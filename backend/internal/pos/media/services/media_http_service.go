@@ -19,15 +19,15 @@ import (
 )
 
 type IMediaHttpService interface {
-	CreateMedia(shopID string, authUsername string, doc models.Media) (string, error)
-	UpdateMedia(shopID string, guid string, authUsername string, doc models.Media) error
-	DeleteMedia(shopID string, guid string, authUsername string) error
-	DeleteMediaByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoMedia(shopID string, guid string) (models.MediaInfo, error)
-	InfoMediaByCode(shopID string, code string) (models.MediaInfo, error)
-	SearchMedia(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.MediaInfo, mongopagination.PaginationData, error)
-	SearchMediaStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.MediaInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.Media) (common.BulkImport, error)
+	CreateMedia(holdingCode string, authUsername string, doc models.Media) (string, error)
+	UpdateMedia(holdingCode string, guid string, authUsername string, doc models.Media) error
+	DeleteMedia(holdingCode string, guid string, authUsername string) error
+	DeleteMediaByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoMedia(holdingCode string, guid string) (models.MediaInfo, error)
+	InfoMediaByCode(holdingCode string, code string) (models.MediaInfo, error)
+	SearchMedia(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.MediaInfo, mongopagination.PaginationData, error)
+	SearchMediaStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.MediaInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.Media) (common.BulkImport, error)
 
 	GetModuleName() string
 }
@@ -63,12 +63,12 @@ func (svc MediaHttpService) getContextTimeout() (context.Context, context.Cancel
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc MediaHttpService) CreateMedia(shopID string, authUsername string, doc models.Media) (string, error) {
+func (svc MediaHttpService) CreateMedia(holdingCode string, authUsername string, doc models.Media) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", doc.Code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", doc.Code)
 
 	if err != nil {
 		return "", err
@@ -81,7 +81,7 @@ func (svc MediaHttpService) CreateMedia(shopID string, authUsername string, doc 
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.MediaDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.Media = doc
 
@@ -95,18 +95,18 @@ func (svc MediaHttpService) CreateMedia(shopID string, authUsername string, doc 
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return newGuidFixed, nil
 }
 
-func (svc MediaHttpService) UpdateMedia(shopID string, guid string, authUsername string, doc models.Media) error {
+func (svc MediaHttpService) UpdateMedia(holdingCode string, guid string, authUsername string, doc models.Media) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -121,25 +121,25 @@ func (svc MediaHttpService) UpdateMedia(shopID string, guid string, authUsername
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, findDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, findDoc)
 
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc MediaHttpService) DeleteMedia(shopID string, guid string, authUsername string) error {
+func (svc MediaHttpService) DeleteMedia(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -149,19 +149,19 @@ func (svc MediaHttpService) DeleteMedia(shopID string, guid string, authUsername
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc MediaHttpService) DeleteMediaByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc MediaHttpService) DeleteMediaByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -170,24 +170,24 @@ func (svc MediaHttpService) DeleteMediaByGUIDs(shopID string, authUsername strin
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc MediaHttpService) InfoMedia(shopID string, guid string) (models.MediaInfo, error) {
+func (svc MediaHttpService) InfoMedia(holdingCode string, guid string) (models.MediaInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.MediaInfo{}, err
@@ -200,12 +200,12 @@ func (svc MediaHttpService) InfoMedia(shopID string, guid string) (models.MediaI
 	return findDoc.MediaInfo, nil
 }
 
-func (svc MediaHttpService) InfoMediaByCode(shopID string, code string) (models.MediaInfo, error) {
+func (svc MediaHttpService) InfoMediaByCode(holdingCode string, code string) (models.MediaInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", code)
 
 	if err != nil {
 		return models.MediaInfo{}, err
@@ -218,7 +218,7 @@ func (svc MediaHttpService) InfoMediaByCode(shopID string, code string) (models.
 	return findDoc.MediaInfo, nil
 }
 
-func (svc MediaHttpService) SearchMedia(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.MediaInfo, mongopagination.PaginationData, error) {
+func (svc MediaHttpService) SearchMedia(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.MediaInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -227,7 +227,7 @@ func (svc MediaHttpService) SearchMedia(shopID string, filters map[string]interf
 		"code",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.MediaInfo{}, pagination, err
@@ -236,7 +236,7 @@ func (svc MediaHttpService) SearchMedia(shopID string, filters map[string]interf
 	return docList, pagination, nil
 }
 
-func (svc MediaHttpService) SearchMediaStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.MediaInfo, int, error) {
+func (svc MediaHttpService) SearchMediaStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.MediaInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -255,7 +255,7 @@ func (svc MediaHttpService) SearchMediaStep(shopID string, langCode string, page
 		}
 	*/
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.MediaInfo{}, 0, err
@@ -264,7 +264,7 @@ func (svc MediaHttpService) SearchMediaStep(shopID string, langCode string, page
 	return docList, total, nil
 }
 
-func (svc MediaHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.Media) (common.BulkImport, error) {
+func (svc MediaHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.Media) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -276,7 +276,7 @@ func (svc MediaHttpService) SaveInBatch(shopID string, authUsername string, data
 		itemCodeGuidList = append(itemCodeGuidList, doc.Code)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "code", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "code", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -288,18 +288,18 @@ func (svc MediaHttpService) SaveInBatch(shopID string, authUsername string, data
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.Media, models.MediaDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.Media) models.MediaDoc {
+		func(holdingCode string, authUsername string, doc models.Media) models.MediaDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.MediaDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.Media = doc
 
 			currentTime := time.Now()
@@ -310,23 +310,23 @@ func (svc MediaHttpService) SaveInBatch(shopID string, authUsername string, data
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.Media, models.MediaDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.MediaDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", guid)
+		func(holdingCode string, guid string) (models.MediaDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", guid)
 		},
 		func(doc models.MediaDoc) bool {
 			return doc.Code != ""
 		},
-		func(shopID string, authUsername string, data models.Media, doc models.MediaDoc) error {
+		func(holdingCode string, authUsername string, data models.Media, doc models.MediaDoc) error {
 
 			doc.Media = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -365,7 +365,7 @@ func (svc MediaHttpService) SaveInBatch(shopID string, authUsername string, data
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -379,9 +379,9 @@ func (svc MediaHttpService) getDocIDKey(doc models.Media) string {
 	return doc.Code
 }
 
-func (svc MediaHttpService) saveMasterSync(shopID string) {
+func (svc MediaHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

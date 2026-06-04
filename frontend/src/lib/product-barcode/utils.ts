@@ -228,7 +228,7 @@ export function toMasterArray(
 export function listRowToBarcode(row: ProductBarcodeListRow): Partial<ProductBarcode> {
   return {
     guidfixed: row.guidfixed,
-    shopid: row.shopid,
+    holding_code: row.holding_code,
     barcode: row.barcode,
     names: row.names ?? [],
     item_unit_code: row.itemunitcode ?? "",
@@ -242,7 +242,7 @@ export function listRowToBarcode(row: ProductBarcodeListRow): Partial<ProductBar
     category_names: row.category_names ?? [],
     prices: row.prices ?? [],
     imageuri: row.imageuri ?? "",
-    qty: row.balance_qty ?? 0,
+    qty: row.available_qty ?? row.balance_qty ?? 0,
     standvalue: row.standvalue ?? 1,
     dividevalue: row.dividevalue ?? 1,
     bom: row.bom ?? [],
@@ -259,7 +259,7 @@ export function rawToProduct(raw: unknown): Product {
   const r: Record<string, unknown> = isRecord(raw) ? raw : {};
   return {
     guidfixed: getFirstString(r, ["guid_fixed", "guidfixed"]),
-    shopid: getString(r, "shopid"),
+    holding_code: getString(r, "holding_code"),
     code: getString(r, "code"),
     names: toNameXArray(r.names),
     group_code: getString(r, "group_code"),
@@ -318,7 +318,7 @@ export function rawToProductBarcode(raw: unknown, base: ProductBarcode): Product
   return {
     ...base,
     guidfixed: getFirstString(r, ["guidfixed", "guid_fixed"]) || base.guidfixed,
-    shopid: getFirstString(r, ["shopid", "shop_id"]) || base.shopid,
+    holding_code: getFirstString(r, ["holding_code", "holding_code"]) || base.holding_code,
     itemcode: getString(r, "itemcode") || base.itemcode,
     barcode: getString(r, "barcode") || base.barcode,
     names: toNameXArray(r.names) || base.names,

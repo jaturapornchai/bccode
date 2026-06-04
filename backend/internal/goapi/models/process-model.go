@@ -35,7 +35,7 @@ type ProcessStockMovementDetailStruct struct {
 }
 
 type ProcessStockCostDetailStruct struct {
-	ShopID          string
+	HoldingCode     string
 	DocDateTime     time.Time
 	DocNo           string
 	LineNumber      int
@@ -146,7 +146,7 @@ type ProductBalanceByCodeLocationGetStruct struct {
 }
 
 type PayLoadCommandStruct struct {
-	ShopID         string                    `json:"shop_id"`
+	HoldingCode    string                    `json:"holding_code"`
 	CommandID      string                    `json:"command_id"`
 	DocNumberList  []string                  `json:"doc_number_list"`
 	Condition      string                    `json:"condition"`
@@ -219,8 +219,8 @@ type StockTransactionStruct struct {
 }
 
 type PayLoadCopyMongoStruct struct {
-	SourceShopID      string `json:"source_shop_id"`
-	TargetShopID      string `json:"target_shop_id"`
+	SourceHoldingCode string `json:"source_holding_code"`
+	TargetHoldingCode string `json:"target_holding_code"`
 	SourceEnvironment string `json:"source_environment"`
 	TargetEnvironment string `json:"target_environment"`
 }

@@ -57,7 +57,7 @@ func (h PaymentMasterHttp) RegisterHttp() {
 // @Router /paymentmaster [post]
 func (h PaymentMasterHttp) CreatePaymentMaster(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.PaymentMaster{}
@@ -68,7 +68,7 @@ func (h PaymentMasterHttp) CreatePaymentMaster(ctx microservice.IContext) error 
 		return err
 	}
 
-	idx, err := h.svc.CreatePaymentMaster(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreatePaymentMaster(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -96,7 +96,7 @@ func (h PaymentMasterHttp) CreatePaymentMaster(ctx microservice.IContext) error 
 func (h PaymentMasterHttp) UpdatePaymentMaster(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -109,7 +109,7 @@ func (h PaymentMasterHttp) UpdatePaymentMaster(ctx microservice.IContext) error 
 		return err
 	}
 
-	err = h.svc.UpdatePaymentMaster(id, shopID, authUsername, *docReq)
+	err = h.svc.UpdatePaymentMaster(id, holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -136,12 +136,12 @@ func (h PaymentMasterHttp) UpdatePaymentMaster(ctx microservice.IContext) error 
 // @Router /paymentmaster/{id} [delete]
 func (h PaymentMasterHttp) DeletePaymentMaster(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeletePaymentMaster(id, shopID, authUsername)
+	err := h.svc.DeletePaymentMaster(id, holdingCode, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -168,12 +168,12 @@ func (h PaymentMasterHttp) DeletePaymentMaster(ctx microservice.IContext) error 
 // @Router /paymentmaster/{id} [get]
 func (h PaymentMasterHttp) InfoPaymentMaster(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get PaymentMaster %v", id)
-	doc, err := h.svc.InfoPaymentMaster(id, shopID)
+	doc, err := h.svc.InfoPaymentMaster(id, holdingCode)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -202,10 +202,10 @@ func (h PaymentMasterHttp) InfoPaymentMaster(ctx microservice.IContext) error {
 // @Router /paymentmaster [get]
 func (h PaymentMasterHttp) SearchPaymentMaster(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	q := ctx.QueryParam("q")
-	docList, err := h.svc.SearchPaymentMaster(shopID, q)
+	docList, err := h.svc.SearchPaymentMaster(holdingCode, q)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -233,7 +233,7 @@ func (h PaymentMasterHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -245,7 +245,7 @@ func (h PaymentMasterHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

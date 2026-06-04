@@ -41,14 +41,14 @@ def main():
 
     # 2. Get active shop
     print("\n2. Getting/Creating a shop...")
-    shop_id = ""
+    holding_code = ""
     try:
         resp = requests.get(f"{BASE_URL}/shop", headers=headers)
         shops = resp.json()
         if isinstance(shops, list) and len(shops) > 0:
-            shop_id = shops[0]["shopid"]
+            holding_code = shops[0]["holding_code"]
         elif isinstance(shops, dict) and isinstance(shops.get("data"), list) and len(shops["data"]) > 0:
-            shop_id = shops["data"][0]["shopid"]
+            holding_code = shops["data"][0]["holding_code"]
         else:
             shop_payload = {
                 "code": "UATSH3",
@@ -60,20 +60,20 @@ def main():
             }
             resp = requests.post(f"{BASE_URL}/shop", json=shop_payload, headers=headers)
             shop_data = resp.json()
-            shop_id = shop_data["id"]
+            holding_code = shop_data["id"]
 
-        print(f"Active Shop ID: {shop_id}")
+        print(f"Active Holding Code: {holding_code}")
     except Exception as e:
         print("Error getting/creating shop:", e)
         sys.exit(1)
 
-    # 3. Request Token with shopid bound
-    print("\n3. Binding token to Shop ID...")
+    # 3. Request Token with holding_code bound
+    print("\n3. Binding token to Holding Code...")
     try:
         resp = requests.post(f"{BASE_URL}/login", json={
             "username": reg_payload["username"],
             "password": reg_payload["password"],
-            "shopid": shop_id
+            "holding_code": holding_code
         })
         shop_login_data = resp.json()
         token = shop_login_data["token"]

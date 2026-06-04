@@ -16,12 +16,12 @@ import (
 )
 
 type IOptionPatternHttpService interface {
-	CreateOptionPattern(shopID string, authUsername string, doc models.OptionPattern) (string, error)
-	UpdateOptionPattern(shopID string, guid string, authUsername string, doc models.OptionPattern) error
-	DeleteOptionPattern(shopID string, guid string, authUsername string) error
-	InfoOptionPattern(shopID string, guid string) (models.OptionPatternInfo, error)
-	SearchOptionPattern(shopID string, pageable micromodels.Pageable) ([]models.OptionPatternInfo, mongopagination.PaginationData, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.OptionPattern) (common.BulkImport, error)
+	CreateOptionPattern(holdingCode string, authUsername string, doc models.OptionPattern) (string, error)
+	UpdateOptionPattern(holdingCode string, guid string, authUsername string, doc models.OptionPattern) error
+	DeleteOptionPattern(holdingCode string, guid string, authUsername string) error
+	InfoOptionPattern(holdingCode string, guid string) (models.OptionPatternInfo, error)
+	SearchOptionPattern(holdingCode string, pageable micromodels.Pageable) ([]models.OptionPatternInfo, mongopagination.PaginationData, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.OptionPattern) (common.BulkImport, error)
 }
 
 type OptionPatternHttpService struct {
@@ -43,12 +43,12 @@ func (svc OptionPatternHttpService) getContextTimeout() (context.Context, contex
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc OptionPatternHttpService) CreateOptionPattern(shopID string, authUsername string, doc models.OptionPattern) (string, error) {
+func (svc OptionPatternHttpService) CreateOptionPattern(holdingCode string, authUsername string, doc models.OptionPattern) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "patterncode", doc.PatternCode)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "patterncode", doc.PatternCode)
 
 	if err != nil {
 		return "", err
@@ -61,7 +61,7 @@ func (svc OptionPatternHttpService) CreateOptionPattern(shopID string, authUsern
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.OptionPatternDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.OptionPattern = doc
 
@@ -81,12 +81,12 @@ func (svc OptionPatternHttpService) CreateOptionPattern(shopID string, authUsern
 	return newGuidFixed, nil
 }
 
-func (svc OptionPatternHttpService) UpdateOptionPattern(shopID string, guid string, authUsername string, doc models.OptionPattern) error {
+func (svc OptionPatternHttpService) UpdateOptionPattern(holdingCode string, guid string, authUsername string, doc models.OptionPattern) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -101,7 +101,7 @@ func (svc OptionPatternHttpService) UpdateOptionPattern(shopID string, guid stri
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, findDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, findDoc)
 
 	if err != nil {
 		return err
@@ -110,12 +110,12 @@ func (svc OptionPatternHttpService) UpdateOptionPattern(shopID string, guid stri
 	return nil
 }
 
-func (svc OptionPatternHttpService) DeleteOptionPattern(shopID string, guid string, authUsername string) error {
+func (svc OptionPatternHttpService) DeleteOptionPattern(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -125,7 +125,7 @@ func (svc OptionPatternHttpService) DeleteOptionPattern(shopID string, guid stri
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
@@ -133,12 +133,12 @@ func (svc OptionPatternHttpService) DeleteOptionPattern(shopID string, guid stri
 	return nil
 }
 
-func (svc OptionPatternHttpService) InfoOptionPattern(shopID string, guid string) (models.OptionPatternInfo, error) {
+func (svc OptionPatternHttpService) InfoOptionPattern(holdingCode string, guid string) (models.OptionPatternInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.OptionPatternInfo{}, err
@@ -152,7 +152,7 @@ func (svc OptionPatternHttpService) InfoOptionPattern(shopID string, guid string
 
 }
 
-func (svc OptionPatternHttpService) SearchOptionPattern(shopID string, pageable micromodels.Pageable) ([]models.OptionPatternInfo, mongopagination.PaginationData, error) {
+func (svc OptionPatternHttpService) SearchOptionPattern(holdingCode string, pageable micromodels.Pageable) ([]models.OptionPatternInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -162,7 +162,7 @@ func (svc OptionPatternHttpService) SearchOptionPattern(shopID string, pageable 
 		"patterncode",
 	}
 
-	docList, pagination, err := svc.repo.FindPage(ctx, shopID, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPage(ctx, holdingCode, searchInFields, pageable)
 
 	if err != nil {
 		return []models.OptionPatternInfo{}, pagination, err
@@ -171,7 +171,7 @@ func (svc OptionPatternHttpService) SearchOptionPattern(shopID string, pageable 
 	return docList, pagination, nil
 }
 
-func (svc OptionPatternHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.OptionPattern) (common.BulkImport, error) {
+func (svc OptionPatternHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.OptionPattern) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -183,7 +183,7 @@ func (svc OptionPatternHttpService) SaveInBatch(shopID string, authUsername stri
 		itemCodeGuidList = append(itemCodeGuidList, doc.PatternCode)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "patterncode", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "patterncode", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -195,18 +195,18 @@ func (svc OptionPatternHttpService) SaveInBatch(shopID string, authUsername stri
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.OptionPattern, models.OptionPatternDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.OptionPattern) models.OptionPatternDoc {
+		func(holdingCode string, authUsername string, doc models.OptionPattern) models.OptionPatternDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.OptionPatternDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.OptionPattern = doc
 
 			currentTime := time.Now()
@@ -217,23 +217,23 @@ func (svc OptionPatternHttpService) SaveInBatch(shopID string, authUsername stri
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.OptionPattern, models.OptionPatternDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.OptionPatternDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "patterncode", guid)
+		func(holdingCode string, guid string) (models.OptionPatternDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "patterncode", guid)
 		},
 		func(doc models.OptionPatternDoc) bool {
 			return doc.PatternCode != ""
 		},
-		func(shopID string, authUsername string, data models.OptionPattern, doc models.OptionPatternDoc) error {
+		func(holdingCode string, authUsername string, data models.OptionPattern, doc models.OptionPatternDoc) error {
 
 			doc.OptionPattern = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}

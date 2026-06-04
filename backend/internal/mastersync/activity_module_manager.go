@@ -50,21 +50,21 @@ func (m ActivityModuleManager) GetPage(moduleSelectList map[string]struct{}, act
 }
 
 type ActivityModule interface {
-	LastActivity(shopID string, action string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) (models.LastActivity, mongopagination.PaginationData, error)
-	LastActivityStep(shopID string, action string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) (models.LastActivity, error)
+	LastActivity(holdingCode string, action string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) (models.LastActivity, mongopagination.PaginationData, error)
+	LastActivityStep(holdingCode string, action string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) (models.LastActivity, error)
 	GetModuleName() string
 }
 
 type ActivityParamPage struct {
-	ShopID     string
-	Action     string
-	LastUpdate time.Time
-	Filters    string
-	Pageable   micromodels.Pageable
+	HoldingCode string
+	Action      string
+	LastUpdate  time.Time
+	Filters     string
+	Pageable    micromodels.Pageable
 }
 
 type ActivityParamOffset struct {
-	ShopID       string
+	HoldingCode  string
 	Action       string
 	LastUpdate   time.Time
 	Filters      string
@@ -80,7 +80,7 @@ func listDataModulePage(appModules map[string]ActivityModule, moduleSelectList m
 	for moduleName, appModule := range appModules {
 		if len(moduleSelectList) == 0 || isSelectModule(moduleSelectList, moduleName) {
 			filters := filterRawTextToMap(param.Filters)
-			docList, pagination, err := appModule.LastActivity(param.ShopID, param.Action, param.LastUpdate, filters, param.Pageable)
+			docList, pagination, err := appModule.LastActivity(param.HoldingCode, param.Action, param.LastUpdate, filters, param.Pageable)
 
 			if err != nil {
 				return map[string]interface{}{}, mongopagination.PaginationData{}, err
@@ -107,14 +107,14 @@ func listDataModuleOffset(appModules map[string]ActivityModule, moduleSelectList
 			filters := filterRawTextToMap(param.Filters)
 
 			// Use ShopsID for productbarcode module if provided
-			shopID := param.ShopID
+			holdingCode := param.HoldingCode
 			if moduleName == "productbarcode" && len(param.ShopsID) > 0 {
-				// For productbarcode module, use the first shop ID from ShopsID list
+				// For productbarcode module, use the first holding Code from ShopsID list
 				// or pass the entire list to the module for IN query handling
-				shopID = strings.Join(param.ShopsID, ",")
+				holdingCode = strings.Join(param.ShopsID, ",")
 			}
 
-			docList, err := appModule.LastActivityStep(shopID, param.Action, param.LastUpdate, filters, param.PageableStep)
+			docList, err := appModule.LastActivityStep(holdingCode, param.Action, param.LastUpdate, filters, param.PageableStep)
 
 			if err != nil {
 				return map[string]interface{}{}, err

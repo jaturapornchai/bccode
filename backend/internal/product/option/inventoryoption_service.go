@@ -13,12 +13,12 @@ import (
 )
 
 type IOptionService interface {
-	CreateOption(shopID string, authUsername string, invOpt models.InventoryOptionMain) (string, error)
-	UpdateOption(shopID string, guid string, authUsername string, invOpt models.InventoryOptionMain) error
-	DeleteOption(shopID string, guid string, username string) error
-	InfoOption(shopID string, guid string) (models.InventoryOptionMainInfo, error)
-	InfoWTFArray(shopID string, codes []string) ([]interface{}, error)
-	SearchOption(shopID string, pageable micromodels.Pageable) ([]models.InventoryOptionMainInfo, mongopagination.PaginationData, error)
+	CreateOption(holdingCode string, authUsername string, invOpt models.InventoryOptionMain) (string, error)
+	UpdateOption(holdingCode string, guid string, authUsername string, invOpt models.InventoryOptionMain) error
+	DeleteOption(holdingCode string, guid string, username string) error
+	InfoOption(holdingCode string, guid string) (models.InventoryOptionMainInfo, error)
+	InfoWTFArray(holdingCode string, codes []string) ([]interface{}, error)
+	SearchOption(holdingCode string, pageable micromodels.Pageable) ([]models.InventoryOptionMainInfo, mongopagination.PaginationData, error)
 }
 
 type OptionService struct {
@@ -40,7 +40,7 @@ func (svc OptionService) getContextTimeout() (context.Context, context.CancelFun
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc OptionService) CreateOption(shopID string, authUsername string, invOpt models.InventoryOptionMain) (string, error) {
+func (svc OptionService) CreateOption(holdingCode string, authUsername string, invOpt models.InventoryOptionMain) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -48,7 +48,7 @@ func (svc OptionService) CreateOption(shopID string, authUsername string, invOpt
 	newGuidFixed := utils.NewGUID()
 
 	invOptDoc := models.InventoryOptionMainDoc{}
-	invOptDoc.ShopID = shopID
+	invOptDoc.HoldingCode = holdingCode
 	invOptDoc.GuidFixed = newGuidFixed
 
 	invOptDoc.InventoryOptionMain = invOpt
@@ -69,12 +69,12 @@ func (svc OptionService) CreateOption(shopID string, authUsername string, invOpt
 	return newGuidFixed, nil
 }
 
-func (svc OptionService) UpdateOption(shopID string, guid string, authUsername string, invOpt models.InventoryOptionMain) error {
+func (svc OptionService) UpdateOption(holdingCode string, guid string, authUsername string, invOpt models.InventoryOptionMain) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -92,7 +92,7 @@ func (svc OptionService) UpdateOption(shopID string, guid string, authUsername s
 		findDoc.InventoryOptionMain.Choices = &[]models.Choice{}
 	}
 
-	svc.repo.Update(ctx, shopID, guid, findDoc)
+	svc.repo.Update(ctx, holdingCode, guid, findDoc)
 
 	if err != nil {
 		return err
@@ -101,12 +101,12 @@ func (svc OptionService) UpdateOption(shopID string, guid string, authUsername s
 	return nil
 }
 
-func (svc OptionService) DeleteOption(shopID string, guid string, username string) error {
+func (svc OptionService) DeleteOption(holdingCode string, guid string, username string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	err := svc.repo.Delete(ctx, shopID, guid, username)
+	err := svc.repo.Delete(ctx, holdingCode, guid, username)
 
 	if err != nil {
 		return err
@@ -115,12 +115,12 @@ func (svc OptionService) DeleteOption(shopID string, guid string, username strin
 	return nil
 }
 
-func (svc OptionService) InfoOption(shopID string, guid string) (models.InventoryOptionMainInfo, error) {
+func (svc OptionService) InfoOption(holdingCode string, guid string) (models.InventoryOptionMainInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.InventoryOptionMainInfo{}, err
@@ -133,7 +133,7 @@ func (svc OptionService) InfoOption(shopID string, guid string) (models.Inventor
 	return findDoc.InventoryOptionMainInfo, nil
 }
 
-func (svc OptionService) InfoWTFArray(shopID string, codes []string) ([]interface{}, error) {
+func (svc OptionService) InfoWTFArray(holdingCode string, codes []string) ([]interface{}, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -141,7 +141,7 @@ func (svc OptionService) InfoWTFArray(shopID string, codes []string) ([]interfac
 	docList := []interface{}{}
 
 	for _, code := range codes {
-		findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", code)
+		findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", code)
 		if err != nil || findDoc.ID == primitive.NilObjectID {
 			// add item empty
 			docList = append(docList, nil)
@@ -153,12 +153,12 @@ func (svc OptionService) InfoWTFArray(shopID string, codes []string) ([]interfac
 	return docList, nil
 }
 
-func (svc OptionService) SearchOption(shopID string, pageable micromodels.Pageable) ([]models.InventoryOptionMainInfo, mongopagination.PaginationData, error) {
+func (svc OptionService) SearchOption(holdingCode string, pageable micromodels.Pageable) ([]models.InventoryOptionMainInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	docList, pagination, err := svc.repo.FindPage(ctx, shopID, pageable)
+	docList, pagination, err := svc.repo.FindPage(ctx, holdingCode, pageable)
 
 	if err != nil {
 		return []models.InventoryOptionMainInfo{}, pagination, err

@@ -8,13 +8,13 @@ import (
 const STOCK_PROCESS_KEY = "STKPROCESS"
 
 type IStockProcessRedisRepository interface {
-	AddStockData(shopID string, barcode string, stockData stockProcessModels.StockData) error
-	BulkAddStockData(shopID string, barcode string, stockDatas []stockProcessModels.StockData) error
-	GetStockDataLength(shopID string, barcode string) (int64, error)
-	// GetStockDataLine(shopID string, barcode string, line int64) (stockProcessModels.StockData, error)
-	// PutStockData(shopID string, barcode string, line int64, stockData stockProcessModels.StockData) error
-	// GetStockDataList(shopID string, barcode string) ([]stockProcessModels.StockData, error)
-	FindStockMovement(shopID string, barcode string, stockData stockProcessModels.StockData) (int64, error)
+	AddStockData(holdingCode string, barcode string, stockData stockProcessModels.StockData) error
+	BulkAddStockData(holdingCode string, barcode string, stockDatas []stockProcessModels.StockData) error
+	GetStockDataLength(holdingCode string, barcode string) (int64, error)
+	// GetStockDataLine(holdingCode string, barcode string, line int64) (stockProcessModels.StockData, error)
+	// PutStockData(holdingCode string, barcode string, line int64, stockData stockProcessModels.StockData) error
+	// GetStockDataList(holdingCode string, barcode string) ([]stockProcessModels.StockData, error)
+	FindStockMovement(holdingCode string, barcode string, stockData stockProcessModels.StockData) (int64, error)
 }
 
 type StockProcessRedisRepository struct {
@@ -27,8 +27,8 @@ func NewStockProcessRedisRepository(pst microservice.ICacher) IStockProcessRedis
 	}
 }
 
-func (repo StockProcessRedisRepository) AddStockData(shopID string, barcode string, stockData stockProcessModels.StockData) error {
-	redisKey := STOCK_PROCESS_KEY + "::" + shopID + "::" + barcode
+func (repo StockProcessRedisRepository) AddStockData(holdingCode string, barcode string, stockData stockProcessModels.StockData) error {
+	redisKey := STOCK_PROCESS_KEY + "::" + holdingCode + "::" + barcode
 
 	err := repo.pst.RPush(redisKey, stockData)
 	if err != nil {
@@ -38,9 +38,9 @@ func (repo StockProcessRedisRepository) AddStockData(shopID string, barcode stri
 	return nil
 }
 
-func (repo StockProcessRedisRepository) BulkAddStockData(shopID string, barcode string, stockDatas []stockProcessModels.StockData) error {
+func (repo StockProcessRedisRepository) BulkAddStockData(holdingCode string, barcode string, stockDatas []stockProcessModels.StockData) error {
 
-	redisKey := STOCK_PROCESS_KEY + "::" + shopID + "::" + barcode
+	redisKey := STOCK_PROCESS_KEY + "::" + holdingCode + "::" + barcode
 
 	for _, data := range stockDatas {
 		err := repo.pst.RPush(redisKey, data)
@@ -51,9 +51,9 @@ func (repo StockProcessRedisRepository) BulkAddStockData(shopID string, barcode 
 	return nil
 }
 
-func (repo StockProcessRedisRepository) GetStockDataLength(shopID string, barcode string) (int64, error) {
+func (repo StockProcessRedisRepository) GetStockDataLength(holdingCode string, barcode string) (int64, error) {
 
-	redisKey := STOCK_PROCESS_KEY + "::" + shopID + "::" + barcode
+	redisKey := STOCK_PROCESS_KEY + "::" + holdingCode + "::" + barcode
 
 	size, err := repo.pst.LLen(redisKey)
 	if err != nil {
@@ -62,9 +62,9 @@ func (repo StockProcessRedisRepository) GetStockDataLength(shopID string, barcod
 	return size, nil
 }
 
-func (repo StockProcessRedisRepository) FindStockMovement(shopID string, barcode string, stockData stockProcessModels.StockData) (int64, error) {
+func (repo StockProcessRedisRepository) FindStockMovement(holdingCode string, barcode string, stockData stockProcessModels.StockData) (int64, error) {
 
-	redisKey := STOCK_PROCESS_KEY + "::" + shopID + "::" + barcode
+	redisKey := STOCK_PROCESS_KEY + "::" + holdingCode + "::" + barcode
 
 	pos, err := repo.pst.LPos(redisKey, stockData)
 	if err != nil {

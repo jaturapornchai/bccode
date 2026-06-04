@@ -19,8 +19,8 @@ func (p PurchaseCreditorTransactionPhaser) PhaseSingleDoc(doc models.PurchaseTra
 
 func (p PurchaseCreditorTransactionPhaser) PhasePurchaseCreditor(doc models.PurchaseTransactionPG) (*models.CreditorTransactionPG, error) {
 	transaction := models.CreditorTransactionPG{
-		ShopIdentity: pkgModels.ShopIdentity{
-			ShopID: doc.ShopID,
+		HoldingCodeentity: pkgModels.HoldingCodeentity{
+			HoldingCode: doc.HoldingCode,
 		},
 		GuidFixed:      doc.GuidFixed,
 		DocNo:          doc.DocNo,

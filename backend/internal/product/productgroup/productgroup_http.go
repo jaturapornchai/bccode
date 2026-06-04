@@ -68,7 +68,7 @@ func (h ProductGroupHttp) RegisterHttp() {
 // @Router /product/group [post]
 func (h ProductGroupHttp) CreateProductGroup(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.ProductGroup{}
@@ -84,7 +84,7 @@ func (h ProductGroupHttp) CreateProductGroup(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreateProductGroup(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateProductGroup(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -109,7 +109,7 @@ func (h ProductGroupHttp) CreateProductGroup(ctx microservice.IContext) error {
 // @Router /product/group/save [post]
 func (h ProductGroupHttp) SaveProductGroup(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.ProductGroup{}
@@ -125,7 +125,7 @@ func (h ProductGroupHttp) SaveProductGroup(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.SaveProductGroup(shopID, authUsername, *docReq)
+	idx, err := h.svc.SaveProductGroup(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -152,7 +152,7 @@ func (h ProductGroupHttp) SaveProductGroup(ctx microservice.IContext) error {
 func (h ProductGroupHttp) UpdateProductGroup(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -170,7 +170,7 @@ func (h ProductGroupHttp) UpdateProductGroup(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateProductGroup(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateProductGroup(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -196,12 +196,12 @@ func (h ProductGroupHttp) UpdateProductGroup(ctx microservice.IContext) error {
 // @Router /product/group/{id} [delete]
 func (h ProductGroupHttp) DeleteProductGroup(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteProductGroup(shopID, id, authUsername)
+	err := h.svc.DeleteProductGroup(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -227,7 +227,7 @@ func (h ProductGroupHttp) DeleteProductGroup(ctx microservice.IContext) error {
 // @Router /product/group [delete]
 func (h ProductGroupHttp) DeleteProductGroupByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -240,7 +240,7 @@ func (h ProductGroupHttp) DeleteProductGroupByGUIDs(ctx microservice.IContext) e
 		return err
 	}
 
-	err = h.svc.DeleteProductGroupByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteProductGroupByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -265,12 +265,12 @@ func (h ProductGroupHttp) DeleteProductGroupByGUIDs(ctx microservice.IContext) e
 // @Router /product/group/{id} [get]
 func (h ProductGroupHttp) InfoProductGroup(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get ProductGroup %v", id)
-	doc, err := h.svc.InfoProductGroup(shopID, id)
+	doc, err := h.svc.InfoProductGroup(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -296,7 +296,7 @@ func (h ProductGroupHttp) InfoProductGroup(ctx microservice.IContext) error {
 // @Router /product/group/by-code [get]
 func (h ProductGroupHttp) InfoArray(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	codesReq, err := url.QueryUnescape(ctx.QueryParam("codes"))
 
@@ -313,7 +313,7 @@ func (h ProductGroupHttp) InfoArray(ctx microservice.IContext) error {
 		return err
 	}
 	// where to filter array
-	doc, err := h.svc.InfoWTFArray(shopID, docReq)
+	doc, err := h.svc.InfoWTFArray(holdingCode, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -340,11 +340,11 @@ func (h ProductGroupHttp) InfoArray(ctx microservice.IContext) error {
 // @Router /product/group [get]
 func (h ProductGroupHttp) SearchProductGroupPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.SearchProductGroup(shopID, map[string]interface{}{}, pageable)
+	docList, pagination, err := h.svc.SearchProductGroup(holdingCode, map[string]interface{}{}, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -373,13 +373,13 @@ func (h ProductGroupHttp) SearchProductGroupPage(ctx microservice.IContext) erro
 // @Router /product/group/list [get]
 func (h ProductGroupHttp) SearchProductGroupStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
 	lang := ctx.QueryParam("lang")
 
-	docList, total, err := h.svc.SearchProductGroupStep(shopID, lang, pageableStep)
+	docList, total, err := h.svc.SearchProductGroupStep(holdingCode, lang, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -407,7 +407,7 @@ func (h ProductGroupHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -419,7 +419,7 @@ func (h ProductGroupHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

@@ -20,17 +20,17 @@ import (
 )
 
 type IBusinessTypeHttpService interface {
-	CreateBusinessType(shopID string, authUsername string, doc models.BusinessType) (string, error)
-	UpdateBusinessType(shopID string, guid string, authUsername string, doc models.BusinessType) error
-	DeleteBusinessType(shopID string, guid string, authUsername string) error
-	DeleteBusinessTypeByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoBusinessType(shopID string, guid string) (models.BusinessTypeInfo, error)
-	InfoBusinessTypeByCode(shopID string, code string) (models.BusinessTypeInfo, error)
-	SearchBusinessType(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.BusinessTypeInfo, mongopagination.PaginationData, error)
-	SearchBusinessTypeStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.BusinessTypeInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.BusinessType) (common.BulkImport, error)
+	CreateBusinessType(holdingCode string, authUsername string, doc models.BusinessType) (string, error)
+	UpdateBusinessType(holdingCode string, guid string, authUsername string, doc models.BusinessType) error
+	DeleteBusinessType(holdingCode string, guid string, authUsername string) error
+	DeleteBusinessTypeByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoBusinessType(holdingCode string, guid string) (models.BusinessTypeInfo, error)
+	InfoBusinessTypeByCode(holdingCode string, code string) (models.BusinessTypeInfo, error)
+	SearchBusinessType(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.BusinessTypeInfo, mongopagination.PaginationData, error)
+	SearchBusinessTypeStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.BusinessTypeInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.BusinessType) (common.BulkImport, error)
 
-	InfoBusinessTypeDefault(shopID string) (models.BusinessTypeInfo, error)
+	InfoBusinessTypeDefault(holdingCode string) (models.BusinessTypeInfo, error)
 
 	GetModuleName() string
 }
@@ -62,13 +62,13 @@ func (svc BusinessTypeHttpService) getContextTimeout() (context.Context, context
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc BusinessTypeHttpService) CreateBusinessType(shopID string, authUsername string, doc models.BusinessType) (string, error) {
+func (svc BusinessTypeHttpService) CreateBusinessType(holdingCode string, authUsername string, doc models.BusinessType) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
 	// Check code is exists
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", doc.Code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", doc.Code)
 
 	if err != nil {
 		return "", err
@@ -84,7 +84,7 @@ func (svc BusinessTypeHttpService) CreateBusinessType(shopID string, authUsernam
 	err = svc.repo.Transaction(ctx, func(tctx context.Context) error {
 
 		if doc.IsDefault {
-			err = svc.repo.ClearDefault(tctx, shopID)
+			err = svc.repo.ClearDefault(tctx, holdingCode)
 			if err != nil {
 				return err
 			}
@@ -92,7 +92,7 @@ func (svc BusinessTypeHttpService) CreateBusinessType(shopID string, authUsernam
 
 		// Create new document
 		docData := models.BusinessTypeDoc{}
-		docData.ShopID = shopID
+		docData.HoldingCode = holdingCode
 		docData.GuidFixed = newGuidFixed
 		docData.BusinessType = doc
 
@@ -114,17 +114,17 @@ func (svc BusinessTypeHttpService) CreateBusinessType(shopID string, authUsernam
 	}
 
 	// Save master sync
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return newGuidFixed, nil
 }
-func (svc BusinessTypeHttpService) UpdateBusinessType(shopID string, guid string, authUsername string, doc models.BusinessType) error {
+func (svc BusinessTypeHttpService) UpdateBusinessType(holdingCode string, guid string, authUsername string, doc models.BusinessType) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
 	// Find the business type by the given guid.
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 	if err != nil {
 		return err
 	}
@@ -136,7 +136,7 @@ func (svc BusinessTypeHttpService) UpdateBusinessType(shopID string, guid string
 	err = svc.repo.Transaction(ctx, func(tctx context.Context) error {
 
 		if doc.IsDefault {
-			err = svc.repo.ClearDefault(tctx, shopID)
+			err = svc.repo.ClearDefault(tctx, holdingCode)
 			if err != nil {
 				return err
 			}
@@ -148,7 +148,7 @@ func (svc BusinessTypeHttpService) UpdateBusinessType(shopID string, guid string
 		findDoc.UpdatedAt = time.Now()
 
 		// Save the updated document.
-		err = svc.repo.Update(tctx, shopID, guid, findDoc)
+		err = svc.repo.Update(tctx, holdingCode, guid, findDoc)
 		if err != nil {
 			return err
 		}
@@ -162,17 +162,17 @@ func (svc BusinessTypeHttpService) UpdateBusinessType(shopID string, guid string
 	}
 
 	// Set the master sync.
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc BusinessTypeHttpService) DeleteBusinessType(shopID string, guid string, authUsername string) error {
+func (svc BusinessTypeHttpService) DeleteBusinessType(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -182,18 +182,18 @@ func (svc BusinessTypeHttpService) DeleteBusinessType(shopID string, guid string
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc BusinessTypeHttpService) DeleteBusinessTypeByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc BusinessTypeHttpService) DeleteBusinessTypeByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -202,7 +202,7 @@ func (svc BusinessTypeHttpService) DeleteBusinessTypeByGUIDs(shopID string, auth
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
@@ -210,12 +210,12 @@ func (svc BusinessTypeHttpService) DeleteBusinessTypeByGUIDs(shopID string, auth
 	return nil
 }
 
-func (svc BusinessTypeHttpService) InfoBusinessTypeDefault(shopID string) (models.BusinessTypeInfo, error) {
+func (svc BusinessTypeHttpService) InfoBusinessTypeDefault(holdingCode string) (models.BusinessTypeInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.GetDefault(ctx, shopID)
+	findDoc, err := svc.repo.GetDefault(ctx, holdingCode)
 
 	if err != nil {
 		return models.BusinessTypeInfo{}, err
@@ -228,12 +228,12 @@ func (svc BusinessTypeHttpService) InfoBusinessTypeDefault(shopID string) (model
 	return findDoc.BusinessTypeInfo, nil
 }
 
-func (svc BusinessTypeHttpService) InfoBusinessType(shopID string, guid string) (models.BusinessTypeInfo, error) {
+func (svc BusinessTypeHttpService) InfoBusinessType(holdingCode string, guid string) (models.BusinessTypeInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.BusinessTypeInfo{}, err
@@ -246,12 +246,12 @@ func (svc BusinessTypeHttpService) InfoBusinessType(shopID string, guid string) 
 	return findDoc.BusinessTypeInfo, nil
 }
 
-func (svc BusinessTypeHttpService) InfoBusinessTypeByCode(shopID string, code string) (models.BusinessTypeInfo, error) {
+func (svc BusinessTypeHttpService) InfoBusinessTypeByCode(holdingCode string, code string) (models.BusinessTypeInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", code)
 
 	if err != nil {
 		return models.BusinessTypeInfo{}, err
@@ -264,7 +264,7 @@ func (svc BusinessTypeHttpService) InfoBusinessTypeByCode(shopID string, code st
 	return findDoc.BusinessTypeInfo, nil
 }
 
-func (svc BusinessTypeHttpService) SearchBusinessType(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.BusinessTypeInfo, mongopagination.PaginationData, error) {
+func (svc BusinessTypeHttpService) SearchBusinessType(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.BusinessTypeInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -273,7 +273,7 @@ func (svc BusinessTypeHttpService) SearchBusinessType(shopID string, filters map
 		"code",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.BusinessTypeInfo{}, pagination, err
@@ -282,7 +282,7 @@ func (svc BusinessTypeHttpService) SearchBusinessType(shopID string, filters map
 	return docList, pagination, nil
 }
 
-func (svc BusinessTypeHttpService) SearchBusinessTypeStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.BusinessTypeInfo, int, error) {
+func (svc BusinessTypeHttpService) SearchBusinessTypeStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.BusinessTypeInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -293,7 +293,7 @@ func (svc BusinessTypeHttpService) SearchBusinessTypeStep(shopID string, langCod
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.BusinessTypeInfo{}, 0, err
@@ -302,7 +302,7 @@ func (svc BusinessTypeHttpService) SearchBusinessTypeStep(shopID string, langCod
 	return docList, total, nil
 }
 
-func (svc BusinessTypeHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.BusinessType) (common.BulkImport, error) {
+func (svc BusinessTypeHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.BusinessType) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -314,7 +314,7 @@ func (svc BusinessTypeHttpService) SaveInBatch(shopID string, authUsername strin
 		itemCodeGuidList = append(itemCodeGuidList, doc.Code)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "code", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "code", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -326,18 +326,18 @@ func (svc BusinessTypeHttpService) SaveInBatch(shopID string, authUsername strin
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.BusinessType, models.BusinessTypeDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.BusinessType) models.BusinessTypeDoc {
+		func(holdingCode string, authUsername string, doc models.BusinessType) models.BusinessTypeDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.BusinessTypeDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.BusinessType = doc
 
 			currentTime := time.Now()
@@ -348,23 +348,23 @@ func (svc BusinessTypeHttpService) SaveInBatch(shopID string, authUsername strin
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.BusinessType, models.BusinessTypeDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.BusinessTypeDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", guid)
+		func(holdingCode string, guid string) (models.BusinessTypeDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", guid)
 		},
 		func(doc models.BusinessTypeDoc) bool {
 			return doc.Code != ""
 		},
-		func(shopID string, authUsername string, data models.BusinessType, doc models.BusinessTypeDoc) error {
+		func(holdingCode string, authUsername string, data models.BusinessType, doc models.BusinessTypeDoc) error {
 
 			doc.BusinessType = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -403,7 +403,7 @@ func (svc BusinessTypeHttpService) SaveInBatch(shopID string, authUsername strin
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -417,9 +417,9 @@ func (svc BusinessTypeHttpService) getDocIDKey(doc models.BusinessType) string {
 	return doc.Code
 }
 
-func (svc BusinessTypeHttpService) saveMasterSync(shopID string) {
+func (svc BusinessTypeHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

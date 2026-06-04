@@ -97,7 +97,7 @@ func (c *PurchaseReceiveTransactionConsumer) ConsumeOnCreateOrUpdate(ctx microse
 		return err
 	}
 
-	err = c.svc.Upsert(transaction.ShopID, transaction.DocNo, *transaction)
+	err = c.svc.Upsert(transaction.HoldingCode, transaction.DocNo, *transaction)
 	if err != nil {
 		logger.GetLogger().Errorf("Cannot insert purchase receive transaction : %v", err.Error())
 		return err
@@ -109,7 +109,7 @@ func (c *PurchaseReceiveTransactionConsumer) ConsumeOnCreateOrUpdate(ctx microse
 		return err
 	}
 
-	err = c.stockConsumerService.Upsert(transaction.ShopID, transaction.DocNo, *stock)
+	err = c.stockConsumerService.Upsert(transaction.HoldingCode, transaction.DocNo, *stock)
 	if err != nil {
 		logger.GetLogger().Errorf("Cannot insert stock transaction : %v", err.Error())
 		return err
@@ -129,7 +129,7 @@ func (c *PurchaseReceiveTransactionConsumer) ConsumeOnBulkCreateOrUpdate(ctx mic
 
 	for _, transaction := range *transactions {
 
-		err = c.svc.Upsert(transaction.ShopID, transaction.DocNo, transaction)
+		err = c.svc.Upsert(transaction.HoldingCode, transaction.DocNo, transaction)
 		if err != nil {
 			logger.GetLogger().Errorf("Cannot insert purchase receive transaction : %v", err.Error())
 			return err
@@ -141,7 +141,7 @@ func (c *PurchaseReceiveTransactionConsumer) ConsumeOnBulkCreateOrUpdate(ctx mic
 			return err
 		}
 
-		err = c.stockConsumerService.Upsert(transaction.ShopID, transaction.DocNo, *stock)
+		err = c.stockConsumerService.Upsert(transaction.HoldingCode, transaction.DocNo, *stock)
 		if err != nil {
 			logger.GetLogger().Errorf("Cannot insert stock transaction : %v", err.Error())
 			return err
@@ -159,13 +159,13 @@ func (c *PurchaseReceiveTransactionConsumer) ConsumeOnDelete(ctx microservice.IC
 		return err
 	}
 
-	err = c.svc.Delete(transaction.ShopID, transaction.DocNo)
+	err = c.svc.Delete(transaction.HoldingCode, transaction.DocNo)
 	if err != nil {
 		c.ms.Logger.Errorf("Cannot delete purchase receive transaction : %v", err.Error())
 		return err
 	}
 
-	err = c.stockConsumerService.Delete(transaction.ShopID, transaction.DocNo)
+	err = c.stockConsumerService.Delete(transaction.HoldingCode, transaction.DocNo)
 	if err != nil {
 		c.ms.Logger.Errorf("Cannot delete stock transaction : %v", err.Error())
 		return err
@@ -184,13 +184,13 @@ func (c *PurchaseReceiveTransactionConsumer) ConsumeOnBulkDelete(ctx microservic
 
 	for _, transaction := range *transactions {
 
-		err = c.svc.Delete(transaction.ShopID, transaction.DocNo)
+		err = c.svc.Delete(transaction.HoldingCode, transaction.DocNo)
 		if err != nil {
 			c.ms.Logger.Errorf("Cannot delete purchase receive transaction : %v", err.Error())
 			return err
 		}
 
-		err = c.stockConsumerService.Delete(transaction.ShopID, transaction.DocNo)
+		err = c.stockConsumerService.Delete(transaction.HoldingCode, transaction.DocNo)
 		if err != nil {
 			c.ms.Logger.Errorf("Cannot delete stock transaction : %v", err.Error())
 			return err

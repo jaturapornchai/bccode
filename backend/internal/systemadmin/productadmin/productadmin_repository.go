@@ -14,10 +14,10 @@ import (
 )
 
 type IProductAdminMongoRepository interface {
-	FindProductBarcodeByShopId(ctx context.Context, shopID string) ([]productBarcodeModel.ProductBarcodeDoc, error)
-	FindProductAndBarcode(ctx context.Context, shopID string, barcode string) (models.ProductBarcodeDoc, error)
-	FindPage(ctx context.Context, shopID string, searchInFields []string, pageable micromodels.Pageable) ([]models.ProductBarcodeDoc, mongopagination.PaginationData, error)
-	DeleteProductBarcodeByShopId(ctx context.Context, shopID string, userName string, ids []string) error
+	FindProductBarcodeByHoldingCode(ctx context.Context, holdingCode string) ([]productBarcodeModel.ProductBarcodeDoc, error)
+	FindProductAndBarcode(ctx context.Context, holdingCode string, barcode string) (models.ProductBarcodeDoc, error)
+	FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable micromodels.Pageable) ([]models.ProductBarcodeDoc, mongopagination.PaginationData, error)
+	DeleteProductBarcodeByHoldingCode(ctx context.Context, holdingCode string, userName string, ids []string) error
 }
 
 type ProductAdminMongoRepository struct {
@@ -32,10 +32,10 @@ func NewProductAdminMongoRepository(pst microservice.IPersisterMongo) IProductAd
 	}
 }
 
-func (r ProductAdminMongoRepository) FindProductBarcodeByShopId(ctx context.Context, shopID string) ([]productBarcodeModel.ProductBarcodeDoc, error) {
+func (r ProductAdminMongoRepository) FindProductBarcodeByHoldingCode(ctx context.Context, holdingCode string) ([]productBarcodeModel.ProductBarcodeDoc, error) {
 
 	docList := []productBarcodeModel.ProductBarcodeDoc{}
-	err := r.pst.Find(ctx, &productBarcodeModel.ProductBarcodeDoc{}, bson.M{"shopid": shopID}, &docList)
+	err := r.pst.Find(ctx, &productBarcodeModel.ProductBarcodeDoc{}, bson.M{"holding_code": holdingCode}, &docList)
 	if err != nil {
 		return nil, err
 	}
@@ -43,9 +43,9 @@ func (r ProductAdminMongoRepository) FindProductBarcodeByShopId(ctx context.Cont
 	return docList, nil
 }
 
-func (r ProductAdminMongoRepository) FindPage(ctx context.Context, shopID string, searchInFields []string, pageable micromodels.Pageable) ([]models.ProductBarcodeDoc, mongopagination.PaginationData, error) {
+func (r ProductAdminMongoRepository) FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable micromodels.Pageable) ([]models.ProductBarcodeDoc, mongopagination.PaginationData, error) {
 
-	results, pagination, err := r.SearchRepository.FindPage(ctx, shopID, searchInFields, pageable)
+	results, pagination, err := r.SearchRepository.FindPage(ctx, holdingCode, searchInFields, pageable)
 
 	if err != nil {
 		return nil, mongopagination.PaginationData{}, err
@@ -54,13 +54,13 @@ func (r ProductAdminMongoRepository) FindPage(ctx context.Context, shopID string
 	return results, pagination, nil
 }
 
-func (r ProductAdminMongoRepository) DeleteProductBarcodeByShopId(ctx context.Context, shopID string, userName string, ids []string) error {
-	// err := r.pst.Delete(&productBarcodeModel.ProductBarcodeDoc{}, bson.M{"shopid": shopID})
+func (r ProductAdminMongoRepository) DeleteProductBarcodeByHoldingCode(ctx context.Context, holdingCode string, userName string, ids []string) error {
+	// err := r.pst.Delete(&productBarcodeModel.ProductBarcodeDoc{}, bson.M{"holding_code": holdingCode})
 	// if err != nil {
 	// 	return err
 	// }
 
-	// err := r.pst.DeleteByID(&productBarcodeModel.ProductBarcodeDoc{}, bson.M{"shopid": shopID})
+	// err := r.pst.DeleteByID(&productBarcodeModel.ProductBarcodeDoc{}, bson.M{"holding_code": holdingCode})
 	// if err != nil {
 	// 	return err
 	// }
@@ -73,10 +73,10 @@ func (r ProductAdminMongoRepository) DeleteProductBarcodeByShopId(ctx context.Co
 	return nil
 }
 
-func (r ProductAdminMongoRepository) FindProductAndBarcode(ctx context.Context, shopID string, barcode string) (models.ProductBarcodeDoc, error) {
+func (r ProductAdminMongoRepository) FindProductAndBarcode(ctx context.Context, holdingCode string, barcode string) (models.ProductBarcodeDoc, error) {
 
 	var doc models.ProductBarcodeDoc
-	err := r.pst.FindOne(ctx, &models.ProductBarcodeDoc{}, bson.M{"shopid": shopID, "barcode": barcode}, &doc)
+	err := r.pst.FindOne(ctx, &models.ProductBarcodeDoc{}, bson.M{"holding_code": holdingCode, "barcode": barcode}, &doc)
 	if err != nil {
 		return models.ProductBarcodeDoc{}, err
 	}

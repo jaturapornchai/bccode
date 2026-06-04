@@ -27,7 +27,7 @@ var DefaultIncrementalConfig = IncrementalConfig{
 
 // CalculateItemChecksum - Calculate MD5 checksum for an item's docdetail records
 // The checksum is based on all relevant fields that affect cost calculation
-func CalculateItemChecksum(ctx context.Context, db *sql.DB, shopId, itemCode string) (string, error) {
+func CalculateItemChecksum(ctx context.Context, db *sql.DB, holdingCode, itemCode string) (string, error) {
 	// Build query with transflags
 	transFlagStrings := make([]string, len(myglobal.TransFlagsToProcess))
 	for i, flag := range myglobal.TransFlagsToProcess {
@@ -107,9 +107,9 @@ func CalculateItemChecksum(ctx context.Context, db *sql.DB, shopId, itemCode str
 
 // CheckItemChanged - Check if an item's data has changed since last calculation
 // Returns true if the item needs recalculation, false if it can be skipped
-func CheckItemChanged(ctx context.Context, db *sql.DB, shopId, itemCode string) (bool, string, error) {
+func CheckItemChanged(ctx context.Context, db *sql.DB, holdingCode, itemCode string) (bool, string, error) {
 	// Calculate current checksum
-	currentChecksum, err := CalculateItemChecksum(ctx, db, shopId, itemCode)
+	currentChecksum, err := CalculateItemChecksum(ctx, db, holdingCode, itemCode)
 	if err != nil {
 		// If we can't calculate checksum, assume changed for safety
 		return true, "", fmt.Errorf("calculate checksum: %w", err)
@@ -130,8 +130,8 @@ func CheckItemChanged(ctx context.Context, db *sql.DB, shopId, itemCode string) 
 	// Get last checksum from stock_calculation_state
 	var lastChecksum sql.NullString
 	err = db.QueryRowContext(ctx,
-		"SELECT last_checksum FROM stock_calculation_state WHERE shop_id = $1 AND item_code = $2",
-		shopId, itemCode,
+		"SELECT last_checksum FROM stock_calculation_state WHERE holding_code = $1 AND item_code = $2",
+		holdingCode, itemCode,
 	).Scan(&lastChecksum)
 
 	if err != nil {
@@ -153,18 +153,18 @@ func CheckItemChanged(ctx context.Context, db *sql.DB, shopId, itemCode string) 
 }
 
 // UpdateItemChecksum - Update the checksum after successful calculation
-func UpdateItemChecksum(ctx context.Context, db *sql.DB, shopId, itemCode, checksum string) error {
+func UpdateItemChecksum(ctx context.Context, db *sql.DB, holdingCode, itemCode, checksum string) error {
 	query := `
-		INSERT INTO stock_calculation_state (shop_id, item_code, last_checksum, last_calc_time, version, created_at, updated_at)
+		INSERT INTO stock_calculation_state (holding_code, item_code, last_checksum, last_calc_time, version, created_at, updated_at)
 		VALUES ($1, $2, $3, NOW(), 1, NOW(), NOW())
-		ON CONFLICT (shop_id, item_code) DO UPDATE
+		ON CONFLICT (holding_code, item_code) DO UPDATE
 		SET last_checksum = EXCLUDED.last_checksum,
 			last_calc_time = EXCLUDED.last_calc_time,
 			version = stock_calculation_state.version + 1,
 			updated_at = NOW()
 	`
 
-	_, err := db.ExecContext(ctx, query, shopId, itemCode, checksum)
+	_, err := db.ExecContext(ctx, query, holdingCode, itemCode, checksum)
 	if err != nil {
 		return fmt.Errorf("upsert stock_calculation_state: %w", err)
 	}
@@ -173,10 +173,10 @@ func UpdateItemChecksum(ctx context.Context, db *sql.DB, shopId, itemCode, check
 }
 
 // DeleteItemChecksum - Delete the checksum when item data is cleared
-func DeleteItemChecksum(ctx context.Context, db *sql.DB, shopId, itemCode string) error {
+func DeleteItemChecksum(ctx context.Context, db *sql.DB, holdingCode, itemCode string) error {
 	_, err := db.ExecContext(ctx,
-		"DELETE FROM stock_calculation_state WHERE shop_id = $1 AND item_code = $2",
-		shopId, itemCode,
+		"DELETE FROM stock_calculation_state WHERE holding_code = $1 AND item_code = $2",
+		holdingCode, itemCode,
 	)
 	if err != nil {
 		return fmt.Errorf("delete stock_calculation_state: %w", err)
@@ -186,22 +186,22 @@ func DeleteItemChecksum(ctx context.Context, db *sql.DB, shopId, itemCode string
 
 // IncrementalStats - Statistics for incremental calculation
 type IncrementalStats struct {
-	TotalItems int           `json:"total_items"`
-	SkippedItems int           `json:"skipped_items"`
-	ProcessedItems int         `json:"processed_items"`
-	Duration time.Duration `json:"duration"`
-	WALSavedPercent float64    `json:"wal_saved_percent"`
+	TotalItems      int           `json:"total_items"`
+	SkippedItems    int           `json:"skipped_items"`
+	ProcessedItems  int           `json:"processed_items"`
+	Duration        time.Duration `json:"duration"`
+	WALSavedPercent float64       `json:"wal_saved_percent"`
 }
 
 // LogIncrementalStats - Log statistics for incremental calculation
-func LogIncrementalStats(shopId string, stats IncrementalStats) {
+func LogIncrementalStats(holdingCode string, stats IncrementalStats) {
 	if stats.TotalItems == 0 {
 		return
 	}
 
 	skipPercent := float64(stats.SkippedItems) / float64(stats.TotalItems) * 100
 	logger.Info("Incremental calculation stats | shop=%s total=%d skipped=%d (%.1f%%) processed=%d duration=%v",
-		shopId,
+		holdingCode,
 		stats.TotalItems,
 		stats.SkippedItems,
 		skipPercent,
@@ -214,14 +214,14 @@ func LogIncrementalStats(shopId string, stats IncrementalStats) {
 func EnsureStockCalculationStateTable(ctx context.Context, db *sql.DB) error {
 	query := `
 		CREATE TABLE IF NOT EXISTS stock_calculation_state (
-			shop_id VARCHAR(100) NOT NULL,
+			holding_code VARCHAR(100) NOT NULL,
 			item_code VARCHAR(100) NOT NULL,
 			last_checksum CHAR(32),
 			last_calc_time TIMESTAMPTZ DEFAULT NOW(),
 			version INTEGER DEFAULT 0,
 			created_at TIMESTAMPTZ DEFAULT NOW(),
 			updated_at TIMESTAMPTZ DEFAULT NOW(),
-			PRIMARY KEY (shop_id, item_code)
+			PRIMARY KEY (holding_code, item_code)
 		)
 	`
 
@@ -232,7 +232,7 @@ func EnsureStockCalculationStateTable(ctx context.Context, db *sql.DB) error {
 
 	// Create indexes
 	indexQueries := []string{
-		"CREATE INDEX IF NOT EXISTS idx_stock_calc_state_shop_item ON stock_calculation_state(shop_id, item_code)",
+		"CREATE INDEX IF NOT EXISTS idx_stock_calc_state_shop_item ON stock_calculation_state(holding_code, item_code)",
 		"CREATE INDEX IF NOT EXISTS idx_stock_calc_state_last_calc_time ON stock_calculation_state(last_calc_time)",
 	}
 

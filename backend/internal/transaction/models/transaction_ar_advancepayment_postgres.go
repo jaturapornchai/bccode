@@ -12,9 +12,9 @@ import (
 // เงินล่วงหน้าลูกหนี้
 type ARAdvancePaymentTransactionPG struct {
 	GeneralTransactionPG `gorm:"embedded;"`
-	CreditorCode string                                 `json:"creditorcode" gorm:"column:creditorcode"`
-	CreditorNames pkgModels.JSONB                        `json:"creditornames" gorm:"column:creditornames;type:jsonb"`
-	Items *[]ARAdvancePaymentTransactionDetailPG `json:"items" gorm:"items;foreignKey:shopid,docno"`
+	CreditorCode         string                                 `json:"creditorcode" gorm:"column:creditorcode"`
+	CreditorNames        pkgModels.JSONB                        `json:"creditornames" gorm:"column:creditornames;type:jsonb"`
+	Items                *[]ARAdvancePaymentTransactionDetailPG `json:"items" gorm:"items;foreignKey:holding_code,docno"`
 }
 
 // รายละเอียด เงินล่วงหน้าลูกหนี้
@@ -34,7 +34,7 @@ func (m *ARAdvancePaymentTransactionPG) BeforeUpdate(tx *gorm.DB) (err error) {
 
 	// find old data
 	var details *[]ARAdvancePaymentTransactionDetailPG
-	tx.Model(&ARAdvancePaymentTransactionDetailPG{}).Where(" shopid=? AND docno=?", m.ShopID, m.DocNo).Find(&details)
+	tx.Model(&ARAdvancePaymentTransactionDetailPG{}).Where(" holding_code=? AND docno=?", m.HoldingCode, m.DocNo).Find(&details)
 
 	// delete un use data
 	for _, tmp := range *details {

@@ -1,10 +1,10 @@
 package models
 
 type RequestReSyncTenant struct {
-	ShopID string `json:"shopid"`
+	HoldingCode string `json:"holding_code"`
 }
 
 type RequestReSyncTenantByDate struct {
-	ShopID string `json:"shopid"`
-	Date string `json:"date"`
+	HoldingCode string `json:"holding_code"`
+	Date        string `json:"date"`
 }

@@ -6,10 +6,10 @@ import (
 )
 
 type IMemberPGRepository interface {
-	Count(shopID string, guid string) (int, error)
+	Count(holdingCode string, guid string) (int, error)
 	Create(doc models.MemberIndex) error
-	Delete(shopID string, guid string) error
-	FindByGuid(shopID string, guid string) (models.MemberIndex, error)
+	Delete(holdingCode string, guid string) error
+	FindByGuid(holdingCode string, guid string) (models.MemberIndex, error)
 }
 
 type MemberPGRepository struct {
@@ -21,8 +21,8 @@ func NewMemberPGRepository(pst microservice.IPersister) MemberPGRepository {
 		pst: pst,
 	}
 }
-func (repo MemberPGRepository) Count(shopID string, guid string) (int, error) {
-	count, err := repo.pst.Count(models.MemberIndex{}, " shop_id = ? AND guid_fixed = ?", shopID, guid)
+func (repo MemberPGRepository) Count(holdingCode string, guid string) (int, error) {
+	count, err := repo.pst.Count(models.MemberIndex{}, " holding_code = ? AND guid_fixed = ?", holdingCode, guid)
 	if err != nil {
 		return 0, err
 	}
@@ -37,18 +37,18 @@ func (repo MemberPGRepository) Create(member models.MemberIndex) error {
 	return nil
 }
 
-func (repo MemberPGRepository) Delete(shopID string, guid string) error {
+func (repo MemberPGRepository) Delete(holdingCode string, guid string) error {
 	tableName := models.MemberIndex{}.TableName()
-	err := repo.pst.Exec("DELETE FROM "+tableName+" WHERE shop_id = ? AND guid_fixed = ?", shopID, guid)
+	err := repo.pst.Exec("DELETE FROM "+tableName+" WHERE holding_code = ? AND guid_fixed = ?", holdingCode, guid)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (repo MemberPGRepository) FindByGuid(shopID string, guid string) (models.MemberIndex, error) {
+func (repo MemberPGRepository) FindByGuid(holdingCode string, guid string) (models.MemberIndex, error) {
 	inv := models.MemberIndex{}
-	_, err := repo.pst.Where(&inv, "  shop_id = ? AND guid_fixed = ?", shopID, guid)
+	_, err := repo.pst.Where(&inv, "  holding_code = ? AND guid_fixed = ?", holdingCode, guid)
 	if err != nil {
 		return inv, err
 	}

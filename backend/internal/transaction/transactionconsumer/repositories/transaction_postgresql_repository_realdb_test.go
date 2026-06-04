@@ -26,19 +26,19 @@ package repositories_test
 // 	repo = repositories.NewTransactionPGRepository(pst)
 
 // 	stockTransaction = models.StockTransaction{
-// 		ShopIdentity: commonModel.ShopIdentity{
-// 			ShopID: "shoptester",
+// 		HoldingCodeentity: commonModel.HoldingCodeentity{
+// 			HoldingCode: "shoptester",
 // 		},
 // 		DocNo: "TRXTEST",
 // 		Details: &[]models.StockTransactionDetail{
 // 			models.StockTransactionDetail{
 // 				DocNo:   "TRXTEST",
-// 				ShopID:  "shoptester",
+// 				HoldingCode:  "shoptester",
 // 				Barcode: "BAR1",
 // 			},
 // 			models.StockTransactionDetail{
 // 				DocNo:   "TRXTEST",
-// 				ShopID:  "shoptester",
+// 				HoldingCode:  "shoptester",
 // 				Barcode: "BAR2",
 // 			},
 // 		},
@@ -61,10 +61,10 @@ package repositories_test
 // 		t.Skip()
 // 	}
 
-// 	bar, err := repo.Get(stockTransaction.ShopID, stockTransaction.DocNo)
+// 	bar, err := repo.Get(stockTransaction.HoldingCode, stockTransaction.DocNo)
 // 	assert.NoError(t, err)
 
-// 	assert.Equal(t, stockTransaction.ShopID, bar.ShopID)
+// 	assert.Equal(t, stockTransaction.HoldingCode, bar.HoldingCode)
 // 	assert.Equal(t, stockTransaction.DocNo, bar.DocNo)
 
 // }
@@ -79,10 +79,10 @@ package repositories_test
 // 	timeStr := currentTime.Format("20060201150405")
 // 	(*stockTransaction.Details)[0].AverageCost, _ = strconv.ParseFloat(timeStr, 64)
 
-// 	err := repo.Update(stockTransaction.ShopID, stockTransaction.DocNo, stockTransaction)
+// 	err := repo.Update(stockTransaction.HoldingCode, stockTransaction.DocNo, stockTransaction)
 // 	assert.NoError(t, err)
 
-// 	bar, err := repo.Get(stockTransaction.ShopID, stockTransaction.DocNo)
+// 	bar, err := repo.Get(stockTransaction.HoldingCode, stockTransaction.DocNo)
 // 	assert.NoError(t, err)
 
 // 	assert.Equal(t, (*stockTransaction.Details)[0].AverageCost, (*bar.Details)[0].AverageCost)
@@ -94,6 +94,6 @@ package repositories_test
 // 		t.Skip()
 // 	}
 
-// 	err := repo.Delete(stockTransaction.ShopID, stockTransaction.DocNo)
+// 	err := repo.Delete(stockTransaction.HoldingCode, stockTransaction.DocNo)
 // 	assert.NoError(t, err)
 // }

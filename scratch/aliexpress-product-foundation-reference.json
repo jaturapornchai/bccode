@@ -1,0 +1,672 @@
+{
+  "purpose": "Source-backed AliExpress product/SKU foundation shape for BC Account import, export, stock, price, and order mapping.",
+  "sources_checked": [
+    {
+      "name": "Shopee Open Platform product/media/variation patterns",
+      "url": "https://open.shopee.com/documents"
+    },
+    {
+      "name": "Lazada Product API Overview",
+      "url": "https://open.lazada.com/apps/doc/doc?docId=120945&nodeId=29614"
+    },
+    {
+      "name": "Lazada Category Attributes and Product Create guide",
+      "url": "https://open.lazada.com/apps/doc/doc?docId=121541&nodeId=10544"
+    },
+    {
+      "name": "TikTok Shop Products API overview",
+      "url": "https://partner.tiktokshop.com/docv2/page/products-api-overview"
+    },
+    {
+      "name": "TikTok Shop Create Product guide",
+      "url": "https://partner.tiktokshop.com/docv2/page/6502fc8da57708028b42b18a"
+    },
+    {
+      "name": "AliExpress Product Operation overview",
+      "url": "https://developer.alibaba.com/docs/doc.htm?articleId=120680&docType=1&treeId=727"
+    },
+    {
+      "name": "aliexpress.solution.product.post",
+      "url": "https://developer.alibaba.com/docs/api.htm?apiId=39634"
+    },
+    {
+      "name": "aliexpress.solution.sku.attribute.query",
+      "url": "https://developer.alibaba.com/docs/api.htm?apiId=39669"
+    },
+    {
+      "name": "aliexpress.postproduct.redefining.findaeproductbyid",
+      "url": "https://developer.alibaba.com/docs/api.htm?apiId=30172&scopeId=12782"
+    },
+    {
+      "name": "aliexpress.solution.product.info.get",
+      "url": "https://developer.alibaba.com/docs/api.htm?apiId=42383"
+    },
+    {
+      "name": "aliexpress.solution.seller.category.tree.query",
+      "url": "https://developer.alibaba.com/docs/api.htm?apiId=46042"
+    },
+    {
+      "name": "aliexpress.solution.product.schema.get",
+      "url": "https://developer.alibaba.com/docs/api.htm?apiId=43456"
+    },
+    {
+      "name": "aliexpress.solution.schema.product.full.update",
+      "url": "https://developer.alibaba.com/docs/api.htm?apiId=44113"
+    },
+    {
+      "name": "aliexpress.solution.order.info.get",
+      "url": "https://developer.alibaba.com/docs/api.htm?apiId=42707"
+    },
+    {
+      "name": "aliexpress.solution.batch.product.inventory.update",
+      "url": "https://developer.alibaba.com/docs/api.htm?apiId=45135"
+    },
+    {
+      "name": "aliexpress.solution.batch.product.price.update",
+      "url": "https://developer.alibaba.com/docs/api.htm?apiId=45140"
+    }
+  ],
+  "source_evidence_summary": {
+    "shopee": "Shopee product structures commonly split item media, attributes, two-tier variations, and per-model SKU price/stock. The official portal is login/JS heavy, so the BC model keeps this mapping conservative and source-specific only in internal profiles.",
+    "lazada": "Lazada documents product APIs around category tree, category attributes, product create/update, item images, attributes, SKUs, sale properties, package dimensions, price, and quantity.",
+    "tiktok": "TikTok Shop documents products, product attributes, sales attributes, images, inventory, price, review status, and SKU limits for product create/edit flows.",
+    "product_operation": "AliExpress product workflows include category mapping, brand permission, freight templates, size chart templates, product post/edit, price update, stock update, online/offline, and product query.",
+    "category_tree": "Category tree returns children_category_id, is_leaf_category, level, and multi_language_names; product category used for posting must be a leaf category.",
+    "product_post": "Product post supports language, product_unit, category_id, attributes, SKU attributes, inventory, price, discount_price, sku_code, EAN/GTIN, package weight/dimensions, inventory deduction strategy, freight template, and country prices.",
+    "sku_attribute_query": "SKU attribute query returns category-specific SKU attributes, allowed SKU values, customized name/picture flags, and common attributes with required flags.",
+    "schema_api": "Schema get returns a category schema string; schema full update sends category_id, multilingual title/description, image_url_list, category_attributes, sku_info_list, package and shipping fields, and aliexpress_product_id.",
+    "product_info": "Product info returns product-level price, currency, package dimensions, images, status, SKU list, SKU code, stock, SKU price/discount price, EAN/GTIN, and multi-country price configuration.",
+    "order_info": "Order detail exposes child line fields such as product_id, sku_code, product_count, product_price, product image, product name, snapshot URL, product_standard, order status, and logistics fields.",
+    "price_stock_update": "Batch inventory and batch price APIs update up to 20 products per call, with per-product SKU update lists keyed by sku_code."
+  },
+  "bc_normalized_contract": {
+    "product_identity": [
+      "holding_code",
+      "guid_fixed",
+      "business_code",
+      "names",
+      "description",
+      "brand_code",
+      "category_code",
+      "business_codes"
+    ],
+    "variant_identity": [
+      "seller_sku",
+      "barcode",
+      "gtin",
+      "option_values",
+      "unit_code",
+      "serial_tracking_mode",
+      "serial_identifiers"
+    ],
+    "price_stock_cost": [
+      "sale_price",
+      "discount_price",
+      "cost",
+      "opening_stock",
+      "sync_stock",
+      "sync_price"
+    ],
+    "package_logistics": [
+      "package_weight",
+      "package_length",
+      "package_width",
+      "package_height",
+      "shipping_preparation_time",
+      "shipping_template_id",
+      "service_template_id",
+      "inventory_deduction_strategy"
+    ],
+    "media_detail": [
+      "main_image_urls",
+      "sku_image_url",
+      "image_url_list",
+      "mobile_detail",
+      "description_html",
+      "video_url"
+    ],
+    "external_source_metadata": [
+      "platform",
+      "account_id",
+      "market_item_id",
+      "market_model_id",
+      "category_id",
+      "category_name",
+      "brand_id",
+      "status",
+      "last_sync_at",
+      "last_sync_error"
+    ]
+  },
+  "bc_field_mapping": {
+    "tenant": {
+      "holding_code": "BC tenant scope, never derived from marketplace payload",
+      "business_codes": "BC company availability, not marketplace shop identity"
+    },
+    "product": {
+      "business_code": "Internal product/business code",
+      "names": "AliExpress subject_list, title_multi_language_list, subject, product_name",
+      "description": "AliExpress description, detail, mobile_detail, web_detail, description_multi_language_list",
+      "category_code": "Internal category mapped from AliExpress category_id or children_category_id",
+      "brand_code": "Internal brand mapped from AliExpress brand_name or category_attributes.Brand Name"
+    },
+    "sku": {
+      "seller_sku": "AliExpress sku_code",
+      "barcode": "AliExpress bar_code when available",
+      "gtin": "AliExpress ean_code / EAN / GTIN",
+      "option_values": "AliExpress sku_attributes_list, sku_attributes, sku_attr, sku_prop_ids, product_standard",
+      "sale_price": "AliExpress price, sku_price, product_price",
+      "discount_price": "AliExpress discount_price, sku_discount_price",
+      "opening_stock": "AliExpress inventory, ipm_sku_stock, avail_quantity",
+      "sync_stock": "Value used by aliexpress.solution.batch.product.inventory.update",
+      "sync_price": "Value used by aliexpress.solution.batch.product.price.update",
+      "cost": "Internal BC cost; AliExpress seller APIs do not provide true merchant cost"
+    },
+    "package": {
+      "package_weight": "AliExpress weight, package_weight, gross_weight",
+      "package_length": "AliExpress package_length or length",
+      "package_width": "AliExpress package_width or width",
+      "package_height": "AliExpress package_height or height",
+      "shipping_preparation_time": "AliExpress shipping_preparation_time or delivery_time",
+      "shipping_template_id": "AliExpress shipping_template_id or freight_template_id"
+    },
+    "external_sync": {
+      "market_item_id": "AliExpress product_id or aliexpress_product_id",
+      "market_model_id": "AliExpress sku_id or SKU attribute path when available",
+      "category_id": "AliExpress category_id / aliexpress_category_id",
+      "status": "AliExpress product_status_type, order_status, son_order_status",
+      "snapshot_url": "AliExpress product_snap_url"
+    }
+  },
+  "aliexpress_category_tree_response": {
+    "request": {
+      "category_id": "{{parent_category_id_or_0_for_root}}",
+      "filter_no_permission": true
+    },
+    "response": {
+      "children_category_list": [
+        {
+          "children_category_id": "{{external_category_id}}",
+          "is_leaf_category": true,
+          "level": 2,
+          "multi_language_names": {
+            "en": "Mobile Phones",
+            "th": "โทรศัพท์มือถือ"
+          }
+        }
+      ],
+      "is_success": true
+    }
+  },
+  "aliexpress_schema_get_response": {
+    "request": {
+      "aliexpress_category_id": "{{external_category_id}}"
+    },
+    "response": {
+      "result": {
+        "success": true,
+        "error_code": "",
+        "error_message": "",
+        "schema": "{{json_schema_string_for_category}}"
+      }
+    }
+  },
+  "aliexpress_solution_product_post_request": {
+    "product_info": {
+      "category_id": "{{external_category_id}}",
+      "brand_name": "{{brand_name}}",
+      "subject_list": [
+        {
+          "locale": "en_US",
+          "value": "{{product_title}}"
+        }
+      ],
+      "main_image_urls_list": [
+        "{{main_image_url}}"
+      ],
+      "attribute_list": [
+        {
+          "aliexpress_attribute_name_id": "{{attribute_name_id}}",
+          "aliexpress_attribute_value_id": "{{attribute_value_id}}",
+          "attribute_name": "{{attribute_name}}",
+          "attribute_value": "{{attribute_value}}"
+        }
+      ]
+    },
+    "sku_info_list": [
+      {
+        "sku_code": "{{seller_sku}}",
+        "sku_attributes_list": [
+          {
+            "sku_attribute_name_id": "{{sku_attribute_name_id}}",
+            "sku_attribute_value_id": "{{sku_attribute_value_id}}",
+            "sku_attribute_value": "{{sku_attribute_value}}",
+            "sku_image_url": "{{sku_image_url}}"
+          }
+        ],
+        "inventory": "{{opening_stock}}",
+        "price": "{{sale_price}}",
+        "discount_price": "{{discount_price}}",
+        "ean_code": "{{gtin}}",
+        "bar_code": "{{barcode}}",
+        "inventory_deduction_strategy": "payment_success_deduct",
+        "weight": "{{package_weight_kg}}",
+        "package_length": "{{package_length_cm}}",
+        "package_height": "{{package_height_cm}}",
+        "package_width": "{{package_width_cm}}",
+        "multi_country_price_configuration": {
+          "price_type": "absolute",
+          "country_price_list": [
+            {
+              "ship_to_country": "TH",
+              "sku_price_by_country_list": [
+                {
+                  "sku_code": "{{seller_sku}}",
+                  "price": "{{country_price}}"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "product_unit": "{{aliexpress_product_unit_id}}",
+    "currency_code": "USD",
+    "product_price": "{{base_price}}",
+    "detail_source_list": [
+      {
+        "locale": "en_US",
+        "mobile_detail": "{\"version\":\"2.0.0\",\"moduleList\":[]}"
+      }
+    ]
+  },
+  "aliexpress_redefining_product_request": {
+    "product_info": {
+      "subject_list": [
+        {
+          "locale": "en_US",
+          "value": "{{product_title}}"
+        }
+      ],
+      "category_id": "{{external_category_id}}",
+      "image_u_r_ls": "{{main_image_url}}",
+      "aeop_ae_product_propertys": [
+        {
+          "attr_name_id": "{{attr_name_id}}",
+          "attr_value_id": "{{attr_value_id}}",
+          "attr_name": "{{attr_name}}",
+          "attr_value": "{{attr_value}}"
+        }
+      ]
+    },
+    "price_inventory": {
+      "product_unit": "{{aliexpress_product_unit_id}}",
+      "is_pack_sell": false,
+      "product_price": "{{base_price}}",
+      "currency_code": "USD",
+      "aeop_ae_product_s_k_us": [
+        {
+          "id": "{{sku_property_path}}",
+          "aeop_s_k_u_property": [
+            {
+              "sku_property_id": "{{sku_property_id}}",
+              "property_value_id": "{{property_value_id}}",
+              "property_value_definition_name": "{{custom_value_name}}",
+              "sku_image": "{{sku_image_url}}",
+              "image_url_list": [
+                "{{sku_image_url}}"
+              ]
+            }
+          ],
+          "currency_code": "USD",
+          "ipm_sku_stock": "{{opening_stock}}",
+          "sku_price": "{{sale_price}}",
+          "sku_stock": true,
+          "sku_code": "{{seller_sku}}",
+          "barcode": "{{barcode}}",
+          "ean_code": "{{gtin}}",
+          "gross_weight": "{{package_weight_kg}}",
+          "package_height": "{{package_height_cm}}",
+          "package_width": "{{package_width_cm}}",
+          "package_length": "{{package_length_cm}}",
+          "aeop_s_k_u_national_discount_price_list": [
+            {
+              "shipto_country": "TH",
+              "discount_price": "{{country_discount_price}}"
+            }
+          ]
+        }
+      ]
+    },
+    "detail_page": {
+      "locale": "en_US",
+      "detail_source_list": [
+        {
+          "locale": "en_US",
+          "mobile_detail": "{\"version\":\"2.0.0\",\"moduleList\":[]}"
+        }
+      ]
+    }
+  },
+  "aliexpress_schema_full_update_request": {
+    "category_id": "{{external_category_id}}",
+    "title_multi_language_list": [
+      {
+        "locale": "en_US",
+        "title": "{{product_title}}"
+      }
+    ],
+    "description_multi_language_list": [
+      {
+        "locale": "en_US",
+        "module_list": [
+          {
+            "type": "html",
+            "html": {
+              "content": "{{description_html}}"
+            }
+          }
+        ]
+      }
+    ],
+    "locale": "en_US",
+    "product_units_type": "{{product_units_type}}",
+    "image_url_list": [
+      "{{main_image_url}}"
+    ],
+    "category_attributes": {
+      "Brand Name": {
+        "value": "{{brand_value_id}}"
+      },
+      "Material": {
+        "value": [
+          "{{material_value_id}}"
+        ]
+      }
+    },
+    "sku_info_list": [
+      {
+        "sku_code": "{{seller_sku}}",
+        "inventory": "{{opening_stock}}",
+        "price": "{{sale_price}}",
+        "discount_price": "{{discount_price}}",
+        "sku_attributes": {
+          "Size": {
+            "value": "{{size_value_id}}"
+          },
+          "Color": {
+            "alias": "{{color_alias}}",
+            "sku_image_url": "{{sku_image_url}}",
+            "value": "{{color_value_id}}"
+          }
+        }
+      }
+    ],
+    "inventory_deduction_strategy": "place_order_withhold",
+    "package_weight": "{{package_weight_kg}}",
+    "package_length": "{{package_length_cm}}",
+    "package_height": "{{package_height_cm}}",
+    "package_width": "{{package_width_cm}}",
+    "shipping_preparation_time": "{{days_to_ship}}",
+    "shipping_template_id": "{{shipping_template_id}}",
+    "service_template_id": "{{service_template_id}}",
+    "aliexpress_product_id": "{{market_item_id}}"
+  },
+  "aliexpress_sku_attribute_query_response": {
+    "supporting_sku_attribute_list": [
+      {
+        "aliexpress_sku_name": "Color",
+        "required": false,
+        "support_customized_name": true,
+        "support_customized_picture": true,
+        "size_limit": 10,
+        "aliexpress_sku_value_list": [
+          {
+            "aliexpress_sku_value_name": "Blue",
+            "aliexpress_sku_value_id": "{{value_id}}"
+          }
+        ]
+      }
+    ],
+    "supporting_common_attribute_list": [
+      {
+        "aliexpress_common_attribute_name_id": "{{attribute_name_id}}",
+        "aliexpress_common_attribute_name": "{{attribute_name}}",
+        "required": false,
+        "attribute_values": [
+          {
+            "aliexpress_common_attribute_value_id": "{{attribute_value_id}}",
+            "aliexpress_common_attribute_value": "{{attribute_value}}"
+          }
+        ]
+      }
+    ]
+  },
+  "aliexpress_product_info_response_shape": {
+    "product": {
+      "id": "{{market_item_id}}",
+      "category_id": "{{external_category_id}}",
+      "display_category_id": "{{display_category_id}}",
+      "subject": "{{product_title}}",
+      "eng_title": "{{english_title}}",
+      "description": "{{description}}",
+      "detail_page_url": "{{detail_page_url}}",
+      "image_path_list": [
+        "{{image_url}}"
+      ],
+      "video_url": "{{video_url}}",
+      "currency_code": "{{currency_code}}",
+      "product_price": "{{product_price}}",
+      "discount_product_price": "{{discount_product_price}}",
+      "total_avail_quantity": "{{total_stock}}",
+      "length": "{{package_length_cm}}",
+      "width": "{{package_width_cm}}",
+      "height": "{{package_height_cm}}",
+      "weight": "{{package_weight_kg}}"
+    },
+    "sku_info": {
+      "has_sku_property": true,
+      "product_s_k_u_property_list": [
+        {
+          "sku_property_id": "{{sku_property_id}}",
+          "sku_property_name": "{{sku_property_name}}",
+          "show_type": "{{show_type}}",
+          "is_show_type_color": true,
+          "sku_property_values": [
+            {
+              "property_value_id": "{{property_value_id}}",
+              "property_value_id_long": "{{property_value_id_long}}",
+              "property_value_name": "{{property_value_name}}",
+              "property_value_display_name": "{{display_name}}",
+              "property_value_definition_name": "{{custom_name}}",
+              "sku_color_value": "{{hex_color}}",
+              "sku_property_image_path": "{{sku_image_url}}",
+              "sku_property_send_goods_country_code": "{{ship_from_country}}",
+              "sku_property_value_show_order": "{{sort_order}}"
+            }
+          ]
+        }
+      ],
+      "sku_property_json": "[[771,173],[311,312]]"
+    },
+    "sku_list": [
+      {
+        "sku_id": "{{market_model_id}}",
+        "sku_attr": "{{sku_property_path}}",
+        "sku_prop_ids": "{{property_value_ids}}",
+        "inventory": "{{available_quantity}}",
+        "avail_quantity": "{{available_quantity}}",
+        "original_price_cents": "{{original_price_cents}}",
+        "discount_price_cents": "{{discount_price_cents}}",
+        "activity": false
+      }
+    ]
+  },
+  "aliexpress_order_import_shape": {
+    "order": {
+      "order_id": "{{external_order_id}}",
+      "product_list": [
+        {
+          "product_id": "{{market_item_id}}",
+          "product_name": "{{product_name}}",
+          "product_img_url": "{{product_image_url}}",
+          "product_count": "{{quantity}}",
+          "product_unit": "{{product_unit}}",
+          "product_standard": "{{selected_options_text}}",
+          "product_snap_url": "{{snapshot_url}}",
+          "sku_code": "{{seller_sku}}",
+          "son_order_status": "{{line_status}}",
+          "total_product_amount": {
+            "currency_code": "{{currency_code}}",
+            "amount": "{{line_amount}}"
+          },
+          "logistics_type": "{{logistics_type}}",
+          "logistics_service_name": "{{logistics_service_name}}",
+          "logistics_amount": {
+            "currency_code": "{{currency_code}}",
+            "amount": "{{shipping_amount}}"
+          }
+        }
+      ]
+    }
+  },
+  "aliexpress_batch_stock_price_update_shape": {
+    "inventory_update": {
+      "mutiple_product_update_list": [
+        {
+          "product_id": "{{market_item_id}}",
+          "multiple_sku_update_list": [
+            {
+              "sku_code": "{{seller_sku}}",
+              "inventory": "{{stock_quantity}}"
+            }
+          ]
+        }
+      ]
+    },
+    "price_update": {
+      "mutiple_product_update_list": [
+        {
+          "product_id": "{{market_item_id}}",
+          "multiple_sku_update_list": [
+            {
+              "sku_code": "{{seller_sku}}",
+              "price": "{{sale_price}}",
+              "discount_price": "{{discount_price}}"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "marketplace_media_and_specification_shapes": {
+    "bc_neutral_media_asset": {
+      "kind": "main | gallery | sku | size_chart | video | description",
+      "uri": "internal R2/S3 private path or normalized CDN URL",
+      "external_id": "platform image/media id when provided",
+      "external_url": "platform image/media URL when imported",
+      "option_code": "COLOR",
+      "option_value": "BLACK",
+      "sort_order": 1,
+      "alt_text": "Human-readable image purpose",
+      "use_case": "MAIN_IMAGE | ATTRIBUTE_IMAGE | DESCRIPTION_IMAGE | SIZE_CHART | VIDEO",
+      "mime_type": "image/webp",
+      "width": 1200,
+      "height": 1200,
+      "last_imported_at": "2026-06-04T00:00:00Z"
+    },
+    "bc_neutral_specification_group": {
+      "group_code": "GENERAL",
+      "group_name": "General specifications",
+      "attributes": [
+        {
+          "attribute_id": "external attribute id when known",
+          "attribute_code": "MATERIAL",
+          "attribute_name": "Material",
+          "input_type": "text | single_select | multi_select | number | date | boolean | rich_text | image",
+          "scope": "product | sku | package | compliance",
+          "is_required": true,
+          "is_sale_prop": false,
+          "is_custom": false,
+          "values": [
+            {
+              "value_id": "external value id when known",
+              "value_code": "COTTON",
+              "value_text": "Cotton",
+              "display_text": "Cotton",
+              "unit_code": "",
+              "sort_order": 1,
+              "is_custom_value": false
+            }
+          ]
+        }
+      ]
+    },
+    "shopee": {
+      "product_media_keys": ["image.image_id_list", "description_info", "video_upload_id"],
+      "specification_keys": ["attribute_list", "tier_variation", "model_list"],
+      "sku_keys": ["model_sku", "tier_index", "normal_stock", "original_price"],
+      "notes": "Shopee generally separates item images, item attributes, two-tier variations, and model/SKU price-stock rows."
+    },
+    "lazada": {
+      "product_media_keys": ["Images.Image", "Skus.Sku.Images.Image", "description", "short_description"],
+      "specification_keys": ["PrimaryCategory", "Attributes", "SaleProp"],
+      "sku_keys": ["SellerSku", "ShopSku", "price", "quantity", "package_weight", "package_length", "package_width", "package_height"],
+      "notes": "Lazada product create/update uses category attributes first; leaf category and variant attributes drive valid SKU sale properties."
+    },
+    "tiktok": {
+      "product_media_keys": ["main_images", "description", "skus.sales_attributes.sku_img", "certifications.files", "size_chart.image"],
+      "specification_keys": ["product_attributes", "sales_attributes"],
+      "sku_keys": ["seller_sku", "price", "inventory", "identifier_code", "package_weight", "package_dimensions"],
+      "notes": "TikTok distinguishes product attributes from sales attributes; sales attributes are SKU variant attributes such as color and size."
+    },
+    "aliexpress": {
+      "product_media_keys": ["main_image_urls_list", "image_url_list", "detail_source_list.mobile_detail", "sku_info_list.sku_attributes_list.sku_image_url"],
+      "specification_keys": ["attribute_list", "category_attributes", "supporting_common_attribute_list", "supporting_sku_attribute_list"],
+      "sku_keys": ["sku_code", "inventory", "price", "discount_price", "ean_code", "bar_code", "weight", "package_length", "package_width", "package_height"],
+      "notes": "AliExpress category/attribute APIs are the most detailed; store both external ids and display names for reliable round-trip mapping."
+    }
+  },
+  "bc_sample_connected_product_family": {
+    "matrix_code": "APPAREL_COLOR_SIZE",
+    "product": {
+      "business_code": "APP-TSHIRT-001",
+      "names": [
+        {"code": "th", "name": "เสื้อยืดคอตตอนพรีเมียม"},
+        {"code": "en", "name": "Premium Cotton T-Shirt"}
+      ],
+      "category_code": "APPAREL_TOP",
+      "brand_code": "SOLAO",
+      "main_media": [
+        {"kind": "main", "uri": "images/products/app-tshirt-main.webp", "sort_order": 1},
+        {"kind": "size_chart", "uri": "images/products/app-tshirt-size-chart.webp", "sort_order": 2}
+      ]
+    },
+    "specification_groups": [
+      {
+        "group_code": "GENERAL",
+        "group_name": "ข้อมูลทั่วไป",
+        "attributes": [
+          {"attribute_code": "MATERIAL", "attribute_name": "วัสดุ", "values": [{"value_code": "COTTON", "value_text": "Cotton 100%"}]},
+          {"attribute_code": "GENDER", "attribute_name": "เพศ", "values": [{"value_code": "UNISEX", "value_text": "Unisex"}]},
+          {"attribute_code": "CARE", "attribute_name": "การดูแล", "values": [{"value_code": "MACHINE_WASH", "value_text": "Machine wash"}]}
+        ]
+      }
+    ],
+    "sku_combinations": [
+      {
+        "seller_sku": "APP-TSHIRT-BLACK-M",
+        "barcode": "885100000001",
+        "gtin": "885100000001",
+        "option_values": ["BLACK", "M"],
+        "sale_price": 390,
+        "cost": 185,
+        "opening_stock": 24,
+        "media_assets": [
+          {"kind": "sku", "option_code": "COLOR", "option_value": "BLACK", "uri": "images/products/app-tshirt-black.webp"}
+        ]
+      }
+    ],
+    "import_policy": "Merge platform fields into neutral BC media/spec/SKU structures, keep channel-specific payloads only in integration_profiles or payload_examples."
+  }
+}

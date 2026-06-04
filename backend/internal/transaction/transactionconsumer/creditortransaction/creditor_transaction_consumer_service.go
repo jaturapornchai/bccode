@@ -9,8 +9,8 @@ import (
 )
 
 type ICreditorTransactionConsumerService interface {
-	Upsert(shopID string, docNo string, doc models.CreditorTransactionPG) error
-	Delete(shopID string, docNo string) error
+	Upsert(holdingCode string, docNo string, doc models.CreditorTransactionPG) error
+	Delete(holdingCode string, docNo string) error
 }
 
 type CreditorTransactionConsumerService struct {
@@ -29,9 +29,9 @@ func NewCreditorTransactionConsumerService(
 	}
 }
 
-func (s *CreditorTransactionConsumerService) Upsert(shopID string, docNo string, doc models.CreditorTransactionPG) error {
+func (s *CreditorTransactionConsumerService) Upsert(holdingCode string, docNo string, doc models.CreditorTransactionPG) error {
 
-	findTrx, err := s.repo.Get(shopID, docNo)
+	findTrx, err := s.repo.Get(holdingCode, docNo)
 	if err != nil {
 		if err != gorm.ErrRecordNotFound {
 			return err
@@ -48,7 +48,7 @@ func (s *CreditorTransactionConsumerService) Upsert(shopID string, docNo string,
 		isEqual := findTrx.CompareTo(&doc)
 
 		if isEqual == false {
-			err = s.repo.Update(shopID, docNo, doc)
+			err = s.repo.Update(holdingCode, docNo, doc)
 			if err != nil {
 				return err
 			}
@@ -57,11 +57,11 @@ func (s *CreditorTransactionConsumerService) Upsert(shopID string, docNo string,
 	return nil
 }
 
-func (s *CreditorTransactionConsumerService) Delete(shopID string, docNo string) error {
+func (s *CreditorTransactionConsumerService) Delete(holdingCode string, docNo string) error {
 
-	err := s.repo.Delete(shopID, docNo, models.CreditorTransactionPG{
-		ShopIdentity: pkgModels.ShopIdentity{
-			ShopID: shopID,
+	err := s.repo.Delete(holdingCode, docNo, models.CreditorTransactionPG{
+		HoldingCodeentity: pkgModels.HoldingCodeentity{
+			HoldingCode: holdingCode,
 		},
 		DocNo: docNo,
 	})

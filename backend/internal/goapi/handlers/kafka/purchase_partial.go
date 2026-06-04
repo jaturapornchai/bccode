@@ -3,8 +3,8 @@ package kafka
 import (
 	"context"
 	"fmt"
-	"smlcloudplatform/internal/goapi/logger"
 	"runtime/debug"
+	"smlcloudplatform/internal/goapi/logger"
 
 	"smlcloudplatform/internal/goapi/models"
 	"smlcloudplatform/internal/goapi/myglobal"
@@ -25,14 +25,14 @@ func OnConsumeMessagePurchasePartialDelete(msg string) error {
 	logger.Info("OnConsumeMessagePurchasePartialDelete: %s", msg)
 
 	docData := TransPurchasePartialDecode(msg)
-	build.DatabaseChecker(docData.ShopId, false)
+	build.DatabaseChecker(docData.HoldingCode, false)
 
-	if docData.ShopId == "" || docData.DocNo == "" {
-		logger.Error("Invalid purchase partial data - missing ShopId or DocNo")
+	if docData.HoldingCode == "" || docData.DocNo == "" {
+		logger.Error("Invalid purchase partial data - missing HoldingCode or DocNo")
 		return fmt.Errorf("invalid purchase partial data")
 	}
 
-	return DeleteDocumentFromDatabases(context.Background(), docData.ShopId, docData.DocNo, TRANS_FLAG_PURCHASE_PARTIAL)
+	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.DocNo, TRANS_FLAG_PURCHASE_PARTIAL)
 }
 
 // ProcessPurchasePartialDocument - processes purchase partial using build-doc system
@@ -50,12 +50,12 @@ func ProcessPurchasePartialDocument(msg string) error {
 	// Decode purchase partial from JSON message
 	logger.Debug("Step 1: Decoding JSON message...")
 	purchasePartialData := TransPurchasePartialDecode(msg)
-	logger.Info("Step 1: Purchase Partial decoded successfully - ShopID=%s, DocNo=%s, TotalAmount=%.2f, Details=%d",
-		purchasePartialData.ShopId, purchasePartialData.DocNo, purchasePartialData.TotalAmount, len(purchasePartialData.Details))
+	logger.Info("Step 1: Purchase Partial decoded successfully - HoldingCode=%s, DocNo=%s, TotalAmount=%.2f, Details=%d",
+		purchasePartialData.HoldingCode, purchasePartialData.DocNo, purchasePartialData.TotalAmount, len(purchasePartialData.Details))
 
-	if purchasePartialData.ShopId == "" || purchasePartialData.DocNo == "" {
-		logger.Error("Invalid purchase partial data - ShopId='%s', DocNo='%s'", purchasePartialData.ShopId, purchasePartialData.DocNo)
-		return fmt.Errorf("invalid purchase partial data - missing ShopId or DocNo")
+	if purchasePartialData.HoldingCode == "" || purchasePartialData.DocNo == "" {
+		logger.Error("Invalid purchase partial data - HoldingCode='%s', DocNo='%s'", purchasePartialData.HoldingCode, purchasePartialData.DocNo)
+		return fmt.Errorf("invalid purchase partial data - missing HoldingCode or DocNo")
 	}
 
 	// Convert MongoDocModel to ProcessMongoTransModel
@@ -66,7 +66,7 @@ func ProcessPurchasePartialDocument(msg string) error {
 
 	// Connect to database
 	logger.Debug("Step 3: Connecting to PostgreSQL...")
-	db, err := mypg.PgSqlFastConnect(purchasePartialData.ShopId)
+	db, err := mypg.PgSqlFastConnect(purchasePartialData.HoldingCode)
 	if err != nil {
 		logger.Error("Failed to connect to database: %v", err)
 		return fmt.Errorf("failed to connect to database: %v", err)
@@ -82,8 +82,8 @@ func ProcessPurchasePartialDocument(msg string) error {
 
 	// Convert to build-doc structs
 	logger.Debug("Step 5: Converting to build-doc structs...")
-	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, purchasePartialData.ShopId)
-	docDetailStructs := MapPurchasePartialToDocDetailStructs(processData, purchasePartialData.ShopId)
+	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, purchasePartialData.HoldingCode)
+	docDetailStructs := MapPurchasePartialToDocDetailStructs(processData, purchasePartialData.HoldingCode)
 	logger.Debug("Step 5 completed: DocStruct created with %d details", len(docDetailStructs))
 
 	// Create doc references if any
@@ -101,18 +101,18 @@ func ProcessPurchasePartialDocument(msg string) error {
 		return fmt.Errorf("failed to insert document to PostgreSQL: %w", err)
 	}
 
-	err = InsertDocDetailToPostgreSQL(ctx, db, purchasePartialData.ShopId, docDetailStructs, 8)
+	err = InsertDocDetailToPostgreSQL(ctx, db, purchasePartialData.HoldingCode, docDetailStructs, 8)
 	if err != nil {
 		return fmt.Errorf("failed to insert doc details to PostgreSQL: %w", err)
 	}
 
-	err = InsertDocumentToClickHouse(ctx, purchasePartialData.ShopId, docStruct, docRefStructs, docPaymentStruct, docDetailStructs, 9)
+	err = InsertDocumentToClickHouse(ctx, purchasePartialData.HoldingCode, docStruct, docRefStructs, docPaymentStruct, docDetailStructs, 9)
 	if err != nil {
 		return fmt.Errorf("failed to insert to ClickHouse: %w", err)
 	}
 
 	// Step 10: Calculate stock cost using global config
-	err = ProcessDocumentStockCalculation(db, purchasePartialData.ShopId, docDetailStructs, 10)
+	err = ProcessDocumentStockCalculation(db, purchasePartialData.HoldingCode, docDetailStructs, 10)
 	if err != nil {
 		logger.Error("Failed to calculate stock cost: %v", err)
 		// Don't return error, just log it
@@ -128,7 +128,7 @@ func ProcessPurchasePartialDocument(msg string) error {
 }
 
 // MapPurchasePartialToDocDetailStructs - converts purchase partial to document detail structs
-func MapPurchasePartialToDocDetailStructs(processData models.ProcessMongoTransModel, shopId string) []models.DocDetailStruct {
+func MapPurchasePartialToDocDetailStructs(processData models.ProcessMongoTransModel, holdingCode string) []models.DocDetailStruct {
 	var docDetailStructs []models.DocDetailStruct
 
 	for i, detail := range processData.Details {
@@ -212,7 +212,7 @@ func ConvertPurchasePartialMongoDocToProcessModel(mongoDoc models.MongoDocModel)
 
 	logger.Info("ConvertPurchasePartialMongoDocToProcessModel: Creating final ProcessMongoTransModel")
 	result := models.ProcessMongoTransModel{
-		ShopId:           mongoDoc.ShopId,
+		HoldingCode:      mongoDoc.HoldingCode,
 		BranchId:         mongoDoc.BranchId,
 		GuidFixed:        mongoDoc.GuidFixed,
 		DocNo:            mongoDoc.DocNo,

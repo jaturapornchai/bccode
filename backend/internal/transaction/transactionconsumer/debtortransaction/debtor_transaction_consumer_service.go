@@ -9,8 +9,8 @@ import (
 )
 
 type IDebtorTransactionConsumerService interface {
-	Upsert(shopID string, docNo string, doc models.DebtorTransactionPG) error
-	Delete(shopID string, docNo string) error
+	Upsert(holdingCode string, docNo string, doc models.DebtorTransactionPG) error
+	Delete(holdingCode string, docNo string) error
 }
 
 type DebtorTransactionConsumerService struct {
@@ -28,9 +28,9 @@ func NewDebtorTransactionService(
 	}
 }
 
-func (s *DebtorTransactionConsumerService) Upsert(shopID string, docNo string, doc models.DebtorTransactionPG) error {
+func (s *DebtorTransactionConsumerService) Upsert(holdingCode string, docNo string, doc models.DebtorTransactionPG) error {
 
-	findTrx, err := s.repo.Get(shopID, docNo)
+	findTrx, err := s.repo.Get(holdingCode, docNo)
 	if err != nil {
 		if err != gorm.ErrRecordNotFound {
 			return err
@@ -47,7 +47,7 @@ func (s *DebtorTransactionConsumerService) Upsert(shopID string, docNo string, d
 		isEqual := findTrx.CompareTo(&doc)
 
 		if isEqual == false {
-			err = s.repo.Update(shopID, docNo, doc)
+			err = s.repo.Update(holdingCode, docNo, doc)
 			if err != nil {
 				return err
 			}
@@ -57,10 +57,10 @@ func (s *DebtorTransactionConsumerService) Upsert(shopID string, docNo string, d
 	return nil
 }
 
-func (s *DebtorTransactionConsumerService) Delete(shopID string, docNo string) error {
-	err := s.repo.Delete(shopID, docNo, models.DebtorTransactionPG{
-		ShopIdentity: pkgModels.ShopIdentity{
-			ShopID: shopID,
+func (s *DebtorTransactionConsumerService) Delete(holdingCode string, docNo string) error {
+	err := s.repo.Delete(holdingCode, docNo, models.DebtorTransactionPG{
+		HoldingCodeentity: pkgModels.HoldingCodeentity{
+			HoldingCode: holdingCode,
 		},
 		DocNo: docNo,
 	})

@@ -15,7 +15,7 @@ type PaidAdvance struct {
 }
 type PaidAdvanceInfo struct {
 	models.DocIdentity `bson:"inline"`
-	PaidAdvance  `bson:"inline"`
+	PaidAdvance        `bson:"inline"`
 }
 
 func (PaidAdvanceInfo) CollectionName() string {
@@ -23,13 +23,13 @@ func (PaidAdvanceInfo) CollectionName() string {
 }
 
 type PaidAdvanceData struct {
-	models.ShopIdentity `bson:"inline"`
-	PaidAdvanceInfo  `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	PaidAdvanceInfo          `bson:"inline"`
 }
 
 type PaidAdvanceDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	PaidAdvanceData  `bson:"inline"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	PaidAdvanceData    `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -46,7 +46,7 @@ func (PaidAdvanceItemGuid) CollectionName() string {
 }
 
 type PaidAdvanceActivity struct {
-	PaidAdvanceData  `bson:"inline"`
+	PaidAdvanceData     `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

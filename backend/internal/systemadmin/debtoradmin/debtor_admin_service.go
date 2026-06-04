@@ -10,8 +10,8 @@ import (
 )
 
 type IDebtorAdminService interface {
-	ReSyncDebtor(shopID string) error
-	ReCalcDebtorBalance(shopID string) error
+	ReSyncDebtor(holdingCode string) error
+	ReCalcDebtorBalance(holdingCode string) error
 }
 
 type DebtorAdminService struct {
@@ -36,12 +36,12 @@ func NewDebtorAdminService(pst microservice.IPersisterMongo, producer microservi
 	}
 }
 
-func (svc DebtorAdminService) ReSyncDebtor(shopID string) error {
+func (svc DebtorAdminService) ReSyncDebtor(holdingCode string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), svc.timeoutDuration)
 	defer cancel()
 
-	debtors, err := svc.repo.FindDebtorByShopId(ctx, shopID)
+	debtors, err := svc.repo.FindDebtorByHoldingCode(ctx, holdingCode)
 	if err != nil {
 		return err
 	}
@@ -54,12 +54,12 @@ func (svc DebtorAdminService) ReSyncDebtor(shopID string) error {
 	return nil
 }
 
-func (svc DebtorAdminService) ReCalcDebtorBalance(shopID string) error {
+func (svc DebtorAdminService) ReCalcDebtorBalance(holdingCode string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), svc.timeoutDuration)
 	defer cancel()
 
-	debtors, err := svc.repo.FindDebtorByShopId(ctx, shopID)
+	debtors, err := svc.repo.FindDebtorByHoldingCode(ctx, holdingCode)
 	if err != nil {
 		return err
 	}
@@ -71,8 +71,8 @@ func (svc DebtorAdminService) ReCalcDebtorBalance(shopID string) error {
 
 			if debtor.Code != "" {
 				requestStockProcessLists = append(requestStockProcessLists, debtorProcessModels.DebtorProcessRequest{
-					ShopID:     shopID,
-					DebtorCode: debtor.Code,
+					HoldingCode: holdingCode,
+					DebtorCode:  debtor.Code,
 				})
 			}
 		}

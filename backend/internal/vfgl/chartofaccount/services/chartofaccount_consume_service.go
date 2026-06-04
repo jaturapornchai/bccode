@@ -10,8 +10,8 @@ import (
 
 type IChartOfAccountConsumeService interface {
 	Create(doc models.ChartOfAccountDoc) error
-	Update(shopID string, accountCode string, doc models.ChartOfAccountDoc) error
-	Delete(shopID string, guid string) error
+	Update(holdingCode string, accountCode string, doc models.ChartOfAccountDoc) error
+	Delete(holdingCode string, guid string) error
 	SaveInBatch(docList []models.ChartOfAccountDoc) error
 	Upsert(models.ChartOfAccountDoc) (*models.ChartOfAccountPG, error)
 }
@@ -47,7 +47,7 @@ func (svc *ChartOfAccountConsumeService) Create(doc models.ChartOfAccountDoc) (*
 	return &pgDoc, nil
 }
 
-func (svc *ChartOfAccountConsumeService) Update(shopID string, accountCode string, doc models.ChartOfAccountDoc) error {
+func (svc *ChartOfAccountConsumeService) Update(holdingCode string, accountCode string, doc models.ChartOfAccountDoc) error {
 	pgDoc := models.ChartOfAccountPG{}
 
 	tmpJsonDoc, err := json.Marshal(doc)
@@ -60,7 +60,7 @@ func (svc *ChartOfAccountConsumeService) Update(shopID string, accountCode strin
 		return err
 	}
 
-	err = svc.repo.Update(shopID, accountCode, pgDoc)
+	err = svc.repo.Update(holdingCode, accountCode, pgDoc)
 
 	if err != nil {
 		return err
@@ -68,8 +68,8 @@ func (svc *ChartOfAccountConsumeService) Update(shopID string, accountCode strin
 	return nil
 }
 
-func (svc *ChartOfAccountConsumeService) Delete(shopID string, accountCode string) error {
-	err := svc.repo.Delete(shopID, accountCode)
+func (svc *ChartOfAccountConsumeService) Delete(holdingCode string, accountCode string) error {
+	err := svc.repo.Delete(holdingCode, accountCode)
 
 	if err != nil {
 		return err
@@ -101,10 +101,10 @@ func (svc *ChartOfAccountConsumeService) SaveInBatch(docList []models.ChartOfAcc
 	return nil
 }
 
-func (svc *ChartOfAccountConsumeService) Upsert(shopID string, doc models.ChartOfAccountDoc) (*models.ChartOfAccountPG, error) {
+func (svc *ChartOfAccountConsumeService) Upsert(holdingCode string, doc models.ChartOfAccountDoc) (*models.ChartOfAccountPG, error) {
 
 	// get
-	data, err := svc.repo.Get(shopID, doc.AccountCode)
+	data, err := svc.repo.Get(holdingCode, doc.AccountCode)
 	if err == gorm.ErrRecordNotFound {
 		if data, err = svc.Create(doc); err != nil {
 			return nil, err
@@ -118,7 +118,7 @@ func (svc *ChartOfAccountConsumeService) Upsert(shopID string, doc models.ChartO
 		data.AccountGroup = doc.AccountGroup
 		data.ConsolidateAccountCode = doc.ConsolidateAccountCode
 
-		if err = svc.repo.Update(shopID, doc.AccountCode, *data); err != nil {
+		if err = svc.repo.Update(holdingCode, doc.AccountCode, *data); err != nil {
 			return nil, err
 		}
 	}

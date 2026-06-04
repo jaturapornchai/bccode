@@ -14,7 +14,7 @@ func (m *MigrationService) ImportChartOfAccount(charts []accountModel.ChartOfAcc
 	for _, chart := range charts {
 		// t.logger.Infof("Process Chart %s:%s", charts[i].AccountCode, charts[i].AccountName)
 
-		findAccount, err := chartRepo.FindByGuid(context.Background(), chart.ShopID, chart.AccountCode)
+		findAccount, err := chartRepo.FindByGuid(context.Background(), chart.HoldingCode, chart.AccountCode)
 		if err != nil {
 			//t.logger.Errorf("Error Find Account %s:%s", charts[i].AccountCode, charts[i].AccountName)
 			return err
@@ -35,7 +35,7 @@ func (m *MigrationService) ImportChartOfAccount(charts []accountModel.ChartOfAcc
 				return err
 			}
 		} else {
-			m.logger.Infof("Account %s:%s:%s is Already", chart.ShopID, chart.AccountCode, chart.AccountName)
+			m.logger.Infof("Account %s:%s:%s is Already", chart.HoldingCode, chart.AccountCode, chart.AccountName)
 		}
 	}
 

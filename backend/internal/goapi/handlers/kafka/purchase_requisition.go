@@ -24,12 +24,12 @@ func OnConsumeMessagePurchaseRequisitionDelete(msg string) error {
 
 	docData := TransPurchaseRequisitionDecode(msg)
 
-	if docData.ShopId == "" || docData.DocNo == "" {
-		logger.Error("Invalid purchase requisition data - missing ShopId or DocNo")
+	if docData.HoldingCode == "" || docData.DocNo == "" {
+		logger.Error("Invalid purchase requisition data - missing HoldingCode or DocNo")
 		return fmt.Errorf("invalid purchase requisition data")
 	}
 
-	return DeleteDocumentFromDatabases(context.Background(), docData.ShopId, docData.DocNo, TRANS_FLAG_PURCHASE_REQUISITION)
+	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.DocNo, TRANS_FLAG_PURCHASE_REQUISITION)
 }
 
 // ProcessPurchaseRequisitionDocument - processes purchase requisition using build-doc system
@@ -45,18 +45,18 @@ func ProcessPurchaseRequisitionDocument(msg string) error {
 
 	// Decode purchase requisition from JSON message
 	purchaseRequisitionData := TransPurchaseRequisitionDecode(msg)
-	logger.Info("Purchase Requisition decoded - ShopID=%s, DocNo=%s, TotalAmount=%.2f, Details=%d",
-		purchaseRequisitionData.ShopId, purchaseRequisitionData.DocNo, purchaseRequisitionData.TotalAmount, len(purchaseRequisitionData.Details))
+	logger.Info("Purchase Requisition decoded - HoldingCode=%s, DocNo=%s, TotalAmount=%.2f, Details=%d",
+		purchaseRequisitionData.HoldingCode, purchaseRequisitionData.DocNo, purchaseRequisitionData.TotalAmount, len(purchaseRequisitionData.Details))
 
-	if purchaseRequisitionData.ShopId == "" || purchaseRequisitionData.DocNo == "" {
-		return fmt.Errorf("invalid purchase requisition data - missing ShopId or DocNo")
+	if purchaseRequisitionData.HoldingCode == "" || purchaseRequisitionData.DocNo == "" {
+		return fmt.Errorf("invalid purchase requisition data - missing HoldingCode or DocNo")
 	}
 
 	// Convert MongoDocModel to ProcessMongoTransModel
 	processData := ConvertPurchaseRequisitionMongoDocToProcessModel(purchaseRequisitionData)
 
 	// Connect to database
-	db, err := mypg.PgSqlFastConnect(purchaseRequisitionData.ShopId)
+	db, err := mypg.PgSqlFastConnect(purchaseRequisitionData.HoldingCode)
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %v", err)
 	}
@@ -67,8 +67,8 @@ func ProcessPurchaseRequisitionDocument(msg string) error {
 	mypg.DeleteDocPgSql(ctx, db, purchaseRequisitionData.DocNo, TRANS_FLAG_PURCHASE_REQUISITION)
 
 	// Convert to build-doc structs
-	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, purchaseRequisitionData.ShopId)
-	docDetailStructs := MapPurchaseRequisitionToDocDetailStructs(processData, purchaseRequisitionData.ShopId)
+	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, purchaseRequisitionData.HoldingCode)
+	docDetailStructs := MapPurchaseRequisitionToDocDetailStructs(processData, purchaseRequisitionData.HoldingCode)
 
 	// Create doc references if any
 	var docRefStructs []models.DocRefStruct
@@ -83,13 +83,13 @@ func ProcessPurchaseRequisitionDocument(msg string) error {
 		return fmt.Errorf("failed to insert document to PostgreSQL: %w", err)
 	}
 
-	err = InsertDocDetailToPostgreSQL(ctx, db, purchaseRequisitionData.ShopId, docDetailStructs, 0)
+	err = InsertDocDetailToPostgreSQL(ctx, db, purchaseRequisitionData.HoldingCode, docDetailStructs, 0)
 	if err != nil {
 		return fmt.Errorf("failed to insert doc details to PostgreSQL: %w", err)
 	}
 
 	// Insert to ClickHouse
-	err = InsertDocumentToClickHouse(ctx, purchaseRequisitionData.ShopId, docStruct, docRefStructs, docPaymentStruct, docDetailStructs, 0)
+	err = InsertDocumentToClickHouse(ctx, purchaseRequisitionData.HoldingCode, docStruct, docRefStructs, docPaymentStruct, docDetailStructs, 0)
 	if err != nil {
 		return fmt.Errorf("failed to insert to ClickHouse: %w", err)
 	}
@@ -102,7 +102,7 @@ func ProcessPurchaseRequisitionDocument(msg string) error {
 }
 
 // MapPurchaseRequisitionToDocDetailStructs - converts purchase requisition to document detail structs
-func MapPurchaseRequisitionToDocDetailStructs(processData models.ProcessMongoTransModel, shopId string) []models.DocDetailStruct {
+func MapPurchaseRequisitionToDocDetailStructs(processData models.ProcessMongoTransModel, holdingCode string) []models.DocDetailStruct {
 	var docDetailStructs []models.DocDetailStruct
 
 	for i, detail := range processData.Details {
@@ -187,7 +187,7 @@ func ConvertPurchaseRequisitionMongoDocToProcessModel(mongoDoc models.MongoDocMo
 	}
 
 	return models.ProcessMongoTransModel{
-		ShopId:           mongoDoc.ShopId,
+		HoldingCode:      mongoDoc.HoldingCode,
 		BranchId:         mongoDoc.BranchId,
 		GuidFixed:        mongoDoc.GuidFixed,
 		CustCode:         mongoDoc.CustCode,

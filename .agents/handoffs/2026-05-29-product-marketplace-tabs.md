@@ -24,7 +24,7 @@ Added 3 marketplace tabs (Shopee / Lazada / TikTok) to the barcode edit form, ea
 - [ ] Inbound sync service: pull listing → fill `platform_price`, `platform_stock`, `status`, `last_sync_at`/`last_sync_error`.
 - [ ] Outbound sync: push `custom_price`/stock when `sync_price`/`sync_stock` enabled.
 - [ ] Unit normalization on push: Shopee weight=KG/dim=cm, Lazada weight=g/dim=mm — store one base unit, convert at the boundary.
-- [ ] Validate `platform` ∈ {shopee,lazada,tiktok} on save; tenant-scope all marketplace queries by `shopid`.
+- [ ] Validate `platform` ∈ {shopee,lazada,tiktok} on save; tenant-scope all marketplace queries by `holding_code`.
 - [ ] MCP tool for marketplace status (optional) so the AI agent can query/sync.
 
 ## 3. API contract expected by the frontend

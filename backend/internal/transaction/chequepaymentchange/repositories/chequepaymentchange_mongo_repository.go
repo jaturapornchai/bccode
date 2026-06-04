@@ -14,27 +14,27 @@ import (
 )
 
 type IChequePaymentChangeRepository interface {
-	Count(ctx context.Context, shopID string) (int, error)
+	Count(ctx context.Context, holdingCode string) (int, error)
 	Create(ctx context.Context, doc models.ChequePaymentChangeDoc) (string, error)
 	CreateInBatch(ctx context.Context, docList []models.ChequePaymentChangeDoc) error
-	Update(ctx context.Context, shopID string, guid string, doc models.ChequePaymentChangeDoc) error
-	DeleteByGuidfixed(ctx context.Context, shopID string, guid string, username string) error
-	Delete(ctx context.Context, shopID string, username string, filters map[string]interface{}) error
-	FindPage(ctx context.Context, shopID string, searchInFields []string, pageable micromodels.Pageable) ([]models.ChequePaymentChangeInfo, mongopagination.PaginationData, error)
-	FindByGuid(ctx context.Context, shopID string, guid string) (models.ChequePaymentChangeDoc, error)
-	FindByGuids(ctx context.Context, shopID string, guids []string) ([]models.ChequePaymentChangeDoc, error)
+	Update(ctx context.Context, holdingCode string, guid string, doc models.ChequePaymentChangeDoc) error
+	DeleteByGuidfixed(ctx context.Context, holdingCode string, guid string, username string) error
+	Delete(ctx context.Context, holdingCode string, username string, filters map[string]interface{}) error
+	FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable micromodels.Pageable) ([]models.ChequePaymentChangeInfo, mongopagination.PaginationData, error)
+	FindByGuid(ctx context.Context, holdingCode string, guid string) (models.ChequePaymentChangeDoc, error)
+	FindByGuids(ctx context.Context, holdingCode string, guids []string) ([]models.ChequePaymentChangeDoc, error)
 
-	FindInItemGuid(ctx context.Context, shopID string, columnName string, itemGuidList []string) ([]models.ChequePaymentChangeItemGuid, error)
-	FindByDocIndentityGuid(ctx context.Context, shopID string, indentityField string, indentityValue interface{}) (models.ChequePaymentChangeDoc, error)
-	FindPageFilter(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.ChequePaymentChangeInfo, mongopagination.PaginationData, error)
-	FindStep(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableLimit micromodels.PageableStep) ([]models.ChequePaymentChangeInfo, int, error)
+	FindInItemGuid(ctx context.Context, holdingCode string, columnName string, itemGuidList []string) ([]models.ChequePaymentChangeItemGuid, error)
+	FindByDocIndentityGuid(ctx context.Context, holdingCode string, indentityField string, indentityValue interface{}) (models.ChequePaymentChangeDoc, error)
+	FindPageFilter(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.ChequePaymentChangeInfo, mongopagination.PaginationData, error)
+	FindStep(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableLimit micromodels.PageableStep) ([]models.ChequePaymentChangeInfo, int, error)
 
-	FindDeletedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ChequePaymentChangeDeleteActivity, mongopagination.PaginationData, error)
-	FindCreatedOrUpdatedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ChequePaymentChangeActivity, mongopagination.PaginationData, error)
-	FindDeletedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ChequePaymentChangeDeleteActivity, error)
-	FindCreatedOrUpdatedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ChequePaymentChangeActivity, error)
+	FindDeletedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ChequePaymentChangeDeleteActivity, mongopagination.PaginationData, error)
+	FindCreatedOrUpdatedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ChequePaymentChangeActivity, mongopagination.PaginationData, error)
+	FindDeletedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ChequePaymentChangeDeleteActivity, error)
+	FindCreatedOrUpdatedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ChequePaymentChangeActivity, error)
 
-	FindLastDocNo(ctx context.Context, shopID string, prefixDocNo string) (models.ChequePaymentChangeDoc, error)
+	FindLastDocNo(ctx context.Context, holdingCode string, prefixDocNo string) (models.ChequePaymentChangeDoc, error)
 }
 
 type ChequePaymentChangeRepository struct {
@@ -58,9 +58,9 @@ func NewChequePaymentChangeRepository(pst microservice.IPersisterMongo) *ChequeP
 
 	return insRepo
 }
-func (repo ChequePaymentChangeRepository) FindLastDocNo(ctx context.Context, shopID string, prefixDocNo string) (models.ChequePaymentChangeDoc, error) {
+func (repo ChequePaymentChangeRepository) FindLastDocNo(ctx context.Context, holdingCode string, prefixDocNo string) (models.ChequePaymentChangeDoc, error) {
 	filters := bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 		"deleted_at": bson.M{
 			"$exists": false,
 		},

@@ -42,8 +42,8 @@ func TestJournalRepositoryCreate(t *testing.T) {
 
 	s.repo = repositories.NewJournalPgRepository(microservice.NewPersisterWithDB(s.db))
 	s.journal = models.JournalPg{
-		ShopIdentity: common.ShopIdentity{
-			ShopID: "SHOPTEST",
+		HoldingCodeentity: common.HoldingCodeentity{
+			HoldingCode: "SHOPTEST",
 		},
 		JournalBody: models.JournalBody{
 			DocNo:   "TESTDOCNO",
@@ -52,17 +52,17 @@ func TestJournalRepositoryCreate(t *testing.T) {
 		AccountBook: &[]models.JournalDetailPg{
 			{
 				Docno:       "TESTDOCNO",
-				ShopID:      "SHOPTEST",
+				HoldingCode: "SHOPTEST",
 				AccountCode: "1000",
 				DebitAmount: 100,
 			},
 		},
 	}
 
-	// journal_mock_cols := []string{"shopid", "parid", "docno", "batchid", "docdate", "accountperiod", "accountyear", "accountgroup", "amount", "accountdescription"}
+	// journal_mock_cols := []string{"holding_code", "parid", "docno", "batchid", "docdate", "accountperiod", "accountyear", "accountgroup", "amount", "accountdescription"}
 	// rows := sqlmock.NewRows(journal_mock_cols).
 	// 	AddRow(
-	// 		s.journal.ShopID,
+	// 		s.journal.HoldingCode,
 	// 		s.journal.ParID,
 	// 		s.journal.Docno,
 	// 		s.journal.BatchID,

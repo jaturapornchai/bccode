@@ -31,9 +31,9 @@ func (_m *MockPaymentDetailRepository) Create(doc models.TransactionPaymentDetai
 	return r0
 }
 
-// Delete provides a mock function with given fields: shopID, docNo, doc
-func (_m *MockPaymentDetailRepository) Delete(shopID string, docNo string, doc models.TransactionPaymentDetail) error {
-	ret := _m.Called(shopID, docNo, doc)
+// Delete provides a mock function with given fields: holdingCode, docNo, doc
+func (_m *MockPaymentDetailRepository) Delete(holdingCode string, docNo string, doc models.TransactionPaymentDetail) error {
+	ret := _m.Called(holdingCode, docNo, doc)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Delete")
@@ -41,7 +41,7 @@ func (_m *MockPaymentDetailRepository) Delete(shopID string, docNo string, doc m
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(string, string, models.TransactionPaymentDetail) error); ok {
-		r0 = rf(shopID, docNo, doc)
+		r0 = rf(holdingCode, docNo, doc)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -49,9 +49,9 @@ func (_m *MockPaymentDetailRepository) Delete(shopID string, docNo string, doc m
 	return r0
 }
 
-// Get provides a mock function with given fields: shopID, docNo
-func (_m *MockPaymentDetailRepository) Get(shopID string, docNo string) (*models.TransactionPaymentDetail, error) {
-	ret := _m.Called(shopID, docNo)
+// Get provides a mock function with given fields: holdingCode, docNo
+func (_m *MockPaymentDetailRepository) Get(holdingCode string, docNo string) (*models.TransactionPaymentDetail, error) {
+	ret := _m.Called(holdingCode, docNo)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Get")
@@ -60,10 +60,10 @@ func (_m *MockPaymentDetailRepository) Get(shopID string, docNo string) (*models
 	var r0 *models.TransactionPaymentDetail
 	var r1 error
 	if rf, ok := ret.Get(0).(func(string, string) (*models.TransactionPaymentDetail, error)); ok {
-		return rf(shopID, docNo)
+		return rf(holdingCode, docNo)
 	}
 	if rf, ok := ret.Get(0).(func(string, string) *models.TransactionPaymentDetail); ok {
-		r0 = rf(shopID, docNo)
+		r0 = rf(holdingCode, docNo)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*models.TransactionPaymentDetail)
@@ -71,7 +71,7 @@ func (_m *MockPaymentDetailRepository) Get(shopID string, docNo string) (*models
 	}
 
 	if rf, ok := ret.Get(1).(func(string, string) error); ok {
-		r1 = rf(shopID, docNo)
+		r1 = rf(holdingCode, docNo)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -79,9 +79,9 @@ func (_m *MockPaymentDetailRepository) Get(shopID string, docNo string) (*models
 	return r0, r1
 }
 
-// Update provides a mock function with given fields: shopID, docNo, doc
-func (_m *MockPaymentDetailRepository) Update(shopID string, docNo string, doc models.TransactionPaymentDetail) error {
-	ret := _m.Called(shopID, docNo, doc)
+// Update provides a mock function with given fields: holdingCode, docNo, doc
+func (_m *MockPaymentDetailRepository) Update(holdingCode string, docNo string, doc models.TransactionPaymentDetail) error {
+	ret := _m.Called(holdingCode, docNo, doc)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Update")
@@ -89,7 +89,7 @@ func (_m *MockPaymentDetailRepository) Update(shopID string, docNo string, doc m
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(string, string, models.TransactionPaymentDetail) error); ok {
-		r0 = rf(shopID, docNo, doc)
+		r0 = rf(holdingCode, docNo, doc)
 	} else {
 		r0 = ret.Error(0)
 	}

@@ -14,13 +14,13 @@ import (
 
 // QueueItem - โครงสร้างข้อมูล queue item (เหมือน myredis.QueueItem)
 type QueueItem struct {
-	ID int64     `json:"id,omitempty"`
-	ShopId string    `json:"shop_id"`
-	DocNo string    `json:"doc_no"`
-	TransFlag string    `json:"trans_flag"`
-	RetryCount int       `json:"retry_count"`
-	CreatedAt time.Time `json:"created_at"`
-	Error string    `json:"error,omitempty"`
+	ID          int64     `json:"id,omitempty"`
+	HoldingCode string    `json:"holding_code"`
+	DocNo       string    `json:"doc_no"`
+	TransFlag   string    `json:"trans_flag"`
+	RetryCount  int       `json:"retry_count"`
+	CreatedAt   time.Time `json:"created_at"`
+	Error       string    `json:"error,omitempty"`
 }
 
 // QueueManager - จัดการ queue ใน PostgreSQL
@@ -67,7 +67,7 @@ func (qm *QueueManager) runWithReconnect(operation func(db *sql.DB) error) error
 // AddToQueue - เพิ่มงานเข้า queue (แทนที่ Redis LPUSH)
 func (qm *QueueManager) AddToQueue(ctx context.Context, item QueueItem) error {
 	query := `
-		INSERT INTO queues (shop_id, doc_no, trans_flag, retry_count, created_at, status)
+		INSERT INTO queues (holding_code, doc_no, trans_flag, retry_count, created_at, status)
 		VALUES ($1, $2, $3, $4, $5, 'pending')
 	`
 
@@ -77,7 +77,7 @@ func (qm *QueueManager) AddToQueue(ctx context.Context, item QueueItem) error {
 
 	err := qm.runWithReconnect(func(db *sql.DB) error {
 		_, execErr := db.ExecContext(ctx, query,
-			item.ShopId,
+			item.HoldingCode,
 			item.DocNo,
 			item.TransFlag,
 			item.RetryCount,
@@ -91,13 +91,13 @@ func (qm *QueueManager) AddToQueue(ctx context.Context, item QueueItem) error {
 		return fmt.Errorf("failed to add to queue: %w", err)
 	}
 
-	logger.Debug("Added to queue: shop=%s, doc=%s, trans=%s", item.ShopId, item.DocNo, item.TransFlag)
+	logger.Debug("Added to queue: shop=%s, doc=%s, trans=%s", item.HoldingCode, item.DocNo, item.TransFlag)
 	return nil
 }
 
 // PopFromQueue - ดึงงานจาก queue (แทนที่ Redis LPOP)
 // ใช้ FOR UPDATE SKIP LOCKED เพื่อป้องกัน race condition
-func (qm *QueueManager) PopFromQueue(ctx context.Context, shopId string) (*QueueItem, error) {
+func (qm *QueueManager) PopFromQueue(ctx context.Context, holdingCode string) (*QueueItem, error) {
 	query := `
 		UPDATE queues
 		SET status = 'processing',
@@ -105,20 +105,20 @@ func (qm *QueueManager) PopFromQueue(ctx context.Context, shopId string) (*Queue
 		WHERE id = (
 			SELECT id
 			FROM queues
-			WHERE shop_id = $1
+			WHERE holding_code = $1
 			  AND status = 'pending'
 			ORDER BY created_at ASC
 			LIMIT 1
 			FOR UPDATE SKIP LOCKED
 		)
-		RETURNING id, shop_id, doc_no, trans_flag, retry_count, created_at
+		RETURNING id, holding_code, doc_no, trans_flag, retry_count, created_at
 	`
 
 	var item QueueItem
 	err := qm.runWithReconnect(func(db *sql.DB) error {
-		return db.QueryRowContext(ctx, query, shopId).Scan(
+		return db.QueryRowContext(ctx, query, holdingCode).Scan(
 			&item.ID,
-			&item.ShopId,
+			&item.HoldingCode,
 			&item.DocNo,
 			&item.TransFlag,
 			&item.RetryCount,
@@ -135,7 +135,7 @@ func (qm *QueueManager) PopFromQueue(ctx context.Context, shopId string) (*Queue
 		return nil, fmt.Errorf("failed to pop from queue: %w", err)
 	}
 
-	logger.Debug("Popped from queue: shop=%s, doc=%s", item.ShopId, item.DocNo)
+	logger.Debug("Popped from queue: shop=%s, doc=%s", item.HoldingCode, item.DocNo)
 	return &item, nil
 }
 
@@ -159,14 +159,14 @@ func (qm *QueueManager) RequeueItem(ctx context.Context, item QueueItem) error {
 		return fmt.Errorf("failed to requeue item: %w", err)
 	}
 
-	logger.Debug("Requeued item: shop=%s, doc=%s, retry=%d", item.ShopId, item.DocNo, item.RetryCount)
+	logger.Debug("Requeued item: shop=%s, doc=%s, retry=%d", item.HoldingCode, item.DocNo, item.RetryCount)
 	return nil
 }
 
 // AddToDeadLetterQueue - ส่งงานล้มเหลวไปยัง DLQ (แทนที่ Redis LPUSH dead_letter_queue)
 func (qm *QueueManager) AddToDeadLetterQueue(ctx context.Context, item QueueItem, errorMessage string) error {
 	insertQuery := `
-		INSERT INTO dead_letter_queue (shop_id, doc_no, trans_flag, retry_count, created_at, error_message)
+		INSERT INTO dead_letter_queue (holding_code, doc_no, trans_flag, retry_count, created_at, error_message)
 		VALUES ($1, $2, $3, $4, $5, $6)
 	`
 
@@ -192,7 +192,7 @@ func (qm *QueueManager) AddToDeadLetterQueue(ctx context.Context, item QueueItem
 		}()
 
 		if _, err := tx.ExecContext(ctx, insertQuery,
-			item.ShopId,
+			item.HoldingCode,
 			item.DocNo,
 			item.TransFlag,
 			item.RetryCount,
@@ -220,17 +220,17 @@ func (qm *QueueManager) AddToDeadLetterQueue(ctx context.Context, item QueueItem
 		return err
 	}
 
-	logger.Warn("Added to dead letter queue: shop=%s, doc=%s, error=%s", item.ShopId, item.DocNo, errorMessage)
+	logger.Warn("Added to dead letter queue: shop=%s, doc=%s, error=%s", item.HoldingCode, item.DocNo, errorMessage)
 	return nil
 }
 
 // GetActiveShops - ดึงรายชื่อ shop ที่มีงาน (แทนที่ Redis KEYS queue:*)
 func (qm *QueueManager) GetActiveShops(ctx context.Context) ([]string, error) {
 	query := `
-		SELECT DISTINCT shop_id
+		SELECT DISTINCT holding_code
 		FROM queues
 		WHERE status = 'pending'
-		ORDER BY shop_id
+		ORDER BY holding_code
 	`
 
 	var rows *sql.Rows
@@ -247,28 +247,28 @@ func (qm *QueueManager) GetActiveShops(ctx context.Context) ([]string, error) {
 
 	var shops []string
 	for rows.Next() {
-		var shopId string
-		if err := rows.Scan(&shopId); err != nil {
-			logger.Error("Failed to scan shop_id: %v", err)
+		var holdingCode string
+		if err := rows.Scan(&holdingCode); err != nil {
+			logger.Error("Failed to scan holding_code: %v", err)
 			continue
 		}
-		shops = append(shops, shopId)
+		shops = append(shops, holdingCode)
 	}
 
 	return shops, nil
 }
 
 // GetQueueLength - ดึงความยาว queue ของ shop (แทนที่ Redis LLEN)
-func (qm *QueueManager) GetQueueLength(ctx context.Context, shopId string) (int64, error) {
+func (qm *QueueManager) GetQueueLength(ctx context.Context, holdingCode string) (int64, error) {
 	query := `
 		SELECT COUNT(*)
 		FROM queues
-		WHERE shop_id = $1 AND status = 'pending'
+		WHERE holding_code = $1 AND status = 'pending'
 	`
 
 	var length int64
 	err := qm.runWithReconnect(func(db *sql.DB) error {
-		return db.QueryRowContext(ctx, query, shopId).Scan(&length)
+		return db.QueryRowContext(ctx, query, holdingCode).Scan(&length)
 	})
 	if err != nil {
 		logger.Error("Failed to get queue length: %v", err)
@@ -280,33 +280,33 @@ func (qm *QueueManager) GetQueueLength(ctx context.Context, shopId string) (int6
 
 // QueueStats - สถิติของ queue
 type QueueStats struct {
-	ShopId string     `json:"shop_id"`
-	PendingCount int64      `json:"pending_count"`
+	HoldingCode     string     `json:"holding_code"`
+	PendingCount    int64      `json:"pending_count"`
 	ProcessingCount int64      `json:"processing_count"`
-	CompletedCount int64      `json:"completed_count"`
-	FailedCount int64      `json:"failed_count"`
-	OldestItem *time.Time `json:"oldest_item,omitempty"`
+	CompletedCount  int64      `json:"completed_count"`
+	FailedCount     int64      `json:"failed_count"`
+	OldestItem      *time.Time `json:"oldest_item,omitempty"`
 }
 
 // GetQueueStats - ดึงสถิติ queue ของ shop (แทนที่ Redis custom stats)
-func (qm *QueueManager) GetQueueStats(ctx context.Context, shopId string) (*QueueStats, error) {
+func (qm *QueueManager) GetQueueStats(ctx context.Context, holdingCode string) (*QueueStats, error) {
 	query := `
 		SELECT
-			shop_id,
+			holding_code,
 			COUNT(*) FILTER (WHERE status = 'pending') as pending_count,
 			COUNT(*) FILTER (WHERE status = 'processing') as processing_count,
 			COUNT(*) FILTER (WHERE status = 'completed') as completed_count,
 			COUNT(*) FILTER (WHERE status = 'failed') as failed_count,
 			MIN(created_at) FILTER (WHERE status = 'pending') as oldest_item
 		FROM queues
-		WHERE shop_id = $1
-		GROUP BY shop_id
+		WHERE holding_code = $1
+		GROUP BY holding_code
 	`
 
 	var stats QueueStats
 	err := qm.runWithReconnect(func(db *sql.DB) error {
-		return db.QueryRowContext(ctx, query, shopId).Scan(
-			&stats.ShopId,
+		return db.QueryRowContext(ctx, query, holdingCode).Scan(
+			&stats.HoldingCode,
 			&stats.PendingCount,
 			&stats.ProcessingCount,
 			&stats.CompletedCount,
@@ -317,7 +317,7 @@ func (qm *QueueManager) GetQueueStats(ctx context.Context, shopId string) (*Queu
 
 	if err == sql.ErrNoRows {
 		return &QueueStats{
-			ShopId:          shopId,
+			HoldingCode:     holdingCode,
 			PendingCount:    0,
 			ProcessingCount: 0,
 			CompletedCount:  0,
@@ -335,24 +335,24 @@ func (qm *QueueManager) GetQueueStats(ctx context.Context, shopId string) (*Queu
 
 // QueueSummary - สรุปข้อมูล queue ทั้งหมด
 type QueueSummary struct {
-	TotalShops int                      `json:"total_shops"`
-	TotalPending int64                    `json:"total_pending"`
+	TotalShops      int                      `json:"total_shops"`
+	TotalPending    int64                    `json:"total_pending"`
 	TotalProcessing int64                    `json:"total_processing"`
-	TotalFailed int64                    `json:"total_failed"`
-	ShopStats []map[string]interface{} `json:"shop_stats"`
+	TotalFailed     int64                    `json:"total_failed"`
+	ShopStats       []map[string]interface{} `json:"shop_stats"`
 }
 
 // GetQueueSummary - ดึงสรุปข้อมูล queue ทั้งหมด (แทนที่ Redis custom stats)
 func (qm *QueueManager) GetQueueSummary(ctx context.Context) (*QueueSummary, error) {
 	query := `
 		SELECT
-			shop_id,
+			holding_code,
 			COUNT(*) FILTER (WHERE status = 'pending') as pending_count,
 			COUNT(*) FILTER (WHERE status = 'processing') as processing_count,
 			COUNT(*) FILTER (WHERE status = 'failed') as failed_count
 		FROM queues
 		WHERE status IN ('pending', 'processing', 'failed')
-		GROUP BY shop_id
+		GROUP BY holding_code
 		ORDER BY pending_count DESC
 	`
 
@@ -373,10 +373,10 @@ func (qm *QueueManager) GetQueueSummary(ctx context.Context) (*QueueSummary, err
 	}
 
 	for rows.Next() {
-		var shopId string
+		var holdingCode string
 		var pending, processing, failed int64
 
-		if err := rows.Scan(&shopId, &pending, &processing, &failed); err != nil {
+		if err := rows.Scan(&holdingCode, &pending, &processing, &failed); err != nil {
 			logger.Error("Failed to scan shop stats: %v", err)
 			continue
 		}
@@ -387,7 +387,7 @@ func (qm *QueueManager) GetQueueSummary(ctx context.Context) (*QueueSummary, err
 		summary.TotalFailed += failed
 
 		summary.ShopStats = append(summary.ShopStats, map[string]interface{}{
-			"shop_id":          shopId,
+			"holding_code":     holdingCode,
 			"pending_count":    pending,
 			"processing_count": processing,
 			"failed_count":     failed,
@@ -455,9 +455,9 @@ func AddToQueue(ctx context.Context, db *sql.DB, item QueueItem) error {
 }
 
 // PopFromQueueCompat - ฟังก์ชันเพื่อความเข้ากันได้กับ myredis.PopFromQueue
-func PopFromQueue(ctx context.Context, db *sql.DB, shopId string) (*QueueItem, error) {
+func PopFromQueue(ctx context.Context, db *sql.DB, holdingCode string) (*QueueItem, error) {
 	qm := NewQueueManager(db)
-	return qm.PopFromQueue(ctx, shopId)
+	return qm.PopFromQueue(ctx, holdingCode)
 }
 
 // RequeueItemCompat - ฟังก์ชันเพื่อความเข้ากันได้กับ myredis.RequeueItem
@@ -479,15 +479,15 @@ func GetActiveShops(ctx context.Context, db *sql.DB) ([]string, error) {
 }
 
 // GetQueueLengthCompat - ฟังก์ชันเพื่อความเข้ากันได้กับ myredis.GetQueueLength
-func GetQueueLength(ctx context.Context, db *sql.DB, shopId string) (int64, error) {
+func GetQueueLength(ctx context.Context, db *sql.DB, holdingCode string) (int64, error) {
 	qm := NewQueueManager(db)
-	return qm.GetQueueLength(ctx, shopId)
+	return qm.GetQueueLength(ctx, holdingCode)
 }
 
 // GetQueueStatsCompat - ฟังก์ชันเพื่อความเข้ากันได้กับ myredis.GetQueueStats
-func GetQueueStats(ctx context.Context, db *sql.DB, shopId string) (map[string]interface{}, error) {
+func GetQueueStats(ctx context.Context, db *sql.DB, holdingCode string) (map[string]interface{}, error) {
 	qm := NewQueueManager(db)
-	stats, err := qm.GetQueueStats(ctx, shopId)
+	stats, err := qm.GetQueueStats(ctx, holdingCode)
 	if err != nil {
 		return nil, err
 	}

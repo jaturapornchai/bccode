@@ -64,7 +64,7 @@ func (h PatternProductHttp) RegisterHttp() {
 // @Router /aicloud/pattern [post]
 func (h PatternProductHttp) CreatePatternProduct(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 	docReq := &models.PatternProduct{}
 	if err := json.Unmarshal([]byte(input), docReq); err != nil {
@@ -77,7 +77,7 @@ func (h PatternProductHttp) CreatePatternProduct(ctx microservice.IContext) erro
 		return err
 	}
 
-	idx, err := h.svc.CreatePatternProduct(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreatePatternProduct(holdingCode, authUsername, *docReq)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -103,7 +103,7 @@ func (h PatternProductHttp) CreatePatternProduct(ctx microservice.IContext) erro
 func (h PatternProductHttp) UpdatePatternProduct(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -118,7 +118,7 @@ func (h PatternProductHttp) UpdatePatternProduct(ctx microservice.IContext) erro
 		return err
 	}
 
-	err := h.svc.UpdatePatternProduct(shopID, id, authUsername, *docReq)
+	err := h.svc.UpdatePatternProduct(holdingCode, id, authUsername, *docReq)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -142,12 +142,12 @@ func (h PatternProductHttp) UpdatePatternProduct(ctx microservice.IContext) erro
 // @Router /aicloud/pattern/{id} [delete]
 func (h PatternProductHttp) DeletePatternProduct(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeletePatternProduct(shopID, id, authUsername)
+	err := h.svc.DeletePatternProduct(holdingCode, id, authUsername)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -171,7 +171,7 @@ func (h PatternProductHttp) DeletePatternProduct(ctx microservice.IContext) erro
 // @Router /aicloud/pattern [delete]
 func (h PatternProductHttp) DeletePatternProductByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -181,7 +181,7 @@ func (h PatternProductHttp) DeletePatternProductByGUIDs(ctx microservice.IContex
 		return err
 	}
 
-	err := h.svc.DeletePatternProductByGUIDs(shopID, authUsername, docReq)
+	err := h.svc.DeletePatternProductByGUIDs(holdingCode, authUsername, docReq)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -204,12 +204,12 @@ func (h PatternProductHttp) DeletePatternProductByGUIDs(ctx microservice.IContex
 // @Router /aicloud/pattern/{id} [get]
 func (h PatternProductHttp) InfoPatternProduct(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get PatternProduct %v", id)
-	doc, err := h.svc.InfoPatternProduct(shopID, id)
+	doc, err := h.svc.InfoPatternProduct(holdingCode, id)
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -234,10 +234,10 @@ func (h PatternProductHttp) InfoPatternProduct(ctx microservice.IContext) error 
 // @Router /aicloud/pattern/code/{code} [get]
 func (h PatternProductHttp) InfoPatternProductByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
-	doc, err := h.svc.InfoPatternProductByCode(shopID, code)
+	doc, err := h.svc.InfoPatternProductByCode(holdingCode, code)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -263,10 +263,10 @@ func (h PatternProductHttp) InfoPatternProductByCode(ctx microservice.IContext) 
 // @Router /aicloud/pattern [get]
 func (h PatternProductHttp) SearchPatternProductPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
-	docList, pagination, err := h.svc.SearchPatternProduct(shopID, map[string]interface{}{}, pageable)
+	docList, pagination, err := h.svc.SearchPatternProduct(holdingCode, map[string]interface{}{}, pageable)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -294,11 +294,11 @@ func (h PatternProductHttp) SearchPatternProductPage(ctx microservice.IContext) 
 // @Router /aicloud/pattern/list [get]
 func (h PatternProductHttp) SearchPatternProductStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 	lang := ctx.QueryParam("lang")
-	docList, total, err := h.svc.SearchPatternProductStep(shopID, lang, pageableStep)
+	docList, total, err := h.svc.SearchPatternProductStep(holdingCode, lang, pageableStep)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -324,7 +324,7 @@ func (h PatternProductHttp) SearchPatternProductStep(ctx microservice.IContext) 
 func (h PatternProductHttp) SaveBulk(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 	dataReq := []models.PatternProduct{}
@@ -333,7 +333,7 @@ func (h PatternProductHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 	if err != nil {
 		ctx.ResponseError(400, err.Error())
 		return err

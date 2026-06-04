@@ -12,9 +12,9 @@ import (
 // เงินมัดจำลูกหนี้
 type ARDepositPaymentTransactionPG struct {
 	GeneralTransactionPG `gorm:"embedded;"`
-	CreditorCode string                                 `json:"creditorcode" gorm:"column:creditorcode"`
-	CreditorNames pkgModels.JSONB                        `json:"creditornames" gorm:"column:creditornames;type:jsonb"`
-	Items *[]ARDepositPaymentTransactionDetailPG `json:"items" gorm:"items;foreignKey:shopid,docno"`
+	CreditorCode         string                                 `json:"creditorcode" gorm:"column:creditorcode"`
+	CreditorNames        pkgModels.JSONB                        `json:"creditornames" gorm:"column:creditornames;type:jsonb"`
+	Items                *[]ARDepositPaymentTransactionDetailPG `json:"items" gorm:"items;foreignKey:holding_code,docno"`
 }
 
 // รายละเอียด เงินมัดจำลูกหนี้
@@ -34,7 +34,7 @@ func (m *ARDepositPaymentTransactionPG) BeforeUpdate(tx *gorm.DB) (err error) {
 
 	// find old data
 	var details *[]ARDepositPaymentTransactionDetailPG
-	tx.Model(&ARDepositPaymentTransactionDetailPG{}).Where(" shopid=? AND docno=?", m.ShopID, m.DocNo).Find(&details)
+	tx.Model(&ARDepositPaymentTransactionDetailPG{}).Where(" holding_code=? AND docno=?", m.HoldingCode, m.DocNo).Find(&details)
 
 	// delete un use data
 	for _, tmp := range *details {

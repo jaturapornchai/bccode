@@ -4,7 +4,8 @@ description: Use when designing or reviewing REST APIs for BC Account.
 ---
 
 ## 1. REST Standards & Versioning
-- **Structure**: `/api/v1/tenants/:tenantId/resources` (alias to legacy `/shops/:shopId/...`). Map logical `tenantId` to physical `shopid` / `shop_id` in code.
+- **Structure**: Prefer Holding-first routes such as `/api/v1/holdings/:holding_code/resources`. Legacy `/shops/...` routes may remain only as explicit compatibility paths during migration; do not introduce new `/shop` API contracts.
+- **Scope Parameters**: Holding-owned access APIs use `holding_code` as the tenant key and optional `business_code` / `branch_code` scope filters. Validate company and branch membership server-side before reading or writing scoped records.
 - **Versioning**: Baseline is `v1`. Keep `v1` backward-compatible. Add side-by-side `v2` for breaking changes.
 - **Payload Headers**: Send `X-BC-Required-Backend-Version`, `X-BC-Client-Platform`, and `X-BC-Client-Version` from clients.
 

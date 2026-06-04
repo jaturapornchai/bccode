@@ -13,19 +13,19 @@ import (
 )
 
 type IReportQueryRepository interface {
-	Count(ctx context.Context, shopID string) (int, error)
+	Count(ctx context.Context, holdingCode string) (int, error)
 	Create(ctx context.Context, doc models.ReportQueryDoc) (string, error)
-	Update(ctx context.Context, shopID string, guid string, doc models.ReportQueryDoc) error
-	DeleteByGuidfixed(ctx context.Context, shopID string, guid string, username string) error
-	Delete(ctx context.Context, shopID string, username string, filters map[string]interface{}) error
-	FindPage(ctx context.Context, shopID string, searchInFields []string, pageable micromodels.Pageable) ([]models.ReportQueryInfo, mongopagination.PaginationData, error)
-	FindByGuid(ctx context.Context, shopID string, guid string) (models.ReportQueryDoc, error)
-	FindOne(ctx context.Context, shopID string, filters interface{}) (models.ReportQueryDoc, error)
+	Update(ctx context.Context, holdingCode string, guid string, doc models.ReportQueryDoc) error
+	DeleteByGuidfixed(ctx context.Context, holdingCode string, guid string, username string) error
+	Delete(ctx context.Context, holdingCode string, username string, filters map[string]interface{}) error
+	FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable micromodels.Pageable) ([]models.ReportQueryInfo, mongopagination.PaginationData, error)
+	FindByGuid(ctx context.Context, holdingCode string, guid string) (models.ReportQueryDoc, error)
+	FindOne(ctx context.Context, holdingCode string, filters interface{}) (models.ReportQueryDoc, error)
 	FindOneByCode(ctx context.Context, reportCode string) (models.ReportQueryDoc, error)
 
-	FindByDocIndentityGuid(ctx context.Context, shopID string, indentityField string, indentityValue interface{}) (models.ReportQueryDoc, error)
-	FindPageFilter(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.ReportQueryInfo, mongopagination.PaginationData, error)
-	FindStep(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableLimit micromodels.PageableStep) ([]models.ReportQueryInfo, int, error)
+	FindByDocIndentityGuid(ctx context.Context, holdingCode string, indentityField string, indentityValue interface{}) (models.ReportQueryDoc, error)
+	FindPageFilter(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.ReportQueryInfo, mongopagination.PaginationData, error)
+	FindStep(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableLimit micromodels.PageableStep) ([]models.ReportQueryInfo, int, error)
 
 	Playground(ctx context.Context, collectionName string, selectFields interface{}, filters interface{}) ([]map[string]interface{}, error)
 	Execute(ctx context.Context, collectionName string, selectFields interface{}, filters interface{}, pageable micromodels.Pageable) ([]map[string]interface{}, common.Pagination, error)

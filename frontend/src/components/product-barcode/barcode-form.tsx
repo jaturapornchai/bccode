@@ -48,7 +48,7 @@ import { uploadProductImage, type MasterName, type MasterEntry } from "@/lib/pro
 import { getBarcodeText } from "@/lib/product-barcode/language";
 import {
   ITEM_TYPE,
-  MARKETPLACE_STATUS,
+  MARKETPLACE_PLATFORMS,
   MATERIAL_TYPE,
   emptyMarketplaceProductMap,
   type MarketplacePlatform,
@@ -76,6 +76,7 @@ type TabKey =
   | "pricing"
   | "media"
   | "logistics"
+  | "marketplace"
   | "product_detail";
 
 interface TabDef {
@@ -88,6 +89,7 @@ const TABS: TabDef[] = [
   { key: "pricing", label: "tabPricing" },
   { key: "media", label: "tabMedia" },
   { key: "logistics", label: "tabDimensions" },
+  { key: "marketplace", label: "tabMarketplace" },
 ];
 
 // ─── Props ────────────────────────────────────────────────────────────────
@@ -188,6 +190,7 @@ export function ProductBarcodeFormDialog(props: ProductBarcodeFormDialogProps) {
         { key: "basic", label: "tabBasic" },
         { key: "pricing", label: "tabPricing" },
         { key: "logistics", label: "tabDimensions" },
+        { key: "marketplace", label: "tabMarketplace" },
         { key: "product_detail", label: "tabProductDetail" },
       ];
     }
@@ -305,6 +308,19 @@ export function ProductBarcodeFormDialog(props: ProductBarcodeFormDialogProps) {
           )}
           {tab === "logistics" && (
             <TabLogistics value={value} onChange={onChange} text={text} />
+          )}
+          {tab === "marketplace" && (
+            <div className="space-y-4">
+              {MARKETPLACE_PLATFORMS.map((platform) => (
+                <TabMarketplace
+                  key={platform}
+                  platform={platform}
+                  value={value}
+                  onChange={onChange}
+                  text={text}
+                />
+              ))}
+            </div>
           )}
           {tab === "product_detail" && (
             <TabProductDetail productDetail={productDetail} loading={loadingProductDetail} text={text} language={language} />
@@ -1369,8 +1385,8 @@ function TabMedia({
   );
 }
 
-// ─── Marketplace tab (Shopee / Lazada / TikTok) ────────────────────────────
-// One tab per platform; all three share the same unified MarketplaceProductMap
+// ─── Marketplace tab (Shopee / Lazada / AliExpress / TikTok) ───────────────
+// One section per platform; all platforms share the same unified MarketplaceProductMap
 // shape. A product holds at most one entry per platform (filtered by `platform`).
 
 function TabMarketplace({
@@ -1385,7 +1401,13 @@ function TabMarketplace({
   text: Text;
 }) {
   const platformLabel =
-    platform === "shopee" ? text.tabShopee : platform === "lazada" ? text.tabLazada : text.tabTiktok;
+    platform === "shopee"
+      ? text.tabShopee
+      : platform === "lazada"
+        ? text.tabLazada
+        : platform === "aliexpress"
+          ? text.tabAliexpress
+          : text.tabTiktok;
 
   const entry = (value.marketplace_products ?? []).find((m) => m.platform === platform) ?? null;
 
@@ -1497,6 +1519,39 @@ function TabMarketplace({
             </div>
           </Section>
 
+          <Section title={text.mkSectionMediaSpecs}>
+            <div className="grid gap-3 lg:grid-cols-2">
+              <MarketplaceJsonField
+                label={text.mkMediaAssets}
+                helper={text.mkJsonArrayHelp}
+                invalidText={text.mkJsonInvalid}
+                value={entry.media_assets}
+                onCommit={(next) => upd("media_assets", next)}
+              />
+              <MarketplaceJsonField
+                label={text.mkSpecificationGroups}
+                helper={text.mkJsonArrayHelp}
+                invalidText={text.mkJsonInvalid}
+                value={entry.specification_groups}
+                onCommit={(next) => upd("specification_groups", next)}
+              />
+              <MarketplaceJsonField
+                label={text.mkRawAttributes}
+                helper={text.mkJsonArrayHelp}
+                invalidText={text.mkJsonInvalid}
+                value={entry.raw_attributes}
+                onCommit={(next) => upd("raw_attributes", next)}
+              />
+              <MarketplaceJsonField
+                label={text.mkPayloadExamples}
+                helper={text.mkJsonArrayHelp}
+                invalidText={text.mkJsonInvalid}
+                value={entry.payload_examples}
+                onCommit={(next) => upd("payload_examples", next)}
+              />
+            </div>
+          </Section>
+
           <Section title={text.mkSectionPriceStock}>
             <FieldGrid>
               <FieldRow label={text.mkCurrency}>
@@ -1530,6 +1585,58 @@ function TabMarketplace({
         </>
       )}
     </div>
+  );
+}
+
+function MarketplaceJsonField({
+  label,
+  helper,
+  invalidText,
+  value,
+  onCommit,
+}: {
+  label: string;
+  helper: string;
+  invalidText: string;
+  value: unknown;
+  onCommit: (value: any[]) => void;
+}) {
+  const [draft, setDraft] = useState(() => JSON.stringify(value ?? [], null, 2));
+  const [invalid, setInvalid] = useState(false);
+
+  useEffect(() => {
+    if (invalid) return;
+    setDraft(JSON.stringify(value ?? [], null, 2));
+  }, [invalid, value]);
+
+  return (
+    <label className="grid gap-1 text-xs font-semibold">
+      <span>{label}</span>
+      <textarea
+        className={cn(
+          "min-h-32 w-full rounded-xl border bg-background px-3 py-2 font-mono text-[11px] text-foreground shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          invalid ? "border-destructive" : "border-input",
+        )}
+        value={draft}
+        onChange={(event) => {
+          setDraft(event.target.value);
+          setInvalid(false);
+        }}
+        onBlur={() => {
+          try {
+            const parsed = JSON.parse(draft || "[]");
+            onCommit(Array.isArray(parsed) ? parsed : [parsed]);
+            setInvalid(false);
+          } catch {
+            setInvalid(true);
+          }
+        }}
+        spellCheck={false}
+      />
+      <span className={cn("text-[10px]", invalid ? "text-destructive" : "text-muted-foreground")}>
+        {invalid ? invalidText : helper}
+      </span>
+    </label>
   );
 }
 

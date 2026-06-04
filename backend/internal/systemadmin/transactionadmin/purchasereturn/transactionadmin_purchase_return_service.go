@@ -8,8 +8,8 @@ import (
 )
 
 type IPurchaseReturnTransactionAdminService interface {
-	ResyncPurchaseReturnDoc(shopID string) error
-	ResyncPurchaseReturnDeleteDoc(shopID string) error
+	ResyncPurchaseReturnDoc(holdingCode string) error
+	ResyncPurchaseReturnDeleteDoc(holdingCode string) error
 }
 
 type PurchaseReturnTransactionAdminService struct {
@@ -32,12 +32,12 @@ func NewPurchaseReturnTransactionAdminService(
 	}
 }
 
-func (s *PurchaseReturnTransactionAdminService) ResyncPurchaseReturnDoc(shopID string) error {
+func (s *PurchaseReturnTransactionAdminService) ResyncPurchaseReturnDoc(holdingCode string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeoutDuration)
 	defer cancel()
 
-	docs, err := s.mongoRepo.FindPurchaseReturnDocByShopID(ctx, shopID)
+	docs, err := s.mongoRepo.FindPurchaseReturnDocByHoldingCode(ctx, holdingCode)
 	if err != nil {
 		return err
 	}
@@ -50,12 +50,12 @@ func (s *PurchaseReturnTransactionAdminService) ResyncPurchaseReturnDoc(shopID s
 	return nil
 }
 
-func (s *PurchaseReturnTransactionAdminService) ResyncPurchaseReturnDeleteDoc(shopID string) error {
+func (s *PurchaseReturnTransactionAdminService) ResyncPurchaseReturnDeleteDoc(holdingCode string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeoutDuration)
 	defer cancel()
 
-	docs, err := s.mongoRepo.FindPurchaseReturnDeleteDocByShopID(ctx, shopID)
+	docs, err := s.mongoRepo.FindPurchaseReturnDeleteDocByHoldingCode(ctx, holdingCode)
 
 	if err != nil {
 		return err

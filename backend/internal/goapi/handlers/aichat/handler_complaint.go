@@ -11,11 +11,11 @@ import (
 
 // SubmitComplaintRequest — request ร้องเรียน AI จาก frontend
 type SubmitComplaintRequest struct {
-	ShopID string `json:"shop_id" validate:"required"`
-	ModelID string `json:"model_id" validate:"required"`
-	Category string `json:"category" validate:"required"` // wrong_answer, gibberish, wrong_language, refused, hallucination, too_short, irrelevant
-	Question string `json:"question,omitempty"`
-	Answer string `json:"answer,omitempty"`
+	HoldingCode string `json:"holding_code" validate:"required"`
+	ModelID     string `json:"model_id" validate:"required"`
+	Category    string `json:"category" validate:"required"` // wrong_answer, gibberish, wrong_language, refused, hallucination, too_short, irrelevant
+	Question    string `json:"question,omitempty"`
+	Answer      string `json:"answer,omitempty"`
 }
 
 // SubmitComplaint — POST /api/v1/ai-provider/complaint
@@ -27,14 +27,14 @@ func SubmitComplaint(c echo.Context) error {
 			"success": false, "message": "Invalid request", "error": err.Error(),
 		})
 	}
-	if req.ShopID == "" || req.ModelID == "" || req.Category == "" {
+	if req.HoldingCode == "" || req.ModelID == "" || req.Category == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
-			"success": false, "message": "shop_id, model_id, and category are required",
+			"success": false, "message": "holding_code, model_id, and category are required",
 		})
 	}
 
 	// หา base URL ของ custom provider (bcproxyai)
-	configs, err := getAIProviderConfigs(req.ShopID)
+	configs, err := getAIProviderConfigs(req.HoldingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"success": false, "message": "ไม่สามารถดึง config ได้", "error": err.Error(),

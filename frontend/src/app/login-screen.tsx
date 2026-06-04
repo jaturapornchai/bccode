@@ -4,23 +4,18 @@ import {
   AlertCircle,
   Building2,
   CheckCircle2,
-  Copy,
-  ExternalLink,
   Eye,
   EyeOff,
   Loader2,
   LockKeyhole,
-  MessageCircle,
   Server,
   Settings as SettingsIcon,
   ShieldCheck,
-  UserPlus,
   UserRound,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import QRCode from "qrcode";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { runtimeGoApiUrlForOrigin } from "@/lib/backend-url";
 import { persistLanguagePreferenceCookies } from "@/lib/backend-language-preload";
@@ -30,10 +25,9 @@ import { LanguageDialog } from "./language-dialog";
 import { ThemeToggle } from "./theme-toggle";
 
 type LoginState = "idle" | "loading" | "success" | "error";
-type SignUpState = "idle" | "loading" | "success" | "error";
 type ConnectionState = "idle" | "testing" | "success" | "error";
-type ProviderLoginState = "idle" | "google" | "line" | "local-google";
-type AuthMethod = "password" | "google" | "line";
+type ProviderLoginState = "idle" | "google" | "local-google";
+type AuthMethod = "password" | "google";
 type RuntimeMode = {
   ready: boolean;
   sameServerBackend: boolean;
@@ -52,23 +46,6 @@ type SocialLoginResponse = {
     pictureUrl?: string;
   };
 };
-type LineDialogState = {
-  open: boolean;
-  loading: boolean;
-  code: string;
-  loginUrl: string;
-  qrDataUrl: string;
-  expiresAt: string;
-  error: string;
-  expired: boolean;
-};
-type SignUpForm = {
-  name: string;
-  username: string;
-  password: string;
-  confirmPassword: string;
-};
-
 const SOCIAL_POLL_TIMEOUT_MS = 5 * 60 * 1000;
 const DEFAULT_SOCIAL_POLL_INTERVAL_MS = 2000;
 const storageKeys = {
@@ -79,48 +56,39 @@ const storageKeys = {
   legacyPassword: "saved_password",
   legacyRememberPassword: "remember_password",
   rememberUsername: "remember_username",
+  holdingCode: "saved_holding_code",
   auth: "bc_auth",
 };
 
-const emptyLineDialog: LineDialogState = {
-  open: false,
-  loading: false,
-  code: "",
-  loginUrl: "",
-  qrDataUrl: "",
-  expiresAt: "",
-  error: "",
-  expired: false,
-};
+const holdingCodePattern = /^[a-z][a-z0-9_]{2,29}$/;
+
+function normalizeHoldingCode(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function isValidHoldingCode(value: string): boolean {
+  return holdingCodePattern.test(value);
+}
 
 export function LoginScreen() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [backendUrl, setBackendUrl] = useState("");
   const [language, setLanguage] = useState<LanguageCode>("th");
+  const [holdingCode, setHoldingCode] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [rememberUsername, setRememberUsername] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loginState, setLoginState] = useState<LoginState>("idle");
-  const [signUpState, setSignUpState] = useState<SignUpState>("idle");
   const [connectionState, setConnectionState] = useState<ConnectionState>("idle");
   const [connectionMessage, setConnectionMessage] = useState("");
   const [providerLoginState, setProviderLoginState] = useState<ProviderLoginState>("idle");
   const [runtimeMode, setRuntimeMode] = useState<RuntimeMode>({ ready: false, sameServerBackend: false });
   const [devGoogleLoginEnabled, setDevGoogleLoginEnabled] = useState(false);
   const [isLocalTestHost, setIsLocalTestHost] = useState(false);
-  const [lineDialog, setLineDialog] = useState<LineDialogState>(emptyLineDialog);
-  const [signUpOpen, setSignUpOpen] = useState(false);
-  const [signUpForm, setSignUpForm] = useState<SignUpForm>({
-    name: "",
-    username: "",
-    password: "",
-    confirmPassword: "",
-  });
   const [message, setMessage] = useState("");
   const googlePollTimer = useRef<number | null>(null);
-  const linePollTimer = useRef<number | null>(null);
   const autoConnectionTested = useRef(false);
 
   const canSubmit = useMemo(() => {
@@ -129,23 +97,14 @@ export function LoginScreen() {
       password.length > 0 &&
       loginState !== "loading" &&
       providerLoginState === "idle";
-  }, [backendUrl, username, password, loginState, providerLoginState]);
-
-  const canSignUp = useMemo(() => {
-    return backendUrl.trim().length > 0 &&
-      signUpForm.username.trim().length > 0 &&
-      signUpForm.password.length > 0 &&
-      signUpForm.confirmPassword.length > 0 &&
-      signUpState !== "loading" &&
-      loginState !== "loading" &&
-      providerLoginState === "idle";
-  }, [backendUrl, loginState, providerLoginState, signUpForm.confirmPassword, signUpForm.password, signUpForm.username, signUpState]);
+  }, [backendUrl, holdingCode, username, password, loginState, providerLoginState]);
 
   useEffect(() => {
     setMounted(true);
     setRuntimeMode({ ready: true, sameServerBackend: isPublicRuntimeHost() });
     const savedLanguage = normalizeLanguage(localStorage.getItem(storageKeys.language) ?? "th");
     const savedUsername = localStorage.getItem(storageKeys.username);
+    const savedHoldingCode = localStorage.getItem(storageKeys.holdingCode);
     const savedRemember =
       localStorage.getItem(storageKeys.rememberUsername) === "true" ||
       localStorage.getItem(storageKeys.legacyRememberPassword) === "true";
@@ -154,6 +113,7 @@ export function LoginScreen() {
     setBackendUrl(runtimeBackendUrlForCurrentPage());
 
     setLanguage(savedLanguage);
+    setHoldingCode(savedHoldingCode ?? "");
     setUsername(savedUsername ?? "");
     setRememberUsername(savedRemember);
     localStorage.removeItem(storageKeys.backendUrl);
@@ -163,7 +123,6 @@ export function LoginScreen() {
 
     return () => {
       stopGooglePolling();
-      stopLinePolling();
     };
   }, []);
 
@@ -231,13 +190,6 @@ export function LoginScreen() {
     if (googlePollTimer.current !== null) {
       window.clearInterval(googlePollTimer.current);
       googlePollTimer.current = null;
-    }
-  }
-
-  function stopLinePolling() {
-    if (linePollTimer.current !== null) {
-      window.clearInterval(linePollTimer.current);
-      linePollTimer.current = null;
     }
   }
 
@@ -319,7 +271,7 @@ export function LoginScreen() {
       setLoginState("success");
       setProviderLoginState("idle");
       setMessage(t(language, "loginSuccess"));
-      router.push("/workspace");
+      router.push("/holding");
       return true;
     } catch {
       return false;
@@ -350,7 +302,7 @@ export function LoginScreen() {
     setProviderLoginState("idle");
     setLoginState("success");
     setMessage(t(language, "loginSuccess"));
-    router.push("/workspace");
+    router.push("/holding");
   }
 
   async function handleLocalGoogleTestLogin() {
@@ -377,7 +329,7 @@ export function LoginScreen() {
       setProviderLoginState("idle");
       setLoginState("success");
       setMessage(t(language, "loginSuccess"));
-      router.push("/workspace");
+      router.push("/holding");
     } catch (error) {
       setProviderLoginState("idle");
       setLoginState("error");
@@ -385,118 +337,12 @@ export function LoginScreen() {
     }
   }
 
-  async function handleLineLogin() {
-    if (!backendUrl.trim()) return setMessage(t(language, "enterBackendUrl"));
-
-    stopLinePolling();
-    setProviderLoginState("line");
-    setLoginState("loading");
-    setMessage("");
-    setLineDialog({ ...emptyLineDialog, open: true, loading: true });
-
-    try {
-      const response = await fetch("/api/auth/line/code", { method: "POST" });
-      const data = (await response.json()) as {
-        success?: boolean;
-        message?: string;
-        code?: string;
-        loginUrl?: string;
-        expiresAt?: string;
-      };
-
-      if (!response.ok || !data.success || !data.code || !data.loginUrl) {
-        throw new Error(data.message ?? t(language, "loginFailed"));
-      }
-
-      const qrDataUrl = await QRCode.toDataURL(data.loginUrl, {
-        margin: 1,
-        width: 220,
-        color: { dark: "#111827", light: "#ffffff" },
-      });
-
-      setLineDialog({
-        open: true,
-        loading: false,
-        code: data.code,
-        loginUrl: data.loginUrl,
-        qrDataUrl,
-        expiresAt: data.expiresAt ?? "",
-        error: "",
-        expired: false,
-      });
-      startLinePolling(data.code, data.expiresAt ?? "");
-    } catch (error) {
-      setProviderLoginState("idle");
-      setLoginState("error");
-      setLineDialog((current) => ({
-        ...current,
-        loading: false,
-        error: error instanceof Error ? error.message : t(language, "loginFailed"),
-      }));
-    }
-  }
-
-  function startLinePolling(code: string, expiresAt: string) {
-    const startedAt = Date.now();
-    linePollTimer.current = window.setInterval(() => {
-      const isExpiredByTime = expiresAt ? Date.now() > Date.parse(expiresAt) : false;
-      if (Date.now() - startedAt > SOCIAL_POLL_TIMEOUT_MS || isExpiredByTime) {
-        stopLinePolling();
-        setProviderLoginState("idle");
-        setLoginState("error");
-        setLineDialog((current) => ({ ...current, expired: true }));
-        setMessage(t(language, "lineLoginExpired"));
-        return;
-      }
-      void pollLineLogin(code);
-    }, DEFAULT_SOCIAL_POLL_INTERVAL_MS);
-  }
-
-  async function pollLineLogin(code: string) {
-    const response = await fetch("/api/auth/line/status", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ backendUrl, code }),
-    });
-    const data = (await response.json()) as SocialLoginResponse;
-
-    if (!response.ok || data.success === false || data.status === "failed" || data.status === "expired") {
-      stopLinePolling();
-      setProviderLoginState("idle");
-      setLoginState("error");
-      setMessage(data.message ?? t(language, "loginFailed"));
-      setLineDialog((current) => ({ ...current, error: data.message ?? t(language, "loginFailed") }));
-      return;
-    }
-
-    if (data.status !== "success" || !data.token) return;
-
-    const nextUsername = data.user?.username || data.user?.email || data.user?.name || "line";
-    persistLogin(data.backendUrl ?? backendUrl, nextUsername, data.token, data.refresh ?? "", "line", data.user);
-    stopLinePolling();
-    setProviderLoginState("idle");
-    setLoginState("success");
-    setMessage(t(language, "loginSuccess"));
-    setLineDialog(emptyLineDialog);
-    router.push("/workspace");
-  }
-
-  function closeLineDialog() {
-    stopLinePolling();
-    setProviderLoginState("idle");
-    if (loginState === "loading") setLoginState("idle");
-    setLineDialog(emptyLineDialog);
-  }
-
-  async function copyLineLoginUrl() {
-    if (!lineDialog.loginUrl) return;
-    await navigator.clipboard.writeText(lineDialog.loginUrl);
-    setMessage(t(language, "copied"));
-  }
-
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!backendUrl.trim()) return setMessage(t(language, "enterBackendUrl"));
+    const normalizedHoldingCode = normalizeHoldingCode(holdingCode);
+    if (!normalizedHoldingCode) return setMessage(t(language, "enterHoldingCode"));
+    if (!isValidHoldingCode(normalizedHoldingCode)) return setMessage(t(language, "holdingCodeInvalid"));
     if (!username.trim()) return setMessage(t(language, "enterUsername"));
     if (!password) return setMessage(t(language, "enterPassword"));
 
@@ -507,7 +353,7 @@ export function LoginScreen() {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ backendUrl, username, password }),
+        body: JSON.stringify({ backendUrl, username, password, holding_code: normalizedHoldingCode }),
       });
       const data = (await response.json()) as {
         success?: boolean;
@@ -522,80 +368,13 @@ export function LoginScreen() {
         throw new Error(data.message ?? t(language, "loginFailed"));
       }
 
-      persistLogin(data.backendUrl ?? backendUrl, username.trim(), data.token, data.refresh ?? "", "password");
+      persistLogin(data.backendUrl ?? backendUrl, username.trim(), data.token, data.refresh ?? "", "password", undefined, normalizedHoldingCode);
       setLoginState("success");
       setMessage(t(language, "loginSuccess"));
       router.push("/workspace");
     } catch (error) {
       setLoginState("error");
       setMessage(error instanceof Error ? error.message : t(language, "loginFailed"));
-    }
-  }
-
-  async function handleSignUp(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!backendUrl.trim()) return setMessage(t(language, "enterBackendUrl"));
-
-    const nextUsername = signUpForm.username.trim();
-    if (!nextUsername) return setMessage(t(language, "enterUsername"));
-    if (!signUpForm.password) return setMessage(t(language, "enterPassword"));
-    if (signUpForm.password !== signUpForm.confirmPassword) {
-      setSignUpState("error");
-      setMessage(t(language, "passwordMismatch"));
-      return;
-    }
-
-    setSignUpState("loading");
-    setLoginState("loading");
-    setMessage("");
-
-    try {
-      const response = await fetch("/api/auth/register-username", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          backendUrl,
-          username: nextUsername,
-          password: signUpForm.password,
-          name: signUpForm.name.trim(),
-        }),
-      });
-      const data = (await response.json()) as { success?: boolean; message?: string; backendUrl?: string };
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message ?? t(language, "registerFailed"));
-      }
-
-      const loginResponse = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ backendUrl: data.backendUrl ?? backendUrl, username: nextUsername, password: signUpForm.password }),
-      });
-      const loginData = (await loginResponse.json()) as {
-        success?: boolean;
-        message?: string;
-        token?: string;
-        refresh?: string;
-        backendUrl?: string;
-      };
-
-      if (!loginResponse.ok || !loginData.success || !loginData.token) {
-        throw new Error(loginData.message ?? t(language, "loginFailed"));
-      }
-
-      persistLogin(loginData.backendUrl ?? data.backendUrl ?? backendUrl, nextUsername, loginData.token, loginData.refresh ?? "", "password");
-      setUsername(nextUsername);
-      setPassword("");
-      setSignUpState("success");
-      setLoginState("success");
-      setSignUpOpen(false);
-      setSignUpForm({ name: "", username: "", password: "", confirmPassword: "" });
-      setMessage(t(language, "registerSuccess"));
-      router.push("/workspace");
-    } catch (error) {
-      setSignUpState("error");
-      setLoginState("error");
-      setMessage(error instanceof Error ? error.message : t(language, "registerFailed"));
     }
   }
 
@@ -637,6 +416,7 @@ export function LoginScreen() {
     refresh: string,
     method: AuthMethod,
     profile?: SocialLoginResponse["user"],
+    nextHoldingCode = "",
   ) {
     const runtimeBackendUrl = runtimeBackendUrlForCurrentPage(nextBackendUrl);
     localStorage.setItem(storageKeys.rememberUsername, String(rememberUsername));
@@ -645,12 +425,25 @@ export function LoginScreen() {
     } else {
       localStorage.removeItem(storageKeys.username);
     }
+    if (nextHoldingCode) {
+      localStorage.setItem(storageKeys.holdingCode, nextHoldingCode);
+    } else {
+      localStorage.removeItem(storageKeys.holdingCode);
+    }
     localStorage.removeItem(storageKeys.legacyPassword);
     localStorage.removeItem(storageKeys.backendUrl);
     localStorage.removeItem(storageKeys.backendUrlHistory);
     localStorage.setItem(
       storageKeys.auth,
-      JSON.stringify({ token, refresh, username: nextUsername, backendUrl: runtimeBackendUrl, method, profile: profile ?? null }),
+      JSON.stringify({
+        token,
+        refresh,
+        username: nextUsername,
+        backendUrl: runtimeBackendUrl,
+        method,
+        profile: profile ?? null,
+        ...(nextHoldingCode ? { holding_code: nextHoldingCode } : {}),
+      }),
     );
   }
 
@@ -686,10 +479,10 @@ export function LoginScreen() {
             </div>
           </div>
           <div className="brand-feature-card">
-            <MessageCircle aria-hidden="true" size={20} />
+            <LockKeyhole aria-hidden="true" size={20} />
             <div>
-              <strong>{t(language, "loginWithLine")}</strong>
-              <span>{t(language, "lineLoginDescription")}</span>
+              <strong>{t(language, "passwordLoginSectionTitle")}</strong>
+              <span>{t(language, "passwordLoginSectionDescription")}</span>
             </div>
           </div>
         </div>
@@ -762,282 +555,145 @@ export function LoginScreen() {
             </label>
           ) : null}
 
-          <label className="field-group">
-            <span>{t(language, "username")}</span>
-            <div className="input-shell">
-              <UserRound aria-hidden="true" size={18} />
-              <input
-                autoComplete="username"
-                value={username}
-                onChange={(event) => setUsername(event.target.value)}
-                placeholder={t(language, "usernamePlaceholder")}
-              />
-            </div>
-          </label>
-
-          <label className="field-group">
-            <span>{t(language, "password")}</span>
-            <div className="input-shell">
+          <section className="password-login-section" aria-label={t(language, "passwordLoginSectionTitle")}>
+            <div className="password-login-heading">
               <LockKeyhole aria-hidden="true" size={18} />
-              <input
-                autoComplete="current-password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                placeholder={t(language, "password")}
-                type={showPassword ? "text" : "password"}
-              />
-              <button
-                className="icon-button"
-                type="button"
-                onClick={() => setShowPassword((current) => !current)}
-                aria-label={showPassword ? t(language, "hidePassword") : t(language, "showPassword")}
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
+              <div>
+                <strong>{t(language, "passwordLoginSectionTitle")}</strong>
+                <span>{t(language, "passwordLoginSectionDescription")}</span>
+              </div>
             </div>
-          </label>
 
-          <div className="form-row">
-            <label className="check-row">
-              <input
-                checked={rememberUsername}
-                onChange={(event) => setRememberUsername(event.target.checked)}
-                type="checkbox"
-              />
-              <span>{t(language, "rememberUsername")}</span>
+            <div className="field-group holding-code-field">
+              <span id="holding-code-label">{t(language, "holdingCode")}</span>
+              <div className="holding-code-control-row">
+                <div className="input-shell">
+                  <Building2 aria-hidden="true" size={18} />
+                  <input
+                    aria-labelledby="holding-code-label"
+                    autoComplete="organization"
+                    value={holdingCode}
+                    onChange={(event) => setHoldingCode(event.target.value.toLowerCase())}
+                    placeholder="bc_demo"
+                  />
+                </div>
+              </div>
+              <small className="field-help">{t(language, "holdingCodeHint")}</small>
+            </div>
+
+            <label className="field-group">
+              <span>{t(language, "username")}</span>
+              <div className="input-shell">
+                <UserRound aria-hidden="true" size={18} />
+                <input
+                  autoComplete="username"
+                  value={username}
+                  onChange={(event) => setUsername(event.target.value)}
+                  placeholder={t(language, "usernamePlaceholder")}
+                />
+              </div>
             </label>
-          </div>
 
-          {message ? (
-            <div className={`message ${loginState === "success" || connectionState === "success" ? "success" : "error"}`}>
-              {loginState === "success" || connectionState === "success" ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
-              <span>{message}</span>
+            <label className="field-group">
+              <span>{t(language, "password")}</span>
+              <div className="input-shell">
+                <LockKeyhole aria-hidden="true" size={18} />
+                <input
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder={t(language, "password")}
+                  type={showPassword ? "text" : "password"}
+                />
+                <button
+                  className="icon-button"
+                  type="button"
+                  onClick={() => setShowPassword((current) => !current)}
+                  aria-label={showPassword ? t(language, "hidePassword") : t(language, "showPassword")}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </label>
+
+            <div className="form-row">
+              <label className="check-row">
+                <input
+                  checked={rememberUsername}
+                  onChange={(event) => setRememberUsername(event.target.checked)}
+                  type="checkbox"
+                />
+                <span>{t(language, "rememberUsername")}</span>
+              </label>
             </div>
-          ) : null}
 
-          <button className="primary-button" type="submit" disabled={!mounted || !canSubmit}>
-            {loginState === "loading" ? <Loader2 className="spin" size={18} /> : <LockKeyhole size={18} />}
-            <span>{loginState === "loading" ? t(language, "loggingIn") : t(language, "login")}</span>
-          </button>
+            {message ? (
+              <div className={`message ${loginState === "success" || connectionState === "success" ? "success" : "error"}`}>
+                {loginState === "success" || connectionState === "success" ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+                <span>{message}</span>
+              </div>
+            ) : null}
 
-          <div className="social-login-separator">
-            <span>{t(language, "socialLoginSeparator")}</span>
-          </div>
-
-          <div className="social-login-grid">
-            <button
-              className="social-login-button google-login"
-              type="button"
-              onClick={handleGoogleLogin}
-              disabled={providerLoginState !== "idle" || loginState === "loading"}
-            >
-              {providerLoginState === "google" ? (
-                <Loader2 className="spin" aria-hidden="true" size={20} />
-              ) : (
-                <Image alt="" height={20} src="/google_logo.png" width={20} />
-              )}
-              <span>{t(language, "loginWithGoogle")}</span>
+            <button className="primary-button" type="submit" disabled={!mounted || !canSubmit}>
+              {loginState === "loading" ? <Loader2 className="spin" size={18} /> : <LockKeyhole size={18} />}
+              <span>{loginState === "loading" ? t(language, "loggingIn") : t(language, "login")}</span>
             </button>
-            {isLocalTestHost ? (
+          </section>
+
+          <section className="auth-login-section" aria-label={t(language, "authLoginSectionTitle")}>
+            <div className="auth-login-heading">
+              <ShieldCheck aria-hidden="true" size={18} />
+              <strong>{t(language, "authLoginSectionTitle")}</strong>
+            </div>
+
+            <div className="social-login-grid">
               <button
-                className="social-login-button local-google-test-login"
+                className="social-login-button google-login"
                 type="button"
-                onClick={handleLocalGoogleTestLogin}
+                onClick={handleGoogleLogin}
                 disabled={providerLoginState !== "idle" || loginState === "loading"}
               >
-                {providerLoginState === "local-google" ? (
+                {providerLoginState === "google" ? (
                   <Loader2 className="spin" aria-hidden="true" size={20} />
                 ) : (
                   <Image alt="" height={20} src="/google_logo.png" width={20} />
                 )}
-                <span>{t(language, "localGoogleTestLogin")}</span>
+                <span>{t(language, "loginWithGoogle")}</span>
               </button>
-            ) : null}
-            <button
-              className="social-login-button line-login"
-              type="button"
-              onClick={handleLineLogin}
-              disabled={providerLoginState !== "idle" || loginState === "loading"}
-            >
-              {providerLoginState === "line" ? (
-                <Loader2 className="spin" aria-hidden="true" size={20} />
-              ) : (
-                <MessageCircle aria-hidden="true" size={20} />
-              )}
-              <span>{t(language, "loginWithLine")}</span>
-            </button>
-          </div>
+              {isLocalTestHost ? (
+                <button
+                  className="social-login-button local-google-test-login"
+                  type="button"
+                  onClick={handleLocalGoogleTestLogin}
+                  disabled={providerLoginState !== "idle" || loginState === "loading"}
+                >
+                  {providerLoginState === "local-google" ? (
+                    <Loader2 className="spin" aria-hidden="true" size={20} />
+                  ) : (
+                    <Image alt="" height={20} src="/google_logo.png" width={20} />
+                  )}
+                  <span>{t(language, "localGoogleTestLogin")}</span>
+                </button>
+              ) : null}
+            </div>
+          </section>
 
           <div className="first-use-note">
             <Building2 aria-hidden="true" size={20} />
             <div>
               <strong>{t(language, "firstUseTitle")}</strong>
               <span>{t(language, "firstUseDescription")}</span>
+              <ol className="first-use-steps">
+                <li>{t(language, "firstUseStepGoogle")}</li>
+                <li>{t(language, "firstUseStepHolding")}</li>
+                <li>{t(language, "firstUseStepWorkspace")}</li>
+              </ol>
+              <small>{t(language, "createHoldingDescription")}</small>
               <small>{t(language, "multiCompanyDescription")}</small>
             </div>
           </div>
 
-          <button
-            className="primary-button signup-open-button email-signup-button"
-            type="button"
-            onClick={handleGoogleLogin}
-            disabled={loginState === "loading" || providerLoginState !== "idle"}
-          >
-            {providerLoginState === "google" ? <Loader2 className="spin" aria-hidden="true" size={18} /> : <UserPlus aria-hidden="true" size={18} />}
-            <span>{t(language, "signUpWithEmail")}</span>
-          </button>
         </form>
-
-        {signUpOpen ? (
-          <div className="dialog-backdrop" role="presentation">
-            <section className="line-login-dialog signup-dialog" aria-label={t(language, "signUp")} role="dialog" aria-modal="true">
-              <div className="dialog-header">
-                <div>
-                  <p className="eyebrow">{t(language, "secureWorkspace")}</p>
-                  <h2>{t(language, "signUp")}</h2>
-                </div>
-                <button className="icon-button dialog-close" type="button" onClick={() => setSignUpOpen(false)} aria-label={t(language, "close")}>
-                  ×
-                </button>
-              </div>
-
-              <p className="line-login-description">{t(language, "signUpDescription")}</p>
-
-              <form className="signup-form" onSubmit={handleSignUp}>
-                <label className="field-group">
-                  <span>{t(language, "displayName")}</span>
-                  <div className="input-shell">
-                    <UserRound aria-hidden="true" size={18} />
-                    <input
-                      autoComplete="name"
-                      value={signUpForm.name}
-                      onChange={(event) => setSignUpForm((current) => ({ ...current, name: event.target.value }))}
-                      placeholder={t(language, "displayName")}
-                    />
-                  </div>
-                </label>
-
-                <label className="field-group">
-                  <span>{t(language, "username")}</span>
-                  <div className="input-shell">
-                    <UserRound aria-hidden="true" size={18} />
-                    <input
-                      autoComplete="username"
-                      value={signUpForm.username}
-                      onChange={(event) => setSignUpForm((current) => ({ ...current, username: event.target.value }))}
-                      placeholder={t(language, "usernamePlaceholder")}
-                    />
-                  </div>
-                </label>
-
-                <label className="field-group">
-                  <span>{t(language, "password")}</span>
-                  <div className="input-shell">
-                    <LockKeyhole aria-hidden="true" size={18} />
-                    <input
-                      autoComplete="new-password"
-                      value={signUpForm.password}
-                      onChange={(event) => setSignUpForm((current) => ({ ...current, password: event.target.value }))}
-                      placeholder={t(language, "password")}
-                      type="password"
-                    />
-                  </div>
-                </label>
-
-                <label className="field-group">
-                  <span>{t(language, "confirmPassword")}</span>
-                  <div className="input-shell">
-                    <LockKeyhole aria-hidden="true" size={18} />
-                    <input
-                      autoComplete="new-password"
-                      value={signUpForm.confirmPassword}
-                      onChange={(event) => setSignUpForm((current) => ({ ...current, confirmPassword: event.target.value }))}
-                      placeholder={t(language, "confirmPassword")}
-                      type="password"
-                    />
-                  </div>
-                </label>
-
-                <div className="line-dialog-actions">
-                  <button className="primary-button" type="submit" disabled={!mounted || !canSignUp}>
-                    {signUpState === "loading" ? <Loader2 className="spin" size={18} /> : <UserPlus size={18} />}
-                    <span>{signUpState === "loading" ? t(language, "creatingAccount") : t(language, "createAccount")}</span>
-                  </button>
-                  <button className="secondary-button" type="button" onClick={() => setSignUpOpen(false)} disabled={signUpState === "loading"}>
-                    {t(language, "close")}
-                  </button>
-                </div>
-              </form>
-            </section>
-          </div>
-        ) : null}
-
-        {lineDialog.open ? (
-          <div className="dialog-backdrop" role="presentation">
-            <section className="line-login-dialog" aria-label={t(language, "lineLoginTitle")} role="dialog" aria-modal="true">
-              <div className="dialog-header">
-                <div>
-                  <p className="eyebrow">{t(language, "loginWithLine")}</p>
-                  <h2>{t(language, "lineLoginTitle")}</h2>
-                </div>
-                <button className="icon-button dialog-close" type="button" onClick={closeLineDialog} aria-label={t(language, "lineLoginClose")}>
-                  ×
-                </button>
-              </div>
-
-              {lineDialog.loading ? (
-                <div className="line-login-status">
-                  <Loader2 className="spin" aria-hidden="true" size={28} />
-                  <span>{t(language, "lineLoginWaiting")}</span>
-                </div>
-              ) : lineDialog.error ? (
-                <div className="message error">
-                  <AlertCircle size={18} />
-                  <span>{lineDialog.error}</span>
-                </div>
-              ) : lineDialog.expired ? (
-                <div className="message error">
-                  <AlertCircle size={18} />
-                  <span>{t(language, "lineLoginExpired")}</span>
-                </div>
-              ) : (
-                <>
-                  <p className="line-login-description">{t(language, "lineLoginDescription")}</p>
-                  <div className="line-qr-box">
-                    {lineDialog.qrDataUrl ? <Image alt={t(language, "lineLoginTitle")} height={220} src={lineDialog.qrDataUrl} unoptimized width={220} /> : null}
-                  </div>
-                  <div className="line-code">
-                    <span>{t(language, "lineLoginCode")}</span>
-                    <strong>{lineDialog.code}</strong>
-                  </div>
-                  <div className="line-dialog-actions">
-                    <a className="secondary-button" href={lineDialog.loginUrl} target="_blank" rel="noreferrer">
-                      <ExternalLink aria-hidden="true" size={17} />
-                      <span>{t(language, "lineLoginOpen")}</span>
-                    </a>
-                    <button className="secondary-button" type="button" onClick={copyLineLoginUrl}>
-                      <Copy aria-hidden="true" size={17} />
-                      <span>{t(language, "lineLoginCopy")}</span>
-                    </button>
-                  </div>
-                  <div className="line-login-status">
-                    <Loader2 className="spin" aria-hidden="true" size={16} />
-                    <span>{t(language, "lineLoginWaiting")}</span>
-                  </div>
-                </>
-              )}
-
-              <div className="line-dialog-actions">
-                <button className="secondary-button" type="button" onClick={handleLineLogin}>
-                  {t(language, "lineLoginCreateNew")}
-                </button>
-                <button className="secondary-button" type="button" onClick={closeLineDialog}>
-                  {t(language, "lineLoginClose")}
-                </button>
-              </div>
-            </section>
-          </div>
-        ) : null}
       </section>
     </main>
   );

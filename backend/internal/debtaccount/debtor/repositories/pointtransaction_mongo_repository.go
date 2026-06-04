@@ -12,14 +12,14 @@ import (
 type IPointTransactionRepository interface {
 	Create(ctx context.Context, doc models.PointTransactionDoc) (string, error)
 	CreateInBatch(ctx context.Context, docList []models.PointTransactionDoc) error
-	UpdateDebtorPointBalance(ctx context.Context, shopID string, customerCode string, pointAmount float64) error
-	UpdateDebtorPointBalanceByCode(ctx context.Context, shopID string, custCode string, pointAmount float64) error
-	UpdateDebtorPointBalanceByPointsCode(ctx context.Context, shopID string, pointsCode string, pointAmount float64) error
-	FindPointTransactionsByDebtorCode(ctx context.Context, shopID string, debtorCode string, pageableStep micromodels.PageableStep) ([]models.PointTransactionInfo, int, error)
-	FindPointTransactionsByPointsCode(ctx context.Context, shopID string, pointsCode string, pageableStep micromodels.PageableStep) ([]models.PointTransactionInfo, int, error)
-	DeletePointTransactionsByDocNo(ctx context.Context, shopID string, docNo string, authUsername string) error
-	DeleteManualPointTransaction(ctx context.Context, shopID string, pointsCode string, docNo string, authUsername string) error
-	RecalculatePointBalanceByPointsCode(ctx context.Context, shopID string, pointsCode string) error
+	UpdateDebtorPointBalance(ctx context.Context, holdingCode string, customerCode string, pointAmount float64) error
+	UpdateDebtorPointBalanceByCode(ctx context.Context, holdingCode string, custCode string, pointAmount float64) error
+	UpdateDebtorPointBalanceByPointsCode(ctx context.Context, holdingCode string, pointsCode string, pointAmount float64) error
+	FindPointTransactionsByDebtorCode(ctx context.Context, holdingCode string, debtorCode string, pageableStep micromodels.PageableStep) ([]models.PointTransactionInfo, int, error)
+	FindPointTransactionsByPointsCode(ctx context.Context, holdingCode string, pointsCode string, pageableStep micromodels.PageableStep) ([]models.PointTransactionInfo, int, error)
+	DeletePointTransactionsByDocNo(ctx context.Context, holdingCode string, docNo string, authUsername string) error
+	DeleteManualPointTransaction(ctx context.Context, holdingCode string, pointsCode string, docNo string, authUsername string) error
+	RecalculatePointBalanceByPointsCode(ctx context.Context, holdingCode string, pointsCode string) error
 }
 
 type PointTransactionRepository struct {
@@ -43,20 +43,20 @@ func NewPointTransactionRepository(pst microservice.IPersisterMongo) *PointTrans
 	return insRepo
 }
 
-func (repo PointTransactionRepository) UpdateDebtorPointBalance(ctx context.Context, shopID string, customerCode string, pointAmount float64) error {
+func (repo PointTransactionRepository) UpdateDebtorPointBalance(ctx context.Context, holdingCode string, customerCode string, pointAmount float64) error {
 	// This is a generic function that tries both "code" and "points_code" fields
 	// for backward compatibility and UsePoint/GetPoint scenarios
 	debtorRepo := NewDebtorRepository(repo.pst)
 
 	// Try to find debtor by code first (for UsePoint - traditional customer lookup)
-	debtor, err := debtorRepo.FindByDocIndentityGuid(ctx, shopID, "code", customerCode)
+	debtor, err := debtorRepo.FindByDocIndentityGuid(ctx, holdingCode, "code", customerCode)
 	if err != nil {
 		return err
 	}
 
 	// If not found by code, try by pointscode (for GetPoint - new point system)
 	if debtor.GuidFixed == "" {
-		debtor, err = debtorRepo.FindByDocIndentityGuid(ctx, shopID, "points_code", customerCode)
+		debtor, err = debtorRepo.FindByDocIndentityGuid(ctx, holdingCode, "points_code", customerCode)
 		if err != nil {
 			return err
 		}
@@ -74,16 +74,16 @@ func (repo PointTransactionRepository) UpdateDebtorPointBalance(ctx context.Cont
 	}
 
 	// Save updated debtor
-	err = debtorRepo.Update(ctx, shopID, debtor.GuidFixed, debtor)
+	err = debtorRepo.Update(ctx, holdingCode, debtor.GuidFixed, debtor)
 	return err
 }
 
 // UpdateDebtorPointBalanceByCode updates point balance by searching with debtor.code (for UsePoint)
-func (repo PointTransactionRepository) UpdateDebtorPointBalanceByCode(ctx context.Context, shopID string, custCode string, pointAmount float64) error {
+func (repo PointTransactionRepository) UpdateDebtorPointBalanceByCode(ctx context.Context, holdingCode string, custCode string, pointAmount float64) error {
 	debtorRepo := NewDebtorRepository(repo.pst)
 
 	// Find debtor by code (for UsePoint - traditional customer lookup)
-	debtor, err := debtorRepo.FindByDocIndentityGuid(ctx, shopID, "code", custCode)
+	debtor, err := debtorRepo.FindByDocIndentityGuid(ctx, holdingCode, "code", custCode)
 	if err != nil {
 		return err
 	}
@@ -100,16 +100,16 @@ func (repo PointTransactionRepository) UpdateDebtorPointBalanceByCode(ctx contex
 	}
 
 	// Save updated debtor
-	err = debtorRepo.Update(ctx, shopID, debtor.GuidFixed, debtor)
+	err = debtorRepo.Update(ctx, holdingCode, debtor.GuidFixed, debtor)
 	return err
 }
 
 // UpdateDebtorPointBalanceByPointsCode updates point balance by searching with debtor.pointscode (for GetPoint)
-func (repo PointTransactionRepository) UpdateDebtorPointBalanceByPointsCode(ctx context.Context, shopID string, pointsCode string, pointAmount float64) error {
+func (repo PointTransactionRepository) UpdateDebtorPointBalanceByPointsCode(ctx context.Context, holdingCode string, pointsCode string, pointAmount float64) error {
 	debtorRepo := NewDebtorRepository(repo.pst)
 
 	// Find debtor by pointscode (for GetPoint - new point system)
-	debtor, err := debtorRepo.FindByDocIndentityGuid(ctx, shopID, "points_code", pointsCode)
+	debtor, err := debtorRepo.FindByDocIndentityGuid(ctx, holdingCode, "points_code", pointsCode)
 	if err != nil {
 		return err
 	}
@@ -126,11 +126,11 @@ func (repo PointTransactionRepository) UpdateDebtorPointBalanceByPointsCode(ctx 
 	}
 
 	// Save updated debtor
-	err = debtorRepo.Update(ctx, shopID, debtor.GuidFixed, debtor)
+	err = debtorRepo.Update(ctx, holdingCode, debtor.GuidFixed, debtor)
 	return err
 }
 
-func (repo PointTransactionRepository) FindPointTransactionsByDebtorCode(ctx context.Context, shopID string, debtorCode string, pageableStep micromodels.PageableStep) ([]models.PointTransactionInfo, int, error) {
+func (repo PointTransactionRepository) FindPointTransactionsByDebtorCode(ctx context.Context, holdingCode string, debtorCode string, pageableStep micromodels.PageableStep) ([]models.PointTransactionInfo, int, error) {
 	filters := map[string]interface{}{
 		"debtorcode": debtorCode,
 	}
@@ -149,7 +149,7 @@ func (repo PointTransactionRepository) FindPointTransactionsByDebtorCode(ctx con
 		}
 	}
 
-	docList, total, err := repo.SearchRepository.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := repo.SearchRepository.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.PointTransactionInfo{}, 0, err
@@ -158,7 +158,7 @@ func (repo PointTransactionRepository) FindPointTransactionsByDebtorCode(ctx con
 	return docList, total, nil
 }
 
-func (repo PointTransactionRepository) FindPointTransactionsByPointsCode(ctx context.Context, shopID string, pointsCode string, pageableStep micromodels.PageableStep) ([]models.PointTransactionInfo, int, error) {
+func (repo PointTransactionRepository) FindPointTransactionsByPointsCode(ctx context.Context, holdingCode string, pointsCode string, pageableStep micromodels.PageableStep) ([]models.PointTransactionInfo, int, error) {
 	filters := map[string]interface{}{
 		"points_code": pointsCode,
 	}
@@ -177,7 +177,7 @@ func (repo PointTransactionRepository) FindPointTransactionsByPointsCode(ctx con
 		}
 	}
 
-	docList, total, err := repo.SearchRepository.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := repo.SearchRepository.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.PointTransactionInfo{}, 0, err
@@ -187,21 +187,21 @@ func (repo PointTransactionRepository) FindPointTransactionsByPointsCode(ctx con
 }
 
 // DeletePointTransactionsByDocNo deletes all point transactions related to a specific document number
-func (repo PointTransactionRepository) DeletePointTransactionsByDocNo(ctx context.Context, shopID string, docNo string, authUsername string) error {
+func (repo PointTransactionRepository) DeletePointTransactionsByDocNo(ctx context.Context, holdingCode string, docNo string, authUsername string) error {
 	filters := map[string]interface{}{
 		"transactiondocno": docNo,
 	}
 
-	err := repo.CrudRepository.Delete(ctx, shopID, authUsername, filters)
+	err := repo.CrudRepository.Delete(ctx, holdingCode, authUsername, filters)
 	return err
 }
 
 // DeleteManualPointTransaction deletes a manual point transaction (TransactionType 3) and recalculates balance
-func (repo PointTransactionRepository) DeleteManualPointTransaction(ctx context.Context, shopID string, pointsCode string, docNo string, authUsername string) error {
+func (repo PointTransactionRepository) DeleteManualPointTransaction(ctx context.Context, holdingCode string, pointsCode string, docNo string, authUsername string) error {
 	// Find the transaction first to validate it's a manual transaction
 	filters := map[string]interface{}{
 		"transactiondocno": docNo,
-		"points_code":       pointsCode,
+		"points_code":      pointsCode,
 	}
 
 	searchInFields := []string{}
@@ -211,7 +211,7 @@ func (repo PointTransactionRepository) DeleteManualPointTransaction(ctx context.
 		Limit: 1,
 	}
 
-	transactions, _, err := repo.SearchRepository.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	transactions, _, err := repo.SearchRepository.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 	if err != nil {
 		return fmt.Errorf("failed to find transaction: %w", err)
 	}
@@ -228,13 +228,13 @@ func (repo PointTransactionRepository) DeleteManualPointTransaction(ctx context.
 	}
 
 	// Delete the transaction
-	err = repo.DeletePointTransactionsByDocNo(ctx, shopID, docNo, authUsername)
+	err = repo.DeletePointTransactionsByDocNo(ctx, holdingCode, docNo, authUsername)
 	if err != nil {
 		return fmt.Errorf("failed to delete transaction: %w", err)
 	}
 
 	// Recalculate balance
-	err = repo.RecalculatePointBalanceByPointsCode(ctx, shopID, pointsCode)
+	err = repo.RecalculatePointBalanceByPointsCode(ctx, holdingCode, pointsCode)
 	if err != nil {
 		return fmt.Errorf("failed to recalculate balance: %w", err)
 	}
@@ -243,11 +243,11 @@ func (repo PointTransactionRepository) DeleteManualPointTransaction(ctx context.
 }
 
 // RecalculatePointBalanceByPointsCode recalculates point balance by summing all point transactions for a specific pointsCode
-func (repo PointTransactionRepository) RecalculatePointBalanceByPointsCode(ctx context.Context, shopID string, pointsCode string) error {
+func (repo PointTransactionRepository) RecalculatePointBalanceByPointsCode(ctx context.Context, holdingCode string, pointsCode string) error {
 	debtorRepo := NewDebtorRepository(repo.pst)
 
 	// Find debtor by pointscode
-	debtor, err := debtorRepo.FindByDocIndentityGuid(ctx, shopID, "points_code", pointsCode)
+	debtor, err := debtorRepo.FindByDocIndentityGuid(ctx, holdingCode, "points_code", pointsCode)
 	if err != nil {
 		return err
 	}
@@ -266,7 +266,7 @@ func (repo PointTransactionRepository) RecalculatePointBalanceByPointsCode(ctx c
 		},
 	}
 
-	transactions, _, err := repo.FindPointTransactionsByPointsCode(ctx, shopID, pointsCode, pageableStep)
+	transactions, _, err := repo.FindPointTransactionsByPointsCode(ctx, holdingCode, pointsCode, pageableStep)
 	if err != nil {
 		return err
 	}
@@ -284,6 +284,6 @@ func (repo PointTransactionRepository) RecalculatePointBalanceByPointsCode(ctx c
 
 	// Update debtor's point balance
 	debtor.PointBalance = calculatedBalance
-	err = debtorRepo.Update(ctx, shopID, debtor.GuidFixed, debtor)
+	err = debtorRepo.Update(ctx, holdingCode, debtor.GuidFixed, debtor)
 	return err
 }

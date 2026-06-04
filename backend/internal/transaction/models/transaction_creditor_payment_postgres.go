@@ -12,20 +12,20 @@ import (
 )
 
 type CreditorPaymentTransactionPG struct {
-	GuidFixed string `json:"guid_fixed" gorm:"column:guid_fixed"`
-	models.ShopIdentity      `bson:"inline"`
+	GuidFixed                string `json:"guid_fixed" gorm:"column:guid_fixed"`
+	models.HoldingCodeentity `bson:"inline"`
 	models.PartitionIdentity `gorm:"embedded;"`
-	DocNo string                                `json:"docno" gorm:"column:docno;primaryKey"`
-	DocDate time.Time                             `json:"docdate" gorm:"column:docdate"`
-	BranchCode string                                `json:"branchcode" gorm:"column:branchcode"`
-	BranchNames models.JSONB                          `json:"branchnames" gorm:"column:branchnames;type:jsonb"`
-	CreditorCode string                                `json:"creditorcode" gorm:"column:creditorcode"`
-	CreditorNames pkgModels.JSONB                       `json:"creditornames" gorm:"column:creditornames;type:jsonb"`
-	TotalAmount float64                               `json:"total_amount" gorm:"column:total_amount"`
-	TotalPayCash float64                               `json:"totalpaycash" gorm:"column:totalpaycash"`
-	TotalPayTransfer float64                               `json:"totalpaytransfer" gorm:"column:totalpaytransfer"`
-	TotalPayCredit float64                               `json:"totalpaycredit" gorm:"column:totalpaycredit"`
-	Details *[]CreditorPaymentTransactionDetailPG `json:"details" gorm:"details;foreignKey:shopid,docno"`
+	DocNo                    string                                `json:"docno" gorm:"column:docno;primaryKey"`
+	DocDate                  time.Time                             `json:"docdate" gorm:"column:docdate"`
+	BranchCode               string                                `json:"branchcode" gorm:"column:branchcode"`
+	BranchNames              models.JSONB                          `json:"branchnames" gorm:"column:branchnames;type:jsonb"`
+	CreditorCode             string                                `json:"creditorcode" gorm:"column:creditorcode"`
+	CreditorNames            pkgModels.JSONB                       `json:"creditornames" gorm:"column:creditornames;type:jsonb"`
+	TotalAmount              float64                               `json:"total_amount" gorm:"column:total_amount"`
+	TotalPayCash             float64                               `json:"totalpaycash" gorm:"column:totalpaycash"`
+	TotalPayTransfer         float64                               `json:"totalpaytransfer" gorm:"column:totalpaytransfer"`
+	TotalPayCredit           float64                               `json:"totalpaycredit" gorm:"column:totalpaycredit"`
+	Details                  *[]CreditorPaymentTransactionDetailPG `json:"details" gorm:"details;foreignKey:holding_code,docno"`
 }
 
 func (CreditorPaymentTransactionPG) TableName() string {
@@ -33,16 +33,16 @@ func (CreditorPaymentTransactionPG) TableName() string {
 }
 
 type CreditorPaymentTransactionDetailPG struct {
-	ID uint   `gorm:"primarykey"`
-	ShopID string `json:"shopid" gorm:"column:shopid"`
+	ID                       uint   `gorm:"primarykey"`
+	HoldingCode              string `json:"holding_code" gorm:"column:holding_code"`
 	models.PartitionIdentity `gorm:"embedded;"`
-	DocNo string  `json:"docno" gorm:"column:docno"`
-	LineNumber int8    `json:"line_number" gorm:"column:line_number"`
-	BillingNo string  `json:"billingno" gorm:"column:billingno"`
-	BillType int8    `json:"billtype" gorm:"column:billtype"`
-	BillAmount float64 `json:"billamount" gorm:"column:billamount"`
-	BalanceAmount float64 `json:"balanceamount" gorm:"column:balanceamount"`
-	PayAmount float64 `json:"payamount" gorm:"column:payamount"`
+	DocNo                    string  `json:"docno" gorm:"column:docno"`
+	LineNumber               int8    `json:"line_number" gorm:"column:line_number"`
+	BillingNo                string  `json:"billingno" gorm:"column:billingno"`
+	BillType                 int8    `json:"billtype" gorm:"column:billtype"`
+	BillAmount               float64 `json:"billamount" gorm:"column:billamount"`
+	BalanceAmount            float64 `json:"balanceamount" gorm:"column:balanceamount"`
+	PayAmount                float64 `json:"payamount" gorm:"column:payamount"`
 }
 
 func (CreditorPaymentTransactionDetailPG) TableName() string {
@@ -53,7 +53,7 @@ func (j *CreditorPaymentTransactionPG) BeforeUpdate(tx *gorm.DB) (err error) {
 
 	// find old data
 	var details *[]CreditorPaymentTransactionDetailPG
-	tx.Model(&CreditorPaymentTransactionDetailPG{}).Where(" shopid=? AND docno=?", j.ShopID, j.DocNo).Find(&details)
+	tx.Model(&CreditorPaymentTransactionDetailPG{}).Where(" holding_code=? AND docno=?", j.HoldingCode, j.DocNo).Find(&details)
 
 	// delete un use data
 	for _, tmp := range *details {
@@ -84,7 +84,7 @@ func (j *CreditorPaymentTransactionPG) BeforeDelete(tx *gorm.DB) (err error) {
 
 	// find old data
 	var details *[]CreditorPaymentTransactionDetailPG
-	tx.Model(&CreditorPaymentTransactionDetailPG{}).Where(" shopid=? AND docno=?", j.ShopID, j.DocNo).Find(&details)
+	tx.Model(&CreditorPaymentTransactionDetailPG{}).Where(" holding_code=? AND docno=?", j.HoldingCode, j.DocNo).Find(&details)
 
 	// delete unuse data
 	for _, tmp := range *details {

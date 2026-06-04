@@ -6,7 +6,7 @@ import (
 )
 
 type IMasterSyncService interface {
-	GetStatus(shopID string, syncModules []string) (map[string]time.Time, error)
+	GetStatus(holdingCode string, syncModules []string) (map[string]time.Time, error)
 }
 
 type MasterSyncService struct {
@@ -20,11 +20,11 @@ func NewMasterSyncService(cacheRepo repositories.IMasterSyncCacheRepository) Mas
 	}
 }
 
-func (svc MasterSyncService) GetStatus(shopID string, syncModules []string) (map[string]time.Time, error) {
+func (svc MasterSyncService) GetStatus(holdingCode string, syncModules []string) (map[string]time.Time, error) {
 	moduleStatus := map[string]time.Time{}
 
 	for _, moduleName := range syncModules {
-		lastTime, err := svc.cacheRepo.Get(shopID, moduleName)
+		lastTime, err := svc.cacheRepo.Get(holdingCode, moduleName)
 		moduleStatus[moduleName] = lastTime
 		if err != nil {
 			return nil, err

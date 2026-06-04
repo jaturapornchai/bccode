@@ -57,7 +57,7 @@ func (h SmsPaymentSettingsHttp) RegisterHttp() {
 // @Router /smspaymentsettings/{storefrontguid} [put]
 func (h SmsPaymentSettingsHttp) CreateSmsPaymentSettings(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	storefrontGUID := ctx.Param("storefrontguid")
@@ -72,7 +72,7 @@ func (h SmsPaymentSettingsHttp) CreateSmsPaymentSettings(ctx microservice.IConte
 		return err
 	}
 
-	err = h.svc.SaveSmsPaymentSettings(shopID, authUsername, storefrontGUID, *docReq)
+	err = h.svc.SaveSmsPaymentSettings(holdingCode, authUsername, storefrontGUID, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -97,11 +97,11 @@ func (h SmsPaymentSettingsHttp) CreateSmsPaymentSettings(ctx microservice.IConte
 // @Router /smspaymentsettings/{storefrontguid} [get]
 func (h SmsPaymentSettingsHttp) InfoSmsPaymentSettings(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	storefrontGUID := ctx.Param("storefrontguid")
 
-	doc, err := h.svc.InfoSmsPaymentSettings(shopID, storefrontGUID)
+	doc, err := h.svc.InfoSmsPaymentSettings(holdingCode, storefrontGUID)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v", err)
@@ -130,10 +130,10 @@ func (h SmsPaymentSettingsHttp) InfoSmsPaymentSettings(ctx microservice.IContext
 // @Router /smspaymentsettings [get]
 func (h SmsPaymentSettingsHttp) SearchSmsPaymentSettings(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
-	docList, pagination, err := h.svc.SearchSmsPaymentSettings(shopID, pageable)
+	docList, pagination, err := h.svc.SearchSmsPaymentSettings(holdingCode, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

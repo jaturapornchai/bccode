@@ -31,70 +31,70 @@ import (
 // ====== request structs ======
 
 type listRequest struct {
-	ShopID string `json:"shop_id"`
-	BranchID string `json:"branch_id"`
-	Limit int    `json:"limit"`
-	Skip int    `json:"skip"`
+	HoldingCode string `json:"holding_code"`
+	BranchID    string `json:"branch_id"`
+	Limit       int    `json:"limit"`
+	Skip        int    `json:"skip"`
 }
 
 type uploadRequest struct {
-	ShopID string   `json:"shop_id"`
-	BranchID string   `json:"branch_id"`
-	Filename string   `json:"file_name"`
+	HoldingCode string   `json:"holding_code"`
+	BranchID    string   `json:"branch_id"`
+	Filename    string   `json:"file_name"`
 	ContentType string   `json:"content_type"`
-	Content string   `json:"content"` // base64
-	UploadedBy string   `json:"uploaded_by"`
+	Content     string   `json:"content"` // base64
+	UploadedBy  string   `json:"uploaded_by"`
 	Description string   `json:"description"`
-	Tags []string `json:"tags"`
-	Status bool     `json:"status"`
-	AllDay bool     `json:"all_day"`
+	Tags        []string `json:"tags"`
+	Status      bool     `json:"status"`
+	AllDay      bool     `json:"all_day"`
 }
 
 type deleteRequest struct {
-	ShopID string `json:"shop_id"`
-	BranchID string `json:"branch_id"`
-	Filename string `json:"file_name"`
+	HoldingCode string `json:"holding_code"`
+	BranchID    string `json:"branch_id"`
+	Filename    string `json:"file_name"`
 }
 
 type updateStatusRequest struct {
-	ShopID string `json:"shop_id"`
-	BranchID string `json:"branch_id"`
-	Filename string `json:"file_name"`
-	Status bool   `json:"status"`
+	HoldingCode string `json:"holding_code"`
+	BranchID    string `json:"branch_id"`
+	Filename    string `json:"file_name"`
+	Status      bool   `json:"status"`
 }
 
 type updateAllDayRequest struct {
-	ShopID string `json:"shop_id"`
-	BranchID string `json:"branch_id"`
-	Filename string `json:"file_name"`
-	AllDay bool   `json:"all_day"`
+	HoldingCode string `json:"holding_code"`
+	BranchID    string `json:"branch_id"`
+	Filename    string `json:"file_name"`
+	AllDay      bool   `json:"all_day"`
 }
 
 type updateScheduleRequest struct {
-	ShopID string  `json:"shop_id"`
-	BranchID string  `json:"branch_id"`
-	Filename string  `json:"file_name"`
+	HoldingCode   string  `json:"holding_code"`
+	BranchID      string  `json:"branch_id"`
+	Filename      string  `json:"file_name"`
 	StartDateTime *string `json:"start_date_time"`
-	EndDateTime *string `json:"end_date_time"`
+	EndDateTime   *string `json:"end_date_time"`
 }
 
 // ====== response shape — matches Flutter DocumentModel ======
 
 type documentResponse struct {
-	ShopID string   `json:"shop_id"`
-	BranchID string   `json:"branch_id"`
-	Filename string   `json:"file_name"`
-	ContentType string   `json:"content_type"`
-	Size int64    `json:"size"`
-	UploadedAt string   `json:"uploaded_at"`
-	UploadedBy string   `json:"uploaded_by"`
-	Description string   `json:"description"`
-	Tags []string `json:"tags"`
-	Version int      `json:"version"`
-	Status bool     `json:"status"`
-	AllDay bool     `json:"all_day"`
+	HoldingCode   string   `json:"holding_code"`
+	BranchID      string   `json:"branch_id"`
+	Filename      string   `json:"file_name"`
+	ContentType   string   `json:"content_type"`
+	Size          int64    `json:"size"`
+	UploadedAt    string   `json:"uploaded_at"`
+	UploadedBy    string   `json:"uploaded_by"`
+	Description   string   `json:"description"`
+	Tags          []string `json:"tags"`
+	Version       int      `json:"version"`
+	Status        bool     `json:"status"`
+	AllDay        bool     `json:"all_day"`
 	StartDateTime *string  `json:"start_date_time,omitempty"`
-	EndDateTime *string  `json:"end_date_time,omitempty"`
+	EndDateTime   *string  `json:"end_date_time,omitempty"`
 }
 
 func toResponse(meta KBDocMeta) documentResponse {
@@ -103,7 +103,7 @@ func toResponse(meta KBDocMeta) documentResponse {
 		tags = []string{}
 	}
 	return documentResponse{
-		ShopID:        meta.ShopID,
+		HoldingCode:   meta.HoldingCode,
 		BranchID:      meta.BranchID,
 		Filename:      meta.Filename,
 		ContentType:   meta.ContentType,
@@ -132,10 +132,10 @@ func ListDocuments(c echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		return errorJSON(c, http.StatusBadRequest, "invalid request: "+err.Error())
 	}
-	if req.ShopID == "" {
-		return errorJSON(c, http.StatusBadRequest, "shop_id required")
+	if req.HoldingCode == "" {
+		return errorJSON(c, http.StatusBadRequest, "holding_code required")
 	}
-	metas, err := GetMetaByShop(req.ShopID, req.BranchID)
+	metas, err := GetMetaByShop(req.HoldingCode, req.BranchID)
 	if err != nil {
 		logger.Error("[KB] list meta failed: %v", err)
 		return errorJSON(c, http.StatusInternalServerError, err.Error())
@@ -159,8 +159,8 @@ func UploadDocument(c echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		return errorJSON(c, http.StatusBadRequest, "invalid request: "+err.Error())
 	}
-	if req.ShopID == "" || req.Filename == "" || req.Content == "" {
-		return errorJSON(c, http.StatusBadRequest, "shop_id, filename, content required")
+	if req.HoldingCode == "" || req.Filename == "" || req.Content == "" {
+		return errorJSON(c, http.StatusBadRequest, "holding_code, filename, content required")
 	}
 	if req.BranchID == "" {
 		req.BranchID = "*"
@@ -176,15 +176,15 @@ func UploadDocument(c echo.Context) error {
 		return errorJSON(c, http.StatusServiceUnavailable, "RAGFlow not configured (RAGFLOW_API_KEY missing)")
 	}
 
-	datasetID, err := client.EnsureDataset(req.ShopID)
+	datasetID, err := client.EnsureDataset(req.HoldingCode)
 	if err != nil {
-		logger.Error("[KB] EnsureDataset failed shop=%s: %v", req.ShopID, err)
+		logger.Error("[KB] EnsureDataset failed shop=%s: %v", req.HoldingCode, err)
 		return errorJSON(c, http.StatusInternalServerError, "ensure dataset: "+err.Error())
 	}
 
 	docs, err := client.UploadDocument(datasetID, req.Filename, bytes.NewReader(rawBytes))
 	if err != nil {
-		logger.Error("[KB] UploadDocument failed shop=%s file=%s: %v", req.ShopID, req.Filename, err)
+		logger.Error("[KB] UploadDocument failed shop=%s file=%s: %v", req.HoldingCode, req.Filename, err)
 		return errorJSON(c, http.StatusInternalServerError, "upload to ragflow: "+err.Error())
 	}
 	if len(docs) == 0 {
@@ -204,7 +204,7 @@ func UploadDocument(c echo.Context) error {
 
 	// Save BC metadata
 	meta := &KBDocMeta{
-		ShopID:       req.ShopID,
+		HoldingCode:  req.HoldingCode,
 		RagflowDocID: uploaded.ID,
 		Filename:     req.Filename,
 		BranchID:     req.BranchID,
@@ -224,7 +224,7 @@ func UploadDocument(c echo.Context) error {
 	}
 
 	logger.Info("[KB] uploaded shop=%s file=%s ragflow_doc=%s size=%d",
-		req.ShopID, req.Filename, uploaded.ID, len(rawBytes))
+		req.HoldingCode, req.Filename, uploaded.ID, len(rawBytes))
 
 	return c.JSON(http.StatusOK, map[string]any{
 		"success":  true,
@@ -239,11 +239,11 @@ func DeleteDocument(c echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		return errorJSON(c, http.StatusBadRequest, "invalid request: "+err.Error())
 	}
-	if req.ShopID == "" || req.Filename == "" {
-		return errorJSON(c, http.StatusBadRequest, "shop_id, filename required")
+	if req.HoldingCode == "" || req.Filename == "" {
+		return errorJSON(c, http.StatusBadRequest, "holding_code, filename required")
 	}
 
-	meta, err := FindByFilename(req.ShopID, req.Filename)
+	meta, err := FindByFilename(req.HoldingCode, req.Filename)
 	if err != nil {
 		return errorJSON(c, http.StatusInternalServerError, err.Error())
 	}
@@ -253,7 +253,7 @@ func DeleteDocument(c echo.Context) error {
 
 	client := ragflow.GetClient()
 	if client.IsConfigured() {
-		datasetID, err := client.EnsureDataset(req.ShopID)
+		datasetID, err := client.EnsureDataset(req.HoldingCode)
 		if err == nil && meta.RagflowDocID != "" {
 			if derr := client.DeleteDocument(datasetID, []string{meta.RagflowDocID}); derr != nil {
 				logger.Warn("[KB] ragflow delete failed (continuing with meta delete): %v", derr)
@@ -261,11 +261,11 @@ func DeleteDocument(c echo.Context) error {
 		}
 	}
 
-	if err := DeleteMeta(req.ShopID, meta.RagflowDocID); err != nil {
+	if err := DeleteMeta(req.HoldingCode, meta.RagflowDocID); err != nil {
 		return errorJSON(c, http.StatusInternalServerError, err.Error())
 	}
 
-	logger.Info("[KB] deleted shop=%s file=%s", req.ShopID, req.Filename)
+	logger.Info("[KB] deleted shop=%s file=%s", req.HoldingCode, req.Filename)
 	return c.JSON(http.StatusOK, map[string]any{"success": true})
 }
 
@@ -275,10 +275,10 @@ func UpdateStatus(c echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		return errorJSON(c, http.StatusBadRequest, "invalid request: "+err.Error())
 	}
-	if req.ShopID == "" || req.Filename == "" {
-		return errorJSON(c, http.StatusBadRequest, "shop_id, filename required")
+	if req.HoldingCode == "" || req.Filename == "" {
+		return errorJSON(c, http.StatusBadRequest, "holding_code, filename required")
 	}
-	if err := UpdateFields(req.ShopID, req.Filename, bson.M{"status": req.Status}); err != nil {
+	if err := UpdateFields(req.HoldingCode, req.Filename, bson.M{"status": req.Status}); err != nil {
 		return errorJSON(c, http.StatusInternalServerError, err.Error())
 	}
 	return c.JSON(http.StatusOK, map[string]any{"success": true})
@@ -290,10 +290,10 @@ func UpdateAllDay(c echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		return errorJSON(c, http.StatusBadRequest, "invalid request: "+err.Error())
 	}
-	if req.ShopID == "" || req.Filename == "" {
-		return errorJSON(c, http.StatusBadRequest, "shop_id, filename required")
+	if req.HoldingCode == "" || req.Filename == "" {
+		return errorJSON(c, http.StatusBadRequest, "holding_code, filename required")
 	}
-	if err := UpdateFields(req.ShopID, req.Filename, bson.M{"allday": req.AllDay}); err != nil {
+	if err := UpdateFields(req.HoldingCode, req.Filename, bson.M{"allday": req.AllDay}); err != nil {
 		return errorJSON(c, http.StatusInternalServerError, err.Error())
 	}
 	return c.JSON(http.StatusOK, map[string]any{"success": true})
@@ -305,8 +305,8 @@ func UpdateSchedule(c echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		return errorJSON(c, http.StatusBadRequest, "invalid request: "+err.Error())
 	}
-	if req.ShopID == "" || req.Filename == "" {
-		return errorJSON(c, http.StatusBadRequest, "shop_id, filename required")
+	if req.HoldingCode == "" || req.Filename == "" {
+		return errorJSON(c, http.StatusBadRequest, "holding_code, filename required")
 	}
 	set := bson.M{}
 	if req.StartDateTime != nil && strings.TrimSpace(*req.StartDateTime) != "" {
@@ -319,7 +319,7 @@ func UpdateSchedule(c echo.Context) error {
 	} else {
 		set["end_date_time"] = nil
 	}
-	if err := UpdateFields(req.ShopID, req.Filename, set); err != nil {
+	if err := UpdateFields(req.HoldingCode, req.Filename, set); err != nil {
 		return errorJSON(c, http.StatusInternalServerError, err.Error())
 	}
 	return c.JSON(http.StatusOK, map[string]any{"success": true})
@@ -365,9 +365,9 @@ func Health(c echo.Context) error {
 //   - Smoke-testing the full Go→RAGFlow path without depending on a tool-calling LLM
 //   - Frontend "search KB" feature (separate from chat)
 type queryRequest struct {
-	ShopID string `json:"shop_id"`
-	Query string `json:"query"`
-	TopK int    `json:"top_k"`
+	HoldingCode string `json:"holding_code"`
+	Query       string `json:"query"`
+	TopK        int    `json:"top_k"`
 }
 
 func Query(c echo.Context) error {
@@ -375,8 +375,8 @@ func Query(c echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		return errorJSON(c, http.StatusBadRequest, "invalid request: "+err.Error())
 	}
-	if req.ShopID == "" || strings.TrimSpace(req.Query) == "" {
-		return errorJSON(c, http.StatusBadRequest, "shop_id and query are required")
+	if req.HoldingCode == "" || strings.TrimSpace(req.Query) == "" {
+		return errorJSON(c, http.StatusBadRequest, "holding_code and query are required")
 	}
 	if req.TopK <= 0 || req.TopK > 50 {
 		req.TopK = 8
@@ -387,15 +387,15 @@ func Query(c echo.Context) error {
 		return errorJSON(c, http.StatusServiceUnavailable, "RAGFLOW_API_KEY not configured")
 	}
 
-	datasetID, err := client.EnsureDataset(req.ShopID)
+	datasetID, err := client.EnsureDataset(req.HoldingCode)
 	if err != nil {
-		logger.Error("[KB.Query] EnsureDataset shop=%s: %v", req.ShopID, err)
+		logger.Error("[KB.Query] EnsureDataset shop=%s: %v", req.HoldingCode, err)
 		return errorJSON(c, http.StatusInternalServerError, "ensure dataset: "+err.Error())
 	}
 
 	chunks, err := client.Retrieve(req.Query, []string{datasetID}, req.TopK)
 	if err != nil {
-		logger.Error("[KB.Query] Retrieve shop=%s: %v", req.ShopID, err)
+		logger.Error("[KB.Query] Retrieve shop=%s: %v", req.HoldingCode, err)
 		return errorJSON(c, http.StatusInternalServerError, "retrieve: "+err.Error())
 	}
 
@@ -410,23 +410,23 @@ func Query(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, map[string]any{
-		"success":    true,
-		"shop_id":    req.ShopID,
-		"dataset_id": datasetID,
-		"query":      req.Query,
-		"total":      len(chunks),
-		"chunks":     results,
+		"success":      true,
+		"holding_code": req.HoldingCode,
+		"dataset_id":   datasetID,
+		"query":        req.Query,
+		"total":        len(chunks),
+		"chunks":       results,
 	})
 }
 
-// ViewDocument — GET /api/v1/kb/view?shop_id=X&doc_id=Y
+// ViewDocument — GET /api/v1/kb/view?holding_code=X&doc_id=Y
 // Returns an HTML page rendering all chunks of the specified document.
 // Used as clickable citation target in AI chatbot responses.
 func ViewDocument(c echo.Context) error {
-	shopID := strings.TrimSpace(c.QueryParam("shop_id"))
+	holdingCode := strings.TrimSpace(c.QueryParam("holding_code"))
 	docID := strings.TrimSpace(c.QueryParam("doc_id"))
-	if shopID == "" || docID == "" {
-		return c.HTML(http.StatusBadRequest, "<h3>Missing shop_id or doc_id</h3>")
+	if holdingCode == "" || docID == "" {
+		return c.HTML(http.StatusBadRequest, "<h3>Missing holding_code or doc_id</h3>")
 	}
 
 	client := ragflow.GetClient()
@@ -434,9 +434,9 @@ func ViewDocument(c echo.Context) error {
 		return c.HTML(http.StatusServiceUnavailable, "<h3>KB service not configured</h3>")
 	}
 
-	datasetID, err := client.EnsureDataset(shopID)
+	datasetID, err := client.EnsureDataset(holdingCode)
 	if err != nil {
-		logger.Error("[KB.View] EnsureDataset shop=%s: %v", shopID, err)
+		logger.Error("[KB.View] EnsureDataset shop=%s: %v", holdingCode, err)
 		return c.HTML(http.StatusInternalServerError, "<h3>Failed to load dataset</h3>")
 	}
 
@@ -444,7 +444,7 @@ func ViewDocument(c echo.Context) error {
 	// RAGFlow /retrieval accepts document_ids; we reuse Retrieve with a generic query.
 	chunks, err := client.RetrieveByDocument(datasetID, docID, 50)
 	if err != nil {
-		logger.Error("[KB.View] Retrieve shop=%s doc=%s: %v", shopID, docID, err)
+		logger.Error("[KB.View] Retrieve shop=%s doc=%s: %v", holdingCode, docID, err)
 		return c.HTML(http.StatusInternalServerError, "<h3>Failed to load document</h3>")
 	}
 

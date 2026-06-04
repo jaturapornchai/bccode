@@ -10,8 +10,8 @@ import (
 
 type IStockCalculator interface {
 	// CalculateStockPrice(stockData []StockData) float64
-	CalculatorStock(shopID string, barcode string) error
-	GetStockDataList(shopID string, barcode string) ([]stockModel.StockData, error)
+	CalculatorStock(holdingCode string, barcode string) error
+	GetStockDataList(holdingCode string, barcode string) ([]stockModel.StockData, error)
 	WriteUpdateStockDataChanged(stockData []stockModel.StockData) error
 }
 
@@ -31,14 +31,14 @@ func NewStockCalculator(
 	}
 }
 
-func (sc *StockCalculator) CalculatorStock(shopID string, barcode string) error {
+func (sc *StockCalculator) CalculatorStock(holdingCode string, barcode string) error {
 
-	stockDataList, err := sc.GetStockDataList(shopID, barcode)
+	stockDataList, err := sc.GetStockDataList(holdingCode, barcode)
 	if err != nil {
 		return err
 	}
 
-	productBarcode, err := sc.productBarcodeRepo.Get(shopID, barcode)
+	productBarcode, err := sc.productBarcodeRepo.Get(holdingCode, barcode)
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func (sc *StockCalculator) CalculatorStock(shopID string, barcode string) error 
 	var stockDataChangeLists []stockModel.StockData
 
 	if len(stockDataList) > 0 {
-		calculator := stockcalculator.NewStockCalculator(shopID, barcode, 2, 0, 0)
+		calculator := stockcalculator.NewStockCalculator(holdingCode, barcode, 2, 0, 0)
 		for i, data := range stockDataList {
 			var costPerUnit, totalCost, balanceQty, balanceAmount, balanceAveragePerUnit float64
 			if data.CalcFlag == 1 {
@@ -158,7 +158,7 @@ func (sc *StockCalculator) CalculatorStock(shopID string, barcode string) error 
 			productBarcode.BalanceAmount = calculator.BalanceAmount()
 			productBarcode.AverageCost = calculator.AverageCost()
 
-			err = sc.productBarcodeRepo.Update(shopID, barcode, productBarcode)
+			err = sc.productBarcodeRepo.Update(holdingCode, barcode, productBarcode)
 			if err != nil {
 				return err
 			}
@@ -169,8 +169,8 @@ func (sc *StockCalculator) CalculatorStock(shopID string, barcode string) error 
 	return nil
 }
 
-func (sc *StockCalculator) GetStockDataList(shopID string, barcode string) ([]stockModel.StockData, error) {
-	return sc.stockMovementRepo.GetStockTransactionList(shopID, barcode)
+func (sc *StockCalculator) GetStockDataList(holdingCode string, barcode string) ([]stockModel.StockData, error) {
+	return sc.stockMovementRepo.GetStockTransactionList(holdingCode, barcode)
 }
 
 func (sc *StockCalculator) WriteUpdateStockDataChanged(stockData []stockModel.StockData) error {

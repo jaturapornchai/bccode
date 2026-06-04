@@ -53,12 +53,12 @@ func (h SaleInvoiceBomPriceHttp) RegisterHttp() {
 // @Router /transaction/sale-invoice-price/{id} [get]
 func (h SaleInvoiceBomPriceHttp) InfoSaleInvoiceBomPrice(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get SaleInvoiceBomPrice %v", id)
-	doc, err := h.svc.InfoSaleInvoiceBomPrice(shopID, id)
+	doc, err := h.svc.InfoSaleInvoiceBomPrice(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -84,11 +84,11 @@ func (h SaleInvoiceBomPriceHttp) InfoSaleInvoiceBomPrice(ctx microservice.IConte
 // @Router /transaction/sale-invoice-price/docno/{docno} [get]
 func (h SaleInvoiceBomPriceHttp) InfoSaleInvoiceBomPriceByDocNo(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	docNo := ctx.Param("docno")
 
-	docs, err := h.svc.InfoSaleInvoiceBomPriceByDocNo(shopID, docNo)
+	docs, err := h.svc.InfoSaleInvoiceBomPriceByDocNo(holdingCode, docNo)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -116,13 +116,13 @@ func (h SaleInvoiceBomPriceHttp) InfoSaleInvoiceBomPriceByDocNo(ctx microservice
 // @Router /transaction/sale-invoice-price [get]
 func (h SaleInvoiceBomPriceHttp) SearchSaleInvoiceBomPricePage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
 	filters := h.searchFilter(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.SearchSaleInvoiceBomPrice(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchSaleInvoiceBomPrice(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -152,7 +152,7 @@ func (h SaleInvoiceBomPriceHttp) SearchSaleInvoiceBomPricePage(ctx microservice.
 // @Router /transaction/sale-invoice-price/list [get]
 func (h SaleInvoiceBomPriceHttp) SearchSaleInvoiceBomPriceStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -160,7 +160,7 @@ func (h SaleInvoiceBomPriceHttp) SearchSaleInvoiceBomPriceStep(ctx microservice.
 
 	filters := h.searchFilter(ctx.QueryParam)
 
-	docList, total, err := h.svc.SearchSaleInvoiceBomPriceStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchSaleInvoiceBomPriceStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

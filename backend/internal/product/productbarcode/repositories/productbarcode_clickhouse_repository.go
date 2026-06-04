@@ -11,7 +11,7 @@ import (
 )
 
 type IProductBarcodeClickhouseRepository interface {
-	Search(shopID string, pageable micromodels.Pageable) ([]models.ProductBarcodeSearch, common.Pagination, error)
+	Search(holdingCode string, pageable micromodels.Pageable) ([]models.ProductBarcodeSearch, common.Pagination, error)
 }
 
 type ProductBarcodeClickhouseRepository struct {
@@ -30,13 +30,13 @@ func NewProductBarcodeClickhouseRepository(pst microservice.IPersisterClickHouse
 	return insRepo
 }
 
-func (repo ProductBarcodeClickhouseRepository) Search(shopID string, pageable micromodels.Pageable) ([]models.ProductBarcodeSearch, common.Pagination, error) {
+func (repo ProductBarcodeClickhouseRepository) Search(holdingCode string, pageable micromodels.Pageable) ([]models.ProductBarcodeSearch, common.Pagination, error) {
 
 	searchInFields := []string{"iccode", "barcode", "unitcode"}
 
 	conn := repo.pst.Conn()
 
-	where := "WHERE shopid = ? "
+	where := "WHERE holding_code = ? "
 
 	whereSerach := ""
 
@@ -66,7 +66,7 @@ func (repo ProductBarcodeClickhouseRepository) Search(shopID string, pageable mi
 		context.Background(),
 		&results,
 		fmt.Sprintf("SELECT iccode, barcode, unitcode, price, names FROM productbarcode %s LIMIT ? OFFSET ?", where),
-		shopID,
+		holdingCode,
 		uint64(pageable.Limit),
 		uint64(offset),
 	)
@@ -77,7 +77,7 @@ func (repo ProductBarcodeClickhouseRepository) Search(shopID string, pageable mi
 
 	var count uint64
 
-	err = conn.QueryRow(context.Background(), fmt.Sprintf("SELECT count(*) FROM productbarcode %s LIMIT 1", where), shopID).Scan(&count)
+	err = conn.QueryRow(context.Background(), fmt.Sprintf("SELECT count(*) FROM productbarcode %s LIMIT 1", where), holdingCode).Scan(&count)
 
 	if err != nil {
 		return []models.ProductBarcodeSearch{}, common.Pagination{}, err

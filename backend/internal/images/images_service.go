@@ -19,10 +19,10 @@ import (
 )
 
 type IImagesService interface {
-	UploadImage(shopId string, fh *multipart.FileHeader) (*models.Image, error)
-	UploadImageToProduct(shopID string, fh *multipart.FileHeader) error
-	GetImageByProductCode(shopid string, itemguid string, index int) (string, *bytes.Buffer, error)
-	GetSlipImage(shopid string, posID string, docDate time.Time, docNo string) (string, *bytes.Buffer, error)
+	UploadImage(holdingCode string, fh *multipart.FileHeader) (*models.Image, error)
+	UploadImageToProduct(holdingCode string, fh *multipart.FileHeader) error
+	GetImageByProductCode(holding_code string, itemguid string, index int) (string, *bytes.Buffer, error)
+	GetSlipImage(holding_code string, posID string, docDate time.Time, docNo string) (string, *bytes.Buffer, error)
 }
 
 type ImagesService struct {
@@ -54,13 +54,13 @@ func (svc ImagesService) getContextTimeout() (context.Context, context.CancelFun
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc ImagesService) UploadImage(shopId string, fh *multipart.FileHeader) (*models.Image, error) {
+func (svc ImagesService) UploadImage(holdingCode string, fh *multipart.FileHeader) (*models.Image, error) {
 
 	fileUploadMetadataSlice := strings.Split(fh.Filename, ".")
 	fileName := svc.NewGUIDFn() //fileUploadMetadataSlice[0]
 	fileExtension := fileUploadMetadataSlice[len(fileUploadMetadataSlice)-1]
 
-	fileName, err := svc.persisterImage.Upload(fh, shopId+"/"+fileName, fileExtension)
+	fileName, err := svc.persisterImage.Upload(fh, holdingCode+"/"+fileName, fileExtension)
 
 	if err != nil {
 		return nil, err
@@ -74,7 +74,7 @@ func (svc ImagesService) UploadImage(shopId string, fh *multipart.FileHeader) (*
 	return image, nil
 }
 
-func (svc ImagesService) UploadImageToProduct(shopID string, fh *multipart.FileHeader) error {
+func (svc ImagesService) UploadImageToProduct(holdingCode string, fh *multipart.FileHeader) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -89,7 +89,7 @@ func (svc ImagesService) UploadImageToProduct(shopID string, fh *multipart.FileH
 	barcodeFileName := fileUploadMetadataSlice[0]
 	fileExtension := fileUploadMetadataSlice[len(fileUploadMetadataSlice)-1]
 
-	findDoc, err := svc.invRepo.FindByBarcode(ctx, shopID, barcodeFileName)
+	findDoc, err := svc.invRepo.FindByBarcode(ctx, holdingCode, barcodeFileName)
 	if err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ func (svc ImagesService) UploadImageToProduct(shopID string, fh *multipart.FileH
 		return errors.New("not found product barcode")
 	}
 
-	uploadFileName, err := svc.persisterImage.Upload(fh, shopID+"/"+barcodeFileName, fileExtension)
+	uploadFileName, err := svc.persisterImage.Upload(fh, holdingCode+"/"+barcodeFileName, fileExtension)
 	if err != nil {
 		return err
 	}
@@ -122,16 +122,16 @@ func (svc ImagesService) UploadImageToProduct(shopID string, fh *multipart.FileH
 	})
 
 	// save and return
-	err = svc.invRepo.Update(context.Background(), shopID, dataDoc.GuidFixed, dataDoc)
+	err = svc.invRepo.Update(context.Background(), holdingCode, dataDoc.GuidFixed, dataDoc)
 	return err
 }
 
-func (svc ImagesService) GetImageByProductCode(shopid string, itemguid string, index int) (string, *bytes.Buffer, error) {
+func (svc ImagesService) GetImageByProductCode(holding_code string, itemguid string, index int) (string, *bytes.Buffer, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.invRepo.FindByGuid(ctx, shopid, itemguid)
+	findDoc, err := svc.invRepo.FindByGuid(ctx, holding_code, itemguid)
 
 	if err != nil {
 		return "", nil, err
@@ -157,12 +157,12 @@ func (svc ImagesService) GetImageByProductCode(shopid string, itemguid string, i
 	return imageUri, buffer, nil
 }
 
-func (svc ImagesService) GetSlipImage(shopid string, posID string, docDate time.Time, docNo string) (string, *bytes.Buffer, error) {
+func (svc ImagesService) GetSlipImage(holding_code string, posID string, docDate time.Time, docNo string) (string, *bytes.Buffer, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.slipimageRepo.FindOne(ctx, shopid, bson.M{"posid": posID, "docdate": docDate, "docno": docNo})
+	findDoc, err := svc.slipimageRepo.FindOne(ctx, holding_code, bson.M{"posid": posID, "docdate": docDate, "docno": docNo})
 
 	if err != nil {
 		return "", nil, err

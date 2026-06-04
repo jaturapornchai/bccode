@@ -16,7 +16,7 @@ import (
 
 var journal_json string = `{
 	"id": "000000000000000000000000",
-	"shopid": "27dcEdktOoaSBYFmnN6G6ett4Jb",
+	"holding_code": "27dcEdktOoaSBYFmnN6G6ett4Jb",
 	"guid_fixed": "2ABh7CJyA7RbeZ1WmdwXWvs0GQa",
 	"parid": "0000000",
 	"batchId": "",
@@ -92,7 +92,7 @@ func TestCreateAndDeleteJournal(t *testing.T) {
 
 	json_str := `{
 		"id": "62cdc14ca3f6ef3ca30543e8",
-		"shopid": "2BYWCndV194TYXVEO7NlRLuJYWY",
+		"holding_code": "2BYWCndV194TYXVEO7NlRLuJYWY",
 		"guid_fixed": "2Br5noZ5LmgRuQLwYrpreUl2J9a",
 		"batchId": "",
 		"docno": "JO-20220713014532831-1",
@@ -121,7 +121,7 @@ func TestCreateAndDeleteJournal(t *testing.T) {
 			"creditamount": 200
 		  }
 		]
-	  }	
+	  }
 	`
 	assert.NotNil(t, repo, "Failed to Init Repo")
 
@@ -132,7 +132,7 @@ func TestCreateAndDeleteJournal(t *testing.T) {
 	err = repo.Create(doc)
 	assert.Nil(t, err, "Failed Unmarshal Json to JournalDoc Create1")
 
-	err = repo.Delete(doc.ShopID, doc.DocNo)
+	err = repo.Delete(doc.HoldingCode, doc.DocNo)
 	assert.Nil(t, err, "Failed Unmarshal Json to JournalDoc Create1")
 
 }
@@ -144,7 +144,7 @@ func TestJournalRepositoryRealDBCreateWithTaxAndVat(t *testing.T) {
 
 	jsonStr := `{
 	"id": "694cb8ec3586a1b47bb12de9",
-	"shopid": "2V5zu2gmRgd7sgWj3g6gu7mxYk0",
+	"holding_code": "2V5zu2gmRgd7sgWj3g6gu7mxYk0",
 	"guid_fixed": "37Jz2mblpBhQzJFfOMRrmjgaUPs",
 	"batchid": "",
 	"docno": "JO-20251225CB8F0D",
@@ -285,6 +285,6 @@ func TestJournalRepositoryRealDBCreateWithTaxAndVat(t *testing.T) {
 	assert.Nil(t, err, "Failed to Create Journal with Tax and Vat")
 
 	// Clean up
-	// err = repo.Delete(doc.ShopID, doc.DocNo)
+	// err = repo.Delete(doc.HoldingCode, doc.DocNo)
 	// assert.Nil(t, err, "Failed to Delete Journal")
 }

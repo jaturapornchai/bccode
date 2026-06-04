@@ -14,10 +14,10 @@ package handlers
 // )
 
 // type IProcessDB interface {
-// 	GetShopDB(shopId string) (*sql.DB, error)
+// 	GetShopDB(holdingCode string) (*sql.DB, error)
 // 	InsertDocList(data []processModel.DocStruct, docRefData []processModel.DocRefStruct)
-// 	InsertStockWaitProcess(shopId string, barcodes []string) error
-// 	InsertDocWaitProcess(shopId string, transFlag int, docNo string) error
+// 	InsertStockWaitProcess(holdingCode string, barcodes []string) error
+// 	InsertDocWaitProcess(holdingCode string, transFlag int, docNo string) error
 // }
 
 // type ProcessDB struct {
@@ -27,9 +27,9 @@ package handlers
 // type IProcessConsumer interface {
 // 	DecodeDocDetail(msg string) processModel.ProcessMongoTransModel
 // 	ListBarcode(data processModel.ProcessMongoTransModel) []string
-// 	ProcessUpSertDocData(shopId string, data processModel.ProcessMongoTransModel) error
-// 	ProcessDeleteDocData(shopId string, data processModel.ProcessMongoTransModel) error
-// 	InvokeProcess(shopid string)
+// 	ProcessUpSertDocData(holdingCode string, data processModel.ProcessMongoTransModel) error
+// 	ProcessDeleteDocData(holdingCode string, data processModel.ProcessMongoTransModel) error
+// 	InvokeProcess(holding_code string)
 // }
 
 // type ProcessConsumer struct {
@@ -56,7 +56,7 @@ package handlers
 // 	return barcodeList
 // }
 
-// func (p *ProcessConsumer) ProcessUpSertDocData(shopId string, data processModel.ProcessMongoTransModel) error {
+// func (p *ProcessConsumer) ProcessUpSertDocData(holdingCode string, data processModel.ProcessMongoTransModel) error {
 
 // 	var postgresData []processModel.DocStruct
 // 	var postgresDocRefData []processModel.DocRefStruct
@@ -67,7 +67,7 @@ package handlers
 // 		postgresDocRefData = append(postgresDocRefData, build.MapDocRefStruct(data.DocNo, data.TransFlag, refNo))
 // 	}
 
-// 	_, err := p.dbProcess.GetShopDB(shopId)
+// 	_, err := p.dbProcess.GetShopDB(holdingCode)
 // 	if err != nil {
 // 		return err
 // 	}
@@ -75,27 +75,27 @@ package handlers
 // 	p.dbProcess.InsertDocList(postgresData, postgresDocRefData)
 
 // 	barcodeList := p.ListBarcode(data)
-// 	err = p.dbProcess.InsertStockWaitProcess(shopId, barcodeList)
+// 	err = p.dbProcess.InsertStockWaitProcess(holdingCode, barcodeList)
 
 // 	if err != nil {
 // 		return err
 // 	}
 
-// 	err = p.dbProcess.InsertDocWaitProcess(shopId, data.TransFlag, data.DocNo)
+// 	err = p.dbProcess.InsertDocWaitProcess(holdingCode, data.TransFlag, data.DocNo)
 // 	if err != nil {
 // 		return err
 // 	}
 
-// 	p.InvokeProcess(shopId)
+// 	p.InvokeProcess(holdingCode)
 // 	return nil
 // }
 
-// func (p *ProcessConsumer) ProcessDeleteDocData(shopId string, data processModel.ProcessMongoTransModel) error {
+// func (p *ProcessConsumer) ProcessDeleteDocData(holdingCode string, data processModel.ProcessMongoTransModel) error {
 
 // }
 
-// func (d *ProcessConsumer) GetShopDB(shopId string) (*sql.DB, error) {
-// 	postgresDB, err := mypg.FastConnect(shopId)
+// func (d *ProcessConsumer) GetShopDB(holdingCode string) (*sql.DB, error) {
+// 	postgresDB, err := mypg.FastConnect(holdingCode)
 // 	if err != nil {
 // 		logger.Info("Failed to connect to PostgreSQL: %v", err)
 // 		return nil, err
@@ -103,13 +103,13 @@ package handlers
 // 	return postgresDB, nil
 // }
 
-// func (p *ProcessConsumer) InvokeProcess(shopid string) {
-// 	go processstock.ProcessStockCostAll(shopid)
-// 	go processDoc.ProcessDocPurchaseAll(shopid)
+// func (p *ProcessConsumer) InvokeProcess(holding_code string) {
+// 	go processstock.ProcessStockCostAll(holding_code)
+// 	go processDoc.ProcessDocPurchaseAll(holding_code)
 // }
 
-// func (p *ProcessDB) GetShopDB(shopId string) (*sql.DB, error) {
-// 	postgresDB, err := mypg.FastConnect(shopId)
+// func (p *ProcessDB) GetShopDB(holdingCode string) (*sql.DB, error) {
+// 	postgresDB, err := mypg.FastConnect(holdingCode)
 // 	if err != nil {
 // 		logger.Info("Failed to connect to PostgreSQL: %v", err)
 // 		return nil, err
@@ -124,7 +124,7 @@ package handlers
 // 	build.ProcessInsertDocList(context.Background(), p.db, data, docRefData)
 // }
 
-// func (p *ProcessDB) InsertStockWaitProcess(shopId string, barcodes []string) error {
+// func (p *ProcessDB) InsertStockWaitProcess(holdingCode string, barcodes []string) error {
 
 // 	var barcodeInsertList []string
 // 	for _, item := range barcodes {
@@ -140,7 +140,7 @@ package handlers
 // 	return nil
 // }
 
-// func (p *ProcessDB) InsertDocWaitProcess(shopId string, transFlag int, docNo string) error {
+// func (p *ProcessDB) InsertDocWaitProcess(holdingCode string, transFlag int, docNo string) error {
 // 	queryInsertDocWaitProcess := "INSERT INTO docwaitprocess (transflag,docno) VALUES (" + strconv.Itoa(transFlag) + ",'" + docNo + "');"
 // 	_, err := p.db.ExecContext(context.Background(), queryInsertDocWaitProcess)
 // 	return err

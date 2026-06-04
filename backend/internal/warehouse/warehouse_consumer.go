@@ -74,7 +74,7 @@ func (c *WarehouseConsumer) ConsumeOnCreateOrUpdate(ctx microservice.IContext) e
 		return err
 	}
 
-	err = c.svc.Upsert(doc.ShopID, doc.GuidFixed, *doc)
+	err = c.svc.Upsert(doc.HoldingCode, doc.GuidFixed, *doc)
 
 	if err != nil {
 		logger.GetLogger().Errorf("Cannot upsert Warehouse doc: %v", err)
@@ -93,7 +93,7 @@ func (c *WarehouseConsumer) ConsumeOnDelete(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = c.svc.Delete(doc.ShopID, doc.GuidFixed)
+	err = c.svc.Delete(doc.HoldingCode, doc.GuidFixed)
 
 	if err != nil {
 		logger.GetLogger().Errorf("Cannot delete Warehouse doc: %v", err)
@@ -112,7 +112,7 @@ func (c *WarehouseConsumer) ConsumeOnBulkCreateOrUpdate(ctx microservice.IContex
 	}
 
 	for _, doc := range *docs {
-		err = c.svc.Upsert(doc.ShopID, doc.GuidFixed, doc)
+		err = c.svc.Upsert(doc.HoldingCode, doc.GuidFixed, doc)
 		if err != nil {
 			logger.GetLogger().Errorf("Cannot upsert Warehouse doc: %v", err)
 			return err
@@ -131,7 +131,7 @@ func (c *WarehouseConsumer) ConsumeOnBulkDelete(ctx microservice.IContext) error
 	}
 
 	for _, doc := range *docs {
-		err = c.svc.Delete(doc.ShopID, doc.GuidFixed)
+		err = c.svc.Delete(doc.HoldingCode, doc.GuidFixed)
 		if err != nil {
 			logger.GetLogger().Errorf("Cannot delete Warehouse doc: %v", err)
 			return err

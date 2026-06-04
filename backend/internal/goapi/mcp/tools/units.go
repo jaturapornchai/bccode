@@ -22,40 +22,40 @@ const unitCollection = "units"
 
 // UnitNameEntry ชื่อหน่วยนับแต่ละภาษา
 type UnitNameEntry struct {
-	Code string `json:"code" bson:"code"`
-	Name string `json:"name" bson:"name"`
-	IsAuto bool   `json:"isauto" bson:"isauto"`
+	Code     string `json:"code" bson:"code"`
+	Name     string `json:"name" bson:"name"`
+	IsAuto   bool   `json:"isauto" bson:"isauto"`
 	IsDelete bool   `json:"isdelete" bson:"isdelete"`
 }
 
 // UnitDocument เอกสารหน่วยนับใน MongoDB
 type UnitDocument struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	ShopID string             `json:"shopid" bson:"shopid"`
-	GuidFixed string             `json:"guid_fixed" bson:"guid_fixed"`
-	UnitCode string `json:"unitcode" bson:"unitcode"`
-	Names []UnitNameEntry    `json:"names" bson:"names"`
-	CreatedBy string             `json:"createdby" bson:"createdby"`
-	CreatedAt time.Time          `json:"created_at" bson:"created_at"`
-	UpdatedBy string             `json:"updatedby,omitempty" bson:"updatedby,omitempty"`
-	UpdatedAt time.Time          `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
-	DeletedAt time.Time          `json:"deleted_at,omitempty" bson:"deleted_at,omitempty"`
+	ID          primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	HoldingCode string             `json:"holding_code" bson:"holding_code"`
+	GuidFixed   string             `json:"guid_fixed" bson:"guid_fixed"`
+	UnitCode    string             `json:"unitcode" bson:"unitcode"`
+	Names       []UnitNameEntry    `json:"names" bson:"names"`
+	CreatedBy   string             `json:"createdby" bson:"createdby"`
+	CreatedAt   time.Time          `json:"created_at" bson:"created_at"`
+	UpdatedBy   string             `json:"updatedby,omitempty" bson:"updatedby,omitempty"`
+	UpdatedAt   time.Time          `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
+	DeletedAt   time.Time          `json:"deleted_at,omitempty" bson:"deleted_at,omitempty"`
 }
 
 // ==================== List Units ====================
 
 // ListUnitsResponse ผลลัพธ์จากการดึง/ค้นหาหน่วยนับ
 type ListUnitsResponse struct {
-	Units []UnitDocument `json:"units"`
-	Count int            `json:"count"`
-	Keyword string         `json:"keyword,omitempty"`
+	Units       []UnitDocument `json:"units"`
+	Count       int            `json:"count"`
+	Keyword     string         `json:"keyword,omitempty"`
 	GeneratedAt time.Time      `json:"generated_at"`
 }
 
 // ListUnits ดึง/ค้นหาหน่วยนับ
-func ListUnits(ctx context.Context, shopID, keyword string, limit int) (*ListUnitsResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func ListUnits(ctx context.Context, holdingCode, keyword string, limit int) (*ListUnitsResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 
 	if limit <= 0 {
@@ -75,7 +75,7 @@ func ListUnits(ctx context.Context, shopID, keyword string, limit int) (*ListUni
 
 	// สร้าง filter
 	filter := bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 		"$or": []bson.M{
 			{"deleted_at": bson.M{"$exists": false}},
 			{"deleted_at": time.Time{}},
@@ -93,7 +93,7 @@ func ListUnits(ctx context.Context, shopID, keyword string, limit int) (*ListUni
 		filter = bson.M{"$and": []bson.M{filter, keywordFilter}}
 	}
 
-	logger.Info("[MCP ListUnits] shopID=%s, keyword=%s, limit=%d", shopID, keyword, limit)
+	logger.Info("[MCP ListUnits] holdingCode=%s, keyword=%s, limit=%d", holdingCode, keyword, limit)
 
 	coll := mongoClient.Database(dbName).Collection(unitCollection)
 	opts := options.Find().
@@ -127,19 +127,19 @@ func ListUnits(ctx context.Context, shopID, keyword string, limit int) (*ListUni
 
 // CreateUnitResponse ผลลัพธ์จากการสร้างหน่วยนับ
 type CreateUnitResponse struct {
-	Success bool         `json:"success"`
-	Message string       `json:"message"`
-	Unit UnitDocument `json:"unit"`
-	KafkaSync string       `json:"kafka_sync"`
-	KafkaError string       `json:"kafka_error,omitempty"`
+	Success     bool         `json:"success"`
+	Message     string       `json:"message"`
+	Unit        UnitDocument `json:"unit"`
+	KafkaSync   string       `json:"kafka_sync"`
+	KafkaError  string       `json:"kafka_error,omitempty"`
 	GeneratedAt time.Time    `json:"generated_at"`
 }
 
 // CreateUnit สร้างหน่วยนับใหม่
 // ใช้ names[] เป็นชื่อแสดงผล
-func CreateUnit(ctx context.Context, shopID, unitCode, namesJSON string) (*CreateUnitResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func CreateUnit(ctx context.Context, holdingCode, unitCode, namesJSON string) (*CreateUnitResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 	if unitCode == "" {
 		return nil, fmt.Errorf("unitcode is required")
@@ -156,8 +156,8 @@ func CreateUnit(ctx context.Context, shopID, unitCode, namesJSON string) (*Creat
 
 	// ตรวจสอบ unitcode ซ้ำ
 	existFilter := bson.M{
-		"shopid":   shopID,
-		"unitcode": unitCode,
+		"holding_code": holdingCode,
+		"unitcode":     unitCode,
 		"$or": []bson.M{
 			{"deleted_at": bson.M{"$exists": false}},
 			{"deleted_at": time.Time{}},
@@ -184,13 +184,13 @@ func CreateUnit(ctx context.Context, shopID, unitCode, namesJSON string) (*Creat
 
 	now := time.Now()
 	doc := UnitDocument{
-		ShopID:    shopID,
-		GuidFixed: uuid.New().String(),
-		UnitCode:  unitCode,
-		Names:     names,
-		CreatedBy: "mcp-tool",
-		CreatedAt: now,
-		UpdatedAt: now,
+		HoldingCode: holdingCode,
+		GuidFixed:   uuid.New().String(),
+		UnitCode:    unitCode,
+		Names:       names,
+		CreatedBy:   "mcp-tool",
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
 
 	result, err := coll.InsertOne(ctx, doc)
@@ -211,7 +211,7 @@ func CreateUnit(ctx context.Context, shopID, unitCode, namesJSON string) (*Creat
 		logger.Warn("[MCP CreateUnit] Kafka publish ล้มเหลว (แต่ MongoDB สำเร็จแล้ว): %v", err)
 	}
 
-	logger.Info("[MCP CreateUnit] สร้าง unitcode=%s สำเร็จ (shop=%s, kafka=%s)", unitCode, shopID, kafkaSync)
+	logger.Info("[MCP CreateUnit] สร้าง unitcode=%s สำเร็จ (shop=%s, kafka=%s)", unitCode, holdingCode, kafkaSync)
 
 	return &CreateUnitResponse{
 		Success:     true,
@@ -228,26 +228,26 @@ func CreateUnit(ctx context.Context, shopID, unitCode, namesJSON string) (*Creat
 // CreateUnitsRequest รายการหน่วยนับที่ต้องการสร้างพร้อมกัน
 type CreateUnitsItem struct {
 	UnitCode string          `json:"unitcode"`
-	Names []UnitNameEntry `json:"names"`
+	Names    []UnitNameEntry `json:"names"`
 }
 
 // CreateUnitsResponse ผลลัพธ์จากการสร้างหน่วยนับหลายรายการ
 type CreateUnitsResponse struct {
-	Success bool           `json:"success"`
-	Message string         `json:"message"`
-	Created []UnitDocument `json:"created"`
-	Skipped []string       `json:"skipped,omitempty"`
+	Success      bool           `json:"success"`
+	Message      string         `json:"message"`
+	Created      []UnitDocument `json:"created"`
+	Skipped      []string       `json:"skipped,omitempty"`
 	CreatedCount int            `json:"created_count"`
 	SkippedCount int            `json:"skipped_count"`
-	KafkaSync string         `json:"kafka_sync"`
-	KafkaError string         `json:"kafka_error,omitempty"`
-	GeneratedAt time.Time      `json:"generated_at"`
+	KafkaSync    string         `json:"kafka_sync"`
+	KafkaError   string         `json:"kafka_error,omitempty"`
+	GeneratedAt  time.Time      `json:"generated_at"`
 }
 
 // CreateUnits สร้างหน่วยนับหลายรายการพร้อมกัน
-func CreateUnits(ctx context.Context, shopID, unitsJSON string) (*CreateUnitsResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func CreateUnits(ctx context.Context, holdingCode, unitsJSON string) (*CreateUnitsResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 	if unitsJSON == "" {
 		return nil, fmt.Errorf("units JSON is required")
@@ -280,8 +280,8 @@ func CreateUnits(ctx context.Context, shopID, unitsJSON string) (*CreateUnitsRes
 	}
 
 	existFilter := bson.M{
-		"shopid":   shopID,
-		"unitcode": bson.M{"$in": unitCodes},
+		"holding_code": holdingCode,
+		"unitcode":     bson.M{"$in": unitCodes},
 		"$or": []bson.M{
 			{"deleted_at": bson.M{"$exists": false}},
 			{"deleted_at": time.Time{}},
@@ -325,13 +325,13 @@ func CreateUnits(ctx context.Context, shopID, unitsJSON string) (*CreateUnitsRes
 		}
 
 		doc := UnitDocument{
-			ShopID:    shopID,
-			GuidFixed: uuid.New().String(),
-			UnitCode:  item.UnitCode,
-			Names:     names,
-			CreatedBy: "mcp-tool",
-			CreatedAt: now,
-			UpdatedAt: now,
+			HoldingCode: holdingCode,
+			GuidFixed:   uuid.New().String(),
+			UnitCode:    item.UnitCode,
+			Names:       names,
+			CreatedBy:   "mcp-tool",
+			CreatedAt:   now,
+			UpdatedAt:   now,
 		}
 		docsToInsert = append(docsToInsert, doc)
 		createdDocs = append(createdDocs, doc)
@@ -355,7 +355,7 @@ func CreateUnits(ctx context.Context, shopID, unitsJSON string) (*CreateUnitsRes
 		}
 	}
 
-	logger.Info("[MCP CreateUnits] สร้าง %d รายการสำเร็จ, ข้าม %d รายการ (shop=%s, kafka=%s)", len(createdDocs), len(skipped), shopID, kafkaSync)
+	logger.Info("[MCP CreateUnits] สร้าง %d รายการสำเร็จ, ข้าม %d รายการ (shop=%s, kafka=%s)", len(createdDocs), len(skipped), holdingCode, kafkaSync)
 
 	return &CreateUnitsResponse{
 		Success:      true,
@@ -374,18 +374,18 @@ func CreateUnits(ctx context.Context, shopID, unitsJSON string) (*CreateUnitsRes
 
 // UpdateUnitResponse ผลลัพธ์จากการอัปเดตหน่วยนับ
 type UpdateUnitResponse struct {
-	Success bool         `json:"success"`
-	Message string       `json:"message"`
-	Unit UnitDocument `json:"unit"`
-	KafkaSync string       `json:"kafka_sync"`
-	KafkaError string       `json:"kafka_error,omitempty"`
+	Success     bool         `json:"success"`
+	Message     string       `json:"message"`
+	Unit        UnitDocument `json:"unit"`
+	KafkaSync   string       `json:"kafka_sync"`
+	KafkaError  string       `json:"kafka_error,omitempty"`
 	GeneratedAt time.Time    `json:"generated_at"`
 }
 
 // UpdateUnit อัปเดตหน่วยนับตาม unitcode
-func UpdateUnit(ctx context.Context, shopID, unitCode, namesJSON string) (*UpdateUnitResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func UpdateUnit(ctx context.Context, holdingCode, unitCode, namesJSON string) (*UpdateUnitResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 	if unitCode == "" {
 		return nil, fmt.Errorf("unitcode is required")
@@ -402,8 +402,8 @@ func UpdateUnit(ctx context.Context, shopID, unitCode, namesJSON string) (*Updat
 
 	// ค้นหา unit ที่ต้องการอัปเดต
 	filter := bson.M{
-		"shopid":   shopID,
-		"unitcode": unitCode,
+		"holding_code": holdingCode,
+		"unitcode":     unitCode,
 		"$or": []bson.M{
 			{"deleted_at": bson.M{"$exists": false}},
 			{"deleted_at": time.Time{}},
@@ -419,7 +419,7 @@ func UpdateUnit(ctx context.Context, shopID, unitCode, namesJSON string) (*Updat
 	// สร้าง update fields
 	updateFields := bson.M{
 		"updated_at": time.Now(),
-		"updatedby": "mcp-tool",
+		"updatedby":  "mcp-tool",
 	}
 	if namesJSON != "" {
 		var names []UnitNameEntry
@@ -447,7 +447,7 @@ func UpdateUnit(ctx context.Context, shopID, unitCode, namesJSON string) (*Updat
 		logger.Warn("[MCP UpdateUnit] Kafka publish ล้มเหลว (แต่ MongoDB สำเร็จแล้ว): %v", err)
 	}
 
-	logger.Info("[MCP UpdateUnit] อัปเดต unitcode=%s สำเร็จ (shop=%s, kafka=%s)", unitCode, shopID, kafkaSync)
+	logger.Info("[MCP UpdateUnit] อัปเดต unitcode=%s สำเร็จ (shop=%s, kafka=%s)", unitCode, holdingCode, kafkaSync)
 
 	return &UpdateUnitResponse{
 		Success:     true,
@@ -463,18 +463,18 @@ func UpdateUnit(ctx context.Context, shopID, unitCode, namesJSON string) (*Updat
 
 // DeleteUnitResponse ผลลัพธ์จากการลบหน่วยนับ
 type DeleteUnitResponse struct {
-	Success bool      `json:"success"`
-	Message string    `json:"message"`
-	UnitCode string    `json:"unitcode"`
-	KafkaSync string    `json:"kafka_sync"`
-	KafkaError string    `json:"kafka_error,omitempty"`
+	Success     bool      `json:"success"`
+	Message     string    `json:"message"`
+	UnitCode    string    `json:"unitcode"`
+	KafkaSync   string    `json:"kafka_sync"`
+	KafkaError  string    `json:"kafka_error,omitempty"`
 	GeneratedAt time.Time `json:"generated_at"`
 }
 
 // DeleteUnit ลบหน่วยนับตาม unitcode
-func DeleteUnit(ctx context.Context, shopID, unitCode string) (*DeleteUnitResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func DeleteUnit(ctx context.Context, holdingCode, unitCode string) (*DeleteUnitResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 	if unitCode == "" {
 		return nil, fmt.Errorf("unitcode is required")
@@ -490,8 +490,8 @@ func DeleteUnit(ctx context.Context, shopID, unitCode string) (*DeleteUnitRespon
 	coll := mongoClient.Database(dbName).Collection(unitCollection)
 
 	filter := bson.M{
-		"shopid":   shopID,
-		"unitcode": unitCode,
+		"holding_code": holdingCode,
+		"unitcode":     unitCode,
 	}
 
 	// ดึง document ก่อนลบ เพื่อส่ง Kafka event
@@ -520,7 +520,7 @@ func DeleteUnit(ctx context.Context, shopID, unitCode string) (*DeleteUnitRespon
 		kafkaSync = "skipped"
 	}
 
-	logger.Info("[MCP DeleteUnit] ลบ unitcode=%s สำเร็จ (shop=%s, kafka=%s)", unitCode, shopID, kafkaSync)
+	logger.Info("[MCP DeleteUnit] ลบ unitcode=%s สำเร็จ (shop=%s, kafka=%s)", unitCode, holdingCode, kafkaSync)
 
 	return &DeleteUnitResponse{
 		Success:     true,
@@ -536,21 +536,21 @@ func DeleteUnit(ctx context.Context, shopID, unitCode string) (*DeleteUnitRespon
 
 // DeleteUnitsResponse ผลลัพธ์จากการลบหน่วยนับหลายรายการ
 type DeleteUnitsResponse struct {
-	Success bool      `json:"success"`
-	Message string    `json:"message"`
-	Deleted []string  `json:"deleted"`
-	NotFound []string  `json:"not_found,omitempty"`
-	DeletedCount int       `json:"deleted_count"`
+	Success       bool      `json:"success"`
+	Message       string    `json:"message"`
+	Deleted       []string  `json:"deleted"`
+	NotFound      []string  `json:"not_found,omitempty"`
+	DeletedCount  int       `json:"deleted_count"`
 	NotFoundCount int       `json:"not_found_count"`
-	KafkaSync string    `json:"kafka_sync"`
-	KafkaError string    `json:"kafka_error,omitempty"`
-	GeneratedAt time.Time `json:"generated_at"`
+	KafkaSync     string    `json:"kafka_sync"`
+	KafkaError    string    `json:"kafka_error,omitempty"`
+	GeneratedAt   time.Time `json:"generated_at"`
 }
 
 // DeleteUnits ลบหน่วยนับหลายรายการพร้อมกัน
-func DeleteUnits(ctx context.Context, shopID, unitcodesJSON string) (*DeleteUnitsResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func DeleteUnits(ctx context.Context, holdingCode, unitcodesJSON string) (*DeleteUnitsResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 	if unitcodesJSON == "" {
 		return nil, fmt.Errorf("unitcodes is required")
@@ -578,8 +578,8 @@ func DeleteUnits(ctx context.Context, shopID, unitcodesJSON string) (*DeleteUnit
 
 	// ค้นหา unitcodes ที่มีอยู่จริง
 	existFilter := bson.M{
-		"shopid":   shopID,
-		"unitcode": bson.M{"$in": unitCodes},
+		"holding_code": holdingCode,
+		"unitcode":     bson.M{"$in": unitCodes},
 	}
 	cursor, err := coll.Find(ctx, existFilter, options.Find().SetProjection(bson.M{"unitcode": 1}))
 	if err != nil {
@@ -613,8 +613,8 @@ func DeleteUnits(ctx context.Context, shopID, unitcodesJSON string) (*DeleteUnit
 	var docsToDelete []interface{}
 	if len(deleted) > 0 {
 		delCursor, _ := coll.Find(ctx, bson.M{
-			"shopid":   shopID,
-			"unitcode": bson.M{"$in": deleted},
+			"holding_code": holdingCode,
+			"unitcode":     bson.M{"$in": deleted},
 		})
 		if delCursor != nil {
 			var docs []UnitDocument
@@ -629,8 +629,8 @@ func DeleteUnits(ctx context.Context, shopID, unitcodesJSON string) (*DeleteUnit
 	// ลบทั้งหมดที่มีอยู่ด้วย DeleteMany
 	if len(deleted) > 0 {
 		deleteFilter := bson.M{
-			"shopid":   shopID,
-			"unitcode": bson.M{"$in": deleted},
+			"holding_code": holdingCode,
+			"unitcode":     bson.M{"$in": deleted},
 		}
 		_, err = coll.DeleteMany(ctx, deleteFilter)
 		if err != nil {
@@ -648,7 +648,7 @@ func DeleteUnits(ctx context.Context, shopID, unitcodesJSON string) (*DeleteUnit
 		}
 	}
 
-	logger.Info("[MCP DeleteUnits] ลบ %d รายการสำเร็จ, ไม่พบ %d รายการ (shop=%s, kafka=%s)", len(deleted), len(notFound), shopID, kafkaSync)
+	logger.Info("[MCP DeleteUnits] ลบ %d รายการสำเร็จ, ไม่พบ %d รายการ (shop=%s, kafka=%s)", len(deleted), len(notFound), holdingCode, kafkaSync)
 
 	return &DeleteUnitsResponse{
 		Success:       true,
@@ -668,23 +668,23 @@ func DeleteUnits(ctx context.Context, shopID, unitcodesJSON string) (*DeleteUnit
 // GetUnitSchema คืนโครงสร้างข้อมูลหน่วยนับ
 func GetUnitSchema() map[string]interface{} {
 	return map[string]interface{}{
-		"collection": unitCollection,
+		"collection":  unitCollection,
 		"description": "หน่วยนับ (Unit of Measure) — ใช้กำหนดหน่วยของสินค้า เช่น ชิ้น, กล่อง, กิโลกรัม",
 		"fields": map[string]interface{}{
-			"_id":       "ObjectID — MongoDB auto-generated ID",
-			"shopid":    "string — Shop ID (tenant isolation)",
-			"guid_fixed": "string — UUID สำหรับอ้างอิงภายใน",
-			"unitcode":  "string (required, max 100) — รหัสหน่วยนับ เช่น EA, BOX, KG, PACK",
-			"names":     "array (required) — ชื่อหลายภาษา [{code:'th', name:'ชิ้น'}, {code:'en', name:'Each'}]",
-			"createdby": "string — ผู้สร้าง",
-			"created_at": "datetime — วันที่สร้าง",
-			"updatedby": "string — ผู้แก้ไขล่าสุด",
-			"updated_at": "datetime — วันที่แก้ไขล่าสุด",
-			"deleted_at": "datetime — วันที่ลบ (soft delete)",
+			"_id":          "ObjectID — MongoDB auto-generated ID",
+			"holding_code": "string — Holding Code (tenant isolation)",
+			"guid_fixed":   "string — UUID สำหรับอ้างอิงภายใน",
+			"unitcode":     "string (required, max 100) — รหัสหน่วยนับ เช่น EA, BOX, KG, PACK",
+			"names":        "array (required) — ชื่อหลายภาษา [{code:'th', name:'ชิ้น'}, {code:'en', name:'Each'}]",
+			"createdby":    "string — ผู้สร้าง",
+			"created_at":   "datetime — วันที่สร้าง",
+			"updatedby":    "string — ผู้แก้ไขล่าสุด",
+			"updated_at":   "datetime — วันที่แก้ไขล่าสุด",
+			"deleted_at":   "datetime — วันที่ลบ (soft delete)",
 		},
 		"indexes": []string{
-			"shopid + unitcode (unique per shop)",
-			"shopid + guidfixed",
+			"holding_code + unitcode (unique per shop)",
+			"holding_code + guidfixed",
 		},
 		"examples": []map[string]interface{}{
 			{

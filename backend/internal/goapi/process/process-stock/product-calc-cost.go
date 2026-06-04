@@ -46,19 +46,19 @@ func (b *BatchStockSaver) SaveClickHouse(details []models.ProcessStockCostDetail
 // StockProgressCallback — callback สำหรับรายงานความคืบหน้าคำนวณต้นทุนสต็อก
 type StockProgressCallback func(processed, total int)
 
-func ProcessStockCostAll(shopId string) {
-	ProcessStockCostAllWithCallback(shopId, nil)
+func ProcessStockCostAll(holdingCode string) {
+	ProcessStockCostAllWithCallback(holdingCode, nil)
 }
 
 // ProcessStockCostAllWithCallback — คำนวณต้นทุนสต็อกทั้งหมด พร้อมรายงาน progress ผ่าน callback
-func ProcessStockCostAllWithCallback(shopId string, callback StockProgressCallback) {
-	logger.Info("ProcessStockCostAll: %s\n", shopId)
+func ProcessStockCostAllWithCallback(holdingCode string, callback StockProgressCallback) {
+	logger.Info("ProcessStockCostAll: %s\n", holdingCode)
 	pointQty := 2
 	pointAmount := 2
 	pointCost := 2
 
 	// ดึงรายการสินค้าที่ต้องคำนวณสต็อกจาก stockwaitprocess
-	db, err := mypg.PgSqlFastConnect(shopId)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		logger.Error("connect to PostgreSQL: %v", err)
 		return
@@ -71,9 +71,9 @@ func ProcessStockCostAllWithCallback(shopId string, callback StockProgressCallba
 		return
 	}
 
-	logger.Info("Found %d item codes to process for shopId %s", len(dataRows), shopId)
+	logger.Info("Found %d item codes to process for holdingCode %s", len(dataRows), holdingCode)
 
-	// ลบทั้งหมดเฉพาะ shopId โดยใช้คำสั่งเดียว
+	// ลบทั้งหมดเฉพาะ holdingCode โดยใช้คำสั่งเดียว
 	ctx := context.TODO()
 
 	// Extract item codes for bulk delete
@@ -85,7 +85,7 @@ func ProcessStockCostAllWithCallback(shopId string, callback StockProgressCallba
 	if len(itemCodeList) > 0 {
 		// Use lib/pq for ANY array parameter
 		_, err = db.ExecContext(ctx, `
-			DELETE FROM processstockcost 
+			DELETE FROM processstockcost
 			WHERE itemcode = ANY($1::text[])
 		`, pq.Array(itemCodeList))
 		if err != nil {
@@ -94,14 +94,14 @@ func ProcessStockCostAllWithCallback(shopId string, callback StockProgressCallba
 		}
 
 		_, err = db.ExecContext(ctx, `
-			DELETE FROM processstocklot 
+			DELETE FROM processstocklot
 			WHERE itemcode = ANY($1::text[])
 		`, pq.Array(itemCodeList))
 		if err != nil {
 			logger.Error("delete PostgreSQL processstocklot: %v", err)
 			return
 		}
-		logger.Info("Deleted data for %d items for shopId %s", len(itemCodeList), shopId)
+		logger.Info("Deleted data for %d items for holdingCode %s", len(itemCodeList), holdingCode)
 	}
 
 	// Channels for Shared Writer
@@ -265,7 +265,7 @@ func ProcessStockCostAllWithCallback(shopId string, callback StockProgressCallba
 				}
 
 				// Use process package to replace partition
-				result := process.ReplaceProcessStockCostPartition(context.Background(), clickHouseDB, shopId, code, d)
+				result := process.ReplaceProcessStockCostPartition(context.Background(), clickHouseDB, holdingCode, code, d)
 				if result.Success {
 					// logger.Info("ClickHouse partition replaced successfully: %s", result.Message)
 				} else {
@@ -289,7 +289,7 @@ func ProcessStockCostAllWithCallback(shopId string, callback StockProgressCallba
 				return
 			}
 			_, err := db.ExecContext(context.Background(), `
-				DELETE FROM stockwaitprocess 
+				DELETE FROM stockwaitprocess
 				WHERE itemcode = ANY($1::text[])
 			`, pq.Array(items))
 			if err != nil {
@@ -324,7 +324,7 @@ func ProcessStockCostAllWithCallback(shopId string, callback StockProgressCallba
 	var wg sync.WaitGroup
 
 	logger.Info("Processing %d item codes with max %d concurrent workers for shop %s",
-		len(dataRows), maxWorkers, shopId)
+		len(dataRows), maxWorkers, holdingCode)
 
 	totalItems := len(dataRows)
 	saver := &BatchStockSaver{
@@ -357,7 +357,7 @@ func ProcessStockCostAllWithCallback(shopId string, callback StockProgressCallba
 			defer func() { <-sem }() // release semaphore
 
 			// Use ProductCalcCostWithSaver with our shared saver
-			ProductCalcCostWithSaver(db, shopId, itemCode, pointQty, pointAmount, pointCost, false, saver)
+			ProductCalcCostWithSaver(db, holdingCode, itemCode, pointQty, pointAmount, pointCost, false, saver)
 
 			// Send to delete queue
 			deleteWaitChan <- itemCode
@@ -382,5 +382,5 @@ func ProcessStockCostAllWithCallback(shopId string, callback StockProgressCallba
 	// Wait for writers to finish flushing
 	writerWg.Wait()
 
-	logger.Info("ProcessStockCostAll completed for shop %s", shopId)
+	logger.Info("ProcessStockCostAll completed for shop %s", holdingCode)
 }

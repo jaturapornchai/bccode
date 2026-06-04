@@ -6,8 +6,8 @@ import (
 )
 
 type IShiftConsumerService interface {
-	Upsert(shopID string, guidFixed string, doc models.ShiftPG) error
-	Delete(shopID string, guidFixed string) error
+	Upsert(holdingCode string, guidFixed string, doc models.ShiftPG) error
+	Delete(holdingCode string, guidFixed string) error
 }
 
 type ShiftConsumerService struct {
@@ -20,8 +20,8 @@ func NewShiftConsumerService(repo repositories.IShiftPostgresRepository) IShiftC
 	}
 }
 
-func (s *ShiftConsumerService) Upsert(shopID string, guidFixed string, doc models.ShiftPG) error {
-	findDoc, err := s.repo.Get(shopID, guidFixed)
+func (s *ShiftConsumerService) Upsert(holdingCode string, guidFixed string, doc models.ShiftPG) error {
+	findDoc, err := s.repo.Get(holdingCode, guidFixed)
 	if err != nil || findDoc == nil {
 		err = s.repo.Create(doc)
 		if err != nil {
@@ -32,7 +32,7 @@ func (s *ShiftConsumerService) Upsert(shopID string, guidFixed string, doc model
 		isEqual := findDoc.CompareTo(&doc)
 
 		if !isEqual {
-			err = s.repo.Update(shopID, guidFixed, doc)
+			err = s.repo.Update(holdingCode, guidFixed, doc)
 			if err != nil {
 				return err
 			}
@@ -42,8 +42,8 @@ func (s *ShiftConsumerService) Upsert(shopID string, guidFixed string, doc model
 	return nil
 }
 
-func (s *ShiftConsumerService) Delete(shopID string, guidFixed string) error {
-	err := s.repo.Delete(shopID, guidFixed)
+func (s *ShiftConsumerService) Delete(holdingCode string, guidFixed string) error {
+	err := s.repo.Delete(holdingCode, guidFixed)
 	if err != nil {
 		return err
 	}

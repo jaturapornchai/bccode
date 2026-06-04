@@ -10,13 +10,13 @@ const groupproductCollectionName = "groupProductMaster"
 
 type GroupProduct struct {
 	models.PartitionIdentity `bson:"inline"`
-	Code string          `json:"code" bson:"code"`
-	Names *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
+	Code                     string          `json:"code" bson:"code"`
+	Names                    *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
 }
 
 type GroupProductInfo struct {
 	models.DocIdentity `bson:"inline"`
-	GroupProduct  `bson:"inline"`
+	GroupProduct       `bson:"inline"`
 }
 
 func (GroupProductInfo) CollectionName() string {
@@ -24,13 +24,13 @@ func (GroupProductInfo) CollectionName() string {
 }
 
 type GroupProductData struct {
-	models.ShopIdentity `bson:"inline"`
-	GroupProductInfo  `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	GroupProductInfo         `bson:"inline"`
 }
 
 type GroupProductDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	GroupProductData  `bson:"inline"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	GroupProductData   `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -47,7 +47,7 @@ func (GroupProductItemGuid) CollectionName() string {
 }
 
 type GroupProductActivity struct {
-	GroupProductData  `bson:"inline"`
+	GroupProductData    `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

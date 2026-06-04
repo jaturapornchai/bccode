@@ -2,10 +2,10 @@ package handlers
 
 import (
 	"context"
+	"os"
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/myclickhouse"
 	"smlcloudplatform/internal/goapi/mypg"
-	"os"
 	"strings"
 )
 
@@ -24,20 +24,20 @@ func CloneClickHouseDatabase() {
 	}
 
 	// ดึงข้อมูล shopgroup
-	rows, err := myPgConn.Query("SELECT groupname, shopidlist FROM shopgroup")
+	rows, err := myPgConn.Query("SELECT groupname, holding_codelist FROM shopgroup")
 	if err != nil {
 		logger.Error("Failed to query shopgroup: %v", err)
 		return
 	}
 	defer rows.Close()
 	type ShopGroup struct {
-		GroupName  string
-		ShopIDList string
+		GroupName       string
+		HoldingCodeList string
 	}
 	var shopGroups []ShopGroup
 	for rows.Next() {
 		var sg ShopGroup
-		if err := rows.Scan(&sg.GroupName, &sg.ShopIDList); err != nil {
+		if err := rows.Scan(&sg.GroupName, &sg.HoldingCodeList); err != nil {
 			logger.Error("Failed to scan shopgroup row: %v", err)
 			return
 		}
@@ -47,8 +47,8 @@ func CloneClickHouseDatabase() {
 
 	// ดำเนินการ clone database ที่นี่
 	for _, sg := range shopGroups {
-		logger.Info("Cloning ClickHouse database for group: %s with shops: %s", sg.GroupName, sg.ShopIDList)
-		err := CloneClickHouseDatabaseStart(sg.GroupName, sg.ShopIDList)
+		logger.Info("Cloning ClickHouse database for group: %s with shops: %s", sg.GroupName, sg.HoldingCodeList)
+		err := CloneClickHouseDatabaseStart(sg.GroupName, sg.HoldingCodeList)
 		if err != nil {
 			logger.Error("Failed to clone ClickHouse database: %v", err)
 			return
@@ -56,14 +56,14 @@ func CloneClickHouseDatabase() {
 	}
 }
 
-// formatShopIDList แปลง "x001,x002,x003" เป็น "'x001','x002','x003'"
-func formatShopIDList(shopIDList string) string {
+// formatHoldingCodeList แปลง "x001,x002,x003" เป็น "'x001','x002','x003'"
+func formatHoldingCodeList(holdingCodeList string) string {
 	// ตัดช่องว่างออก
-	shopIDList = strings.ReplaceAll(shopIDList, " ", "")
-	shopIDList = strings.ReplaceAll(shopIDList, "'", "")
+	holdingCodeList = strings.ReplaceAll(holdingCodeList, " ", "")
+	holdingCodeList = strings.ReplaceAll(holdingCodeList, "'", "")
 
 	// แยกด้วย comma
-	shops := strings.Split(shopIDList, ",")
+	shops := strings.Split(holdingCodeList, ",")
 
 	// ใส่ quotes รอบแต่ละ shop
 	quotedShops := make([]string, len(shops))
@@ -77,11 +77,11 @@ func formatShopIDList(shopIDList string) string {
 	return strings.Join(quotedShops, ",")
 }
 
-func CloneClickHouseDatabaseStart(databaseName string, shopIDList string) error {
-	// แปลง shopIDList จาก "x001,x002,x003" เป็น "'x001','x002','x003'"
-	formattedShopIDList := formatShopIDList(shopIDList)
-	logger.Info("📋 Original shopIDList: %s", shopIDList)
-	logger.Info("📋 Formatted shopIDList: %s", formattedShopIDList)
+func CloneClickHouseDatabaseStart(databaseName string, holdingCodeList string) error {
+	// แปลง holdingCodeList จาก "x001,x002,x003" เป็น "'x001','x002','x003'"
+	formattedHoldingCodeList := formatHoldingCodeList(holdingCodeList)
+	logger.Info("📋 Original holdingCodeList: %s", holdingCodeList)
+	logger.Info("📋 Formatted holdingCodeList: %s", formattedHoldingCodeList)
 
 	// เชื่อมต่อ ClickHouse
 	chClient, err := myclickhouse.CreateClickHouseConnection()
@@ -123,7 +123,7 @@ func CloneClickHouseDatabaseStart(databaseName string, shopIDList string) error 
 	}
 	if tableExists {
 		// ลบข้อมูลเก่าออก
-		delQuery := "ALTER TABLE " + databaseName + ".docdetail DELETE WHERE shopid IN (" + formattedShopIDList + ")"
+		delQuery := "ALTER TABLE " + databaseName + ".docdetail DELETE WHERE holding_code IN (" + formattedHoldingCodeList + ")"
 		err = chClient.Exec(ctx, delQuery)
 		if err != nil {
 			logger.Error("Failed to delete old data from docdetail in database %s: %v", databaseName, err)
@@ -142,7 +142,7 @@ func CloneClickHouseDatabaseStart(databaseName string, shopIDList string) error 
 	insertQuery := `INSERT INTO ` + databaseName + `.docdetail
 	SELECT *
 	FROM ` + sourceDB + `.docdetail
-	WHERE shopid IN (` + formattedShopIDList + `)`
+	WHERE holding_code IN (` + formattedHoldingCodeList + `)`
 
 	err = chClient.Exec(ctx, insertQuery)
 	if err != nil {
@@ -150,7 +150,7 @@ func CloneClickHouseDatabaseStart(databaseName string, shopIDList string) error 
 		return err
 	}
 
-	logger.Info("✅ Successfully cloned docdetail data to database %s for shops: %s", databaseName, formattedShopIDList)
+	logger.Info("✅ Successfully cloned docdetail data to database %s for shops: %s", databaseName, formattedHoldingCodeList)
 
 	return nil
 }

@@ -23,12 +23,12 @@ func (ChequeDisqualifiedInfo) CollectionName() string {
 }
 
 type ChequeDisqualifiedData struct {
-	models.ShopIdentity    `bson:"inline"`
-	ChequeDisqualifiedInfo `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	ChequeDisqualifiedInfo   `bson:"inline"`
 }
 
 type ChequeDisqualifiedDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                     primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	ChequeDisqualifiedData `bson:"inline"`
 	models.ActivityDoc     `bson:"inline"`
 }

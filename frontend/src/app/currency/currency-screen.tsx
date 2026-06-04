@@ -913,7 +913,7 @@ function readWorkspace(): WorkspaceSession | null {
     const raw = localStorage.getItem(workspaceStorageKeys.workspace);
     if (!raw) return null;
     const workspace = JSON.parse(raw) as WorkspaceSession;
-    return workspace?.shop?.shopid ? workspace : null;
+    return workspace?.shop?.holding_code ? workspace : null;
   } catch {
     return null;
   }

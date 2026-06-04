@@ -73,7 +73,7 @@ func (h UnitHttp) RegisterHttp() {
 // @Router      /unit/uploadfile [post]
 func (h *UnitHttp) UploadFile(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 
 	file, err := ctx.FormFile("excelfile")
 	if err != nil {
@@ -99,7 +99,7 @@ func (h *UnitHttp) UploadFile(ctx microservice.IContext) error {
 	}
 
 	// Process file และบันทึกข้อมูล
-	result, err := h.svc.ImportUnitsFromFile(fileBytes, shopID, authUsername)
+	result, err := h.svc.ImportUnitsFromFile(fileBytes, holdingCode, authUsername)
 	if err != nil {
 		ctx.Response(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return nil
@@ -120,7 +120,7 @@ func (h *UnitHttp) UploadFile(ctx microservice.IContext) error {
 // @Router /unit [post]
 func (h UnitHttp) CreateUnit(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.Unit{}
@@ -136,7 +136,7 @@ func (h UnitHttp) CreateUnit(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreateUnit(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateUnit(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -163,7 +163,7 @@ func (h UnitHttp) CreateUnit(ctx microservice.IContext) error {
 func (h UnitHttp) UpdateUnit(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	if len(id) < 1 {
@@ -186,7 +186,7 @@ func (h UnitHttp) UpdateUnit(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateUnit(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateUnit(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -214,7 +214,7 @@ func (h UnitHttp) UpdateUnit(ctx microservice.IContext) error {
 func (h UnitHttp) UpdateFieldUnit(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
@@ -238,7 +238,7 @@ func (h UnitHttp) UpdateFieldUnit(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateFieldUnit(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateFieldUnit(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -264,7 +264,7 @@ func (h UnitHttp) UpdateFieldUnit(ctx microservice.IContext) error {
 // @Router /unit/{id} [get]
 func (h UnitHttp) InfoUnit(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
@@ -274,7 +274,7 @@ func (h UnitHttp) InfoUnit(ctx microservice.IContext) error {
 	}
 
 	h.ms.Logger.Debugf("Get Unit %v", id)
-	doc, err := h.svc.InfoUnit(shopID, id)
+	doc, err := h.svc.InfoUnit(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -300,7 +300,7 @@ func (h UnitHttp) InfoUnit(ctx microservice.IContext) error {
 // @Router /unit/by-code [get]
 func (h UnitHttp) InfoArray(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	codesReq, err := url.QueryUnescape(ctx.QueryParam("codes"))
 
@@ -318,7 +318,7 @@ func (h UnitHttp) InfoArray(ctx microservice.IContext) error {
 	}
 
 	// where to filter array
-	doc, err := h.svc.InfoUnitWTFArray(shopID, docReq)
+	doc, err := h.svc.InfoUnitWTFArray(holdingCode, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -379,7 +379,8 @@ func (h UnitHttp) InfoArrayMaster(ctx microservice.IContext) error {
 // @Param		page	query	integer		false  "page "
 // @Param		limit	query	integer		false  "liumit "
 // @Param		unitcode	query	string		false  "unitcode filter ex. \"u001,u002,u003\""
-// @Param		shopsid	query	string		false  "shopid filter ex. \"shop1,shop2,shop3\" - if provided, searches across multiple shops"
+// @Param		holding_code	query	string		false  "holding_code filter ex. \"holding1,holding2,holding3\""
+// @Param		shopsid	query	string		false  "legacy holding_code filter"
 // @Accept 		json
 // @Success		200	{array}		common.ApiResponse
 // @Failure		401 {object}	common.AuthResponseFailed
@@ -387,12 +388,16 @@ func (h UnitHttp) InfoArrayMaster(ctx microservice.IContext) error {
 // @Router /unit [get]
 func (h UnitHttp) SearchUnit(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
 	unitCode := ctx.QueryParam("unitcode")
-	shopsidParam := ctx.QueryParam("shopsid")
+	holdingCodeParam := strings.TrimSpace(ctx.QueryParam("holding_code"))
+	shopsidParam := strings.TrimSpace(ctx.QueryParam("shopsid"))
+	if holdingCodeParam != "" {
+		shopsidParam = holdingCodeParam
+	}
 	companyGuid := ctx.QueryParam("company_guid")
 
 	unitCodeFilters := []string{}
@@ -400,7 +405,7 @@ func (h UnitHttp) SearchUnit(ctx microservice.IContext) error {
 		unitCodeFilters = strings.Split(unitCode, ",")
 	}
 
-	// Check if shopsid parameter is provided for multi-shop query
+	// Check if holding_code parameter is provided for multi-holding query
 	if shopsidParam != "" {
 		shopsidList := strings.Split(shopsidParam, ",")
 		// Remove empty strings
@@ -428,7 +433,7 @@ func (h UnitHttp) SearchUnit(ctx microservice.IContext) error {
 	}
 
 	// Default single shop query
-	docList, pagination, err := h.svc.SearchUnit(shopID, companyGuid, unitCodeFilters, pageable)
+	docList, pagination, err := h.svc.SearchUnit(holdingCode, companyGuid, unitCodeFilters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -458,7 +463,7 @@ func (h UnitHttp) SearchUnit(ctx microservice.IContext) error {
 // @Router /unit/list [get]
 func (h UnitHttp) SearchUnitLimit(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -471,7 +476,7 @@ func (h UnitHttp) SearchUnitLimit(ctx microservice.IContext) error {
 		unitCodeFilters = strings.Split(unitCode, ",")
 	}
 
-	docList, total, err := h.svc.SearchUnitLimit(shopID, companyGuid, lang, unitCodeFilters, pageableStep)
+	docList, total, err := h.svc.SearchUnitLimit(holdingCode, companyGuid, lang, unitCodeFilters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -499,7 +504,7 @@ func (h UnitHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -511,7 +516,7 @@ func (h UnitHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())
@@ -540,7 +545,7 @@ func (h UnitHttp) SaveBulk(ctx microservice.IContext) error {
 // @Router /unit/{id} [delete]
 func (h UnitHttp) DeleteUnit(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
@@ -550,7 +555,7 @@ func (h UnitHttp) DeleteUnit(ctx microservice.IContext) error {
 		return nil
 	}
 
-	err := h.svc.DeleteUnit(shopID, id, authUsername)
+	err := h.svc.DeleteUnit(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -576,7 +581,7 @@ func (h UnitHttp) DeleteUnit(ctx microservice.IContext) error {
 // @Router /unit [delete]
 func (h UnitHttp) DeleteByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -589,7 +594,7 @@ func (h UnitHttp) DeleteByGUIDs(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.DeleteUnitByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteUnitByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

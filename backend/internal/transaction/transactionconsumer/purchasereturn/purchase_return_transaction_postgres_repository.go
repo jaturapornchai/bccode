@@ -7,11 +7,11 @@ import (
 )
 
 type IPurchaseReturnTransactionPGRepository interface {
-	Get(shopID string, docNo string) (*models.PurchaseReturnTransactionPG, error)
+	Get(holdingCode string, docNo string) (*models.PurchaseReturnTransactionPG, error)
 	Create(doc models.PurchaseReturnTransactionPG) error
-	Update(shopID string, docNo string, doc models.PurchaseReturnTransactionPG) error
-	Delete(shopID string, docNo string, doc models.PurchaseReturnTransactionPG) error
-	DeleteData(shopID string, docNo string, doc models.PurchaseReturnTransactionPG) error
+	Update(holdingCode string, docNo string, doc models.PurchaseReturnTransactionPG) error
+	Delete(holdingCode string, docNo string, doc models.PurchaseReturnTransactionPG) error
+	DeleteData(holdingCode string, docNo string, doc models.PurchaseReturnTransactionPG) error
 }
 
 type PurchaseReturnTransactionPGRepository struct {
@@ -37,11 +37,11 @@ func (repo PurchaseReturnTransactionPGRepository) Create(doc models.PurchaseRetu
 	return nil
 }
 
-func (repo PurchaseReturnTransactionPGRepository) Update(shopID string, docNo string, doc models.PurchaseReturnTransactionPG) error {
+func (repo PurchaseReturnTransactionPGRepository) Update(holdingCode string, docNo string, doc models.PurchaseReturnTransactionPG) error {
 
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"shopid": shopID,
-		"docno":  docNo,
+		"holding_code": holdingCode,
+		"docno":        docNo,
 	})
 
 	if err != nil {
@@ -50,20 +50,20 @@ func (repo PurchaseReturnTransactionPGRepository) Update(shopID string, docNo st
 	return nil
 }
 
-func (repo *PurchaseReturnTransactionPGRepository) DeleteData(shopID string, docNo string, doc models.PurchaseReturnTransactionPG) error {
+func (repo *PurchaseReturnTransactionPGRepository) DeleteData(holdingCode string, docNo string, doc models.PurchaseReturnTransactionPG) error {
 
 	var details *[]models.PurchaseReturnTransactionDetailPG
 	tx := repo.pst.DBClient().Begin()
 
-	tx.Model(&models.PurchaseReturnTransactionDetailPG{}).Where(" shopid=? AND docno=?", shopID, docNo).Find(&details)
+	tx.Model(&models.PurchaseReturnTransactionDetailPG{}).Where(" holding_code=? AND docno=?", holdingCode, docNo).Find(&details)
 	for _, tmp := range *details {
 		// mark delete
 		tx.Delete(&models.PurchaseReturnTransactionDetailPG{}, tmp.ID)
 	}
 
 	err := tx.Delete(models.PurchaseReturnTransactionPG{}, map[string]interface{}{
-		"shopid": shopID,
-		"docno":  docNo,
+		"holding_code": holdingCode,
+		"docno":        docNo,
 	}).Error
 
 	if err != nil {

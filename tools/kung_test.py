@@ -57,7 +57,7 @@ QUESTIONS = [
 
 def ask(idx: int, q: str, out_dir: Path) -> dict:
     body = json.dumps({
-        "shop_id": SHOP,
+        "holding_code": SHOP,
         "question": q,
         "session_id": f"pytest-{int(time.time())}-{idx}",
         "output_format": "html",

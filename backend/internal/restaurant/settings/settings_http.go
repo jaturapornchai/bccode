@@ -60,7 +60,7 @@ func (h RestaurantSettingsHttp) RegisterHttp() {
 // @Router /restaurant/settings [post]
 func (h RestaurantSettingsHttp) CreateRestaurantSettings(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.RestaurantSettings{}
@@ -71,7 +71,7 @@ func (h RestaurantSettingsHttp) CreateRestaurantSettings(ctx microservice.IConte
 		return err
 	}
 
-	idx, err := h.svc.CreateRestaurantSettings(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateRestaurantSettings(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -98,7 +98,7 @@ func (h RestaurantSettingsHttp) CreateRestaurantSettings(ctx microservice.IConte
 func (h RestaurantSettingsHttp) UpdateRestaurantSettings(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -111,7 +111,7 @@ func (h RestaurantSettingsHttp) UpdateRestaurantSettings(ctx microservice.IConte
 		return err
 	}
 
-	err = h.svc.UpdateRestaurantSettings(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateRestaurantSettings(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -137,12 +137,12 @@ func (h RestaurantSettingsHttp) UpdateRestaurantSettings(ctx microservice.IConte
 // @Router /restaurant/settings/{id} [delete]
 func (h RestaurantSettingsHttp) DeleteRestaurantSettings(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteRestaurantSettings(shopID, id, authUsername)
+	err := h.svc.DeleteRestaurantSettings(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -168,7 +168,7 @@ func (h RestaurantSettingsHttp) DeleteRestaurantSettings(ctx microservice.IConte
 // @Router /restaurant/settings [delete]
 func (h RestaurantSettingsHttp) DeleteByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -181,7 +181,7 @@ func (h RestaurantSettingsHttp) DeleteByGUIDs(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.DeleteByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -206,12 +206,12 @@ func (h RestaurantSettingsHttp) DeleteByGUIDs(ctx microservice.IContext) error {
 // @Router /restaurant/settings/{id} [get]
 func (h RestaurantSettingsHttp) InfoRestaurantSettings(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get RestaurantSettings %v", id)
-	doc, err := h.svc.InfoRestaurantSettings(shopID, id)
+	doc, err := h.svc.InfoRestaurantSettings(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -237,14 +237,14 @@ func (h RestaurantSettingsHttp) InfoRestaurantSettings(ctx microservice.IContext
 // @Router /restaurant/settings/code/{code} [get]
 func (h RestaurantSettingsHttp) InfoRestaurantSettingsByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
 	h.ms.Logger.Debugf("Get RestaurantSettings %v", code)
 	pageable := utils.GetPageable(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.ListRestaurantSettingsByCode(shopID, code, pageable)
+	docList, pagination, err := h.svc.ListRestaurantSettingsByCode(holdingCode, code, pageable)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", code, err)
@@ -273,11 +273,11 @@ func (h RestaurantSettingsHttp) InfoRestaurantSettingsByCode(ctx microservice.IC
 // @Router /restaurant/settings [get]
 func (h RestaurantSettingsHttp) SearchRestaurantSettings(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.SearchRestaurantSettings(shopID, pageable)
+	docList, pagination, err := h.svc.SearchRestaurantSettings(holdingCode, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -305,7 +305,7 @@ func (h RestaurantSettingsHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -317,7 +317,7 @@ func (h RestaurantSettingsHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

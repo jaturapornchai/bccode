@@ -103,7 +103,7 @@ func (h CouponHttp) RegisterHttp() {
 // @Router /coupon [post]
 func (h CouponHttp) CreateCoupon(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.Coupon{}
@@ -142,7 +142,7 @@ func (h CouponHttp) CreateCoupon(ctx microservice.IContext) error {
 		}
 	}
 
-	idx, err := h.svc.CreateCoupon(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateCoupon(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -170,7 +170,7 @@ func (h CouponHttp) CreateCoupon(ctx microservice.IContext) error {
 func (h CouponHttp) UpdateCoupon(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -211,7 +211,7 @@ func (h CouponHttp) UpdateCoupon(ctx microservice.IContext) error {
 		}
 	}
 
-	err = h.svc.UpdateCoupon(id, shopID, authUsername, *docReq)
+	err = h.svc.UpdateCoupon(id, holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -238,12 +238,12 @@ func (h CouponHttp) UpdateCoupon(ctx microservice.IContext) error {
 // @Router /coupon/{id} [delete]
 func (h CouponHttp) DeleteCoupon(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteCoupon(id, shopID, authUsername)
+	err := h.svc.DeleteCoupon(id, holdingCode, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -270,12 +270,12 @@ func (h CouponHttp) DeleteCoupon(ctx microservice.IContext) error {
 // @Router /coupon/{id} [get]
 func (h CouponHttp) InfoCoupon(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get Coupon %v", id)
-	doc, err := h.svc.InfoCoupon(id, shopID)
+	doc, err := h.svc.InfoCoupon(id, holdingCode)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -303,12 +303,12 @@ func (h CouponHttp) InfoCoupon(ctx microservice.IContext) error {
 // @Router /coupon/code/{code} [get]
 func (h CouponHttp) GetCouponByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
 	h.ms.Logger.Debugf("Get Coupon by code %v", code)
-	doc, err := h.svc.InfoCouponByCode(code, shopID)
+	doc, err := h.svc.InfoCouponByCode(code, holdingCode)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting coupon by code %v: %v", code, err)
@@ -337,10 +337,10 @@ func (h CouponHttp) GetCouponByCode(ctx microservice.IContext) error {
 // @Router /coupon [get]
 func (h CouponHttp) SearchCoupon(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	q := ctx.QueryParam("q")
-	docList, err := h.svc.SearchCoupon(shopID, q)
+	docList, err := h.svc.SearchCoupon(holdingCode, q)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -368,7 +368,7 @@ func (h CouponHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -411,7 +411,7 @@ func (h CouponHttp) SaveBulk(ctx microservice.IContext) error {
 		}
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())
@@ -443,7 +443,7 @@ func (h CouponHttp) SaveBulk(ctx microservice.IContext) error {
 // @Router /coupon/bulk/preview [post]
 func (h CouponHttp) PreviewBulkImport(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 	dataReq := []models.Coupon{}
@@ -480,7 +480,7 @@ func (h CouponHttp) PreviewBulkImport(ctx microservice.IContext) error {
 	}
 
 	// Check for duplicates in the database
-	previewResponse, err := h.svc.PreviewBulkImport(shopID, dataReq)
+	previewResponse, err := h.svc.PreviewBulkImport(holdingCode, dataReq)
 	if err != nil {
 		ctx.ResponseError(400, err.Error())
 		return err
@@ -530,13 +530,13 @@ func (h CouponHttp) DownloadImportTemplate(ctx microservice.IContext) error {
 
 	// กำหนดหัวตาราง (ใช้ชื่อฟิลด์จาก model)
 	headers := []string{
-		"coupon_code",               // รหัสคูปอง
+		"coupon_code",              // รหัสคูปอง
 		"names",                    // ชื่อคูปอง (string เดียว)
 		"couponvalue",              // มูลค่าคูปอง
-		"issued_date",               // วันที่ออกคูปอง (YYYY-MM-DD)
-		"expiry_date",               // วันหมดอายุ (YYYY-MM-DD)
-		"coupon_type",               // ประเภทคูปอง (0,1,2)
-		"customer_codes",            // รหัสลูกค้า (ถ้ามีหลายตัวใช้ ;)
+		"issued_date",              // วันที่ออกคูปอง (YYYY-MM-DD)
+		"expiry_date",              // วันหมดอายุ (YYYY-MM-DD)
+		"coupon_type",              // ประเภทคูปอง (0,1,2)
+		"customer_codes",           // รหัสลูกค้า (ถ้ามีหลายตัวใช้ ;)
 		"remark",                   // หมายเหตุ
 		"status",                   // สถานะ (0,1)
 		"isonetimeuse",             // ใช้ครั้งเดียว (true/false)
@@ -801,7 +801,7 @@ func (h CouponHttp) DownloadImportTemplate(ctx microservice.IContext) error {
 // @Router /coupon/upload-excel [post]
 func (h CouponHttp) UploadExcelImport(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	// อ่านไฟล์ Excel จาก form data
@@ -856,7 +856,7 @@ func (h CouponHttp) UploadExcelImport(ctx microservice.IContext) error {
 	}
 
 	// เรียก service ประมวลผล
-	response, err := h.processExcelImportSync(shopID, authUsername, *importReq)
+	response, err := h.processExcelImportSync(holdingCode, authUsername, *importReq)
 	if err != nil {
 		ctx.ResponseError(500, "เกิดข้อผิดพลาดในการประมวลผล: "+err.Error())
 		return err
@@ -966,12 +966,12 @@ func (h CouponHttp) InfoCouponStatus(ctx microservice.IContext) error {
 // @Router /coupon/{id}/availability [get]
 func (h CouponHttp) CheckCouponAvailability(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	customerID := ctx.QueryParam("customer_id")
 
 	id := ctx.Param("id")
 
-	availability, err := h.svc.CheckCouponAvailability(id, shopID, customerID)
+	availability, err := h.svc.CheckCouponAvailability(id, holdingCode, customerID)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -997,7 +997,7 @@ func (h CouponHttp) CheckCouponAvailability(ctx microservice.IContext) error {
 // @Router /coupon/{id}/availability/check [post]
 func (h CouponHttp) CheckCouponAvailabilityAdvanced(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
 
@@ -1039,7 +1039,7 @@ func (h CouponHttp) CheckCouponAvailabilityAdvanced(ctx microservice.IContext) e
 		}
 	}
 
-	availability, err := h.svc.CheckCouponAvailabilityAdvanced(id, shopID, checkReq)
+	availability, err := h.svc.CheckCouponAvailabilityAdvanced(id, holdingCode, checkReq)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -1065,7 +1065,7 @@ func (h CouponHttp) CheckCouponAvailabilityAdvanced(ctx microservice.IContext) e
 // @Router /coupon/{id}/reserve [post]
 func (h CouponHttp) ReserveCoupon(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	couponCode := ctx.Param("id") // URL parameter `:id` คือ couponCode
 	input := ctx.ReadInput()
@@ -1089,7 +1089,7 @@ func (h CouponHttp) ReserveCoupon(ctx microservice.IContext) error {
 	}
 
 	// ตรวจสอบความพร้อมใช้งานของคูปองก่อนจอง
-	availability, err := h.svc.CheckCouponAvailability(couponCode, shopID, reserveReq.CustomerID)
+	availability, err := h.svc.CheckCouponAvailability(couponCode, holdingCode, reserveReq.CustomerID)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, "ไม่สามารถตรวจสอบความพร้อมใช้งานของคูปอง: "+err.Error())
 		return err
@@ -1100,7 +1100,7 @@ func (h CouponHttp) ReserveCoupon(ctx microservice.IContext) error {
 		return nil
 	}
 
-	reservation, err := h.svc.ReserveCoupon(couponCode, shopID, *reserveReq)
+	reservation, err := h.svc.ReserveCoupon(couponCode, holdingCode, *reserveReq)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -1126,7 +1126,7 @@ func (h CouponHttp) ReserveCoupon(ctx microservice.IContext) error {
 // @Router /coupon/{id}/reserve [delete]
 func (h CouponHttp) CancelReserveCoupon(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	couponCode := ctx.Param("id") // URL parameter `:id` คือ couponCode
 	input := ctx.ReadInput()
@@ -1149,7 +1149,7 @@ func (h CouponHttp) CancelReserveCoupon(ctx microservice.IContext) error {
 		return nil
 	}
 
-	err = h.svc.CancelReserveCoupon(couponCode, shopID, *cancelReq)
+	err = h.svc.CancelReserveCoupon(couponCode, holdingCode, *cancelReq)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -1175,7 +1175,7 @@ func (h CouponHttp) CancelReserveCoupon(ctx microservice.IContext) error {
 // @Router /coupon/{id}/use [post]
 func (h CouponHttp) UseCoupon(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	couponCode := ctx.Param("id") // URL parameter `:id` คือ couponCode
@@ -1224,7 +1224,7 @@ func (h CouponHttp) UseCoupon(ctx microservice.IContext) error {
 		return nil
 	}
 
-	usageResult, err := h.svc.UseCoupon(couponCode, shopID, authUsername, *useReq)
+	usageResult, err := h.svc.UseCoupon(couponCode, holdingCode, authUsername, *useReq)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -1252,7 +1252,7 @@ func (h CouponHttp) UseCoupon(ctx microservice.IContext) error {
 // @Router /coupon/calculate [post]
 func (h CouponHttp) CalculateCoupons(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -1327,7 +1327,7 @@ func (h CouponHttp) CalculateCoupons(ctx microservice.IContext) error {
 	}
 
 	// Calculate coupons
-	result, err := h.svc.CalculateCoupons(shopID, *calcReq)
+	result, err := h.svc.CalculateCoupons(holdingCode, *calcReq)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -1353,7 +1353,7 @@ func (h CouponHttp) CalculateCoupons(ctx microservice.IContext) error {
 // @Router 		/coupon/reservation/status [get]
 func (h CouponHttp) CheckReservationStatus(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	transactionID := ctx.QueryParam("transaction_id")
 
@@ -1363,7 +1363,7 @@ func (h CouponHttp) CheckReservationStatus(ctx microservice.IContext) error {
 	}
 
 	// เช็คสถานะการจองด้วย transaction ID
-	status, err := h.svc.CheckReservationByTransactionID(transactionID, shopID)
+	status, err := h.svc.CheckReservationByTransactionID(transactionID, holdingCode)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -1389,7 +1389,7 @@ func (h CouponHttp) CheckReservationStatus(ctx microservice.IContext) error {
 // @Router 		/coupon/reservation/lookup [post]
 func (h CouponHttp) LookupReservation(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -1406,7 +1406,7 @@ func (h CouponHttp) LookupReservation(ctx microservice.IContext) error {
 	}
 
 	// ค้นหาข้อมูลการจองคูปอง
-	reservationInfo, err := h.svc.LookupReservationDetails(shopID, *lookupReq)
+	reservationInfo, err := h.svc.LookupReservationDetails(holdingCode, *lookupReq)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -1434,7 +1434,7 @@ func (h CouponHttp) LookupReservation(ctx microservice.IContext) error {
 // @Router 		/coupon/usage-history [post]
 func (h CouponHttp) CreateUsageHistory(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -1510,7 +1510,7 @@ func (h CouponHttp) CreateUsageHistory(ctx microservice.IContext) error {
 	}
 
 	// สร้างประวัติการใช้คูปอง
-	historyID, err := h.svc.CreateUsageHistory(shopID, authUsername, *historyReq)
+	historyID, err := h.svc.CreateUsageHistory(holdingCode, authUsername, *historyReq)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -1548,7 +1548,7 @@ func (h CouponHttp) CreateUsageHistory(ctx microservice.IContext) error {
 // @Router 		/coupon/usage-history/search [get]
 func (h CouponHttp) GetUsageHistory(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	// รับ parameters จาก query string
 	page, _ := strconv.Atoi(ctx.QueryParam("page"))
@@ -1605,7 +1605,7 @@ func (h CouponHttp) GetUsageHistory(ctx microservice.IContext) error {
 	}
 
 	// ค้นหาประวัติการใช้คูปอง
-	response, err := h.svc.GetUsageHistory(shopID, searchReq)
+	response, err := h.svc.GetUsageHistory(holdingCode, searchReq)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -1632,7 +1632,7 @@ func (h CouponHttp) GetUsageHistory(ctx microservice.IContext) error {
 // @Router 		/coupon/usage-history/by-coupon [get]
 func (h CouponHttp) GetUsageHistoryByCoupon(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	couponID := ctx.QueryParam("coupon_id")
 	pageStr := ctx.QueryParam("page")
@@ -1660,7 +1660,7 @@ func (h CouponHttp) GetUsageHistoryByCoupon(ctx microservice.IContext) error {
 	}
 
 	// ดึงประวัติการใช้
-	response, err := h.svc.GetUsageHistoryByCoupon(shopID, couponID, page, pageSize)
+	response, err := h.svc.GetUsageHistoryByCoupon(holdingCode, couponID, page, pageSize)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -1688,7 +1688,7 @@ func (h CouponHttp) GetUsageHistoryByCoupon(ctx microservice.IContext) error {
 // @Router 		/coupon/customer/usage-history [get]
 func (h CouponHttp) GetUsageHistoryByCustomer(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	customerID := ctx.QueryParam("customer_id")
 	pageStr := ctx.QueryParam("page")
@@ -1716,7 +1716,7 @@ func (h CouponHttp) GetUsageHistoryByCustomer(ctx microservice.IContext) error {
 	}
 
 	// ดึงประวัติการใช้
-	response, err := h.svc.GetUsageHistoryByCustomer(shopID, customerID, page, pageSize)
+	response, err := h.svc.GetUsageHistoryByCustomer(holdingCode, customerID, page, pageSize)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -1742,7 +1742,7 @@ func (h CouponHttp) GetUsageHistoryByCustomer(ctx microservice.IContext) error {
 // @Router 		/coupon/sale-invoice/usage-history [get]
 func (h CouponHttp) GetUsageHistoryBySaleInvoice(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	saleInvoiceID := ctx.QueryParam("sale_invoice_id")
 
@@ -1752,7 +1752,7 @@ func (h CouponHttp) GetUsageHistoryBySaleInvoice(ctx microservice.IContext) erro
 	}
 
 	// ดึงประวัติการใช้
-	items, err := h.svc.GetUsageHistoryBySaleInvoice(shopID, saleInvoiceID)
+	items, err := h.svc.GetUsageHistoryBySaleInvoice(holdingCode, saleInvoiceID)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -1781,7 +1781,7 @@ func (h CouponHttp) GetUsageHistoryBySaleInvoice(ctx microservice.IContext) erro
 // @Router 		/coupon/transaction/usage-history [get]
 func (h CouponHttp) GetUsageHistoryByTransactionID(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	transactionID := ctx.QueryParam("transaction_id")
 
@@ -1791,7 +1791,7 @@ func (h CouponHttp) GetUsageHistoryByTransactionID(ctx microservice.IContext) er
 	}
 
 	// ดึงประวัติการใช้
-	items, err := h.svc.GetUsageHistoryByTransactionID(shopID, transactionID)
+	items, err := h.svc.GetUsageHistoryByTransactionID(holdingCode, transactionID)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err

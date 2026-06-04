@@ -1,6 +1,6 @@
 package models
 
 type CreditorProcessRequest struct {
-	ShopID string `json:"shop_id" `
+	HoldingCode  string `json:"holding_code" `
 	CreditorCode string `json:"creditor_code"  `
 }

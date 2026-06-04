@@ -29,8 +29,8 @@ func TestChartOfAccountRepositoryCreateInRealDB(t *testing.T) {
 	assert.NotNil(repo)
 
 	// give := &vfgl.ChartOfAccountPG{
-	// 	ShopIdentity: models.ShopIdentity{
-	// 		ShopID: "SHOPTEST",
+	// 	HoldingCodeentity: models.HoldingCodeentity{
+	// 		HoldingCode: "SHOPTEST",
 	// 	},
 	// 	AccountCode: "10000",
 	// 	AccountName: "เงินสด",

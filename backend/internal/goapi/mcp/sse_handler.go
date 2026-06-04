@@ -164,7 +164,7 @@ func (s *MCPServer) handleSSEInternal(c echo.Context, devMode bool) error {
 		close(session.Done)
 	}()
 
-	logger.Info("MCP SSE session started: %s (shop: %s)", sessionID, apiKey.ShopID)
+	logger.Info("MCP SSE session started: %s (shop: %s)", sessionID, apiKey.HoldingCode)
 
 	// Get the underlying writer - try to get Flusher
 	w := c.Response().Writer
@@ -843,9 +843,9 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
-					"shop_id": map[string]interface{}{
+					"holding_code": map[string]interface{}{
 						"type":        "string",
-						"description": "Shop ID (= PostgreSQL database name)",
+						"description": "Holding Code (= PostgreSQL database name)",
 					},
 					"query": map[string]interface{}{
 						"type":        "string",
@@ -856,7 +856,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"description": "Max rows for SELECT (default: 100, max: 10000)",
 					},
 				},
-				"required": []string{"shop_id", "query"},
+				"required": []string{"holding_code", "query"},
 			},
 		},
 		{
@@ -1836,12 +1836,12 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
-					"shop_id": map[string]interface{}{
+					"holding_code": map[string]interface{}{
 						"type":        "string",
-						"description": "Shop ID to rebuild products for",
+						"description": "Holding Code to rebuild products for",
 					},
 				},
-				"required": []string{"shop_id"},
+				"required": []string{"holding_code"},
 			},
 		},
 	}
@@ -1895,11 +1895,11 @@ func (s *MCPServer) handleToolCall(ctx context.Context, session *SSESession, par
 		return nil, fmt.Errorf("tool '%s' is not allowed for this API key", callParams.Name)
 	}
 
-	// Add shop_id from API key
+	// Add holding_code from API key
 	if callParams.Arguments == nil {
 		callParams.Arguments = make(map[string]interface{})
 	}
-	callParams.Arguments["shop_id"] = session.APIKey.ShopID
+	callParams.Arguments["holding_code"] = session.APIKey.HoldingCode
 
 	// Execute tool
 	startTime := time.Now()

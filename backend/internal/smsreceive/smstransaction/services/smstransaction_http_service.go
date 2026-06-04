@@ -18,13 +18,13 @@ import (
 )
 
 type ISmsTransactionHttpService interface {
-	CreateSmsTransaction(shopID string, authUsername string, doc models.SmsTransaction) (string, error)
-	UpdateSmsTransaction(guid string, shopID string, authUsername string, doc models.SmsTransaction) error
-	DeleteSmsTransaction(guid string, shopID string, authUsername string) error
-	InfoSmsTransaction(guid string, shopID string) (models.SmsTransactionInfo, error)
-	SearchSmsTransaction(shopID string, pageable micromodels.Pageable) ([]models.SmsTransactionInfo, mongopagination.PaginationData, error)
-	CheckSMS(shopID string, storefrontGUID string, amountCheck float64, checkTime time.Time) (models.SmsTransactionCheck, error)
-	ConfirmSmsTransaction(shopID string, smsTransactionGUIDFixed string) error
+	CreateSmsTransaction(holdingCode string, authUsername string, doc models.SmsTransaction) (string, error)
+	UpdateSmsTransaction(guid string, holdingCode string, authUsername string, doc models.SmsTransaction) error
+	DeleteSmsTransaction(guid string, holdingCode string, authUsername string) error
+	InfoSmsTransaction(guid string, holdingCode string) (models.SmsTransactionInfo, error)
+	SearchSmsTransaction(holdingCode string, pageable micromodels.Pageable) ([]models.SmsTransactionInfo, mongopagination.PaginationData, error)
+	CheckSMS(holdingCode string, storefrontGUID string, amountCheck float64, checkTime time.Time) (models.SmsTransactionCheck, error)
+	ConfirmSmsTransaction(holdingCode string, smsTransactionGUIDFixed string) error
 }
 
 type SmsTransactionHttpService struct {
@@ -60,12 +60,12 @@ func (svc SmsTransactionHttpService) getContextTimeout() (context.Context, conte
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc SmsTransactionHttpService) CreateSmsTransaction(shopID string, authUsername string, doc models.SmsTransaction) (string, error) {
+func (svc SmsTransactionHttpService) CreateSmsTransaction(holdingCode string, authUsername string, doc models.SmsTransaction) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "transid", doc.TransId)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "transid", doc.TransId)
 
 	if err != nil {
 		return "", err
@@ -78,7 +78,7 @@ func (svc SmsTransactionHttpService) CreateSmsTransaction(shopID string, authUse
 	newGuidFixed := svc.genGUID()
 
 	docData := models.SmsTransactionDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.SmsTransaction = doc
 
 	docData.GuidFixed = newGuidFixed
@@ -96,12 +96,12 @@ func (svc SmsTransactionHttpService) CreateSmsTransaction(shopID string, authUse
 	return newGuidFixed, nil
 }
 
-func (svc SmsTransactionHttpService) UpdateSmsTransaction(guid string, shopID string, authUsername string, doc models.SmsTransaction) error {
+func (svc SmsTransactionHttpService) UpdateSmsTransaction(guid string, holdingCode string, authUsername string, doc models.SmsTransaction) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -119,7 +119,7 @@ func (svc SmsTransactionHttpService) UpdateSmsTransaction(guid string, shopID st
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = svc.timeNow()
 
-	err = svc.repo.Update(ctx, shopID, guid, findDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, findDoc)
 
 	if err != nil {
 		return err
@@ -128,12 +128,12 @@ func (svc SmsTransactionHttpService) UpdateSmsTransaction(guid string, shopID st
 	return nil
 }
 
-func (svc SmsTransactionHttpService) DeleteSmsTransaction(guid string, shopID string, authUsername string) error {
+func (svc SmsTransactionHttpService) DeleteSmsTransaction(guid string, holdingCode string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -143,19 +143,19 @@ func (svc SmsTransactionHttpService) DeleteSmsTransaction(guid string, shopID st
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (svc SmsTransactionHttpService) InfoSmsTransaction(guid string, shopID string) (models.SmsTransactionInfo, error) {
+func (svc SmsTransactionHttpService) InfoSmsTransaction(guid string, holdingCode string) (models.SmsTransactionInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.SmsTransactionInfo{}, err
@@ -169,7 +169,7 @@ func (svc SmsTransactionHttpService) InfoSmsTransaction(guid string, shopID stri
 
 }
 
-func (svc SmsTransactionHttpService) SearchSmsTransaction(shopID string, pageable micromodels.Pageable) ([]models.SmsTransactionInfo, mongopagination.PaginationData, error) {
+func (svc SmsTransactionHttpService) SearchSmsTransaction(holdingCode string, pageable micromodels.Pageable) ([]models.SmsTransactionInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -179,7 +179,7 @@ func (svc SmsTransactionHttpService) SearchSmsTransaction(shopID string, pageabl
 		"transid",
 	}
 
-	docList, pagination, err := svc.repo.FindPage(ctx, shopID, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPage(ctx, holdingCode, searchInFields, pageable)
 
 	if err != nil {
 		return []models.SmsTransactionInfo{}, pagination, err
@@ -188,12 +188,12 @@ func (svc SmsTransactionHttpService) SearchSmsTransaction(shopID string, pageabl
 	return docList, pagination, nil
 }
 
-func (svc SmsTransactionHttpService) CheckSMS(shopID string, storefrontGUID string, amountCheck float64, checkTime time.Time) (models.SmsTransactionCheck, error) {
+func (svc SmsTransactionHttpService) CheckSMS(holdingCode string, storefrontGUID string, amountCheck float64, checkTime time.Time) (models.SmsTransactionCheck, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	storefrontSmsPaymentSettingDoc, err := svc.smsSetingsRepo.FindOne(ctx, shopID, bson.M{"storefrontguid": storefrontGUID})
+	storefrontSmsPaymentSettingDoc, err := svc.smsSetingsRepo.FindOne(ctx, holdingCode, bson.M{"storefrontguid": storefrontGUID})
 
 	if err != nil {
 		return models.SmsTransactionCheck{
@@ -220,7 +220,7 @@ func (svc SmsTransactionHttpService) CheckSMS(shopID string, storefrontGUID stri
 
 	addressKey := smsPatternDoc.Address
 
-	smsList, err := svc.repo.FindFilterSms(ctx, shopID, storefrontGUID, addressKey, startTime, endTime)
+	smsList, err := svc.repo.FindFilterSms(ctx, holdingCode, storefrontGUID, addressKey, startTime, endTime)
 	if err != nil {
 		return models.SmsTransactionCheck{
 			Pass:        false,
@@ -252,12 +252,12 @@ func (svc SmsTransactionHttpService) CheckSMS(shopID string, storefrontGUID stri
 	}, nil
 }
 
-func (svc SmsTransactionHttpService) ConfirmSmsTransaction(shopID string, smsTransactionGUIDFixed string) error {
+func (svc SmsTransactionHttpService) ConfirmSmsTransaction(holdingCode string, smsTransactionGUIDFixed string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, smsTransactionGUIDFixed)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, smsTransactionGUIDFixed)
 
 	if err != nil {
 		return err
@@ -265,7 +265,7 @@ func (svc SmsTransactionHttpService) ConfirmSmsTransaction(shopID string, smsTra
 
 	findDoc.Status = 1
 
-	return svc.repo.Update(ctx, shopID, findDoc.GuidFixed, findDoc)
+	return svc.repo.Update(ctx, holdingCode, findDoc.GuidFixed, findDoc)
 }
 
 func GetAmountFromPattern(pattern string, message string) (float64, error) {

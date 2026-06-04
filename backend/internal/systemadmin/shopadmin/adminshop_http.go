@@ -16,7 +16,7 @@ type IShopAdminHttp interface {
 	GetShopByProjectNo(ctx microservice.IContext) error
 	RegisterHttp(ms *microservice.Microservice, prefix string)
 	ListShopUsers(ctx microservice.IContext) error
-	ListShopUsersByShopId(ctx microservice.IContext) error
+	ListShopUsersByHoldingCode(ctx microservice.IContext) error
 }
 
 type ShopAdminHttp struct {
@@ -40,7 +40,7 @@ func (s *ShopAdminHttp) RegisterHttp(ms *microservice.Microservice, prefix strin
 	ms.POST(prefix+"/shopadmin/newshop", s.CreateShop)
 	ms.GET(prefix+"/shopadmin/getshopbybranchcode", s.GetShopByProjectNo)
 	ms.GET(prefix+"/shopadmin/listshopusers", s.ListShopUsers)
-	ms.GET(prefix+"/shopadmin/shopusers", s.ListShopUsersByShopId)
+	ms.GET(prefix+"/shopadmin/shopusers", s.ListShopUsersByHoldingCode)
 
 }
 
@@ -143,11 +143,11 @@ func (s *ShopAdminHttp) ListShopUsers(ctx microservice.IContext) error {
 	return nil
 }
 
-func (s *ShopAdminHttp) ListShopUsersByShopId(ctx microservice.IContext) error {
+func (s *ShopAdminHttp) ListShopUsersByHoldingCode(ctx microservice.IContext) error {
 
-	shopId := ctx.QueryParam("shopid")
+	holdingCode := ctx.QueryParam("holding_code")
 
-	shopList, err := s.shopadminsvc.ListShopUsersByShopId(shopId)
+	shopList, err := s.shopadminsvc.ListShopUsersByHoldingCode(holdingCode)
 
 	if err != nil {
 		ctx.Response(500, goMicroModels.RestErrorResponse{

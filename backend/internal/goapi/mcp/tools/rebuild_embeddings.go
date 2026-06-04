@@ -23,7 +23,7 @@ const embeddingBatchSize = 50
 type RebuildEmbeddingsResponse struct {
 	Success     bool      `json:"success"`
 	Message     string    `json:"message"`
-	ShopID      string    `json:"shop_id"`
+	HoldingCode string    `json:"holding_code"`
 	EntityType  string    `json:"entity_type"`
 	Total       int       `json:"total"`
 	Updated     int       `json:"updated"`
@@ -41,18 +41,18 @@ type embedRow struct {
 
 // RebuildEmbeddings builds pgvector embeddings on PostgreSQL projection tables.
 // MongoDB remains the authoritative operational source for entity data.
-func RebuildEmbeddings(ctx context.Context, shopID string, forceAll bool, entityType string) (*RebuildEmbeddingsResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func RebuildEmbeddings(ctx context.Context, holdingCode string, forceAll bool, entityType string) (*RebuildEmbeddingsResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 	if entityType == "" {
 		entityType = "product"
 	}
 
 	start := time.Now()
-	logger.Info("[Embeddings] เริ่มสร้าง embeddings สำหรับ %s shop=%s (forceAll=%v)", entityType, shopID, forceAll)
+	logger.Info("[Embeddings] เริ่มสร้าง embeddings สำหรับ %s shop=%s (forceAll=%v)", entityType, holdingCode, forceAll)
 
-	db, err := mypg.PgSqlFastConnect(shopID)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		return nil, fmt.Errorf("database connection failed: %w", err)
 	}
@@ -78,7 +78,7 @@ func RebuildEmbeddings(ctx context.Context, shopID string, forceAll bool, entity
 		return &RebuildEmbeddingsResponse{
 			Success:     true,
 			Message:     fmt.Sprintf("ไม่มี %s ที่ต้องสร้าง embedding", entityType),
-			ShopID:      shopID,
+			HoldingCode: holdingCode,
 			EntityType:  entityType,
 			Total:       0,
 			GeneratedAt: time.Now(),
@@ -136,7 +136,7 @@ func RebuildEmbeddings(ctx context.Context, shopID string, forceAll bool, entity
 	return &RebuildEmbeddingsResponse{
 		Success:     true,
 		Message:     msg,
-		ShopID:      shopID,
+		HoldingCode: holdingCode,
 		EntityType:  entityType,
 		Total:       total,
 		Updated:     updated,
@@ -289,12 +289,12 @@ func float32SliceToVectorString(v []float32) string {
 }
 
 // RebuildAllEmbeddings สร้าง embeddings ทุก entity type ในรอบเดียว
-func RebuildAllEmbeddings(ctx context.Context, shopID string, forceAll bool) ([]RebuildEmbeddingsResponse, error) {
+func RebuildAllEmbeddings(ctx context.Context, holdingCode string, forceAll bool) ([]RebuildEmbeddingsResponse, error) {
 	types := []string{"product", "debtor", "creditor", "customer"}
 	var results []RebuildEmbeddingsResponse
 
 	for _, t := range types {
-		resp, err := RebuildEmbeddings(ctx, shopID, forceAll, t)
+		resp, err := RebuildEmbeddings(ctx, holdingCode, forceAll, t)
 		if err != nil {
 			logger.Warn("[Embeddings] %s failed: %v", t, err)
 			continue
@@ -306,8 +306,8 @@ func RebuildAllEmbeddings(ctx context.Context, shopID string, forceAll bool) ([]
 }
 
 // RebuildAllEmbeddingsJSON — wrapper ที่ return JSON string
-func RebuildAllEmbeddingsJSON(ctx context.Context, shopID string, forceAll bool) (string, error) {
-	results, err := RebuildAllEmbeddings(ctx, shopID, forceAll)
+func RebuildAllEmbeddingsJSON(ctx context.Context, holdingCode string, forceAll bool) (string, error) {
+	results, err := RebuildAllEmbeddings(ctx, holdingCode, forceAll)
 	if err != nil {
 		return "", err
 	}

@@ -7,8 +7,8 @@ import (
 )
 
 type IWarehouseConsumerService interface {
-	Upsert(shopID string, docNo string, doc models.WarehousePG) error
-	Delete(shopID string, docNo string) error
+	Upsert(holdingCode string, docNo string, doc models.WarehousePG) error
+	Delete(holdingCode string, docNo string) error
 }
 
 type WarehouseConsumerService struct {
@@ -21,8 +21,8 @@ func NewWarehouseConsumerService(repo repositories.IWarehousePGRepository) IWare
 	}
 }
 
-func (s *WarehouseConsumerService) Upsert(shopID string, guidFixed string, doc models.WarehousePG) error {
-	foundDocument, err := s.repo.Get(shopID, guidFixed)
+func (s *WarehouseConsumerService) Upsert(holdingCode string, guidFixed string, doc models.WarehousePG) error {
+	foundDocument, err := s.repo.Get(holdingCode, guidFixed)
 
 	if err != nil && err.Error() != "record not found" {
 		return err
@@ -38,7 +38,7 @@ func (s *WarehouseConsumerService) Upsert(shopID string, guidFixed string, doc m
 		isEqual := foundDocument.CompareTo(&doc)
 
 		if !isEqual {
-			err = s.repo.Update(shopID, guidFixed, doc)
+			err = s.repo.Update(holdingCode, guidFixed, doc)
 			if err != nil {
 				return err
 			}
@@ -50,9 +50,9 @@ func (s *WarehouseConsumerService) Upsert(shopID string, guidFixed string, doc m
 	return nil
 }
 
-func (s *WarehouseConsumerService) Delete(shopID string, guidFixed string) error {
+func (s *WarehouseConsumerService) Delete(holdingCode string, guidFixed string) error {
 
-	err := s.repo.Delete(shopID, guidFixed)
+	err := s.repo.Delete(holdingCode, guidFixed)
 	if err != nil {
 		return err
 	}

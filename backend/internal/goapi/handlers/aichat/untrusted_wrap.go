@@ -28,22 +28,22 @@ import (
 // ToolObservationEnvelope — JSON envelope ที่ห่อ tool result ก่อนส่งให้ AI
 // ตรงตาม spec OpenClaw + เพิ่ม field สำหรับ ReAct
 type ToolObservationEnvelope struct {
-	Tool string                 `json:"tool"`
-	SessionKey string                 `json:"session_key,omitempty"` // OpenClaw session_key
-	Params map[string]interface{} `json:"params,omitempty"`
-	TookMs int64                  `json:"took_ms"`
-	Iteration int                    `json:"iteration,omitempty"`
+	Tool            string                 `json:"tool"`
+	SessionKey      string                 `json:"session_key,omitempty"` // OpenClaw session_key
+	Params          map[string]interface{} `json:"params,omitempty"`
+	TookMs          int64                  `json:"took_ms"`
+	Iteration       int                    `json:"iteration,omitempty"`
 	ExternalContent ExternalContentMeta    `json:"external_content"`
-	Data interface{}            `json:"data,omitempty"`
-	Error string                 `json:"error,omitempty"`
+	Data            interface{}            `json:"data,omitempty"`
+	Error           string                 `json:"error,omitempty"`
 }
 
 // ExternalContentMeta — metadata บอก AI ว่า data ภายในเป็น untrusted
 type ExternalContentMeta struct {
 	Untrusted bool   `json:"untrusted"`
-	Source string `json:"source"`   // "mcp", "web_search", "custom_query", "user_upload"
-	Provider string `json:"provider"` // ชื่อ tool หรือ external service
-	Wrapped bool   `json:"wrapped"`
+	Source    string `json:"source"`   // "mcp", "web_search", "custom_query", "user_upload"
+	Provider  string `json:"provider"` // ชื่อ tool หรือ external service
+	Wrapped   bool   `json:"wrapped"`
 }
 
 // untrustedSecurityNotice — banner เตือน AI ที่นำหน้า wrapped content เสมอ
@@ -159,15 +159,15 @@ func assembleUntrustedBlock(toolName, source string, iteration int, payload stri
 	return sb.String()
 }
 
-// sanitizeParams ลบ field ที่ไม่ควรส่งให้ AI เห็น (เช่น shop_id ซึ่งเป็น internal)
-// AI ไม่จำเป็นต้องรู้ shop_id เพื่อตอบคำถาม — มัน auto-injected
+// sanitizeParams ลบ field ที่ไม่ควรส่งให้ AI เห็น (เช่น holding_code ซึ่งเป็น internal)
+// AI ไม่จำเป็นต้องรู้ holding_code เพื่อตอบคำถาม — มัน auto-injected
 func sanitizeParams(params map[string]interface{}) map[string]interface{} {
 	if params == nil {
 		return nil
 	}
 	cleaned := make(map[string]interface{}, len(params))
 	for k, v := range params {
-		if k == "shop_id" {
+		if k == "holding_code" {
 			continue
 		}
 		cleaned[k] = v

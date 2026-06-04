@@ -11,7 +11,7 @@ import (
 )
 
 // RegisterRoutes — ลงทะเบียน routes กับ Echo group
-// ใช้ per-request DB connection ตาม shopID (pattern เดียวกับ handlers อื่นๆ)
+// ใช้ per-request DB connection ตาม holdingCode (pattern เดียวกับ handlers อื่นๆ)
 func RegisterRoutes(g *echo.Group) {
 	// Costing Config
 	g.GET("/products/:itemcode/costing-config", GetCostingConfig)
@@ -36,9 +36,9 @@ func RegisterRoutes(g *echo.Group) {
 	g.POST("/inventory/create-tables", CreateTablesHandler)
 }
 
-// connectAndService — สร้าง DB connection + service จาก shopID
-func connectAndService(shopID string) (*InventoryCostingService, error) {
-	db, err := myPg.PgSqlFastConnect(shopID)
+// connectAndService — สร้าง DB connection + service จาก holdingCode
+func connectAndService(holdingCode string) (*InventoryCostingService, error) {
+	db, err := myPg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		return nil, err
 	}
@@ -48,18 +48,18 @@ func connectAndService(shopID string) (*InventoryCostingService, error) {
 // === Config Handlers ===
 
 func GetCostingConfig(c echo.Context) error {
-	shopID := c.QueryParam("shopid")
+	holdingCode := c.QueryParam("holding_code")
 	itemCode := c.Param("itemcode")
-	if shopID == "" || itemCode == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ต้องระบุ shopid และ itemcode"})
+	if holdingCode == "" || itemCode == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ต้องระบุ holding_code และ itemcode"})
 	}
 
-	svc, err := connectAndService(shopID)
+	svc, err := connectAndService(holdingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
-	config, err := svc.GetCostingConfig(c.Request().Context(), shopID, itemCode)
+	config, err := svc.GetCostingConfig(c.Request().Context(), holdingCode, itemCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
@@ -67,7 +67,7 @@ func GetCostingConfig(c echo.Context) error {
 }
 
 func UpdateCostingConfig(c echo.Context) error {
-	shopID := c.QueryParam("shopid")
+	holdingCode := c.QueryParam("holding_code")
 	itemCode := c.Param("itemcode")
 
 	var config m.ProductCostingConfig
@@ -76,12 +76,12 @@ func UpdateCostingConfig(c echo.Context) error {
 	}
 	config.ItemCode = itemCode
 
-	svc, err := connectAndService(shopID)
+	svc, err := connectAndService(holdingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
-	if err := svc.UpdateCostingConfig(c.Request().Context(), shopID, &config); err != nil {
+	if err := svc.UpdateCostingConfig(c.Request().Context(), holdingCode, &config); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
 	}
 
@@ -96,11 +96,11 @@ func ProcessReceipt(c echo.Context) error {
 	if err := c.Bind(&params); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ข้อมูลไม่ถูกต้อง"})
 	}
-	if params.ShopID == "" || params.ItemCode == "" || params.Qty <= 0 {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ต้องระบุ shop_id, item_code, qty > 0"})
+	if params.HoldingCode == "" || params.ItemCode == "" || params.Qty <= 0 {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ต้องระบุ holding_code, item_code, qty > 0"})
 	}
 
-	svc, err := connectAndService(params.ShopID)
+	svc, err := connectAndService(params.HoldingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
@@ -118,7 +118,7 @@ func ProcessIssue(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ข้อมูลไม่ถูกต้อง"})
 	}
 
-	svc, err := connectAndService(params.ShopID)
+	svc, err := connectAndService(params.HoldingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
@@ -136,7 +136,7 @@ func ProcessTransfer(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ข้อมูลไม่ถูกต้อง"})
 	}
 
-	svc, err := connectAndService(params.ShopID)
+	svc, err := connectAndService(params.HoldingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
@@ -154,7 +154,7 @@ func ProcessAdjustment(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ข้อมูลไม่ถูกต้อง"})
 	}
 
-	svc, err := connectAndService(params.ShopID)
+	svc, err := connectAndService(params.HoldingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
@@ -172,7 +172,7 @@ func ProcessSalesReturn(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ข้อมูลไม่ถูกต้อง"})
 	}
 
-	svc, err := connectAndService(params.ShopID)
+	svc, err := connectAndService(params.HoldingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
@@ -190,7 +190,7 @@ func ProcessPurchaseReturn(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ข้อมูลไม่ถูกต้อง"})
 	}
 
-	svc, err := connectAndService(params.ShopID)
+	svc, err := connectAndService(params.HoldingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
@@ -205,17 +205,17 @@ func ProcessPurchaseReturn(c echo.Context) error {
 // === Report Handlers ===
 
 func GetInventoryValuation(c echo.Context) error {
-	shopID := c.QueryParam("shopid")
-	if shopID == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ต้องระบุ shopid"})
+	holdingCode := c.QueryParam("holding_code")
+	if holdingCode == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ต้องระบุ holding_code"})
 	}
 
-	svc, err := connectAndService(shopID)
+	svc, err := connectAndService(holdingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
-	report, err := svc.GetInventoryValuation(c.Request().Context(), shopID)
+	report, err := svc.GetInventoryValuation(c.Request().Context(), holdingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
@@ -223,13 +223,13 @@ func GetInventoryValuation(c echo.Context) error {
 }
 
 func GetStockCard(c echo.Context) error {
-	shopID := c.QueryParam("shopid")
+	holdingCode := c.QueryParam("holding_code")
 	itemCode := c.Param("itemcode")
 	fromDate := c.QueryParam("from")
 	toDate := c.QueryParam("to")
 
-	if shopID == "" || itemCode == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ต้องระบุ shopid และ itemcode"})
+	if holdingCode == "" || itemCode == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ต้องระบุ holding_code และ itemcode"})
 	}
 
 	from, err := time.Parse("2006-01-02", fromDate)
@@ -241,12 +241,12 @@ func GetStockCard(c echo.Context) error {
 		to = time.Now()
 	}
 
-	svc, svcErr := connectAndService(shopID)
+	svc, svcErr := connectAndService(holdingCode)
 	if svcErr != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": svcErr.Error()})
 	}
 
-	report, err := svc.GetStockCard(c.Request().Context(), shopID, itemCode, from, to)
+	report, err := svc.GetStockCard(c.Request().Context(), holdingCode, itemCode, from, to)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
@@ -254,20 +254,20 @@ func GetStockCard(c echo.Context) error {
 }
 
 func GetCostLayers(c echo.Context) error {
-	shopID := c.QueryParam("shopid")
+	holdingCode := c.QueryParam("holding_code")
 	itemCode := c.Param("itemcode")
 	whCode := c.QueryParam("whcode")
 
-	if shopID == "" || itemCode == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ต้องระบุ shopid และ itemcode"})
+	if holdingCode == "" || itemCode == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ต้องระบุ holding_code และ itemcode"})
 	}
 
-	svc, err := connectAndService(shopID)
+	svc, err := connectAndService(holdingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
-	layers, err := svc.GetCostLayers(c.Request().Context(), shopID, itemCode, whCode)
+	layers, err := svc.GetCostLayers(c.Request().Context(), holdingCode, itemCode, whCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
@@ -277,12 +277,12 @@ func GetCostLayers(c echo.Context) error {
 // === Database Handler ===
 
 func CreateTablesHandler(c echo.Context) error {
-	shopID := c.QueryParam("shopid")
-	if shopID == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ต้องระบุ shopid"})
+	holdingCode := c.QueryParam("holding_code")
+	if holdingCode == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ต้องระบุ holding_code"})
 	}
 
-	db, err := myPg.PgSqlFastConnect(shopID)
+	db, err := myPg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}

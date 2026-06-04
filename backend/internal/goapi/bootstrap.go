@@ -247,7 +247,7 @@ func createGoAPIAuthMiddleware(cacher microservice.ICacher) echo.MiddlewareFunc 
 					})
 				}
 			}
-			if userInfo.ShopID == "" {
+			if userInfo.HoldingCode == "" {
 				logger.Warn("GoAPI auth failed: shop not selected")
 				return c.JSON(http.StatusUnauthorized, map[string]interface{}{
 					"success": false,
@@ -255,7 +255,7 @@ func createGoAPIAuthMiddleware(cacher microservice.ICacher) echo.MiddlewareFunc 
 				})
 			}
 
-			requestedShopID, err := goAPIRequestShopID(c)
+			requestedHoldingCode, err := goAPIRequestHoldingCode(c)
 			if err != nil {
 				logger.Warn("GoAPI auth failed: invalid tenant payload")
 				return c.JSON(http.StatusBadRequest, map[string]interface{}{
@@ -263,8 +263,8 @@ func createGoAPIAuthMiddleware(cacher microservice.ICacher) echo.MiddlewareFunc 
 					"message": "Invalid request payload",
 				})
 			}
-			if requestedShopID != "" && requestedShopID != userInfo.ShopID {
-				logger.Warn("GoAPI tenant blocked: route=%s requested_shop=%s token_shop=%s", c.Path(), requestedShopID, userInfo.ShopID)
+			if requestedHoldingCode != "" && requestedHoldingCode != userInfo.HoldingCode {
+				logger.Warn("GoAPI tenant blocked: route=%s requested_shop=%s token_shop=%s", c.Path(), requestedHoldingCode, userInfo.HoldingCode)
 				return c.JSON(http.StatusForbidden, map[string]interface{}{
 					"success": false,
 					"message": "Forbidden",
@@ -272,8 +272,8 @@ func createGoAPIAuthMiddleware(cacher microservice.ICacher) echo.MiddlewareFunc 
 			}
 
 			if isDevelopmentMode() {
-				logger.Info("[DEV][GoAPI auth] method=%s route=%s user=%s shopid=%s requested_shopid=%s",
-					c.Request().Method, c.Path(), userInfo.Username, userInfo.ShopID, requestedShopID)
+				logger.Info("[DEV][GoAPI auth] method=%s route=%s user=%s holding_code=%s requested_holding_code=%s",
+					c.Request().Method, c.Path(), userInfo.Username, userInfo.HoldingCode, requestedHoldingCode)
 			}
 
 			c.Set("UserInfo", userInfo)
@@ -288,7 +288,7 @@ func authenticateGoAPIRedisToken(cacher microservice.ICacher, tokenText string) 
 	}
 
 	cacheKey := "auth-" + tokenText
-	raw, err := cacher.HMGet(cacheKey, []string{"username", "name", "shopid", "role"})
+	raw, err := cacher.HMGet(cacheKey, []string{"username", "name", "holding_code", "role"})
 	if err != nil || len(raw) < 4 || raw[0] == nil {
 		return msmodels.UserInfo{}, false
 	}
@@ -300,7 +300,7 @@ func authenticateGoAPIRedisToken(cacher microservice.ICacher, tokenText string) 
 		userInfo.Name = fmt.Sprintf("%v", raw[1])
 	}
 	if raw[2] != nil {
-		userInfo.ShopID = fmt.Sprintf("%v", raw[2])
+		userInfo.HoldingCode = fmt.Sprintf("%v", raw[2])
 	}
 	if raw[3] != nil {
 		role, err := strconv.ParseUint(fmt.Sprintf("%v", raw[3]), 10, 8)
@@ -313,7 +313,7 @@ func authenticateGoAPIRedisToken(cacher microservice.ICacher, tokenText string) 
 		return msmodels.UserInfo{}, false
 	}
 
-	if userInfo.ShopID != "" {
+	if userInfo.HoldingCode != "" {
 		_ = cacher.Expire(cacheKey, 24*3*time.Hour)
 	}
 	return userInfo, true
@@ -358,8 +358,8 @@ func getBearerToken(authorization string) (string, error) {
 	return strings.TrimSpace(parts[1]), nil
 }
 
-func goAPIRequestShopID(c echo.Context) (string, error) {
-	for _, key := range []string{"shopid", "shop_id", "tenant_id"} {
+func goAPIRequestHoldingCode(c echo.Context) (string, error) {
+	for _, key := range []string{"holding_code", "holding_code", "tenant_id"} {
 		if value := strings.TrimSpace(c.QueryParam(key)); value != "" {
 			return value, nil
 		}
@@ -386,25 +386,25 @@ func goAPIRequestShopID(c echo.Context) (string, error) {
 	if err := json.Unmarshal(bodyBytes, &payload); err != nil {
 		return "", err
 	}
-	return shopIDFromPayload(payload)
+	return holdingCodeFromPayload(payload)
 }
 
-func shopIDFromPayload(payload map[string]interface{}) (string, error) {
-	for _, key := range []string{"shopid", "shop_id", "tenant_id"} {
+func holdingCodeFromPayload(payload map[string]interface{}) (string, error) {
+	for _, key := range []string{"holding_code", "holding_code", "tenant_id"} {
 		if value := payloadString(payload[key]); value != "" {
 			return value, nil
 		}
 	}
 
 	if nested, ok := payload["body"].(map[string]interface{}); ok {
-		return shopIDFromPayload(nested)
+		return holdingCodeFromPayload(nested)
 	}
 	if nestedRaw, ok := payload["body"].(string); ok && strings.TrimSpace(nestedRaw) != "" {
 		var nested map[string]interface{}
 		if err := json.Unmarshal([]byte(nestedRaw), &nested); err != nil {
 			return "", err
 		}
-		return shopIDFromPayload(nested)
+		return holdingCodeFromPayload(nested)
 	}
 	return "", nil
 }
@@ -456,7 +456,7 @@ func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string) {
 	g.GET("/api/health/kafka", handlers.KafkaHealthHandler)
 	g.GET("/api/health/background", handlers.BackgroundTaskStatusHandler)
 	g.GET("/api/health/queue", handlers.QueueStatusHandler)
-	g.GET("/api/health/queue/:shopid", handlers.QueueShopStatusHandler)
+	g.GET("/api/health/queue/:holding_code", handlers.QueueShopStatusHandler)
 	g.GET("/api/health/database", handlers.DatabaseHealthHandler)
 	g.GET("/api/health/system", handlers.SystemHealthHandler)
 

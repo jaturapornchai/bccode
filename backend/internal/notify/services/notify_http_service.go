@@ -17,15 +17,15 @@ import (
 )
 
 type INotifyHttpService interface {
-	CreateNotify(shopID string, authUsername string, doc models.NotifyRequest) (string, error)
-	UpdateNotify(shopID string, guid string, authUsername string, doc models.NotifyRequest) error
-	DeleteNotify(shopID string, guid string, authUsername string) error
-	DeleteNotifyByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoNotify(shopID string, guid string) (models.NotifyInfo, error)
-	InfoNotifyByCode(shopID string, code string) (models.NotifyInfo, error)
-	SearchNotify(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.Notify, mongopagination.PaginationData, error)
-	SearchNotifyInfo(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.NotifyInfo, mongopagination.PaginationData, error)
-	SearchNotifyStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.NotifyInfo, int, error)
+	CreateNotify(holdingCode string, authUsername string, doc models.NotifyRequest) (string, error)
+	UpdateNotify(holdingCode string, guid string, authUsername string, doc models.NotifyRequest) error
+	DeleteNotify(holdingCode string, guid string, authUsername string) error
+	DeleteNotifyByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoNotify(holdingCode string, guid string) (models.NotifyInfo, error)
+	InfoNotifyByCode(holdingCode string, code string) (models.NotifyInfo, error)
+	SearchNotify(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.Notify, mongopagination.PaginationData, error)
+	SearchNotifyInfo(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.NotifyInfo, mongopagination.PaginationData, error)
+	SearchNotifyStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.NotifyInfo, int, error)
 
 	GetModuleName() string
 }
@@ -61,7 +61,7 @@ func (svc NotifyHttpService) getContextTimeout() (context.Context, context.Cance
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc NotifyHttpService) CreateNotify(shopID string, authUsername string, doc models.NotifyRequest) (string, error) {
+func (svc NotifyHttpService) CreateNotify(holdingCode string, authUsername string, doc models.NotifyRequest) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -69,7 +69,7 @@ func (svc NotifyHttpService) CreateNotify(shopID string, authUsername string, do
 	newGuidFixed := utils.NewGUID()
 
 	dataDoc := models.NotifyDoc{}
-	dataDoc.ShopID = shopID
+	dataDoc.HoldingCode = holdingCode
 	dataDoc.GuidFixed = newGuidFixed
 	dataDoc.Token = doc.Token
 	dataDoc.Notify = doc.Notify
@@ -84,18 +84,18 @@ func (svc NotifyHttpService) CreateNotify(shopID string, authUsername string, do
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return newGuidFixed, nil
 }
 
-func (svc NotifyHttpService) UpdateNotify(shopID string, guid string, authUsername string, doc models.NotifyRequest) error {
+func (svc NotifyHttpService) UpdateNotify(holdingCode string, guid string, authUsername string, doc models.NotifyRequest) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -112,25 +112,25 @@ func (svc NotifyHttpService) UpdateNotify(shopID string, guid string, authUserna
 	dataDoc.UpdatedBy = authUsername
 	dataDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, dataDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, dataDoc)
 
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc NotifyHttpService) DeleteNotify(shopID string, guid string, authUsername string) error {
+func (svc NotifyHttpService) DeleteNotify(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -140,19 +140,19 @@ func (svc NotifyHttpService) DeleteNotify(shopID string, guid string, authUserna
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc NotifyHttpService) DeleteNotifyByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc NotifyHttpService) DeleteNotifyByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -161,24 +161,24 @@ func (svc NotifyHttpService) DeleteNotifyByGUIDs(shopID string, authUsername str
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc NotifyHttpService) InfoNotify(shopID string, guid string) (models.NotifyInfo, error) {
+func (svc NotifyHttpService) InfoNotify(holdingCode string, guid string) (models.NotifyInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.NotifyInfo{}, err
@@ -191,12 +191,12 @@ func (svc NotifyHttpService) InfoNotify(shopID string, guid string) (models.Noti
 	return findDoc.NotifyInfo, nil
 }
 
-func (svc NotifyHttpService) InfoNotifyByCode(shopID string, code string) (models.NotifyInfo, error) {
+func (svc NotifyHttpService) InfoNotifyByCode(holdingCode string, code string) (models.NotifyInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "uid", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "uid", code)
 
 	if err != nil {
 		return models.NotifyInfo{}, err
@@ -209,7 +209,7 @@ func (svc NotifyHttpService) InfoNotifyByCode(shopID string, code string) (model
 	return findDoc.NotifyInfo, nil
 }
 
-func (svc NotifyHttpService) SearchNotify(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.Notify, mongopagination.PaginationData, error) {
+func (svc NotifyHttpService) SearchNotify(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.Notify, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -218,7 +218,7 @@ func (svc NotifyHttpService) SearchNotify(shopID string, filters map[string]inte
 		"name",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.Notify{}, pagination, err
@@ -232,7 +232,7 @@ func (svc NotifyHttpService) SearchNotify(shopID string, filters map[string]inte
 	return tempResults, pagination, nil
 }
 
-func (svc NotifyHttpService) SearchNotifyInfo(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.NotifyInfo, mongopagination.PaginationData, error) {
+func (svc NotifyHttpService) SearchNotifyInfo(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.NotifyInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -241,7 +241,7 @@ func (svc NotifyHttpService) SearchNotifyInfo(shopID string, filters map[string]
 		"name",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.NotifyInfo{}, pagination, err
@@ -250,7 +250,7 @@ func (svc NotifyHttpService) SearchNotifyInfo(shopID string, filters map[string]
 	return docList, pagination, nil
 }
 
-func (svc NotifyHttpService) SearchNotifyStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.NotifyInfo, int, error) {
+func (svc NotifyHttpService) SearchNotifyStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.NotifyInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -261,7 +261,7 @@ func (svc NotifyHttpService) SearchNotifyStep(shopID string, langCode string, fi
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.NotifyInfo{}, 0, err
@@ -270,9 +270,9 @@ func (svc NotifyHttpService) SearchNotifyStep(shopID string, langCode string, fi
 	return docList, total, nil
 }
 
-func (svc NotifyHttpService) saveMasterSync(shopID string) {
+func (svc NotifyHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

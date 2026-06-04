@@ -13,20 +13,20 @@ import (
 )
 
 type IShopUserService interface {
-	SaveUserPermissionShop(shopID string, authUsername string, editusername string, username string, role models.UserRole) error
-	SaveUserFullProfile(shopID string, authUsername string, req *models.UserRoleRequest) error
-	DeleteUserPermissionShop(shopID string, authUsername string, username string) error
-	CleanupEmptyUsers(shopID string) (int64, error)
+	SaveUserPermissionShop(holdingCode string, authUsername string, editusername string, username string, role models.UserRole) error
+	SaveUserFullProfile(holdingCode string, authUsername string, req *models.UserRoleRequest) error
+	DeleteUserPermissionShop(holdingCode string, authUsername string, username string) error
+	CleanupEmptyUsers(holdingCode string) (int64, error)
 
-	InfoShopByUser(shopID string, username string) (models.ShopUserProfile, error)
+	InfoShopByUser(holdingCode string, username string) (models.ShopUserProfile, error)
 	ListShopByUser(authUsername string, authUserUID string, pageable micromodels.Pageable) ([]models.ShopUserInfo, mongopagination.PaginationData, error)
-	ListUserInShop(shopID string, pageable micromodels.Pageable) ([]models.ShopUserProfile, mongopagination.PaginationData, error)
+	ListUserInShop(holdingCode string, pageable micromodels.Pageable) ([]models.ShopUserProfile, mongopagination.PaginationData, error)
 
 	// SyncLineData - sync LINE data จาก LIFF (ใช้สำหรับ callback จาก lineoa-liff)
-	SyncLineData(shopID string, username string, lineUserID string, lineDisplayName string, linePictureURL string) error
+	SyncLineData(holdingCode string, username string, lineUserID string, lineDisplayName string, linePictureURL string) error
 
 	// SaveMyLineData - ให้ผู้ใช้อัปเดต LINE data ของตัวเอง
-	SaveMyLineData(shopID string, username string, lineUserID string, lineDisplayName string, linePictureURL string) error
+	SaveMyLineData(holdingCode string, username string, lineUserID string, lineDisplayName string, linePictureURL string) error
 }
 
 type ShopUserService struct {
@@ -89,12 +89,12 @@ func applyAccessStatus(req *models.UserRoleRequest, existing models.ShopUser, au
 	return nil
 }
 
-func (svc ShopUserService) InfoShopByUser(shopID string, username string) (models.ShopUserProfile, error) {
+func (svc ShopUserService) InfoShopByUser(holdingCode string, username string) (models.ShopUserProfile, error) {
 
 	shopUserProfile := models.ShopUserProfile{}
 
 	// ดึงข้อมูล ShopUser เพื่อให้ได้ fields ใหม่ด้วย (position, department, LINE, approval)
-	shopUser, err := svc.repo.FindByShopIDAndUsername(context.Background(), shopID, username)
+	shopUser, err := svc.repo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, username)
 	if err != nil {
 		return models.ShopUserProfile{}, err
 	}
@@ -108,7 +108,7 @@ func (svc ShopUserService) InfoShopByUser(shopID string, username string) (model
 	}
 
 	// Basic info
-	shopUserProfile.ShopID = shopUser.ShopID
+	shopUserProfile.HoldingCode = shopUser.HoldingCode
 	shopUserProfile.Username = username
 	shopUserProfile.UserUID = shopUser.UserUID
 	shopUserProfile.Role = shopUser.Role
@@ -118,7 +118,7 @@ func (svc ShopUserService) InfoShopByUser(shopID string, username string) (model
 	shopUserProfile.AccessEnabledAt = shopUser.AccessEnabledAt
 	shopUserProfile.AccessEnabledBy = shopUser.AccessEnabledBy
 
-	createdBy, err := svc.repo.FindShopCreatedBy(context.Background(), shopID)
+	createdBy, err := svc.repo.FindShopCreatedBy(context.Background(), holdingCode)
 	if err != nil {
 		return models.ShopUserProfile{}, err
 	}
@@ -146,6 +146,7 @@ func (svc ShopUserService) InfoShopByUser(shopID string, username string) (model
 	// === ข้อมูลการอนุมัติ ===
 	shopUserProfile.POApproval = shopUser.POApproval
 	shopUserProfile.QuotationApproval = shopUser.QuotationApproval
+	shopUserProfile.AccessScopes = shopUser.AccessScopes
 
 	return shopUserProfile, err
 }
@@ -175,7 +176,7 @@ func (svc ShopUserService) ListShopByUser(authUsername string, authUserUID strin
 	return docList, pagination, err
 }
 
-func (svc ShopUserService) ListUserInShop(shopID string, pageable micromodels.Pageable) ([]models.ShopUserProfile, mongopagination.PaginationData, error) {
+func (svc ShopUserService) ListUserInShop(holdingCode string, pageable micromodels.Pageable) ([]models.ShopUserProfile, mongopagination.PaginationData, error) {
 	shopUserProfiles := []models.ShopUserProfile{}
 
 	profileMatchedUsernames := []string{}
@@ -187,7 +188,7 @@ func (svc ShopUserService) ListUserInShop(shopID string, pageable micromodels.Pa
 		}
 	}
 
-	shopUsers, pagination, err := svc.repo.FindByUserInShopPageWithProfileMatches(context.Background(), shopID, pageable, profileMatchedUsernames)
+	shopUsers, pagination, err := svc.repo.FindByUserInShopPageWithProfileMatches(context.Background(), holdingCode, pageable, profileMatchedUsernames)
 
 	if err != nil {
 		return shopUserProfiles, pagination, err
@@ -205,7 +206,7 @@ func (svc ShopUserService) ListUserInShop(shopID string, pageable micromodels.Pa
 		return shopUserProfiles, pagination, err
 	}
 
-	createdBy, err := svc.repo.FindShopCreatedBy(context.Background(), shopID)
+	createdBy, err := svc.repo.FindShopCreatedBy(context.Background(), holdingCode)
 	if err != nil {
 		return shopUserProfiles, pagination, err
 	}
@@ -218,7 +219,7 @@ func (svc ShopUserService) ListUserInShop(shopID string, pageable micromodels.Pa
 	for _, doc := range shopUsers {
 		shopUserProfile := models.ShopUserProfile{}
 
-		shopUserProfile.ShopID = doc.ShopID
+		shopUserProfile.HoldingCode = doc.HoldingCode
 		shopUserProfile.Username = doc.Username
 		shopUserProfile.UserUID = doc.UserUID
 		shopUserProfile.Role = doc.Role
@@ -226,6 +227,7 @@ func (svc ShopUserService) ListUserInShop(shopID string, pageable micromodels.Pa
 		shopUserProfile.Department = doc.Department
 		shopUserProfile.POApproval = doc.POApproval
 		shopUserProfile.QuotationApproval = doc.QuotationApproval
+		shopUserProfile.AccessScopes = doc.AccessScopes
 		shopUserProfile.IsAccessDisabled = doc.IsAccessDisabled
 		shopUserProfile.AccessDisabledAt = doc.AccessDisabledAt
 		shopUserProfile.AccessDisabledBy = doc.AccessDisabledBy
@@ -253,7 +255,7 @@ func (svc ShopUserService) ListUserInShop(shopID string, pageable micromodels.Pa
 	return shopUserProfiles, pagination, err
 }
 
-func (svc ShopUserService) SaveUserPermissionShop(shopID string, authUsername string, editusername string, username string, role models.UserRole) error {
+func (svc ShopUserService) SaveUserPermissionShop(holdingCode string, authUsername string, editusername string, username string, role models.UserRole) error {
 
 	username = utils.NormalizeUsername(username)
 
@@ -261,7 +263,7 @@ func (svc ShopUserService) SaveUserPermissionShop(shopID string, authUsername st
 		return errors.New("can not edit self permission")
 	}
 
-	authUser, err := svc.repo.FindByShopIDAndUsername(context.Background(), shopID, authUsername)
+	authUser, err := svc.repo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, authUsername)
 
 	if err != nil {
 		return err
@@ -275,7 +277,7 @@ func (svc ShopUserService) SaveUserPermissionShop(shopID string, authUsername st
 
 	if editusername != "" {
 
-		findEditUser, err := svc.repo.FindByShopIDAndUsername(context.Background(), shopID, editusername)
+		findEditUser, err := svc.repo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, editusername)
 
 		if err != nil {
 			return err
@@ -284,12 +286,12 @@ func (svc ShopUserService) SaveUserPermissionShop(shopID string, authUsername st
 		if findEditUser.Username != "" {
 			tempID := findEditUser.ID
 
-			err = svc.repo.Update(context.Background(), tempID, shopID, username, role)
+			err = svc.repo.Update(context.Background(), tempID, holdingCode, username, role)
 			if err != nil {
 				return err
 			}
 		} else {
-			err = svc.repo.Save(context.Background(), shopID, username, role)
+			err = svc.repo.Save(context.Background(), holdingCode, username, role)
 
 			if err != nil {
 				return err
@@ -298,7 +300,7 @@ func (svc ShopUserService) SaveUserPermissionShop(shopID string, authUsername st
 
 	} else {
 
-		err = svc.repo.Save(context.Background(), shopID, username, role)
+		err = svc.repo.Save(context.Background(), holdingCode, username, role)
 
 		if err != nil {
 			return err
@@ -307,10 +309,10 @@ func (svc ShopUserService) SaveUserPermissionShop(shopID string, authUsername st
 	return nil
 }
 
-func (svc ShopUserService) create(ctx context.Context, shopID string, username string, role models.UserRole) error {
+func (svc ShopUserService) create(ctx context.Context, holdingCode string, username string, role models.UserRole) error {
 
 	tempShopUser := models.ShopUser{}
-	tempShopUser.ShopID = shopID
+	tempShopUser.HoldingCode = holdingCode
 	tempShopUser.Username = username
 	tempShopUser.Role = role
 
@@ -322,7 +324,7 @@ func (svc ShopUserService) create(ctx context.Context, shopID string, username s
 }
 
 // SaveUserFullProfile - บันทึกข้อมูลผู้ใช้แบบครบถ้วน (รวม position, department, LINE, approval)
-func (svc ShopUserService) SaveUserFullProfile(shopID string, authUsername string, req *models.UserRoleRequest) error {
+func (svc ShopUserService) SaveUserFullProfile(holdingCode string, authUsername string, req *models.UserRoleRequest) error {
 	username := utils.NormalizeUsername(req.Username)
 	editusername := utils.NormalizeUsername(req.EditUsername)
 	req.EditUsername = editusername
@@ -331,7 +333,7 @@ func (svc ShopUserService) SaveUserFullProfile(shopID string, authUsername strin
 		return errors.New("can not edit self permission")
 	}
 
-	authUser, err := svc.repo.FindByShopIDAndUsername(context.Background(), shopID, authUsername)
+	authUser, err := svc.repo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, authUsername)
 	if err != nil {
 		return err
 	}
@@ -340,7 +342,7 @@ func (svc ShopUserService) SaveUserFullProfile(shopID string, authUsername strin
 		return errors.New("permission denied")
 	}
 
-	createdBy, err := svc.repo.FindShopCreatedBy(context.Background(), shopID)
+	createdBy, err := svc.repo.FindShopCreatedBy(context.Background(), holdingCode)
 	if err != nil {
 		return err
 	}
@@ -349,7 +351,7 @@ func (svc ShopUserService) SaveUserFullProfile(shopID string, authUsername strin
 	if editusername != "" {
 		lookupUsername = editusername
 	}
-	existingTarget, existingTargetErr := svc.repo.FindByShopIDAndUsername(context.Background(), shopID, lookupUsername)
+	existingTarget, existingTargetErr := svc.repo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, lookupUsername)
 	if existingTargetErr != nil {
 		existingTarget = models.ShopUser{}
 	}
@@ -363,7 +365,7 @@ func (svc ShopUserService) SaveUserFullProfile(shopID string, authUsername strin
 
 	// ตรวจสอบว่า LINE ID ไม่ซ้ำกับผู้ใช้คนอื่น - ถ้าซ้ำให้ auto-unlink คนเก่า
 	if req.LineUserID != "" {
-		existingUser, existingUserErr := svc.repo.FindByShopIDAndLineUserID(context.Background(), shopID, req.LineUserID)
+		existingUser, existingUserErr := svc.repo.FindByHoldingCodeAndLineUserID(context.Background(), holdingCode, req.LineUserID)
 		// ถ้าพบผู้ใช้ที่ใช้ LINE ID นี้แล้ว และไม่ใช่ผู้ใช้คนเดียวกัน ให้ลบ LINE data ของคนเก่า (auto-unlink)
 		if existingUserErr == nil && existingUser.Username != "" && !sameUsername(existingUser.Username, username) {
 			// ลบ LINE data ของ user เก่า
@@ -377,9 +379,10 @@ func (svc ShopUserService) SaveUserFullProfile(shopID string, authUsername strin
 				LinePictureURL:    "",
 				POApproval:        existingUser.POApproval,
 				QuotationApproval: existingUser.QuotationApproval,
+				AccessScopes:      existingUser.AccessScopes,
 			}
 			copyAccessStatusToRequest(oldReq, existingUser)
-			svc.repo.SaveFullProfile(context.Background(), shopID, oldReq)
+			svc.repo.SaveFullProfile(context.Background(), holdingCode, oldReq)
 		}
 	}
 
@@ -387,7 +390,7 @@ func (svc ShopUserService) SaveUserFullProfile(shopID string, authUsername strin
 	req.Username = username
 
 	// บันทึกข้อมูลแบบ full profile
-	err = svc.repo.SaveFullProfile(context.Background(), shopID, req)
+	err = svc.repo.SaveFullProfile(context.Background(), holdingCode, req)
 	if err != nil {
 		return err
 	}
@@ -395,9 +398,9 @@ func (svc ShopUserService) SaveUserFullProfile(shopID string, authUsername strin
 	return nil
 }
 
-func (svc ShopUserService) DeleteUserPermissionShop(shopID string, authUsername string, username string) error {
+func (svc ShopUserService) DeleteUserPermissionShop(holdingCode string, authUsername string, username string) error {
 
-	authUser, err := svc.repo.FindByShopIDAndUsername(context.Background(), shopID, authUsername)
+	authUser, err := svc.repo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, authUsername)
 
 	if err != nil {
 		return err
@@ -407,7 +410,7 @@ func (svc ShopUserService) DeleteUserPermissionShop(shopID string, authUsername 
 		return errors.New("permission denied")
 	}
 
-	findUser, err := svc.repo.FindByShopIDAndUsername(context.Background(), shopID, username)
+	findUser, err := svc.repo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, username)
 
 	if err != nil {
 		return err
@@ -418,7 +421,7 @@ func (svc ShopUserService) DeleteUserPermissionShop(shopID string, authUsername 
 		return errors.New("user not found")
 	}
 
-	createdBy, err := svc.repo.FindShopCreatedBy(context.Background(), shopID)
+	createdBy, err := svc.repo.FindShopCreatedBy(context.Background(), holdingCode)
 	if err != nil {
 		return err
 	}
@@ -435,7 +438,7 @@ func (svc ShopUserService) DeleteUserPermissionShop(shopID string, authUsername 
 		return errors.New("can't delete your permission")
 	}
 
-	err = svc.repo.Delete(context.Background(), shopID, username)
+	err = svc.repo.Delete(context.Background(), holdingCode, username)
 
 	if err != nil {
 		return err
@@ -444,12 +447,12 @@ func (svc ShopUserService) DeleteUserPermissionShop(shopID string, authUsername 
 }
 
 // CleanupEmptyUsers - ลบ users ที่ username ว่างออกจาก shop
-func (svc ShopUserService) CleanupEmptyUsers(shopID string) (int64, error) {
-	return svc.repo.DeleteEmptyUsernames(context.Background(), shopID)
+func (svc ShopUserService) CleanupEmptyUsers(holdingCode string) (int64, error) {
+	return svc.repo.DeleteEmptyUsernames(context.Background(), holdingCode)
 }
 
 // SyncLineData - sync LINE data จาก LIFF callback (ใช้สำหรับ callback จาก lineoa-liff หลัง linking สำเร็จ)
-func (svc ShopUserService) SyncLineData(shopID string, username string, lineUserID string, lineDisplayName string, linePictureURL string) error {
+func (svc ShopUserService) SyncLineData(holdingCode string, username string, lineUserID string, lineDisplayName string, linePictureURL string) error {
 	username = utils.NormalizeUsername(username)
 
 	if username == "" {
@@ -457,7 +460,7 @@ func (svc ShopUserService) SyncLineData(shopID string, username string, lineUser
 	}
 
 	// ตรวจสอบว่ามี user นี้ใน shop หรือไม่
-	existingUser, err := svc.repo.FindByShopIDAndUsername(context.Background(), shopID, username)
+	existingUser, err := svc.repo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, username)
 	if err != nil {
 		return errors.New("user not found in shop")
 	}
@@ -468,7 +471,7 @@ func (svc ShopUserService) SyncLineData(shopID string, username string, lineUser
 
 	// ถ้า LINE ID ถูกใช้โดยผู้ใช้คนอื่นแล้ว ให้ลบ LINE data ของคนนั้นก่อน (auto-unlink)
 	if lineUserID != "" {
-		existingLineUser, existingLineUserErr := svc.repo.FindByShopIDAndLineUserID(context.Background(), shopID, lineUserID)
+		existingLineUser, existingLineUserErr := svc.repo.FindByHoldingCodeAndLineUserID(context.Background(), holdingCode, lineUserID)
 		if existingLineUserErr == nil && existingLineUser.Username != "" && !sameUsername(existingLineUser.Username, username) {
 			// ลบ LINE data ของ user เก่า
 			oldReq := &models.UserRoleRequest{
@@ -479,9 +482,10 @@ func (svc ShopUserService) SyncLineData(shopID string, username string, lineUser
 				LineUserID:      "", // clear LINE data
 				LineDisplayName: "",
 				LinePictureURL:  "",
+				AccessScopes:    existingLineUser.AccessScopes,
 			}
 			copyAccessStatusToRequest(oldReq, existingLineUser)
-			svc.repo.SaveFullProfile(context.Background(), shopID, oldReq)
+			svc.repo.SaveFullProfile(context.Background(), holdingCode, oldReq)
 		}
 	}
 
@@ -496,14 +500,15 @@ func (svc ShopUserService) SyncLineData(shopID string, username string, lineUser
 		LinePictureURL:    linePictureURL,
 		POApproval:        existingUser.POApproval,
 		QuotationApproval: existingUser.QuotationApproval,
+		AccessScopes:      existingUser.AccessScopes,
 	}
 	copyAccessStatusToRequest(req, existingUser)
 
-	return svc.repo.SaveFullProfile(context.Background(), shopID, req)
+	return svc.repo.SaveFullProfile(context.Background(), holdingCode, req)
 }
 
 // SaveMyLineData - ให้ผู้ใช้อัปเดต LINE data ของตัวเอง (ใช้จาก Flutter หลัง LIFF linking)
-func (svc ShopUserService) SaveMyLineData(shopID string, username string, lineUserID string, lineDisplayName string, linePictureURL string) error {
+func (svc ShopUserService) SaveMyLineData(holdingCode string, username string, lineUserID string, lineDisplayName string, linePictureURL string) error {
 	username = utils.NormalizeUsername(username)
 
 	if username == "" {
@@ -511,7 +516,7 @@ func (svc ShopUserService) SaveMyLineData(shopID string, username string, lineUs
 	}
 
 	// ตรวจสอบว่ามี user นี้ใน shop หรือไม่
-	existingUser, err := svc.repo.FindByShopIDAndUsername(context.Background(), shopID, username)
+	existingUser, err := svc.repo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, username)
 	if err != nil {
 		return errors.New("user not found in shop")
 	}
@@ -522,7 +527,7 @@ func (svc ShopUserService) SaveMyLineData(shopID string, username string, lineUs
 
 	// ถ้า LINE ID ถูกใช้โดยผู้ใช้คนอื่นแล้ว ให้ลบ LINE data ของคนนั้นก่อน (auto-unlink)
 	if lineUserID != "" {
-		existingLineUser, existingLineUserErr := svc.repo.FindByShopIDAndLineUserID(context.Background(), shopID, lineUserID)
+		existingLineUser, existingLineUserErr := svc.repo.FindByHoldingCodeAndLineUserID(context.Background(), holdingCode, lineUserID)
 		if existingLineUserErr == nil && existingLineUser.Username != "" && !sameUsername(existingLineUser.Username, username) {
 			// ลบ LINE data ของ user เก่า
 			oldReq := &models.UserRoleRequest{
@@ -533,9 +538,10 @@ func (svc ShopUserService) SaveMyLineData(shopID string, username string, lineUs
 				LineUserID:      "", // clear LINE data
 				LineDisplayName: "",
 				LinePictureURL:  "",
+				AccessScopes:    existingLineUser.AccessScopes,
 			}
 			copyAccessStatusToRequest(oldReq, existingLineUser)
-			svc.repo.SaveFullProfile(context.Background(), shopID, oldReq)
+			svc.repo.SaveFullProfile(context.Background(), holdingCode, oldReq)
 		}
 	}
 
@@ -550,8 +556,9 @@ func (svc ShopUserService) SaveMyLineData(shopID string, username string, lineUs
 		LinePictureURL:    linePictureURL,
 		POApproval:        existingUser.POApproval,
 		QuotationApproval: existingUser.QuotationApproval,
+		AccessScopes:      existingUser.AccessScopes,
 	}
 	copyAccessStatusToRequest(req, existingUser)
 
-	return svc.repo.SaveFullProfile(context.Background(), shopID, req)
+	return svc.repo.SaveFullProfile(context.Background(), holdingCode, req)
 }

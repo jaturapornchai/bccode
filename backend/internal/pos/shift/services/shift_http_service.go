@@ -23,16 +23,16 @@ import (
 )
 
 type IShiftHttpService interface {
-	CreateShift(shopID string, authUsername string, doc models.Shift) (string, error)
-	UpdateShift(shopID string, guid string, authUsername string, doc models.Shift) error
-	DeleteShift(shopID string, guid string, authUsername string) error
-	DeleteShiftByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoShift(shopID string, guid string) (models.ShiftInfo, error)
-	ReportShift(shopID string, docno string) (models.ShiftInfo, error)
-	InfoShiftByCode(shopID string, code string) (models.ShiftInfo, error)
-	SearchShift(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ShiftInfo, mongopagination.PaginationData, error)
-	SearchShiftStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ShiftInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.Shift) (common.BulkImport, error)
+	CreateShift(holdingCode string, authUsername string, doc models.Shift) (string, error)
+	UpdateShift(holdingCode string, guid string, authUsername string, doc models.Shift) error
+	DeleteShift(holdingCode string, guid string, authUsername string) error
+	DeleteShiftByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoShift(holdingCode string, guid string) (models.ShiftInfo, error)
+	ReportShift(holdingCode string, docno string) (models.ShiftInfo, error)
+	InfoShiftByCode(holdingCode string, code string) (models.ShiftInfo, error)
+	SearchShift(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ShiftInfo, mongopagination.PaginationData, error)
+	SearchShiftStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ShiftInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.Shift) (common.BulkImport, error)
 
 	GetModuleName() string
 }
@@ -91,7 +91,7 @@ func (svc ShiftHttpService) getContextTimeout() (context.Context, context.Cancel
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc ShiftHttpService) CreateShift(shopID string, authUsername string, doc models.Shift) (string, error) {
+func (svc ShiftHttpService) CreateShift(holdingCode string, authUsername string, doc models.Shift) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -99,7 +99,7 @@ func (svc ShiftHttpService) CreateShift(shopID string, authUsername string, doc 
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.ShiftDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.Shift = doc
 
@@ -113,7 +113,7 @@ func (svc ShiftHttpService) CreateShift(shopID string, authUsername string, doc 
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 		err = svc.repoMq.Create(docData)
 		if err != nil {
 			logger.GetLogger().Errorf("Create shift message queue error :: %s", err.Error())
@@ -123,12 +123,12 @@ func (svc ShiftHttpService) CreateShift(shopID string, authUsername string, doc 
 	return newGuidFixed, nil
 }
 
-func (svc ShiftHttpService) UpdateShift(shopID string, guid string, authUsername string, doc models.Shift) error {
+func (svc ShiftHttpService) UpdateShift(holdingCode string, guid string, authUsername string, doc models.Shift) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -143,14 +143,14 @@ func (svc ShiftHttpService) UpdateShift(shopID string, guid string, authUsername
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, findDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, findDoc)
 
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 		err = svc.repoMq.Update(findDoc)
 		if err != nil {
 			logger.GetLogger().Errorf("Update shift message queue error :: %s", err.Error())
@@ -160,12 +160,12 @@ func (svc ShiftHttpService) UpdateShift(shopID string, guid string, authUsername
 	return nil
 }
 
-func (svc ShiftHttpService) DeleteShift(shopID string, guid string, authUsername string) error {
+func (svc ShiftHttpService) DeleteShift(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -175,13 +175,13 @@ func (svc ShiftHttpService) DeleteShift(shopID string, guid string, authUsername
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 		err = svc.repoMq.Delete(findDoc)
 		if err != nil {
 			logger.GetLogger().Errorf("Delete creditor message queue error :: %s", err.Error())
@@ -191,7 +191,7 @@ func (svc ShiftHttpService) DeleteShift(shopID string, guid string, authUsername
 	return nil
 }
 
-func (svc ShiftHttpService) DeleteShiftByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc ShiftHttpService) DeleteShiftByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -199,18 +199,18 @@ func (svc ShiftHttpService) DeleteShiftByGUIDs(shopID string, authUsername strin
 	deleteFilterQuery := map[string]interface{}{
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
-	findDocs, err := svc.repo.FindByGuids(ctx, shopID, GUIDs)
+	findDocs, err := svc.repo.FindByGuids(ctx, holdingCode, GUIDs)
 
 	if err != nil {
 		return err
 	}
 
-	err = svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err = svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 		err = svc.repoMq.DeleteInBatch(findDocs)
 		if err != nil {
 			logger.GetLogger().Errorf("Delete creditor message queue error :: %s", err.Error())
@@ -220,12 +220,12 @@ func (svc ShiftHttpService) DeleteShiftByGUIDs(shopID string, authUsername strin
 	return nil
 }
 
-func (svc ShiftHttpService) InfoShift(shopID string, guid string) (models.ShiftInfo, error) {
+func (svc ShiftHttpService) InfoShift(holdingCode string, guid string) (models.ShiftInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.ShiftInfo{}, err
@@ -239,8 +239,8 @@ func (svc ShiftHttpService) InfoShift(shopID string, guid string) (models.ShiftI
 }
 
 // Satisfy old interface for backward compatibility
-func (svc *ShiftHttpService) ReportShift(shopID string, docno string) (models.ShiftInfo, error) {
-	report, err := svc.ReportShiftReport(shopID, docno)
+func (svc *ShiftHttpService) ReportShift(holdingCode string, docno string) (models.ShiftInfo, error) {
+	report, err := svc.ReportShiftReport(holdingCode, docno)
 	if err != nil {
 		return models.ShiftInfo{}, err
 	}
@@ -250,11 +250,11 @@ func (svc *ShiftHttpService) ReportShift(shopID string, docno string) (models.Sh
 	return models.ShiftInfo{}, errors.New("no shift found in report")
 }
 
-func (svc *ShiftHttpService) ReportShiftReport(shopID string, docno string) (models.ShiftReport, error) {
+func (svc *ShiftHttpService) ReportShiftReport(holdingCode string, docno string) (models.ShiftReport, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	shiftDocs, err := svc.repo.FindByDocNo(ctx, shopID, docno)
+	shiftDocs, err := svc.repo.FindByDocNo(ctx, holdingCode, docno)
 	if err != nil {
 		return models.ShiftReport{}, err
 	}
@@ -286,7 +286,7 @@ func (svc *ShiftHttpService) ReportShiftReport(shopID string, docno string) (mod
 	}
 
 	filters := map[string]interface{}{"shiftdocno": docno}
-	invoices, _, err := svc.SaleInvoiceService.SearchSaleInvoice(shopID, filters, micromodels.Pageable{Limit: 1000000, Page: 1})
+	invoices, _, err := svc.SaleInvoiceService.SearchSaleInvoice(holdingCode, filters, micromodels.Pageable{Limit: 1000000, Page: 1})
 	if err != nil {
 		return models.ShiftReport{}, err
 	}
@@ -364,12 +364,12 @@ func (svc *ShiftHttpService) ReportShiftReport(shopID string, docno string) (mod
 	}, nil
 }
 
-func (svc ShiftHttpService) InfoShiftByCode(shopID string, code string) (models.ShiftInfo, error) {
+func (svc ShiftHttpService) InfoShiftByCode(holdingCode string, code string) (models.ShiftInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", code)
 
 	if err != nil {
 		return models.ShiftInfo{}, err
@@ -382,7 +382,7 @@ func (svc ShiftHttpService) InfoShiftByCode(shopID string, code string) (models.
 	return findDoc.ShiftInfo, nil
 }
 
-func (svc ShiftHttpService) SearchShift(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ShiftInfo, mongopagination.PaginationData, error) {
+func (svc ShiftHttpService) SearchShift(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ShiftInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -393,7 +393,7 @@ func (svc ShiftHttpService) SearchShift(shopID string, filters map[string]interf
 		"remark",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.ShiftInfo{}, pagination, err
@@ -402,7 +402,7 @@ func (svc ShiftHttpService) SearchShift(shopID string, filters map[string]interf
 	return docList, pagination, nil
 }
 
-func (svc ShiftHttpService) SearchShiftStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ShiftInfo, int, error) {
+func (svc ShiftHttpService) SearchShiftStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ShiftInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -423,7 +423,7 @@ func (svc ShiftHttpService) SearchShiftStep(shopID string, langCode string, filt
 		}
 	*/
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.ShiftInfo{}, 0, err
@@ -432,7 +432,7 @@ func (svc ShiftHttpService) SearchShiftStep(shopID string, langCode string, filt
 	return docList, total, nil
 }
 
-func (svc ShiftHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.Shift) (common.BulkImport, error) {
+func (svc ShiftHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.Shift) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -444,7 +444,7 @@ func (svc ShiftHttpService) SaveInBatch(shopID string, authUsername string, data
 		itemCodeGuidList = append(itemCodeGuidList, doc.DocNo)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "docno", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "docno", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -456,18 +456,18 @@ func (svc ShiftHttpService) SaveInBatch(shopID string, authUsername string, data
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.Shift, models.ShiftDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.Shift) models.ShiftDoc {
+		func(holdingCode string, authUsername string, doc models.Shift) models.ShiftDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.ShiftDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.Shift = doc
 
 			currentTime := time.Now()
@@ -478,23 +478,23 @@ func (svc ShiftHttpService) SaveInBatch(shopID string, authUsername string, data
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.Shift, models.ShiftDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.ShiftDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", guid)
+		func(holdingCode string, guid string) (models.ShiftDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", guid)
 		},
 		func(doc models.ShiftDoc) bool {
 			return doc.DocNo != ""
 		},
-		func(shopID string, authUsername string, data models.Shift, doc models.ShiftDoc) error {
+		func(holdingCode string, authUsername string, data models.Shift, doc models.ShiftDoc) error {
 
 			doc.Shift = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -534,7 +534,7 @@ func (svc ShiftHttpService) SaveInBatch(shopID string, authUsername string, data
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 		err = svc.repoMq.CreateInBatch(createDataList)
 		if err != nil {
 			logger.GetLogger().Errorf("Create shift message queue error :: %s", err.Error())
@@ -558,9 +558,9 @@ func (svc ShiftHttpService) getDocIDKey(doc models.Shift) string {
 	return doc.DocNo
 }
 
-func (svc ShiftHttpService) saveMasterSync(shopID string) {
+func (svc ShiftHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

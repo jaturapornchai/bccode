@@ -27,12 +27,12 @@ func TestGetDataTrialBalanceReportPgRepository(t *testing.T) {
 	assert.NotNil(pst)
 	repo := journalreport.NewJournalReportPgRepository(pst)
 
-	shopId := "27dcEdktOoaSBYFmnN6G6ett4Jb"
+	holdingCode := "27dcEdktOoaSBYFmnN6G6ett4Jb"
 	accGroup := "01"
 	startDate := time.Date(2022, 05, 01, 00, 00, 00, 0, time.UTC)
 	endDate := time.Date(2022, 05, 31, 00, 00, 00, 0, time.UTC)
 
-	get, err := repo.GetDataTrialBalance(shopId, accGroup, false, startDate, endDate)
+	get, err := repo.GetDataTrialBalance(holdingCode, accGroup, false, startDate, endDate)
 	assert.Nil(err)
 	assert.NotNil(get)
 }
@@ -49,12 +49,12 @@ func TestGetDataProfitAndLossReportPgRepository(t *testing.T) {
 	assert.NotNil(pst)
 	repo := journalreport.NewJournalReportPgRepository(pst)
 
-	shopId := "27dcEdktOoaSBYFmnN6G6ett4Jb"
+	holdingCode := "27dcEdktOoaSBYFmnN6G6ett4Jb"
 	accGroup := "01"
 	startDate := time.Date(2022, 05, 01, 00, 00, 00, 0, time.UTC)
 	endDate := time.Date(2022, 05, 31, 00, 00, 00, 0, time.UTC)
 
-	get, err := repo.GetDataProfitAndLoss(shopId, accGroup, false, startDate, endDate)
+	get, err := repo.GetDataProfitAndLoss(holdingCode, accGroup, false, startDate, endDate)
 	assert.Nil(err)
 	assert.NotNil(get)
 }
@@ -71,11 +71,11 @@ func TestGetDataBalanceSheetReportPgRepository(t *testing.T) {
 	assert.NotNil(pst)
 	repo := journalreport.NewJournalReportPgRepository(pst)
 
-	shopId := "27dcEdktOoaSBYFmnN6G6ett4Jb"
+	holdingCode := "27dcEdktOoaSBYFmnN6G6ett4Jb"
 	accGroup := "01"
 	endDate := time.Date(2022, 05, 31, 00, 00, 00, 0, time.UTC)
 
-	get, err := repo.GetDataBalanceSheet(shopId, accGroup, false, endDate)
+	get, err := repo.GetDataBalanceSheet(holdingCode, accGroup, false, endDate)
 	assert.Nil(err)
 	assert.NotNil(get)
 }

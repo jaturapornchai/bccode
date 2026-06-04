@@ -27,7 +27,7 @@ func NewInventoryCostingService(db *sql.DB) *InventoryCostingService {
 // ProcessReceipt — รับสินค้าเข้า (ซื้อ, รับโอน, ปรับเพิ่ม)
 func (s *InventoryCostingService) ProcessReceipt(ctx context.Context, params m.ReceiptParams) (*m.CostTransactionResult, error) {
 	return s.withTransaction(ctx, func(tx *sql.Tx) (*m.CostTransactionResult, error) {
-		engine, err := s.getEngineForProduct(ctx, tx, params.ShopID, params.ItemCode)
+		engine, err := s.getEngineForProduct(ctx, tx, params.HoldingCode, params.ItemCode)
 		if err != nil {
 			return nil, err
 		}
@@ -39,7 +39,7 @@ func (s *InventoryCostingService) ProcessReceipt(ctx context.Context, params m.R
 // ProcessIssue — ตัดสินค้าออก (ขาย, เบิก)
 func (s *InventoryCostingService) ProcessIssue(ctx context.Context, params m.IssueParams) (*m.CostTransactionResult, error) {
 	return s.withTransaction(ctx, func(tx *sql.Tx) (*m.CostTransactionResult, error) {
-		engine, err := s.getEngineForProduct(ctx, tx, params.ShopID, params.ItemCode)
+		engine, err := s.getEngineForProduct(ctx, tx, params.HoldingCode, params.ItemCode)
 		if err != nil {
 			return nil, err
 		}
@@ -51,7 +51,7 @@ func (s *InventoryCostingService) ProcessIssue(ctx context.Context, params m.Iss
 // ProcessSalesReturn — รับคืนจากลูกค้า
 func (s *InventoryCostingService) ProcessSalesReturn(ctx context.Context, params m.SalesReturnParams) (*m.CostTransactionResult, error) {
 	return s.withTransaction(ctx, func(tx *sql.Tx) (*m.CostTransactionResult, error) {
-		engine, err := s.getEngineForProduct(ctx, tx, params.ShopID, params.ItemCode)
+		engine, err := s.getEngineForProduct(ctx, tx, params.HoldingCode, params.ItemCode)
 		if err != nil {
 			return nil, err
 		}
@@ -62,7 +62,7 @@ func (s *InventoryCostingService) ProcessSalesReturn(ctx context.Context, params
 // ProcessPurchaseReturn — ส่งคืนสินค้าให้ supplier
 func (s *InventoryCostingService) ProcessPurchaseReturn(ctx context.Context, params m.PurchaseReturnParams) (*m.CostTransactionResult, error) {
 	return s.withTransaction(ctx, func(tx *sql.Tx) (*m.CostTransactionResult, error) {
-		engine, err := s.getEngineForProduct(ctx, tx, params.ShopID, params.ItemCode)
+		engine, err := s.getEngineForProduct(ctx, tx, params.HoldingCode, params.ItemCode)
 		if err != nil {
 			return nil, err
 		}
@@ -73,14 +73,14 @@ func (s *InventoryCostingService) ProcessPurchaseReturn(ctx context.Context, par
 // ProcessTransfer — โอนย้ายคลัง (ตัดออกจากต้นทาง + รับเข้าปลายทาง)
 func (s *InventoryCostingService) ProcessTransfer(ctx context.Context, params m.TransferParams) (*m.CostTransactionResult, error) {
 	return s.withTransaction(ctx, func(tx *sql.Tx) (*m.CostTransactionResult, error) {
-		engine, err := s.getEngineForProduct(ctx, tx, params.ShopID, params.ItemCode)
+		engine, err := s.getEngineForProduct(ctx, tx, params.HoldingCode, params.ItemCode)
 		if err != nil {
 			return nil, err
 		}
 
 		// 1. ตัดออกจากคลังต้นทาง
 		issueParams := m.IssueParams{
-			ShopID: params.ShopID, ItemCode: params.ItemCode, Barcode: params.Barcode,
+			HoldingCode: params.HoldingCode, ItemCode: params.ItemCode, Barcode: params.Barcode,
 			WhCode: params.FromWhCode, LocationCode: params.FromLocationCode,
 			Qty: params.Qty, RefDocType: params.RefDocType, RefDocNo: params.RefDocNo,
 			TransFlag: params.TransFlag, LotNumber: params.LotNumber,
@@ -99,7 +99,7 @@ func (s *InventoryCostingService) ProcessTransfer(ctx context.Context, params m.
 
 		// 2. รับเข้าคลังปลายทาง (ใช้ต้นทุนจากต้นทาง)
 		receiptParams := m.ReceiptParams{
-			ShopID: params.ShopID, ItemCode: params.ItemCode, Barcode: params.Barcode,
+			HoldingCode: params.HoldingCode, ItemCode: params.ItemCode, Barcode: params.Barcode,
 			WhCode: params.ToWhCode, LocationCode: params.ToLocationCode,
 			Qty: params.Qty, UnitCost: unitCost,
 			RefDocType: params.RefDocType, RefDocNo: params.RefDocNo,
@@ -122,7 +122,7 @@ func (s *InventoryCostingService) ProcessTransfer(ctx context.Context, params m.
 // ProcessAdjustment — ปรับปรุง stock
 func (s *InventoryCostingService) ProcessAdjustment(ctx context.Context, params m.AdjustmentParams) (*m.CostTransactionResult, error) {
 	return s.withTransaction(ctx, func(tx *sql.Tx) (*m.CostTransactionResult, error) {
-		engine, err := s.getEngineForProduct(ctx, tx, params.ShopID, params.ItemCode)
+		engine, err := s.getEngineForProduct(ctx, tx, params.HoldingCode, params.ItemCode)
 		if err != nil {
 			return nil, err
 		}
@@ -131,14 +131,29 @@ func (s *InventoryCostingService) ProcessAdjustment(ctx context.Context, params 
 }
 
 // GetValuation — ดูมูลค่าสินค้าปัจจุบัน
-func (s *InventoryCostingService) GetValuation(ctx context.Context, shopID, itemCode, whCode string) (*m.StockValuation, error) {
+func (s *InventoryCostingService) GetValuation(ctx context.Context, holdingCode, itemCode, whCode string) (*m.StockValuation, error) {
 	var result *m.StockValuation
 	_, err := s.withTransaction(ctx, func(tx *sql.Tx) (*m.CostTransactionResult, error) {
-		engine, err := s.getEngineForProduct(ctx, tx, shopID, itemCode)
+		engine, err := s.getEngineForProduct(ctx, tx, holdingCode, itemCode)
 		if err != nil {
 			return nil, err
 		}
-		result, err = engine.GetCurrentValuation(ctx, tx, shopID, itemCode, whCode)
+		var costByWarehouse bool
+		err = tx.QueryRowContext(ctx,
+			`SELECT COALESCE(cost_by_warehouse, false)
+			 FROM product_costing_config WHERE holding_code = $1 AND itemcode = $2`,
+			holdingCode, itemCode,
+		).Scan(&costByWarehouse)
+		if err == sql.ErrNoRows {
+			costByWarehouse = false
+		} else if err != nil {
+			return nil, fmt.Errorf("ดึงตัวเลือกต้นทุนแยกคลังไม่สำเร็จ: %w", err)
+		}
+		valuationWhCode := whCode
+		if !costByWarehouse {
+			valuationWhCode = ""
+		}
+		result, err = engine.GetCurrentValuation(ctx, tx, holdingCode, itemCode, valuationWhCode)
 		return nil, err
 	})
 	if err != nil {
@@ -148,16 +163,18 @@ func (s *InventoryCostingService) GetValuation(ctx context.Context, shopID, item
 }
 
 // GetCostingConfig — ดึง costing config ของสินค้า
-func (s *InventoryCostingService) GetCostingConfig(ctx context.Context, shopID, itemCode string) (*m.ProductCostingConfig, error) {
+func (s *InventoryCostingService) GetCostingConfig(ctx context.Context, holdingCode, itemCode string) (*m.ProductCostingConfig, error) {
 	var config m.ProductCostingConfig
 	err := s.db.QueryRowContext(ctx,
 		`SELECT itemcode, costingmethod, lottrackingenabled, expirytrackingenabled,
-		        expiryalertdays, autoblockexpired, allownegativestock, standardcost
-		 FROM product_costing_config WHERE shopid = $1 AND itemcode = $2`,
-		shopID, itemCode,
+		        expiryalertdays, autoblockexpired, allownegativestock,
+		        COALESCE(cost_by_warehouse, false), standardcost
+		 FROM product_costing_config WHERE holding_code = $1 AND itemcode = $2`,
+		holdingCode, itemCode,
 	).Scan(&config.ItemCode, &config.CostingMethod, &config.LotTrackingEnabled,
 		&config.ExpiryTrackingEnabled, &config.ExpiryAlertDays,
-		&config.AutoBlockExpired, &config.AllowNegativeStock, &config.StandardCost)
+		&config.AutoBlockExpired, &config.AllowNegativeStock,
+		&config.CostByWarehouse, &config.StandardCost)
 	if err == sql.ErrNoRows {
 		return &m.ProductCostingConfig{
 			ItemCode:      itemCode,
@@ -171,15 +188,15 @@ func (s *InventoryCostingService) GetCostingConfig(ctx context.Context, shopID, 
 }
 
 // UpdateCostingConfig — ตั้งค่า costing method ของสินค้า
-func (s *InventoryCostingService) UpdateCostingConfig(ctx context.Context, shopID string, config *m.ProductCostingConfig) error {
+func (s *InventoryCostingService) UpdateCostingConfig(ctx context.Context, holdingCode string, config *m.ProductCostingConfig) error {
 	validMethods := map[string]bool{
-		m.CostingMethodMovingAverage:  true,
+		m.CostingMethodMovingAverage:   true,
 		m.CostingMethodPeriodicAverage: true,
-		m.CostingMethodFIFO:           true,
-		m.CostingMethodLIFO:           true,
-		m.CostingMethodFEFO:           true,
-		m.CostingMethodLot:            true,
-		m.CostingMethodStandard:       true,
+		m.CostingMethodFIFO:            true,
+		m.CostingMethodLIFO:            true,
+		m.CostingMethodFEFO:            true,
+		m.CostingMethodLot:             true,
+		m.CostingMethodStandard:        true,
 	}
 	if !validMethods[config.CostingMethod] {
 		return fmt.Errorf("ไม่รู้จัก costing method: %s", config.CostingMethod)
@@ -198,35 +215,36 @@ func (s *InventoryCostingService) UpdateCostingConfig(ctx context.Context, shopI
 
 	_, err := s.db.ExecContext(ctx,
 		`INSERT INTO product_costing_config
-		 (shopid, itemcode, costingmethod, lottrackingenabled, expirytrackingenabled,
-		  expiryalertdays, autoblockexpired, allownegativestock, standardcost, updatedat)
-		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW())
-		 ON CONFLICT (shopid, itemcode) DO UPDATE SET
+		 (holding_code, itemcode, costingmethod, lottrackingenabled, expirytrackingenabled,
+		  expiryalertdays, autoblockexpired, allownegativestock, cost_by_warehouse, standardcost, updatedat)
+		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,NOW())
+		 ON CONFLICT (holding_code, itemcode) DO UPDATE SET
 		  costingmethod = EXCLUDED.costingmethod,
 		  lottrackingenabled = EXCLUDED.lottrackingenabled,
 		  expirytrackingenabled = EXCLUDED.expirytrackingenabled,
 		  expiryalertdays = EXCLUDED.expiryalertdays,
 		  autoblockexpired = EXCLUDED.autoblockexpired,
 		  allownegativestock = EXCLUDED.allownegativestock,
+		  cost_by_warehouse = EXCLUDED.cost_by_warehouse,
 		  standardcost = EXCLUDED.standardcost,
 		  updatedat = NOW()`,
-		shopID, config.ItemCode, config.CostingMethod,
+		holdingCode, config.ItemCode, config.CostingMethod,
 		config.LotTrackingEnabled, config.ExpiryTrackingEnabled,
 		config.ExpiryAlertDays, config.AutoBlockExpired,
-		config.AllowNegativeStock, config.StandardCost,
+		config.AllowNegativeStock, config.CostByWarehouse, config.StandardCost,
 	)
 	return err
 }
 
 // GetStockCard — รายงาน Stock Card (ประวัติเคลื่อนไหวสินค้า)
-func (s *InventoryCostingService) GetStockCard(ctx context.Context, shopID, itemCode string, fromDate, toDate time.Time) (*m.StockCardReport, error) {
+func (s *InventoryCostingService) GetStockCard(ctx context.Context, holdingCode, itemCode string, fromDate, toDate time.Time) (*m.StockCardReport, error) {
 	rows, err := s.db.QueryContext(ctx,
 		`SELECT transactiondate, refdocno, transactiontype, transflag,
 		        qty, unitcost, totalcost, balanceqty, balancetotalvalue, balanceavgcost
 		 FROM inventory_cost_transactions
-		 WHERE shopid = $1 AND itemcode = $2 AND transactiondate >= $3 AND transactiondate <= $4
+		 WHERE holding_code = $1 AND itemcode = $2 AND transactiondate >= $3 AND transactiondate <= $4
 		 ORDER BY transactiondate ASC, id ASC`,
-		shopID, itemCode, fromDate, toDate,
+		holdingCode, itemCode, fromDate, toDate,
 	)
 	if err != nil {
 		return nil, err
@@ -234,10 +252,10 @@ func (s *InventoryCostingService) GetStockCard(ctx context.Context, shopID, item
 	defer rows.Close()
 
 	report := &m.StockCardReport{
-		ShopID:   shopID,
-		ItemCode: itemCode,
-		FromDate: fromDate,
-		ToDate:   toDate,
+		HoldingCode: holdingCode,
+		ItemCode:    itemCode,
+		FromDate:    fromDate,
+		ToDate:      toDate,
 	}
 
 	for rows.Next() {
@@ -261,17 +279,17 @@ func (s *InventoryCostingService) GetStockCard(ctx context.Context, shopID, item
 }
 
 // GetCostLayers — ดู cost layers ที่ยังเหลือ (สำหรับ FIFO/LIFO/FEFO/Lot)
-func (s *InventoryCostingService) GetCostLayers(ctx context.Context, shopID, itemCode, whCode string) ([]m.InventoryCostLayer, error) {
+func (s *InventoryCostingService) GetCostLayers(ctx context.Context, holdingCode, itemCode, whCode string) ([]m.InventoryCostLayer, error) {
 	rows, err := s.db.QueryContext(ctx,
-		`SELECT id, shopid, itemcode, barcode, whcode, locationcode,
+		`SELECT id, holding_code, itemcode, barcode, whcode, locationcode,
 		        layertype, refdoctype, refdocno, originalqty, remainingqty,
 		        unitcost, landedcostperunit, totalunitcost,
 		        lotnumber, supplierlotnumber, manufacturingdate, expirydate,
 		        qualitystatus, receiveddate, createdat
 		 FROM inventory_cost_layers
-		 WHERE shopid = $1 AND itemcode = $2 AND whcode = $3 AND remainingqty > 0
+		 WHERE holding_code = $1 AND itemcode = $2 AND whcode = $3 AND remainingqty > 0
 		 ORDER BY receiveddate ASC, id ASC`,
-		shopID, itemCode, whCode,
+		holdingCode, itemCode, whCode,
 	)
 	if err != nil {
 		return nil, err
@@ -281,7 +299,7 @@ func (s *InventoryCostingService) GetCostLayers(ctx context.Context, shopID, ite
 	var layers []m.InventoryCostLayer
 	for rows.Next() {
 		var l m.InventoryCostLayer
-		err := rows.Scan(&l.ID, &l.ShopID, &l.ItemCode, &l.Barcode, &l.WhCode, &l.LocationCode,
+		err := rows.Scan(&l.ID, &l.HoldingCode, &l.ItemCode, &l.Barcode, &l.WhCode, &l.LocationCode,
 			&l.LayerType, &l.RefDocType, &l.RefDocNo, &l.OriginalQty, &l.RemainingQty,
 			&l.UnitCost, &l.LandedCostPerUnit, &l.TotalUnitCost,
 			&l.LotNumber, &l.SupplierLotNumber, &l.ManufacturingDate, &l.ExpiryDate,
@@ -295,15 +313,15 @@ func (s *InventoryCostingService) GetCostLayers(ctx context.Context, shopID, ite
 }
 
 // GetInventoryValuation — รายงานมูลค่าสินค้าคงเหลือทั้งร้าน
-func (s *InventoryCostingService) GetInventoryValuation(ctx context.Context, shopID string) (*m.InventoryValuationReport, error) {
+func (s *InventoryCostingService) GetInventoryValuation(ctx context.Context, holdingCode string) (*m.InventoryValuationReport, error) {
 	rows, err := s.db.QueryContext(ctx,
 		`SELECT sb.itemcode, sb.whcode, sb.currentqty, sb.currentavgcost, sb.currenttotalvalue,
 		        COALESCE(pc.costingmethod, 'moving_average')
 		 FROM inventory_stock_balances sb
-		 LEFT JOIN product_costing_config pc ON sb.shopid = pc.shopid AND sb.itemcode = pc.itemcode
-		 WHERE sb.shopid = $1 AND sb.currentqty > 0
+		 LEFT JOIN product_costing_config pc ON sb.holding_code = pc.holding_code AND sb.itemcode = pc.itemcode
+		 WHERE sb.holding_code = $1 AND sb.currentqty > 0
 		 ORDER BY sb.itemcode, sb.whcode`,
-		shopID,
+		holdingCode,
 	)
 	if err != nil {
 		return nil, err
@@ -311,8 +329,8 @@ func (s *InventoryCostingService) GetInventoryValuation(ctx context.Context, sho
 	defer rows.Close()
 
 	report := &m.InventoryValuationReport{
-		ShopID:   shopID,
-		AsOfDate: time.Now(),
+		HoldingCode: holdingCode,
+		AsOfDate:    time.Now(),
 	}
 
 	for rows.Next() {
@@ -331,11 +349,11 @@ func (s *InventoryCostingService) GetInventoryValuation(ctx context.Context, sho
 // === Private Methods ===
 
 // getEngineForProduct — ดึง engine ที่ตั้งค่าไว้สำหรับสินค้า
-func (s *InventoryCostingService) getEngineForProduct(ctx context.Context, tx *sql.Tx, shopID, itemCode string) (costing.CostingEngine, error) {
+func (s *InventoryCostingService) getEngineForProduct(ctx context.Context, tx *sql.Tx, holdingCode, itemCode string) (costing.CostingEngine, error) {
 	var method string
 	err := tx.QueryRowContext(ctx,
-		`SELECT COALESCE(costingmethod, 'moving_average') FROM product_costing_config WHERE shopid = $1 AND itemcode = $2`,
-		shopID, itemCode,
+		`SELECT COALESCE(costingmethod, 'moving_average') FROM product_costing_config WHERE holding_code = $1 AND itemcode = $2`,
+		holdingCode, itemCode,
 	).Scan(&method)
 	if err == sql.ErrNoRows {
 		method = m.CostingMethodMovingAverage

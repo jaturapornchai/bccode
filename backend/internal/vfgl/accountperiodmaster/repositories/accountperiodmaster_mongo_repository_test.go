@@ -18,5 +18,5 @@ func init() {
 }
 
 func TestFindByDateRange(t *testing.T) {
-	repoMock.FindByDateRange(context.TODO(), "shopID", time.Now(), time.Now())
+	repoMock.FindByDateRange(context.TODO(), "holdingCode", time.Now(), time.Now())
 }

@@ -22,7 +22,7 @@ const barcodeCollection = "productBarcodes"
 
 // lookupUnitNames ดึง names จาก units collection ตาม unitcode
 // ใช้เมื่อผู้ใช้ระบุ itemunitcode แต่ไม่ได้ระบุ itemunitnames
-func lookupUnitNames(ctx context.Context, shopID, unitCode string) []BarcodeNameEntry {
+func lookupUnitNames(ctx context.Context, holdingCode, unitCode string) []BarcodeNameEntry {
 	if unitCode == "" {
 		return nil
 	}
@@ -40,8 +40,8 @@ func lookupUnitNames(ctx context.Context, shopID, unitCode string) []BarcodeName
 		Names []BarcodeNameEntry `bson:"names"`
 	}
 	err := coll.FindOne(ctx, bson.M{
-		"shopid":   shopID,
-		"unitcode": unitCode,
+		"holding_code": holdingCode,
+		"unitcode":     unitCode,
 		"$or": []bson.M{
 			{"deleted_by": bson.M{"$exists": false}},
 			{"deleted_by": ""},
@@ -57,7 +57,7 @@ func lookupUnitNames(ctx context.Context, shopID, unitCode string) []BarcodeName
 }
 
 // lookupGroupNames ดึง names จาก productGroups collection ตาม groupcode
-func lookupGroupNames(ctx context.Context, shopID, groupCode string) []BarcodeNameEntry {
+func lookupGroupNames(ctx context.Context, holdingCode, groupCode string) []BarcodeNameEntry {
 	if groupCode == "" {
 		return nil
 	}
@@ -75,8 +75,8 @@ func lookupGroupNames(ctx context.Context, shopID, groupCode string) []BarcodeNa
 		Names []BarcodeNameEntry `bson:"names"`
 	}
 	err := coll.FindOne(ctx, bson.M{
-		"shopid": shopID,
-		"code":   groupCode,
+		"holding_code": holdingCode,
+		"code":         groupCode,
 		"$or": []bson.M{
 			{"deleted_by": bson.M{"$exists": false}},
 			{"deleted_by": ""},
@@ -92,7 +92,7 @@ func lookupGroupNames(ctx context.Context, shopID, groupCode string) []BarcodeNa
 }
 
 // lookupCategoryNames ดึง names จาก productCategories collection ตาม guidfixed
-func lookupCategoryNames(ctx context.Context, shopID, categoryCode string) []BarcodeNameEntry {
+func lookupCategoryNames(ctx context.Context, holdingCode, categoryCode string) []BarcodeNameEntry {
 	if categoryCode == "" {
 		return nil
 	}
@@ -110,8 +110,8 @@ func lookupCategoryNames(ctx context.Context, shopID, categoryCode string) []Bar
 		Names []BarcodeNameEntry `bson:"names"`
 	}
 	err := coll.FindOne(ctx, bson.M{
-		"shopid":     shopID,
-		"guid_fixed": categoryCode,
+		"holding_code": holdingCode,
+		"guid_fixed":   categoryCode,
 		"$or": []bson.M{
 			{"deleted_by": bson.M{"$exists": false}},
 			{"deleted_by": ""},
@@ -145,7 +145,7 @@ type BarcodePriceEntry struct {
 // BarcodeDocument เอกสาร barcode ใน MongoDB (fields หลักที่ MCP ใช้)
 type BarcodeDocument struct {
 	ID               primitive.ObjectID  `json:"id" bson:"_id,omitempty"`
-	ShopID           string              `json:"shopid" bson:"shopid"`
+	HoldingCode      string              `json:"holding_code" bson:"holding_code"`
 	GuidFixed        string              `json:"guid_fixed" bson:"guid_fixed"`
 	Barcode          string              `json:"barcode" bson:"barcode"`
 	ItemCode         string              `json:"itemcode" bson:"itemcode"`
@@ -188,9 +188,9 @@ type ListBarcodesResponse struct {
 }
 
 // ListBarcodes ดึง/ค้นหา barcode
-func ListBarcodes(ctx context.Context, shopID, keyword string, limit int) (*ListBarcodesResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func ListBarcodes(ctx context.Context, holdingCode, keyword string, limit int) (*ListBarcodesResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 
 	if limit <= 0 {
@@ -210,7 +210,7 @@ func ListBarcodes(ctx context.Context, shopID, keyword string, limit int) (*List
 
 	// สร้าง filter — ไม่รวม soft deleted
 	filter := bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 		"$or": []bson.M{
 			{"deleted_by": bson.M{"$exists": false}},
 			{"deleted_by": ""},
@@ -229,14 +229,14 @@ func ListBarcodes(ctx context.Context, shopID, keyword string, limit int) (*List
 		filter = bson.M{"$and": []bson.M{filter, keywordFilter}}
 	}
 
-	logger.Info("[MCP ListBarcodes] shopID=%s, keyword=%s, limit=%d", shopID, keyword, limit)
+	logger.Info("[MCP ListBarcodes] holdingCode=%s, keyword=%s, limit=%d", holdingCode, keyword, limit)
 
 	coll := mongoClient.Database(dbName).Collection(barcodeCollection)
 	opts := options.Find().
 		SetLimit(int64(limit)).
 		SetSort(bson.D{{Key: "barcode", Value: 1}}).
 		SetProjection(bson.M{
-			"shopid": 1, "guid_fixed": 1, "barcode": 1, "itemcode": 1,
+			"holding_code": 1, "guid_fixed": 1, "barcode": 1, "itemcode": 1,
 			"names": 1, "item_unit_code": 1, "itemunitnames": 1,
 			"prices": 1, "standvalue": 1, "dividevalue": 1,
 			"is_main_barcode": 1, "isusesubbarcodes": 1,
@@ -285,9 +285,9 @@ type CreateBarcodeResponse struct {
 }
 
 // CreateBarcode สร้าง barcode ใหม่
-func CreateBarcode(ctx context.Context, shopID, barcode, itemCode, namesJSON, itemUnitCode, itemUnitNamesJSON, pricesJSON string, standValue, divideValue float64, isMainBarcode *bool, groupCode, groupNamesJSON, categoryCode, categoryNamesJSON string) (*CreateBarcodeResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func CreateBarcode(ctx context.Context, holdingCode, barcode, itemCode, namesJSON, itemUnitCode, itemUnitNamesJSON, pricesJSON string, standValue, divideValue float64, isMainBarcode *bool, groupCode, groupNamesJSON, categoryCode, categoryNamesJSON string) (*CreateBarcodeResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 	if barcode == "" {
 		return nil, fmt.Errorf("barcode is required")
@@ -307,8 +307,8 @@ func CreateBarcode(ctx context.Context, shopID, barcode, itemCode, namesJSON, it
 
 	// ตรวจสอบ barcode ซ้ำ
 	existFilter := bson.M{
-		"shopid":  shopID,
-		"barcode": barcode,
+		"holding_code": holdingCode,
+		"barcode":      barcode,
 		"$or": []bson.M{
 			{"deleted_by": bson.M{"$exists": false}},
 			{"deleted_by": ""},
@@ -342,7 +342,7 @@ func CreateBarcode(ctx context.Context, shopID, barcode, itemCode, namesJSON, it
 	}
 	// Auto-lookup: ถ้าไม่ได้ระบุ itemunitnames แต่ระบุ itemunitcode → ดึงจาก units collection
 	if len(itemUnitNames) == 0 && itemUnitCode != "" {
-		if looked := lookupUnitNames(ctx, shopID, itemUnitCode); looked != nil {
+		if looked := lookupUnitNames(ctx, holdingCode, itemUnitCode); looked != nil {
 			itemUnitNames = looked
 		}
 	}
@@ -372,7 +372,7 @@ func CreateBarcode(ctx context.Context, shopID, barcode, itemCode, namesJSON, it
 	}
 	// Auto-lookup: ถ้าไม่ได้ระบุ groupnames แต่ระบุ groupcode → ดึงจาก productGroups collection
 	if len(groupNames) == 0 && groupCode != "" {
-		if looked := lookupGroupNames(ctx, shopID, groupCode); looked != nil {
+		if looked := lookupGroupNames(ctx, holdingCode, groupCode); looked != nil {
 			groupNames = looked
 		}
 	}
@@ -386,7 +386,7 @@ func CreateBarcode(ctx context.Context, shopID, barcode, itemCode, namesJSON, it
 	}
 	// Auto-lookup: ถ้าไม่ได้ระบุ categorynames แต่ระบุ categorycode → ดึงจาก productCategories collection
 	if len(categoryNames) == 0 && categoryCode != "" {
-		if looked := lookupCategoryNames(ctx, shopID, categoryCode); looked != nil {
+		if looked := lookupCategoryNames(ctx, holdingCode, categoryCode); looked != nil {
 			categoryNames = looked
 		}
 	}
@@ -400,7 +400,7 @@ func CreateBarcode(ctx context.Context, shopID, barcode, itemCode, namesJSON, it
 	now := time.Now()
 	guidFixed := uuid.New().String()
 	doc := BarcodeDocument{
-		ShopID:        shopID,
+		HoldingCode:   holdingCode,
 		GuidFixed:     guidFixed,
 		Barcode:       barcode,
 		ItemCode:      itemCode,
@@ -438,7 +438,7 @@ func CreateBarcode(ctx context.Context, shopID, barcode, itemCode, namesJSON, it
 		logger.Warn("[MCP CreateBarcode] Kafka publish ล้มเหลว (แต่ MongoDB สำเร็จแล้ว): %v", err)
 	}
 
-	logger.Info("[MCP CreateBarcode] สร้าง barcode=%s สำเร็จ (shop=%s, kafka=%s)", barcode, shopID, kafkaSync)
+	logger.Info("[MCP CreateBarcode] สร้าง barcode=%s สำเร็จ (shop=%s, kafka=%s)", barcode, holdingCode, kafkaSync)
 
 	return &CreateBarcodeResponse{
 		Success:     true,
@@ -479,9 +479,9 @@ type CreateBarcodesResponse struct {
 }
 
 // CreateBarcodes สร้าง barcode หลายรายการพร้อมกัน
-func CreateBarcodes(ctx context.Context, shopID, barcodesJSON string) (*CreateBarcodesResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func CreateBarcodes(ctx context.Context, holdingCode, barcodesJSON string) (*CreateBarcodesResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 	if barcodesJSON == "" {
 		return nil, fmt.Errorf("barcodes JSON is required")
@@ -514,8 +514,8 @@ func CreateBarcodes(ctx context.Context, shopID, barcodesJSON string) (*CreateBa
 	}
 
 	existFilter := bson.M{
-		"shopid":  shopID,
-		"barcode": bson.M{"$in": barcodeValues},
+		"holding_code": holdingCode,
+		"barcode":      bson.M{"$in": barcodeValues},
 		"$or": []bson.M{
 			{"deleted_by": bson.M{"$exists": false}},
 			{"deleted_by": ""},
@@ -581,13 +581,13 @@ func CreateBarcodes(ctx context.Context, shopID, barcodesJSON string) (*CreateBa
 		// Auto-lookup: ถ้าไม่ได้ระบุ itemunitnames แต่ระบุ itemunitcode → ดึงจาก units collection
 		unitNames := item.ItemUnitNames
 		if len(unitNames) == 0 && item.ItemUnitCode != "" {
-			if looked := lookupUnitNames(ctx, shopID, item.ItemUnitCode); looked != nil {
+			if looked := lookupUnitNames(ctx, holdingCode, item.ItemUnitCode); looked != nil {
 				unitNames = looked
 			}
 		}
 
 		doc := BarcodeDocument{
-			ShopID:        shopID,
+			HoldingCode:   holdingCode,
 			GuidFixed:     uuid.New().String(),
 			Barcode:       item.Barcode,
 			ItemCode:      item.ItemCode,
@@ -624,7 +624,7 @@ func CreateBarcodes(ctx context.Context, shopID, barcodesJSON string) (*CreateBa
 		}
 	}
 
-	logger.Info("[MCP CreateBarcodes] สร้าง %d รายการสำเร็จ, ข้าม %d รายการ (shop=%s, kafka=%s)", len(createdDocs), len(skipped), shopID, kafkaSync)
+	logger.Info("[MCP CreateBarcodes] สร้าง %d รายการสำเร็จ, ข้าม %d รายการ (shop=%s, kafka=%s)", len(createdDocs), len(skipped), holdingCode, kafkaSync)
 
 	return &CreateBarcodesResponse{
 		Success:      true,
@@ -652,9 +652,9 @@ type UpdateBarcodeResponse struct {
 }
 
 // UpdateBarcode อัปเดต barcode ตาม guidfixed
-func UpdateBarcode(ctx context.Context, shopID, guidFixed, namesJSON, itemUnitCode, itemUnitNamesJSON, pricesJSON, groupCode, groupNamesJSON, categoryCode, categoryNamesJSON string) (*UpdateBarcodeResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func UpdateBarcode(ctx context.Context, holdingCode, guidFixed, namesJSON, itemUnitCode, itemUnitNamesJSON, pricesJSON, groupCode, groupNamesJSON, categoryCode, categoryNamesJSON string) (*UpdateBarcodeResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 	if guidFixed == "" {
 		return nil, fmt.Errorf("guidfixed is required")
@@ -671,8 +671,8 @@ func UpdateBarcode(ctx context.Context, shopID, guidFixed, namesJSON, itemUnitCo
 
 	// ค้นหา barcode ที่ต้องการอัปเดต
 	filter := bson.M{
-		"shopid":     shopID,
-		"guid_fixed": guidFixed,
+		"holding_code": holdingCode,
+		"guid_fixed":   guidFixed,
 		"$or": []bson.M{
 			{"deleted_by": bson.M{"$exists": false}},
 			{"deleted_by": ""},
@@ -708,7 +708,7 @@ func UpdateBarcode(ctx context.Context, shopID, guidFixed, namesJSON, itemUnitCo
 		updateFields["itemunitnames"] = itemUnitNames
 	} else if itemUnitCode != "" {
 		// Auto-lookup: ถ้าเปลี่ยน itemunitcode แต่ไม่ได้ระบุ itemunitnames → ดึงจาก units collection
-		if looked := lookupUnitNames(ctx, shopID, itemUnitCode); looked != nil {
+		if looked := lookupUnitNames(ctx, holdingCode, itemUnitCode); looked != nil {
 			updateFields["itemunitnames"] = looked
 		}
 	}
@@ -730,7 +730,7 @@ func UpdateBarcode(ctx context.Context, shopID, guidFixed, namesJSON, itemUnitCo
 		updateFields["group_names"] = groupNames
 	} else if groupCode != "" {
 		// Auto-lookup: ถ้าเปลี่ยน groupcode แต่ไม่ได้ระบุ groupnames → ดึงจาก productGroups collection
-		if looked := lookupGroupNames(ctx, shopID, groupCode); looked != nil {
+		if looked := lookupGroupNames(ctx, holdingCode, groupCode); looked != nil {
 			updateFields["group_names"] = looked
 		}
 	}
@@ -745,7 +745,7 @@ func UpdateBarcode(ctx context.Context, shopID, guidFixed, namesJSON, itemUnitCo
 		updateFields["category_names"] = categoryNames
 	} else if categoryCode != "" {
 		// Auto-lookup: ถ้าเปลี่ยน categorycode แต่ไม่ได้ระบุ categorynames → ดึงจาก productCategories collection
-		if looked := lookupCategoryNames(ctx, shopID, categoryCode); looked != nil {
+		if looked := lookupCategoryNames(ctx, holdingCode, categoryCode); looked != nil {
 			updateFields["category_names"] = looked
 		}
 	}
@@ -768,7 +768,7 @@ func UpdateBarcode(ctx context.Context, shopID, guidFixed, namesJSON, itemUnitCo
 		logger.Warn("[MCP UpdateBarcode] Kafka publish ล้มเหลว (แต่ MongoDB สำเร็จแล้ว): %v", err)
 	}
 
-	logger.Info("[MCP UpdateBarcode] อัปเดต guidfixed=%s สำเร็จ (shop=%s, kafka=%s)", guidFixed, shopID, kafkaSync)
+	logger.Info("[MCP UpdateBarcode] อัปเดต guidfixed=%s สำเร็จ (shop=%s, kafka=%s)", guidFixed, holdingCode, kafkaSync)
 
 	return &UpdateBarcodeResponse{
 		Success:     true,
@@ -793,9 +793,9 @@ type DeleteBarcodeResponse struct {
 }
 
 // DeleteBarcode ลบ barcode ตาม guidfixed
-func DeleteBarcode(ctx context.Context, shopID, guidFixed string) (*DeleteBarcodeResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func DeleteBarcode(ctx context.Context, holdingCode, guidFixed string) (*DeleteBarcodeResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 	if guidFixed == "" {
 		return nil, fmt.Errorf("guidfixed is required")
@@ -811,8 +811,8 @@ func DeleteBarcode(ctx context.Context, shopID, guidFixed string) (*DeleteBarcod
 	coll := mongoClient.Database(dbName).Collection(barcodeCollection)
 
 	filter := bson.M{
-		"shopid":     shopID,
-		"guid_fixed": guidFixed,
+		"holding_code": holdingCode,
+		"guid_fixed":   guidFixed,
 	}
 
 	// ดึง document ก่อนลบ เพื่อส่ง Kafka event
@@ -841,7 +841,7 @@ func DeleteBarcode(ctx context.Context, shopID, guidFixed string) (*DeleteBarcod
 		kafkaSync = "skipped"
 	}
 
-	logger.Info("[MCP DeleteBarcode] ลบ guidfixed=%s สำเร็จ (shop=%s, kafka=%s)", guidFixed, shopID, kafkaSync)
+	logger.Info("[MCP DeleteBarcode] ลบ guidfixed=%s สำเร็จ (shop=%s, kafka=%s)", guidFixed, holdingCode, kafkaSync)
 
 	return &DeleteBarcodeResponse{
 		Success:     true,
@@ -869,9 +869,9 @@ type DeleteBarcodesResponse struct {
 }
 
 // DeleteBarcodes ลบ barcode หลายรายการพร้อมกัน
-func DeleteBarcodes(ctx context.Context, shopID, guidfixedsJSON string) (*DeleteBarcodesResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func DeleteBarcodes(ctx context.Context, holdingCode, guidfixedsJSON string) (*DeleteBarcodesResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 	if guidfixedsJSON == "" {
 		return nil, fmt.Errorf("guidfixeds is required")
@@ -899,8 +899,8 @@ func DeleteBarcodes(ctx context.Context, shopID, guidfixedsJSON string) (*Delete
 
 	// ค้นหา guidfixed ที่มีอยู่จริง
 	existFilter := bson.M{
-		"shopid":     shopID,
-		"guid_fixed": bson.M{"$in": guidFixeds},
+		"holding_code": holdingCode,
+		"guid_fixed":   bson.M{"$in": guidFixeds},
 	}
 	cursor, err := coll.Find(ctx, existFilter, options.Find().SetProjection(bson.M{"guid_fixed": 1}))
 	if err != nil {
@@ -934,8 +934,8 @@ func DeleteBarcodes(ctx context.Context, shopID, guidfixedsJSON string) (*Delete
 	var docsToDelete []interface{}
 	if len(deleted) > 0 {
 		delCursor, _ := coll.Find(ctx, bson.M{
-			"shopid":     shopID,
-			"guid_fixed": bson.M{"$in": deleted},
+			"holding_code": holdingCode,
+			"guid_fixed":   bson.M{"$in": deleted},
 		})
 		if delCursor != nil {
 			var docs []BarcodeDocument
@@ -950,8 +950,8 @@ func DeleteBarcodes(ctx context.Context, shopID, guidfixedsJSON string) (*Delete
 	// ลบทั้งหมดที่มีอยู่ด้วย DeleteMany
 	if len(deleted) > 0 {
 		deleteFilter := bson.M{
-			"shopid":     shopID,
-			"guid_fixed": bson.M{"$in": deleted},
+			"holding_code": holdingCode,
+			"guid_fixed":   bson.M{"$in": deleted},
 		}
 		_, err = coll.DeleteMany(ctx, deleteFilter)
 		if err != nil {
@@ -969,7 +969,7 @@ func DeleteBarcodes(ctx context.Context, shopID, guidfixedsJSON string) (*Delete
 		}
 	}
 
-	logger.Info("[MCP DeleteBarcodes] ลบ %d รายการสำเร็จ, ไม่พบ %d รายการ (shop=%s, kafka=%s)", len(deleted), len(notFound), shopID, kafkaSync)
+	logger.Info("[MCP DeleteBarcodes] ลบ %d รายการสำเร็จ, ไม่พบ %d รายการ (shop=%s, kafka=%s)", len(deleted), len(notFound), holdingCode, kafkaSync)
 
 	return &DeleteBarcodesResponse{
 		Success:       true,
@@ -993,7 +993,7 @@ func GetBarcodeSchema() map[string]interface{} {
 		"description": "สินค้า/บาร์โค้ด (Product Barcode) — เอกสารหลักของสินค้า ประกอบด้วย barcode, ชื่อ, หน่วยนับ, ราคา, หมวดหมู่",
 		"fields": map[string]interface{}{
 			"_id":              "ObjectID — MongoDB auto-generated ID",
-			"shopid":           "string — Shop ID (tenant isolation)",
+			"holding_code":     "string — Holding Code (tenant isolation)",
 			"guid_fixed":       "string — UUID สำหรับอ้างอิงภายใน",
 			"barcode":          "string (required) — รหัสบาร์โค้ด เช่น 8859100001234",
 			"itemcode":         "string (required) — รหัสสินค้า เช่น SKU001",
@@ -1022,9 +1022,9 @@ func GetBarcodeSchema() map[string]interface{} {
 			"deleted_at":       "datetime — วันที่ลบ (soft delete)",
 		},
 		"indexes": []string{
-			"shopid + barcode (unique per shop)",
-			"shopid + guidfixed",
-			"shopid + itemcode",
+			"holding_code + barcode (unique per shop)",
+			"holding_code + guidfixed",
+			"holding_code + itemcode",
 		},
 		"examples": []map[string]interface{}{
 			{

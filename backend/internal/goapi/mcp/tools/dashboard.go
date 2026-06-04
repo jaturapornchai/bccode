@@ -12,8 +12,8 @@ import (
 
 // DashboardKPIsRequest represents the request for dashboard KPIs
 type DashboardKPIsRequest struct {
-	ShopID string `json:"shop_id"`
-	Period string `json:"period"` // today, this_week, this_month, this_year
+	HoldingCode string `json:"holding_code"`
+	Period      string `json:"period"` // today, this_week, this_month, this_year
 }
 
 // DashboardKPIsResponse represents the dashboard KPIs
@@ -85,9 +85,9 @@ type SalesTrendPoint struct {
 
 // GetDashboardKPIs returns KPIs from processed relational projections.
 // ClickHouse remains the target store for BI/reporting facts.
-func GetDashboardKPIs(ctx context.Context, shopID, period string) (*DashboardKPIsResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func GetDashboardKPIs(ctx context.Context, holdingCode, period string) (*DashboardKPIsResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 
 	// Default period
@@ -132,10 +132,10 @@ func GetDashboardKPIs(ctx context.Context, shopID, period string) (*DashboardKPI
 		prevToDate = fromDate.Add(-time.Second)
 	}
 
-	logger.Info("[Dashboard KPIs] shopid=%s, period=%s, from=%s, to=%s",
-		shopID, period, fromDate.Format("2006-01-02"), toDate.Format("2006-01-02"))
+	logger.Info("[Dashboard KPIs] holding_code=%s, period=%s, from=%s, to=%s",
+		holdingCode, period, fromDate.Format("2006-01-02"), toDate.Format("2006-01-02"))
 
-	db, err := mypg.PgSqlFastConnect(shopID)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		return nil, fmt.Errorf("database connection failed: %w", err)
 	}
@@ -237,7 +237,7 @@ func GetDashboardKPIs(ctx context.Context, shopID, period string) (*DashboardKPI
 
 // BusinessHealthRequest represents the request for business health
 type BusinessHealthRequest struct {
-	ShopID string `json:"shop_id"`
+	HoldingCode string `json:"holding_code"`
 }
 
 // BusinessHealthResponse represents overall business health
@@ -259,12 +259,12 @@ type HealthMetric struct {
 }
 
 // GetBusinessHealth returns overall business health assessment
-func GetBusinessHealth(ctx context.Context, shopID string) (*BusinessHealthResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func GetBusinessHealth(ctx context.Context, holdingCode string) (*BusinessHealthResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 
-	db, err := mypg.PgSqlFastConnect(shopID)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		return nil, fmt.Errorf("database connection failed: %w", err)
 	}

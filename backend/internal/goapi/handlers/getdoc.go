@@ -3,9 +3,9 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"smlcloudplatform/internal/goapi/logger"
 	mypg "smlcloudplatform/internal/goapi/mypg"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -20,9 +20,9 @@ import (
 func MongoGetDataHandler(c echo.Context) error {
 	logger.Info("MongoSelectHandler called")
 	var payLoad struct {
-		ShopId string `json:"shopid"`
-		Collection string `json:"collection"`
-		GuidFixed string `json:"guid_fixed"`
+		HoldingCode string `json:"holding_code"`
+		Collection  string `json:"collection"`
+		GuidFixed   string `json:"guid_fixed"`
 	}
 
 	if err := c.Bind(&payLoad); err != nil {
@@ -33,12 +33,12 @@ func MongoGetDataHandler(c echo.Context) error {
 	}
 
 	// Debug: Log incoming payload
-	logger.Info("[MongoGetDataHandler] Payload: shopid=%s, collection=%s, guidfixed=%s", payLoad.ShopId, payLoad.Collection, payLoad.GuidFixed)
+	logger.Info("[MongoGetDataHandler] Payload: holding_code=%s, collection=%s, guidfixed=%s", payLoad.HoldingCode, payLoad.Collection, payLoad.GuidFixed)
 
 	// ⭐ แก้ไข: เพิ่มการตรวจสอบ Collection
-	if payLoad.ShopId == "" || payLoad.GuidFixed == "" || payLoad.Collection == "" {
+	if payLoad.HoldingCode == "" || payLoad.GuidFixed == "" || payLoad.Collection == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Missing shopid, collection, or guidfixed",
+			"error": "Missing holding_code, collection, or guidfixed",
 			"code":  "MISSING_PARAMETERS",
 		})
 	}
@@ -57,7 +57,7 @@ func MongoGetDataHandler(c echo.Context) error {
 	MongodbDatabaseName := svcConfig.MongodbDatabaseName()
 	collection := mongoClient.Database(MongodbDatabaseName).Collection(payLoad.Collection)
 
-	filter := bson.M{"shopid": payLoad.ShopId, "guid_fixed": payLoad.GuidFixed}
+	filter := bson.M{"holding_code": payLoad.HoldingCode, "guid_fixed": payLoad.GuidFixed}
 
 	// ⭐ แก้ไข: Log ก่อน Find และใช้ collection name ที่ถูกต้อง
 	logger.Info("Finding documents in MongoDB collection '%s' with filter: %+v", payLoad.Collection, filter)
@@ -115,18 +115,18 @@ func PgGetDocHandler(c echo.Context) error {
 	logger.Info("PgGetDoc called")
 	// รับ JSON payLoad จาก request body
 	var payLoad struct {
-		ShopId string   `json:"shopid"`
-		System string   `json:"system"`
-		OffSet int      `json:"offset"`
-		Limit int      `json:"limit"`
-		Search string   `json:"search"`
-		CustCode string   `json:"custcode"`
-		DateOrder int      `json:"dateorder"` // 0=asc, 1=desc
-		FromDate string   `json:"fromdate"`  // วันที่เริ่มต้น format: "2026-02-01"
-		ToDate string   `json:"todate"`    // วันที่สิ้นสุด format: "2026-02-28"
-		MinAmount *float64 `json:"minamount"` // ยอดเงินต่ำสุด (nil = ไม่กรอง)
-		MaxAmount *float64 `json:"maxamount"` // ยอดเงินสูงสุด (nil = ไม่กรอง)
-		CustCodes []string `json:"custcodes"` // รายการเจ้าหนี้ที่เลือก (multi-select)
+		HoldingCode string   `json:"holding_code"`
+		System      string   `json:"system"`
+		OffSet      int      `json:"offset"`
+		Limit       int      `json:"limit"`
+		Search      string   `json:"search"`
+		CustCode    string   `json:"custcode"`
+		DateOrder   int      `json:"dateorder"` // 0=asc, 1=desc
+		FromDate    string   `json:"fromdate"`  // วันที่เริ่มต้น format: "2026-02-01"
+		ToDate      string   `json:"todate"`    // วันที่สิ้นสุด format: "2026-02-28"
+		MinAmount   *float64 `json:"minamount"` // ยอดเงินต่ำสุด (nil = ไม่กรอง)
+		MaxAmount   *float64 `json:"maxamount"` // ยอดเงินสูงสุด (nil = ไม่กรอง)
+		CustCodes   []string `json:"custcodes"` // รายการเจ้าหนี้ที่เลือก (multi-select)
 	}
 
 	if err := c.Bind(&payLoad); err != nil {
@@ -164,7 +164,7 @@ func PgGetDocHandler(c echo.Context) error {
 	// query from postgresql
 
 	// open postgresql connection
-	db, err := mypg.PgSqlFastConnect(payLoad.ShopId)
+	db, err := mypg.PgSqlFastConnect(payLoad.HoldingCode)
 	if err != nil {
 		logger.Error("connecting to database: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{
@@ -286,32 +286,32 @@ func PgGetDocHandler(c echo.Context) error {
 		}
 
 		results = append(results, map[string]any{
-			"guid_fixed":    guidfixed,
-			"docdatetime":  docdatetime.UTC().Format("2006-01-02T15:04:05.000Z"),
-			"docno":        docno,
-			"custcode":     custcode,
-			"cust_name":     custname,
-			"total_amount":  totalamount,
-			"detailcount":  detailcount,
-			"transflag":    transflag,
-			"isref":        isref,
-			"islocked":     islocked,
-			"isclosed":     isclosed,
-			"creator_code":        creatorCode,
-			"creator_name":        creatorName,
-			"created_at":          createdAt.UTC().Format("2006-01-02T15:04:05.000Z"),
-			"doc_currency":        docCurrency,
-			"doc_currencysymbol":  docCurrencySymbol,
+			"guid_fixed":           guidfixed,
+			"docdatetime":          docdatetime.UTC().Format("2006-01-02T15:04:05.000Z"),
+			"docno":                docno,
+			"custcode":             custcode,
+			"cust_name":            custname,
+			"total_amount":         totalamount,
+			"detailcount":          detailcount,
+			"transflag":            transflag,
+			"isref":                isref,
+			"islocked":             islocked,
+			"isclosed":             isclosed,
+			"creator_code":         creatorCode,
+			"creator_name":         creatorName,
+			"created_at":           createdAt.UTC().Format("2006-01-02T15:04:05.000Z"),
+			"doc_currency":         docCurrency,
+			"doc_currencysymbol":   docCurrencySymbol,
 			"exchange_rate":        exchangeRate,
-			"totalamount_doc":     totalamountDoc,
-			"iscancel":              iscancel,
-			"isdelete":              isdelete,
-			"iscomparedsuccess":     iscomparedsuccess,
-			"isclosedmanual":        isclosedmanual,
-			"closedmanual_by_code":  closedmanualByCode,
-			"closedmanual_by_name":  closedmanualByName,
-			"closedmanual_at":       closedmanualAt.UTC().Format("2006-01-02T15:04:05.000Z"),
-			"closedmanual_reason":   closedmanualReason,
+			"totalamount_doc":      totalamountDoc,
+			"iscancel":             iscancel,
+			"isdelete":             isdelete,
+			"iscomparedsuccess":    iscomparedsuccess,
+			"isclosedmanual":       isclosedmanual,
+			"closedmanual_by_code": closedmanualByCode,
+			"closedmanual_by_name": closedmanualByName,
+			"closedmanual_at":      closedmanualAt.UTC().Format("2006-01-02T15:04:05.000Z"),
+			"closedmanual_reason":  closedmanualReason,
 		})
 	}
 

@@ -14,7 +14,7 @@ type IShopAdminRepository interface {
 	FindShopByProjectNo(ctx context.Context, projectNo string) (shopModels.ShopDoc, error)
 
 	ListShopUsersAll(ctx context.Context) ([]ShopUserDoc, error)
-	ListShopUsersByShopId(ctx context.Context, shopId string) ([]ShopUserDoc, error)
+	ListShopUsersByHoldingCode(ctx context.Context, holdingCode string) ([]ShopUserDoc, error)
 }
 
 type ShopAdminRepository struct {
@@ -70,11 +70,11 @@ func (repo *ShopAdminRepository) ListShopUsersAll(ctx context.Context) ([]ShopUs
 	return shopUserList, nil
 }
 
-func (repo *ShopAdminRepository) ListShopUsersByShopId(ctx context.Context, shopId string) ([]ShopUserDoc, error) {
+func (repo *ShopAdminRepository) ListShopUsersByHoldingCode(ctx context.Context, holdingCode string) ([]ShopUserDoc, error) {
 
 	shopUserList := []ShopUserDoc{}
 
-	err := repo.pst.Find(ctx, ShopUserDoc{}, bson.M{"shopid": shopId}, &shopUserList)
+	err := repo.pst.Find(ctx, ShopUserDoc{}, bson.M{"holding_code": holdingCode}, &shopUserList)
 
 	if err != nil {
 		return []ShopUserDoc{}, err

@@ -22,12 +22,12 @@ var jsForbiddenSQL = []string{
 
 // JSExecResponse — ผลลัพธ์จากการรัน JS
 type JSExecResponse struct {
-	Success bool        `json:"success"`
-	Result interface{} `json:"result,omitempty"`
-	Logs []string    `json:"logs,omitempty"`
-	Error string      `json:"error,omitempty"`
+	Success     bool        `json:"success"`
+	Result      interface{} `json:"result,omitempty"`
+	Logs        []string    `json:"logs,omitempty"`
+	Error       string      `json:"error,omitempty"`
 	ExecutionMs int64       `json:"execution_ms"`
-	QueriesRun int         `json:"queries_run"`
+	QueriesRun  int         `json:"queries_run"`
 }
 
 // ExecuteJS รัน JavaScript code ใน Goja sandbox (readonly)
@@ -41,9 +41,9 @@ type JSExecResponse struct {
 //
 // Script ต้อง return ค่าออกมา (ค่าเดียว — object/array/string/number)
 // หรือใช้ statement สุดท้ายเป็นค่า (เพราะ wrap ใน IIFE)
-func ExecuteJS(ctx context.Context, shopID, code string) (*JSExecResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func ExecuteJS(ctx context.Context, holdingCode, code string) (*JSExecResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 	if strings.TrimSpace(code) == "" {
 		return nil, fmt.Errorf("code is empty")
@@ -90,7 +90,7 @@ func ExecuteJS(ctx context.Context, shopID, code string) (*JSExecResponse, error
 			panic(vm.NewGoError(err))
 		}
 		queryCount++
-		result, err := ExecutePgCommand(queryCtx, shopID, sql, limit)
+		result, err := ExecutePgCommand(queryCtx, holdingCode, sql, limit)
 		if err != nil {
 			panic(vm.NewGoError(fmt.Errorf("query_pg: %w", err)))
 		}
@@ -106,7 +106,7 @@ func ExecuteJS(ctx context.Context, shopID, code string) (*JSExecResponse, error
 		}
 		limit := argInt(call, 2, 200)
 		queryCount++
-		result, err := QueryMongoDB(queryCtx, shopID, "bcaiclouddb", collection, filter, limit)
+		result, err := QueryMongoDB(queryCtx, holdingCode, "bcaiclouddb", collection, filter, limit)
 		if err != nil {
 			panic(vm.NewGoError(fmt.Errorf("query_mongo: %w", err)))
 		}
@@ -121,7 +121,7 @@ func ExecuteJS(ctx context.Context, shopID, code string) (*JSExecResponse, error
 			panic(vm.NewGoError(err))
 		}
 		queryCount++
-		result, err := QueryClickHouse(queryCtx, shopID, "", sql, limit)
+		result, err := QueryClickHouse(queryCtx, holdingCode, "", sql, limit)
 		if err != nil {
 			panic(vm.NewGoError(fmt.Errorf("query_ch: %w", err)))
 		}
@@ -129,7 +129,7 @@ func ExecuteJS(ctx context.Context, shopID, code string) (*JSExecResponse, error
 	})
 
 	// ==================== run script ====================
-	logger.Info("[JS Executor] shop=%s code_len=%d", shopID, len(code))
+	logger.Info("[JS Executor] shop=%s code_len=%d", holdingCode, len(code))
 
 	// wrap ใน IIFE — script ต้อง return ค่าออกมา
 	wrapped := "(function(){\n" + code + "\n})()"

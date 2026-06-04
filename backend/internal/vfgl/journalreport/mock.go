@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func MockTrialBalanceSheetReport(shopId string, accountGroup string, startDate time.Time, endDate time.Time) *models.TrialBalanceSheetReport {
+func MockTrialBalanceSheetReport(holdingCode string, accountGroup string, startDate time.Time, endDate time.Time) *models.TrialBalanceSheetReport {
 
 	acc12101 := &models.TrialBalanceSheetAccountDetail{
 		ChartOfAccountPG: chartofaccountModel.ChartOfAccountPG{
@@ -127,7 +127,7 @@ func MockTrialBalanceSheetReport(shopId string, accountGroup string, startDate t
 	return reportMock
 }
 
-func MockBalanceSheetReport(shopId string, accountGroup string, endDate time.Time) *models.BalanceSheetReport {
+func MockBalanceSheetReport(holdingCode string, accountGroup string, endDate time.Time) *models.BalanceSheetReport {
 
 	acc11010 := &models.BalanceSheetAccountDetail{
 		ChartOfAccountPG: chartofaccountModel.ChartOfAccountPG{
@@ -308,7 +308,7 @@ func MockBalanceSheetDetailReport() []models.BalanceSheetAccountDetail {
 	return details
 }
 
-func MockProfitAndLossSheetReport(shopId string, accountGroup string, startDate time.Time, endDate time.Time) *models.ProfitAndLossSheetReport {
+func MockProfitAndLossSheetReport(holdingCode string, accountGroup string, startDate time.Time, endDate time.Time) *models.ProfitAndLossSheetReport {
 
 	acc41010 := &models.ProfitAndLossSheetAccountDetail{
 		ChartOfAccountPG: chartofaccountModel.ChartOfAccountPG{

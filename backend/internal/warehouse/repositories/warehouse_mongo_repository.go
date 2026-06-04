@@ -15,29 +15,29 @@ import (
 )
 
 type IWarehouseRepository interface {
-	Count(ctx context.Context, shopID string) (int, error)
+	Count(ctx context.Context, holdingCode string) (int, error)
 	Create(ctx context.Context, doc models.WarehouseDoc) (string, error)
 	CreateInBatch(ctx context.Context, docList []models.WarehouseDoc) error
-	Update(ctx context.Context, shopID string, guid string, doc models.WarehouseDoc) error
-	DeleteByGuidfixed(ctx context.Context, shopID string, guid string, username string) error
-	Delete(ctx context.Context, shopID string, username string, filters map[string]interface{}) error
-	FindPage(ctx context.Context, shopID string, searchInFields []string, pageable micromodels.Pageable) ([]models.WarehouseInfo, mongopagination.PaginationData, error)
-	FindByGuid(ctx context.Context, shopID string, guid string) (models.WarehouseDoc, error)
+	Update(ctx context.Context, holdingCode string, guid string, doc models.WarehouseDoc) error
+	DeleteByGuidfixed(ctx context.Context, holdingCode string, guid string, username string) error
+	Delete(ctx context.Context, holdingCode string, username string, filters map[string]interface{}) error
+	FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable micromodels.Pageable) ([]models.WarehouseInfo, mongopagination.PaginationData, error)
+	FindByGuid(ctx context.Context, holdingCode string, guid string) (models.WarehouseDoc, error)
 
-	FindInItemGuid(ctx context.Context, shopID string, columnName string, itemGuidList []string) ([]models.WarehouseItemGuid, error)
-	FindByDocIndentityGuid(ctx context.Context, shopID string, indentityField string, indentityValue interface{}) (models.WarehouseDoc, error)
-	FindPageFilter(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.WarehouseInfo, mongopagination.PaginationData, error)
-	FindStep(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableLimit micromodels.PageableStep) ([]models.WarehouseInfo, int, error)
+	FindInItemGuid(ctx context.Context, holdingCode string, columnName string, itemGuidList []string) ([]models.WarehouseItemGuid, error)
+	FindByDocIndentityGuid(ctx context.Context, holdingCode string, indentityField string, indentityValue interface{}) (models.WarehouseDoc, error)
+	FindPageFilter(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.WarehouseInfo, mongopagination.PaginationData, error)
+	FindStep(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableLimit micromodels.PageableStep) ([]models.WarehouseInfo, int, error)
 
-	FindDeletedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.WarehouseDeleteActivity, mongopagination.PaginationData, error)
-	FindCreatedOrUpdatedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.WarehouseActivity, mongopagination.PaginationData, error)
-	FindDeletedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.WarehouseDeleteActivity, error)
-	FindCreatedOrUpdatedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.WarehouseActivity, error)
+	FindDeletedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.WarehouseDeleteActivity, mongopagination.PaginationData, error)
+	FindCreatedOrUpdatedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.WarehouseActivity, mongopagination.PaginationData, error)
+	FindDeletedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.WarehouseDeleteActivity, error)
+	FindCreatedOrUpdatedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.WarehouseActivity, error)
 
-	FindLocationPage(ctx context.Context, shopID string, pageable micromodels.Pageable) ([]models.LocationInfo, mongopagination.PaginationData, error)
-	FindShelfPage(ctx context.Context, shopID string, pageable micromodels.Pageable) ([]models.ShelfInfo, mongopagination.PaginationData, error)
-	FindWarehouseByLocation(ctx context.Context, shopID, warehouseCode, locationCode string) (models.WarehouseDoc, error)
-	FindWarehouseByShelf(ctx context.Context, shopID, warehouseCode, locationCode, shelfCode string) (models.WarehouseDoc, error)
+	FindLocationPage(ctx context.Context, holdingCode string, pageable micromodels.Pageable) ([]models.LocationInfo, mongopagination.PaginationData, error)
+	FindShelfPage(ctx context.Context, holdingCode string, pageable micromodels.Pageable) ([]models.ShelfInfo, mongopagination.PaginationData, error)
+	FindWarehouseByLocation(ctx context.Context, holdingCode, warehouseCode, locationCode string) (models.WarehouseDoc, error)
+	FindWarehouseByShelf(ctx context.Context, holdingCode, warehouseCode, locationCode, shelfCode string) (models.WarehouseDoc, error)
 
 	Transaction(ctx context.Context, queryFunc func(ctx context.Context) error) error
 }
@@ -68,14 +68,14 @@ func (repo WarehouseRepository) Transaction(ctx context.Context, queryFunc func(
 	return repo.pst.Transaction(ctx, queryFunc)
 }
 
-func (repo WarehouseRepository) FindLocationPage(ctx context.Context, shopID string, pageable micromodels.Pageable) ([]models.LocationInfo, mongopagination.PaginationData, error) {
+func (repo WarehouseRepository) FindLocationPage(ctx context.Context, holdingCode string, pageable micromodels.Pageable) ([]models.LocationInfo, mongopagination.PaginationData, error) {
 
 	criteria := []interface{}{}
 
 	mainQuery := bson.M{
 		"$match": bson.M{
-			"shopid":    shopID,
-			"deleted_at": bson.M{"$exists": false},
+			"holding_code": holdingCode,
+			"deleted_at":   bson.M{"$exists": false},
 		},
 	}
 	criteria = append(criteria, mainQuery)
@@ -91,7 +91,7 @@ func (repo WarehouseRepository) FindLocationPage(ctx context.Context, shopID str
 	criteria = append(criteria, unwindQuery)
 
 	projectQuery := bson.M{"$project": bson.M{
-		"guid_fixed":      "$guidfixed",
+		"guid_fixed":     "$guidfixed",
 		"warehousecode":  "$code",
 		"warehousenames": "$names",
 		"locationcode":   "$location.code",
@@ -115,14 +115,14 @@ func (repo WarehouseRepository) FindLocationPage(ctx context.Context, shopID str
 	return docList, aggData.Pagination, nil
 }
 
-func (repo WarehouseRepository) FindShelfPage(ctx context.Context, shopID string, pageable micromodels.Pageable) ([]models.ShelfInfo, mongopagination.PaginationData, error) {
+func (repo WarehouseRepository) FindShelfPage(ctx context.Context, holdingCode string, pageable micromodels.Pageable) ([]models.ShelfInfo, mongopagination.PaginationData, error) {
 
 	criteria := []interface{}{}
 
 	mainQuery := bson.M{
 		"$match": bson.M{
-			"shopid":    shopID,
-			"deleted_at": bson.M{"$exists": false},
+			"holding_code": holdingCode,
+			"deleted_at":   bson.M{"$exists": false},
 		},
 	}
 	criteria = append(criteria, mainQuery)
@@ -141,7 +141,7 @@ func (repo WarehouseRepository) FindShelfPage(ctx context.Context, shopID string
 	criteria = append(criteria, unwindQueryLevel2)
 
 	projectQuery := bson.M{"$project": bson.M{
-		"guid_fixed":      "$guidfixed",
+		"guid_fixed":     "$guidfixed",
 		"warehousecode":  "$code",
 		"warehousenames": "$names",
 		"locationcode":   "$location.code",
@@ -167,10 +167,10 @@ func (repo WarehouseRepository) FindShelfPage(ctx context.Context, shopID string
 	return docList, aggData.Pagination, nil
 }
 
-func (repo WarehouseRepository) FindWarehouseByLocation(ctx context.Context, shopID, warehouseCode, locationCode string) (models.WarehouseDoc, error) {
+func (repo WarehouseRepository) FindWarehouseByLocation(ctx context.Context, holdingCode, warehouseCode, locationCode string) (models.WarehouseDoc, error) {
 
 	filters := bson.M{
-		"shopid":        shopID,
+		"holding_code":  holdingCode,
 		"code":          warehouseCode,
 		"location.code": locationCode,
 	}
@@ -185,10 +185,10 @@ func (repo WarehouseRepository) FindWarehouseByLocation(ctx context.Context, sho
 	return doc, nil
 }
 
-func (repo WarehouseRepository) FindWarehouseByShelf(ctx context.Context, shopID, warehouseCode, locationCode, shelfCode string) (models.WarehouseDoc, error) {
+func (repo WarehouseRepository) FindWarehouseByShelf(ctx context.Context, holdingCode, warehouseCode, locationCode, shelfCode string) (models.WarehouseDoc, error) {
 
 	filters := bson.M{
-		"shopid":              shopID,
+		"holding_code":        holdingCode,
 		"code":                warehouseCode,
 		"location.code":       locationCode,
 		"location.shelf.code": shelfCode,

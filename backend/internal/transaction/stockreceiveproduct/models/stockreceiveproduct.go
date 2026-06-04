@@ -24,12 +24,12 @@ func (StockReceiveProductInfo) CollectionName() string {
 }
 
 type StockReceiveProductData struct {
-	models.ShopIdentity     `bson:"inline"`
-	StockReceiveProductInfo `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	StockReceiveProductInfo  `bson:"inline"`
 }
 
 type StockReceiveProductDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                      primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	StockReceiveProductData `bson:"inline"`
 	models.ActivityDoc      `bson:"inline"`
 }

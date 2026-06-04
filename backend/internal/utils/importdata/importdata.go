@@ -19,7 +19,7 @@ func FilterDuplicate[TDATA any](docList []TDATA, fnGetID func(TDATA) string) (it
 }
 
 func PreparePayloadData[TDATA any, TDOC any](
-	shopID string,
+	holdingCode string,
 	authUsername string,
 	itemGuidList []string,
 	payloadCategoryList []TDATA,
@@ -40,7 +40,7 @@ func PreparePayloadData[TDATA any, TDOC any](
 		if _, ok := tempItemGuidDict[idKey]; ok {
 			duplicateDataList = append(duplicateDataList, doc)
 		} else {
-			dataDoc := fnPrepareData(shopID, authUsername, doc)
+			dataDoc := fnPrepareData(holdingCode, authUsername, doc)
 			createDataList = append(createDataList, dataDoc)
 		}
 	}
@@ -48,7 +48,7 @@ func PreparePayloadData[TDATA any, TDOC any](
 }
 
 func UpdateOnDuplicate[TDATA any, TDOC any](
-	shopID string,
+	holdingCode string,
 	authUsername string,
 	duplicateDataList []TDATA,
 	fnGetID func(TDATA) string,
@@ -62,14 +62,14 @@ func UpdateOnDuplicate[TDATA any, TDOC any](
 
 	for _, doc := range duplicateDataList {
 		idKey := fnGetID(doc)
-		findDoc, err := fnFindGuid(shopID, idKey)
+		findDoc, err := fnFindGuid(holdingCode, idKey)
 
 		if !(fnCheckExistsDoc(findDoc)) {
 			updateFailDataList = append(updateFailDataList, doc)
 			continue
 		}
 
-		err = fnUptdateDoc(shopID, authUsername, doc, findDoc)
+		err = fnUptdateDoc(holdingCode, authUsername, doc, findDoc)
 
 		if err != nil {
 			updateFailDataList = append(updateFailDataList, doc)

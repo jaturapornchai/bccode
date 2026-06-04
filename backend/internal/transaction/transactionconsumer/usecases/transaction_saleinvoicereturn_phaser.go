@@ -27,8 +27,8 @@ func (p *StockTransactionSaleInvoicePhaser) PhaseSaleReturnDoc(doc saleReturnMod
 	}
 
 	stockTransaction := models.StockTransaction{
-		ShopIdentity: pkgModels.ShopIdentity{
-			ShopID: doc.ShopID,
+		HoldingCodeentity: pkgModels.HoldingCodeentity{
+			HoldingCode: doc.HoldingCode,
 		},
 		TransFlag: 48,
 		DocNo:     doc.DocNo,

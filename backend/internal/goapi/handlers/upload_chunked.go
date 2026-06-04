@@ -232,12 +232,12 @@ func UploadChunkHandler(c echo.Context) error {
 
 // MergeChunksHandler merges all uploaded chunks and uploads to Cloudflare R2
 // POST /upload/merge
-// JSON body: { "uploadID": "uuid", "shopid": "optional" }
+// JSON body: { "uploadID": "uuid", "holding_code": "optional" }
 // Returns: { "success": true, "fileName": "guid.ext", "fileUrl": "presigned", "checksum": "md5hash" }
 func MergeChunksHandler(c echo.Context) error {
 	var req struct {
-		UploadID string `json:"upload_id"`
-		ShopID   string `json:"shopid"`
+		UploadID    string `json:"upload_id"`
+		HoldingCode string `json:"holding_code"`
 	}
 
 	if err := c.Bind(&req); err != nil {
@@ -335,13 +335,13 @@ func MergeChunksHandler(c echo.Context) error {
 		})
 	}
 
-	shopID, authStatus := storageAuthorizedShopID(c, req.ShopID)
+	holdingCode, authStatus := storageAuthorizedHoldingCode(c, req.HoldingCode)
 	if authStatus != http.StatusOK {
 		return c.JSON(authStatus, map[string]interface{}{
 			"error": "shop not selected or forbidden",
 		})
 	}
-	objectKey := fmt.Sprintf("%s/uploads/%s/%s", shopID, time.Now().Format("20060102"), finalFilename)
+	objectKey := fmt.Sprintf("%s/uploads/%s/%s", holdingCode, time.Now().Format("20060102"), finalFilename)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()

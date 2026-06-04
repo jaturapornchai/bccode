@@ -10,9 +10,9 @@ import (
 	"time"
 )
 
-// AddDocToProcessQueue - เพิ่มเอกสารเข้า PostgreSQL queue แยกตาม shopId
+// AddDocToProcessQueue - เพิ่มเอกสารเข้า PostgreSQL queue แยกตาม holdingCode
 // แทนที่ Redis queue ด้วย PostgreSQL
-func AddDocToProcessQueue(shopId, docNo string, transFlag interface{}) error {
+func AddDocToProcessQueue(holdingCode, docNo string, transFlag interface{}) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -45,11 +45,11 @@ func AddDocToProcessQueue(shopId, docNo string, transFlag interface{}) error {
 
 	// สร้าง QueueItem
 	queueItem := mypostgres.QueueItem{
-		ShopId:     shopId,
-		DocNo:      docNo,
-		TransFlag:  transFlagStr,
-		CreatedAt:  time.Now(),
-		RetryCount: 0,
+		HoldingCode: holdingCode,
+		DocNo:       docNo,
+		TransFlag:   transFlagStr,
+		CreatedAt:   time.Now(),
+		RetryCount:  0,
 	}
 
 	// เพิ่มเข้า PostgreSQL queue
@@ -57,18 +57,18 @@ func AddDocToProcessQueue(shopId, docNo string, transFlag interface{}) error {
 	err = qm.AddToQueue(ctx, queueItem)
 	if err != nil {
 		logger.Error("Failed to add to PostgreSQL queue (shop=%s, doc=%s): %v",
-			shopId, docNo, err)
+			holdingCode, docNo, err)
 		return err
 	}
 
 	logger.Debug("Added to PostgreSQL queue successfully: shop=%s, docno=%s, transflag=%s",
-		shopId, docNo, transFlagStr)
+		holdingCode, docNo, transFlagStr)
 
 	return nil
 }
 
 // AddDocToProcessQueueWithPriority - เพิ่มเอกสารเข้า queue พร้อม priority
-func AddDocToProcessQueueWithPriority(shopId, docNo string, transFlag interface{}, priority int) error {
+func AddDocToProcessQueueWithPriority(holdingCode, docNo string, transFlag interface{}, priority int) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
@@ -83,11 +83,11 @@ func AddDocToProcessQueueWithPriority(shopId, docNo string, transFlag interface{
 
 	// สร้าง QueueItem (PostgreSQL จะจัดเรียงตาม created_at โดยอัตโนมัติ)
 	queueItem := mypostgres.QueueItem{
-		ShopId:     shopId,
-		DocNo:      docNo,
-		TransFlag:  transFlagStr,
-		CreatedAt:  time.Now(),
-		RetryCount: 0,
+		HoldingCode: holdingCode,
+		DocNo:       docNo,
+		TransFlag:   transFlagStr,
+		CreatedAt:   time.Now(),
+		RetryCount:  0,
 	}
 
 	qm := mypostgres.NewQueueManager(db)
@@ -98,7 +98,7 @@ func AddDocToProcessQueueWithPriority(shopId, docNo string, transFlag interface{
 	}
 
 	logger.Debug("Added to PostgreSQL queue with priority=%d: shop=%s, docno=%s",
-		priority, shopId, docNo)
+		priority, holdingCode, docNo)
 
 	return nil
 }

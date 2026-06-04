@@ -51,7 +51,7 @@ func (s *CreditorAdminHttp) ReSyncCreditor(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = s.svc.ReSyncCreditor(req.ShopID)
+	err = s.svc.ReSyncCreditor(req.HoldingCode)
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, common.ApiResponse{
 			Success: false,
@@ -78,7 +78,7 @@ func (s *CreditorAdminHttp) ReCalcCreditorBalance(ctx microservice.IContext) err
 		return err
 	}
 
-	err = s.svc.ReCalcCreditorBalance(req.ShopID)
+	err = s.svc.ReCalcCreditorBalance(req.HoldingCode)
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, common.ApiResponse{
 			Success: false,

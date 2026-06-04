@@ -14,27 +14,27 @@ import (
 )
 
 type IReceiveDepositRefundRepository interface {
-	Count(ctx context.Context, shopID string) (int, error)
+	Count(ctx context.Context, holdingCode string) (int, error)
 	Create(ctx context.Context, doc models.ReceiveDepositRefundDoc) (string, error)
 	CreateInBatch(ctx context.Context, docList []models.ReceiveDepositRefundDoc) error
-	Update(ctx context.Context, shopID string, guid string, doc models.ReceiveDepositRefundDoc) error
-	DeleteByGuidfixed(ctx context.Context, shopID string, guid string, username string) error
-	Delete(ctx context.Context, shopID string, username string, filters map[string]interface{}) error
-	FindPage(ctx context.Context, shopID string, searchInFields []string, pageable micromodels.Pageable) ([]models.ReceiveDepositRefundInfo, mongopagination.PaginationData, error)
-	FindByGuid(ctx context.Context, shopID string, guid string) (models.ReceiveDepositRefundDoc, error)
-	FindByGuids(ctx context.Context, shopID string, guids []string) ([]models.ReceiveDepositRefundDoc, error)
+	Update(ctx context.Context, holdingCode string, guid string, doc models.ReceiveDepositRefundDoc) error
+	DeleteByGuidfixed(ctx context.Context, holdingCode string, guid string, username string) error
+	Delete(ctx context.Context, holdingCode string, username string, filters map[string]interface{}) error
+	FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable micromodels.Pageable) ([]models.ReceiveDepositRefundInfo, mongopagination.PaginationData, error)
+	FindByGuid(ctx context.Context, holdingCode string, guid string) (models.ReceiveDepositRefundDoc, error)
+	FindByGuids(ctx context.Context, holdingCode string, guids []string) ([]models.ReceiveDepositRefundDoc, error)
 
-	FindInItemGuid(ctx context.Context, shopID string, columnName string, itemGuidList []string) ([]models.ReceiveDepositRefundItemGuid, error)
-	FindByDocIndentityGuid(ctx context.Context, shopID string, indentityField string, indentityValue interface{}) (models.ReceiveDepositRefundDoc, error)
-	FindPageFilter(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.ReceiveDepositRefundInfo, mongopagination.PaginationData, error)
-	FindStep(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableLimit micromodels.PageableStep) ([]models.ReceiveDepositRefundInfo, int, error)
+	FindInItemGuid(ctx context.Context, holdingCode string, columnName string, itemGuidList []string) ([]models.ReceiveDepositRefundItemGuid, error)
+	FindByDocIndentityGuid(ctx context.Context, holdingCode string, indentityField string, indentityValue interface{}) (models.ReceiveDepositRefundDoc, error)
+	FindPageFilter(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.ReceiveDepositRefundInfo, mongopagination.PaginationData, error)
+	FindStep(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableLimit micromodels.PageableStep) ([]models.ReceiveDepositRefundInfo, int, error)
 
-	FindDeletedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ReceiveDepositRefundDeleteActivity, mongopagination.PaginationData, error)
-	FindCreatedOrUpdatedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ReceiveDepositRefundActivity, mongopagination.PaginationData, error)
-	FindDeletedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ReceiveDepositRefundDeleteActivity, error)
-	FindCreatedOrUpdatedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ReceiveDepositRefundActivity, error)
+	FindDeletedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ReceiveDepositRefundDeleteActivity, mongopagination.PaginationData, error)
+	FindCreatedOrUpdatedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ReceiveDepositRefundActivity, mongopagination.PaginationData, error)
+	FindDeletedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ReceiveDepositRefundDeleteActivity, error)
+	FindCreatedOrUpdatedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ReceiveDepositRefundActivity, error)
 
-	FindLastDocNo(ctx context.Context, shopID string, prefixDocNo string) (models.ReceiveDepositRefundDoc, error)
+	FindLastDocNo(ctx context.Context, holdingCode string, prefixDocNo string) (models.ReceiveDepositRefundDoc, error)
 }
 
 type ReceiveDepositRefundRepository struct {
@@ -58,9 +58,9 @@ func NewReceiveDepositRefundRepository(pst microservice.IPersisterMongo) *Receiv
 
 	return insRepo
 }
-func (repo ReceiveDepositRefundRepository) FindLastDocNo(ctx context.Context, shopID string, prefixDocNo string) (models.ReceiveDepositRefundDoc, error) {
+func (repo ReceiveDepositRefundRepository) FindLastDocNo(ctx context.Context, holdingCode string, prefixDocNo string) (models.ReceiveDepositRefundDoc, error) {
 	filters := bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 		"deleted_at": bson.M{
 			"$exists": false,
 		},

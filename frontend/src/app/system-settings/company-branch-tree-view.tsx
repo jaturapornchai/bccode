@@ -24,6 +24,8 @@ import { normalizeLanguageConfigs } from "./system-settings-screen";
 import { deriveMainApiUrl } from "@/lib/backend-url";
 import { NamesEditor } from "@/components/product-barcode/names-editor";
 import { isThaiHeadOfficeBranchCode, normalizeThaiTaxBranchCode } from "@/lib/thai-branch-code";
+import { notifyWorkspaceChanged } from "@/lib/workspace-models";
+import { normalizeBusinessCode } from "@/lib/business-code";
 
 interface CompanyBranchTreeViewProps {
   auth: { token: string; backendUrl: string } | null;
@@ -33,7 +35,7 @@ interface CompanyBranchTreeViewProps {
 }
 
 interface CompanyWorkspace {
-  shop: { shopid: string };
+  shop: { holding_code: string };
   shopInfo?: {
     settings?: {
       language?: string;
@@ -71,7 +73,7 @@ interface BranchRecord {
 
 type NodeType = "company" | "branch";
 type ConfirmAction = "save" | "delete";
-type OrganizationFormType = "edit_company" | "edit_branch" | "create_company" | "create_branch";
+type OrganizationFormType = "view_company" | "view_branch" | "edit_company" | "edit_branch" | "create_company" | "create_branch";
 
 interface SelectedNode {
   type: NodeType;
@@ -119,18 +121,18 @@ export function CompanyBranchTreeView({
     }
   }, [auth]);
 
-  const ensureActiveWorkspaceShop = useCallback(async () => {
-    const shopid = workspace?.shop?.shopid?.trim();
-    if (!auth || !shopid) return;
+  const ensureActiveWorkspaceHolding = useCallback(async () => {
+    const holding_code = workspace?.shop?.holding_code?.trim();
+    if (!auth || !holding_code) return;
 
-    const res = await fetch("/api/workspace/select-shop", {
+    const res = await fetch("/api/workspace/select-holding", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "x-bc-backend-url": auth.backendUrl,
         Authorization: `Bearer ${auth.token}`,
       },
-      body: JSON.stringify({ backendUrl: auth.backendUrl, shopid }),
+      body: JSON.stringify({ backendUrl: auth.backendUrl, holding_code }),
     });
     const json = (await res.json().catch(() => ({}))) as { success?: boolean; message?: string };
     if (!res.ok || json.success === false) {
@@ -199,11 +201,13 @@ export function CompanyBranchTreeView({
     setLoading(true);
     setLoadError("");
     try {
-      await ensureActiveWorkspaceShop();
+      await ensureActiveWorkspaceHolding();
 
       // Load Companies
-      const resComp = await fetch(`${mainApiUrl}/organization/company`, {
+      const cacheBuster = Date.now().toString();
+      const resComp = await fetch(`${mainApiUrl}/organization/company?_=${cacheBuster}`, {
         headers: { Authorization: `Bearer ${auth.token}` },
+        cache: "no-store",
       });
       const jsonComp = await resComp.json();
       if (!resComp.ok || jsonComp.success === false) {
@@ -214,8 +218,9 @@ export function CompanyBranchTreeView({
       }
 
       // Load Branches
-      const resBranch = await fetch(`${mainApiUrl}/organization/branch`, {
+      const resBranch = await fetch(`${mainApiUrl}/organization/branch?_=${cacheBuster}`, {
         headers: { Authorization: `Bearer ${auth.token}` },
+        cache: "no-store",
       });
       const jsonBranch = await resBranch.json();
       if (!resBranch.ok || jsonBranch.success === false) {
@@ -230,24 +235,11 @@ export function CompanyBranchTreeView({
     } finally {
       setLoading(false);
     }
-  }, [auth, ensureActiveWorkspaceShop, mainApiUrl]);
+  }, [auth, ensureActiveWorkspaceHolding, mainApiUrl]);
 
   useEffect(() => {
     void loadData();
   }, [loadData]);
-
-  // Initialize selected node
-  useEffect(() => {
-    if (companies.length > 0 && !selectedNode) {
-      const first = companies[0];
-      setSelectedNode({
-        type: "company",
-        guid_fixed: first.guid_fixed,
-        data: first,
-      });
-      setFormType("edit_company");
-    }
-  }, [companies, selectedNode]);
 
   // Right Form Values
   const [formCode, setFormCode] = useState("");
@@ -268,7 +260,7 @@ export function CompanyBranchTreeView({
       });
     });
 
-    setFormCode(selectedNode.data.code || "");
+    setFormCode(selectedNode.type === "company" ? normalizeBusinessCode(selectedNode.data.code) : selectedNode.data.code || "");
     setFormIsActive(selectedNode.data.is_active !== false);
     setFormNames(list);
 
@@ -279,14 +271,15 @@ export function CompanyBranchTreeView({
 
   // Handle Save
   const handleSave = async () => {
-    if (!auth || !selectedNode || !formType) return;
+    if (!auth || !selectedNode || !formType || formType.startsWith("view")) return;
     setSaving(true);
     setSaveError("");
 
     try {
-      await ensureActiveWorkspaceShop();
+      await ensureActiveWorkspaceHolding();
 
       const namesList = formNames;
+      const normalizedCompanyCode = formType.includes("company") ? normalizeBusinessCode(formCode) : "";
       const normalizedBranchCode = formType.includes("branch") ? normalizeThaiTaxBranchCode(formCode) : "";
 
       let url = "";
@@ -297,7 +290,7 @@ export function CompanyBranchTreeView({
         url = `${mainApiUrl}/organization/company`;
         method = "POST";
         body = {
-          code: formCode,
+          code: normalizedCompanyCode,
           names: namesList,
           tax_id: formTaxId,
           is_active: formIsActive,
@@ -306,7 +299,7 @@ export function CompanyBranchTreeView({
         url = `${mainApiUrl}/organization/company/${selectedNode.guid_fixed}`;
         method = "PUT";
         body = {
-          code: formCode,
+          code: normalizedCompanyCode,
           names: namesList,
           tax_id: formTaxId,
           is_active: formIsActive,
@@ -349,8 +342,10 @@ export function CompanyBranchTreeView({
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 2000);
         await loadData();
+        onRefresh?.();
+        notifyWorkspaceChanged();
         if (formType.startsWith("create")) {
-          const createdCode = formType === "create_branch" ? normalizedBranchCode : formCode;
+          const createdCode = formType === "create_branch" ? normalizedBranchCode : normalizedCompanyCode;
           const createdData = {
             guid_fixed: json.id,
             code: createdCode,
@@ -390,7 +385,7 @@ export function CompanyBranchTreeView({
 
     setLoading(true);
     try {
-      await ensureActiveWorkspaceShop();
+      await ensureActiveWorkspaceHolding();
 
       const url = `${mainApiUrl}/organization/${node.type}/${node.guid_fixed}`;
       const res = await fetch(url, {
@@ -403,6 +398,9 @@ export function CompanyBranchTreeView({
       }
       if (json.success) {
         await loadData();
+        pruneDeletedNode(node);
+        onRefresh?.();
+        notifyWorkspaceChanged();
         setSelectedNode(null);
         setFormType(null);
         setDeleteError("");
@@ -415,13 +413,24 @@ export function CompanyBranchTreeView({
     }
   };
 
+  const pruneDeletedNode = (node: SelectedNode) => {
+    const deletedGuid = node.guid_fixed ?? "";
+    if (!deletedGuid) return;
+    if (node.type === "company") {
+      setCompanies((prev) => prev.filter((company) => company.guid_fixed !== deletedGuid));
+      setBranches((prev) => prev.filter((branch) => branch.company_guid !== deletedGuid));
+      return;
+    }
+    setBranches((prev) => prev.filter((branch) => branch.guid_fixed !== deletedGuid));
+  };
+
   const sortedCompanies = useMemo(() => {
     return [...companies].sort((a, b) => {
-      const codeA = a.code || "";
-      const codeB = b.code || "";
+      const codeA = normalizeBusinessCode(a.code);
+      const codeB = normalizeBusinessCode(b.code);
       const cmp = codeA.localeCompare(codeB, undefined, { numeric: true, sensitivity: "base" });
       if (cmp !== 0) return cmp;
-      
+
       const nameA = getNameFromObject(a.names, language) || "";
       const nameB = getNameFromObject(b.names, language) || "";
       return nameA.localeCompare(nameB, "th", { sensitivity: "base" });
@@ -434,12 +443,14 @@ export function CompanyBranchTreeView({
       const codeB = b.code || "";
       const cmp = codeA.localeCompare(codeB, undefined, { numeric: true, sensitivity: "base" });
       if (cmp !== 0) return cmp;
-      
+
       const nameA = getNameFromObject(a.names, language) || "";
       const nameB = getNameFromObject(b.names, language) || "";
       return nameA.localeCompare(nameB, "th", { sensitivity: "base" });
     });
   }, [branches, language]);
+
+  const isReadOnlyMode = formType?.startsWith("view") ?? false;
 
   return (
     <div className="grid w-full grid-cols-1 gap-4 xl:grid-cols-[minmax(320px,0.85fr)_minmax(420px,1.15fr)]">
@@ -489,8 +500,10 @@ export function CompanyBranchTreeView({
             <div className="space-y-2">
               {sortedCompanies.map((comp) => {
                 const compGuid = comp.guid_fixed || "";
+                const companyCode = normalizeBusinessCode(comp.code);
                 const isCollapsed = collapsedCompanies[compGuid];
                 const isSelected = selectedNode?.type === "company" && selectedNode.guid_fixed === compGuid;
+                const isEditingCompany = isSelected && formType === "edit_company";
                 const compBranches = sortedBranches.filter((b) => b.company_guid === compGuid);
 
                 return (
@@ -498,7 +511,11 @@ export function CompanyBranchTreeView({
                     <div
                       className={cn(
                         "group flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all",
-                        isSelected ? "bg-primary/10 border-l-4 border-primary pl-1 font-bold" : "hover:bg-accent pl-2"
+                        isEditingCompany
+                          ? "bg-amber-100/70 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100 border-l-4 border-amber-400 pl-1 font-bold"
+                          : isSelected
+                            ? "bg-primary/10 border-l-4 border-primary pl-1 font-bold"
+                            : "hover:bg-accent pl-2"
                       )}
                       onClick={() => {
                         setSelectedNode({
@@ -506,7 +523,7 @@ export function CompanyBranchTreeView({
                           guid_fixed: compGuid,
                           data: comp,
                         });
-                        setFormType("edit_company");
+                        setFormType("view_company");
                       }}
                     >
                       <div className="flex items-center gap-2 min-w-0">
@@ -528,10 +545,27 @@ export function CompanyBranchTreeView({
                         </button>
                         <Building2 className="w-4 h-4 text-primary shrink-0" />
                         <span className="truncate">
-                          [{comp.code}] {getNameFromObject(comp.names, language) || comp.code}
+                          [{companyCode}] {getNameFromObject(comp.names, language) || companyCode}
                         </span>
                       </div>
                       <div className="flex items-center gap-1">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="w-7 h-7 text-primary hover:text-primary hover:bg-primary/10"
+                          title="แก้ไขบริษัท"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedNode({
+                              type: "company",
+                              guid_fixed: compGuid,
+                              data: comp,
+                            });
+                            setFormType("edit_company");
+                          }}
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </Button>
                         <Button
                           size="icon"
                           variant="ghost"
@@ -573,6 +607,7 @@ export function CompanyBranchTreeView({
                         {compBranches.map((br) => {
                           const brGuid = br.guid_fixed || "";
                           const isBrSelected = selectedNode?.type === "branch" && selectedNode.guid_fixed === brGuid;
+                          const isEditingBranch = isBrSelected && formType === "edit_branch";
                           const cannotDeleteBranch = isThaiHeadOfficeBranchCode(br.code) || compBranches.length <= 1;
 
                           return (
@@ -580,7 +615,11 @@ export function CompanyBranchTreeView({
                               key={brGuid}
                               className={cn(
                                 "group flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all",
-                                isBrSelected ? "bg-sky-500/10 border-l-4 border-sky-500 pl-1 font-semibold" : "hover:bg-accent pl-2"
+                                isEditingBranch
+                                  ? "bg-amber-100/70 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100 border-l-4 border-amber-400 pl-1 font-semibold"
+                                  : isBrSelected
+                                    ? "bg-sky-500/10 border-l-4 border-sky-500 pl-1 font-semibold"
+                                    : "hover:bg-accent pl-2"
                               )}
                               onClick={() => {
                                 setSelectedNode({
@@ -589,7 +628,7 @@ export function CompanyBranchTreeView({
                                   company_guid: compGuid,
                                   data: br,
                                 });
-                                setFormType("edit_branch");
+                                setFormType("view_branch");
                               }}
                             >
                               <div className="flex items-center gap-2 min-w-0">
@@ -599,6 +638,24 @@ export function CompanyBranchTreeView({
                                 </span>
                               </div>
                               <div className="flex items-center gap-1">
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="w-7 h-7 text-primary hover:text-primary hover:bg-primary/10"
+                                  title="แก้ไขสาขา"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedNode({
+                                      type: "branch",
+                                      guid_fixed: brGuid,
+                                      company_guid: compGuid,
+                                      data: br,
+                                    });
+                                    setFormType("edit_branch");
+                                  }}
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                </Button>
                                 <Button
                                   size="icon"
                                   variant="ghost"
@@ -645,33 +702,52 @@ export function CompanyBranchTreeView({
                     ) : (
                       <GitBranch className="w-5.5 h-5.5 text-sky-500 shrink-0" />
                     )}
+                    {formType === "view_company" && "ข้อมูลบริษัท"}
+                    {formType === "view_branch" && "ข้อมูลสาขา"}
                     {formType === "create_company" && "เพิ่มบริษัทใหม่"}
                     {formType === "edit_company" && "แก้ไขข้อมูลบริษัท"}
                     {formType === "create_branch" && "เพิ่มสาขาใหม่"}
                     {formType === "edit_branch" && "แก้ไขข้อมูลสาขา"}
                   </h3>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {formType.startsWith("create") ? "ระบุข้อมูลรายละเอียดหลักเพื่อเพิ่มข้อมูลเข้าระบบ" : "แก้ไขรายละเอียดข้อมูลและบันทึกประวัติ"}
+                    {formType.startsWith("create")
+                      ? "ระบุข้อมูลรายละเอียดหลักเพื่อเพิ่มข้อมูลเข้าระบบ"
+                      : isReadOnlyMode
+                        ? "แสดงรายละเอียดข้อมูลจากรายการที่เลือก"
+                        : "แก้ไขรายละเอียดข้อมูลและบันทึกประวัติ"}
                   </p>
                 </div>
-                {formType === "edit_company" && selectedNode?.guid_fixed && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="gap-1 text-xs border-sky-500/30 text-sky-600 hover:bg-sky-500/10 hover:text-sky-700 font-bold shrink-0"
-                    onClick={() => {
-                      setSelectedNode({
-                        type: "branch",
-                        company_guid: selectedNode.guid_fixed,
-                        data: {},
-                      });
-                      setFormType("create_branch");
-                    }}
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    เพิ่มสาขาในบริษัทนี้
-                  </Button>
-                )}
+                <div className="flex shrink-0 items-center gap-2">
+                  {isReadOnlyMode && selectedNode?.guid_fixed && (
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="size-9 border-primary/30 text-primary hover:bg-primary/10"
+                      title={selectedNode.type === "company" ? "แก้ไขบริษัท" : "แก้ไขสาขา"}
+                      onClick={() => setFormType(selectedNode.type === "company" ? "edit_company" : "edit_branch")}
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </Button>
+                  )}
+                  {(formType === "view_company" || formType === "edit_company") && selectedNode?.guid_fixed && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1 text-xs border-sky-500/30 text-sky-600 hover:bg-sky-500/10 hover:text-sky-700 font-bold shrink-0"
+                      onClick={() => {
+                        setSelectedNode({
+                          type: "branch",
+                          company_guid: selectedNode.guid_fixed,
+                          data: {},
+                        });
+                        setFormType("create_branch");
+                      }}
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      เพิ่มสาขาในบริษัทนี้
+                    </Button>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-4">
@@ -682,9 +758,12 @@ export function CompanyBranchTreeView({
                     </label>
                     <Input
                       value={formCode}
-                      onChange={(e) => setFormCode(e.target.value)}
+                      onChange={(e) => {
+                        setFormCode(formType.includes("company") ? normalizeBusinessCode(e.target.value) : e.target.value);
+                      }}
                       placeholder={formType.includes("company") ? "ระบุรหัสบริษัท เช่น 00000" : "ระบุรหัสสาขา 5 หลัก เช่น 00001"}
                       className="bg-accent/20"
+                      disabled={isReadOnlyMode}
                     />
                   </div>
                   {formType.includes("company") && (
@@ -695,6 +774,7 @@ export function CompanyBranchTreeView({
                         onChange={(e) => setFormTaxId(e.target.value)}
                         placeholder="เลขผู้เสียภาษี 13 หลัก"
                         className="bg-accent/20"
+                        disabled={isReadOnlyMode}
                       />
                     </div>
                   )}
@@ -708,6 +788,7 @@ export function CompanyBranchTreeView({
                     languages={editorLanguages}
                     label={formType.includes("company") ? "ชื่อบริษัท" : "ชื่อสาขา"}
                     language={language}
+                    disabled={isReadOnlyMode}
                   />
                 </div>
                 {saveError && (
@@ -722,13 +803,15 @@ export function CompanyBranchTreeView({
                     id="is_active"
                     checked={formIsActive}
                     onChange={(e) => setFormIsActive(e.target.checked)}
+                    disabled={isReadOnlyMode}
                     className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
                   />
                   <label htmlFor="is_active" className="text-sm font-semibold text-foreground cursor-pointer select-none">
                     เปิดใช้งานในระบบ
                   </label>
                 </div>
- 
+
+                {!isReadOnlyMode && (
                 <div className="pt-6 border-t mt-4">
                   <Button
                     onClick={() => showConfirmCodeDialog("save")}
@@ -747,6 +830,7 @@ export function CompanyBranchTreeView({
                     )}
                   </Button>
                 </div>
+                )}
               </div>
             </div>
           ) : (

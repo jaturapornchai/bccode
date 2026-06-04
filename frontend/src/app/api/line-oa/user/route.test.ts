@@ -17,7 +17,7 @@ describe("LINE OA user route", () => {
       body: JSON.stringify({
         action: "profile",
         backendUrl: "http://localhost:8888/goapi",
-        shopId: "SHOP001",
+        holdingCode: "SHOP001",
         username: "user@example.com",
       }),
     }));
@@ -31,7 +31,7 @@ describe("LINE OA user route", () => {
       expect(String(url)).toBe("http://localhost:8888/goapi/api/user/lineoa/link");
       expect(init?.method).toBe("POST");
       expect(JSON.parse(String(init?.body))).toEqual({
-        shop_id: "SHOP001",
+        holding_code: "SHOP001",
         username: "user@example.com",
       });
       return Response.json({ status: "success", link: "https://liff.line.me/123?token=abc" });
@@ -42,12 +42,12 @@ describe("LINE OA user route", () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${signJwt({ username: "user@example.com", shopid: "SHOP001" })}`,
+        Authorization: `Bearer ${signJwt({ username: "user@example.com", holding_code: "SHOP001" })}`,
       },
       body: JSON.stringify({
         action: "link",
         backendUrl: "http://localhost:8888/goapi",
-        shopId: "SHOP001",
+        holdingCode: "SHOP001",
         username: "user@example.com",
       }),
     }));
@@ -70,12 +70,12 @@ describe("LINE OA user route", () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${signJwt({ username: "user@example.com", shopid: "SHOP001" })}`,
+        Authorization: `Bearer ${signJwt({ username: "user@example.com", holding_code: "SHOP001" })}`,
       },
       body: JSON.stringify({
         action: "profile",
         backendUrl: "http://localhost:8888/goapi",
-        shopId: "SHOP002",
+        holdingCode: "SHOP002",
         username: "user@example.com",
       }),
     }));

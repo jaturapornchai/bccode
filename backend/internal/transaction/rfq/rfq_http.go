@@ -8,11 +8,11 @@ import (
 
 	mastersync "smlcloudplatform/internal/mastersync/repositories"
 	common "smlcloudplatform/internal/models"
+	trancache "smlcloudplatform/internal/transaction/repositories"
 	"smlcloudplatform/internal/transaction/rfq/models"
 	"smlcloudplatform/internal/transaction/rfq/repositories"
 	"smlcloudplatform/internal/transaction/rfq/services"
 	"smlcloudplatform/internal/transaction/rfq/validators"
-	trancache "smlcloudplatform/internal/transaction/repositories"
 	"smlcloudplatform/internal/utils"
 	"smlcloudplatform/internal/utils/requestfilter"
 	"smlcloudplatform/pkg/microservice"
@@ -82,7 +82,7 @@ func (h RFQHttp) RegisterHttp() {
 
 func (h RFQHttp) CreateRFQ(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 	lang := getRequestLanguage(ctx)
 
@@ -97,7 +97,7 @@ func (h RFQHttp) CreateRFQ(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, docNo, validationResult, err := h.svc.CreateRFQ(shopID, authUsername, *docReq)
+	idx, docNo, validationResult, err := h.svc.CreateRFQ(holdingCode, authUsername, *docReq)
 	if validationResult != nil && !validationResult.IsValid() {
 		ctx.Response(http.StatusBadRequest, validationResult.ToErrorResponse(lang))
 		return nil
@@ -114,7 +114,7 @@ func (h RFQHttp) CreateRFQ(ctx microservice.IContext) error {
 func (h RFQHttp) UpdateRFQ(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
 	lang := getRequestLanguage(ctx)
@@ -130,7 +130,7 @@ func (h RFQHttp) UpdateRFQ(ctx microservice.IContext) error {
 		return err
 	}
 
-	validationResult, err := h.svc.UpdateRFQ(shopID, id, authUsername, *docReq)
+	validationResult, err := h.svc.UpdateRFQ(holdingCode, id, authUsername, *docReq)
 	if validationResult != nil && !validationResult.IsValid() {
 		ctx.Response(http.StatusBadRequest, validationResult.ToUpdateErrorResponse(lang))
 		return nil
@@ -146,11 +146,11 @@ func (h RFQHttp) UpdateRFQ(ctx microservice.IContext) error {
 
 func (h RFQHttp) DeleteRFQ(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteRFQ(shopID, id, authUsername)
+	err := h.svc.DeleteRFQ(holdingCode, id, authUsername)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -161,7 +161,7 @@ func (h RFQHttp) DeleteRFQ(ctx microservice.IContext) error {
 
 func (h RFQHttp) DeleteRFQByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 	input := ctx.ReadInput()
 
@@ -172,7 +172,7 @@ func (h RFQHttp) DeleteRFQByGUIDs(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.DeleteRFQByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteRFQByGUIDs(holdingCode, authUsername, docReq)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -183,10 +183,10 @@ func (h RFQHttp) DeleteRFQByGUIDs(ctx microservice.IContext) error {
 
 func (h RFQHttp) InfoRFQ(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	id := ctx.Param("id")
 
-	doc, err := h.svc.InfoRFQ(shopID, id)
+	doc, err := h.svc.InfoRFQ(holdingCode, id)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -197,10 +197,10 @@ func (h RFQHttp) InfoRFQ(ctx microservice.IContext) error {
 
 func (h RFQHttp) InfoRFQByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoRFQByCode(shopID, code)
+	doc, err := h.svc.InfoRFQByCode(holdingCode, code)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -211,7 +211,7 @@ func (h RFQHttp) InfoRFQByCode(ctx microservice.IContext) error {
 
 func (h RFQHttp) SearchRFQPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	pageable := utils.GetPageable(ctx.QueryParam)
 
 	filters := requestfilter.GenerateFilters(ctx.QueryParam, []requestfilter.FilterRequest{
@@ -221,7 +221,7 @@ func (h RFQHttp) SearchRFQPage(ctx microservice.IContext) error {
 		{Param: "branchcode", Field: "branch.code", Type: requestfilter.FieldTypeString},
 	})
 
-	docList, pagination, err := h.svc.SearchRFQ(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchRFQ(holdingCode, filters, pageable)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -232,7 +232,7 @@ func (h RFQHttp) SearchRFQPage(ctx microservice.IContext) error {
 
 func (h RFQHttp) SearchRFQStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 	lang := ctx.QueryParam("lang")
 
@@ -243,7 +243,7 @@ func (h RFQHttp) SearchRFQStep(ctx microservice.IContext) error {
 		{Param: "branchcode", Field: "branch.code", Type: requestfilter.FieldTypeString},
 	})
 
-	docList, total, err := h.svc.SearchRFQStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchRFQStep(holdingCode, lang, filters, pageableStep)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -255,7 +255,7 @@ func (h RFQHttp) SearchRFQStep(ctx microservice.IContext) error {
 func (h RFQHttp) SaveBulk(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	input := ctx.ReadInput()
 
 	dataReq := []models.RFQ{}
@@ -265,7 +265,7 @@ func (h RFQHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 	if err != nil {
 		ctx.ResponseError(400, err.Error())
 		return err

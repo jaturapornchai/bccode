@@ -10,21 +10,21 @@ import (
 )
 
 type ICRUDRepository[T any] interface {
-	Count(ctx context.Context, shopID string) (int, error)
-	CountByKey(shopID string, keyName string, keyValue []string) (int, error)
-	CountByInKeys(shopID string, keyName string, keyValues []string) (int, error)
+	Count(ctx context.Context, holdingCode string) (int, error)
+	CountByKey(holdingCode string, keyName string, keyValue []string) (int, error)
+	CountByInKeys(holdingCode string, keyName string, keyValues []string) (int, error)
 
 	Create(ctx context.Context, doc T) (string, error)
 	CreateInBatch(ctx context.Context, docList []T) error
-	Update(ctx context.Context, shopID string, guid string, doc T) error
-	Delete(ctx context.Context, shopID string, username string, filters map[string]interface{}) error
-	DeleteByGuidfixed(ctx context.Context, shopID string, guid string, username string) error
-	FindOne(ctx context.Context, shopID string, filters interface{}) (T, error)
-	FindByGuid(ctx context.Context, shopID string, guid string) (T, error)
-	FindByGuids(ctx context.Context, shopID string, guids []string) ([]T, error)
-	FindByDocIndentityGuid(ctx context.Context, shopID string, indentityField string, indentityValue interface{}) (T, error)
-	FindByDocIndentityGuids(ctx context.Context, shopID string, indentityField string, indentityValue interface{}) ([]T, error)
-	FindOneFilter(ctx context.Context, shopID string, filters map[string]interface{}) (T, error)
+	Update(ctx context.Context, holdingCode string, guid string, doc T) error
+	Delete(ctx context.Context, holdingCode string, username string, filters map[string]interface{}) error
+	DeleteByGuidfixed(ctx context.Context, holdingCode string, guid string, username string) error
+	FindOne(ctx context.Context, holdingCode string, filters interface{}) (T, error)
+	FindByGuid(ctx context.Context, holdingCode string, guid string) (T, error)
+	FindByGuids(ctx context.Context, holdingCode string, guids []string) ([]T, error)
+	FindByDocIndentityGuid(ctx context.Context, holdingCode string, indentityField string, indentityValue interface{}) (T, error)
+	FindByDocIndentityGuids(ctx context.Context, holdingCode string, indentityField string, indentityValue interface{}) ([]T, error)
+	FindOneFilter(ctx context.Context, holdingCode string, filters map[string]interface{}) (T, error)
 }
 
 type CrudRepository[T any] struct {
@@ -37,9 +37,9 @@ func NewCrudRepository[T any](pst microservice.IPersisterMongo) CrudRepository[T
 	}
 }
 
-func (repo CrudRepository[T]) Count(ctx context.Context, shopID string) (int, error) {
+func (repo CrudRepository[T]) Count(ctx context.Context, holdingCode string) (int, error) {
 
-	count, err := repo.pst.Count(ctx, new(T), bson.M{"shopid": shopID})
+	count, err := repo.pst.Count(ctx, new(T), bson.M{"holding_code": holdingCode})
 
 	if err != nil {
 		return 0, err
@@ -47,23 +47,23 @@ func (repo CrudRepository[T]) Count(ctx context.Context, shopID string) (int, er
 	return count, nil
 }
 
-func (repo CrudRepository[T]) CountByKey(ctx context.Context, shopID string, keyName string, keyValue string) (int, error) {
+func (repo CrudRepository[T]) CountByKey(ctx context.Context, holdingCode string, keyName string, keyValue string) (int, error) {
 
 	filters := bson.M{
-		"shopid":    shopID,
-		"deleted_at": bson.M{"$exists": false},
-		keyName:     keyValue,
+		"holding_code": holdingCode,
+		"deleted_at":   bson.M{"$exists": false},
+		keyName:        keyValue,
 	}
 
 	return repo.pst.Count(ctx, new(T), filters)
 }
 
-func (repo CrudRepository[T]) CountByInKeys(ctx context.Context, shopID string, keyName string, keyValues []string) (int, error) {
+func (repo CrudRepository[T]) CountByInKeys(ctx context.Context, holdingCode string, keyName string, keyValues []string) (int, error) {
 
 	filters := bson.M{
-		"shopid":    shopID,
-		"deleted_at": bson.M{"$exists": false},
-		keyName:     bson.M{"$in": keyValues},
+		"holding_code": holdingCode,
+		"deleted_at":   bson.M{"$exists": false},
+		keyName:        bson.M{"$in": keyValues},
 	}
 
 	return repo.pst.Count(ctx, new(T), filters)
@@ -94,10 +94,10 @@ func (repo CrudRepository[T]) CreateInBatch(ctx context.Context, docList []T) er
 	return nil
 }
 
-func (repo CrudRepository[T]) Update(ctx context.Context, shopID string, guid string, doc T) error {
+func (repo CrudRepository[T]) Update(ctx context.Context, holdingCode string, guid string, doc T) error {
 	filterDoc := map[string]interface{}{
-		"shopid":    shopID,
-		"guid_fixed": guid,
+		"holding_code": holdingCode,
+		"guid_fixed":   guid,
 	}
 
 	err := repo.pst.UpdateOne(ctx, new(T), filterDoc, doc)
@@ -109,7 +109,7 @@ func (repo CrudRepository[T]) Update(ctx context.Context, shopID string, guid st
 	return nil
 }
 
-func (repo CrudRepository[T]) Delete(ctx context.Context, shopID string, username string, filters map[string]interface{}) error {
+func (repo CrudRepository[T]) Delete(ctx context.Context, holdingCode string, username string, filters map[string]interface{}) error {
 
 	filterQuery := bson.M{}
 
@@ -117,7 +117,7 @@ func (repo CrudRepository[T]) Delete(ctx context.Context, shopID string, usernam
 		filterQuery[col] = val
 	}
 
-	filterQuery["shopid"] = shopID
+	filterQuery["holding_code"] = holdingCode
 
 	err := repo.pst.SoftDelete(ctx, new(T), username, filterQuery)
 
@@ -128,8 +128,8 @@ func (repo CrudRepository[T]) Delete(ctx context.Context, shopID string, usernam
 	return nil
 }
 
-func (repo CrudRepository[T]) DeleteByGuidfixed(ctx context.Context, shopID string, guid string, username string) error {
-	err := repo.pst.SoftDelete(ctx, new(T), username, bson.M{"guid_fixed": guid, "shopid": shopID})
+func (repo CrudRepository[T]) DeleteByGuidfixed(ctx context.Context, holdingCode string, guid string, username string) error {
+	err := repo.pst.SoftDelete(ctx, new(T), username, bson.M{"guid_fixed": guid, "holding_code": holdingCode})
 
 	if err != nil {
 		return err
@@ -138,19 +138,19 @@ func (repo CrudRepository[T]) DeleteByGuidfixed(ctx context.Context, shopID stri
 	return nil
 }
 
-func (repo CrudRepository[T]) FindOne(ctx context.Context, shopID string, filters interface{}) (T, error) {
+func (repo CrudRepository[T]) FindOne(ctx context.Context, holdingCode string, filters interface{}) (T, error) {
 
 	var filterQuery interface{}
 
 	switch filters.(type) {
 	case bson.M:
 		tempFilterQuery := filters.(bson.M)
-		tempFilterQuery["shopid"] = shopID
+		tempFilterQuery["holding_code"] = holdingCode
 		tempFilterQuery["deleted_at"] = bson.M{"$exists": false}
 		filterQuery = tempFilterQuery
 	case bson.D:
 		tempFilterQuery := filters.(bson.D)
-		tempFilterQuery = append(tempFilterQuery, bson.E{"shopid", shopID})
+		tempFilterQuery = append(tempFilterQuery, bson.E{"holding_code", holdingCode})
 		tempFilterQuery = append(tempFilterQuery, bson.E{"deleted_at", bson.D{{"$exists", false}}})
 
 		filterQuery = tempFilterQuery
@@ -169,14 +169,14 @@ func (repo CrudRepository[T]) FindOne(ctx context.Context, shopID string, filter
 	return *doc, nil
 }
 
-func (repo CrudRepository[T]) FindByGuid(ctx context.Context, shopID string, guid string) (T, error) {
+func (repo CrudRepository[T]) FindByGuid(ctx context.Context, holdingCode string, guid string) (T, error) {
 
 	doc := new(T)
 
 	err := repo.pst.FindOne(
 		ctx,
 		new(T),
-		bson.M{"guid_fixed": guid, "shopid": shopID, "deleted_at": bson.M{"$exists": false}},
+		bson.M{"guid_fixed": guid, "holding_code": holdingCode, "deleted_at": bson.M{"$exists": false}},
 		doc,
 	)
 
@@ -187,14 +187,14 @@ func (repo CrudRepository[T]) FindByGuid(ctx context.Context, shopID string, gui
 	return *doc, nil
 }
 
-func (repo CrudRepository[T]) FindByGuids(ctx context.Context, shopID string, guids []string) ([]T, error) {
+func (repo CrudRepository[T]) FindByGuids(ctx context.Context, holdingCode string, guids []string) ([]T, error) {
 
 	doc := new([]T)
 
 	err := repo.pst.Find(
 		ctx,
 		new(T),
-		bson.M{"guid_fixed": bson.M{"$in": guids}, "shopid": shopID, "deleted_at": bson.M{"$exists": false}},
+		bson.M{"guid_fixed": bson.M{"$in": guids}, "holding_code": holdingCode, "deleted_at": bson.M{"$exists": false}},
 		doc,
 	)
 
@@ -205,11 +205,11 @@ func (repo CrudRepository[T]) FindByGuids(ctx context.Context, shopID string, gu
 	return *doc, nil
 }
 
-func (repo CrudRepository[T]) FindByDocIndentityGuid(ctx context.Context, shopID string, indentityField string, indentityValue interface{}) (T, error) {
+func (repo CrudRepository[T]) FindByDocIndentityGuid(ctx context.Context, holdingCode string, indentityField string, indentityValue interface{}) (T, error) {
 
 	doc := new(T)
 
-	err := repo.pst.FindOne(ctx, new(T), bson.M{"shopid": shopID, "deleted_at": bson.M{"$exists": false}, indentityField: indentityValue}, doc)
+	err := repo.pst.FindOne(ctx, new(T), bson.M{"holding_code": holdingCode, "deleted_at": bson.M{"$exists": false}, indentityField: indentityValue}, doc)
 
 	if err != nil {
 		return *new(T), err
@@ -218,7 +218,7 @@ func (repo CrudRepository[T]) FindByDocIndentityGuid(ctx context.Context, shopID
 	return *doc, nil
 }
 
-func (repo CrudRepository[T]) FindByDocIndentityGuids(ctx context.Context, shopID string, indentityField string, indentityValues interface{}) ([]T, error) {
+func (repo CrudRepository[T]) FindByDocIndentityGuids(ctx context.Context, holdingCode string, indentityField string, indentityValues interface{}) ([]T, error) {
 
 	var values interface{}
 	switch v := indentityValues.(type) {
@@ -232,7 +232,7 @@ func (repo CrudRepository[T]) FindByDocIndentityGuids(ctx context.Context, shopI
 
 	doc := new([]T)
 
-	err := repo.pst.Find(ctx, new(T), bson.M{"shopid": shopID, "deleted_at": bson.M{"$exists": false}, indentityField: bson.M{"$in": values}}, doc)
+	err := repo.pst.Find(ctx, new(T), bson.M{"holding_code": holdingCode, "deleted_at": bson.M{"$exists": false}, indentityField: bson.M{"$in": values}}, doc)
 
 	if err != nil {
 		return *new([]T), err
@@ -241,7 +241,7 @@ func (repo CrudRepository[T]) FindByDocIndentityGuids(ctx context.Context, shopI
 	return *doc, nil
 }
 
-func (repo CrudRepository[T]) FindOneFilter(ctx context.Context, shopID string, filters map[string]interface{}) (T, error) {
+func (repo CrudRepository[T]) FindOneFilter(ctx context.Context, holdingCode string, filters map[string]interface{}) (T, error) {
 
 	doc := new(T)
 
@@ -251,7 +251,7 @@ func (repo CrudRepository[T]) FindOneFilter(ctx context.Context, shopID string, 
 		findFilters[col] = val
 	}
 
-	findFilters["shopid"] = shopID
+	findFilters["holding_code"] = holdingCode
 	findFilters["deleted_at"] = bson.M{"$exists": false}
 
 	err := repo.pst.FindOne(ctx, new(T), findFilters, doc)
@@ -263,7 +263,7 @@ func (repo CrudRepository[T]) FindOneFilter(ctx context.Context, shopID string, 
 	return *doc, nil
 }
 
-func (repo CrudRepository[T]) FindFilter(ctx context.Context, shopID string, filters map[string]interface{}) ([]T, error) {
+func (repo CrudRepository[T]) FindFilter(ctx context.Context, holdingCode string, filters map[string]interface{}) ([]T, error) {
 
 	doc := new([]T)
 
@@ -273,7 +273,7 @@ func (repo CrudRepository[T]) FindFilter(ctx context.Context, shopID string, fil
 		findFilters[col] = val
 	}
 
-	findFilters["shopid"] = shopID
+	findFilters["holding_code"] = holdingCode
 	findFilters["deleted_at"] = bson.M{"$exists": false}
 
 	err := repo.pst.Find(ctx, new(T), findFilters, doc)

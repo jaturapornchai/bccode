@@ -7,10 +7,10 @@ import (
 )
 
 type IDebtorPaymentTransactionPGRepository interface {
-	Get(shopID string, docNo string) (*models.DebtorPaymentTransactionPG, error)
+	Get(holdingCode string, docNo string) (*models.DebtorPaymentTransactionPG, error)
 	Create(doc models.DebtorPaymentTransactionPG) error
-	Update(shopID string, docNo string, doc models.DebtorPaymentTransactionPG) error
-	Delete(shopID string, docNo string, doc models.DebtorPaymentTransactionPG) error
+	Update(holdingCode string, docNo string, doc models.DebtorPaymentTransactionPG) error
+	Delete(holdingCode string, docNo string, doc models.DebtorPaymentTransactionPG) error
 }
 
 type DebtorPaymentTransactionPGRepository struct {

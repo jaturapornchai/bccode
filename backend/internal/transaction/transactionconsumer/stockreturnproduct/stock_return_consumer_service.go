@@ -6,8 +6,8 @@ import (
 )
 
 type IStockReturnProductConsumerService interface {
-	Upsert(shopID string, docNo string, doc models.StockReturnProductTransactionPG) error
-	Delete(shopID string, docNo string) error
+	Upsert(holdingCode string, docNo string, doc models.StockReturnProductTransactionPG) error
+	Delete(holdingCode string, docNo string) error
 }
 
 type StockReturnProductConsumerService struct {
@@ -20,8 +20,8 @@ func NewStockReturnProductConsumerService(repo IStockReturnTransactionPGReposito
 	}
 }
 
-func (s *StockReturnProductConsumerService) Upsert(shopID string, docNo string, doc models.StockReturnProductTransactionPG) error {
-	findDoc, err := s.repo.Get(shopID, docNo)
+func (s *StockReturnProductConsumerService) Upsert(holdingCode string, docNo string, doc models.StockReturnProductTransactionPG) error {
+	findDoc, err := s.repo.Get(holdingCode, docNo)
 	if err != nil {
 		err = s.repo.Create(doc)
 		if err != nil {
@@ -32,7 +32,7 @@ func (s *StockReturnProductConsumerService) Upsert(shopID string, docNo string, 
 		isEqual := findDoc.CompareTo(&doc)
 
 		if !isEqual {
-			err = s.repo.Update(shopID, docNo, doc)
+			err = s.repo.Update(holdingCode, docNo, doc)
 			if err != nil {
 				return err
 			}
@@ -42,11 +42,11 @@ func (s *StockReturnProductConsumerService) Upsert(shopID string, docNo string, 
 	return nil
 }
 
-func (s *StockReturnProductConsumerService) Delete(shopID string, docNo string) error {
-	err := s.repo.DeleteData(shopID, docNo, models.StockReturnProductTransactionPG{
+func (s *StockReturnProductConsumerService) Delete(holdingCode string, docNo string) error {
+	err := s.repo.DeleteData(holdingCode, docNo, models.StockReturnProductTransactionPG{
 		TransactionPG: models.TransactionPG{
-			ShopIdentity: pkgModels.ShopIdentity{
-				ShopID: shopID,
+			HoldingCodeentity: pkgModels.HoldingCodeentity{
+				HoldingCode: holdingCode,
 			},
 			DocNo: docNo,
 		},

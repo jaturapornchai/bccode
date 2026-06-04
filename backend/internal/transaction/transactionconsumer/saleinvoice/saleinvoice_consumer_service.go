@@ -7,8 +7,8 @@ import (
 )
 
 type ISaleInvoiceTransactionConsumerService interface {
-	Upsert(shopID string, docNo string, doc models.SaleInvoiceTransactionPG) error
-	Delete(shopID string, docNo string) error
+	Upsert(holdingCode string, docNo string, doc models.SaleInvoiceTransactionPG) error
+	Delete(holdingCode string, docNo string) error
 }
 
 type SaleInvoiceTransactionConsumerService struct {
@@ -21,8 +21,8 @@ func NewSaleInvoiceTransactionConsumerService(repo ISaleInvoiceTransactionPGRepo
 	}
 }
 
-func (s *SaleInvoiceTransactionConsumerService) Upsert(shopID string, docNo string, doc models.SaleInvoiceTransactionPG) error {
-	foundDocument, err := s.repo.Get(shopID, docNo)
+func (s *SaleInvoiceTransactionConsumerService) Upsert(holdingCode string, docNo string, doc models.SaleInvoiceTransactionPG) error {
+	foundDocument, err := s.repo.Get(holdingCode, docNo)
 
 	if err != nil && err.Error() != "record not found" {
 		return err
@@ -38,7 +38,7 @@ func (s *SaleInvoiceTransactionConsumerService) Upsert(shopID string, docNo stri
 		isEqual := foundDocument.CompareTo(&doc)
 
 		if !isEqual {
-			err = s.repo.Update(shopID, docNo, doc)
+			err = s.repo.Update(holdingCode, docNo, doc)
 			if err != nil {
 				return err
 			}
@@ -50,11 +50,11 @@ func (s *SaleInvoiceTransactionConsumerService) Upsert(shopID string, docNo stri
 	return nil
 }
 
-func (s *SaleInvoiceTransactionConsumerService) Delete(shopID string, docNo string) error {
-	err := s.repo.DeleteData(shopID, docNo, models.SaleInvoiceTransactionPG{
+func (s *SaleInvoiceTransactionConsumerService) Delete(holdingCode string, docNo string) error {
+	err := s.repo.DeleteData(holdingCode, docNo, models.SaleInvoiceTransactionPG{
 		TransactionPG: models.TransactionPG{
-			ShopIdentity: pkgModels.ShopIdentity{
-				ShopID: shopID,
+			HoldingCodeentity: pkgModels.HoldingCodeentity{
+				HoldingCode: holdingCode,
 			},
 			DocNo: docNo,
 		},

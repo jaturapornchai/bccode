@@ -7,10 +7,10 @@ import (
 )
 
 type IPaymentRepository interface {
-	Get(shopID string, docNo string) (*models.TransactionPayment, error)
+	Get(holdingCode string, docNo string) (*models.TransactionPayment, error)
 	Create(doc models.TransactionPayment) error
-	Update(shopID string, docNo string, doc models.TransactionPayment) error
-	Delete(shopID string, docNo string, doc models.TransactionPayment) error
+	Update(holdingCode string, docNo string, doc models.TransactionPayment) error
+	Delete(holdingCode string, docNo string, doc models.TransactionPayment) error
 }
 
 type PaymentRepository struct {
@@ -36,11 +36,11 @@ func (repo PaymentRepository) Create(doc models.TransactionPayment) error {
 	return nil
 }
 
-func (repo PaymentRepository) Update(shopID string, docNo string, doc models.TransactionPayment) error {
+func (repo PaymentRepository) Update(holdingCode string, docNo string, doc models.TransactionPayment) error {
 
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"shopid": shopID,
-		"docno":  docNo,
+		"holding_code": holdingCode,
+		"docno":        docNo,
 	})
 
 	if err != nil {

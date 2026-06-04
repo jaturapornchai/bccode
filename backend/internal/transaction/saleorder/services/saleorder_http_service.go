@@ -22,15 +22,15 @@ import (
 )
 
 type ISaleOrderHttpService interface {
-	CreateSaleOrder(shopID string, authUsername string, doc models.SaleOrder) (string, string, error)
-	UpdateSaleOrder(shopID string, guid string, authUsername string, doc models.SaleOrder) error
-	DeleteSaleOrder(shopID string, guid string, authUsername string) error
-	DeleteSaleOrderByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoSaleOrder(shopID string, guid string) (models.SaleOrderInfo, error)
-	InfoSaleOrderByCode(shopID string, code string) (models.SaleOrderInfo, error)
-	SearchSaleOrder(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.SaleOrderInfo, mongopagination.PaginationData, error)
-	SearchSaleOrderStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.SaleOrderInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.SaleOrder) (common.BulkImport, error)
+	CreateSaleOrder(holdingCode string, authUsername string, doc models.SaleOrder) (string, string, error)
+	UpdateSaleOrder(holdingCode string, guid string, authUsername string, doc models.SaleOrder) error
+	DeleteSaleOrder(holdingCode string, guid string, authUsername string) error
+	DeleteSaleOrderByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoSaleOrder(holdingCode string, guid string) (models.SaleOrderInfo, error)
+	InfoSaleOrderByCode(holdingCode string, code string) (models.SaleOrderInfo, error)
+	SearchSaleOrder(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.SaleOrderInfo, mongopagination.PaginationData, error)
+	SearchSaleOrderStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.SaleOrderInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.SaleOrder) (common.BulkImport, error)
 
 	GetModuleName() string
 }
@@ -81,11 +81,11 @@ func (svc SaleOrderHttpService) getDocNoPrefix(docDate time.Time) string {
 	return fmt.Sprintf("%s%s", MODULE_NAME, docDateStr)
 }
 
-func (svc SaleOrderHttpService) generateNewDocNo(ctx context.Context, shopID, prefixDocNo string, docNumber int) (string, int, error) {
-	prevoiusDocNumber, err := svc.repoCache.Get(shopID, prefixDocNo)
+func (svc SaleOrderHttpService) generateNewDocNo(ctx context.Context, holdingCode, prefixDocNo string, docNumber int) (string, int, error) {
+	prevoiusDocNumber, err := svc.repoCache.Get(holdingCode, prefixDocNo)
 
 	if prevoiusDocNumber == 0 || err != nil {
-		lastDoc, err := svc.repo.FindLastDocNo(ctx, shopID, prefixDocNo)
+		lastDoc, err := svc.repo.FindLastDocNo(ctx, holdingCode, prefixDocNo)
 
 		if err != nil {
 			return "", 0, err
@@ -105,7 +105,7 @@ func (svc SaleOrderHttpService) generateNewDocNo(ctx context.Context, shopID, pr
 	newDocNumber := prevoiusDocNumber + 1
 	newDocNo := fmt.Sprintf("%s%05d", prefixDocNo, newDocNumber)
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", newDocNo)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", newDocNo)
 
 	if err != nil {
 		return "", 0, err
@@ -118,7 +118,7 @@ func (svc SaleOrderHttpService) generateNewDocNo(ctx context.Context, shopID, pr
 	return newDocNo, newDocNumber, nil
 }
 
-func (svc SaleOrderHttpService) CreateSaleOrder(shopID string, authUsername string, doc models.SaleOrder) (string, string, error) {
+func (svc SaleOrderHttpService) CreateSaleOrder(holdingCode string, authUsername string, doc models.SaleOrder) (string, string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -126,7 +126,7 @@ func (svc SaleOrderHttpService) CreateSaleOrder(shopID string, authUsername stri
 	docDate := doc.DocDatetime
 	prefixDocNo := svc.getDocNoPrefix(docDate)
 
-	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, shopID, prefixDocNo, 1)
+	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, holdingCode, prefixDocNo, 1)
 
 	if err != nil {
 		return "", "", err
@@ -135,7 +135,7 @@ func (svc SaleOrderHttpService) CreateSaleOrder(shopID string, authUsername stri
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.SaleOrderDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.SaleOrder = doc
 
@@ -149,23 +149,23 @@ func (svc SaleOrderHttpService) CreateSaleOrder(shopID string, authUsername stri
 		return "", "", err
 	}
 
-	go svc.repoCache.Save(shopID, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
+	go svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
 
 	go func() {
 		svc.repoMq.Create(docData)
-		svc.repoCache.Save(shopID, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
-		svc.saveMasterSync(shopID)
+		svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return newGuidFixed, newDocNo, nil
 }
 
-func (svc SaleOrderHttpService) UpdateSaleOrder(shopID string, guid string, authUsername string, doc models.SaleOrder) error {
+func (svc SaleOrderHttpService) UpdateSaleOrder(holdingCode string, guid string, authUsername string, doc models.SaleOrder) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -182,7 +182,7 @@ func (svc SaleOrderHttpService) UpdateSaleOrder(shopID string, guid string, auth
 	docData.UpdatedBy = authUsername
 	docData.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, docData)
+	err = svc.repo.Update(ctx, holdingCode, guid, docData)
 
 	if err != nil {
 		return err
@@ -190,18 +190,18 @@ func (svc SaleOrderHttpService) UpdateSaleOrder(shopID string, guid string, auth
 
 	func() {
 		svc.repoMq.Update(docData)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc SaleOrderHttpService) DeleteSaleOrder(shopID string, guid string, authUsername string) error {
+func (svc SaleOrderHttpService) DeleteSaleOrder(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -211,20 +211,20 @@ func (svc SaleOrderHttpService) DeleteSaleOrder(shopID string, guid string, auth
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
 	func() {
 		svc.repoMq.Delete(findDoc)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc SaleOrderHttpService) DeleteSaleOrderByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc SaleOrderHttpService) DeleteSaleOrderByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -233,26 +233,26 @@ func (svc SaleOrderHttpService) DeleteSaleOrderByGUIDs(shopID string, authUserna
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
 
 	func() {
-		docs, _ := svc.repo.FindByGuids(ctx, shopID, GUIDs)
+		docs, _ := svc.repo.FindByGuids(ctx, holdingCode, GUIDs)
 		svc.repoMq.DeleteInBatch(docs)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc SaleOrderHttpService) InfoSaleOrder(shopID string, guid string) (models.SaleOrderInfo, error) {
+func (svc SaleOrderHttpService) InfoSaleOrder(holdingCode string, guid string) (models.SaleOrderInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.SaleOrderInfo{}, err
@@ -265,12 +265,12 @@ func (svc SaleOrderHttpService) InfoSaleOrder(shopID string, guid string) (model
 	return findDoc.SaleOrderInfo, nil
 }
 
-func (svc SaleOrderHttpService) InfoSaleOrderByCode(shopID string, code string) (models.SaleOrderInfo, error) {
+func (svc SaleOrderHttpService) InfoSaleOrderByCode(holdingCode string, code string) (models.SaleOrderInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", code)
 
 	if err != nil {
 		return models.SaleOrderInfo{}, err
@@ -283,7 +283,7 @@ func (svc SaleOrderHttpService) InfoSaleOrderByCode(shopID string, code string) 
 	return findDoc.SaleOrderInfo, nil
 }
 
-func (svc SaleOrderHttpService) SearchSaleOrder(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.SaleOrderInfo, mongopagination.PaginationData, error) {
+func (svc SaleOrderHttpService) SearchSaleOrder(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.SaleOrderInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -292,7 +292,7 @@ func (svc SaleOrderHttpService) SearchSaleOrder(shopID string, filters map[strin
 		"docno",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.SaleOrderInfo{}, pagination, err
@@ -301,7 +301,7 @@ func (svc SaleOrderHttpService) SearchSaleOrder(shopID string, filters map[strin
 	return docList, pagination, nil
 }
 
-func (svc SaleOrderHttpService) SearchSaleOrderStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.SaleOrderInfo, int, error) {
+func (svc SaleOrderHttpService) SearchSaleOrderStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.SaleOrderInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -312,7 +312,7 @@ func (svc SaleOrderHttpService) SearchSaleOrderStep(shopID string, langCode stri
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.SaleOrderInfo{}, 0, err
@@ -321,7 +321,7 @@ func (svc SaleOrderHttpService) SearchSaleOrderStep(shopID string, langCode stri
 	return docList, total, nil
 }
 
-func (svc SaleOrderHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.SaleOrder) (common.BulkImport, error) {
+func (svc SaleOrderHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.SaleOrder) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -333,7 +333,7 @@ func (svc SaleOrderHttpService) SaveInBatch(shopID string, authUsername string, 
 		itemCodeGuidList = append(itemCodeGuidList, doc.DocNo)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "docno", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "docno", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -345,18 +345,18 @@ func (svc SaleOrderHttpService) SaveInBatch(shopID string, authUsername string, 
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.SaleOrder, models.SaleOrderDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.SaleOrder) models.SaleOrderDoc {
+		func(holdingCode string, authUsername string, doc models.SaleOrder) models.SaleOrderDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.SaleOrderDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.SaleOrder = doc
 
 			currentTime := time.Now()
@@ -367,23 +367,23 @@ func (svc SaleOrderHttpService) SaveInBatch(shopID string, authUsername string, 
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.SaleOrder, models.SaleOrderDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.SaleOrderDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", guid)
+		func(holdingCode string, guid string) (models.SaleOrderDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", guid)
 		},
 		func(doc models.SaleOrderDoc) bool {
 			return doc.DocNo != ""
 		},
-		func(shopID string, authUsername string, data models.SaleOrder, doc models.SaleOrderDoc) error {
+		func(holdingCode string, authUsername string, data models.SaleOrder, doc models.SaleOrderDoc) error {
 
 			doc.SaleOrder = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -422,7 +422,7 @@ func (svc SaleOrderHttpService) SaveInBatch(shopID string, authUsername string, 
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -436,9 +436,9 @@ func (svc SaleOrderHttpService) getDocIDKey(doc models.SaleOrder) string {
 	return doc.DocNo
 }
 
-func (svc SaleOrderHttpService) saveMasterSync(shopID string) {
+func (svc SaleOrderHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

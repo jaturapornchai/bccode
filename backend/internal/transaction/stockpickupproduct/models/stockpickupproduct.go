@@ -24,12 +24,12 @@ func (StockPickupProductInfo) CollectionName() string {
 }
 
 type StockPickupProductData struct {
-	models.ShopIdentity    `bson:"inline"`
-	StockPickupProductInfo `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	StockPickupProductInfo   `bson:"inline"`
 }
 
 type StockPickupProductDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                     primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	StockPickupProductData `bson:"inline"`
 	models.ActivityDoc     `bson:"inline"`
 }

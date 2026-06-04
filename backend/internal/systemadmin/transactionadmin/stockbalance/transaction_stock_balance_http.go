@@ -50,7 +50,7 @@ func (s *StockBalanceTransactionAdminHttp) ReSyncStockBalanceProductTransaction(
 		return err
 	}
 
-	err = s.svc.ReSyncStockBalanceProductDoc(req.ShopID)
+	err = s.svc.ReSyncStockBalanceProductDoc(req.HoldingCode)
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, common.ApiResponse{
 			Success: false,
@@ -80,7 +80,7 @@ func (s *StockBalanceTransactionAdminHttp) ReSyncStockBalanceProductDeleteTransa
 		return err
 	}
 
-	err = s.svc.ReSyncStockBalanceProductDeleteDoc(req.ShopID)
+	err = s.svc.ReSyncStockBalanceProductDeleteDoc(req.HoldingCode)
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, common.ApiResponse{
 			Success: false,

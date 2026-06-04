@@ -64,7 +64,7 @@ func (h CategoryProductHttp) RegisterHttp() {
 // @Router /aicloud/category [post]
 func (h CategoryProductHttp) CreateCategoryProduct(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 	docReq := &models.CategoryProduct{}
 	if err := json.Unmarshal([]byte(input), docReq); err != nil {
@@ -77,7 +77,7 @@ func (h CategoryProductHttp) CreateCategoryProduct(ctx microservice.IContext) er
 		return err
 	}
 
-	idx, err := h.svc.CreateCategoryProduct(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateCategoryProduct(holdingCode, authUsername, *docReq)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -103,7 +103,7 @@ func (h CategoryProductHttp) CreateCategoryProduct(ctx microservice.IContext) er
 func (h CategoryProductHttp) UpdateCategoryProduct(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -118,7 +118,7 @@ func (h CategoryProductHttp) UpdateCategoryProduct(ctx microservice.IContext) er
 		return err
 	}
 
-	err := h.svc.UpdateCategoryProduct(shopID, id, authUsername, *docReq)
+	err := h.svc.UpdateCategoryProduct(holdingCode, id, authUsername, *docReq)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -142,12 +142,12 @@ func (h CategoryProductHttp) UpdateCategoryProduct(ctx microservice.IContext) er
 // @Router /aicloud/category/{id} [delete]
 func (h CategoryProductHttp) DeleteCategoryProduct(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteCategoryProduct(shopID, id, authUsername)
+	err := h.svc.DeleteCategoryProduct(holdingCode, id, authUsername)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -171,7 +171,7 @@ func (h CategoryProductHttp) DeleteCategoryProduct(ctx microservice.IContext) er
 // @Router /aicloud/category [delete]
 func (h CategoryProductHttp) DeleteCategoryProductByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -181,7 +181,7 @@ func (h CategoryProductHttp) DeleteCategoryProductByGUIDs(ctx microservice.ICont
 		return err
 	}
 
-	err := h.svc.DeleteCategoryProductByGUIDs(shopID, authUsername, docReq)
+	err := h.svc.DeleteCategoryProductByGUIDs(holdingCode, authUsername, docReq)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -204,12 +204,12 @@ func (h CategoryProductHttp) DeleteCategoryProductByGUIDs(ctx microservice.ICont
 // @Router /aicloud/category/{id} [get]
 func (h CategoryProductHttp) InfoCategoryProduct(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get CategoryProduct %v", id)
-	doc, err := h.svc.InfoCategoryProduct(shopID, id)
+	doc, err := h.svc.InfoCategoryProduct(holdingCode, id)
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -234,10 +234,10 @@ func (h CategoryProductHttp) InfoCategoryProduct(ctx microservice.IContext) erro
 // @Router /aicloud/category/code/{code} [get]
 func (h CategoryProductHttp) InfoCategoryProductByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
-	doc, err := h.svc.InfoCategoryProductByCode(shopID, code)
+	doc, err := h.svc.InfoCategoryProductByCode(holdingCode, code)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -263,10 +263,10 @@ func (h CategoryProductHttp) InfoCategoryProductByCode(ctx microservice.IContext
 // @Router /aicloud/category [get]
 func (h CategoryProductHttp) SearchCategoryProductPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
-	docList, pagination, err := h.svc.SearchCategoryProduct(shopID, map[string]interface{}{}, pageable)
+	docList, pagination, err := h.svc.SearchCategoryProduct(holdingCode, map[string]interface{}{}, pageable)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -294,11 +294,11 @@ func (h CategoryProductHttp) SearchCategoryProductPage(ctx microservice.IContext
 // @Router /aicloud/category/list [get]
 func (h CategoryProductHttp) SearchCategoryProductStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 	lang := ctx.QueryParam("lang")
-	docList, total, err := h.svc.SearchCategoryProductStep(shopID, lang, pageableStep)
+	docList, total, err := h.svc.SearchCategoryProductStep(holdingCode, lang, pageableStep)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -324,7 +324,7 @@ func (h CategoryProductHttp) SearchCategoryProductStep(ctx microservice.IContext
 func (h CategoryProductHttp) SaveBulk(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 	dataReq := []models.CategoryProduct{}
@@ -333,7 +333,7 @@ func (h CategoryProductHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 	if err != nil {
 		ctx.ResponseError(400, err.Error())
 		return err

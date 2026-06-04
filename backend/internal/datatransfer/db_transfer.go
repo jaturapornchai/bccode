@@ -21,7 +21,7 @@ func NewDBTransfer(sourceDatabase microservice.IPersisterMongo, targetDatabase m
 	}
 }
 
-func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
+func (db *DBTransfer) BeginTransfer(holdingCode string, targetHoldingCode string) {
 
 	connection := NewDataTransferConnection(db.sourceDatabase, db.targetDatabase)
 
@@ -37,23 +37,23 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 
 	// shop
 
-	if targetShopID == "" {
+	if targetHoldingCode == "" {
 		fmt.Println("Start transfer shop")
 		shopDataTransfer := NewShopDataTransfer(connection)
-		err = shopDataTransfer.StartTransfer(todo, shopID, targetShopID)
+		err = shopDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 		if err != nil {
 			panic(err)
 		}
 	} else {
 		// find shop
 		shopSourceRepository := shop.NewShopRepository(connection.GetTargetConnection())
-		findShop, err := shopSourceRepository.FindByGuid(todo, targetShopID)
+		findShop, err := shopSourceRepository.FindByGuid(todo, targetHoldingCode)
 		if err != nil {
 			panic(err)
 		}
 
 		if findShop.GuidFixed == "" {
-			fmt.Println("Shop", targetShopID, "not found")
+			fmt.Println("Shop", targetHoldingCode, "not found")
 			return
 		}
 	}
@@ -61,7 +61,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// shopuser
 	fmt.Println("Start transfer shop user")
 	shopUserDataTransfer := NewShopUserDataTransfer(connection)
-	err = shopUserDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = shopUserDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -69,7 +69,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// shop employee
 	fmt.Println("Start transfer shop employee")
 	shopEmployeeDataTransfer := NewShopEmployeeDataTransfer(connection)
-	err = shopEmployeeDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = shopEmployeeDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -77,7 +77,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// productbarcode
 	fmt.Println("Start transfer Product Barcode")
 	productBarcodeDataTransfer := NewProductBarcodeDataTransfer(connection)
-	err = productBarcodeDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = productBarcodeDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -85,7 +85,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// category
 	fmt.Println("Start transfer Product Category")
 	productCategoryTransfer := NewProductCategoryDataTransfer(connection)
-	err = productCategoryTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = productCategoryTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -93,7 +93,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// kitchen
 	fmt.Println("Start transfer Restaurant Kitchen")
 	kitchenDataTransfer := NewRestaurantKitchenDataTransfer(connection)
-	err = kitchenDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = kitchenDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -101,7 +101,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// restaurant setting
 	fmt.Println("Start transfer Restaurant Setting")
 	restaurantSettingDataTransfer := NewRestaurantSettingDataTransfer(connection)
-	err = restaurantSettingDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = restaurantSettingDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -109,7 +109,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// bank master
 	fmt.Println("Start transfer Bank Master")
 	bankMasterDataTransfer := NewBankMasterDataTransfer(connection)
-	err = bankMasterDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = bankMasterDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -117,7 +117,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// book bank
 	fmt.Println("Start transfer Book Bank")
 	bookbankDataTransfer := NewBookBankDataTransfer(connection)
-	err = bookbankDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = bookbankDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -125,7 +125,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// qr payment
 	fmt.Println("Start transfer QR Payment")
 	qrPaymentDataTransfer := NewQRPaymentDataTransfer(connection)
-	err = qrPaymentDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = qrPaymentDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -133,7 +133,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// order device
 	fmt.Println("Start transfer Order Device")
 	orderDeviceDataTransfer := NewOrderDeviceDataTransfer(connection)
-	err = orderDeviceDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = orderDeviceDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -141,7 +141,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// order device setting
 	fmt.Println("Start transfer Order Device Setting")
 	orderDeviceSettingDataTransfer := NewOrderDeviceSettingDataTransfer(connection)
-	err = orderDeviceSettingDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = orderDeviceSettingDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -149,7 +149,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// organization branch
 	fmt.Println("Start transfer Organization Branch")
 	organizationBranchDataTransfer := NewOrganizationBranchDataTransfer(connection)
-	err = organizationBranchDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = organizationBranchDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -157,7 +157,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// organization business type
 	fmt.Println("Start transfer Organization Business Type")
 	organizationBusinessTypeDataTransfer := NewOrganizationBusinessTypeDataTransfer(connection)
-	err = organizationBusinessTypeDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = organizationBusinessTypeDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -165,7 +165,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// organization department
 	fmt.Println("Start transfer Organization Department")
 	organizationDepartmentDataTransfer := NewOrganizationDepartmentDataTransfer(connection)
-	err = organizationDepartmentDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = organizationDepartmentDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -173,7 +173,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// pos media
 	fmt.Println("Start transfer Pos Media")
 	posMediaDataTransfer := NewPosMediaDataTransfer(connection)
-	err = posMediaDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = posMediaDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -181,7 +181,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// pos setting
 	fmt.Println("Start transfer Pos Setting")
 	posSettingDataTransfer := NewPosSettingDataTransfer(connection)
-	err = posSettingDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = posSettingDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -189,7 +189,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// product barcode bom
 	fmt.Println("Start transfer Product Barcode BOM")
 	productbarcodeBOMDataTransfer := NewProductbarcodeBOMDataTransfer(connection)
-	err = productbarcodeBOMDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = productbarcodeBOMDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -197,7 +197,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// product group
 	fmt.Println("Start transfer Product Group")
 	productGroupDataTransfer := NewProductGroupDataTransfer(connection)
-	err = productGroupDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = productGroupDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -205,7 +205,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// product unit
 	fmt.Println("Start transfer Product Unit")
 	productUnitDataTransfer := NewProductUnitDataTransfer(connection)
-	err = productUnitDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = productUnitDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -213,7 +213,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// order type
 	fmt.Println("Start transfer Order Type")
 	orderTypeDataTransfer := NewOrderTypeDataTransfer(connection)
-	err = orderTypeDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = orderTypeDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -221,7 +221,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// restaurant table
 	fmt.Println("Start transfer Restaurant Table")
 	restaurantTableDataTransfer := NewRestaurantTableDataTransfer(connection)
-	err = restaurantTableDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = restaurantTableDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -229,7 +229,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// restaurant zone
 	fmt.Println("Start transfer Restaurant Zone")
 	restaurantZoneDataTransfer := NewRestaurantZoneDataTransfer(connection)
-	err = restaurantZoneDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = restaurantZoneDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -237,7 +237,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// restaurant staff
 	fmt.Println("Start transfer Restaurant Staff")
 	restaurantStaffDataTransfer := NewRestaurantStaffDataTransfer(connection)
-	err = restaurantStaffDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = restaurantStaffDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -245,7 +245,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// sale channel
 	fmt.Println("Start transfer Sale Channel")
 	saleChannelDataTransfer := NewSaleChannelDataTransfer(connection)
-	err = saleChannelDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = saleChannelDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -253,7 +253,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// transport channel
 	fmt.Println("Start transfer Transport Channel")
 	transportChannelDataTransfer := NewSaleTransportDataTransfer(connection)
-	err = transportChannelDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = transportChannelDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -261,7 +261,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// slip image
 	fmt.Println("Start transfer Slip Image")
 	slipImageDataTransfer := NewSlipImageDataTransfer(connection)
-	err = slipImageDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = slipImageDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -269,7 +269,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// debtor
 	fmt.Println("Start transfer Debtor")
 	debtorDataTransfer := NewDebtorDataTransfer(connection)
-	err = debtorDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = debtorDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -277,7 +277,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// debor group
 	fmt.Println("Start transfer Debtor Group")
 	debtorGroupDataTransfer := NewDebtorGroupDataTransfer(connection)
-	err = debtorGroupDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = debtorGroupDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -285,7 +285,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// creditor
 	fmt.Println("Start transfer Creditor")
 	creditorDataTransfer := NewCreditorDataTransfer(connection)
-	err = creditorDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = creditorDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -293,7 +293,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// creditor group
 	fmt.Println("Start transfer Creditor Group")
 	creditorGroupDataTransfer := NewCreditorGroupDataTransfer(connection)
-	err = creditorGroupDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = creditorGroupDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -301,7 +301,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// warehouse
 	fmt.Println("Start transfer Warehouse")
 	warehouseDataTransfer := NewProductWarehouseDataTransfer(connection)
-	err = warehouseDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = warehouseDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -309,7 +309,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// transaction paid
 	fmt.Println("Start transfer Transaction Paid")
 	transactionPaidDataTransfer := NewTransactionPaidDataTransfer(connection)
-	err = transactionPaidDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = transactionPaidDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -317,7 +317,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// transaction pay
 	fmt.Println("Start transfer Transaction Pay")
 	transactionPayDataTransfer := NewTransactionPayDataTransfer(connection)
-	err = transactionPayDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = transactionPayDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -325,7 +325,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// transaction purchase
 	fmt.Println("Start transfer Transaction Purchase")
 	transactionPurchaseDataTransfer := NewTransactionPurchaseDataTransfer(connection)
-	err = transactionPurchaseDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = transactionPurchaseDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -333,7 +333,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// transaction purchase return
 	fmt.Println("Start transfer Transaction Purchase Return")
 	purchaseReturnDataTransfer := NewPurchaseReturnDataTransfer(connection)
-	err = purchaseReturnDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = purchaseReturnDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -341,7 +341,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// transaction sale
 	fmt.Println("Start transfer Transaction Sale")
 	transactionSaleDataTransfer := NewSaleInvoiceDataTransfer(connection)
-	err = transactionSaleDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = transactionSaleDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -349,14 +349,14 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// transaction sale invoice bom price
 	fmt.Println("Start transfer Transaction Sale Invoice Bom Price")
 	transactionSaleInvoiceBomPriceDataTransfer := NewSaleInvoiceBomPricesDataTransfer(connection)
-	err = transactionSaleInvoiceBomPriceDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = transactionSaleInvoiceBomPriceDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
 
 	// sale invoice return
 	saleInvoiceReturnDataTransfer := NewSaleInvoiceReturnDataTransfer(connection)
-	err = saleInvoiceReturnDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = saleInvoiceReturnDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -364,7 +364,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// transaction stock balance
 	fmt.Println("Start transfer Transaction Stock Balance")
 	transactionStockBalanceDataTransfer := NewStockBalanceDataTransfer(connection)
-	err = transactionStockBalanceDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = transactionStockBalanceDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -372,7 +372,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// transaction stock balance detail
 	fmt.Println("Start transfer Transaction Stock Balance Detail")
 	transactionStockBalanceDetailDataTransfer := NewStockBalanceDetailDataTransfer(connection)
-	err = transactionStockBalanceDetailDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = transactionStockBalanceDetailDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -380,7 +380,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// transaction stock adjustment
 	fmt.Println("Start transfer Transaction Stock Adjustment")
 	transactionStockAdjustmentDataTransfer := NewStockAdjustmentDataTransfer(connection)
-	err = transactionStockAdjustmentDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = transactionStockAdjustmentDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -388,7 +388,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// transaction stock pickup
 	fmt.Println("Start transfer Transaction Stock Pickup")
 	transactionStockPickupDataTransfer := NewStockPickupProductDataTransfer(connection)
-	err = transactionStockPickupDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = transactionStockPickupDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -396,7 +396,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// transaction stock receive
 	fmt.Println("Start transfer Transaction Stock Receive")
 	transactionStockReceiveDataTransfer := NewStockReceiveProductDataTransfer(connection)
-	err = transactionStockReceiveDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = transactionStockReceiveDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -404,7 +404,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// transaction stock return
 	fmt.Println("Start transfer Transaction Stock Return")
 	transactionStockReturnDataTransfer := NewStockReturnProductDataTransfer(connection)
-	err = transactionStockReturnDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = transactionStockReturnDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -412,7 +412,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// transaction stock transfer
 	fmt.Println("Start transfer Transaction Stock Transfer")
 	transactionStockTransferDataTransfer := NewStockTransferDataTransfer(connection)
-	err = transactionStockTransferDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = transactionStockTransferDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -420,7 +420,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// transaction purchase order
 	fmt.Println("Start transfer Transaction Purchase Order")
 	transactionPurchaseOrderDataTransfer := NewPurchaseOrderDataTransfer(connection)
-	err = transactionPurchaseOrderDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = transactionPurchaseOrderDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}
@@ -428,7 +428,7 @@ func (db *DBTransfer) BeginTransfer(shopID string, targetShopID string) {
 	// transaction purchase receive
 	fmt.Println("Start transfer Transaction Purchase Receive")
 	transactionPurchaseReceiveDataTransfer := NewPurchaseReceiveDataTransfer(connection)
-	err = transactionPurchaseReceiveDataTransfer.StartTransfer(todo, shopID, targetShopID)
+	err = transactionPurchaseReceiveDataTransfer.StartTransfer(todo, holdingCode, targetHoldingCode)
 	if err != nil {
 		panic(err)
 	}

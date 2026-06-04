@@ -67,7 +67,7 @@ func (h PaidAdvanceHttp) RegisterHttp() {
 // @Router /transaction/paidadvance [post]
 func (h PaidAdvanceHttp) CreatePaidAdvance(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.PaidAdvance{}
@@ -83,7 +83,7 @@ func (h PaidAdvanceHttp) CreatePaidAdvance(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, docNo, err := h.svc.CreatePaidAdvance(shopID, authUsername, *docReq)
+	idx, docNo, err := h.svc.CreatePaidAdvance(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -111,7 +111,7 @@ func (h PaidAdvanceHttp) CreatePaidAdvance(ctx microservice.IContext) error {
 func (h PaidAdvanceHttp) UpdatePaidAdvance(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -129,7 +129,7 @@ func (h PaidAdvanceHttp) UpdatePaidAdvance(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdatePaidAdvance(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdatePaidAdvance(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -155,12 +155,12 @@ func (h PaidAdvanceHttp) UpdatePaidAdvance(ctx microservice.IContext) error {
 // @Router /transaction/paidadvance/{id} [delete]
 func (h PaidAdvanceHttp) DeletePaidAdvance(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeletePaidAdvance(shopID, id, authUsername)
+	err := h.svc.DeletePaidAdvance(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -186,7 +186,7 @@ func (h PaidAdvanceHttp) DeletePaidAdvance(ctx microservice.IContext) error {
 // @Router /transaction/paidadvance [delete]
 func (h PaidAdvanceHttp) DeletePaidAdvanceByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -199,7 +199,7 @@ func (h PaidAdvanceHttp) DeletePaidAdvanceByGUIDs(ctx microservice.IContext) err
 		return err
 	}
 
-	err = h.svc.DeletePaidAdvanceByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeletePaidAdvanceByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -224,12 +224,12 @@ func (h PaidAdvanceHttp) DeletePaidAdvanceByGUIDs(ctx microservice.IContext) err
 // @Router /transaction/paidadvance/{id} [get]
 func (h PaidAdvanceHttp) InfoPaidAdvance(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get PaidAdvance %v", id)
-	doc, err := h.svc.InfoPaidAdvance(shopID, id)
+	doc, err := h.svc.InfoPaidAdvance(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -255,11 +255,11 @@ func (h PaidAdvanceHttp) InfoPaidAdvance(ctx microservice.IContext) error {
 // @Router /transaction/paidadvance/code/{code} [get]
 func (h PaidAdvanceHttp) InfoPaidAdvanceByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoPaidAdvanceByCode(shopID, code)
+	doc, err := h.svc.InfoPaidAdvanceByCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -290,7 +290,7 @@ func (h PaidAdvanceHttp) InfoPaidAdvanceByCode(ctx microservice.IContext) error 
 // @Router /transaction/paidadvance [get]
 func (h PaidAdvanceHttp) SearchPaidAdvancePage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -311,7 +311,7 @@ func (h PaidAdvanceHttp) SearchPaidAdvancePage(ctx microservice.IContext) error 
 		},
 	})
 
-	docList, pagination, err := h.svc.SearchPaidAdvance(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchPaidAdvance(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -344,7 +344,7 @@ func (h PaidAdvanceHttp) SearchPaidAdvancePage(ctx microservice.IContext) error 
 // @Router /transaction/paidadvance/list [get]
 func (h PaidAdvanceHttp) SearchPaidAdvanceStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -367,7 +367,7 @@ func (h PaidAdvanceHttp) SearchPaidAdvanceStep(ctx microservice.IContext) error 
 		},
 	})
 
-	docList, total, err := h.svc.SearchPaidAdvanceStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchPaidAdvanceStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -395,7 +395,7 @@ func (h PaidAdvanceHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -407,7 +407,7 @@ func (h PaidAdvanceHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

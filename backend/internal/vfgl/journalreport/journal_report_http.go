@@ -70,7 +70,7 @@ func (h JournalReportHttp) RegisterHttp() {
 func (r JournalReportHttp) ProcessReportTrialBalanceSheet(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	layout := "2006-01-02 -0700" //
 	accountGroup := ctx.QueryParam("accountgroup")
@@ -108,7 +108,7 @@ func (r JournalReportHttp) ProcessReportTrialBalanceSheet(ctx microservice.ICont
 	endDate = endDate.AddDate(0, 0, 1).Add(time.Second * -1)
 
 	r.ms.Logger.Debugf("Start Process TrialBalanceSheet %v:%v, includecloseaccount: %v", startDate, endDate, includeCloseAccountMode)
-	reportData, err := r.svc.ProcessTrialBalanceSheetReport(shopID, accountGroup, includeCloseAccountMode, startDate.UTC(), endDate.UTC())
+	reportData, err := r.svc.ProcessTrialBalanceSheetReport(holdingCode, accountGroup, includeCloseAccountMode, startDate.UTC(), endDate.UTC())
 	if err != nil {
 		ctx.ResponseError(500, fmt.Sprintf("Failed on Process Report : %v.", err.Error()))
 		return err
@@ -139,7 +139,7 @@ func (r JournalReportHttp) ProcessReportTrialBalanceSheet(ctx microservice.ICont
 // @Router		/gl/report/balancesheet [get]
 func (r JournalReportHttp) ProcessBalanceSheetReport(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	layout := "2006-01-02 -0700" //
 	endDateStr := ctx.QueryParam("end_date")
@@ -168,7 +168,7 @@ func (r JournalReportHttp) ProcessBalanceSheetReport(ctx microservice.IContext) 
 	endDate = endDate.AddDate(0, 0, 1).Add(time.Second * -1)
 
 	r.ms.Logger.Debugf("Start Process BalanceSheet at %v", endDate)
-	reportData, err := r.svc.ProcessBalanceSheetReport(shopID, accountGroup, includeCloseAccountMode, endDate.UTC())
+	reportData, err := r.svc.ProcessBalanceSheetReport(holdingCode, accountGroup, includeCloseAccountMode, endDate.UTC())
 	if err != nil {
 		ctx.ResponseError(500, fmt.Sprintf("Failed on Process Report : %v.", err.Error()))
 		return err
@@ -200,7 +200,7 @@ func (r JournalReportHttp) ProcessBalanceSheetReport(ctx microservice.IContext) 
 // @Router		/gl/report/profitandloss [get]
 func (r JournalReportHttp) ProcessProfitAndLossReport(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	layout := "2006-01-02 -0700" //
 	accountGroup := ctx.QueryParam("accountgroup")
@@ -238,7 +238,7 @@ func (r JournalReportHttp) ProcessProfitAndLossReport(ctx microservice.IContext)
 	endDate = endDate.AddDate(0, 0, 1).Add(time.Second * -1)
 
 	r.ms.Logger.Debugf("Start Process ProfitAndLoss %v:%v", startDate, endDate)
-	reportData, err := r.svc.ProcessProfitAndLossSheetReport(shopID, accountGroup, includeCloseAccountMode, startDate.UTC(), endDate.UTC())
+	reportData, err := r.svc.ProcessProfitAndLossSheetReport(holdingCode, accountGroup, includeCloseAccountMode, startDate.UTC(), endDate.UTC())
 	if err != nil {
 		ctx.ResponseError(500, fmt.Sprintf("Failed on Process Report : %v.", err.Error()))
 		return err
@@ -272,7 +272,7 @@ func (r JournalReportHttp) ProcessProfitAndLossReport(ctx microservice.IContext)
 func (r JournalReportHttp) ProcessReportLedgerAccount(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	layout := "2006-01-02 -0700" //
 	startDateStr := ctx.QueryParam("start_date")
@@ -329,7 +329,7 @@ func (r JournalReportHttp) ProcessReportLedgerAccount(ctx microservice.IContext)
 	}
 
 	r.ms.Logger.Debugf("Start Process Ledger Account %v:%v", startDate, endDate)
-	reportData, err := r.svc.ProcessLedgerAccount(shopID, accountGroup, creditorCode, debtorCode, consolidateAccountCode, accRanges, bookCode, startDate.UTC(), endDate.UTC())
+	reportData, err := r.svc.ProcessLedgerAccount(holdingCode, accountGroup, creditorCode, debtorCode, consolidateAccountCode, accRanges, bookCode, startDate.UTC(), endDate.UTC())
 	if err != nil {
 		ctx.ResponseError(500, fmt.Sprintf("Failed on Process Report : %v.", err.Error()))
 		return err
@@ -351,7 +351,7 @@ func (r JournalReportHttp) ProcessReportLedgerAccount(ctx microservice.IContext)
 // @Param        startdate query string true "จากวันที่ (YYYY-MM-DD)"
 // @Param        enddate query string true "ถึงวันที่ (YYYY-MM-DD)"
 // @Param        timezone query string false "TimeZone (default: +00)"
-// @Param        shopids query string false "Shop IDs comma-separated"
+// @Param        holding_codes query string false "Holding Codes comma-separated"
 // @Accept       json
 // @Success      200 {object} models.MultiShopDashboardResponse
 // @Failure      400 {object} common.AuthResponseFailed
@@ -367,7 +367,7 @@ func (r JournalReportHttp) ProcessMultiShopDashboard(ctx microservice.IContext) 
 	startDateStr := ctx.QueryParam("start_date")
 	endDateStr := ctx.QueryParam("end_date")
 	timeZone := ctx.QueryParam("timezone")
-	shopIDsParam := ctx.QueryParam("shopids")
+	holdingCodesParam := ctx.QueryParam("holding_codes")
 
 	// Validate
 	if len(startDateStr) < 1 || len(endDateStr) < 1 {
@@ -398,19 +398,19 @@ func (r JournalReportHttp) ProcessMultiShopDashboard(ctx microservice.IContext) 
 	}
 	endDate = endDate.AddDate(0, 0, 1).Add(time.Second * -1)
 
-	// Parse shop IDs
-	var shopIDs []string
-	if len(shopIDsParam) > 0 {
-		shopIDs = strings.Split(shopIDsParam, ",")
-		for i, id := range shopIDs {
-			shopIDs[i] = strings.TrimSpace(id)
+	// Parse holding Codes
+	var holdingCodes []string
+	if len(holdingCodesParam) > 0 {
+		holdingCodes = strings.Split(holdingCodesParam, ",")
+		for i, id := range holdingCodes {
+			holdingCodes[i] = strings.TrimSpace(id)
 		}
 	}
 
 	// Process
 	r.ms.Logger.Debugf("Multi-Shop Dashboard: user=%s, period=%v to %v", username, startDate, endDate)
 
-	result, err := r.svc.ProcessMultiShopDashboard(username, shopIDs, startDate.UTC(), endDate.UTC())
+	result, err := r.svc.ProcessMultiShopDashboard(username, holdingCodes, startDate.UTC(), endDate.UTC())
 	if err != nil {
 		ctx.ResponseError(500, fmt.Sprintf("Failed to process dashboard: %v", err.Error()))
 		return err

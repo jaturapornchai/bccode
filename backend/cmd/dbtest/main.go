@@ -55,17 +55,17 @@ func main() {
 		log.Fatalf("ล้มเหลวในการ parse bootstrap.json: %v", err)
 	}
 
-	targetShopId := "3E0aX0qsmeRr26TjCk3kRz5vBdv"
+	targetHoldingCode := "3E0aX0qsmeRr26TjCk3kRz5vBdv"
 
-	// 2. ทดสอบ PostgreSQL (แยก Database ตาม Shop ID)
-	fmt.Printf("\n[1] ทดสอบ PostgreSQL (Database แยกตาม shopid: %s)\n", targetShopId)
+	// 2. ทดสอบ PostgreSQL (แยก Database ตาม Holding Code)
+	fmt.Printf("\n[1] ทดสอบ PostgreSQL (Database แยกตาม holding_code: %s)\n", targetHoldingCode)
 	pgConnStr := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s connect_timeout=5",
 		config.PostgreSQL.Host,
 		config.PostgreSQL.Port,
 		config.PostgreSQL.User,
 		config.PostgreSQL.Password,
-		targetShopId, // ต่อตรงเข้า shop database
+		targetHoldingCode, // ต่อตรงเข้า shop database
 		config.PostgreSQL.SSLMode,
 	)
 
@@ -82,7 +82,7 @@ func main() {
 			log.Printf("ERROR: ไม่สามารถเชื่อมต่อ (Ping) PostgreSQL: %v\n", err)
 		} else {
 			duration := time.Since(start)
-			fmt.Printf("✓ เชื่อมต่อ PostgreSQL สำเร็จ (dbname=%s, host=%s) ในเวลา %v\n", targetShopId, config.PostgreSQL.Host, duration)
+			fmt.Printf("✓ เชื่อมต่อ PostgreSQL สำเร็จ (dbname=%s, host=%s) ในเวลา %v\n", targetHoldingCode, config.PostgreSQL.Host, duration)
 
 			// สอบถามข้อมูลพื้นฐาน
 			var dbName string
@@ -108,9 +108,9 @@ func main() {
 		}
 	}
 
-	// 3. ทดสอบ ClickHouse (รวม Database กลาง แต่แยกฟิลด์ shopid เพื่อทำ BI)
+	// 3. ทดสอบ ClickHouse (รวม Database กลาง แต่แยกฟิลด์ holding_code เพื่อทำ BI)
 	fmt.Printf("\n[2] ทดสอบ ClickHouse (Database กลาง: %s)\n", config.ClickHouse.DatabaseName)
-	
+
 	chOpts := &clickhouse.Options{
 		Addr: []string{fmt.Sprintf("%s:%s", config.ClickHouse.Host, config.ClickHouse.Port)},
 		Auth: clickhouse.Auth{
@@ -153,36 +153,36 @@ func main() {
 				log.Printf("  - ดึงตาราง ClickHouse ล้มเหลว: %v\n", err)
 			}
 
-			// ดึงสถิติจำนวนเอกสารแยกตาม shopid เพื่อแสดงการทำ BI หลายกิจการ
+			// ดึงสถิติจำนวนเอกสารแยกตาม holding_code เพื่อแสดงการทำ BI หลายกิจการ
 			var shopStats []struct {
-				ShopID string `ch:"shopid"`
-				Count  uint64 `ch:"cnt"`
+				HoldingCode string `ch:"holding_code"`
+				Count       uint64 `ch:"cnt"`
 			}
-			statQuery := fmt.Sprintf("SELECT shopid, count() as cnt FROM %s.doc GROUP BY shopid LIMIT 10", config.ClickHouse.DatabaseName)
+			statQuery := fmt.Sprintf("SELECT holding_code, count() as cnt FROM %s.doc GROUP BY holding_code LIMIT 10", config.ClickHouse.DatabaseName)
 			err = chConn.Select(ctx, &shopStats, statQuery)
 			if err == nil {
-				fmt.Println("  - สถิติ BI (จำนวนแถวในตาราง doc แยกตาม shopid):")
+				fmt.Println("  - สถิติ BI (จำนวนแถวในตาราง doc แยกตาม holding_code):")
 				if len(shopStats) == 0 {
 					fmt.Println("    * ยังไม่มีข้อมูลเอกสารในระบบ")
 				}
 				for _, stat := range shopStats {
-					fmt.Printf("    * Shop ID: %s => จำนวนเอกสาร: %d แถว\n", stat.ShopID, stat.Count)
+					fmt.Printf("    * Holding Code: %s => จำนวนเอกสาร: %d แถว\n", stat.HoldingCode, stat.Count)
 				}
 			} else {
 				// อาจจะยังไม่มีตาราง doc เลยทดลองหาจาก productbarcode แทน
 				var barcodeStats []struct {
-					ShopID string `ch:"shopid"`
-					Count  uint64 `ch:"cnt"`
+					HoldingCode string `ch:"holding_code"`
+					Count       uint64 `ch:"cnt"`
 				}
-				statQuery2 := fmt.Sprintf("SELECT shopid, count() as cnt FROM %s.productbarcode GROUP BY shopid LIMIT 10", config.ClickHouse.DatabaseName)
+				statQuery2 := fmt.Sprintf("SELECT holding_code, count() as cnt FROM %s.productbarcode GROUP BY holding_code LIMIT 10", config.ClickHouse.DatabaseName)
 				err = chConn.Select(ctx, &barcodeStats, statQuery2)
 				if err == nil {
-					fmt.Println("  - สถิติ BI (จำนวนแถวในตาราง productbarcode แยกตาม shopid):")
+					fmt.Println("  - สถิติ BI (จำนวนแถวในตาราง productbarcode แยกตาม holding_code):")
 					if len(barcodeStats) == 0 {
 						fmt.Println("    * ยังไม่มีข้อมูลสินค้าในระบบ")
 					}
 					for _, stat := range barcodeStats {
-						fmt.Printf("    * Shop ID: %s => จำนวนบาร์โค้ด: %d รายการ\n", stat.ShopID, stat.Count)
+						fmt.Printf("    * Holding Code: %s => จำนวนบาร์โค้ด: %d รายการ\n", stat.HoldingCode, stat.Count)
 					}
 				} else {
 					log.Printf("  - ดึงข้อมูลสถิติ BI ล้มเหลว: %v\n", err)

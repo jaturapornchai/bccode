@@ -23,6 +23,7 @@ export type SystemSettingField = {
     | "image-upload"
     | "image-gallery"
     | "json"
+    | "holding-scope-rules"
     | "language-configs"
     | "language-list"
     | "master-picker"
@@ -30,6 +31,7 @@ export type SystemSettingField = {
     | "number"
     | "radio"
     | "select"
+    | "string-list"
     | "text"
     | "time-sale-list"
     | "textarea";
@@ -51,6 +53,7 @@ export type SystemSettingKind =
   | "copy-uat"
   | "goapi-crud"
   | "main-crud"
+  | "report"
   | "restaurant-setting";
 
 export type SystemSettingConfig = {
@@ -191,21 +194,6 @@ const roleOwnerLabel: SystemSettingText = {
   fil: "Owner Level",
 };
 
-const userIdGuidLabel: SystemSettingText = {
-  th: "รหัสผู้ใช้ (GUID)",
-  en: "User ID (GUID)",
-  cn: "用户 ID (GUID)",
-  ja: "ユーザーID (GUID)",
-  ko: "사용자 ID (GUID)",
-  lo: "ລະຫັດຜູ້ໃຊ້ (GUID)",
-  my: "အသုံးပြုသူ ID (GUID)",
-  km: "លេខសម្គាល់អ្នកប្រើ (GUID)",
-  vi: "ID người dùng (GUID)",
-  ms: "ID pengguna (GUID)",
-  id: "ID pengguna (GUID)",
-  fil: "User ID (GUID)",
-};
-
 const loginUsernameLabel: SystemSettingText = {
   th: "ชื่อผู้ใช้สำหรับเข้าสู่ระบบ",
   en: "Login username",
@@ -297,8 +285,8 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     idField: "guid_fixed",
     title: { th: "ภาษาที่ใช้งาน", en: "Active Languages" },
     subtitle: {
-      th: "จัดการภาษาที่ใช้งาน ลำดับแรกคือภาษาแรกของบริษัท",
-      en: "Manage active languages. The first one is the company's primary language.",
+      th: "กำหนดก่อนข้อมูลอื่น ลำดับแรกคือภาษาแรกของบริษัทและช่องชื่อหลายภาษา",
+      en: "Set this before other data. The first row is the primary language for multilingual names.",
     },
     fields: [
       languageConfigsField(
@@ -574,8 +562,8 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     manual: "employee",
     kind: "main-crud",
     icon: "user-round",
-    basePath: "/shop/employee",
-    listPath: "/shop/employee/list",
+    basePath: "/holding/employee",
+    listPath: "/holding/employee/list",
     idField: "guid_fixed",
     title: { th: "พนักงาน", en: "Employee" },
     subtitle: {
@@ -589,7 +577,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
       textField("pincode", "PIN", "PIN"),
       checkboxField("isenabled", "เปิดใช้งาน", "Enabled"),
       checkboxField("isusepos", "ใช้งาน POS", "Use POS"),
-      companyMultiSelectField("business_codes", "สิทธิ์การเข้าถึงบริษัท", "Active companies"),
+      holdingScopeRulesField("access_scopes", "บริษัท/สาขาที่เข้าใช้งานได้", "Company and branch access"),
     ],
   },
   {
@@ -598,8 +586,8 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     manual: "user",
     kind: "main-crud",
     icon: "users",
-    basePath: "/shop/permission",
-    listPath: "/shop/users",
+    basePath: "/holding/permission",
+    listPath: "/holding/users",
     idField: "username",
     title: { th: "ผู้ใช้งาน", en: "User" },
     subtitle: {
@@ -607,7 +595,6 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
       en: "Manage users, role, department, LINE profile, and approval permissions.",
     },
     fields: [
-      { key: "uid", label: userIdGuidLabel, type: "text", readOnly: true },
       textField(
         "username",
         "รหัสผู้ใช้ หรือ email",
@@ -652,7 +639,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
       ),
       textField("position", "ตำแหน่ง", "Position"),
       textField("department", "แผนก", "Department"),
-      companyMultiSelectField("business_codes", "สิทธิ์การเข้าถึงบริษัท", "Active companies"),
+      holdingScopeRulesField("access_scopes", "บริษัท/สาขาที่เข้าใช้งานได้", "Company and branch access", true),
       {
         ...textField("line_user_id", "LINE User ID", "LINE User ID"),
         readOnly: true,
@@ -718,16 +705,31 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     deleteKey: "guid_fixed",
     title: { th: "สิทธิ์การอนุมัติ", en: "Approval Permission" },
     subtitle: {
-      th: "กำหนดสิทธิ์และวงเงินอนุมัติแยกตามบริษัท",
-      en: "Configure approval roles and limits by company.",
+      th: "กำหนดสิทธิ์และวงเงินอนุมัติภายใต้ Holding และกำหนดขอบเขตบริษัท/สาขา",
+      en: "Configure Holding approval roles, limits, and company/branch scope.",
     },
     fields: [
       textField("approval_code", "รหัส", "Code", true),
       textField("approval_name", "ชื่อ", "Name", true),
       textareaField("description", "คำอธิบาย", "Description"),
       checkboxField("is_active", "เปิดใช้งาน", "Active"),
+      holdingScopeRulesField("approval_rules", "ขอบเขตที่ใช้สิทธิ์อนุมัติ", "Approval scope"),
       jsonField("approvals", "สิทธิ์การอนุมัติ", "Approval permission JSON"),
     ],
+  },
+  {
+    slug: "user_access_audit",
+    route: "/user_access_audit",
+    manual: "user_access_audit",
+    kind: "report",
+    icon: "shield",
+    title: { th: "ตรวจสอบสถานะผู้ใช้งาน", en: "User Access Audit" },
+    subtitle: {
+      th: "ตรวจสอบว่าผู้ใช้งานเข้าอะไรได้บ้าง ทำอะไรได้บ้าง และส่งออกเป็นรายงาน PDF",
+      en: "Review what each user can access, what they can do, and export the result as a PDF report.",
+    },
+    editable: false,
+    fields: [],
   },
   {
     slug: "permission_definition",
@@ -740,15 +742,16 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     deleteKey: "guid_fixed",
     title: { th: "กำหนดสิทธิ์หน้าจอ", en: "Permission Definition" },
     subtitle: {
-      th: "สร้างรหัสสิทธิ์และกำหนดสิทธิ์หน้าจอ/action",
-      en: "Create permission codes and define screen/action permissions.",
+      th: "สร้างรหัสสิทธิ์หน้าจอภายใต้ Holding และกำหนดขอบเขตบริษัท/สาขา",
+      en: "Create Holding screen permission codes and company/branch scope.",
     },
     fields: [
       textField("permission_code", "รหัสสิทธิ์", "Permission code", true),
       textField("permission_name", "ชื่อสิทธิ์", "Permission name", true),
       textareaField("description", "คำอธิบาย", "Description"),
       checkboxField("is_active", "เปิดใช้งาน", "Active"),
-      jsonField("access_rules", "สิทธิ์หน้าจอ/action", "Screen/action permissions JSON"),
+      holdingScopeRulesField("scope_rules", "ขอบเขตที่ใช้สิทธิ์นี้", "Permission scope"),
+      jsonField("access_rules", "สิทธิ์หน้าจอ/action ตามสาขา", "Branch screen/action permissions"),
     ],
   },
   {
@@ -770,6 +773,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
       textField("group_name", "ชื่อกลุ่มสิทธิ์", "Group name", true),
       textareaField("description", "คำอธิบาย", "Description"),
       checkboxField("is_active", "เปิดใช้งาน", "Active"),
+      holdingScopeRulesField("scope_rules", "ขอบเขตที่ใช้กลุ่มสิทธิ์นี้", "Permission group scope"),
       jsonField("permission_codes", "สิทธิ์", "Permissions"),
     ],
   },
@@ -784,8 +788,8 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     deleteKey: "guid_fixed",
     title: { th: "กำหนดสิทธิ์ผู้ใช้งาน", en: "User Permission" },
     subtitle: {
-      th: "กำหนดสิทธิ์การเข้าถึงบริษัทของผู้ใช้งาน",
-      en: "Configure company access permissions for users.",
+      th: "ผูกผู้ใช้กับกลุ่มสิทธิ์/สิทธิ์หน้าจอภายใต้ Holding และกำหนดขอบเขตบริษัท/สาขา",
+      en: "Link users to Holding permissions and company/branch scope.",
     },
     fields: [
       textField(
@@ -796,7 +800,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
       ),
       textField("employee_name", "ชื่อ", "Name"),
       textField("group_code", "กลุ่มสิทธิ์", "Permission group", false),
-      companyMultiSelectField("business_codes", "สิทธิ์การเข้าถึงบริษัท", "Active companies"),
+      holdingScopeRulesField("scope_rules", "ขอบเขตที่ผู้ใช้นี้ใช้สิทธิ์ได้", "User permission scope"),
       jsonField("permission_codes", "สิทธิ์", "Permissions"),
       jsonField("approval_codes", "สิทธิ์การอนุมัติ", "Approval permissions"),
     ],
@@ -931,6 +935,65 @@ function productMasterConfigs(): SystemSettingConfig[] {
       titleEn,
     );
 
+  const atlasMasterConfig = (
+    slug: string,
+    route: string,
+    icon: string,
+    collection: string,
+    titleTh: string,
+    titleEn: string,
+    subtitleTh: string,
+    subtitleEn: string,
+    fields: SystemSettingField[],
+  ): SystemSettingConfig => ({
+    slug,
+    route,
+    manual: slug,
+    kind: "atlas",
+    icon,
+    collection,
+    idField: "guid_fixed",
+    title: { th: titleTh, en: titleEn },
+    subtitle: { th: subtitleTh, en: subtitleEn },
+    fields,
+  });
+
+  const sizeSystemOptions: SystemSettingOption[] = [
+    { value: "intl", label: "International", labels: { th: "สากล", en: "International" } },
+    { value: "th", label: "Thai", labels: { th: "ไทย", en: "Thai" } },
+    { value: "us", label: "US", labels: { th: "US", en: "US" } },
+    { value: "uk", label: "UK", labels: { th: "UK", en: "UK" } },
+    { value: "eu", label: "EU", labels: { th: "EU", en: "EU" } },
+    { value: "jp", label: "JP", labels: { th: "JP", en: "JP" } },
+  ];
+
+  const sizeTypeOptions: SystemSettingOption[] = [
+    { value: "regular", label: "Regular", labels: { th: "ปกติ", en: "Regular" } },
+    { value: "petite", label: "Petite", labels: { th: "ตัวเล็ก", en: "Petite" } },
+    { value: "plus", label: "Plus", labels: { th: "พลัสไซซ์", en: "Plus size" } },
+    { value: "tall", label: "Tall", labels: { th: "ตัวสูง", en: "Tall" } },
+    { value: "kids", label: "Kids", labels: { th: "เด็ก", en: "Kids" } },
+    { value: "free_size", label: "Free size", labels: { th: "ฟรีไซซ์", en: "Free size" } },
+  ];
+
+  const variantMatrixTypeOptions: SystemSettingOption[] = [
+    { value: "general", label: "General", labels: { th: "สินค้าทั่วไป", en: "General" } },
+    { value: "apparel", label: "Apparel", labels: { th: "เสื้อผ้า/แฟชั่น", en: "Apparel" } },
+    { value: "mobile_phone", label: "Mobile phone", labels: { th: "มือถือ/โทรศัพท์", en: "Mobile phone" } },
+    { value: "sim", label: "SIM", labels: { th: "ซิมการ์ด", en: "SIM card" } },
+    { value: "computer", label: "Computer", labels: { th: "คอมพิวเตอร์", en: "Computer" } },
+    { value: "electronics", label: "Electronics", labels: { th: "อิเล็กทรอนิกส์", en: "Electronics" } },
+  ];
+
+  const serialTrackingModeOptions: SystemSettingOption[] = [
+    { value: "none", label: "None", labels: { th: "ไม่คุมเลขเครื่อง", en: "None" } },
+    { value: "serial_no", label: "Serial No.", labels: { th: "Serial No.", en: "Serial No." } },
+    { value: "imei", label: "IMEI", labels: { th: "IMEI", en: "IMEI" } },
+    { value: "iccid", label: "ICCID", labels: { th: "ICCID ซิม", en: "SIM ICCID" } },
+    { value: "mac_address", label: "MAC address", labels: { th: "MAC address", en: "MAC address" } },
+    { value: "multiple", label: "Multiple", labels: { th: "หลายเลขต่อชิ้น", en: "Multiple identifiers" } },
+  ];
+
   return [
     {
       slug: "productunit",
@@ -1064,6 +1127,133 @@ function productMasterConfigs(): SystemSettingConfig[] {
       "ชื่อประเภทสินค้า",
       "Product type names",
     ),
+    atlasMasterConfig(
+      "product_color",
+      "/product_color",
+      "color",
+      "product_colors",
+      "สีสินค้า",
+      "Product Color",
+      "กำหนดรหัสสี ชื่อสี และชื่อเรียกอื่นสำหรับใช้สร้าง SKU",
+      "Define color codes, names, and aliases for SKU generation.",
+      [
+        textField("code", "รหัสสี", "Color code", true),
+        namesField("names", "ชื่อสี", "Color names"),
+        textField("hex_color", "ค่าสี (HEX)", "Color HEX"),
+        textField("color_family", "กลุ่มสี", "Color family"),
+        {
+          ...stringListField("aliases", "ชื่อเรียกอื่น", "Aliases"),
+          placeholder: "ดำ, black, สีดำ",
+          helper: {
+            th: "เพิ่มชื่อที่ระบบควรจับคู่เป็นสีเดียวกัน เช่น ดำ, black, สีดำ",
+            en: "Add names that should map to the same color, such as black, dark, BK.",
+          },
+        },
+        companyMultiSelectField("business_codes", "สิทธิ์การเข้าถึงบริษัท", "Active companies"),
+        checkboxField("isdisabled", "ปิดใช้งาน", "Disabled"),
+      ],
+    ),
+    atlasMasterConfig(
+      "product_size",
+      "/product_size",
+      "ruler",
+      "product_sizes",
+      "ไซซ์สินค้า",
+      "Product Size",
+      "กำหนดรหัสไซซ์ ระบบไซซ์ และชื่อเรียกอื่น",
+      "Define size codes, size systems, and aliases.",
+      [
+        textField("code", "รหัสไซซ์", "Size code", true),
+        namesField("names", "ชื่อไซซ์", "Size names"),
+        selectField("size_system", "ระบบไซซ์", "Size system", sizeSystemOptions),
+        selectField("size_type", "ประเภทไซซ์", "Size type", sizeTypeOptions),
+        numberField("sort_order", "ลำดับ", "Sort order"),
+        {
+          ...stringListField("aliases", "ชื่อเรียกอื่น", "Aliases"),
+          placeholder: "XL, XL(60-70kg), 36-37",
+          helper: {
+            th: "เพิ่มชื่อไซซ์ที่ระบบควรจับคู่เป็นไซซ์เดียวกัน เช่น XL, XL(60-70kg), 36-37",
+            en: "Add imported size labels that should map to the same size.",
+          },
+        },
+        companyMultiSelectField("business_codes", "สิทธิ์การเข้าถึงบริษัท", "Active companies"),
+        checkboxField("isdisabled", "ปิดใช้งาน", "Disabled"),
+      ],
+    ),
+    atlasMasterConfig(
+      "product_variant_matrix",
+      "/product_variant_matrix",
+      "grid",
+      "product_variant_matrices",
+      "ตารางตัวเลือก SKU",
+      "Variant / SKU Matrix",
+      "ออกแบบแกนตัวเลือกและชุด SKU สำหรับราคา สต๊อก ต้นทุน และการนำเข้าข้อมูล",
+      "Design option tiers and SKU combinations for price, stock, cost, and imports.",
+      [
+        textField("code", "รหัสชุดตัวเลือก", "Matrix code", true),
+        namesField("names", "ชื่อชุดตัวเลือก", "Matrix names"),
+        selectField("matrix_type", "ประเภทธุรกิจสินค้า", "Product business type", variantMatrixTypeOptions),
+        selectField("serial_tracking_mode", "การคุมเลขเครื่อง", "Serial tracking mode", serialTrackingModeOptions),
+        {
+          ...jsonField("option_tiers", "แกนตัวเลือก", "Option tiers"),
+          placeholder: `[{"tier_no":1,"option_code":"COLOR","name":"สี/Color"},{"tier_no":2,"option_code":"SIZE","name":"ขนาด/Size"}]`,
+          helper: {
+            th: "รองรับหลายแกน เช่น สี, ไซซ์, ความจุ, รุ่น, เครือข่าย, วัสดุ, รสชาติ, แพ็ก",
+            en: "Supports multiple tiers such as color, size, storage, model, network, material, flavor, and pack.",
+          },
+        },
+        {
+          ...jsonField("sku_combinations", "รายการ SKU/ตัวเลือก", "SKU combinations"),
+          placeholder: `[{"seller_sku":"SKU-001","barcode":"885000000001","gtin":"885000000001","option_values":["BLACK","128GB"],"sale_price":0,"cost":0,"opening_stock":0,"package_weight":0}]`,
+          helper: {
+            th: "ใช้เก็บ SKU, barcode/GTIN, ราคา, ต้นทุน, สต๊อกเริ่มต้น, น้ำหนัก/ขนาด และเลขเครื่องต่อ SKU",
+            en: "Stores SKU, barcode/GTIN, price, cost, opening stock, package size/weight, and serial policy per SKU.",
+          },
+        },
+        {
+          ...jsonField("media_assets", "โครงสร้างรูปภาพ/วิดีโอ", "Media asset structure"),
+          placeholder: `[{"kind":"main","uri":"images/products/example-main.webp","sort_order":1},{"kind":"sku","option_code":"COLOR","option_value":"BLACK","uri":"images/products/example-black.webp"}]`,
+          helper: {
+            th: "รองรับรูปหลัก รูปเพิ่มเติม รูปตามตัวเลือก วิดีโอ ตารางไซซ์ และรูปในรายละเอียดสินค้า",
+            en: "Supports main images, gallery images, SKU option images, video, size chart, and detail-page media.",
+          },
+        },
+        {
+          ...jsonField("specification_groups", "ข้อมูลจำเพาะสินค้า", "Product specifications"),
+          placeholder: `[{"group_code":"GENERAL","group_name":"ข้อมูลทั่วไป","attributes":[{"attribute_code":"MATERIAL","attribute_name":"วัสดุ","input_type":"multi_select","scope":"product","values":[{"value_code":"COTTON","value_text":"Cotton"}]}]}]`,
+          helper: {
+            th: "ใช้เก็บ attribute/specification จากหลายช่องทางขายแล้วแปลงเป็นสเปกกลางของระบบ",
+            en: "Stores attributes/specifications from multiple channels as the system's neutral product spec structure.",
+          },
+        },
+        {
+          ...jsonField("import_attribute_maps", "แผนที่ Attribute นำเข้า", "Import attribute maps"),
+          placeholder: `[{"source_name":"Color","target_option_code":"COLOR"},{"source_name":"Storage","target_option_code":"STORAGE"}]`,
+          helper: {
+            th: "ใช้แมพชื่อ attribute จากข้อมูลนำเข้าให้เข้ากับแกนตัวเลือกของระบบ โดยไม่ต้องแสดงแหล่งที่มา",
+            en: "Maps imported attribute names into system option tiers without exposing the source channel.",
+          },
+        },
+        {
+          ...jsonField("integration_profiles", "โครงสร้างเชื่อมต่อภายนอก", "External integration profiles"),
+          placeholder: `[{"channel":"external","sku_fields":["seller_sku","barcode","price","stock"]}]`,
+          helper: {
+            th: "เก็บรายละเอียดสำหรับ import/sync ภายนอกไว้ให้ระบบใช้ ไม่ใช้เป็นข้อความแสดงที่มาของสินค้า",
+            en: "Stores external import/sync details for the system without showing them as product-source labels.",
+          },
+        },
+        {
+          ...jsonField("payload_examples", "ตัวอย่าง payload", "Payload examples"),
+          placeholder: `[{"direction":"import","use_case":"product_detail","payload":{"title":"Example","images":[],"attributes":[],"skus":[]}}]`,
+          helper: {
+            th: "เก็บตัวอย่าง JSON สำหรับทีมพัฒนา/ตัวนำเข้า ไม่ใช้เป็นข้อความแสดงในหน้าขายปกติ",
+            en: "Stores sample JSON for developers/importers, not as normal product display text.",
+          },
+        },
+        companyMultiSelectField("business_codes", "สิทธิ์การเข้าถึงบริษัท", "Active companies"),
+        checkboxField("isdisabled", "ปิดใช้งาน", "Disabled"),
+      ],
+    ),
     {
       slug: "product_dimension",
       route: "/product_dimension",
@@ -1139,7 +1329,7 @@ function productMasterConfigs(): SystemSettingConfig[] {
       "/master_category_screen",
       "category",
       "category",
-      "หมวดจำแนกสินค้า",
+      "หมวดคุณลักษณะสินค้า",
       "Product Attribute Category",
     ),
     aicloudConfig(
@@ -1320,6 +1510,19 @@ function namesField(
 
 function jsonField(key: string, th: string, en: string): SystemSettingField {
   return { key, label: { th, en }, type: "json" };
+}
+
+function stringListField(key: string, th: string, en: string): SystemSettingField {
+  return { key, label: { th, en }, type: "string-list" };
+}
+
+function holdingScopeRulesField(
+  key: string,
+  th: string,
+  en: string,
+  required = false,
+): SystemSettingField {
+  return { key, label: { th, en }, type: "holding-scope-rules", required };
 }
 
 function languageListField(

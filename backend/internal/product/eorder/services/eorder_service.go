@@ -59,26 +59,26 @@ func (svc EOrderService) getContextTimeout() (context.Context, context.CancelFun
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc EOrderService) GetShopInfoOld(shopID string, orderStationCode string) (models.EOrderShopOld, error) {
+func (svc EOrderService) GetShopInfoOld(holdingCode string, orderStationCode string) (models.EOrderShopOld, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
 	result := models.EOrderShopOld{}
 
-	shopInfo, err := svc.shopRepo.FindByGuid(ctx, shopID)
+	shopInfo, err := svc.shopRepo.FindByGuid(ctx, holdingCode)
 
 	if err != nil {
 		return models.EOrderShopOld{}, err
 	}
 
-	tableCount, err := svc.tableRepo.Count(ctx, shopID)
+	tableCount, err := svc.tableRepo.Count(ctx, holdingCode)
 
 	if err != nil {
 		return models.EOrderShopOld{}, err
 	}
 
 	if orderStationCode != "" {
-		orderDevice, err := svc.repoDevice.FindByDocIndentityGuid(ctx, shopID, "code", orderStationCode)
+		orderDevice, err := svc.repoDevice.FindByDocIndentityGuid(ctx, holdingCode, "code", orderStationCode)
 
 		if err != nil {
 			return models.EOrderShopOld{}, err
@@ -86,7 +86,7 @@ func (svc EOrderService) GetShopInfoOld(shopID string, orderStationCode string) 
 
 		tempOrderStation := models.EOrderShopOrderOld{}
 		if orderDevice.Code != "" {
-			order, err := svc.repoOrder.FindByDocIndentityGuid(ctx, shopID, "guid_fixed", orderDevice.SettingCode)
+			order, err := svc.repoOrder.FindByDocIndentityGuid(ctx, holdingCode, "guid_fixed", orderDevice.SettingCode)
 
 			if err != nil {
 				return models.EOrderShopOld{}, err
@@ -96,7 +96,7 @@ func (svc EOrderService) GetShopInfoOld(shopID string, orderStationCode string) 
 
 			if order.Code != "" {
 				// Media
-				media, err := svc.repoMedia.FindByGuid(ctx, shopID, order.MediaGUID)
+				media, err := svc.repoMedia.FindByGuid(ctx, holdingCode, order.MediaGUID)
 
 				if err != nil {
 					return models.EOrderShopOld{}, err
@@ -113,7 +113,7 @@ func (svc EOrderService) GetShopInfoOld(shopID string, orderStationCode string) 
 				}
 
 				// Sale channel
-				saleChannels, err := svc.repoSaleChannel.FindByGuids(ctx, shopID, saleChannelGUIDs)
+				saleChannels, err := svc.repoSaleChannel.FindByGuids(ctx, holdingCode, saleChannelGUIDs)
 
 				if err != nil {
 					return models.EOrderShopOld{}, err
@@ -125,7 +125,7 @@ func (svc EOrderService) GetShopInfoOld(shopID string, orderStationCode string) 
 				}
 
 				// Branch
-				branch, err := svc.repoBranch.FindByGuid(ctx, shopID, order.Branch.GuidFixed)
+				branch, err := svc.repoBranch.FindByGuid(ctx, holdingCode, order.Branch.GuidFixed)
 
 				if err != nil {
 					return models.EOrderShopOld{}, err
@@ -133,7 +133,7 @@ func (svc EOrderService) GetShopInfoOld(shopID string, orderStationCode string) 
 				tempOrderStation.Branch = branch.Branch
 
 				// Kitchen
-				kitchens, err := svc.repoKitchen.Find(ctx, shopID, map[string]interface{}{
+				kitchens, err := svc.repoKitchen.Find(ctx, holdingCode, map[string]interface{}{
 					"group_number": order.KitchenGroupNumber,
 				})
 
@@ -152,7 +152,7 @@ func (svc EOrderService) GetShopInfoOld(shopID string, orderStationCode string) 
 
 	}
 
-	result.ShopID = shopInfo.GuidFixed
+	result.HoldingCode = shopInfo.GuidFixed
 	result.Name1 = shopInfo.Name1
 	result.ProfilePicture = shopInfo.ProfilePicture
 	result.IsBcMember = shopInfo.IsBcMember
@@ -162,25 +162,25 @@ func (svc EOrderService) GetShopInfoOld(shopID string, orderStationCode string) 
 	return result, nil
 }
 
-func (svc EOrderService) GetShopInfo(shopID string, orderStationCode string) (models.EOrderShop, error) {
+func (svc EOrderService) GetShopInfo(holdingCode string, orderStationCode string) (models.EOrderShop, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
 	result := models.EOrderShop{}
 
-	shopInfo, err := svc.shopRepo.FindByGuid(ctx, shopID)
+	shopInfo, err := svc.shopRepo.FindByGuid(ctx, holdingCode)
 
 	if err != nil {
 		return models.EOrderShop{}, err
 	}
 
-	tableCount, err := svc.tableRepo.Count(ctx, shopID)
+	tableCount, err := svc.tableRepo.Count(ctx, holdingCode)
 
 	if err != nil {
 		return models.EOrderShop{}, err
 	}
 
-	notify, err := svc.repoNotify.Find(ctx, shopID, map[string]interface{}{})
+	notify, err := svc.repoNotify.Find(ctx, holdingCode, map[string]interface{}{})
 	if err != nil {
 		return models.EOrderShop{}, err
 	}
@@ -188,7 +188,7 @@ func (svc EOrderService) GetShopInfo(shopID string, orderStationCode string) (mo
 	result.Notify = notify
 
 	if orderStationCode != "" {
-		orderDevice, err := svc.repoDevice.FindByDocIndentityGuid(ctx, shopID, "code", orderStationCode)
+		orderDevice, err := svc.repoDevice.FindByDocIndentityGuid(ctx, holdingCode, "code", orderStationCode)
 
 		if err != nil {
 			return models.EOrderShop{}, err
@@ -198,7 +198,7 @@ func (svc EOrderService) GetShopInfo(shopID string, orderStationCode string) (mo
 		if orderDevice.Code != "" {
 			tempOrderStation.OrderDevice = orderDevice.OrderDevice
 
-			order, err := svc.repoOrder.FindByDocIndentityGuid(ctx, shopID, "guid_fixed", orderDevice.SettingCode)
+			order, err := svc.repoOrder.FindByDocIndentityGuid(ctx, holdingCode, "guid_fixed", orderDevice.SettingCode)
 
 			if err != nil {
 				return models.EOrderShop{}, err
@@ -209,7 +209,7 @@ func (svc EOrderService) GetShopInfo(shopID string, orderStationCode string) (mo
 				tempOrderStation.Setting.OrderSetting = order.OrderSetting
 
 				// Media
-				media, err := svc.repoMedia.FindByGuid(ctx, shopID, order.MediaGUID)
+				media, err := svc.repoMedia.FindByGuid(ctx, holdingCode, order.MediaGUID)
 
 				if err != nil {
 					return models.EOrderShop{}, err
@@ -223,7 +223,7 @@ func (svc EOrderService) GetShopInfo(shopID string, orderStationCode string) (mo
 				}
 
 				// Sale channel
-				saleChannels, err := svc.repoSaleChannel.FindByGuids(ctx, shopID, saleChannelGUIDs)
+				saleChannels, err := svc.repoSaleChannel.FindByGuids(ctx, holdingCode, saleChannelGUIDs)
 
 				if err != nil {
 					return models.EOrderShop{}, err
@@ -235,7 +235,7 @@ func (svc EOrderService) GetShopInfo(shopID string, orderStationCode string) (mo
 				}
 
 				// Branch
-				branch, err := svc.repoBranch.FindByGuid(ctx, shopID, order.Branch.GuidFixed)
+				branch, err := svc.repoBranch.FindByGuid(ctx, holdingCode, order.Branch.GuidFixed)
 
 				if err != nil {
 					return models.EOrderShop{}, err
@@ -243,7 +243,7 @@ func (svc EOrderService) GetShopInfo(shopID string, orderStationCode string) (mo
 				tempOrderStation.Setting.Branch = branch.Branch
 
 				// Kitchen
-				kitchens, err := svc.repoKitchen.Find(ctx, shopID, map[string]interface{}{
+				kitchens, err := svc.repoKitchen.Find(ctx, holdingCode, map[string]interface{}{
 					"group_number": order.KitchenGroupNumber,
 				})
 
@@ -262,7 +262,7 @@ func (svc EOrderService) GetShopInfo(shopID string, orderStationCode string) (mo
 
 	}
 
-	result.ShopID = shopInfo.GuidFixed
+	result.HoldingCode = shopInfo.GuidFixed
 	result.Name1 = shopInfo.Name1
 	result.ProfilePicture = shopInfo.ProfilePicture
 	result.TotalTable = tableCount

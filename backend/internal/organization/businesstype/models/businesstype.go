@@ -10,14 +10,14 @@ const businesstypeCollectionName = "organizationBusinessTypes"
 
 type BusinessType struct {
 	models.PartitionIdentity `bson:"inline"`
-	Code string          `json:"code" bson:"code"`
-	Names *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
-	IsDefault bool            `json:"isdefault" bson:"isdefault"`
+	Code                     string          `json:"code" bson:"code"`
+	Names                    *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
+	IsDefault                bool            `json:"isdefault" bson:"isdefault"`
 }
 
 type BusinessTypeInfo struct {
 	models.DocIdentity `bson:"inline"`
-	BusinessType  `bson:"inline"`
+	BusinessType       `bson:"inline"`
 }
 
 func (BusinessTypeInfo) CollectionName() string {
@@ -25,13 +25,13 @@ func (BusinessTypeInfo) CollectionName() string {
 }
 
 type BusinessTypeData struct {
-	models.ShopIdentity `bson:"inline"`
-	BusinessTypeInfo  `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	BusinessTypeInfo         `bson:"inline"`
 }
 
 type BusinessTypeDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	BusinessTypeData  `bson:"inline"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	BusinessTypeData   `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -48,7 +48,7 @@ func (BusinessTypeItemGuid) CollectionName() string {
 }
 
 type BusinessTypeActivity struct {
-	BusinessTypeData  `bson:"inline"`
+	BusinessTypeData    `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

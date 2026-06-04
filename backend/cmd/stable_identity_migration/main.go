@@ -191,7 +191,7 @@ func backfillShopUsersUID(ctx context.Context, db *mongo.Database, apply bool) {
 
 		id := doc["_id"]
 		username, _ := doc["username"].(string)
-		shopid, _ := doc["shopid"].(string)
+		holding_code, _ := doc["holding_code"].(string)
 		existingUID, _ := doc["user_uid"].(string)
 
 		if existingUID != "" {
@@ -219,7 +219,7 @@ func backfillShopUsersUID(ctx context.Context, db *mongo.Database, apply bool) {
 			continue
 		}
 
-		fmt.Printf("  [ShopUser] Mapping username: %s in shop: %s -> user_uid: %s\n", username, shopid, uid)
+		fmt.Printf("  [ShopUser] Mapping username: %s in shop: %s -> user_uid: %s\n", username, holding_code, uid)
 		if apply {
 			_, err := col.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"user_uid": uid}})
 			if err != nil {
@@ -232,15 +232,15 @@ func backfillShopUsersUID(ctx context.Context, db *mongo.Database, apply bool) {
 	fmt.Printf("  Total shopUsers mapped/needed backfill: %d\n", count)
 
 	if apply {
-		fmt.Println("  Creating index 'ix_shopUsers_shopid_user_uid' on shopUsers(shopid, user_uid)...")
+		fmt.Println("  Creating index 'ix_shopUsers_holding_code_user_uid' on shopUsers(holding_code, user_uid)...")
 		indexModel := mongo.IndexModel{
-			Keys:    bson.D{{Key: "shopid", Value: 1}, {Key: "user_uid", Value: 1}},
-			Options: options.Index().SetName("ix_shopUsers_shopid_user_uid"),
+			Keys:    bson.D{{Key: "holding_code", Value: 1}, {Key: "user_uid", Value: 1}},
+			Options: options.Index().SetName("ix_shopUsers_holding_code_user_uid"),
 		}
 		name, err := col.Indexes().CreateOne(ctx, indexModel)
 		if err != nil {
 			if strings.Contains(err.Error(), "IndexOptionsConflict") {
-				legacyName := "ix_shop_users_shopid_user_uid"
+				legacyName := "ix_shop_users_holding_code_user_uid"
 				fmt.Printf("    Found same-key legacy index conflict. Dropping '%s' before recreating canonical name...\n", legacyName)
 				if _, dropErr := col.Indexes().DropOne(ctx, legacyName); dropErr != nil {
 					log.Printf("    Failed to drop legacy index on shopUsers: %v\n", dropErr)
@@ -484,5 +484,5 @@ func printIndexStatus(ctx context.Context, db *mongo.Database) {
 	}
 
 	printIndexExists("users", "ux_users_uid")
-	printIndexExists("shopUsers", "ix_shopUsers_shopid_user_uid")
+	printIndexExists("shopUsers", "ix_shopUsers_holding_code_user_uid")
 }

@@ -6,8 +6,8 @@ import (
 )
 
 type IRFQTransactionConsumerService interface {
-	Upsert(shopID string, docNo string, doc models.RFQTransactionPG) error
-	Delete(shopID string, docNo string) error
+	Upsert(holdingCode string, docNo string, doc models.RFQTransactionPG) error
+	Delete(holdingCode string, docNo string) error
 }
 
 type RFQTransactionConsumerService struct {
@@ -20,8 +20,8 @@ func NewRFQTransactionService(repo IRFQTransactionPGRepository) IRFQTransactionC
 	}
 }
 
-func (s *RFQTransactionConsumerService) Upsert(shopID string, docNo string, doc models.RFQTransactionPG) error {
-	foundDocument, err := s.repo.Get(shopID, docNo)
+func (s *RFQTransactionConsumerService) Upsert(holdingCode string, docNo string, doc models.RFQTransactionPG) error {
+	foundDocument, err := s.repo.Get(holdingCode, docNo)
 	if err != nil && err.Error() != "record not found" {
 		return err
 	}
@@ -30,17 +30,17 @@ func (s *RFQTransactionConsumerService) Upsert(shopID string, docNo string, doc 
 	} else {
 		isEqual := foundDocument.CompareTo(&doc)
 		if !isEqual {
-			return s.repo.Update(shopID, docNo, doc)
+			return s.repo.Update(holdingCode, docNo, doc)
 		}
 	}
 	return nil
 }
 
-func (s *RFQTransactionConsumerService) Delete(shopID string, docNo string) error {
-	err := s.repo.DeleteData(shopID, docNo, models.RFQTransactionPG{
+func (s *RFQTransactionConsumerService) Delete(holdingCode string, docNo string) error {
+	err := s.repo.DeleteData(holdingCode, docNo, models.RFQTransactionPG{
 		TransactionPG: models.TransactionPG{
-			ShopIdentity: pkgModels.ShopIdentity{
-				ShopID: shopID,
+			HoldingCodeentity: pkgModels.HoldingCodeentity{
+				HoldingCode: holdingCode,
 			},
 			DocNo: docNo,
 		},

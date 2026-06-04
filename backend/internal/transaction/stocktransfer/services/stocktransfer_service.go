@@ -25,15 +25,15 @@ import (
 )
 
 type IStockTransferService interface {
-	CreateStockTransfer(shopID string, authUsername string, doc models.StockTransfer) (string, string, error)
-	UpdateStockTransfer(shopID string, guid string, authUsername string, doc models.StockTransfer) error
-	DeleteStockTransfer(shopID string, guid string, authUsername string) error
-	DeleteStockTransferByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoStockTransfer(shopID string, guid string) (models.StockTransferInfo, error)
-	InfoStockTransferByCode(shopID string, code string) (models.StockTransferInfo, error)
-	SearchStockTransfer(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.StockTransferInfo, mongopagination.PaginationData, error)
-	SearchStockTransferStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.StockTransferInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.StockTransfer) (common.BulkImport, error)
+	CreateStockTransfer(holdingCode string, authUsername string, doc models.StockTransfer) (string, string, error)
+	UpdateStockTransfer(holdingCode string, guid string, authUsername string, doc models.StockTransfer) error
+	DeleteStockTransfer(holdingCode string, guid string, authUsername string) error
+	DeleteStockTransferByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoStockTransfer(holdingCode string, guid string) (models.StockTransferInfo, error)
+	InfoStockTransferByCode(holdingCode string, code string) (models.StockTransferInfo, error)
+	SearchStockTransfer(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.StockTransferInfo, mongopagination.PaginationData, error)
+	SearchStockTransferStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.StockTransferInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.StockTransfer) (common.BulkImport, error)
 
 	GetModuleName() string
 }
@@ -94,11 +94,11 @@ func (svc StockTransferService) getDocNoPrefix(docDate time.Time) string {
 	return fmt.Sprintf("%s%s", MODULE_NAME, docDateStr)
 }
 
-func (svc StockTransferService) generateNewDocNo(ctx context.Context, shopID, prefixDocNo string, docNumber int) (string, int, error) {
-	prevoiusDocNumber, err := svc.repoCache.Get(shopID, prefixDocNo)
+func (svc StockTransferService) generateNewDocNo(ctx context.Context, holdingCode, prefixDocNo string, docNumber int) (string, int, error) {
+	prevoiusDocNumber, err := svc.repoCache.Get(holdingCode, prefixDocNo)
 
 	if prevoiusDocNumber == 0 || err != nil {
-		lastDoc, err := svc.repo.FindLastDocNo(ctx, shopID, prefixDocNo)
+		lastDoc, err := svc.repo.FindLastDocNo(ctx, holdingCode, prefixDocNo)
 
 		if err != nil {
 			return "", 0, err
@@ -118,7 +118,7 @@ func (svc StockTransferService) generateNewDocNo(ctx context.Context, shopID, pr
 	newDocNumber := prevoiusDocNumber + 1
 	newDocNo := fmt.Sprintf("%s%05d", prefixDocNo, newDocNumber)
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", newDocNo)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", newDocNo)
 
 	if err != nil {
 		return "", 0, err
@@ -131,7 +131,7 @@ func (svc StockTransferService) generateNewDocNo(ctx context.Context, shopID, pr
 	return newDocNo, newDocNumber, nil
 }
 
-func (svc StockTransferService) CreateStockTransfer(shopID string, authUsername string, doc models.StockTransfer) (string, string, error) {
+func (svc StockTransferService) CreateStockTransfer(holdingCode string, authUsername string, doc models.StockTransfer) (string, string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -139,7 +139,7 @@ func (svc StockTransferService) CreateStockTransfer(shopID string, authUsername 
 	docDate := doc.DocDatetime
 	prefixDocNo := svc.getDocNoPrefix(docDate)
 
-	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, shopID, prefixDocNo, 1)
+	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, holdingCode, prefixDocNo, 1)
 
 	if err != nil {
 		return "", "", err
@@ -148,11 +148,11 @@ func (svc StockTransferService) CreateStockTransfer(shopID string, authUsername 
 	newGuidFixed := utils.NewGUID()
 
 	dataDoc := models.StockTransferDoc{}
-	dataDoc.ShopID = shopID
+	dataDoc.HoldingCode = holdingCode
 	dataDoc.GuidFixed = newGuidFixed
 	dataDoc.StockTransfer = doc
 
-	productBarcodes, err := svc.GetDetailProductBarcodes(ctx, shopID, *doc.Details)
+	productBarcodes, err := svc.GetDetailProductBarcodes(ctx, holdingCode, *doc.Details)
 	if err != nil {
 		return "", "", err
 	}
@@ -172,19 +172,19 @@ func (svc StockTransferService) CreateStockTransfer(shopID string, authUsername 
 
 	go func() {
 		svc.repoMq.Create(dataDoc)
-		svc.repoCache.Save(shopID, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
-		svc.saveMasterSync(shopID)
+		svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return newGuidFixed, newDocNo, nil
 }
 
-func (svc StockTransferService) GetDetailProductBarcodes(ctx context.Context, shopID string, details []trans_models.Detail) ([]productbarcode_models.ProductBarcodeInfo, error) {
+func (svc StockTransferService) GetDetailProductBarcodes(ctx context.Context, holdingCode string, details []trans_models.Detail) ([]productbarcode_models.ProductBarcodeInfo, error) {
 	var tempBarcodes []string
 	for _, doc := range details {
 		tempBarcodes = append(tempBarcodes, doc.Barcode)
 	}
-	return svc.productbarcodeRepo.FindByBarcodes(ctx, shopID, tempBarcodes)
+	return svc.productbarcodeRepo.FindByBarcodes(ctx, holdingCode, tempBarcodes)
 }
 
 func (svc StockTransferService) PrepareDetail(details []trans_models.Detail, productBarcodes []productbarcode_models.ProductBarcodeInfo) []trans_models.Detail {
@@ -209,12 +209,12 @@ func (svc StockTransferService) PrepareDetail(details []trans_models.Detail, pro
 	return details
 }
 
-func (svc StockTransferService) UpdateStockTransfer(shopID string, guid string, authUsername string, doc models.StockTransfer) error {
+func (svc StockTransferService) UpdateStockTransfer(holdingCode string, guid string, authUsername string, doc models.StockTransfer) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -224,7 +224,7 @@ func (svc StockTransferService) UpdateStockTransfer(shopID string, guid string, 
 		return errors.New("document not found")
 	}
 
-	findExists, err := svc.repo.FindDocOne(ctx, shopID, doc.DocNo, doc.TransFlag)
+	findExists, err := svc.repo.FindDocOne(ctx, holdingCode, doc.DocNo, doc.TransFlag)
 
 	if err != nil {
 		return err
@@ -237,7 +237,7 @@ func (svc StockTransferService) UpdateStockTransfer(shopID string, guid string, 
 	dataDoc := findDoc
 	dataDoc.StockTransfer = doc
 
-	productBarcodes, err := svc.GetDetailProductBarcodes(ctx, shopID, *doc.Details)
+	productBarcodes, err := svc.GetDetailProductBarcodes(ctx, holdingCode, *doc.Details)
 	if err != nil {
 		return err
 	}
@@ -249,7 +249,7 @@ func (svc StockTransferService) UpdateStockTransfer(shopID string, guid string, 
 	dataDoc.UpdatedBy = authUsername
 	dataDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, dataDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, dataDoc)
 
 	if err != nil {
 		return err
@@ -257,18 +257,18 @@ func (svc StockTransferService) UpdateStockTransfer(shopID string, guid string, 
 
 	func() {
 		svc.repoMq.Update(dataDoc)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc StockTransferService) DeleteStockTransfer(shopID string, guid string, authUsername string) error {
+func (svc StockTransferService) DeleteStockTransfer(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -278,20 +278,20 @@ func (svc StockTransferService) DeleteStockTransfer(shopID string, guid string, 
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
 	func() {
 		svc.repoMq.Delete(findDoc)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc StockTransferService) DeleteStockTransferByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc StockTransferService) DeleteStockTransferByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -300,26 +300,26 @@ func (svc StockTransferService) DeleteStockTransferByGUIDs(shopID string, authUs
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
 
 	func() {
-		docs, _ := svc.repo.FindByGuids(ctx, shopID, GUIDs)
+		docs, _ := svc.repo.FindByGuids(ctx, holdingCode, GUIDs)
 		svc.repoMq.DeleteInBatch(docs)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc StockTransferService) InfoStockTransfer(shopID string, guid string) (models.StockTransferInfo, error) {
+func (svc StockTransferService) InfoStockTransfer(holdingCode string, guid string) (models.StockTransferInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.StockTransferInfo{}, err
@@ -332,12 +332,12 @@ func (svc StockTransferService) InfoStockTransfer(shopID string, guid string) (m
 	return findDoc.StockTransferInfo, nil
 }
 
-func (svc StockTransferService) InfoStockTransferByCode(shopID string, code string) (models.StockTransferInfo, error) {
+func (svc StockTransferService) InfoStockTransferByCode(holdingCode string, code string) (models.StockTransferInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", code)
 
 	if err != nil {
 		return models.StockTransferInfo{}, err
@@ -350,7 +350,7 @@ func (svc StockTransferService) InfoStockTransferByCode(shopID string, code stri
 	return findDoc.StockTransferInfo, nil
 }
 
-func (svc StockTransferService) SearchStockTransfer(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.StockTransferInfo, mongopagination.PaginationData, error) {
+func (svc StockTransferService) SearchStockTransfer(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.StockTransferInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -359,7 +359,7 @@ func (svc StockTransferService) SearchStockTransfer(shopID string, filters map[s
 		"docno",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.StockTransferInfo{}, pagination, err
@@ -368,7 +368,7 @@ func (svc StockTransferService) SearchStockTransfer(shopID string, filters map[s
 	return docList, pagination, nil
 }
 
-func (svc StockTransferService) SearchStockTransferStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.StockTransferInfo, int, error) {
+func (svc StockTransferService) SearchStockTransferStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.StockTransferInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -379,7 +379,7 @@ func (svc StockTransferService) SearchStockTransferStep(shopID string, langCode 
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.StockTransferInfo{}, 0, err
@@ -388,7 +388,7 @@ func (svc StockTransferService) SearchStockTransferStep(shopID string, langCode 
 	return docList, total, nil
 }
 
-func (svc StockTransferService) SaveInBatch(shopID string, authUsername string, dataList []models.StockTransfer) (common.BulkImport, error) {
+func (svc StockTransferService) SaveInBatch(holdingCode string, authUsername string, dataList []models.StockTransfer) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -400,7 +400,7 @@ func (svc StockTransferService) SaveInBatch(shopID string, authUsername string, 
 		itemCodeGuidList = append(itemCodeGuidList, doc.DocNo)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "docno", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "docno", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -412,18 +412,18 @@ func (svc StockTransferService) SaveInBatch(shopID string, authUsername string, 
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.StockTransfer, models.StockTransferDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.StockTransfer) models.StockTransferDoc {
+		func(holdingCode string, authUsername string, doc models.StockTransfer) models.StockTransferDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.StockTransferDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.StockTransfer = doc
 
 			currentTime := time.Now()
@@ -434,23 +434,23 @@ func (svc StockTransferService) SaveInBatch(shopID string, authUsername string, 
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.StockTransfer, models.StockTransferDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.StockTransferDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", guid)
+		func(holdingCode string, guid string) (models.StockTransferDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", guid)
 		},
 		func(doc models.StockTransferDoc) bool {
 			return doc.DocNo != ""
 		},
-		func(shopID string, authUsername string, data models.StockTransfer, doc models.StockTransferDoc) error {
+		func(holdingCode string, authUsername string, data models.StockTransfer, doc models.StockTransferDoc) error {
 
 			doc.StockTransfer = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -489,7 +489,7 @@ func (svc StockTransferService) SaveInBatch(shopID string, authUsername string, 
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -503,9 +503,9 @@ func (svc StockTransferService) getDocIDKey(doc models.StockTransfer) string {
 	return doc.DocNo
 }
 
-func (svc StockTransferService) saveMasterSync(shopID string) {
+func (svc StockTransferService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

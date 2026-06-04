@@ -14,7 +14,7 @@ func TestParseTransactionToPaymentDetail(t *testing.T) {
 
 	// Test case 1
 	transaction1 := transmodels.TransactionMessageQueue{}
-	transaction1.ShopID = "shop01"
+	transaction1.HoldingCode = "shop01"
 	transaction1.DocNo = "DOC1"
 	transaction1.TransFlag = 44
 	transaction1.PaymentDetailRaw = `[
@@ -44,7 +44,7 @@ func TestParseTransactionToPaymentDetail(t *testing.T) {
 
 	paymentDetail1 := []models.TransactionPaymentDetail{
 		{
-			ShopID:        "shop01",
+			HoldingCode:   "shop01",
 			DocNo:         "DOC1",
 			DocMode:       0,
 			TransFlag:     44,
@@ -103,11 +103,11 @@ func TestParseTransactionToPaymentDetail(t *testing.T) {
 	paymentDetail5 := []models.TransactionPaymentDetail{}
 
 	tests := []struct {
-		name       string
-		giveShopID string
-		give       transmodels.TransactionMessageQueue
-		expectErr  bool
-		expect     []models.TransactionPaymentDetail
+		name            string
+		giveHoldingCode string
+		give            transmodels.TransactionMessageQueue
+		expectErr       bool
+		expect          []models.TransactionPaymentDetail
 	}{
 		{
 			name:      "pass full body",

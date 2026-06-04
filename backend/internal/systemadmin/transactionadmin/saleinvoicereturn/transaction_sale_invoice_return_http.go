@@ -51,7 +51,7 @@ func (s *SaleInvoiceReturnTransactionAdminHttp) ReSyncSaleInvoiceReturnTransacti
 		return err
 	}
 
-	err = s.svc.ReSyncSaleInvoiceReturnDoc(req.ShopID)
+	err = s.svc.ReSyncSaleInvoiceReturnDoc(req.HoldingCode)
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, common.ApiResponse{
 			Success: false,
@@ -81,7 +81,7 @@ func (s *SaleInvoiceReturnTransactionAdminHttp) ReSyncSaleInvoiceReturnDeleteTra
 		return err
 	}
 
-	err = s.svc.ReSyncSaleInvoiceReturnDeleteDoc(req.ShopID)
+	err = s.svc.ReSyncSaleInvoiceReturnDeleteDoc(req.HoldingCode)
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, common.ApiResponse{
 			Success: false,

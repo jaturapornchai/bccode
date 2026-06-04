@@ -61,7 +61,7 @@ func (h CustomerGroupHttp) RegisterHttp() {
 // @Router /debtaccount/customer-group [post]
 func (h CustomerGroupHttp) CreateCustomerGroup(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.CustomerGroup{}
@@ -77,7 +77,7 @@ func (h CustomerGroupHttp) CreateCustomerGroup(ctx microservice.IContext) error 
 		return err
 	}
 
-	idx, err := h.svc.CreateCustomerGroup(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateCustomerGroup(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -104,7 +104,7 @@ func (h CustomerGroupHttp) CreateCustomerGroup(ctx microservice.IContext) error 
 func (h CustomerGroupHttp) UpdateCustomerGroup(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -122,7 +122,7 @@ func (h CustomerGroupHttp) UpdateCustomerGroup(ctx microservice.IContext) error 
 		return err
 	}
 
-	err = h.svc.UpdateCustomerGroup(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateCustomerGroup(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -148,12 +148,12 @@ func (h CustomerGroupHttp) UpdateCustomerGroup(ctx microservice.IContext) error 
 // @Router /debtaccount/customer-group/{id} [delete]
 func (h CustomerGroupHttp) DeleteCustomerGroup(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteCustomerGroup(shopID, id, authUsername)
+	err := h.svc.DeleteCustomerGroup(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -179,7 +179,7 @@ func (h CustomerGroupHttp) DeleteCustomerGroup(ctx microservice.IContext) error 
 // @Router /debtaccount/customer-group [delete]
 func (h CustomerGroupHttp) DeleteCustomerGroupByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -192,7 +192,7 @@ func (h CustomerGroupHttp) DeleteCustomerGroupByGUIDs(ctx microservice.IContext)
 		return err
 	}
 
-	err = h.svc.DeleteCustomerGroupByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteCustomerGroupByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -217,12 +217,12 @@ func (h CustomerGroupHttp) DeleteCustomerGroupByGUIDs(ctx microservice.IContext)
 // @Router /debtaccount/customer-group/{id} [get]
 func (h CustomerGroupHttp) InfoCustomerGroup(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get CustomerGroup %v", id)
-	doc, err := h.svc.InfoCustomerGroup(shopID, id)
+	doc, err := h.svc.InfoCustomerGroup(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -250,11 +250,11 @@ func (h CustomerGroupHttp) InfoCustomerGroup(ctx microservice.IContext) error {
 // @Router /debtaccount/customer-group [get]
 func (h CustomerGroupHttp) SearchCustomerGroupPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.SearchCustomerGroup(shopID, map[string]interface{}{}, pageable)
+	docList, pagination, err := h.svc.SearchCustomerGroup(holdingCode, map[string]interface{}{}, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -283,13 +283,13 @@ func (h CustomerGroupHttp) SearchCustomerGroupPage(ctx microservice.IContext) er
 // @Router /debtaccount/customer-group/list [get]
 func (h CustomerGroupHttp) SearchCustomerGroupStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
 	lang := ctx.QueryParam("lang")
 
-	docList, total, err := h.svc.SearchCustomerGroupStep(shopID, lang, pageableStep)
+	docList, total, err := h.svc.SearchCustomerGroupStep(holdingCode, lang, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -317,7 +317,7 @@ func (h CustomerGroupHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -329,7 +329,7 @@ func (h CustomerGroupHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

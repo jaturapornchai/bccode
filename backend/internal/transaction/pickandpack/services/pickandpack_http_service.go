@@ -22,23 +22,23 @@ import (
 )
 
 type IPickandpackHttpService interface {
-	CreatePickandpack(shopID string, authUsername string, doc models.Pickandpack) (string, string, error)
-	UpdatePickandpack(shopID string, guid string, authUsername string, doc models.Pickandpack) error
-	DeletePickandpack(shopID string, guid string, authUsername string) error
-	DeletePickandpackByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoPickandpack(shopID string, guid string) (models.PickandpackInfo, error)
-	InfoPickandpackByCode(shopID string, code string) (models.PickandpackInfo, error)
-	SearchPickandpack(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.PickandpackInfo, mongopagination.PaginationData, error)
-	SearchPickandpackStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.PickandpackInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.Pickandpack) (common.BulkImport, error)
+	CreatePickandpack(holdingCode string, authUsername string, doc models.Pickandpack) (string, string, error)
+	UpdatePickandpack(holdingCode string, guid string, authUsername string, doc models.Pickandpack) error
+	DeletePickandpack(holdingCode string, guid string, authUsername string) error
+	DeletePickandpackByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoPickandpack(holdingCode string, guid string) (models.PickandpackInfo, error)
+	InfoPickandpackByCode(holdingCode string, code string) (models.PickandpackInfo, error)
+	SearchPickandpack(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.PickandpackInfo, mongopagination.PaginationData, error)
+	SearchPickandpackStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.PickandpackInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.Pickandpack) (common.BulkImport, error)
 
 	// New update methods
-	UpdatePrint(shopID string, docNo string, authUsername string) error
-	ConfirmPickandpack(shopID string, docNo string, authUsername string) error
-	CancelPickandpack(shopID string, docNo string, authUsername string) error
+	UpdatePrint(holdingCode string, docNo string, authUsername string) error
+	ConfirmPickandpack(holdingCode string, docNo string, authUsername string) error
+	CancelPickandpack(holdingCode string, docNo string, authUsername string) error
 
 	// Dashboard methods
-	GetWarehouseDashboard(shopID string, whcodes []string, locationcodes []string, fromDate, toDate string) (interface{}, error)
+	GetWarehouseDashboard(holdingCode string, whcodes []string, locationcodes []string, fromDate, toDate string) (interface{}, error)
 
 	GetModuleName() string
 }
@@ -89,11 +89,11 @@ func (svc PickandpackHttpService) getDocNoPrefix(docDate time.Time) string {
 	return fmt.Sprintf("%s%s", MODULE_NAME, docDateStr)
 }
 
-func (svc PickandpackHttpService) generateNewDocNo(ctx context.Context, shopID, prefixDocNo string, docNumber int) (string, int, error) {
-	prevoiusDocNumber, err := svc.repoCache.Get(shopID, prefixDocNo)
+func (svc PickandpackHttpService) generateNewDocNo(ctx context.Context, holdingCode, prefixDocNo string, docNumber int) (string, int, error) {
+	prevoiusDocNumber, err := svc.repoCache.Get(holdingCode, prefixDocNo)
 
 	if prevoiusDocNumber == 0 || err != nil {
-		lastDoc, err := svc.repo.FindLastDocNo(ctx, shopID, prefixDocNo)
+		lastDoc, err := svc.repo.FindLastDocNo(ctx, holdingCode, prefixDocNo)
 
 		if err != nil {
 			return "", 0, err
@@ -113,7 +113,7 @@ func (svc PickandpackHttpService) generateNewDocNo(ctx context.Context, shopID, 
 	newDocNumber := prevoiusDocNumber + 1
 	newDocNo := fmt.Sprintf("%s%05d", prefixDocNo, newDocNumber)
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", newDocNo)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", newDocNo)
 
 	if err != nil {
 		return "", 0, err
@@ -126,7 +126,7 @@ func (svc PickandpackHttpService) generateNewDocNo(ctx context.Context, shopID, 
 	return newDocNo, newDocNumber, nil
 }
 
-func (svc PickandpackHttpService) CreatePickandpack(shopID string, authUsername string, doc models.Pickandpack) (string, string, error) {
+func (svc PickandpackHttpService) CreatePickandpack(holdingCode string, authUsername string, doc models.Pickandpack) (string, string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -134,7 +134,7 @@ func (svc PickandpackHttpService) CreatePickandpack(shopID string, authUsername 
 	docDate := doc.DocDatetime
 	prefixDocNo := svc.getDocNoPrefix(docDate)
 
-	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, shopID, prefixDocNo, 1)
+	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, holdingCode, prefixDocNo, 1)
 
 	if err != nil {
 		return "", "", err
@@ -143,7 +143,7 @@ func (svc PickandpackHttpService) CreatePickandpack(shopID string, authUsername 
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.PickandpackDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.Pickandpack = doc
 
@@ -157,23 +157,23 @@ func (svc PickandpackHttpService) CreatePickandpack(shopID string, authUsername 
 		return "", "", err
 	}
 
-	go svc.repoCache.Save(shopID, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
+	go svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
 
 	go func() {
 		svc.repoMq.Create(docData)
-		svc.repoCache.Save(shopID, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
-		svc.saveMasterSync(shopID)
+		svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return newGuidFixed, newDocNo, nil
 }
 
-func (svc PickandpackHttpService) UpdatePickandpack(shopID string, guid string, authUsername string, doc models.Pickandpack) error {
+func (svc PickandpackHttpService) UpdatePickandpack(holdingCode string, guid string, authUsername string, doc models.Pickandpack) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -190,7 +190,7 @@ func (svc PickandpackHttpService) UpdatePickandpack(shopID string, guid string, 
 	docData.UpdatedBy = authUsername
 	docData.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, docData)
+	err = svc.repo.Update(ctx, holdingCode, guid, docData)
 
 	if err != nil {
 		return err
@@ -198,18 +198,18 @@ func (svc PickandpackHttpService) UpdatePickandpack(shopID string, guid string, 
 
 	func() {
 		svc.repoMq.Update(docData)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc PickandpackHttpService) DeletePickandpack(shopID string, guid string, authUsername string) error {
+func (svc PickandpackHttpService) DeletePickandpack(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -219,20 +219,20 @@ func (svc PickandpackHttpService) DeletePickandpack(shopID string, guid string, 
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
 	func() {
 		svc.repoMq.Delete(findDoc)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc PickandpackHttpService) DeletePickandpackByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc PickandpackHttpService) DeletePickandpackByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -241,26 +241,26 @@ func (svc PickandpackHttpService) DeletePickandpackByGUIDs(shopID string, authUs
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
 
 	func() {
-		docs, _ := svc.repo.FindByGuids(ctx, shopID, GUIDs)
+		docs, _ := svc.repo.FindByGuids(ctx, holdingCode, GUIDs)
 		svc.repoMq.DeleteInBatch(docs)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc PickandpackHttpService) InfoPickandpack(shopID string, guid string) (models.PickandpackInfo, error) {
+func (svc PickandpackHttpService) InfoPickandpack(holdingCode string, guid string) (models.PickandpackInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.PickandpackInfo{}, err
@@ -273,12 +273,12 @@ func (svc PickandpackHttpService) InfoPickandpack(shopID string, guid string) (m
 	return findDoc.PickandpackInfo, nil
 }
 
-func (svc PickandpackHttpService) InfoPickandpackByCode(shopID string, code string) (models.PickandpackInfo, error) {
+func (svc PickandpackHttpService) InfoPickandpackByCode(holdingCode string, code string) (models.PickandpackInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", code)
 
 	if err != nil {
 		return models.PickandpackInfo{}, err
@@ -291,7 +291,7 @@ func (svc PickandpackHttpService) InfoPickandpackByCode(shopID string, code stri
 	return findDoc.PickandpackInfo, nil
 }
 
-func (svc PickandpackHttpService) SearchPickandpack(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.PickandpackInfo, mongopagination.PaginationData, error) {
+func (svc PickandpackHttpService) SearchPickandpack(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.PickandpackInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -300,7 +300,7 @@ func (svc PickandpackHttpService) SearchPickandpack(shopID string, filters map[s
 		"docno",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.PickandpackInfo{}, pagination, err
@@ -309,7 +309,7 @@ func (svc PickandpackHttpService) SearchPickandpack(shopID string, filters map[s
 	return docList, pagination, nil
 }
 
-func (svc PickandpackHttpService) SearchPickandpackStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.PickandpackInfo, int, error) {
+func (svc PickandpackHttpService) SearchPickandpackStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.PickandpackInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -320,7 +320,7 @@ func (svc PickandpackHttpService) SearchPickandpackStep(shopID string, langCode 
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.PickandpackInfo{}, 0, err
@@ -329,7 +329,7 @@ func (svc PickandpackHttpService) SearchPickandpackStep(shopID string, langCode 
 	return docList, total, nil
 }
 
-func (svc PickandpackHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.Pickandpack) (common.BulkImport, error) {
+func (svc PickandpackHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.Pickandpack) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -341,7 +341,7 @@ func (svc PickandpackHttpService) SaveInBatch(shopID string, authUsername string
 		itemCodeGuidList = append(itemCodeGuidList, doc.DocNo)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "docno", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "docno", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -353,18 +353,18 @@ func (svc PickandpackHttpService) SaveInBatch(shopID string, authUsername string
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.Pickandpack, models.PickandpackDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.Pickandpack) models.PickandpackDoc {
+		func(holdingCode string, authUsername string, doc models.Pickandpack) models.PickandpackDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.PickandpackDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.Pickandpack = doc
 
 			currentTime := time.Now()
@@ -375,23 +375,23 @@ func (svc PickandpackHttpService) SaveInBatch(shopID string, authUsername string
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.Pickandpack, models.PickandpackDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.PickandpackDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", guid)
+		func(holdingCode string, guid string) (models.PickandpackDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", guid)
 		},
 		func(doc models.PickandpackDoc) bool {
 			return doc.DocNo != ""
 		},
-		func(shopID string, authUsername string, data models.Pickandpack, doc models.PickandpackDoc) error {
+		func(holdingCode string, authUsername string, data models.Pickandpack, doc models.PickandpackDoc) error {
 
 			doc.Pickandpack = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -430,7 +430,7 @@ func (svc PickandpackHttpService) SaveInBatch(shopID string, authUsername string
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -444,9 +444,9 @@ func (svc PickandpackHttpService) getDocIDKey(doc models.Pickandpack) string {
 	return doc.DocNo
 }
 
-func (svc PickandpackHttpService) saveMasterSync(shopID string) {
+func (svc PickandpackHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())
@@ -455,12 +455,12 @@ func (svc PickandpackHttpService) saveMasterSync(shopID string) {
 }
 
 // UpdatePrint updates pickandpack print status
-func (svc PickandpackHttpService) UpdatePrint(shopID string, docNo string, authUsername string) error {
+func (svc PickandpackHttpService) UpdatePrint(holdingCode string, docNo string, authUsername string) error {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
 	// Find document by DocNo
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", docNo)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", docNo)
 	if err != nil {
 		return err
 	}
@@ -479,7 +479,7 @@ func (svc PickandpackHttpService) UpdatePrint(shopID string, docNo string, authU
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, findDoc.GuidFixed, findDoc)
+	err = svc.repo.Update(ctx, holdingCode, findDoc.GuidFixed, findDoc)
 	if err != nil {
 		return err
 	}
@@ -489,19 +489,19 @@ func (svc PickandpackHttpService) UpdatePrint(shopID string, docNo string, authU
 		if err != nil {
 			fmt.Printf("update mq error :: %s", err.Error())
 		}
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
 // ConfirmPickandpack updates pickandpack confirm status
-func (svc PickandpackHttpService) ConfirmPickandpack(shopID string, docNo string, authUsername string) error {
+func (svc PickandpackHttpService) ConfirmPickandpack(holdingCode string, docNo string, authUsername string) error {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
 	// Find document by DocNo
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", docNo)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", docNo)
 	if err != nil {
 		return err
 	}
@@ -520,7 +520,7 @@ func (svc PickandpackHttpService) ConfirmPickandpack(shopID string, docNo string
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, findDoc.GuidFixed, findDoc)
+	err = svc.repo.Update(ctx, holdingCode, findDoc.GuidFixed, findDoc)
 	if err != nil {
 		return err
 	}
@@ -530,19 +530,19 @@ func (svc PickandpackHttpService) ConfirmPickandpack(shopID string, docNo string
 		if err != nil {
 			fmt.Printf("update mq error :: %s", err.Error())
 		}
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
 // CancelPickandpack cancels pickandpack document
-func (svc PickandpackHttpService) CancelPickandpack(shopID string, docNo string, authUsername string) error {
+func (svc PickandpackHttpService) CancelPickandpack(holdingCode string, docNo string, authUsername string) error {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
 	// Find document by DocNo
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", docNo)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", docNo)
 	if err != nil {
 		return err
 	}
@@ -558,7 +558,7 @@ func (svc PickandpackHttpService) CancelPickandpack(shopID string, docNo string,
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, findDoc.GuidFixed, findDoc)
+	err = svc.repo.Update(ctx, holdingCode, findDoc.GuidFixed, findDoc)
 	if err != nil {
 		return err
 	}
@@ -568,19 +568,19 @@ func (svc PickandpackHttpService) CancelPickandpack(shopID string, docNo string,
 		if err != nil {
 			fmt.Printf("update mq error :: %s", err.Error())
 		}
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
 // GetWarehouseDashboard gets warehouse statistics for pickandpack documents
-func (svc PickandpackHttpService) GetWarehouseDashboard(shopID string, whcodes []string, locationcodes []string, fromDate, toDate string) (interface{}, error) {
+func (svc PickandpackHttpService) GetWarehouseDashboard(holdingCode string, whcodes []string, locationcodes []string, fromDate, toDate string) (interface{}, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
 	// Use repository method for aggregation
-	results, err := svc.repo.AggregateWarehouseDashboard(ctx, shopID, whcodes, locationcodes, fromDate, toDate)
+	results, err := svc.repo.AggregateWarehouseDashboard(ctx, holdingCode, whcodes, locationcodes, fromDate, toDate)
 	if err != nil {
 		return nil, err
 	}

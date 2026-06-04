@@ -17,7 +17,7 @@ import (
 // ถ้า provider แรกเป็น ollama → ใช้ ReAct mode (local models ไม่รองรับ native tool_calls ดี)
 // อื่นๆ → ใช้ v2 (OpenAI function calling)
 func routeAgentLoop(ctx context.Context, req AgentV2Request, emitSSE func(SSEEvent)) (*AgentChatResponse, error) {
-	providers := aiprovider.GetShopToolCallingProviders(req.ShopID)
+	providers := aiprovider.GetShopToolCallingProviders(req.HoldingCode)
 	if len(providers) > 0 && strings.EqualFold(providers[0].Name(), "ollama") {
 		logger.Info("[น้องกุ้ง] Provider=ollama → ใช้ ReAct mode")
 		return RunAgentReAct(ctx, req, emitSSE)
@@ -35,9 +35,9 @@ func ChatAgentV2(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" || req.Question == "" {
+	if req.HoldingCode == "" || req.Question == "" {
 		return c.JSON(http.StatusBadRequest, AgentChatResponse{
-			Success: false, Message: "shop_id and question are required", Timestamp: time.Now(),
+			Success: false, Message: "holding_code and question are required", Timestamp: time.Now(),
 		})
 	}
 
@@ -46,7 +46,7 @@ func ChatAgentV2(c echo.Context) error {
 		req.OutputFormat = "html"
 	}
 
-	logger.Info("[น้องกุ้ง] Question: %s (shop: %s, session: %s, format: %s)", req.Question, req.ShopID, req.SessionID, req.OutputFormat)
+	logger.Info("[น้องกุ้ง] Question: %s (shop: %s, session: %s, format: %s)", req.Question, req.HoldingCode, req.SessionID, req.OutputFormat)
 
 	// Check SSE support — ต้องดึง underlying http.Flusher จาก echo.Response.Writer
 	flusher, ok := c.Response().Writer.(http.Flusher)
@@ -110,9 +110,9 @@ func ChatAgentV2Sync(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" || req.Question == "" {
+	if req.HoldingCode == "" || req.Question == "" {
 		return c.JSON(http.StatusBadRequest, AgentChatResponse{
-			Success: false, Message: "shop_id and question are required", Timestamp: time.Now(),
+			Success: false, Message: "holding_code and question are required", Timestamp: time.Now(),
 		})
 	}
 
@@ -120,7 +120,7 @@ func ChatAgentV2Sync(c echo.Context) error {
 		req.OutputFormat = "html"
 	}
 
-	logger.Info("[น้องกุ้ง-sync] Question: %s (shop: %s, format: %s)", req.Question, req.ShopID, req.OutputFormat)
+	logger.Info("[น้องกุ้ง-sync] Question: %s (shop: %s, format: %s)", req.Question, req.HoldingCode, req.OutputFormat)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 180*time.Second)
 	defer cancel()
@@ -133,7 +133,7 @@ func ChatAgentV2Sync(c echo.Context) error {
 		logger.Error("[น้องกุ้ง-sync] Agent loop failed: %v", err)
 		ocErr := classifyAgentError(err)
 		body := ocErr.AsResponseBody()
-		body["session_key"] = BuildSessionKey(req.ShopID, req.SessionID)
+		body["session_key"] = BuildSessionKey(req.HoldingCode, req.SessionID)
 		body["timestamp"] = time.Now()
 		return c.JSON(http.StatusInternalServerError, body)
 	}
@@ -145,17 +145,17 @@ func ChatAgentV2Sync(c echo.Context) error {
 // POST /api/v1/chatbot/clear-session
 func ClearChatSession(c echo.Context) error {
 	var req struct {
-		ShopID string `json:"shop_id"`
-		SessionID string `json:"session_id"`
+		HoldingCode string `json:"holding_code"`
+		SessionID   string `json:"session_id"`
 	}
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]any{"success": false, "message": err.Error()})
 	}
-	if req.ShopID == "" || req.SessionID == "" {
-		return c.JSON(http.StatusBadRequest, map[string]any{"success": false, "message": "shop_id and session_id required"})
+	if req.HoldingCode == "" || req.SessionID == "" {
+		return c.JSON(http.StatusBadRequest, map[string]any{"success": false, "message": "holding_code and session_id required"})
 	}
 
-	if err := clearSession(req.SessionID, req.ShopID); err != nil {
+	if err := clearSession(req.SessionID, req.HoldingCode); err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]any{"success": false, "message": err.Error()})
 	}
 

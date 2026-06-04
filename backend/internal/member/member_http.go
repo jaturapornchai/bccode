@@ -117,7 +117,7 @@ func (h MemberHttp) MemberAuthLine(ctx microservice.IContext) error {
 // @Router /member/profile [put]
 func (h MemberHttp) UpdateMemberProfileWithLine(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	lineUID := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -130,7 +130,7 @@ func (h MemberHttp) UpdateMemberProfileWithLine(ctx microservice.IContext) error
 		return err
 	}
 
-	err = h.service.UpdateProfileWithLine(shopID, lineUID, docReq)
+	err = h.service.UpdateProfileWithLine(holdingCode, lineUID, docReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())
@@ -154,10 +154,10 @@ func (h MemberHttp) UpdateMemberProfileWithLine(ctx microservice.IContext) error
 func (h MemberHttp) LineProfileInfo(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	lineUID := userInfo.Username
 
-	doc, err := h.service.LineProfileInfo(shopID, lineUID)
+	doc, err := h.service.LineProfileInfo(holdingCode, lineUID)
 
 	if err != nil && err.Error() != "mongo: no documents in result" {
 		ctx.ResponseError(400, err.Error())
@@ -191,7 +191,7 @@ func (h MemberHttp) LineProfileInfo(ctx microservice.IContext) error {
 func (h MemberHttp) CreateMember(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -203,7 +203,7 @@ func (h MemberHttp) CreateMember(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.service.Create(shopID, authUsername, doc)
+	idx, err := h.service.Create(holdingCode, authUsername, doc)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())
@@ -230,7 +230,7 @@ func (h MemberHttp) CreateMember(ctx microservice.IContext) error {
 func (h MemberHttp) UpdateMember(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	guid := ctx.Param("id")
 
@@ -244,7 +244,7 @@ func (h MemberHttp) UpdateMember(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.service.Update(shopID, authUsername, guid, *docReq)
+	err = h.service.Update(holdingCode, authUsername, guid, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())
@@ -269,11 +269,11 @@ func (h MemberHttp) UpdateMember(ctx microservice.IContext) error {
 func (h MemberHttp) InfoMember(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
-	doc, err := h.service.Info(shopID, id)
+	doc, err := h.service.Info(holdingCode, id)
 
 	if err != nil && err.Error() != "mongo: no documents in result" {
 		ctx.ResponseError(400, err.Error())
@@ -308,13 +308,13 @@ func (h MemberHttp) InfoMember(ctx microservice.IContext) error {
 // @Router /member [get]
 func (h MemberHttp) SearchMemberPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
 	filters := requestfilter.GenerateFilters(ctx.QueryParam, []requestfilter.FilterRequest{})
 
-	docList, pagination, err := h.service.SearchMemberInfo(shopID, filters, pageable)
+	docList, pagination, err := h.service.SearchMemberInfo(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -343,7 +343,7 @@ func (h MemberHttp) SearchMemberPage(ctx microservice.IContext) error {
 // @Router /member/list [get]
 func (h MemberHttp) SearchMemberStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -351,7 +351,7 @@ func (h MemberHttp) SearchMemberStep(ctx microservice.IContext) error {
 
 	filters := requestfilter.GenerateFilters(ctx.QueryParam, []requestfilter.FilterRequest{})
 
-	docList, total, err := h.service.SearchMemberStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.service.SearchMemberStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

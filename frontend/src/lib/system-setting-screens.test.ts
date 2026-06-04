@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import { getSystemSettingConfig } from "./system-setting-screens";
 
 describe("system setting screen configs", () => {
-  it("uses the legacy unit guid field when deleting product units", () => {
+  it("uses the immutable guid_fixed field when deleting product units", () => {
     const config = getSystemSettingConfig("productunit");
 
     expect(config?.basePath).toBe("/unit");
-    expect(config?.idField).toBe("guidfixed");
+    expect(config?.idField).toBe("guid_fixed");
   });
 
   it("keeps branch settings aligned with the legacy Flutter branch model", () => {
@@ -80,8 +80,8 @@ describe("system setting screen configs", () => {
     const config = getSystemSettingConfig("active_languages");
     const keys = new Set(config?.fields.map((field) => field.key));
 
-    expect(config?.fields[0]?.key).toBe("settings.languageconfigs");
-    expect(keys.has("settings.languageconfigs")).toBe(true);
+    expect(config?.fields[0]?.key).toBe("settings.language_configs");
+    expect(keys.has("settings.language_configs")).toBe(true);
     expect(keys.has("settings.language")).toBe(false);
   });
 
@@ -106,5 +106,46 @@ describe("system setting screen configs", () => {
     expect(
       dateFormat?.options?.some((option) => option.value === "MMMM dd, yyyy"),
     ).toBe(true);
+  });
+
+  it("defines neutral SKU option masters on MongoDB Atlas collections", () => {
+    const color = getSystemSettingConfig("product_color");
+    const size = getSystemSettingConfig("product_size");
+    const matrix = getSystemSettingConfig("product_variant_matrix");
+
+    expect(color).toMatchObject({
+      route: "/product_color",
+      kind: "atlas",
+      collection: "product_colors",
+      idField: "guid_fixed",
+    });
+    expect(size).toMatchObject({
+      route: "/product_size",
+      kind: "atlas",
+      collection: "product_sizes",
+      idField: "guid_fixed",
+    });
+    expect(matrix).toMatchObject({
+      route: "/product_variant_matrix",
+      kind: "atlas",
+      collection: "product_variant_matrices",
+      idField: "guid_fixed",
+    });
+
+    expect(color?.fields.map((field) => field.key)).toContain("aliases");
+    expect(size?.fields.map((field) => field.key)).toContain("aliases");
+    expect(matrix?.fields.map((field) => field.key)).toEqual(
+      expect.arrayContaining([
+        "option_tiers",
+        "sku_combinations",
+        "media_assets",
+        "specification_groups",
+        "import_attribute_maps",
+        "integration_profiles",
+        "payload_examples",
+        "serial_tracking_mode",
+        "business_codes",
+      ]),
+    );
   });
 });

@@ -58,7 +58,7 @@ func (h FileStatusHttp) RegisterHttp() {
 // @Router /file-status [post]
 func (h FileStatusHttp) CreateFileStatus(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.FileStatus{}
@@ -74,7 +74,7 @@ func (h FileStatusHttp) CreateFileStatus(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreateFileStatus(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateFileStatus(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -101,7 +101,7 @@ func (h FileStatusHttp) CreateFileStatus(ctx microservice.IContext) error {
 func (h FileStatusHttp) UpdateFileStatus(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -119,7 +119,7 @@ func (h FileStatusHttp) UpdateFileStatus(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateFileStatus(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateFileStatus(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -145,12 +145,12 @@ func (h FileStatusHttp) UpdateFileStatus(ctx microservice.IContext) error {
 // @Router /file-status/{id} [delete]
 func (h FileStatusHttp) DeleteFileStatus(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteFileStatus(shopID, id, authUsername)
+	err := h.svc.DeleteFileStatus(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -176,12 +176,12 @@ func (h FileStatusHttp) DeleteFileStatus(ctx microservice.IContext) error {
 // @Router /file-status/menu/{menu} [delete]
 func (h FileStatusHttp) DeleteFileStatusByMenu(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	menu := ctx.Param("menu")
 
-	err := h.svc.DeleteFileStatusByMenu(shopID, authUsername, menu)
+	err := h.svc.DeleteFileStatusByMenu(holdingCode, authUsername, menu)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -206,7 +206,7 @@ func (h FileStatusHttp) DeleteFileStatusByMenu(ctx microservice.IContext) error 
 // @Router /file-status [delete]
 func (h FileStatusHttp) DeleteFileStatusByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -219,7 +219,7 @@ func (h FileStatusHttp) DeleteFileStatusByGUIDs(ctx microservice.IContext) error
 		return err
 	}
 
-	err = h.svc.DeleteFileStatusByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteFileStatusByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -244,12 +244,12 @@ func (h FileStatusHttp) DeleteFileStatusByGUIDs(ctx microservice.IContext) error
 // @Router /file-status/{id} [get]
 func (h FileStatusHttp) InfoFileStatus(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get FileStatus %v", id)
-	doc, err := h.svc.InfoFileStatus(shopID, id)
+	doc, err := h.svc.InfoFileStatus(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -277,7 +277,7 @@ func (h FileStatusHttp) InfoFileStatus(ctx microservice.IContext) error {
 // @Router /file-status [get]
 func (h FileStatusHttp) SearchFileStatusPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	pageable := utils.GetPageable(ctx.QueryParam)
@@ -297,7 +297,7 @@ func (h FileStatusHttp) SearchFileStatusPage(ctx microservice.IContext) error {
 
 	filters["username"] = authUsername
 
-	docList, pagination, err := h.svc.SearchFileStatus(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchFileStatus(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -326,7 +326,7 @@ func (h FileStatusHttp) SearchFileStatusPage(ctx microservice.IContext) error {
 // @Router /file-status/list [get]
 func (h FileStatusHttp) SearchFileStatusStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
@@ -348,7 +348,7 @@ func (h FileStatusHttp) SearchFileStatusStep(ctx microservice.IContext) error {
 
 	filters["username"] = authUsername
 
-	docList, total, err := h.svc.SearchFileStatusStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchFileStatusStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

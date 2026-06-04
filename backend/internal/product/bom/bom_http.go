@@ -69,7 +69,7 @@ func (h BOMHttp) RegisterHttp() {
 // @Router /product/bom [post]
 func (h BOMHttp) CreateBOM(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 	if input != "" && input != "null" {
 		docReq := &models.ProductBarcodeBOMSaveRequest{}
@@ -79,7 +79,7 @@ func (h BOMHttp) CreateBOM(ctx microservice.IContext) error {
 			return err
 		}
 
-		idx, err := h.svc.SaveRecipeBOM(shopID, authUsername, "", *docReq)
+		idx, err := h.svc.SaveRecipeBOM(holdingCode, authUsername, "", *docReq)
 		if err != nil {
 			ctx.ResponseError(http.StatusBadRequest, err.Error())
 			return err
@@ -106,7 +106,7 @@ func (h BOMHttp) CreateBOM(ctx microservice.IContext) error {
 		return nil
 	}
 
-	idx, err := h.svc.UpsertBOM(shopID, authUsername, docNo, barcode)
+	idx, err := h.svc.UpsertBOM(holdingCode, authUsername, docNo, barcode)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -133,7 +133,7 @@ func (h BOMHttp) CreateBOM(ctx microservice.IContext) error {
 func (h BOMHttp) UpdateBOM(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	id := ctx.Param("id")
 	if id == "" {
 		ctx.ResponseError(http.StatusBadRequest, "guid is empty")
@@ -147,7 +147,7 @@ func (h BOMHttp) UpdateBOM(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.SaveRecipeBOM(shopID, authUsername, id, *docReq)
+	idx, err := h.svc.SaveRecipeBOM(holdingCode, authUsername, id, *docReq)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -171,12 +171,12 @@ func (h BOMHttp) UpdateBOM(ctx microservice.IContext) error {
 // @Router /product/bom/{id} [delete]
 func (h BOMHttp) DeleteBOM(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteBOM(shopID, id, authUsername)
+	err := h.svc.DeleteBOM(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -202,12 +202,12 @@ func (h BOMHttp) DeleteBOM(ctx microservice.IContext) error {
 // @Router /product/bom/{id} [get]
 func (h BOMHttp) InfoBOM(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get BOM %v", id)
-	doc, err := h.svc.InfoBOM(shopID, id)
+	doc, err := h.svc.InfoBOM(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -236,13 +236,13 @@ func (h BOMHttp) InfoBOM(ctx microservice.IContext) error {
 // @Router /product/bom [get]
 func (h BOMHttp) SearchBOMPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
 	filters := h.searchFilter(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.SearchBOM(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchBOM(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -272,7 +272,7 @@ func (h BOMHttp) SearchBOMPage(ctx microservice.IContext) error {
 // @Router /product/bom/list [get]
 func (h BOMHttp) SearchBOMStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -280,7 +280,7 @@ func (h BOMHttp) SearchBOMStep(ctx microservice.IContext) error {
 
 	filters := h.searchFilter(ctx.QueryParam)
 
-	docList, total, err := h.svc.SearchBOMStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchBOMStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

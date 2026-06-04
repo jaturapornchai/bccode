@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"reflect"
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/models"
 	"smlcloudplatform/internal/goapi/myglobal"
-	"os"
-	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -301,12 +301,12 @@ func ExecuteCommand(ctx context.Context, conn clickhouse.Conn, query string) err
 
 // AsyncBatchItem ข้อมูลที่รอ insert แบบ async
 type AsyncBatchItem struct {
-	Table     string
-	ShopID    string
-	Columns   []string
-	Values    [][]interface{}
-	Callback  func(error)
-	CreatedAt time.Time
+	Table       string
+	HoldingCode string
+	Columns     []string
+	Values      [][]interface{}
+	Callback    func(error)
+	CreatedAt   time.Time
 }
 
 var (
@@ -443,17 +443,17 @@ func flushBatch(items []AsyncBatchItem, table string, workerID int) {
 
 // AsyncInsert ส่งข้อมูลไปยัง async queue สำหรับ batch insert
 // callback จะถูกเรียกเมื่อ insert เสร็จ (หรือ error)
-func AsyncInsert(table, shopID string, columns []string, values [][]interface{}, callback func(error)) {
+func AsyncInsert(table, holdingCode string, columns []string, values [][]interface{}, callback func(error)) {
 	// เริ่ม worker pool ถ้ายังไม่ได้เริ่ม
 	initAsyncWorkerPool()
 
 	item := AsyncBatchItem{
-		Table:     table,
-		ShopID:    shopID,
-		Columns:   columns,
-		Values:    values,
-		Callback:  callback,
-		CreatedAt: time.Now(),
+		Table:       table,
+		HoldingCode: holdingCode,
+		Columns:     columns,
+		Values:      values,
+		Callback:    callback,
+		CreatedAt:   time.Now(),
 	}
 
 	select {
@@ -493,20 +493,20 @@ func AsyncInsert(table, shopID string, columns []string, values [][]interface{},
 }
 
 // AsyncInsertFireAndForget ส่งข้อมูลไปยัง async queue โดยไม่รอผลลัพธ์
-func AsyncInsertFireAndForget(table, shopID string, columns []string, values [][]interface{}) {
-	AsyncInsert(table, shopID, columns, values, nil)
+func AsyncInsertFireAndForget(table, holdingCode string, columns []string, values [][]interface{}) {
+	AsyncInsert(table, holdingCode, columns, values, nil)
 }
 
-func DocDeleteClickHouse(ctx context.Context, shopId string, docNo string) {
+func DocDeleteClickHouse(ctx context.Context, holdingCode string, docNo string) {
 	conn, err := ClickHouseFastConnect()
 	if err != nil {
 		return
 	}
 
 	deleteCommands := []string{
-		fmt.Sprintf("ALTER TABLE %s DELETE WHERE shopid = '%s' AND docno = '%s'", TableName("doc"), shopId, docNo),
-		fmt.Sprintf("ALTER TABLE %s DELETE WHERE shopid = '%s' AND docno = '%s'", TableName("docdetail"), shopId, docNo),
-		fmt.Sprintf("ALTER TABLE %s DELETE WHERE shopid = '%s' AND docno = '%s'", TableName("docpayment"), shopId, docNo),
+		fmt.Sprintf("ALTER TABLE %s DELETE WHERE holding_code = '%s' AND docno = '%s'", TableName("doc"), holdingCode, docNo),
+		fmt.Sprintf("ALTER TABLE %s DELETE WHERE holding_code = '%s' AND docno = '%s'", TableName("docdetail"), holdingCode, docNo),
+		fmt.Sprintf("ALTER TABLE %s DELETE WHERE holding_code = '%s' AND docno = '%s'", TableName("docpayment"), holdingCode, docNo),
 	}
 
 	for _, cmd := range deleteCommands {
@@ -530,7 +530,7 @@ func DocUpdate(docData models.MongoDocModel) {
 			checkSumMongodb = uuid.NewString()
 		}
 
-		query := fmt.Sprintf("SELECT checksum FROM %s WHERE shopid = '%s' AND docno = '%s'", TableName("doc"), docData.ShopId, docData.DocNo)
+		query := fmt.Sprintf("SELECT checksum FROM %s WHERE holding_code = '%s' AND docno = '%s'", TableName("doc"), docData.HoldingCode, docData.DocNo)
 		dataRows, err := QuerySelectAll(clickHouseConn, query)
 		if err != nil {
 			return
@@ -543,14 +543,14 @@ func DocUpdate(docData models.MongoDocModel) {
 			}
 		}
 
-		DocDeleteClickHouse(context.Background(), docData.ShopId, docData.DocNo)
+		DocDeleteClickHouse(context.Background(), docData.HoldingCode, docData.DocNo)
 
 		docDateTimeStr := docData.DocDateTime.Format("2006-01-02 15:04:05")
 		payCashBalance := docData.PayCashAmount - docData.PayCashChange
 
 		insertCommands := []string{
 			fmt.Sprintf(`INSERT INTO %s (
-            shopid, branchid, docno, docdatetime, perioddatetime,
+            holding_code, branchid, docno, docdatetime, perioddatetime,
             totalamount, paycashamount, paycashchange, paycashbalance,
             roundamount, checksum, slipurl, salechannelcode, deliveryamount,
             guidfixed, iscancel, cancelreason, guidpos, guidbranch
@@ -558,7 +558,7 @@ func DocUpdate(docData models.MongoDocModel) {
             '%s', '%s', '%s', '%s', '%s', %.2f, %.2f, %.2f, %.2f, %.2f,
             '%s', '%s', '%s', %.2f, '%s', %v, '%s', '%s', '%s'
         )`, TableName("doc"),
-				docData.ShopId, docData.BranchId, docData.DocNo, docDateTimeStr, docDateTimeStr,
+				docData.HoldingCode, docData.BranchId, docData.DocNo, docDateTimeStr, docDateTimeStr,
 				docData.TotalAmount, docData.PayCashAmount, docData.PayCashChange, payCashBalance,
 				docData.RoundAmount, checkSumMongodb, docData.SlipUrl, docData.SaleChannelCode,
 				docData.DeliveryAmount, docData.GuidFixed, docData.IsCancel,
@@ -573,14 +573,14 @@ func DocUpdate(docData models.MongoDocModel) {
 			}
 			insertCommands = append(insertCommands,
 				fmt.Sprintf(`INSERT INTO %s (
-                shopid, branchid, docno, docdatetime, perioddatetime,
+                holding_code, branchid, docno, docdatetime, perioddatetime,
                 line_number, barcode, qty, price, sumamount, discountamount,
                 itemnames, refguid, sumamountchoice, ischoice, guidfixed, guidpos, guidbranch
             ) VALUES (
                 '%s', '%s', '%s', '%s', '%s', %d, '%s', %.2f, %.2f, %.2f, %.2f,
                 '%s', '%s', %.2f, %d, '%s', '%s', '%s'
             )`, TableName("docdetail"),
-					docData.ShopId, docData.BranchId, docData.DocNo, docDateTimeStr, docDateTimeStr,
+					docData.HoldingCode, docData.BranchId, docData.DocNo, docDateTimeStr, docDateTimeStr,
 					i+1, detail.Barcode, detail.Qty, detail.Price, detail.SumAmount, detail.DiscountAmount,
 					itemName, detail.RefGuid, detail.SumAmountChoice, detail.IsChoice, docData.GuidFixed,
 					docData.GuidPos, docData.Branch.GuidFixed),
@@ -596,12 +596,12 @@ func DocUpdate(docData models.MongoDocModel) {
 				trans_flag := payment["trans_flag"].(float64)
 				insertCommands = append(insertCommands,
 					fmt.Sprintf(`INSERT INTO %s (
-                    shopid, branchid, docno, docdatetime, perioddatetime,
+                    holding_code, branchid, docno, docdatetime, perioddatetime,
                     description, amount, trans_flag, guidfixed, guidbranch
                 ) VALUES (
                     '%s', '%s', '%s', '%s', '%s', '%s', %f, %f, '%s', '%s'
                 )`, TableName("docpayment"),
-						docData.ShopId, docData.BranchId, docData.DocNo, docDateTimeStr, docDateTimeStr,
+						docData.HoldingCode, docData.BranchId, docData.DocNo, docDateTimeStr, docDateTimeStr,
 						providerName, amount, trans_flag, docData.GuidFixed, docData.Branch.GuidFixed))
 			}
 		}
@@ -623,7 +623,7 @@ func ProductBarcodeUpdate(productData models.MongoProductBarcodeModel) error {
 	checkSumMongodb := myglobal.CalculateMD5(productDataStr)
 	updateClickHouse := false
 
-	query := fmt.Sprintf("SELECT checksum FROM %s WHERE shopid = '%s' AND barcode = '%s'", TableName("productbarcode"), productData.ShopId, productData.Barcode)
+	query := fmt.Sprintf("SELECT checksum FROM %s WHERE holding_code = '%s' AND barcode = '%s'", TableName("productbarcode"), productData.HoldingCode, productData.Barcode)
 	dataRows, err := QuerySelectAll(conn, query)
 	if err != nil {
 		return err
@@ -641,7 +641,7 @@ func ProductBarcodeUpdate(productData models.MongoProductBarcodeModel) error {
 
 		// สร้างคำสั่ง SQL หลายประเภทที่ต้องการรันพร้อมกัน
 		deleteCommands := []string{
-			fmt.Sprintf("ALTER TABLE %s DELETE WHERE shopid = '%s' AND barcode = '%s'", TableName("productbarcode"), productData.ShopId, productData.Barcode),
+			fmt.Sprintf("ALTER TABLE %s DELETE WHERE holding_code = '%s' AND barcode = '%s'", TableName("productbarcode"), productData.HoldingCode, productData.Barcode),
 		}
 
 		productName := ""
@@ -696,8 +696,8 @@ func ProductBarcodeUpdate(productData models.MongoProductBarcodeModel) error {
 		}
 
 		insertCommands := []string{
-			fmt.Sprintf("INSERT INTO %s (shopid, itemcode, barcode, barcoderef, name0, name1, name2, name3, name4, name5, checksum, groupcode, groupnames, unitcode, unitname, price1, unitstand, unitdivide) VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %.2f, %.8f, %.8f)", TableName("productbarcode"),
-				productData.ShopId,
+			fmt.Sprintf("INSERT INTO %s (holding_code, itemcode, barcode, barcoderef, name0, name1, name2, name3, name4, name5, checksum, groupcode, groupnames, unitcode, unitname, price1, unitstand, unitdivide) VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %.2f, %.8f, %.8f)", TableName("productbarcode"),
+				productData.HoldingCode,
 				productData.ItemCode,
 				productData.Barcode,
 				barcodeRef,

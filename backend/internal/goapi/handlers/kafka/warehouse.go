@@ -39,12 +39,12 @@ func OnConsumeMessageWarehouseDelete(msg string) error {
 
 	warehouseData := WarehouseDecode(msg)
 
-	if warehouseData.ShopId == "" || warehouseData.Code == "" {
-		logger.Error("Invalid warehouse data - missing ShopId or Code")
+	if warehouseData.HoldingCode == "" || warehouseData.Code == "" {
+		logger.Error("Invalid warehouse data - missing HoldingCode or Code")
 		return fmt.Errorf("invalid warehouse data")
 	}
 
-	build.DatabaseChecker(warehouseData.ShopId, false) // เช็ค database
+	build.DatabaseChecker(warehouseData.HoldingCode, false) // เช็ค database
 
 	err := DeleteWarehouseFromPostgreSQL(warehouseData)
 	if err != nil {
@@ -58,12 +58,12 @@ func OnConsumeMessageWarehouseDelete(msg string) error {
 // WarehouseBuild - builds warehouse data from Kafka message
 func WarehouseBuild(msg string) {
 	warehouseData := WarehouseDecode(msg)
-	if warehouseData.ShopId == "" {
-		logger.Warn("Warehouse data missing ShopId")
+	if warehouseData.HoldingCode == "" {
+		logger.Warn("Warehouse data missing HoldingCode")
 		return
 	}
 
-	build.DatabaseChecker(warehouseData.ShopId, false)
+	build.DatabaseChecker(warehouseData.HoldingCode, false)
 	WarehouseInsertOrUpdateToPostgreSQL(warehouseData)
 }
 
@@ -80,9 +80,9 @@ func WarehouseDecode(msg string) models.MongoWarehouseModel {
 
 // WarehouseInsertOrUpdateToPostgreSQL - inserts or updates warehouse data in PostgreSQL
 func WarehouseInsertOrUpdateToPostgreSQL(warehouseData models.MongoWarehouseModel) {
-	logger.Info("Processing warehouse: ShopId=%s, Code=%s", warehouseData.ShopId, warehouseData.Code)
+	logger.Info("Processing warehouse: HoldingCode=%s, Code=%s", warehouseData.HoldingCode, warehouseData.Code)
 
-	db, err := mypg.PgSqlFastConnect(warehouseData.ShopId)
+	db, err := mypg.PgSqlFastConnect(warehouseData.HoldingCode)
 	if err != nil {
 		logger.Info("Failed to connect to Postgres: %v", err)
 		return
@@ -152,9 +152,9 @@ func WarehouseInsertOrUpdateToPostgreSQL(warehouseData models.MongoWarehouseMode
 
 // DeleteWarehouseFromPostgreSQL - deletes warehouse data from PostgreSQL
 func DeleteWarehouseFromPostgreSQL(warehouseData models.MongoWarehouseModel) error {
-	logger.Info("Deleting warehouse: ShopId=%s, Code=%s", warehouseData.ShopId, warehouseData.Code)
+	logger.Info("Deleting warehouse: HoldingCode=%s, Code=%s", warehouseData.HoldingCode, warehouseData.Code)
 
-	db, err := mypg.PgSqlFastConnect(warehouseData.ShopId)
+	db, err := mypg.PgSqlFastConnect(warehouseData.HoldingCode)
 	if err != nil {
 		return fmt.Errorf("failed to connect to Postgres: %v", err)
 	}

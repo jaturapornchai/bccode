@@ -8,10 +8,10 @@ import (
 )
 
 type IWarehousePGRepository interface {
-	Get(shopID string, guidFixed string) (models.WarehousePG, error)
+	Get(holdingCode string, guidFixed string) (models.WarehousePG, error)
 	Create(doc models.WarehousePG) error
-	Update(shopID string, guidFixed string, doc models.WarehousePG) error
-	Delete(shopID string, guidFixed string) error
+	Update(holdingCode string, guidFixed string, doc models.WarehousePG) error
+	Delete(holdingCode string, guidFixed string) error
 }
 
 type WarehousePGRepository struct {
@@ -27,11 +27,11 @@ func NewWarehousePGRepository(pst microservice.IPersister) IWarehousePGRepositor
 	return repo
 }
 
-func (repo WarehousePGRepository) Get(shopID string, guidFixed string) (models.WarehousePG, error) {
+func (repo WarehousePGRepository) Get(holdingCode string, guidFixed string) (models.WarehousePG, error) {
 
 	var data models.WarehousePG
 	err := repo.pst.DBClient().Preload(clause.Associations).
-		Where("shopid=? AND guidfixed=?", shopID, guidFixed).
+		Where("holding_code=? AND guidfixed=?", holdingCode, guidFixed).
 		First(&data).Error
 
 	if err != nil {
@@ -49,11 +49,11 @@ func (repo WarehousePGRepository) Create(doc models.WarehousePG) error {
 	return nil
 }
 
-func (repo WarehousePGRepository) Update(shopID string, guidFixed string, doc models.WarehousePG) error {
+func (repo WarehousePGRepository) Update(holdingCode string, guidFixed string, doc models.WarehousePG) error {
 
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"shopid":    shopID,
-		"guid_fixed": guidFixed,
+		"holding_code": holdingCode,
+		"guid_fixed":   guidFixed,
 	})
 
 	if err != nil {
@@ -62,11 +62,11 @@ func (repo WarehousePGRepository) Update(shopID string, guidFixed string, doc mo
 	return nil
 }
 
-func (repo *WarehousePGRepository) Delete(shopID string, guidFixed string) error {
+func (repo *WarehousePGRepository) Delete(holdingCode string, guidFixed string) error {
 
 	err := repo.pst.Delete(models.WarehousePG{}, map[string]interface{}{
-		"shopid":    shopID,
-		"guid_fixed": guidFixed,
+		"holding_code": holdingCode,
+		"guid_fixed":   guidFixed,
 	})
 
 	if err != nil {

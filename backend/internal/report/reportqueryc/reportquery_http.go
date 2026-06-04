@@ -60,7 +60,7 @@ func (h ReportQueryHttp) RegisterHttp() {
 // @Security     AccessToken
 // @Router /report/playground [post]
 func (h ReportQueryHttp) PlaygroundReportQuery(ctx microservice.IContext) error {
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	reqBody := &models.Query{}
@@ -76,7 +76,7 @@ func (h ReportQueryHttp) PlaygroundReportQuery(ctx microservice.IContext) error 
 		return err
 	}
 
-	result, err := h.svc.PlaygroundReportQuery(shopID, *reqBody)
+	result, err := h.svc.PlaygroundReportQuery(holdingCode, *reqBody)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -100,7 +100,7 @@ func (h ReportQueryHttp) PlaygroundReportQuery(ctx microservice.IContext) error 
 // @Security     AccessToken
 // @Router /report/execute [post]
 func (h ReportQueryHttp) ExecuteReportQuery(ctx microservice.IContext) error {
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	reportCode := ctx.QueryParam("code")
@@ -119,7 +119,7 @@ func (h ReportQueryHttp) ExecuteReportQuery(ctx microservice.IContext) error {
 		return err
 	}
 
-	result, pagination, err := h.svc.ExecuteReportQuery(shopID, reportCode, *reqBody, pageable)
+	result, pagination, err := h.svc.ExecuteReportQuery(holdingCode, reportCode, *reqBody, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -145,7 +145,7 @@ func (h ReportQueryHttp) ExecuteReportQuery(ctx microservice.IContext) error {
 // @Router /report/query [post]
 func (h ReportQueryHttp) CreateReportQuery(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.ReportQuery{}
@@ -161,7 +161,7 @@ func (h ReportQueryHttp) CreateReportQuery(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreateReportQuery(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateReportQuery(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -188,7 +188,7 @@ func (h ReportQueryHttp) CreateReportQuery(ctx microservice.IContext) error {
 func (h ReportQueryHttp) UpdateReportQuery(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -206,7 +206,7 @@ func (h ReportQueryHttp) UpdateReportQuery(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateReportQuery(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateReportQuery(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -232,12 +232,12 @@ func (h ReportQueryHttp) UpdateReportQuery(ctx microservice.IContext) error {
 // @Router /report/query/{id} [delete]
 func (h ReportQueryHttp) DeleteReportQuery(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteReportQuery(shopID, id, authUsername)
+	err := h.svc.DeleteReportQuery(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -263,7 +263,7 @@ func (h ReportQueryHttp) DeleteReportQuery(ctx microservice.IContext) error {
 // @Router /report/query [delete]
 func (h ReportQueryHttp) DeleteReportQueryByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -276,7 +276,7 @@ func (h ReportQueryHttp) DeleteReportQueryByGUIDs(ctx microservice.IContext) err
 		return err
 	}
 
-	err = h.svc.DeleteReportQueryByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteReportQueryByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -301,12 +301,12 @@ func (h ReportQueryHttp) DeleteReportQueryByGUIDs(ctx microservice.IContext) err
 // @Router /report/query/{id} [get]
 func (h ReportQueryHttp) InfoReportQuery(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get ReportQuery %v", id)
-	doc, err := h.svc.InfoReportQuery(shopID, id)
+	doc, err := h.svc.InfoReportQuery(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -332,11 +332,11 @@ func (h ReportQueryHttp) InfoReportQuery(ctx microservice.IContext) error {
 // @Router /report/query/code/{code} [get]
 func (h ReportQueryHttp) InfoReportQueryByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoReportQueryByCode(shopID, code)
+	doc, err := h.svc.InfoReportQueryByCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -363,11 +363,11 @@ func (h ReportQueryHttp) InfoReportQueryByCode(ctx microservice.IContext) error 
 // @Router /report/query [get]
 func (h ReportQueryHttp) SearchReportQueryPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.SearchReportQuery(shopID, map[string]interface{}{}, pageable)
+	docList, pagination, err := h.svc.SearchReportQuery(holdingCode, map[string]interface{}{}, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -396,13 +396,13 @@ func (h ReportQueryHttp) SearchReportQueryPage(ctx microservice.IContext) error 
 // @Router /report/query/list [get]
 func (h ReportQueryHttp) SearchReportQueryStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
 	lang := ctx.QueryParam("lang")
 
-	docList, total, err := h.svc.SearchReportQueryStep(shopID, lang, pageableStep)
+	docList, total, err := h.svc.SearchReportQueryStep(holdingCode, lang, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

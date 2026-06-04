@@ -29,7 +29,7 @@ type Branch struct {
 	PaymentRounding          PaymentRoundingSettings `json:"paymentrounding" bson:"paymentrounding"`
 	PointConfig              PointConfig             `json:"pointconfig" bson:"pointconfig"`
 	IsMainShop               bool                    `json:"ismainshop" bson:"ismainshop"`
-	MainShopId               string                  `json:"main_shop_id" bson:"main_shop_id"`
+	MainHoldingCode          string                  `json:"main_holding_code" bson:"main_holding_code"`
 	ProductCenterType        int8                    `json:"productcentertype" bson:"productcentertype"`
 	DebtorCenterType         int8                    `json:"debtorcentertype" bson:"debtorcentertype"`
 	CouponUseType            int8                    `json:"couponusetype" bson:"couponusetype"`
@@ -127,8 +127,8 @@ func (BranchInfo) CollectionName() string {
 }
 
 type BranchData struct {
-	models.ShopIdentity `bson:"inline"`
-	BranchInfo          `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	BranchInfo               `bson:"inline"`
 }
 
 type BranchDoc struct {

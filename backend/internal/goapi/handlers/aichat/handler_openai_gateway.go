@@ -9,8 +9,8 @@ package aichat
 //	                                              ผลลัพธ์กลับในรูป OpenAI SSE format
 //	GET  /goapi/api/aichat/v1/models            — list models ที่ gateway นี้ให้บริการ
 //
-// Shop ID: OpenClaw ไม่รู้จัก shop_id → ใช้ default จาก bootstrap.json
-// (openclaw.default_shop_id) ถ้าไม่มีจะใช้ constant fallback ด้านล่าง
+// Holding Code: OpenClaw ไม่รู้จัก holding_code → ใช้ default จาก bootstrap.json
+// (openclaw.default_holding_code) ถ้าไม่มีจะใช้ constant fallback ด้านล่าง
 //
 // Session ID: รับจาก query `?session=xxx` หรือ `user` field ของ request
 // ถ้าไม่มี generate ใหม่จาก timestamp (no memory cross-request)
@@ -43,65 +43,65 @@ func truncateForLog(s string, max int) string {
 // osGetenv — wrapper เพื่อให้ test mock ได้ (ตอนนี้ยังไม่ mock ใช้ os.Getenv ตรงๆ)
 var osGetenv = os.Getenv
 
-// defaultOpenclawShopID — shop_id ที่ OpenClaw gateway จะใช้
-// (single-tenant dev mode — ถ้าต้องการเปลี่ยน ให้ override ผ่าน env OPENCLAW_SHOP_ID)
-const defaultOpenclawShopID = "3AEz8tu22GHPpAZ0XhwPFM4fjY9"
+// defaultOpenclawHoldingCode — holding_code ที่ OpenClaw gateway จะใช้
+// (single-tenant dev mode — ถ้าต้องการเปลี่ยน ให้ override ผ่าน env OPENCLAW_HOLDING_CODE)
+const defaultOpenclawHoldingCode = "3AEz8tu22GHPpAZ0XhwPFM4fjY9"
 
-// getOpenclawShopID — คืน shop_id ที่จะใช้สำหรับ OpenClaw gateway
-func getOpenclawShopID() string {
-	if v := strings.TrimSpace(osGetenv("OPENCLAW_SHOP_ID")); v != "" {
+// getOpenclawHoldingCode — คืน holding_code ที่จะใช้สำหรับ OpenClaw gateway
+func getOpenclawHoldingCode() string {
+	if v := strings.TrimSpace(osGetenv("OPENCLAW_HOLDING_CODE")); v != "" {
 		return v
 	}
-	return defaultOpenclawShopID
+	return defaultOpenclawHoldingCode
 }
 
 // ==================== OpenAI Types ====================
 
 type openaiChatMessage struct {
-	Role string `json:"role"`
+	Role    string `json:"role"`
 	Content any    `json:"content"` // string | []contentPart
-	Name string `json:"name,omitempty"`
+	Name    string `json:"name,omitempty"`
 }
 
 type openaiChatRequest struct {
-	Model string              `json:"model"`
+	Model    string              `json:"model"`
 	Messages []openaiChatMessage `json:"messages"`
-	Stream bool                `json:"stream"`
-	User string              `json:"user,omitempty"` // ใช้เป็น session_id
+	Stream   bool                `json:"stream"`
+	User     string              `json:"user,omitempty"` // ใช้เป็น session_id
 }
 
 type openaiChoice struct {
-	Index int                `json:"index"`
-	Message *openaiChatMessage `json:"message,omitempty"`
-	Delta *openaiChatMessage `json:"delta,omitempty"`
+	Index        int                `json:"index"`
+	Message      *openaiChatMessage `json:"message,omitempty"`
+	Delta        *openaiChatMessage `json:"delta,omitempty"`
 	FinishReason *string            `json:"finish_reason"`
 }
 
 type openaiUsage struct {
-	PromptTokens int `json:"prompt_tokens"`
+	PromptTokens     int `json:"prompt_tokens"`
 	CompletionTokens int `json:"completion_tokens"`
-	TotalTokens int `json:"total_tokens"`
+	TotalTokens      int `json:"total_tokens"`
 }
 
 type openaiChatResponse struct {
-	ID string         `json:"id"`
-	Object string         `json:"object"`
+	ID      string         `json:"id"`
+	Object  string         `json:"object"`
 	Created int64          `json:"created"`
-	Model string         `json:"model"`
+	Model   string         `json:"model"`
 	Choices []openaiChoice `json:"choices"`
-	Usage *openaiUsage   `json:"usage,omitempty"`
+	Usage   *openaiUsage   `json:"usage,omitempty"`
 }
 
 type openaiModel struct {
-	ID string `json:"id"`
-	Object string `json:"object"`
+	ID      string `json:"id"`
+	Object  string `json:"object"`
 	Created int64  `json:"created"`
 	OwnedBy string `json:"owned_by"`
 }
 
 type openaiModelList struct {
 	Object string        `json:"object"`
-	Data []openaiModel `json:"data"`
+	Data   []openaiModel `json:"data"`
 }
 
 // ==================== extractLastUserMessage ====================
@@ -251,7 +251,7 @@ func OpenAIGatewayChatCompletions(c echo.Context) error {
 	}
 
 	// Resolve shop + session ก่อนเพื่อให้ compactor ใช้
-	shopID := getOpenclawShopID()
+	holdingCode := getOpenclawHoldingCode()
 	sessionID := strings.TrimSpace(req.User)
 	if sessionID == "" {
 		sessionID = strings.TrimSpace(c.QueryParam("session"))
@@ -261,7 +261,7 @@ func OpenAIGatewayChatCompletions(c echo.Context) error {
 	}
 
 	compactCtx, compactCancel := context.WithTimeout(context.Background(), 25*time.Second)
-	question := buildQuestionWithCompactedHistory(compactCtx, shopID, sessionID, req.Messages)
+	question := buildQuestionWithCompactedHistory(compactCtx, holdingCode, sessionID, req.Messages)
 	compactCancel()
 	if strings.TrimSpace(question) == "" {
 		logger.Warn("[OpenClaw Gateway] no user message found in %d messages", len(req.Messages))
@@ -274,9 +274,9 @@ func OpenAIGatewayChatCompletions(c echo.Context) error {
 	}
 
 	agentReq := AgentV2Request{
-		ShopID:    shopID,
-		SessionID: sessionID,
-		Question:  question,
+		HoldingCode: holdingCode,
+		SessionID:   sessionID,
+		Question:    question,
 		// External OpenAI-compatible clients (OpenClaw, ChatGPT-style UIs)
 		// render Markdown — not HTML.
 		OutputFormat: "markdown",
@@ -290,7 +290,7 @@ func OpenAIGatewayChatCompletions(c echo.Context) error {
 	}
 
 	logger.Info("[OpenClaw Gateway] model=%s shop=%s session=%s stream=%v question=%q",
-		modelName, shopID, sessionID, req.Stream, question)
+		modelName, holdingCode, sessionID, req.Stream, question)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 180*time.Second)
 	defer cancel()

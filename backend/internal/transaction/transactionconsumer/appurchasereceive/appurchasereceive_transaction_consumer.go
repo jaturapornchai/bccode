@@ -92,7 +92,7 @@ func (c *APPurchaseReceiveTransactionConsumer) ConsumeOnCreateOrUpdate(ctx micro
 		return err
 	}
 
-	err = c.svc.Upsert(transaction.ShopID, transaction.DocNo, *transaction)
+	err = c.svc.Upsert(transaction.HoldingCode, transaction.DocNo, *transaction)
 	if err != nil {
 		logger.GetLogger().Errorf("Cannot Insert Purchase Transaction : %v", err.Error())
 		return err
@@ -103,7 +103,7 @@ func (c *APPurchaseReceiveTransactionConsumer) ConsumeOnCreateOrUpdate(ctx micro
 		logger.GetLogger().Errorf("Cannot Phase PurchaseDoc to Creditor Transaction : %v", err.Error())
 		return err
 	}
-	err = c.creditorConsumerService.Upsert(transaction.ShopID, transaction.DocNo, *creditor)
+	err = c.creditorConsumerService.Upsert(transaction.HoldingCode, transaction.DocNo, *creditor)
 	if err != nil {
 		logger.GetLogger().Errorf("Cannot Insert CreditorTransaction : %v", err.Error())
 		return err
@@ -122,14 +122,14 @@ func (c *APPurchaseReceiveTransactionConsumer) ConsumeOnDelete(ctx microservice.
 		return err
 	}
 
-	err = c.svc.Delete(transaction.ShopID, transaction.DocNo)
+	err = c.svc.Delete(transaction.HoldingCode, transaction.DocNo)
 	if err != nil {
 		c.ms.Logger.Errorf("Cannot Insert Purchase Transaction : %v", err.Error())
 		return err
 	}
 
 	// delete creditor transaction
-	err = c.creditorConsumerService.Delete(transaction.ShopID, transaction.DocNo)
+	err = c.creditorConsumerService.Delete(transaction.HoldingCode, transaction.DocNo)
 	if err != nil {
 		c.ms.Logger.Errorf("Cannot Delete Creditor Transaction : %v", err.Error())
 		return err
@@ -148,7 +148,7 @@ func (c *APPurchaseReceiveTransactionConsumer) ConsumeOnBulkCreateOrUpdate(ctx m
 	}
 
 	for _, transaction := range *transactions {
-		err = c.svc.Upsert(transaction.ShopID, transaction.DocNo, transaction)
+		err = c.svc.Upsert(transaction.HoldingCode, transaction.DocNo, transaction)
 		if err != nil {
 			c.ms.Logger.Errorf("Cannot Insert Purchase Transaction : %v", err.Error())
 			return err
@@ -159,7 +159,7 @@ func (c *APPurchaseReceiveTransactionConsumer) ConsumeOnBulkCreateOrUpdate(ctx m
 			logger.GetLogger().Errorf("Cannot Phase PurchaseDoc to Creditor Transaction : %v", err.Error())
 			return err
 		}
-		err = c.creditorConsumerService.Upsert(transaction.ShopID, transaction.DocNo, *creditor)
+		err = c.creditorConsumerService.Upsert(transaction.HoldingCode, transaction.DocNo, *creditor)
 		if err != nil {
 			logger.GetLogger().Errorf("Cannot Insert CreditorTransaction : %v", err.Error())
 			return err
@@ -179,13 +179,13 @@ func (c *APPurchaseReceiveTransactionConsumer) ConsumeOnBulkDelete(ctx microserv
 	}
 
 	for _, transaction := range *transactions {
-		err = c.svc.Delete(transaction.ShopID, transaction.DocNo)
+		err = c.svc.Delete(transaction.HoldingCode, transaction.DocNo)
 		if err != nil {
 			c.ms.Logger.Errorf("Cannot Insert StockTransaction : %v", err.Error())
 			return err
 		}
 
-		err = c.creditorConsumerService.Delete(transaction.ShopID, transaction.DocNo)
+		err = c.creditorConsumerService.Delete(transaction.HoldingCode, transaction.DocNo)
 		if err != nil {
 			c.ms.Logger.Errorf("Cannot Delete Creditor Transaction : %v", err.Error())
 			return err

@@ -5,11 +5,11 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"runtime/debug"
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/models"
 	"smlcloudplatform/internal/goapi/myglobal"
 	"smlcloudplatform/internal/goapi/mypg"
-	"runtime/debug"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
@@ -25,19 +25,19 @@ func OnConsumeMessageEmployeeCreateOrUpdate(msg string) error {
 // OnConsumeMessageEmployeeDelete - handles employee delete messages
 func OnConsumeMessageEmployeeDelete(msg string) error {
 	// รับ Message จาก Kafka ที่เป็นการลบข้อมูล Employee
-	// msg จะเป็น JSON string ที่มีข้อมูล เช่น {"shopid": "shop123", "code": "E0001"}
+	// msg จะเป็น JSON string ที่มีข้อมูล เช่น {"holding_code": "shop123", "code": "E0001"}
 
 	logger.Info("OnConsumeMessageEmployeeDelete: %s", msg)
 
 	employeeData := TransEmployeeDecode(msg)
 
-	if employeeData.ShopId == "" || employeeData.Code == "" {
-		logger.Error("ข้อมูล employee ไม่ถูกต้อง - ไม่มี ShopId หรือ Code")
+	if employeeData.HoldingCode == "" || employeeData.Code == "" {
+		logger.Error("ข้อมูล employee ไม่ถูกต้อง - ไม่มี HoldingCode หรือ Code")
 		return fmt.Errorf("invalid employee data")
 	}
 
 	// ลบข้อมูลใน PostgreSQL
-	db, err := mypg.PgSqlFastConnect(employeeData.ShopId)
+	db, err := mypg.PgSqlFastConnect(employeeData.HoldingCode)
 	if err != nil {
 		logger.Error("ไม่สามารถเชื่อมต่อ PostgreSQL: %v", err)
 		return err
@@ -50,7 +50,7 @@ func OnConsumeMessageEmployeeDelete(msg string) error {
 		return err
 	}
 
-	logger.Info("ลบ employee สำเร็จ: ShopID=%s, Code=%s", employeeData.ShopId, employeeData.Code)
+	logger.Info("ลบ employee สำเร็จ: HoldingCode=%s, Code=%s", employeeData.HoldingCode, employeeData.Code)
 	return nil
 }
 
@@ -70,17 +70,17 @@ func ProcessEmployeeMasterData(msg string) error {
 	// Decode employee from JSON message
 	logger.Debug("Step 1: กำลัง Decode JSON message... ")
 	employeeData := TransEmployeeDecode(msg)
-	logger.Info("Step 1: Decode employee สำเร็จ - ShopID=%s, Code=%s, Name=%s",
-		employeeData.ShopId, employeeData.Code, employeeData.Name)
+	logger.Info("Step 1: Decode employee สำเร็จ - HoldingCode=%s, Code=%s, Name=%s",
+		employeeData.HoldingCode, employeeData.Code, employeeData.Name)
 
-	if employeeData.ShopId == "" || employeeData.Code == "" {
-		logger.Error("ข้อมูล employee ไม่ถูกต้อง - ShopId='%s', Code='%s'", employeeData.ShopId, employeeData.Code)
-		return fmt.Errorf("invalid employee data - missing ShopId or Code")
+	if employeeData.HoldingCode == "" || employeeData.Code == "" {
+		logger.Error("ข้อมูล employee ไม่ถูกต้อง - HoldingCode='%s', Code='%s'", employeeData.HoldingCode, employeeData.Code)
+		return fmt.Errorf("invalid employee data - missing HoldingCode or Code")
 	}
 
 	// Connect to database
 	logger.Debug("Step 2: กำลังเชื่อมต่อ PostgreSQL...")
-	db, err := mypg.PgSqlFastConnect(employeeData.ShopId)
+	db, err := mypg.PgSqlFastConnect(employeeData.HoldingCode)
 	if err != nil {
 		logger.Error("ไม่สามารถเชื่อมต่อ database: %v", err)
 		return fmt.Errorf("failed to connect to database: %v", err)

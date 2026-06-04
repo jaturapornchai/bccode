@@ -9,8 +9,8 @@ import (
 )
 
 type IPurchaseReturnTransactionAdminRepository interface {
-	FindPurchaseReturnDocByShopID(ctx context.Context, shopID string) ([]purchaseReturnModel.PurchaseReturnDoc, error)
-	FindPurchaseReturnDeleteDocByShopID(ctx context.Context, shopID string) ([]purchaseReturnModel.PurchaseReturnDoc, error)
+	FindPurchaseReturnDocByHoldingCode(ctx context.Context, holdingCode string) ([]purchaseReturnModel.PurchaseReturnDoc, error)
+	FindPurchaseReturnDeleteDocByHoldingCode(ctx context.Context, holdingCode string) ([]purchaseReturnModel.PurchaseReturnDoc, error)
 }
 
 type PurchaseReturnTransactionAdminRepository struct {
@@ -23,13 +23,13 @@ func NewPurchaseReturnTransactionAdminRepository(pst microservice.IPersisterMong
 	}
 }
 
-func (r *PurchaseReturnTransactionAdminRepository) FindPurchaseReturnDocByShopID(ctx context.Context, shopID string) ([]purchaseReturnModel.PurchaseReturnDoc, error) {
+func (r *PurchaseReturnTransactionAdminRepository) FindPurchaseReturnDocByHoldingCode(ctx context.Context, holdingCode string) ([]purchaseReturnModel.PurchaseReturnDoc, error) {
 	docList := []purchaseReturnModel.PurchaseReturnDoc{}
 
 	err := r.pst.Find(ctx, &purchaseReturnModel.PurchaseReturnDoc{},
 		bson.M{
-			"shopid":    shopID,
-			"deleted_at": bson.M{"$exists": false}},
+			"holding_code": holdingCode,
+			"deleted_at":   bson.M{"$exists": false}},
 		&docList)
 	if err != nil {
 		return nil, err
@@ -38,13 +38,13 @@ func (r *PurchaseReturnTransactionAdminRepository) FindPurchaseReturnDocByShopID
 	return docList, nil
 }
 
-func (r *PurchaseReturnTransactionAdminRepository) FindPurchaseReturnDeleteDocByShopID(ctx context.Context, shopID string) ([]purchaseReturnModel.PurchaseReturnDoc, error) {
+func (r *PurchaseReturnTransactionAdminRepository) FindPurchaseReturnDeleteDocByHoldingCode(ctx context.Context, holdingCode string) ([]purchaseReturnModel.PurchaseReturnDoc, error) {
 	docList := []purchaseReturnModel.PurchaseReturnDoc{}
 
 	err := r.pst.Find(ctx, &purchaseReturnModel.PurchaseReturnDoc{},
 		bson.M{
-			"shopid":    shopID,
-			"deleted_at": bson.M{"$exists": true},
+			"holding_code": holdingCode,
+			"deleted_at":   bson.M{"$exists": true},
 		},
 		&docList)
 	if err != nil {

@@ -33,8 +33,8 @@ export function verifyHs256Jwt(authorization: string): JwtVerificationResult {
   }
 }
 
-export function getJwtClaimShopId(claims: Record<string, unknown>): string {
-  const value = claims.shopid ?? claims.shop_id ?? claims.shopId;
+export function getJwtClaimHoldingCode(claims: Record<string, unknown>): string {
+  const value = claims.holding_code ?? claims.holdingCode;
   return typeof value === "string" ? value.trim() : "";
 }
 

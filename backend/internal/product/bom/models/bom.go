@@ -82,7 +82,7 @@ func (ProductBarcodeBOMViewInfo) CollectionName() string {
 }
 
 type ProductBarcodeBOMViewData struct {
-	models.ShopIdentity       `bson:"inline"`
+	models.HoldingCodeentity  `bson:"inline"`
 	ProductBarcodeBOMViewInfo `bson:"inline"`
 }
 

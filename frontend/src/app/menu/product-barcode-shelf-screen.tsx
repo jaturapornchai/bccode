@@ -100,7 +100,7 @@ export function ProductBarcodeShelfScreen({ embedded = false, language: external
         },
         body: JSON.stringify({
           backendUrl: currentAuth.backendUrl,
-          shopid: currentWorkspace.shop.shopid,
+          holding_code: currentWorkspace.shop.holding_code,
           keyword: searchText.trim(),
           limit: 80,
           offset: 0,
@@ -339,7 +339,7 @@ function readWorkspace(): WorkspaceSession | null {
     const raw = localStorage.getItem(workspaceStorageKeys.workspace);
     if (!raw) return null;
     const workspace = JSON.parse(raw) as WorkspaceSession;
-    return workspace?.shop?.shopid ? workspace : null;
+    return workspace?.shop?.holding_code ? workspace : null;
   } catch {
     return null;
   }

@@ -73,26 +73,26 @@ func MapDocDetailFromMongo(docData models.MongoDocModel, detail any, transFlag i
 	}
 
 	return models.DocDetailStruct{
-		DocDateTime:     docData.DocDateTime,
-		DocNo:           docData.DocNo,
-		LineNumber:      detailStruct.LineNumber,
-		TransFlag:       transFlag,
-		CalcFlag:        calcFlag,
-		CalcSeq:         calcSeq,
-		ItemCode:        detailStruct.ItemCode,
-		Description:     detailStruct.ItemName,
-		BarcodeMain:     barcodeMain,
-		Barcode:         detailStruct.Barcode,
-		UnitCode:        detailStruct.UnitCode,
-		WhCode:          whCode,
-		LocationCode:    locationCode,
-		TotalQty:        totalQty,
-		Price:           detailStruct.Price,
-		PriceExcludeVat: detailStruct.PriceExcludeVat,
-		UnitStand:       unitStand,
-		UnitDivide:      unitDivide,
-		DocRef:          detailStruct.DocRef,
-		SumAmount:       detailStruct.SumAmount,
+		DocDateTime:            docData.DocDateTime,
+		DocNo:                  docData.DocNo,
+		LineNumber:             detailStruct.LineNumber,
+		TransFlag:              transFlag,
+		CalcFlag:               calcFlag,
+		CalcSeq:                calcSeq,
+		ItemCode:               detailStruct.ItemCode,
+		Description:            detailStruct.ItemName,
+		BarcodeMain:            barcodeMain,
+		Barcode:                detailStruct.Barcode,
+		UnitCode:               detailStruct.UnitCode,
+		WhCode:                 whCode,
+		LocationCode:           locationCode,
+		TotalQty:               totalQty,
+		Price:                  detailStruct.Price,
+		PriceExcludeVat:        detailStruct.PriceExcludeVat,
+		UnitStand:              unitStand,
+		UnitDivide:             unitDivide,
+		DocRef:                 detailStruct.DocRef,
+		SumAmount:              detailStruct.SumAmount,
 		PriceDoc:               detailStruct.PriceDoc,
 		SumAmountDoc:           detailStruct.SumAmountDoc,
 		DiscountAmountDoc:      detailStruct.DiscountAmountDoc,
@@ -102,7 +102,7 @@ func MapDocDetailFromMongo(docData models.MongoDocModel, detail any, transFlag i
 	}
 }
 
-func MapDocStructFromMongo(docData models.MongoDocModel, shopId string) (models.DocStruct, models.DocPaymentStruct) {
+func MapDocStructFromMongo(docData models.MongoDocModel, holdingCode string) (models.DocStruct, models.DocPaymentStruct) {
 	// คำนวณ checksum สำหรับข้อมูลเอกสาร - ใช้ MD5 เพื่อให้ได้ 32 ตัวอักษร
 	checksumData := fmt.Sprintf("%v", docData)
 	checksum := CalculateMD5(checksumData)
@@ -126,7 +126,7 @@ func MapDocStructFromMongo(docData models.MongoDocModel, shopId string) (models.
 	isDelete := docData.IsDelete || docData.DeletedAt != nil
 
 	s := models.DocStruct{
-		ShopID:          shopId,
+		HoldingCode:     holdingCode,
 		TransFlag:       docData.TransFlag,
 		DocNo:           docData.DocNo,
 		DocDateTime:     docData.DocDateTime,
@@ -162,8 +162,8 @@ func MapDocStructFromMongo(docData models.MongoDocModel, shopId string) (models.
 		// DocCurrency (field ใหม่) = สกุลเงินเอกสาร
 		DocCurrency:       docData.DocCurrency,
 		DocCurrencySymbol: docData.DocCurrencySymbol,
-		ExchangeRate:       docData.ExchangeRate,
-		TotalAmountDoc:     docData.TotalAmountDoc,
+		ExchangeRate:      docData.ExchangeRate,
+		TotalAmountDoc:    docData.TotalAmountDoc,
 		// Soft Delete
 		IsDelete: isDelete,
 	}
@@ -182,7 +182,7 @@ func MapDocStructFromMongo(docData models.MongoDocModel, shopId string) (models.
 				providerName, _ := payment["provider_name"].(string)
 				trans_flag, _ := payment["trans_flag"].(float64)
 				p = models.DocPaymentStruct{
-					ShopID:         shopId,
+					HoldingCode:    holdingCode,
 					BranchID:       docData.Branch.GuidFixed,
 					DocDateTime:    docData.DocDateTime,
 					PeriodDateTime: docData.DocDateTime,

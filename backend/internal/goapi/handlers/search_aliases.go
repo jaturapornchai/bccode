@@ -14,41 +14,41 @@ import (
 
 // SearchAlias — model สำหรับ alias
 type SearchAlias struct {
-	ID int    `json:"id"`
-	Alias string `json:"alias"`
-	Target string `json:"target"`
+	ID        int    `json:"id"`
+	Alias     string `json:"alias"`
+	Target    string `json:"target"`
 	AliasType string `json:"alias_type"`
 }
 
 // SearchAliasCreateRequest — request body สำหรับสร้าง alias
 type SearchAliasCreateRequest struct {
-	ShopID string `json:"shopid"`
-	Alias string `json:"alias"`
-	Target string `json:"target"`
-	AliasType string `json:"alias_type"`
+	HoldingCode string `json:"holding_code"`
+	Alias       string `json:"alias"`
+	Target      string `json:"target"`
+	AliasType   string `json:"alias_type"`
 }
 
 // SearchAliasListRequest — request body สำหรับดูรายการ aliases
 type SearchAliasListRequest struct {
-	ShopID string `json:"shopid"`
+	HoldingCode string `json:"holding_code"`
 }
 
 // SearchAliasDeleteRequest — request body สำหรับลบ alias
 type SearchAliasDeleteRequest struct {
-	ShopID string `json:"shopid"`
+	HoldingCode string `json:"holding_code"`
 }
 
-// SearchAliasListHandler — GET /api/search/aliases?shopid=xxx
+// SearchAliasListHandler — GET /api/search/aliases?holding_code=xxx
 func SearchAliasListHandler(c echo.Context) error {
-	shopID := c.QueryParam("shopid")
-	if shopID == "" {
+	holdingCode := c.QueryParam("holding_code")
+	if holdingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"success": false,
-			"message": "Missing required parameter: shopid",
+			"message": "Missing required parameter: holding_code",
 		})
 	}
 
-	db, err := mypg.PgSqlFastConnect(shopID)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		logger.Error("SearchAliasListHandler: connect PG: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
@@ -98,10 +98,10 @@ func SearchAliasCreateHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" || req.Alias == "" || req.Target == "" {
+	if req.HoldingCode == "" || req.Alias == "" || req.Target == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"success": false,
-			"message": "Missing required fields: shopid, alias, target",
+			"message": "Missing required fields: holding_code, alias, target",
 		})
 	}
 
@@ -109,7 +109,7 @@ func SearchAliasCreateHandler(c echo.Context) error {
 		req.AliasType = "brand"
 	}
 
-	db, err := mypg.PgSqlFastConnect(req.ShopID)
+	db, err := mypg.PgSqlFastConnect(req.HoldingCode)
 	if err != nil {
 		logger.Error("SearchAliasCreateHandler: connect PG: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
@@ -144,13 +144,13 @@ func SearchAliasCreateHandler(c echo.Context) error {
 	})
 }
 
-// SearchAliasDeleteHandler — DELETE /api/search/aliases/:id?shopid=xxx
+// SearchAliasDeleteHandler — DELETE /api/search/aliases/:id?holding_code=xxx
 func SearchAliasDeleteHandler(c echo.Context) error {
-	shopID := c.QueryParam("shopid")
-	if shopID == "" {
+	holdingCode := c.QueryParam("holding_code")
+	if holdingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"success": false,
-			"message": "Missing required parameter: shopid",
+			"message": "Missing required parameter: holding_code",
 		})
 	}
 
@@ -163,7 +163,7 @@ func SearchAliasDeleteHandler(c echo.Context) error {
 		})
 	}
 
-	db, err := mypg.PgSqlFastConnect(shopID)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		logger.Error("SearchAliasDeleteHandler: connect PG: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]interface{}{

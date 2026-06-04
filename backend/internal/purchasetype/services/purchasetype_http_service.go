@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	mastersync "smlcloudplatform/internal/mastersync/repositories"
 	"smlcloudplatform/internal/purchasetype/models"
 	"smlcloudplatform/internal/purchasetype/repositories"
-	mastersync "smlcloudplatform/internal/mastersync/repositories"
 	"smlcloudplatform/internal/services"
 	"smlcloudplatform/internal/utils"
 	micromodels "smlcloudplatform/pkg/microservice/models"
@@ -17,14 +17,14 @@ import (
 )
 
 type IPurchaseTypeHttpService interface {
-	CreatePurchaseType(shopID string, authUsername string, doc models.PurchaseType) (string, error)
-	UpdatePurchaseType(shopID string, guid string, authUsername string, doc models.PurchaseType) error
-	DeletePurchaseType(shopID string, guid string, authUsername string) error
-	DeletePurchaseTypeByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoPurchaseType(shopID string, guid string) (models.PurchaseTypeInfo, error)
-	InfoPurchaseTypeByCode(shopID string, code string) (models.PurchaseTypeInfo, error)
-	SearchPurchaseType(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.PurchaseTypeInfo, mongopagination.PaginationData, error)
-	SearchPurchaseTypeStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.PurchaseTypeInfo, int, error)
+	CreatePurchaseType(holdingCode string, authUsername string, doc models.PurchaseType) (string, error)
+	UpdatePurchaseType(holdingCode string, guid string, authUsername string, doc models.PurchaseType) error
+	DeletePurchaseType(holdingCode string, guid string, authUsername string) error
+	DeletePurchaseTypeByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoPurchaseType(holdingCode string, guid string) (models.PurchaseTypeInfo, error)
+	InfoPurchaseTypeByCode(holdingCode string, code string) (models.PurchaseTypeInfo, error)
+	SearchPurchaseType(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.PurchaseTypeInfo, mongopagination.PaginationData, error)
+	SearchPurchaseTypeStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.PurchaseTypeInfo, int, error)
 
 	GetModuleName() string
 }
@@ -57,13 +57,13 @@ func (svc PurchaseTypeHttpService) getContextTimeout() (context.Context, context
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc PurchaseTypeHttpService) CreatePurchaseType(shopID string, authUsername string, doc models.PurchaseType) (string, error) {
+func (svc PurchaseTypeHttpService) CreatePurchaseType(holdingCode string, authUsername string, doc models.PurchaseType) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
 	// Check if code already exists
-	findDoc, _ := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", doc.Code)
+	findDoc, _ := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", doc.Code)
 	if len(findDoc.GuidFixed) > 0 {
 		return "", errors.New("code already exists")
 	}
@@ -71,7 +71,7 @@ func (svc PurchaseTypeHttpService) CreatePurchaseType(shopID string, authUsernam
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.PurchaseTypeDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.PurchaseType = doc
 
@@ -85,18 +85,18 @@ func (svc PurchaseTypeHttpService) CreatePurchaseType(shopID string, authUsernam
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return newGuidFixed, nil
 }
 
-func (svc PurchaseTypeHttpService) UpdatePurchaseType(shopID string, guid string, authUsername string, doc models.PurchaseType) error {
+func (svc PurchaseTypeHttpService) UpdatePurchaseType(holdingCode string, guid string, authUsername string, doc models.PurchaseType) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -113,25 +113,25 @@ func (svc PurchaseTypeHttpService) UpdatePurchaseType(shopID string, guid string
 	dataDoc.UpdatedBy = authUsername
 	dataDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, dataDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, dataDoc)
 
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc PurchaseTypeHttpService) DeletePurchaseType(shopID string, guid string, authUsername string) error {
+func (svc PurchaseTypeHttpService) DeletePurchaseType(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -141,19 +141,19 @@ func (svc PurchaseTypeHttpService) DeletePurchaseType(shopID string, guid string
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc PurchaseTypeHttpService) DeletePurchaseTypeByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc PurchaseTypeHttpService) DeletePurchaseTypeByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -162,24 +162,24 @@ func (svc PurchaseTypeHttpService) DeletePurchaseTypeByGUIDs(shopID string, auth
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc PurchaseTypeHttpService) InfoPurchaseType(shopID string, guid string) (models.PurchaseTypeInfo, error) {
+func (svc PurchaseTypeHttpService) InfoPurchaseType(holdingCode string, guid string) (models.PurchaseTypeInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.PurchaseTypeInfo{}, err
@@ -192,12 +192,12 @@ func (svc PurchaseTypeHttpService) InfoPurchaseType(shopID string, guid string) 
 	return findDoc.PurchaseTypeInfo, nil
 }
 
-func (svc PurchaseTypeHttpService) InfoPurchaseTypeByCode(shopID string, code string) (models.PurchaseTypeInfo, error) {
+func (svc PurchaseTypeHttpService) InfoPurchaseTypeByCode(holdingCode string, code string) (models.PurchaseTypeInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", code)
 
 	if err != nil {
 		return models.PurchaseTypeInfo{}, err
@@ -210,7 +210,7 @@ func (svc PurchaseTypeHttpService) InfoPurchaseTypeByCode(shopID string, code st
 	return findDoc.PurchaseTypeInfo, nil
 }
 
-func (svc PurchaseTypeHttpService) SearchPurchaseType(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.PurchaseTypeInfo, mongopagination.PaginationData, error) {
+func (svc PurchaseTypeHttpService) SearchPurchaseType(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.PurchaseTypeInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -219,7 +219,7 @@ func (svc PurchaseTypeHttpService) SearchPurchaseType(shopID string, filters map
 		"code",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.PurchaseTypeInfo{}, pagination, err
@@ -228,7 +228,7 @@ func (svc PurchaseTypeHttpService) SearchPurchaseType(shopID string, filters map
 	return docList, pagination, nil
 }
 
-func (svc PurchaseTypeHttpService) SearchPurchaseTypeStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.PurchaseTypeInfo, int, error) {
+func (svc PurchaseTypeHttpService) SearchPurchaseTypeStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.PurchaseTypeInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -239,7 +239,7 @@ func (svc PurchaseTypeHttpService) SearchPurchaseTypeStep(shopID string, langCod
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.PurchaseTypeInfo{}, 0, err
@@ -248,9 +248,9 @@ func (svc PurchaseTypeHttpService) SearchPurchaseTypeStep(shopID string, langCod
 	return docList, total, nil
 }
 
-func (svc PurchaseTypeHttpService) saveMasterSync(shopID string) {
+func (svc PurchaseTypeHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

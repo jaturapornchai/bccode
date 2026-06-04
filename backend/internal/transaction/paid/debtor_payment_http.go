@@ -66,7 +66,7 @@ func (h PaidHttp) RegisterHttp() {
 // @Router /transaction/paid [post]
 func (h PaidHttp) CreatePaid(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.Paid{}
@@ -82,7 +82,7 @@ func (h PaidHttp) CreatePaid(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, docNo, err := h.svc.CreatePaid(shopID, authUsername, *docReq)
+	idx, docNo, err := h.svc.CreatePaid(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -110,7 +110,7 @@ func (h PaidHttp) CreatePaid(ctx microservice.IContext) error {
 func (h PaidHttp) UpdatePaid(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -128,7 +128,7 @@ func (h PaidHttp) UpdatePaid(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdatePaid(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdatePaid(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -154,12 +154,12 @@ func (h PaidHttp) UpdatePaid(ctx microservice.IContext) error {
 // @Router /transaction/paid/{id} [delete]
 func (h PaidHttp) DeletePaid(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeletePaid(shopID, id, authUsername)
+	err := h.svc.DeletePaid(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -185,7 +185,7 @@ func (h PaidHttp) DeletePaid(ctx microservice.IContext) error {
 // @Router /transaction/paid [delete]
 func (h PaidHttp) DeletePaidByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -198,7 +198,7 @@ func (h PaidHttp) DeletePaidByGUIDs(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.DeletePaidByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeletePaidByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -223,12 +223,12 @@ func (h PaidHttp) DeletePaidByGUIDs(ctx microservice.IContext) error {
 // @Router /transaction/paid/{id} [get]
 func (h PaidHttp) InfoPaid(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get Paid %v", id)
-	doc, err := h.svc.InfoPaid(shopID, id)
+	doc, err := h.svc.InfoPaid(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -254,11 +254,11 @@ func (h PaidHttp) InfoPaid(ctx microservice.IContext) error {
 // @Router /transaction/paid/code/{code} [get]
 func (h PaidHttp) InfoPaidByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoPaidByCode(shopID, code)
+	doc, err := h.svc.InfoPaidByCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -289,7 +289,7 @@ func (h PaidHttp) InfoPaidByCode(ctx microservice.IContext) error {
 // @Router /transaction/paid [get]
 func (h PaidHttp) SearchPaidPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -310,7 +310,7 @@ func (h PaidHttp) SearchPaidPage(ctx microservice.IContext) error {
 		},
 	})
 
-	docList, pagination, err := h.svc.SearchPaid(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchPaid(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -343,7 +343,7 @@ func (h PaidHttp) SearchPaidPage(ctx microservice.IContext) error {
 // @Router /transaction/paid/list [get]
 func (h PaidHttp) SearchPaidStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -366,7 +366,7 @@ func (h PaidHttp) SearchPaidStep(ctx microservice.IContext) error {
 		},
 	})
 
-	docList, total, err := h.svc.SearchPaidStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchPaidStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -394,7 +394,7 @@ func (h PaidHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -406,7 +406,7 @@ func (h PaidHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

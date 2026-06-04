@@ -13,27 +13,27 @@ import (
 )
 
 type IDepartmentRepository interface {
-	Count(ctx context.Context, shopID string) (int, error)
+	Count(ctx context.Context, holdingCode string) (int, error)
 	Create(ctx context.Context, doc models.DepartmentDoc) (string, error)
 	CreateInBatch(ctx context.Context, docList []models.DepartmentDoc) error
-	Update(ctx context.Context, shopID string, guid string, doc models.DepartmentDoc) error
-	DeleteByGuidfixed(ctx context.Context, shopID string, guid string, username string) error
-	Delete(ctx context.Context, shopID string, username string, filters map[string]interface{}) error
-	FindPage(ctx context.Context, shopID string, searchInFields []string, pageable micromodels.Pageable) ([]models.DepartmentInfo, mongopagination.PaginationData, error)
-	FindByGuid(ctx context.Context, shopID string, guid string) (models.DepartmentDoc, error)
+	Update(ctx context.Context, holdingCode string, guid string, doc models.DepartmentDoc) error
+	DeleteByGuidfixed(ctx context.Context, holdingCode string, guid string, username string) error
+	Delete(ctx context.Context, holdingCode string, username string, filters map[string]interface{}) error
+	FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable micromodels.Pageable) ([]models.DepartmentInfo, mongopagination.PaginationData, error)
+	FindByGuid(ctx context.Context, holdingCode string, guid string) (models.DepartmentDoc, error)
 
-	FindInItemGuid(ctx context.Context, shopID string, columnName string, itemGuidList []string) ([]models.DepartmentItemGuid, error)
-	FindOneFilter(ctx context.Context, shopID string, filters map[string]interface{}) (models.DepartmentDoc, error)
-	FindByDocIndentityGuid(ctx context.Context, shopID string, indentityField string, indentityValue interface{}) (models.DepartmentDoc, error)
-	FindPageFilter(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.DepartmentInfo, mongopagination.PaginationData, error)
-	FindStep(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableLimit micromodels.PageableStep) ([]models.DepartmentInfo, int, error)
+	FindInItemGuid(ctx context.Context, holdingCode string, columnName string, itemGuidList []string) ([]models.DepartmentItemGuid, error)
+	FindOneFilter(ctx context.Context, holdingCode string, filters map[string]interface{}) (models.DepartmentDoc, error)
+	FindByDocIndentityGuid(ctx context.Context, holdingCode string, indentityField string, indentityValue interface{}) (models.DepartmentDoc, error)
+	FindPageFilter(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.DepartmentInfo, mongopagination.PaginationData, error)
+	FindStep(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableLimit micromodels.PageableStep) ([]models.DepartmentInfo, int, error)
 
-	FindDeletedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.DepartmentDeleteActivity, mongopagination.PaginationData, error)
-	FindCreatedOrUpdatedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.DepartmentActivity, mongopagination.PaginationData, error)
-	FindDeletedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.DepartmentDeleteActivity, error)
-	FindCreatedOrUpdatedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.DepartmentActivity, error)
+	FindDeletedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.DepartmentDeleteActivity, mongopagination.PaginationData, error)
+	FindCreatedOrUpdatedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.DepartmentActivity, mongopagination.PaginationData, error)
+	FindDeletedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.DepartmentDeleteActivity, error)
+	FindCreatedOrUpdatedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.DepartmentActivity, error)
 
-	FindOneByCode(ctx context.Context, shopID, branchCode, departmentCode string) (models.DepartmentDoc, error)
+	FindOneByCode(ctx context.Context, holdingCode, branchCode, departmentCode string) (models.DepartmentDoc, error)
 }
 
 type DepartmentRepository struct {
@@ -58,12 +58,12 @@ func NewDepartmentRepository(pst microservice.IPersisterMongo) *DepartmentReposi
 	return insRepo
 }
 
-func (repo DepartmentRepository) FindOneByCode(ctx context.Context, shopID string, branchCode, departmentCode string) (models.DepartmentDoc, error) {
+func (repo DepartmentRepository) FindOneByCode(ctx context.Context, holdingCode string, branchCode, departmentCode string) (models.DepartmentDoc, error) {
 	doc := models.DepartmentDoc{}
 	filter := bson.M{
-		"shopid":    shopID,
-		"deleted_at": bson.M{"$exists": false},
-		"code":      departmentCode,
+		"holding_code": holdingCode,
+		"deleted_at":   bson.M{"$exists": false},
+		"code":         departmentCode,
 	}
 	if branchCode != "" {
 		filter["branchcode"] = branchCode

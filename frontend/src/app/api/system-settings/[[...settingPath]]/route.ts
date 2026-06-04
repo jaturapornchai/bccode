@@ -1,7 +1,7 @@
 import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 import { validateBackendUrl } from "@/lib/backend-url";
-import { getJwtClaimShopId, verifyHs256Jwt } from "@/lib/server-jwt";
+import { getJwtClaimHoldingCode, verifyHs256Jwt } from "@/lib/server-jwt";
 import { getSystemSettingConfig, type SystemSettingConfig } from "@/lib/system-setting-screens";
 import {
   getBackendUrlFromRequest,
@@ -142,8 +142,8 @@ function usesGoApi(config: SystemSettingConfig): boolean {
 }
 
 function validateTenantAccess(request: Request, body?: Record<string, unknown>): NextResponse | null {
-  const requestedShopId = getRequestedShopId(request, body);
-  if (!requestedShopId) return null;
+  const requestedHoldingCode = getRequestedHoldingCode(request, body);
+  if (!requestedHoldingCode) return null;
   if (!process.env.JWT_SECRET_KEY?.trim()) return null;
 
   const authorization = requireBearerToken(request);
@@ -152,22 +152,22 @@ function validateTenantAccess(request: Request, body?: Record<string, unknown>):
   const jwt = verifyHs256Jwt(authorization);
   if (!jwt.ok) return NextResponse.json({ success: false, message: jwt.message }, { status: jwt.status });
 
-  const claimShopId = getJwtClaimShopId(jwt.claims);
-  if (!claimShopId) return NextResponse.json({ success: false, message: "token ไม่มีรหัสบริษัท" }, { status: 401 });
-  if (claimShopId !== requestedShopId) {
+  const claimHoldingCode = getJwtClaimHoldingCode(jwt.claims);
+  if (!claimHoldingCode) return NextResponse.json({ success: false, message: "token ไม่มีรหัส holding" }, { status: 401 });
+  if (claimHoldingCode !== requestedHoldingCode) {
     return NextResponse.json({ success: false, message: "ไม่มีสิทธิ์เข้าถึงข้อมูลบริษัทนี้" }, { status: 403 });
   }
   return null;
 }
 
-function getRequestedShopId(request: Request, body?: Record<string, unknown>): string {
+function getRequestedHoldingCode(request: Request, body?: Record<string, unknown>): string {
   const url = new URL(request.url);
   const value =
-    body?.shopid ??
-    body?.shop_id ??
     body?.holding_code ??
-    url.searchParams.get("shopid") ??
-    url.searchParams.get("shop_id") ??
+    body?.holding_code ??
+    url.searchParams.get("holding_code") ??
+    url.searchParams.get("holding_code") ??
+    body?.holding_code ??
     url.searchParams.get("holding_code") ??
     "";
   return String(value).trim();
@@ -176,10 +176,10 @@ function getRequestedShopId(request: Request, body?: Record<string, unknown>): s
 function buildGetPath(request: Request, config: SystemSettingConfig, id: string): string {
   const url = new URL(request.url);
   const query = new URLSearchParams();
-  const shopid = url.searchParams.get("shopid") ?? url.searchParams.get("shop_id") ?? "";
+  const holding_code = url.searchParams.get("holding_code") ?? url.searchParams.get("holding_code") ?? "";
 
   if (config.kind === "company") {
-    const targetShop = id || shopid;
+    const targetShop = id || holding_code;
     return `/shop/${encodeURIComponent(targetShop)}`;
   }
 
@@ -196,7 +196,7 @@ function buildGetPath(request: Request, config: SystemSettingConfig, id: string)
   }
 
   if (config.kind === "goapi-crud") {
-    query.set("shop_id", shopid);
+    query.set("holding_code", holding_code);
     return `${config.basePath ?? ""}?${query.toString()}`;
   }
 
@@ -221,16 +221,17 @@ function buildGetPath(request: Request, config: SystemSettingConfig, id: string)
 
 function buildGetInit(request: Request, config: SystemSettingConfig, id = ""): RequestInit {
   const url = new URL(request.url);
-  const shopid = url.searchParams.get("shopid") ?? url.searchParams.get("shop_id") ?? "";
+  const holding_code = url.searchParams.get("holding_code") ?? url.searchParams.get("holding_code") ?? "";
+  const holdingCode = url.searchParams.get("holding_code")?.trim() ?? "";
 
   if (config.kind === "atlas") {
     const body: Record<string, unknown> = {
       collection: config.collection,
-      shopid,
-      holding_code: shopid,
+      holding_code,
       limit: Number(url.searchParams.get("limit") ?? "1000"),
       skip: Number(url.searchParams.get("offset") ?? "0"),
     };
+    if (holdingCode) body.holding_code = holdingCode;
     if (id) {
       body.guid_fixed = id;
       body.email = id;
@@ -244,7 +245,7 @@ function buildGetInit(request: Request, config: SystemSettingConfig, id = ""): R
   }
 
   if (config.kind === "ai-provider") {
-    return { method: "POST", body: JSON.stringify({ shop_id: shopid }) };
+    return { method: "POST", body: JSON.stringify({ holding_code: holding_code }) };
   }
 
   return { method: "GET" };
@@ -256,8 +257,8 @@ function buildWritePath(request: Request, config: SystemSettingConfig, id: strin
   let path = "";
 
   if (config.kind === "company") {
-    const shopid = String(body.shopid ?? url.searchParams.get("shopid") ?? id);
-    path = `/shop/${encodeURIComponent(shopid)}`;
+    const holding_code = String(body.holding_code ?? url.searchParams.get("holding_code") ?? id);
+    path = `/holding/${encodeURIComponent(holding_code)}`;
   } else if (config.kind === "restaurant-setting") {
     path = id ? `/restaurant/settings/${encodeURIComponent(id)}` : "/restaurant/settings";
   } else if (config.kind === "atlas") {
@@ -271,7 +272,7 @@ function buildWritePath(request: Request, config: SystemSettingConfig, id: strin
   } else if (config.kind === "copy-uat") {
     path = body.action === "copy" ? "/copymongouattodev" : "/previewcopymongo";
   } else if (config.slug === "user") {
-    path = "/shop/permission";
+    path = "/holding/permission";
   } else {
     path = id ? `${config.basePath}/${encodeProxyPathId(config, id)}` : (config.basePath ?? "");
   }
@@ -287,7 +288,7 @@ function buildDeletePath(request: Request, config: SystemSettingConfig, id: stri
   if (config.kind === "atlas") path = "/atlas/delete";
   else if (config.kind === "ai-provider") path = "/api/v1/ai-provider/delete";
   else if (config.kind === "goapi-crud") path = `${config.basePath}/${encodeProxyPathId(config, id)}`;
-  else if (config.slug === "user") path = `/shop/permission/${encodeProxyPathId(config, id)}`;
+  else if (config.slug === "user") path = `/holding/permission/${encodeProxyPathId(config, id)}`;
   else path = `${config.basePath}/${encodeProxyPathId(config, id)}`;
 
   return search ? `${path}${search}` : path;
@@ -295,8 +296,10 @@ function buildDeletePath(request: Request, config: SystemSettingConfig, id: stri
 
 function buildWritePayload(request: Request, config: SystemSettingConfig, id: string, body: Record<string, unknown>): Record<string, unknown> {
   const payload = stripProxyKeys(body);
+  normalizeAccessScopePayload(config.slug, payload);
   const url = new URL(request.url);
-  const shopid = String(payload.shopid ?? payload.shop_id ?? payload.holding_code ?? url.searchParams.get("shopid") ?? url.searchParams.get("holding_code") ?? "");
+  const holding_code = String(payload.holding_code ?? payload.holding_code ?? url.searchParams.get("holding_code") ?? url.searchParams.get("holding_code") ?? payload.holding_code ?? url.searchParams.get("holding_code") ?? "");
+  const holdingCode = String(payload.holding_code ?? url.searchParams.get("holding_code") ?? "").trim();
 
   if (config.kind === "restaurant-setting") {
     const { guid_fixed: _guidfixed, ...rest } = payload;
@@ -312,8 +315,8 @@ function buildWritePayload(request: Request, config: SystemSettingConfig, id: st
     const legacyKey = id && id !== key ? id : "";
     const {
       _id: _mongoId,
-      shopid: _legacyShopID,
-      shop_id: _legacyShopIDAlt,
+      holding_code: _legacyHoldingCode,
+      holding_code: _legacyHoldingCodeAlt,
       updatedAt: _legacyUpdatedAt,
       updatedBy: _legacyUpdatedBy,
       createdAt: _legacyCreatedAt,
@@ -321,21 +324,22 @@ function buildWritePayload(request: Request, config: SystemSettingConfig, id: st
       ...atlasData
     } = payload;
     void _mongoId;
-    void _legacyShopID;
-    void _legacyShopIDAlt;
+    void _legacyHoldingCode;
+    void _legacyHoldingCodeAlt;
     void _legacyUpdatedAt;
     void _legacyUpdatedBy;
     void _legacyCreatedAt;
     void _legacyCreatedBy;
+    if (!holdingCode) delete atlasData.holding_code;
     return {
       collection: config.collection,
-      shopid,
-      holding_code: String(payload.holding_code ?? shopid),
+      holding_code,
+      ...(holdingCode ? { holding_code: holdingCode } : {}),
       guid_fixed: key,
       email: legacyKey,
       cartid: legacyKey,
       user_uid: typeof payload.user_uid === "string" ? payload.user_uid : undefined,
-      data: { ...atlasData, holding_code: String(payload.holding_code ?? shopid), guid_fixed: key },
+      data: { ...atlasData, ...(holdingCode ? { holding_code: holdingCode } : {}), guid_fixed: key },
       upsert: true,
     };
   }
@@ -343,14 +347,14 @@ function buildWritePayload(request: Request, config: SystemSettingConfig, id: st
   if (config.kind === "goapi-crud") {
     return {
       ...payload,
-      shop_id: shopid,
+      holding_code: holding_code,
     };
   }
 
   if (config.kind === "ai-provider") {
     return {
       ...payload,
-      shop_id: shopid,
+      holding_code: holding_code,
     };
   }
 
@@ -361,6 +365,87 @@ function buildWritePayload(request: Request, config: SystemSettingConfig, id: st
   return payload;
 }
 
+function normalizeAccessScopePayload(slug: string, payload: Record<string, unknown>) {
+  const field =
+    slug === "user"
+      ? "access_scopes"
+      : slug === "approval_setting"
+        ? "approval_rules"
+        : slug === "permission_definition" || slug === "permission_group" || slug === "permission_link"
+          ? "scope_rules"
+          : "";
+  if (!field) return;
+  const value = payload[field] ?? payload.access_scopes ?? payload.business_codes ?? payload.company_guids;
+  payload[field] = normalizeScopeRules(value);
+}
+
+function normalizeScopeRules(value: unknown): Record<string, unknown>[] {
+  const raw = scopeRawArray(value);
+  const seen = new Set<string>();
+  const rules: Record<string, unknown>[] = [];
+  for (const item of raw) {
+    const rule = normalizeScopeRule(item);
+    const key = `${rule.scope_type}|${rule.business_code ?? ""}|${rule.branch_code ?? ""}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    rules.push(rule);
+  }
+  return rules;
+}
+
+function scopeRawArray(value: unknown): unknown[] {
+  if (Array.isArray(value)) return value;
+  if (typeof value !== "string") return [];
+  const trimmed = value.trim();
+  if (!trimmed) return [];
+  try {
+    const parsed = JSON.parse(trimmed) as unknown;
+    if (Array.isArray(parsed)) return parsed;
+  } catch {
+    // Fall through to comma-separated legacy company list.
+  }
+  return trimmed.split(",").map((item) => item.trim()).filter(Boolean);
+}
+
+function normalizeScopeRule(value: unknown): Record<string, unknown> {
+  if (typeof value === "string") {
+    const businessCode = normalizeBusinessCode(value);
+    return businessCode
+      ? { scope_type: "company", business_code: businessCode, all_branches: true }
+      : { scope_type: "holding" };
+  }
+  const record = isRecord(value) ? value : {};
+  const rawScope = String(record.scope_type ?? record.scopeType ?? "holding").trim().toLowerCase();
+  const businessCode = normalizeBusinessCode(record.business_code ?? record.businessCode ?? record.company_code ?? record.companyCode);
+  if (rawScope === "holding" || !businessCode) return { scope_type: "holding", all_branches: false };
+  const allBranches = booleanValue(record.all_branches ?? record.allBranches ?? record.use_all_branches);
+  if (rawScope === "company" || allBranches) return { scope_type: "company", business_code: businessCode, all_branches: true };
+  return {
+    scope_type: "branch",
+    business_code: businessCode,
+    branch_code: normalizeBranchCode(record.branch_code ?? record.branchCode ?? record.code),
+    all_branches: false,
+  };
+}
+
+function normalizeBusinessCode(value: unknown): string {
+  return String(value ?? "").trim().toUpperCase();
+}
+
+function normalizeBranchCode(value: unknown): string {
+  const raw = String(value ?? "").trim();
+  if (!raw) return "";
+  return /^\d{1,5}$/.test(raw) ? raw.padStart(5, "0") : raw;
+}
+
+function booleanValue(value: unknown): boolean {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value !== 0;
+  if (typeof value !== "string") return false;
+  const text = value.trim().toLowerCase();
+  return text === "true" || text === "1" || text === "yes" || text === "y";
+}
+
 function buildDeletePayload(
   request: Request,
   config: SystemSettingConfig,
@@ -368,13 +453,14 @@ function buildDeletePayload(
   body: Record<string, unknown>,
 ): Record<string, unknown> | undefined {
   const url = new URL(request.url);
-  const shopid = String(body.shopid ?? body.shop_id ?? body.holding_code ?? url.searchParams.get("shopid") ?? url.searchParams.get("holding_code") ?? "");
+  const holding_code = String(body.holding_code ?? body.holding_code ?? url.searchParams.get("holding_code") ?? url.searchParams.get("holding_code") ?? body.holding_code ?? url.searchParams.get("holding_code") ?? "");
+  const holdingCode = String(body.holding_code ?? url.searchParams.get("holding_code") ?? "").trim();
 
   if (config.kind === "atlas") {
     return {
       collection: config.collection,
-      shopid,
-      holding_code: String(body.holding_code ?? shopid),
+      holding_code,
+      ...(holdingCode ? { holding_code: holdingCode } : {}),
       guid_fixed: id,
       email: id,
       cartid: id,
@@ -385,7 +471,7 @@ function buildDeletePayload(
 
   if (config.kind === "ai-provider") {
     return {
-      shop_id: shopid,
+      holding_code: holding_code,
       provider_name: id,
     };
   }

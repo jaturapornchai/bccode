@@ -15,7 +15,7 @@ import (
 
 // DocUpdate ทำหน้าที่อัพเดทข้อมูลเอกสารในฐานข้อมูล PostgreSQL
 func xxDocUpdate(docData models.MongoDocModel) error {
-	db, err := PgSqlFastConnect(docData.ShopId)
+	db, err := PgSqlFastConnect(docData.HoldingCode)
 	if err != nil {
 		return fmt.Errorf("failed to connect to PostgreSQL: %w", err)
 	}
@@ -150,7 +150,7 @@ func xxDocUpdate(docData models.MongoDocModel) error {
 
 				insertPaymentQuery := `
 					INSERT INTO docpayment (
-						branchid, docno, docdatetime, perioddatetime, 
+						branchid, docno, docdatetime, perioddatetime,
 						description, amount, trans_flag, guidfixed, guidbranch
 					) VALUES (
 						$1, $2, $3, $4, $5, $6, $7, $8, $9
@@ -224,7 +224,7 @@ func AddToDocWaitProcessQueues(ctx context.Context, db *sql.DB, docNo string, tr
 	insertStockWaitQuery := `
 		INSERT INTO stockwaitprocess (itemcode)
 		SELECT DISTINCT itemcode
-		FROM docdetail 
+		FROM docdetail
 		WHERE docno = $1 AND transflag = $2`
 
 	_, err = db.ExecContext(ctx, insertStockWaitQuery, docNo, transFlag)

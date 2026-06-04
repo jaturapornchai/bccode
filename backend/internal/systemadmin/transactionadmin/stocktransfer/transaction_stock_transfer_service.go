@@ -8,8 +8,8 @@ import (
 )
 
 type IStockTransferTransactionAdminService interface {
-	ReSyncStockTransferDoc(shopID string) error
-	ReSyncStockTransferDeleteDoc(shopID string) error
+	ReSyncStockTransferDoc(holdingCode string) error
+	ReSyncStockTransferDeleteDoc(holdingCode string) error
 }
 
 type StockTransferTransactionAdminService struct {
@@ -30,12 +30,12 @@ func NewStockTransferTransactionAdminService(pst microservice.IPersisterMongo, k
 	}
 }
 
-func (s *StockTransferTransactionAdminService) ReSyncStockTransferDoc(shopID string) error {
+func (s *StockTransferTransactionAdminService) ReSyncStockTransferDoc(holdingCode string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeoutDuration)
 	defer cancel()
 
-	docs, err := s.mongoRepo.FindStockTransferDocByShopID(ctx, shopID)
+	docs, err := s.mongoRepo.FindStockTransferDocByHoldingCode(ctx, holdingCode)
 	if err != nil {
 		return err
 	}
@@ -48,12 +48,12 @@ func (s *StockTransferTransactionAdminService) ReSyncStockTransferDoc(shopID str
 
 }
 
-func (s *StockTransferTransactionAdminService) ReSyncStockTransferDeleteDoc(shopID string) error {
+func (s *StockTransferTransactionAdminService) ReSyncStockTransferDeleteDoc(holdingCode string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeoutDuration)
 	defer cancel()
 
-	docs, err := s.mongoRepo.FindStockTransferDocDeleteByShopID(ctx, shopID)
+	docs, err := s.mongoRepo.FindStockTransferDocDeleteByHoldingCode(ctx, holdingCode)
 
 	if err != nil {
 		return err

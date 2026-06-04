@@ -6,8 +6,8 @@ import (
 )
 
 type IBOMConsumerService interface {
-	Upsert(shopID string, guidFixed string, doc models.ProductBarcodeBOMViewPG) error
-	Delete(shopID string, guidFixed string) error
+	Upsert(holdingCode string, guidFixed string, doc models.ProductBarcodeBOMViewPG) error
+	Delete(holdingCode string, guidFixed string) error
 }
 
 type BOMConsumerService struct {
@@ -20,8 +20,8 @@ func NewBOMConsumerService(repo repositories.IBOMPostgresRepository) IBOMConsume
 	}
 }
 
-func (s *BOMConsumerService) Upsert(shopID string, guidFixed string, doc models.ProductBarcodeBOMViewPG) error {
-	findDoc, err := s.repo.Get(shopID, guidFixed)
+func (s *BOMConsumerService) Upsert(holdingCode string, guidFixed string, doc models.ProductBarcodeBOMViewPG) error {
+	findDoc, err := s.repo.Get(holdingCode, guidFixed)
 	if err != nil || findDoc == nil {
 		err = s.repo.Create(doc)
 		if err != nil {
@@ -32,7 +32,7 @@ func (s *BOMConsumerService) Upsert(shopID string, guidFixed string, doc models.
 		isEqual := findDoc.CompareTo(&doc)
 
 		if !isEqual {
-			err = s.repo.Update(shopID, guidFixed, doc)
+			err = s.repo.Update(holdingCode, guidFixed, doc)
 			if err != nil {
 				return err
 			}
@@ -42,8 +42,8 @@ func (s *BOMConsumerService) Upsert(shopID string, guidFixed string, doc models.
 	return nil
 }
 
-func (s *BOMConsumerService) Delete(shopID string, guidFixed string) error {
-	err := s.repo.Delete(shopID, guidFixed)
+func (s *BOMConsumerService) Delete(holdingCode string, guidFixed string) error {
+	err := s.repo.Delete(holdingCode, guidFixed)
 	if err != nil {
 		return err
 	}

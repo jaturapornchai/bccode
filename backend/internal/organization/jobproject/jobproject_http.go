@@ -64,7 +64,7 @@ func (h JobProjectHttp) RegisterHttp() {
 // @Router /organization/jobproject [post]
 func (h JobProjectHttp) CreateJobProject(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.JobProject{}
@@ -80,7 +80,7 @@ func (h JobProjectHttp) CreateJobProject(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreateJobProject(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateJobProject(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -107,7 +107,7 @@ func (h JobProjectHttp) CreateJobProject(ctx microservice.IContext) error {
 func (h JobProjectHttp) UpdateJobProject(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -125,7 +125,7 @@ func (h JobProjectHttp) UpdateJobProject(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateJobProject(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateJobProject(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -151,12 +151,12 @@ func (h JobProjectHttp) UpdateJobProject(ctx microservice.IContext) error {
 // @Router /organization/jobproject/{id} [delete]
 func (h JobProjectHttp) DeleteJobProject(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteJobProject(shopID, id, authUsername)
+	err := h.svc.DeleteJobProject(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -182,7 +182,7 @@ func (h JobProjectHttp) DeleteJobProject(ctx microservice.IContext) error {
 // @Router /organization/jobproject [delete]
 func (h JobProjectHttp) DeleteJobProjectByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -195,7 +195,7 @@ func (h JobProjectHttp) DeleteJobProjectByGUIDs(ctx microservice.IContext) error
 		return err
 	}
 
-	err = h.svc.DeleteJobProjectByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteJobProjectByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -220,12 +220,12 @@ func (h JobProjectHttp) DeleteJobProjectByGUIDs(ctx microservice.IContext) error
 // @Router /organization/jobproject/{id} [get]
 func (h JobProjectHttp) InfoJobProject(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get JobProject %v", id)
-	doc, err := h.svc.InfoJobProject(shopID, id)
+	doc, err := h.svc.InfoJobProject(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -252,12 +252,12 @@ func (h JobProjectHttp) InfoJobProject(ctx microservice.IContext) error {
 // @Router /organization/jobproject/{jobProjectCode}/branch/{branchCode} [get]
 func (h JobProjectHttp) InfoJobProjectByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	branchCode := ctx.Param("branchCode")
 	jobProjectCode := ctx.Param("jobProjectCode")
 
-	doc, err := h.svc.InfoJobProjectByCode(shopID, branchCode, jobProjectCode)
+	doc, err := h.svc.InfoJobProjectByCode(holdingCode, branchCode, jobProjectCode)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -284,11 +284,11 @@ func (h JobProjectHttp) InfoJobProjectByCode(ctx microservice.IContext) error {
 // @Router /organization/jobproject [get]
 func (h JobProjectHttp) SearchJobProjectPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.SearchJobProject(shopID, map[string]interface{}{}, pageable)
+	docList, pagination, err := h.svc.SearchJobProject(holdingCode, map[string]interface{}{}, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -317,13 +317,13 @@ func (h JobProjectHttp) SearchJobProjectPage(ctx microservice.IContext) error {
 // @Router /organization/jobproject/list [get]
 func (h JobProjectHttp) SearchJobProjectStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
 	lang := ctx.QueryParam("lang")
 
-	docList, total, err := h.svc.SearchJobProjectStep(shopID, lang, pageableStep)
+	docList, total, err := h.svc.SearchJobProjectStep(holdingCode, lang, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -351,7 +351,7 @@ func (h JobProjectHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -363,7 +363,7 @@ func (h JobProjectHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

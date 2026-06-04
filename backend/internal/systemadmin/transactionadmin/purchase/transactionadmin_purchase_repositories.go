@@ -9,8 +9,8 @@ import (
 )
 
 type IPurchaseTransactionAdminRepositories interface {
-	FindPurchaseDocByShopID(ctx context.Context, shopID string) ([]purchaseModels.PurchaseDoc, error)
-	FindPurchaseDocDeleteByShopID(ctx context.Context, shopID string) ([]purchaseModels.PurchaseDoc, error)
+	FindPurchaseDocByHoldingCode(ctx context.Context, holdingCode string) ([]purchaseModels.PurchaseDoc, error)
+	FindPurchaseDocDeleteByHoldingCode(ctx context.Context, holdingCode string) ([]purchaseModels.PurchaseDoc, error)
 }
 
 type PurchaseTransactionAdminRepositories struct {
@@ -23,14 +23,14 @@ func NewPurchaseTransactionAdminRepositories(pst microservice.IPersisterMongo) I
 	}
 }
 
-func (r PurchaseTransactionAdminRepositories) FindPurchaseDocByShopID(ctx context.Context, shopID string) ([]purchaseModels.PurchaseDoc, error) {
+func (r PurchaseTransactionAdminRepositories) FindPurchaseDocByHoldingCode(ctx context.Context, holdingCode string) ([]purchaseModels.PurchaseDoc, error) {
 
 	docList := []purchaseModels.PurchaseDoc{}
 
 	err := r.pst.Find(ctx, &purchaseModels.PurchaseDoc{},
 		bson.M{
-			"shopid":    shopID,
-			"deleted_at": bson.M{"$exists": false},
+			"holding_code": holdingCode,
+			"deleted_at":   bson.M{"$exists": false},
 		},
 		&docList)
 	if err != nil {
@@ -40,13 +40,13 @@ func (r PurchaseTransactionAdminRepositories) FindPurchaseDocByShopID(ctx contex
 	return docList, nil
 }
 
-func (r PurchaseTransactionAdminRepositories) FindPurchaseDocDeleteByShopID(ctx context.Context, shopID string) ([]purchaseModels.PurchaseDoc, error) {
+func (r PurchaseTransactionAdminRepositories) FindPurchaseDocDeleteByHoldingCode(ctx context.Context, holdingCode string) ([]purchaseModels.PurchaseDoc, error) {
 	docList := []purchaseModels.PurchaseDoc{}
 
 	err := r.pst.Find(ctx, &purchaseModels.PurchaseDoc{},
 		bson.M{
-			"shopid":    shopID,
-			"deleted_at": bson.M{"$exists": true},
+			"holding_code": holdingCode,
+			"deleted_at":   bson.M{"$exists": true},
 		},
 		&docList)
 	if err != nil {

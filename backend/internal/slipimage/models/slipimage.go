@@ -11,31 +11,31 @@ import (
 const slipimageCollectionName = "slipImages"
 
 type SlipImageRequest struct {
-	Mode uint8                 `json:"mode" bson:"mode"` // 0 = slip, 1 = qr
-	File *multipart.FileHeader `json:"file" bson:"file"`
-	DocNo string                `json:"docno" bson:"docno"`
-	DocDate time.Time             `json:"docdate" bson:"docdate"`
-	PosID string                `json:"posid" bson:"posid"`
-	MachineCode string                `json:"machinecode" bson:"machinecode"`
-	BranchCode string                `json:"branchcode" bson:"branchcode"`
+	Mode            uint8                 `json:"mode" bson:"mode"` // 0 = slip, 1 = qr
+	File            *multipart.FileHeader `json:"file" bson:"file"`
+	DocNo           string                `json:"docno" bson:"docno"`
+	DocDate         time.Time             `json:"docdate" bson:"docdate"`
+	PosID           string                `json:"posid" bson:"posid"`
+	MachineCode     string                `json:"machinecode" bson:"machinecode"`
+	BranchCode      string                `json:"branchcode" bson:"branchcode"`
 	ZoneGroupNumber string                `json:"zonegroupnumber" bson:"zonegroupnumber"`
 }
 
 type SlipImage struct {
-	Mode uint8     `json:"mode" bson:"mode"` // 0 = slip, 1 = qr
-	URI string    `json:"uri" bson:"uri"`
-	Size int64     `json:"size" bson:"size"`
-	DocNo string    `json:"docno" bson:"docno"`
-	DocDate time.Time `json:"docdate" bson:"docdate"`
-	PosID string    `json:"posid" bson:"posid"`
-	MachineCode string    `json:"machinecode" bson:"machinecode"`
-	BranchCode string    `json:"branchcode" bson:"branchcode"`
+	Mode            uint8     `json:"mode" bson:"mode"` // 0 = slip, 1 = qr
+	URI             string    `json:"uri" bson:"uri"`
+	Size            int64     `json:"size" bson:"size"`
+	DocNo           string    `json:"docno" bson:"docno"`
+	DocDate         time.Time `json:"docdate" bson:"docdate"`
+	PosID           string    `json:"posid" bson:"posid"`
+	MachineCode     string    `json:"machinecode" bson:"machinecode"`
+	BranchCode      string    `json:"branchcode" bson:"branchcode"`
 	ZoneGroupNumber string    `json:"zonegroupnumber" bson:"zonegroupnumber"`
 }
 
 type SlipImageInfo struct {
 	models.DocIdentity `bson:"inline"`
-	SlipImage  `bson:"inline"`
+	SlipImage          `bson:"inline"`
 }
 
 func (SlipImageInfo) CollectionName() string {
@@ -43,13 +43,13 @@ func (SlipImageInfo) CollectionName() string {
 }
 
 type SlipImageData struct {
-	models.ShopIdentity `bson:"inline"`
-	SlipImageInfo  `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	SlipImageInfo            `bson:"inline"`
 }
 
 type SlipImageDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	SlipImageData  `bson:"inline"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	SlipImageData      `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -65,7 +65,7 @@ func (SlipImageItemGuid) CollectionName() string {
 }
 
 type SlipImageActivity struct {
-	SlipImageData  `bson:"inline"`
+	SlipImageData       `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

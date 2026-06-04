@@ -23,11 +23,11 @@ import (
 // Report Get Handler - handles report generation and file serving
 func ReportGetHandler(c echo.Context) error {
 	commandId := c.QueryParam("command_id")
-	shopId := c.QueryParam("shop_id")
+	holdingCode := c.QueryParam("holding_code")
 	guid := c.QueryParam("guid")
 
 	// ดึงข้อมูลจาก PostgreSQL เพื่อแสดงผล
-	db, err := mypg.PgSqlFastConnect(shopId)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		logger.Info("Database connection error: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{
@@ -234,21 +234,21 @@ func ReportGetHandler(c echo.Context) error {
 }
 
 // Report Stock Balance by Warehouse and Barcode
-func ReportProductBalanceByWareHouseBarcode(shopId string, guid string, finalDate string, timezoneCode string, languageCode string) string {
-	return reportstock.ReportProductBalanceByWareHouseAndItem(shopId, guid, finalDate, timezoneCode, languageCode)
+func ReportProductBalanceByWareHouseBarcode(holdingCode string, guid string, finalDate string, timezoneCode string, languageCode string) string {
+	return reportstock.ReportProductBalanceByWareHouseAndItem(holdingCode, guid, finalDate, timezoneCode, languageCode)
 }
 
 // Report Stock Balance by Location and Barcode
-func ReportProductBalanceByLocationBarcode(shopId string, guid string, finalDate string, timezoneCode string, languageCode string) string {
-	return reportstock.ReportProductBalanceByLocationAndItem(shopId, guid, finalDate, timezoneCode, languageCode)
+func ReportProductBalanceByLocationBarcode(holdingCode string, guid string, finalDate string, timezoneCode string, languageCode string) string {
+	return reportstock.ReportProductBalanceByLocationAndItem(holdingCode, guid, finalDate, timezoneCode, languageCode)
 }
 
 // Report Stock Balance by Barcode, Warehouse Code and Location Code
-func ReportProductBalanceByBarcodeWhCodeLocationCode(shopId string, guid string, condition int, finalDate string, timezoneCode string, languageCode string) string {
-	return reportstock.ReportProductBalanceByItemAndWareHouseAndLocation(shopId, guid, condition, finalDate, timezoneCode, languageCode)
+func ReportProductBalanceByBarcodeWhCodeLocationCode(holdingCode string, guid string, condition int, finalDate string, timezoneCode string, languageCode string) string {
+	return reportstock.ReportProductBalanceByItemAndWareHouseAndLocation(holdingCode, guid, condition, finalDate, timezoneCode, languageCode)
 }
 
 // Report Product Stock Movement
-func ReportProductStockMovement(shopId string, guid string, timezoneCode string, languageCode string) {
-	reportstock.ReportProductStockMovement(shopId, guid, timezoneCode, languageCode)
+func ReportProductStockMovement(holdingCode string, guid string, timezoneCode string, languageCode string) {
+	reportstock.ReportProductStockMovement(holdingCode, guid, timezoneCode, languageCode)
 }

@@ -7,11 +7,11 @@ import (
 )
 
 type ISaleOrderTransactionPGRepository interface {
-	Get(shopID string, docNo string) (*models.SaleOrderPG, error)
+	Get(holdingCode string, docNo string) (*models.SaleOrderPG, error)
 	Create(doc models.SaleOrderPG) error
-	Update(shopID string, docNo string, doc models.SaleOrderPG) error
-	Delete(shopID string, docNo string, doc models.SaleOrderPG) error
-	DeleteData(shopID string, docNo string, doc models.SaleOrderPG) error
+	Update(holdingCode string, docNo string, doc models.SaleOrderPG) error
+	Delete(holdingCode string, docNo string, doc models.SaleOrderPG) error
+	DeleteData(holdingCode string, docNo string, doc models.SaleOrderPG) error
 }
 
 type SaleOrderTransactionPGRepository struct {
@@ -36,11 +36,11 @@ func (repo SaleOrderTransactionPGRepository) Create(doc models.SaleOrderPG) erro
 	return nil
 }
 
-func (repo SaleOrderTransactionPGRepository) Update(shopID string, docNo string, doc models.SaleOrderPG) error {
+func (repo SaleOrderTransactionPGRepository) Update(holdingCode string, docNo string, doc models.SaleOrderPG) error {
 
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"shopid": shopID,
-		"docno":  docNo,
+		"holding_code": holdingCode,
+		"docno":        docNo,
 	})
 
 	if err != nil {
@@ -49,12 +49,12 @@ func (repo SaleOrderTransactionPGRepository) Update(shopID string, docNo string,
 	return nil
 }
 
-func (repo *SaleOrderTransactionPGRepository) DeleteData(shopID string, docNo string, doc models.SaleOrderPG) error {
+func (repo *SaleOrderTransactionPGRepository) DeleteData(holdingCode string, docNo string, doc models.SaleOrderPG) error {
 
 	var details *[]models.SaleOrderDetailPG
 	tx := repo.pst.DBClient().Begin()
 
-	tx.Model(&models.SaleOrderDetailPG{}).Where(" shopid=? AND docno=?", shopID, docNo).Find(&details)
+	tx.Model(&models.SaleOrderDetailPG{}).Where(" holding_code=? AND docno=?", holdingCode, docNo).Find(&details)
 	for _, tmp := range *details {
 		// mark delete
 		err := tx.Delete(&models.SaleOrderDetailPG{}, tmp.ID).Error
@@ -65,8 +65,8 @@ func (repo *SaleOrderTransactionPGRepository) DeleteData(shopID string, docNo st
 	}
 
 	err := tx.Delete(&models.SaleOrderPG{}, map[string]interface{}{
-		"shopid": shopID,
-		"docno":  docNo,
+		"holding_code": holdingCode,
+		"docno":        docNo,
 	}).Error
 	if err != nil {
 		tx.Rollback()

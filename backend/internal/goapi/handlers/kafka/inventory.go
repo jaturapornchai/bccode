@@ -34,9 +34,9 @@ func OnConsumeMessageInventoryDelete(msg string) error {
 		return err
 	}
 
-	if productData.ShopId == "" {
-		logger.Warn("Product barcode delete data missing ShopId")
-		return fmt.Errorf("missing ShopId for product deletion")
+	if productData.HoldingCode == "" {
+		logger.Warn("Product barcode delete data missing HoldingCode")
+		return fmt.Errorf("missing HoldingCode for product deletion")
 	}
 
 	if productData.Barcode == "" {
@@ -44,7 +44,7 @@ func OnConsumeMessageInventoryDelete(msg string) error {
 		return fmt.Errorf("missing Barcode for product deletion")
 	}
 
-	build.DatabaseChecker(productData.ShopId, false)
+	build.DatabaseChecker(productData.HoldingCode, false)
 
 	// Process single barcode deletion
 	err = ProductBarcodeDeleteFromPostgreSQL(productData)
@@ -92,8 +92,8 @@ func OnConsumeMessageInventoryBulkCreateOrUpdate(msg string) error {
 			price = barcode.Prices[0].Price
 		}
 
-		logger.Info("Barcode %d: ShopId: %s, Barcode: %s, ItemCode: %s, Name: %s, GroupCode: %s, GroupName: %s,UnitCode: %s, UnitName: %s, Price: %.2f",
-			i+1, barcode.ShopId, barcode.Barcode, barcode.ItemCode, name, barcode.GroupCode, groupName, barcode.ItemUnitCode, unitName, price)
+		logger.Info("Barcode %d: HoldingCode: %s, Barcode: %s, ItemCode: %s, Name: %s, GroupCode: %s, GroupName: %s,UnitCode: %s, UnitName: %s, Price: %.2f",
+			i+1, barcode.HoldingCode, barcode.Barcode, barcode.ItemCode, name, barcode.GroupCode, groupName, barcode.ItemUnitCode, unitName, price)
 	}
 
 	err = ProductBarcodeBulkUpdateWithLogging(barcodes)
@@ -123,13 +123,13 @@ func OnConsumeMessageInventoryBulkDelete(msg string) error {
 		return nil
 	}
 
-	// ตรวจสอบ ShopId ให้ตรงกันทุกตัว
-	shopId := barcodes[0].ShopId
+	// ตรวจสอบ HoldingCode ให้ตรงกันทุกตัว
+	holdingCode := barcodes[0].HoldingCode
 	for i, barcode := range barcodes {
-		if barcode.ShopId != shopId {
-			logger.Error("ShopId mismatch in bulk delete: barcode %d has ShopId %s, expected %s",
-				i+1, barcode.ShopId, shopId)
-			return fmt.Errorf("ShopId mismatch in bulk delete")
+		if barcode.HoldingCode != holdingCode {
+			logger.Error("HoldingCode mismatch in bulk delete: barcode %d has HoldingCode %s, expected %s",
+				i+1, barcode.HoldingCode, holdingCode)
+			return fmt.Errorf("HoldingCode mismatch in bulk delete")
 		}
 	}
 
@@ -174,12 +174,12 @@ func ProductBarcodeBuild(msg string) {
 		return
 	}
 
-	if productData.ShopId == "" {
-		logger.Warn("Product barcode data missing ShopId")
+	if productData.HoldingCode == "" {
+		logger.Warn("Product barcode data missing HoldingCode")
 		return
 	}
 
-	build.DatabaseChecker(productData.ShopId, false)
+	build.DatabaseChecker(productData.HoldingCode, false)
 
 	// Process single barcode update
 	err = ProductBarcodeInsertOrUpdateToPostgreSQL(productData)
@@ -189,7 +189,7 @@ func ProductBarcodeBuild(msg string) {
 
 	// Update product balance (packing/unitname อาจเปลี่ยน → ต้อง recalc word)
 	if productData.ItemCode != "" {
-		db, dbErr := mypg.PgSqlFastConnect(productData.ShopId)
+		db, dbErr := mypg.PgSqlFastConnect(productData.HoldingCode)
 		if dbErr == nil {
 			processstock.ProcessProductBalanceUpdateByItemsAsync(db, []string{productData.ItemCode})
 		}
@@ -198,10 +198,10 @@ func ProductBarcodeBuild(msg string) {
 
 // ProductBarcodeInsertOrUpdateToPostgreSQL - inserts or updates product barcode data in PostgreSQL
 func ProductBarcodeInsertOrUpdateToPostgreSQL(productData models.MongoProductBarcodeModel) error {
-	logger.Info("Processing product barcode: ShopId=%s, Barcode=%s, ItemCode=%s",
-		productData.ShopId, productData.Barcode, productData.ItemCode)
+	logger.Info("Processing product barcode: HoldingCode=%s, Barcode=%s, ItemCode=%s",
+		productData.HoldingCode, productData.Barcode, productData.ItemCode)
 
-	db, err := mypg.PgSqlFastConnect(productData.ShopId)
+	db, err := mypg.PgSqlFastConnect(productData.HoldingCode)
 	if err != nil {
 		return fmt.Errorf("failed to connect to Postgres: %v", err)
 	}
@@ -236,16 +236,16 @@ func ProductBarcodeInsertOrUpdateToPostgreSQL(productData models.MongoProductBar
 	}
 
 	// Delete existing record
-	_, err = db.ExecContext(ctx, "DELETE FROM productbarcode WHERE shopid = $1 AND barcode = $2", productData.ShopId, productData.Barcode)
+	_, err = db.ExecContext(ctx, "DELETE FROM productbarcode WHERE holding_code = $1 AND barcode = $2", productData.HoldingCode, productData.Barcode)
 	if err != nil {
 		logger.Warn("Could not delete existing barcode %s: %v", productData.Barcode, err)
 	}
 
 	// Insert new record (PostgreSQL)
 	_, err = db.ExecContext(ctx,
-		`INSERT INTO productbarcode (shopid, barcode, itemcode, name0, checksum, groupcode, groupnames, unitcode, unitname, price1, barcoderefunitstand, barcoderefunitdivide, itemtype, materialtype)
+		`INSERT INTO productbarcode (holding_code, barcode, itemcode, name0, checksum, groupcode, groupnames, unitcode, unitname, price1, barcoderefunitstand, barcoderefunitdivide, itemtype, materialtype)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
-		productData.ShopId,
+		productData.HoldingCode,
 		productData.Barcode,
 		productData.ItemCode,
 		productName,
@@ -267,7 +267,7 @@ func ProductBarcodeInsertOrUpdateToPostgreSQL(productData models.MongoProductBar
 	logger.Info("Inserted/Updated product barcode (PG): %s", productData.Barcode)
 
 	// ClickHouse: insert/update ด้วย (best-effort — ไม่ fail ถ้า CH พัง)
-	clickHouseInsertOrUpdate(productData.ShopId, productData.Barcode, productData.ItemCode, productName,
+	clickHouseInsertOrUpdate(productData.HoldingCode, productData.Barcode, productData.ItemCode, productName,
 		productData.ItemUnitCode, unitName, productData.GroupCode, groupName,
 		price, productData.StandValue, productData.DivideValue, checksum)
 
@@ -280,11 +280,11 @@ func ProductBarcodeBulkUpdateWithLogging(productDataList []models.MongoProductBa
 		return nil
 	}
 
-	// Get shop ID from first item
-	shopId := productDataList[0].ShopId
+	// Get holding Code from first item
+	holdingCode := productDataList[0].HoldingCode
 
 	// Connect to PostgreSQL
-	db, err := mypg.PgSqlFastConnect(shopId)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		return fmt.Errorf("failed to connect to PostgreSQL: %v", err)
 	}
@@ -339,14 +339,14 @@ func productBarcodeBulkUpdateInternalWithLogging(ctx context.Context, db *sql.DB
 		}
 
 		// For bulk update, use prepared statement to delete existing records
-		deleteQuery := "DELETE FROM productbarcode WHERE shopid = $1 AND barcode = $2"
-		_, err := db.ExecContext(ctx, deleteQuery, productData.ShopId, productData.Barcode)
+		deleteQuery := "DELETE FROM productbarcode WHERE holding_code = $1 AND barcode = $2"
+		_, err := db.ExecContext(ctx, deleteQuery, productData.HoldingCode, productData.Barcode)
 		if err != nil {
 			logger.Warn("Could not delete existing barcode %s: %v", productData.Barcode, err)
 		}
 
 		record := []any{
-			productData.ShopId,
+			productData.HoldingCode,
 			productData.Barcode,
 			productData.ItemCode,
 			productName,
@@ -366,7 +366,7 @@ func productBarcodeBulkUpdateInternalWithLogging(ctx context.Context, db *sql.DB
 
 	// Use COPY FROM for bulk insert (PostgreSQL)
 	columns := []string{
-		"shopid", "barcode", "itemcode", "name0", "checksum",
+		"holding_code", "barcode", "itemcode", "name0", "checksum",
 		"groupcode", "groupnames", "unitcode", "unitname", "price1",
 		"barcoderefunitstand", "barcoderefunitdivide", "itemtype", "materialtype",
 	}
@@ -385,10 +385,10 @@ func productBarcodeBulkUpdateInternalWithLogging(ctx context.Context, db *sql.DB
 
 // ProductBarcodeDeleteFromPostgreSQL - ลบข้อมูลสินค้าใน PostgreSQL + ClickHouse
 func ProductBarcodeDeleteFromPostgreSQL(productData models.MongoProductBarcodeModel) error {
-	logger.Info("Deleting product barcode: ShopId=%s, Barcode=%s",
-		productData.ShopId, productData.Barcode)
+	logger.Info("Deleting product barcode: HoldingCode=%s, Barcode=%s",
+		productData.HoldingCode, productData.Barcode)
 
-	db, err := mypg.PgSqlFastConnect(productData.ShopId)
+	db, err := mypg.PgSqlFastConnect(productData.HoldingCode)
 	if err != nil {
 		return fmt.Errorf("failed to connect to PostgreSQL: %v", err)
 	}
@@ -396,7 +396,7 @@ func ProductBarcodeDeleteFromPostgreSQL(productData models.MongoProductBarcodeMo
 	ctx := context.Background()
 
 	// ลบข้อมูลสินค้า (PostgreSQL)
-	result, err := db.ExecContext(ctx, "DELETE FROM productbarcode WHERE shopid = $1 AND barcode = $2", productData.ShopId, productData.Barcode)
+	result, err := db.ExecContext(ctx, "DELETE FROM productbarcode WHERE holding_code = $1 AND barcode = $2", productData.HoldingCode, productData.Barcode)
 	if err != nil {
 		return fmt.Errorf("error deleting product barcode %s: %v", productData.Barcode, err)
 	}
@@ -410,7 +410,7 @@ func ProductBarcodeDeleteFromPostgreSQL(productData models.MongoProductBarcodeMo
 	}
 
 	// ClickHouse: ลบด้วย (best-effort)
-	clickHouseDelete(productData.ShopId, productData.Barcode)
+	clickHouseDelete(productData.HoldingCode, productData.Barcode)
 
 	return nil
 }
@@ -421,11 +421,11 @@ func ProductBarcodeBulkDeleteWithLogging(productDataList []models.MongoProductBa
 		return nil
 	}
 
-	// Get shop ID from first item
-	shopId := productDataList[0].ShopId
+	// Get holding Code from first item
+	holdingCode := productDataList[0].HoldingCode
 
 	// Connect to PostgreSQL
-	db, err := mypg.PgSqlFastConnect(shopId)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		return fmt.Errorf("failed to connect to PostgreSQL: %v", err)
 	}
@@ -457,7 +457,7 @@ func productBarcodeBulkDeleteInternalWithLogging(ctx context.Context, db *sql.DB
 	var failedBarcodes []string
 
 	for _, productData := range productDataList {
-		result, err := db.ExecContext(ctx, "DELETE FROM productbarcode WHERE shopid = $1 AND barcode = $2", productData.ShopId, productData.Barcode)
+		result, err := db.ExecContext(ctx, "DELETE FROM productbarcode WHERE holding_code = $1 AND barcode = $2", productData.HoldingCode, productData.Barcode)
 		if err != nil {
 			logger.Error("failed to delete barcode %s: %v", productData.Barcode, err)
 			failedBarcodes = append(failedBarcodes, productData.Barcode)
@@ -488,7 +488,7 @@ func productBarcodeBulkDeleteInternalWithLogging(ctx context.Context, db *sql.DB
 
 	// ClickHouse: bulk delete ด้วย (best-effort)
 	if len(productDataList) > 0 {
-		clickHouseBulkDelete(productDataList[0].ShopId, productDataList)
+		clickHouseBulkDelete(productDataList[0].HoldingCode, productDataList)
 	}
 
 	return nil
@@ -500,15 +500,15 @@ func chEsc(s string) string {
 	return strings.ReplaceAll(s, "'", "\\'")
 }
 
-func clickHouseInsertOrUpdate(shopID, barcode, itemcode, name0, unitcode, unitname, groupcode, groupnames string,
+func clickHouseInsertOrUpdate(holdingCode, barcode, itemcode, name0, unitcode, unitname, groupcode, groupnames string,
 	price, standValue, divideValue float64, checksum string) {
 }
 
 func clickHouseBulkInsert(productDataList []models.MongoProductBarcodeModel) {
 }
 
-func clickHouseDelete(shopID, barcode string) {
+func clickHouseDelete(holdingCode, barcode string) {
 }
 
-func clickHouseBulkDelete(shopID string, productDataList []models.MongoProductBarcodeModel) {
+func clickHouseBulkDelete(holdingCode string, productDataList []models.MongoProductBarcodeModel) {
 }

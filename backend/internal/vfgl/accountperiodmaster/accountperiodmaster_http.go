@@ -60,7 +60,7 @@ func (h AccountPeriodMasterHttp) RegisterHttp() {
 // @Router /gl/accountperiodmaster [post]
 func (h AccountPeriodMasterHttp) CreateAccountPeriodMaster(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.AccountPeriodMasterRequest{}
@@ -76,7 +76,7 @@ func (h AccountPeriodMasterHttp) CreateAccountPeriodMaster(ctx microservice.ICon
 		return err
 	}
 
-	idx, err := h.svc.CreateAccountPeriodMaster(shopID, authUsername, docReq.ToAccountPeriodMaster())
+	idx, err := h.svc.CreateAccountPeriodMaster(holdingCode, authUsername, docReq.ToAccountPeriodMaster())
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -103,7 +103,7 @@ func (h AccountPeriodMasterHttp) CreateAccountPeriodMaster(ctx microservice.ICon
 func (h AccountPeriodMasterHttp) UpdateAccountPeriodMaster(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -121,7 +121,7 @@ func (h AccountPeriodMasterHttp) UpdateAccountPeriodMaster(ctx microservice.ICon
 		return err
 	}
 
-	err = h.svc.UpdateAccountPeriodMaster(shopID, id, authUsername, docReq.ToAccountPeriodMaster())
+	err = h.svc.UpdateAccountPeriodMaster(holdingCode, id, authUsername, docReq.ToAccountPeriodMaster())
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -147,12 +147,12 @@ func (h AccountPeriodMasterHttp) UpdateAccountPeriodMaster(ctx microservice.ICon
 // @Router /gl/accountperiodmaster/{id} [delete]
 func (h AccountPeriodMasterHttp) DeleteAccountPeriodMaster(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteAccountPeriodMaster(shopID, id, authUsername)
+	err := h.svc.DeleteAccountPeriodMaster(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -178,7 +178,7 @@ func (h AccountPeriodMasterHttp) DeleteAccountPeriodMaster(ctx microservice.ICon
 // @Router /gl/accountperiodmaster [delete]
 func (h AccountPeriodMasterHttp) DeleteAccountPeriodMasterByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -191,7 +191,7 @@ func (h AccountPeriodMasterHttp) DeleteAccountPeriodMasterByGUIDs(ctx microservi
 		return err
 	}
 
-	err = h.svc.DeleteAccountPeriodMasterByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteAccountPeriodMasterByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -216,12 +216,12 @@ func (h AccountPeriodMasterHttp) DeleteAccountPeriodMasterByGUIDs(ctx microservi
 // @Router /gl/accountperiodmaster/{id} [get]
 func (h AccountPeriodMasterHttp) InfoAccountPeriodMaster(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get AccountPeriodMaster %v", id)
-	doc, err := h.svc.InfoAccountPeriodMaster(shopID, id)
+	doc, err := h.svc.InfoAccountPeriodMaster(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -247,7 +247,7 @@ func (h AccountPeriodMasterHttp) InfoAccountPeriodMaster(ctx microservice.IConte
 // @Router /gl/accountperiodmaster/by-date [get]
 func (h AccountPeriodMasterHttp) InfoAccountPeriodMasterByDate(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	layout := "2006-01-02"
 	reqDateList := ctx.QueryParam("date-list")
@@ -271,7 +271,7 @@ func (h AccountPeriodMasterHttp) InfoAccountPeriodMasterByDate(ctx microservice.
 		dateList = append(dateList, tempDate)
 	}
 
-	doc, err := h.svc.InfoAccountPeriodMasterByDateList(shopID, dateList)
+	doc, err := h.svc.InfoAccountPeriodMasterByDateList(holdingCode, dateList)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -298,10 +298,10 @@ func (h AccountPeriodMasterHttp) InfoAccountPeriodMasterByDate(ctx microservice.
 // @Router /gl/accountperiodmaster [get]
 func (h AccountPeriodMasterHttp) SearchAccountPeriodMasterPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
-	docList, pagination, err := h.svc.SearchAccountPeriodMaster(shopID, pageable)
+	docList, pagination, err := h.svc.SearchAccountPeriodMaster(holdingCode, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -330,13 +330,13 @@ func (h AccountPeriodMasterHttp) SearchAccountPeriodMasterPage(ctx microservice.
 // @Router /gl/accountperiodmaster/list [get]
 func (h AccountPeriodMasterHttp) SearchAccountPeriodMasterLimit(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
 	lang := ctx.QueryParam("lang")
 
-	docList, total, err := h.svc.SearchAccountPeriodMasterStep(shopID, lang, pageableStep)
+	docList, total, err := h.svc.SearchAccountPeriodMasterStep(holdingCode, lang, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -362,7 +362,7 @@ func (h AccountPeriodMasterHttp) SearchAccountPeriodMasterLimit(ctx microservice
 // @Router /gl/accountperiodmaster/bulk [post]
 func (h AccountPeriodMasterHttp) SaveBulkAccountPeriodMaster(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &[]models.AccountPeriodMasterRequest{}
@@ -383,7 +383,7 @@ func (h AccountPeriodMasterHttp) SaveBulkAccountPeriodMaster(ctx microservice.IC
 		tempDocListReq = append(tempDocListReq, doc.ToAccountPeriodMaster())
 	}
 
-	err = h.svc.SaveInBatch(shopID, authUsername, tempDocListReq)
+	err = h.svc.SaveInBatch(holdingCode, authUsername, tempDocListReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

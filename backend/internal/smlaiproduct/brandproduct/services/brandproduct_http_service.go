@@ -20,15 +20,15 @@ import (
 )
 
 type IBrandProductHttpService interface {
-	CreateBrandProduct(shopID string, authUsername string, doc models.BrandProduct) (string, error)
-	UpdateBrandProduct(shopID string, guid string, authUsername string, doc models.BrandProduct) error
-	DeleteBrandProduct(shopID string, guid string, authUsername string) error
-	DeleteBrandProductByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoBrandProduct(shopID string, guid string) (models.BrandProductInfo, error)
-	InfoBrandProductByCode(shopID string, code string) (models.BrandProductInfo, error)
-	SearchBrandProduct(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.BrandProductInfo, mongopagination.PaginationData, error)
-	SearchBrandProductStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.BrandProductInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.BrandProduct) (common.BulkImport, error)
+	CreateBrandProduct(holdingCode string, authUsername string, doc models.BrandProduct) (string, error)
+	UpdateBrandProduct(holdingCode string, guid string, authUsername string, doc models.BrandProduct) error
+	DeleteBrandProduct(holdingCode string, guid string, authUsername string) error
+	DeleteBrandProductByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoBrandProduct(holdingCode string, guid string) (models.BrandProductInfo, error)
+	InfoBrandProductByCode(holdingCode string, code string) (models.BrandProductInfo, error)
+	SearchBrandProduct(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.BrandProductInfo, mongopagination.PaginationData, error)
+	SearchBrandProductStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.BrandProductInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.BrandProduct) (common.BulkImport, error)
 
 	GetModuleName() string
 }
@@ -65,12 +65,12 @@ func (svc BrandProductHttpService) getContextTimeout() (context.Context, context
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc BrandProductHttpService) CreateBrandProduct(shopID string, authUsername string, doc models.BrandProduct) (string, error) {
+func (svc BrandProductHttpService) CreateBrandProduct(holdingCode string, authUsername string, doc models.BrandProduct) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", doc.Code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", doc.Code)
 
 	if err != nil {
 		return "", err
@@ -83,7 +83,7 @@ func (svc BrandProductHttpService) CreateBrandProduct(shopID string, authUsernam
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.BrandProductDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.BrandProduct = doc
 
@@ -99,12 +99,12 @@ func (svc BrandProductHttpService) CreateBrandProduct(shopID string, authUsernam
 	return newGuidFixed, nil
 }
 
-func (svc BrandProductHttpService) UpdateBrandProduct(shopID string, guid string, authUsername string, doc models.BrandProduct) error {
+func (svc BrandProductHttpService) UpdateBrandProduct(holdingCode string, guid string, authUsername string, doc models.BrandProduct) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -121,7 +121,7 @@ func (svc BrandProductHttpService) UpdateBrandProduct(shopID string, guid string
 	docData.UpdatedBy = authUsername
 	docData.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, docData)
+	err = svc.repo.Update(ctx, holdingCode, guid, docData)
 
 	if err != nil {
 		return err
@@ -130,12 +130,12 @@ func (svc BrandProductHttpService) UpdateBrandProduct(shopID string, guid string
 	return nil
 }
 
-func (svc BrandProductHttpService) DeleteBrandProduct(shopID string, guid string, authUsername string) error {
+func (svc BrandProductHttpService) DeleteBrandProduct(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -145,13 +145,13 @@ func (svc BrandProductHttpService) DeleteBrandProduct(shopID string, guid string
 		return errors.New("document not found")
 	}
 
-	existsInProduct, _ := svc.existsOrderTypeRefInProduct(shopID, []string{guid})
+	existsInProduct, _ := svc.existsOrderTypeRefInProduct(holdingCode, []string{guid})
 
 	if existsInProduct {
 		return fmt.Errorf("\"%s\" is referenced in product barcode", findDoc.Code)
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
@@ -159,12 +159,12 @@ func (svc BrandProductHttpService) DeleteBrandProduct(shopID string, guid string
 	return nil
 }
 
-func (svc BrandProductHttpService) DeleteBrandProductByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc BrandProductHttpService) DeleteBrandProductByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	existsInProduct, _ := svc.existsOrderTypeRefInProduct(shopID, GUIDs)
+	existsInProduct, _ := svc.existsOrderTypeRefInProduct(holdingCode, GUIDs)
 
 	if existsInProduct {
 		return fmt.Errorf("referenced in product")
@@ -174,7 +174,7 @@ func (svc BrandProductHttpService) DeleteBrandProductByGUIDs(shopID string, auth
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
@@ -182,12 +182,12 @@ func (svc BrandProductHttpService) DeleteBrandProductByGUIDs(shopID string, auth
 	return nil
 }
 
-func (svc BrandProductHttpService) InfoBrandProduct(shopID string, guid string) (models.BrandProductInfo, error) {
+func (svc BrandProductHttpService) InfoBrandProduct(holdingCode string, guid string) (models.BrandProductInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.BrandProductInfo{}, err
@@ -200,12 +200,12 @@ func (svc BrandProductHttpService) InfoBrandProduct(shopID string, guid string) 
 	return findDoc.BrandProductInfo, nil
 }
 
-func (svc BrandProductHttpService) InfoBrandProductByCode(shopID string, code string) (models.BrandProductInfo, error) {
+func (svc BrandProductHttpService) InfoBrandProductByCode(holdingCode string, code string) (models.BrandProductInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", code)
 
 	if err != nil {
 		return models.BrandProductInfo{}, err
@@ -218,7 +218,7 @@ func (svc BrandProductHttpService) InfoBrandProductByCode(shopID string, code st
 	return findDoc.BrandProductInfo, nil
 }
 
-func (svc BrandProductHttpService) SearchBrandProduct(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.BrandProductInfo, mongopagination.PaginationData, error) {
+func (svc BrandProductHttpService) SearchBrandProduct(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.BrandProductInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -228,7 +228,7 @@ func (svc BrandProductHttpService) SearchBrandProduct(shopID string, filters map
 		"names.name",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.BrandProductInfo{}, pagination, err
@@ -237,7 +237,7 @@ func (svc BrandProductHttpService) SearchBrandProduct(shopID string, filters map
 	return docList, pagination, nil
 }
 
-func (svc BrandProductHttpService) SearchBrandProductStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.BrandProductInfo, int, error) {
+func (svc BrandProductHttpService) SearchBrandProductStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.BrandProductInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -257,7 +257,7 @@ func (svc BrandProductHttpService) SearchBrandProductStep(shopID string, langCod
 		}
 	*/
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.BrandProductInfo{}, 0, err
@@ -266,7 +266,7 @@ func (svc BrandProductHttpService) SearchBrandProductStep(shopID string, langCod
 	return docList, total, nil
 }
 
-func (svc BrandProductHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.BrandProduct) (common.BulkImport, error) {
+func (svc BrandProductHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.BrandProduct) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -278,7 +278,7 @@ func (svc BrandProductHttpService) SaveInBatch(shopID string, authUsername strin
 		itemCodeGuidList = append(itemCodeGuidList, doc.Code)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "code", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "code", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -290,18 +290,18 @@ func (svc BrandProductHttpService) SaveInBatch(shopID string, authUsername strin
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.BrandProduct, models.BrandProductDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.BrandProduct) models.BrandProductDoc {
+		func(holdingCode string, authUsername string, doc models.BrandProduct) models.BrandProductDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.BrandProductDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.BrandProduct = doc
 
 			currentTime := time.Now()
@@ -312,23 +312,23 @@ func (svc BrandProductHttpService) SaveInBatch(shopID string, authUsername strin
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.BrandProduct, models.BrandProductDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.BrandProductDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", guid)
+		func(holdingCode string, guid string) (models.BrandProductDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", guid)
 		},
 		func(doc models.BrandProductDoc) bool {
 			return doc.Code != ""
 		},
-		func(shopID string, authUsername string, data models.BrandProduct, doc models.BrandProductDoc) error {
+		func(holdingCode string, authUsername string, data models.BrandProduct, doc models.BrandProductDoc) error {
 
 			doc.BrandProduct = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -367,7 +367,7 @@ func (svc BrandProductHttpService) SaveInBatch(shopID string, authUsername strin
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -381,9 +381,9 @@ func (svc BrandProductHttpService) getDocIDKey(doc models.BrandProduct) string {
 	return doc.Code
 }
 
-func (svc BrandProductHttpService) saveMasterSync(shopID string) {
+func (svc BrandProductHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())
@@ -395,12 +395,12 @@ func (svc BrandProductHttpService) GetModuleName() string {
 	return "productType"
 }
 
-func (svc BrandProductHttpService) existsOrderTypeRefInProduct(shopID string, GUIDs []string) (bool, error) {
+func (svc BrandProductHttpService) existsOrderTypeRefInProduct(holdingCode string, GUIDs []string) (bool, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	docCount, err := svc.repoProductBarcode.CountByBrandProducts(ctx, shopID, GUIDs)
+	docCount, err := svc.repoProductBarcode.CountByBrandProducts(ctx, holdingCode, GUIDs)
 	if err != nil {
 		return true, err
 	}

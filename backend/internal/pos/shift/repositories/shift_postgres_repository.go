@@ -8,10 +8,10 @@ import (
 )
 
 type IShiftPostgresRepository interface {
-	Get(shopID string, shiftCode string) (*shiftModels.ShiftPG, error)
+	Get(holdingCode string, shiftCode string) (*shiftModels.ShiftPG, error)
 	Create(doc shiftModels.ShiftPG) error
-	Update(shopID string, shiftCode string, doc shiftModels.ShiftPG) error
-	Delete(shopID string, shiftCode string) error
+	Update(holdingCode string, shiftCode string, doc shiftModels.ShiftPG) error
+	Delete(holdingCode string, shiftCode string) error
 }
 
 type ShiftPostgresRepository struct {
@@ -24,9 +24,9 @@ func NewShiftPostgresRepository(pst microservice.IPersister) IShiftPostgresRepos
 	}
 }
 
-func (repo *ShiftPostgresRepository) Get(shopID string, shiftCode string) (*shiftModels.ShiftPG, error) {
+func (repo *ShiftPostgresRepository) Get(holdingCode string, shiftCode string) (*shiftModels.ShiftPG, error) {
 	var result shiftModels.ShiftPG
-	_, err := repo.pst.First(&result, "shopid=? AND guidfixed=?", shopID, shiftCode)
+	_, err := repo.pst.First(&result, "holding_code=? AND guidfixed=?", holdingCode, shiftCode)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
@@ -46,10 +46,10 @@ func (repo *ShiftPostgresRepository) Create(doc shiftModels.ShiftPG) error {
 	return nil
 }
 
-func (repo *ShiftPostgresRepository) Update(shopID string, shiftCode string, doc shiftModels.ShiftPG) error {
+func (repo *ShiftPostgresRepository) Update(holdingCode string, shiftCode string, doc shiftModels.ShiftPG) error {
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"shopid":    shopID,
-		"guid_fixed": shiftCode,
+		"holding_code": holdingCode,
+		"guid_fixed":   shiftCode,
 	})
 
 	if err != nil {
@@ -58,10 +58,10 @@ func (repo *ShiftPostgresRepository) Update(shopID string, shiftCode string, doc
 	return nil
 }
 
-func (repo *ShiftPostgresRepository) Delete(shopID string, shiftCode string) error {
+func (repo *ShiftPostgresRepository) Delete(holdingCode string, shiftCode string) error {
 	err := repo.pst.Delete(&shiftModels.ShiftPG{}, map[string]interface{}{
-		"shopid":    shopID,
-		"guid_fixed": shiftCode,
+		"holding_code": holdingCode,
+		"guid_fixed":   shiftCode,
 	})
 
 	if err != nil {

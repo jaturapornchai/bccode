@@ -12,7 +12,7 @@ type IShopAdminService interface {
 	CreateShop(doc shopModels.ShopDoc) error
 	FindShopByProjectNo(projectNo string) (shopModels.ShopDoc, error)
 	ListShopUsersAll() ([]ShopUserDoc, error)
-	ListShopUsersByShopId(shopId string) ([]ShopUserDoc, error)
+	ListShopUsersByHoldingCode(holdingCode string) ([]ShopUserDoc, error)
 }
 
 type ShopAdminService struct {
@@ -60,10 +60,10 @@ func (s *ShopAdminService) ListShopUsersAll() ([]ShopUserDoc, error) {
 	return s.repo.ListShopUsersAll(ctx)
 }
 
-func (s *ShopAdminService) ListShopUsersByShopId(shopId string) ([]ShopUserDoc, error) {
+func (s *ShopAdminService) ListShopUsersByHoldingCode(holdingCode string) ([]ShopUserDoc, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeoutDuration)
 	defer cancel()
 
-	return s.repo.ListShopUsersByShopId(ctx, shopId)
+	return s.repo.ListShopUsersByHoldingCode(ctx, holdingCode)
 }

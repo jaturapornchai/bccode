@@ -19,13 +19,13 @@ const shopAIProviderCollection = "aiProviderConfigs"
 
 // shopProviderDoc — document ใน MongoDB collection aiProviderConfigs
 type shopProviderDoc struct {
-	ShopID string     `bson:"shopid"`
-	ProviderName string     `bson:"provider_name"`
-	APIKey string     `bson:"apikey"`
-	BaseURL string     `bson:"baseurl"`
-	Model string     `bson:"model"`
-	IsActive bool       `bson:"isactive"`
-	Priority int        `bson:"priority"`
+	HoldingCode   string     `bson:"holding_code"`
+	ProviderName  string     `bson:"provider_name"`
+	APIKey        string     `bson:"apikey"`
+	BaseURL       string     `bson:"baseurl"`
+	Model         string     `bson:"model"`
+	IsActive      bool       `bson:"isactive"`
+	Priority      int        `bson:"priority"`
 	CooldownUntil *time.Time `bson:"cooldownuntil"`
 }
 
@@ -40,8 +40,8 @@ type shopProviderDoc struct {
 const shopProviderCacheTTL = 2 * time.Minute
 
 type cachedShopProviderDocs struct {
-	docs      []shopProviderDoc
-	loadedAt  time.Time
+	docs     []shopProviderDoc
+	loadedAt time.Time
 }
 
 var (
@@ -50,10 +50,10 @@ var (
 )
 
 // getCachedShopProviderDocs — คืน docs จาก cache ถ้ายังไม่หมดอายุ
-func getCachedShopProviderDocs(shopID string) ([]shopProviderDoc, bool) {
+func getCachedShopProviderDocs(holdingCode string) ([]shopProviderDoc, bool) {
 	shopProviderCacheMu.RLock()
 	defer shopProviderCacheMu.RUnlock()
-	entry, ok := shopProviderCache[shopID]
+	entry, ok := shopProviderCache[holdingCode]
 	if !ok {
 		return nil, false
 	}
@@ -67,12 +67,12 @@ func getCachedShopProviderDocs(shopID string) ([]shopProviderDoc, bool) {
 }
 
 // putCachedShopProviderDocs — เก็บ docs ลง cache
-func putCachedShopProviderDocs(shopID string, docs []shopProviderDoc) {
+func putCachedShopProviderDocs(holdingCode string, docs []shopProviderDoc) {
 	shopProviderCacheMu.Lock()
 	defer shopProviderCacheMu.Unlock()
 	stored := make([]shopProviderDoc, len(docs))
 	copy(stored, docs)
-	shopProviderCache[shopID] = &cachedShopProviderDocs{
+	shopProviderCache[holdingCode] = &cachedShopProviderDocs{
 		docs:     stored,
 		loadedAt: time.Now(),
 	}
@@ -88,13 +88,13 @@ func putCachedShopProviderDocs(shopID string, docs []shopProviderDoc) {
 }
 
 // InvalidateShopProviderCache — เรียกเมื่อ config เปลี่ยน (save/delete/cooldown)
-func InvalidateShopProviderCache(shopID string) {
-	if shopID == "" {
+func InvalidateShopProviderCache(holdingCode string) {
+	if holdingCode == "" {
 		return
 	}
 	shopProviderCacheMu.Lock()
 	defer shopProviderCacheMu.Unlock()
-	delete(shopProviderCache, shopID)
+	delete(shopProviderCache, holdingCode)
 }
 
 // shopProviderBaseURLs — base URL ต่อ provider (OpenAI-compatible)
@@ -117,9 +117,9 @@ var shopProviderDefaultModels = map[string]string{
 
 // loadShopProviderDocs ดึง active provider docs ของ shop จาก MongoDB
 // มี in-memory cache (TTL 2 นาที) เพื่อลด MongoDB round-trip ใน chatbot hot path
-func loadShopProviderDocs(shopID string) ([]shopProviderDoc, error) {
+func loadShopProviderDocs(holdingCode string) ([]shopProviderDoc, error) {
 	// Cache hit — คืนทันทีไม่ยิง MongoDB
-	if cached, ok := getCachedShopProviderDocs(shopID); ok {
+	if cached, ok := getCachedShopProviderDocs(holdingCode); ok {
 		return cached, nil
 	}
 
@@ -135,7 +135,7 @@ func loadShopProviderDocs(shopID string) ([]shopProviderDoc, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	filter := bson.M{"shopid": shopID, "isactive": true}
+	filter := bson.M{"holding_code": holdingCode, "isactive": true}
 	opts := options.Find().SetSort(bson.D{{Key: "priority", Value: 1}})
 
 	cur, err := col.Find(ctx, filter, opts)
@@ -150,12 +150,12 @@ func loadShopProviderDocs(shopID string) ([]shopProviderDoc, error) {
 	}
 
 	// เก็บ cache ไว้เฉพาะกรณี query สำเร็จ (อาจเป็น empty list ก็ cache ได้ — บอกว่า shop นี้ไม่มี config)
-	putCachedShopProviderDocs(shopID, docs)
+	putCachedShopProviderDocs(holdingCode, docs)
 	return docs, nil
 }
 
 // updateShopProviderCooldownDB บันทึก cooldown กลับ MongoDB
-func updateShopProviderCooldownDB(shopID, providerName, errMsg string, cooldownUntil time.Time) {
+func updateShopProviderCooldownDB(holdingCode, providerName, errMsg string, cooldownUntil time.Time) {
 	mongoClient := myGlobal.SafeMongoConnectFast()
 	if mongoClient == nil {
 		logger.Error("[ShopProvider] MongoDB not available for cooldown update")
@@ -169,13 +169,13 @@ func updateShopProviderCooldownDB(shopID, providerName, errMsg string, cooldownU
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	filter := bson.M{"shopid": shopID, "provider_name": providerName}
+	filter := bson.M{"holding_code": holdingCode, "provider_name": providerName}
 	update := bson.M{
 		"$set": bson.M{
 			"lasterror":     errMsg,
-			"last_error_at":   time.Now(),
+			"last_error_at": time.Now(),
 			"cooldownuntil": cooldownUntil,
-			"updated_at":     time.Now(),
+			"updated_at":    time.Now(),
 		},
 	}
 
@@ -184,23 +184,23 @@ func updateShopProviderCooldownDB(shopID, providerName, errMsg string, cooldownU
 	}
 
 	// Invalidate cache — ให้ request ถัดไปเห็น cooldown ใหม่ทันที
-	InvalidateShopProviderCache(shopID)
+	InvalidateShopProviderCache(holdingCode)
 }
 
 // GetShopProviders คืน providers สำหรับ shop จาก MongoDB — fallback to env vars ถ้าไม่มี config
-func GetShopProviders(shopID string) []providerEntry {
-	if shopID == "" {
+func GetShopProviders(holdingCode string) []providerEntry {
+	if holdingCode == "" {
 		return getAvailableProviders()
 	}
 
-	docs, err := loadShopProviderDocs(shopID)
+	docs, err := loadShopProviderDocs(holdingCode)
 	if err != nil {
-		logger.Warn("[ShopProvider] loadDocs failed for shop=%s, falling back to env: %v", shopID, err)
+		logger.Warn("[ShopProvider] loadDocs failed for shop=%s, falling back to env: %v", holdingCode, err)
 		return getAvailableProviders()
 	}
 
 	if len(docs) == 0 {
-		logger.Info("[ShopProvider] no DB config for shop=%s, using env fallback", shopID)
+		logger.Info("[ShopProvider] no DB config for shop=%s, using env fallback", holdingCode)
 		return getAvailableProviders()
 	}
 
@@ -211,7 +211,7 @@ func GetShopProviders(shopID string) []providerEntry {
 	for _, doc := range docs {
 		// skip cooldown — แต่ถ้ามี provider เดียว ข้าม cooldown ไป (ไม่งั้นใช้ไม่ได้เลย)
 		if !singleProvider && doc.CooldownUntil != nil && doc.CooldownUntil.After(now) {
-			logger.Info("[ShopProvider] %s is in cooldown until %v (shop=%s)", doc.ProviderName, doc.CooldownUntil, shopID)
+			logger.Info("[ShopProvider] %s is in cooldown until %v (shop=%s)", doc.ProviderName, doc.CooldownUntil, holdingCode)
 			continue
 		}
 
@@ -235,7 +235,7 @@ func GetShopProviders(shopID string) []providerEntry {
 		// Custom provider — ใช้ base_url จาก config
 		if strings.HasPrefix(doc.ProviderName, "custom") {
 			if doc.BaseURL == "" {
-				logger.Warn("[ShopProvider] custom provider '%s' has no base_url, skipped (shop=%s)", doc.ProviderName, shopID)
+				logger.Warn("[ShopProvider] custom provider '%s' has no base_url, skipped (shop=%s)", doc.ProviderName, holdingCode)
 				continue
 			}
 			// Custom provider — ต่อ /chat/completions ตามมาตรฐาน OpenAI
@@ -252,7 +252,7 @@ func GetShopProviders(shopID string) []providerEntry {
 
 		baseURL, ok := shopProviderBaseURLs[doc.ProviderName]
 		if !ok {
-			logger.Warn("[ShopProvider] unknown provider '%s' skipped (shop=%s)", doc.ProviderName, shopID)
+			logger.Warn("[ShopProvider] unknown provider '%s' skipped (shop=%s)", doc.ProviderName, holdingCode)
 			continue
 		}
 
@@ -269,16 +269,16 @@ func GetShopProviders(shopID string) []providerEntry {
 	}
 
 	if len(providers) == 0 {
-		logger.Warn("[ShopProvider] all DB providers cooled down for shop=%s, falling back to env", shopID)
+		logger.Warn("[ShopProvider] all DB providers cooled down for shop=%s, falling back to env", holdingCode)
 		return getAvailableProviders()
 	}
 
-	logger.Info("[ShopProvider] shop=%s loaded %d provider(s) from DB", shopID, len(providers))
+	logger.Info("[ShopProvider] shop=%s loaded %d provider(s) from DB", holdingCode, len(providers))
 	return providers
 }
 
 // MarkProviderFailed บันทึก cooldown เมื่อ provider fail — ทั้ง in-memory + MongoDB
-func MarkProviderFailed(shopID, providerName string, err error) {
+func MarkProviderFailed(holdingCode, providerName string, err error) {
 	cd := defaultCooldown
 	if isRateLimitError(err) {
 		cd = rateLimitCooldown
@@ -288,15 +288,15 @@ func MarkProviderFailed(shopID, providerName string, err error) {
 	markFailed(providerName, cd)
 
 	// MongoDB cooldown (สำหรับ shop-specific path)
-	if shopID != "" {
+	if holdingCode != "" {
 		cooldownUntil := time.Now().Add(cd)
-		updateShopProviderCooldownDB(shopID, providerName, err.Error(), cooldownUntil)
+		updateShopProviderCooldownDB(holdingCode, providerName, err.Error(), cooldownUntil)
 	}
 }
 
 // GetShopToolCallingProviders คืน tool-calling providers สำหรับ shop
-func GetShopToolCallingProviders(shopID string) []ToolCallingProvider {
-	entries := GetShopProviders(shopID)
+func GetShopToolCallingProviders(holdingCode string) []ToolCallingProvider {
+	entries := GetShopProviders(holdingCode)
 	var result []ToolCallingProvider
 	for _, p := range entries {
 		if tc, ok := p.provider.(ToolCallingProvider); ok {
@@ -308,8 +308,8 @@ func GetShopToolCallingProviders(shopID string) []ToolCallingProvider {
 
 // GetShopAIProviders คืน AIProvider list (text generation) สำหรับ shop
 // ใช้สำหรับงาน text-only เช่น summarization, classification ที่ไม่ต้อง tool calling
-func GetShopAIProviders(shopID string) []AIProvider {
-	entries := GetShopProviders(shopID)
+func GetShopAIProviders(holdingCode string) []AIProvider {
+	entries := GetShopProviders(holdingCode)
 	result := make([]AIProvider, 0, len(entries))
 	for _, p := range entries {
 		result = append(result, p.provider)

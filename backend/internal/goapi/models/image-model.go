@@ -10,7 +10,7 @@ import (
 // Note: R2Key เก็บไว้ใน DB แต่ไม่ส่งออกไป frontend (json:"-")
 type ImageMetadata struct {
 	ID           primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	ShopID       string             `bson:"shopid" json:"shopid"`
+	HoldingCode  string             `bson:"holding_code" json:"holding_code"`
 	FileName     string             `bson:"file_name" json:"file_name"`         // ชื่อไฟล์ใน R2 (hash + extension)
 	OriginalName string             `bson:"original_name" json:"original_name"` // ชื่อไฟล์เดิม
 	ContentType  string             `bson:"content_type" json:"content_type"`   // MIME type
@@ -42,7 +42,7 @@ type ImageMetadata struct {
 
 // ImageUploadRequest - request body สำหรับ upload
 type ImageUploadRequest struct {
-	ShopID      string   `form:"shopid" json:"shopid"`
+	HoldingCode string   `form:"holding_code" json:"holding_code"`
 	Category    string   `form:"category" json:"category"`
 	Description string   `form:"description" json:"description"`
 	Tags        []string `form:"tags" json:"tags"`
@@ -51,7 +51,7 @@ type ImageUploadRequest struct {
 
 // ImageListRequest - request body สำหรับ list รูปภาพ
 type ImageListRequest struct {
-	ShopID      string `json:"shopid"`
+	HoldingCode string `json:"holding_code"`
 	Category    string `json:"category,omitempty"`
 	Limit       int64  `json:"limit,omitempty"`
 	Skip        int64  `json:"skip,omitempty"`
@@ -60,15 +60,15 @@ type ImageListRequest struct {
 
 // ImageDeleteRequest - request body สำหรับลบรูปภาพ
 type ImageDeleteRequest struct {
-	ShopID   string `json:"shopid"`
-	ImageID  string `json:"image_id"`
-	FileName string `json:"file_name"` // สามารถใช้ filename แทน image_id ได้
+	HoldingCode string `json:"holding_code"`
+	ImageID     string `json:"image_id"`
+	FileName    string `json:"file_name"` // สามารถใช้ filename แทน image_id ได้
 }
 
 // ImageGetRequest - request body สำหรับดึงรูปภาพ
 type ImageGetRequest struct {
-	ShopID   string `json:"shopid"`
-	FileName string `json:"file_name"`
+	HoldingCode string `json:"holding_code"`
+	FileName    string `json:"file_name"`
 }
 
 // ImageResponse - response เมื่ออัปโหลดสำเร็จ
@@ -100,7 +100,7 @@ type ImageListResponse struct {
 // ใช้ fields แยกแทน embedding เพื่อให้ json marshal ทำงานถูกต้อง
 type ImageListDataItem struct {
 	ID           primitive.ObjectID `json:"id"`
-	ShopID       string             `json:"shopid"`
+	HoldingCode  string             `json:"holding_code"`
 	FileName     string             `json:"file_name"`
 	OriginalName string             `json:"original_name"`
 	ContentType  string             `json:"content_type"`
@@ -145,7 +145,7 @@ type ImageListResponseWithTotal struct {
 
 // ImageVerifyRequest - request body สำหรับ verify slip
 type ImageVerifyRequest struct {
-	ShopID         string `json:"shopid"`
+	HoldingCode    string `json:"holding_code"`
 	ImageID        string `json:"image_id"`        // หรือใช้ filename
 	FileName       string `json:"file_name"`       // สามารถใช้แทน image_id ได้
 	CheckDuplicate bool   `json:"check_duplicate"` // ตรวจสอบ slip ซ้ำ

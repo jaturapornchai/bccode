@@ -27,7 +27,7 @@ func TestCreateInventoryOptionMain(t *testing.T) {
 	give := models.InventoryOptionMainDoc{}
 
 	give.GuidFixed = "fx01"
-	give.ShopID = "mx01"
+	give.HoldingCode = "mx01"
 	give.Code = "code001"
 
 	_, err := repo.Create(context.TODO(), give)

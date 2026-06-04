@@ -18,9 +18,9 @@ import (
 type ICurrencyHttp interface{}
 
 type CurrencyHttp struct {
-	ms                  *microservice.Microservice
-	cfg                 config.IConfig
-	currencySvc         services.ICurrencyHttpService
+	ms                     *microservice.Microservice
+	cfg                    config.IConfig
+	currencySvc            services.ICurrencyHttpService
 	exchangeRateHistorySvc services.IExchangeRateHistorySeparateService // ใช้ separate collection
 }
 
@@ -79,7 +79,7 @@ func (h CurrencyHttp) RegisterHttp() {
 // @Router /currency [post]
 func (h CurrencyHttp) CreateCurrency(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.Currency{}
@@ -95,7 +95,7 @@ func (h CurrencyHttp) CreateCurrency(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.currencySvc.CreateCurrency(shopID, authUsername, *docReq)
+	idx, err := h.currencySvc.CreateCurrency(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -122,7 +122,7 @@ func (h CurrencyHttp) CreateCurrency(ctx microservice.IContext) error {
 func (h CurrencyHttp) UpdateCurrency(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -140,7 +140,7 @@ func (h CurrencyHttp) UpdateCurrency(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.currencySvc.UpdateCurrency(shopID, id, authUsername, *docReq)
+	err = h.currencySvc.UpdateCurrency(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -166,12 +166,12 @@ func (h CurrencyHttp) UpdateCurrency(ctx microservice.IContext) error {
 // @Router /currency/{id} [delete]
 func (h CurrencyHttp) DeleteCurrency(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.currencySvc.DeleteCurrency(shopID, id, authUsername)
+	err := h.currencySvc.DeleteCurrency(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -197,7 +197,7 @@ func (h CurrencyHttp) DeleteCurrency(ctx microservice.IContext) error {
 // @Router /currency [delete]
 func (h CurrencyHttp) DeleteCurrencyByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -210,7 +210,7 @@ func (h CurrencyHttp) DeleteCurrencyByGUIDs(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.currencySvc.DeleteCurrencyByGUIDs(shopID, authUsername, docReq)
+	err = h.currencySvc.DeleteCurrencyByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -235,12 +235,12 @@ func (h CurrencyHttp) DeleteCurrencyByGUIDs(ctx microservice.IContext) error {
 // @Router /currency/{id} [get]
 func (h CurrencyHttp) InfoCurrency(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get Currency %v", id)
-	doc, err := h.currencySvc.InfoCurrency(shopID, id)
+	doc, err := h.currencySvc.InfoCurrency(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -269,7 +269,7 @@ func (h CurrencyHttp) InfoCurrency(ctx microservice.IContext) error {
 // @Router /currency [get]
 func (h CurrencyHttp) SearchCurrencyPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -281,7 +281,7 @@ func (h CurrencyHttp) SearchCurrencyPage(ctx microservice.IContext) error {
 		},
 	})
 
-	docList, pagination, err := h.currencySvc.SearchCurrency(shopID, filters, pageable)
+	docList, pagination, err := h.currencySvc.SearchCurrency(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -310,7 +310,7 @@ func (h CurrencyHttp) SearchCurrencyPage(ctx microservice.IContext) error {
 // @Router /currency/list [get]
 func (h CurrencyHttp) SearchCurrencyStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -322,7 +322,7 @@ func (h CurrencyHttp) SearchCurrencyStep(ctx microservice.IContext) error {
 		},
 	})
 
-	docList, total, err := h.currencySvc.SearchCurrencyStep(shopID, filters, pageableStep)
+	docList, total, err := h.currencySvc.SearchCurrencyStep(holdingCode, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -341,9 +341,9 @@ func (h CurrencyHttp) SearchCurrencyStep(ctx microservice.IContext) error {
 
 // ExchangeRateRequest - Request for creating/updating exchange rate
 type ExchangeRateRequest struct {
-	Currency string  `json:"currency" validate:"required"` // USD, EUR, JPY
-	Date string  `json:"date" validate:"required"`     // YYYY-MM-DD
-	Rate float64 `json:"rate" validate:"required,gt=0"` // Exchange rate to THB
+	Currency string  `json:"currency" validate:"required"`  // USD, EUR, JPY
+	Date     string  `json:"date" validate:"required"`      // YYYY-MM-DD
+	Rate     float64 `json:"rate" validate:"required,gt=0"` // Exchange rate to THB
 }
 
 // Create ExchangeRateHistory godoc
@@ -357,7 +357,7 @@ type ExchangeRateRequest struct {
 // @Router /exchange-rate-history [post]
 func (h CurrencyHttp) CreateExchangeRateHistory(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &ExchangeRateRequest{}
@@ -373,7 +373,7 @@ func (h CurrencyHttp) CreateExchangeRateHistory(ctx microservice.IContext) error
 		return err
 	}
 
-	idx, err := h.exchangeRateHistorySvc.CreateExchangeRateHistory(shopID, authUsername, docReq.Currency, docReq.Date, docReq.Rate)
+	idx, err := h.exchangeRateHistorySvc.CreateExchangeRateHistory(holdingCode, authUsername, docReq.Currency, docReq.Date, docReq.Rate)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -400,7 +400,7 @@ func (h CurrencyHttp) CreateExchangeRateHistory(ctx microservice.IContext) error
 func (h CurrencyHttp) UpdateExchangeRateHistory(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -418,7 +418,7 @@ func (h CurrencyHttp) UpdateExchangeRateHistory(ctx microservice.IContext) error
 		return err
 	}
 
-	err = h.exchangeRateHistorySvc.UpdateExchangeRateHistory(shopID, id, authUsername, docReq.Date, docReq.Rate)
+	err = h.exchangeRateHistorySvc.UpdateExchangeRateHistory(holdingCode, id, authUsername, docReq.Date, docReq.Rate)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -444,12 +444,12 @@ func (h CurrencyHttp) UpdateExchangeRateHistory(ctx microservice.IContext) error
 // @Router /exchange-rate-history/{id} [delete]
 func (h CurrencyHttp) DeleteExchangeRateHistory(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.exchangeRateHistorySvc.DeleteExchangeRateHistory(shopID, id, authUsername)
+	err := h.exchangeRateHistorySvc.DeleteExchangeRateHistory(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -475,7 +475,7 @@ func (h CurrencyHttp) DeleteExchangeRateHistory(ctx microservice.IContext) error
 // @Router /exchange-rate-history [delete]
 func (h CurrencyHttp) DeleteExchangeRateHistoryByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -488,7 +488,7 @@ func (h CurrencyHttp) DeleteExchangeRateHistoryByGUIDs(ctx microservice.IContext
 		return err
 	}
 
-	err = h.exchangeRateHistorySvc.DeleteExchangeRateHistoryByGUIDs(shopID, authUsername, docReq)
+	err = h.exchangeRateHistorySvc.DeleteExchangeRateHistoryByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -513,12 +513,12 @@ func (h CurrencyHttp) DeleteExchangeRateHistoryByGUIDs(ctx microservice.IContext
 // @Router /exchange-rate-history/{id} [get]
 func (h CurrencyHttp) InfoExchangeRateHistory(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get ExchangeRateHistory %v", id)
-	doc, err := h.exchangeRateHistorySvc.InfoExchangeRateHistory(shopID, id)
+	doc, err := h.exchangeRateHistorySvc.InfoExchangeRateHistory(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -547,7 +547,7 @@ func (h CurrencyHttp) InfoExchangeRateHistory(ctx microservice.IContext) error {
 // @Router /exchange-rate-history [get]
 func (h CurrencyHttp) SearchExchangeRateHistoryPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -559,7 +559,7 @@ func (h CurrencyHttp) SearchExchangeRateHistoryPage(ctx microservice.IContext) e
 		},
 	})
 
-	docList, pagination, err := h.exchangeRateHistorySvc.SearchExchangeRateHistory(shopID, filters, pageable)
+	docList, pagination, err := h.exchangeRateHistorySvc.SearchExchangeRateHistory(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -588,7 +588,7 @@ func (h CurrencyHttp) SearchExchangeRateHistoryPage(ctx microservice.IContext) e
 // @Router /exchange-rate-history/list [get]
 func (h CurrencyHttp) SearchExchangeRateHistoryStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -600,7 +600,7 @@ func (h CurrencyHttp) SearchExchangeRateHistoryStep(ctx microservice.IContext) e
 		},
 	})
 
-	docList, total, err := h.exchangeRateHistorySvc.SearchExchangeRateHistoryStep(shopID, filters, pageableStep)
+	docList, total, err := h.exchangeRateHistorySvc.SearchExchangeRateHistoryStep(holdingCode, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -627,7 +627,7 @@ func (h CurrencyHttp) SearchExchangeRateHistoryStep(ctx microservice.IContext) e
 // @Router /exchange-rate-history/latest [get]
 func (h CurrencyHttp) GetLatestExchangeRate(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	currency := ctx.QueryParam("currency")
 	date := ctx.QueryParam("date")
@@ -638,7 +638,7 @@ func (h CurrencyHttp) GetLatestExchangeRate(ctx microservice.IContext) error {
 	}
 
 	h.ms.Logger.Debugf("Get latest exchange rate for %s on %s", currency, date)
-	doc, err := h.exchangeRateHistorySvc.GetLatestExchangeRate(shopID, currency, date)
+	doc, err := h.exchangeRateHistorySvc.GetLatestExchangeRate(holdingCode, currency, date)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting exchange rate: %v", err)

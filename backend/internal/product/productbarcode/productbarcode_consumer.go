@@ -112,7 +112,7 @@ func (pbc *ProductBarcodeConsumer) ConsumerOnProductBarcodeCreate(ctx microservi
 		pbc.ms.Logger.Errorf(moduleName, err.Error())
 	}
 
-	_, err = pbc.svc.UpSert(doc.ShopID, doc.Barcode, doc)
+	_, err = pbc.svc.UpSert(doc.HoldingCode, doc.Barcode, doc)
 
 	if err != nil {
 		pbc.ms.Logger.Errorf(moduleName, err.Error())
@@ -133,7 +133,7 @@ func (pbc *ProductBarcodeConsumer) ConsumerOnProductBarcodeBulkCreate(ctx micros
 	}
 
 	for _, item := range doc {
-		_, err = pbc.svc.UpSert(item.ShopID, item.Barcode, item)
+		_, err = pbc.svc.UpSert(item.HoldingCode, item.Barcode, item)
 	}
 
 	if err != nil {
@@ -155,13 +155,13 @@ func (pbc *ProductBarcodeConsumer) ConsumerOnProductBarcodeUpdate(ctx microservi
 		pbc.ms.Logger.Errorf(moduleName, err.Error())
 	}
 
-	// err = pbc.svc.UpdateRefBarcode(doc.ShopID, doc)
+	// err = pbc.svc.UpdateRefBarcode(doc.HoldingCode, doc)
 
 	// if err != nil {
 	// 	pbc.ms.Logger.Errorf(moduleName, err.Error())
 	// }
 
-	_, err = pbc.svc.UpSert(doc.ShopID, doc.Barcode, doc)
+	_, err = pbc.svc.UpSert(doc.HoldingCode, doc.Barcode, doc)
 
 	if err != nil {
 		pbc.ms.Logger.Errorf(moduleName, err.Error())
@@ -183,7 +183,7 @@ func (pbc *ProductBarcodeConsumer) ConsumerOnProductBarcodeDelete(ctx microservi
 		pbc.ms.Logger.Errorf(moduleName, err.Error())
 	}
 
-	err = pbc.svc.Delete(context.Background(), doc.ShopID, doc.Barcode)
+	err = pbc.svc.Delete(context.Background(), doc.HoldingCode, doc.Barcode)
 
 	if err != nil {
 		pbc.ms.Logger.Errorf(moduleName, err.Error())
@@ -204,7 +204,7 @@ func (pbc *ProductBarcodeConsumer) ConsumerOnProductTypeUpdate(ctx microservice.
 		pbc.ms.Logger.Errorf(moduleName, err.Error())
 	}
 
-	err = pbc.svc.UpdateProductType(doc.ShopID, doc.ToProductType())
+	err = pbc.svc.UpdateProductType(doc.HoldingCode, doc.ToProductType())
 
 	if err != nil {
 		pbc.ms.Logger.Errorf(moduleName, err.Error())
@@ -226,7 +226,7 @@ func (pbc *ProductBarcodeConsumer) ConsumerOnProductGroupUpdate(ctx microservice
 		pbc.ms.Logger.Errorf(moduleName, err.Error())
 	}
 
-	err = pbc.svc.UpdateProductGroup(doc.ShopID, doc.ToProductGroup())
+	err = pbc.svc.UpdateProductGroup(doc.HoldingCode, doc.ToProductGroup())
 
 	if err != nil {
 		pbc.ms.Logger.Errorf(moduleName, err.Error())
@@ -248,7 +248,7 @@ func (pbc *ProductBarcodeConsumer) ConsumerOnUnitUpdate(ctx microservice.IContex
 		pbc.ms.Logger.Errorf(moduleName, err.Error())
 	}
 
-	err = pbc.svc.UpdateProductUnit(doc.ShopID, doc.ToProductUnit())
+	err = pbc.svc.UpdateProductUnit(doc.HoldingCode, doc.ToProductUnit())
 
 	if err != nil {
 		pbc.ms.Logger.Errorf(moduleName, err.Error())
@@ -270,7 +270,7 @@ func (pbc *ProductBarcodeConsumer) ConsumerOnProductOrderTypeUpdate(ctx microser
 		pbc.ms.Logger.Errorf(moduleName, err.Error())
 	}
 
-	err = pbc.svc.UpdateProductOrderType(doc.ShopID, doc.ToProductOrderType())
+	err = pbc.svc.UpdateProductOrderType(doc.HoldingCode, doc.ToProductOrderType())
 
 	if err != nil {
 		pbc.ms.Logger.Errorf(moduleName, err.Error())

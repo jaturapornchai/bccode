@@ -7,11 +7,11 @@ import (
 )
 
 type IAPAdvancePaymentRefundTransactionPGRepository interface {
-	Get(shopID string, docNo string) (*models.APAdvancePaymentRefundTransactionPG, error)
+	Get(holdingCode string, docNo string) (*models.APAdvancePaymentRefundTransactionPG, error)
 	Create(doc models.APAdvancePaymentRefundTransactionPG) error
-	Update(shopID string, docNo string, doc models.APAdvancePaymentRefundTransactionPG) error
-	Delete(shopID string, docNo string, doc models.APAdvancePaymentRefundTransactionPG) error
-	DeleteData(shopID string, docNo string, doc models.APAdvancePaymentRefundTransactionPG) error
+	Update(holdingCode string, docNo string, doc models.APAdvancePaymentRefundTransactionPG) error
+	Delete(holdingCode string, docNo string, doc models.APAdvancePaymentRefundTransactionPG) error
+	DeleteData(holdingCode string, docNo string, doc models.APAdvancePaymentRefundTransactionPG) error
 }
 
 type APAdvancePaymentRefundTransactionPGRepository struct {
@@ -37,11 +37,11 @@ func (repo APAdvancePaymentRefundTransactionPGRepository) Create(doc models.APAd
 	return nil
 }
 
-func (repo APAdvancePaymentRefundTransactionPGRepository) Update(shopID string, docNo string, doc models.APAdvancePaymentRefundTransactionPG) error {
+func (repo APAdvancePaymentRefundTransactionPGRepository) Update(holdingCode string, docNo string, doc models.APAdvancePaymentRefundTransactionPG) error {
 
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"shopid": shopID,
-		"docno":  docNo,
+		"holding_code": holdingCode,
+		"docno":        docNo,
 	})
 
 	if err != nil {
@@ -50,12 +50,12 @@ func (repo APAdvancePaymentRefundTransactionPGRepository) Update(shopID string, 
 	return nil
 }
 
-func (repo *APAdvancePaymentRefundTransactionPGRepository) DeleteData(shopID string, docNo string, doc models.APAdvancePaymentRefundTransactionPG) error {
+func (repo *APAdvancePaymentRefundTransactionPGRepository) DeleteData(holdingCode string, docNo string, doc models.APAdvancePaymentRefundTransactionPG) error {
 
 	var details *[]models.APAdvancePaymentRefundTransactionDetailPG
 	tx := repo.pst.DBClient().Begin()
 
-	tx.Model(&models.APAdvancePaymentRefundTransactionDetailPG{}).Where(" shopid=? AND docno=?", shopID, docNo).Find(&details)
+	tx.Model(&models.APAdvancePaymentRefundTransactionDetailPG{}).Where(" holding_code=? AND docno=?", holdingCode, docNo).Find(&details)
 	for _, tmp := range *details {
 		err := tx.Delete(&models.PurchaseReceiveTransactionDetailPG{}, tmp.ID).Error
 		if err != nil {
@@ -65,8 +65,8 @@ func (repo *APAdvancePaymentRefundTransactionPGRepository) DeleteData(shopID str
 	}
 
 	err := tx.Delete(&models.APAdvancePaymentRefundTransactionPG{}, map[string]interface{}{
-		"shopid": shopID,
-		"docno":  docNo,
+		"holding_code": holdingCode,
+		"docno":        docNo,
 	}).Error
 	if err != nil {
 		tx.Rollback()

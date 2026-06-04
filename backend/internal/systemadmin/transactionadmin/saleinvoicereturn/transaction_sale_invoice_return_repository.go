@@ -9,8 +9,8 @@ import (
 )
 
 type ISaleInvoiceReturnTransactionAdminRepositories interface {
-	FindSaleInvoiceReturnDocByShopID(ctx context.Context, shopID string) ([]saleInvoiceReturnModels.SaleInvoiceReturnDoc, error)
-	FindSaleInvoiceReturnDeleteDocByShopID(ctx context.Context, shopID string) ([]saleInvoiceReturnModels.SaleInvoiceReturnDoc, error)
+	FindSaleInvoiceReturnDocByHoldingCode(ctx context.Context, holdingCode string) ([]saleInvoiceReturnModels.SaleInvoiceReturnDoc, error)
+	FindSaleInvoiceReturnDeleteDocByHoldingCode(ctx context.Context, holdingCode string) ([]saleInvoiceReturnModels.SaleInvoiceReturnDoc, error)
 }
 
 type SaleInvoiceReturnTransactionAdminRepositories struct {
@@ -23,14 +23,14 @@ func NewSaleInvoiceReturnTransactionAdminRepositories(pst microservice.IPersiste
 	}
 }
 
-func (r SaleInvoiceReturnTransactionAdminRepositories) FindSaleInvoiceReturnDocByShopID(ctx context.Context, shopID string) ([]saleInvoiceReturnModels.SaleInvoiceReturnDoc, error) {
+func (r SaleInvoiceReturnTransactionAdminRepositories) FindSaleInvoiceReturnDocByHoldingCode(ctx context.Context, holdingCode string) ([]saleInvoiceReturnModels.SaleInvoiceReturnDoc, error) {
 
 	docList := []saleInvoiceReturnModels.SaleInvoiceReturnDoc{}
 
 	err := r.pst.Find(ctx, &saleInvoiceReturnModels.SaleInvoiceReturnDoc{},
 		bson.M{
-			"shopid":    shopID,
-			"deleted_at": bson.M{"$exists": false},
+			"holding_code": holdingCode,
+			"deleted_at":   bson.M{"$exists": false},
 		},
 		&docList)
 	if err != nil {
@@ -40,13 +40,13 @@ func (r SaleInvoiceReturnTransactionAdminRepositories) FindSaleInvoiceReturnDocB
 	return docList, nil
 }
 
-func (r SaleInvoiceReturnTransactionAdminRepositories) FindSaleInvoiceReturnDeleteDocByShopID(ctx context.Context, shopID string) ([]saleInvoiceReturnModels.SaleInvoiceReturnDoc, error) {
+func (r SaleInvoiceReturnTransactionAdminRepositories) FindSaleInvoiceReturnDeleteDocByHoldingCode(ctx context.Context, holdingCode string) ([]saleInvoiceReturnModels.SaleInvoiceReturnDoc, error) {
 	docList := []saleInvoiceReturnModels.SaleInvoiceReturnDoc{}
 
 	err := r.pst.Find(ctx, &saleInvoiceReturnModels.SaleInvoiceReturnDoc{},
 		bson.M{
-			"shopid":    shopID,
-			"deleted_at": bson.M{"$exists": true},
+			"holding_code": holdingCode,
+			"deleted_at":   bson.M{"$exists": true},
 		},
 		&docList)
 	if err != nil {

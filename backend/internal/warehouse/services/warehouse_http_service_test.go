@@ -20,8 +20,8 @@ type MockWarehouseRepository struct {
 	mock.Mock
 }
 
-func (m *MockWarehouseRepository) Count(ctx context.Context, shopID string) (int, error) {
-	args := m.Called(ctx, shopID)
+func (m *MockWarehouseRepository) Count(ctx context.Context, holdingCode string) (int, error) {
+	args := m.Called(ctx, holdingCode)
 	return args.Int(0), args.Error(1)
 }
 
@@ -35,88 +35,88 @@ func (m *MockWarehouseRepository) CreateInBatch(ctx context.Context, docList []m
 	return args.Error(0)
 }
 
-func (m *MockWarehouseRepository) Update(ctx context.Context, shopID, guid string, doc models.WarehouseDoc) error {
-	args := m.Called(ctx, shopID, guid, doc)
+func (m *MockWarehouseRepository) Update(ctx context.Context, holdingCode, guid string, doc models.WarehouseDoc) error {
+	args := m.Called(ctx, holdingCode, guid, doc)
 	return args.Error(0)
 }
 
-func (m *MockWarehouseRepository) DeleteByGuidfixed(ctx context.Context, shopID, guid, username string) error {
-	args := m.Called(ctx, shopID, guid, username)
+func (m *MockWarehouseRepository) DeleteByGuidfixed(ctx context.Context, holdingCode, guid, username string) error {
+	args := m.Called(ctx, holdingCode, guid, username)
 	return args.Error(0)
 }
 
-func (m *MockWarehouseRepository) Delete(ctx context.Context, shopID, username string, filters map[string]interface{}) error {
-	args := m.Called(ctx, shopID, username, filters)
+func (m *MockWarehouseRepository) Delete(ctx context.Context, holdingCode, username string, filters map[string]interface{}) error {
+	args := m.Called(ctx, holdingCode, username, filters)
 	return args.Error(0)
 }
 
-func (m *MockWarehouseRepository) FindPage(ctx context.Context, shopID string, searchInFields []string, pageable micromodels.Pageable) ([]models.WarehouseInfo, mongopagination.PaginationData, error) {
-	args := m.Called(ctx, shopID, searchInFields, pageable)
+func (m *MockWarehouseRepository) FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable micromodels.Pageable) ([]models.WarehouseInfo, mongopagination.PaginationData, error) {
+	args := m.Called(ctx, holdingCode, searchInFields, pageable)
 	return args.Get(0).([]models.WarehouseInfo), args.Get(1).(mongopagination.PaginationData), args.Error(2)
 }
 
-func (m *MockWarehouseRepository) FindByGuid(ctx context.Context, shopID, guid string) (models.WarehouseDoc, error) {
-	args := m.Called(ctx, shopID, guid)
+func (m *MockWarehouseRepository) FindByGuid(ctx context.Context, holdingCode, guid string) (models.WarehouseDoc, error) {
+	args := m.Called(ctx, holdingCode, guid)
 	return args.Get(0).(models.WarehouseDoc), args.Error(1)
 }
 
-func (m *MockWarehouseRepository) FindInItemGuid(ctx context.Context, shopID, columnName string, itemGuidList []string) ([]models.WarehouseItemGuid, error) {
-	args := m.Called(ctx, shopID, columnName, itemGuidList)
+func (m *MockWarehouseRepository) FindInItemGuid(ctx context.Context, holdingCode, columnName string, itemGuidList []string) ([]models.WarehouseItemGuid, error) {
+	args := m.Called(ctx, holdingCode, columnName, itemGuidList)
 	return args.Get(0).([]models.WarehouseItemGuid), args.Error(1)
 }
 
-func (m *MockWarehouseRepository) FindByDocIndentityGuid(ctx context.Context, shopID, indentityField string, indentityValue interface{}) (models.WarehouseDoc, error) {
-	args := m.Called(ctx, shopID, indentityField, indentityValue)
+func (m *MockWarehouseRepository) FindByDocIndentityGuid(ctx context.Context, holdingCode, indentityField string, indentityValue interface{}) (models.WarehouseDoc, error) {
+	args := m.Called(ctx, holdingCode, indentityField, indentityValue)
 	return args.Get(0).(models.WarehouseDoc), args.Error(1)
 }
 
-func (m *MockWarehouseRepository) FindPageFilter(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.WarehouseInfo, mongopagination.PaginationData, error) {
-	args := m.Called(ctx, shopID, filters, searchInFields, pageable)
+func (m *MockWarehouseRepository) FindPageFilter(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.WarehouseInfo, mongopagination.PaginationData, error) {
+	args := m.Called(ctx, holdingCode, filters, searchInFields, pageable)
 	return args.Get(0).([]models.WarehouseInfo), args.Get(1).(mongopagination.PaginationData), args.Error(2)
 }
 
-func (m *MockWarehouseRepository) FindStep(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableLimit micromodels.PageableStep) ([]models.WarehouseInfo, int, error) {
-	args := m.Called(ctx, shopID, filters, searchInFields, projects, pageableLimit)
+func (m *MockWarehouseRepository) FindStep(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableLimit micromodels.PageableStep) ([]models.WarehouseInfo, int, error) {
+	args := m.Called(ctx, holdingCode, filters, searchInFields, projects, pageableLimit)
 	return args.Get(0).([]models.WarehouseInfo), args.Int(1), args.Error(2)
 }
 
-func (m *MockWarehouseRepository) FindDeletedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.WarehouseDeleteActivity, mongopagination.PaginationData, error) {
-	args := m.Called(ctx, shopID, lastUpdatedDate, filters, pageable)
+func (m *MockWarehouseRepository) FindDeletedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.WarehouseDeleteActivity, mongopagination.PaginationData, error) {
+	args := m.Called(ctx, holdingCode, lastUpdatedDate, filters, pageable)
 	return args.Get(0).([]models.WarehouseDeleteActivity), args.Get(1).(mongopagination.PaginationData), args.Error(2)
 }
 
-func (m *MockWarehouseRepository) FindCreatedOrUpdatedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.WarehouseActivity, mongopagination.PaginationData, error) {
-	args := m.Called(ctx, shopID, lastUpdatedDate, filters, pageable)
+func (m *MockWarehouseRepository) FindCreatedOrUpdatedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.WarehouseActivity, mongopagination.PaginationData, error) {
+	args := m.Called(ctx, holdingCode, lastUpdatedDate, filters, pageable)
 	return args.Get(0).([]models.WarehouseActivity), args.Get(1).(mongopagination.PaginationData), args.Error(2)
 }
 
-func (m *MockWarehouseRepository) FindDeletedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.WarehouseDeleteActivity, error) {
-	args := m.Called(ctx, shopID, lastUpdatedDate, filters, pageableStep)
+func (m *MockWarehouseRepository) FindDeletedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.WarehouseDeleteActivity, error) {
+	args := m.Called(ctx, holdingCode, lastUpdatedDate, filters, pageableStep)
 	return args.Get(0).([]models.WarehouseDeleteActivity), args.Error(1)
 }
 
-func (m *MockWarehouseRepository) FindCreatedOrUpdatedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.WarehouseActivity, error) {
-	args := m.Called(ctx, shopID, lastUpdatedDate, filters, pageableStep)
+func (m *MockWarehouseRepository) FindCreatedOrUpdatedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.WarehouseActivity, error) {
+	args := m.Called(ctx, holdingCode, lastUpdatedDate, filters, pageableStep)
 	return args.Get(0).([]models.WarehouseActivity), args.Error(1)
 }
 
-func (m *MockWarehouseRepository) FindLocationPage(ctx context.Context, shopID string, pageable micromodels.Pageable) ([]models.LocationInfo, mongopagination.PaginationData, error) {
-	args := m.Called(ctx, shopID, pageable)
+func (m *MockWarehouseRepository) FindLocationPage(ctx context.Context, holdingCode string, pageable micromodels.Pageable) ([]models.LocationInfo, mongopagination.PaginationData, error) {
+	args := m.Called(ctx, holdingCode, pageable)
 	return args.Get(0).([]models.LocationInfo), args.Get(1).(mongopagination.PaginationData), args.Error(2)
 }
 
-func (m *MockWarehouseRepository) FindShelfPage(ctx context.Context, shopID string, pageable micromodels.Pageable) ([]models.ShelfInfo, mongopagination.PaginationData, error) {
-	args := m.Called(ctx, shopID, pageable)
+func (m *MockWarehouseRepository) FindShelfPage(ctx context.Context, holdingCode string, pageable micromodels.Pageable) ([]models.ShelfInfo, mongopagination.PaginationData, error) {
+	args := m.Called(ctx, holdingCode, pageable)
 	return args.Get(0).([]models.ShelfInfo), args.Get(1).(mongopagination.PaginationData), args.Error(2)
 }
 
-func (m *MockWarehouseRepository) FindWarehouseByLocation(ctx context.Context, shopID, warehouseCode, locationCode string) (models.WarehouseDoc, error) {
-	args := m.Called(ctx, shopID, warehouseCode, locationCode)
+func (m *MockWarehouseRepository) FindWarehouseByLocation(ctx context.Context, holdingCode, warehouseCode, locationCode string) (models.WarehouseDoc, error) {
+	args := m.Called(ctx, holdingCode, warehouseCode, locationCode)
 	return args.Get(0).(models.WarehouseDoc), args.Error(1)
 }
 
-func (m *MockWarehouseRepository) FindWarehouseByShelf(ctx context.Context, shopID, warehouseCode, locationCode, shelfCode string) (models.WarehouseDoc, error) {
-	args := m.Called(ctx, shopID, warehouseCode, locationCode, shelfCode)
+func (m *MockWarehouseRepository) FindWarehouseByShelf(ctx context.Context, holdingCode, warehouseCode, locationCode, shelfCode string) (models.WarehouseDoc, error) {
+	args := m.Called(ctx, holdingCode, warehouseCode, locationCode, shelfCode)
 	return args.Get(0).(models.WarehouseDoc), args.Error(1)
 }
 
@@ -126,7 +126,7 @@ func (m *MockWarehouseRepository) Transaction(ctx context.Context, queryFunc fun
 }
 
 func TestUpdateLocation(t *testing.T) {
-	shopID := "testShopID"
+	holdingCode := "testHoldingCode"
 	authUsername := "testUser"
 	warehouseCode := "WH01"
 	locationCode := "L01"
@@ -147,8 +147,8 @@ func TestUpdateLocation(t *testing.T) {
 		mockRepo := new(MockWarehouseRepository)
 		svc := services.NewWarehouseHttpService(mockRepo, nil, nil)
 
-		mockRepo.On("FindWarehouseByLocation", shopID, warehouseCode, locationCode).Return(warehouseDoc, nil)
-		mockRepo.On("Update", shopID, warehouseDoc.GuidFixed, mock.Anything).Return(nil)
+		mockRepo.On("FindWarehouseByLocation", holdingCode, warehouseCode, locationCode).Return(warehouseDoc, nil)
+		mockRepo.On("Update", holdingCode, warehouseDoc.GuidFixed, mock.Anything).Return(nil)
 		mockRepo.On("Transaction", mock.Anything).Return(nil)
 
 		doc := models.LocationRequest{
@@ -158,7 +158,7 @@ func TestUpdateLocation(t *testing.T) {
 			},
 		}
 
-		err := svc.UpdateLocation(shopID, authUsername, warehouseCode, locationCode, doc)
+		err := svc.UpdateLocation(holdingCode, authUsername, warehouseCode, locationCode, doc)
 		assert.NoError(t, err)
 	})
 
@@ -172,10 +172,10 @@ func TestUpdateLocation(t *testing.T) {
 		targetWarehouseDoc.Code = "WH01"
 		targetWarehouseDoc.Location = &[]models.Location{}
 
-		mockRepo.On("FindWarehouseByLocation", shopID, warehouseCode, locationCode).Return(warehouseDoc, nil)
-		mockRepo.On("FindByDocIndentityGuid", shopID, "code", "WH01").Return(targetWarehouseDoc, nil)
-		mockRepo.On("Update", shopID, warehouseDoc.GuidFixed, mock.Anything).Return(nil)
-		mockRepo.On("Update", shopID, targetWarehouseDoc.GuidFixed, mock.Anything).Return(nil)
+		mockRepo.On("FindWarehouseByLocation", holdingCode, warehouseCode, locationCode).Return(warehouseDoc, nil)
+		mockRepo.On("FindByDocIndentityGuid", holdingCode, "code", "WH01").Return(targetWarehouseDoc, nil)
+		mockRepo.On("Update", holdingCode, warehouseDoc.GuidFixed, mock.Anything).Return(nil)
+		mockRepo.On("Update", holdingCode, targetWarehouseDoc.GuidFixed, mock.Anything).Return(nil)
 		mockRepo.On("Transaction", mock.Anything).Return(nil)
 
 		doc := models.LocationRequest{}
@@ -186,7 +186,7 @@ func TestUpdateLocation(t *testing.T) {
 			*common.NewNameXWithCodeName("lo1", "location 1"),
 		}
 
-		err := svc.UpdateLocation(shopID, authUsername, warehouseCode, locationCode, doc)
+		err := svc.UpdateLocation(holdingCode, authUsername, warehouseCode, locationCode, doc)
 		assert.NoError(t, err)
 	})
 
@@ -194,7 +194,7 @@ func TestUpdateLocation(t *testing.T) {
 		mockRepo := new(MockWarehouseRepository)
 		svc := services.NewWarehouseHttpService(mockRepo, nil, nil)
 
-		mockRepo.On("FindWarehouseByLocation", shopID, warehouseCode, locationCode).Return(models.WarehouseDoc{}, nil)
+		mockRepo.On("FindWarehouseByLocation", holdingCode, warehouseCode, locationCode).Return(models.WarehouseDoc{}, nil)
 
 		doc := models.LocationRequest{
 			WarehouseCode: "WH02",
@@ -204,7 +204,7 @@ func TestUpdateLocation(t *testing.T) {
 			},
 		}
 
-		err := svc.UpdateLocation(shopID, authUsername, warehouseCode, locationCode, doc)
+		err := svc.UpdateLocation(holdingCode, authUsername, warehouseCode, locationCode, doc)
 		assert.Error(t, err)
 		assert.Equal(t, errors.New("document not found"), err)
 	})
@@ -213,8 +213,8 @@ func TestUpdateLocation(t *testing.T) {
 			mockRepo := new(MockWarehouseRepository)
 			svc := WarehouseHttpService{repo: mockRepo}
 
-			mockRepo.On("FindWarehouseByLocation", shopID, warehouseCode, locationCode).Return(warehouseDoc, nil)
-			mockRepo.On("FindByDocIndentityGuid", shopID, "code", "WH02").Return(models.WarehouseDoc{}, nil)
+			mockRepo.On("FindWarehouseByLocation", holdingCode, warehouseCode, locationCode).Return(warehouseDoc, nil)
+			mockRepo.On("FindByDocIndentityGuid", holdingCode, "code", "WH02").Return(models.WarehouseDoc{}, nil)
 
 			doc := models.LocationRequest{
 				WarehouseCode: "WH02",
@@ -222,7 +222,7 @@ func TestUpdateLocation(t *testing.T) {
 				Names:         "Updated Location",
 			}
 
-			err := svc.UpdateLocation(shopID, authUsername, warehouseCode, locationCode, doc)
+			err := svc.UpdateLocation(holdingCode, authUsername, warehouseCode, locationCode, doc)
 			assert.Error(t, err)
 			assert.Equal(t, errors.New("document not found"), err)
 		})
@@ -241,8 +241,8 @@ func TestUpdateLocation(t *testing.T) {
 				},
 			}
 
-			mockRepo.On("FindWarehouseByLocation", shopID, warehouseCode, locationCode).Return(warehouseDoc, nil)
-			mockRepo.On("FindByDocIndentityGuid", shopID, "code", "WH02").Return(targetWarehouseDoc, nil)
+			mockRepo.On("FindWarehouseByLocation", holdingCode, warehouseCode, locationCode).Return(warehouseDoc, nil)
+			mockRepo.On("FindByDocIndentityGuid", holdingCode, "code", "WH02").Return(targetWarehouseDoc, nil)
 
 			doc := models.LocationRequest{
 				WarehouseCode: "WH02",
@@ -250,7 +250,7 @@ func TestUpdateLocation(t *testing.T) {
 				Names:         "Updated Location",
 			}
 
-			err := svc.UpdateLocation(shopID, authUsername, warehouseCode, locationCode, doc)
+			err := svc.UpdateLocation(holdingCode, authUsername, warehouseCode, locationCode, doc)
 			assert.Error(t, err)
 			assert.Equal(t, errors.New("location code is exists"), err)
 		})

@@ -6,8 +6,8 @@ import (
 )
 
 type IPaymentDetailUsecase interface {
-	Upsert(shopID string, docNo string, doc models.TransactionPaymentDetail) error
-	Delete(shopID string, docNo string) error
+	Upsert(holdingCode string, docNo string, doc models.TransactionPaymentDetail) error
+	Delete(holdingCode string, docNo string) error
 }
 
 type PaymentDetailUsecase struct {
@@ -20,8 +20,8 @@ func NewPaymentDetailUsecase(repo repositories.IPaymentDetailRepository) *Paymen
 	}
 }
 
-func (s *PaymentDetailUsecase) Upsert(shopID string, docNo string, doc models.TransactionPaymentDetail) error {
-	foundDocument, err := s.repo.Get(shopID, docNo)
+func (s *PaymentDetailUsecase) Upsert(holdingCode string, docNo string, doc models.TransactionPaymentDetail) error {
+	foundDocument, err := s.repo.Get(holdingCode, docNo)
 
 	if err != nil && err.Error() != "record not found" {
 		return err
@@ -35,7 +35,7 @@ func (s *PaymentDetailUsecase) Upsert(shopID string, docNo string, doc models.Tr
 	} else {
 
 		if !foundDocument.CompareTo(&doc) {
-			err = s.repo.Update(shopID, docNo, doc)
+			err = s.repo.Update(holdingCode, docNo, doc)
 			if err != nil {
 				return err
 			}
@@ -45,10 +45,10 @@ func (s *PaymentDetailUsecase) Upsert(shopID string, docNo string, doc models.Tr
 	return nil
 }
 
-func (s *PaymentDetailUsecase) Delete(shopID string, docNo string) error {
-	err := s.repo.Delete(shopID, docNo, models.TransactionPaymentDetail{
-		ShopID: shopID,
-		DocNo:  docNo,
+func (s *PaymentDetailUsecase) Delete(holdingCode string, docNo string) error {
+	err := s.repo.Delete(holdingCode, docNo, models.TransactionPaymentDetail{
+		HoldingCode: holdingCode,
+		DocNo:       docNo,
 	})
 	if err != nil {
 		return err

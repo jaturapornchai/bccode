@@ -17,14 +17,14 @@ import (
 )
 
 type IColorHttpService interface {
-	CreateColor(shopID string, authUsername string, doc models.Color) (string, error)
-	UpdateColor(shopID string, guid string, authUsername string, doc models.Color) error
-	DeleteColor(shopID string, guid string, authUsername string) error
-	InfoColor(shopID string, guid string) (models.ColorInfo, error)
-	InfoWTFArray(shopID string, codes []string) ([]interface{}, error)
-	SearchColor(shopID string, pageable micromodels.Pageable) ([]models.ColorInfo, mongopagination.PaginationData, error)
-	SearchColorStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.ColorInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.Color) (common.BulkImport, error)
+	CreateColor(holdingCode string, authUsername string, doc models.Color) (string, error)
+	UpdateColor(holdingCode string, guid string, authUsername string, doc models.Color) error
+	DeleteColor(holdingCode string, guid string, authUsername string) error
+	InfoColor(holdingCode string, guid string) (models.ColorInfo, error)
+	InfoWTFArray(holdingCode string, codes []string) ([]interface{}, error)
+	SearchColor(holdingCode string, pageable micromodels.Pageable) ([]models.ColorInfo, mongopagination.PaginationData, error)
+	SearchColorStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.ColorInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.Color) (common.BulkImport, error)
 }
 
 type ColorHttpService struct {
@@ -46,12 +46,12 @@ func (svc ColorHttpService) getContextTimeout() (context.Context, context.Cancel
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc ColorHttpService) CreateColor(shopID string, authUsername string, doc models.Color) (string, error) {
+func (svc ColorHttpService) CreateColor(holdingCode string, authUsername string, doc models.Color) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", doc.Code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", doc.Code)
 
 	if err != nil {
 		return "", err
@@ -64,7 +64,7 @@ func (svc ColorHttpService) CreateColor(shopID string, authUsername string, doc 
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.ColorDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.Color = doc
 
@@ -80,12 +80,12 @@ func (svc ColorHttpService) CreateColor(shopID string, authUsername string, doc 
 	return newGuidFixed, nil
 }
 
-func (svc ColorHttpService) UpdateColor(shopID string, guid string, authUsername string, doc models.Color) error {
+func (svc ColorHttpService) UpdateColor(holdingCode string, guid string, authUsername string, doc models.Color) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -100,7 +100,7 @@ func (svc ColorHttpService) UpdateColor(shopID string, guid string, authUsername
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, findDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, findDoc)
 
 	if err != nil {
 		return err
@@ -109,12 +109,12 @@ func (svc ColorHttpService) UpdateColor(shopID string, guid string, authUsername
 	return nil
 }
 
-func (svc ColorHttpService) DeleteColor(shopID string, guid string, authUsername string) error {
+func (svc ColorHttpService) DeleteColor(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -124,7 +124,7 @@ func (svc ColorHttpService) DeleteColor(shopID string, guid string, authUsername
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
@@ -132,12 +132,12 @@ func (svc ColorHttpService) DeleteColor(shopID string, guid string, authUsername
 	return nil
 }
 
-func (svc ColorHttpService) InfoColor(shopID string, guid string) (models.ColorInfo, error) {
+func (svc ColorHttpService) InfoColor(holdingCode string, guid string) (models.ColorInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.ColorInfo{}, err
@@ -151,7 +151,7 @@ func (svc ColorHttpService) InfoColor(shopID string, guid string) (models.ColorI
 
 }
 
-func (svc ColorHttpService) InfoWTFArray(shopID string, codes []string) ([]interface{}, error) {
+func (svc ColorHttpService) InfoWTFArray(holdingCode string, codes []string) ([]interface{}, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -159,7 +159,7 @@ func (svc ColorHttpService) InfoWTFArray(shopID string, codes []string) ([]inter
 	docList := []interface{}{}
 
 	for _, code := range codes {
-		findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", code)
+		findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", code)
 		if err != nil || findDoc.ID == primitive.NilObjectID {
 			// add item empty
 			docList = append(docList, nil)
@@ -171,7 +171,7 @@ func (svc ColorHttpService) InfoWTFArray(shopID string, codes []string) ([]inter
 	return docList, nil
 }
 
-func (svc ColorHttpService) SearchColor(shopID string, pageable micromodels.Pageable) ([]models.ColorInfo, mongopagination.PaginationData, error) {
+func (svc ColorHttpService) SearchColor(holdingCode string, pageable micromodels.Pageable) ([]models.ColorInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -181,7 +181,7 @@ func (svc ColorHttpService) SearchColor(shopID string, pageable micromodels.Page
 		"names.name",
 	}
 
-	docList, pagination, err := svc.repo.FindPage(ctx, shopID, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPage(ctx, holdingCode, searchInFields, pageable)
 
 	if err != nil {
 		return []models.ColorInfo{}, pagination, err
@@ -190,7 +190,7 @@ func (svc ColorHttpService) SearchColor(shopID string, pageable micromodels.Page
 	return docList, pagination, nil
 }
 
-func (svc ColorHttpService) SearchColorStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.ColorInfo, int, error) {
+func (svc ColorHttpService) SearchColorStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.ColorInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -201,7 +201,7 @@ func (svc ColorHttpService) SearchColorStep(shopID string, langCode string, page
 	}
 
 	selectFields := map[string]interface{}{
-		"guid_fixed":      1,
+		"guid_fixed":     1,
 		"code":           1,
 		"colorselect":    1,
 		"colorsystem":    1,
@@ -216,7 +216,7 @@ func (svc ColorHttpService) SearchColorStep(shopID string, langCode string, page
 		selectFields["names"] = 1
 	}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.ColorInfo{}, 0, err
@@ -225,7 +225,7 @@ func (svc ColorHttpService) SearchColorStep(shopID string, langCode string, page
 	return docList, total, nil
 }
 
-func (svc ColorHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.Color) (common.BulkImport, error) {
+func (svc ColorHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.Color) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -237,7 +237,7 @@ func (svc ColorHttpService) SaveInBatch(shopID string, authUsername string, data
 		itemCodeGuidList = append(itemCodeGuidList, doc.Code)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "code", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "code", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -249,18 +249,18 @@ func (svc ColorHttpService) SaveInBatch(shopID string, authUsername string, data
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.Color, models.ColorDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.Color) models.ColorDoc {
+		func(holdingCode string, authUsername string, doc models.Color) models.ColorDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.ColorDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.Color = doc
 
 			currentTime := time.Now()
@@ -271,23 +271,23 @@ func (svc ColorHttpService) SaveInBatch(shopID string, authUsername string, data
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.Color, models.ColorDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.ColorDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", guid)
+		func(holdingCode string, guid string) (models.ColorDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", guid)
 		},
 		func(doc models.ColorDoc) bool {
 			return doc.Code != ""
 		},
-		func(shopID string, authUsername string, data models.Color, doc models.ColorDoc) error {
+		func(holdingCode string, authUsername string, data models.Color, doc models.ColorDoc) error {
 
 			doc.Color = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}

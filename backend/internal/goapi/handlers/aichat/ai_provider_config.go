@@ -36,35 +36,35 @@ var providerDefaultModels = map[string]string{
 // ---- Request structs ----
 
 type listAIProvidersReq struct {
-	ShopID string `json:"shop_id"`
+	HoldingCode string `json:"holding_code"`
 }
 
 type saveAIProviderReq struct {
-	ShopID string   `json:"shop_id"`
+	HoldingCode  string   `json:"holding_code"`
 	ProviderName string   `json:"provider_name"`
-	APIKey string   `json:"api_key"`
-	BaseURL string   `json:"base_url"`
-	Model string   `json:"model"`
+	APIKey       string   `json:"api_key"`
+	BaseURL      string   `json:"base_url"`
+	Model        string   `json:"model"`
 	Capabilities []string `json:"capabilities"`
-	IsActive bool     `json:"is_active"`
-	Priority int      `json:"priority"`
+	IsActive     bool     `json:"is_active"`
+	Priority     int      `json:"priority"`
 }
 
 type deleteAIProviderReq struct {
-	ShopID string `json:"shop_id"`
+	HoldingCode  string `json:"holding_code"`
 	ProviderName string `json:"provider_name"`
 }
 
 type testAIProviderReq struct {
-	ShopID string `json:"shop_id"`
+	HoldingCode  string `json:"holding_code"`
 	ProviderName string `json:"provider_name"`
-	APIKey string `json:"api_key"`
-	BaseURL string `json:"base_url"`
-	Model string `json:"model"`
+	APIKey       string `json:"api_key"`
+	BaseURL      string `json:"base_url"`
+	Model        string `json:"model"`
 }
 
 type aiProviderStatusReq struct {
-	ShopID string `json:"shop_id"`
+	HoldingCode string `json:"holding_code"`
 }
 
 // ---- Handlers ----
@@ -78,15 +78,15 @@ func ListAIProviders(c echo.Context) error {
 			"message": "invalid request: " + err.Error(),
 		})
 	}
-	if req.ShopID == "" {
+	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "shop_id is required",
+			"message": "holding_code is required",
 		})
 	}
 
-	logger.Info("[AIProvider] list shop_id=%s", req.ShopID)
-	configs, err := getAIProviderConfigs(req.ShopID)
+	logger.Info("[AIProvider] list holding_code=%s", req.HoldingCode)
+	configs, err := getAIProviderConfigs(req.HoldingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"success": false,
@@ -130,10 +130,10 @@ func SaveAIProvider(c echo.Context) error {
 			"message": "invalid request: " + err.Error(),
 		})
 	}
-	if req.ShopID == "" || req.ProviderName == "" {
+	if req.HoldingCode == "" || req.ProviderName == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "shop_id and provider_name are required",
+			"message": "holding_code and provider_name are required",
 		})
 	}
 	// custom provider ไม่บังคับ api_key (เช่น Ollama, local proxy)
@@ -172,7 +172,7 @@ func SaveAIProvider(c echo.Context) error {
 		Priority:     req.Priority,
 	}
 
-	if err := upsertAIProviderConfig(req.ShopID, cfg); err != nil {
+	if err := upsertAIProviderConfig(req.HoldingCode, cfg); err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"success": false,
 			"message": "บันทึกไม่ได้: " + err.Error(),
@@ -194,14 +194,14 @@ func DeleteAIProvider(c echo.Context) error {
 			"message": "invalid request: " + err.Error(),
 		})
 	}
-	if req.ShopID == "" || req.ProviderName == "" {
+	if req.HoldingCode == "" || req.ProviderName == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "shop_id and provider_name are required",
+			"message": "holding_code and provider_name are required",
 		})
 	}
 
-	if err := deleteAIProviderConfig(req.ShopID, req.ProviderName); err != nil {
+	if err := deleteAIProviderConfig(req.HoldingCode, req.ProviderName); err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"success": false,
 			"message": "ลบไม่ได้: " + err.Error(),
@@ -336,14 +336,14 @@ func AIProviderStatus(c echo.Context) error {
 			"message": "invalid request: " + err.Error(),
 		})
 	}
-	if req.ShopID == "" {
+	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "shop_id is required",
+			"message": "holding_code is required",
 		})
 	}
 
-	configs, err := getAIProviderConfigs(req.ShopID)
+	configs, err := getAIProviderConfigs(req.HoldingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"success": false,
@@ -564,8 +564,8 @@ func testRequest(ctx context.Context, chatURL, apiKey string, reqBody map[string
 
 type listModelsReq struct {
 	ProviderName string `json:"provider_name"`
-	APIKey string `json:"api_key"`
-	BaseURL string `json:"base_url"`
+	APIKey       string `json:"api_key"`
+	BaseURL      string `json:"base_url"`
 }
 
 // ListAIModels — POST /api/v1/ai-provider/models
@@ -653,8 +653,8 @@ func ListAIModels(c echo.Context) error {
 
 	var modelsResp struct {
 		Data []struct {
-			ID string `json:"id"`
-			Object string `json:"object"`
+			ID      string `json:"id"`
+			Object  string `json:"object"`
 			OwnedBy string `json:"owned_by"`
 		} `json:"data"`
 	}
@@ -710,7 +710,7 @@ func listGeminiModels(c echo.Context, ctx context.Context, apiKey string) error 
 
 	var geminiResp struct {
 		Models []struct {
-			Name string `json:"name"`
+			Name        string `json:"name"`
 			DisplayName string `json:"display_name"`
 		} `json:"models"`
 	}

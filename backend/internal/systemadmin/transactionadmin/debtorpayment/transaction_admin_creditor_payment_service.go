@@ -8,7 +8,7 @@ import (
 )
 
 type IDebtorPaymentTransactionAdminService interface {
-	ReSyncDebtorPaymentDoc(shopID string) error
+	ReSyncDebtorPaymentDoc(holdingCode string) error
 }
 
 type DebtorPaymentTransactionAdminService struct {
@@ -28,12 +28,12 @@ func NewDebtorPaymentTransactionAdminService(pst microservice.IPersisterMongo, k
 	}
 }
 
-func (s *DebtorPaymentTransactionAdminService) ReSyncDebtorPaymentDoc(shopID string) error {
+func (s *DebtorPaymentTransactionAdminService) ReSyncDebtorPaymentDoc(holdingCode string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeoutDuration)
 	defer cancel()
 
-	docs, err := s.mongoRepo.FindDebtorPaymentDocByShopID(ctx, shopID)
+	docs, err := s.mongoRepo.FindDebtorPaymentDocByHoldingCode(ctx, holdingCode)
 	if err != nil {
 		return err
 	}

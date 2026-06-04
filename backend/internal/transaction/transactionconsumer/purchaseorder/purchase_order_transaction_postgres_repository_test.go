@@ -31,8 +31,8 @@ func createTestPurchaseOrderTransaction() models.PurchaseOrderTransactionPG {
 	return models.PurchaseOrderTransactionPG{
 		TransactionPG: models.TransactionPG{
 			GuidFixed: "test-guid-fixed",
-			ShopIdentity: microModels.ShopIdentity{
-				ShopID: "TEST001",
+			HoldingCodeentity: microModels.HoldingCodeentity{
+				HoldingCode: "TEST001",
 			},
 			InquiryType: 1,
 			TransFlag:   1,
@@ -79,11 +79,11 @@ func createTestPurchaseOrderTransaction() models.PurchaseOrderTransactionPG {
 		Items: &[]models.PurchaseOrderDetailTransactionPG{
 			{
 				TransactionDetailPG: models.TransactionDetailPG{
-					ID:         1,
-					ShopID:     "TEST001",
-					DocNo:      "PO001",
-					LineNumber: 1,
-					Barcode:    "123456789",
+					ID:          1,
+					HoldingCode: "TEST001",
+					DocNo:       "PO001",
+					LineNumber:  1,
+					Barcode:     "123456789",
 					ItemNames: microModels.JSONB{
 						microModels.NameX{
 							Code: &thaiLang,
@@ -182,7 +182,7 @@ func TestGetPurchaseOrder(t *testing.T) {
 		// First create a test record
 		// testData := createTestPurchaseOrderTransaction()
 		//testData.DocNo = "PO_GET_TEST_001"
-		//testData.ShopID = "TEST001"
+		//testData.HoldingCode = "TEST001"
 
 		// err := repo.Create(testData)
 		// assert.NoError(t, err)
@@ -192,7 +192,7 @@ func TestGetPurchaseOrder(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, result)
 		assert.Equal(t, "PO001", result.DocNo)
-		assert.Equal(t, "TEST001", result.ShopID)
+		assert.Equal(t, "TEST001", result.HoldingCode)
 		assert.Equal(t, "CRED001", result.CreditorCode)
 	})
 
@@ -237,11 +237,11 @@ func TestUpdatePurchaseOrder(t *testing.T) {
 		(*testData.Items)[0].Remark = "Updated item remark"
 
 		// Update the record
-		err = repo.Update(result.ShopID, result.DocNo, testData)
+		err = repo.Update(result.HoldingCode, result.DocNo, testData)
 		assert.NoError(t, err)
 
 		// Verify the update
-		result, err = repo.Get(result.ShopID, result.DocNo)
+		result, err = repo.Get(result.HoldingCode, result.DocNo)
 		assert.NoError(t, err)
 		assert.Equal(t, "Updated description", result.Description)
 		assert.Equal(t, 2000.0, result.TotalAmount)
@@ -251,7 +251,7 @@ func TestUpdatePurchaseOrder(t *testing.T) {
 	t.Run("Update_NonExistentRecord", func(t *testing.T) {
 		testData := createTestPurchaseOrderTransaction()
 		testData.DocNo = "NONEXISTENT"
-		testData.ShopID = "NONEXISTENT"
+		testData.HoldingCode = "NONEXISTENT"
 
 		err := repo.Update("NONEXISTENT", "NONEXISTENT", testData)
 		// Update should not return error even if no records are affected
@@ -283,7 +283,7 @@ func TestDeleteData(t *testing.T) {
 		// First create a test record with details
 		// testData := createTestPurchaseOrderTransaction()
 		// testData.DocNo = "PO_DELETE_TEST_001"
-		// testData.ShopID = "TEST001"
+		// testData.HoldingCode = "TEST001"
 
 		// err := repo.Create(testData)
 		// assert.NoError(t, err)
@@ -319,13 +319,13 @@ func TestDeleteData(t *testing.T) {
 	// 	// Create a test record with multiple detail lines
 	// 	testData := createTestPurchaseOrderTransaction()
 	// 	testData.DocNo = "PO_DELETE_MULTI_001"
-	// 	testData.ShopID = "TEST001"
+	// 	testData.HoldingCode = "TEST001"
 
 	// 	// Add more detail items
 	// 	additionalItem := models.PurchaseOrderDetailTransactionPG{
 	// 		TransactionDetailPG: models.TransactionDetailPG{
 	// 			ID:         2,
-	// 			ShopID:     "TEST001",
+	// 			HoldingCode:     "TEST001",
 	// 			DocNo:      "PO_DELETE_MULTI_001",
 	// 			LineNumber: 2,
 	// 			Barcode:    "987654321",

@@ -9,8 +9,8 @@ import (
 )
 
 type IStockAdjustmentTransactionAdminRepository interface {
-	FindStockAdjustmentDocByShopID(ctx context.Context, shopID string) ([]stockadjustmentmodels.StockAdjustmentDoc, error)
-	FindStockAdjustmentDocDeleteByShopID(ctx context.Context, shopID string) ([]stockadjustmentmodels.StockAdjustmentDoc, error)
+	FindStockAdjustmentDocByHoldingCode(ctx context.Context, holdingCode string) ([]stockadjustmentmodels.StockAdjustmentDoc, error)
+	FindStockAdjustmentDocDeleteByHoldingCode(ctx context.Context, holdingCode string) ([]stockadjustmentmodels.StockAdjustmentDoc, error)
 }
 
 type StockAdjustmentTransactionAdminRepository struct {
@@ -23,13 +23,13 @@ func NewStockAdjustmentTransactionAdminRepository(pst microservice.IPersisterMon
 	}
 }
 
-func (r *StockAdjustmentTransactionAdminRepository) FindStockAdjustmentDocByShopID(ctx context.Context, shopID string) ([]stockadjustmentmodels.StockAdjustmentDoc, error) {
+func (r *StockAdjustmentTransactionAdminRepository) FindStockAdjustmentDocByHoldingCode(ctx context.Context, holdingCode string) ([]stockadjustmentmodels.StockAdjustmentDoc, error) {
 	docList := []stockadjustmentmodels.StockAdjustmentDoc{}
 
 	err := r.pst.Find(ctx, &stockadjustmentmodels.StockAdjustmentDoc{},
 		bson.M{
-			"shopid":    shopID,
-			"deleted_at": bson.M{"$exists": false},
+			"holding_code": holdingCode,
+			"deleted_at":   bson.M{"$exists": false},
 		},
 		&docList)
 	if err != nil {
@@ -39,13 +39,13 @@ func (r *StockAdjustmentTransactionAdminRepository) FindStockAdjustmentDocByShop
 	return docList, nil
 }
 
-func (r *StockAdjustmentTransactionAdminRepository) FindStockAdjustmentDocDeleteByShopID(ctx context.Context, shopID string) ([]stockadjustmentmodels.StockAdjustmentDoc, error) {
+func (r *StockAdjustmentTransactionAdminRepository) FindStockAdjustmentDocDeleteByHoldingCode(ctx context.Context, holdingCode string) ([]stockadjustmentmodels.StockAdjustmentDoc, error) {
 	docList := []stockadjustmentmodels.StockAdjustmentDoc{}
 
 	err := r.pst.Find(ctx, &stockadjustmentmodels.StockAdjustmentDoc{},
 		bson.M{
-			"shopid":    shopID,
-			"deleted_at": bson.M{"$exists": true},
+			"holding_code": holdingCode,
+			"deleted_at":   bson.M{"$exists": true},
 		},
 		&docList)
 	if err != nil {

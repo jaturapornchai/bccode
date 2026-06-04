@@ -59,7 +59,7 @@ func (*UserRequest) CollectionName() string {
 type UserLoginRequest struct {
 	UsernameCode `bson:"inline"`
 	UserPassword `bson:"inline"`
-	ShopID       string `json:"shopid,omitempty"`
+	HoldingCode  string `json:"holding_code,omitempty"`
 }
 
 type UserProfile struct {
@@ -87,7 +87,7 @@ type UserProfileReponse struct {
 }
 
 type ShopSelectRequest struct {
-	ShopID string `json:"shopid" validate:"required"`
+	HoldingCode string `json:"holding_code"`
 }
 
 type UserRole = uint8
@@ -101,16 +101,23 @@ const (
 )
 
 type ShopUserBase struct {
-	Username string   `json:"username" bson:"username"`
-	UserUID  string   `json:"user_uid" bson:"user_uid"`
-	ShopID   string   `json:"shopid" bson:"shopid"`
-	Role     UserRole `json:"role" bson:"role"`
+	Username    string   `json:"username" bson:"username"`
+	UserUID     string   `json:"user_uid" bson:"user_uid"`
+	HoldingCode string   `json:"holding_code" bson:"holding_code"`
+	Role        UserRole `json:"role" bson:"role"`
 }
 
 // DocumentApproval - ข้อมูลการอนุมัติแยกตามประเภทเอกสาร
 type DocumentApproval struct {
 	ApprovalRole      int     `json:"approval_role" bson:"approval_role"`             // 0=ไม่มีสิทธิ์, 1-4=ระดับผู้อนุมัติ
 	MaxApprovalAmount float64 `json:"max_approval_amount" bson:"max_approval_amount"` // วงเงินอนุมัติสูงสุด (บาท)
+}
+
+type AccessScope struct {
+	ScopeType    string `json:"scope_type" bson:"scope_type"`                           // holding, company, branch
+	BusinessCode string `json:"business_code,omitempty" bson:"business_code,omitempty"` // company code
+	BranchCode   string `json:"branch_code,omitempty" bson:"branch_code,omitempty"`     // Thai tax branch code
+	AllBranches  bool   `json:"all_branches,omitempty" bson:"all_branches,omitempty"`
 }
 
 type ShopUser struct {
@@ -131,6 +138,7 @@ type ShopUser struct {
 	// === ข้อมูลการอนุมัติแยกตามประเภทเอกสาร ===
 	POApproval        *DocumentApproval `json:"po_approval,omitempty" bson:"po_approval,omitempty"`               // อนุมัติใบสั่งซื้อ
 	QuotationApproval *DocumentApproval `json:"quotation_approval,omitempty" bson:"quotation_approval,omitempty"` // อนุมัติใบเสนอราคา
+	AccessScopes      []AccessScope     `json:"access_scopes,omitempty" bson:"access_scopes,omitempty"`
 }
 
 func (*ShopUser) CollectionName() string {
@@ -138,7 +146,7 @@ func (*ShopUser) CollectionName() string {
 }
 
 type ShopUserInfo struct {
-	ShopID         string         `json:"shopid" bson:"shopid"`
+	HoldingCode    string         `json:"holding_code" bson:"holding_code"`
 	Name           string         `json:"name" bson:"name"`
 	Names          []models.NameX `json:"names" bson:"names"`
 	BranchCode     string         `json:"branchcode" bson:"branchcode"`
@@ -153,7 +161,7 @@ func (*ShopUserInfo) CollectionName() string {
 }
 
 type UserRoleRequest struct {
-	ShopID       string   `json:"shopid" bson:"shopid"`
+	HoldingCode  string   `json:"holding_code" bson:"holding_code"`
 	EditUsername string   `json:"editusername" bson:"editusername"`
 	Username     string   `json:"username" bson:"username"`
 	UserUID      string   `json:"user_uid,omitempty" bson:"user_uid,omitempty"`
@@ -171,11 +179,12 @@ type UserRoleRequest struct {
 	// === ข้อมูลการอนุมัติแยกตามประเภทเอกสาร ===
 	POApproval        *DocumentApproval `json:"po_approval,omitempty" bson:"po_approval,omitempty"`
 	QuotationApproval *DocumentApproval `json:"quotation_approval,omitempty" bson:"quotation_approval,omitempty"`
+	AccessScopes      []AccessScope     `json:"access_scopes,omitempty" bson:"access_scopes,omitempty"`
 }
 
 type ShopUserAccessLog struct {
 	ID             primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	ShopID         string             `json:"shopid" bson:"shopid"`
+	HoldingCode    string             `json:"holding_code" bson:"holding_code"`
 	Username       string             `json:"username" bson:"username"`
 	Ip             string             `json:"ip" bson:"ip"`
 	LastAccessedAt time.Time          `json:"last_accessed_at" bson:"last_accessed_at"`
@@ -201,6 +210,7 @@ type ShopUserProfile struct {
 	// === ข้อมูลการอนุมัติแยกตามประเภทเอกสาร ===
 	POApproval        *DocumentApproval `json:"po_approval,omitempty" bson:"po_approval,omitempty"`
 	QuotationApproval *DocumentApproval `json:"quotation_approval,omitempty" bson:"quotation_approval,omitempty"`
+	AccessScopes      []AccessScope     `json:"access_scopes,omitempty" bson:"access_scopes,omitempty"`
 }
 
 // func (u UserRole) EqualString(userRoleStr string)  bool {

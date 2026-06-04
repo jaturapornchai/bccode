@@ -20,14 +20,14 @@ import (
 )
 
 type IZoneService interface {
-	CreateZone(shopID string, authUsername string, doc models.Zone) (string, error)
-	UpdateZone(shopID string, guid string, authUsername string, doc models.Zone) error
-	DeleteZone(shopID string, guid string, authUsername string) error
-	InfoZone(shopID string, guid string) (models.ZoneInfo, error)
-	InfoWTFArray(shopID string, codes []string) ([]interface{}, error)
-	SearchZone(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ZoneInfo, mongopagination.PaginationData, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.Zone) (common.BulkImport, error)
-	DeleteByGUIDs(shopID string, authUsername string, GUIDs []string) error
+	CreateZone(holdingCode string, authUsername string, doc models.Zone) (string, error)
+	UpdateZone(holdingCode string, guid string, authUsername string, doc models.Zone) error
+	DeleteZone(holdingCode string, guid string, authUsername string) error
+	InfoZone(holdingCode string, guid string) (models.ZoneInfo, error)
+	InfoWTFArray(holdingCode string, codes []string) ([]interface{}, error)
+	SearchZone(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ZoneInfo, mongopagination.PaginationData, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.Zone) (common.BulkImport, error)
+	DeleteByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
 
 	GetModuleName() string
 }
@@ -57,12 +57,12 @@ func (svc ZoneService) getContextTimeout() (context.Context, context.CancelFunc)
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc ZoneService) CreateZone(shopID string, authUsername string, doc models.Zone) (string, error) {
+func (svc ZoneService) CreateZone(holdingCode string, authUsername string, doc models.Zone) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", doc.Code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", doc.Code)
 
 	if err != nil {
 		return "", err
@@ -75,7 +75,7 @@ func (svc ZoneService) CreateZone(shopID string, authUsername string, doc models
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.ZoneDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.Zone = doc
 
@@ -90,17 +90,17 @@ func (svc ZoneService) CreateZone(shopID string, authUsername string, doc models
 		return "", err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return newGuidFixed, nil
 }
 
-func (svc ZoneService) UpdateZone(shopID string, guid string, authUsername string, doc models.Zone) error {
+func (svc ZoneService) UpdateZone(holdingCode string, guid string, authUsername string, doc models.Zone) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -117,34 +117,34 @@ func (svc ZoneService) UpdateZone(shopID string, guid string, authUsername strin
 
 	findDoc.LastUpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, findDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, findDoc)
 
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc ZoneService) DeleteZone(shopID string, guid string, authUsername string) error {
+func (svc ZoneService) DeleteZone(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	err := svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err := svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc ZoneService) DeleteByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc ZoneService) DeleteByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -153,7 +153,7 @@ func (svc ZoneService) DeleteByGUIDs(shopID string, authUsername string, GUIDs [
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
@@ -161,12 +161,12 @@ func (svc ZoneService) DeleteByGUIDs(shopID string, authUsername string, GUIDs [
 	return nil
 }
 
-func (svc ZoneService) InfoZone(shopID string, guid string) (models.ZoneInfo, error) {
+func (svc ZoneService) InfoZone(holdingCode string, guid string) (models.ZoneInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.ZoneInfo{}, err
@@ -180,7 +180,7 @@ func (svc ZoneService) InfoZone(shopID string, guid string) (models.ZoneInfo, er
 
 }
 
-func (svc ZoneService) InfoWTFArray(shopID string, codes []string) ([]interface{}, error) {
+func (svc ZoneService) InfoWTFArray(holdingCode string, codes []string) ([]interface{}, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -188,7 +188,7 @@ func (svc ZoneService) InfoWTFArray(shopID string, codes []string) ([]interface{
 	docList := []interface{}{}
 
 	for _, code := range codes {
-		findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", code)
+		findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", code)
 		if err != nil || findDoc.ID == primitive.NilObjectID {
 			// add item empty
 			docList = append(docList, nil)
@@ -200,7 +200,7 @@ func (svc ZoneService) InfoWTFArray(shopID string, codes []string) ([]interface{
 	return docList, nil
 }
 
-func (svc ZoneService) SearchZone(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ZoneInfo, mongopagination.PaginationData, error) {
+func (svc ZoneService) SearchZone(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ZoneInfo, mongopagination.PaginationData, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
@@ -209,7 +209,7 @@ func (svc ZoneService) SearchZone(shopID string, filters map[string]interface{},
 		"names.name",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.ZoneInfo{}, pagination, err
@@ -218,7 +218,7 @@ func (svc ZoneService) SearchZone(shopID string, filters map[string]interface{},
 	return docList, pagination, nil
 }
 
-func (svc ZoneService) SaveInBatch(shopID string, authUsername string, dataList []models.Zone) (common.BulkImport, error) {
+func (svc ZoneService) SaveInBatch(holdingCode string, authUsername string, dataList []models.Zone) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -230,7 +230,7 @@ func (svc ZoneService) SaveInBatch(shopID string, authUsername string, dataList 
 		itemCodeGuidList = append(itemCodeGuidList, doc.Code)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "code", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "code", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -242,18 +242,18 @@ func (svc ZoneService) SaveInBatch(shopID string, authUsername string, dataList 
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.Zone, models.ZoneDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadCategoryList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.Zone) models.ZoneDoc {
+		func(holdingCode string, authUsername string, doc models.Zone) models.ZoneDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.ZoneDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.Zone = doc
 
 			currentTime := time.Now()
@@ -265,17 +265,17 @@ func (svc ZoneService) SaveInBatch(shopID string, authUsername string, dataList 
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.Zone, models.ZoneDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.ZoneDoc, error) {
-			return svc.repo.FindByGuid(ctx, shopID, guid)
+		func(holdingCode string, guid string) (models.ZoneDoc, error) {
+			return svc.repo.FindByGuid(ctx, holdingCode, guid)
 		},
 		func(doc models.ZoneDoc) bool {
 			return false
 		},
-		func(shopID string, authUsername string, data models.Zone, doc models.ZoneDoc) error {
+		func(holdingCode string, authUsername string, data models.Zone, doc models.ZoneDoc) error {
 
 			return nil
 		},
@@ -309,7 +309,7 @@ func (svc ZoneService) SaveInBatch(shopID string, authUsername string, dataList 
 		updateFailDataKey = append(updateFailDataKey, doc.Code)
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -323,9 +323,9 @@ func (svc ZoneService) getDocIDKey(doc models.Zone) string {
 	return doc.Code
 }
 
-func (svc ZoneService) saveMasterSync(shopID string) {
+func (svc ZoneService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

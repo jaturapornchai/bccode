@@ -15,7 +15,7 @@ type DepositRecord struct {
 }
 type DepositRecordInfo struct {
 	models.DocIdentity `bson:"inline"`
-	DepositRecord  `bson:"inline"`
+	DepositRecord      `bson:"inline"`
 }
 
 func (DepositRecordInfo) CollectionName() string {
@@ -23,12 +23,12 @@ func (DepositRecordInfo) CollectionName() string {
 }
 
 type DepositRecordData struct {
-	models.ShopIdentity `bson:"inline"`
-	DepositRecordInfo  `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	DepositRecordInfo        `bson:"inline"`
 }
 
 type DepositRecordDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	DepositRecordData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
@@ -46,7 +46,7 @@ func (DepositRecordItemGuid) CollectionName() string {
 }
 
 type DepositRecordActivity struct {
-	DepositRecordData  `bson:"inline"`
+	DepositRecordData   `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

@@ -17,22 +17,22 @@ import (
 )
 
 type IJournalHttpService interface {
-	CreateJournal(shopID string, authUsername string, doc models.Journal) (string, error)
-	RebuildPgJournal(shopID string, authUsername string) ([]models.JournalDoc, error)
-	UpdateJournal(guid string, shopID string, authUsername string, doc models.Journal) (oldDocNo string, newDocNo string, err error)
-	DeleteJournal(guid string, shopID string, authUsername string) error
-	DeleteJournalByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	DeleteJournalByBatchID(shopID string, authUsername string, batchID string) error
-	InfoJournal(shopID string, guid string) (models.JournalInfo, error)
-	InfoJournalByDocNo(shopID string, docNo string) (models.JournalInfo, error)
-	InfoJournalByDocumentRef(shopID string, documentRef string) (models.JournalInfo, error)
-	SearchJournal(shopID string, pagable micromodels.Pageable, searchFilters map[string]interface{}, startDate time.Time, endDate time.Time, accountGroup string) ([]models.JournalInfo, mongopagination.PaginationData, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.Journal) (common.BulkImport, error)
-	GetDuplicateDocNos(shopID string) ([]models.DuplicateDocNo, error)
-	CheckVatDocNoExists(shopID string, debtType int, code string, vatDocNo string) (models.VatDocNoCheckResult, error)
-	CheckTaxDocNoExists(shopID string, debtType int, code string, taxDocNo string) (models.VatDocNoCheckResult, error)
+	CreateJournal(holdingCode string, authUsername string, doc models.Journal) (string, error)
+	RebuildPgJournal(holdingCode string, authUsername string) ([]models.JournalDoc, error)
+	UpdateJournal(guid string, holdingCode string, authUsername string, doc models.Journal) (oldDocNo string, newDocNo string, err error)
+	DeleteJournal(guid string, holdingCode string, authUsername string) error
+	DeleteJournalByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	DeleteJournalByBatchID(holdingCode string, authUsername string, batchID string) error
+	InfoJournal(holdingCode string, guid string) (models.JournalInfo, error)
+	InfoJournalByDocNo(holdingCode string, docNo string) (models.JournalInfo, error)
+	InfoJournalByDocumentRef(holdingCode string, documentRef string) (models.JournalInfo, error)
+	SearchJournal(holdingCode string, pagable micromodels.Pageable, searchFilters map[string]interface{}, startDate time.Time, endDate time.Time, accountGroup string) ([]models.JournalInfo, mongopagination.PaginationData, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.Journal) (common.BulkImport, error)
+	GetDuplicateDocNos(holdingCode string) ([]models.DuplicateDocNo, error)
+	CheckVatDocNoExists(holdingCode string, debtType int, code string, vatDocNo string) (models.VatDocNoCheckResult, error)
+	CheckTaxDocNoExists(holdingCode string, debtType int, code string, taxDocNo string) (models.VatDocNoCheckResult, error)
 
-	FindLastDocnoFromFormat(shopID string, docFormat string) (string, error)
+	FindLastDocnoFromFormat(holdingCode string, docFormat string) (string, error)
 	ReGenerateGuidEmpty() error
 }
 
@@ -57,12 +57,12 @@ func (svc JournalHttpService) getContextTimeout() (context.Context, context.Canc
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc JournalHttpService) CreateJournal(shopID string, authUsername string, doc models.Journal) (string, error) {
+func (svc JournalHttpService) CreateJournal(holdingCode string, authUsername string, doc models.Journal) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", doc.DocNo)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", doc.DocNo)
 
 	if err != nil {
 		return "", err
@@ -75,7 +75,7 @@ func (svc JournalHttpService) CreateJournal(shopID string, authUsername string, 
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.JournalDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.Journal = doc
 
@@ -98,12 +98,12 @@ func (svc JournalHttpService) CreateJournal(shopID string, authUsername string, 
 	}
 	return newGuidFixed, nil
 }
-func (svc JournalHttpService) RebuildPgJournal(shopID string, authUsername string) ([]models.JournalDoc, error) {
+func (svc JournalHttpService) RebuildPgJournal(holdingCode string, authUsername string) ([]models.JournalDoc, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.Find(ctx, shopID, []string{}, "")
+	findDoc, err := svc.repo.Find(ctx, holdingCode, []string{}, "")
 
 	if err != nil {
 		return []models.JournalDoc{}, err
@@ -113,7 +113,7 @@ func (svc JournalHttpService) RebuildPgJournal(shopID string, authUsername strin
 	for _, doc := range findDoc {
 
 		docData := models.JournalDoc{}
-		docData.ShopID = shopID
+		docData.HoldingCode = holdingCode
 		docData.GuidFixed = doc.GuidFixed
 		// docData.Journal = doc.Journal
 		docData.AccountBook = doc.AccountBook
@@ -149,12 +149,12 @@ func (svc JournalHttpService) RebuildPgJournal(shopID string, authUsername strin
 	return docDatax, nil
 }
 
-func (svc JournalHttpService) UpdateJournal(guid string, shopID string, authUsername string, doc models.Journal) (oldDocNo string, newDocNo string, err error) {
+func (svc JournalHttpService) UpdateJournal(guid string, holdingCode string, authUsername string, doc models.Journal) (oldDocNo string, newDocNo string, err error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return "", "", err
@@ -171,7 +171,7 @@ func (svc JournalHttpService) UpdateJournal(guid string, shopID string, authUser
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, findDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, findDoc)
 
 	if err != nil {
 		return "", "", err
@@ -184,12 +184,12 @@ func (svc JournalHttpService) UpdateJournal(guid string, shopID string, authUser
 	return oldDocNo, newDocNo, nil
 }
 
-func (svc JournalHttpService) DeleteJournal(guid string, shopID string, authUsername string) error {
+func (svc JournalHttpService) DeleteJournal(guid string, holdingCode string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -199,7 +199,7 @@ func (svc JournalHttpService) DeleteJournal(guid string, shopID string, authUser
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
@@ -211,18 +211,18 @@ func (svc JournalHttpService) DeleteJournal(guid string, shopID string, authUser
 	return nil
 }
 
-func (svc JournalHttpService) DeleteJournalByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc JournalHttpService) DeleteJournalByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	docs, _ := svc.repo.FindByGuids(ctx, shopID, GUIDs)
+	docs, _ := svc.repo.FindByGuids(ctx, holdingCode, GUIDs)
 
 	deleteFilterQuery := map[string]interface{}{
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
@@ -235,12 +235,12 @@ func (svc JournalHttpService) DeleteJournalByGUIDs(shopID string, authUsername s
 	return nil
 }
 
-func (svc JournalHttpService) DeleteJournalByBatchID(shopID string, authUsername string, batchID string) error {
+func (svc JournalHttpService) DeleteJournalByBatchID(holdingCode string, authUsername string, batchID string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDocs, err := svc.repo.FindFilter(ctx, shopID, bson.M{"batchid": batchID})
+	findDocs, err := svc.repo.FindFilter(ctx, holdingCode, bson.M{"batchid": batchID})
 
 	if err != nil {
 		return err
@@ -250,7 +250,7 @@ func (svc JournalHttpService) DeleteJournalByBatchID(shopID string, authUsername
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.Delete(ctx, shopID, authUsername, map[string]interface{}{"batchid": batchID})
+	err = svc.repo.Delete(ctx, holdingCode, authUsername, map[string]interface{}{"batchid": batchID})
 	if err != nil {
 		return err
 	}
@@ -263,12 +263,12 @@ func (svc JournalHttpService) DeleteJournalByBatchID(shopID string, authUsername
 	return nil
 }
 
-func (svc JournalHttpService) InfoJournal(shopID string, guid string) (models.JournalInfo, error) {
+func (svc JournalHttpService) InfoJournal(holdingCode string, guid string) (models.JournalInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.JournalInfo{}, err
@@ -285,14 +285,14 @@ func (svc JournalHttpService) InfoJournal(shopID string, guid string) (models.Jo
 
 }
 
-func (svc JournalHttpService) InfoJournalByDocNo(shopID string, docNo string) (models.JournalInfo, error) {
+func (svc JournalHttpService) InfoJournalByDocNo(holdingCode string, docNo string) (models.JournalInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
 	filters := bson.M{"docno": docNo}
 
-	findDoc, err := svc.repo.FindOne(ctx, shopID, filters)
+	findDoc, err := svc.repo.FindOne(ctx, holdingCode, filters)
 
 	if err != nil {
 		return models.JournalInfo{}, err
@@ -306,7 +306,7 @@ func (svc JournalHttpService) InfoJournalByDocNo(shopID string, docNo string) (m
 
 }
 
-func (svc JournalHttpService) InfoJournalByDocumentRef(shopID string, documentRef string) (models.JournalInfo, error) {
+func (svc JournalHttpService) InfoJournalByDocumentRef(holdingCode string, documentRef string) (models.JournalInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -315,7 +315,7 @@ func (svc JournalHttpService) InfoJournalByDocumentRef(shopID string, documentRe
 		"documentref": documentRef,
 	}
 
-	findDoc, err := svc.repo.FindOne(ctx, shopID, filters)
+	findDoc, err := svc.repo.FindOne(ctx, holdingCode, filters)
 
 	if err != nil {
 		return models.JournalInfo{}, err
@@ -329,7 +329,7 @@ func (svc JournalHttpService) InfoJournalByDocumentRef(shopID string, documentRe
 
 }
 
-func (svc JournalHttpService) SearchJournal(shopID string, pageable micromodels.Pageable, searchFilters map[string]interface{}, startDate time.Time, endDate time.Time, accountGroup string) ([]models.JournalInfo, mongopagination.PaginationData, error) {
+func (svc JournalHttpService) SearchJournal(holdingCode string, pageable micromodels.Pageable, searchFilters map[string]interface{}, startDate time.Time, endDate time.Time, accountGroup string) ([]models.JournalInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -403,7 +403,7 @@ func (svc JournalHttpService) SearchJournal(shopID string, pageable micromodels.
 		}
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.JournalInfo{}, pagination, err
@@ -434,7 +434,7 @@ func (svc JournalHttpService) ReGenerateGuidEmpty() error {
 	return nil
 }
 
-func (svc JournalHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.Journal) (common.BulkImport, error) {
+func (svc JournalHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.Journal) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -446,7 +446,7 @@ func (svc JournalHttpService) SaveInBatch(shopID string, authUsername string, da
 		itemCodeGuidList = append(itemCodeGuidList, doc.DocNo)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "docno", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "docno", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -458,18 +458,18 @@ func (svc JournalHttpService) SaveInBatch(shopID string, authUsername string, da
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.Journal, models.JournalDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.Journal) models.JournalDoc {
+		func(holdingCode string, authUsername string, doc models.Journal) models.JournalDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.JournalDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.Journal = doc
 
 			currentTime := time.Now()
@@ -480,12 +480,12 @@ func (svc JournalHttpService) SaveInBatch(shopID string, authUsername string, da
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.Journal, models.JournalDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.JournalDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", guid)
+		func(holdingCode string, guid string) (models.JournalDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", guid)
 		},
 		func(doc models.JournalDoc) bool {
 			if doc.DocNo != "" {
@@ -493,13 +493,13 @@ func (svc JournalHttpService) SaveInBatch(shopID string, authUsername string, da
 			}
 			return false
 		},
-		func(shopID string, authUsername string, data models.Journal, doc models.JournalDoc) error {
+		func(holdingCode string, authUsername string, data models.Journal, doc models.JournalDoc) error {
 
 			doc.Journal = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -555,12 +555,12 @@ func (svc JournalHttpService) getDocIDKey(doc models.Journal) string {
 	return doc.DocNo
 }
 
-func (svc JournalHttpService) FindLastDocnoFromFormat(shopID string, docFormat string) (string, error) {
+func (svc JournalHttpService) FindLastDocnoFromFormat(holdingCode string, docFormat string) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	lastDocNo, err := svc.repo.FindLastDocno(ctx, shopID, docFormat)
+	lastDocNo, err := svc.repo.FindLastDocno(ctx, holdingCode, docFormat)
 
 	if err != nil {
 		return "", err
@@ -570,12 +570,12 @@ func (svc JournalHttpService) FindLastDocnoFromFormat(shopID string, docFormat s
 
 }
 
-func (svc JournalHttpService) GetDuplicateDocNos(shopID string) ([]models.DuplicateDocNo, error) {
+func (svc JournalHttpService) GetDuplicateDocNos(holdingCode string) ([]models.DuplicateDocNo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	duplicates, err := svc.repo.GetDuplicateDocNos(ctx, shopID)
+	duplicates, err := svc.repo.GetDuplicateDocNos(ctx, holdingCode)
 
 	if err != nil {
 		return []models.DuplicateDocNo{}, err
@@ -584,12 +584,12 @@ func (svc JournalHttpService) GetDuplicateDocNos(shopID string) ([]models.Duplic
 	return duplicates, nil
 }
 
-func (svc JournalHttpService) CheckVatDocNoExists(shopID string, debtType int, code string, vatDocNo string) (models.VatDocNoCheckResult, error) {
+func (svc JournalHttpService) CheckVatDocNoExists(holdingCode string, debtType int, code string, vatDocNo string) (models.VatDocNoCheckResult, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	exists, err := svc.repo.CheckVatDocNoExists(ctx, shopID, debtType, code, vatDocNo)
+	exists, err := svc.repo.CheckVatDocNoExists(ctx, holdingCode, debtType, code, vatDocNo)
 	if err != nil {
 		return models.VatDocNoCheckResult{}, err
 	}
@@ -607,12 +607,12 @@ func (svc JournalHttpService) CheckVatDocNoExists(shopID string, debtType int, c
 	}, nil
 }
 
-func (svc JournalHttpService) CheckTaxDocNoExists(shopID string, debtType int, code string, taxDocNo string) (models.VatDocNoCheckResult, error) {
+func (svc JournalHttpService) CheckTaxDocNoExists(holdingCode string, debtType int, code string, taxDocNo string) (models.VatDocNoCheckResult, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	exists, err := svc.repo.CheckTaxDocNoExists(ctx, shopID, debtType, code, taxDocNo)
+	exists, err := svc.repo.CheckTaxDocNoExists(ctx, holdingCode, debtType, code, taxDocNo)
 	if err != nil {
 		return models.VatDocNoCheckResult{}, err
 	}

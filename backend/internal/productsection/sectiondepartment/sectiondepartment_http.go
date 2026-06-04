@@ -63,7 +63,7 @@ func (h SectionDepartmentHttp) RegisterHttp() {
 func (h SectionDepartmentHttp) SaveSectionDepartment(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -80,7 +80,7 @@ func (h SectionDepartmentHttp) SaveSectionDepartment(ctx microservice.IContext) 
 		return err
 	}
 
-	id, err := h.svc.SaveSectionDepartment(shopID, authUsername, *docReq)
+	id, err := h.svc.SaveSectionDepartment(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -106,12 +106,12 @@ func (h SectionDepartmentHttp) SaveSectionDepartment(ctx microservice.IContext) 
 // @Router /product-section/department/{id} [delete]
 func (h SectionDepartmentHttp) DeleteSectionDepartment(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteSectionDepartment(shopID, id, authUsername)
+	err := h.svc.DeleteSectionDepartment(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -137,7 +137,7 @@ func (h SectionDepartmentHttp) DeleteSectionDepartment(ctx microservice.IContext
 // @Router /product-section/department [delete]
 func (h SectionDepartmentHttp) DeleteSectionDepartmentByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -150,7 +150,7 @@ func (h SectionDepartmentHttp) DeleteSectionDepartmentByGUIDs(ctx microservice.I
 		return err
 	}
 
-	err = h.svc.DeleteSectionDepartmentByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteSectionDepartmentByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -175,12 +175,12 @@ func (h SectionDepartmentHttp) DeleteSectionDepartmentByGUIDs(ctx microservice.I
 // @Router /product-section/department/{id} [get]
 func (h SectionDepartmentHttp) InfoSectionDepartment(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get SectionDepartment %v", id)
-	doc, err := h.svc.InfoSectionDepartment(shopID, id)
+	doc, err := h.svc.InfoSectionDepartment(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -207,12 +207,12 @@ func (h SectionDepartmentHttp) InfoSectionDepartment(ctx microservice.IContext) 
 // @Router /product-section/department/{departmentCode}/branch/{branchCode} [get]
 func (h SectionDepartmentHttp) InfoSectionDepartmentByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	branchCode := ctx.Param("branchCode")
 	departmentCode := ctx.Param("departmentCode")
 
-	doc, err := h.svc.InfoSectionDepartmentByCode(shopID, branchCode, departmentCode)
+	doc, err := h.svc.InfoSectionDepartmentByCode(holdingCode, branchCode, departmentCode)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -239,11 +239,11 @@ func (h SectionDepartmentHttp) InfoSectionDepartmentByCode(ctx microservice.ICon
 // @Router /product-section/department [get]
 func (h SectionDepartmentHttp) SearchSectionDepartmentPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.SearchSectionDepartment(shopID, map[string]interface{}{}, pageable)
+	docList, pagination, err := h.svc.SearchSectionDepartment(holdingCode, map[string]interface{}{}, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -272,13 +272,13 @@ func (h SectionDepartmentHttp) SearchSectionDepartmentPage(ctx microservice.ICon
 // @Router /product-section/department/list [get]
 func (h SectionDepartmentHttp) SearchSectionDepartmentStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
 	lang := ctx.QueryParam("lang")
 
-	docList, total, err := h.svc.SearchSectionDepartmentStep(shopID, lang, pageableStep)
+	docList, total, err := h.svc.SearchSectionDepartmentStep(holdingCode, lang, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -306,7 +306,7 @@ func (h SectionDepartmentHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -318,7 +318,7 @@ func (h SectionDepartmentHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

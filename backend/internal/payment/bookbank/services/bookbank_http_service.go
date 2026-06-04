@@ -20,14 +20,14 @@ import (
 )
 
 type IBookBankHttpService interface {
-	CreateBookBank(shopID string, authUsername string, doc models.BookBank) (string, error)
-	UpdateBookBank(shopID string, guid string, authUsername string, doc models.BookBank) error
-	DeleteBookBank(shopID string, guid string, authUsername string) error
-	DeleteBookBankByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoBookBank(shopID string, guid string) (models.BookBankInfo, error)
-	SearchBookBank(shopID string, pageable micromodels.Pageable) ([]models.BookBankInfo, mongopagination.PaginationData, error)
-	SearchBookBankStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.BookBankInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.BookBank) (common.BulkImport, error)
+	CreateBookBank(holdingCode string, authUsername string, doc models.BookBank) (string, error)
+	UpdateBookBank(holdingCode string, guid string, authUsername string, doc models.BookBank) error
+	DeleteBookBank(holdingCode string, guid string, authUsername string) error
+	DeleteBookBankByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoBookBank(holdingCode string, guid string) (models.BookBankInfo, error)
+	SearchBookBank(holdingCode string, pageable micromodels.Pageable) ([]models.BookBankInfo, mongopagination.PaginationData, error)
+	SearchBookBankStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.BookBankInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.BookBank) (common.BulkImport, error)
 
 	GetModuleName() string
 }
@@ -59,12 +59,12 @@ func (svc BookBankHttpService) getContextTimeout() (context.Context, context.Can
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc BookBankHttpService) CreateBookBank(shopID string, authUsername string, doc models.BookBank) (string, error) {
+func (svc BookBankHttpService) CreateBookBank(holdingCode string, authUsername string, doc models.BookBank) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "passbook", doc.PassBook)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "passbook", doc.PassBook)
 
 	if err != nil {
 		return "", err
@@ -77,7 +77,7 @@ func (svc BookBankHttpService) CreateBookBank(shopID string, authUsername string
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.BookBankDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.BookBank = doc
 
@@ -90,17 +90,17 @@ func (svc BookBankHttpService) CreateBookBank(shopID string, authUsername string
 		return "", err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return newGuidFixed, nil
 }
 
-func (svc BookBankHttpService) UpdateBookBank(shopID string, guid string, authUsername string, doc models.BookBank) error {
+func (svc BookBankHttpService) UpdateBookBank(holdingCode string, guid string, authUsername string, doc models.BookBank) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -115,23 +115,23 @@ func (svc BookBankHttpService) UpdateBookBank(shopID string, guid string, authUs
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, findDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, findDoc)
 
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc BookBankHttpService) DeleteBookBank(shopID string, guid string, authUsername string) error {
+func (svc BookBankHttpService) DeleteBookBank(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -141,17 +141,17 @@ func (svc BookBankHttpService) DeleteBookBank(shopID string, guid string, authUs
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc BookBankHttpService) DeleteBookBankByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc BookBankHttpService) DeleteBookBankByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -160,7 +160,7 @@ func (svc BookBankHttpService) DeleteBookBankByGUIDs(shopID string, authUsername
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
@@ -168,12 +168,12 @@ func (svc BookBankHttpService) DeleteBookBankByGUIDs(shopID string, authUsername
 	return nil
 }
 
-func (svc BookBankHttpService) InfoBookBank(shopID string, guid string) (models.BookBankInfo, error) {
+func (svc BookBankHttpService) InfoBookBank(holdingCode string, guid string) (models.BookBankInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.BookBankInfo{}, err
@@ -187,7 +187,7 @@ func (svc BookBankHttpService) InfoBookBank(shopID string, guid string) (models.
 
 }
 
-func (svc BookBankHttpService) SearchBookBank(shopID string, pageable micromodels.Pageable) ([]models.BookBankInfo, mongopagination.PaginationData, error) {
+func (svc BookBankHttpService) SearchBookBank(holdingCode string, pageable micromodels.Pageable) ([]models.BookBankInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -200,7 +200,7 @@ func (svc BookBankHttpService) SearchBookBank(shopID string, pageable micromodel
 		"banknames.name",
 	}
 
-	docList, pagination, err := svc.repo.FindPage(ctx, shopID, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPage(ctx, holdingCode, searchInFields, pageable)
 
 	if err != nil {
 		return []models.BookBankInfo{}, pagination, err
@@ -209,7 +209,7 @@ func (svc BookBankHttpService) SearchBookBank(shopID string, pageable micromodel
 	return docList, pagination, nil
 }
 
-func (svc BookBankHttpService) SearchBookBankStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.BookBankInfo, int, error) {
+func (svc BookBankHttpService) SearchBookBankStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.BookBankInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -224,7 +224,7 @@ func (svc BookBankHttpService) SearchBookBankStep(shopID string, langCode string
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.BookBankInfo{}, 0, err
@@ -233,7 +233,7 @@ func (svc BookBankHttpService) SearchBookBankStep(shopID string, langCode string
 	return docList, total, nil
 }
 
-func (svc BookBankHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.BookBank) (common.BulkImport, error) {
+func (svc BookBankHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.BookBank) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -245,7 +245,7 @@ func (svc BookBankHttpService) SaveInBatch(shopID string, authUsername string, d
 		itemCodeGuidList = append(itemCodeGuidList, doc.PassBook)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "passbook", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "passbook", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -257,18 +257,18 @@ func (svc BookBankHttpService) SaveInBatch(shopID string, authUsername string, d
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.BookBank, models.BookBankDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.BookBank) models.BookBankDoc {
+		func(holdingCode string, authUsername string, doc models.BookBank) models.BookBankDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.BookBankDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.BookBank = doc
 
 			currentTime := time.Now()
@@ -279,23 +279,23 @@ func (svc BookBankHttpService) SaveInBatch(shopID string, authUsername string, d
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.BookBank, models.BookBankDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.BookBankDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "passbook", guid)
+		func(holdingCode string, guid string) (models.BookBankDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "passbook", guid)
 		},
 		func(doc models.BookBankDoc) bool {
 			return doc.PassBook != ""
 		},
-		func(shopID string, authUsername string, data models.BookBank, doc models.BookBankDoc) error {
+		func(holdingCode string, authUsername string, data models.BookBank, doc models.BookBankDoc) error {
 
 			doc.BookBank = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -334,7 +334,7 @@ func (svc BookBankHttpService) SaveInBatch(shopID string, authUsername string, d
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -348,9 +348,9 @@ func (svc BookBankHttpService) getDocIDKey(doc models.BookBank) string {
 	return doc.PassBook
 }
 
-func (svc BookBankHttpService) saveMasterSync(shopID string) {
+func (svc BookBankHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

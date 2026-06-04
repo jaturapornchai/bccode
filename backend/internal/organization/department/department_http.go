@@ -62,7 +62,7 @@ func (h DepartmentHttp) RegisterHttp() {
 // @Router /organization/department [post]
 func (h DepartmentHttp) CreateDepartment(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.Department{}
@@ -78,7 +78,7 @@ func (h DepartmentHttp) CreateDepartment(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreateDepartment(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateDepartment(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -105,7 +105,7 @@ func (h DepartmentHttp) CreateDepartment(ctx microservice.IContext) error {
 func (h DepartmentHttp) UpdateDepartment(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -123,7 +123,7 @@ func (h DepartmentHttp) UpdateDepartment(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateDepartment(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateDepartment(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -149,12 +149,12 @@ func (h DepartmentHttp) UpdateDepartment(ctx microservice.IContext) error {
 // @Router /organization/department/{id} [delete]
 func (h DepartmentHttp) DeleteDepartment(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteDepartment(shopID, id, authUsername)
+	err := h.svc.DeleteDepartment(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -180,7 +180,7 @@ func (h DepartmentHttp) DeleteDepartment(ctx microservice.IContext) error {
 // @Router /organization/department [delete]
 func (h DepartmentHttp) DeleteDepartmentByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -193,7 +193,7 @@ func (h DepartmentHttp) DeleteDepartmentByGUIDs(ctx microservice.IContext) error
 		return err
 	}
 
-	err = h.svc.DeleteDepartmentByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteDepartmentByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -218,12 +218,12 @@ func (h DepartmentHttp) DeleteDepartmentByGUIDs(ctx microservice.IContext) error
 // @Router /organization/department/{id} [get]
 func (h DepartmentHttp) InfoDepartment(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get Department %v", id)
-	doc, err := h.svc.InfoDepartment(shopID, id)
+	doc, err := h.svc.InfoDepartment(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -250,12 +250,12 @@ func (h DepartmentHttp) InfoDepartment(ctx microservice.IContext) error {
 // @Router /organization/department/{departmentCode}/branch/{branchCode} [get]
 func (h DepartmentHttp) InfoDepartmentByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	branchCode := ctx.Param("branchCode")
 	departmentCode := ctx.Param("departmentCode")
 
-	doc, err := h.svc.InfoDepartmentByCode(shopID, branchCode, departmentCode)
+	doc, err := h.svc.InfoDepartmentByCode(holdingCode, branchCode, departmentCode)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -282,11 +282,11 @@ func (h DepartmentHttp) InfoDepartmentByCode(ctx microservice.IContext) error {
 // @Router /organization/department [get]
 func (h DepartmentHttp) SearchDepartmentPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.SearchDepartment(shopID, departmentBranchFilters(ctx), pageable)
+	docList, pagination, err := h.svc.SearchDepartment(holdingCode, departmentBranchFilters(ctx), pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -315,13 +315,13 @@ func (h DepartmentHttp) SearchDepartmentPage(ctx microservice.IContext) error {
 // @Router /organization/department/list [get]
 func (h DepartmentHttp) SearchDepartmentStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
 	lang := ctx.QueryParam("lang")
 
-	docList, total, err := h.svc.SearchDepartmentStep(shopID, lang, departmentBranchFilters(ctx), pageableStep)
+	docList, total, err := h.svc.SearchDepartmentStep(holdingCode, lang, departmentBranchFilters(ctx), pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -363,7 +363,7 @@ func (h DepartmentHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -375,7 +375,7 @@ func (h DepartmentHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

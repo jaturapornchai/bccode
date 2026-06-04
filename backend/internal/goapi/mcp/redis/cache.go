@@ -246,8 +246,8 @@ func (c *Cache) GetRateLimitRemaining(apiKey string, limitPerMinute int) (int, i
 }
 
 // SetShopData caches shop-related data
-func (c *Cache) SetShopData(shopID string, dataType string, data interface{}, ttl time.Duration) error {
-	key := fmt.Sprintf("%s%s:%s", PrefixShopData, shopID, dataType)
+func (c *Cache) SetShopData(holdingCode string, dataType string, data interface{}, ttl time.Duration) error {
+	key := fmt.Sprintf("%s%s:%s", PrefixShopData, holdingCode, dataType)
 	if ttl == 0 {
 		ttl = TTLShopData
 	}
@@ -256,8 +256,8 @@ func (c *Cache) SetShopData(shopID string, dataType string, data interface{}, tt
 }
 
 // GetShopData retrieves cached shop data
-func (c *Cache) GetShopData(shopID string, dataType string, result interface{}) error {
-	key := fmt.Sprintf("%s%s:%s", PrefixShopData, shopID, dataType)
+func (c *Cache) GetShopData(holdingCode string, dataType string, result interface{}) error {
+	key := fmt.Sprintf("%s%s:%s", PrefixShopData, holdingCode, dataType)
 	data, exists := c.get(key)
 	if !exists {
 		return fmt.Errorf("cache miss")
@@ -294,11 +294,11 @@ func (c *Cache) GetToolResult(toolName string, params map[string]interface{}, re
 }
 
 // InvalidateShopCache clears all cached data for a shop
-func (c *Cache) InvalidateShopCache(shopID string) error {
+func (c *Cache) InvalidateShopCache(holdingCode string) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	prefix := PrefixShopData + shopID + ":"
+	prefix := PrefixShopData + holdingCode + ":"
 	for key := range c.data {
 		if len(key) >= len(prefix) && key[:len(prefix)] == prefix {
 			delete(c.data, key)

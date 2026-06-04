@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const MockShopID = "TESTSHOP"
+const MockHoldingCode = "TESTSHOP"
 
 var cache *microservice.Cacher
 var repoCacheMock repositories.MasterSyncCacheRepository
@@ -28,7 +28,7 @@ func TestSetCache(t *testing.T) {
 	if os.Getenv("SERVERLESS") == "serverless" {
 		t.Skip()
 	}
-	err := repoCacheMock.Save(MockShopID, "XTEST")
+	err := repoCacheMock.Save(MockHoldingCode, "XTEST")
 
 	if err != nil {
 		t.Error(err)
@@ -39,7 +39,7 @@ func TestGetCache(t *testing.T) {
 	if os.Getenv("SERVERLESS") == "serverless" {
 		t.Skip()
 	}
-	val, err := repoCacheMock.Get(MockShopID, "XTEST")
+	val, err := repoCacheMock.Get(MockHoldingCode, "XTEST")
 
 	if err != nil {
 		t.Error(err)
@@ -54,7 +54,7 @@ func TestSetCacheWithModule(t *testing.T) {
 	if os.Getenv("SERVERLESS") == "serverless" {
 		t.Skip()
 	}
-	err := repoCacheMock.Save(MockShopID, "XTEST")
+	err := repoCacheMock.Save(MockHoldingCode, "XTEST")
 
 	if err != nil {
 		t.Error(err)
@@ -66,7 +66,7 @@ func TestGetCacheWithModule(t *testing.T) {
 	if os.Getenv("SERVERLESS") == "serverless" {
 		t.Skip()
 	}
-	val, err := repoCacheMock.Get(MockShopID, "XTEST")
+	val, err := repoCacheMock.Get(MockHoldingCode, "XTEST")
 
 	if err != nil {
 		t.Error(err)

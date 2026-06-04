@@ -22,14 +22,14 @@ import (
 
 type IMemberService interface {
 	AuthWithLine(lineAuth models.LineAuthRequest) (string, error)
-	UpdateProfileWithLine(shopID string, lineUID string, doc models.Member) error
-	LineProfileInfo(shopID string, lineUID string) (models.MemberInfo, error)
+	UpdateProfileWithLine(holdingCode string, lineUID string, doc models.Member) error
+	LineProfileInfo(holdingCode string, lineUID string) (models.MemberInfo, error)
 
-	Create(shopID string, authUsername string, doc models.Member) (string, error)
-	Update(shopID string, username string, guid string, doc models.Member) error
-	Info(shopID string, guid string) (models.MemberInfo, error)
-	SearchMemberInfo(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.MemberInfo, mongopagination.PaginationData, error)
-	SearchMemberStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.MemberInfo, int, error)
+	Create(holdingCode string, authUsername string, doc models.Member) (string, error)
+	Update(holdingCode string, username string, guid string, doc models.Member) error
+	Info(holdingCode string, guid string) (models.MemberInfo, error)
+	SearchMemberInfo(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.MemberInfo, mongopagination.PaginationData, error)
+	SearchMemberStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.MemberInfo, int, error)
 }
 
 type MemberService struct {
@@ -62,7 +62,7 @@ func (svc MemberService) getContextTimeout() (context.Context, context.CancelFun
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc MemberService) UpdateProfileWithLine(shopID string, lineUID string, doc models.Member) error {
+func (svc MemberService) UpdateProfileWithLine(holdingCode string, lineUID string, doc models.Member) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -89,7 +89,7 @@ func (svc MemberService) UpdateProfileWithLine(shopID string, lineUID string, do
 		dataDoc.Shops = &[]string{}
 	}
 
-	*dataDoc.Shops = append(*dataDoc.Shops, shopID)
+	*dataDoc.Shops = append(*dataDoc.Shops, holdingCode)
 	*dataDoc.Shops = lo.Uniq[string](*dataDoc.Shops)
 
 	if doc.Addresses == nil {
@@ -113,9 +113,9 @@ func (svc MemberService) UpdateProfileWithLine(shopID string, lineUID string, do
 	return nil
 }
 
-func (svc MemberService) registerWithLine(shopID string, lineProfile models.LineProfile) (string, error) {
+func (svc MemberService) registerWithLine(holdingCode string, lineProfile models.LineProfile) (string, error) {
 
-	idx, err := svc.create(shopID, lineProfile.UserID, models.MemberTypeLine, models.Member{
+	idx, err := svc.create(holdingCode, lineProfile.UserID, models.MemberTypeLine, models.Member{
 		LineUID:    lineProfile.UserID,
 		Name:       lineProfile.DisplayName,
 		PictureUrl: lineProfile.PictureUrl,
@@ -126,7 +126,7 @@ func (svc MemberService) registerWithLine(shopID string, lineProfile models.Line
 		return "", err
 	}
 
-	shopInfo, err := svc.shopService.InfoShop(shopID)
+	shopInfo, err := svc.shopService.InfoShop(holdingCode)
 
 	if err != nil {
 		return "", err
@@ -160,7 +160,7 @@ func (svc MemberService) AuthWithLine(lineAuth models.LineAuthRequest) (string, 
 	memberName := ""
 
 	if findDoc.GuidFixed == "" {
-		_, err = svc.registerWithLine(lineAuth.ShopID, lineProfile)
+		_, err = svc.registerWithLine(lineAuth.HoldingCode, lineProfile)
 
 		if err != nil {
 			return "", err
@@ -174,10 +174,10 @@ func (svc MemberService) AuthWithLine(lineAuth models.LineAuthRequest) (string, 
 	}
 
 	userInfo := micromodels.UserInfo{
-		Username: lineUID,
-		Name:     memberName,
-		ShopID:   lineAuth.ShopID,
-		Role:     0,
+		Username:    lineUID,
+		Name:        memberName,
+		HoldingCode: lineAuth.HoldingCode,
+		Role:        0,
 	}
 
 	tokenID, err := svc.authService.GenerateTokenWithRedisExpire(microservice.AUTHTYPE_BEARER, userInfo, time.Duration(24*30)*time.Hour)
@@ -285,7 +285,7 @@ func (svc MemberService) LineVerify(lineToken string) (models.LineVerify, error)
 	return lineVerify, nil
 }
 
-func (svc MemberService) LineProfileInfo(shopID string, lineUID string) (models.MemberInfo, error) {
+func (svc MemberService) LineProfileInfo(holdingCode string, lineUID string) (models.MemberInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -299,7 +299,7 @@ func (svc MemberService) LineProfileInfo(shopID string, lineUID string) (models.
 	return doc.MemberInfo, nil
 }
 
-func (svc MemberService) create(shopID string, authUsername string, memberType models.MemberType, doc models.Member) (string, error) {
+func (svc MemberService) create(holdingCode string, authUsername string, memberType models.MemberType, doc models.Member) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -322,7 +322,7 @@ func (svc MemberService) create(shopID string, authUsername string, memberType m
 	dataDoc.CreatedBy = authUsername
 	dataDoc.CreatedAt = time.Now()
 	dataDoc.LastUpdatedAt = time.Now()
-	dataDoc.Shops = &[]string{shopID}
+	dataDoc.Shops = &[]string{holdingCode}
 
 	_, err := svc.repo.Create(ctx, dataDoc)
 
@@ -333,10 +333,10 @@ func (svc MemberService) create(shopID string, authUsername string, memberType m
 	return newGuid, nil
 }
 
-func (svc MemberService) Create(shopID string, authUsername string, doc models.Member) (string, error) {
+func (svc MemberService) Create(holdingCode string, authUsername string, doc models.Member) (string, error) {
 
 	doc.LineUID = ""
-	idx, err := svc.create(shopID, authUsername, models.MemberTypeCustomer, doc)
+	idx, err := svc.create(holdingCode, authUsername, models.MemberTypeCustomer, doc)
 
 	if err != nil {
 		return "", err
@@ -345,12 +345,12 @@ func (svc MemberService) Create(shopID string, authUsername string, doc models.M
 	return idx, nil
 }
 
-func (svc MemberService) Update(shopID string, username string, guid string, doc models.Member) error {
+func (svc MemberService) Update(holdingCode string, username string, guid string, doc models.Member) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -374,7 +374,7 @@ func (svc MemberService) Update(shopID string, username string, guid string, doc
 	dataDoc.UpdatedAt = time.Now()
 	dataDoc.LastUpdatedAt = time.Now()
 
-	*dataDoc.Shops = append(*dataDoc.Shops, shopID)
+	*dataDoc.Shops = append(*dataDoc.Shops, holdingCode)
 	*dataDoc.Shops = lo.Uniq[string](*dataDoc.Shops)
 
 	err = svc.repo.Update(ctx, guid, dataDoc)
@@ -386,12 +386,12 @@ func (svc MemberService) Update(shopID string, username string, guid string, doc
 	return nil
 }
 
-func (svc MemberService) Info(shopID string, guid string) (models.MemberInfo, error) {
+func (svc MemberService) Info(holdingCode string, guid string) (models.MemberInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	doc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	doc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.MemberInfo{}, err
@@ -400,7 +400,7 @@ func (svc MemberService) Info(shopID string, guid string) (models.MemberInfo, er
 	return doc.MemberInfo, nil
 }
 
-func (svc MemberService) SearchMemberInfo(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.MemberInfo, mongopagination.PaginationData, error) {
+func (svc MemberService) SearchMemberInfo(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.MemberInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -411,7 +411,7 @@ func (svc MemberService) SearchMemberInfo(shopID string, filters map[string]inte
 		"telephone",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, searchInFields, pageable)
 
 	if err != nil {
 		return []models.MemberInfo{}, pagination, err
@@ -420,7 +420,7 @@ func (svc MemberService) SearchMemberInfo(shopID string, filters map[string]inte
 	return docList, pagination, nil
 }
 
-func (svc MemberService) SearchMemberStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.MemberInfo, int, error) {
+func (svc MemberService) SearchMemberStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.MemberInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -433,7 +433,7 @@ func (svc MemberService) SearchMemberStep(shopID string, langCode string, filter
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.MemberInfo{}, 0, err

@@ -30,22 +30,22 @@ func NewMCPAPIKeyHandler() *MCPAPIKeyHandler {
 
 // CreateAPIKeyRequest represents a request to create an API key
 type CreateAPIKeyRequest struct {
-	ShopID string   `json:"shop_id"`
-	Name string   `json:"name"`
-	Description string   `json:"description"`
-	AllowedTools []string `json:"allowed_tools"`
+	HoldingCode        string   `json:"holding_code"`
+	Name               string   `json:"name"`
+	Description        string   `json:"description"`
+	AllowedTools       []string `json:"allowed_tools"`
 	RateLimitPerMinute int      `json:"rate_limit_per_minute"`
-	ExpiresAt *string  `json:"expires_at,omitempty"` // Format: YYYY-MM-DD
-	CreatedBy string   `json:"created_by"`
+	ExpiresAt          *string  `json:"expires_at,omitempty"` // Format: YYYY-MM-DD
+	CreatedBy          string   `json:"created_by"`
 }
 
 // CreateAPIKeyResponse represents the response for creating an API key
 type CreateAPIKeyResponse struct {
-	ID string    `json:"id"`
-	Name string    `json:"name"`
-	ShopID string    `json:"shop_id"`
-	CreatedAt time.Time `json:"created_at"`
-	ExpiresAt *string   `json:"expires_at,omitempty"`
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	HoldingCode string    `json:"holding_code"`
+	CreatedAt   time.Time `json:"created_at"`
+	ExpiresAt   *string   `json:"expires_at,omitempty"`
 }
 
 // CreateAPIKeyHandler creates a new MCP API key
@@ -59,10 +59,10 @@ func (h *MCPAPIKeyHandler) CreateAPIKeyHandler(c echo.Context) error {
 	}
 
 	// Validate required fields
-	if req.ShopID == "" {
+	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "shop_id is required",
-			"code":  "MISSING_SHOP_ID",
+			"error": "holding_code is required",
+			"code":  "MISSING_HOLDING_CODE",
 		})
 	}
 	if req.Name == "" {
@@ -101,7 +101,7 @@ func (h *MCPAPIKeyHandler) CreateAPIKeyHandler(c echo.Context) error {
 	// Create API key document
 	apiKey := &mongodb.APIKey{
 		APIKey:             apiKeyStr,
-		ShopID:             req.ShopID,
+		HoldingCode:        req.HoldingCode,
 		Name:               req.Name,
 		Description:        req.Description,
 		IsActive:           true,
@@ -131,32 +131,32 @@ func (h *MCPAPIKeyHandler) CreateAPIKeyHandler(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusCreated, CreateAPIKeyResponse{
-		ID:        createdKey.ID.Hex(),
-		Name:      createdKey.Name,
-		ShopID:    createdKey.ShopID,
-		CreatedAt: createdKey.CreatedAt,
-		ExpiresAt: expiresAtStr,
+		ID:          createdKey.ID.Hex(),
+		Name:        createdKey.Name,
+		HoldingCode: createdKey.HoldingCode,
+		CreatedAt:   createdKey.CreatedAt,
+		ExpiresAt:   expiresAtStr,
 	})
 }
 
 // ListAPIKeysHandler lists all API keys for a shop
 type ListAPIKeysRequest struct {
-	ShopID string `query:"shop_id"`
+	HoldingCode string `query:"holding_code"`
 }
 
 func (h *MCPAPIKeyHandler) ListAPIKeysHandler(c echo.Context) error {
-	shopID := c.QueryParam("shop_id")
-	if shopID == "" {
+	holdingCode := c.QueryParam("holding_code")
+	if holdingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "shop_id is required",
-			"code":  "MISSING_SHOP_ID",
+			"error": "holding_code is required",
+			"code":  "MISSING_HOLDING_CODE",
 		})
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	apiKeys, err := h.keysRepo.GetAPIKeysByShop(ctx, shopID)
+	apiKeys, err := h.keysRepo.GetAPIKeysByShop(ctx, holdingCode)
 	if err != nil {
 		logger.Error("Failed to get API keys: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{
@@ -172,14 +172,13 @@ func (h *MCPAPIKeyHandler) ListAPIKeysHandler(c echo.Context) error {
 			"id":                    key.ID.Hex(),
 			"name":                  key.Name,
 			"description":           key.Description,
-			"shop_id":               key.ShopID,
+			"holding_code":          key.HoldingCode,
 			"is_active":             key.IsActive,
 			"allowed_tools":         key.AllowedTools,
 			"rate_limit_per_minute": key.RateLimitPerMinute,
 			"created_at":            key.CreatedAt,
 			"created_by":            key.CreatedBy,
 		}
-
 
 		if key.ExpiresAt != nil {
 			keyData["expires_at"] = key.ExpiresAt.Format("2006-01-02")
@@ -250,10 +249,10 @@ func (h *MCPAPIKeyHandler) DeleteAPIKeyHandler(c echo.Context) error {
 
 // UpdateAPIKeyRequest represents a request to update an API key
 type UpdateAPIKeyRequest struct {
-	Name *string  `json:"name,omitempty"`
-	Description *string  `json:"description,omitempty"`
-	IsActive *bool    `json:"is_active,omitempty"`
-	AllowedTools []string `json:"allowed_tools,omitempty"`
+	Name               *string  `json:"name,omitempty"`
+	Description        *string  `json:"description,omitempty"`
+	IsActive           *bool    `json:"is_active,omitempty"`
+	AllowedTools       []string `json:"allowed_tools,omitempty"`
 	RateLimitPerMinute *int     `json:"rate_limit_per_minute,omitempty"`
 }
 
@@ -368,7 +367,7 @@ func (h *MCPAPIKeyHandler) GetAPIKeyHandler(c echo.Context) error {
 		"id":                    apiKey.ID.Hex(),
 		"name":                  apiKey.Name,
 		"description":           apiKey.Description,
-		"shop_id":               apiKey.ShopID,
+		"holding_code":          apiKey.HoldingCode,
 		"is_active":             apiKey.IsActive,
 		"allowed_tools":         apiKey.AllowedTools,
 		"rate_limit_per_minute": apiKey.RateLimitPerMinute,
@@ -391,17 +390,17 @@ func (h *MCPAPIKeyHandler) GetAPIKeyHandler(c echo.Context) error {
 
 // GetAuditLogsHandler gets audit logs for a shop
 type GetAuditLogsRequest struct {
-	ShopID string `query:"shop_id"`
-	Limit  int64  `query:"limit"`
-	Skip   int64  `query:"skip"`
+	HoldingCode string `query:"holding_code"`
+	Limit       int64  `query:"limit"`
+	Skip        int64  `query:"skip"`
 }
 
 func (h *MCPAPIKeyHandler) GetAuditLogsHandler(c echo.Context) error {
-	shopID := c.QueryParam("shop_id")
-	if shopID == "" {
+	holdingCode := c.QueryParam("holding_code")
+	if holdingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "shop_id is required",
-			"code":  "MISSING_SHOP_ID",
+			"error": "holding_code is required",
+			"code":  "MISSING_HOLDING_CODE",
 		})
 	}
 
@@ -422,7 +421,7 @@ func (h *MCPAPIKeyHandler) GetAuditLogsHandler(c echo.Context) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	logs, err := h.keysRepo.GetAuditLogsByShop(ctx, shopID, limit, skip)
+	logs, err := h.keysRepo.GetAuditLogsByShop(ctx, holdingCode, limit, skip)
 	if err != nil {
 		logger.Error("Failed to get audit logs: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{
@@ -436,7 +435,7 @@ func (h *MCPAPIKeyHandler) GetAuditLogsHandler(c echo.Context) error {
 		logData := map[string]interface{}{
 			"id":                log.ID.Hex(),
 			"api_key_id":        log.APIKeyID.Hex(),
-			"shop_id":           log.ShopID,
+			"holding_code":      log.HoldingCode,
 			"tool_name":         log.ToolName,
 			"request_params":    log.RequestParams,
 			"response_status":   log.ResponseStatus,
@@ -498,7 +497,7 @@ func (h *MCPAPIKeyHandler) ExportAPIKeyHandler(c echo.Context) error {
 	// สร้าง export data
 	exportData := tools.GenerateTokenExport(
 		apiKey.APIKey,
-		apiKey.ShopID,
+		apiKey.HoldingCode,
 		apiKey.Name,
 		serverURL,
 		apiKey.ExpiresAt,
@@ -507,7 +506,7 @@ func (h *MCPAPIKeyHandler) ExportAPIKeyHandler(c echo.Context) error {
 
 	// บันทึก token file (background)
 	go func() {
-		if saveErr := tools.SaveTokenFile(apiKey.ShopID, keyID, exportData); saveErr != nil {
+		if saveErr := tools.SaveTokenFile(apiKey.HoldingCode, keyID, exportData); saveErr != nil {
 			logger.Error("Failed to save token file: %v", saveErr)
 		}
 	}()
@@ -528,10 +527,10 @@ func (h *MCPAPIKeyHandler) CreateAPIKeyWithExportHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" {
+	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "shop_id is required",
-			"code":  "MISSING_SHOP_ID",
+			"error": "holding_code is required",
+			"code":  "MISSING_HOLDING_CODE",
 		})
 	}
 	if req.Name == "" {
@@ -570,7 +569,7 @@ func (h *MCPAPIKeyHandler) CreateAPIKeyWithExportHandler(c echo.Context) error {
 
 	apiKey := &mongodb.APIKey{
 		APIKey:             apiKeyStr,
-		ShopID:             req.ShopID,
+		HoldingCode:        req.HoldingCode,
 		Name:               req.Name,
 		Description:        req.Description,
 		IsActive:           true,
@@ -600,7 +599,7 @@ func (h *MCPAPIKeyHandler) CreateAPIKeyWithExportHandler(c echo.Context) error {
 
 	exportData := tools.GenerateTokenExport(
 		createdKey.APIKey,
-		createdKey.ShopID,
+		createdKey.HoldingCode,
 		createdKey.Name,
 		serverURL,
 		createdKey.ExpiresAt,
@@ -609,7 +608,7 @@ func (h *MCPAPIKeyHandler) CreateAPIKeyWithExportHandler(c echo.Context) error {
 
 	// บันทึก token file (background)
 	go func() {
-		if saveErr := tools.SaveTokenFile(createdKey.ShopID, createdKey.ID.Hex(), exportData); saveErr != nil {
+		if saveErr := tools.SaveTokenFile(createdKey.HoldingCode, createdKey.ID.Hex(), exportData); saveErr != nil {
 			logger.Error("Failed to save token file: %v", saveErr)
 		}
 	}()
@@ -617,10 +616,10 @@ func (h *MCPAPIKeyHandler) CreateAPIKeyWithExportHandler(c echo.Context) error {
 	return c.JSON(http.StatusCreated, map[string]interface{}{
 		"success": true,
 		"data": map[string]interface{}{
-			"id":         createdKey.ID.Hex(),
-			"name":       createdKey.Name,
-			"shop_id":    createdKey.ShopID,
-			"created_at": createdKey.CreatedAt,
+			"id":           createdKey.ID.Hex(),
+			"name":         createdKey.Name,
+			"holding_code": createdKey.HoldingCode,
+			"created_at":   createdKey.CreatedAt,
 			"expires_at": func() *string {
 				if createdKey.ExpiresAt != nil {
 					s := createdKey.ExpiresAt.Format("2006-01-02")
@@ -635,9 +634,9 @@ func (h *MCPAPIKeyHandler) CreateAPIKeyWithExportHandler(c echo.Context) error {
 
 // ToolInfo describes a single MCP tool for the frontend catalog
 type ToolInfo struct {
-	Name string `json:"name"`
+	Name     string `json:"name"`
 	Category string `json:"category"`
-	IsWrite bool   `json:"is_write"`
+	IsWrite  bool   `json:"is_write"`
 }
 
 // GetAvailableToolsHandler returns all MCP tools grouped by category + write flag
@@ -722,7 +721,7 @@ func (h *MCPAPIKeyHandler) GetAvailableToolsHandler(c echo.Context) error {
 	// Build ordered response
 	type CategoryGroup struct {
 		Category string     `json:"category"`
-		Tools []ToolInfo `json:"tools"`
+		Tools    []ToolInfo `json:"tools"`
 	}
 	var groups []CategoryGroup
 	for _, cat := range categoryOrder {
@@ -732,31 +731,31 @@ func (h *MCPAPIKeyHandler) GetAvailableToolsHandler(c echo.Context) error {
 	// Permission presets
 	presets := []map[string]interface{}{
 		{
-			"value":       "readonly",
-			"label":       "Readonly",
-			"description": "ดูข้อมูลอย่างเดียว (เหมาะกับ Claude Desktop, frontend dev)",
+			"value":         "readonly",
+			"label":         "Readonly",
+			"description":   "ดูข้อมูลอย่างเดียว (เหมาะกับ Claude Desktop, frontend dev)",
 			"allowed_tools": []string{"readonly"},
 		},
 		{
-			"value":       "developer",
-			"label":       "Developer",
-			"description": "ทุก tool รวม create/update/delete (เหมาะกับ backend dev)",
+			"value":         "developer",
+			"label":         "Developer",
+			"description":   "ทุก tool รวม create/update/delete (เหมาะกับ backend dev)",
 			"allowed_tools": []string{"*"},
 		},
 		{
-			"value":       "custom",
-			"label":       "Custom",
-			"description": "เลือก tools เองทีละตัว",
+			"value":         "custom",
+			"label":         "Custom",
+			"description":   "เลือก tools เองทีละตัว",
 			"allowed_tools": nil,
 		},
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"success":       true,
-		"categories":    groups,
-		"presets":       presets,
-		"total_tools":   len(catalog),
-		"write_tools":   len(tools.WriteTools),
+		"success":        true,
+		"categories":     groups,
+		"presets":        presets,
+		"total_tools":    len(catalog),
+		"write_tools":    len(tools.WriteTools),
 		"readonly_tools": len(catalog) - len(tools.WriteTools),
 	})
 }

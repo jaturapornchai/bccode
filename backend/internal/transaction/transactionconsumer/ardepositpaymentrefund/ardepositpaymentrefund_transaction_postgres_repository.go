@@ -7,11 +7,11 @@ import (
 )
 
 type IARDepositPaymentRefundTransactionPGRepository interface {
-	Get(shopID string, docNo string) (*models.ARDepositPaymentRefundTransactionPG, error)
+	Get(holdingCode string, docNo string) (*models.ARDepositPaymentRefundTransactionPG, error)
 	Create(doc models.ARDepositPaymentRefundTransactionPG) error
-	Update(shopID string, docNo string, doc models.ARDepositPaymentRefundTransactionPG) error
-	Delete(shopID string, docNo string, doc models.ARDepositPaymentRefundTransactionPG) error
-	DeleteData(shopID string, docNo string, doc models.ARDepositPaymentRefundTransactionPG) error
+	Update(holdingCode string, docNo string, doc models.ARDepositPaymentRefundTransactionPG) error
+	Delete(holdingCode string, docNo string, doc models.ARDepositPaymentRefundTransactionPG) error
+	DeleteData(holdingCode string, docNo string, doc models.ARDepositPaymentRefundTransactionPG) error
 }
 
 type ARDepositPaymentRefundTransactionPGRepository struct {
@@ -37,11 +37,11 @@ func (repo ARDepositPaymentRefundTransactionPGRepository) Create(doc models.ARDe
 	return nil
 }
 
-func (repo ARDepositPaymentRefundTransactionPGRepository) Update(shopID string, docNo string, doc models.ARDepositPaymentRefundTransactionPG) error {
+func (repo ARDepositPaymentRefundTransactionPGRepository) Update(holdingCode string, docNo string, doc models.ARDepositPaymentRefundTransactionPG) error {
 
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"shopid": shopID,
-		"docno":  docNo,
+		"holding_code": holdingCode,
+		"docno":        docNo,
 	})
 	if err != nil {
 		return err
@@ -49,12 +49,12 @@ func (repo ARDepositPaymentRefundTransactionPGRepository) Update(shopID string, 
 	return nil
 }
 
-func (repo *ARDepositPaymentRefundTransactionPGRepository) DeleteData(shopID string, docNo string, doc models.ARDepositPaymentRefundTransactionPG) error {
+func (repo *ARDepositPaymentRefundTransactionPGRepository) DeleteData(holdingCode string, docNo string, doc models.ARDepositPaymentRefundTransactionPG) error {
 
 	var details *[]models.ARDepositPaymentRefundTransactionDetailPG
 	tx := repo.pst.DBClient().Begin()
 
-	tx.Model(&models.ARDepositPaymentRefundTransactionDetailPG{}).Where(" shopid=? AND docno=?", shopID, docNo).Find(&details)
+	tx.Model(&models.ARDepositPaymentRefundTransactionDetailPG{}).Where(" holding_code=? AND docno=?", holdingCode, docNo).Find(&details)
 	for _, tmp := range *details {
 		err := tx.Delete(&models.ARDepositPaymentRefundTransactionDetailPG{}, tmp.ID).Error
 		if err != nil {
@@ -64,8 +64,8 @@ func (repo *ARDepositPaymentRefundTransactionPGRepository) DeleteData(shopID str
 	}
 
 	err := tx.Delete(&models.ARDepositPaymentRefundTransactionPG{}, map[string]interface{}{
-		"shopid": shopID,
-		"docno":  docNo,
+		"holding_code": holdingCode,
+		"docno":        docNo,
 	}).Error
 	if err != nil {
 		tx.Rollback()

@@ -13,26 +13,26 @@ import (
 )
 
 type ICostCenterRepository interface {
-	Count(ctx context.Context, shopID string) (int, error)
+	Count(ctx context.Context, holdingCode string) (int, error)
 	Create(ctx context.Context, doc models.CostCenterDoc) (string, error)
 	CreateInBatch(ctx context.Context, docList []models.CostCenterDoc) error
-	Update(ctx context.Context, shopID string, guid string, doc models.CostCenterDoc) error
-	DeleteByGuidfixed(ctx context.Context, shopID string, guid string, username string) error
-	Delete(ctx context.Context, shopID string, username string, filters map[string]interface{}) error
-	FindPage(ctx context.Context, shopID string, searchInFields []string, pageable micromodels.Pageable) ([]models.CostCenterInfo, mongopagination.PaginationData, error)
-	FindByGuid(ctx context.Context, shopID string, guid string) (models.CostCenterDoc, error)
+	Update(ctx context.Context, holdingCode string, guid string, doc models.CostCenterDoc) error
+	DeleteByGuidfixed(ctx context.Context, holdingCode string, guid string, username string) error
+	Delete(ctx context.Context, holdingCode string, username string, filters map[string]interface{}) error
+	FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable micromodels.Pageable) ([]models.CostCenterInfo, mongopagination.PaginationData, error)
+	FindByGuid(ctx context.Context, holdingCode string, guid string) (models.CostCenterDoc, error)
 
-	FindInItemGuid(ctx context.Context, shopID string, columnName string, itemGuidList []string) ([]models.CostCenterItemGuid, error)
-	FindByDocIndentityGuid(ctx context.Context, shopID string, indentityField string, indentityValue interface{}) (models.CostCenterDoc, error)
-	FindPageFilter(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.CostCenterInfo, mongopagination.PaginationData, error)
-	FindStep(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableLimit micromodels.PageableStep) ([]models.CostCenterInfo, int, error)
+	FindInItemGuid(ctx context.Context, holdingCode string, columnName string, itemGuidList []string) ([]models.CostCenterItemGuid, error)
+	FindByDocIndentityGuid(ctx context.Context, holdingCode string, indentityField string, indentityValue interface{}) (models.CostCenterDoc, error)
+	FindPageFilter(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.CostCenterInfo, mongopagination.PaginationData, error)
+	FindStep(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableLimit micromodels.PageableStep) ([]models.CostCenterInfo, int, error)
 
-	FindDeletedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.CostCenterDeleteActivity, mongopagination.PaginationData, error)
-	FindCreatedOrUpdatedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.CostCenterActivity, mongopagination.PaginationData, error)
-	FindDeletedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.CostCenterDeleteActivity, error)
-	FindCreatedOrUpdatedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.CostCenterActivity, error)
+	FindDeletedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.CostCenterDeleteActivity, mongopagination.PaginationData, error)
+	FindCreatedOrUpdatedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.CostCenterActivity, mongopagination.PaginationData, error)
+	FindDeletedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.CostCenterDeleteActivity, error)
+	FindCreatedOrUpdatedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.CostCenterActivity, error)
 
-	FindOneByCode(ctx context.Context, shopID, branchCode, costCenterCode string) (models.CostCenterDoc, error)
+	FindOneByCode(ctx context.Context, holdingCode, branchCode, costCenterCode string) (models.CostCenterDoc, error)
 }
 
 type CostCenterRepository struct {
@@ -57,13 +57,13 @@ func NewCostCenterRepository(pst microservice.IPersisterMongo) *CostCenterReposi
 	return insRepo
 }
 
-func (repo CostCenterRepository) FindOneByCode(ctx context.Context, shopID string, branchCode, costCenterCode string) (models.CostCenterDoc, error) {
+func (repo CostCenterRepository) FindOneByCode(ctx context.Context, holdingCode string, branchCode, costCenterCode string) (models.CostCenterDoc, error) {
 	doc := models.CostCenterDoc{}
 	err := repo.pst.FindOne(ctx,
 		models.CostCenterDoc{},
 		bson.M{
-			"shopid":         shopID,
-			"deleted_at":      bson.M{"$exists": false},
+			"holding_code":   holdingCode,
+			"deleted_at":     bson.M{"$exists": false},
 			"branchcode":     branchCode,
 			"costcentercode": costCenterCode,
 		}, &doc)

@@ -9,8 +9,8 @@ import (
 )
 
 type IStockReturnProductTransactionAdminRepository interface {
-	FindStockReturnProductDocByShopID(ctx context.Context, shopID string) ([]stockreturnproductmodels.StockReturnProductDoc, error)
-	FindStockReturnProductDeleteDocByShopID(ctx context.Context, shopID string) ([]stockreturnproductmodels.StockReturnProductDoc, error)
+	FindStockReturnProductDocByHoldingCode(ctx context.Context, holdingCode string) ([]stockreturnproductmodels.StockReturnProductDoc, error)
+	FindStockReturnProductDeleteDocByHoldingCode(ctx context.Context, holdingCode string) ([]stockreturnproductmodels.StockReturnProductDoc, error)
 }
 
 type StockReturnProductTransactionAdminRepository struct {
@@ -23,13 +23,13 @@ func NewStockReturnProductTransactionAdminRepository(pst microservice.IPersister
 	}
 }
 
-func (r *StockReturnProductTransactionAdminRepository) FindStockReturnProductDocByShopID(ctx context.Context, shopID string) ([]stockreturnproductmodels.StockReturnProductDoc, error) {
+func (r *StockReturnProductTransactionAdminRepository) FindStockReturnProductDocByHoldingCode(ctx context.Context, holdingCode string) ([]stockreturnproductmodels.StockReturnProductDoc, error) {
 	docList := []stockreturnproductmodels.StockReturnProductDoc{}
 
 	err := r.pst.Find(ctx, &stockreturnproductmodels.StockReturnProductDoc{},
 		bson.M{
-			"shopid":    shopID,
-			"deleted_at": bson.M{"$exists": false},
+			"holding_code": holdingCode,
+			"deleted_at":   bson.M{"$exists": false},
 		},
 		&docList)
 	if err != nil {
@@ -39,13 +39,13 @@ func (r *StockReturnProductTransactionAdminRepository) FindStockReturnProductDoc
 	return docList, nil
 }
 
-func (r *StockReturnProductTransactionAdminRepository) FindStockReturnProductDeleteDocByShopID(ctx context.Context, shopID string) ([]stockreturnproductmodels.StockReturnProductDoc, error) {
+func (r *StockReturnProductTransactionAdminRepository) FindStockReturnProductDeleteDocByHoldingCode(ctx context.Context, holdingCode string) ([]stockreturnproductmodels.StockReturnProductDoc, error) {
 	docList := []stockreturnproductmodels.StockReturnProductDoc{}
 
 	err := r.pst.Find(ctx, &stockreturnproductmodels.StockReturnProductDoc{},
 		bson.M{
-			"shopid":    shopID,
-			"deleted_at": bson.M{"$exists": true},
+			"holding_code": holdingCode,
+			"deleted_at":   bson.M{"$exists": true},
 		},
 		&docList)
 	if err != nil {

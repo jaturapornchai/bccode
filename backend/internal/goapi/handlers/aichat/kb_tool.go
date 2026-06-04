@@ -37,12 +37,12 @@ const (
 
 // executeKBQuery ค้นหาเอกสารใน RAGFlow แล้วคืน chunks ให้ AI สังเคราะห์เอง
 //
-// shopID: ดึงจาก agent context (ลูกค้าคนปัจจุบัน)
+// holdingCode: ดึงจาก agent context (ลูกค้าคนปัจจุบัน)
 // params: tool args จาก AI — ต้องมี "query" field
-func executeKBQuery(ctx context.Context, shopID string, params map[string]any) (any, error) {
+func executeKBQuery(ctx context.Context, holdingCode string, params map[string]any) (any, error) {
 	_ = ctx // ragflow client uses its own timeout
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 
 	// ดึง query จาก params (รองรับชื่อ alias เผื่อ AI สับสน)
@@ -81,10 +81,10 @@ func executeKBQuery(ctx context.Context, shopID string, params map[string]any) (
 		return nil, fmt.Errorf("knowledge base is not configured (RAGFLOW_API_KEY missing) — ขอให้ admin ตั้งค่า RAGFlow API key ก่อนใช้งาน")
 	}
 
-	logger.Info("[KB Tool] query shop=%s len=%d top_k=%d", shopID, len(query), topK)
+	logger.Info("[KB Tool] query shop=%s len=%d top_k=%d", holdingCode, len(query), topK)
 	start := time.Now()
 
-	datasetID, err := client.EnsureDataset(shopID)
+	datasetID, err := client.EnsureDataset(holdingCode)
 	if err != nil {
 		return nil, fmt.Errorf("ensure dataset: %w", err)
 	}
@@ -95,7 +95,7 @@ func executeKBQuery(ctx context.Context, shopID string, params map[string]any) (
 	}
 
 	tookMs := time.Since(start).Milliseconds()
-	logger.Info("[KB Tool] retrieved %d chunks shop=%s took=%dms", len(chunks), shopID, tookMs)
+	logger.Info("[KB Tool] retrieved %d chunks shop=%s took=%dms", len(chunks), holdingCode, tookMs)
 
 	// Build compact result for AI consumption.
 	// Each chunk: content (truncated), document name (from doc_keyword), similarity.
@@ -125,7 +125,7 @@ func executeKBQuery(ctx context.Context, shopID string, params map[string]any) (
 		return map[string]any{
 			"found":          false,
 			"source":         "knowledge_base",
-			"shop_id":        shopID,
+			"holding_code":   holdingCode,
 			"dataset_id":     datasetID,
 			"original_query": query,
 			"message":        "ไม่พบเอกสารที่เกี่ยวข้องกับคำถามใน Knowledge Base — ลอง upload เอกสารเพิ่ม หรือใช้คำค้นอื่น",
@@ -135,7 +135,7 @@ func executeKBQuery(ctx context.Context, shopID string, params map[string]any) (
 	return map[string]any{
 		"found":          true,
 		"source":         "knowledge_base",
-		"shop_id":        shopID,
+		"holding_code":   holdingCode,
 		"dataset_id":     datasetID,
 		"original_query": query,
 		"chunk_count":    len(results),
@@ -157,8 +157,8 @@ func executeKBQuery(ctx context.Context, shopID string, params map[string]any) (
 //   - topK is small (5) because this runs on every request; we want fast + cheap.
 //   - The block is wrapped with EXTERNAL_UNTRUSTED_CONTENT markers, matching the
 //     security convention used for tool results elsewhere in the agent.
-func buildKBContextMessage(shopID, question string) (string, []Citation) {
-	if shopID == "" || strings.TrimSpace(question) == "" {
+func buildKBContextMessage(holdingCode, question string) (string, []Citation) {
+	if holdingCode == "" || strings.TrimSpace(question) == "" {
 		return "", nil
 	}
 	client := ragflow.GetClient()
@@ -166,9 +166,9 @@ func buildKBContextMessage(shopID, question string) (string, []Citation) {
 		return "", nil
 	}
 
-	datasetID, err := client.EnsureDataset(shopID)
+	datasetID, err := client.EnsureDataset(holdingCode)
 	if err != nil {
-		logger.Warn("[KB Pre-Fetch] EnsureDataset shop=%s: %v", shopID, err)
+		logger.Warn("[KB Pre-Fetch] EnsureDataset shop=%s: %v", holdingCode, err)
 		return "", nil
 	}
 
@@ -186,13 +186,13 @@ func buildKBContextMessage(shopID, question string) (string, []Citation) {
 	start := time.Now()
 	chunks, err := client.Retrieve(retrievalQuery, []string{datasetID}, 5)
 	if err != nil {
-		logger.Warn("[KB Pre-Fetch] Retrieve shop=%s: %v", shopID, err)
+		logger.Warn("[KB Pre-Fetch] Retrieve shop=%s: %v", holdingCode, err)
 		return "", nil
 	}
 	tookMs := time.Since(start).Milliseconds()
 
 	if len(chunks) == 0 {
-		logger.Info("[KB Pre-Fetch] no chunks shop=%s took=%dms", shopID, tookMs)
+		logger.Info("[KB Pre-Fetch] no chunks shop=%s took=%dms", holdingCode, tookMs)
 		return "", nil
 	}
 
@@ -239,7 +239,7 @@ func buildKBContextMessage(shopID, question string) (string, []Citation) {
 	b.WriteString("<<<END_EXTERNAL_UNTRUSTED_CONTENT>>>")
 
 	logger.Info("[KB Pre-Fetch] injected %d chunks (%d chars, %d citations) shop=%s took=%dms",
-		len(chunks), totalChars, len(citations), shopID, tookMs)
+		len(chunks), totalChars, len(citations), holdingCode, tookMs)
 	return b.String(), citations
 }
 
@@ -298,12 +298,12 @@ func truncateString(s string, maxChars int) string {
 // dispatchAgentTool — ศูนย์กลางเรียก tool ของ agent
 //
 // แยกออกมาเพื่อให้ทั้ง v2 (parallel batch) และ ReAct ใช้ logic เดียวกัน:
-//   - tool พิเศษที่ต้องรู้ shopID (เช่น query_knowledge_base) → handle inline
+//   - tool พิเศษที่ต้องรู้ holdingCode (เช่น query_knowledge_base) → handle inline
 //   - tool ปกติ → ส่งต่อไป MCP server
 func dispatchAgentTool(ctx context.Context, mcpExec func(context.Context, string, map[string]any) (any, error),
-	shopID, toolName string, params map[string]any) (any, error) {
+	holdingCode, toolName string, params map[string]any) (any, error) {
 	if toolName == kbQueryToolName {
-		return executeKBQuery(ctx, shopID, params)
+		return executeKBQuery(ctx, holdingCode, params)
 	}
 	return mcpExec(ctx, toolName, params)
 }

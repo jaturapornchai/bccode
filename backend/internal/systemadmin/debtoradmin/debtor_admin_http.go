@@ -51,7 +51,7 @@ func (s *DebtorAdminHttp) ReSyncDebtor(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = s.svc.ReSyncDebtor(req.ShopID)
+	err = s.svc.ReSyncDebtor(req.HoldingCode)
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, common.ApiResponse{
 			Success: false,
@@ -78,7 +78,7 @@ func (s *DebtorAdminHttp) ReCalcDebtorBalance(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = s.svc.ReCalcDebtorBalance(req.ShopID)
+	err = s.svc.ReCalcDebtorBalance(req.HoldingCode)
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, common.ApiResponse{
 			Success: false,

@@ -10,10 +10,10 @@ const groupsuboneproductCollectionName = "groupsuboneProductMaster"
 
 type GroupsuboneProduct struct {
 	models.PartitionIdentity `bson:"inline"`
-	Code string          `json:"code" bson:"code"`
-	Names *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
-	GroupMainGuid string          `json:"group_main_guid" bson:"group_main_guid"`
-	GroupMainNames *[]models.NameX `json:"group_main_names" bson:"-"`
+	Code                     string          `json:"code" bson:"code"`
+	Names                    *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
+	GroupMainGuid            string          `json:"group_main_guid" bson:"group_main_guid"`
+	GroupMainNames           *[]models.NameX `json:"group_main_names" bson:"-"`
 }
 
 type GroupsuboneProductInfo struct {
@@ -26,12 +26,12 @@ func (GroupsuboneProductInfo) CollectionName() string {
 }
 
 type GroupsuboneProductData struct {
-	models.ShopIdentity    `bson:"inline"`
-	GroupsuboneProductInfo `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	GroupsuboneProductInfo   `bson:"inline"`
 }
 
 type GroupsuboneProductDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                     primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	GroupsuboneProductData `bson:"inline"`
 	models.ActivityDoc     `bson:"inline"`
 }

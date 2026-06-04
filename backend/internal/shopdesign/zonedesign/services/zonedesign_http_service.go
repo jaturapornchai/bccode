@@ -15,11 +15,11 @@ import (
 )
 
 type IZoneDesignService interface {
-	CreateZoneDesign(shopID string, authUsername string, category models.ZoneDesign) (string, error)
-	UpdateZoneDesign(shopID string, guid string, authUsername string, category models.ZoneDesign) error
-	DeleteZoneDesign(shopID string, guid string, authUsername string) error
-	InfoZoneDesign(shopID string, guid string) (models.ZoneDesignInfo, error)
-	SearchZoneDesign(shopID string, pageable micromodels.Pageable) ([]models.ZoneDesignInfo, mongopagination.PaginationData, error)
+	CreateZoneDesign(holdingCode string, authUsername string, category models.ZoneDesign) (string, error)
+	UpdateZoneDesign(holdingCode string, guid string, authUsername string, category models.ZoneDesign) error
+	DeleteZoneDesign(holdingCode string, guid string, authUsername string) error
+	InfoZoneDesign(holdingCode string, guid string) (models.ZoneDesignInfo, error)
+	SearchZoneDesign(holdingCode string, pageable micromodels.Pageable) ([]models.ZoneDesignInfo, mongopagination.PaginationData, error)
 }
 
 type ZoneDesignService struct {
@@ -41,7 +41,7 @@ func (svc ZoneDesignService) getContextTimeout() (context.Context, context.Cance
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc ZoneDesignService) CreateZoneDesign(shopID string, authUsername string, doc models.ZoneDesign) (string, error) {
+func (svc ZoneDesignService) CreateZoneDesign(holdingCode string, authUsername string, doc models.ZoneDesign) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -49,7 +49,7 @@ func (svc ZoneDesignService) CreateZoneDesign(shopID string, authUsername string
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.ZoneDesignDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.ZoneDesign = doc
 
@@ -64,12 +64,12 @@ func (svc ZoneDesignService) CreateZoneDesign(shopID string, authUsername string
 	return newGuidFixed, nil
 }
 
-func (svc ZoneDesignService) UpdateZoneDesign(shopID string, guid string, authUsername string, category models.ZoneDesign) error {
+func (svc ZoneDesignService) UpdateZoneDesign(holdingCode string, guid string, authUsername string, category models.ZoneDesign) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -84,7 +84,7 @@ func (svc ZoneDesignService) UpdateZoneDesign(shopID string, guid string, authUs
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, findDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, findDoc)
 
 	if err != nil {
 		return err
@@ -92,12 +92,12 @@ func (svc ZoneDesignService) UpdateZoneDesign(shopID string, guid string, authUs
 	return nil
 }
 
-func (svc ZoneDesignService) DeleteZoneDesign(shopID string, guid string, authUsername string) error {
+func (svc ZoneDesignService) DeleteZoneDesign(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	err := svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err := svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 
 	if err != nil {
 		return err
@@ -105,12 +105,12 @@ func (svc ZoneDesignService) DeleteZoneDesign(shopID string, guid string, authUs
 	return nil
 }
 
-func (svc ZoneDesignService) InfoZoneDesign(shopID string, guid string) (models.ZoneDesignInfo, error) {
+func (svc ZoneDesignService) InfoZoneDesign(holdingCode string, guid string) (models.ZoneDesignInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.ZoneDesignInfo{}, err
@@ -124,7 +124,7 @@ func (svc ZoneDesignService) InfoZoneDesign(shopID string, guid string) (models.
 
 }
 
-func (svc ZoneDesignService) SearchZoneDesign(shopID string, pageable micromodels.Pageable) ([]models.ZoneDesignInfo, mongopagination.PaginationData, error) {
+func (svc ZoneDesignService) SearchZoneDesign(holdingCode string, pageable micromodels.Pageable) ([]models.ZoneDesignInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -137,7 +137,7 @@ func (svc ZoneDesignService) SearchZoneDesign(shopID string, pageable micromodel
 		searchInFields = append(searchInFields, fmt.Sprintf("name%d", (i+1)))
 	}
 
-	docList, pagination, err := svc.repo.FindPage(ctx, shopID, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPage(ctx, holdingCode, searchInFields, pageable)
 
 	if err != nil {
 		return []models.ZoneDesignInfo{}, pagination, err

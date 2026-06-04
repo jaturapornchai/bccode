@@ -94,7 +94,7 @@ func (m *MasterCenter) CheckMasterShop() error {
 			return err
 		}
 
-		findUserShop, err := m.userShopRepo.FindByShopIDAndUsername(context.TODO(), masterShop.GuidFixed, masterUser.Username)
+		findUserShop, err := m.userShopRepo.FindByHoldingCodeAndUsername(context.TODO(), masterShop.GuidFixed, masterUser.Username)
 		if err != nil {
 			return err
 		}

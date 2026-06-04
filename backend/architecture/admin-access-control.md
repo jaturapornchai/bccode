@@ -8,7 +8,7 @@ Design access control for BC Ai Account so:
 - The first admin can assign which email addresses are platform admins.
 - Admin can assign which email addresses are owners for all companies in a company group.
 - Admin/owner can assign which email addresses can access which company/business and which branches.
-- Existing core `shopid` data remains unchanged. Logical `tenant_id` uses the same value as existing `shopid`. Some newer GoAPI/MCP modules use `shop_id` as an API/DTO field and must map it explicitly.
+- Existing core `holding_code` data remains unchanged. Logical `tenant_id` uses the same value as existing `holding_code`. Some newer GoAPI/MCP modules use `holding_code` as an API/DTO field and must map it explicitly.
 
 ## Scope Model
 
@@ -17,7 +17,7 @@ Use these scopes:
 ```text
 platform          = whole BC Ai Account installation
 company_group_id  = owner group that contains many companies/businesses
-tenant_id         = one company/business, same value as core shopid for existing data
+tenant_id         = one company/business, same value as core holding_code for existing data
 branch_id         = one branch under tenant_id
 user_id/email     = person identity from login provider
 ```
@@ -112,11 +112,11 @@ company_groups(
 
 ### Tenants
 
-Use existing core `shopid` as tenant id.
+Use existing core `holding_code` as tenant id.
 
 ```text
 tenants(
-  tenant_id,          # same value as core shopid
+  tenant_id,          # same value as core holding_code
   company_group_id,
   name,
   status,
@@ -136,7 +136,7 @@ access_grants(
   id,
   email_normalized,
   company_group_id,
-  tenant_id,          # same value as core shopid, nullable only for group-level grants
+  tenant_id,          # same value as core holding_code, nullable only for group-level grants
   branch_ids,         # empty means all branches for that tenant when branch_scope = all
   branch_scope,       # all | selected
   role,
@@ -225,7 +225,7 @@ Context shape:
   "groups": ["group_01"],
   "tenants": [
     {
-      "tenant_id": "existing_shopid",
+      "tenant_id": "existing_holding_code",
       "branch_scope": "selected",
       "branch_ids": ["B001", "B002"],
       "roles": ["branch_admin"]
@@ -303,7 +303,7 @@ Returns all groups, tenants, branches, and roles the current user may select.
 
 1. Platform owner/admin creates a company group.
 2. Assign one or more `group_owner` emails.
-3. Link existing `shopid` values into the group as `tenant_id`.
+3. Link existing `holding_code` values into the group as `tenant_id`.
 4. Group owner can open overview for all linked tenants.
 
 ### Grant Tenant/Branch Access
@@ -374,7 +374,7 @@ Production must load these from a controlled secret source or environment config
 
 - Auth provider must provide verified email.
 - Existing `shopUsers` can remain for tenant-level compatibility.
-- Branch data comes from existing branch collections using `shopid` + branch code/id.
+- Branch data comes from existing branch collections using `holding_code` + branch code/id.
 - Backend request context must support resolved access.
 - BI/report APIs must accept authorized tenant/branch filters from backend context.
 
@@ -384,7 +384,7 @@ Phase 1:
 
 - Keep `shopUsers` and existing role behavior.
 - Add `platform_admins`, `company_groups`, `tenants`, and `access_grants`.
-- Set `tenant_id = shopid`.
+- Set `tenant_id = holding_code`.
 - Resolve access from new grants first, fallback to `shopUsers` for legacy screens.
 
 Phase 2:
@@ -396,7 +396,7 @@ Phase 2:
 Phase 3:
 
 - Gradually replace direct role checks such as `ROLE_OWNER` with policy checks.
-- Keep `shopid` physical storage unless a functional migration is required.
+- Keep `holding_code` physical storage unless a functional migration is required.
 
 ## Limitations
 

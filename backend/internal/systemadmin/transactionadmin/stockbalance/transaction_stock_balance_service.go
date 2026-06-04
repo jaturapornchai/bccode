@@ -13,8 +13,8 @@ import (
 )
 
 type IStockBalanceProductTransactionAdminService interface {
-	ReSyncStockBalanceProductDoc(shopID string) error
-	ReSyncStockBalanceProductDeleteDoc(shopID string) error
+	ReSyncStockBalanceProductDoc(holdingCode string) error
+	ReSyncStockBalanceProductDeleteDoc(holdingCode string) error
 }
 
 type StockBalanceProductTransactionAdminService struct {
@@ -41,12 +41,12 @@ func NewStockBalanceProductTransactionAdminService(
 	}
 }
 
-func (s *StockBalanceProductTransactionAdminService) ReSyncStockBalanceProductDoc(shopID string) error {
+func (s *StockBalanceProductTransactionAdminService) ReSyncStockBalanceProductDoc(holdingCode string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeoutDuration)
 	defer cancel()
 
-	docs, err := s.mongoRepo.FindStockBalanceDocByShopID(ctx, shopID)
+	docs, err := s.mongoRepo.FindStockBalanceDocByHoldingCode(ctx, holdingCode)
 	if err != nil {
 		return err
 	}
@@ -55,12 +55,12 @@ func (s *StockBalanceProductTransactionAdminService) ReSyncStockBalanceProductDo
 
 	for _, doc := range docs {
 		stockBalanceMessage := stockBalanceModels.StockBalanceMessage{}
-		stockBalanceMessage.ShopID = doc.ShopID
+		stockBalanceMessage.HoldingCode = doc.HoldingCode
 		stockBalanceMessage.GuidFixed = doc.GuidFixed
 		stockBalanceMessage.StockBalance = doc.StockBalance
 
 		// get stock balance details
-		stockDetails, err := s.GetStockBalanceDetail(doc.ShopID, doc.DocNo)
+		stockDetails, err := s.GetStockBalanceDetail(doc.HoldingCode, doc.DocNo)
 		if err != nil {
 			return err
 		}
@@ -83,12 +83,12 @@ func (s *StockBalanceProductTransactionAdminService) ReSyncStockBalanceProductDo
 	return nil
 }
 
-func (s *StockBalanceProductTransactionAdminService) ReSyncStockBalanceProductDeleteDoc(shopID string) error {
+func (s *StockBalanceProductTransactionAdminService) ReSyncStockBalanceProductDeleteDoc(holdingCode string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeoutDuration)
 	defer cancel()
 
-	docs, err := s.mongoRepo.FindStockBalanceDocDeleteByShopID(ctx, shopID)
+	docs, err := s.mongoRepo.FindStockBalanceDocDeleteByHoldingCode(ctx, holdingCode)
 
 	if err != nil {
 		return err
@@ -101,7 +101,7 @@ func (s *StockBalanceProductTransactionAdminService) ReSyncStockBalanceProductDe
 		stockBalanceMessage.StockBalance = doc.StockBalance
 
 		// get stock balance details
-		stockDetails, err := s.GetStockBalanceDetail(doc.ShopID, doc.DocNo)
+		stockDetails, err := s.GetStockBalanceDetail(doc.HoldingCode, doc.DocNo)
 		if err != nil {
 			return err
 		}
@@ -124,7 +124,7 @@ func (s *StockBalanceProductTransactionAdminService) ReSyncStockBalanceProductDe
 	return nil
 }
 
-func (s *StockBalanceProductTransactionAdminService) GetStockBalanceDetail(shopID string, docNo string) (*[]stockBalanceDetailModels.StockBalanceDetailInfo, error) {
+func (s *StockBalanceProductTransactionAdminService) GetStockBalanceDetail(holdingCode string, docNo string) (*[]stockBalanceDetailModels.StockBalanceDetailInfo, error) {
 
 	filters := map[string]interface{}{
 		"docno": docNo,
@@ -153,7 +153,7 @@ func (s *StockBalanceProductTransactionAdminService) GetStockBalanceDetail(shopI
 		ctx, cancel := context.WithTimeout(context.Background(), timeOut)
 		defer cancel()
 
-		docs, pages, err := s.stockDetailRepo.FindPageFilter(ctx, shopID, filters, searchInFields, pageRequest)
+		docs, pages, err := s.stockDetailRepo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageRequest)
 		if err != nil {
 			return nil, err
 		}
@@ -165,7 +165,7 @@ func (s *StockBalanceProductTransactionAdminService) GetStockBalanceDetail(shopI
 		// 		TransactionDetailPG: models.TransactionDetailPG{
 		// 			GuidFixed:           doc.GuidFixed,
 		// 			DocNo:               doc.DocNo,
-		// 			ShopID:              shopID,
+		// 			HoldingCode:              holdingCode,
 		// 			LineNumber:          int8(doc.LineNumber),
 		// 			DocRef:              doc.DocRef,
 		// 			Barcode:             doc.Barcode,

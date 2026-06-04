@@ -1091,7 +1091,7 @@ definitions:
       financialstatements:
         description: ผลกระทบต่องบการเงิน 1=ทั่วไป, 2=ต้นทุนขาย
         type: integer
-      shopid:
+      holding_code:
         type: string
     type: object
   models.BalanceSheetReport:
@@ -5443,7 +5443,7 @@ definitions:
     properties:
       lineaccesstoken:
         type: string
-      shopid:
+      holding_code:
         type: string
     type: object
   models.LineLoginRequest:
@@ -7536,7 +7536,7 @@ definitions:
     type: object
   models.PosLoginRequest:
     properties:
-      shopid:
+      holding_code:
         type: string
       username:
         description: validate:"required,alphanum,gte=3,max=233"
@@ -8091,7 +8091,7 @@ definitions:
         minItems: 1
         type: array
         uniqueItems: true
-      shopid:
+      holding_code:
         type: string
       unitguid:
         type: string
@@ -8326,7 +8326,7 @@ definitions:
       financialstatements:
         description: ผลกระทบต่องบการเงิน 1=ทั่วไป, 2=ต้นทุนขาย
         type: integer
-      shopid:
+      holding_code:
         type: string
     type: object
   models.ProfitAndLossSheetReport:
@@ -12525,7 +12525,7 @@ definitions:
         type: boolean
       logo:
         type: string
-      mainshopid:
+      mainholding_code:
         type: string
       name1:
         type: string
@@ -12563,7 +12563,7 @@ definitions:
         type: integer
       monthlyaverage:
         type: number
-      shopid:
+      holding_code:
         type: string
       shopname:
         type: string
@@ -12578,7 +12578,7 @@ definitions:
     properties:
       isfavorite:
         type: boolean
-      shopid:
+      holding_code:
         type: string
     type: object
   models.ShopImage:
@@ -12612,7 +12612,7 @@ definitions:
         type: boolean
       logo:
         type: string
-      mainshopid:
+      mainholding_code:
         type: string
       name1:
         type: string
@@ -12657,7 +12657,7 @@ definitions:
         type: boolean
       logo:
         type: string
-      mainshopid:
+      mainholding_code:
         type: string
       name1:
         type: string
@@ -15286,7 +15286,7 @@ definitions:
       nextbalancedebitamount:
         description: ยอดสะสมเดบิต
         type: number
-      shopid:
+      holding_code:
         type: string
       sumbalancecredit:
         type: number
@@ -15434,7 +15434,7 @@ definitions:
       phonenumber:
         maxLength: 100
         type: string
-      shopid:
+      holding_code:
         type: string
     required:
     - countrycode
@@ -15795,7 +15795,7 @@ definitions:
         type: string
       line_user_id:
         type: string
-      shop_id:
+      holding_code:
         type: string
       username:
         type: string
@@ -15829,10 +15829,10 @@ definitions:
     type: object
   smlcloudplatform_internal_authentication_models.ShopSelectRequest:
     properties:
-      shopid:
+      holding_code:
         type: string
     required:
-    - shopid
+    - holding_code
     type: object
   smlcloudplatform_internal_authentication_models.ShopUserInfo:
     properties:
@@ -15844,7 +15844,7 @@ definitions:
         type: boolean
       lastaccessedat:
         type: string
-      mainshopid:
+      mainholding_code:
         description: Name1          string         `json:"name1" bson:"name1"`
         type: string
       name:
@@ -15855,7 +15855,7 @@ definitions:
         type: array
       role:
         $ref: '#/definitions/smlcloudplatform_internal_authentication_models.UserRole'
-      shopid:
+      holding_code:
         type: string
     type: object
   smlcloudplatform_internal_authentication_models.UserLoginRequest:
@@ -15864,7 +15864,7 @@ definitions:
         maxLength: 233
         minLength: 5
         type: string
-      shopid:
+      holding_code:
         type: string
       username:
         description: validate:"required,alphanum,gte=3,max=233"
@@ -15999,7 +15999,7 @@ definitions:
         $ref: '#/definitions/smlcloudplatform_internal_authentication_models.DocumentApproval'
       role:
         $ref: '#/definitions/smlcloudplatform_internal_authentication_models.UserRole'
-      shopid:
+      holding_code:
         type: string
       username:
         type: string
@@ -23340,9 +23340,9 @@ paths:
       - application/json
       description: List Product Category
       parameters:
-      - description: Shop ID
+      - description: Holding Code
         in: query
-        name: shopid
+        name: holding_code
         type: string
       - description: Search Value
         in: query
@@ -23412,9 +23412,9 @@ paths:
       - application/json
       description: List Product By Barcodes
       parameters:
-      - description: Shop ID
+      - description: Holding Code
         in: query
-        name: shopid
+        name: holding_code
         type: string
       - description: barcode json array
         in: query
@@ -23438,9 +23438,9 @@ paths:
       - application/json
       description: List Product
       parameters:
-      - description: Shop ID
+      - description: Holding Code
         in: query
-        name: shopid
+        name: holding_code
         type: string
       - description: barcode json array
         in: body
@@ -23612,9 +23612,9 @@ paths:
       - application/json
       description: Get Shop Info
       parameters:
-      - description: Shop ID
+      - description: Holding Code
         in: query
-        name: shopid
+        name: holding_code
         type: string
       - description: Order station code
         in: query
@@ -23639,9 +23639,9 @@ paths:
       - application/json
       description: Get Shop Info v1.1
       parameters:
-      - description: Shop ID
+      - description: Holding Code
         in: query
-        name: shopid
+        name: holding_code
         type: string
       - description: Order station code
         in: query
@@ -24784,9 +24784,9 @@ paths:
         in: query
         name: timezone
         type: string
-      - description: Shop IDs comma-separated
+      - description: Holding Codes comma-separated
         in: query
-        name: shopids
+        name: holding_codes
         type: string
       responses:
         "200":
@@ -25295,15 +25295,15 @@ paths:
       summary: แสดงรายละเอียดข้อมูลรายวัน
       tags:
       - GL
-  /gl/journal/rebuild/{shopid}:
+  /gl/journal/rebuild/{holding_code}:
     get:
       consumes:
       - application/json
       description: บันทึกข้อมูลรายวัน
       parameters:
-      - description: Journal Shop ID
+      - description: Journal Holding Code
         in: path
-        name: shopid
+        name: holding_code
         required: true
         type: string
       responses:
@@ -37473,7 +37473,7 @@ paths:
       - application/json
       description: Delete Shop
       parameters:
-      - description: Shop ID
+      - description: Holding Code
         in: path
         name: id
         required: true
@@ -37496,7 +37496,7 @@ paths:
       - application/json
       description: Infomation Shop Profile
       parameters:
-      - description: Shop ID
+      - description: Holding Code
         in: path
         name: id
         required: true
@@ -37521,7 +37521,7 @@ paths:
       - application/json
       description: Update Shop
       parameters:
-      - description: Shop ID
+      - description: Holding Code
         in: path
         name: id
         required: true
@@ -38115,15 +38115,15 @@ paths:
       - AccessToken: []
       tags:
       - ShopUser
-  /slip/{shopid}/{posid}/{docdate}/{docno}:
+  /slip/{holding_code}/{posid}/{docdate}/{docno}:
     get:
       consumes:
       - application/json
       description: GET Slip Image
       parameters:
-      - description: Shop ID
+      - description: Holding Code
         in: path
-        name: shopid
+        name: holding_code
         required: true
         type: string
       - description: POS ID
@@ -53026,7 +53026,7 @@ paths:
         in: query
         name: unitcode
         type: string
-      - description: shopid filter ex. \
+      - description: holding_code filter ex. \
         in: query
         name: shopsid
         type: string

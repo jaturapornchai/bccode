@@ -12,10 +12,10 @@ import (
 )
 
 type IPurchaseReceiveTransactionAdminRepositories interface {
-	FindPurchaseReceiveDocByShopID(ctx context.Context, shopID string) ([]purchasePartialModels.PurchasepartialDoc, error)
-	FindPage(ctx context.Context, shopID string, searchInFields []string, pageable msModels.Pageable) ([]purchasePartialModels.PurchasepartialDoc, mongopagination.PaginationData, error)
-	FindPageFilter(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, pageable msModels.Pageable) ([]purchasePartialModels.PurchasepartialDoc, mongopagination.PaginationData, error)
-	FindPurchaseReceiveDocDeleteByShopID(ctx context.Context, shopID string) ([]purchasePartialModels.PurchasepartialDoc, error)
+	FindPurchaseReceiveDocByHoldingCode(ctx context.Context, holdingCode string) ([]purchasePartialModels.PurchasepartialDoc, error)
+	FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable msModels.Pageable) ([]purchasePartialModels.PurchasepartialDoc, mongopagination.PaginationData, error)
+	FindPageFilter(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, pageable msModels.Pageable) ([]purchasePartialModels.PurchasepartialDoc, mongopagination.PaginationData, error)
+	FindPurchaseReceiveDocDeleteByHoldingCode(ctx context.Context, holdingCode string) ([]purchasePartialModels.PurchasepartialDoc, error)
 }
 
 type PurchaseReceiveTransactionAdminRepositories struct {
@@ -30,14 +30,14 @@ func NewPurchaseReceiveTransactionAdminRepositories(pst microservice.IPersisterM
 	}
 }
 
-func (r PurchaseReceiveTransactionAdminRepositories) FindPurchaseReceiveDocByShopID(ctx context.Context, shopID string) ([]purchasePartialModels.PurchasepartialDoc, error) {
+func (r PurchaseReceiveTransactionAdminRepositories) FindPurchaseReceiveDocByHoldingCode(ctx context.Context, holdingCode string) ([]purchasePartialModels.PurchasepartialDoc, error) {
 
 	docList := []purchasePartialModels.PurchasepartialDoc{}
 
 	err := r.pst.Find(ctx, &purchasePartialModels.PurchasepartialDoc{},
 		bson.M{
-			"shopid":    shopID,
-			"deleted_at": bson.M{"$exists": false},
+			"holding_code": holdingCode,
+			"deleted_at":   bson.M{"$exists": false},
 		},
 		&docList)
 	if err != nil {
@@ -47,20 +47,9 @@ func (r PurchaseReceiveTransactionAdminRepositories) FindPurchaseReceiveDocBySho
 	return docList, nil
 }
 
-func (r PurchaseReceiveTransactionAdminRepositories) FindPage(ctx context.Context, shopID string, searchInFields []string, pageable msModels.Pageable) ([]purchasePartialModels.PurchasepartialDoc, mongopagination.PaginationData, error) {
+func (r PurchaseReceiveTransactionAdminRepositories) FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable msModels.Pageable) ([]purchasePartialModels.PurchasepartialDoc, mongopagination.PaginationData, error) {
 
-	results, pagination, err := r.SearchRepository.FindPage(ctx, shopID, searchInFields, pageable)
-
-	if err != nil {
-		return nil, mongopagination.PaginationData{}, err
-	}
-
-	return results, pagination, nil
-}
-
-func (r PurchaseReceiveTransactionAdminRepositories) FindPageFilter(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, pageable msModels.Pageable) ([]purchasePartialModels.PurchasepartialDoc, mongopagination.PaginationData, error) {
-
-	results, pagination, err := r.SearchRepository.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	results, pagination, err := r.SearchRepository.FindPage(ctx, holdingCode, searchInFields, pageable)
 
 	if err != nil {
 		return nil, mongopagination.PaginationData{}, err
@@ -69,13 +58,24 @@ func (r PurchaseReceiveTransactionAdminRepositories) FindPageFilter(ctx context.
 	return results, pagination, nil
 }
 
-func (r PurchaseReceiveTransactionAdminRepositories) FindPurchaseReceiveDocDeleteByShopID(ctx context.Context, shopID string) ([]purchasePartialModels.PurchasepartialDoc, error) {
+func (r PurchaseReceiveTransactionAdminRepositories) FindPageFilter(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, pageable msModels.Pageable) ([]purchasePartialModels.PurchasepartialDoc, mongopagination.PaginationData, error) {
+
+	results, pagination, err := r.SearchRepository.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
+
+	if err != nil {
+		return nil, mongopagination.PaginationData{}, err
+	}
+
+	return results, pagination, nil
+}
+
+func (r PurchaseReceiveTransactionAdminRepositories) FindPurchaseReceiveDocDeleteByHoldingCode(ctx context.Context, holdingCode string) ([]purchasePartialModels.PurchasepartialDoc, error) {
 	docList := []purchasePartialModels.PurchasepartialDoc{}
 
 	err := r.pst.Find(ctx, &purchasePartialModels.PurchasepartialDoc{},
 		bson.M{
-			"shopid":    shopID,
-			"deleted_at": bson.M{"$exists": true},
+			"holding_code": holdingCode,
+			"deleted_at":   bson.M{"$exists": true},
 		},
 		&docList)
 	if err != nil {

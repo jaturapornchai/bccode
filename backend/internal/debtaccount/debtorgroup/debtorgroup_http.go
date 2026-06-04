@@ -61,7 +61,7 @@ func (h DebtorGroupHttp) RegisterHttp() {
 // @Router /debtaccount/debtor-group [post]
 func (h DebtorGroupHttp) CreateDebtorGroup(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.DebtorGroup{}
@@ -77,7 +77,7 @@ func (h DebtorGroupHttp) CreateDebtorGroup(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreateDebtorGroup(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateDebtorGroup(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -104,7 +104,7 @@ func (h DebtorGroupHttp) CreateDebtorGroup(ctx microservice.IContext) error {
 func (h DebtorGroupHttp) UpdateDebtorGroup(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -122,7 +122,7 @@ func (h DebtorGroupHttp) UpdateDebtorGroup(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateDebtorGroup(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateDebtorGroup(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -148,12 +148,12 @@ func (h DebtorGroupHttp) UpdateDebtorGroup(ctx microservice.IContext) error {
 // @Router /debtaccount/debtor-group/{id} [delete]
 func (h DebtorGroupHttp) DeleteDebtorGroup(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteDebtorGroup(shopID, id, authUsername)
+	err := h.svc.DeleteDebtorGroup(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -179,7 +179,7 @@ func (h DebtorGroupHttp) DeleteDebtorGroup(ctx microservice.IContext) error {
 // @Router /debtaccount/debtor-group [delete]
 func (h DebtorGroupHttp) DeleteDebtorGroupByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -192,7 +192,7 @@ func (h DebtorGroupHttp) DeleteDebtorGroupByGUIDs(ctx microservice.IContext) err
 		return err
 	}
 
-	err = h.svc.DeleteDebtorGroupByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteDebtorGroupByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -217,12 +217,12 @@ func (h DebtorGroupHttp) DeleteDebtorGroupByGUIDs(ctx microservice.IContext) err
 // @Router /debtaccount/debtor-group/{id} [get]
 func (h DebtorGroupHttp) InfoDebtorGroup(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get DebtorGroup %v", id)
-	doc, err := h.svc.InfoDebtorGroup(shopID, id)
+	doc, err := h.svc.InfoDebtorGroup(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -250,11 +250,11 @@ func (h DebtorGroupHttp) InfoDebtorGroup(ctx microservice.IContext) error {
 // @Router /debtaccount/debtor-group [get]
 func (h DebtorGroupHttp) SearchDebtorGroupPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.SearchDebtorGroup(shopID, map[string]interface{}{}, pageable)
+	docList, pagination, err := h.svc.SearchDebtorGroup(holdingCode, map[string]interface{}{}, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -283,13 +283,13 @@ func (h DebtorGroupHttp) SearchDebtorGroupPage(ctx microservice.IContext) error 
 // @Router /debtaccount/debtor-group/list [get]
 func (h DebtorGroupHttp) SearchDebtorGroupStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
 	lang := ctx.QueryParam("lang")
 
-	docList, total, err := h.svc.SearchDebtorGroupStep(shopID, lang, pageableStep)
+	docList, total, err := h.svc.SearchDebtorGroupStep(holdingCode, lang, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -317,7 +317,7 @@ func (h DebtorGroupHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -329,7 +329,7 @@ func (h DebtorGroupHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

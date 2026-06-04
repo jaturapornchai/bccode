@@ -20,21 +20,21 @@ const processStockCalcCostCommandID = "processstockcalccost"
 
 // processStockCalcCostRequest defines the payload structure accepted by ProcessStockCalcCostHandler.
 type processStockCalcCostRequest struct {
-	ShopID string          `json:"shop_id"`
-	CommandID string          `json:"command_id"`
+	HoldingCode  string          `json:"holding_code"`
+	CommandID    string          `json:"command_id"`
 	ItemCodeList json.RawMessage `json:"item_code_list"`
-	DeleteFirst *bool           `json:"delete_first"`
-	PointQty *int            `json:"point_qty"`
-	PointAmount *int            `json:"point_amount"`
-	PointCost *int            `json:"point_cost"`
-	Incremental *bool           `json:"incremental"`   // ใช้ incremental calculation (ตรวจ checksum ก่อน)
-	MinimalLog *bool           `json:"minimal_log"`   // ใช้ UPSERT แทน DELETE+INSERT เพื่อลด WAL
+	DeleteFirst  *bool           `json:"delete_first"`
+	PointQty     *int            `json:"point_qty"`
+	PointAmount  *int            `json:"point_amount"`
+	PointCost    *int            `json:"point_cost"`
+	Incremental  *bool           `json:"incremental"` // ใช้ incremental calculation (ตรวจ checksum ก่อน)
+	MinimalLog   *bool           `json:"minimal_log"` // ใช้ UPSERT แทน DELETE+INSERT เพื่อลด WAL
 }
 
 // processStockCalcCostItemResult holds per-item execution metadata for API responses.
 type processStockCalcCostItemResult struct {
-	ItemCode string `json:"item_code"`
-	Status string `json:"status"`
+	ItemCode   string `json:"item_code"`
+	Status     string `json:"status"`
 	DurationMs int64  `json:"duration_ms"`
 }
 
@@ -51,11 +51,11 @@ func ProcessStockCalcCostHandler(c echo.Context) error {
 		})
 	}
 
-	payload.ShopID = strings.TrimSpace(payload.ShopID)
-	if payload.ShopID == "" {
+	payload.HoldingCode = strings.TrimSpace(payload.HoldingCode)
+	if payload.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
-			"error": "shop_id is required",
-			"code":  "MISSING_SHOP_ID",
+			"error": "holding_code is required",
+			"code":  "MISSING_HOLDING_CODE",
 		})
 	}
 
@@ -103,7 +103,7 @@ func ProcessStockCalcCostHandler(c echo.Context) error {
 		minimalLog = *payload.MinimalLog
 	}
 
-	results, err := runProcessStockCalcCost(payload.ShopID, itemCodes, pointQty, pointAmount, pointCost, deleteFirst, incremental, minimalLog)
+	results, err := runProcessStockCalcCost(payload.HoldingCode, itemCodes, pointQty, pointAmount, pointCost, deleteFirst, incremental, minimalLog)
 	if err != nil {
 		logger.Error("ProcessStockCalcCostHandler failed: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]any{
@@ -112,12 +112,12 @@ func ProcessStockCalcCostHandler(c echo.Context) error {
 		})
 	}
 
-	logger.Success("ProcessStockCalcCostHandler completed | shop=%s items=%d duration=%v", payload.ShopID, len(results), time.Since(start))
+	logger.Success("ProcessStockCalcCostHandler completed | shop=%s items=%d duration=%v", payload.HoldingCode, len(results), time.Since(start))
 
 	return c.JSON(http.StatusOK, map[string]any{
 		"status":          "success",
 		"code":            200,
-		"shop_id":         payload.ShopID,
+		"holding_code":    payload.HoldingCode,
 		"command_id":      payload.CommandID,
 		"processed_items": len(results),
 		"duration_ms":     time.Since(start).Milliseconds(),
@@ -187,12 +187,12 @@ func parseItemCodesFromJSON(raw json.RawMessage) ([]string, error) {
 	return nil, fmt.Errorf("item_code_list must be array or string, got: %s", string(raw))
 }
 
-func runProcessStockCalcCost(shopID string, itemCodes []string, pointQty, pointAmount, pointCost int, deleteFirst, incremental, minimalLog bool) ([]processStockCalcCostItemResult, error) {
+func runProcessStockCalcCost(holdingCode string, itemCodes []string, pointQty, pointAmount, pointCost int, deleteFirst, incremental, minimalLog bool) ([]processStockCalcCostItemResult, error) {
 	if len(itemCodes) == 0 {
 		return nil, errors.New("item_code_list must contain at least one item")
 	}
 
-	db, err := mypg.PgSqlFastConnect(shopID)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		return nil, fmt.Errorf("database connection error: %w", err)
 	}
@@ -200,15 +200,15 @@ func runProcessStockCalcCost(shopID string, itemCodes []string, pointQty, pointA
 	results := make([]processStockCalcCostItemResult, 0, len(itemCodes))
 	for idx, itemCode := range itemCodes {
 		logger.Info("ProcessStockCalcCost processing %s (%d/%d) for shop %s (incremental=%v, minimalLog=%v)",
-			itemCode, idx+1, len(itemCodes), shopID, incremental, minimalLog)
+			itemCode, idx+1, len(itemCodes), holdingCode, incremental, minimalLog)
 		itemStart := time.Now()
 
 		if incremental {
 			// Use incremental mode with checksum checking
-			processstock.ProductCalcCostIncremental(db, shopID, itemCode, pointQty, pointAmount, pointCost, incremental, minimalLog)
+			processstock.ProductCalcCostIncremental(db, holdingCode, itemCode, pointQty, pointAmount, pointCost, incremental, minimalLog)
 		} else {
 			// Legacy mode
-			processstock.ProductCalcCost(db, shopID, itemCode, pointQty, pointAmount, pointCost, deleteFirst)
+			processstock.ProductCalcCost(db, holdingCode, itemCode, pointQty, pointAmount, pointCost, deleteFirst)
 		}
 
 		results = append(results, processStockCalcCostItemResult{

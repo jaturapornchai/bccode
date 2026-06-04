@@ -17,11 +17,11 @@ import (
 type IMemberRepository interface {
 	Create(ctx context.Context, doc models.MemberDoc) (primitive.ObjectID, error)
 	Update(ctx context.Context, guid string, doc models.MemberDoc) error
-	FindByGuid(ctx context.Context, shopID string, guid string) (models.MemberDoc, error)
+	FindByGuid(ctx context.Context, holdingCode string, guid string) (models.MemberDoc, error)
 
 	FindByLineUID(ctx context.Context, lineUID string) (models.MemberDoc, error)
-	FindPageFilter(ctx context.Context, shopID string, searchInFields []string, pageable micro_models.Pageable) ([]models.MemberInfo, mongopagination.PaginationData, error)
-	FindStep(ctx context.Context, shopID string, searchInFields []string, projects map[string]interface{}, pageableStep micro_models.PageableStep) ([]models.MemberInfo, int, error)
+	FindPageFilter(ctx context.Context, holdingCode string, searchInFields []string, pageable micro_models.Pageable) ([]models.MemberInfo, mongopagination.PaginationData, error)
+	FindStep(ctx context.Context, holdingCode string, searchInFields []string, projects map[string]interface{}, pageableStep micro_models.PageableStep) ([]models.MemberInfo, int, error)
 }
 
 type MemberRepository struct {
@@ -56,9 +56,9 @@ func (repo MemberRepository) Update(ctx context.Context, guid string, doc models
 	return nil
 }
 
-func (repo MemberRepository) FindByGuid(ctx context.Context, shopID string, guid string) (models.MemberDoc, error) {
+func (repo MemberRepository) FindByGuid(ctx context.Context, holdingCode string, guid string) (models.MemberDoc, error) {
 	doc := &models.MemberDoc{}
-	err := repo.pst.FindOne(ctx, &models.MemberDoc{}, bson.M{"guid_fixed": guid, "shops": shopID, "deleted_at": bson.M{"$exists": false}}, doc)
+	err := repo.pst.FindOne(ctx, &models.MemberDoc{}, bson.M{"guid_fixed": guid, "shops": holdingCode, "deleted_at": bson.M{"$exists": false}}, doc)
 	if err != nil {
 		return *doc, err
 	}
@@ -74,14 +74,14 @@ func (repo MemberRepository) FindByLineUID(ctx context.Context, lineUID string) 
 	return *doc, nil
 }
 
-func (repo MemberRepository) FindPageFilter(ctx context.Context, shopID string, searchInFields []string, pageable micro_models.Pageable) ([]models.MemberInfo, mongopagination.PaginationData, error) {
+func (repo MemberRepository) FindPageFilter(ctx context.Context, holdingCode string, searchInFields []string, pageable micro_models.Pageable) ([]models.MemberInfo, mongopagination.PaginationData, error) {
 
 	matchFilterList := []interface{}{}
 
 	searchFilterQuery := search.CreateTextFilter(searchInFields, pageable.Query)
 
 	queryFilters := bson.M{
-		"shops":     shopID,
+		"shops":      holdingCode,
 		"deleted_at": bson.M{"$exists": false},
 	}
 
@@ -111,10 +111,10 @@ func (repo MemberRepository) FindPageFilter(ctx context.Context, shopID string, 
 	return docList, pagination, nil
 }
 
-func (repo MemberRepository) FindStep(ctx context.Context, shopID string, searchInFields []string, projects map[string]interface{}, pageableStep micro_models.PageableStep) ([]models.MemberInfo, int, error) {
+func (repo MemberRepository) FindStep(ctx context.Context, holdingCode string, searchInFields []string, projects map[string]interface{}, pageableStep micro_models.PageableStep) ([]models.MemberInfo, int, error) {
 
 	filterQuery := bson.M{
-		"shops":     shopID,
+		"shops":      holdingCode,
 		"deleted_at": bson.M{"$exists": false},
 	}
 

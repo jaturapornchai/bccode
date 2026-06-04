@@ -67,7 +67,7 @@ func (h DepositRecordHttp) RegisterHttp() {
 // @Router /transaction/bank/depositrecord [post]
 func (h DepositRecordHttp) CreateDepositRecord(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.DepositRecord{}
@@ -83,7 +83,7 @@ func (h DepositRecordHttp) CreateDepositRecord(ctx microservice.IContext) error 
 		return err
 	}
 
-	idx, docNo, err := h.svc.CreateDepositRecord(shopID, authUsername, *docReq)
+	idx, docNo, err := h.svc.CreateDepositRecord(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -111,7 +111,7 @@ func (h DepositRecordHttp) CreateDepositRecord(ctx microservice.IContext) error 
 func (h DepositRecordHttp) UpdateDepositRecord(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -129,7 +129,7 @@ func (h DepositRecordHttp) UpdateDepositRecord(ctx microservice.IContext) error 
 		return err
 	}
 
-	err = h.svc.UpdateDepositRecord(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateDepositRecord(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -155,12 +155,12 @@ func (h DepositRecordHttp) UpdateDepositRecord(ctx microservice.IContext) error 
 // @Router /transaction/bank/depositrecord/{id} [delete]
 func (h DepositRecordHttp) DeleteDepositRecord(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteDepositRecord(shopID, id, authUsername)
+	err := h.svc.DeleteDepositRecord(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -186,7 +186,7 @@ func (h DepositRecordHttp) DeleteDepositRecord(ctx microservice.IContext) error 
 // @Router /transaction/bank/depositrecord [delete]
 func (h DepositRecordHttp) DeleteDepositRecordByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -199,7 +199,7 @@ func (h DepositRecordHttp) DeleteDepositRecordByGUIDs(ctx microservice.IContext)
 		return err
 	}
 
-	err = h.svc.DeleteDepositRecordByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteDepositRecordByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -224,12 +224,12 @@ func (h DepositRecordHttp) DeleteDepositRecordByGUIDs(ctx microservice.IContext)
 // @Router /transaction/bank/depositrecord/{id} [get]
 func (h DepositRecordHttp) InfoDepositRecord(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get DepositRecord %v", id)
-	doc, err := h.svc.InfoDepositRecord(shopID, id)
+	doc, err := h.svc.InfoDepositRecord(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -255,11 +255,11 @@ func (h DepositRecordHttp) InfoDepositRecord(ctx microservice.IContext) error {
 // @Router /transaction/bank/depositrecord/code/{code} [get]
 func (h DepositRecordHttp) InfoDepositRecordByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoDepositRecordByCode(shopID, code)
+	doc, err := h.svc.InfoDepositRecordByCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -290,7 +290,7 @@ func (h DepositRecordHttp) InfoDepositRecordByCode(ctx microservice.IContext) er
 // @Router /transaction/bank/depositrecord [get]
 func (h DepositRecordHttp) SearchDepositRecordPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -311,7 +311,7 @@ func (h DepositRecordHttp) SearchDepositRecordPage(ctx microservice.IContext) er
 		},
 	})
 
-	docList, pagination, err := h.svc.SearchDepositRecord(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchDepositRecord(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -344,7 +344,7 @@ func (h DepositRecordHttp) SearchDepositRecordPage(ctx microservice.IContext) er
 // @Router /transaction/bank/depositrecord/list [get]
 func (h DepositRecordHttp) SearchDepositRecordStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -367,7 +367,7 @@ func (h DepositRecordHttp) SearchDepositRecordStep(ctx microservice.IContext) er
 		},
 	})
 
-	docList, total, err := h.svc.SearchDepositRecordStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchDepositRecordStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -395,7 +395,7 @@ func (h DepositRecordHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -407,7 +407,7 @@ func (h DepositRecordHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

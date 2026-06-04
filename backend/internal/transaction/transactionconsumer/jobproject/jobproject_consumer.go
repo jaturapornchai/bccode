@@ -71,7 +71,7 @@ func (c *JobProjectConsumer) ConsumeOnCreateOrUpdate(ctx microservice.IContext) 
 		logger.GetLogger().Errorf("Cannot unmarshal jobproject doc: %v", err.Error())
 		return err
 	}
-	err = c.svc.Upsert(doc.ShopID, doc.GuidFixed, doc)
+	err = c.svc.Upsert(doc.HoldingCode, doc.GuidFixed, doc)
 	if err != nil {
 		logger.GetLogger().Errorf("Cannot upsert jobproject pg: %v", err.Error())
 		return err
@@ -88,7 +88,7 @@ func (c *JobProjectConsumer) ConsumeOnBulkCreateOrUpdate(ctx microservice.IConte
 		return err
 	}
 	for _, doc := range docs {
-		err = c.svc.Upsert(doc.ShopID, doc.GuidFixed, doc)
+		err = c.svc.Upsert(doc.HoldingCode, doc.GuidFixed, doc)
 		if err != nil {
 			logger.GetLogger().Errorf("Cannot upsert jobproject pg: %v", err.Error())
 			return err
@@ -105,7 +105,7 @@ func (c *JobProjectConsumer) ConsumeOnDelete(ctx microservice.IContext) error {
 		logger.GetLogger().Errorf("Cannot unmarshal jobproject doc: %v", err.Error())
 		return err
 	}
-	err = c.svc.Delete(doc.ShopID, doc.GuidFixed)
+	err = c.svc.Delete(doc.HoldingCode, doc.GuidFixed)
 	if err != nil {
 		logger.GetLogger().Errorf("Cannot delete jobproject pg: %v", err.Error())
 		return err
@@ -122,7 +122,7 @@ func (c *JobProjectConsumer) ConsumeOnBulkDelete(ctx microservice.IContext) erro
 		return err
 	}
 	for _, doc := range docs {
-		err = c.svc.Delete(doc.ShopID, doc.GuidFixed)
+		err = c.svc.Delete(doc.HoldingCode, doc.GuidFixed)
 		if err != nil {
 			logger.GetLogger().Errorf("Cannot delete jobproject pg: %v", err.Error())
 			return err

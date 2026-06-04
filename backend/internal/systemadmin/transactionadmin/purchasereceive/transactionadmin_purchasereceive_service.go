@@ -9,8 +9,8 @@ import (
 )
 
 type IPurchaseReceiveTransactionAdminService interface {
-	ReSyncPurchaseReceiveDoc(shopID string) error
-	ReSyncPurchaseReceiveDeleteDoc(shopID string) error
+	ReSyncPurchaseReceiveDoc(holdingCode string) error
+	ReSyncPurchaseReceiveDeleteDoc(holdingCode string) error
 }
 
 type PurchaseReceiveTransactionAdminService struct {
@@ -30,7 +30,7 @@ func NewPurchaseReceiveTransactionAdminService(pst microservice.IPersisterMongo,
 	}
 }
 
-func (s *PurchaseReceiveTransactionAdminService) ReSyncPurchaseReceiveDoc(shopID string) error {
+func (s *PurchaseReceiveTransactionAdminService) ReSyncPurchaseReceiveDoc(holdingCode string) error {
 
 	pageRequest := msModels.Pageable{
 		Limit: 20,
@@ -47,7 +47,7 @@ func (s *PurchaseReceiveTransactionAdminService) ReSyncPurchaseReceiveDoc(shopID
 		ctx, cancel := context.WithTimeout(context.Background(), s.timeoutDuration)
 		defer cancel()
 
-		docs, pages, err := s.mongoRepo.FindPage(ctx, shopID, nil, pageRequest)
+		docs, pages, err := s.mongoRepo.FindPage(ctx, holdingCode, nil, pageRequest)
 		if err != nil {
 			return err
 		}
@@ -67,12 +67,12 @@ func (s *PurchaseReceiveTransactionAdminService) ReSyncPurchaseReceiveDoc(shopID
 	return nil
 }
 
-func (s *PurchaseReceiveTransactionAdminService) ReSyncPurchaseReceiveDeleteDoc(shopID string) error {
+func (s *PurchaseReceiveTransactionAdminService) ReSyncPurchaseReceiveDeleteDoc(holdingCode string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeoutDuration)
 	defer cancel()
 
-	docs, err := s.mongoRepo.FindPurchaseReceiveDocDeleteByShopID(ctx, shopID)
+	docs, err := s.mongoRepo.FindPurchaseReceiveDocDeleteByHoldingCode(ctx, holdingCode)
 
 	if err != nil {
 		return err

@@ -27,7 +27,7 @@ func ParseTransactionToPaymentDetail(other transmodels.TransactionMessageQueue) 
 			return []models.TransactionPaymentDetail{}, err
 		}
 
-		tempDetail.ShopID = other.ShopID
+		tempDetail.HoldingCode = other.HoldingCode
 		tempDetail.DocNo = other.DocNo
 
 		// switch field
@@ -43,7 +43,7 @@ func ParseTransactionToPaymentDetail(other transmodels.TransactionMessageQueue) 
 		}
 
 		for i := range tempDetails {
-			tempDetails[i].ShopID = other.ShopID
+			tempDetails[i].HoldingCode = other.HoldingCode
 			tempDetails[i].DocNo = other.DocNo
 
 			// switch field

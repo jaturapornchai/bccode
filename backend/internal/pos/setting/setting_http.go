@@ -62,7 +62,7 @@ func (h SettingHttp) RegisterHttp() {
 // @Router /pos/setting [post]
 func (h SettingHttp) CreateSetting(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.Setting{}
@@ -78,7 +78,7 @@ func (h SettingHttp) CreateSetting(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreateSetting(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateSetting(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -105,7 +105,7 @@ func (h SettingHttp) CreateSetting(ctx microservice.IContext) error {
 func (h SettingHttp) UpdateSetting(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -123,7 +123,7 @@ func (h SettingHttp) UpdateSetting(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateSetting(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateSetting(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -149,12 +149,12 @@ func (h SettingHttp) UpdateSetting(ctx microservice.IContext) error {
 // @Router /pos/setting/{id} [delete]
 func (h SettingHttp) DeleteSetting(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteSetting(shopID, id, authUsername)
+	err := h.svc.DeleteSetting(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -180,7 +180,7 @@ func (h SettingHttp) DeleteSetting(ctx microservice.IContext) error {
 // @Router /pos/setting [delete]
 func (h SettingHttp) DeleteSettingByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -193,7 +193,7 @@ func (h SettingHttp) DeleteSettingByGUIDs(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.DeleteSettingByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteSettingByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -218,12 +218,12 @@ func (h SettingHttp) DeleteSettingByGUIDs(ctx microservice.IContext) error {
 // @Router /pos/setting/{id} [get]
 func (h SettingHttp) InfoSetting(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get Setting %v", id)
-	doc, err := h.svc.InfoSetting(shopID, id)
+	doc, err := h.svc.InfoSetting(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -249,11 +249,11 @@ func (h SettingHttp) InfoSetting(ctx microservice.IContext) error {
 // @Router /pos/setting/code/{code} [get]
 func (h SettingHttp) InfoSettingByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoSettingByCode(shopID, code)
+	doc, err := h.svc.InfoSettingByCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -280,11 +280,11 @@ func (h SettingHttp) InfoSettingByCode(ctx microservice.IContext) error {
 // @Router /pos/setting [get]
 func (h SettingHttp) SearchSettingPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.SearchSetting(shopID, map[string]interface{}{}, pageable)
+	docList, pagination, err := h.svc.SearchSetting(holdingCode, map[string]interface{}{}, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -313,13 +313,13 @@ func (h SettingHttp) SearchSettingPage(ctx microservice.IContext) error {
 // @Router /pos/setting/list [get]
 func (h SettingHttp) SearchSettingStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
 	lang := ctx.QueryParam("lang")
 
-	docList, total, err := h.svc.SearchSettingStep(shopID, lang, pageableStep)
+	docList, total, err := h.svc.SearchSettingStep(holdingCode, lang, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -347,7 +347,7 @@ func (h SettingHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -359,7 +359,7 @@ func (h SettingHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

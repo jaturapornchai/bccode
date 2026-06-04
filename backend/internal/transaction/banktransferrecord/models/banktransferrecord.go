@@ -23,12 +23,12 @@ func (BankTransferRecordInfo) CollectionName() string {
 }
 
 type BankTransferRecordData struct {
-	models.ShopIdentity    `bson:"inline"`
-	BankTransferRecordInfo `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	BankTransferRecordInfo   `bson:"inline"`
 }
 
 type BankTransferRecordDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                     primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	BankTransferRecordData `bson:"inline"`
 	models.ActivityDoc     `bson:"inline"`
 }

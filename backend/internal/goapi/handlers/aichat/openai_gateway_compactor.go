@@ -46,10 +46,10 @@ const (
 // ====== In-memory cache ======
 
 type cachedSummary struct {
-	summary       string
-	coveredHash   string // hash ของ messages ที่สรุปไปแล้ว
-	coveredCount  int    // จำนวน messages ที่สรุปไปแล้ว (จากต้น)
-	updatedAt     time.Time
+	summary      string
+	coveredHash  string // hash ของ messages ที่สรุปไปแล้ว
+	coveredCount int    // จำนวน messages ที่สรุปไปแล้ว (จากต้น)
+	updatedAt    time.Time
 }
 
 var (
@@ -149,13 +149,13 @@ func totalContentChars(msgs []openaiChatMessage) int {
 // buildQuestionWithCompactedHistory สร้าง question พร้อม history ที่ compact แล้ว
 //
 // Strategy:
-//   1. หา last user message
-//   2. แบ่ง messages เป็น 2 ส่วน: olderToCompact (ก่อน) + recentRaw (หลัง compactKeepRecent ตัว) + latest
-//   3. ถ้า olderToCompact ยาวเกิน threshold → ยิง AI สรุป (ใช้ cache ถ้า hash ตรงกัน)
-//   4. ประกอบ:  [สรุป] + [recent raw] + [latest question]
+//  1. หา last user message
+//  2. แบ่ง messages เป็น 2 ส่วน: olderToCompact (ก่อน) + recentRaw (หลัง compactKeepRecent ตัว) + latest
+//  3. ถ้า olderToCompact ยาวเกิน threshold → ยิง AI สรุป (ใช้ cache ถ้า hash ตรงกัน)
+//  4. ประกอบ:  [สรุป] + [recent raw] + [latest question]
 //
 // ถ้า AI provider ไม่พร้อมหรือ fail → fallback เป็น hard-truncate (เหมือนเดิม)
-func buildQuestionWithCompactedHistory(ctx context.Context, shopID, sessionID string, messages []openaiChatMessage) string {
+func buildQuestionWithCompactedHistory(ctx context.Context, holdingCode, sessionID string, messages []openaiChatMessage) string {
 	// 1. หา last user message
 	lastUserIdx := -1
 	for i := len(messages) - 1; i >= 0; i-- {
@@ -192,7 +192,7 @@ func buildQuestionWithCompactedHistory(ctx context.Context, shopID, sessionID st
 	//  2) cached.coveredHash ไม่ตรงกับ hash prefix (session ต่าง / history ถูกแก้)
 	//  3) recent block ยาวเกิน compactTriggerChars → ขยาย coverage ใหม่
 	var summary string
-	var olderCount int  // จำนวน messages ใน prefix ที่ summary ครอบอยู่
+	var olderCount int // จำนวน messages ใน prefix ที่ summary ครอบอยู่
 	var recent []openaiChatMessage
 	var needResummarize bool
 
@@ -233,7 +233,7 @@ func buildQuestionWithCompactedHistory(ctx context.Context, shopID, sessionID st
 		recent = history[cut:]
 
 		// ยิง AI สรุป
-		s, err := summarizeWithAI(ctx, shopID, older)
+		s, err := summarizeWithAI(ctx, holdingCode, older)
 		if err != nil || strings.TrimSpace(s) == "" {
 			logger.Warn("[OpenClaw Compactor] summarize failed (session=%s): %v — fallback hard truncate", sessionID, err)
 			// fallback: ตัดดื้อๆ
@@ -276,10 +276,10 @@ func buildQuestionWithCompactedHistory(ctx context.Context, shopID, sessionID st
 }
 
 // summarizeWithAI ยิง provider ของ shop ไปสรุป history
-func summarizeWithAI(parentCtx context.Context, shopID string, older []openaiChatMessage) (string, error) {
-	providers := aiprovider.GetShopAIProviders(shopID)
+func summarizeWithAI(parentCtx context.Context, holdingCode string, older []openaiChatMessage) (string, error) {
+	providers := aiprovider.GetShopAIProviders(holdingCode)
 	if len(providers) == 0 {
-		return "", fmt.Errorf("no AI providers available for shop=%s", shopID)
+		return "", fmt.Errorf("no AI providers available for shop=%s", holdingCode)
 	}
 
 	plain := renderHistoryPlain(older)

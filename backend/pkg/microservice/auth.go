@@ -22,7 +22,7 @@ type IAuthService interface {
 	GetTokenFromAuthorizationHeader(tokenType TokenType, tokenAuthorization string) (string, error)
 	GenerateTokenWithRedis(tokenType TokenType, userInfo models.UserInfo) (string, error)
 	GenerateTokenWithRedisExpire(tokenType TokenType, userInfo models.UserInfo, expireTime time.Duration) (string, error)
-	SelectShop(tokenType TokenType, tokenStr string, shopID string, role uint8) error
+	SelectShop(tokenType TokenType, tokenStr string, holdingCode string, role uint8) error
 	ExpireToken(tokenType TokenType, tokenAuthorizationHeader string) error
 	DeleteToken(tokenType TokenType, tokenStr string) error
 	RefreshToken(token string) (string, string, error)
@@ -130,7 +130,7 @@ func (authService *AuthService) MWFuncWithRedisMixShop(cacher ICacher, shopPath 
 
 			if len(tempUserInfo.Username) < 1 {
 
-				tempUserInfoRaw, err := authService.cacher.HMGet(cacheKey, []string{"username", "name", "uid", "shopid", "role"})
+				tempUserInfoRaw, err := authService.cacher.HMGet(cacheKey, []string{"username", "name", "uid", "holding_code", "role"})
 
 				if err != nil {
 					return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false, "message": "Token Invalid."})
@@ -145,7 +145,7 @@ func (authService *AuthService) MWFuncWithRedisMixShop(cacher ICacher, shopPath 
 					}
 
 					if tempUserInfoRaw[3] != nil {
-						tempUserInfo.ShopID = fmt.Sprintf("%v", tempUserInfoRaw[3])
+						tempUserInfo.HoldingCode = fmt.Sprintf("%v", tempUserInfoRaw[3])
 					}
 				}
 
@@ -164,10 +164,10 @@ func (authService *AuthService) MWFuncWithRedisMixShop(cacher ICacher, shopPath 
 				return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false, "message": "Token Invalid."})
 			}
 
-			tempShopID := ""
+			tempHoldingCode := ""
 
-			if tempUserInfo.ShopID != "" {
-				tempShopID = tempUserInfo.ShopID
+			if tempUserInfo.HoldingCode != "" {
+				tempHoldingCode = tempUserInfo.HoldingCode
 			}
 
 			// check accept shop path
@@ -178,7 +178,7 @@ func (authService *AuthService) MWFuncWithRedisMixShop(cacher ICacher, shopPath 
 				}
 			}
 
-			if !thisPathExceptShopSelected && len(string(tempShopID)) < 1 {
+			if !thisPathExceptShopSelected && len(string(tempHoldingCode)) < 1 {
 				return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false, "message": "Shop not selected."})
 			}
 
@@ -189,18 +189,18 @@ func (authService *AuthService) MWFuncWithRedisMixShop(cacher ICacher, shopPath 
 			}
 
 			if !thisPathExceptShopSelected {
-				if len(tempShopID) < 1 {
+				if len(tempHoldingCode) < 1 {
 					return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false, "message": "Shop not selected."})
 				}
 
-				userInfo.ShopID = tempUserInfo.ShopID
+				userInfo.HoldingCode = tempUserInfo.HoldingCode
 				userInfo.Role = tempUserInfo.Role
 			}
 
 			go func() {
 				authService.ReTokenExpire(tokenCtx.tokenType, cacheKey)
 
-				if userInfo.ShopID != "" {
+				if userInfo.HoldingCode != "" {
 					authService.cacheMemory.Set(cacheKey, userInfo, authService.cacheMemoryExpire)
 				}
 			}()
@@ -235,19 +235,19 @@ func (authService *AuthService) MWFuncWithRedis(cacher ICacher, publicPath ...st
 
 			cacheKey := authService.GetPrefixCacheKey(tokenCtx.tokenType) + tokenCtx.token
 
-			tempUserInfo, err := authService.cacher.HMGet(cacheKey, []string{"username", "name", "uid", "shopid", "role"})
+			tempUserInfo, err := authService.cacher.HMGet(cacheKey, []string{"username", "name", "uid", "holding_code", "role"})
 
 			if err != nil || tempUserInfo[0] == nil {
 				return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false, "message": "Token Invalid."})
 			}
 
-			tempShopID := ""
+			tempHoldingCode := ""
 
 			if tempUserInfo[3] != nil {
-				tempShopID = fmt.Sprintf("%v", tempUserInfo[3])
+				tempHoldingCode = fmt.Sprintf("%v", tempUserInfo[3])
 			}
 
-			if len(string(tempShopID)) < 1 {
+			if len(string(tempHoldingCode)) < 1 {
 				return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false, "message": "Shop not selected."})
 			}
 
@@ -259,11 +259,11 @@ func (authService *AuthService) MWFuncWithRedis(cacher ICacher, publicPath ...st
 			}
 
 			userInfo := models.UserInfo{
-				Username: fmt.Sprintf("%v", tempUserInfo[0]),
-				Name:     fmt.Sprintf("%v", tempUserInfo[1]),
-				UID:      cacheString(tempUserInfo[2]),
-				ShopID:   cacheString(tempUserInfo[3]),
-				Role:     uint8(userRole),
+				Username:    fmt.Sprintf("%v", tempUserInfo[0]),
+				Name:        fmt.Sprintf("%v", tempUserInfo[1]),
+				UID:         cacheString(tempUserInfo[2]),
+				HoldingCode: cacheString(tempUserInfo[3]),
+				Role:        uint8(userRole),
 			}
 
 			authService.ReTokenExpire(tokenCtx.tokenType, cacheKey)
@@ -432,23 +432,23 @@ func (authService *AuthService) GenerateTokenWithRedisExpire(tokenType TokenType
 	cacheKey := authService.GetPrefixCacheKey(tokenType) + tokenStr
 
 	authService.cacher.HMSet(cacheKey, map[string]interface{}{
-		"username": userInfo.Username,
-		"name":     userInfo.Name,
-		"uid":      userInfo.UID,
-		"shopid":   userInfo.ShopID,
-		"role":     userInfo.Role,
+		"username":     userInfo.Username,
+		"name":         userInfo.Name,
+		"uid":          userInfo.UID,
+		"holding_code": userInfo.HoldingCode,
+		"role":         userInfo.Role,
 	})
 	authService.cacher.Expire(cacheKey, expireTime)
 
 	return tokenStr, nil
 }
 
-func (authService *AuthService) SelectShop(tokenType TokenType, tokenStr string, shopID string, role uint8) error {
+func (authService *AuthService) SelectShop(tokenType TokenType, tokenStr string, holdingCode string, role uint8) error {
 	cacheKey := authService.GetPrefixCacheKey(tokenType) + tokenStr
 
 	err := authService.cacher.HMSet(cacheKey, map[string]interface{}{
-		"shopid": shopID,
-		"role":   role,
+		"holding_code": holdingCode,
+		"role":         role,
 	})
 
 	if err != nil {

@@ -17,12 +17,12 @@ import (
 )
 
 type IJournalBookHttpService interface {
-	Create(shopID string, authUsername string, doc models.JournalBook) (string, error)
-	Update(guid string, shopID string, authUsername string, doc models.JournalBook) error
-	Delete(guid string, shopID string, authUsername string) error
-	Info(guid string, shopID string) (models.JournalBookInfo, error)
-	Search(shopID string, pageable micromodels.Pageable) ([]models.JournalBookInfo, mongopagination.PaginationData, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.JournalBook) (common.BulkImport, error)
+	Create(holdingCode string, authUsername string, doc models.JournalBook) (string, error)
+	Update(guid string, holdingCode string, authUsername string, doc models.JournalBook) error
+	Delete(guid string, holdingCode string, authUsername string) error
+	Info(guid string, holdingCode string) (models.JournalBookInfo, error)
+	Search(holdingCode string, pageable micromodels.Pageable) ([]models.JournalBookInfo, mongopagination.PaginationData, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.JournalBook) (common.BulkImport, error)
 }
 
 type JournalBookHttpService struct {
@@ -46,12 +46,12 @@ func (svc JournalBookHttpService) getContextTimeout() (context.Context, context.
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc JournalBookHttpService) Create(shopID string, authUsername string, doc models.JournalBook) (string, error) {
+func (svc JournalBookHttpService) Create(holdingCode string, authUsername string, doc models.JournalBook) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindOne(ctx, shopID, bson.M{"code": doc.Code})
+	findDoc, err := svc.repo.FindOne(ctx, holdingCode, bson.M{"code": doc.Code})
 
 	if err != nil {
 		return "", err
@@ -64,7 +64,7 @@ func (svc JournalBookHttpService) Create(shopID string, authUsername string, doc
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.JournalBookDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.JournalBook = doc
 
@@ -85,12 +85,12 @@ func (svc JournalBookHttpService) Create(shopID string, authUsername string, doc
 	return newGuidFixed, nil
 }
 
-func (svc JournalBookHttpService) Update(guid string, shopID string, authUsername string, doc models.JournalBook) error {
+func (svc JournalBookHttpService) Update(guid string, holdingCode string, authUsername string, doc models.JournalBook) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -100,7 +100,7 @@ func (svc JournalBookHttpService) Update(guid string, shopID string, authUsernam
 		return errors.New("document not found")
 	}
 
-	findDocCode, err := svc.repo.FindOne(ctx, shopID, bson.M{"code": doc.Code})
+	findDocCode, err := svc.repo.FindOne(ctx, holdingCode, bson.M{"code": doc.Code})
 
 	if err != nil {
 		return err
@@ -115,7 +115,7 @@ func (svc JournalBookHttpService) Update(guid string, shopID string, authUsernam
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, findDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, findDoc)
 
 	if err != nil {
 		return err
@@ -123,12 +123,12 @@ func (svc JournalBookHttpService) Update(guid string, shopID string, authUsernam
 	return nil
 }
 
-func (svc JournalBookHttpService) Delete(guid string, shopID string, authUsername string) error {
+func (svc JournalBookHttpService) Delete(guid string, holdingCode string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	err := svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err := svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 
 	if err != nil {
 		return err
@@ -136,12 +136,12 @@ func (svc JournalBookHttpService) Delete(guid string, shopID string, authUsernam
 	return nil
 }
 
-func (svc JournalBookHttpService) Info(guid string, shopID string) (models.JournalBookInfo, error) {
+func (svc JournalBookHttpService) Info(guid string, holdingCode string) (models.JournalBookInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.JournalBookInfo{}, err
@@ -155,7 +155,7 @@ func (svc JournalBookHttpService) Info(guid string, shopID string) (models.Journ
 
 }
 
-func (svc JournalBookHttpService) Search(shopID string, pageable micromodels.Pageable) ([]models.JournalBookInfo, mongopagination.PaginationData, error) {
+func (svc JournalBookHttpService) Search(holdingCode string, pageable micromodels.Pageable) ([]models.JournalBookInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -165,7 +165,7 @@ func (svc JournalBookHttpService) Search(shopID string, pageable micromodels.Pag
 		"code",
 	}
 
-	docList, pagination, err := svc.repo.FindPage(ctx, shopID, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPage(ctx, holdingCode, searchInFields, pageable)
 
 	if err != nil {
 		return []models.JournalBookInfo{}, pagination, err
@@ -174,7 +174,7 @@ func (svc JournalBookHttpService) Search(shopID string, pageable micromodels.Pag
 	return docList, pagination, nil
 }
 
-func (svc JournalBookHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.JournalBook) (common.BulkImport, error) {
+func (svc JournalBookHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.JournalBook) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -189,7 +189,7 @@ func (svc JournalBookHttpService) SaveInBatch(shopID string, authUsername string
 		itemCodeGuidList = append(itemCodeGuidList, doc.Code)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "docno", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "docno", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -201,18 +201,18 @@ func (svc JournalBookHttpService) SaveInBatch(shopID string, authUsername string
 	}
 
 	duplicateDataList, createDataList = importdata.PreparePayloadData[models.JournalBook, models.JournalBookDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.JournalBook) models.JournalBookDoc {
+		func(holdingCode string, authUsername string, doc models.JournalBook) models.JournalBookDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.JournalBookDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.JournalBook = doc
 
 			currentTime := time.Now()
@@ -223,12 +223,12 @@ func (svc JournalBookHttpService) SaveInBatch(shopID string, authUsername string
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.JournalBook, models.JournalBookDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.JournalBookDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", guid)
+		func(holdingCode string, guid string) (models.JournalBookDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", guid)
 		},
 		func(doc models.JournalBookDoc) bool {
 			if doc.Code != "" {
@@ -236,13 +236,13 @@ func (svc JournalBookHttpService) SaveInBatch(shopID string, authUsername string
 			}
 			return false
 		},
-		func(shopID string, authUsername string, data models.JournalBook, doc models.JournalBookDoc) error {
+		func(holdingCode string, authUsername string, data models.JournalBook, doc models.JournalBookDoc) error {
 
 			doc.JournalBook = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}

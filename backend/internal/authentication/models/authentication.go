@@ -7,8 +7,8 @@ type AuthenticationContext struct {
 }
 
 type ShopFavoriteRequest struct {
-	ShopID string `json:"shopid" bson:"shopid"`
-	IsFavorite bool   `json:"is_favorite" bson:"is_favorite"`
+	HoldingCode string `json:"holding_code" bson:"holding_code"`
+	IsFavorite  bool   `json:"is_favorite" bson:"is_favorite"`
 }
 
 type TokenLoginRequest struct {
@@ -22,29 +22,29 @@ type LineLoginRequest struct {
 // LineUserLoginRequest — สำหรับ QR code / LIFF login flow
 // Flutter ส่ง line_user_id ตรงจาก LIFF server (ไม่มี LINE access token)
 type LineUserLoginRequest struct {
-	LineUserID string `json:"line_user_id" validate:"required"`
+	LineUserID  string `json:"line_user_id" validate:"required"`
 	DisplayName string `json:"display_name"`
-	PictureUrl string `json:"picture_url"`
-	Email string `json:"email"`
+	PictureUrl  string `json:"picture_url"`
+	Email       string `json:"email"`
 }
 
 // GoogleLoginRequest — สำหรับ Google OAuth mobile (Android/iOS)
 // Flutter ส่ง google_user_id + email หลังจาก Google OAuth สำเร็จ
 type GoogleLoginRequest struct {
 	GoogleUserID string `json:"google_user_id"`
-	DisplayName string `json:"display_name"`
-	PictureUrl string `json:"picture_url"`
-	Email string `json:"email" validate:"required"`
+	DisplayName  string `json:"display_name"`
+	PictureUrl   string `json:"picture_url"`
+	Email        string `json:"email" validate:"required"`
 }
 
 type TokenLoginResponse struct {
-	Token string `json:"token"`
+	Token   string `json:"token"`
 	Refresh string `json:"refresh"`
 }
 
 type PhoneNumberLoginReponse struct {
 	RefCode string    `json:"refcode"`
-	Expire time.Time `json:"expire"`
+	Expire  time.Time `json:"expire"`
 }
 
 type PhoneNumberLoginRequest struct {
@@ -53,20 +53,20 @@ type PhoneNumberLoginRequest struct {
 
 type PhoneNumberOTPRequest struct {
 	PhoneNumber string `json:"phone_number" bson:"phone_number" validate:"required,max=233"`
-	RefCode string `json:"refcode"`
-	OTP string `json:"otp" bson:"otp" validate:"required,max=20"`
+	RefCode     string `json:"refcode"`
+	OTP         string `json:"otp" bson:"otp" validate:"required,max=20"`
 }
 
 type PhoneOTP struct {
 	PhoneNumber string `json:"phone_number"`
-	OTP string `json:"otp" `
+	OTP         string `json:"otp" `
 }
 
 // LinkLineRequest — สำหรับเชื่อมต่อ LINE กับ user profile
 type LinkLineRequest struct {
-	LineUserID string `json:"line_user_id" validate:"required"`
+	LineUserID      string `json:"line_user_id" validate:"required"`
 	LineDisplayName string `json:"line_display_name"`
-	LinePictureURL string `json:"line_picture_url"`
+	LinePictureURL  string `json:"line_picture_url"`
 }
 
 type UserDisableLoginError struct{}

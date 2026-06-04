@@ -6,8 +6,8 @@ import (
 )
 
 type IDebtorConsumerService interface {
-	Upsert(shopID string, code string, doc models.DebtorPG) error
-	Delete(shopID string, code string) error
+	Upsert(holdingCode string, code string, doc models.DebtorPG) error
+	Delete(holdingCode string, code string) error
 }
 
 type DebtorConsumerService struct {
@@ -20,8 +20,8 @@ func NewDebtorConsumerService(repo repositories.IDebtorPostgresRepository) IDebt
 	}
 }
 
-func (s *DebtorConsumerService) Upsert(shopID string, code string, doc models.DebtorPG) error {
-	findDoc, err := s.repo.Get(shopID, code)
+func (s *DebtorConsumerService) Upsert(holdingCode string, code string, doc models.DebtorPG) error {
+	findDoc, err := s.repo.Get(holdingCode, code)
 	if err != nil || findDoc == nil {
 		err = s.repo.Create(doc)
 		if err != nil {
@@ -32,7 +32,7 @@ func (s *DebtorConsumerService) Upsert(shopID string, code string, doc models.De
 		isEqual := findDoc.CompareTo(&doc)
 
 		if !isEqual {
-			err = s.repo.Update(shopID, code, doc)
+			err = s.repo.Update(holdingCode, code, doc)
 			if err != nil {
 				return err
 			}
@@ -42,8 +42,8 @@ func (s *DebtorConsumerService) Upsert(shopID string, code string, doc models.De
 	return nil
 }
 
-func (s *DebtorConsumerService) Delete(shopID string, code string) error {
-	err := s.repo.Delete(shopID, code)
+func (s *DebtorConsumerService) Delete(holdingCode string, code string) error {
+	err := s.repo.Delete(holdingCode, code)
 	if err != nil {
 		return err
 	}

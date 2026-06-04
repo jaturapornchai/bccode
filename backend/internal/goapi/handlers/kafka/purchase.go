@@ -24,13 +24,13 @@ func OnConsumeMessagePurchaseDelete(msg string) error {
 	logger.Info("OnConsumeMessagePurchaseDelete: Processing deletion message")
 
 	docData := TransPurchaseDecode(msg)
-	if docData.ShopId == "" || docData.DocNo == "" {
-		logger.Error("OnConsumeMessagePurchaseDelete: Invalid data - missing ShopId or DocNo")
+	if docData.HoldingCode == "" || docData.DocNo == "" {
+		logger.Error("OnConsumeMessagePurchaseDelete: Invalid data - missing HoldingCode or DocNo")
 		return fmt.Errorf("invalid purchase data")
 	}
 
 	// Delete from both databases
-	err := DeleteDocumentFromDatabases(context.Background(), docData.ShopId, docData.DocNo, TRANS_FLAG_PURCHASE)
+	err := DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.DocNo, TRANS_FLAG_PURCHASE)
 	if err != nil {
 		logger.Error("OnConsumeMessagePurchaseDelete: Failed to delete: %v", err)
 		return err
@@ -53,21 +53,21 @@ func ProcessPurchaseDocument(msg string) error {
 	logger.Info("ProcessPurchaseDocument: Step 1 - Decoding JSON message")
 	purchaseData := TransPurchaseDecode(msg)
 
-	if purchaseData.ShopId == "" || purchaseData.DocNo == "" {
-		logger.Error("ProcessPurchaseDocument: Invalid data - ShopId='%s', DocNo='%s'", purchaseData.ShopId, purchaseData.DocNo)
-		return fmt.Errorf("invalid purchase data - missing ShopId or DocNo")
+	if purchaseData.HoldingCode == "" || purchaseData.DocNo == "" {
+		logger.Error("ProcessPurchaseDocument: Invalid data - HoldingCode='%s', DocNo='%s'", purchaseData.HoldingCode, purchaseData.DocNo)
+		return fmt.Errorf("invalid purchase data - missing HoldingCode or DocNo")
 	}
 
 	logger.Info("ProcessPurchaseDocument: Starting processing for DocNo=%s", purchaseData.DocNo)
-	build.DatabaseChecker(purchaseData.ShopId, false)
+	build.DatabaseChecker(purchaseData.HoldingCode, false)
 
 	// Step 2: Convert Kafka message to ProcessMongoTransModel
 	logger.Info("ProcessPurchaseDocument: Step 2 - Converting Kafka message to ProcessMongoTransModel")
 	processData := ConvertPurchaseMongoDocToProcessModel(purchaseData)
 
 	// Step 3: Connect to PostgreSQL
-	logger.Info("ProcessPurchaseDocument: Step 3 - Connecting to PostgreSQL for shopId=%s", purchaseData.ShopId)
-	db, err := mypg.PgSqlFastConnect(purchaseData.ShopId)
+	logger.Info("ProcessPurchaseDocument: Step 3 - Connecting to PostgreSQL for holdingCode=%s", purchaseData.HoldingCode)
+	db, err := mypg.PgSqlFastConnect(purchaseData.HoldingCode)
 	if err != nil {
 		logger.Error("ProcessPurchaseDocument: Failed to connect to PostgreSQL: %v", err)
 		return fmt.Errorf("failed to connect to PostgreSQL: %v", err)
@@ -81,8 +81,8 @@ func ProcessPurchaseDocument(msg string) error {
 
 	// Step 5: Convert process model to build-doc structs
 	logger.Info("ProcessPurchaseDocument: Step 5 - Converting process model to build-doc structs")
-	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, purchaseData.ShopId)
-	docDetailStructs := MapPurchaseToDocDetailStructs(processData, purchaseData.ShopId)
+	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, purchaseData.HoldingCode)
+	docDetailStructs := MapPurchaseToDocDetailStructs(processData, purchaseData.HoldingCode)
 
 	// Step 6: Create document references จาก docDetailStructs ที่มี DocRef
 	logger.Info("ProcessPurchaseDocument: Step 6 - Creating document references")
@@ -95,10 +95,10 @@ func ProcessPurchaseDocument(msg string) error {
 			docRefMap[detail.DocRef] = true
 			// สร้าง docref record: Purchase (12) อ้างอิง Purchase Order (6)
 			docRefStructs = append(docRefStructs, models.DocRefStruct{
-				DocNo:            processData.DocNo,      // เลขที่เอกสาร Purchase
-				DocNoTransFlag:   TRANS_FLAG_PURCHASE,    // 12
-				DocRefNo:         detail.DocRef,          // เลขที่เอกสาร Purchase Order ที่อ้างอิง
-				DocRefNoTransFlag: 6,                     // Purchase Order transflag
+				DocNo:             processData.DocNo,   // เลขที่เอกสาร Purchase
+				DocNoTransFlag:    TRANS_FLAG_PURCHASE, // 12
+				DocRefNo:          detail.DocRef,       // เลขที่เอกสาร Purchase Order ที่อ้างอิง
+				DocRefNoTransFlag: 6,                   // Purchase Order transflag
 			})
 			logger.Info("ProcessPurchaseDocument: Added docref %s -> %s", processData.DocNo, detail.DocRef)
 		}
@@ -111,18 +111,18 @@ func ProcessPurchaseDocument(msg string) error {
 		return fmt.Errorf("failed to insert document to PostgreSQL: %w", err)
 	}
 
-	err = InsertDocDetailToPostgreSQL(ctx, db, purchaseData.ShopId, docDetailStructs, 8)
+	err = InsertDocDetailToPostgreSQL(ctx, db, purchaseData.HoldingCode, docDetailStructs, 8)
 	if err != nil {
 		return fmt.Errorf("failed to insert doc details to PostgreSQL: %w", err)
 	}
 
-	err = InsertDocumentToClickHouse(ctx, purchaseData.ShopId, docStruct, docRefStructs, docPaymentStruct, docDetailStructs, 9)
+	err = InsertDocumentToClickHouse(ctx, purchaseData.HoldingCode, docStruct, docRefStructs, docPaymentStruct, docDetailStructs, 9)
 	if err != nil {
 		return fmt.Errorf("failed to insert to ClickHouse: %w", err)
 	}
 
 	// Step 10: Calculate stock cost using global config
-	err = ProcessDocumentStockCalculation(db, purchaseData.ShopId, docDetailStructs, 10)
+	err = ProcessDocumentStockCalculation(db, purchaseData.HoldingCode, docDetailStructs, 10)
 	if err != nil {
 		logger.Error("Failed to calculate stock cost: %v", err)
 		// Don't return error, just log it
@@ -141,15 +141,15 @@ func ProcessPurchaseDocument(msg string) error {
 	}
 
 	// Step 12: Process document status immediately after insert
-	logger.Info("ProcessPurchaseDocument: Step 12 - Processing document status for shopId=%s", purchaseData.ShopId)
-	ProcessDocumentStatusAsync(purchaseData.ShopId)
+	logger.Info("ProcessPurchaseDocument: Step 12 - Processing document status for holdingCode=%s", purchaseData.HoldingCode)
+	ProcessDocumentStatusAsync(purchaseData.HoldingCode)
 
 	logger.Success("ProcessPurchaseDocument: Successfully processed DocNo=%s", purchaseData.DocNo)
 	return nil
 }
 
 // MapPurchaseToDocDetailStructs - converts purchase to document detail structs
-func MapPurchaseToDocDetailStructs(processData models.ProcessMongoTransModel, shopId string) []models.DocDetailStruct {
+func MapPurchaseToDocDetailStructs(processData models.ProcessMongoTransModel, holdingCode string) []models.DocDetailStruct {
 	var docDetailStructs []models.DocDetailStruct
 
 	for i, detail := range processData.Details {
@@ -237,7 +237,7 @@ func ConvertPurchaseMongoDocToProcessModel(mongoDoc models.MongoDocModel) models
 
 	logger.Info("ConvertPurchaseMongoDocToProcessModel: Creating final ProcessMongoTransModel")
 	result := models.ProcessMongoTransModel{
-		ShopId:           mongoDoc.ShopId,
+		HoldingCode:      mongoDoc.HoldingCode,
 		BranchId:         mongoDoc.BranchId,
 		GuidFixed:        mongoDoc.GuidFixed,
 		DocNo:            mongoDoc.DocNo,

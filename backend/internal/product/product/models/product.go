@@ -10,71 +10,71 @@ const productCollectionName = "products"
 
 type Product struct {
 	models.PartitionIdentity `bson:"inline"`
-	Code string             `json:"code" bson:"code"`
-	Names *[]models.NameX    `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
-	GroupCode string             `json:"group_code" bson:"group_code"`
-	GroupNames *[]models.NameX    `json:"group_names" bson:"group_names"`
-	ManufacturerGUID string             `json:"manufacturerguid" bson:"manufacturerguid"`
-	ManufacturerCode string             `json:"manufacturercode" bson:"manufacturercode"`
-	ManufacturerNames *[]models.NameX    `json:"manufacturernames" bson:"manufacturernames"`
-	Dimensions []ProductDimension `json:"dimensions" bson:"dimensions"`
-	VatType int8               `json:"vat_type" bson:"vat_type"`
-	Barcodes []Barcodes         `json:"barcodes,omitempty"`
-	ItemType int8               `json:"item_type" bson:"item_type"`
-	UnitGuid string             `json:"unitguid" bson:"unitguid"`
-	GroupsuboneGuid string          `json:"groupsuboneguid" bson:"groupsuboneguid"`
-	GroupsuboneCode string          `json:"groupsubonecode" bson:"groupsubonecode"`
-	GroupsuboneNames *[]models.NameX `json:"groupsubonenames" bson:"groupsubonenames"`
-	GroupsubtwoGuid string          `json:"groupsubtwoguid" bson:"groupsubtwoguid"`
-	GroupsubtwoCode string          `json:"groupsubtwocode" bson:"groupsubtwocode"`
-	GroupsubtwoNames *[]models.NameX `json:"groupsubtwonames" bson:"groupsubtwonames"`
-	BrandGuid string          `json:"brandguid" bson:"brandguid"`
-	BrandCode string          `json:"brand_code" bson:"brand_code"`
-	BrandNames *[]models.NameX `json:"brandnames" bson:"brandnames"`
-	DesignGuid string          `json:"designguid" bson:"designguid"`
-	DesignCode string          `json:"designcode" bson:"designcode"`
-	DesignNames *[]models.NameX `json:"designnames" bson:"designnames"`
-	ModelGuid string          `json:"modelguid" bson:"modelguid"`
-	ModelCode string          `json:"modelcode" bson:"modelcode"`
-	ModelNames *[]models.NameX `json:"modelnames" bson:"modelnames"`
-	PatternGuid string          `json:"patternguid" bson:"patternguid"`
-	PatternCode string          `json:"patterncode" bson:"patterncode"`
-	PatternNames *[]models.NameX `json:"patternnames" bson:"patternnames"`
-	GradeGuid string          `json:"gradeguid" bson:"gradeguid"`
-	GradeCode string          `json:"gradecode" bson:"gradecode"`
-	GradeNames *[]models.NameX `json:"gradenames" bson:"gradenames"`
-	CategoryGuid string          `json:"category_guid" bson:"category_guid"`
-	CategoryCode string          `json:"categorycode" bson:"categorycode"`
-	CategoryNames *[]models.NameX `json:"category_names" bson:"category_names"`
-	ClassGuid string          `json:"classguid" bson:"classguid"`
-	ClassCode string          `json:"classcode" bson:"classcode"`
-	ClassNames *[]models.NameX `json:"classnames" bson:"classnames"`
-	MaterialType int8   `json:"materialtype" bson:"materialtype"`
-	TaxType int8   `json:"tax_type" bson:"tax_type"`
-	Manufacturers *[]ProductManufacturer `json:"manufacturers" bson:"manufacturers"`
-	Suppliers     *[]ProductSupplier     `json:"suppliers" bson:"suppliers"`
+	Code                     string                 `json:"code" bson:"code"`
+	Names                    *[]models.NameX        `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
+	GroupCode                string                 `json:"group_code" bson:"group_code"`
+	GroupNames               *[]models.NameX        `json:"group_names" bson:"group_names"`
+	ManufacturerGUID         string                 `json:"manufacturerguid" bson:"manufacturerguid"`
+	ManufacturerCode         string                 `json:"manufacturercode" bson:"manufacturercode"`
+	ManufacturerNames        *[]models.NameX        `json:"manufacturernames" bson:"manufacturernames"`
+	Dimensions               []ProductDimension     `json:"dimensions" bson:"dimensions"`
+	VatType                  int8                   `json:"vat_type" bson:"vat_type"`
+	Barcodes                 []Barcodes             `json:"barcodes,omitempty"`
+	ItemType                 int8                   `json:"item_type" bson:"item_type"`
+	UnitGuid                 string                 `json:"unitguid" bson:"unitguid"`
+	GroupsuboneGuid          string                 `json:"groupsuboneguid" bson:"groupsuboneguid"`
+	GroupsuboneCode          string                 `json:"groupsubonecode" bson:"groupsubonecode"`
+	GroupsuboneNames         *[]models.NameX        `json:"groupsubonenames" bson:"groupsubonenames"`
+	GroupsubtwoGuid          string                 `json:"groupsubtwoguid" bson:"groupsubtwoguid"`
+	GroupsubtwoCode          string                 `json:"groupsubtwocode" bson:"groupsubtwocode"`
+	GroupsubtwoNames         *[]models.NameX        `json:"groupsubtwonames" bson:"groupsubtwonames"`
+	BrandGuid                string                 `json:"brandguid" bson:"brandguid"`
+	BrandCode                string                 `json:"brand_code" bson:"brand_code"`
+	BrandNames               *[]models.NameX        `json:"brandnames" bson:"brandnames"`
+	DesignGuid               string                 `json:"designguid" bson:"designguid"`
+	DesignCode               string                 `json:"designcode" bson:"designcode"`
+	DesignNames              *[]models.NameX        `json:"designnames" bson:"designnames"`
+	ModelGuid                string                 `json:"modelguid" bson:"modelguid"`
+	ModelCode                string                 `json:"modelcode" bson:"modelcode"`
+	ModelNames               *[]models.NameX        `json:"modelnames" bson:"modelnames"`
+	PatternGuid              string                 `json:"patternguid" bson:"patternguid"`
+	PatternCode              string                 `json:"patterncode" bson:"patterncode"`
+	PatternNames             *[]models.NameX        `json:"patternnames" bson:"patternnames"`
+	GradeGuid                string                 `json:"gradeguid" bson:"gradeguid"`
+	GradeCode                string                 `json:"gradecode" bson:"gradecode"`
+	GradeNames               *[]models.NameX        `json:"gradenames" bson:"gradenames"`
+	CategoryGuid             string                 `json:"category_guid" bson:"category_guid"`
+	CategoryCode             string                 `json:"categorycode" bson:"categorycode"`
+	CategoryNames            *[]models.NameX        `json:"category_names" bson:"category_names"`
+	ClassGuid                string                 `json:"classguid" bson:"classguid"`
+	ClassCode                string                 `json:"classcode" bson:"classcode"`
+	ClassNames               *[]models.NameX        `json:"classnames" bson:"classnames"`
+	MaterialType             int8                   `json:"materialtype" bson:"materialtype"`
+	TaxType                  int8                   `json:"tax_type" bson:"tax_type"`
+	Manufacturers            *[]ProductManufacturer `json:"manufacturers" bson:"manufacturers"`
+	Suppliers                *[]ProductSupplier     `json:"suppliers" bson:"suppliers"`
 
 	// Core Product Properties Moved from ProductBarcode
-	ImageURI                  string                        `json:"imageuri" bson:"imageuri"`
-	Images                    *[]ProductImage               `json:"images" bson:"images"`
-	UseImageOrColor           bool                          `json:"useimageorcolor" bson:"useimageorcolor"`
-	ColorSelect               string                        `json:"colorselect" bson:"colorselect"`
-	ColorSelectHex            string                        `json:"colorselecthex" bson:"colorselecthex"`
-	IsSumPoint                bool                          `json:"issumpoint" bson:"issumpoint"`
-	IsALaCarte                bool                          `json:"isalacarte" bson:"isalacarte"`
-	IsSplitUnitPrint          bool                          `json:"issplitunitprint" bson:"issplitunitprint"`
-	IsOnlyStaff               bool                          `json:"isonlystaff" bson:"isonlystaff"`
-	FoodType                  int                           `json:"foodtype" bson:"foodtype"`
-	IsStockForRestaurant      bool                          `json:"isstockforrestaurant" bson:"isstockforrestaurant"`
-	Restaurant                ProductRestaurant             `json:"restaurant" bson:"restaurant"`
-	OrderTypes                *[]ProductOrderType           `json:"ordertypes" bson:"ordertypes"`
-	Options                   *[]ProductOption              `json:"options" bson:"options"`
-	IsAlert                   bool                          `json:"isalert" bson:"isalert"`
-	AlertDescription          string                        `json:"alertdescription" bson:"alertdescription" validate:"max=1500"`
-	Description               string                        `json:"description" bson:"description" validate:"max=1500"`
-	TimeForSales              *[]ProductTimeForSale         `json:"timeforsales" bson:"timeforsales"`
-	BusinessTypes             *[]ProductBarcodeBusinessType `json:"businesstypes" bson:"businesstypes"`
-	IgnoreBranches            *[]ProductBarcodeBranch       `json:"ignorebranches" bson:"ignorebranches"`
+	ImageURI             string                        `json:"imageuri" bson:"imageuri"`
+	Images               *[]ProductImage               `json:"images" bson:"images"`
+	UseImageOrColor      bool                          `json:"useimageorcolor" bson:"useimageorcolor"`
+	ColorSelect          string                        `json:"colorselect" bson:"colorselect"`
+	ColorSelectHex       string                        `json:"colorselecthex" bson:"colorselecthex"`
+	IsSumPoint           bool                          `json:"issumpoint" bson:"issumpoint"`
+	IsALaCarte           bool                          `json:"isalacarte" bson:"isalacarte"`
+	IsSplitUnitPrint     bool                          `json:"issplitunitprint" bson:"issplitunitprint"`
+	IsOnlyStaff          bool                          `json:"isonlystaff" bson:"isonlystaff"`
+	FoodType             int                           `json:"foodtype" bson:"foodtype"`
+	IsStockForRestaurant bool                          `json:"isstockforrestaurant" bson:"isstockforrestaurant"`
+	Restaurant           ProductRestaurant             `json:"restaurant" bson:"restaurant"`
+	OrderTypes           *[]ProductOrderType           `json:"ordertypes" bson:"ordertypes"`
+	Options              *[]ProductOption              `json:"options" bson:"options"`
+	IsAlert              bool                          `json:"isalert" bson:"isalert"`
+	AlertDescription     string                        `json:"alertdescription" bson:"alertdescription" validate:"max=1500"`
+	Description          string                        `json:"description" bson:"description" validate:"max=1500"`
+	TimeForSales         *[]ProductTimeForSale         `json:"timeforsales" bson:"timeforsales"`
+	BusinessTypes        *[]ProductBarcodeBusinessType `json:"businesstypes" bson:"businesstypes"`
+	IgnoreBranches       *[]ProductBarcodeBranch       `json:"ignorebranches" bson:"ignorebranches"`
 
 	// Units and BOM properties moved from ProductBarcode to Product
 	Condition        bool                 `json:"condition" bson:"condition"`
@@ -92,11 +92,11 @@ type Product struct {
 	MarketplaceProducts *[]MarketplaceProductMap `json:"marketplace_products" bson:"marketplace_products"`
 
 	// Stock properties
-	OrderPoint       float64              `json:"orderpoint" bson:"orderpoint"`
-	MinPoint         float64              `json:"minpoint" bson:"minpoint"`
-	MaxPoint         float64              `json:"maxpoint" bson:"maxpoint"`
-	Qty              float64              `json:"qty" bson:"qty"`
-	StockBarcode     string               `json:"stockbarcode" bson:"stockbarcode"`
+	OrderPoint   float64 `json:"orderpoint" bson:"orderpoint"`
+	MinPoint     float64 `json:"minpoint" bson:"minpoint"`
+	MaxPoint     float64 `json:"maxpoint" bson:"maxpoint"`
+	Qty          float64 `json:"qty" bson:"qty"`
+	StockBarcode string  `json:"stockbarcode" bson:"stockbarcode"`
 }
 
 type RefProductBarcode struct {
@@ -145,39 +145,39 @@ type ProductSupplier struct {
 }
 
 type Barcodes struct {
-	GuidFixed string          `json:"guid_fixed" gorm:"-"`
-	ItemUnitCode string          `json:"item_unit_code" gorm:"-"`
+	GuidFixed     string          `json:"guid_fixed" gorm:"-"`
+	ItemUnitCode  string          `json:"item_unit_code" gorm:"-"`
 	ItemUnitNames *[]models.NameX `json:"itemunitnames" gorm:"-"`
-	Barcode string          `json:"barcode" gorm:"-"`
-	Prices *[]ProductPrice `json:"prices" gorm:"-"`
-	Condition bool            `json:"condition" gorm:"-"`
-	DivideValue float64         `json:"dividevalue" gorm:"-"`
-	StandValue float64         `json:"standvalue" gorm:"-"`
-	Qty float64         `json:"qty" gorm:"-"`
+	Barcode       string          `json:"barcode" gorm:"-"`
+	Prices        *[]ProductPrice `json:"prices" gorm:"-"`
+	Condition     bool            `json:"condition" gorm:"-"`
+	DivideValue   float64         `json:"dividevalue" gorm:"-"`
+	StandValue    float64         `json:"standvalue" gorm:"-"`
+	Qty           float64         `json:"qty" gorm:"-"`
 	IsMainBarcode bool            `json:"is_main_barcode" gorm:"-"`
 }
 
 type ProductPrice struct {
 	KeyNumber int     `json:"key_number" gorm:"-"`
-	Price float64 `json:"price" gorm:"-"`
+	Price     float64 `json:"price" gorm:"-"`
 }
 
 type ProductDimension struct {
 	models.DocIdentity `bson:"inline"`
-	Names *[]models.NameX      `json:"names" bson:"names"`
-	IsDisabled bool                 `json:"isdisabled" bson:"isdisabled"`
-	Item ProductDimensionItem `json:"item" bson:"item"`
+	Names              *[]models.NameX      `json:"names" bson:"names"`
+	IsDisabled         bool                 `json:"isdisabled" bson:"isdisabled"`
+	Item               ProductDimensionItem `json:"item" bson:"item"`
 }
 
 type ProductDimensionItem struct {
 	models.DocIdentity `bson:"inline"`
-	Names *[]models.NameX `json:"names" bson:"names"`
-	IsDisabled bool            `json:"isdisabled" bson:"isdisabled"`
+	Names              *[]models.NameX `json:"names" bson:"names"`
+	IsDisabled         bool            `json:"isdisabled" bson:"isdisabled"`
 }
 
 type ProductInfo struct {
 	models.DocIdentity `bson:"inline"`
-	Product  `bson:"inline"`
+	Product            `bson:"inline"`
 }
 
 func (ProductInfo) CollectionName() string {
@@ -185,13 +185,13 @@ func (ProductInfo) CollectionName() string {
 }
 
 type ProductData struct {
-	models.ShopIdentity `bson:"inline"`
-	ProductInfo  `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	ProductInfo              `bson:"inline"`
 }
 
 type ProductDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	ProductData  `bson:"inline"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ProductData        `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -208,7 +208,7 @@ func (ProductItemGuid) CollectionName() string {
 }
 
 type ProductActivity struct {
-	ProductData  `bson:"inline"`
+	ProductData         `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 
@@ -228,6 +228,56 @@ func (ProductDeleteActivity) CollectionName() string {
 type ProductImage struct {
 	XOrder int    `json:"xorder" bson:"xorder"`
 	URI    string `json:"uri" bson:"uri"`
+}
+
+type MarketplaceMediaAsset struct {
+	Kind           string `json:"kind" bson:"kind"` // main, gallery, sku, size_chart, video, description
+	URI            string `json:"uri" bson:"uri"`
+	ExternalID     string `json:"external_id" bson:"external_id"`
+	ExternalURL    string `json:"external_url" bson:"external_url"`
+	OptionCode     string `json:"option_code" bson:"option_code"`
+	OptionValue    string `json:"option_value" bson:"option_value"`
+	SortOrder      int    `json:"sort_order" bson:"sort_order"`
+	AltText        string `json:"alt_text" bson:"alt_text"`
+	UseCase        string `json:"use_case" bson:"use_case"`
+	MimeType       string `json:"mime_type" bson:"mime_type"`
+	Width          int    `json:"width" bson:"width"`
+	Height         int    `json:"height" bson:"height"`
+	LastImportedAt string `json:"last_imported_at" bson:"last_imported_at"`
+}
+
+type MarketplaceAttributeValue struct {
+	ValueID       string `json:"value_id" bson:"value_id"`
+	ValueCode     string `json:"value_code" bson:"value_code"`
+	ValueText     string `json:"value_text" bson:"value_text"`
+	DisplayText   string `json:"display_text" bson:"display_text"`
+	UnitCode      string `json:"unit_code" bson:"unit_code"`
+	SortOrder     int    `json:"sort_order" bson:"sort_order"`
+	IsCustomValue bool   `json:"is_custom_value" bson:"is_custom_value"`
+}
+
+type MarketplaceAttribute struct {
+	AttributeID   string                       `json:"attribute_id" bson:"attribute_id"`
+	AttributeCode string                       `json:"attribute_code" bson:"attribute_code"`
+	AttributeName string                       `json:"attribute_name" bson:"attribute_name"`
+	InputType     string                       `json:"input_type" bson:"input_type"` // text, single_select, multi_select, number, date, boolean
+	Scope         string                       `json:"scope" bson:"scope"`           // product, sku, package, compliance
+	IsRequired    bool                         `json:"is_required" bson:"is_required"`
+	IsSaleProp    bool                         `json:"is_sale_prop" bson:"is_sale_prop"`
+	IsCustom      bool                         `json:"is_custom" bson:"is_custom"`
+	Values        *[]MarketplaceAttributeValue `json:"values" bson:"values"`
+}
+
+type MarketplaceSpecificationGroup struct {
+	GroupCode  string                  `json:"group_code" bson:"group_code"`
+	GroupName  string                  `json:"group_name" bson:"group_name"`
+	Attributes *[]MarketplaceAttribute `json:"attributes" bson:"attributes"`
+}
+
+type MarketplacePayloadExample struct {
+	Direction string `json:"direction" bson:"direction"` // import, export, stock_update, price_update, order_import
+	UseCase   string `json:"use_case" bson:"use_case"`
+	Payload   any    `json:"payload" bson:"payload"`
 }
 
 type ProductRestaurant struct {
@@ -293,15 +343,15 @@ type ProductBarcodeBranch struct {
 }
 
 // MarketplaceProductMap maps one internal product/barcode to one marketplace
-// listing on a single platform (Shopee / Lazada / TikTok). One product can hold
-// many entries — one per platform+account. Unified shape so all three platforms
+// listing on a single platform (Shopee / Lazada / AliExpress / TikTok). One product can hold
+// many entries — one per platform+account. Unified shape so all platforms
 // share the same fields ("คล้ายๆกัน"); blank fields are simply unused per platform.
-// Platform values: "shopee" | "lazada" | "tiktok".
+// Platform values: "shopee" | "lazada" | "aliexpress" | "tiktok".
 type MarketplaceProductMap struct {
 	// Platform identity
-	Platform  string `json:"platform" bson:"platform"`
-	AccountID string `json:"account_id" bson:"account_id"` // seller/shop account on the platform
-	ShopID    string `json:"shop_id" bson:"shop_id"`       // legacy field, kept for backward-compat
+	Platform    string `json:"platform" bson:"platform"`
+	AccountID   string `json:"account_id" bson:"account_id"`     // seller/shop account on the platform
+	HoldingCode string `json:"holding_code" bson:"holding_code"` // legacy field, kept for backward-compat
 	// Item identity on the marketplace
 	MarketItemID  string `json:"market_item_id" bson:"market_item_id"`   // Shopee item_id / Lazada item_id / TikTok product_id
 	MarketModelID string `json:"market_model_id" bson:"market_model_id"` // variation/model/sku id for this listing
@@ -314,6 +364,12 @@ type MarketplaceProductMap struct {
 	CategoryID   string `json:"category_id" bson:"category_id"`
 	CategoryName string `json:"category_name" bson:"category_name"`
 	BrandID      string `json:"brand_id" bson:"brand_id"`
+	// Media and specifications are internal import/sync structures. Normal product UI should display
+	// merged product images/specs, not expose marketplace origin labels.
+	MediaAssets         *[]MarketplaceMediaAsset         `json:"media_assets" bson:"media_assets"`
+	SpecificationGroups *[]MarketplaceSpecificationGroup `json:"specification_groups" bson:"specification_groups"`
+	RawAttributes       *[]MarketplaceAttribute          `json:"raw_attributes" bson:"raw_attributes"`
+	PayloadExamples     *[]MarketplacePayloadExample     `json:"payload_examples" bson:"payload_examples"`
 	// Price & stock (current value on platform + sync intent)
 	Currency      string  `json:"currency" bson:"currency"`
 	CustomPrice   float64 `json:"custom_price" bson:"custom_price"`     // price we intend to push
@@ -322,7 +378,7 @@ type MarketplaceProductMap struct {
 	SyncStock     bool    `json:"sync_stock" bson:"sync_stock"`
 	SyncPrice     bool    `json:"sync_price" bson:"sync_price"`
 	// Listing & sync status
-	Status        string `json:"status" bson:"status"`         // LIVE / UNLIST / REVIEWING / REJECTED / DELETED
+	Status        string `json:"status" bson:"status"` // LIVE / UNLIST / REVIEWING / REJECTED / DELETED
 	RejectReason  string `json:"reject_reason" bson:"reject_reason"`
 	DaysToShip    int    `json:"days_to_ship" bson:"days_to_ship"`
 	IsPreOrder    bool   `json:"is_pre_order" bson:"is_pre_order"`
@@ -336,21 +392,23 @@ type MarketplaceProductMap struct {
 // marketplace SKU. Same unified field set as MarketplaceProductMap minus the
 // item-level catalog fields, so sub-barcode variations sync consistently.
 type MarketplaceSKUMap struct {
-	Platform      string  `json:"platform" bson:"platform"`
-	AccountID     string  `json:"account_id" bson:"account_id"`
-	ShopID        string  `json:"shop_id" bson:"shop_id"`
-	MarketItemID  string  `json:"market_item_id" bson:"market_item_id"`
-	MarketModelID string  `json:"market_model_id" bson:"market_model_id"`
-	SellerSKU     string  `json:"seller_sku" bson:"seller_sku"`
-	ShopSKU       string  `json:"shop_sku" bson:"shop_sku"`
-	GTIN          string  `json:"gtin" bson:"gtin"`
-	Currency      string  `json:"currency" bson:"currency"`
-	SyncStock     bool    `json:"sync_stock" bson:"sync_stock"`
-	SyncPrice     bool    `json:"sync_price" bson:"sync_price"`
-	CustomPrice   float64 `json:"custom_price" bson:"custom_price"`
-	PlatformPrice float64 `json:"platform_price" bson:"platform_price"`
-	PlatformStock int     `json:"platform_stock" bson:"platform_stock"`
-	Status        string  `json:"status" bson:"status"`
-	SyncEnabled   bool    `json:"sync_enabled" bson:"sync_enabled"`
-	LastSyncAt    string  `json:"last_sync_at" bson:"last_sync_at"`
+	Platform      string                   `json:"platform" bson:"platform"`
+	AccountID     string                   `json:"account_id" bson:"account_id"`
+	HoldingCode   string                   `json:"holding_code" bson:"holding_code"`
+	MarketItemID  string                   `json:"market_item_id" bson:"market_item_id"`
+	MarketModelID string                   `json:"market_model_id" bson:"market_model_id"`
+	SellerSKU     string                   `json:"seller_sku" bson:"seller_sku"`
+	ShopSKU       string                   `json:"shop_sku" bson:"shop_sku"`
+	GTIN          string                   `json:"gtin" bson:"gtin"`
+	MediaAssets   *[]MarketplaceMediaAsset `json:"media_assets" bson:"media_assets"`
+	RawAttributes *[]MarketplaceAttribute  `json:"raw_attributes" bson:"raw_attributes"`
+	Currency      string                   `json:"currency" bson:"currency"`
+	SyncStock     bool                     `json:"sync_stock" bson:"sync_stock"`
+	SyncPrice     bool                     `json:"sync_price" bson:"sync_price"`
+	CustomPrice   float64                  `json:"custom_price" bson:"custom_price"`
+	PlatformPrice float64                  `json:"platform_price" bson:"platform_price"`
+	PlatformStock int                      `json:"platform_stock" bson:"platform_stock"`
+	Status        string                   `json:"status" bson:"status"`
+	SyncEnabled   bool                     `json:"sync_enabled" bson:"sync_enabled"`
+	LastSyncAt    string                   `json:"last_sync_at" bson:"last_sync_at"`
 }

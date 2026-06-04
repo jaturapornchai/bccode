@@ -28,12 +28,12 @@ func OnConsumeMessagePurchaseReturnDelete(msg string) error {
 
 	docData := TransPurchaseReturnDecode(msg)
 
-	if docData.ShopId == "" || docData.DocNo == "" {
-		logger.Error("Invalid purchase return data - missing ShopId or DocNo")
+	if docData.HoldingCode == "" || docData.DocNo == "" {
+		logger.Error("Invalid purchase return data - missing HoldingCode or DocNo")
 		return fmt.Errorf("invalid purchase return data")
 	}
 
-	return DeleteDocumentFromDatabases(context.Background(), docData.ShopId, docData.DocNo, TRANS_FLAG_PURCHASE_RETURN)
+	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.DocNo, TRANS_FLAG_PURCHASE_RETURN)
 }
 
 // ProcessPurchaseReturnDocument - processes purchase return using build-doc system
@@ -51,12 +51,12 @@ func ProcessPurchaseReturnDocument(msg string) error {
 	// Decode purchase return from JSON message
 	logger.Debug("Step 1: Decoding JSON message...")
 	purchaseReturnData := TransPurchaseReturnDecode(msg)
-	logger.Info("Step 1 completed: Decoded PurchaseReturn - DocNo=%s, ShopId=%s, Amount=%.2f",
-		purchaseReturnData.DocNo, purchaseReturnData.ShopId, purchaseReturnData.TotalAmount)
+	logger.Info("Step 1 completed: Decoded PurchaseReturn - DocNo=%s, HoldingCode=%s, Amount=%.2f",
+		purchaseReturnData.DocNo, purchaseReturnData.HoldingCode, purchaseReturnData.TotalAmount)
 
-	if purchaseReturnData.ShopId == "" || purchaseReturnData.DocNo == "" {
-		logger.Error("Invalid purchase return data - ShopId='%s', DocNo='%s'", purchaseReturnData.ShopId, purchaseReturnData.DocNo)
-		return fmt.Errorf("invalid purchase return data - missing ShopId or DocNo")
+	if purchaseReturnData.HoldingCode == "" || purchaseReturnData.DocNo == "" {
+		logger.Error("Invalid purchase return data - HoldingCode='%s', DocNo='%s'", purchaseReturnData.HoldingCode, purchaseReturnData.DocNo)
+		return fmt.Errorf("invalid purchase return data - missing HoldingCode or DocNo")
 	}
 
 	// Convert MongoDocModel to ProcessMongoTransModel
@@ -67,7 +67,7 @@ func ProcessPurchaseReturnDocument(msg string) error {
 
 	// Connect to database
 	logger.Debug("Step 3: Connecting to PostgreSQL...")
-	db, err := mypg.PgSqlFastConnect(purchaseReturnData.ShopId)
+	db, err := mypg.PgSqlFastConnect(purchaseReturnData.HoldingCode)
 	if err != nil {
 		logger.Error("Failed to connect to database: %v", err)
 		return fmt.Errorf("failed to connect to database: %v", err)
@@ -83,8 +83,8 @@ func ProcessPurchaseReturnDocument(msg string) error {
 
 	// Convert to build-doc structs
 	logger.Debug("Step 5: Converting to build-doc structs...")
-	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, purchaseReturnData.ShopId)
-	docDetailStructs := MapPurchaseReturnToDocDetailStructs(processData, purchaseReturnData.ShopId)
+	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, purchaseReturnData.HoldingCode)
+	docDetailStructs := MapPurchaseReturnToDocDetailStructs(processData, purchaseReturnData.HoldingCode)
 	logger.Debug("Step 5 completed: DocStruct created with %d details", len(docDetailStructs))
 
 	// Create doc references if any
@@ -101,18 +101,18 @@ func ProcessPurchaseReturnDocument(msg string) error {
 		return fmt.Errorf("failed to insert document to PostgreSQL: %w", err)
 	}
 
-	err = InsertDocDetailToPostgreSQL(ctx, db, purchaseReturnData.ShopId, docDetailStructs, 8)
+	err = InsertDocDetailToPostgreSQL(ctx, db, purchaseReturnData.HoldingCode, docDetailStructs, 8)
 	if err != nil {
 		return fmt.Errorf("failed to insert doc details to PostgreSQL: %w", err)
 	}
 
-	err = InsertDocumentToClickHouse(ctx, purchaseReturnData.ShopId, docStruct, docRefStructs, docPaymentStruct, docDetailStructs, 9)
+	err = InsertDocumentToClickHouse(ctx, purchaseReturnData.HoldingCode, docStruct, docRefStructs, docPaymentStruct, docDetailStructs, 9)
 	if err != nil {
 		return fmt.Errorf("failed to insert to ClickHouse: %w", err)
 	}
 
 	// Step 10: Calculate stock cost using global config
-	err = ProcessDocumentStockCalculation(db, purchaseReturnData.ShopId, docDetailStructs, 10)
+	err = ProcessDocumentStockCalculation(db, purchaseReturnData.HoldingCode, docDetailStructs, 10)
 	if err != nil {
 		logger.Error("Failed to calculate stock cost: %v", err)
 		// Don't return error, just log it
@@ -128,7 +128,7 @@ func ProcessPurchaseReturnDocument(msg string) error {
 }
 
 // MapPurchaseReturnToDocDetailStructs - converts purchase return to document detail structs
-func MapPurchaseReturnToDocDetailStructs(processData models.ProcessMongoTransModel, shopId string) []models.DocDetailStruct {
+func MapPurchaseReturnToDocDetailStructs(processData models.ProcessMongoTransModel, holdingCode string) []models.DocDetailStruct {
 	var docDetailStructs []models.DocDetailStruct
 
 	for i, detail := range processData.Details {
@@ -211,7 +211,7 @@ func ConvertPurchaseReturnMongoDocToProcessModel(mongoDoc models.MongoDocModel) 
 
 	logger.Info("ConvertPurchaseReturnMongoDocToProcessModel: Creating final ProcessMongoTransModel")
 	result := models.ProcessMongoTransModel{
-		ShopId:           mongoDoc.ShopId,
+		HoldingCode:      mongoDoc.HoldingCode,
 		BranchId:         mongoDoc.BranchId,
 		GuidFixed:        mongoDoc.GuidFixed,
 		DocNo:            mongoDoc.DocNo,

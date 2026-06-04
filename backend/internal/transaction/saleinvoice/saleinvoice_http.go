@@ -106,7 +106,7 @@ func (h SaleInvoiceHttp) RegisterHttp() {
 // @Router /transaction/sale-invoice [post]
 func (h SaleInvoiceHttp) CreateSaleInvoice(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.SaleInvoice{}
@@ -122,7 +122,7 @@ func (h SaleInvoiceHttp) CreateSaleInvoice(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, docNo, err := h.svc.CreateSaleInvoice(shopID, authUsername, *docReq)
+	idx, docNo, err := h.svc.CreateSaleInvoice(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -148,7 +148,7 @@ func (h SaleInvoiceHttp) CreateSaleInvoice(ctx microservice.IContext) error {
 // @Router /transaction/sale-invoice/auto-coupon [post]
 func (h SaleInvoiceHttp) CreateSaleInvoiceWithAutoCoupon(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.SaleInvoice{}
@@ -164,7 +164,7 @@ func (h SaleInvoiceHttp) CreateSaleInvoiceWithAutoCoupon(ctx microservice.IConte
 		return err
 	}
 
-	idx, docNo, err := h.svc.CreateSaleInvoiceWithAutoCoupon(shopID, authUsername, *docReq)
+	idx, docNo, err := h.svc.CreateSaleInvoiceWithAutoCoupon(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -191,7 +191,7 @@ func (h SaleInvoiceHttp) CreateSaleInvoiceWithAutoCoupon(ctx microservice.IConte
 // @Router /transaction/sale-invoice/recalpoint/:code [get]
 func (h SaleInvoiceHttp) RecalPoint(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	code := ctx.Param("code")
 
 	if code == "" {
@@ -199,7 +199,7 @@ func (h SaleInvoiceHttp) RecalPoint(ctx microservice.IContext) error {
 		return nil
 	}
 
-	err := h.svc.RecalPoint(shopID, authUsername, code)
+	err := h.svc.RecalPoint(holdingCode, authUsername, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -226,7 +226,7 @@ func (h SaleInvoiceHttp) RecalPoint(ctx microservice.IContext) error {
 func (h SaleInvoiceHttp) UpdateSaleInvoice(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -244,7 +244,7 @@ func (h SaleInvoiceHttp) UpdateSaleInvoice(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateSaleInvoice(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateSaleInvoice(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -270,12 +270,12 @@ func (h SaleInvoiceHttp) UpdateSaleInvoice(ctx microservice.IContext) error {
 // @Router /transaction/sale-invoice/{id} [delete]
 func (h SaleInvoiceHttp) DeleteSaleInvoice(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteSaleInvoice(shopID, id, authUsername)
+	err := h.svc.DeleteSaleInvoice(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -301,7 +301,7 @@ func (h SaleInvoiceHttp) DeleteSaleInvoice(ctx microservice.IContext) error {
 // @Router /transaction/sale-invoice [delete]
 func (h SaleInvoiceHttp) DeleteSaleInvoiceByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -314,7 +314,7 @@ func (h SaleInvoiceHttp) DeleteSaleInvoiceByGUIDs(ctx microservice.IContext) err
 		return err
 	}
 
-	err = h.svc.DeleteSaleInvoiceByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteSaleInvoiceByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -339,12 +339,12 @@ func (h SaleInvoiceHttp) DeleteSaleInvoiceByGUIDs(ctx microservice.IContext) err
 // @Router /transaction/sale-invoice/{id} [get]
 func (h SaleInvoiceHttp) InfoSaleInvoice(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get SaleInvoice %v", id)
-	doc, err := h.svc.InfoSaleInvoice(shopID, id)
+	doc, err := h.svc.InfoSaleInvoice(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -370,11 +370,11 @@ func (h SaleInvoiceHttp) InfoSaleInvoice(ctx microservice.IContext) error {
 // @Router /transaction/sale-invoice/code/{code} [get]
 func (h SaleInvoiceHttp) InfoSaleInvoiceByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoSaleInvoiceByCode(shopID, code)
+	doc, err := h.svc.InfoSaleInvoiceByCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -399,11 +399,11 @@ func (h SaleInvoiceHttp) InfoSaleInvoiceByCode(ctx microservice.IContext) error 
 // @Router /transaction/sale-invoice/guidpos/{code} [get]
 func (h SaleInvoiceHttp) InfoSaleInvoiceByGuidPos(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoSaleInvoiceByGuidPos(shopID, code)
+	doc, err := h.svc.InfoSaleInvoiceByGuidPos(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -429,7 +429,7 @@ func (h SaleInvoiceHttp) InfoSaleInvoiceByGuidPos(ctx microservice.IContext) err
 // @Router /transaction/sale-invoice/last-pos-docno [get]
 func (h SaleInvoiceHttp) GetLastPOSDocNo(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	posID := ctx.QueryParam("posid")
 	maxDocNo := ctx.QueryParam("maxdocno")
@@ -439,7 +439,7 @@ func (h SaleInvoiceHttp) GetLastPOSDocNo(ctx microservice.IContext) error {
 		return nil
 	}
 
-	doc, err := h.svc.GetLastPOSDocNo(shopID, posID, maxDocNo)
+	doc, err := h.svc.GetLastPOSDocNo(holdingCode, posID, maxDocNo)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -476,13 +476,13 @@ func (h SaleInvoiceHttp) GetLastPOSDocNo(ctx microservice.IContext) error {
 // @Router /transaction/sale-invoice [get]
 func (h SaleInvoiceHttp) SearchSaleInvoicePage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
 	filters := h.searchFilter(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.SearchSaleInvoice(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchSaleInvoice(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -517,7 +517,7 @@ func (h SaleInvoiceHttp) SearchSaleInvoicePage(ctx microservice.IContext) error 
 // @Router /transaction/sale-invoice/list [get]
 func (h SaleInvoiceHttp) SearchSaleInvoiceStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -525,7 +525,7 @@ func (h SaleInvoiceHttp) SearchSaleInvoiceStep(ctx microservice.IContext) error 
 
 	filters := h.searchFilter(ctx.QueryParam)
 
-	docList, total, err := h.svc.SearchSaleInvoiceStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchSaleInvoiceStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -553,7 +553,7 @@ func (h SaleInvoiceHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -565,7 +565,7 @@ func (h SaleInvoiceHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())
@@ -604,7 +604,7 @@ func (h SaleInvoiceHttp) SaveBulk(ctx microservice.IContext) error {
 // @Router /transaction/sale-invoice/export [get]
 func (h SaleInvoiceHttp) Export(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	languageCode := ctx.QueryParam("lang")
 
@@ -618,11 +618,11 @@ func (h SaleInvoiceHttp) Export(ctx microservice.IContext) error {
 		"barcode",        //บาร์โค้ด",
 		"productname",    //"ชื่อสินค้า",
 		"unitcode",       //"หน่วยนับ",
-		"unit_name",       //"ชื่อหน่วยนับ",
+		"unit_name",      //"ชื่อหน่วยนับ",
 		"qty",            //"จำนวน",
 		"price",          //ราคา",
 		"discountamount", // "มูลค่าส่วนลด",
-		"sum_amount",      //"มูลค่าสินค้า",
+		"sum_amount",     //"มูลค่าสินค้า",
 	}
 
 	languageHeader := map[string]string{}
@@ -631,14 +631,14 @@ func (h SaleInvoiceHttp) Export(ctx microservice.IContext) error {
 		languageHeader[key] = ctx.QueryParam(key)
 	}
 
-	results, err := h.svc.Export(shopID, languageCode, languageHeader)
+	results, err := h.svc.Export(holdingCode, languageCode, languageHeader)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
 
-	fileName := fmt.Sprintf("%s_sale_invoice_%s.csv", shopID, time.Now().Format("20060102150405"))
+	fileName := fmt.Sprintf("%s_sale_invoice_%s.csv", holdingCode, time.Now().Format("20060102150405"))
 
 	ctx.EchoContext().Response().Header().Set(echo.HeaderContentType, "application/octet-stream; charset=UTF-8")
 	ctx.EchoContext().Response().Header().Set(echo.HeaderContentDisposition, "attachment; filename=\""+fileName+"\"")

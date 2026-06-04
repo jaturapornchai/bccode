@@ -73,7 +73,7 @@ func (c *ShiftConsumer) ConsumeOnCreateOrUpdate(ctx microservice.IContext) error
 		return err
 	}
 
-	err = c.svc.Upsert(doc.ShopID, doc.GuidFixed, doc)
+	err = c.svc.Upsert(doc.HoldingCode, doc.GuidFixed, doc)
 	if err != nil {
 		return err
 	}
@@ -90,7 +90,7 @@ func (c *ShiftConsumer) ConsumeOnDelete(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = c.svc.Delete(doc.ShopID, doc.GuidFixed)
+	err = c.svc.Delete(doc.HoldingCode, doc.GuidFixed)
 	if err != nil {
 		return err
 	}
@@ -108,7 +108,7 @@ func (c *ShiftConsumer) ConsumeOnBulkCreateOrUpdate(ctx microservice.IContext) e
 	}
 
 	for _, doc := range docs {
-		err = c.svc.Upsert(doc.ShopID, doc.GuidFixed, doc)
+		err = c.svc.Upsert(doc.HoldingCode, doc.GuidFixed, doc)
 		if err != nil {
 			return err
 		}
@@ -126,7 +126,7 @@ func (c *ShiftConsumer) ConsumeOnBulkDelete(ctx microservice.IContext) error {
 	}
 
 	for _, doc := range docs {
-		err = c.svc.Delete(doc.ShopID, doc.GuidFixed)
+		err = c.svc.Delete(doc.HoldingCode, doc.GuidFixed)
 		if err != nil {
 			return err
 		}

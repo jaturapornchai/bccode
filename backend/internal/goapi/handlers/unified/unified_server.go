@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	unifiedcache "smlcloudplatform/internal/goapi/cache/unified"
 	"smlcloudplatform/internal/goapi/aiprovider"
+	unifiedcache "smlcloudplatform/internal/goapi/cache/unified"
 	"smlcloudplatform/internal/goapi/logger"
 
 	"github.com/labstack/echo/v4"
@@ -14,67 +14,67 @@ import (
 
 // UnifiedQueryRequest แทนคำขอ unified query
 type UnifiedQueryRequest struct {
-	ShopID string                 `json:"shop_id"`
-	Question string                 `json:"question"`
-	QueryType string                 `json:"query_type"` // "chat", "search", "stock", "document", "unified"
+	HoldingCode     string                 `json:"holding_code"`
+	Question        string                 `json:"question"`
+	QueryType       string                 `json:"query_type"` // "chat", "search", "stock", "document", "unified"
 	IncludeRealTime bool                   `json:"include_real_time"`
-	Filters map[string]interface{} `json:"filters"`
-	Context map[string]interface{} `json:"context"`
+	Filters         map[string]interface{} `json:"filters"`
+	Context         map[string]interface{} `json:"context"`
 }
 
 // UnifiedQueryResponse แทนคำตอบ unified query
 type UnifiedQueryResponse struct {
-	Success bool                   `json:"success"`
-	ResponseType string                 `json:"response_type"`
-	Data map[string]interface{} `json:"data"`
-	AIResponse string                 `json:"ai_response"`
-	SearchResults []SearchResult         `json:"search_results"`
-	StockData *StockData             `json:"stock_data"`
-	RealTimeData interface{}            `json:"real_time_data"`
-	CacheStatus string                 `json:"cache_status"` // "hit", "miss", "partial"
+	Success        bool                   `json:"success"`
+	ResponseType   string                 `json:"response_type"`
+	Data           map[string]interface{} `json:"data"`
+	AIResponse     string                 `json:"ai_response"`
+	SearchResults  []SearchResult         `json:"search_results"`
+	StockData      *StockData             `json:"stock_data"`
+	RealTimeData   interface{}            `json:"real_time_data"`
+	CacheStatus    string                 `json:"cache_status"` // "hit", "miss", "partial"
 	ProcessingTime time.Duration          `json:"processing_time"`
-	TokenUsage *TokenUsage            `json:"token_usage"`
-	Timestamp time.Time              `json:"timestamp"`
+	TokenUsage     *TokenUsage            `json:"token_usage"`
+	Timestamp      time.Time              `json:"timestamp"`
 }
 
 // SearchResult แทนผลการค้นหา
 type SearchResult struct {
-	ItemCode string  `json:"item_code"`
-	Name string  `json:"name"`
-	Barcode string  `json:"barcode"`
-	Unit string  `json:"unit"`
-	ImageURL string  `json:"image_url"`
+	ItemCode       string  `json:"item_code"`
+	Name           string  `json:"name"`
+	Barcode        string  `json:"barcode"`
+	Unit           string  `json:"unit"`
+	ImageURL       string  `json:"image_url"`
 	RelevanceScore float64 `json:"relevance_score"`
-	CurrentStock float64 `json:"current_stock"`
-	Warehouse string  `json:"warehouse"`
-	Location string  `json:"location"`
+	CurrentStock   float64 `json:"current_stock"`
+	Warehouse      string  `json:"warehouse"`
+	Location       string  `json:"location"`
 }
 
 // StockData แทนข้อมูลสต็อก
 type StockData struct {
 	CurrentBalance float64   `json:"current_balance"`
-	Warehouse string    `json:"warehouse"`
-	Location string    `json:"location"`
-	LastUpdated time.Time `json:"last_updated"`
-	MovementType string    `json:"movement_type"` // "increase", "decrease", "transfer"
+	Warehouse      string    `json:"warehouse"`
+	Location       string    `json:"location"`
+	LastUpdated    time.Time `json:"last_updated"`
+	MovementType   string    `json:"movement_type"` // "increase", "decrease", "transfer"
 	ChangeQuantity float64   `json:"change_quantity"`
 }
 
 // TokenUsage แทนการใช้งาน token
 type TokenUsage struct {
-	PromptTokens int     `json:"prompt_tokens"`
+	PromptTokens     int     `json:"prompt_tokens"`
 	CompletionTokens int     `json:"completion_tokens"`
-	TotalTokens int     `json:"total_tokens"`
-	CostUSD float64 `json:"cost_usd"`
-	CostTHB float64 `json:"cost_thb"`
-	Model string  `json:"model"`
+	TotalTokens      int     `json:"total_tokens"`
+	CostUSD          float64 `json:"cost_usd"`
+	CostTHB          float64 `json:"cost_thb"`
+	Model            string  `json:"model"`
 }
 
 // UnifiedAPIServer แทน unified API server
 type UnifiedAPIServer struct {
-	cacheManager      *unifiedcache.UnifiedCacheManager
-	websocketHub      *WebSocketHub
-	aiProvider        aiprovider.AIProvider
+	cacheManager *unifiedcache.UnifiedCacheManager
+	websocketHub *WebSocketHub
+	aiProvider   aiprovider.AIProvider
 }
 
 // WebSocketHub แทน WebSocket hub สำหรับ real-time updates
@@ -107,9 +107,9 @@ func NewUnifiedAPIServer() *UnifiedAPIServer {
 	ai := aiprovider.GetProvider()
 
 	server := &UnifiedAPIServer{
-		cacheManager:      cacheManager,
-		websocketHub:      wsHub,
-		aiProvider:        ai,
+		cacheManager: cacheManager,
+		websocketHub: wsHub,
+		aiProvider:   ai,
 	}
 
 	logger.Success("✅ UnifiedAPIServer เริ่มต้นเรียบร้อย")
@@ -125,28 +125,28 @@ func (s *UnifiedAPIServer) ProcessUnifiedQuery(c echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		logger.Warn("ล้มเหลวในการแปลง request body: %v", err)
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success":  false,
-			"error":    "Invalid request format",
-			"message":  "กรุณาตรวจสอบรูปแบบข้อมูลที่ส่งมา",
+			"success":   false,
+			"error":     "Invalid request format",
+			"message":   "กรุณาตรวจสอบรูปแบบข้อมูลที่ส่งมา",
 			"timestamp": time.Now(),
 		})
 	}
 
 	// Validate request
-	if req.ShopID == "" {
+	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success":  false,
-			"error":    "shop_id is required",
-			"message":  "จำเป็นต้องระบุ shop_id",
+			"success":   false,
+			"error":     "holding_code is required",
+			"message":   "จำเป็นต้องระบุ holding_code",
 			"timestamp": time.Now(),
 		})
 	}
 
 	if req.Question == "" && req.QueryType != "search" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success":  false,
-			"error":    "question is required",
-			"message":  "จำเป็นต้องระบุคำถาม",
+			"success":   false,
+			"error":     "question is required",
+			"message":   "จำเป็นต้องระบุคำถาม",
 			"timestamp": time.Now(),
 		})
 	}
@@ -157,7 +157,7 @@ func (s *UnifiedAPIServer) ProcessUnifiedQuery(c echo.Context) error {
 	}
 
 	logger.Info("[UnifiedQuery] shop: %s, query_type: %s, include_real_time: %v, question: %s",
-		req.ShopID, req.QueryType, req.IncludeRealTime, req.Question)
+		req.HoldingCode, req.QueryType, req.IncludeRealTime, req.Question)
 
 	// ประมวลผลตาม query type
 	var response *UnifiedQueryResponse
@@ -169,10 +169,10 @@ func (s *UnifiedAPIServer) ProcessUnifiedQuery(c echo.Context) error {
 	if err != nil {
 		logger.Error("ล้มเหลวในการประมวลผล unified query: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-			"success":  false,
-			"error":    "processing_failed",
-			"message":  "เกิดข้อผิดพลาดในการประมวลผล",
-			"details":  err.Error(),
+			"success":   false,
+			"error":     "processing_failed",
+			"message":   "เกิดข้อผิดพลาดในการประมวลผล",
+			"details":   err.Error(),
 			"timestamp": time.Now(),
 		})
 	}
@@ -190,7 +190,7 @@ func (s *UnifiedAPIServer) ProcessUnifiedQuery(c echo.Context) error {
 func (s *UnifiedAPIServer) ProcessUnifiedMultiSourceQuery(ctx context.Context, req *UnifiedQueryRequest) (*UnifiedQueryResponse, error) {
 	// ตรวจสอบ cache ก่อน
 	cacheKey := generateQueryCacheKey(req)
-	if cached, found := s.cacheManager.Get(ctx, "unified", req.ShopID, cacheKey); found {
+	if cached, found := s.cacheManager.Get(ctx, "unified", req.HoldingCode, cacheKey); found {
 		logger.Debug("Cache HIT สำหรับ unified query")
 		if response, ok := cached.(*UnifiedQueryResponse); ok {
 			response.CacheStatus = "hit"
@@ -200,12 +200,12 @@ func (s *UnifiedAPIServer) ProcessUnifiedMultiSourceQuery(ctx context.Context, r
 
 	// เริ่มต้น response
 	response := &UnifiedQueryResponse{
-		Success:        true,
-		ResponseType:   "unified",
-		Data:           make(map[string]interface{}),
-		SearchResults:  []SearchResult{},
-		CacheStatus:    "miss",
-		TokenUsage:     &TokenUsage{},
+		Success:       true,
+		ResponseType:  "unified",
+		Data:          make(map[string]interface{}),
+		SearchResults: []SearchResult{},
+		CacheStatus:   "miss",
+		TokenUsage:    &TokenUsage{},
 	}
 
 	// 1. ประมวลผล AI Chat (ใช้ Gemini โดยตรง)
@@ -260,19 +260,19 @@ func (s *UnifiedAPIServer) ProcessUnifiedMultiSourceQuery(ctx context.Context, r
 	if response.StockData != nil {
 		response.Data["stock_data"] = response.StockData
 	}
-	response.Data["shop_id"] = req.ShopID
+	response.Data["holding_code"] = req.HoldingCode
 	response.Data["query_type"] = "unified"
 	response.Data["include_real_time"] = req.IncludeRealTime
 
 	// 5. Cache result
-	s.cacheManager.Set(ctx, "unified", req.ShopID, cacheKey, response, 0)
+	s.cacheManager.Set(ctx, "unified", req.HoldingCode, cacheKey, response, 0)
 
 	return response, nil
 }
 
 // generateQueryCacheKey สร้าง cache key สำหรับ query
 func generateQueryCacheKey(req *UnifiedQueryRequest) string {
-	key := req.ShopID + ":" + req.QueryType + ":" + req.Question
+	key := req.HoldingCode + ":" + req.QueryType + ":" + req.Question
 	if req.IncludeRealTime {
 		key += ":realtime"
 	}
@@ -289,20 +289,20 @@ func extractSearchQuery(question string) string {
 
 	// ตรวจสอบว่ามี keyword ที่บ่งบอกการค้นหา
 	searchKeywords := []string{"ค้นหา", "หา", "สินค้า", "product", "item", "code", "barcode"}
-	
+
 	for _, keyword := range searchKeywords {
 		if containsIgnoreCase(question, keyword) {
 			return question
 		}
 	}
-	
+
 	return ""
 }
 
 // containsIgnoreCase ตรวจสอบว่ามี substring โดยไม่สนใจ case
 func containsIgnoreCase(text, substring string) bool {
-	return len(text) >= len(substring) && 
-		   findSubstringIgnoreCase(text, substring)
+	return len(text) >= len(substring) &&
+		findSubstringIgnoreCase(text, substring)
 }
 
 func findSubstringIgnoreCase(text, substring string) bool {
@@ -345,10 +345,10 @@ func augmentSearchResultsWithStock(results []SearchResult, stockData *StockData)
 // HealthCheck ตรวจสอบสถานะของ unified server
 func (s *UnifiedAPIServer) HealthCheck(c echo.Context) error {
 	healthData := map[string]interface{}{
-		"status":           "healthy",
-		"version":          "1.0.0",
-		"timestamp":        time.Now().Unix(),
-		"unified_server":   "running",
+		"status":         "healthy",
+		"version":        "1.0.0",
+		"timestamp":      time.Now().Unix(),
+		"unified_server": "running",
 		"components": map[string]interface{}{
 			"ai_chat":        "ok",
 			"product_search": "ok",
@@ -388,9 +388,9 @@ func (s *UnifiedAPIServer) HealthCheck(c echo.Context) error {
 func (s *UnifiedAPIServer) GetCacheStats(c echo.Context) error {
 	if s.cacheManager == nil {
 		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
-			"success":  false,
-			"error":    "cache_manager_not_initialized",
-			"message":  "Cache manager ไม่ได้เริ่มต้น",
+			"success": false,
+			"error":   "cache_manager_not_initialized",
+			"message": "Cache manager ไม่ได้เริ่มต้น",
 		})
 	}
 

@@ -27,8 +27,8 @@ func newRealDBRepository(t *testing.T) (repositories.IProductBarcodePGRepository
 	codeEn := "en"
 	itemNameEng := "test"
 	barcode := &models.ProductBarcodePg{
-		ShopID:  "shoptester",
-		Barcode: "1234567890",
+		HoldingCode: "shoptester",
+		Barcode:     "1234567890",
 		PartitionIdentity: commonModel.PartitionIdentity{
 			ParID: "partitiontester",
 		},
@@ -59,10 +59,10 @@ func TestCreateProductBarcodeInRealDB(t *testing.T) {
 func TestGetBarcode(t *testing.T) {
 	productBarcodeRepository, barcode := newRealDBRepository(t)
 
-	bar, err := productBarcodeRepository.Get(barcode.ShopID, barcode.Barcode)
+	bar, err := productBarcodeRepository.Get(barcode.HoldingCode, barcode.Barcode)
 	assert.NoError(t, err)
 
-	assert.Equal(t, barcode.ShopID, bar.ShopID)
+	assert.Equal(t, barcode.HoldingCode, bar.HoldingCode)
 }
 
 func TestUpdateBarcode(t *testing.T) {
@@ -72,10 +72,10 @@ func TestUpdateBarcode(t *testing.T) {
 	timeStr := currentTime.Format("20060201150405")
 	barcode.BalanceQty, _ = strconv.ParseFloat(timeStr, 64)
 
-	err := productBarcodeRepository.Update(barcode.ShopID, barcode.Barcode, barcode)
+	err := productBarcodeRepository.Update(barcode.HoldingCode, barcode.Barcode, barcode)
 	assert.NoError(t, err)
 
-	bar, err := productBarcodeRepository.Get(barcode.ShopID, barcode.Barcode)
+	bar, err := productBarcodeRepository.Get(barcode.HoldingCode, barcode.Barcode)
 	assert.NoError(t, err)
 
 	assert.Equal(t, barcode.BalanceQty, bar.BalanceQty)
@@ -93,6 +93,6 @@ func TestGetBarcodeAssertNotFoundBarcode(t *testing.T) {
 func TestDeleteProductBarcodeInRealDB(t *testing.T) {
 	productBarcodeRepository, barcode := newRealDBRepository(t)
 
-	err := productBarcodeRepository.Delete(barcode.ShopID, barcode.Barcode)
+	err := productBarcodeRepository.Delete(barcode.HoldingCode, barcode.Barcode)
 	assert.NoError(t, err)
 }

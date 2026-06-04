@@ -8,8 +8,8 @@ import (
 )
 
 type ISaleInvoiceReturnTransactionAdminService interface {
-	ReSyncSaleInvoiceReturnDoc(shopID string) error
-	ReSyncSaleInvoiceReturnDeleteDoc(shopID string) error
+	ReSyncSaleInvoiceReturnDoc(holdingCode string) error
+	ReSyncSaleInvoiceReturnDeleteDoc(holdingCode string) error
 }
 
 type SaleInvoiceReturnTransactionAdminService struct {
@@ -29,12 +29,12 @@ func NewSaleInvoiceReturnTransactionAdminService(pst microservice.IPersisterMong
 	}
 }
 
-func (s *SaleInvoiceReturnTransactionAdminService) ReSyncSaleInvoiceReturnDoc(shopID string) error {
+func (s *SaleInvoiceReturnTransactionAdminService) ReSyncSaleInvoiceReturnDoc(holdingCode string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeoutDuration)
 	defer cancel()
 
-	docs, err := s.mongoRepo.FindSaleInvoiceReturnDocByShopID(ctx, shopID)
+	docs, err := s.mongoRepo.FindSaleInvoiceReturnDocByHoldingCode(ctx, holdingCode)
 	if err != nil {
 		return err
 	}
@@ -47,12 +47,12 @@ func (s *SaleInvoiceReturnTransactionAdminService) ReSyncSaleInvoiceReturnDoc(sh
 	return nil
 }
 
-func (s *SaleInvoiceReturnTransactionAdminService) ReSyncSaleInvoiceReturnDeleteDoc(shopID string) error {
+func (s *SaleInvoiceReturnTransactionAdminService) ReSyncSaleInvoiceReturnDeleteDoc(holdingCode string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeoutDuration)
 	defer cancel()
 
-	docs, err := s.mongoRepo.FindSaleInvoiceReturnDeleteDocByShopID(ctx, shopID)
+	docs, err := s.mongoRepo.FindSaleInvoiceReturnDeleteDocByHoldingCode(ctx, holdingCode)
 
 	if err != nil {
 		return err

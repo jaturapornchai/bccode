@@ -8,8 +8,8 @@ import (
 )
 
 type IStockReturnProductTransactionAdminService interface {
-	ReSyncStockReturnProductDoc(shopID string) error
-	ReSyncStockReturnProductDeleteDoc(shopID string) error
+	ReSyncStockReturnProductDoc(holdingCode string) error
+	ReSyncStockReturnProductDeleteDoc(holdingCode string) error
 }
 
 type StockReturnProductTransactionAdminService struct {
@@ -30,12 +30,12 @@ func NewStockReturnProductTransactionAdminService(pst microservice.IPersisterMon
 	}
 }
 
-func (s *StockReturnProductTransactionAdminService) ReSyncStockReturnProductDoc(shopID string) error {
+func (s *StockReturnProductTransactionAdminService) ReSyncStockReturnProductDoc(holdingCode string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeoutDuration)
 	defer cancel()
 
-	docs, err := s.mongoRepo.FindStockReturnProductDocByShopID(ctx, shopID)
+	docs, err := s.mongoRepo.FindStockReturnProductDocByHoldingCode(ctx, holdingCode)
 	if err != nil {
 		return err
 	}
@@ -48,12 +48,12 @@ func (s *StockReturnProductTransactionAdminService) ReSyncStockReturnProductDoc(
 
 }
 
-func (s *StockReturnProductTransactionAdminService) ReSyncStockReturnProductDeleteDoc(shopID string) error {
+func (s *StockReturnProductTransactionAdminService) ReSyncStockReturnProductDeleteDoc(holdingCode string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeoutDuration)
 	defer cancel()
 
-	docs, err := s.mongoRepo.FindStockReturnProductDeleteDocByShopID(ctx, shopID)
+	docs, err := s.mongoRepo.FindStockReturnProductDeleteDocByHoldingCode(ctx, holdingCode)
 
 	if err != nil {
 		return err

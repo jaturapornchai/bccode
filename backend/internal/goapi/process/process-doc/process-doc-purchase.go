@@ -83,7 +83,7 @@ func ProcessDocPurchase(db *sql.DB, docNo string) {
 		// unitstand = หน่วยตัวตั้ง
 		// unitdivide = หน่วยตัวแยก
 		queryCompare := `
-            SELECT 
+            SELECT
                 SUM(COALESCE(dds.totalqty * (dds.unitstand / NULLIF(dds.unitdivide, 0)), dds.totalqty)) AS totalordered,
                 COALESCE(SUM(drc.totalqty * (drc.unitstand / NULLIF(drc.unitdivide, 0))), 0) AS totalreceived
             FROM docdetail dds
@@ -146,11 +146,11 @@ func ProcessDocPurchase(db *sql.DB, docNo string) {
 	}
 }
 
-func ProcessDocPurchaseAll(shopId string) {
-	logger.Info("Starting ProcessDocPurchaseAll for shop %s", shopId)
+func ProcessDocPurchaseAll(holdingCode string) {
+	logger.Info("Starting ProcessDocPurchaseAll for shop %s", holdingCode)
 	ctx := context.Background()
 
-	db, err := mypg.PgSqlFastConnect(shopId)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		logger.Info("Failed to connect to PostgreSQL: %v", err)
 		return
@@ -177,11 +177,11 @@ func ProcessDocPurchaseAll(shopId string) {
 	rows.Close()
 
 	if len(docList) == 0 {
-		logger.Debug("No purchase documents to process for shop %s", shopId)
+		logger.Debug("No purchase documents to process for shop %s", holdingCode)
 		return
 	}
 
-	logger.Info("Processing %d purchase documents for shop %s", len(docList), shopId)
+	logger.Info("Processing %d purchase documents for shop %s", len(docList), holdingCode)
 
 	// ประมวลผลแบบ batch (ไม่ใช้ goroutine เพื่อความรวดเร็ว)
 	successCount := 0
@@ -203,5 +203,5 @@ func ProcessDocPurchaseAll(shopId string) {
 	}
 
 	logger.Success("ProcessDocPurchaseAll completed for shop %s: processed %d docs (%d success, %d errors)",
-		shopId, len(docList), successCount, errorCount)
+		holdingCode, len(docList), successCount, errorCount)
 }

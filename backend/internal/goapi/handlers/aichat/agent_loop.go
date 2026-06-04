@@ -91,7 +91,7 @@ func agentSystemPrompt() string {
 
 // callWithFallback เรียก AI พร้อม fallback — ถ้า provider แรก fail ให้ลองตัวถัดไป + บันทึก cooldown
 // ถ้ามี provider เดียว → ไม่ cooldown (ไม่มี fallback จะ cooldown ไปก็ใช้ไม่ได้เลย)
-func callWithFallback(ctx context.Context, shopID string, providers []aiprovider.ToolCallingProvider, messages []aiprovider.OAIMessage, tools []aiprovider.OAITool, temperature float64) (*aiprovider.OAIResponse, string, error) {
+func callWithFallback(ctx context.Context, holdingCode string, providers []aiprovider.ToolCallingProvider, messages []aiprovider.OAIMessage, tools []aiprovider.OAITool, temperature float64) (*aiprovider.OAIResponse, string, error) {
 	singleProvider := len(providers) == 1
 	var lastErr error
 	for _, p := range providers {
@@ -104,7 +104,7 @@ func callWithFallback(ctx context.Context, shopID string, providers []aiprovider
 		}
 		logger.Warn("[Agent] Provider %s failed (after retries): %v — trying next", p.Name(), err)
 		if !singleProvider {
-			aiprovider.MarkProviderFailed(shopID, p.Name(), err)
+			aiprovider.MarkProviderFailed(holdingCode, p.Name(), err)
 		}
 		lastErr = err
 	}
@@ -167,11 +167,11 @@ func stripImageContent(messages []aiprovider.OAIMessage) []aiprovider.OAIMessage
 }
 
 // RunAgentLoop — ReAct loop: AI เรียก tools ซ้ำๆ จนได้คำตอบ
-func RunAgentLoop(ctx context.Context, shopID string, question string) (*AgentChatResponse, error) {
+func RunAgentLoop(ctx context.Context, holdingCode string, question string) (*AgentChatResponse, error) {
 	startTime := time.Now()
 
 	// หา providers ที่รองรับ tool calling (จาก DB ของ shop ก่อน, fallback env vars)
-	providers := aiprovider.GetShopToolCallingProviders(shopID)
+	providers := aiprovider.GetShopToolCallingProviders(holdingCode)
 	if len(providers) == 0 {
 		return nil, fmt.Errorf("ไม่มี AI Provider ที่รองรับ tool calling")
 	}
@@ -199,7 +199,7 @@ func RunAgentLoop(ctx context.Context, shopID string, question string) (*AgentCh
 		logger.Info("[Agent] Iteration %d — sending %d messages to AI", iterations, len(messages))
 
 		// เรียก AI พร้อม tools (fallback ข้าม provider ถ้า rate limit)
-		resp, providerName, err := callWithFallback(ctx, shopID, providers, messages, tools, 0.3)
+		resp, providerName, err := callWithFallback(ctx, holdingCode, providers, messages, tools, 0.3)
 		if err != nil {
 			logger.Error("[Agent] AI call failed at iteration %d: %v", iterations, err)
 			return nil, fmt.Errorf("AI ตอบไม่ได้: %w", err)
@@ -285,8 +285,8 @@ func RunAgentLoop(ctx context.Context, shopID string, question string) (*AgentCh
 				continue
 			}
 
-			// Inject shop_id
-			params["shop_id"] = shopID
+			// Inject holding_code
+			params["holding_code"] = holdingCode
 
 			logger.Info("[Agent] Executing tool: %s", toolName)
 

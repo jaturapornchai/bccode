@@ -10232,8 +10232,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Shop ID",
-                        "name": "shopid",
+                        "description": "Holding Code",
+                        "name": "holding_code",
                         "in": "query"
                     },
                     {
@@ -10343,8 +10343,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Shop ID",
-                        "name": "shopid",
+                        "description": "Holding Code",
+                        "name": "holding_code",
                         "in": "query"
                     },
                     {
@@ -10383,8 +10383,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Shop ID",
-                        "name": "shopid",
+                        "description": "Holding Code",
+                        "name": "holding_code",
                         "in": "query"
                     },
                     {
@@ -10652,8 +10652,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Shop ID",
-                        "name": "shopid",
+                        "description": "Holding Code",
+                        "name": "holding_code",
                         "in": "query"
                     },
                     {
@@ -10694,8 +10694,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Shop ID",
-                        "name": "shopid",
+                        "description": "Holding Code",
+                        "name": "holding_code",
                         "in": "query"
                     },
                     {
@@ -12529,8 +12529,8 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Shop IDs comma-separated",
-                        "name": "shopids",
+                        "description": "Holding Codes comma-separated",
+                        "name": "holding_codes",
                         "in": "query"
                     }
                 ],
@@ -13207,7 +13207,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/gl/journal/rebuild/{shopid}": {
+        "/gl/journal/rebuild/{holding_code}": {
             "get": {
                 "security": [
                     {
@@ -13225,8 +13225,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Journal Shop ID",
-                        "name": "shopid",
+                        "description": "Journal Holding Code",
+                        "name": "holding_code",
                         "in": "path",
                         "required": true
                     }
@@ -33838,7 +33838,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Shop ID",
+                        "description": "Holding Code",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -33878,7 +33878,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Shop ID",
+                        "description": "Holding Code",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -33924,7 +33924,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Shop ID",
+                        "description": "Holding Code",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -33946,7 +33946,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/slip/{shopid}/{posid}/{docdate}/{docno}": {
+        "/slip/{holding_code}/{posid}/{docdate}/{docno}": {
             "get": {
                 "security": [
                     {
@@ -33963,8 +33963,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Shop ID",
-                        "name": "shopid",
+                        "description": "Holding Code",
+                        "name": "holding_code",
                         "in": "path",
                         "required": true
                     },
@@ -57741,7 +57741,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "shopid filter ex. \\",
+                        "description": "holding_code filter ex. \\",
                         "name": "shopsid",
                         "in": "query"
                     }
@@ -61146,7 +61146,7 @@ const docTemplate = `{
                     "description": "ผลกระทบต่องบการเงิน 1=ทั่วไป, 2=ต้นทุนขาย",
                     "type": "integer"
                 },
-                "shopid": {
+                "holding_code": {
                     "type": "string"
                 }
             }
@@ -67528,7 +67528,7 @@ const docTemplate = `{
                 "lineaccesstoken": {
                     "type": "string"
                 },
-                "shopid": {
+                "holding_code": {
                     "type": "string"
                 }
             }
@@ -70518,7 +70518,7 @@ const docTemplate = `{
                 "username"
             ],
             "properties": {
-                "shopid": {
+                "holding_code": {
                     "type": "string"
                 },
                 "username": {
@@ -71347,7 +71347,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.NameX"
                     }
                 },
-                "shopid": {
+                "holding_code": {
                     "type": "string"
                 },
                 "unitguid": {
@@ -71689,7 +71689,7 @@ const docTemplate = `{
                     "description": "ผลกระทบต่องบการเงิน 1=ทั่วไป, 2=ต้นทุนขาย",
                     "type": "integer"
                 },
-                "shopid": {
+                "holding_code": {
                     "type": "string"
                 }
             }
@@ -77548,7 +77548,7 @@ const docTemplate = `{
                 "logo": {
                     "type": "string"
                 },
-                "mainshopid": {
+                "mainholding_code": {
                     "type": "string"
                 },
                 "name1": {
@@ -77606,7 +77606,7 @@ const docTemplate = `{
                 "monthlyaverage": {
                     "type": "number"
                 },
-                "shopid": {
+                "holding_code": {
                     "type": "string"
                 },
                 "shopname": {
@@ -77629,7 +77629,7 @@ const docTemplate = `{
                 "isfavorite": {
                     "type": "boolean"
                 },
-                "shopid": {
+                "holding_code": {
                     "type": "string"
                 }
             }
@@ -77681,7 +77681,7 @@ const docTemplate = `{
                 "logo": {
                     "type": "string"
                 },
-                "mainshopid": {
+                "mainholding_code": {
                     "type": "string"
                 },
                 "name1": {
@@ -77749,7 +77749,7 @@ const docTemplate = `{
                 "logo": {
                     "type": "string"
                 },
-                "mainshopid": {
+                "mainholding_code": {
                     "type": "string"
                 },
                 "name1": {
@@ -81394,7 +81394,7 @@ const docTemplate = `{
                     "description": "ยอดสะสมเดบิต",
                     "type": "number"
                 },
-                "shopid": {
+                "holding_code": {
                     "type": "string"
                 },
                 "sumbalancecredit": {
@@ -81609,7 +81609,7 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 100
                 },
-                "shopid": {
+                "holding_code": {
                     "type": "string"
                 }
             }
@@ -82137,7 +82137,7 @@ const docTemplate = `{
                 "line_user_id": {
                     "type": "string"
                 },
-                "shop_id": {
+                "holding_code": {
                     "type": "string"
                 },
                 "username": {
@@ -82189,10 +82189,10 @@ const docTemplate = `{
         "smlcloudplatform_internal_authentication_models.ShopSelectRequest": {
             "type": "object",
             "required": [
-                "shopid"
+                "holding_code"
             ],
             "properties": {
-                "shopid": {
+                "holding_code": {
                     "type": "string"
                 }
             }
@@ -82212,7 +82212,7 @@ const docTemplate = `{
                 "lastaccessedat": {
                     "type": "string"
                 },
-                "mainshopid": {
+                "mainholding_code": {
                     "description": "Name1          string         ` + "`" + `json:\"name1\" bson:\"name1\"` + "`" + `",
                     "type": "string"
                 },
@@ -82228,7 +82228,7 @@ const docTemplate = `{
                 "role": {
                     "$ref": "#/definitions/smlcloudplatform_internal_authentication_models.UserRole"
                 },
-                "shopid": {
+                "holding_code": {
                     "type": "string"
                 }
             }
@@ -82245,7 +82245,7 @@ const docTemplate = `{
                     "maxLength": 233,
                     "minLength": 5
                 },
-                "shopid": {
+                "holding_code": {
                     "type": "string"
                 },
                 "username": {
@@ -82433,7 +82433,7 @@ const docTemplate = `{
                 "role": {
                     "$ref": "#/definitions/smlcloudplatform_internal_authentication_models.UserRole"
                 },
-                "shopid": {
+                "holding_code": {
                     "type": "string"
                 },
                 "username": {

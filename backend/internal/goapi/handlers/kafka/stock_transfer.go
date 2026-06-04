@@ -24,12 +24,12 @@ func OnConsumeMessageStockTransferDelete(msg string) error {
 	logger.Info("OnConsumeMessageStockTransferDelete: Processing deletion message")
 
 	docData := TransStockTransferDecode(msg)
-	if docData.ShopId == "" || docData.DocNo == "" {
-		logger.Error("OnConsumeMessageStockTransferDelete: Invalid data - missing ShopId or DocNo")
+	if docData.HoldingCode == "" || docData.DocNo == "" {
+		logger.Error("OnConsumeMessageStockTransferDelete: Invalid data - missing HoldingCode or DocNo")
 		return fmt.Errorf("invalid stock transfer data")
 	}
 
-	return DeleteDocumentFromDatabases(context.Background(), docData.ShopId, docData.DocNo, TRANS_FLAG_STOCK_TRANSFER)
+	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.DocNo, TRANS_FLAG_STOCK_TRANSFER)
 }
 
 // ProcessStockTransferDocument - processes stock transfer document following standardized 10-step pattern
@@ -45,21 +45,21 @@ func ProcessStockTransferDocument(msg string) error {
 	logger.Info("ProcessStockTransferDocument: Step 1 - Decoding JSON message")
 	docData := TransStockTransferDecode(msg)
 
-	if docData.ShopId == "" || docData.DocNo == "" {
-		logger.Error("ProcessStockTransferDocument: Invalid data - ShopId='%s', DocNo='%s'", docData.ShopId, docData.DocNo)
-		return fmt.Errorf("invalid stock transfer data - missing ShopId or DocNo")
+	if docData.HoldingCode == "" || docData.DocNo == "" {
+		logger.Error("ProcessStockTransferDocument: Invalid data - HoldingCode='%s', DocNo='%s'", docData.HoldingCode, docData.DocNo)
+		return fmt.Errorf("invalid stock transfer data - missing HoldingCode or DocNo")
 	}
 
 	logger.Info("ProcessStockTransferDocument: Starting processing for DocNo=%s", docData.DocNo)
-	build.DatabaseChecker(docData.ShopId, false)
+	build.DatabaseChecker(docData.HoldingCode, false)
 
 	// Step 2: Convert Kafka message to ProcessMongoTransModel
 	logger.Info("ProcessStockTransferDocument: Step 2 - Converting Kafka message to ProcessMongoTransModel")
 	processData := ConvertStockTransferMongoDocToProcessModel(docData)
 
 	// Step 3: Connect to PostgreSQL
-	logger.Info("ProcessStockTransferDocument: Step 3 - Connecting to PostgreSQL for shopId=%s", docData.ShopId)
-	db, err := mypg.PgSqlFastConnect(docData.ShopId)
+	logger.Info("ProcessStockTransferDocument: Step 3 - Connecting to PostgreSQL for holdingCode=%s", docData.HoldingCode)
+	db, err := mypg.PgSqlFastConnect(docData.HoldingCode)
 	if err != nil {
 		logger.Error("ProcessStockTransferDocument: Failed to connect to PostgreSQL: %v", err)
 		return fmt.Errorf("failed to connect to PostgreSQL: %v", err)
@@ -73,8 +73,8 @@ func ProcessStockTransferDocument(msg string) error {
 
 	// Step 5: Convert process model to build-doc structs
 	logger.Info("ProcessStockTransferDocument: Step 5 - Converting process model to build-doc structs")
-	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, docData.ShopId)
-	docDetailStructs := MapStockTransferToDocDetailStructs(processData, docData.ShopId)
+	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, docData.HoldingCode)
+	docDetailStructs := MapStockTransferToDocDetailStructs(processData, docData.HoldingCode)
 
 	// Step 6: Create document references
 	logger.Info("ProcessStockTransferDocument: Step 6 - Creating document references")
@@ -90,18 +90,18 @@ func ProcessStockTransferDocument(msg string) error {
 		return fmt.Errorf("failed to insert document to PostgreSQL: %w", err)
 	}
 
-	err = InsertDocDetailToPostgreSQL(ctx, db, docData.ShopId, docDetailStructs, 8)
+	err = InsertDocDetailToPostgreSQL(ctx, db, docData.HoldingCode, docDetailStructs, 8)
 	if err != nil {
 		return fmt.Errorf("failed to insert doc details to PostgreSQL: %w", err)
 	}
 
-	err = InsertDocumentToClickHouse(ctx, docData.ShopId, docStruct, docRefStructs, docPaymentStruct, docDetailStructs, 9)
+	err = InsertDocumentToClickHouse(ctx, docData.HoldingCode, docStruct, docRefStructs, docPaymentStruct, docDetailStructs, 9)
 	if err != nil {
 		return fmt.Errorf("failed to insert to ClickHouse: %w", err)
 	}
 
 	// Step 10: Calculate stock cost using global config
-	err = ProcessDocumentStockCalculation(db, docData.ShopId, docDetailStructs, 10)
+	err = ProcessDocumentStockCalculation(db, docData.HoldingCode, docDetailStructs, 10)
 	if err != nil {
 		logger.Error("Failed to calculate stock cost: %v", err)
 		// Don't return error, just log it
@@ -182,7 +182,7 @@ func ConvertStockTransferMongoDocToProcessModel(stockTransfer models.StockTransf
 
 	logger.Info("ConvertStockTransferMongoDocToProcessModel: Creating final ProcessMongoTransModel")
 	result := models.ProcessMongoTransModel{
-		ShopId:           stockTransfer.ShopId,
+		HoldingCode:      stockTransfer.HoldingCode,
 		BranchId:         stockTransfer.BranchCode,
 		GuidFixed:        stockTransfer.Guid,
 		DocNo:            stockTransfer.DocNo,
@@ -209,7 +209,7 @@ func ConvertStockTransferMongoDocToProcessModel(stockTransfer models.StockTransf
 }
 
 // MapStockTransferToDocDetailStructs - converts stock transfer to document detail structs
-func MapStockTransferToDocDetailStructs(processData models.ProcessMongoTransModel, shopId string) []models.DocDetailStruct {
+func MapStockTransferToDocDetailStructs(processData models.ProcessMongoTransModel, holdingCode string) []models.DocDetailStruct {
 	var docDetailStructs []models.DocDetailStruct
 
 	for i, detail := range processData.Details {

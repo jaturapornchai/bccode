@@ -10,20 +10,20 @@ import (
 )
 
 type PurchaseTransactionPG struct {
-	TransactionPG  `gorm:"embedded;"`
-	CreditorCode string                         `json:"creditorcode" gorm:"column:creditorcode"`
-	CreditorNames pkgModels.JSONB                `json:"creditornames" gorm:"column:creditornames;type:jsonb"`
-	TotalPayCash float64                        `json:"totalpaycash" gorm:"column:totalpaycash"`
+	TransactionPG    `gorm:"embedded;"`
+	CreditorCode     string                         `json:"creditorcode" gorm:"column:creditorcode"`
+	CreditorNames    pkgModels.JSONB                `json:"creditornames" gorm:"column:creditornames;type:jsonb"`
+	TotalPayCash     float64                        `json:"totalpaycash" gorm:"column:totalpaycash"`
 	TotalPayTransfer float64                        `json:"totalpaytransfer" gorm:"column:totalpaytransfer"`
-	TotalPayCredit float64                        `json:"totalpaycredit" gorm:"column:totalpaycredit"`
-	Items *[]PurchaseTransactionDetailPG `json:"items" gorm:"items;foreignKey:shopid,docno"`
+	TotalPayCredit   float64                        `json:"totalpaycredit" gorm:"column:totalpaycredit"`
+	Items            *[]PurchaseTransactionDetailPG `json:"items" gorm:"items;foreignKey:holding_code,docno"`
 }
 
 type PurchaseTransactionDetailPG struct {
 	TransactionDetailPG `gorm:"embedded;"`
-	ManufacturerGUID string          `json:"manufacturerguid" gorm:"column:manufacturerguid"`
-	ManufacturerCode string          `json:"manufacturercode" gorm:"column:manufacturercode"`
-	ManufacturerNames pkgModels.JSONB `json:"manufacturernames" gorm:"column:manufacturernames;type:jsonb"`
+	ManufacturerGUID    string          `json:"manufacturerguid" gorm:"column:manufacturerguid"`
+	ManufacturerCode    string          `json:"manufacturercode" gorm:"column:manufacturercode"`
+	ManufacturerNames   pkgModels.JSONB `json:"manufacturernames" gorm:"column:manufacturernames;type:jsonb"`
 }
 
 func (PurchaseTransactionPG) TableName() string {
@@ -48,7 +48,7 @@ func (j *PurchaseTransactionPG) BeforeUpdate(tx *gorm.DB) (err error) {
 
 	// find old data
 	var details *[]PurchaseTransactionDetailPG
-	tx.Model(&PurchaseTransactionDetailPG{}).Where(" shopid=? AND docno=?", j.ShopID, j.DocNo).Find(&details)
+	tx.Model(&PurchaseTransactionDetailPG{}).Where(" holding_code=? AND docno=?", j.HoldingCode, j.DocNo).Find(&details)
 
 	// delete un use data
 	for _, tmp := range *details {

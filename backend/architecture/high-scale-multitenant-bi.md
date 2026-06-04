@@ -31,8 +31,8 @@ branch_id         = one branch under tenant_id
 Rules:
 
 - `tenant_id` is the canonical tenant boundary.
-- For existing production data, `tenant_id` must use the same value as the existing core `shopid`.
-- Existing core storage uses `shopid` as the physical storage field. Some newer GoAPI/MCP modules expose `shop_id` at the API/DTO layer, so treat `tenant_id` as the logical/API name and map to the module's real field instead of renaming old data.
+- For existing production data, `tenant_id` must use the same value as the existing core `holding_code`.
+- Existing core storage uses `holding_code` as the physical storage field. Some newer GoAPI/MCP modules expose `holding_code` at the API/DTO layer, so treat `tenant_id` as the logical/API name and map to the module's real field instead of renaming old data.
 - `tenant_id` must represent the selected company/business, not the owner user.
 - One `user_id` can access many `tenant_id` values through membership and roles.
 - One `company_group_id` can contain many `tenant_id` values for owner-level overview.
@@ -61,7 +61,7 @@ Every write must include:
 
 ```text
 company_group_id
-tenant_id          # same value as shopid for existing tenants
+tenant_id          # same value as holding_code for existing tenants
 branch_id
 doc_type
 doc_no
@@ -81,7 +81,7 @@ event_id
 event_type
 event_version
 company_group_id
-tenant_id          # same value as shopid for existing tenants
+tenant_id          # same value as holding_code for existing tenants
 branch_id
 doc_type
 doc_no

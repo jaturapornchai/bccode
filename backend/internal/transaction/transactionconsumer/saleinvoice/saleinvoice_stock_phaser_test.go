@@ -14,8 +14,8 @@ func TestSaleInvoiceStockPhaser(t *testing.T) {
 	giveSaleInvoice := SaleInvoiceTransactionStruct()
 	want := models.StockTransaction{
 		GuidFixed: "2TKOzSqEElEKNuIacaMHxbc4GgU",
-		ShopIdentity: pkgModels.ShopIdentity{
-			ShopID: "2Eh6e3pfWvXTp0yV3CyFEhKPjdI",
+		HoldingCodeentity: pkgModels.HoldingCodeentity{
+			HoldingCode: "2Eh6e3pfWvXTp0yV3CyFEhKPjdI",
 		},
 		TransFlag:      44,
 		InquiryType:    1,
@@ -40,7 +40,7 @@ func TestSaleInvoiceStockPhaser(t *testing.T) {
 		IsCancel:       false,
 		Details: &[]models.StockTransactionDetail{
 			{
-				ShopID:              "2Eh6e3pfWvXTp0yV3CyFEhKPjdI",
+				HoldingCode:         "2Eh6e3pfWvXTp0yV3CyFEhKPjdI",
 				DocNo:               "a91d29f5-67af-4334-8999-8bc49ed73b4a",
 				Barcode:             "8850086130359",
 				UnitCode:            "ซอง",
@@ -68,7 +68,7 @@ func TestSaleInvoiceStockPhaser(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, want.GuidFixed, get.GuidFixed, "GuidFixed")
-	assert.Equal(t, want.ShopID, get.ShopID, "ShopID")
+	assert.Equal(t, want.HoldingCode, get.HoldingCode, "HoldingCode")
 	assert.Equal(t, want.TransFlag, get.TransFlag, "TransFlag")
 	assert.Equal(t, want.InquiryType, get.InquiryType, "InquiryType")
 	assert.Equal(t, want.DocNo, get.DocNo, "DocNo")
@@ -90,7 +90,7 @@ func TestSaleInvoiceStockPhaser(t *testing.T) {
 	assert.Equal(t, want.Status, get.Status, "Status")
 	assert.Equal(t, want.IsCancel, get.IsCancel, "IsCancel")
 
-	assert.Equal(t, (*want.Details)[0].ShopID, (*get.Details)[0].ShopID, "Details[0].ShopID")
+	assert.Equal(t, (*want.Details)[0].HoldingCode, (*get.Details)[0].HoldingCode, "Details[0].HoldingCode")
 	assert.Equal(t, (*want.Details)[0].DocNo, (*get.Details)[0].DocNo, "Details[0].DocNo")
 	assert.Equal(t, (*want.Details)[0].Barcode, (*get.Details)[0].Barcode, "Details[0].Barcode")
 	assert.Equal(t, (*want.Details)[0].UnitCode, (*get.Details)[0].UnitCode, "Details[0].UnitCode")

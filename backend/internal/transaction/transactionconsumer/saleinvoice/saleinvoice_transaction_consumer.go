@@ -121,7 +121,7 @@ func (t *SaleInvoiceTransactionConsumer) ConsumeOnCreateOrUpdate(ctx microservic
 
 	logger.GetLogger().Info("ConsumeOnCreateOrUpdate : %v", transaction.DocNo)
 
-	err = t.svc.Upsert(transaction.ShopID, transaction.DocNo, *transaction)
+	err = t.svc.Upsert(transaction.HoldingCode, transaction.DocNo, *transaction)
 	if err != nil {
 		t.ms.Logger.Errorf("Cannot Insert StockTransaction : %v", err.Error())
 		return err
@@ -134,7 +134,7 @@ func (t *SaleInvoiceTransactionConsumer) ConsumeOnCreateOrUpdate(ctx microservic
 		return err
 	}
 
-	err = t.stockConsumerService.Upsert(stock.ShopID, stock.DocNo, *stock)
+	err = t.stockConsumerService.Upsert(stock.HoldingCode, stock.DocNo, *stock)
 	if err != nil {
 		t.ms.Logger.Errorf("Cannot Insert StockTransaction : %v", err.Error())
 		return err
@@ -149,7 +149,7 @@ func (t *SaleInvoiceTransactionConsumer) ConsumeOnCreateOrUpdate(ctx microservic
 			return err
 		}
 
-		err = t.debtorConsumerService.Upsert(debtor.ShopID, debtor.DocNo, *debtor)
+		err = t.debtorConsumerService.Upsert(debtor.HoldingCode, debtor.DocNo, *debtor)
 		if err != nil {
 			t.ms.Logger.Errorf("Cannot Insert StockTransaction : %v", err.Error())
 			return err
@@ -172,7 +172,7 @@ func (t *SaleInvoiceTransactionConsumer) ConsumeOnCreateOrUpdate(ctx microservic
 	}
 
 	for _, item := range *transaction.Items {
-		t.productBomService.UpsertBOM(transaction.ShopID, "SYSTEM", transaction.DocNo, item.Barcode)
+		t.productBomService.UpsertBOM(transaction.HoldingCode, "SYSTEM", transaction.DocNo, item.Barcode)
 	}
 
 	return nil
@@ -188,28 +188,28 @@ func (t *SaleInvoiceTransactionConsumer) ConsumeOnDelete(ctx microservice.IConte
 		return err
 	}
 
-	err = t.svc.Delete(trx.ShopID, trx.DocNo)
+	err = t.svc.Delete(trx.HoldingCode, trx.DocNo)
 	if err != nil {
 		t.ms.Logger.Errorf("Cannot Insert StockTransaction : %v", err.Error())
 		return err
 	}
 
 	// delete stock transaction
-	err = t.stockConsumerService.Delete(trx.ShopID, trx.DocNo)
+	err = t.stockConsumerService.Delete(trx.HoldingCode, trx.DocNo)
 	if err != nil {
 		t.ms.Logger.Errorf("Cannot Insert StockTransaction : %v", err.Error())
 		return err
 	}
 
 	// delete debtor transaction
-	err = t.debtorConsumerService.Delete(trx.ShopID, trx.DocNo)
+	err = t.debtorConsumerService.Delete(trx.HoldingCode, trx.DocNo)
 	if err != nil {
 		t.ms.Logger.Errorf("Cannot Insert StockTransaction : %v", err.Error())
 		return err
 	}
 
 	// delete transaction payment
-	err = t.transPaymentConsumeUsecase.Delete(trx.ShopID, trx.DocNo)
+	err = t.transPaymentConsumeUsecase.Delete(trx.HoldingCode, trx.DocNo)
 	if err != nil {
 		t.ms.Logger.Errorf("Cannot Delete Transaction Payment : %v", err.Error())
 		return err
@@ -226,7 +226,7 @@ func (t *SaleInvoiceTransactionConsumer) ConsumeOnBulkCreateOrUpdate(ctx microse
 		return err
 	}
 	for _, transaction := range *transactions {
-		err = t.svc.Upsert(transaction.ShopID, transaction.DocNo, transaction)
+		err = t.svc.Upsert(transaction.HoldingCode, transaction.DocNo, transaction)
 		if err != nil {
 			t.ms.Logger.Errorf("Cannot Insert StockTransaction : %v", err.Error())
 			return err
@@ -239,7 +239,7 @@ func (t *SaleInvoiceTransactionConsumer) ConsumeOnBulkCreateOrUpdate(ctx microse
 			return err
 		}
 
-		err = t.stockConsumerService.Upsert(stock.ShopID, stock.DocNo, *stock)
+		err = t.stockConsumerService.Upsert(stock.HoldingCode, stock.DocNo, *stock)
 		if err != nil {
 			t.ms.Logger.Errorf("Cannot Insert StockTransaction : %v", err.Error())
 			return err
@@ -253,7 +253,7 @@ func (t *SaleInvoiceTransactionConsumer) ConsumeOnBulkCreateOrUpdate(ctx microse
 		}
 
 		if debtor.InquiryType == 0 {
-			err = t.debtorConsumerService.Upsert(debtor.ShopID, debtor.DocNo, *debtor)
+			err = t.debtorConsumerService.Upsert(debtor.HoldingCode, debtor.DocNo, *debtor)
 			if err != nil {
 				t.ms.Logger.Errorf("Cannot Insert StockTransaction : %v", err.Error())
 				return err
@@ -290,28 +290,28 @@ func (t *SaleInvoiceTransactionConsumer) ConsumeOnBulkDelete(ctx microservice.IC
 	}
 
 	for _, trx := range *transactions {
-		err = t.svc.Delete(trx.ShopID, trx.DocNo)
+		err = t.svc.Delete(trx.HoldingCode, trx.DocNo)
 		if err != nil {
 			t.ms.Logger.Errorf("Cannot Insert StockTransaction : %v", err.Error())
 			return err
 		}
 
 		// delete stock transaction
-		err = t.stockConsumerService.Delete(trx.ShopID, trx.DocNo)
+		err = t.stockConsumerService.Delete(trx.HoldingCode, trx.DocNo)
 		if err != nil {
 			t.ms.Logger.Errorf("Cannot Insert StockTransaction : %v", err.Error())
 			return err
 		}
 
 		// delete debtor transaction
-		err = t.debtorConsumerService.Delete(trx.ShopID, trx.DocNo)
+		err = t.debtorConsumerService.Delete(trx.HoldingCode, trx.DocNo)
 		if err != nil {
 			t.ms.Logger.Errorf("Cannot Insert StockTransaction : %v", err.Error())
 			return err
 		}
 
 		// delete transaction payment
-		err = t.transPaymentConsumeUsecase.Delete(trx.ShopID, trx.DocNo)
+		err = t.transPaymentConsumeUsecase.Delete(trx.HoldingCode, trx.DocNo)
 		if err != nil {
 			t.ms.Logger.Errorf("Cannot Delete Transaction Payment : %v", err.Error())
 			return err

@@ -67,7 +67,7 @@ func (h QuotationHttp) RegisterHttp() {
 // @Router /transaction/quotation [post]
 func (h QuotationHttp) CreateQuotation(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.Quotation{}
@@ -83,7 +83,7 @@ func (h QuotationHttp) CreateQuotation(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, docNo, err := h.svc.CreateQuotation(shopID, authUsername, *docReq)
+	idx, docNo, err := h.svc.CreateQuotation(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -111,7 +111,7 @@ func (h QuotationHttp) CreateQuotation(ctx microservice.IContext) error {
 func (h QuotationHttp) UpdateQuotation(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -129,7 +129,7 @@ func (h QuotationHttp) UpdateQuotation(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateQuotation(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateQuotation(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -155,12 +155,12 @@ func (h QuotationHttp) UpdateQuotation(ctx microservice.IContext) error {
 // @Router /transaction/quotation/{id} [delete]
 func (h QuotationHttp) DeleteQuotation(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteQuotation(shopID, id, authUsername)
+	err := h.svc.DeleteQuotation(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -186,7 +186,7 @@ func (h QuotationHttp) DeleteQuotation(ctx microservice.IContext) error {
 // @Router /transaction/quotation [delete]
 func (h QuotationHttp) DeleteQuotationByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -199,7 +199,7 @@ func (h QuotationHttp) DeleteQuotationByGUIDs(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.DeleteQuotationByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteQuotationByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -224,12 +224,12 @@ func (h QuotationHttp) DeleteQuotationByGUIDs(ctx microservice.IContext) error {
 // @Router /transaction/quotation/{id} [get]
 func (h QuotationHttp) InfoQuotation(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get Quotation %v", id)
-	doc, err := h.svc.InfoQuotation(shopID, id)
+	doc, err := h.svc.InfoQuotation(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -255,11 +255,11 @@ func (h QuotationHttp) InfoQuotation(ctx microservice.IContext) error {
 // @Router /transaction/quotation/code/{code} [get]
 func (h QuotationHttp) InfoQuotationByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoQuotationByCode(shopID, code)
+	doc, err := h.svc.InfoQuotationByCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -290,7 +290,7 @@ func (h QuotationHttp) InfoQuotationByCode(ctx microservice.IContext) error {
 // @Router /transaction/quotation [get]
 func (h QuotationHttp) SearchQuotationPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -311,7 +311,7 @@ func (h QuotationHttp) SearchQuotationPage(ctx microservice.IContext) error {
 		},
 	})
 
-	docList, pagination, err := h.svc.SearchQuotation(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchQuotation(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -344,7 +344,7 @@ func (h QuotationHttp) SearchQuotationPage(ctx microservice.IContext) error {
 // @Router /transaction/quotation/list [get]
 func (h QuotationHttp) SearchQuotationStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -367,7 +367,7 @@ func (h QuotationHttp) SearchQuotationStep(ctx microservice.IContext) error {
 		},
 	})
 
-	docList, total, err := h.svc.SearchQuotationStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchQuotationStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -395,7 +395,7 @@ func (h QuotationHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -407,7 +407,7 @@ func (h QuotationHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

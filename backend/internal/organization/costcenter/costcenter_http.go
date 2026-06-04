@@ -64,7 +64,7 @@ func (h CostCenterHttp) RegisterHttp() {
 // @Router /organization/costcenter [post]
 func (h CostCenterHttp) CreateCostCenter(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.CostCenter{}
@@ -80,7 +80,7 @@ func (h CostCenterHttp) CreateCostCenter(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreateCostCenter(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateCostCenter(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -107,7 +107,7 @@ func (h CostCenterHttp) CreateCostCenter(ctx microservice.IContext) error {
 func (h CostCenterHttp) UpdateCostCenter(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -125,7 +125,7 @@ func (h CostCenterHttp) UpdateCostCenter(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateCostCenter(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateCostCenter(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -151,12 +151,12 @@ func (h CostCenterHttp) UpdateCostCenter(ctx microservice.IContext) error {
 // @Router /organization/costcenter/{id} [delete]
 func (h CostCenterHttp) DeleteCostCenter(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteCostCenter(shopID, id, authUsername)
+	err := h.svc.DeleteCostCenter(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -182,7 +182,7 @@ func (h CostCenterHttp) DeleteCostCenter(ctx microservice.IContext) error {
 // @Router /organization/costcenter [delete]
 func (h CostCenterHttp) DeleteCostCenterByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -195,7 +195,7 @@ func (h CostCenterHttp) DeleteCostCenterByGUIDs(ctx microservice.IContext) error
 		return err
 	}
 
-	err = h.svc.DeleteCostCenterByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteCostCenterByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -220,12 +220,12 @@ func (h CostCenterHttp) DeleteCostCenterByGUIDs(ctx microservice.IContext) error
 // @Router /organization/costcenter/{id} [get]
 func (h CostCenterHttp) InfoCostCenter(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get CostCenter %v", id)
-	doc, err := h.svc.InfoCostCenter(shopID, id)
+	doc, err := h.svc.InfoCostCenter(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -252,12 +252,12 @@ func (h CostCenterHttp) InfoCostCenter(ctx microservice.IContext) error {
 // @Router /organization/costcenter/{costCenterCode}/branch/{branchCode} [get]
 func (h CostCenterHttp) InfoCostCenterByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	branchCode := ctx.Param("branchCode")
 	costCenterCode := ctx.Param("costCenterCode")
 
-	doc, err := h.svc.InfoCostCenterByCode(shopID, branchCode, costCenterCode)
+	doc, err := h.svc.InfoCostCenterByCode(holdingCode, branchCode, costCenterCode)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -284,11 +284,11 @@ func (h CostCenterHttp) InfoCostCenterByCode(ctx microservice.IContext) error {
 // @Router /organization/costcenter [get]
 func (h CostCenterHttp) SearchCostCenterPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.SearchCostCenter(shopID, map[string]interface{}{}, pageable)
+	docList, pagination, err := h.svc.SearchCostCenter(holdingCode, map[string]interface{}{}, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -317,13 +317,13 @@ func (h CostCenterHttp) SearchCostCenterPage(ctx microservice.IContext) error {
 // @Router /organization/costcenter/list [get]
 func (h CostCenterHttp) SearchCostCenterStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
 	lang := ctx.QueryParam("lang")
 
-	docList, total, err := h.svc.SearchCostCenterStep(shopID, lang, pageableStep)
+	docList, total, err := h.svc.SearchCostCenterStep(holdingCode, lang, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -351,7 +351,7 @@ func (h CostCenterHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -363,7 +363,7 @@ func (h CostCenterHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

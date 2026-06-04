@@ -205,7 +205,7 @@ func ReportPostHandler(c echo.Context) error {
 		itemCodes, _ := parseItemCodesFromJSON(payLoad.ItemCodeList)
 
 		// สร้าง rebuild job สำหรับ progress tracking
-		job := build.CreateJob(payLoad.ShopID)
+		job := build.CreateJob(payLoad.HoldingCode)
 
 		go func() {
 			defer func() {
@@ -215,15 +215,15 @@ func ReportPostHandler(c echo.Context) error {
 			}()
 			if createDatabase {
 				// Full rebuild: drop database + create ใหม่ทั้งหมด (พร้อม progress)
-				build.PgSqlDropDatabaseAndReProcessWithProgress(payLoad.ShopID, job)
+				build.PgSqlDropDatabaseAndReProcessWithProgress(payLoad.HoldingCode, job)
 			} else {
 				// Calc only mode: คำนวณสต็อกและสถานะเอกสารเท่านั้น
 				if len(itemCodes) > 0 {
 					// เฉพาะ items ที่ระบุ (พร้อม progress)
-					build.CalcStockCostForItemsWithProgress(payLoad.ShopID, itemCodes, job)
+					build.CalcStockCostForItemsWithProgress(payLoad.HoldingCode, itemCodes, job)
 				} else {
 					// ทุก items (พร้อม progress)
-					build.CalcStockCostAllWithProgress(payLoad.ShopID, job)
+					build.CalcStockCostAllWithProgress(payLoad.HoldingCode, job)
 				}
 			}
 		}()
@@ -233,7 +233,7 @@ func ReportPostHandler(c echo.Context) error {
 			"status":          "success",
 			"code":            200,
 			"job_id":          job.ID,
-			"shop_id":         payLoad.ShopID,
+			"holding_code":    payLoad.HoldingCode,
 			"command_id":      payLoad.CommandID,
 			"create_database": createDatabase,
 			"item_count":      len(itemCodes),
@@ -243,23 +243,23 @@ func ReportPostHandler(c echo.Context) error {
 	if payLoad.CommandID == "rebuild_document_flow" {
 		// คำนวณ flow เอกสาร (isref, iscomparedsuccess, isclosed)
 		// สำหรับคำนวณสถานะเอกสารใบสั่งซื้อว่ามีการอ้างอิง (รับสินค้า) หรือยัง
-		job := build.CreateJob(payLoad.ShopID)
+		job := build.CreateJob(payLoad.HoldingCode)
 
 		go func() {
 			defer func() {
 				time.Sleep(10 * time.Second)
 				build.RemoveJob(job.ID)
 			}()
-			build.RebuildDocumentFlowWithProgress(payLoad.ShopID, job)
+			build.RebuildDocumentFlowWithProgress(payLoad.HoldingCode, job)
 		}()
 
 		return c.JSON(http.StatusOK, map[string]any{
-			"message":    "rebuild document flow started",
-			"status":     "success",
-			"code":       200,
-			"job_id":     job.ID,
-			"shop_id":    payLoad.ShopID,
-			"command_id": payLoad.CommandID,
+			"message":      "rebuild document flow started",
+			"status":       "success",
+			"code":         200,
+			"job_id":       job.ID,
+			"holding_code": payLoad.HoldingCode,
+			"command_id":   payLoad.CommandID,
 		})
 	}
 
@@ -267,17 +267,17 @@ func ReportPostHandler(c echo.Context) error {
 		// Rebuild เฉพาะสินค้า (PostgreSQL, ClickHouse)
 		// รองรับทั้ง "rebuild_products_only" และ "rebuild-products"
 		go func() {
-			err := build.RebuildProductsOnly(payLoad.ShopID)
+			err := build.RebuildProductsOnly(payLoad.HoldingCode)
 			if err != nil {
 				logger.Error("Failed to rebuild products: %v", err)
 			}
 		}()
 		return c.JSON(http.StatusOK, map[string]any{
-			"message":    "rebuild products only started",
-			"status":     "success",
-			"code":       200,
-			"shop_id":    payLoad.ShopID,
-			"command_id": payLoad.CommandID,
+			"message":      "rebuild products only started",
+			"status":       "success",
+			"code":         200,
+			"holding_code": payLoad.HoldingCode,
+			"command_id":   payLoad.CommandID,
 		})
 	}
 
@@ -298,7 +298,7 @@ func ReportPostHandler(c echo.Context) error {
 			deleteFirst = *payLoad.DeleteFirst
 		}
 
-		results, err := runProcessStockCalcCost(payLoad.ShopID, itemCodes, pointQty, pointAmount, pointCost, deleteFirst, false, false)
+		results, err := runProcessStockCalcCost(payLoad.HoldingCode, itemCodes, pointQty, pointAmount, pointCost, deleteFirst, false, false)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, map[string]any{
 				"error": err.Error(),
@@ -310,7 +310,7 @@ func ReportPostHandler(c echo.Context) error {
 			"message":         "process stock cost",
 			"status":          "success",
 			"code":            200,
-			"shop_id":         payLoad.ShopID,
+			"holding_code":    payLoad.HoldingCode,
 			"command_id":      payLoad.CommandID,
 			"processed_items": len(results),
 			"point_qty":       pointQty,
@@ -322,32 +322,32 @@ func ReportPostHandler(c echo.Context) error {
 	}
 
 	if payLoad.CommandID == "report_product_balance_by_whcode_barcode" {
-		logger.Info("Command: %s, ShopID: %s, GUID: %s", payLoad.CommandID, payLoad.ShopID, payLoad.Guid)
+		logger.Info("Command: %s, HoldingCode: %s, GUID: %s", payLoad.CommandID, payLoad.HoldingCode, payLoad.Guid)
 
-		ReportProductBalanceByWareHouseBarcode(payLoad.ShopID, payLoad.Guid, payLoad.FinalDate, timezoneCode, languageCode)
+		ReportProductBalanceByWareHouseBarcode(payLoad.HoldingCode, payLoad.Guid, payLoad.FinalDate, timezoneCode, languageCode)
 
 		return c.JSON(http.StatusOK, map[string]any{
-			"message":    "report completed",
-			"status":     "success",
-			"code":       200,
-			"shop_id":    payLoad.ShopID,
-			"command_id": payLoad.CommandID,
-			"guid":       payLoad.Guid,
+			"message":      "report completed",
+			"status":       "success",
+			"code":         200,
+			"holding_code": payLoad.HoldingCode,
+			"command_id":   payLoad.CommandID,
+			"guid":         payLoad.Guid,
 		})
 	}
 
 	if payLoad.CommandID == "report_product_balance_by_location_barcode" {
-		logger.Info("Command: %s, ShopID: %s, GUID: %s", payLoad.CommandID, payLoad.ShopID, payLoad.Guid)
+		logger.Info("Command: %s, HoldingCode: %s, GUID: %s", payLoad.CommandID, payLoad.HoldingCode, payLoad.Guid)
 
-		ReportProductBalanceByLocationBarcode(payLoad.ShopID, payLoad.Guid, payLoad.FinalDate, timezoneCode, languageCode)
+		ReportProductBalanceByLocationBarcode(payLoad.HoldingCode, payLoad.Guid, payLoad.FinalDate, timezoneCode, languageCode)
 
 		return c.JSON(http.StatusOK, map[string]any{
-			"message":    "report completed",
-			"status":     "success",
-			"code":       200,
-			"shop_id":    payLoad.ShopID,
-			"command_id": payLoad.CommandID,
-			"guid":       payLoad.Guid,
+			"message":      "report completed",
+			"status":       "success",
+			"code":         200,
+			"holding_code": payLoad.HoldingCode,
+			"command_id":   payLoad.CommandID,
+			"guid":         payLoad.Guid,
 		})
 	}
 
@@ -358,32 +358,32 @@ func ReportPostHandler(c echo.Context) error {
 			// Add conversion logic here if needed
 		}
 
-		logger.Info("Command: %s, ShopID: %s, GUID: %s, Condition: %d", payLoad.CommandID, payLoad.ShopID, payLoad.Guid, conditionInt)
+		logger.Info("Command: %s, HoldingCode: %s, GUID: %s, Condition: %d", payLoad.CommandID, payLoad.HoldingCode, payLoad.Guid, conditionInt)
 
-		ReportProductBalanceByBarcodeWhCodeLocationCode(payLoad.ShopID, payLoad.Guid, conditionInt, payLoad.FinalDate, timezoneCode, languageCode)
+		ReportProductBalanceByBarcodeWhCodeLocationCode(payLoad.HoldingCode, payLoad.Guid, conditionInt, payLoad.FinalDate, timezoneCode, languageCode)
 
 		return c.JSON(http.StatusOK, map[string]any{
-			"message":    "report completed",
-			"status":     "success",
-			"code":       200,
-			"shop_id":    payLoad.ShopID,
-			"command_id": payLoad.CommandID,
-			"guid":       payLoad.Guid,
+			"message":      "report completed",
+			"status":       "success",
+			"code":         200,
+			"holding_code": payLoad.HoldingCode,
+			"command_id":   payLoad.CommandID,
+			"guid":         payLoad.Guid,
 		})
 	}
 
 	if payLoad.CommandID == "report_product_stock_movement" {
-		logger.Info("Command: %s, ShopID: %s, GUID: %s", payLoad.CommandID, payLoad.ShopID, payLoad.Guid)
+		logger.Info("Command: %s, HoldingCode: %s, GUID: %s", payLoad.CommandID, payLoad.HoldingCode, payLoad.Guid)
 
-		ReportProductStockMovement(payLoad.ShopID, payLoad.Guid, timezoneCode, languageCode)
+		ReportProductStockMovement(payLoad.HoldingCode, payLoad.Guid, timezoneCode, languageCode)
 
 		return c.JSON(http.StatusOK, map[string]any{
-			"message":    "report completed",
-			"status":     "success",
-			"code":       200,
-			"shop_id":    payLoad.ShopID,
-			"command_id": payLoad.CommandID,
-			"guid":       payLoad.Guid,
+			"message":      "report completed",
+			"status":       "success",
+			"code":         200,
+			"holding_code": payLoad.HoldingCode,
+			"command_id":   payLoad.CommandID,
+			"guid":         payLoad.Guid,
 		})
 	}
 
@@ -392,14 +392,14 @@ func ReportPostHandler(c echo.Context) error {
 		// รายงานสินค้าคงเหลือ ตามบาร์โค้ด คลังสินค้า ที่เก็บสินค้า
 		condition, _ := strconv.Atoi(payLoad.Condition)
 		balanceOnly, _ := strconv.ParseBool(payLoad.BalanceOnly)
-		logger.Info("Command: %s, Shop ID: %s", payLoad.CommandID, payLoad.ShopID)
+		logger.Info("Command: %s, Holding Code: %s", payLoad.CommandID, payLoad.HoldingCode)
 		logger.Info("Condition: %d", condition)
 		logger.Info("Balance Only: %t", balanceOnly)
 		logger.Info("Condition: %d, Final Date: %s", condition, payLoad.FinalDate)
 		// สร้าง Report
 		logger.Info("GUID: %v", payLoad.Guid)
 		// สร้าง Report
-		localBin := reportstock.ReportProductBalanceByItemAndWareHouseAndLocation(payLoad.ShopID, payLoad.Guid, condition, payLoad.FinalDate, timezoneCode, languageCode)
+		localBin := reportstock.ReportProductBalanceByItemAndWareHouseAndLocation(payLoad.HoldingCode, payLoad.Guid, condition, payLoad.FinalDate, timezoneCode, languageCode)
 		reportPath := uploadReportBinToS3(localBin)
 		return c.JSON(http.StatusOK, map[string]any{
 			"message": "Report",
@@ -415,12 +415,12 @@ func ReportPostHandler(c echo.Context) error {
 		// รายงานสินค้าคงเหลือ คลังสินค้า ตามบาร์โค้ด
 		condition, _ := strconv.Atoi(payLoad.Condition)
 		balanceOnly, _ := strconv.ParseBool(payLoad.BalanceOnly)
-		logger.Info("Command: %s, Shop ID: %s", payLoad.CommandID, payLoad.ShopID)
+		logger.Info("Command: %s, Holding Code: %s", payLoad.CommandID, payLoad.HoldingCode)
 		logger.Info("Condition: %d", condition)
 		logger.Info("Balance Only: %t", balanceOnly)
 		logger.Info("Condition: %d, Final Date: %s", condition, payLoad.FinalDate)
 		logger.Info("GUID: %v", payLoad.Guid)
-		localBin := reportstock.ReportProductBalanceByWareHouseAndItem(payLoad.ShopID, payLoad.Guid, payLoad.FinalDate, timezoneCode, languageCode)
+		localBin := reportstock.ReportProductBalanceByWareHouseAndItem(payLoad.HoldingCode, payLoad.Guid, payLoad.FinalDate, timezoneCode, languageCode)
 		reportPath := uploadReportBinToS3(localBin)
 		return c.JSON(http.StatusOK, map[string]any{
 			"message": "Report",
@@ -435,10 +435,10 @@ func ReportPostHandler(c echo.Context) error {
 		// สร้าง Report PDF
 		// รายงานสินค้าคงเหลือ ที่เก็บสินค้า ตามบาร์โค้ด
 		balanceOnly, _ := strconv.ParseBool(payLoad.BalanceOnly)
-		logger.Info("Command: %s, Shop ID: %s", payLoad.CommandID, payLoad.ShopID)
+		logger.Info("Command: %s, Holding Code: %s", payLoad.CommandID, payLoad.HoldingCode)
 		logger.Info("Balance Only: %t", balanceOnly)
 		logger.Info("GUID: %v", payLoad.Guid)
-		localBin := reportstock.ReportProductBalanceByLocationAndItem(payLoad.ShopID, payLoad.Guid, payLoad.FinalDate, timezoneCode, languageCode)
+		localBin := reportstock.ReportProductBalanceByLocationAndItem(payLoad.HoldingCode, payLoad.Guid, payLoad.FinalDate, timezoneCode, languageCode)
 		reportPath := uploadReportBinToS3(localBin)
 		return c.JSON(http.StatusOK, map[string]any{
 			"message": "Report",
@@ -450,7 +450,7 @@ func ReportPostHandler(c echo.Context) error {
 	}
 
 	if payLoad.CommandID == "report_product_stock_movement_create_pdf" {
-		localBin := reportstock.ReportProductStockMovement(payLoad.ShopID, payLoad.Guid, timezoneCode, languageCode)
+		localBin := reportstock.ReportProductStockMovement(payLoad.HoldingCode, payLoad.Guid, timezoneCode, languageCode)
 		reportPath := uploadReportBinToS3(localBin)
 		return c.JSON(http.StatusOK, map[string]any{
 			"message": "Report",
@@ -495,7 +495,7 @@ func ReportPostHandler(c echo.Context) error {
 
 		// สร้าง Report
 		// รายงานสินค้าคงเหลือ ตามบาร์โค้ด คลังสินค้า ที่เก็บสินค้า
-		prepareReport := processstock.ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(payLoad.ShopID, condition, finalDate, balanceOnly, barcodeList, payLoad.WarehouseList, timezoneCode)
+		prepareReport := processstock.ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(payLoad.HoldingCode, condition, finalDate, balanceOnly, barcodeList, payLoad.WarehouseList, timezoneCode)
 		logger.Info("PrepareReport: %+v", prepareReport)
 		return c.JSON(http.StatusOK, map[string]any{
 			"message": "Report",
@@ -520,7 +520,7 @@ func ReportPostHandler(c echo.Context) error {
 		logger.Info("Barcode List: %v", barcodeList)
 
 		finalDate := fmt.Sprintf("%v", payLoad.FinalDate)
-		prepareReport := processstock.ProcessProductBalanceByWareHouseAndItem(payLoad.ShopID, finalDate, balanceOnly, barcodeList, payLoad.WarehouseList)
+		prepareReport := processstock.ProcessProductBalanceByWareHouseAndItem(payLoad.HoldingCode, finalDate, balanceOnly, barcodeList, payLoad.WarehouseList)
 		logger.Info("PrepareReport: %+v", prepareReport)
 		return c.JSON(http.StatusOK, map[string]any{
 			"message": "Report",
@@ -549,7 +549,7 @@ func ReportPostHandler(c echo.Context) error {
 		logger.Info("Condition: %d, Final Date: %s", condition, finalDate)
 		// สร้าง Report
 		// รายงานสินค้าคงเหลือ ตามบาร์โค้ด คลังสินค้า ที่เก็บสินค้า
-		prepareReport := processstock.ProcessProductBalanceByLocationAndItem(payLoad.ShopID, finalDate, balanceOnly, barcodeList, payLoad.WarehouseList)
+		prepareReport := processstock.ProcessProductBalanceByLocationAndItem(payLoad.HoldingCode, finalDate, balanceOnly, barcodeList, payLoad.WarehouseList)
 		logger.Info("ProcessProductBalanceByLocationCodeBarcode PrepareReport: %+v", prepareReport)
 		return c.JSON(http.StatusOK, map[string]any{
 			"message": "Report",
@@ -578,7 +578,7 @@ func ReportPostHandler(c echo.Context) error {
 		logger.Info("Condition: %d, Final Date: %s", condition, finalDate)
 		// สร้าง Report
 		// รายงานสินค้าคงเหลือ ตามบาร์โค้ด คลังสินค้า ที่เก็บสินค้า
-		prepareReport := processstock.ProcessProductMovement(payLoad.ShopID, fromDate, finalDate, movementOnly, itemCodeList, payLoad.WarehouseList)
+		prepareReport := processstock.ProcessProductMovement(payLoad.HoldingCode, fromDate, finalDate, movementOnly, itemCodeList, payLoad.WarehouseList)
 		logger.Info("PrepareReport: %+v", prepareReport)
 		return c.JSON(http.StatusOK, map[string]any{
 			"message": "Report",
@@ -605,7 +605,7 @@ func ReportPostHandler(c echo.Context) error {
 			})
 		}
 
-		prepareReport := processdoc.PurchaseStatusByDocNo(payLoad.ShopID, docNoList)
+		prepareReport := processdoc.PurchaseStatusByDocNo(payLoad.HoldingCode, docNoList)
 		logger.Info("PrepareReport: %+v", prepareReport)
 
 		return c.JSON(http.StatusOK, map[string]any{

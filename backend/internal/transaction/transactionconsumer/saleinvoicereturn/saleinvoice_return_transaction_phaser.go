@@ -19,7 +19,7 @@ func (p *SaleInvoiceReturnTransactionPhaser) PhaseSaleInvoiceReturnDoc(doc saleI
 			TransactionDetailPG: models.TransactionDetailPG{
 				GuidFixed:           doc.GuidFixed,
 				DocNo:               doc.DocNo,
-				ShopID:              doc.ShopID,
+				HoldingCode:         doc.HoldingCode,
 				LineNumber:          int8(detail.LineNumber),
 				DocRef:              detail.DocRef,
 				Barcode:             detail.Barcode,
@@ -77,8 +77,8 @@ func (p *SaleInvoiceReturnTransactionPhaser) PhaseSaleInvoiceReturnDoc(doc saleI
 
 	stockTransaction := models.SaleInvoiceReturnTransactionPG{
 		TransactionPG: models.TransactionPG{
-			ShopIdentity: pkgModels.ShopIdentity{
-				ShopID: doc.ShopID,
+			HoldingCodeentity: pkgModels.HoldingCodeentity{
+				HoldingCode: doc.HoldingCode,
 			},
 			GuidFixed:           doc.GuidFixed,
 			GuidRef:             doc.GuidRef,

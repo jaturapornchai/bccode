@@ -23,7 +23,7 @@ func (p PurchaseReceiveTransactionStockPhaser) PhaseStockTransactionPurchaseRece
 	for i, detail := range *doc.Items {
 		stockDetail := models.StockTransactionDetail{
 			DocRef:              detail.DocRef,
-			ShopID:              doc.ShopID,
+			HoldingCode:         doc.HoldingCode,
 			DocNo:               doc.DocNo,
 			Barcode:             detail.Barcode,
 			ItemType:            detail.ItemType,
@@ -50,8 +50,8 @@ func (p PurchaseReceiveTransactionStockPhaser) PhaseStockTransactionPurchaseRece
 	}
 
 	stockTransaction := models.StockTransaction{
-		ShopIdentity: pkgModels.ShopIdentity{
-			ShopID: doc.ShopID,
+		HoldingCodeentity: pkgModels.HoldingCodeentity{
+			HoldingCode: doc.HoldingCode,
 		},
 		GuidFixed:      doc.GuidFixed,
 		GuidRef:        doc.GuidRef,

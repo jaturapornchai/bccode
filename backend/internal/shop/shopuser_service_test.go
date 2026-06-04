@@ -15,23 +15,23 @@ import (
 func TestShopUserSave(t *testing.T) {
 	shopUserRepo := new(ShopUserRepositoryMock)
 
-	mockShopID := "MockShopID"
+	mockHoldingCode := "MockHoldingCode"
 
 	authUser := "auth_user"
 
 	ctx := context.Background()
 
 	mockShopUserAuth := models.ShopUser{}
-	mockShopUserAuth.ShopID = mockShopID
+	mockShopUserAuth.HoldingCode = mockHoldingCode
 	mockShopUserAuth.Username = authUser
 	mockShopUserAuth.Role = models.ROLE_OWNER
 
-	shopUserRepo.On("FindByShopIDAndUsername", ctx, mockShopID, authUser).Return(mockShopUserAuth, nil)
-	shopUserRepo.On("Save", ctx, mockShopID, "user_create", models.ROLE_OWNER).Return(nil)
+	shopUserRepo.On("FindByHoldingCodeAndUsername", ctx, mockHoldingCode, authUser).Return(mockShopUserAuth, nil)
+	shopUserRepo.On("Save", ctx, mockHoldingCode, "user_create", models.ROLE_OWNER).Return(nil)
 
 	shopUserSvc := shop.NewShopUserService(shopUserRepo)
 
-	err := shopUserSvc.SaveUserPermissionShop(mockShopID, authUser, "", "user_create", models.ROLE_OWNER)
+	err := shopUserSvc.SaveUserPermissionShop(mockHoldingCode, authUser, "", "user_create", models.ROLE_OWNER)
 
 	require.NoError(t, err)
 
@@ -40,61 +40,61 @@ func TestShopUserSave(t *testing.T) {
 func TestShopUserDeleteCannotDeleteCreator(t *testing.T) {
 	shopUserRepo := new(ShopUserRepositoryMock)
 	ctx := context.Background()
-	shopID := "shop_id"
+	holdingCode := "holding_code"
 	authUsername := "owner@example.com"
 	creatorUsername := "creator@example.com"
 
-	shopUserRepo.On("FindByShopIDAndUsername", ctx, shopID, authUsername).Return(testShopUser(shopID, authUsername, models.ROLE_OWNER), nil)
-	shopUserRepo.On("FindByShopIDAndUsername", ctx, shopID, creatorUsername).Return(testShopUser(shopID, creatorUsername, models.ROLE_OWNER), nil)
-	shopUserRepo.On("FindShopCreatedBy", ctx, shopID).Return(creatorUsername, nil)
+	shopUserRepo.On("FindByHoldingCodeAndUsername", ctx, holdingCode, authUsername).Return(testShopUser(holdingCode, authUsername, models.ROLE_OWNER), nil)
+	shopUserRepo.On("FindByHoldingCodeAndUsername", ctx, holdingCode, creatorUsername).Return(testShopUser(holdingCode, creatorUsername, models.ROLE_OWNER), nil)
+	shopUserRepo.On("FindShopCreatedBy", ctx, holdingCode).Return(creatorUsername, nil)
 
 	shopUserSvc := shop.NewShopUserService(shopUserRepo)
 
-	err := shopUserSvc.DeleteUserPermissionShop(shopID, authUsername, creatorUsername)
+	err := shopUserSvc.DeleteUserPermissionShop(holdingCode, authUsername, creatorUsername)
 
 	require.EqualError(t, err, "creator_cannot_delete")
-	shopUserRepo.AssertNotCalled(t, "Delete", ctx, shopID, creatorUsername)
+	shopUserRepo.AssertNotCalled(t, "Delete", ctx, holdingCode, creatorUsername)
 }
 
 func TestShopUserSaveFullProfileCreatorCannotBeDisabled(t *testing.T) {
 	shopUserRepo := new(ShopUserRepositoryMock)
 	ctx := context.Background()
-	shopID := "shop_id"
+	holdingCode := "holding_code"
 	authUsername := "owner@example.com"
 	creatorUsername := "creator@example.com"
 
-	shopUserRepo.On("FindByShopIDAndUsername", ctx, shopID, authUsername).Return(testShopUser(shopID, authUsername, models.ROLE_OWNER), nil)
-	shopUserRepo.On("FindShopCreatedBy", ctx, shopID).Return(creatorUsername, nil)
-	shopUserRepo.On("FindByShopIDAndUsername", ctx, shopID, creatorUsername).Return(testShopUser(shopID, creatorUsername, models.ROLE_OWNER), nil)
+	shopUserRepo.On("FindByHoldingCodeAndUsername", ctx, holdingCode, authUsername).Return(testShopUser(holdingCode, authUsername, models.ROLE_OWNER), nil)
+	shopUserRepo.On("FindShopCreatedBy", ctx, holdingCode).Return(creatorUsername, nil)
+	shopUserRepo.On("FindByHoldingCodeAndUsername", ctx, holdingCode, creatorUsername).Return(testShopUser(holdingCode, creatorUsername, models.ROLE_OWNER), nil)
 
 	shopUserSvc := shop.NewShopUserService(shopUserRepo)
 
-	err := shopUserSvc.SaveUserFullProfile(shopID, authUsername, &models.UserRoleRequest{
+	err := shopUserSvc.SaveUserFullProfile(holdingCode, authUsername, &models.UserRoleRequest{
 		Username:         creatorUsername,
 		Role:             models.ROLE_OWNER,
 		IsAccessDisabled: true,
 	})
 
 	require.EqualError(t, err, "creator_access_cannot_be_disabled")
-	shopUserRepo.AssertNotCalled(t, "SaveFullProfile", ctx, shopID)
+	shopUserRepo.AssertNotCalled(t, "SaveFullProfile", ctx, holdingCode)
 }
 
 func TestShopUserSaveFullProfileDisablesMember(t *testing.T) {
 	shopUserRepo := new(ShopUserRepositoryMock)
 	ctx := context.Background()
-	shopID := "shop_id"
+	holdingCode := "holding_code"
 	authUsername := "owner@example.com"
 	targetUsername := "member@example.com"
 
-	shopUserRepo.On("FindByShopIDAndUsername", ctx, shopID, authUsername).Return(testShopUser(shopID, authUsername, models.ROLE_OWNER), nil)
-	shopUserRepo.On("FindShopCreatedBy", ctx, shopID).Return(authUsername, nil)
-	shopUserRepo.On("FindByShopIDAndUsername", ctx, shopID, targetUsername).Return(testShopUser(shopID, targetUsername, models.ROLE_ADMIN), nil)
-	shopUserRepo.On("FindByShopIDAndLineUserID", ctx, shopID, "line-id").Return(models.ShopUser{}, errors.New("not found"))
-	shopUserRepo.On("SaveFullProfile", ctx, shopID, requireAccessDisabledRequest(t, targetUsername, authUsername)).Return(nil)
+	shopUserRepo.On("FindByHoldingCodeAndUsername", ctx, holdingCode, authUsername).Return(testShopUser(holdingCode, authUsername, models.ROLE_OWNER), nil)
+	shopUserRepo.On("FindShopCreatedBy", ctx, holdingCode).Return(authUsername, nil)
+	shopUserRepo.On("FindByHoldingCodeAndUsername", ctx, holdingCode, targetUsername).Return(testShopUser(holdingCode, targetUsername, models.ROLE_ADMIN), nil)
+	shopUserRepo.On("FindByHoldingCodeAndLineUserID", ctx, holdingCode, "line-id").Return(models.ShopUser{}, errors.New("not found"))
+	shopUserRepo.On("SaveFullProfile", ctx, holdingCode, requireAccessDisabledRequest(t, targetUsername, authUsername)).Return(nil)
 
 	shopUserSvc := shop.NewShopUserService(shopUserRepo)
 
-	err := shopUserSvc.SaveUserFullProfile(shopID, authUsername, &models.UserRoleRequest{
+	err := shopUserSvc.SaveUserFullProfile(holdingCode, authUsername, &models.UserRoleRequest{
 		Username:         targetUsername,
 		Role:             models.ROLE_ADMIN,
 		LineUserID:       "line-id",
@@ -107,19 +107,19 @@ func TestShopUserSaveFullProfileDisablesMember(t *testing.T) {
 func TestShopUserSaveFullProfilePreservesUserUIDWhenUsernameChanges(t *testing.T) {
 	shopUserRepo := new(ShopUserRepositoryMock)
 	ctx := context.Background()
-	shopID := "shop_id"
+	holdingCode := "holding_code"
 	authUsername := "owner@example.com"
 	oldUsername := "old@example.com"
 	newUsername := "new@example.com"
 	userUID := "stable-user-uid"
 
-	target := testShopUser(shopID, oldUsername, models.ROLE_ADMIN)
+	target := testShopUser(holdingCode, oldUsername, models.ROLE_ADMIN)
 	target.UserUID = userUID
 
-	shopUserRepo.On("FindByShopIDAndUsername", ctx, shopID, authUsername).Return(testShopUser(shopID, authUsername, models.ROLE_OWNER), nil)
-	shopUserRepo.On("FindShopCreatedBy", ctx, shopID).Return(authUsername, nil)
-	shopUserRepo.On("FindByShopIDAndUsername", ctx, shopID, oldUsername).Return(target, nil)
-	shopUserRepo.On("SaveFullProfile", ctx, shopID, mock.MatchedBy(func(req *models.UserRoleRequest) bool {
+	shopUserRepo.On("FindByHoldingCodeAndUsername", ctx, holdingCode, authUsername).Return(testShopUser(holdingCode, authUsername, models.ROLE_OWNER), nil)
+	shopUserRepo.On("FindShopCreatedBy", ctx, holdingCode).Return(authUsername, nil)
+	shopUserRepo.On("FindByHoldingCodeAndUsername", ctx, holdingCode, oldUsername).Return(target, nil)
+	shopUserRepo.On("SaveFullProfile", ctx, holdingCode, mock.MatchedBy(func(req *models.UserRoleRequest) bool {
 		return req.Username == newUsername &&
 			req.EditUsername == oldUsername &&
 			req.UserUID == userUID
@@ -127,7 +127,7 @@ func TestShopUserSaveFullProfilePreservesUserUIDWhenUsernameChanges(t *testing.T
 
 	shopUserSvc := shop.NewShopUserService(shopUserRepo)
 
-	err := shopUserSvc.SaveUserFullProfile(shopID, authUsername, &models.UserRoleRequest{
+	err := shopUserSvc.SaveUserFullProfile(holdingCode, authUsername, &models.UserRoleRequest{
 		EditUsername: oldUsername,
 		Username:     newUsername,
 		Role:         models.ROLE_ADMIN,
@@ -136,9 +136,9 @@ func TestShopUserSaveFullProfilePreservesUserUIDWhenUsernameChanges(t *testing.T
 	require.NoError(t, err)
 }
 
-func testShopUser(shopID string, username string, role models.UserRole) models.ShopUser {
+func testShopUser(holdingCode string, username string, role models.UserRole) models.ShopUser {
 	shopUser := models.ShopUser{}
-	shopUser.ShopID = shopID
+	shopUser.HoldingCode = holdingCode
 	shopUser.Username = username
 	shopUser.Role = role
 	return shopUser

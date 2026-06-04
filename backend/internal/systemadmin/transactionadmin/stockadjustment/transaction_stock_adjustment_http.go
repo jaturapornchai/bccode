@@ -51,7 +51,7 @@ func (s *StockAdjustmentTransactionAdminHttp) ReSyncStockAdjustmentTransaction(c
 		return err
 	}
 
-	err = s.svc.ReSyncStockAdjustmentDoc(req.ShopID)
+	err = s.svc.ReSyncStockAdjustmentDoc(req.HoldingCode)
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, common.ApiResponse{
 			Success: false,
@@ -82,7 +82,7 @@ func (s *StockAdjustmentTransactionAdminHttp) ReSyncStockAdjustmentDeleteTransac
 		return err
 	}
 
-	err = s.svc.ReSyncStockAdjustmentDeleteDoc(req.ShopID)
+	err = s.svc.ReSyncStockAdjustmentDeleteDoc(req.HoldingCode)
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, common.ApiResponse{
 			Success: false,

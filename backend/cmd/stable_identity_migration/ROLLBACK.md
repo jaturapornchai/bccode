@@ -13,16 +13,16 @@ This migration is additive and safe to rerun. It backfills stable identity field
 
 ## Task 2: `shopUsers.user_uid`
 
-- Forward: backfill `shopUsers.user_uid` from `shopUsers.username -> users.username -> users.uid`, then create index `ix_shopUsers_shopid_user_uid`.
+- Forward: backfill `shopUsers.user_uid` from `shopUsers.username -> users.username -> users.uid`, then create index `ix_shopUsers_holding_code_user_uid`.
 - Rollback index only:
   ```js
-  db.shopUsers.dropIndex("ix_shopUsers_shopid_user_uid")
+  db.shopUsers.dropIndex("ix_shopUsers_holding_code_user_uid")
   ```
 - If an older deployment expects the legacy index name, recreate the same keys with the old name:
   ```js
   db.shopUsers.createIndex(
-    { shopid: 1, user_uid: 1 },
-    { name: "ix_shop_users_shopid_user_uid" }
+    { holding_code: 1, user_uid: 1 },
+    { name: "ix_shop_users_holding_code_user_uid" }
   )
   ```
 - Data rollback is not recommended. During transition the app still dual-reads username, but deleting `user_uid` removes rename-safe joins.

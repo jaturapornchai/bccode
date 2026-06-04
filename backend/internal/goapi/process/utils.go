@@ -10,8 +10,8 @@ import (
 )
 
 // ลบข้อมูลในตารางที่เกี่ยวข้องกับเอกสาร
-func TruncateProcessTables(shopId string) error {
-	db, err := mypg.PgSqlFastConnect(shopId)
+func TruncateProcessTables(holdingCode string) error {
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		return fmt.Errorf("failed to connect to PostgreSQL: %v", err)
 	}
@@ -23,10 +23,10 @@ func TruncateProcessTables(shopId string) error {
 		if err != nil {
 			return fmt.Errorf("error truncating %s table: %w", table, err)
 		}
-		logger.Info("Truncated %s table for shopId %s", table, shopId)
+		logger.Info("Truncated %s table for holdingCode %s", table, holdingCode)
 	}
 	// insert queue to process
-	db, err = mypg.PgSqlFastConnect(shopId)
+	db, err = mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		logger.Info("Database connection error: %v", err)
 	}
@@ -43,8 +43,8 @@ func TruncateProcessTables(shopId string) error {
 }
 
 // ลบข้อมูลในตารางที่เกี่ยวข้องกับเอกสาร
-func TruncateDocTables(shopId string) error {
-	db, err := mypg.PgSqlFastConnect(shopId)
+func TruncateDocTables(holdingCode string) error {
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		return fmt.Errorf("failed to connect to PostgreSQL: %v", err)
 	}
@@ -56,7 +56,7 @@ func TruncateDocTables(shopId string) error {
 		if err != nil {
 			return fmt.Errorf("error truncating %s table: %w", table, err)
 		}
-		logger.Info("Truncated %s table for shopId %s", table, shopId)
+		logger.Info("Truncated %s table for holdingCode %s", table, holdingCode)
 	}
 
 	return nil

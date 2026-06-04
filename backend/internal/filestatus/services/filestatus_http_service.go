@@ -15,14 +15,14 @@ import (
 )
 
 type IFileStatusHttpService interface {
-	CreateFileStatus(shopID string, authUsername string, doc models.FileStatus) (string, error)
-	UpdateFileStatus(shopID string, guid string, authUsername string, doc models.FileStatus) error
-	DeleteFileStatus(shopID string, guid string, authUsername string) error
-	DeleteFileStatusByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	DeleteFileStatusByMenu(shopID string, authUsername string, menu string) error
-	InfoFileStatus(shopID string, guid string) (models.FileStatusInfo, error)
-	SearchFileStatus(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.FileStatusInfo, mongopagination.PaginationData, error)
-	SearchFileStatusStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.FileStatusInfo, int, error)
+	CreateFileStatus(holdingCode string, authUsername string, doc models.FileStatus) (string, error)
+	UpdateFileStatus(holdingCode string, guid string, authUsername string, doc models.FileStatus) error
+	DeleteFileStatus(holdingCode string, guid string, authUsername string) error
+	DeleteFileStatusByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	DeleteFileStatusByMenu(holdingCode string, authUsername string, menu string) error
+	InfoFileStatus(holdingCode string, guid string) (models.FileStatusInfo, error)
+	SearchFileStatus(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.FileStatusInfo, mongopagination.PaginationData, error)
+	SearchFileStatusStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.FileStatusInfo, int, error)
 }
 
 type FileStatusHttpService struct {
@@ -51,12 +51,12 @@ func (svc FileStatusHttpService) getContextTimeout() (context.Context, context.C
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc FileStatusHttpService) CreateFileStatus(shopID string, authUsername string, doc models.FileStatus) (string, error) {
+func (svc FileStatusHttpService) CreateFileStatus(holdingCode string, authUsername string, doc models.FileStatus) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindOne(ctx, shopID, bson.M{"menu": doc.Menu, "username": authUsername, "job_id": doc.JobID})
+	findDoc, err := svc.repo.FindOne(ctx, holdingCode, bson.M{"menu": doc.Menu, "username": authUsername, "job_id": doc.JobID})
 
 	if err != nil {
 		return "", err
@@ -69,7 +69,7 @@ func (svc FileStatusHttpService) CreateFileStatus(shopID string, authUsername st
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.FileStatusDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.FileStatus = doc
 
@@ -86,12 +86,12 @@ func (svc FileStatusHttpService) CreateFileStatus(shopID string, authUsername st
 	return newGuidFixed, nil
 }
 
-func (svc FileStatusHttpService) UpdateFileStatus(shopID string, guid string, authUsername string, doc models.FileStatus) error {
+func (svc FileStatusHttpService) UpdateFileStatus(holdingCode string, guid string, authUsername string, doc models.FileStatus) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindOne(ctx, shopID, bson.M{"guid_fixed": guid})
+	findDoc, err := svc.repo.FindOne(ctx, holdingCode, bson.M{"guid_fixed": guid})
 
 	if err != nil {
 		return err
@@ -109,7 +109,7 @@ func (svc FileStatusHttpService) UpdateFileStatus(shopID string, guid string, au
 	dataDoc.UpdatedBy = authUsername
 	dataDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, dataDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, dataDoc)
 
 	if err != nil {
 		return err
@@ -118,12 +118,12 @@ func (svc FileStatusHttpService) UpdateFileStatus(shopID string, guid string, au
 	return nil
 }
 
-func (svc FileStatusHttpService) DeleteFileStatusByMenu(shopID string, authUsername string, menu string) error {
+func (svc FileStatusHttpService) DeleteFileStatusByMenu(holdingCode string, authUsername string, menu string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, bson.M{"menu": menu})
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, bson.M{"menu": menu})
 	if err != nil {
 		return err
 	}
@@ -131,12 +131,12 @@ func (svc FileStatusHttpService) DeleteFileStatusByMenu(shopID string, authUsern
 	return nil
 }
 
-func (svc FileStatusHttpService) DeleteFileStatus(shopID string, guid string, authUsername string) error {
+func (svc FileStatusHttpService) DeleteFileStatus(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -146,7 +146,7 @@ func (svc FileStatusHttpService) DeleteFileStatus(shopID string, guid string, au
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
@@ -154,7 +154,7 @@ func (svc FileStatusHttpService) DeleteFileStatus(shopID string, guid string, au
 	return nil
 }
 
-func (svc FileStatusHttpService) DeleteFileStatusByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc FileStatusHttpService) DeleteFileStatusByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -163,7 +163,7 @@ func (svc FileStatusHttpService) DeleteFileStatusByGUIDs(shopID string, authUser
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
@@ -171,12 +171,12 @@ func (svc FileStatusHttpService) DeleteFileStatusByGUIDs(shopID string, authUser
 	return nil
 }
 
-func (svc FileStatusHttpService) InfoFileStatus(shopID string, guid string) (models.FileStatusInfo, error) {
+func (svc FileStatusHttpService) InfoFileStatus(holdingCode string, guid string) (models.FileStatusInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.FileStatusInfo{}, err
@@ -189,14 +189,14 @@ func (svc FileStatusHttpService) InfoFileStatus(shopID string, guid string) (mod
 	return findDoc.FileStatusInfo, nil
 }
 
-func (svc FileStatusHttpService) SearchFileStatus(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.FileStatusInfo, mongopagination.PaginationData, error) {
+func (svc FileStatusHttpService) SearchFileStatus(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.FileStatusInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
 	searchInFields := []string{}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.FileStatusInfo{}, pagination, err
@@ -205,7 +205,7 @@ func (svc FileStatusHttpService) SearchFileStatus(shopID string, filters map[str
 	return docList, pagination, nil
 }
 
-func (svc FileStatusHttpService) SearchFileStatusStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.FileStatusInfo, int, error) {
+func (svc FileStatusHttpService) SearchFileStatusStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.FileStatusInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -216,7 +216,7 @@ func (svc FileStatusHttpService) SearchFileStatusStep(shopID string, langCode st
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.FileStatusInfo{}, 0, err

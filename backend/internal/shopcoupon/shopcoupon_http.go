@@ -47,7 +47,7 @@ func (h ShopCouponHttp) RegisterHttp() {
 
 func (h ShopCouponHttp) CreateShopCoupon(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.ShopCoupon{}
@@ -58,7 +58,7 @@ func (h ShopCouponHttp) CreateShopCoupon(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreateShopCoupon(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateShopCoupon(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -75,7 +75,7 @@ func (h ShopCouponHttp) CreateShopCoupon(ctx microservice.IContext) error {
 func (h ShopCouponHttp) UpdateShopCoupon(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -88,7 +88,7 @@ func (h ShopCouponHttp) UpdateShopCoupon(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateShopCoupon(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateShopCoupon(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -105,12 +105,12 @@ func (h ShopCouponHttp) UpdateShopCoupon(ctx microservice.IContext) error {
 
 func (h ShopCouponHttp) DeleteShopCoupon(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteShopCoupon(id, shopID, authUsername)
+	err := h.svc.DeleteShopCoupon(id, holdingCode, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -127,12 +127,12 @@ func (h ShopCouponHttp) DeleteShopCoupon(ctx microservice.IContext) error {
 
 func (h ShopCouponHttp) InfoShopCoupon(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get ShopCoupon %v", id)
-	doc, err := h.svc.InfoShopCoupon(shopID, id)
+	doc, err := h.svc.InfoShopCoupon(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -149,7 +149,7 @@ func (h ShopCouponHttp) InfoShopCoupon(ctx microservice.IContext) error {
 
 func (h ShopCouponHttp) SearchShopCoupon(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -164,7 +164,7 @@ func (h ShopCouponHttp) SearchShopCoupon(ctx microservice.IContext) error {
 		}
 	}
 
-	docList, pagination, err := h.svc.SearchShopCoupon(shopID, filterMatch, pageable)
+	docList, pagination, err := h.svc.SearchShopCoupon(holdingCode, filterMatch, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

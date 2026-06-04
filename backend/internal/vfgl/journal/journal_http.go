@@ -70,7 +70,7 @@ func (h JournalHttp) RegisterHttp() {
 	h.ms.GET("/gl/journal/check-vatdocno", h.CheckVatDocNo)
 	h.ms.GET("/gl/journal/check-taxdocno", h.CheckTaxDocNo)
 	h.ms.GET("/gl/journal/:id", h.InfoJournal)
-	h.ms.GET("/gl/journal/rebuild/:shopid", h.RebuildPgJournal)
+	h.ms.GET("/gl/journal/rebuild/:holding_code", h.RebuildPgJournal)
 	h.ms.GET("/gl/journal/docno/:docno", h.InfoJournalByDocno)
 	h.ms.GET("/gl/journal/docref/:doc", h.InfoJournalByDocumentRef)
 	h.ms.PUT("/gl/journal/:id", h.UpdateJournal)
@@ -120,7 +120,7 @@ func (h JournalHttp) ReUpdateGuidJournalEmpty(ctx microservice.IContext) error {
 // @Router /gl/journal [post]
 func (h JournalHttp) CreateJournal(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.Journal{}
@@ -132,7 +132,7 @@ func (h JournalHttp) CreateJournal(ctx microservice.IContext) error {
 	}
 
 	if len(docReq.DocumentRef) > 0 {
-		docImageGroup, err := h.svcDocImage.GetDocumentImageDocRefGroup(shopID, docReq.DocumentRef)
+		docImageGroup, err := h.svcDocImage.GetDocumentImageDocRefGroup(holdingCode, docReq.DocumentRef)
 		if err != nil {
 			messageError := ""
 			if err.Error() == "document not found" {
@@ -153,7 +153,7 @@ func (h JournalHttp) CreateJournal(ctx microservice.IContext) error {
 		}
 	}
 
-	idx, err := h.svc.CreateJournal(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateJournal(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -162,7 +162,7 @@ func (h JournalHttp) CreateJournal(ctx microservice.IContext) error {
 
 	// Update reference after creating journal to include GuidFixed
 	if len(docReq.DocumentRef) > 0 {
-		err = h.svcDocImage.UpdateReferenceByDocumentImageGroup(shopID, authUsername, docReq.DocumentRef, documentImageModel.Reference{
+		err = h.svcDocImage.UpdateReferenceByDocumentImageGroup(holdingCode, authUsername, docReq.DocumentRef, documentImageModel.Reference{
 			GuidFixed: idx,
 			Module:    h.Module,
 			DocNo:     docReq.DocNo,
@@ -186,17 +186,17 @@ func (h JournalHttp) CreateJournal(ctx microservice.IContext) error {
 // @Description บันทึกข้อมูลรายวัน
 // @Tags		GL
 // @Accept 		json
-// @Param		shopid  path      string  true  "Journal Shop ID"
+// @Param		holding_code  path      string  true  "Journal Holding Code"
 // @Success		200	{object}	common.ResponseSuccessWithID
 // @Failure		401 {object}	common.AuthResponseFailed
 // @Security     AccessToken
-// @Router /gl/journal/rebuild/{shopid}  [get]
+// @Router /gl/journal/rebuild/{holding_code}  [get]
 func (h JournalHttp) RebuildPgJournal(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	// shopID := ctx.UserInfo().ShopID
-	shopID := ctx.Param("shopid")
+	// holdingCode := ctx.UserInfo().HoldingCode
+	holdingCode := ctx.Param("holding_code")
 
-	idx, err := h.svc.RebuildPgJournal(shopID, authUsername)
+	idx, err := h.svc.RebuildPgJournal(holdingCode, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -224,7 +224,7 @@ func (h JournalHttp) RebuildPgJournal(ctx microservice.IContext) error {
 func (h JournalHttp) UpdateJournal(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -238,7 +238,7 @@ func (h JournalHttp) UpdateJournal(ctx microservice.IContext) error {
 	}
 
 	if len(docReq.DocumentRef) > 0 {
-		docImageGroup, err := h.svcDocImage.GetDocumentImageDocRefGroup(shopID, docReq.DocumentRef)
+		docImageGroup, err := h.svcDocImage.GetDocumentImageDocRefGroup(holdingCode, docReq.DocumentRef)
 		if err != nil {
 			messageError := ""
 			if err.Error() == "document not found" {
@@ -259,14 +259,14 @@ func (h JournalHttp) UpdateJournal(ctx microservice.IContext) error {
 		}
 	}
 
-	journalInfo, err := h.svc.InfoJournal(shopID, id)
+	journalInfo, err := h.svc.InfoJournal(holdingCode, id)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
 
-	oldDocNo, newDocNo, err := h.svc.UpdateJournal(id, shopID, authUsername, *docReq)
+	oldDocNo, newDocNo, err := h.svc.UpdateJournal(id, holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -277,10 +277,10 @@ func (h JournalHttp) UpdateJournal(ctx microservice.IContext) error {
 	if journalInfo.DocumentRef != docReq.DocumentRef {
 
 		if len(docReq.DocumentRef) > 0 {
-			err = h.svcDocImage.UpdateReferenceByDocumentImageGroup(shopID, authUsername, docReq.DocumentRef, documentImageModel.Reference{
+			err = h.svcDocImage.UpdateReferenceByDocumentImageGroup(holdingCode, authUsername, docReq.DocumentRef, documentImageModel.Reference{
 				GuidFixed: id,
-				Module: h.Module,
-				DocNo:  docReq.DocNo,
+				Module:    h.Module,
+				DocNo:     docReq.DocNo,
 			})
 			if err != nil {
 				ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -291,7 +291,7 @@ func (h JournalHttp) UpdateJournal(ctx microservice.IContext) error {
 
 	// Sync references when DocNo changes
 	if oldDocNo != newDocNo {
-		err = h.svcDocImage.UpdateDocNoInReferences(shopID, h.Module, oldDocNo, newDocNo)
+		err = h.svcDocImage.UpdateDocNoInReferences(holdingCode, h.Module, oldDocNo, newDocNo)
 		if err != nil {
 			ctx.ResponseError(http.StatusBadRequest, fmt.Sprintf("failed to update references: %s", err.Error()))
 			return err
@@ -318,19 +318,19 @@ func (h JournalHttp) UpdateJournal(ctx microservice.IContext) error {
 // @Router /gl/journal/{id} [delete]
 func (h JournalHttp) DeleteJournal(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	journal, err := h.svc.InfoJournal(shopID, id)
+	journal, err := h.svc.InfoJournal(holdingCode, id)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
 
-	err = h.svc.DeleteJournal(id, shopID, authUsername)
+	err = h.svc.DeleteJournal(id, holdingCode, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -342,7 +342,7 @@ func (h JournalHttp) DeleteJournal(ctx microservice.IContext) error {
 			Module: h.Module,
 			DocNo:  journal.DocNo,
 		}
-		h.svcDocImage.DeleteReferenceByDocumentImageGroup(shopID, authUsername, journal.DocumentRef, imageRef)
+		h.svcDocImage.DeleteReferenceByDocumentImageGroup(holdingCode, authUsername, journal.DocumentRef, imageRef)
 	}
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
@@ -364,7 +364,7 @@ func (h JournalHttp) DeleteJournal(ctx microservice.IContext) error {
 // @Router /gl/journal/ [delete]
 func (h JournalHttp) DeleteJournalByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -377,7 +377,7 @@ func (h JournalHttp) DeleteJournalByGUIDs(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.DeleteJournalByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteJournalByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -403,12 +403,12 @@ func (h JournalHttp) DeleteJournalByGUIDs(ctx microservice.IContext) error {
 // @Router /gl/journal/batchid/{batchid} [delete]
 func (h JournalHttp) DeleteJournalByBatchID(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	batchID := ctx.Param("batchid")
 
-	err := h.svc.DeleteJournalByBatchID(shopID, authUsername, batchID)
+	err := h.svc.DeleteJournalByBatchID(holdingCode, authUsername, batchID)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -434,12 +434,12 @@ func (h JournalHttp) DeleteJournalByBatchID(ctx microservice.IContext) error {
 // @Router /gl/journal/{id} [get]
 func (h JournalHttp) InfoJournal(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get Journal %v", id)
-	doc, err := h.svc.InfoJournal(shopID, id)
+	doc, err := h.svc.InfoJournal(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -466,12 +466,12 @@ func (h JournalHttp) InfoJournal(ctx microservice.IContext) error {
 // @Router /gl/journal/docno/{docno} [get]
 func (h JournalHttp) InfoJournalByDocno(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	docNo := ctx.Param("docno")
 
 	h.ms.Logger.Debugf("Get Journal %v", docNo)
-	doc, err := h.svc.InfoJournalByDocNo(shopID, docNo)
+	doc, err := h.svc.InfoJournalByDocNo(holdingCode, docNo)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", docNo, err)
@@ -498,12 +498,12 @@ func (h JournalHttp) InfoJournalByDocno(ctx microservice.IContext) error {
 // @Router /gl/journal/docref/{doc} [get]
 func (h JournalHttp) InfoJournalByDocumentRef(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	docRef := ctx.Param("doc")
 
 	h.ms.Logger.Debugf("Get Journal Document ref %v:", docRef)
-	doc, err := h.svc.InfoJournalByDocumentRef(shopID, docRef)
+	doc, err := h.svc.InfoJournalByDocumentRef(holdingCode, docRef)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", doc, err)
@@ -544,7 +544,7 @@ func (h JournalHttp) InfoJournalByDocumentRef(ctx microservice.IContext) error {
 // @Router /gl/journal [get]
 func (h JournalHttp) SearchJournal(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -660,7 +660,7 @@ func (h JournalHttp) SearchJournal(ctx microservice.IContext) error {
 		}
 	}
 
-	docList, pagination, err := h.svc.SearchJournal(shopID, pageable, searchFilters, startDate, endDate, accountGroup)
+	docList, pagination, err := h.svc.SearchJournal(holdingCode, pageable, searchFilters, startDate, endDate, accountGroup)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -689,7 +689,7 @@ func (h JournalHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -701,7 +701,7 @@ func (h JournalHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())
@@ -730,11 +730,11 @@ func (h JournalHttp) SaveBulk(ctx microservice.IContext) error {
 // @Router /gl/journal/last-docno [get]
 func (h JournalHttp) GetLastDocNo(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	docFormat := ctx.QueryParam("docformat")
 
-	doc, err := h.svc.FindLastDocnoFromFormat(shopID, docFormat)
+	doc, err := h.svc.FindLastDocnoFromFormat(holdingCode, docFormat)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -759,9 +759,9 @@ func (h JournalHttp) GetLastDocNo(ctx microservice.IContext) error {
 // @Router /gl/journal/duplicate-docnos [get]
 func (h JournalHttp) GetDuplicateDocNos(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
-	duplicates, err := h.svc.GetDuplicateDocNos(shopID)
+	duplicates, err := h.svc.GetDuplicateDocNos(holdingCode)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -788,7 +788,7 @@ func (h JournalHttp) GetDuplicateDocNos(ctx microservice.IContext) error {
 // @Router /gl/journal/check-vatdocno [get]
 func (h JournalHttp) CheckVatDocNo(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	debtTypeStr := ctx.QueryParam("debttype")
 	code := ctx.QueryParam("code")
@@ -806,7 +806,7 @@ func (h JournalHttp) CheckVatDocNo(ctx microservice.IContext) error {
 		return nil
 	}
 
-	result, err := h.svc.CheckVatDocNoExists(shopID, debtType, code, docNumber)
+	result, err := h.svc.CheckVatDocNoExists(holdingCode, debtType, code, docNumber)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -832,7 +832,7 @@ func (h JournalHttp) CheckVatDocNo(ctx microservice.IContext) error {
 // @Router /gl/journal/check-taxdocno [get]
 func (h JournalHttp) CheckTaxDocNo(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	debtTypeStr := ctx.QueryParam("debttype")
 	code := ctx.QueryParam("code")
@@ -850,7 +850,7 @@ func (h JournalHttp) CheckTaxDocNo(ctx microservice.IContext) error {
 		return nil
 	}
 
-	result, err := h.svc.CheckTaxDocNoExists(shopID, debtType, code, docNumber)
+	result, err := h.svc.CheckTaxDocNoExists(holdingCode, debtType, code, docNumber)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err

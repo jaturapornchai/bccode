@@ -11,9 +11,9 @@ import (
 	"smlcloudplatform/internal/goapi/process/build"
 )
 
-func ReportProductStockMovement(shopId string, guid string, timezoneCode string, languageCode string) string {
-	logger.Info("ReportProductStockMovement: shopId=%s, guid=%s, timezoneCode=%s, languageCode=%s", shopId, guid, timezoneCode, languageCode)
-	db, err := mypg.PgSqlFastConnect(shopId)
+func ReportProductStockMovement(holdingCode string, guid string, timezoneCode string, languageCode string) string {
+	logger.Info("ReportProductStockMovement: holdingCode=%s, guid=%s, timezoneCode=%s, languageCode=%s", holdingCode, guid, timezoneCode, languageCode)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		logger.Info("Failed to connect to PostgreSQL: %v", err)
 		return ""

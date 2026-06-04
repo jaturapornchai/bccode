@@ -8,8 +8,8 @@ import (
 )
 
 type IStockReceiveProductTransactionAdminService interface {
-	ReSyncStockReceiveProductDoc(shopID string) error
-	ReSyncStockReceiveProductDeleteDoc(shopID string) error
+	ReSyncStockReceiveProductDoc(holdingCode string) error
+	ReSyncStockReceiveProductDeleteDoc(holdingCode string) error
 }
 
 type StockReceiveProductTransactionAdminService struct {
@@ -33,12 +33,12 @@ func NewStockReceiveProductTransactionAdminService(
 	}
 }
 
-func (s *StockReceiveProductTransactionAdminService) ReSyncStockReceiveProductDoc(shopID string) error {
+func (s *StockReceiveProductTransactionAdminService) ReSyncStockReceiveProductDoc(holdingCode string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeoutDuration)
 	defer cancel()
 
-	docs, err := s.mongoRepo.FindStockReceiveDocByShopID(ctx, shopID)
+	docs, err := s.mongoRepo.FindStockReceiveDocByHoldingCode(ctx, holdingCode)
 	if err != nil {
 		return err
 	}
@@ -51,12 +51,12 @@ func (s *StockReceiveProductTransactionAdminService) ReSyncStockReceiveProductDo
 	return nil
 }
 
-func (s *StockReceiveProductTransactionAdminService) ReSyncStockReceiveProductDeleteDoc(shopID string) error {
+func (s *StockReceiveProductTransactionAdminService) ReSyncStockReceiveProductDeleteDoc(holdingCode string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeoutDuration)
 	defer cancel()
 
-	docs, err := s.mongoRepo.FindStockReceiveDeleteDocByShopID(ctx, shopID)
+	docs, err := s.mongoRepo.FindStockReceiveDeleteDocByHoldingCode(ctx, holdingCode)
 
 	if err != nil {
 		return err

@@ -67,7 +67,7 @@ func (h AccrualreceiveHttp) RegisterHttp() {
 // @Router /transaction/accrualreceive [post]
 func (h AccrualreceiveHttp) CreateAccrualreceive(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.Accrualreceive{}
@@ -83,7 +83,7 @@ func (h AccrualreceiveHttp) CreateAccrualreceive(ctx microservice.IContext) erro
 		return err
 	}
 
-	idx, docNo, err := h.svc.CreateAccrualreceive(shopID, authUsername, *docReq)
+	idx, docNo, err := h.svc.CreateAccrualreceive(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -111,7 +111,7 @@ func (h AccrualreceiveHttp) CreateAccrualreceive(ctx microservice.IContext) erro
 func (h AccrualreceiveHttp) UpdateAccrualreceive(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -129,7 +129,7 @@ func (h AccrualreceiveHttp) UpdateAccrualreceive(ctx microservice.IContext) erro
 		return err
 	}
 
-	err = h.svc.UpdateAccrualreceive(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateAccrualreceive(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -155,12 +155,12 @@ func (h AccrualreceiveHttp) UpdateAccrualreceive(ctx microservice.IContext) erro
 // @Router /transaction/accrualreceive/{id} [delete]
 func (h AccrualreceiveHttp) DeleteAccrualreceive(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteAccrualreceive(shopID, id, authUsername)
+	err := h.svc.DeleteAccrualreceive(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -186,7 +186,7 @@ func (h AccrualreceiveHttp) DeleteAccrualreceive(ctx microservice.IContext) erro
 // @Router /transaction/accrualreceive [delete]
 func (h AccrualreceiveHttp) DeleteAccrualreceiveByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -199,7 +199,7 @@ func (h AccrualreceiveHttp) DeleteAccrualreceiveByGUIDs(ctx microservice.IContex
 		return err
 	}
 
-	err = h.svc.DeleteAccrualreceiveByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteAccrualreceiveByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -224,12 +224,12 @@ func (h AccrualreceiveHttp) DeleteAccrualreceiveByGUIDs(ctx microservice.IContex
 // @Router /transaction/accrualreceive/{id} [get]
 func (h AccrualreceiveHttp) InfoAccrualreceive(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get Accrualreceive %v", id)
-	doc, err := h.svc.InfoAccrualreceive(shopID, id)
+	doc, err := h.svc.InfoAccrualreceive(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -255,11 +255,11 @@ func (h AccrualreceiveHttp) InfoAccrualreceive(ctx microservice.IContext) error 
 // @Router /transaction/accrualreceive/code/{code} [get]
 func (h AccrualreceiveHttp) InfoAccrualreceiveByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoAccrualreceiveByCode(shopID, code)
+	doc, err := h.svc.InfoAccrualreceiveByCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -290,7 +290,7 @@ func (h AccrualreceiveHttp) InfoAccrualreceiveByCode(ctx microservice.IContext) 
 // @Router /transaction/accrualreceive [get]
 func (h AccrualreceiveHttp) SearchAccrualreceivePage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -311,7 +311,7 @@ func (h AccrualreceiveHttp) SearchAccrualreceivePage(ctx microservice.IContext) 
 		},
 	})
 
-	docList, pagination, err := h.svc.SearchAccrualreceive(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchAccrualreceive(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -344,7 +344,7 @@ func (h AccrualreceiveHttp) SearchAccrualreceivePage(ctx microservice.IContext) 
 // @Router /transaction/accrualreceive/list [get]
 func (h AccrualreceiveHttp) SearchAccrualreceiveStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -367,7 +367,7 @@ func (h AccrualreceiveHttp) SearchAccrualreceiveStep(ctx microservice.IContext) 
 		},
 	})
 
-	docList, total, err := h.svc.SearchAccrualreceiveStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchAccrualreceiveStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -395,7 +395,7 @@ func (h AccrualreceiveHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -407,7 +407,7 @@ func (h AccrualreceiveHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

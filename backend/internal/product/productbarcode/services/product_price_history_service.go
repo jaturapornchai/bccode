@@ -11,10 +11,10 @@ import (
 )
 
 type IProductPriceHistoryService interface {
-	RecordPriceChange(ctx context.Context, shopID string, productBarcodeGUID string, barcode string, productName string, oldPrices, newPrices []models.ProductPrice, action string, username string, remark string) error
-	GetPriceHistory(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error)
-	GetPriceHistoryByBarcode(shopID string, barcode string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error)
-	GetPriceHistoryByProductGUID(shopID string, productBarcodeGUID string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error)
+	RecordPriceChange(ctx context.Context, holdingCode string, productBarcodeGUID string, barcode string, productName string, oldPrices, newPrices []models.ProductPrice, action string, username string, remark string) error
+	GetPriceHistory(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error)
+	GetPriceHistoryByBarcode(holdingCode string, barcode string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error)
+	GetPriceHistoryByProductGUID(holdingCode string, productBarcodeGUID string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error)
 }
 
 type ProductPriceHistoryService struct {
@@ -37,7 +37,7 @@ func NewProductPriceHistoryService(
 
 func (svc *ProductPriceHistoryService) RecordPriceChange(
 	ctx context.Context,
-	shopID string,
+	holdingCode string,
 	productBarcodeGUID string,
 	barcode string,
 	productName string,
@@ -65,7 +65,7 @@ func (svc *ProductPriceHistoryService) RecordPriceChange(
 			priceType := getPriceTypeName(newPrice.KeyNumber)
 
 			history := models.ProductPriceHistory{}
-			history.ShopIdentity.ShopID = shopID
+			history.HoldingCodeentity.HoldingCode = holdingCode
 			history.DocIdentity.GuidFixed = svc.generateGUID()
 			history.ProductBarcodeGUID = productBarcodeGUID
 			history.Barcode = barcode
@@ -92,26 +92,26 @@ func (svc *ProductPriceHistoryService) RecordPriceChange(
 	return nil
 }
 
-func (svc *ProductPriceHistoryService) GetPriceHistory(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error) {
+func (svc *ProductPriceHistoryService) GetPriceHistory(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	searchInFields := []string{"barcode", "productname", "createdby"}
-	return svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	return svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 }
 
-func (svc *ProductPriceHistoryService) GetPriceHistoryByBarcode(shopID string, barcode string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error) {
+func (svc *ProductPriceHistoryService) GetPriceHistoryByBarcode(holdingCode string, barcode string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	return svc.repo.FindByBarcode(ctx, shopID, barcode, pageable)
+	return svc.repo.FindByBarcode(ctx, holdingCode, barcode, pageable)
 }
 
-func (svc *ProductPriceHistoryService) GetPriceHistoryByProductGUID(shopID string, productBarcodeGUID string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error) {
+func (svc *ProductPriceHistoryService) GetPriceHistoryByProductGUID(holdingCode string, productBarcodeGUID string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	return svc.repo.FindByProductBarcode(ctx, shopID, productBarcodeGUID, pageable)
+	return svc.repo.FindByProductBarcode(ctx, holdingCode, productBarcodeGUID, pageable)
 }
 
 // Helper function เพื่อแปลง KeyNumber เป็นชื่อประเภทราคา

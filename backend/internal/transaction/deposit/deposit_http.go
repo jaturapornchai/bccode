@@ -67,7 +67,7 @@ func (h DepositHttp) RegisterHttp() {
 // @Router /transaction/deposit [post]
 func (h DepositHttp) CreateDeposit(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.Deposit{}
@@ -83,7 +83,7 @@ func (h DepositHttp) CreateDeposit(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, docNo, err := h.svc.CreateDeposit(shopID, authUsername, *docReq)
+	idx, docNo, err := h.svc.CreateDeposit(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -111,7 +111,7 @@ func (h DepositHttp) CreateDeposit(ctx microservice.IContext) error {
 func (h DepositHttp) UpdateDeposit(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -129,7 +129,7 @@ func (h DepositHttp) UpdateDeposit(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateDeposit(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateDeposit(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -155,12 +155,12 @@ func (h DepositHttp) UpdateDeposit(ctx microservice.IContext) error {
 // @Router /transaction/deposit/{id} [delete]
 func (h DepositHttp) DeleteDeposit(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteDeposit(shopID, id, authUsername)
+	err := h.svc.DeleteDeposit(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -186,7 +186,7 @@ func (h DepositHttp) DeleteDeposit(ctx microservice.IContext) error {
 // @Router /transaction/deposit [delete]
 func (h DepositHttp) DeleteDepositByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -199,7 +199,7 @@ func (h DepositHttp) DeleteDepositByGUIDs(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.DeleteDepositByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteDepositByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -224,12 +224,12 @@ func (h DepositHttp) DeleteDepositByGUIDs(ctx microservice.IContext) error {
 // @Router /transaction/deposit/{id} [get]
 func (h DepositHttp) InfoDeposit(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get Deposit %v", id)
-	doc, err := h.svc.InfoDeposit(shopID, id)
+	doc, err := h.svc.InfoDeposit(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -255,11 +255,11 @@ func (h DepositHttp) InfoDeposit(ctx microservice.IContext) error {
 // @Router /transaction/deposit/code/{code} [get]
 func (h DepositHttp) InfoDepositByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoDepositByCode(shopID, code)
+	doc, err := h.svc.InfoDepositByCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -290,7 +290,7 @@ func (h DepositHttp) InfoDepositByCode(ctx microservice.IContext) error {
 // @Router /transaction/deposit [get]
 func (h DepositHttp) SearchDepositPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -311,7 +311,7 @@ func (h DepositHttp) SearchDepositPage(ctx microservice.IContext) error {
 		},
 	})
 
-	docList, pagination, err := h.svc.SearchDeposit(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchDeposit(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -344,7 +344,7 @@ func (h DepositHttp) SearchDepositPage(ctx microservice.IContext) error {
 // @Router /transaction/deposit/list [get]
 func (h DepositHttp) SearchDepositStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -367,7 +367,7 @@ func (h DepositHttp) SearchDepositStep(ctx microservice.IContext) error {
 		},
 	})
 
-	docList, total, err := h.svc.SearchDepositStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchDepositStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -395,7 +395,7 @@ func (h DepositHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -407,7 +407,7 @@ func (h DepositHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

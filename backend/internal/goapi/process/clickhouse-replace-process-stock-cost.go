@@ -14,13 +14,13 @@ import (
 
 // ReplacePartitionResult ผลลัพธ์การ replace
 type ReplacePartitionResult struct {
-	Success bool    `json:"success"`
-	ShopID string  `json:"shopid"`
-	ItemCode string  `json:"itemcode"`
-	Rows int64   `json:"rows"`
-	Duration float64 `json:"duration"`
-	Message string  `json:"message"`
-	Error string  `json:"error,omitempty"`
+	Success     bool    `json:"success"`
+	HoldingCode string  `json:"holding_code"`
+	ItemCode    string  `json:"itemcode"`
+	Rows        int64   `json:"rows"`
+	Duration    float64 `json:"duration"`
+	Message     string  `json:"message"`
+	Error       string  `json:"error,omitempty"`
 }
 
 // ReplaceProcessStockCostPartition replace partition ของ processstockcost table โดยส่ง array ข้อมูลเข้ามาโดยตรง
@@ -28,7 +28,7 @@ type ReplacePartitionResult struct {
 // Parameters:
 //   - ctx: context สำหรับ timeout/cancellation
 //   - conn: clickhouse.Conn ClickHouse connection
-//   - shopID: รหัสร้าน
+//   - holdingCode: รหัสร้าน
 //   - itemCode: รหัสสินค้า
 //   - data: array ของข้อมูลที่จะ insert
 //
@@ -38,14 +38,14 @@ type ReplacePartitionResult struct {
 // Example:
 //
 //	data := []ProcessStockCostDetailStruct{
-//	    {ShopID: "SHOP001", ItemCode: "ITEM001", DocNo: "PO001", ...},
-//	    {ShopID: "SHOP001", ItemCode: "ITEM001", DocNo: "PO002", ...},
+//	    {HoldingCode: "SHOP001", ItemCode: "ITEM001", DocNo: "PO001", ...},
+//	    {HoldingCode: "SHOP001", ItemCode: "ITEM001", DocNo: "PO002", ...},
 //	}
 //	result := ReplaceProcessStockCostPartition(ctx, conn, "SHOP001", "ITEM001", data)
 func ReplaceProcessStockCostPartition(
 	ctx context.Context,
 	conn clickhouse.Conn,
-	shopID string,
+	holdingCode string,
 	itemCode string,
 	data []models.ProcessStockCostDetailStruct,
 ) *ReplacePartitionResult {
@@ -53,8 +53,8 @@ func ReplaceProcessStockCostPartition(
 	startTime := time.Now()
 
 	result := &ReplacePartitionResult{
-		ShopID:   shopID,
-		ItemCode: itemCode,
+		HoldingCode: holdingCode,
+		ItemCode:    itemCode,
 	}
 
 	// ตรวจสอบข้อมูล
@@ -89,7 +89,7 @@ func ReplaceProcessStockCostPartition(
 	// 2. Prepare batch insert
 	insertQuery := fmt.Sprintf(`
         INSERT INTO %s (
-            shopid, itemcode, docdatetime, docno, linenumber, transflag,
+            holding_code, itemcode, docdatetime, docno, linenumber, transflag,
             barcodemain, barcode, unitcode, whcode, locationcode,
             totalqty, unitstand, unitdivide, price, averagecost,
             calcamount, balanceqty, balanceamount, guid, unitcost, docref
@@ -106,7 +106,7 @@ func ReplaceProcessStockCostPartition(
 	// 3. Batch insert ข้อมูล
 	for _, row := range data {
 		err := batch.Append(
-			shopID,              // shopid
+			holdingCode,         // holding_code
 			itemCode,            // itemcode
 			row.DocDateTime,     // docdatetime
 			row.DocNo,           // docno
@@ -148,7 +148,7 @@ func ReplaceProcessStockCostPartition(
         ALTER TABLE processstockcost
         REPLACE PARTITION ('%s', '%s')
         FROM %s
-    `, shopID, itemCode, stagingTable)
+    `, holdingCode, itemCode, stagingTable)
 
 	if err := conn.Exec(ctx, replaceQuery); err != nil {
 		result.Error = fmt.Sprintf("failed to replace partition: %v", err)

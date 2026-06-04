@@ -11,7 +11,7 @@ import (
 )
 
 type IJournalTransactionAdminRepository interface {
-	FindJournalTransactionDocByShopID(ctx context.Context, shopID string, isDeleted bool, pageable msModels.Pageable) ([]journalModels.JournalDoc, mongopagination.PaginationData, error)
+	FindJournalTransactionDocByHoldingCode(ctx context.Context, holdingCode string, isDeleted bool, pageable msModels.Pageable) ([]journalModels.JournalDoc, mongopagination.PaginationData, error)
 }
 
 type JournalTransactionAdminRepository struct {
@@ -24,13 +24,13 @@ func NewJournalTransactionAdminRepository(pst microservice.IPersisterMongo) IJou
 	}
 }
 
-func (r JournalTransactionAdminRepository) FindJournalTransactionDocByShopID(ctx context.Context, shopID string, isDeleted bool, pageable msModels.Pageable) ([]journalModels.JournalDoc, mongopagination.PaginationData, error) {
+func (r JournalTransactionAdminRepository) FindJournalTransactionDocByHoldingCode(ctx context.Context, holdingCode string, isDeleted bool, pageable msModels.Pageable) ([]journalModels.JournalDoc, mongopagination.PaginationData, error) {
 
 	docList := []journalModels.JournalDoc{}
 
 	queryFilters := bson.M{
-		"shopid":    shopID,
-		"deleted_at": bson.M{"$exists": isDeleted},
+		"holding_code": holdingCode,
+		"deleted_at":   bson.M{"$exists": isDeleted},
 	}
 
 	pagination, err := r.pst.FindPage(ctx, &journalModels.JournalDoc{}, queryFilters, pageable, &docList)

@@ -8,10 +8,10 @@ import (
 )
 
 type ICreditorPostgresRepository interface {
-	Get(shopID string, creditorCode string) (*creditorModels.CreditorPG, error)
+	Get(holdingCode string, creditorCode string) (*creditorModels.CreditorPG, error)
 	Create(doc creditorModels.CreditorPG) error
-	Update(shopID string, creditorCode string, doc creditorModels.CreditorPG) error
-	Delete(shopID string, creditorCode string) error
+	Update(holdingCode string, creditorCode string, doc creditorModels.CreditorPG) error
+	Delete(holdingCode string, creditorCode string) error
 }
 
 type CreditorPostgresRepository struct {
@@ -24,9 +24,9 @@ func NewCreditorPostgresRepository(pst microservice.IPersister) ICreditorPostgre
 	}
 }
 
-func (repo *CreditorPostgresRepository) Get(shopID string, creditorCode string) (*creditorModels.CreditorPG, error) {
+func (repo *CreditorPostgresRepository) Get(holdingCode string, creditorCode string) (*creditorModels.CreditorPG, error) {
 	var result creditorModels.CreditorPG
-	_, err := repo.pst.First(&result, "shopid=? AND code=?", shopID, creditorCode)
+	_, err := repo.pst.First(&result, "holding_code=? AND code=?", holdingCode, creditorCode)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
@@ -46,10 +46,10 @@ func (repo *CreditorPostgresRepository) Create(doc creditorModels.CreditorPG) er
 	return nil
 }
 
-func (repo *CreditorPostgresRepository) Update(shopID string, creditorCode string, doc creditorModels.CreditorPG) error {
+func (repo *CreditorPostgresRepository) Update(holdingCode string, creditorCode string, doc creditorModels.CreditorPG) error {
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"shopid": shopID,
-		"code":   creditorCode,
+		"holding_code": holdingCode,
+		"code":         creditorCode,
 	})
 
 	if err != nil {
@@ -58,10 +58,10 @@ func (repo *CreditorPostgresRepository) Update(shopID string, creditorCode strin
 	return nil
 }
 
-func (repo *CreditorPostgresRepository) Delete(shopID string, creditorCode string) error {
+func (repo *CreditorPostgresRepository) Delete(holdingCode string, creditorCode string) error {
 	err := repo.pst.Delete(&creditorModels.CreditorPG{}, map[string]interface{}{
-		"shopid": shopID,
-		"code":   creditorCode,
+		"holding_code": holdingCode,
+		"code":         creditorCode,
 	})
 
 	if err != nil {

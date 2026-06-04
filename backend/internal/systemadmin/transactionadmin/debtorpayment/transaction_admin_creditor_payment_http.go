@@ -49,7 +49,7 @@ func (s *DebtorPaymentTransactionAdminHttp) ReSyncCreditorPaymentTransaction(ctx
 		return err
 	}
 
-	err = s.svc.ReSyncDebtorPaymentDoc(req.ShopID)
+	err = s.svc.ReSyncDebtorPaymentDoc(req.HoldingCode)
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, common.ApiResponse{
 			Success: false,

@@ -9,16 +9,16 @@ import (
 
 // ใบสืบราคา (Request for Quotation)
 type RFQTransactionPG struct {
-	TransactionPG  `gorm:"embedded;"`
-	RefPRDocNo string                    `json:"refprdocno" gorm:"column:refprdocno"`
-	RefPRGuidFixed string                    `json:"refprguidfixed" gorm:"column:refprguidfixed"`
-	SelectedVendor string                    `json:"selectedvendor" gorm:"column:selectedvendor"`
-	SelectionReason string                    `json:"selectionreason" gorm:"column:selectionreason"`
-	RefPODocNo string                    `json:"refpodocno" gorm:"column:refpodocno"`
-	RefPOGuidFixed string                    `json:"refpoguidfixed" gorm:"column:refpoguidfixed"`
-	MinVendors int8                      `json:"minvendors" gorm:"column:minvendors"`
-	ConversionStatus string                   `json:"conversionstatus" gorm:"column:conversionstatus"`
-	Items *[]RFQDetailTransactionPG `json:"items" gorm:"items;foreignKey:shopid,docno"`
+	TransactionPG    `gorm:"embedded;"`
+	RefPRDocNo       string                    `json:"refprdocno" gorm:"column:refprdocno"`
+	RefPRGuidFixed   string                    `json:"refprguidfixed" gorm:"column:refprguidfixed"`
+	SelectedVendor   string                    `json:"selectedvendor" gorm:"column:selectedvendor"`
+	SelectionReason  string                    `json:"selectionreason" gorm:"column:selectionreason"`
+	RefPODocNo       string                    `json:"refpodocno" gorm:"column:refpodocno"`
+	RefPOGuidFixed   string                    `json:"refpoguidfixed" gorm:"column:refpoguidfixed"`
+	MinVendors       int8                      `json:"minvendors" gorm:"column:minvendors"`
+	ConversionStatus string                    `json:"conversionstatus" gorm:"column:conversionstatus"`
+	Items            *[]RFQDetailTransactionPG `json:"items" gorm:"items;foreignKey:holding_code,docno"`
 }
 
 // รายละเอียด ใบสืบราคา
@@ -36,7 +36,7 @@ func (RFQDetailTransactionPG) TableName() string {
 
 func (s *RFQTransactionPG) BeforeUpdate(tx *gorm.DB) (err error) {
 	var details *[]RFQDetailTransactionPG
-	tx.Model(&RFQDetailTransactionPG{}).Where(" shopid=? AND docno=?", s.ShopID, s.DocNo).Find(&details)
+	tx.Model(&RFQDetailTransactionPG{}).Where(" holding_code=? AND docno=?", s.HoldingCode, s.DocNo).Find(&details)
 
 	for _, tmp := range *details {
 		var foundUpdate bool = false

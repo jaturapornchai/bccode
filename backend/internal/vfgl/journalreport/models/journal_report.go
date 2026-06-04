@@ -6,36 +6,36 @@ import (
 )
 
 type TrialBalanceSheetReport struct {
-	ReportDate time.Time                         `json:"reportdate"`             // วันที่ทำรายการ
-	StartDate time.Time                         `json:"start_date"`              // วันที่เริ่มต้น
-	EndDate time.Time                         `json:"end_date"`                // วันที่สิ้นสุด
-	AccountGroup string                            `json:"accountgroup"`           // เล่มบัญชี
-	AccountDetails *[]TrialBalanceSheetAccountDetail `json:"accountdetails"`         // รายละเอียดบัญชี
-	TotalBalanceDebit float64                           `json:"totalbalancedebit"`      // รวมยอดยกมาเดบิต
-	TotalBalanceCredit float64                           `json:"totalbalancecredit"`     // รวมยอดยกมาเครดิต
-	TotalAmountDebit float64                           `json:"totalamountdebit"`       // รวมเดบิต
-	TotalAmountCredit float64                           `json:"totalamountcredit"`      // รวมเครดิต
-	TotalNextBalanceDebit float64                           `json:"totalnextbalancedebit"`  // รวมยอดสะสมเดบิต
+	ReportDate             time.Time                         `json:"reportdate"`             // วันที่ทำรายการ
+	StartDate              time.Time                         `json:"start_date"`             // วันที่เริ่มต้น
+	EndDate                time.Time                         `json:"end_date"`               // วันที่สิ้นสุด
+	AccountGroup           string                            `json:"accountgroup"`           // เล่มบัญชี
+	AccountDetails         *[]TrialBalanceSheetAccountDetail `json:"accountdetails"`         // รายละเอียดบัญชี
+	TotalBalanceDebit      float64                           `json:"totalbalancedebit"`      // รวมยอดยกมาเดบิต
+	TotalBalanceCredit     float64                           `json:"totalbalancecredit"`     // รวมยอดยกมาเครดิต
+	TotalAmountDebit       float64                           `json:"totalamountdebit"`       // รวมเดบิต
+	TotalAmountCredit      float64                           `json:"totalamountcredit"`      // รวมเครดิต
+	TotalNextBalanceDebit  float64                           `json:"totalnextbalancedebit"`  // รวมยอดสะสมเดบิต
 	TotalNextBalanceCredit float64                           `json:"totalnextbalancecredit"` // รวมยอดสะสมเครดิต
 }
 
 type TrialBalanceSheetAccountDetail struct {
 	chartofaccountModel.ChartOfAccountPG
-	Amount float64 `json:"amount" gorm:"column:amount"`                                // ยอดคงเหลือ(ประจำงวด)
-	BalanceAmount float64 `json:"balanceamount" gorm:"column:balanceamount"`                  // ยอดคงเหลือยกมา
-	NextBalanceAmount float64 `json:"nextbalanceamount" gorm:"column:nextbalanceamount"`          // ยอดคงเหลือสะสม
-	DebitAmount float64 `json:"debitamount" gorm:"-"`                                       // ยอดเดบิต
-	CreditAmount float64 `json:"creditamount" gorm:"-"`                                      // ยอดเครดิต
-	SumDebit float64 `json:"sumdebit" gorm:"column:debitamount"`                         // ยอดเครดิต
-	SumCredit float64 `json:"sumcredit" gorm:"column:creditamount"`                       // ยอดเครดิต
-	BalanceDebitAmount float64 `json:"balancedebitamount" gorm:"-"`                                // ยอดยกมาเดบิต
-	BalanceCreditAmount float64 `json:"balancecreditamount" gorm:"-"`                               // ยอดยกมาเครดิต
-	SumBalanceDebit float64 `json:"sumbalancedebit" gorm:"column:balancedebitamount"`           //
-	SumBalanceCredit float64 `json:"sumbalancecredit" gorm:"column:balancecreditamount"`         //
-	NextBalanceDebitAmount float64 `json:"nextbalancedebitamount" gorm:"-"`                            // ยอดสะสมเดบิต
+	Amount                  float64 `json:"amount" gorm:"column:amount"`                                // ยอดคงเหลือ(ประจำงวด)
+	BalanceAmount           float64 `json:"balanceamount" gorm:"column:balanceamount"`                  // ยอดคงเหลือยกมา
+	NextBalanceAmount       float64 `json:"nextbalanceamount" gorm:"column:nextbalanceamount"`          // ยอดคงเหลือสะสม
+	DebitAmount             float64 `json:"debitamount" gorm:"-"`                                       // ยอดเดบิต
+	CreditAmount            float64 `json:"creditamount" gorm:"-"`                                      // ยอดเครดิต
+	SumDebit                float64 `json:"sumdebit" gorm:"column:debitamount"`                         // ยอดเครดิต
+	SumCredit               float64 `json:"sumcredit" gorm:"column:creditamount"`                       // ยอดเครดิต
+	BalanceDebitAmount      float64 `json:"balancedebitamount" gorm:"-"`                                // ยอดยกมาเดบิต
+	BalanceCreditAmount     float64 `json:"balancecreditamount" gorm:"-"`                               // ยอดยกมาเครดิต
+	SumBalanceDebit         float64 `json:"sumbalancedebit" gorm:"column:balancedebitamount"`           //
+	SumBalanceCredit        float64 `json:"sumbalancecredit" gorm:"column:balancecreditamount"`         //
+	NextBalanceDebitAmount  float64 `json:"nextbalancedebitamount" gorm:"-"`                            // ยอดสะสมเดบิต
 	NextBalanceCreditAmount float64 `json:"nextbalancecreditamount" gorm:"-"`                           // ยอดสะสมเครดิต
-	SumNextBalanceDebit float64 `json:"sumnextbalancedebit" gorm:"column:nextbalancedebitamount"`   //
-	SumNextBalanceCredit float64 `json:"sumnextbalancecredit" gorm:"column:nextbalancecreditamount"` //
+	SumNextBalanceDebit     float64 `json:"sumnextbalancedebit" gorm:"column:nextbalancedebitamount"`   //
+	SumNextBalanceCredit    float64 `json:"sumnextbalancecredit" gorm:"column:nextbalancecreditamount"` //
 }
 
 type BalanceSheetReport struct {
@@ -96,53 +96,53 @@ type ProfitAndLossSheetAccountDetail struct {
 
 type TrialBalanceSheetReportResponse struct {
 	Success bool                    `json:"success"`
-	Data TrialBalanceSheetReport `json:"data,omitempty"`
+	Data    TrialBalanceSheetReport `json:"data,omitempty"`
 }
 
 type BalanceSheetReportResponse struct {
 	Success bool               `json:"success"`
-	Data BalanceSheetReport `json:"data,omitempty"`
+	Data    BalanceSheetReport `json:"data,omitempty"`
 }
 
 type LostAndProfitSheetReportResponse struct {
 	Success bool                     `json:"success"`
-	Data ProfitAndLossSheetReport `json:"data,omitempty"`
+	Data    ProfitAndLossSheetReport `json:"data,omitempty"`
 }
 
 type LedgerAccountRaw struct {
-	RowMode int8      `json:"rowmode" gorm:"column:rowmode"`
-	DocDate time.Time `json:"docdate" gorm:"column:docdate"`
-	DocNo string    `json:"docno" gorm:"column:docno"`
-	AccountCode string    `json:"accountcode" gorm:"column:accountcode"`
-	AccountName string    `json:"accountname" gorm:"column:accountname"`
-	AccountDescription string    `json:"accountdescription" gorm:"column:accountdescription"`
-	AccountGroup string    `json:"accountgroup" gorm:"column:accountgroup"`
+	RowMode                int8      `json:"rowmode" gorm:"column:rowmode"`
+	DocDate                time.Time `json:"docdate" gorm:"column:docdate"`
+	DocNo                  string    `json:"docno" gorm:"column:docno"`
+	AccountCode            string    `json:"accountcode" gorm:"column:accountcode"`
+	AccountName            string    `json:"accountname" gorm:"column:accountname"`
+	AccountDescription     string    `json:"accountdescription" gorm:"column:accountdescription"`
+	AccountGroup           string    `json:"accountgroup" gorm:"column:accountgroup"`
 	ConsolidateAccountCode string    `json:"consolidateaccountcode" gorm:"column:consolidateaccountcode"`
-	DebitAmount float64   `json:"debitamount" gorm:"column:debitamount"`
-	CreditAmount float64   `json:"creditamount" gorm:"column:creditamount"`
-	Amount float64   `json:"amount" gorm:"column:amount"`
+	DebitAmount            float64   `json:"debitamount" gorm:"column:debitamount"`
+	CreditAmount           float64   `json:"creditamount" gorm:"column:creditamount"`
+	Amount                 float64   `json:"amount" gorm:"column:amount"`
 }
 
 type LedgerAccount struct {
-	AccountCode string                 `json:"accountcode" gorm:"column:accountcode"`
-	AccountName string                 `json:"accountname" gorm:"column:accountname"`
-	AccountGroup string                 `json:"accountgroup" gorm:"column:accountgroup"`
+	AccountCode            string                 `json:"accountcode" gorm:"column:accountcode"`
+	AccountName            string                 `json:"accountname" gorm:"column:accountname"`
+	AccountGroup           string                 `json:"accountgroup" gorm:"column:accountgroup"`
 	ConsolidateAccountCode string                 `json:"consolidateaccountcode" gorm:"column:consolidateaccountcode"`
-	Balance float64                `json:"balance" gorm:"column:balance"`
-	NextBalance float64                `json:"nextbalance" gorm:"column:nextbalance"`
-	Details *[]LedgerAccountDetail `json:"details" gorm:"column:details"`
+	Balance                float64                `json:"balance" gorm:"column:balance"`
+	NextBalance            float64                `json:"nextbalance" gorm:"column:nextbalance"`
+	Details                *[]LedgerAccountDetail `json:"details" gorm:"column:details"`
 }
 
 type LedgerAccountDetail struct {
-	DocNo string    `json:"docno" gorm:"column:docno"`
-	DocDate time.Time `json:"docdate" gorm:"column:docdate"`
+	DocNo              string    `json:"docno" gorm:"column:docno"`
+	DocDate            time.Time `json:"docdate" gorm:"column:docdate"`
 	AccountDescription string    `json:"accountdescription" gorm:"column:accountdescription"`
-	Debit float64   `json:"debit" gorm:"column:debit"`
-	Credit float64   `json:"credit" gorm:"column:credit"`
-	Amount float64   `json:"amount" gorm:"column:amount"`
-	CountVat int       `json:"countvat"`
-	CountTax int       `json:"counttax"`
-	CountImage int       `json:"countimage"`
+	Debit              float64   `json:"debit" gorm:"column:debit"`
+	Credit             float64   `json:"credit" gorm:"column:credit"`
+	Amount             float64   `json:"amount" gorm:"column:amount"`
+	CountVat           int       `json:"countvat"`
+	CountTax           int       `json:"counttax"`
+	CountImage         int       `json:"countimage"`
 }
 
 type LedgerAccountCodeRange struct {
@@ -151,7 +151,7 @@ type LedgerAccountCodeRange struct {
 }
 
 type JournalSummary struct {
-	DocNo string `json:"docno" bson:"docno"`
+	DocNo    string `json:"docno" bson:"docno"`
 	CountVat int    `json:"countvat" bson:"countvat"`
 	CountTax int    `json:"counttax" bson:"counttax"`
 }
@@ -161,7 +161,7 @@ func (JournalSummary) CollectionName() string {
 }
 
 type JournalImageSummary struct {
-	DocNo string `json:"docno" bson:"docno"`
+	DocNo      string `json:"docno" bson:"docno"`
 	CountImage int    `json:"countimage" bson:"countimage"`
 }
 
@@ -170,8 +170,8 @@ func (JournalImageSummary) CollectionName() string {
 }
 
 type JournalDocNoByShop struct {
-	ShopID string `json:"shopid" bson:"shopid"`
-	DocNo string `json:"docno" bson:"docno"`
+	HoldingCode string `json:"holding_code" bson:"holding_code"`
+	DocNo       string `json:"docno" bson:"docno"`
 }
 
 func (JournalDocNoByShop) CollectionName() string {
@@ -181,40 +181,40 @@ func (JournalDocNoByShop) CollectionName() string {
 // Multi-Shop Dashboard Response
 type MultiShopDashboardResponse struct {
 	Success bool                   `json:"success"`
-	Data []ShopDashboardSummary `json:"data"`
-	Period PeriodInfo             `json:"period"`
+	Data    []ShopDashboardSummary `json:"data"`
+	Period  PeriodInfo             `json:"period"`
 }
 
 // Summary per shop
 type ShopDashboardSummary struct {
-	ShopID string  `json:"shopid"`
-	ShopName string  `json:"shopname"`
-	DailyAverage float64 `json:"dailyaverage"`
+	HoldingCode    string  `json:"holding_code"`
+	ShopName       string  `json:"shopname"`
+	DailyAverage   float64 `json:"dailyaverage"`
 	MonthlyAverage float64 `json:"monthlyaverage"`
-	YearlyAverage float64 `json:"yearlyaverage"`
-	TotalRevenue float64 `json:"totalrevenue"`
-	TotalProfit float64 `json:"totalprofit"`
-	ImageCount int     `json:"imagecount"`
+	YearlyAverage  float64 `json:"yearlyaverage"`
+	TotalRevenue   float64 `json:"totalrevenue"`
+	TotalProfit    float64 `json:"totalprofit"`
+	ImageCount     int     `json:"imagecount"`
 }
 
 // Period metadata
 type PeriodInfo struct {
 	StartDate time.Time `json:"start_date"`
-	EndDate time.Time `json:"end_date"`
+	EndDate   time.Time `json:"end_date"`
 	TotalDays int       `json:"totaldays"`
 }
 
 // PostgreSQL raw result (internal use)
 type MultiShopRevenueRaw struct {
-	ShopID string  `gorm:"column:shopid"`
+	HoldingCode     string  `gorm:"column:holding_code"`
 	AccountCategory int16   `gorm:"column:accountcategory"`
-	TotalAmount float64 `gorm:"column:total_amount"`
+	TotalAmount     float64 `gorm:"column:total_amount"`
 }
 
 // MongoDB image count result
 type ShopImageCount struct {
-	ShopID string `json:"shopid" bson:"shopid"`
-	ImageCount int    `json:"imagecount" bson:"imagecount"`
+	HoldingCode string `json:"holding_code" bson:"holding_code"`
+	ImageCount  int    `json:"imagecount" bson:"imagecount"`
 }
 
 func (ShopImageCount) CollectionName() string {

@@ -25,21 +25,21 @@ func (m *MockChartOfAccountRepository) Create(doc models.ChartOfAccountPG) error
 	return ret.Error(0)
 }
 
-func (m *MockChartOfAccountRepository) Update(shopID string, accountCode string, doc models.ChartOfAccountPG) error {
-	ret := m.Called(shopID, accountCode, doc)
+func (m *MockChartOfAccountRepository) Update(holdingCode string, accountCode string, doc models.ChartOfAccountPG) error {
+	ret := m.Called(holdingCode, accountCode, doc)
 	return ret.Error(0)
 }
 
-func (m *MockChartOfAccountRepository) Delete(shopID string, accountCode string) error {
-	ret := m.Called(shopID, accountCode)
+func (m *MockChartOfAccountRepository) Delete(holdingCode string, accountCode string) error {
+	ret := m.Called(holdingCode, accountCode)
 	return ret.Error(1)
 }
 
-func (m *MockChartOfAccountRepository) Get(shopID string, accountCode string) (*models.ChartOfAccountPG, error) {
+func (m *MockChartOfAccountRepository) Get(holdingCode string, accountCode string) (*models.ChartOfAccountPG, error) {
 	var charts []models.ChartOfAccountPG
 
 	charts = append(charts, models.ChartOfAccountPG{})
-	ret := m.Called(shopID, accountCode)
+	ret := m.Called(holdingCode, accountCode)
 	return ret.Get(0).(*models.ChartOfAccountPG), ret.Error(1)
 }
 
@@ -63,8 +63,8 @@ func TestChartOfAccountServiceCreate(t *testing.T) {
 		AccountGroup:        "99999",
 		FinancialStatements: 2,
 		AccountLevel:        9999,
-		ShopIdentity: common.ShopIdentity{
-			ShopID: "27dcEdktOoaSBYFmnN6G6ett4Jb",
+		HoldingCodeentity: common.HoldingCodeentity{
+			HoldingCode: "27dcEdktOoaSBYFmnN6G6ett4Jb",
 		},
 	}
 
@@ -81,8 +81,8 @@ func TestChartOfAccountServiceCreate(t *testing.T) {
 					FinancialStatements: 2,
 				},
 			},
-			ShopIdentity: common.ShopIdentity{
-				ShopID: "27dcEdktOoaSBYFmnN6G6ett4Jb",
+			HoldingCodeentity: common.HoldingCodeentity{
+				HoldingCode: "27dcEdktOoaSBYFmnN6G6ett4Jb",
 			},
 		},
 	}
@@ -135,8 +135,8 @@ func TestChartOfAccountConsumeServiceUpsertWhenNotFoundDataInsertNew(t *testing.
 					AccountLevel:       9999,
 				},
 			},
-			ShopIdentity: common.ShopIdentity{
-				ShopID: "27dcEdktOoaSBYFmnN6G6ett4Jb",
+			HoldingCodeentity: common.HoldingCodeentity{
+				HoldingCode: "27dcEdktOoaSBYFmnN6G6ett4Jb",
 			},
 		},
 	}
@@ -148,18 +148,18 @@ func TestChartOfAccountConsumeServiceUpsertWhenNotFoundDataInsertNew(t *testing.
 		AccountBalanceType: 2,
 		AccountGroup:       "99999",
 		AccountLevel:       9999,
-		ShopIdentity: common.ShopIdentity{
-			ShopID: "27dcEdktOoaSBYFmnN6G6ett4Jb",
+		HoldingCodeentity: common.HoldingCodeentity{
+			HoldingCode: "27dcEdktOoaSBYFmnN6G6ett4Jb",
 		},
 	}
 
 	mockRepo := new(MockChartOfAccountRepository)
-	mockRepo.On("Get", give.ShopID, give.AccountCode).Return(&models.ChartOfAccountPG{}, gorm.ErrRecordNotFound)
+	mockRepo.On("Get", give.HoldingCode, give.AccountCode).Return(&models.ChartOfAccountPG{}, gorm.ErrRecordNotFound)
 	mockRepo.On("Create", want).Return(nil)
-	// mockRepo.On("Update", give.ShopID, give.AccountCode, give).Return(nil)
+	// mockRepo.On("Update", give.HoldingCode, give.AccountCode, give).Return(nil)
 
 	svc := services.NewChartOfAccountConsumeService(mockRepo)
-	get, err := svc.Upsert(give.ShopID, give)
+	get, err := svc.Upsert(give.HoldingCode, give)
 	assert.Nil(t, err, "Error should be nil")
 	assert.Equal(t, get, &want, "After Update Are Not Equal")
 
@@ -178,8 +178,8 @@ func TestChartOfAccountConsumeServiceUpsertWhenFoundDataUpdateOld(t *testing.T) 
 					AccountLevel:       9999,
 				},
 			},
-			ShopIdentity: common.ShopIdentity{
-				ShopID: "27dcEdktOoaSBYFmnN6G6ett4Jb",
+			HoldingCodeentity: common.HoldingCodeentity{
+				HoldingCode: "27dcEdktOoaSBYFmnN6G6ett4Jb",
 			},
 		},
 	}
@@ -191,8 +191,8 @@ func TestChartOfAccountConsumeServiceUpsertWhenFoundDataUpdateOld(t *testing.T) 
 		AccountBalanceType: 0,
 		AccountGroup:       "",
 		AccountLevel:       0,
-		ShopIdentity: common.ShopIdentity{
-			ShopID: "27dcEdktOoaSBYFmnN6G6ett4Jb",
+		HoldingCodeentity: common.HoldingCodeentity{
+			HoldingCode: "27dcEdktOoaSBYFmnN6G6ett4Jb",
 		},
 	}
 
@@ -203,17 +203,17 @@ func TestChartOfAccountConsumeServiceUpsertWhenFoundDataUpdateOld(t *testing.T) 
 		AccountBalanceType: 2,
 		AccountGroup:       "99999",
 		AccountLevel:       9999,
-		ShopIdentity: common.ShopIdentity{
-			ShopID: "27dcEdktOoaSBYFmnN6G6ett4Jb",
+		HoldingCodeentity: common.HoldingCodeentity{
+			HoldingCode: "27dcEdktOoaSBYFmnN6G6ett4Jb",
 		},
 	}
 
 	mockRepo := new(MockChartOfAccountRepository)
-	mockRepo.On("Get", give.ShopID, give.AccountCode).Return(&giveGetFromRepository, nil)
-	mockRepo.On("Update", give.ShopID, give.AccountCode, want).Return(nil)
+	mockRepo.On("Get", give.HoldingCode, give.AccountCode).Return(&giveGetFromRepository, nil)
+	mockRepo.On("Update", give.HoldingCode, give.AccountCode, want).Return(nil)
 
 	svc := services.NewChartOfAccountConsumeService(mockRepo)
-	get, err := svc.Upsert(give.ShopID, give)
+	get, err := svc.Upsert(give.HoldingCode, give)
 	assert.Nil(t, err, "Error should be nil")
 	assert.Equal(t, get, &want, "After Update Are Not Equal")
 

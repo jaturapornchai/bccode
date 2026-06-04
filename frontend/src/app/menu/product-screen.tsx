@@ -93,15 +93,15 @@ function readWorkspaceSession(): WorkspaceSession | null {
   }
 }
 
-async function ensureActiveProductShop(auth: AuthSession, shopid: string): Promise<void> {
-  const response = await fetch("/api/workspace/select-shop", {
+async function ensureActiveProductHolding(auth: AuthSession, holding_code: string): Promise<void> {
+  const response = await fetch("/api/workspace/select-holding", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "x-bc-backend-url": auth.backendUrl,
       Authorization: `Bearer ${auth.token}`,
     },
-    body: JSON.stringify({ backendUrl: auth.backendUrl, shopid }),
+    body: JSON.stringify({ backendUrl: auth.backendUrl, holding_code }),
     cache: "no-store",
   });
   const data = await response.json().catch(() => null) as { success?: boolean; message?: string } | null;
@@ -330,13 +330,13 @@ const [pickerType, setPickerType] = useState<string>("");
     };
   }, []);
 
-  const activeShopId = workspace?.shop.shopid ?? "";
+  const activeHoldingCode = workspace?.shop.holding_code ?? "";
 
   useEffect(() => {
     if (!showBarcodePicker || !auth) return;
     let active = true;
     setLoadingBarcodes(true);
-    listBarcodes(auth, { shopid: activeShopId, keyword: barcodeSearch, limit: 100 })
+    listBarcodes(auth, { holding_code: activeHoldingCode, keyword: barcodeSearch, limit: 100 })
       .then((resData) => {
         if (active && resData.success && resData.data) {
           // Filter unlinked barcodes (itemcode is empty — no product linked yet)
@@ -352,7 +352,7 @@ const [pickerType, setPickerType] = useState<string>("");
     return () => {
       active = false;
     };
-  }, [showBarcodePicker, auth, activeShopId, barcodeSearch]);
+  }, [showBarcodePicker, auth, activeHoldingCode, barcodeSearch]);
 
   const activeLanguages = useMemo(() => languageCodesFromWorkspace(workspace), [workspace]);
 
@@ -403,13 +403,13 @@ const [pickerType, setPickerType] = useState<string>("");
   }, [isFormDirty, confirm]);
 
   const loadProducts = useCallback(async () => {
-    if (!auth || !activeShopId) return;
+    if (!auth || !activeHoldingCode) return;
     setLoading(true);
     setNotice(null);
     try {
-      const tokenShopKey = `${auth.token}:${activeShopId}`;
+      const tokenShopKey = `${auth.token}:${activeHoldingCode}`;
       if (selectedShopTokenRef.current !== tokenShopKey) {
-        await ensureActiveProductShop(auth, activeShopId);
+        await ensureActiveProductHolding(auth, activeHoldingCode);
         selectedShopTokenRef.current = tokenShopKey;
       }
       const params = new URLSearchParams({
@@ -450,17 +450,17 @@ const [pickerType, setPickerType] = useState<string>("");
     } finally {
       setLoading(false);
     }
-  }, [auth, activeShopId, search, text.requestFailed, isSetOnly]);
+  }, [auth, activeHoldingCode, search, text.requestFailed, isSetOnly]);
 
   useEffect(() => {
-    if (auth && activeShopId) {
+    if (auth && activeHoldingCode) {
       void loadProducts();
     }
-  }, [auth, activeShopId, loadProducts]);
+  }, [auth, activeHoldingCode, loadProducts]);
 
   const makeBlankProduct = useCallback((): Product => ({
     guidfixed: "",
-    shopid: activeShopId,
+    holding_code: activeHoldingCode,
     code: "",
     names: [{ code: "th", name: "" }, { code: "en", name: "" }],
     group_code: "",
@@ -482,7 +482,7 @@ const [pickerType, setPickerType] = useState<string>("");
     maxpoint: 0,
     qty: 0,
     stockbarcode: "",
-  }), [activeShopId, isSetOnly]);
+  }), [activeHoldingCode, isSetOnly]);
 
   const handleCreateOpen = () => {
     setEditorMode("create");
@@ -2731,8 +2731,8 @@ function TabProductMisc({
           <FieldRow label={textMisc.miscGuidFixed}>
             <Input value={value.guidfixed || ""} readOnly className="bg-muted/50" />
           </FieldRow>
-          <FieldRow label={textMisc.miscShopId}>
-            <Input value={value.shopid || ""} readOnly className="bg-muted/50" />
+          <FieldRow label={textMisc.miscHoldingCode}>
+            <Input value={value.holding_code || ""} readOnly className="bg-muted/50" />
           </FieldRow>
           <FieldRow label={textMisc.miscUnitGuid}>
             <Input value={value.unitguid || ""} readOnly className="bg-muted/50" />

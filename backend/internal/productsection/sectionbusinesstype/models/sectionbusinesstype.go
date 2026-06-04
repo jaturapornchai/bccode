@@ -10,8 +10,8 @@ const sectionbusinesstypeCollectionName = "sectionBusinessType"
 
 type SectionBusinessType struct {
 	models.PartitionIdentity `bson:"inline"`
-	BusinessTypeCode string    `json:"businesstypecode" bson:"businesstypecode"`
-	ProductCodes *[]string `json:"productcodes" bson:"productcodes"`
+	BusinessTypeCode         string    `json:"businesstypecode" bson:"businesstypecode"`
+	ProductCodes             *[]string `json:"productcodes" bson:"productcodes"`
 }
 
 type SectionBusinessTypeInfo struct {
@@ -24,12 +24,12 @@ func (SectionBusinessTypeInfo) CollectionName() string {
 }
 
 type SectionBusinessTypeData struct {
-	models.ShopIdentity     `bson:"inline"`
-	SectionBusinessTypeInfo `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	SectionBusinessTypeInfo  `bson:"inline"`
 }
 
 type SectionBusinessTypeDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                      primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	SectionBusinessTypeData `bson:"inline"`
 	models.ActivityDoc      `bson:"inline"`
 }

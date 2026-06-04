@@ -61,7 +61,7 @@ func (h JournalWs) WebsocketImage(ctx microservice.IContext) error {
 	screenName := config.WEBSOCKET_SCREEN_IMAGE
 
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	username := userInfo.Username
 
@@ -78,19 +78,19 @@ func (h JournalWs) WebsocketImage(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svcWebsocket.SetWebsocket(shopID, username, screenName)
+	err = h.svcWebsocket.SetWebsocket(holdingCode, username, screenName)
 
 	if err != nil {
 		return err
 	}
 
-	err = h.svcWebsocket.ExpireWebsocket(shopID, username)
+	err = h.svcWebsocket.ExpireWebsocket(holdingCode, username)
 
 	if err != nil {
 		return err
 	}
 
-	cacheMsg, subID, err := h.svcWebsocket.SubDoc(shopID, username, screenName)
+	cacheMsg, subID, err := h.svcWebsocket.SubDoc(holdingCode, username, screenName)
 
 	if err != nil {
 		return err
@@ -101,8 +101,8 @@ func (h JournalWs) WebsocketImage(ctx microservice.IContext) error {
 		ws.Close()
 		h.ms.WebsocketClose(socketID)
 		h.svcWebsocket.UnSub(subID)
-		h.svcWebsocket.DelWebsocket(shopID, username, screenName)
-		h.ClearDocRef(shopID, username)
+		h.svcWebsocket.DelWebsocket(holdingCode, username, screenName)
+		h.ClearDocRef(holdingCode, username)
 	}()
 
 	go func() {
@@ -120,12 +120,12 @@ func (h JournalWs) WebsocketImage(ctx microservice.IContext) error {
 	}()
 
 	// Send to client
-	lastMessageForm, err := h.svcWebsocket.GetLastMessage(shopID, username, config.WEBSOCKET_SCREEN_FORM)
+	lastMessageForm, err := h.svcWebsocket.GetLastMessage(holdingCode, username, config.WEBSOCKET_SCREEN_FORM)
 	if err != nil {
 		h.ms.Logger.Error(err.Error())
 	}
 
-	lastMessage, err := h.svcWebsocket.GetLastMessage(shopID, username, screenName)
+	lastMessage, err := h.svcWebsocket.GetLastMessage(holdingCode, username, screenName)
 	if err != nil {
 		h.ms.Logger.Error(err.Error())
 	}
@@ -175,7 +175,7 @@ func (h JournalWs) WebsocketImage(ctx microservice.IContext) error {
 	}
 
 	for {
-		h.svcWebsocket.ExpireWebsocket(shopID, username)
+		h.svcWebsocket.ExpireWebsocket(holdingCode, username)
 
 		// if err != nil {
 		// 	return nil
@@ -189,7 +189,7 @@ func (h JournalWs) WebsocketImage(ctx microservice.IContext) error {
 				return err
 			}
 
-			h.svcWebsocket.SaveLastMessage(shopID, username, screenName, temp.Payload)
+			h.svcWebsocket.SaveLastMessage(holdingCode, username, screenName, temp.Payload)
 		}
 
 	}
@@ -200,7 +200,7 @@ func (h JournalWs) WebsocketForm(ctx microservice.IContext) error {
 	screenName := config.WEBSOCKET_SCREEN_FORM
 	sendScreenName := config.WEBSOCKET_SCREEN_IMAGE
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	username := userInfo.Username
 
@@ -217,19 +217,19 @@ func (h JournalWs) WebsocketForm(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svcWebsocket.SetWebsocket(shopID, username, screenName)
+	err = h.svcWebsocket.SetWebsocket(holdingCode, username, screenName)
 
 	if err != nil {
 		return err
 	}
 
-	err = h.svcWebsocket.ExpireWebsocket(shopID, username)
+	err = h.svcWebsocket.ExpireWebsocket(holdingCode, username)
 
 	if err != nil {
 		return err
 	}
 
-	cacheMsg, subID, err := h.svcWebsocket.SubDoc(shopID, username, screenName)
+	cacheMsg, subID, err := h.svcWebsocket.SubDoc(holdingCode, username, screenName)
 
 	if err != nil {
 		return err
@@ -240,8 +240,8 @@ func (h JournalWs) WebsocketForm(ctx microservice.IContext) error {
 		ws.Close()
 		h.ms.WebsocketClose(socketID)
 		h.svcWebsocket.UnSub(subID)
-		h.svcWebsocket.DelWebsocket(shopID, username, screenName)
-		h.ClearDocRef(shopID, username)
+		h.svcWebsocket.DelWebsocket(holdingCode, username, screenName)
+		h.ClearDocRef(holdingCode, username)
 	}()
 
 	// Receive from client
@@ -251,7 +251,7 @@ func (h JournalWs) WebsocketForm(ctx microservice.IContext) error {
 		}()
 
 		for {
-			h.svcWebsocket.ExpireWebsocket(shopID, username)
+			h.svcWebsocket.ExpireWebsocket(holdingCode, username)
 
 			journalEvent := models.JournalEvent{}
 			err := ws.ReadJSON(&journalEvent)
@@ -261,20 +261,20 @@ func (h JournalWs) WebsocketForm(ctx microservice.IContext) error {
 			}
 
 			tempRef, _ := json.Marshal(journalEvent)
-			h.svcWebsocket.PubDoc(shopID, username, sendScreenName, tempRef)
+			h.svcWebsocket.PubDoc(holdingCode, username, sendScreenName, tempRef)
 
 			switch journalEvent.Event {
 			case "save":
-				h.svcWebsocket.ClearLastMessage(shopID, username)
+				h.svcWebsocket.ClearLastMessage(holdingCode, username)
 				//clear
-				h.ClearDocRef(shopID, username)
+				h.ClearDocRef(holdingCode, username)
 			}
 		}
 
 	}(ws, sigClose)
 
 	// Send to client
-	lastMessage, err := h.svcWebsocket.GetLastMessage(shopID, username, screenName)
+	lastMessage, err := h.svcWebsocket.GetLastMessage(holdingCode, username, screenName)
 	if err != nil {
 		h.ms.Logger.Error(err.Error())
 	}
@@ -307,7 +307,7 @@ func (h JournalWs) WebsocketForm(ctx microservice.IContext) error {
 func (h JournalWs) WebsocketDocRefPool(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	username := userInfo.Username
 
@@ -324,13 +324,13 @@ func (h JournalWs) WebsocketDocRefPool(ctx microservice.IContext) error {
 		return err
 	}
 
-	return h.svcWebsocket.DocRefPool(shopID, username, ws)
+	return h.svcWebsocket.DocRefPool(holdingCode, username, ws)
 
 }
 
-func (h JournalWs) ClearDocRef(shopID string, username string) error {
+func (h JournalWs) ClearDocRef(holdingCode string, username string) error {
 
-	// isExists, err := h.svcWebsocket.ExistsWebsocket(shopID, username)
+	// isExists, err := h.svcWebsocket.ExistsWebsocket(holdingCode, username)
 	// if err != nil {
 	// 	h.ms.Logger.Error(err.Error())
 	// }
@@ -339,7 +339,7 @@ func (h JournalWs) ClearDocRef(shopID string, username string) error {
 	// 	return nil
 	// }
 
-	// lastMessage, err := h.svcWebsocket.GetLastMessage(shopID, username, "form")
+	// lastMessage, err := h.svcWebsocket.GetLastMessage(holdingCode, username, "form")
 	// if err != nil {
 	// 	h.ms.Logger.Error(err.Error())
 	// }
@@ -348,7 +348,7 @@ func (h JournalWs) ClearDocRef(shopID string, username string) error {
 	// 	journalRef := models.JournalRef{}
 	// 	json.Unmarshal([]byte(lastMessage), &journalRef)
 
-	// 	err = h.svcWebsocket.DelDocRefPool(shopID, username, journalRef.DocRef)
+	// 	err = h.svcWebsocket.DelDocRefPool(holdingCode, username, journalRef.DocRef)
 	// 	if err != nil {
 	// 		h.ms.Logger.Error(err.Error())
 	// 	}
@@ -368,9 +368,9 @@ func (h JournalWs) ClearDocRef(shopID string, username string) error {
 // @Router		/selected [get]
 func (h JournalWs) GetAllDocRefPool(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
-	result, err := h.svcWebsocket.GetAllDocRefPool(shopID)
+	result, err := h.svcWebsocket.GetAllDocRefPool(holdingCode)
 
 	docRefPool := []models.DocRefPool{}
 	for tempDocRef, tempUsername := range result {
@@ -394,10 +394,10 @@ func (h JournalWs) GetAllDocRefPool(ctx microservice.IContext) error {
 
 func (h JournalWs) GetUserDocRef(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	username := userInfo.Username
 
-	result, err := h.svcWebsocket.GetDocRefUserPool(shopID, username)
+	result, err := h.svcWebsocket.GetDocRefUserPool(holdingCode, username)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -415,7 +415,7 @@ func (h JournalWs) GetUserDocRef(ctx microservice.IContext) error {
 
 func (h JournalWs) GetDocRefUser(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	docRef := ctx.QueryParam("docref")
 
@@ -429,7 +429,7 @@ func (h JournalWs) GetDocRefUser(ctx microservice.IContext) error {
 		return nil
 	}
 
-	result, err := h.svcWebsocket.GetDocRefPool(shopID, docRef)
+	result, err := h.svcWebsocket.GetDocRefPool(holdingCode, docRef)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -457,7 +457,7 @@ func (h JournalWs) GetDocRefUser(ctx microservice.IContext) error {
 // @Router		/gl/journal/docref/select [post]
 func (h JournalWs) SelectDocRefPool(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	username := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -476,7 +476,7 @@ func (h JournalWs) SelectDocRefPool(ctx microservice.IContext) error {
 		forceSelect = true
 	}
 
-	result, err := h.svcWebsocket.DocRefSelectForce(shopID, username, docReq.DocRef, forceSelect)
+	result, err := h.svcWebsocket.DocRefSelectForce(holdingCode, username, docReq.DocRef, forceSelect)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -502,7 +502,7 @@ func (h JournalWs) SelectDocRefPool(ctx microservice.IContext) error {
 // @Router		/gl/journal/docref/deselect [post]
 func (h JournalWs) DeSelectDocRefPool(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	username := userInfo.Username
 
 	// input := ctx.ReadInput()
@@ -515,7 +515,7 @@ func (h JournalWs) DeSelectDocRefPool(ctx microservice.IContext) error {
 	// 	return err
 	// }
 
-	result, err := h.svcWebsocket.DocRefDeSelect(shopID, username)
+	result, err := h.svcWebsocket.DocRefDeSelect(holdingCode, username)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -547,17 +547,17 @@ func (h JournalWs) WebsocketConnectCount(ctx microservice.IContext) error {
 // @Router		/gl/journal/docref/next [post]
 func (h JournalWs) NextSelectDocumentRef(ctx microservice.IContext) error {
 	// userInfo := ctx.UserInfo()
-	// shopID := userInfo.ShopID
+	// holdingCode := userInfo.HoldingCode
 	// username := userInfo.Username
 
-	// doc, err := h.svcWebsocket.DocRefNextSelect(shopID, username, 0)
+	// doc, err := h.svcWebsocket.DocRefNextSelect(holdingCode, username, 0)
 
 	// if err != nil {
 	// 	ctx.ResponseError(http.StatusBadRequest, err.Error())
 	// 	return err
 	// }
 
-	// _, err = h.svcWebsocket.DocRefSelectForce(shopID, username, doc.DocumentRef, true)
+	// _, err = h.svcWebsocket.DocRefSelectForce(holdingCode, username, doc.DocumentRef, true)
 
 	// if err != nil {
 	// 	ctx.ResponseError(http.StatusBadRequest, err.Error())

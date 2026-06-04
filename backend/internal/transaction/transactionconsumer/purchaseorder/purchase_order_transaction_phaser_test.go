@@ -11,7 +11,7 @@ func TestPhasePurchaseOrderMsg(t *testing.T) {
 
 	giveMsg := `{
 	"id": "000000000000000000000000",
-	"shopid": "30LbRx3l0SLaK84gLpcF0W4x9Z0",
+	"holding_code": "30LbRx3l0SLaK84gLpcF0W4x9Z0",
 	"guid_fixed": "32sPNAFfVGHiVjgN6amwMr0i1mS",
 	"docno": "PO2025091800001",
 	"docdatetime": "2025-09-18T14:37:15.211Z",
@@ -627,7 +627,7 @@ func TestPhasePurchaseOrderMsg(t *testing.T) {
 
 	// Main transaction fields
 	assert.Equal(t, "32sPNAFfVGHiVjgN6amwMr0i1mS", got.GuidFixed)
-	assert.Equal(t, "30LbRx3l0SLaK84gLpcF0W4x9Z0", got.ShopID)
+	assert.Equal(t, "30LbRx3l0SLaK84gLpcF0W4x9Z0", got.HoldingCode)
 	assert.Equal(t, int16(6), got.TransFlag)
 	assert.Equal(t, "PO2025091800001", got.DocNo)
 	assert.Equal(t, "3e52d89b-0621-4c4b-a5f2-ae1e950fe710", got.GuidRef)
@@ -676,7 +676,7 @@ func TestPhasePurchaseOrderMsg(t *testing.T) {
 	item1 := (*got.Items)[0]
 	assert.Equal(t, "32sPNAFfVGHiVjgN6amwMr0i1mS", item1.GuidFixed)
 	assert.Equal(t, "PO2025091800001", item1.DocNo)
-	assert.Equal(t, "30LbRx3l0SLaK84gLpcF0W4x9Z0", item1.ShopID)
+	assert.Equal(t, "30LbRx3l0SLaK84gLpcF0W4x9Z0", item1.HoldingCode)
 	assert.Equal(t, int8(1), item1.LineNumber)
 	assert.Equal(t, "885001", item1.Barcode)
 	assert.Equal(t, "30LbfsvYmdlp5hzcz8qznVjzArZ", item1.ItemGuid)
@@ -776,7 +776,7 @@ func TestPhasePurchaseOrderMsg(t *testing.T) {
 		// Common item assertions
 		assert.Equal(t, got.GuidFixed, item.GuidFixed, "Item %d GuidFixed", i+1)
 		assert.Equal(t, got.DocNo, item.DocNo, "Item %d DocNo", i+1)
-		assert.Equal(t, got.ShopID, item.ShopID, "Item %d ShopID", i+1)
+		assert.Equal(t, got.HoldingCode, item.HoldingCode, "Item %d HoldingCode", i+1)
 		assert.Equal(t, 0.0, item.Price, "Item %d Price", i+1)
 		assert.Equal(t, "", item.Discount, "Item %d Discount", i+1)
 		assert.Equal(t, 0.0, item.DiscountAmount, "Item %d DiscountAmount", i+1)

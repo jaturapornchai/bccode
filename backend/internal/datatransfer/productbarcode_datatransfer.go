@@ -17,7 +17,7 @@ type ProductBarcodeDataTransfer struct {
 }
 
 type IProductBarcodeDataTransferRepository interface {
-	FindPage(ctx context.Context, shopID string, searchInFields []string, pageable msModels.Pageable) ([]models.ProductBarcodeDoc, mongopagination.PaginationData, error)
+	FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable msModels.Pageable) ([]models.ProductBarcodeDoc, mongopagination.PaginationData, error)
 }
 
 type ProductBarcodeDataTransferRepository struct {
@@ -35,9 +35,9 @@ func NewProductBarcodeDataTransferRepository(mongodbPersister microservice.IPers
 	return repo
 }
 
-func (repo ProductBarcodeDataTransferRepository) FindPage(ctx context.Context, shopID string, searchInFields []string, pageable msModels.Pageable) ([]models.ProductBarcodeDoc, mongopagination.PaginationData, error) {
+func (repo ProductBarcodeDataTransferRepository) FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable msModels.Pageable) ([]models.ProductBarcodeDoc, mongopagination.PaginationData, error) {
 
-	results, pagination, err := repo.SearchRepository.FindPage(ctx, shopID, searchInFields, pageable)
+	results, pagination, err := repo.SearchRepository.FindPage(ctx, holdingCode, searchInFields, pageable)
 
 	if err != nil {
 		return nil, mongopagination.PaginationData{}, err
@@ -51,7 +51,7 @@ func NewProductBarcodeDataTransfer(transferConnection IDataTransferConnection) I
 		transferConnection: transferConnection,
 	}
 }
-func (pbd *ProductBarcodeDataTransfer) StartTransfer(ctx context.Context, shopID string, targetShopID string) error {
+func (pbd *ProductBarcodeDataTransfer) StartTransfer(ctx context.Context, holdingCode string, targetHoldingCode string) error {
 
 	sourceProductBarcodeRepository := NewProductBarcodeDataTransferRepository(pbd.transferConnection.GetSourceConnection())
 	targetProductBarcodeRepository := productbarcoderepository.NewProductBarcodeRepository(pbd.transferConnection.GetTargetConnection(), nil)
@@ -68,16 +68,16 @@ func (pbd *ProductBarcodeDataTransfer) StartTransfer(ctx context.Context, shopID
 	}
 
 	for {
-		docs, pages, err := sourceProductBarcodeRepository.FindPage(ctx, shopID, nil, pageRequest)
+		docs, pages, err := sourceProductBarcodeRepository.FindPage(ctx, holdingCode, nil, pageRequest)
 		if err != nil {
 			return err
 		}
 
 		if len(docs) > 0 {
 
-			if targetShopID != "" {
+			if targetHoldingCode != "" {
 				for i := range docs {
-					docs[i].ShopID = targetShopID
+					docs[i].HoldingCode = targetHoldingCode
 					docs[i].ID = primitive.NewObjectID()
 				}
 			}

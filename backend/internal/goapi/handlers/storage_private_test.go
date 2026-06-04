@@ -54,20 +54,20 @@ func TestStorageProxyURLAlwaysIncludesShopPrefix(t *testing.T) {
 
 func TestStorageObjectBelongsToShop(t *testing.T) {
 	tests := []struct {
-		name      string
-		objectKey string
-		shopID    string
-		want      bool
+		name        string
+		objectKey   string
+		holdingCode string
+		want        bool
 	}{
-		{name: "same shop", objectKey: "SHOP001/images/a.png", shopID: "SHOP001", want: true},
-		{name: "different shop", objectKey: "SHOP002/images/a.png", shopID: "SHOP001", want: false},
-		{name: "path traversal", objectKey: "SHOP001/../SHOP002/a.png", shopID: "SHOP001", want: false},
-		{name: "missing shop", objectKey: "uploads/20260521/a.png", shopID: "", want: false},
+		{name: "same shop", objectKey: "SHOP001/images/a.png", holdingCode: "SHOP001", want: true},
+		{name: "different shop", objectKey: "SHOP002/images/a.png", holdingCode: "SHOP001", want: false},
+		{name: "path traversal", objectKey: "SHOP001/../SHOP002/a.png", holdingCode: "SHOP001", want: false},
+		{name: "missing shop", objectKey: "uploads/20260521/a.png", holdingCode: "", want: false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := storageObjectBelongsToShop(tt.objectKey, tt.shopID)
+			got := storageObjectBelongsToShop(tt.objectKey, tt.holdingCode)
 			if got != tt.want {
 				t.Fatalf("expected %v, got %v", tt.want, got)
 			}
@@ -82,7 +82,7 @@ func TestS3FileProxyBlocksCrossShopKeyBeforeStorage(t *testing.T) {
 	c := e.NewContext(req, rec)
 	c.SetParamNames("*")
 	c.SetParamValues("SHOP002/images/a.png")
-	c.Set("UserInfo", msmodels.UserInfo{Username: "user@example.com", ShopID: "SHOP001"})
+	c.Set("UserInfo", msmodels.UserInfo{Username: "user@example.com", HoldingCode: "SHOP001"})
 
 	if err := S3FileProxyHandler(c); err != nil {
 		t.Fatalf("S3FileProxyHandler returned error: %v", err)
@@ -93,36 +93,36 @@ func TestS3FileProxyBlocksCrossShopKeyBeforeStorage(t *testing.T) {
 	}
 }
 
-func TestStorageAuthorizedShopID(t *testing.T) {
+func TestStorageAuthorizedHoldingCode(t *testing.T) {
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodPost, "/upload", nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
-	c.Set("UserInfo", msmodels.UserInfo{Username: "user@example.com", ShopID: "SHOP001"})
+	c.Set("UserInfo", msmodels.UserInfo{Username: "user@example.com", HoldingCode: "SHOP001"})
 
-	shopID, status := storageAuthorizedShopID(c, "")
-	if status != http.StatusOK || shopID != "SHOP001" {
-		t.Fatalf("expected token shop SHOP001 with status 200, got shop=%q status=%d", shopID, status)
+	holdingCode, status := storageAuthorizedHoldingCode(c, "")
+	if status != http.StatusOK || holdingCode != "SHOP001" {
+		t.Fatalf("expected token shop SHOP001 with status 200, got shop=%q status=%d", holdingCode, status)
 	}
 
-	shopID, status = storageAuthorizedShopID(c, "SHOP001")
-	if status != http.StatusOK || shopID != "SHOP001" {
-		t.Fatalf("expected matching requested shop SHOP001 with status 200, got shop=%q status=%d", shopID, status)
+	holdingCode, status = storageAuthorizedHoldingCode(c, "SHOP001")
+	if status != http.StatusOK || holdingCode != "SHOP001" {
+		t.Fatalf("expected matching requested shop SHOP001 with status 200, got shop=%q status=%d", holdingCode, status)
 	}
 
-	_, status = storageAuthorizedShopID(c, "SHOP002")
+	_, status = storageAuthorizedHoldingCode(c, "SHOP002")
 	if status != http.StatusForbidden {
 		t.Fatalf("expected status %d for cross-shop request, got %d", http.StatusForbidden, status)
 	}
 }
 
-func TestStorageAuthorizedShopIDRejectsMissingToken(t *testing.T) {
+func TestStorageAuthorizedHoldingCodeRejectsMissingToken(t *testing.T) {
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodPost, "/upload", nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
-	if _, status := storageAuthorizedShopID(c, ""); status != http.StatusUnauthorized {
+	if _, status := storageAuthorizedHoldingCode(c, ""); status != http.StatusUnauthorized {
 		t.Fatalf("expected status %d when token is missing, got %d", http.StatusUnauthorized, status)
 	}
 }
@@ -134,7 +134,7 @@ func TestS3FileProxyBlocksPathTraversal(t *testing.T) {
 	c := e.NewContext(req, rec)
 	c.SetParamNames("*")
 	c.SetParamValues("SHOP001/../SHOP002/a.png")
-	c.Set("UserInfo", msmodels.UserInfo{Username: "user@example.com", ShopID: "SHOP001"})
+	c.Set("UserInfo", msmodels.UserInfo{Username: "user@example.com", HoldingCode: "SHOP001"})
 
 	if err := S3FileProxyHandler(c); err != nil {
 		t.Fatalf("S3FileProxyHandler returned error: %v", err)
@@ -162,14 +162,14 @@ func TestS3FileProxyRequiresAuthShop(t *testing.T) {
 	}
 }
 
-func newMultipartUploadContext(t *testing.T, e *echo.Echo, formShopID string) (echo.Context, *httptest.ResponseRecorder) {
+func newMultipartUploadContext(t *testing.T, e *echo.Echo, formHoldingCode string) (echo.Context, *httptest.ResponseRecorder) {
 	t.Helper()
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	if formShopID != "" {
-		if err := writer.WriteField("shopid", formShopID); err != nil {
-			t.Fatalf("write shopid field: %v", err)
+	if formHoldingCode != "" {
+		if err := writer.WriteField("holding_code", formHoldingCode); err != nil {
+			t.Fatalf("write holding_code field: %v", err)
 		}
 	}
 	part, err := writer.CreateFormFile("file", "noop.png")
@@ -193,13 +193,13 @@ func newMultipartUploadContext(t *testing.T, e *echo.Echo, formShopID string) (e
 func TestImageUploadHandlerRejectsCrossShopForm(t *testing.T) {
 	e := echo.New()
 	c, rec := newMultipartUploadContext(t, e, "SHOP002")
-	c.Set("UserInfo", msmodels.UserInfo{Username: "user@example.com", ShopID: "SHOP001"})
+	c.Set("UserInfo", msmodels.UserInfo{Username: "user@example.com", HoldingCode: "SHOP001"})
 
 	if err := ImageUploadHandler(c); err != nil {
 		t.Fatalf("ImageUploadHandler returned error: %v", err)
 	}
 	if rec.Code != http.StatusForbidden {
-		t.Fatalf("expected status %d when form shopid mismatches token, got %d", http.StatusForbidden, rec.Code)
+		t.Fatalf("expected status %d when form holding_code mismatches token, got %d", http.StatusForbidden, rec.Code)
 	}
 	if !strings.Contains(rec.Body.String(), "Forbidden") {
 		t.Fatalf("expected response body to mention Forbidden, got %s", rec.Body.String())
@@ -221,42 +221,42 @@ func TestImageUploadHandlerRejectsMissingShopToken(t *testing.T) {
 func TestFileUploadHandlerRejectsCrossShopForm(t *testing.T) {
 	e := echo.New()
 	c, rec := newMultipartUploadContext(t, e, "SHOP002")
-	c.Set("UserInfo", msmodels.UserInfo{Username: "user@example.com", ShopID: "SHOP001"})
+	c.Set("UserInfo", msmodels.UserInfo{Username: "user@example.com", HoldingCode: "SHOP001"})
 
 	if err := FileUploadHandler(c); err != nil {
 		t.Fatalf("FileUploadHandler returned error: %v", err)
 	}
 	if rec.Code != http.StatusForbidden {
-		t.Fatalf("expected status %d when form shopid mismatches token, got %d", http.StatusForbidden, rec.Code)
+		t.Fatalf("expected status %d when form holding_code mismatches token, got %d", http.StatusForbidden, rec.Code)
 	}
 }
 
 func TestAttachmentUploadHandlerRejectsCrossShopForm(t *testing.T) {
 	e := echo.New()
 	c, rec := newMultipartUploadContext(t, e, "SHOP002")
-	c.Set("UserInfo", msmodels.UserInfo{Username: "user@example.com", ShopID: "SHOP001"})
+	c.Set("UserInfo", msmodels.UserInfo{Username: "user@example.com", HoldingCode: "SHOP001"})
 
 	if err := AttachmentUploadHandler(c); err != nil {
 		t.Fatalf("AttachmentUploadHandler returned error: %v", err)
 	}
 	if rec.Code != http.StatusForbidden {
-		t.Fatalf("expected status %d when form shopid mismatches token, got %d", http.StatusForbidden, rec.Code)
+		t.Fatalf("expected status %d when form holding_code mismatches token, got %d", http.StatusForbidden, rec.Code)
 	}
 }
 
 func TestAttachmentDownloadHandlerRejectsCrossShopQuery(t *testing.T) {
 	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/api/attachment/download/507f1f77bcf86cd799439011?shopid=SHOP002", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/attachment/download/507f1f77bcf86cd799439011?holding_code=SHOP002", nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetParamNames("id")
 	c.SetParamValues("507f1f77bcf86cd799439011")
-	c.Set("UserInfo", msmodels.UserInfo{Username: "user@example.com", ShopID: "SHOP001"})
+	c.Set("UserInfo", msmodels.UserInfo{Username: "user@example.com", HoldingCode: "SHOP001"})
 
 	if err := AttachmentDownloadHandler(c); err != nil {
 		t.Fatalf("AttachmentDownloadHandler returned error: %v", err)
 	}
 	if rec.Code != http.StatusForbidden {
-		t.Fatalf("expected status %d when query shopid mismatches token, got %d", http.StatusForbidden, rec.Code)
+		t.Fatalf("expected status %d when query holding_code mismatches token, got %d", http.StatusForbidden, rec.Code)
 	}
 }

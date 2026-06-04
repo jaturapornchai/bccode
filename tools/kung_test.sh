@@ -26,7 +26,7 @@ run_one() {
   local start=$(date +%s.%N)
   curl -s -X POST "$URL" \
     -H "Content-Type: application/json" \
-    -d "{\"shop_id\":\"$SHOP\",\"question\":\"$q\",\"session_id\":\"$sid\",\"output_format\":\"html\"}" \
+    -d "{\"holding_code\":\"$SHOP\",\"question\":\"$q\",\"session_id\":\"$sid\",\"output_format\":\"html\"}" \
     -o "$OUT/resp-$idx.json" \
     -w "HTTP=%{http_code} TIME=%{time_total}\n" > "$OUT/meta-$idx.txt"
   local end=$(date +%s.%N)

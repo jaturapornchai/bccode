@@ -8,8 +8,8 @@ import (
 )
 
 type IMasterSyncCacheRepository interface {
-	Save(shopID string, moduleName string) error
-	Get(shopID string, moduleName string) (time.Time, error)
+	Save(holdingCode string, moduleName string) error
+	Get(holdingCode string, moduleName string) (time.Time, error)
 }
 
 type MasterSyncCacheRepository struct {
@@ -24,17 +24,17 @@ func NewMasterSyncCacheRepository(cache microservice.ICacher) MasterSyncCacheRep
 	}
 }
 
-func (repo MasterSyncCacheRepository) Save(shopID string, moduleName string) error {
+func (repo MasterSyncCacheRepository) Save(holdingCode string, moduleName string) error {
 	changeTime := time.Now().Format(time.RFC3339)
-	cacheModuleKey := repo.getCacheModuleKeyWithModule(shopID, moduleName)
-	cacheModuleAllMasterKey := repo.getCacheModuleKeyWithModule(shopID, repo.allMasterKey)
+	cacheModuleKey := repo.getCacheModuleKeyWithModule(holdingCode, moduleName)
+	cacheModuleAllMasterKey := repo.getCacheModuleKeyWithModule(holdingCode, repo.allMasterKey)
 
 	repo.cache.SetNoExpire(cacheModuleAllMasterKey, changeTime)
 	return repo.cache.SetNoExpire(cacheModuleKey, changeTime)
 }
 
-func (repo MasterSyncCacheRepository) Get(shopID string, moduleName string) (time.Time, error) {
-	cacheModuleKey := repo.getCacheModuleKeyWithModule(shopID, moduleName)
+func (repo MasterSyncCacheRepository) Get(holdingCode string, moduleName string) (time.Time, error) {
+	cacheModuleKey := repo.getCacheModuleKeyWithModule(holdingCode, moduleName)
 
 	strTime, err := repo.cache.Get(cacheModuleKey)
 	if err != nil {
@@ -57,6 +57,6 @@ func (repo MasterSyncCacheRepository) Get(shopID string, moduleName string) (tim
 	return valTime, nil
 }
 
-func (repo MasterSyncCacheRepository) getCacheModuleKeyWithModule(shopID string, moduleName string) string {
-	return fmt.Sprintf("mastersync-%s::%s", shopID, moduleName)
+func (repo MasterSyncCacheRepository) getCacheModuleKeyWithModule(holdingCode string, moduleName string) string {
+	return fmt.Sprintf("mastersync-%s::%s", holdingCode, moduleName)
 }

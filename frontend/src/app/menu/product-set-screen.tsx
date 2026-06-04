@@ -70,15 +70,15 @@ type ProductSetScreenProps = {
   language?: LanguageCode;
 };
 
-async function ensureActiveProductSetShop(auth: AuthSession, shopid: string): Promise<void> {
-  const response = await fetch("/api/workspace/select-shop", {
+async function ensureActiveProductSetHolding(auth: AuthSession, holding_code: string): Promise<void> {
+  const response = await fetch("/api/workspace/select-holding", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "x-bc-backend-url": auth.backendUrl,
       Authorization: `Bearer ${auth.token}`,
     },
-    body: JSON.stringify({ backendUrl: auth.backendUrl, shopid }),
+    body: JSON.stringify({ backendUrl: auth.backendUrl, holding_code }),
     cache: "no-store",
   });
   const data = await response.json().catch(() => null) as { success?: boolean; message?: string } | null;
@@ -92,14 +92,14 @@ function BarcodePickerModal({
   open,
   onClose,
   auth,
-  shopId,
+  holdingCode,
   language,
   onSelect,
 }: {
   open: boolean;
   onClose: () => void;
   auth: AuthSession | null;
-  shopId: string;
+  holdingCode: string;
   language: string;
   onSelect: (row: ProductBarcodeListRow) => void;
 }) {
@@ -115,7 +115,7 @@ function BarcodePickerModal({
       try {
         const response = await listBarcodes(auth, {
           keyword: query,
-          shopid: shopId,
+          holding_code: holdingCode,
           limit: 30,
         });
         if (response.success && response.data) {
@@ -129,7 +129,7 @@ function BarcodePickerModal({
     };
     const handler = setTimeout(fetchBarcodes, 300);
     return () => clearTimeout(handler);
-  }, [open, query, auth, shopId]);
+  }, [open, query, auth, holdingCode]);
 
   if (!open) return null;
 
@@ -174,7 +174,7 @@ function BarcodePickerModal({
             <div className="grid gap-1">
               {items.map((row, index) => {
                 const price = row.price ?? (row.prices?.[0]?.price ?? 0);
-                const stock = row.balance_qty ?? 0;
+                const stock = row.available_qty ?? row.balance_qty ?? 0;
                 const unit = pickName(row.itemunitnames, language) || "ชิ้น";
 
                 return (
@@ -277,18 +277,18 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
     if (workspaceRaw) setWorkspace(JSON.parse(workspaceRaw));
   }, []);
 
-  const activeShopId = workspace?.shop.shopid ?? "";
+  const activeHoldingCode = workspace?.shop.holding_code ?? "";
   const shopLanguages = useMemo(() => languageCodesFromWorkspace(workspace), [workspace]);
 
   // Load products of type SET (item_type: 2)
   const loadProductSets = useCallback(async () => {
-    if (!auth || !activeShopId) return;
+    if (!auth || !activeHoldingCode) return;
     setLoading(true);
     setNotice(null);
     try {
-      const tokenShopKey = `${auth.token}:${activeShopId}`;
+      const tokenShopKey = `${auth.token}:${activeHoldingCode}`;
       if (selectedShopTokenRef.current !== tokenShopKey) {
-        await ensureActiveProductSetShop(auth, activeShopId);
+        await ensureActiveProductSetHolding(auth, activeHoldingCode);
         selectedShopTokenRef.current = tokenShopKey;
       }
       const params = new URLSearchParams({
@@ -326,13 +326,13 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
     } finally {
       setLoading(false);
     }
-  }, [auth, activeShopId, search]);
+  }, [auth, activeHoldingCode, search]);
 
   useEffect(() => {
-    if (auth && activeShopId) {
+    if (auth && activeHoldingCode) {
       void loadProductSets();
     }
-  }, [auth, activeShopId, loadProductSets]);
+  }, [auth, activeHoldingCode, loadProductSets]);
 
   const selectedProduct = useMemo(() => {
     return items.find((item) => item.guidfixed === selectedGuid) ?? items[0] ?? null;
@@ -340,7 +340,7 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
 
   // Load component live details (price, stock, unit)
   const loadComponentDetails = useCallback(async (barcodes: string[]) => {
-    if (!auth || !activeShopId || barcodes.length === 0) return;
+    if (!auth || !activeHoldingCode || barcodes.length === 0) return;
     try {
       const promises = barcodes.map(async (code) => {
         const response = await fetch(`/api/product-barcode/list`, {
@@ -351,7 +351,7 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
           },
           body: JSON.stringify({
             keyword: code,
-            shopid: activeShopId,
+            holding_code: activeHoldingCode,
             limit: 1
           })
         });
@@ -361,7 +361,7 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
           return {
             code: row.barcode,
             price: row.price ?? (row.prices?.[0]?.price ?? 0),
-            stock: row.balance_qty ?? 0,
+            stock: row.available_qty ?? row.balance_qty ?? 0,
             unit: pickName(row.itemunitnames, lang) || "ชิ้น",
             name: pickName(row.names, lang) || row.barcode
           };
@@ -381,7 +381,7 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
     } catch (err) {
       console.error("Failed to load component details", err);
     }
-  }, [auth, activeShopId, lang]);
+  }, [auth, activeHoldingCode, lang]);
 
   // Gather unique component barcodes to fetch details
   useEffect(() => {
@@ -496,7 +496,7 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
 
   const makeBlankProductSet = useCallback((): Product => ({
     guidfixed: "",
-    shopid: activeShopId,
+    holding_code: activeHoldingCode,
     code: "",
     names: [{ code: "th", name: "" }, { code: "en", name: "" }],
     group_code: "",
@@ -516,7 +516,7 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
     package_length: 0,
     package_width: 0,
     package_height: 0,
-  }), [activeShopId]);
+  }), [activeHoldingCode]);
 
   const handleCreateOpen = () => {
     setEditorMode("create");
@@ -669,7 +669,7 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
 
     // Cache details immediately
     const price = entry.price ?? (entry.prices?.[0]?.price ?? 0);
-    const stock = entry.balance_qty ?? 0;
+    const stock = entry.available_qty ?? entry.balance_qty ?? 0;
     const unit = pickName(entry.itemunitnames, lang) || "ชิ้น";
 
     setBarcodeDetails(prev => ({
@@ -1882,7 +1882,7 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
           open={customBarcodePickerOpen}
           onClose={() => setCustomBarcodePickerOpen(false)}
           auth={auth}
-          shopId={activeShopId}
+          holdingCode={activeHoldingCode}
           language={lang}
           onSelect={(entry) => {
             if (activeOptionIndex >= 0) {

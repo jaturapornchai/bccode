@@ -11,14 +11,14 @@ const shopZoneCollectionName = "restaurantZones"
 
 type Zone struct {
 	GroupNumber int                   `json:"group_number" bson:"group_number"`
-	Code string                `json:"code" bson:"code"`
-	Names *[]models.NameX       `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
-	Printer *printerModel.Printer `json:"printer" bson:"printer"`
+	Code        string                `json:"code" bson:"code"`
+	Names       *[]models.NameX       `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
+	Printer     *printerModel.Printer `json:"printer" bson:"printer"`
 }
 
 type ZoneInfo struct {
 	models.DocIdentity `bson:"inline"`
-	Zone  `bson:"inline"`
+	Zone               `bson:"inline"`
 }
 
 func (ZoneInfo) CollectionName() string {
@@ -26,13 +26,13 @@ func (ZoneInfo) CollectionName() string {
 }
 
 type ZoneData struct {
-	models.ShopIdentity `bson:"inline"`
-	ZoneInfo  `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	ZoneInfo                 `bson:"inline"`
 }
 
 type ZoneDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	ZoneData  `bson:"inline"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ZoneData           `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 	models.LastUpdate  `bson:"inline"`
 }
@@ -50,7 +50,7 @@ func (ZoneItemGuid) CollectionName() string {
 }
 
 type ZoneActivity struct {
-	ZoneData  `bson:"inline"`
+	ZoneData            `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 
@@ -69,22 +69,22 @@ func (ZoneDeleteActivity) CollectionName() string {
 
 type ZoneInfoResponse struct {
 	Success bool     `json:"success"`
-	Data ZoneInfo `json:"data,omitempty"`
+	Data    ZoneInfo `json:"data,omitempty"`
 }
 
 type ZonePageResponse struct {
-	Success bool                          `json:"success"`
-	Data []ZoneInfo                    `json:"data,omitempty"`
+	Success    bool                          `json:"success"`
+	Data       []ZoneInfo                    `json:"data,omitempty"`
 	Pagination models.PaginationDataResponse `json:"pagination,omitempty"`
 }
 
 type ZoneLastActivityResponse struct {
-	New []ZoneActivity       `json:"new" `
+	New    []ZoneActivity       `json:"new" `
 	Remove []ZoneDeleteActivity `json:"remove"`
 }
 
 type ZoneFetchUpdateResponse struct {
-	Success bool                          `json:"success"`
-	Data ZoneLastActivityResponse      `json:"data,omitempty"`
+	Success    bool                          `json:"success"`
+	Data       ZoneLastActivityResponse      `json:"data,omitempty"`
 	Pagination models.PaginationDataResponse `json:"pagination,omitempty"`
 }

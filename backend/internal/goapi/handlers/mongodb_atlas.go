@@ -60,27 +60,53 @@ func GetAtlasConnection() (*mongo.Client, *mongo.Database) {
 	return atlasClient, atlasDB
 }
 
-func normalizedAtlasShopID(shopid string, shopID string) string {
-	if strings.TrimSpace(shopid) != "" {
-		return strings.TrimSpace(shopid)
-	}
-	return strings.TrimSpace(shopID)
-}
-
-func normalizedAtlasTenantID(holdingCode string, shopid string, shopID string) string {
+func normalizedAtlasTenantID(holdingCode string) string {
 	if strings.TrimSpace(holdingCode) != "" {
 		return strings.TrimSpace(holdingCode)
 	}
-	return normalizedAtlasShopID(shopid, shopID)
+	return ""
+}
+
+type atlasTenantIDs struct {
+	authTenant string
+	dataTenant string
+	filterIDs  []string
+}
+
+func resolveAtlasTenantIDs(holdingCode string) atlasTenantIDs {
+	holdingCode = strings.TrimSpace(holdingCode)
+	authTenant := holdingCode
+	dataTenant := holdingCode
+
+	filterIDs := []string{dataTenant}
+
+	return atlasTenantIDs{authTenant: authTenant, dataTenant: dataTenant, filterIDs: filterIDs}
 }
 
 func atlasTenantFilter(tenantID string) bson.M {
 	return bson.M{
 		"$or": []bson.M{
 			{"holding_code": tenantID},
-			{"shopid": tenantID},
+			{"holding_code": tenantID},
 		},
 	}
+}
+
+func atlasTenantFilterAny(tenantIDs ...string) bson.M {
+	clauses := make([]bson.M, 0, len(tenantIDs)*2)
+	seen := map[string]bool{}
+	for _, tenantID := range tenantIDs {
+		tenantID = strings.TrimSpace(tenantID)
+		if tenantID == "" || seen[tenantID] {
+			continue
+		}
+		clauses = append(clauses, bson.M{"holding_code": tenantID}, bson.M{"holding_code": tenantID})
+		seen[tenantID] = true
+	}
+	if len(clauses) == 0 {
+		return atlasTenantFilter("")
+	}
+	return bson.M{"$or": clauses}
 }
 
 func atlasIdentityFilter(guidFixed string, email string, cartID string, userUID string) bson.M {
@@ -123,9 +149,9 @@ func andAtlasFilters(filters ...bson.M) bson.M {
 	return bson.M{"$and": active}
 }
 
-func validateAtlasTenant(c echo.Context, requestShopID string) error {
+func validateAtlasTenant(c echo.Context, requestHoldingCode string) error {
 	userInfo, ok := c.Get("UserInfo").(msmodels.UserInfo)
-	if !ok || userInfo.ShopID == "" {
+	if !ok || userInfo.HoldingCode == "" {
 		logger.Warn("MongoDB tenant check failed: missing authenticated user info")
 		return c.JSON(http.StatusUnauthorized, map[string]interface{}{
 			"status":  "error",
@@ -133,15 +159,15 @@ func validateAtlasTenant(c echo.Context, requestShopID string) error {
 			"message": "Unauthorized",
 		})
 	}
-	if strings.TrimSpace(requestShopID) == "" {
+	if strings.TrimSpace(requestHoldingCode) == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  "error",
 			"code":    400,
 			"message": "holding_code is required",
 		})
 	}
-	if requestShopID != userInfo.ShopID {
-		logger.Warn("MongoDB tenant mismatch: token_shop=%s request_shop=%s", userInfo.ShopID, requestShopID)
+	if requestHoldingCode != userInfo.HoldingCode {
+		logger.Warn("MongoDB tenant mismatch: token_shop=%s request_shop=%s", userInfo.HoldingCode, requestHoldingCode)
 		return c.JSON(http.StatusForbidden, map[string]interface{}{
 			"status":  "error",
 			"code":    403,
@@ -167,8 +193,6 @@ func MongoAtlasUpdateHandler(c echo.Context) error {
 		Collection  string                 `json:"collection"`
 		HoldingCode string                 `json:"holding_code"`
 		GuidFixed   string                 `json:"guid_fixed"`
-		ShopId      string                 `json:"shopid"`
-		ShopIDAlt   string                 `json:"shop_id"`
 		Email       string                 `json:"email"`
 		CartId      string                 `json:"cartid"`
 		UserUID     string                 `json:"user_uid"`
@@ -194,17 +218,17 @@ func MongoAtlasUpdateHandler(c echo.Context) error {
 		})
 	}
 
-	reqBody.ShopId = normalizedAtlasTenantID(reqBody.HoldingCode, reqBody.ShopId, reqBody.ShopIDAlt)
-	if err := validateAtlasTenant(c, reqBody.ShopId); err != nil {
+	tenantIDs := resolveAtlasTenantIDs(reqBody.HoldingCode)
+	if err := validateAtlasTenant(c, tenantIDs.authTenant); err != nil {
 		return err
 	}
 
 	// Validate identifiers - ต้องไม่ว่าง
-	if reqBody.ShopId == "" {
+	if tenantIDs.dataTenant == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  "error",
 			"code":    400,
-			"message": "shopid is required and cannot be empty",
+			"message": "holding_code is required and cannot be empty",
 		})
 	}
 	reqBody.GuidFixed = strings.TrimSpace(reqBody.GuidFixed)
@@ -225,7 +249,7 @@ func MongoAtlasUpdateHandler(c echo.Context) error {
 	}
 
 	filter := andAtlasFilters(
-		atlasTenantFilter(reqBody.ShopId),
+		atlasTenantFilterAny(tenantIDs.filterIDs...),
 		atlasIdentityFilter(reqBody.GuidFixed, reqBody.Email, reqBody.CartId, reqBody.UserUID),
 	)
 
@@ -239,10 +263,10 @@ func MongoAtlasUpdateHandler(c echo.Context) error {
 	}
 
 	// เพิ่ม identifiers ลงใน data ตาม model ใหม่ และเก็บ legacy key เฉพาะ request เก่าที่ไม่มี guid_fixed
-	reqBody.Data["holding_code"] = reqBody.ShopId
+	reqBody.Data["holding_code"] = tenantIDs.dataTenant
 	reqBody.Data["guid_fixed"] = reqBody.GuidFixed
 	if usesLegacyIdentity {
-		reqBody.Data["shopid"] = reqBody.ShopId
+		reqBody.Data["holding_code"] = tenantIDs.authTenant
 		reqBody.Data["email"] = reqBody.Email
 		reqBody.Data["cartid"] = reqBody.CartId
 	}
@@ -299,8 +323,6 @@ func MongoAtlasDeleteHandler(c echo.Context) error {
 		Collection  string `json:"collection"`
 		HoldingCode string `json:"holding_code"`
 		GuidFixed   string `json:"guid_fixed"`
-		ShopId      string `json:"shopid"`
-		ShopIDAlt   string `json:"shop_id"`
 		Email       string `json:"email"`
 		CartId      string `json:"cartid"`
 		UserUID     string `json:"user_uid"`
@@ -325,17 +347,17 @@ func MongoAtlasDeleteHandler(c echo.Context) error {
 		})
 	}
 
-	reqBody.ShopId = normalizedAtlasTenantID(reqBody.HoldingCode, reqBody.ShopId, reqBody.ShopIDAlt)
-	if err := validateAtlasTenant(c, reqBody.ShopId); err != nil {
+	tenantIDs := resolveAtlasTenantIDs(reqBody.HoldingCode)
+	if err := validateAtlasTenant(c, tenantIDs.authTenant); err != nil {
 		return err
 	}
 
 	// Validate identifiers - ต้องไม่ว่าง
-	if reqBody.ShopId == "" {
+	if tenantIDs.dataTenant == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  "error",
 			"code":    400,
-			"message": "shopid is required and cannot be empty",
+			"message": "holding_code is required and cannot be empty",
 		})
 	}
 	reqBody.GuidFixed = strings.TrimSpace(reqBody.GuidFixed)
@@ -355,7 +377,7 @@ func MongoAtlasDeleteHandler(c echo.Context) error {
 	}
 
 	filter := andAtlasFilters(
-		atlasTenantFilter(reqBody.ShopId),
+		atlasTenantFilterAny(tenantIDs.filterIDs...),
 		atlasIdentityFilter(reqBody.GuidFixed, reqBody.Email, reqBody.CartId, reqBody.UserUID),
 	)
 
@@ -417,8 +439,6 @@ func MongoAtlasGetHandler(c echo.Context) error {
 		Collection  string `json:"collection"`
 		HoldingCode string `json:"holding_code"`
 		GuidFixed   string `json:"guid_fixed"`
-		ShopId      string `json:"shopid"`
-		ShopIDAlt   string `json:"shop_id"`
 		Email       string `json:"email"`
 		CartId      string `json:"cartid"`
 		UserUID     string `json:"user_uid"`
@@ -444,12 +464,12 @@ func MongoAtlasGetHandler(c echo.Context) error {
 		})
 	}
 
-	reqBody.ShopId = normalizedAtlasTenantID(reqBody.HoldingCode, reqBody.ShopId, reqBody.ShopIDAlt)
-	if err := validateAtlasTenant(c, reqBody.ShopId); err != nil {
+	tenantIDs := resolveAtlasTenantIDs(reqBody.HoldingCode)
+	if err := validateAtlasTenant(c, tenantIDs.authTenant); err != nil {
 		return err
 	}
 
-	filter := atlasTenantFilter(reqBody.ShopId)
+	filter := atlasTenantFilterAny(tenantIDs.filterIDs...)
 	if reqBody.GuidFixed != "" || reqBody.Email != "" || reqBody.CartId != "" || reqBody.UserUID != "" {
 		filter = andAtlasFilters(
 			filter,

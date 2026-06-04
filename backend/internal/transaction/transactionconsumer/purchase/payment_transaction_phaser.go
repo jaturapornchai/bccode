@@ -20,11 +20,11 @@ func (p PaymentTransactionPhaser) PhaseSingleDoc(doc models.PurchaseTransactionP
 func (p *PaymentTransactionPhaser) PhaseStockTransactionPaymentDoc(doc models.PurchaseTransactionPG) (*payment_models.TransactionPayment, error) {
 
 	transaction := payment_models.TransactionPayment{
-		ShopID:    doc.ShopID,
-		DocNo:     doc.DocNo,
-		DocDate:   doc.DocDate,
-		GuidRef:   doc.GuidRef,
-		TransFlag: doc.TransFlag,
+		HoldingCode: doc.HoldingCode,
+		DocNo:       doc.DocNo,
+		DocDate:     doc.DocDate,
+		GuidRef:     doc.GuidRef,
+		TransFlag:   doc.TransFlag,
 	}
 	return &transaction, nil
 }

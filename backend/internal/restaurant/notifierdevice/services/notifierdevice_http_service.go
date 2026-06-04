@@ -14,14 +14,14 @@ import (
 )
 
 type INotifierDeviceHttpService interface {
-	CreateAuthCode(shopID string, authUsername string) (models.NotifierDeviceAuth, error)
+	CreateAuthCode(holdingCode string, authUsername string) (models.NotifierDeviceAuth, error)
 	ConfirmAuthCode(payload models.NotifierDeviceConfirmAuthPayload) (bool, error)
 
-	UpdateNotifierDevice(shopID string, guid string, authUsername string, doc models.NotifierDevice) error
-	DeleteNotifierDevice(shopID string, guid string, authUsername string) error
-	DeleteNotifierDeviceByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoNotifierDevice(shopID string, guid string) (models.NotifierDeviceInfo, error)
-	SearchNotifierDevice(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.NotifierDeviceInfo, mongopagination.PaginationData, error)
+	UpdateNotifierDevice(holdingCode string, guid string, authUsername string, doc models.NotifierDevice) error
+	DeleteNotifierDevice(holdingCode string, guid string, authUsername string) error
+	DeleteNotifierDeviceByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoNotifierDevice(holdingCode string, guid string) (models.NotifierDeviceInfo, error)
+	SearchNotifierDevice(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.NotifierDeviceInfo, mongopagination.PaginationData, error)
 }
 
 type NotifierDeviceHttpService struct {
@@ -55,12 +55,12 @@ func (svc NotifierDeviceHttpService) getContextTimeout() (context.Context, conte
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc NotifierDeviceHttpService) CreateAuthCode(shopID string, authUsername string) (models.NotifierDeviceAuth, error) {
+func (svc NotifierDeviceHttpService) CreateAuthCode(holdingCode string, authUsername string) (models.NotifierDeviceAuth, error) {
 
 	refCode := svc.generateRefCode(8)
 
 	notifierAuth := models.NotifierDeviceAuth{
-		ShopID:      shopID,
+		HoldingCode: holdingCode,
 		UserAddedBy: authUsername,
 		RefCode:     refCode,
 	}
@@ -86,7 +86,7 @@ func (svc NotifierDeviceHttpService) ConfirmAuthCode(payload models.NotifierDevi
 		return false, errors.New("refcode invalid")
 	}
 
-	_, err = svc.CreateNotifierDevice(notifierAuth.ShopID, notifierAuth.UserAddedBy, models.NotifierDevice{
+	_, err = svc.CreateNotifierDevice(notifierAuth.HoldingCode, notifierAuth.UserAddedBy, models.NotifierDevice{
 		FCMToken:   payload.FCMToken,
 		DeviceID:   payload.DeviceID,
 		DeviceName: payload.DeviceName,
@@ -99,12 +99,12 @@ func (svc NotifierDeviceHttpService) ConfirmAuthCode(payload models.NotifierDevi
 	return true, nil
 }
 
-func (svc NotifierDeviceHttpService) CreateNotifierDevice(shopID string, authUsername string, doc models.NotifierDevice) (string, error) {
+func (svc NotifierDeviceHttpService) CreateNotifierDevice(holdingCode string, authUsername string, doc models.NotifierDevice) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "fcmtoken", doc.FCMToken)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "fcmtoken", doc.FCMToken)
 
 	if err != nil {
 		return "", err
@@ -117,7 +117,7 @@ func (svc NotifierDeviceHttpService) CreateNotifierDevice(shopID string, authUse
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.NotifierDeviceDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.NotifierDevice = doc
 
@@ -133,12 +133,12 @@ func (svc NotifierDeviceHttpService) CreateNotifierDevice(shopID string, authUse
 	return newGuidFixed, nil
 }
 
-func (svc NotifierDeviceHttpService) UpdateNotifierDevice(shopID string, guid string, authUsername string, doc models.NotifierDevice) error {
+func (svc NotifierDeviceHttpService) UpdateNotifierDevice(holdingCode string, guid string, authUsername string, doc models.NotifierDevice) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -153,7 +153,7 @@ func (svc NotifierDeviceHttpService) UpdateNotifierDevice(shopID string, guid st
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, findDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, findDoc)
 
 	if err != nil {
 		return err
@@ -162,12 +162,12 @@ func (svc NotifierDeviceHttpService) UpdateNotifierDevice(shopID string, guid st
 	return nil
 }
 
-func (svc NotifierDeviceHttpService) DeleteNotifierDevice(shopID string, guid string, authUsername string) error {
+func (svc NotifierDeviceHttpService) DeleteNotifierDevice(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -177,7 +177,7 @@ func (svc NotifierDeviceHttpService) DeleteNotifierDevice(shopID string, guid st
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
@@ -185,7 +185,7 @@ func (svc NotifierDeviceHttpService) DeleteNotifierDevice(shopID string, guid st
 	return nil
 }
 
-func (svc NotifierDeviceHttpService) DeleteNotifierDeviceByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc NotifierDeviceHttpService) DeleteNotifierDeviceByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -194,7 +194,7 @@ func (svc NotifierDeviceHttpService) DeleteNotifierDeviceByGUIDs(shopID string, 
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
@@ -202,12 +202,12 @@ func (svc NotifierDeviceHttpService) DeleteNotifierDeviceByGUIDs(shopID string, 
 	return nil
 }
 
-func (svc NotifierDeviceHttpService) InfoNotifierDevice(shopID string, guid string) (models.NotifierDeviceInfo, error) {
+func (svc NotifierDeviceHttpService) InfoNotifierDevice(holdingCode string, guid string) (models.NotifierDeviceInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.NotifierDeviceInfo{}, err
@@ -220,7 +220,7 @@ func (svc NotifierDeviceHttpService) InfoNotifierDevice(shopID string, guid stri
 	return findDoc.NotifierDeviceInfo, nil
 }
 
-func (svc NotifierDeviceHttpService) SearchNotifierDevice(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.NotifierDeviceInfo, mongopagination.PaginationData, error) {
+func (svc NotifierDeviceHttpService) SearchNotifierDevice(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.NotifierDeviceInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -229,7 +229,7 @@ func (svc NotifierDeviceHttpService) SearchNotifierDevice(shopID string, filters
 		"usercode",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.NotifierDeviceInfo{}, pagination, err

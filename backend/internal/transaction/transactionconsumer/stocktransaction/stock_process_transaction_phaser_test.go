@@ -13,8 +13,8 @@ import (
 func TestPhaserStockProcessFromStockData(t *testing.T) {
 
 	giveStockTransactionModels := stocktransactionmodels.StockTransaction{
-		ShopIdentity: pkgModels.ShopIdentity{
-			ShopID: "SHOP0001",
+		HoldingCodeentity: pkgModels.HoldingCodeentity{
+			HoldingCode: "SHOP0001",
 		},
 		Details: &[]stocktransactionmodels.StockTransactionDetail{
 			{
@@ -29,8 +29,8 @@ func TestPhaserStockProcessFromStockData(t *testing.T) {
 
 	assert.Nil(t, err)
 	wantStockTransaction := stockprocessmodels.StockProcessRequest{
-		ShopID:  "SHOP0001",
-		Barcode: "BARCODE0001",
+		HoldingCode: "SHOP0001",
+		Barcode:     "BARCODE0001",
 	}
 
 	assert.Equal(t, wantStockTransaction, (*gotStockProcessRequest)[0], "StockProcessRequest")

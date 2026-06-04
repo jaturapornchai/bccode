@@ -9,7 +9,7 @@ import (
 )
 
 // ValidateStockBeforeSale ตรวจสอบสต็อกคงเหลือก่อนขาย
-func ValidateStockBeforeSale(ctx context.Context, db *sql.DB, shopId int, itemCode string, qtyToSell float64) error {
+func ValidateStockBeforeSale(ctx context.Context, db *sql.DB, holdingCode int, itemCode string, qtyToSell float64) error {
 	// Query สต็อกปัจจุบันจาก docdetail
 	query := `
 		SELECT COALESCE(SUM(totalqty * CASE
@@ -18,12 +18,12 @@ func ValidateStockBeforeSale(ctx context.Context, db *sql.DB, shopId int, itemCo
 			ELSE 0
 		END), 0) as current_stock
 		FROM docdetail
-		WHERE shopid = $1
+		WHERE holding_code = $1
 		  AND itemcode = $2
 		  AND iscalcstock = 1
 	`
 
-	rows, err := mypg.QuerySelectAll(db, query, shopId, itemCode)
+	rows, err := mypg.QuerySelectAll(db, query, holdingCode, itemCode)
 	if err != nil {
 		return fmt.Errorf("ไม่สามารถตรวจสอบสต็อกได้: %w", err)
 	}
@@ -58,7 +58,7 @@ func ValidateStockBeforeSale(ctx context.Context, db *sql.DB, shopId int, itemCo
 }
 
 // ValidateStockForMultipleItems ตรวจสอบสต็อกสำหรับหลายรายการพร้อมกัน
-func ValidateStockForMultipleItems(ctx context.Context, db *sql.DB, shopId int, items []StockValidationItem) []error {
+func ValidateStockForMultipleItems(ctx context.Context, db *sql.DB, holdingCode int, items []StockValidationItem) []error {
 	var errors []error
 
 	for _, item := range items {
@@ -67,7 +67,7 @@ func ValidateStockForMultipleItems(ctx context.Context, db *sql.DB, shopId int, 
 			continue
 		}
 
-		err := ValidateStockBeforeSale(ctx, db, shopId, item.ItemCode, item.Qty)
+		err := ValidateStockBeforeSale(ctx, db, holdingCode, item.ItemCode, item.Qty)
 		if err != nil {
 			errors = append(errors, err)
 		}
@@ -83,7 +83,7 @@ type StockValidationItem struct {
 }
 
 // GetCurrentStock ดึงสต็อกปัจจุบันของสินค้า
-func GetCurrentStock(ctx context.Context, db *sql.DB, shopId int, itemCode string) (float64, error) {
+func GetCurrentStock(ctx context.Context, db *sql.DB, holdingCode int, itemCode string) (float64, error) {
 	query := `
 		SELECT COALESCE(SUM(totalqty * CASE
 			WHEN calcflag = 1 THEN 1
@@ -91,12 +91,12 @@ func GetCurrentStock(ctx context.Context, db *sql.DB, shopId int, itemCode strin
 			ELSE 0
 		END), 0) as current_stock
 		FROM docdetail
-		WHERE shopid = $1
+		WHERE holding_code = $1
 		  AND itemcode = $2
 		  AND iscalcstock = 1
 	`
 
-	rows, err := mypg.QuerySelectAll(db, query, shopId, itemCode)
+	rows, err := mypg.QuerySelectAll(db, query, holdingCode, itemCode)
 	if err != nil {
 		return 0, fmt.Errorf("ไม่สามารถดึงข้อมูลสต็อกได้: %w", err)
 	}
@@ -110,7 +110,7 @@ func GetCurrentStock(ctx context.Context, db *sql.DB, shopId int, itemCode strin
 }
 
 // CheckNegativeStock ตรวจสอบสินค้าที่มีสต็อกติดลบในระบบ
-func CheckNegativeStock(ctx context.Context, db *sql.DB, shopId int) ([]NegativeStockItem, error) {
+func CheckNegativeStock(ctx context.Context, db *sql.DB, holdingCode int) ([]NegativeStockItem, error) {
 	query := `
 		SELECT
 			itemcode,
@@ -120,7 +120,7 @@ func CheckNegativeStock(ctx context.Context, db *sql.DB, shopId int) ([]Negative
 				ELSE 0
 			END) as current_stock
 		FROM docdetail
-		WHERE shopid = $1
+		WHERE holding_code = $1
 		  AND iscalcstock = 1
 		GROUP BY itemcode
 		HAVING SUM(totalqty * CASE
@@ -131,7 +131,7 @@ func CheckNegativeStock(ctx context.Context, db *sql.DB, shopId int) ([]Negative
 		ORDER BY current_stock ASC
 	`
 
-	rows, err := mypg.QuerySelectAll(db, query, shopId)
+	rows, err := mypg.QuerySelectAll(db, query, holdingCode)
 	if err != nil {
 		return nil, fmt.Errorf("ไม่สามารถตรวจสอบสต็อกติดลบได้: %w", err)
 	}
@@ -145,7 +145,7 @@ func CheckNegativeStock(ctx context.Context, db *sql.DB, shopId int) ([]Negative
 	}
 
 	if len(negativeItems) > 0 {
-		logger.Warn("⚠️ พบสินค้าสต็อกติดลบ %d รายการใน shop %d", len(negativeItems), shopId)
+		logger.Warn("⚠️ พบสินค้าสต็อกติดลบ %d รายการใน shop %d", len(negativeItems), holdingCode)
 		for _, item := range negativeItems {
 			logger.Warn("  - %s: %.2f", item.ItemCode, item.CurrentStock)
 		}

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"smlcloudplatform/internal/config"
-	"strings"
 	currencyrepo "smlcloudplatform/internal/currency/repositories"
 	mastersync "smlcloudplatform/internal/mastersync/repositories"
 	common "smlcloudplatform/internal/models"
@@ -16,6 +15,7 @@ import (
 	"smlcloudplatform/internal/utils"
 	"smlcloudplatform/internal/utils/requestfilter"
 	"smlcloudplatform/pkg/microservice"
+	"strings"
 )
 
 type IPurchaseOrderHttp interface{}
@@ -105,7 +105,7 @@ func (h PurchaseOrderHttp) RegisterHttp() {
 // @Router /transaction/purchase-order [post]
 func (h PurchaseOrderHttp) CreatePurchaseOrder(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	// ภาษาสำหรับ response message — อ่านจาก Accept-Language header (ที่ frontend ส่งมา)
@@ -126,7 +126,7 @@ func (h PurchaseOrderHttp) CreatePurchaseOrder(ctx microservice.IContext) error 
 		return err
 	}
 
-	idx, docNo, validationResult, err := h.svc.CreatePurchaseOrder(shopID, authUsername, *docReq)
+	idx, docNo, validationResult, err := h.svc.CreatePurchaseOrder(holdingCode, authUsername, *docReq)
 
 	// ตรวจสอบ validation errors — return รายละเอียดทุก field ที่ผิดพลาด
 	if validationResult != nil && !validationResult.IsValid() {
@@ -156,7 +156,7 @@ func (h PurchaseOrderHttp) CreatePurchaseOrder(ctx microservice.IContext) error 
 func (h PurchaseOrderHttp) UpdatePurchaseOrder(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -178,7 +178,7 @@ func (h PurchaseOrderHttp) UpdatePurchaseOrder(ctx microservice.IContext) error 
 		return err
 	}
 
-	validationResult, err := h.svc.UpdatePurchaseOrder(shopID, id, authUsername, *docReq)
+	validationResult, err := h.svc.UpdatePurchaseOrder(holdingCode, id, authUsername, *docReq)
 
 	// ตรวจสอบ validation errors — return รายละเอียดทุก field ที่ผิดพลาด
 	if validationResult != nil && !validationResult.IsValid() {
@@ -207,12 +207,12 @@ func (h PurchaseOrderHttp) UpdatePurchaseOrder(ctx microservice.IContext) error 
 // @Router /transaction/purchase-order/{id} [delete]
 func (h PurchaseOrderHttp) DeletePurchaseOrder(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeletePurchaseOrder(shopID, id, authUsername)
+	err := h.svc.DeletePurchaseOrder(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -238,7 +238,7 @@ func (h PurchaseOrderHttp) DeletePurchaseOrder(ctx microservice.IContext) error 
 // @Router /transaction/purchase-order [delete]
 func (h PurchaseOrderHttp) DeletePurchaseOrderByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -251,7 +251,7 @@ func (h PurchaseOrderHttp) DeletePurchaseOrderByGUIDs(ctx microservice.IContext)
 		return err
 	}
 
-	err = h.svc.DeletePurchaseOrderByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeletePurchaseOrderByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -276,12 +276,12 @@ func (h PurchaseOrderHttp) DeletePurchaseOrderByGUIDs(ctx microservice.IContext)
 // @Router /transaction/purchase-order/{id} [get]
 func (h PurchaseOrderHttp) InfoPurchaseOrder(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get PurchaseOrder %v", id)
-	doc, err := h.svc.InfoPurchaseOrder(shopID, id)
+	doc, err := h.svc.InfoPurchaseOrder(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -307,11 +307,11 @@ func (h PurchaseOrderHttp) InfoPurchaseOrder(ctx microservice.IContext) error {
 // @Router /transaction/purchase-order/code/{code} [get]
 func (h PurchaseOrderHttp) InfoPurchaseOrderByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoPurchaseOrderByCode(shopID, code)
+	doc, err := h.svc.InfoPurchaseOrderByCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -342,7 +342,7 @@ func (h PurchaseOrderHttp) InfoPurchaseOrderByCode(ctx microservice.IContext) er
 // @Router /transaction/purchase-order [get]
 func (h PurchaseOrderHttp) SearchPurchaseOrderPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -363,7 +363,7 @@ func (h PurchaseOrderHttp) SearchPurchaseOrderPage(ctx microservice.IContext) er
 		},
 	})
 
-	docList, pagination, err := h.svc.SearchPurchaseOrder(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchPurchaseOrder(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -396,7 +396,7 @@ func (h PurchaseOrderHttp) SearchPurchaseOrderPage(ctx microservice.IContext) er
 // @Router /transaction/purchase-order/list [get]
 func (h PurchaseOrderHttp) SearchPurchaseOrderStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -419,7 +419,7 @@ func (h PurchaseOrderHttp) SearchPurchaseOrderStep(ctx microservice.IContext) er
 		},
 	})
 
-	docList, total, err := h.svc.SearchPurchaseOrderStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchPurchaseOrderStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -447,7 +447,7 @@ func (h PurchaseOrderHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -459,7 +459,7 @@ func (h PurchaseOrderHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

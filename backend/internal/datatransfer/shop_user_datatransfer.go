@@ -17,11 +17,11 @@ func NewShopUserDataTransfer(transferConnection IDataTransferConnection) IDataTr
 	}
 }
 
-func (sdt *ShopUserDataTransfer) StartTransfer(ctx context.Context, shopID string, targetShopID string) error {
+func (sdt *ShopUserDataTransfer) StartTransfer(ctx context.Context, holdingCode string, targetHoldingCode string) error {
 
 	shopSourceRepository := shopModule.NewShopUserRepository(sdt.transferConnection.GetSourceConnection())
 
-	shopUserList, err := shopSourceRepository.FindByShopID(ctx, shopID)
+	shopUserList, err := shopSourceRepository.FindByHoldingCode(ctx, holdingCode)
 	if err != nil {
 		return err
 	}
@@ -30,9 +30,9 @@ func (sdt *ShopUserDataTransfer) StartTransfer(ctx context.Context, shopID strin
 
 	for _, shopUser := range *shopUserList {
 
-		if targetShopID != "" {
+		if targetHoldingCode != "" {
 			shopUser.ID = primitive.NewObjectID()
-			shopUser.ShopID = targetShopID
+			shopUser.HoldingCode = targetHoldingCode
 		}
 		err := shopTargetRepository.Create(ctx, &shopUser)
 		if err != nil {

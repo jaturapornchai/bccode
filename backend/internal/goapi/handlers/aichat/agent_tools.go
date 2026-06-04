@@ -124,8 +124,8 @@ func buildLazyAnswerReminder(question string) string {
 // frontend ไม่ต้องการข้อมูลทั้งหมด แค่ preview ก่อน — ถ้าผู้ใช้อยากดูเต็มก็ไปดู log
 //
 // ขั้นตอน:
-//   1. ถ้า result เป็น array → เก็บ first N items + รายงาน total count
-//   2. Marshal เป็น JSON แล้วตัดถ้ายาวเกิน maxChars
+//  1. ถ้า result เป็น array → เก็บ first N items + รายงาน total count
+//  2. Marshal เป็น JSON แล้วตัดถ้ายาวเกิน maxChars
 func truncateToolResultForUI(result any, maxChars int) any {
 	if result == nil {
 		return nil
@@ -529,7 +529,7 @@ func buildAgentToolDefs() []aiprovider.OAITool {
 			Type: "function",
 			Function: aiprovider.OAIFunction{
 				Name:        "query_knowledge_base",
-				Description: "Search the shop's Knowledge Base — internal documents the shop has uploaded itself (PDF/Word/Excel/Markdown/Text) via RAG retrieval. This is the shop's own private library: handbooks, policies, manuals, contracts, internal FAQs, uploaded reports. CALL THIS TOOL whenever the user's question is plausibly answered by something the shop wrote down for itself — anything shop-specific that is NOT raw transactional data (products/sales/customers) and NOT general world knowledge. If you find yourself about to answer a shop-specific factual question (a number, a procedure, a contact, a rule) from your training data, you MUST call this tool first instead. Returning 'not found' from this tool is a valid and useful answer; fabricating an answer is not. shop_id is set automatically — pass query as a natural language question (Thai or English).",
+				Description: "Search the shop's Knowledge Base — internal documents the shop has uploaded itself (PDF/Word/Excel/Markdown/Text) via RAG retrieval. This is the shop's own private library: handbooks, policies, manuals, contracts, internal FAQs, uploaded reports. CALL THIS TOOL whenever the user's question is plausibly answered by something the shop wrote down for itself — anything shop-specific that is NOT raw transactional data (products/sales/customers) and NOT general world knowledge. If you find yourself about to answer a shop-specific factual question (a number, a procedure, a contact, a rule) from your training data, you MUST call this tool first instead. Returning 'not found' from this tool is a valid and useful answer; fabricating an answer is not. holding_code is set automatically — pass query as a natural language question (Thai or English).",
 				Parameters: map[string]interface{}{
 					"type": "object",
 					"properties": map[string]interface{}{

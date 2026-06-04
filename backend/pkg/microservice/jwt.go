@@ -110,26 +110,26 @@ func (jwtService *JwtService) MWFuncWithRedis(cacher ICacher, publicPath ...stri
 			}
 
 			cacheKey := jwtService.prefixCacheKey + tokenStr
-			tempUserInfo, err := jwtService.cacher.HMGet(cacheKey, []string{"username", "name", "uid", "shopid"})
+			tempUserInfo, err := jwtService.cacher.HMGet(cacheKey, []string{"username", "name", "uid", "holding_code"})
 
 			if err != nil {
 				return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false, "message": "Token Invalid."})
 			}
-			tempShopID := ""
+			tempHoldingCode := ""
 
 			if tempUserInfo[3] != nil {
-				tempShopID = fmt.Sprintf("%v", tempUserInfo[3])
+				tempHoldingCode = fmt.Sprintf("%v", tempUserInfo[3])
 			}
 
-			if len(string(tempShopID)) < 1 {
+			if len(string(tempHoldingCode)) < 1 {
 				return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false, "message": "Shop not selected."})
 			}
 
 			userInfo := models.UserInfo{
-				Username: fmt.Sprintf("%v", tempUserInfo[0]),
-				Name:     fmt.Sprintf("%v", tempUserInfo[1]),
-				UID:      cacheString(tempUserInfo[2]),
-				ShopID:   cacheString(tempUserInfo[3]),
+				Username:    fmt.Sprintf("%v", tempUserInfo[0]),
+				Name:        fmt.Sprintf("%v", tempUserInfo[1]),
+				UID:         cacheString(tempUserInfo[2]),
+				HoldingCode: cacheString(tempUserInfo[3]),
 			}
 
 			cacher.Expire("auth-"+tokenStr, jwtService.expire)
@@ -300,10 +300,10 @@ func (jwtService *JwtService) GenerateTokenWithRedis(userInfo models.UserInfo) (
 	return tokenStr, nil
 }
 
-func (jwtService *JwtService) SelectShop(tokenStr string, shopID string) error {
+func (jwtService *JwtService) SelectShop(tokenStr string, holdingCode string) error {
 	cacheKey := jwtService.prefixCacheKey + tokenStr
 	err := jwtService.cacher.HMSet(cacheKey, map[string]interface{}{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 
 	if err != nil {

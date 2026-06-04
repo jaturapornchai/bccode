@@ -5,20 +5,22 @@ import {
   AlertCircle,
   AlertTriangle,
   Bell,
+  Building2,
   CheckCircle2,
   ChevronDown,
   ChevronsUpDown,
   CircleX,
   Command,
   Copy,
+  Crown,
   ExternalLink,
+  GitBranch,
   KeyRound,
   LayoutDashboard,
   LayoutPanelTop,
   Lock,
   Loader2,
   LogOut,
-  Menu as MenuIcon,
   MessageCircle,
   PanelLeftClose,
   PanelLeftOpen,
@@ -46,6 +48,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { backendText, useBackendLanguage, type BackendLanguageDictionary } from "@/lib/backend-language";
+import { normalizeBusinessCode } from "@/lib/business-code";
 import { normalizeLanguage, t, type LanguageCode } from "@/lib/i18n";
 import {
   MENU_SECTIONS,
@@ -58,7 +61,15 @@ import {
 import { getFrequentMenuEntries, menuUsageStorageKey, readMenuUsage, recordMenuUsage, type MenuUsageMap } from "@/lib/menu-usage";
 import { getSystemSettingConfig } from "@/lib/system-setting-screens";
 import { cn } from "@/lib/utils";
-import { branchDisplayName, shopDisplayName, type AuthSession, type WorkspaceSession, workspaceStorageKeys } from "@/lib/workspace-models";
+import {
+  holdingDisplayName,
+  shopDisplayName,
+  workspaceBranchDisplayName,
+  workspaceCompanyDisplayName,
+  type AuthSession,
+  type WorkspaceSession,
+  workspaceStorageKeys,
+} from "@/lib/workspace-models";
 import { CurrencyScreen } from "../currency/currency-screen";
 import { LanguageDialog } from "../language-dialog";
 import { LineOaLinkScreen } from "../line-oa/line-oa-link-screen";
@@ -217,18 +228,182 @@ function workspacePermissionKeys(workspace: WorkspaceSession): string[] {
   ].filter(Boolean)));
 }
 
+function WorkspaceContextPanel({
+  language,
+  mode,
+  workspace,
+}: {
+  language: LanguageCode;
+  mode: "sidebar" | "topbar";
+  workspace: WorkspaceSession | null;
+}) {
+  if (!workspace) {
+    return (
+      <div className={cn(
+        "min-w-0 rounded-xl border border-border bg-background/90 px-2 py-1 shadow-sm",
+        mode === "topbar" && "flex-[1_1_18rem]",
+      )}>
+        <p className="text-xs font-bold leading-tight">BC Ai Account</p>
+        <p className="text-[10px] leading-tight text-muted-foreground">Workspace</p>
+      </div>
+    );
+  }
+
+  const companyLabel = language === "th" ? "บริษัท" : "Company";
+  const branchLabel = language === "th" ? "สาขา" : "Branch";
+  const rows = [
+    { icon: Crown, label: "Holding", value: holdingDisplayName(workspace) },
+    { icon: Building2, label: companyLabel, value: workspaceCompanyDisplayName(workspace) },
+    { icon: GitBranch, label: branchLabel, value: workspaceBranchDisplayName(workspace) },
+  ];
+
+  return (
+    <div
+      className={cn(
+        "min-w-0 rounded-xl border border-border bg-background/90 shadow-sm",
+        mode === "sidebar"
+          ? "grid gap-1 p-1.5"
+          : "grid w-full grid-cols-1 gap-1 p-1 sm:grid-cols-2 xl:grid-cols-[minmax(10rem,0.8fr)_minmax(20rem,1.45fr)_minmax(12rem,0.9fr)]",
+      )}
+    >
+      {rows.map((row) => {
+        const Icon = row.icon;
+        return (
+          <div
+            className={cn(
+              "min-w-0 rounded-lg border border-border/60 bg-card/80",
+              mode === "sidebar"
+                ? "grid grid-cols-[16px_52px_minmax(0,1fr)] items-start gap-1.5 px-1.5 py-1"
+                : "grid grid-cols-[16px_58px_minmax(0,1fr)] items-start gap-1.5 px-2 py-1",
+            )}
+            key={row.label}
+          >
+            <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+            {mode === "sidebar" || mode === "topbar" ? (
+              <span className="pt-0.5 text-[9px] font-black uppercase leading-tight text-muted-foreground">
+                {row.label}
+              </span>
+            ) : null}
+            <div className="min-w-0">
+              <p className="break-words text-xs font-bold leading-snug text-foreground">
+                {row.value || "-"}
+              </p>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+type WorkspaceAccessContext = {
+  holding_code: string;
+  business_code: string;
+  branch_code: string;
+};
+
+function workspaceAccessContext(workspace: WorkspaceSession): WorkspaceAccessContext {
+  return {
+    holding_code: stringValue(workspace.shop.holding_code),
+    business_code: normalizeBusinessCode(
+      (workspace.shop as SettingRecord).business_code ??
+        (workspace.shop as SettingRecord).code ??
+        workspace.shop.holding_code,
+    ),
+    branch_code: normalizeBranchCode(workspace.branch?.code ?? workspace.shop.branchcode),
+  };
+}
+
+function settingValue(record: SettingRecord, ...keys: string[]): unknown {
+  for (const key of keys) {
+    const value = record[key];
+    if (value !== undefined && value !== null && value !== "") return value;
+  }
+  return undefined;
+}
+
+function booleanSetting(value: unknown): boolean {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value !== 0;
+  if (typeof value === "string") {
+    const text = value.trim().toLowerCase();
+    return text === "true" || text === "1" || text === "yes" || text === "y";
+  }
+  return false;
+}
+
+function scopeRulesApply(value: unknown, context: WorkspaceAccessContext, defaultAllow = true): boolean {
+  const rules = scopeRuleArray(value);
+  if (!rules.length) return defaultAllow;
+  return rules.some((rule) => {
+    const scopeType = stringValue(settingValue(rule, "scope_type", "scopeType")).toLowerCase();
+    if (!scopeType || scopeType === "holding") return true;
+    const businessCode = normalizeBusinessCode(settingValue(rule, "business_code", "businessCode", "company_code", "companyCode"));
+    if (!businessCode || businessCode !== context.business_code) return false;
+    if (scopeType === "company" || booleanSetting(settingValue(rule, "all_branches", "allBranches", "use_all_branches"))) return true;
+    if (scopeType === "branch") {
+      const branchCode = normalizeBranchCode(settingValue(rule, "branch_code", "branchCode", "code"));
+      return Boolean(branchCode && branchCode === context.branch_code);
+    }
+    return false;
+  });
+}
+
+function scopeRuleArray(value: unknown): SettingRecord[] {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => (isRecord(item) ? item : typeof item === "string" ? { scope_type: "company", business_code: item } : null))
+      .filter((item): item is SettingRecord => item !== null);
+  }
+  if (typeof value === "string" && value.trim()) {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      if (Array.isArray(parsed)) return scopeRuleArray(parsed);
+    } catch {
+      return value.split(",").map((item) => ({ scope_type: "company", business_code: item.trim() })).filter((item) => item.business_code);
+    }
+  }
+  return [];
+}
+
+function normalizeBranchCode(value: unknown): string {
+  const raw = stringValue(value).trim();
+  if (!raw) return "";
+  return /^\d{1,5}$/.test(raw) ? raw.padStart(5, "0") : raw;
+}
+
+function permissionRuleAppliesToWorkspace(
+  scopeKey: string,
+  branchRule: SettingRecord,
+  menuRule: SettingRecord,
+  workspaceKeys: Set<string>,
+): boolean {
+  if (
+    booleanSetting(settingValue(menuRule, "all_branches", "allBranches", "use_all_branches")) ||
+    booleanSetting(settingValue(branchRule, "all_branches", "allBranches", "use_all_branches"))
+  ) {
+    return true;
+  }
+  return [
+    scopeKey,
+    stringValue(branchRule.branch_key),
+    stringValue(branchRule.branchguid),
+    stringValue(branchRule.branchcode),
+  ].some((key) => key && workspaceKeys.has(key));
+}
+
 async function fetchAllowedMenuIds(auth: AuthSession, workspace: WorkspaceSession): Promise<Set<string>> {
   const headers = {
     "Content-Type": "application/json",
     "x-bc-backend-url": auth.backendUrl,
     Authorization: `Bearer ${auth.token}`,
   };
-  const shopid = encodeURIComponent(workspace.shop.shopid);
+  const holding_code = encodeURIComponent(workspace.shop.holding_code);
   try {
     const [linksResponse, definitionsResponse, groupsResponse] = await Promise.all([
-      fetch(`/api/system-settings/permission_link?limit=1000&offset=0&shopid=${shopid}`, { headers, cache: "no-store" }),
-      fetch(`/api/system-settings/permission_definition?limit=1000&offset=0&shopid=${shopid}`, { headers, cache: "no-store" }),
-      fetch(`/api/system-settings/permission_group?limit=1000&offset=0&shopid=${shopid}`, { headers, cache: "no-store" }).catch(() => null),
+      fetch(`/api/system-settings/permission_link?limit=1000&offset=0&holding_code=${holding_code}`, { headers, cache: "no-store" }),
+      fetch(`/api/system-settings/permission_definition?limit=1000&offset=0&holding_code=${holding_code}`, { headers, cache: "no-store" }),
+      fetch(`/api/system-settings/permission_group?limit=1000&offset=0&holding_code=${holding_code}`, { headers, cache: "no-store" }).catch(() => null),
     ]);
     if (!linksResponse.ok || !definitionsResponse.ok) return new Set();
 
@@ -244,33 +419,51 @@ async function fetchAllowedMenuIds(auth: AuthSession, workspace: WorkspaceSessio
       }
     }
 
+    const accessContext = workspaceAccessContext(workspace);
     const userKeys = new Set([auth.username, auth.profile?.email].map(stringValue).filter(Boolean).map((item) => item.toLowerCase()));
-    const permissionLink = normalizeSettingRecords(linksPayload).find((record) => userKeys.has(stringValue(record.employeeCode).toLowerCase()));
+    const permissionLink = normalizeSettingRecords(linksPayload).find((record) =>
+      userKeys.has(stringValue(settingValue(record, "employee_code", "employeeCode")).toLowerCase()) &&
+      scopeRulesApply(
+        settingValue(record, "scope_rules", "access_scopes", "business_codes", "company_guids"),
+        accessContext,
+        true,
+      ),
+    );
 
     const finalPermissionCodes = new Set<string>();
     if (permissionLink) {
-      stringArray(permissionLink.permissionCodes).forEach((c) => finalPermissionCodes.add(c));
-      const empGroupCode = stringValue(permissionLink.groupCode);
+      stringArray(settingValue(permissionLink, "permission_codes", "permissionCodes")).forEach((c) => finalPermissionCodes.add(c));
+      const empGroupCode = stringValue(settingValue(permissionLink, "group_code", "groupCode"));
       if (empGroupCode) {
-        const matchedGroup = groupsList.find((g) => stringValue(g.groupCode) === empGroupCode);
+        const matchedGroup = groupsList.find((g) =>
+          stringValue(settingValue(g, "group_code", "groupCode")) === empGroupCode &&
+          scopeRulesApply(settingValue(g, "scope_rules", "access_scopes"), accessContext, true),
+        );
         if (matchedGroup) {
-          stringArray(matchedGroup.permissionCodes).forEach((c) => finalPermissionCodes.add(c));
+          stringArray(settingValue(matchedGroup, "permission_codes", "permissionCodes")).forEach((c) => finalPermissionCodes.add(c));
         }
       }
     }
 
     if (!finalPermissionCodes.size) return new Set();
 
-    const branchKeys = workspacePermissionKeys(workspace);
+    const branchKeys = new Set(workspacePermissionKeys(workspace));
     const allowed = new Set<string>();
     for (const definition of normalizeSettingRecords(definitionsPayload)) {
-      if (!finalPermissionCodes.has(stringValue(definition.permissionCode))) continue;
-      const branches = toRecord(definition.branches);
-      for (const branchKey of branchKeys) {
-        const branch = toRecord(branches[branchKey]);
+      if (!finalPermissionCodes.has(stringValue(settingValue(definition, "permission_code", "permissionCode")))) continue;
+      if (!scopeRulesApply(settingValue(definition, "scope_rules", "access_scopes"), accessContext, true)) continue;
+      const branches = toRecord(settingValue(definition, "access_rules", "branches"));
+      for (const [branchKey, branchValue] of Object.entries(branches)) {
+        const branch = toRecord(branchValue);
         const menus = toRecord(branch.menus);
         for (const [menuId, value] of Object.entries(menus)) {
-          if (Boolean(toRecord(value).access)) allowed.add(menuId);
+          const menuRule = toRecord(value);
+          if (
+            Boolean(menuRule.access) &&
+            permissionRuleAppliesToWorkspace(branchKey, branch, menuRule, branchKeys)
+          ) {
+            allowed.add(menuId);
+          }
         }
       }
     }
@@ -460,15 +653,6 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
 
   const rows = useMemo(() => menuQuery.data ?? [], [menuQuery.data]);
   const frequentMenuEntries = useMemo(() => getFrequentMenuEntries(allMenuItems, menuUsage, 20), [allMenuItems, menuUsage]);
-  const sectionRows = useMemo(() => {
-    if (activeSection === "all") return rows;
-    const section = MENU_SECTIONS.find((item) => item.id === activeSection);
-    if (!section) return rows;
-    const label = menuText(section.title, language, backendLanguage);
-    return rows.filter((row) => row.module === label);
-  }, [activeSection, backendLanguage, language, rows]);
-  const kpis = useMemo(() => buildKpis(rows, backendLanguage), [backendLanguage, rows]);
-  const chartData = useMemo(() => buildChartData(rows, language, backendLanguage), [backendLanguage, language, rows]);
   const activeWorkTab = useMemo(() => tabs.find((tab) => tab.id === activeTabId) ?? firstTab, [activeTabId, tabs]);
   const activeTabNeedsFixedViewport = activeWorkTab.route === "/product_barcode" || activeWorkTab.route === "/product" || activeWorkTab.route === "/productset";
 
@@ -485,12 +669,19 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
     setActiveTabId(tabId);
   }
 
+  function openOverview() {
+    setActiveSection("all");
+    setActiveTabId(firstTab.id);
+    setGlobalSearch("");
+    setExpandedSections([]);
+    setExpandedGroups([]);
+  }
+
   function toggleSection(sectionId: string) {
     setExpandedSections((current) =>
       current.includes(sectionId) ? current.filter((id) => id !== sectionId) : [...current, sectionId],
     );
     setActiveSection(sectionId);
-    setActiveTabId(firstTab.id);
   }
 
   function toggleGroup(groupKey: string) {
@@ -712,27 +903,14 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
     <main className="min-h-dvh overflow-x-hidden bg-background text-foreground lg:h-dvh lg:min-h-0 lg:max-h-dvh lg:overflow-hidden">
       <div className={cn("grid min-h-dvh min-w-0 grid-cols-[minmax(0,1fr)] lg:h-dvh lg:min-h-0 lg:max-h-dvh lg:overflow-hidden", showLeftMenu && "lg:grid-cols-[280px_minmax(0,1fr)]")}>
         {showLeftMenu ? (
-        <aside className="max-h-dvh min-w-0 overflow-x-hidden overflow-y-auto overscroll-contain border-b border-border bg-card/80 p-3 lg:sticky lg:top-0 lg:h-dvh lg:border-b-0 lg:border-r">
-          <div className="mb-3 flex items-center gap-3 rounded-2xl border border-border bg-background p-3 shadow-sm">
-            <div className="grid h-10 w-10 place-items-center rounded-2xl bg-primary text-primary-foreground">
-              <MenuIcon className="h-5 w-5" />
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold">{workspace ? shopDisplayName(workspace.shop) : "BC Ai Account"}</p>
-              <p className="truncate text-xs text-muted-foreground">{workspace?.branch ? branchDisplayName(workspace.branch) : "Workspace"}</p>
-            </div>
-            <Button type="button" variant="outline" size="icon" className="ml-auto shrink-0" aria-label={mt(backendLanguage, "hideMenu")} title={mt(backendLanguage, "hideMenu")} onClick={() => setSidebarHidden(true)}>
-              <PanelLeftClose className="h-4 w-4" />
-            </Button>
-          </div>
-
+        <aside className="flex max-h-dvh min-w-0 flex-col overflow-x-hidden overflow-y-auto overscroll-contain border-b border-border bg-card/80 p-3 lg:sticky lg:top-0 lg:h-dvh lg:border-b-0 lg:border-r">
           <label className="relative mb-3 block">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input className="pl-9" placeholder={mt(backendLanguage, "searchMenu")} value={globalSearch} onChange={(event) => setGlobalSearch(event.target.value)} />
           </label>
 
           <nav aria-label={mt(backendLanguage, "navigation")} className="grid w-full max-w-full gap-2" role="tree">
-            <SidebarButton active={activeSection === "all"} count={rows.length} icon={<LayoutDashboard className="h-4 w-4" />} label={mt(backendLanguage, "overview")} onClick={() => setActiveSection("all")} />
+            <SidebarButton active={activeSection === "all" && activeTabId === firstTab.id} count={rows.length} icon={<LayoutDashboard className="h-4 w-4" />} label={mt(backendLanguage, "overview")} onClick={openOverview} />
             {MENU_SECTIONS.map((section) => {
               const label = menuText(section.title, language, backendLanguage);
               return (
@@ -755,6 +933,19 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
               );
             })}
           </nav>
+          <div className="pointer-events-none sticky bottom-3 z-20 mt-auto flex justify-end pt-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="pointer-events-auto h-9 w-9 rounded-xl bg-background/95 shadow-lg backdrop-blur"
+              aria-label={mt(backendLanguage, "hideMenu")}
+              title={mt(backendLanguage, "hideMenu")}
+              onClick={() => setSidebarHidden(true)}
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </Button>
+          </div>
         </aside>
         ) : null}
 
@@ -768,8 +959,10 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
             className="menu-top-chrome sticky top-0 z-30 shrink-0 border-b border-border bg-background/90 px-2 py-1 backdrop-blur"
             data-hidden={topChromeHidden ? "true" : "false"}
           >
-            <div className="flex flex-col gap-1.5 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex min-w-0 items-center gap-1.5">
+            <div className="grid min-w-0 gap-1.5">
+              <WorkspaceContextPanel language={language} mode="topbar" workspace={workspace} />
+              <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                <div className="flex min-w-0 shrink-0 items-center gap-1.5">
                 {menuLayout === "left" && sidebarHidden ? (
                   <Button type="button" variant="outline" size="icon" className="shrink-0" aria-label={mt(backendLanguage, "showMenu")} title={mt(backendLanguage, "showMenu")} onClick={() => setSidebarHidden(false)}>
                     <PanelLeftOpen className="h-4 w-4" />
@@ -804,13 +997,12 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                     <span className="hidden sm:inline">{menuLayoutTopText}</span>
                   </Button>
                 </div>
-              </div>
-
-              <div className="flex w-full min-w-0 flex-wrap items-center justify-end gap-1.5 lg:flex-1">
-                <label className="relative min-w-52 flex-1 lg:max-w-xs xl:max-w-sm">
+                </div>
+                <label className="relative min-w-52 flex-[1_1_22rem]">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input className="h-8 pl-9" placeholder={mt(backendLanguage, "searchMenu")} value={globalSearch} onChange={(event) => setGlobalSearch(event.target.value)} />
                 </label>
+                <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-1.5">
                 <Button variant="outline" size="icon" className="h-8 w-8" aria-label={backendText(backendLanguage, "notification")}>
                   <Bell className="h-4 w-4" />
                 </Button>
@@ -872,11 +1064,12 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                       {backendText(backendLanguage, "change_company")}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={logout}>
-                      <LogOut className="h-4 w-4" />
+                    <LogOut className="h-4 w-4" />
                       {backendText(backendLanguage, "logout")}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+                </div>
               </div>
             </div>
           </header>
@@ -887,6 +1080,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
               canAccessMenuItem={canAccessMenuItem}
               language={language}
               onOpenItem={openMenuItem}
+              onOpenOverview={openOverview}
               onSelectSection={setActiveSection}
             />
           ) : null}
@@ -947,15 +1141,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                       role="tabpanel"
                     >
                       {tab.id === "home" ? (
-                        <DashboardHome
-                          chartData={chartData}
-                          backendLanguage={backendLanguage}
-                          globalSearch={globalSearch}
-                          kpis={kpis}
-                          onGlobalSearchChange={setGlobalSearch}
-                          onOpen={openMenuItem}
-                          rows={sectionRows}
-                        />
+                        <DashboardHome />
                       ) : (
                         <WorkTabPanel activeTab={tab} backendLanguage={backendLanguage} language={language} tabCount={tabs.length} />
                       )}
@@ -1105,6 +1291,7 @@ function TopMenuChrome({
   canAccessMenuItem,
   language,
   onOpenItem,
+  onOpenOverview,
   onSelectSection,
 }: {
   activeSection: string;
@@ -1112,6 +1299,7 @@ function TopMenuChrome({
   canAccessMenuItem: (item: MenuItem) => boolean;
   language: LanguageCode;
   onOpenItem: (item: MenuItem) => void;
+  onOpenOverview: () => void;
   onSelectSection: (sectionId: string) => void;
 }) {
   const [openSectionId, setOpenSectionId] = useState<string | null>(null);
@@ -1201,7 +1389,7 @@ function TopMenuChrome({
             setOpenSectionId(null);
             setActiveGroupId(null);
             setActiveFolderId(null);
-            onSelectSection("all");
+            onOpenOverview();
           }}
         >
           <LayoutDashboard className="h-4 w-4" />
@@ -1975,54 +2163,8 @@ function OpenTabs({
   );
 }
 
-function DashboardHome({
-  backendLanguage,
-  chartData,
-  globalSearch,
-  kpis,
-  onGlobalSearchChange,
-  onOpen,
-  rows,
-}: {
-  backendLanguage: BackendLanguageDictionary;
-  chartData: ReturnType<typeof buildChartData>;
-  globalSearch: string;
-  kpis: ReturnType<typeof buildKpis>;
-  onGlobalSearchChange: (value: string) => void;
-  onOpen: (item: MenuItem) => void;
-  rows: ErpMenuRow[];
-}) {
-  return (
-    <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3">
-      <section className="grid grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-2 xl:grid-cols-4" aria-label="KPI">
-        {kpis.map((item) => (
-          <Card key={item.label} className="shadow-sm">
-            <CardHeader className="pb-2">
-              <CardDescription>{item.label}</CardDescription>
-              <CardTitle className="text-2xl">{item.value}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Badge variant={item.tone === "success" ? "success" : item.tone === "warning" ? "warning" : "secondary"}>{item.change}</Badge>
-            </CardContent>
-          </Card>
-        ))}
-      </section>
-
-      <section className="grid grid-cols-[minmax(0,1fr)] gap-3">
-        <MenuKpiChart data={chartData} dictionary={backendLanguage} />
-      </section>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>{backendText(backendLanguage, "erp_data_table")}</CardTitle>
-          <CardDescription>{backendText(backendLanguage, "erp_data_table_description")}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <MenuDataTable data={rows} dictionary={backendLanguage} globalSearch={globalSearch} onGlobalSearchChange={onGlobalSearchChange} onOpen={onOpen} />
-        </CardContent>
-      </Card>
-    </div>
-  );
+function DashboardHome() {
+  return <div className="min-h-[320px] min-w-0" aria-label="overview" />;
 }
 
 function WorkTabPanel({ activeTab, backendLanguage, language, tabCount }: { activeTab: WorkTab; backendLanguage: BackendLanguageDictionary; language: LanguageCode; tabCount: number }) {

@@ -12,7 +12,7 @@ func TestMarketplaceProductMapJSONRoundTrip(t *testing.T) {
 	in := MarketplaceProductMap{
 		Platform:      "shopee",
 		AccountID:     "acc-1",
-		ShopID:        "shop-1",
+		HoldingCode:   "shop-1",
 		MarketItemID:  "ITEM123",
 		MarketModelID: "MODEL456",
 		ItemURL:       "https://shopee.co.th/product/1/2",
@@ -54,7 +54,7 @@ func TestMarketplaceProductMapJSONRoundTrip(t *testing.T) {
 
 	// Contract guard: these JSON keys must stay in sync with the frontend type.
 	wantKeys := []string{
-		"platform", "account_id", "shop_id", "market_item_id", "market_model_id",
+		"platform", "account_id", "holding_code", "market_item_id", "market_model_id",
 		"item_url", "seller_sku", "shop_sku", "gtin", "category_id", "category_name",
 		"brand_id", "currency", "custom_price", "platform_price", "platform_stock",
 		"sync_stock", "sync_price", "status", "reject_reason", "days_to_ship",
@@ -76,7 +76,7 @@ func TestMarketplaceSKUMapJSONRoundTrip(t *testing.T) {
 	in := MarketplaceSKUMap{
 		Platform:      "lazada",
 		AccountID:     "acc-2",
-		ShopID:        "shop-2",
+		HoldingCode:   "shop-2",
 		MarketItemID:  "L-ITEM-9",
 		MarketModelID: "L-SKU-9",
 		SellerSKU:     "SKU-VAR-01",

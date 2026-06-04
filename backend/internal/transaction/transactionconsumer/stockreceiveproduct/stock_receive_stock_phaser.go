@@ -14,7 +14,7 @@ func (p StockReceiveStockPhaser) PhaseSingleDoc(doc models.StockReceiveProductTr
 		stockDetail := models.StockTransactionDetail{
 			CalcFlag:            1,
 			DocRef:              detail.DocRef,
-			ShopID:              doc.ShopID,
+			HoldingCode:         doc.HoldingCode,
 			DocNo:               doc.DocNo,
 			Barcode:             detail.Barcode,
 			ItemType:            detail.ItemType,
@@ -40,8 +40,8 @@ func (p StockReceiveStockPhaser) PhaseSingleDoc(doc models.StockReceiveProductTr
 	}
 
 	stockTransaction := models.StockTransaction{
-		ShopIdentity: pkgModels.ShopIdentity{
-			ShopID: doc.ShopID,
+		HoldingCodeentity: pkgModels.HoldingCodeentity{
+			HoldingCode: doc.HoldingCode,
 		},
 		GuidFixed:      doc.GuidFixed,
 		GuidRef:        doc.GuidRef,

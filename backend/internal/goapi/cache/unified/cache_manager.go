@@ -15,38 +15,38 @@ import (
 var CacheTTL = map[string]time.Duration{
 	"ai_chat":        15 * time.Minute,
 	"product_search": 30 * time.Minute,
-	"stock_realtime":  5 * time.Minute,
-	"document":        60 * time.Minute,
-	"analytics":       24 * time.Hour,
+	"stock_realtime": 5 * time.Minute,
+	"document":       60 * time.Minute,
+	"analytics":      24 * time.Hour,
 }
 
 // CacheKeyPatterns สำหรับการสร้าง key
 var CacheKeyPatterns = map[string]string{
-	"ai_chat":         "ai:chat:{shop_id}:{hash}",
-	"product_search": "product:search:{shop_id}:{hash}",
-	"stock_realtime":  "stock:realtime:{shop_id}:{item_code}:{warehouse}:{location}",
-	"document":        "doc:{shop_id}:{doc_no}:{version}",
-	"analytics":       "analytics:{shop_id}:{type}:{period}",
+	"ai_chat":        "ai:chat:{holding_code}:{hash}",
+	"product_search": "product:search:{holding_code}:{hash}",
+	"stock_realtime": "stock:realtime:{holding_code}:{item_code}:{warehouse}:{location}",
+	"document":       "doc:{holding_code}:{doc_no}:{version}",
+	"analytics":      "analytics:{holding_code}:{type}:{period}",
 }
 
 // CacheEntry แสดงข้อมูลใน cache
 type CacheEntry struct {
-	Data interface{} `json:"data"`
-	Timestamp time.Time   `json:"timestamp"`
-	TTL time.Duration `json:"ttl"`
-	HitCount int64       `json:"hit_count"`
-	LastAccess time.Time   `json:"last_access"`
+	Data       interface{}   `json:"data"`
+	Timestamp  time.Time     `json:"timestamp"`
+	TTL        time.Duration `json:"ttl"`
+	HitCount   int64         `json:"hit_count"`
+	LastAccess time.Time     `json:"last_access"`
 }
 
 // CacheStats สถิติการใช้งาน cache
 type CacheStats struct {
-	TotalEntries int64              `json:"total_entries"`
-	TotalHits int64              `json:"total_hits"`
-	TotalMisses int64              `json:"total_misses"`
-	HitRate float64            `json:"hit_rate"`
-	MemoryUsage int64              `json:"memory_usage"`
-	ByType map[string]int64   `json:"by_type"`
-	LastUpdated time.Time          `json:"last_updated"`
+	TotalEntries int64            `json:"total_entries"`
+	TotalHits    int64            `json:"total_hits"`
+	TotalMisses  int64            `json:"total_misses"`
+	HitRate      float64          `json:"hit_rate"`
+	MemoryUsage  int64            `json:"memory_usage"`
+	ByType       map[string]int64 `json:"by_type"`
+	LastUpdated  time.Time        `json:"last_updated"`
 }
 
 // UnifiedCacheManager จัดการ cache หลายระดับ
@@ -70,14 +70,14 @@ type UnifiedCacheManager struct {
 
 // CacheConfig การตั้งค่า Cache
 type CacheConfig struct {
-	L1CacheSize        int                    // ขนาด L1 cache
-	EnableRedis        bool                   // เปิดใช้ Redis
-	RedisURL           string                 // URL Redis
-	EnableDatabase     bool                   // เปิดใช้ Database cache
-	DatabaseURL        string                 // URL Database
-	TTLOverrides       map[string]time.Duration // override TTL ตามประเภท
-	AutoCleanup        bool                   // เปิดการทำความสะอาดอัตโนมัติ
-	CleanupInterval    time.Duration          // ช่วงเวลาในการทำความสะอาด
+	L1CacheSize     int                      // ขนาด L1 cache
+	EnableRedis     bool                     // เปิดใช้ Redis
+	RedisURL        string                   // URL Redis
+	EnableDatabase  bool                     // เปิดใช้ Database cache
+	DatabaseURL     string                   // URL Database
+	TTLOverrides    map[string]time.Duration // override TTL ตามประเภท
+	AutoCleanup     bool                     // เปิดการทำความสะอาดอัตโนมัติ
+	CleanupInterval time.Duration            // ช่วงเวลาในการทำความสะอาด
 }
 
 // DefaultCacheConfig การตั้งค่าเริ่มต้น
@@ -104,7 +104,7 @@ func NewUnifiedCacheManager(config *CacheConfig) *UnifiedCacheManager {
 	}
 
 	cache := &UnifiedCacheManager{
-		l1Cache:     &sync.Map{},
+		l1Cache:      &sync.Map{},
 		redisEnabled: config.EnableRedis,
 		dbEnabled:    config.EnableDatabase,
 		config:       config,
@@ -125,11 +125,11 @@ func NewUnifiedCacheManager(config *CacheConfig) *UnifiedCacheManager {
 }
 
 // Get ดึงข้อมูลจาก cache
-func (c *UnifiedCacheManager) Get(ctx context.Context, cacheType, shopID string, key interface{}) (interface{}, bool) {
-	cacheKey := c.generateCacheKey(cacheType, shopID, key)
-	
+func (c *UnifiedCacheManager) Get(ctx context.Context, cacheType, holdingCode string, key interface{}) (interface{}, bool) {
+	cacheKey := c.generateCacheKey(cacheType, holdingCode, key)
+
 	startTime := time.Now()
-	
+
 	// ลอง L1 Cache ก่อน
 	if value, exists := c.l1Cache.Load(cacheKey); exists {
 		entry, ok := value.(*CacheEntry)
@@ -138,8 +138,8 @@ func (c *UnifiedCacheManager) Get(ctx context.Context, cacheType, shopID string,
 			entry.HitCount++
 			entry.LastAccess = time.Now()
 			c.l1Cache.Store(cacheKey, entry)
-			
-			logger.Debug("Cache HIT (L1): %s (shop: %s, duration: %v)", cacheType, shopID, time.Since(startTime))
+
+			logger.Debug("Cache HIT (L1): %s (shop: %s, duration: %v)", cacheType, holdingCode, time.Since(startTime))
 			return entry.Data, true
 		}
 		// ลบ entry ที่หมดอายุ
@@ -148,17 +148,17 @@ func (c *UnifiedCacheManager) Get(ctx context.Context, cacheType, shopID string,
 
 	// TODO: เพิ่ม L2 (Redis) และ L3 (Database) cache
 	// ในการใช้งานจริง จะเพิ่มการดึงจาก Redis และ Database
-	
+
 	c.recordMiss(cacheType)
-	logger.Debug("Cache MISS: %s (shop: %s, duration: %v)", cacheType, shopID, time.Since(startTime))
-	
+	logger.Debug("Cache MISS: %s (shop: %s, duration: %v)", cacheType, holdingCode, time.Since(startTime))
+
 	return nil, false
 }
 
 // Set บันทึกข้อมูลลง cache
-func (c *UnifiedCacheManager) Set(ctx context.Context, cacheType, shopID string, key interface{}, data interface{}, ttl time.Duration) error {
-	cacheKey := c.generateCacheKey(cacheType, shopID, key)
-	
+func (c *UnifiedCacheManager) Set(ctx context.Context, cacheType, holdingCode string, key interface{}, data interface{}, ttl time.Duration) error {
+	cacheKey := c.generateCacheKey(cacheType, holdingCode, key)
+
 	// ใช้ TTL เริ่มต้นถ้าไม่ได้ระบุ
 	if ttl == 0 {
 		if defaultTTL, exists := CacheTTL[cacheType]; exists {
@@ -181,20 +181,20 @@ func (c *UnifiedCacheManager) Set(ctx context.Context, cacheType, shopID string,
 
 	// TODO: เพิ่มการบันทึกใน Redis และ Database
 	// ในการใช้งานจริง จะเพิ่มการบันทึกแบบ async
-	
-	logger.Debug("Cache SET: %s (shop: %s, key: %s, ttl: %v)", cacheType, shopID, cacheKey, ttl)
+
+	logger.Debug("Cache SET: %s (shop: %s, key: %s, ttl: %v)", cacheType, holdingCode, cacheKey, ttl)
 	return nil
 }
 
 // Delete ลบข้อมูลจาก cache
-func (c *UnifiedCacheManager) Delete(ctx context.Context, cacheType, shopID string, key interface{}) error {
-	cacheKey := c.generateCacheKey(cacheType, shopID, key)
-	
+func (c *UnifiedCacheManager) Delete(ctx context.Context, cacheType, holdingCode string, key interface{}) error {
+	cacheKey := c.generateCacheKey(cacheType, holdingCode, key)
+
 	c.l1Cache.Delete(cacheKey)
-	
+
 	// TODO: เพิ่มการลบจาก Redis และ Database
-	
-	logger.Debug("Cache DELETE: %s (shop: %s, key: %s)", cacheType, shopID, cacheKey)
+
+	logger.Debug("Cache DELETE: %s (shop: %s, key: %s)", cacheType, holdingCode, cacheKey)
 	return nil
 }
 
@@ -223,30 +223,30 @@ func (c *UnifiedCacheManager) Clear(ctx context.Context, cacheType string) error
 func (c *UnifiedCacheManager) GetStats() *CacheStats {
 	c.statsMutex.RLock()
 	defer c.statsMutex.RUnlock()
-	
+
 	// อัปเดตสถิติปัจจุบัน
 	c.stats.TotalEntries = c.getTotalEntries()
 	c.stats.MemoryUsage = c.estimateMemoryUsage()
 	c.stats.HitRate = c.calculateHitRate()
 	c.stats.LastUpdated = time.Now()
-	
+
 	// สร้าง deep copy
 	statsCopy := *c.stats
 	statsCopy.ByType = make(map[string]int64)
 	for k, v := range c.stats.ByType {
 		statsCopy.ByType[k] = v
 	}
-	
+
 	return &statsCopy
 }
 
 // generateCacheKey สร้าง cache key
-func (c *UnifiedCacheManager) generateCacheKey(cacheType, shopID string, key interface{}) string {
+func (c *UnifiedCacheManager) generateCacheKey(cacheType, holdingCode string, key interface{}) string {
 	keyStr := fmt.Sprintf("%v", key)
 	hash := md5.Sum([]byte(keyStr))
 	hashStr := hex.EncodeToString(hash[:8])
-	
-	return fmt.Sprintf("%s:%s:%s", cacheType, shopID, hashStr)
+
+	return fmt.Sprintf("%s:%s:%s", cacheType, holdingCode, hashStr)
 }
 
 // isExpired ตรวจสอบว่า entry หมดอายุหรือไม่
@@ -276,7 +276,7 @@ func (c *UnifiedCacheManager) isCacheTypeMatch(keyStr, cacheType string) bool {
 func (c *UnifiedCacheManager) recordHit(cacheType string) {
 	c.statsMutex.Lock()
 	defer c.statsMutex.Unlock()
-	
+
 	c.stats.TotalHits++
 	c.stats.ByType[cacheType]++
 }
@@ -285,7 +285,7 @@ func (c *UnifiedCacheManager) recordHit(cacheType string) {
 func (c *UnifiedCacheManager) recordMiss(cacheType string) {
 	c.statsMutex.Lock()
 	defer c.statsMutex.Unlock()
-	
+
 	c.stats.TotalMisses++
 }
 
@@ -318,7 +318,7 @@ func (c *UnifiedCacheManager) calculateHitRate() float64 {
 func (c *UnifiedCacheManager) startAutoCleanup() {
 	ticker := time.NewTicker(c.config.CleanupInterval)
 	defer ticker.Stop()
-	
+
 	for range ticker.C {
 		c.performCleanup()
 	}
@@ -327,7 +327,7 @@ func (c *UnifiedCacheManager) startAutoCleanup() {
 // performCleanup ทำความสะอาด cache
 func (c *UnifiedCacheManager) performCleanup() {
 	cleaned := 0
-	
+
 	c.l1Cache.Range(func(key, value interface{}) bool {
 		entry, ok := value.(*CacheEntry)
 		if ok && c.isExpired(entry) {
@@ -336,7 +336,7 @@ func (c *UnifiedCacheManager) performCleanup() {
 		}
 		return true
 	})
-	
+
 	if cleaned > 0 {
 		logger.Info("🧹 Cache cleanup: ลบ %d entries ที่หมดอายุ", cleaned)
 	}
@@ -345,35 +345,35 @@ func (c *UnifiedCacheManager) performCleanup() {
 // Specialized cache methods
 
 // AI Chat Cache Methods
-func (c *UnifiedCacheManager) GetAIChat(ctx context.Context, shopID, questionHash string) (interface{}, bool) {
-	return c.Get(ctx, "ai_chat", shopID, questionHash)
+func (c *UnifiedCacheManager) GetAIChat(ctx context.Context, holdingCode, questionHash string) (interface{}, bool) {
+	return c.Get(ctx, "ai_chat", holdingCode, questionHash)
 }
 
-func (c *UnifiedCacheManager) SetAIChat(ctx context.Context, shopID, questionHash string, response interface{}) error {
-	return c.Set(ctx, "ai_chat", shopID, questionHash, response, 0)
+func (c *UnifiedCacheManager) SetAIChat(ctx context.Context, holdingCode, questionHash string, response interface{}) error {
+	return c.Set(ctx, "ai_chat", holdingCode, questionHash, response, 0)
 }
 
 // Product Search Cache Methods
-func (c *UnifiedCacheManager) GetProductSearch(ctx context.Context, shopID, queryHash string) (interface{}, bool) {
-	return c.Get(ctx, "product_search", shopID, queryHash)
+func (c *UnifiedCacheManager) GetProductSearch(ctx context.Context, holdingCode, queryHash string) (interface{}, bool) {
+	return c.Get(ctx, "product_search", holdingCode, queryHash)
 }
 
-func (c *UnifiedCacheManager) SetProductSearch(ctx context.Context, shopID, queryHash string, results interface{}) error {
-	return c.Set(ctx, "product_search", shopID, queryHash, results, 0)
+func (c *UnifiedCacheManager) SetProductSearch(ctx context.Context, holdingCode, queryHash string, results interface{}) error {
+	return c.Set(ctx, "product_search", holdingCode, queryHash, results, 0)
 }
 
 // Real-time Stock Cache Methods
-func (c *UnifiedCacheManager) GetStock(ctx context.Context, shopID, itemCode, warehouse, location string) (interface{}, bool) {
+func (c *UnifiedCacheManager) GetStock(ctx context.Context, holdingCode, itemCode, warehouse, location string) (interface{}, bool) {
 	key := fmt.Sprintf("%s:%s:%s", itemCode, warehouse, location)
-	return c.Get(ctx, "stock_realtime", shopID, key)
+	return c.Get(ctx, "stock_realtime", holdingCode, key)
 }
 
-func (c *UnifiedCacheManager) SetStock(ctx context.Context, shopID, itemCode, warehouse, location string, balance interface{}) error {
+func (c *UnifiedCacheManager) SetStock(ctx context.Context, holdingCode, itemCode, warehouse, location string, balance interface{}) error {
 	key := fmt.Sprintf("%s:%s:%s", itemCode, warehouse, location)
-	return c.Set(ctx, "stock_realtime", shopID, key, balance, 0)
+	return c.Set(ctx, "stock_realtime", holdingCode, key, balance, 0)
 }
 
-func (c *UnifiedCacheManager) UpdateStock(ctx context.Context, shopID, itemCode, warehouse, location string, balance interface{}) error {
+func (c *UnifiedCacheManager) UpdateStock(ctx context.Context, holdingCode, itemCode, warehouse, location string, balance interface{}) error {
 	key := fmt.Sprintf("%s:%s:%s", itemCode, warehouse, location)
-	return c.Set(ctx, "stock_realtime", shopID, key, balance, 0)
+	return c.Set(ctx, "stock_realtime", holdingCode, key, balance, 0)
 }

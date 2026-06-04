@@ -6,8 +6,8 @@ import (
 )
 
 type IDebtorPaymentConsumerService interface {
-	Upsert(shopID string, docNo string, doc models.DebtorPaymentTransactionPG) error
-	Delete(shopID string, docNo string) error
+	Upsert(holdingCode string, docNo string, doc models.DebtorPaymentTransactionPG) error
+	Delete(holdingCode string, docNo string) error
 }
 
 type DebtorPaymentConsumerService struct {
@@ -21,8 +21,8 @@ func NewDebtorPaymentConsumerService(repo IDebtorPaymentTransactionPGRepository)
 	}
 }
 
-func (s *DebtorPaymentConsumerService) Upsert(shopID string, docNo string, doc models.DebtorPaymentTransactionPG) error {
-	findDoc, err := s.repo.Get(shopID, docNo)
+func (s *DebtorPaymentConsumerService) Upsert(holdingCode string, docNo string, doc models.DebtorPaymentTransactionPG) error {
+	findDoc, err := s.repo.Get(holdingCode, docNo)
 	if err != nil {
 		err = s.repo.Create(doc)
 		if err != nil {
@@ -33,7 +33,7 @@ func (s *DebtorPaymentConsumerService) Upsert(shopID string, docNo string, doc m
 		isEqual := findDoc.CompareTo(&doc)
 
 		if isEqual == false {
-			err = s.repo.Update(shopID, docNo, doc)
+			err = s.repo.Update(holdingCode, docNo, doc)
 			if err != nil {
 				return err
 			}
@@ -45,10 +45,10 @@ func (s *DebtorPaymentConsumerService) Upsert(shopID string, docNo string, doc m
 	return nil
 }
 
-func (s *DebtorPaymentConsumerService) Delete(shopID string, docNo string) error {
-	err := s.repo.Delete(shopID, docNo, models.DebtorPaymentTransactionPG{
-		ShopIdentity: pkgModels.ShopIdentity{
-			ShopID: shopID,
+func (s *DebtorPaymentConsumerService) Delete(holdingCode string, docNo string) error {
+	err := s.repo.Delete(holdingCode, docNo, models.DebtorPaymentTransactionPG{
+		HoldingCodeentity: pkgModels.HoldingCodeentity{
+			HoldingCode: holdingCode,
 		},
 		DocNo: docNo,
 	})

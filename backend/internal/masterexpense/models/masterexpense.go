@@ -10,15 +10,15 @@ const masterexpenseCollectionName = "masterExpenses"
 
 type MasterExpense struct {
 	models.PartitionIdentity `bson:"inline"`
-	Code string          `json:"code" bson:"code"`
-	Names *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
-	AccountCode string          `json:"accountcode" bson:"accountcode"`
-	AccountName string          `json:"accountname" bson:"accountname"`
+	Code                     string          `json:"code" bson:"code"`
+	Names                    *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
+	AccountCode              string          `json:"accountcode" bson:"accountcode"`
+	AccountName              string          `json:"accountname" bson:"accountname"`
 }
 
 type MasterExpenseInfo struct {
 	models.DocIdentity `bson:"inline"`
-	MasterExpense  `bson:"inline"`
+	MasterExpense      `bson:"inline"`
 }
 
 func (MasterExpenseInfo) CollectionName() string {
@@ -26,12 +26,12 @@ func (MasterExpenseInfo) CollectionName() string {
 }
 
 type MasterExpenseData struct {
-	models.ShopIdentity `bson:"inline"`
-	MasterExpenseInfo  `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	MasterExpenseInfo        `bson:"inline"`
 }
 
 type MasterExpenseDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	MasterExpenseData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
@@ -49,7 +49,7 @@ func (MasterExpenseItemGuid) CollectionName() string {
 }
 
 type MasterExpenseActivity struct {
-	MasterExpenseData  `bson:"inline"`
+	MasterExpenseData   `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

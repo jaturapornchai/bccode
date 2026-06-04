@@ -12,7 +12,7 @@ import (
 	"smlcloudplatform/internal/goapi/mypg"
 )
 
-func PurchaseStatusByDocNo(shopID string, docNos []string) []models.PurchaseStatusStruct {
+func PurchaseStatusByDocNo(holdingCode string, docNos []string) []models.PurchaseStatusStruct {
 	var statusList []models.PurchaseStatusStruct
 
 	if len(docNos) == 0 {
@@ -21,7 +21,7 @@ func PurchaseStatusByDocNo(shopID string, docNos []string) []models.PurchaseStat
 	}
 
 	ctx := context.Background()
-	db, err := mypg.PgSqlFastConnect(shopID)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		logger.Info("Failed to connect to PostgreSQL: %v", err)
 		return statusList
@@ -67,7 +67,7 @@ func PurchaseStatusByDocNo(shopID string, docNos []string) []models.PurchaseStat
 
 	// Query 1: รายการสั่งซื้อทั้งหมด
 	orderedQuery := fmt.Sprintf(`
-		SELECT 
+		SELECT
 			docno,
 			itemcode,
 			transflag,
@@ -109,7 +109,7 @@ func PurchaseStatusByDocNo(shopID string, docNos []string) []models.PurchaseStat
 
 	// Query 2: รายการรับสินค้าทั้งหมด (summary)
 	receivedSummaryQuery := fmt.Sprintf(`
-		SELECT 
+		SELECT
 			dr.docnoref,
 			dd.itemcode,
 			SUM(COALESCE(dd.totalqty * (COALESCE(dd.unitstand, 1) / NULLIF(COALESCE(dd.unitdivide, 1), 0)), dd.totalqty)) AS qty_received
@@ -150,7 +150,7 @@ func PurchaseStatusByDocNo(shopID string, docNos []string) []models.PurchaseStat
 
 	// Query 3: รายการรับสินค้ารายละเอียด (สำหรับ doc_refer)
 	receivedDetailQuery := fmt.Sprintf(`
-		SELECT 
+		SELECT
 			dr.docnoref,
 			dd.itemcode,
 			dd.docno,
@@ -324,7 +324,7 @@ func PurchaseStatusByDocNo(shopID string, docNos []string) []models.PurchaseStat
 		}
 	}
 
-	logger.Info("Processed %d purchase documents for shop %s", len(statusList), shopID)
+	logger.Info("Processed %d purchase documents for shop %s", len(statusList), holdingCode)
 	// log json
 	jsonData, _ := json.MarshalIndent(statusList, "", "  ")
 	logger.Info("Purchase Status JSON: %s", string(jsonData))

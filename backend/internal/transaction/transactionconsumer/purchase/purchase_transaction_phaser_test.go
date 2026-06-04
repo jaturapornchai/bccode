@@ -17,8 +17,8 @@ func PurchaseTransactionStruct() models.PurchaseTransactionPG {
 
 	want := models.PurchaseTransactionPG{
 		TransactionPG: models.TransactionPG{
-			ShopIdentity: pkgModels.ShopIdentity{
-				ShopID: "2PrIIqTWxoBXv16K310sNwfHmfY",
+			HoldingCodeentity: pkgModels.HoldingCodeentity{
+				HoldingCode: "2PrIIqTWxoBXv16K310sNwfHmfY",
 			},
 			GuidFixed:  "2RYA2Yri2HRKDF5JFnKpwuGmydO",
 			TransFlag:  12,
@@ -54,7 +54,7 @@ func PurchaseTransactionStruct() models.PurchaseTransactionPG {
 					DocRef:              "detail doc ref",
 					DocRefDateTime:      time.Date(2023, 6, 22, 6, 46, 43, 0, time.UTC),
 					DocNo:               "PU2023062200001",
-					ShopID:              "2PrIIqTWxoBXv16K310sNwfHmfY",
+					HoldingCode:         "2PrIIqTWxoBXv16K310sNwfHmfY",
 					LineNumber:          0,
 					ItemGuid:            "2PrfDoufKF7KF0Ua2V6sbHBlm2R",
 					Barcode:             "BARCODE001",
@@ -100,7 +100,7 @@ func TestPurchaseTransactionPhaser(t *testing.T) {
 
 	giveInput := `{
 		"id": "6493ee72a7408bc3e6035632",
-		"shopid": "2PrIIqTWxoBXv16K310sNwfHmfY",
+		"holding_code": "2PrIIqTWxoBXv16K310sNwfHmfY",
 		"guid_fixed": "2RYA2Yri2HRKDF5JFnKpwuGmydO",
 		"docno": "PU2023062200001",
 		"docdatetime": "2023-06-22T06:46:25.000Z",
@@ -121,7 +121,7 @@ func TestPurchaseTransactionPhaser(t *testing.T) {
 		},
 		"taxdocno": "TAXPU2023062200001",
 		"taxdocdate": "2023-06-22T06:46:25.000Z",
-		"description": "Purchase Remark",		
+		"description": "Purchase Remark",
 		"doc_type": 0,
 		"inquirytype": 1,
 		"vat_type": 1,
@@ -130,7 +130,7 @@ func TestPurchaseTransactionPhaser(t *testing.T) {
 		"totaldiscount": 30,
 		"totalvalue": 50,
 		"totalbeforevat": 46.728971962616825,
-		"totalexceptvat": 0,		
+		"totalexceptvat": 0,
 		"totalvatvalue": 3.2710280373831777,
 		"totalaftervat": 50,
 		"total_amount": 50,
@@ -182,7 +182,7 @@ func TestPurchaseTransactionPhaser(t *testing.T) {
 			"sum_amount": 50,
 			"sumamountexcludevat": 46.728971962616825,
 			"totalvaluevat": 3.2710280373831777,
-			"whcode": "00000",			
+			"whcode": "00000",
 			"locationcode": "LC001",
 			"vat_type": 1,
 			"vatcal": 0,
@@ -340,7 +340,7 @@ func TestPurchaseTransactionPhaser(t *testing.T) {
 
 	assert.Nil(t, err)
 
-	assert.Equal(t, get.ShopID, want.ShopID, "shopid")
+	assert.Equal(t, get.HoldingCode, want.HoldingCode, "holding_code")
 	assert.Equal(t, get.GuidFixed, want.GuidFixed, "guid_fixed")
 	assert.Equal(t, get.TransFlag, want.TransFlag, "transflag")
 	assert.Equal(t, get.DocNo, want.DocNo, "docno")
@@ -370,7 +370,7 @@ func TestPurchaseTransactionPhaser(t *testing.T) {
 	// detail
 	assert.Equal(t, (*get.Items)[0].GuidFixed, (*want.Items)[0].GuidFixed, "item.guidfixed")
 	assert.Equal(t, (*get.Items)[0].DocNo, (*want.Items)[0].DocNo, "item.docno")
-	assert.Equal(t, (*get.Items)[0].ShopID, (*want.Items)[0].ShopID, "item.shopid")
+	assert.Equal(t, (*get.Items)[0].HoldingCode, (*want.Items)[0].HoldingCode, "item.holding_code")
 	assert.Equal(t, (*get.Items)[0].LineNumber, (*want.Items)[0].LineNumber, "item.linenumber")
 	assert.Equal(t, (*get.Items)[0].ItemGuid, (*want.Items)[0].ItemGuid, "item.itemguid")
 	assert.Equal(t, (*get.Items)[0].Barcode, (*want.Items)[0].Barcode, "item.barcode")

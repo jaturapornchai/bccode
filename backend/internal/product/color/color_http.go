@@ -57,7 +57,7 @@ func (h ColorHttp) RegisterHttp() {
 // @Router /color [post]
 func (h ColorHttp) CreateColor(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.Color{}
@@ -73,7 +73,7 @@ func (h ColorHttp) CreateColor(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreateColor(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateColor(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -100,7 +100,7 @@ func (h ColorHttp) CreateColor(ctx microservice.IContext) error {
 func (h ColorHttp) UpdateColor(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -118,7 +118,7 @@ func (h ColorHttp) UpdateColor(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateColor(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateColor(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -144,12 +144,12 @@ func (h ColorHttp) UpdateColor(ctx microservice.IContext) error {
 // @Router /color/{id} [delete]
 func (h ColorHttp) DeleteColor(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteColor(shopID, id, authUsername)
+	err := h.svc.DeleteColor(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -175,12 +175,12 @@ func (h ColorHttp) DeleteColor(ctx microservice.IContext) error {
 // @Router /color/{id} [get]
 func (h ColorHttp) InfoColor(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get Color %v", id)
-	doc, err := h.svc.InfoColor(shopID, id)
+	doc, err := h.svc.InfoColor(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -206,7 +206,7 @@ func (h ColorHttp) InfoColor(ctx microservice.IContext) error {
 // @Router /color/pk [get]
 func (h ColorHttp) InfoArray(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -219,7 +219,7 @@ func (h ColorHttp) InfoArray(ctx microservice.IContext) error {
 	}
 
 	// where to filter array
-	doc, err := h.svc.InfoWTFArray(shopID, *docReq)
+	doc, err := h.svc.InfoWTFArray(holdingCode, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -246,10 +246,10 @@ func (h ColorHttp) InfoArray(ctx microservice.IContext) error {
 // @Router /color [get]
 func (h ColorHttp) SearchColor(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
-	docList, pagination, err := h.svc.SearchColor(shopID, pageable)
+	docList, pagination, err := h.svc.SearchColor(holdingCode, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -278,13 +278,13 @@ func (h ColorHttp) SearchColor(ctx microservice.IContext) error {
 // @Router /color/list [get]
 func (h ColorHttp) SearchColorStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
 	lang := ctx.QueryParam("lang")
 
-	docList, total, err := h.svc.SearchColorStep(shopID, lang, pageableStep)
+	docList, total, err := h.svc.SearchColorStep(holdingCode, lang, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -312,7 +312,7 @@ func (h ColorHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -324,7 +324,7 @@ func (h ColorHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

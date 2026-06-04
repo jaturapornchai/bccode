@@ -20,20 +20,20 @@ func NewSalesTool() *SalesTool {
 
 // DailySalesRequest represents a request for daily sales
 type DailySalesRequest struct {
-	ShopID string `json:"shop_id"`
-	Date string `json:"date"` // Format: YYYY-MM-DD
-	BranchCode string `json:"branch_code,omitempty"`
+	HoldingCode string `json:"holding_code"`
+	Date        string `json:"date"` // Format: YYYY-MM-DD
+	BranchCode  string `json:"branch_code,omitempty"`
 }
 
 // DailySalesResponse represents the response for daily sales
 type DailySalesResponse struct {
-	Date string  `json:"date"`
-	TotalAmount float64 `json:"total_amount"`
-	TotalCost float64 `json:"total_cost"`
-	TotalProfit float64 `json:"total_profit"`
-	TotalQty float64 `json:"total_qty"`
+	Date          string  `json:"date"`
+	TotalAmount   float64 `json:"total_amount"`
+	TotalCost     float64 `json:"total_cost"`
+	TotalProfit   float64 `json:"total_profit"`
+	TotalQty      float64 `json:"total_qty"`
 	DocumentCount int64   `json:"document_count"`
-	BranchCode string  `json:"branch_code,omitempty"`
+	BranchCode    string  `json:"branch_code,omitempty"`
 }
 
 // GetDailySales retrieves daily sales data from ClickHouse
@@ -54,18 +54,18 @@ func (st *SalesTool) GetDailySales(ctx context.Context, req DailySalesRequest) (
 
 	// Build query
 	query := fmt.Sprintf(`
-		SELECT 
+		SELECT
 			COUNT(DISTINCT docno) as doc_count,
 			SUM(totalqty * -1) as total_qty,
 			SUM(totalqty * price * -1) as total_amount,
 			SUM(calcamount * -1) as total_cost,
 			SUM((totalqty * price * -1) - (calcamount * -1)) as total_profit
-		FROM ` + myclickhouse.TableName("processstockcost") + `
-		WHERE shopid = '%s'
+		FROM `+myclickhouse.TableName("processstockcost")+`
+		WHERE holding_code = '%s'
 			AND transflag = 44
 			AND docdatetime >= '%s'
 			AND docdatetime < '%s'`,
-		req.ShopID, startDate, endDate)
+		req.HoldingCode, startDate, endDate)
 
 	if req.BranchCode != "" {
 		query += fmt.Sprintf(" AND whcode = '%s'", req.BranchCode)
@@ -102,38 +102,38 @@ func (st *SalesTool) GetDailySales(ctx context.Context, req DailySalesRequest) (
 
 // SalesByDateRangeRequest represents a request for sales by date range
 type SalesByDateRangeRequest struct {
-	ShopID string `json:"shop_id"`
-	FromDate string `json:"from_date"` // Format: YYYY-MM-DD
-	ToDate string `json:"to_date"`   // Format: YYYY-MM-DD
-	BranchCode string `json:"branch_code,omitempty"`
-	GroupBy string `json:"group_by,omitempty"` // "day", "week", "month"
+	HoldingCode string `json:"holding_code"`
+	FromDate    string `json:"from_date"` // Format: YYYY-MM-DD
+	ToDate      string `json:"to_date"`   // Format: YYYY-MM-DD
+	BranchCode  string `json:"branch_code,omitempty"`
+	GroupBy     string `json:"group_by,omitempty"` // "day", "week", "month"
 }
 
 // SalesByDateRangeResponse represents sales data grouped by date
 type SalesByDateRangeResponse struct {
 	FromDate string           `json:"from_date"`
-	ToDate string           `json:"to_date"`
-	GroupBy string           `json:"group_by"`
-	Data []SalesGroupData `json:"data"`
-	Summary SalesSummary     `json:"summary"`
+	ToDate   string           `json:"to_date"`
+	GroupBy  string           `json:"group_by"`
+	Data     []SalesGroupData `json:"data"`
+	Summary  SalesSummary     `json:"summary"`
 }
 
 // SalesGroupData represents sales data for a specific period
 type SalesGroupData struct {
-	Period string  `json:"period"`
+	Period      string  `json:"period"`
 	TotalAmount float64 `json:"total_amount"`
-	TotalCost float64 `json:"total_cost"`
+	TotalCost   float64 `json:"total_cost"`
 	TotalProfit float64 `json:"total_profit"`
-	TotalQty float64 `json:"total_qty"`
-	DocCount int64   `json:"doc_count"`
+	TotalQty    float64 `json:"total_qty"`
+	DocCount    int64   `json:"doc_count"`
 }
 
 // SalesSummary represents overall summary
 type SalesSummary struct {
-	TotalAmount float64 `json:"total_amount"`
-	TotalCost float64 `json:"total_cost"`
-	TotalProfit float64 `json:"total_profit"`
-	TotalQty float64 `json:"total_qty"`
+	TotalAmount   float64 `json:"total_amount"`
+	TotalCost     float64 `json:"total_cost"`
+	TotalProfit   float64 `json:"total_profit"`
+	TotalQty      float64 `json:"total_qty"`
 	DocumentCount int64   `json:"document_count"`
 	AvgDailySales float64 `json:"avg_daily_sales"`
 }
@@ -172,19 +172,19 @@ func (st *SalesTool) GetSalesByDateRange(ctx context.Context, req SalesByDateRan
 	}
 
 	query := fmt.Sprintf(`
-		SELECT 
+		SELECT
 			%s as period,
 			COUNT(DISTINCT docno) as doc_count,
 			SUM(totalqty * -1) as total_qty,
 			SUM(totalqty * price * -1) as total_amount,
 			SUM(calcamount * -1) as total_cost,
 			SUM((totalqty * price * -1) - (calcamount * -1)) as total_profit
-		FROM ` + myclickhouse.TableName("processstockcost") + `
-		WHERE shopid = '%s'
+		FROM `+myclickhouse.TableName("processstockcost")+`
+		WHERE holding_code = '%s'
 			AND transflag = 44
 			AND docdatetime >= '%s'
 			AND docdatetime < '%s'`,
-		groupByClause, req.ShopID,
+		groupByClause, req.HoldingCode,
 		fromDate.Format("2006-01-02"),
 		toDate.AddDate(0, 0, 1).Format("2006-01-02"))
 
@@ -240,31 +240,31 @@ func (st *SalesTool) GetSalesByDateRange(ctx context.Context, req SalesByDateRan
 
 // TopSellingProductsRequest represents a request for top selling products
 type TopSellingProductsRequest struct {
-	ShopID string `json:"shop_id"`
-	FromDate string `json:"from_date"` // Format: YYYY-MM-DD
-	ToDate string `json:"to_date"`   // Format: YYYY-MM-DD
-	Limit int    `json:"limit"`     // Default: 10
-	BranchCode string `json:"branch_code,omitempty"`
+	HoldingCode string `json:"holding_code"`
+	FromDate    string `json:"from_date"` // Format: YYYY-MM-DD
+	ToDate      string `json:"to_date"`   // Format: YYYY-MM-DD
+	Limit       int    `json:"limit"`     // Default: 10
+	BranchCode  string `json:"branch_code,omitempty"`
 }
 
 // TopSellingProduct represents a top selling product
 type TopSellingProduct struct {
-	ItemCode string  `json:"item_code"`
-	ItemName string  `json:"item_name"`
-	Barcode string  `json:"barcode"`
-	TotalQty float64 `json:"total_qty"`
+	ItemCode    string  `json:"item_code"`
+	ItemName    string  `json:"item_name"`
+	Barcode     string  `json:"barcode"`
+	TotalQty    float64 `json:"total_qty"`
 	TotalAmount float64 `json:"total_amount"`
-	TotalCost float64 `json:"total_cost"`
+	TotalCost   float64 `json:"total_cost"`
 	TotalProfit float64 `json:"total_profit"`
-	AvgPrice float64 `json:"avg_price"`
+	AvgPrice    float64 `json:"avg_price"`
 }
 
 // TopSellingProductsResponse represents the response for top selling products
 type TopSellingProductsResponse struct {
-	FromDate string              `json:"from_date"`
-	ToDate string              `json:"to_date"`
-	Limit int                 `json:"limit"`
-	Products []TopSellingProduct `json:"products"`
+	FromDate   string              `json:"from_date"`
+	ToDate     string              `json:"to_date"`
+	Limit      int                 `json:"limit"`
+	Products   []TopSellingProduct `json:"products"`
 	TotalCount int                 `json:"total_count"`
 }
 
@@ -285,7 +285,7 @@ func (st *SalesTool) GetTopSellingProducts(ctx context.Context, req TopSellingPr
 	toDate, _ := time.Parse("2006-01-02", req.ToDate)
 
 	query := fmt.Sprintf(`
-		SELECT 
+		SELECT
 			p.itemcode,
 			MAX(pb.name0) as itemname,
 			MAX(p.barcode) as barcode,
@@ -294,13 +294,13 @@ func (st *SalesTool) GetTopSellingProducts(ctx context.Context, req TopSellingPr
 			SUM(p.calcamount * -1) as total_cost,
 			SUM((p.totalqty * p.price * -1) - (p.calcamount * -1)) as total_profit,
 			AVG(p.price) as avg_price
-		FROM ` + myclickhouse.TableName("processstockcost") + ` p
-		LEFT JOIN ` + myclickhouse.TableName("productbarcode") + ` pb ON p.shopid = pb.shopid AND p.itemcode = pb.itemcode
-		WHERE p.shopid = '%s'
+		FROM `+myclickhouse.TableName("processstockcost")+` p
+		LEFT JOIN `+myclickhouse.TableName("productbarcode")+` pb ON p.holding_code = pb.holding_code AND p.itemcode = pb.itemcode
+		WHERE p.holding_code = '%s'
 			AND p.transflag = 44
 			AND p.docdatetime >= '%s'
 			AND p.docdatetime < '%s'`,
-		req.ShopID,
+		req.HoldingCode,
 		fromDate.Format("2006-01-02"),
 		toDate.AddDate(0, 0, 1).Format("2006-01-02"))
 
@@ -343,26 +343,26 @@ func (st *SalesTool) GetTopSellingProducts(ctx context.Context, req TopSellingPr
 
 // SalesBySellerRequest represents a request for sales by seller
 type SalesBySellerRequest struct {
-	ShopID string `json:"shop_id"`
-	FromDate string `json:"from_date"` // Format: YYYY-MM-DD
-	ToDate string `json:"to_date"`   // Format: YYYY-MM-DD
+	HoldingCode string `json:"holding_code"`
+	FromDate    string `json:"from_date"` // Format: YYYY-MM-DD
+	ToDate      string `json:"to_date"`   // Format: YYYY-MM-DD
 }
 
 // SellerSales represents sales data for a seller
 type SellerSales struct {
-	SellerCode string  `json:"seller_code"`
-	SellerName string  `json:"seller_name"`
+	SellerCode  string  `json:"seller_code"`
+	SellerName  string  `json:"seller_name"`
 	TotalAmount float64 `json:"total_amount"`
-	TotalQty float64 `json:"total_qty"`
-	DocCount int64   `json:"doc_count"`
+	TotalQty    float64 `json:"total_qty"`
+	DocCount    int64   `json:"doc_count"`
 	AvgDocValue float64 `json:"avg_doc_value"`
 }
 
 // SalesBySellerResponse represents the response for sales by seller
 type SalesBySellerResponse struct {
-	FromDate string        `json:"from_date"`
-	ToDate string        `json:"to_date"`
-	Sellers []SellerSales `json:"sellers"`
+	FromDate   string        `json:"from_date"`
+	ToDate     string        `json:"to_date"`
+	Sellers    []SellerSales `json:"sellers"`
 	TotalCount int           `json:"total_count"`
 }
 
@@ -386,15 +386,15 @@ func (st *SalesTool) GetSalesBySeller(ctx context.Context, req SalesBySellerRequ
 			SUM(p.totalqty * -1) as total_qty,
 			SUM(p.totalqty * p.price * -1) as total_amount
 		FROM `+myclickhouse.TableName("processstockcost")+` p
-		INNER JOIN `+myclickhouse.TableName("doc")+` d ON p.shopid = d.shopid AND p.docno = d.docno
-		LEFT JOIN `+myclickhouse.TableName("salechannel")+` sc ON d.shopid = sc.shopid AND d.salechannelcode = sc.code
-		WHERE p.shopid = '%s'
+		INNER JOIN `+myclickhouse.TableName("doc")+` d ON p.holding_code = d.holding_code AND p.docno = d.docno
+		LEFT JOIN `+myclickhouse.TableName("salechannel")+` sc ON d.holding_code = sc.holding_code AND d.salechannelcode = sc.code
+		WHERE p.holding_code = '%s'
 			AND p.transflag = 44
 			AND p.docdatetime >= '%s'
 			AND p.docdatetime < '%s'
 		GROUP BY d.salechannelcode
 		ORDER BY total_amount DESC`,
-		req.ShopID,
+		req.HoldingCode,
 		fromDate.Format("2006-01-02"),
 		toDate.AddDate(0, 0, 1).Format("2006-01-02"))
 
@@ -433,30 +433,30 @@ func (st *SalesTool) GetSalesBySeller(ctx context.Context, req SalesBySellerRequ
 
 // MonthlySummaryRequest represents a request for monthly summary
 type MonthlySummaryRequest struct {
-	ShopID string `json:"shop_id"`
-	Year int    `json:"year"`
-	Month int    `json:"month"` // 1-12
+	HoldingCode string `json:"holding_code"`
+	Year        int    `json:"year"`
+	Month       int    `json:"month"` // 1-12
 }
 
 // MonthlySummaryResponse represents the response for monthly summary
 type MonthlySummaryResponse struct {
-	Year int                `json:"year"`
-	Month int                `json:"month"`
-	MonthName string             `json:"month_name"`
-	TotalAmount float64            `json:"total_amount"`
-	TotalCost float64            `json:"total_cost"`
-	TotalProfit float64            `json:"total_profit"`
-	TotalQty float64            `json:"total_qty"`
+	Year          int                `json:"year"`
+	Month         int                `json:"month"`
+	MonthName     string             `json:"month_name"`
+	TotalAmount   float64            `json:"total_amount"`
+	TotalCost     float64            `json:"total_cost"`
+	TotalProfit   float64            `json:"total_profit"`
+	TotalQty      float64            `json:"total_qty"`
 	DocumentCount int64              `json:"document_count"`
-	DailyAverage float64            `json:"daily_average"`
-	ProfitMargin float64            `json:"profit_margin"`
-	Comparison *MonthlyComparison `json:"comparison,omitempty"`
+	DailyAverage  float64            `json:"daily_average"`
+	ProfitMargin  float64            `json:"profit_margin"`
+	Comparison    *MonthlyComparison `json:"comparison,omitempty"`
 }
 
 // MonthlyComparison compares with previous month
 type MonthlyComparison struct {
-	PrevMonthAmount float64 `json:"prev_month_amount"`
-	AmountChange float64 `json:"amount_change"`
+	PrevMonthAmount     float64 `json:"prev_month_amount"`
+	AmountChange        float64 `json:"amount_change"`
 	AmountChangePercent float64 `json:"amount_change_percent"`
 }
 
@@ -484,18 +484,18 @@ func (st *SalesTool) GetMonthlySummary(ctx context.Context, req MonthlySummaryRe
 
 	// Get current month data
 	query := fmt.Sprintf(`
-		SELECT 
+		SELECT
 			COUNT(DISTINCT docno) as doc_count,
 			SUM(totalqty * -1) as total_qty,
 			SUM(totalqty * price * -1) as total_amount,
 			SUM(calcamount * -1) as total_cost,
 			SUM((totalqty * price * -1) - (calcamount * -1)) as total_profit
-		FROM ` + myclickhouse.TableName("processstockcost") + `
-		WHERE shopid = '%s'
+		FROM `+myclickhouse.TableName("processstockcost")+`
+		WHERE holding_code = '%s'
 			AND transflag = 44
 			AND docdatetime >= '%s'
 			AND docdatetime < '%s'`,
-		req.ShopID,
+		req.HoldingCode,
 		startDate.Format("2006-01-02"),
 		endDate.Format("2006-01-02"))
 
@@ -536,14 +536,14 @@ func (st *SalesTool) GetMonthlySummary(ctx context.Context, req MonthlySummaryRe
 
 	// Get previous month data for comparison
 	prevMonthQuery := fmt.Sprintf(`
-		SELECT 
+		SELECT
 			SUM(totalqty * price * -1) as total_amount
-		FROM ` + myclickhouse.TableName("processstockcost") + `
-		WHERE shopid = '%s'
+		FROM `+myclickhouse.TableName("processstockcost")+`
+		WHERE holding_code = '%s'
 			AND transflag = 44
 			AND docdatetime >= '%s'
 			AND docdatetime < '%s'`,
-		req.ShopID,
+		req.HoldingCode,
 		startDate.AddDate(0, -1, 0).Format("2006-01-02"),
 		startDate.Format("2006-01-02"))
 

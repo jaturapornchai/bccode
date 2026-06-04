@@ -3,10 +3,10 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/myclickhouse"
 	"smlcloudplatform/internal/goapi/mypg"
-	"net/http"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -14,12 +14,12 @@ import (
 
 // ManualClosePORequest — request สำหรับปิด/เปิดเอกสารใบสั่งซื้อด้วยมือ
 type ManualClosePORequest struct {
-	ShopID string `json:"shop_id"`
-	DocNo string `json:"docno"`
-	Action string `json:"action"`         // "close" หรือ "open"
+	HoldingCode  string `json:"holding_code"`
+	DocNo        string `json:"docno"`
+	Action       string `json:"action"`         // "close" หรือ "open"
 	ActionByCode string `json:"action_by_code"` // รหัสผู้กระทำ
 	ActionByName string `json:"action_by_name"` // ชื่อผู้กระทำ
-	Reason string `json:"reason"`         // เหตุผล (ต้องกรอก)
+	Reason       string `json:"reason"`         // เหตุผล (ต้องกรอก)
 }
 
 // ManualClosePOHandler — ปิด/เปิดเอกสารใบสั่งซื้อด้วยมือ
@@ -35,11 +35,11 @@ func ManualClosePOHandler(c echo.Context) error {
 	}
 
 	// Validate
-	if req.ShopID == "" {
+	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"status":  "error",
 			"code":    400,
-			"message": "กรุณาระบุ shop_id",
+			"message": "กรุณาระบุ holding_code",
 		})
 	}
 	if req.DocNo == "" {
@@ -74,7 +74,7 @@ func ManualClosePOHandler(c echo.Context) error {
 	ctx := context.Background()
 
 	// เชื่อมต่อ PostgreSQL
-	db, err := mypg.PgSqlFastConnect(req.ShopID)
+	db, err := mypg.PgSqlFastConnect(req.HoldingCode)
 	if err != nil {
 		logger.Error("[ManualClosePO] เชื่อมต่อ PostgreSQL ไม่สำเร็จ: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]any{
@@ -136,7 +136,7 @@ func ManualClosePOHandler(c echo.Context) error {
 	// อัปเดต ClickHouse (async)
 	go func() {
 		isClosedManual := req.Action == "close"
-		updateClickHouseManualClose(ctx, req.ShopID, req.DocNo, isClosedManual, req.ActionByCode, req.ActionByName, now, req.Reason)
+		updateClickHouseManualClose(ctx, req.HoldingCode, req.DocNo, isClosedManual, req.ActionByCode, req.ActionByName, now, req.Reason)
 	}()
 
 	actionText := "ปิดเอกสาร"
@@ -153,7 +153,7 @@ func ManualClosePOHandler(c echo.Context) error {
 		"message": fmt.Sprintf("%sสำเร็จ", actionText),
 		"data": map[string]any{
 			"docno":                req.DocNo,
-			"isclosedmanual":      req.Action == "close",
+			"isclosedmanual":       req.Action == "close",
 			"closedmanual_by_code": req.ActionByCode,
 			"closedmanual_by_name": req.ActionByName,
 			"closedmanual_at":      now.Format("2006-01-02T15:04:05.000Z"),
@@ -163,7 +163,7 @@ func ManualClosePOHandler(c echo.Context) error {
 }
 
 // updateClickHouseManualClose — อัปเดตสถานะปิด/เปิดเอกสารใน ClickHouse
-func updateClickHouseManualClose(ctx context.Context, shopID, docNo string, isClosedManual bool, byCode, byName string, at time.Time, reason string) {
+func updateClickHouseManualClose(ctx context.Context, holdingCode, docNo string, isClosedManual bool, byCode, byName string, at time.Time, reason string) {
 	conn, err := myclickhouse.ClickHouseFastConnect()
 	if err != nil {
 		logger.Error("[ManualClosePO] เชื่อมต่อ ClickHouse ไม่สำเร็จ: %v", err)
@@ -172,8 +172,8 @@ func updateClickHouseManualClose(ctx context.Context, shopID, docNo string, isCl
 
 	tableName := myclickhouse.TableName("doc")
 	query := fmt.Sprintf(
-		"ALTER TABLE %s UPDATE isclosedmanual = %t, closedmanual_by_code = '%s', closedmanual_by_name = '%s', closedmanual_at = '%s', closedmanual_reason = '%s' WHERE shopid = '%s' AND docno = '%s'",
-		tableName, isClosedManual, byCode, byName, at.Format("2006-01-02 15:04:05"), reason, shopID, docNo,
+		"ALTER TABLE %s UPDATE isclosedmanual = %t, closedmanual_by_code = '%s', closedmanual_by_name = '%s', closedmanual_at = '%s', closedmanual_reason = '%s' WHERE holding_code = '%s' AND docno = '%s'",
+		tableName, isClosedManual, byCode, byName, at.Format("2006-01-02 15:04:05"), reason, holdingCode, docNo,
 	)
 
 	if err := conn.Exec(ctx, query); err != nil {

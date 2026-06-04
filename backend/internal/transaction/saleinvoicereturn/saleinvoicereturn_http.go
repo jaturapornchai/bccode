@@ -77,7 +77,7 @@ func (h SaleInvoiceReturnHttp) RegisterHttp() {
 // @Router /transaction/sale-invoice-return [post]
 func (h SaleInvoiceReturnHttp) CreateSaleInvoiceReturn(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.SaleInvoiceReturn{}
@@ -93,7 +93,7 @@ func (h SaleInvoiceReturnHttp) CreateSaleInvoiceReturn(ctx microservice.IContext
 		return err
 	}
 
-	idx, docNo, err := h.svc.CreateSaleInvoiceReturn(shopID, authUsername, *docReq)
+	idx, docNo, err := h.svc.CreateSaleInvoiceReturn(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -121,7 +121,7 @@ func (h SaleInvoiceReturnHttp) CreateSaleInvoiceReturn(ctx microservice.IContext
 func (h SaleInvoiceReturnHttp) UpdateSaleInvoiceReturn(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -139,7 +139,7 @@ func (h SaleInvoiceReturnHttp) UpdateSaleInvoiceReturn(ctx microservice.IContext
 		return err
 	}
 
-	err = h.svc.UpdateSaleInvoiceReturn(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateSaleInvoiceReturn(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -165,12 +165,12 @@ func (h SaleInvoiceReturnHttp) UpdateSaleInvoiceReturn(ctx microservice.IContext
 // @Router /transaction/sale-invoice-return/{id} [delete]
 func (h SaleInvoiceReturnHttp) DeleteSaleInvoiceReturn(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteSaleInvoiceReturn(shopID, id, authUsername)
+	err := h.svc.DeleteSaleInvoiceReturn(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -196,7 +196,7 @@ func (h SaleInvoiceReturnHttp) DeleteSaleInvoiceReturn(ctx microservice.IContext
 // @Router /transaction/sale-invoice-return [delete]
 func (h SaleInvoiceReturnHttp) DeleteSaleInvoiceReturnByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -209,7 +209,7 @@ func (h SaleInvoiceReturnHttp) DeleteSaleInvoiceReturnByGUIDs(ctx microservice.I
 		return err
 	}
 
-	err = h.svc.DeleteSaleInvoiceReturnByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteSaleInvoiceReturnByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -234,12 +234,12 @@ func (h SaleInvoiceReturnHttp) DeleteSaleInvoiceReturnByGUIDs(ctx microservice.I
 // @Router /transaction/sale-invoice-return/{id} [get]
 func (h SaleInvoiceReturnHttp) InfoSaleInvoiceReturn(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get SaleInvoiceReturn %v", id)
-	doc, err := h.svc.InfoSaleInvoiceReturn(shopID, id)
+	doc, err := h.svc.InfoSaleInvoiceReturn(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -265,11 +265,11 @@ func (h SaleInvoiceReturnHttp) InfoSaleInvoiceReturn(ctx microservice.IContext) 
 // @Router /transaction/sale-invoice-return/code/{code} [get]
 func (h SaleInvoiceReturnHttp) InfoSaleInvoiceReturnByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoSaleInvoiceReturnByCode(shopID, code)
+	doc, err := h.svc.InfoSaleInvoiceReturnByCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -295,7 +295,7 @@ func (h SaleInvoiceReturnHttp) InfoSaleInvoiceReturnByCode(ctx microservice.ICon
 // @Router /transaction/sale-invoice-return/last-pos-docno [get]
 func (h SaleInvoiceReturnHttp) GetLastPOSDocNo(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	posID := ctx.QueryParam("posid")
 	maxDocNo := ctx.QueryParam("maxdocno")
@@ -305,7 +305,7 @@ func (h SaleInvoiceReturnHttp) GetLastPOSDocNo(ctx microservice.IContext) error 
 		return nil
 	}
 
-	doc, err := h.svc.GetLastPOSDocNo(shopID, posID, maxDocNo)
+	doc, err := h.svc.GetLastPOSDocNo(holdingCode, posID, maxDocNo)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -340,13 +340,13 @@ func (h SaleInvoiceReturnHttp) GetLastPOSDocNo(ctx microservice.IContext) error 
 // @Router /transaction/sale-invoice-return [get]
 func (h SaleInvoiceReturnHttp) SearchSaleInvoiceReturnPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
 	filters := h.searchFilter(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.SearchSaleInvoiceReturn(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchSaleInvoiceReturn(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -383,7 +383,7 @@ func (h SaleInvoiceReturnHttp) SearchSaleInvoiceReturnPage(ctx microservice.ICon
 // @Router /transaction/sale-invoice-return/list [get]
 func (h SaleInvoiceReturnHttp) SearchSaleInvoiceReturnStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -391,7 +391,7 @@ func (h SaleInvoiceReturnHttp) SearchSaleInvoiceReturnStep(ctx microservice.ICon
 
 	filters := h.searchFilter(ctx.QueryParam)
 
-	docList, total, err := h.svc.SearchSaleInvoiceReturnStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchSaleInvoiceReturnStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -419,7 +419,7 @@ func (h SaleInvoiceReturnHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -431,7 +431,7 @@ func (h SaleInvoiceReturnHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

@@ -14,8 +14,8 @@ type MockRepository struct {
 	mock.Mock
 }
 
-func (mock *MockRepository) Get(shopID string, docNo string) (*models.TransactionPaymentDetail, error) {
-	args := mock.Called(shopID, docNo)
+func (mock *MockRepository) Get(holdingCode string, docNo string) (*models.TransactionPaymentDetail, error) {
+	args := mock.Called(holdingCode, docNo)
 
 	return args.Get(0).(*models.TransactionPaymentDetail), args.Error(1)
 }
@@ -25,13 +25,13 @@ func (mock *MockRepository) Create(doc models.TransactionPaymentDetail) error {
 	return args.Error(0)
 }
 
-func (mock *MockRepository) Update(shopID string, docNo string, doc models.TransactionPaymentDetail) error {
-	args := mock.Called(shopID, docNo, doc)
+func (mock *MockRepository) Update(holdingCode string, docNo string, doc models.TransactionPaymentDetail) error {
+	args := mock.Called(holdingCode, docNo, doc)
 	return args.Error(0)
 }
 
-func (mock *MockRepository) Delete(shopID string, docNo string, doc models.TransactionPaymentDetail) error {
-	args := mock.Called(shopID, docNo, doc)
+func (mock *MockRepository) Delete(holdingCode string, docNo string, doc models.TransactionPaymentDetail) error {
+	args := mock.Called(holdingCode, docNo, doc)
 	return args.Error(0)
 }
 

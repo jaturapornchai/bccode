@@ -7,11 +7,11 @@ import (
 )
 
 type IPurchaseDebitNoteTransactionPostgresRepository interface {
-	Get(shopID string, docNo string) (*models.PurchaseDebitNoteTransactionPG, error)
+	Get(holdingCode string, docNo string) (*models.PurchaseDebitNoteTransactionPG, error)
 	Create(doc models.PurchaseDebitNoteTransactionPG) error
-	Update(shopID string, docNo string, doc models.PurchaseDebitNoteTransactionPG) error
-	Delete(shopID string, docNo string, doc models.PurchaseDebitNoteTransactionPG) error
-	DeleteData(shopID string, docNo string, doc models.PurchaseDebitNoteTransactionPG) error
+	Update(holdingCode string, docNo string, doc models.PurchaseDebitNoteTransactionPG) error
+	Delete(holdingCode string, docNo string, doc models.PurchaseDebitNoteTransactionPG) error
+	DeleteData(holdingCode string, docNo string, doc models.PurchaseDebitNoteTransactionPG) error
 }
 
 type PurchaseDebitNoteTransactionRepository struct {
@@ -37,10 +37,10 @@ func (repo PurchaseDebitNoteTransactionRepository) Create(doc models.PurchaseDeb
 	return nil
 }
 
-func (repo PurchaseDebitNoteTransactionRepository) Update(shopID string, docNo string, doc models.PurchaseDebitNoteTransactionPG) error {
+func (repo PurchaseDebitNoteTransactionRepository) Update(holdingCode string, docNo string, doc models.PurchaseDebitNoteTransactionPG) error {
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"shopid": shopID,
-		"docno":  docNo,
+		"holding_code": holdingCode,
+		"docno":        docNo,
 	})
 
 	if err != nil {
@@ -49,11 +49,11 @@ func (repo PurchaseDebitNoteTransactionRepository) Update(shopID string, docNo s
 	return nil
 }
 
-func (repo *PurchaseDebitNoteTransactionRepository) DeleteData(shopID string, docNo string, doc models.PurchaseDebitNoteTransactionPG) error {
+func (repo *PurchaseDebitNoteTransactionRepository) DeleteData(holdingCode string, docNo string, doc models.PurchaseDebitNoteTransactionPG) error {
 	var details *[]models.PurchaseDebitNoteTransactionDetailPG
 	tx := repo.pst.DBClient().Begin()
 
-	tx.Model(&models.PurchaseDebitNoteTransactionDetailPG{}).Where(" shopid=? AND docno=?", shopID, docNo).Find(&details)
+	tx.Model(&models.PurchaseDebitNoteTransactionDetailPG{}).Where(" holding_code=? AND docno=?", holdingCode, docNo).Find(&details)
 	for _, tmp := range *details {
 		// mark delete
 		err := tx.Delete(&models.PurchaseDebitNoteTransactionDetailPG{}, tmp.ID).Error
@@ -63,7 +63,7 @@ func (repo *PurchaseDebitNoteTransactionRepository) DeleteData(shopID string, do
 		}
 	}
 	// mark delete header
-	err := tx.Delete(&models.PurchaseDebitNoteTransactionPG{}, "shopid=? AND docno=?", shopID, docNo).Error
+	err := tx.Delete(&models.PurchaseDebitNoteTransactionPG{}, "holding_code=? AND docno=?", holdingCode, docNo).Error
 	if err != nil {
 		tx.Rollback()
 		return err

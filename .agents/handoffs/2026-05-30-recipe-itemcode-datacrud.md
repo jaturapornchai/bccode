@@ -30,7 +30,7 @@ Source locations to check:
 Payload for `POST /api/product-barcode`:
 ```json
 {
-  "shopid": "...",
+  "holding_code": "...",
   "barcode": "RECIPE-001",
   "itemcode": "RECIPE-001",
   "names": [{"code": "th", "name": "..."}],

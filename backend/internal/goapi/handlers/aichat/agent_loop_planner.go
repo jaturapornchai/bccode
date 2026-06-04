@@ -78,13 +78,13 @@ const (
 
 // RunAgentLoopPlanner — entry point ที่ใช้แทน RunAgentLoopV2 / RunAgentReAct
 func RunAgentLoopPlanner(ctx context.Context, req AgentV2Request, emitSSE func(SSEEvent)) (*AgentChatResponse, error) {
-	shopID := req.ShopID
-	sessionKey := BuildSessionKey(shopID, req.SessionID)
+	holdingCode := req.HoldingCode
+	sessionKey := BuildSessionKey(holdingCode, req.SessionID)
 	logger.Info("[Planner] session_key=%s", sessionKey)
 
-	providers := aiprovider.GetShopAIProviders(shopID)
+	providers := aiprovider.GetShopAIProviders(holdingCode)
 	if len(providers) == 0 {
-		return nil, fmt.Errorf("ไม่มี AI Provider สำหรับ shop=%s", shopID)
+		return nil, fmt.Errorf("ไม่มี AI Provider สำหรับ shop=%s", holdingCode)
 	}
 
 	mcpServer := mcp.GetDefaultServer()
@@ -129,7 +129,7 @@ func RunAgentLoopPlanner(ctx context.Context, req AgentV2Request, emitSSE func(S
 	var executed []ExecutedQuery
 	if len(plan.Queries) > 0 {
 		emitSSE(SSEEvent{Type: "status", Data: fmt.Sprintf("ค้นข้อมูล %d แหล่ง...", len(plan.Queries))})
-		executed = runExecutor(ctx, mcpServer, shopID, sessionKey, plan.Queries, emitSSE)
+		executed = runExecutor(ctx, mcpServer, holdingCode, sessionKey, plan.Queries, emitSSE)
 	}
 
 	// -------- Phase 3: Synthesizer --------
@@ -271,7 +271,7 @@ func sanitizeQueries(queries []QueryPlanItem) []QueryPlanItem {
 func runExecutor(
 	parentCtx context.Context,
 	mcpServer *mcp.MCPServer,
-	shopID, sessionKey string,
+	holdingCode, sessionKey string,
 	queries []QueryPlanItem,
 	emitSSE func(SSEEvent),
 ) []ExecutedQuery {
@@ -285,11 +285,11 @@ func runExecutor(
 			ctx, cancel := context.WithTimeout(parentCtx, executorPerQueryTO)
 			defer cancel()
 
-			// inject shop_id
+			// inject holding_code
 			if item.Args == nil {
 				item.Args = map[string]any{}
 			}
-			item.Args["shop_id"] = shopID
+			item.Args["holding_code"] = holdingCode
 
 			started := time.Now()
 			emitSSE(SSEEvent{Type: "tool_start", Data: map[string]any{

@@ -371,7 +371,7 @@ audit_barcode_without_item_code	ตรวจสอบ Barcode ที่ไม่
 audit_barcode_without_item_code_header	** ตรวจสอบบาร์โค้ดที่ไม่มีรหัสสินค้า **	** Audit Barcode Without Item Code **	** 审核没有物料代码的条形码 **	** 商品コードなしのバーコード監査 **	** ត្រួតពិនិត្យបាកូដគ្មានលេខកូដផលិតផល **	** 상품 코드 없는 바코드 감사 **	** ກວດສອບບາກູດທີ່ບໍ່ມີລະຫັດສິນຄ້າ **	** ပစ္စည်းကုဒ်မပါဘဲ ဘားကုဒ်ကို စိစစ်ပါ **	** Kiểm toán mã vạch không có mã sản phẩm **	** Audit Barcode Without Item Code **	** Audit Barcode Without Item Code **	** Audit Barcode Without Item Code **
 audit_barcode_without_item_code_no_error	ตรวจสอบบาร์โค้ดที่ไม่มีรหัสสินค้า ไม่พบข้อผิดพลาด	Audit Barcode Without Item Code - No Errors Found	审核没有物料代码的条形码 - 未发现错误	商品コードなしのバーコード監査 - エラーなし	ត្រួតពិនិត្យបាកូដគ្មានលេខកូដផលិតផល - មិនមានកំហុស	상품 코드 없는 바코드 감사 - 오류 없음	ກວດສອບບາກູດທີ່ບໍ່ມີລະຫັດສິນຄ້າ ບໍ່ພົບຄວາມຜິດພາດ	ပစ္စည်းကုဒ်မပါဘဲ ဘားကုဒ်ကို စိစစ်ပါ - အမှားမတွေ့ရှိပါ	Kiểm toán mã vạch không có mã sản phẩm - Không tìm thấy lỗi	Audit Barcode Without Item Code - No Errors Found	Audit Barcode Without Item Code - No Errors Found	Audit Barcode Without Item Code - No Errors Found
 audit_check_cost_table	ตรวจสอบตารางต้นทุนสินค้า	Check Product Cost Table	Check Product Cost Table	Check Product Cost Table	Check Product Cost Table	Check Product Cost Table	Check Product Cost Table	Check Product Cost Table	Check Product Cost Table	Check Product Cost Table	Check Product Cost Table	Check Product Cost Table
-audit_data	ตรวจสอบข้อมูล	Audit Data	审计数据	データ監査	សវនកម្មទិន្នន័យ	데이터 감사	ກວດສອບຂໍ້ມູນ	ဒေတာစစ်ဆေးခြင်း	Kiểm tra dữ liệu	Audit Data	Audit Data	Audit Data
+audit_data	ตรวจข้อมูล	Check Data	检查数据	データ確認	ពិនិត្យទិន្នន័យ	데이터 확인	ກວດຂໍ້ມູນ	ဒေတာစစ်ဆေးခြင်း	Kiểm tra dữ liệu	Check Data	Check Data	Check Data
 audit_match	ตรงกัน	Match	Match	Match	Match	Match	Match	Match	Match	Match	Match	Match
 audit_not_match	ไม่ตรงกัน	Not Match	Not Match	Not Match	Not Match	Not Match	Not Match	Not Match	Not Match	Not Match	Not Match	Not Match
 audit_product	ตรวจนับสินค้า	Product Audit	Product Audit	Product Audit	Product Audit	Product Audit	Product Audit	Product Audit	Product Audit	Product Audit	Product Audit	Product Audit
@@ -724,7 +724,7 @@ christian	คริสต์ศักราช	Christian Era	公历	西暦	គ�
 christian_era	คริสต์ศักราช (ค.ศ.)	Christian Era (A.D.)	公元	西暦	គ្រិស្តសករាជ	서력기원	ສາກົນ	ခရစ်နှစ်	Công nguyên	Christian Era (A.D.)	Christian Era (A.D.)	Christian Era (A.D.)
 christian_era_short	ค.ศ.	A.D.	公元	西暦	គ.ស.	서기	ຄ.ສ.	ခရစ်နှစ်	C.N.	A.D.	A.D.	A.D.
 citizen_id	รหัสบัตรประชาชน	Citizen ID	身份证号码	国民ID	អត្តសញ្ញាណប័ណ្ណ	주민등록번호	ເລກບັດປະຊາຊົນ	မှတ်ပုံတင်နံပါတ်	Số CMND/CCCD	Citizen ID	Citizen ID	Citizen ID
-class	ระดับ	Level	级别	レベル	កម្រិត	레벨	ລະດັບ	အဆင့်	Cấp độ	Level	Level	Level
+class	ระดับสินค้า	Product Level	商品等级	商品レベル	កម្រិតផលិតផល	상품 등급	ລະດັບສິນຄ້າ	ကုန်ပစ္စည်းအဆင့်	Cấp độ hàng hóa	Product Level	Product Level	Product Level
 class_code	รหัสระดับ	Level Code	级别代码	レベルコード	លេខកូដកម្រិត	레벨 코드	ລະຫັດລະດັບ	အဆင့်ကုဒ်	Mã cấp độ	Level Code	Level Code	Level Code
 class_codes	รหัสคลาส	Class Code	班级代码	クラスコード	លេខកូដថ្នាក់	클래스 코드	ລະຫັດຫ້ອງຮຽນ	အတန်းကုဒ်	Mã lớp	Class Code	Class Code	Class Code
 class_name	ชื่อระดับ	Level Name	级别名称	レベル名	ឈ្មោះកម្រិត	레벨 이름	ຊື່ລະດັບ	အဆင့်အမည်	Tên cấp độ	Level Name	Level Name	Level Name
@@ -890,7 +890,7 @@ creator_access_cannot_be_disabled	ไม่สามารถปิดสิท�
 creator_always_enabled	ผู้สร้างเข้าใช้งานได้ตลอด	Creator can always access	创建者始终可以访问	作成者は常にアクセスできます	អ្នកបង្កើតអាចចូលប្រើបានជានិច្ច	작성자는 항상 접속할 수 있습니다	ຜູ້ສ້າງເຂົ້າໃຊ້ງານໄດ້ຕະຫຼອດ	ဖန်တီးသူသည် အမြဲဝင်ရောက်နိုင်သည်	Người tạo luôn có thể truy cập	Pencipta sentiasa boleh akses	Pembuat selalu dapat mengakses	Palaging maaaring maka-access ang gumawa
 creator_cannot_delete	ผู้สร้างไม่สามารถลบได้	Creator cannot be deleted	创建者不能被删除	作成者は削除できません	មិនអាចលុបអ្នកបង្កើតបានទេ	작성자는 삭제할 수 없습니다	ບໍ່ສາມາດລົບຜູ້ສ້າງໄດ້	ဖန်တီးသူကို ဖျက်၍မရပါ	Không thể xóa người tạo	Pencipta tidak boleh dipadam	Pembuat tidak dapat dihapus	Hindi maaaring burahin ang gumawa
 cost	ต้นทุน	Cost	Cost	Cost	Cost	Cost	Cost	Cost	Cost	Cost	Cost	Cost
-cost_calculation_test_result	ผลการทดสอบคำนวณต้นทุน			
+cost_calculation_test_result	ผลการทดสอบคำนวณต้นทุน
 cost_center	ศูนย์ต้นทุน	Cost Center	成本中心	コストセンター	មជ្ឈមណ្ឌលថ្លៃដើម	비용 센터	ສູນຕົ້ນທຶນ	ကုန်ကျစရိတ်ဌာန	Trung tâm chi phí	Cost Calculation Test Result	Cost Calculation Test Result	Cost Calculation Test Result	Cost Calculation Test Result	Cost Calculation Test Result	Cost Calculation Test Result	Cost Calculation Test Result	Cost Calculation Test Result	Cost Center	Cost Center	Cost Center
 cost_center_code	รหัสศูนย์ต้นทุน	Cost Center Code	成本中心代码	コストセンターコード	លេខកូដមជ្ឈមណ្ឌលដើមទុន	비용센터 코드	ລະຫັດສູນຕົ້ນທຶນ	ကုန်ကျစရိတ်ဌာနကုဒ်	Mã trung tâm chi phí	Cost Center Code	Cost Center Code	Cost Center Code
 cost_center_name	ชื่อศูนย์ต้นทุน	Cost Center Name	成本中心名称	コストセンター名	ឈ្មោះមជ្ឈមណ្ឌលដើមទុន	비용센터 이름	ຊື່ສູນຕົ້ນທຶນ	ကုန်ကျစရိတ်ဌာနအမည်	Tên trung tâm chi phí	Cost Center Name	Cost Center Name	Cost Center Name
@@ -1064,7 +1064,7 @@ currency_name	ชื่อสกุลเงิน	Currency Name	货币名称	�
 currency_name_example	ดอลลาร์สหรัฐ, ยูโร, เยน เป็นต้น	US Dollar, Euro, Japanese Yen, etc.	US Dollar, Euro, Japanese Yen, etc.	US Dollar, Euro, Japanese Yen, etc.	US Dollar, Euro, Japanese Yen, etc.	US Dollar, Euro, Japanese Yen, etc.	US Dollar, Euro, Japanese Yen, etc.	US Dollar, Euro, Japanese Yen, etc.	US Dollar, Euro, Japanese Yen, etc.	US Dollar, Euro, Japanese Yen, etc.	US Dollar, Euro, Japanese Yen, etc.	US Dollar, Euro, Japanese Yen, etc.
 current_document	เอกสารปัจจุบัน	Current Document	当前文档	現在のドキュメント	ឯកសារបច្ចុប្បន្ន	현재 문서	ເອກະສານປັດຈຸບັນ	လက်ရှိစာရွက်စာတမ်း	Tài liệu hiện tại	Current Document	Current Document	Current Document
 current_shop	ร้านค้าปัจจุบัน	Current Shop	当前商店	現在の店舗	ហាងបច្ចុប្បន្ន	현재 매장	ຮ້ານຄ້າປັດຈຸບັນ	လက်ရှိဆိုင်	Cửa hàng hiện tại	Current Shop	Current Shop	Current Shop
-current_shop_id	Shop ID ปัจจุบัน:	Current Shop ID:	Current Shop ID:	Current Shop ID:	Current Shop ID:	Current Shop ID:	Current Shop ID:	Current Shop ID:	Current Shop ID:	Current Shop ID:	Current Shop ID:	Current Shop ID:
+current_holding_code	Holding Code ปัจจุบัน:	Current Holding Code:	Current Holding Code:	Current Holding Code:	Current Holding Code:	Current Holding Code:	Current Holding Code:	Current Holding Code:	Current Holding Code:	Current Holding Code:	Current Holding Code:	Current Holding Code:
 current_status	สถานะปัจจุบัน	Current Status	当前状态	現在のステータス	ស្ថានភាពបច្ចុប្បន្ន	현재 상태	ສະຖານະປັດຈຸບັນ	လက်ရှိအခြေအနေ	Trạng thái hiện tại	Current Status	Current Status	Current Status
 custom_form	ฟอร์มที่กำหนดเอง	Custom Form	Custom Form	Custom Form	Custom Form	Custom Form	Custom Form	Custom Form	Custom Form	Custom Form	Custom Form	Custom Form
 customer	ลูกค้า	Customer	客户	顧客	អតិថិជន	고객	ລູກຄ້າ	ဖောက်သည်	Khách hàng	Customer	Customer	Customer
@@ -1232,7 +1232,7 @@ description_section	รายละเอียด	Description Section	描述	�
 deselect_all_locations	ไม่เลือกที่เก็บสินค้าทั้งหมด	Deselect All Locations	取消选择所有位置	すべての場所の選択を解除	ដកការជ្រើសរើសទីតាំងទាំងអស់	모든 위치 선택 해제	ບໍ່ເລືອກສະຖານທີ່ທັງໝົດ	တည်နေရာအားလုံးကို ရွေးချယ်မှုပယ်ဖျက်ပါ	Bỏ chọn tất cả vị trí	Deselect All Locations	Deselect All Locations	Deselect All Locations
 deselect_all_warehouses	ไม่เลือกคลังสินค้าทั้งหมด	Deselect All Warehouses	取消选择所有仓库	すべての倉庫の選択を解除	ដកការជ្រើសរើសឃ្លាំងទាំងអស់	모든 창고 선택 해제	ບໍ່ເລືອກຄັງສິນຄ້າທັງໝົດ	ဂိုဒေါင်အားလုံးကို ရွေးချယ်မှုပယ်ဖျက်ပါ	Bỏ chọn tất cả kho hàng	Deselect All Warehouses	Deselect All Warehouses	Deselect All Warehouses
 deselect_category	ยกเลิกหมวด	Deselect Category	Deselect Category	Deselect Category	Deselect Category	Deselect Category	Deselect Category	Deselect Category	Deselect Category	Deselect Category	Deselect Category	Deselect Category
-design	รูปทรง	Shape	形状	形状	រាង	모양	ຮູບຊົງ	ပုံသဏ္ဍာန်	Hình dạng	Shape	Shape	Shape
+design	รูปทรงสินค้า	Product Shape	商品形状	商品の形状	រូបរាងផលិតផល	상품 모양	ຮູບຊົງສິນຄ້າ	ကုန်ပစ္စည်းပုံသဏ္ဌာန်	Hình dáng hàng hóa	Product Shape	Product Shape	Product Shape
 design_code	รหัสรูปทรง	Shape Code	形状代码	形状コード	កូដរាង	모양 코드	ລະຫັດຮູບຊົງ	ပုံသဏ္ဍာန်ကုဒ်	Mã hình dạng	Shape Code	Shape Code	Shape Code
 design_codes	รหัสดีไซน์	Design Code	设计代码	デザインコード	កូដរចនា	디자인 코드	ລະຫັດດີໄຊ	ဒီဇိုင်းကုဒ်	Mã thiết kế	Design Code	Design Code	Design Code
 design_form	ออกแบบฟอร์ม	Design Form	设计表单	フォームを設計	រចនាទម្រង់	양식 디자인	ອອກແບບຟອມ	ပုံစံဒီဇိုင်း	Thiết kế biểu mẫu	Design Form	Design Form	Design Form
@@ -1469,7 +1469,7 @@ error_process_document	เกิดข้อผิดพลาดในการ
 error_rows	แถวที่ผิดพลาด	Error Rows	错误行	エラー行	ជួរដេកកំហុស	오류 행	ແຖວທີ່ຜິດພາດ	အမှားအတန်းများ	Hàng lỗi	Error Rows	Error Rows	Error Rows
 error_saving	เกิดข้อผิดพลาดในการบันทึก	Error saving	Error saving	Error saving	Error saving	Error saving	Error saving	Error saving	Error saving	Error saving	Error saving	Error saving
 error_selecting_file	เกิดข้อผิดพลาดในการเลือกไฟล์	Error selecting file	选择文件时出错	ファイル選択エラー	កំហុសក្នុងការជ្រើសរើសឯកសារ	파일 선택 오류	ເກີດຂໍ້ຜິດພາດໃນການເລືອກໄຟລ໌	ဖိုင် ရွေးချယ်ရာတွင် အမှားဖြစ်သည်	Lỗi khi chọn tệp	Error selecting file	Error selecting file	Error selecting file
-error_sending_request	เกิดข้อผิดพลาดในการส่งคำขอ: 	Error sending request: 	发送请求时出错: 	リクエスト送信エラー: 	កំហុសក្នុងការផ្ញើសំណើ: 	요청 전송 오류: 	ເກີດຂໍ້ຜິດພາດໃນການສົ່ງຄຳຂໍ: 	တောင်းဆိုမှုပို့ရာတွင် အမှားအယွင်း: 	Lỗi khi gửi yêu cầu: 	Error sending request: 	Error sending request: 	Error sending request: 
+error_sending_request	เกิดข้อผิดพลาดในการส่งคำขอ: 	Error sending request: 	发送请求时出错: 	リクエスト送信エラー: 	កំហុសក្នុងការផ្ញើសំណើ: 	요청 전송 오류: 	ເກີດຂໍ້ຜິດພາດໃນການສົ່ງຄຳຂໍ: 	တောင်းဆိုမှုပို့ရာတွင် အမှားအယွင်း: 	Lỗi khi gửi yêu cầu: 	Error sending request: 	Error sending request: 	Error sending request:
 error_update_data	เกิดข้อผิดพลาดในการอัพเดทข้อมูล	Error updating data	更新数据时出错	データ更新エラー	កំហុសក្នុងការធ្វើបច្ចុប្បន្នភាពទិន្នន័យ	데이터 업데이트 오류	ເກີດຂໍ້ຜິດພາດໃນການອັບເດດຂໍ້ມູນ	ဒေတာအဆင့်မြှင့်တင်မှုအမှား	Lỗi cập nhật dữ liệu	Error updating data	Error updating data	Error updating data
 error_with_detail	เกิดข้อผิดพลาด	Error occurred	发生错误	エラーが発生しました	កំហុសបានកើតឡើង	오류가 발생했습니다	ເກີດຂໍ້ຜິດພາດ	အမှားအယွင်း ဖြစ်ပွားသည်	Đã xảy ra lỗi	Error occurred	Error occurred	Error occurred
 errors	ผิดพลาด	Errors	错误	エラー	កំហុស	오류	ຂໍ້ຜິດພາດ	အမှားများ	Lỗi	Errors	Errors	Errors
@@ -1811,7 +1811,7 @@ go_to_permission_definition	กรุณาไปที่หน้ากำห�
 good_return	รับคืนสินค้า	Receive Product Return	接收退货	返品を受け取る	ទទួលការສົ່ງຄືນផលិតផល	반품 수령	ຮັບຄືນສິນຄ້າ	ကုန်ပစ္စည်းပြန်အမ်းမှုကို လက်ခံပါ	Nhận hàng trả lại	Receive Product Return	Receive Product Return	Receive Product Return
 goods_issue	ใบเบิกสินค้า	Goods Issue	出库单	出庫伝票	វិក្កយបត្រចេញទំនិញ	출고	ໃບເບີກສິນຄ້າ	ကုန်ပစ္စည်းထုတ်ပေးခြင်း	Phiếu xuất kho	Goods Issue	Goods Issue	Goods Issue
 goods_receive	ใบรับสินค้า	Goods Receive	入库单	入庫伝票	វិក្កយបត្រទទួលទំនិញ	입고	ໃບຮັບສິນຄ້າ	ကုန်ပစ္စည်းလက်ခံခြင်း	Phiếu nhập kho	Goods Receive	Goods Receive	Goods Receive
-grade	เกรด	Grade	等级	グレード	ថ្នាក់	등급	ເກຣດ	အဆင့်	Hạng	Grade	Grade	Grade
+grade	เกรดสินค้า	Product Grade	商品等级	商品グレード	ថ្នាក់ផលិតផល	상품 등급	ເກຣດສິນຄ້າ	ကုန်ပစ္စည်းအဆင့်	Hạng hàng hóa	Product Grade	Product Grade	Product Grade
 grade_code	รหัสเกรด	Grade Code	等级代码	グレードコード	កូដថ្នាក់	등급 코드	ລະຫັດເກຣດ	အဆင့်ကုဒ်	Mã hạng	Grade Code	Grade Code	Grade Code
 grade_codes	รหัสเกรด	Grade Code	等级代码	グレードコード	កូដថ្នាក់	등급 코드	ລະຫັດເກຣດ	အဆင့်ကုဒ်	Mã hạng	Grade Code	Grade Code	Grade Code
 grade_name	ชื่อเกรด	Grade Name	等级名称	グレード名	ឈ្មោះថ្នាក់	등급 이름	ຊື່ເກຣດ	အဆင့်အမည်	Tên hạng	Grade Name	Grade Name	Grade Name
@@ -1897,7 +1897,7 @@ import_mode_description	คุณต้องการตรวจสอบข�
 import_points_error	เกิดข้อผิดพลาดในการ Import แต้ม	Error importing points	导入积分时出错	ポイントインポートエラー	កំហុសក្នុងការនាំចូលពិន្ទុ	포인트 가져오기 오류	ເກີດຂໍ້ຜິດພາດໃນການນຳເຂົ້າແຕ້ມ	အမှတ်ထည့်သွင်းရာတွင် အမှားဖြစ်ပါသည်	Lỗi khi nhập điểm	Error importing points	Error importing points	Error importing points
 import_points_failed	นำเข้าแต้มไม่สำเร็จ	Import points failed	Import points failed	Import points failed	Import points failed	Import points failed	Import points failed	Import points failed	Import points failed	Import points failed	Import points failed	Import points failed
 import_points_success	นำเข้าแต้มสำเร็จ	Import points success	Import points success	Import points success	Import points success	Import points success	Import points success	Import points success	Import points success	Import points success	Import points success	Import points success
-import_product	นำเข้าสินค้า	Import Product	导入商品	商品をインポート	នាំចូលផលិតផល	상품 가져오기	ນຳເຂົ້າສິນຄ້າ	ကုန်ပစ္စည်းတင်သွင်းပါ	Nhập sản phẩm	Import Product	Import Product	Import Product
+import_product	นำเข้ารายการสินค้า	Import Product List	导入商品列表	商品リストをインポート	នាំចូលបញ្ជីផលិតផល	상품 목록 가져오기	ນຳເຂົ້າລາຍການສິນຄ້າ	ကုန်ပစ္စည်းစာရင်းတင်သွင်း	Nhập danh sách hàng hóa	Import Product List	Import Product List	Import Product List
 import_product_balance	นำเข้าสินค้ายกมา	Import Beginning Inventory	导入期初库存	期首在庫をインポート	នាំចូលសារពើភ័ណ្ឌដើមគ្រា	기초 재고 가져오기	ນຳເຂົ້າສິນຄ້າຍົກມາ	စာရင်းဖွင့်ကုန်ပစ္စည်းတင်သွင်းပါ	Nhập tồn kho đầu kỳ	Import Beginning Inventory	Import Beginning Inventory	Import Beginning Inventory
 import_product_data	นำเข้าข้อมูลสินค้า	Import Product Data	导入产品数据	商品データインポート	នាំចូលទិន្នន័យផលិតផល	제품 데이터 가져오기	ນຳເຂົ້າຂໍ້ມູນສິນຄ້າ	ထုတ်ကုန်ဒေတာတင်သွင်းရန်	Nhập dữ liệu sản phẩm	Import Product Data	Import Product Data	Import Product Data
 import_product_detail.all	ทั้งหมด	All	全部	すべて	ទាំងអស់	전체	ທັງໝົດ	အားလုံး	Tất cả	All	All	All
@@ -2024,7 +2024,7 @@ item_no_multiple_units_or_not_found	ไม่มีหลายหน่วย�
 item_not_found	ไม่พบสินค้า	Product Not Found	未找到产品	商品が見つかりません	រកមិនឃើញផលិតផល	상품을 찾을 수 없음	ບໍ່ພົບສິນຄ້າ	ကုန်ပစ္စည်းမတွေ့ပါ	Không tìm thấy sản phẩm	Product Not Found	Product Not Found	Product Not Found
 item_order	ลำดับ	Order	序号	順序	លំដាប់	순서	ລຳດັບ	အစဉ်	Thứ tự	Order	Order	Order
 item_reference_code	รหัสสินค้าอ้างอิง	Item Reference Code	物品参考代码	商品参照コード	លេខកូដផលិតផលយោង	품목 참조 코드	ລະຫັດສິນຄ້າອ້າງອິງ	ပစ္စည်းရည်ညွှန်းကုဒ်	Mã tham chiếu sản phẩm	Item Reference Code	Item Reference Code	Item Reference Code
-item_type												
+item_type
 itemcode	รหัสสินค้า	Product Code	产品代码	商品コード	លេខកូដផលិតផល	상품 코드	ລະຫັດສິນຄ້າ	ကုန်ပစ္စည်းကုဒ်	Mã sản phẩm	Product Code	Product Code	Product Code
 items	รายการ	items	项目	項目	ធាតុ	항목	ລາຍການ	အရာများ	mục	items	items	items
 items_count	จำนวนรายการ	Items Count	项目数	アイテム数	ចំនួនមុខទំនិញ	항목 수	ຈຳນວນລາຍການ	ပစ္စည်းအရေအတွက်	Số lượng mục	Items Count	Items Count	Items Count
@@ -2247,7 +2247,7 @@ mcp_readonly_desc	ดูข้อมูลอย่างเดียว	Read-on
 mcp_readonly_description	ดูข้อมูลอย่างเดียว — เหมาะกับ Claude Desktop	Read only — suitable for Claude Desktop	Read only — suitable for Claude Desktop	Read only — suitable for Claude Desktop	Read only — suitable for Claude Desktop	Read only — suitable for Claude Desktop	Read only — suitable for Claude Desktop	Read only — suitable for Claude Desktop	Read only — suitable for Claude Desktop	Read only — suitable for Claude Desktop	Read only — suitable for Claude Desktop	Read only — suitable for Claude Desktop
 mcp_readwrite_desc	อ่าน+เขียน ทุก tool	Read+Write all tools	读写所有工具	すべてのツールの読み書き	អាន+សរសេរឧបករណ៍ទាំងអស់	모든 도구 읽기+쓰기	ອ່ານ+ຂຽນ ທຸກ tool	tools အားလုံး ဖတ်+ရေး	Đọc+Ghi tất cả công cụ	Read+Write all tools	Read+Write all tools	Read+Write all tools
 mcp_readwrite_description	อ่าน+เขียน ทุก tool — เหมาะกับ backend dev	Read+Write all tools — suitable for backend dev	Read+Write all tools — suitable for backend dev	Read+Write all tools — suitable for backend dev	Read+Write all tools — suitable for backend dev	Read+Write all tools — suitable for backend dev	Read+Write all tools — suitable for backend dev	Read+Write all tools — suitable for backend dev	Read+Write all tools — suitable for backend dev	Read+Write all tools — suitable for backend dev	Read+Write all tools — suitable for backend dev	Read+Write all tools — suitable for backend dev
-mcp_token	MCP Token	MCP Token	MCP Token	MCP Token	MCP Token	MCP Token	MCP Token	MCP Token	MCP Token	MCP Token	MCP Token	MCP Token
+mcp_token	รหัสเชื่อมผู้ช่วย AI	AI Assistant Access Key	AI助手访问密钥	AIアシスタント接続キー	សោភ្ជាប់ជំនួយការ AI	AI 도우미 접속 키	ລະຫັດເຊື່ອມຜູ້ຊ່ວຍ AI	AI အကူချိတ်ဆက်ကုဒ်	Khóa kết nối trợ lý AI	AI Assistant Access Key	AI Assistant Access Key	AI Assistant Access Key
 mcp_usage_guide	วิธีใช้: สร้าง API Key → คัดลอก Config → วางใน claude_desktop_config.json	How to use: Create API Key → Copy Claude Desktop config → Paste into config file	使用方法：创建 API Key → 复制 Claude Desktop 配置 → 粘贴到配置文件中即可使用	使い方：API キーを作成 → Claude Desktop 設定をコピー → 設定ファイルに貼り付け	របៀបប្រើ: បង្កើតសោ API → ចម្លងការកំណត់ Claude Desktop → បិទភ្ជាប់ក្នុងឯកសារកំណត់	사용 방법: API 키 생성 → Claude Desktop 설정 복사 → 설정 파일에 붙여넣기	ວິທີໃຊ້: ສ້າງກະແຈ API → ສຳເນົາການຕັ້ງຄ່າ Claude Desktop → ວາງໃນໄຟລ໌ການຕັ້ງຄ່າ	အသုံးပြုနည်း: API သော့ဖန်တီးပါ → Claude Desktop ဆက်တင်ကူးယူပါ → ဆက်တင်ဖိုင်တွင်ကူးထည့်ပါ	Cách sử dụng: Tạo API Key → Sao chép cấu hình Claude Desktop → Dán vào tệp cấu hình	How to use: Create API Key → Copy Claude Desktop config → Paste into config file	How to use: Create API Key → Copy Claude Desktop config → Paste into config file	How to use: Create API Key → Copy Claude Desktop config → Paste into config file
 member_only	เฉพาะลูกค้าสมาชิก	Member Only	仅限会员	会員のみ	សម្រាប់តែសមាជិក	회원 전용	ສະເພາະສະມາຊິກ	အသင်းဝင်များသာ	Chỉ dành cho thành viên	Member Only	Member Only	Member Only
 member_point_label	คะแนนสะสมสมาชิก	Member Point Accumulation	会员积分	会員ポイント累積	ការប្រមូលពិន្ទុសមាជិក	회원 포인트 적립	ຄະແນນສະສົມສະມາຊິກ	အသင်းဝင်အမှတ်စုဆောင်း	Tích điểm thành viên	Member Point Accumulation	Member Point Accumulation	Member Point Accumulation
@@ -2267,13 +2267,13 @@ minimum_amount	ยอดขั้นต่ำ	Minimum	最低	最低	អប្ប
 minimum_purchase_amount	ยอดซื้อขั้นต่ำ	Minimum Purchase	最低消费	最低購入額	ការទិញអប្បបរមា	최소 구매	ຍອດຊື້ຂັ້ນຕ່ຳ	အနည်းဆုံးဝယ်ယူငွေ	Mua tối thiểu	Minimum Purchase	Minimum Purchase	Minimum Purchase
 minus	ลด	Minus	减	マイナス	ដក	빼기	ລົບ	နှုတ်	Trừ	Minus	Minus	Minus
 minutes	นาที	Minutes	Minutes	Minutes	Minutes	Minutes	Minutes	Minutes	Minutes	Minutes	Minutes	Minutes
-model	รุ่น	Model	型号	モデル	ម៉ូដែល	모델	ຮຸ່ນ	မော်ဒယ်	Mẫu	Model	Model	Model
+model	รุ่นสินค้า	Product Model	商品型号	商品モデル	ម៉ូដែលផលិតផល	상품 모델	ຮຸ່ນສິນຄ້າ	ကုန်ပစ္စည်းမော်ဒယ်	Mẫu hàng hóa	Product Model	Product Model	Product Model
 model_code	รหัสรุ่น	Model Code	型号代码	モデルコード	លេខកូដម៉ូដែល	모델 코드	ລະຫັດຮຸ່ນ	မော်ဒယ်ကုဒ်	Mã mẫu	Model Code	Model Code	Model Code
 model_codes	รหัสโมเดล	Model Code	型号代码	モデルコード	លេខកូដម៉ូដែល	모델 코드	ລະຫັດໂມເດວ	မော်ဒယ်ကုဒ်	Mã mẫu	Model Code	Model Code	Model Code
 model_name	ชื่อรุ่น	Model Name	型号名称	モデル名	ឈ្មោះម៉ូដែល	모델명	ຊື່ຮຸ່ນ	မော်ဒယ်အမည်	Tên mẫu	Model Name	Model Name	Model Name
 mom_comparison	เปรียบเทียบเดือนต่อเดือน	Month-over-Month Comparison	月度对比	月次比較	ប្រៀបធៀបខែចេញខែ	월간 비교	ປຽບທຽບເດືອນຕໍ່ເດືອນ	လအလိုက်နှိုင်းယှဉ်မှု	So sánh tháng	Month-over-Month Comparison	Month-over-Month Comparison	Month-over-Month Comparison
 monday	วันจันทร์	Monday	星期一	月曜日	ថ្ងៃច័ន្ទ	월요일	ວັນຈັນ	တနင်္လာနေ့	Thứ Hai	Monday	Monday	Monday
-money												
+money
 money_change	เงินทอน	Change	找零	お釣り	ប្រាក់អាប់	거스름돈	ເງິນທອນ	အမ်ပြန်	Tiền thối	Change	Change	Change
 money_end_day	เงินเข้าสิ้นวัน	End of Day Settlement	日终入账	日末入金	ប្រាក់ចូលចុងថ្ងៃ	당일 마감 입금	ເງິນເຂົ້າສິ້ນວັນ	နေ့ကုန်ငွေဝင်	Tiền vào cuối ngày	End of Day Settlement	End of Day Settlement	End of Day Settlement
 money_next_day	เงินเข้าวันถัดไป	Next Day Payment	次日入账	翌日入金	ប្រាក់ចូលថ្ងៃបន្ទាប់	익일 입금	ເງິນເຂົ້າວັນຖັດໄປ	နောက်နေ့ငွေဝင်	Tiền vào ngày hôm sau	Next Day Payment	Next Day Payment	Next Day Payment
@@ -2306,7 +2306,7 @@ must	ต้องเลือก	Must Select	必选	必須選択	ត្រូវ
 must_select_approval_role_first	ต้องเลือกบทบาทการอนุมัติก่อน	Must select approval role first	必须先选择审批角色	まず承認役割を選択してください	ត្រូវជ្រើសរើសតួនាទីអនុម័តជាមុន	먼저 승인 역할을 선택해야 합니다	ຕ້ອງເລືອກບົດບາດການອະນຸມັດກ່ອນ	ခွင့်ပြုချက်အခန်းကဏ္ဍကို အရင်ရွေးပါ	Phải chọn vai trò phê duyệt trước	Must select approval role first	Must select approval role first	Must select approval role first
 my_form	ฟอร์มของฉัน	My Form	My Form	My Form	My Form	My Form	My Form	My Form	My Form	My Form	My Form	My Form
 name	ชื่อ	Name	姓名	名前	ឈ្មោះ	이름	ຊື່	အမည်	Tên	Name	Name	Name
-name_1_prefix	ชื่อ 1 :  	Name 1:  	名称 1:  	名前 1：	ឈ្មោះ 1 :  	이름 1:  	ຊື່ 1 :  	အမည် 1 :  	Tên 1:  	Name 1:  	Name 1:  	Name 1:  
+name_1_prefix	ชื่อ 1 :  	Name 1:  	名称 1:  	名前 1：	ឈ្មោះ 1 :  	이름 1:  	ຊື່ 1 :  	အမည် 1 :  	Tên 1:  	Name 1:  	Name 1:  	Name 1:
 name_order_station	ชื่อเครื่อง Order Station	Order Station Name	点餐台名称	オーダーステーション名	ឈ្មោះស្ថានីយកម្ម៉ង់	주문 스테이션 이름	ຊື່ເຄື່ອງສັ່ງອາຫານ	အော်ဒါစက်အမည်	Tên trạm đặt hàng	Order Station Name	Order Station Name	Order Station Name
 namepdtype	ชื่อประเภทสินค้า	Product Type Name	产品类型名称	商品タイプ名	ឈ្មោះប្រភេទផលិតផល	제품 유형 이름	ຊື່ປະເພດສິນຄ້າ	ကုန်ပစ္စည်းအမျိုးအစားအမည်	Tên loại sản phẩm	Product Type Name	Product Type Name	Product Type Name
 near_out_of_stock	เตือนเมื่อสินค้าใกล้หมด (เหลือต่ำกว่าจุดผลิต)	Alert when product is near out of stock (below reorder point)	产品快没货时提醒（低于再订货点）	商品の在庫が少なくなったときに通知（再発注点を下回る）	ជូនដំណឹងនៅពេលផលិតផលជិតអស់ស្តុក (ក្រោមចំណុចកុម្ម៉ង់ឡើងវិញ)	상품 재고 부족 시 알림 (재주문 시점 미만)	ເຕືອນເມື່ອສິນຄ້າໃກ້ໝົດ (ເຫຼືອຕ່ຳກວ່າຈຸດສັ່ງຊື້)	ကုန်ပစ္စည်းပြတ်လုနီးပါးဖြစ်သောအခါ သတိပေးပါ (ပြန်လည်မှာယူသည့်အမှတ်အောက်)	Cảnh báo khi sản phẩm gần hết hàng (dưới điểm đặt hàng lại)	Alert when product is near out of stock (below reorder point)	Alert when product is near out of stock (below reorder point)	Alert when product is near out of stock (below reorder point)
@@ -2510,7 +2510,7 @@ or	หรือ	Or	或	または	ឬ	또는	ຫຼື	သို့မဟုတ�
 order	รายการ	Order	订单	注文	ការបញ្ជាទិញ	주문	ລາຍການ	အော်ဒါ	Đơn hàng	Order	Order	Order
 order_code	หมายเลข Order Station	Order Station Number	点餐台编号	オーダーステーション番号	លេខស្ថានីយបញ្ជាទិញ	주문 스테이션 번호	ໝາຍເລກ Order Station	အော်ဒါစခန်းနံပါတ်	Số trạm đặt hàng	Order Station Number	Order Station Number	Order Station Number
 org_master_data	ข้อมูลองค์กร	Organization Master Data	组织主数据	組織マスターデータ	ទិន្នន័យចម្បងរបស់អង្គភាព	조직 마스터 데이터	ຂໍ້ມູນຫຼັກອົງກອນ	အဖွဲ့အစည်းမာစတာဒေတာ	Dữ liệu chính tổ chức	Organization Master Data	Organization Master Data	Organization Master Data
-order_setting	กำหนดเครื่อง Order Station	Order Station Setting	点餐台设置	オーダーステーション設定	ការកំណត់ស្ថានីយបញ្ជាទិញ	주문 스테이션 설정	ກຳນົດເຄື່ອງ Order Station	အော်ဒါစခန်းသတ်မှတ်ချက်	Cài đặt trạm đặt hàng	Order Station Setting	Order Station Setting	Order Station Setting
+order_setting	ตั้งค่าการสั่งอาหาร	Ordering Settings	点餐设置	注文設定	ការកំណត់ការបញ្ជាទិញ	주문 설정	ຕັ້ງຄ່າການສັ່ງອາຫານ	အော်ဒါဆက်တင်	Cài đặt đặt món	Ordering Settings	Ordering Settings	Ordering Settings
 order_setting_code	รหัสเครื่อง Order Station	Order Station Code	点餐台代码	オーダーステーションコード	កូដស្ថានីយបញ្ជាទិញ	주문 스테이션 코드	ລະຫັດເຄື່ອງ Order Station	အော်ဒါစခန်းကုဒ်	Mã trạm đặt hàng	Order Station Code	Order Station Code	Order Station Code
 order_setting_doc_format	รูปแบบเลขที่เอกสาร	Document Number Format	文档编号格式	ドキュメント番号形式	ទម្រង់លេខឯកសារ	문서 번호 형식	ຮູບແບບເລກທີເອກະສານ	စာရွက်စာတမ်းနံပါတ်ပုံစံ	Định dạng số tài liệu	Document Number Format	Document Number Format	Document Number Format
 order_station_id_already_exists	รหัสเครื่อง Order Stationซ้ำ	Order Station ID already exists	点餐台ID已存在	オーダーステーションIDは既に存在します	លេខសម្គាល់ស្ថានីយបញ្ជាទិញមានរួចហើយ	주문 스테이션 ID가 이미 존재합니다	ລະຫັດເຄື່ອງ Order Station ຊ້ຳ	အော်ဒါစခန်း ID ရှိပြီးသားဖြစ်သည်	ID trạm đặt hàng đã tồn tại	Order Station ID already exists	Order Station ID already exists	Order Station ID already exists
@@ -2550,8 +2550,8 @@ partially_received	ยังรับไม่ครบ	Partially Received	Parti
 parent_project	โครงการหลัก	Parent Project	主项目	親プロジェクト	គម្រោងមេ	상위 프로젝트	ໂຄງການຫຼັກ	မူဘောင်စီမံကိန်း	Dự án cha	Parent Project	Parent Project	Parent Project
 pass_book	เลขที่บัญชี	Account Number	帐号	口座番号	លេខគណនី	계좌 번호	ເລກບັນຊີ	အကောင့်နံပါတ်	Số tài khoản	Account Number	Account Number	Account Number
 pass_book_branch	สาขาธนาคาร	Bank Branch	银行分行	銀行支店	សាខាធនាគារ	은행 지점	ສາຂາທະນາຄານ	ဘဏ်ခွဲ	Chi nhánh ngân hàng	Bank Branch	Bank Branch	Bank Branch
-passbook												
-passbook_code												
+passbook
+passbook_code
 passed	ผ่าน	Passed	通过	合格	ជាប់	통과	ຜ່ານ	အောင်	Đạt	Passed	Passed	Passed
 password	รหัสผ่าน	Password	密码	パスワード	ពាក្យសម្ងាត់	비밀번호	ລະຫັດຜ່ານ	စကားဝှက်	Mật khẩu	Password	Password	Password
 pattern	รูปแบบสินค้า	Product Pattern	产品款式	製品パターン	គំរូផលិតផល	제품 패턴	ຮູບແບບສິນຄ້າ	ကုန်ပစ္စည်းပုံစံ	Mẫu sản phẩm	Product Pattern	Product Pattern	Product Pattern
@@ -2763,7 +2763,7 @@ point_balance	แต้มคงเหลือ	Point Balance	Point Balance	Poin
 point_code_label	รหัสแต้ม:	Point Code:	Point Code:	Point Code:	Point Code:	Point Code:	Point Code:	Point Code:	Point Code:	Point Code:	Point Code:	Point Code:
 point_multiplier	ตัวคูณแต้ม	Point Multiplier	积分倍数	ポイント倍率	មេគុណពិន្ទុ	포인트 배수	ຕົວຄູນແຕ້ມ	အမှတ်မြှောက်ကိန်း	Hệ số nhân điểm	Point Multiplier	Point Multiplier	Point Multiplier
 point_redemption_example	ตัวอย่างการแลกแต้ม	Point redemption example	积分兑换示例	ポイント交換例	ឧទាហរណ៍នៃការប្តូរពិន្ទុ	포인트 교환 예시	ຕົວຢ່າງການແລກແຕ້ມ	အမှတ်လဲလှယ်မှုဥပမာ	Ví dụ đổi điểm	Point redemption example	Point redemption example	Point redemption example
-point_setting	กำหนดแต้มสะสม	Point Setting	积分设置	ポイント設定	ការកំណត់ពិន្ទុ	Point Setting	ກໍານົດຄະແນນສະສົມ	အမှတ်သတ်မှတ်ခြင်း	Cài đặt điểm	Point Setting	Point Setting	Point Setting
+point_setting	ตั้งค่าคะแนนสะสม	Reward Point Settings	积分设置	ポイント設定	ការកំណត់ពិន្ទុរង្វាន់	리워드 포인트 설정	ຕັ້ງຄ່າຄະແນນສະສົມ	အမှတ်ဆု ဆက်တင်	Cài đặt điểm thưởng	Reward Point Settings	Reward Point Settings	Reward Point Settings
 point_system	ระบบแต้มสะสม	Point System	积分系统	ポイントシステム	ប្រព័ន្ធពិន្ទុ	포인트 시스템	ລະບົບແຕ້ມສະສົມ	အမှတ်စနစ်	Hệ thống điểm	Point System	Point System	Point System
 point_system_description	จัดการการตั้งค่าระบบแต้มสะสมสำหรับลูกค้า	Manage point system configuration for customers	管理客户积分系统配置	顧客のポイントシステム設定を管理する	គ្រប់គ្រងការកំណត់ប្រព័ន្ធពិន្ទុសម្រាប់អតិថិជន	고객을 위한 포인트 시스템 구성 관리	ຈັດການການຕັ້ງຄ່າລະບົບແຕ້ມສະສົມສຳລັບລູກຄ້າ	ဖောက်သည်များအတွက် အမှတ်စနစ်ပုံစံသတ်မှတ်ခြင်းကို စီမံခန့်ခွဲပါ	Quản lý cấu hình hệ thống điểm cho khách hàng	Manage point system configuration for customers	Manage point system configuration for customers	Manage point system configuration for customers
 point_transaction.add_points	เพิ่มแต้ม	Add Points	添加积分	ポイントを追加	បន្ថែមពិន្ទុ	포인트 추가	ເພີ່ມແຕ້ມ	အမှတ်ထည့်ပါ	Thêm điểm	Add Points	Add Points	Add Points
@@ -2788,7 +2788,7 @@ pos	ขายหน้าร้าน	Storefront Sales	店面销售	店頭販売
 pos_cash_management	การรับเงิน POS	POS Cash Management	POS现金管理	POSキャッシュ管理	ការគ្រប់គ្រងសាច់ប្រាក់ POS	POS 현금 관리	ການຈັດການເງິນສົດ POS	POS ငွေသားစီမံခန့်ခွဲမှု	Quản lý tiền mặt POS	POS Cash Management	POS Cash Management	POS Cash Management
 pos_id	POS ID	POS ID	POS ID	POS ID	POS ID	POS ID	POS ID	POS ID	POS ID	POS ID	POS ID	POS ID
 pos_id_cannot_be_empty	POS ID ไม่สามารถเป็นค่าว่างได้	POS ID cannot be empty	POS ID cannot be empty	POS ID cannot be empty	POS ID cannot be empty	POS ID cannot be empty	POS ID cannot be empty	POS ID cannot be empty	POS ID cannot be empty	POS ID cannot be empty	POS ID cannot be empty	POS ID cannot be empty
-pos_media	สื่อโฆษณา	Advertising Media	广告媒体	広告メディア	មេឌៀផ្សាយពាណិជ្ជកម្ម	광고 매체	ສື່ໂຄສະນາ	ကြော်ငြာမီဒီယာ	Phương tiện quảng cáo	Advertising Media	Advertising Media	Advertising Media
+pos_media	รูป/สื่อหน้าจอขาย	Point of Sale Media	销售屏幕媒体	販売画面メディア	មេឌៀអេក្រង់លក់	판매 화면 미디어	ຮູບ/ສື່ໜ້າຈໍຂາຍ	အရောင်းမျက်နှာပြင်မီဒီယာ	Ảnh/phương tiện màn hình bán hàng	Point of Sale Media	Point of Sale Media	Point of Sale Media
 pos_media_code	รหัสสื่อโฆษณา	Advertising Media Code	广告媒体代码	広告メディアコード	កូដមេឌៀផ្សាយពាណិជ្ជកម្ម	광고 매체 코드	ລະຫັດສື່ໂຄສະນາ	ကြော်ငြာမီဒီယာကုဒ်	Mã phương tiện quảng cáo	Advertising Media Code	Advertising Media Code	Advertising Media Code
 pos_media_name	ชื่อสื่อโฆษณา	Advertising Media Name	广告媒体名称	広告メディア名	ឈ្មោះមេឌៀផ្សាយពាណិជ្ជកម្ម	광고 매체 이름	ຊື່ສື່ໂຄສະນາ	ကြော်ငြာမီဒီယာအမည်	Tên phương tiện quảng cáo	Advertising Media Name	Advertising Media Name	Advertising Media Name
 pos_media_search	ค้นหาสื่อโฆษณา	Search Advertising Media	搜索广告媒体	広告メディアを検索	ស្វែងរកមេឌៀផ្សាយពាណិជ្ជកម្ម	광고 매체 검색	ຄົ້ນຫາສື່ໂຄສະນາ	ကြော်ငြာမီဒီယာရှာဖွေပါ	Tìm kiếm phương tiện quảng cáo	Search Advertising Media	Search Advertising Media	Search Advertising Media
@@ -2797,7 +2797,7 @@ pos_only	POS เท่านั้น	POS Only	POS Only	POS Only	POS Only	POS On
 pos_receive_money	รับเงิน POS	POS Receive Money	POS收款	POS入金	POS ទទួលប្រាក់	POS 입금	ຮັບເງິນ POS	POS ငွေလက်ခံ	POS nhận tiền	POS Receive Money	POS Receive Money	POS Receive Money
 pos_screen	หน้าจอขาย	Sale Screen	销售屏幕	販売画面	អេក្រង់លក់	판매 화면	ໜ້າຈໍຂາຍ	အရောင်းမျက်နှာပြင်	Màn hình bán hàng	Sale Screen	Sale Screen	Sale Screen
 pos_send_money	ส่งเงิน POS	POS Send Money	POS出款	POS出金	POS ផ្ញើប្រាក់	POS 출금	ສົ່ງເງິນ POS	POS ငွေထုတ်ပေး	POS gửi tiền	POS Send Money	POS Send Money	POS Send Money
-pos_setting	กำหนดรหัสเครื่อง POS	Set POS Machine Code	设置POS机代码	POSマシンコード設定	កំណត់កូដម៉ាស៊ីន POS	POS 기기 코드 설정	ກຳນົດລະຫັດເຄື່ອງ POS	POS စက်ကုဒ်သတ်မှတ်ပါ	Thiết lập mã máy POS	Set POS Machine Code	Set POS Machine Code	Set POS Machine Code
+pos_setting	ตั้งค่าเครื่องขายหน้าร้าน (POS)	Point of Sale Settings	销售终端设置	販売端末設定	ការកំណត់ម៉ាស៊ីនលក់មុខហាង	판매 단말 설정	ຕັ້ງຄ່າເຄື່ອງຂາຍໜ້າຮ້ານ (POS)	ဆိုင်ရှေ့အရောင်းစက် ဆက်တင်	Cài đặt máy bán hàng (POS)	Point of Sale Settings	Point of Sale Settings	Point of Sale Settings
 pos_setting_code	รหัสเครื่อง POS	POS Machine Code	POS机代码	POSマシンコード	កូដម៉ាស៊ីន POS	POS 기기 코드	ລະຫັດເຄື່ອງ POS	POS စက်ကုဒ်	Mã máy POS	POS Machine Code	POS Machine Code	POS Machine Code
 pos_setting_devicenumber	หมายเลขเครื่อง	Machine Number	机器号码	マシン番号	លេខម៉ាស៊ីន	기기 번호	ໝາຍເລກເຄື່ອງ	စက်နံပါတ်	Số máy	Machine Number	Machine Number	Machine Number
 pos_setting_doccode	รหัสเอกสาร	Document Code	文档代码	ドキュメントコード	កូដឯកសារ	문서 코드	ລະຫັດເອກະສານ	စာရွက်စာတမ်းကုဒ်	Mã tài liệu	Document Code	Document Code	Document Code
@@ -2846,7 +2846,7 @@ price_member	ราคาสมาชิก	Member price	会员价格	会員価�
 price_min	ราคาต่ำสุด	Min Price	最低价	最低価格	តម្លៃអប្បបរមា	최저가	ລາຄາຕ່ຳສຸດ	အနိမ့်ဆုံးစျေး	Giá tối thiểu	Min Price	Min Price	Min Price
 price_must_not_be_negative	ราคาต้องไม่ติดลบ	Price must not be negative	价格不能为负数	価格はマイナスにできません	តម្លៃមិនអាចអវិជ្ជមាន	가격은 음수가 될 수 없습니다	ລາຄາຕ້ອງບໍ່ຕິດລົບ	စျေးနှုန်းသည် အနုတ်မဖြစ်ရ	Giá không được âm	Price must not be negative	Price must not be negative	Price must not be negative
 price_per_unit	ราคาต่อหน่วย	Price per Unit	单价	単価	តម្លៃក្នុងមួយឯកតា	단가	ລາຄາຕໍ່ຫົວໜ່ວຍ	တစ်ယူနစ်ဈေးနှုန်း	Giá mỗi đơn vị	Price per Unit	Price per Unit	Price per Unit
-price_prefix	ราคา : + 	Price: + 	价格：+ 	価格：+ 	តម្លៃ : + 	가격: + 	ລາຄາ : + 	စျေးနှုန်း : + 	Giá: + 	Price: + 	Price: + 	Price: + 
+price_prefix	ราคา : + 	Price: + 	价格：+ 	価格：+ 	តម្លៃ : + 	가격: + 	ລາຄາ : + 	စျေးနှုန်း : + 	Giá: + 	Price: + 	Price: + 	Price: +
 price_retail	ราคาขายปลีก	Retail Price	Retail Price	Retail Price	Retail Price	Retail Price	Retail Price	Retail Price	Retail Price	Retail Price	Retail Price	Retail Price
 price_sale	ราคาขาย	Sale Price	销售价格	販売価格	តម្លៃលក់	판매 가격	ລາຄາຂາຍ	အရောင်းစျေးနှုန်း	Giá bán	Sale Price	Sale Price	Sale Price
 price_update	แก้ราคา	Update Price	确定价格	Update Price	Update Price	Update Price	ອັບເດດລາຄາ	Update Price	Update Price	Update Price	Update Price	Update Price
@@ -2905,8 +2905,12 @@ product_amount	รวมทั้งสิ้น	Total Amount	总金额	合計�
 product_barcode	บาร์โค้ดสินค้า	Product Barcode	Product Barcode	Product Barcode	Product Barcode	Product Barcode	Product Barcode	Product Barcode	Product Barcode	Product Barcode	Product Barcode	Product Barcode
 product_bom	สูตรผลิต	Product BOM	产品BOM	製品BOM	BOM ផលិតផល	제품 BOM	ສູດການຜະລິດ	ထုတ်ကုန် BOM	BOM sản phẩm	Product BOM	Product BOM	Product BOM
 product_boom	สูตรผลิต	Product Recipe	产品配方	製品レシピ	រូបមន្តផលិតផល	제품 레시피	ສູດສິນຄ້າ	ထုတ်ကုန်ချက်ပြုတ်နည်း	Công thức sản phẩm	Product Recipe	Product Recipe	Product Recipe
-product_category	หมวดสินค้า	Product Category	产品类别	製品カテゴリ	ប្រភេទផលិតផល	제품 카테고리	ໝວດສິນຄ້າ	ထုတ်ကုန်အမျိုးအစား	Danh mục sản phẩm	Product Category	Product Category	Product Category
-product_category_list	จัดสินค้าในหมวดสินค้า	Product Category List	产品类别列表	製品カテゴリリスト	បញ្ជីប្រភេទផលិតផល	제품 카테고리 목록	ລາຍການໝວດສິນຄ້າ	ထုတ်ကုန်အမျိုးအစားစာရင်း	Danh sách danh mục sản phẩm	Product Category List	Product Category List	Product Category List
+product_category	จัดหมวดสินค้า	Product Categories	商品分类	商品カテゴリ	រៀបចំប្រភេទផលិតផល	상품 분류	ຈັດໝວດສິນຄ້າ	ကုန်ပစ္စည်းအမျိုးအစားစီမံ	Tổ chức danh mục hàng hóa	Product Categories	Product Categories	Product Categories
+product_category_list	สินค้าในหมวด	Products in Category	类别中的产品	カテゴリ内の商品	ផលិតផលក្នុងប្រភេទ	카테고리 내 제품	ສິນຄ້າໃນໝວດ	အမျိုးအစားထဲရှိကုန်ပစ္စည်းများ	Sản phẩm trong danh mục	Produk dalam Kategori	Produk dalam Kategori	Mga Produkto sa Kategorya
+product_attribute_category	คุณลักษณะสินค้า	Product Attributes	商品属性	商品属性	លក្ខណៈផលិតផល	상품 속성	ຄຸນລັກສະນະສິນຄ້າ	ကုန်ပစ္စည်းအင်္ဂါရပ်	Thuộc tính hàng hóa	Product Attributes	Product Attributes	Product Attributes
+product_color	สีสินค้า	Product Color	产品颜色	商品カラー	ពណ៌ផលិតផល	제품 색상	ສີສິນຄ້າ	ကုန်ပစ္စည်းအရောင်	Màu sản phẩm	Warna Produk	Warna Produk	Kulay ng Produkto
+product_size	ไซซ์/ขนาดสินค้า	Product Size	商品尺码/尺寸	商品サイズ	ទំហំផលិតផល	상품 사이즈	ໄຊຊ໌/ຂະໜາດສິນຄ້າ	ကုန်ပစ္စည်းဆိုဒ်/အရွယ်အစား	Kích cỡ hàng hóa	Product Size	Product Size	Product Size
+product_variant_matrix	ชุดตัวเลือกสินค้า	Product Option Sets	商品选项组合	商品オプションセット	ชุดជម្រើសផលិតផល	상품 옵션 세트	ຊຸດຕົວເລືອກສິນຄ້າ	ကုန်ပစ္စည်းရွေးချယ်မှုชุด	Bộ tùy chọn hàng hóa	Product Option Sets	Product Option Sets	Product Option Sets
 product_category_name	ชื่อหมวดสินค้า	Product Category Name	产品类别名称	製品カテゴリ名	ឈ្មោះប្រភេទផលិតផល	제품 카테고리 이름	ຊື່ໝວດສິນຄ້າ	ထုတ်ကုန်အမျိုးအစားအမည်	Tên danh mục sản phẩm	Product Category Name	Product Category Name	Product Category Name
 product_code	รหัสสินค้า	Product Code	产品代码	製品コード	កូដផលិតផល	제품 코드	ລະຫັດສິນຄ້າ	ထုတ်ကုန်ကုဒ်	Mã sản phẩm	Product Code	Product Code	Product Code
 product_code_not_specified	รหัสสินค้าไม่ระบุ	Product Code Not Specified	Product Code Not Specified	Product Code Not Specified	Product Code Not Specified	Product Code Not Specified	Product Code Not Specified	Product Code Not Specified	Product Code Not Specified	Product Code Not Specified	Product Code Not Specified	Product Code Not Specified
@@ -2930,7 +2934,7 @@ product_details_price_baht	ราคา (บาท)	Price (Baht)	价格（泰铢
 product_details_price_history	ประวัติการเปลี่ยนแปลงราคา	Price History	价格变更历史	価格変更履歴	ប្រវត្តិការផ្លាស់ប្តូរតម្លៃ	가격 변경 이력	ປະຫວັດການປ່ຽນແປງລາຄາ	စျေးနှုန်းပြောင်းလဲမှုမှတ်တမ်း	Lịch sử thay đổi giá	Price History	Price History	Price History
 product_details_price_level	ระดับราคา	Price Level	价格等级	価格レベル	កម្រិតតម្លៃ	가격 레벨	ລະດັບລາຄາ	စျေးနှုန်းအဆင့်	Cấp giá	Price Level	Price Level	Price Level
 product_details_select_product	กรุณาเลือกสินค้า	Please select a product	请选择产品	商品を選択してください	សូមជ្រើសរើសផលិតផល	상품을 선택하세요	ກະລຸນາເລືອກສິນຄ້າ	ကုန်ပစ္စည်းရွေးချယ်ပါ	Vui lòng chọn sản phẩm	Please select a product	Please select a product	Please select a product
-product_dimension	มิติสินค้า	Product Dimension	产品尺寸	製品寸法	វិមាត្រផលិតផល	제품 치수	ມິຕິສິນຄ້າ	ထုတ်ကုန်အတိုင်းအတာ	Kích thước sản phẩm	Product Dimension	Product Dimension	Product Dimension
+product_dimension	ขนาด/มิติสินค้า	Product Dimensions	商品尺寸	商品の寸法	ទំហំ/វិមាត្រផលិតផល	상품 치수	ຂະໜາດ/ມິຕິສິນຄ້າ	ကုန်ပစ္စည်းအတိုင်းအတာ	Kích thước hàng hóa	Product Dimensions	Product Dimensions	Product Dimensions
 product_dimension_name	ชื่อมิติสินค้า	Product Dimension Name	产品尺寸名称	製品寸法名	ឈ្មោះវិមាត្រផលិតផល	제품 치수 이름	ຊື່ມິຕິສິນຄ້າ	ထုတ်ကုန်အတိုင်းအတာအမည်	Tên kích thước sản phẩm	Product Dimension Name	Product Dimension Name	Product Dimension Name
 product_discount	ส่วนลด	Product discount	折扣	割引	បញ្ចុះតម្លៃ	할인	ສ່ວນຫຼຸດ	လျှော့စျေး	Giảm giá	Product discount	Product discount	Product discount
 product_duplicate	สินค้าซ้ำในไฟล์นำเข้า	Duplicate Product in Import File	导入文件中的产品重复	インポートファイルの製品が重複しています	ផលិតផលស្ទួននៅក្នុងឯកសារនាំចូល	가져오기 파일에 중복된 제품이 있습니다	ສິນຄ້າຊ້ຳກັນໃນໄຟລ໌ນຳເຂົ້າ	တင်သွင်းဖိုင်တွင် ထုတ်ကုန်ထပ်နေသည်	Sản phẩm trùng lặp trong tệp nhập	Duplicate Product in Import File	Duplicate Product in Import File	Duplicate Product in Import File
@@ -3116,14 +3120,14 @@ qr_code_order	สร้าง QR CODE Order Station	Create Order Station QR Code
 qr_name	ชื่อ QR	QR name	QR name	QR name	QR name	QR name	QR name	QR name	QR name	QR name	QR name	QR name
 qr_not_found	ไม่พบ QR	QR not found	未找到QR	QRが見つかりません	រកមិនឃើញ QR	QR을 찾을 수 없습니다	ບໍ່ພົບ QR	QR မတွေ့ပါ	Không tìm thấy QR	QR not found	QR not found	QR not found
 qr_payment	จ่ายด้วย QR	QR payment	QR payment	QR payment	QR payment	QR payment	QR payment	QR payment	QR payment	QR payment	QR payment	QR payment
-qr_provider	ผู้ให้บริการคิวอาร์โค๊ด	QR provider	QR provider	QR provider	QR provider	QR provider	QR provider	QR provider	QR provider	QR provider	QR provider	QR provider
+qr_provider	ผู้ให้บริการรับเงิน QR	QR Payment Provider	QR收款服务商	QR決済サービス	អ្នកផ្តល់សេវាទូទាត់ QR	QR 결제 제공자	ຜູ້ໃຫ້ບໍລິການຮັບເງິນ QR	QR ငွေလက်ခံဝန်ဆောင်မှု	Đơn vị nhận tiền QR	QR Payment Provider	QR Payment Provider	QR Payment Provider
 qr_type	ประเภท QR Wallet	QR Wallet Type	二维码类型 钱包	QRウォレットタイプ	ប្រភេទកាបូប QR	QR 지갑 유형	ປະເພດກະເປົາເງິນ QR	QR ပိုက်ဆံအိတ်အမျိုးအစား	Loại ví QR	QR Wallet Type	QR Wallet Type	QR Wallet Type
 qrcode	คิวอาร์โค้ด	QR Code	二维码	QRコード	កូដ QR	QR 코드	QR Code	QR ကုដ	Mã QR	QR Code	QR Code	QR Code
 qrcode_code	รหัส	Code	代码	コード	កូដ	코드	ລະຫັດ	ကုဒ်	Mã	Code	Code	Code
 qrcode_list	รายการคิวอาร์โค้ด	QR Code List	二维码列表	QRコードリスト	បញ្ជីកូដ QR	QR 코드 목록	ລາຍການ QR Code	QR ကုដစာရင်း	Danh sách mã QR	QR Code List	QR Code List	QR Code List
 qrcode_order_food	QR Code สั่งอาหาร	QR Code Order Food	QR码点餐	QRコード注文	QR Code បញ្ជាម្ហូប	QR코드 음식 주문	QR Code ສັ່ງອາຫານ	QR Code အစားအစာ မှာယူ	QR Code đặt món	QR Code Order Food	QR Code Order Food	QR Code Order Food
 qty	จำนวน	quantity	数量	数量	ចំនួន	수량	ຈຳນວນ	အရေအတွက်	Số lượng	quantity	quantity	quantity
-qty1												
+qty1
 qty_free	จำนวนแถม	Free Quantity	赠送数量	無料数量	ចំនួនថែម	무료 수량	ຈຳນວນແຖມ	လက်ဆောင်အရေအတွက်	Số lượng tặng	Free Quantity	Free Quantity	Free Quantity
 qty_limit	จำนวนที่ต้องซื้อ	Quantity to purchase	Quantity to purchase	Quantity to purchase	Quantity to purchase	Quantity to purchase	Quantity to purchase	Quantity to purchase	Quantity to purchase	Quantity to purchase	Quantity to purchase	Quantity to purchase
 qty_minimum	จำนวนขั้นต่ำ	Minimum Quantity	最低数量	最小数量	ចំនួនអប្បបរមា	최소 수량	ຈຳນວນຂັ້ນຕ່ຳ	အနည်းဆုံးအရေအတွက်	Số lượng tối thiểu	Minimum Quantity	Minimum Quantity	Minimum Quantity
@@ -3154,10 +3158,10 @@ reason_required	เหตุผล (จำเป็น)	Reason (Required)	Reason
 rebuild_all	Rebuild ทั้งหมด	Rebuild All	全部重建	すべて再構築	Rebuild ទាំងអស់	전체 재구축	Rebuild ທັງໝົດ	အားလုံး Rebuild	Rebuild tất cả	Rebuild All	Rebuild All	Rebuild All
 rebuild_all_description	คำนวณยอดสต็อกใหม่ทั้งหมดจากเอกสาร	Recalculate all stock from documents	从文档重新计算所有库存	ドキュメントからすべての在庫を再計算	គណនាស្តុកទាំងអស់ឡើងវិញពីឯកសារ	문서에서 모든 재고 재계산	ຄຳນວນຍອດສະຕ໊ອກໃໝ່ທັງໝົດຈາກເອກະສານ	စာရွက်စာတမ်းများမှ ကုန်ပစ္စည်းအားလုံး ပြန်တွက်ပါ	Tính lại tất cả tồn kho từ chứng từ	Recalculate all stock from documents	Recalculate all stock from documents	Recalculate all stock from documents
 rebuild_all_subtitle	ลบยอดสต็อกเดิมและคำนวณใหม่ทั้งหมด	Delete existing stock and recalculate all	删除现有库存并全部重新计算	既存の在庫を削除してすべて再計算	លុបស្តុកដែលមានស្រាប់ និងគណនាឡើងវិញទាំងអស់	기존 재고 삭제 후 전체 재계산	ລຶບຍອດສະຕ໊ອກເກົ່າ ແລະ ຄຳນວນໃໝ່ທັງໝົດ	ရှိပြီးသား ကုန်ပစ္စည်း ဖျက်ပြီး အားလုံးပြန်တွက်ပါ	Xóa tồn kho hiện tại và tính lại tất cả	Delete existing stock and recalculate all	Delete existing stock and recalculate all	Delete existing stock and recalculate all
-rebuild_product_balance	ประมวลผลยอดคงเหลือ	Rebuild Product Balance	重新计算库存余额	在庫残高を再計算	គណនាសមតុល្យស្តុកឡើងវិញ	재고 잔액 재계산	ປະມວນຜົນຍອດຄົງເຫຼືອ	ကုန်ပစ္စည်းလက်ကျန် ပြန်တွက်ချက်	Tính lại số dư tồn kho	Rebuild Product Balance	Rebuild Product Balance	Rebuild Product Balance
+rebuild_product_balance	สร้างยอดคงเหลือใหม่	Rebuild Stock Balance	重新计算库存余额	在庫残高を再計算	គណនាសមតុល្យស្តុកឡើងវិញ	재고 잔액 재계산	ສ້າງຍອດຄົງເຫຼືອໃໝ່	ကုန်ပစ္စည်းလက်ကျန် ပြန်တွက်ချက်	Tính lại số dư tồn kho	Rebuild Stock Balance	Rebuild Stock Balance	Rebuild Stock Balance
 rebuild_product_balance_description	ประมวลผลยอดคงเหลือ ค้างรับ ค้างส่ง ของสินค้าทั้งหมดใหม่ จากข้อมูลเอกสารรายวัน ใบสั่งซื้อ และใบสั่งขาย	Recalculate all product balance, pending receive and pending send quantities from daily documents, purchase orders and sales orders	从日常单据、采购订单和销售订单重新计算所有产品的库存余额、待收和待发数量	日次伝票、発注書、受注書からすべての商品の在庫残高、入荷待ち、出荷待ち数量を再計算します	គណនាសមតុល្យស្តុក ចំនួនរង់ចាំទទួល និងរង់ចាំផ្ញើរបស់ផលិតផលទាំងអស់ឡើងវិញ ពីឯកសារប្រចាំថ្ងៃ បញ្ជាទិញ និងបញ្ជាលក់	일일 문서, 구매 주문 및 판매 주문에서 모든 제품의 재고 잔액, 미수량 및 미발송량을 재계산합니다	ປະມວນຜົນຍອດຄົງເຫຼືອ ຄ້າງຮັບ ຄ້າງສົ່ງ ຂອງສິນຄ້າທັງໝົດໃໝ່ ຈາກເອກະສານປະຈຳວັນ ໃບສັ່ງຊື້ ແລະ ໃບສັ່ງຂາຍ	နေ့စဉ်စာရွက်စာတမ်းများ၊ ဝယ်ယူမှာစာများ နှင့် ရောင်းချမှာစာများမှ ကုန်ပစ္စည်းအားလုံး၏ လက်ကျန်၊ လက်ခံရန်ကျန် နှင့် ပို့ရန်ကျန် ပြန်တွက်ချက်ပါ	Tính lại tất cả số dư tồn kho, chờ nhận và chờ gửi từ chứng từ hàng ngày, đơn đặt hàng mua và đơn đặt hàng bán	Recalculate all product balance, pending receive and pending send quantities from daily documents, purchase orders and sales orders	Recalculate all product balance, pending receive and pending send quantities from daily documents, purchase orders and sales orders	Recalculate all product balance, pending receive and pending send quantities from daily documents, purchase orders and sales orders
 rebuild_product_balance_warning	ระบบจะคำนวณยอดคงเหลือ ค้างรับ ค้างส่ง ของสินค้าทั้งหมดใหม่ กระบวนการนี้อาจใช้เวลาสักครู่	The system will recalculate all product balances, pending receive and pending send quantities. This may take a moment	系统将重新计算所有产品的库存余额、待收和待发数量。这可能需要一些时间	システムはすべての商品の在庫残高、入荷待ち、出荷待ちの数量を再計算します。しばらくお待ちください	ប្រព័ន្ធនឹងគណនាសមតុល្យស្តុក ចំនួនរង់ចាំទទួល និងរង់ចាំផ្ញើរបស់ផលិតផលទាំងអស់ឡើងវិញ ដំណើរការនេះអាចចំណាយពេលមួយរយៈ	시스템이 모든 제품의 재고 잔액, 미수량 및 미발송량을 재계산합니다. 잠시 시간이 걸릴 수 있습니다	ລະບົບຈະຄຳນວນຍອດຄົງເຫຼືອ ຍອດຄ້າງຮັບ ຄ້າງສົ່ງ ຂອງສິນຄ້າທັງໝົດໃໝ່ ຂະບວນການນີ້ອາດໃຊ້ເວລາສັກຄູ່	စနစ်သည် ကုန်ပစ္စည်းအားလုံး၏ လက်ကျန်၊ လက်ခံရန်ကျန် နှင့် ပို့ရန်ကျန် အရေအတွက်များကို ပြန်တွက်ချက်ပါမည်	Hệ thống sẽ tính lại tất cả số dư tồn kho, số lượng chờ nhận và chờ gửi. Quá trình này có thể mất một lúc	The system will recalculate all product balances, pending receive and pending send quantities. This may take a moment	The system will recalculate all product balances, pending receive and pending send quantities. This may take a moment	The system will recalculate all product balances, pending receive and pending send quantities. This may take a moment
-rebuild_products	สร้างสินค้าใหม่	Rebuild Products	重建产品	商品を再構築	កសាងផលិតផលឡើងវិញ	상품 재구축	ສ້າງສິນຄ້າໃໝ່	ကုန်ပစ္စည်းများပြန်တည်ဆောက်	Xây dựng lại sản phẩm	Rebuild Products	Rebuild Products	Rebuild Products
+rebuild_products	สร้างรายการสินค้าใหม่	Rebuild Product List	重建商品列表	商品リストを再作成	បង្កើតបញ្ជីផលិតផលឡើងវិញ	상품 목록 재생성	ສ້າງລາຍການສິນຄ້າໃໝ່	ကုန်ပစ္စည်းစာရင်းပြန်တည်ဆောက်	Tạo lại danh sách hàng hóa	Rebuild Product List	Rebuild Product List	Rebuild Product List
 rebuild_products_description	ระบบจะดึงข้อมูลสินค้าจาก MongoDB และสร้างใหม่ใน PostgreSQL และ ClickHouse	System will fetch product data from MongoDB and recreate in PostgreSQL and ClickHouse	系统将从MongoDB获取产品数据并在PostgreSQL和ClickHouse中重新创建	システムがMongoDBから商品データを取得し、PostgreSQLとClickHouseで再作成します	ប្រព័ន្ធនឹងទាញយកទិន្នន័យផលិតផលពី MongoDB ហើយបង្កើតឡើងវិញក្នុង PostgreSQL និង ClickHouse	시스템이 MongoDB에서 제품 데이터를 가져와 PostgreSQL 및 ClickHouse에서 재생성합니다	ລະບົບຈະດຶງຂໍ້ມູນສິນຄ້າຈາກ MongoDB ແລະ ສ້າງໃໝ່ໃນ PostgreSQL ແລະ ClickHouse	စနစ်သည် MongoDB မှ ကုန်ပစ္စည်းဒေတာကို ရယူပြီး PostgreSQL နှင့် ClickHouse တွင် ပြန်လည်ဖန်တီးပါမည်	Hệ thống sẽ lấy dữ liệu sản phẩm từ MongoDB và tạo lại trong PostgreSQL và ClickHouse	System will fetch product data from MongoDB and recreate in PostgreSQL and ClickHouse	System will fetch product data from MongoDB and recreate in PostgreSQL and ClickHouse	System will fetch product data from MongoDB and recreate in PostgreSQL and ClickHouse
 rebuild_products_warning	กระบวนการนี้อาจใช้เวลาสักครู่ ห้ามปิดหน้าจอขณะกำลังประมวลผล	This process may take a moment. Do not close the screen during processing	此过程可能需要一些时间。处理期间请勿关闭屏幕	この処理には時間がかかる場合があります。処理中は画面を閉じないでください	ដំណើរការនេះអាចចំណាយពេលមួយរយៈ កុំបិទអេក្រង់ក្នុងពេលដំណើរការ	이 프로세스는 시간이 걸릴 수 있습니다. 처리 중에는 화면을 닫지 마세요	ຂະບວນການນີ້ອາດໃຊ້ເວລາສັກຄູ່ ຫ້າມປິດໜ້າຈໍຂະນະກຳລັງປະມວນຜົນ	ဤလုပ်ငန်းစဉ် အချိန်အနည်းငယ် ကြာနိုင်သည် လုပ်ဆောင်နေစဉ် မျက်နှာပြင် မပိတ်ပါနှင့်	Quá trình này có thể mất một lúc. Không đóng màn hình trong khi xử lý	This process may take a moment. Do not close the screen during processing	This process may take a moment. Do not close the screen during processing	This process may take a moment. Do not close the screen during processing
 receipt	ใบเสร็จรับเงิน	Receipt	收据	領収書	បង្កាន់ដៃ	영수증	ໃບຮັບເງິນ	ပြေစာ	Hóa đơn	Receipt	Receipt	Receipt
@@ -3192,7 +3196,7 @@ receivelist_total_value	รวมมูลค่า	Total Value	总金额	合計
 receivelist_transaction_type	ประเภทรายการ	Transaction Type	交易类型	取引種類	ប្រភេទប្រតិបត្តិការ	거래 유형	ປະເພດລາຍການ	ငွေစာရင်းအမျိုးအစား	Loại giao dịch	Transaction Type	Transaction Type	Transaction Type
 receivelist_type	ประเภท	Type	类型	種類	ប្រភេទ	유형	ປະເພດ	အမျိုးအစား	Loại	Type	Type	Type
 receivelist_value	มูลค่า	Value	金额	金額	តម្លៃ	금액	ມູນຄ່າ	တန်ဖိုး	Giá trị	Value	Value	Value
-receivemoney			
+receivemoney
 receiver	ผู้รับ	Receiver	接收方	受信者	អ្នកទទួល	수신자	ຜູ້ຮັບ	လက်ခံသူ	Người nhận	Receiver	Receiver	Receiver
 receiver_bank	ธนาคารผู้รับ	Receiver Bank	接收方银行	受取銀行	ធនាគារអ្នកទទួល	수신 은행	ທະນາຄານຜູ້ຮັບ	လက်ခံသူဘဏ်	Ngân hàng người nhận	Receiver Bank	Receiver Bank	Receiver Bank
 recent_purchases	ซื้อล่าสุด	Recent Purchases	最近采购	最近の購入	ការទិញថ្មីៗ	최근 구매	ຊື້ລ່າສຸດ	မကြာသေးမီဝယ်ယူမှုများ	Mua gần đây	Recent Purchases	Recent Purchases	Recent Purchases
@@ -3357,7 +3361,7 @@ report_stock_by_warehouse	คงเหลือตามคลัง	Stock by Wa
 report_stock_movement	เคลื่อนไหวของสต็อก	Stock Movement	库存流动	在庫移動	ចលនាស្តុក	재고 이동	ການເຄື່ອນໄຫວສະຕັອກ	စတော့ရွှေ့ပြောင်းမှု	Di chuyển tồn kho	Stock Movement	Stock Movement	Stock Movement
 report_stock_movement_cost	ต้นทุนความเคลื่อนไหว	Stock Movement Cost	Stock Movement Cost	Stock Movement Cost	Stock Movement Cost	Stock Movement Cost	Stock Movement Cost	Stock Movement Cost	Stock Movement Cost	Stock Movement Cost	Stock Movement Cost	Stock Movement Cost
 report_stock_movement_cost_title	รายงานเคลื่อนไหวสินค้า/ต้นทุน	Stock Movement/Cost Report	Stock Movement/Cost Report	Stock Movement/Cost Report	Stock Movement/Cost Report	Stock Movement/Cost Report	Stock Movement/Cost Report	Stock Movement/Cost Report	Stock Movement/Cost Report	Stock Movement/Cost Report	Stock Movement/Cost Report	Stock Movement/Cost Report
-report_stock_movement_with_product	เคลื่อนไหวของสต็อก : 	Stock Movement : 	库存流动 : 	在庫移動 : 	ចលនាស្តុក : 	재고 이동 : 	ການເຄື່ອນໄຫວສະຕັອກ : 	စတော့ရွှေ့ပြောင်းမှု : 	Di chuyển tồn kho : 	Stock Movement : 	Stock Movement : 	Stock Movement : 
+report_stock_movement_with_product	เคลื่อนไหวของสต็อก : 	Stock Movement : 	库存流动 : 	在庫移動 : 	ចលនាស្តុក : 	재고 이동 : 	ການເຄື່ອນໄຫວສະຕັອກ : 	စတော့ရွှေ့ပြောင်းမှု : 	Di chuyển tồn kho : 	Stock Movement : 	Stock Movement : 	Stock Movement :
 report_stockadjustment	รายงานการปรับปรุงสต๊อก	Stock Adjustment Report	库存调整报告	在庫調整レポート	របាយការណ៍កែសម្រួលស្តុក	재고 조정 보고서	ລາຍງານການປັບປຸງສະຕັອກ	စတော့ချိန်ညှိမှုအစီရင်ခံစာ	Báo cáo điều chỉnh kho	Stock Adjustment Report	Stock Adjustment Report	Stock Adjustment Report
 report_stockbalance	รายงานยอดคงเหลือสินค้า	Stock Balance Report	库存余额报表	在庫残高レポート	របាយការណ៍សមតុល្យស្តុក	재고 잔액 보고서	ລາຍງານຍອດຄົງເຫຼືອສິນຄ້າ	ကုန်ပစ္စည်းလက်ကျန် အစီရင်ခံစာ	Báo cáo tồn kho	Stock Balance Report	Stock Balance Report	Stock Balance Report
 report_stockcard	รายงานบัตรสต็อก	Stock Card Report	库存卡报表	在庫カードレポート	របាយការណ៍កាតស្តុក	재고 카드 보고서	ລາຍງານບັດສະຕ໊ອກ	ကုန်ပစ္စည်းကတ် အစီရင်ခံစာ	Báo cáo thẻ kho	Stock Card Report	Stock Card Report	Stock Card Report
@@ -3379,7 +3383,7 @@ required_to_select	จำเป็นต้องเลือก	Required	必须
 resend_notification	แจ้งเตือนซ้ำ	Resend Notification	Resend Notification	Resend Notification	Resend Notification	Resend Notification	Resend Notification	Resend Notification	Resend Notification	Resend Notification	Resend Notification	Resend Notification
 resend_notification_failed	ส่งแจ้งเตือนซ้ำไม่สำเร็จ	Resend Notification Failed	重发通知失败	再通知の送信に失敗しました	ការផ្ញើការជូនដំណឹងឡើងវិញបរាជ័យ	알림 재전송 실패	ສົ່ງແຈ້ງເຕືອນຊ້ຳບໍ່ສຳເລັດ	အကြောင်းကြားမှု ပြန်ပို့မအောင်မြင်ပါ	Gửi lại thông báo thất bại	Resend Notification Failed	Resend Notification Failed	Resend Notification Failed
 resend_notification_success	ส่งแจ้งเตือนซ้ำสำเร็จ	Resend Notification Success	重发通知成功	再通知の送信に成功しました	ការផ្ញើការជូនដំណឹងឡើងវិញជោគជ័យ	알림 재전송 성공	ສົ່ງແຈ້ງເຕືອນຊ້ຳສຳເລັດ	အကြောင်းကြားမှု ပြန်ပို့အောင်မြင်	Gửi lại thông báo thành công	Resend Notification Success	Resend Notification Success	Resend Notification Success
-reset	Reset 	Reset 	Reset 	Reset 	Reset 	Reset 	Reset 	Reset 	Reset 	Reset 	Reset 	Reset 
+reset	Reset 	Reset 	Reset 	Reset 	Reset 	Reset 	Reset 	Reset 	Reset 	Reset 	Reset 	Reset
 reset_card_size	รีเซ็ตขนาดการ์ด	Reset Card Size	重置卡片大小	カードサイズをリセット	កំណត់ទំហំកាតឡើងវិញ	카드 크기 초기화	ຣີເຊັດຂະໜາດບັດ	ကတ်အရွယ်အစား ပြန်ညှိပါ	Đặt lại kích thước thẻ	Reset Card Size	Reset Card Size	Reset Card Size
 reset_pin	Reset PIN	Reset PIN	Reset PIN	Reset PIN	Reset PIN	Reset PIN	Reset PIN	Reset PIN	Reset PIN	Reset PIN	Reset PIN	Reset PIN
 reset_pin_code	Reset PIN	Reset PIN	Reset PIN	Reset PIN	Reset PIN	Reset PIN	Reset PIN	Reset PIN	Reset PIN	Reset PIN	Reset PIN	Reset PIN
@@ -3834,7 +3838,7 @@ staff_name	ชื่อ พนักงาน	Staff Name	员工姓名	スタッ�
 stand		Stand	Stand	Stand	Stand	Stand	Stand	Stand	Stand	Stand	Stand	Stand
 standard_cost	ต้นทุนมาตรฐาน	Standard Cost	标准成本	標準原価	ថ្លៃដើមស្តង់ដារ	표준 원가	ຕົ້ນທຶນມາດຕະຖານ	စံကုန်ကျစရိတ်	Chi phí tiêu chuẩn	Standard Cost	Standard Cost	Standard Cost
 standard_cost_per_unit	ต้นทุนมาตรฐานต่อหน่วย	Standard Cost Per Unit	单位标准成本	単位あたり標準原価	ថ្លៃដើមស្តង់ដារក្នុងមួយឯកតា	단위당 표준 원가	ຕົ້ນທຶນມາດຕະຖານຕໍ່ໜ່ວຍ	ယူနစ်တစ်ခုချင်းစံကုန်ကျစရိတ်	Chi phí tiêu chuẩn mỗi đơn vị	Standard Cost Per Unit	Standard Cost Per Unit	Standard Cost Per Unit
-standvalue												
+standvalue
 start_by_adding_first_shelf	เริ่มต้นด้วยการเพิ่มชั้นวางแรก	Start by adding your first shelf	从添加第一个货架开始	最初の棚を追加して始めましょう	ចាប់ផ្តើមដោយបន្ថែមធ្នើដំបូង	첫 번째 선반을 추가하여 시작하세요	ເລີ່ມຕົ້ນດ້ວຍການເພີ່ມຊັ້ນວາງທຳອິດ	ပထမဆုံး စင် ထည့်ခြင်းဖြင့် စတင်ပါ	Bắt đầu bằng cách thêm kệ đầu tiên	Start by adding your first shelf	Start by adding your first shelf	Start by adding your first shelf
 start_calculate	เริ่มคำนวณ	Start Calculate	开始计算	計算開始	ចាប់ផ្តើមគណនា	계산 시작	ເລີ່ມຄຳນວນ	တွက်ချက်ခြင်း စတင်ပါ	Bắt đầu tính	Start Calculate	Start Calculate	Start Calculate
 start_date	วันที่เริ่มต้น	Start Date	开始日期	開始日	កាលបរិច្ឆេទចាប់ផ្តើម	시작일	ວັນທີເລີ່ມຕົ້ນ	စတင်ရက်	Ngày bắt đầu	Start Date	Start Date	Start Date
@@ -3908,7 +3912,7 @@ sub_group_1	กลุ่มย่อย 1	Sub Group 1	Sub Group 1	Sub Group 1	Su
 sub_group_2	กลุ่มย่อย 2	Sub Group 2	Sub Group 2	Sub Group 2	Sub Group 2	Sub Group 2	Sub Group 2	Sub Group 2	Sub Group 2	Sub Group 2	Sub Group 2	Sub Group 2
 sub_of	สาขา	Sub office	分店	支店	សាខា	지점	ສາຂາ	ဌာနခွဲ	Chi nhánh	Sub office	Sub office	Sub office
 sub_of_number	ลำดับสาขา	Branch Sequence	分店序号	支店順序	លំដាប់សាខា	지점 순서	ລຳດັບສາຂາ	ဌာနခွဲအစီအစဉ်	Thứ tự chi nhánh	Branch Sequence	Branch Sequence	Branch Sequence
-sub_options	ตัวเลือกย่อย: 	Sub Options: 	子选项：	サブオプション：	ជម្រើសរង: 	하위 옵션: 	ຕົວເລືອກຍ່ອຍ: 	အခွဲရွေးချယ်မှုများ: 	Tùy chọn phụ: 	Sub Options: 	Sub Options: 	Sub Options: 
+sub_options	ตัวเลือกย่อย: 	Sub Options: 	子选项：	サブオプション：	ជម្រើសរង: 	하위 옵션: 	ຕົວເລືອກຍ່ອຍ: 	အခွဲရွေးချယ်မှုများ: 	Tùy chọn phụ: 	Sub Options: 	Sub Options: 	Sub Options:
 sub_pattern_name	ชื่อรูปแบบย่อย	Sub-Pattern Name	子模式名称	サブパターン名	ឈ្មោះលំនាំរង	하위 패턴 이름	ຊື່ຮູບແບບຍ່ອຍ	ခွဲပုံစံအမည်	Tên mẫu phụ	Sub-Pattern Name	Sub-Pattern Name	Sub-Pattern Name
 sub_shop_name	ชื่อร้านย่อย	Sub Shop Name	Sub Shop Name	Sub Shop Name	Sub Shop Name	Sub Shop Name	Sub Shop Name	Sub Shop Name	Sub Shop Name	Sub Shop Name	Sub Shop Name	Sub Shop Name
 subdistrict_code	รหัสตำบล	Subdistrict Code	街道代码	地区コード	កូដឃុំ/សង្កាត់	읍/면/동 코드	ລະຫັດຕຳບົນ	ရပ်ကွက်ကုဒ်	Mã phường/xã	Subdistrict Code	Subdistrict Code	Subdistrict Code
@@ -3959,7 +3963,7 @@ tap_add_customer_to_start	แตะปุ่มเพิ่มลูกค้า
 tap_add_product_button	แตะปุ่ม เพิ่มสินค้า เพื่อเริ่มต้น	Tap Add Product button to start	点击添加产品按钮开始	商品追加ボタンをタップして開始	ប៉ះប៊ូតុងបន្ថែមផលិតផលដើម្បីចាប់ផ្តើម	제품 추가 버튼을 탭하여 시작	ແຕະປຸ່ມ ເພີ່ມສິນຄ້າ ເພື່ອເລີ່ມຕົ້ນ	ထုတ်ကုန်ထည့်ခလုတ်တို့၍စတင်ပါ	Chạm nút Thêm sản phẩm để bắt đầu	Tap Add Product button to start	Tap Add Product button to start	Tap Add Product button to start
 tap_to_select_document	แตะเพื่อเลือกเอกสาร	Tap to select document	Tap to select document	Tap to select document	Tap to select document	Tap to select document	Tap to select document	Tap to select document	Tap to select document	Tap to select document	Tap to select document	Tap to select document
 tap_to_view_detail	กดเพื่อดูรายละเอียด	Tap to view detail	点击查看详情	タップして詳細を表示	ចុចដើម្បីមើលព័ត៌មានលម្អិត	탭하여 상세 보기	ກົດເພື່ອເບິ່ງລາຍລະອຽດ	အသေးစိတ်ကြည့်ရန် နှိပ်ပါ	Nhấn để xem chi tiết	Tap to view detail	Tap to view detail	Tap to view detail
-target_shop_id_not_found	ไม่พบ Shop ID ปลายทาง	Target Shop ID not found	未找到目标商店ID	宛先ショップIDが見つかりません	រកមិនឃើញ Shop ID គោលដៅ	대상 매장 ID를 찾을 수 없습니다	ບໍ່ພົບ Shop ID ປາຍທາງ	ဦးတည်ရာ Shop ID ရှာမတွေ့ပါ	Không tìm thấy Shop ID đích	Target Shop ID not found	Target Shop ID not found	Target Shop ID not found
+target_holding_code_not_found	ไม่พบ Holding Code ปลายทาง	Target Holding Code not found	未找到目标商店ID	宛先ショップIDが見つかりません	រកមិនឃើញ Holding Code គោលដៅ	대상 매장 ID를 찾을 수 없습니다	ບໍ່ພົບ Holding Code ປາຍທາງ	ဦးတည်ရာ Holding Code ရှာမတွေ့ပါ	Không tìm thấy Holding Code đích	Target Holding Code not found	Target Holding Code not found	Target Holding Code not found
 tax	ภาษี	Tax	税	税	ពន្ធ	세금	ພາສີ	အခွန်	Thuế	Tax	Tax	Tax
 tax_address_1	ที่อยู่เอกสารภาษี 1	Tax Document Address 1	税务文件地址 1	税務書類住所 1	អាសយដ្ឋានឯកសារពន្ធ 1	세금 문서 주소 1	ທີ່ຢູ່ເອກະສານພາສີ 1	အခွန်စာရွက်စာတမ်းလိပ်စာ 1	Địa chỉ tài liệu thuế 1	Tax Document Address 1	Tax Document Address 1	Tax Document Address 1
 tax_address_2	ที่อยู่เอกสารภาษီ 2	Tax Document Address 2	税务文件地址 2	税務書類住所 2	អាសយដ្ឋានឯកសារពន្ធ 2	세금 문서 주소 2	ທີ່ຢູ່ເອກະສານພາສີ 2	အခွန်စာရွက်စာတမ်းလိပ်စာ 2	Địa chỉ tài liệu thuế 2	Tax Document Address 2	Tax Document Address 2	Tax Document Address 2
@@ -4382,7 +4386,7 @@ wrong_product	สินค้าผิด	Wrong product	产品错误	商品が�
 wrong_quantity_value	จำนวน/มูลค่าผิด	Wrong quantity/value	数量/价值错误	数量/金額が間違っています	បរិមាណ/តម្លៃខុស	수량/가치 오류	ຈຳນວນ/ມູນຄ່າຜິດ	အရေအတွက်/တန်ဖိုးမှား	Số lượng/giá trị sai	Wrong quantity/value	Wrong quantity/value	Wrong quantity/value
 xqty		X qty	X qty	X qty	X qty	X qty	X qty	X qty	X qty	X qty	X qty	X qty
 xunit		X unit	X unit	X unit	X unit	X unit	X unit	X unit	X unit	X unit	X unit	X unit
-xxx												
+xxx
 year	ปี	Year	年	年	ឆ្នាំ	연도	ປີ	နှစ်	Năm	Year	Year	Year
 yeartype	ประเภทปี	Year Type	年份类型	年タイプ	ប្រភេទឆ្នាំ	연도 유형	ປະເພດປີ	ခုနှစ်အမျိုးအစား	Loại năm	Year Type	Year Type	Year Type
 yes	ใช่	Yes	是的	はい	បាទ/ចាស	예	ແມ່ນແລ້ວ	ဟုတ်	Có	Yes	Yes	Yes
@@ -4401,7 +4405,7 @@ zoom_out	ซูมออก	Zoom Out	缩小	縮小	បង្រួម	축소	ຊ
 คืนเงินล่วงหน้า	คืนเงินล่วงหน้า	Advance Refund	退还预付款	前払い返金	សងប្រាក់ជាមុនវិញ	선불금 환불	ຄືນເງິນລ່ວງໜ້າ	ကြိုတင်ငွေ ပြန်အမ်းငွေ	Hoàn trả tiền ứng trước	Advance Refund	Advance Refund	Advance Refund
 จ่ายเงินมัดจำ	จ่ายเงินมัดจำ	Pay Deposit	支付押金	保証金支払い	បង់ប្រាក់កក់	보증금 지불	ຈ່າຍເງິນມັດຈຳ	စရန်ငွေ ပေးချေရန်	Thanh toán tiền cọc	Pay Deposit	Pay Deposit	Pay Deposit
 ทดสอบประมวลผลใหม่	ทดสอบประมวลผลใหม่	Retest Processing	重新测试处理	再テスト処理	ធ្វើតេស្តដំណើរការឡើងវិញ	재처리 테스트	ທົດສອບປະມວນຜົນໃໝ່	ပြန်လည်စမ်းသပ်လုပ်ဆောင်	Kiểm tra xử lý lại	Retest Processing	Retest Processing	Retest Processing
-บาร์โค้ดอ้างอิง/หน่วยนับ												
+บาร์โค้ดอ้างอิง/หน่วยนับ
 รับคืนเงินมัดจำ	รับคืนเงินมัดจำ	Receive Deposit Refund	收到押金退还	保証金返金受領	ទទួលការសងប្រាក់កក់វិញ	보증금 환불 수령	ຮັບຄືນເງິນມັດຈຳ	စရန်ငွေ ပြန်အမ်းငွေ လက်ခံရန်	Nhận hoàn trả tiền cọc	Receive Deposit Refund	Receive Deposit Refund	Receive Deposit Refund
 รับคืนเงินล่วงหน้า	รับคืนเงินล่วงหน้า	Receive Advance Refund	收到预付款退还	前払い返金受領	ទទួលការសងប្រាក់ជាមុនវិញ	선불금 환불 수령	ຮັບຄືນເງິນລ່ວງໜ້າ	ကြိုတင်ငွေ ပြန်အမ်းငွေ လက်ခံရန်	Nhận hoàn trả tiền ứng trước	Receive Advance Refund	Receive Advance Refund	Receive Advance Refund
 รับเงินมัดจำ	รับเงินมัดจำ	Receive Deposit	收取押金	保証金受領	ទទួលប្រាក់កក់	보증금 수령	ຮັບເງິນມັດຈຳ	စရန်ငွေ လက်ခံရန်	Nhận tiền cọc	Receive Deposit	Receive Deposit	Receive Deposit
@@ -4433,7 +4437,7 @@ under_delivery_tolerance	ยอมรับรับขาด	Under Delivery Tol
 budget	งบประมาณ	Budget	预算	予算	ថវិកា	예산	ງົບປະມານ	ဘတ်ဂျက်	Ngân sách	Bajet	Anggaran	Badyet
 budget_over_warning	ยอด PR เกินงบประมาณ	PR exceeds budget by	采购申请超出预算	購買申請が予算を超過	PR លើសថវិកា	PR이 예산 초과	PR ເກີນງົບປະມານ	PR ဘတ်ဂျက်ကျော်လွန်	PR vượt ngân sách	PR melebihi bajet	PR melebihi anggaran	Lampas sa badyet ang PR
 
-procurement_dashboard	แดชบอร์ดจัดซื้อ	Procurement Dashboard	采购仪表板	調達ダッシュボード	ផ្ទាំងគ្រប់គ្រងការលទ្ធកម្ម	조달 대시보드	ແດັຊບອດຈັດຊື້	ဝယ်ယူရေးဒက်ရှ်ဘုတ်	Bảng điều khiển mua sắm	Papan pemuka perolehan	Dasbor pengadaan	Dashboard ng procurement
+procurement_dashboard	ภาพรวมจัดซื้อ	Purchase Overview	采购概览	購買概要	ទិដ្ឋភាពរួមការទិញ	구매 현황	ພາບລວມຈັດຊື້	ဝယ်ယူမှုအကျဉ်းချုပ်	Tổng quan mua hàng	Purchase Overview	Purchase Overview	Purchase Overview
 monthly_procurement_trend	แนวโน้มจัดซื้อรายเดือน	Monthly Procurement Trend	月度采购趋势	月間調達トレンド	និន្នាការលទ្ធកម្មប្រចាំខែ	월별 조달 추세	ແນວໂນ້ມຈັດຊື້ລາຍເດືອນ	လစဉ်ဝယ်ယူရေးလမ်းကြောင်း	Xu hướng mua sắm hàng tháng	Trend perolehan bulanan	Tren pengadaan bulanan	Buwanang trend ng procurement
 document_status_summary	สรุปสถานะเอกสาร	Document Status Summary	文件状态汇总	書類ステータス概要	សង្ខេបស្ថានភាពឯកសារ	문서 상태 요약	ສະຫຼຸບສະຖານະເອກະສານ	စာရွက်စာတမ်းအခြေအနေအကျဉ်းချုပ်	Tóm tắt trạng thái chứng từ	Ringkasan status dokumen	Ringkasan status dokumen	Buod ng status ng dokumento
 top_vendors	เจ้าหนี้ยอดสูงสุด	Top Vendors	主要供应商	トップ仕入先	អ្នកផ្គត់ផ្គង់កំពូល	상위 거래처	ເຈົ້າໜີ້ຍອດສູງສຸດ	ထိပ်တန်းရောင်းသူများ	Nhà cung cấp hàng đầu	Vendor teratas	Vendor teratas	Nangungunang vendor
@@ -4491,8 +4495,8 @@ use_branch_system	ใช้ระบบสาขา	Use branch system	使用分�
 use_department_system	ใช้ระบบแผนก	Use department system	使用部门系统	部門システムを使用	ប្រើប្រព័ន្ធនាយកដ្ឋាន	부서 시스템 사용	ໃຊ້ລະບົບພະແນກ	ဌာနစနစ်အသုံးပြုရန်	Sử dụng hệ thống phòng ban	Guna sistem jabatan	Gunakan sistem departemen	Gamitin ang department system
 vat_status	สถานะ VAT	VAT status	增值税状态	VATステータス	ស្ថានភាព VAT	VAT 상태	ສະຖານະ VAT	VAT အခြေအနေ	Trạng thái VAT	Status VAT	Status VAT	Status VAT
 year_type	รูปแบบปี	Year format	年份格式	年形式	ទម្រង់ឆ្នាំ	연도 형식	ຮູບແບບປີ	နှစ်ပုံစံ	Định dạng năm	Format tahun	Format tahun	Format ng taon
-ai_provider	AI Provider	AI Provider	AI Provider	AI Provider	AI Provider	AI Provider	AI Provider	AI Provider	AI Provider	AI Provider	AI Provider	AI Provider
-copy_uat_dev	โอนข้อมูล UAT ไป DEV	Copy UAT to DEV	将 UAT 数据复制到 DEV	UATデータをDEVへコピー	ចម្លងទិន្នន័យ UAT ទៅ DEV	UAT 데이터를 DEV로 복사	ຄັດລອກຂໍ້ມູນ UAT ໄປ DEV	UAT ဒေတာကို DEV သို့ ကူးယူပါ	Sao chép dữ liệu UAT sang DEV	Salin data UAT ke DEV	Salin data UAT ke DEV	Kopyahin ang UAT data papuntang DEV
+ai_provider	ผู้ให้บริการ AI	AI Service Provider	AI 服务提供商	AIサービス提供元	អ្នកផ្តល់សេវា AI	AI 서비스 제공자	ຜູ້ໃຫ້ບໍລິການ AI	AI ဝန်ဆောင်မှုပေးသူ	Nhà cung cấp dịch vụ AI	AI Service Provider	AI Service Provider	AI Service Provider
+copy_uat_dev	คัดลอกข้อมูลทดสอบ	Copy Test Data	复制测试数据	テストデータをコピー	ចម្លងទិន្នន័យសាកល្បង	테스트 데이터 복사	ຄັດລອກຂໍ້ມູນທົດສອບ	စမ်းသပ်ဒေတာကူးယူပါ	Sao chép dữ liệu thử nghiệm	Copy Test Data	Copy Test Data	Copy Test Data
 rfq	ขอใบเสนอราคา	Request for Quotation	请求报价	見積依頼	ស្នើសុំសម្រង់តម្លៃ	견적 요청	ຂໍໃບສະເໜີລາຄາ	စျေးနှုန်းတောင်းခံလွှာ	Yêu cầu báo giá	Permintaan sebut harga	Permintaan penawaran	Request for quotation
 advance_payment_refund	รับคืนเงินล่วงหน้า	Advance Refund	预付款退款	前払い返金	ទទួលคืนប្រាក់បង់មុន	선급금 환불	ຮັບຄືນເງິນລ່ວງໜ້າ	ကြိုတင်ငွေ ပြန်လက်ခံ	Nhận hoàn tiền ứng trước	Terima bayaran balik pendahuluan	Terima pengembalian uang muka	Tumanggap ng refund ng paunang bayad
 deposit_refund	รับคืนเงินมัดจำ	Deposit Refund	押金退款	保証金返金	ទទួលคืนប្រាក់កក់	보증금 환불	ຮັບຄືນເງິນມັດຈຳ	အပ်ငွေ ပြန်လက်ခံ	Nhận hoàn tiền đặt cọc	Terima bayaran balik deposit	Terima pengembalian deposit	Tumanggap ng refund ng deposito
@@ -4515,13 +4519,13 @@ gross_profit_by_document	กำไรขั้นต้นตามเอกส�
 gross_profit_by_product	กำไรขั้นต้นตามสินค้า	Gross Profit by Product	按商品毛利	商品別粗利益	ប្រាក់ចំណេញដុលតាមផលិតផល	상품별 매출총이익	ກຳໄລລວມຕາມສິນຄ້າ	ကုန်ပစ္စည်းအလိုက် အကြမ်းအမြတ်	Lợi nhuận gộp theo hàng hóa	Untung kasar mengikut produk	Laba kotor per produk	Gross profit ayon sa produkto
 vat_sale	รายงานภาษีขาย	VAT Sale	销项税报告	売上税レポート	របាយការណ៍ពន្ធលក់	매출세 보고서	ລາຍງານພາສີຂາຍ	ရောင်းခွန်အစီရင်ခံစာ	Báo cáo thuế bán ra	Laporan cukai jualan	Laporan pajak penjualan	Ulat ng buwis sa benta
 vat_buy	รายงานภาษีซื้อ	VAT Purchase	进项税报告	仕入税レポート	របាយការណ៍ពន្ធទិញ	매입세 보고서	ລາຍງານພາສີຊື້	ဝယ်ယူခွန်အစီရင်ခံစာ	Báo cáo thuế mua vào	Laporan cukai belian	Laporan pajak pembelian	Ulat ng buwis sa pagbili
-reprocess	ทดสอบประมวลผลใหม่	Reprocess Test	重新处理测试	再処理テスト	សាកល្បងដំណើរការឡើងវិញ	재처리 테스트	ທົດສອບປະມວນຜົນໃໝ່	ပြန်လည်လုပ်ဆောင်မှုစမ်းသပ်	Kiểm tra xử lý lại	Ujian proses semula	Tes proses ulang	Reprocess test
+reprocess	คำนวณข้อมูลใหม่	Recalculate Data	重新计算数据	データ再計算	គណនាទិន្នន័យឡើងវិញ	데이터 재계산	ຄຳນວນຂໍ້ມູນໃໝ່	ဒေတာပြန်တွက်ချက်	Tính lại dữ liệu	Recalculate Data	Recalculate Data	Recalculate Data
 label_print	พิมพ์ป้ายสินค้า	Print Product Label	打印商品标签	商品ラベル印刷	បោះពុម្ពស្លាកផលិតផល	상품 라벨 인쇄	ພິມປ້າຍສິນຄ້າ	ကုန်ပစ္စည်းတံဆိပ်ပုံနှိပ်	In nhãn hàng hóa	Cetak label produk	Cetak label produk	I-print ang product label
 product_tools	เครื่องมือสินค้า	Product Tools	Product Tools	Product Tools	Product Tools	Product Tools	Product Tools	Product Tools	Product Tools	Product Tools	Product Tools	Product Tools
 productset	สินค้าชุด	Product Set	Product Set	Product Set	Product Set	Product Set	Product Set	Product Set	Product Set	Product Set	Product Set	Product Set
-shopee_mappings	Shopee Mappings	Shopee Mappings	Shopee Mappings	Shopee Mappings	Shopee Mappings	Shopee Mappings	Shopee Mappings	Shopee Mappings	Shopee Mappings	Shopee Mappings	Shopee Mappings	Shopee Mappings
-lazada_mappings	Lazada Mappings	Lazada Mappings	Lazada Mappings	Lazada Mappings	Lazada Mappings	Lazada Mappings	Lazada Mappings	Lazada Mappings	Lazada Mappings	Lazada Mappings	Lazada Mappings	Lazada Mappings
-tiktok_mappings	TikTok Mappings	TikTok Mappings	TikTok Mappings	TikTok Mappings	TikTok Mappings	TikTok Mappings	TikTok Mappings	TikTok Mappings	TikTok Mappings	TikTok Mappings	TikTok Mappings	TikTok Mappings
+shopee_mappings	เชื่อม Shopee	Shopee Connection	Shopee 连接	Shopee連携	ភ្ជាប់ Shopee	Shopee 연결	ເຊື່ອມ Shopee	Shopee ချိတ်ဆက်	Kết nối Shopee	Shopee Connection	Shopee Connection	Shopee Connection
+lazada_mappings	เชื่อม Lazada	Lazada Connection	Lazada 连接	Lazada連携	ភ្ជាប់ Lazada	Lazada 연결	ເຊື່ອມ Lazada	Lazada ချိတ်ဆက်	Kết nối Lazada	Lazada Connection	Lazada Connection	Lazada Connection
+tiktok_mappings	เชื่อม TikTok	TikTok Connection	TikTok 连接	TikTok連携	ភ្ជាប់ TikTok	TikTok 연결	ເຊື່ອມ TikTok	TikTok ချိတ်ဆက်	Kết nối TikTok	TikTok Connection	TikTok Connection	TikTok Connection
 bom	สูตรผลิต	Product BOM	产品BOM	製品BOM	BOM ផលិតផល	제품 BOM	ສູດການຜະລິດ	ကုန်ပစ္စည်း BOM	BOM sản phẩm	BOM produk	BOM produk	Product BOM
 add_product_branch	เพิ่มสินค้าเข้าตามสาขา	Add Product to Branch	添加商品到分店	支店に商品を追加	បន្ថែមផលិតផលទៅសាខា	지점에 상품 추가	ເພີ່ມສິນຄ້າໃຫ້ສາຂາ	ဌာနခွဲသို့ ကုန်ပစ္စည်းထည့်	Thêm hàng vào chi nhánh	Tambah produk ke cawangan	Tambah produk ke cabang	Magdagdag ng produkto sa branch
 add_product_department	เพิ่มสินค้าเข้าตามแผนก	Add Product to Department	添加商品到部门	部門に商品を追加	បន្ថែមផលិតផលទៅនាយកដ្ឋាន	부서에 상품 추가	ເພີ່ມສິນຄ້າໃຫ້ພະແນກ	ဌာနသို့ ကုန်ပစ္စည်းထည့်	Thêm hàng vào phòng ban	Tambah produk ke jabatan	Tambah produk ke departemen	Magdagdag ng produkto sa department
@@ -4529,15 +4533,15 @@ coupon_setting	ตั้งค่าคูปอง	Coupon Setting	优惠券设�
 po_approval	อนุมัติใบสั่งซื้อ	PO Approval	采购订单审批	発注承認	អនុម័តបញ្ជាទិញ	PO 승인	ອະນຸມັດໃບສັ່ງຊື້	ဝယ်ယူအော်ဒါ အတည်ပြု	Phê duyệt đơn mua hàng	Kelulusan PO	Persetujuan PO	Pag-apruba ng PO
 qt_approval	อนุมัติใบเสนอราคา	Quotation Approval	报价单审批	見積承認	អនុម័តសម្រង់តម្លៃ	견적 승인	ອະນຸມັດໃບສະເໜີລາຄາ	စျေးနှုန်းတင်ပြချက် အတည်ပြု	Phê duyệt báo giá	Kelulusan sebut harga	Persetujuan penawaran	Pag-apruba ng quotation
 so_approval	อนุมัติใบสั่งขาย	Sale Order Approval	销售订单审批	受注承認	អនុម័តបញ្ជាលក់	판매 주문 승인	ອະນຸມັດໃບສັ່ງຂາຍ	အရောင်းအော်ဒါ အတည်ပြု	Phê duyệt đơn bán hàng	Kelulusan pesanan jualan	Persetujuan pesanan penjualan	Pag-apruba ng sale order
-import_product_file	นำเข้าข้อมูลสินค้า	Import Product Data	导入商品数据	商品データ取込	នាំចូលទិន្នន័យផលិតផល	상품 데이터 가져오기	ນຳເຂົ້າຂໍ້ມູນສິນຄ້າ	ကုန်ပစ္စည်းဒေတာ တင်သွင်း	Nhập dữ liệu hàng hóa	Import data produk	Impor data produk	Mag-import ng product data
+import_product_file	นำเข้าสินค้าจากไฟล์	Import Product File	从文件导入商品	ファイルから商品を取込	នាំចូលផលិតផលពីឯកសារ	파일에서 상품 가져오기	ນຳເຂົ້າສິນຄ້າຈາກໄຟລ໌	ဖိုင်မှကုန်ပစ္စည်းတင်သွင်း	Nhập hàng hóa từ tệp	Import Product File	Import Product File	Import Product File
 knowledge_base	คลังความรู้	Knowledge Base	知识库	ナレッジベース	មូលដ្ឋានចំណេះដឹង	지식 베이스	ຄັງຄວາມຮູ້	အသိပညာဘေ့စ်	Cơ sở tri thức	Pangkalan pengetahuan	Basis pengetahuan	Knowledge base
-alert_agent	BC Ai Account Alert Agent	BC Ai Account Alert Agent	BC Ai Account Alert Agent	BC Ai Account Alert Agent	BC Ai Account Alert Agent	BC Ai Account Alert Agent	BC Ai Account Alert Agent	BC Ai Account Alert Agent	BC Ai Account Alert Agent	BC Ai Account Alert Agent	BC Ai Account Alert Agent	BC Ai Account Alert Agent
+alert_agent	ผู้ช่วยแจ้งเตือน	Alert Assistant	提醒助手	通知アシスタント	ជំនួយការជូនដំណឹង	알림 도우미	ຜູ້ຊ່ວຍແຈ້ງເຕືອນ	သတိပေးအကူ	Trợ lý thông báo	Alert Assistant	Alert Assistant	Alert Assistant
 add_product_kitchen	เพิ่มสินค้าเข้าครัว	Add Product to Kitchen	添加商品到厨房	キッチンに商品を追加	បន្ថែមផលិតផលទៅផ្ទះបាយ	주방에 상품 추가	ເພີ່ມສິນຄ້າໃຫ້ເຮືອນຄົວ	မီးဖိုချောင်သို့ ကုန်ပစ္စည်းထည့်	Thêm hàng vào bếp	Tambah produk ke dapur	Tambah produk ke dapur	Magdagdag ng produkto sa kusina
-qr_order	QR Code สั่งอาหาร	QR Order	二维码点餐	QR注文	ការបញ្ជាទិញ QR	QR 주문	ສັ່ງອາຫານດ້ວຍ QR	QR အော်ဒါ	Đặt món bằng QR	Pesanan QR	Pesanan QR	QR order
-order_template	ตั้งค่า Template Order	Order Template Setting	订单模板设置	注文テンプレート設定	ការកំណត់គំរូបញ្ជាទិញ	주문 템플릿 설정	ຕັ້ງຄ່າແມ່ແບບອໍເດີ	အော်ဒါပုံစံ ဆက်တင်	Cài đặt mẫu đơn hàng	Tetapan templat pesanan	Pengaturan template pesanan	Order template setting
+qr_order	สั่งอาหารด้วย QR	QR Ordering	二维码点餐	QR注文	ការបញ្ជាទិញតាម QR	QR 주문	ສັ່ງອາຫານດ້ວຍ QR	QR ဖြင့်မှာယူ	Đặt món bằng QR	QR Ordering	QR Ordering	QR Ordering
+order_template	ตั้งค่าเครื่องสั่งอาหาร	Ordering Station Settings	点餐设备设置	注文端末設定	ការកំណត់ម៉ាស៊ីនបញ្ជាទិញ	주문 기기 설정	ຕັ້ງຄ່າເຄື່ອງສັ່ງອາຫານ	အော်ဒါစက်ဆက်တင်	Cài đặt máy đặt món	Ordering Station Settings	Ordering Station Settings	Ordering Station Settings
 workday	วันทำงาน	Work Day	工作日	営業日	ថ្ងៃធ្វើការ	근무일	ວັນເຮັດວຽກ	အလုပ်လုပ်ရက်	Ngày làm việc	Hari bekerja	Hari kerja	Araw ng trabaho
 activity	กิจกรรม	Activity	活动	アクティビティ	សកម្មភាព	활동	ກິດຈະກຳ	လှုပ်ရှားမှု	Hoạt động	Aktiviti	Aktivitas	Aktibidad
-audit_reprocess	ตรวจสอบ/ประมวลผล	Audit / Reprocess	审计/重新处理	監査/再処理	សវនកម្ម/ដំណើរការឡើងវិញ	감사/재처리	ກວດສອບ/ປະມວນຜົນໃໝ່	စစ်ဆေး/ပြန်လည်လုပ်ဆောင်	Kiểm tra / xử lý lại	Audit / proses semula	Audit / proses ulang	Audit / reprocess
+audit_reprocess	ตรวจและซ่อมข้อมูล	Data Check and Repair	检查并修复数据	データ確認と修復	ពិនិត្យ និងជួសជុលទិន្នន័យ	데이터 확인 및 복구	ກວດ ແລະ ແກ້ໄຂຂໍ້ມູນ	ဒေတာစစ်ဆေး/ပြင်ဆင်	Kiểm tra và sửa dữ liệu	Data Check and Repair	Data Check and Repair	Data Check and Repair
 close_tab	ปิดแท็บ	Close tab	关闭标签	タブを閉じる	បិទថេប	탭 닫기	ປິດແທັບ	တက်ဘ်ပိတ်	Đóng tab	Tutup tab	Tutup tab	Isara ang tab
 columns	คอลัมน์	Columns	列	列	ជួរឈរ	열	ຄໍລຳ	ကော်လံများ	Cột	Lajur	Kolom	Mga column
 commands	คำสั่ง	Commands	命令	コマンド	ពាក្យបញ្ជា	명령	ຄຳສັ່ງ	အမိန့်များ	Lệnh	Arahan	Perintah	Mga utos
@@ -4572,8 +4576,14 @@ organization_master	ข้อมูลหลักองค์กร	Organizatio
 placeholder	ตัวอย่าง	Placeholder	占位	プレースホルダー	កន្លែងដាក់	플레이스홀더	ຕົວຢ່າງ	နေရာယူစာသား	Giữ chỗ	Placeholder	Placeholder	Placeholder
 previous	ก่อนหน้า	Previous	上一页	前へ	មុន	이전	ກ່ອນໜ້າ	ယခင်	Trước	Sebelumnya	Sebelumnya	Nakaraan
 procurement	จัดซื้อจัดหา	Procurement	采购	調達	លទ្ធកម្ម	조달	ຈັດຊື້ຈັດຫາ	ဝယ်ယူရေး	Mua sắm	Perolehan	Pengadaan	Procurement
+product_catalog	สินค้าและบาร์โค้ด	Product Catalog	商品和条形码	商品とバーコード	ផលិតផល និងបាកូដ	상품 및 바코드	ສິນຄ້າ ແລະ ບາກູດ	ကုန်ပစ္စည်းနှင့် ဘားကုဒ်	Hàng hóa và mã vạch	Product Catalog	Product Catalog	Product Catalog
+product_classification	จัดกลุ่มสินค้า	Product Grouping	商品分组	商品グループ分け	រៀបចំក្រុមផលិតផល	상품 그룹화	ຈັດກຸ່ມສິນຄ້າ	ကုန်ပစ္စည်းအုပ်စုဖွဲ့	Nhóm hàng hóa	Product Grouping	Product Grouping	Product Grouping
 product_database	จัดการฐานข้อมูลสินค้า	Product Database	商品数据库	商品データベース	មូលដ្ឋានទិន្នន័យផលិតផល	상품 데이터베이스	ຖານຂໍ້ມູນສິນຄ້າ	ကုန်ပစ္စည်းဒေတာဘေ့စ်	Cơ sở dữ liệu hàng hóa	Pangkalan data produk	Basis data produk	Product database
+product_descriptors	รายละเอียดประกอบสินค้า	Product Details	商品补充信息	商品詳細	ព័ត៌មានលម្អិតផលិតផល	상품 상세 정보	ລາຍລະອຽດປະກອບສິນຄ້າ	ကုန်ပစ္စည်းအသေးစိတ်	Chi tiết bổ sung hàng hóa	Product Details	Product Details	Product Details
 product_management	จัดการสินค้า	Products	商品管理	商品管理	គ្រប់គ្រងផលិតផល	상품 관리	ຈັດການສິນຄ້າ	ကုန်ပစ္စည်းစီမံခန့်ခွဲမှု	Quản lý hàng hóa	Pengurusan produk	Manajemen produk	Pamamahala ng produkto
+product_sku_options	สี ไซซ์ และตัวเลือก	Product Options	颜色、尺码和选项	色・サイズ・オプション	ពណ៌ ទំហំ និងជម្រើស	색상, 사이즈 및 옵션	ສີ ໄຊຊ໌ ແລະ ຕົວເລືອກ	အရောင်၊ ဆိုဒ် နှင့် ရွေးချယ်မှု	Màu, kích cỡ và tùy chọn	Product Options	Product Options	Product Options
+product_stock_production	คลังและการผลิต	Stock and Production	库存和生产	在庫と製造	ស្តុក និងការផលិត	재고 및 생산	ຄັງ ແລະ ການຜະລິດ	ကုန်လက်ကျန်နှင့် ထုတ်လုပ်မှု	Kho và sản xuất	Stock and Production	Stock and Production	Stock and Production
+marketplace_connectors	เชื่อมข้อมูลตลาดออนไลน์	Marketplace Connections	电商平台连接	オンライン市場連携	ភ្ជាប់ទីផ្សារអនឡាញ	온라인 마켓 연결	ເຊື່ອມຂໍ້ມູນຕະຫຼາດອອນລາຍ	အွန်လိုင်းဈေးကွက်ချိတ်ဆက်	Kết nối sàn bán hàng	Marketplace Connections	Marketplace Connections	Marketplace Connections
 purchase_advance_deposit	เงินล่วงหน้า/เงินมัดจำฝั่งซื้อ	Purchase Advance / Deposit	采购预付款/押金	購買前払い/保証金	ប្រាក់បង់មុន/ប្រាក់កក់ផ្នែកទិញ	구매 선급금/보증금	ເງິນລ່ວງໜ້າ/ເງິນມັດຈຳຝັ່ງຊື້	ဝယ်ယူပိုင်း ကြိုတင်ငွေ/အပ်ငွေ	Tạm ứng / đặt cọc mua hàng	Pendahuluan / deposit belian	Uang muka / deposit pembelian	Advance / deposito sa pagbili
 purchase_group	ซื้อ	Purchase	采购	購買	ទិញ	구매	ຊື້	ဝယ်ယူ	Mua hàng	Belian	Pembelian	Pagbili
 ready_as_tab	พร้อมเปิดเป็นแท็บ	Ready as tabs	可作为标签打开	タブで開く準備済み	រួចរាល់បើកជាថេប	탭으로 열 준비됨	ພ້ອມເປີດເປັນແທັບ	တက်ဘ်အဖြစ်ဖွင့်ရန် အသင့်	Sẵn sàng mở dạng tab	Sedia dibuka sebagai tab	Siap dibuka sebagai tab	Handang buksan bilang tab
@@ -4582,9 +4592,10 @@ route	Route	Route	路由	ルート	Route	라우트	Route	Route	Route	Route	Route
 route_count_by_main_category	จำนวน route ที่ migrate มาเป็น Next.js แยกตามหมวดหลัก	Number of routes migrated to Next.js by main category	按主分类统计已迁移到 Next.js 的路由数量	Next.jsへ移行したルート数を主要カテゴリ別に表示	ចំនួន route ដែល migrate ទៅ Next.js តាមប្រភេទមេ	주요 분류별 Next.js로 마이그레이션된 라우트 수	ຈຳນວນ route ທີ່ migrate ມາເປັນ Next.js ແຍກຕາມໝວດຫຼັກ	အဓိကအမျိုးအစားအလိုက် Next.js သို့ migrate လုပ်ထားသော route အရေအတွက်	Số route đã migrate sang Next.js theo nhóm chính	Bilangan route yang dimigrasi ke Next.js mengikut kategori utama	Jumlah route yang dimigrasi ke Next.js per kategori utama	Bilang ng route na na-migrate sa Next.js ayon sa pangunahing kategorya
 routine_group	กลุ่มงานประจำ	Routine group	日常业务组	定常業務グループ	ក្រុមការងារប្រចាំ	정기 업무 그룹	ກຸ່ມວຽກປະຈຳ	ပုံမှန်လုပ်ငန်းအုပ်စု	Nhóm nghiệp vụ thường xuyên	Kumpulan rutin	Kelompok rutin	Routine group
 sales_group	ขาย	Sales	销售	販売	លក់	판매	ຂາຍ	ရောင်းချ	Bán hàng	Jualan	Penjualan	Benta
+sales_color	สีสำหรับงานขาย	Sales Colors	销售颜色	販売用の色	ពណ៌សម្រាប់ការលក់	판매용 색상	ສີສຳລັບງານຂາຍ	အရောင်းအတွက်အရောင်	Màu dùng cho bán hàng	Sales Colors	Sales Colors	Sales Colors
 sales_reports	รายงานขาย	Sales Reports	销售报告	売上レポート	របាយការណ៍លក់	판매 보고서	ລາຍງານຂາຍ	အရောင်းအစီရင်ခံစာများ	Báo cáo bán hàng	Laporan jualan	Laporan penjualan	Mga ulat ng benta
-search_menu_document_route	ค้นหาเมนู เอกสาร หรือ route	Search menu, document, or route	搜索菜单、单据或路由	メニュー、伝票、ルートを検索	ស្វែងរកម៉ឺនុយ ឯកសារ ឬ route	메뉴, 문서, 라우트 검색	ຄົ້ນຫາເມນູ ເອກະສານ ຫຼື route	မီနူး၊ စာရွက်စာတမ်း သို့မဟုတ် route ရှာဖွေ	Tìm menu, chứng từ hoặc route	Cari menu, dokumen atau route	Cari menu, dokumen, atau route	Maghanap ng menu, dokumento, o route
-search_menu_group_route	ค้นหาเมนู กลุ่ม หรือ route	Search menu, group, or route	搜索菜单、分组或路由	メニュー、グループ、ルートを検索	ស្វែងរកម៉ឺនុយ ក្រុម ឬ route	메뉴, 그룹, 라우트 검색	ຄົ້ນຫາເມນູ ກຸ່ມ ຫຼື route	မီနူး၊ အုပ်စု သို့မဟုတ် route ရှာဖွေ	Tìm menu, nhóm hoặc route	Cari menu, kumpulan atau route	Cari menu, grup, atau route	Maghanap ng menu, grupo, o route
+search_menu_document_route	ค้นหาเมนู เอกสาร หรือหน้าจอ	Search menu, document, or screen	搜索菜单、单据或页面	メニュー、伝票、画面を検索	ស្វែងរកម៉ឺនុយ ឯកសារ ឬអេក្រង់	메뉴, 문서, 화면 검색	ຄົ້ນຫາເມນູ ເອກະສານ ຫຼື ໜ້າຈໍ	မီနူး၊ စာရွက်စာတမ်း သို့မဟုတ် မျက်နှာပြင် ရှာဖွေ	Tìm menu, chứng từ hoặc màn hình	Search menu, document, or screen	Search menu, document, or screen	Search menu, document, or screen
+search_menu_group_route	ค้นหาเมนู กลุ่ม หรือหน้าจอ	Search menu, group, or screen	搜索菜单、分组或页面	メニュー、グループ、画面を検索	ស្វែងរកម៉ឺនុយ ក្រុម ឬអេក្រង់	메뉴, 그룹, 화면 검색	ຄົ້ນຫາເມນູ ກຸ່ມ ຫຼື ໜ້າຈໍ	မီနူး၊ အုပ်စု သို့မဟုတ် မျက်နှာပြင် ရှာဖွေ	Tìm menu, nhóm hoặc màn hình	Search menu, group, or screen	Search menu, group, or screen	Search menu, group, or screen
 show_menu	แสดงเมนู	Show menu	显示菜单	メニューを表示	បង្ហាញម៉ឺនុយ	메뉴 보이기	ສະແດງເມນູ	မီနူးပြ	Hiện menu	Tunjuk menu	Tampilkan menu	Ipakita ang menu
 status_migration	กำลังย้าย	Migrating	正在迁移	移行中	កំពុង migrate	마이그레이션 중	ກຳລັງຍ້າຍ	ရွှေ့ပြောင်းနေသည်	Đang migrate	Sedang migrasi	Sedang migrasi	Nagmi-migrate
 status_planned	วางแผน	Planned	已计划	計画済み	បានគ្រោង	계획됨	ວາງແຜນ	စီစဉ်ထားသည်	Đã lên kế hoạch	Dirancang	Direncanakan	Nakaplano

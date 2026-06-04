@@ -11,8 +11,8 @@ import (
 )
 
 type IMediaService interface {
-	UploadImage(shopId string, fh *multipart.FileHeader) (*models.Media, error)
-	UploadVideo(shopId string, fh *multipart.FileHeader) (*models.Media, error)
+	UploadImage(holdingCode string, fh *multipart.FileHeader) (*models.Media, error)
+	UploadVideo(holdingCode string, fh *multipart.FileHeader) (*models.Media, error)
 }
 
 type MediaService struct {
@@ -35,7 +35,7 @@ func InitMediaService() IMediaService {
 	return NewMediaService(filePersister, fnGenGuid)
 }
 
-func (svc MediaService) UploadImage(shopId string, fh *multipart.FileHeader) (*models.Media, error) {
+func (svc MediaService) UploadImage(holdingCode string, fh *multipart.FileHeader) (*models.Media, error) {
 
 	// fileUploadMetadataSlice := strings.Split(fh.Filename, ".")
 	// fileName := svc.NewGUIDFn() //fileUploadMetadataSlice[0]
@@ -46,14 +46,14 @@ func (svc MediaService) UploadImage(shopId string, fh *multipart.FileHeader) (*m
 	// }
 
 	// return &models.Media{
-	// 	ShopID: shopId,
+	// 	HoldingCode: holdingCode,
 	// 	Uri:    imageUri,
 	// }, nil
 
 	return nil, nil
 }
 
-func (svc MediaService) UploadVideo(shopId string, fh *multipart.FileHeader) (*models.Media, error) {
+func (svc MediaService) UploadVideo(holdingCode string, fh *multipart.FileHeader) (*models.Media, error) {
 
 	fileExt := ""
 
@@ -76,7 +76,7 @@ func (svc MediaService) UploadVideo(shopId string, fh *multipart.FileHeader) (*m
 	fileExt = strings.TrimPrefix(fileExt, ".")
 	fileName := svc.NewGUIDFn()
 
-	uploadFileName, err := svc.filePersister.Save(fh, shopId+"/"+fileName, fileExt)
+	uploadFileName, err := svc.filePersister.Save(fh, holdingCode+"/"+fileName, fileExt)
 
 	if err != nil {
 		return nil, err

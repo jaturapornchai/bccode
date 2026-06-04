@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/models"
-	"math"
 	"strings"
 	"time"
 
@@ -14,13 +14,13 @@ import (
 	"smlcloudplatform/internal/goapi/mypg"
 )
 
-func ProcessProductBalanceByItemAndWareHouseAndLocation(shopId string, condition int, finalDate string, balanceOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct) (result models.ResultModel) {
+func ProcessProductBalanceByItemAndWareHouseAndLocation(holdingCode string, condition int, finalDate string, balanceOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct) (result models.ResultModel) {
 	// Default to Thailand timezone for backward compatibility
-	return ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(shopId, condition, finalDate, balanceOnly, itemCodeList, warehouseList, "TH")
+	return ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(holdingCode, condition, finalDate, balanceOnly, itemCodeList, warehouseList, "TH")
 }
 
 // Deprecated: ใช้ ProcessProductBalanceByBarcodeWhCodeLocationCodeWithTimezone แทน
-func ProcessProductBalanceByItemAndWareHouseAndLocationWithCountry(shopId string, condition int, finalDate string, balanceOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct, countryCode string) (result models.ResultModel) {
+func ProcessProductBalanceByItemAndWareHouseAndLocationWithCountry(holdingCode string, condition int, finalDate string, balanceOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct, countryCode string) (result models.ResultModel) {
 	// Convert country code to timezone code for backward compatibility
 	timezoneCode := countryCode
 	switch countryCode {
@@ -29,15 +29,15 @@ func ProcessProductBalanceByItemAndWareHouseAndLocationWithCountry(shopId string
 	case "US":
 		timezoneCode = "US_EST" // Default to Eastern Time
 	}
-	return ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(shopId, condition, finalDate, balanceOnly, itemCodeList, warehouseList, timezoneCode)
+	return ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(holdingCode, condition, finalDate, balanceOnly, itemCodeList, warehouseList, timezoneCode)
 }
 
-func ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(shopId string, condition int, finalDate string, balanceOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct, timezoneCode string) (result models.ResultModel) {
+func ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(holdingCode string, condition int, finalDate string, balanceOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct, timezoneCode string) (result models.ResultModel) {
 	overallStart := time.Now()
 
 	ctx := context.Background()
 
-	db, err := mypg.PgSqlFastConnect(shopId)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		logger.Info("Failed to connect to PostgreSQL: %v", err)
 		return
@@ -58,7 +58,7 @@ func ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(shopId strin
 				p.itemcode,
 				STRING_AGG(DISTINCT p.barcode, ', ') AS barcodelist
 			FROM productbarcode p
-			WHERE p.itemcode IS NOT NULL 
+			WHERE p.itemcode IS NOT NULL
 			AND p.itemcode <> ''
 			{OTHER_CONDITION}
 			GROUP BY p.itemcode
@@ -68,7 +68,7 @@ func ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(shopId strin
 				p.itemcode,
 				STRING_AGG(DISTINCT p.name0, ', ') AS itemname
 			FROM productbarcode p
-			WHERE p.itemcode IS NOT NULL 
+			WHERE p.itemcode IS NOT NULL
 			AND p.itemcode <> ''
 			{OTHER_CONDITION}
 			GROUP BY p.itemcode
@@ -76,13 +76,13 @@ func ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(shopId strin
 		auto_packing AS (
 			SELECT
 				p.itemcode,
-				COUNT(DISTINCT CASE 
-					WHEN p.barcoderefunitstand > 0 AND p.barcoderefunitdivide > 0 
+				COUNT(DISTINCT CASE
+					WHEN p.barcoderefunitstand > 0 AND p.barcoderefunitdivide > 0
 					AND (p.barcoderefunitstand != p.barcoderefunitdivide)
-					THEN p.barcoderefunitstand || '-' || p.barcoderefunitdivide 
+					THEN p.barcoderefunitstand || '-' || p.barcoderefunitdivide
 				END) AS countpacking
 			FROM productbarcode p
-			WHERE p.itemcode IS NOT NULL 
+			WHERE p.itemcode IS NOT NULL
 			AND p.itemcode <> ''
 			{OTHER_CONDITION}
 			GROUP BY p.itemcode
@@ -169,36 +169,36 @@ func ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(shopId strin
 
 			transFlagList := myglobal.GetTransFlagsForQuery()
 
-			query := `SELECT 
+			query := `SELECT
 						lc.itemcode,
 						lc.whcode,
 						lc.averagecost,
-						sb.total_balance AS balanceqty, 
+						sb.total_balance AS balanceqty,
 						sb.total_balance * lc.averagecost as balanceamount
-					FROM 
+					FROM
 						(
-							SELECT 
+							SELECT
 								itemcode,
 								whcode,
 								averagecost,
 								balanceamount,
 								ROW_NUMBER() OVER (PARTITION BY itemcode, whcode ORDER BY docdatetime DESC) AS rn
 							FROM processstockcost
-							WHERE 
+							WHERE
 								` + dateCondition + `
 						) AS lc
-					INNER JOIN 
+					INNER JOIN
 						(
-							SELECT 
+							SELECT
 								itemcode,
 								whcode,
 								SUM(totalqty * (unitstand / NULLIF(unitdivide, 0))) AS total_balance
-							FROM docdetail 
-							WHERE 
+							FROM docdetail
+							WHERE
 								` + dateCondition + `
 								AND transflag IN (` + transFlagList + `)
 							GROUP BY itemcode, whcode
-						) AS sb 
+						) AS sb
 					ON lc.itemcode = sb.itemcode AND lc.whcode = sb.whcode
 					WHERE lc.rn = 1`
 
@@ -255,35 +255,35 @@ func ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(shopId strin
 
 			transFlagList := myglobal.GetTransFlagsForQuery()
 
-			query := `SELECT 
+			query := `SELECT
 						lc.itemcode,
 						lc.whcode,
 						lc.locationcode,
 						sb.total_balance AS balanceqty
-					FROM 
+					FROM
 						(
-							SELECT 
+							SELECT
 								itemcode,
 								whcode,
 								locationcode,
 								ROW_NUMBER() OVER (PARTITION BY itemcode, whcode, locationcode ORDER BY docdatetime DESC) AS rn
 							FROM processstockcost
-							WHERE 
+							WHERE
 								` + dateCondition2 + `
 						) AS lc
-					INNER JOIN 
+					INNER JOIN
 						(
-							SELECT 
+							SELECT
 								itemcode,
 								whcode,
 								locationcode,
 								SUM(totalqty * (unitstand / NULLIF(unitdivide, 0))) AS total_balance
-							FROM docdetail 
-							WHERE 
+							FROM docdetail
+							WHERE
 								` + dateCondition2 + `
 								AND transflag IN (` + transFlagList + `)
 							GROUP BY itemcode, whcode, locationcode
-						) AS sb 
+						) AS sb
 					ON lc.itemcode = sb.itemcode AND lc.whcode = sb.whcode AND lc.locationcode = sb.locationcode
 					WHERE lc.rn = 1`
 
@@ -347,21 +347,21 @@ func ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(shopId strin
 			return
 		}
 
-		queryProduct := `SELECT 
+		queryProduct := `SELECT
 						itemcode,
 						averagecost,
 						balanceqty,
 						balanceamount
-					FROM 
+					FROM
 						(
-							SELECT 
+							SELECT
 								itemcode,
 								averagecost,
 								balanceqty,
 								balanceamount,
 								ROW_NUMBER() OVER (PARTITION BY itemcode ORDER BY docdatetime DESC) AS rn
 							FROM processstockcost
-							WHERE 
+							WHERE
 								` + dateCondition3 + `
 						) AS lc
 					WHERE lc.rn = 1`

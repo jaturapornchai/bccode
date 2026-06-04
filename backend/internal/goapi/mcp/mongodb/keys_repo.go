@@ -22,31 +22,31 @@ const (
 
 // APIKey represents an MCP API Key
 type APIKey struct {
-	ID primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	APIKey string             `bson:"api_key" json:"api_key"`
-	ShopID string             `bson:"shop_id" json:"shop_id"`
-	Name string             `bson:"name" json:"name"`
-	Description string             `bson:"description" json:"description"`
-	IsActive bool               `bson:"is_active" json:"is_active"`
-	AllowedTools []string           `bson:"allowed_tools" json:"allowed_tools"`
+	ID                 primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	APIKey             string             `bson:"api_key" json:"api_key"`
+	HoldingCode        string             `bson:"holding_code" json:"holding_code"`
+	Name               string             `bson:"name" json:"name"`
+	Description        string             `bson:"description" json:"description"`
+	IsActive           bool               `bson:"is_active" json:"is_active"`
+	AllowedTools       []string           `bson:"allowed_tools" json:"allowed_tools"`
 	RateLimitPerMinute int                `bson:"rate_limit_per_minute" json:"rate_limit_per_minute"`
-	CreatedAt time.Time          `bson:"created_at" json:"created_at"`
-	ExpiresAt *time.Time         `bson:"expires_at,omitempty" json:"expires_at,omitempty"`
-	LastUsedAt *time.Time         `bson:"last_used_at,omitempty" json:"last_used_at,omitempty"`
-	CreatedBy string             `bson:"created_by" json:"created_by"`
+	CreatedAt          time.Time          `bson:"created_at" json:"created_at"`
+	ExpiresAt          *time.Time         `bson:"expires_at,omitempty" json:"expires_at,omitempty"`
+	LastUsedAt         *time.Time         `bson:"last_used_at,omitempty" json:"last_used_at,omitempty"`
+	CreatedBy          string             `bson:"created_by" json:"created_by"`
 }
 
 // AuditLog represents an MCP audit log entry
 type AuditLog struct {
-	ID primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	APIKeyID primitive.ObjectID `bson:"api_key_id" json:"api_key_id"`
-	ShopID string             `bson:"shop_id" json:"shop_id"`
-	ToolName string             `bson:"tool_name" json:"tool_name"`
-	RequestParams bson.M             `bson:"request_params" json:"request_params"`
-	ResponseStatus string             `bson:"response_status" json:"response_status"`
-	ErrorMessage string             `bson:"error_message,omitempty" json:"error_message,omitempty"`
+	ID              primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	APIKeyID        primitive.ObjectID `bson:"api_key_id" json:"api_key_id"`
+	HoldingCode     string             `bson:"holding_code" json:"holding_code"`
+	ToolName        string             `bson:"tool_name" json:"tool_name"`
+	RequestParams   bson.M             `bson:"request_params" json:"request_params"`
+	ResponseStatus  string             `bson:"response_status" json:"response_status"`
+	ErrorMessage    string             `bson:"error_message,omitempty" json:"error_message,omitempty"`
 	ExecutionTimeMs int64              `bson:"execution_time_ms" json:"execution_time_ms"`
-	CreatedAt time.Time          `bson:"created_at" json:"created_at"`
+	CreatedAt       time.Time          `bson:"created_at" json:"created_at"`
 }
 
 // KeysRepository handles API key operations
@@ -132,11 +132,11 @@ func (r *KeysRepository) GetAPIKeyByID(ctx context.Context, id string) (*APIKey,
 }
 
 // GetAPIKeysByShop retrieves all API keys for a shop
-func (r *KeysRepository) GetAPIKeysByShop(ctx context.Context, shopID string) ([]APIKey, error) {
+func (r *KeysRepository) GetAPIKeysByShop(ctx context.Context, holdingCode string) ([]APIKey, error) {
 	collection := r.db.Collection(CollectionAPIKeys)
 
 	cursor, err := collection.Find(ctx, bson.M{
-		"shop_id": shopID,
+		"holding_code": holdingCode,
 	}, options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}}))
 
 	if err != nil {
@@ -240,7 +240,7 @@ func (r *KeysRepository) CreateAuditLog(ctx context.Context, log *AuditLog) erro
 }
 
 // GetAuditLogsByShop retrieves audit logs for a shop
-func (r *KeysRepository) GetAuditLogsByShop(ctx context.Context, shopID string, limit int64, skip int64) ([]AuditLog, error) {
+func (r *KeysRepository) GetAuditLogsByShop(ctx context.Context, holdingCode string, limit int64, skip int64) ([]AuditLog, error) {
 	collection := r.db.Collection(CollectionAuditLog)
 
 	opts := options.Find().
@@ -248,7 +248,7 @@ func (r *KeysRepository) GetAuditLogsByShop(ctx context.Context, shopID string, 
 		SetLimit(limit).
 		SetSkip(skip)
 
-	cursor, err := collection.Find(ctx, bson.M{"shop_id": shopID}, opts)
+	cursor, err := collection.Find(ctx, bson.M{"holding_code": holdingCode}, opts)
 	if err != nil {
 		logger.Error("Failed to get audit logs: %v", err)
 		return nil, fmt.Errorf("failed to get audit logs: %w", err)
@@ -280,7 +280,7 @@ func (r *KeysRepository) EnsureIndexes(ctx context.Context) error {
 			Options: options.Index().SetUnique(true),
 		},
 		{
-			Keys: bson.D{{Key: "shop_id", Value: 1}},
+			Keys: bson.D{{Key: "holding_code", Value: 1}},
 		},
 		{
 			Keys: bson.D{{Key: "is_active", Value: 1}},
@@ -307,14 +307,14 @@ func (r *KeysRepository) EnsureIndexes(ctx context.Context) error {
 			Keys: bson.D{{Key: "api_key_id", Value: 1}},
 		},
 		{
-			Keys: bson.D{{Key: "shop_id", Value: 1}},
+			Keys: bson.D{{Key: "holding_code", Value: 1}},
 		},
 		{
 			Keys: bson.D{{Key: "created_at", Value: -1}},
 		},
 		{
 			Keys: bson.D{
-				{Key: "shop_id", Value: 1},
+				{Key: "holding_code", Value: 1},
 				{Key: "created_at", Value: -1},
 			},
 		},

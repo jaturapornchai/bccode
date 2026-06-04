@@ -13,22 +13,22 @@ import (
 )
 
 type IAccountPeriodMasterRepository interface {
-	Count(ctx context.Context, shopID string) (int, error)
+	Count(ctx context.Context, holdingCode string) (int, error)
 	Create(ctx context.Context, doc models.AccountPeriodMasterDoc) (string, error)
 	CreateInBatch(ctx context.Context, docList []models.AccountPeriodMasterDoc) error
-	Update(ctx context.Context, shopID string, guid string, doc models.AccountPeriodMasterDoc) error
-	DeleteByGuidfixed(ctx context.Context, shopID string, guid string, username string) error
-	Delete(ctx context.Context, shopID string, username string, filters map[string]interface{}) error
-	FindPage(ctx context.Context, shopID string, searchInFields []string, pageable micromodels.Pageable) ([]models.AccountPeriodMasterInfo, mongopagination.PaginationData, error)
-	FindByGuid(ctx context.Context, shopID string, guid string) (models.AccountPeriodMasterDoc, error)
-	FindByDateRange(ctx context.Context, shopID string, startDate time.Time, endDate time.Time) (models.AccountPeriodMasterDoc, error)
-	FindByPeriod(ctx context.Context, shopID string, period int) (models.AccountPeriodMasterDoc, error)
+	Update(ctx context.Context, holdingCode string, guid string, doc models.AccountPeriodMasterDoc) error
+	DeleteByGuidfixed(ctx context.Context, holdingCode string, guid string, username string) error
+	Delete(ctx context.Context, holdingCode string, username string, filters map[string]interface{}) error
+	FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable micromodels.Pageable) ([]models.AccountPeriodMasterInfo, mongopagination.PaginationData, error)
+	FindByGuid(ctx context.Context, holdingCode string, guid string) (models.AccountPeriodMasterDoc, error)
+	FindByDateRange(ctx context.Context, holdingCode string, startDate time.Time, endDate time.Time) (models.AccountPeriodMasterDoc, error)
+	FindByPeriod(ctx context.Context, holdingCode string, period int) (models.AccountPeriodMasterDoc, error)
 
-	FindInItemGuid(ctx context.Context, shopID string, columnName string, itemGuidList []string) ([]models.AccountPeriodMasterItemGuid, error)
-	FindByDocIndentityGuid(ctx context.Context, shopID string, indentityField string, indentityValue interface{}) (models.AccountPeriodMasterDoc, error)
-	FindAll(ctx context.Context, shopID string) ([]models.AccountPeriodMasterDoc, error)
+	FindInItemGuid(ctx context.Context, holdingCode string, columnName string, itemGuidList []string) ([]models.AccountPeriodMasterItemGuid, error)
+	FindByDocIndentityGuid(ctx context.Context, holdingCode string, indentityField string, indentityValue interface{}) (models.AccountPeriodMasterDoc, error)
+	FindAll(ctx context.Context, holdingCode string) ([]models.AccountPeriodMasterDoc, error)
 
-	FindStep(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, selectFields map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.AccountPeriodMasterInfo, int, error)
+	FindStep(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, selectFields map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.AccountPeriodMasterInfo, int, error)
 }
 
 type AccountPeriodMasterRepository struct {
@@ -51,7 +51,7 @@ func NewAccountPeriodMasterRepository(pst microservice.IPersisterMongo) *Account
 	return insRepo
 }
 
-func (repo AccountPeriodMasterRepository) FindByDateRange(ctx context.Context, shopID string, startDate time.Time, endDate time.Time) (models.AccountPeriodMasterDoc, error) {
+func (repo AccountPeriodMasterRepository) FindByDateRange(ctx context.Context, holdingCode string, startDate time.Time, endDate time.Time) (models.AccountPeriodMasterDoc, error) {
 	endDate = endDate.AddDate(0, 0, 1)
 
 	filterQuery := bson.D{
@@ -65,7 +65,7 @@ func (repo AccountPeriodMasterRepository) FindByDateRange(ctx context.Context, s
 		}},
 	}
 
-	finDoc, err := repo.FindOne(ctx, shopID, filterQuery)
+	finDoc, err := repo.FindOne(ctx, holdingCode, filterQuery)
 
 	if err != nil {
 		return models.AccountPeriodMasterDoc{}, err
@@ -74,13 +74,13 @@ func (repo AccountPeriodMasterRepository) FindByDateRange(ctx context.Context, s
 	return finDoc, nil
 }
 
-func (repo AccountPeriodMasterRepository) FindByPeriod(ctx context.Context, shopID string, period int) (models.AccountPeriodMasterDoc, error) {
+func (repo AccountPeriodMasterRepository) FindByPeriod(ctx context.Context, holdingCode string, period int) (models.AccountPeriodMasterDoc, error) {
 
 	filterQuery := bson.D{
 		bson.E{"period", period},
 	}
 
-	finDoc, err := repo.FindOne(ctx, shopID, filterQuery)
+	finDoc, err := repo.FindOne(ctx, holdingCode, filterQuery)
 
 	if err != nil {
 		return models.AccountPeriodMasterDoc{}, err
@@ -89,12 +89,12 @@ func (repo AccountPeriodMasterRepository) FindByPeriod(ctx context.Context, shop
 	return finDoc, nil
 }
 
-func (repo AccountPeriodMasterRepository) FindAll(ctx context.Context, shopID string) ([]models.AccountPeriodMasterDoc, error) {
+func (repo AccountPeriodMasterRepository) FindAll(ctx context.Context, holdingCode string) ([]models.AccountPeriodMasterDoc, error) {
 
 	filterQuery := bson.M{
-		"shopid":     shopID,
-		"isdisabled": false,
-		"deleted_at":  bson.M{"$exists": false},
+		"holding_code": holdingCode,
+		"isdisabled":   false,
+		"deleted_at":   bson.M{"$exists": false},
 	}
 
 	findDocList := []models.AccountPeriodMasterDoc{}

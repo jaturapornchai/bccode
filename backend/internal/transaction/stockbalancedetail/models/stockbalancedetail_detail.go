@@ -10,7 +10,7 @@ import (
 const stockbalanceDetailCollectionName = "transactionStockBalanceDetails"
 
 type StockBalanceDetail struct {
-	DocNo string `json:"docno" bson:"docno" validate:"required"`
+	DocNo               string `json:"docno" bson:"docno" validate:"required"`
 	trans_models.Detail `bson:"inline"`
 }
 
@@ -28,12 +28,12 @@ func (StockBalanceDetailInfo) CollectionName() string {
 }
 
 type StockBalanceDetailData struct {
-	models.ShopIdentity    `bson:"inline"`
-	StockBalanceDetailInfo `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	StockBalanceDetailInfo   `bson:"inline"`
 }
 
 type StockBalanceDetailDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                     primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	StockBalanceDetailData `bson:"inline"`
 	models.ActivityDoc     `bson:"inline"`
 }

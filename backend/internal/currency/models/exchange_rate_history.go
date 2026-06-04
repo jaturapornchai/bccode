@@ -10,11 +10,11 @@ const exchangeRateHistoryCollectionName = "exchangeRateHistory"
 
 // ExchangeRateHistory - ประวัติอัตราแลกเปลี่ยน (แยก document ต่าง date)
 type ExchangeRateHistory struct {
-	Currency string  `json:"currency" bson:"currency"` // USD, EUR, JPY, etc.
-	Date string  `json:"date" bson:"date"`         // YYYY-MM-DD
-	Rate float64 `json:"rate" bson:"rate"`         // อัตราแลกเปลี่ยนเป็นเงินบาท (1 USD = X THB)
-	Source string  `json:"source,omitempty" bson:"source,omitempty"` // แหล่งที่มา (manual, api, etc.)
-	Note string  `json:"note,omitempty" bson:"note,omitempty"`     // หมายเหตุ
+	Currency string  `json:"currency" bson:"currency"`                 // USD, EUR, JPY, etc.
+	Date     string  `json:"date" bson:"date"`                         // YYYY-MM-DD
+	Rate     float64 `json:"rate" bson:"rate"`                         // อัตราแลกเปลี่ยนเป็นเงินบาท (1 USD = X THB)
+	Source   string  `json:"source,omitempty" bson:"source,omitempty"` // แหล่งที่มา (manual, api, etc.)
+	Note     string  `json:"note,omitempty" bson:"note,omitempty"`     // หมายเหตุ
 }
 
 type ExchangeRateHistoryInfo struct {
@@ -27,12 +27,12 @@ func (*ExchangeRateHistoryInfo) CollectionName() string {
 }
 
 type ExchangeRateHistoryData struct {
-	models.ShopIdentity     `bson:"inline"`
-	ExchangeRateHistoryInfo `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	ExchangeRateHistoryInfo  `bson:"inline"`
 }
 
 type ExchangeRateHistoryDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                      primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	ExchangeRateHistoryData `bson:"inline"`
 	models.ActivityDoc      `bson:"inline"`
 }

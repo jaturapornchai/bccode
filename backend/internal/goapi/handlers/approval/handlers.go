@@ -169,7 +169,7 @@ type ApprovalRule struct {
 // POApprovalSetting represents a PO approval setting document
 type POApprovalSetting struct {
 	ID               primitive.ObjectID `bson:"_id,omitempty" json:"guid,omitempty"`
-	ShopID           string             `bson:"shop_id" json:"shop_id"`
+	HoldingCode      string             `bson:"holding_code" json:"holding_code"`
 	PurchaseTypeCode string             `bson:"purchase_type_code" json:"purchase_type_code"`
 	PurchaseTypeName string             `bson:"purchase_type_name" json:"purchase_type_name"`
 	Rules            []ApprovalRule     `bson:"rules" json:"rules"`
@@ -180,7 +180,7 @@ type POApprovalSetting struct {
 
 // POApprovalSettingRequest represents a request for PO approval setting operations
 type POApprovalSettingRequest struct {
-	ShopID           string         `json:"shop_id"`
+	HoldingCode      string         `json:"holding_code"`
 	PurchaseTypeCode string         `json:"purchase_type_code"`
 	PurchaseTypeName string         `json:"purchase_type_name"`
 	Rules            []ApprovalRule `json:"rules"`
@@ -221,10 +221,10 @@ func GetPOApprovalSettingsHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" {
+	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "shop_id is required",
+			"message": "holding_code is required",
 		})
 	}
 
@@ -232,7 +232,7 @@ func GetPOApprovalSettingsHandler(c echo.Context) error {
 	defer cancel()
 
 	collection := getCollection(POApprovalSettingsCollection)
-	filter := bson.M{"shop_id": req.ShopID}
+	filter := bson.M{"holding_code": req.HoldingCode}
 
 	cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.M{"purchase_type_code": 1}))
 	if err != nil {
@@ -275,10 +275,10 @@ func GetPOApprovalSettingHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" || req.PurchaseTypeCode == "" {
+	if req.HoldingCode == "" || req.PurchaseTypeCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "shop_id and purchase_type_code are required",
+			"message": "holding_code and purchase_type_code are required",
 		})
 	}
 
@@ -286,7 +286,7 @@ func GetPOApprovalSettingHandler(c echo.Context) error {
 	defer cancel()
 
 	collection := getCollection(POApprovalSettingsCollection)
-	filter := bson.M{"shop_id": req.ShopID, "purchase_type_code": req.PurchaseTypeCode}
+	filter := bson.M{"holding_code": req.HoldingCode, "purchase_type_code": req.PurchaseTypeCode}
 
 	var setting POApprovalSetting
 	err := collection.FindOne(ctx, filter).Decode(&setting)
@@ -325,10 +325,10 @@ func SavePOApprovalSettingHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" || req.PurchaseTypeCode == "" {
+	if req.HoldingCode == "" || req.PurchaseTypeCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "shop_id and purchase_type_code are required",
+			"message": "holding_code and purchase_type_code are required",
 		})
 	}
 
@@ -349,7 +349,7 @@ func SavePOApprovalSettingHandler(c echo.Context) error {
 	}
 	rules = enrichApproverUserUIDs(ctx, rules)
 
-	filter := bson.M{"shop_id": req.ShopID, "purchase_type_code": req.PurchaseTypeCode}
+	filter := bson.M{"holding_code": req.HoldingCode, "purchase_type_code": req.PurchaseTypeCode}
 	update := bson.M{
 		"$set": bson.M{
 			"purchase_type_name": req.PurchaseTypeName,
@@ -358,7 +358,7 @@ func SavePOApprovalSettingHandler(c echo.Context) error {
 			"updated_at":         now,
 		},
 		"$setOnInsert": bson.M{
-			"shop_id":            req.ShopID,
+			"holding_code":       req.HoldingCode,
 			"purchase_type_code": req.PurchaseTypeCode,
 			"created_at":         now,
 		},
@@ -398,10 +398,10 @@ func DeletePOApprovalSettingHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" || req.PurchaseTypeCode == "" {
+	if req.HoldingCode == "" || req.PurchaseTypeCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "shop_id and purchase_type_code are required",
+			"message": "holding_code and purchase_type_code are required",
 		})
 	}
 
@@ -409,7 +409,7 @@ func DeletePOApprovalSettingHandler(c echo.Context) error {
 	defer cancel()
 
 	collection := getCollection(POApprovalSettingsCollection)
-	filter := bson.M{"shop_id": req.ShopID, "purchase_type_code": req.PurchaseTypeCode}
+	filter := bson.M{"holding_code": req.HoldingCode, "purchase_type_code": req.PurchaseTypeCode}
 
 	result, err := collection.DeleteOne(ctx, filter)
 	if err != nil {
@@ -467,7 +467,7 @@ type POApprovalStatusItem struct {
 // POApprovalStatus สถานะการอนุมัติ PO
 type POApprovalStatus struct {
 	ID                   primitive.ObjectID `bson:"_id,omitempty" json:"guid,omitempty"`
-	ShopID               string             `bson:"shop_id" json:"shop_id"`
+	HoldingCode          string             `bson:"holding_code" json:"holding_code"`
 	DocNo                string             `bson:"docno" json:"docno"`
 	GuidFixed            string             `bson:"guid_fixed" json:"guid_fixed"`
 	SourceDocNo          string             `bson:"source_docno,omitempty" json:"source_docno,omitempty"`         // เลขที่เอกสารต้นแบบ
@@ -505,7 +505,7 @@ type POApprovalStatusRequestItem struct {
 
 // POApprovalStatusRequest request สำหรับจัดการสถานะการอนุมัติ
 type POApprovalStatusRequest struct {
-	ShopID           string  `json:"shop_id"`
+	HoldingCode      string  `json:"holding_code"`
 	DocNo            string  `json:"docno"`
 	GuidFixed        string  `json:"guid_fixed"`
 	SourceDocNo      string  `json:"source_docno"`     // เลขที่เอกสารต้นแบบ
@@ -540,10 +540,10 @@ func GetPOApprovalStatusHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" || req.DocNo == "" {
+	if req.HoldingCode == "" || req.DocNo == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "shop_id and docno are required",
+			"message": "holding_code and docno are required",
 		})
 	}
 
@@ -551,7 +551,7 @@ func GetPOApprovalStatusHandler(c echo.Context) error {
 	defer cancel()
 
 	collection := getTokenCollection(POApprovalStatusCollection)
-	filter := bson.M{"shop_id": req.ShopID, "docno": req.DocNo}
+	filter := bson.M{"holding_code": req.HoldingCode, "docno": req.DocNo}
 
 	var status POApprovalStatus
 	err := collection.FindOne(ctx, filter).Decode(&status)
@@ -578,8 +578,8 @@ func GetPOApprovalStatusHandler(c echo.Context) error {
 
 // GetBatchPOApprovalStatusRequest request สำหรับดึงสถานะหลายเอกสาร
 type GetBatchPOApprovalStatusRequest struct {
-	ShopID string   `json:"shop_id"`
-	DocNos []string `json:"docnos"`
+	HoldingCode string   `json:"holding_code"`
+	DocNos      []string `json:"docnos"`
 }
 
 // GetBatchPOApprovalStatusHandler - ดึงสถานะการอนุมัติ PO หลายเอกสารพร้อมกัน
@@ -596,10 +596,10 @@ func GetBatchPOApprovalStatusHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" || len(req.DocNos) == 0 {
+	if req.HoldingCode == "" || len(req.DocNos) == 0 {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "shop_id and docnos are required",
+			"message": "holding_code and docnos are required",
 		})
 	}
 
@@ -613,8 +613,8 @@ func GetBatchPOApprovalStatusHandler(c echo.Context) error {
 
 	collection := getTokenCollection(POApprovalStatusCollection)
 	filter := bson.M{
-		"shop_id": req.ShopID,
-		"docno":   bson.M{"$in": req.DocNos},
+		"holding_code": req.HoldingCode,
+		"docno":        bson.M{"$in": req.DocNos},
 	}
 
 	cursor, err := collection.Find(ctx, filter)
@@ -675,8 +675,8 @@ func GetBatchPOApprovalStatusHandler(c echo.Context) error {
 	if len(docNoList) > 0 {
 		notificationCollection := getTokenCollection(POApprovalNotificationLogCollection)
 		notificationFilter := bson.M{
-			"shop_id": req.ShopID,
-			"docno":   bson.M{"$in": docNoList},
+			"holding_code": req.HoldingCode,
+			"docno":        bson.M{"$in": docNoList},
 		}
 		notificationCursor, err := notificationCollection.Find(ctx, notificationFilter, options.Find().SetSort(bson.D{{Key: "sent_at", Value: -1}}))
 		if err == nil {
@@ -744,17 +744,17 @@ func SubmitPOApprovalHandler(c echo.Context) error {
 	}
 
 	// Log เพื่อ debug ค่าที่รับมาจาก Frontend
-	logger.Info("[SubmitPO] Request received - docNo: %s, shopID: %s, is_modified: %v, totalAmount: %.2f",
-		req.DocNo, req.ShopID, req.IsModified, req.TotalAmount)
+	logger.Info("[SubmitPO] Request received - docNo: %s, holdingCode: %s, is_modified: %v, totalAmount: %.2f",
+		req.DocNo, req.HoldingCode, req.IsModified, req.TotalAmount)
 	logger.Info("[SubmitPO] PurchaseType - code: '%s', name: '%s'", req.PurchaseTypeCode, req.PurchaseTypeName)
 	logger.Info("[SubmitPO] Transaction details - custCode: '%s', custName: '%s', items: %d",
 		req.CustCode, req.CustName, len(req.Items))
 	logger.Info("[SubmitPO] Comment (หมายเหตุ): '%s'", req.Comment)
 
-	if req.ShopID == "" || req.DocNo == "" || req.PurchaseTypeCode == "" {
+	if req.HoldingCode == "" || req.DocNo == "" || req.PurchaseTypeCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "shop_id, docno, and purchase_type_code are required",
+			"message": "holding_code, docno, and purchase_type_code are required",
 		})
 	}
 
@@ -767,7 +767,7 @@ func SubmitPOApprovalHandler(c echo.Context) error {
 	settingsCollection := getCollection(POApprovalSettingsCollection)
 	var setting POApprovalSetting
 	err := settingsCollection.FindOne(ctx, bson.M{
-		"shop_id":            req.ShopID,
+		"holding_code":       req.HoldingCode,
 		"purchase_type_code": req.PurchaseTypeCode,
 	}).Decode(&setting)
 
@@ -822,7 +822,7 @@ func SubmitPOApprovalHandler(c echo.Context) error {
 
 	// ดึง history เดิม (ถ้ามี) เพื่อ append ไม่ใช่ overwrite
 	var existingStatus POApprovalStatus
-	existingFilter := bson.M{"shop_id": req.ShopID, "docno": req.DocNo}
+	existingFilter := bson.M{"holding_code": req.HoldingCode, "docno": req.DocNo}
 	existingErr := collection.FindOne(ctx, existingFilter).Decode(&existingStatus)
 
 	var history []ApprovalHistory
@@ -862,7 +862,7 @@ func SubmitPOApprovalHandler(c echo.Context) error {
 	}
 
 	// Upsert - ถ้ามีแล้วให้อัปเดต ถ้าไม่มีให้สร้างใหม่
-	filter := bson.M{"shop_id": req.ShopID, "docno": req.DocNo}
+	filter := bson.M{"holding_code": req.HoldingCode, "docno": req.DocNo}
 	update := bson.M{
 		"$set": bson.M{
 			"guid_fixed":             req.GuidFixed,
@@ -887,9 +887,9 @@ func SubmitPOApprovalHandler(c echo.Context) error {
 			"items":       items,
 		},
 		"$setOnInsert": bson.M{
-			"shop_id":    req.ShopID,
-			"docno":      req.DocNo,
-			"created_at": now,
+			"holding_code": req.HoldingCode,
+			"docno":        req.DocNo,
+			"created_at":   now,
 		},
 	}
 
@@ -914,7 +914,7 @@ func SubmitPOApprovalHandler(c echo.Context) error {
 
 	if shouldSendNotification {
 		logger.Info("[SubmitPO] Calling sendAutoNotifications with isModified: %v", req.IsModified)
-		notificationSent = sendAutoNotifications(ctx, req.ShopID, req.DocNo, savedStatus, setting, req.IsModified)
+		notificationSent = sendAutoNotifications(ctx, req.HoldingCode, req.DocNo, savedStatus, setting, req.IsModified)
 		logger.Info("[SubmitPO] Notifications sent: %d", notificationSent)
 	}
 
@@ -933,9 +933,9 @@ func SubmitPOApprovalHandler(c echo.Context) error {
 
 // sendAutoNotifications ส่งแจ้งเตือนอัตโนมัติไปยังผู้อนุมัติ
 // isModified = true จะส่งแจ้งเตือนใหม่แม้ว่าจะเคยส่งไปแล้ว และแสดงว่ามีการแก้ไข
-func sendAutoNotifications(ctx context.Context, shopID, docNo string, poStatus POApprovalStatus, setting POApprovalSetting, isModified bool) int {
-	logger.Info("[sendAutoNotifications] START - docNo: %s, shopID: %s, isModified: %v, requiredLevel: %d",
-		docNo, shopID, isModified, poStatus.RequiredLevel)
+func sendAutoNotifications(ctx context.Context, holdingCode, docNo string, poStatus POApprovalStatus, setting POApprovalSetting, isModified bool) int {
+	logger.Info("[sendAutoNotifications] START - docNo: %s, holdingCode: %s, isModified: %v, requiredLevel: %d",
+		docNo, holdingCode, isModified, poStatus.RequiredLevel)
 
 	// หาผู้อนุมัติที่เกี่ยวข้องตามวงเงิน
 	var approvers []ApproverInfo
@@ -985,11 +985,11 @@ func sendAutoNotifications(ctx context.Context, shopID, docNo string, poStatus P
 	}
 
 	// ดึง LIFF ID สำหรับ LINE
-	liffID, liffErr := getLiffID(shopID)
+	liffID, liffErr := getLiffID(holdingCode)
 	if liffErr != nil {
-		logger.Warn("[sendAutoNotifications] Failed to get LIFF ID for shop %s: %v", shopID, liffErr)
+		logger.Warn("[sendAutoNotifications] Failed to get LIFF ID for shop %s: %v", holdingCode, liffErr)
 	}
-	logger.Info("[sendAutoNotifications] LIFF ID for shop %s: '%s' (empty=%v)", shopID, liffID, liffID == "")
+	logger.Info("[sendAutoNotifications] LIFF ID for shop %s: '%s' (empty=%v)", holdingCode, liffID, liffID == "")
 
 	// Base URL
 	baseURL := os.Getenv("APP_BASE_URL")
@@ -1007,7 +1007,7 @@ func sendAutoNotifications(ctx context.Context, shopID, docNo string, poStatus P
 		// ถ้าไม่ใช่การแก้ไข ให้ตรวจสอบว่าเคยส่งสำเร็จแล้วหรือยัง
 		if !isModified {
 			existingFilter := bson.M{
-				"shop_id":       shopID,
+				"holding_code":  holdingCode,
 				"docno":         docNo,
 				"approver_code": approver.UserCode,
 				"status":        "sent",
@@ -1020,17 +1020,17 @@ func sendAutoNotifications(ctx context.Context, shopID, docNo string, poStatus P
 
 		// ส่ง Email ถ้ามี (ใช้ Brevo API)
 		if approver.Email != "" && isBrevoConfigured() {
-			approveToken, _ := generateApprovalToken(shopID, docNo, poStatus.GuidFixed, approver.UserCode, approver.UserName, "approve")
-			rejectToken, _ := generateApprovalToken(shopID, docNo, poStatus.GuidFixed, approver.UserCode, approver.UserName, "reject")
+			approveToken, _ := generateApprovalToken(holdingCode, docNo, poStatus.GuidFixed, approver.UserCode, approver.UserName, "approve")
+			rejectToken, _ := generateApprovalToken(holdingCode, docNo, poStatus.GuidFixed, approver.UserCode, approver.UserName, "reject")
 
 			approveURL := fmt.Sprintf("%s/api/approval/action?token=%s&action=approve", baseURL, approveToken)
 			rejectURL := fmt.Sprintf("%s/api/approval/action?token=%s&action=reject", baseURL, rejectToken)
-			pdfURL := fmt.Sprintf("%s/api/po/pdf?shop_id=%s&docno=%s", baseURL, shopID, docNo)
+			pdfURL := fmt.Sprintf("%s/api/po/pdf?holding_code=%s&docno=%s", baseURL, holdingCode, docNo)
 
 			emailErr := SendApprovalEmail(
 				approver.Email,
 				approver.UserName,
-				shopID,
+				holdingCode,
 				docNo,
 				totalAmount,
 				poStatus.PurchaseTypeName,
@@ -1051,7 +1051,7 @@ func sendAutoNotifications(ctx context.Context, shopID, docNo string, poStatus P
 			}
 
 			emailLog := NotificationLog{
-				ShopID:           shopID,
+				HoldingCode:      holdingCode,
 				DocNo:            docNo,
 				GuidFixed:        poStatus.GuidFixed,
 				ApproverCode:     approver.UserCode,
@@ -1068,15 +1068,15 @@ func sendAutoNotifications(ctx context.Context, shopID, docNo string, poStatus P
 
 		// ส่ง LINE Push ถ้ามี
 		if approver.LineUserID != "" && liffID != "" {
-			approveToken, _ := generateApprovalToken(shopID, docNo, poStatus.GuidFixed, approver.UserCode, approver.UserName, "approve")
-			liffURL := fmt.Sprintf("https://liff.line.me/%s/approve?token=%s&shop_id=%s&docno=%s", liffID, approveToken, shopID, docNo)
+			approveToken, _ := generateApprovalToken(holdingCode, docNo, poStatus.GuidFixed, approver.UserCode, approver.UserName, "approve")
+			liffURL := fmt.Sprintf("https://liff.line.me/%s/approve?token=%s&holding_code=%s&docno=%s", liffID, approveToken, holdingCode, docNo)
 
 			logger.Info("[sendAutoNotifications] Sending LINE Push to %s (lineUserID: %s) with isModified: %v",
 				approver.UserName, approver.LineUserID, isModified)
 
 			lineErr := SendLinePushApprovalV2(ApprovalNotificationParams{
 				LineUserID:       approver.LineUserID,
-				ShopID:           shopID,
+				HoldingCode:      holdingCode,
 				DocNo:            docNo,
 				DocDatetime:      poStatus.DocDatetime,
 				TotalAmount:      totalAmount,
@@ -1098,7 +1098,7 @@ func sendAutoNotifications(ctx context.Context, shopID, docNo string, poStatus P
 			}
 
 			lineLog := NotificationLog{
-				ShopID:           shopID,
+				HoldingCode:      holdingCode,
 				DocNo:            docNo,
 				GuidFixed:        poStatus.GuidFixed,
 				ApproverCode:     approver.UserCode,
@@ -1117,7 +1117,7 @@ func sendAutoNotifications(ctx context.Context, shopID, docNo string, poStatus P
 				logger.Warn("[sendAutoNotifications] SKIPPED LINE Push for %s: no line_user_id in approver data", approver.UserCode)
 			}
 			if liffID == "" {
-				logger.Warn("[sendAutoNotifications] SKIPPED LINE Push for %s: no liff_id configured for shop %s", approver.UserCode, shopID)
+				logger.Warn("[sendAutoNotifications] SKIPPED LINE Push for %s: no liff_id configured for shop %s", approver.UserCode, holdingCode)
 			}
 		}
 	}
@@ -1139,10 +1139,10 @@ func ApprovePOHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" || req.DocNo == "" || req.ActionBy == "" {
+	if req.HoldingCode == "" || req.DocNo == "" || req.ActionBy == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "shop_id, docno, and action_by are required",
+			"message": "holding_code, docno, and action_by are required",
 		})
 	}
 
@@ -1171,9 +1171,9 @@ func ApprovePOHandler(c echo.Context) error {
 
 	// Atomic: FindOneAndUpdate กับ filter status=pending → ป้องกัน 2 คน approve พร้อมกัน
 	atomicFilter := bson.M{
-		"shop_id": req.ShopID,
-		"docno":   req.DocNo,
-		"status":  "pending",
+		"holding_code": req.HoldingCode,
+		"docno":        req.DocNo,
+		"status":       "pending",
 	}
 	update := bson.M{
 		"$set": bson.M{
@@ -1193,7 +1193,7 @@ func ApprovePOHandler(c echo.Context) error {
 	if err == mongo.ErrNoDocuments {
 		// ตรวจสอบว่าเอกสารมีอยู่จริงหรือไม่ และสถานะปัจจุบันคืออะไร
 		var existing POApprovalStatus
-		findErr := collection.FindOne(ctx, bson.M{"shop_id": req.ShopID, "docno": req.DocNo}).Decode(&existing)
+		findErr := collection.FindOne(ctx, bson.M{"holding_code": req.HoldingCode, "docno": req.DocNo}).Decode(&existing)
 		if findErr == mongo.ErrNoDocuments {
 			return c.JSON(http.StatusNotFound, map[string]any{
 				"success": false,
@@ -1240,10 +1240,10 @@ func RejectPOHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" || req.DocNo == "" || req.ActionBy == "" {
+	if req.HoldingCode == "" || req.DocNo == "" || req.ActionBy == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "shop_id, docno, and action_by are required",
+			"message": "holding_code, docno, and action_by are required",
 		})
 	}
 
@@ -1271,9 +1271,9 @@ func RejectPOHandler(c echo.Context) error {
 
 	// Atomic: FindOneAndUpdate กับ filter status=pending
 	atomicFilter := bson.M{
-		"shop_id": req.ShopID,
-		"docno":   req.DocNo,
-		"status":  "pending",
+		"holding_code": req.HoldingCode,
+		"docno":        req.DocNo,
+		"status":       "pending",
 	}
 	update := bson.M{
 		"$set": bson.M{
@@ -1292,7 +1292,7 @@ func RejectPOHandler(c echo.Context) error {
 
 	if err == mongo.ErrNoDocuments {
 		var existing POApprovalStatus
-		findErr := collection.FindOne(ctx, bson.M{"shop_id": req.ShopID, "docno": req.DocNo}).Decode(&existing)
+		findErr := collection.FindOne(ctx, bson.M{"holding_code": req.HoldingCode, "docno": req.DocNo}).Decode(&existing)
 		if findErr == mongo.ErrNoDocuments {
 			return c.JSON(http.StatusNotFound, map[string]any{
 				"success": false,
@@ -1333,10 +1333,10 @@ func WithdrawPOHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" || req.DocNo == "" || req.ActionBy == "" {
+	if req.HoldingCode == "" || req.DocNo == "" || req.ActionBy == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "shop_id, docno, and action_by are required",
+			"message": "holding_code, docno, and action_by are required",
 		})
 	}
 
@@ -1344,7 +1344,7 @@ func WithdrawPOHandler(c echo.Context) error {
 	defer cancel()
 
 	collection := getTokenCollection(POApprovalStatusCollection)
-	filter := bson.M{"shop_id": req.ShopID, "docno": req.DocNo}
+	filter := bson.M{"holding_code": req.HoldingCode, "docno": req.DocNo}
 
 	// ดึงสถานะปัจจุบัน
 	var currentStatus POApprovalStatus
@@ -1379,7 +1379,7 @@ func WithdrawPOHandler(c echo.Context) error {
 		settingsCollection := getCollection(POApprovalSettingsCollection)
 		var setting POApprovalSetting
 		settingErr := settingsCollection.FindOne(ctx, bson.M{
-			"shop_id":            req.ShopID,
+			"holding_code":       req.HoldingCode,
 			"purchase_type_code": currentStatus.PurchaseTypeCode,
 		}).Decode(&setting)
 
@@ -1432,9 +1432,9 @@ func WithdrawPOHandler(c echo.Context) error {
 
 	// Atomic: FindOneAndUpdate กับ filter status=pending → ป้องกัน race condition
 	atomicFilter := bson.M{
-		"shop_id": req.ShopID,
-		"docno":   req.DocNo,
-		"status":  "pending",
+		"holding_code": req.HoldingCode,
+		"docno":        req.DocNo,
+		"status":       "pending",
 	}
 	update := bson.M{
 		"$set": bson.M{
@@ -1489,10 +1489,10 @@ func GetPendingApprovalsHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" {
+	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "shop_id is required",
+			"message": "holding_code is required",
 		})
 	}
 
@@ -1503,8 +1503,8 @@ func GetPendingApprovalsHandler(c echo.Context) error {
 
 	// ดึง PO ที่รออนุมัติ และ ผู้ใช้มีสิทธิ์อนุมัติได้
 	filter := bson.M{
-		"shop_id": req.ShopID,
-		"status":  "pending",
+		"holding_code": req.HoldingCode,
+		"status":       "pending",
 	}
 
 	// ถ้าระบุระดับสิทธิ์ ให้กรองเฉพาะที่ผู้ใช้อนุมัติได้
@@ -1554,10 +1554,10 @@ func GetRejectedPOListHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" {
+	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "shop_id is required",
+			"message": "holding_code is required",
 		})
 	}
 
@@ -1568,8 +1568,8 @@ func GetRejectedPOListHandler(c echo.Context) error {
 
 	// ดึง PO ที่ถูกปฏิเสธ
 	filter := bson.M{
-		"shop_id": req.ShopID,
-		"status":  "rejected",
+		"holding_code": req.HoldingCode,
+		"status":       "rejected",
 	}
 
 	cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.M{"updated_at": -1}).SetLimit(50))
@@ -1610,7 +1610,7 @@ const POApprovalNotificationLogCollection = "po_approval_notification_log"
 // NotificationLog บันทึกการส่งการแจ้งเตือน
 type NotificationLog struct {
 	ID               primitive.ObjectID `bson:"_id,omitempty" json:"guid,omitempty"`
-	ShopID           string             `bson:"shop_id" json:"shop_id"`
+	HoldingCode      string             `bson:"holding_code" json:"holding_code"`
 	DocNo            string             `bson:"docno" json:"docno"`
 	GuidFixed        string             `bson:"guid_fixed" json:"guid_fixed"`
 	ApproverCode     string             `bson:"approver_code" json:"approver_code"`
@@ -1629,7 +1629,7 @@ type NotificationLog struct {
 
 // NotificationRequest request สำหรับการแจ้งเตือน
 type NotificationRequest struct {
-	ShopID       string `json:"shop_id"`
+	HoldingCode  string `json:"holding_code"`
 	DocNo        string `json:"docno"`
 	GuidFixed    string `json:"guid_fixed"`
 	ApproverCode string `json:"approver_code"`
@@ -1650,10 +1650,10 @@ func CheckNotificationSentHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" || req.DocNo == "" || req.ApproverCode == "" {
+	if req.HoldingCode == "" || req.DocNo == "" || req.ApproverCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "shop_id, docno, and approver_code are required",
+			"message": "holding_code, docno, and approver_code are required",
 		})
 	}
 
@@ -1665,7 +1665,7 @@ func CheckNotificationSentHandler(c echo.Context) error {
 
 	// ตรวจสอบว่าเคยส่งแจ้งเตือนสำเร็จแล้วหรือยัง
 	filter := bson.M{
-		"shop_id":       req.ShopID,
+		"holding_code":  req.HoldingCode,
 		"docno":         req.DocNo,
 		"approver_code": req.ApproverCode,
 		"status":        "sent",
@@ -1700,10 +1700,10 @@ func SendApprovalNotificationHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" || req.DocNo == "" {
+	if req.HoldingCode == "" || req.DocNo == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "shop_id and docno are required",
+			"message": "holding_code and docno are required",
 		})
 	}
 
@@ -1714,9 +1714,9 @@ func SendApprovalNotificationHandler(c echo.Context) error {
 	statusCollection := getTokenCollection(POApprovalStatusCollection)
 	var poStatus POApprovalStatus
 	err := statusCollection.FindOne(ctx, bson.M{
-		"shop_id": req.ShopID,
-		"docno":   req.DocNo,
-		"status":  "pending",
+		"holding_code": req.HoldingCode,
+		"docno":        req.DocNo,
+		"status":       "pending",
 	}).Decode(&poStatus)
 
 	if err == mongo.ErrNoDocuments {
@@ -1737,7 +1737,7 @@ func SendApprovalNotificationHandler(c echo.Context) error {
 	settingsCollection := getCollection(POApprovalSettingsCollection)
 	var setting POApprovalSetting
 	err = settingsCollection.FindOne(ctx, bson.M{
-		"shop_id":            req.ShopID,
+		"holding_code":       req.HoldingCode,
 		"purchase_type_code": poStatus.PurchaseTypeCode,
 	}).Decode(&setting)
 
@@ -1787,7 +1787,7 @@ func SendApprovalNotificationHandler(c echo.Context) error {
 	for _, approver := range approvers {
 		// ตรวจสอบว่าเคยส่งสำเร็จแล้วหรือยัง
 		existingFilter := bson.M{
-			"shop_id":       req.ShopID,
+			"holding_code":  req.HoldingCode,
 			"docno":         req.DocNo,
 			"approver_code": approver.UserCode,
 			"status":        "sent",
@@ -1806,7 +1806,7 @@ func SendApprovalNotificationHandler(c echo.Context) error {
 		// ส่ง Email ถ้ามี
 		if approver.Email != "" {
 			emailLog := NotificationLog{
-				ShopID:           req.ShopID,
+				HoldingCode:      req.HoldingCode,
 				DocNo:            req.DocNo,
 				GuidFixed:        poStatus.GuidFixed,
 				ApproverCode:     approver.UserCode,
@@ -1830,7 +1830,7 @@ func SendApprovalNotificationHandler(c echo.Context) error {
 		// ส่ง LINE Push ถ้ามี
 		if approver.LineUserID != "" {
 			lineLog := NotificationLog{
-				ShopID:           req.ShopID,
+				HoldingCode:      req.HoldingCode,
 				DocNo:            req.DocNo,
 				GuidFixed:        poStatus.GuidFixed,
 				ApproverCode:     approver.UserCode,
@@ -1868,7 +1868,7 @@ func ProcessPendingNotificationsHandler(c echo.Context) error {
 	}
 
 	type ProcessRequest struct {
-		ShopID string `json:"shop_id"`
+		HoldingCode string `json:"holding_code"`
 	}
 
 	var req ProcessRequest
@@ -1879,10 +1879,10 @@ func ProcessPendingNotificationsHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" {
+	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "shop_id is required",
+			"message": "holding_code is required",
 		})
 	}
 
@@ -1892,8 +1892,8 @@ func ProcessPendingNotificationsHandler(c echo.Context) error {
 	// ดึง PO ทั้งหมดที่รออนุมัติ
 	statusCollection := getTokenCollection(POApprovalStatusCollection)
 	cursor, err := statusCollection.Find(ctx, bson.M{
-		"shop_id": req.ShopID,
-		"status":  "pending",
+		"holding_code": req.HoldingCode,
+		"status":       "pending",
 	})
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]any{
@@ -1921,7 +1921,7 @@ func ProcessPendingNotificationsHandler(c echo.Context) error {
 		settingsCollection := getCollection(POApprovalSettingsCollection)
 		var setting POApprovalSetting
 		err := settingsCollection.FindOne(ctx, bson.M{
-			"shop_id":            req.ShopID,
+			"holding_code":       req.HoldingCode,
 			"purchase_type_code": po.PurchaseTypeCode,
 		}).Decode(&setting)
 
@@ -1949,7 +1949,7 @@ func ProcessPendingNotificationsHandler(c echo.Context) error {
 
 		for _, approver := range approvers {
 			existingFilter := bson.M{
-				"shop_id":       req.ShopID,
+				"holding_code":  req.HoldingCode,
 				"docno":         po.DocNo,
 				"approver_code": approver.UserCode,
 				"status":        "sent",
@@ -1961,7 +1961,7 @@ func ProcessPendingNotificationsHandler(c echo.Context) error {
 
 			if approver.Email != "" {
 				emailLog := NotificationLog{
-					ShopID:           req.ShopID,
+					HoldingCode:      req.HoldingCode,
 					DocNo:            po.DocNo,
 					GuidFixed:        po.GuidFixed,
 					ApproverCode:     approver.UserCode,
@@ -1978,7 +1978,7 @@ func ProcessPendingNotificationsHandler(c echo.Context) error {
 
 			if approver.LineUserID != "" {
 				lineLog := NotificationLog{
-					ShopID:           req.ShopID,
+					HoldingCode:      req.HoldingCode,
 					DocNo:            po.DocNo,
 					GuidFixed:        po.GuidFixed,
 					ApproverCode:     approver.UserCode,
@@ -2017,10 +2017,10 @@ func GetNotificationLogsHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" {
+	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "shop_id is required",
+			"message": "holding_code is required",
 		})
 	}
 
@@ -2030,7 +2030,7 @@ func GetNotificationLogsHandler(c echo.Context) error {
 	// ใช้ getTokenCollection เพื่ออ่านจาก bcai_documents ที่ LINE-LIFF ใช้
 	collection := getTokenCollection(POApprovalNotificationLogCollection)
 
-	filter := bson.M{"shop_id": req.ShopID}
+	filter := bson.M{"holding_code": req.HoldingCode}
 	if req.DocNo != "" {
 		filter["docno"] = req.DocNo
 	}
@@ -2072,7 +2072,7 @@ func GetNotificationLogsHandler(c echo.Context) error {
 
 // MarkOpenedRequest request สำหรับบันทึกการเปิดอ่าน
 type MarkOpenedRequest struct {
-	ShopID       string `json:"shop_id"`
+	HoldingCode  string `json:"holding_code"`
 	DocNo        string `json:"docno"`
 	GuidFixed    string `json:"guid_fixed"`
 	ApproverCode string `json:"approver_code"`
@@ -2094,10 +2094,10 @@ func MarkNotificationOpenedHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" || req.DocNo == "" || req.ApproverCode == "" {
+	if req.HoldingCode == "" || req.DocNo == "" || req.ApproverCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "shop_id, docno, and approver_code are required",
+			"message": "holding_code, docno, and approver_code are required",
 		})
 	}
 
@@ -2110,7 +2110,7 @@ func MarkNotificationOpenedHandler(c echo.Context) error {
 
 	// อัปเดต notification ที่ยังไม่ได้เปิดอ่าน
 	filter := bson.M{
-		"shop_id":       req.ShopID,
+		"holding_code":  req.HoldingCode,
 		"docno":         req.DocNo,
 		"approver_code": req.ApproverCode,
 		"opened_at":     bson.M{"$exists": false}, // ยังไม่เคยเปิด
@@ -2137,15 +2137,15 @@ func MarkNotificationOpenedHandler(c echo.Context) error {
 		statusCollection := getTokenCollection(POApprovalStatusCollection)
 		var poStatus POApprovalStatus
 		err := statusCollection.FindOne(ctx, bson.M{
-			"shop_id": req.ShopID,
-			"docno":   req.DocNo,
+			"holding_code": req.HoldingCode,
+			"docno":        req.DocNo,
 		}).Decode(&poStatus)
 
 		if err == nil {
 			// ดึงชื่อผู้อนุมัติจาก notification log
 			var notifLog NotificationLog
 			_ = collection.FindOne(ctx, bson.M{
-				"shop_id":       req.ShopID,
+				"holding_code":  req.HoldingCode,
 				"docno":         req.DocNo,
 				"approver_code": req.ApproverCode,
 			}).Decode(&notifLog)
@@ -2168,7 +2168,7 @@ func MarkNotificationOpenedHandler(c echo.Context) error {
 
 			// สร้าง parameters สำหรับส่ง LINE notification
 			params := OpenedNotificationParams{
-				ShopID:           req.ShopID,
+				HoldingCode:      req.HoldingCode,
 				DocNo:            req.DocNo,
 				DocDatetime:      docDatetime,
 				CreatorCode:      poStatus.CreatedBy,
@@ -2221,9 +2221,9 @@ type TimelineItem struct {
 
 // TimelineRequest request สำหรับดึง timeline
 type TimelineRequest struct {
-	ShopID    string `json:"shop_id"`
-	DocNo     string `json:"docno"`
-	GuidFixed string `json:"guid_fixed"`
+	HoldingCode string `json:"holding_code"`
+	DocNo       string `json:"docno"`
+	GuidFixed   string `json:"guid_fixed"`
 }
 
 // GetApprovalTimelineHandler - ดึงประวัติรวมทั้งหมด (submit, approve, reject, notification sent/opened)
@@ -2240,10 +2240,10 @@ func GetApprovalTimelineHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" || req.DocNo == "" {
+	if req.HoldingCode == "" || req.DocNo == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "shop_id and docno are required",
+			"message": "holding_code and docno are required",
 		})
 	}
 
@@ -2256,8 +2256,8 @@ func GetApprovalTimelineHandler(c echo.Context) error {
 	statusCollection := getTokenCollection(POApprovalStatusCollection)
 	var poStatus POApprovalStatus
 	err := statusCollection.FindOne(ctx, bson.M{
-		"shop_id": req.ShopID,
-		"docno":   req.DocNo,
+		"holding_code": req.HoldingCode,
+		"docno":        req.DocNo,
 	}).Decode(&poStatus)
 
 	if err == nil {
@@ -2304,8 +2304,8 @@ func GetApprovalTimelineHandler(c echo.Context) error {
 	// ใช้ getTokenCollection เพื่ออ่านจาก bcai_documents ที่ LINE-LIFF ใช้
 	notificationCollection := getTokenCollection(POApprovalNotificationLogCollection)
 	cursor, err := notificationCollection.Find(ctx, bson.M{
-		"shop_id": req.ShopID,
-		"docno":   req.DocNo,
+		"holding_code": req.HoldingCode,
+		"docno":        req.DocNo,
 	})
 	if err == nil {
 		defer cursor.Close(ctx)
@@ -2387,7 +2387,7 @@ func GetApprovalTimelineHandler(c echo.Context) error {
 
 // UpdatePOApprovalStatusToCancelled - อัปเดตสถานะ PO approval เป็น cancelled เมื่อ PO ถูกยกเลิก
 // ฟังก์ชันนี้ถูกเรียกจาก Kafka consumer เมื่อมีการยกเลิก PO
-func UpdatePOApprovalStatusToCancelled(shopID, docNo, cancelReason, cancelUserCode, cancelUserName string) error {
+func UpdatePOApprovalStatusToCancelled(holdingCode, docNo, cancelReason, cancelUserCode, cancelUserName string) error {
 	if tokenAtlasDB == nil {
 		return fmt.Errorf("MongoDB not connected")
 	}
@@ -2399,8 +2399,8 @@ func UpdatePOApprovalStatusToCancelled(shopID, docNo, cancelReason, cancelUserCo
 
 	// หา PO status ที่มีอยู่
 	filter := bson.M{
-		"shop_id": shopID,
-		"docno":   docNo,
+		"holding_code": holdingCode,
+		"docno":        docNo,
 	}
 
 	var poStatus POApprovalStatus
@@ -2458,7 +2458,7 @@ func UpdatePOApprovalStatusToCancelled(shopID, docNo, cancelReason, cancelUserCo
 
 // GetApprovalStatusMapByShop — ดึง approval status ทั้งหมดของ shop (สำหรับ rebuild)
 // return map[docno]status เช่น {"PO20260107001": "approved", "PO20260108002": "pending"}
-func GetApprovalStatusMapByShop(shopID string) (map[string]string, error) {
+func GetApprovalStatusMapByShop(holdingCode string) (map[string]string, error) {
 	collection := getTokenCollection(POApprovalStatusCollection)
 	if collection == nil {
 		return nil, fmt.Errorf("approval collection not initialized")
@@ -2467,7 +2467,7 @@ func GetApprovalStatusMapByShop(shopID string) (map[string]string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	filter := bson.M{"shop_id": shopID}
+	filter := bson.M{"holding_code": holdingCode}
 	opts := options.Find().SetProjection(bson.M{"docno": 1, "status": 1})
 
 	cursor, err := collection.Find(ctx, filter, opts)
@@ -2487,6 +2487,6 @@ func GetApprovalStatusMapByShop(shopID string) (map[string]string, error) {
 		}
 	}
 
-	logger.Info("[Approval] ดึง approval status สำหรับ shop %s ได้ %d รายการ", shopID, len(result))
+	logger.Info("[Approval] ดึง approval status สำหรับ shop %s ได้ %d รายการ", holdingCode, len(result))
 	return result, nil
 }

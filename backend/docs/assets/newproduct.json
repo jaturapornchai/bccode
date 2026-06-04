@@ -1,6 +1,6 @@
 {
     "id": "refId",
-    "shopId": "string",
+    "holdingCode": "string",
     "barcode": "",
     "unit_name": "",
     "price": 0,

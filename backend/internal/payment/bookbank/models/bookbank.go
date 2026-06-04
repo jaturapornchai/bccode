@@ -10,25 +10,25 @@ const bookbankCollectionName = "bookBank"
 
 type BookBank struct {
 	models.PartitionIdentity `bson:"inline"`
-	BookCode string          `json:"bookcode" bson:"bookcode"`
-	PassBook string          `json:"passbook" bson:"passbook"`
-	BankCode string          `json:"bankcode" bson:"bankcode"`
-	AccountCode string          `json:"accountcode" bson:"accountcode"`
-	AccountName string          `json:"accountname" bson:"accountname"`
-	Names *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
-	BankNames *[]models.NameX `json:"banknames" bson:"banknames" validate:"required,min=1,unique=Code,dive"`
-	Images *[]Image        `json:"images" bson:"images"`
-	BankBranch string          `json:"bankbranch" bson:"bankbranch"`
+	BookCode                 string          `json:"bookcode" bson:"bookcode"`
+	PassBook                 string          `json:"passbook" bson:"passbook"`
+	BankCode                 string          `json:"bankcode" bson:"bankcode"`
+	AccountCode              string          `json:"accountcode" bson:"accountcode"`
+	AccountName              string          `json:"accountname" bson:"accountname"`
+	Names                    *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
+	BankNames                *[]models.NameX `json:"banknames" bson:"banknames" validate:"required,min=1,unique=Code,dive"`
+	Images                   *[]Image        `json:"images" bson:"images"`
+	BankBranch               string          `json:"bankbranch" bson:"bankbranch"`
 }
 
 type Image struct {
 	XOrder int    `json:"xorder" bson:"xorder"`
-	Uri string `json:"uri" bson:"uri"`
+	Uri    string `json:"uri" bson:"uri"`
 }
 
 type BookBankInfo struct {
 	models.DocIdentity `bson:"inline"`
-	BookBank  `bson:"inline"`
+	BookBank           `bson:"inline"`
 }
 
 func (BookBankInfo) CollectionName() string {
@@ -36,13 +36,13 @@ func (BookBankInfo) CollectionName() string {
 }
 
 type BookBankData struct {
-	models.ShopIdentity `bson:"inline"`
-	BookBankInfo  `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	BookBankInfo             `bson:"inline"`
 }
 
 type BookBankDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	BookBankData  `bson:"inline"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	BookBankData       `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -59,7 +59,7 @@ func (BookBankItemGuid) CollectionName() string {
 }
 
 type BookBankActivity struct {
-	BookBankData  `bson:"inline"`
+	BookBankData        `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

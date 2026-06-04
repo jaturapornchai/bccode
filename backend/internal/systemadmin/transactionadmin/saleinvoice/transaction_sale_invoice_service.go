@@ -11,10 +11,10 @@ import (
 )
 
 type ISaleInvoiceTransactionAdminService interface {
-	ReSyncSaleInvoiceDoc(shopID string) error
-	ReSyncSaleInvoiceDeleteDoc(shopID string) error
-	ReSyncSaleInvoiceDocByDate(shopID string, date string) error
-	ReSyncSaleInvoiceDeleteDocByDate(shopID string, date time.Time) error
+	ReSyncSaleInvoiceDoc(holdingCode string) error
+	ReSyncSaleInvoiceDeleteDoc(holdingCode string) error
+	ReSyncSaleInvoiceDocByDate(holdingCode string, date string) error
+	ReSyncSaleInvoiceDeleteDocByDate(holdingCode string, date time.Time) error
 }
 
 type SaleInvoiceTransactionAdminService struct {
@@ -35,7 +35,7 @@ func NewSaleInvoiceTransactionAdminService(pst microservice.IPersisterMongo, kfP
 	}
 }
 
-func (s *SaleInvoiceTransactionAdminService) ReSyncSaleInvoiceDoc(shopID string) error {
+func (s *SaleInvoiceTransactionAdminService) ReSyncSaleInvoiceDoc(holdingCode string) error {
 
 	pageRequest := msModels.Pageable{
 		Limit: 20,
@@ -52,12 +52,12 @@ func (s *SaleInvoiceTransactionAdminService) ReSyncSaleInvoiceDoc(shopID string)
 		ctx, cancel := context.WithTimeout(context.Background(), s.timeoutDuration)
 		defer cancel()
 
-		docs, pages, err := s.mongoRepo.FindPage(ctx, shopID, nil, pageRequest)
+		docs, pages, err := s.mongoRepo.FindPage(ctx, holdingCode, nil, pageRequest)
 		if err != nil {
 			return err
 		}
 
-		// barcodes, pages, err := svc.mongoRepo.FindPage(shopID, nil, pageRequest)
+		// barcodes, pages, err := svc.mongoRepo.FindPage(holdingCode, nil, pageRequest)
 		// 	if err != nil {
 		// 		return err
 		// 	}
@@ -78,12 +78,12 @@ func (s *SaleInvoiceTransactionAdminService) ReSyncSaleInvoiceDoc(shopID string)
 
 }
 
-func (s *SaleInvoiceTransactionAdminService) ReSyncSaleInvoiceDeleteDoc(shopID string) error {
+func (s *SaleInvoiceTransactionAdminService) ReSyncSaleInvoiceDeleteDoc(holdingCode string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeoutDuration)
 	defer cancel()
 
-	docs, err := s.mongoRepo.FindSaleInvoiceDeleteByShopID(ctx, shopID)
+	docs, err := s.mongoRepo.FindSaleInvoiceDeleteByHoldingCode(ctx, holdingCode)
 
 	if err != nil {
 		return err
@@ -96,7 +96,7 @@ func (s *SaleInvoiceTransactionAdminService) ReSyncSaleInvoiceDeleteDoc(shopID s
 	return nil
 }
 
-func (s *SaleInvoiceTransactionAdminService) ReSyncSaleInvoiceDocByDate(shopID string, datestr string) error {
+func (s *SaleInvoiceTransactionAdminService) ReSyncSaleInvoiceDocByDate(holdingCode string, datestr string) error {
 
 	pageRequest := msModels.Pageable{
 		Limit: 20,
@@ -129,12 +129,12 @@ func (s *SaleInvoiceTransactionAdminService) ReSyncSaleInvoiceDocByDate(shopID s
 			},
 		}
 
-		docs, pages, err := s.mongoRepo.FindPageFilter(ctx, shopID, dateFilter, nil, pageRequest)
+		docs, pages, err := s.mongoRepo.FindPageFilter(ctx, holdingCode, dateFilter, nil, pageRequest)
 		if err != nil {
 			return err
 		}
 
-		// barcodes, pages, err := svc.mongoRepo.FindPage(shopID, nil, pageRequest)
+		// barcodes, pages, err := svc.mongoRepo.FindPage(holdingCode, nil, pageRequest)
 		// 	if err != nil {
 		// 		return err
 		// 	}
@@ -155,12 +155,12 @@ func (s *SaleInvoiceTransactionAdminService) ReSyncSaleInvoiceDocByDate(shopID s
 
 }
 
-func (s *SaleInvoiceTransactionAdminService) ReSyncSaleInvoiceDeleteDocByDate(shopID string, date time.Time) error {
+func (s *SaleInvoiceTransactionAdminService) ReSyncSaleInvoiceDeleteDocByDate(holdingCode string, date time.Time) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeoutDuration)
 	defer cancel()
 
-	docs, err := s.mongoRepo.FindSaleInvoiceDeleteByShopID(ctx, shopID)
+	docs, err := s.mongoRepo.FindSaleInvoiceDeleteByHoldingCode(ctx, holdingCode)
 
 	if err != nil {
 		return err

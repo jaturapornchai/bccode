@@ -10,16 +10,16 @@ const formTemplateCollectionName = "formTemplates"
 
 type FormTemplate struct {
 	models.PartitionIdentity `bson:"inline"`
-	Code string                 `json:"code" bson:"code"`
-	Names *[]models.NameX        `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
-	DocType string                 `json:"doc_type" bson:"doc_type"`
-	IsDefault bool                   `json:"isdefault" bson:"isdefault"`
-	TemplateData map[string]interface{} `json:"templatedata" bson:"templatedata"`
+	Code                     string                 `json:"code" bson:"code"`
+	Names                    *[]models.NameX        `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
+	DocType                  string                 `json:"doc_type" bson:"doc_type"`
+	IsDefault                bool                   `json:"isdefault" bson:"isdefault"`
+	TemplateData             map[string]interface{} `json:"templatedata" bson:"templatedata"`
 }
 
 type FormTemplateInfo struct {
 	models.DocIdentity `bson:"inline"`
-	FormTemplate  `bson:"inline"`
+	FormTemplate       `bson:"inline"`
 }
 
 func (FormTemplateInfo) CollectionName() string {
@@ -27,13 +27,13 @@ func (FormTemplateInfo) CollectionName() string {
 }
 
 type FormTemplateData struct {
-	models.ShopIdentity `bson:"inline"`
-	FormTemplateInfo  `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	FormTemplateInfo         `bson:"inline"`
 }
 
 type FormTemplateDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	FormTemplateData  `bson:"inline"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	FormTemplateData   `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -50,7 +50,7 @@ func (FormTemplateItemGuid) CollectionName() string {
 }
 
 type FormTemplateActivity struct {
-	FormTemplateData  `bson:"inline"`
+	FormTemplateData    `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

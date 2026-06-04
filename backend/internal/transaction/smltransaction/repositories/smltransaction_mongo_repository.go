@@ -11,12 +11,12 @@ import (
 )
 
 type ISMLTransactionRepository interface {
-	FindByDocIndentityKey(collectionName string, shopID string, indentityField string, indentityValue interface{}) (map[string]interface{}, error)
+	FindByDocIndentityKey(collectionName string, holdingCode string, indentityField string, indentityValue interface{}) (map[string]interface{}, error)
 	Create(collectionName string, doc map[string]interface{}) (string, error)
-	Update(collectionName string, shopID string, guid string, doc map[string]interface{}) error
+	Update(collectionName string, holdingCode string, guid string, doc map[string]interface{}) error
 	CreateInBatch(collectionName string, docList []map[string]interface{}) error
-	DeleteByGuidfixed(collectionName string, shopID string, guid string, username string) error
-	Delete(collectionName string, shopID string, username string, filters map[string]interface{}) error
+	DeleteByGuidfixed(collectionName string, holdingCode string, guid string, username string) error
+	Delete(collectionName string, holdingCode string, username string, filters map[string]interface{}) error
 	Transaction(fnc func(ctx context.Context) error) error
 	CreateIndex(collectionName string, keyID string) (string, error)
 
@@ -44,8 +44,8 @@ func (repo SMLTransactionRepository) Filter(collectionName string, filters bson.
 		context.Background(),
 		&models.DynamicCollection{Collection: collectionName},
 		bson.M{
-			"shopid": 0,
-			"_id":    0,
+			"holding_code": 0,
+			"_id":          0,
 		}, filters,
 		pageable,
 		&docList,
@@ -69,10 +69,10 @@ func (repo SMLTransactionRepository) Create(collectionName string, doc map[strin
 	return idx.Hex(), nil
 }
 
-func (repo SMLTransactionRepository) Update(collectionName string, shopID string, guid string, doc map[string]interface{}) error {
+func (repo SMLTransactionRepository) Update(collectionName string, holdingCode string, guid string, doc map[string]interface{}) error {
 	filterDoc := map[string]interface{}{
-		"shopid":    shopID,
-		"guid_fixed": guid,
+		"holding_code": holdingCode,
+		"guid_fixed":   guid,
 	}
 
 	err := repo.pst.UpdateOne(context.Background(), &models.DynamicCollection{Collection: collectionName}, filterDoc, doc)
@@ -101,17 +101,17 @@ func (repo SMLTransactionRepository) CreateInBatch(collectionName string, docLis
 
 type Doc struct {
 	DocNo string `bson:"docno"`
-	Name string `bson:"name"`
+	Name  string `bson:"name"`
 }
 
-func (repo SMLTransactionRepository) FindByDocIndentityKey(collectionName string, shopID string, indentityField string, indentityValue interface{}) (map[string]interface{}, error) {
+func (repo SMLTransactionRepository) FindByDocIndentityKey(collectionName string, holdingCode string, indentityField string, indentityValue interface{}) (map[string]interface{}, error) {
 
 	doc := map[string]interface{}{}
 
 	err := repo.pst.FindOne(
 		context.Background(),
 		&models.DynamicCollection{Collection: collectionName},
-		bson.M{"shopid": shopID, "deleted_at": bson.M{"$exists": false},
+		bson.M{"holding_code": holdingCode, "deleted_at": bson.M{"$exists": false},
 			indentityField: indentityValue},
 		&doc,
 	)
@@ -123,11 +123,11 @@ func (repo SMLTransactionRepository) FindByDocIndentityKey(collectionName string
 	return doc, nil
 }
 
-func (repo SMLTransactionRepository) DeleteByGuidfixed(collectionName string, shopID string, guid string, username string) error {
+func (repo SMLTransactionRepository) DeleteByGuidfixed(collectionName string, holdingCode string, guid string, username string) error {
 	err := repo.pst.SoftDelete(
 		context.Background(),
 		&models.DynamicCollection{Collection: collectionName},
-		username, bson.M{"guid_fixed": guid, "shopid": shopID},
+		username, bson.M{"guid_fixed": guid, "holding_code": holdingCode},
 	)
 
 	if err != nil {
@@ -137,7 +137,7 @@ func (repo SMLTransactionRepository) DeleteByGuidfixed(collectionName string, sh
 	return nil
 }
 
-func (repo SMLTransactionRepository) Delete(collectionName string, shopID string, username string, filters map[string]interface{}) error {
+func (repo SMLTransactionRepository) Delete(collectionName string, holdingCode string, username string, filters map[string]interface{}) error {
 
 	// filterQuery := bson.M{}
 
@@ -145,7 +145,7 @@ func (repo SMLTransactionRepository) Delete(collectionName string, shopID string
 	// 	filterQuery[col] = val
 	// }
 
-	// filterQuery["shopid"] = shopID
+	// filterQuery["holding_code"] = holdingCode
 
 	// err := repo.pst.SoftDelete(&models.DynamicCollection{Collection: collectionName}, username, filterQuery)
 
@@ -159,7 +159,7 @@ func (repo SMLTransactionRepository) Delete(collectionName string, shopID string
 		filterQuery[col] = val
 	}
 
-	filterQuery["shopid"] = shopID
+	filterQuery["holding_code"] = holdingCode
 
 	err := repo.pst.Delete(
 		context.Background(),
@@ -181,7 +181,7 @@ func (repo SMLTransactionRepository) Transaction(fnc func(ctx context.Context) e
 func (repo SMLTransactionRepository) CreateIndex(collectionName string, keyID string) (string, error) {
 	indexName := "idx_smlx_" + keyID
 	keys := bson.D{
-		{Key: "shopid", Value: 1},
+		{Key: "holding_code", Value: 1},
 		{Key: keyID, Value: 1},
 	}
 	return repo.pst.CreateIndex(

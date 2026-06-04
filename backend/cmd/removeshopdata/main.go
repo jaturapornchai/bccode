@@ -61,7 +61,7 @@ import (
 )
 
 var (
-	shopID = flag.String("shopid", "", "shopID to transfer")
+	holdingCode = flag.String("holding_code", "", "holdingCode to transfer")
 )
 
 func main() {
@@ -74,7 +74,7 @@ func main() {
 	ctx := context.TODO()
 
 	shopRepo := shop.NewShopRepository(targetDatabase)
-	findShop, err := shopRepo.FindByGuid(ctx, *shopID)
+	findShop, err := shopRepo.FindByGuid(ctx, *holdingCode)
 	if err != nil {
 		fmt.Println("Find Shop Error")
 		return
@@ -95,11 +95,11 @@ func main() {
 		return
 	}
 
-	// remove data in shop user {"shopid": "2PrIIqTWxoBXv16K310sNwfHmfY", "username": {"$ne": "maxkorn"}}
+	// remove data in shop user {"holding_code": "2PrIIqTWxoBXv16K310sNwfHmfY", "username": {"$ne": "maxkorn"}}
 	fmt.Println("Remove Shop User")
 	err = targetDatabase.Delete(ctx, &shopUserModels.ShopUser{}, bson.M{
-		"shopid":   shopID,
-		"username": bson.M{"$ne": findShop.CreatedBy},
+		"holding_code": holdingCode,
+		"username":     bson.M{"$ne": findShop.CreatedBy},
 	})
 	if err != nil {
 		fmt.Println("Remove Shop User Error", err)
@@ -109,7 +109,7 @@ func main() {
 	// remove shop employee
 	fmt.Println("Remove Shop Employee")
 	err = targetDatabase.Delete(ctx, &shopEmployeeModels.EmployeeDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Shop Employee Error", err)
@@ -119,7 +119,7 @@ func main() {
 	// remove product barcode
 	fmt.Println("Remove Product Barcode")
 	err = targetDatabase.Delete(ctx, &productBarcodeModels.ProductBarcodeDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Product Barcode Error", err)
@@ -129,7 +129,7 @@ func main() {
 	// remove product categories
 	fmt.Println("Remove Product Categories")
 	err = targetDatabase.Delete(ctx, &productCategoryModels.ProductCategoryDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Product Categories Error", err)
@@ -139,7 +139,7 @@ func main() {
 	// remove kitchen
 	fmt.Println("Remove Product Kitchen")
 	err = targetDatabase.Delete(ctx, &restaurantKitchenModels.KitchenDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Product Kitchen Error", err)
@@ -149,7 +149,7 @@ func main() {
 	// remove restaurant setting
 	fmt.Println("Remove Restaurant Setting")
 	err = targetDatabase.Delete(ctx, &restaurantSettingModels.RestaurantSettingsDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Restaurant Setting Error", err)
@@ -159,7 +159,7 @@ func main() {
 	// remove bank master
 	fmt.Println("Remove Bank Master")
 	err = targetDatabase.Delete(ctx, &paymentBankMasterModels.BankMasterDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Bank Master Error", err)
@@ -169,7 +169,7 @@ func main() {
 	// remove bookbank master
 	fmt.Println("Remove Book Bank Master")
 	err = targetDatabase.Delete(ctx, &paymentBookBankMasterModels.BookBankDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Book Bank Master Error", err)
@@ -179,7 +179,7 @@ func main() {
 	// remove qrpayment master
 	fmt.Println("Remove QR Payment Master")
 	err = targetDatabase.Delete(ctx, &paymentQRPaymentMasterModels.QrPaymentDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove QR Payment Master Error", err)
@@ -189,7 +189,7 @@ func main() {
 	// remove order device
 	fmt.Println("Remove Order Device")
 	err = targetDatabase.Delete(ctx, &orderDeviceModels.OrderDeviceDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Device Error", err)
@@ -199,7 +199,7 @@ func main() {
 	// remove order setting
 	fmt.Println("Remove Order Setting")
 	err = targetDatabase.Delete(ctx, &orderSettingModels.SettingDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -209,7 +209,7 @@ func main() {
 	// organization branch
 	fmt.Println("Remove Organization Branch")
 	err = targetDatabase.Delete(ctx, &organizationBranchModels.BranchDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -219,7 +219,7 @@ func main() {
 	// organization business type
 	fmt.Println("Remove Organization Business Type")
 	err = targetDatabase.Delete(ctx, &organizationBusinessTypeModels.BusinessTypeDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -229,7 +229,7 @@ func main() {
 	// organization department
 	fmt.Println("Remove Organization Department")
 	err = targetDatabase.Delete(ctx, &organizationDepartmentModels.DepartmentDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -239,7 +239,7 @@ func main() {
 	// pos media
 	fmt.Println("Remove POS Media")
 	err = targetDatabase.Delete(ctx, &posMediaModels.MediaDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -249,7 +249,7 @@ func main() {
 	// pos setting
 	fmt.Println("Remove POS Setting")
 	err = targetDatabase.Delete(ctx, &posSettingModels.SettingDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -259,7 +259,7 @@ func main() {
 	// product barcode bom
 	fmt.Println("Remove Product Barcode BOM")
 	err = targetDatabase.Delete(ctx, &productBarcodeBOMModels.ProductBarcodeBOMViewDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -269,7 +269,7 @@ func main() {
 	// product group
 	fmt.Println("Remove Product Group")
 	err = targetDatabase.Delete(ctx, &productGroupModels.ProductGroupDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -279,7 +279,7 @@ func main() {
 	// product unit
 	fmt.Println("Remove Product Unit")
 	err = targetDatabase.Delete(ctx, &productUnitModels.UnitDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -289,7 +289,7 @@ func main() {
 	// order type
 	fmt.Println("Remove Order Type")
 	err = targetDatabase.Delete(ctx, &orderTypeModels.OrderTypeDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -299,7 +299,7 @@ func main() {
 	// remove restaurant table
 	fmt.Println("Remove Restaurant Table")
 	err = targetDatabase.Delete(ctx, &restaurentTableModels.TableDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -309,7 +309,7 @@ func main() {
 	// remove restaurant zone
 	fmt.Println("Remove Restaurant Zone")
 	err = targetDatabase.Delete(ctx, &restaurantZoneModels.ZoneDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -319,7 +319,7 @@ func main() {
 	// remove restaurant staff
 	fmt.Println("Remove Restaurant Staff")
 	err = targetDatabase.Delete(ctx, &restaurantStaffModels.StaffDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -329,7 +329,7 @@ func main() {
 	// remove sale channel
 	fmt.Println("Remove Sale Channel")
 	err = targetDatabase.Delete(ctx, &saleChannelModels.SaleChannelDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -339,7 +339,7 @@ func main() {
 	// remove transport channel
 	fmt.Println("Remove Transport Channel")
 	err = targetDatabase.Delete(ctx, &transportChannelModels.TransportChannelDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -349,7 +349,7 @@ func main() {
 	// remove slip image
 	fmt.Println("Remove Slip Image")
 	err = targetDatabase.Delete(ctx, &slipImageModels.SlipImageDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -359,7 +359,7 @@ func main() {
 	// remove debtor
 	fmt.Println("Remove Debtor")
 	err = targetDatabase.Delete(ctx, &debtorModels.DebtorDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -369,7 +369,7 @@ func main() {
 	// remove debtor group
 	fmt.Println("Remove Debtor Group")
 	err = targetDatabase.Delete(ctx, &debtorGroupModels.DebtorGroupDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -379,7 +379,7 @@ func main() {
 	// remove creditor
 	fmt.Println("Remove Creditor")
 	err = targetDatabase.Delete(ctx, &creditorModels.CreditorDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -389,7 +389,7 @@ func main() {
 	// remove creditor group
 	fmt.Println("Remove Creditor Group")
 	err = targetDatabase.Delete(ctx, &creditorGroupModels.CreditorGroupDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -399,7 +399,7 @@ func main() {
 	// remove warehouse
 	fmt.Println("Remove Warehouse")
 	err = targetDatabase.Delete(ctx, &warehouseModels.WarehouseDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -409,7 +409,7 @@ func main() {
 	// remove transaction paid
 	fmt.Println("Remove Transaction Paid")
 	err = targetDatabase.Delete(ctx, &transactionPaidModels.PaidDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -419,7 +419,7 @@ func main() {
 	// remove transaction pay
 	fmt.Println("Remove Transaction Pay")
 	err = targetDatabase.Delete(ctx, &transactionPayModels.PayDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -429,7 +429,7 @@ func main() {
 	// remove transaction purchase
 	fmt.Println("Remove Transaction Purchase")
 	err = targetDatabase.Delete(ctx, &transactionPurchaseModels.PurchaseDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -439,7 +439,7 @@ func main() {
 	// remove transaction purchase return
 	fmt.Println("Remove Transaction Purchase Return")
 	err = targetDatabase.Delete(ctx, &transactionPurcahseReturnModels.PurchaseReturnDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -449,7 +449,7 @@ func main() {
 	// remove transaction sale
 	fmt.Println("Remove Transaction Sale Invoice")
 	err = targetDatabase.Delete(ctx, &transactionSaleModels.SaleInvoiceDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -459,7 +459,7 @@ func main() {
 	// remove transaction sale bom
 	fmt.Println("Remove Transaction Sale BOM")
 	err = targetDatabase.Delete(ctx, &transactionSaleBOMModels.SaleInvoiceBomPriceDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -469,7 +469,7 @@ func main() {
 	// remove transaction sale return
 	fmt.Println("Remove Transaction Sale Return")
 	err = targetDatabase.Delete(ctx, &transactionSaleInvoiceReturnModels.SaleInvoiceReturnDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -479,7 +479,7 @@ func main() {
 	// remove transaction stock balance
 	fmt.Println("Remove Transaction Stock Balance")
 	err = targetDatabase.Delete(ctx, &transactionStockBalanceModels.StockBalanceDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -489,7 +489,7 @@ func main() {
 	// remove transaction stock balance detail
 	fmt.Println("Remove Transaction Stock Balance Detail")
 	err = targetDatabase.Delete(ctx, &transactionStockBalanceDetailModels.StockBalanceDetailDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -499,7 +499,7 @@ func main() {
 	// remove transaction stock adjust
 	fmt.Println("Remove Transaction Stock Adjust")
 	err = targetDatabase.Delete(ctx, &transactionStockAdjustModels.StockAdjustmentDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -509,7 +509,7 @@ func main() {
 	// remove transaction stock pickup
 	fmt.Println("Remove Transaction Stock Pickup")
 	err = targetDatabase.Delete(ctx, &transactionStockPickupModels.StockPickupProductDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -519,7 +519,7 @@ func main() {
 	// remove transaction stock receive
 	fmt.Println("Remove Transaction Stock Receive")
 	err = targetDatabase.Delete(ctx, &transactionStockReceiveModels.StockReceiveProductDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -529,7 +529,7 @@ func main() {
 	// remove transaction stock return
 	fmt.Println("Remove Transaction Stock Return")
 	err = targetDatabase.Delete(ctx, &transactionStockReturnModels.StockReturnProductDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)
@@ -539,7 +539,7 @@ func main() {
 	// remove transaction stock transfer
 	fmt.Println("Remove Transaction Stock Transfer")
 	err = targetDatabase.Delete(ctx, &transactionStockTransferModels.StockTransferDoc{}, bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 	})
 	if err != nil {
 		fmt.Println("Remove Order Setting Error", err)

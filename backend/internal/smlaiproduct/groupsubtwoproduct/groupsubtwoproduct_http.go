@@ -68,7 +68,7 @@ func (h GroupsubtwoProductHttp) RegisterHttp() {
 // @Router /aicloud/groupsubtwo [post]
 func (h GroupsubtwoProductHttp) CreateGroupsubtwoProduct(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 	docReq := &models.GroupsubtwoProduct{}
 	if err := json.Unmarshal([]byte(input), docReq); err != nil {
@@ -81,7 +81,7 @@ func (h GroupsubtwoProductHttp) CreateGroupsubtwoProduct(ctx microservice.IConte
 		return err
 	}
 
-	idx, err := h.svc.CreateGroupsubtwoProduct(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateGroupsubtwoProduct(holdingCode, authUsername, *docReq)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -107,7 +107,7 @@ func (h GroupsubtwoProductHttp) CreateGroupsubtwoProduct(ctx microservice.IConte
 func (h GroupsubtwoProductHttp) UpdateGroupsubtwoProduct(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -122,7 +122,7 @@ func (h GroupsubtwoProductHttp) UpdateGroupsubtwoProduct(ctx microservice.IConte
 		return err
 	}
 
-	err := h.svc.UpdateGroupsubtwoProduct(shopID, id, authUsername, *docReq)
+	err := h.svc.UpdateGroupsubtwoProduct(holdingCode, id, authUsername, *docReq)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -146,12 +146,12 @@ func (h GroupsubtwoProductHttp) UpdateGroupsubtwoProduct(ctx microservice.IConte
 // @Router /aicloud/groupsubtwo/{id} [delete]
 func (h GroupsubtwoProductHttp) DeleteGroupsubtwoProduct(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteGroupsubtwoProduct(shopID, id, authUsername)
+	err := h.svc.DeleteGroupsubtwoProduct(holdingCode, id, authUsername)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -175,7 +175,7 @@ func (h GroupsubtwoProductHttp) DeleteGroupsubtwoProduct(ctx microservice.IConte
 // @Router /aicloud/groupsubtwo [delete]
 func (h GroupsubtwoProductHttp) DeleteGroupsubtwoProductByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -185,7 +185,7 @@ func (h GroupsubtwoProductHttp) DeleteGroupsubtwoProductByGUIDs(ctx microservice
 		return err
 	}
 
-	err := h.svc.DeleteGroupsubtwoProductByGUIDs(shopID, authUsername, docReq)
+	err := h.svc.DeleteGroupsubtwoProductByGUIDs(holdingCode, authUsername, docReq)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -208,12 +208,12 @@ func (h GroupsubtwoProductHttp) DeleteGroupsubtwoProductByGUIDs(ctx microservice
 // @Router /aicloud/groupsubtwo/{id} [get]
 func (h GroupsubtwoProductHttp) InfoGroupsubtwoProduct(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get GroupsubtwoProduct %v", id)
-	doc, err := h.svc.InfoGroupsubtwoProduct(shopID, id)
+	doc, err := h.svc.InfoGroupsubtwoProduct(holdingCode, id)
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -238,10 +238,10 @@ func (h GroupsubtwoProductHttp) InfoGroupsubtwoProduct(ctx microservice.IContext
 // @Router /aicloud/groupsubtwo/code/{code} [get]
 func (h GroupsubtwoProductHttp) InfoGroupsubtwoProductByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
-	doc, err := h.svc.InfoGroupsubtwoProductByCode(shopID, code)
+	doc, err := h.svc.InfoGroupsubtwoProductByCode(holdingCode, code)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -269,7 +269,7 @@ func (h GroupsubtwoProductHttp) InfoGroupsubtwoProductByCode(ctx microservice.IC
 // @Router /aicloud/groupsubtwo [get]
 func (h GroupsubtwoProductHttp) SearchGroupsubtwoProductPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	// สร้าง filter จาก query parameters
 	filter := make(map[string]interface{})
@@ -285,7 +285,7 @@ func (h GroupsubtwoProductHttp) SearchGroupsubtwoProductPage(ctx microservice.IC
 	}
 
 	pageable := utils.GetPageable(ctx.QueryParam)
-	docList, pagination, err := h.svc.SearchGroupsubtwoProduct(shopID, filter, pageable)
+	docList, pagination, err := h.svc.SearchGroupsubtwoProduct(holdingCode, filter, pageable)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -313,11 +313,11 @@ func (h GroupsubtwoProductHttp) SearchGroupsubtwoProductPage(ctx microservice.IC
 // @Router /aicloud/groupsubtwo/list [get]
 func (h GroupsubtwoProductHttp) SearchGroupsubtwoProductStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 	lang := ctx.QueryParam("lang")
-	docList, total, err := h.svc.SearchGroupsubtwoProductStep(shopID, lang, pageableStep)
+	docList, total, err := h.svc.SearchGroupsubtwoProductStep(holdingCode, lang, pageableStep)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -343,7 +343,7 @@ func (h GroupsubtwoProductHttp) SearchGroupsubtwoProductStep(ctx microservice.IC
 func (h GroupsubtwoProductHttp) SaveBulk(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 	dataReq := []models.GroupsubtwoProduct{}
@@ -352,7 +352,7 @@ func (h GroupsubtwoProductHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 	if err != nil {
 		ctx.ResponseError(400, err.Error())
 		return err

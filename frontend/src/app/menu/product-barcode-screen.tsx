@@ -74,7 +74,7 @@ type ProductBarcodeScreenProps = {
 type ProductBarcodeRecord = {
   raw: Record<string, unknown>;
   guidFixed: string;
-  shopId: string;
+  holdingCode: string;
   barcode: string;
   barcodeRef: string;
   name: string;
@@ -268,7 +268,7 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
     setSplitLeftPercent(next);
   }, []);
 
-  const activeShopId = workspace?.shop.shopid ?? "";
+  const activeHoldingCode = workspace?.shop.holding_code ?? "";
   const activeBranch = workspace?.branch ? branchDisplayName(workspace.branch) : "-";
   const activeTenant = workspace?.shop ? shopDisplayName(workspace.shop) : "-";
   const shopLanguages = useMemo(() => languageCodesFromWorkspace(workspace), [workspace]);
@@ -376,7 +376,7 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
   );
 
   const loadBarcodes = useCallback(async () => {
-    if (!auth || !activeShopId) {
+    if (!auth || !activeHoldingCode) {
       setNotice({ type: "error", text: text.apiRequired });
       return;
     }
@@ -389,7 +389,7 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
     setNotice(null);
     try {
       const data = await listBarcodes(auth, {
-        shopid: activeShopId,
+        holding_code: activeHoldingCode,
         keyword: search.trim(),
         groupcode: debouncedFilters.groupCode.trim(),
         brandcode: debouncedFilters.brandCode.trim(),
@@ -429,7 +429,7 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
     } finally {
       if (!controller.signal.aborted) setLoading(false);
     }
-  }, [activeShopId, auth, debouncedFilters, search, text.apiRequired, text.requestFailed]);
+  }, [activeHoldingCode, auth, debouncedFilters, search, text.apiRequired, text.requestFailed]);
 
   const loadBarcodeDetail = useCallback(
     async (item: ProductBarcodeRecord) => {
@@ -467,12 +467,12 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
   );
 
   useEffect(() => {
-    if (!auth || !activeShopId) return;
+    if (!auth || !activeHoldingCode) return;
     const timer = window.setTimeout(() => {
       void loadBarcodes();
     }, 300);
     return () => window.clearTimeout(timer);
-  }, [activeShopId, auth, loadBarcodes]);
+  }, [activeHoldingCode, auth, loadBarcodes]);
 
   useEffect(() => {
     if (!selectedBase) return;
@@ -560,7 +560,7 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
     setEditorGuid("");
     setEditorDirty(false);
     const next = emptyProductBarcode();
-    next.shopid = activeShopId;
+    next.holding_code = activeHoldingCode;
     setEditorBarcode(next);
     setEditorOpen(true);
   }
@@ -574,7 +574,7 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
     setEditorGuid(target.guidFixed);
     setEditorDirty(false);
     const base = emptyProductBarcode();
-    base.shopid = activeShopId;
+    base.holding_code = activeHoldingCode;
     setEditorBarcode(rawToProductBarcode(target.raw, base));
     setEditorOpen(true);
   }
@@ -586,11 +586,11 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
     setEditorGuid("");
     setEditorDirty(true);
     const base = emptyProductBarcode();
-    base.shopid = activeShopId;
+    base.holding_code = activeHoldingCode;
     const next = rawToProductBarcode(selected.raw, base);
     next.guidfixed = "";
     next.barcode = "";
-    next.shopid = activeShopId;
+    next.holding_code = activeHoldingCode;
     setEditorBarcode(next);
     setEditorOpen(true);
   }
@@ -599,7 +599,7 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
     const next = JSON.parse(JSON.stringify(editorBarcode)) as ProductBarcodeObject;
     next.guidfixed = "";
     next.barcode = "";
-    next.shopid = activeShopId;
+    next.holding_code = activeHoldingCode;
     setEditorMode("create");
     setEditorGuid("");
     setEditorBarcode(next);
@@ -632,7 +632,7 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
       if (keepOpen) {
         // "Save & add new": reset to a blank record and stay open
         const next = emptyProductBarcode();
-        next.shopid = activeShopId;
+        next.holding_code = activeHoldingCode;
         setEditorGuid("");
         setEditorDirty(false);
         setEditorBarcode(next);
@@ -1245,7 +1245,7 @@ function ProductBarcodeDetail({
   const basicFields = item
     ? [
         { label: text.guid, value: item.guidFixed },
-        { label: text.shopId, value: item.shopId },
+        { label: text.holdingCode, value: item.holdingCode },
         { label: text.barcode, value: item.barcode },
         { label: text.barcodeRef, value: item.barcodeRef },
         { label: text.productName, value: item.name },
@@ -1492,7 +1492,7 @@ function readWorkspaceSession(): WorkspaceSession | null {
     const raw = localStorage.getItem(workspaceStorageKeys.workspace);
     if (!raw) return null;
     const workspace = JSON.parse(raw) as WorkspaceSession;
-    return workspace.shop?.shopid ? workspace : null;
+    return workspace.shop?.holding_code ? workspace : null;
   } catch {
     return null;
   }
@@ -1510,7 +1510,7 @@ function normalizeBarcodeRecord(value: unknown): ProductBarcodeRecord {
   return {
     raw: record,
     guidFixed: getFirstString(record, ["guid_fixed", "guidfixed"]),
-    shopId: getFirstString(record, ["shopid", "shop_id"]),
+    holdingCode: getFirstString(record, ["holding_code", "holding_code"]),
     barcode: getFirstString(record, ["barcode"]),
     barcodeRef: getFirstString(record, ["barcoderef", "barcode_ref", "refbarcode"]),
     name: localizedNameFromKeys(record, ["names"], getFirstString(record, ["name0", "name", "item_name"])),
@@ -1551,7 +1551,7 @@ function normalizeBarcodeRecord(value: unknown): ProductBarcodeRecord {
     colorSelectHex: getFirstString(record, ["colorselecthex", "color_select_hex"]),
     unitCount: getFirstNumber(record, ["unit_count", "unitcount"]),
     allUnitNames: getFirstString(record, ["all_unit_names", "allunitnames"]),
-    balanceQty: getFirstNumber(record, ["balance_qty", "balanceqty"]),
+    balanceQty: getFirstNumber(record, ["available_qty", "balance_qty", "balanceqty"]),
     balanceFormatted: getFirstString(record, ["balance_formatted", "balanceformatted"]),
     standValue: getFirstNumber(record, ["standvalue", "stand_value", "barcoderefunitstand", "barcode_ref_unit_stand"]),
     divideValue: getFirstNumber(record, ["dividevalue", "divide_value", "barcoderefunitdivide", "barcode_ref_unit_divide"]),

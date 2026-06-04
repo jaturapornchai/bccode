@@ -17,12 +17,12 @@ import (
 )
 
 type IAccountGroupHttpService interface {
-	Create(shopID string, authUsername string, doc models.AccountGroup) (string, error)
-	Update(guid string, shopID string, authUsername string, doc models.AccountGroup) error
-	Delete(guid string, shopID string, authUsername string) error
-	Info(guid string, shopID string) (models.AccountGroupInfo, error)
-	Search(shopID string, pageable micromodels.Pageable) ([]models.AccountGroupInfo, mongopagination.PaginationData, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.AccountGroup) (common.BulkImport, error)
+	Create(holdingCode string, authUsername string, doc models.AccountGroup) (string, error)
+	Update(guid string, holdingCode string, authUsername string, doc models.AccountGroup) error
+	Delete(guid string, holdingCode string, authUsername string) error
+	Info(guid string, holdingCode string) (models.AccountGroupInfo, error)
+	Search(holdingCode string, pageable micromodels.Pageable) ([]models.AccountGroupInfo, mongopagination.PaginationData, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.AccountGroup) (common.BulkImport, error)
 }
 
 type AccountGroupHttpService struct {
@@ -46,12 +46,12 @@ func (svc AccountGroupHttpService) getContextTimeout() (context.Context, context
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc AccountGroupHttpService) Create(shopID string, authUsername string, doc models.AccountGroup) (string, error) {
+func (svc AccountGroupHttpService) Create(holdingCode string, authUsername string, doc models.AccountGroup) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindOne(ctx, shopID, bson.M{"code": doc.Code})
+	findDoc, err := svc.repo.FindOne(ctx, holdingCode, bson.M{"code": doc.Code})
 
 	if err != nil {
 		return "", err
@@ -64,7 +64,7 @@ func (svc AccountGroupHttpService) Create(shopID string, authUsername string, do
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.AccountGroupDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.AccountGroup = doc
 
@@ -85,12 +85,12 @@ func (svc AccountGroupHttpService) Create(shopID string, authUsername string, do
 	return newGuidFixed, nil
 }
 
-func (svc AccountGroupHttpService) Update(guid string, shopID string, authUsername string, doc models.AccountGroup) error {
+func (svc AccountGroupHttpService) Update(guid string, holdingCode string, authUsername string, doc models.AccountGroup) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -100,7 +100,7 @@ func (svc AccountGroupHttpService) Update(guid string, shopID string, authUserna
 		return errors.New("document not found")
 	}
 
-	findDocCode, err := svc.repo.FindOne(ctx, shopID, bson.M{"code": doc.Code})
+	findDocCode, err := svc.repo.FindOne(ctx, holdingCode, bson.M{"code": doc.Code})
 
 	if err != nil {
 		return err
@@ -115,7 +115,7 @@ func (svc AccountGroupHttpService) Update(guid string, shopID string, authUserna
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, findDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, findDoc)
 
 	if err != nil {
 		return err
@@ -123,12 +123,12 @@ func (svc AccountGroupHttpService) Update(guid string, shopID string, authUserna
 	return nil
 }
 
-func (svc AccountGroupHttpService) Delete(guid string, shopID string, authUsername string) error {
+func (svc AccountGroupHttpService) Delete(guid string, holdingCode string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	err := svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err := svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 
 	if err != nil {
 		return err
@@ -136,12 +136,12 @@ func (svc AccountGroupHttpService) Delete(guid string, shopID string, authUserna
 	return nil
 }
 
-func (svc AccountGroupHttpService) Info(guid string, shopID string) (models.AccountGroupInfo, error) {
+func (svc AccountGroupHttpService) Info(guid string, holdingCode string) (models.AccountGroupInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.AccountGroupInfo{}, err
@@ -155,7 +155,7 @@ func (svc AccountGroupHttpService) Info(guid string, shopID string) (models.Acco
 
 }
 
-func (svc AccountGroupHttpService) Search(shopID string, pageable micromodels.Pageable) ([]models.AccountGroupInfo, mongopagination.PaginationData, error) {
+func (svc AccountGroupHttpService) Search(holdingCode string, pageable micromodels.Pageable) ([]models.AccountGroupInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -165,7 +165,7 @@ func (svc AccountGroupHttpService) Search(shopID string, pageable micromodels.Pa
 		"code",
 	}
 
-	docList, pagination, err := svc.repo.FindPage(ctx, shopID, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPage(ctx, holdingCode, searchInFields, pageable)
 
 	if err != nil {
 		return []models.AccountGroupInfo{}, pagination, err
@@ -174,7 +174,7 @@ func (svc AccountGroupHttpService) Search(shopID string, pageable micromodels.Pa
 	return docList, pagination, nil
 }
 
-func (svc AccountGroupHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.AccountGroup) (common.BulkImport, error) {
+func (svc AccountGroupHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.AccountGroup) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -189,7 +189,7 @@ func (svc AccountGroupHttpService) SaveInBatch(shopID string, authUsername strin
 		itemCodeGuidList = append(itemCodeGuidList, doc.Code)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "docno", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "docno", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -201,18 +201,18 @@ func (svc AccountGroupHttpService) SaveInBatch(shopID string, authUsername strin
 	}
 
 	duplicateDataList, createDataList = importdata.PreparePayloadData[models.AccountGroup, models.AccountGroupDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.AccountGroup) models.AccountGroupDoc {
+		func(holdingCode string, authUsername string, doc models.AccountGroup) models.AccountGroupDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.AccountGroupDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.AccountGroup = doc
 
 			currentTime := time.Now()
@@ -223,12 +223,12 @@ func (svc AccountGroupHttpService) SaveInBatch(shopID string, authUsername strin
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.AccountGroup, models.AccountGroupDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.AccountGroupDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", guid)
+		func(holdingCode string, guid string) (models.AccountGroupDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", guid)
 		},
 		func(doc models.AccountGroupDoc) bool {
 			if doc.Code != "" {
@@ -236,13 +236,13 @@ func (svc AccountGroupHttpService) SaveInBatch(shopID string, authUsername strin
 			}
 			return false
 		},
-		func(shopID string, authUsername string, data models.AccountGroup, doc models.AccountGroupDoc) error {
+		func(holdingCode string, authUsername string, data models.AccountGroup, doc models.AccountGroupDoc) error {
 
 			doc.AccountGroup = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}

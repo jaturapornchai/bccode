@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/models"
-	"math"
 	"strings"
 	"time"
 
@@ -14,19 +14,19 @@ import (
 	"smlcloudplatform/internal/goapi/mypg"
 )
 
-func ProcessProductBalanceByLocationAndItem(shopId string, finalDate string, balanceOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct) (result models.ResultModel) {
+func ProcessProductBalanceByLocationAndItem(holdingCode string, finalDate string, balanceOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct) (result models.ResultModel) {
 	// Default to Thailand timezone for backward compatibility
-	return ProcessProductBalanceByLocationAndItemWithTimezone(shopId, finalDate, balanceOnly, itemCodeList, warehouseList, "TH")
+	return ProcessProductBalanceByLocationAndItemWithTimezone(holdingCode, finalDate, balanceOnly, itemCodeList, warehouseList, "TH")
 }
 
-func ProcessProductBalanceByLocationAndItemWithTimezone(shopId string, finalDate string, balanceOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct, timezoneCode string) (result models.ResultModel) {
+func ProcessProductBalanceByLocationAndItemWithTimezone(holdingCode string, finalDate string, balanceOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct, timezoneCode string) (result models.ResultModel) {
 	logger.Info("ProcessProductBalanceByLocationCodeBarcode with Timezone: %s", timezoneCode)
 	// whereHouseList
 	logger.Info("warehouseList: %+v", warehouseList)
 
 	ctx := context.Background()
 
-	db, err := mypg.PgSqlFastConnect(shopId)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		logger.Info("Failed to connect to PostgreSQL: %v", err)
 		return models.ResultModel{
@@ -98,7 +98,7 @@ WITH item_names AS (
 		itemcode,
 		STRING_AGG(DISTINCT name0, ', ') AS itemname
 	FROM productbarcode
-	WHERE itemcode IS NOT NULL 
+	WHERE itemcode IS NOT NULL
 	AND itemcode <> ''
 	GROUP BY itemcode
 ),
@@ -107,20 +107,20 @@ barcode_list AS (
 		itemcode,
 		STRING_AGG(DISTINCT barcode, ', ') AS barcodelist
 	FROM productbarcode
-	WHERE itemcode IS NOT NULL 
+	WHERE itemcode IS NOT NULL
 	AND itemcode <> ''
 	GROUP BY itemcode
 ),
 auto_packing AS (
 	SELECT
 		itemcode,
-		COUNT(DISTINCT CASE 
-			WHEN barcoderefunitstand > 0 AND barcoderefunitdivide > 0 
+		COUNT(DISTINCT CASE
+			WHEN barcoderefunitstand > 0 AND barcoderefunitdivide > 0
 			AND (barcoderefunitstand != barcoderefunitdivide)
-			THEN barcoderefunitstand || '-' || barcoderefunitdivide 
+			THEN barcoderefunitstand || '-' || barcoderefunitdivide
 		END) AS countpacking
 	FROM productbarcode
-	WHERE itemcode IS NOT NULL 
+	WHERE itemcode IS NOT NULL
 	AND itemcode <> ''
 	GROUP BY itemcode
 )
@@ -129,7 +129,7 @@ SELECT
     lc.locationcode AS locationcode,
     lc.itemcode AS itemcode,
     n.itemname AS itemname,
-	pb2.unitcode AS unitcode,					
+	pb2.unitcode AS unitcode,
     pb2.unitname AS unitname,
     sb.total_balance AS balanceqty,
     COALESCE(ap.countpacking, 0) AS countpacking,
@@ -154,8 +154,8 @@ JOIN (
     WHERE ` + dateCondition + `
 		AND transflag IN (` + transFlagList + `)
     GROUP BY itemcode, whcode, locationcode
-) AS sb ON lc.itemcode = sb.itemcode 
-       AND lc.whcode = sb.whcode 
+) AS sb ON lc.itemcode = sb.itemcode
+       AND lc.whcode = sb.whcode
        AND lc.locationcode = sb.locationcode
 LEFT JOIN item_names n ON lc.itemcode = n.itemcode
 LEFT JOIN barcode_list b ON lc.itemcode = b.itemcode
@@ -166,7 +166,7 @@ LEFT JOIN (
 		MAX(unitcode) AS unitcode,
 		MAX(unitname) AS unitname
 	FROM productbarcode
-	WHERE barcoderefunitstand = 1 
+	WHERE barcoderefunitstand = 1
 	  AND barcoderefunitdivide = 1
 	GROUP BY itemcode
 ) pb2 ON lc.itemcode = pb2.itemcode

@@ -89,8 +89,8 @@ func (c *JournalTransactionConsumer) ConsumeOnCreateOrUpdate(ctx microservice.IC
 		return err
 	}
 
-	c.ms.Logger.Debugf("Journal created : %v, %v", doc.ShopID, doc.DocNo)
-	_, err = c.svc.UpSert(doc.ShopID, doc.DocNo, doc)
+	c.ms.Logger.Debugf("Journal created : %v, %v", doc.HoldingCode, doc.DocNo)
+	_, err = c.svc.UpSert(doc.HoldingCode, doc.DocNo, doc)
 
 	if err != nil {
 		c.ms.Logger.Errorf(moduleName, err.Error())
@@ -111,8 +111,8 @@ func (c *JournalTransactionConsumer) ConsumeOnDelete(ctx microservice.IContext) 
 		c.ms.Logger.Errorf(moduleName, err.Error())
 	}
 
-	c.ms.Logger.Debugf("Journal delete : %v, %v", doc.ShopID, doc.DocNo)
-	err = c.svc.Delete(doc.ShopID, doc.DocNo)
+	c.ms.Logger.Debugf("Journal delete : %v, %v", doc.HoldingCode, doc.DocNo)
+	err = c.svc.Delete(doc.HoldingCode, doc.DocNo)
 
 	if err != nil {
 		c.ms.Logger.Errorf(moduleName, err.Error())
@@ -133,7 +133,7 @@ func (c *JournalTransactionConsumer) ConsumeOnBulkCreateOrUpdate(ctx microservic
 	}
 
 	for _, transaction := range docList {
-		_, err = c.svc.UpSert(transaction.ShopID, transaction.DocNo, transaction)
+		_, err = c.svc.UpSert(transaction.HoldingCode, transaction.DocNo, transaction)
 		if err != nil {
 			c.ms.Logger.Errorf(moduleName, err.Error())
 		}
@@ -154,7 +154,7 @@ func (c *JournalTransactionConsumer) ConsumeOnBulkDelete(ctx microservice.IConte
 	}
 
 	for _, transaction := range docList {
-		err := c.svc.Delete(transaction.ShopID, transaction.DocNo)
+		err := c.svc.Delete(transaction.HoldingCode, transaction.DocNo)
 
 		if err != nil {
 			c.ms.Logger.Errorf(moduleName, err.Error())

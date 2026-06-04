@@ -22,10 +22,10 @@ func ChatAgent(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" {
+	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, AgentChatResponse{
 			Success:   false,
-			Message:   "shop_id is required",
+			Message:   "holding_code is required",
 			Timestamp: time.Now(),
 		})
 	}
@@ -38,13 +38,13 @@ func ChatAgent(c echo.Context) error {
 		})
 	}
 
-	logger.Info("[ChatAgent] Question: %s (shop: %s)", req.Question, req.ShopID)
+	logger.Info("[ChatAgent] Question: %s (shop: %s)", req.Question, req.HoldingCode)
 
 	// 120s timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 
-	resp, err := RunAgentLoop(ctx, req.ShopID, req.Question)
+	resp, err := RunAgentLoop(ctx, req.HoldingCode, req.Question)
 	if err != nil {
 		logger.Error("[ChatAgent] Agent loop failed: %v", err)
 		return c.JSON(http.StatusInternalServerError, AgentChatResponse{

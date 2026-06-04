@@ -64,7 +64,7 @@ func (h CustomerHttp) RegisterHttp() {
 // @Router /debtaccount/customer [post]
 func (h CustomerHttp) CreateCustomer(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.CustomerRequest{}
@@ -80,7 +80,7 @@ func (h CustomerHttp) CreateCustomer(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreateCustomer(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateCustomer(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -107,7 +107,7 @@ func (h CustomerHttp) CreateCustomer(ctx microservice.IContext) error {
 func (h CustomerHttp) UpdateCustomer(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -125,7 +125,7 @@ func (h CustomerHttp) UpdateCustomer(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateCustomer(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateCustomer(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -151,12 +151,12 @@ func (h CustomerHttp) UpdateCustomer(ctx microservice.IContext) error {
 // @Router /debtaccount/customer/{id} [delete]
 func (h CustomerHttp) DeleteCustomer(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteCustomer(shopID, id, authUsername)
+	err := h.svc.DeleteCustomer(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -182,7 +182,7 @@ func (h CustomerHttp) DeleteCustomer(ctx microservice.IContext) error {
 // @Router /debtaccount/customer [delete]
 func (h CustomerHttp) DeleteCustomerByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -195,7 +195,7 @@ func (h CustomerHttp) DeleteCustomerByGUIDs(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.DeleteCustomerByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteCustomerByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -220,12 +220,12 @@ func (h CustomerHttp) DeleteCustomerByGUIDs(ctx microservice.IContext) error {
 // @Router /debtaccount/customer/{id} [get]
 func (h CustomerHttp) InfoCustomer(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get Customer %v", id)
-	doc, err := h.svc.InfoCustomer(shopID, id)
+	doc, err := h.svc.InfoCustomer(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -251,11 +251,11 @@ func (h CustomerHttp) InfoCustomer(ctx microservice.IContext) error {
 // @Router /debtaccount/customer/code/{code} [get]
 func (h CustomerHttp) InfoCustomerByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoCustomerByCode(shopID, code)
+	doc, err := h.svc.InfoCustomerByCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -284,7 +284,7 @@ func (h CustomerHttp) InfoCustomerByCode(ctx microservice.IContext) error {
 // @Router /debtaccount/customer [get]
 func (h CustomerHttp) SearchCustomerPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -300,7 +300,7 @@ func (h CustomerHttp) SearchCustomerPage(ctx microservice.IContext) error {
 		filters["isdebtor"] = isdebtor == "true" || isdebtor == "1"
 	}
 
-	docList, pagination, err := h.svc.SearchCustomer(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchCustomer(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -331,7 +331,7 @@ func (h CustomerHttp) SearchCustomerPage(ctx microservice.IContext) error {
 // @Router /debtaccount/customer/list [get]
 func (h CustomerHttp) SearchCustomerStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -349,7 +349,7 @@ func (h CustomerHttp) SearchCustomerStep(ctx microservice.IContext) error {
 		filters["isdebtor"] = isdebtor == "true" || isdebtor == "1"
 	}
 
-	docList, total, err := h.svc.SearchCustomerStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchCustomerStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -377,7 +377,7 @@ func (h CustomerHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -389,7 +389,7 @@ func (h CustomerHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

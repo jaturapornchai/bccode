@@ -14,21 +14,21 @@ import (
 
 // ProcessStockCostRequest - request payload for process stock cost queries
 type ProcessStockCostRequest struct {
-	ShopID string   `json:"shop_id"`
-	FromDate string   `json:"from_date"`
-	ToDate string   `json:"to_date"`
-	BranchCodes []string `json:"branch_codes,omitempty"`
+	HoldingCode  string   `json:"holding_code"`
+	FromDate     string   `json:"from_date"`
+	ToDate       string   `json:"to_date"`
+	BranchCodes  []string `json:"branch_codes,omitempty"`
 	ProductCodes []string `json:"product_codes,omitempty"`
-	Limit int      `json:"limit,omitempty"`
-	Offset int      `json:"offset,omitempty"`
+	Limit        int      `json:"limit,omitempty"`
+	Offset       int      `json:"offset,omitempty"`
 }
 
 // ProcessStockCostSummaryRequest - request for summary queries
 type ProcessStockCostSummaryRequest struct {
-	ShopID string   `json:"shop_id"`
-	FromDate string   `json:"from_date"`
-	ToDate string   `json:"to_date"`
-	BranchCodes []string `json:"branch_codes,omitempty"`
+	HoldingCode  string   `json:"holding_code"`
+	FromDate     string   `json:"from_date"`
+	ToDate       string   `json:"to_date"`
+	BranchCodes  []string `json:"branch_codes,omitempty"`
 	ProductCodes []string `json:"product_codes,omitempty"`
 }
 
@@ -44,10 +44,10 @@ func ProcessStockCostHandler(c echo.Context) error {
 	}
 
 	// Validate required fields
-	if req.ShopID == "" {
+	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "shop_id is required",
-			"code":  "MISSING_SHOP_ID",
+			"error": "holding_code is required",
+			"code":  "MISSING_HOLDING_CODE",
 		})
 	}
 
@@ -87,7 +87,7 @@ func ProcessStockCostHandler(c echo.Context) error {
 	}
 
 	// Connect to database
-	db, err := mypg.PgSqlFastConnect(req.ShopID)
+	db, err := mypg.PgSqlFastConnect(req.HoldingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "Database connection failed",
@@ -163,10 +163,10 @@ func ProcessStockCostSummaryHandler(c echo.Context) error {
 	}
 
 	// Validate required fields
-	if req.ShopID == "" {
+	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "shop_id is required",
-			"code":  "MISSING_SHOP_ID",
+			"error": "holding_code is required",
+			"code":  "MISSING_HOLDING_CODE",
 		})
 	}
 
@@ -197,7 +197,7 @@ func ProcessStockCostSummaryHandler(c echo.Context) error {
 	toDate = toDate.AddDate(0, 0, 1)
 
 	// Connect to database
-	db, err := mypg.PgSqlFastConnect(req.ShopID)
+	db, err := mypg.PgSqlFastConnect(req.HoldingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "Database connection failed",
@@ -270,9 +270,9 @@ func ProcessStockCostCheckHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" || req.FromDate == "" || req.ToDate == "" {
+	if req.HoldingCode == "" || req.FromDate == "" || req.ToDate == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "shop_id, from_date and to_date are required",
+			"error": "holding_code, from_date and to_date are required",
 			"code":  "MISSING_REQUIRED_FIELDS",
 		})
 	}
@@ -295,7 +295,7 @@ func ProcessStockCostCheckHandler(c echo.Context) error {
 
 	toDate = toDate.AddDate(0, 0, 1)
 
-	db, err := mypg.PgSqlFastConnect(req.ShopID)
+	db, err := mypg.PgSqlFastConnect(req.HoldingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "Database connection failed",
@@ -331,12 +331,12 @@ func ProcessStockCostCheckHandler(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, map[string]any{
-		"status":         "success",
-		"total_rows":     totalRows,
+		"status":          "success",
+		"total_rows":      totalRows,
 		"total_documents": totalDocs,
-		"total_products": totalProducts,
-		"earliest_date":  earliestDate,
-		"latest_date":    latestDate,
+		"total_products":  totalProducts,
+		"earliest_date":   earliestDate,
+		"latest_date":     latestDate,
 	})
 }
 

@@ -6,8 +6,8 @@ import (
 )
 
 type ICacheRepository interface {
-	Save(shopID string, moduleName string) error
-	Get(shopID string, moduleName string) (time.Time, error)
+	Save(holdingCode string, moduleName string) error
+	Get(holdingCode string, moduleName string) (time.Time, error)
 }
 
 type CacheRepository struct {

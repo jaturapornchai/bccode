@@ -6,7 +6,9 @@ import (
 	auth_model "smlcloudplatform/internal/authentication/models"
 	common "smlcloudplatform/internal/models"
 	"smlcloudplatform/internal/shop/models"
+	"smlcloudplatform/internal/utils"
 	micromodels "smlcloudplatform/pkg/microservice/models"
+	"strings"
 	"time"
 
 	"github.com/smlsoft/mongopagination"
@@ -40,15 +42,25 @@ func NewShopService(shopRepo IShopRepository, shopUserRepo IShopUserRepository, 
 func (svc ShopService) CreateShop(username string, doc models.Shop) (string, error) {
 
 	dataDoc := models.ShopDoc{}
-	shopID := svc.newGUID()
-	dataDoc.GuidFixed = shopID
+	holdingCode := svc.newGUID()
+	holdingCode, err := utils.NormalizeHoldingCode(doc.HoldingCode)
+	if err != nil {
+		return "", err
+	}
+	if holdingCode != "" {
+		if existing, findErr := svc.shopRepo.FindByHoldingCode(context.Background(), holdingCode); findErr == nil && existing.GuidFixed != "" {
+			return "", errors.New("holding_code is exists")
+		}
+	}
+	dataDoc.GuidFixed = holdingCode
 	dataDoc.CreatedBy = username
 	dataDoc.CreatedAt = svc.timeNow()
 	dataDoc.Shop = doc
+	dataDoc.HoldingCode = holdingCode
 
-	if dataDoc.Shop.MainShopId != "" {
+	if dataDoc.Shop.MainHoldingCode != "" {
 		dataDoc.IsMainShop = false
-		dataDoc.MainShopId = doc.MainShopId
+		dataDoc.MainHoldingCode = doc.MainHoldingCode
 	}
 	dataDoc.DebtorCenterType = doc.DebtorCenterType
 	dataDoc.ProductCenterType = doc.ProductCenterType
@@ -58,19 +70,19 @@ func (svc ShopService) CreateShop(username string, doc models.Shop) (string, err
 		dataDoc.Names = []common.NameX{}
 	}
 
-	_, err := svc.shopRepo.Create(context.Background(), dataDoc)
+	_, err = svc.shopRepo.Create(context.Background(), dataDoc)
 
 	if err != nil {
 		return "", err
 	}
 
-	err = svc.shopUserRepo.Save(context.Background(), shopID, username, auth_model.ROLE_OWNER)
+	err = svc.shopUserRepo.Save(context.Background(), holdingCode, username, auth_model.ROLE_OWNER)
 
 	if err != nil {
 		return "", err
 	}
 
-	return shopID, nil
+	return holdingCode, nil
 }
 
 func (svc ShopService) UpdateShop(guid string, username string, shop models.Shop) error {
@@ -86,6 +98,21 @@ func (svc ShopService) UpdateShop(guid string, username string, shop models.Shop
 	}
 
 	dataDoc := findShop
+	holdingCodeInput := strings.TrimSpace(shop.HoldingCode)
+	if holdingCodeInput == "" {
+		shop.HoldingCode = findShop.HoldingCode
+	} else {
+		holdingCode, err := utils.NormalizeHoldingCode(holdingCodeInput)
+		if err != nil {
+			return err
+		}
+		if holdingCode != findShop.HoldingCode {
+			if existing, findErr := svc.shopRepo.FindByHoldingCode(context.Background(), holdingCode); findErr == nil && existing.GuidFixed != "" && existing.GuidFixed != guid {
+				return errors.New("holding_code is exists")
+			}
+		}
+		shop.HoldingCode = holdingCode
+	}
 
 	dataDoc.Shop = shop
 

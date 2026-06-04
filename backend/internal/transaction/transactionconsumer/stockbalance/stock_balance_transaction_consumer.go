@@ -79,7 +79,7 @@ func (c *StockReceiveTransactionConsumer) ConsumeOnCreateOrUpdate(ctx microservi
 		return err
 	}
 
-	// details, err := c.svc.GetStockBalanceDetail(transaction.ShopID, transaction.DocNo)
+	// details, err := c.svc.GetStockBalanceDetail(transaction.HoldingCode, transaction.DocNo)
 	// if err != nil {
 	// 	logger.GetLogger().Errorf("Error getting stock balance details: %v", err)
 	// 	return err
@@ -87,7 +87,7 @@ func (c *StockReceiveTransactionConsumer) ConsumeOnCreateOrUpdate(ctx microservi
 
 	// transaction.Items = details
 
-	err = c.svc.Upsert(transaction.ShopID, transaction.DocNo, *transaction)
+	err = c.svc.Upsert(transaction.HoldingCode, transaction.DocNo, *transaction)
 	if err != nil {
 		logger.GetLogger().Errorf("Error upserting transaction: %v", err)
 	}
@@ -98,7 +98,7 @@ func (c *StockReceiveTransactionConsumer) ConsumeOnCreateOrUpdate(ctx microservi
 		return err
 	}
 
-	err = c.stockConsumerService.Upsert(stockTransaction.ShopID, stockTransaction.DocNo, *stockTransaction)
+	err = c.stockConsumerService.Upsert(stockTransaction.HoldingCode, stockTransaction.DocNo, *stockTransaction)
 	if err != nil {
 		logger.GetLogger().Errorf("Error upserting stock transaction: %v", err)
 	}
@@ -118,7 +118,7 @@ func (c *StockReceiveTransactionConsumer) ConsumeOnBulkCreateOrUpdate(ctx micros
 
 	for _, transaction := range *transactions {
 
-		err = c.svc.Upsert(transaction.ShopID, transaction.DocNo, transaction)
+		err = c.svc.Upsert(transaction.HoldingCode, transaction.DocNo, transaction)
 		if err != nil {
 			logger.GetLogger().Errorf("Error upserting transaction: %v", err)
 		}
@@ -129,7 +129,7 @@ func (c *StockReceiveTransactionConsumer) ConsumeOnBulkCreateOrUpdate(ctx micros
 			return err
 		}
 
-		err = c.stockConsumerService.Upsert(stockTransaction.ShopID, stockTransaction.DocNo, *stockTransaction)
+		err = c.stockConsumerService.Upsert(stockTransaction.HoldingCode, stockTransaction.DocNo, *stockTransaction)
 		if err != nil {
 			logger.GetLogger().Errorf("Error upserting stock transaction: %v", err)
 		}
@@ -147,12 +147,12 @@ func (c *StockReceiveTransactionConsumer) ConsumeOnDelete(ctx microservice.ICont
 		logger.GetLogger().Errorf("Error phasing transaction: %v", err)
 	}
 
-	err = c.svc.Delete(transaction.ShopID, transaction.DocNo)
+	err = c.svc.Delete(transaction.HoldingCode, transaction.DocNo)
 	if err != nil {
 		logger.GetLogger().Errorf("Error deleting transaction: %v", err)
 	}
 
-	err = c.stockConsumerService.Delete(transaction.ShopID, transaction.DocNo)
+	err = c.stockConsumerService.Delete(transaction.HoldingCode, transaction.DocNo)
 	if err != nil {
 		logger.GetLogger().Errorf("Error deleting stock transaction: %v", err)
 		return err
@@ -174,12 +174,12 @@ func (c *StockReceiveTransactionConsumer) ConsumeOnBulkDelete(ctx microservice.I
 
 	for _, transaction := range *transactions {
 
-		err = c.svc.Delete(transaction.ShopID, transaction.DocNo)
+		err = c.svc.Delete(transaction.HoldingCode, transaction.DocNo)
 		if err != nil {
 			logger.GetLogger().Errorf("Error deleting transaction: %v", err)
 		}
 
-		err = c.stockConsumerService.Delete(transaction.ShopID, transaction.DocNo)
+		err = c.stockConsumerService.Delete(transaction.HoldingCode, transaction.DocNo)
 		if err != nil {
 			logger.GetLogger().Errorf("Error deleting stock transaction: %v", err)
 			return err

@@ -62,10 +62,10 @@ func (c *StockProcessConsumer) ConsumerStockProcessCreate(ctx microservice.ICont
 	if err != nil {
 		return err
 	}
-	c.ms.Logger.Debugf("Start Calculator Stock [%v:%v]", stockProcessRequest.ShopID, stockProcessRequest.Barcode)
-	err = c.calculator.CalculatorStock(stockProcessRequest.ShopID, stockProcessRequest.Barcode)
+	c.ms.Logger.Debugf("Start Calculator Stock [%v:%v]", stockProcessRequest.HoldingCode, stockProcessRequest.Barcode)
+	err = c.calculator.CalculatorStock(stockProcessRequest.HoldingCode, stockProcessRequest.Barcode)
 	if err != nil {
-		c.ms.Logger.Errorf("Cannot Calculator Stock [%v:%v] : %v", stockProcessRequest.ShopID, stockProcessRequest.Barcode, err.Error())
+		c.ms.Logger.Errorf("Cannot Calculator Stock [%v:%v] : %v", stockProcessRequest.HoldingCode, stockProcessRequest.Barcode, err.Error())
 	}
 	return err
 }
@@ -82,14 +82,14 @@ func (c *StockProcessConsumer) ConsumerStockProcessBulkCreate(ctx microservice.I
 	for _, req := range stockProcessRequests {
 		go func(r models.StockProcessRequest) {
 
-			c.ms.Logger.Debugf("Start Calculator Stock [%v:%v]", r.ShopID, r.Barcode)
-			err = c.calculator.CalculatorStock(r.ShopID, r.Barcode)
+			c.ms.Logger.Debugf("Start Calculator Stock [%v:%v]", r.HoldingCode, r.Barcode)
+			err = c.calculator.CalculatorStock(r.HoldingCode, r.Barcode)
 			if err != nil {
 				c.ms.Logger.Errorf("Cannot Calculator Stock : %v", err.Error())
 				//return err
 			}
 		}(req)
 	}
-	// err = c.calculator.CalculatorStock(stockProcessRequest.ShopID, stockProcessRequest.Barcode)
+	// err = c.calculator.CalculatorStock(stockProcessRequest.HoldingCode, stockProcessRequest.Barcode)
 	return err
 }

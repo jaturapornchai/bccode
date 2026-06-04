@@ -67,7 +67,7 @@ func (h ChequeDepositHttp) RegisterHttp() {
 // @Router /transaction/chequereceive/chequedeposit [post]
 func (h ChequeDepositHttp) CreateChequeDeposit(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.ChequeDeposit{}
@@ -83,7 +83,7 @@ func (h ChequeDepositHttp) CreateChequeDeposit(ctx microservice.IContext) error 
 		return err
 	}
 
-	idx, docNo, err := h.svc.CreateChequeDeposit(shopID, authUsername, *docReq)
+	idx, docNo, err := h.svc.CreateChequeDeposit(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -111,7 +111,7 @@ func (h ChequeDepositHttp) CreateChequeDeposit(ctx microservice.IContext) error 
 func (h ChequeDepositHttp) UpdateChequeDeposit(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -129,7 +129,7 @@ func (h ChequeDepositHttp) UpdateChequeDeposit(ctx microservice.IContext) error 
 		return err
 	}
 
-	err = h.svc.UpdateChequeDeposit(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateChequeDeposit(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -155,12 +155,12 @@ func (h ChequeDepositHttp) UpdateChequeDeposit(ctx microservice.IContext) error 
 // @Router /transaction/chequereceive/chequedeposit/{id} [delete]
 func (h ChequeDepositHttp) DeleteChequeDeposit(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteChequeDeposit(shopID, id, authUsername)
+	err := h.svc.DeleteChequeDeposit(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -186,7 +186,7 @@ func (h ChequeDepositHttp) DeleteChequeDeposit(ctx microservice.IContext) error 
 // @Router /transaction/chequereceive/chequedeposit [delete]
 func (h ChequeDepositHttp) DeleteChequeDepositByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -199,7 +199,7 @@ func (h ChequeDepositHttp) DeleteChequeDepositByGUIDs(ctx microservice.IContext)
 		return err
 	}
 
-	err = h.svc.DeleteChequeDepositByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteChequeDepositByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -224,12 +224,12 @@ func (h ChequeDepositHttp) DeleteChequeDepositByGUIDs(ctx microservice.IContext)
 // @Router /transaction/chequereceive/chequedeposit/{id} [get]
 func (h ChequeDepositHttp) InfoChequeDeposit(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get ChequeDeposit %v", id)
-	doc, err := h.svc.InfoChequeDeposit(shopID, id)
+	doc, err := h.svc.InfoChequeDeposit(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -255,11 +255,11 @@ func (h ChequeDepositHttp) InfoChequeDeposit(ctx microservice.IContext) error {
 // @Router /transaction/chequereceive/chequedeposit/code/{code} [get]
 func (h ChequeDepositHttp) InfoChequeDepositByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoChequeDepositByCode(shopID, code)
+	doc, err := h.svc.InfoChequeDepositByCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -290,7 +290,7 @@ func (h ChequeDepositHttp) InfoChequeDepositByCode(ctx microservice.IContext) er
 // @Router /transaction/chequereceive/chequedeposit [get]
 func (h ChequeDepositHttp) SearchChequeDepositPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -311,7 +311,7 @@ func (h ChequeDepositHttp) SearchChequeDepositPage(ctx microservice.IContext) er
 		},
 	})
 
-	docList, pagination, err := h.svc.SearchChequeDeposit(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchChequeDeposit(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -344,7 +344,7 @@ func (h ChequeDepositHttp) SearchChequeDepositPage(ctx microservice.IContext) er
 // @Router /transaction/chequereceive/chequedeposit/list [get]
 func (h ChequeDepositHttp) SearchChequeDepositStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -367,7 +367,7 @@ func (h ChequeDepositHttp) SearchChequeDepositStep(ctx microservice.IContext) er
 		},
 	})
 
-	docList, total, err := h.svc.SearchChequeDepositStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchChequeDepositStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -395,7 +395,7 @@ func (h ChequeDepositHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -407,7 +407,7 @@ func (h ChequeDepositHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

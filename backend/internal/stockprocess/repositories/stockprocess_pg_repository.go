@@ -6,10 +6,10 @@ import (
 )
 
 type IStockProcessPGRepository interface {
-	GetStockTransactionList(shopID string, barcode string) ([]stockModel.StockData, error)
+	GetStockTransactionList(holdingCode string, barcode string) ([]stockModel.StockData, error)
 	UpdateStockTransactionChange(stockData []stockModel.StockData) error
 
-	ExecuteUpdateProductBarcodeStockBalance(shopID string, barcode string) error
+	ExecuteUpdateProductBarcodeStockBalance(holdingCode string, barcode string) error
 }
 
 type StockProcessPGRepository struct {
@@ -22,13 +22,13 @@ func NewStockProcessPGRepository(pst microservice.IPersister) IStockProcessPGRep
 	}
 }
 
-func (repo *StockProcessPGRepository) GetStockTransactionList(shopID string, barcode string) ([]stockModel.StockData, error) {
+func (repo *StockProcessPGRepository) GetStockTransactionList(holdingCode string, barcode string) ([]stockModel.StockData, error) {
 
 	var stockDatas []stockModel.StockData
 
-	sql := `SELECT 
+	sql := `SELECT
 	STKD.id,
-	STK.shopid, STK.docno,  STK.docdate, STK.transflag, STK.inquirytype, STKD.docref
+	STK.holding_code, STK.docno,  STK.docdate, STK.transflag, STK.inquirytype, STKD.docref
 	, STKD.barcode, PDB.mainbarcoderef, STKD.unitcode, STKD.qty
 	, PDB.standvalue, PDB.dividevalue
 	, STKD.calcflag
@@ -39,17 +39,17 @@ func (repo *StockProcessPGRepository) GetStockTransactionList(shopID string, bar
 	, STKD.vattype ,STKD.taxtype
 	, STKD.costperunit, STKD.totalcost
 	, STKD.balanceamount, STKD.balanceaverage, STKD.balanceqty
-	
+
 	FROM stock_transaction AS STK
-	JOIN stock_transaction_detail AS STKD on STKD.docno = STK.docno AND STKD.shopid = STK.shopid
-	JOIN productbarcode AS PDB ON PDB.barcode = STKD.barcode AND STKD.shopid = PDB.shopid
-	WHERE STK.shopid = @shopid AND STK.iscancel = false AND PDB.mainbarcoderef = (select mainbarcoderef from productbarcode where barcode = @barcode and productbarcode.shopid = STK.shopid ) 
+	JOIN stock_transaction_detail AS STKD on STKD.docno = STK.docno AND STKD.holding_code = STK.holding_code
+	JOIN productbarcode AS PDB ON PDB.barcode = STKD.barcode AND STKD.holding_code = PDB.holding_code
+	WHERE STK.holding_code = @holding_code AND STK.iscancel = false AND PDB.mainbarcoderef = (select mainbarcoderef from productbarcode where barcode = @barcode and productbarcode.holding_code = STK.holding_code )
 	ORDER BY STK.docdate, STK.docno, STKD.calcflag, STKD.linenumber`
 
-	//repo.pst.Where(&stockDatas, "shop_id = ? AND barcode = ?", shopID, barcode)
+	//repo.pst.Where(&stockDatas, "holding_code = ? AND barcode = ?", holdingCode, barcode)
 	conditions := map[string]interface{}{
-		"shopid":  shopID,
-		"barcode": barcode,
+		"holding_code": holdingCode,
+		"barcode":      barcode,
 	}
 	_, err := repo.pst.Raw(sql, conditions, &stockDatas)
 
@@ -78,21 +78,21 @@ func (repo *StockProcessPGRepository) UpdateStockTransactionChange(stockData []s
 	return err
 }
 
-func (repo *StockProcessPGRepository) ExecuteUpdateProductBarcodeStockBalance(shopId string, barcode string) error {
+func (repo *StockProcessPGRepository) ExecuteUpdateProductBarcodeStockBalance(holdingCode string, barcode string) error {
 
-	sql := `WITH stock AS (select 
-		barcode, shopid, balanceqty
-		, (SELECT SUM(STKD.qty*calcflag) FROM stock_transaction_detail AS STKD 
-			WHERE STKD.shopid = productbarcode.shopid AND STKD.barcode = productbarcode.barcode) as trx_balance_qty
+	sql := `WITH stock AS (select
+		barcode, holding_code, balanceqty
+		, (SELECT SUM(STKD.qty*calcflag) FROM stock_transaction_detail AS STKD
+			WHERE STKD.holding_code = productbarcode.holding_code AND STKD.barcode = productbarcode.barcode) as trx_balance_qty
 		from productbarcode
-		where shopid= @shopid and barcode = @barcode
+		where holding_code= @holding_code and barcode = @barcode
 		)
 		UPDATE productbarcode set balanceqty = stock.trx_balance_qty
-		FROM stock  WHERE productbarcode.barcode = stock.barcode AND productbarcode.shopid= stock.shopid AND productbarcode.balanceqty <>  stock.trx_balance_qty
+		FROM stock  WHERE productbarcode.barcode = stock.barcode AND productbarcode.holding_code= stock.holding_code AND productbarcode.balanceqty <>  stock.trx_balance_qty
 		 `
 	conditions := map[string]interface{}{
-		"shopid":  shopId,
-		"barcode": barcode,
+		"holding_code": holdingCode,
+		"barcode":      barcode,
 	}
 
 	err := repo.pst.Exec(sql, conditions)

@@ -13,16 +13,16 @@ import (
 )
 
 type ISmsTransactionRepository interface {
-	Count(ctx context.Context, shopID string) (int, error)
+	Count(ctx context.Context, holdingCode string) (int, error)
 	Create(ctx context.Context, doc models.SmsTransactionDoc) (string, error)
 	CreateInBatch(ctx context.Context, docList []models.SmsTransactionDoc) error
-	Update(ctx context.Context, shopID string, guid string, doc models.SmsTransactionDoc) error
-	DeleteByGuidfixed(ctx context.Context, shopID string, guid string, username string) error
-	FindPage(ctx context.Context, shopID string, searchInFields []string, pageable micromodels.Pageable) ([]models.SmsTransactionInfo, mongopagination.PaginationData, error)
-	FindByGuid(ctx context.Context, shopID string, guid string) (models.SmsTransactionDoc, error)
-	FindByDocIndentityGuid(ctx context.Context, shopID string, indentityField string, indentityValue interface{}) (models.SmsTransactionDoc, error)
+	Update(ctx context.Context, holdingCode string, guid string, doc models.SmsTransactionDoc) error
+	DeleteByGuidfixed(ctx context.Context, holdingCode string, guid string, username string) error
+	FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable micromodels.Pageable) ([]models.SmsTransactionInfo, mongopagination.PaginationData, error)
+	FindByGuid(ctx context.Context, holdingCode string, guid string) (models.SmsTransactionDoc, error)
+	FindByDocIndentityGuid(ctx context.Context, holdingCode string, indentityField string, indentityValue interface{}) (models.SmsTransactionDoc, error)
 
-	FindFilterSms(ctx context.Context, shopID string, storefrontGUID string, address string, startTime time.Time, endTime time.Time) ([]models.SmsTransactionInfo, error)
+	FindFilterSms(ctx context.Context, holdingCode string, storefrontGUID string, address string, startTime time.Time, endTime time.Time) ([]models.SmsTransactionInfo, error)
 }
 
 type SmsTransactionRepository struct {
@@ -49,12 +49,12 @@ func NewSmsTransactionRepository(pst microservice.IPersisterMongo) SmsTransactio
 	return insRepo
 }
 
-func (repo SmsTransactionRepository) FindFilterSms(ctx context.Context, shopID string, storefrontGUID string, address string, startTime time.Time, endTime time.Time) ([]models.SmsTransactionInfo, error) {
+func (repo SmsTransactionRepository) FindFilterSms(ctx context.Context, holdingCode string, storefrontGUID string, address string, startTime time.Time, endTime time.Time) ([]models.SmsTransactionInfo, error) {
 
 	filters := bson.M{
-		"shopid":         shopID,
+		"holding_code":   holdingCode,
 		"storefrontguid": storefrontGUID,
-		"deleted_at":      bson.M{"$exists": false},
+		"deleted_at":     bson.M{"$exists": false},
 		"address":        address,
 		"status":         0,
 		"created_at": bson.M{

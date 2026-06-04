@@ -9,8 +9,8 @@ import (
 )
 
 type IJournalTransactionAdminService interface {
-	ReSyncJournalTransactionDoc(shopID string) error
-	ReSyncJournalDeleteTransactionDoc(shopID string) error
+	ReSyncJournalTransactionDoc(holdingCode string) error
+	ReSyncJournalDeleteTransactionDoc(holdingCode string) error
 }
 
 type JournalTransactionAdminService struct {
@@ -31,7 +31,7 @@ func NewJournalTransactionAdminService(pst microservice.IPersisterMongo, kfProdu
 	}
 }
 
-func (s *JournalTransactionAdminService) ReSyncJournalTransactionDoc(shopID string) error {
+func (s *JournalTransactionAdminService) ReSyncJournalTransactionDoc(holdingCode string) error {
 
 	pageRequest := msModels.Pageable{
 		Limit: 20,
@@ -48,7 +48,7 @@ func (s *JournalTransactionAdminService) ReSyncJournalTransactionDoc(shopID stri
 		ctx, cancel := context.WithTimeout(context.Background(), s.timeoutDuration)
 		defer cancel()
 
-		docs, pages, err := s.mongoRepo.FindJournalTransactionDocByShopID(ctx, shopID, false, pageRequest)
+		docs, pages, err := s.mongoRepo.FindJournalTransactionDocByHoldingCode(ctx, holdingCode, false, pageRequest)
 		if err != nil {
 			return err
 		}
@@ -69,7 +69,7 @@ func (s *JournalTransactionAdminService) ReSyncJournalTransactionDoc(shopID stri
 	return nil
 }
 
-func (s *JournalTransactionAdminService) ReSyncJournalDeleteTransactionDoc(shopID string) error {
+func (s *JournalTransactionAdminService) ReSyncJournalDeleteTransactionDoc(holdingCode string) error {
 	pageRequest := msModels.Pageable{
 		Limit: 20,
 		Page:  1,
@@ -85,7 +85,7 @@ func (s *JournalTransactionAdminService) ReSyncJournalDeleteTransactionDoc(shopI
 		ctx, cancel := context.WithTimeout(context.Background(), s.timeoutDuration)
 		defer cancel()
 
-		docs, pages, err := s.mongoRepo.FindJournalTransactionDocByShopID(ctx, shopID, true, pageRequest)
+		docs, pages, err := s.mongoRepo.FindJournalTransactionDocByHoldingCode(ctx, holdingCode, true, pageRequest)
 		if err != nil {
 			return err
 		}

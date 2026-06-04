@@ -67,7 +67,7 @@ func (h BankTransferRecordHttp) RegisterHttp() {
 // @Router /transaction/bank/banktransferrecord [post]
 func (h BankTransferRecordHttp) CreateBankTransferRecord(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.BankTransferRecord{}
@@ -83,7 +83,7 @@ func (h BankTransferRecordHttp) CreateBankTransferRecord(ctx microservice.IConte
 		return err
 	}
 
-	idx, docNo, err := h.svc.CreateBankTransferRecord(shopID, authUsername, *docReq)
+	idx, docNo, err := h.svc.CreateBankTransferRecord(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -111,7 +111,7 @@ func (h BankTransferRecordHttp) CreateBankTransferRecord(ctx microservice.IConte
 func (h BankTransferRecordHttp) UpdateBankTransferRecord(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -129,7 +129,7 @@ func (h BankTransferRecordHttp) UpdateBankTransferRecord(ctx microservice.IConte
 		return err
 	}
 
-	err = h.svc.UpdateBankTransferRecord(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateBankTransferRecord(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -155,12 +155,12 @@ func (h BankTransferRecordHttp) UpdateBankTransferRecord(ctx microservice.IConte
 // @Router /transaction/bank/banktransferrecord/{id} [delete]
 func (h BankTransferRecordHttp) DeleteBankTransferRecord(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteBankTransferRecord(shopID, id, authUsername)
+	err := h.svc.DeleteBankTransferRecord(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -186,7 +186,7 @@ func (h BankTransferRecordHttp) DeleteBankTransferRecord(ctx microservice.IConte
 // @Router /transaction/bank/banktransferrecord [delete]
 func (h BankTransferRecordHttp) DeleteBankTransferRecordByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -199,7 +199,7 @@ func (h BankTransferRecordHttp) DeleteBankTransferRecordByGUIDs(ctx microservice
 		return err
 	}
 
-	err = h.svc.DeleteBankTransferRecordByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteBankTransferRecordByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -224,12 +224,12 @@ func (h BankTransferRecordHttp) DeleteBankTransferRecordByGUIDs(ctx microservice
 // @Router /transaction/bank/banktransferrecord/{id} [get]
 func (h BankTransferRecordHttp) InfoBankTransferRecord(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get BankTransferRecord %v", id)
-	doc, err := h.svc.InfoBankTransferRecord(shopID, id)
+	doc, err := h.svc.InfoBankTransferRecord(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -255,11 +255,11 @@ func (h BankTransferRecordHttp) InfoBankTransferRecord(ctx microservice.IContext
 // @Router /transaction/bank/banktransferrecord/code/{code} [get]
 func (h BankTransferRecordHttp) InfoBankTransferRecordByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoBankTransferRecordByCode(shopID, code)
+	doc, err := h.svc.InfoBankTransferRecordByCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -290,7 +290,7 @@ func (h BankTransferRecordHttp) InfoBankTransferRecordByCode(ctx microservice.IC
 // @Router /transaction/bank/banktransferrecord [get]
 func (h BankTransferRecordHttp) SearchBankTransferRecordPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -311,7 +311,7 @@ func (h BankTransferRecordHttp) SearchBankTransferRecordPage(ctx microservice.IC
 		},
 	})
 
-	docList, pagination, err := h.svc.SearchBankTransferRecord(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchBankTransferRecord(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -344,7 +344,7 @@ func (h BankTransferRecordHttp) SearchBankTransferRecordPage(ctx microservice.IC
 // @Router /transaction/bank/banktransferrecord/list [get]
 func (h BankTransferRecordHttp) SearchBankTransferRecordStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -367,7 +367,7 @@ func (h BankTransferRecordHttp) SearchBankTransferRecordStep(ctx microservice.IC
 		},
 	})
 
-	docList, total, err := h.svc.SearchBankTransferRecordStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchBankTransferRecordStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -395,7 +395,7 @@ func (h BankTransferRecordHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -407,7 +407,7 @@ func (h BankTransferRecordHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

@@ -3,8 +3,8 @@ package kafka
 import (
 	"context"
 	"fmt"
-	"smlcloudplatform/internal/goapi/logger"
 	"runtime/debug"
+	"smlcloudplatform/internal/goapi/logger"
 
 	"smlcloudplatform/internal/goapi/models"
 	"smlcloudplatform/internal/goapi/myglobal"
@@ -82,12 +82,12 @@ func ProcessStockAdjustmentDocument(msg string) error {
 	// Decode stock adjustment from JSON message
 	logger.Debug("Step 1: Decoding JSON message... ")
 	docData := TransStockAdjustmentDecode(msg)
-	logger.Info("Step 1: Stock Adjustment decoded successfully - ShopID=%s, DocNo=%s, TransFlag=%d",
-		docData.ShopId, docData.DocNo, docData.TransFlag)
+	logger.Info("Step 1: Stock Adjustment decoded successfully - HoldingCode=%s, DocNo=%s, TransFlag=%d",
+		docData.HoldingCode, docData.DocNo, docData.TransFlag)
 
-	if docData.ShopId == "" || docData.DocNo == "" {
-		logger.Error("Invalid stock adjustment data - ShopId='%s', DocNo='%s'", docData.ShopId, docData.DocNo)
-		return fmt.Errorf("invalid stock adjustment data - missing ShopId or DocNo")
+	if docData.HoldingCode == "" || docData.DocNo == "" {
+		logger.Error("Invalid stock adjustment data - HoldingCode='%s', DocNo='%s'", docData.HoldingCode, docData.DocNo)
+		return fmt.Errorf("invalid stock adjustment data - missing HoldingCode or DocNo")
 	}
 
 	// Convert StockAdjustmentStruct to ProcessMongoTransModel
@@ -98,7 +98,7 @@ func ProcessStockAdjustmentDocument(msg string) error {
 
 	// Connect to database
 	logger.Debug("Step 3: Connecting to PostgreSQL...")
-	db, err := mypg.PgSqlFastConnect(docData.ShopId)
+	db, err := mypg.PgSqlFastConnect(docData.HoldingCode)
 	if err != nil {
 		logger.Error("Failed to connect to database: %v", err)
 		return fmt.Errorf("failed to connect to database: %v", err)
@@ -114,8 +114,8 @@ func ProcessStockAdjustmentDocument(msg string) error {
 
 	// Convert to build-doc structs
 	logger.Debug("Step 5: Converting to build-doc structs...")
-	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, docData.ShopId)
-	docDetailStructs := MapStockAdjustmentToDocDetailStructs(processData, docData.ShopId)
+	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, docData.HoldingCode)
+	docDetailStructs := MapStockAdjustmentToDocDetailStructs(processData, docData.HoldingCode)
 	logger.Debug("Step 5 completed: Converted to %d doc details", len(docDetailStructs))
 
 	// Create doc references if any
@@ -133,18 +133,18 @@ func ProcessStockAdjustmentDocument(msg string) error {
 		return fmt.Errorf("failed to insert document to PostgreSQL: %w", err)
 	}
 
-	err = InsertDocDetailToPostgreSQL(ctx, db, docData.ShopId, docDetailStructs, 8)
+	err = InsertDocDetailToPostgreSQL(ctx, db, docData.HoldingCode, docDetailStructs, 8)
 	if err != nil {
 		return fmt.Errorf("failed to insert doc details to PostgreSQL: %w", err)
 	}
 
-	err = InsertDocumentToClickHouse(ctx, docData.ShopId, docStruct, docRefStructs, docPaymentStruct, docDetailStructs, 9)
+	err = InsertDocumentToClickHouse(ctx, docData.HoldingCode, docStruct, docRefStructs, docPaymentStruct, docDetailStructs, 9)
 	if err != nil {
 		return fmt.Errorf("failed to insert to ClickHouse: %w", err)
 	}
 
 	// Step 10: Calculate stock cost using global config
-	err = ProcessDocumentStockCalculation(db, docData.ShopId, docDetailStructs, 10)
+	err = ProcessDocumentStockCalculation(db, docData.HoldingCode, docDetailStructs, 10)
 	if err != nil {
 		logger.Error("Failed to calculate stock cost: %v", err)
 		// Don't return error, just log it
@@ -204,7 +204,7 @@ func ConvertStockAdjustmentMongoDocToProcessModel(docData models.StockAdjustment
 
 	logger.Info("ConvertStockAdjustmentMongoDocToProcessModel: Creating final ProcessMongoTransModel")
 	result := models.ProcessMongoTransModel{
-		ShopId:           docData.ShopId,
+		HoldingCode:      docData.HoldingCode,
 		BranchId:         docData.BranchId,
 		GuidFixed:        docData.GuidFixed,
 		DocNo:            docData.DocNo,
@@ -230,7 +230,7 @@ func ConvertStockAdjustmentMongoDocToProcessModel(docData models.StockAdjustment
 }
 
 // MapStockAdjustmentToDocDetailStructs - converts stock adjustment to document detail structs
-func MapStockAdjustmentToDocDetailStructs(processData models.ProcessMongoTransModel, shopId string) []models.DocDetailStruct {
+func MapStockAdjustmentToDocDetailStructs(processData models.ProcessMongoTransModel, holdingCode string) []models.DocDetailStruct {
 	var docDetailStructs []models.DocDetailStruct
 
 	for i, detail := range processData.Details {
@@ -290,10 +290,10 @@ func OnConsumeMessageStockAdjustmentDelete(msg string) error {
 
 	docData := TransStockAdjustmentDecode(msg)
 
-	if docData.ShopId == "" || docData.DocNo == "" {
-		logger.Error("Invalid stock adjustment data - missing ShopId or DocNo")
+	if docData.HoldingCode == "" || docData.DocNo == "" {
+		logger.Error("Invalid stock adjustment data - missing HoldingCode or DocNo")
 		return fmt.Errorf("invalid stock adjustment data")
 	}
 
-	return DeleteDocumentFromDatabases(context.Background(), docData.ShopId, docData.DocNo, docData.TransFlag)
+	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.DocNo, docData.TransFlag)
 }

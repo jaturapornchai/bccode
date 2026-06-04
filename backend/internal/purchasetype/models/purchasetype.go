@@ -11,14 +11,14 @@ const purchaseTypeCollectionName = "purchaseTypes"
 // PurchaseType - ประเภทการจัดซื้อ (รองรับหลายภาษา)
 type PurchaseType struct {
 	models.PartitionIdentity `bson:"inline"`
-	Code string          `json:"code" bson:"code"`
-	Names *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
-	Descriptions *[]models.NameX `json:"descriptions" bson:"descriptions"`
+	Code                     string          `json:"code" bson:"code"`
+	Names                    *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
+	Descriptions             *[]models.NameX `json:"descriptions" bson:"descriptions"`
 }
 
 type PurchaseTypeInfo struct {
 	models.DocIdentity `bson:"inline"`
-	PurchaseType  `bson:"inline"`
+	PurchaseType       `bson:"inline"`
 }
 
 func (PurchaseTypeInfo) CollectionName() string {
@@ -26,13 +26,13 @@ func (PurchaseTypeInfo) CollectionName() string {
 }
 
 type PurchaseTypeData struct {
-	models.ShopIdentity `bson:"inline"`
-	PurchaseTypeInfo  `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	PurchaseTypeInfo         `bson:"inline"`
 }
 
 type PurchaseTypeDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	PurchaseTypeData  `bson:"inline"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	PurchaseTypeData   `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -49,7 +49,7 @@ func (PurchaseTypeItemGuid) CollectionName() string {
 }
 
 type PurchaseTypeActivity struct {
-	PurchaseTypeData  `bson:"inline"`
+	PurchaseTypeData    `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

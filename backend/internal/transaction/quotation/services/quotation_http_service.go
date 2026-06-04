@@ -22,15 +22,15 @@ import (
 )
 
 type IQuotationHttpService interface {
-	CreateQuotation(shopID string, authUsername string, doc models.Quotation) (string, string, error)
-	UpdateQuotation(shopID string, guid string, authUsername string, doc models.Quotation) error
-	DeleteQuotation(shopID string, guid string, authUsername string) error
-	DeleteQuotationByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoQuotation(shopID string, guid string) (models.QuotationInfo, error)
-	InfoQuotationByCode(shopID string, code string) (models.QuotationInfo, error)
-	SearchQuotation(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.QuotationInfo, mongopagination.PaginationData, error)
-	SearchQuotationStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.QuotationInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.Quotation) (common.BulkImport, error)
+	CreateQuotation(holdingCode string, authUsername string, doc models.Quotation) (string, string, error)
+	UpdateQuotation(holdingCode string, guid string, authUsername string, doc models.Quotation) error
+	DeleteQuotation(holdingCode string, guid string, authUsername string) error
+	DeleteQuotationByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoQuotation(holdingCode string, guid string) (models.QuotationInfo, error)
+	InfoQuotationByCode(holdingCode string, code string) (models.QuotationInfo, error)
+	SearchQuotation(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.QuotationInfo, mongopagination.PaginationData, error)
+	SearchQuotationStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.QuotationInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.Quotation) (common.BulkImport, error)
 
 	GetModuleName() string
 }
@@ -81,11 +81,11 @@ func (svc QuotationHttpService) getDocNoPrefix(docDate time.Time) string {
 	return fmt.Sprintf("%s%s", MODULE_NAME, docDateStr)
 }
 
-func (svc QuotationHttpService) generateNewDocNo(ctx context.Context, shopID, prefixDocNo string, docNumber int) (string, int, error) {
-	prevoiusDocNumber, err := svc.repoCache.Get(shopID, prefixDocNo)
+func (svc QuotationHttpService) generateNewDocNo(ctx context.Context, holdingCode, prefixDocNo string, docNumber int) (string, int, error) {
+	prevoiusDocNumber, err := svc.repoCache.Get(holdingCode, prefixDocNo)
 
 	if prevoiusDocNumber == 0 || err != nil {
-		lastDoc, err := svc.repo.FindLastDocNo(ctx, shopID, prefixDocNo)
+		lastDoc, err := svc.repo.FindLastDocNo(ctx, holdingCode, prefixDocNo)
 
 		if err != nil {
 			return "", 0, err
@@ -105,7 +105,7 @@ func (svc QuotationHttpService) generateNewDocNo(ctx context.Context, shopID, pr
 	newDocNumber := prevoiusDocNumber + 1
 	newDocNo := fmt.Sprintf("%s%05d", prefixDocNo, newDocNumber)
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", newDocNo)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", newDocNo)
 
 	if err != nil {
 		return "", 0, err
@@ -118,7 +118,7 @@ func (svc QuotationHttpService) generateNewDocNo(ctx context.Context, shopID, pr
 	return newDocNo, newDocNumber, nil
 }
 
-func (svc QuotationHttpService) CreateQuotation(shopID string, authUsername string, doc models.Quotation) (string, string, error) {
+func (svc QuotationHttpService) CreateQuotation(holdingCode string, authUsername string, doc models.Quotation) (string, string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -126,7 +126,7 @@ func (svc QuotationHttpService) CreateQuotation(shopID string, authUsername stri
 	docDate := doc.DocDatetime
 	prefixDocNo := svc.getDocNoPrefix(docDate)
 
-	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, shopID, prefixDocNo, 1)
+	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, holdingCode, prefixDocNo, 1)
 
 	if err != nil {
 		return "", "", err
@@ -135,7 +135,7 @@ func (svc QuotationHttpService) CreateQuotation(shopID string, authUsername stri
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.QuotationDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.Quotation = doc
 
@@ -149,23 +149,23 @@ func (svc QuotationHttpService) CreateQuotation(shopID string, authUsername stri
 		return "", "", err
 	}
 
-	go svc.repoCache.Save(shopID, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
+	go svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
 
 	go func() {
 		svc.repoMq.Create(docData)
-		svc.repoCache.Save(shopID, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
-		svc.saveMasterSync(shopID)
+		svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return newGuidFixed, newDocNo, nil
 }
 
-func (svc QuotationHttpService) UpdateQuotation(shopID string, guid string, authUsername string, doc models.Quotation) error {
+func (svc QuotationHttpService) UpdateQuotation(holdingCode string, guid string, authUsername string, doc models.Quotation) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -182,7 +182,7 @@ func (svc QuotationHttpService) UpdateQuotation(shopID string, guid string, auth
 	docData.UpdatedBy = authUsername
 	docData.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, docData)
+	err = svc.repo.Update(ctx, holdingCode, guid, docData)
 
 	if err != nil {
 		return err
@@ -190,18 +190,18 @@ func (svc QuotationHttpService) UpdateQuotation(shopID string, guid string, auth
 
 	func() {
 		svc.repoMq.Update(docData)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc QuotationHttpService) DeleteQuotation(shopID string, guid string, authUsername string) error {
+func (svc QuotationHttpService) DeleteQuotation(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -211,20 +211,20 @@ func (svc QuotationHttpService) DeleteQuotation(shopID string, guid string, auth
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
 	func() {
 		svc.repoMq.Delete(findDoc)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc QuotationHttpService) DeleteQuotationByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc QuotationHttpService) DeleteQuotationByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -233,26 +233,26 @@ func (svc QuotationHttpService) DeleteQuotationByGUIDs(shopID string, authUserna
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
 
 	func() {
-		docs, _ := svc.repo.FindByGuids(ctx, shopID, GUIDs)
+		docs, _ := svc.repo.FindByGuids(ctx, holdingCode, GUIDs)
 		svc.repoMq.DeleteInBatch(docs)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc QuotationHttpService) InfoQuotation(shopID string, guid string) (models.QuotationInfo, error) {
+func (svc QuotationHttpService) InfoQuotation(holdingCode string, guid string) (models.QuotationInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.QuotationInfo{}, err
@@ -265,12 +265,12 @@ func (svc QuotationHttpService) InfoQuotation(shopID string, guid string) (model
 	return findDoc.QuotationInfo, nil
 }
 
-func (svc QuotationHttpService) InfoQuotationByCode(shopID string, code string) (models.QuotationInfo, error) {
+func (svc QuotationHttpService) InfoQuotationByCode(holdingCode string, code string) (models.QuotationInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", code)
 
 	if err != nil {
 		return models.QuotationInfo{}, err
@@ -283,7 +283,7 @@ func (svc QuotationHttpService) InfoQuotationByCode(shopID string, code string) 
 	return findDoc.QuotationInfo, nil
 }
 
-func (svc QuotationHttpService) SearchQuotation(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.QuotationInfo, mongopagination.PaginationData, error) {
+func (svc QuotationHttpService) SearchQuotation(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.QuotationInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -292,7 +292,7 @@ func (svc QuotationHttpService) SearchQuotation(shopID string, filters map[strin
 		"docno",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.QuotationInfo{}, pagination, err
@@ -301,7 +301,7 @@ func (svc QuotationHttpService) SearchQuotation(shopID string, filters map[strin
 	return docList, pagination, nil
 }
 
-func (svc QuotationHttpService) SearchQuotationStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.QuotationInfo, int, error) {
+func (svc QuotationHttpService) SearchQuotationStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.QuotationInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -312,7 +312,7 @@ func (svc QuotationHttpService) SearchQuotationStep(shopID string, langCode stri
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.QuotationInfo{}, 0, err
@@ -321,7 +321,7 @@ func (svc QuotationHttpService) SearchQuotationStep(shopID string, langCode stri
 	return docList, total, nil
 }
 
-func (svc QuotationHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.Quotation) (common.BulkImport, error) {
+func (svc QuotationHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.Quotation) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -333,7 +333,7 @@ func (svc QuotationHttpService) SaveInBatch(shopID string, authUsername string, 
 		itemCodeGuidList = append(itemCodeGuidList, doc.DocNo)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "docno", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "docno", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -345,18 +345,18 @@ func (svc QuotationHttpService) SaveInBatch(shopID string, authUsername string, 
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.Quotation, models.QuotationDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.Quotation) models.QuotationDoc {
+		func(holdingCode string, authUsername string, doc models.Quotation) models.QuotationDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.QuotationDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.Quotation = doc
 
 			currentTime := time.Now()
@@ -367,23 +367,23 @@ func (svc QuotationHttpService) SaveInBatch(shopID string, authUsername string, 
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.Quotation, models.QuotationDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.QuotationDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", guid)
+		func(holdingCode string, guid string) (models.QuotationDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", guid)
 		},
 		func(doc models.QuotationDoc) bool {
 			return doc.DocNo != ""
 		},
-		func(shopID string, authUsername string, data models.Quotation, doc models.QuotationDoc) error {
+		func(holdingCode string, authUsername string, data models.Quotation, doc models.QuotationDoc) error {
 
 			doc.Quotation = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -422,7 +422,7 @@ func (svc QuotationHttpService) SaveInBatch(shopID string, authUsername string, 
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -436,9 +436,9 @@ func (svc QuotationHttpService) getDocIDKey(doc models.Quotation) string {
 	return doc.DocNo
 }
 
-func (svc QuotationHttpService) saveMasterSync(shopID string) {
+func (svc QuotationHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

@@ -2,23 +2,23 @@ package models
 
 type CountStatus struct {
 	Status int8 `json:"status"`
-	Count int  `json:"count"`
+	Count  int  `json:"count"`
 }
 type DocumentImageTaskChangeMessage struct {
-	ShopID string        `json:"shopid"`
-	TaskGUID string        `json:"task_guid"`
-	Count int           `json:"count"`
-	BillCount float64       `json:"billcount"`
-	ReferenceCount float64       `json:"referencecount"`
+	HoldingCode      string        `json:"holding_code"`
+	TaskGUID         string        `json:"task_guid"`
+	Count            int           `json:"count"`
+	BillCount        float64       `json:"billcount"`
+	ReferenceCount   float64       `json:"referencecount"`
 	ReferenceBalance float64       `json:"referencebalance"`
-	CountStatus []CountStatus `json:"countstatus"`
+	CountStatus      []CountStatus `json:"countstatus"`
 	// Event    TaskChangeEvent `json:"event"`
 }
 
 type DocumentImageTaskRejectMessage struct {
-	ShopID string `json:"shopid"`
-	TaskGUID string `json:"task_guid"`
-	Count int    `json:"count"`
+	HoldingCode string `json:"holding_code"`
+	TaskGUID    string `json:"task_guid"`
+	Count       int    `json:"count"`
 	// Event    TaskRejectEvent `json:"event"`
 }
 

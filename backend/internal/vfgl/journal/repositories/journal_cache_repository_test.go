@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-const MockShopID = "TESTSHOP"
+const MockHoldingCode = "TESTSHOP"
 const prefixName = "ws"
 
 var cache *microservice.Cacher

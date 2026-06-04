@@ -23,17 +23,17 @@ const (
 
 // ChatSessionDoc — เก็บ conversation history ใน RAM (ชื่อเดิมเพื่อ backward compat)
 type ChatSessionDoc struct {
-	SessionID string           `json:"session_id"`
-	ShopID string           `json:"shop_id"`
-	Messages []SessionMessage `json:"messages"`
-	CreatedAt time.Time        `json:"created_at"`
-	UpdatedAt time.Time        `json:"updated_at"`
+	SessionID   string           `json:"session_id"`
+	HoldingCode string           `json:"holding_code"`
+	Messages    []SessionMessage `json:"messages"`
+	CreatedAt   time.Time        `json:"created_at"`
+	UpdatedAt   time.Time        `json:"updated_at"`
 }
 
 // SessionMessage — message ใน session (เก็บแค่ user + assistant, ไม่เก็บ tool/system)
 type SessionMessage struct {
-	Role string    `json:"role"`
-	Content string    `json:"content"`
+	Role      string    `json:"role"`
+	Content   string    `json:"content"`
 	Timestamp time.Time `json:"timestamp"`
 }
 
@@ -66,28 +66,28 @@ func startSessionJanitor() {
 	}()
 }
 
-func sessionStoreKey(sessionID, shopID string) string {
-	return shopID + "::" + sessionID
+func sessionStoreKey(sessionID, holdingCode string) string {
+	return holdingCode + "::" + sessionID
 }
 
 // loadSession โหลด session จาก in-memory cache
 // ไม่พบ → return session ใหม่ (empty)
-func loadSession(sessionID, shopID string) (*ChatSessionDoc, error) {
+func loadSession(sessionID, holdingCode string) (*ChatSessionDoc, error) {
 	janitorOnce.Do(startSessionJanitor)
 
 	sessionStoreMu.RLock()
-	entry, ok := sessionStore[sessionStoreKey(sessionID, shopID)]
+	entry, ok := sessionStore[sessionStoreKey(sessionID, holdingCode)]
 	sessionStoreMu.RUnlock()
 
 	if ok && time.Now().Before(entry.expiresAt) {
 		return entry.doc, nil
 	}
 	return &ChatSessionDoc{
-		SessionID: sessionID,
-		ShopID:    shopID,
-		Messages:  []SessionMessage{},
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		SessionID:   sessionID,
+		HoldingCode: holdingCode,
+		Messages:    []SessionMessage{},
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
 	}, nil
 }
 
@@ -102,7 +102,7 @@ func saveSession(doc *ChatSessionDoc) error {
 	doc.UpdatedAt = time.Now()
 
 	sessionStoreMu.Lock()
-	sessionStore[sessionStoreKey(doc.SessionID, doc.ShopID)] = &sessionEntry{
+	sessionStore[sessionStoreKey(doc.SessionID, doc.HoldingCode)] = &sessionEntry{
 		doc:       doc,
 		expiresAt: time.Now().Add(sessionTTL),
 	}
@@ -138,9 +138,9 @@ func appendToSession(session *ChatSessionDoc, role, content string) {
 }
 
 // clearSession ลบ session ออกจาก in-memory cache
-func clearSession(sessionID, shopID string) error {
+func clearSession(sessionID, holdingCode string) error {
 	sessionStoreMu.Lock()
-	delete(sessionStore, sessionStoreKey(sessionID, shopID))
+	delete(sessionStore, sessionStoreKey(sessionID, holdingCode))
 	sessionStoreMu.Unlock()
 	return nil
 }

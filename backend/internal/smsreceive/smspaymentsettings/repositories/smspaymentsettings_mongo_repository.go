@@ -11,14 +11,14 @@ import (
 )
 
 type ISmsPaymentSettingsRepository interface {
-	Count(ctx context.Context, shopID string) (int, error)
+	Count(ctx context.Context, holdingCode string) (int, error)
 	Create(ctx context.Context, doc models.SmsPaymentSettingsDoc) (string, error)
 	CreateInBatch(ctx context.Context, docList []models.SmsPaymentSettingsDoc) error
-	Update(ctx context.Context, shopID string, guid string, doc models.SmsPaymentSettingsDoc) error
-	DeleteByGuidfixed(ctx context.Context, shopID string, guid string, username string) error
-	FindOne(ctx context.Context, shopID string, filters interface{}) (models.SmsPaymentSettingsDoc, error)
-	FindPage(ctx context.Context, shopID string, searchInFields []string, pageable micromodels.Pageable) ([]models.SmsPaymentSettingsInfo, mongopagination.PaginationData, error)
-	FindByGuid(ctx context.Context, shopID string, guid string) (models.SmsPaymentSettingsDoc, error)
+	Update(ctx context.Context, holdingCode string, guid string, doc models.SmsPaymentSettingsDoc) error
+	DeleteByGuidfixed(ctx context.Context, holdingCode string, guid string, username string) error
+	FindOne(ctx context.Context, holdingCode string, filters interface{}) (models.SmsPaymentSettingsDoc, error)
+	FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable micromodels.Pageable) ([]models.SmsPaymentSettingsInfo, mongopagination.PaginationData, error)
+	FindByGuid(ctx context.Context, holdingCode string, guid string) (models.SmsPaymentSettingsDoc, error)
 }
 
 type SmsPaymentSettingsRepository struct {

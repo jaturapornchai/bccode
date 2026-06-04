@@ -20,14 +20,14 @@ import (
 )
 
 type ICreditorGroupHttpService interface {
-	CreateCreditorGroup(shopID string, authUsername string, doc models.CreditorGroup) (string, error)
-	UpdateCreditorGroup(shopID string, guid string, authUsername string, doc models.CreditorGroup) error
-	DeleteCreditorGroup(shopID string, guid string, authUsername string) error
-	DeleteCreditorGroupByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoCreditorGroup(shopID string, guid string) (models.CreditorGroupInfo, error)
-	SearchCreditorGroup(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.CreditorGroupInfo, mongopagination.PaginationData, error)
-	SearchCreditorGroupStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.CreditorGroupInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.CreditorGroup) (common.BulkImport, error)
+	CreateCreditorGroup(holdingCode string, authUsername string, doc models.CreditorGroup) (string, error)
+	UpdateCreditorGroup(holdingCode string, guid string, authUsername string, doc models.CreditorGroup) error
+	DeleteCreditorGroup(holdingCode string, guid string, authUsername string) error
+	DeleteCreditorGroupByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoCreditorGroup(holdingCode string, guid string) (models.CreditorGroupInfo, error)
+	SearchCreditorGroup(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.CreditorGroupInfo, mongopagination.PaginationData, error)
+	SearchCreditorGroupStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.CreditorGroupInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.CreditorGroup) (common.BulkImport, error)
 
 	GetModuleName() string
 }
@@ -57,11 +57,11 @@ func (svc CreditorGroupHttpService) getContextTimeout() (context.Context, contex
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc CreditorGroupHttpService) CreateCreditorGroup(shopID string, authUsername string, doc models.CreditorGroup) (string, error) {
+func (svc CreditorGroupHttpService) CreateCreditorGroup(holdingCode string, authUsername string, doc models.CreditorGroup) (string, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "group_code", doc.GroupCode)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "group_code", doc.GroupCode)
 
 	if err != nil {
 		return "", err
@@ -74,7 +74,7 @@ func (svc CreditorGroupHttpService) CreateCreditorGroup(shopID string, authUsern
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.CreditorGroupDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.CreditorGroup = doc
 
@@ -87,16 +87,16 @@ func (svc CreditorGroupHttpService) CreateCreditorGroup(shopID string, authUsern
 		return "", err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return newGuidFixed, nil
 }
 
-func (svc CreditorGroupHttpService) UpdateCreditorGroup(shopID string, guid string, authUsername string, doc models.CreditorGroup) error {
+func (svc CreditorGroupHttpService) UpdateCreditorGroup(holdingCode string, guid string, authUsername string, doc models.CreditorGroup) error {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -111,21 +111,21 @@ func (svc CreditorGroupHttpService) UpdateCreditorGroup(shopID string, guid stri
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, findDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, findDoc)
 
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc CreditorGroupHttpService) DeleteCreditorGroup(shopID string, guid string, authUsername string) error {
+func (svc CreditorGroupHttpService) DeleteCreditorGroup(holdingCode string, guid string, authUsername string) error {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -135,17 +135,17 @@ func (svc CreditorGroupHttpService) DeleteCreditorGroup(shopID string, guid stri
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc CreditorGroupHttpService) DeleteCreditorGroupByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc CreditorGroupHttpService) DeleteCreditorGroupByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
@@ -153,7 +153,7 @@ func (svc CreditorGroupHttpService) DeleteCreditorGroupByGUIDs(shopID string, au
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
@@ -161,11 +161,11 @@ func (svc CreditorGroupHttpService) DeleteCreditorGroupByGUIDs(shopID string, au
 	return nil
 }
 
-func (svc CreditorGroupHttpService) InfoCreditorGroup(shopID string, guid string) (models.CreditorGroupInfo, error) {
+func (svc CreditorGroupHttpService) InfoCreditorGroup(holdingCode string, guid string) (models.CreditorGroupInfo, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.CreditorGroupInfo{}, err
@@ -179,7 +179,7 @@ func (svc CreditorGroupHttpService) InfoCreditorGroup(shopID string, guid string
 
 }
 
-func (svc CreditorGroupHttpService) SearchCreditorGroup(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.CreditorGroupInfo, mongopagination.PaginationData, error) {
+func (svc CreditorGroupHttpService) SearchCreditorGroup(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.CreditorGroupInfo, mongopagination.PaginationData, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
@@ -188,7 +188,7 @@ func (svc CreditorGroupHttpService) SearchCreditorGroup(shopID string, filters m
 		"names.name",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.CreditorGroupInfo{}, pagination, err
@@ -197,7 +197,7 @@ func (svc CreditorGroupHttpService) SearchCreditorGroup(shopID string, filters m
 	return docList, pagination, nil
 }
 
-func (svc CreditorGroupHttpService) SearchCreditorGroupStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.CreditorGroupInfo, int, error) {
+func (svc CreditorGroupHttpService) SearchCreditorGroupStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.CreditorGroupInfo, int, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
@@ -208,7 +208,7 @@ func (svc CreditorGroupHttpService) SearchCreditorGroupStep(shopID string, langC
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.CreditorGroupInfo{}, 0, err
@@ -217,7 +217,7 @@ func (svc CreditorGroupHttpService) SearchCreditorGroupStep(shopID string, langC
 	return docList, total, nil
 }
 
-func (svc CreditorGroupHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.CreditorGroup) (common.BulkImport, error) {
+func (svc CreditorGroupHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.CreditorGroup) (common.BulkImport, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
@@ -228,7 +228,7 @@ func (svc CreditorGroupHttpService) SaveInBatch(shopID string, authUsername stri
 		itemCodeGuidList = append(itemCodeGuidList, doc.GroupCode)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "group_code", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "group_code", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -240,18 +240,18 @@ func (svc CreditorGroupHttpService) SaveInBatch(shopID string, authUsername stri
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.CreditorGroup, models.CreditorGroupDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.CreditorGroup) models.CreditorGroupDoc {
+		func(holdingCode string, authUsername string, doc models.CreditorGroup) models.CreditorGroupDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.CreditorGroupDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.CreditorGroup = doc
 
 			currentTime := time.Now()
@@ -262,23 +262,23 @@ func (svc CreditorGroupHttpService) SaveInBatch(shopID string, authUsername stri
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.CreditorGroup, models.CreditorGroupDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.CreditorGroupDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "group_code", guid)
+		func(holdingCode string, guid string) (models.CreditorGroupDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "group_code", guid)
 		},
 		func(doc models.CreditorGroupDoc) bool {
 			return doc.GroupCode != ""
 		},
-		func(shopID string, authUsername string, data models.CreditorGroup, doc models.CreditorGroupDoc) error {
+		func(holdingCode string, authUsername string, data models.CreditorGroup, doc models.CreditorGroupDoc) error {
 
 			doc.CreditorGroup = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -317,7 +317,7 @@ func (svc CreditorGroupHttpService) SaveInBatch(shopID string, authUsername stri
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -331,9 +331,9 @@ func (svc CreditorGroupHttpService) getDocIDKey(doc models.CreditorGroup) string
 	return doc.GroupCode
 }
 
-func (svc CreditorGroupHttpService) saveMasterSync(shopID string) {
+func (svc CreditorGroupHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

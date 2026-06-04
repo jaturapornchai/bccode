@@ -51,7 +51,7 @@ func (s *PurchaseTransactionAdminHttp) ReSyncPurchaseTransaction(ctx microservic
 		return err
 	}
 
-	err = s.svc.ReSyncPurchaseDoc(req.ShopID)
+	err = s.svc.ReSyncPurchaseDoc(req.HoldingCode)
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, common.ApiResponse{
 			Success: false,
@@ -80,7 +80,7 @@ func (s *PurchaseTransactionAdminHttp) ReSyncPurchaseDeleteTransaction(ctx micro
 		return err
 	}
 
-	err = s.svc.ReSyncPurchaseDeleteDoc(req.ShopID)
+	err = s.svc.ReSyncPurchaseDeleteDoc(req.HoldingCode)
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, common.ApiResponse{
 			Success: false,

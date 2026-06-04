@@ -30,14 +30,14 @@ func TestXLSXProductCompare(t *testing.T) {
 	fmt.Println()
 
 	// กำหนดค่า
-	shopID := "33UYr4vEDECjXsql4x3Lb4FdWfX"
+	holdingCode := "33UYr4vEDECjXsql4x3Lb4FdWfX"
 	fileName := "761a0b3a-a2ce-47b8-8711-f3525158b484.xlsx"
 
 	// หา file path
 	tempDir := os.TempDir()
 	filePath := filepath.Join(tempDir, "uploads", fileName)
 
-	fmt.Printf("Shop ID: %s\n", shopID)
+	fmt.Printf("Holding Code: %s\n", holdingCode)
 	fmt.Printf("File: %s\n", fileName)
 	fmt.Printf("Path: %s\n", filePath)
 	fmt.Println()
@@ -49,7 +49,7 @@ func TestXLSXProductCompare(t *testing.T) {
 
 	// สร้าง session
 	session := &ProductPrepareSession{
-		ShopID:        shopID,
+		HoldingCode:   holdingCode,
 		FileName:      fileName,
 		FilePath:      filePath,
 		Status:        StatusNotStarted,

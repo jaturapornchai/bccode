@@ -63,7 +63,7 @@ func (h ChartOfAccountHttp) RegisterHttp() {
 // @Router /gl/chartofaccount [get]
 func (h ChartOfAccountHttp) Search(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -88,7 +88,7 @@ func (h ChartOfAccountHttp) Search(ctx microservice.IContext) error {
 
 	}
 
-	docList, pagination, err := h.svc.Search(shopID, accRanges, pageable)
+	docList, pagination, err := h.svc.Search(holdingCode, accRanges, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -115,7 +115,7 @@ func (h ChartOfAccountHttp) Search(ctx microservice.IContext) error {
 // @Router /gl/chartofaccount [post]
 func (h ChartOfAccountHttp) Create(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.ChartOfAccount{}
@@ -126,7 +126,7 @@ func (h ChartOfAccountHttp) Create(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.Create(shopID, authUsername, *docReq)
+	idx, err := h.svc.Create(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -152,12 +152,12 @@ func (h ChartOfAccountHttp) Create(ctx microservice.IContext) error {
 // @Router /gl/chartofaccount/{id} [get]
 func (h ChartOfAccountHttp) Info(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get Journal %v", id)
-	doc, err := h.svc.Info(id, shopID)
+	doc, err := h.svc.Info(id, holdingCode)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -186,7 +186,7 @@ func (h ChartOfAccountHttp) Info(ctx microservice.IContext) error {
 func (h ChartOfAccountHttp) Update(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -199,7 +199,7 @@ func (h ChartOfAccountHttp) Update(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.Update(id, shopID, authUsername, *docReq)
+	err = h.svc.Update(id, holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -226,12 +226,12 @@ func (h ChartOfAccountHttp) Update(ctx microservice.IContext) error {
 // @Router /gl/chartofaccount/{id} [delete]
 func (h ChartOfAccountHttp) Delete(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.Delete(id, shopID, authUsername)
+	err := h.svc.Delete(id, holdingCode, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -260,7 +260,7 @@ func (h ChartOfAccountHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -272,7 +272,7 @@ func (h ChartOfAccountHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

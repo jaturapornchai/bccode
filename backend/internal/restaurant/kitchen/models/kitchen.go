@@ -10,16 +10,16 @@ const kitchenCollectionName = "restaurantKitchens"
 
 type Kitchen struct {
 	GroupNumber int             `json:"group_number" bson:"group_number"`
-	Code string          `json:"code" bson:"code"`
-	Names *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
-	Printers *[]string       `json:"printers" bson:"printers"`
-	Products *[]string       `json:"products" bson:"products"`
-	Zones *[]string       `json:"zones" bson:"zones"`
+	Code        string          `json:"code" bson:"code"`
+	Names       *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
+	Printers    *[]string       `json:"printers" bson:"printers"`
+	Products    *[]string       `json:"products" bson:"products"`
+	Zones       *[]string       `json:"zones" bson:"zones"`
 }
 
 type KitchenInfo struct {
 	models.DocIdentity `bson:"inline"`
-	Kitchen  `bson:"inline"`
+	Kitchen            `bson:"inline"`
 }
 
 func (KitchenInfo) CollectionName() string {
@@ -27,13 +27,13 @@ func (KitchenInfo) CollectionName() string {
 }
 
 type KitchenData struct {
-	models.ShopIdentity `bson:"inline"`
-	KitchenInfo  `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	KitchenInfo              `bson:"inline"`
 }
 
 type KitchenDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	KitchenData  `bson:"inline"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	KitchenData        `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 	models.LastUpdate  `bson:"inline"`
 }
@@ -51,7 +51,7 @@ func (KitchenItemGuid) CollectionName() string {
 }
 
 type KitchenActivity struct {
-	KitchenData  `bson:"inline"`
+	KitchenData         `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 
@@ -70,22 +70,22 @@ func (KitchenDeleteActivity) CollectionName() string {
 
 type KitchenInfoResponse struct {
 	Success bool        `json:"success"`
-	Data KitchenInfo `json:"data,omitempty"`
+	Data    KitchenInfo `json:"data,omitempty"`
 }
 
 type KitchenPageResponse struct {
-	Success bool                          `json:"success"`
-	Data []KitchenInfo                 `json:"data,omitempty"`
+	Success    bool                          `json:"success"`
+	Data       []KitchenInfo                 `json:"data,omitempty"`
 	Pagination models.PaginationDataResponse `json:"pagination,omitempty"`
 }
 
 type KitchenLastActivityResponse struct {
-	New []KitchenActivity       `json:"new" `
+	New    []KitchenActivity       `json:"new" `
 	Remove []KitchenDeleteActivity `json:"remove"`
 }
 
 type KitchenFetchUpdateResponse struct {
-	Success bool                          `json:"success"`
-	Data KitchenLastActivityResponse   `json:"data,omitempty"`
+	Success    bool                          `json:"success"`
+	Data       KitchenLastActivityResponse   `json:"data,omitempty"`
 	Pagination models.PaginationDataResponse `json:"pagination,omitempty"`
 }

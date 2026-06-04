@@ -23,12 +23,12 @@ func (PurchaseDebitNoteInfo) CollectionName() string {
 }
 
 type PurchaseDebitNoteData struct {
-	models.ShopIdentity   `bson:"inline"`
-	PurchaseDebitNoteInfo `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	PurchaseDebitNoteInfo    `bson:"inline"`
 }
 
 type PurchaseDebitNoteDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                    primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	PurchaseDebitNoteData `bson:"inline"`
 	models.ActivityDoc    `bson:"inline"`
 }

@@ -22,15 +22,15 @@ import (
 )
 
 type IReceiveDepositRefundHttpService interface {
-	CreateReceiveDepositRefund(shopID string, authUsername string, doc models.ReceiveDepositRefund) (string, string, error)
-	UpdateReceiveDepositRefund(shopID string, guid string, authUsername string, doc models.ReceiveDepositRefund) error
-	DeleteReceiveDepositRefund(shopID string, guid string, authUsername string) error
-	DeleteReceiveDepositRefundByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoReceiveDepositRefund(shopID string, guid string) (models.ReceiveDepositRefundInfo, error)
-	InfoReceiveDepositRefundByCode(shopID string, code string) (models.ReceiveDepositRefundInfo, error)
-	SearchReceiveDepositRefund(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ReceiveDepositRefundInfo, mongopagination.PaginationData, error)
-	SearchReceiveDepositRefundStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ReceiveDepositRefundInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.ReceiveDepositRefund) (common.BulkImport, error)
+	CreateReceiveDepositRefund(holdingCode string, authUsername string, doc models.ReceiveDepositRefund) (string, string, error)
+	UpdateReceiveDepositRefund(holdingCode string, guid string, authUsername string, doc models.ReceiveDepositRefund) error
+	DeleteReceiveDepositRefund(holdingCode string, guid string, authUsername string) error
+	DeleteReceiveDepositRefundByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoReceiveDepositRefund(holdingCode string, guid string) (models.ReceiveDepositRefundInfo, error)
+	InfoReceiveDepositRefundByCode(holdingCode string, code string) (models.ReceiveDepositRefundInfo, error)
+	SearchReceiveDepositRefund(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ReceiveDepositRefundInfo, mongopagination.PaginationData, error)
+	SearchReceiveDepositRefundStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ReceiveDepositRefundInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.ReceiveDepositRefund) (common.BulkImport, error)
 
 	GetModuleName() string
 }
@@ -81,11 +81,11 @@ func (svc ReceiveDepositRefundHttpService) getDocNoPrefix(docDate time.Time) str
 	return fmt.Sprintf("%s%s", MODULE_NAME, docDateStr)
 }
 
-func (svc ReceiveDepositRefundHttpService) generateNewDocNo(ctx context.Context, shopID, prefixDocNo string, docNumber int) (string, int, error) {
-	prevoiusDocNumber, err := svc.repoCache.Get(shopID, prefixDocNo)
+func (svc ReceiveDepositRefundHttpService) generateNewDocNo(ctx context.Context, holdingCode, prefixDocNo string, docNumber int) (string, int, error) {
+	prevoiusDocNumber, err := svc.repoCache.Get(holdingCode, prefixDocNo)
 
 	if prevoiusDocNumber == 0 || err != nil {
-		lastDoc, err := svc.repo.FindLastDocNo(ctx, shopID, prefixDocNo)
+		lastDoc, err := svc.repo.FindLastDocNo(ctx, holdingCode, prefixDocNo)
 
 		if err != nil {
 			return "", 0, err
@@ -105,7 +105,7 @@ func (svc ReceiveDepositRefundHttpService) generateNewDocNo(ctx context.Context,
 	newDocNumber := prevoiusDocNumber + 1
 	newDocNo := fmt.Sprintf("%s%05d", prefixDocNo, newDocNumber)
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", newDocNo)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", newDocNo)
 
 	if err != nil {
 		return "", 0, err
@@ -118,7 +118,7 @@ func (svc ReceiveDepositRefundHttpService) generateNewDocNo(ctx context.Context,
 	return newDocNo, newDocNumber, nil
 }
 
-func (svc ReceiveDepositRefundHttpService) CreateReceiveDepositRefund(shopID string, authUsername string, doc models.ReceiveDepositRefund) (string, string, error) {
+func (svc ReceiveDepositRefundHttpService) CreateReceiveDepositRefund(holdingCode string, authUsername string, doc models.ReceiveDepositRefund) (string, string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -126,7 +126,7 @@ func (svc ReceiveDepositRefundHttpService) CreateReceiveDepositRefund(shopID str
 	docDate := doc.DocDatetime
 	prefixDocNo := svc.getDocNoPrefix(docDate)
 
-	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, shopID, prefixDocNo, 1)
+	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, holdingCode, prefixDocNo, 1)
 
 	if err != nil {
 		return "", "", err
@@ -135,7 +135,7 @@ func (svc ReceiveDepositRefundHttpService) CreateReceiveDepositRefund(shopID str
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.ReceiveDepositRefundDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.ReceiveDepositRefund = doc
 
@@ -149,23 +149,23 @@ func (svc ReceiveDepositRefundHttpService) CreateReceiveDepositRefund(shopID str
 		return "", "", err
 	}
 
-	go svc.repoCache.Save(shopID, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
+	go svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
 
 	go func() {
 		svc.repoMq.Create(docData)
-		svc.repoCache.Save(shopID, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
-		svc.saveMasterSync(shopID)
+		svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return newGuidFixed, newDocNo, nil
 }
 
-func (svc ReceiveDepositRefundHttpService) UpdateReceiveDepositRefund(shopID string, guid string, authUsername string, doc models.ReceiveDepositRefund) error {
+func (svc ReceiveDepositRefundHttpService) UpdateReceiveDepositRefund(holdingCode string, guid string, authUsername string, doc models.ReceiveDepositRefund) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -182,7 +182,7 @@ func (svc ReceiveDepositRefundHttpService) UpdateReceiveDepositRefund(shopID str
 	docData.UpdatedBy = authUsername
 	docData.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, docData)
+	err = svc.repo.Update(ctx, holdingCode, guid, docData)
 
 	if err != nil {
 		return err
@@ -190,18 +190,18 @@ func (svc ReceiveDepositRefundHttpService) UpdateReceiveDepositRefund(shopID str
 
 	func() {
 		svc.repoMq.Update(docData)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc ReceiveDepositRefundHttpService) DeleteReceiveDepositRefund(shopID string, guid string, authUsername string) error {
+func (svc ReceiveDepositRefundHttpService) DeleteReceiveDepositRefund(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -211,20 +211,20 @@ func (svc ReceiveDepositRefundHttpService) DeleteReceiveDepositRefund(shopID str
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
 	func() {
 		svc.repoMq.Delete(findDoc)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc ReceiveDepositRefundHttpService) DeleteReceiveDepositRefundByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc ReceiveDepositRefundHttpService) DeleteReceiveDepositRefundByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -233,26 +233,26 @@ func (svc ReceiveDepositRefundHttpService) DeleteReceiveDepositRefundByGUIDs(sho
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
 
 	func() {
-		docs, _ := svc.repo.FindByGuids(ctx, shopID, GUIDs)
+		docs, _ := svc.repo.FindByGuids(ctx, holdingCode, GUIDs)
 		svc.repoMq.DeleteInBatch(docs)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc ReceiveDepositRefundHttpService) InfoReceiveDepositRefund(shopID string, guid string) (models.ReceiveDepositRefundInfo, error) {
+func (svc ReceiveDepositRefundHttpService) InfoReceiveDepositRefund(holdingCode string, guid string) (models.ReceiveDepositRefundInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.ReceiveDepositRefundInfo{}, err
@@ -265,12 +265,12 @@ func (svc ReceiveDepositRefundHttpService) InfoReceiveDepositRefund(shopID strin
 	return findDoc.ReceiveDepositRefundInfo, nil
 }
 
-func (svc ReceiveDepositRefundHttpService) InfoReceiveDepositRefundByCode(shopID string, code string) (models.ReceiveDepositRefundInfo, error) {
+func (svc ReceiveDepositRefundHttpService) InfoReceiveDepositRefundByCode(holdingCode string, code string) (models.ReceiveDepositRefundInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", code)
 
 	if err != nil {
 		return models.ReceiveDepositRefundInfo{}, err
@@ -283,7 +283,7 @@ func (svc ReceiveDepositRefundHttpService) InfoReceiveDepositRefundByCode(shopID
 	return findDoc.ReceiveDepositRefundInfo, nil
 }
 
-func (svc ReceiveDepositRefundHttpService) SearchReceiveDepositRefund(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ReceiveDepositRefundInfo, mongopagination.PaginationData, error) {
+func (svc ReceiveDepositRefundHttpService) SearchReceiveDepositRefund(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ReceiveDepositRefundInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -292,7 +292,7 @@ func (svc ReceiveDepositRefundHttpService) SearchReceiveDepositRefund(shopID str
 		"docno",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.ReceiveDepositRefundInfo{}, pagination, err
@@ -301,7 +301,7 @@ func (svc ReceiveDepositRefundHttpService) SearchReceiveDepositRefund(shopID str
 	return docList, pagination, nil
 }
 
-func (svc ReceiveDepositRefundHttpService) SearchReceiveDepositRefundStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ReceiveDepositRefundInfo, int, error) {
+func (svc ReceiveDepositRefundHttpService) SearchReceiveDepositRefundStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ReceiveDepositRefundInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -312,7 +312,7 @@ func (svc ReceiveDepositRefundHttpService) SearchReceiveDepositRefundStep(shopID
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.ReceiveDepositRefundInfo{}, 0, err
@@ -321,7 +321,7 @@ func (svc ReceiveDepositRefundHttpService) SearchReceiveDepositRefundStep(shopID
 	return docList, total, nil
 }
 
-func (svc ReceiveDepositRefundHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.ReceiveDepositRefund) (common.BulkImport, error) {
+func (svc ReceiveDepositRefundHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.ReceiveDepositRefund) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -333,7 +333,7 @@ func (svc ReceiveDepositRefundHttpService) SaveInBatch(shopID string, authUserna
 		itemCodeGuidList = append(itemCodeGuidList, doc.DocNo)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "docno", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "docno", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -345,18 +345,18 @@ func (svc ReceiveDepositRefundHttpService) SaveInBatch(shopID string, authUserna
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.ReceiveDepositRefund, models.ReceiveDepositRefundDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.ReceiveDepositRefund) models.ReceiveDepositRefundDoc {
+		func(holdingCode string, authUsername string, doc models.ReceiveDepositRefund) models.ReceiveDepositRefundDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.ReceiveDepositRefundDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.ReceiveDepositRefund = doc
 
 			currentTime := time.Now()
@@ -367,23 +367,23 @@ func (svc ReceiveDepositRefundHttpService) SaveInBatch(shopID string, authUserna
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.ReceiveDepositRefund, models.ReceiveDepositRefundDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.ReceiveDepositRefundDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", guid)
+		func(holdingCode string, guid string) (models.ReceiveDepositRefundDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", guid)
 		},
 		func(doc models.ReceiveDepositRefundDoc) bool {
 			return doc.DocNo != ""
 		},
-		func(shopID string, authUsername string, data models.ReceiveDepositRefund, doc models.ReceiveDepositRefundDoc) error {
+		func(holdingCode string, authUsername string, data models.ReceiveDepositRefund, doc models.ReceiveDepositRefundDoc) error {
 
 			doc.ReceiveDepositRefund = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -422,7 +422,7 @@ func (svc ReceiveDepositRefundHttpService) SaveInBatch(shopID string, authUserna
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -436,9 +436,9 @@ func (svc ReceiveDepositRefundHttpService) getDocIDKey(doc models.ReceiveDeposit
 	return doc.DocNo
 }
 
-func (svc ReceiveDepositRefundHttpService) saveMasterSync(shopID string) {
+func (svc ReceiveDepositRefundHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

@@ -22,15 +22,15 @@ import (
 )
 
 type IBankTransferRecordHttpService interface {
-	CreateBankTransferRecord(shopID string, authUsername string, doc models.BankTransferRecord) (string, string, error)
-	UpdateBankTransferRecord(shopID string, guid string, authUsername string, doc models.BankTransferRecord) error
-	DeleteBankTransferRecord(shopID string, guid string, authUsername string) error
-	DeleteBankTransferRecordByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoBankTransferRecord(shopID string, guid string) (models.BankTransferRecordInfo, error)
-	InfoBankTransferRecordByCode(shopID string, code string) (models.BankTransferRecordInfo, error)
-	SearchBankTransferRecord(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.BankTransferRecordInfo, mongopagination.PaginationData, error)
-	SearchBankTransferRecordStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.BankTransferRecordInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.BankTransferRecord) (common.BulkImport, error)
+	CreateBankTransferRecord(holdingCode string, authUsername string, doc models.BankTransferRecord) (string, string, error)
+	UpdateBankTransferRecord(holdingCode string, guid string, authUsername string, doc models.BankTransferRecord) error
+	DeleteBankTransferRecord(holdingCode string, guid string, authUsername string) error
+	DeleteBankTransferRecordByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoBankTransferRecord(holdingCode string, guid string) (models.BankTransferRecordInfo, error)
+	InfoBankTransferRecordByCode(holdingCode string, code string) (models.BankTransferRecordInfo, error)
+	SearchBankTransferRecord(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.BankTransferRecordInfo, mongopagination.PaginationData, error)
+	SearchBankTransferRecordStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.BankTransferRecordInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.BankTransferRecord) (common.BulkImport, error)
 
 	GetModuleName() string
 }
@@ -81,11 +81,11 @@ func (svc BankTransferRecordHttpService) getDocNoPrefix(docDate time.Time) strin
 	return fmt.Sprintf("%s%s", MODULE_NAME, docDateStr)
 }
 
-func (svc BankTransferRecordHttpService) generateNewDocNo(ctx context.Context, shopID, prefixDocNo string, docNumber int) (string, int, error) {
-	prevoiusDocNumber, err := svc.repoCache.Get(shopID, prefixDocNo)
+func (svc BankTransferRecordHttpService) generateNewDocNo(ctx context.Context, holdingCode, prefixDocNo string, docNumber int) (string, int, error) {
+	prevoiusDocNumber, err := svc.repoCache.Get(holdingCode, prefixDocNo)
 
 	if prevoiusDocNumber == 0 || err != nil {
-		lastDoc, err := svc.repo.FindLastDocNo(ctx, shopID, prefixDocNo)
+		lastDoc, err := svc.repo.FindLastDocNo(ctx, holdingCode, prefixDocNo)
 
 		if err != nil {
 			return "", 0, err
@@ -105,7 +105,7 @@ func (svc BankTransferRecordHttpService) generateNewDocNo(ctx context.Context, s
 	newDocNumber := prevoiusDocNumber + 1
 	newDocNo := fmt.Sprintf("%s%05d", prefixDocNo, newDocNumber)
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", newDocNo)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", newDocNo)
 
 	if err != nil {
 		return "", 0, err
@@ -118,7 +118,7 @@ func (svc BankTransferRecordHttpService) generateNewDocNo(ctx context.Context, s
 	return newDocNo, newDocNumber, nil
 }
 
-func (svc BankTransferRecordHttpService) CreateBankTransferRecord(shopID string, authUsername string, doc models.BankTransferRecord) (string, string, error) {
+func (svc BankTransferRecordHttpService) CreateBankTransferRecord(holdingCode string, authUsername string, doc models.BankTransferRecord) (string, string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -126,7 +126,7 @@ func (svc BankTransferRecordHttpService) CreateBankTransferRecord(shopID string,
 	docDate := doc.DocDatetime
 	prefixDocNo := svc.getDocNoPrefix(docDate)
 
-	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, shopID, prefixDocNo, 1)
+	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, holdingCode, prefixDocNo, 1)
 
 	if err != nil {
 		return "", "", err
@@ -135,7 +135,7 @@ func (svc BankTransferRecordHttpService) CreateBankTransferRecord(shopID string,
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.BankTransferRecordDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.BankTransferRecord = doc
 
@@ -149,23 +149,23 @@ func (svc BankTransferRecordHttpService) CreateBankTransferRecord(shopID string,
 		return "", "", err
 	}
 
-	go svc.repoCache.Save(shopID, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
+	go svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
 
 	go func() {
 		svc.repoMq.Create(docData)
-		svc.repoCache.Save(shopID, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
-		svc.saveMasterSync(shopID)
+		svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return newGuidFixed, newDocNo, nil
 }
 
-func (svc BankTransferRecordHttpService) UpdateBankTransferRecord(shopID string, guid string, authUsername string, doc models.BankTransferRecord) error {
+func (svc BankTransferRecordHttpService) UpdateBankTransferRecord(holdingCode string, guid string, authUsername string, doc models.BankTransferRecord) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -182,7 +182,7 @@ func (svc BankTransferRecordHttpService) UpdateBankTransferRecord(shopID string,
 	docData.UpdatedBy = authUsername
 	docData.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, docData)
+	err = svc.repo.Update(ctx, holdingCode, guid, docData)
 
 	if err != nil {
 		return err
@@ -190,18 +190,18 @@ func (svc BankTransferRecordHttpService) UpdateBankTransferRecord(shopID string,
 
 	func() {
 		svc.repoMq.Update(docData)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc BankTransferRecordHttpService) DeleteBankTransferRecord(shopID string, guid string, authUsername string) error {
+func (svc BankTransferRecordHttpService) DeleteBankTransferRecord(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -211,20 +211,20 @@ func (svc BankTransferRecordHttpService) DeleteBankTransferRecord(shopID string,
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
 	func() {
 		svc.repoMq.Delete(findDoc)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc BankTransferRecordHttpService) DeleteBankTransferRecordByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc BankTransferRecordHttpService) DeleteBankTransferRecordByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -233,26 +233,26 @@ func (svc BankTransferRecordHttpService) DeleteBankTransferRecordByGUIDs(shopID 
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
 
 	func() {
-		docs, _ := svc.repo.FindByGuids(ctx, shopID, GUIDs)
+		docs, _ := svc.repo.FindByGuids(ctx, holdingCode, GUIDs)
 		svc.repoMq.DeleteInBatch(docs)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc BankTransferRecordHttpService) InfoBankTransferRecord(shopID string, guid string) (models.BankTransferRecordInfo, error) {
+func (svc BankTransferRecordHttpService) InfoBankTransferRecord(holdingCode string, guid string) (models.BankTransferRecordInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.BankTransferRecordInfo{}, err
@@ -265,12 +265,12 @@ func (svc BankTransferRecordHttpService) InfoBankTransferRecord(shopID string, g
 	return findDoc.BankTransferRecordInfo, nil
 }
 
-func (svc BankTransferRecordHttpService) InfoBankTransferRecordByCode(shopID string, code string) (models.BankTransferRecordInfo, error) {
+func (svc BankTransferRecordHttpService) InfoBankTransferRecordByCode(holdingCode string, code string) (models.BankTransferRecordInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", code)
 
 	if err != nil {
 		return models.BankTransferRecordInfo{}, err
@@ -283,7 +283,7 @@ func (svc BankTransferRecordHttpService) InfoBankTransferRecordByCode(shopID str
 	return findDoc.BankTransferRecordInfo, nil
 }
 
-func (svc BankTransferRecordHttpService) SearchBankTransferRecord(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.BankTransferRecordInfo, mongopagination.PaginationData, error) {
+func (svc BankTransferRecordHttpService) SearchBankTransferRecord(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.BankTransferRecordInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -292,7 +292,7 @@ func (svc BankTransferRecordHttpService) SearchBankTransferRecord(shopID string,
 		"docno",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.BankTransferRecordInfo{}, pagination, err
@@ -301,7 +301,7 @@ func (svc BankTransferRecordHttpService) SearchBankTransferRecord(shopID string,
 	return docList, pagination, nil
 }
 
-func (svc BankTransferRecordHttpService) SearchBankTransferRecordStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.BankTransferRecordInfo, int, error) {
+func (svc BankTransferRecordHttpService) SearchBankTransferRecordStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.BankTransferRecordInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -312,7 +312,7 @@ func (svc BankTransferRecordHttpService) SearchBankTransferRecordStep(shopID str
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.BankTransferRecordInfo{}, 0, err
@@ -321,7 +321,7 @@ func (svc BankTransferRecordHttpService) SearchBankTransferRecordStep(shopID str
 	return docList, total, nil
 }
 
-func (svc BankTransferRecordHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.BankTransferRecord) (common.BulkImport, error) {
+func (svc BankTransferRecordHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.BankTransferRecord) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -333,7 +333,7 @@ func (svc BankTransferRecordHttpService) SaveInBatch(shopID string, authUsername
 		itemCodeGuidList = append(itemCodeGuidList, doc.DocNo)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "docno", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "docno", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -345,18 +345,18 @@ func (svc BankTransferRecordHttpService) SaveInBatch(shopID string, authUsername
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.BankTransferRecord, models.BankTransferRecordDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.BankTransferRecord) models.BankTransferRecordDoc {
+		func(holdingCode string, authUsername string, doc models.BankTransferRecord) models.BankTransferRecordDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.BankTransferRecordDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.BankTransferRecord = doc
 
 			currentTime := time.Now()
@@ -367,23 +367,23 @@ func (svc BankTransferRecordHttpService) SaveInBatch(shopID string, authUsername
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.BankTransferRecord, models.BankTransferRecordDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.BankTransferRecordDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", guid)
+		func(holdingCode string, guid string) (models.BankTransferRecordDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", guid)
 		},
 		func(doc models.BankTransferRecordDoc) bool {
 			return doc.DocNo != ""
 		},
-		func(shopID string, authUsername string, data models.BankTransferRecord, doc models.BankTransferRecordDoc) error {
+		func(holdingCode string, authUsername string, data models.BankTransferRecord, doc models.BankTransferRecordDoc) error {
 
 			doc.BankTransferRecord = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -422,7 +422,7 @@ func (svc BankTransferRecordHttpService) SaveInBatch(shopID string, authUsername
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -436,9 +436,9 @@ func (svc BankTransferRecordHttpService) getDocIDKey(doc models.BankTransferReco
 	return doc.DocNo
 }
 
-func (svc BankTransferRecordHttpService) saveMasterSync(shopID string) {
+func (svc BankTransferRecordHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

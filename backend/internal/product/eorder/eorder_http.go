@@ -175,7 +175,7 @@ func (h EOrderHttp) RegisterHttp() {
 // List Product Category
 // @Description List Product Category
 // @Tags		E-Order
-// @Param		shopid		query	string		false  "Shop ID"
+// @Param		holding_code		query	string		false  "Holding Code"
 // @Param		q		query	string		false  "Search Value"
 // @Param		group-number		query	int		false  "group number"
 // @Param		page	query	integer		false  "Page"
@@ -185,10 +185,10 @@ func (h EOrderHttp) RegisterHttp() {
 // @Failure		401 {object}	common.AuthResponseFailed
 // @Router /e-order/category [get]
 func (h EOrderHttp) SearchProductCategoryPage(ctx microservice.IContext) error {
-	shopID := ctx.QueryParam("shopid")
+	holdingCode := ctx.QueryParam("holding_code")
 
-	if len(shopID) == 0 {
-		ctx.ResponseError(http.StatusBadRequest, "shopid is empty")
+	if len(holdingCode) == 0 {
+		ctx.ResponseError(http.StatusBadRequest, "holding_code is empty")
 		return nil
 	}
 
@@ -200,7 +200,7 @@ func (h EOrderHttp) SearchProductCategoryPage(ctx microservice.IContext) error {
 			Type:  requestfilter.FieldTypeInt,
 		},
 	})
-	docList, pagination, err := h.svcCategory.SearchProductCategory(shopID, filters, pageable)
+	docList, pagination, err := h.svcCategory.SearchProductCategory(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -218,7 +218,7 @@ func (h EOrderHttp) SearchProductCategoryPage(ctx microservice.IContext) error {
 // List Product
 // @Description List Product
 // @Tags		E-Order
-// @Param		shopid		query	string		false  "Shop ID"
+// @Param		holding_code		query	string		false  "Holding Code"
 // @Param		barcodes		query	string		false  "barcode json array"
 // @Param		isalacarte		query	string		false  "is A La Carte"
 // @Param		ordertypes		query	string		false  "order types ex. a01,a02"
@@ -230,10 +230,10 @@ func (h EOrderHttp) SearchProductCategoryPage(ctx microservice.IContext) error {
 // @Failure		401 {object}	common.AuthResponseFailed
 // @Router /e-order/product-barcode [get]
 func (h EOrderHttp) SearchProductBarcodePage(ctx microservice.IContext) error {
-	shopID := ctx.QueryParam("shopid")
+	holdingCode := ctx.QueryParam("holding_code")
 
-	if len(shopID) == 0 {
-		ctx.ResponseError(http.StatusBadRequest, "shopid is empty")
+	if len(holdingCode) == 0 {
+		ctx.ResponseError(http.StatusBadRequest, "holding_code is empty")
 		return nil
 	}
 
@@ -262,7 +262,7 @@ func (h EOrderHttp) SearchProductBarcodePage(ctx microservice.IContext) error {
 	}
 
 	pageable := utils.GetPageable(ctx.QueryParam)
-	docList, pagination, err := h.svcProduct.SearchProductBarcode(shopID, filters, pageable)
+	docList, pagination, err := h.svcProduct.SearchProductBarcode(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -280,7 +280,7 @@ func (h EOrderHttp) SearchProductBarcodePage(ctx microservice.IContext) error {
 // List Product
 // @Description List Product
 // @Tags		E-Order
-// @Param		shopid		query	string		false  "Shop ID"
+// @Param		holding_code		query	string		false  "Holding Code"
 // @Param		barcodes		body	[]string	false  "barcode json array"
 // @Param		isalacarte		query	string		false  "is A La Carte"
 // @Param		ordertypes		query	string		false  "order types ex. a01,a02"
@@ -292,10 +292,10 @@ func (h EOrderHttp) SearchProductBarcodePage(ctx microservice.IContext) error {
 // @Failure		401 {object}	common.AuthResponseFailed
 // @Router /e-order/product-barcode [post]
 func (h EOrderHttp) SearchProductBarcodeManyBarcodePage(ctx microservice.IContext) error {
-	shopID := ctx.QueryParam("shopid")
+	holdingCode := ctx.QueryParam("holding_code")
 
-	if len(shopID) == 0 {
-		ctx.ResponseError(http.StatusBadRequest, "shopid is empty")
+	if len(holdingCode) == 0 {
+		ctx.ResponseError(http.StatusBadRequest, "holding_code is empty")
 		return nil
 	}
 
@@ -324,7 +324,7 @@ func (h EOrderHttp) SearchProductBarcodeManyBarcodePage(ctx microservice.IContex
 	}
 
 	pageable := utils.GetPageable(ctx.QueryParam)
-	docList, pagination, err := h.svcProduct.SearchProductBarcode(shopID, filters, pageable)
+	docList, pagination, err := h.svcProduct.SearchProductBarcode(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -342,17 +342,17 @@ func (h EOrderHttp) SearchProductBarcodeManyBarcodePage(ctx microservice.IContex
 // List Product By Barcodes
 // @Description List Product By Barcodes
 // @Tags		E-Order
-// @Param		shopid		query	string		false  "Shop ID"
+// @Param		holding_code		query	string		false  "Holding Code"
 // @Param		barcodes		query	string		false  "barcode json array"
 // @Accept 		json
 // @Success		200	{array}		common.ApiResponse
 // @Failure		401 {object}	common.AuthResponseFailed
 // @Router /e-order/product-barcode [get]
 func (h EOrderHttp) GetProductBarcodeByBarcodes(ctx microservice.IContext) error {
-	shopID := ctx.QueryParam("shopid")
+	holdingCode := ctx.QueryParam("holding_code")
 
-	if len(shopID) == 0 {
-		ctx.ResponseError(http.StatusBadRequest, "shopid is empty")
+	if len(holdingCode) == 0 {
+		ctx.ResponseError(http.StatusBadRequest, "holding_code is empty")
 		return nil
 	}
 
@@ -363,7 +363,7 @@ func (h EOrderHttp) GetProductBarcodeByBarcodes(ctx microservice.IContext) error
 		json.Unmarshal([]byte(rawBarcodes), &barcodes)
 	}
 
-	docList, err := h.svcProduct.GetProductBarcodeByBarcodes(shopID, barcodes)
+	docList, err := h.svcProduct.GetProductBarcodeByBarcodes(holdingCode, barcodes)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -380,22 +380,22 @@ func (h EOrderHttp) GetProductBarcodeByBarcodes(ctx microservice.IContext) error
 // Get Shop Info
 // @Description Get Shop Info
 // @Tags		E-Order
-// @Param		shopid		query	string		false  "Shop ID"
+// @Param		holding_code		query	string		false  "Holding Code"
 // @Param		order-station		query	string		false  "Order station code"
 // @Accept 		json
 // @Success		200	{array}		common.ApiResponse
 // @Failure		401 {object}	common.AuthResponseFailed
 // @Router /e-order/shop-info [get]
 func (h EOrderHttp) ShopInfoOld(ctx microservice.IContext) error {
-	shopID := ctx.QueryParam("shopid")
+	holdingCode := ctx.QueryParam("holding_code")
 	orderStationCode := ctx.QueryParam("order-station")
 
-	if len(shopID) == 0 {
-		ctx.ResponseError(http.StatusBadRequest, "shopid is empty")
+	if len(holdingCode) == 0 {
+		ctx.ResponseError(http.StatusBadRequest, "holding_code is empty")
 		return nil
 	}
 
-	data, err := h.svcEOrder.GetShopInfoOld(shopID, orderStationCode)
+	data, err := h.svcEOrder.GetShopInfoOld(holdingCode, orderStationCode)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -412,22 +412,22 @@ func (h EOrderHttp) ShopInfoOld(ctx microservice.IContext) error {
 // Get Shop Info v1.1
 // @Description Get Shop Info v1.1
 // @Tags		E-Order
-// @Param		shopid		query	string		false  "Shop ID"
+// @Param		holding_code		query	string		false  "Holding Code"
 // @Param		order-station		query	string		false  "Order station code"
 // @Accept 		json
 // @Success		200	{array}		common.ApiResponse
 // @Failure		401 {object}	common.AuthResponseFailed
 // @Router /e-order/shop-info/v1.1 [get]
 func (h EOrderHttp) ShopInfo(ctx microservice.IContext) error {
-	shopID := ctx.QueryParam("shopid")
+	holdingCode := ctx.QueryParam("holding_code")
 	orderStationCode := ctx.QueryParam("order-station")
 
-	if len(shopID) == 0 {
-		ctx.ResponseError(http.StatusBadRequest, "shopid is empty")
+	if len(holdingCode) == 0 {
+		ctx.ResponseError(http.StatusBadRequest, "holding_code is empty")
 		return nil
 	}
 
-	data, err := h.svcEOrder.GetShopInfo(shopID, orderStationCode)
+	data, err := h.svcEOrder.GetShopInfo(holdingCode, orderStationCode)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -453,10 +453,10 @@ func (h EOrderHttp) ShopInfo(ctx microservice.IContext) error {
 // @Failure		401 {object}	common.AuthResponseFailed
 // @Router /e-order/restaurant/zone [get]
 func (h EOrderHttp) SearchZone(ctx microservice.IContext) error {
-	shopID := ctx.QueryParam("shopid")
+	holdingCode := ctx.QueryParam("holding_code")
 
-	if len(shopID) == 0 {
-		ctx.ResponseError(http.StatusBadRequest, "shopid is empty")
+	if len(holdingCode) == 0 {
+		ctx.ResponseError(http.StatusBadRequest, "holding_code is empty")
 		return nil
 	}
 
@@ -469,7 +469,7 @@ func (h EOrderHttp) SearchZone(ctx microservice.IContext) error {
 		},
 	})
 
-	docList, pagination, err := h.svcZone.SearchZone(shopID, filters, pageable)
+	docList, pagination, err := h.svcZone.SearchZone(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -496,10 +496,10 @@ func (h EOrderHttp) SearchZone(ctx microservice.IContext) error {
 // @Failure		401 {object}	common.AuthResponseFailed
 // @Router /e-order/restaurant/kitchen [get]
 func (h EOrderHttp) SearchKitchen(ctx microservice.IContext) error {
-	shopID := ctx.QueryParam("shopid")
+	holdingCode := ctx.QueryParam("holding_code")
 
-	if len(shopID) == 0 {
-		ctx.ResponseError(http.StatusBadRequest, "shopid is empty")
+	if len(holdingCode) == 0 {
+		ctx.ResponseError(http.StatusBadRequest, "holding_code is empty")
 		return nil
 	}
 
@@ -513,7 +513,7 @@ func (h EOrderHttp) SearchKitchen(ctx microservice.IContext) error {
 		},
 	})
 
-	docList, pagination, err := h.svcKitchen.SearchKitchen(shopID, filters, pageable)
+	docList, pagination, err := h.svcKitchen.SearchKitchen(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -540,10 +540,10 @@ func (h EOrderHttp) SearchKitchen(ctx microservice.IContext) error {
 // @Failure		401 {object}	common.AuthResponseFailed
 // @Router /e-order/restaurant/table [get]
 func (h EOrderHttp) SearchTable(ctx microservice.IContext) error {
-	shopID := ctx.QueryParam("shopid")
+	holdingCode := ctx.QueryParam("holding_code")
 
-	if len(shopID) == 0 {
-		ctx.ResponseError(http.StatusBadRequest, "shopid is empty")
+	if len(holdingCode) == 0 {
+		ctx.ResponseError(http.StatusBadRequest, "holding_code is empty")
 		return nil
 	}
 
@@ -557,7 +557,7 @@ func (h EOrderHttp) SearchTable(ctx microservice.IContext) error {
 		},
 	})
 
-	docList, pagination, err := h.svcTable.SearchTable(shopID, filters, pageable)
+	docList, pagination, err := h.svcTable.SearchTable(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -582,9 +582,9 @@ func (h EOrderHttp) SearchTable(ctx microservice.IContext) error {
 // @Failure		401 {object}	common.AuthResponseFailed
 // @Router /e-order/sale-invoice/last-pos-docno [get]
 func (h EOrderHttp) GetLastPOSDocNo(ctx microservice.IContext) error {
-	shopID := ctx.QueryParam("shopid")
-	if len(shopID) == 0 {
-		ctx.ResponseError(http.StatusBadRequest, "shopid is empty")
+	holdingCode := ctx.QueryParam("holding_code")
+	if len(holdingCode) == 0 {
+		ctx.ResponseError(http.StatusBadRequest, "holding_code is empty")
 		return nil
 	}
 
@@ -596,7 +596,7 @@ func (h EOrderHttp) GetLastPOSDocNo(ctx microservice.IContext) error {
 		return nil
 	}
 
-	doc, err := h.svcSaleInvoice.GetLastPOSDocNo(shopID, posID, maxDocNo)
+	doc, err := h.svcSaleInvoice.GetLastPOSDocNo(holdingCode, posID, maxDocNo)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -629,10 +629,10 @@ func (h EOrderHttp) Test(ctx microservice.IContext) error {
 // @Failure		401 {object}	common.AuthResponseFailed
 // @Router /e-order/notify [get]
 func (h EOrderHttp) Notify(ctx microservice.IContext) error {
-	shopID := ctx.QueryParam("shopid")
+	holdingCode := ctx.QueryParam("holding_code")
 
-	if len(shopID) == 0 {
-		ctx.ResponseError(http.StatusBadRequest, "shopid is empty")
+	if len(holdingCode) == 0 {
+		ctx.ResponseError(http.StatusBadRequest, "holding_code is empty")
 		return nil
 	}
 
@@ -646,7 +646,7 @@ func (h EOrderHttp) Notify(ctx microservice.IContext) error {
 		},
 	})
 
-	docList, pagination, err := h.svcNotify.SearchNotifyInfo(shopID, filters, pageable)
+	docList, pagination, err := h.svcNotify.SearchNotifyInfo(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

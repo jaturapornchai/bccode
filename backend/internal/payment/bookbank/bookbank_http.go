@@ -61,7 +61,7 @@ func (h BookBankHttp) RegisterHttp() {
 // @Router /payment/bookbank [post]
 func (h BookBankHttp) CreateBookBank(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.BookBank{}
@@ -77,7 +77,7 @@ func (h BookBankHttp) CreateBookBank(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreateBookBank(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateBookBank(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -104,7 +104,7 @@ func (h BookBankHttp) CreateBookBank(ctx microservice.IContext) error {
 func (h BookBankHttp) UpdateBookBank(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -122,7 +122,7 @@ func (h BookBankHttp) UpdateBookBank(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateBookBank(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateBookBank(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -148,12 +148,12 @@ func (h BookBankHttp) UpdateBookBank(ctx microservice.IContext) error {
 // @Router /payment/bookbank/{id} [delete]
 func (h BookBankHttp) DeleteBookBank(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteBookBank(shopID, id, authUsername)
+	err := h.svc.DeleteBookBank(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -179,7 +179,7 @@ func (h BookBankHttp) DeleteBookBank(ctx microservice.IContext) error {
 // @Router /payment/bookbank [delete]
 func (h BookBankHttp) DeleteBookBankByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -192,7 +192,7 @@ func (h BookBankHttp) DeleteBookBankByGUIDs(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.DeleteBookBankByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteBookBankByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -217,12 +217,12 @@ func (h BookBankHttp) DeleteBookBankByGUIDs(ctx microservice.IContext) error {
 // @Router /payment/bookbank/{id} [get]
 func (h BookBankHttp) InfoBookBank(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get BookBank %v", id)
-	doc, err := h.svc.InfoBookBank(shopID, id)
+	doc, err := h.svc.InfoBookBank(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -250,11 +250,11 @@ func (h BookBankHttp) InfoBookBank(ctx microservice.IContext) error {
 // @Router /payment/bookbank [get]
 func (h BookBankHttp) SearchBookBankPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.SearchBookBank(shopID, pageable)
+	docList, pagination, err := h.svc.SearchBookBank(holdingCode, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -283,13 +283,13 @@ func (h BookBankHttp) SearchBookBankPage(ctx microservice.IContext) error {
 // @Router /payment/bookbank/list [get]
 func (h BookBankHttp) SearchBookBankLimit(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
 	lang := ctx.QueryParam("lang")
 
-	docList, total, err := h.svc.SearchBookBankStep(shopID, lang, pageableStep)
+	docList, total, err := h.svc.SearchBookBankStep(holdingCode, lang, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -317,7 +317,7 @@ func (h BookBankHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -329,7 +329,7 @@ func (h BookBankHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

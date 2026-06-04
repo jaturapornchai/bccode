@@ -14,15 +14,15 @@ import (
 
 // SalesReportRequest - request สำหรับรายงานขาย
 type SalesReportRequest struct {
-	ShopID string   `json:"shop_id"`
-	FromDate string   `json:"from_date"`
-	ToDate string   `json:"to_date"`
-	BranchCodes []string `json:"branch_codes,omitempty"`
-	ProductCodes []string `json:"product_codes,omitempty"`
-	SortAscending bool    `json:"sort_ascending"`
-	ReportType string   `json:"report_type"` // "header" or "detail"
-	Limit int      `json:"limit,omitempty"`
-	Offset int      `json:"offset,omitempty"`
+	HoldingCode   string   `json:"holding_code"`
+	FromDate      string   `json:"from_date"`
+	ToDate        string   `json:"to_date"`
+	BranchCodes   []string `json:"branch_codes,omitempty"`
+	ProductCodes  []string `json:"product_codes,omitempty"`
+	SortAscending bool     `json:"sort_ascending"`
+	ReportType    string   `json:"report_type"` // "header" or "detail"
+	Limit         int      `json:"limit,omitempty"`
+	Offset        int      `json:"offset,omitempty"`
 }
 
 // SalesReportByDocumentHandler - รายงานขายแยกตามเอกสาร (ปลอดภัยจาก SQL injection)
@@ -36,10 +36,10 @@ func SalesReportByDocumentHandler(c echo.Context) error {
 	}
 
 	// Validate required fields
-	if req.ShopID == "" {
+	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "shop_id is required",
-			"code":  "MISSING_SHOP_ID",
+			"error": "holding_code is required",
+			"code":  "MISSING_HOLDING_CODE",
 		})
 	}
 
@@ -79,7 +79,7 @@ func SalesReportByDocumentHandler(c echo.Context) error {
 	}
 
 	// Connect to database
-	db, err := mypg.PgSqlFastConnect(req.ShopID)
+	db, err := mypg.PgSqlFastConnect(req.HoldingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "Database connection failed",
@@ -309,9 +309,9 @@ func SalesReportSummaryHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" || req.FromDate == "" || req.ToDate == "" {
+	if req.HoldingCode == "" || req.FromDate == "" || req.ToDate == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "shop_id, from_date and to_date are required",
+			"error": "holding_code, from_date and to_date are required",
 			"code":  "MISSING_REQUIRED_FIELDS",
 		})
 	}
@@ -333,7 +333,7 @@ func SalesReportSummaryHandler(c echo.Context) error {
 	}
 	toDate = toDate.AddDate(0, 0, 1)
 
-	db, err := mypg.PgSqlFastConnect(req.ShopID)
+	db, err := mypg.PgSqlFastConnect(req.HoldingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "Database connection failed",

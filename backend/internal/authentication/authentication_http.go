@@ -14,6 +14,7 @@ import (
 	"smlcloudplatform/internal/shop"
 	"smlcloudplatform/internal/utils"
 	"smlcloudplatform/pkg/microservice"
+	"strings"
 	"time"
 )
 
@@ -113,11 +114,15 @@ func (h AuthenticationHttp) RegisterHttp() {
 	h.ms.DELETE("/profile/link-line", h.UnlinkLine)
 
 	middlewareShop := h.authService.MWFuncWithShop(h.ms.Cacher(h.cfg.CacherConfig()))
+	h.ms.GET("/list-holding", h.ListShopCanAccess, middlewareShop)
 	h.ms.GET("/list-shop", h.ListShopCanAccess, middlewareShop)
+	h.ms.POST("/select-holding", h.SelectShop, middlewareShop)
 	h.ms.POST("/select-shop", h.SelectShop, middlewareShop)
+	h.ms.PUT("/favorite-holding", h.UpdateShopFavorite, middlewareShop)
 	h.ms.PUT("/favorite-shop", h.UpdateShopFavorite, middlewareShop)
 
 	shopHttp := shop.NewShopHttp(h.ms, h.cfg)
+	h.ms.POST("/create-holding", shopHttp.CreateShop, middlewareShop)
 	h.ms.POST("/create-shop", shopHttp.CreateShop, middlewareShop)
 }
 
@@ -926,7 +931,7 @@ func (h AuthenticationHttp) ResetPasswordToDefault(ctx microservice.IContext) er
 		return nil
 	}
 
-	err := h.authenticationService.ResetPasswordToDefault(userInfo.ShopID, userInfo.Username, targetUsername)
+	err := h.authenticationService.ResetPasswordToDefault(userInfo.HoldingCode, userInfo.Username, targetUsername)
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, common.ApiResponse{
 			Success: false,
@@ -1032,7 +1037,7 @@ func (h AuthenticationHttp) Profile(ctx microservice.IContext) error {
 // @Router /profileshop [get]
 func (h AuthenticationHttp) ProfileShop(ctx microservice.IContext) error {
 
-	userProfile, err := h.shopService.InfoShop(ctx.UserInfo().ShopID)
+	userProfile, err := h.shopService.InfoShop(ctx.UserInfo().HoldingCode)
 
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, common.ApiResponse{
@@ -1075,12 +1080,15 @@ func (h AuthenticationHttp) SelectShop(ctx microservice.IContext) error {
 		})
 		return err
 	}
+	if strings.TrimSpace(shopSelectReq.HoldingCode) == "" {
+		shopSelectReq.HoldingCode = strings.TrimSpace(shopSelectReq.HoldingCode)
+	}
 
 	authContext := models.AuthenticationContext{
 		Ip: ctx.RealIp(),
 	}
 
-	err = h.authenticationService.AccessShop(shopSelectReq.ShopID, authUsername, userInfo.UID, authorizationHeader, authContext)
+	err = h.authenticationService.AccessShop(shopSelectReq.HoldingCode, authUsername, userInfo.UID, authorizationHeader, authContext)
 
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, common.ApiResponse{
@@ -1152,7 +1160,7 @@ func (h AuthenticationHttp) UpdateShopFavorite(ctx microservice.IContext) error 
 		return err
 	}
 
-	err = h.authenticationService.UpdateFavoriteShop(reqBody.ShopID, authUsername, userInfo.UID, reqBody.IsFavorite)
+	err = h.authenticationService.UpdateFavoriteShop(reqBody.HoldingCode, authUsername, userInfo.UID, reqBody.IsFavorite)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

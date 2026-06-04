@@ -138,14 +138,85 @@ describe("menu language labels", () => {
     expect(toolIds).toEqual(["price-history", "label-print"]);
   });
 
+  it("splits product setup into user-focused groups instead of one long technical list", () => {
+    const masterSection = MENU_SECTIONS.find((section) => section.id === "master");
+    const groupsById = new Map(masterSection?.groups.map((group) => [group.id, group]) ?? []);
+
+    expect(groupsById.get("products")?.title.th).toBe("สินค้าและบาร์โค้ด");
+    expect(groupsById.get("products")?.items.map((item) => item.id)).toEqual([
+      "product",
+      "barcode",
+      "productset",
+      "product-unit",
+      "promotion",
+    ]);
+    expect(groupsById.get("product-classification")?.title.th).toBe("จัดกลุ่มสินค้า");
+    expect(groupsById.get("product-classification")?.items.map((item) => item.id)).toEqual([
+      "product-group",
+      "product-category",
+      "product-category-list",
+      "product-type",
+    ]);
+    expect(groupsById.get("product-sku-options")?.title.th).toBe("สี ไซซ์ และตัวเลือก");
+    expect(groupsById.get("product-sku-options")?.items.map((item) => item.id)).toEqual([
+      "product-variant-matrix",
+      "product-color",
+      "product-size",
+    ]);
+    expect(groupsById.get("product-stock-production")?.items.map((item) => item.id)).toEqual([
+      "warehouse",
+      "bom",
+    ]);
+  });
+
   it("uses distinct product category labels for category structure and attribute category", () => {
     const masterSection = MENU_SECTIONS.find((section) => section.id === "master");
-    const productGroup = masterSection?.groups.find((group) => group.id === "products");
-    const labelsById = new Map(productGroup?.items.map((item) => [item.id, item.label.th]) ?? []);
+    const masterItems = masterSection?.groups.flatMap((group) => group.items) ?? [];
+    const labelsById = new Map(masterItems.map((item) => [item.id, item.label.th]));
 
-    expect(labelsById.get("product-category")).toBe("โครงสร้างหมวดสินค้า");
-    expect(labelsById.get("category")).toBe("หมวดจำแนกสินค้า");
-    expect(productGroup?.items.filter((item) => item.label.th === "หมวดสินค้า")).toHaveLength(0);
+    expect(labelsById.get("product-category")).toBe("จัดหมวดสินค้า");
+    expect(labelsById.get("product-category-list")).toBe("สินค้าในหมวด");
+    expect(labelsById.get("category")).toBe("คุณลักษณะสินค้า");
+    expect(masterItems.filter((item) => item.label.th === "หมวดสินค้า")).toHaveLength(0);
+  });
+
+  it("uses plain Thai business words for visible menu labels", () => {
+    const visibleLabels = MENU_SECTIONS.flatMap((section) => [
+      section.title.th,
+      ...section.groups.flatMap((group) => [
+        group.title.th,
+        ...group.items.map((item) => item.label.th),
+      ]),
+    ]);
+    const technicalWords = [
+      "Dashboard",
+      "Mappings",
+      "Template",
+      "route",
+      "MCP Token",
+      "AI Provider",
+      "Matrix",
+      "Schema",
+      "Payload",
+      "Raw JSON",
+      "GUID",
+      "Collection",
+      "Slug",
+    ];
+
+    const offenders = visibleLabels.filter((label) => technicalWords.some((word) => label.includes(word)));
+    expect(offenders).toEqual([]);
+  });
+
+  it("adds neutral SKU option masters for import-ready product variants", () => {
+    const masterSection = MENU_SECTIONS.find((section) => section.id === "master");
+    const skuGroup = masterSection?.groups.find((group) => group.id === "product-sku-options");
+    const routesById = new Map(skuGroup?.items.map((item) => [item.id, item.route]) ?? []);
+
+    expect(routesById.get("product-color")).toBe("/product_color");
+    expect(routesById.get("product-size")).toBe("/product_size");
+    expect(routesById.get("product-variant-matrix")).toBe("/product_variant_matrix");
+    expect(skuGroup?.items.find((item) => item.id === "product-variant-matrix")?.label.th).toBe("ชุดตัวเลือกสินค้า");
   });
 
   it("has backend language keys for every keyed menu section and group", () => {

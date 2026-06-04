@@ -40,7 +40,7 @@ interface CodeXSort {
 
 export interface ProductCategoryItemsEditorProps {
   auth: AuthSession | null;
-  workspace: { shop: { shopid: string } } | null;
+  workspace: { shop: { holding_code: string } } | null;
   language: string;
   categorySelectedGuid: string;
   categoryRecord: SettingRecord | null;
@@ -137,14 +137,14 @@ export function ProductCategoryItemsEditor({
   useEffect(() => {
     if (!searchDialogOpen || !auth || !workspace) return;
 
-    const shopid = workspace.shop.shopid;
+    const holding_code = workspace.shop.holding_code;
     let active = true;
     async function fetchBarcodes() {
       setSearching(true);
       setSearchError("");
       try {
         const response = await listBarcodes(auth, {
-          shopid,
+          holding_code,
           keyword: debouncedQuery,
           limit: 50,
         });
@@ -270,7 +270,7 @@ export function ProductCategoryItemsEditor({
       };
 
       const response = await fetch(
-        `/api/system-settings/productcategorylist/${encodeURIComponent(guid)}?shopid=${encodeURIComponent(workspace.shop.shopid)}`,
+        `/api/system-settings/productcategorylist/${encodeURIComponent(guid)}?holding_code=${encodeURIComponent(workspace.shop.holding_code)}`,
         {
           method: "PUT",
           headers: {
@@ -281,7 +281,7 @@ export function ProductCategoryItemsEditor({
           body: JSON.stringify({
             ...payload,
             backendUrl: auth.backendUrl,
-            shopid: workspace.shop.shopid,
+            holding_code: workspace.shop.holding_code,
           }),
         }
       );

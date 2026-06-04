@@ -138,8 +138,8 @@ func (c *DBLogCleaner) cleanClickHouseLogs(ctx context.Context) {
 
 // CleanupPostgreSQLForShop - ทำความสะอาด PostgreSQL สำหรับ shop
 // เรียกใช้เมื่อต้องการ manual cleanup
-func CleanupPostgreSQLForShop(shopId string) error {
-	db, err := mydb.GetGlobalConnectionFromPool(shopId)
+func CleanupPostgreSQLForShop(holdingCode string) error {
+	db, err := mydb.GetGlobalConnectionFromPool(holdingCode)
 	if err != nil {
 		return fmt.Errorf("cannot connect to PostgreSQL: %w", err)
 	}

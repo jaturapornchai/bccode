@@ -56,7 +56,7 @@ func (h OptionPatternHttp) RegisterHttp() {
 // @Router /optionpattern [post]
 func (h OptionPatternHttp) CreateOptionPattern(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.OptionPattern{}
@@ -67,7 +67,7 @@ func (h OptionPatternHttp) CreateOptionPattern(ctx microservice.IContext) error 
 		return err
 	}
 
-	idx, err := h.svc.CreateOptionPattern(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateOptionPattern(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -94,7 +94,7 @@ func (h OptionPatternHttp) CreateOptionPattern(ctx microservice.IContext) error 
 func (h OptionPatternHttp) UpdateOptionPattern(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -107,7 +107,7 @@ func (h OptionPatternHttp) UpdateOptionPattern(ctx microservice.IContext) error 
 		return err
 	}
 
-	err = h.svc.UpdateOptionPattern(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateOptionPattern(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -133,12 +133,12 @@ func (h OptionPatternHttp) UpdateOptionPattern(ctx microservice.IContext) error 
 // @Router /optionpattern/{id} [delete]
 func (h OptionPatternHttp) DeleteOptionPattern(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteOptionPattern(shopID, id, authUsername)
+	err := h.svc.DeleteOptionPattern(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -164,12 +164,12 @@ func (h OptionPatternHttp) DeleteOptionPattern(ctx microservice.IContext) error 
 // @Router /optionpattern/{id} [get]
 func (h OptionPatternHttp) InfoOptionPattern(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get OptionPattern %v", id)
-	doc, err := h.svc.InfoOptionPattern(shopID, id)
+	doc, err := h.svc.InfoOptionPattern(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -197,10 +197,10 @@ func (h OptionPatternHttp) InfoOptionPattern(ctx microservice.IContext) error {
 // @Router /optionpattern [get]
 func (h OptionPatternHttp) SearchOptionPattern(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
-	docList, pagination, err := h.svc.SearchOptionPattern(shopID, pageable)
+	docList, pagination, err := h.svc.SearchOptionPattern(holdingCode, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -228,7 +228,7 @@ func (h OptionPatternHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -240,7 +240,7 @@ func (h OptionPatternHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

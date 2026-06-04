@@ -6,9 +6,9 @@ import (
 )
 
 type IPOSTempService interface {
-	SaveTemp(shopID string, branchCode string, doc string) error
-	InfoTemp(shopID string, branchCode string) (string, error)
-	DeleteTemp(shopID string, branchCode string) error
+	SaveTemp(holdingCode string, branchCode string, doc string) error
+	InfoTemp(holdingCode string, branchCode string) (string, error)
+	DeleteTemp(holdingCode string, branchCode string) error
 }
 
 type POSTempService struct {
@@ -23,8 +23,8 @@ func NewPOSTempService(repo repositories.ICacheRepository) *POSTempService {
 	return insSvc
 }
 
-func (svc POSTempService) SaveTemp(shopID string, branchCode string, doc string) error {
-	err := svc.repo.Save(shopID, branchCode, doc, time.Hour*24*7)
+func (svc POSTempService) SaveTemp(holdingCode string, branchCode string, doc string) error {
+	err := svc.repo.Save(holdingCode, branchCode, doc, time.Hour*24*7)
 	if err != nil {
 		return err
 	}
@@ -32,9 +32,9 @@ func (svc POSTempService) SaveTemp(shopID string, branchCode string, doc string)
 	return nil
 }
 
-func (svc POSTempService) InfoTemp(shopID string, branchCode string) (string, error) {
+func (svc POSTempService) InfoTemp(holdingCode string, branchCode string) (string, error) {
 
-	result, err := svc.repo.Get(shopID, branchCode)
+	result, err := svc.repo.Get(holdingCode, branchCode)
 	if err != nil {
 		return "", err
 	}
@@ -42,9 +42,9 @@ func (svc POSTempService) InfoTemp(shopID string, branchCode string) (string, er
 	return result, nil
 }
 
-func (svc POSTempService) DeleteTemp(shopID string, branchCode string) error {
+func (svc POSTempService) DeleteTemp(holdingCode string, branchCode string) error {
 
-	err := svc.repo.Delete(shopID, branchCode)
+	err := svc.repo.Delete(holdingCode, branchCode)
 	if err != nil {
 		return err
 	}

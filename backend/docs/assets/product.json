@@ -19,7 +19,7 @@
   "id": "string",
   "itemSku": "string",
   "lineNumber": 0,
-  "shopId": "string",
+  "holdingCode": "string",
   "name1": "string",
   "name2": "string",
   "name3": "string",

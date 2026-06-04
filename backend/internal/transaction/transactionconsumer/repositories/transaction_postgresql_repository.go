@@ -8,10 +8,10 @@ package repositories
 // )
 
 // type IStockTransactionPGRepository interface {
-// 	Get(shopID string, docNo string) (*models.StockTransaction, error)
+// 	Get(holdingCode string, docNo string) (*models.StockTransaction, error)
 // 	Create(doc models.StockTransaction) error
-// 	Update(shopID string, docNo string, doc models.StockTransaction) error
-// 	Delete(shopID string, docNo string) error
+// 	Update(holdingCode string, docNo string, doc models.StockTransaction) error
+// 	Delete(holdingCode string, docNo string) error
 // }
 
 // func NewStockTransactionPGRepository(pst microservice.IPersister) IStockTransactionPGRepository {
@@ -24,11 +24,11 @@ package repositories
 // 	pst microservice.IPersister
 // }
 
-// func (repo *StockTransactionPGRepository) Get(shopID string, docNo string) (*models.StockTransaction, error) {
+// func (repo *StockTransactionPGRepository) Get(holdingCode string, docNo string) (*models.StockTransaction, error) {
 // 	var data models.StockTransaction
 
 // 	err := repo.pst.DBClient().Preload(clause.Associations).
-// 		Where("shopid=? AND docno=?", shopID, docNo).
+// 		Where("holding_code=? AND docno=?", holdingCode, docNo).
 // 		First(&data).Error
 // 	if err != nil {
 // 		return nil, err
@@ -45,9 +45,9 @@ package repositories
 // 	return nil
 // }
 
-// func (repo *StockTransactionPGRepository) Update(shopID string, docNo string, doc models.StockTransaction) error {
+// func (repo *StockTransactionPGRepository) Update(holdingCode string, docNo string, doc models.StockTransaction) error {
 // 	err := repo.pst.Update(&doc, map[string]interface{}{
-// 		"shopid": shopID,
+// 		"holding_code": holdingCode,
 // 		"docno":  docNo,
 // 	})
 
@@ -57,17 +57,17 @@ package repositories
 // 	return nil
 // }
 
-// func (repo *StockTransactionPGRepository) Delete(shopID string, docNo string) error {
+// func (repo *StockTransactionPGRepository) Delete(holdingCode string, docNo string) error {
 // 	var details *[]models.StockTransactionDetail
 // 	tx := repo.pst.DBClient().Begin()
-// 	tx.Model(&models.StockTransactionDetail{}).Where(" shopid=? AND docno=?", shopID, docNo).Find(&details)
+// 	tx.Model(&models.StockTransactionDetail{}).Where(" holding_code=? AND docno=?", holdingCode, docNo).Find(&details)
 // 	for _, tmp := range *details {
 // 		// mark delete
 // 		tx.Delete(&models.StockTransactionDetail{}, tmp.ID)
 // 	}
 
 // 	err := tx.Delete(models.StockTransaction{}, map[string]interface{}{
-// 		"shopid": shopID,
+// 		"holding_code": holdingCode,
 // 		"docno":  docNo,
 // 	}).Error
 

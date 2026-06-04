@@ -66,7 +66,7 @@ func (h ReceivableOtherHttp) RegisterHttp() {
 // @Router /transaction/receivableother [post]
 func (h ReceivableOtherHttp) CreateReceivableOther(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.ReceivableOther{}
@@ -82,7 +82,7 @@ func (h ReceivableOtherHttp) CreateReceivableOther(ctx microservice.IContext) er
 		return err
 	}
 
-	idx, docNo, err := h.svc.CreateReceivableOther(shopID, authUsername, *docReq)
+	idx, docNo, err := h.svc.CreateReceivableOther(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -110,7 +110,7 @@ func (h ReceivableOtherHttp) CreateReceivableOther(ctx microservice.IContext) er
 func (h ReceivableOtherHttp) UpdateReceivableOther(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -128,7 +128,7 @@ func (h ReceivableOtherHttp) UpdateReceivableOther(ctx microservice.IContext) er
 		return err
 	}
 
-	err = h.svc.UpdateReceivableOther(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateReceivableOther(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -154,12 +154,12 @@ func (h ReceivableOtherHttp) UpdateReceivableOther(ctx microservice.IContext) er
 // @Router /transaction/receivableother/{id} [delete]
 func (h ReceivableOtherHttp) DeleteReceivableOther(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteReceivableOther(shopID, id, authUsername)
+	err := h.svc.DeleteReceivableOther(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -185,7 +185,7 @@ func (h ReceivableOtherHttp) DeleteReceivableOther(ctx microservice.IContext) er
 // @Router /transaction/receivableother [delete]
 func (h ReceivableOtherHttp) DeleteReceivableOtherByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -198,7 +198,7 @@ func (h ReceivableOtherHttp) DeleteReceivableOtherByGUIDs(ctx microservice.ICont
 		return err
 	}
 
-	err = h.svc.DeleteReceivableOtherByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteReceivableOtherByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -223,12 +223,12 @@ func (h ReceivableOtherHttp) DeleteReceivableOtherByGUIDs(ctx microservice.ICont
 // @Router /transaction/receivableother/{id} [get]
 func (h ReceivableOtherHttp) InfoReceivableOther(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get ReceivableOther %v", id)
-	doc, err := h.svc.InfoReceivableOther(shopID, id)
+	doc, err := h.svc.InfoReceivableOther(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -254,11 +254,11 @@ func (h ReceivableOtherHttp) InfoReceivableOther(ctx microservice.IContext) erro
 // @Router /transaction/receivableother/code/{code} [get]
 func (h ReceivableOtherHttp) InfoReceivableOtherByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoReceivableOtherByCode(shopID, code)
+	doc, err := h.svc.InfoReceivableOtherByCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -289,7 +289,7 @@ func (h ReceivableOtherHttp) InfoReceivableOtherByCode(ctx microservice.IContext
 // @Router /transaction/receivableother [get]
 func (h ReceivableOtherHttp) SearchReceivableOtherPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -310,7 +310,7 @@ func (h ReceivableOtherHttp) SearchReceivableOtherPage(ctx microservice.IContext
 		},
 	})
 
-	docList, pagination, err := h.svc.SearchReceivableOther(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchReceivableOther(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -343,7 +343,7 @@ func (h ReceivableOtherHttp) SearchReceivableOtherPage(ctx microservice.IContext
 // @Router /transaction/receivableother/list [get]
 func (h ReceivableOtherHttp) SearchReceivableOtherStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -366,7 +366,7 @@ func (h ReceivableOtherHttp) SearchReceivableOtherStep(ctx microservice.IContext
 		},
 	})
 
-	docList, total, err := h.svc.SearchReceivableOtherStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchReceivableOtherStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -394,7 +394,7 @@ func (h ReceivableOtherHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -406,7 +406,7 @@ func (h ReceivableOtherHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

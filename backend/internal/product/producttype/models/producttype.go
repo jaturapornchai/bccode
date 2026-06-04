@@ -10,13 +10,13 @@ const producttypeCollectionName = "productTypes"
 
 type ProductType struct {
 	models.PartitionIdentity `bson:"inline"`
-	Code string          `json:"code" bson:"code"`
-	Names *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
+	Code                     string          `json:"code" bson:"code"`
+	Names                    *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
 }
 
 type ProductTypeInfo struct {
 	models.DocIdentity `bson:"inline"`
-	ProductType  `bson:"inline"`
+	ProductType        `bson:"inline"`
 }
 
 func (ProductTypeInfo) CollectionName() string {
@@ -24,13 +24,13 @@ func (ProductTypeInfo) CollectionName() string {
 }
 
 type ProductTypeData struct {
-	models.ShopIdentity `bson:"inline"`
-	ProductTypeInfo  `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	ProductTypeInfo          `bson:"inline"`
 }
 
 type ProductTypeDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	ProductTypeData  `bson:"inline"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ProductTypeData    `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -47,7 +47,7 @@ func (ProductTypeItemGuid) CollectionName() string {
 }
 
 type ProductTypeActivity struct {
-	ProductTypeData  `bson:"inline"`
+	ProductTypeData     `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

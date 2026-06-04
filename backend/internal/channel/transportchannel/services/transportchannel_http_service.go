@@ -19,15 +19,15 @@ import (
 )
 
 type ITransportChannelHttpService interface {
-	CreateTransportChannel(shopID string, authUsername string, doc models.TransportChannel) (string, error)
-	UpdateTransportChannel(shopID string, guid string, authUsername string, doc models.TransportChannel) error
-	DeleteTransportChannel(shopID string, guid string, authUsername string) error
-	DeleteTransportChannelByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoTransportChannel(shopID string, guid string) (models.TransportChannelInfo, error)
-	InfoTransportChannelByCode(shopID string, code string) (models.TransportChannelInfo, error)
-	SearchTransportChannel(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.TransportChannelInfo, mongopagination.PaginationData, error)
-	SearchTransportChannelStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.TransportChannelInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.TransportChannel) (common.BulkImport, error)
+	CreateTransportChannel(holdingCode string, authUsername string, doc models.TransportChannel) (string, error)
+	UpdateTransportChannel(holdingCode string, guid string, authUsername string, doc models.TransportChannel) error
+	DeleteTransportChannel(holdingCode string, guid string, authUsername string) error
+	DeleteTransportChannelByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoTransportChannel(holdingCode string, guid string) (models.TransportChannelInfo, error)
+	InfoTransportChannelByCode(holdingCode string, code string) (models.TransportChannelInfo, error)
+	SearchTransportChannel(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.TransportChannelInfo, mongopagination.PaginationData, error)
+	SearchTransportChannelStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.TransportChannelInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.TransportChannel) (common.BulkImport, error)
 
 	GetModuleName() string
 }
@@ -57,12 +57,12 @@ func (svc TransportChannelHttpService) getContextTimeout() (context.Context, con
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc TransportChannelHttpService) CreateTransportChannel(shopID string, authUsername string, doc models.TransportChannel) (string, error) {
+func (svc TransportChannelHttpService) CreateTransportChannel(holdingCode string, authUsername string, doc models.TransportChannel) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", doc.Code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", doc.Code)
 
 	if err != nil {
 		return "", err
@@ -75,7 +75,7 @@ func (svc TransportChannelHttpService) CreateTransportChannel(shopID string, aut
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.TransportChannelDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.TransportChannel = doc
 
@@ -88,17 +88,17 @@ func (svc TransportChannelHttpService) CreateTransportChannel(shopID string, aut
 		return "", err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return newGuidFixed, nil
 }
 
-func (svc TransportChannelHttpService) UpdateTransportChannel(shopID string, guid string, authUsername string, doc models.TransportChannel) error {
+func (svc TransportChannelHttpService) UpdateTransportChannel(holdingCode string, guid string, authUsername string, doc models.TransportChannel) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -113,23 +113,23 @@ func (svc TransportChannelHttpService) UpdateTransportChannel(shopID string, gui
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, findDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, findDoc)
 
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc TransportChannelHttpService) DeleteTransportChannel(shopID string, guid string, authUsername string) error {
+func (svc TransportChannelHttpService) DeleteTransportChannel(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -139,17 +139,17 @@ func (svc TransportChannelHttpService) DeleteTransportChannel(shopID string, gui
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc TransportChannelHttpService) DeleteTransportChannelByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc TransportChannelHttpService) DeleteTransportChannelByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -158,7 +158,7 @@ func (svc TransportChannelHttpService) DeleteTransportChannelByGUIDs(shopID stri
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
@@ -166,11 +166,11 @@ func (svc TransportChannelHttpService) DeleteTransportChannelByGUIDs(shopID stri
 	return nil
 }
 
-func (svc TransportChannelHttpService) InfoTransportChannel(shopID string, guid string) (models.TransportChannelInfo, error) {
+func (svc TransportChannelHttpService) InfoTransportChannel(holdingCode string, guid string) (models.TransportChannelInfo, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.TransportChannelInfo{}, err
@@ -183,11 +183,11 @@ func (svc TransportChannelHttpService) InfoTransportChannel(shopID string, guid 
 	return findDoc.TransportChannelInfo, nil
 }
 
-func (svc TransportChannelHttpService) InfoTransportChannelByCode(shopID string, code string) (models.TransportChannelInfo, error) {
+func (svc TransportChannelHttpService) InfoTransportChannelByCode(holdingCode string, code string) (models.TransportChannelInfo, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", code)
 
 	if err != nil {
 		return models.TransportChannelInfo{}, err
@@ -200,7 +200,7 @@ func (svc TransportChannelHttpService) InfoTransportChannelByCode(shopID string,
 	return findDoc.TransportChannelInfo, nil
 }
 
-func (svc TransportChannelHttpService) SearchTransportChannel(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.TransportChannelInfo, mongopagination.PaginationData, error) {
+func (svc TransportChannelHttpService) SearchTransportChannel(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.TransportChannelInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -210,7 +210,7 @@ func (svc TransportChannelHttpService) SearchTransportChannel(shopID string, fil
 		"names.name",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.TransportChannelInfo{}, pagination, err
@@ -219,7 +219,7 @@ func (svc TransportChannelHttpService) SearchTransportChannel(shopID string, fil
 	return docList, pagination, nil
 }
 
-func (svc TransportChannelHttpService) SearchTransportChannelStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.TransportChannelInfo, int, error) {
+func (svc TransportChannelHttpService) SearchTransportChannelStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.TransportChannelInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -231,7 +231,7 @@ func (svc TransportChannelHttpService) SearchTransportChannelStep(shopID string,
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.TransportChannelInfo{}, 0, err
@@ -240,7 +240,7 @@ func (svc TransportChannelHttpService) SearchTransportChannelStep(shopID string,
 	return docList, total, nil
 }
 
-func (svc TransportChannelHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.TransportChannel) (common.BulkImport, error) {
+func (svc TransportChannelHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.TransportChannel) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -252,7 +252,7 @@ func (svc TransportChannelHttpService) SaveInBatch(shopID string, authUsername s
 		itemCodeGuidList = append(itemCodeGuidList, doc.Code)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "code", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "code", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -264,18 +264,18 @@ func (svc TransportChannelHttpService) SaveInBatch(shopID string, authUsername s
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.TransportChannel, models.TransportChannelDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.TransportChannel) models.TransportChannelDoc {
+		func(holdingCode string, authUsername string, doc models.TransportChannel) models.TransportChannelDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.TransportChannelDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.TransportChannel = doc
 
 			currentTime := time.Now()
@@ -286,23 +286,23 @@ func (svc TransportChannelHttpService) SaveInBatch(shopID string, authUsername s
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.TransportChannel, models.TransportChannelDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.TransportChannelDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", guid)
+		func(holdingCode string, guid string) (models.TransportChannelDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", guid)
 		},
 		func(doc models.TransportChannelDoc) bool {
 			return doc.Code != ""
 		},
-		func(shopID string, authUsername string, data models.TransportChannel, doc models.TransportChannelDoc) error {
+		func(holdingCode string, authUsername string, data models.TransportChannel, doc models.TransportChannelDoc) error {
 
 			doc.TransportChannel = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -341,7 +341,7 @@ func (svc TransportChannelHttpService) SaveInBatch(shopID string, authUsername s
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -355,9 +355,9 @@ func (svc TransportChannelHttpService) getDocIDKey(doc models.TransportChannel) 
 	return doc.Code
 }
 
-func (svc TransportChannelHttpService) saveMasterSync(shopID string) {
+func (svc TransportChannelHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

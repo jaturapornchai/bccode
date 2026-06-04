@@ -23,12 +23,12 @@ func (CreditCardWithdrawalInfo) CollectionName() string {
 }
 
 type CreditCardWithdrawalData struct {
-	models.ShopIdentity      `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
 	CreditCardWithdrawalInfo `bson:"inline"`
 }
 
 type CreditCardWithdrawalDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                       primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	CreditCardWithdrawalData `bson:"inline"`
 	models.ActivityDoc       `bson:"inline"`
 }

@@ -17,7 +17,7 @@ func TestValidateAtlasTenantRejectsMismatchedShop(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/atlas/get", nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
-	c.Set("UserInfo", msmodels.UserInfo{Username: "user@example.com", ShopID: "SHOP001"})
+	c.Set("UserInfo", msmodels.UserInfo{Username: "user@example.com", HoldingCode: "SHOP001"})
 
 	if err := validateAtlasTenant(c, "SHOP002"); err != nil {
 		t.Fatalf("validateAtlasTenant returned error: %v", err)
@@ -32,7 +32,7 @@ func TestValidateAtlasTenantAllowsMatchingShop(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/atlas/get", nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
-	c.Set("UserInfo", msmodels.UserInfo{Username: "user@example.com", ShopID: "SHOP001"})
+	c.Set("UserInfo", msmodels.UserInfo{Username: "user@example.com", HoldingCode: "SHOP001"})
 
 	if err := validateAtlasTenant(c, "SHOP001"); err != nil {
 		t.Fatalf("validateAtlasTenant returned error: %v", err)
@@ -40,7 +40,7 @@ func TestValidateAtlasTenantAllowsMatchingShop(t *testing.T) {
 }
 
 func TestNormalizedAtlasTenantIDPrefersHoldingCode(t *testing.T) {
-	got := normalizedAtlasTenantID("HOLDING001", "SHOP001", "SHOP002")
+	got := normalizedAtlasTenantID("HOLDING001")
 	if got != "HOLDING001" {
 		t.Fatalf("tenant id = %q, want HOLDING001", got)
 	}

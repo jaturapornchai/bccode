@@ -192,7 +192,7 @@ func getAllModels() []ModelDef {
 			Category:    "transaction",
 			SourceFile:  "internal/goapi/models/mongo-trans-model.go",
 			Fields: []FieldDef{
-				{Name: "ShopId", JSONName: "shopid", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Shop ID"},
+				{Name: "HoldingCode", JSONName: "holding_code", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Holding Code"},
 				{Name: "BranchId", JSONName: "branch_id", Type: "string", DartType: "String", TSType: "string", Description: "Branch ID"},
 				{Name: "DocNo", JSONName: "docno", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Document number"},
 				{Name: "DocDateTime", JSONName: "docdatetime", Type: "time.Time", DartType: "DateTime", TSType: "Date", Required: true, Description: "Document date/time"},
@@ -243,7 +243,7 @@ func getAllModels() []ModelDef {
 			Category:    "transaction",
 			SourceFile:  "internal/goapi/models/process-doc-model.go",
 			Fields: []FieldDef{
-				{Name: "ShopID", JSONName: "shopid", Type: "string", DartType: "String", TSType: "string", Required: true},
+				{Name: "HoldingCode", JSONName: "holding_code", Type: "string", DartType: "String", TSType: "string", Required: true},
 				{Name: "CustCode", JSONName: "custcode", Type: "string", DartType: "String", TSType: "string"},
 				{Name: "TransFlag", JSONName: "transflag", Type: "int", DartType: "int", TSType: "number", Required: true},
 				{Name: "DocNo", JSONName: "docno", Type: "string", DartType: "String", TSType: "string", Required: true},
@@ -267,7 +267,7 @@ func getAllModels() []ModelDef {
 			Category:    "transaction",
 			SourceFile:  "internal/goapi/models/process-doc-model.go",
 			Fields: []FieldDef{
-				{Name: "ShopID", JSONName: "shopid", Type: "string", DartType: "String", TSType: "string", Required: true},
+				{Name: "HoldingCode", JSONName: "holding_code", Type: "string", DartType: "String", TSType: "string", Required: true},
 				{Name: "DocNo", JSONName: "docno", Type: "string", DartType: "String", TSType: "string", Required: true},
 				{Name: "TransFlag", JSONName: "transflag", Type: "int", DartType: "int", TSType: "number"},
 				{Name: "DocDateTime", JSONName: "docdatetime", Type: "time.Time", DartType: "DateTime", TSType: "Date"},
@@ -284,7 +284,7 @@ func getAllModels() []ModelDef {
 			Category:    "product",
 			SourceFile:  "internal/goapi/models/barcode-model.go",
 			Fields: []FieldDef{
-				{Name: "ShopID", JSONName: "shopid", Type: "string", DartType: "String", TSType: "string", Required: true},
+				{Name: "HoldingCode", JSONName: "holding_code", Type: "string", DartType: "String", TSType: "string", Required: true},
 				{Name: "ItemCode", JSONName: "itemcode", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Product code"},
 				{Name: "Barcode", JSONName: "barcode", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Barcode number"},
 				{Name: "Name0", JSONName: "name0", Type: "string", DartType: "String", TSType: "string", Description: "Product name (primary language)"},
@@ -383,7 +383,7 @@ func getAllModels() []ModelDef {
 			SourceFile:  "internal/goapi/models/image-model.go",
 			Fields: []FieldDef{
 				{Name: "ID", JSONName: "id", Type: "ObjectID", DartType: "String", TSType: "string", Required: true},
-				{Name: "ShopID", JSONName: "shop_id", Type: "string", DartType: "String", TSType: "string", Required: true},
+				{Name: "HoldingCode", JSONName: "holding_code", Type: "string", DartType: "String", TSType: "string", Required: true},
 				{Name: "FileName", JSONName: "file_name", Type: "string", DartType: "String", TSType: "string", Required: true},
 				{Name: "OriginalName", JSONName: "original_name", Type: "string", DartType: "String", TSType: "string"},
 				{Name: "ContentType", JSONName: "content_type", Type: "string", DartType: "String", TSType: "string"},
@@ -404,7 +404,7 @@ func getAllModels() []ModelDef {
 			SourceFile:  "internal/goapi/models/attachment-model.go",
 			Fields: []FieldDef{
 				{Name: "ID", JSONName: "id", Type: "ObjectID", DartType: "String", TSType: "string", Required: true},
-				{Name: "ShopID", JSONName: "shop_id", Type: "string", DartType: "String", TSType: "string", Required: true},
+				{Name: "HoldingCode", JSONName: "holding_code", Type: "string", DartType: "String", TSType: "string", Required: true},
 				{Name: "ScreenType", JSONName: "screen_type", Type: "string", DartType: "String", TSType: "string", Description: "Screen/document type"},
 				{Name: "DocNo", JSONName: "doc_no", Type: "string", DartType: "String", TSType: "string"},
 				{Name: "FileName", JSONName: "file_name", Type: "string", DartType: "String", TSType: "string", Required: true},
@@ -425,7 +425,7 @@ func getAllModels() []ModelDef {
 			SourceFile:  "internal/goapi/models/pdf-history-model.go",
 			Fields: []FieldDef{
 				{Name: "ID", JSONName: "id", Type: "ObjectID", DartType: "String", TSType: "string", Required: true},
-				{Name: "ShopID", JSONName: "shop_id", Type: "string", DartType: "String", TSType: "string", Required: true},
+				{Name: "HoldingCode", JSONName: "holding_code", Type: "string", DartType: "String", TSType: "string", Required: true},
 				{Name: "DocNo", JSONName: "doc_no", Type: "string", DartType: "String", TSType: "string", Required: true},
 				{Name: "Title", JSONName: "title", Type: "string", DartType: "String", TSType: "string"},
 				{Name: "FileName", JSONName: "file_name", Type: "string", DartType: "String", TSType: "string"},
@@ -446,7 +446,7 @@ func getAllModels() []ModelDef {
 			Category:    "master",
 			SourceFile:  "internal/goapi/models/mongo-warehouse-model.go",
 			Fields: []FieldDef{
-				{Name: "Shopid", JSONName: "shopid", Type: "string", DartType: "String", TSType: "string", Required: true},
+				{Name: "HoldingCode", JSONName: "holding_code", Type: "string", DartType: "String", TSType: "string", Required: true},
 				{Name: "Code", JSONName: "code", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Warehouse code"},
 				{Name: "Names", JSONName: "names", Type: "[]LanguageModel", DartType: "List<Map<String, dynamic>>", TSType: "Array<{code: string, name: string}>", Description: "Warehouse name (multi-language)"},
 			},
@@ -461,7 +461,7 @@ func getAllModels() []ModelDef {
 			Fields: []FieldDef{
 				{Name: "Code", JSONName: "code", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Employee code"},
 				{Name: "Name", JSONName: "name", Type: "string", DartType: "String", TSType: "string", Description: "Employee name"},
-				{Name: "ShopId", JSONName: "shopid", Type: "string", DartType: "String", TSType: "string"},
+				{Name: "HoldingCode", JSONName: "holding_code", Type: "string", DartType: "String", TSType: "string"},
 				{Name: "Position", JSONName: "position", Type: "string", DartType: "String", TSType: "string"},
 				{Name: "Department", JSONName: "department", Type: "string", DartType: "String", TSType: "string"},
 				{Name: "ApprovalRole", JSONName: "approvalrole", Type: "string", DartType: "String", TSType: "string", Description: "Role for PO approval"},
@@ -476,7 +476,7 @@ func getAllModels() []ModelDef {
 			Category:    "query",
 			SourceFile:  "internal/goapi/models/query-result-model.go",
 			Fields: []FieldDef{
-				{Name: "ShopID", JSONName: "shopid", Type: "string", DartType: "String", TSType: "string", Required: true},
+				{Name: "HoldingCode", JSONName: "holding_code", Type: "string", DartType: "String", TSType: "string", Required: true},
 				{Name: "Query", JSONName: "query", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "SQL query"},
 				{Name: "GUID", JSONName: "guid", Type: "string", DartType: "String", TSType: "string", Description: "Optional GUID for result caching"},
 			},
@@ -532,7 +532,7 @@ func getAllModels() []ModelDef {
 				{Name: "Name", JSONName: "name", Type: "string", DartType: "String", TSType: "string", Description: "Display name"},
 				{Name: "Email", JSONName: "email", Type: "string", DartType: "String", TSType: "string"},
 				{Name: "Role", JSONName: "role", Type: "int", DartType: "int", TSType: "number", Required: true, Description: "0=user, 1=admin, 2=owner, 255=system (see user_role enum)"},
-				{Name: "ShopID", JSONName: "shopid", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Shop GUID"},
+				{Name: "HoldingCode", JSONName: "holding_code", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Shop GUID"},
 				{Name: "IsActive", JSONName: "isactive", Type: "bool", DartType: "bool", TSType: "boolean"},
 				{Name: "ApprovalLimit", JSONName: "approvallimit", Type: "float64", DartType: "double", TSType: "number", Description: "Max approval amount"},
 				{Name: "ApprovalRole", JSONName: "approvalrole", Type: "string", DartType: "String", TSType: "string", Description: "Approval role name"},

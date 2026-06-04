@@ -20,14 +20,14 @@ import (
 )
 
 type IDeviceHttpService interface {
-	CreateDevice(shopID string, authUsername string, doc models.Device) (string, error)
-	UpdateDevice(shopID string, guid string, authUsername string, doc models.Device) error
-	DeleteDevice(shopID string, guid string, authUsername string) error
-	DeleteDeviceByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoDevice(shopID string, guid string) (models.DeviceInfo, error)
-	SearchDevice(shopID string, pageable micromodels.Pageable) ([]models.DeviceInfo, mongopagination.PaginationData, error)
-	SearchDeviceStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.DeviceInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.Device) (common.BulkImport, error)
+	CreateDevice(holdingCode string, authUsername string, doc models.Device) (string, error)
+	UpdateDevice(holdingCode string, guid string, authUsername string, doc models.Device) error
+	DeleteDevice(holdingCode string, guid string, authUsername string) error
+	DeleteDeviceByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoDevice(holdingCode string, guid string) (models.DeviceInfo, error)
+	SearchDevice(holdingCode string, pageable micromodels.Pageable) ([]models.DeviceInfo, mongopagination.PaginationData, error)
+	SearchDeviceStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.DeviceInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.Device) (common.BulkImport, error)
 
 	GetModuleName() string
 }
@@ -59,12 +59,12 @@ func (svc DeviceHttpService) getContextTimeout() (context.Context, context.Cance
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc DeviceHttpService) CreateDevice(shopID string, authUsername string, doc models.Device) (string, error) {
+func (svc DeviceHttpService) CreateDevice(holdingCode string, authUsername string, doc models.Device) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", doc.Code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", doc.Code)
 
 	if err != nil {
 		return "", err
@@ -77,7 +77,7 @@ func (svc DeviceHttpService) CreateDevice(shopID string, authUsername string, do
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.DeviceDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.Device = doc
 
@@ -90,17 +90,17 @@ func (svc DeviceHttpService) CreateDevice(shopID string, authUsername string, do
 		return "", err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return newGuidFixed, nil
 }
 
-func (svc DeviceHttpService) UpdateDevice(shopID string, guid string, authUsername string, doc models.Device) error {
+func (svc DeviceHttpService) UpdateDevice(holdingCode string, guid string, authUsername string, doc models.Device) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -115,23 +115,23 @@ func (svc DeviceHttpService) UpdateDevice(shopID string, guid string, authUserna
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, findDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, findDoc)
 
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc DeviceHttpService) DeleteDevice(shopID string, guid string, authUsername string) error {
+func (svc DeviceHttpService) DeleteDevice(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -141,17 +141,17 @@ func (svc DeviceHttpService) DeleteDevice(shopID string, guid string, authUserna
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc DeviceHttpService) DeleteDeviceByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc DeviceHttpService) DeleteDeviceByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -160,7 +160,7 @@ func (svc DeviceHttpService) DeleteDeviceByGUIDs(shopID string, authUsername str
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
@@ -168,12 +168,12 @@ func (svc DeviceHttpService) DeleteDeviceByGUIDs(shopID string, authUsername str
 	return nil
 }
 
-func (svc DeviceHttpService) InfoDevice(shopID string, guid string) (models.DeviceInfo, error) {
+func (svc DeviceHttpService) InfoDevice(holdingCode string, guid string) (models.DeviceInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.DeviceInfo{}, err
@@ -187,7 +187,7 @@ func (svc DeviceHttpService) InfoDevice(shopID string, guid string) (models.Devi
 
 }
 
-func (svc DeviceHttpService) SearchDevice(shopID string, pageable micromodels.Pageable) ([]models.DeviceInfo, mongopagination.PaginationData, error) {
+func (svc DeviceHttpService) SearchDevice(holdingCode string, pageable micromodels.Pageable) ([]models.DeviceInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -197,7 +197,7 @@ func (svc DeviceHttpService) SearchDevice(shopID string, pageable micromodels.Pa
 		"names.name",
 	}
 
-	docList, pagination, err := svc.repo.FindPage(ctx, shopID, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPage(ctx, holdingCode, searchInFields, pageable)
 
 	if err != nil {
 		return []models.DeviceInfo{}, pagination, err
@@ -206,7 +206,7 @@ func (svc DeviceHttpService) SearchDevice(shopID string, pageable micromodels.Pa
 	return docList, pagination, nil
 }
 
-func (svc DeviceHttpService) SearchDeviceStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.DeviceInfo, int, error) {
+func (svc DeviceHttpService) SearchDeviceStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.DeviceInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -218,7 +218,7 @@ func (svc DeviceHttpService) SearchDeviceStep(shopID string, langCode string, pa
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.DeviceInfo{}, 0, err
@@ -227,7 +227,7 @@ func (svc DeviceHttpService) SearchDeviceStep(shopID string, langCode string, pa
 	return docList, total, nil
 }
 
-func (svc DeviceHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.Device) (common.BulkImport, error) {
+func (svc DeviceHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.Device) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -239,7 +239,7 @@ func (svc DeviceHttpService) SaveInBatch(shopID string, authUsername string, dat
 		itemCodeGuidList = append(itemCodeGuidList, doc.Code)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "code", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "code", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -251,18 +251,18 @@ func (svc DeviceHttpService) SaveInBatch(shopID string, authUsername string, dat
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.Device, models.DeviceDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.Device) models.DeviceDoc {
+		func(holdingCode string, authUsername string, doc models.Device) models.DeviceDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.DeviceDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.Device = doc
 
 			currentTime := time.Now()
@@ -273,23 +273,23 @@ func (svc DeviceHttpService) SaveInBatch(shopID string, authUsername string, dat
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.Device, models.DeviceDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.DeviceDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", guid)
+		func(holdingCode string, guid string) (models.DeviceDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", guid)
 		},
 		func(doc models.DeviceDoc) bool {
 			return doc.Code != ""
 		},
-		func(shopID string, authUsername string, data models.Device, doc models.DeviceDoc) error {
+		func(holdingCode string, authUsername string, data models.Device, doc models.DeviceDoc) error {
 
 			doc.Device = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -328,7 +328,7 @@ func (svc DeviceHttpService) SaveInBatch(shopID string, authUsername string, dat
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -342,9 +342,9 @@ func (svc DeviceHttpService) getDocIDKey(doc models.Device) string {
 	return doc.Code
 }
 
-func (svc DeviceHttpService) saveMasterSync(shopID string) {
+func (svc DeviceHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

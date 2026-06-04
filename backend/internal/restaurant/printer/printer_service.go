@@ -19,13 +19,13 @@ import (
 )
 
 type IPrinterService interface {
-	CreatePrinter(shopID string, authUsername string, doc models.Printer) (string, error)
-	UpdatePrinter(shopID string, guid string, authUsername string, doc models.Printer) error
-	DeletePrinter(shopID string, guid string, authUsername string) error
-	InfoPrinter(shopID string, guid string) (models.PrinterInfo, error)
-	SearchPrinter(shopID string, pageable micromodels.Pageable) ([]models.PrinterInfo, mongopagination.PaginationData, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.Printer) (common.BulkImport, error)
-	SearchPrinterStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.PrinterInfo, int, error)
+	CreatePrinter(holdingCode string, authUsername string, doc models.Printer) (string, error)
+	UpdatePrinter(holdingCode string, guid string, authUsername string, doc models.Printer) error
+	DeletePrinter(holdingCode string, guid string, authUsername string) error
+	InfoPrinter(holdingCode string, guid string) (models.PrinterInfo, error)
+	SearchPrinter(holdingCode string, pageable micromodels.Pageable) ([]models.PrinterInfo, mongopagination.PaginationData, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.Printer) (common.BulkImport, error)
+	SearchPrinterStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.PrinterInfo, int, error)
 
 	GetModuleName() string
 }
@@ -56,12 +56,12 @@ func (svc PrinterService) getContextTimeout() (context.Context, context.CancelFu
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc PrinterService) CreatePrinter(shopID string, authUsername string, doc models.Printer) (string, error) {
+func (svc PrinterService) CreatePrinter(holdingCode string, authUsername string, doc models.Printer) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", doc.Code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", doc.Code)
 
 	if err != nil {
 		return "", err
@@ -74,7 +74,7 @@ func (svc PrinterService) CreatePrinter(shopID string, authUsername string, doc 
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.PrinterDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.Printer = doc
 
@@ -87,17 +87,17 @@ func (svc PrinterService) CreatePrinter(shopID string, authUsername string, doc 
 		return "", err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return newGuidFixed, nil
 }
 
-func (svc PrinterService) UpdatePrinter(shopID string, guid string, authUsername string, doc models.Printer) error {
+func (svc PrinterService) UpdatePrinter(holdingCode string, guid string, authUsername string, doc models.Printer) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -112,39 +112,39 @@ func (svc PrinterService) UpdatePrinter(shopID string, guid string, authUsername
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, findDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, findDoc)
 
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc PrinterService) DeletePrinter(shopID string, guid string, authUsername string) error {
+func (svc PrinterService) DeletePrinter(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	err := svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err := svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc PrinterService) InfoPrinter(shopID string, guid string) (models.PrinterInfo, error) {
+func (svc PrinterService) InfoPrinter(holdingCode string, guid string) (models.PrinterInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.PrinterInfo{}, err
@@ -158,7 +158,7 @@ func (svc PrinterService) InfoPrinter(shopID string, guid string) (models.Printe
 
 }
 
-func (svc PrinterService) SearchPrinter(shopID string, pageable micromodels.Pageable) ([]models.PrinterInfo, mongopagination.PaginationData, error) {
+func (svc PrinterService) SearchPrinter(holdingCode string, pageable micromodels.Pageable) ([]models.PrinterInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -172,7 +172,7 @@ func (svc PrinterService) SearchPrinter(shopID string, pageable micromodels.Page
 		searchInFields = append(searchInFields, fmt.Sprintf("name%d", (i+1)))
 	}
 
-	docList, pagination, err := svc.repo.FindPage(ctx, shopID, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPage(ctx, holdingCode, searchInFields, pageable)
 
 	if err != nil {
 		return []models.PrinterInfo{}, pagination, err
@@ -181,7 +181,7 @@ func (svc PrinterService) SearchPrinter(shopID string, pageable micromodels.Page
 	return docList, pagination, nil
 }
 
-func (svc PrinterService) SearchPrinterStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.PrinterInfo, int, error) {
+func (svc PrinterService) SearchPrinterStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.PrinterInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -193,7 +193,7 @@ func (svc PrinterService) SearchPrinterStep(shopID string, langCode string, page
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.PrinterInfo{}, 0, err
@@ -202,7 +202,7 @@ func (svc PrinterService) SearchPrinterStep(shopID string, langCode string, page
 	return docList, total, nil
 }
 
-func (svc PrinterService) SaveInBatch(shopID string, authUsername string, dataList []models.Printer) (common.BulkImport, error) {
+func (svc PrinterService) SaveInBatch(holdingCode string, authUsername string, dataList []models.Printer) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -214,7 +214,7 @@ func (svc PrinterService) SaveInBatch(shopID string, authUsername string, dataLi
 		itemCodeGuidList = append(itemCodeGuidList, doc.Code)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "code", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "code", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -226,18 +226,18 @@ func (svc PrinterService) SaveInBatch(shopID string, authUsername string, dataLi
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.Printer, models.PrinterDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadCategoryList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.Printer) models.PrinterDoc {
+		func(holdingCode string, authUsername string, doc models.Printer) models.PrinterDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.PrinterDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.Printer = doc
 
 			currentTime := time.Now()
@@ -249,17 +249,17 @@ func (svc PrinterService) SaveInBatch(shopID string, authUsername string, dataLi
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.Printer, models.PrinterDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.PrinterDoc, error) {
-			return svc.repo.FindByGuid(ctx, shopID, guid)
+		func(holdingCode string, guid string) (models.PrinterDoc, error) {
+			return svc.repo.FindByGuid(ctx, holdingCode, guid)
 		},
 		func(doc models.PrinterDoc) bool {
 			return false
 		},
-		func(shopID string, authUsername string, data models.Printer, doc models.PrinterDoc) error {
+		func(holdingCode string, authUsername string, data models.Printer, doc models.PrinterDoc) error {
 
 			return nil
 		},
@@ -293,7 +293,7 @@ func (svc PrinterService) SaveInBatch(shopID string, authUsername string, dataLi
 		updateFailDataKey = append(updateFailDataKey, doc.Code)
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -307,9 +307,9 @@ func (svc PrinterService) getDocIDKey(doc models.Printer) string {
 	return doc.Code
 }
 
-func (svc PrinterService) saveMasterSync(shopID string) {
+func (svc PrinterService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

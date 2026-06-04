@@ -19,15 +19,15 @@ import (
 )
 
 type IJobProjectHttpService interface {
-	CreateJobProject(shopID string, authUsername string, doc models.JobProject) (string, error)
-	UpdateJobProject(shopID string, guid string, authUsername string, doc models.JobProject) error
-	DeleteJobProject(shopID string, guid string, authUsername string) error
-	DeleteJobProjectByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoJobProject(shopID string, guid string) (models.JobProjectInfo, error)
-	InfoJobProjectByCode(shopID, branchCode, jobProjectCode string) (models.JobProjectInfo, error)
-	SearchJobProject(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.JobProjectInfo, mongopagination.PaginationData, error)
-	SearchJobProjectStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.JobProjectInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.JobProject) (common.BulkImport, error)
+	CreateJobProject(holdingCode string, authUsername string, doc models.JobProject) (string, error)
+	UpdateJobProject(holdingCode string, guid string, authUsername string, doc models.JobProject) error
+	DeleteJobProject(holdingCode string, guid string, authUsername string) error
+	DeleteJobProjectByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoJobProject(holdingCode string, guid string) (models.JobProjectInfo, error)
+	InfoJobProjectByCode(holdingCode, branchCode, jobProjectCode string) (models.JobProjectInfo, error)
+	SearchJobProject(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.JobProjectInfo, mongopagination.PaginationData, error)
+	SearchJobProjectStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.JobProjectInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.JobProject) (common.BulkImport, error)
 
 	GetModuleName() string
 }
@@ -61,12 +61,12 @@ func (svc JobProjectHttpService) getContextTimeout() (context.Context, context.C
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc JobProjectHttpService) CreateJobProject(shopID string, authUsername string, doc models.JobProject) (string, error) {
+func (svc JobProjectHttpService) CreateJobProject(holdingCode string, authUsername string, doc models.JobProject) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", doc.Code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", doc.Code)
 
 	if err != nil {
 		return "", err
@@ -79,7 +79,7 @@ func (svc JobProjectHttpService) CreateJobProject(shopID string, authUsername st
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.JobProjectDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.JobProject = doc
 
@@ -94,18 +94,18 @@ func (svc JobProjectHttpService) CreateJobProject(shopID string, authUsername st
 
 	go func() {
 		svc.repoMessageQueue.Create(docData)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return newGuidFixed, nil
 }
 
-func (svc JobProjectHttpService) UpdateJobProject(shopID string, guid string, authUsername string, doc models.JobProject) error {
+func (svc JobProjectHttpService) UpdateJobProject(holdingCode string, guid string, authUsername string, doc models.JobProject) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -120,7 +120,7 @@ func (svc JobProjectHttpService) UpdateJobProject(shopID string, guid string, au
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, findDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, findDoc)
 
 	if err != nil {
 		return err
@@ -128,18 +128,18 @@ func (svc JobProjectHttpService) UpdateJobProject(shopID string, guid string, au
 
 	go func() {
 		svc.repoMessageQueue.Update(findDoc)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc JobProjectHttpService) DeleteJobProject(shopID string, guid string, authUsername string) error {
+func (svc JobProjectHttpService) DeleteJobProject(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -149,20 +149,20 @@ func (svc JobProjectHttpService) DeleteJobProject(shopID string, guid string, au
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
 	go func() {
 		svc.repoMessageQueue.Delete(findDoc)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc JobProjectHttpService) DeleteJobProjectByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc JobProjectHttpService) DeleteJobProjectByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -171,7 +171,7 @@ func (svc JobProjectHttpService) DeleteJobProjectByGUIDs(shopID string, authUser
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
@@ -179,12 +179,12 @@ func (svc JobProjectHttpService) DeleteJobProjectByGUIDs(shopID string, authUser
 	return nil
 }
 
-func (svc JobProjectHttpService) InfoJobProject(shopID string, guid string) (models.JobProjectInfo, error) {
+func (svc JobProjectHttpService) InfoJobProject(holdingCode string, guid string) (models.JobProjectInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.JobProjectInfo{}, err
@@ -197,12 +197,12 @@ func (svc JobProjectHttpService) InfoJobProject(shopID string, guid string) (mod
 	return findDoc.JobProjectInfo, nil
 }
 
-func (svc JobProjectHttpService) InfoJobProjectByCode(shopID, branchCode, jobProjectCode string) (models.JobProjectInfo, error) {
+func (svc JobProjectHttpService) InfoJobProjectByCode(holdingCode, branchCode, jobProjectCode string) (models.JobProjectInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindOneByCode(ctx, shopID, branchCode, jobProjectCode)
+	findDoc, err := svc.repo.FindOneByCode(ctx, holdingCode, branchCode, jobProjectCode)
 
 	if err != nil {
 		return models.JobProjectInfo{}, err
@@ -215,7 +215,7 @@ func (svc JobProjectHttpService) InfoJobProjectByCode(shopID, branchCode, jobPro
 	return findDoc.JobProjectInfo, nil
 }
 
-func (svc JobProjectHttpService) SearchJobProject(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.JobProjectInfo, mongopagination.PaginationData, error) {
+func (svc JobProjectHttpService) SearchJobProject(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.JobProjectInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -224,7 +224,7 @@ func (svc JobProjectHttpService) SearchJobProject(shopID string, filters map[str
 		"code",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.JobProjectInfo{}, pagination, err
@@ -233,7 +233,7 @@ func (svc JobProjectHttpService) SearchJobProject(shopID string, filters map[str
 	return docList, pagination, nil
 }
 
-func (svc JobProjectHttpService) SearchJobProjectStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.JobProjectInfo, int, error) {
+func (svc JobProjectHttpService) SearchJobProjectStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.JobProjectInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -244,7 +244,7 @@ func (svc JobProjectHttpService) SearchJobProjectStep(shopID string, langCode st
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.JobProjectInfo{}, 0, err
@@ -253,7 +253,7 @@ func (svc JobProjectHttpService) SearchJobProjectStep(shopID string, langCode st
 	return docList, total, nil
 }
 
-func (svc JobProjectHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.JobProject) (common.BulkImport, error) {
+func (svc JobProjectHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.JobProject) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -265,7 +265,7 @@ func (svc JobProjectHttpService) SaveInBatch(shopID string, authUsername string,
 		itemCodeGuidList = append(itemCodeGuidList, doc.Code)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "code", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "code", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -277,18 +277,18 @@ func (svc JobProjectHttpService) SaveInBatch(shopID string, authUsername string,
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.JobProject, models.JobProjectDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.JobProject) models.JobProjectDoc {
+		func(holdingCode string, authUsername string, doc models.JobProject) models.JobProjectDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.JobProjectDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.JobProject = doc
 
 			currentTime := time.Now()
@@ -299,23 +299,23 @@ func (svc JobProjectHttpService) SaveInBatch(shopID string, authUsername string,
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.JobProject, models.JobProjectDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.JobProjectDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", guid)
+		func(holdingCode string, guid string) (models.JobProjectDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", guid)
 		},
 		func(doc models.JobProjectDoc) bool {
 			return doc.Code != ""
 		},
-		func(shopID string, authUsername string, data models.JobProject, doc models.JobProjectDoc) error {
+		func(holdingCode string, authUsername string, data models.JobProject, doc models.JobProjectDoc) error {
 
 			doc.JobProject = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -354,7 +354,7 @@ func (svc JobProjectHttpService) SaveInBatch(shopID string, authUsername string,
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -368,9 +368,9 @@ func (svc JobProjectHttpService) getDocIDKey(doc models.JobProject) string {
 	return doc.Code
 }
 
-func (svc JobProjectHttpService) saveMasterSync(shopID string) {
+func (svc JobProjectHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

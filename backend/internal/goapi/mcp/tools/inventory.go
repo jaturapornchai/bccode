@@ -13,8 +13,8 @@ import (
 // ==================== Inventory Value ====================
 
 type InventoryValueRequest struct {
-	ShopID string `json:"shop_id"`
-	WHCode string `json:"whcode"`
+	HoldingCode string `json:"holding_code"`
+	WHCode      string `json:"whcode"`
 }
 
 type InventoryValueResponse struct {
@@ -60,14 +60,14 @@ type TopValueItem struct {
 
 // GetInventoryValue reads processed PostgreSQL inventory projections.
 // MongoDB remains the authoritative operational source for inventory documents.
-func GetInventoryValue(ctx context.Context, shopID, whcode string) (*InventoryValueResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func GetInventoryValue(ctx context.Context, holdingCode, whcode string) (*InventoryValueResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 
-	logger.Info("[Inventory Value] shopid=%s, whcode=%s", shopID, whcode)
+	logger.Info("[Inventory Value] holding_code=%s, whcode=%s", holdingCode, whcode)
 
-	db, err := mypg.PgSqlFastConnect(shopID)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		return nil, fmt.Errorf("database connection failed: %w", err)
 	}
@@ -246,9 +246,9 @@ func GetInventoryValue(ctx context.Context, shopID, whcode string) (*InventoryVa
 // ==================== Low Stock Alerts ====================
 
 type LowStockAlertsRequest struct {
-	ShopID    string `json:"shop_id"`
-	Threshold int    `json:"threshold"` // Default 10
-	Limit     int    `json:"limit"`     // Default 50
+	HoldingCode string `json:"holding_code"`
+	Threshold   int    `json:"threshold"` // Default 10
+	Limit       int    `json:"limit"`     // Default 50
 }
 
 type LowStockAlertsResponse struct {
@@ -278,9 +278,9 @@ type LowStockItem struct {
 	WarehouseCode string  `json:"warehouse_code"`
 }
 
-func GetLowStockAlerts(ctx context.Context, shopID string, threshold, limit int) (*LowStockAlertsResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func GetLowStockAlerts(ctx context.Context, holdingCode string, threshold, limit int) (*LowStockAlertsResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 
 	if threshold <= 0 {
@@ -293,9 +293,9 @@ func GetLowStockAlerts(ctx context.Context, shopID string, threshold, limit int)
 		limit = 200
 	}
 
-	logger.Info("[Low Stock Alerts] shopid=%s, threshold=%d, limit=%d", shopID, threshold, limit)
+	logger.Info("[Low Stock Alerts] holding_code=%s, threshold=%d, limit=%d", holdingCode, threshold, limit)
 
-	db, err := mypg.PgSqlFastConnect(shopID)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		return nil, fmt.Errorf("database connection failed: %w", err)
 	}
@@ -379,9 +379,9 @@ func GetLowStockAlerts(ctx context.Context, shopID string, threshold, limit int)
 // ==================== Dead Stock ====================
 
 type DeadStockRequest struct {
-	ShopID string `json:"shop_id"`
-	Days   int    `json:"days"` // No movement for X days (default 90)
-	Limit  int    `json:"limit"`
+	HoldingCode string `json:"holding_code"`
+	Days        int    `json:"days"` // No movement for X days (default 90)
+	Limit       int    `json:"limit"`
 }
 
 type DeadStockResponse struct {
@@ -413,9 +413,9 @@ type DeadStockItem struct {
 	Recommendation string  `json:"recommendation"`
 }
 
-func GetDeadStock(ctx context.Context, shopID string, days, limit int) (*DeadStockResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func GetDeadStock(ctx context.Context, holdingCode string, days, limit int) (*DeadStockResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 
 	if days <= 0 {
@@ -425,9 +425,9 @@ func GetDeadStock(ctx context.Context, shopID string, days, limit int) (*DeadSto
 		limit = 50
 	}
 
-	logger.Info("[Dead Stock] shopid=%s, days=%d, limit=%d", shopID, days, limit)
+	logger.Info("[Dead Stock] holding_code=%s, days=%d, limit=%d", holdingCode, days, limit)
 
-	db, err := mypg.PgSqlFastConnect(shopID)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		return nil, fmt.Errorf("database connection failed: %w", err)
 	}
@@ -529,9 +529,9 @@ func GetDeadStock(ctx context.Context, shopID string, days, limit int) (*DeadSto
 // ==================== Inventory Turnover ====================
 
 type InventoryTurnoverRequest struct {
-	ShopID   string `json:"shop_id"`
-	FromDate string `json:"from_date"`
-	ToDate   string `json:"to_date"`
+	HoldingCode string `json:"holding_code"`
+	FromDate    string `json:"from_date"`
+	ToDate      string `json:"to_date"`
 }
 
 type InventoryTurnoverResponse struct {
@@ -566,9 +566,9 @@ type TurnoverItem struct {
 	CurrentStock float64 `json:"current_stock"`
 }
 
-func GetInventoryTurnover(ctx context.Context, shopID, fromDate, toDate string) (*InventoryTurnoverResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func GetInventoryTurnover(ctx context.Context, holdingCode, fromDate, toDate string) (*InventoryTurnoverResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 
 	now := time.Now()
@@ -579,9 +579,9 @@ func GetInventoryTurnover(ctx context.Context, shopID, fromDate, toDate string) 
 		toDate = now.Format("2006-01-02")
 	}
 
-	logger.Info("[Inventory Turnover] shopid=%s, from=%s, to=%s", shopID, fromDate, toDate)
+	logger.Info("[Inventory Turnover] holding_code=%s, from=%s, to=%s", holdingCode, fromDate, toDate)
 
-	db, err := mypg.PgSqlFastConnect(shopID)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		return nil, fmt.Errorf("database connection failed: %w", err)
 	}

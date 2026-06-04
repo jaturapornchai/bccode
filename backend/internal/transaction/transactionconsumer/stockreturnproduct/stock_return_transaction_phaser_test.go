@@ -13,8 +13,8 @@ import (
 func wantStockReturnTransactionStruct() models.StockReturnProductTransactionPG {
 	want := models.StockReturnProductTransactionPG{
 		TransactionPG: models.TransactionPG{
-			ShopIdentity: pkgModels.ShopIdentity{
-				ShopID: "2PrIIqTWxoBXv16K310sNwfHmfY",
+			HoldingCodeentity: pkgModels.HoldingCodeentity{
+				HoldingCode: "2PrIIqTWxoBXv16K310sNwfHmfY",
 			},
 			GuidFixed:  "2RjalZEcCV3BzRybaHGeqXhfw6C",
 			TransFlag:  58,
@@ -50,7 +50,7 @@ func wantStockReturnTransactionStruct() models.StockReturnProductTransactionPG {
 					DocRef:              "PO23051516490133",
 					DocRefDateTime:      time.Date(2023, 5, 15, 9, 49, 58, 0, time.UTC),
 					DocNo:               "IR2023062600001",
-					ShopID:              "2PrIIqTWxoBXv16K310sNwfHmfY",
+					HoldingCode:         "2PrIIqTWxoBXv16K310sNwfHmfY",
 					LineNumber:          0,
 					ItemGuid:            "2Pxcf33JyR8jRXiKpH2cNc9lH9v",
 					Barcode:             "BARCODE015",
@@ -84,7 +84,7 @@ func TestStockReturnTransactionPhaser(t *testing.T) {
 
 	giveInput := `{
 		"id": "6499444f684e0b206e0b2118",
-		"shopid": "2PrIIqTWxoBXv16K310sNwfHmfY",
+		"holding_code": "2PrIIqTWxoBXv16K310sNwfHmfY",
 		"guid_fixed": "2RjalZEcCV3BzRybaHGeqXhfw6C",
 		"docno": "IR2023062600001",
 		"docdatetime": "2023-06-26T07:54:41.000Z",
@@ -244,7 +244,7 @@ func TestStockReturnTransactionPhaser(t *testing.T) {
 
 	assert.Nil(t, err)
 
-	assert.Equal(t, get.ShopID, want.ShopID, "shopid")
+	assert.Equal(t, get.HoldingCode, want.HoldingCode, "holding_code")
 	assert.Equal(t, get.GuidFixed, want.GuidFixed, "guid_fixed")
 	assert.Equal(t, get.TransFlag, want.TransFlag, "transflag")
 	assert.Equal(t, get.DocNo, want.DocNo, "docno")
@@ -271,7 +271,7 @@ func TestStockReturnTransactionPhaser(t *testing.T) {
 	// detail
 	assert.Equal(t, (*get.Items)[0].GuidFixed, (*want.Items)[0].GuidFixed, "item.guidfixed")
 	assert.Equal(t, (*get.Items)[0].DocNo, (*want.Items)[0].DocNo, "item.docno")
-	assert.Equal(t, (*get.Items)[0].ShopID, (*want.Items)[0].ShopID, "item.shopid")
+	assert.Equal(t, (*get.Items)[0].HoldingCode, (*want.Items)[0].HoldingCode, "item.holding_code")
 	assert.Equal(t, (*get.Items)[0].LineNumber, (*want.Items)[0].LineNumber, "item.linenumber")
 	assert.Equal(t, (*get.Items)[0].ItemGuid, (*want.Items)[0].ItemGuid, "item.itemguid")
 	assert.Equal(t, (*get.Items)[0].Barcode, (*want.Items)[0].Barcode, "item.barcode")

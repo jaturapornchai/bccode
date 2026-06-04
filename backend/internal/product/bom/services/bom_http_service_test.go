@@ -16,7 +16,7 @@ type captureBOMRepository struct {
 	searchStepFields []string
 }
 
-func (repo *captureBOMRepository) Count(ctx context.Context, shopID string) (int, error) {
+func (repo *captureBOMRepository) Count(ctx context.Context, holdingCode string) (int, error) {
 	return 0, nil
 }
 
@@ -28,60 +28,60 @@ func (repo *captureBOMRepository) CreateInBatch(ctx context.Context, docList []m
 	return nil
 }
 
-func (repo *captureBOMRepository) Update(ctx context.Context, shopID string, guid string, doc models.ProductBarcodeBOMViewDoc) error {
+func (repo *captureBOMRepository) Update(ctx context.Context, holdingCode string, guid string, doc models.ProductBarcodeBOMViewDoc) error {
 	return nil
 }
 
-func (repo *captureBOMRepository) DeleteByGuidfixed(ctx context.Context, shopID string, guid string, username string) error {
+func (repo *captureBOMRepository) DeleteByGuidfixed(ctx context.Context, holdingCode string, guid string, username string) error {
 	return nil
 }
 
-func (repo *captureBOMRepository) Delete(ctx context.Context, shopID string, username string, filters map[string]interface{}) error {
+func (repo *captureBOMRepository) Delete(ctx context.Context, holdingCode string, username string, filters map[string]interface{}) error {
 	return nil
 }
 
-func (repo *captureBOMRepository) FindPageFilter(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.ProductBarcodeBOMViewInfo, mongopagination.PaginationData, error) {
+func (repo *captureBOMRepository) FindPageFilter(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.ProductBarcodeBOMViewInfo, mongopagination.PaginationData, error) {
 	return []models.ProductBarcodeBOMViewInfo{}, mongopagination.PaginationData{}, nil
 }
 
-func (repo *captureBOMRepository) FindByGuid(ctx context.Context, shopID string, guid string) (models.ProductBarcodeBOMViewDoc, error) {
+func (repo *captureBOMRepository) FindByGuid(ctx context.Context, holdingCode string, guid string) (models.ProductBarcodeBOMViewDoc, error) {
 	return models.ProductBarcodeBOMViewDoc{}, nil
 }
 
-func (repo *captureBOMRepository) FindInItemGuid(ctx context.Context, shopID string, columnName string, itemGuidList []string) ([]models.ProductBarcodeBOMViewGuid, error) {
+func (repo *captureBOMRepository) FindInItemGuid(ctx context.Context, holdingCode string, columnName string, itemGuidList []string) ([]models.ProductBarcodeBOMViewGuid, error) {
 	return []models.ProductBarcodeBOMViewGuid{}, nil
 }
 
-func (repo *captureBOMRepository) FindByDocIndentityGuid(ctx context.Context, shopID string, indentityField string, indentityValue interface{}) (models.ProductBarcodeBOMViewDoc, error) {
+func (repo *captureBOMRepository) FindByDocIndentityGuid(ctx context.Context, holdingCode string, indentityField string, indentityValue interface{}) (models.ProductBarcodeBOMViewDoc, error) {
 	return models.ProductBarcodeBOMViewDoc{}, nil
 }
 
-func (repo *captureBOMRepository) FindStep(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, selectFields map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ProductBarcodeBOMViewInfo, int, error) {
+func (repo *captureBOMRepository) FindStep(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, selectFields map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ProductBarcodeBOMViewInfo, int, error) {
 	repo.searchStepFields = append([]string(nil), searchInFields...)
 	return []models.ProductBarcodeBOMViewInfo{}, 0, nil
 }
 
-func (repo *captureBOMRepository) FindDeletedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageable micromodels.Pageable) ([]models.ProductBarcodeBOMViewDeleteActivity, mongopagination.PaginationData, error) {
+func (repo *captureBOMRepository) FindDeletedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageable micromodels.Pageable) ([]models.ProductBarcodeBOMViewDeleteActivity, mongopagination.PaginationData, error) {
 	return []models.ProductBarcodeBOMViewDeleteActivity{}, mongopagination.PaginationData{}, nil
 }
 
-func (repo *captureBOMRepository) FindCreatedOrUpdatedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageable micromodels.Pageable) ([]models.ProductBarcodeBOMViewActivity, mongopagination.PaginationData, error) {
+func (repo *captureBOMRepository) FindCreatedOrUpdatedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageable micromodels.Pageable) ([]models.ProductBarcodeBOMViewActivity, mongopagination.PaginationData, error) {
 	return []models.ProductBarcodeBOMViewActivity{}, mongopagination.PaginationData{}, nil
 }
 
-func (repo *captureBOMRepository) FindDeletedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ProductBarcodeBOMViewDeleteActivity, error) {
+func (repo *captureBOMRepository) FindDeletedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ProductBarcodeBOMViewDeleteActivity, error) {
 	return []models.ProductBarcodeBOMViewDeleteActivity{}, nil
 }
 
-func (repo *captureBOMRepository) FindCreatedOrUpdatedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ProductBarcodeBOMViewActivity, error) {
+func (repo *captureBOMRepository) FindCreatedOrUpdatedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ProductBarcodeBOMViewActivity, error) {
 	return []models.ProductBarcodeBOMViewActivity{}, nil
 }
 
-func (repo *captureBOMRepository) FindUseBOMByBarcode(ctx context.Context, shopID string, barcode string) (models.ProductBarcodeBOMViewDoc, error) {
+func (repo *captureBOMRepository) FindUseBOMByBarcode(ctx context.Context, holdingCode string, barcode string) (models.ProductBarcodeBOMViewDoc, error) {
 	return models.ProductBarcodeBOMViewDoc{}, nil
 }
 
-func (repo *captureBOMRepository) ClearUseBOMByBarcode(ctx context.Context, shopID string, barcode string) error {
+func (repo *captureBOMRepository) ClearUseBOMByBarcode(ctx context.Context, holdingCode string, barcode string) error {
 	return nil
 }
 

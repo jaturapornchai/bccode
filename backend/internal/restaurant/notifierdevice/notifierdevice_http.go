@@ -60,9 +60,9 @@ func (h NotifierDeviceHttp) RegisterHttp() {
 func (h NotifierDeviceHttp) CreateNotifierAuthRefCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
-	notifierAuth, err := h.svc.CreateAuthCode(shopID, authUsername)
+	notifierAuth, err := h.svc.CreateAuthCode(holdingCode, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -129,7 +129,7 @@ func (h NotifierDeviceHttp) ConfirmNotifierAuthRefCode(ctx microservice.IContext
 func (h NotifierDeviceHttp) UpdateNotifierDevice(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -147,7 +147,7 @@ func (h NotifierDeviceHttp) UpdateNotifierDevice(ctx microservice.IContext) erro
 		return err
 	}
 
-	err = h.svc.UpdateNotifierDevice(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateNotifierDevice(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -173,12 +173,12 @@ func (h NotifierDeviceHttp) UpdateNotifierDevice(ctx microservice.IContext) erro
 // @Router /restaurant/notifier-device/{id} [delete]
 func (h NotifierDeviceHttp) DeleteNotifierDevice(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteNotifierDevice(shopID, id, authUsername)
+	err := h.svc.DeleteNotifierDevice(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -204,7 +204,7 @@ func (h NotifierDeviceHttp) DeleteNotifierDevice(ctx microservice.IContext) erro
 // @Router /restaurant/notifier-device [delete]
 func (h NotifierDeviceHttp) DeleteNotifierDeviceByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -217,7 +217,7 @@ func (h NotifierDeviceHttp) DeleteNotifierDeviceByGUIDs(ctx microservice.IContex
 		return err
 	}
 
-	err = h.svc.DeleteNotifierDeviceByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteNotifierDeviceByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -242,12 +242,12 @@ func (h NotifierDeviceHttp) DeleteNotifierDeviceByGUIDs(ctx microservice.IContex
 // @Router /restaurant/notifier-device/{id} [get]
 func (h NotifierDeviceHttp) InfoNotifierDevice(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get Notifier %v", id)
-	doc, err := h.svc.InfoNotifierDevice(shopID, id)
+	doc, err := h.svc.InfoNotifierDevice(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -275,11 +275,11 @@ func (h NotifierDeviceHttp) InfoNotifierDevice(ctx microservice.IContext) error 
 // @Router /restaurant/notifier-device [get]
 func (h NotifierDeviceHttp) SearchNotifierPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.SearchNotifierDevice(shopID, map[string]interface{}{}, pageable)
+	docList, pagination, err := h.svc.SearchNotifierDevice(holdingCode, map[string]interface{}{}, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

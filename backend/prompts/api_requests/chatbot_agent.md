@@ -19,7 +19,7 @@ Backend เพิ่ม endpoint ใหม่ `POST /goapi/api/v1/chatbot/chat-a
 **Request:**
 ```json
 {
-  "shop_id": "2jgDFkVsFdah2JnSMC89rM2eBMy",
+  "holding_code": "2jgDFkVsFdah2JnSMC89rM2eBMy",
   "question": "ยอดขายวันนี้เท่าไหร่"
 }
 ```
@@ -35,12 +35,12 @@ Backend เพิ่ม endpoint ใหม่ `POST /goapi/api/v1/chatbot/chat-a
     "tools_used": [
       {
         "tool": "get_daily_sales",
-        "params": {"date": "2026-03-02", "shop_id": "..."},
+        "params": {"date": "2026-03-02", "holding_code": "..."},
         "duration_ms": 245
       },
       {
         "tool": "get_top_selling_products",
-        "params": {"from_date": "2026-03-02", "to_date": "2026-03-02", "limit": 5, "shop_id": "..."},
+        "params": {"from_date": "2026-03-02", "to_date": "2026-03-02", "limit": 5, "holding_code": "..."},
         "duration_ms": 189
       }
     ],
@@ -96,8 +96,8 @@ Backend เพิ่ม endpoint ใหม่ `POST /goapi/api/v1/chatbot/chat-a
 ```
 
 **Request เปลี่ยน:**
-- เดิม: `{"shop_id": "...", "question": "...", "function_name": "product"}`
-- ใหม่: `{"shop_id": "...", "question": "..."}` (ไม่ต้องส่ง `function_name` แล้ว)
+- เดิม: `{"holding_code": "...", "question": "...", "function_name": "product"}`
+- ใหม่: `{"holding_code": "...", "question": "..."}` (ไม่ต้องส่ง `function_name` แล้ว)
 
 **Response เปลี่ยน:**
 - เดิม: `data.answer` + `data.html`

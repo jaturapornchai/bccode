@@ -120,7 +120,7 @@ func (h PickandpackHttp) RegisterHttp() {
 // @Router /transaction/pickandpack [post]
 func (h PickandpackHttp) CreatePickandpack(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.Pickandpack{}
@@ -136,7 +136,7 @@ func (h PickandpackHttp) CreatePickandpack(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, docNo, err := h.svc.CreatePickandpack(shopID, authUsername, *docReq)
+	idx, docNo, err := h.svc.CreatePickandpack(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -166,7 +166,7 @@ func (h PickandpackHttp) CreatePickandpack(ctx microservice.IContext) error {
 // @Router /transaction/pickandpack/available-saleinvoice [get]
 func (h PickandpackHttp) SearchAvailableSaleInvoice(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 	searchKeyword := ctx.QueryParam("q")
@@ -208,7 +208,7 @@ func (h PickandpackHttp) SearchAvailableSaleInvoice(ctx microservice.IContext) e
 	}
 
 	// Search for SaleInvoice documents
-	saleInvoiceList, pagination, err := h.saleInvoiceSvc.SearchSaleInvoice(shopID, filterMap, pageable)
+	saleInvoiceList, pagination, err := h.saleInvoiceSvc.SearchSaleInvoice(holdingCode, filterMap, pageable)
 	if err != nil {
 		h.ms.Logger.Errorf("Error searching SaleInvoice: %v", err)
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -239,7 +239,7 @@ func (h PickandpackHttp) SearchAvailableSaleInvoice(ctx microservice.IContext) e
 // @Router /transaction/pickandpack/by-warehouse [get]
 func (h PickandpackHttp) SearchPickandpackByWarehouse(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -320,7 +320,7 @@ func (h PickandpackHttp) SearchPickandpackByWarehouse(ctx microservice.IContext)
 	}
 
 	// Search Pickandpack documents
-	docList, pagination, err := h.svc.SearchPickandpack(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchPickandpack(holdingCode, filters, pageable)
 	if err != nil {
 		h.ms.Logger.Errorf("Error searching Pickandpack by warehouse: %v", err)
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -353,7 +353,7 @@ func (h PickandpackHttp) SearchPickandpackByWarehouse(ctx microservice.IContext)
 // @Router /transaction/pickandpack/saleinvoice-status [get]
 func (h PickandpackHttp) GetSaleInvoicePackingStatus(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 	searchKeyword := ctx.QueryParam("q")
@@ -386,7 +386,7 @@ func (h PickandpackHttp) GetSaleInvoicePackingStatus(ctx microservice.IContext) 
 	filterMap["isclose"] = false
 
 	// Search for SaleInvoice documents
-	saleInvoiceList, pagination, err := h.saleInvoiceSvc.SearchSaleInvoice(shopID, filterMap, pageable)
+	saleInvoiceList, pagination, err := h.saleInvoiceSvc.SearchSaleInvoice(holdingCode, filterMap, pageable)
 	if err != nil {
 		h.ms.Logger.Errorf("Error searching SaleInvoice: %v", err)
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -394,7 +394,7 @@ func (h PickandpackHttp) GetSaleInvoicePackingStatus(ctx microservice.IContext) 
 	}
 
 	// Get all Pickandpack documents to check their status
-	pickandpackMap, err := h.getAllPickandpackByRefSaleInvoice(shopID)
+	pickandpackMap, err := h.getAllPickandpackByRefSaleInvoice(holdingCode)
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting Pickandpack documents: %v", err)
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -535,7 +535,7 @@ func (h PickandpackHttp) GetSaleInvoicePackingStatus(ctx microservice.IContext) 
 }
 
 // Helper function to get all Pickandpack documents grouped by RefSaleInvoice
-func (h PickandpackHttp) getAllPickandpackByRefSaleInvoice(shopID string) (map[string][]models.PickandpackInfo, error) {
+func (h PickandpackHttp) getAllPickandpackByRefSaleInvoice(holdingCode string) (map[string][]models.PickandpackInfo, error) {
 	// Create empty filters to get all Pickandpack documents
 	emptyFilters := make(map[string]interface{})
 
@@ -552,7 +552,7 @@ func (h PickandpackHttp) getAllPickandpackByRefSaleInvoice(shopID string) (map[s
 	pageable := utils.GetPageable(getPageParam)
 
 	// Get all Pickandpack documents
-	pickandpackList, _, err := h.svc.SearchPickandpack(shopID, emptyFilters, pageable)
+	pickandpackList, _, err := h.svc.SearchPickandpack(holdingCode, emptyFilters, pageable)
 	if err != nil {
 		return nil, err
 	}
@@ -569,7 +569,7 @@ func (h PickandpackHttp) getAllPickandpackByRefSaleInvoice(shopID string) (map[s
 }
 
 // Helper function to update SaleInvoice packing status and progress
-func (h PickandpackHttp) updateSaleInvoicePackingStatus(shopID, saleInvoiceDocNo string, saleInvoiceguid string, packingStatus, packingProgress int, updatedBy string) error {
+func (h PickandpackHttp) updateSaleInvoicePackingStatus(holdingCode, saleInvoiceDocNo string, saleInvoiceguid string, packingStatus, packingProgress int, updatedBy string) error {
 	// If status and progress are -1, auto calculate from Pickandpack documents
 	if packingStatus == -1 || packingProgress == -1 {
 		// Get all Pickandpack documents for this SaleInvoice
@@ -577,7 +577,7 @@ func (h PickandpackHttp) updateSaleInvoicePackingStatus(shopID, saleInvoiceDocNo
 			"refsaleinvoice": saleInvoiceDocNo,
 		}
 
-		pickandpackList, _, err := h.svc.SearchPickandpack(shopID, filters, utils.GetPageable(func(key string) string {
+		pickandpackList, _, err := h.svc.SearchPickandpack(holdingCode, filters, utils.GetPageable(func(key string) string {
 			if key == "page" {
 				return "1"
 			}
@@ -637,7 +637,7 @@ func (h PickandpackHttp) updateSaleInvoicePackingStatus(shopID, saleInvoiceDocNo
 	// TODO: When SaleInvoice model has PackingStatus and PackingProgress fields, uncomment this:
 
 	// Get the SaleInvoice document first
-	saleInvoiceInfo, err := h.saleInvoiceSvc.InfoSaleInvoice(shopID, saleInvoiceguid)
+	saleInvoiceInfo, err := h.saleInvoiceSvc.InfoSaleInvoice(holdingCode, saleInvoiceguid)
 	if err != nil {
 		return fmt.Errorf("failed to get SaleInvoice %s: %v", saleInvoiceDocNo, err)
 	}
@@ -651,7 +651,7 @@ func (h PickandpackHttp) updateSaleInvoicePackingStatus(shopID, saleInvoiceDocNo
 	saleInvoiceInfo.PackingAt = &PackingAt
 
 	// Save back using UpdateSaleInvoice method (pass the embedded SaleInvoice struct)
-	err = h.saleInvoiceSvc.UpdateSaleInvoice(shopID, saleInvoiceInfo.GuidFixed, "system", saleInvoiceInfo.SaleInvoice)
+	err = h.saleInvoiceSvc.UpdateSaleInvoice(holdingCode, saleInvoiceInfo.GuidFixed, "system", saleInvoiceInfo.SaleInvoice)
 	if err != nil {
 		return fmt.Errorf("failed to update SaleInvoice %s: %v", saleInvoiceInfo.GuidFixed, err)
 	}
@@ -660,7 +660,7 @@ func (h PickandpackHttp) updateSaleInvoicePackingStatus(shopID, saleInvoiceDocNo
 }
 
 // Helper function to get existing RefSaleInvoice values
-func (h PickandpackHttp) getExistingRefSaleInvoices(shopID string) (map[string]bool, error) {
+func (h PickandpackHttp) getExistingRefSaleInvoices(holdingCode string) (map[string]bool, error) {
 	// Create empty filters to get all Pickandpack documents
 	emptyFilters := make(map[string]interface{})
 
@@ -677,7 +677,7 @@ func (h PickandpackHttp) getExistingRefSaleInvoices(shopID string) (map[string]b
 	pageable := utils.GetPageable(getPageParam)
 
 	// Get all Pickandpack documents
-	pickandpackList, _, err := h.svc.SearchPickandpack(shopID, emptyFilters, pageable)
+	pickandpackList, _, err := h.svc.SearchPickandpack(holdingCode, emptyFilters, pageable)
 	if err != nil {
 		return nil, err
 	}
@@ -705,11 +705,11 @@ func (h PickandpackHttp) getExistingRefSaleInvoices(shopID string) (map[string]b
 // @Router /transaction/pickandpack/approve/{id} [post]
 func (h PickandpackHttp) ApprovePickandpack(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 
 	id := ctx.Param("id")
 
-	doc, err := h.saleInvoiceSvc.InfoSaleInvoice(shopID, id)
+	doc, err := h.saleInvoiceSvc.InfoSaleInvoice(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -813,7 +813,7 @@ func (h PickandpackHttp) ApprovePickandpack(ctx microservice.IContext) error {
 		docReq.IsClose = false
 
 		// Create the Pickandpack document
-		idx, docNo, err := h.svc.CreatePickandpack(shopID, authUsername, *docReq)
+		idx, docNo, err := h.svc.CreatePickandpack(holdingCode, authUsername, *docReq)
 
 		if err != nil {
 			h.ms.Logger.Errorf("Error creating Pickandpack document for warehouse %s: %v", warehouseKey, err)
@@ -843,7 +843,7 @@ func (h PickandpackHttp) ApprovePickandpack(ctx microservice.IContext) error {
 	doc.Address = docRequest.Address
 
 	// Save SaleInvoice with updated fields
-	err = h.saleInvoiceSvc.UpdateSaleInvoice(shopID, doc.GuidFixed, authUsername, doc.SaleInvoice)
+	err = h.saleInvoiceSvc.UpdateSaleInvoice(holdingCode, doc.GuidFixed, authUsername, doc.SaleInvoice)
 	if err != nil {
 		h.ms.Logger.Errorf("Error updating SaleInvoice fields for %s: %v", doc.DocNo, err)
 		ctx.ResponseError(http.StatusBadRequest, fmt.Sprintf("Error updating SaleInvoice fields: %v", err))
@@ -854,7 +854,7 @@ func (h PickandpackHttp) ApprovePickandpack(ctx microservice.IContext) error {
 		doc.DocNo, docRequest.Phone, docRequest.Sendtype, docRequest.Email, docRequest.Address)
 
 	// หลังจากสร้าง Pickandpack เสร็จ - Update SaleInvoice PackingStatus
-	err = h.updateSaleInvoicePackingStatus(shopID, doc.DocNo, doc.GuidFixed, 1, 0, authUsername)
+	err = h.updateSaleInvoicePackingStatus(holdingCode, doc.DocNo, doc.GuidFixed, 1, 0, authUsername)
 	if err != nil {
 		h.ms.Logger.Warnf("Warning: Could not update SaleInvoice packing status for %s: %v", doc.DocNo, err)
 		// Don't return error, just log warning as Pickandpack creation was successful
@@ -883,12 +883,12 @@ func (h PickandpackHttp) ApprovePickandpack(ctx microservice.IContext) error {
 // @Router /transaction/pickandpack/closejob/{id} [put]
 func (h PickandpackHttp) CloseSaleInvoiceJob(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	// Get the SaleInvoice document first
-	saleInvoiceInfo, err := h.saleInvoiceSvc.InfoSaleInvoice(shopID, id)
+	saleInvoiceInfo, err := h.saleInvoiceSvc.InfoSaleInvoice(holdingCode, id)
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting SaleInvoice document %v: %v", id, err)
 		ctx.ResponseError(http.StatusBadRequest, fmt.Sprintf("SaleInvoice not found: %v", err))
@@ -902,7 +902,7 @@ func (h PickandpackHttp) CloseSaleInvoiceJob(ctx microservice.IContext) error {
 	saleInvoiceInfo.CloseJobAt = &closeJobAt
 
 	// Save back using UpdateSaleInvoice method (pass the embedded SaleInvoice struct)
-	err = h.saleInvoiceSvc.UpdateSaleInvoice(shopID, saleInvoiceInfo.GuidFixed, userInfo.Username, saleInvoiceInfo.SaleInvoice)
+	err = h.saleInvoiceSvc.UpdateSaleInvoice(holdingCode, saleInvoiceInfo.GuidFixed, userInfo.Username, saleInvoiceInfo.SaleInvoice)
 	if err != nil {
 		h.ms.Logger.Errorf("Error updating SaleInvoice IsClose %v: %v", id, err)
 		ctx.ResponseError(http.StatusBadRequest, fmt.Sprintf("Failed to close SaleInvoice job: %v", err))
@@ -938,12 +938,12 @@ func (h PickandpackHttp) CloseSaleInvoiceJob(ctx microservice.IContext) error {
 func (h PickandpackHttp) CancelPickandpackBySaleInvoice(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	saleInvoiceId := ctx.Param("id")
 
 	// Get the SaleInvoice document first to validate and get DocNo
-	saleInvoiceInfo, err := h.saleInvoiceSvc.InfoSaleInvoice(shopID, saleInvoiceId)
+	saleInvoiceInfo, err := h.saleInvoiceSvc.InfoSaleInvoice(holdingCode, saleInvoiceId)
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting SaleInvoice document %v: %v", saleInvoiceId, err)
 		ctx.ResponseError(http.StatusBadRequest, fmt.Sprintf("SaleInvoice not found: %v", err))
@@ -955,7 +955,7 @@ func (h PickandpackHttp) CancelPickandpackBySaleInvoice(ctx microservice.IContex
 		"refsaleinvoice": saleInvoiceInfo.DocNo,
 	}
 
-	pickandpackList, _, err := h.svc.SearchPickandpack(shopID, filters, utils.GetPageable(func(key string) string {
+	pickandpackList, _, err := h.svc.SearchPickandpack(holdingCode, filters, utils.GetPageable(func(key string) string {
 		if key == "page" {
 			return "1"
 		}
@@ -999,7 +999,7 @@ func (h PickandpackHttp) CancelPickandpackBySaleInvoice(ctx microservice.IContex
 	h.ms.Logger.Infof("Found %d Pickandpack documents to delete for SaleInvoice %s", len(pickandpackGUIDs), saleInvoiceInfo.DocNo)
 
 	// Delete all Pickandpack documents
-	err = h.svc.DeletePickandpackByGUIDs(shopID, authUsername, pickandpackGUIDs)
+	err = h.svc.DeletePickandpackByGUIDs(holdingCode, authUsername, pickandpackGUIDs)
 	if err != nil {
 		h.ms.Logger.Errorf("Error deleting Pickandpack documents: %v", err)
 		ctx.ResponseError(http.StatusBadRequest, fmt.Sprintf("Error deleting Pickandpack documents: %v", err))
@@ -1017,7 +1017,7 @@ func (h PickandpackHttp) CancelPickandpackBySaleInvoice(ctx microservice.IContex
 	saleInvoiceInfo.CloseJobAt = nil
 
 	// Save back using UpdateSaleInvoice method
-	err = h.saleInvoiceSvc.UpdateSaleInvoice(shopID, saleInvoiceInfo.GuidFixed, authUsername, saleInvoiceInfo.SaleInvoice)
+	err = h.saleInvoiceSvc.UpdateSaleInvoice(holdingCode, saleInvoiceInfo.GuidFixed, authUsername, saleInvoiceInfo.SaleInvoice)
 	if err != nil {
 		h.ms.Logger.Errorf("Error updating SaleInvoice status %v: %v", saleInvoiceId, err)
 		// Don't return error here as deletion was successful, just log warning
@@ -1088,7 +1088,7 @@ func calculateTotalQty(details []transmodels.Detail) float64 {
 func (h PickandpackHttp) UpdatePickandpackStatus(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	statusParam := ctx.Param("status")
@@ -1104,7 +1104,7 @@ func (h PickandpackHttp) UpdatePickandpackStatus(ctx microservice.IContext) erro
 	}
 
 	// Get existing document
-	doc, err := h.svc.InfoPickandpack(shopID, id)
+	doc, err := h.svc.InfoPickandpack(holdingCode, id)
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting Pickandpack document %v: %v", id, err)
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -1118,7 +1118,7 @@ func (h PickandpackHttp) UpdatePickandpackStatus(ctx microservice.IContext) erro
 	updateDoc := doc.Pickandpack
 
 	// Save the updated document
-	err = h.svc.UpdatePickandpack(shopID, id, authUsername, updateDoc)
+	err = h.svc.UpdatePickandpack(holdingCode, id, authUsername, updateDoc)
 	if err != nil {
 		h.ms.Logger.Errorf("Error updating Pickandpack status %v: %v", id, err)
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -1128,7 +1128,7 @@ func (h PickandpackHttp) UpdatePickandpackStatus(ctx microservice.IContext) erro
 	h.ms.Logger.Infof("Updated Pickandpack %s status to %d by user %s", id, status, authUsername)
 
 	// หลังจากอัพเดท Pickandpack status - คำนวณ progress ของ SaleInvoice ใหม่
-	err = h.updateSaleInvoicePackingStatus(shopID, doc.RefSaleInvoice, doc.GuidFixed, -1, -1, authUsername) // -1 = auto calculate
+	err = h.updateSaleInvoicePackingStatus(holdingCode, doc.RefSaleInvoice, doc.GuidFixed, -1, -1, authUsername) // -1 = auto calculate
 	if err != nil {
 		h.ms.Logger.Warnf("Warning: Could not update SaleInvoice packing progress for %s: %v", doc.RefSaleInvoice, err)
 		// Don't return error, just log warning as Pickandpack update was successful
@@ -1161,7 +1161,7 @@ func (h PickandpackHttp) UpdatePickandpackStatus(ctx microservice.IContext) erro
 func (h PickandpackHttp) UpdatePickandpackDetails(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -1175,7 +1175,7 @@ func (h PickandpackHttp) UpdatePickandpackDetails(ctx microservice.IContext) err
 	}
 
 	// Get existing document
-	doc, err := h.svc.InfoPickandpack(shopID, id)
+	doc, err := h.svc.InfoPickandpack(holdingCode, id)
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting Pickandpack document %v: %v", id, err)
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -1192,7 +1192,7 @@ func (h PickandpackHttp) UpdatePickandpackDetails(ctx microservice.IContext) err
 	updateDoc := doc.Pickandpack
 
 	// Save the updated document
-	err = h.svc.UpdatePickandpack(shopID, id, authUsername, updateDoc)
+	err = h.svc.UpdatePickandpack(holdingCode, id, authUsername, updateDoc)
 	if err != nil {
 		h.ms.Logger.Errorf("Error updating Pickandpack details %v: %v", id, err)
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -1246,7 +1246,7 @@ func getStatusText(status int8) string {
 func (h PickandpackHttp) UpdatePickandpack(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -1264,7 +1264,7 @@ func (h PickandpackHttp) UpdatePickandpack(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdatePickandpack(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdatePickandpack(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -1290,12 +1290,12 @@ func (h PickandpackHttp) UpdatePickandpack(ctx microservice.IContext) error {
 // @Router /transaction/pickandpack/{id} [delete]
 func (h PickandpackHttp) DeletePickandpack(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeletePickandpack(shopID, id, authUsername)
+	err := h.svc.DeletePickandpack(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -1321,7 +1321,7 @@ func (h PickandpackHttp) DeletePickandpack(ctx microservice.IContext) error {
 // @Router /transaction/pickandpack [delete]
 func (h PickandpackHttp) DeletePickandpackByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -1334,7 +1334,7 @@ func (h PickandpackHttp) DeletePickandpackByGUIDs(ctx microservice.IContext) err
 		return err
 	}
 
-	err = h.svc.DeletePickandpackByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeletePickandpackByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -1359,12 +1359,12 @@ func (h PickandpackHttp) DeletePickandpackByGUIDs(ctx microservice.IContext) err
 // @Router /transaction/pickandpack/{id} [get]
 func (h PickandpackHttp) InfoPickandpack(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get Pickandpack %v", id)
-	doc, err := h.svc.InfoPickandpack(shopID, id)
+	doc, err := h.svc.InfoPickandpack(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -1390,11 +1390,11 @@ func (h PickandpackHttp) InfoPickandpack(ctx microservice.IContext) error {
 // @Router /transaction/pickandpack/code/{code} [get]
 func (h PickandpackHttp) InfoPickandpackByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoPickandpackByCode(shopID, code)
+	doc, err := h.svc.InfoPickandpackByCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -1425,7 +1425,7 @@ func (h PickandpackHttp) InfoPickandpackByCode(ctx microservice.IContext) error 
 // @Router /transaction/pickandpack [get]
 func (h PickandpackHttp) SearchPickandpackPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -1458,7 +1458,7 @@ func (h PickandpackHttp) SearchPickandpackPage(ctx microservice.IContext) error 
 	}
 	filterMap["isclose"] = false
 
-	docList, pagination, err := h.svc.SearchPickandpack(shopID, filterMap, pageable)
+	docList, pagination, err := h.svc.SearchPickandpack(holdingCode, filterMap, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -1491,7 +1491,7 @@ func (h PickandpackHttp) SearchPickandpackPage(ctx microservice.IContext) error 
 // @Router /transaction/pickandpack/list [get]
 func (h PickandpackHttp) SearchPickandpackStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -1514,7 +1514,7 @@ func (h PickandpackHttp) SearchPickandpackStep(ctx microservice.IContext) error 
 		},
 	})
 
-	docList, total, err := h.svc.SearchPickandpackStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchPickandpackStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -1542,7 +1542,7 @@ func (h PickandpackHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -1554,7 +1554,7 @@ func (h PickandpackHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())
@@ -1587,7 +1587,7 @@ func (h PickandpackHttp) SaveBulk(ctx microservice.IContext) error {
 // @Router /transaction/pickandpack/history [get]
 func (h PickandpackHttp) GetPickandpackHistory(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -1603,7 +1603,7 @@ func (h PickandpackHttp) GetPickandpackHistory(ctx microservice.IContext) error 
 	filters["isclose"] = true
 	filters["iscancel"] = false
 
-	saleInvoiceList, pagination, err := h.saleInvoiceSvc.SearchSaleInvoice(shopID, filters, pageable)
+	saleInvoiceList, pagination, err := h.saleInvoiceSvc.SearchSaleInvoice(holdingCode, filters, pageable)
 	if err != nil {
 		h.ms.Logger.Errorf("Error searching SaleInvoice: %v", err)
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -1613,7 +1613,7 @@ func (h PickandpackHttp) GetPickandpackHistory(ctx microservice.IContext) error 
 	// Get all Pickandpack documents for these SaleInvoices
 	pickandpackMap := make(map[string][]models.PickandpackInfo)
 	for _, invoice := range saleInvoiceList {
-		ppList, _, err := h.svc.SearchPickandpack(shopID, map[string]interface{}{"refsaleinvoice": invoice.DocNo}, utils.GetPageable(func(key string) string {
+		ppList, _, err := h.svc.SearchPickandpack(holdingCode, map[string]interface{}{"refsaleinvoice": invoice.DocNo}, utils.GetPageable(func(key string) string {
 			if key == "page" {
 				return "1"
 			}
@@ -1674,7 +1674,7 @@ func (h PickandpackHttp) GetPickandpackHistory(ctx microservice.IContext) error 
 // @Router /transaction/pickandpack/dashboard [get]
 func (h PickandpackHttp) GetPickandpackDashboard(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	// Generate filters for date range
 	filters := requestfilter.GenerateFilters(ctx.QueryParam, []requestfilter.FilterRequest{
@@ -1699,7 +1699,7 @@ func (h PickandpackHttp) GetPickandpackDashboard(ctx microservice.IContext) erro
 	}
 
 	// Search for Available SaleInvoice documents
-	availableSaleInvoiceList, _, err := h.saleInvoiceSvc.SearchSaleInvoice(shopID, availableFilters, utils.GetPageable(func(key string) string {
+	availableSaleInvoiceList, _, err := h.saleInvoiceSvc.SearchSaleInvoice(holdingCode, availableFilters, utils.GetPageable(func(key string) string {
 		if key == "page" {
 			return "1"
 		}
@@ -1725,7 +1725,7 @@ func (h PickandpackHttp) GetPickandpackDashboard(ctx microservice.IContext) erro
 	completedFilters["isclose"] = true
 	completedFilters["iscancel"] = false
 
-	completedSaleInvoiceList, _, err := h.saleInvoiceSvc.SearchSaleInvoice(shopID, completedFilters, utils.GetPageable(func(key string) string {
+	completedSaleInvoiceList, _, err := h.saleInvoiceSvc.SearchSaleInvoice(holdingCode, completedFilters, utils.GetPageable(func(key string) string {
 		if key == "page" {
 			return "1"
 		}
@@ -1751,7 +1751,7 @@ func (h PickandpackHttp) GetPickandpackDashboard(ctx microservice.IContext) erro
 	inProgressFilters["isclose"] = false
 	inProgressFilters["iscancel"] = false
 
-	inProgressSaleInvoiceList, _, err := h.saleInvoiceSvc.SearchSaleInvoice(shopID, inProgressFilters, utils.GetPageable(func(key string) string {
+	inProgressSaleInvoiceList, _, err := h.saleInvoiceSvc.SearchSaleInvoice(holdingCode, inProgressFilters, utils.GetPageable(func(key string) string {
 		if key == "page" {
 			return "1"
 		}
@@ -1775,7 +1775,7 @@ func (h PickandpackHttp) GetPickandpackDashboard(ctx microservice.IContext) erro
 	}
 	totalFilters["iscancel"] = false
 
-	totalSaleInvoiceList, _, err := h.saleInvoiceSvc.SearchSaleInvoice(shopID, totalFilters, utils.GetPageable(func(key string) string {
+	totalSaleInvoiceList, _, err := h.saleInvoiceSvc.SearchSaleInvoice(holdingCode, totalFilters, utils.GetPageable(func(key string) string {
 		if key == "page" {
 			return "1"
 		}
@@ -1847,8 +1847,8 @@ func (h PickandpackHttp) GetPickandpackDashboard(ctx microservice.IContext) erro
 func (h PickandpackHttp) GetWarehouseDashboard(ctx microservice.IContext) error {
 	h.ms.Logger.Debugf("GetWarehouseDashboard called")
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
-	h.ms.Logger.Debugf("GetWarehouseDashboard shopID: %s", shopID)
+	holdingCode := userInfo.HoldingCode
+	h.ms.Logger.Debugf("GetWarehouseDashboard holdingCode: %s", holdingCode)
 
 	// Parse parameters
 	whcodesParam := ctx.QueryParam("whcodes")
@@ -1877,7 +1877,7 @@ func (h PickandpackHttp) GetWarehouseDashboard(ctx microservice.IContext) error 
 	}
 
 	// Call service method
-	dashboardData, err := h.svc.GetWarehouseDashboard(shopID, whcodes, locationcodes, fromDate, toDate)
+	dashboardData, err := h.svc.GetWarehouseDashboard(holdingCode, whcodes, locationcodes, fromDate, toDate)
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting warehouse dashboard: %v", err)
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -1902,7 +1902,7 @@ func (h PickandpackHttp) GetWarehouseDashboard(ctx microservice.IContext) error 
 // @Router /transaction/pickandpack/updateprint/{docno} [put]
 func (h PickandpackHttp) UpdatePrint(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	docNo := ctx.Param("docno")
@@ -1911,7 +1911,7 @@ func (h PickandpackHttp) UpdatePrint(ctx microservice.IContext) error {
 		return fmt.Errorf("docno is required")
 	}
 
-	err := h.svc.UpdatePrint(shopID, docNo, authUsername)
+	err := h.svc.UpdatePrint(holdingCode, docNo, authUsername)
 	if err != nil {
 		h.ms.Logger.Errorf("Error updating print status: %v", err)
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -1936,7 +1936,7 @@ func (h PickandpackHttp) UpdatePrint(ctx microservice.IContext) error {
 // @Router /transaction/pickandpack/confirmpickandpack/{docno} [put]
 func (h PickandpackHttp) ConfirmPickandpack(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	docNo := ctx.Param("docno")
@@ -1945,7 +1945,7 @@ func (h PickandpackHttp) ConfirmPickandpack(ctx microservice.IContext) error {
 		return fmt.Errorf("docno is required")
 	}
 
-	err := h.svc.ConfirmPickandpack(shopID, docNo, authUsername)
+	err := h.svc.ConfirmPickandpack(holdingCode, docNo, authUsername)
 	if err != nil {
 		h.ms.Logger.Errorf("Error confirming pickandpack: %v", err)
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -1970,7 +1970,7 @@ func (h PickandpackHttp) ConfirmPickandpack(ctx microservice.IContext) error {
 // @Router /transaction/pickandpack/cancel/{docno} [put]
 func (h PickandpackHttp) CancelPickandpack(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	docNo := ctx.Param("docno")
@@ -1979,7 +1979,7 @@ func (h PickandpackHttp) CancelPickandpack(ctx microservice.IContext) error {
 		return fmt.Errorf("docno is required")
 	}
 
-	err := h.svc.CancelPickandpack(shopID, docNo, authUsername)
+	err := h.svc.CancelPickandpack(holdingCode, docNo, authUsername)
 	if err != nil {
 		h.ms.Logger.Errorf("Error cancelling pickandpack: %v", err)
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

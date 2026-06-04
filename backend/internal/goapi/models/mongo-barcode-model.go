@@ -1,7 +1,7 @@
 package models
 
 type ProcessMongoBarcodeModel struct {
-	ShopID        string                               `json:"shopid" bson:"shopid"`
+	HoldingCode   string                               `json:"holding_code" bson:"holding_code"`
 	ItemCode      string                               `json:"itemcode" bson:"itemcode"`
 	Barcode       string                               `json:"barcode" bson:"barcode"`
 	ItemType      int                                  `json:"item_type" bson:"item_type"`

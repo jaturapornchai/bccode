@@ -10,11 +10,11 @@ DO $$
 BEGIN
     IF to_regclass('public.organization_branches') IS NOT NULL THEN
         CREATE UNIQUE INDEX IF NOT EXISTS idx_branch_shop_company_code
-            ON organization_branches(shopid, company_guid, code)
+            ON organization_branches(holding_code, company_guid, code)
             WHERE deleted_at IS NULL;
 
         CREATE INDEX IF NOT EXISTS idx_branch_shop_company
-            ON organization_branches(shopid, company_guid)
+            ON organization_branches(holding_code, company_guid)
             WHERE deleted_at IS NULL;
     END IF;
 END $$;

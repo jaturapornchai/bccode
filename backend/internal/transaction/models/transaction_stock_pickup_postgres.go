@@ -27,7 +27,7 @@ type StockPickUpTransactionPG struct {
 	// TotalPayCash     float64                           `json:"totalpaycash" gorm:"column:totalpaycash"`
 	// TotalPayTransfer float64                           `json:"totalpaytransfer" gorm:"column:totalpaytransfer"`
 	// TotalPayCredit   float64                           `json:"totalpaycredit" gorm:"column:totalpaycredit"`
-	Items *[]StockPickUpTransactionDetailPG `json:"items" gorm:"items;foreignKey:shopid,docno"`
+	Items *[]StockPickUpTransactionDetailPG `json:"items" gorm:"items;foreignKey:holding_code,docno"`
 }
 
 type StockPickUpTransactionDetailPG struct {
@@ -53,7 +53,7 @@ func (j *StockPickUpTransactionPG) BeforeUpdate(tx *gorm.DB) (err error) {
 
 	// find old data
 	var details *[]StockPickUpTransactionDetailPG
-	tx.Model(&StockPickUpTransactionDetailPG{}).Where(" shopid=? AND docno=?", j.ShopID, j.DocNo).Find(&details)
+	tx.Model(&StockPickUpTransactionDetailPG{}).Where(" holding_code=? AND docno=?", j.HoldingCode, j.DocNo).Find(&details)
 
 	// delete un use data
 	for _, tmp := range *details {

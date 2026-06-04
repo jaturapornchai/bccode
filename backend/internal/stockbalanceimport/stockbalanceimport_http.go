@@ -92,7 +92,7 @@ func (h StockBalanceImportHttp) RegisterHttp() {
 // @Security     AccessToken
 // @Router /stockbalanceimport/upload [post]
 func (h StockBalanceImportHttp) UploadExcel(ctx microservice.IContext) error {
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	authUsername := ctx.UserInfo().Username
 	tempFile, err := ctx.FormFile("file")
 
@@ -115,7 +115,7 @@ func (h StockBalanceImportHttp) UploadExcel(ctx microservice.IContext) error {
 	}
 	defer file.Close()
 
-	taskID, err := h.svc.ImportFromFile(shopID, authUsername, file)
+	taskID, err := h.svc.ImportFromFile(holdingCode, authUsername, file)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -140,7 +140,7 @@ func (h StockBalanceImportHttp) UploadExcel(ctx microservice.IContext) error {
 // @Security     AccessToken
 // @Router /stockbalanceimport [post]
 func (h StockBalanceImportHttp) Create(ctx microservice.IContext) error {
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	authUsername := ctx.UserInfo().Username
 
 	input := ctx.ReadInput()
@@ -158,7 +158,7 @@ func (h StockBalanceImportHttp) Create(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.Create(shopID, authUsername, &docReq)
+	err = h.svc.Create(holdingCode, authUsername, &docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -184,7 +184,7 @@ func (h StockBalanceImportHttp) Create(ctx microservice.IContext) error {
 // @Security     AccessToken
 // @Router /stockbalanceimport/{task-id} [get]
 func (h StockBalanceImportHttp) List(ctx microservice.IContext) error {
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 
 	taskID := ctx.Param("task-id")
 
@@ -210,7 +210,7 @@ func (h StockBalanceImportHttp) List(ctx microservice.IContext) error {
 		filters["exist"] = isExist
 	}
 
-	results, page, err := h.svc.List(shopID, taskID, filters, pageable)
+	results, page, err := h.svc.List(holdingCode, taskID, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -235,7 +235,7 @@ func (h StockBalanceImportHttp) List(ctx microservice.IContext) error {
 // @Security     AccessToken
 // @Router /stockbalanceimport/item/{guid} [put]
 func (h StockBalanceImportHttp) Update(ctx microservice.IContext) error {
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -254,7 +254,7 @@ func (h StockBalanceImportHttp) Update(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.Update(shopID, guid, docReq)
+	err = h.svc.Update(holdingCode, guid, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -277,11 +277,11 @@ func (h StockBalanceImportHttp) Update(ctx microservice.IContext) error {
 // @Security     AccessToken
 // @Router /stockbalanceimport/item/{guid} [delete]
 func (h StockBalanceImportHttp) Delete(ctx microservice.IContext) error {
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 
 	guid := ctx.Param("guid")
 
-	err := h.svc.Delete(shopID, guid)
+	err := h.svc.Delete(holdingCode, guid)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -304,11 +304,11 @@ func (h StockBalanceImportHttp) Delete(ctx microservice.IContext) error {
 // @Security     AccessToken
 // @Router /stockbalanceimport/{task-id} [delete]
 func (h StockBalanceImportHttp) DeleteByTask(ctx microservice.IContext) error {
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 
 	taskID := ctx.Param("task-id")
 
-	err := h.svc.DeleteTask(shopID, taskID)
+	err := h.svc.DeleteTask(holdingCode, taskID)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -333,7 +333,7 @@ func (h StockBalanceImportHttp) DeleteByTask(ctx microservice.IContext) error {
 // @Router /stockbalanceimport/{task-id} [post]
 func (h StockBalanceImportHttp) SaveTask(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	taskID := ctx.Param("task-id")
@@ -347,7 +347,7 @@ func (h StockBalanceImportHttp) SaveTask(ctx microservice.IContext) error {
 		return err
 	}
 
-	docNo, err := h.svc.SaveTask(shopID, authUsername, taskID, docReq)
+	docNo, err := h.svc.SaveTask(holdingCode, authUsername, taskID, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -371,11 +371,11 @@ func (h StockBalanceImportHttp) SaveTask(ctx microservice.IContext) error {
 // @Security     AccessToken
 // @Router /stockbalanceimport/{task-id}/meta [get]
 func (h StockBalanceImportHttp) Meta(ctx microservice.IContext) error {
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 
 	taskID := ctx.Param("task-id")
 
-	result, err := h.svc.Meta(shopID, taskID)
+	result, err := h.svc.Meta(holdingCode, taskID)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -399,11 +399,11 @@ func (h StockBalanceImportHttp) Meta(ctx microservice.IContext) error {
 // @Security     AccessToken
 // @Router /stockbalanceimport/{task-id}/verify [post]
 func (h StockBalanceImportHttp) Verify(ctx microservice.IContext) error {
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 
 	guid := ctx.Param("task-id")
 
-	err := h.svc.Verify(shopID, guid)
+	err := h.svc.Verify(holdingCode, guid)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

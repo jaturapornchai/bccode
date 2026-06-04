@@ -67,7 +67,7 @@ func (h SaleOrderHttp) RegisterHttp() {
 // @Router /transaction/sale-order [post]
 func (h SaleOrderHttp) CreateSaleOrder(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.SaleOrder{}
@@ -83,7 +83,7 @@ func (h SaleOrderHttp) CreateSaleOrder(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, docNo, err := h.svc.CreateSaleOrder(shopID, authUsername, *docReq)
+	idx, docNo, err := h.svc.CreateSaleOrder(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -111,7 +111,7 @@ func (h SaleOrderHttp) CreateSaleOrder(ctx microservice.IContext) error {
 func (h SaleOrderHttp) UpdateSaleOrder(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -129,7 +129,7 @@ func (h SaleOrderHttp) UpdateSaleOrder(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateSaleOrder(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateSaleOrder(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -155,12 +155,12 @@ func (h SaleOrderHttp) UpdateSaleOrder(ctx microservice.IContext) error {
 // @Router /transaction/sale-order/{id} [delete]
 func (h SaleOrderHttp) DeleteSaleOrder(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteSaleOrder(shopID, id, authUsername)
+	err := h.svc.DeleteSaleOrder(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -186,7 +186,7 @@ func (h SaleOrderHttp) DeleteSaleOrder(ctx microservice.IContext) error {
 // @Router /transaction/sale-order [delete]
 func (h SaleOrderHttp) DeleteSaleOrderByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -199,7 +199,7 @@ func (h SaleOrderHttp) DeleteSaleOrderByGUIDs(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.DeleteSaleOrderByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteSaleOrderByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -224,12 +224,12 @@ func (h SaleOrderHttp) DeleteSaleOrderByGUIDs(ctx microservice.IContext) error {
 // @Router /transaction/sale-order/{id} [get]
 func (h SaleOrderHttp) InfoSaleOrder(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get SaleOrder %v", id)
-	doc, err := h.svc.InfoSaleOrder(shopID, id)
+	doc, err := h.svc.InfoSaleOrder(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -255,11 +255,11 @@ func (h SaleOrderHttp) InfoSaleOrder(ctx microservice.IContext) error {
 // @Router /transaction/sale-order/code/{code} [get]
 func (h SaleOrderHttp) InfoSaleOrderByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoSaleOrderByCode(shopID, code)
+	doc, err := h.svc.InfoSaleOrderByCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -290,7 +290,7 @@ func (h SaleOrderHttp) InfoSaleOrderByCode(ctx microservice.IContext) error {
 // @Router /transaction/sale-order [get]
 func (h SaleOrderHttp) SearchSaleOrderPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -311,7 +311,7 @@ func (h SaleOrderHttp) SearchSaleOrderPage(ctx microservice.IContext) error {
 		},
 	})
 
-	docList, pagination, err := h.svc.SearchSaleOrder(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchSaleOrder(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -344,7 +344,7 @@ func (h SaleOrderHttp) SearchSaleOrderPage(ctx microservice.IContext) error {
 // @Router /transaction/sale-order/list [get]
 func (h SaleOrderHttp) SearchSaleOrderStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -367,7 +367,7 @@ func (h SaleOrderHttp) SearchSaleOrderStep(ctx microservice.IContext) error {
 		},
 	})
 
-	docList, total, err := h.svc.SearchSaleOrderStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchSaleOrderStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -395,7 +395,7 @@ func (h SaleOrderHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -407,7 +407,7 @@ func (h SaleOrderHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

@@ -10,13 +10,13 @@ const designproductCollectionName = "designProductMaster"
 
 type DesignProduct struct {
 	models.PartitionIdentity `bson:"inline"`
-	Code string          `json:"code" bson:"code"`
-	Names *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
+	Code                     string          `json:"code" bson:"code"`
+	Names                    *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
 }
 
 type DesignProductInfo struct {
 	models.DocIdentity `bson:"inline"`
-	DesignProduct  `bson:"inline"`
+	DesignProduct      `bson:"inline"`
 }
 
 func (DesignProductInfo) CollectionName() string {
@@ -24,12 +24,12 @@ func (DesignProductInfo) CollectionName() string {
 }
 
 type DesignProductData struct {
-	models.ShopIdentity `bson:"inline"`
-	DesignProductInfo  `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	DesignProductInfo        `bson:"inline"`
 }
 
 type DesignProductDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	DesignProductData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
@@ -47,7 +47,7 @@ func (DesignProductItemGuid) CollectionName() string {
 }
 
 type DesignProductActivity struct {
-	DesignProductData  `bson:"inline"`
+	DesignProductData   `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

@@ -25,8 +25,8 @@ func (p PurchaseReturnTransactionCreditorPhaser) PhasePurchaseReturnCreditor(doc
 
 	transaction := models.CreditorTransactionPG{
 		GuidFixed: doc.GuidFixed,
-		ShopIdentity: pkgModels.ShopIdentity{
-			ShopID: doc.ShopID,
+		HoldingCodeentity: pkgModels.HoldingCodeentity{
+			HoldingCode: doc.HoldingCode,
 		},
 		DocNo:          doc.DocNo,
 		DocDate:        doc.DocDate,

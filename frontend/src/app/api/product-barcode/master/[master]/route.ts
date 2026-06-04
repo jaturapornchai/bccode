@@ -30,7 +30,7 @@ const MASTER_PATHS: Record<string, string> = {
   producttype: "/product/type",
   ordertype: "/product/order-type",
   businesstype: "/product-section/business-type",
-  branch: "/list-shop",
+  branch: "/list-holding",
   company: "/organization/company",
   creditor: "/debtaccount/creditor",
   product: "/product",
@@ -78,8 +78,8 @@ export async function GET(request: Request, context: MasterContext) {
       let guid = String(entry.guidfixed ?? entry.guid_fixed ?? "");
       let code = String(entry.code ?? entry.unitcode ?? entry.itemunitcode ?? entry.groupcode ?? entry.brand_code ?? entry.categorycode ?? "");
       if (masterKey === "branch") {
-        guid = String(entry.shopid ?? "");
-        code = String(entry.branchcode && entry.branchcode !== "" ? entry.branchcode : (entry.shopid ?? ""));
+        guid = String(entry.holding_code ?? "");
+        code = String(entry.branchcode && entry.branchcode !== "" ? entry.branchcode : (entry.holding_code ?? ""));
       }
       const namesSource = entry.names ?? entry.unitnames ?? entry.unit_names ?? entry.itemunitnames ?? entry.item_unit_names;
       const names = Array.isArray(namesSource) ? namesSource : [];

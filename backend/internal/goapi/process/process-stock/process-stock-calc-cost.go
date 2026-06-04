@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"math"
+	"runtime"
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/models"
 	"smlcloudplatform/internal/goapi/myclickhouse"
@@ -11,8 +13,6 @@ import (
 	"smlcloudplatform/internal/goapi/mypg"
 	"smlcloudplatform/internal/goapi/mypostgres"
 	"smlcloudplatform/internal/goapi/process"
-	"math"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -25,58 +25,58 @@ type StockSaver interface {
 }
 
 // ProductCalcCost - Calculate stock cost for a single item (legacy interface)
-func ProductCalcCost(db *sql.DB, shopId string, itemCodeForProcess string, pointQty int, pointAmount int, pointCost int, deleteFrist bool) {
-	ProductCalcCostWithOptions(db, shopId, itemCodeForProcess, pointQty, pointAmount, pointCost, deleteFrist, false, false, nil)
+func ProductCalcCost(db *sql.DB, holdingCode string, itemCodeForProcess string, pointQty int, pointAmount int, pointCost int, deleteFrist bool) {
+	ProductCalcCostWithOptions(db, holdingCode, itemCodeForProcess, pointQty, pointAmount, pointCost, deleteFrist, false, false, nil)
 }
 
 // ProductCalcCostIncremental - Calculate stock cost with incremental mode
-func ProductCalcCostIncremental(db *sql.DB, shopId string, itemCodeForProcess string, pointQty int, pointAmount int, pointCost int, incremental, minimalLog bool) {
-	ProductCalcCostWithOptions(db, shopId, itemCodeForProcess, pointQty, pointAmount, pointCost, !minimalLog, incremental, minimalLog, nil)
+func ProductCalcCostIncremental(db *sql.DB, holdingCode string, itemCodeForProcess string, pointQty int, pointAmount int, pointCost int, incremental, minimalLog bool) {
+	ProductCalcCostWithOptions(db, holdingCode, itemCodeForProcess, pointQty, pointAmount, pointCost, !minimalLog, incremental, minimalLog, nil)
 }
 
 // ProductCalcCostWithSaver - Calculate stock cost with custom saver (legacy interface)
-func ProductCalcCostWithSaver(db *sql.DB, shopId string, itemCodeForProcess string, pointQty int, pointAmount int, pointCost int, deleteFrist bool, saver StockSaver) {
-	ProductCalcCostWithOptions(db, shopId, itemCodeForProcess, pointQty, pointAmount, pointCost, deleteFrist, false, false, saver)
+func ProductCalcCostWithSaver(db *sql.DB, holdingCode string, itemCodeForProcess string, pointQty int, pointAmount int, pointCost int, deleteFrist bool, saver StockSaver) {
+	ProductCalcCostWithOptions(db, holdingCode, itemCodeForProcess, pointQty, pointAmount, pointCost, deleteFrist, false, false, saver)
 }
 
 // ProductCalcCostWithOptions - Full-featured stock cost calculation
 // Parameters:
 //   - db: database connection
-//   - shopId: shop identifier
+//   - holdingCode: holding codeentifier
 //   - itemCodeForProcess: item code to calculate
 //   - pointQty, pointAmount, pointCost: decimal precision
 //   - deleteFirst: if true, delete existing data before insert (legacy mode)
 //   - incremental: if true, check checksum and skip unchanged items
 //   - minimalLog: if true, use UPSERT to reduce WAL logging
 //   - saver: optional custom saver interface
-func ProductCalcCostWithOptions(db *sql.DB, shopId string, itemCodeForProcess string, pointQty int, pointAmount int, pointCost int, deleteFirst bool, incremental bool, minimalLog bool, saver StockSaver) {
+func ProductCalcCostWithOptions(db *sql.DB, holdingCode string, itemCodeForProcess string, pointQty int, pointAmount int, pointCost int, deleteFirst bool, incremental bool, minimalLog bool, saver StockSaver) {
 	logger.Info("Starting CalcCost for item code: %s (incremental=%v, minimalLog=%v)", itemCodeForProcess, incremental, minimalLog)
 
 	// ทำการบันทึกข้อมูลเฉพาะสำหรับ item code นี้
 	ctx := context.Background()
 
 	// 🔒 Distributed Lock เพื่อป้องกัน race condition (ใช้ PostgreSQL)
-	lockKey := fmt.Sprintf("stock:calc:%s:%s", shopId, itemCodeForProcess)
+	lockKey := fmt.Sprintf("stock:calc:%s:%s", holdingCode, itemCodeForProcess)
 	lock := mypostgres.NewDistributedLock(db, lockKey, 5*time.Minute) // Lock timeout 5 นาที
 
 	// พยายาม acquire lock (retry 10 ครั้ง, รอครั้งละ 500ms)
 	err := lock.AcquireWithRetry(ctx, 10, 500*time.Millisecond)
 	if err != nil {
-		logger.Error("Failed to acquire lock for %s/%s: %v", shopId, itemCodeForProcess, err)
+		logger.Error("Failed to acquire lock for %s/%s: %v", holdingCode, itemCodeForProcess, err)
 		return
 	}
 	defer func() {
 		if err := lock.Release(ctx); err != nil {
-			logger.Error("Failed to release lock for %s/%s: %v", shopId, itemCodeForProcess, err)
+			logger.Error("Failed to release lock for %s/%s: %v", holdingCode, itemCodeForProcess, err)
 		}
 	}()
 
-	logger.Info("✅ Lock acquired for %s/%s", shopId, itemCodeForProcess)
+	logger.Info("✅ Lock acquired for %s/%s", holdingCode, itemCodeForProcess)
 
 	// Incremental mode: Check if item has changed
 	var currentChecksum string
 	if incremental {
-		changed, checksum, err := CheckItemChanged(ctx, db, shopId, itemCodeForProcess)
+		changed, checksum, err := CheckItemChanged(ctx, db, holdingCode, itemCodeForProcess)
 		if err != nil {
 			logger.Warn("Failed to check item change for %s: %v, will recalculate", itemCodeForProcess, err)
 		} else if !changed {
@@ -297,7 +297,7 @@ func ProductCalcCostWithOptions(db *sql.DB, shopId string, itemCodeForProcess st
 	for index := 0; index < len(dataRows); index++ {
 		row := dataRows[index]
 		detailSorted = append(detailSorted, models.ProcessStockCostDetailStruct{
-			ShopID:          shopId,
+			HoldingCode:     holdingCode,
 			DocDateTime:     mypg.GetTimeValue(row, "docdatetime"),
 			DocNo:           mypg.GetStringValue(row, "docno"),
 			LineNumber:      index + 1,
@@ -536,7 +536,7 @@ func ProductCalcCostWithOptions(db *sql.DB, shopId string, itemCodeForProcess st
 					logger.Error("Failed to connect to ClickHouse: %v", err)
 					return
 				}
-				result := process.ReplaceProcessStockCostPartition(context.Background(), clickHouseDB, shopId, itemCodeForProcess, details)
+				result := process.ReplaceProcessStockCostPartition(context.Background(), clickHouseDB, holdingCode, itemCodeForProcess, details)
 				if result.Success {
 					logger.Info("ClickHouse partition replaced successfully: %s", result.Message)
 				} else {
@@ -550,7 +550,7 @@ func ProductCalcCostWithOptions(db *sql.DB, shopId string, itemCodeForProcess st
 
 	// Update checksum after successful calculation (incremental mode)
 	if incremental && currentChecksum != "" {
-		if err := UpdateItemChecksum(ctx, db, shopId, itemCodeForProcess, currentChecksum); err != nil {
+		if err := UpdateItemChecksum(ctx, db, holdingCode, itemCodeForProcess, currentChecksum); err != nil {
 			logger.Warn("Failed to update checksum for %s: %v", itemCodeForProcess, err)
 		} else {
 			logger.Debug("Updated checksum for %s: %s", itemCodeForProcess, currentChecksum)

@@ -19,15 +19,15 @@ import (
 )
 
 type ISaleChannelHttpService interface {
-	CreateSaleChannel(shopID string, authUsername string, doc models.SaleChannel) (string, error)
-	UpdateSaleChannel(shopID string, guid string, authUsername string, doc models.SaleChannel) error
-	DeleteSaleChannel(shopID string, guid string, authUsername string) error
-	DeleteSaleChannelByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoSaleChannel(shopID string, guid string) (models.SaleChannelInfo, error)
-	InfoSaleChannelByCode(shopID string, code string) (models.SaleChannelInfo, error)
-	SearchSaleChannel(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.SaleChannelInfo, mongopagination.PaginationData, error)
-	SearchSaleChannelStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.SaleChannelInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.SaleChannel) (common.BulkImport, error)
+	CreateSaleChannel(holdingCode string, authUsername string, doc models.SaleChannel) (string, error)
+	UpdateSaleChannel(holdingCode string, guid string, authUsername string, doc models.SaleChannel) error
+	DeleteSaleChannel(holdingCode string, guid string, authUsername string) error
+	DeleteSaleChannelByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoSaleChannel(holdingCode string, guid string) (models.SaleChannelInfo, error)
+	InfoSaleChannelByCode(holdingCode string, code string) (models.SaleChannelInfo, error)
+	SearchSaleChannel(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.SaleChannelInfo, mongopagination.PaginationData, error)
+	SearchSaleChannelStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.SaleChannelInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.SaleChannel) (common.BulkImport, error)
 
 	GetModuleName() string
 }
@@ -51,9 +51,9 @@ func NewSaleChannelHttpService(repo repositories.ISaleChannelRepository, syncCac
 	return insSvc
 }
 
-func (svc SaleChannelHttpService) CreateSaleChannel(shopID string, authUsername string, doc models.SaleChannel) (string, error) {
+func (svc SaleChannelHttpService) CreateSaleChannel(holdingCode string, authUsername string, doc models.SaleChannel) (string, error) {
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(context.Background(), shopID, "code", doc.Code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(context.Background(), holdingCode, "code", doc.Code)
 
 	if err != nil {
 		return "", err
@@ -66,7 +66,7 @@ func (svc SaleChannelHttpService) CreateSaleChannel(shopID string, authUsername 
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.SaleChannelDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.SaleChannel = doc
 
@@ -79,14 +79,14 @@ func (svc SaleChannelHttpService) CreateSaleChannel(shopID string, authUsername 
 		return "", err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return newGuidFixed, nil
 }
 
-func (svc SaleChannelHttpService) UpdateSaleChannel(shopID string, guid string, authUsername string, doc models.SaleChannel) error {
+func (svc SaleChannelHttpService) UpdateSaleChannel(holdingCode string, guid string, authUsername string, doc models.SaleChannel) error {
 
-	findDoc, err := svc.repo.FindByGuid(context.Background(), shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(context.Background(), holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -101,20 +101,20 @@ func (svc SaleChannelHttpService) UpdateSaleChannel(shopID string, guid string, 
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(context.Background(), shopID, guid, findDoc)
+	err = svc.repo.Update(context.Background(), holdingCode, guid, findDoc)
 
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc SaleChannelHttpService) DeleteSaleChannel(shopID string, guid string, authUsername string) error {
+func (svc SaleChannelHttpService) DeleteSaleChannel(holdingCode string, guid string, authUsername string) error {
 
-	findDoc, err := svc.repo.FindByGuid(context.Background(), shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(context.Background(), holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -124,23 +124,23 @@ func (svc SaleChannelHttpService) DeleteSaleChannel(shopID string, guid string, 
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(context.Background(), shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(context.Background(), holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc SaleChannelHttpService) DeleteSaleChannelByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc SaleChannelHttpService) DeleteSaleChannelByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	deleteFilterQuery := map[string]interface{}{
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(context.Background(), shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(context.Background(), holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
@@ -148,24 +148,9 @@ func (svc SaleChannelHttpService) DeleteSaleChannelByGUIDs(shopID string, authUs
 	return nil
 }
 
-func (svc SaleChannelHttpService) InfoSaleChannel(shopID string, guid string) (models.SaleChannelInfo, error) {
+func (svc SaleChannelHttpService) InfoSaleChannel(holdingCode string, guid string) (models.SaleChannelInfo, error) {
 
-	findDoc, err := svc.repo.FindByGuid(context.Background(), shopID, guid)
-
-	if err != nil {
-		return models.SaleChannelInfo{}, err
-	}
-
-	if len(findDoc.GuidFixed) < 1 {
-		return models.SaleChannelInfo{}, errors.New("document not found")
-	}
-
-	return findDoc.SaleChannelInfo, nil
-}
-
-func (svc SaleChannelHttpService) InfoSaleChannelByCode(shopID string, code string) (models.SaleChannelInfo, error) {
-
-	findDoc, err := svc.repo.FindByDocIndentityGuid(context.Background(), shopID, "code", code)
+	findDoc, err := svc.repo.FindByGuid(context.Background(), holdingCode, guid)
 
 	if err != nil {
 		return models.SaleChannelInfo{}, err
@@ -178,13 +163,28 @@ func (svc SaleChannelHttpService) InfoSaleChannelByCode(shopID string, code stri
 	return findDoc.SaleChannelInfo, nil
 }
 
-func (svc SaleChannelHttpService) SearchSaleChannel(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.SaleChannelInfo, mongopagination.PaginationData, error) {
+func (svc SaleChannelHttpService) InfoSaleChannelByCode(holdingCode string, code string) (models.SaleChannelInfo, error) {
+
+	findDoc, err := svc.repo.FindByDocIndentityGuid(context.Background(), holdingCode, "code", code)
+
+	if err != nil {
+		return models.SaleChannelInfo{}, err
+	}
+
+	if len(findDoc.GuidFixed) < 1 {
+		return models.SaleChannelInfo{}, errors.New("document not found")
+	}
+
+	return findDoc.SaleChannelInfo, nil
+}
+
+func (svc SaleChannelHttpService) SearchSaleChannel(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.SaleChannelInfo, mongopagination.PaginationData, error) {
 	searchInFields := []string{
 		"code",
 		"names.name",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(context.Background(), shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(context.Background(), holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.SaleChannelInfo{}, pagination, err
@@ -193,7 +193,7 @@ func (svc SaleChannelHttpService) SearchSaleChannel(shopID string, filters map[s
 	return docList, pagination, nil
 }
 
-func (svc SaleChannelHttpService) SearchSaleChannelStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.SaleChannelInfo, int, error) {
+func (svc SaleChannelHttpService) SearchSaleChannelStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.SaleChannelInfo, int, error) {
 	searchInFields := []string{
 		"code",
 		"names.name",
@@ -201,7 +201,7 @@ func (svc SaleChannelHttpService) SearchSaleChannelStep(shopID string, langCode 
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(context.Background(), shopID, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(context.Background(), holdingCode, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.SaleChannelInfo{}, 0, err
@@ -210,7 +210,7 @@ func (svc SaleChannelHttpService) SearchSaleChannelStep(shopID string, langCode 
 	return docList, total, nil
 }
 
-func (svc SaleChannelHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.SaleChannel) (common.BulkImport, error) {
+func (svc SaleChannelHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.SaleChannel) (common.BulkImport, error) {
 
 	payloadList, payloadDuplicateList := importdata.FilterDuplicate[models.SaleChannel](dataList, svc.getDocIDKey)
 
@@ -219,7 +219,7 @@ func (svc SaleChannelHttpService) SaveInBatch(shopID string, authUsername string
 		itemCodeGuidList = append(itemCodeGuidList, doc.Code)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(context.Background(), shopID, "code", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(context.Background(), holdingCode, "code", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -231,18 +231,18 @@ func (svc SaleChannelHttpService) SaveInBatch(shopID string, authUsername string
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.SaleChannel, models.SaleChannelDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.SaleChannel) models.SaleChannelDoc {
+		func(holdingCode string, authUsername string, doc models.SaleChannel) models.SaleChannelDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.SaleChannelDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.SaleChannel = doc
 
 			currentTime := time.Now()
@@ -253,23 +253,23 @@ func (svc SaleChannelHttpService) SaveInBatch(shopID string, authUsername string
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.SaleChannel, models.SaleChannelDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.SaleChannelDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(context.Background(), shopID, "code", guid)
+		func(holdingCode string, guid string) (models.SaleChannelDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(context.Background(), holdingCode, "code", guid)
 		},
 		func(doc models.SaleChannelDoc) bool {
 			return doc.Code != ""
 		},
-		func(shopID string, authUsername string, data models.SaleChannel, doc models.SaleChannelDoc) error {
+		func(holdingCode string, authUsername string, data models.SaleChannel, doc models.SaleChannelDoc) error {
 
 			doc.SaleChannel = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(context.Background(), shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(context.Background(), holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -308,7 +308,7 @@ func (svc SaleChannelHttpService) SaveInBatch(shopID string, authUsername string
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -322,9 +322,9 @@ func (svc SaleChannelHttpService) getDocIDKey(doc models.SaleChannel) string {
 	return doc.Code
 }
 
-func (svc SaleChannelHttpService) saveMasterSync(shopID string) {
+func (svc SaleChannelHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

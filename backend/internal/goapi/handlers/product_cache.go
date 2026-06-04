@@ -16,10 +16,10 @@ import (
 
 // ProductCache - Centralized product cache
 type ProductCache struct {
-	mu       sync.RWMutex
-	cache    map[string]*ProductCacheEntry
-	maxSize  int
-	ttl      time.Duration
+	mu      sync.RWMutex
+	cache   map[string]*ProductCacheEntry
+	maxSize int
+	ttl     time.Duration
 }
 
 // ProductCacheEntry - Single cache entry
@@ -165,8 +165,8 @@ func (pc *ProductCache) Stats() map[string]any {
 	}
 
 	return map[string]any{
-		"size":       len(pc.cache),
-		"max_size":   pc.maxSize,
+		"size":        len(pc.cache),
+		"max_size":    pc.maxSize,
 		"ttl_seconds": int(pc.ttl.Seconds()),
 		"total_hits":  totalHits,
 	}
@@ -174,19 +174,19 @@ func (pc *ProductCache) Stats() map[string]any {
 
 // ProductSearchRequest - Request for product search
 type ProductSearchRequest struct {
-	ShopID string `json:"shop_id"`
-	Search string `json:"search"`
-	BranchCode string `json:"branch_code"`
+	HoldingCode      string `json:"holding_code"`
+	Search           string `json:"search"`
+	BranchCode       string `json:"branch_code"`
 	BusinessTypeCode string `json:"business_type_code"`
-	Limit int    `json:"limit"`
-	Offset int    `json:"offset"`
-	UseCache bool   `json:"use_cache"`
+	Limit            int    `json:"limit"`
+	Offset           int    `json:"offset"`
+	UseCache         bool   `json:"use_cache"`
 }
 
 // generateCacheKey - Generate cache key from request
 func generateCacheKey(req ProductSearchRequest) string {
 	data := fmt.Sprintf("%s_%s_%s_%s_%d_%d",
-		req.ShopID, req.Search, req.BranchCode,
+		req.HoldingCode, req.Search, req.BranchCode,
 		req.BusinessTypeCode, req.Limit, req.Offset)
 	hash := sha256.Sum256([]byte(data))
 	return hex.EncodeToString(hash[:16]) // Use first 16 bytes
@@ -202,10 +202,10 @@ func ProductSearchHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" {
+	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "shop_id is required",
-			"code":  "MISSING_SHOP_ID",
+			"error": "holding_code is required",
+			"code":  "MISSING_HOLDING_CODE",
 		})
 	}
 
@@ -228,18 +228,18 @@ func ProductSearchHandler(c echo.Context) error {
 	if req.UseCache {
 		if cachedData, found := productCache.Get(cacheKey); found {
 			return c.JSON(http.StatusOK, map[string]any{
-				"status":  "success",
-				"data":    cachedData,
-				"count":   len(cachedData),
-				"cached":  true,
-				"limit":   req.Limit,
-				"offset":  req.Offset,
+				"status": "success",
+				"data":   cachedData,
+				"count":  len(cachedData),
+				"cached": true,
+				"limit":  req.Limit,
+				"offset": req.Offset,
 			})
 		}
 	}
 
 	// Connect to database
-	db, err := mypg.PgSqlFastConnect(req.ShopID)
+	db, err := mypg.PgSqlFastConnect(req.HoldingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "Database connection failed",
@@ -374,8 +374,8 @@ func ProductCacheStatsHandler(c echo.Context) error {
 // ProductCacheClearHandler - Clear product cache
 func ProductCacheClearHandler(c echo.Context) error {
 	var req struct {
-		ShopID string `json:"shop_id"`
-		Prefix string `json:"prefix"`
+		HoldingCode string `json:"holding_code"`
+		Prefix      string `json:"prefix"`
 	}
 
 	if err := c.Bind(&req); err != nil {
@@ -400,8 +400,8 @@ func ProductCacheClearHandler(c echo.Context) error {
 // ProductBarcodeSearchHandler - Search by barcode (optimized single lookup)
 func ProductBarcodeSearchHandler(c echo.Context) error {
 	var req struct {
-		ShopID string `json:"shop_id"`
-		Barcode string `json:"barcode"`
+		HoldingCode string `json:"holding_code"`
+		Barcode     string `json:"barcode"`
 	}
 
 	if err := c.Bind(&req); err != nil {
@@ -411,15 +411,15 @@ func ProductBarcodeSearchHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" || req.Barcode == "" {
+	if req.HoldingCode == "" || req.Barcode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "shop_id and barcode are required",
+			"error": "holding_code and barcode are required",
 			"code":  "MISSING_REQUIRED_FIELDS",
 		})
 	}
 
 	// Check cache first
-	cacheKey := fmt.Sprintf("barcode_%s_%s", req.ShopID, req.Barcode)
+	cacheKey := fmt.Sprintf("barcode_%s_%s", req.HoldingCode, req.Barcode)
 	if cachedData, found := productCache.Get(cacheKey); found && len(cachedData) > 0 {
 		return c.JSON(http.StatusOK, map[string]any{
 			"status": "success",
@@ -429,7 +429,7 @@ func ProductBarcodeSearchHandler(c echo.Context) error {
 	}
 
 	// Connect to database
-	db, err := mypg.PgSqlFastConnect(req.ShopID)
+	db, err := mypg.PgSqlFastConnect(req.HoldingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "Database connection failed",
@@ -461,17 +461,17 @@ LIMIT 1`
 	row := db.QueryRowContext(ctx, query, req.Barcode)
 
 	var result struct {
-		ItemCode    string
-		Barcode     string
-		ItemName    string
-		UnitCode    string
-		UnitName    string
-		Price       float64
-		UnitStand   float64
-		UnitDivide  float64
+		ItemCode     string
+		Barcode      string
+		ItemName     string
+		UnitCode     string
+		UnitName     string
+		Price        float64
+		UnitStand    float64
+		UnitDivide   float64
 		CategoryCode *string
-		VatType     *int
-		CostPrice   *float64
+		VatType      *int
+		CostPrice    *float64
 	}
 
 	err = row.Scan(
@@ -491,14 +491,14 @@ LIMIT 1`
 	data := map[string]any{
 		"itemcode":     result.ItemCode,
 		"barcode":      result.Barcode,
-		"item_name":     result.ItemName,
+		"item_name":    result.ItemName,
 		"unitcode":     result.UnitCode,
-		"unit_name":     result.UnitName,
+		"unit_name":    result.UnitName,
 		"price":        result.Price,
 		"unitstand":    result.UnitStand,
 		"unitdivide":   result.UnitDivide,
 		"categorycode": result.CategoryCode,
-		"vat_type":      result.VatType,
+		"vat_type":     result.VatType,
 		"costprice":    result.CostPrice,
 	}
 

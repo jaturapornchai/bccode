@@ -155,7 +155,7 @@ storage name migration: no rename needed
 | `docdatetime` | `doc_datetime` |
 | `custCode` | `cust_code` |
 | `custcode` | `cust_code` |
-| `shopid` | `shop_id` |
+| `holding_code` | `holding_code` |
 | `transflag` | `trans_flag` |
 | `itemcode` | `item_code` |
 | `unitcode` | `unit_code` |

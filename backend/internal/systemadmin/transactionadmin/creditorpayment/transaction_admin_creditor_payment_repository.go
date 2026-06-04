@@ -7,7 +7,7 @@ import (
 )
 
 type ICreditorPaymentTransactionAdminRepository interface {
-	FindCreditorPaymentDocByShopID(ctx context.Context, shopID string) ([]creditorPaymentModels.PayDoc, error)
+	FindCreditorPaymentDocByHoldingCode(ctx context.Context, holdingCode string) ([]creditorPaymentModels.PayDoc, error)
 }
 
 type CreditorPaymentTransactionAdminRepository struct {
@@ -20,11 +20,11 @@ func NewCreditorPaymentTransactionAdminRepository(pst microservice.IPersisterMon
 	}
 }
 
-func (r CreditorPaymentTransactionAdminRepository) FindCreditorPaymentDocByShopID(ctx context.Context, shopID string) ([]creditorPaymentModels.PayDoc, error) {
+func (r CreditorPaymentTransactionAdminRepository) FindCreditorPaymentDocByHoldingCode(ctx context.Context, holdingCode string) ([]creditorPaymentModels.PayDoc, error) {
 
 	docs := []creditorPaymentModels.PayDoc{}
 
-	err := r.pst.Find(ctx, &creditorPaymentModels.PayDoc{}, map[string]interface{}{"shopid": shopID}, &docs)
+	err := r.pst.Find(ctx, &creditorPaymentModels.PayDoc{}, map[string]interface{}{"holding_code": holdingCode}, &docs)
 	if err != nil {
 		return nil, err
 	}

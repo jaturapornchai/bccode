@@ -11,14 +11,14 @@ import (
 )
 
 type IJournalBookMongoRepository interface {
-	Count(ctx context.Context, shopID string) (int, error)
+	Count(ctx context.Context, holdingCode string) (int, error)
 	Create(ctx context.Context, doc models.JournalBookDoc) (string, error)
 	CreateInBatch(ctx context.Context, docList []models.JournalBookDoc) error
-	Update(ctx context.Context, shopID string, guid string, doc models.JournalBookDoc) error
-	DeleteByGuidfixed(ctx context.Context, shopID string, guid string, username string) error
-	FindOne(ctx context.Context, shopID string, filters interface{}) (models.JournalBookDoc, error)
-	FindPage(ctx context.Context, shopID string, searchInFields []string, pageable micromodels.Pageable) ([]models.JournalBookInfo, mongopagination.PaginationData, error)
-	FindByGuid(ctx context.Context, shopID string, guid string) (models.JournalBookDoc, error)
+	Update(ctx context.Context, holdingCode string, guid string, doc models.JournalBookDoc) error
+	DeleteByGuidfixed(ctx context.Context, holdingCode string, guid string, username string) error
+	FindOne(ctx context.Context, holdingCode string, filters interface{}) (models.JournalBookDoc, error)
+	FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable micromodels.Pageable) ([]models.JournalBookInfo, mongopagination.PaginationData, error)
+	FindByGuid(ctx context.Context, holdingCode string, guid string) (models.JournalBookDoc, error)
 }
 
 type JournalBookMongoRepository struct {

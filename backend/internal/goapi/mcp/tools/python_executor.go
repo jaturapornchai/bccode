@@ -121,9 +121,9 @@ type PyExecResponse struct {
 //
 // หรือแบบง่ายกว่า — ให้ AI คืนค่าจาก expression สุดท้ายอัตโนมัติไม่ได้
 // เพราะ Python ไม่มี implicit return ที่ top level
-func ExecutePython(ctx context.Context, shopID, code string) (*PyExecResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func ExecutePython(ctx context.Context, holdingCode, code string) (*PyExecResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 	if strings.TrimSpace(code) == "" {
 		return nil, fmt.Errorf("code is empty")
@@ -161,7 +161,7 @@ func ExecutePython(ctx context.Context, shopID, code string) (*PyExecResponse, e
 		return nil, fmt.Errorf("start python: %w", err)
 	}
 
-	logger.Info("[Python Executor] shop=%s code_len=%d", shopID, len(code))
+	logger.Info("[Python Executor] shop=%s code_len=%d", holdingCode, len(code))
 
 	// Reader goroutine — handles the RPC loop
 	reader := bufio.NewReaderSize(stdout, 64*1024)
@@ -194,7 +194,7 @@ func ExecutePython(ctx context.Context, shopID, code string) (*PyExecResponse, e
 					continue
 				}
 				op, _ := req["op"].(string)
-				data, rpcErr := handlePythonRPC(procCtx, shopID, op, req)
+				data, rpcErr := handlePythonRPC(procCtx, holdingCode, op, req)
 				if rpcErr != nil {
 					writeRPCError(stdin, rpcErr.Error())
 					continue
@@ -293,7 +293,7 @@ func ExecutePython(ctx context.Context, shopID, code string) (*PyExecResponse, e
 
 // handlePythonRPC ประมวลผล RPC request จาก Python subprocess
 // คืนค่า (data, error) — data จะถูก wrap ใน {"ok":true,"data":...}
-func handlePythonRPC(ctx context.Context, shopID, op string, req map[string]any) (any, error) {
+func handlePythonRPC(ctx context.Context, holdingCode, op string, req map[string]any) (any, error) {
 	switch op {
 	case "query_pg":
 		sql, _ := req["sql"].(string)
@@ -301,7 +301,7 @@ func handlePythonRPC(ctx context.Context, shopID, op string, req map[string]any)
 		if err := validateReadonlySQL(sql); err != nil {
 			return nil, err
 		}
-		result, err := ExecutePgCommand(ctx, shopID, sql, limit)
+		result, err := ExecutePgCommand(ctx, holdingCode, sql, limit)
 		if err != nil {
 			return nil, fmt.Errorf("query_pg: %w", err)
 		}
@@ -314,7 +314,7 @@ func handlePythonRPC(ctx context.Context, shopID, op string, req map[string]any)
 			filter = "{}"
 		}
 		limit := pyArgInt(req, "limit", 200)
-		result, err := QueryMongoDB(ctx, shopID, "bcaiclouddb", collection, filter, limit)
+		result, err := QueryMongoDB(ctx, holdingCode, "bcaiclouddb", collection, filter, limit)
 		if err != nil {
 			return nil, fmt.Errorf("query_mongo: %w", err)
 		}
@@ -326,7 +326,7 @@ func handlePythonRPC(ctx context.Context, shopID, op string, req map[string]any)
 		if err := validateReadonlySQL(sql); err != nil {
 			return nil, err
 		}
-		result, err := QueryClickHouse(ctx, shopID, "", sql, limit)
+		result, err := QueryClickHouse(ctx, holdingCode, "", sql, limit)
 		if err != nil {
 			return nil, fmt.Errorf("query_ch: %w", err)
 		}

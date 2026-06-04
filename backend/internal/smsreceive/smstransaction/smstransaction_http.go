@@ -59,7 +59,7 @@ func (h SmsTransactionHttp) RegisterHttp() {
 // @Router /smstransaction [post]
 func (h SmsTransactionHttp) CreateSmsTransaction(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.SmsTransaction{}
@@ -70,7 +70,7 @@ func (h SmsTransactionHttp) CreateSmsTransaction(ctx microservice.IContext) erro
 		return err
 	}
 
-	idx, err := h.svc.CreateSmsTransaction(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateSmsTransaction(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -98,7 +98,7 @@ func (h SmsTransactionHttp) CreateSmsTransaction(ctx microservice.IContext) erro
 func (h SmsTransactionHttp) UpdateSmsTransaction(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -111,7 +111,7 @@ func (h SmsTransactionHttp) UpdateSmsTransaction(ctx microservice.IContext) erro
 		return err
 	}
 
-	err = h.svc.UpdateSmsTransaction(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateSmsTransaction(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -138,12 +138,12 @@ func (h SmsTransactionHttp) UpdateSmsTransaction(ctx microservice.IContext) erro
 // @Router /smstransaction/{id} [delete]
 func (h SmsTransactionHttp) DeleteSmsTransaction(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteSmsTransaction(shopID, id, authUsername)
+	err := h.svc.DeleteSmsTransaction(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -170,12 +170,12 @@ func (h SmsTransactionHttp) DeleteSmsTransaction(ctx microservice.IContext) erro
 // @Router /smstransaction/{id} [get]
 func (h SmsTransactionHttp) InfoSmsTransaction(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get SmsTransaction %v", id)
-	doc, err := h.svc.InfoSmsTransaction(shopID, id)
+	doc, err := h.svc.InfoSmsTransaction(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -204,10 +204,10 @@ func (h SmsTransactionHttp) InfoSmsTransaction(ctx microservice.IContext) error 
 // @Router /smstransaction [get]
 func (h SmsTransactionHttp) SearchSmsTransaction(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
-	docList, pagination, err := h.svc.SearchSmsTransaction(shopID, pageable)
+	docList, pagination, err := h.svc.SearchSmsTransaction(holdingCode, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -236,7 +236,7 @@ func (h SmsTransactionHttp) SearchSmsTransaction(ctx microservice.IContext) erro
 // @Router /checksms [get]
 func (h SmsTransactionHttp) CheckSMS(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	storefrontCode := ctx.Param("storefront")
 
@@ -254,7 +254,7 @@ func (h SmsTransactionHttp) CheckSMS(ctx microservice.IContext) error {
 
 	checkTime := h.ms.TimeNow()
 
-	amount, err := h.svc.CheckSMS(shopID, storefrontCode, docReq.Amount, checkTime)
+	amount, err := h.svc.CheckSMS(holdingCode, storefrontCode, docReq.Amount, checkTime)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -282,7 +282,7 @@ func (h SmsTransactionHttp) CheckSMS(ctx microservice.IContext) error {
 // @Router /smstransaction/confirm/{id} [get]
 func (h SmsTransactionHttp) ConfirmSmsTransaction(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	// mockTime, _ := time.Parse(time.RFC3339, "2022-08-25T03:09:57.335+00:00")
 
@@ -290,7 +290,7 @@ func (h SmsTransactionHttp) ConfirmSmsTransaction(ctx microservice.IContext) err
 
 	id := ctx.Param("id")
 
-	err := h.svc.ConfirmSmsTransaction(shopID, id)
+	err := h.svc.ConfirmSmsTransaction(holdingCode, id)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

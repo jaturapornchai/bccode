@@ -16,11 +16,11 @@ var (
 	ErrBranchCodeExists          = errors.New("branch code is exists")
 )
 
-func PrepareCreateBranch(req *BranchPg, shopID string, now time.Time, newGUID func() string) error {
+func PrepareCreateBranch(req *BranchPg, holdingCode string, now time.Time, newGUID func() string) error {
 	if err := PrepareUpdateBranch(req); err != nil {
 		return err
 	}
-	req.ShopID = shopID
+	req.HoldingCode = holdingCode
 	if req.GuidFixed == "" {
 		req.GuidFixed = newGUID()
 	}
@@ -44,34 +44,34 @@ func PrepareUpdateBranch(req *BranchPg) error {
 	return nil
 }
 
-func BranchCompanyLookup(db *gorm.DB, shopID string, companyGuid string) *gorm.DB {
-	return db.Where("shopid = ? AND guid_fixed = ?", shopID, companyGuid)
+func BranchCompanyLookup(db *gorm.DB, holdingCode string, companyGuid string) *gorm.DB {
+	return db.Where("holding_code = ? AND guid_fixed = ?", holdingCode, companyGuid)
 }
 
-func BranchDuplicateLookup(db *gorm.DB, shopID string, companyGuid string, code string, excludeGuid string) *gorm.DB {
-	query := db.Where("shopid = ? AND company_guid = ? AND code = ?", shopID, companyGuid, code)
+func BranchDuplicateLookup(db *gorm.DB, holdingCode string, companyGuid string, code string, excludeGuid string) *gorm.DB {
+	query := db.Where("holding_code = ? AND company_guid = ? AND code = ?", holdingCode, companyGuid, code)
 	if excludeGuid != "" {
 		query = query.Where("guid_fixed <> ?", excludeGuid)
 	}
 	return query
 }
 
-func CompanyBranchCountLookup(db *gorm.DB, shopID string, companyGuid string) *gorm.DB {
-	return db.Model(&BranchPg{}).Where("shopid = ? AND company_guid = ?", shopID, companyGuid)
+func CompanyBranchCountLookup(db *gorm.DB, holdingCode string, companyGuid string) *gorm.DB {
+	return db.Model(&BranchPg{}).Where("holding_code = ? AND company_guid = ?", holdingCode, companyGuid)
 }
 
-func EnsureCompanyExists(db *gorm.DB, shopID string, companyGuid string) error {
+func EnsureCompanyExists(db *gorm.DB, holdingCode string, companyGuid string) error {
 	var company companyModels.CompanyPg
-	err := BranchCompanyLookup(db, shopID, companyGuid).First(&company).Error
+	err := BranchCompanyLookup(db, holdingCode, companyGuid).First(&company).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return ErrBranchCompanyNotFound
 	}
 	return err
 }
 
-func EnsureBranchCodeAvailable(db *gorm.DB, shopID string, companyGuid string, code string, excludeGuid string) error {
+func EnsureBranchCodeAvailable(db *gorm.DB, holdingCode string, companyGuid string, code string, excludeGuid string) error {
 	var existing BranchPg
-	err := BranchDuplicateLookup(db, shopID, companyGuid, code, excludeGuid).First(&existing).Error
+	err := BranchDuplicateLookup(db, holdingCode, companyGuid, code, excludeGuid).First(&existing).Error
 	if err == nil {
 		return ErrBranchCodeExists
 	}

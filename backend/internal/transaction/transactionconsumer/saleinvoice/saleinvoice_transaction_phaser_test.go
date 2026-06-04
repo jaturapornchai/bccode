@@ -22,8 +22,8 @@ func SaleInvoiceTransactionStruct() models.SaleInvoiceTransactionPG {
 
 	give := models.SaleInvoiceTransactionPG{
 		TransactionPG: models.TransactionPG{
-			ShopIdentity: pkgModels.ShopIdentity{
-				ShopID: "2Eh6e3pfWvXTp0yV3CyFEhKPjdI",
+			HoldingCodeentity: pkgModels.HoldingCodeentity{
+				HoldingCode: "2Eh6e3pfWvXTp0yV3CyFEhKPjdI",
 			},
 			GuidFixed:      "2TKOzSqEElEKNuIacaMHxbc4GgU",
 			TransFlag:      44,
@@ -57,7 +57,7 @@ func SaleInvoiceTransactionStruct() models.SaleInvoiceTransactionPG {
 					DocRef:              "--",
 					DocRefDateTime:      time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC),
 					DocNo:               "a91d29f5-67af-4334-8999-8bc49ed73b4a",
-					ShopID:              "2Eh6e3pfWvXTp0yV3CyFEhKPjdI",
+					HoldingCode:         "2Eh6e3pfWvXTp0yV3CyFEhKPjdI",
 					LineNumber:          1,
 					ItemGuid:            "-",
 					Barcode:             "8850086130359",
@@ -110,7 +110,7 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 
 	giveInput := `{
 		"id": "000000000000000000000000",
-		"shopid": "2Eh6e3pfWvXTp0yV3CyFEhKPjdI",
+		"holding_code": "2Eh6e3pfWvXTp0yV3CyFEhKPjdI",
 		"guid_fixed": "2TKOzSqEElEKNuIacaMHxbc4GgU",
 		"docno": "a91d29f5-67af-4334-8999-8bc49ed73b4a",
 		"docdatetime": "2023-07-31T07:29:28.000Z",
@@ -207,9 +207,9 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 				"laststatus": 0,
 				"ispos": 1,
 				"multiunit": false,
-				
 
-				
+
+
 				"tolocationnames": [],
 				"unitnames": [
 					{
@@ -263,7 +263,7 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 
 	assert.Nil(t, err)
 
-	assert.Equal(t, get.ShopID, want.ShopID, "shopid")
+	assert.Equal(t, get.HoldingCode, want.HoldingCode, "holding_code")
 	assert.Equal(t, get.GuidFixed, want.GuidFixed, "guid_fixed")
 	assert.Equal(t, get.TransFlag, want.TransFlag, "transflag")
 	assert.Equal(t, get.DocNo, want.DocNo, "docno")
@@ -293,7 +293,7 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 	// detail
 	assert.Equal(t, (*get.Items)[0].GuidFixed, (*want.Items)[0].GuidFixed, "item.guidfixed")
 	assert.Equal(t, (*get.Items)[0].DocNo, (*want.Items)[0].DocNo, "item.docno")
-	assert.Equal(t, (*get.Items)[0].ShopID, (*want.Items)[0].ShopID, "item.shopid")
+	assert.Equal(t, (*get.Items)[0].HoldingCode, (*want.Items)[0].HoldingCode, "item.holding_code")
 	assert.Equal(t, (*get.Items)[0].LineNumber, (*want.Items)[0].LineNumber, "item.linenumber")
 	assert.Equal(t, (*get.Items)[0].ItemGuid, (*want.Items)[0].ItemGuid, "item.itemguid")
 	assert.Equal(t, (*get.Items)[0].Barcode, (*want.Items)[0].Barcode, "item.barcode")
@@ -340,7 +340,7 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 
 func TestDataFromPOS(t *testing.T) {
 	rawData := `{
-		"shopid": "2Eh6e3pfWvXTp0yV3CyFEhKPjdI",
+		"holding_code": "2Eh6e3pfWvXTp0yV3CyFEhKPjdI",
 		"guid_fixed": "2TKOzSqEElEKNuIacaMHxbc4GgU",
 		"docno": "002240212-0009",
 		"docdatetime": "2024-02-12T07:51:56.336Z",
@@ -695,7 +695,7 @@ func TestDataFromPOS(t *testing.T) {
 
 	require.Nil(t, err)
 
-	assert.Equal(t, "2Eh6e3pfWvXTp0yV3CyFEhKPjdI", get.ShopID, "shopid")
+	assert.Equal(t, "2Eh6e3pfWvXTp0yV3CyFEhKPjdI", get.HoldingCode, "holding_code")
 	assert.Equal(t, "002240212-0009", get.DocNo, "doc no")
 	assert.Equal(t, "b01", get.BranchCode, "branch code")
 	assert.Equal(t, "สาขาที่ 1", *(get.BranchNames[0].Name), "branch name")

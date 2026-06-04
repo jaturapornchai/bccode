@@ -23,12 +23,12 @@ func (RestaurantSettingsInfo) CollectionName() string {
 }
 
 type RestaurantSettingsData struct {
-	models.ShopIdentity    `bson:"inline"`
-	RestaurantSettingsInfo `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	RestaurantSettingsInfo   `bson:"inline"`
 }
 
 type RestaurantSettingsDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                     primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	RestaurantSettingsData `bson:"inline"`
 	models.ActivityDoc     `bson:"inline"`
 	models.LastUpdate      `bson:"inline"`
@@ -66,22 +66,22 @@ func (RestaurantSettingsDeleteActivity) CollectionName() string {
 
 type RestaurantSettingsInfoResponse struct {
 	Success bool                   `json:"success"`
-	Data RestaurantSettingsInfo `json:"data,omitempty"`
+	Data    RestaurantSettingsInfo `json:"data,omitempty"`
 }
 
 type RestaurantSettingsPageResponse struct {
-	Success bool                          `json:"success"`
-	Data []RestaurantSettingsInfo      `json:"data,omitempty"`
+	Success    bool                          `json:"success"`
+	Data       []RestaurantSettingsInfo      `json:"data,omitempty"`
 	Pagination models.PaginationDataResponse `json:"pagination,omitempty"`
 }
 
 type RestaurantSettingsLastActivityResponse struct {
-	New []RestaurantSettingsActivity       `json:"new" `
+	New    []RestaurantSettingsActivity       `json:"new" `
 	Remove []RestaurantSettingsDeleteActivity `json:"remove"`
 }
 
 type RestaurantSettingsFetchUpdateResponse struct {
-	Success bool                                   `json:"success"`
-	Data RestaurantSettingsLastActivityResponse `json:"data,omitempty"`
+	Success    bool                                   `json:"success"`
+	Data       RestaurantSettingsLastActivityResponse `json:"data,omitempty"`
 	Pagination models.PaginationDataResponse          `json:"pagination,omitempty"`
 }

@@ -152,7 +152,7 @@ var legacyStorageFieldNameAliases = map[string]string{
 	"docno":          "doc_no",
 	"itemcode":       "item_code",
 	"locationcode":   "location_code",
-	"shopid":         "shop_id",
+	"holding_code":   "holding_code",
 	"transflag":      "trans_flag",
 	"unitcode":       "unit_code",
 	"warehousecode":  "warehouse_code",

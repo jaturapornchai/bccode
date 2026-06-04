@@ -22,15 +22,15 @@ import (
 )
 
 type IWithdrawalRecordHttpService interface {
-	CreateWithdrawalRecord(shopID string, authUsername string, doc models.WithdrawalRecord) (string, string, error)
-	UpdateWithdrawalRecord(shopID string, guid string, authUsername string, doc models.WithdrawalRecord) error
-	DeleteWithdrawalRecord(shopID string, guid string, authUsername string) error
-	DeleteWithdrawalRecordByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoWithdrawalRecord(shopID string, guid string) (models.WithdrawalRecordInfo, error)
-	InfoWithdrawalRecordByCode(shopID string, code string) (models.WithdrawalRecordInfo, error)
-	SearchWithdrawalRecord(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.WithdrawalRecordInfo, mongopagination.PaginationData, error)
-	SearchWithdrawalRecordStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.WithdrawalRecordInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.WithdrawalRecord) (common.BulkImport, error)
+	CreateWithdrawalRecord(holdingCode string, authUsername string, doc models.WithdrawalRecord) (string, string, error)
+	UpdateWithdrawalRecord(holdingCode string, guid string, authUsername string, doc models.WithdrawalRecord) error
+	DeleteWithdrawalRecord(holdingCode string, guid string, authUsername string) error
+	DeleteWithdrawalRecordByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoWithdrawalRecord(holdingCode string, guid string) (models.WithdrawalRecordInfo, error)
+	InfoWithdrawalRecordByCode(holdingCode string, code string) (models.WithdrawalRecordInfo, error)
+	SearchWithdrawalRecord(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.WithdrawalRecordInfo, mongopagination.PaginationData, error)
+	SearchWithdrawalRecordStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.WithdrawalRecordInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.WithdrawalRecord) (common.BulkImport, error)
 
 	GetModuleName() string
 }
@@ -81,11 +81,11 @@ func (svc WithdrawalRecordHttpService) getDocNoPrefix(docDate time.Time) string 
 	return fmt.Sprintf("%s%s", MODULE_NAME, docDateStr)
 }
 
-func (svc WithdrawalRecordHttpService) generateNewDocNo(ctx context.Context, shopID, prefixDocNo string, docNumber int) (string, int, error) {
-	prevoiusDocNumber, err := svc.repoCache.Get(shopID, prefixDocNo)
+func (svc WithdrawalRecordHttpService) generateNewDocNo(ctx context.Context, holdingCode, prefixDocNo string, docNumber int) (string, int, error) {
+	prevoiusDocNumber, err := svc.repoCache.Get(holdingCode, prefixDocNo)
 
 	if prevoiusDocNumber == 0 || err != nil {
-		lastDoc, err := svc.repo.FindLastDocNo(ctx, shopID, prefixDocNo)
+		lastDoc, err := svc.repo.FindLastDocNo(ctx, holdingCode, prefixDocNo)
 
 		if err != nil {
 			return "", 0, err
@@ -105,7 +105,7 @@ func (svc WithdrawalRecordHttpService) generateNewDocNo(ctx context.Context, sho
 	newDocNumber := prevoiusDocNumber + 1
 	newDocNo := fmt.Sprintf("%s%05d", prefixDocNo, newDocNumber)
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", newDocNo)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", newDocNo)
 
 	if err != nil {
 		return "", 0, err
@@ -118,7 +118,7 @@ func (svc WithdrawalRecordHttpService) generateNewDocNo(ctx context.Context, sho
 	return newDocNo, newDocNumber, nil
 }
 
-func (svc WithdrawalRecordHttpService) CreateWithdrawalRecord(shopID string, authUsername string, doc models.WithdrawalRecord) (string, string, error) {
+func (svc WithdrawalRecordHttpService) CreateWithdrawalRecord(holdingCode string, authUsername string, doc models.WithdrawalRecord) (string, string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -126,7 +126,7 @@ func (svc WithdrawalRecordHttpService) CreateWithdrawalRecord(shopID string, aut
 	docDate := doc.DocDatetime
 	prefixDocNo := svc.getDocNoPrefix(docDate)
 
-	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, shopID, prefixDocNo, 1)
+	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, holdingCode, prefixDocNo, 1)
 
 	if err != nil {
 		return "", "", err
@@ -135,7 +135,7 @@ func (svc WithdrawalRecordHttpService) CreateWithdrawalRecord(shopID string, aut
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.WithdrawalRecordDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.WithdrawalRecord = doc
 
@@ -149,23 +149,23 @@ func (svc WithdrawalRecordHttpService) CreateWithdrawalRecord(shopID string, aut
 		return "", "", err
 	}
 
-	go svc.repoCache.Save(shopID, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
+	go svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
 
 	go func() {
 		svc.repoMq.Create(docData)
-		svc.repoCache.Save(shopID, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
-		svc.saveMasterSync(shopID)
+		svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return newGuidFixed, newDocNo, nil
 }
 
-func (svc WithdrawalRecordHttpService) UpdateWithdrawalRecord(shopID string, guid string, authUsername string, doc models.WithdrawalRecord) error {
+func (svc WithdrawalRecordHttpService) UpdateWithdrawalRecord(holdingCode string, guid string, authUsername string, doc models.WithdrawalRecord) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -182,7 +182,7 @@ func (svc WithdrawalRecordHttpService) UpdateWithdrawalRecord(shopID string, gui
 	docData.UpdatedBy = authUsername
 	docData.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, docData)
+	err = svc.repo.Update(ctx, holdingCode, guid, docData)
 
 	if err != nil {
 		return err
@@ -190,18 +190,18 @@ func (svc WithdrawalRecordHttpService) UpdateWithdrawalRecord(shopID string, gui
 
 	func() {
 		svc.repoMq.Update(docData)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc WithdrawalRecordHttpService) DeleteWithdrawalRecord(shopID string, guid string, authUsername string) error {
+func (svc WithdrawalRecordHttpService) DeleteWithdrawalRecord(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -211,20 +211,20 @@ func (svc WithdrawalRecordHttpService) DeleteWithdrawalRecord(shopID string, gui
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
 	func() {
 		svc.repoMq.Delete(findDoc)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc WithdrawalRecordHttpService) DeleteWithdrawalRecordByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc WithdrawalRecordHttpService) DeleteWithdrawalRecordByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -233,26 +233,26 @@ func (svc WithdrawalRecordHttpService) DeleteWithdrawalRecordByGUIDs(shopID stri
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
 
 	func() {
-		docs, _ := svc.repo.FindByGuids(ctx, shopID, GUIDs)
+		docs, _ := svc.repo.FindByGuids(ctx, holdingCode, GUIDs)
 		svc.repoMq.DeleteInBatch(docs)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc WithdrawalRecordHttpService) InfoWithdrawalRecord(shopID string, guid string) (models.WithdrawalRecordInfo, error) {
+func (svc WithdrawalRecordHttpService) InfoWithdrawalRecord(holdingCode string, guid string) (models.WithdrawalRecordInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.WithdrawalRecordInfo{}, err
@@ -265,12 +265,12 @@ func (svc WithdrawalRecordHttpService) InfoWithdrawalRecord(shopID string, guid 
 	return findDoc.WithdrawalRecordInfo, nil
 }
 
-func (svc WithdrawalRecordHttpService) InfoWithdrawalRecordByCode(shopID string, code string) (models.WithdrawalRecordInfo, error) {
+func (svc WithdrawalRecordHttpService) InfoWithdrawalRecordByCode(holdingCode string, code string) (models.WithdrawalRecordInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", code)
 
 	if err != nil {
 		return models.WithdrawalRecordInfo{}, err
@@ -283,7 +283,7 @@ func (svc WithdrawalRecordHttpService) InfoWithdrawalRecordByCode(shopID string,
 	return findDoc.WithdrawalRecordInfo, nil
 }
 
-func (svc WithdrawalRecordHttpService) SearchWithdrawalRecord(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.WithdrawalRecordInfo, mongopagination.PaginationData, error) {
+func (svc WithdrawalRecordHttpService) SearchWithdrawalRecord(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.WithdrawalRecordInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -292,7 +292,7 @@ func (svc WithdrawalRecordHttpService) SearchWithdrawalRecord(shopID string, fil
 		"docno",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.WithdrawalRecordInfo{}, pagination, err
@@ -301,7 +301,7 @@ func (svc WithdrawalRecordHttpService) SearchWithdrawalRecord(shopID string, fil
 	return docList, pagination, nil
 }
 
-func (svc WithdrawalRecordHttpService) SearchWithdrawalRecordStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.WithdrawalRecordInfo, int, error) {
+func (svc WithdrawalRecordHttpService) SearchWithdrawalRecordStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.WithdrawalRecordInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -312,7 +312,7 @@ func (svc WithdrawalRecordHttpService) SearchWithdrawalRecordStep(shopID string,
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.WithdrawalRecordInfo{}, 0, err
@@ -321,7 +321,7 @@ func (svc WithdrawalRecordHttpService) SearchWithdrawalRecordStep(shopID string,
 	return docList, total, nil
 }
 
-func (svc WithdrawalRecordHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.WithdrawalRecord) (common.BulkImport, error) {
+func (svc WithdrawalRecordHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.WithdrawalRecord) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -333,7 +333,7 @@ func (svc WithdrawalRecordHttpService) SaveInBatch(shopID string, authUsername s
 		itemCodeGuidList = append(itemCodeGuidList, doc.DocNo)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "docno", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "docno", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -345,18 +345,18 @@ func (svc WithdrawalRecordHttpService) SaveInBatch(shopID string, authUsername s
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.WithdrawalRecord, models.WithdrawalRecordDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.WithdrawalRecord) models.WithdrawalRecordDoc {
+		func(holdingCode string, authUsername string, doc models.WithdrawalRecord) models.WithdrawalRecordDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.WithdrawalRecordDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.WithdrawalRecord = doc
 
 			currentTime := time.Now()
@@ -367,23 +367,23 @@ func (svc WithdrawalRecordHttpService) SaveInBatch(shopID string, authUsername s
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.WithdrawalRecord, models.WithdrawalRecordDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.WithdrawalRecordDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", guid)
+		func(holdingCode string, guid string) (models.WithdrawalRecordDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", guid)
 		},
 		func(doc models.WithdrawalRecordDoc) bool {
 			return doc.DocNo != ""
 		},
-		func(shopID string, authUsername string, data models.WithdrawalRecord, doc models.WithdrawalRecordDoc) error {
+		func(holdingCode string, authUsername string, data models.WithdrawalRecord, doc models.WithdrawalRecordDoc) error {
 
 			doc.WithdrawalRecord = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -422,7 +422,7 @@ func (svc WithdrawalRecordHttpService) SaveInBatch(shopID string, authUsername s
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -436,9 +436,9 @@ func (svc WithdrawalRecordHttpService) getDocIDKey(doc models.WithdrawalRecord) 
 	return doc.DocNo
 }
 
-func (svc WithdrawalRecordHttpService) saveMasterSync(shopID string) {
+func (svc WithdrawalRecordHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

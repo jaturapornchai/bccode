@@ -33,18 +33,18 @@ const (
 
 // BuildSessionKey สร้าง session_key รูปแบบ OpenClaw
 //
-//	agent:nongkung:webchat:shop:{shopID}:{sessionID}
+//	agent:nongkung:webchat:shop:{holdingCode}:{sessionID}
 //
 // ถ้า sessionID ว่าง → fallback เป็น "anon" (chat แบบไม่มี memory)
-func BuildSessionKey(shopID, sessionID string) string {
+func BuildSessionKey(holdingCode, sessionID string) string {
 	if sessionID == "" {
 		sessionID = "anon"
 	}
 	// sanitize: ตัด ":" ออกเพื่อไม่ให้ key พัง
-	shopID = strings.ReplaceAll(shopID, ":", "_")
+	holdingCode = strings.ReplaceAll(holdingCode, ":", "_")
 	sessionID = strings.ReplaceAll(sessionID, ":", "_")
 	return fmt.Sprintf("agent:%s:%s:%s:%s:%s",
-		agentID, channelWebChat, sessionTypeShop, shopID, sessionID)
+		agentID, channelWebChat, sessionTypeShop, holdingCode, sessionID)
 }
 
 // ==================== OpenClaw Error Envelope ====================
@@ -54,17 +54,17 @@ func BuildSessionKey(shopID, sessionID string) string {
 
 // OpenClawError — error envelope ตาม OpenClaw spec ข้อ 12
 type OpenClawError struct {
-	Code string               `json:"code"`
+	Code    string               `json:"code"`
 	Message string               `json:"message"`
 	Details *OpenClawErrorDetail `json:"details,omitempty"`
 }
 
 // OpenClawErrorDetail — รายละเอียดเพิ่มเติม + คำแนะนำว่า client ควรทำอะไรต่อ
 type OpenClawErrorDetail struct {
-	Code string `json:"code,omitempty"`                // เช่น "MODEL_TIMEOUT"
-	Reason string `json:"reason,omitempty"`              // human-readable why
+	Code                string `json:"code,omitempty"`                  // เช่น "MODEL_TIMEOUT"
+	Reason              string `json:"reason,omitempty"`                // human-readable why
 	RecommendedNextStep string `json:"recommended_next_step,omitempty"` // hint ให้ client
-	CanRetry bool   `json:"can_retry,omitempty"`            // retry แล้วน่าจะหายไหม
+	CanRetry            bool   `json:"can_retry,omitempty"`             // retry แล้วน่าจะหายไหม
 }
 
 // Standard error codes (ตรงกับ OpenClaw spec ที่เราใช้)

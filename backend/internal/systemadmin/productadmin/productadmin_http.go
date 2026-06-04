@@ -53,7 +53,7 @@ func (s *ProductAdminHttp) ReSycProductBarcode(ctx microservice.IContext) error 
 		return err
 	}
 
-	err = s.svc.ReSyncProductBarcode(req.ShopID)
+	err = s.svc.ReSyncProductBarcode(req.HoldingCode)
 	if err != nil {
 		logger.GetLogger().Error("ReSycProductBarcode error ", err)
 		ctx.Response(http.StatusInternalServerError, common.ApiResponse{
@@ -84,8 +84,8 @@ func (s *ProductAdminHttp) ReCalcStockBalance(ctx microservice.IContext) error {
 		return err
 	}
 
-	logger.GetLogger().Debugf("Receive ReCalcStockBalance ShopID:%v , Barcode:%v", req.ShopID, req.Barcode)
-	err = s.svc.ReCalcStockBalance(req.ShopID, req.Barcode)
+	logger.GetLogger().Debugf("Receive ReCalcStockBalance HoldingCode:%v , Barcode:%v", req.HoldingCode, req.Barcode)
+	err = s.svc.ReCalcStockBalance(req.HoldingCode, req.Barcode)
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, common.ApiResponse{
 			Success: false,
@@ -115,7 +115,7 @@ func (s *ProductAdminHttp) DeleteProductBarcode(ctx microservice.IContext) error
 		return err
 	}
 
-	err = s.svc.DeleteProductBarcodeAll(req.ShopID, ctx.UserInfo().Username)
+	err = s.svc.DeleteProductBarcodeAll(req.HoldingCode, ctx.UserInfo().Username)
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, common.ApiResponse{
 			Success: false,

@@ -100,7 +100,7 @@ func (t *PayTransactionConsumer) ConsumeOnDelete(ctx microservice.IContext) erro
 	}
 
 	// delete transaction payment
-	err = t.transPaymentConsumeUsecase.Delete(transMQDoc.ShopID, transMQDoc.DocNo)
+	err = t.transPaymentConsumeUsecase.Delete(transMQDoc.HoldingCode, transMQDoc.DocNo)
 	if err != nil {
 		t.ms.Logger.Errorf("Cannot Delete Transaction Payment : %v", err.Error())
 		return err
@@ -142,7 +142,7 @@ func (t *PayTransactionConsumer) ConsumeOnBulkDelete(ctx microservice.IContext) 
 	}
 
 	for _, transMQDoc := range transMQDocs {
-		err = t.transPaymentConsumeUsecase.Delete(transMQDoc.ShopID, transMQDoc.DocNo)
+		err = t.transPaymentConsumeUsecase.Delete(transMQDoc.HoldingCode, transMQDoc.DocNo)
 		if err != nil {
 			logger.GetLogger().Errorf("Cannot Delete Transaction Payment : %v", err.Error())
 			return err

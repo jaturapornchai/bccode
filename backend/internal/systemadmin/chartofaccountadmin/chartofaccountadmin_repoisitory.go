@@ -11,7 +11,7 @@ import (
 )
 
 type IChartOfAccountAdminRepository interface {
-	FindChartOfAccountDocByShopID(ctx context.Context, shopID string, isDeleted bool, pageable msModels.Pageable) ([]chartOfAccountModels.ChartOfAccountDoc, mongopagination.PaginationData, error)
+	FindChartOfAccountDocByHoldingCode(ctx context.Context, holdingCode string, isDeleted bool, pageable msModels.Pageable) ([]chartOfAccountModels.ChartOfAccountDoc, mongopagination.PaginationData, error)
 }
 
 type ChartOfAccountAdminRepository struct {
@@ -24,18 +24,18 @@ func NewChartOfAccountAdminRepository(pst microservice.IPersisterMongo) IChartOf
 	}
 }
 
-func (r ChartOfAccountAdminRepository) FindChartOfAccountDocByShopID(ctx context.Context, shopID string, isDeleted bool, pageable msModels.Pageable) ([]chartOfAccountModels.ChartOfAccountDoc, mongopagination.PaginationData, error) {
+func (r ChartOfAccountAdminRepository) FindChartOfAccountDocByHoldingCode(ctx context.Context, holdingCode string, isDeleted bool, pageable msModels.Pageable) ([]chartOfAccountModels.ChartOfAccountDoc, mongopagination.PaginationData, error) {
 
 	docList := []chartOfAccountModels.ChartOfAccountDoc{}
 
-	// err := r.pst.Find(ctx, &chartOfAccountModels.ChartOfAccountDoc{}, bson.M{"shopid": shopID}, &docList)
+	// err := r.pst.Find(ctx, &chartOfAccountModels.ChartOfAccountDoc{}, bson.M{"holding_code": holdingCode}, &docList)
 	// if err != nil {
 	// 	return nil, err
 	// }
 
 	queryFilters := bson.M{
-		"shopid":    shopID,
-		"deleted_at": bson.M{"$exists": isDeleted},
+		"holding_code": holdingCode,
+		"deleted_at":   bson.M{"$exists": isDeleted},
 	}
 
 	pagination, err := r.pst.FindPage(ctx, &chartOfAccountModels.ChartOfAccountDoc{}, queryFilters, pageable, &docList)

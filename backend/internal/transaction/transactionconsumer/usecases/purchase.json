@@ -1,7 +1,7 @@
 [
     {
       "id": "64892cc629aadf6b6dbf7a0d",
-      "shopid": "2IZS0jFeRXWPidSupyXN7zQIlaS",
+      "holding_code": "2IZS0jFeRXWPidSupyXN7zQIlaS",
       "guidfixed": "2RB7CgETzvJh18OdSA1GB20Mpoy",
       "docno": "PU2023061400001",
       "totaldiscount": 0,
@@ -140,7 +140,7 @@
     },
     {
       "id": "64907162e4a1b77f403791f1",
-      "shopid": "2IZS0jFeRXWPidSupyXN7zQIlaS",
+      "holding_code": "2IZS0jFeRXWPidSupyXN7zQIlaS",
       "guidfixed": "2RQge2M7kFpCvxLd5Adh8MKta0H",
       "docno": "PU2023061900001",
       "totaldiscount": 0,

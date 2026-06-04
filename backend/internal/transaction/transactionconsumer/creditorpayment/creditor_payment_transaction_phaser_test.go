@@ -18,8 +18,8 @@ func wantDataCreditPayment() *models.CreditorPaymentTransactionPG {
 	}
 
 	want := models.CreditorPaymentTransactionPG{
-		ShopIdentity: pkgModels.ShopIdentity{
-			ShopID: "2IZS0jFeRXWPidSupyXN7zQIlaS",
+		HoldingCodeentity: pkgModels.HoldingCodeentity{
+			HoldingCode: "2IZS0jFeRXWPidSupyXN7zQIlaS",
 		},
 		GuidFixed:        "2UIT0vYecL1mMA8NvvAvjnVqqwR",
 		DocNo:            "DE2023080200001",
@@ -34,7 +34,7 @@ func wantDataCreditPayment() *models.CreditorPaymentTransactionPG {
 		Details: &[]models.CreditorPaymentTransactionDetailPG{
 			{
 				DocNo:         "DE2023080200001",
-				ShopID:        "2IZS0jFeRXWPidSupyXN7zQIlaS",
+				HoldingCode:   "2IZS0jFeRXWPidSupyXN7zQIlaS",
 				LineNumber:    0,
 				BillingNo:     "PU2023080200001",
 				BillType:      12,
@@ -52,7 +52,7 @@ func TestCreditPaymentTransactionPhaser(t *testing.T) {
 
 	giveInput := `{
 		"id": "000000000000000000000000",
-		"shopid": "2IZS0jFeRXWPidSupyXN7zQIlaS",
+		"holding_code": "2IZS0jFeRXWPidSupyXN7zQIlaS",
 		"guid_fixed": "2UIT0vYecL1mMA8NvvAvjnVqqwR",
 		"docno": "DE2023080200001",
 		"docdatetime": "2023-08-02T08:38:59.000Z",
@@ -122,7 +122,7 @@ func TestCreditPaymentTransactionPhaser(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Equal(t, want.GuidFixed, got.GuidFixed, "guid_fixed")
-	assert.Equal(t, want.ShopID, got.ShopID, "shopid")
+	assert.Equal(t, want.HoldingCode, got.HoldingCode, "holding_code")
 	assert.Equal(t, want.DocNo, got.DocNo, "docno")
 	assert.Equal(t, want.DocDate, got.DocDate, "docdate")
 	assert.Equal(t, want.CreditorCode, got.CreditorCode, "creditorcode")
@@ -134,7 +134,7 @@ func TestCreditPaymentTransactionPhaser(t *testing.T) {
 	assert.Equal(t, want.BranchNames, got.BranchNames, "branchnames")
 
 	assert.Equal(t, (*got.Details)[0].DocNo, (*want.Details)[0].DocNo, "item.docno")
-	assert.Equal(t, (*got.Details)[0].ShopID, (*want.Details)[0].ShopID, "item.shopid")
+	assert.Equal(t, (*got.Details)[0].HoldingCode, (*want.Details)[0].HoldingCode, "item.holding_code")
 	assert.Equal(t, (*got.Details)[0].LineNumber, (*want.Details)[0].LineNumber, "item.linenumber")
 	assert.Equal(t, (*got.Details)[0].BillingNo, (*want.Details)[0].BillingNo, "item.billingno")
 	assert.Equal(t, (*got.Details)[0].BillType, (*want.Details)[0].BillType, "item.billtype")

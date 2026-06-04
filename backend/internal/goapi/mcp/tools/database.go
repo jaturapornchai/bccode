@@ -13,52 +13,52 @@ import (
 // ==================== Database Schema ====================
 
 type DatabaseSchemaRequest struct {
-	ShopID string `json:"shop_id"`
-	TableName string `json:"table_name"` // Optional - specific table
+	HoldingCode string `json:"holding_code"`
+	TableName   string `json:"table_name"` // Optional - specific table
 }
 
 type DatabaseSchemaResponse struct {
 	DatabaseName string        `json:"database_name"`
-	Tables []TableSchema `json:"tables"`
-	TableCount int           `json:"table_count"`
-	GeneratedAt time.Time     `json:"generated_at"`
+	Tables       []TableSchema `json:"tables"`
+	TableCount   int           `json:"table_count"`
+	GeneratedAt  time.Time     `json:"generated_at"`
 }
 
 type TableSchema struct {
-	TableName string         `json:"table_name"`
-	TableType string         `json:"table_type"` // BASE TABLE, VIEW
-	Columns []ColumnSchema `json:"columns"`
+	TableName   string         `json:"table_name"`
+	TableType   string         `json:"table_type"` // BASE TABLE, VIEW
+	Columns     []ColumnSchema `json:"columns"`
 	ColumnCount int            `json:"column_count"`
-	RowCount int64          `json:"row_count_estimate"`
+	RowCount    int64          `json:"row_count_estimate"`
 	Description string         `json:"description,omitempty"`
 }
 
 type ColumnSchema struct {
-	ColumnName string `json:"column_name"`
-	DataType string `json:"data_type"`
-	IsNullable string `json:"is_nullable"`
+	ColumnName    string `json:"column_name"`
+	DataType      string `json:"data_type"`
+	IsNullable    string `json:"is_nullable"`
 	ColumnDefault string `json:"column_default,omitempty"`
-	MaxLength int    `json:"max_length,omitempty"`
-	IsPrimaryKey bool   `json:"is_primary_key"`
-	IsForeignKey bool   `json:"is_foreign_key"`
-	Description string `json:"description,omitempty"`
+	MaxLength     int    `json:"max_length,omitempty"`
+	IsPrimaryKey  bool   `json:"is_primary_key"`
+	IsForeignKey  bool   `json:"is_foreign_key"`
+	Description   string `json:"description,omitempty"`
 }
 
 // GetDatabaseSchema returns the database schema information
-func GetDatabaseSchema(ctx context.Context, shopID, tableName string) (*DatabaseSchemaResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func GetDatabaseSchema(ctx context.Context, holdingCode, tableName string) (*DatabaseSchemaResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 
-	logger.Info("[Database Schema] shopid=%s, table=%s", shopID, tableName)
+	logger.Info("[Database Schema] holding_code=%s, table=%s", holdingCode, tableName)
 
-	db, err := mypg.PgSqlFastConnect(shopID)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		return nil, fmt.Errorf("database connection failed: %w", err)
 	}
 
 	response := &DatabaseSchemaResponse{
-		DatabaseName: shopID,
+		DatabaseName: holdingCode,
 		Tables:       []TableSchema{},
 		GeneratedAt:  time.Now(),
 	}
@@ -161,25 +161,25 @@ func GetDatabaseSchema(ctx context.Context, shopID, tableName string) (*Database
 // ==================== Execute Query (Readonly) ====================
 
 type ExecuteQueryRequest struct {
-	ShopID string `json:"shop_id"`
-	Query string `json:"query"`
-	Limit int    `json:"limit"` // Max rows to return
+	HoldingCode string `json:"holding_code"`
+	Query       string `json:"query"`
+	Limit       int    `json:"limit"` // Max rows to return
 }
 
 type ExecuteQueryResponse struct {
-	Query string                   `json:"query"`
-	Columns []string                 `json:"columns"`
-	Rows []map[string]interface{} `json:"rows"`
-	RowCount int                      `json:"row_count"`
+	Query       string                   `json:"query"`
+	Columns     []string                 `json:"columns"`
+	Rows        []map[string]interface{} `json:"rows"`
+	RowCount    int                      `json:"row_count"`
 	ExecutionMs int64                    `json:"execution_ms"`
-	Truncated bool                     `json:"truncated"`
+	Truncated   bool                     `json:"truncated"`
 	GeneratedAt time.Time                `json:"generated_at"`
 }
 
 // ExecuteReadonlyQuery executes a SELECT query and returns results
-func ExecuteReadonlyQuery(ctx context.Context, shopID, query string, limit int) (*ExecuteQueryResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func ExecuteReadonlyQuery(ctx context.Context, holdingCode, query string, limit int) (*ExecuteQueryResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 	if query == "" {
 		return nil, fmt.Errorf("query is required")
@@ -215,9 +215,9 @@ func ExecuteReadonlyQuery(ctx context.Context, shopID, query string, limit int) 
 		query = fmt.Sprintf("%s LIMIT %d", strings.TrimSuffix(query, ";"), limit)
 	}
 
-	logger.Info("[Execute Query] shopid=%s, query=%s", shopID, query)
+	logger.Info("[Execute Query] holding_code=%s, query=%s", holdingCode, query)
 
-	db, err := mypg.PgSqlFastConnect(shopID)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		return nil, fmt.Errorf("database connection failed: %w", err)
 	}
@@ -288,24 +288,24 @@ func ExecuteReadonlyQuery(ctx context.Context, shopID, query string, limit int) 
 // ==================== Get Table Sample Data ====================
 
 type TableSampleRequest struct {
-	ShopID string `json:"shop_id"`
-	TableName string `json:"table_name"`
-	Limit int    `json:"limit"`
+	HoldingCode string `json:"holding_code"`
+	TableName   string `json:"table_name"`
+	Limit       int    `json:"limit"`
 }
 
 type TableSampleResponse struct {
-	TableName string                   `json:"table_name"`
-	Columns []string                 `json:"columns"`
-	Rows []map[string]interface{} `json:"rows"`
-	RowCount int                      `json:"row_count"`
-	TotalRows int64                    `json:"total_rows_estimate"`
+	TableName   string                   `json:"table_name"`
+	Columns     []string                 `json:"columns"`
+	Rows        []map[string]interface{} `json:"rows"`
+	RowCount    int                      `json:"row_count"`
+	TotalRows   int64                    `json:"total_rows_estimate"`
 	GeneratedAt time.Time                `json:"generated_at"`
 }
 
 // GetTableSample returns sample data from a table
-func GetTableSample(ctx context.Context, shopID, tableName string, limit int) (*TableSampleResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func GetTableSample(ctx context.Context, holdingCode, tableName string, limit int) (*TableSampleResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 	if tableName == "" {
 		return nil, fmt.Errorf("table_name is required")
@@ -325,17 +325,17 @@ func GetTableSample(ctx context.Context, shopID, tableName string, limit int) (*
 		limit = 100
 	}
 
-	logger.Info("[Table Sample] shopid=%s, table=%s, limit=%d", shopID, tableName, limit)
+	logger.Info("[Table Sample] holding_code=%s, table=%s, limit=%d", holdingCode, tableName, limit)
 
 	// Use ExecuteReadonlyQuery for the actual query
 	query := fmt.Sprintf("SELECT * FROM %s LIMIT %d", tableName, limit)
-	result, err := ExecuteReadonlyQuery(ctx, shopID, query, limit)
+	result, err := ExecuteReadonlyQuery(ctx, holdingCode, query, limit)
 	if err != nil {
 		return nil, err
 	}
 
 	// Get total row count
-	db, _ := mypg.PgSqlFastConnect(shopID)
+	db, _ := mypg.PgSqlFastConnect(holdingCode)
 	var totalRows int64
 	db.QueryRow(fmt.Sprintf("SELECT reltuples::bigint FROM pg_class WHERE relname = '%s'", tableName)).Scan(&totalRows)
 

@@ -18,7 +18,7 @@ func (svc *ShopServiceOld) SearchMember(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pst := svc.ms.MongoPersister(svc.cfg.MongoPersisterConfig())
 
@@ -41,7 +41,7 @@ func (svc *ShopServiceOld) SearchMember(ctx microservice.IContext) error {
 		Options: "",
 	}}
 
-	pagination, err := pst.FindPage(&models.MemberInfo{}, limit, page, bson.M{"createdby": authUsername, "shopid": shopID, "$or": []interface{}{
+	pagination, err := pst.FindPage(&models.MemberInfo{}, limit, page, bson.M{"createdby": authUsername, "holding_code": holdingCode, "$or": []interface{}{
 		bson.M{"email": searchText},
 		bson.M{"username": searchText},
 		bson.M{"name": searchText},
@@ -63,7 +63,7 @@ func (svc *ShopServiceOld) SearchMember(ctx microservice.IContext) error {
 func (svc *ShopServiceOld) CreateMember(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -83,7 +83,7 @@ func (svc *ShopServiceOld) CreateMember(ctx microservice.IContext) error {
 	pst := svc.ms.MongoPersister(svc.cfg.MongoPersisterConfig())
 
 	findMember := &models.Member{}
-	err = pst.FindOne(&models.Member{}, bson.M{"shop_id": shopID, "$or": []interface{}{
+	err = pst.FindOne(&models.Member{}, bson.M{"holding_code": holdingCode, "$or": []interface{}{
 		bson.M{"email": memberReq.Email},
 		bson.M{"username": memberReq.Username},
 	}}, findMember)
@@ -111,7 +111,7 @@ func (svc *ShopServiceOld) CreateMember(ctx microservice.IContext) error {
 	}
 
 	member := &models.Member{
-		ShopID: shopID,
+		HoldingCode: holdingCode,
 		Email:      memberReq.Email,
 		Username:   memberReq.Username,
 		Password:   hashPassword,
@@ -233,7 +233,7 @@ func (svc *ShopServiceOld) DeleteMember(ctx microservice.IContext) error {
 func (svc *ShopServiceOld) GetMemberInfo(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
@@ -241,7 +241,7 @@ func (svc *ShopServiceOld) GetMemberInfo(ctx microservice.IContext) error {
 
 	memberInfo := &models.MemberInfo{}
 
-	err := pst.FindOne(&models.MemberInfo{}, bson.M{"guid_fixed": id, "createdby": authUsername, "shop_id": shopID}, memberInfo)
+	err := pst.FindOne(&models.MemberInfo{}, bson.M{"guid_fixed": id, "createdby": authUsername, "holding_code": holdingCode}, memberInfo)
 
 	if err != nil {
 		ctx.ResponseError(400, "not found")

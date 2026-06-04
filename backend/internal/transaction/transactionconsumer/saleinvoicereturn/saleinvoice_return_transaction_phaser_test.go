@@ -16,8 +16,8 @@ func SaleInvoiceReturnTransactionStruct() models.SaleInvoiceReturnTransactionPG 
 	nameTh := "นาง เมย์ ไฟแรง"
 	give := models.SaleInvoiceReturnTransactionPG{
 		TransactionPG: models.TransactionPG{
-			ShopIdentity: pkgModels.ShopIdentity{
-				ShopID: "2PrIIqTWxoBXv16K310sNwfHmfY",
+			HoldingCodeentity: pkgModels.HoldingCodeentity{
+				HoldingCode: "2PrIIqTWxoBXv16K310sNwfHmfY",
 			},
 			GuidFixed:      "2RFXUaW570MAWkgYgDduGM9WYIk",
 			TransFlag:      48,
@@ -49,7 +49,7 @@ func SaleInvoiceReturnTransactionStruct() models.SaleInvoiceReturnTransactionPG 
 					DocRef:              "ITEM001",
 					DocRefDateTime:      time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC),
 					DocNo:               "ST2023061500001",
-					ShopID:              "2PrIIqTWxoBXv16K310sNwfHmfY",
+					HoldingCode:         "2PrIIqTWxoBXv16K310sNwfHmfY",
 					LineNumber:          1,
 					ItemGuid:            "2PrfeYHTr2Sbo1oRU9rgdm9H35r",
 					Barcode:             "BARCODE003",
@@ -93,7 +93,7 @@ func SaleInvoiceReturnTransactionStruct() models.SaleInvoiceReturnTransactionPG 
 func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 	giveInput := `{
 		"id": "648b3d633d5e36f1165454b5",
-		"shopid": "2PrIIqTWxoBXv16K310sNwfHmfY",
+		"holding_code": "2PrIIqTWxoBXv16K310sNwfHmfY",
 		"guid_fixed": "2RFXUaW570MAWkgYgDduGM9WYIk",
 		"docno": "ST2023061500001",
 		"guid_ref": "e846ae42-f506-4ee1-b588-7d395de13e7e",
@@ -156,7 +156,7 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 				"isauto": false,
 				"isdelete": false
 			}
-		],		
+		],
 		"cashiercode": "",
 		"details": [
 			{
@@ -244,7 +244,7 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 						"isdelete": false
 					}
 				],
-				
+
 				"whnames": [
 					{
 						"code": "th",
@@ -273,7 +273,7 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 						"isdelete": false
 					}
 				],
-				
+
 				"unitnames": [
 					{
 						"code": "th",
@@ -295,7 +295,7 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 					}
 				]
 			}
-		],		
+		],
 		"paymentdetail": {
 			"cashamounttext": "",
 			"cashamount": 5,
@@ -323,7 +323,7 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 
 	assert.Nil(t, err)
 
-	assert.Equal(t, get.ShopID, want.ShopID, "shopid")
+	assert.Equal(t, get.HoldingCode, want.HoldingCode, "holding_code")
 	assert.Equal(t, get.GuidFixed, want.GuidFixed, "guid_fixed")
 	assert.Equal(t, get.TransFlag, want.TransFlag, "transflag")
 	assert.Equal(t, get.DocNo, want.DocNo, "docno")
@@ -353,7 +353,7 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 	// detail
 	assert.Equal(t, (*get.Items)[0].GuidFixed, (*want.Items)[0].GuidFixed, "item.guidfixed")
 	assert.Equal(t, (*get.Items)[0].DocNo, (*want.Items)[0].DocNo, "item.docno")
-	assert.Equal(t, (*get.Items)[0].ShopID, (*want.Items)[0].ShopID, "item.shopid")
+	assert.Equal(t, (*get.Items)[0].HoldingCode, (*want.Items)[0].HoldingCode, "item.holding_code")
 	assert.Equal(t, (*get.Items)[0].LineNumber, (*want.Items)[0].LineNumber, "item.linenumber")
 	assert.Equal(t, (*get.Items)[0].ItemGuid, (*want.Items)[0].ItemGuid, "item.itemguid")
 	assert.Equal(t, (*get.Items)[0].Barcode, (*want.Items)[0].Barcode, "item.barcode")

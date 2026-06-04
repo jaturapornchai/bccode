@@ -48,7 +48,7 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "search_products",
 		"description": "Search products from the PostgreSQL projection/read model built from MongoDB operational product data, with Thai full-text search and stock balance.",
 		"parameters": map[string]interface{}{
-			"shop_id":         "string (required) - Shop ID",
+			"holding_code":    "string (required) - Holding Code",
 			"keyword":         "string (required) - Search keyword (Thai or English)",
 			"whcode":          "string (optional) - Warehouse code to filter stock balance",
 			"locationcode":    "string (optional) - Location code to filter stock balance",
@@ -61,49 +61,49 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "get_daily_sales",
 		"description": "Get daily sales summary for a specific date",
 		"parameters": map[string]interface{}{
-			"shop_id":     "string (required) - Shop ID",
-			"date":        "string (required) - Date in YYYY-MM-DD format",
-			"branch_code": "string (optional) - Filter by branch/warehouse code",
+			"holding_code": "string (required) - Holding Code",
+			"date":         "string (required) - Date in YYYY-MM-DD format",
+			"branch_code":  "string (optional) - Filter by branch/warehouse code",
 		},
 	},
 	{
 		"name":        "get_sales_by_date_range",
 		"description": "Get sales data grouped by day/week/month for a date range",
 		"parameters": map[string]interface{}{
-			"shop_id":     "string (required) - Shop ID",
-			"from_date":   "string (required) - Start date in YYYY-MM-DD format",
-			"to_date":     "string (required) - End date in YYYY-MM-DD format",
-			"branch_code": "string (optional) - Filter by branch/warehouse code",
-			"group_by":    "string (optional) - Group by: day, week, month (default: day)",
+			"holding_code": "string (required) - Holding Code",
+			"from_date":    "string (required) - Start date in YYYY-MM-DD format",
+			"to_date":      "string (required) - End date in YYYY-MM-DD format",
+			"branch_code":  "string (optional) - Filter by branch/warehouse code",
+			"group_by":     "string (optional) - Group by: day, week, month (default: day)",
 		},
 	},
 	{
 		"name":        "get_top_selling_products",
 		"description": "Get top selling products for a date range",
 		"parameters": map[string]interface{}{
-			"shop_id":     "string (required) - Shop ID",
-			"from_date":   "string (required) - Start date in YYYY-MM-DD format",
-			"to_date":     "string (required) - End date in YYYY-MM-DD format",
-			"limit":       "number (optional) - Number of products to return (default: 10, max: 100)",
-			"branch_code": "string (optional) - Filter by branch/warehouse code",
+			"holding_code": "string (required) - Holding Code",
+			"from_date":    "string (required) - Start date in YYYY-MM-DD format",
+			"to_date":      "string (required) - End date in YYYY-MM-DD format",
+			"limit":        "number (optional) - Number of products to return (default: 10, max: 100)",
+			"branch_code":  "string (optional) - Filter by branch/warehouse code",
 		},
 	},
 	{
 		"name":        "get_sales_by_seller",
 		"description": "Get sales data grouped by seller/salesperson",
 		"parameters": map[string]interface{}{
-			"shop_id":   "string (required) - Shop ID",
-			"from_date": "string (required) - Start date in YYYY-MM-DD format",
-			"to_date":   "string (required) - End date in YYYY-MM-DD format",
+			"holding_code": "string (required) - Holding Code",
+			"from_date":    "string (required) - Start date in YYYY-MM-DD format",
+			"to_date":      "string (required) - End date in YYYY-MM-DD format",
 		},
 	},
 	{
 		"name":        "get_monthly_summary",
 		"description": "Get monthly sales summary with comparison to previous month",
 		"parameters": map[string]interface{}{
-			"shop_id": "string (required) - Shop ID",
-			"year":    "number (required) - Year (e.g., 2025)",
-			"month":   "number (required) - Month (1-12)",
+			"holding_code": "string (required) - Holding Code",
+			"year":         "number (required) - Year (e.g., 2025)",
+			"month":        "number (required) - Month (1-12)",
 		},
 	},
 	// Dashboard Tools
@@ -111,15 +111,15 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "get_dashboard_kpis",
 		"description": "Get comprehensive KPI dashboard from processed relational projections. Includes sales, orders, profit, customers, inventory metrics with trends.",
 		"parameters": map[string]interface{}{
-			"shop_id": "string (required) - Shop ID",
-			"period":  "string (optional) - Period: today, this_week, this_month, this_year (default: this_month)",
+			"holding_code": "string (required) - Holding Code",
+			"period":       "string (optional) - Period: today, this_week, this_month, this_year (default: this_month)",
 		},
 	},
 	{
 		"name":        "get_business_health",
 		"description": "Get overall business health score and key indicators. Returns health score (0-100), alerts, and recommendations.",
 		"parameters": map[string]interface{}{
-			"shop_id": "string (required) - Shop ID",
+			"holding_code": "string (required) - Holding Code",
 		},
 	},
 	// Financial Tools
@@ -127,34 +127,34 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "get_profit_analysis",
 		"description": "Get detailed profit analysis with revenue breakdown by category, gross margin, and profit trends.",
 		"parameters": map[string]interface{}{
-			"shop_id":   "string (required) - Shop ID",
-			"from_date": "string (required) - Start date in YYYY-MM-DD format",
-			"to_date":   "string (required) - End date in YYYY-MM-DD format",
+			"holding_code": "string (required) - Holding Code",
+			"from_date":    "string (required) - Start date in YYYY-MM-DD format",
+			"to_date":      "string (required) - End date in YYYY-MM-DD format",
 		},
 	},
 	{
 		"name":        "get_accounts_receivable",
 		"description": "Get accounts receivable summary with aging buckets (current, 30, 60, 90+ days) and top debtors.",
 		"parameters": map[string]interface{}{
-			"shop_id": "string (required) - Shop ID",
-			"limit":   "number (optional) - Number of top debtors to return (default: 10)",
+			"holding_code": "string (required) - Holding Code",
+			"limit":        "number (optional) - Number of top debtors to return (default: 10)",
 		},
 	},
 	{
 		"name":        "get_accounts_payable",
 		"description": "Get accounts payable summary with aging buckets and top creditors.",
 		"parameters": map[string]interface{}{
-			"shop_id": "string (required) - Shop ID",
-			"limit":   "number (optional) - Number of top creditors to return (default: 10)",
+			"holding_code": "string (required) - Holding Code",
+			"limit":        "number (optional) - Number of top creditors to return (default: 10)",
 		},
 	},
 	{
 		"name":        "get_cash_flow",
 		"description": "Get cash flow analysis showing inflows, outflows, and net position over time.",
 		"parameters": map[string]interface{}{
-			"shop_id":   "string (required) - Shop ID",
-			"from_date": "string (required) - Start date in YYYY-MM-DD format",
-			"to_date":   "string (required) - End date in YYYY-MM-DD format",
+			"holding_code": "string (required) - Holding Code",
+			"from_date":    "string (required) - Start date in YYYY-MM-DD format",
+			"to_date":      "string (required) - End date in YYYY-MM-DD format",
 		},
 	},
 	// Inventory Tools
@@ -162,24 +162,24 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "get_inventory_value",
 		"description": "Get inventory valuation from PostgreSQL relational projections, with breakdown by category and warehouse.",
 		"parameters": map[string]interface{}{
-			"shop_id": "string (required) - Shop ID",
-			"whcode":  "string (optional) - Filter by warehouse code",
+			"holding_code": "string (required) - Holding Code",
+			"whcode":       "string (optional) - Filter by warehouse code",
 		},
 	},
 	{
 		"name":        "get_low_stock_alerts",
 		"description": "Get products that are below minimum stock level or out of stock.",
 		"parameters": map[string]interface{}{
-			"shop_id":   "string (required) - Shop ID",
-			"threshold": "number (optional) - Stock threshold to consider low (default: 10)",
-			"limit":     "number (optional) - Number of alerts to return (default: 50)",
+			"holding_code": "string (required) - Holding Code",
+			"threshold":    "number (optional) - Stock threshold to consider low (default: 10)",
+			"limit":        "number (optional) - Number of alerts to return (default: 50)",
 		},
 	},
 	{
 		"name":        "get_dead_stock",
 		"description": "Get products with no movement for specified days (slow-moving/dead stock).",
 		"parameters": map[string]interface{}{
-			"shop_id":          "string (required) - Shop ID",
+			"holding_code":     "string (required) - Holding Code",
 			"days_no_movement": "number (optional) - Days without movement (default: 90)",
 			"limit":            "number (optional) - Number of products to return (default: 50)",
 		},
@@ -188,10 +188,10 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "get_inventory_turnover",
 		"description": "Get inventory turnover ratio and days of inventory for products.",
 		"parameters": map[string]interface{}{
-			"shop_id":   "string (required) - Shop ID",
-			"from_date": "string (required) - Start date in YYYY-MM-DD format",
-			"to_date":   "string (required) - End date in YYYY-MM-DD format",
-			"limit":     "number (optional) - Number of products to return (default: 50)",
+			"holding_code": "string (required) - Holding Code",
+			"from_date":    "string (required) - Start date in YYYY-MM-DD format",
+			"to_date":      "string (required) - End date in YYYY-MM-DD format",
+			"limit":        "number (optional) - Number of products to return (default: 50)",
 		},
 	},
 	// Customer Tools
@@ -199,26 +199,26 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "get_top_customers",
 		"description": "Get top customers by revenue with purchase history and trends.",
 		"parameters": map[string]interface{}{
-			"shop_id":   "string (required) - Shop ID",
-			"from_date": "string (required) - Start date in YYYY-MM-DD format",
-			"to_date":   "string (required) - End date in YYYY-MM-DD format",
-			"limit":     "number (optional) - Number of customers to return (default: 10)",
+			"holding_code": "string (required) - Holding Code",
+			"from_date":    "string (required) - Start date in YYYY-MM-DD format",
+			"to_date":      "string (required) - End date in YYYY-MM-DD format",
+			"limit":        "number (optional) - Number of customers to return (default: 10)",
 		},
 	},
 	{
 		"name":        "get_customer_growth",
 		"description": "Get customer acquisition and retention metrics over time.",
 		"parameters": map[string]interface{}{
-			"shop_id":   "string (required) - Shop ID",
-			"from_date": "string (required) - Start date in YYYY-MM-DD format",
-			"to_date":   "string (required) - End date in YYYY-MM-DD format",
+			"holding_code": "string (required) - Holding Code",
+			"from_date":    "string (required) - Start date in YYYY-MM-DD format",
+			"to_date":      "string (required) - End date in YYYY-MM-DD format",
 		},
 	},
 	{
 		"name":        "get_customer_segments",
 		"description": "Get customer segmentation analysis (RFM: Recency, Frequency, Monetary).",
 		"parameters": map[string]interface{}{
-			"shop_id": "string (required) - Shop ID",
+			"holding_code": "string (required) - Holding Code",
 		},
 	},
 	// Comparison Tools
@@ -226,18 +226,18 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "get_yoy_comparison",
 		"description": "Get year-over-year comparison of revenue, orders, and profit with monthly breakdown.",
 		"parameters": map[string]interface{}{
-			"shop_id": "string (required) - Shop ID",
-			"year":    "number (optional) - Year to compare (default: current year)",
-			"month":   "number (optional) - Specific month to compare (1-12, optional)",
+			"holding_code": "string (required) - Holding Code",
+			"year":         "number (optional) - Year to compare (default: current year)",
+			"month":        "number (optional) - Specific month to compare (1-12, optional)",
 		},
 	},
 	{
 		"name":        "get_mom_comparison",
 		"description": "Get month-over-month comparison with weekly breakdown and daily trends.",
 		"parameters": map[string]interface{}{
-			"shop_id": "string (required) - Shop ID",
-			"year":    "number (optional) - Year (default: current year)",
-			"month":   "number (optional) - Month to compare (1-12, default: current month)",
+			"holding_code": "string (required) - Holding Code",
+			"year":         "number (optional) - Year (default: current year)",
+			"month":        "number (optional) - Month to compare (1-12, default: current month)",
 		},
 	},
 	// Database Tools
@@ -245,26 +245,26 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "get_database_schema",
 		"description": "Get PostgreSQL database structure (tables, columns, types, relationships). PostgreSQL is used for relational processing — joins, aggregations, reports. For raw data, use MongoDB. For OLAP analytics, use ClickHouse.",
 		"parameters": map[string]interface{}{
-			"shop_id":    "string (required) - Shop ID",
-			"table_name": "string (optional) - Filter by table name (partial match)",
+			"holding_code": "string (required) - Holding Code",
+			"table_name":   "string (optional) - Filter by table name (partial match)",
 		},
 	},
 	{
 		"name":        "execute_query",
 		"description": "Execute a readonly SQL query on PostgreSQL (SELECT only). PostgreSQL handles relational processing — joins, aggregations, reports.",
 		"parameters": map[string]interface{}{
-			"shop_id": "string (required) - Shop ID",
-			"query":   "string (required) - SQL SELECT query",
-			"limit":   "number (optional) - Max rows to return (default: 100, max: 1000)",
+			"holding_code": "string (required) - Holding Code",
+			"query":        "string (required) - SQL SELECT query",
+			"limit":        "number (optional) - Max rows to return (default: 100, max: 1000)",
 		},
 	},
 	{
 		"name":        "get_table_sample",
 		"description": "Get sample data from a PostgreSQL table. Quick way to see what relational data looks like.",
 		"parameters": map[string]interface{}{
-			"shop_id":    "string (required) - Shop ID",
-			"table_name": "string (required) - Table name",
-			"limit":      "number (optional) - Number of rows (default: 10, max: 100)",
+			"holding_code": "string (required) - Holding Code",
+			"table_name":   "string (required) - Table name",
+			"limit":        "number (optional) - Number of rows (default: 10, max: 100)",
 		},
 	},
 	// MongoDB Tools — Main data store (source of truth)
@@ -272,11 +272,11 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "query_mongodb",
 		"description": "Query MongoDB collection (readonly). MongoDB is the main data store (source of truth) — all documents, transactions, and master data live here.",
 		"parameters": map[string]interface{}{
-			"shop_id":    "string (optional) - Shop ID for data isolation",
-			"database":   "string (optional) - Database name (default: from config)",
-			"collection": "string (required) - Collection name",
-			"filter":     "string (optional) - JSON filter e.g. {\"transflag\":6} (default: {})",
-			"limit":      "number (optional) - Max documents (default: 20, max: 100)",
+			"holding_code": "string (optional) - Holding Code for data isolation",
+			"database":     "string (optional) - Database name (default: from config)",
+			"collection":   "string (required) - Collection name",
+			"filter":       "string (optional) - JSON filter e.g. {\"transflag\":6} (default: {})",
+			"limit":        "number (optional) - Max documents (default: 20, max: 100)",
 		},
 	},
 	{
@@ -290,11 +290,11 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "aggregate_mongodb",
 		"description": "Run aggregation pipeline on MongoDB (main data store, readonly). Blocks $out and $merge stages. Use for complex queries on raw source data.",
 		"parameters": map[string]interface{}{
-			"shop_id":    "string (optional) - Shop ID for data isolation",
-			"database":   "string (optional) - Database name (default: from config)",
-			"collection": "string (required) - Collection name",
-			"pipeline":   "string (required) - JSON array of pipeline stages e.g. [{\"$match\":{\"transflag\":6}},{\"$group\":{\"_id\":\"$currency\",\"count\":{\"$sum\":1}}}]",
-			"limit":      "number (optional) - Max results (default: 100, max: 100)",
+			"holding_code": "string (optional) - Holding Code for data isolation",
+			"database":     "string (optional) - Database name (default: from config)",
+			"collection":   "string (required) - Collection name",
+			"pipeline":     "string (required) - JSON array of pipeline stages e.g. [{\"$match\":{\"transflag\":6}},{\"$group\":{\"_id\":\"$currency\",\"count\":{\"$sum\":1}}}]",
+			"limit":        "number (optional) - Max results (default: 100, max: 100)",
 		},
 	},
 	// ClickHouse Tools — Dimensional/OLAP processing
@@ -302,10 +302,10 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "query_clickhouse",
 		"description": "Execute readonly SELECT/SHOW query on ClickHouse (OLAP/dimensional analytics). Use for time-series analysis, BI dashboards, and large-scale aggregations.",
 		"parameters": map[string]interface{}{
-			"shop_id":  "string (optional) - Shop ID for data isolation",
-			"database": "string (optional) - Database name (default: from env CH_DATABASE_NAME)",
-			"query":    "string (required) - SQL SELECT or SHOW query",
-			"limit":    "number (optional) - Max rows (default: 100, max: 1000)",
+			"holding_code": "string (optional) - Holding Code for data isolation",
+			"database":     "string (optional) - Database name (default: from env CH_DATABASE_NAME)",
+			"query":        "string (required) - SQL SELECT or SHOW query",
+			"limit":        "number (optional) - Max rows (default: 100, max: 1000)",
 		},
 	},
 	{
@@ -320,9 +320,9 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "execute_pg_command",
 		"description": "⚡ DEV TOOL: Execute ANY SQL on PostgreSQL (SELECT, DELETE, INSERT, UPDATE, ALTER, TRUNCATE, DROP). No readonly restriction. Use with caution.",
 		"parameters": map[string]interface{}{
-			"shop_id": "string (required) - Shop ID (= PostgreSQL database name)",
-			"query":   "string (required) - Any SQL command",
-			"limit":   "number (optional) - Max rows for SELECT (default: 100, max: 10000)",
+			"holding_code": "string (required) - Holding Code (= PostgreSQL database name)",
+			"query":        "string (required) - Any SQL command",
+			"limit":        "number (optional) - Max rows for SELECT (default: 100, max: 10000)",
 		},
 	},
 	{
@@ -387,51 +387,51 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "list_units",
 		"description": "List/search units of measure (หน่วยนับ). Returns unit codes and names.",
 		"parameters": map[string]interface{}{
-			"shop_id": "string (required) - Shop ID",
-			"keyword": "string (optional) - Search by unit code or name",
-			"limit":   "number (optional) - Max results (default: 50, max: 200)",
+			"holding_code": "string (required) - Holding Code",
+			"keyword":      "string (optional) - Search by unit code or name",
+			"limit":        "number (optional) - Max results (default: 50, max: 200)",
 		},
 	},
 	{
 		"name":        "create_unit",
 		"description": "Create a new unit of measure (หน่วยนับ). Uses names[] for multi-language display names.",
 		"parameters": map[string]interface{}{
-			"shop_id":  "string (required) - Shop ID",
-			"unitcode": "string (required) - Unit code e.g. EA, BOX, KG",
-			"names":    "string (required) - JSON array [{\"code\":\"th\",\"name\":\"ชิ้น\"},{\"code\":\"en\",\"name\":\"Each\"}]",
+			"holding_code": "string (required) - Holding Code",
+			"unitcode":     "string (required) - Unit code e.g. EA, BOX, KG",
+			"names":        "string (required) - JSON array [{\"code\":\"th\",\"name\":\"ชิ้น\"},{\"code\":\"en\",\"name\":\"Each\"}]",
 		},
 	},
 	{
 		"name":        "create_units",
 		"description": "Create multiple units of measure at once (bulk). Skips duplicates.",
 		"parameters": map[string]interface{}{
-			"shop_id": "string (required) - Shop ID",
-			"units":   "string (required) - JSON array e.g. [{\"unitcode\":\"EA\",\"names\":[{\"code\":\"th\",\"name\":\"ชิ้น\"}]},{\"unitcode\":\"BOX\",\"names\":[{\"code\":\"th\",\"name\":\"กล่อง\"}]}]",
+			"holding_code": "string (required) - Holding Code",
+			"units":        "string (required) - JSON array e.g. [{\"unitcode\":\"EA\",\"names\":[{\"code\":\"th\",\"name\":\"ชิ้น\"}]},{\"unitcode\":\"BOX\",\"names\":[{\"code\":\"th\",\"name\":\"กล่อง\"}]}]",
 		},
 	},
 	{
 		"name":        "update_unit",
 		"description": "Update an existing unit of measure by unit code.",
 		"parameters": map[string]interface{}{
-			"shop_id":  "string (required) - Shop ID",
-			"unitcode": "string (required) - Unit code to update",
-			"names":    "string (optional) - JSON array of language names [{\"code\":\"th\",\"name\":\"ชิ้น\"}]",
+			"holding_code": "string (required) - Holding Code",
+			"unitcode":     "string (required) - Unit code to update",
+			"names":        "string (optional) - JSON array of language names [{\"code\":\"th\",\"name\":\"ชิ้น\"}]",
 		},
 	},
 	{
 		"name":        "delete_unit",
 		"description": "Delete a unit of measure by unit code.",
 		"parameters": map[string]interface{}{
-			"shop_id":  "string (required) - Shop ID",
-			"unitcode": "string (required) - Unit code to delete",
+			"holding_code": "string (required) - Holding Code",
+			"unitcode":     "string (required) - Unit code to delete",
 		},
 	},
 	{
 		"name":        "delete_units",
 		"description": "Delete multiple units of measure at once (bulk). Reports which were deleted and which were not found.",
 		"parameters": map[string]interface{}{
-			"shop_id":   "string (required) - Shop ID",
-			"unitcodes": "string (required) - JSON array of unit codes e.g. [\"EA\",\"BOX\",\"KG\"]. Max 100 items.",
+			"holding_code": "string (required) - Holding Code",
+			"unitcodes":    "string (required) - JSON array of unit codes e.g. [\"EA\",\"BOX\",\"KG\"]. Max 100 items.",
 		},
 	},
 	{
@@ -444,16 +444,16 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "list_barcodes",
 		"description": "List/search product barcodes (สินค้า/บาร์โค้ด). Search by barcode, item code, or product name.",
 		"parameters": map[string]interface{}{
-			"shop_id": "string (required) - Shop ID",
-			"keyword": "string (optional) - Search by barcode, item code, or product name",
-			"limit":   "number (optional) - Max results (default: 50, max: 200)",
+			"holding_code": "string (required) - Holding Code",
+			"keyword":      "string (optional) - Search by barcode, item code, or product name",
+			"limit":        "number (optional) - Max results (default: 50, max: 200)",
 		},
 	},
 	{
 		"name":        "create_barcode",
 		"description": "Create a new product barcode (สินค้า/บาร์โค้ด). Uses names[] for multi-language product names.",
 		"parameters": map[string]interface{}{
-			"shop_id":         "string (required) - Shop ID",
+			"holding_code":    "string (required) - Holding Code",
 			"barcode":         "string (required) - Barcode e.g. 8859100001234",
 			"itemcode":        "string (required) - Item/product code e.g. SKU001",
 			"names":           "string (required) - JSON array [{\"code\":\"th\",\"name\":\"สินค้า A\"},{\"code\":\"en\",\"name\":\"Product A\"}]",
@@ -473,15 +473,15 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "create_barcodes",
 		"description": "Create multiple product barcodes at once (bulk). Skips duplicates.",
 		"parameters": map[string]interface{}{
-			"shop_id":  "string (required) - Shop ID",
-			"barcodes": "string (required) - JSON array e.g. [{\"barcode\":\"123\",\"itemcode\":\"SKU1\",\"names\":[{\"code\":\"th\",\"name\":\"สินค้า\"}]}]",
+			"holding_code": "string (required) - Holding Code",
+			"barcodes":     "string (required) - JSON array e.g. [{\"barcode\":\"123\",\"itemcode\":\"SKU1\",\"names\":[{\"code\":\"th\",\"name\":\"สินค้า\"}]}]",
 		},
 	},
 	{
 		"name":        "update_barcode",
 		"description": "Update an existing product barcode by guidfixed.",
 		"parameters": map[string]interface{}{
-			"shop_id":        "string (required) - Shop ID",
+			"holding_code":   "string (required) - Holding Code",
 			"guid_fixed":     "string (required) - GuidFixed of the barcode to update",
 			"names":          "string (optional) - JSON array of language names [{\"code\":\"th\",\"name\":\"ชื่อใหม่\"}]",
 			"item_unit_code": "string (optional) - New unit code",
@@ -497,16 +497,16 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "delete_barcode",
 		"description": "Delete a product barcode by guidfixed.",
 		"parameters": map[string]interface{}{
-			"shop_id":    "string (required) - Shop ID",
-			"guid_fixed": "string (required) - GuidFixed of the barcode to delete",
+			"holding_code": "string (required) - Holding Code",
+			"guid_fixed":   "string (required) - GuidFixed of the barcode to delete",
 		},
 	},
 	{
 		"name":        "delete_barcodes",
 		"description": "Delete multiple product barcodes at once (bulk). Reports which were deleted and which were not found.",
 		"parameters": map[string]interface{}{
-			"shop_id":    "string (required) - Shop ID",
-			"guidfixeds": "string (required) - JSON array of guidfixed values e.g. [\"guid1\",\"guid2\"]. Max 100 items.",
+			"holding_code": "string (required) - Holding Code",
+			"guidfixeds":   "string (required) - JSON array of guidfixed values e.g. [\"guid1\",\"guid2\"]. Max 100 items.",
 		},
 	},
 	{
@@ -519,32 +519,32 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "get_ref_barcodes",
 		"description": "Get reference barcodes and unit chain for a product. Shows all units (e.g., ชิ้น→ลัง) and how they reference each other. Returns product_name and unit_name as formatted strings (auto from names[]).",
 		"parameters": map[string]interface{}{
-			"shop_id":  "string (required) - Shop ID",
-			"itemcode": "string (optional) - Item code to get all barcodes for (if not specified, use barcode to find)",
-			"barcode":  "string (optional) - Barcode to find item code from (one of itemcode/barcode required)",
+			"holding_code": "string (required) - Holding Code",
+			"itemcode":     "string (optional) - Item code to get all barcodes for (if not specified, use barcode to find)",
+			"barcode":      "string (optional) - Barcode to find item code from (one of itemcode/barcode required)",
 		},
 	},
 	{
 		"name":        "set_ref_barcode",
 		"description": "Set reference barcode for a barcode (unit conversion). E.g., BOX → EA means 1 BOX = 24 EA. Checks for circular references.",
 		"parameters": map[string]interface{}{
-			"shop_id":     "string (required) - Shop ID",
-			"barcode":     "string (required) - Source barcode (e.g., BOX barcode)",
-			"ref_barcode": "string (required) - Target reference barcode (e.g., EA barcode). Must be same itemcode.",
-			"qty":         "number (optional) - Quantity for condition-based reference",
-			"standvalue":  "number (optional) - Override stand value (default: use existing)",
-			"dividevalue": "number (optional) - Override divide value (default: use existing)",
-			"condition":   "boolean (optional) - Is conditional reference (default: false)",
+			"holding_code": "string (required) - Holding Code",
+			"barcode":      "string (required) - Source barcode (e.g., BOX barcode)",
+			"ref_barcode":  "string (required) - Target reference barcode (e.g., EA barcode). Must be same itemcode.",
+			"qty":          "number (optional) - Quantity for condition-based reference",
+			"standvalue":   "number (optional) - Override stand value (default: use existing)",
+			"dividevalue":  "number (optional) - Override divide value (default: use existing)",
+			"condition":    "boolean (optional) - Is conditional reference (default: false)",
 		},
 	},
 	{
 		"name":        "create_multi_unit_barcode",
 		"description": "Create a product with multiple units at once (e.g., ชิ้น + ลัง + แพ็ค). Automatically sets reference barcodes. The unit with standvalue=1 becomes the base unit.",
 		"parameters": map[string]interface{}{
-			"shop_id":  "string (required) - Shop ID",
-			"itemcode": "string (required) - Item code for all units",
-			"names":    "string (optional) - Default JSON names array (used when unit doesn't have its own names)",
-			"units":    "string (required) - JSON array of units e.g. [{\"barcode\":\"EA-001\",\"itemunitcode\":\"EA\",\"standvalue\":1,\"dividevalue\":1,...},{\"barcode\":\"BOX-001\",\"itemunitcode\":\"BOX\",\"standvalue\":24,\"dividevalue\":1,...}]",
+			"holding_code": "string (required) - Holding Code",
+			"itemcode":     "string (required) - Item code for all units",
+			"names":        "string (optional) - Default JSON names array (used when unit doesn't have its own names)",
+			"units":        "string (required) - JSON array of units e.g. [{\"barcode\":\"EA-001\",\"itemunitcode\":\"EA\",\"standvalue\":1,\"dividevalue\":1,...},{\"barcode\":\"BOX-001\",\"itemunitcode\":\"BOX\",\"standvalue\":24,\"dividevalue\":1,...}]",
 		},
 	},
 	// Rebuild Products (Full Sync — กรณี Kafka sync ผิดพลาด)
@@ -552,7 +552,7 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "rebuild_products",
 		"description": "Full rebuild: sync ALL product barcodes from MongoDB → PostgreSQL + ClickHouse. Use when Kafka sync fails or data is out of sync. Same as frontend 'สร้างสินค้าใหม่' button.",
 		"parameters": map[string]interface{}{
-			"shop_id": "string (required) - Shop ID to rebuild products for",
+			"holding_code": "string (required) - Holding Code to rebuild products for",
 		},
 	},
 	// Rebuild Embeddings (สร้าง vector embeddings สำหรับ semantic search)
@@ -560,9 +560,9 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "rebuild_embeddings",
 		"description": "Build vector embeddings for semantic search on PostgreSQL projection tables with Ollama -> pgvector. Supports product, debtor, creditor, customer. Use entity_type=all to rebuild all.",
 		"parameters": map[string]interface{}{
-			"shop_id":     "string (required) - Shop ID",
-			"entity_type": "string (optional) - product|debtor|creditor|customer|all (default: product)",
-			"force_all":   "boolean (optional) - true=สร้างใหม่ทั้งหมด, false=เฉพาะที่ยังไม่มี (default: false)",
+			"holding_code": "string (required) - Holding Code",
+			"entity_type":  "string (optional) - product|debtor|creditor|customer|all (default: product)",
+			"force_all":    "boolean (optional) - true=สร้างใหม่ทั้งหมด, false=เฉพาะที่ยังไม่มี (default: false)",
 		},
 	},
 	// Product Group Tools (กลุ่มสินค้า)
@@ -570,51 +570,51 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "list_product_groups",
 		"description": "List/search product groups (กลุ่มสินค้า). Returns group codes and names with multi-language support.",
 		"parameters": map[string]interface{}{
-			"shop_id": "string (required) - Shop ID",
-			"keyword": "string (optional) - Search by group code or name (e.g., 'อาหาร', 'FOOD')",
-			"limit":   "number (optional) - Max results to return (default: 50, max: 200)",
+			"holding_code": "string (required) - Holding Code",
+			"keyword":      "string (optional) - Search by group code or name (e.g., 'อาหาร', 'FOOD')",
+			"limit":        "number (optional) - Max results to return (default: 50, max: 200)",
 		},
 	},
 	{
 		"name":        "create_product_group",
 		"description": "Create a new product group (กลุ่มสินค้า). Uses names[] for multi-language display names.",
 		"parameters": map[string]interface{}{
-			"shop_id": "string (required) - Shop ID",
-			"code":    "string (required) - Group code (e.g., 'FOOD', 'DRINK', 'TOOL')",
-			"names":   "string (required) - JSON array [{\"code\":\"th\",\"name\":\"อาหาร\"},{\"code\":\"en\",\"name\":\"Food\"}]",
+			"holding_code": "string (required) - Holding Code",
+			"code":         "string (required) - Group code (e.g., 'FOOD', 'DRINK', 'TOOL')",
+			"names":        "string (required) - JSON array [{\"code\":\"th\",\"name\":\"อาหาร\"},{\"code\":\"en\",\"name\":\"Food\"}]",
 		},
 	},
 	{
 		"name":        "create_product_groups",
 		"description": "Create multiple product groups at once (bulk). Skips duplicates automatically.",
 		"parameters": map[string]interface{}{
-			"shop_id": "string (required) - Shop ID",
-			"groups":  "string (required) - JSON array e.g. [{\"code\":\"FOOD\",\"names\":[{\"code\":\"th\",\"name\":\"อาหาร\"}]},{\"code\":\"DRINK\",\"names\":[{\"code\":\"th\",\"name\":\"เครื่องดื่ม\"}]}]. Max 100 items.",
+			"holding_code": "string (required) - Holding Code",
+			"groups":       "string (required) - JSON array e.g. [{\"code\":\"FOOD\",\"names\":[{\"code\":\"th\",\"name\":\"อาหาร\"}]},{\"code\":\"DRINK\",\"names\":[{\"code\":\"th\",\"name\":\"เครื่องดื่ม\"}]}]. Max 100 items.",
 		},
 	},
 	{
 		"name":        "update_product_group",
 		"description": "Update an existing product group by code.",
 		"parameters": map[string]interface{}{
-			"shop_id": "string (required) - Shop ID",
-			"code":    "string (required) - Group code to update",
-			"names":   "string (optional) - JSON array of multi-language names [{\"code\":\"th\",\"name\":\"อาหาร\"}]",
+			"holding_code": "string (required) - Holding Code",
+			"code":         "string (required) - Group code to update",
+			"names":        "string (optional) - JSON array of multi-language names [{\"code\":\"th\",\"name\":\"อาหาร\"}]",
 		},
 	},
 	{
 		"name":        "delete_product_group",
 		"description": "Delete a product group by code.",
 		"parameters": map[string]interface{}{
-			"shop_id": "string (required) - Shop ID",
-			"code":    "string (required) - Group code to delete",
+			"holding_code": "string (required) - Holding Code",
+			"code":         "string (required) - Group code to delete",
 		},
 	},
 	{
 		"name":        "delete_product_groups",
 		"description": "Delete multiple product groups at once (bulk). Reports which were deleted and which were not found.",
 		"parameters": map[string]interface{}{
-			"shop_id": "string (required) - Shop ID",
-			"codes":   "string (required) - JSON array of group codes e.g. [\"FOOD\",\"DRINK\",\"TOOL\"]. Max 100 items.",
+			"holding_code": "string (required) - Holding Code",
+			"codes":        "string (required) - JSON array of group codes e.g. [\"FOOD\",\"DRINK\",\"TOOL\"]. Max 100 items.",
 		},
 	},
 	{
@@ -627,16 +627,16 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "list_product_categories",
 		"description": "List/search product categories (หมวดสินค้า). Returns category names, hierarchy, and group numbers.",
 		"parameters": map[string]interface{}{
-			"shop_id": "string (required) - Shop ID",
-			"keyword": "string (optional) - Search by category name (e.g., 'เนื้อสัตว์', 'ผัก')",
-			"limit":   "number (optional) - Max results to return (default: 50, max: 200)",
+			"holding_code": "string (required) - Holding Code",
+			"keyword":      "string (optional) - Search by category name (e.g., 'เนื้อสัตว์', 'ผัก')",
+			"limit":        "number (optional) - Max results to return (default: 50, max: 200)",
 		},
 	},
 	{
 		"name":        "create_product_category",
 		"description": "Create a new product category (หมวดสินค้า). Uses names[] for multi-language display names. Supports hierarchy via parentguid.",
 		"parameters": map[string]interface{}{
-			"shop_id":      "string (required) - Shop ID",
+			"holding_code": "string (required) - Holding Code",
 			"names":        "string (required) - JSON array [{\"code\":\"th\",\"name\":\"เนื้อสัตว์\"},{\"code\":\"en\",\"name\":\"Meat\"}]",
 			"parent_guid":  "string (optional) - Parent category guidfixed (for hierarchy)",
 			"group_number": "number (optional) - Group/sort number",
@@ -646,15 +646,15 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "create_product_categories",
 		"description": "Create multiple product categories at once (bulk). Auto-generates guidfixed for each.",
 		"parameters": map[string]interface{}{
-			"shop_id":    "string (required) - Shop ID",
-			"categories": "string (required) - JSON array e.g. [{\"names\":[{\"code\":\"th\",\"name\":\"เนื้อสัตว์\"}],\"groupnumber\":1},{\"names\":[{\"code\":\"th\",\"name\":\"ผัก\"}],\"groupnumber\":2}]. Max 100 items.",
+			"holding_code": "string (required) - Holding Code",
+			"categories":   "string (required) - JSON array e.g. [{\"names\":[{\"code\":\"th\",\"name\":\"เนื้อสัตว์\"}],\"groupnumber\":1},{\"names\":[{\"code\":\"th\",\"name\":\"ผัก\"}],\"groupnumber\":2}]. Max 100 items.",
 		},
 	},
 	{
 		"name":        "update_product_category",
 		"description": "Update an existing product category by guidfixed.",
 		"parameters": map[string]interface{}{
-			"shop_id":      "string (required) - Shop ID",
+			"holding_code": "string (required) - Holding Code",
 			"guid_fixed":   "string (required) - GuidFixed of the category to update",
 			"names":        "string (optional) - JSON array of multi-language names [{\"code\":\"th\",\"name\":\"เนื้อสัตว์\"}]",
 			"parent_guid":  "string (optional) - New parent category guidfixed",
@@ -665,16 +665,16 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "delete_product_category",
 		"description": "Delete a product category by guidfixed.",
 		"parameters": map[string]interface{}{
-			"shop_id":    "string (required) - Shop ID",
-			"guid_fixed": "string (required) - GuidFixed of the category to delete",
+			"holding_code": "string (required) - Holding Code",
+			"guid_fixed":   "string (required) - GuidFixed of the category to delete",
 		},
 	},
 	{
 		"name":        "delete_product_categories",
 		"description": "Delete multiple product categories at once (bulk). Reports which were deleted and which were not found.",
 		"parameters": map[string]interface{}{
-			"shop_id":    "string (required) - Shop ID",
-			"guidfixeds": "string (required) - JSON array of guidfixed values e.g. [\"guid1\",\"guid2\"]. Max 100 items.",
+			"holding_code": "string (required) - Holding Code",
+			"guidfixeds":   "string (required) - JSON array of guidfixed values e.g. [\"guid1\",\"guid2\"]. Max 100 items.",
 		},
 	},
 	{
@@ -1134,12 +1134,12 @@ func (s *MCPServer) InvokeTool(c echo.Context) error {
 		})
 	}
 
-	// Add shop_id from API key if not provided or empty
+	// Add holding_code from API key if not provided or empty
 	if req.Params == nil {
 		req.Params = make(map[string]interface{})
 	}
-	if shopID, exists := req.Params["shop_id"]; !exists || shopID == nil || shopID == "" {
-		req.Params["shop_id"] = apiKey.ShopID
+	if holdingCode, exists := req.Params["holding_code"]; !exists || holdingCode == nil || holdingCode == "" {
+		req.Params["holding_code"] = apiKey.HoldingCode
 	}
 
 	// Execute tool
@@ -1400,10 +1400,10 @@ func (s *MCPServer) GetDailySales(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request"})
 	}
 
-	// Get API key data and set shop_id
+	// Get API key data and set holding_code
 	apiKey, _ := auth.GetAPIKeyFromContext(c)
-	if params.ShopID == "" {
-		params.ShopID = apiKey.ShopID
+	if params.HoldingCode == "" {
+		params.HoldingCode = apiKey.HoldingCode
 	}
 
 	result, err := s.sales.GetDailySales(c.Request().Context(), params)
@@ -1422,8 +1422,8 @@ func (s *MCPServer) GetSalesByDateRange(c echo.Context) error {
 	}
 
 	apiKey, _ := auth.GetAPIKeyFromContext(c)
-	if params.ShopID == "" {
-		params.ShopID = apiKey.ShopID
+	if params.HoldingCode == "" {
+		params.HoldingCode = apiKey.HoldingCode
 	}
 
 	result, err := s.sales.GetSalesByDateRange(c.Request().Context(), params)
@@ -1442,8 +1442,8 @@ func (s *MCPServer) GetTopSellingProducts(c echo.Context) error {
 	}
 
 	apiKey, _ := auth.GetAPIKeyFromContext(c)
-	if params.ShopID == "" {
-		params.ShopID = apiKey.ShopID
+	if params.HoldingCode == "" {
+		params.HoldingCode = apiKey.HoldingCode
 	}
 
 	result, err := s.sales.GetTopSellingProducts(c.Request().Context(), params)
@@ -1462,8 +1462,8 @@ func (s *MCPServer) GetSalesBySeller(c echo.Context) error {
 	}
 
 	apiKey, _ := auth.GetAPIKeyFromContext(c)
-	if params.ShopID == "" {
-		params.ShopID = apiKey.ShopID
+	if params.HoldingCode == "" {
+		params.HoldingCode = apiKey.HoldingCode
 	}
 
 	result, err := s.sales.GetSalesBySeller(c.Request().Context(), params)
@@ -1482,8 +1482,8 @@ func (s *MCPServer) GetMonthlySummary(c echo.Context) error {
 	}
 
 	apiKey, _ := auth.GetAPIKeyFromContext(c)
-	if params.ShopID == "" {
-		params.ShopID = apiKey.ShopID
+	if params.HoldingCode == "" {
+		params.HoldingCode = apiKey.HoldingCode
 	}
 
 	result, err := s.sales.GetMonthlySummary(c.Request().Context(), params)
@@ -1497,7 +1497,7 @@ func (s *MCPServer) GetMonthlySummary(c echo.Context) error {
 // invokeGetDailySales invokes the daily sales tool
 func (s *MCPServer) invokeGetDailySales(ctx context.Context, params map[string]interface{}) (interface{}, error) {
 	var req tools.DailySalesRequest
-	req.ShopID = getStringParam(params, "shop_id")
+	req.HoldingCode = getStringParam(params, "holding_code")
 	req.Date = getStringParam(params, "date")
 	req.BranchCode = getStringParam(params, "branch_code")
 	return s.sales.GetDailySales(ctx, req)
@@ -1506,7 +1506,7 @@ func (s *MCPServer) invokeGetDailySales(ctx context.Context, params map[string]i
 // invokeGetSalesByDateRange invokes the sales by date range tool
 func (s *MCPServer) invokeGetSalesByDateRange(ctx context.Context, params map[string]interface{}) (interface{}, error) {
 	var req tools.SalesByDateRangeRequest
-	req.ShopID = getStringParam(params, "shop_id")
+	req.HoldingCode = getStringParam(params, "holding_code")
 	req.FromDate = getStringParam(params, "from_date")
 	req.ToDate = getStringParam(params, "to_date")
 	req.BranchCode = getStringParam(params, "branch_code")
@@ -1517,7 +1517,7 @@ func (s *MCPServer) invokeGetSalesByDateRange(ctx context.Context, params map[st
 // invokeGetTopSellingProducts invokes the top selling products tool
 func (s *MCPServer) invokeGetTopSellingProducts(ctx context.Context, params map[string]interface{}) (interface{}, error) {
 	var req tools.TopSellingProductsRequest
-	req.ShopID = getStringParam(params, "shop_id")
+	req.HoldingCode = getStringParam(params, "holding_code")
 	req.FromDate = getStringParam(params, "from_date")
 	req.ToDate = getStringParam(params, "to_date")
 	req.Limit = getIntParam(params, "limit")
@@ -1528,7 +1528,7 @@ func (s *MCPServer) invokeGetTopSellingProducts(ctx context.Context, params map[
 // invokeGetSalesBySeller invokes the sales by seller tool
 func (s *MCPServer) invokeGetSalesBySeller(ctx context.Context, params map[string]interface{}) (interface{}, error) {
 	var req tools.SalesBySellerRequest
-	req.ShopID = getStringParam(params, "shop_id")
+	req.HoldingCode = getStringParam(params, "holding_code")
 	req.FromDate = getStringParam(params, "from_date")
 	req.ToDate = getStringParam(params, "to_date")
 	return s.sales.GetSalesBySeller(ctx, req)
@@ -1537,7 +1537,7 @@ func (s *MCPServer) invokeGetSalesBySeller(ctx context.Context, params map[strin
 // invokeGetMonthlySummary invokes the monthly summary tool
 func (s *MCPServer) invokeGetMonthlySummary(ctx context.Context, params map[string]interface{}) (interface{}, error) {
 	var req tools.MonthlySummaryRequest
-	req.ShopID = getStringParam(params, "shop_id")
+	req.HoldingCode = getStringParam(params, "holding_code")
 	req.Year = getIntParam(params, "year")
 	req.Month = getIntParam(params, "month")
 	return s.sales.GetMonthlySummary(ctx, req)
@@ -1545,7 +1545,7 @@ func (s *MCPServer) invokeGetMonthlySummary(ctx context.Context, params map[stri
 
 // invokeSearchProducts invokes the product search tool with Thai full-text search
 func (s *MCPServer) invokeSearchProducts(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	keyword := getStringParam(params, "keyword")
 	whcode := getStringParam(params, "whcode")
 	locationcode := getStringParam(params, "locationcode")
@@ -1569,69 +1569,69 @@ func (s *MCPServer) invokeSearchProducts(ctx context.Context, params map[string]
 	}
 
 	// Call the product search tool
-	return tools.SearchProducts(ctx, shopID, keyword, whcode, locationcode, limit, includeBalance)
+	return tools.SearchProducts(ctx, holdingCode, keyword, whcode, locationcode, limit, includeBalance)
 }
 
 // ==================== Dashboard Tool Invocations ====================
 
 // invokeGetDashboardKPIs invokes the dashboard KPIs tool
 func (s *MCPServer) invokeGetDashboardKPIs(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	period := getStringParam(params, "period")
 	if period == "" {
 		period = "this_month"
 	}
-	return tools.GetDashboardKPIs(ctx, shopID, period)
+	return tools.GetDashboardKPIs(ctx, holdingCode, period)
 }
 
 // invokeGetBusinessHealth invokes the business health tool
 func (s *MCPServer) invokeGetBusinessHealth(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
-	return tools.GetBusinessHealth(ctx, shopID)
+	holdingCode := getStringParam(params, "holding_code")
+	return tools.GetBusinessHealth(ctx, holdingCode)
 }
 
 // ==================== Financial Tool Invocations ====================
 
 // invokeGetProfitAnalysis invokes the profit analysis tool
 func (s *MCPServer) invokeGetProfitAnalysis(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	fromDate := getStringParam(params, "from_date")
 	toDate := getStringParam(params, "to_date")
-	return tools.GetProfitAnalysis(ctx, shopID, fromDate, toDate)
+	return tools.GetProfitAnalysis(ctx, holdingCode, fromDate, toDate)
 }
 
 // invokeGetAccountsReceivable invokes the accounts receivable tool
 func (s *MCPServer) invokeGetAccountsReceivable(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
-	return tools.GetAccountsReceivable(ctx, shopID)
+	holdingCode := getStringParam(params, "holding_code")
+	return tools.GetAccountsReceivable(ctx, holdingCode)
 }
 
 // invokeGetAccountsPayable invokes the accounts payable tool
 func (s *MCPServer) invokeGetAccountsPayable(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
-	return tools.GetAccountsPayable(ctx, shopID)
+	holdingCode := getStringParam(params, "holding_code")
+	return tools.GetAccountsPayable(ctx, holdingCode)
 }
 
 // invokeGetCashFlow invokes the cash flow tool
 func (s *MCPServer) invokeGetCashFlow(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	fromDate := getStringParam(params, "from_date")
 	toDate := getStringParam(params, "to_date")
-	return tools.GetCashFlow(ctx, shopID, fromDate, toDate)
+	return tools.GetCashFlow(ctx, holdingCode, fromDate, toDate)
 }
 
 // ==================== Inventory Tool Invocations ====================
 
 // invokeGetInventoryValue invokes the inventory value tool
 func (s *MCPServer) invokeGetInventoryValue(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	whcode := getStringParam(params, "whcode")
-	return tools.GetInventoryValue(ctx, shopID, whcode)
+	return tools.GetInventoryValue(ctx, holdingCode, whcode)
 }
 
 // invokeGetLowStockAlerts invokes the low stock alerts tool
 func (s *MCPServer) invokeGetLowStockAlerts(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	threshold := getIntParam(params, "threshold")
 	limit := getIntParam(params, "limit")
 	if threshold <= 0 {
@@ -1640,12 +1640,12 @@ func (s *MCPServer) invokeGetLowStockAlerts(ctx context.Context, params map[stri
 	if limit <= 0 {
 		limit = 50
 	}
-	return tools.GetLowStockAlerts(ctx, shopID, threshold, limit)
+	return tools.GetLowStockAlerts(ctx, holdingCode, threshold, limit)
 }
 
 // invokeGetDeadStock invokes the dead stock tool
 func (s *MCPServer) invokeGetDeadStock(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	daysNoMovement := getIntParam(params, "days_no_movement")
 	limit := getIntParam(params, "limit")
 	if daysNoMovement <= 0 {
@@ -1654,29 +1654,29 @@ func (s *MCPServer) invokeGetDeadStock(ctx context.Context, params map[string]in
 	if limit <= 0 {
 		limit = 50
 	}
-	return tools.GetDeadStock(ctx, shopID, daysNoMovement, limit)
+	return tools.GetDeadStock(ctx, holdingCode, daysNoMovement, limit)
 }
 
 // invokeGetInventoryTurnover invokes the inventory turnover tool
 func (s *MCPServer) invokeGetInventoryTurnover(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	fromDate := getStringParam(params, "from_date")
 	toDate := getStringParam(params, "to_date")
-	return tools.GetInventoryTurnover(ctx, shopID, fromDate, toDate)
+	return tools.GetInventoryTurnover(ctx, holdingCode, fromDate, toDate)
 }
 
 // ==================== Customer Tool Invocations ====================
 
 func (s *MCPServer) invokeSearchCustomers(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	keyword := getStringParam(params, "keyword")
 	limit := getIntParam(params, "limit")
-	return tools.SearchCustomers(ctx, shopID, keyword, limit)
+	return tools.SearchCustomers(ctx, holdingCode, keyword, limit)
 }
 
 // invokeGetTopCustomers invokes the top customers tool
 func (s *MCPServer) invokeGetTopCustomers(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	fromDate := getStringParam(params, "from_date")
 	toDate := getStringParam(params, "to_date")
 	limit := getIntParam(params, "limit")
@@ -1687,84 +1687,84 @@ func (s *MCPServer) invokeGetTopCustomers(ctx context.Context, params map[string
 	if sortBy == "" {
 		sortBy = "amount"
 	}
-	return tools.GetTopCustomers(ctx, shopID, fromDate, toDate, limit, sortBy)
+	return tools.GetTopCustomers(ctx, holdingCode, fromDate, toDate, limit, sortBy)
 }
 
 // invokeGetCustomerGrowth invokes the customer growth tool
 func (s *MCPServer) invokeGetCustomerGrowth(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	fromDate := getStringParam(params, "from_date")
 	toDate := getStringParam(params, "to_date")
-	return tools.GetCustomerGrowth(ctx, shopID, fromDate, toDate)
+	return tools.GetCustomerGrowth(ctx, holdingCode, fromDate, toDate)
 }
 
 // invokeGetCustomerSegments invokes the customer segments tool
 func (s *MCPServer) invokeGetCustomerSegments(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	fromDate := getStringParam(params, "from_date")
 	toDate := getStringParam(params, "to_date")
-	return tools.GetCustomerSegments(ctx, shopID, fromDate, toDate)
+	return tools.GetCustomerSegments(ctx, holdingCode, fromDate, toDate)
 }
 
 // ==================== Comparison Tool Invocations ====================
 
 // invokeGetYoYComparison invokes the year-over-year comparison tool
 func (s *MCPServer) invokeGetYoYComparison(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	year := getIntParam(params, "year")
 	month := getIntParam(params, "month")
-	return tools.GetYoYComparison(ctx, shopID, year, month)
+	return tools.GetYoYComparison(ctx, holdingCode, year, month)
 }
 
 // invokeGetMoMComparison invokes the month-over-month comparison tool
 func (s *MCPServer) invokeGetMoMComparison(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	year := getIntParam(params, "year")
 	month := getIntParam(params, "month")
-	return tools.GetMoMComparison(ctx, shopID, year, month)
+	return tools.GetMoMComparison(ctx, holdingCode, year, month)
 }
 
 // ==================== Database Tool Invocations ====================
 
 // invokeGetDatabaseSchema invokes the database schema tool
 func (s *MCPServer) invokeGetDatabaseSchema(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	tableName := getStringParam(params, "table_name")
-	return tools.GetDatabaseSchema(ctx, shopID, tableName)
+	return tools.GetDatabaseSchema(ctx, holdingCode, tableName)
 }
 
 // invokeExecuteQuery invokes the execute query tool (readonly)
 func (s *MCPServer) invokeExecuteQuery(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	query := getStringParam(params, "query")
 	limit := getIntParam(params, "limit")
 	if limit <= 0 {
 		limit = 100
 	}
-	return tools.ExecuteReadonlyQuery(ctx, shopID, query, limit)
+	return tools.ExecuteReadonlyQuery(ctx, holdingCode, query, limit)
 }
 
 // invokeGetTableSample invokes the table sample tool
 func (s *MCPServer) invokeGetTableSample(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	tableName := getStringParam(params, "table_name")
 	limit := getIntParam(params, "limit")
 	if limit <= 0 {
 		limit = 10
 	}
-	return tools.GetTableSample(ctx, shopID, tableName, limit)
+	return tools.GetTableSample(ctx, holdingCode, tableName, limit)
 }
 
 // ==================== MongoDB Tool Invocations ====================
 
 // invokeQueryMongoDB invokes the MongoDB query tool (readonly)
 func (s *MCPServer) invokeQueryMongoDB(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	database := getStringParam(params, "database")
 	collection := getStringParam(params, "collection")
 	filter := getStringParam(params, "filter")
 	limit := getIntParam(params, "limit")
-	return tools.QueryMongoDB(ctx, shopID, database, collection, filter, limit)
+	return tools.QueryMongoDB(ctx, holdingCode, database, collection, filter, limit)
 }
 
 // invokeListMongoDBCollections invokes the MongoDB list collections tool
@@ -1775,23 +1775,23 @@ func (s *MCPServer) invokeListMongoDBCollections(ctx context.Context, params map
 
 // invokeAggregateMongoDB invokes the MongoDB aggregation tool (readonly)
 func (s *MCPServer) invokeAggregateMongoDB(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	database := getStringParam(params, "database")
 	collection := getStringParam(params, "collection")
 	pipeline := getStringParam(params, "pipeline")
 	limit := getIntParam(params, "limit")
-	return tools.AggregateMongoDB(ctx, shopID, database, collection, pipeline, limit)
+	return tools.AggregateMongoDB(ctx, holdingCode, database, collection, pipeline, limit)
 }
 
 // ==================== ClickHouse Tool Invocations ====================
 
 // invokeQueryClickHouse invokes the ClickHouse query tool (readonly)
 func (s *MCPServer) invokeQueryClickHouse(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	database := getStringParam(params, "database")
 	query := getStringParam(params, "query")
 	limit := getIntParam(params, "limit")
-	return tools.QueryClickHouse(ctx, shopID, database, query, limit)
+	return tools.QueryClickHouse(ctx, holdingCode, database, query, limit)
 }
 
 // invokeListClickHouseTables invokes the ClickHouse list tables tool
@@ -1802,26 +1802,26 @@ func (s *MCPServer) invokeListClickHouseTables(ctx context.Context, params map[s
 
 // invokeExecutePgCommand invokes the dev PostgreSQL command tool
 func (s *MCPServer) invokeExecutePgCommand(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	query := getStringParam(params, "query")
 	limit := getIntParam(params, "limit")
-	return tools.ExecutePgCommand(ctx, shopID, query, limit)
+	return tools.ExecutePgCommand(ctx, holdingCode, query, limit)
 }
 
 // invokeExecuteJS รัน JavaScript ใน Goja sandbox (readonly)
 // AI เขียน JS เอง → รัน → ดูผล → แก้ → รันใหม่ จนได้คำตอบ
 func (s *MCPServer) invokeExecuteJS(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	code := getStringParam(params, "code")
-	return tools.ExecuteJS(ctx, shopID, code)
+	return tools.ExecuteJS(ctx, holdingCode, code)
 }
 
 // invokeExecutePython รัน Python 3 script ใน subprocess sandbox (readonly)
 // LLM เขียน Python เก่งที่สุด → ใช้เป็น primary tool สำหรับงาน data/query
 func (s *MCPServer) invokeExecutePython(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	code := getStringParam(params, "code")
-	return tools.ExecutePython(ctx, shopID, code)
+	return tools.ExecutePython(ctx, holdingCode, code)
 }
 
 // invokeExecuteChCommand invokes the dev ClickHouse command tool
@@ -1850,7 +1850,7 @@ func (s *MCPServer) logAudit(apiKey *mongodb.APIKey, toolName string, params map
 
 	log := &mongodb.AuditLog{
 		APIKeyID:        apiKey.ID,
-		ShopID:          apiKey.ShopID,
+		HoldingCode:     apiKey.HoldingCode,
 		ToolName:        toolName,
 		RequestParams:   paramsBson,
 		ResponseStatus:  status,
@@ -1973,47 +1973,47 @@ func (s *MCPServer) invokeGetModelSchema(ctx context.Context, params map[string]
 
 // invokeListUnits invokes the list/search units tool
 func (s *MCPServer) invokeListUnits(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	keyword := getStringParam(params, "keyword")
 	limit := getIntParam(params, "limit")
-	return tools.ListUnits(ctx, shopID, keyword, limit)
+	return tools.ListUnits(ctx, holdingCode, keyword, limit)
 }
 
 // invokeCreateUnit invokes the create unit tool
 func (s *MCPServer) invokeCreateUnit(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	unitCode := getStringParam(params, "unitcode")
 	names := getStringParam(params, "names")
-	return tools.CreateUnit(ctx, shopID, unitCode, names)
+	return tools.CreateUnit(ctx, holdingCode, unitCode, names)
 }
 
 // invokeCreateUnits invokes the bulk create units tool
 func (s *MCPServer) invokeCreateUnits(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	units := getStringParam(params, "units")
-	return tools.CreateUnits(ctx, shopID, units)
+	return tools.CreateUnits(ctx, holdingCode, units)
 }
 
 // invokeUpdateUnit invokes the update unit tool
 func (s *MCPServer) invokeUpdateUnit(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	unitCode := getStringParam(params, "unitcode")
 	names := getStringParam(params, "names")
-	return tools.UpdateUnit(ctx, shopID, unitCode, names)
+	return tools.UpdateUnit(ctx, holdingCode, unitCode, names)
 }
 
 // invokeDeleteUnit invokes the delete unit tool
 func (s *MCPServer) invokeDeleteUnit(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	unitCode := getStringParam(params, "unitcode")
-	return tools.DeleteUnit(ctx, shopID, unitCode)
+	return tools.DeleteUnit(ctx, holdingCode, unitCode)
 }
 
 // invokeDeleteUnits invokes the bulk delete units tool
 func (s *MCPServer) invokeDeleteUnits(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	unitcodes := getStringParam(params, "unitcodes")
-	return tools.DeleteUnits(ctx, shopID, unitcodes)
+	return tools.DeleteUnits(ctx, holdingCode, unitcodes)
 }
 
 // invokeGetUnitSchema invokes the get unit schema tool
@@ -2034,15 +2034,15 @@ func (s *MCPServer) invokeWebSearch(ctx context.Context, params map[string]inter
 
 // invokeListBarcodes invokes the list/search barcodes tool
 func (s *MCPServer) invokeListBarcodes(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	keyword := getStringParam(params, "keyword")
 	limit := getIntParam(params, "limit")
-	return tools.ListBarcodes(ctx, shopID, keyword, limit)
+	return tools.ListBarcodes(ctx, holdingCode, keyword, limit)
 }
 
 // invokeCreateBarcode invokes the create barcode tool
 func (s *MCPServer) invokeCreateBarcode(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	barcode := getStringParam(params, "barcode")
 	itemCode := getStringParam(params, "itemcode")
 	names := getStringParam(params, "names")
@@ -2056,19 +2056,19 @@ func (s *MCPServer) invokeCreateBarcode(ctx context.Context, params map[string]i
 	groupNames := getStringParam(params, "group_names")
 	categoryCode := getStringParam(params, "categorycode")
 	categoryNames := getStringParam(params, "category_names")
-	return tools.CreateBarcode(ctx, shopID, barcode, itemCode, names, itemUnitCode, itemUnitNames, prices, standValue, divideValue, isMainBarcode, groupCode, groupNames, categoryCode, categoryNames)
+	return tools.CreateBarcode(ctx, holdingCode, barcode, itemCode, names, itemUnitCode, itemUnitNames, prices, standValue, divideValue, isMainBarcode, groupCode, groupNames, categoryCode, categoryNames)
 }
 
 // invokeCreateBarcodes invokes the bulk create barcodes tool
 func (s *MCPServer) invokeCreateBarcodes(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	barcodes := getStringParam(params, "barcodes")
-	return tools.CreateBarcodes(ctx, shopID, barcodes)
+	return tools.CreateBarcodes(ctx, holdingCode, barcodes)
 }
 
 // invokeUpdateBarcode invokes the update barcode tool
 func (s *MCPServer) invokeUpdateBarcode(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	guidFixed := getStringParam(params, "guid_fixed")
 	names := getStringParam(params, "names")
 	itemUnitCode := getStringParam(params, "item_unit_code")
@@ -2078,21 +2078,21 @@ func (s *MCPServer) invokeUpdateBarcode(ctx context.Context, params map[string]i
 	groupNames := getStringParam(params, "group_names")
 	categoryCode := getStringParam(params, "categorycode")
 	categoryNames := getStringParam(params, "category_names")
-	return tools.UpdateBarcode(ctx, shopID, guidFixed, names, itemUnitCode, itemUnitNames, prices, groupCode, groupNames, categoryCode, categoryNames)
+	return tools.UpdateBarcode(ctx, holdingCode, guidFixed, names, itemUnitCode, itemUnitNames, prices, groupCode, groupNames, categoryCode, categoryNames)
 }
 
 // invokeDeleteBarcode invokes the delete barcode tool
 func (s *MCPServer) invokeDeleteBarcode(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	guidFixed := getStringParam(params, "guid_fixed")
-	return tools.DeleteBarcode(ctx, shopID, guidFixed)
+	return tools.DeleteBarcode(ctx, holdingCode, guidFixed)
 }
 
 // invokeDeleteBarcodes invokes the bulk delete barcodes tool
 func (s *MCPServer) invokeDeleteBarcodes(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	guidfixeds := getStringParam(params, "guidfixeds")
-	return tools.DeleteBarcodes(ctx, shopID, guidfixeds)
+	return tools.DeleteBarcodes(ctx, holdingCode, guidfixeds)
 }
 
 // invokeGetBarcodeSchema invokes the get barcode schema tool
@@ -2102,87 +2102,87 @@ func (s *MCPServer) invokeGetBarcodeSchema(ctx context.Context, params map[strin
 
 // invokeGetRefBarcodes invokes the get reference barcodes tool
 func (s *MCPServer) invokeGetRefBarcodes(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	itemCode := getStringParam(params, "itemcode")
 	barcode := getStringParam(params, "barcode")
-	return tools.GetRefBarcodes(ctx, shopID, itemCode, barcode)
+	return tools.GetRefBarcodes(ctx, holdingCode, itemCode, barcode)
 }
 
 // invokeSetRefBarcode invokes the set reference barcode tool
 func (s *MCPServer) invokeSetRefBarcode(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	barcode := getStringParam(params, "barcode")
 	refBarcode := getStringParam(params, "ref_barcode")
 	qty := getFloatParam(params, "qty")
 	standValue := getFloatParam(params, "standvalue")
 	divideValue := getFloatParam(params, "dividevalue")
 	condition := getBoolParam(params, "condition")
-	return tools.SetRefBarcode(ctx, shopID, barcode, refBarcode, qty, standValue, divideValue, condition)
+	return tools.SetRefBarcode(ctx, holdingCode, barcode, refBarcode, qty, standValue, divideValue, condition)
 }
 
 // invokeCreateMultiUnitBarcode invokes the create multi-unit barcode tool
 func (s *MCPServer) invokeCreateMultiUnitBarcode(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	itemCode := getStringParam(params, "itemcode")
 	names := getStringParam(params, "names")
 	units := getStringParam(params, "units")
-	return tools.CreateMultiUnitBarcode(ctx, shopID, itemCode, names, units)
+	return tools.CreateMultiUnitBarcode(ctx, holdingCode, itemCode, names, units)
 }
 
 func (s *MCPServer) invokeRebuildProducts(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
-	return tools.RebuildProducts(ctx, shopID)
+	holdingCode := getStringParam(params, "holding_code")
+	return tools.RebuildProducts(ctx, holdingCode)
 }
 
 func (s *MCPServer) invokeRebuildEmbeddings(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	forceAll := getBoolParam(params, "force_all")
 	entityType := getStringParam(params, "entity_type")
 	if entityType == "all" {
-		return tools.RebuildAllEmbeddings(ctx, shopID, forceAll)
+		return tools.RebuildAllEmbeddings(ctx, holdingCode, forceAll)
 	}
-	return tools.RebuildEmbeddings(ctx, shopID, forceAll, entityType)
+	return tools.RebuildEmbeddings(ctx, holdingCode, forceAll, entityType)
 }
 
 // ==================== Product Group Tool Invocations ====================
 
 func (s *MCPServer) invokeListProductGroups(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	keyword := getStringParam(params, "keyword")
 	limit := getIntParam(params, "limit")
-	return tools.ListProductGroups(ctx, shopID, keyword, limit)
+	return tools.ListProductGroups(ctx, holdingCode, keyword, limit)
 }
 
 func (s *MCPServer) invokeCreateProductGroup(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	code := getStringParam(params, "code")
 	names := getStringParam(params, "names")
-	return tools.CreateProductGroup(ctx, shopID, code, names)
+	return tools.CreateProductGroup(ctx, holdingCode, code, names)
 }
 
 func (s *MCPServer) invokeCreateProductGroups(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	groups := getStringParam(params, "groups")
-	return tools.CreateProductGroups(ctx, shopID, groups)
+	return tools.CreateProductGroups(ctx, holdingCode, groups)
 }
 
 func (s *MCPServer) invokeUpdateProductGroup(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	code := getStringParam(params, "code")
 	names := getStringParam(params, "names")
-	return tools.UpdateProductGroup(ctx, shopID, code, names)
+	return tools.UpdateProductGroup(ctx, holdingCode, code, names)
 }
 
 func (s *MCPServer) invokeDeleteProductGroup(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	code := getStringParam(params, "code")
-	return tools.DeleteProductGroup(ctx, shopID, code)
+	return tools.DeleteProductGroup(ctx, holdingCode, code)
 }
 
 func (s *MCPServer) invokeDeleteProductGroups(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	codes := getStringParam(params, "codes")
-	return tools.DeleteProductGroups(ctx, shopID, codes)
+	return tools.DeleteProductGroups(ctx, holdingCode, codes)
 }
 
 func (s *MCPServer) invokeGetProductGroupSchema(ctx context.Context, params map[string]interface{}) (interface{}, error) {
@@ -2192,45 +2192,45 @@ func (s *MCPServer) invokeGetProductGroupSchema(ctx context.Context, params map[
 // ==================== Product Category Tool Invocations ====================
 
 func (s *MCPServer) invokeListProductCategories(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	keyword := getStringParam(params, "keyword")
 	limit := getIntParam(params, "limit")
-	return tools.ListProductCategories(ctx, shopID, keyword, limit)
+	return tools.ListProductCategories(ctx, holdingCode, keyword, limit)
 }
 
 func (s *MCPServer) invokeCreateProductCategory(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	names := getStringParam(params, "names")
 	parentGUID := getStringParam(params, "parent_guid")
 	groupNumber := getIntParam(params, "group_number")
-	return tools.CreateProductCategory(ctx, shopID, names, parentGUID, groupNumber)
+	return tools.CreateProductCategory(ctx, holdingCode, names, parentGUID, groupNumber)
 }
 
 func (s *MCPServer) invokeCreateProductCategories(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	categories := getStringParam(params, "categories")
-	return tools.CreateProductCategories(ctx, shopID, categories)
+	return tools.CreateProductCategories(ctx, holdingCode, categories)
 }
 
 func (s *MCPServer) invokeUpdateProductCategory(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	guidFixed := getStringParam(params, "guid_fixed")
 	names := getStringParam(params, "names")
 	parentGUID := getStringParam(params, "parent_guid")
 	groupNumber := getIntParam(params, "group_number")
-	return tools.UpdateProductCategory(ctx, shopID, guidFixed, names, parentGUID, groupNumber)
+	return tools.UpdateProductCategory(ctx, holdingCode, guidFixed, names, parentGUID, groupNumber)
 }
 
 func (s *MCPServer) invokeDeleteProductCategory(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	guidFixed := getStringParam(params, "guid_fixed")
-	return tools.DeleteProductCategory(ctx, shopID, guidFixed)
+	return tools.DeleteProductCategory(ctx, holdingCode, guidFixed)
 }
 
 func (s *MCPServer) invokeDeleteProductCategories(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	guidfixeds := getStringParam(params, "guidfixeds")
-	return tools.DeleteProductCategories(ctx, shopID, guidfixeds)
+	return tools.DeleteProductCategories(ctx, holdingCode, guidfixeds)
 }
 
 func (s *MCPServer) invokeGetProductCategorySchema(ctx context.Context, params map[string]interface{}) (interface{}, error) {
@@ -2240,21 +2240,21 @@ func (s *MCPServer) invokeGetProductCategorySchema(ctx context.Context, params m
 // ==================== Creditor Invokers ====================
 
 func (s *MCPServer) invokeListCreditors(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	keyword := getStringParam(params, "keyword")
 	limit := getIntParam(params, "limit")
-	return tools.ListCreditors(ctx, shopID, keyword, limit)
+	return tools.ListCreditors(ctx, holdingCode, keyword, limit)
 }
 
 func (s *MCPServer) invokeSearchCreditors(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	keyword := getStringParam(params, "keyword")
 	limit := getIntParam(params, "limit")
-	return tools.SearchCreditors(ctx, shopID, keyword, limit)
+	return tools.SearchCreditors(ctx, holdingCode, keyword, limit)
 }
 
 func (s *MCPServer) invokeCreateCreditor(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	code := getStringParam(params, "code")
 	names := getStringParam(params, "names")
 	taxid := getStringParam(params, "tax_id")
@@ -2262,36 +2262,36 @@ func (s *MCPServer) invokeCreateCreditor(ctx context.Context, params map[string]
 	personaltype := int8(getIntParam(params, "personal_type"))
 	creditday := getIntParam(params, "creditday")
 	address := getStringParam(params, "addressforbilling")
-	return tools.CreateCreditor(ctx, shopID, code, names, taxid, email, personaltype, creditday, address)
+	return tools.CreateCreditor(ctx, holdingCode, code, names, taxid, email, personaltype, creditday, address)
 }
 
 func (s *MCPServer) invokeCreateCreditors(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	creditors := getStringParam(params, "creditors")
-	return tools.CreateCreditors(ctx, shopID, creditors)
+	return tools.CreateCreditors(ctx, holdingCode, creditors)
 }
 
 func (s *MCPServer) invokeUpdateCreditor(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	guidfixed := getStringParam(params, "guid_fixed")
 	names := getStringParam(params, "names")
 	taxid := getStringParam(params, "tax_id")
 	email := getStringParam(params, "email")
 	creditday := getIntParam(params, "creditday")
 	address := getStringParam(params, "addressforbilling")
-	return tools.UpdateCreditor(ctx, shopID, guidfixed, names, taxid, email, creditday, address)
+	return tools.UpdateCreditor(ctx, holdingCode, guidfixed, names, taxid, email, creditday, address)
 }
 
 func (s *MCPServer) invokeDeleteCreditor(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	guidfixed := getStringParam(params, "guid_fixed")
-	return tools.DeleteCreditor(ctx, shopID, guidfixed)
+	return tools.DeleteCreditor(ctx, holdingCode, guidfixed)
 }
 
 func (s *MCPServer) invokeDeleteCreditors(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	guidfixeds := getStringParam(params, "guidfixeds")
-	return tools.DeleteCreditors(ctx, shopID, guidfixeds)
+	return tools.DeleteCreditors(ctx, holdingCode, guidfixeds)
 }
 
 func (s *MCPServer) invokeGetCreditorSchema(ctx context.Context, params map[string]interface{}) (interface{}, error) {
@@ -2301,21 +2301,21 @@ func (s *MCPServer) invokeGetCreditorSchema(ctx context.Context, params map[stri
 // ==================== Debtor Invokers ====================
 
 func (s *MCPServer) invokeListDebtors(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	keyword := getStringParam(params, "keyword")
 	limit := getIntParam(params, "limit")
-	return tools.ListDebtors(ctx, shopID, keyword, limit)
+	return tools.ListDebtors(ctx, holdingCode, keyword, limit)
 }
 
 func (s *MCPServer) invokeSearchDebtors(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	keyword := getStringParam(params, "keyword")
 	limit := getIntParam(params, "limit")
-	return tools.SearchDebtors(ctx, shopID, keyword, limit)
+	return tools.SearchDebtors(ctx, holdingCode, keyword, limit)
 }
 
 func (s *MCPServer) invokeCreateDebtor(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	code := getStringParam(params, "code")
 	names := getStringParam(params, "names")
 	taxid := getStringParam(params, "tax_id")
@@ -2323,36 +2323,36 @@ func (s *MCPServer) invokeCreateDebtor(ctx context.Context, params map[string]in
 	personaltype := int8(getIntParam(params, "personal_type"))
 	creditday := getIntParam(params, "creditday")
 	address := getStringParam(params, "addressforbilling")
-	return tools.CreateDebtor(ctx, shopID, code, names, taxid, email, personaltype, creditday, address)
+	return tools.CreateDebtor(ctx, holdingCode, code, names, taxid, email, personaltype, creditday, address)
 }
 
 func (s *MCPServer) invokeCreateDebtors(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	debtors := getStringParam(params, "debtors")
-	return tools.CreateDebtors(ctx, shopID, debtors)
+	return tools.CreateDebtors(ctx, holdingCode, debtors)
 }
 
 func (s *MCPServer) invokeUpdateDebtor(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	guidfixed := getStringParam(params, "guid_fixed")
 	names := getStringParam(params, "names")
 	taxid := getStringParam(params, "tax_id")
 	email := getStringParam(params, "email")
 	creditday := getIntParam(params, "creditday")
 	address := getStringParam(params, "addressforbilling")
-	return tools.UpdateDebtor(ctx, shopID, guidfixed, names, taxid, email, creditday, address)
+	return tools.UpdateDebtor(ctx, holdingCode, guidfixed, names, taxid, email, creditday, address)
 }
 
 func (s *MCPServer) invokeDeleteDebtor(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	guidfixed := getStringParam(params, "guid_fixed")
-	return tools.DeleteDebtor(ctx, shopID, guidfixed)
+	return tools.DeleteDebtor(ctx, holdingCode, guidfixed)
 }
 
 func (s *MCPServer) invokeDeleteDebtors(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	guidfixeds := getStringParam(params, "guidfixeds")
-	return tools.DeleteDebtors(ctx, shopID, guidfixeds)
+	return tools.DeleteDebtors(ctx, holdingCode, guidfixeds)
 }
 
 func (s *MCPServer) invokeGetDebtorSchema(ctx context.Context, params map[string]interface{}) (interface{}, error) {
@@ -2362,14 +2362,14 @@ func (s *MCPServer) invokeGetDebtorSchema(ctx context.Context, params map[string
 // ==================== Purchase Order Invokers ====================
 
 func (s *MCPServer) invokeListPurchaseOrders(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	keyword := getStringParam(params, "keyword")
 	limit := getIntParam(params, "limit")
-	return tools.ListPurchaseOrders(ctx, shopID, keyword, limit)
+	return tools.ListPurchaseOrders(ctx, holdingCode, keyword, limit)
 }
 
 func (s *MCPServer) invokeCreatePurchaseOrder(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	docno := getStringParam(params, "docno")
 	custcode := getStringParam(params, "custcode")
 	custnames := getStringParam(params, "custnames")
@@ -2379,24 +2379,24 @@ func (s *MCPServer) invokeCreatePurchaseOrder(ctx context.Context, params map[st
 	vattype := int8(getIntParam(params, "vat_type"))
 	vatrate := getFloatParam(params, "vatrate")
 	totalamount := getFloatParam(params, "total_amount")
-	return tools.CreatePurchaseOrder(ctx, shopID, docno, custcode, custnames, details, description, transflag, vattype, vatrate, totalamount)
+	return tools.CreatePurchaseOrder(ctx, holdingCode, docno, custcode, custnames, details, description, transflag, vattype, vatrate, totalamount)
 }
 
 func (s *MCPServer) invokeUpdatePurchaseOrder(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	guidfixed := getStringParam(params, "guid_fixed")
 	custnames := getStringParam(params, "custnames")
 	details := getStringParam(params, "details")
 	description := getStringParam(params, "description")
 	totalamount := getFloatParam(params, "total_amount")
 	status := int8(getIntParam(params, "status"))
-	return tools.UpdatePurchaseOrder(ctx, shopID, guidfixed, custnames, details, description, totalamount, status)
+	return tools.UpdatePurchaseOrder(ctx, holdingCode, guidfixed, custnames, details, description, totalamount, status)
 }
 
 func (s *MCPServer) invokeDeletePurchaseOrder(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	guidfixed := getStringParam(params, "guid_fixed")
-	return tools.DeletePurchaseOrder(ctx, shopID, guidfixed)
+	return tools.DeletePurchaseOrder(ctx, holdingCode, guidfixed)
 }
 
 func (s *MCPServer) invokeGetPurchaseOrderSchema(ctx context.Context, params map[string]interface{}) (interface{}, error) {
@@ -2406,14 +2406,14 @@ func (s *MCPServer) invokeGetPurchaseOrderSchema(ctx context.Context, params map
 // ==================== Purchase Requisition Invokers ====================
 
 func (s *MCPServer) invokeListPurchaseRequisitions(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	keyword := getStringParam(params, "keyword")
 	limit := getIntParam(params, "limit")
-	return tools.ListPurchaseRequisitions(ctx, shopID, keyword, limit)
+	return tools.ListPurchaseRequisitions(ctx, holdingCode, keyword, limit)
 }
 
 func (s *MCPServer) invokeCreatePurchaseRequisition(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	docno := getStringParam(params, "docno")
 	requesterCode := getStringParam(params, "requester_code")
 	requesterName := getStringParam(params, "requester_name")
@@ -2427,11 +2427,11 @@ func (s *MCPServer) invokeCreatePurchaseRequisition(ctx context.Context, params 
 	details := getStringParam(params, "details")
 	description := getStringParam(params, "description")
 	totalamount := getFloatParam(params, "total_amount")
-	return tools.CreatePurchaseRequisition(ctx, shopID, docno, requesterCode, requesterName, departmentCode, departmentNames, purpose, budgetCode, budgetAmount, urgency, requestedDeliveryDate, details, description, totalamount)
+	return tools.CreatePurchaseRequisition(ctx, holdingCode, docno, requesterCode, requesterName, departmentCode, departmentNames, purpose, budgetCode, budgetAmount, urgency, requestedDeliveryDate, details, description, totalamount)
 }
 
 func (s *MCPServer) invokeUpdatePurchaseRequisition(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	guidfixed := getStringParam(params, "guid_fixed")
 	requesterCode := getStringParam(params, "requester_code")
 	requesterName := getStringParam(params, "requester_name")
@@ -2447,13 +2447,13 @@ func (s *MCPServer) invokeUpdatePurchaseRequisition(ctx context.Context, params 
 	totalamount := getFloatParam(params, "total_amount")
 	status := int8(getIntParam(params, "status"))
 	conversionStatus := getStringParam(params, "conversion_status")
-	return tools.UpdatePurchaseRequisition(ctx, shopID, guidfixed, requesterCode, requesterName, departmentCode, departmentNames, purpose, budgetCode, budgetAmount, urgency, requestedDeliveryDate, details, description, totalamount, status, conversionStatus)
+	return tools.UpdatePurchaseRequisition(ctx, holdingCode, guidfixed, requesterCode, requesterName, departmentCode, departmentNames, purpose, budgetCode, budgetAmount, urgency, requestedDeliveryDate, details, description, totalamount, status, conversionStatus)
 }
 
 func (s *MCPServer) invokeDeletePurchaseRequisition(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	shopID := getStringParam(params, "shop_id")
+	holdingCode := getStringParam(params, "holding_code")
 	guidfixed := getStringParam(params, "guid_fixed")
-	return tools.DeletePurchaseRequisition(ctx, shopID, guidfixed)
+	return tools.DeletePurchaseRequisition(ctx, holdingCode, guidfixed)
 }
 
 func (s *MCPServer) invokeGetPurchaseRequisitionSchema(ctx context.Context, params map[string]interface{}) (interface{}, error) {

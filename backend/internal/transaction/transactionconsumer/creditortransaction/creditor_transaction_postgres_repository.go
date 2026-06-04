@@ -7,10 +7,10 @@ import (
 )
 
 type ICreditorTransactionPGRepository interface {
-	Get(shopID string, docNo string) (*models.CreditorTransactionPG, error)
+	Get(holdingCode string, docNo string) (*models.CreditorTransactionPG, error)
 	Create(doc models.CreditorTransactionPG) error
-	Update(shopID string, docNo string, doc models.CreditorTransactionPG) error
-	Delete(shopID string, docNo string, doc models.CreditorTransactionPG) error
+	Update(holdingCode string, docNo string, doc models.CreditorTransactionPG) error
+	Delete(holdingCode string, docNo string, doc models.CreditorTransactionPG) error
 }
 
 type CreditorTransactionPGRepository struct {

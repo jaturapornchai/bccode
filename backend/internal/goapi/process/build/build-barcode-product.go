@@ -64,7 +64,7 @@ func ProcessInsertBarCodeListForClickHouse(chClient clickhouse.Conn, barcodes *[
 	// เตรียมข้อมูลสำหรับ batch insert
 	batch, err := chClient.PrepareBatch(context.Background(), `
 		INSERT INTO productbarcode (
-			shopid, itemcode, barcode, barcoderef, name0, name1, name2, name3, name4, name5,
+			holding_code, itemcode, barcode, barcoderef, name0, name1, name2, name3, name4, name5,
 			checksum, groupcode, groupnames, unitcode, unitname, price1, price_retail, unitstand, unitdivide, imageuri
 		)
 	`)
@@ -77,7 +77,7 @@ func ProcessInsertBarCodeListForClickHouse(chClient clickhouse.Conn, barcodes *[
 	for _, barcode := range *barcodes {
 		// เพิ่มข้อมูลลงใน batch
 		err = batch.Append(
-			barcode.ShopID,               // shopid
+			barcode.HoldingCode,          // holding_code
 			barcode.ItemCode,             // itemcode
 			barcode.Barcode,              // barcode
 			barcode.BarcodeRef,           // barcoderef
@@ -127,22 +127,22 @@ func ProcessInsertBarCodeList(dbPg *sql.DB, chClient clickhouse.Conn, barcodes *
 	return nil
 }
 
-func ProcessBarcodeRebuildAll(shopId string) {
+func ProcessBarcodeRebuildAll(holdingCode string) {
 	mongoClient := myglobal.SafeMongoConnectFast() // Use optimized connection
 	if mongoClient == nil {
 		logger.Error("MongoConnect failed")
 		return
 	}
 
-	logger.Info("Starting BarcodeRebuildAll for shop %s", shopId)
+	logger.Info("Starting BarcodeRebuildAll for shop %s", holdingCode)
 
-	pgDb, err := mypg.PgSqlFastConnect(shopId)
+	pgDb, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		logger.Info("Failed to connect to Postgres: %v", err)
 		return
 	}
 
-	// postgresql delete existing rows for this shop (แยก database แล้ว ไม่ต้อง where shopid)
+	// postgresql delete existing rows for this shop (แยก database แล้ว ไม่ต้อง where holding_code)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -151,7 +151,7 @@ func ProcessBarcodeRebuildAll(shopId string) {
 		logger.Error("truncating productbarcode: %v", err)
 		return
 	}
-	logger.Info("Cleared productbarcode rows for shopId %s", shopId)
+	logger.Info("Cleared productbarcode rows for holdingCode %s", holdingCode)
 
 	// clickhouse delete existing rows for this shop
 	chClient, err := myclickhouse.ClickHouseFastConnect()
@@ -161,7 +161,7 @@ func ProcessBarcodeRebuildAll(shopId string) {
 	}
 	// ใช้ connection pool ไม่ต้อง close
 
-	err = chClient.Exec(context.Background(), "ALTER TABLE productbarcode DELETE WHERE shopid = ?", shopId)
+	err = chClient.Exec(context.Background(), "ALTER TABLE productbarcode DELETE WHERE holding_code = ?", holdingCode)
 	if err != nil {
 		logger.Error("deleting existing ClickHouse productbarcode rows: %v", err)
 		return
@@ -171,7 +171,7 @@ func ProcessBarcodeRebuildAll(shopId string) {
 	svcConfig := config.NewServiceConfig()
 	MongodbDatabaseName := svcConfig.MongodbDatabaseName()
 	collection := mongoClient.Database(MongodbDatabaseName).Collection("productBarcodes")
-	cur, err := collection.Find(context.Background(), bson.M{"shopid": shopId, "deleted_by": bson.M{"$exists": false}})
+	cur, err := collection.Find(context.Background(), bson.M{"holding_code": holdingCode, "deleted_by": bson.M{"$exists": false}})
 	logger.Info("Finding documents in MongoDB collection %s", MongodbDatabaseName)
 	if err != nil {
 		logger.Error("finding documents: %v", err)
@@ -190,12 +190,12 @@ func ProcessBarcodeRebuildAll(shopId string) {
 		logger.Info("Cursor error: %v", err)
 		return
 	}
-	logger.Info("Fetched %d product barcodes from MongoDB for shop %s", len(productBarcodes), shopId)
+	logger.Info("Fetched %d product barcodes from MongoDB for shop %s", len(productBarcodes), holdingCode)
 
 	// insert into Postgres and ClickHouse
 	if err := ProcessInsertBarCodeList(pgDb, chClient, &productBarcodes); err != nil {
 		logger.Error("BulkInsertWithCopy productbarcode error: %v", err)
 		return
 	}
-	logger.Info("Inserted %d product barcodes for shop %s", len(productBarcodes), shopId)
+	logger.Info("Inserted %d product barcodes for shop %s", len(productBarcodes), holdingCode)
 }

@@ -67,7 +67,7 @@ func (h PaidAdvanceRefundHttp) RegisterHttp() {
 // @Router /transaction/paidadvancerefund [post]
 func (h PaidAdvanceRefundHttp) CreatePaidAdvanceRefund(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.PaidAdvanceRefund{}
@@ -83,7 +83,7 @@ func (h PaidAdvanceRefundHttp) CreatePaidAdvanceRefund(ctx microservice.IContext
 		return err
 	}
 
-	idx, docNo, err := h.svc.CreatePaidAdvanceRefund(shopID, authUsername, *docReq)
+	idx, docNo, err := h.svc.CreatePaidAdvanceRefund(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -111,7 +111,7 @@ func (h PaidAdvanceRefundHttp) CreatePaidAdvanceRefund(ctx microservice.IContext
 func (h PaidAdvanceRefundHttp) UpdatePaidAdvanceRefund(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -129,7 +129,7 @@ func (h PaidAdvanceRefundHttp) UpdatePaidAdvanceRefund(ctx microservice.IContext
 		return err
 	}
 
-	err = h.svc.UpdatePaidAdvanceRefund(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdatePaidAdvanceRefund(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -155,12 +155,12 @@ func (h PaidAdvanceRefundHttp) UpdatePaidAdvanceRefund(ctx microservice.IContext
 // @Router /transaction/paidadvancerefund/{id} [delete]
 func (h PaidAdvanceRefundHttp) DeletePaidAdvanceRefund(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeletePaidAdvanceRefund(shopID, id, authUsername)
+	err := h.svc.DeletePaidAdvanceRefund(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -186,7 +186,7 @@ func (h PaidAdvanceRefundHttp) DeletePaidAdvanceRefund(ctx microservice.IContext
 // @Router /transaction/paidadvancerefund [delete]
 func (h PaidAdvanceRefundHttp) DeletePaidAdvanceRefundByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -199,7 +199,7 @@ func (h PaidAdvanceRefundHttp) DeletePaidAdvanceRefundByGUIDs(ctx microservice.I
 		return err
 	}
 
-	err = h.svc.DeletePaidAdvanceRefundByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeletePaidAdvanceRefundByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -224,12 +224,12 @@ func (h PaidAdvanceRefundHttp) DeletePaidAdvanceRefundByGUIDs(ctx microservice.I
 // @Router /transaction/paidadvancerefund/{id} [get]
 func (h PaidAdvanceRefundHttp) InfoPaidAdvanceRefund(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get PaidAdvanceRefund %v", id)
-	doc, err := h.svc.InfoPaidAdvanceRefund(shopID, id)
+	doc, err := h.svc.InfoPaidAdvanceRefund(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -255,11 +255,11 @@ func (h PaidAdvanceRefundHttp) InfoPaidAdvanceRefund(ctx microservice.IContext) 
 // @Router /transaction/paidadvancerefund/code/{code} [get]
 func (h PaidAdvanceRefundHttp) InfoPaidAdvanceRefundByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoPaidAdvanceRefundByCode(shopID, code)
+	doc, err := h.svc.InfoPaidAdvanceRefundByCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -290,7 +290,7 @@ func (h PaidAdvanceRefundHttp) InfoPaidAdvanceRefundByCode(ctx microservice.ICon
 // @Router /transaction/paidadvancerefund [get]
 func (h PaidAdvanceRefundHttp) SearchPaidAdvanceRefundPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -311,7 +311,7 @@ func (h PaidAdvanceRefundHttp) SearchPaidAdvanceRefundPage(ctx microservice.ICon
 		},
 	})
 
-	docList, pagination, err := h.svc.SearchPaidAdvanceRefund(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchPaidAdvanceRefund(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -344,7 +344,7 @@ func (h PaidAdvanceRefundHttp) SearchPaidAdvanceRefundPage(ctx microservice.ICon
 // @Router /transaction/paidadvancerefund/list [get]
 func (h PaidAdvanceRefundHttp) SearchPaidAdvanceRefundStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -367,7 +367,7 @@ func (h PaidAdvanceRefundHttp) SearchPaidAdvanceRefundStep(ctx microservice.ICon
 		},
 	})
 
-	docList, total, err := h.svc.SearchPaidAdvanceRefundStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchPaidAdvanceRefundStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -395,7 +395,7 @@ func (h PaidAdvanceRefundHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -407,7 +407,7 @@ func (h PaidAdvanceRefundHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

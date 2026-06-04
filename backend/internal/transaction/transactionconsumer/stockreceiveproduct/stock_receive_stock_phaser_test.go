@@ -16,8 +16,8 @@ func TestStockReceiveStockTransactionPhaser(t *testing.T) {
 
 	want := models.StockTransaction{
 		GuidFixed: "2QoOKOZ7Bv8dSUv38VTkkS2AZ0J",
-		ShopIdentity: pkgModels.ShopIdentity{
-			ShopID: "2PrIIqTWxoBXv16K310sNwfHmfY",
+		HoldingCodeentity: pkgModels.HoldingCodeentity{
+			HoldingCode: "2PrIIqTWxoBXv16K310sNwfHmfY",
 		},
 		TransFlag:      60,
 		InquiryType:    0,
@@ -42,7 +42,7 @@ func TestStockReceiveStockTransactionPhaser(t *testing.T) {
 		IsCancel:       false,
 		Details: &[]models.StockTransactionDetail{
 			{
-				ShopID:              "2PrIIqTWxoBXv16K310sNwfHmfY",
+				HoldingCode:         "2PrIIqTWxoBXv16K310sNwfHmfY",
 				DocNo:               "IF2023060100001",
 				Barcode:             "BARCODE001",
 				UnitCode:            "ENV",
@@ -70,7 +70,7 @@ func TestStockReceiveStockTransactionPhaser(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, want.GuidFixed, get.GuidFixed, "GuidFixed")
-	assert.Equal(t, want.ShopID, get.ShopID, "ShopID")
+	assert.Equal(t, want.HoldingCode, get.HoldingCode, "HoldingCode")
 	assert.Equal(t, want.TransFlag, get.TransFlag, "TransFlag")
 	assert.Equal(t, want.InquiryType, get.InquiryType, "InquiryType")
 	assert.Equal(t, want.DocNo, get.DocNo, "DocNo")
@@ -92,7 +92,7 @@ func TestStockReceiveStockTransactionPhaser(t *testing.T) {
 	assert.Equal(t, want.Status, get.Status, "Status")
 	assert.Equal(t, want.IsCancel, get.IsCancel, "IsCancel")
 
-	assert.Equal(t, (*want.Details)[0].ShopID, (*get.Details)[0].ShopID, "Details[0].ShopID")
+	assert.Equal(t, (*want.Details)[0].HoldingCode, (*get.Details)[0].HoldingCode, "Details[0].HoldingCode")
 	assert.Equal(t, (*want.Details)[0].DocNo, (*get.Details)[0].DocNo, "Details[0].DocNo")
 	assert.Equal(t, (*want.Details)[0].Barcode, (*get.Details)[0].Barcode, "Details[0].Barcode")
 	assert.Equal(t, (*want.Details)[0].UnitCode, (*get.Details)[0].UnitCode, "Details[0].UnitCode")

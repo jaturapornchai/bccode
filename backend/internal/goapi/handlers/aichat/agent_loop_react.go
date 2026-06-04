@@ -252,25 +252,25 @@ func parseReActResponse(text string) (thought, action, actionInputJSON string, o
 // RunAgentReAct — ReAct pattern agent loop สำหรับ Ollama (gemma4 และ local models)
 // ใส่ tools list ใน system prompt เป็น text, parse Thought/Action/Action Input จาก response
 func RunAgentReAct(ctx context.Context, req AgentV2Request, emitSSE func(SSEEvent)) (*AgentChatResponse, error) {
-	shopID := req.ShopID
-	sessionKey := BuildSessionKey(shopID, req.SessionID)
+	holdingCode := req.HoldingCode
+	sessionKey := BuildSessionKey(holdingCode, req.SessionID)
 	logger.Info("[น้องกุ้ง ReAct] session_key=%s", sessionKey)
 
 	// 1. Load session memory (in-memory only — backend ห้ามเขียน DB)
 	var session *ChatSessionDoc
 	if req.SessionID != "" {
 		var err error
-		session, err = loadSession(req.SessionID, shopID)
+		session, err = loadSession(req.SessionID, holdingCode)
 		if err != nil {
 			logger.Warn("[น้องกุ้ง ReAct] loadSession error: %v — starting fresh", err)
-			session = &ChatSessionDoc{SessionID: req.SessionID, ShopID: shopID}
+			session = &ChatSessionDoc{SessionID: req.SessionID, HoldingCode: holdingCode}
 		}
 	}
 
 	// 2. Get AI providers
 	emitSSE(SSEEvent{Type: "status", Data: "กำลังเตรียมพร้อม (ReAct mode)..."})
 
-	providers := aiprovider.GetShopToolCallingProviders(shopID)
+	providers := aiprovider.GetShopToolCallingProviders(holdingCode)
 	if len(providers) == 0 {
 		return nil, fmt.Errorf("ไม่มี AI Provider — กรุณาตั้งค่าในหน้า AI Provider Settings")
 	}
@@ -527,8 +527,8 @@ func RunAgentReAct(ctx context.Context, req AgentV2Request, emitSSE func(SSEEven
 			params = map[string]any{}
 		}
 
-		// Inject shop_id ทุก tool call
-		params["shop_id"] = shopID
+		// Inject holding_code ทุก tool call
+		params["holding_code"] = holdingCode
 
 		// Emit tool_start
 		toolStart := time.Now()
@@ -537,7 +537,7 @@ func RunAgentReAct(ctx context.Context, req AgentV2Request, emitSSE func(SSEEven
 		}})
 
 		// Execute tool via MCP (or special inline handlers like query_knowledge_base)
-		toolResult, toolErr := dispatchAgentTool(ctx, mcpServer.ExecuteToolDirect, shopID, action, params)
+		toolResult, toolErr := dispatchAgentTool(ctx, mcpServer.ExecuteToolDirect, holdingCode, action, params)
 		durationMs := time.Since(toolStart).Milliseconds()
 
 		// Determine source label

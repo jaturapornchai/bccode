@@ -61,7 +61,7 @@ func (h StaffHttp) RegisterHttp() {
 // @Router /restaurant/staff [post]
 func (h StaffHttp) CreateStaff(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.Staff{}
@@ -77,7 +77,7 @@ func (h StaffHttp) CreateStaff(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreateStaff(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateStaff(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -104,7 +104,7 @@ func (h StaffHttp) CreateStaff(ctx microservice.IContext) error {
 func (h StaffHttp) UpdateStaff(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -122,7 +122,7 @@ func (h StaffHttp) UpdateStaff(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateStaff(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateStaff(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -148,12 +148,12 @@ func (h StaffHttp) UpdateStaff(ctx microservice.IContext) error {
 // @Router /restaurant/staff/{id} [delete]
 func (h StaffHttp) DeleteStaff(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteStaff(shopID, id, authUsername)
+	err := h.svc.DeleteStaff(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -179,7 +179,7 @@ func (h StaffHttp) DeleteStaff(ctx microservice.IContext) error {
 // @Router /restaurant/staff [delete]
 func (h StaffHttp) DeleteStaffByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -192,7 +192,7 @@ func (h StaffHttp) DeleteStaffByGUIDs(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.DeleteStaffByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteStaffByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -217,12 +217,12 @@ func (h StaffHttp) DeleteStaffByGUIDs(ctx microservice.IContext) error {
 // @Router /restaurant/staff/{id} [get]
 func (h StaffHttp) InfoStaff(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get Staff %v", id)
-	doc, err := h.svc.InfoStaff(shopID, id)
+	doc, err := h.svc.InfoStaff(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -250,10 +250,10 @@ func (h StaffHttp) InfoStaff(ctx microservice.IContext) error {
 // @Router /restaurant/staff [get]
 func (h StaffHttp) SearchStaffPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
-	docList, pagination, err := h.svc.SearchStaff(shopID, pageable)
+	docList, pagination, err := h.svc.SearchStaff(holdingCode, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -282,13 +282,13 @@ func (h StaffHttp) SearchStaffPage(ctx microservice.IContext) error {
 // @Router /restaurant/staff/list [get]
 func (h StaffHttp) SearchStaffLimit(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
 	lang := ctx.QueryParam("lang")
 
-	docList, total, err := h.svc.SearchStaffStep(shopID, lang, pageableStep)
+	docList, total, err := h.svc.SearchStaffStep(holdingCode, lang, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -316,7 +316,7 @@ func (h StaffHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -328,7 +328,7 @@ func (h StaffHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

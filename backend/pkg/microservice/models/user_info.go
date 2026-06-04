@@ -1,9 +1,9 @@
 package models
 
 type UserInfo struct {
-	Username string `json:"username" `
-	Name     string `json:"name"`
-	ShopID   string `json:"shopid" `
-	Role     uint8  `json:"role"`
-	UID      string `json:"uid"`
+	Username    string `json:"username" `
+	Name        string `json:"name"`
+	HoldingCode string `json:"holding_code" `
+	Role        uint8  `json:"role"`
+	UID         string `json:"uid"`
 }

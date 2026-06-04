@@ -25,9 +25,9 @@ import (
 
 // AttachmentUploadHandler - อัปโหลดไฟล์แนบเอกสารไปยัง R2 และบันทึก metadata ใน MongoDB
 // POST /api/attachment/upload
-// Form data: file, shopid, screen_type, docno, guidfixed, description, uploaded_by, uploaded_name
+// Form data: file, holding_code, screen_type, docno, guidfixed, description, uploaded_by, uploaded_name
 func AttachmentUploadHandler(c echo.Context) error {
-	shopID, authStatus := storageAuthorizedShopID(c, c.FormValue("shopid"))
+	holdingCode, authStatus := storageAuthorizedHoldingCode(c, c.FormValue("holding_code"))
 	if authStatus != http.StatusOK {
 		message := "shop not selected"
 		if authStatus == http.StatusForbidden {
@@ -67,11 +67,11 @@ func AttachmentUploadHandler(c echo.Context) error {
 	uploadedBy := c.FormValue("uploaded_by")
 	uploadedName := c.FormValue("uploaded_name")
 
-	if shopID == "" || screenType == "" || docNo == "" || guidFixed == "" {
+	if holdingCode == "" || screenType == "" || docNo == "" || guidFixed == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  "error",
 			"code":    400,
-			"message": "shopid, screen_type, docno, and guidfixed are required",
+			"message": "holding_code, screen_type, docno, and guidfixed are required",
 		})
 	}
 
@@ -152,10 +152,10 @@ func AttachmentUploadHandler(c echo.Context) error {
 	hash := sha256.Sum256(buf.Bytes())
 	hashStr := hex.EncodeToString(hash[:])[:16] // ใช้ 16 ตัวแรก
 
-	// Generate filename: shopid/attachments/screentype/guidfixed/timestamp_hash.ext
+	// Generate filename: holding_code/attachments/screentype/guidfixed/timestamp_hash.ext
 	timestamp := time.Now().Format("20060102_150405")
 	fileName := fmt.Sprintf("%s_%s%s", timestamp, hashStr, ext)
-	r2Key := fmt.Sprintf("%s/attachments/%s/%s/%s", shopID, screenType, guidFixed, fileName)
+	r2Key := fmt.Sprintf("%s/attachments/%s/%s/%s", holdingCode, screenType, guidFixed, fileName)
 
 	// Detect content type
 	contentType := http.DetectContentType(buf.Bytes())
@@ -192,7 +192,7 @@ func AttachmentUploadHandler(c echo.Context) error {
 	// Save metadata to MongoDB
 	now := time.Now()
 	attachmentDoc := models.AttachmentMetadata{
-		ShopID:       shopID,
+		HoldingCode:  holdingCode,
 		ScreenType:   screenType,
 		DocNo:        docNo,
 		GuidFixed:    guidFixed,
@@ -226,7 +226,7 @@ func AttachmentUploadHandler(c echo.Context) error {
 	}
 
 	logger.Success("Attachment uploaded successfully: %s (shop: %s, doc: %s, size: %d bytes)",
-		fileName, shopID, docNo, file.Size)
+		fileName, holdingCode, docNo, file.Size)
 
 	return c.JSON(http.StatusOK, models.AttachmentResponse{
 		Status:  "success",
@@ -238,7 +238,7 @@ func AttachmentUploadHandler(c echo.Context) error {
 
 // AttachmentListHandler - ดึงรายการไฟล์แนบตามเงื่อนไข
 // POST /api/attachment/list
-// Body: { shopid, screen_type, docno, guidfixed, limit, skip }
+// Body: { holding_code, screen_type, docno, guidfixed, limit, skip }
 func AttachmentListHandler(c echo.Context) error {
 	if atlasClient == nil {
 		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
@@ -257,7 +257,7 @@ func AttachmentListHandler(c echo.Context) error {
 		})
 	}
 
-	shopID, authStatus := storageAuthorizedShopID(c, req.ShopID)
+	holdingCode, authStatus := storageAuthorizedHoldingCode(c, req.HoldingCode)
 	if authStatus != http.StatusOK {
 		message := "shop not selected"
 		if authStatus == http.StatusForbidden {
@@ -271,7 +271,7 @@ func AttachmentListHandler(c echo.Context) error {
 	}
 
 	// Build filter
-	filter := bson.M{"shopid": shopID}
+	filter := bson.M{"holding_code": holdingCode}
 	if req.ScreenType != "" {
 		filter["screen_type"] = req.ScreenType
 	}
@@ -332,7 +332,7 @@ func AttachmentListHandler(c echo.Context) error {
 	for _, att := range attachments {
 		item := models.AttachmentListDataItem{
 			ID:           att.ID,
-			ShopID:       att.ShopID,
+			HoldingCode:  att.HoldingCode,
 			ScreenType:   att.ScreenType,
 			DocNo:        att.DocNo,
 			GuidFixed:    att.GuidFixed,
@@ -348,8 +348,8 @@ func AttachmentListHandler(c echo.Context) error {
 			UpdatedAt:    att.UpdatedAt,
 		}
 
-		// สร้าง private backend URL สำหรับ stream ผ่าน goapi เฉพาะไฟล์ใต้ shopid เดียวกัน
-		if client != nil && att.R2Key != "" && storageObjectBelongsToShop(att.R2Key, att.ShopID) {
+		// สร้าง private backend URL สำหรับ stream ผ่าน goapi เฉพาะไฟล์ใต้ holding_code เดียวกัน
+		if client != nil && att.R2Key != "" && storageObjectBelongsToShop(att.R2Key, att.HoldingCode) {
 			url, err := getPresignedURL(client, att.R2Key, 60)
 			if err == nil {
 				item.URL = url
@@ -370,7 +370,7 @@ func AttachmentListHandler(c echo.Context) error {
 
 // AttachmentDeleteHandler - ลบไฟล์แนบจาก R2 และ MongoDB
 // POST /api/attachment/delete
-// Body: { shopid, attachment_id or filename }
+// Body: { holding_code, attachment_id or filename }
 func AttachmentDeleteHandler(c echo.Context) error {
 	client, err := GetR2Client()
 	if err != nil || client == nil {
@@ -398,7 +398,7 @@ func AttachmentDeleteHandler(c echo.Context) error {
 		})
 	}
 
-	shopID, authStatus := storageAuthorizedShopID(c, req.ShopID)
+	holdingCode, authStatus := storageAuthorizedHoldingCode(c, req.HoldingCode)
 	if authStatus != http.StatusOK {
 		message := "shop not selected"
 		if authStatus == http.StatusForbidden {
@@ -425,7 +425,7 @@ func AttachmentDeleteHandler(c echo.Context) error {
 	collection := atlasDB.Collection("attachments")
 
 	// Build filter
-	filter := bson.M{"shopid": shopID}
+	filter := bson.M{"holding_code": holdingCode}
 	if req.AttachmentID != "" {
 		oid, err := primitive.ObjectIDFromHex(req.AttachmentID)
 		if err != nil {
@@ -451,8 +451,8 @@ func AttachmentDeleteHandler(c echo.Context) error {
 		})
 	}
 
-	if !storageObjectBelongsToShop(attachmentDoc.R2Key, shopID) {
-		logger.Warn("Attachment delete blocked: requested_shop=%s object_shop=%s", shopID, storageObjectShopID(attachmentDoc.R2Key))
+	if !storageObjectBelongsToShop(attachmentDoc.R2Key, holdingCode) {
+		logger.Warn("Attachment delete blocked: requested_shop=%s object_shop=%s", holdingCode, storageObjectHoldingCode(attachmentDoc.R2Key))
 		return c.JSON(http.StatusForbidden, map[string]interface{}{
 			"status":  "error",
 			"code":    403,
@@ -481,7 +481,7 @@ func AttachmentDeleteHandler(c echo.Context) error {
 		})
 	}
 
-	logger.Success("Attachment deleted: %s (shop: %s, doc: %s)", attachmentDoc.FileName, shopID, attachmentDoc.DocNo)
+	logger.Success("Attachment deleted: %s (shop: %s, doc: %s)", attachmentDoc.FileName, holdingCode, attachmentDoc.DocNo)
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"status":  "success",
@@ -491,7 +491,7 @@ func AttachmentDeleteHandler(c echo.Context) error {
 }
 
 // AttachmentDownloadHandler - ดาวน์โหลดไฟล์แนบโดยตรงผ่าน private backend stream
-// GET /api/attachment/download/:id?shopid=xxx
+// GET /api/attachment/download/:id?holding_code=xxx
 func AttachmentDownloadHandler(c echo.Context) error {
 	attachmentID := c.Param("id")
 	if attachmentID == "" {
@@ -502,7 +502,7 @@ func AttachmentDownloadHandler(c echo.Context) error {
 		})
 	}
 
-	shopID, authStatus := storageAuthorizedShopID(c, c.QueryParam("shopid"))
+	holdingCode, authStatus := storageAuthorizedHoldingCode(c, c.QueryParam("holding_code"))
 	if authStatus != http.StatusOK {
 		message := "shop not selected"
 		if authStatus == http.StatusForbidden {
@@ -546,8 +546,8 @@ func AttachmentDownloadHandler(c echo.Context) error {
 
 	collection := atlasDB.Collection("attachments")
 	filter := bson.M{
-		"_id":    oid,
-		"shopid": shopID,
+		"_id":          oid,
+		"holding_code": holdingCode,
 	}
 
 	var attachmentDoc models.AttachmentMetadata
@@ -560,8 +560,8 @@ func AttachmentDownloadHandler(c echo.Context) error {
 		})
 	}
 
-	if !storageObjectBelongsToShop(attachmentDoc.R2Key, shopID) {
-		logger.Warn("Attachment download blocked: requested_shop=%s object_shop=%s", shopID, storageObjectShopID(attachmentDoc.R2Key))
+	if !storageObjectBelongsToShop(attachmentDoc.R2Key, holdingCode) {
+		logger.Warn("Attachment download blocked: requested_shop=%s object_shop=%s", holdingCode, storageObjectHoldingCode(attachmentDoc.R2Key))
 		return c.JSON(http.StatusForbidden, map[string]interface{}{
 			"status":  "error",
 			"code":    403,

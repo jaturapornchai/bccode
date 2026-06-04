@@ -12,10 +12,10 @@ import (
 )
 
 type ISaleInvoiceTransactionAdminRepository interface {
-	FindSaleInvoiceByShopID(ctx context.Context, shopID string) ([]saleInvoiceModels.SaleInvoiceDoc, error)
-	FindPage(ctx context.Context, shopID string, searchInFields []string, pageable msModels.Pageable) ([]saleInvoiceModels.SaleInvoiceDoc, mongopagination.PaginationData, error)
-	FindPageFilter(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, pageable msModels.Pageable) ([]saleInvoiceModels.SaleInvoiceDoc, mongopagination.PaginationData, error)
-	FindSaleInvoiceDeleteByShopID(ctx context.Context, shopID string) ([]saleInvoiceModels.SaleInvoiceDoc, error)
+	FindSaleInvoiceByHoldingCode(ctx context.Context, holdingCode string) ([]saleInvoiceModels.SaleInvoiceDoc, error)
+	FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable msModels.Pageable) ([]saleInvoiceModels.SaleInvoiceDoc, mongopagination.PaginationData, error)
+	FindPageFilter(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, pageable msModels.Pageable) ([]saleInvoiceModels.SaleInvoiceDoc, mongopagination.PaginationData, error)
+	FindSaleInvoiceDeleteByHoldingCode(ctx context.Context, holdingCode string) ([]saleInvoiceModels.SaleInvoiceDoc, error)
 }
 
 type SaleInvoiceTransactionAdminRepository struct {
@@ -30,13 +30,13 @@ func NewSaleInvoiceTransactionAdminRepository(pst microservice.IPersisterMongo) 
 	}
 }
 
-func (r SaleInvoiceTransactionAdminRepository) FindSaleInvoiceByShopID(ctx context.Context, shopID string) ([]saleInvoiceModels.SaleInvoiceDoc, error) {
+func (r SaleInvoiceTransactionAdminRepository) FindSaleInvoiceByHoldingCode(ctx context.Context, holdingCode string) ([]saleInvoiceModels.SaleInvoiceDoc, error) {
 	docList := []saleInvoiceModels.SaleInvoiceDoc{}
 
 	err := r.pst.Find(ctx, &saleInvoiceModels.SaleInvoiceDoc{},
 		bson.M{
-			"shopid":    shopID,
-			"deleted_at": bson.M{"$exists": false},
+			"holding_code": holdingCode,
+			"deleted_at":   bson.M{"$exists": false},
 		},
 		&docList)
 	if err != nil {
@@ -46,20 +46,9 @@ func (r SaleInvoiceTransactionAdminRepository) FindSaleInvoiceByShopID(ctx conte
 	return docList, nil
 }
 
-func (r SaleInvoiceTransactionAdminRepository) FindPage(ctx context.Context, shopID string, searchInFields []string, pageable msModels.Pageable) ([]saleInvoiceModels.SaleInvoiceDoc, mongopagination.PaginationData, error) {
+func (r SaleInvoiceTransactionAdminRepository) FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable msModels.Pageable) ([]saleInvoiceModels.SaleInvoiceDoc, mongopagination.PaginationData, error) {
 
-	results, pagination, err := r.SearchRepository.FindPage(ctx, shopID, searchInFields, pageable)
-
-	if err != nil {
-		return nil, mongopagination.PaginationData{}, err
-	}
-
-	return results, pagination, nil
-}
-
-func (r SaleInvoiceTransactionAdminRepository) FindPageFilter(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, pageable msModels.Pageable) ([]saleInvoiceModels.SaleInvoiceDoc, mongopagination.PaginationData, error) {
-
-	results, pagination, err := r.SearchRepository.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	results, pagination, err := r.SearchRepository.FindPage(ctx, holdingCode, searchInFields, pageable)
 
 	if err != nil {
 		return nil, mongopagination.PaginationData{}, err
@@ -68,13 +57,24 @@ func (r SaleInvoiceTransactionAdminRepository) FindPageFilter(ctx context.Contex
 	return results, pagination, nil
 }
 
-func (r SaleInvoiceTransactionAdminRepository) FindSaleInvoiceDeleteByShopID(ctx context.Context, shopID string) ([]saleInvoiceModels.SaleInvoiceDoc, error) {
+func (r SaleInvoiceTransactionAdminRepository) FindPageFilter(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, pageable msModels.Pageable) ([]saleInvoiceModels.SaleInvoiceDoc, mongopagination.PaginationData, error) {
+
+	results, pagination, err := r.SearchRepository.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
+
+	if err != nil {
+		return nil, mongopagination.PaginationData{}, err
+	}
+
+	return results, pagination, nil
+}
+
+func (r SaleInvoiceTransactionAdminRepository) FindSaleInvoiceDeleteByHoldingCode(ctx context.Context, holdingCode string) ([]saleInvoiceModels.SaleInvoiceDoc, error) {
 	docList := []saleInvoiceModels.SaleInvoiceDoc{}
 
 	err := r.pst.Find(ctx, &saleInvoiceModels.SaleInvoiceDoc{},
 		bson.M{
-			"shopid":    shopID,
-			"deleted_at": bson.M{"$exists": true},
+			"holding_code": holdingCode,
+			"deleted_at":   bson.M{"$exists": true},
 		},
 		&docList)
 	if err != nil {

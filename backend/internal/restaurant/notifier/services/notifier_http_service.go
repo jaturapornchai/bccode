@@ -14,13 +14,13 @@ import (
 )
 
 type INotifierHttpService interface {
-	CreateNotifier(shopID string, authUsername string, doc models.Notifier) (string, error)
-	UpdateNotifier(shopID string, guid string, authUsername string, doc models.Notifier) error
-	DeleteNotifier(shopID string, guid string, authUsername string) error
-	DeleteNotifierByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoNotifier(shopID string, guid string) (models.NotifierInfo, error)
-	InfoNotifierByCode(shopID string, code string) (models.NotifierInfo, error)
-	SearchNotifier(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.NotifierInfo, mongopagination.PaginationData, error)
+	CreateNotifier(holdingCode string, authUsername string, doc models.Notifier) (string, error)
+	UpdateNotifier(holdingCode string, guid string, authUsername string, doc models.Notifier) error
+	DeleteNotifier(holdingCode string, guid string, authUsername string) error
+	DeleteNotifierByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoNotifier(holdingCode string, guid string) (models.NotifierInfo, error)
+	InfoNotifierByCode(holdingCode string, code string) (models.NotifierInfo, error)
+	SearchNotifier(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.NotifierInfo, mongopagination.PaginationData, error)
 }
 
 type NotifierHttpService struct {
@@ -51,12 +51,12 @@ func (svc NotifierHttpService) getContextTimeout() (context.Context, context.Can
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc NotifierHttpService) CreateNotifier(shopID string, authUsername string, doc models.Notifier) (string, error) {
+func (svc NotifierHttpService) CreateNotifier(holdingCode string, authUsername string, doc models.Notifier) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", doc.Code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", doc.Code)
 
 	if err != nil {
 		return "", err
@@ -69,7 +69,7 @@ func (svc NotifierHttpService) CreateNotifier(shopID string, authUsername string
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.NotifierDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.Notifier = doc
 
@@ -85,12 +85,12 @@ func (svc NotifierHttpService) CreateNotifier(shopID string, authUsername string
 	return newGuidFixed, nil
 }
 
-func (svc NotifierHttpService) UpdateNotifier(shopID string, guid string, authUsername string, doc models.Notifier) error {
+func (svc NotifierHttpService) UpdateNotifier(holdingCode string, guid string, authUsername string, doc models.Notifier) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -105,7 +105,7 @@ func (svc NotifierHttpService) UpdateNotifier(shopID string, guid string, authUs
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, findDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, findDoc)
 
 	if err != nil {
 		return err
@@ -114,12 +114,12 @@ func (svc NotifierHttpService) UpdateNotifier(shopID string, guid string, authUs
 	return nil
 }
 
-func (svc NotifierHttpService) DeleteNotifier(shopID string, guid string, authUsername string) error {
+func (svc NotifierHttpService) DeleteNotifier(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -129,7 +129,7 @@ func (svc NotifierHttpService) DeleteNotifier(shopID string, guid string, authUs
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
@@ -137,7 +137,7 @@ func (svc NotifierHttpService) DeleteNotifier(shopID string, guid string, authUs
 	return nil
 }
 
-func (svc NotifierHttpService) DeleteNotifierByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc NotifierHttpService) DeleteNotifierByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -146,7 +146,7 @@ func (svc NotifierHttpService) DeleteNotifierByGUIDs(shopID string, authUsername
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
@@ -154,12 +154,12 @@ func (svc NotifierHttpService) DeleteNotifierByGUIDs(shopID string, authUsername
 	return nil
 }
 
-func (svc NotifierHttpService) InfoNotifier(shopID string, guid string) (models.NotifierInfo, error) {
+func (svc NotifierHttpService) InfoNotifier(holdingCode string, guid string) (models.NotifierInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.NotifierInfo{}, err
@@ -172,12 +172,12 @@ func (svc NotifierHttpService) InfoNotifier(shopID string, guid string) (models.
 	return findDoc.NotifierInfo, nil
 }
 
-func (svc NotifierHttpService) InfoNotifierByCode(shopID string, code string) (models.NotifierInfo, error) {
+func (svc NotifierHttpService) InfoNotifierByCode(holdingCode string, code string) (models.NotifierInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "usercode", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "usercode", code)
 
 	if err != nil {
 		return models.NotifierInfo{}, err
@@ -190,7 +190,7 @@ func (svc NotifierHttpService) InfoNotifierByCode(shopID string, code string) (m
 	return findDoc.NotifierInfo, nil
 }
 
-func (svc NotifierHttpService) SearchNotifier(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.NotifierInfo, mongopagination.PaginationData, error) {
+func (svc NotifierHttpService) SearchNotifier(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.NotifierInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -199,7 +199,7 @@ func (svc NotifierHttpService) SearchNotifier(shopID string, filters map[string]
 		"usercode",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.NotifierInfo{}, pagination, err

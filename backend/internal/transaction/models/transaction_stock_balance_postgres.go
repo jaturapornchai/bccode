@@ -9,7 +9,7 @@ import (
 
 type StockBalanceTransactionPG struct {
 	TransactionPG `gorm:"embedded;"`
-	Items *[]StockBalanceTransactionDetailPG `json:"items" gorm:"items;foreignKey:shopid,docno"`
+	Items         *[]StockBalanceTransactionDetailPG `json:"items" gorm:"items;foreignKey:holding_code,docno"`
 }
 
 type StockBalanceTransactionDetailPG struct {
@@ -29,7 +29,7 @@ func (j *StockBalanceTransactionPG) BeforeUpdate(tx *gorm.DB) (err error) {
 
 	// find old data
 	var details *[]StockBalanceTransactionDetailPG
-	tx.Model(&StockBalanceTransactionDetailPG{}).Where(" shopid=? AND docno=?", j.ShopID, j.DocNo).Find(&details)
+	tx.Model(&StockBalanceTransactionDetailPG{}).Where(" holding_code=? AND docno=?", j.HoldingCode, j.DocNo).Find(&details)
 
 	// delete un use data
 	for _, tmp := range *details {

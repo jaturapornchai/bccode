@@ -10,18 +10,18 @@ const colorCollectionName = "colors"
 
 type Color struct {
 	models.PartitionIdentity `bson:"inline"`
-	Code string          `json:"code" bson:"code"`
-	Names *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
-	ColorSelect string          `json:"colorselect" bson:"colorselect"`
-	ColorSystem string          `json:"colorsystem" bson:"colorsystem"`
-	ColorHex string          `json:"colorhex" bson:"colorhex"`
-	ColorSelectHex string          `json:"colorselecthex" bson:"colorselecthex"`
-	ColorSystemHex string          `json:"colorsystemhex" bson:"colorsystemhex"`
+	Code                     string          `json:"code" bson:"code"`
+	Names                    *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
+	ColorSelect              string          `json:"colorselect" bson:"colorselect"`
+	ColorSystem              string          `json:"colorsystem" bson:"colorsystem"`
+	ColorHex                 string          `json:"colorhex" bson:"colorhex"`
+	ColorSelectHex           string          `json:"colorselecthex" bson:"colorselecthex"`
+	ColorSystemHex           string          `json:"colorsystemhex" bson:"colorsystemhex"`
 }
 
 type ColorInfo struct {
 	models.DocIdentity `bson:"inline"`
-	Color  `bson:"inline"`
+	Color              `bson:"inline"`
 }
 
 func (ColorInfo) CollectionName() string {
@@ -29,13 +29,13 @@ func (ColorInfo) CollectionName() string {
 }
 
 type ColorData struct {
-	models.ShopIdentity `bson:"inline"`
-	ColorInfo  `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	ColorInfo                `bson:"inline"`
 }
 
 type ColorDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	ColorData  `bson:"inline"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ColorData          `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -52,7 +52,7 @@ func (ColorItemGuid) CollectionName() string {
 }
 
 type ColorActivity struct {
-	ColorData  `bson:"inline"`
+	ColorData           `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

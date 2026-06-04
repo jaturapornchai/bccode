@@ -1,11 +1,11 @@
 @baseUrl = http://localhost:8088
 @auth = Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2NDYwMjIwMzAsInVzZXJuYW1lIjoiZGV2MDEiLCJuYW1lIjoiZGV2IGRldiJ9.FW613xlE7PJm_PADLFE9r65toXuuvl7q6cV7Pi_Lj7dEAfnQ4-fSJDlicS79k-s6rqtV835xV9nGmM1UEgl-VPAO_4syy-LpXjzJL2eRNFmMg3Cy1jp_RYY-mlHvshfVyCRqh6ZDbe_9lUKZ1avYjqjF9fjFWPB4IRF53kiYz3hIVbu3hAsbEYoQhH32sSdYtgF5aaa78XLH3c9BG3KHKWUpE4LU2bJp5NcDL2JT9NBRXZ8slMjHW0JGGh5oSnt2yYFJDSyWY1K8Z6tYnG4pY9of_qSfRzAM_KHBLoVTReYOLXIHfRpUe8VPHiwLvjG7Tn1VocLkCqpaZYxYv6iJtlHMkmx5RXs8QYCDWmrgUeqEhrGiIxU-VDKI5wa6YG1f1QcHVjEC461lpjtaytSfxPn_Jq_XfqEUBBERnQFESuOUCPmQUHgHLQYPS-Xoqxu5zcKweXfoSUvNfX0NqSTviaif4lv7J44iWijDcL3JqmDCdRx7xK02BSdI7TMTqw1u0-h5HegrPeKp2I7k3BGiEB76TkUW0O4nR1CigEKz0onD0_yeQkQv1zi_esi7zy1UlWmIlNfKzbZj6DmLNbgjbKZ0A_FaOi80zUdaVPEgPuzRj4Y7LuqpLszq7uHRQ9_MNdnT6jttY8GJy5Wli0j5gKqdeQdFWcqxogDs8UEQbCQ
-@shopID = 25H2pZ8v2jRVGwjOLKBAzSaHgOA
+@holdingCode = 25H2pZ8v2jRVGwjOLKBAzSaHgOA
 @memberID = 61c15e0a42ab5650fb0adb41
 
 
 # @name login
-POST {{baseUrl}}/login 
+POST {{baseUrl}}/login
 Content-Type: application/json
 
 {
@@ -28,12 +28,12 @@ Authorization: {{auth}}
 Content-Type: application/json
 
 ###
-GET {{baseUrl}}/shop/{{shopID}}
+GET {{baseUrl}}/shop/{{holdingCode}}
 Authorization: {{auth}}
 Content-Type: application/json
 
 ###
-PUT {{baseUrl}}/shop/{{shopID}}
+PUT {{baseUrl}}/shop/{{holdingCode}}
 Authorization: {{auth}}
 Content-Type: application/json
 
@@ -42,18 +42,18 @@ Content-Type: application/json
 }
 
 ###
-DELETE {{baseUrl}}/shop/{{shopID}}
+DELETE {{baseUrl}}/shop/{{holdingCode}}
 Authorization: {{auth}}
 Content-Type: application/json
 
 
 ###
-GET {{baseUrl}}/shop/{{shopID}}/member
+GET {{baseUrl}}/shop/{{holdingCode}}/member
 Authorization: {{auth}}
 Content-Type: application/json
 
 ###
-POST {{baseUrl}}/shop/{{shopID}}/member
+POST {{baseUrl}}/shop/{{holdingCode}}/member
 Authorization: {{auth}}
 Content-Type: application/json
 
@@ -65,13 +65,13 @@ Content-Type: application/json
 }
 
 ###
-GET {{baseUrl}}/shop/{{shopID}}/member/{{memberID}}
+GET {{baseUrl}}/shop/{{holdingCode}}/member/{{memberID}}
 Authorization: {{auth}}
 Content-Type: application/json
 
 ###
 
-PUT {{baseUrl}}/shop/{{shopID}}/member/{{memberID}}
+PUT {{baseUrl}}/shop/{{holdingCode}}/member/{{memberID}}
 Authorization: {{auth}}
 Content-Type: application/json
 
@@ -83,7 +83,7 @@ Content-Type: application/json
 
 ###
 
-PUT {{baseUrl}}/shop/{{shopID}}/member/{{memberID}/password
+PUT {{baseUrl}}/shop/{{holdingCode}}/member/{{memberID}/password
 Authorization: {{auth}}
 Content-Type: application/json
 
@@ -93,6 +93,6 @@ Content-Type: application/json
 
 ###
 
-DELETE {{baseUrl}}/shop/{{shopID}}/member/{{memberID}}
+DELETE {{baseUrl}}/shop/{{holdingCode}}/member/{{memberID}}
 Authorization: {{auth}}
 Content-Type: application/json

@@ -13,20 +13,20 @@ import (
 
 // productQtyInfo — ข้อมูลยอดของสินค้า 1 รายการ
 type productQtyInfo struct {
-	ItemCode        string
-	BalanceQty      float64
-	PendingRecvQty  float64
-	PendingSendQty  float64
+	ItemCode       string
+	BalanceQty     float64
+	PendingRecvQty float64
+	PendingSendQty float64
 }
 
 // ==================== Full Rebuild (ทำทั้งหมด) ====================
 
 // ProcessProductBalanceUpdate — คำนวณยอดคงเหลือ + ค้างรับ + ค้างส่ง ทั้งหมด แล้ว UPDATE ลง product
-func ProcessProductBalanceUpdate(shopID string) error {
+func ProcessProductBalanceUpdate(holdingCode string) error {
 	startTime := time.Now()
-	logger.Info("ProcessProductBalanceUpdate: start (shopID=%s)", shopID)
+	logger.Info("ProcessProductBalanceUpdate: start (holdingCode=%s)", holdingCode)
 
-	db, err := mypg.PgSqlFastConnect(shopID)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		return fmt.Errorf("connect PG: %w", err)
 	}

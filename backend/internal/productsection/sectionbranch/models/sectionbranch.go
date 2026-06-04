@@ -10,13 +10,13 @@ const sectionbranchCollectionName = "productSectionBranch"
 
 type SectionBranch struct {
 	models.PartitionIdentity `bson:"inline"`
-	BranchCode string    `json:"branchcode" bson:"branchcode"`
-	ProductCodes *[]string `json:"productcodes" bson:"productcodes"`
+	BranchCode               string    `json:"branchcode" bson:"branchcode"`
+	ProductCodes             *[]string `json:"productcodes" bson:"productcodes"`
 }
 
 type SectionBranchInfo struct {
 	models.DocIdentity `bson:"inline"`
-	SectionBranch  `bson:"inline"`
+	SectionBranch      `bson:"inline"`
 }
 
 func (SectionBranchInfo) CollectionName() string {
@@ -24,12 +24,12 @@ func (SectionBranchInfo) CollectionName() string {
 }
 
 type SectionBranchData struct {
-	models.ShopIdentity `bson:"inline"`
-	SectionBranchInfo  `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	SectionBranchInfo        `bson:"inline"`
 }
 
 type SectionBranchDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	SectionBranchData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
@@ -47,7 +47,7 @@ func (SectionBranchItemGuid) CollectionName() string {
 }
 
 type SectionBranchActivity struct {
-	SectionBranchData  `bson:"inline"`
+	SectionBranchData   `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

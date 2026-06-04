@@ -15,7 +15,7 @@ type ChequeDeposit struct {
 }
 type ChequeDepositInfo struct {
 	models.DocIdentity `bson:"inline"`
-	ChequeDeposit  `bson:"inline"`
+	ChequeDeposit      `bson:"inline"`
 }
 
 func (ChequeDepositInfo) CollectionName() string {
@@ -23,12 +23,12 @@ func (ChequeDepositInfo) CollectionName() string {
 }
 
 type ChequeDepositData struct {
-	models.ShopIdentity `bson:"inline"`
-	ChequeDepositInfo  `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	ChequeDepositInfo        `bson:"inline"`
 }
 
 type ChequeDepositDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	ChequeDepositData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
@@ -46,7 +46,7 @@ func (ChequeDepositItemGuid) CollectionName() string {
 }
 
 type ChequeDepositActivity struct {
-	ChequeDepositData  `bson:"inline"`
+	ChequeDepositData   `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

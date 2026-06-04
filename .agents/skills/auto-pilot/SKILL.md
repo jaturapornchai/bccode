@@ -13,5 +13,5 @@ description: Primary skill for BC Account. Use for every task; routes via AI_IND
 - **No Mocks**: Use DEV database/API; no guessed configurations/schemas.
 - **Languages**: Query `languages.tsv` by exact key regex only (e.g. `rg -n "^key\t"`).
 - **Backend/Frontend**: Target `frontend/` (Next.js) or `backend/` (Go) scope.
-- **External Model Docs**: `D:\bccode-model` is outside the `D:\bccode` GitHub project. Do not stage/commit/push it when pushing this repo unless Jead explicitly gives a separate remote for that folder.
+- **External Workspaces**: Folders outside `D:\bccode` are outside this GitHub project. Do not stage/commit/push external workspaces unless Jead explicitly gives a separate remote for that folder.
 - **Verify**: Frontend dev = rely on `next dev` HMR; run `npm run typecheck` only before commit/summary. Backend = after Go-code edits are complete, auto deploy local Docker Desktop with `cd D:\bccode\backend; .\scripts\deploy-mainapi-fast.ps1`, then verify `/healthz`; use full `docker-compose up -d --no-deps --build mainapi` for image/runtime changes. DEV server deploy still requires explicit `deploy dev`. See core-rules "Dev Workflow Mode".

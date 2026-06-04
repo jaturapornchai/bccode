@@ -217,8 +217,8 @@ func (m *MigrationAPI) InitCenterAccountGroup(ctx microservice.IContext) error {
 		return err
 	}
 
-	if req.ShopID != "999999999" {
-		ctx.ResponseError(http.StatusBadRequest, "ShopID Not Valid")
+	if req.HoldingCode != "999999999" {
+		ctx.ResponseError(http.StatusBadRequest, "HoldingCode Not Valid")
 		return err
 	}
 
@@ -250,8 +250,8 @@ func (m *MigrationAPI) InitialChartOfAccountCenter(ctx microservice.IContext) er
 		return err
 	}
 
-	if req.ShopID != "999999999" {
-		ctx.ResponseError(http.StatusBadRequest, "ShopID Not Valid")
+	if req.HoldingCode != "999999999" {
+		ctx.ResponseError(http.StatusBadRequest, "HoldingCode Not Valid")
 		return err
 	}
 
@@ -282,8 +282,8 @@ func (m *MigrationAPI) InitCenterJournalBook(ctx microservice.IContext) error {
 		return err
 	}
 
-	if req.ShopID != "999999999" {
-		ctx.ResponseError(http.StatusBadRequest, "ShopID Not Valid")
+	if req.HoldingCode != "999999999" {
+		ctx.ResponseError(http.StatusBadRequest, "HoldingCode Not Valid")
 		return err
 	}
 

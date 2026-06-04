@@ -1,12 +1,12 @@
 package models
 
 type Identity struct {
-	ShopID string `json:"shopid" bson:"shopid" gorm:"column:shopid;primaryKey"`
-	GuidFixed string `json:"guid_fixed" bson:"guid_fixed" gorm:"column:guid_fixed;primaryKey"`
+	HoldingCode string `json:"holding_code" bson:"holding_code" gorm:"column:holding_code;primaryKey"`
+	GuidFixed   string `json:"guid_fixed" bson:"guid_fixed" gorm:"column:guid_fixed;primaryKey"`
 }
 
-type ShopIdentity struct {
-	ShopID string `json:"shopid" bson:"shopid" gorm:"column:shopid;primaryKey"`
+type HoldingCodeentity struct {
+	HoldingCode string `json:"holding_code" bson:"holding_code" gorm:"column:holding_code;primaryKey"`
 }
 
 type DocIdentity struct {

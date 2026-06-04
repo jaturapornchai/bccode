@@ -61,7 +61,7 @@ func (h DimensionHttp) RegisterHttp() {
 // @Router /dimension [post]
 func (h DimensionHttp) CreateDimension(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.Dimension{}
@@ -77,7 +77,7 @@ func (h DimensionHttp) CreateDimension(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreateDimension(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateDimension(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -104,7 +104,7 @@ func (h DimensionHttp) CreateDimension(ctx microservice.IContext) error {
 func (h DimensionHttp) UpdateDimension(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -122,7 +122,7 @@ func (h DimensionHttp) UpdateDimension(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateDimension(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateDimension(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -148,12 +148,12 @@ func (h DimensionHttp) UpdateDimension(ctx microservice.IContext) error {
 // @Router /dimension/{id} [delete]
 func (h DimensionHttp) DeleteDimension(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteDimension(shopID, id, authUsername)
+	err := h.svc.DeleteDimension(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -179,7 +179,7 @@ func (h DimensionHttp) DeleteDimension(ctx microservice.IContext) error {
 // @Router /dimension [delete]
 func (h DimensionHttp) DeleteDimensionByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -192,7 +192,7 @@ func (h DimensionHttp) DeleteDimensionByGUIDs(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.DeleteDimensionByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteDimensionByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -217,12 +217,12 @@ func (h DimensionHttp) DeleteDimensionByGUIDs(ctx microservice.IContext) error {
 // @Router /dimension/{id} [get]
 func (h DimensionHttp) InfoDimension(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get Dimension %v", id)
-	doc, err := h.svc.InfoDimension(shopID, id)
+	doc, err := h.svc.InfoDimension(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -251,7 +251,7 @@ func (h DimensionHttp) InfoDimension(ctx microservice.IContext) error {
 // @Router /dimension [get]
 func (h DimensionHttp) SearchDimensionPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -263,7 +263,7 @@ func (h DimensionHttp) SearchDimensionPage(ctx microservice.IContext) error {
 		},
 	})
 
-	docList, pagination, err := h.svc.SearchDimension(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchDimension(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -293,7 +293,7 @@ func (h DimensionHttp) SearchDimensionPage(ctx microservice.IContext) error {
 // @Router /dimension/list [get]
 func (h DimensionHttp) SearchDimensionStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -307,7 +307,7 @@ func (h DimensionHttp) SearchDimensionStep(ctx microservice.IContext) error {
 		},
 	})
 
-	docList, total, err := h.svc.SearchDimensionStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchDimensionStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

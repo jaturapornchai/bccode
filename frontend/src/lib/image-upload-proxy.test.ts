@@ -11,7 +11,7 @@ describe("image upload proxy response", () => {
       status: "success",
       code: 200,
       data: {
-        shopid: "SHOP001",
+        holding_code: "SHOP001",
         category: "system-settings/imageuri",
         file_name: "20260525_111111_abcd.webp",
       },

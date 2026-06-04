@@ -64,7 +64,7 @@ func (h MasterIncomeHttp) RegisterHttp() {
 // @Router /master-income [post]
 func (h MasterIncomeHttp) CreateMasterIncome(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.MasterIncome{}
@@ -80,7 +80,7 @@ func (h MasterIncomeHttp) CreateMasterIncome(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreateMasterIncome(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateMasterIncome(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -107,7 +107,7 @@ func (h MasterIncomeHttp) CreateMasterIncome(ctx microservice.IContext) error {
 func (h MasterIncomeHttp) UpdateMasterIncome(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -125,7 +125,7 @@ func (h MasterIncomeHttp) UpdateMasterIncome(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateMasterIncome(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateMasterIncome(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -151,12 +151,12 @@ func (h MasterIncomeHttp) UpdateMasterIncome(ctx microservice.IContext) error {
 // @Router /master-income/{id} [delete]
 func (h MasterIncomeHttp) DeleteMasterIncome(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteMasterIncome(shopID, id, authUsername)
+	err := h.svc.DeleteMasterIncome(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -182,7 +182,7 @@ func (h MasterIncomeHttp) DeleteMasterIncome(ctx microservice.IContext) error {
 // @Router /master-income [delete]
 func (h MasterIncomeHttp) DeleteMasterIncomeByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -195,7 +195,7 @@ func (h MasterIncomeHttp) DeleteMasterIncomeByGUIDs(ctx microservice.IContext) e
 		return err
 	}
 
-	err = h.svc.DeleteMasterIncomeByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteMasterIncomeByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -220,12 +220,12 @@ func (h MasterIncomeHttp) DeleteMasterIncomeByGUIDs(ctx microservice.IContext) e
 // @Router /master-income/{id} [get]
 func (h MasterIncomeHttp) InfoMasterIncome(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get MasterIncome %v", id)
-	doc, err := h.svc.InfoMasterIncome(shopID, id)
+	doc, err := h.svc.InfoMasterIncome(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -251,11 +251,11 @@ func (h MasterIncomeHttp) InfoMasterIncome(ctx microservice.IContext) error {
 // @Router /master-income/code/{code} [get]
 func (h MasterIncomeHttp) InfoMasterIncomeByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoMasterIncomeByCode(shopID, code)
+	doc, err := h.svc.InfoMasterIncomeByCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -282,13 +282,13 @@ func (h MasterIncomeHttp) InfoMasterIncomeByCode(ctx microservice.IContext) erro
 // @Router /master-income [get]
 func (h MasterIncomeHttp) SearchMasterIncomePage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
 	filters := requestfilter.GenerateFilters(ctx.QueryParam, []requestfilter.FilterRequest{})
 
-	docList, pagination, err := h.svc.SearchMasterIncome(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchMasterIncome(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -317,7 +317,7 @@ func (h MasterIncomeHttp) SearchMasterIncomePage(ctx microservice.IContext) erro
 // @Router /master-income/list [get]
 func (h MasterIncomeHttp) SearchMasterIncomeStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -325,7 +325,7 @@ func (h MasterIncomeHttp) SearchMasterIncomeStep(ctx microservice.IContext) erro
 
 	filters := requestfilter.GenerateFilters(ctx.QueryParam, []requestfilter.FilterRequest{})
 
-	docList, total, err := h.svc.SearchMasterIncomeStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchMasterIncomeStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -353,7 +353,7 @@ func (h MasterIncomeHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -365,7 +365,7 @@ func (h MasterIncomeHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

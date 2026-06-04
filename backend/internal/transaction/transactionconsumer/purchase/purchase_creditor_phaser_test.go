@@ -15,8 +15,8 @@ func TestPurchaseCreditorPhaser(t *testing.T) {
 	give := PurchaseTransactionStruct()
 	want := models.CreditorTransactionPG{
 		GuidFixed: "2RYA2Yri2HRKDF5JFnKpwuGmydO",
-		ShopIdentity: pkgModels.ShopIdentity{
-			ShopID: "2PrIIqTWxoBXv16K310sNwfHmfY",
+		HoldingCodeentity: pkgModels.HoldingCodeentity{
+			HoldingCode: "2PrIIqTWxoBXv16K310sNwfHmfY",
 		},
 		TransFlag:      12,
 		InquiryType:    1,
@@ -42,7 +42,7 @@ func TestPurchaseCreditorPhaser(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, want.GuidFixed, get.GuidFixed, "GuidFixed")
-	assert.Equal(t, want.ShopID, get.ShopID, "ShopID")
+	assert.Equal(t, want.HoldingCode, get.HoldingCode, "HoldingCode")
 	assert.Equal(t, want.TransFlag, get.TransFlag, "TransFlag")
 	assert.Equal(t, want.InquiryType, get.InquiryType, "InquiryType")
 	assert.Equal(t, want.DocNo, get.DocNo, "DocNo")

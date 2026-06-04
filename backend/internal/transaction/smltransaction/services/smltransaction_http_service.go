@@ -20,9 +20,9 @@ import (
 )
 
 type ISMLTransactionHttpService interface {
-	CreateSMLTransaction(shopID string, authUsername string, smlRequest models.SMLTransactionRequest) (string, error)
-	SaveInBatch(shopID string, authUsername string, dataReq models.SMLTransactionBulkRequest) ([]string, error)
-	DeleteSMLTransaction(shopID string, authUsername string, smlKeyRequest models.SMLTransactionKeyRequest) ([]string, error)
+	CreateSMLTransaction(holdingCode string, authUsername string, smlRequest models.SMLTransactionRequest) (string, error)
+	SaveInBatch(holdingCode string, authUsername string, dataReq models.SMLTransactionBulkRequest) ([]string, error)
+	DeleteSMLTransaction(holdingCode string, authUsername string, smlKeyRequest models.SMLTransactionKeyRequest) ([]string, error)
 	QueryFilter(filters bson.M, pageable micromodels.Pageable) ([]map[string]interface{}, mongopagination.PaginationData, error)
 
 	QueryFilter2(paramQuery map[string]interface{}, pageable micromodels.Pageable) ([]map[string]interface{}, mongopagination.PaginationData, error)
@@ -45,8 +45,8 @@ func NewSMLTransactionHttpService(repo repositories.ISMLTransactionRepository, m
 	return insSvc
 }
 
-func (svc SMLTransactionHttpService) CreateSMLTransaction(shopID string, authUsername string, smlRequest models.SMLTransactionRequest) (string, error) {
-	// guid, err := svc.save(shopID, authUsername, smlRequest)
+func (svc SMLTransactionHttpService) CreateSMLTransaction(holdingCode string, authUsername string, smlRequest models.SMLTransactionRequest) (string, error) {
+	// guid, err := svc.save(holdingCode, authUsername, smlRequest)
 
 	// if err != nil {
 	// 	return "", err
@@ -73,13 +73,13 @@ func (svc SMLTransactionHttpService) CreateSMLTransaction(shopID string, authUse
 	}
 
 	deleteFilter := bson.M{smlRequest.KeyID: smlRequest.Body[smlRequest.KeyID]}
-	err := svc.repo.Delete(collectionName, shopID, authUsername, deleteFilter)
+	err := svc.repo.Delete(collectionName, holdingCode, authUsername, deleteFilter)
 
 	if err != nil {
 		return "", err
 	}
 
-	tempData := svc.createBody(shopID, authUsername, smlRequest.Body)
+	tempData := svc.createBody(holdingCode, authUsername, smlRequest.Body)
 	guid, err := svc.repo.Create(collectionName, tempData)
 
 	if err != nil {
@@ -95,9 +95,9 @@ func (svc SMLTransactionHttpService) CreateSMLTransaction(shopID string, authUse
 	return guid, nil
 }
 
-func (svc SMLTransactionHttpService) save(shopID string, authUsername string, smlRequest models.SMLTransactionRequest) (string, error) {
+func (svc SMLTransactionHttpService) save(holdingCode string, authUsername string, smlRequest models.SMLTransactionRequest) (string, error) {
 	collectionName := svc.getCollectionName(smlRequest.Collection)
-	findDoc, err := svc.repo.FindByDocIndentityKey(collectionName, shopID, smlRequest.KeyID, smlRequest.Body[smlRequest.KeyID])
+	findDoc, err := svc.repo.FindByDocIndentityKey(collectionName, holdingCode, smlRequest.KeyID, smlRequest.Body[smlRequest.KeyID])
 
 	if err != nil {
 		return "", err
@@ -106,7 +106,7 @@ func (svc SMLTransactionHttpService) save(shopID string, authUsername string, sm
 	_, ok := findDoc[smlRequest.KeyID]
 
 	if ok || findDoc[smlRequest.KeyID] != nil {
-		guid, err := svc.update(shopID, authUsername, findDoc, smlRequest)
+		guid, err := svc.update(holdingCode, authUsername, findDoc, smlRequest)
 
 		if err != nil {
 			return "", err
@@ -116,7 +116,7 @@ func (svc SMLTransactionHttpService) save(shopID string, authUsername string, sm
 		return guid, nil
 	}
 
-	guid, err := svc.create(shopID, authUsername, smlRequest)
+	guid, err := svc.create(holdingCode, authUsername, smlRequest)
 
 	if err != nil {
 		return "", err
@@ -125,12 +125,12 @@ func (svc SMLTransactionHttpService) save(shopID string, authUsername string, sm
 	return guid, nil
 }
 
-func (svc SMLTransactionHttpService) update(shopID string, authUsername string, findDoc map[string]interface{}, smlRequest models.SMLTransactionRequest) (string, error) {
+func (svc SMLTransactionHttpService) update(holdingCode string, authUsername string, findDoc map[string]interface{}, smlRequest models.SMLTransactionRequest) (string, error) {
 	collectionName := svc.getCollectionName(smlRequest.Collection)
 
 	guidFixed := fmt.Sprintf("%v", findDoc["guid_fixed"])
 	docData := smlRequest.Body
-	docData["shopid"] = findDoc["shopid"]
+	docData["holding_code"] = findDoc["holding_code"]
 	docData["guid_fixed"] = guidFixed
 	docData["createdby"] = findDoc["createdby"]
 	docData["created_at"] = findDoc["created_at"]
@@ -138,7 +138,7 @@ func (svc SMLTransactionHttpService) update(shopID string, authUsername string, 
 	docData["updatedby"] = authUsername
 	docData["updated_at"] = time.Now()
 
-	err := svc.repo.Update(collectionName, shopID, guidFixed, docData)
+	err := svc.repo.Update(collectionName, holdingCode, guidFixed, docData)
 
 	if err != nil {
 		return "", err
@@ -147,13 +147,13 @@ func (svc SMLTransactionHttpService) update(shopID string, authUsername string, 
 	return guidFixed, nil
 }
 
-func (svc SMLTransactionHttpService) create(shopID string, authUsername string, smlRequest models.SMLTransactionRequest) (string, error) {
+func (svc SMLTransactionHttpService) create(holdingCode string, authUsername string, smlRequest models.SMLTransactionRequest) (string, error) {
 	collectionName := svc.getCollectionName(smlRequest.Collection)
 
 	docData := smlRequest.Body
 	newGuidFixed := utils.NewGUID()
 
-	docData["shopid"] = shopID
+	docData["holding_code"] = holdingCode
 	docData["guid_fixed"] = newGuidFixed
 	docData["createdby"] = authUsername
 	docData["created_at"] = time.Now()
@@ -167,12 +167,12 @@ func (svc SMLTransactionHttpService) create(shopID string, authUsername string, 
 	return newGuidFixed, nil
 }
 
-func (svc SMLTransactionHttpService) createBody(shopID string, authUsername string, bodyRequest map[string]interface{}) map[string]interface{} {
+func (svc SMLTransactionHttpService) createBody(holdingCode string, authUsername string, bodyRequest map[string]interface{}) map[string]interface{} {
 
 	docData := bodyRequest
 	newGuidFixed := utils.NewGUID()
 
-	docData["shopid"] = shopID
+	docData["holding_code"] = holdingCode
 	docData["guid_fixed"] = newGuidFixed
 	docData["createdby"] = authUsername
 	docData["created_at"] = time.Now()
@@ -180,7 +180,7 @@ func (svc SMLTransactionHttpService) createBody(shopID string, authUsername stri
 	return docData
 }
 
-func (svc SMLTransactionHttpService) SaveInBatch(shopID string, authUsername string, dataReq models.SMLTransactionBulkRequest) ([]string, error) {
+func (svc SMLTransactionHttpService) SaveInBatch(holdingCode string, authUsername string, dataReq models.SMLTransactionBulkRequest) ([]string, error) {
 	collectionName := svc.getCollectionName(dataReq.Collection)
 	_, collectionIndexExists := svc.indexCreated[collectionName]
 	if !collectionIndexExists {
@@ -200,7 +200,7 @@ func (svc SMLTransactionHttpService) SaveInBatch(shopID string, authUsername str
 		}
 
 		identityKeys = append(identityKeys, smlRequest[dataReq.KeyID].(string))
-		createData := svc.createBody(shopID, authUsername, smlRequest)
+		createData := svc.createBody(holdingCode, authUsername, smlRequest)
 		tempData = append(tempData, createData)
 	}
 
@@ -213,7 +213,7 @@ func (svc SMLTransactionHttpService) SaveInBatch(shopID string, authUsername str
 		filters := map[string]interface{}{
 			dataReq.KeyID: bson.M{"$in": identityKeys},
 		}
-		err := svc.repo.Delete(collectionName, shopID, authUsername, filters)
+		err := svc.repo.Delete(collectionName, holdingCode, authUsername, filters)
 
 		if err != nil {
 			return err
@@ -255,13 +255,13 @@ func (svc SMLTransactionHttpService) SaveInBatch(shopID string, authUsername str
 	return identityKeys, nil
 }
 
-func (svc SMLTransactionHttpService) SaveInBatchOld(shopID string, authUsername string, dataReq models.SMLTransactionBulkRequest) ([]string, error) {
+func (svc SMLTransactionHttpService) SaveInBatchOld(holdingCode string, authUsername string, dataReq models.SMLTransactionBulkRequest) ([]string, error) {
 
 	guids := []string{}
 	tempSaveSuccess := []map[string]interface{}{}
 	err := svc.repo.Transaction(func(ctx context.Context) error {
 		for _, smlRequest := range dataReq.Body {
-			guidFixed, err := svc.CreateSMLTransaction(shopID, authUsername, models.SMLTransactionRequest{
+			guidFixed, err := svc.CreateSMLTransaction(holdingCode, authUsername, models.SMLTransactionRequest{
 				Collection: dataReq.Collection,
 				KeyID:      dataReq.KeyID,
 				Body:       smlRequest,
@@ -295,13 +295,13 @@ func (svc SMLTransactionHttpService) SaveInBatchOld(shopID string, authUsername 
 	return guids, nil
 }
 
-func (svc SMLTransactionHttpService) DeleteSMLTransaction(shopID string, authUsername string, smlKeyRequest models.SMLTransactionKeyRequest) ([]string, error) {
+func (svc SMLTransactionHttpService) DeleteSMLTransaction(holdingCode string, authUsername string, smlKeyRequest models.SMLTransactionKeyRequest) ([]string, error) {
 	collectionName := svc.getCollectionName(smlKeyRequest.Collection)
 
 	filters := map[string]interface{}{
 		smlKeyRequest.KeyID: bson.M{"$in": smlKeyRequest.DeleteKeys},
 	}
-	err := svc.repo.Delete(collectionName, shopID, authUsername, filters)
+	err := svc.repo.Delete(collectionName, holdingCode, authUsername, filters)
 
 	if err != nil {
 		return []string{}, err

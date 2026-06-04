@@ -68,7 +68,7 @@ interface WarehouseTreeViewProps {
 type NodeType = "warehouse" | "location" | "shelf";
 
 interface WarehouseWorkspace {
-  shop: { shopid: string };
+  shop: { holding_code: string };
   shopInfo?: {
     settings?: {
       language?: string;
@@ -457,7 +457,7 @@ export function WarehouseTreeView({
         ...targetWarehouse,
         location: updatedLocations,
         backendUrl: auth.backendUrl,
-        shopid: workspace.shop.shopid,
+        holding_code: workspace.shop.holding_code,
       };
 
       const response = await fetch(

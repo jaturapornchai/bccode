@@ -14,39 +14,39 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func TestGoAPIRequestShopIDReadsJSONAndPreservesBody(t *testing.T) {
+func TestGoAPIRequestHoldingCodeReadsJSONAndPreservesBody(t *testing.T) {
 	e := echo.New()
-	req := httptest.NewRequest(http.MethodPost, "/get", strings.NewReader(`{"shop_id":"SHOP001"}`))
+	req := httptest.NewRequest(http.MethodPost, "/get", strings.NewReader(`{"holding_code":"SHOP001"}`))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
-	shopID, err := goAPIRequestShopID(c)
+	holdingCode, err := goAPIRequestHoldingCode(c)
 	if err != nil {
-		t.Fatalf("goAPIRequestShopID returned error: %v", err)
+		t.Fatalf("goAPIRequestHoldingCode returned error: %v", err)
 	}
-	if shopID != "SHOP001" {
-		t.Fatalf("shopID = %q, want SHOP001", shopID)
+	if holdingCode != "SHOP001" {
+		t.Fatalf("holdingCode = %q, want SHOP001", holdingCode)
 	}
 
 	body, err := io.ReadAll(c.Request().Body)
 	if err != nil {
 		t.Fatalf("read preserved body: %v", err)
 	}
-	if string(body) != `{"shop_id":"SHOP001"}` {
+	if string(body) != `{"holding_code":"SHOP001"}` {
 		t.Fatalf("body = %q, want original body", string(body))
 	}
 }
 
-func TestShopIDFromPayloadReadsNestedJSONBody(t *testing.T) {
-	shopID, err := shopIDFromPayload(map[string]interface{}{
-		"body": `{"shopid":"SHOP002"}`,
+func TestHoldingCodeFromPayloadReadsNestedJSONBody(t *testing.T) {
+	holdingCode, err := holdingCodeFromPayload(map[string]interface{}{
+		"body": `{"holding_code":"SHOP002"}`,
 	})
 	if err != nil {
-		t.Fatalf("shopIDFromPayload returned error: %v", err)
+		t.Fatalf("holdingCodeFromPayload returned error: %v", err)
 	}
-	if shopID != "SHOP002" {
-		t.Fatalf("shopID = %q, want SHOP002", shopID)
+	if holdingCode != "SHOP002" {
+		t.Fatalf("holdingCode = %q, want SHOP002", holdingCode)
 	}
 }
 
@@ -57,9 +57,9 @@ func TestAuthenticateGoAPIJWTTokenUsesConfiguredSecret(t *testing.T) {
 	claims := microservice.CustomClaims{
 		RegisteredClaims: &jwt.RegisteredClaims{},
 		UserInfo: msmodels.UserInfo{
-			Username: "user@example.com",
-			ShopID:   "SHOP003",
-			Role:     2,
+			Username:    "user@example.com",
+			HoldingCode: "SHOP003",
+			Role:        2,
 		},
 	}
 	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte("test-secret"))
@@ -71,7 +71,7 @@ func TestAuthenticateGoAPIJWTTokenUsesConfiguredSecret(t *testing.T) {
 	if err != nil {
 		t.Fatalf("authenticateGoAPIJWTToken returned error: %v", err)
 	}
-	if userInfo.ShopID != "SHOP003" || userInfo.Username != "user@example.com" {
+	if userInfo.HoldingCode != "SHOP003" || userInfo.Username != "user@example.com" {
 		t.Fatalf("userInfo = %+v", userInfo)
 	}
 }

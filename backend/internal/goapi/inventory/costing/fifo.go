@@ -17,7 +17,7 @@ func (e *FIFOEngine) Method() string { return inv.CostingMethodFIFO }
 
 // ProcessReceipt — รับสินค้าเข้า → สร้าง cost layer ใหม่
 func (e *FIFOEngine) ProcessReceipt(ctx context.Context, tx *sql.Tx, params inv.ReceiptParams) (*inv.CostTransactionResult, error) {
-	balance, err := getOrCreateBalance(ctx, tx, params.ShopID, params.ItemCode, params.Barcode, params.WhCode, params.LocationCode)
+	balance, err := getOrCreateBalance(ctx, tx, params.HoldingCode, params.ItemCode, params.Barcode, params.WhCode, params.LocationCode)
 	if err != nil {
 		return nil, err
 	}
@@ -26,7 +26,7 @@ func (e *FIFOEngine) ProcessReceipt(ctx context.Context, tx *sql.Tx, params inv.
 
 	// สร้าง cost layer ใหม่
 	layer := &inv.InventoryCostLayer{
-		ShopID:        params.ShopID,
+		HoldingCode:   params.HoldingCode,
 		ItemCode:      params.ItemCode,
 		Barcode:       params.Barcode,
 		WhCode:        params.WhCode,
@@ -64,7 +64,7 @@ func (e *FIFOEngine) ProcessReceipt(ctx context.Context, tx *sql.Tx, params inv.
 	}
 
 	ct := &inv.InventoryCostTransaction{
-		ShopID:            params.ShopID,
+		HoldingCode:       params.HoldingCode,
 		ItemCode:          params.ItemCode,
 		Barcode:           params.Barcode,
 		WhCode:            params.WhCode,
@@ -101,7 +101,7 @@ func (e *FIFOEngine) ProcessReceipt(ctx context.Context, tx *sql.Tx, params inv.
 
 // ProcessIssue — ตัดสินค้าออก → ตัด layer เก่าสุดก่อน (FIFO)
 func (e *FIFOEngine) ProcessIssue(ctx context.Context, tx *sql.Tx, params inv.IssueParams) (*inv.CostTransactionResult, error) {
-	balance, err := getOrCreateBalance(ctx, tx, params.ShopID, params.ItemCode, params.Barcode, params.WhCode, params.LocationCode)
+	balance, err := getOrCreateBalance(ctx, tx, params.HoldingCode, params.ItemCode, params.Barcode, params.WhCode, params.LocationCode)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +111,7 @@ func (e *FIFOEngine) ProcessIssue(ctx context.Context, tx *sql.Tx, params inv.Is
 	}
 
 	// ดึง cost layers เรียงจากเก่าสุด (FIFO)
-	totalCost, err := e.consumeLayers(ctx, tx, params.ShopID, params.ItemCode, params.WhCode, params.LocationCode, params.Qty)
+	totalCost, err := e.consumeLayers(ctx, tx, params.HoldingCode, params.ItemCode, params.WhCode, params.LocationCode, params.Qty)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +134,7 @@ func (e *FIFOEngine) ProcessIssue(ctx context.Context, tx *sql.Tx, params inv.Is
 	}
 
 	ct := &inv.InventoryCostTransaction{
-		ShopID:            params.ShopID,
+		HoldingCode:       params.HoldingCode,
 		ItemCode:          params.ItemCode,
 		Barcode:           params.Barcode,
 		WhCode:            params.WhCode,
@@ -168,14 +168,14 @@ func (e *FIFOEngine) ProcessIssue(ctx context.Context, tx *sql.Tx, params inv.Is
 
 // consumeLayers — ตัด cost layers ตามลำดับ FIFO (เก่าสุดก่อน)
 // return: totalCost ที่ตัดออก
-func (e *FIFOEngine) consumeLayers(ctx context.Context, tx *sql.Tx, shopID, itemCode, whCode, locationCode string, qtyNeeded float64) (float64, error) {
+func (e *FIFOEngine) consumeLayers(ctx context.Context, tx *sql.Tx, holdingCode, itemCode, whCode, locationCode string, qtyNeeded float64) (float64, error) {
 	rows, err := tx.QueryContext(ctx,
 		`SELECT id, remainingqty, totalunitcost
 		 FROM inventory_cost_layers
-		 WHERE shopid = $1 AND itemcode = $2 AND whcode = $3 AND locationcode = $4 AND remainingqty > 0
+		 WHERE holding_code = $1 AND itemcode = $2 AND whcode = $3 AND locationcode = $4 AND remainingqty > 0
 		 ORDER BY receiveddate ASC, id ASC
 		 FOR UPDATE`,
-		shopID, itemCode, whCode, locationCode,
+		holdingCode, itemCode, whCode, locationCode,
 	)
 	if err != nil {
 		return 0, fmt.Errorf("ดึง cost layers ไม่สำเร็จ: %w", err)
@@ -220,7 +220,7 @@ func (e *FIFOEngine) consumeLayers(ctx context.Context, tx *sql.Tx, shopID, item
 
 // ProcessSalesReturn — รับคืนจากลูกค้า → สร้าง layer ใหม่ด้วย original cost
 func (e *FIFOEngine) ProcessSalesReturn(ctx context.Context, tx *sql.Tx, params inv.SalesReturnParams) (*inv.CostTransactionResult, error) {
-	balance, err := getOrCreateBalance(ctx, tx, params.ShopID, params.ItemCode, params.Barcode, params.WhCode, params.LocationCode)
+	balance, err := getOrCreateBalance(ctx, tx, params.HoldingCode, params.ItemCode, params.Barcode, params.WhCode, params.LocationCode)
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +232,7 @@ func (e *FIFOEngine) ProcessSalesReturn(ctx context.Context, tx *sql.Tx, params 
 
 	// สร้าง cost layer ใหม่สำหรับของที่รับคืน
 	layer := &inv.InventoryCostLayer{
-		ShopID:        params.ShopID,
+		HoldingCode:   params.HoldingCode,
 		ItemCode:      params.ItemCode,
 		Barcode:       params.Barcode,
 		WhCode:        params.WhCode,
@@ -265,7 +265,7 @@ func (e *FIFOEngine) ProcessSalesReturn(ctx context.Context, tx *sql.Tx, params 
 	}
 
 	ct := &inv.InventoryCostTransaction{
-		ShopID:            params.ShopID,
+		HoldingCode:       params.HoldingCode,
 		ItemCode:          params.ItemCode,
 		Barcode:           params.Barcode,
 		WhCode:            params.WhCode,
@@ -300,7 +300,7 @@ func (e *FIFOEngine) ProcessSalesReturn(ctx context.Context, tx *sql.Tx, params 
 
 // ProcessPurchaseReturn — ส่งคืน supplier → ตัด layer ที่เกี่ยวข้อง
 func (e *FIFOEngine) ProcessPurchaseReturn(ctx context.Context, tx *sql.Tx, params inv.PurchaseReturnParams) (*inv.CostTransactionResult, error) {
-	balance, err := getOrCreateBalance(ctx, tx, params.ShopID, params.ItemCode, params.Barcode, params.WhCode, params.LocationCode)
+	balance, err := getOrCreateBalance(ctx, tx, params.HoldingCode, params.ItemCode, params.Barcode, params.WhCode, params.LocationCode)
 	if err != nil {
 		return nil, err
 	}
@@ -315,7 +315,7 @@ func (e *FIFOEngine) ProcessPurchaseReturn(ctx context.Context, tx *sql.Tx, para
 		totalCost = params.Qty * unitCost
 	} else {
 		// ไม่ระบุ → ตัดตาม FIFO
-		totalCost, err = e.consumeLayers(ctx, tx, params.ShopID, params.ItemCode, params.WhCode, params.LocationCode, params.Qty)
+		totalCost, err = e.consumeLayers(ctx, tx, params.HoldingCode, params.ItemCode, params.WhCode, params.LocationCode, params.Qty)
 		if err != nil {
 			return nil, err
 		}
@@ -339,7 +339,7 @@ func (e *FIFOEngine) ProcessPurchaseReturn(ctx context.Context, tx *sql.Tx, para
 	}
 
 	ct := &inv.InventoryCostTransaction{
-		ShopID:            params.ShopID,
+		HoldingCode:       params.HoldingCode,
 		ItemCode:          params.ItemCode,
 		Barcode:           params.Barcode,
 		WhCode:            params.WhCode,
@@ -398,7 +398,7 @@ func (e *FIFOEngine) consumeSpecificLayer(ctx context.Context, tx *sql.Tx, layer
 
 // ProcessAdjustment — ปรับปรุง stock
 func (e *FIFOEngine) ProcessAdjustment(ctx context.Context, tx *sql.Tx, params inv.AdjustmentParams) (*inv.CostTransactionResult, error) {
-	balance, err := getOrCreateBalance(ctx, tx, params.ShopID, params.ItemCode, params.Barcode, params.WhCode, params.LocationCode)
+	balance, err := getOrCreateBalance(ctx, tx, params.HoldingCode, params.ItemCode, params.Barcode, params.WhCode, params.LocationCode)
 	if err != nil {
 		return nil, err
 	}
@@ -415,7 +415,7 @@ func (e *FIFOEngine) ProcessAdjustment(ctx context.Context, tx *sql.Tx, params i
 
 		// สร้าง layer ใหม่
 		layer := &inv.InventoryCostLayer{
-			ShopID:        params.ShopID,
+			HoldingCode:   params.HoldingCode,
 			ItemCode:      params.ItemCode,
 			Barcode:       params.Barcode,
 			WhCode:        params.WhCode,
@@ -442,7 +442,7 @@ func (e *FIFOEngine) ProcessAdjustment(ctx context.Context, tx *sql.Tx, params i
 		newTotalValue = balance.CurrentTotalValue + totalCost
 	} else {
 		txType = inv.TxTypeAdjustmentOut
-		totalCost, err = e.consumeLayers(ctx, tx, params.ShopID, params.ItemCode, params.WhCode, params.LocationCode, params.Qty)
+		totalCost, err = e.consumeLayers(ctx, tx, params.HoldingCode, params.ItemCode, params.WhCode, params.LocationCode, params.Qty)
 		if err != nil {
 			return nil, err
 		}
@@ -465,7 +465,7 @@ func (e *FIFOEngine) ProcessAdjustment(ctx context.Context, tx *sql.Tx, params i
 	}
 
 	ct := &inv.InventoryCostTransaction{
-		ShopID:            params.ShopID,
+		HoldingCode:       params.HoldingCode,
 		ItemCode:          params.ItemCode,
 		Barcode:           params.Barcode,
 		WhCode:            params.WhCode,
@@ -499,14 +499,32 @@ func (e *FIFOEngine) ProcessAdjustment(ctx context.Context, tx *sql.Tx, params i
 }
 
 // GetCurrentValuation — ดูมูลค่าสินค้าปัจจุบัน
-func (e *FIFOEngine) GetCurrentValuation(ctx context.Context, tx *sql.Tx, shopID, itemCode, whCode string) (*inv.StockValuation, error) {
+func (e *FIFOEngine) GetCurrentValuation(ctx context.Context, tx *sql.Tx, holdingCode, itemCode, whCode string) (*inv.StockValuation, error) {
 	var val inv.StockValuation
-	err := tx.QueryRowContext(ctx,
-		`SELECT itemcode, whcode, currentqty, currentavgcost, currenttotalvalue
-		 FROM inventory_stock_balances
-		 WHERE shopid = $1 AND itemcode = $2 AND whcode = $3`,
-		shopID, itemCode, whCode,
-	).Scan(&val.ItemCode, &val.WhCode, &val.CurrentQty, &val.AverageCost, &val.TotalValue)
+	var err error
+	if whCode == "" {
+		err = tx.QueryRowContext(ctx,
+			`SELECT itemcode, '' AS whcode,
+			        COALESCE(SUM(currentqty), 0),
+			        CASE WHEN COALESCE(SUM(currentqty), 0) = 0 THEN 0 ELSE COALESCE(SUM(currenttotalvalue), 0) / SUM(currentqty) END,
+			        COALESCE(SUM(currenttotalvalue), 0)
+			 FROM inventory_stock_balances
+			 WHERE holding_code = $1 AND itemcode = $2
+			 GROUP BY itemcode`,
+			holdingCode, itemCode,
+		).Scan(&val.ItemCode, &val.WhCode, &val.CurrentQty, &val.AverageCost, &val.TotalValue)
+	} else {
+		err = tx.QueryRowContext(ctx,
+			`SELECT itemcode, whcode,
+			        COALESCE(SUM(currentqty), 0),
+			        CASE WHEN COALESCE(SUM(currentqty), 0) = 0 THEN 0 ELSE COALESCE(SUM(currenttotalvalue), 0) / SUM(currentqty) END,
+			        COALESCE(SUM(currenttotalvalue), 0)
+			 FROM inventory_stock_balances
+			 WHERE holding_code = $1 AND itemcode = $2 AND whcode = $3
+			 GROUP BY itemcode, whcode`,
+			holdingCode, itemCode, whCode,
+		).Scan(&val.ItemCode, &val.WhCode, &val.CurrentQty, &val.AverageCost, &val.TotalValue)
+	}
 	if err == sql.ErrNoRows {
 		return &inv.StockValuation{ItemCode: itemCode, WhCode: whCode, CostingMethod: inv.CostingMethodFIFO}, nil
 	}

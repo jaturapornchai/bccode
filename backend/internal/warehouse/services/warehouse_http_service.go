@@ -23,37 +23,37 @@ import (
 )
 
 type IWarehouseHttpService interface {
-	CreateWarehouse(shopID string, authUsername string, doc models.Warehouse) (string, error)
-	UpdateWarehouse(shopID string, guid string, authUsername string, doc models.Warehouse) error
-	DeleteWarehouse(shopID string, guid string, authUsername string) error
-	DeleteWarehouseByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoWarehouse(shopID string, guid string) (models.WarehouseInfo, error)
-	InfoWarehouseByCode(shopID string, code string) (models.WarehouseInfo, error)
-	SearchWarehouse(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.WarehouseInfo, mongopagination.PaginationData, error)
-	SearchWarehouseStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.WarehouseInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.Warehouse) (common.BulkImport, error)
+	CreateWarehouse(holdingCode string, authUsername string, doc models.Warehouse) (string, error)
+	UpdateWarehouse(holdingCode string, guid string, authUsername string, doc models.Warehouse) error
+	DeleteWarehouse(holdingCode string, guid string, authUsername string) error
+	DeleteWarehouseByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoWarehouse(holdingCode string, guid string) (models.WarehouseInfo, error)
+	InfoWarehouseByCode(holdingCode string, code string) (models.WarehouseInfo, error)
+	SearchWarehouse(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.WarehouseInfo, mongopagination.PaginationData, error)
+	SearchWarehouseStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.WarehouseInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.Warehouse) (common.BulkImport, error)
 
-	SearchLocation(shopID string, pageable micromodels.Pageable) ([]models.LocationInfo, mongopagination.PaginationData, error)
-	SearchShelf(shopID string, pageable micromodels.Pageable) ([]models.ShelfInfo, mongopagination.PaginationData, error)
+	SearchLocation(holdingCode string, pageable micromodels.Pageable) ([]models.LocationInfo, mongopagination.PaginationData, error)
+	SearchShelf(holdingCode string, pageable micromodels.Pageable) ([]models.ShelfInfo, mongopagination.PaginationData, error)
 
-	InfoLocation(shopID, warehouseCode, locationCode string) (models.LocationInfo, error)
-	CreateLocation(shopID, authUsername, warehouseCode string, doc models.LocationRequest) error
-	UpdateLocation(shopID, authUsername, warehouseCode, locationCode string, doc models.LocationRequest) error
-	DeleteLocationByCodes(shopID, authUsername, warehouseCode string, locationCodes []string) error
+	InfoLocation(holdingCode, warehouseCode, locationCode string) (models.LocationInfo, error)
+	CreateLocation(holdingCode, authUsername, warehouseCode string, doc models.LocationRequest) error
+	UpdateLocation(holdingCode, authUsername, warehouseCode, locationCode string, doc models.LocationRequest) error
+	DeleteLocationByCodes(holdingCode, authUsername, warehouseCode string, locationCodes []string) error
 
-	InfoShelf(shopID, warehouseCode, locationCode, shelfCode string) (models.ShelfInfo, error)
-	CreateShelf(shopID, authUsername, warehouseCode, locationCode string, doc models.ShelfRequest) error
-	UpdateShelf(shopID, authUsername, warehouseCode, locationCode, shelfCode string, doc models.ShelfRequest) error
-	DeleteShelfByCodes(shopID, authUsername, warehouseCode, locationCode string, shelfCodes []string) error
+	InfoShelf(holdingCode, warehouseCode, locationCode, shelfCode string) (models.ShelfInfo, error)
+	CreateShelf(holdingCode, authUsername, warehouseCode, locationCode string, doc models.ShelfRequest) error
+	UpdateShelf(holdingCode, authUsername, warehouseCode, locationCode, shelfCode string, doc models.ShelfRequest) error
+	DeleteShelfByCodes(holdingCode, authUsername, warehouseCode, locationCode string, shelfCodes []string) error
 
 	// ProductBarcode in Shelf management
-	AddProductBarcodeToShelf(shopID, authUsername, warehouseCode, locationCode, shelfCode string, productBarcode models.ShelfProductBarcode) error
-	RemoveProductBarcodeFromShelf(shopID, authUsername, warehouseCode, locationCode, shelfCode, productGuidFixed string) error
-	GetShelfProductBarcodes(shopID, warehouseCode, locationCode, shelfCode string) ([]models.ShelfProductBarcode, error)
+	AddProductBarcodeToShelf(holdingCode, authUsername, warehouseCode, locationCode, shelfCode string, productBarcode models.ShelfProductBarcode) error
+	RemoveProductBarcodeFromShelf(holdingCode, authUsername, warehouseCode, locationCode, shelfCode, productGuidFixed string) error
+	GetShelfProductBarcodes(holdingCode, warehouseCode, locationCode, shelfCode string) ([]models.ShelfProductBarcode, error)
 
 	// Bulk ProductBarcode operations
-	BulkAddProductBarcodesToShelf(shopID, authUsername, warehouseCode, locationCode, shelfCode string, products []models.ShelfProductBarcode) models.BulkProductOperationResponse
-	BulkRemoveProductBarcodesFromShelf(shopID, authUsername, warehouseCode, locationCode, shelfCode string, guidFixedList []string) models.BulkProductOperationResponse
+	BulkAddProductBarcodesToShelf(holdingCode, authUsername, warehouseCode, locationCode, shelfCode string, products []models.ShelfProductBarcode) models.BulkProductOperationResponse
+	BulkRemoveProductBarcodesFromShelf(holdingCode, authUsername, warehouseCode, locationCode, shelfCode string, guidFixedList []string) models.BulkProductOperationResponse
 
 	GetModuleName() string
 }
@@ -87,12 +87,12 @@ func (svc WarehouseHttpService) getContextTimeout() (context.Context, context.Ca
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc WarehouseHttpService) CreateWarehouse(shopID string, authUsername string, doc models.Warehouse) (string, error) {
+func (svc WarehouseHttpService) CreateWarehouse(holdingCode string, authUsername string, doc models.Warehouse) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", doc.Code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", doc.Code)
 
 	if err != nil {
 		return "", err
@@ -105,7 +105,7 @@ func (svc WarehouseHttpService) CreateWarehouse(shopID string, authUsername stri
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.WarehouseDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.Warehouse = doc
 
@@ -119,7 +119,7 @@ func (svc WarehouseHttpService) CreateWarehouse(shopID string, authUsername stri
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 		err = svc.repoMq.Create(docData)
 
 		if err != nil {
@@ -130,12 +130,12 @@ func (svc WarehouseHttpService) CreateWarehouse(shopID string, authUsername stri
 	return newGuidFixed, nil
 }
 
-func (svc WarehouseHttpService) UpdateWarehouse(shopID string, guid string, authUsername string, doc models.Warehouse) error {
+func (svc WarehouseHttpService) UpdateWarehouse(holdingCode string, guid string, authUsername string, doc models.Warehouse) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -152,26 +152,26 @@ func (svc WarehouseHttpService) UpdateWarehouse(shopID string, guid string, auth
 	dataDoc.UpdatedBy = authUsername
 	dataDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, dataDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, dataDoc)
 
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 		svc.repoMq.Update(dataDoc)
 	}()
 
 	return nil
 }
 
-func (svc WarehouseHttpService) CreateLocation(shopID, authUsername, warehouseCode string, doc models.LocationRequest) error {
+func (svc WarehouseHttpService) CreateLocation(holdingCode, authUsername, warehouseCode string, doc models.LocationRequest) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", warehouseCode)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", warehouseCode)
 
 	if err != nil {
 		return err
@@ -200,21 +200,21 @@ func (svc WarehouseHttpService) CreateLocation(shopID, authUsername, warehouseCo
 	dataDoc.UpdatedBy = authUsername
 	dataDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, findDoc.GuidFixed, dataDoc)
+	err = svc.repo.Update(ctx, holdingCode, findDoc.GuidFixed, dataDoc)
 
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 		svc.repoMq.Update(dataDoc)
 	}()
 
 	return nil
 }
 
-func (svc WarehouseHttpService) UpdateLocation(shopID, authUsername, warehouseCode, locationCode string, doc models.LocationRequest) error {
+func (svc WarehouseHttpService) UpdateLocation(holdingCode, authUsername, warehouseCode, locationCode string, doc models.LocationRequest) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -222,7 +222,7 @@ func (svc WarehouseHttpService) UpdateLocation(shopID, authUsername, warehouseCo
 	updateDoc := models.WarehouseDoc{}
 	removeDoc := models.WarehouseDoc{}
 
-	findDoc, err := svc.repo.FindWarehouseByLocation(ctx, shopID, warehouseCode, locationCode)
+	findDoc, err := svc.repo.FindWarehouseByLocation(ctx, holdingCode, warehouseCode, locationCode)
 
 	if err != nil {
 		return err
@@ -234,7 +234,7 @@ func (svc WarehouseHttpService) UpdateLocation(shopID, authUsername, warehouseCo
 
 	if warehouseCode != doc.WarehouseCode {
 
-		findDocWarehouse, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", doc.WarehouseCode)
+		findDocWarehouse, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", doc.WarehouseCode)
 
 		if err != nil {
 			return err
@@ -317,7 +317,7 @@ func (svc WarehouseHttpService) UpdateLocation(shopID, authUsername, warehouseCo
 		updateDoc.UpdatedBy = authUsername
 		updateDoc.UpdatedAt = time.Now()
 
-		err = svc.repo.Update(ctx, shopID, updateDoc.GuidFixed, updateDoc)
+		err = svc.repo.Update(ctx, holdingCode, updateDoc.GuidFixed, updateDoc)
 
 		if err != nil {
 			return err
@@ -327,7 +327,7 @@ func (svc WarehouseHttpService) UpdateLocation(shopID, authUsername, warehouseCo
 			removeDoc.UpdatedBy = authUsername
 			removeDoc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, removeDoc.GuidFixed, removeDoc)
+			err = svc.repo.Update(ctx, holdingCode, removeDoc.GuidFixed, removeDoc)
 
 			if err != nil {
 				return err
@@ -342,7 +342,7 @@ func (svc WarehouseHttpService) UpdateLocation(shopID, authUsername, warehouseCo
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 		svc.repoMq.Update(updateDoc)
 		svc.repoMq.Update(removeDoc)
 	}()
@@ -350,12 +350,12 @@ func (svc WarehouseHttpService) UpdateLocation(shopID, authUsername, warehouseCo
 	return nil
 }
 
-func (svc WarehouseHttpService) DeleteLocationByCodes(shopID, authUsername, warehouseCode string, locationCodes []string) error {
+func (svc WarehouseHttpService) DeleteLocationByCodes(holdingCode, authUsername, warehouseCode string, locationCodes []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	removeDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", warehouseCode)
+	removeDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", warehouseCode)
 
 	if err != nil {
 		return err
@@ -382,26 +382,26 @@ func (svc WarehouseHttpService) DeleteLocationByCodes(shopID, authUsername, ware
 	removeDoc.UpdatedBy = authUsername
 	removeDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, removeDoc.GuidFixed, removeDoc)
+	err = svc.repo.Update(ctx, holdingCode, removeDoc.GuidFixed, removeDoc)
 
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 		svc.repoMq.Update(removeDoc)
 	}()
 
 	return nil
 }
 
-func (svc WarehouseHttpService) CreateShelf(shopID, authUsername, warehouseCode, locationCode string, doc models.ShelfRequest) error {
+func (svc WarehouseHttpService) CreateShelf(holdingCode, authUsername, warehouseCode, locationCode string, doc models.ShelfRequest) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindWarehouseByShelf(ctx, shopID, warehouseCode, locationCode, doc.Code)
+	findDoc, err := svc.repo.FindWarehouseByShelf(ctx, holdingCode, warehouseCode, locationCode, doc.Code)
 
 	if err != nil {
 		return err
@@ -442,7 +442,7 @@ func (svc WarehouseHttpService) CreateShelf(shopID, authUsername, warehouseCode,
 	return nil
 }
 
-func (svc WarehouseHttpService) UpdateShelf(shopID, authUsername, warehouseCode, locationCode, shelfCode string, doc models.ShelfRequest) error {
+func (svc WarehouseHttpService) UpdateShelf(holdingCode, authUsername, warehouseCode, locationCode, shelfCode string, doc models.ShelfRequest) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -450,7 +450,7 @@ func (svc WarehouseHttpService) UpdateShelf(shopID, authUsername, warehouseCode,
 	updateDoc := models.WarehouseDoc{}
 	removeDoc := models.WarehouseDoc{}
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", warehouseCode)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", warehouseCode)
 
 	if err != nil {
 		return err
@@ -462,7 +462,7 @@ func (svc WarehouseHttpService) UpdateShelf(shopID, authUsername, warehouseCode,
 
 	if warehouseCode != doc.WarehouseCode {
 
-		findDocWarehouse, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", doc.WarehouseCode)
+		findDocWarehouse, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", doc.WarehouseCode)
 
 		if err != nil {
 			return err
@@ -544,7 +544,7 @@ func (svc WarehouseHttpService) UpdateShelf(shopID, authUsername, warehouseCode,
 		removeDoc.UpdatedBy = authUsername
 		removeDoc.UpdatedAt = time.Now()
 
-		err = svc.repo.Update(ctx, shopID, removeDoc.GuidFixed, removeDoc)
+		err = svc.repo.Update(ctx, holdingCode, removeDoc.GuidFixed, removeDoc)
 
 		if err != nil {
 			return err
@@ -553,7 +553,7 @@ func (svc WarehouseHttpService) UpdateShelf(shopID, authUsername, warehouseCode,
 		updateDoc.UpdatedBy = authUsername
 		updateDoc.UpdatedAt = time.Now()
 
-		err = svc.repo.Update(ctx, shopID, updateDoc.GuidFixed, updateDoc)
+		err = svc.repo.Update(ctx, holdingCode, updateDoc.GuidFixed, updateDoc)
 
 		if err != nil {
 			return err
@@ -569,12 +569,12 @@ func (svc WarehouseHttpService) UpdateShelf(shopID, authUsername, warehouseCode,
 	return nil
 }
 
-func (svc WarehouseHttpService) DeleteShelfByCodes(shopID, authUsername, warehouseCode, locationCode string, shelfCodes []string) error {
+func (svc WarehouseHttpService) DeleteShelfByCodes(holdingCode, authUsername, warehouseCode, locationCode string, shelfCodes []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	removeDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", warehouseCode)
+	removeDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", warehouseCode)
 
 	if err != nil {
 		return err
@@ -613,26 +613,26 @@ func (svc WarehouseHttpService) DeleteShelfByCodes(shopID, authUsername, warehou
 	removeDoc.UpdatedBy = authUsername
 	removeDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, removeDoc.GuidFixed, removeDoc)
+	err = svc.repo.Update(ctx, holdingCode, removeDoc.GuidFixed, removeDoc)
 
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 		svc.repoMq.Update(removeDoc)
 	}()
 
 	return nil
 }
 
-func (svc WarehouseHttpService) DeleteWarehouse(shopID string, guid string, authUsername string) error {
+func (svc WarehouseHttpService) DeleteWarehouse(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -642,20 +642,20 @@ func (svc WarehouseHttpService) DeleteWarehouse(shopID string, guid string, auth
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 		svc.repoMq.Delete(findDoc)
 	}()
 
 	return nil
 }
 
-func (svc WarehouseHttpService) DeleteWarehouseByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc WarehouseHttpService) DeleteWarehouseByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -664,24 +664,24 @@ func (svc WarehouseHttpService) DeleteWarehouseByGUIDs(shopID string, authUserna
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc WarehouseHttpService) InfoWarehouse(shopID string, guid string) (models.WarehouseInfo, error) {
+func (svc WarehouseHttpService) InfoWarehouse(holdingCode string, guid string) (models.WarehouseInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.WarehouseInfo{}, err
@@ -720,12 +720,12 @@ func (svc WarehouseHttpService) InfoWarehouse(shopID string, guid string) (model
 	return warehouseInfo, nil
 }
 
-func (svc WarehouseHttpService) InfoWarehouseByCode(shopID string, code string) (models.WarehouseInfo, error) {
+func (svc WarehouseHttpService) InfoWarehouseByCode(holdingCode string, code string) (models.WarehouseInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", code)
 
 	if err != nil {
 		return models.WarehouseInfo{}, err
@@ -752,12 +752,12 @@ func (svc WarehouseHttpService) InfoWarehouseByCode(shopID string, code string) 
 	return warehouseInfo, nil
 }
 
-func (svc WarehouseHttpService) InfoLocation(shopID, warehouseCode, locationCode string) (models.LocationInfo, error) {
+func (svc WarehouseHttpService) InfoLocation(holdingCode, warehouseCode, locationCode string) (models.LocationInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", warehouseCode)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", warehouseCode)
 
 	if err != nil {
 		return models.LocationInfo{}, err
@@ -798,12 +798,12 @@ func (svc WarehouseHttpService) InfoLocation(shopID, warehouseCode, locationCode
 	return locationInfo, nil
 }
 
-func (svc WarehouseHttpService) InfoShelf(shopID, warehouseCode, locationCode, shelfCode string) (models.ShelfInfo, error) {
+func (svc WarehouseHttpService) InfoShelf(holdingCode, warehouseCode, locationCode, shelfCode string) (models.ShelfInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", warehouseCode)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", warehouseCode)
 
 	if err != nil {
 		return models.ShelfInfo{}, err
@@ -837,7 +837,7 @@ func (svc WarehouseHttpService) InfoShelf(shopID, warehouseCode, locationCode, s
 	return shelfInfo, nil
 }
 
-func (svc WarehouseHttpService) SearchWarehouse(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.WarehouseInfo, mongopagination.PaginationData, error) {
+func (svc WarehouseHttpService) SearchWarehouse(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.WarehouseInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -846,7 +846,7 @@ func (svc WarehouseHttpService) SearchWarehouse(shopID string, filters map[strin
 		"code",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.WarehouseInfo{}, pagination, err
@@ -855,7 +855,7 @@ func (svc WarehouseHttpService) SearchWarehouse(shopID string, filters map[strin
 	return docList, pagination, nil
 }
 
-func (svc WarehouseHttpService) SearchWarehouseStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.WarehouseInfo, int, error) {
+func (svc WarehouseHttpService) SearchWarehouseStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.WarehouseInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -866,7 +866,7 @@ func (svc WarehouseHttpService) SearchWarehouseStep(shopID string, langCode stri
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.WarehouseInfo{}, 0, err
@@ -875,12 +875,12 @@ func (svc WarehouseHttpService) SearchWarehouseStep(shopID string, langCode stri
 	return docList, total, nil
 }
 
-func (svc WarehouseHttpService) SearchLocation(shopID string, pageable micromodels.Pageable) ([]models.LocationInfo, mongopagination.PaginationData, error) {
+func (svc WarehouseHttpService) SearchLocation(holdingCode string, pageable micromodels.Pageable) ([]models.LocationInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	docList, pagination, err := svc.repo.FindLocationPage(ctx, shopID, pageable)
+	docList, pagination, err := svc.repo.FindLocationPage(ctx, holdingCode, pageable)
 
 	if err != nil {
 		return []models.LocationInfo{}, pagination, err
@@ -889,12 +889,12 @@ func (svc WarehouseHttpService) SearchLocation(shopID string, pageable micromode
 	return docList, pagination, nil
 }
 
-func (svc WarehouseHttpService) SearchShelf(shopID string, pageable micromodels.Pageable) ([]models.ShelfInfo, mongopagination.PaginationData, error) {
+func (svc WarehouseHttpService) SearchShelf(holdingCode string, pageable micromodels.Pageable) ([]models.ShelfInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	docList, pagination, err := svc.repo.FindShelfPage(ctx, shopID, pageable)
+	docList, pagination, err := svc.repo.FindShelfPage(ctx, holdingCode, pageable)
 
 	if err != nil {
 		return []models.ShelfInfo{}, pagination, err
@@ -903,7 +903,7 @@ func (svc WarehouseHttpService) SearchShelf(shopID string, pageable micromodels.
 	return docList, pagination, nil
 }
 
-func (svc WarehouseHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.Warehouse) (common.BulkImport, error) {
+func (svc WarehouseHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.Warehouse) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -915,7 +915,7 @@ func (svc WarehouseHttpService) SaveInBatch(shopID string, authUsername string, 
 		itemCodeGuidList = append(itemCodeGuidList, doc.Code)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "code", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "code", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -927,18 +927,18 @@ func (svc WarehouseHttpService) SaveInBatch(shopID string, authUsername string, 
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.Warehouse, models.WarehouseDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.Warehouse) models.WarehouseDoc {
+		func(holdingCode string, authUsername string, doc models.Warehouse) models.WarehouseDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.WarehouseDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.Warehouse = doc
 
 			currentTime := time.Now()
@@ -949,23 +949,23 @@ func (svc WarehouseHttpService) SaveInBatch(shopID string, authUsername string, 
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.Warehouse, models.WarehouseDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.WarehouseDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", guid)
+		func(holdingCode string, guid string) (models.WarehouseDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", guid)
 		},
 		func(doc models.WarehouseDoc) bool {
 			return doc.Code != ""
 		},
-		func(shopID string, authUsername string, data models.Warehouse, doc models.WarehouseDoc) error {
+		func(holdingCode string, authUsername string, data models.Warehouse, doc models.WarehouseDoc) error {
 
 			doc.Warehouse = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -1004,7 +1004,7 @@ func (svc WarehouseHttpService) SaveInBatch(shopID string, authUsername string, 
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -1018,9 +1018,9 @@ func (svc WarehouseHttpService) getDocIDKey(doc models.Warehouse) string {
 	return doc.Code
 }
 
-func (svc WarehouseHttpService) saveMasterSync(shopID string) {
+func (svc WarehouseHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())
@@ -1033,11 +1033,11 @@ func (svc WarehouseHttpService) GetModuleName() string {
 }
 
 // ProductBarcode in Shelf management methods
-func (svc WarehouseHttpService) AddProductBarcodeToShelf(shopID, authUsername, warehouseCode, locationCode, shelfCode string, productBarcode models.ShelfProductBarcode) error {
+func (svc WarehouseHttpService) AddProductBarcodeToShelf(holdingCode, authUsername, warehouseCode, locationCode, shelfCode string, productBarcode models.ShelfProductBarcode) error {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", warehouseCode)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", warehouseCode)
 	if err != nil {
 		return err
 	}
@@ -1063,7 +1063,7 @@ func (svc WarehouseHttpService) AddProductBarcodeToShelf(shopID, authUsername, w
 					dataDoc.UpdatedBy = authUsername
 					dataDoc.UpdatedAt = time.Now()
 
-					return svc.repo.Update(ctx, shopID, findDoc.GuidFixed, dataDoc)
+					return svc.repo.Update(ctx, holdingCode, findDoc.GuidFixed, dataDoc)
 				}
 			}
 			return errors.New("shelf not found")
@@ -1072,11 +1072,11 @@ func (svc WarehouseHttpService) AddProductBarcodeToShelf(shopID, authUsername, w
 	return errors.New("location not found")
 }
 
-func (svc WarehouseHttpService) RemoveProductBarcodeFromShelf(shopID, authUsername, warehouseCode, locationCode, shelfCode, productGuidFixed string) error {
+func (svc WarehouseHttpService) RemoveProductBarcodeFromShelf(holdingCode, authUsername, warehouseCode, locationCode, shelfCode, productGuidFixed string) error {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", warehouseCode)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", warehouseCode)
 	if err != nil {
 		return err
 	}
@@ -1100,7 +1100,7 @@ func (svc WarehouseHttpService) RemoveProductBarcodeFromShelf(shopID, authUserna
 					dataDoc.UpdatedBy = authUsername
 					dataDoc.UpdatedAt = time.Now()
 
-					return svc.repo.Update(ctx, shopID, findDoc.GuidFixed, dataDoc)
+					return svc.repo.Update(ctx, holdingCode, findDoc.GuidFixed, dataDoc)
 				}
 			}
 			return errors.New("shelf not found")
@@ -1109,11 +1109,11 @@ func (svc WarehouseHttpService) RemoveProductBarcodeFromShelf(shopID, authUserna
 	return errors.New("location not found")
 }
 
-func (svc WarehouseHttpService) GetShelfProductBarcodes(shopID, warehouseCode, locationCode, shelfCode string) ([]models.ShelfProductBarcode, error) {
+func (svc WarehouseHttpService) GetShelfProductBarcodes(holdingCode, warehouseCode, locationCode, shelfCode string) ([]models.ShelfProductBarcode, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", warehouseCode)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", warehouseCode)
 	if err != nil {
 		return []models.ShelfProductBarcode{}, err
 	}
@@ -1137,7 +1137,7 @@ func (svc WarehouseHttpService) GetShelfProductBarcodes(shopID, warehouseCode, l
 }
 
 // Bulk ProductBarcode operations implementations
-func (svc WarehouseHttpService) BulkAddProductBarcodesToShelf(shopID, authUsername, warehouseCode, locationCode, shelfCode string, products []models.ShelfProductBarcode) models.BulkProductOperationResponse {
+func (svc WarehouseHttpService) BulkAddProductBarcodesToShelf(holdingCode, authUsername, warehouseCode, locationCode, shelfCode string, products []models.ShelfProductBarcode) models.BulkProductOperationResponse {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
@@ -1147,7 +1147,7 @@ func (svc WarehouseHttpService) BulkAddProductBarcodesToShelf(shopID, authUserna
 		Errors:     []models.BulkOperationError{},
 	}
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", warehouseCode)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", warehouseCode)
 	if err != nil {
 		// Return error response for all products
 		for i, product := range products {
@@ -1189,7 +1189,7 @@ func (svc WarehouseHttpService) BulkAddProductBarcodesToShelf(shopID, authUserna
 					dataDoc.UpdatedBy = authUsername
 					dataDoc.UpdatedAt = time.Now()
 
-					if updateErr := svc.repo.Update(ctx, shopID, findDoc.GuidFixed, dataDoc); updateErr != nil {
+					if updateErr := svc.repo.Update(ctx, holdingCode, findDoc.GuidFixed, dataDoc); updateErr != nil {
 						// If update fails, return error for all products
 						bulkResponse.Success = false
 						for i := range bulkResponse.Results {
@@ -1234,7 +1234,7 @@ func (svc WarehouseHttpService) BulkAddProductBarcodesToShelf(shopID, authUserna
 	return response
 }
 
-func (svc WarehouseHttpService) BulkRemoveProductBarcodesFromShelf(shopID, authUsername, warehouseCode, locationCode, shelfCode string, guidFixedList []string) models.BulkProductOperationResponse {
+func (svc WarehouseHttpService) BulkRemoveProductBarcodesFromShelf(holdingCode, authUsername, warehouseCode, locationCode, shelfCode string, guidFixedList []string) models.BulkProductOperationResponse {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
@@ -1244,7 +1244,7 @@ func (svc WarehouseHttpService) BulkRemoveProductBarcodesFromShelf(shopID, authU
 		Errors:     []models.BulkOperationError{},
 	}
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", warehouseCode)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", warehouseCode)
 	if err != nil {
 		// Return error response for all products
 		for i, guid := range guidFixedList {
@@ -1286,7 +1286,7 @@ func (svc WarehouseHttpService) BulkRemoveProductBarcodesFromShelf(shopID, authU
 					dataDoc.UpdatedBy = authUsername
 					dataDoc.UpdatedAt = time.Now()
 
-					if updateErr := svc.repo.Update(ctx, shopID, findDoc.GuidFixed, dataDoc); updateErr != nil {
+					if updateErr := svc.repo.Update(ctx, holdingCode, findDoc.GuidFixed, dataDoc); updateErr != nil {
 						// If update fails, return error for all products
 						bulkResponse.Success = false
 						bulkResponse.Errors = []models.BulkOperationError{}

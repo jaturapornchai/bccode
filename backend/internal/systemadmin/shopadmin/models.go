@@ -8,13 +8,13 @@ import (
 )
 
 type ShopDoc struct {
-	ID primitive.ObjectID `json:"-" bson:"_id,omitempty"`
-	GuidFixed string             `json:"shopid" bson:"guid_fixed"`
-	Name1 string             `json:"name1" bson:"name1"`
-	Names []models.NameX     `json:"names" bson:"names"`
-	Telephone string             `json:"telephone" bson:"telephone"`
+	ID         primitive.ObjectID `json:"-" bson:"_id,omitempty"`
+	GuidFixed  string             `json:"holding_code" bson:"guid_fixed"`
+	Name1      string             `json:"name1" bson:"name1"`
+	Names      []models.NameX     `json:"names" bson:"names"`
+	Telephone  string             `json:"telephone" bson:"telephone"`
 	BranchCode string             `json:"branchcode" bson:"branchcode"`
-	CreatedBy string             `json:"createdby" bson:"createdby"`
+	CreatedBy  string             `json:"createdby" bson:"createdby"`
 }
 
 func (ShopDoc) CollectionName() string {
@@ -22,10 +22,10 @@ func (ShopDoc) CollectionName() string {
 }
 
 type ShopUserDoc struct {
-	ID primitive.ObjectID `json:"-" bson:"_id,omitempty"`
-	ShopId string             `json:"shopid" bson:"shopid"`
-	Username string             `json:"username" bson:"username"`
-	Role int                `json:"role" bson:"role"`
+	ID             primitive.ObjectID `json:"-" bson:"_id,omitempty"`
+	HoldingCode    string             `json:"holding_code" bson:"holding_code"`
+	Username       string             `json:"username" bson:"username"`
+	Role           int                `json:"role" bson:"role"`
 	LastAccessedAt time.Time          `json:"last_accessed_at" bson:"last_accessed_at"`
 }
 

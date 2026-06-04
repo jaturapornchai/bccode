@@ -68,7 +68,7 @@ func (h StockTransferHttp) RegisterHttp() {
 // @Router /transaction/stock-transfer [post]
 func (h StockTransferHttp) CreateStockTransfer(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.StockTransfer{}
@@ -84,7 +84,7 @@ func (h StockTransferHttp) CreateStockTransfer(ctx microservice.IContext) error 
 		return err
 	}
 
-	idx, docNo, err := h.svc.CreateStockTransfer(shopID, authUsername, *docReq)
+	idx, docNo, err := h.svc.CreateStockTransfer(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -112,7 +112,7 @@ func (h StockTransferHttp) CreateStockTransfer(ctx microservice.IContext) error 
 func (h StockTransferHttp) UpdateStockTransfer(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -130,7 +130,7 @@ func (h StockTransferHttp) UpdateStockTransfer(ctx microservice.IContext) error 
 		return err
 	}
 
-	err = h.svc.UpdateStockTransfer(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateStockTransfer(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -156,12 +156,12 @@ func (h StockTransferHttp) UpdateStockTransfer(ctx microservice.IContext) error 
 // @Router /transaction/stock-transfer/{id} [delete]
 func (h StockTransferHttp) DeleteStockTransfer(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteStockTransfer(shopID, id, authUsername)
+	err := h.svc.DeleteStockTransfer(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -187,7 +187,7 @@ func (h StockTransferHttp) DeleteStockTransfer(ctx microservice.IContext) error 
 // @Router /transaction/stock-transfer [delete]
 func (h StockTransferHttp) DeleteStockTransferByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -200,7 +200,7 @@ func (h StockTransferHttp) DeleteStockTransferByGUIDs(ctx microservice.IContext)
 		return err
 	}
 
-	err = h.svc.DeleteStockTransferByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteStockTransferByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -225,12 +225,12 @@ func (h StockTransferHttp) DeleteStockTransferByGUIDs(ctx microservice.IContext)
 // @Router /transaction/stock-transfer/{id} [get]
 func (h StockTransferHttp) InfoStockTransfer(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get StockTransfer %v", id)
-	doc, err := h.svc.InfoStockTransfer(shopID, id)
+	doc, err := h.svc.InfoStockTransfer(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -256,11 +256,11 @@ func (h StockTransferHttp) InfoStockTransfer(ctx microservice.IContext) error {
 // @Router /transaction/stock-transfer/code/{code} [get]
 func (h StockTransferHttp) InfoStockTransferByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoStockTransferByCode(shopID, code)
+	doc, err := h.svc.InfoStockTransferByCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -291,7 +291,7 @@ func (h StockTransferHttp) InfoStockTransferByCode(ctx microservice.IContext) er
 // @Router /transaction/stock-transfer [get]
 func (h StockTransferHttp) SearchStockTransferPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -312,7 +312,7 @@ func (h StockTransferHttp) SearchStockTransferPage(ctx microservice.IContext) er
 		},
 	})
 
-	docList, pagination, err := h.svc.SearchStockTransfer(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchStockTransfer(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -345,7 +345,7 @@ func (h StockTransferHttp) SearchStockTransferPage(ctx microservice.IContext) er
 // @Router /transaction/stock-transfer/list [get]
 func (h StockTransferHttp) SearchStockTransferStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -368,7 +368,7 @@ func (h StockTransferHttp) SearchStockTransferStep(ctx microservice.IContext) er
 		},
 	})
 
-	docList, total, err := h.svc.SearchStockTransferStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchStockTransferStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

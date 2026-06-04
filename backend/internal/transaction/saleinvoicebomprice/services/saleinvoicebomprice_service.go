@@ -14,13 +14,13 @@ import (
 )
 
 type ISaleInvoiceBomPriceService interface {
-	CreateSaleInvoiceBomPrice(shopID string, authUsername string, docNo string, bomGUID string, bomBarcodes []string) (string, error)
-	DeleteSaleInvoiceBomPrice(shopID string, guid string, authUsername string) error
-	InfoSaleInvoiceBomPrice(shopID string, guid string) (models.SaleInvoiceBomPriceInfo, error)
-	InfoSaleInvoiceBomPriceByCode(shopID string, code string) (models.SaleInvoiceBomPriceInfo, error)
-	InfoSaleInvoiceBomPriceByDocNo(shopID string, docNo string) ([]models.SaleInvoiceBomPriceInfo, error)
-	SearchSaleInvoiceBomPrice(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.SaleInvoiceBomPriceInfo, mongopagination.PaginationData, error)
-	SearchSaleInvoiceBomPriceStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.SaleInvoiceBomPriceInfo, int, error)
+	CreateSaleInvoiceBomPrice(holdingCode string, authUsername string, docNo string, bomGUID string, bomBarcodes []string) (string, error)
+	DeleteSaleInvoiceBomPrice(holdingCode string, guid string, authUsername string) error
+	InfoSaleInvoiceBomPrice(holdingCode string, guid string) (models.SaleInvoiceBomPriceInfo, error)
+	InfoSaleInvoiceBomPriceByCode(holdingCode string, code string) (models.SaleInvoiceBomPriceInfo, error)
+	InfoSaleInvoiceBomPriceByDocNo(holdingCode string, docNo string) ([]models.SaleInvoiceBomPriceInfo, error)
+	SearchSaleInvoiceBomPrice(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.SaleInvoiceBomPriceInfo, mongopagination.PaginationData, error)
+	SearchSaleInvoiceBomPriceStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.SaleInvoiceBomPriceInfo, int, error)
 }
 
 type SaleInvoiceBomPriceService struct {
@@ -51,7 +51,7 @@ func (svc SaleInvoiceBomPriceService) getContextTimeout() (context.Context, cont
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc SaleInvoiceBomPriceService) CreateSaleInvoiceBomPrice(shopID string, authUsername string, docNo string, bomGUID string, bomBarcodes []string) (string, error) {
+func (svc SaleInvoiceBomPriceService) CreateSaleInvoiceBomPrice(holdingCode string, authUsername string, docNo string, bomGUID string, bomBarcodes []string) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -60,7 +60,7 @@ func (svc SaleInvoiceBomPriceService) CreateSaleInvoiceBomPrice(shopID string, a
 
 	newGuidFixed := utils.NewGUID()
 
-	dataDoc.ShopID = shopID
+	dataDoc.HoldingCode = holdingCode
 	dataDoc.GuidFixed = newGuidFixed
 	dataDoc.BOMGuid = bomGUID
 	dataDoc.DocNo = docNo
@@ -93,12 +93,12 @@ func (svc SaleInvoiceBomPriceService) CreateSaleInvoiceBomPrice(shopID string, a
 	return newGuidFixed, nil
 }
 
-func (svc SaleInvoiceBomPriceService) DeleteSaleInvoiceBomPrice(shopID string, guid string, authUsername string) error {
+func (svc SaleInvoiceBomPriceService) DeleteSaleInvoiceBomPrice(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -108,7 +108,7 @@ func (svc SaleInvoiceBomPriceService) DeleteSaleInvoiceBomPrice(shopID string, g
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
@@ -116,12 +116,12 @@ func (svc SaleInvoiceBomPriceService) DeleteSaleInvoiceBomPrice(shopID string, g
 	return nil
 }
 
-func (svc SaleInvoiceBomPriceService) InfoSaleInvoiceBomPrice(shopID string, guid string) (models.SaleInvoiceBomPriceInfo, error) {
+func (svc SaleInvoiceBomPriceService) InfoSaleInvoiceBomPrice(holdingCode string, guid string) (models.SaleInvoiceBomPriceInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.SaleInvoiceBomPriceInfo{}, err
@@ -134,12 +134,12 @@ func (svc SaleInvoiceBomPriceService) InfoSaleInvoiceBomPrice(shopID string, gui
 	return findDoc.SaleInvoiceBomPriceInfo, nil
 }
 
-func (svc SaleInvoiceBomPriceService) InfoSaleInvoiceBomPriceByCode(shopID string, code string) (models.SaleInvoiceBomPriceInfo, error) {
+func (svc SaleInvoiceBomPriceService) InfoSaleInvoiceBomPriceByCode(holdingCode string, code string) (models.SaleInvoiceBomPriceInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", code)
 
 	if err != nil {
 		return models.SaleInvoiceBomPriceInfo{}, err
@@ -152,12 +152,12 @@ func (svc SaleInvoiceBomPriceService) InfoSaleInvoiceBomPriceByCode(shopID strin
 	return findDoc.SaleInvoiceBomPriceInfo, nil
 }
 
-func (svc SaleInvoiceBomPriceService) InfoSaleInvoiceBomPriceByDocNo(shopID string, docNo string) ([]models.SaleInvoiceBomPriceInfo, error) {
+func (svc SaleInvoiceBomPriceService) InfoSaleInvoiceBomPriceByDocNo(holdingCode string, docNo string) ([]models.SaleInvoiceBomPriceInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDocs, err := svc.repo.FindByDocNo(ctx, shopID, docNo)
+	findDocs, err := svc.repo.FindByDocNo(ctx, holdingCode, docNo)
 
 	if err != nil {
 		return []models.SaleInvoiceBomPriceInfo{}, err
@@ -170,7 +170,7 @@ func (svc SaleInvoiceBomPriceService) InfoSaleInvoiceBomPriceByDocNo(shopID stri
 	return findDocs, nil
 }
 
-func (svc SaleInvoiceBomPriceService) SearchSaleInvoiceBomPrice(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.SaleInvoiceBomPriceInfo, mongopagination.PaginationData, error) {
+func (svc SaleInvoiceBomPriceService) SearchSaleInvoiceBomPrice(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.SaleInvoiceBomPriceInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -179,7 +179,7 @@ func (svc SaleInvoiceBomPriceService) SearchSaleInvoiceBomPrice(shopID string, f
 		"docno",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.SaleInvoiceBomPriceInfo{}, pagination, err
@@ -188,7 +188,7 @@ func (svc SaleInvoiceBomPriceService) SearchSaleInvoiceBomPrice(shopID string, f
 	return docList, pagination, nil
 }
 
-func (svc SaleInvoiceBomPriceService) SearchSaleInvoiceBomPriceStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.SaleInvoiceBomPriceInfo, int, error) {
+func (svc SaleInvoiceBomPriceService) SearchSaleInvoiceBomPriceStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.SaleInvoiceBomPriceInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -199,7 +199,7 @@ func (svc SaleInvoiceBomPriceService) SearchSaleInvoiceBomPriceStep(shopID strin
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.SaleInvoiceBomPriceInfo{}, 0, err

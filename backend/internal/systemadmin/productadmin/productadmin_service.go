@@ -12,9 +12,9 @@ import (
 )
 
 type IProductAdminService interface {
-	ReSyncProductBarcode(shopID string) error
-	ReCalcStockBalance(shopID string, barcode string) error
-	DeleteProductBarcodeAll(shopID string, userName string) error
+	ReSyncProductBarcode(holdingCode string) error
+	ReCalcStockBalance(holdingCode string, barcode string) error
+	DeleteProductBarcodeAll(holdingCode string, userName string) error
 }
 
 type ProductAdminService struct {
@@ -38,9 +38,9 @@ func NewProductAdminService(pst microservice.IPersisterMongo, kfProducer microse
 	}
 }
 
-func (svc ProductAdminService) ReSyncProductBarcode(shopID string) error {
+func (svc ProductAdminService) ReSyncProductBarcode(holdingCode string) error {
 
-	// find product barcode by shopid
+	// find product barcode by holding_code
 	ctx, cancel := context.WithTimeout(context.Background(), svc.timeoutDuration)
 	defer cancel()
 
@@ -56,7 +56,7 @@ func (svc ProductAdminService) ReSyncProductBarcode(shopID string) error {
 	}
 
 	for {
-		barcodes, pages, err := svc.mongoRepo.FindPage(ctx, shopID, nil, pageRequest)
+		barcodes, pages, err := svc.mongoRepo.FindPage(ctx, holdingCode, nil, pageRequest)
 		if err != nil {
 			return err
 		}
@@ -85,7 +85,7 @@ func (svc ProductAdminService) ReSyncProductBarcode(shopID string) error {
 
 }
 
-func (svc ProductAdminService) ReCalcStockBalance(shopID string, barcode string) error {
+func (svc ProductAdminService) ReCalcStockBalance(holdingCode string, barcode string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), svc.timeoutDuration)
 	defer cancel()
@@ -93,7 +93,7 @@ func (svc ProductAdminService) ReCalcStockBalance(shopID string, barcode string)
 	var requestStockProcessLists []stockProcessModels.StockProcessRequest
 
 	if barcode != "" {
-		findBarcode, err := svc.mongoRepo.FindProductAndBarcode(ctx, shopID, barcode)
+		findBarcode, err := svc.mongoRepo.FindProductAndBarcode(ctx, holdingCode, barcode)
 		if err != nil {
 			return err
 		}
@@ -102,13 +102,13 @@ func (svc ProductAdminService) ReCalcStockBalance(shopID string, barcode string)
 
 			if findBarcode.Barcode != "" {
 				requestStockProcessLists = append(requestStockProcessLists, stockProcessModels.StockProcessRequest{
-					ShopID:  shopID,
-					Barcode: findBarcode.Barcode,
+					HoldingCode: holdingCode,
+					Barcode:     findBarcode.Barcode,
 				})
 			}
 		}
 	} else {
-		barcodes, err := svc.mongoRepo.FindProductBarcodeByShopId(ctx, shopID)
+		barcodes, err := svc.mongoRepo.FindProductBarcodeByHoldingCode(ctx, holdingCode)
 		if err != nil {
 			return err
 		}
@@ -117,8 +117,8 @@ func (svc ProductAdminService) ReCalcStockBalance(shopID string, barcode string)
 
 			if item.Barcode != "" {
 				requestStockProcessLists = append(requestStockProcessLists, stockProcessModels.StockProcessRequest{
-					ShopID:  shopID,
-					Barcode: item.Barcode,
+					HoldingCode: holdingCode,
+					Barcode:     item.Barcode,
 				})
 			}
 		}
@@ -137,7 +137,7 @@ func (svc ProductAdminService) ReCalcStockBalance(shopID string, barcode string)
 	return nil
 }
 
-func (svc ProductAdminService) DeleteProductBarcodeAll(shopID string, userName string) error {
+func (svc ProductAdminService) DeleteProductBarcodeAll(holdingCode string, userName string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), svc.timeoutDuration)
 	defer cancel()
@@ -154,7 +154,7 @@ func (svc ProductAdminService) DeleteProductBarcodeAll(shopID string, userName s
 	}
 
 	for {
-		barcodes, pages, err := svc.mongoRepo.FindPage(ctx, shopID, nil, pageRequest)
+		barcodes, pages, err := svc.mongoRepo.FindPage(ctx, holdingCode, nil, pageRequest)
 		if err != nil {
 			return err
 		}
@@ -165,7 +165,7 @@ func (svc ProductAdminService) DeleteProductBarcodeAll(shopID string, userName s
 			ids = append(ids, barcode.ID.Hex())
 		}
 
-		err = svc.mongoRepo.DeleteProductBarcodeByShopId(ctx, shopID, userName, ids)
+		err = svc.mongoRepo.DeleteProductBarcodeByHoldingCode(ctx, holdingCode, userName, ids)
 		if err != nil {
 			return err
 		}

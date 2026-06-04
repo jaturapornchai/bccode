@@ -15,59 +15,59 @@ func (m *MockDocumentImageRepository) Create(ctx context.Context, doc models.Doc
 	return args.String(0), args.Error(1)
 }
 
-func (m *MockDocumentImageRepository) Update(shopID string, guid string, doc models.DocumentImageDoc) error {
-	args := m.Called(shopID, guid, doc)
+func (m *MockDocumentImageRepository) Update(holdingCode string, guid string, doc models.DocumentImageDoc) error {
+	args := m.Called(holdingCode, guid, doc)
 	return args.Error(0)
 }
 
-func (m *MockDocumentImageRepository) DeleteByGuidfixed(shopID string, guid string, username string) error {
-	args := m.Called(shopID, guid, username)
+func (m *MockDocumentImageRepository) DeleteByGuidfixed(holdingCode string, guid string, username string) error {
+	args := m.Called(holdingCode, guid, username)
 	return args.Error(0)
 }
 
-func (m *MockDocumentImageRepository) FindOne(shopID string, filters map[string]interface{}) (models.DocumentImageDoc, error) {
-	args := m.Called(shopID, filters)
+func (m *MockDocumentImageRepository) FindOne(holdingCode string, filters map[string]interface{}) (models.DocumentImageDoc, error) {
+	args := m.Called(holdingCode, filters)
 	return args.Get(0).(models.DocumentImageDoc), args.Error(1)
 }
 
-func (m *MockDocumentImageRepository) FindByGuid(shopID string, guid string) (models.DocumentImageDoc, error) {
-	args := m.Called(shopID, guid)
+func (m *MockDocumentImageRepository) FindByGuid(holdingCode string, guid string) (models.DocumentImageDoc, error) {
+	args := m.Called(holdingCode, guid)
 	return args.Get(0).(models.DocumentImageDoc), args.Error(1)
 }
 
-func (m *MockDocumentImageRepository) FindPage(shopID string, searchInFields []string, pageable micromodels.Pageable)([]models.DocumentImageInfo, mongopagination.PaginationData, error) {
-	args := m.Called(shopID, searchInFields, pageable)
+func (m *MockDocumentImageRepository) FindPage(holdingCode string, searchInFields []string, pageable micromodels.Pageable)([]models.DocumentImageInfo, mongopagination.PaginationData, error) {
+	args := m.Called(holdingCode, searchInFields, pageable)
 	return args.Get(0).([]models.DocumentImageInfo), args.Get(1).(mongopagination.PaginationData), args.Error(2)
 }
 
-func (m *MockDocumentImageRepository) FindPageFilterSort(shopID string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.DocumentImageInfo, mongopagination.PaginationData, error) {
-	args := m.Called(shopID, filters, searchInFields, pageables)
+func (m *MockDocumentImageRepository) FindPageFilterSort(holdingCode string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.DocumentImageInfo, mongopagination.PaginationData, error) {
+	args := m.Called(holdingCode, filters, searchInFields, pageables)
 	return args.Get(0).([]models.DocumentImageInfo), args.Get(1).(mongopagination.PaginationData), args.Error(2)
 }
 
-func (m *MockDocumentImageRepository) SaveDocumentImageDocRefGroup(shopID string, docRef string, docImages []string) error {
-	args := m.Called(shopID, docRef, docImages)
+func (m *MockDocumentImageRepository) SaveDocumentImageDocRefGroup(holdingCode string, docRef string, docImages []string) error {
+	args := m.Called(holdingCode, docRef, docImages)
 	return args.Error(0)
 }
 
-func (m *MockDocumentImageRepository) ListDocumentImageGroup(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.DocumentImageGroup, mongopagination.PaginationData, error) {
-	args := m.Called(shopID, filters, pageable)
+func (m *MockDocumentImageRepository) ListDocumentImageGroup(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.DocumentImageGroup, mongopagination.PaginationData, error) {
+	args := m.Called(holdingCode, filters, pageable)
 	return args.Get(0).([]models.DocumentImageGroup), args.Get(1).(mongopagination.PaginationData), args.Error(2)
 }
 
-func (m *MockDocumentImageRepository) GetDocumentImageGroup(shopID string, docRef string) (models.DocumentImageGroup, error) {
-	args := m.Called(shopID, docRef)
+func (m *MockDocumentImageRepository) GetDocumentImageGroup(holdingCode string, docRef string) (models.DocumentImageGroup, error) {
+	args := m.Called(holdingCode, docRef)
 	return args.Get(0).(models.DocumentImageGroup), args.Error(1)
 }
 
-func (m *MockDocumentImageRepository) UpdateDocumentImageStatus(shopID string, guid string, docnoGUIDRef string, status int8) error {
-	args := m.Called(shopID, guid, docnoGUIDRef, status)
+func (m *MockDocumentImageRepository) UpdateDocumentImageStatus(holdingCode string, guid string, docnoGUIDRef string, status int8) error {
+	args := m.Called(holdingCode, guid, docnoGUIDRef, status)
 
 	return args.Error(0)
 }
 
-func (m *MockDocumentImageRepository) UpdateDocumentImageStatusByDocumentRef(shopID string, docRef string, docnoGUIDRef string, status int8) error {
-	args := m.Called(shopID, docRef, docnoGUIDRef, status)
+func (m *MockDocumentImageRepository) UpdateDocumentImageStatusByDocumentRef(holdingCode string, docRef string, docnoGUIDRef string, status int8) error {
+	args := m.Called(holdingCode, docRef, docnoGUIDRef, status)
 
 	return args.Error(0)
 }
@@ -121,7 +121,7 @@ func CreateImage() *image.RGBA {
 
 func TestDocumentImageUploadService(t *testing.T) {
 
-	giveShopId := "TESTSHOP"
+	giveHoldingCode := "TESTSHOP"
 	giveUserId := "TESTUSER"
 	giveModuleName := "TESTMODULE"
 
@@ -131,8 +131,8 @@ func TestDocumentImageUploadService(t *testing.T) {
 	giveNewGuid := utils.NewGUID()
 	wantCreateDocumentImage := models.DocumentImageDoc{
 		DocumentImageData: models.DocumentImageData{
-			ShopIdentity: common.ShopIdentity{
-				ShopID: giveShopId,
+			HoldingCodeentity: common.HoldingCodeentity{
+				HoldingCode: giveHoldingCode,
 			},
 			DocumentImageInfo: models.DocumentImageInfo{
 				DocIdentity: common.DocIdentity{
@@ -153,7 +153,7 @@ func TestDocumentImageUploadService(t *testing.T) {
 		},
 	}
 
-	giveImageUploadFileNameWithShop := fmt.Sprintf("%s/%s", giveShopId, giveNewGuid)
+	giveImageUploadFileNameWithShop := fmt.Sprintf("%s/%s", giveHoldingCode, giveNewGuid)
 
 	// body := new(bytes.Buffer)
 	// writer := multipart.NewWriter(body)
@@ -182,7 +182,7 @@ func TestDocumentImageUploadService(t *testing.T) {
 			return giveNewGuid
 		},
 	}
-	get, err := svc.UploadDocumentImage(giveShopId, giveUserId, giveModuleName, giveFileHeader)
+	get, err := svc.UploadDocumentImage(giveHoldingCode, giveUserId, giveModuleName, giveFileHeader)
 	assert.Nil(t, err, fmt.Sprintf("Failed After Service Upload Document Image"))
 	assert.Equal(t, get, &wantCreateDocumentImage.DocumentImageInfo, "Failed After Service Upload Document Image Are Not Equal Given Test Data.")
 }

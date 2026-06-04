@@ -18,34 +18,34 @@ import (
 )
 
 type IDocumentImageService interface {
-	CreateDocumentImage(shopID string, authUsername string, doc models.DocumentImageRequest) (string, string, error)
-	BulkCreateDocumentImage(shopID string, authUsername string, docs []models.DocumentImageRequest) error
-	InfoDocumentImage(shopID string, guid string) (models.DocumentImageInfo, error)
-	SearchDocumentImage(shopID string, matchFilters map[string]interface{}, pageable micromodels.Pageable) ([]models.DocumentImageInfo, mongopagination.PaginationData, error)
-	UploadDocumentImage(shopID string, authUsername string, fh *multipart.FileHeader) (*models.DocumentImageInfo, error)
-	CreateImageEdit(shopID string, authUsername string, docImageGUID string, docRequest models.ImageEditRequest) error
-	CreateImageComment(shopID string, authUsername string, docImageGUID string, docRequest models.CommentRequest) error
+	CreateDocumentImage(holdingCode string, authUsername string, doc models.DocumentImageRequest) (string, string, error)
+	BulkCreateDocumentImage(holdingCode string, authUsername string, docs []models.DocumentImageRequest) error
+	InfoDocumentImage(holdingCode string, guid string) (models.DocumentImageInfo, error)
+	SearchDocumentImage(holdingCode string, matchFilters map[string]interface{}, pageable micromodels.Pageable) ([]models.DocumentImageInfo, mongopagination.PaginationData, error)
+	UploadDocumentImage(holdingCode string, authUsername string, fh *multipart.FileHeader) (*models.DocumentImageInfo, error)
+	CreateImageEdit(holdingCode string, authUsername string, docImageGUID string, docRequest models.ImageEditRequest) error
+	CreateImageComment(holdingCode string, authUsername string, docImageGUID string, docRequest models.CommentRequest) error
 
-	CreateDocumentImageGroup(shopID string, authUsername string, docImageGroup models.DocumentImageGroup) (string, error)
-	GetDocumentImageDocRefGroup(shopID string, docImageGroupGUID string) (models.DocumentImageGroupInfo, error)
-	GetDocumentImageGroupByDocRef(shopID string, docRef string) (models.DocumentImageGroupInfo, error)
-	UpdateDocumentImageGroup(shopID string, authUsername string, groupGUID string, docImageGroup models.DocumentImageGroup) error
-	UpdateImageReferenceByDocumentImageGroup(shopID string, authUsername string, groupGUID string, docImages []models.ImageReferenceBody) error
-	UpdateReferenceByDocumentImageGroup(shopID string, authUsername string, groupGUID string, docRef models.Reference) error
-	UpdateTagsInDocumentImageGroup(shopID string, authUsername string, groupGUID string, tags []string) error
-	UpdateStatusDocumentImageGroup(shopID string, authUsername string, groupGUID string, status int8) error
-	UnGroupDocumentImageGroup(shopID string, authUsername string, groupGUID string) ([]string, error)
-	ListDocumentImageGroup(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.DocumentImageGroupInfo, mongopagination.PaginationData, error)
-	DeleteReferenceByDocumentImageGroup(shopID string, authUsername string, groupGUID string, docRef models.Reference) error
-	DeleteDocumentImageGroupByGuid(shopID string, authUsername string, DocumentImageGroupGuidFixed string) error
-	DeleteDocumentImageGroupByGuids(shopID string, authUsername string, documentImageGroupGuidFixeds []string) error
-	XSortsUpdate(ctx context.Context, shopID string, authUsername string, taskGUID string, xsorts []models.XSortDocumentImageGroupRequest) error
+	CreateDocumentImageGroup(holdingCode string, authUsername string, docImageGroup models.DocumentImageGroup) (string, error)
+	GetDocumentImageDocRefGroup(holdingCode string, docImageGroupGUID string) (models.DocumentImageGroupInfo, error)
+	GetDocumentImageGroupByDocRef(holdingCode string, docRef string) (models.DocumentImageGroupInfo, error)
+	UpdateDocumentImageGroup(holdingCode string, authUsername string, groupGUID string, docImageGroup models.DocumentImageGroup) error
+	UpdateImageReferenceByDocumentImageGroup(holdingCode string, authUsername string, groupGUID string, docImages []models.ImageReferenceBody) error
+	UpdateReferenceByDocumentImageGroup(holdingCode string, authUsername string, groupGUID string, docRef models.Reference) error
+	UpdateTagsInDocumentImageGroup(holdingCode string, authUsername string, groupGUID string, tags []string) error
+	UpdateStatusDocumentImageGroup(holdingCode string, authUsername string, groupGUID string, status int8) error
+	UnGroupDocumentImageGroup(holdingCode string, authUsername string, groupGUID string) ([]string, error)
+	ListDocumentImageGroup(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.DocumentImageGroupInfo, mongopagination.PaginationData, error)
+	DeleteReferenceByDocumentImageGroup(holdingCode string, authUsername string, groupGUID string, docRef models.Reference) error
+	DeleteDocumentImageGroupByGuid(holdingCode string, authUsername string, DocumentImageGroupGuidFixed string) error
+	DeleteDocumentImageGroupByGuids(holdingCode string, authUsername string, documentImageGroupGuidFixeds []string) error
+	XSortsUpdate(ctx context.Context, holdingCode string, authUsername string, taskGUID string, xsorts []models.XSortDocumentImageGroupRequest) error
 
-	ReCountStatusDocumentImageGroupByGUID(shopID string, authUsername string, documentImageGroupGUID string) error
+	ReCountStatusDocumentImageGroupByGUID(holdingCode string, authUsername string, documentImageGroupGUID string) error
 	UpdateDocumentImageReferenceGroup() error
-	UpdateStatusDocumentImageGroupByTask(shopID string, authUsername string, taskGUID string, status int8) error
-	ReCountStatusDocumentImageGroupByTask(shopID string, authUsername string, taskGUID string) error
-	UpdateDocNoInReferences(shopID string, module string, oldDocNo string, newDocNo string) error
+	UpdateStatusDocumentImageGroupByTask(holdingCode string, authUsername string, taskGUID string, status int8) error
+	ReCountStatusDocumentImageGroupByTask(holdingCode string, authUsername string, taskGUID string) error
+	UpdateDocNoInReferences(holdingCode string, module string, oldDocNo string, newDocNo string) error
 }
 
 type DocumentImageService struct {
@@ -83,14 +83,14 @@ func (svc DocumentImageService) getContextTimeout() (context.Context, context.Ca
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc DocumentImageService) CreateDocumentImage(shopID string, authUsername string, docRequest models.DocumentImageRequest) (string, string, error) {
+func (svc DocumentImageService) CreateDocumentImage(holdingCode string, authUsername string, docRequest models.DocumentImageRequest) (string, string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
 	findDocImgGroup := models.DocumentImageGroupDoc{}
 	if len(docRequest.DocumentImageGroupGUID) > 0 {
-		_, err := svc.repoImageGroup.FindByGuid(ctx, shopID, docRequest.DocumentImageGroupGUID)
+		_, err := svc.repoImageGroup.FindByGuid(ctx, holdingCode, docRequest.DocumentImageGroupGUID)
 
 		if err != nil {
 			return "", "", err
@@ -104,7 +104,7 @@ func (svc DocumentImageService) CreateDocumentImage(shopID string, authUsername 
 	documentImageGUID := svc.newDocumentImageGUIDFnc()
 
 	docData := models.DocumentImageDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = documentImageGUID
 	docData.DocumentImage = docRequest.DocumentImage
 
@@ -131,9 +131,9 @@ func (svc DocumentImageService) CreateDocumentImage(shopID string, authUsername 
 	}
 
 	docImageRef := svc.documentImageToImageReference(documentImageGUID, docRequest.DocumentImage, authUsername, createdAt)
-	docDataImageGroup := svc.createImageGroupByDocumentImage(shopID, authUsername, imageGroupGUID, docImageRef, docRequest.ImageURI, tags, docRequest.TaskGUID, docRequest.PathTask, createdAt, 0)
+	docDataImageGroup := svc.createImageGroupByDocumentImage(holdingCode, authUsername, imageGroupGUID, docImageRef, docRequest.ImageURI, tags, docRequest.TaskGUID, docRequest.PathTask, createdAt, 0)
 
-	newXOrderDocImgGroup, _ := svc.newXOrderDocumentImageGroup(ctx, shopID, docRequest.TaskGUID)
+	newXOrderDocImgGroup, _ := svc.newXOrderDocumentImageGroup(ctx, holdingCode, docRequest.TaskGUID)
 	docDataImageGroup.XOrder = newXOrderDocImgGroup
 
 	err := svc.repoImageGroup.Transaction(ctx, func(ctx context.Context) error {
@@ -157,7 +157,7 @@ func (svc DocumentImageService) CreateDocumentImage(shopID string, authUsername 
 		return "", "", err
 	}
 
-	_, err = svc.messageQueueReCountDocumentImageGroup(ctx, shopID, docRequest.TaskGUID)
+	_, err = svc.messageQueueReCountDocumentImageGroup(ctx, holdingCode, docRequest.TaskGUID)
 	if err != nil {
 		return "", "", err
 	}
@@ -165,7 +165,7 @@ func (svc DocumentImageService) CreateDocumentImage(shopID string, authUsername 
 	return documentImageGUID, imageGroupGUID, nil
 }
 
-func (svc DocumentImageService) CreateDocumentImageWithTask(shopID string, authUsername string, docRequest models.DocumentImageRequest) (string, string, error) {
+func (svc DocumentImageService) CreateDocumentImageWithTask(holdingCode string, authUsername string, docRequest models.DocumentImageRequest) (string, string, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
@@ -176,7 +176,7 @@ func (svc DocumentImageService) CreateDocumentImageWithTask(shopID string, authU
 	documentImageGUID := svc.newDocumentImageGUIDFnc()
 
 	docData := models.DocumentImageDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = documentImageGUID
 	docData.DocumentImage = docRequest.DocumentImage
 
@@ -198,9 +198,9 @@ func (svc DocumentImageService) CreateDocumentImageWithTask(shopID string, authU
 	// image group
 	imageGroupGUID := svc.newDocumentImageGroupGUIDFnc()
 	docImageRef := svc.documentImageToImageReference(documentImageGUID, docRequest.DocumentImage, authUsername, createdAt)
-	docDataImageGroup := svc.createImageGroupByDocumentImage(shopID, authUsername, imageGroupGUID, docImageRef, docRequest.ImageURI, tags, docRequest.TaskGUID, docRequest.PathTask, createdAt, 0)
+	docDataImageGroup := svc.createImageGroupByDocumentImage(holdingCode, authUsername, imageGroupGUID, docImageRef, docRequest.ImageURI, tags, docRequest.TaskGUID, docRequest.PathTask, createdAt, 0)
 
-	newXOrderDocImgGroup, _ := svc.newXOrderDocumentImageGroup(ctx, shopID, docRequest.TaskGUID)
+	newXOrderDocImgGroup, _ := svc.newXOrderDocumentImageGroup(ctx, holdingCode, docRequest.TaskGUID)
 
 	docDataImageGroup.XOrder = newXOrderDocImgGroup
 
@@ -225,7 +225,7 @@ func (svc DocumentImageService) CreateDocumentImageWithTask(shopID string, authU
 		return "", "", err
 	}
 
-	_, err = svc.messageQueueReCountDocumentImageGroup(ctx, shopID, docRequest.TaskGUID)
+	_, err = svc.messageQueueReCountDocumentImageGroup(ctx, holdingCode, docRequest.TaskGUID)
 	if err != nil {
 		return "", "", err
 	}
@@ -233,12 +233,12 @@ func (svc DocumentImageService) CreateDocumentImageWithTask(shopID string, authU
 	return documentImageGUID, imageGroupGUID, nil
 }
 
-func (svc DocumentImageService) CreateImageEdit(shopID string, authUsername string, docImageGUID string, docRequest models.ImageEditRequest) error {
+func (svc DocumentImageService) CreateImageEdit(holdingCode string, authUsername string, docImageGUID string, docRequest models.ImageEditRequest) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repoImage.FindByGuid(ctx, shopID, docImageGUID)
+	findDoc, err := svc.repoImage.FindByGuid(ctx, holdingCode, docImageGUID)
 
 	if err != nil {
 		return err
@@ -262,7 +262,7 @@ func (svc DocumentImageService) CreateImageEdit(shopID string, authUsername stri
 
 	tempDoc.Edits = append(tempDoc.Edits, imageEdit)
 
-	err = svc.repoImage.Update(ctx, shopID, docImageGUID, tempDoc)
+	err = svc.repoImage.Update(ctx, holdingCode, docImageGUID, tempDoc)
 	if err != nil {
 		return err
 	}
@@ -270,12 +270,12 @@ func (svc DocumentImageService) CreateImageEdit(shopID string, authUsername stri
 	return nil
 }
 
-func (svc DocumentImageService) CreateImageComment(shopID string, authUsername string, docImageGUID string, docRequest models.CommentRequest) error {
+func (svc DocumentImageService) CreateImageComment(holdingCode string, authUsername string, docImageGUID string, docRequest models.CommentRequest) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repoImage.FindByGuid(ctx, shopID, docImageGUID)
+	findDoc, err := svc.repoImage.FindByGuid(ctx, holdingCode, docImageGUID)
 
 	if err != nil {
 		return err
@@ -299,7 +299,7 @@ func (svc DocumentImageService) CreateImageComment(shopID string, authUsername s
 
 	tempDoc.Comments = append(tempDoc.Comments, comment)
 
-	err = svc.repoImage.Update(ctx, shopID, docImageGUID, tempDoc)
+	err = svc.repoImage.Update(ctx, holdingCode, docImageGUID, tempDoc)
 	if err != nil {
 		return err
 	}
@@ -307,7 +307,7 @@ func (svc DocumentImageService) CreateImageComment(shopID string, authUsername s
 	return nil
 }
 
-func (svc DocumentImageService) BulkCreateDocumentImage(shopID string, authUsername string, docs []models.DocumentImageRequest) error {
+func (svc DocumentImageService) BulkCreateDocumentImage(holdingCode string, authUsername string, docs []models.DocumentImageRequest) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -327,7 +327,7 @@ func (svc DocumentImageService) BulkCreateDocumentImage(shopID string, authUsern
 
 		_, ok := taskLastXOrder[doc.TaskGUID]
 		if !ok {
-			newXOrderDocImgGroup, _ := svc.newXOrderDocumentImageGroup(ctx, shopID, doc.TaskGUID)
+			newXOrderDocImgGroup, _ := svc.newXOrderDocumentImageGroup(ctx, holdingCode, doc.TaskGUID)
 			taskLastXOrder[doc.TaskGUID] = newXOrderDocImgGroup
 		} else {
 			taskLastXOrder[doc.TaskGUID]++
@@ -336,7 +336,7 @@ func (svc DocumentImageService) BulkCreateDocumentImage(shopID string, authUsern
 		documentImageGUID := svc.newDocumentImageGUIDFnc()
 
 		docData := models.DocumentImageDoc{}
-		docData.ShopID = shopID
+		docData.HoldingCode = holdingCode
 		docData.GuidFixed = documentImageGUID
 		docData.DocumentImage = doc.DocumentImage
 
@@ -362,7 +362,7 @@ func (svc DocumentImageService) BulkCreateDocumentImage(shopID string, authUsern
 			tags = *doc.Tags
 		}
 
-		docDataImageGroup := svc.createImageGroupByDocumentImage(shopID, authUsername, imageGroupGUID, docImageRef, doc.ImageURI, tags, doc.TaskGUID, doc.PathTask, createdAt, 0)
+		docDataImageGroup := svc.createImageGroupByDocumentImage(holdingCode, authUsername, imageGroupGUID, docImageRef, doc.ImageURI, tags, doc.TaskGUID, doc.PathTask, createdAt, 0)
 
 		docDataImageGroup.XOrder = taskLastXOrder[doc.TaskGUID]
 
@@ -397,7 +397,7 @@ func (svc DocumentImageService) BulkCreateDocumentImage(shopID string, authUsern
 	}
 
 	for taskGUID := range taskGUIDsChanged {
-		_, err = svc.messageQueueReCountDocumentImageGroup(ctx, shopID, taskGUID)
+		_, err = svc.messageQueueReCountDocumentImageGroup(ctx, holdingCode, taskGUID)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -406,12 +406,12 @@ func (svc DocumentImageService) BulkCreateDocumentImage(shopID string, authUsern
 	return nil
 }
 
-func (svc DocumentImageService) InfoDocumentImage(shopID string, guid string) (models.DocumentImageInfo, error) {
+func (svc DocumentImageService) InfoDocumentImage(holdingCode string, guid string) (models.DocumentImageInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repoImage.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repoImage.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.DocumentImageInfo{}, err
@@ -424,13 +424,13 @@ func (svc DocumentImageService) InfoDocumentImage(shopID string, guid string) (m
 	return findDoc.DocumentImageInfo, nil
 }
 
-func (svc DocumentImageService) SearchDocumentImage(shopID string, matchFilters map[string]interface{}, pageable micromodels.Pageable) ([]models.DocumentImageInfo, mongopagination.PaginationData, error) {
+func (svc DocumentImageService) SearchDocumentImage(holdingCode string, matchFilters map[string]interface{}, pageable micromodels.Pageable) ([]models.DocumentImageInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
 	searchInFields := []string{"guid_fixed", "documentref", "module"}
-	docList, pagination, err := svc.repoImage.FindPageFilter(ctx, shopID, matchFilters, searchInFields, pageable)
+	docList, pagination, err := svc.repoImage.FindPageFilter(ctx, holdingCode, matchFilters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.DocumentImageInfo{}, pagination, err
@@ -439,7 +439,7 @@ func (svc DocumentImageService) SearchDocumentImage(shopID string, matchFilters 
 	return docList, pagination, nil
 }
 
-func (svc DocumentImageService) UploadDocumentImage(shopID string, authUsername string, fh *multipart.FileHeader) (*models.DocumentImageInfo, error) {
+func (svc DocumentImageService) UploadDocumentImage(holdingCode string, authUsername string, fh *multipart.FileHeader) (*models.DocumentImageInfo, error) {
 
 	if fh.Filename == "" {
 		return nil, errors.New("image file name not found")
@@ -449,7 +449,7 @@ func (svc DocumentImageService) UploadDocumentImage(shopID string, authUsername 
 	fileName := svc.newDocumentImageGUIDFnc() //fileUploadMetadataSlice[0]
 	fileExtension := fileUploadMetadataSlice[1]
 
-	fileNameWithShop := fmt.Sprintf("%s/%s", shopID, fileName)
+	fileNameWithShop := fmt.Sprintf("%s/%s", holdingCode, fileName)
 
 	imageUri, err := svc.FilePersister.Save(fh, fileNameWithShop, fileExtension)
 	if err != nil {
@@ -460,7 +460,7 @@ func (svc DocumentImageService) UploadDocumentImage(shopID string, authUsername 
 	doc := new(models.DocumentImageDoc)
 	doc.GuidFixed = svc.newDocumentImageGUIDFnc()
 	doc.ImageURI = imageUri
-	doc.ShopID = shopID
+	doc.HoldingCode = holdingCode
 	doc.UploadedBy = authUsername
 	doc.UploadedAt = svc.timeNowFnc()
 	doc.CreatedBy = authUsername
@@ -472,7 +472,7 @@ func (svc DocumentImageService) UploadDocumentImage(shopID string, authUsername 
 		TaskGUID:      "",
 		PathTask:      "",
 	}
-	_, _, err = svc.CreateDocumentImage(shopID, authUsername, docRequest)
+	_, _, err = svc.CreateDocumentImage(holdingCode, authUsername, docRequest)
 
 	if err != nil {
 		return nil, err

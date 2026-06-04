@@ -62,7 +62,7 @@ func (h NotifyHttp) RegisterHttp() {
 // @Router /notify [post]
 func (h NotifyHttp) CreateNotify(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.NotifyRequest{}
@@ -78,7 +78,7 @@ func (h NotifyHttp) CreateNotify(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreateNotify(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateNotify(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -105,7 +105,7 @@ func (h NotifyHttp) CreateNotify(ctx microservice.IContext) error {
 func (h NotifyHttp) UpdateNotify(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -123,7 +123,7 @@ func (h NotifyHttp) UpdateNotify(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateNotify(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateNotify(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -149,12 +149,12 @@ func (h NotifyHttp) UpdateNotify(ctx microservice.IContext) error {
 // @Router /notify/{id} [delete]
 func (h NotifyHttp) DeleteNotify(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteNotify(shopID, id, authUsername)
+	err := h.svc.DeleteNotify(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -180,7 +180,7 @@ func (h NotifyHttp) DeleteNotify(ctx microservice.IContext) error {
 // @Router /notify [delete]
 func (h NotifyHttp) DeleteNotifyByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -193,7 +193,7 @@ func (h NotifyHttp) DeleteNotifyByGUIDs(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.DeleteNotifyByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteNotifyByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -218,12 +218,12 @@ func (h NotifyHttp) DeleteNotifyByGUIDs(ctx microservice.IContext) error {
 // @Router /notify/{id} [get]
 func (h NotifyHttp) InfoNotify(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get Notify %v", id)
-	doc, err := h.svc.InfoNotify(shopID, id)
+	doc, err := h.svc.InfoNotify(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -249,11 +249,11 @@ func (h NotifyHttp) InfoNotify(ctx microservice.IContext) error {
 // @Router /notify/code/{code} [get]
 func (h NotifyHttp) InfoNotifyByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoNotifyByCode(shopID, code)
+	doc, err := h.svc.InfoNotifyByCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -282,7 +282,7 @@ func (h NotifyHttp) InfoNotifyByCode(ctx microservice.IContext) error {
 // @Router /notify [get]
 func (h NotifyHttp) SearchNotifyPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -298,7 +298,7 @@ func (h NotifyHttp) SearchNotifyPage(ctx microservice.IContext) error {
 		},
 	})
 
-	docList, pagination, err := h.svc.SearchNotifyInfo(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchNotifyInfo(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -329,7 +329,7 @@ func (h NotifyHttp) SearchNotifyPage(ctx microservice.IContext) error {
 // @Router /notify/list [get]
 func (h NotifyHttp) SearchNotifyStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -347,7 +347,7 @@ func (h NotifyHttp) SearchNotifyStep(ctx microservice.IContext) error {
 		},
 	})
 
-	docList, total, err := h.svc.SearchNotifyStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchNotifyStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

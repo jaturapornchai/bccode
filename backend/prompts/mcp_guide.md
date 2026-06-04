@@ -37,16 +37,16 @@ Header: X-API-Key: bc_live_xxx
 ```bash
 curl -X POST {BASE_URL}/goapi/api/mcp/keys/create-with-export \
   -H "Content-Type: application/json" \
-  -d '{"name":"frontend-dev","description":"For frontend AI","shop_id":"YOUR_SHOP_ID"}'
+  -d '{"name":"frontend-dev","description":"For frontend AI","holding_code":"YOUR_HOLDING_CODE"}'
 ```
 
 Response จะได้ `api_key` กลับมา — เก็บไว้ใช้ทุก request
 
-### shop_id ไม่ต้องส่ง
+### holding_code ไม่ต้องส่ง
 
-API key มี `shop_id` ฝังอยู่แล้ว — **ไม่ต้องส่ง shop_id ในทุก request**
+API key มี `holding_code` ฝังอยู่แล้ว — **ไม่ต้องส่ง holding_code ในทุก request**
 
-Backend auto-inject shop_id จาก API key ให้ทุก tool
+Backend auto-inject holding_code จาก API key ให้ทุก tool
 
 ---
 
@@ -56,7 +56,7 @@ Backend auto-inject shop_id จาก API key ให้ทุก tool
 {
   "tool": "ชื่อ tool",
   "params": {
-    // parameters ตาม tool (ไม่ต้องมี shop_id)
+    // parameters ตาม tool (ไม่ต้องมี holding_code)
   }
 }
 ```
@@ -300,6 +300,6 @@ MCP tools เรียกผ่าน curl/HTTP ได้โดยตรง แ�
 
 - ทุก tool เป็น **readonly** — ไม่แก้ไขข้อมูล
 - Database query tools อนุญาตเฉพาะ `SELECT` / `SHOW`
-- Data isolation: ทุก query filter by `shop_id` จาก API key อัตโนมัติ
+- Data isolation: ทุก query filter by `holding_code` จาก API key อัตโนมัติ
 - Rate limit: ยังไม่มี (อนาคตจะเพิ่ม)
 - ใช้ project-local docs/source เป็นหลัก ไม่พึ่ง shared local skills folder

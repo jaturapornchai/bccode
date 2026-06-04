@@ -22,15 +22,15 @@ import (
 )
 
 type IDepositHttpService interface {
-	CreateDeposit(shopID string, authUsername string, doc models.Deposit) (string, string, error)
-	UpdateDeposit(shopID string, guid string, authUsername string, doc models.Deposit) error
-	DeleteDeposit(shopID string, guid string, authUsername string) error
-	DeleteDepositByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoDeposit(shopID string, guid string) (models.DepositInfo, error)
-	InfoDepositByCode(shopID string, code string) (models.DepositInfo, error)
-	SearchDeposit(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.DepositInfo, mongopagination.PaginationData, error)
-	SearchDepositStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.DepositInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.Deposit) (common.BulkImport, error)
+	CreateDeposit(holdingCode string, authUsername string, doc models.Deposit) (string, string, error)
+	UpdateDeposit(holdingCode string, guid string, authUsername string, doc models.Deposit) error
+	DeleteDeposit(holdingCode string, guid string, authUsername string) error
+	DeleteDepositByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoDeposit(holdingCode string, guid string) (models.DepositInfo, error)
+	InfoDepositByCode(holdingCode string, code string) (models.DepositInfo, error)
+	SearchDeposit(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.DepositInfo, mongopagination.PaginationData, error)
+	SearchDepositStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.DepositInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.Deposit) (common.BulkImport, error)
 
 	GetModuleName() string
 }
@@ -81,11 +81,11 @@ func (svc DepositHttpService) getDocNoPrefix(docDate time.Time) string {
 	return fmt.Sprintf("%s%s", MODULE_NAME, docDateStr)
 }
 
-func (svc DepositHttpService) generateNewDocNo(ctx context.Context, shopID, prefixDocNo string, docNumber int) (string, int, error) {
-	prevoiusDocNumber, err := svc.repoCache.Get(shopID, prefixDocNo)
+func (svc DepositHttpService) generateNewDocNo(ctx context.Context, holdingCode, prefixDocNo string, docNumber int) (string, int, error) {
+	prevoiusDocNumber, err := svc.repoCache.Get(holdingCode, prefixDocNo)
 
 	if prevoiusDocNumber == 0 || err != nil {
-		lastDoc, err := svc.repo.FindLastDocNo(ctx, shopID, prefixDocNo)
+		lastDoc, err := svc.repo.FindLastDocNo(ctx, holdingCode, prefixDocNo)
 
 		if err != nil {
 			return "", 0, err
@@ -105,7 +105,7 @@ func (svc DepositHttpService) generateNewDocNo(ctx context.Context, shopID, pref
 	newDocNumber := prevoiusDocNumber + 1
 	newDocNo := fmt.Sprintf("%s%05d", prefixDocNo, newDocNumber)
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", newDocNo)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", newDocNo)
 
 	if err != nil {
 		return "", 0, err
@@ -118,7 +118,7 @@ func (svc DepositHttpService) generateNewDocNo(ctx context.Context, shopID, pref
 	return newDocNo, newDocNumber, nil
 }
 
-func (svc DepositHttpService) CreateDeposit(shopID string, authUsername string, doc models.Deposit) (string, string, error) {
+func (svc DepositHttpService) CreateDeposit(holdingCode string, authUsername string, doc models.Deposit) (string, string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -126,7 +126,7 @@ func (svc DepositHttpService) CreateDeposit(shopID string, authUsername string, 
 	docDate := doc.DocDatetime
 	prefixDocNo := svc.getDocNoPrefix(docDate)
 
-	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, shopID, prefixDocNo, 1)
+	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, holdingCode, prefixDocNo, 1)
 
 	if err != nil {
 		return "", "", err
@@ -135,7 +135,7 @@ func (svc DepositHttpService) CreateDeposit(shopID string, authUsername string, 
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.DepositDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.Deposit = doc
 
@@ -149,23 +149,23 @@ func (svc DepositHttpService) CreateDeposit(shopID string, authUsername string, 
 		return "", "", err
 	}
 
-	go svc.repoCache.Save(shopID, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
+	go svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
 
 	go func() {
 		svc.repoMq.Create(docData)
-		svc.repoCache.Save(shopID, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
-		svc.saveMasterSync(shopID)
+		svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return newGuidFixed, newDocNo, nil
 }
 
-func (svc DepositHttpService) UpdateDeposit(shopID string, guid string, authUsername string, doc models.Deposit) error {
+func (svc DepositHttpService) UpdateDeposit(holdingCode string, guid string, authUsername string, doc models.Deposit) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -182,7 +182,7 @@ func (svc DepositHttpService) UpdateDeposit(shopID string, guid string, authUser
 	docData.UpdatedBy = authUsername
 	docData.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, docData)
+	err = svc.repo.Update(ctx, holdingCode, guid, docData)
 
 	if err != nil {
 		return err
@@ -190,18 +190,18 @@ func (svc DepositHttpService) UpdateDeposit(shopID string, guid string, authUser
 
 	func() {
 		svc.repoMq.Update(docData)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc DepositHttpService) DeleteDeposit(shopID string, guid string, authUsername string) error {
+func (svc DepositHttpService) DeleteDeposit(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -211,20 +211,20 @@ func (svc DepositHttpService) DeleteDeposit(shopID string, guid string, authUser
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
 	func() {
 		svc.repoMq.Delete(findDoc)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc DepositHttpService) DeleteDepositByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc DepositHttpService) DeleteDepositByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -233,26 +233,26 @@ func (svc DepositHttpService) DeleteDepositByGUIDs(shopID string, authUsername s
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
 
 	func() {
-		docs, _ := svc.repo.FindByGuids(ctx, shopID, GUIDs)
+		docs, _ := svc.repo.FindByGuids(ctx, holdingCode, GUIDs)
 		svc.repoMq.DeleteInBatch(docs)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc DepositHttpService) InfoDeposit(shopID string, guid string) (models.DepositInfo, error) {
+func (svc DepositHttpService) InfoDeposit(holdingCode string, guid string) (models.DepositInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.DepositInfo{}, err
@@ -265,12 +265,12 @@ func (svc DepositHttpService) InfoDeposit(shopID string, guid string) (models.De
 	return findDoc.DepositInfo, nil
 }
 
-func (svc DepositHttpService) InfoDepositByCode(shopID string, code string) (models.DepositInfo, error) {
+func (svc DepositHttpService) InfoDepositByCode(holdingCode string, code string) (models.DepositInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", code)
 
 	if err != nil {
 		return models.DepositInfo{}, err
@@ -283,7 +283,7 @@ func (svc DepositHttpService) InfoDepositByCode(shopID string, code string) (mod
 	return findDoc.DepositInfo, nil
 }
 
-func (svc DepositHttpService) SearchDeposit(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.DepositInfo, mongopagination.PaginationData, error) {
+func (svc DepositHttpService) SearchDeposit(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.DepositInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -292,7 +292,7 @@ func (svc DepositHttpService) SearchDeposit(shopID string, filters map[string]in
 		"docno",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.DepositInfo{}, pagination, err
@@ -301,7 +301,7 @@ func (svc DepositHttpService) SearchDeposit(shopID string, filters map[string]in
 	return docList, pagination, nil
 }
 
-func (svc DepositHttpService) SearchDepositStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.DepositInfo, int, error) {
+func (svc DepositHttpService) SearchDepositStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.DepositInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -312,7 +312,7 @@ func (svc DepositHttpService) SearchDepositStep(shopID string, langCode string, 
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.DepositInfo{}, 0, err
@@ -321,7 +321,7 @@ func (svc DepositHttpService) SearchDepositStep(shopID string, langCode string, 
 	return docList, total, nil
 }
 
-func (svc DepositHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.Deposit) (common.BulkImport, error) {
+func (svc DepositHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.Deposit) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -333,7 +333,7 @@ func (svc DepositHttpService) SaveInBatch(shopID string, authUsername string, da
 		itemCodeGuidList = append(itemCodeGuidList, doc.DocNo)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "docno", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "docno", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -345,18 +345,18 @@ func (svc DepositHttpService) SaveInBatch(shopID string, authUsername string, da
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.Deposit, models.DepositDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.Deposit) models.DepositDoc {
+		func(holdingCode string, authUsername string, doc models.Deposit) models.DepositDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.DepositDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.Deposit = doc
 
 			currentTime := time.Now()
@@ -367,23 +367,23 @@ func (svc DepositHttpService) SaveInBatch(shopID string, authUsername string, da
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.Deposit, models.DepositDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.DepositDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", guid)
+		func(holdingCode string, guid string) (models.DepositDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", guid)
 		},
 		func(doc models.DepositDoc) bool {
 			return doc.DocNo != ""
 		},
-		func(shopID string, authUsername string, data models.Deposit, doc models.DepositDoc) error {
+		func(holdingCode string, authUsername string, data models.Deposit, doc models.DepositDoc) error {
 
 			doc.Deposit = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -422,7 +422,7 @@ func (svc DepositHttpService) SaveInBatch(shopID string, authUsername string, da
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -436,9 +436,9 @@ func (svc DepositHttpService) getDocIDKey(doc models.Deposit) string {
 	return doc.DocNo
 }
 
-func (svc DepositHttpService) saveMasterSync(shopID string) {
+func (svc DepositHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

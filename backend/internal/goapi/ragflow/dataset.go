@@ -2,7 +2,7 @@ package ragflow
 
 // Dataset operations — multi-tenant per shop.
 //
-// Each shop gets a deterministic dataset name: bcacct_shop_<shopID>
+// Each shop gets a deterministic dataset name: bcacct_shop_<holdingCode>
 // EnsureDataset is the main entry point — looks up by name, creates if missing,
 // caches the dataset_id in-memory for fast subsequent calls.
 
@@ -20,7 +20,7 @@ const (
 
 // DatasetMeta — minimal RAGFlow dataset info we care about
 type DatasetMeta struct {
-	ID string `json:"id"`
+	ID   string `json:"id"`
 	Name string `json:"name"`
 }
 
@@ -35,24 +35,24 @@ type DatasetMeta struct {
 // which depends on which provider+model the admin set up in the Web UI —
 // hard to hardcode here, so leave it to tenant default.
 type CreateDatasetRequest struct {
-	Name string `json:"name"`
+	Name           string `json:"name"`
 	EmbeddingModel string `json:"embedding_model,omitempty"`
-	ChunkMethod string `json:"chunk_method,omitempty"`
+	ChunkMethod    string `json:"chunk_method,omitempty"`
 }
 
 type createDatasetResponse struct {
-	Code int          `json:"code"`
+	Code    int          `json:"code"`
 	Message string       `json:"message"`
-	Data *DatasetMeta `json:"data"`
+	Data    *DatasetMeta `json:"data"`
 }
 
 type listDatasetsResponse struct {
-	Code int           `json:"code"`
+	Code    int           `json:"code"`
 	Message string        `json:"message"`
-	Data []DatasetMeta `json:"data"`
+	Data    []DatasetMeta `json:"data"`
 }
 
-// ====== In-memory cache: shopID → datasetID ======
+// ====== In-memory cache: holdingCode → datasetID ======
 
 var (
 	datasetCache   = map[string]cachedDataset{}
@@ -60,16 +60,16 @@ var (
 )
 
 type cachedDataset struct {
-	id        string
-	cachedAt  time.Time
+	id       string
+	cachedAt time.Time
 }
 
 const datasetCacheTTL = 30 * time.Minute
 
-func getCachedDataset(shopID string) string {
+func getCachedDataset(holdingCode string) string {
 	datasetCacheMu.RLock()
 	defer datasetCacheMu.RUnlock()
-	v, ok := datasetCache[shopID]
+	v, ok := datasetCache[holdingCode]
 	if !ok {
 		return ""
 	}
@@ -79,26 +79,26 @@ func getCachedDataset(shopID string) string {
 	return v.id
 }
 
-func putCachedDataset(shopID, datasetID string) {
+func putCachedDataset(holdingCode, datasetID string) {
 	datasetCacheMu.Lock()
 	defer datasetCacheMu.Unlock()
-	datasetCache[shopID] = cachedDataset{id: datasetID, cachedAt: time.Now()}
+	datasetCache[holdingCode] = cachedDataset{id: datasetID, cachedAt: time.Now()}
 }
 
 // InvalidateDatasetCache clears a single shop's cached dataset id (call after delete)
-func InvalidateDatasetCache(shopID string) {
+func InvalidateDatasetCache(holdingCode string) {
 	datasetCacheMu.Lock()
 	defer datasetCacheMu.Unlock()
-	delete(datasetCache, shopID)
+	delete(datasetCache, holdingCode)
 }
 
 // ====== Public API ======
 
 // DatasetNameFromShop returns the deterministic dataset name for a shop.
 // Allows reverse lookup without needing a separate mapping table.
-func DatasetNameFromShop(shopID string) string {
+func DatasetNameFromShop(holdingCode string) string {
 	// Lowercase + replace any whitespace — RAGFlow allows alphanumeric/underscore
-	cleaned := strings.ToLower(strings.TrimSpace(shopID))
+	cleaned := strings.ToLower(strings.TrimSpace(holdingCode))
 	cleaned = strings.ReplaceAll(cleaned, " ", "_")
 	cleaned = strings.ReplaceAll(cleaned, "-", "_")
 	return "bcacct_shop_" + cleaned
@@ -106,15 +106,15 @@ func DatasetNameFromShop(shopID string) string {
 
 // EnsureDataset returns the dataset ID for a shop, creating one if it doesn't exist.
 // Cached in-memory after first lookup.
-func (c *Client) EnsureDataset(shopID string) (string, error) {
-	if shopID == "" {
-		return "", fmt.Errorf("shop_id is required")
+func (c *Client) EnsureDataset(holdingCode string) (string, error) {
+	if holdingCode == "" {
+		return "", fmt.Errorf("holding_code is required")
 	}
-	if id := getCachedDataset(shopID); id != "" {
+	if id := getCachedDataset(holdingCode); id != "" {
 		return id, nil
 	}
 
-	name := DatasetNameFromShop(shopID)
+	name := DatasetNameFromShop(holdingCode)
 
 	// Try lookup first
 	id, err := c.FindDatasetByName(name)
@@ -122,7 +122,7 @@ func (c *Client) EnsureDataset(shopID string) (string, error) {
 		return "", fmt.Errorf("lookup dataset: %w", err)
 	}
 	if id != "" {
-		putCachedDataset(shopID, id)
+		putCachedDataset(holdingCode, id)
 		return id, nil
 	}
 
@@ -131,7 +131,7 @@ func (c *Client) EnsureDataset(shopID string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("create dataset: %w", err)
 	}
-	putCachedDataset(shopID, created.ID)
+	putCachedDataset(holdingCode, created.ID)
 	return created.ID, nil
 }
 
@@ -175,7 +175,7 @@ func (c *Client) CreateDataset(name string) (*DatasetMeta, error) {
 func (c *Client) DeleteDataset(datasetID string) error {
 	body := map[string]any{"ids": []string{datasetID}}
 	var resp struct {
-		Code int    `json:"code"`
+		Code    int    `json:"code"`
 		Message string `json:"message"`
 	}
 	if err := c.doJSON("DELETE", "/api/v1/datasets", body, &resp); err != nil {

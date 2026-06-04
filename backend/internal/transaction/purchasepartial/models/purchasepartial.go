@@ -15,7 +15,7 @@ type Purchasepartial struct {
 }
 type PurchasepartialInfo struct {
 	models.DocIdentity `bson:"inline"`
-	Purchasepartial  `bson:"inline"`
+	Purchasepartial    `bson:"inline"`
 }
 
 func (PurchasepartialInfo) CollectionName() string {
@@ -23,12 +23,12 @@ func (PurchasepartialInfo) CollectionName() string {
 }
 
 type PurchasepartialData struct {
-	models.ShopIdentity `bson:"inline"`
-	PurchasepartialInfo `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	PurchasepartialInfo      `bson:"inline"`
 }
 
 type PurchasepartialDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                  primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	PurchasepartialData `bson:"inline"`
 	models.ActivityDoc  `bson:"inline"`
 }

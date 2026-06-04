@@ -11,11 +11,11 @@ import (
 // ProcessDocPurchaseDirectBatch - ประมวลผลสถานะเอกสารแบบ Direct (ไม่ผ่าน docwaitprocess)
 // ⚡ ULTRA-FAST MODE สำหรับ Rebuild - ใช้ 1 Mega-Query แทน 3 Queries
 // คาดการณ์: เร็วกว่า ProcessDocPurchaseBatch อีก 30-40%
-func ProcessDocPurchaseDirectBatch(shopId string) {
-	logger.Info("Starting ProcessDocPurchaseDirectBatch for shop %s (ULTRA-FAST DIRECT MODE)", shopId)
+func ProcessDocPurchaseDirectBatch(holdingCode string) {
+	logger.Info("Starting ProcessDocPurchaseDirectBatch for shop %s (ULTRA-FAST DIRECT MODE)", holdingCode)
 	ctx := context.Background()
 
-	db, err := mypg.PgSqlFastConnect(shopId)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		logger.Error("Failed to connect to PostgreSQL: %v", err)
 		return
@@ -28,15 +28,15 @@ func ProcessDocPurchaseDirectBatch(shopId string) {
 	logger.Debug("Executing MEGA-QUERY: Direct batch update (no queue)")
 
 	megaQuery := `
-		WITH 
+		WITH
 		-- CTE 1: คำนวณ isref สำหรับทุกเอกสาร
 		doc_isref AS (
-			SELECT 
+			SELECT
 				doc.docno,
-				CASE 
+				CASE
 					WHEN EXISTS (
-						SELECT 1 FROM docref 
-						WHERE docref.docnoref = doc.docno 
+						SELECT 1 FROM docref
+						WHERE docref.docnoref = doc.docno
 						AND docref.docnotransflag IN (310, 12)
 					) THEN true
 					ELSE false
@@ -46,7 +46,7 @@ func ProcessDocPurchaseDirectBatch(shopId string) {
 		),
 		-- CTE 2: คำนวณ totalordered และ totalreceived
 		doc_comparison AS (
-			SELECT 
+			SELECT
 				dds.docno,
 				SUM(COALESCE(dds.totalqty * (dds.unitstand / NULLIF(dds.unitdivide, 0)), dds.totalqty)) AS totalordered,
 				COALESCE(SUM(drc.totalqty * (drc.unitstand / NULLIF(drc.unitdivide, 0))), 0) AS totalreceived
@@ -68,7 +68,7 @@ func ProcessDocPurchaseDirectBatch(shopId string) {
 		)
 		-- UPDATE ทั้งหมดในครั้งเดียว
 		UPDATE doc
-		SET 
+		SET
 			isref = COALESCE(dir.new_isref, doc.isref),
 			iscomparedsuccess = CASE
 				WHEN dc.totalreceived IS NULL THEN doc.iscomparedsuccess
@@ -98,21 +98,21 @@ func ProcessDocPurchaseDirectBatch(shopId string) {
 
 	rowsAffected, _ := result.RowsAffected()
 	logger.Success("✅ MEGA-QUERY completed: Updated %d documents (isref + iscomparedsuccess + isclosed)", rowsAffected)
-	logger.Success("ProcessDocPurchaseDirectBatch completed for shop %s", shopId)
+	logger.Success("ProcessDocPurchaseDirectBatch completed for shop %s", holdingCode)
 }
 
 // ProcessDocPurchaseDirectBatchByDocNos - ประมวลผลเฉพาะเอกสารที่ระบุ (Direct mode)
 // ⚡ ULTRA-FAST MODE สำหรับ Rebuild เฉพาะบางเอกสาร
-func ProcessDocPurchaseDirectBatchByDocNos(shopId string, docNos []string) {
+func ProcessDocPurchaseDirectBatchByDocNos(holdingCode string, docNos []string) {
 	if len(docNos) == 0 {
 		logger.Warn("No documents to process")
 		return
 	}
 
-	logger.Info("Starting ProcessDocPurchaseDirectBatchByDocNos for shop %s (%d documents)", shopId, len(docNos))
+	logger.Info("Starting ProcessDocPurchaseDirectBatchByDocNos for shop %s (%d documents)", holdingCode, len(docNos))
 	ctx := context.Background()
 
-	db, err := mypg.PgSqlFastConnect(shopId)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		logger.Error("Failed to connect to PostgreSQL: %v", err)
 		return
@@ -123,15 +123,15 @@ func ProcessDocPurchaseDirectBatchByDocNos(shopId string, docNos []string) {
 
 	// 🚀 MEGA-QUERY สำหรับเอกสารเฉพาะ
 	megaQuery := fmt.Sprintf(`
-		WITH 
+		WITH
 		-- CTE 1: คำนวณ isref
 		doc_isref AS (
-			SELECT 
+			SELECT
 				doc.docno,
-				CASE 
+				CASE
 					WHEN EXISTS (
-						SELECT 1 FROM docref 
-						WHERE docref.docnoref = doc.docno 
+						SELECT 1 FROM docref
+						WHERE docref.docnoref = doc.docno
 						AND docref.docnotransflag IN (310, 12)
 					) THEN true
 					ELSE false
@@ -142,7 +142,7 @@ func ProcessDocPurchaseDirectBatchByDocNos(shopId string, docNos []string) {
 		),
 		-- CTE 2: คำนวณ totalordered และ totalreceived
 		doc_comparison AS (
-			SELECT 
+			SELECT
 				dds.docno,
 				SUM(COALESCE(dds.totalqty * (dds.unitstand / NULLIF(dds.unitdivide, 0)), dds.totalqty)) AS totalordered,
 				COALESCE(SUM(drc.totalqty * (drc.unitstand / NULLIF(drc.unitdivide, 0))), 0) AS totalreceived
@@ -165,7 +165,7 @@ func ProcessDocPurchaseDirectBatchByDocNos(shopId string, docNos []string) {
 		)
 		-- UPDATE ทั้งหมดในครั้งเดียว
 		UPDATE doc
-		SET 
+		SET
 			isref = COALESCE(dir.new_isref, doc.isref),
 			iscomparedsuccess = CASE
 				WHEN dc.totalreceived IS NULL THEN doc.iscomparedsuccess
@@ -197,7 +197,7 @@ func ProcessDocPurchaseDirectBatchByDocNos(shopId string, docNos []string) {
 
 	rowsAffected, _ := result.RowsAffected()
 	logger.Success("✅ MEGA-QUERY completed: Updated %d documents", rowsAffected)
-	logger.Success("ProcessDocPurchaseDirectBatchByDocNos completed for shop %s", shopId)
+	logger.Success("ProcessDocPurchaseDirectBatchByDocNos completed for shop %s", holdingCode)
 }
 
 // joinStringSlice - helper function to join string slice

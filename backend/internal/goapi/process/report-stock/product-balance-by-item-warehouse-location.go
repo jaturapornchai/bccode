@@ -11,7 +11,7 @@ import (
 	// "smlcloudplatform/internal/goapi/process"
 )
 
-func ReportProductBalanceByItemAndWareHouseAndLocation(shopId string, guid string, condition int, finalDate string, timezoneCode string, languageCode string) string {
+func ReportProductBalanceByItemAndWareHouseAndLocation(holdingCode string, guid string, condition int, finalDate string, timezoneCode string, languageCode string) string {
 	// เพิ่ม panic recovery
 	// defer func() {
 	// 	if r := recover(); r != nil {
@@ -20,14 +20,14 @@ func ReportProductBalanceByItemAndWareHouseAndLocation(shopId string, guid strin
 	// }()
 
 	// ตรวจสอบ parameters
-	if shopId == "" || guid == "" {
-		logger.Info("Invalid parameters: shopId=%s, guid=%s", shopId, guid)
+	if holdingCode == "" || guid == "" {
+		logger.Info("Invalid parameters: holdingCode=%s, guid=%s", holdingCode, guid)
 		return ""
 	}
 
-	logger.Info("Starting PDF generation for GUID: %s, Shop: %s", guid, shopId)
+	logger.Info("Starting PDF generation for GUID: %s, Shop: %s", guid, holdingCode)
 
-	db, err := mypg.PgSqlFastConnect(shopId)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		logger.Info("Failed to connect to PostgreSQL: %v", err)
 		return ""

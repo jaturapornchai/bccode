@@ -25,19 +25,19 @@ import (
 )
 
 type ITaskHttpService interface {
-	GenerateTaskID(shopID string, authUsername string) (string, error)
-	CreateTask(shopID string, authUsername string, doc models.Task) (string, error)
-	UpdateTask(shopID string, guid string, authUsername string, doc models.Task) error
-	UpdateTaskStatus(shopID string, guid string, authUsername string, jobStatus int8) error
-	DeleteTask(shopID string, guid string, authUsername string) error
-	DeleteTaskByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoTask(shopID string, guid string) (models.TaskInfo, error)
-	SearchTask(shopID string, module string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.TaskInfo, mongopagination.PaginationData, error)
-	SearchTaskStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.TaskInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.Task) (common.BulkImport, error)
+	GenerateTaskID(holdingCode string, authUsername string) (string, error)
+	CreateTask(holdingCode string, authUsername string, doc models.Task) (string, error)
+	UpdateTask(holdingCode string, guid string, authUsername string, doc models.Task) error
+	UpdateTaskStatus(holdingCode string, guid string, authUsername string, jobStatus int8) error
+	DeleteTask(holdingCode string, guid string, authUsername string) error
+	DeleteTaskByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoTask(holdingCode string, guid string) (models.TaskInfo, error)
+	SearchTask(holdingCode string, module string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.TaskInfo, mongopagination.PaginationData, error)
+	SearchTaskStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.TaskInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.Task) (common.BulkImport, error)
 
 	TaskStatusReference() map[int]string
-	GetTaskReject(shopID string, module string, taskGUID string) ([]models.TaskInfo, error)
+	GetTaskReject(holdingCode string, module string, taskGUID string) ([]models.TaskInfo, error)
 
 	UpdateTaskTotalImage(docReq documentImageModel.DocumentImageTaskChangeMessage) error
 	UpdateTaskTotalRejectImage(docReq documentImageModel.DocumentImageTaskRejectMessage) error
@@ -80,7 +80,7 @@ func (svc TaskHttpService) TaskStatusReference() map[int]string {
 	}
 }
 
-func (svc TaskHttpService) GenerateTaskID(shopID string, authUsername string) (string, error) {
+func (svc TaskHttpService) GenerateTaskID(holdingCode string, authUsername string) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -94,7 +94,7 @@ func (svc TaskHttpService) GenerateTaskID(shopID string, authUsername string) (s
 
 	codeFmt := fmt.Sprintf("%s%s-", userFmt, timeFmt)
 
-	findDoc, err := svc.repo.FindLastTaskByCode(ctx, shopID, codeFmt)
+	findDoc, err := svc.repo.FindLastTaskByCode(ctx, holdingCode, codeFmt)
 	if err != nil {
 		return "", err
 	}
@@ -124,12 +124,12 @@ func (svc TaskHttpService) PaddingNumber(number int) string {
 	return fmt.Sprintf("%03d", number)
 }
 
-func (svc TaskHttpService) CreateTask(shopID string, authUsername string, doc models.Task) (string, error) {
+func (svc TaskHttpService) CreateTask(holdingCode string, authUsername string, doc models.Task) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "name", doc.Name)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "name", doc.Name)
 
 	if err != nil {
 		return "", err
@@ -139,7 +139,7 @@ func (svc TaskHttpService) CreateTask(shopID string, authUsername string, doc mo
 		return "", errors.New("name is duplicated")
 	}
 
-	findDocCode, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", doc.Code)
+	findDocCode, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", doc.Code)
 
 	if err != nil {
 		return "", err
@@ -152,7 +152,7 @@ func (svc TaskHttpService) CreateTask(shopID string, authUsername string, doc mo
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.TaskDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.Task = doc
 	docData.Status = models.TaskPending
@@ -174,12 +174,12 @@ func (svc TaskHttpService) CreateTask(shopID string, authUsername string, doc mo
 	return newGuidFixed, nil
 }
 
-func (svc TaskHttpService) UpdateTask(shopID string, guid string, authUsername string, doc models.Task) error {
+func (svc TaskHttpService) UpdateTask(holdingCode string, guid string, authUsername string, doc models.Task) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -207,7 +207,7 @@ func (svc TaskHttpService) UpdateTask(shopID string, guid string, authUsername s
 	updateDoc.UpdatedBy = authUsername
 	updateDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, updateDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, updateDoc)
 
 	if err != nil {
 		return err
@@ -216,12 +216,12 @@ func (svc TaskHttpService) UpdateTask(shopID string, guid string, authUsername s
 	return nil
 }
 
-func (svc TaskHttpService) UpdateTaskStatus(shopID string, taskGUID string, authUsername string, jobStatus int8) error {
+func (svc TaskHttpService) UpdateTaskStatus(holdingCode string, taskGUID string, authUsername string, jobStatus int8) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, taskGUID)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, taskGUID)
 
 	if err != nil {
 		return err
@@ -242,7 +242,7 @@ func (svc TaskHttpService) UpdateTaskStatus(shopID string, taskGUID string, auth
 	totalImageGroup := 0
 	totalRejectImageGroup := 0
 	if jobStatus == models.TaskCompleted {
-		findDocImageGroups, err := svc.repoDocImageGroup.FindByTaskGUID(ctx, shopID, taskGUID)
+		findDocImageGroups, err := svc.repoDocImageGroup.FindByTaskGUID(ctx, holdingCode, taskGUID)
 
 		if err != nil {
 			return err
@@ -256,7 +256,7 @@ func (svc TaskHttpService) UpdateTaskStatus(shopID string, taskGUID string, auth
 			totalImageGroup += 1
 		}
 
-		err = svc.repoDocImageGroup.UpdateTaskIsCompletedByTaskGUID(ctx, shopID, findDoc.GuidFixed, true)
+		err = svc.repoDocImageGroup.UpdateTaskIsCompletedByTaskGUID(ctx, holdingCode, findDoc.GuidFixed, true)
 		if err != nil {
 			return err
 		}
@@ -265,7 +265,7 @@ func (svc TaskHttpService) UpdateTaskStatus(shopID string, taskGUID string, auth
 	totalImageGroup = 0
 	totalRejectKeyingImageGroup := 0
 	if jobStatus == models.TaskGlCompleted {
-		findDocImageGroups, err := svc.repoDocImageGroup.FindByTaskGUID(ctx, shopID, taskGUID)
+		findDocImageGroups, err := svc.repoDocImageGroup.FindByTaskGUID(ctx, holdingCode, taskGUID)
 
 		if err != nil {
 			return err
@@ -284,7 +284,7 @@ func (svc TaskHttpService) UpdateTaskStatus(shopID string, taskGUID string, auth
 		newTaskGuidFixed := utils.NewGUID()
 
 		docData := models.TaskDoc{}
-		docData.ShopID = shopID
+		docData.HoldingCode = holdingCode
 		docData.GuidFixed = newTaskGuidFixed
 		docData.Module = findDoc.Module
 
@@ -300,7 +300,7 @@ func (svc TaskHttpService) UpdateTaskStatus(shopID string, taskGUID string, auth
 			docData.Path = fmt.Sprintf("%s/%s", findDoc.Path, findDoc.GuidFixed)
 		}
 
-		taskCount, err := svc.repo.CountTaskParent(ctx, shopID, parentGUID)
+		taskCount, err := svc.repo.CountTaskParent(ctx, holdingCode, parentGUID)
 
 		if err != nil {
 			taskCount = 0
@@ -311,12 +311,12 @@ func (svc TaskHttpService) UpdateTaskStatus(shopID string, taskGUID string, auth
 
 		newTaskCode := ""
 		for i := 0; i < 5; i++ {
-			newTaskCode, err = svc.GenerateTaskID(shopID, authUsername)
+			newTaskCode, err = svc.GenerateTaskID(holdingCode, authUsername)
 			if err != nil {
 				return err
 			}
 
-			findDocCode, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", newTaskCode)
+			findDocCode, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", newTaskCode)
 
 			if err != nil {
 				return err
@@ -353,7 +353,7 @@ func (svc TaskHttpService) UpdateTaskStatus(shopID string, taskGUID string, auth
 		}
 
 		if jobStatus == models.TaskCompleted {
-			findDocImageGroups, err := svc.repoDocImageGroup.FindByTaskGUID(ctx, shopID, taskGUID)
+			findDocImageGroups, err := svc.repoDocImageGroup.FindByTaskGUID(ctx, holdingCode, taskGUID)
 
 			if err != nil {
 				return err
@@ -371,7 +371,7 @@ func (svc TaskHttpService) UpdateTaskStatus(shopID string, taskGUID string, auth
 						docImgReq.ImageURI = docImage.ImageURI
 						docImgReq.Name = docImage.Name // + " -- REJECT"
 
-						_, _, err := svc.serviceDocImage.CreateDocumentImage(shopID, authUsername, docImgReq)
+						_, _, err := svc.serviceDocImage.CreateDocumentImage(holdingCode, authUsername, docImgReq)
 
 						if err != nil {
 							fmt.Println(err)
@@ -390,7 +390,7 @@ func (svc TaskHttpService) UpdateTaskStatus(shopID string, taskGUID string, auth
 	updateDoc.UpdatedBy = authUsername
 	updateDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, taskGUID, updateDoc)
+	err = svc.repo.Update(ctx, holdingCode, taskGUID, updateDoc)
 
 	if err != nil {
 		return err
@@ -399,12 +399,12 @@ func (svc TaskHttpService) UpdateTaskStatus(shopID string, taskGUID string, auth
 	return nil
 }
 
-func (svc TaskHttpService) DeleteTask(shopID string, guid string, authUsername string) error {
+func (svc TaskHttpService) DeleteTask(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -414,7 +414,7 @@ func (svc TaskHttpService) DeleteTask(shopID string, guid string, authUsername s
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
@@ -422,7 +422,7 @@ func (svc TaskHttpService) DeleteTask(shopID string, guid string, authUsername s
 	return nil
 }
 
-func (svc TaskHttpService) DeleteTaskByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc TaskHttpService) DeleteTaskByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -431,7 +431,7 @@ func (svc TaskHttpService) DeleteTaskByGUIDs(shopID string, authUsername string,
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
@@ -439,12 +439,12 @@ func (svc TaskHttpService) DeleteTaskByGUIDs(shopID string, authUsername string,
 	return nil
 }
 
-func (svc TaskHttpService) InfoTask(shopID string, guid string) (models.TaskInfo, error) {
+func (svc TaskHttpService) InfoTask(holdingCode string, guid string) (models.TaskInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.TaskInfo{}, err
@@ -454,7 +454,7 @@ func (svc TaskHttpService) InfoTask(shopID string, guid string) (models.TaskInfo
 		return models.TaskInfo{}, errors.New("document not found")
 	}
 
-	findDocChild, err := svc.repo.FindTaskChild(ctx, shopID, findDoc.GuidFixed)
+	findDocChild, err := svc.repo.FindTaskChild(ctx, holdingCode, findDoc.GuidFixed)
 
 	if err != nil {
 		return models.TaskInfo{}, err
@@ -466,12 +466,12 @@ func (svc TaskHttpService) InfoTask(shopID string, guid string) (models.TaskInfo
 
 }
 
-func (svc TaskHttpService) GetTaskReject(shopID string, module string, taskGUID string) ([]models.TaskInfo, error) {
+func (svc TaskHttpService) GetTaskReject(holdingCode string, module string, taskGUID string) ([]models.TaskInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	docList, err := svc.repo.FindPageByTaskReject(ctx, shopID, module, taskGUID)
+	docList, err := svc.repo.FindPageByTaskReject(ctx, holdingCode, module, taskGUID)
 
 	if err != nil {
 		return []models.TaskInfo{}, err
@@ -480,7 +480,7 @@ func (svc TaskHttpService) GetTaskReject(shopID string, module string, taskGUID 
 	return docList, nil
 }
 
-func (svc TaskHttpService) SearchTask(shopID string, module string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.TaskInfo, mongopagination.PaginationData, error) {
+func (svc TaskHttpService) SearchTask(holdingCode string, module string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.TaskInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -489,21 +489,21 @@ func (svc TaskHttpService) SearchTask(shopID string, module string, filters map[
 		"name",
 	}
 
-	docList, pagination, err := svc.repo.FindPageTask(ctx, shopID, module, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageTask(ctx, holdingCode, module, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.TaskInfo{}, pagination, err
 	}
 
 	for i, doc := range docList {
-		findDocChild, _ := svc.repo.FindTaskChild(ctx, shopID, doc.GuidFixed)
+		findDocChild, _ := svc.repo.FindTaskChild(ctx, holdingCode, doc.GuidFixed)
 		docList[i].TaskChild = findDocChild
 	}
 
 	return docList, pagination, nil
 }
 
-func (svc TaskHttpService) SearchTaskStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.TaskInfo, int, error) {
+func (svc TaskHttpService) SearchTaskStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.TaskInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -514,14 +514,14 @@ func (svc TaskHttpService) SearchTaskStep(shopID string, langCode string, pageab
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.TaskInfo{}, 0, err
 	}
 
 	for i, doc := range docList {
-		findDocChild, _ := svc.repo.FindTaskChild(ctx, shopID, doc.GuidFixed)
+		findDocChild, _ := svc.repo.FindTaskChild(ctx, holdingCode, doc.GuidFixed)
 
 		docList[i].TaskChild = findDocChild
 	}
@@ -529,7 +529,7 @@ func (svc TaskHttpService) SearchTaskStep(shopID string, langCode string, pageab
 	return docList, total, nil
 }
 
-func (svc TaskHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.Task) (common.BulkImport, error) {
+func (svc TaskHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.Task) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -541,7 +541,7 @@ func (svc TaskHttpService) SaveInBatch(shopID string, authUsername string, dataL
 		itemCodeGuidList = append(itemCodeGuidList, doc.Name)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "name", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "name", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -553,18 +553,18 @@ func (svc TaskHttpService) SaveInBatch(shopID string, authUsername string, dataL
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.Task, models.TaskDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.Task) models.TaskDoc {
+		func(holdingCode string, authUsername string, doc models.Task) models.TaskDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.TaskDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.Task = doc
 
 			currentTime := time.Now()
@@ -575,23 +575,23 @@ func (svc TaskHttpService) SaveInBatch(shopID string, authUsername string, dataL
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.Task, models.TaskDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.TaskDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "name", guid)
+		func(holdingCode string, guid string) (models.TaskDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "name", guid)
 		},
 		func(doc models.TaskDoc) bool {
 			return doc.Name != ""
 		},
-		func(shopID string, authUsername string, data models.Task, doc models.TaskDoc) error {
+		func(holdingCode string, authUsername string, data models.Task, doc models.TaskDoc) error {
 
 			doc.Task = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -656,7 +656,7 @@ func (svc TaskHttpService) UpdateTaskTotalImage(docReq documentImageModel.Docume
 		})
 	}
 
-	err := svc.repo.UpdateTotalDocumentImageGroup(ctx, docReq.ShopID, docReq.TaskGUID, docReq.Count, totalDocStatus, docReq.BillCount, docReq.ReferenceCount, docReq.ReferenceBalance)
+	err := svc.repo.UpdateTotalDocumentImageGroup(ctx, docReq.HoldingCode, docReq.TaskGUID, docReq.Count, totalDocStatus, docReq.BillCount, docReq.ReferenceCount, docReq.ReferenceBalance)
 
 	if err != nil {
 		return err
@@ -670,7 +670,7 @@ func (svc TaskHttpService) UpdateTaskTotalRejectImage(docReq documentImageModel.
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	// findDoc, err := svc.repo.FindByGuid(docReq.ShopID, docReq.TaskGUID)
+	// findDoc, err := svc.repo.FindByGuid(docReq.HoldingCode, docReq.TaskGUID)
 
 	// if err != nil {
 	// 	return err
@@ -687,7 +687,7 @@ func (svc TaskHttpService) UpdateTaskTotalRejectImage(docReq documentImageModel.
 	// 	findDoc.ToTalReject = currentTotal - docReq.Count
 	// }
 
-	err := svc.repo.UpdateTotalRejectDocumentImageGroup(ctx, docReq.ShopID, docReq.TaskGUID, docReq.Count)
+	err := svc.repo.UpdateTotalRejectDocumentImageGroup(ctx, docReq.HoldingCode, docReq.TaskGUID, docReq.Count)
 
 	if err != nil {
 		return err

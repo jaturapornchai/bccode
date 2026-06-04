@@ -11,7 +11,7 @@ import (
 func TestPurchaseReceiveStockPhaser(t *testing.T) {
 	giveMsg := `{
 	"id": "000000000000000000000000",
-	"shopid": "30LbRx3l0SLaK84gLpcF0W4x9Z0",
+	"holding_code": "30LbRx3l0SLaK84gLpcF0W4x9Z0",
 	"guid_fixed": "32Y3x1r0sqYOww0mRXrh0ftiIxV",
 	"docno": "PP2025091100001",
 	"docdatetime": "2025-09-11T09:44:52.81Z",
@@ -264,7 +264,7 @@ func TestPurchaseReceiveStockPhaser(t *testing.T) {
 
 	// Assert main transaction fields
 	assert.Equal(t, "PP2025091100001", got.DocNo)
-	assert.Equal(t, "30LbRx3l0SLaK84gLpcF0W4x9Z0", got.ShopID)
+	assert.Equal(t, "30LbRx3l0SLaK84gLpcF0W4x9Z0", got.HoldingCode)
 	assert.Equal(t, "32Y3x1r0sqYOww0mRXrh0ftiIxV", got.GuidFixed)
 	assert.Equal(t, "5335d4d3-66ff-4b5d-a2c4-b9fb67e4db7c", got.GuidRef)
 	expectedDocDate := time.Date(2025, 9, 11, 9, 44, 52, 810000000, time.UTC)
@@ -295,7 +295,7 @@ func TestPurchaseReceiveStockPhaser(t *testing.T) {
 	// Assert first detail item
 	detail := (*got.Details)[0]
 	assert.Equal(t, "PP2025091100001", detail.DocNo)
-	assert.Equal(t, "30LbRx3l0SLaK84gLpcF0W4x9Z0", detail.ShopID)
+	assert.Equal(t, "30LbRx3l0SLaK84gLpcF0W4x9Z0", detail.HoldingCode)
 	assert.Equal(t, "PO2025091100003", detail.DocRef)
 	assert.Equal(t, "885002", detail.Barcode)
 	assert.Equal(t, int8(0), detail.ItemType)

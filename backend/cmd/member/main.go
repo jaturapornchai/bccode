@@ -20,6 +20,7 @@ func main() {
 	authService := microservice.NewAuthServicePrefix("linemember:", "linememberrefresh:", cacher, 24*3*time.Hour, 24*30*time.Hour)
 
 	publicPath := []string{
+		"/holding/*",
 		"/shop/*",
 		"/member/line",
 		"/healthz",

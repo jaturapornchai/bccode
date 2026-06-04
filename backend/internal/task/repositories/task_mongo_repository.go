@@ -16,33 +16,33 @@ import (
 )
 
 type ITaskRepository interface {
-	FindTaskChild(ctx context.Context, shopID string, rejectFromTaskGUID string) (models.TaskChild, error)
-	FindLastTaskByCode(ctx context.Context, shopID string, codeFormat string) (models.TaskDoc, error)
-	FindOneTaskByCode(ctx context.Context, shopID string, taskCode string) (models.TaskInfo, error)
-	Count(ctx context.Context, shopID string) (int, error)
-	CountTaskParent(ctx context.Context, shopID string, taskGUID string) (int, error)
+	FindTaskChild(ctx context.Context, holdingCode string, rejectFromTaskGUID string) (models.TaskChild, error)
+	FindLastTaskByCode(ctx context.Context, holdingCode string, codeFormat string) (models.TaskDoc, error)
+	FindOneTaskByCode(ctx context.Context, holdingCode string, taskCode string) (models.TaskInfo, error)
+	Count(ctx context.Context, holdingCode string) (int, error)
+	CountTaskParent(ctx context.Context, holdingCode string, taskGUID string) (int, error)
 	Create(ctx context.Context, doc models.TaskDoc) (string, error)
 	CreateInBatch(ctx context.Context, docList []models.TaskDoc) error
-	Update(ctx context.Context, shopID string, guid string, doc models.TaskDoc) error
-	DeleteByGuidfixed(ctx context.Context, shopID string, guid string, username string) error
-	Delete(ctx context.Context, shopID string, username string, filters map[string]interface{}) error
-	FindPage(ctx context.Context, shopID string, searchInFields []string, pageable micromodels.Pageable) ([]models.TaskInfo, mongopagination.PaginationData, error)
-	FindByGuid(ctx context.Context, shopID string, guid string) (models.TaskDoc, error)
+	Update(ctx context.Context, holdingCode string, guid string, doc models.TaskDoc) error
+	DeleteByGuidfixed(ctx context.Context, holdingCode string, guid string, username string) error
+	Delete(ctx context.Context, holdingCode string, username string, filters map[string]interface{}) error
+	FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable micromodels.Pageable) ([]models.TaskInfo, mongopagination.PaginationData, error)
+	FindByGuid(ctx context.Context, holdingCode string, guid string) (models.TaskDoc, error)
 
-	UpdateTotalDocumentImageGroup(ctx context.Context, shopID string, taskGUID string, total int, countStatus []models.TotalStatus, billCount float64, referenceCount float64, referenceBalance float64) error
-	UpdateTotalRejectDocumentImageGroup(ctx context.Context, shopID string, taskGUID string, total int) error
+	UpdateTotalDocumentImageGroup(ctx context.Context, holdingCode string, taskGUID string, total int, countStatus []models.TotalStatus, billCount float64, referenceCount float64, referenceBalance float64) error
+	UpdateTotalRejectDocumentImageGroup(ctx context.Context, holdingCode string, taskGUID string, total int) error
 
-	FindPageByTaskReject(ctx context.Context, shopID string, module string, taskGUID string) ([]models.TaskInfo, error)
-	FindInItemGuid(ctx context.Context, shopID string, columnName string, itemGuidList []string) ([]models.TaskItemGuid, error)
-	FindByDocIndentityGuid(ctx context.Context, shopID string, indentityField string, indentityValue interface{}) (models.TaskDoc, error)
-	FindStep(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableLimit micromodels.PageableStep) ([]models.TaskInfo, int, error)
+	FindPageByTaskReject(ctx context.Context, holdingCode string, module string, taskGUID string) ([]models.TaskInfo, error)
+	FindInItemGuid(ctx context.Context, holdingCode string, columnName string, itemGuidList []string) ([]models.TaskItemGuid, error)
+	FindByDocIndentityGuid(ctx context.Context, holdingCode string, indentityField string, indentityValue interface{}) (models.TaskDoc, error)
+	FindStep(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableLimit micromodels.PageableStep) ([]models.TaskInfo, int, error)
 
-	FindDeletedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageable micromodels.Pageable) ([]models.TaskDeleteActivity, mongopagination.PaginationData, error)
-	FindCreatedOrUpdatedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageable micromodels.Pageable) ([]models.TaskActivity, mongopagination.PaginationData, error)
-	FindDeletedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.TaskDeleteActivity, error)
-	FindCreatedOrUpdatedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.TaskActivity, error)
+	FindDeletedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageable micromodels.Pageable) ([]models.TaskDeleteActivity, mongopagination.PaginationData, error)
+	FindCreatedOrUpdatedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageable micromodels.Pageable) ([]models.TaskActivity, mongopagination.PaginationData, error)
+	FindDeletedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.TaskDeleteActivity, error)
+	FindCreatedOrUpdatedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.TaskActivity, error)
 
-	FindPageTask(ctx context.Context, shopID string, module string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.TaskInfo, mongopagination.PaginationData, error)
+	FindPageTask(ctx context.Context, holdingCode string, module string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.TaskInfo, mongopagination.PaginationData, error)
 }
 
 type TaskRepository struct {
@@ -67,11 +67,11 @@ func NewTaskRepository(pst microservice.IPersisterMongo) *TaskRepository {
 	return &insRepo
 }
 
-func (repo *TaskRepository) FindTaskChild(ctx context.Context, shopID string, rejectFromTaskGUID string) (models.TaskChild, error) {
+func (repo *TaskRepository) FindTaskChild(ctx context.Context, holdingCode string, rejectFromTaskGUID string) (models.TaskChild, error) {
 
 	queryFilters := bson.M{
-		"shopid":             shopID,
-		"deleted_at":          bson.M{"$exists": false},
+		"holding_code":       holdingCode,
+		"deleted_at":         bson.M{"$exists": false},
 		"rejectfromtaskguid": rejectFromTaskGUID,
 	}
 
@@ -89,11 +89,11 @@ func (repo *TaskRepository) FindTaskChild(ctx context.Context, shopID string, re
 	return findDoc, nil
 }
 
-func (repo *TaskRepository) FindLastTaskByCode(ctx context.Context, shopID string, codeFormat string) (models.TaskDoc, error) {
+func (repo *TaskRepository) FindLastTaskByCode(ctx context.Context, holdingCode string, codeFormat string) (models.TaskDoc, error) {
 
 	queryFilters := bson.M{
-		"shopid":    shopID,
-		"deleted_at": bson.M{"$exists": false},
+		"holding_code": holdingCode,
+		"deleted_at":   bson.M{"$exists": false},
 		"code": bson.M{"$regex": primitive.Regex{
 			Pattern: codeFormat + ".*",
 			Options: "i",
@@ -106,7 +106,7 @@ func (repo *TaskRepository) FindLastTaskByCode(ctx context.Context, shopID strin
 
 	findDoc := new(models.TaskDoc)
 	err := repo.pst.FindOne(ctx, models.TaskDoc{}, queryFilters, &findDoc, opts)
-	// err := repo.pst.FindOne(models.TaskDoc{}, bson.M{"shopid": shopID}, &findDoc)
+	// err := repo.pst.FindOne(models.TaskDoc{}, bson.M{"holding_code": holdingCode}, &findDoc)
 
 	if err != nil {
 		return models.TaskDoc{}, err
@@ -115,11 +115,11 @@ func (repo *TaskRepository) FindLastTaskByCode(ctx context.Context, shopID strin
 	return *findDoc, nil
 }
 
-func (repo *TaskRepository) CountTaskParent(ctx context.Context, shopID string, taskGUID string) (int, error) {
+func (repo *TaskRepository) CountTaskParent(ctx context.Context, holdingCode string, taskGUID string) (int, error) {
 
 	queryFilters := bson.M{
-		"shopid":    shopID,
-		"deleted_at": bson.M{"$exists": false},
+		"holding_code": holdingCode,
+		"deleted_at":   bson.M{"$exists": false},
 	}
 
 	queryFilters["parentguidfixed"] = taskGUID
@@ -133,12 +133,12 @@ func (repo *TaskRepository) CountTaskParent(ctx context.Context, shopID string, 
 	return count, nil
 }
 
-func (repo *TaskRepository) UpdateTotalDocumentImageGroup(ctx context.Context, shopID string, taskGUID string, totalDoc int, totalDocStatus []models.TotalStatus, billCount float64, referenceCount float64, referenceBalance float64) error {
+func (repo *TaskRepository) UpdateTotalDocumentImageGroup(ctx context.Context, holdingCode string, taskGUID string, totalDoc int, totalDocStatus []models.TotalStatus, billCount float64, referenceCount float64, referenceBalance float64) error {
 
 	queryFilters := bson.M{
-		"shopid":    shopID,
-		"guid_fixed": taskGUID,
-		"deleted_at": bson.M{"$exists": false},
+		"holding_code": holdingCode,
+		"guid_fixed":   taskGUID,
+		"deleted_at":   bson.M{"$exists": false},
 	}
 
 	queryFilters["guid_fixed"] = taskGUID
@@ -152,12 +152,12 @@ func (repo *TaskRepository) UpdateTotalDocumentImageGroup(ctx context.Context, s
 	return nil
 }
 
-func (repo *TaskRepository) UpdateTotalRejectDocumentImageGroup(ctx context.Context, shopID string, taskGUID string, total int) error {
+func (repo *TaskRepository) UpdateTotalRejectDocumentImageGroup(ctx context.Context, holdingCode string, taskGUID string, total int) error {
 
 	queryFilters := bson.M{
-		"shopid":    shopID,
-		"guid_fixed": taskGUID,
-		"deleted_at": bson.M{"$exists": false},
+		"holding_code": holdingCode,
+		"guid_fixed":   taskGUID,
+		"deleted_at":   bson.M{"$exists": false},
 	}
 
 	queryFilters["guid_fixed"] = taskGUID
@@ -171,11 +171,11 @@ func (repo *TaskRepository) UpdateTotalRejectDocumentImageGroup(ctx context.Cont
 	return nil
 }
 
-func (repo *TaskRepository) FindPageByTaskReject(ctx context.Context, shopID string, module string, taskGUID string) ([]models.TaskInfo, error) {
+func (repo *TaskRepository) FindPageByTaskReject(ctx context.Context, holdingCode string, module string, taskGUID string) ([]models.TaskInfo, error) {
 
 	queryFilters := bson.M{
-		"shopid":    shopID,
-		"deleted_at": bson.M{"$exists": false},
+		"holding_code": holdingCode,
+		"deleted_at":   bson.M{"$exists": false},
 	}
 
 	if len(module) > 0 {
@@ -195,12 +195,12 @@ func (repo *TaskRepository) FindPageByTaskReject(ctx context.Context, shopID str
 	return docList, nil
 }
 
-func (repo *TaskRepository) FindOneTaskByCode(ctx context.Context, shopID string, taskCode string) (models.TaskInfo, error) {
+func (repo *TaskRepository) FindOneTaskByCode(ctx context.Context, holdingCode string, taskCode string) (models.TaskInfo, error) {
 
 	queryFilters := bson.M{
-		"shopid":    shopID,
-		"deleted_at": bson.M{"$exists": false},
-		"code":      taskCode,
+		"holding_code": holdingCode,
+		"deleted_at":   bson.M{"$exists": false},
+		"code":         taskCode,
 	}
 
 	findDoc := models.TaskInfo{}
@@ -214,7 +214,7 @@ func (repo *TaskRepository) FindOneTaskByCode(ctx context.Context, shopID string
 	return findDoc, nil
 }
 
-func (repo *TaskRepository) FindPageTask(ctx context.Context, shopID string, module string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.TaskInfo, mongopagination.PaginationData, error) {
+func (repo *TaskRepository) FindPageTask(ctx context.Context, holdingCode string, module string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.TaskInfo, mongopagination.PaginationData, error) {
 
 	matchFilterList := []interface{}{}
 
@@ -232,8 +232,8 @@ func (repo *TaskRepository) FindPageTask(ctx context.Context, shopID string, mod
 	}
 
 	queryFilters := bson.M{
-		"shopid":    shopID,
-		"deleted_at": bson.M{"$exists": false},
+		"holding_code": holdingCode,
+		"deleted_at":   bson.M{"$exists": false},
 	}
 
 	if len(module) > 0 {

@@ -42,10 +42,10 @@ func (svc MediaHttp) RegisterHttp() {
 func (svc MediaHttp) UploadVideo(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
-	shopId := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	fileHeader, _ := ctx.FormFile("file")
 
-	media, err := svc.service.UploadVideo(shopId, fileHeader)
+	media, err := svc.service.UploadVideo(holdingCode, fileHeader)
 
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, &common.ApiResponse{
@@ -65,10 +65,10 @@ func (svc MediaHttp) UploadVideo(ctx microservice.IContext) error {
 func (svc MediaHttp) UploadImage(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
-	shopId := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	fileHeader, _ := ctx.FormFile("file")
 
-	media, err := svc.service.UploadImage(shopId, fileHeader)
+	media, err := svc.service.UploadImage(holdingCode, fileHeader)
 
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, &common.ApiResponse{

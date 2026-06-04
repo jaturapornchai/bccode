@@ -36,7 +36,7 @@ The request payload shape is:
 ```typescript
 {
   guidfixed: string;
-  shopid: string;
+  holding_code: string;
   code: string;
   names: NameX[];
   group_code: string;

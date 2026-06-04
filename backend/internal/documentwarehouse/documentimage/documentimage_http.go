@@ -142,7 +142,7 @@ func (h DocumentImageHttp) Info(ctx microservice.IContext) error {
 func (h DocumentImageHttp) SearchDocumentImage(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -190,7 +190,7 @@ func (h DocumentImageHttp) SearchDocumentImage(ctx microservice.IContext) error 
 	docRefReserve := strings.TrimSpace(ctx.QueryParam("docref-reserve"))
 
 	if len(docRefReserve) > 0 && docRefReserve != "0" {
-		docRefPoolList, err := h.svcWsJournal.GetAllDocRefPool(shopID)
+		docRefPoolList, err := h.svcWsJournal.GetAllDocRefPool(holdingCode)
 
 		if err == nil {
 			docRefList := []string{}
@@ -204,7 +204,7 @@ func (h DocumentImageHttp) SearchDocumentImage(ctx microservice.IContext) error 
 		matchFilters["documentref"] = documentRef
 	}
 
-	docList, pagination, err := h.service.SearchDocumentImage(shopID, matchFilters, pageable)
+	docList, pagination, err := h.service.SearchDocumentImage(holdingCode, matchFilters, pageable)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -232,10 +232,10 @@ func (h DocumentImageHttp) SearchDocumentImage(ctx microservice.IContext) error 
 func (h DocumentImageHttp) GetDocumentImageInfo(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("guid")
-	doc, err := h.service.InfoDocumentImage(shopID, id)
+	doc, err := h.service.InfoDocumentImage(holdingCode, id)
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -261,7 +261,7 @@ func (h DocumentImageHttp) GetDocumentImageInfo(ctx microservice.IContext) error
 // @Router /documentimage [post]
 func (h DocumentImageHttp) CreateDocumentImage(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.DocumentImageRequest{}
@@ -272,7 +272,7 @@ func (h DocumentImageHttp) CreateDocumentImage(ctx microservice.IContext) error 
 		return err
 	}
 
-	idx, imageGroupGUID, err := h.service.CreateDocumentImage(shopID, authUsername, *docReq)
+	idx, imageGroupGUID, err := h.service.CreateDocumentImage(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -300,7 +300,7 @@ func (h DocumentImageHttp) CreateDocumentImage(ctx microservice.IContext) error 
 // @Router /documentimage/{guid}/imageedit [put]
 func (h DocumentImageHttp) CreateDocumentImageEdit(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docImageGUID := ctx.Param("guid")
@@ -318,7 +318,7 @@ func (h DocumentImageHttp) CreateDocumentImageEdit(ctx microservice.IContext) er
 		return err
 	}
 
-	err = h.service.CreateImageEdit(shopID, authUsername, docImageGUID, *docReq)
+	err = h.service.CreateImageEdit(holdingCode, authUsername, docImageGUID, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -344,7 +344,7 @@ func (h DocumentImageHttp) CreateDocumentImageEdit(ctx microservice.IContext) er
 // @Router /documentimage/{guid}/comment [put]
 func (h DocumentImageHttp) CreateDocumentImageComment(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docImageGUID := ctx.Param("guid")
@@ -362,7 +362,7 @@ func (h DocumentImageHttp) CreateDocumentImageComment(ctx microservice.IContext)
 		return err
 	}
 
-	err = h.service.CreateImageComment(shopID, authUsername, docImageGUID, *docReq)
+	err = h.service.CreateImageComment(holdingCode, authUsername, docImageGUID, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -387,7 +387,7 @@ func (h DocumentImageHttp) CreateDocumentImageComment(ctx microservice.IContext)
 // @Router /documentimage/bulk [post]
 func (h DocumentImageHttp) BulkCreateDocumentImage(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &[]models.DocumentImageRequest{}
@@ -403,7 +403,7 @@ func (h DocumentImageHttp) BulkCreateDocumentImage(ctx microservice.IContext) er
 		return err
 	}
 
-	err = h.service.BulkCreateDocumentImage(shopID, authUsername, *docReq)
+	err = h.service.BulkCreateDocumentImage(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -430,7 +430,7 @@ func (h DocumentImageHttp) BulkCreateDocumentImage(ctx microservice.IContext) er
 // @Router /documentimage/status/{id} [put]
 func (h DocumentImageHttp) UpdateDocumentImageStatus(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -442,7 +442,7 @@ func (h DocumentImageHttp) UpdateDocumentImageStatus(ctx microservice.IContext) 
 		return err
 	}
 
-	err = h.service.UpdateDocumentImageStatus(shopID, id, docReq.DocGUIDRef, docReq.Status)
+	err = h.service.UpdateDocumentImageStatus(holdingCode, id, docReq.DocGUIDRef, docReq.Status)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -470,7 +470,7 @@ func (h DocumentImageHttp) UpdateDocumentImageStatus(ctx microservice.IContext) 
 // @Router /documentimage/documentref/status/{docref} [put]
 func (h DocumentImageHttp) UpdateDocumentImageStatusByDocumentRef(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	docref := ctx.Param("docref")
 	input := ctx.ReadInput()
@@ -482,7 +482,7 @@ func (h DocumentImageHttp) UpdateDocumentImageStatusByDocumentRef(ctx microservi
 		return err
 	}
 
-	err = h.service.UpdateDocumentImageStatusByDocumentRef(shopID, docref, docReq.DocGUIDRef, docReq.Status)
+	err = h.service.UpdateDocumentImageStatusByDocumentRef(holdingCode, docref, docReq.DocGUIDRef, docReq.Status)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -524,9 +524,9 @@ func (h DocumentImageHttp) UploadDocumentImage(ctx microservice.IContext) error 
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
-	idx, err := h.service.UploadDocumentImage(shopID, authUsername, fileHeader)
+	idx, err := h.service.UploadDocumentImage(holdingCode, authUsername, fileHeader)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())
@@ -563,7 +563,7 @@ func (h DocumentImageHttp) UploadDocumentImage(ctx microservice.IContext) error 
 func (h DocumentImageHttp) ListDocumentImageGroup(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -613,7 +613,7 @@ func (h DocumentImageHttp) ListDocumentImageGroup(ctx microservice.IContext) err
 		}
 		if reserveBy == "1" {
 			// ✅ Filter เฉพาะของ user ที่ request (reserveby=1)
-			docRef, err := h.svcWsJournal.GetDocRefUserPool(shopID, userInfo.Username)
+			docRef, err := h.svcWsJournal.GetDocRefUserPool(holdingCode, userInfo.Username)
 
 			if err == nil && len(docRef) > 0 {
 				// User นี้ select เอกสารไว้ -> แสดงเฉพาะเอกสารนั้น
@@ -624,7 +624,7 @@ func (h DocumentImageHttp) ListDocumentImageGroup(ctx microservice.IContext) err
 			}
 		} else {
 			// ✅ Filter ทั้ง shop (reserveby=0 หรือไม่ส่ง) - แสดงเฉพาะที่ยังไม่มีใคร select
-			docRefPoolList, err := h.svcWsJournal.GetAllDocRefPool(shopID)
+			docRefPoolList, err := h.svcWsJournal.GetAllDocRefPool(holdingCode)
 
 			if err == nil {
 				docRefList := []string{}
@@ -657,7 +657,7 @@ func (h DocumentImageHttp) ListDocumentImageGroup(ctx microservice.IContext) err
 		matchFilters["task_guid"] = folder
 	}
 
-	docList, pagination, err := h.service.ListDocumentImageGroup(shopID, matchFilters, pageable)
+	docList, pagination, err := h.service.ListDocumentImageGroup(holdingCode, matchFilters, pageable)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -684,11 +684,11 @@ func (h DocumentImageHttp) ListDocumentImageGroup(ctx microservice.IContext) err
 func (h DocumentImageHttp) GetDocumentImageGroup(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	docImageGroupGUID := ctx.Param("guid")
 
-	doc, err := h.service.GetDocumentImageDocRefGroup(shopID, docImageGroupGUID)
+	doc, err := h.service.GetDocumentImageDocRefGroup(holdingCode, docImageGroupGUID)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -714,7 +714,7 @@ func (h DocumentImageHttp) GetDocumentImageGroup(ctx microservice.IContext) erro
 func (h DocumentImageHttp) CreateDocumentImageGroup(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -727,7 +727,7 @@ func (h DocumentImageHttp) CreateDocumentImageGroup(ctx microservice.IContext) e
 		return err
 	}
 
-	idx, err := h.service.CreateDocumentImageGroup(shopID, authUsername, *docImageGroup)
+	idx, err := h.service.CreateDocumentImageGroup(holdingCode, authUsername, *docImageGroup)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -767,7 +767,7 @@ func (h DocumentImageHttp) UpdateDocumentImageGroup(ctx microservice.IContext) e
 		return err
 	}
 
-	err = h.service.UpdateDocumentImageGroup(userInfo.ShopID, userInfo.Username, docImageGroupGUID, *docImageGroup)
+	err = h.service.UpdateDocumentImageGroup(userInfo.HoldingCode, userInfo.Username, docImageGroupGUID, *docImageGroup)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -806,7 +806,7 @@ func (h DocumentImageHttp) UpdateImageReferenceByDocumentImageGroup(ctx microser
 		return err
 	}
 
-	err = h.service.UpdateImageReferenceByDocumentImageGroup(userInfo.ShopID, userInfo.Username, docImageGroupGUID, *docImages)
+	err = h.service.UpdateImageReferenceByDocumentImageGroup(userInfo.HoldingCode, userInfo.Username, docImageGroupGUID, *docImages)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -845,7 +845,7 @@ func (h DocumentImageHttp) UpdateReferenceByDocumentImageGroup(ctx microservice.
 		return err
 	}
 
-	err = h.service.UpdateReferenceByDocumentImageGroup(userInfo.ShopID, userInfo.Username, docImageGroupGUID, *docImages)
+	err = h.service.UpdateReferenceByDocumentImageGroup(userInfo.HoldingCode, userInfo.Username, docImageGroupGUID, *docImages)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -873,7 +873,7 @@ func (h DocumentImageHttp) UngroupDocumentImageGroup(ctx microservice.IContext) 
 
 	docImageGroupGUID := ctx.Param("guid")
 
-	guids, err := h.service.UnGroupDocumentImageGroup(userInfo.ShopID, userInfo.Username, docImageGroupGUID)
+	guids, err := h.service.UnGroupDocumentImageGroup(userInfo.HoldingCode, userInfo.Username, docImageGroupGUID)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -900,7 +900,7 @@ func (h DocumentImageHttp) UngroupDocumentImageGroup(ctx microservice.IContext) 
 func (h DocumentImageHttp) UpdateStatusDocumentImageGroup(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	docImageGroupGUID := ctx.Param("guid")
@@ -915,7 +915,7 @@ func (h DocumentImageHttp) UpdateStatusDocumentImageGroup(ctx microservice.ICont
 		return err
 	}
 
-	err = h.service.UpdateStatusDocumentImageGroup(shopID, authUsername, docImageGroupGUID, docReq.Status)
+	err = h.service.UpdateStatusDocumentImageGroup(holdingCode, authUsername, docImageGroupGUID, docReq.Status)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -939,12 +939,12 @@ func (h DocumentImageHttp) UpdateStatusDocumentImageGroup(ctx microservice.ICont
 // @Router /documentimagegroup/{guid}/recount [put]
 func (h DocumentImageHttp) ReCountDocumentImageGroupByGUID(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	guid := ctx.Param("guid")
 
-	err := h.service.ReCountStatusDocumentImageGroupByGUID(shopID, authUsername, guid)
+	err := h.service.ReCountStatusDocumentImageGroupByGUID(holdingCode, authUsername, guid)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -971,7 +971,7 @@ func (h DocumentImageHttp) ReCountDocumentImageGroupByGUID(ctx microservice.ICon
 func (h DocumentImageHttp) UpdateStatusDocumentImageGroupByTask(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	taskGUID := ctx.Param("task_guid")
@@ -986,7 +986,7 @@ func (h DocumentImageHttp) UpdateStatusDocumentImageGroupByTask(ctx microservice
 		return err
 	}
 
-	err = h.service.UpdateStatusDocumentImageGroupByTask(shopID, authUsername, taskGUID, docReq.Status)
+	err = h.service.UpdateStatusDocumentImageGroupByTask(holdingCode, authUsername, taskGUID, docReq.Status)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -1011,12 +1011,12 @@ func (h DocumentImageHttp) UpdateStatusDocumentImageGroupByTask(ctx microservice
 func (h DocumentImageHttp) ReCountStatusDocumentImageGroupByTask(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	docImageGroupGUID := ctx.Param("task_guid")
 
-	err := h.service.ReCountStatusDocumentImageGroupByTask(shopID, authUsername, docImageGroupGUID)
+	err := h.service.ReCountStatusDocumentImageGroupByTask(holdingCode, authUsername, docImageGroupGUID)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -1042,7 +1042,7 @@ func (h DocumentImageHttp) ReCountStatusDocumentImageGroupByTask(ctx microservic
 func (h DocumentImageHttp) UpdateTagsDocumentImageGroup(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	docImageGroupGUID := ctx.Param("guid")
@@ -1062,7 +1062,7 @@ func (h DocumentImageHttp) UpdateTagsDocumentImageGroup(ctx microservice.IContex
 		return err
 	}
 
-	err = h.service.UpdateTagsInDocumentImageGroup(shopID, authUsername, docImageGroupGUID, tags)
+	err = h.service.UpdateTagsInDocumentImageGroup(holdingCode, authUsername, docImageGroupGUID, tags)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -1088,10 +1088,10 @@ func (h DocumentImageHttp) UpdateTagsDocumentImageGroup(ctx microservice.IContex
 func (h DocumentImageHttp) GetDocumentImageGroupByDocRefInfo(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	docRef := ctx.Param("docref")
-	doc, err := h.service.GetDocumentImageGroupByDocRef(shopID, docRef)
+	doc, err := h.service.GetDocumentImageGroupByDocRef(holdingCode, docRef)
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", docRef, err)
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -1118,12 +1118,12 @@ func (h DocumentImageHttp) GetDocumentImageGroupByDocRefInfo(ctx microservice.IC
 func (h DocumentImageHttp) DeleteDocumentImageGroup(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("guid")
 
-	err := h.service.DeleteDocumentImageGroupByGuid(shopID, authUsername, id)
+	err := h.service.DeleteDocumentImageGroupByGuid(holdingCode, authUsername, id)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -1149,7 +1149,7 @@ func (h DocumentImageHttp) DeleteDocumentImageGroup(ctx microservice.IContext) e
 func (h DocumentImageHttp) DeleteDocumentImageGroups(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -1162,7 +1162,7 @@ func (h DocumentImageHttp) DeleteDocumentImageGroups(ctx microservice.IContext) 
 		return err
 	}
 
-	err = h.service.DeleteDocumentImageGroupByGuids(shopID, authUsername, guids)
+	err = h.service.DeleteDocumentImageGroupByGuids(holdingCode, authUsername, guids)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -1187,7 +1187,7 @@ func (h DocumentImageHttp) DeleteDocumentImageGroups(ctx microservice.IContext) 
 func (h DocumentImageHttp) UpdateXSort(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -1207,7 +1207,7 @@ func (h DocumentImageHttp) UpdateXSort(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.service.XSortsUpdate(context.Background(), shopID, authUsername, taskGUID, reqBody)
+	err = h.service.XSortsUpdate(context.Background(), holdingCode, authUsername, taskGUID, reqBody)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err

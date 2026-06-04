@@ -70,7 +70,7 @@ func (c *RFQTransactionConsumer) ConsumeOnCreateOrUpdate(ctx microservice.IConte
 		logger.GetLogger().Errorf("Cannot phase RFQ doc: %v", err.Error())
 		return err
 	}
-	err = c.svc.Upsert(transaction.ShopID, transaction.DocNo, *transaction)
+	err = c.svc.Upsert(transaction.HoldingCode, transaction.DocNo, *transaction)
 	if err != nil {
 		logger.GetLogger().Errorf("Cannot insert RFQ transaction pg: %v", err.Error())
 		return err
@@ -86,7 +86,7 @@ func (c *RFQTransactionConsumer) ConsumeOnBulkCreateOrUpdate(ctx microservice.IC
 		return err
 	}
 	for _, transaction := range *transactions {
-		err = c.svc.Upsert(transaction.ShopID, transaction.DocNo, transaction)
+		err = c.svc.Upsert(transaction.HoldingCode, transaction.DocNo, transaction)
 		if err != nil {
 			logger.GetLogger().Errorf("Cannot insert RFQ transaction pg: %v", err.Error())
 			return err
@@ -102,7 +102,7 @@ func (c *RFQTransactionConsumer) ConsumeOnDelete(ctx microservice.IContext) erro
 		logger.GetLogger().Errorf("Cannot phase RFQ doc: %v", err.Error())
 		return err
 	}
-	err = c.svc.Delete(transaction.ShopID, transaction.DocNo)
+	err = c.svc.Delete(transaction.HoldingCode, transaction.DocNo)
 	if err != nil {
 		logger.GetLogger().Errorf("Cannot delete RFQ transaction pg: %v", err.Error())
 		return err
@@ -118,7 +118,7 @@ func (c *RFQTransactionConsumer) ConsumeOnBulkDelete(ctx microservice.IContext) 
 		return err
 	}
 	for _, transaction := range *transactions {
-		err = c.svc.Delete(transaction.ShopID, transaction.DocNo)
+		err = c.svc.Delete(transaction.HoldingCode, transaction.DocNo)
 		if err != nil {
 			logger.GetLogger().Errorf("Cannot delete RFQ transaction pg: %v", err.Error())
 			return err

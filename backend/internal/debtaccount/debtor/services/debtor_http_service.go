@@ -24,22 +24,22 @@ import (
 )
 
 type IDebtorHttpService interface {
-	CreateDebtor(shopID string, authUsername string, doc models.DebtorRequest) (string, error)
-	UpdateDebtor(shopID string, guid string, authUsername string, doc models.DebtorRequest) error
-	DeleteDebtor(shopID string, guid string, authUsername string) error
-	DeleteDebtorByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoDebtor(shopID string, guid string) (models.DebtorInfo, error)
-	InfoDebtorByCode(shopID string, code string) (models.DebtorInfo, error)
-	InfoDebtorByLine(shopID string, code string) (models.DebtorInfo, error)
-	SearchDebtor(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.DebtorInfo, mongopagination.PaginationData, error)
-	SearchDebtorStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.DebtorInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.DebtorRequest) (common.BulkImport, error)
-	InfoAuthDebtor(shopID string, username string, password string) (models.DebtorInfo, error)
-	SearchPointTransactions(shopID string, debtorCode string, pageableStep micromodels.PageableStep) ([]models.PointTransactionInfo, int, error)
-	RecalPointByPointsCode(shopID string, pointsCode string, authUsername string) error
-	AddPointManually(shopID string, pointsCode string, pointAmount float64, description string, authUsername string) error
-	BulkAddPoints(shopID string, pointsList []models.OpeningBalancePointRequest, authUsername string) (models.BulkImportPointResult, error)
-	DeleteManualPointTransaction(shopID string, pointsCode string, docNo string, authUsername string) error
+	CreateDebtor(holdingCode string, authUsername string, doc models.DebtorRequest) (string, error)
+	UpdateDebtor(holdingCode string, guid string, authUsername string, doc models.DebtorRequest) error
+	DeleteDebtor(holdingCode string, guid string, authUsername string) error
+	DeleteDebtorByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoDebtor(holdingCode string, guid string) (models.DebtorInfo, error)
+	InfoDebtorByCode(holdingCode string, code string) (models.DebtorInfo, error)
+	InfoDebtorByLine(holdingCode string, code string) (models.DebtorInfo, error)
+	SearchDebtor(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.DebtorInfo, mongopagination.PaginationData, error)
+	SearchDebtorStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.DebtorInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.DebtorRequest) (common.BulkImport, error)
+	InfoAuthDebtor(holdingCode string, username string, password string) (models.DebtorInfo, error)
+	SearchPointTransactions(holdingCode string, debtorCode string, pageableStep micromodels.PageableStep) ([]models.PointTransactionInfo, int, error)
+	RecalPointByPointsCode(holdingCode string, pointsCode string, authUsername string) error
+	AddPointManually(holdingCode string, pointsCode string, pointAmount float64, description string, authUsername string) error
+	BulkAddPoints(holdingCode string, pointsList []models.OpeningBalancePointRequest, authUsername string) (models.BulkImportPointResult, error)
+	DeleteManualPointTransaction(holdingCode string, pointsCode string, docNo string, authUsername string) error
 
 	GetModuleName() string
 }
@@ -87,7 +87,7 @@ func (svc DebtorHttpService) getContextTimeout() (context.Context, context.Cance
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc DebtorHttpService) InfoAuthDebtor(shopID string, username string, password string) (models.DebtorInfo, error) {
+func (svc DebtorHttpService) InfoAuthDebtor(holdingCode string, username string, password string) (models.DebtorInfo, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
@@ -95,7 +95,7 @@ func (svc DebtorHttpService) InfoAuthDebtor(shopID string, username string, pass
 		return models.DebtorInfo{}, errors.New("username or password incorrect")
 	}
 
-	findDoc, err := svc.repo.FindAuthByUsername(ctx, shopID, username)
+	findDoc, err := svc.repo.FindAuthByUsername(ctx, holdingCode, username)
 
 	if err != nil {
 		return models.DebtorInfo{}, err
@@ -125,12 +125,12 @@ func (svc DebtorHttpService) InfoAuthDebtor(shopID string, username string, pass
 
 }
 
-func (svc DebtorHttpService) CreateDebtor(shopID string, authUsername string, doc models.DebtorRequest) (string, error) {
+func (svc DebtorHttpService) CreateDebtor(holdingCode string, authUsername string, doc models.DebtorRequest) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", doc.Code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", doc.Code)
 
 	if err != nil {
 		return "", err
@@ -141,7 +141,7 @@ func (svc DebtorHttpService) CreateDebtor(shopID string, authUsername string, do
 	}
 
 	if doc.Auth.Username != "" {
-		findDocAuth, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "auth.username", doc.Code)
+		findDocAuth, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "auth.username", doc.Code)
 
 		if err != nil {
 			return "", err
@@ -154,7 +154,7 @@ func (svc DebtorHttpService) CreateDebtor(shopID string, authUsername string, do
 
 	// Check PointsCode uniqueness if provided
 	if doc.PointsCode != "" {
-		findDocPointsCode, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "points_code", doc.PointsCode)
+		findDocPointsCode, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "points_code", doc.PointsCode)
 
 		if err != nil {
 			return "", err
@@ -168,7 +168,7 @@ func (svc DebtorHttpService) CreateDebtor(shopID string, authUsername string, do
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.DebtorDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.Debtor = doc.Debtor
 	docData.GroupGUIDs = &doc.Groups
@@ -193,7 +193,7 @@ func (svc DebtorHttpService) CreateDebtor(shopID string, authUsername string, do
 	// Recalculate point balance if pointscode is provided
 	if doc.PointsCode != "" {
 		go func() {
-			err := svc.RecalPointByPointsCode(shopID, doc.PointsCode, authUsername)
+			err := svc.RecalPointByPointsCode(holdingCode, doc.PointsCode, authUsername)
 			if err != nil {
 				logger.GetLogger().Errorf("Recalculate point balance error for pointscode %s :: %s", doc.PointsCode, err.Error())
 			}
@@ -201,7 +201,7 @@ func (svc DebtorHttpService) CreateDebtor(shopID string, authUsername string, do
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 		err = svc.repoMq.Create(docData)
 		if err != nil {
 			logger.GetLogger().Errorf("Create creditor message queue error :: %s", err.Error())
@@ -211,12 +211,12 @@ func (svc DebtorHttpService) CreateDebtor(shopID string, authUsername string, do
 	return newGuidFixed, nil
 }
 
-func (svc DebtorHttpService) UpdateDebtor(shopID string, guid string, authUsername string, doc models.DebtorRequest) error {
+func (svc DebtorHttpService) UpdateDebtor(holdingCode string, guid string, authUsername string, doc models.DebtorRequest) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -227,7 +227,7 @@ func (svc DebtorHttpService) UpdateDebtor(shopID string, guid string, authUserna
 	}
 
 	if doc.Auth.Username != "" {
-		findDocAuth, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "auth.username", doc.Auth.Username)
+		findDocAuth, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "auth.username", doc.Auth.Username)
 
 		if err != nil {
 			return err
@@ -240,7 +240,7 @@ func (svc DebtorHttpService) UpdateDebtor(shopID string, guid string, authUserna
 
 	// Check PointsCode uniqueness if provided
 	if doc.PointsCode != "" {
-		findDocPointsCode, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "points_code", doc.PointsCode)
+		findDocPointsCode, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "points_code", doc.PointsCode)
 
 		if err != nil {
 			return err
@@ -268,7 +268,7 @@ func (svc DebtorHttpService) UpdateDebtor(shopID string, guid string, authUserna
 		dataDoc.Auth.Password = hashedPassword
 	}
 
-	err = svc.repo.Update(ctx, shopID, guid, dataDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, dataDoc)
 
 	if err != nil {
 		return err
@@ -277,7 +277,7 @@ func (svc DebtorHttpService) UpdateDebtor(shopID string, guid string, authUserna
 	// Recalculate point balance if pointscode is provided or changed
 	if doc.PointsCode != "" && doc.PointsCode != findDoc.PointsCode {
 		go func() {
-			err := svc.RecalPointByPointsCode(shopID, doc.PointsCode, authUsername)
+			err := svc.RecalPointByPointsCode(holdingCode, doc.PointsCode, authUsername)
 			if err != nil {
 				logger.GetLogger().Errorf("Recalculate point balance error for pointscode %s :: %s", doc.PointsCode, err.Error())
 			}
@@ -285,7 +285,7 @@ func (svc DebtorHttpService) UpdateDebtor(shopID string, guid string, authUserna
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 		err = svc.repoMq.Update(dataDoc)
 		if err != nil {
 			logger.GetLogger().Errorf("Update creditor message queue error :: %s", err.Error())
@@ -295,11 +295,11 @@ func (svc DebtorHttpService) UpdateDebtor(shopID string, guid string, authUserna
 	return nil
 }
 
-func (svc DebtorHttpService) DeleteDebtor(shopID string, guid string, authUsername string) error {
+func (svc DebtorHttpService) DeleteDebtor(holdingCode string, guid string, authUsername string) error {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -309,13 +309,13 @@ func (svc DebtorHttpService) DeleteDebtor(shopID string, guid string, authUserna
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 		err = svc.repoMq.Delete(findDoc)
 		if err != nil {
 			logger.GetLogger().Errorf("Delete creditor message queue error :: %s", err.Error())
@@ -325,11 +325,11 @@ func (svc DebtorHttpService) DeleteDebtor(shopID string, guid string, authUserna
 	return nil
 }
 
-func (svc DebtorHttpService) DeleteDebtorByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc DebtorHttpService) DeleteDebtorByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDocs, err := svc.repo.FindByGuids(ctx, shopID, GUIDs)
+	findDocs, err := svc.repo.FindByGuids(ctx, holdingCode, GUIDs)
 
 	if err != nil {
 		return err
@@ -339,13 +339,13 @@ func (svc DebtorHttpService) DeleteDebtorByGUIDs(shopID string, authUsername str
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err = svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err = svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 		err = svc.repoMq.DeleteInBatch(findDocs)
 		if err != nil {
 			logger.GetLogger().Errorf("Delete creditor message queue error :: %s", err.Error())
@@ -355,12 +355,12 @@ func (svc DebtorHttpService) DeleteDebtorByGUIDs(shopID string, authUsername str
 	return nil
 }
 
-func (svc DebtorHttpService) InfoDebtor(shopID string, guid string) (models.DebtorInfo, error) {
+func (svc DebtorHttpService) InfoDebtor(holdingCode string, guid string) (models.DebtorInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.DebtorInfo{}, err
@@ -371,7 +371,7 @@ func (svc DebtorHttpService) InfoDebtor(shopID string, guid string) (models.Debt
 	}
 
 	if findDoc.GroupGUIDs != nil {
-		findGroups, err := svc.repoGroup.FindByGuids(ctx, shopID, *findDoc.GroupGUIDs)
+		findGroups, err := svc.repoGroup.FindByGuids(ctx, holdingCode, *findDoc.GroupGUIDs)
 
 		if err != nil {
 			return models.DebtorInfo{}, err
@@ -393,12 +393,12 @@ func (svc DebtorHttpService) InfoDebtor(shopID string, guid string) (models.Debt
 
 }
 
-func (svc DebtorHttpService) InfoDebtorByCode(shopID string, code string) (models.DebtorInfo, error) {
+func (svc DebtorHttpService) InfoDebtorByCode(holdingCode string, code string) (models.DebtorInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", code)
 
 	if err != nil {
 		return models.DebtorInfo{}, err
@@ -409,7 +409,7 @@ func (svc DebtorHttpService) InfoDebtorByCode(shopID string, code string) (model
 	}
 
 	if findDoc.GroupGUIDs != nil {
-		findGroups, err := svc.repoGroup.FindByGuids(ctx, shopID, *findDoc.GroupGUIDs)
+		findGroups, err := svc.repoGroup.FindByGuids(ctx, holdingCode, *findDoc.GroupGUIDs)
 
 		if err != nil {
 			return models.DebtorInfo{}, err
@@ -431,12 +431,12 @@ func (svc DebtorHttpService) InfoDebtorByCode(shopID string, code string) (model
 
 }
 
-func (svc DebtorHttpService) InfoDebtorByLine(shopID string, code string) (models.DebtorInfo, error) {
+func (svc DebtorHttpService) InfoDebtorByLine(holdingCode string, code string) (models.DebtorInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "line.lineuid", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "line.lineuid", code)
 
 	if err != nil {
 		return models.DebtorInfo{}, err
@@ -446,7 +446,7 @@ func (svc DebtorHttpService) InfoDebtorByLine(shopID string, code string) (model
 		return models.DebtorInfo{}, errors.New("document not found")
 	}
 
-	findGroups, err := svc.repoGroup.FindByGuids(ctx, shopID, *findDoc.GroupGUIDs)
+	findGroups, err := svc.repoGroup.FindByGuids(ctx, holdingCode, *findDoc.GroupGUIDs)
 
 	if err != nil {
 		return models.DebtorInfo{}, err
@@ -467,7 +467,7 @@ func (svc DebtorHttpService) InfoDebtorByLine(shopID string, code string) (model
 
 }
 
-func (svc DebtorHttpService) SearchDebtor(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.DebtorInfo, mongopagination.PaginationData, error) {
+func (svc DebtorHttpService) SearchDebtor(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.DebtorInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -482,17 +482,17 @@ func (svc DebtorHttpService) SearchDebtor(shopID string, filters map[string]inte
 		"addressforbilling.phonesecondary",
 	}
 
-	// Check if shopid filter exists (from shopsid parameter)
+	// Check if holding_code filter exists (from shopsid parameter)
 	var docList []models.DebtorInfo
 	var pagination mongopagination.PaginationData
 	var err error
 
-	if _, hasShopidFilter := filters["shopid"]; hasShopidFilter {
-		// Use FindPageFilterNoShopid when shopid filter exists
-		docList, pagination, err = svc.repo.FindPageFilterNoShopid(ctx, filters, searchInFields, pageable)
+	if _, hasHoldingCodeFilter := filters["holding_code"]; hasHoldingCodeFilter {
+		// Use FindPageFilterNoHoldingCode when holding_code filter exists
+		docList, pagination, err = svc.repo.FindPageFilterNoHoldingCode(ctx, filters, searchInFields, pageable)
 	} else {
-		// Use regular FindPageFilter when no shopid filter
-		docList, pagination, err = svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+		// Use regular FindPageFilter when no holding_code filter
+		docList, pagination, err = svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 	}
 
 	if err != nil {
@@ -501,7 +501,7 @@ func (svc DebtorHttpService) SearchDebtor(shopID string, filters map[string]inte
 
 	for idx, doc := range docList {
 		if doc.GroupGUIDs != nil {
-			findCustGroups, err := svc.repoGroup.FindByGuids(ctx, shopID, *doc.GroupGUIDs)
+			findCustGroups, err := svc.repoGroup.FindByGuids(ctx, holdingCode, *doc.GroupGUIDs)
 			if err != nil {
 				return []models.DebtorInfo{}, pagination, err
 			}
@@ -523,7 +523,7 @@ func (svc DebtorHttpService) SearchDebtor(shopID string, filters map[string]inte
 	return docList, pagination, nil
 }
 
-func (svc DebtorHttpService) SearchDebtorStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.DebtorInfo, int, error) {
+func (svc DebtorHttpService) SearchDebtorStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.DebtorInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -540,17 +540,17 @@ func (svc DebtorHttpService) SearchDebtorStep(shopID string, langCode string, fi
 
 	selectFields := map[string]interface{}{}
 
-	// Check if shopid filter exists (from shopsid parameter)
+	// Check if holding_code filter exists (from shopsid parameter)
 	var docList []models.DebtorInfo
 	var total int
 	var err error
 
-	if _, hasShopidFilter := filters["shopid"]; hasShopidFilter {
-		// Use FindStepNoShopid when shopid filter exists
-		docList, total, err = svc.repo.FindStepNoShopid(ctx, filters, searchInFields, selectFields, pageableStep)
+	if _, hasHoldingCodeFilter := filters["holding_code"]; hasHoldingCodeFilter {
+		// Use FindStepNoHoldingCode when holding_code filter exists
+		docList, total, err = svc.repo.FindStepNoHoldingCode(ctx, filters, searchInFields, selectFields, pageableStep)
 	} else {
-		// Use regular FindStep when no shopid filter
-		docList, total, err = svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+		// Use regular FindStep when no holding_code filter
+		docList, total, err = svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 	}
 
 	if err != nil {
@@ -559,7 +559,7 @@ func (svc DebtorHttpService) SearchDebtorStep(shopID string, langCode string, fi
 
 	for idx, doc := range docList {
 		if doc.GroupGUIDs != nil {
-			findCustGroups, err := svc.repoGroup.FindByGuids(ctx, shopID, *doc.GroupGUIDs)
+			findCustGroups, err := svc.repoGroup.FindByGuids(ctx, holdingCode, *doc.GroupGUIDs)
 			if err != nil {
 				return []models.DebtorInfo{}, 0, err
 			}
@@ -581,7 +581,7 @@ func (svc DebtorHttpService) SearchDebtorStep(shopID string, langCode string, fi
 	return docList, total, nil
 }
 
-func (svc DebtorHttpService) SaveInBatch(shopID string, authUsername string, dataListReq []models.DebtorRequest) (common.BulkImport, error) {
+func (svc DebtorHttpService) SaveInBatch(holdingCode string, authUsername string, dataListReq []models.DebtorRequest) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -603,7 +603,7 @@ func (svc DebtorHttpService) SaveInBatch(shopID string, authUsername string, dat
 		itemCodeGuidList = append(itemCodeGuidList, doc.Code)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "code", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "code", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -615,18 +615,18 @@ func (svc DebtorHttpService) SaveInBatch(shopID string, authUsername string, dat
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.Debtor, models.DebtorDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.Debtor) models.DebtorDoc {
+		func(holdingCode string, authUsername string, doc models.Debtor) models.DebtorDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.DebtorDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.Debtor = doc
 
 			currentTime := time.Now()
@@ -637,23 +637,23 @@ func (svc DebtorHttpService) SaveInBatch(shopID string, authUsername string, dat
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.Debtor, models.DebtorDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.DebtorDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", guid)
+		func(holdingCode string, guid string) (models.DebtorDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", guid)
 		},
 		func(doc models.DebtorDoc) bool {
 			return doc.Code != ""
 		},
-		func(shopID string, authUsername string, data models.Debtor, doc models.DebtorDoc) error {
+		func(holdingCode string, authUsername string, data models.Debtor, doc models.DebtorDoc) error {
 
 			doc.Debtor = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -693,7 +693,7 @@ func (svc DebtorHttpService) SaveInBatch(shopID string, authUsername string, dat
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 		err = svc.repoMq.CreateInBatch(createDataList)
 		if err != nil {
 			logger.GetLogger().Errorf("Create creditor message queue error :: %s", err.Error())
@@ -717,9 +717,9 @@ func (svc DebtorHttpService) getDocIDKey(doc models.Debtor) string {
 	return doc.Code
 }
 
-func (svc DebtorHttpService) saveMasterSync(shopID string) {
+func (svc DebtorHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())
@@ -731,11 +731,11 @@ func (svc DebtorHttpService) GetModuleName() string {
 	return "debtor"
 }
 
-func (svc DebtorHttpService) SearchPointTransactions(shopID string, debtorCode string, pageableStep micromodels.PageableStep) ([]models.PointTransactionInfo, int, error) {
+func (svc DebtorHttpService) SearchPointTransactions(holdingCode string, debtorCode string, pageableStep micromodels.PageableStep) ([]models.PointTransactionInfo, int, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	docList, total, err := svc.pointTransRepo.FindPointTransactionsByPointsCode(ctx, shopID, debtorCode, pageableStep)
+	docList, total, err := svc.pointTransRepo.FindPointTransactionsByPointsCode(ctx, holdingCode, debtorCode, pageableStep)
 
 	if err != nil {
 		return []models.PointTransactionInfo{}, 0, err
@@ -745,7 +745,7 @@ func (svc DebtorHttpService) SearchPointTransactions(shopID string, debtorCode s
 }
 
 // RecalPointByPointsCode recalculates point balance for a pointscode based on all point transactions
-func (svc DebtorHttpService) RecalPointByPointsCode(shopID string, pointsCode string, authUsername string) error {
+func (svc DebtorHttpService) RecalPointByPointsCode(holdingCode string, pointsCode string, authUsername string) error {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
@@ -754,7 +754,7 @@ func (svc DebtorHttpService) RecalPointByPointsCode(shopID string, pointsCode st
 	}
 
 	// Find the debtor by pointscode
-	findDebtor, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "points_code", pointsCode)
+	findDebtor, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "points_code", pointsCode)
 	if err != nil {
 		return err
 	}
@@ -769,7 +769,7 @@ func (svc DebtorHttpService) RecalPointByPointsCode(shopID string, pointsCode st
 		Limit: 10000, // Get all transactions
 	}
 
-	transactions, _, err := svc.pointTransRepo.FindPointTransactionsByPointsCode(ctx, shopID, pointsCode, pageableStep)
+	transactions, _, err := svc.pointTransRepo.FindPointTransactionsByPointsCode(ctx, holdingCode, pointsCode, pageableStep)
 	if err != nil {
 		return err
 	}
@@ -790,7 +790,7 @@ func (svc DebtorHttpService) RecalPointByPointsCode(shopID string, pointsCode st
 	findDebtor.UpdatedBy = authUsername
 	findDebtor.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, findDebtor.GuidFixed, findDebtor)
+	err = svc.repo.Update(ctx, holdingCode, findDebtor.GuidFixed, findDebtor)
 	if err != nil {
 		return err
 	}
@@ -799,7 +799,7 @@ func (svc DebtorHttpService) RecalPointByPointsCode(shopID string, pointsCode st
 }
 
 // AddPointManually adds points manually to a customer (can be used for opening balance, adjustments, or promotions)
-func (svc DebtorHttpService) AddPointManually(shopID string, pointsCode string, pointAmount float64, description string, authUsername string) error {
+func (svc DebtorHttpService) AddPointManually(holdingCode string, pointsCode string, pointAmount float64, description string, authUsername string) error {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
@@ -812,7 +812,7 @@ func (svc DebtorHttpService) AddPointManually(shopID string, pointsCode string, 
 	}
 
 	// Find debtor by pointscode
-	debtor, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "points_code", pointsCode)
+	debtor, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "points_code", pointsCode)
 	if err != nil {
 		return fmt.Errorf("failed to find debtor: %w", err)
 	}
@@ -832,7 +832,7 @@ func (svc DebtorHttpService) AddPointManually(shopID string, pointsCode string, 
 	// Create point transaction for manual adjustment
 	pointTransaction := models.PointTransactionDoc{
 		PointTransactionData: models.PointTransactionData{
-			ShopIdentity: common.ShopIdentity{ShopID: shopID},
+			HoldingCodeentity: common.HoldingCodeentity{HoldingCode: holdingCode},
 			PointTransactionInfo: models.PointTransactionInfo{
 				DocIdentity: common.DocIdentity{GuidFixed: utils.NewGUID()},
 				PointTransaction: models.PointTransaction{
@@ -861,7 +861,7 @@ func (svc DebtorHttpService) AddPointManually(shopID string, pointsCode string, 
 	}
 
 	// Recalculate point balance from all transactions to ensure accuracy
-	err = svc.pointTransRepo.RecalculatePointBalanceByPointsCode(ctx, shopID, pointsCode)
+	err = svc.pointTransRepo.RecalculatePointBalanceByPointsCode(ctx, holdingCode, pointsCode)
 	if err != nil {
 		return fmt.Errorf("failed to recalculate point balance: %w", err)
 	}
@@ -870,7 +870,7 @@ func (svc DebtorHttpService) AddPointManually(shopID string, pointsCode string, 
 }
 
 // BulkAddPoints bulk adds points for multiple customers (can be used for opening balance, adjustments, or promotions)
-func (svc DebtorHttpService) BulkAddPoints(shopID string, pointsList []models.OpeningBalancePointRequest, authUsername string) (models.BulkImportPointResult, error) {
+func (svc DebtorHttpService) BulkAddPoints(holdingCode string, pointsList []models.OpeningBalancePointRequest, authUsername string) (models.BulkImportPointResult, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
@@ -904,7 +904,7 @@ func (svc DebtorHttpService) BulkAddPoints(shopID string, pointsList []models.Op
 		}
 
 		// Find debtor by pointscode
-		debtor, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "points_code", item.PointsCode)
+		debtor, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "points_code", item.PointsCode)
 		if err != nil {
 			result.Failed++
 			result.FailedItems = append(result.FailedItems, models.BulkImportPointFailedItem{
@@ -937,7 +937,7 @@ func (svc DebtorHttpService) BulkAddPoints(shopID string, pointsList []models.Op
 		// Create point transaction for manual adjustment
 		pointTransaction := models.PointTransactionDoc{
 			PointTransactionData: models.PointTransactionData{
-				ShopIdentity: common.ShopIdentity{ShopID: shopID},
+				HoldingCodeentity: common.HoldingCodeentity{HoldingCode: holdingCode},
 				PointTransactionInfo: models.PointTransactionInfo{
 					DocIdentity: common.DocIdentity{GuidFixed: utils.NewGUID()},
 					PointTransaction: models.PointTransaction{
@@ -972,7 +972,7 @@ func (svc DebtorHttpService) BulkAddPoints(shopID string, pointsList []models.Op
 		}
 
 		// Recalculate point balance from all transactions to ensure accuracy
-		err = svc.pointTransRepo.RecalculatePointBalanceByPointsCode(ctx, shopID, item.PointsCode)
+		err = svc.pointTransRepo.RecalculatePointBalanceByPointsCode(ctx, holdingCode, item.PointsCode)
 		if err != nil {
 			result.Failed++
 			result.FailedItems = append(result.FailedItems, models.BulkImportPointFailedItem{
@@ -992,7 +992,7 @@ func (svc DebtorHttpService) BulkAddPoints(shopID string, pointsList []models.Op
 }
 
 // DeleteManualPointTransaction deletes a manual point transaction and recalculates balance
-func (svc DebtorHttpService) DeleteManualPointTransaction(shopID string, pointsCode string, docNo string, authUsername string) error {
+func (svc DebtorHttpService) DeleteManualPointTransaction(holdingCode string, pointsCode string, docNo string, authUsername string) error {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
@@ -1005,7 +1005,7 @@ func (svc DebtorHttpService) DeleteManualPointTransaction(shopID string, pointsC
 	}
 
 	// Delete the manual transaction (this function validates it's type 3 and recalculates balance)
-	err := svc.pointTransRepo.DeleteManualPointTransaction(ctx, shopID, pointsCode, docNo, authUsername)
+	err := svc.pointTransRepo.DeleteManualPointTransaction(ctx, holdingCode, pointsCode, docNo, authUsername)
 	if err != nil {
 		return err
 	}

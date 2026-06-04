@@ -54,7 +54,7 @@ func (p *DebtorPaymentTransactionPhaser) PhaseDebtorPaymentTransactionDoc(doc de
 	for i, detail := range *doc.Details {
 
 		d := models.DebtorPaymentTransactionDetailPG{
-			ShopID:        doc.ShopID,
+			HoldingCode:   doc.HoldingCode,
 			DocNo:         doc.DocNo,
 			LineNumber:    int8(i),
 			BillingNo:     detail.DocNo,
@@ -87,8 +87,8 @@ func (p *DebtorPaymentTransactionPhaser) PhaseDebtorPaymentTransactionDoc(doc de
 	}
 
 	transaction := models.DebtorPaymentTransactionPG{
-		ShopIdentity: pkgModels.ShopIdentity{
-			ShopID: doc.ShopID,
+		HoldingCodeentity: pkgModels.HoldingCodeentity{
+			HoldingCode: doc.HoldingCode,
 		},
 		GuidFixed:        doc.GuidFixed,
 		DocNo:            doc.DocNo,

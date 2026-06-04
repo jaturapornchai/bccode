@@ -80,9 +80,9 @@ func GetLocalIPAddress() (string, error) {
 	return "", fmt.Errorf("ไม่พบ IP address ในระบบ local")
 }
 
-// Helper function to validate shop ID format
-func ValidateShopID(shopId string) bool {
-	if len(shopId) < 10 || len(shopId) > 50 {
+// Helper function to validate holding Code format
+func ValidateHoldingCode(holdingCode string) bool {
+	if len(holdingCode) < 10 || len(holdingCode) > 50 {
 		return false
 	}
 	// Add more validation logic as needed
@@ -102,15 +102,15 @@ func ValidateGUID(guid string) bool {
 func TransSaleInvoiceBuild(jsonData string) {
 	docData := TransSaleInvoiceDecode(jsonData)
 
-	// Validate ShopId before proceeding
-	if docData.ShopId == "" {
-		logger.Warn("Sale invoice data missing ShopId, skipping processing")
+	// Validate HoldingCode before proceeding
+	if docData.HoldingCode == "" {
+		logger.Warn("Sale invoice data missing HoldingCode, skipping processing")
 		return
 	}
 
-	build.DatabaseChecker(docData.ShopId, false) // เช็ค database
+	build.DatabaseChecker(docData.HoldingCode, false) // เช็ค database
 	logger.Info("Processing document: %s %s %s %s %.2f",
-		docData.ShopId, docData.DocNo, docData.Description,
+		docData.HoldingCode, docData.DocNo, docData.Description,
 		docData.DocDateTime.UTC().Format("2006-01-02 15:04:05"), docData.TotalAmount)
 	for _, detail := range docData.Details {
 		logger.Info("Detail: %s %s %s", detail.Barcode, detail.ItemCode, detail.UnitCode)
@@ -156,13 +156,13 @@ func ProductBarcodeDecode(jsonData string) models.MongoProductBarcodeModel {
 func ProductBarcodeBuild(jsonData string) {
 	productBarcode := ProductBarcodeDecode(jsonData)
 
-	// Validate ShopId before proceeding
-	if productBarcode.ShopId == "" {
-		logger.Warn("Product barcode data missing ShopId, skipping processing")
+	// Validate HoldingCode before proceeding
+	if productBarcode.HoldingCode == "" {
+		logger.Warn("Product barcode data missing HoldingCode, skipping processing")
 		return
 	}
 
-	build.DatabaseChecker(productBarcode.ShopId, false) // เช็ค database
+	build.DatabaseChecker(productBarcode.HoldingCode, false) // เช็ค database
 	err := mypg.ProductBarcodeUpdate(productBarcode)
 	if err != nil {
 		logger.Error("in PostgreSQL ProductBarcodeUpdate: %v", err)
@@ -171,9 +171,9 @@ func ProductBarcodeBuild(jsonData string) {
 
 // DeleteSaleInvoiceFromPostgreSQL - deletes sale invoice from PostgreSQL
 func DeleteSaleInvoiceFromPostgreSQL(saleInvoice models.MongoDocModel) error {
-	logger.Info("Starting deletion of Sale Invoice: ShopID: %s, DocNo: %s", saleInvoice.ShopId, saleInvoice.DocNo)
+	logger.Info("Starting deletion of Sale Invoice: HoldingCode: %s, DocNo: %s", saleInvoice.HoldingCode, saleInvoice.DocNo)
 
-	db, err := mypg.PgSqlFastConnect(saleInvoice.ShopId)
+	db, err := mypg.PgSqlFastConnect(saleInvoice.HoldingCode)
 	if err != nil {
 		return fmt.Errorf("failed to connect to PostgreSQL: %v", err)
 	}
@@ -196,7 +196,7 @@ func DeleteSaleInvoiceFromPostgreSQL(saleInvoice models.MongoDocModel) error {
 		}
 	}
 
-	logger.Success("deleted Sale Invoice: ShopID: %s, DocNo: %s", saleInvoice.ShopId, saleInvoice.DocNo)
+	logger.Success("deleted Sale Invoice: HoldingCode: %s, DocNo: %s", saleInvoice.HoldingCode, saleInvoice.DocNo)
 	return nil
 }
 

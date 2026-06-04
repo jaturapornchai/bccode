@@ -11,24 +11,24 @@ const shiftCollectionName = "shift"
 
 type Shift struct {
 	models.PartitionIdentity `bson:"inline"`
-	UserCode string    `json:"usercode" bson:"usercode"`
-	Username string    `json:"username" bson:"username"`
-	PosId string    `json:"posid" bson:"posid"`
-	DocNo string    `json:"docno" bson:"docno"`
-	DocType int8      `json:"doc_type" bson:"doc_type"`
-	DocDate time.Time `json:"docdate" bson:"docdate"`
-	Remark string    `json:"remark" bson:"remark"`
-	Amount float64   `json:"amount" bson:"amount"`
-	CreditCard float64   `json:"creditcard" bson:"creditcard"`
-	PromptPay float64   `json:"promptpay" bson:"promptpay"`
-	Transfer float64   `json:"transfer" bson:"transfer"`
-	Cheque float64   `json:"cheque" bson:"cheque"`
-	Coupon float64   `json:"coupon" bson:"coupon"`
+	UserCode                 string    `json:"usercode" bson:"usercode"`
+	Username                 string    `json:"username" bson:"username"`
+	PosId                    string    `json:"posid" bson:"posid"`
+	DocNo                    string    `json:"docno" bson:"docno"`
+	DocType                  int8      `json:"doc_type" bson:"doc_type"`
+	DocDate                  time.Time `json:"docdate" bson:"docdate"`
+	Remark                   string    `json:"remark" bson:"remark"`
+	Amount                   float64   `json:"amount" bson:"amount"`
+	CreditCard               float64   `json:"creditcard" bson:"creditcard"`
+	PromptPay                float64   `json:"promptpay" bson:"promptpay"`
+	Transfer                 float64   `json:"transfer" bson:"transfer"`
+	Cheque                   float64   `json:"cheque" bson:"cheque"`
+	Coupon                   float64   `json:"coupon" bson:"coupon"`
 }
 
 type ShiftInfo struct {
 	models.DocIdentity `bson:"inline"`
-	Shift  `bson:"inline"`
+	Shift              `bson:"inline"`
 }
 
 func (ShiftInfo) CollectionName() string {
@@ -36,13 +36,13 @@ func (ShiftInfo) CollectionName() string {
 }
 
 type ShiftData struct {
-	models.ShopIdentity `bson:"inline"`
-	ShiftInfo  `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	ShiftInfo                `bson:"inline"`
 }
 
 type ShiftDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	ShiftData  `bson:"inline"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ShiftData          `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -59,7 +59,7 @@ func (ShiftItemGuid) CollectionName() string {
 }
 
 type ShiftActivity struct {
-	ShiftData  `bson:"inline"`
+	ShiftData           `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

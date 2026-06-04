@@ -15,8 +15,8 @@ func TestSaleInvoiceReturnDebtorPhaser(t *testing.T) {
 	give := SaleInvoiceReturnTransactionStruct()
 	want := models.DebtorTransactionPG{
 		GuidFixed: "2RFXUaW570MAWkgYgDduGM9WYIk",
-		ShopIdentity: pkgModels.ShopIdentity{
-			ShopID: "2PrIIqTWxoBXv16K310sNwfHmfY",
+		HoldingCodeentity: pkgModels.HoldingCodeentity{
+			HoldingCode: "2PrIIqTWxoBXv16K310sNwfHmfY",
 		},
 		TransFlag:      48,
 		InquiryType:    22,
@@ -41,7 +41,7 @@ func TestSaleInvoiceReturnDebtorPhaser(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, want.GuidFixed, get.GuidFixed, "GuidFixed")
-	assert.Equal(t, want.ShopID, get.ShopID, "ShopID")
+	assert.Equal(t, want.HoldingCode, get.HoldingCode, "HoldingCode")
 	assert.Equal(t, want.TransFlag, get.TransFlag, "TransFlag")
 	assert.Equal(t, want.InquiryType, get.InquiryType, "InquiryType")
 	assert.Equal(t, want.DocNo, get.DocNo, "DocNo")

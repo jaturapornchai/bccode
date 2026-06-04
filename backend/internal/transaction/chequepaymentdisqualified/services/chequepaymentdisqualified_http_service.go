@@ -22,15 +22,15 @@ import (
 )
 
 type IChequePaymentDisqualifiedHttpService interface {
-	CreateChequePaymentDisqualified(shopID string, authUsername string, doc models.ChequePaymentDisqualified) (string, string, error)
-	UpdateChequePaymentDisqualified(shopID string, guid string, authUsername string, doc models.ChequePaymentDisqualified) error
-	DeleteChequePaymentDisqualified(shopID string, guid string, authUsername string) error
-	DeleteChequePaymentDisqualifiedByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoChequePaymentDisqualified(shopID string, guid string) (models.ChequePaymentDisqualifiedInfo, error)
-	InfoChequePaymentDisqualifiedByCode(shopID string, code string) (models.ChequePaymentDisqualifiedInfo, error)
-	SearchChequePaymentDisqualified(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ChequePaymentDisqualifiedInfo, mongopagination.PaginationData, error)
-	SearchChequePaymentDisqualifiedStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ChequePaymentDisqualifiedInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.ChequePaymentDisqualified) (common.BulkImport, error)
+	CreateChequePaymentDisqualified(holdingCode string, authUsername string, doc models.ChequePaymentDisqualified) (string, string, error)
+	UpdateChequePaymentDisqualified(holdingCode string, guid string, authUsername string, doc models.ChequePaymentDisqualified) error
+	DeleteChequePaymentDisqualified(holdingCode string, guid string, authUsername string) error
+	DeleteChequePaymentDisqualifiedByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoChequePaymentDisqualified(holdingCode string, guid string) (models.ChequePaymentDisqualifiedInfo, error)
+	InfoChequePaymentDisqualifiedByCode(holdingCode string, code string) (models.ChequePaymentDisqualifiedInfo, error)
+	SearchChequePaymentDisqualified(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ChequePaymentDisqualifiedInfo, mongopagination.PaginationData, error)
+	SearchChequePaymentDisqualifiedStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ChequePaymentDisqualifiedInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.ChequePaymentDisqualified) (common.BulkImport, error)
 
 	GetModuleName() string
 }
@@ -81,11 +81,11 @@ func (svc ChequePaymentDisqualifiedHttpService) getDocNoPrefix(docDate time.Time
 	return fmt.Sprintf("%s%s", MODULE_NAME, docDateStr)
 }
 
-func (svc ChequePaymentDisqualifiedHttpService) generateNewDocNo(ctx context.Context, shopID, prefixDocNo string, docNumber int) (string, int, error) {
-	prevoiusDocNumber, err := svc.repoCache.Get(shopID, prefixDocNo)
+func (svc ChequePaymentDisqualifiedHttpService) generateNewDocNo(ctx context.Context, holdingCode, prefixDocNo string, docNumber int) (string, int, error) {
+	prevoiusDocNumber, err := svc.repoCache.Get(holdingCode, prefixDocNo)
 
 	if prevoiusDocNumber == 0 || err != nil {
-		lastDoc, err := svc.repo.FindLastDocNo(ctx, shopID, prefixDocNo)
+		lastDoc, err := svc.repo.FindLastDocNo(ctx, holdingCode, prefixDocNo)
 
 		if err != nil {
 			return "", 0, err
@@ -105,7 +105,7 @@ func (svc ChequePaymentDisqualifiedHttpService) generateNewDocNo(ctx context.Con
 	newDocNumber := prevoiusDocNumber + 1
 	newDocNo := fmt.Sprintf("%s%05d", prefixDocNo, newDocNumber)
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", newDocNo)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", newDocNo)
 
 	if err != nil {
 		return "", 0, err
@@ -118,7 +118,7 @@ func (svc ChequePaymentDisqualifiedHttpService) generateNewDocNo(ctx context.Con
 	return newDocNo, newDocNumber, nil
 }
 
-func (svc ChequePaymentDisqualifiedHttpService) CreateChequePaymentDisqualified(shopID string, authUsername string, doc models.ChequePaymentDisqualified) (string, string, error) {
+func (svc ChequePaymentDisqualifiedHttpService) CreateChequePaymentDisqualified(holdingCode string, authUsername string, doc models.ChequePaymentDisqualified) (string, string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -126,7 +126,7 @@ func (svc ChequePaymentDisqualifiedHttpService) CreateChequePaymentDisqualified(
 	docDate := doc.DocDatetime
 	prefixDocNo := svc.getDocNoPrefix(docDate)
 
-	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, shopID, prefixDocNo, 1)
+	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, holdingCode, prefixDocNo, 1)
 
 	if err != nil {
 		return "", "", err
@@ -135,7 +135,7 @@ func (svc ChequePaymentDisqualifiedHttpService) CreateChequePaymentDisqualified(
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.ChequePaymentDisqualifiedDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.ChequePaymentDisqualified = doc
 
@@ -149,23 +149,23 @@ func (svc ChequePaymentDisqualifiedHttpService) CreateChequePaymentDisqualified(
 		return "", "", err
 	}
 
-	go svc.repoCache.Save(shopID, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
+	go svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
 
 	go func() {
 		svc.repoMq.Create(docData)
-		svc.repoCache.Save(shopID, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
-		svc.saveMasterSync(shopID)
+		svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return newGuidFixed, newDocNo, nil
 }
 
-func (svc ChequePaymentDisqualifiedHttpService) UpdateChequePaymentDisqualified(shopID string, guid string, authUsername string, doc models.ChequePaymentDisqualified) error {
+func (svc ChequePaymentDisqualifiedHttpService) UpdateChequePaymentDisqualified(holdingCode string, guid string, authUsername string, doc models.ChequePaymentDisqualified) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -182,7 +182,7 @@ func (svc ChequePaymentDisqualifiedHttpService) UpdateChequePaymentDisqualified(
 	docData.UpdatedBy = authUsername
 	docData.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, docData)
+	err = svc.repo.Update(ctx, holdingCode, guid, docData)
 
 	if err != nil {
 		return err
@@ -190,18 +190,18 @@ func (svc ChequePaymentDisqualifiedHttpService) UpdateChequePaymentDisqualified(
 
 	func() {
 		svc.repoMq.Update(docData)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc ChequePaymentDisqualifiedHttpService) DeleteChequePaymentDisqualified(shopID string, guid string, authUsername string) error {
+func (svc ChequePaymentDisqualifiedHttpService) DeleteChequePaymentDisqualified(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -211,20 +211,20 @@ func (svc ChequePaymentDisqualifiedHttpService) DeleteChequePaymentDisqualified(
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
 	func() {
 		svc.repoMq.Delete(findDoc)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc ChequePaymentDisqualifiedHttpService) DeleteChequePaymentDisqualifiedByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc ChequePaymentDisqualifiedHttpService) DeleteChequePaymentDisqualifiedByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -233,26 +233,26 @@ func (svc ChequePaymentDisqualifiedHttpService) DeleteChequePaymentDisqualifiedB
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
 
 	func() {
-		docs, _ := svc.repo.FindByGuids(ctx, shopID, GUIDs)
+		docs, _ := svc.repo.FindByGuids(ctx, holdingCode, GUIDs)
 		svc.repoMq.DeleteInBatch(docs)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc ChequePaymentDisqualifiedHttpService) InfoChequePaymentDisqualified(shopID string, guid string) (models.ChequePaymentDisqualifiedInfo, error) {
+func (svc ChequePaymentDisqualifiedHttpService) InfoChequePaymentDisqualified(holdingCode string, guid string) (models.ChequePaymentDisqualifiedInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.ChequePaymentDisqualifiedInfo{}, err
@@ -265,12 +265,12 @@ func (svc ChequePaymentDisqualifiedHttpService) InfoChequePaymentDisqualified(sh
 	return findDoc.ChequePaymentDisqualifiedInfo, nil
 }
 
-func (svc ChequePaymentDisqualifiedHttpService) InfoChequePaymentDisqualifiedByCode(shopID string, code string) (models.ChequePaymentDisqualifiedInfo, error) {
+func (svc ChequePaymentDisqualifiedHttpService) InfoChequePaymentDisqualifiedByCode(holdingCode string, code string) (models.ChequePaymentDisqualifiedInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", code)
 
 	if err != nil {
 		return models.ChequePaymentDisqualifiedInfo{}, err
@@ -283,7 +283,7 @@ func (svc ChequePaymentDisqualifiedHttpService) InfoChequePaymentDisqualifiedByC
 	return findDoc.ChequePaymentDisqualifiedInfo, nil
 }
 
-func (svc ChequePaymentDisqualifiedHttpService) SearchChequePaymentDisqualified(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ChequePaymentDisqualifiedInfo, mongopagination.PaginationData, error) {
+func (svc ChequePaymentDisqualifiedHttpService) SearchChequePaymentDisqualified(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ChequePaymentDisqualifiedInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -292,7 +292,7 @@ func (svc ChequePaymentDisqualifiedHttpService) SearchChequePaymentDisqualified(
 		"docno",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.ChequePaymentDisqualifiedInfo{}, pagination, err
@@ -301,7 +301,7 @@ func (svc ChequePaymentDisqualifiedHttpService) SearchChequePaymentDisqualified(
 	return docList, pagination, nil
 }
 
-func (svc ChequePaymentDisqualifiedHttpService) SearchChequePaymentDisqualifiedStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ChequePaymentDisqualifiedInfo, int, error) {
+func (svc ChequePaymentDisqualifiedHttpService) SearchChequePaymentDisqualifiedStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ChequePaymentDisqualifiedInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -312,7 +312,7 @@ func (svc ChequePaymentDisqualifiedHttpService) SearchChequePaymentDisqualifiedS
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.ChequePaymentDisqualifiedInfo{}, 0, err
@@ -321,7 +321,7 @@ func (svc ChequePaymentDisqualifiedHttpService) SearchChequePaymentDisqualifiedS
 	return docList, total, nil
 }
 
-func (svc ChequePaymentDisqualifiedHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.ChequePaymentDisqualified) (common.BulkImport, error) {
+func (svc ChequePaymentDisqualifiedHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.ChequePaymentDisqualified) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -333,7 +333,7 @@ func (svc ChequePaymentDisqualifiedHttpService) SaveInBatch(shopID string, authU
 		itemCodeGuidList = append(itemCodeGuidList, doc.DocNo)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "docno", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "docno", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -345,18 +345,18 @@ func (svc ChequePaymentDisqualifiedHttpService) SaveInBatch(shopID string, authU
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.ChequePaymentDisqualified, models.ChequePaymentDisqualifiedDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.ChequePaymentDisqualified) models.ChequePaymentDisqualifiedDoc {
+		func(holdingCode string, authUsername string, doc models.ChequePaymentDisqualified) models.ChequePaymentDisqualifiedDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.ChequePaymentDisqualifiedDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.ChequePaymentDisqualified = doc
 
 			currentTime := time.Now()
@@ -367,23 +367,23 @@ func (svc ChequePaymentDisqualifiedHttpService) SaveInBatch(shopID string, authU
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.ChequePaymentDisqualified, models.ChequePaymentDisqualifiedDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.ChequePaymentDisqualifiedDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", guid)
+		func(holdingCode string, guid string) (models.ChequePaymentDisqualifiedDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", guid)
 		},
 		func(doc models.ChequePaymentDisqualifiedDoc) bool {
 			return doc.DocNo != ""
 		},
-		func(shopID string, authUsername string, data models.ChequePaymentDisqualified, doc models.ChequePaymentDisqualifiedDoc) error {
+		func(holdingCode string, authUsername string, data models.ChequePaymentDisqualified, doc models.ChequePaymentDisqualifiedDoc) error {
 
 			doc.ChequePaymentDisqualified = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -422,7 +422,7 @@ func (svc ChequePaymentDisqualifiedHttpService) SaveInBatch(shopID string, authU
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -436,9 +436,9 @@ func (svc ChequePaymentDisqualifiedHttpService) getDocIDKey(doc models.ChequePay
 	return doc.DocNo
 }
 
-func (svc ChequePaymentDisqualifiedHttpService) saveMasterSync(shopID string) {
+func (svc ChequePaymentDisqualifiedHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

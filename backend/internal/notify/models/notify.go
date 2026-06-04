@@ -9,31 +9,31 @@ import (
 const notifyCollectionName = "notify"
 
 type Notify struct {
-	Type string                 `json:"type" bson:"type"`
-	Name string                 `json:"name" bson:"name"`
-	Options map[string]interface{} `json:"options" bson:"options"`
+	Type         string                 `json:"type" bson:"type"`
+	Name         string                 `json:"name" bson:"name"`
+	Options      map[string]interface{} `json:"options" bson:"options"`
 	BranchEvents []NotifyBranchEvent    `json:"branchevents" bson:"branchevents"`
 }
 
 type NotifyBranchEvent struct {
-	Branch NotifyBranch `json:"branch" bson:"branch"`
-	IsEnable bool         `json:"isenable" bson:"isenable"`
-	IsSaveBill bool         `json:"issavebill" bson:"issavebill"`
-	IsOutOfStock bool         `json:"isoutofstock" bson:"isoutofstock"`
+	Branch           NotifyBranch `json:"branch" bson:"branch"`
+	IsEnable         bool         `json:"isenable" bson:"isenable"`
+	IsSaveBill       bool         `json:"issavebill" bson:"issavebill"`
+	IsOutOfStock     bool         `json:"isoutofstock" bson:"isoutofstock"`
 	IsNearOutOfStock bool         `json:"isnearoutofstock" bson:"isnearoutofstock"`
-	IsPreorder bool         `json:"ispreorder" bson:"ispreorder"`
+	IsPreorder       bool         `json:"ispreorder" bson:"ispreorder"`
 }
 
 type NotifyBranch struct {
 	GuidFixed string         `json:"guid_fixed" bson:"guid_fixed"`
-	Code string         `json:"code" bson:"code"`
-	Names []models.NameX `json:"names" bson:"names"`
+	Code      string         `json:"code" bson:"code"`
+	Names     []models.NameX `json:"names" bson:"names"`
 }
 
 type NotifyInfo struct {
 	models.DocIdentity `bson:"inline"`
-	Token string `json:"token" bson:"token"`
-	Notify  `bson:"inline"`
+	Token              string `json:"token" bson:"token"`
+	Notify             `bson:"inline"`
 }
 
 func (NotifyInfo) CollectionName() string {
@@ -41,13 +41,13 @@ func (NotifyInfo) CollectionName() string {
 }
 
 type NotifyData struct {
-	models.ShopIdentity `bson:"inline"`
-	NotifyInfo  `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	NotifyInfo               `bson:"inline"`
 }
 
 type NotifyDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	NotifyData  `bson:"inline"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	NotifyData         `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -64,7 +64,7 @@ func (NotifyItemGuid) CollectionName() string {
 }
 
 type NotifyActivity struct {
-	NotifyData  `bson:"inline"`
+	NotifyData          `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 
@@ -82,6 +82,6 @@ func (NotifyDeleteActivity) CollectionName() string {
 }
 
 type NotifyRequest struct {
-	Token string `json:"token" bson:"token"`
+	Token  string `json:"token" bson:"token"`
 	Notify `bson:"inline"`
 }

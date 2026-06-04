@@ -15,7 +15,7 @@ import (
 
 func TestBuildBOMView(t *testing.T) {
 
-	data01, _ := findByBarcode(context.Background(), "shopID", "01")
+	data01, _ := findByBarcode(context.Background(), "holdingCode", "01")
 	productBarcodeDict := map[string]models.ProductBarcodeDoc{}
 	bomViewDict := map[string]*models.ProductBarcodeBOMView{}
 
@@ -26,7 +26,7 @@ func TestBuildBOMView(t *testing.T) {
 		bomViewDict[data01.Barcode] = &bomView
 	}
 
-	services.BuildBOMView(context.Background(), findByBarcode, 1, &productBarcodeDict, &bomViewDict, "shopID", data01.BOM, &bomView.BOM)
+	services.BuildBOMView(context.Background(), findByBarcode, 1, &productBarcodeDict, &bomViewDict, "holdingCode", data01.BOM, &bomView.BOM)
 
 	bomView2 := models.ProductBarcodeBOMView{}
 	bomView2.FromProductBarcode(data01.ProductBarcodeData)
@@ -35,19 +35,19 @@ func TestBuildBOMView(t *testing.T) {
 		bomViewDict[data01.Barcode] = &bomView
 	}
 
-	services.BuildBOMView(context.Background(), findByBarcode, 1, &productBarcodeDict, &bomViewDict, "shopID", data01.BOM, &bomView2.BOM)
+	services.BuildBOMView(context.Background(), findByBarcode, 1, &productBarcodeDict, &bomViewDict, "holdingCode", data01.BOM, &bomView2.BOM)
 
 	assert.Equal(t, "guid1", bomViewDict["01"].BarcodeGuidFixed)
 }
 
 func TestBuildBOMView2(t *testing.T) {
 
-	data01, _ := findByBarcode(context.Background(), "shopID", "01")
+	data01, _ := findByBarcode(context.Background(), "holdingCode", "01")
 	productBarcodeDict := map[string]models.ProductBarcodeDoc{}
 	bomViewDict := map[string]*models.ProductBarcodeBOMView{}
 	bomView := models.ProductBarcodeBOMView{}
 
-	services.BuildBOMViewCache(context.Background(), findByBarcode, 0, &productBarcodeDict, &bomViewDict, "shopID", data01.Barcode, []models.BOMProductBarcode{}, &bomView)
+	services.BuildBOMViewCache(context.Background(), findByBarcode, 0, &productBarcodeDict, &bomViewDict, "holdingCode", data01.Barcode, []models.BOMProductBarcode{}, &bomView)
 
 	jsonData, err := json.Marshal(bomView)
 
@@ -59,7 +59,7 @@ func TestBuildBOMView2(t *testing.T) {
 
 var data = map[string]models.ProductBarcodeDoc{}
 
-func findByBarcode(ctx context.Context, shopID string, barcode string) (models.ProductBarcodeDoc, error) {
+func findByBarcode(ctx context.Context, holdingCode string, barcode string) (models.ProductBarcodeDoc, error) {
 
 	if len(data) == 0 {
 		fmt.Println("init data")

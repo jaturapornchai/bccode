@@ -125,46 +125,46 @@ func getLangText(langMap map[string]string, code string, fallback string) string
 
 // ThemeColors - สีหลักของธีม
 type ThemeColors struct {
-	Primary string `json:"primary"`   // สีหลัก
+	Primary   string `json:"primary"`   // สีหลัก
 	Secondary string `json:"secondary"` // สีรอง
-	Accent string `json:"accent"`    // สีเน้น
-	Danger string `json:"danger"`    // สีแจ้งเตือน
-	Warning string `json:"warning"`   // สีเตือน
+	Accent    string `json:"accent"`    // สีเน้น
+	Danger    string `json:"danger"`    // สีแจ้งเตือน
+	Warning   string `json:"warning"`   // สีเตือน
 }
 
 // ThemeHeader - สีส่วนหัวเอกสาร
 type ThemeHeader struct {
-	TitleColor string  `json:"title_color"`    // สีหัวเรื่อง
+	TitleColor    string  `json:"title_color"`    // สีหัวเรื่อง
 	SubtitleColor string  `json:"subtitle_color"` // สีข้อความรอง
-	LineColor string  `json:"line_color"`     // สีเส้นคั่น
-	LineWidth float64 `json:"line_width"`     // ความหนาเส้น
+	LineColor     string  `json:"line_color"`     // สีเส้นคั่น
+	LineWidth     float64 `json:"line_width"`     // ความหนาเส้น
 }
 
 // ThemeSection - สีส่วน section
 type ThemeSection struct {
-	LabelColor string `json:"label_color"`      // สีหัวข้อ
-	TextColor string `json:"text_color"`       // สีข้อความ
+	LabelColor      string `json:"label_color"`      // สีหัวข้อ
+	TextColor       string `json:"text_color"`       // สีข้อความ
 	BackgroundColor string `json:"background_color"` // สีพื้นหลัง
 }
 
 // ThemeTable - สีตาราง
 type ThemeTable struct {
-	HeaderBgColor string  `json:"header_bg_color"`   // สีพื้นหลังหัวตาราง
+	HeaderBgColor   string  `json:"header_bg_color"`   // สีพื้นหลังหัวตาราง
 	HeaderTextColor string  `json:"header_text_color"` // สีข้อความหัวตาราง
-	RowTextColor string  `json:"row_text_color"`    // สีข้อความแถว
-	RowBgColor string  `json:"row_bg_color"`      // สีพื้นหลังแถว
-	RowAltBgColor string  `json:"row_alt_bg_color"`   // สีพื้นหลังแถวสลับ
-	BorderColor string  `json:"border_color"`     // สีเส้นขอบ
-	BorderWidth float64 `json:"border_width"`     // ความหนาเส้นขอบ
+	RowTextColor    string  `json:"row_text_color"`    // สีข้อความแถว
+	RowBgColor      string  `json:"row_bg_color"`      // สีพื้นหลังแถว
+	RowAltBgColor   string  `json:"row_alt_bg_color"`  // สีพื้นหลังแถวสลับ
+	BorderColor     string  `json:"border_color"`      // สีเส้นขอบ
+	BorderWidth     float64 `json:"border_width"`      // ความหนาเส้นขอบ
 }
 
 // ThemeSummary - สีส่วนสรุป
 type ThemeSummary struct {
-	BgColor string `json:"bg_color"`            // สีพื้นหลัง
-	TextColor string `json:"text_color"`          // สีข้อความ
-	HighlightBgColor string `json:"highlight_bg_color"`   // สีพื้นหลังยอดรวม
+	BgColor            string `json:"bg_color"`             // สีพื้นหลัง
+	TextColor          string `json:"text_color"`           // สีข้อความ
+	HighlightBgColor   string `json:"highlight_bg_color"`   // สีพื้นหลังยอดรวม
 	HighlightTextColor string `json:"highlight_text_color"` // สีข้อความยอดรวม
-	BorderColor string `json:"border_color"`        // สีเส้นขอบ
+	BorderColor        string `json:"border_color"`         // สีเส้นขอบ
 }
 
 // ThemeFooter - สีส่วนท้าย
@@ -175,22 +175,22 @@ type ThemeFooter struct {
 
 // Theme - โครงสร้างธีมทั้งหมด
 type Theme struct {
-	Name string       `json:"name"`    // ชื่อธีม
-	Preset string       `json:"preset"`  // ใช้ preset theme
-	Colors ThemeColors  `json:"colors"`  // สีหลัก
-	Header ThemeHeader  `json:"header"`  // สีส่วนหัว
+	Name    string       `json:"name"`    // ชื่อธีม
+	Preset  string       `json:"preset"`  // ใช้ preset theme
+	Colors  ThemeColors  `json:"colors"`  // สีหลัก
+	Header  ThemeHeader  `json:"header"`  // สีส่วนหัว
 	Section ThemeSection `json:"section"` // สีส่วน section
-	Table ThemeTable   `json:"table"`   // สีตาราง
+	Table   ThemeTable   `json:"table"`   // สีตาราง
 	Summary ThemeSummary `json:"summary"` // สีส่วนสรุป
-	Footer ThemeFooter  `json:"footer"`  // สีส่วนท้าย
+	Footer  ThemeFooter  `json:"footer"`  // สีส่วนท้าย
 }
 
 // FontSizes - กำหนดขนาด font แยกตามส่วน
 type FontSizes struct {
-	Header int `json:"header"`  // ขนาด font ส่วนหัวเอกสาร (default: 10)
-	Detail int `json:"detail"`  // ขนาด font ตารางรายละเอียด (default: 7)
+	Header  int `json:"header"`  // ขนาด font ส่วนหัวเอกสาร (default: 10)
+	Detail  int `json:"detail"`  // ขนาด font ตารางรายละเอียด (default: 7)
 	Summary int `json:"summary"` // ขนาด font ส่วนสรุป (default: 9)
-	Footer int `json:"footer"`  // ขนาด font ส่วนท้าย (default: 8)
+	Footer  int `json:"footer"`  // ขนาด font ส่วนท้าย (default: 8)
 }
 
 // Labels - ข้อความแปลภาษาสำหรับ PDF
@@ -216,24 +216,24 @@ type Labels struct {
 	NoItems   string
 
 	// Summary
-	Subtotal       string
-	Discount       string
-	AfterDiscount  string
-	Tax            string
-	GrandTotal     string
-	Currency       string
-	Notes          string
+	Subtotal      string
+	Discount      string
+	AfterDiscount string
+	Tax           string
+	GrandTotal    string
+	Currency      string
+	Notes         string
 
 	// Footer
-	PrintedAt  string
-	Page       string
-	Terms      string
+	PrintedAt   string
+	Page        string
+	Terms       string
 	CompanyName string
 
 	// Signature
-	PreparedBy  string
-	CheckedBy   string
-	ApprovedBy  string
+	PreparedBy string
+	CheckedBy  string
+	ApprovedBy string
 }
 
 // GetLabels - ดึง labels ตามภาษา (อ่านจาก JSON file ก่อน, fallback เป็นค่า default)
@@ -264,13 +264,13 @@ func GetLabels(language string) Labels {
 		NoItems:   getLangText(langMap, "no_items", getDefaultLabel(language, "NoItems")),
 
 		// Summary
-		Subtotal:       getLangText(langMap, "subtotal", getDefaultLabel(language, "Subtotal")),
-		Discount:       getLangText(langMap, "discount", getDefaultLabel(language, "Discount")),
-		AfterDiscount:  getLangText(langMap, "after_discount", getDefaultLabel(language, "AfterDiscount")),
-		Tax:            getLangText(langMap, "vat", getDefaultLabel(language, "Tax")),
-		GrandTotal:     getLangText(langMap, "grand_total", getDefaultLabel(language, "GrandTotal")),
-		Currency:       getLangText(langMap, "currency", getDefaultLabel(language, "Currency")),
-		Notes:          getLangText(langMap, "note", getDefaultLabel(language, "Notes")),
+		Subtotal:      getLangText(langMap, "subtotal", getDefaultLabel(language, "Subtotal")),
+		Discount:      getLangText(langMap, "discount", getDefaultLabel(language, "Discount")),
+		AfterDiscount: getLangText(langMap, "after_discount", getDefaultLabel(language, "AfterDiscount")),
+		Tax:           getLangText(langMap, "vat", getDefaultLabel(language, "Tax")),
+		GrandTotal:    getLangText(langMap, "grand_total", getDefaultLabel(language, "GrandTotal")),
+		Currency:      getLangText(langMap, "currency", getDefaultLabel(language, "Currency")),
+		Notes:         getLangText(langMap, "note", getDefaultLabel(language, "Notes")),
 
 		// Footer
 		PrintedAt:   getLangText(langMap, "print", getDefaultLabel(language, "PrintedAt")),
@@ -279,9 +279,9 @@ func GetLabels(language string) Labels {
 		CompanyName: getLangText(langMap, "company_name", getDefaultLabel(language, "CompanyName")),
 
 		// Signature
-		PreparedBy:  getLangText(langMap, "prepared_by", getDefaultLabel(language, "PreparedBy")),
-		CheckedBy:   getLangText(langMap, "checked_by", getDefaultLabel(language, "CheckedBy")),
-		ApprovedBy:  getLangText(langMap, "approved_by", getDefaultLabel(language, "ApprovedBy")),
+		PreparedBy: getLangText(langMap, "prepared_by", getDefaultLabel(language, "PreparedBy")),
+		CheckedBy:  getLangText(langMap, "checked_by", getDefaultLabel(language, "CheckedBy")),
+		ApprovedBy: getLangText(langMap, "approved_by", getDefaultLabel(language, "ApprovedBy")),
 	}
 }
 
@@ -308,9 +308,9 @@ func getDefaultLabelsMap(language string) map[string]string {
 			"Subtotal": "Subtotal", "Discount": "Discount", "AfterDiscount": "After Discount",
 			"Tax": "VAT 7%", "GrandTotal": "Grand Total", "Currency": "Baht", "Notes": "Notes",
 			"PrintedAt": "Printed:", "Page": "Page",
-			"Terms": "Terms: Payment within 30 days | Price includes VAT",
+			"Terms":       "Terms: Payment within 30 days | Price includes VAT",
 			"CompanyName": "Sample Company Ltd.",
-			"PreparedBy": "Prepared By", "CheckedBy": "Checked By", "ApprovedBy": "Approved By",
+			"PreparedBy":  "Prepared By", "CheckedBy": "Checked By", "ApprovedBy": "Approved By",
 		}
 	case "ai:cn":
 		return map[string]string{
@@ -323,9 +323,9 @@ func getDefaultLabelsMap(language string) map[string]string {
 			"Subtotal": "小计", "Discount": "折扣", "AfterDiscount": "折后金额",
 			"Tax": "增值税 7%", "GrandTotal": "总计", "Currency": "泰铢", "Notes": "备注",
 			"PrintedAt": "打印时间:", "Page": "页",
-			"Terms": "条款: 30天内付款 | 价格含增值税",
+			"Terms":       "条款: 30天内付款 | 价格含增值税",
 			"CompanyName": "示例公司",
-			"PreparedBy": "制单人", "CheckedBy": "审核人", "ApprovedBy": "批准人",
+			"PreparedBy":  "制单人", "CheckedBy": "审核人", "ApprovedBy": "批准人",
 		}
 	case "ai:ja":
 		return map[string]string{
@@ -338,9 +338,9 @@ func getDefaultLabelsMap(language string) map[string]string {
 			"Subtotal": "小計", "Discount": "割引", "AfterDiscount": "割引後",
 			"Tax": "消費税 7%", "GrandTotal": "合計", "Currency": "バーツ", "Notes": "備考",
 			"PrintedAt": "印刷日時:", "Page": "ページ",
-			"Terms": "条件: 30日以内にお支払い | 価格は税込み",
+			"Terms":       "条件: 30日以内にお支払い | 価格は税込み",
 			"CompanyName": "サンプル会社",
-			"PreparedBy": "作成者", "CheckedBy": "確認者", "ApprovedBy": "承認者",
+			"PreparedBy":  "作成者", "CheckedBy": "確認者", "ApprovedBy": "承認者",
 		}
 	case "ai:ko":
 		return map[string]string{
@@ -353,9 +353,9 @@ func getDefaultLabelsMap(language string) map[string]string {
 			"Subtotal": "소계", "Discount": "할인", "AfterDiscount": "할인 후",
 			"Tax": "부가세 7%", "GrandTotal": "총합계", "Currency": "바트", "Notes": "비고",
 			"PrintedAt": "인쇄:", "Page": "페이지",
-			"Terms": "조건: 30일 이내 결제 | 가격은 부가세 포함",
+			"Terms":       "조건: 30일 이내 결제 | 가격은 부가세 포함",
 			"CompanyName": "샘플 회사",
-			"PreparedBy": "작성자", "CheckedBy": "확인자", "ApprovedBy": "승인자",
+			"PreparedBy":  "작성자", "CheckedBy": "확인자", "ApprovedBy": "승인자",
 		}
 	case "ai:vi":
 		return map[string]string{
@@ -368,9 +368,9 @@ func getDefaultLabelsMap(language string) map[string]string {
 			"Subtotal": "Cộng tiền", "Discount": "Chiết khấu", "AfterDiscount": "Sau chiết khấu",
 			"Tax": "VAT 7%", "GrandTotal": "Tổng cộng", "Currency": "Baht", "Notes": "Ghi chú",
 			"PrintedAt": "In ngày:", "Page": "Trang",
-			"Terms": "Điều khoản: Thanh toán trong 30 ngày | Giá đã bao gồm VAT",
+			"Terms":       "Điều khoản: Thanh toán trong 30 ngày | Giá đã bao gồm VAT",
 			"CompanyName": "Công ty mẫu",
-			"PreparedBy": "Người lập", "CheckedBy": "Người kiểm tra", "ApprovedBy": "Người duyệt",
+			"PreparedBy":  "Người lập", "CheckedBy": "Người kiểm tra", "ApprovedBy": "Người duyệt",
 		}
 	case "ai:lo":
 		return map[string]string{
@@ -383,9 +383,9 @@ func getDefaultLabelsMap(language string) map[string]string {
 			"Subtotal": "ລວມເງິນ", "Discount": "ສ່ວນຫຼຸດ", "AfterDiscount": "ຫຼັງຫັກສ່ວນຫຼຸດ",
 			"Tax": "ພາສີ 7%", "GrandTotal": "ຍອດລວມທັງໝົດ", "Currency": "ບາດ", "Notes": "ໝາຍເຫດ",
 			"PrintedAt": "ພິມ:", "Page": "ໜ້າ",
-			"Terms": "ເງື່ອນໄຂ: ຊຳລະເງິນພາຍໃນ 30 ວັນ | ລາຄາລວມ VAT ແລ້ວ",
+			"Terms":       "ເງື່ອນໄຂ: ຊຳລະເງິນພາຍໃນ 30 ວັນ | ລາຄາລວມ VAT ແລ້ວ",
 			"CompanyName": "ບໍລິສັດ ຕົວຢ່າງ ຈຳກັດ",
-			"PreparedBy": "ຜູ້ຈັດທຳ", "CheckedBy": "ຜູ້ກວດສອບ", "ApprovedBy": "ຜູ້ອະນຸມັດ",
+			"PreparedBy":  "ຜູ້ຈັດທຳ", "CheckedBy": "ຜູ້ກວດສອບ", "ApprovedBy": "ຜູ້ອະນຸມັດ",
 		}
 	case "ai:my":
 		return map[string]string{
@@ -398,9 +398,9 @@ func getDefaultLabelsMap(language string) map[string]string {
 			"Subtotal": "စုစုပေါင်း", "Discount": "လျှော့စျေး", "AfterDiscount": "လျှော့ပြီးနောက်",
 			"Tax": "အခွန် 7%", "GrandTotal": "စုစုပေါင်းတန်ဖိုး", "Currency": "ဘတ်", "Notes": "မှတ်ချက်",
 			"PrintedAt": "ပရင့်:", "Page": "စာမျက်နှာ",
-			"Terms": "စည်းကမ်း: ရက် 30 အတွင်းငွေပေးချေပါ | VAT ပါဝင်ပြီး",
+			"Terms":       "စည်းကမ်း: ရက် 30 အတွင်းငွေပေးချေပါ | VAT ပါဝင်ပြီး",
 			"CompanyName": "နမူနာကုမ္ပဏီ",
-			"PreparedBy": "ပြုလုပ်သူ", "CheckedBy": "စစ်ဆေးသူ", "ApprovedBy": "အတည်ပြုသူ",
+			"PreparedBy":  "ပြုလုပ်သူ", "CheckedBy": "စစ်ဆေးသူ", "ApprovedBy": "အတည်ပြုသူ",
 		}
 	case "ai:km":
 		return map[string]string{
@@ -413,9 +413,9 @@ func getDefaultLabelsMap(language string) map[string]string {
 			"Subtotal": "សរុបរង", "Discount": "បញ្ចុះតម្លៃ", "AfterDiscount": "បន្ទាប់ពីបញ្ចុះតម្លៃ",
 			"Tax": "អាករ 7%", "GrandTotal": "សរុបរួម", "Currency": "បាត", "Notes": "កំណត់ចំណាំ",
 			"PrintedAt": "បោះពុម្ព:", "Page": "ទំព័រ",
-			"Terms": "លក្ខខណ្ឌ: ទូទាត់ក្នុងរយៈពេល 30 ថ្ងៃ | តម្លៃរួមអាករ",
+			"Terms":       "លក្ខខណ្ឌ: ទូទាត់ក្នុងរយៈពេល 30 ថ្ងៃ | តម្លៃរួមអាករ",
 			"CompanyName": "ក្រុមហ៊ុនគំរូ",
-			"PreparedBy": "អ្នករៀបចំ", "CheckedBy": "អ្នកពិនិត្យ", "ApprovedBy": "អ្នកអនុម័ត",
+			"PreparedBy":  "អ្នករៀបចំ", "CheckedBy": "អ្នកពិនិត្យ", "ApprovedBy": "អ្នកអនុម័ត",
 		}
 	default: // "th" - Thai
 		return map[string]string{
@@ -428,9 +428,9 @@ func getDefaultLabelsMap(language string) map[string]string {
 			"Subtotal": "รวมเงิน", "Discount": "ส่วนลด", "AfterDiscount": "หลังหักส่วนลด",
 			"Tax": "ภาษี 7%", "GrandTotal": "ยอดรวมทั้งสิ้น", "Currency": "บาท", "Notes": "หมายเหตุ",
 			"PrintedAt": "พิมพ์:", "Page": "หน้า",
-			"Terms": "เงื่อนไข: ชำระเงินภายใน 30 วัน | ราคารวม VAT แล้ว",
+			"Terms":       "เงื่อนไข: ชำระเงินภายใน 30 วัน | ราคารวม VAT แล้ว",
 			"CompanyName": "บริษัท ตัวอย่าง จำกัด",
-			"PreparedBy": "ผู้จัดทำ", "CheckedBy": "ผู้ตรวจสอบ", "ApprovedBy": "ผู้อนุมัติ",
+			"PreparedBy":  "ผู้จัดทำ", "CheckedBy": "ผู้ตรวจสอบ", "ApprovedBy": "ผู้อนุมัติ",
 		}
 	}
 }
@@ -443,43 +443,43 @@ func getDefaultLabelsMap(language string) map[string]string {
 // BorderStyles: none, solid, dashed, double, rounded
 // LogoStyles: normal, large, small, circular, withBackground
 type Template struct {
-	ID string  `json:"id"`                   // รหัสเทมเพลต
-	Name string  `json:"name"`                 // ชื่อเทมเพลต
-	HeaderLayout string  `json:"header_layout"`         // รูปแบบหัวเอกสาร
-	TableStyle string  `json:"table_style"`           // รูปแบบตาราง
-	SummaryLayout string  `json:"summary_layout"`        // รูปแบบส่วนสรุป
-	FooterStyle string  `json:"footer_style"`          // รูปแบบท้ายเอกสาร
-	ShowLogo bool    `json:"show_logo"`             // แสดงโลโก้
-	LogoStyle string  `json:"logo_style"`            // รูปแบบโลโก้
-	ShowWatermark bool    `json:"show_watermark"`        // แสดงลายน้ำ
-	WatermarkText string  `json:"watermark_text"`        // ข้อความลายน้ำ
-	ShowBorder bool    `json:"show_border"`           // แสดงกรอบ
-	BorderStyle string  `json:"border_style"`          // รูปแบบกรอบ
-	ShowDocTitle bool    `json:"show_doc_title"`         // แสดงหัวเอกสาร
-	ShowCompanyInfo bool    `json:"show_company_info"`      // แสดงข้อมูลบริษัท
-	ShowCustomerInfo bool    `json:"show_customer_info"`     // แสดงข้อมูลลูกค้า
-	ShowPaymentInfo bool    `json:"show_payment_info"`      // แสดงข้อมูลการชำระเงิน
-	ShowNotes bool    `json:"show_notes"`            // แสดงหมายเหตุ
-	ShowSignature bool    `json:"show_signature"`        // แสดงลายเซ็น
-	HeaderSpacing float64 `json:"header_spacing"`        // ระยะห่างหัวเอกสาร
-	TableSpacing float64 `json:"table_spacing"`         // ระยะห่างตาราง
-	SummarySpacing float64 `json:"summary_spacing"`       // ระยะห่างส่วนสรุป
-	MarginTop float64 `json:"margin_top"`            // ระยะขอบบน
-	MarginBottom float64 `json:"margin_bottom"`         // ระยะขอบล่าง
-	MarginLeft float64 `json:"margin_left"`           // ระยะขอบซ้าย
-	MarginRight float64 `json:"margin_right"`          // ระยะขอบขวา
-	ShowRowNumber bool    `json:"show_row_number"`        // แสดงลำดับแถว
-	ShowUnitPrice bool    `json:"show_unit_price"`        // แสดงราคาต่อหน่วย
-	ShowDiscount bool    `json:"show_discount"`         // แสดงส่วนลด
-	ShowTax bool    `json:"show_tax"`              // แสดงภาษี
-	AlternateRowColor bool    `json:"alternate_row_color"`    // สลับสีแถว
-	ShowHeaderLine bool    `json:"show_header_line"`       // แสดงเส้นหัวเอกสาร
-	HeaderLineWidth float64 `json:"header_line_width"`      // ความหนาเส้นหัวเอกสาร
+	ID                   string  `json:"id"`                     // รหัสเทมเพลต
+	Name                 string  `json:"name"`                   // ชื่อเทมเพลต
+	HeaderLayout         string  `json:"header_layout"`          // รูปแบบหัวเอกสาร
+	TableStyle           string  `json:"table_style"`            // รูปแบบตาราง
+	SummaryLayout        string  `json:"summary_layout"`         // รูปแบบส่วนสรุป
+	FooterStyle          string  `json:"footer_style"`           // รูปแบบท้ายเอกสาร
+	ShowLogo             bool    `json:"show_logo"`              // แสดงโลโก้
+	LogoStyle            string  `json:"logo_style"`             // รูปแบบโลโก้
+	ShowWatermark        bool    `json:"show_watermark"`         // แสดงลายน้ำ
+	WatermarkText        string  `json:"watermark_text"`         // ข้อความลายน้ำ
+	ShowBorder           bool    `json:"show_border"`            // แสดงกรอบ
+	BorderStyle          string  `json:"border_style"`           // รูปแบบกรอบ
+	ShowDocTitle         bool    `json:"show_doc_title"`         // แสดงหัวเอกสาร
+	ShowCompanyInfo      bool    `json:"show_company_info"`      // แสดงข้อมูลบริษัท
+	ShowCustomerInfo     bool    `json:"show_customer_info"`     // แสดงข้อมูลลูกค้า
+	ShowPaymentInfo      bool    `json:"show_payment_info"`      // แสดงข้อมูลการชำระเงิน
+	ShowNotes            bool    `json:"show_notes"`             // แสดงหมายเหตุ
+	ShowSignature        bool    `json:"show_signature"`         // แสดงลายเซ็น
+	HeaderSpacing        float64 `json:"header_spacing"`         // ระยะห่างหัวเอกสาร
+	TableSpacing         float64 `json:"table_spacing"`          // ระยะห่างตาราง
+	SummarySpacing       float64 `json:"summary_spacing"`        // ระยะห่างส่วนสรุป
+	MarginTop            float64 `json:"margin_top"`             // ระยะขอบบน
+	MarginBottom         float64 `json:"margin_bottom"`          // ระยะขอบล่าง
+	MarginLeft           float64 `json:"margin_left"`            // ระยะขอบซ้าย
+	MarginRight          float64 `json:"margin_right"`           // ระยะขอบขวา
+	ShowRowNumber        bool    `json:"show_row_number"`        // แสดงลำดับแถว
+	ShowUnitPrice        bool    `json:"show_unit_price"`        // แสดงราคาต่อหน่วย
+	ShowDiscount         bool    `json:"show_discount"`          // แสดงส่วนลด
+	ShowTax              bool    `json:"show_tax"`               // แสดงภาษี
+	AlternateRowColor    bool    `json:"alternate_row_color"`    // สลับสีแถว
+	ShowHeaderLine       bool    `json:"show_header_line"`       // แสดงเส้นหัวเอกสาร
+	HeaderLineWidth      float64 `json:"header_line_width"`      // ความหนาเส้นหัวเอกสาร
 	ShowHeaderBackground bool    `json:"show_header_background"` // แสดงพื้นหลังหัวตาราง
-	ShowSubtotal bool    `json:"show_subtotal"`         // แสดงยอดรวมย่อย
-	ShowTotalDiscount bool    `json:"show_total_discount"`    // แสดงส่วนลดรวม
-	ShowTotalTax bool    `json:"show_total_tax"`         // แสดงภาษีรวม
-	HighlightTotal bool    `json:"highlight_total"`       // เน้นยอดรวม
+	ShowSubtotal         bool    `json:"show_subtotal"`          // แสดงยอดรวมย่อย
+	ShowTotalDiscount    bool    `json:"show_total_discount"`    // แสดงส่วนลดรวม
+	ShowTotalTax         bool    `json:"show_total_tax"`         // แสดงภาษีรวม
+	HighlightTotal       bool    `json:"highlight_total"`        // เน้นยอดรวม
 }
 
 // TableStyleConfig - การตั้งค่าสไตล์ตาราง
@@ -601,30 +601,30 @@ func GetTableStyleConfig(styleName string) TableStyleConfig {
 
 // GenPDFPayload - payload สำหรับการสร้าง PDF จาก MongoDB document
 type GenPDFPayload struct {
-	ShopID string     `json:"shopid"`
-	Collection string     `json:"collection"`
-	DocNo string     `json:"docno"` // เลขที่เอกสาร
-	Title string     `json:"title"`
-	PageSize string     `json:"pagesize"`    // A4, A3, Letter, Legal
-	Orientation string     `json:"orientation"` // P (Portrait), L (Landscape)
-	FontSize int        `json:"fontsize"`    // ขนาดฟอนต์พื้นฐาน (8-16) - ใช้เป็น fallback
-	FontSizes *FontSizes `json:"fontsizes"`   // ขนาด font แยกตามส่วน
-	FontFamily string     `json:"font_family"`  // ชื่อ font family (Sarabun, Kanit, Prompt, etc.) - default: GoNotoCurrent
+	HoldingCode string     `json:"holding_code"`
+	Collection  string     `json:"collection"`
+	DocNo       string     `json:"docno"` // เลขที่เอกสาร
+	Title       string     `json:"title"`
+	PageSize    string     `json:"pagesize"`     // A4, A3, Letter, Legal
+	Orientation string     `json:"orientation"`  // P (Portrait), L (Landscape)
+	FontSize    int        `json:"fontsize"`     // ขนาดฟอนต์พื้นฐาน (8-16) - ใช้เป็น fallback
+	FontSizes   *FontSizes `json:"fontsizes"`    // ขนาด font แยกตามส่วน
+	FontFamily  string     `json:"font_family"`  // ชื่อ font family (Sarabun, Kanit, Prompt, etc.) - default: GoNotoCurrent
 	LineSpacing float64    `json:"line_spacing"` // ระยะห่างระหว่างบรรทัด (1.0 = ปกติ, 1.5 = 1.5 เท่า, 2.0 = 2 เท่า) - default: 1.0
-	ColorMode *bool      `json:"colormode"`   // true = สี, false = ขาวดำ (default: true)
-	DateFormat string     `json:"date_format"`  // รูปแบบวันที่: DD/MM/YYYY, DD/MM/BBBB, DD MMM YY, DD MMMM BBBB, etc.
-	Language string     `json:"language"`    // ภาษา: th, en, ai:cn, ai:ja, ai:ko, ai:lo, ai:km, ai:my, ai:vi
-	ThemeName string     `json:"theme_name"`   // ชื่อ preset theme (modern-blue, professional, etc.)
-	TemplateID string     `json:"template_id"`  // รหัส preset template (standard, modern, etc.)
-	Theme *Theme     `json:"theme"`       // ธีมแบบ custom (ถ้าต้องการกำหนดเอง)
-	Template *Template  `json:"template"`    // เทมเพลตแบบ custom (ถ้าต้องการกำหนดเอง)
+	ColorMode   *bool      `json:"colormode"`    // true = สี, false = ขาวดำ (default: true)
+	DateFormat  string     `json:"date_format"`  // รูปแบบวันที่: DD/MM/YYYY, DD/MM/BBBB, DD MMM YY, DD MMMM BBBB, etc.
+	Language    string     `json:"language"`     // ภาษา: th, en, ai:cn, ai:ja, ai:ko, ai:lo, ai:km, ai:my, ai:vi
+	ThemeName   string     `json:"theme_name"`   // ชื่อ preset theme (modern-blue, professional, etc.)
+	TemplateID  string     `json:"template_id"`  // รหัส preset template (standard, modern, etc.)
+	Theme       *Theme     `json:"theme"`        // ธีมแบบ custom (ถ้าต้องการกำหนดเอง)
+	Template    *Template  `json:"template"`     // เทมเพลตแบบ custom (ถ้าต้องการกำหนดเอง)
 
 	// Multi-currency display option
 	ShowDualCurrency *bool `json:"show_dual_currency"` // true = แสดง 2 สกุลเงิน (default), false = แสดงเฉพาะ doc currency
 
 	// Preview mode - รับข้อมูลจาก payload โดยตรง (ไม่ดึงจาก DB)
 	IsPreview bool                   `json:"is_preview"` // true = แสดง watermark "Preview"
-	Document map[string]interface{} `json:"document"`  // ข้อมูลเอกสารสำหรับ preview (กรณียังไม่ save)
+	Document  map[string]interface{} `json:"document"`   // ข้อมูลเอกสารสำหรับ preview (กรณียังไม่ save)
 
 	// User info for history tracking
 	PrintedBy string `json:"printed_by"` // ผู้พิมพ์ (optional)
@@ -1278,8 +1278,8 @@ func FormatDateWithFormat(val interface{}, format string) string {
 
 	// แปลงตามรูปแบบ
 	buddhist2 := (t.Year() + 543) % 100 // พ.ศ. 2 หลัก
-	buddhist4 := t.Year() + 543          // พ.ศ. 4 หลัก
-	year2 := t.Year() % 100              // ค.ศ. 2 หลัก
+	buddhist4 := t.Year() + 543         // พ.ศ. 4 หลัก
+	year2 := t.Year() % 100             // ค.ศ. 2 หลัก
 
 	switch format {
 	// ค.ศ. 4 หลัก (English month names)

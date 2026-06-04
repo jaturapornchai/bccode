@@ -266,7 +266,7 @@ export function ProductBomEditor({
     }
 
     setLoading(true);
-    fetch(`/api/system-settings/product_bom/${encodeURIComponent(selectedRecord.guid_fixed)}?shopid=${encodeURIComponent(workspace.shop.shopid)}`, {
+    fetch(`/api/system-settings/product_bom/${encodeURIComponent(selectedRecord.guid_fixed)}?holding_code=${encodeURIComponent(workspace.shop.holding_code)}`, {
       headers: {
         Authorization: `Bearer ${auth.token}`,
         "x-bc-backend-url": auth.backendUrl || "",
@@ -598,13 +598,13 @@ export function ProductBomEditor({
         price: parentPrice,
         bom: activeBOM,
         boms: payloadBOMs,
-        shopid: workspace.shop.shopid,
+        holding_code: workspace.shop.holding_code,
       };
 
       const saveResponse = await fetch(
         isCreate
-          ? `/api/system-settings/product_bom?shopid=${encodeURIComponent(workspace.shop.shopid)}`
-          : `/api/system-settings/product_bom/${encodeURIComponent(selectedRecord.guid_fixed)}?shopid=${encodeURIComponent(workspace.shop.shopid)}`,
+          ? `/api/system-settings/product_bom?holding_code=${encodeURIComponent(workspace.shop.holding_code)}`
+          : `/api/system-settings/product_bom/${encodeURIComponent(selectedRecord.guid_fixed)}?holding_code=${encodeURIComponent(workspace.shop.holding_code)}`,
         {
           method: isCreate ? "POST" : "PUT",
           headers: {

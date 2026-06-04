@@ -70,7 +70,7 @@ func (h PurchaseReturnHttp) RegisterHttp() {
 // @Router /transaction/purchase-return [post]
 func (h PurchaseReturnHttp) CreatePurchaseReturn(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.PurchaseReturn{}
@@ -86,7 +86,7 @@ func (h PurchaseReturnHttp) CreatePurchaseReturn(ctx microservice.IContext) erro
 		return err
 	}
 
-	idx, docNo, err := h.svc.CreatePurchaseReturn(shopID, authUsername, *docReq)
+	idx, docNo, err := h.svc.CreatePurchaseReturn(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -114,7 +114,7 @@ func (h PurchaseReturnHttp) CreatePurchaseReturn(ctx microservice.IContext) erro
 func (h PurchaseReturnHttp) UpdatePurchaseReturn(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -132,7 +132,7 @@ func (h PurchaseReturnHttp) UpdatePurchaseReturn(ctx microservice.IContext) erro
 		return err
 	}
 
-	err = h.svc.UpdatePurchaseReturn(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdatePurchaseReturn(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -158,12 +158,12 @@ func (h PurchaseReturnHttp) UpdatePurchaseReturn(ctx microservice.IContext) erro
 // @Router /transaction/purchase-return/{id} [delete]
 func (h PurchaseReturnHttp) DeletePurchaseReturn(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeletePurchaseReturn(shopID, id, authUsername)
+	err := h.svc.DeletePurchaseReturn(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -189,7 +189,7 @@ func (h PurchaseReturnHttp) DeletePurchaseReturn(ctx microservice.IContext) erro
 // @Router /transaction/purchase-return [delete]
 func (h PurchaseReturnHttp) DeletePurchaseReturnByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -202,7 +202,7 @@ func (h PurchaseReturnHttp) DeletePurchaseReturnByGUIDs(ctx microservice.IContex
 		return err
 	}
 
-	err = h.svc.DeletePurchaseReturnByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeletePurchaseReturnByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -227,12 +227,12 @@ func (h PurchaseReturnHttp) DeletePurchaseReturnByGUIDs(ctx microservice.IContex
 // @Router /transaction/purchase-return/{id} [get]
 func (h PurchaseReturnHttp) InfoPurchaseReturn(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get PurchaseReturn %v", id)
-	doc, err := h.svc.InfoPurchaseReturn(shopID, id)
+	doc, err := h.svc.InfoPurchaseReturn(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -258,11 +258,11 @@ func (h PurchaseReturnHttp) InfoPurchaseReturn(ctx microservice.IContext) error 
 // @Router /transaction/purchase-return/code/{code} [get]
 func (h PurchaseReturnHttp) InfoPurchaseReturnByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoPurchaseReturnByCode(shopID, code)
+	doc, err := h.svc.InfoPurchaseReturnByCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -293,7 +293,7 @@ func (h PurchaseReturnHttp) InfoPurchaseReturnByCode(ctx microservice.IContext) 
 // @Router /transaction/purchase-return [get]
 func (h PurchaseReturnHttp) SearchPurchaseReturnPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -314,7 +314,7 @@ func (h PurchaseReturnHttp) SearchPurchaseReturnPage(ctx microservice.IContext) 
 		},
 	})
 
-	docList, pagination, err := h.svc.SearchPurchaseReturn(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchPurchaseReturn(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -347,7 +347,7 @@ func (h PurchaseReturnHttp) SearchPurchaseReturnPage(ctx microservice.IContext) 
 // @Router /transaction/purchase-return/list [get]
 func (h PurchaseReturnHttp) SearchPurchaseReturnStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -370,7 +370,7 @@ func (h PurchaseReturnHttp) SearchPurchaseReturnStep(ctx microservice.IContext) 
 		},
 	})
 
-	docList, total, err := h.svc.SearchPurchaseReturnStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchPurchaseReturnStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -398,7 +398,7 @@ func (h PurchaseReturnHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -410,7 +410,7 @@ func (h PurchaseReturnHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

@@ -61,7 +61,7 @@ func (h QrPaymentHttp) RegisterHttp() {
 // @Router /payment/qrpayment [post]
 func (h QrPaymentHttp) CreateQrPayment(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.QrPayment{}
@@ -77,7 +77,7 @@ func (h QrPaymentHttp) CreateQrPayment(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreateQrPayment(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateQrPayment(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -104,7 +104,7 @@ func (h QrPaymentHttp) CreateQrPayment(ctx microservice.IContext) error {
 func (h QrPaymentHttp) UpdateQrPayment(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -122,7 +122,7 @@ func (h QrPaymentHttp) UpdateQrPayment(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateQrPayment(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateQrPayment(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -148,12 +148,12 @@ func (h QrPaymentHttp) UpdateQrPayment(ctx microservice.IContext) error {
 // @Router /payment/qrpayment/{id} [delete]
 func (h QrPaymentHttp) DeleteQrPayment(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteQrPayment(shopID, id, authUsername)
+	err := h.svc.DeleteQrPayment(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -179,7 +179,7 @@ func (h QrPaymentHttp) DeleteQrPayment(ctx microservice.IContext) error {
 // @Router /payment/qrpayment [delete]
 func (h QrPaymentHttp) DeleteQrPaymentByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -192,7 +192,7 @@ func (h QrPaymentHttp) DeleteQrPaymentByGUIDs(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.DeleteQrPaymentByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteQrPaymentByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -217,12 +217,12 @@ func (h QrPaymentHttp) DeleteQrPaymentByGUIDs(ctx microservice.IContext) error {
 // @Router /payment/qrpayment/{id} [get]
 func (h QrPaymentHttp) InfoQrPayment(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get QrPayment %v", id)
-	doc, err := h.svc.InfoQrPayment(shopID, id)
+	doc, err := h.svc.InfoQrPayment(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -250,11 +250,11 @@ func (h QrPaymentHttp) InfoQrPayment(ctx microservice.IContext) error {
 // @Router /payment/qrpayment [get]
 func (h QrPaymentHttp) SearchQrPaymentPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.SearchQrPayment(shopID, pageable)
+	docList, pagination, err := h.svc.SearchQrPayment(holdingCode, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -283,13 +283,13 @@ func (h QrPaymentHttp) SearchQrPaymentPage(ctx microservice.IContext) error {
 // @Router /payment/qrpayment/list [get]
 func (h QrPaymentHttp) SearchQrPaymentLimit(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
 	lang := ctx.QueryParam("lang")
 
-	docList, total, err := h.svc.SearchQrPaymentStep(shopID, lang, pageableStep)
+	docList, total, err := h.svc.SearchQrPaymentStep(holdingCode, lang, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -317,7 +317,7 @@ func (h QrPaymentHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -329,7 +329,7 @@ func (h QrPaymentHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

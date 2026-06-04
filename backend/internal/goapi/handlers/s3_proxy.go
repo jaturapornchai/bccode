@@ -27,21 +27,21 @@ func S3FileProxyHandler(c echo.Context) error {
 		})
 	}
 
-	if storageObjectShopID(objectKey) == "" {
+	if storageObjectHoldingCode(objectKey) == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"error": "invalid file key",
 		})
 	}
 
-	shopID := storageContextShopID(c)
-	if shopID == "" {
+	holdingCode := storageContextHoldingCode(c)
+	if holdingCode == "" {
 		logger.Warn("S3 proxy blocked: missing shop in auth context")
 		return c.JSON(http.StatusUnauthorized, map[string]string{
 			"error": "shop not selected",
 		})
 	}
-	if !storageObjectBelongsToShop(objectKey, shopID) {
-		logger.Warn("S3 proxy blocked: requested_shop=%s token_shop=%s", storageObjectShopID(objectKey), shopID)
+	if !storageObjectBelongsToShop(objectKey, holdingCode) {
+		logger.Warn("S3 proxy blocked: requested_shop=%s token_shop=%s", storageObjectHoldingCode(objectKey), holdingCode)
 		return c.JSON(http.StatusForbidden, map[string]string{
 			"error": "forbidden",
 		})
@@ -59,7 +59,7 @@ func S3FileProxyHandler(c echo.Context) error {
 
 func streamStorageObject(c echo.Context, client *s3.Client, objectKey string, downloadName string) error {
 	objectKey = storageNormalizeObjectKey(objectKey)
-	if storageObjectShopID(objectKey) == "" {
+	if storageObjectHoldingCode(objectKey) == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"error": "invalid file key",
 		})

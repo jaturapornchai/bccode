@@ -64,7 +64,7 @@ func (h ModelProductHttp) RegisterHttp() {
 // @Router /aicloud/model [post]
 func (h ModelProductHttp) CreateModelProduct(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 	docReq := &models.ModelProduct{}
 	if err := json.Unmarshal([]byte(input), docReq); err != nil {
@@ -77,7 +77,7 @@ func (h ModelProductHttp) CreateModelProduct(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreateModelProduct(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateModelProduct(holdingCode, authUsername, *docReq)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -103,7 +103,7 @@ func (h ModelProductHttp) CreateModelProduct(ctx microservice.IContext) error {
 func (h ModelProductHttp) UpdateModelProduct(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -118,7 +118,7 @@ func (h ModelProductHttp) UpdateModelProduct(ctx microservice.IContext) error {
 		return err
 	}
 
-	err := h.svc.UpdateModelProduct(shopID, id, authUsername, *docReq)
+	err := h.svc.UpdateModelProduct(holdingCode, id, authUsername, *docReq)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -142,12 +142,12 @@ func (h ModelProductHttp) UpdateModelProduct(ctx microservice.IContext) error {
 // @Router /aicloud/model/{id} [delete]
 func (h ModelProductHttp) DeleteModelProduct(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteModelProduct(shopID, id, authUsername)
+	err := h.svc.DeleteModelProduct(holdingCode, id, authUsername)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -171,7 +171,7 @@ func (h ModelProductHttp) DeleteModelProduct(ctx microservice.IContext) error {
 // @Router /aicloud/model [delete]
 func (h ModelProductHttp) DeleteModelProductByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -181,7 +181,7 @@ func (h ModelProductHttp) DeleteModelProductByGUIDs(ctx microservice.IContext) e
 		return err
 	}
 
-	err := h.svc.DeleteModelProductByGUIDs(shopID, authUsername, docReq)
+	err := h.svc.DeleteModelProductByGUIDs(holdingCode, authUsername, docReq)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -204,12 +204,12 @@ func (h ModelProductHttp) DeleteModelProductByGUIDs(ctx microservice.IContext) e
 // @Router /aicloud/model/{id} [get]
 func (h ModelProductHttp) InfoModelProduct(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get ModelProduct %v", id)
-	doc, err := h.svc.InfoModelProduct(shopID, id)
+	doc, err := h.svc.InfoModelProduct(holdingCode, id)
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -234,10 +234,10 @@ func (h ModelProductHttp) InfoModelProduct(ctx microservice.IContext) error {
 // @Router /aicloud/model/code/{code} [get]
 func (h ModelProductHttp) InfoModelProductByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
-	doc, err := h.svc.InfoModelProductByCode(shopID, code)
+	doc, err := h.svc.InfoModelProductByCode(holdingCode, code)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -263,10 +263,10 @@ func (h ModelProductHttp) InfoModelProductByCode(ctx microservice.IContext) erro
 // @Router /aicloud/model [get]
 func (h ModelProductHttp) SearchModelProductPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
-	docList, pagination, err := h.svc.SearchModelProduct(shopID, map[string]interface{}{}, pageable)
+	docList, pagination, err := h.svc.SearchModelProduct(holdingCode, map[string]interface{}{}, pageable)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -294,11 +294,11 @@ func (h ModelProductHttp) SearchModelProductPage(ctx microservice.IContext) erro
 // @Router /aicloud/model/list [get]
 func (h ModelProductHttp) SearchModelProductStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 	lang := ctx.QueryParam("lang")
-	docList, total, err := h.svc.SearchModelProductStep(shopID, lang, pageableStep)
+	docList, total, err := h.svc.SearchModelProductStep(holdingCode, lang, pageableStep)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -324,7 +324,7 @@ func (h ModelProductHttp) SearchModelProductStep(ctx microservice.IContext) erro
 func (h ModelProductHttp) SaveBulk(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 	dataReq := []models.ModelProduct{}
@@ -333,7 +333,7 @@ func (h ModelProductHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 	if err != nil {
 		ctx.ResponseError(400, err.Error())
 		return err

@@ -71,7 +71,7 @@ func (c *CostCenterConsumer) ConsumeOnCreateOrUpdate(ctx microservice.IContext) 
 		logger.GetLogger().Errorf("Cannot unmarshal costcenter doc: %v", err.Error())
 		return err
 	}
-	err = c.svc.Upsert(doc.ShopID, doc.GuidFixed, doc)
+	err = c.svc.Upsert(doc.HoldingCode, doc.GuidFixed, doc)
 	if err != nil {
 		logger.GetLogger().Errorf("Cannot upsert costcenter pg: %v", err.Error())
 		return err
@@ -88,7 +88,7 @@ func (c *CostCenterConsumer) ConsumeOnBulkCreateOrUpdate(ctx microservice.IConte
 		return err
 	}
 	for _, doc := range docs {
-		err = c.svc.Upsert(doc.ShopID, doc.GuidFixed, doc)
+		err = c.svc.Upsert(doc.HoldingCode, doc.GuidFixed, doc)
 		if err != nil {
 			logger.GetLogger().Errorf("Cannot upsert costcenter pg: %v", err.Error())
 			return err
@@ -105,7 +105,7 @@ func (c *CostCenterConsumer) ConsumeOnDelete(ctx microservice.IContext) error {
 		logger.GetLogger().Errorf("Cannot unmarshal costcenter doc: %v", err.Error())
 		return err
 	}
-	err = c.svc.Delete(doc.ShopID, doc.GuidFixed)
+	err = c.svc.Delete(doc.HoldingCode, doc.GuidFixed)
 	if err != nil {
 		logger.GetLogger().Errorf("Cannot delete costcenter pg: %v", err.Error())
 		return err
@@ -122,7 +122,7 @@ func (c *CostCenterConsumer) ConsumeOnBulkDelete(ctx microservice.IContext) erro
 		return err
 	}
 	for _, doc := range docs {
-		err = c.svc.Delete(doc.ShopID, doc.GuidFixed)
+		err = c.svc.Delete(doc.HoldingCode, doc.GuidFixed)
 		if err != nil {
 			logger.GetLogger().Errorf("Cannot delete costcenter pg: %v", err.Error())
 			return err

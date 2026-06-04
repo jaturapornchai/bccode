@@ -8,8 +8,8 @@ import (
 )
 
 type IPurchaseTransactionAdminService interface {
-	ReSyncPurchaseDoc(shopID string) error
-	ReSyncPurchaseDeleteDoc(shopID string) error
+	ReSyncPurchaseDoc(holdingCode string) error
+	ReSyncPurchaseDeleteDoc(holdingCode string) error
 }
 
 type PurchaseTransactionAdminService struct {
@@ -29,12 +29,12 @@ func NewPurchaseTransactionAdminService(pst microservice.IPersisterMongo, kfProd
 	}
 }
 
-func (s *PurchaseTransactionAdminService) ReSyncPurchaseDoc(shopID string) error {
+func (s *PurchaseTransactionAdminService) ReSyncPurchaseDoc(holdingCode string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeoutDuration)
 	defer cancel()
 
-	docs, err := s.mongoRepo.FindPurchaseDocByShopID(ctx, shopID)
+	docs, err := s.mongoRepo.FindPurchaseDocByHoldingCode(ctx, holdingCode)
 	if err != nil {
 		return err
 	}
@@ -47,12 +47,12 @@ func (s *PurchaseTransactionAdminService) ReSyncPurchaseDoc(shopID string) error
 	return nil
 }
 
-func (s *PurchaseTransactionAdminService) ReSyncPurchaseDeleteDoc(shopID string) error {
+func (s *PurchaseTransactionAdminService) ReSyncPurchaseDeleteDoc(holdingCode string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeoutDuration)
 	defer cancel()
 
-	docs, err := s.mongoRepo.FindPurchaseDocDeleteByShopID(ctx, shopID)
+	docs, err := s.mongoRepo.FindPurchaseDocDeleteByHoldingCode(ctx, holdingCode)
 
 	if err != nil {
 		return err

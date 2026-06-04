@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { validateBackendUrl } from "@/lib/backend-url";
-import { getJwtClaimShopId, verifyHs256Jwt } from "@/lib/server-jwt";
+import { getJwtClaimHoldingCode, verifyHs256Jwt } from "@/lib/server-jwt";
 import {
   extractMessage,
   isRecord,
@@ -11,8 +11,8 @@ import {
 type LineOaUserBody = {
   action?: "link" | "profile";
   backendUrl?: string;
-  shopId?: string;
-  shop_id?: string;
+  holding_code?: string;
+  holdingCode?: string;
   username?: string;
 };
 
@@ -38,13 +38,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, message: "LINE OA action ไม่ถูกต้อง" }, { status: 400 });
   }
 
-  const shopId = (body.shopId ?? body.shop_id ?? "").trim();
+  const holdingCode = (body.holding_code ?? body.holdingCode ?? "").trim();
   const username = body.username?.trim() ?? "";
-  if (!shopId || !username) {
+  if (!holdingCode || !username) {
     return NextResponse.json({ success: false, message: "ไม่พบข้อมูลบริษัทหรือผู้ใช้" }, { status: 400 });
   }
 
-  const tenantResponse = validateTenantAccess(authorization, shopId);
+  const tenantResponse = validateTenantAccess(authorization, holdingCode);
   if (tenantResponse) return tenantResponse;
 
   let goApiUrl: string;
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
         "Accept-Language": request.headers.get("accept-language") ?? "th",
         Authorization: authorization,
       },
-      body: JSON.stringify({ shop_id: shopId, username }),
+      body: JSON.stringify({ holding_code: holdingCode, username }),
       signal: controller.signal,
       cache: "no-store",
     });
@@ -96,15 +96,15 @@ export async function POST(request: Request) {
   }
 }
 
-function validateTenantAccess(authorization: string, requestedShopId: string): NextResponse | null {
+function validateTenantAccess(authorization: string, requestedHoldingCode: string): NextResponse | null {
   if (!process.env.JWT_SECRET_KEY?.trim()) return null;
 
   const jwt = verifyHs256Jwt(authorization);
   if (!jwt.ok) return NextResponse.json({ success: false, message: jwt.message }, { status: jwt.status });
 
-  const claimShopId = getJwtClaimShopId(jwt.claims);
-  if (!claimShopId) return NextResponse.json({ success: false, message: "token ไม่มีรหัสบริษัท" }, { status: 401 });
-  if (claimShopId !== requestedShopId) {
+  const claimHoldingCode = getJwtClaimHoldingCode(jwt.claims);
+  if (!claimHoldingCode) return NextResponse.json({ success: false, message: "token ไม่มีรหัส holding" }, { status: 401 });
+  if (claimHoldingCode !== requestedHoldingCode) {
     return NextResponse.json({ success: false, message: "ไม่มีสิทธิ์เข้าถึงข้อมูลบริษัทนี้" }, { status: 403 });
   }
   return null;

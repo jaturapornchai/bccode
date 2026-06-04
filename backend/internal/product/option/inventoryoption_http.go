@@ -53,7 +53,7 @@ func (h OptionHttp) RegisterHttp() {
 // @Router /option [post]
 func (h *OptionHttp) CreateInventoryOptionMain(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.InventoryOptionMain{}
@@ -64,7 +64,7 @@ func (h *OptionHttp) CreateInventoryOptionMain(ctx microservice.IContext) error 
 		return err
 	}
 
-	idx, err := h.optService.CreateOption(shopID, authUsername, *docReq)
+	idx, err := h.optService.CreateOption(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -91,7 +91,7 @@ func (h *OptionHttp) CreateInventoryOptionMain(ctx microservice.IContext) error 
 func (h *OptionHttp) UpdateInventoryOptionMain(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -104,7 +104,7 @@ func (h *OptionHttp) UpdateInventoryOptionMain(ctx microservice.IContext) error 
 		return err
 	}
 
-	err = h.optService.UpdateOption(shopID, id, authUsername, *docReq)
+	err = h.optService.UpdateOption(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -130,12 +130,12 @@ func (h *OptionHttp) UpdateInventoryOptionMain(ctx microservice.IContext) error 
 // @Router /option/{id} [delete]
 func (h *OptionHttp) DeleteInventoryOptionMain(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.optService.DeleteOption(shopID, id, authUsername)
+	err := h.optService.DeleteOption(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -161,11 +161,11 @@ func (h *OptionHttp) DeleteInventoryOptionMain(ctx microservice.IContext) error 
 // @Router /option/{id} [get]
 func (h *OptionHttp) InfoInventoryOptionMain(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
-	doc, err := h.optService.InfoOption(shopID, id)
+	doc, err := h.optService.InfoOption(holdingCode, id)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -190,7 +190,7 @@ func (h *OptionHttp) InfoInventoryOptionMain(ctx microservice.IContext) error {
 // @Router /option/by-code [get]
 func (h OptionHttp) InfoArray(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	codesReq, err := url.QueryUnescape(ctx.QueryParam("codes"))
 
@@ -208,7 +208,7 @@ func (h OptionHttp) InfoArray(ctx microservice.IContext) error {
 	}
 
 	// where to filter array
-	doc, err := h.optService.InfoWTFArray(shopID, docReq)
+	doc, err := h.optService.InfoWTFArray(holdingCode, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -235,11 +235,11 @@ func (h OptionHttp) InfoArray(ctx microservice.IContext) error {
 // @Router /option [get]
 func (h *OptionHttp) SearchInventoryOptionMain(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
-	docList, pagination, err := h.optService.SearchOption(shopID, pageable)
+	docList, pagination, err := h.optService.SearchOption(holdingCode, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

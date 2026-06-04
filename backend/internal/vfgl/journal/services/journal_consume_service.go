@@ -10,10 +10,10 @@ import (
 
 type IJournalConsumeService interface {
 	// Create(doc models.JournalDoc) error
-	// Update(shopID string, docNo string, doc models.JournalDoc) error
+	// Update(holdingCode string, docNo string, doc models.JournalDoc) error
 	// SaveInBatch(docList []models.JournalDoc) error
-	Delete(shopID string, guid string) error
-	UpSert(shopID string, docNo string, doc models.JournalDoc) (*models.JournalPg, error)
+	Delete(holdingCode string, guid string) error
+	UpSert(holdingCode string, docNo string, doc models.JournalDoc) (*models.JournalPg, error)
 }
 
 type JournalConsumeService struct {
@@ -47,7 +47,7 @@ func (svc *JournalConsumeService) Create(doc models.JournalDoc) (*models.Journal
 	return &pgDoc, nil
 }
 
-func (svc *JournalConsumeService) Update(shopID string, docNo string, doc models.JournalDoc) error {
+func (svc *JournalConsumeService) Update(holdingCode string, docNo string, doc models.JournalDoc) error {
 	pgDoc := models.JournalPg{}
 
 	tmpJsonDoc, err := json.Marshal(doc)
@@ -60,7 +60,7 @@ func (svc *JournalConsumeService) Update(shopID string, docNo string, doc models
 		return err
 	}
 
-	err = svc.repo.Update(shopID, docNo, pgDoc)
+	err = svc.repo.Update(holdingCode, docNo, pgDoc)
 
 	if err != nil {
 		return err
@@ -68,8 +68,8 @@ func (svc *JournalConsumeService) Update(shopID string, docNo string, doc models
 	return nil
 }
 
-func (svc *JournalConsumeService) Delete(shopID string, docNo string) error {
-	err := svc.repo.Delete(shopID, docNo)
+func (svc *JournalConsumeService) Delete(holdingCode string, docNo string) error {
+	err := svc.repo.Delete(holdingCode, docNo)
 
 	if err != nil {
 		return err
@@ -101,7 +101,7 @@ func (svc *JournalConsumeService) SaveInBatch(docList []models.JournalDoc) error
 	return nil
 }
 
-func (svc *JournalConsumeService) UpSert(shopID string, docNo string, doc models.JournalDoc) (*models.JournalPg, error) {
+func (svc *JournalConsumeService) UpSert(holdingCode string, docNo string, doc models.JournalDoc) (*models.JournalPg, error) {
 	docPg := models.JournalPg{}
 
 	tmpJsonDoc, err := json.Marshal(doc)
@@ -124,7 +124,7 @@ func (svc *JournalConsumeService) UpSert(shopID string, docNo string, doc models
 		docPg.AccountBook = &[]models.JournalDetailPg{}
 	}
 
-	data, err := svc.repo.Get(shopID, docNo)
+	data, err := svc.repo.Get(holdingCode, docNo)
 	if err == gorm.ErrRecordNotFound {
 		data, err = svc.Create(doc)
 		if err != nil {
@@ -176,7 +176,7 @@ func (svc *JournalConsumeService) UpSert(shopID string, docNo string, doc models
 			}
 		}
 
-		if err = svc.repo.Update(shopID, doc.DocNo, docPg); err != nil {
+		if err = svc.repo.Update(holdingCode, doc.DocNo, docPg); err != nil {
 			return nil, err
 		}
 	}

@@ -10,8 +10,8 @@ import (
 )
 
 type ICreditorAdminService interface {
-	ReSyncCreditor(shopID string) error
-	ReCalcCreditorBalance(shopID string) error
+	ReSyncCreditor(holdingCode string) error
+	ReCalcCreditorBalance(holdingCode string) error
 }
 
 type CreditorAdminService struct {
@@ -35,13 +35,13 @@ func NewCreditorAdminService(pst microservice.IPersisterMongo, producer microser
 	}
 }
 
-func (svc CreditorAdminService) ReSyncCreditor(shopID string) error {
+func (svc CreditorAdminService) ReSyncCreditor(holdingCode string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), svc.timeoutDuration)
 	defer cancel()
 
-	// find creditor by shopid
-	creditors, err := svc.mongoRepo.FindCreditorByShopId(ctx, shopID)
+	// find creditor by holding_code
+	creditors, err := svc.mongoRepo.FindCreditorByHoldingCode(ctx, holdingCode)
 	if err != nil {
 		return err
 	}
@@ -55,12 +55,12 @@ func (svc CreditorAdminService) ReSyncCreditor(shopID string) error {
 	return nil
 }
 
-func (svc CreditorAdminService) ReCalcCreditorBalance(shopID string) error {
+func (svc CreditorAdminService) ReCalcCreditorBalance(holdingCode string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), svc.timeoutDuration)
 	defer cancel()
 
-	creditors, err := svc.mongoRepo.FindCreditorByShopId(ctx, shopID)
+	creditors, err := svc.mongoRepo.FindCreditorByHoldingCode(ctx, holdingCode)
 	if err != nil {
 		return err
 	}
@@ -72,7 +72,7 @@ func (svc CreditorAdminService) ReCalcCreditorBalance(shopID string) error {
 
 			if creditor.Code != "" {
 				requestStockProcessLists = append(requestStockProcessLists, creditorProcessModels.CreditorProcessRequest{
-					ShopID:       shopID,
+					HoldingCode:  holdingCode,
 					CreditorCode: creditor.Code,
 				})
 			}

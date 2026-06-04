@@ -52,7 +52,7 @@ func (h CouponHttp) updateBatchProgress(batchID string, progress, totalRows, pro
 }
 
 // Helper method สำหรับประมวลผล Excel Import
-func (h CouponHttp) processExcelImportSync(shopID, authUsername string, req models.CouponExcelImportRequest) (*models.CouponExcelImportResponse, error) {
+func (h CouponHttp) processExcelImportSync(holdingCode, authUsername string, req models.CouponExcelImportRequest) (*models.CouponExcelImportResponse, error) {
 	// สร้าง batch ID
 	batchID := h.generateBatchID()
 
@@ -198,7 +198,7 @@ func (h CouponHttp) processExcelImportSync(shopID, authUsername string, req mode
 		couponCodes[couponCode] = rowNum
 
 		// เช็ครหัสคูปองซ้ำในฐานข้อมูล
-		exists, err := h.checkCouponCodeExists(shopID, couponCode)
+		exists, err := h.checkCouponCodeExists(holdingCode, couponCode)
 		if err != nil {
 			errors = append(errors, models.CouponImportError{
 				Row:        rowNum,
@@ -222,7 +222,7 @@ func (h CouponHttp) processExcelImportSync(shopID, authUsername string, req mode
 		// ถ้าเป็น validate only ไม่ต้องบันทึก
 		if !req.ValidateOnly {
 			// บันทึกข้อมูลคูปอง
-			err = h.saveCouponFromRow(shopID, authUsername, row, rowNum)
+			err = h.saveCouponFromRow(holdingCode, authUsername, row, rowNum)
 			if err != nil {
 				errors = append(errors, models.CouponImportError{
 					Row:        rowNum,
@@ -300,10 +300,10 @@ func (h CouponHttp) processExcelImportSync(shopID, authUsername string, req mode
 }
 
 // เช็ครหัสคูปองซ้ำในฐานข้อมูล
-func (h CouponHttp) checkCouponCodeExists(shopID, couponCode string) (bool, error) {
+func (h CouponHttp) checkCouponCodeExists(holdingCode, couponCode string) (bool, error) {
 	// เรียก service เพื่อเช็คในฐานข้อมูล
 	// ใช้ SearchCoupon แล้วเช็คว่ามีรหัสคูปองนี้หรือไม่
-	searchResult, err := h.svc.SearchCoupon(shopID, couponCode)
+	searchResult, err := h.svc.SearchCoupon(holdingCode, couponCode)
 	if err != nil {
 		return false, err
 	}
@@ -321,7 +321,7 @@ func (h CouponHttp) checkCouponCodeExists(shopID, couponCode string) (bool, erro
 }
 
 // บันทึกข้อมูลคูปองจากแถว Excel
-func (h CouponHttp) saveCouponFromRow(shopID, authUsername string, row []string, rowNum int) error {
+func (h CouponHttp) saveCouponFromRow(holdingCode, authUsername string, row []string, rowNum int) error {
 	// Parse ข้อมูลจาก Excel row
 	couponData := models.Coupon{}
 
@@ -508,6 +508,6 @@ func (h CouponHttp) saveCouponFromRow(shopID, authUsername string, row []string,
 	}
 
 	// เรียก service เพื่อบันทึกข้อมูล
-	_, err := h.svc.CreateCoupon(shopID, authUsername, couponData)
+	_, err := h.svc.CreateCoupon(holdingCode, authUsername, couponData)
 	return err
 }

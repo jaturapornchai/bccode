@@ -53,7 +53,7 @@ func (h WarehouseHttp) RegisterHttp() {
 }
 
 func (h WarehouseHttp) CreateWarehouse(ctx microservice.IContext) error {
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	type CreateWarehouseRequest struct {
@@ -67,7 +67,7 @@ func (h WarehouseHttp) CreateWarehouse(ctx microservice.IContext) error {
 		return err
 	}
 
-	req.ShopID = shopID
+	req.HoldingCode = holdingCode
 	if req.GuidFixed == "" {
 		req.GuidFixed = utils.NewGUID()
 	}
@@ -75,7 +75,7 @@ func (h WarehouseHttp) CreateWarehouse(ctx microservice.IContext) error {
 	req.UpdatedAt = time.Now()
 	req.IsActive = true
 
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
+	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
 	db := pst.DBClient()
 
 	err := db.Transaction(func(tx *gorm.DB) error {
@@ -108,10 +108,10 @@ func (h WarehouseHttp) CreateWarehouse(ctx microservice.IContext) error {
 }
 
 func (h WarehouseHttp) SearchWarehouse(ctx microservice.IContext) error {
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	companyGuid := ctx.QueryParam("company_guid")
 
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
+	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
 	db := pst.DBClient()
 
 	var list []warehouseModels.WarehousePg
@@ -129,12 +129,12 @@ func (h WarehouseHttp) SearchWarehouse(ctx microservice.IContext) error {
 			})
 			return nil
 		}
-		if err := db.Where("shopid = ? AND guid_fixed IN ?", shopID, whGuids).Preload("Zones.Shelves").Find(&list).Error; err != nil {
+		if err := db.Where("holding_code = ? AND guid_fixed IN ?", holdingCode, whGuids).Preload("Zones.Shelves").Find(&list).Error; err != nil {
 			ctx.ResponseError(http.StatusInternalServerError, err.Error())
 			return err
 		}
 	} else {
-		if err := db.Where("shopid = ?", shopID).Preload("Zones.Shelves").Find(&list).Error; err != nil {
+		if err := db.Where("holding_code = ?", holdingCode).Preload("Zones.Shelves").Find(&list).Error; err != nil {
 			ctx.ResponseError(http.StatusInternalServerError, err.Error())
 			return err
 		}
@@ -158,13 +158,13 @@ func (h WarehouseHttp) SearchWarehouse(ctx microservice.IContext) error {
 }
 
 func (h WarehouseHttp) InfoWarehouse(ctx microservice.IContext) error {
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	id := ctx.Param("id")
 
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
+	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
 	db := pst.DBClient()
 	var data warehouseModels.WarehousePg
-	if err := db.Where("shopid = ? AND guid_fixed = ?", shopID, id).Preload("Zones.Shelves").First(&data).Error; err != nil {
+	if err := db.Where("holding_code = ? AND guid_fixed = ?", holdingCode, id).Preload("Zones.Shelves").First(&data).Error; err != nil {
 		ctx.ResponseError(http.StatusNotFound, "Warehouse not found")
 		return err
 	}
@@ -183,14 +183,14 @@ func (h WarehouseHttp) InfoWarehouse(ctx microservice.IContext) error {
 }
 
 func (h WarehouseHttp) UpdateWarehouse(ctx microservice.IContext) error {
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
 
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
+	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
 	db := pst.DBClient()
 	var existing warehouseModels.WarehousePg
-	if err := db.Where("shopid = ? AND guid_fixed = ?", shopID, id).First(&existing).Error; err != nil {
+	if err := db.Where("holding_code = ? AND guid_fixed = ?", holdingCode, id).First(&existing).Error; err != nil {
 		ctx.ResponseError(http.StatusNotFound, "Warehouse not found")
 		return err
 	}
@@ -253,7 +253,7 @@ func (h WarehouseHttp) UpdateWarehouse(ctx microservice.IContext) error {
 		// Insert new zones and shelves
 		for _, zone := range req.Zones {
 			zone.WarehouseGuid = id
-			zone.ShopID = shopID
+			zone.HoldingCode = holdingCode
 			if zone.GuidFixed == "" {
 				zone.GuidFixed = utils.NewGUID()
 			}
@@ -271,7 +271,7 @@ func (h WarehouseHttp) UpdateWarehouse(ctx microservice.IContext) error {
 
 			for _, shelf := range shelvesToCreate {
 				shelf.ZoneGuid = zone.GuidFixed
-				shelf.ShopID = shopID
+				shelf.HoldingCode = holdingCode
 				if shelf.GuidFixed == "" {
 					shelf.GuidFixed = utils.NewGUID()
 				}
@@ -301,13 +301,13 @@ func (h WarehouseHttp) UpdateWarehouse(ctx microservice.IContext) error {
 }
 
 func (h WarehouseHttp) DeleteWarehouse(ctx microservice.IContext) error {
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	id := ctx.Param("id")
 
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
+	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
 	db := pst.DBClient()
 	var data warehouseModels.WarehousePg
-	if err := db.Where("shopid = ? AND guid_fixed = ?", shopID, id).First(&data).Error; err != nil {
+	if err := db.Where("holding_code = ? AND guid_fixed = ?", holdingCode, id).First(&data).Error; err != nil {
 		ctx.ResponseError(http.StatusNotFound, "Warehouse not found")
 		return err
 	}
@@ -327,7 +327,7 @@ func (h WarehouseHttp) DeleteWarehouse(ctx microservice.IContext) error {
 
 // Zone CRUD
 func (h WarehouseHttp) CreateZone(ctx microservice.IContext) error {
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	warehouseGuid := ctx.Param("warehouseGuid")
 	input := ctx.ReadInput()
 
@@ -337,7 +337,7 @@ func (h WarehouseHttp) CreateZone(ctx microservice.IContext) error {
 		return err
 	}
 
-	req.ShopID = shopID
+	req.HoldingCode = holdingCode
 	req.WarehouseGuid = warehouseGuid
 	if req.GuidFixed == "" {
 		req.GuidFixed = utils.NewGUID()
@@ -346,7 +346,7 @@ func (h WarehouseHttp) CreateZone(ctx microservice.IContext) error {
 	req.UpdatedAt = time.Now()
 	req.IsActive = true
 
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
+	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
 	db := pst.DBClient()
 	if err := db.Create(&req).Error; err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
@@ -361,13 +361,13 @@ func (h WarehouseHttp) CreateZone(ctx microservice.IContext) error {
 }
 
 func (h WarehouseHttp) SearchZone(ctx microservice.IContext) error {
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	warehouseGuid := ctx.Param("warehouseGuid")
 
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
+	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
 	db := pst.DBClient()
 	var list []warehouseModels.ZonePg
-	if err := db.Where("shopid = ? AND warehouse_guid = ?", shopID, warehouseGuid).Find(&list).Error; err != nil {
+	if err := db.Where("holding_code = ? AND warehouse_guid = ?", holdingCode, warehouseGuid).Find(&list).Error; err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
 	}
@@ -380,13 +380,13 @@ func (h WarehouseHttp) SearchZone(ctx microservice.IContext) error {
 }
 
 func (h WarehouseHttp) InfoZone(ctx microservice.IContext) error {
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	id := ctx.Param("id")
 
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
+	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
 	db := pst.DBClient()
 	var data warehouseModels.ZonePg
-	if err := db.Where("shopid = ? AND guid_fixed = ?", shopID, id).First(&data).Error; err != nil {
+	if err := db.Where("holding_code = ? AND guid_fixed = ?", holdingCode, id).First(&data).Error; err != nil {
 		ctx.ResponseError(http.StatusNotFound, "Zone not found")
 		return err
 	}
@@ -399,14 +399,14 @@ func (h WarehouseHttp) InfoZone(ctx microservice.IContext) error {
 }
 
 func (h WarehouseHttp) UpdateZone(ctx microservice.IContext) error {
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
 
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
+	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
 	db := pst.DBClient()
 	var existing warehouseModels.ZonePg
-	if err := db.Where("shopid = ? AND guid_fixed = ?", shopID, id).First(&existing).Error; err != nil {
+	if err := db.Where("holding_code = ? AND guid_fixed = ?", holdingCode, id).First(&existing).Error; err != nil {
 		ctx.ResponseError(http.StatusNotFound, "Zone not found")
 		return err
 	}
@@ -436,13 +436,13 @@ func (h WarehouseHttp) UpdateZone(ctx microservice.IContext) error {
 }
 
 func (h WarehouseHttp) DeleteZone(ctx microservice.IContext) error {
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	id := ctx.Param("id")
 
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
+	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
 	db := pst.DBClient()
 	var data warehouseModels.ZonePg
-	if err := db.Where("shopid = ? AND guid_fixed = ?", shopID, id).First(&data).Error; err != nil {
+	if err := db.Where("holding_code = ? AND guid_fixed = ?", holdingCode, id).First(&data).Error; err != nil {
 		ctx.ResponseError(http.StatusNotFound, "Zone not found")
 		return err
 	}
@@ -462,7 +462,7 @@ func (h WarehouseHttp) DeleteZone(ctx microservice.IContext) error {
 
 // Shelf CRUD
 func (h WarehouseHttp) CreateShelf(ctx microservice.IContext) error {
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	zoneGuid := ctx.Param("zoneGuid")
 	input := ctx.ReadInput()
 
@@ -472,7 +472,7 @@ func (h WarehouseHttp) CreateShelf(ctx microservice.IContext) error {
 		return err
 	}
 
-	req.ShopID = shopID
+	req.HoldingCode = holdingCode
 	req.ZoneGuid = zoneGuid
 	if req.GuidFixed == "" {
 		req.GuidFixed = utils.NewGUID()
@@ -481,7 +481,7 @@ func (h WarehouseHttp) CreateShelf(ctx microservice.IContext) error {
 	req.UpdatedAt = time.Now()
 	req.IsActive = true
 
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
+	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
 	db := pst.DBClient()
 	if err := db.Create(&req).Error; err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
@@ -496,13 +496,13 @@ func (h WarehouseHttp) CreateShelf(ctx microservice.IContext) error {
 }
 
 func (h WarehouseHttp) SearchShelf(ctx microservice.IContext) error {
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	zoneGuid := ctx.Param("zoneGuid")
 
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
+	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
 	db := pst.DBClient()
 	var list []warehouseModels.ShelfPg
-	if err := db.Where("shopid = ? AND zone_guid = ?", shopID, zoneGuid).Find(&list).Error; err != nil {
+	if err := db.Where("holding_code = ? AND zone_guid = ?", holdingCode, zoneGuid).Find(&list).Error; err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
 	}
@@ -515,13 +515,13 @@ func (h WarehouseHttp) SearchShelf(ctx microservice.IContext) error {
 }
 
 func (h WarehouseHttp) InfoShelf(ctx microservice.IContext) error {
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	id := ctx.Param("id")
 
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
+	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
 	db := pst.DBClient()
 	var data warehouseModels.ShelfPg
-	if err := db.Where("shopid = ? AND guid_fixed = ?", shopID, id).First(&data).Error; err != nil {
+	if err := db.Where("holding_code = ? AND guid_fixed = ?", holdingCode, id).First(&data).Error; err != nil {
 		ctx.ResponseError(http.StatusNotFound, "Shelf not found")
 		return err
 	}
@@ -534,14 +534,14 @@ func (h WarehouseHttp) InfoShelf(ctx microservice.IContext) error {
 }
 
 func (h WarehouseHttp) UpdateShelf(ctx microservice.IContext) error {
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
 
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
+	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
 	db := pst.DBClient()
 	var existing warehouseModels.ShelfPg
-	if err := db.Where("shopid = ? AND guid_fixed = ?", shopID, id).First(&existing).Error; err != nil {
+	if err := db.Where("holding_code = ? AND guid_fixed = ?", holdingCode, id).First(&existing).Error; err != nil {
 		ctx.ResponseError(http.StatusNotFound, "Shelf not found")
 		return err
 	}
@@ -570,13 +570,13 @@ func (h WarehouseHttp) UpdateShelf(ctx microservice.IContext) error {
 }
 
 func (h WarehouseHttp) DeleteShelf(ctx microservice.IContext) error {
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	id := ctx.Param("id")
 
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
+	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
 	db := pst.DBClient()
 	var data warehouseModels.ShelfPg
-	if err := db.Where("shopid = ? AND guid_fixed = ?", shopID, id).First(&data).Error; err != nil {
+	if err := db.Where("holding_code = ? AND guid_fixed = ?", holdingCode, id).First(&data).Error; err != nil {
 		ctx.ResponseError(http.StatusNotFound, "Shelf not found")
 		return err
 	}

@@ -91,8 +91,8 @@ func (t *ServiceTools) InitChartOfAccountMasterCenter() error {
 		if findAccount.GuidFixed == "" {
 			chartDoc := accountModel.ChartOfAccountDoc{
 				ChartOfAccountData: accountModel.ChartOfAccountData{
-					ShopIdentity: models.ShopIdentity{
-						ShopID: t.masterShop.GuidFixed,
+					HoldingCodeentity: models.HoldingCodeentity{
+						HoldingCode: t.masterShop.GuidFixed,
 					},
 					ChartOfAccountInfo: accountModel.ChartOfAccountInfo{
 						DocIdentity: models.DocIdentity{
@@ -142,8 +142,8 @@ func (t *ServiceTools) InitJournalBookMasterCenter(ctx microservice.IContext) er
 			bookRepo.Create(context.Background(),
 				journalBookModel.JournalBookDoc{
 					JournalBookData: journalBookModel.JournalBookData{
-						ShopIdentity: models.ShopIdentity{
-							ShopID: t.masterShop.GuidFixed,
+						HoldingCodeentity: models.HoldingCodeentity{
+							HoldingCode: t.masterShop.GuidFixed,
 						},
 						JournalBookInfo: journalBookModel.JournalBookInfo{
 							DocIdentity: models.DocIdentity{

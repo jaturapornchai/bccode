@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/models"
-	"math"
 	"strings"
 	"time"
 
@@ -14,11 +14,11 @@ import (
 	"smlcloudplatform/internal/goapi/mypg"
 )
 
-func ProcessProductMovement(shopId string, fromDate string, endDate string, movementOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct) models.ResultModel {
+func ProcessProductMovement(holdingCode string, fromDate string, endDate string, movementOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct) models.ResultModel {
 
 	ctx := context.Background()
 
-	db, err := mypg.PgSqlFastConnect(shopId)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		logger.Info("Failed to connect to PostgreSQL: %v", err)
 		return models.ResultModel{
@@ -93,17 +93,17 @@ func ProcessProductMovement(shopId string, fromDate string, endDate string, move
 				args[i] = itemCode
 			}
 
-			queryAllProducts := fmt.Sprintf(`SELECT 
+			queryAllProducts := fmt.Sprintf(`SELECT
 				p1.itemcode,
-				CASE 
-					WHEN COUNT(DISTINCT p1.barcode) > 0 THEN 
+				CASE
+					WHEN COUNT(DISTINCT p1.barcode) > 0 THEN
 						STRING_AGG(DISTINCT p1.name0, ' / ' ORDER BY p1.name0) || ' [' || STRING_AGG(DISTINCT p1.barcode, ', ' ORDER BY p1.barcode) || ']'
-					ELSE 
+					ELSE
 						STRING_AGG(DISTINCT p1.name0, ' / ' ORDER BY p1.name0)
 				END AS name,
 				MAX(CASE WHEN p1.barcoderefunitstand = 1 AND p1.barcoderefunitdivide = 1 THEN p1.unitcode END) AS unitcode,
 				MAX(CASE WHEN p1.barcoderefunitstand = 1 AND p1.barcoderefunitdivide = 1 THEN p1.unitname END) AS unitname
-			FROM productbarcode p1			
+			FROM productbarcode p1
 			WHERE p1.itemcode IN (%s)
 			GROUP BY p1.itemcode`, strings.Join(placeholders, ","))
 
@@ -147,7 +147,7 @@ func ProcessProductMovement(shopId string, fromDate string, endDate string, move
 			}
 
 			// Query เดียวสำหรับทุก itemcode
-			queryAllStockMovement := fmt.Sprintf(`SELECT 
+			queryAllStockMovement := fmt.Sprintf(`SELECT
 				docdatetime,
 				barcode,
 				itemcode,
@@ -161,15 +161,15 @@ func ProcessProductMovement(shopId string, fromDate string, endDate string, move
 				unitdivide,
 				price,
 				averagecost,
-				balanceqty, 
+				balanceqty,
 				calcamount,
 				balanceamount,
 				unitcost,
 				docref
-			FROM processstockcost 
-			WHERE 
-				docdatetime::date >= $1::date 
-				AND docdatetime::date <= $2::date 
+			FROM processstockcost
+			WHERE
+				docdatetime::date >= $1::date
+				AND docdatetime::date <= $2::date
 				AND itemcode IN (%s)
 			ORDER BY itemcode, docdatetime, linenumber, totalqty`,
 				strings.Join(placeholders, ","))

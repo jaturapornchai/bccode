@@ -67,7 +67,7 @@ func (h StockBalanceDetailHttp) RegisterHttp() {
 // @Router /transaction/stock-balance-detail [post]
 func (h StockBalanceDetailHttp) CreateStockBalanceDetail(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := []models.StockBalanceDetail{}
@@ -83,7 +83,7 @@ func (h StockBalanceDetailHttp) CreateStockBalanceDetail(ctx microservice.IConte
 		return err
 	}
 
-	err = h.svc.CreateStockBalanceDetail(shopID, authUsername, docReq)
+	err = h.svc.CreateStockBalanceDetail(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -109,7 +109,7 @@ func (h StockBalanceDetailHttp) CreateStockBalanceDetail(ctx microservice.IConte
 func (h StockBalanceDetailHttp) UpdateStockBalanceDetail(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -127,7 +127,7 @@ func (h StockBalanceDetailHttp) UpdateStockBalanceDetail(ctx microservice.IConte
 		return err
 	}
 
-	err = h.svc.UpdateStockBalanceDetail(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateStockBalanceDetail(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -153,12 +153,12 @@ func (h StockBalanceDetailHttp) UpdateStockBalanceDetail(ctx microservice.IConte
 // @Router /transaction/stock-balance-detail/{id} [delete]
 func (h StockBalanceDetailHttp) DeleteStockBalanceDetail(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteStockBalanceDetail(shopID, id, authUsername)
+	err := h.svc.DeleteStockBalanceDetail(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -184,7 +184,7 @@ func (h StockBalanceDetailHttp) DeleteStockBalanceDetail(ctx microservice.IConte
 // @Router /transaction/stock-balance-detail [delete]
 func (h StockBalanceDetailHttp) DeleteStockBalanceDetailByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -197,7 +197,7 @@ func (h StockBalanceDetailHttp) DeleteStockBalanceDetailByGUIDs(ctx microservice
 		return err
 	}
 
-	err = h.svc.DeleteStockBalanceDetailByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteStockBalanceDetailByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -222,12 +222,12 @@ func (h StockBalanceDetailHttp) DeleteStockBalanceDetailByGUIDs(ctx microservice
 // @Router /transaction/stock-balance-detail/{id} [get]
 func (h StockBalanceDetailHttp) InfoStockBalanceDetail(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get StockBalanceDetail %v", id)
-	doc, err := h.svc.InfoStockBalanceDetail(shopID, id)
+	doc, err := h.svc.InfoStockBalanceDetail(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -257,7 +257,7 @@ func (h StockBalanceDetailHttp) InfoStockBalanceDetail(ctx microservice.IContext
 // @Router /transaction/stock-balance-detail/doc/{docno} [get]
 func (h StockBalanceDetailHttp) SearchStockBalanceDetailPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -266,7 +266,7 @@ func (h StockBalanceDetailHttp) SearchStockBalanceDetailPage(ctx microservice.IC
 		"docno": docNo,
 	}
 
-	docList, pagination, err := h.svc.SearchStockBalanceDetail(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchStockBalanceDetail(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -296,7 +296,7 @@ func (h StockBalanceDetailHttp) SearchStockBalanceDetailPage(ctx microservice.IC
 // @Router /transaction/stock-balance-detail/list/doc/{docno} [get]
 func (h StockBalanceDetailHttp) SearchStockBalanceDetailStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -307,7 +307,7 @@ func (h StockBalanceDetailHttp) SearchStockBalanceDetailStep(ctx microservice.IC
 		"docno": docNo,
 	}
 
-	docList, total, err := h.svc.SearchStockBalanceDetailStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchStockBalanceDetailStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -333,12 +333,12 @@ func (h StockBalanceDetailHttp) SearchStockBalanceDetailStep(ctx microservice.IC
 // @Router /transaction/stock-balance-detail/doc/{docno} [delete]
 func (h StockBalanceDetailHttp) DeleteStockBalanceDetailByDocNo(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	docNo := ctx.Param("docno")
 
-	err := h.svc.DeleteStockBalanceDetailByDocNo(shopID, authUsername, docNo)
+	err := h.svc.DeleteStockBalanceDetailByDocNo(holdingCode, authUsername, docNo)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

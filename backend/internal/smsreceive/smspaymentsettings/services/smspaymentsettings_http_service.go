@@ -17,9 +17,9 @@ import (
 )
 
 type ISmsPaymentSettingsHttpService interface {
-	SaveSmsPaymentSettings(shopID string, authUsername string, storefrontGUID string, doc models.SmsPaymentSettings) error
-	InfoSmsPaymentSettings(shopID string, storefrontGUID string) (models.SmsPaymentSettingsInfo, error)
-	SearchSmsPaymentSettings(shopID string, pageable micromodels.Pageable) ([]models.SmsPaymentSettingsInfo, mongopagination.PaginationData, error)
+	SaveSmsPaymentSettings(holdingCode string, authUsername string, storefrontGUID string, doc models.SmsPaymentSettings) error
+	InfoSmsPaymentSettings(holdingCode string, storefrontGUID string) (models.SmsPaymentSettingsInfo, error)
+	SearchSmsPaymentSettings(holdingCode string, pageable micromodels.Pageable) ([]models.SmsPaymentSettingsInfo, mongopagination.PaginationData, error)
 }
 
 type SmsPaymentSettingsHttpService struct {
@@ -43,7 +43,7 @@ func (svc SmsPaymentSettingsHttpService) getContextTimeout() (context.Context, c
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc SmsPaymentSettingsHttpService) SaveSmsPaymentSettings(shopID string, authUsername string, storefrontGUID string, doc models.SmsPaymentSettings) error {
+func (svc SmsPaymentSettingsHttpService) SaveSmsPaymentSettings(holdingCode string, authUsername string, storefrontGUID string, doc models.SmsPaymentSettings) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -58,7 +58,7 @@ func (svc SmsPaymentSettingsHttpService) SaveSmsPaymentSettings(shopID string, a
 		return errors.New("pattern code not found")
 	}
 
-	findDoc, err := svc.repo.FindOne(ctx, shopID, bson.M{})
+	findDoc, err := svc.repo.FindOne(ctx, holdingCode, bson.M{})
 
 	if err != nil {
 		return err
@@ -71,23 +71,23 @@ func (svc SmsPaymentSettingsHttpService) SaveSmsPaymentSettings(shopID string, a
 	}
 
 	if isExitsSetting {
-		return svc.updateSmsPaymentSettings(shopID, findDoc.GuidFixed, authUsername, doc)
+		return svc.updateSmsPaymentSettings(holdingCode, findDoc.GuidFixed, authUsername, doc)
 	} else {
-		return svc.createSmsPaymentSettings(shopID, authUsername, doc)
+		return svc.createSmsPaymentSettings(holdingCode, authUsername, doc)
 	}
 
 }
 
 func (svc SmsPaymentSettingsHttpService) isExistsPaymentSettings(storefrontGUID string, findDoc models.SmsPaymentSettingsDoc) (bool, error) {
 
-	if len(findDoc.ShopID) > 0 && findDoc.StorefrontGUID == storefrontGUID {
+	if len(findDoc.HoldingCode) > 0 && findDoc.StorefrontGUID == storefrontGUID {
 		return true, nil
 	}
 
 	return false, nil
 }
 
-func (svc SmsPaymentSettingsHttpService) createSmsPaymentSettings(shopID string, authUsername string, doc models.SmsPaymentSettings) error {
+func (svc SmsPaymentSettingsHttpService) createSmsPaymentSettings(holdingCode string, authUsername string, doc models.SmsPaymentSettings) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -97,7 +97,7 @@ func (svc SmsPaymentSettingsHttpService) createSmsPaymentSettings(shopID string,
 	docData := models.SmsPaymentSettingsDoc{}
 	docData.SmsPaymentSettings = doc
 
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 
 	docData.CreatedBy = authUsername
@@ -112,12 +112,12 @@ func (svc SmsPaymentSettingsHttpService) createSmsPaymentSettings(shopID string,
 	return nil
 }
 
-func (svc SmsPaymentSettingsHttpService) updateSmsPaymentSettings(shopID string, guid string, authUsername string, doc models.SmsPaymentSettings) error {
+func (svc SmsPaymentSettingsHttpService) updateSmsPaymentSettings(holdingCode string, guid string, authUsername string, doc models.SmsPaymentSettings) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -132,7 +132,7 @@ func (svc SmsPaymentSettingsHttpService) updateSmsPaymentSettings(shopID string,
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, findDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, findDoc)
 
 	if err != nil {
 		return err
@@ -141,12 +141,12 @@ func (svc SmsPaymentSettingsHttpService) updateSmsPaymentSettings(shopID string,
 	return nil
 }
 
-func (svc SmsPaymentSettingsHttpService) InfoSmsPaymentSettings(shopID string, storefrontGUID string) (models.SmsPaymentSettingsInfo, error) {
+func (svc SmsPaymentSettingsHttpService) InfoSmsPaymentSettings(holdingCode string, storefrontGUID string) (models.SmsPaymentSettingsInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindOne(ctx, shopID, bson.M{"storefrontguid": storefrontGUID})
+	findDoc, err := svc.repo.FindOne(ctx, holdingCode, bson.M{"storefrontguid": storefrontGUID})
 
 	if err != nil {
 		return models.SmsPaymentSettingsInfo{}, err
@@ -156,12 +156,12 @@ func (svc SmsPaymentSettingsHttpService) InfoSmsPaymentSettings(shopID string, s
 
 }
 
-func (svc SmsPaymentSettingsHttpService) SearchSmsPaymentSettings(shopID string, pageable micromodels.Pageable) ([]models.SmsPaymentSettingsInfo, mongopagination.PaginationData, error) {
+func (svc SmsPaymentSettingsHttpService) SearchSmsPaymentSettings(holdingCode string, pageable micromodels.Pageable) ([]models.SmsPaymentSettingsInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	docList, pagination, err := svc.repo.FindPage(ctx, shopID, []string{}, pageable)
+	docList, pagination, err := svc.repo.FindPage(ctx, holdingCode, []string{}, pageable)
 
 	if err != nil {
 		return []models.SmsPaymentSettingsInfo{}, mongopagination.PaginationData{}, err

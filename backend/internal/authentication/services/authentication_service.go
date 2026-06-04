@@ -31,11 +31,11 @@ type IAuthenticationService interface {
 	ForgotPasswordByPhonenumber(userRequest auth_models.ForgotPasswordPhoneNumberRequest) error
 	Update(username string, userRequest auth_models.UserProfileRequest) error
 	UpdatePassword(username string, currentPassword string, newPassword string) error
-	ResetPasswordToDefault(shopID string, authUsername string, targetUsername string) error
+	ResetPasswordToDefault(holdingCode string, authUsername string, targetUsername string) error
 	Logout(authorizationHeader string) error
 	Profile(username string, userUID string) (auth_models.UserProfile, error)
-	AccessShop(shopID string, username string, userUID string, authorizationHeader string, authContext models.AuthenticationContext) error
-	UpdateFavoriteShop(shopID string, username string, userUID string, isFavorite bool) error
+	AccessShop(holdingCode string, username string, userUID string, authorizationHeader string, authContext models.AuthenticationContext) error
+	UpdateFavoriteShop(holdingCode string, username string, userUID string, isFavorite bool) error
 	LoginWithFirebaseToken(token string) (string, error)
 	LoginWithLineToken(token string) (string, error)
 	LoginWithLineUserID(lineUserID string, displayName string, pictureUrl string, email string) (string, string, error)
@@ -149,6 +149,8 @@ func (svc AuthenticationService) LoginWithPhoneNumberOTP(userLoginReq *auth_mode
 
 func (svc AuthenticationService) LoginWithPhoneNumber(userLoginReq *auth_models.UserLoginPhoneNumberRequest, authContext models.AuthenticationContext) (models.TokenLoginResponse, error) {
 
+	userLoginReq.HoldingCode = strings.TrimSpace(userLoginReq.HoldingCode)
+
 	findUser, err := svc.authRepo.FindByPhonenumber(context.Background(), userLoginReq.PhoneNumberField)
 
 	if err != nil && err.Error() != "mongo: no documents in result" {
@@ -165,7 +167,12 @@ func (svc AuthenticationService) LoginWithPhoneNumber(userLoginReq *auth_models.
 		return models.TokenLoginResponse{}, errors.New("username or password is invalid")
 	}
 
-	resultLogin, err := svc.processUserLogin(*findUser, userLoginReq.ShopID, authContext)
+	holdingCode, err := svc.resolveLoginHoldingCode(context.Background(), userLoginReq.HoldingCode)
+	if err != nil {
+		return models.TokenLoginResponse{}, err
+	}
+
+	resultLogin, err := svc.processUserLogin(*findUser, holdingCode, authContext)
 
 	if err != nil {
 		return models.TokenLoginResponse{}, err
@@ -179,7 +186,7 @@ func (svc AuthenticationService) Login(userLoginReq *auth_models.UserLoginReques
 	userLoginReq.Username = utils.NormalizeUsername(userLoginReq.Username)
 
 	userLoginReq.Username = strings.TrimSpace(userLoginReq.Username)
-	userLoginReq.ShopID = strings.TrimSpace(userLoginReq.ShopID)
+	userLoginReq.HoldingCode = strings.TrimSpace(userLoginReq.HoldingCode)
 
 	findUser, err := svc.authRepo.FindUser(context.Background(), userLoginReq.Username)
 
@@ -202,7 +209,12 @@ func (svc AuthenticationService) Login(userLoginReq *auth_models.UserLoginReques
 		return models.TokenLoginResponse{}, errors.New("username or password is invalid")
 	}
 
-	resultLogin, err := svc.processUserLogin(*findUser, userLoginReq.ShopID, authContext)
+	holdingCode, err := svc.resolveLoginHoldingCode(context.Background(), userLoginReq.HoldingCode)
+	if err != nil {
+		return models.TokenLoginResponse{}, err
+	}
+
+	resultLogin, err := svc.processUserLogin(*findUser, holdingCode, authContext)
 
 	if err != nil {
 		return models.TokenLoginResponse{}, err
@@ -216,7 +228,7 @@ func (svc AuthenticationService) Poslogin(userLoginReq *auth_models.PosLoginRequ
 	userLoginReq.Username = utils.NormalizeUsername(userLoginReq.Username)
 
 	userLoginReq.Username = strings.TrimSpace(userLoginReq.Username)
-	userLoginReq.ShopID = strings.TrimSpace(userLoginReq.ShopID)
+	userLoginReq.HoldingCode = strings.TrimSpace(userLoginReq.HoldingCode)
 
 	findUser, err := svc.authRepo.FindUser(context.Background(), userLoginReq.Username)
 
@@ -235,7 +247,12 @@ func (svc AuthenticationService) Poslogin(userLoginReq *auth_models.PosLoginRequ
 	// 	return models.TokenLoginResponse{}, errors.New("username or password is invalid")
 	// }
 
-	resultLogin, err := svc.processUserLogin(*findUser, userLoginReq.ShopID, authContext)
+	holdingCode, err := svc.resolveLoginHoldingCode(context.Background(), userLoginReq.HoldingCode)
+	if err != nil {
+		return models.TokenLoginResponse{}, err
+	}
+
+	resultLogin, err := svc.processUserLogin(*findUser, holdingCode, authContext)
 
 	if err != nil {
 		return models.TokenLoginResponse{}, err
@@ -249,7 +266,7 @@ func (svc AuthenticationService) LoginEmail(userLoginReq *auth_models.PosLoginRe
 	userLoginReq.Username = utils.NormalizeUsername(userLoginReq.Username)
 
 	userLoginReq.Username = strings.TrimSpace(userLoginReq.Username)
-	userLoginReq.ShopID = strings.TrimSpace(userLoginReq.ShopID)
+	userLoginReq.HoldingCode = strings.TrimSpace(userLoginReq.HoldingCode)
 
 	findUser, err := svc.authRepo.FindUser(context.Background(), userLoginReq.Username)
 
@@ -260,7 +277,9 @@ func (svc AuthenticationService) LoginEmail(userLoginReq *auth_models.PosLoginRe
 	if len(findUser.Username) == 0 {
 		// Register user if not found
 		user := auth_models.UserDoc{}
+		user.UID = svc.generateGUID()
 		user.Username = userLoginReq.Username
+		user.Email = userLoginReq.Username
 		user.Password = ""
 		user.UserDetail.Name = userLoginReq.Username
 		user.CreatedAt = svc.timeNow()
@@ -284,7 +303,7 @@ func (svc AuthenticationService) LoginEmail(userLoginReq *auth_models.PosLoginRe
 	return tokenString, nil
 }
 
-func (svc *AuthenticationService) processUserLogin(findUser auth_models.UserDoc, shopID string, authContext models.AuthenticationContext) (models.TokenLoginResponse, error) {
+func (svc *AuthenticationService) processUserLogin(findUser auth_models.UserDoc, holdingCode string, authContext models.AuthenticationContext) (models.TokenLoginResponse, error) {
 	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, micromodel.UserInfo{Username: findUser.Username, Name: findUser.Name, UID: findUser.UID})
 
 	if err != nil {
@@ -298,14 +317,14 @@ func (svc *AuthenticationService) processUserLogin(findUser auth_models.UserDoc,
 		return models.TokenLoginResponse{}, errors.New("login failed")
 	}
 
-	if len(shopID) > 0 {
+	if len(holdingCode) > 0 {
 		var shopUser auth_models.ShopUser
 		var err error
 		if strings.TrimSpace(findUser.UID) != "" {
-			shopUser, err = svc.shopUserRepo.FindByShopIDAndUserUID(context.Background(), shopID, findUser.UID)
+			shopUser, err = svc.shopUserRepo.FindByHoldingCodeAndUserUID(context.Background(), holdingCode, findUser.UID)
 		}
 		if strings.TrimSpace(findUser.UID) == "" || err != nil {
-			shopUser, err = svc.shopUserRepo.FindByShopIDAndUsername(context.Background(), shopID, findUser.Username)
+			shopUser, err = svc.shopUserRepo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, findUser.Username)
 		}
 
 		if err != nil {
@@ -313,16 +332,16 @@ func (svc *AuthenticationService) processUserLogin(findUser auth_models.UserDoc,
 		}
 
 		if shopUser.ID == primitive.NilObjectID {
-			return models.TokenLoginResponse{}, errors.New("shop invalid")
+			return models.TokenLoginResponse{}, errors.New("holding_code invalid")
 		}
 
-		if err = svc.ensureShopAccessAllowed(context.Background(), shopID, shopUser); err != nil {
+		if err = svc.ensureShopAccessAllowed(context.Background(), holdingCode, shopUser); err != nil {
 			svc.authService.DeleteToken(microservice.AUTHTYPE_BEARER, tokenString)
 			svc.authService.DeleteToken(microservice.AUTHTYPE_REFRESH, refreshTokenString)
 			return models.TokenLoginResponse{}, err
 		}
 
-		err = svc.authService.SelectShop(microservice.AUTHTYPE_BEARER, tokenString, shopID, shopUser.Role)
+		err = svc.authService.SelectShop(microservice.AUTHTYPE_BEARER, tokenString, holdingCode, shopUser.Role)
 
 		if err != nil {
 			return models.TokenLoginResponse{}, errors.New("failed shop select")
@@ -330,13 +349,13 @@ func (svc *AuthenticationService) processUserLogin(findUser auth_models.UserDoc,
 
 		lastAccessedAt := svc.timeNow()
 
-		err = svc.shopUserRepo.UpdateLastAccess(context.Background(), shopID, shopUser.Username, lastAccessedAt)
+		err = svc.shopUserRepo.UpdateLastAccess(context.Background(), holdingCode, shopUser.Username, lastAccessedAt)
 		if err != nil {
 			logger.GetLogger().Error(err.Error())
 		}
 
 		err = svc.shopUserAccessLogRepo.Create(context.Background(), auth_models.ShopUserAccessLog{
-			ShopID:         shopID,
+			HoldingCode:    holdingCode,
 			Username:       findUser.Username,
 			Ip:             authContext.Ip,
 			LastAccessedAt: lastAccessedAt,
@@ -350,12 +369,43 @@ func (svc *AuthenticationService) processUserLogin(findUser auth_models.UserDoc,
 	return models.TokenLoginResponse{Token: tokenString, Refresh: refreshTokenString}, nil
 }
 
-func (svc *AuthenticationService) ensureShopAccessAllowed(ctx context.Context, shopID string, shopUser auth_models.ShopUser) error {
+func (svc *AuthenticationService) resolveLoginHoldingCode(ctx context.Context, holdingCode string) (string, error) {
+	holdingCode = strings.TrimSpace(holdingCode)
+	holdingCode, err := utils.NormalizeHoldingCode(holdingCode)
+	if err != nil {
+		return "", err
+	}
+	if holdingCode == "" {
+		return holdingCode, nil
+	}
+	resolvedHoldingCode, err := svc.shopUserRepo.ResolveHoldingCodeByHoldingCode(ctx, holdingCode)
+	if err != nil {
+		return "", err
+	}
+	if holdingCode != "" && holdingCode != resolvedHoldingCode {
+		return "", errors.New("holding_code mismatch")
+	}
+	return resolvedHoldingCode, nil
+}
+
+func (svc AuthenticationService) findShopUser(ctx context.Context, holdingCode string, username string, userUID string) (auth_models.ShopUser, error) {
+	var shopUser auth_models.ShopUser
+	var err error
+	if strings.TrimSpace(userUID) != "" {
+		shopUser, err = svc.shopUserRepo.FindByHoldingCodeAndUserUID(ctx, holdingCode, userUID)
+	}
+	if strings.TrimSpace(userUID) == "" || err != nil {
+		shopUser, err = svc.shopUserRepo.FindByHoldingCodeAndUsername(ctx, holdingCode, username)
+	}
+	return shopUser, err
+}
+
+func (svc *AuthenticationService) ensureShopAccessAllowed(ctx context.Context, holdingCode string, shopUser auth_models.ShopUser) error {
 	if !shopUser.IsAccessDisabled {
 		return nil
 	}
 
-	createdBy, err := svc.shopUserRepo.FindShopCreatedBy(ctx, shopID)
+	createdBy, err := svc.shopUserRepo.FindShopCreatedBy(ctx, holdingCode)
 	if err != nil {
 		return err
 	}
@@ -665,12 +715,12 @@ func (svc AuthenticationService) UpdatePassword(username string, currentPassword
 	return nil
 }
 
-func (svc AuthenticationService) ResetPasswordToDefault(shopID string, authUsername string, targetUsername string) error {
-	shopID = strings.TrimSpace(shopID)
+func (svc AuthenticationService) ResetPasswordToDefault(holdingCode string, authUsername string, targetUsername string) error {
+	holdingCode = strings.TrimSpace(holdingCode)
 	authUsername = utils.NormalizeUsername(authUsername)
 	targetUsername = utils.NormalizeUsername(targetUsername)
 
-	if shopID == "" {
+	if holdingCode == "" {
 		return errors.New("shop invalid")
 	}
 	if authUsername == "" || targetUsername == "" {
@@ -680,7 +730,7 @@ func (svc AuthenticationService) ResetPasswordToDefault(shopID string, authUsern
 		return errors.New("use change password for self")
 	}
 
-	authUser, err := svc.shopUserRepo.FindByShopIDAndUsername(context.Background(), shopID, authUsername)
+	authUser, err := svc.shopUserRepo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, authUsername)
 	if err != nil {
 		return err
 	}
@@ -688,7 +738,7 @@ func (svc AuthenticationService) ResetPasswordToDefault(shopID string, authUsern
 		return errors.New("permission denied")
 	}
 
-	targetShopUser, err := svc.shopUserRepo.FindByShopIDAndUsername(context.Background(), shopID, targetUsername)
+	targetShopUser, err := svc.shopUserRepo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, targetUsername)
 	if err != nil {
 		return err
 	}
@@ -772,10 +822,11 @@ func (svc AuthenticationService) Profile(username string, userUID string) (auth_
 	return userProfile, nil
 }
 
-func (svc AuthenticationService) AccessShop(shopID string, username string, userUID string, authorizationHeader string, authContext models.AuthenticationContext) error {
+func (svc AuthenticationService) AccessShop(holdingCode string, username string, userUID string, authorizationHeader string, authContext models.AuthenticationContext) error {
 
-	if shopID == "" {
-		return errors.New("shop invalid")
+	holdingCode = strings.TrimSpace(holdingCode)
+	if holdingCode == "" {
+		return errors.New("holding_code invalid")
 	}
 
 	if username == "" {
@@ -792,12 +843,13 @@ func (svc AuthenticationService) AccessShop(shopID string, username string, user
 		return errors.New("token invalid")
 	}
 
-	var shopUser auth_models.ShopUser
-	if strings.TrimSpace(userUID) != "" {
-		shopUser, err = svc.shopUserRepo.FindByShopIDAndUserUID(context.Background(), shopID, userUID)
-	}
-	if strings.TrimSpace(userUID) == "" || err != nil {
-		shopUser, err = svc.shopUserRepo.FindByShopIDAndUsername(context.Background(), shopID, username)
+	shopUser, err := svc.findShopUser(context.Background(), holdingCode, username, userUID)
+	if err != nil {
+		resolvedHoldingCode, resolveErr := svc.resolveLoginHoldingCode(context.Background(), holdingCode)
+		if resolveErr == nil && resolvedHoldingCode != "" && resolvedHoldingCode != holdingCode {
+			holdingCode = resolvedHoldingCode
+			shopUser, err = svc.findShopUser(context.Background(), holdingCode, username, userUID)
+		}
 	}
 
 	if err != nil {
@@ -805,21 +857,21 @@ func (svc AuthenticationService) AccessShop(shopID string, username string, user
 	}
 
 	if shopUser.ID == primitive.NilObjectID {
-		return errors.New("shop invalid")
+		return errors.New("holding_code invalid")
 	}
 
-	if err = svc.ensureShopAccessAllowed(context.Background(), shopID, shopUser); err != nil {
+	if err = svc.ensureShopAccessAllowed(context.Background(), holdingCode, shopUser); err != nil {
 		return err
 	}
 
-	err = svc.authService.SelectShop(microservice.AUTHTYPE_BEARER, tokenStr, shopID, shopUser.Role)
+	err = svc.authService.SelectShop(microservice.AUTHTYPE_BEARER, tokenStr, holdingCode, shopUser.Role)
 
 	if err != nil {
 		return errors.New("failed shop select")
 	}
 
 	lastAccessedAt := svc.timeNow()
-	err = svc.shopUserRepo.UpdateLastAccess(context.Background(), shopID, shopUser.Username, lastAccessedAt)
+	err = svc.shopUserRepo.UpdateLastAccess(context.Background(), holdingCode, shopUser.Username, lastAccessedAt)
 	if err != nil {
 		logger.GetLogger().Error(err.Error())
 	}
@@ -827,7 +879,7 @@ func (svc AuthenticationService) AccessShop(shopID string, username string, user
 	err = svc.shopUserAccessLogRepo.Create(
 		context.Background(),
 		auth_models.ShopUserAccessLog{
-			ShopID:         shopID,
+			HoldingCode:    holdingCode,
 			Username:       shopUser.Username,
 			Ip:             authContext.Ip,
 			LastAccessedAt: lastAccessedAt,
@@ -840,10 +892,10 @@ func (svc AuthenticationService) AccessShop(shopID string, username string, user
 	return nil
 }
 
-func (svc AuthenticationService) UpdateFavoriteShop(shopID string, username string, userUID string, isFavorite bool) error {
+func (svc AuthenticationService) UpdateFavoriteShop(holdingCode string, username string, userUID string, isFavorite bool) error {
 
-	if shopID == "" {
-		return errors.New("shop invalid")
+	if holdingCode == "" {
+		return errors.New("holding_code invalid")
 	}
 
 	if username == "" {
@@ -853,10 +905,10 @@ func (svc AuthenticationService) UpdateFavoriteShop(shopID string, username stri
 	var shopUser auth_models.ShopUser
 	var err error
 	if strings.TrimSpace(userUID) != "" {
-		shopUser, err = svc.shopUserRepo.FindByShopIDAndUserUID(context.Background(), shopID, userUID)
+		shopUser, err = svc.shopUserRepo.FindByHoldingCodeAndUserUID(context.Background(), holdingCode, userUID)
 	}
 	if strings.TrimSpace(userUID) == "" || err != nil {
-		shopUser, err = svc.shopUserRepo.FindByShopIDAndUsername(context.Background(), shopID, username)
+		shopUser, err = svc.shopUserRepo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, username)
 	}
 
 	if err != nil {
@@ -867,7 +919,7 @@ func (svc AuthenticationService) UpdateFavoriteShop(shopID string, username stri
 		return errors.New("shop invalid")
 	}
 
-	err = svc.shopUserRepo.SaveFavorite(context.Background(), shopID, shopUser.Username, isFavorite)
+	err = svc.shopUserRepo.SaveFavorite(context.Background(), holdingCode, shopUser.Username, isFavorite)
 	if err != nil {
 		return errors.New("favorite failed")
 	}
@@ -1172,7 +1224,7 @@ func (svc AuthenticationService) DeleteUser(username string) error {
 	}
 
 	for _, shopUser := range *shopFind {
-		err = svc.shopUserRepo.Delete(context.Background(), shopUser.ShopID, username)
+		err = svc.shopUserRepo.Delete(context.Background(), shopUser.HoldingCode, username)
 		if err != nil {
 			return err
 		}

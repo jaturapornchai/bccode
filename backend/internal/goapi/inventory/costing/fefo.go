@@ -25,7 +25,7 @@ func (e *FEFOEngine) ProcessReceipt(ctx context.Context, tx *sql.Tx, params inv.
 		return nil, fmt.Errorf("FEFO ต้องระบุ lot_number ทุกครั้งที่รับสินค้าเข้า")
 	}
 
-	balance, err := getOrCreateBalance(ctx, tx, params.ShopID, params.ItemCode, params.Barcode, params.WhCode, params.LocationCode)
+	balance, err := getOrCreateBalance(ctx, tx, params.HoldingCode, params.ItemCode, params.Barcode, params.WhCode, params.LocationCode)
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +33,7 @@ func (e *FEFOEngine) ProcessReceipt(ctx context.Context, tx *sql.Tx, params inv.
 	totalCost := params.Qty * params.UnitCost
 
 	layer := &inv.InventoryCostLayer{
-		ShopID: params.ShopID, ItemCode: params.ItemCode, Barcode: params.Barcode,
+		HoldingCode: params.HoldingCode, ItemCode: params.ItemCode, Barcode: params.Barcode,
 		WhCode: params.WhCode, LocationCode: params.LocationCode,
 		LayerType: inv.LayerTypePurchase, RefDocType: params.RefDocType, RefDocNo: params.RefDocNo,
 		OriginalQty: params.Qty, RemainingQty: params.Qty,
@@ -61,7 +61,7 @@ func (e *FEFOEngine) ProcessReceipt(ctx context.Context, tx *sql.Tx, params inv.
 	}
 
 	ct := &inv.InventoryCostTransaction{
-		ShopID: params.ShopID, ItemCode: params.ItemCode, Barcode: params.Barcode,
+		HoldingCode: params.HoldingCode, ItemCode: params.ItemCode, Barcode: params.Barcode,
 		WhCode: params.WhCode, LocationCode: params.LocationCode,
 		TransactionType: inv.TxTypePurchaseReceipt, TransFlag: params.TransFlag,
 		RefDocType: params.RefDocType, RefDocNo: params.RefDocNo,
@@ -69,7 +69,7 @@ func (e *FEFOEngine) ProcessReceipt(ctx context.Context, tx *sql.Tx, params inv.
 		LotNumber: params.LotNumber, ExpiryDate: params.ExpiryDate, CostLayerID: &layer.ID,
 		BalanceQty: newQty, BalanceAvgCost: newAvgCost, BalanceTotalValue: newTotalValue,
 		CostingMethodUsed: inv.CostingMethodFEFO,
-		TransactionDate: params.ReceivedDate, CreatedBy: params.CreatedBy,
+		TransactionDate:   params.ReceivedDate, CreatedBy: params.CreatedBy,
 	}
 	if err := insertCostTransaction(ctx, tx, ct); err != nil {
 		return nil, err
@@ -82,7 +82,7 @@ func (e *FEFOEngine) ProcessReceipt(ctx context.Context, tx *sql.Tx, params inv.
 }
 
 func (e *FEFOEngine) ProcessIssue(ctx context.Context, tx *sql.Tx, params inv.IssueParams) (*inv.CostTransactionResult, error) {
-	balance, err := getOrCreateBalance(ctx, tx, params.ShopID, params.ItemCode, params.Barcode, params.WhCode, params.LocationCode)
+	balance, err := getOrCreateBalance(ctx, tx, params.HoldingCode, params.ItemCode, params.Barcode, params.WhCode, params.LocationCode)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func (e *FEFOEngine) ProcessIssue(ctx context.Context, tx *sql.Tx, params inv.Is
 	}
 
 	// ตัด layers เรียงตาม expiry_date (หมดอายุเร็วสุดก่อน)
-	totalCost, err := e.consumeLayersFEFO(ctx, tx, params.ShopID, params.ItemCode, params.WhCode, params.LocationCode, params.Qty)
+	totalCost, err := e.consumeLayersFEFO(ctx, tx, params.HoldingCode, params.ItemCode, params.WhCode, params.LocationCode, params.Qty)
 	if err != nil {
 		return nil, err
 	}
@@ -113,15 +113,15 @@ func (e *FEFOEngine) ProcessIssue(ctx context.Context, tx *sql.Tx, params inv.Is
 	}
 
 	ct := &inv.InventoryCostTransaction{
-		ShopID: params.ShopID, ItemCode: params.ItemCode, Barcode: params.Barcode,
+		HoldingCode: params.HoldingCode, ItemCode: params.ItemCode, Barcode: params.Barcode,
 		WhCode: params.WhCode, LocationCode: params.LocationCode,
 		TransactionType: inv.TxTypeSalesIssue, TransFlag: params.TransFlag,
 		RefDocType: params.RefDocType, RefDocNo: params.RefDocNo,
 		Qty: -params.Qty, UnitCost: unitCost, TotalCost: -totalCost,
-		LotNumber: params.LotNumber,
+		LotNumber:  params.LotNumber,
 		BalanceQty: newQty, BalanceAvgCost: newAvgCost, BalanceTotalValue: newTotalValue,
 		CostingMethodUsed: inv.CostingMethodFEFO,
-		TransactionDate: params.TransactionDate, CreatedBy: params.CreatedBy,
+		TransactionDate:   params.TransactionDate, CreatedBy: params.CreatedBy,
 	}
 	if err := insertCostTransaction(ctx, tx, ct); err != nil {
 		return nil, err
@@ -133,14 +133,14 @@ func (e *FEFOEngine) ProcessIssue(ctx context.Context, tx *sql.Tx, params inv.Is
 }
 
 // consumeLayersFEFO — ตัด layers เรียงตาม expiry_date ASC (หมดอายุเร็วสุดก่อน)
-func (e *FEFOEngine) consumeLayersFEFO(ctx context.Context, tx *sql.Tx, shopID, itemCode, whCode, locationCode string, qtyNeeded float64) (float64, error) {
+func (e *FEFOEngine) consumeLayersFEFO(ctx context.Context, tx *sql.Tx, holdingCode, itemCode, whCode, locationCode string, qtyNeeded float64) (float64, error) {
 	rows, err := tx.QueryContext(ctx,
 		`SELECT id, remainingqty, totalunitcost, expirydate
 		 FROM inventory_cost_layers
-		 WHERE shopid = $1 AND itemcode = $2 AND whcode = $3 AND locationcode = $4 AND remainingqty > 0
+		 WHERE holding_code = $1 AND itemcode = $2 AND whcode = $3 AND locationcode = $4 AND remainingqty > 0
 		 ORDER BY expirydate ASC, receiveddate ASC, id ASC
 		 FOR UPDATE`,
-		shopID, itemCode, whCode, locationCode,
+		holdingCode, itemCode, whCode, locationCode,
 	)
 	if err != nil {
 		return 0, fmt.Errorf("ดึง cost layers ไม่สำเร็จ: %w", err)
@@ -211,9 +211,9 @@ func (e *FEFOEngine) ProcessAdjustment(ctx context.Context, tx *sql.Tx, params i
 	return result, nil
 }
 
-func (e *FEFOEngine) GetCurrentValuation(ctx context.Context, tx *sql.Tx, shopID, itemCode, whCode string) (*inv.StockValuation, error) {
+func (e *FEFOEngine) GetCurrentValuation(ctx context.Context, tx *sql.Tx, holdingCode, itemCode, whCode string) (*inv.StockValuation, error) {
 	fifo := &FIFOEngine{}
-	val, err := fifo.GetCurrentValuation(ctx, tx, shopID, itemCode, whCode)
+	val, err := fifo.GetCurrentValuation(ctx, tx, holdingCode, itemCode, whCode)
 	if err != nil {
 		return nil, err
 	}

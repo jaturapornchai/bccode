@@ -6,12 +6,12 @@ import (
 	"smlcloudplatform/internal/product/productbarcode/models"
 )
 
-func (svc ProductBarcodeHttpService) InfoBomView(shopID string, barcode string) (models.ProductBarcodeBOMView, error) {
+func (svc ProductBarcodeHttpService) InfoBomView(holdingCode string, barcode string) (models.ProductBarcodeBOMView, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	doc, err := svc.repo.FindByBarcode(ctx, shopID, barcode)
+	doc, err := svc.repo.FindByBarcode(ctx, holdingCode, barcode)
 
 	if err != nil {
 		return models.ProductBarcodeBOMView{}, err
@@ -27,7 +27,7 @@ func (svc ProductBarcodeHttpService) InfoBomView(shopID string, barcode string) 
 	// BuildBOMViewCache(ctx, svc.repo.FindByBarcode,
 	// 	0, &map[string]models.ProductBarcodeDoc{},
 	// 	&bomViewDict,
-	// 	shopID, doc.Barcode, []models.BOMProductBarcode{}, &bomView)
+	// 	holdingCode, doc.Barcode, []models.BOMProductBarcode{}, &bomView)
 
 	bomView.FromProductBarcode(doc.ProductBarcodeData)
 
@@ -39,7 +39,7 @@ func (svc ProductBarcodeHttpService) InfoBomView(shopID string, barcode string) 
 
 	if doc.BOM != nil && len(*doc.BOM) > 0 {
 		productBarcodeDict := map[string]models.ProductBarcodeDoc{}
-		err = BuildBOMView(ctx, svc.repo.FindByBarcode, bomView.Level, &productBarcodeDict, &bomViewDict, shopID, doc.BOM, &bomView.BOM)
+		err = BuildBOMView(ctx, svc.repo.FindByBarcode, bomView.Level, &productBarcodeDict, &bomViewDict, holdingCode, doc.BOM, &bomView.BOM)
 		if err != nil {
 			return models.ProductBarcodeBOMView{}, err
 		}
@@ -48,7 +48,7 @@ func (svc ProductBarcodeHttpService) InfoBomView(shopID string, barcode string) 
 	return bomView, nil
 }
 
-func (svc ProductBarcodeHttpService) ListBomView(shopID string, barcodes []string) ([]models.ProductBarcodeBOMView, error) {
+func (svc ProductBarcodeHttpService) ListBomView(holdingCode string, barcodes []string) ([]models.ProductBarcodeBOMView, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -56,7 +56,7 @@ func (svc ProductBarcodeHttpService) ListBomView(shopID string, barcodes []strin
 	var bomViews []models.ProductBarcodeBOMView
 	var bomViewDict = map[string]*models.ProductBarcodeBOMView{}
 	for _, barcode := range barcodes {
-		doc, err := svc.repo.FindByBarcode(ctx, shopID, barcode)
+		doc, err := svc.repo.FindByBarcode(ctx, holdingCode, barcode)
 
 		if err != nil {
 			return []models.ProductBarcodeBOMView{}, err
@@ -75,7 +75,7 @@ func (svc ProductBarcodeHttpService) ListBomView(shopID string, barcodes []strin
 
 		if doc.BOM != nil && len(*doc.BOM) > 0 {
 			productBarcodeDict := map[string]models.ProductBarcodeDoc{}
-			err = BuildBOMView(ctx, svc.repo.FindByBarcode, 1, &productBarcodeDict, &bomViewDict, shopID, doc.BOM, &bomView.BOM)
+			err = BuildBOMView(ctx, svc.repo.FindByBarcode, 1, &productBarcodeDict, &bomViewDict, holdingCode, doc.BOM, &bomView.BOM)
 			if err != nil {
 				return []models.ProductBarcodeBOMView{}, err
 			}
@@ -93,11 +93,11 @@ func (svc ProductBarcodeHttpService) BuildBOM() (context.Context, context.Cancel
 
 func BuildBOMView(
 	ctx context.Context,
-	findByBarcode func(ctx context.Context, shopID string, barcode string) (models.ProductBarcodeDoc, error),
+	findByBarcode func(ctx context.Context, holdingCode string, barcode string) (models.ProductBarcodeDoc, error),
 	currentLevel int,
 	productBarcodeDict *map[string]models.ProductBarcodeDoc,
 	bomViewDict *map[string]*models.ProductBarcodeBOMView,
-	shopID string,
+	holdingCode string,
 	BOMs *[]models.BOMProductBarcode,
 	bomView *[]models.ProductBarcodeBOMView) error {
 
@@ -117,7 +117,7 @@ func BuildBOMView(
 		} else {
 			var tempDoc = models.ProductBarcodeDoc{}
 			if _, ok := (*productBarcodeDict)[bom.Barcode]; !ok {
-				findDoc, err := findByBarcode(ctx, shopID, bom.Barcode)
+				findDoc, err := findByBarcode(ctx, holdingCode, bom.Barcode)
 
 				if err != nil {
 					return err
@@ -139,7 +139,7 @@ func BuildBOMView(
 			// }
 
 			if tempDoc.BOM != nil && len(*tempDoc.BOM) > 0 {
-				err := BuildBOMView(ctx, findByBarcode, currentLevel, productBarcodeDict, bomViewDict, shopID, tempDoc.BOM, &tempBOMView.BOM)
+				err := BuildBOMView(ctx, findByBarcode, currentLevel, productBarcodeDict, bomViewDict, holdingCode, tempDoc.BOM, &tempBOMView.BOM)
 
 				if err != nil {
 					return err
@@ -160,11 +160,11 @@ func BuildBOMView(
 
 func BuildBOMViewCache(
 	ctx context.Context,
-	findByBarcode func(ctx context.Context, shopID string, barcode string) (models.ProductBarcodeDoc, error),
+	findByBarcode func(ctx context.Context, holdingCode string, barcode string) (models.ProductBarcodeDoc, error),
 	currentLevel int,
 	productBarcodeDict *map[string]models.ProductBarcodeDoc,
 	bomViewDict *map[string]*models.ProductBarcodeBOMView,
-	shopID string,
+	holdingCode string,
 	barcode string,
 	childBOMs []models.BOMProductBarcode,
 	bomView *models.ProductBarcodeBOMView) error {
@@ -181,7 +181,7 @@ func BuildBOMViewCache(
 	} else {
 		var tempDoc = models.ProductBarcodeDoc{}
 		if _, ok := (*productBarcodeDict)[barcode]; !ok {
-			findDoc, err := findByBarcode(ctx, shopID, barcode)
+			findDoc, err := findByBarcode(ctx, holdingCode, barcode)
 
 			if err != nil {
 				return err
@@ -220,7 +220,7 @@ func BuildBOMViewCache(
 		if len(tempBOMs) != 0 {
 			for _, bom := range tempBOMs {
 				if tempBOMs != nil {
-					err := BuildBOMViewCache(ctx, findByBarcode, currentLevel+1, productBarcodeDict, bomViewDict, shopID, bom.Barcode, *tempDoc.BOM, &tempBOMView)
+					err := BuildBOMViewCache(ctx, findByBarcode, currentLevel+1, productBarcodeDict, bomViewDict, holdingCode, bom.Barcode, *tempDoc.BOM, &tempBOMView)
 
 					if err != nil {
 						return err

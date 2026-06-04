@@ -9,10 +9,10 @@ import (
 const smspaymentsettingsCollectionName = "smsPaymentSettings"
 
 type SmsPaymentSettings struct {
-	StorefrontGUID string `json:"storefrontguid" bson:"storefrontguid" validate:"required,max=233"`
-	PatternCode string `json:"patterncode" bson:"patterncode" validate:"required"`
+	StorefrontGUID   string `json:"storefrontguid" bson:"storefrontguid" validate:"required,max=233"`
+	PatternCode      string `json:"patterncode" bson:"patterncode" validate:"required"`
 	TimeMinuteBefore int    `json:"timeminutebefore" bson:"timeminutebefore"`
-	TimeMinuteAfter int    `json:"timeminuteafter" bson:"timeminuteafter"`
+	TimeMinuteAfter  int    `json:"timeminuteafter" bson:"timeminuteafter"`
 }
 
 type SmsPaymentSettingsInfo struct {
@@ -25,12 +25,12 @@ func (SmsPaymentSettingsInfo) CollectionName() string {
 }
 
 type SmsPaymentSettingsData struct {
-	models.ShopIdentity    `bson:"inline"`
-	SmsPaymentSettingsInfo `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	SmsPaymentSettingsInfo   `bson:"inline"`
 }
 
 type SmsPaymentSettingsDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                     primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	SmsPaymentSettingsData `bson:"inline"`
 	models.ActivityDoc     `bson:"inline"`
 }

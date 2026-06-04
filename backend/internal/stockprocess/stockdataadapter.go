@@ -3,7 +3,7 @@ package stockprocess
 import "smlcloudplatform/pkg/microservice"
 
 type IStockDataAdapter interface {
-	GetStockDataLength(shopID string, barcode string) int64
+	GetStockDataLength(holdingCode string, barcode string) int64
 }
 
 type StockDataAdapter struct {

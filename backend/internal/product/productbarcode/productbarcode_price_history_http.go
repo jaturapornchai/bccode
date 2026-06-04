@@ -26,13 +26,13 @@ import (
 // @Router /product/barcode/price-history [get]
 func (h ProductBarcodeHttp) GetPriceHistory(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
 	filters := h.priceHistoryFilter(ctx.QueryParam)
 
-	docs, pagination, err := h.svc.GetPriceHistory(shopID, filters, pageable)
+	docs, pagination, err := h.svc.GetPriceHistory(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -60,12 +60,12 @@ func (h ProductBarcodeHttp) GetPriceHistory(ctx microservice.IContext) error {
 // @Router /product/barcode/price-history/{barcode} [get]
 func (h ProductBarcodeHttp) GetPriceHistoryByBarcode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	barcode := ctx.Param("barcode")
 	pageable := utils.GetPageable(ctx.QueryParam)
 
-	docs, pagination, err := h.svc.GetPriceHistoryByBarcode(shopID, barcode, pageable)
+	docs, pagination, err := h.svc.GetPriceHistoryByBarcode(holdingCode, barcode, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

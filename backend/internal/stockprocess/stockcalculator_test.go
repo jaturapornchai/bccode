@@ -18,8 +18,8 @@ type MockStockProcessPGRepository struct {
 	mock.Mock
 }
 
-func (m *MockStockProcessPGRepository) GetStockTransactionList(shopID string, barcode string) ([]stockModel.StockData, error) {
-	ret := m.Called(shopID, barcode)
+func (m *MockStockProcessPGRepository) GetStockTransactionList(holdingCode string, barcode string) ([]stockModel.StockData, error) {
+	ret := m.Called(holdingCode, barcode)
 	return ret.Get(0).([]stockModel.StockData), ret.Error(1)
 }
 
@@ -28,8 +28,8 @@ func (m *MockStockProcessPGRepository) UpdateStockTransactionChange(stockData []
 	return ret.Error(0)
 }
 
-func (m *MockStockProcessPGRepository) ExecuteUpdateProductBarcodeStockBalance(shopID string, barcode string) error {
-	ret := m.Called(shopID, barcode)
+func (m *MockStockProcessPGRepository) ExecuteUpdateProductBarcodeStockBalance(holdingCode string, barcode string) error {
+	ret := m.Called(holdingCode, barcode)
 	return ret.Error(0)
 }
 
@@ -37,18 +37,18 @@ type MockProductBarcodePGRepository struct {
 	mock.Mock
 }
 
-func (m *MockProductBarcodePGRepository) FindByBarcode(shopID string, barcode string) (*productBarcodeModel.ProductBarcodePg, error) {
-	ret := m.Called(shopID, barcode)
+func (m *MockProductBarcodePGRepository) FindByBarcode(holdingCode string, barcode string) (*productBarcodeModel.ProductBarcodePg, error) {
+	ret := m.Called(holdingCode, barcode)
 	return ret.Get(0).(*productBarcodeModel.ProductBarcodePg), ret.Error(1)
 }
 
-func (m *MockProductBarcodePGRepository) FindByBarcodes(shopID string, barcodes []string) ([]productBarcodeModel.ProductBarcodePg, error) {
-	ret := m.Called(shopID, barcodes)
+func (m *MockProductBarcodePGRepository) FindByBarcodes(holdingCode string, barcodes []string) ([]productBarcodeModel.ProductBarcodePg, error) {
+	ret := m.Called(holdingCode, barcodes)
 	return ret.Get(0).([]productBarcodeModel.ProductBarcodePg), ret.Error(1)
 }
 
-func (m *MockProductBarcodePGRepository) Get(shopID string, barcode string) (*productBarcodeModel.ProductBarcodePg, error) {
-	ret := m.Called(shopID, barcode)
+func (m *MockProductBarcodePGRepository) Get(holdingCode string, barcode string) (*productBarcodeModel.ProductBarcodePg, error) {
+	ret := m.Called(holdingCode, barcode)
 	return ret.Get(0).(*productBarcodeModel.ProductBarcodePg), ret.Error(1)
 }
 
@@ -57,13 +57,13 @@ func (m *MockProductBarcodePGRepository) Create(doc *productBarcodeModel.Product
 	return ret.Error(0)
 }
 
-func (m *MockProductBarcodePGRepository) Update(shopID string, barcode string, doc *productBarcodeModel.ProductBarcodePg) error {
-	ret := m.Called(shopID, barcode, doc)
+func (m *MockProductBarcodePGRepository) Update(holdingCode string, barcode string, doc *productBarcodeModel.ProductBarcodePg) error {
+	ret := m.Called(holdingCode, barcode, doc)
 	return ret.Error(0)
 }
 
-func (m *MockProductBarcodePGRepository) Delete(shopID string, barcode string) error {
-	ret := m.Called(shopID, barcode)
+func (m *MockProductBarcodePGRepository) Delete(holdingCode string, barcode string) error {
+	ret := m.Called(holdingCode, barcode)
 	return ret.Error(0)
 }
 
@@ -77,7 +77,7 @@ func (m *MockProductBarcodePGRepository) Delete(shopID string, barcode string) e
 
 func TestStockProcess(t *testing.T) {
 
-	FIX_SHOPID := "SHOPID"
+	FIX_HOLDING_CODE := "HOLDING_CODE"
 	FIX_BARCODE := "BARCODE"
 	// stockLists, err := repo.GetStockTransactionList("2IZS0jFeRXWPidSupyXN7zQIlaS", "888555")
 	// assert.Nil(t, err)
@@ -86,7 +86,7 @@ func TestStockProcess(t *testing.T) {
 
 	var stockDataLists []stockModel.StockData
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "PU25030001",
 		TransFlag:           12,
@@ -97,7 +97,7 @@ func TestStockProcess(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "INV25030001",
 		TransFlag:           44,
@@ -108,7 +108,7 @@ func TestStockProcess(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "INV25030002",
 		TransFlag:           44,
@@ -119,7 +119,7 @@ func TestStockProcess(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "FG25030002",
 		TransFlag:           60,
@@ -130,7 +130,7 @@ func TestStockProcess(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "PU25030002",
 		TransFlag:           12,
@@ -141,7 +141,7 @@ func TestStockProcess(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "PT25030001",
 		DocRef:              "PU25030001",
@@ -153,7 +153,7 @@ func TestStockProcess(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "INV25030003",
 		TransFlag:           44,
@@ -164,125 +164,125 @@ func TestStockProcess(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:     FIX_SHOPID,
-		Barcode:    FIX_BARCODE,
-		DocNo:      "TF25030001",
-		TransFlag:  72,
-		CalcFlag:   -1,
-		CalcQty:    60,
-		LineNumber: 0,
+		HoldingCode: FIX_HOLDING_CODE,
+		Barcode:     FIX_BARCODE,
+		DocNo:       "TF25030001",
+		TransFlag:   72,
+		CalcFlag:    -1,
+		CalcQty:     60,
+		LineNumber:  0,
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:     FIX_SHOPID,
-		Barcode:    FIX_BARCODE,
-		DocNo:      "TF25030001",
-		TransFlag:  72,
-		CalcFlag:   -1,
-		CalcQty:    30,
-		LineNumber: 1,
+		HoldingCode: FIX_HOLDING_CODE,
+		Barcode:     FIX_BARCODE,
+		DocNo:       "TF25030001",
+		TransFlag:   72,
+		CalcFlag:    -1,
+		CalcQty:     30,
+		LineNumber:  1,
 	})
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:     FIX_SHOPID,
-		Barcode:    FIX_BARCODE,
-		DocNo:      "TF25030001",
-		TransFlag:  72,
-		CalcFlag:   -1,
-		CalcQty:    30,
-		LineNumber: 2,
-	})
-
-	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:     FIX_SHOPID,
-		Barcode:    FIX_BARCODE,
-		DocNo:      "TF25030001",
-		TransFlag:  72,
-		CalcFlag:   -1,
-		CalcQty:    30,
-		LineNumber: 3,
+		HoldingCode: FIX_HOLDING_CODE,
+		Barcode:     FIX_BARCODE,
+		DocNo:       "TF25030001",
+		TransFlag:   72,
+		CalcFlag:    -1,
+		CalcQty:     30,
+		LineNumber:  2,
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:     FIX_SHOPID,
-		Barcode:    FIX_BARCODE,
-		DocNo:      "TF25030001",
-		TransFlag:  72,
-		CalcFlag:   -1,
-		CalcQty:    30,
-		LineNumber: 4,
+		HoldingCode: FIX_HOLDING_CODE,
+		Barcode:     FIX_BARCODE,
+		DocNo:       "TF25030001",
+		TransFlag:   72,
+		CalcFlag:    -1,
+		CalcQty:     30,
+		LineNumber:  3,
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:     FIX_SHOPID,
-		Barcode:    FIX_BARCODE,
-		DocNo:      "TF25030001",
-		TransFlag:  72,
-		CalcFlag:   -1,
-		CalcQty:    30,
-		LineNumber: 5,
+		HoldingCode: FIX_HOLDING_CODE,
+		Barcode:     FIX_BARCODE,
+		DocNo:       "TF25030001",
+		TransFlag:   72,
+		CalcFlag:    -1,
+		CalcQty:     30,
+		LineNumber:  4,
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:     FIX_SHOPID,
-		Barcode:    FIX_BARCODE,
-		DocNo:      "TF25030001",
-		TransFlag:  72,
-		CalcFlag:   1,
-		CalcQty:    60,
-		LineNumber: 0,
+		HoldingCode: FIX_HOLDING_CODE,
+		Barcode:     FIX_BARCODE,
+		DocNo:       "TF25030001",
+		TransFlag:   72,
+		CalcFlag:    -1,
+		CalcQty:     30,
+		LineNumber:  5,
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:     FIX_SHOPID,
-		Barcode:    FIX_BARCODE,
-		DocNo:      "TF25030001",
-		TransFlag:  72,
-		CalcFlag:   1,
-		CalcQty:    30,
-		LineNumber: 1,
-	})
-	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:     FIX_SHOPID,
-		Barcode:    FIX_BARCODE,
-		DocNo:      "TF25030001",
-		TransFlag:  72,
-		CalcFlag:   1,
-		CalcQty:    30,
-		LineNumber: 2,
+		HoldingCode: FIX_HOLDING_CODE,
+		Barcode:     FIX_BARCODE,
+		DocNo:       "TF25030001",
+		TransFlag:   72,
+		CalcFlag:    1,
+		CalcQty:     60,
+		LineNumber:  0,
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:     FIX_SHOPID,
-		Barcode:    FIX_BARCODE,
-		DocNo:      "TF25030001",
-		TransFlag:  72,
-		CalcFlag:   1,
-		CalcQty:    30,
-		LineNumber: 3,
+		HoldingCode: FIX_HOLDING_CODE,
+		Barcode:     FIX_BARCODE,
+		DocNo:       "TF25030001",
+		TransFlag:   72,
+		CalcFlag:    1,
+		CalcQty:     30,
+		LineNumber:  1,
+	})
+	stockDataLists = append(stockDataLists, stockModel.StockData{
+		HoldingCode: FIX_HOLDING_CODE,
+		Barcode:     FIX_BARCODE,
+		DocNo:       "TF25030001",
+		TransFlag:   72,
+		CalcFlag:    1,
+		CalcQty:     30,
+		LineNumber:  2,
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:     FIX_SHOPID,
-		Barcode:    FIX_BARCODE,
-		DocNo:      "TF25030001",
-		TransFlag:  72,
-		CalcFlag:   1,
-		CalcQty:    30,
-		LineNumber: 4,
+		HoldingCode: FIX_HOLDING_CODE,
+		Barcode:     FIX_BARCODE,
+		DocNo:       "TF25030001",
+		TransFlag:   72,
+		CalcFlag:    1,
+		CalcQty:     30,
+		LineNumber:  3,
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:     FIX_SHOPID,
-		Barcode:    FIX_BARCODE,
-		DocNo:      "TF25030001",
-		TransFlag:  72,
-		CalcFlag:   1,
-		CalcQty:    30,
-		LineNumber: 5,
+		HoldingCode: FIX_HOLDING_CODE,
+		Barcode:     FIX_BARCODE,
+		DocNo:       "TF25030001",
+		TransFlag:   72,
+		CalcFlag:    1,
+		CalcQty:     30,
+		LineNumber:  4,
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode: FIX_HOLDING_CODE,
+		Barcode:     FIX_BARCODE,
+		DocNo:       "TF25030001",
+		TransFlag:   72,
+		CalcFlag:    1,
+		CalcQty:     30,
+		LineNumber:  5,
+	})
+
+	stockDataLists = append(stockDataLists, stockModel.StockData{
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "INV25030004",
 		TransFlag:           44,
@@ -293,7 +293,7 @@ func TestStockProcess(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "INV25030005",
 		TransFlag:           44,
@@ -304,7 +304,7 @@ func TestStockProcess(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "INV25030006",
 		TransFlag:           44,
@@ -315,7 +315,7 @@ func TestStockProcess(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "WID25030001",
 		TransFlag:           56,
@@ -326,7 +326,7 @@ func TestStockProcess(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "FG25030001",
 		TransFlag:           60,
@@ -337,7 +337,7 @@ func TestStockProcess(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "PT25030002",
 		TransFlag:           16,
@@ -348,7 +348,7 @@ func TestStockProcess(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "INV25030007",
 		TransFlag:           44,
@@ -359,7 +359,7 @@ func TestStockProcess(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "INV25030008",
 		TransFlag:           44,
@@ -370,7 +370,7 @@ func TestStockProcess(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "INV25030009",
 		TransFlag:           44,
@@ -381,7 +381,7 @@ func TestStockProcess(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "INV250300011",
 		TransFlag:           44,
@@ -392,7 +392,7 @@ func TestStockProcess(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "INV25030012",
 		TransFlag:           44,
@@ -403,7 +403,7 @@ func TestStockProcess(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "WID25030002",
 		TransFlag:           56,
@@ -414,7 +414,7 @@ func TestStockProcess(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "IS25030001",
 		TransFlag:           68,
@@ -425,7 +425,7 @@ func TestStockProcess(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "IA25030001",
 		TransFlag:           866,
@@ -436,7 +436,7 @@ func TestStockProcess(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "TF25030002",
 		TransFlag:           72,
@@ -447,7 +447,7 @@ func TestStockProcess(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "TF25030002",
 		TransFlag:           72,
@@ -458,7 +458,7 @@ func TestStockProcess(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "RIM25030001",
 		DocRef:              "WID25030002",
@@ -470,7 +470,7 @@ func TestStockProcess(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "INV25030013",
 		TransFlag:           44,
@@ -481,7 +481,7 @@ func TestStockProcess(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "CN25030001",
 		DocRef:              "INV25030013",
@@ -493,7 +493,7 @@ func TestStockProcess(t *testing.T) {
 	})
 
 	// stockDataLists = append(stockDataLists, stockModel.StockData{
-	// 	ShopID:              FIX_SHOPID,
+	// 	HoldingCode:              FIX_HOLDING_CODE,
 	// 	Barcode:             FIX_BARCODE,
 	// 	DocNo:               "DOC2",
 	// 	TransFlag:           12,
@@ -506,7 +506,7 @@ func TestStockProcess(t *testing.T) {
 	// })
 
 	// stockDataLists = append(stockDataLists, stockModel.StockData{
-	// 	ShopID:              FIX_SHOPID,
+	// 	HoldingCode:              FIX_HOLDING_CODE,
 	// 	Barcode:             FIX_BARCODE,
 	// 	DocNo:               "DOC2",
 	// 	TransFlag:           12,
@@ -523,21 +523,21 @@ func TestStockProcess(t *testing.T) {
 	logger.NewAppLogger(config.NewLoggerConfig())
 
 	giveBarcode := &productBarcodeModel.ProductBarcodePg{
-		ShopID:     FIX_SHOPID,
-		Barcode:    FIX_BARCODE,
-		BalanceQty: 297,
+		HoldingCode: FIX_HOLDING_CODE,
+		Barcode:     FIX_BARCODE,
+		BalanceQty:  297,
 	}
 
 	repo := new(MockStockProcessPGRepository)
-	repo.On("GetStockTransactionList", FIX_SHOPID, FIX_BARCODE).Return(stockDataLists, nil)
+	repo.On("GetStockTransactionList", FIX_HOLDING_CODE, FIX_BARCODE).Return(stockDataLists, nil)
 	repo.On("UpdateStockTransactionChange", mock.Anything).Return(nil)
 
 	barcodeRepo := new(MockProductBarcodePGRepository)
-	barcodeRepo.On("Get", FIX_SHOPID, FIX_BARCODE).Return(giveBarcode, nil)
-	barcodeRepo.On("Update", FIX_SHOPID, FIX_BARCODE, giveBarcode).Return(nil)
+	barcodeRepo.On("Get", FIX_HOLDING_CODE, FIX_BARCODE).Return(giveBarcode, nil)
+	barcodeRepo.On("Update", FIX_HOLDING_CODE, FIX_BARCODE, giveBarcode).Return(nil)
 
 	process := stockprocess.NewStockCalculator(repo, barcodeRepo)
-	process.CalculatorStock(FIX_SHOPID, FIX_BARCODE)
+	process.CalculatorStock(FIX_HOLDING_CODE, FIX_BARCODE)
 
 	assert.Equal(t, stockDataLists[0].CostPerUnit, float64(6.39), fmt.Sprintf("Cost Per Unit DocNo: %s", stockDataLists[0].DocNo))
 	assert.Equal(t, stockDataLists[0].TotalCost, float64(1915.89), fmt.Sprintf("Total Cost DocNo: %s", stockDataLists[0].DocNo))
@@ -657,7 +657,7 @@ func TestStockProcess(t *testing.T) {
 
 func TestProcessStockResultNAN(t *testing.T) {
 
-	FIX_SHOPID := "SHOPID"
+	FIX_HOLDING_CODE := "HOLDING_CODE"
 	FIX_BARCODE := "01-150"
 	// stockLists, err := repo.GetStockTransactionList("2IZS0jFeRXWPidSupyXN7zQIlaS", "888555")
 	// assert.Nil(t, err)
@@ -666,7 +666,7 @@ func TestProcessStockResultNAN(t *testing.T) {
 
 	var stockDataLists []stockModel.StockData
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "TF2025020800004",
 		TransFlag:           72,
@@ -677,7 +677,7 @@ func TestProcessStockResultNAN(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "TF2025020800004",
 		TransFlag:           72,
@@ -688,7 +688,7 @@ func TestProcessStockResultNAN(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "TF2025021100001",
 		TransFlag:           72,
@@ -699,7 +699,7 @@ func TestProcessStockResultNAN(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "TF2025021100001",
 		TransFlag:           72,
@@ -710,7 +710,7 @@ func TestProcessStockResultNAN(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "TF2025021200003",
 		TransFlag:           72,
@@ -721,7 +721,7 @@ func TestProcessStockResultNAN(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "TF2025021200003",
 		TransFlag:           72,
@@ -732,7 +732,7 @@ func TestProcessStockResultNAN(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "IF2025021700002",
 		TransFlag:           60,
@@ -747,21 +747,21 @@ func TestProcessStockResultNAN(t *testing.T) {
 	logger.NewAppLogger(config.NewLoggerConfig())
 
 	giveBarcode := &productBarcodeModel.ProductBarcodePg{
-		ShopID:     FIX_SHOPID,
-		Barcode:    FIX_BARCODE,
-		BalanceQty: 0,
+		HoldingCode: FIX_HOLDING_CODE,
+		Barcode:     FIX_BARCODE,
+		BalanceQty:  0,
 	}
 
 	repo := new(MockStockProcessPGRepository)
-	repo.On("GetStockTransactionList", FIX_SHOPID, FIX_BARCODE).Return(stockDataLists, nil)
+	repo.On("GetStockTransactionList", FIX_HOLDING_CODE, FIX_BARCODE).Return(stockDataLists, nil)
 	repo.On("UpdateStockTransactionChange", mock.Anything).Return(nil)
 
 	barcodeRepo := new(MockProductBarcodePGRepository)
-	barcodeRepo.On("Get", FIX_SHOPID, FIX_BARCODE).Return(giveBarcode, nil)
-	barcodeRepo.On("Update", FIX_SHOPID, FIX_BARCODE, giveBarcode).Return(nil)
+	barcodeRepo.On("Get", FIX_HOLDING_CODE, FIX_BARCODE).Return(giveBarcode, nil)
+	barcodeRepo.On("Update", FIX_HOLDING_CODE, FIX_BARCODE, giveBarcode).Return(nil)
 
 	process := stockprocess.NewStockCalculator(repo, barcodeRepo)
-	process.CalculatorStock(FIX_SHOPID, FIX_BARCODE)
+	process.CalculatorStock(FIX_HOLDING_CODE, FIX_BARCODE)
 
 	assert.Equal(t, stockDataLists[0].CostPerUnit, float64(0), fmt.Sprintf("Cost Per Unit DocNo: %s", stockDataLists[0].DocNo))
 	assert.Equal(t, stockDataLists[0].TotalCost, float64(0), fmt.Sprintf("Total Cost DocNo: %s", stockDataLists[0].DocNo))
@@ -807,12 +807,12 @@ func TestProcessStockResultNAN(t *testing.T) {
 }
 
 func TestProcessStockBalanceAmountInfinity(t *testing.T) {
-	FIX_SHOPID := "SHOPID"
+	FIX_HOLDING_CODE := "HOLDING_CODE"
 	FIX_BARCODE := "885001"
 
 	var stockDataLists []stockModel.StockData
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "PU00",
 		TransFlag:           12,
@@ -823,7 +823,7 @@ func TestProcessStockBalanceAmountInfinity(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "PU01",
 		TransFlag:           12,
@@ -834,7 +834,7 @@ func TestProcessStockBalanceAmountInfinity(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "SALE02",
 		TransFlag:           44,
@@ -845,7 +845,7 @@ func TestProcessStockBalanceAmountInfinity(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "SALE03",
 		TransFlag:           44,
@@ -856,7 +856,7 @@ func TestProcessStockBalanceAmountInfinity(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "SALE04",
 		TransFlag:           44,
@@ -867,7 +867,7 @@ func TestProcessStockBalanceAmountInfinity(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "SALE05",
 		TransFlag:           44,
@@ -878,7 +878,7 @@ func TestProcessStockBalanceAmountInfinity(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "SALE06",
 		TransFlag:           44,
@@ -889,7 +889,7 @@ func TestProcessStockBalanceAmountInfinity(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "PU07",
 		TransFlag:           12,
@@ -900,7 +900,7 @@ func TestProcessStockBalanceAmountInfinity(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "SALE08",
 		TransFlag:           44,
@@ -911,7 +911,7 @@ func TestProcessStockBalanceAmountInfinity(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "SALE09",
 		TransFlag:           44,
@@ -922,7 +922,7 @@ func TestProcessStockBalanceAmountInfinity(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "PU10",
 		TransFlag:           12,
@@ -933,7 +933,7 @@ func TestProcessStockBalanceAmountInfinity(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "PU11",
 		TransFlag:           12,
@@ -944,7 +944,7 @@ func TestProcessStockBalanceAmountInfinity(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "SALE12",
 		TransFlag:           44,
@@ -959,21 +959,21 @@ func TestProcessStockBalanceAmountInfinity(t *testing.T) {
 	logger.NewAppLogger(config.NewLoggerConfig())
 
 	giveBarcode := &productBarcodeModel.ProductBarcodePg{
-		ShopID:     FIX_SHOPID,
-		Barcode:    FIX_BARCODE,
-		BalanceQty: 0,
+		HoldingCode: FIX_HOLDING_CODE,
+		Barcode:     FIX_BARCODE,
+		BalanceQty:  0,
 	}
 
 	repo := new(MockStockProcessPGRepository)
-	repo.On("GetStockTransactionList", FIX_SHOPID, FIX_BARCODE).Return(stockDataLists, nil)
+	repo.On("GetStockTransactionList", FIX_HOLDING_CODE, FIX_BARCODE).Return(stockDataLists, nil)
 	repo.On("UpdateStockTransactionChange", mock.Anything).Return(nil)
 
 	barcodeRepo := new(MockProductBarcodePGRepository)
-	barcodeRepo.On("Get", FIX_SHOPID, FIX_BARCODE).Return(giveBarcode, nil)
-	barcodeRepo.On("Update", FIX_SHOPID, FIX_BARCODE, giveBarcode).Return(nil)
+	barcodeRepo.On("Get", FIX_HOLDING_CODE, FIX_BARCODE).Return(giveBarcode, nil)
+	barcodeRepo.On("Update", FIX_HOLDING_CODE, FIX_BARCODE, giveBarcode).Return(nil)
 
 	process := stockprocess.NewStockCalculator(repo, barcodeRepo)
-	process.CalculatorStock(FIX_SHOPID, FIX_BARCODE)
+	process.CalculatorStock(FIX_HOLDING_CODE, FIX_BARCODE)
 
 	assert.Equal(t, stockDataLists[0].CalcQty, float64(1), fmt.Sprintf("Doc Qty of DocNo: %s", stockDataLists[0].DocNo))
 	assert.Equal(t, stockDataLists[0].CostPerUnit, float64(10), fmt.Sprintf("Cost Per Unit DocNo: %s", stockDataLists[0].DocNo))
@@ -1068,12 +1068,12 @@ func TestProcessStockBalanceAmountInfinity(t *testing.T) {
 
 func TestCalcStockSaleAndReturnMustBeNotNAN(t *testing.T) {
 
-	FIX_SHOPID := "SHOPID"
+	FIX_HOLDING_CODE := "HOLDING_CODE"
 	FIX_BARCODE := "885001"
 
 	var stockDataLists []stockModel.StockData
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "SALE01",
 		TransFlag:           44,
@@ -1084,7 +1084,7 @@ func TestCalcStockSaleAndReturnMustBeNotNAN(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "CN02",
 		DocRef:              "SALE01",
@@ -1096,7 +1096,7 @@ func TestCalcStockSaleAndReturnMustBeNotNAN(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "SALE03",
 		TransFlag:           44,
@@ -1107,7 +1107,7 @@ func TestCalcStockSaleAndReturnMustBeNotNAN(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "PU04",
 		TransFlag:           12,
@@ -1122,21 +1122,21 @@ func TestCalcStockSaleAndReturnMustBeNotNAN(t *testing.T) {
 	logger.NewAppLogger(config.NewLoggerConfig())
 
 	giveBarcode := &productBarcodeModel.ProductBarcodePg{
-		ShopID:     FIX_SHOPID,
-		Barcode:    FIX_BARCODE,
-		BalanceQty: 0,
+		HoldingCode: FIX_HOLDING_CODE,
+		Barcode:     FIX_BARCODE,
+		BalanceQty:  0,
 	}
 
 	repo := new(MockStockProcessPGRepository)
-	repo.On("GetStockTransactionList", FIX_SHOPID, FIX_BARCODE).Return(stockDataLists, nil)
+	repo.On("GetStockTransactionList", FIX_HOLDING_CODE, FIX_BARCODE).Return(stockDataLists, nil)
 	repo.On("UpdateStockTransactionChange", mock.Anything).Return(nil)
 
 	barcodeRepo := new(MockProductBarcodePGRepository)
-	barcodeRepo.On("Get", FIX_SHOPID, FIX_BARCODE).Return(giveBarcode, nil)
-	barcodeRepo.On("Update", FIX_SHOPID, FIX_BARCODE, giveBarcode).Return(nil)
+	barcodeRepo.On("Get", FIX_HOLDING_CODE, FIX_BARCODE).Return(giveBarcode, nil)
+	barcodeRepo.On("Update", FIX_HOLDING_CODE, FIX_BARCODE, giveBarcode).Return(nil)
 
 	process := stockprocess.NewStockCalculator(repo, barcodeRepo)
-	process.CalculatorStock(FIX_SHOPID, FIX_BARCODE)
+	process.CalculatorStock(FIX_HOLDING_CODE, FIX_BARCODE)
 
 	assert.Equal(t, stockDataLists[0].CalcQty, float64(1), fmt.Sprintf("Doc Qty of DocNo: %s", stockDataLists[0].DocNo))
 	assert.Equal(t, stockDataLists[0].BalanceQty, float64(-1), fmt.Sprintf("Balance Qty DocNo: %s", stockDataLists[0].DocNo))
@@ -1169,12 +1169,12 @@ func TestCalcStockSaleAndReturnMustBeNotNAN(t *testing.T) {
 
 func TestDebugStockNotCalc(t *testing.T) {
 
-	FIX_SHOPID := "SHOPID"
+	FIX_HOLDING_CODE := "HOLDING_CODE"
 	FIX_BARCODE := "885001"
 
 	var stockDataLists []stockModel.StockData
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "SALE01",
 		TransFlag:           310,
@@ -1190,7 +1190,7 @@ func TestDebugStockNotCalc(t *testing.T) {
 	})
 
 	stockDataLists = append(stockDataLists, stockModel.StockData{
-		ShopID:              FIX_SHOPID,
+		HoldingCode:         FIX_HOLDING_CODE,
 		Barcode:             FIX_BARCODE,
 		DocNo:               "POS01",
 		DocRef:              "",
@@ -1206,21 +1206,21 @@ func TestDebugStockNotCalc(t *testing.T) {
 	logger.NewAppLogger(config.NewLoggerConfig())
 
 	giveBarcode := &productBarcodeModel.ProductBarcodePg{
-		ShopID:     FIX_SHOPID,
-		Barcode:    FIX_BARCODE,
-		BalanceQty: 0,
+		HoldingCode: FIX_HOLDING_CODE,
+		Barcode:     FIX_BARCODE,
+		BalanceQty:  0,
 	}
 
 	repo := new(MockStockProcessPGRepository)
-	repo.On("GetStockTransactionList", FIX_SHOPID, FIX_BARCODE).Return(stockDataLists, nil)
+	repo.On("GetStockTransactionList", FIX_HOLDING_CODE, FIX_BARCODE).Return(stockDataLists, nil)
 	repo.On("UpdateStockTransactionChange", mock.Anything).Return(nil)
 
 	barcodeRepo := new(MockProductBarcodePGRepository)
-	barcodeRepo.On("Get", FIX_SHOPID, FIX_BARCODE).Return(giveBarcode, nil)
-	barcodeRepo.On("Update", FIX_SHOPID, FIX_BARCODE, giveBarcode).Return(nil)
+	barcodeRepo.On("Get", FIX_HOLDING_CODE, FIX_BARCODE).Return(giveBarcode, nil)
+	barcodeRepo.On("Update", FIX_HOLDING_CODE, FIX_BARCODE, giveBarcode).Return(nil)
 
 	process := stockprocess.NewStockCalculator(repo, barcodeRepo)
-	process.CalculatorStock(FIX_SHOPID, FIX_BARCODE)
+	process.CalculatorStock(FIX_HOLDING_CODE, FIX_BARCODE)
 
 	assert.Equal(t, stockDataLists[0].CalcQty, float64(10), fmt.Sprintf("Doc Qty of DocNo: %s", stockDataLists[0].DocNo))
 	assert.Equal(t, stockDataLists[0].BalanceQty, float64(10), fmt.Sprintf("Balance Qty DocNo: %s", stockDataLists[0].DocNo))

@@ -29,8 +29,8 @@ import (
 // 	assert.NotNil(repo)
 
 // 	give := &models.ChartOfAccountPG{
-// 		ShopIdentity: models.ShopIdentity{
-// 			ShopID: "SHOPTEST",
+// 		HoldingCodeentity: models.HoldingCodeentity{
+// 			HoldingCode: "SHOPTEST",
 // 		},
 // 		AccountCode: "10000",
 // 		AccountName: "เงินสด",
@@ -94,8 +94,8 @@ func TestChartOfAccountRepositoryCreate(t *testing.T) {
 	s.repo = repositories.NewChartOfAccountPgRepository(microservice.NewPersisterWithDB(s.db))
 
 	s.chartofaccount = models.ChartOfAccountPG{
-		ShopIdentity: common.ShopIdentity{
-			ShopID: "TESTSHOP",
+		HoldingCodeentity: common.HoldingCodeentity{
+			HoldingCode: "TESTSHOP",
 		},
 		PartitionIdentity: common.PartitionIdentity{
 			ParID: "",
@@ -113,18 +113,18 @@ func TestChartOfAccountRepositoryCreate(t *testing.T) {
 	s.mock.ExpectBegin()
 
 	s.mock.ExpectExec(
-		regexp.QuoteMeta(`INSERT INTO "chartofaccounts" ("shopid","parid","accountcode","accountname","accountcategory","accountbalancetype","accountgroup","accountlevel","consolidateaccountcode")
+		regexp.QuoteMeta(`INSERT INTO "chartofaccounts" ("holding_code","parid","accountcode","accountname","accountcategory","accountbalancetype","accountgroup","accountlevel","consolidateaccountcode")
 	                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`)).
 		WithArgs(
-			s.chartofaccount.ShopID, s.chartofaccount.ParID, s.chartofaccount.AccountCode, s.chartofaccount.AccountName,
+			s.chartofaccount.HoldingCode, s.chartofaccount.ParID, s.chartofaccount.AccountCode, s.chartofaccount.AccountName,
 			s.chartofaccount.AccountCategory, s.chartofaccount.AccountBalanceType, s.chartofaccount.AccountGroup, s.chartofaccount.AccountLevel,
 			s.chartofaccount.ConsolidateAccountCode).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	// s.mock.ExpectQuery(regexp.QuoteMeta(
-	// 	`INSERT INTO "chartofaccounts" ("shopid", "accountcode","accountname")
+	// 	`INSERT INTO "chartofaccounts" ("holding_code", "accountcode","accountname")
 	// 						VALUES ($1,$2,$3) RETURNING "chartofaccounts"."accountcode"`)).
-	// 	WithArgs(s.chartofaccount.ShopID, s.chartofaccount.ParID, s.chartofaccount.AccountCode, s.chartofaccount.AccountName, s.chartofaccount.AccountCategory, s.chartofaccount.AccountBalanceType, s.chartofaccount.AccountGroup, s.chartofaccount.AccountLevel, s.chartofaccount.ConsolidateAccountCode).
+	// 	WithArgs(s.chartofaccount.HoldingCode, s.chartofaccount.ParID, s.chartofaccount.AccountCode, s.chartofaccount.AccountName, s.chartofaccount.AccountCategory, s.chartofaccount.AccountBalanceType, s.chartofaccount.AccountGroup, s.chartofaccount.AccountLevel, s.chartofaccount.ConsolidateAccountCode).
 	// 	WillReturnRows(sqlmock.NewRows([]string{"0001"}).
 	// 		AddRow(s.chartofaccount.AccountCode))
 
@@ -141,7 +141,7 @@ func TestChartOfAccountRepositoryCreate(t *testing.T) {
 	}
 }
 
-func TestChartOfAccountRepositoryGetByShopIDAndAccountCode(t *testing.T) {
+func TestChartOfAccountRepositoryGetByHoldingCodeAndAccountCode(t *testing.T) {
 	s := &chartOfAccountRepositoryTestSuite{}
 
 	var (
@@ -157,8 +157,8 @@ func TestChartOfAccountRepositoryGetByShopIDAndAccountCode(t *testing.T) {
 	s.repo = repositories.NewChartOfAccountPgRepository(microservice.NewPersisterWithDB(s.db))
 
 	s.chartofaccount = models.ChartOfAccountPG{
-		ShopIdentity: common.ShopIdentity{
-			ShopID: "TESTSHOP",
+		HoldingCodeentity: common.HoldingCodeentity{
+			HoldingCode: "TESTSHOP",
 		},
 		PartitionIdentity: common.PartitionIdentity{
 			ParID: "",
@@ -172,10 +172,10 @@ func TestChartOfAccountRepositoryGetByShopIDAndAccountCode(t *testing.T) {
 		ConsolidateAccountCode: "",
 	}
 
-	colums := []string{"shopid", "parid", "accountcode", "accountname", "accountcategory", "accountbalancetype", "accountgroup", "accountlevel", "consolidateaccountcode"}
+	colums := []string{"holding_code", "parid", "accountcode", "accountname", "accountcategory", "accountbalancetype", "accountgroup", "accountlevel", "consolidateaccountcode"}
 	rows := sqlmock.NewRows(colums).
 		AddRow(
-			s.chartofaccount.ShopIdentity.ShopID,
+			s.chartofaccount.HoldingCodeentity.HoldingCode,
 			s.chartofaccount.ParID,
 			s.chartofaccount.AccountCode,
 			s.chartofaccount.AccountName,
@@ -190,11 +190,11 @@ func TestChartOfAccountRepositoryGetByShopIDAndAccountCode(t *testing.T) {
 	//s.mock.ExpectBegin()
 
 	s.mock.ExpectQuery(
-		regexp.QuoteMeta(`SELECT * FROM "chartofaccounts" WHERE shopid=$1 AND accountcode=$2`)).
-		WithArgs(s.chartofaccount.ShopID, s.chartofaccount.AccountCode).
+		regexp.QuoteMeta(`SELECT * FROM "chartofaccounts" WHERE holding_code=$1 AND accountcode=$2`)).
+		WithArgs(s.chartofaccount.HoldingCode, s.chartofaccount.AccountCode).
 		WillReturnRows(rows)
 
-	get, err := s.repo.Get(s.chartofaccount.ShopID, s.chartofaccount.AccountCode)
+	get, err := s.repo.Get(s.chartofaccount.HoldingCode, s.chartofaccount.AccountCode)
 	if err != nil {
 		t.Errorf("Failed to insert to gorm db, got error: %v", err)
 		t.FailNow()
@@ -208,7 +208,7 @@ func TestChartOfAccountRepositoryGetByShopIDAndAccountCode(t *testing.T) {
 	}
 }
 
-func TestChartOfAccountRepositoryGetByShopIDAndAccountCodeAssertNotFoundData(t *testing.T) {
+func TestChartOfAccountRepositoryGetByHoldingCodeAndAccountCodeAssertNotFoundData(t *testing.T) {
 	s := &chartOfAccountRepositoryTestSuite{}
 
 	var (
@@ -224,8 +224,8 @@ func TestChartOfAccountRepositoryGetByShopIDAndAccountCodeAssertNotFoundData(t *
 	s.repo = repositories.NewChartOfAccountPgRepository(microservice.NewPersisterWithDB(s.db))
 
 	s.chartofaccount = models.ChartOfAccountPG{
-		ShopIdentity: common.ShopIdentity{
-			ShopID: "TESTSHOP",
+		HoldingCodeentity: common.HoldingCodeentity{
+			HoldingCode: "TESTSHOP",
 		},
 		PartitionIdentity: common.PartitionIdentity{
 			ParID: "",
@@ -239,19 +239,19 @@ func TestChartOfAccountRepositoryGetByShopIDAndAccountCodeAssertNotFoundData(t *
 		ConsolidateAccountCode: "",
 	}
 
-	// colums := []string{"shopid", "parid", "accountcode", "accountname", "accountcategory", "accountbalancetype", "accountgroup", "accountlevel", "consolidateaccountcode"}
+	// colums := []string{"holding_code", "parid", "accountcode", "accountname", "accountcategory", "accountbalancetype", "accountgroup", "accountlevel", "consolidateaccountcode"}
 	// rows := sqlmock.NewRows(colums)
 
 	s.mock.MatchExpectationsInOrder(false)
 	//s.mock.ExpectBegin()
 
 	s.mock.ExpectQuery(
-		regexp.QuoteMeta(`SELECT * FROM "chartofaccounts" WHERE shopid=$1 AND accountcode=$2`)).
-		WithArgs(s.chartofaccount.ShopID, s.chartofaccount.AccountCode).
+		regexp.QuoteMeta(`SELECT * FROM "chartofaccounts" WHERE holding_code=$1 AND accountcode=$2`)).
+		WithArgs(s.chartofaccount.HoldingCode, s.chartofaccount.AccountCode).
 		WillReturnError(gorm.ErrRecordNotFound)
 		//WillReturnRows(rows)
 
-	get, err := s.repo.Get(s.chartofaccount.ShopID, s.chartofaccount.AccountCode)
+	get, err := s.repo.Get(s.chartofaccount.HoldingCode, s.chartofaccount.AccountCode)
 	assert.NotNil(t, err, "Failed to assert not found record")
 	if get != nil {
 		t.Errorf("Failed on Get Blank Data from gorm db, got Data: %v", get)

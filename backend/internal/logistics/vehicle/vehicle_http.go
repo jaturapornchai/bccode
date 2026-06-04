@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"net/http"
 	"smlcloudplatform/internal/config"
-	mastersync "smlcloudplatform/internal/mastersync/repositories"
-	common "smlcloudplatform/internal/models"
 	"smlcloudplatform/internal/logistics/vehicle/models"
 	"smlcloudplatform/internal/logistics/vehicle/repositories"
 	"smlcloudplatform/internal/logistics/vehicle/services"
+	mastersync "smlcloudplatform/internal/mastersync/repositories"
+	common "smlcloudplatform/internal/models"
 	"smlcloudplatform/internal/utils"
 	"smlcloudplatform/internal/utils/requestfilter"
 	"smlcloudplatform/pkg/microservice"
@@ -63,7 +63,7 @@ func (h VehicleHttp) RegisterHttp() {
 // @Router /logistics/vehicle [post]
 func (h VehicleHttp) CreateVehicle(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.Vehicle{}
@@ -79,7 +79,7 @@ func (h VehicleHttp) CreateVehicle(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreateVehicle(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateVehicle(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -106,7 +106,7 @@ func (h VehicleHttp) CreateVehicle(ctx microservice.IContext) error {
 func (h VehicleHttp) UpdateVehicle(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -124,7 +124,7 @@ func (h VehicleHttp) UpdateVehicle(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateVehicle(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateVehicle(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -150,12 +150,12 @@ func (h VehicleHttp) UpdateVehicle(ctx microservice.IContext) error {
 // @Router /logistics/vehicle/{id} [delete]
 func (h VehicleHttp) DeleteVehicle(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteVehicle(shopID, id, authUsername)
+	err := h.svc.DeleteVehicle(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -181,7 +181,7 @@ func (h VehicleHttp) DeleteVehicle(ctx microservice.IContext) error {
 // @Router /logistics/vehicle [delete]
 func (h VehicleHttp) DeleteVehicleByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -194,7 +194,7 @@ func (h VehicleHttp) DeleteVehicleByGUIDs(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.DeleteVehicleByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteVehicleByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -219,12 +219,12 @@ func (h VehicleHttp) DeleteVehicleByGUIDs(ctx microservice.IContext) error {
 // @Router /logistics/vehicle/{id} [get]
 func (h VehicleHttp) InfoVehicle(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("ดึงข้อมูลยานพาหนะ %v", id)
-	doc, err := h.svc.InfoVehicle(shopID, id)
+	doc, err := h.svc.InfoVehicle(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("ดึงข้อมูลยานพาหนะผิดพลาด %v: %v", id, err)
@@ -250,11 +250,11 @@ func (h VehicleHttp) InfoVehicle(ctx microservice.IContext) error {
 // @Router /logistics/vehicle/code/{code} [get]
 func (h VehicleHttp) InfoVehicleByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoVehicleByCode(shopID, code)
+	doc, err := h.svc.InfoVehicleByCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -283,7 +283,7 @@ func (h VehicleHttp) InfoVehicleByCode(ctx microservice.IContext) error {
 // @Router /logistics/vehicle [get]
 func (h VehicleHttp) SearchVehiclePage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -300,7 +300,7 @@ func (h VehicleHttp) SearchVehiclePage(ctx microservice.IContext) error {
 		},
 	})
 
-	docList, pagination, err := h.svc.SearchVehicle(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchVehicle(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -331,7 +331,7 @@ func (h VehicleHttp) SearchVehiclePage(ctx microservice.IContext) error {
 // @Router /logistics/vehicle/list [get]
 func (h VehicleHttp) SearchVehicleStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -350,7 +350,7 @@ func (h VehicleHttp) SearchVehicleStep(ctx microservice.IContext) error {
 		},
 	})
 
-	docList, total, err := h.svc.SearchVehicleStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchVehicleStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -378,7 +378,7 @@ func (h VehicleHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -390,7 +390,7 @@ func (h VehicleHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

@@ -62,7 +62,7 @@ func (h SectionBranchHttp) RegisterHttp() {
 func (h SectionBranchHttp) SaveSectionBranch(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -79,7 +79,7 @@ func (h SectionBranchHttp) SaveSectionBranch(ctx microservice.IContext) error {
 		return err
 	}
 
-	id, err := h.svc.SaveSectionBranch(shopID, authUsername, *docReq)
+	id, err := h.svc.SaveSectionBranch(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -105,12 +105,12 @@ func (h SectionBranchHttp) SaveSectionBranch(ctx microservice.IContext) error {
 // @Router /product-section/branch/{id} [delete]
 func (h SectionBranchHttp) DeleteSectionBranch(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteSectionBranch(shopID, id, authUsername)
+	err := h.svc.DeleteSectionBranch(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -136,7 +136,7 @@ func (h SectionBranchHttp) DeleteSectionBranch(ctx microservice.IContext) error 
 // @Router /product-section/branch [delete]
 func (h SectionBranchHttp) DeleteSectionBranchByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -149,7 +149,7 @@ func (h SectionBranchHttp) DeleteSectionBranchByGUIDs(ctx microservice.IContext)
 		return err
 	}
 
-	err = h.svc.DeleteSectionBranchByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteSectionBranchByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -174,12 +174,12 @@ func (h SectionBranchHttp) DeleteSectionBranchByGUIDs(ctx microservice.IContext)
 // @Router /product-section/branch/{id} [get]
 func (h SectionBranchHttp) InfoSectionBranch(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get SectionBranch %v", id)
-	doc, err := h.svc.InfoSectionBranch(shopID, id)
+	doc, err := h.svc.InfoSectionBranch(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -205,11 +205,11 @@ func (h SectionBranchHttp) InfoSectionBranch(ctx microservice.IContext) error {
 // @Router /product-section/branch/code/{code} [get]
 func (h SectionBranchHttp) InfoSectionBranchByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoSectionBranchByBranchCode(shopID, code)
+	doc, err := h.svc.InfoSectionBranchByBranchCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -236,11 +236,11 @@ func (h SectionBranchHttp) InfoSectionBranchByCode(ctx microservice.IContext) er
 // @Router /product-section/branch [get]
 func (h SectionBranchHttp) SearchSectionBranchPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.SearchSectionBranch(shopID, map[string]interface{}{}, pageable)
+	docList, pagination, err := h.svc.SearchSectionBranch(holdingCode, map[string]interface{}{}, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -269,13 +269,13 @@ func (h SectionBranchHttp) SearchSectionBranchPage(ctx microservice.IContext) er
 // @Router /product-section/branch/list [get]
 func (h SectionBranchHttp) SearchSectionBranchStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
 	lang := ctx.QueryParam("lang")
 
-	docList, total, err := h.svc.SearchSectionBranchStep(shopID, lang, pageableStep)
+	docList, total, err := h.svc.SearchSectionBranchStep(holdingCode, lang, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -303,7 +303,7 @@ func (h SectionBranchHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -315,7 +315,7 @@ func (h SectionBranchHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

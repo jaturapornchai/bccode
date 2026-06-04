@@ -20,14 +20,14 @@ import (
 )
 
 type IStaffHttpService interface {
-	CreateStaff(shopID string, authUsername string, doc models.Staff) (string, error)
-	UpdateStaff(shopID string, guid string, authUsername string, doc models.Staff) error
-	DeleteStaff(shopID string, guid string, authUsername string) error
-	DeleteStaffByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoStaff(shopID string, guid string) (models.StaffInfo, error)
-	SearchStaff(shopID string, pageable micromodels.Pageable) ([]models.StaffInfo, mongopagination.PaginationData, error)
-	SearchStaffStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.StaffInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.Staff) (common.BulkImport, error)
+	CreateStaff(holdingCode string, authUsername string, doc models.Staff) (string, error)
+	UpdateStaff(holdingCode string, guid string, authUsername string, doc models.Staff) error
+	DeleteStaff(holdingCode string, guid string, authUsername string) error
+	DeleteStaffByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoStaff(holdingCode string, guid string) (models.StaffInfo, error)
+	SearchStaff(holdingCode string, pageable micromodels.Pageable) ([]models.StaffInfo, mongopagination.PaginationData, error)
+	SearchStaffStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.StaffInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.Staff) (common.BulkImport, error)
 
 	GetModuleName() string
 }
@@ -59,12 +59,12 @@ func (svc StaffHttpService) getContextTimeout() (context.Context, context.Cancel
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc StaffHttpService) CreateStaff(shopID string, authUsername string, doc models.Staff) (string, error) {
+func (svc StaffHttpService) CreateStaff(holdingCode string, authUsername string, doc models.Staff) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", doc.Code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", doc.Code)
 
 	if err != nil {
 		return "", err
@@ -77,7 +77,7 @@ func (svc StaffHttpService) CreateStaff(shopID string, authUsername string, doc 
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.StaffDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.Staff = doc
 
@@ -90,17 +90,17 @@ func (svc StaffHttpService) CreateStaff(shopID string, authUsername string, doc 
 		return "", err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return newGuidFixed, nil
 }
 
-func (svc StaffHttpService) UpdateStaff(shopID string, guid string, authUsername string, doc models.Staff) error {
+func (svc StaffHttpService) UpdateStaff(holdingCode string, guid string, authUsername string, doc models.Staff) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -115,23 +115,23 @@ func (svc StaffHttpService) UpdateStaff(shopID string, guid string, authUsername
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, findDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, findDoc)
 
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc StaffHttpService) DeleteStaff(shopID string, guid string, authUsername string) error {
+func (svc StaffHttpService) DeleteStaff(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -141,17 +141,17 @@ func (svc StaffHttpService) DeleteStaff(shopID string, guid string, authUsername
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc StaffHttpService) DeleteStaffByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc StaffHttpService) DeleteStaffByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -160,7 +160,7 @@ func (svc StaffHttpService) DeleteStaffByGUIDs(shopID string, authUsername strin
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
@@ -168,12 +168,12 @@ func (svc StaffHttpService) DeleteStaffByGUIDs(shopID string, authUsername strin
 	return nil
 }
 
-func (svc StaffHttpService) InfoStaff(shopID string, guid string) (models.StaffInfo, error) {
+func (svc StaffHttpService) InfoStaff(holdingCode string, guid string) (models.StaffInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.StaffInfo{}, err
@@ -187,7 +187,7 @@ func (svc StaffHttpService) InfoStaff(shopID string, guid string) (models.StaffI
 
 }
 
-func (svc StaffHttpService) SearchStaff(shopID string, pageable micromodels.Pageable) ([]models.StaffInfo, mongopagination.PaginationData, error) {
+func (svc StaffHttpService) SearchStaff(holdingCode string, pageable micromodels.Pageable) ([]models.StaffInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -197,7 +197,7 @@ func (svc StaffHttpService) SearchStaff(shopID string, pageable micromodels.Page
 		"names.name",
 	}
 
-	docList, pagination, err := svc.repo.FindPage(ctx, shopID, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPage(ctx, holdingCode, searchInFields, pageable)
 
 	if err != nil {
 		return []models.StaffInfo{}, pagination, err
@@ -206,7 +206,7 @@ func (svc StaffHttpService) SearchStaff(shopID string, pageable micromodels.Page
 	return docList, pagination, nil
 }
 
-func (svc StaffHttpService) SearchStaffStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.StaffInfo, int, error) {
+func (svc StaffHttpService) SearchStaffStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.StaffInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -218,7 +218,7 @@ func (svc StaffHttpService) SearchStaffStep(shopID string, langCode string, page
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.StaffInfo{}, 0, err
@@ -227,7 +227,7 @@ func (svc StaffHttpService) SearchStaffStep(shopID string, langCode string, page
 	return docList, total, nil
 }
 
-func (svc StaffHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.Staff) (common.BulkImport, error) {
+func (svc StaffHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.Staff) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -239,7 +239,7 @@ func (svc StaffHttpService) SaveInBatch(shopID string, authUsername string, data
 		itemCodeGuidList = append(itemCodeGuidList, doc.Code)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "code", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "code", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -251,18 +251,18 @@ func (svc StaffHttpService) SaveInBatch(shopID string, authUsername string, data
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.Staff, models.StaffDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.Staff) models.StaffDoc {
+		func(holdingCode string, authUsername string, doc models.Staff) models.StaffDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.StaffDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.Staff = doc
 
 			currentTime := time.Now()
@@ -273,23 +273,23 @@ func (svc StaffHttpService) SaveInBatch(shopID string, authUsername string, data
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.Staff, models.StaffDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.StaffDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", guid)
+		func(holdingCode string, guid string) (models.StaffDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", guid)
 		},
 		func(doc models.StaffDoc) bool {
 			return doc.Code != ""
 		},
-		func(shopID string, authUsername string, data models.Staff, doc models.StaffDoc) error {
+		func(holdingCode string, authUsername string, data models.Staff, doc models.StaffDoc) error {
 
 			doc.Staff = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -328,7 +328,7 @@ func (svc StaffHttpService) SaveInBatch(shopID string, authUsername string, data
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -342,9 +342,9 @@ func (svc StaffHttpService) getDocIDKey(doc models.Staff) string {
 	return doc.Code
 }
 
-func (svc StaffHttpService) saveMasterSync(shopID string) {
+func (svc StaffHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

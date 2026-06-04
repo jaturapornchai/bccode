@@ -2,9 +2,11 @@ package shop
 
 import (
 	"context"
+	"errors"
 	"smlcloudplatform/internal/shop/models"
 	"smlcloudplatform/pkg/microservice"
 	micromodels "smlcloudplatform/pkg/microservice/models"
+	"strings"
 
 	"github.com/smlsoft/mongopagination"
 	"go.mongodb.org/mongo-driver/bson"
@@ -15,6 +17,7 @@ type IShopRepository interface {
 	Create(ctx context.Context, shop models.ShopDoc) (string, error)
 	Update(ctx context.Context, guid string, shop models.ShopDoc) error
 	FindByGuid(ctx context.Context, guid string) (models.ShopDoc, error)
+	FindByHoldingCode(ctx context.Context, holdingCode string) (models.ShopDoc, error)
 	FindPage(ctx context.Context, pageable micromodels.Pageable) ([]models.ShopInfo, mongopagination.PaginationData, error)
 	Delete(ctx context.Context, guid string, username string) error
 }
@@ -55,9 +58,25 @@ func (repo ShopRepository) FindByGuid(ctx context.Context, guid string) (models.
 	err := repo.pst.FindOne(ctx, &models.ShopDoc{}, bson.M{"guid_fixed": guid, "deleted_at": bson.M{"$exists": false}}, findShop)
 
 	if err != nil {
-		return models.ShopDoc{}, err
+		return repo.FindByHoldingCode(ctx, guid)
+	}
+	if strings.TrimSpace(findShop.GuidFixed) == "" {
+		return repo.FindByHoldingCode(ctx, guid)
 	}
 	return *findShop, err
+}
+
+func (repo ShopRepository) FindByHoldingCode(ctx context.Context, holdingCode string) (models.ShopDoc, error) {
+	findShop := &models.ShopDoc{}
+	err := repo.pst.FindOne(ctx, &models.ShopDoc{}, bson.M{"holding_code": holdingCode, "deleted_at": bson.M{"$exists": false}}, findShop)
+
+	if err != nil {
+		return models.ShopDoc{}, err
+	}
+	if strings.TrimSpace(findShop.GuidFixed) == "" {
+		return models.ShopDoc{}, errors.New("holding not found")
+	}
+	return *findShop, nil
 }
 
 func (repo ShopRepository) FindPage(ctx context.Context, pageable micromodels.Pageable) ([]models.ShopInfo, mongopagination.PaginationData, error) {
@@ -80,7 +99,7 @@ func (repo ShopRepository) FindPage(ctx context.Context, pageable micromodels.Pa
 }
 
 func (repo ShopRepository) Delete(ctx context.Context, guid string, username string) error {
-	err := repo.pst.SoftDeleteByID(ctx, &models.ShopInfo{}, guid, username)
+	err := repo.pst.SoftDelete(ctx, &models.ShopDoc{}, username, bson.M{"guid_fixed": guid, "deleted_at": bson.M{"$exists": false}})
 	if err != nil {
 		return err
 	}

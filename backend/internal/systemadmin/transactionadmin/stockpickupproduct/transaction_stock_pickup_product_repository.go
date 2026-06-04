@@ -9,8 +9,8 @@ import (
 )
 
 type IStockPickupTransactionAdminRepository interface {
-	FindStockPickupDocByShopID(ctx context.Context, shopID string) ([]stockPickupProductModels.StockPickupProductDoc, error)
-	FindStockPickupDocDeleteByShopID(ctx context.Context, shopID string) ([]stockPickupProductModels.StockPickupProductDoc, error)
+	FindStockPickupDocByHoldingCode(ctx context.Context, holdingCode string) ([]stockPickupProductModels.StockPickupProductDoc, error)
+	FindStockPickupDocDeleteByHoldingCode(ctx context.Context, holdingCode string) ([]stockPickupProductModels.StockPickupProductDoc, error)
 }
 
 type StockPickupTransactionAdminRepository struct {
@@ -23,13 +23,13 @@ func NewStockPickupTransactionAdminRepository(pst microservice.IPersisterMongo) 
 	}
 }
 
-func (r *StockPickupTransactionAdminRepository) FindStockPickupDocByShopID(ctx context.Context, shopID string) ([]stockPickupProductModels.StockPickupProductDoc, error) {
+func (r *StockPickupTransactionAdminRepository) FindStockPickupDocByHoldingCode(ctx context.Context, holdingCode string) ([]stockPickupProductModels.StockPickupProductDoc, error) {
 	docList := []stockPickupProductModels.StockPickupProductDoc{}
 
 	err := r.pst.Find(ctx, &stockPickupProductModels.StockPickupProductDoc{},
 		bson.M{
-			"shopid":    shopID,
-			"deleted_at": bson.M{"$exists": false},
+			"holding_code": holdingCode,
+			"deleted_at":   bson.M{"$exists": false},
 		},
 		&docList)
 	if err != nil {
@@ -39,13 +39,13 @@ func (r *StockPickupTransactionAdminRepository) FindStockPickupDocByShopID(ctx c
 	return docList, nil
 }
 
-func (r *StockPickupTransactionAdminRepository) FindStockPickupDocDeleteByShopID(ctx context.Context, shopID string) ([]stockPickupProductModels.StockPickupProductDoc, error) {
+func (r *StockPickupTransactionAdminRepository) FindStockPickupDocDeleteByHoldingCode(ctx context.Context, holdingCode string) ([]stockPickupProductModels.StockPickupProductDoc, error) {
 	docList := []stockPickupProductModels.StockPickupProductDoc{}
 
 	err := r.pst.Find(ctx, &stockPickupProductModels.StockPickupProductDoc{},
 		bson.M{
-			"shopid":    shopID,
-			"deleted_at": bson.M{"$exists": true},
+			"holding_code": holdingCode,
+			"deleted_at":   bson.M{"$exists": true},
 		},
 		&docList)
 	if err != nil {

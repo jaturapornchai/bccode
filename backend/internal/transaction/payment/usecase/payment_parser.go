@@ -11,7 +11,7 @@ func ParseTransactionToPayment(other transmodels.TransactionMessageQueue) (model
 
 	doc := models.TransactionPayment{}
 
-	doc.ShopID = other.ShopID
+	doc.HoldingCode = other.HoldingCode
 	doc.DocNo = other.DocNo
 	doc.DocDate = other.DocDatetime
 	doc.GuidRef = other.GuidRef

@@ -18,14 +18,14 @@ import (
 )
 
 type ISectionBranchHttpService interface {
-	SaveSectionBranch(shopID string, authUsername string, doc models.SectionBranch) (string, error)
-	DeleteSectionBranch(shopID string, guid string, authUsername string) error
-	DeleteSectionBranchByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoSectionBranch(shopID string, guid string) (models.SectionBranchInfo, error)
-	InfoSectionBranchByBranchCode(shopID string, branchcode string) (models.SectionBranchInfo, error)
-	SearchSectionBranch(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.SectionBranchInfo, mongopagination.PaginationData, error)
-	SearchSectionBranchStep(shopID string, langBranchCode string, pageableStep micromodels.PageableStep) ([]models.SectionBranchInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.SectionBranch) (common.BulkImport, error)
+	SaveSectionBranch(holdingCode string, authUsername string, doc models.SectionBranch) (string, error)
+	DeleteSectionBranch(holdingCode string, guid string, authUsername string) error
+	DeleteSectionBranchByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoSectionBranch(holdingCode string, guid string) (models.SectionBranchInfo, error)
+	InfoSectionBranchByBranchCode(holdingCode string, branchcode string) (models.SectionBranchInfo, error)
+	SearchSectionBranch(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.SectionBranchInfo, mongopagination.PaginationData, error)
+	SearchSectionBranchStep(holdingCode string, langBranchCode string, pageableStep micromodels.PageableStep) ([]models.SectionBranchInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.SectionBranch) (common.BulkImport, error)
 
 	GetModuleName() string
 }
@@ -59,12 +59,12 @@ func (svc SectionBranchHttpService) getContextTimeout() (context.Context, contex
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc SectionBranchHttpService) SaveSectionBranch(shopID string, authUsername string, doc models.SectionBranch) (string, error) {
+func (svc SectionBranchHttpService) SaveSectionBranch(holdingCode string, authUsername string, doc models.SectionBranch) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "branchcode", doc.BranchCode)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "branchcode", doc.BranchCode)
 
 	if err != nil {
 		return "", err
@@ -72,9 +72,9 @@ func (svc SectionBranchHttpService) SaveSectionBranch(shopID string, authUsernam
 
 	guidFixed := ""
 	if len(findDoc.GuidFixed) < 1 {
-		guidFixed, err = svc.create(findDoc, shopID, authUsername, doc)
+		guidFixed, err = svc.create(findDoc, holdingCode, authUsername, doc)
 	} else {
-		err = svc.update(findDoc, shopID, authUsername, doc)
+		err = svc.update(findDoc, holdingCode, authUsername, doc)
 		guidFixed = findDoc.GuidFixed
 	}
 
@@ -85,7 +85,7 @@ func (svc SectionBranchHttpService) SaveSectionBranch(shopID string, authUsernam
 	return guidFixed, nil
 }
 
-func (svc SectionBranchHttpService) create(findDoc models.SectionBranchDoc, shopID string, authUsername string, doc models.SectionBranch) (string, error) {
+func (svc SectionBranchHttpService) create(findDoc models.SectionBranchDoc, holdingCode string, authUsername string, doc models.SectionBranch) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -93,7 +93,7 @@ func (svc SectionBranchHttpService) create(findDoc models.SectionBranchDoc, shop
 	newGuidFixed := svc.generateGUID()
 
 	docData := models.SectionBranchDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.SectionBranch = doc
 
@@ -106,12 +106,12 @@ func (svc SectionBranchHttpService) create(findDoc models.SectionBranchDoc, shop
 		return "", err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return newGuidFixed, nil
 }
 
-func (svc SectionBranchHttpService) update(findDoc models.SectionBranchDoc, shopID string, authUsername string, doc models.SectionBranch) error {
+func (svc SectionBranchHttpService) update(findDoc models.SectionBranchDoc, holdingCode string, authUsername string, doc models.SectionBranch) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -125,23 +125,23 @@ func (svc SectionBranchHttpService) update(findDoc models.SectionBranchDoc, shop
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
 
-	err := svc.repo.Update(ctx, shopID, findDoc.GuidFixed, findDoc)
+	err := svc.repo.Update(ctx, holdingCode, findDoc.GuidFixed, findDoc)
 
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc SectionBranchHttpService) DeleteSectionBranch(shopID string, guid string, authUsername string) error {
+func (svc SectionBranchHttpService) DeleteSectionBranch(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -151,17 +151,17 @@ func (svc SectionBranchHttpService) DeleteSectionBranch(shopID string, guid stri
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc SectionBranchHttpService) DeleteSectionBranchByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc SectionBranchHttpService) DeleteSectionBranchByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -170,7 +170,7 @@ func (svc SectionBranchHttpService) DeleteSectionBranchByGUIDs(shopID string, au
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
@@ -178,12 +178,12 @@ func (svc SectionBranchHttpService) DeleteSectionBranchByGUIDs(shopID string, au
 	return nil
 }
 
-func (svc SectionBranchHttpService) InfoSectionBranch(shopID string, guid string) (models.SectionBranchInfo, error) {
+func (svc SectionBranchHttpService) InfoSectionBranch(holdingCode string, guid string) (models.SectionBranchInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.SectionBranchInfo{}, err
@@ -196,12 +196,12 @@ func (svc SectionBranchHttpService) InfoSectionBranch(shopID string, guid string
 	return findDoc.SectionBranchInfo, nil
 }
 
-func (svc SectionBranchHttpService) InfoSectionBranchByBranchCode(shopID string, branchcode string) (models.SectionBranchInfo, error) {
+func (svc SectionBranchHttpService) InfoSectionBranchByBranchCode(holdingCode string, branchcode string) (models.SectionBranchInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "branchcode", branchcode)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "branchcode", branchcode)
 
 	if err != nil {
 		return models.SectionBranchInfo{}, err
@@ -214,7 +214,7 @@ func (svc SectionBranchHttpService) InfoSectionBranchByBranchCode(shopID string,
 	return findDoc.SectionBranchInfo, nil
 }
 
-func (svc SectionBranchHttpService) SearchSectionBranch(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.SectionBranchInfo, mongopagination.PaginationData, error) {
+func (svc SectionBranchHttpService) SearchSectionBranch(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.SectionBranchInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -223,7 +223,7 @@ func (svc SectionBranchHttpService) SearchSectionBranch(shopID string, filters m
 		"branchcode",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.SectionBranchInfo{}, pagination, err
@@ -232,7 +232,7 @@ func (svc SectionBranchHttpService) SearchSectionBranch(shopID string, filters m
 	return docList, pagination, nil
 }
 
-func (svc SectionBranchHttpService) SearchSectionBranchStep(shopID string, langBranchCode string, pageableStep micromodels.PageableStep) ([]models.SectionBranchInfo, int, error) {
+func (svc SectionBranchHttpService) SearchSectionBranchStep(holdingCode string, langBranchCode string, pageableStep micromodels.PageableStep) ([]models.SectionBranchInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -249,7 +249,7 @@ func (svc SectionBranchHttpService) SearchSectionBranchStep(shopID string, langB
 		selectFields["names"] = 1
 	}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.SectionBranchInfo{}, 0, err
@@ -258,7 +258,7 @@ func (svc SectionBranchHttpService) SearchSectionBranchStep(shopID string, langB
 	return docList, total, nil
 }
 
-func (svc SectionBranchHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.SectionBranch) (common.BulkImport, error) {
+func (svc SectionBranchHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.SectionBranch) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -270,7 +270,7 @@ func (svc SectionBranchHttpService) SaveInBatch(shopID string, authUsername stri
 		itemBranchCodeGuidList = append(itemBranchCodeGuidList, doc.BranchCode)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "branchcode", itemBranchCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "branchcode", itemBranchCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -282,18 +282,18 @@ func (svc SectionBranchHttpService) SaveInBatch(shopID string, authUsername stri
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.SectionBranch, models.SectionBranchDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.SectionBranch) models.SectionBranchDoc {
+		func(holdingCode string, authUsername string, doc models.SectionBranch) models.SectionBranchDoc {
 			newGuid := svc.generateGUID()
 
 			dataDoc := models.SectionBranchDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.SectionBranch = doc
 
 			currentTime := time.Now()
@@ -304,23 +304,23 @@ func (svc SectionBranchHttpService) SaveInBatch(shopID string, authUsername stri
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.SectionBranch, models.SectionBranchDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.SectionBranchDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "branchcode", guid)
+		func(holdingCode string, guid string) (models.SectionBranchDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "branchcode", guid)
 		},
 		func(doc models.SectionBranchDoc) bool {
 			return doc.BranchCode != ""
 		},
-		func(shopID string, authUsername string, data models.SectionBranch, doc models.SectionBranchDoc) error {
+		func(holdingCode string, authUsername string, data models.SectionBranch, doc models.SectionBranchDoc) error {
 
 			doc.SectionBranch = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -359,7 +359,7 @@ func (svc SectionBranchHttpService) SaveInBatch(shopID string, authUsername stri
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -373,9 +373,9 @@ func (svc SectionBranchHttpService) getDocIDKey(doc models.SectionBranch) string
 	return doc.BranchCode
 }
 
-func (svc SectionBranchHttpService) saveMasterSync(shopID string) {
+func (svc SectionBranchHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

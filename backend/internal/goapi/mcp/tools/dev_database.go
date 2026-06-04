@@ -18,20 +18,20 @@ import (
 // ==================== PostgreSQL Dev Command ====================
 
 type PgCommandResponse struct {
-	Query string                   `json:"query"`
-	CommandType string                   `json:"command_type"` // SELECT, DELETE, INSERT, etc.
-	Rows []map[string]interface{} `json:"rows,omitempty"`
-	RowCount int                      `json:"row_count"`
+	Query        string                   `json:"query"`
+	CommandType  string                   `json:"command_type"` // SELECT, DELETE, INSERT, etc.
+	Rows         []map[string]interface{} `json:"rows,omitempty"`
+	RowCount     int                      `json:"row_count"`
 	RowsAffected int64                    `json:"rows_affected"`
-	Truncated bool                     `json:"truncated"`
-	ExecutionMs int64                    `json:"execution_ms"`
-	GeneratedAt time.Time                `json:"generated_at"`
+	Truncated    bool                     `json:"truncated"`
+	ExecutionMs  int64                    `json:"execution_ms"`
+	GeneratedAt  time.Time                `json:"generated_at"`
 }
 
 // ExecutePgCommand รัน SQL query/command บน PostgreSQL (dev — ไม่จำกัด readonly)
-func ExecutePgCommand(ctx context.Context, shopID, query string, limit int) (*PgCommandResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func ExecutePgCommand(ctx context.Context, holdingCode, query string, limit int) (*PgCommandResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 	if query == "" {
 		return nil, fmt.Errorf("query is required")
@@ -47,9 +47,9 @@ func ExecutePgCommand(ctx context.Context, shopID, query string, limit int) (*Pg
 	normalizedQuery := strings.ToUpper(strings.TrimSpace(query))
 	commandType := detectCommandType(normalizedQuery)
 
-	logger.Info("[Dev PG Command] shopid=%s, type=%s, query=%s", shopID, commandType, query)
+	logger.Info("[Dev PG Command] holding_code=%s, type=%s, query=%s", holdingCode, commandType, query)
 
-	db, err := mypg.PgSqlFastConnect(shopID)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		return nil, fmt.Errorf("database connection failed: %w", err)
 	}
@@ -145,12 +145,12 @@ func ExecutePgCommand(ctx context.Context, shopID, query string, limit int) (*Pg
 // ==================== ClickHouse Dev Command ====================
 
 type ChCommandResponse struct {
-	Database string                   `json:"database"`
-	Query string                   `json:"query"`
+	Database    string                   `json:"database"`
+	Query       string                   `json:"query"`
 	CommandType string                   `json:"command_type"`
-	Rows []map[string]interface{} `json:"rows,omitempty"`
-	RowCount int                      `json:"row_count"`
-	Truncated bool                     `json:"truncated"`
+	Rows        []map[string]interface{} `json:"rows,omitempty"`
+	RowCount    int                      `json:"row_count"`
+	Truncated   bool                     `json:"truncated"`
 	ExecutionMs int64                    `json:"execution_ms"`
 	GeneratedAt time.Time                `json:"generated_at"`
 }

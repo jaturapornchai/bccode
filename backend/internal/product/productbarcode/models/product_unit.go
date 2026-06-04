@@ -4,11 +4,11 @@ import "smlcloudplatform/internal/models"
 
 type ProductUnit struct {
 	UnitCode string          `json:"unit_code" bson:"unit_code"`
-	Names *[]models.NameX `json:"names" bson:"names"`
+	Names    *[]models.NameX `json:"names" bson:"names"`
 }
 
 type ProductUnitMessageQueueRequest struct {
-	models.ShopIdentity `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
 	ProductUnit
 }
 

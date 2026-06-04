@@ -19,16 +19,16 @@ import (
 )
 
 type IKitchenService interface {
-	CreateKitchen(shopID string, authUsername string, doc models.Kitchen) (string, error)
-	UpdateKitchen(shopID string, guid string, authUsername string, doc models.Kitchen) error
-	DeleteKitchen(shopID string, guid string, authUsername string) error
-	InfoKitchen(shopID string, guid string) (models.KitchenInfo, error)
-	SearchKitchen(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.KitchenInfo, mongopagination.PaginationData, error)
-	SearchKitchenStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.KitchenInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.Kitchen) (common.BulkImport, error)
-	GetProductBarcodeKitchen(shopID string) ([]models.KitchenProductBarcode, error)
+	CreateKitchen(holdingCode string, authUsername string, doc models.Kitchen) (string, error)
+	UpdateKitchen(holdingCode string, guid string, authUsername string, doc models.Kitchen) error
+	DeleteKitchen(holdingCode string, guid string, authUsername string) error
+	InfoKitchen(holdingCode string, guid string) (models.KitchenInfo, error)
+	SearchKitchen(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.KitchenInfo, mongopagination.PaginationData, error)
+	SearchKitchenStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.KitchenInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.Kitchen) (common.BulkImport, error)
+	GetProductBarcodeKitchen(holdingCode string) ([]models.KitchenProductBarcode, error)
 
-	// LastActivity(shopID string, action string, lastUpdatedDate time.Time, pageable micromodels.Pageable) (common.LastActivity, mongopagination.PaginationData, error)
+	// LastActivity(holdingCode string, action string, lastUpdatedDate time.Time, pageable micromodels.Pageable) (common.LastActivity, mongopagination.PaginationData, error)
 
 	GetModuleName() string
 }
@@ -58,12 +58,12 @@ func (svc KitchenService) getContextTimeout() (context.Context, context.CancelFu
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc KitchenService) CreateKitchen(shopID string, authUsername string, doc models.Kitchen) (string, error) {
+func (svc KitchenService) CreateKitchen(holdingCode string, authUsername string, doc models.Kitchen) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", doc.Code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", doc.Code)
 
 	if err != nil {
 		return "", err
@@ -76,7 +76,7 @@ func (svc KitchenService) CreateKitchen(shopID string, authUsername string, doc 
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.KitchenDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.Kitchen = doc
 
@@ -90,17 +90,17 @@ func (svc KitchenService) CreateKitchen(shopID string, authUsername string, doc 
 
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return newGuidFixed, nil
 }
 
-func (svc KitchenService) UpdateKitchen(shopID string, guid string, authUsername string, doc models.Kitchen) error {
+func (svc KitchenService) UpdateKitchen(holdingCode string, guid string, authUsername string, doc models.Kitchen) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -115,39 +115,39 @@ func (svc KitchenService) UpdateKitchen(shopID string, guid string, authUsername
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, findDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, findDoc)
 
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc KitchenService) DeleteKitchen(shopID string, guid string, authUsername string) error {
+func (svc KitchenService) DeleteKitchen(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	err := svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err := svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc KitchenService) InfoKitchen(shopID string, guid string) (models.KitchenInfo, error) {
+func (svc KitchenService) InfoKitchen(holdingCode string, guid string) (models.KitchenInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.KitchenInfo{}, err
@@ -161,7 +161,7 @@ func (svc KitchenService) InfoKitchen(shopID string, guid string) (models.Kitche
 
 }
 
-func (svc KitchenService) SearchKitchen(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.KitchenInfo, mongopagination.PaginationData, error) {
+func (svc KitchenService) SearchKitchen(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.KitchenInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -175,7 +175,7 @@ func (svc KitchenService) SearchKitchen(shopID string, filters map[string]interf
 		searchInFields = append(searchInFields, fmt.Sprintf("name%d", (i+1)))
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.KitchenInfo{}, pagination, err
@@ -184,7 +184,7 @@ func (svc KitchenService) SearchKitchen(shopID string, filters map[string]interf
 	return docList, pagination, nil
 }
 
-func (svc KitchenService) SearchKitchenStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.KitchenInfo, int, error) {
+func (svc KitchenService) SearchKitchenStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.KitchenInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -196,7 +196,7 @@ func (svc KitchenService) SearchKitchenStep(shopID string, langCode string, filt
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.KitchenInfo{}, 0, err
@@ -205,7 +205,7 @@ func (svc KitchenService) SearchKitchenStep(shopID string, langCode string, filt
 	return docList, total, nil
 }
 
-func (svc KitchenService) SaveInBatch(shopID string, authUsername string, dataList []models.Kitchen) (common.BulkImport, error) {
+func (svc KitchenService) SaveInBatch(holdingCode string, authUsername string, dataList []models.Kitchen) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -217,7 +217,7 @@ func (svc KitchenService) SaveInBatch(shopID string, authUsername string, dataLi
 		itemCodeGuidList = append(itemCodeGuidList, doc.Code)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "code", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "code", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -229,18 +229,18 @@ func (svc KitchenService) SaveInBatch(shopID string, authUsername string, dataLi
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.Kitchen, models.KitchenDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadCategoryList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.Kitchen) models.KitchenDoc {
+		func(holdingCode string, authUsername string, doc models.Kitchen) models.KitchenDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.KitchenDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.Kitchen = doc
 
 			currentTime := time.Now()
@@ -252,17 +252,17 @@ func (svc KitchenService) SaveInBatch(shopID string, authUsername string, dataLi
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.Kitchen, models.KitchenDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.KitchenDoc, error) {
-			return svc.repo.FindByGuid(ctx, shopID, guid)
+		func(holdingCode string, guid string) (models.KitchenDoc, error) {
+			return svc.repo.FindByGuid(ctx, holdingCode, guid)
 		},
 		func(doc models.KitchenDoc) bool {
 			return false
 		},
-		func(shopID string, authUsername string, data models.Kitchen, doc models.KitchenDoc) error {
+		func(holdingCode string, authUsername string, data models.Kitchen, doc models.KitchenDoc) error {
 
 			return nil
 		},
@@ -296,7 +296,7 @@ func (svc KitchenService) SaveInBatch(shopID string, authUsername string, dataLi
 		updateFailDataKey = append(updateFailDataKey, doc.Code)
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -310,9 +310,9 @@ func (svc KitchenService) getDocIDKey(doc models.Kitchen) string {
 	return doc.Code
 }
 
-func (svc KitchenService) saveMasterSync(shopID string) {
+func (svc KitchenService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())
@@ -324,7 +324,7 @@ func (svc KitchenService) GetModuleName() string {
 	return "restaurant-kitchen"
 }
 
-func (svc KitchenService) GetProductBarcodeKitchen(shopID string) ([]models.KitchenProductBarcode, error) {
+func (svc KitchenService) GetProductBarcodeKitchen(holdingCode string) ([]models.KitchenProductBarcode, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -337,7 +337,7 @@ func (svc KitchenService) GetProductBarcodeKitchen(shopID string) ([]models.Kitc
 	tempDocs := map[string][]models.KitchenInfo{}
 
 	for isNotFinished {
-		findDocs, pagination, err := svc.repo.FindPage(ctx, shopID, []string{}, micromodels.Pageable{
+		findDocs, pagination, err := svc.repo.FindPage(ctx, holdingCode, []string{}, micromodels.Pageable{
 			Page:  currentPage,
 			Limit: limit,
 		})

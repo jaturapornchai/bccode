@@ -9,14 +9,14 @@ import (
 
 // GetProductData retrieves product information from legacy PostgreSQL projections.
 // MongoDB remains the operational source of truth for product CRUD.
-func GetProductData(ctx context.Context, shopID string) ([]StockData, error) {
-	db, err := mydb.GetGlobalConnectionFromPool(shopID)
+func GetProductData(ctx context.Context, holdingCode string) ([]StockData, error) {
+	db, err := mydb.GetGlobalConnectionFromPool(holdingCode)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database connection: %w", err)
 	}
 
 	query := `
-		SELECT 
+		SELECT
 			p.itemcode as product_code,
 			p.name0 as product_name,
 			COALESCE(STRING_AGG(DISTINCT pb.barcode, ','), '') as barcode_list,
@@ -55,6 +55,6 @@ func GetProductData(ctx context.Context, shopID string) ([]StockData, error) {
 		return nil, fmt.Errorf("error iterating rows: %w", err)
 	}
 
-	logger.Info("Retrieved %d product items for shop %s", len(stockData), shopID)
+	logger.Info("Retrieved %d product items for shop %s", len(stockData), holdingCode)
 	return stockData, nil
 }

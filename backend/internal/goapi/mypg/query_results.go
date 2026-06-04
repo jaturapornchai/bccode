@@ -12,13 +12,13 @@ import (
 
 // QueryResult represents a row in query_results table
 type QueryResult struct {
-	ID int64           `json:"id"`
-	GUID string          `json:"guid"`
-	ShopID string          `json:"shopid"`
+	ID          int64           `json:"id"`
+	GUID        string          `json:"guid"`
+	HoldingCode string          `json:"holding_code"`
 	DocDatetime time.Time       `json:"docdatetime"`
-	LineNumber int             `json:"line_number"`
-	DataJSON json.RawMessage `json:"datajson"`
-	CreatedAt time.Time       `json:"created_at"`
+	LineNumber  int             `json:"line_number"`
+	DataJSON    json.RawMessage `json:"datajson"`
+	CreatedAt   time.Time       `json:"created_at"`
 }
 
 // CreateResultTableIfNotExists สร้าง query_results table ถ้ายังไม่มี
@@ -27,7 +27,7 @@ func CreateResultTableIfNotExists(db *sql.DB) error {
 		CREATE TABLE IF NOT EXISTS public.query_results (
 			id SERIAL PRIMARY KEY,
 			guid TEXT NOT NULL,
-			shopid TEXT NOT NULL,
+			holding_code TEXT NOT NULL,
 			docdatetime TIMESTAMPTZ DEFAULT NOW(),
 			linenumber INTEGER NOT NULL,
 			datajson JSONB NOT NULL,
@@ -37,8 +37,8 @@ func CreateResultTableIfNotExists(db *sql.DB) error {
 		CREATE INDEX IF NOT EXISTS idx_query_results_guid
 		ON public.query_results(guid);
 
-		CREATE INDEX IF NOT EXISTS idx_query_results_shopid_guid
-		ON public.query_results(shopid, guid);
+		CREATE INDEX IF NOT EXISTS idx_query_results_holding_code_guid
+		ON public.query_results(holding_code, guid);
 	`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -54,21 +54,21 @@ func CreateResultTableIfNotExists(db *sql.DB) error {
 }
 
 // InsertQueryResult inserts a single query result row
-func InsertQueryResult(db *sql.DB, guid, shopID string, lineNumber int, data map[string]interface{}) error {
+func InsertQueryResult(db *sql.DB, guid, holdingCode string, lineNumber int, data map[string]interface{}) error {
 	dataJSON, err := json.Marshal(data)
 	if err != nil {
 		return fmt.Errorf("failed to marshal data: %w", err)
 	}
 
 	query := `
-		INSERT INTO public.query_results (guid, shopid, linenumber, datajson)
+		INSERT INTO public.query_results (guid, holding_code, linenumber, datajson)
 		VALUES ($1, $2, $3, $4)
 	`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	_, err = db.ExecContext(ctx, query, guid, shopID, lineNumber, dataJSON)
+	_, err = db.ExecContext(ctx, query, guid, holdingCode, lineNumber, dataJSON)
 	if err != nil {
 		return fmt.Errorf("failed to insert query result: %w", err)
 	}
@@ -77,7 +77,7 @@ func InsertQueryResult(db *sql.DB, guid, shopID string, lineNumber int, data map
 }
 
 // InsertQueryResultsBatch inserts multiple query results in a batch
-func InsertQueryResultsBatch(db *sql.DB, guid, shopID string, results []map[string]interface{}) (int, error) {
+func InsertQueryResultsBatch(db *sql.DB, guid, holdingCode string, results []map[string]interface{}) (int, error) {
 	if len(results) == 0 {
 		return 0, nil
 	}
@@ -92,7 +92,7 @@ func InsertQueryResultsBatch(db *sql.DB, guid, shopID string, results []map[stri
 	defer tx.Rollback()
 
 	stmt, err := tx.PrepareContext(ctx, `
-		INSERT INTO public.query_results (guid, shopid, linenumber, datajson)
+		INSERT INTO public.query_results (guid, holding_code, linenumber, datajson)
 		VALUES ($1, $2, $3, $4)
 	`)
 	if err != nil {
@@ -106,7 +106,7 @@ func InsertQueryResultsBatch(db *sql.DB, guid, shopID string, results []map[stri
 			return i, fmt.Errorf("failed to marshal data at row %d: %w", i, err)
 		}
 
-		_, err = stmt.ExecContext(ctx, guid, shopID, i+1, dataJSON)
+		_, err = stmt.ExecContext(ctx, guid, holdingCode, i+1, dataJSON)
 		if err != nil {
 			return i, fmt.Errorf("failed to insert row %d: %w", i, err)
 		}
@@ -120,14 +120,14 @@ func InsertQueryResultsBatch(db *sql.DB, guid, shopID string, results []map[stri
 }
 
 // GetQueryResults retrieves query results by GUID with pagination
-func GetQueryResults(db *sql.DB, shopID, guid string, limit, offset int) ([]map[string]interface{}, int, error) {
+func GetQueryResults(db *sql.DB, holdingCode, guid string, limit, offset int) ([]map[string]interface{}, int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
 	// Get total count
 	var total int
-	countQuery := `SELECT COUNT(*) FROM public.query_results WHERE shopid = $1 AND guid = $2`
-	err := db.QueryRowContext(ctx, countQuery, shopID, guid).Scan(&total)
+	countQuery := `SELECT COUNT(*) FROM public.query_results WHERE holding_code = $1 AND guid = $2`
+	err := db.QueryRowContext(ctx, countQuery, holdingCode, guid).Scan(&total)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get count: %w", err)
 	}
@@ -135,12 +135,12 @@ func GetQueryResults(db *sql.DB, shopID, guid string, limit, offset int) ([]map[
 	// Get data with pagination
 	query := `
 		SELECT datajson FROM public.query_results
-		WHERE shopid = $1 AND guid = $2
+		WHERE holding_code = $1 AND guid = $2
 		ORDER BY linenumber
 		LIMIT $3 OFFSET $4
 	`
 
-	rows, err := db.QueryContext(ctx, query, shopID, guid, limit, offset)
+	rows, err := db.QueryContext(ctx, query, holdingCode, guid, limit, offset)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to query results: %w", err)
 	}
@@ -169,13 +169,13 @@ func GetQueryResults(db *sql.DB, shopID, guid string, limit, offset int) ([]map[
 }
 
 // DeleteQueryResults deletes query results by GUID
-func DeleteQueryResults(db *sql.DB, shopID, guid string) error {
-	query := `DELETE FROM public.query_results WHERE shopid = $1 AND guid = $2`
+func DeleteQueryResults(db *sql.DB, holdingCode, guid string) error {
+	query := `DELETE FROM public.query_results WHERE holding_code = $1 AND guid = $2`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	_, err := db.ExecContext(ctx, query, shopID, guid)
+	_, err := db.ExecContext(ctx, query, holdingCode, guid)
 	if err != nil {
 		return fmt.Errorf("failed to delete query results: %w", err)
 	}

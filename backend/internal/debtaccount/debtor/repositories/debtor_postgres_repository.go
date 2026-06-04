@@ -8,10 +8,10 @@ import (
 )
 
 type IDebtorPostgresRepository interface {
-	Get(shopID string, code string) (*debtorModels.DebtorPG, error)
+	Get(holdingCode string, code string) (*debtorModels.DebtorPG, error)
 	Create(doc debtorModels.DebtorPG) error
-	Update(shopID string, code string, doc debtorModels.DebtorPG) error
-	Delete(shopID string, code string) error
+	Update(holdingCode string, code string, doc debtorModels.DebtorPG) error
+	Delete(holdingCode string, code string) error
 }
 
 type DebtorPostgresRepository struct {
@@ -24,9 +24,9 @@ func NewDebtorPostgresRepository(pst microservice.IPersister) IDebtorPostgresRep
 	}
 }
 
-func (repo *DebtorPostgresRepository) Get(shopID string, code string) (*debtorModels.DebtorPG, error) {
+func (repo *DebtorPostgresRepository) Get(holdingCode string, code string) (*debtorModels.DebtorPG, error) {
 	var result debtorModels.DebtorPG
-	_, err := repo.pst.First(&result, "shopid=? AND code=?", shopID, code)
+	_, err := repo.pst.First(&result, "holding_code=? AND code=?", holdingCode, code)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
@@ -46,10 +46,10 @@ func (repo *DebtorPostgresRepository) Create(doc debtorModels.DebtorPG) error {
 	return nil
 }
 
-func (repo *DebtorPostgresRepository) Update(shopID string, code string, doc debtorModels.DebtorPG) error {
+func (repo *DebtorPostgresRepository) Update(holdingCode string, code string, doc debtorModels.DebtorPG) error {
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"shopid": shopID,
-		"code":   code,
+		"holding_code": holdingCode,
+		"code":         code,
 	})
 
 	if err != nil {
@@ -58,10 +58,10 @@ func (repo *DebtorPostgresRepository) Update(shopID string, code string, doc deb
 	return nil
 }
 
-func (repo *DebtorPostgresRepository) Delete(shopID string, code string) error {
+func (repo *DebtorPostgresRepository) Delete(holdingCode string, code string) error {
 	err := repo.pst.Delete(&debtorModels.DebtorPG{}, map[string]interface{}{
-		"shopid": shopID,
-		"code":   code,
+		"holding_code": holdingCode,
+		"code":         code,
 	})
 	if err != nil {
 		return err

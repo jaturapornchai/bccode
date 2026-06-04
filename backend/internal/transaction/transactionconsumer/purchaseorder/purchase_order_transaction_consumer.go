@@ -82,7 +82,7 @@ func (c *PurchaseOrderTransactionConsumer) ConsumeOnCreateOrUpdate(ctx microserv
 		return err
 	}
 
-	err = c.svc.Upsert(transaction.ShopID, transaction.DocNo, *transaction)
+	err = c.svc.Upsert(transaction.HoldingCode, transaction.DocNo, *transaction)
 	if err != nil {
 		logger.GetLogger().Errorf("Cannot insert purchase order transaction pg: %v", err.Error())
 		return err
@@ -102,7 +102,7 @@ func (c *PurchaseOrderTransactionConsumer) ConsumeOnBulkCreateOrUpdate(ctx micro
 
 	for _, transaction := range *transactions {
 
-		err = c.svc.Upsert(transaction.ShopID, transaction.DocNo, transaction)
+		err = c.svc.Upsert(transaction.HoldingCode, transaction.DocNo, transaction)
 		if err != nil {
 			logger.GetLogger().Errorf("Cannot insert purchase order transaction  pg: %v", err.Error())
 			return err
@@ -121,7 +121,7 @@ func (c *PurchaseOrderTransactionConsumer) ConsumeOnDelete(ctx microservice.ICon
 		return err
 	}
 
-	err = c.svc.Delete(transaction.ShopID, transaction.DocNo)
+	err = c.svc.Delete(transaction.HoldingCode, transaction.DocNo)
 	if err != nil {
 		logger.GetLogger().Errorf("Cannot insert purchase order transaction pg: %v", err.Error())
 		return err
@@ -140,7 +140,7 @@ func (c *PurchaseOrderTransactionConsumer) ConsumeOnBulkDelete(ctx microservice.
 
 	for _, transaction := range *transactions {
 
-		err = c.svc.Delete(transaction.ShopID, transaction.DocNo)
+		err = c.svc.Delete(transaction.HoldingCode, transaction.DocNo)
 		if err != nil {
 			logger.GetLogger().Errorf("Cannot insert purchase order transaction  pg: %v", err.Error())
 			return err

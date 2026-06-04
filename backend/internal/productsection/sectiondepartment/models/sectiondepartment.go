@@ -10,9 +10,9 @@ const sectiondepartmentCollectionName = "sectionDepartment"
 
 type SectionDepartment struct {
 	models.PartitionIdentity `bson:"inline"`
-	BranchCode string    `json:"branchcode" bson:"branchcode"`
-	DepartmentCode string    `json:"departmentcode" bson:"departmentcode"`
-	ProductCodes *[]string `json:"productcodes" bson:"productcodes"`
+	BranchCode               string    `json:"branchcode" bson:"branchcode"`
+	DepartmentCode           string    `json:"departmentcode" bson:"departmentcode"`
+	ProductCodes             *[]string `json:"productcodes" bson:"productcodes"`
 }
 
 type SectionDepartmentInfo struct {
@@ -25,12 +25,12 @@ func (SectionDepartmentInfo) CollectionName() string {
 }
 
 type SectionDepartmentData struct {
-	models.ShopIdentity   `bson:"inline"`
-	SectionDepartmentInfo `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	SectionDepartmentInfo    `bson:"inline"`
 }
 
 type SectionDepartmentDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                    primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	SectionDepartmentData `bson:"inline"`
 	models.ActivityDoc    `bson:"inline"`
 }

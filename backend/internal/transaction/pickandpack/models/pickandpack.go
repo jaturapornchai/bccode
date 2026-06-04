@@ -13,16 +13,16 @@ const saleorderCollectionName = "transactionPickandpack"
 type Pickandpack struct {
 	models.PartitionIdentity `bson:"inline"`
 	transmodels.Transaction  `bson:"inline"`
-	WhCode string          `json:"whcode" bson:"whcode"`
-	WhNames *[]models.NameX `json:"whnames" bson:"whnames"`
-	LocationCode string          `json:"locationcode" bson:"locationcode"`
-	LocationNames *[]models.NameX `json:"locationnames" bson:"locationnames"`
-	Sendtype string          `json:"sendtype" bson:"sendtype"`
-	Email string          `json:"email" bson:"email"`
-	Phone string          `json:"phone" bson:"phone"`
-	Address string          `json:"address" bson:"address"`
-	RefSaleInvoice string          `json:"refsaleinvoice" bson:"refsaleinvoice"`
-	PackStatus int8            `json:"packstatus" bson:"packstatus"`
+	WhCode                   string          `json:"whcode" bson:"whcode"`
+	WhNames                  *[]models.NameX `json:"whnames" bson:"whnames"`
+	LocationCode             string          `json:"locationcode" bson:"locationcode"`
+	LocationNames            *[]models.NameX `json:"locationnames" bson:"locationnames"`
+	Sendtype                 string          `json:"sendtype" bson:"sendtype"`
+	Email                    string          `json:"email" bson:"email"`
+	Phone                    string          `json:"phone" bson:"phone"`
+	Address                  string          `json:"address" bson:"address"`
+	RefSaleInvoice           string          `json:"refsaleinvoice" bson:"refsaleinvoice"`
+	PackStatus               int8            `json:"packstatus" bson:"packstatus"`
 
 	// Print tracking fields
 	IsPrint bool       `json:"isprint" bson:"isprint"`
@@ -37,7 +37,7 @@ type Pickandpack struct {
 
 type PickandpackInfo struct {
 	models.DocIdentity `bson:"inline"`
-	Pickandpack  `bson:"inline"`
+	Pickandpack        `bson:"inline"`
 }
 
 func (PickandpackInfo) CollectionName() string {
@@ -45,13 +45,13 @@ func (PickandpackInfo) CollectionName() string {
 }
 
 type PickandpackData struct {
-	models.ShopIdentity `bson:"inline"`
-	PickandpackInfo  `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	PickandpackInfo          `bson:"inline"`
 }
 
 type PickandpackDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	PickandpackData  `bson:"inline"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	PickandpackData    `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -68,7 +68,7 @@ func (PickandpackItemGuid) CollectionName() string {
 }
 
 type PickandpackActivity struct {
-	PickandpackData  `bson:"inline"`
+	PickandpackData     `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 
@@ -86,22 +86,22 @@ func (PickandpackDeleteActivity) CollectionName() string {
 }
 
 type WarehouseLocationGroup struct {
-	WhCode string `json:"whcode" bson:"whcode"`
+	WhCode       string `json:"whcode" bson:"whcode"`
 	LocationCode string `json:"locationcode" bson:"locationcode"`
 }
 
 type WarehouseStatusCount struct {
 	PackStatus int `json:"packstatus" bson:"packstatus"`
-	Count int `json:"count" bson:"count"`
+	Count      int `json:"count" bson:"count"`
 }
 
 type PickandpackWarehouseDashboard struct {
 	models.PartitionIdentity `bson:"inline"`
-	ID WarehouseLocationGroup `json:"_id" bson:"_id"`
-	WhNames *[]models.NameX        `json:"whnames" bson:"whnames"`
-	LocationNames *[]models.NameX        `json:"locationnames" bson:"locationnames"`
-	StatusCounts []WarehouseStatusCount `json:"status_counts" bson:"status_counts"`
-	TotalCount int32                  `json:"total_count" bson:"total_count"`
+	ID                       WarehouseLocationGroup `json:"_id" bson:"_id"`
+	WhNames                  *[]models.NameX        `json:"whnames" bson:"whnames"`
+	LocationNames            *[]models.NameX        `json:"locationnames" bson:"locationnames"`
+	StatusCounts             []WarehouseStatusCount `json:"status_counts" bson:"status_counts"`
+	TotalCount               int32                  `json:"total_count" bson:"total_count"`
 }
 
 func (PickandpackWarehouseDashboard) CollectionName() string {

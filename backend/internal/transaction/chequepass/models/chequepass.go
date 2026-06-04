@@ -15,7 +15,7 @@ type ChequePass struct {
 }
 type ChequePassInfo struct {
 	models.DocIdentity `bson:"inline"`
-	ChequePass  `bson:"inline"`
+	ChequePass         `bson:"inline"`
 }
 
 func (ChequePassInfo) CollectionName() string {
@@ -23,13 +23,13 @@ func (ChequePassInfo) CollectionName() string {
 }
 
 type ChequePassData struct {
-	models.ShopIdentity `bson:"inline"`
-	ChequePassInfo  `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	ChequePassInfo           `bson:"inline"`
 }
 
 type ChequePassDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	ChequePassData  `bson:"inline"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ChequePassData     `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -46,7 +46,7 @@ func (ChequePassItemGuid) CollectionName() string {
 }
 
 type ChequePassActivity struct {
-	ChequePassData  `bson:"inline"`
+	ChequePassData      `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

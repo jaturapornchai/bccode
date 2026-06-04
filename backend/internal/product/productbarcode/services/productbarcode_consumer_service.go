@@ -12,14 +12,14 @@ import (
 )
 
 type IProductBarcodeConsumeService interface {
-	UpdateRefBarcode(shopID string, doc models.ProductBarcodeDoc) error
-	UpdateProductType(shopID string, doc models.ProductType) error
-	UpdateProductGroup(shopID string, doc models.ProductGroup) error
-	UpdateProductUnit(shopID string, doc models.ProductUnit) error
-	UpdateProductOrderType(shopID string, doc models.ProductOrderType) error
-	UpSert(shopID string, barcode string, doc models.ProductBarcodeDoc) (*models.ProductBarcodePg, error)
-	Delete(ctx context.Context, shopID string, barcode string) error
-	ReSync(shopID string) error
+	UpdateRefBarcode(holdingCode string, doc models.ProductBarcodeDoc) error
+	UpdateProductType(holdingCode string, doc models.ProductType) error
+	UpdateProductGroup(holdingCode string, doc models.ProductGroup) error
+	UpdateProductUnit(holdingCode string, doc models.ProductUnit) error
+	UpdateProductOrderType(holdingCode string, doc models.ProductOrderType) error
+	UpSert(holdingCode string, barcode string, doc models.ProductBarcodeDoc) (*models.ProductBarcodePg, error)
+	Delete(ctx context.Context, holdingCode string, barcode string) error
+	ReSync(holdingCode string) error
 }
 
 type ProductBarcodeConsumeService struct {
@@ -48,11 +48,11 @@ func NewProductBarcodeConsumerService(
 	}
 }
 
-func (svc ProductBarcodeConsumeService) UpdateRefBarcode(shopID string, doc models.ProductBarcodeDoc) error {
+func (svc ProductBarcodeConsumeService) UpdateRefBarcode(holdingCode string, doc models.ProductBarcodeDoc) error {
 
 	refProductBarcode := doc.ToRefBarcode()
 
-	err := svc.productMongoRepo.UpdateRefBarcodeByGUID(context.Background(), shopID, doc.GuidFixed, refProductBarcode)
+	err := svc.productMongoRepo.UpdateRefBarcodeByGUID(context.Background(), holdingCode, doc.GuidFixed, refProductBarcode)
 
 	if err != nil {
 		return err
@@ -61,8 +61,8 @@ func (svc ProductBarcodeConsumeService) UpdateRefBarcode(shopID string, doc mode
 	return nil
 }
 
-func (svc ProductBarcodeConsumeService) UpdateProductType(shopID string, doc models.ProductType) error {
-	err := svc.productMongoRepo.UpdateAllProductTypeByGUID(context.Background(), shopID, doc.GuidFixed, doc)
+func (svc ProductBarcodeConsumeService) UpdateProductType(holdingCode string, doc models.ProductType) error {
+	err := svc.productMongoRepo.UpdateAllProductTypeByGUID(context.Background(), holdingCode, doc.GuidFixed, doc)
 
 	if err != nil {
 		return err
@@ -71,8 +71,8 @@ func (svc ProductBarcodeConsumeService) UpdateProductType(shopID string, doc mod
 	return nil
 }
 
-func (svc ProductBarcodeConsumeService) UpdateProductGroup(shopID string, doc models.ProductGroup) error {
-	err := svc.productMongoRepo.UpdateAllProductGroupByCode(context.Background(), shopID, doc)
+func (svc ProductBarcodeConsumeService) UpdateProductGroup(holdingCode string, doc models.ProductGroup) error {
+	err := svc.productMongoRepo.UpdateAllProductGroupByCode(context.Background(), holdingCode, doc)
 
 	if err != nil {
 		return err
@@ -81,8 +81,8 @@ func (svc ProductBarcodeConsumeService) UpdateProductGroup(shopID string, doc mo
 	return nil
 }
 
-func (svc ProductBarcodeConsumeService) UpdateProductUnit(shopID string, doc models.ProductUnit) error {
-	err := svc.productMongoRepo.UpdateAllProductUnitByCode(context.Background(), shopID, doc)
+func (svc ProductBarcodeConsumeService) UpdateProductUnit(holdingCode string, doc models.ProductUnit) error {
+	err := svc.productMongoRepo.UpdateAllProductUnitByCode(context.Background(), holdingCode, doc)
 
 	if err != nil {
 		return err
@@ -91,8 +91,8 @@ func (svc ProductBarcodeConsumeService) UpdateProductUnit(shopID string, doc mod
 	return nil
 }
 
-func (svc ProductBarcodeConsumeService) UpdateProductOrderType(shopID string, doc models.ProductOrderType) error {
-	err := svc.productMongoRepo.UpdateAllProductOrderTypeByGUID(context.Background(), shopID, doc.GuidFixed, doc)
+func (svc ProductBarcodeConsumeService) UpdateProductOrderType(holdingCode string, doc models.ProductOrderType) error {
+	err := svc.productMongoRepo.UpdateAllProductOrderTypeByGUID(context.Background(), holdingCode, doc.GuidFixed, doc)
 
 	if err != nil {
 		return err
@@ -101,20 +101,20 @@ func (svc ProductBarcodeConsumeService) UpdateProductOrderType(shopID string, do
 	return nil
 }
 
-func (svc ProductBarcodeConsumeService) UpSert(shopID string, barcode string, doc models.ProductBarcodeDoc) (*models.ProductBarcodePg, error) {
+func (svc ProductBarcodeConsumeService) UpSert(holdingCode string, barcode string, doc models.ProductBarcodeDoc) (*models.ProductBarcodePg, error) {
 
 	pgDoc, err := svc.phaser.PhaseProductBarcodeDoc(&doc)
 	if err != nil {
 		return nil, err
 	}
 
-	findbarcodePG, err := svc.productPgRepo.Get(shopID, pgDoc.Barcode)
+	findbarcodePG, err := svc.productPgRepo.Get(holdingCode, pgDoc.Barcode)
 	if err != nil {
 		return nil, err
 	}
 
 	if findbarcodePG != nil {
-		err = svc.productPgRepo.Update(shopID, pgDoc.Barcode, pgDoc)
+		err = svc.productPgRepo.Update(holdingCode, pgDoc.Barcode, pgDoc)
 	} else {
 		err = svc.productPgRepo.Create(pgDoc)
 	}
@@ -126,15 +126,15 @@ func (svc ProductBarcodeConsumeService) UpSert(shopID string, barcode string, do
 	return pgDoc, nil
 }
 
-func (svc ProductBarcodeConsumeService) Delete(ctx context.Context, shopID string, barcode string) error {
+func (svc ProductBarcodeConsumeService) Delete(ctx context.Context, holdingCode string, barcode string) error {
 
-	err := svc.productPgRepo.Delete(shopID, barcode)
+	err := svc.productPgRepo.Delete(holdingCode, barcode)
 	if err != nil {
 		return err
 	}
 	return nil
 }
-func (svc ProductBarcodeConsumeService) ReSync(shopID string) error {
+func (svc ProductBarcodeConsumeService) ReSync(holdingCode string) error {
 
 	// resync 100
 
@@ -150,7 +150,7 @@ func (svc ProductBarcodeConsumeService) ReSync(shopID string) error {
 	}
 
 	for {
-		barcodes, pages, err := svc.productMongoRepo.FindPage(context.Background(), shopID, nil, pageRequest)
+		barcodes, pages, err := svc.productMongoRepo.FindPage(context.Background(), holdingCode, nil, pageRequest)
 		if err != nil {
 			return err
 		}
@@ -159,14 +159,14 @@ func (svc ProductBarcodeConsumeService) ReSync(shopID string) error {
 
 			doc := models.ProductBarcodeDoc{
 				ProductBarcodeData: models.ProductBarcodeData{
-					ShopIdentity: commonModels.ShopIdentity{
-						ShopID: shopID,
+					HoldingCodeentity: commonModels.HoldingCodeentity{
+						HoldingCode: holdingCode,
 					},
 					ProductBarcodeInfo: barcode,
 				},
 			}
 
-			svc.UpSert(shopID, barcode.Barcode, doc)
+			svc.UpSert(holdingCode, barcode.Barcode, doc)
 		}
 
 		if pages.TotalPage > int64(pageRequest.Page) {

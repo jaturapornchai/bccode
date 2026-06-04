@@ -43,7 +43,7 @@ func (h ZoneDesignHttp) RegisterHttp() {
 
 func (h ZoneDesignHttp) CreateZoneDesign(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.ZoneDesign{}
@@ -54,7 +54,7 @@ func (h ZoneDesignHttp) CreateZoneDesign(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreateZoneDesign(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateZoneDesign(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -71,7 +71,7 @@ func (h ZoneDesignHttp) CreateZoneDesign(ctx microservice.IContext) error {
 func (h ZoneDesignHttp) UpdateZoneDesign(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -84,7 +84,7 @@ func (h ZoneDesignHttp) UpdateZoneDesign(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateZoneDesign(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateZoneDesign(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -101,12 +101,12 @@ func (h ZoneDesignHttp) UpdateZoneDesign(ctx microservice.IContext) error {
 
 func (h ZoneDesignHttp) DeleteZoneDesign(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteZoneDesign(shopID, id, authUsername)
+	err := h.svc.DeleteZoneDesign(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -123,12 +123,12 @@ func (h ZoneDesignHttp) DeleteZoneDesign(ctx microservice.IContext) error {
 
 func (h ZoneDesignHttp) InfoZoneDesign(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get ZoneDesign %v", id)
-	doc, err := h.svc.InfoZoneDesign(shopID, id)
+	doc, err := h.svc.InfoZoneDesign(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -145,10 +145,10 @@ func (h ZoneDesignHttp) InfoZoneDesign(ctx microservice.IContext) error {
 
 func (h ZoneDesignHttp) SearchZoneDesign(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
-	docList, pagination, err := h.svc.SearchZoneDesign(shopID, pageable)
+	docList, pagination, err := h.svc.SearchZoneDesign(holdingCode, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

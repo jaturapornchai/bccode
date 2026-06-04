@@ -51,7 +51,7 @@ func (h *PurchaseReturnTransactionAdminHttp) ResyncPurchaseReturnDoc(ctx microse
 		return err
 	}
 
-	err = h.svc.ResyncPurchaseReturnDoc(req.ShopID)
+	err = h.svc.ResyncPurchaseReturnDoc(req.HoldingCode)
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, common.ApiResponse{
 			Success: false,
@@ -83,7 +83,7 @@ func (h *PurchaseReturnTransactionAdminHttp) ResyncPurchaseReturnDeleteDoc(ctx m
 		return err
 	}
 
-	err = h.svc.ResyncPurchaseReturnDeleteDoc(req.ShopID)
+	err = h.svc.ResyncPurchaseReturnDeleteDoc(req.HoldingCode)
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, common.ApiResponse{
 			Success: false,

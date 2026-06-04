@@ -12,7 +12,7 @@ import (
 
 type IPaymentUsecase interface {
 	Upsert(doc trans_models.TransactionMessageQueue) error
-	Delete(shopID string, docNo string) error
+	Delete(holdingCode string, docNo string) error
 }
 
 type PaymentUsecase struct {
@@ -50,7 +50,7 @@ func (u PaymentUsecase) Upsert(transDoc trans_models.TransactionMessageQueue) er
 		return err
 	}
 
-	err = u.transactionPaymentUsecase.Upsert(transDoc.ShopID, transDoc.DocNo, transPayment)
+	err = u.transactionPaymentUsecase.Upsert(transDoc.HoldingCode, transDoc.DocNo, transPayment)
 	if err != nil {
 		return err
 	}
@@ -61,7 +61,7 @@ func (u PaymentUsecase) Upsert(transDoc trans_models.TransactionMessageQueue) er
 	}
 
 	for transPaymentDetail := range transPaymentDetails {
-		err = u.transactionPaymentDetailUsecase.Upsert(transDoc.ShopID, transDoc.DocNo, transPaymentDetails[transPaymentDetail])
+		err = u.transactionPaymentDetailUsecase.Upsert(transDoc.HoldingCode, transDoc.DocNo, transPaymentDetails[transPaymentDetail])
 		if err != nil {
 			return err
 		}
@@ -71,14 +71,14 @@ func (u PaymentUsecase) Upsert(transDoc trans_models.TransactionMessageQueue) er
 
 }
 
-func (u PaymentUsecase) Delete(shopID string, docNo string) error {
+func (u PaymentUsecase) Delete(holdingCode string, docNo string) error {
 
-	err := u.transactionPaymentUsecase.Delete(shopID, docNo)
+	err := u.transactionPaymentUsecase.Delete(holdingCode, docNo)
 	if err != nil {
 		return err
 	}
 
-	err = u.transactionPaymentDetailUsecase.Delete(shopID, docNo)
+	err = u.transactionPaymentDetailUsecase.Delete(holdingCode, docNo)
 	if err != nil {
 		return err
 	}

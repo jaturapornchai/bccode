@@ -41,11 +41,11 @@ func GenPDFHandler(c echo.Context) error {
 	}
 
 	// Validate required parameters
-	if payload.ShopID == "" {
+	if payload.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  "error",
 			"code":    400,
-			"message": "Missing required parameter: shopid",
+			"message": "Missing required parameter: holding_code",
 		})
 	}
 
@@ -139,7 +139,7 @@ func GenPDFHandler(c echo.Context) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	filter := bson.M{"shopid": payload.ShopID, "docno": payload.DocNo}
+	filter := bson.M{"holding_code": payload.HoldingCode, "docno": payload.DocNo}
 	logger.Info("Finding document in MongoDB collection '%s' with filter: %+v", payload.Collection, filter)
 
 	cur, err := collection.Find(ctx, filter)
@@ -224,10 +224,10 @@ func uploadPDFToR2AndSaveHistory(ctx context.Context, filePath string, payload g
 		return fmt.Errorf("failed to read PDF file: %v", err)
 	}
 
-	// Generate R2 key: shopid/pdf/collection_docno_timestamp.pdf
+	// Generate R2 key: holding_code/pdf/collection_docno_timestamp.pdf
 	timestamp := time.Now().Format("20060102_150405")
 	fileName := fmt.Sprintf("%s_%s_%s.pdf", payload.Collection, payload.DocNo, timestamp)
-	r2Key := fmt.Sprintf("%s/pdf/%s", payload.ShopID, fileName)
+	r2Key := fmt.Sprintf("%s/pdf/%s", payload.HoldingCode, fileName)
 
 	// Get bucket name from env
 	r2BucketName := strings.TrimSpace(os.Getenv("R2_BUCKET_NAME"))
@@ -262,7 +262,7 @@ func uploadPDFToR2AndSaveHistory(ctx context.Context, filePath string, payload g
 
 	now := time.Now()
 	historyDoc := models.PdfHistory{
-		ShopID:       payload.ShopID,
+		HoldingCode:  payload.HoldingCode,
 		Collection:   payload.Collection,
 		DocNo:        payload.DocNo,
 		DocDate:      docDate,
@@ -509,7 +509,7 @@ func buildPdfHistoryItem(h models.PdfHistory, r2Client *s3.Client) PdfHistorySim
 }
 
 // PdfHistoryGetHandler - ดึงรายการประวัติ PDF แบบ GET (query params)
-// GET /genpdf/history?shopid=xxx&collection=xxx&docno=xxx
+// GET /genpdf/history?holding_code=xxx&collection=xxx&docno=xxx
 func PdfHistoryGetHandler(c echo.Context) error {
 	logger.Info("-> PdfHistoryGetHandler called")
 
@@ -522,20 +522,20 @@ func PdfHistoryGetHandler(c echo.Context) error {
 	}
 
 	// Get query parameters
-	shopID := c.QueryParam("shopid")
+	holdingCode := c.QueryParam("holding_code")
 	collectionName := c.QueryParam("collection")
 	docNo := c.QueryParam("docno")
 
-	if shopID == "" {
+	if holdingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  "error",
 			"code":    400,
-			"message": "shopid query parameter is required",
+			"message": "holding_code query parameter is required",
 		})
 	}
 
 	// Build filter
-	filter := bson.M{"shopid": shopID}
+	filter := bson.M{"holding_code": holdingCode}
 	if collectionName != "" {
 		filter["collection"] = collectionName
 	}
@@ -612,16 +612,16 @@ func PdfHistoryListHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" {
+	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  "error",
 			"code":    400,
-			"message": "shopid is required",
+			"message": "holding_code is required",
 		})
 	}
 
 	// Build filter
-	filter := bson.M{"shopid": req.ShopID}
+	filter := bson.M{"holding_code": req.HoldingCode}
 	if req.Collection != "" {
 		filter["collection"] = req.Collection
 	}
@@ -679,7 +679,7 @@ func PdfHistoryListHandler(c echo.Context) error {
 	for _, h := range histories {
 		item := models.PdfHistoryListItem{
 			ID:           h.ID,
-			ShopID:       h.ShopID,
+			HoldingCode:  h.HoldingCode,
 			Collection:   h.Collection,
 			DocNo:        h.DocNo,
 			Title:        h.Title,

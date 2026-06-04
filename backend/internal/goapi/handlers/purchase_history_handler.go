@@ -14,21 +14,21 @@ import (
 
 // PurchaseHistoryRequest - request สำหรับดึงประวัติการสั่งซื้อ
 type PurchaseHistoryRequest struct {
-	ShopID string   `json:"shop_id"`
-	Barcodes []string `json:"barcodes"`
-	Months int      `json:"months"` // จำนวนเดือนย้อนหลัง (default 3)
+	HoldingCode string   `json:"holding_code"`
+	Barcodes    []string `json:"barcodes"`
+	Months      int      `json:"months"` // จำนวนเดือนย้อนหลัง (default 3)
 }
 
 // PurchaseHistoryItem - รายการประวัติการสั่งซื้อ
 type PurchaseHistoryItem struct {
-	Barcode string  `json:"barcode"`
-	ItemCode string  `json:"itemcode"`
-	DocNo string  `json:"docno"`
-	DocDate string  `json:"docdate"`
-	CustCode string  `json:"custcode"`     // รหัสผู้ขาย/เจ้าหนี้
-	TotalQty float64 `json:"totalqty"`
-	UnitCode string  `json:"unitcode"`
-	Price float64 `json:"price"`
+	Barcode   string  `json:"barcode"`
+	ItemCode  string  `json:"itemcode"`
+	DocNo     string  `json:"docno"`
+	DocDate   string  `json:"docdate"`
+	CustCode  string  `json:"custcode"` // รหัสผู้ขาย/เจ้าหนี้
+	TotalQty  float64 `json:"totalqty"`
+	UnitCode  string  `json:"unitcode"`
+	Price     float64 `json:"price"`
 	SumAmount float64 `json:"sum_amount"`
 	TransFlag int     `json:"transflag"`
 }
@@ -46,11 +46,11 @@ func PurchaseHistoryHandler(c echo.Context) error {
 	}
 
 	// Validate required fields
-	if req.ShopID == "" {
+	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"success": false,
-			"error":   "Missing required parameter: shop_id",
-			"code":    "MISSING_SHOP_ID",
+			"error":   "Missing required parameter: holding_code",
+			"code":    "MISSING_HOLDING_CODE",
 		})
 	}
 
@@ -79,8 +79,8 @@ func PurchaseHistoryHandler(c echo.Context) error {
 		})
 	}
 
-	// Connect to database (shop_id is used as database name)
-	db, err := mypg.PgSqlFastConnect(req.ShopID)
+	// Connect to database (holding_code is used as database name)
+	db, err := mypg.PgSqlFastConnect(req.HoldingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
 			"success": false,

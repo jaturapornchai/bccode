@@ -63,10 +63,10 @@ func GetConfigsHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" {
+	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "shop_id is required",
-			"code":  "MISSING_SHOP_ID",
+			"error": "holding_code is required",
+			"code":  "MISSING_HOLDING_CODE",
 		})
 	}
 
@@ -74,7 +74,7 @@ func GetConfigsHandler(c echo.Context) error {
 	defer cancel()
 
 	collection := getCollection(ConfigCollection)
-	filter := bson.M{"shop_id": req.ShopID}
+	filter := bson.M{"holding_code": req.HoldingCode}
 
 	cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.M{"lineoa_type": 1}))
 	if err != nil {
@@ -117,9 +117,9 @@ func GetConfigHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" || req.LineOAType == "" {
+	if req.HoldingCode == "" || req.LineOAType == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "shop_id and lineoa_type are required",
+			"error": "holding_code and lineoa_type are required",
 			"code":  "MISSING_REQUIRED_FIELDS",
 		})
 	}
@@ -128,7 +128,7 @@ func GetConfigHandler(c echo.Context) error {
 	defer cancel()
 
 	collection := getCollection(ConfigCollection)
-	filter := bson.M{"shop_id": req.ShopID, "lineoa_type": req.LineOAType}
+	filter := bson.M{"holding_code": req.HoldingCode, "lineoa_type": req.LineOAType}
 
 	var config ConfigDoc
 	err := collection.FindOne(ctx, filter).Decode(&config)
@@ -165,9 +165,9 @@ func SaveConfigHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" || req.LineOAType == "" {
+	if req.HoldingCode == "" || req.LineOAType == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "shop_id and lineoa_type are required",
+			"error": "holding_code and lineoa_type are required",
 			"code":  "MISSING_REQUIRED_FIELDS",
 		})
 	}
@@ -183,11 +183,11 @@ func SaveConfigHandler(c echo.Context) error {
 	if req.GUID == "" {
 		// Insert new or upsert
 		resultGUID = uuid.New().String()
-		filter := bson.M{"shop_id": req.ShopID, "lineoa_type": req.LineOAType}
+		filter := bson.M{"holding_code": req.HoldingCode, "lineoa_type": req.LineOAType}
 		update := bson.M{
 			"$set": bson.M{
 				"guid":           resultGUID,
-				"shop_id":        req.ShopID,
+				"holding_code":   req.HoldingCode,
 				"lineoa_type":    req.LineOAType,
 				"channel_id":     req.ChannelID,
 				"channel_secret": req.ChannelSecret,
@@ -218,7 +218,7 @@ func SaveConfigHandler(c echo.Context) error {
 	} else {
 		// Update existing
 		resultGUID = req.GUID
-		filter := bson.M{"guid": req.GUID, "shop_id": req.ShopID}
+		filter := bson.M{"guid": req.GUID, "holding_code": req.HoldingCode}
 		update := bson.M{
 			"$set": bson.M{
 				"channel_id":     req.ChannelID,
@@ -318,9 +318,9 @@ func GetEmployeesHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" || req.LineOAConfigGUID == "" {
+	if req.HoldingCode == "" || req.LineOAConfigGUID == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "shop_id and lineoa_config_guid are required",
+			"error": "holding_code and lineoa_config_guid are required",
 			"code":  "MISSING_REQUIRED_FIELDS",
 		})
 	}
@@ -375,9 +375,9 @@ func AddEmployeeHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" || req.LineOAConfigGUID == "" || req.EmployeeCode == "" {
+	if req.HoldingCode == "" || req.LineOAConfigGUID == "" || req.EmployeeCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "shop_id, lineoa_config_guid, and employee_code are required",
+			"error": "holding_code, lineoa_config_guid, and employee_code are required",
 			"code":  "MISSING_REQUIRED_FIELDS",
 		})
 	}
@@ -396,7 +396,7 @@ func AddEmployeeHandler(c echo.Context) error {
 		"$set": bson.M{
 			"guid":               newGUID,
 			"lineoa_config_guid": req.LineOAConfigGUID,
-			"shop_id":            req.ShopID,
+			"holding_code":       req.HoldingCode,
 			"employee_code":      req.EmployeeCode,
 			"employee_name":      req.EmployeeName,
 			"is_active":          true,
@@ -445,9 +445,9 @@ func RemoveEmployeeHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" || req.GUID == "" {
+	if req.HoldingCode == "" || req.GUID == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "shop_id and guid are required",
+			"error": "holding_code and guid are required",
 			"code":  "MISSING_REQUIRED_FIELDS",
 		})
 	}
@@ -487,9 +487,9 @@ func GenerateLinkHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" || req.LineOAConfigGUID == "" || req.EmployeeCode == "" {
+	if req.HoldingCode == "" || req.LineOAConfigGUID == "" || req.EmployeeCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "shop_id, lineoa_config_guid, and employee_code are required",
+			"error": "holding_code, lineoa_config_guid, and employee_code are required",
 			"code":  "MISSING_REQUIRED_FIELDS",
 		})
 	}
@@ -515,7 +515,7 @@ func GenerateLinkHandler(c echo.Context) error {
 	tokenCollection := getCollection(LinkTokenCollection)
 	tokenDoc := LinkTokenDoc{
 		Token:            linkToken,
-		ShopID:           req.ShopID,
+		HoldingCode:      req.HoldingCode,
 		LineOAConfigGUID: req.LineOAConfigGUID,
 		EmployeeCode:     req.EmployeeCode,
 		TokenType:        "employee",
@@ -532,7 +532,7 @@ func GenerateLinkHandler(c echo.Context) error {
 	}
 
 	// Generate LIFF URL
-	liffURL := fmt.Sprintf("https://liff.line.me/%s?token=%s&shop_id=%s", config.LiffID, linkToken, req.ShopID)
+	liffURL := fmt.Sprintf("https://liff.line.me/%s?token=%s&holding_code=%s", config.LiffID, linkToken, req.HoldingCode)
 
 	return c.JSON(http.StatusOK, map[string]any{
 		"status": "success",
@@ -554,9 +554,9 @@ func UserLinkHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" || req.Username == "" {
+	if req.HoldingCode == "" || req.Username == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "shop_id and username are required",
+			"error": "holding_code and username are required",
 			"code":  "MISSING_REQUIRED_FIELDS",
 		})
 	}
@@ -570,17 +570,17 @@ func UserLinkHandler(c echo.Context) error {
 
 	// Try manager type first
 	err := configCollection.FindOne(ctx, bson.M{
-		"shop_id":     req.ShopID,
-		"lineoa_type": "manager",
-		"is_active":   true,
+		"holding_code": req.HoldingCode,
+		"lineoa_type":  "manager",
+		"is_active":    true,
 	}).Decode(&config)
 
 	if err != nil || config.LiffID == "" {
 		// Try any active config with LIFF ID
 		err = configCollection.FindOne(ctx, bson.M{
-			"shop_id":   req.ShopID,
-			"is_active": true,
-			"liff_id":   bson.M{"$ne": ""},
+			"holding_code": req.HoldingCode,
+			"is_active":    true,
+			"liff_id":      bson.M{"$ne": ""},
 		}).Decode(&config)
 		if err != nil || config.LiffID == "" {
 			return c.JSON(http.StatusOK, map[string]any{
@@ -596,12 +596,12 @@ func UserLinkHandler(c echo.Context) error {
 	// Save link token for user
 	tokenCollection := getCollection(LinkTokenCollection)
 	tokenDoc := LinkTokenDoc{
-		Token:     linkToken,
-		ShopID:    req.ShopID,
-		Username:  req.Username,
-		TokenType: "user",
-		ExpiresAt: time.Now().Add(24 * time.Hour),
-		CreatedAt: time.Now(),
+		Token:       linkToken,
+		HoldingCode: req.HoldingCode,
+		Username:    req.Username,
+		TokenType:   "user",
+		ExpiresAt:   time.Now().Add(24 * time.Hour),
+		CreatedAt:   time.Now(),
 	}
 
 	_, err = tokenCollection.InsertOne(ctx, tokenDoc)
@@ -613,7 +613,7 @@ func UserLinkHandler(c echo.Context) error {
 	}
 
 	// Generate LIFF URL with type=user to differentiate from employee linking
-	liffURL := fmt.Sprintf("https://liff.line.me/%s?token=%s&type=user&shop_id=%s", config.LiffID, linkToken, req.ShopID)
+	liffURL := fmt.Sprintf("https://liff.line.me/%s?token=%s&type=user&holding_code=%s", config.LiffID, linkToken, req.HoldingCode)
 
 	return c.JSON(http.StatusOK, map[string]any{
 		"status": "success",
@@ -635,9 +635,9 @@ func CallbackHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" || req.Token == "" || req.LineUserID == "" {
+	if req.HoldingCode == "" || req.Token == "" || req.LineUserID == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "shop_id, token and line_user_id are required",
+			"error": "holding_code, token and line_user_id are required",
 			"code":  "MISSING_REQUIRED_FIELDS",
 		})
 	}
@@ -649,10 +649,10 @@ func CallbackHandler(c echo.Context) error {
 	tokenCollection := getCollection(LinkTokenCollection)
 	var tokenDoc LinkTokenDoc
 	err := tokenCollection.FindOne(ctx, bson.M{
-		"token":      req.Token,
-		"shop_id":    req.ShopID,
-		"expires_at": bson.M{"$gt": time.Now()},
-		"used_at":    nil,
+		"token":        req.Token,
+		"holding_code": req.HoldingCode,
+		"expires_at":   bson.M{"$gt": time.Now()},
+		"used_at":      nil,
 	}).Decode(&tokenDoc)
 
 	if err != nil {
@@ -668,10 +668,10 @@ func CallbackHandler(c echo.Context) error {
 	if tokenDoc.TokenType == "user" {
 		// Update user Line info - store in MongoDB
 		userCollection := getCollection(UserProfileCollection)
-		filter := bson.M{"shop_id": req.ShopID, "username": tokenDoc.Username}
+		filter := bson.M{"holding_code": req.HoldingCode, "username": tokenDoc.Username}
 		update := bson.M{
 			"$set": bson.M{
-				"shop_id":           req.ShopID,
+				"holding_code":      req.HoldingCode,
 				"username":          tokenDoc.Username,
 				"line_user_id":      req.LineUserID,
 				"line_display_name": req.DisplayName,
@@ -738,9 +738,9 @@ func GetUserProfileHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" || req.Username == "" {
+	if req.HoldingCode == "" || req.Username == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "shop_id and username are required",
+			"error": "holding_code and username are required",
 			"code":  "MISSING_REQUIRED_FIELDS",
 		})
 	}
@@ -751,8 +751,8 @@ func GetUserProfileHandler(c echo.Context) error {
 	collection := getCollection(UserProfileCollection)
 	var profile bson.M
 	err := collection.FindOne(ctx, bson.M{
-		"shop_id":  req.ShopID,
-		"username": req.Username,
+		"holding_code": req.HoldingCode,
+		"username":     req.Username,
 	}).Decode(&profile)
 
 	if err == mongo.ErrNoDocuments {

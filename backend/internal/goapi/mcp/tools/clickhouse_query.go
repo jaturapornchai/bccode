@@ -14,25 +14,25 @@ import (
 
 // ClickHouseQueryRequest คำขอ query ClickHouse
 type ClickHouseQueryRequest struct {
-	ShopID string `json:"shop_id"`
-	Database string `json:"database"` // ถ้าไม่ระบุจะใช้ค่าจาก env CH_DATABASE_NAME
-	Query string `json:"query"`    // SQL SELECT query
-	Limit int    `json:"limit"`    // จำนวนแถวสูงสุด (default=100, max=1000)
+	HoldingCode string `json:"holding_code"`
+	Database    string `json:"database"` // ถ้าไม่ระบุจะใช้ค่าจาก env CH_DATABASE_NAME
+	Query       string `json:"query"`    // SQL SELECT query
+	Limit       int    `json:"limit"`    // จำนวนแถวสูงสุด (default=100, max=1000)
 }
 
 // ClickHouseQueryResponse ผลลัพธ์จาก query ClickHouse
 type ClickHouseQueryResponse struct {
-	Database string                   `json:"database"`
-	Query string                   `json:"query"`
-	Rows []map[string]interface{} `json:"rows"`
-	RowCount int                      `json:"row_count"`
-	Truncated bool                     `json:"truncated"`
+	Database    string                   `json:"database"`
+	Query       string                   `json:"query"`
+	Rows        []map[string]interface{} `json:"rows"`
+	RowCount    int                      `json:"row_count"`
+	Truncated   bool                     `json:"truncated"`
 	ExecutionMs int64                    `json:"execution_ms"`
 	GeneratedAt time.Time                `json:"generated_at"`
 }
 
 // QueryClickHouse รัน SELECT query บน ClickHouse (readonly)
-func QueryClickHouse(ctx context.Context, shopID, database, query string, limit int) (*ClickHouseQueryResponse, error) {
+func QueryClickHouse(ctx context.Context, holdingCode, database, query string, limit int) (*ClickHouseQueryResponse, error) {
 	if query == "" {
 		return nil, fmt.Errorf("query is required")
 	}
@@ -74,14 +74,14 @@ func QueryClickHouse(ctx context.Context, shopID, database, query string, limit 
 		query = fmt.Sprintf("%s LIMIT %d", strings.TrimSuffix(strings.TrimSpace(query), ";"), limit)
 	}
 
-	// เพิ่ม shopid filter ถ้ามี (ป้องกันการดูข้อมูลข้าม shop)
-	if shopID != "" && strings.HasPrefix(normalizedQuery, "SELECT") {
+	// เพิ่ม holding_code filter ถ้ามี (ป้องกันการดูข้อมูลข้าม shop)
+	if holdingCode != "" && strings.HasPrefix(normalizedQuery, "SELECT") {
 		if strings.Contains(normalizedQuery, "WHERE") {
-			// เพิ่ม AND shopid = 'xxx' หลัง WHERE
-			query = addShopIDToClickHouseQuery(query, shopID)
+			// เพิ่ม AND holding_code = 'xxx' หลัง WHERE
+			query = addHoldingCodeToClickHouseQuery(query, holdingCode)
 		} else {
-			// เพิ่ม WHERE shopid = 'xxx'
-			query = addShopIDWhereClause(query, shopID)
+			// เพิ่ม WHERE holding_code = 'xxx'
+			query = addHoldingCodeWhereClause(query, holdingCode)
 		}
 	}
 
@@ -125,17 +125,17 @@ func QueryClickHouse(ctx context.Context, shopID, database, query string, limit 
 
 // ClickHouseTableInfo ข้อมูล table
 type ClickHouseTableInfo struct {
-	Name string `json:"name"`
-	Engine string `json:"engine"`
-	TotalRows int    `json:"total_rows"`
+	Name       string `json:"name"`
+	Engine     string `json:"engine"`
+	TotalRows  int    `json:"total_rows"`
 	TotalBytes int    `json:"total_bytes"`
 }
 
 // ClickHouseListTablesResponse ผลลัพธ์รายการ tables
 type ClickHouseListTablesResponse struct {
-	Database string                `json:"database"`
-	Tables []ClickHouseTableInfo `json:"tables"`
-	Count int                   `json:"count"`
+	Database    string                `json:"database"`
+	Tables      []ClickHouseTableInfo `json:"tables"`
+	Count       int                   `json:"count"`
 	GeneratedAt time.Time             `json:"generated_at"`
 }
 
@@ -202,8 +202,8 @@ func ListClickHouseTables(ctx context.Context, database string) (*ClickHouseList
 
 // ==================== Helper Functions ====================
 
-// addShopIDToClickHouseQuery เพิ่ม shopid condition เข้าไปใน WHERE clause ที่มีอยู่
-func addShopIDToClickHouseQuery(query, shopID string) string {
+// addHoldingCodeToClickHouseQuery เพิ่ม holding_code condition เข้าไปใน WHERE clause ที่มีอยู่
+func addHoldingCodeToClickHouseQuery(query, holdingCode string) string {
 	// หาตำแหน่ง WHERE (case-insensitive)
 	upperQuery := strings.ToUpper(query)
 	whereIdx := strings.Index(upperQuery, "WHERE")
@@ -211,15 +211,15 @@ func addShopIDToClickHouseQuery(query, shopID string) string {
 		return query
 	}
 
-	// แทรก shopid = 'xxx' AND หลัง WHERE
+	// แทรก holding_code = 'xxx' AND หลัง WHERE
 	insertPos := whereIdx + len("WHERE")
-	return query[:insertPos] + fmt.Sprintf(" shopid = '%s' AND", shopID) + query[insertPos:]
+	return query[:insertPos] + fmt.Sprintf(" holding_code = '%s' AND", holdingCode) + query[insertPos:]
 }
 
-// addShopIDWhereClause เพิ่ม WHERE shopid = 'xxx' เข้าไปก่อน ORDER BY/GROUP BY/HAVING/LIMIT
-func addShopIDWhereClause(query, shopID string) string {
+// addHoldingCodeWhereClause เพิ่ม WHERE holding_code = 'xxx' เข้าไปก่อน ORDER BY/GROUP BY/HAVING/LIMIT
+func addHoldingCodeWhereClause(query, holdingCode string) string {
 	upperQuery := strings.ToUpper(strings.TrimSpace(query))
-	whereClause := fmt.Sprintf(" WHERE shopid = '%s'", shopID)
+	whereClause := fmt.Sprintf(" WHERE holding_code = '%s'", holdingCode)
 
 	// หาตำแหน่งแรกสุดจาก keywords ทั้งหมด (ต้องแทรก WHERE ก่อน keyword ที่อยู่ใกล้ FROM ที่สุด)
 	insertKeywords := []string{"ORDER BY", "GROUP BY", "HAVING", "LIMIT"}

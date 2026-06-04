@@ -217,15 +217,65 @@ type ProductImage struct {
 	URI    string `json:"uri" bson:"uri"`
 }
 
+type MarketplaceMediaAsset struct {
+	Kind           string `json:"kind" bson:"kind"` // main, gallery, sku, size_chart, video, description
+	URI            string `json:"uri" bson:"uri"`
+	ExternalID     string `json:"external_id" bson:"external_id"`
+	ExternalURL    string `json:"external_url" bson:"external_url"`
+	OptionCode     string `json:"option_code" bson:"option_code"`
+	OptionValue    string `json:"option_value" bson:"option_value"`
+	SortOrder      int    `json:"sort_order" bson:"sort_order"`
+	AltText        string `json:"alt_text" bson:"alt_text"`
+	UseCase        string `json:"use_case" bson:"use_case"`
+	MimeType       string `json:"mime_type" bson:"mime_type"`
+	Width          int    `json:"width" bson:"width"`
+	Height         int    `json:"height" bson:"height"`
+	LastImportedAt string `json:"last_imported_at" bson:"last_imported_at"`
+}
+
+type MarketplaceAttributeValue struct {
+	ValueID       string `json:"value_id" bson:"value_id"`
+	ValueCode     string `json:"value_code" bson:"value_code"`
+	ValueText     string `json:"value_text" bson:"value_text"`
+	DisplayText   string `json:"display_text" bson:"display_text"`
+	UnitCode      string `json:"unit_code" bson:"unit_code"`
+	SortOrder     int    `json:"sort_order" bson:"sort_order"`
+	IsCustomValue bool   `json:"is_custom_value" bson:"is_custom_value"`
+}
+
+type MarketplaceAttribute struct {
+	AttributeID   string                       `json:"attribute_id" bson:"attribute_id"`
+	AttributeCode string                       `json:"attribute_code" bson:"attribute_code"`
+	AttributeName string                       `json:"attribute_name" bson:"attribute_name"`
+	InputType     string                       `json:"input_type" bson:"input_type"` // text, single_select, multi_select, number, date, boolean
+	Scope         string                       `json:"scope" bson:"scope"`           // product, sku, package, compliance
+	IsRequired    bool                         `json:"is_required" bson:"is_required"`
+	IsSaleProp    bool                         `json:"is_sale_prop" bson:"is_sale_prop"`
+	IsCustom      bool                         `json:"is_custom" bson:"is_custom"`
+	Values        *[]MarketplaceAttributeValue `json:"values" bson:"values"`
+}
+
+type MarketplaceSpecificationGroup struct {
+	GroupCode  string                  `json:"group_code" bson:"group_code"`
+	GroupName  string                  `json:"group_name" bson:"group_name"`
+	Attributes *[]MarketplaceAttribute `json:"attributes" bson:"attributes"`
+}
+
+type MarketplacePayloadExample struct {
+	Direction string `json:"direction" bson:"direction"` // import, export, stock_update, price_update, order_import
+	UseCase   string `json:"use_case" bson:"use_case"`
+	Payload   any    `json:"payload" bson:"payload"`
+}
+
 type ProductPrice struct {
 	KeyNumber int     `json:"key_number" bson:"key_number"`
 	Price     float64 `json:"price" bson:"price"`
 }
 
 type ProductBarcodeInfo struct {
-	models.DocIdentity  `bson:"inline"`
-	models.ShopIdentity `bson:"inline"`
-	ProductBarcode      `bson:"inline"`
+	models.DocIdentity       `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	ProductBarcode           `bson:"inline"`
 }
 
 func (ProductBarcodeInfo) CollectionName() string {
@@ -233,8 +283,8 @@ func (ProductBarcodeInfo) CollectionName() string {
 }
 
 type ProductBarcodeData struct {
-	models.ShopIdentity `bson:"inline"`
-	ProductBarcodeInfo  `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	ProductBarcodeInfo       `bson:"inline"`
 }
 
 type ProductBarcodeDoc struct {
@@ -310,7 +360,7 @@ func (ProductBarcodeSearch) TableName() string {
 // Names                    datatypes.JSON `json:"names"  gorm:"column:names;type:jsonb;default:'[]'" `
 // Names                    *JSONB  `json:"names"  gorm:"column:names;type:jsonb" `
 type ProductBarcodePg struct {
-	ShopID                   string `json:"shopid" gorm:"column:shopid;primaryKey"`
+	HoldingCode              string `json:"holding_code" gorm:"column:holding_code;primaryKey"`
 	models.PartitionIdentity `gorm:"embedded;"`
 	Barcode                  string              `json:"barcode" gorm:"column:barcode;primaryKey"`
 	Names                    JSONB               `json:"names"  gorm:"column:names;type:jsonb" `
@@ -388,15 +438,15 @@ func (a *JSONB) Scan(value interface{}) error {
 }
 
 // MarketplaceProductMap maps one internal product/barcode to one marketplace
-// listing on a single platform (Shopee / Lazada / TikTok). One product can hold
-// many entries — one per platform+account. Unified shape so all three platforms
+// listing on a single platform (Shopee / Lazada / AliExpress / TikTok). One product can hold
+// many entries — one per platform+account. Unified shape so all platforms
 // share the same fields ("คล้ายๆกัน"); blank fields are simply unused per platform.
-// Platform values: "shopee" | "lazada" | "tiktok".
+// Platform values: "shopee" | "lazada" | "aliexpress" | "tiktok".
 type MarketplaceProductMap struct {
 	// Platform identity
-	Platform  string `json:"platform" bson:"platform"`
-	AccountID string `json:"account_id" bson:"account_id"` // seller/shop account on the platform
-	ShopID    string `json:"shop_id" bson:"shop_id"`       // legacy field, kept for backward-compat
+	Platform    string `json:"platform" bson:"platform"`
+	AccountID   string `json:"account_id" bson:"account_id"`     // seller/shop account on the platform
+	HoldingCode string `json:"holding_code" bson:"holding_code"` // legacy field, kept for backward-compat
 	// Item identity on the marketplace
 	MarketItemID  string `json:"market_item_id" bson:"market_item_id"`   // Shopee item_id / Lazada item_id / TikTok product_id
 	MarketModelID string `json:"market_model_id" bson:"market_model_id"` // variation/model/sku id for this listing
@@ -409,6 +459,12 @@ type MarketplaceProductMap struct {
 	CategoryID   string `json:"category_id" bson:"category_id"`
 	CategoryName string `json:"category_name" bson:"category_name"`
 	BrandID      string `json:"brand_id" bson:"brand_id"`
+	// Media and specifications are internal import/sync structures. Normal product UI should display
+	// merged product images/specs, not expose marketplace origin labels.
+	MediaAssets         *[]MarketplaceMediaAsset         `json:"media_assets" bson:"media_assets"`
+	SpecificationGroups *[]MarketplaceSpecificationGroup `json:"specification_groups" bson:"specification_groups"`
+	RawAttributes       *[]MarketplaceAttribute          `json:"raw_attributes" bson:"raw_attributes"`
+	PayloadExamples     *[]MarketplacePayloadExample     `json:"payload_examples" bson:"payload_examples"`
 	// Price & stock (current value on platform + sync intent)
 	Currency      string  `json:"currency" bson:"currency"`
 	CustomPrice   float64 `json:"custom_price" bson:"custom_price"`     // price we intend to push
@@ -431,21 +487,23 @@ type MarketplaceProductMap struct {
 // marketplace SKU. Same unified field set as MarketplaceProductMap minus the
 // item-level catalog fields, so sub-barcode variations sync consistently.
 type MarketplaceSKUMap struct {
-	Platform      string  `json:"platform" bson:"platform"`
-	AccountID     string  `json:"account_id" bson:"account_id"`
-	ShopID        string  `json:"shop_id" bson:"shop_id"`
-	MarketItemID  string  `json:"market_item_id" bson:"market_item_id"`
-	MarketModelID string  `json:"market_model_id" bson:"market_model_id"`
-	SellerSKU     string  `json:"seller_sku" bson:"seller_sku"`
-	ShopSKU       string  `json:"shop_sku" bson:"shop_sku"`
-	GTIN          string  `json:"gtin" bson:"gtin"`
-	Currency      string  `json:"currency" bson:"currency"`
-	SyncStock     bool    `json:"sync_stock" bson:"sync_stock"`
-	SyncPrice     bool    `json:"sync_price" bson:"sync_price"`
-	CustomPrice   float64 `json:"custom_price" bson:"custom_price"`
-	PlatformPrice float64 `json:"platform_price" bson:"platform_price"`
-	PlatformStock int     `json:"platform_stock" bson:"platform_stock"`
-	Status        string  `json:"status" bson:"status"`
-	SyncEnabled   bool    `json:"sync_enabled" bson:"sync_enabled"`
-	LastSyncAt    string  `json:"last_sync_at" bson:"last_sync_at"`
+	Platform      string                   `json:"platform" bson:"platform"`
+	AccountID     string                   `json:"account_id" bson:"account_id"`
+	HoldingCode   string                   `json:"holding_code" bson:"holding_code"`
+	MarketItemID  string                   `json:"market_item_id" bson:"market_item_id"`
+	MarketModelID string                   `json:"market_model_id" bson:"market_model_id"`
+	SellerSKU     string                   `json:"seller_sku" bson:"seller_sku"`
+	ShopSKU       string                   `json:"shop_sku" bson:"shop_sku"`
+	GTIN          string                   `json:"gtin" bson:"gtin"`
+	MediaAssets   *[]MarketplaceMediaAsset `json:"media_assets" bson:"media_assets"`
+	RawAttributes *[]MarketplaceAttribute  `json:"raw_attributes" bson:"raw_attributes"`
+	Currency      string                   `json:"currency" bson:"currency"`
+	SyncStock     bool                     `json:"sync_stock" bson:"sync_stock"`
+	SyncPrice     bool                     `json:"sync_price" bson:"sync_price"`
+	CustomPrice   float64                  `json:"custom_price" bson:"custom_price"`
+	PlatformPrice float64                  `json:"platform_price" bson:"platform_price"`
+	PlatformStock int                      `json:"platform_stock" bson:"platform_stock"`
+	Status        string                   `json:"status" bson:"status"`
+	SyncEnabled   bool                     `json:"sync_enabled" bson:"sync_enabled"`
+	LastSyncAt    string                   `json:"last_sync_at" bson:"last_sync_at"`
 }

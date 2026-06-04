@@ -12,20 +12,20 @@ import (
 )
 
 var (
-	shopID         = flag.String("shopid", "", "shopID to transfer")
-	toShopID       = flag.String("toshopid", "", "shopID to transfer")
+	holdingCode    = flag.String("holding_code", "", "holdingCode to transfer")
+	toHoldingCode  = flag.String("toholding_code", "", "holdingCode to transfer")
 	confirmTranser = flag.Bool("confirm", false, "confirm transfer")
 )
 
 func main() {
 
-	// read shopid from std in
+	// read holding_code from std in
 	godotenv.Load()
 
 	flag.Parse()
 
-	if *shopID == "" {
-		panic("shopID is required")
+	if *holdingCode == "" {
+		panic("holdingCode is required")
 	}
 
 	if confirmTranser != nil && !*confirmTranser {
@@ -33,10 +33,10 @@ func main() {
 		reader := bufio.NewReader(os.Stdin)
 
 		messageToShopDisplay := ""
-		if *toShopID != "" {
-			messageToShopDisplay = " to shopID: " + *toShopID
+		if *toHoldingCode != "" {
+			messageToShopDisplay = " to holdingCode: " + *toHoldingCode
 		}
-		fmt.Println("Are you sure to transfer shopID: ", *shopID, messageToShopDisplay, " ? (y/n)")
+		fmt.Println("Are you sure to transfer holdingCode: ", *holdingCode, messageToShopDisplay, " ? (y/n)")
 
 		text, _ := reader.ReadString('\n')
 
@@ -54,5 +54,5 @@ func main() {
 	targetDatabase := microservice.NewPersisterMongo(destinationDBConfig)
 
 	dbTransfer := tf.NewDBTransfer(sourceDatabase, targetDatabase)
-	dbTransfer.BeginTransfer(*shopID, *toShopID)
+	dbTransfer.BeginTransfer(*holdingCode, *toHoldingCode)
 }

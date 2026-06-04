@@ -27,12 +27,12 @@ import (
 )
 
 type IBOMHttpService interface {
-	UpsertBOM(shopID string, authUsername string, dcoNo string, barcode string) (string, error)
-	SaveRecipeBOM(shopID string, authUsername string, guid string, req models.ProductBarcodeBOMSaveRequest) (string, error)
-	DeleteBOM(shopID string, guid string, authUsername string) error
-	InfoBOM(shopID string, guid string) (models.ProductBarcodeBOMViewInfo, error)
-	SearchBOM(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ProductBarcodeBOMViewInfo, mongopagination.PaginationData, error)
-	SearchBOMStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ProductBarcodeBOMViewInfo, int, error)
+	UpsertBOM(holdingCode string, authUsername string, dcoNo string, barcode string) (string, error)
+	SaveRecipeBOM(holdingCode string, authUsername string, guid string, req models.ProductBarcodeBOMSaveRequest) (string, error)
+	DeleteBOM(holdingCode string, guid string, authUsername string) error
+	InfoBOM(holdingCode string, guid string) (models.ProductBarcodeBOMViewInfo, error)
+	SearchBOM(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ProductBarcodeBOMViewInfo, mongopagination.PaginationData, error)
+	SearchBOMStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ProductBarcodeBOMViewInfo, int, error)
 }
 
 type BOMHttpService struct {
@@ -65,11 +65,11 @@ func (svc BOMHttpService) getContextTimeout() (context.Context, context.CancelFu
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc BOMHttpService) UpsertBOM(shopID string, authUsername string, docNo string, barcode string) (string, error) {
+func (svc BOMHttpService) UpsertBOM(holdingCode string, authUsername string, docNo string, barcode string) (string, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	doc, err := svc.productRepo.FindByBarcode(ctx, shopID, barcode)
+	doc, err := svc.productRepo.FindByBarcode(ctx, holdingCode, barcode)
 	if err != nil {
 		return "", err
 	}
@@ -82,7 +82,7 @@ func (svc BOMHttpService) UpsertBOM(shopID string, authUsername string, docNo st
 	}
 
 	// 1. Delete all cached BOM entries for this barcode to start with a clean state
-	err = svc.repo.Delete(ctx, shopID, authUsername, map[string]interface{}{"barcode": barcode})
+	err = svc.repo.Delete(ctx, holdingCode, authUsername, map[string]interface{}{"barcode": barcode})
 	if err != nil {
 		return "", err
 	}
@@ -104,7 +104,7 @@ func (svc BOMHttpService) UpsertBOM(shopID string, authUsername string, docNo st
 
 			productBarcodeDict := map[string]product_models.ProductBarcodeDoc{}
 			if ver.BOM != nil && len(*ver.BOM) > 0 {
-				err = product_services.BuildBOMView(ctx, svc.productRepo.FindByBarcode, bomView.Level, &productBarcodeDict, &bomViewDict, shopID, ver.BOM, &bomView.BOM)
+				err = product_services.BuildBOMView(ctx, svc.productRepo.FindByBarcode, bomView.Level, &productBarcodeDict, &bomViewDict, holdingCode, ver.BOM, &bomView.BOM)
 				if err != nil {
 					return "", err
 				}
@@ -134,7 +134,7 @@ func (svc BOMHttpService) UpsertBOM(shopID string, authUsername string, docNo st
 				guidFixed = utils.NewGUID()
 			}
 
-			lastGUID, err = svc.createWithParams(ctx, shopID, authUsername, checkSumStr, guidFixed, ver.StartDate, ver.EndDate, isCurrentUse, docBomView)
+			lastGUID, err = svc.createWithParams(ctx, holdingCode, authUsername, checkSumStr, guidFixed, ver.StartDate, ver.EndDate, isCurrentUse, docBomView)
 			if err != nil {
 				return lastGUID, err
 			}
@@ -144,7 +144,7 @@ func (svc BOMHttpService) UpsertBOM(shopID string, authUsername string, docNo st
 			for tempBarcode := range productBarcodeDict {
 				bomBarcodes = append(bomBarcodes, tempBarcode)
 			}
-			_, err = svc.saleInvoiceBomSvc.CreateSaleInvoiceBomPrice(shopID, authUsername, docNo, guidFixed, bomBarcodes)
+			_, err = svc.saleInvoiceBomSvc.CreateSaleInvoiceBomPrice(holdingCode, authUsername, docNo, guidFixed, bomBarcodes)
 			if err != nil {
 				return lastGUID, err
 			}
@@ -164,7 +164,7 @@ func (svc BOMHttpService) UpsertBOM(shopID string, authUsername string, docNo st
 
 	productBarcodeDict := map[string]product_models.ProductBarcodeDoc{}
 	if doc.BOM != nil && len(*doc.BOM) > 0 {
-		err = product_services.BuildBOMView(ctx, svc.productRepo.FindByBarcode, bomView.Level, &productBarcodeDict, &bomViewDict, shopID, doc.BOM, &bomView.BOM)
+		err = product_services.BuildBOMView(ctx, svc.productRepo.FindByBarcode, bomView.Level, &productBarcodeDict, &bomViewDict, holdingCode, doc.BOM, &bomView.BOM)
 		if err != nil {
 			return "", err
 		}
@@ -186,7 +186,7 @@ func (svc BOMHttpService) UpsertBOM(shopID string, authUsername string, docNo st
 		return "", err
 	}
 
-	newGUID, err := svc.createWithParams(ctx, shopID, authUsername, checkSumStr, "", time.Now(), nil, true, docBomView)
+	newGUID, err := svc.createWithParams(ctx, holdingCode, authUsername, checkSumStr, "", time.Now(), nil, true, docBomView)
 	if err != nil {
 		return newGUID, err
 	}
@@ -195,7 +195,7 @@ func (svc BOMHttpService) UpsertBOM(shopID string, authUsername string, docNo st
 	for tempBarcode := range productBarcodeDict {
 		bomBarcodes = append(bomBarcodes, tempBarcode)
 	}
-	_, err = svc.saleInvoiceBomSvc.CreateSaleInvoiceBomPrice(shopID, authUsername, docNo, newGUID, bomBarcodes)
+	_, err = svc.saleInvoiceBomSvc.CreateSaleInvoiceBomPrice(holdingCode, authUsername, docNo, newGUID, bomBarcodes)
 	if err != nil {
 		return newGUID, err
 	}
@@ -203,7 +203,7 @@ func (svc BOMHttpService) UpsertBOM(shopID string, authUsername string, docNo st
 	return newGUID, nil
 }
 
-func (svc BOMHttpService) SaveRecipeBOM(shopID string, authUsername string, guid string, req models.ProductBarcodeBOMSaveRequest) (string, error) {
+func (svc BOMHttpService) SaveRecipeBOM(holdingCode string, authUsername string, guid string, req models.ProductBarcodeBOMSaveRequest) (string, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
@@ -224,7 +224,7 @@ func (svc BOMHttpService) SaveRecipeBOM(shopID string, authUsername string, guid
 		itemUnitNames = &[]common_models.NameX{}
 	}
 
-	preparedVersions, activeBOM, startDate, endDate, err := svc.prepareRecipeBOMVersions(ctx, shopID, recipeCode, req)
+	preparedVersions, activeBOM, startDate, endDate, err := svc.prepareRecipeBOMVersions(ctx, holdingCode, recipeCode, req)
 	if err != nil {
 		return "", err
 	}
@@ -254,7 +254,7 @@ func (svc BOMHttpService) SaveRecipeBOM(shopID string, authUsername string, guid
 	}
 	root.BarcodeGuidFixed = targetGuid
 
-	existingByCode, err := svc.repo.FindUseBOMByBarcode(ctx, shopID, recipeCode)
+	existingByCode, err := svc.repo.FindUseBOMByBarcode(ctx, holdingCode, recipeCode)
 	if err == nil && existingByCode.GuidFixed != "" && existingByCode.GuidFixed != targetGuid {
 		return "", fmt.Errorf("recipe code %s already exists", recipeCode)
 	}
@@ -271,7 +271,7 @@ func (svc BOMHttpService) SaveRecipeBOM(shopID string, authUsername string, guid
 	}
 
 	docData := models.ProductBarcodeBOMViewDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = targetGuid
 	docData.ProductBarcodeBOMView = root
 	docData.CheckSum = checkSumStr
@@ -298,7 +298,7 @@ func (svc BOMHttpService) SaveRecipeBOM(shopID string, authUsername string, guid
 		return targetGuid, nil
 	}
 
-	existing, err := svc.repo.FindByGuid(ctx, shopID, targetGuid)
+	existing, err := svc.repo.FindByGuid(ctx, holdingCode, targetGuid)
 	if err != nil {
 		return "", err
 	}
@@ -310,7 +310,7 @@ func (svc BOMHttpService) SaveRecipeBOM(shopID string, authUsername string, guid
 	docData.UpdatedBy = authUsername
 	docData.UpdatedAt = now
 
-	err = svc.repo.Update(ctx, shopID, targetGuid, docData)
+	err = svc.repo.Update(ctx, holdingCode, targetGuid, docData)
 	if err != nil {
 		return "", err
 	}
@@ -325,13 +325,13 @@ func (svc BOMHttpService) SaveRecipeBOM(shopID string, authUsername string, guid
 
 func (svc BOMHttpService) prepareRecipeBOMVersions(
 	ctx context.Context,
-	shopID string,
+	holdingCode string,
 	recipeCode string,
 	req models.ProductBarcodeBOMSaveRequest,
 ) ([]models.ProductBarcodeBOMVersion, []models.ProductBarcodeBOMView, time.Time, *time.Time, error) {
 	now := time.Now()
 	if len(req.BOMs) == 0 {
-		items, err := svc.prepareRecipeBOMItems(ctx, shopID, recipeCode, req.BOM)
+		items, err := svc.prepareRecipeBOMItems(ctx, holdingCode, recipeCode, req.BOM)
 		if err != nil {
 			return nil, nil, now, nil, err
 		}
@@ -350,7 +350,7 @@ func (svc BOMHttpService) prepareRecipeBOMVersions(
 		if ver.BOM != nil {
 			rawItems = *ver.BOM
 		}
-		items, err := svc.prepareRecipeBOMItems(ctx, shopID, recipeCode, rawItems)
+		items, err := svc.prepareRecipeBOMItems(ctx, holdingCode, recipeCode, rawItems)
 		if err != nil {
 			return nil, nil, now, nil, err
 		}
@@ -388,7 +388,7 @@ func (svc BOMHttpService) prepareRecipeBOMVersions(
 
 func (svc BOMHttpService) prepareRecipeBOMItems(
 	ctx context.Context,
-	shopID string,
+	holdingCode string,
 	recipeCode string,
 	reqItems []models.ProductBarcodeBOMView,
 ) ([]models.ProductBarcodeBOMView, error) {
@@ -412,7 +412,7 @@ func (svc BOMHttpService) prepareRecipeBOMItems(
 
 		switch refType {
 		case "recipe":
-			recipeDoc, err := svc.repo.FindUseBOMByBarcode(ctx, shopID, barcode)
+			recipeDoc, err := svc.repo.FindUseBOMByBarcode(ctx, holdingCode, barcode)
 			if err != nil {
 				return nil, err
 			}
@@ -428,7 +428,7 @@ func (svc BOMHttpService) prepareRecipeBOMItems(
 				item.BOM = &empty
 			}
 		case "product":
-			productDoc, err := svc.productRepo.FindByBarcode(ctx, shopID, barcode)
+			productDoc, err := svc.productRepo.FindByBarcode(ctx, holdingCode, barcode)
 			if err != nil {
 				return nil, err
 			}
@@ -495,13 +495,13 @@ func normalizeRecipeBOMRequestItem(item models.ProductBarcodeBOMView) models.Pro
 	return item
 }
 
-func (svc BOMHttpService) clearUseBOMByBarcode(ctx context.Context, shopID string, barcode string) error {
-	return svc.repo.ClearUseBOMByBarcode(ctx, shopID, barcode)
+func (svc BOMHttpService) clearUseBOMByBarcode(ctx context.Context, holdingCode string, barcode string) error {
+	return svc.repo.ClearUseBOMByBarcode(ctx, holdingCode, barcode)
 }
 
 func (svc BOMHttpService) createWithParams(
 	ctx context.Context,
-	shopID string,
+	holdingCode string,
 	authUsername string,
 	checkSum string,
 	guidFixed string,
@@ -516,7 +516,7 @@ func (svc BOMHttpService) createWithParams(
 	}
 
 	docData := models.ProductBarcodeBOMViewDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = guidFixed
 	docData.ProductBarcodeBOMView = doc
 	docData.CheckSum = checkSum
@@ -545,13 +545,13 @@ func (svc BOMHttpService) createWithParams(
 	return guidFixed, nil
 }
 
-func (svc BOMHttpService) create(ctx context.Context, shopID string, authUsername string, checkSum string, doc models.ProductBarcodeBOMView) (string, error) {
+func (svc BOMHttpService) create(ctx context.Context, holdingCode string, authUsername string, checkSum string, doc models.ProductBarcodeBOMView) (string, error) {
 
 	currentDate := time.Now()
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.ProductBarcodeBOMViewDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.ProductBarcodeBOMView = doc
 	docData.CheckSum = checkSum
@@ -580,12 +580,12 @@ func (svc BOMHttpService) create(ctx context.Context, shopID string, authUsernam
 	return newGuidFixed, nil
 }
 
-func (svc BOMHttpService) DeleteBOM(shopID string, guid string, authUsername string) error {
+func (svc BOMHttpService) DeleteBOM(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -595,7 +595,7 @@ func (svc BOMHttpService) DeleteBOM(shopID string, guid string, authUsername str
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
@@ -611,12 +611,12 @@ func (svc BOMHttpService) DeleteBOM(shopID string, guid string, authUsername str
 	return nil
 }
 
-func (svc BOMHttpService) InfoBOM(shopID string, guid string) (models.ProductBarcodeBOMViewInfo, error) {
+func (svc BOMHttpService) InfoBOM(holdingCode string, guid string) (models.ProductBarcodeBOMViewInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.ProductBarcodeBOMViewInfo{}, err
@@ -630,7 +630,7 @@ func (svc BOMHttpService) InfoBOM(shopID string, guid string) (models.ProductBar
 
 }
 
-func (svc BOMHttpService) SearchBOM(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ProductBarcodeBOMViewInfo, mongopagination.PaginationData, error) {
+func (svc BOMHttpService) SearchBOM(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ProductBarcodeBOMViewInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -647,7 +647,7 @@ func (svc BOMHttpService) SearchBOM(shopID string, filters map[string]interface{
 		}
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.ProductBarcodeBOMViewInfo{}, pagination, err
@@ -656,7 +656,7 @@ func (svc BOMHttpService) SearchBOM(shopID string, filters map[string]interface{
 	return docList, pagination, nil
 }
 
-func (svc BOMHttpService) SearchBOMStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ProductBarcodeBOMViewInfo, int, error) {
+func (svc BOMHttpService) SearchBOMStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ProductBarcodeBOMViewInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -674,7 +674,7 @@ func (svc BOMHttpService) SearchBOMStep(shopID string, langCode string, filters 
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.ProductBarcodeBOMViewInfo{}, 0, err

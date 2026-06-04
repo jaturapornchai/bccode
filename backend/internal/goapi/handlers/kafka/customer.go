@@ -5,11 +5,11 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"runtime/debug"
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/models"
 	"smlcloudplatform/internal/goapi/myglobal"
 	"smlcloudplatform/internal/goapi/mypg"
-	"runtime/debug"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
@@ -25,19 +25,19 @@ func OnConsumeMessageCustomerCreateOrUpdate(msg string) error {
 // OnConsumeMessageCustomerDelete - handles customer delete messages
 func OnConsumeMessageCustomerDelete(msg string) error {
 	// รับ Message จาก Kafka ที่เป็นการลบข้อมูล Customer
-	// msg จะเป็น JSON string ที่มีข้อมูล เช่น {"shopid": "shop123", "code": "C0001"}
+	// msg จะเป็น JSON string ที่มีข้อมูล เช่น {"holding_code": "shop123", "code": "C0001"}
 
 	logger.Info("OnConsumeMessageCustomerDelete: %s", msg)
 
 	customerData := TransCustomerDecode(msg)
 
-	if customerData.ShopId == "" || customerData.Code == "" {
-		logger.Error("ข้อมูล customer ไม่ถูกต้อง - ไม่มี ShopId หรือ Code")
+	if customerData.HoldingCode == "" || customerData.Code == "" {
+		logger.Error("ข้อมูล customer ไม่ถูกต้อง - ไม่มี HoldingCode หรือ Code")
 		return fmt.Errorf("invalid customer data")
 	}
 
 	// ลบข้อมูลใน PostgreSQL
-	db, err := mypg.PgSqlFastConnect(customerData.ShopId)
+	db, err := mypg.PgSqlFastConnect(customerData.HoldingCode)
 	if err != nil {
 		logger.Error("ไม่สามารถเชื่อมต่อ PostgreSQL: %v", err)
 		return err
@@ -50,7 +50,7 @@ func OnConsumeMessageCustomerDelete(msg string) error {
 		return err
 	}
 
-	logger.Info("ลบ customer สำเร็จ: ShopID=%s, Code=%s", customerData.ShopId, customerData.Code)
+	logger.Info("ลบ customer สำเร็จ: HoldingCode=%s, Code=%s", customerData.HoldingCode, customerData.Code)
 	return nil
 }
 
@@ -70,17 +70,17 @@ func ProcessCustomerMasterData(msg string) error {
 	// Decode customer from JSON message
 	logger.Debug("Step 1: กำลัง Decode JSON message... ")
 	customerData := TransCustomerDecode(msg)
-	logger.Info("Step 1: Decode customer สำเร็จ - ShopID=%s, Code=%s, TaxID=%s, Names=%d",
-		customerData.ShopId, customerData.Code, customerData.TaxID, len(customerData.Names))
+	logger.Info("Step 1: Decode customer สำเร็จ - HoldingCode=%s, Code=%s, TaxID=%s, Names=%d",
+		customerData.HoldingCode, customerData.Code, customerData.TaxID, len(customerData.Names))
 
-	if customerData.ShopId == "" || customerData.Code == "" {
-		logger.Error("ข้อมูล customer ไม่ถูกต้อง - ShopId='%s', Code='%s'", customerData.ShopId, customerData.Code)
-		return fmt.Errorf("invalid customer data - missing ShopId or Code")
+	if customerData.HoldingCode == "" || customerData.Code == "" {
+		logger.Error("ข้อมูล customer ไม่ถูกต้อง - HoldingCode='%s', Code='%s'", customerData.HoldingCode, customerData.Code)
+		return fmt.Errorf("invalid customer data - missing HoldingCode or Code")
 	}
 
 	// Connect to database
 	logger.Debug("Step 2: กำลังเชื่อมต่อ PostgreSQL...")
-	db, err := mypg.PgSqlFastConnect(customerData.ShopId)
+	db, err := mypg.PgSqlFastConnect(customerData.HoldingCode)
 	if err != nil {
 		logger.Error("ไม่สามารถเชื่อมต่อ database: %v", err)
 		return fmt.Errorf("failed to connect to database: %v", err)

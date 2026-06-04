@@ -10,15 +10,15 @@ const unitCollectionName = "units"
 
 type Unit struct {
 	models.PartitionIdentity `bson:"inline"`
-	UnitCode string `json:"unitcode" bson:"unitcode" validate:"required,max=100"`
+	UnitCode                 string `json:"unitcode" bson:"unitcode" validate:"required,max=100"`
 	models.UnitName          `bson:"inline"`
-	Names *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
-	CompanyGuids []string `json:"company_guids" bson:"company_guids"`
+	Names                    *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
+	CompanyGuids             []string        `json:"company_guids" bson:"company_guids"`
 }
 
 type UnitInfo struct {
 	models.DocIdentity `bson:"inline"`
-	Unit  `bson:"inline"`
+	Unit               `bson:"inline"`
 }
 
 func (UnitInfo) CollectionName() string {
@@ -26,13 +26,13 @@ func (UnitInfo) CollectionName() string {
 }
 
 type UnitData struct {
-	models.ShopIdentity `bson:"inline"`
-	UnitInfo  `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	UnitInfo                 `bson:"inline"`
 }
 
 type UnitDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	UnitData  `bson:"inline"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	UnitData           `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -49,7 +49,7 @@ func (UnitItemGuid) CollectionName() string {
 }
 
 type UnitActivity struct {
-	UnitData  `bson:"inline"`
+	UnitData            `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

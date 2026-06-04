@@ -4,11 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"runtime"
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/myglobal"
 	"smlcloudplatform/internal/goapi/mypostgres"
 	"smlcloudplatform/internal/goapi/process"
-	"runtime"
 	"sync"
 	"time"
 )
@@ -22,7 +22,7 @@ type WorkerManager struct {
 	isRunning      bool
 	mu             sync.RWMutex
 	shopUpdateChan chan []string // channel สำหรับอัพเดทรายชื่อ shop
-	db             *sql.DB        // PostgreSQL connection
+	db             *sql.DB       // PostgreSQL connection
 }
 
 // DynamicWorker - worker ที่ทำงานแบบ dynamic (ไม่ผูกกับ shop เดียว)
@@ -36,11 +36,11 @@ type DynamicWorker struct {
 
 // WorkerStats - สถิติของ worker
 type WorkerStats struct {
-	WorkerID int       `json:"worker_id"`
+	WorkerID       int       `json:"worker_id"`
 	TotalProcessed uint64    `json:"total_processed"`
-	Status string    `json:"status"`
-	CurrentShop string    `json:"current_shop"`
-	LastProcessed time.Time `json:"last_processed"`
+	Status         string    `json:"status"`
+	CurrentShop    string    `json:"current_shop"`
+	LastProcessed  time.Time `json:"last_processed"`
 }
 
 // OptimalWorkerCount คำนวณจำนวน worker ที่เหมาะสมตาม CPU cores
@@ -257,11 +257,11 @@ func (w *DynamicWorker) run() {
 			// Round-robin ไปหา shop ที่มีงาน
 			processed := false
 			for i := 0; i < len(activeShops); i++ {
-				shopId := activeShops[currentShopIndex]
+				holdingCode := activeShops[currentShopIndex]
 				currentShopIndex = (currentShopIndex + 1) % len(activeShops)
 
 				// ลองดึงงานจาก shop นี้
-				if w.processShopQueue(shopId) {
+				if w.processShopQueue(holdingCode) {
 					processed = true
 					break
 				}
@@ -289,7 +289,7 @@ func (w *DynamicWorker) run() {
 }
 
 // processShopQueue - ดึงและประมวลผลงานจาก queue ของ shop
-func (w *DynamicWorker) processShopQueue(shopId string) bool {
+func (w *DynamicWorker) processShopQueue(holdingCode string) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
@@ -302,9 +302,9 @@ func (w *DynamicWorker) processShopQueue(shopId string) bool {
 
 	// ดึงงานจาก queue (non-blocking)
 	qm := mypostgres.NewQueueManager(db)
-	item, err := qm.PopFromQueue(ctx, shopId)
+	item, err := qm.PopFromQueue(ctx, holdingCode)
 	if err != nil {
-		logger.Error("[Worker-%d] Failed to pop from queue (shop=%s): %v", w.id, shopId, err)
+		logger.Error("[Worker-%d] Failed to pop from queue (shop=%s): %v", w.id, holdingCode, err)
 		return false
 	}
 
@@ -315,7 +315,7 @@ func (w *DynamicWorker) processShopQueue(shopId string) bool {
 
 	// ประมวลผลงาน
 	logger.Info("[Worker-%d] Processing: shop=%s, docno=%s, transflag=%s",
-		w.id, item.ShopId, item.DocNo, item.TransFlag)
+		w.id, item.HoldingCode, item.DocNo, item.TransFlag)
 
 	startTime := time.Now()
 	err = w.processDocument(ctx, item)
@@ -323,7 +323,7 @@ func (w *DynamicWorker) processShopQueue(shopId string) bool {
 
 	if err != nil {
 		logger.Error("[Worker-%d] Failed to process doc %s (shop=%s): %v",
-			w.id, item.DocNo, item.ShopId, err)
+			w.id, item.DocNo, item.HoldingCode, err)
 
 		// Requeue หรือส่งไป dead letter queue
 		if item.RetryCount < 3 {
@@ -348,7 +348,7 @@ func (w *DynamicWorker) processShopQueue(shopId string) bool {
 	w.mu.Unlock()
 
 	logger.Info("[Worker-%d] ✓ Completed: shop=%s, docno=%s (duration=%v)",
-		w.id, item.ShopId, item.DocNo, duration.Round(time.Millisecond))
+		w.id, item.HoldingCode, item.DocNo, duration.Round(time.Millisecond))
 
 	return true
 }
@@ -379,13 +379,13 @@ func (w *DynamicWorker) processPurchaseOrder(ctx context.Context, item *mypostgr
 	logger.Debug("[Worker-%d] Processing Purchase Order: %s", w.id, item.DocNo)
 
 	// Placeholder - ใส่ logic จริงตรงนี้
-	return process.ProcessPurchaseOrderStatus(ctx, item.ShopId, item.DocNo)
+	return process.ProcessPurchaseOrderStatus(ctx, item.HoldingCode, item.DocNo)
 }
 
 // processSaleInvoice - ประมวลผล Sale Invoice
 func (w *DynamicWorker) processSaleInvoice(ctx context.Context, item *mypostgres.QueueItem) error {
 	logger.Debug("[Worker-%d] Processing Sale Invoice: %s", w.id, item.DocNo)
-	return process.ProcessSaleInvoiceStatus(ctx, item.ShopId, item.DocNo)
+	return process.ProcessSaleInvoiceStatus(ctx, item.HoldingCode, item.DocNo)
 }
 
 // processCreditor - ประมวลผล Creditor

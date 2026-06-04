@@ -15,7 +15,7 @@ type AdvancePayment struct {
 }
 type AdvancePaymentInfo struct {
 	models.DocIdentity `bson:"inline"`
-	AdvancePayment  `bson:"inline"`
+	AdvancePayment     `bson:"inline"`
 }
 
 func (AdvancePaymentInfo) CollectionName() string {
@@ -23,12 +23,12 @@ func (AdvancePaymentInfo) CollectionName() string {
 }
 
 type AdvancePaymentData struct {
-	models.ShopIdentity `bson:"inline"`
-	AdvancePaymentInfo  `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	AdvancePaymentInfo       `bson:"inline"`
 }
 
 type AdvancePaymentDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	AdvancePaymentData `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

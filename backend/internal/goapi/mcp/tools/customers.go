@@ -18,45 +18,45 @@ import (
 // ==================== Top Customers ====================
 
 type TopCustomersRequest struct {
-	ShopID string `json:"shop_id"`
-	FromDate string `json:"from_date"`
-	ToDate string `json:"to_date"`
-	Limit int    `json:"limit"`
-	SortBy string `json:"sort_by"` // amount, orders, profit
+	HoldingCode string `json:"holding_code"`
+	FromDate    string `json:"from_date"`
+	ToDate      string `json:"to_date"`
+	Limit       int    `json:"limit"`
+	SortBy      string `json:"sort_by"` // amount, orders, profit
 }
 
 type TopCustomersResponse struct {
-	Period string           `json:"period"`
-	Summary CustomerSummary  `json:"summary"`
-	Customers []TopCustomer    `json:"customers"`
-	GeneratedAt time.Time        `json:"generated_at"`
+	Period      string          `json:"period"`
+	Summary     CustomerSummary `json:"summary"`
+	Customers   []TopCustomer   `json:"customers"`
+	GeneratedAt time.Time       `json:"generated_at"`
 }
 
 type CustomerSummary struct {
-	TotalCustomers int     `json:"total_customers"`
-	TotalRevenue float64 `json:"total_revenue"`
-	TotalRevenueWord string  `json:"total_revenue_word"`
+	TotalCustomers     int     `json:"total_customers"`
+	TotalRevenue       float64 `json:"total_revenue"`
+	TotalRevenueWord   string  `json:"total_revenue_word"`
 	AveragePerCustomer float64 `json:"average_per_customer"`
 	Top20Concentration float64 `json:"top_20_concentration_percent"` // % of revenue from top 20%
 }
 
 type TopCustomer struct {
-	Rank int     `json:"rank"`
-	CustomerCode string  `json:"customer_code"`
-	CustomerName string  `json:"customer_name"`
-	TotalAmount float64 `json:"total_amount"`
-	TotalAmountWord string `json:"total_amount_word"`
-	OrderCount int     `json:"order_count"`
-	AverageOrder float64 `json:"average_order"`
-	Profit float64 `json:"profit"`
-	ProfitMargin float64 `json:"profit_margin_percent"`
-	Percentage float64 `json:"percentage_of_total"`
-	LastOrderDate string  `json:"last_order_date"`
+	Rank            int     `json:"rank"`
+	CustomerCode    string  `json:"customer_code"`
+	CustomerName    string  `json:"customer_name"`
+	TotalAmount     float64 `json:"total_amount"`
+	TotalAmountWord string  `json:"total_amount_word"`
+	OrderCount      int     `json:"order_count"`
+	AverageOrder    float64 `json:"average_order"`
+	Profit          float64 `json:"profit"`
+	ProfitMargin    float64 `json:"profit_margin_percent"`
+	Percentage      float64 `json:"percentage_of_total"`
+	LastOrderDate   string  `json:"last_order_date"`
 }
 
-func GetTopCustomers(ctx context.Context, shopID, fromDate, toDate string, limit int, sortBy string) (*TopCustomersResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func GetTopCustomers(ctx context.Context, holdingCode, fromDate, toDate string, limit int, sortBy string) (*TopCustomersResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 
 	now := time.Now()
@@ -76,9 +76,9 @@ func GetTopCustomers(ctx context.Context, shopID, fromDate, toDate string, limit
 		sortBy = "amount"
 	}
 
-	logger.Info("[Top Customers] shopid=%s, from=%s, to=%s, limit=%d", shopID, fromDate, toDate, limit)
+	logger.Info("[Top Customers] holding_code=%s, from=%s, to=%s, limit=%d", holdingCode, fromDate, toDate, limit)
 
-	db, err := mypg.PgSqlFastConnect(shopID)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		return nil, fmt.Errorf("database connection failed: %w", err)
 	}
@@ -215,51 +215,51 @@ func GetTopCustomers(ctx context.Context, shopID, fromDate, toDate string, limit
 // ==================== Customer Growth ====================
 
 type CustomerGrowthRequest struct {
-	ShopID string `json:"shop_id"`
-	FromDate string `json:"from_date"`
-	ToDate string `json:"to_date"`
+	HoldingCode string `json:"holding_code"`
+	FromDate    string `json:"from_date"`
+	ToDate      string `json:"to_date"`
 }
 
 type CustomerGrowthResponse struct {
-	Period string              `json:"period"`
-	Summary GrowthSummary       `json:"summary"`
-	MonthlyGrowth []MonthlyGrowth     `json:"monthly_growth"`
-	NewVsReturning NewVsReturning      `json:"new_vs_returning"`
-	GeneratedAt time.Time           `json:"generated_at"`
+	Period         string          `json:"period"`
+	Summary        GrowthSummary   `json:"summary"`
+	MonthlyGrowth  []MonthlyGrowth `json:"monthly_growth"`
+	NewVsReturning NewVsReturning  `json:"new_vs_returning"`
+	GeneratedAt    time.Time       `json:"generated_at"`
 }
 
 type GrowthSummary struct {
-	TotalNewCustomers int     `json:"total_new_customers"`
-	TotalReturning int     `json:"total_returning_customers"`
-	GrowthRate float64 `json:"growth_rate_percent"`
-	RetentionRate float64 `json:"retention_rate_percent"`
-	ChurnRate float64 `json:"churn_rate_percent"`
+	TotalNewCustomers     int     `json:"total_new_customers"`
+	TotalReturning        int     `json:"total_returning_customers"`
+	GrowthRate            float64 `json:"growth_rate_percent"`
+	RetentionRate         float64 `json:"retention_rate_percent"`
+	ChurnRate             float64 `json:"churn_rate_percent"`
 	CustomerLifetimeValue float64 `json:"customer_lifetime_value"`
 }
 
 type MonthlyGrowth struct {
-	Month string  `json:"month"`
+	Month        string  `json:"month"`
 	NewCustomers int     `json:"new_customers"`
-	Returning int     `json:"returning_customers"`
-	Churned int     `json:"churned_customers"`
-	NetGrowth int     `json:"net_growth"`
-	GrowthRate float64 `json:"growth_rate_percent"`
+	Returning    int     `json:"returning_customers"`
+	Churned      int     `json:"churned_customers"`
+	NetGrowth    int     `json:"net_growth"`
+	GrowthRate   float64 `json:"growth_rate_percent"`
 }
 
 type NewVsReturning struct {
-	NewCustomerRevenue float64 `json:"new_customer_revenue"`
+	NewCustomerRevenue     float64 `json:"new_customer_revenue"`
 	NewCustomerRevenueWord string  `json:"new_customer_revenue_word"`
-	NewCustomerPercent float64 `json:"new_customer_percent"`
-	ReturningRevenue float64 `json:"returning_revenue"`
-	ReturningRevenueWord string  `json:"returning_revenue_word"`
-	ReturningPercent float64 `json:"returning_percent"`
-	NewCustomerAvgOrder float64 `json:"new_customer_avg_order"`
-	ReturningAvgOrder float64 `json:"returning_avg_order"`
+	NewCustomerPercent     float64 `json:"new_customer_percent"`
+	ReturningRevenue       float64 `json:"returning_revenue"`
+	ReturningRevenueWord   string  `json:"returning_revenue_word"`
+	ReturningPercent       float64 `json:"returning_percent"`
+	NewCustomerAvgOrder    float64 `json:"new_customer_avg_order"`
+	ReturningAvgOrder      float64 `json:"returning_avg_order"`
 }
 
-func GetCustomerGrowth(ctx context.Context, shopID, fromDate, toDate string) (*CustomerGrowthResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func GetCustomerGrowth(ctx context.Context, holdingCode, fromDate, toDate string) (*CustomerGrowthResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 
 	now := time.Now()
@@ -270,9 +270,9 @@ func GetCustomerGrowth(ctx context.Context, shopID, fromDate, toDate string) (*C
 		toDate = now.Format("2006-01-02")
 	}
 
-	logger.Info("[Customer Growth] shopid=%s, from=%s, to=%s", shopID, fromDate, toDate)
+	logger.Info("[Customer Growth] holding_code=%s, from=%s, to=%s", holdingCode, fromDate, toDate)
 
-	db, err := mypg.PgSqlFastConnect(shopID)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		return nil, fmt.Errorf("database connection failed: %w", err)
 	}
@@ -428,40 +428,40 @@ func GetCustomerGrowth(ctx context.Context, shopID, fromDate, toDate string) (*C
 // ==================== Customer Segments ====================
 
 type CustomerSegmentsRequest struct {
-	ShopID string `json:"shop_id"`
-	FromDate string `json:"from_date"`
-	ToDate string `json:"to_date"`
+	HoldingCode string `json:"holding_code"`
+	FromDate    string `json:"from_date"`
+	ToDate      string `json:"to_date"`
 }
 
 type CustomerSegmentsResponse struct {
-	Period string            `json:"period"`
-	Segments []CustomerSegment `json:"segments"`
+	Period      string            `json:"period"`
+	Segments    []CustomerSegment `json:"segments"`
 	RFMAnalysis RFMAnalysis       `json:"rfm_analysis"`
 	GeneratedAt time.Time         `json:"generated_at"`
 }
 
 type CustomerSegment struct {
-	Name string  `json:"name"`
-	Description string  `json:"description"`
-	CustomerCount int     `json:"customer_count"`
-	Percentage float64 `json:"percentage"`
-	TotalRevenue float64 `json:"total_revenue"`
+	Name           string  `json:"name"`
+	Description    string  `json:"description"`
+	CustomerCount  int     `json:"customer_count"`
+	Percentage     float64 `json:"percentage"`
+	TotalRevenue   float64 `json:"total_revenue"`
 	RevenuePercent float64 `json:"revenue_percent"`
-	AvgOrderValue float64 `json:"avg_order_value"`
-	AvgFrequency float64 `json:"avg_frequency"`
+	AvgOrderValue  float64 `json:"avg_order_value"`
+	AvgFrequency   float64 `json:"avg_frequency"`
 }
 
 type RFMAnalysis struct {
-	Champions int `json:"champions"`      // High R, F, M
+	Champions      int `json:"champions"`       // High R, F, M
 	LoyalCustomers int `json:"loyal_customers"` // High F, M
-	AtRisk int `json:"at_risk"`        // Low R, High F, M
-	Lost int `json:"lost"`           // Very Low R
-	NewCustomers int `json:"new_customers"`  // High R, Low F
+	AtRisk         int `json:"at_risk"`         // Low R, High F, M
+	Lost           int `json:"lost"`            // Very Low R
+	NewCustomers   int `json:"new_customers"`   // High R, Low F
 }
 
-func GetCustomerSegments(ctx context.Context, shopID, fromDate, toDate string) (*CustomerSegmentsResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func GetCustomerSegments(ctx context.Context, holdingCode, fromDate, toDate string) (*CustomerSegmentsResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 
 	now := time.Now()
@@ -472,9 +472,9 @@ func GetCustomerSegments(ctx context.Context, shopID, fromDate, toDate string) (
 		toDate = now.Format("2006-01-02")
 	}
 
-	logger.Info("[Customer Segments] shopid=%s, from=%s, to=%s", shopID, fromDate, toDate)
+	logger.Info("[Customer Segments] holding_code=%s, from=%s, to=%s", holdingCode, fromDate, toDate)
 
-	db, err := mypg.PgSqlFastConnect(shopID)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		return nil, fmt.Errorf("database connection failed: %w", err)
 	}
@@ -550,27 +550,27 @@ func GetCustomerSegments(ctx context.Context, shopID, fromDate, toDate string) (
 
 	response.Segments = []CustomerSegment{
 		{
-			Name:          "VIP",
-			Description:   "High-value customers (2x+ avg spending)",
-			CustomerCount: vipCount,
-			Percentage:    float64(vipCount) / float64(totalCustomers) * 100,
-			TotalRevenue:  vipRevenue,
+			Name:           "VIP",
+			Description:    "High-value customers (2x+ avg spending)",
+			CustomerCount:  vipCount,
+			Percentage:     float64(vipCount) / float64(totalCustomers) * 100,
+			TotalRevenue:   vipRevenue,
 			RevenuePercent: vipRevenue / totalRevenue * 100,
 		},
 		{
-			Name:          "Regular",
-			Description:   "Standard customers (0.5x-2x avg spending)",
-			CustomerCount: regularCount,
-			Percentage:    float64(regularCount) / float64(totalCustomers) * 100,
-			TotalRevenue:  regularRevenue,
+			Name:           "Regular",
+			Description:    "Standard customers (0.5x-2x avg spending)",
+			CustomerCount:  regularCount,
+			Percentage:     float64(regularCount) / float64(totalCustomers) * 100,
+			TotalRevenue:   regularRevenue,
 			RevenuePercent: regularRevenue / totalRevenue * 100,
 		},
 		{
-			Name:          "Occasional",
-			Description:   "Low-frequency customers (<0.5x avg spending)",
-			CustomerCount: lowCount,
-			Percentage:    float64(lowCount) / float64(totalCustomers) * 100,
-			TotalRevenue:  lowRevenue,
+			Name:           "Occasional",
+			Description:    "Low-frequency customers (<0.5x avg spending)",
+			CustomerCount:  lowCount,
+			Percentage:     float64(lowCount) / float64(totalCustomers) * 100,
+			TotalRevenue:   lowRevenue,
 			RevenuePercent: lowRevenue / totalRevenue * 100,
 		},
 	}
@@ -590,27 +590,27 @@ func GetCustomerSegments(ctx context.Context, shopID, fromDate, toDate string) (
 
 // CustomerSearchResult — lightweight customer record สำหรับ search result
 type CustomerSearchResult struct {
-	GuidFixed string `json:"guid_fixed"`
-	Code string `json:"code"`
-	Name0 string `json:"name0"`
-	TaxId string `json:"tax_id,omitempty"`
-	Email string `json:"email,omitempty"`
-	ShopID string `json:"shopid"`
+	GuidFixed   string `json:"guid_fixed"`
+	Code        string `json:"code"`
+	Name0       string `json:"name0"`
+	TaxId       string `json:"tax_id,omitempty"`
+	Email       string `json:"email,omitempty"`
+	HoldingCode string `json:"holding_code"`
 }
 
 // SearchCustomersResponse — result สำหรับ search_customers MCP tool
 type SearchCustomersResponse struct {
-	Customers []CustomerSearchResult `json:"customers"`
-	Count int                   `json:"count"`
-	Keyword string                `json:"keyword"`
-	SearchMode string                `json:"search_mode"` // "vector", "regex"
-	GeneratedAt time.Time             `json:"generated_at"`
+	Customers   []CustomerSearchResult `json:"customers"`
+	Count       int                    `json:"count"`
+	Keyword     string                 `json:"keyword"`
+	SearchMode  string                 `json:"search_mode"` // "vector", "regex"
+	GeneratedAt time.Time              `json:"generated_at"`
 }
 
 // SearchCustomers — vector-first semantic search สำหรับ agent ใช้
-func SearchCustomers(ctx context.Context, shopID, keyword string, limit int) (*SearchCustomersResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func SearchCustomers(ctx context.Context, holdingCode, keyword string, limit int) (*SearchCustomersResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 	if keyword == "" {
 		return nil, fmt.Errorf("keyword is required")
@@ -622,10 +622,10 @@ func SearchCustomers(ctx context.Context, shopID, keyword string, limit int) (*S
 		limit = 50
 	}
 
-	logger.Info("[SearchEntity] search_customers shopID=%s keyword=%s limit=%d", shopID, keyword, limit)
+	logger.Info("[SearchEntity] search_customers holdingCode=%s keyword=%s limit=%d", holdingCode, keyword, limit)
 
 	// 1. Try pgvector first
-	vectorResults, vecErr := searchCustomersVector(shopID, keyword, limit)
+	vectorResults, vecErr := searchCustomersVector(holdingCode, keyword, limit)
 	if vecErr == nil && len(vectorResults) > 0 {
 		logger.Info("[SearchEntity] search_customers vector found %d results", len(vectorResults))
 		return &SearchCustomersResponse{
@@ -649,7 +649,7 @@ func SearchCustomers(ctx context.Context, shopID, keyword string, limit int) (*S
 	dbName := svcCfg.MongodbDatabaseName()
 
 	filter := bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 		"$or": []bson.M{
 			{"deleted_at": bson.M{"$exists": false}},
 			{"deleted_at": time.Time{}},
@@ -674,12 +674,12 @@ func SearchCustomers(ctx context.Context, shopID, keyword string, limit int) (*S
 	defer cursor.Close(ctx)
 
 	type mongoCustomer struct {
-		GuidFixed string `bson:"guid_fixed"`
-		Code string `bson:"code"`
-		Name0 string `bson:"name0"`
-		TaxId string `bson:"tax_id"`
-		Email string `bson:"email"`
-		ShopID string `bson:"shopid"`
+		GuidFixed   string `bson:"guid_fixed"`
+		Code        string `bson:"code"`
+		Name0       string `bson:"name0"`
+		TaxId       string `bson:"tax_id"`
+		Email       string `bson:"email"`
+		HoldingCode string `bson:"holding_code"`
 	}
 	var raw []mongoCustomer
 	if err := cursor.All(ctx, &raw); err != nil {
@@ -689,12 +689,12 @@ func SearchCustomers(ctx context.Context, shopID, keyword string, limit int) (*S
 	customers := make([]CustomerSearchResult, 0, len(raw))
 	for _, r := range raw {
 		customers = append(customers, CustomerSearchResult{
-			GuidFixed: r.GuidFixed,
-			Code:      r.Code,
-			Name0:     r.Name0,
-			TaxId:     r.TaxId,
-			Email:     r.Email,
-			ShopID:    r.ShopID,
+			GuidFixed:   r.GuidFixed,
+			Code:        r.Code,
+			Name0:       r.Name0,
+			TaxId:       r.TaxId,
+			Email:       r.Email,
+			HoldingCode: r.HoldingCode,
 		})
 	}
 
@@ -709,8 +709,8 @@ func SearchCustomers(ctx context.Context, shopID, keyword string, limit int) (*S
 }
 
 // searchCustomersVector — pgvector search บน customer table
-func searchCustomersVector(shopID, keyword string, limit int) ([]CustomerSearchResult, error) {
-	db, err := mypg.PgSqlFastConnect(shopID)
+func searchCustomersVector(holdingCode, keyword string, limit int) ([]CustomerSearchResult, error) {
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		return nil, err
 	}
@@ -737,11 +737,11 @@ func searchCustomersVector(shopID, keyword string, limit int) ([]CustomerSearchR
 			COALESCE(taxid,''), COALESCE(email,''),
 			(name_embedding <=> $1::vector) as distance
 		FROM customer
-		WHERE shopid = $2 AND name_embedding IS NOT NULL
+		WHERE holding_code = $2 AND name_embedding IS NOT NULL
 		ORDER BY name_embedding <=> $1::vector
 		LIMIT $3`
 
-	rows, err := db.Query(sqlQuery, vecStr, shopID, limit)
+	rows, err := db.Query(sqlQuery, vecStr, holdingCode, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -757,7 +757,7 @@ func searchCustomersVector(shopID, keyword string, limit int) ([]CustomerSearchR
 		if distance > 0.5 {
 			continue
 		}
-		r.ShopID = shopID
+		r.HoldingCode = holdingCode
 		results = append(results, r)
 	}
 	return results, nil

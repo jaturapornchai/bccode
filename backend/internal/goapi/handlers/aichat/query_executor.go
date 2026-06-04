@@ -13,13 +13,13 @@ import (
 // QueryResult represents the result from database query
 type QueryResult struct {
 	Columns []string        `json:"columns"`
-	Rows [][]interface{} `json:"rows"`
-	Count int             `json:"count"`
+	Rows    [][]interface{} `json:"rows"`
+	Count   int             `json:"count"`
 }
 
 // ExecuteQuery runs the SQL query and returns results
-func ExecuteQuery(ctx context.Context, shopID string, sql string, limit int) (*QueryResult, error) {
-	db, err := mydb.GetGlobalConnectionFromPool(shopID)
+func ExecuteQuery(ctx context.Context, holdingCode string, sql string, limit int) (*QueryResult, error) {
+	db, err := mydb.GetGlobalConnectionFromPool(holdingCode)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database connection: %w", err)
 	}
@@ -198,8 +198,8 @@ func GenerateAnswerFromData(ctx context.Context, question string, intent *QueryI
 
 	// Parse JSON response
 	var aiResponse struct {
-		Answer string   `json:"answer"`
-		HTML string   `json:"html"`
+		Answer             string   `json:"answer"`
+		HTML               string   `json:"html"`
 		SuggestedQuestions []string `json:"suggested_questions"`
 	}
 

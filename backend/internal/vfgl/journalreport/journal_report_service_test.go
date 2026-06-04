@@ -19,28 +19,28 @@ type MockJournalReportPgRepository struct {
 	mock.Mock
 }
 
-func (m *MockJournalReportPgRepository) GetDataTrialBalance(shopId string, accountGroup string, includeCloseAccountMode bool, startDate time.Time, endDate time.Time) ([]models.TrialBalanceSheetAccountDetail, error) {
-	ret := m.Called(shopId, accountGroup, includeCloseAccountMode, startDate, endDate)
+func (m *MockJournalReportPgRepository) GetDataTrialBalance(holdingCode string, accountGroup string, includeCloseAccountMode bool, startDate time.Time, endDate time.Time) ([]models.TrialBalanceSheetAccountDetail, error) {
+	ret := m.Called(holdingCode, accountGroup, includeCloseAccountMode, startDate, endDate)
 	return ret.Get(0).([]models.TrialBalanceSheetAccountDetail), ret.Error(1)
 }
 
-func (m *MockJournalReportPgRepository) GetDataProfitAndLoss(shopId string, accountGroup string, includeCloseAccountMode bool, startDate time.Time, endDate time.Time) ([]models.ProfitAndLossSheetAccountDetail, error) {
-	ret := m.Called(shopId, accountGroup, includeCloseAccountMode, startDate, endDate)
+func (m *MockJournalReportPgRepository) GetDataProfitAndLoss(holdingCode string, accountGroup string, includeCloseAccountMode bool, startDate time.Time, endDate time.Time) ([]models.ProfitAndLossSheetAccountDetail, error) {
+	ret := m.Called(holdingCode, accountGroup, includeCloseAccountMode, startDate, endDate)
 	return ret.Get(0).([]models.ProfitAndLossSheetAccountDetail), ret.Error(1)
 }
 
-func (m *MockJournalReportPgRepository) GetDataBalanceSheet(shopId string, accountGroup string, includeCloseAccountMode bool, endDate time.Time) ([]models.BalanceSheetAccountDetail, error) {
-	ret := m.Called(shopId, accountGroup, includeCloseAccountMode, endDate)
+func (m *MockJournalReportPgRepository) GetDataBalanceSheet(holdingCode string, accountGroup string, includeCloseAccountMode bool, endDate time.Time) ([]models.BalanceSheetAccountDetail, error) {
+	ret := m.Called(holdingCode, accountGroup, includeCloseAccountMode, endDate)
 	return ret.Get(0).([]models.BalanceSheetAccountDetail), ret.Error(1)
 }
 
-func (m *MockJournalReportPgRepository) GetDataLedgerAccount(shopId string, accountGroup string, creditorCode string, debtorCode string, consolidateAccountCode string, accountCodeRanges []models.LedgerAccountCodeRange, bookCode string, startDate time.Time, endDate time.Time) ([]models.LedgerAccountRaw, error) {
-	ret := m.Called(shopId, accountGroup, creditorCode, debtorCode, consolidateAccountCode, accountCodeRanges, bookCode, startDate, endDate)
+func (m *MockJournalReportPgRepository) GetDataLedgerAccount(holdingCode string, accountGroup string, creditorCode string, debtorCode string, consolidateAccountCode string, accountCodeRanges []models.LedgerAccountCodeRange, bookCode string, startDate time.Time, endDate time.Time) ([]models.LedgerAccountRaw, error) {
+	ret := m.Called(holdingCode, accountGroup, creditorCode, debtorCode, consolidateAccountCode, accountCodeRanges, bookCode, startDate, endDate)
 	return ret.Get(0).([]models.LedgerAccountRaw), ret.Error(1)
 }
 
-func (m *MockJournalReportPgRepository) GetMultiShopRevenue(shopIDs []string, startDate time.Time, endDate time.Time) ([]models.MultiShopRevenueRaw, error) {
-	ret := m.Called(shopIDs, startDate, endDate)
+func (m *MockJournalReportPgRepository) GetMultiShopRevenue(holdingCodes []string, startDate time.Time, endDate time.Time) ([]models.MultiShopRevenueRaw, error) {
+	ret := m.Called(holdingCodes, startDate, endDate)
 	return ret.Get(0).([]models.MultiShopRevenueRaw), ret.Error(1)
 }
 
@@ -48,21 +48,21 @@ type MockJournalReportMongoRepository struct {
 	mock.Mock
 }
 
-func (m *MockJournalReportMongoRepository) FindCountDetailByDocs(ctx context.Context, shopID string, docs []string) ([]models.JournalSummary, error) {
-	ret := m.Called(ctx, shopID, docs)
+func (m *MockJournalReportMongoRepository) FindCountDetailByDocs(ctx context.Context, holdingCode string, docs []string) ([]models.JournalSummary, error) {
+	ret := m.Called(ctx, holdingCode, docs)
 	return ret.Get(0).([]models.JournalSummary), ret.Error(1)
 }
-func (m *MockJournalReportMongoRepository) FindCountImageByDocs(ctx context.Context, shopID string, docs []string) ([]models.JournalImageSummary, error) {
-	ret := m.Called(ctx, shopID, docs)
+func (m *MockJournalReportMongoRepository) FindCountImageByDocs(ctx context.Context, holdingCode string, docs []string) ([]models.JournalImageSummary, error) {
+	ret := m.Called(ctx, holdingCode, docs)
 	return ret.Get(0).([]models.JournalImageSummary), ret.Error(1)
 }
-func (m *MockJournalReportMongoRepository) FindImageCountByShops(ctx context.Context, shopIDs []string, startDate time.Time, endDate time.Time) ([]models.ShopImageCount, error) {
-	ret := m.Called(ctx, shopIDs, startDate, endDate)
+func (m *MockJournalReportMongoRepository) FindImageCountByShops(ctx context.Context, holdingCodes []string, startDate time.Time, endDate time.Time) ([]models.ShopImageCount, error) {
+	ret := m.Called(ctx, holdingCodes, startDate, endDate)
 	return ret.Get(0).([]models.ShopImageCount), ret.Error(1)
 }
 
-func (m *MockJournalReportMongoRepository) GetDocNosByShopsAndDateRange(ctx context.Context, shopIDs []string, startDate time.Time, endDate time.Time) (map[string][]string, error) {
-	ret := m.Called(ctx, shopIDs, startDate, endDate)
+func (m *MockJournalReportMongoRepository) GetDocNosByShopsAndDateRange(ctx context.Context, holdingCodes []string, startDate time.Time, endDate time.Time) (map[string][]string, error) {
+	ret := m.Called(ctx, holdingCodes, startDate, endDate)
 	return ret.Get(0).(map[string][]string), ret.Error(1)
 }
 
@@ -71,8 +71,8 @@ func (m *MockJournalReportMongoRepository) CountImagesByDocNos(ctx context.Conte
 	return ret.Get(0).([]models.ShopImageCount), ret.Error(1)
 }
 
-func (m *MockJournalReportMongoRepository) CountAllImagesByShops(ctx context.Context, shopIDs []string) ([]models.ShopImageCount, error) {
-	ret := m.Called(ctx, shopIDs)
+func (m *MockJournalReportMongoRepository) CountAllImagesByShops(ctx context.Context, holdingCodes []string) ([]models.ShopImageCount, error) {
+	ret := m.Called(ctx, holdingCodes)
 	return ret.Get(0).([]models.ShopImageCount), ret.Error(1)
 }
 

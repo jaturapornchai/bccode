@@ -12,11 +12,11 @@ const accountperiodmasterCollectionName = "accountPeriodMaster"
 
 // Request
 type AccountPeriodMasterRequest struct {
-	Period int            `json:"period" bson:"period"`
-	StartDate models.ISODate `json:"start_date" bson:"start_date"`
-	EndDate models.ISODate `json:"end_date" bson:"end_date"`
+	Period      int            `json:"period" bson:"period"`
+	StartDate   models.ISODate `json:"start_date" bson:"start_date"`
+	EndDate     models.ISODate `json:"end_date" bson:"end_date"`
 	Description string         `json:"description" bson:"description"`
-	IsDisabled bool           `json:"isdisabled" bson:"isdisabled"`
+	IsDisabled  bool           `json:"isdisabled" bson:"isdisabled"`
 }
 
 func (apm *AccountPeriodMasterRequest) ToAccountPeriodMaster() AccountPeriodMaster {
@@ -32,11 +32,11 @@ func (apm *AccountPeriodMasterRequest) ToAccountPeriodMaster() AccountPeriodMast
 // Account Period Master
 type AccountPeriodMaster struct {
 	models.PartitionIdentity `bson:"inline"`
-	Period int       `json:"period" bson:"period"`
-	StartDate time.Time `json:"start_date" bson:"start_date"`
-	EndDate time.Time `json:"end_date" bson:"end_date"`
-	Description string    `json:"description" bson:"description"`
-	IsDisabled bool      `json:"isdisabled" bson:"isdisabled"`
+	Period                   int       `json:"period" bson:"period"`
+	StartDate                time.Time `json:"start_date" bson:"start_date"`
+	EndDate                  time.Time `json:"end_date" bson:"end_date"`
+	Description              string    `json:"description" bson:"description"`
+	IsDisabled               bool      `json:"isdisabled" bson:"isdisabled"`
 }
 
 type AccountPeriodMasterInfo struct {
@@ -53,7 +53,7 @@ func (doc *AccountPeriodMasterInfo) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
 		*Alias
 		StartDate string `json:"start_date"`
-		EndDate string `json:"end_date"`
+		EndDate   string `json:"end_date"`
 	}{
 		Alias:     (*Alias)(doc),
 		StartDate: doc.StartDate.Format("2006-01-02"),
@@ -62,12 +62,12 @@ func (doc *AccountPeriodMasterInfo) MarshalJSON() ([]byte, error) {
 }
 
 type AccountPeriodMasterData struct {
-	models.ShopIdentity     `bson:"inline"`
-	AccountPeriodMasterInfo `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	AccountPeriodMasterInfo  `bson:"inline"`
 }
 
 type AccountPeriodMasterDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                      primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	AccountPeriodMasterData `bson:"inline"`
 	models.ActivityDoc      `bson:"inline"`
 }
@@ -81,7 +81,7 @@ func (doc *AccountPeriodMasterDoc) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
 		*Alias
 		StartDate string `json:"start_date"`
-		EndDate string `json:"end_date"`
+		EndDate   string `json:"end_date"`
 	}{
 		Alias:     (*Alias)(doc),
 		StartDate: doc.StartDate.Format("2006-01-02"),
@@ -116,6 +116,6 @@ func (AccountPeriodMasterDeleteActivity) CollectionName() string {
 }
 
 type MapDateAccountPeriodMasterInfo struct {
-	Date string                  `json:"date"`
+	Date       string                  `json:"date"`
 	PeriodData AccountPeriodMasterInfo `json:"perioddata"`
 }

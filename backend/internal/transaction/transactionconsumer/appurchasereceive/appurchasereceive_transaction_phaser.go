@@ -59,7 +59,7 @@ func (p *APPurchaseReceiveTransactionPhaser) PhaseAccrualReceiveDoc(doc accrualR
 					DocRef:              detail.DocRef,
 					DocRefDateTime:      detail.DocRefDatetime,
 					DocNo:               doc.DocNo,
-					ShopID:              doc.ShopID,
+					HoldingCode:         doc.HoldingCode,
 					LineNumber:          int8(detail.LineNumber),
 					Barcode:             detail.Barcode,
 					Qty:                 detail.Qty,
@@ -97,8 +97,8 @@ func (p *APPurchaseReceiveTransactionPhaser) PhaseAccrualReceiveDoc(doc accrualR
 		TransactionPG: models.TransactionPG{
 			GuidFixed: doc.GuidFixed,
 			GuidRef:   doc.GuidRef,
-			ShopIdentity: pkgModels.ShopIdentity{
-				ShopID: doc.ShopID,
+			HoldingCodeentity: pkgModels.HoldingCodeentity{
+				HoldingCode: doc.HoldingCode,
 			},
 			TransFlag:      12,
 			DocNo:          doc.DocNo,

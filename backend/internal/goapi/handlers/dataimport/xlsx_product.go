@@ -28,82 +28,82 @@ const (
 
 // ProductPrepareSession - session การประมวลผล
 type ProductPrepareSession struct {
-	ShopID string                 `json:"shop_id"`
-	FileName string                 `json:"file_name"`
-	FilePath string                 `json:"file_path"`
-	JSONFilePath string                 `json:"json_file_path"` // เพิ่ม: path ของ JSON result file
-	JSONFileName string                 `json:"json_file_name"` // เพิ่ม: ชื่อไฟล์ JSON
-	Status ProductPrepareStatus   `json:"status"`
-	Progress float64                `json:"progress"`
-	TotalRows int                    `json:"total_rows"`
+	HoldingCode   string                 `json:"holding_code"`
+	FileName      string                 `json:"file_name"`
+	FilePath      string                 `json:"file_path"`
+	JSONFilePath  string                 `json:"json_file_path"` // เพิ่ม: path ของ JSON result file
+	JSONFileName  string                 `json:"json_file_name"` // เพิ่ม: ชื่อไฟล์ JSON
+	Status        ProductPrepareStatus   `json:"status"`
+	Progress      float64                `json:"progress"`
+	TotalRows     int                    `json:"total_rows"`
 	ProcessedRows int                    `json:"processed_rows"`
-	SuccessCount int                    `json:"success_count"`
-	ErrorCount int                    `json:"error_count"`
-	StartTime time.Time              `json:"start_time"`
-	EndTime *time.Time             `json:"end_time,omitempty"`
-	Result []ProductPrepareResult `json:"result,omitempty"`
-	ErrorMessage string                 `json:"error_message,omitempty"`
-	Mutex sync.RWMutex           `json:"-"`
+	SuccessCount  int                    `json:"success_count"`
+	ErrorCount    int                    `json:"error_count"`
+	StartTime     time.Time              `json:"start_time"`
+	EndTime       *time.Time             `json:"end_time,omitempty"`
+	Result        []ProductPrepareResult `json:"result,omitempty"`
+	ErrorMessage  string                 `json:"error_message,omitempty"`
+	Mutex         sync.RWMutex           `json:"-"`
 }
 
 // ProductPrepareResult - ผลลัพธ์แต่ละแถว
 type ProductPrepareResult struct {
-	RowNumber int                    `json:"row_number"`
-	Barcode string                 `json:"barcode"`
-	Name string                 `json:"name"`
-	UnitCode string                 `json:"unit_code"`
-	ProductType string                 `json:"product_type"`
-	TaxType string                 `json:"tax_type"`
-	Code string                 `json:"code"`
-	Price float64                `json:"price"`
-	PriceMember float64                `json:"price_member"`
-	PriceDelivery float64                `json:"price_delivery"`
-	PriceOne float64                `json:"price_one"`
-	PriceTwo float64                `json:"price_two"`
-	PriceThree float64                `json:"price_three"`
-	PriceFour float64                `json:"price_four"`
-	PriceFive float64                `json:"price_five"`
-	PriceSix float64                `json:"price_six"`
-	PriceSeven float64                `json:"price_seven"`
-	PriceEight float64                `json:"price_eight"`
-	PriceNine float64                `json:"price_nine"`
-	GroupCode string                 `json:"group_code"`
+	RowNumber       int                    `json:"row_number"`
+	Barcode         string                 `json:"barcode"`
+	Name            string                 `json:"name"`
+	UnitCode        string                 `json:"unit_code"`
+	ProductType     string                 `json:"product_type"`
+	TaxType         string                 `json:"tax_type"`
+	Code            string                 `json:"code"`
+	Price           float64                `json:"price"`
+	PriceMember     float64                `json:"price_member"`
+	PriceDelivery   float64                `json:"price_delivery"`
+	PriceOne        float64                `json:"price_one"`
+	PriceTwo        float64                `json:"price_two"`
+	PriceThree      float64                `json:"price_three"`
+	PriceFour       float64                `json:"price_four"`
+	PriceFive       float64                `json:"price_five"`
+	PriceSix        float64                `json:"price_six"`
+	PriceSeven      float64                `json:"price_seven"`
+	PriceEight      float64                `json:"price_eight"`
+	PriceNine       float64                `json:"price_nine"`
+	GroupCode       string                 `json:"group_code"`
 	GroupsuboneCode string                 `json:"groupsubone_code"`
 	GroupsubtwoCode string                 `json:"groupsubtwo_code"`
-	BrandCode string                 `json:"brand_code"`
-	DesignCode string                 `json:"design_code"`
-	ModelCode string                 `json:"model_code"`
-	PatternCode string                 `json:"pattern_code"`
-	GradeCode string                 `json:"grade_code"`
-	CategoryCode string                 `json:"category_code"`
-	ClassCode string                 `json:"class_code"`
-	StandValue float64                `json:"stand_value"`
-	DivideValue float64                `json:"divide_value"`
-	Status string                 `json:"status"` // "success", "error", "warning"
-	Message string                 `json:"message"`
-	Data map[string]interface{} `json:"data,omitempty"`
+	BrandCode       string                 `json:"brand_code"`
+	DesignCode      string                 `json:"design_code"`
+	ModelCode       string                 `json:"model_code"`
+	PatternCode     string                 `json:"pattern_code"`
+	GradeCode       string                 `json:"grade_code"`
+	CategoryCode    string                 `json:"category_code"`
+	ClassCode       string                 `json:"class_code"`
+	StandValue      float64                `json:"stand_value"`
+	DivideValue     float64                `json:"divide_value"`
+	Status          string                 `json:"status"` // "success", "error", "warning"
+	Message         string                 `json:"message"`
+	Data            map[string]interface{} `json:"data,omitempty"`
 }
 
 var (
-	// เก็บ session ตาม shopId
+	// เก็บ session ตาม holdingCode
 	productPrepareSessions = make(map[string]*ProductPrepareSession)
 	xlsxSessionMutex       sync.RWMutex
 )
 
 // StartProductPrepareHandler - เริ่มประมวลผลไฟล์ Excel
 // POST /xlsx/product/start
-// Form-data: shopId, file (Excel file)
+// Form-data: holdingCode, file (Excel file)
 func StartProductPrepareHandler(c echo.Context) error {
-	shopID := c.FormValue("shopId")
-	if shopID == "" {
+	holdingCode := c.FormValue("holdingCode")
+	if holdingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"error": "shopId is required",
+			"error": "holdingCode is required",
 		})
 	}
 
 	// ตรวจสอบว่ามี session ทำงานอยู่แล้วหรือไม่
 	xlsxSessionMutex.RLock()
-	existingSession, exists := productPrepareSessions[shopID]
+	existingSession, exists := productPrepareSessions[holdingCode]
 	xlsxSessionMutex.RUnlock()
 
 	if exists && existingSession.Status == StatusProcessing {
@@ -146,7 +146,7 @@ func StartProductPrepareHandler(c echo.Context) error {
 
 	// ใช้ system temp directory
 	tempDir := os.TempDir()
-	uploadDir := filepath.Join(tempDir, "uploads", "xlsx", shopID)
+	uploadDir := filepath.Join(tempDir, "uploads", "xlsx", holdingCode)
 	os.MkdirAll(uploadDir, 0755)
 
 	filePath := filepath.Join(uploadDir, file.Filename)
@@ -169,54 +169,54 @@ func StartProductPrepareHandler(c echo.Context) error {
 		})
 	}
 
-	logger.Info("Excel file saved: %s for shop %s", filePath, shopID)
+	logger.Info("Excel file saved: %s for shop %s", filePath, holdingCode)
 
 	// สร้าง session ใหม่
 	session := &ProductPrepareSession{
-		ShopID:    shopID,
-		FileName:  file.Filename,
-		FilePath:  filePath,
-		Status:    StatusProcessing,
-		Progress:  0,
-		StartTime: time.Now(),
-		Result:    []ProductPrepareResult{},
+		HoldingCode: holdingCode,
+		FileName:    file.Filename,
+		FilePath:    filePath,
+		Status:      StatusProcessing,
+		Progress:    0,
+		StartTime:   time.Now(),
+		Result:      []ProductPrepareResult{},
 	}
 
 	// เก็บ session
 	xlsxSessionMutex.Lock()
-	productPrepareSessions[shopID] = session
+	productPrepareSessions[holdingCode] = session
 	xlsxSessionMutex.Unlock()
 
 	// เริ่มประมวลผลใน goroutine
 	go processProductExcel(session)
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"success":  true,
-		"message":  "Processing started",
-		"shopId":   shopID,
-		"fileName": file.Filename,
-		"status":   StatusProcessing,
+		"success":     true,
+		"message":     "Processing started",
+		"holdingCode": holdingCode,
+		"fileName":    file.Filename,
+		"status":      StatusProcessing,
 	})
 }
 
 // GetProductPrepareStatusHandler - ตรวจสอบสถานะการประมวลผล
-// GET /xlsx/product/status?shopId=xxx
+// GET /xlsx/product/status?holdingCode=xxx
 func GetProductPrepareStatusHandler(c echo.Context) error {
-	shopID := c.QueryParam("shopId")
-	if shopID == "" {
+	holdingCode := c.QueryParam("holdingCode")
+	if holdingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"error": "shopId is required",
+			"error": "holdingCode is required",
 		})
 	}
 
 	xlsxSessionMutex.RLock()
-	session, exists := productPrepareSessions[shopID]
+	session, exists := productPrepareSessions[holdingCode]
 	xlsxSessionMutex.RUnlock()
 
 	if !exists {
 		return c.JSON(http.StatusOK, map[string]interface{}{
-			"shopId": shopID,
-			"status": StatusNotStarted,
+			"holdingCode": holdingCode,
+			"status":      StatusNotStarted,
 		})
 	}
 
@@ -224,7 +224,7 @@ func GetProductPrepareStatusHandler(c echo.Context) error {
 	defer session.Mutex.RUnlock()
 
 	response := map[string]interface{}{
-		"shopId":        session.ShopID,
+		"holdingCode":   session.HoldingCode,
 		"fileName":      session.FileName,
 		"status":        session.Status,
 		"progress":      session.Progress,
@@ -249,17 +249,17 @@ func GetProductPrepareStatusHandler(c echo.Context) error {
 }
 
 // GetProductPrepareResultHandler - ดึงผลลัพธ์การประมวลผล
-// GET /xlsx/product/result?shopId=xxx
+// GET /xlsx/product/result?holdingCode=xxx
 func GetProductPrepareResultHandler(c echo.Context) error {
-	shopID := c.QueryParam("shopId")
-	if shopID == "" {
+	holdingCode := c.QueryParam("holdingCode")
+	if holdingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"error": "shopId is required",
+			"error": "holdingCode is required",
 		})
 	}
 
 	xlsxSessionMutex.RLock()
-	session, exists := productPrepareSessions[shopID]
+	session, exists := productPrepareSessions[holdingCode]
 	xlsxSessionMutex.RUnlock()
 
 	if !exists {
@@ -274,15 +274,15 @@ func GetProductPrepareResultHandler(c echo.Context) error {
 
 	if session.Status == StatusProcessing {
 		return c.JSON(http.StatusOK, map[string]interface{}{
-			"shopId":   shopID,
-			"status":   StatusProcessing,
-			"message":  "Still processing, please wait",
-			"progress": session.Progress,
+			"holdingCode": holdingCode,
+			"status":      StatusProcessing,
+			"message":     "Still processing, please wait",
+			"progress":    session.Progress,
 		})
 	}
 
 	response := map[string]interface{}{
-		"shopId":        session.ShopID,
+		"holdingCode":   session.HoldingCode,
 		"fileName":      session.FileName,
 		"status":        session.Status,
 		"totalRows":     session.TotalRows,
@@ -322,7 +322,7 @@ func processProductExcel(session *ProductPrepareSession) {
 		}
 	}()
 
-	logger.Info("Starting Excel processing for shop %s: %s", session.ShopID, session.FilePath)
+	logger.Info("Starting Excel processing for shop %s: %s", session.HoldingCode, session.FilePath)
 
 	// เปิดไฟล์ Excel
 	f, err := excelize.OpenFile(session.FilePath)
@@ -396,7 +396,7 @@ func processProductExcel(session *ProductPrepareSession) {
 		row := rows[i]
 		rowNumber := i + 1 // เพิ่ม 1 เพราะนับรวม header
 
-		result := processProductRow(session.ShopID, rowNumber, headers, row)
+		result := processProductRow(session.HoldingCode, rowNumber, headers, row)
 		results = append(results, result)
 
 		// อัปเดตความคืบหน้า
@@ -426,7 +426,7 @@ func processProductExcel(session *ProductPrepareSession) {
 	session.EndTime = &endTime
 
 	// สร้าง JSON file
-	jsonFileName, jsonFilePath, err := saveResultsToJSON(session.ShopID, results)
+	jsonFileName, jsonFilePath, err := saveResultsToJSON(session.HoldingCode, results)
 	if err != nil {
 		logger.Error("Failed to save JSON file: %v", err)
 		session.Status = StatusError
@@ -441,7 +441,7 @@ func processProductExcel(session *ProductPrepareSession) {
 
 	duration := endTime.Sub(session.StartTime)
 	logger.Success("Excel processing completed for shop %s: %d rows in %s (Success: %d, Error: %d)",
-		session.ShopID, totalRows, duration, session.SuccessCount, session.ErrorCount)
+		session.HoldingCode, totalRows, duration, session.SuccessCount, session.ErrorCount)
 
 	// Cleanup Excel file after processing
 	os.Remove(session.FilePath)
@@ -449,7 +449,7 @@ func processProductExcel(session *ProductPrepareSession) {
 }
 
 // processProductRow - ประมวลผลแต่ละแถว
-func processProductRow(shopID string, rowNumber int, headers []string, row []string) ProductPrepareResult {
+func processProductRow(holdingCode string, rowNumber int, headers []string, row []string) ProductPrepareResult {
 	result := ProductPrepareResult{
 		RowNumber: rowNumber,
 		Status:    "success",
@@ -519,7 +519,7 @@ func processProductRow(shopID string, rowNumber int, headers []string, row []str
 
 	// เก็บข้อมูลทั้งหมด
 	result.Data["rowData"] = rowData
-	result.Data["shopId"] = shopID
+	result.Data["holdingCode"] = holdingCode
 
 	if result.Message == "" {
 		result.Message = "Processed successfully"
@@ -550,17 +550,17 @@ func parseFloat(s string) float64 {
 }
 
 // saveResultsToJSON - บันทึกผลลัพธ์เป็น JSON file
-func saveResultsToJSON(shopID string, results []ProductPrepareResult) (string, string, error) {
+func saveResultsToJSON(holdingCode string, results []ProductPrepareResult) (string, string, error) {
 	// สร้าง folder สำหรับเก็บ JSON
 	tempDir := os.TempDir()
-	jsonDir := filepath.Join(tempDir, "uploads", "xlsx", shopID, "results")
+	jsonDir := filepath.Join(tempDir, "uploads", "xlsx", holdingCode, "results")
 	if err := os.MkdirAll(jsonDir, 0755); err != nil {
 		return "", "", fmt.Errorf("failed to create JSON directory: %v", err)
 	}
 
 	// สร้างชื่อไฟล์ JSON (ใช้ timestamp)
 	timestamp := time.Now().Format("20060102_150405")
-	jsonFileName := fmt.Sprintf("products_%s_%s.json", shopID, timestamp)
+	jsonFileName := fmt.Sprintf("products_%s_%s.json", holdingCode, timestamp)
 	jsonFilePath := filepath.Join(jsonDir, jsonFileName)
 
 	// แปลง results เป็น JSON
@@ -579,17 +579,17 @@ func saveResultsToJSON(shopID string, results []ProductPrepareResult) (string, s
 }
 
 // ClearProductPrepareSession - ลบ session (เรียกใช้หลังดึงผลลัพธ์แล้ว)
-func ClearProductPrepareSession(shopID string) {
+func ClearProductPrepareSession(holdingCode string) {
 	xlsxSessionMutex.Lock()
 	defer xlsxSessionMutex.Unlock()
 
-	if session, exists := productPrepareSessions[shopID]; exists {
+	if session, exists := productPrepareSessions[holdingCode]; exists {
 		// ลบไฟล์
 		if session.FilePath != "" {
 			os.Remove(session.FilePath)
 			logger.Info("Cleaned up Excel file: %s", session.FilePath)
 		}
-		delete(productPrepareSessions, shopID)
+		delete(productPrepareSessions, holdingCode)
 	}
 }
 

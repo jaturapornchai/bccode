@@ -19,26 +19,26 @@ import (
 
 // MongoQueryRequest คำขอ query MongoDB
 type MongoQueryRequest struct {
-	ShopID string `json:"shop_id"`
-	Database string `json:"database"`   // ถ้าไม่ระบุจะใช้ค่า default จาก config
-	Collection string `json:"collection"` // ชื่อ collection ที่ต้องการ query
-	Filter string `json:"filter"`     // JSON filter (bson.M format)
-	Limit int    `json:"limit"`      // จำนวน documents สูงสุด (default=20, max=100)
+	HoldingCode string `json:"holding_code"`
+	Database    string `json:"database"`   // ถ้าไม่ระบุจะใช้ค่า default จาก config
+	Collection  string `json:"collection"` // ชื่อ collection ที่ต้องการ query
+	Filter      string `json:"filter"`     // JSON filter (bson.M format)
+	Limit       int    `json:"limit"`      // จำนวน documents สูงสุด (default=20, max=100)
 }
 
 // MongoQueryResponse ผลลัพธ์จาก query MongoDB
 type MongoQueryResponse struct {
-	Database string                   `json:"database"`
-	Collection string                   `json:"collection"`
-	Documents []map[string]interface{} `json:"documents"`
-	Count int                      `json:"count"`
-	Truncated bool                     `json:"truncated"`
+	Database    string                   `json:"database"`
+	Collection  string                   `json:"collection"`
+	Documents   []map[string]interface{} `json:"documents"`
+	Count       int                      `json:"count"`
+	Truncated   bool                     `json:"truncated"`
 	ExecutionMs int64                    `json:"execution_ms"`
 	GeneratedAt time.Time                `json:"generated_at"`
 }
 
 // QueryMongoDB ค้นหาข้อมูลใน MongoDB (readonly — ใช้ Find เท่านั้น)
-func QueryMongoDB(ctx context.Context, shopID, database, collection, filterJSON string, limit int) (*MongoQueryResponse, error) {
+func QueryMongoDB(ctx context.Context, holdingCode, database, collection, filterJSON string, limit int) (*MongoQueryResponse, error) {
 	if collection == "" {
 		return nil, fmt.Errorf("collection is required")
 	}
@@ -75,9 +75,9 @@ func QueryMongoDB(ctx context.Context, shopID, database, collection, filterJSON 
 		filter = bson.M{}
 	}
 
-	// เพิ่ม shopid filter ถ้ามี (ป้องกันการดูข้อมูลข้าม shop)
-	if shopID != "" {
-		filter["shopid"] = shopID
+	// เพิ่ม holding_code filter ถ้ามี (ป้องกันการดูข้อมูลข้าม shop)
+	if holdingCode != "" {
+		filter["holding_code"] = holdingCode
 	}
 
 	startTime := time.Now()
@@ -122,9 +122,9 @@ func QueryMongoDB(ctx context.Context, shopID, database, collection, filterJSON 
 
 // MongoListCollectionsResponse ผลลัพธ์รายการ collections
 type MongoListCollectionsResponse struct {
-	Database string           `json:"database"`
+	Database    string           `json:"database"`
 	Collections []CollectionInfo `json:"collections"`
-	Count int              `json:"count"`
+	Count       int              `json:"count"`
 	GeneratedAt time.Time        `json:"generated_at"`
 }
 
@@ -175,15 +175,15 @@ func ListMongoDBCollections(ctx context.Context, database string) (*MongoListCol
 
 // MongoAggregateRequest คำขอ aggregation pipeline
 type MongoAggregateRequest struct {
-	ShopID string `json:"shop_id"`
-	Database string `json:"database"`
-	Collection string `json:"collection"`
-	Pipeline string `json:"pipeline"` // JSON array ของ pipeline stages
-	Limit int    `json:"limit"`
+	HoldingCode string `json:"holding_code"`
+	Database    string `json:"database"`
+	Collection  string `json:"collection"`
+	Pipeline    string `json:"pipeline"` // JSON array ของ pipeline stages
+	Limit       int    `json:"limit"`
 }
 
 // AggregateMongoDB รัน aggregation pipeline บน collection (readonly)
-func AggregateMongoDB(ctx context.Context, shopID, database, collection, pipelineJSON string, limit int) (*MongoQueryResponse, error) {
+func AggregateMongoDB(ctx context.Context, holdingCode, database, collection, pipelineJSON string, limit int) (*MongoQueryResponse, error) {
 	if collection == "" {
 		return nil, fmt.Errorf("collection is required")
 	}
@@ -225,9 +225,9 @@ func AggregateMongoDB(ctx context.Context, shopID, database, collection, pipelin
 		return nil, fmt.Errorf("pipeline JSON ไม่ถูกต้อง: %w", err)
 	}
 
-	// เพิ่ม $match shopid ถ้ามี (ป้องกันการดูข้อมูลข้าม shop)
-	if shopID != "" {
-		matchStage := bson.M{"$match": bson.M{"shopid": shopID}}
+	// เพิ่ม $match holding_code ถ้ามี (ป้องกันการดูข้อมูลข้าม shop)
+	if holdingCode != "" {
+		matchStage := bson.M{"$match": bson.M{"holding_code": holdingCode}}
 		pipeline = append([]bson.M{matchStage}, pipeline...)
 	}
 

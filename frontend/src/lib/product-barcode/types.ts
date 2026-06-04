@@ -36,6 +36,56 @@ export interface ProductImage {
   uri: string;
 }
 
+export interface MarketplaceMediaAsset {
+  kind: string;
+  uri: string;
+  external_id: string;
+  external_url: string;
+  option_code: string;
+  option_value: string;
+  sort_order: number;
+  alt_text: string;
+  use_case: string;
+  mime_type: string;
+  width: number;
+  height: number;
+  last_imported_at: string;
+}
+
+export interface MarketplaceAttributeValue {
+  value_id: string;
+  value_code: string;
+  value_text: string;
+  display_text: string;
+  unit_code: string;
+  sort_order: number;
+  is_custom_value: boolean;
+}
+
+export interface MarketplaceAttribute {
+  attribute_id: string;
+  attribute_code: string;
+  attribute_name: string;
+  input_type: string;
+  scope: string;
+  is_required: boolean;
+  is_sale_prop: boolean;
+  is_custom: boolean;
+  values: MarketplaceAttributeValue[];
+}
+
+export interface MarketplaceSpecificationGroup {
+  group_code: string;
+  group_name: string;
+  attributes: MarketplaceAttribute[];
+}
+
+export interface MarketplacePayloadExample {
+  direction: string;
+  use_case: string;
+  payload: unknown;
+}
+
 /** Fixed cost entry — matches Go `FixedCost`. */
 export interface FixedCost {
   effectdate: string; // ISO date string
@@ -60,7 +110,7 @@ export interface ProductOrderType {
 }
 
 /** Supported marketplace platforms (matches backend `platform` values). */
-export const MARKETPLACE_PLATFORMS = ["shopee", "lazada", "tiktok"] as const;
+export const MARKETPLACE_PLATFORMS = ["shopee", "lazada", "aliexpress", "tiktok"] as const;
 export type MarketplacePlatform = (typeof MARKETPLACE_PLATFORMS)[number];
 
 /** Listing status options shared across platforms. */
@@ -69,13 +119,13 @@ export type MarketplaceStatus = (typeof MARKETPLACE_STATUS)[number];
 
 /**
  * One marketplace listing mapping for a product/barcode — matches Go
- * `MarketplaceProductMap`. Unified shape across Shopee/Lazada/TikTok; unused
+ * `MarketplaceProductMap`. Unified shape across Shopee/Lazada/AliExpress/TikTok; unused
  * fields per platform stay blank.
  */
 export interface MarketplaceProductMap {
   platform: string;
   account_id: string;
-  shop_id: string;
+  holding_code: string;
   market_item_id: string;
   market_model_id: string;
   item_url: string;
@@ -85,6 +135,10 @@ export interface MarketplaceProductMap {
   category_id: string;
   category_name: string;
   brand_id: string;
+  media_assets: MarketplaceMediaAsset[];
+  specification_groups: MarketplaceSpecificationGroup[];
+  raw_attributes: MarketplaceAttribute[];
+  payload_examples: MarketplacePayloadExample[];
   currency: string;
   custom_price: number;
   platform_price: number;
@@ -105,12 +159,14 @@ export interface MarketplaceProductMap {
 export interface MarketplaceSKUMap {
   platform: string;
   account_id: string;
-  shop_id: string;
+  holding_code: string;
   market_item_id: string;
   market_model_id: string;
   seller_sku: string;
   shop_sku: string;
   gtin: string;
+  media_assets?: MarketplaceMediaAsset[];
+  raw_attributes?: MarketplaceAttribute[];
   currency: string;
   sync_stock: boolean;
   sync_price: boolean;
@@ -127,7 +183,7 @@ export function emptyMarketplaceProductMap(platform: MarketplacePlatform): Marke
   return {
     platform,
     account_id: "",
-    shop_id: "",
+    holding_code: "",
     market_item_id: "",
     market_model_id: "",
     item_url: "",
@@ -137,6 +193,10 @@ export function emptyMarketplaceProductMap(platform: MarketplacePlatform): Marke
     category_id: "",
     category_name: "",
     brand_id: "",
+    media_assets: [],
+    specification_groups: [],
+    raw_attributes: [],
+    payload_examples: [],
     currency: "THB",
     custom_price: 0,
     platform_price: 0,
@@ -197,6 +257,13 @@ export interface ProductDimension {
     names: NameX[];
     isdisabled: boolean;
   };
+}
+
+export interface ProductStockDimension {
+  dimension_guid?: string;
+  dimension_name?: string;
+  item_guid?: string;
+  item_name?: string;
 }
 
 /** Business type — matches Go `ProductBarcodeBusinessType`. */
@@ -292,7 +359,7 @@ export type ProductType = number;
 export interface ProductBarcode {
   // Identity
   guidfixed: string;
-  shopid?: string;
+  holding_code?: string;
   itemcode: string;
   barcode: string;
   names: NameX[];
@@ -434,7 +501,7 @@ export type ProductBarcodeUpdateRequest = ProductBarcode;
 /** Row shape returned by `POST /goapi/api/product/barcode/list` (PG list). */
 export interface ProductBarcodeListRow {
   guidfixed: string;
-  shopid?: string;
+  holding_code?: string;
   barcode: string;
   names: NameX[];
   itemunitcode: string;
@@ -451,7 +518,12 @@ export interface ProductBarcodeListRow {
   price?: number;
   imageuri: string;
   balance_qty?: number;
+  reserved_qty?: number;
+  available_qty?: number;
+  stock_dimension_key?: string;
+  stock_dimensions?: ProductStockDimension[];
   balanceamount?: number;
+  balance_amount?: number;
   averagecost?: number;
   mainbarcoderef?: string;
   standvalue?: number;
@@ -492,7 +564,7 @@ export interface ProductBarcodeListFilters {
 
 /** Request body for list endpoint. */
 export interface ProductBarcodeListRequest extends ProductBarcodeListFilters {
-  shopid: string;
+  holding_code: string;
 }
 
 /** Response envelope from list endpoint. */
@@ -507,7 +579,7 @@ export interface ProductBarcodeListResponse {
 export function emptyProductBarcode(): ProductBarcode {
   return {
     guidfixed: "",
-    shopid: "",
+    holding_code: "",
     itemcode: "",
     barcode: "",
     names: [],
@@ -642,7 +714,7 @@ export interface ProductSupplier {
 
 export interface Product {
   guidfixed: string;
-  shopid: string;
+  holding_code: string;
   code: string;
   names: NameX[];
   group_code: string;

@@ -13,24 +13,24 @@ import (
 )
 
 type IExchangeRateHistoryRepository interface {
-	Count(ctx context.Context, shopID string) (int, error)
+	Count(ctx context.Context, holdingCode string) (int, error)
 	Create(ctx context.Context, doc models.ExchangeRateHistoryDoc) (string, error)
 	CreateInBatch(ctx context.Context, docList []models.ExchangeRateHistoryDoc) error
-	Update(ctx context.Context, shopID string, guid string, doc models.ExchangeRateHistoryDoc) error
-	DeleteByGuidfixed(ctx context.Context, shopID string, guid string, username string) error
-	Delete(ctx context.Context, shopID string, username string, filters map[string]interface{}) error
-	FindPage(ctx context.Context, shopID string, searchInFields []string, pageable micromodels.Pageable) ([]models.ExchangeRateHistoryInfo, mongopagination.PaginationData, error)
-	FindByGuid(ctx context.Context, shopID string, guid string) (models.ExchangeRateHistoryDoc, error)
-	FindByGuids(ctx context.Context, shopID string, guids []string) ([]models.ExchangeRateHistoryDoc, error)
-	FindPageFilter(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.ExchangeRateHistoryInfo, mongopagination.PaginationData, error)
-	FindStep(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableLimit micromodels.PageableStep) ([]models.ExchangeRateHistoryInfo, int, error)
+	Update(ctx context.Context, holdingCode string, guid string, doc models.ExchangeRateHistoryDoc) error
+	DeleteByGuidfixed(ctx context.Context, holdingCode string, guid string, username string) error
+	Delete(ctx context.Context, holdingCode string, username string, filters map[string]interface{}) error
+	FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable micromodels.Pageable) ([]models.ExchangeRateHistoryInfo, mongopagination.PaginationData, error)
+	FindByGuid(ctx context.Context, holdingCode string, guid string) (models.ExchangeRateHistoryDoc, error)
+	FindByGuids(ctx context.Context, holdingCode string, guids []string) ([]models.ExchangeRateHistoryDoc, error)
+	FindPageFilter(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.ExchangeRateHistoryInfo, mongopagination.PaginationData, error)
+	FindStep(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableLimit micromodels.PageableStep) ([]models.ExchangeRateHistoryInfo, int, error)
 
-	FindLatestRate(ctx context.Context, shopID string, currency string, date string) (models.ExchangeRateHistoryDoc, error)
+	FindLatestRate(ctx context.Context, holdingCode string, currency string, date string) (models.ExchangeRateHistoryDoc, error)
 
-	FindDeletedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ExchangeRateHistoryDeleteActivity, mongopagination.PaginationData, error)
-	FindCreatedOrUpdatedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ExchangeRateHistoryActivity, mongopagination.PaginationData, error)
-	FindDeletedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ExchangeRateHistoryDeleteActivity, error)
-	FindCreatedOrUpdatedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ExchangeRateHistoryActivity, error)
+	FindDeletedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ExchangeRateHistoryDeleteActivity, mongopagination.PaginationData, error)
+	FindCreatedOrUpdatedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ExchangeRateHistoryActivity, mongopagination.PaginationData, error)
+	FindDeletedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ExchangeRateHistoryDeleteActivity, error)
+	FindCreatedOrUpdatedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ExchangeRateHistoryActivity, error)
 }
 
 type ExchangeRateHistoryRepository struct {
@@ -53,7 +53,7 @@ func NewExchangeRateHistoryRepository(pst microservice.IPersisterMongo) *Exchang
 }
 
 // FindLatestRate - หาอัตราแลกเปลี่ยนล่าสุดที่ <= วันที่ที่ระบุ
-func (r *ExchangeRateHistoryRepository) FindLatestRate(ctx context.Context, shopID string, currency string, date string) (models.ExchangeRateHistoryDoc, error) {
+func (r *ExchangeRateHistoryRepository) FindLatestRate(ctx context.Context, holdingCode string, currency string, date string) (models.ExchangeRateHistoryDoc, error) {
 	// Query: currency = ? AND date <= ? ORDER BY date DESC LIMIT 1
 	filters := map[string]interface{}{
 		"currency": currency,
@@ -69,7 +69,7 @@ func (r *ExchangeRateHistoryRepository) FindLatestRate(ctx context.Context, shop
 		},
 	}
 
-	docList, _, err := r.SearchRepository.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, _, err := r.SearchRepository.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 	if err != nil {
 		return models.ExchangeRateHistoryDoc{}, err
 	}

@@ -17,13 +17,13 @@ import (
 )
 
 type IDimensionHttpService interface {
-	CreateDimension(shopID string, authUsername string, doc models.Dimension) (string, error)
-	UpdateDimension(shopID string, guid string, authUsername string, doc models.Dimension) error
-	DeleteDimension(shopID string, guid string, authUsername string) error
-	DeleteDimensionByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoDimension(shopID string, guid string) (models.DimensionInfo, error)
-	SearchDimension(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.DimensionInfo, mongopagination.PaginationData, error)
-	SearchDimensionStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.DimensionInfo, int, error)
+	CreateDimension(holdingCode string, authUsername string, doc models.Dimension) (string, error)
+	UpdateDimension(holdingCode string, guid string, authUsername string, doc models.Dimension) error
+	DeleteDimension(holdingCode string, guid string, authUsername string) error
+	DeleteDimensionByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoDimension(holdingCode string, guid string) (models.DimensionInfo, error)
+	SearchDimension(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.DimensionInfo, mongopagination.PaginationData, error)
+	SearchDimensionStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.DimensionInfo, int, error)
 
 	GetModuleName() string
 }
@@ -59,7 +59,7 @@ func (svc DimensionHttpService) getContextTimeout() (context.Context, context.Ca
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc DimensionHttpService) CreateDimension(shopID string, authUsername string, doc models.Dimension) (string, error) {
+func (svc DimensionHttpService) CreateDimension(holdingCode string, authUsername string, doc models.Dimension) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -67,7 +67,7 @@ func (svc DimensionHttpService) CreateDimension(shopID string, authUsername stri
 	newGuidFixed := utils.NewGUID()
 
 	dataDoc := models.DimensionDoc{}
-	dataDoc.ShopID = shopID
+	dataDoc.HoldingCode = holdingCode
 	dataDoc.GuidFixed = newGuidFixed
 	dataDoc.Dimension = doc
 
@@ -85,18 +85,18 @@ func (svc DimensionHttpService) CreateDimension(shopID string, authUsername stri
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return newGuidFixed, nil
 }
 
-func (svc DimensionHttpService) UpdateDimension(shopID string, guid string, authUsername string, doc models.Dimension) error {
+func (svc DimensionHttpService) UpdateDimension(holdingCode string, guid string, authUsername string, doc models.Dimension) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -134,25 +134,25 @@ func (svc DimensionHttpService) UpdateDimension(shopID string, guid string, auth
 	dataDoc.UpdatedBy = authUsername
 	dataDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, dataDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, dataDoc)
 
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc DimensionHttpService) DeleteDimension(shopID string, guid string, authUsername string) error {
+func (svc DimensionHttpService) DeleteDimension(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -162,19 +162,19 @@ func (svc DimensionHttpService) DeleteDimension(shopID string, guid string, auth
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc DimensionHttpService) DeleteDimensionByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc DimensionHttpService) DeleteDimensionByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -183,24 +183,24 @@ func (svc DimensionHttpService) DeleteDimensionByGUIDs(shopID string, authUserna
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc DimensionHttpService) InfoDimension(shopID string, guid string) (models.DimensionInfo, error) {
+func (svc DimensionHttpService) InfoDimension(holdingCode string, guid string) (models.DimensionInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.DimensionInfo{}, err
@@ -213,7 +213,7 @@ func (svc DimensionHttpService) InfoDimension(shopID string, guid string) (model
 	return findDoc.DimensionInfo, nil
 }
 
-func (svc DimensionHttpService) SearchDimension(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.DimensionInfo, mongopagination.PaginationData, error) {
+func (svc DimensionHttpService) SearchDimension(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.DimensionInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -223,7 +223,7 @@ func (svc DimensionHttpService) SearchDimension(shopID string, filters map[strin
 		"names",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.DimensionInfo{}, pagination, err
@@ -232,7 +232,7 @@ func (svc DimensionHttpService) SearchDimension(shopID string, filters map[strin
 	return docList, pagination, nil
 }
 
-func (svc DimensionHttpService) SearchDimensionStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.DimensionInfo, int, error) {
+func (svc DimensionHttpService) SearchDimensionStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.DimensionInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -244,7 +244,7 @@ func (svc DimensionHttpService) SearchDimensionStep(shopID string, langCode stri
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.DimensionInfo{}, 0, err
@@ -253,9 +253,9 @@ func (svc DimensionHttpService) SearchDimensionStep(shopID string, langCode stri
 	return docList, total, nil
 }
 
-func (svc DimensionHttpService) saveMasterSync(shopID string) {
+func (svc DimensionHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

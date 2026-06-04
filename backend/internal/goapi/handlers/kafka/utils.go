@@ -152,27 +152,27 @@ func LogMessageInfo(consumerName string, msg string) {
 // ProcessDocumentStockCalculation - คำนวณต้นทุนสินค้าสำหรับเอกสาร (ใช้ร่วมกันได้ทุก document type)
 // Parameters:
 //   - db: database connection (*sql.DB)
-//   - shopId: shop ID
+//   - holdingCode: holding Code
 //   - docDetailStructs: รายการสินค้าในเอกสาร ([]models.DocDetailStruct)
 //   - stepNumber: เลข step สำหรับ log (เช่น 11, 12)
 //
 // Returns: error
-func ProcessDocumentStockCalculation(db *sql.DB, shopId string, docDetailStructs []models.DocDetailStruct, stepNumber int) error {
+func ProcessDocumentStockCalculation(db *sql.DB, holdingCode string, docDetailStructs []models.DocDetailStruct, stepNumber int) error {
 	// Use incremental mode by default for Kafka consumer
-	return ProcessDocumentStockCalculationWithOptions(db, shopId, docDetailStructs, stepNumber, true, true)
+	return ProcessDocumentStockCalculationWithOptions(db, holdingCode, docDetailStructs, stepNumber, true, true)
 }
 
 // ProcessDocumentStockCalculationWithOptions - คำนวณต้นทุนสินค้าพร้อม options
 // Parameters:
 //   - db: database connection (*sql.DB)
-//   - shopId: shop ID
+//   - holdingCode: holding Code
 //   - docDetailStructs: รายการสินค้าในเอกสาร ([]models.DocDetailStruct)
 //   - stepNumber: เลข step สำหรับ log (เช่น 11, 12)
 //   - incremental: ถ้า true จะตรวจสอบ checksum ก่อน และข้ามถ้าไม่มีการเปลี่ยนแปลง
 //   - minimalLog: ถ้า true จะใช้ UPSERT แทน DELETE+INSERT เพื่อลด WAL log
 //
 // Returns: error
-func ProcessDocumentStockCalculationWithOptions(db *sql.DB, shopId string, docDetailStructs []models.DocDetailStruct, stepNumber int, incremental, minimalLog bool) error {
+func ProcessDocumentStockCalculationWithOptions(db *sql.DB, holdingCode string, docDetailStructs []models.DocDetailStruct, stepNumber int, incremental, minimalLog bool) error {
 	logger.Debug("Step %d: Starting stock calculation (incremental=%v, minimalLog=%v)...", stepNumber, incremental, minimalLog)
 
 	// รวบรวม unique itemcodes จาก docdetails
@@ -211,7 +211,7 @@ func ProcessDocumentStockCalculationWithOptions(db *sql.DB, shopId string, docDe
 			// Use incremental mode with checksum checking
 			processstock.ProductCalcCostIncremental(
 				db,          // database connection
-				shopId,      // shopId
+				holdingCode, // holdingCode
 				itemCode,    // itemCodeForProcess
 				pointQty,    // pointQty (จาก global config)
 				pointAmount, // pointAmount (จาก global config)
@@ -223,7 +223,7 @@ func ProcessDocumentStockCalculationWithOptions(db *sql.DB, shopId string, docDe
 			// Legacy mode: delete first then insert
 			processstock.ProductCalcCost(
 				db,          // database connection
-				shopId,      // shopId
+				holdingCode, // holdingCode
 				itemCode,    // itemCodeForProcess
 				pointQty,    // pointQty (จาก global config)
 				pointAmount, // pointAmount (จาก global config)
@@ -239,7 +239,7 @@ func ProcessDocumentStockCalculationWithOptions(db *sql.DB, shopId string, docDe
 	// Log stats
 	if incremental {
 		logger.Info("Incremental calculation stats | shop=%s total=%d skipped=%d processed=%d",
-			shopId, totalItems, skippedItems, processedItems)
+			holdingCode, totalItems, skippedItems, processedItems)
 	}
 
 	logger.Success("Step %d completed: Calculated cost for %d items", stepNumber, totalItems)
@@ -298,15 +298,15 @@ func InsertDocumentToPostgreSQLTx(ctx context.Context, tx *sql.Tx, docStruct mod
 // Parameters:
 //   - ctx: context
 //   - db: database connection (*sql.DB)
-//   - shopId: shop ID
+//   - holdingCode: holding Code
 //   - docDetailStructs: รายการสินค้า
 //   - stepNumber: เลข step สำหรับ log
 //
 // Returns: error
-func InsertDocDetailToPostgreSQL(ctx context.Context, db *sql.DB, shopId string, docDetailStructs []models.DocDetailStruct, stepNumber int) error {
+func InsertDocDetailToPostgreSQL(ctx context.Context, db *sql.DB, holdingCode string, docDetailStructs []models.DocDetailStruct, stepNumber int) error {
 	logger.Debug("Step %d: Inserting document details to PostgreSQL...", stepNumber)
 
-	err := mypg.InsertDocDetailListToPostgreSql(ctx, db, shopId, docDetailStructs)
+	err := mypg.InsertDocDetailListToPostgreSql(ctx, db, holdingCode, docDetailStructs)
 	if err != nil {
 		logger.Error("Failed to insert docdetail: %v", err)
 		return fmt.Errorf("failed to insert docdetail: %v", err)
@@ -316,10 +316,10 @@ func InsertDocDetailToPostgreSQL(ctx context.Context, db *sql.DB, shopId string,
 	return nil
 }
 
-func InsertDocDetailToPostgreSQLTx(ctx context.Context, tx *sql.Tx, shopId string, docDetailStructs []models.DocDetailStruct, stepNumber int) error {
+func InsertDocDetailToPostgreSQLTx(ctx context.Context, tx *sql.Tx, holdingCode string, docDetailStructs []models.DocDetailStruct, stepNumber int) error {
 	logger.Debug("Step %d: Inserting document details to PostgreSQL (tx)...", stepNumber)
 
-	if err := mypg.InsertDocDetailListToPostgreSqlTx(ctx, tx, shopId, docDetailStructs); err != nil {
+	if err := mypg.InsertDocDetailListToPostgreSqlTx(ctx, tx, holdingCode, docDetailStructs); err != nil {
 		logger.Error("Failed to insert docdetail (tx): %v", err)
 		return fmt.Errorf("failed to insert docdetail (tx): %v", err)
 	}
@@ -331,7 +331,7 @@ func InsertDocDetailToPostgreSQLTx(ctx context.Context, tx *sql.Tx, shopId strin
 // InsertDocumentToClickHouse - Insert เอกสารไปยัง ClickHouse (ใช้ร่วมกัน)
 // Parameters:
 //   - ctx: context
-//   - shopId: shop ID
+//   - holdingCode: holding Code
 //   - docStruct: เอกสารหลัก
 //   - docRefStructs: เอกสารอ้างอิง
 //   - docPaymentStruct: ข้อมูลการชำระเงิน
@@ -339,7 +339,7 @@ func InsertDocDetailToPostgreSQLTx(ctx context.Context, tx *sql.Tx, shopId strin
 //   - stepNumber: เลข step สำหรับ log
 //
 // Returns: error
-func InsertDocumentToClickHouse(ctx context.Context, shopId string, docStruct models.DocStruct, docRefStructs []models.DocRefStruct, docPaymentStruct models.DocPaymentStruct, docDetailStructs []models.DocDetailStruct, stepNumber int) error {
+func InsertDocumentToClickHouse(ctx context.Context, holdingCode string, docStruct models.DocStruct, docRefStructs []models.DocRefStruct, docPaymentStruct models.DocPaymentStruct, docDetailStructs []models.DocDetailStruct, stepNumber int) error {
 	logger.Debug("Step %d: ClickHouse is disabled, skipping insert.", stepNumber)
 	return nil
 }
@@ -427,9 +427,9 @@ func DecodeKafkaMessage[T any](jsonData string, targetModel *T, messageType stri
 
 // DeleteDocumentFromDatabases ทำ soft delete เอกสารใน PostgreSQL และ ClickHouse
 // เปลี่ยนจาก hard delete เป็น UPDATE isdelete = true
-func DeleteDocumentFromDatabases(ctx context.Context, shopId, docNo string, transFlag int) error {
+func DeleteDocumentFromDatabases(ctx context.Context, holdingCode, docNo string, transFlag int) error {
 	// Soft delete ใน PostgreSQL
-	db, err := mypg.PgSqlFastConnect(shopId)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		logger.Error("เชื่อมต่อ PostgreSQL สำหรับ soft delete ล้มเหลว: %v", err)
 		return fmt.Errorf("failed to connect to PostgreSQL: %w", err)
@@ -444,7 +444,7 @@ func DeleteDocumentFromDatabases(ctx context.Context, shopId, docNo string, tran
 	logger.Info("[SoftDelete] PostgreSQL: docno=%s, transflag=%d — isdelete=true", docNo, transFlag)
 
 	// Soft delete ใน ClickHouse
-	SoftDeleteDocClickHouse(ctx, shopId, docNo)
+	SoftDeleteDocClickHouse(ctx, holdingCode, docNo)
 
 	// เพิ่มเข้า document wait process queue
 	query := "INSERT INTO docwaitprocess (docno, transflag) VALUES ($1, $2)"
@@ -457,13 +457,13 @@ func DeleteDocumentFromDatabases(ctx context.Context, shopId, docNo string, tran
 }
 
 // SoftDeleteDocClickHouse ทำ soft delete เอกสารใน ClickHouse (เลิกใช้งานแล้ว)
-func SoftDeleteDocClickHouse(ctx context.Context, shopId, docNo string) {
+func SoftDeleteDocClickHouse(ctx context.Context, holdingCode, docNo string) {
 	// ClickHouse is permanently disabled
 }
 
 // ProcessDocumentStatusAsync - ประมวลผลสถานะเอกสารแบบ async หลังจาก Kafka เสร็จ
 // เรียกทันทีโดยไม่มี debounce เพื่อให้สถานะอัปเดตเร็วที่สุด
-func ProcessDocumentStatusAsync(shopId string) {
+func ProcessDocumentStatusAsync(holdingCode string) {
 	// เรียกทันทีแบบ goroutine ไม่ต้องรอ
-	processdoc.ProcessDocumentStatusByShop(shopId)
+	processdoc.ProcessDocumentStatusByShop(holdingCode)
 }

@@ -12,9 +12,9 @@ import (
 // คืนเงินล่วงหน้าเจ้าหนี้
 type APAdvancePaymentRefundTransactionPG struct {
 	GeneralTransactionPG `gorm:"embedded;"`
-	CreditorCode string                                       `json:"creditorcode" gorm:"column:creditorcode"`
-	CreditorNames pkgModels.JSONB                              `json:"creditornames" gorm:"column:creditornames;type:jsonb"`
-	Items *[]APAdvancePaymentRefundTransactionDetailPG `json:"items" gorm:"items;foreignKey:shopid,docno"`
+	CreditorCode         string                                       `json:"creditorcode" gorm:"column:creditorcode"`
+	CreditorNames        pkgModels.JSONB                              `json:"creditornames" gorm:"column:creditornames;type:jsonb"`
+	Items                *[]APAdvancePaymentRefundTransactionDetailPG `json:"items" gorm:"items;foreignKey:holding_code,docno"`
 }
 
 // รายละเอียด คืนเงินล่วงหน้าเจ้าหนี้
@@ -34,7 +34,7 @@ func (m *APAdvancePaymentRefundTransactionPG) BeforeUpdate(tx *gorm.DB) (err err
 
 	// find old data
 	var details *[]APAdvancePaymentRefundTransactionDetailPG
-	tx.Model(&APAdvancePaymentRefundTransactionDetailPG{}).Where(" shopid=? AND docno=?", m.ShopID, m.DocNo).Find(&details)
+	tx.Model(&APAdvancePaymentRefundTransactionDetailPG{}).Where(" holding_code=? AND docno=?", m.HoldingCode, m.DocNo).Find(&details)
 
 	// delete un use data
 	for _, tmp := range *details {

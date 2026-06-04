@@ -22,15 +22,15 @@ import (
 )
 
 type IPurchasepartialHttpService interface {
-	CreatePurchasepartial(shopID string, authUsername string, doc models.Purchasepartial) (string, string, error)
-	UpdatePurchasepartial(shopID string, guid string, authUsername string, doc models.Purchasepartial) error
-	DeletePurchasepartial(shopID string, guid string, authUsername string) error
-	DeletePurchasepartialByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoPurchasepartial(shopID string, guid string) (models.PurchasepartialInfo, error)
-	InfoPurchasepartialByCode(shopID string, code string) (models.PurchasepartialInfo, error)
-	SearchPurchasepartial(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.PurchasepartialInfo, mongopagination.PaginationData, error)
-	SearchPurchasepartialStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.PurchasepartialInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.Purchasepartial) (common.BulkImport, error)
+	CreatePurchasepartial(holdingCode string, authUsername string, doc models.Purchasepartial) (string, string, error)
+	UpdatePurchasepartial(holdingCode string, guid string, authUsername string, doc models.Purchasepartial) error
+	DeletePurchasepartial(holdingCode string, guid string, authUsername string) error
+	DeletePurchasepartialByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoPurchasepartial(holdingCode string, guid string) (models.PurchasepartialInfo, error)
+	InfoPurchasepartialByCode(holdingCode string, code string) (models.PurchasepartialInfo, error)
+	SearchPurchasepartial(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.PurchasepartialInfo, mongopagination.PaginationData, error)
+	SearchPurchasepartialStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.PurchasepartialInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.Purchasepartial) (common.BulkImport, error)
 
 	GetModuleName() string
 }
@@ -81,11 +81,11 @@ func (svc PurchasepartialHttpService) getDocNoPrefix(docDate time.Time) string {
 	return fmt.Sprintf("%s%s", MODULE_NAME, docDateStr)
 }
 
-func (svc PurchasepartialHttpService) generateNewDocNo(ctx context.Context, shopID, prefixDocNo string, docNumber int) (string, int, error) {
-	prevoiusDocNumber, err := svc.repoCache.Get(shopID, prefixDocNo)
+func (svc PurchasepartialHttpService) generateNewDocNo(ctx context.Context, holdingCode, prefixDocNo string, docNumber int) (string, int, error) {
+	prevoiusDocNumber, err := svc.repoCache.Get(holdingCode, prefixDocNo)
 
 	if prevoiusDocNumber == 0 || err != nil {
-		lastDoc, err := svc.repo.FindLastDocNo(ctx, shopID, prefixDocNo)
+		lastDoc, err := svc.repo.FindLastDocNo(ctx, holdingCode, prefixDocNo)
 
 		if err != nil {
 			return "", 0, err
@@ -105,7 +105,7 @@ func (svc PurchasepartialHttpService) generateNewDocNo(ctx context.Context, shop
 	newDocNumber := prevoiusDocNumber + 1
 	newDocNo := fmt.Sprintf("%s%05d", prefixDocNo, newDocNumber)
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", newDocNo)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", newDocNo)
 
 	if err != nil {
 		return "", 0, err
@@ -118,7 +118,7 @@ func (svc PurchasepartialHttpService) generateNewDocNo(ctx context.Context, shop
 	return newDocNo, newDocNumber, nil
 }
 
-func (svc PurchasepartialHttpService) CreatePurchasepartial(shopID string, authUsername string, doc models.Purchasepartial) (string, string, error) {
+func (svc PurchasepartialHttpService) CreatePurchasepartial(holdingCode string, authUsername string, doc models.Purchasepartial) (string, string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -126,7 +126,7 @@ func (svc PurchasepartialHttpService) CreatePurchasepartial(shopID string, authU
 	docDate := doc.DocDatetime
 	prefixDocNo := svc.getDocNoPrefix(docDate)
 
-	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, shopID, prefixDocNo, 1)
+	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, holdingCode, prefixDocNo, 1)
 
 	if err != nil {
 		return "", "", err
@@ -135,7 +135,7 @@ func (svc PurchasepartialHttpService) CreatePurchasepartial(shopID string, authU
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.PurchasepartialDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.Purchasepartial = doc
 
@@ -149,23 +149,23 @@ func (svc PurchasepartialHttpService) CreatePurchasepartial(shopID string, authU
 		return "", "", err
 	}
 
-	go svc.repoCache.Save(shopID, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
+	go svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
 
 	go func() {
 		svc.repoMq.Create(docData)
-		svc.repoCache.Save(shopID, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
-		svc.saveMasterSync(shopID)
+		svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return newGuidFixed, newDocNo, nil
 }
 
-func (svc PurchasepartialHttpService) UpdatePurchasepartial(shopID string, guid string, authUsername string, doc models.Purchasepartial) error {
+func (svc PurchasepartialHttpService) UpdatePurchasepartial(holdingCode string, guid string, authUsername string, doc models.Purchasepartial) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -182,7 +182,7 @@ func (svc PurchasepartialHttpService) UpdatePurchasepartial(shopID string, guid 
 	docData.UpdatedBy = authUsername
 	docData.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, docData)
+	err = svc.repo.Update(ctx, holdingCode, guid, docData)
 
 	if err != nil {
 		return err
@@ -190,18 +190,18 @@ func (svc PurchasepartialHttpService) UpdatePurchasepartial(shopID string, guid 
 
 	func() {
 		svc.repoMq.Update(docData)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc PurchasepartialHttpService) DeletePurchasepartial(shopID string, guid string, authUsername string) error {
+func (svc PurchasepartialHttpService) DeletePurchasepartial(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -211,20 +211,20 @@ func (svc PurchasepartialHttpService) DeletePurchasepartial(shopID string, guid 
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
 	func() {
 		svc.repoMq.Delete(findDoc)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc PurchasepartialHttpService) DeletePurchasepartialByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc PurchasepartialHttpService) DeletePurchasepartialByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -233,26 +233,26 @@ func (svc PurchasepartialHttpService) DeletePurchasepartialByGUIDs(shopID string
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
 
 	func() {
-		docs, _ := svc.repo.FindByGuids(ctx, shopID, GUIDs)
+		docs, _ := svc.repo.FindByGuids(ctx, holdingCode, GUIDs)
 		svc.repoMq.DeleteInBatch(docs)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc PurchasepartialHttpService) InfoPurchasepartial(shopID string, guid string) (models.PurchasepartialInfo, error) {
+func (svc PurchasepartialHttpService) InfoPurchasepartial(holdingCode string, guid string) (models.PurchasepartialInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.PurchasepartialInfo{}, err
@@ -265,12 +265,12 @@ func (svc PurchasepartialHttpService) InfoPurchasepartial(shopID string, guid st
 	return findDoc.PurchasepartialInfo, nil
 }
 
-func (svc PurchasepartialHttpService) InfoPurchasepartialByCode(shopID string, code string) (models.PurchasepartialInfo, error) {
+func (svc PurchasepartialHttpService) InfoPurchasepartialByCode(holdingCode string, code string) (models.PurchasepartialInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", code)
 
 	if err != nil {
 		return models.PurchasepartialInfo{}, err
@@ -283,7 +283,7 @@ func (svc PurchasepartialHttpService) InfoPurchasepartialByCode(shopID string, c
 	return findDoc.PurchasepartialInfo, nil
 }
 
-func (svc PurchasepartialHttpService) SearchPurchasepartial(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.PurchasepartialInfo, mongopagination.PaginationData, error) {
+func (svc PurchasepartialHttpService) SearchPurchasepartial(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.PurchasepartialInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -292,7 +292,7 @@ func (svc PurchasepartialHttpService) SearchPurchasepartial(shopID string, filte
 		"docno",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.PurchasepartialInfo{}, pagination, err
@@ -301,7 +301,7 @@ func (svc PurchasepartialHttpService) SearchPurchasepartial(shopID string, filte
 	return docList, pagination, nil
 }
 
-func (svc PurchasepartialHttpService) SearchPurchasepartialStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.PurchasepartialInfo, int, error) {
+func (svc PurchasepartialHttpService) SearchPurchasepartialStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.PurchasepartialInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -312,7 +312,7 @@ func (svc PurchasepartialHttpService) SearchPurchasepartialStep(shopID string, l
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.PurchasepartialInfo{}, 0, err
@@ -321,7 +321,7 @@ func (svc PurchasepartialHttpService) SearchPurchasepartialStep(shopID string, l
 	return docList, total, nil
 }
 
-func (svc PurchasepartialHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.Purchasepartial) (common.BulkImport, error) {
+func (svc PurchasepartialHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.Purchasepartial) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -333,7 +333,7 @@ func (svc PurchasepartialHttpService) SaveInBatch(shopID string, authUsername st
 		itemCodeGuidList = append(itemCodeGuidList, doc.DocNo)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "docno", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "docno", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -345,18 +345,18 @@ func (svc PurchasepartialHttpService) SaveInBatch(shopID string, authUsername st
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.Purchasepartial, models.PurchasepartialDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.Purchasepartial) models.PurchasepartialDoc {
+		func(holdingCode string, authUsername string, doc models.Purchasepartial) models.PurchasepartialDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.PurchasepartialDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.Purchasepartial = doc
 
 			currentTime := time.Now()
@@ -367,23 +367,23 @@ func (svc PurchasepartialHttpService) SaveInBatch(shopID string, authUsername st
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.Purchasepartial, models.PurchasepartialDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.PurchasepartialDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", guid)
+		func(holdingCode string, guid string) (models.PurchasepartialDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", guid)
 		},
 		func(doc models.PurchasepartialDoc) bool {
 			return doc.DocNo != ""
 		},
-		func(shopID string, authUsername string, data models.Purchasepartial, doc models.PurchasepartialDoc) error {
+		func(holdingCode string, authUsername string, data models.Purchasepartial, doc models.PurchasepartialDoc) error {
 
 			doc.Purchasepartial = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -422,7 +422,7 @@ func (svc PurchasepartialHttpService) SaveInBatch(shopID string, authUsername st
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -436,9 +436,9 @@ func (svc PurchasepartialHttpService) getDocIDKey(doc models.Purchasepartial) st
 	return doc.DocNo
 }
 
-func (svc PurchasepartialHttpService) saveMasterSync(shopID string) {
+func (svc PurchasepartialHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

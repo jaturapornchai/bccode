@@ -17,8 +17,8 @@ func (s StockProcessTransactionPhaser) PhaseStockTransactionProcess(data stocktr
 
 	for i, detail := range *data.Details {
 		details[i] = stockprocessmodels.StockProcessRequest{
-			ShopID:  data.ShopID,
-			Barcode: detail.Barcode,
+			HoldingCode: data.HoldingCode,
+			Barcode:     detail.Barcode,
 		}
 	}
 	return nil, &details

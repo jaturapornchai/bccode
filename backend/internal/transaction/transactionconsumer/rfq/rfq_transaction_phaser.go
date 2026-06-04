@@ -52,7 +52,7 @@ func (p RFQTransactionPhaser) PhaseRFQTransactionDoc(doc rfqModel.RFQDoc) (*mode
 					DocRef:              detail.DocRef,
 					DocRefDateTime:      detail.DocRefDatetime,
 					DocNo:               doc.DocNo,
-					ShopID:              doc.ShopID,
+					HoldingCode:         doc.HoldingCode,
 					LineNumber:          int8(detail.LineNumber),
 					Barcode:             detail.Barcode,
 					Qty:                 detail.Qty,
@@ -91,8 +91,8 @@ func (p RFQTransactionPhaser) PhaseRFQTransactionDoc(doc rfqModel.RFQDoc) (*mode
 		TransactionPG: models.TransactionPG{
 			GuidFixed: doc.GuidFixed,
 			GuidRef:   doc.GuidRef,
-			ShopIdentity: pkgModels.ShopIdentity{
-				ShopID: doc.ShopID,
+			HoldingCodeentity: pkgModels.HoldingCodeentity{
+				HoldingCode: doc.HoldingCode,
 			},
 			TransFlag:      22, // RFQ = transflag 22
 			DocNo:          doc.DocNo,

@@ -7,11 +7,11 @@ import (
 )
 
 type ISaleDebitNoteTransactionPGRepository interface {
-	Get(shopID string, docNo string) (*models.SaleDebitNoteTransactionPG, error)
+	Get(holdingCode string, docNo string) (*models.SaleDebitNoteTransactionPG, error)
 	Create(doc models.SaleDebitNoteTransactionPG) error
-	Update(shopID string, docNo string, doc models.SaleDebitNoteTransactionPG) error
-	Delete(shopID string, docNo string, doc models.SaleDebitNoteTransactionPG) error
-	DeleteData(shopID string, docNo string, doc models.SaleDebitNoteTransactionPG) error
+	Update(holdingCode string, docNo string, doc models.SaleDebitNoteTransactionPG) error
+	Delete(holdingCode string, docNo string, doc models.SaleDebitNoteTransactionPG) error
+	DeleteData(holdingCode string, docNo string, doc models.SaleDebitNoteTransactionPG) error
 }
 
 type SaleDebitNoteTransactionPGRepository struct {
@@ -38,11 +38,11 @@ func (repo SaleDebitNoteTransactionPGRepository) Create(doc models.SaleDebitNote
 	return nil
 }
 
-func (repo SaleDebitNoteTransactionPGRepository) Update(shopID string, docNo string, doc models.SaleDebitNoteTransactionPG) error {
+func (repo SaleDebitNoteTransactionPGRepository) Update(holdingCode string, docNo string, doc models.SaleDebitNoteTransactionPG) error {
 
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"shopid": shopID,
-		"docno":  docNo,
+		"holding_code": holdingCode,
+		"docno":        docNo,
 	})
 
 	if err != nil {
@@ -51,18 +51,18 @@ func (repo SaleDebitNoteTransactionPGRepository) Update(shopID string, docNo str
 	return nil
 }
 
-func (repo *SaleDebitNoteTransactionPGRepository) DeleteData(shopID string, docNo string, doc models.SaleDebitNoteTransactionPG) error {
+func (repo *SaleDebitNoteTransactionPGRepository) DeleteData(holdingCode string, docNo string, doc models.SaleDebitNoteTransactionPG) error {
 
 	var details *[]models.SaleDebitNoteTransactionDetailPG
 	tx := repo.pst.DBClient().Begin()
 
-	tx.Model(&models.SaleDebitNoteTransactionDetailPG{}).Where(" shopid=? AND docno=?", shopID, docNo).Find(&details)
+	tx.Model(&models.SaleDebitNoteTransactionDetailPG{}).Where(" holding_code=? AND docno=?", holdingCode, docNo).Find(&details)
 	for _, tmp := range *details {
 		// mark delete
 		tx.Delete(&models.SaleDebitNoteTransactionDetailPG{}, tmp.ID)
 	}
 
-	err := tx.Delete(&models.SaleDebitNoteTransactionPG{}, " shopid=? AND docno=?", shopID, docNo).Error
+	err := tx.Delete(&models.SaleDebitNoteTransactionPG{}, " holding_code=? AND docno=?", holdingCode, docNo).Error
 	if err != nil {
 		tx.Rollback()
 		return err

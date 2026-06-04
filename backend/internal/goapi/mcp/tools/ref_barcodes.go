@@ -21,56 +21,56 @@ import (
 // RefBarcodeEntry ข้อมูล barcode อ้างอิง (ใน array refbarcodes)
 // ต้องมี names/itemunitnames เพื่อให้ frontend แสดงชื่อได้ (ตรงกับ RefProductBarcode)
 type RefBarcodeEntry struct {
-	GuidFixed string             `json:"guid_fixed" bson:"guid_fixed"`
-	Names []BarcodeNameEntry `json:"names" bson:"names"`
-	ItemUnitCode string             `json:"item_unit_code" bson:"item_unit_code"`
+	GuidFixed     string             `json:"guid_fixed" bson:"guid_fixed"`
+	Names         []BarcodeNameEntry `json:"names" bson:"names"`
+	ItemUnitCode  string             `json:"item_unit_code" bson:"item_unit_code"`
 	ItemUnitNames []BarcodeNameEntry `json:"itemunitnames" bson:"itemunitnames"`
-	Barcode string             `json:"barcode" bson:"barcode"`
-	Condition bool               `json:"condition" bson:"condition"`
-	DivideValue float64            `json:"dividevalue" bson:"dividevalue"`
-	StandValue float64            `json:"standvalue" bson:"standvalue"`
-	Qty float64            `json:"qty" bson:"qty"`
+	Barcode       string             `json:"barcode" bson:"barcode"`
+	Condition     bool               `json:"condition" bson:"condition"`
+	DivideValue   float64            `json:"dividevalue" bson:"dividevalue"`
+	StandValue    float64            `json:"standvalue" bson:"standvalue"`
+	Qty           float64            `json:"qty" bson:"qty"`
 }
 
 // ==================== Get Ref Barcodes ====================
 
 // GetRefBarcodesResponse ผลลัพธ์จากการดึง reference barcodes
 type GetRefBarcodesResponse struct {
-	ShopID string             `json:"shopid"`
-	ItemCode string             `json:"itemcode"`
+	HoldingCode string             `json:"holding_code"`
+	ItemCode    string             `json:"itemcode"`
 	ProductName string             `json:"product_name"`
-	Barcodes []RefBarcodeDetail `json:"barcodes"`
-	UnitChain []UnitChainEntry   `json:"unit_chain"`
-	Count int                `json:"count"`
+	Barcodes    []RefBarcodeDetail `json:"barcodes"`
+	UnitChain   []UnitChainEntry   `json:"unit_chain"`
+	Count       int                `json:"count"`
 	GeneratedAt time.Time          `json:"generated_at"`
 }
 
 // RefBarcodeDetail ข้อมูล barcode พร้อม reference
 type RefBarcodeDetail struct {
-	GuidFixed string              `json:"guid_fixed"`
-	Barcode string              `json:"barcode"`
-	ProductName string              `json:"product_name"`
-	Names []BarcodeNameEntry  `json:"names"`
-	ItemUnitCode string              `json:"item_unit_code"`
-	UnitName string              `json:"unit_name"`
-	ItemUnitNames []BarcodeNameEntry  `json:"itemunitnames"`
-	StandValue float64             `json:"standvalue"`
-	DivideValue float64             `json:"dividevalue"`
-	IsMainBarcode bool                `json:"is_main_barcode"`
+	GuidFixed        string              `json:"guid_fixed"`
+	Barcode          string              `json:"barcode"`
+	ProductName      string              `json:"product_name"`
+	Names            []BarcodeNameEntry  `json:"names"`
+	ItemUnitCode     string              `json:"item_unit_code"`
+	UnitName         string              `json:"unit_name"`
+	ItemUnitNames    []BarcodeNameEntry  `json:"itemunitnames"`
+	StandValue       float64             `json:"standvalue"`
+	DivideValue      float64             `json:"dividevalue"`
+	IsMainBarcode    bool                `json:"is_main_barcode"`
 	IsUseSubBarcodes bool                `json:"isusesubbarcodes"`
-	RefBarcodes []RefBarcodeEntry   `json:"refbarcodes"`
-	Prices []BarcodePriceEntry `json:"prices"`
+	RefBarcodes      []RefBarcodeEntry   `json:"refbarcodes"`
+	Prices           []BarcodePriceEntry `json:"prices"`
 }
 
 // UnitChainEntry แสดงสายหน่วยนับ
 type UnitChainEntry struct {
-	Barcode string  `json:"barcode"`
+	Barcode      string  `json:"barcode"`
 	ItemUnitCode string  `json:"item_unit_code"`
-	UnitName string  `json:"unit_name"`
-	StandValue float64 `json:"standvalue"`
-	DivideValue float64 `json:"dividevalue"`
-	RefBarcode string  `json:"ref_barcode,omitempty"`
-	BaseQty float64 `json:"base_qty"`
+	UnitName     string  `json:"unit_name"`
+	StandValue   float64 `json:"standvalue"`
+	DivideValue  float64 `json:"dividevalue"`
+	RefBarcode   string  `json:"ref_barcode,omitempty"`
+	BaseQty      float64 `json:"base_qty"`
 }
 
 // getThaiName ดึงชื่อภาษาไทย (ถ้าไม่มี → ภาษาแรกที่มี)
@@ -89,9 +89,9 @@ func getThaiName(names []BarcodeNameEntry) string {
 }
 
 // GetRefBarcodes ดึง reference barcodes ของสินค้า (itemcode)
-func GetRefBarcodes(ctx context.Context, shopID, itemCode, barcode string) (*GetRefBarcodesResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func GetRefBarcodes(ctx context.Context, holdingCode, itemCode, barcode string) (*GetRefBarcodesResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 	if itemCode == "" && barcode == "" {
 		return nil, fmt.Errorf("ต้องระบุ itemcode หรือ barcode อย่างน้อย 1 อย่าง")
@@ -117,9 +117,9 @@ func GetRefBarcodes(ctx context.Context, shopID, itemCode, barcode string) (*Get
 			ItemCode string `bson:"itemcode"`
 		}
 		err := coll.FindOne(ctx, bson.M{
-			"shopid":  shopID,
-			"barcode": barcode,
-			"$or":     notDeletedFilter,
+			"holding_code": holdingCode,
+			"barcode":      barcode,
+			"$or":          notDeletedFilter,
 		}).Decode(&doc)
 		if err != nil {
 			return nil, fmt.Errorf("ไม่พบ barcode '%s'", barcode)
@@ -129,9 +129,9 @@ func GetRefBarcodes(ctx context.Context, shopID, itemCode, barcode string) (*Get
 
 	// ดึง barcodes ทั้งหมดที่มี itemcode เดียวกัน
 	filter := bson.M{
-		"shopid":   shopID,
-		"itemcode": itemCode,
-		"$or":      notDeletedFilter,
+		"holding_code": holdingCode,
+		"itemcode":     itemCode,
+		"$or":          notDeletedFilter,
 	}
 
 	opts := options.Find().
@@ -153,17 +153,17 @@ func GetRefBarcodes(ctx context.Context, shopID, itemCode, barcode string) (*Get
 	var barcodes []RefBarcodeDetail
 	for cursor.Next(ctx) {
 		var doc struct {
-			GuidFixed string              `bson:"guid_fixed"`
-			Barcode string              `bson:"barcode"`
-			Names []BarcodeNameEntry  `bson:"names"`
-			ItemUnitCode string              `bson:"item_unit_code"`
-			ItemUnitNames []BarcodeNameEntry  `bson:"itemunitnames"`
-			StandValue float64             `bson:"standvalue"`
-			DivideValue float64             `bson:"dividevalue"`
-			IsMainBarcode bool                `bson:"is_main_barcode"`
+			GuidFixed        string              `bson:"guid_fixed"`
+			Barcode          string              `bson:"barcode"`
+			Names            []BarcodeNameEntry  `bson:"names"`
+			ItemUnitCode     string              `bson:"item_unit_code"`
+			ItemUnitNames    []BarcodeNameEntry  `bson:"itemunitnames"`
+			StandValue       float64             `bson:"standvalue"`
+			DivideValue      float64             `bson:"dividevalue"`
+			IsMainBarcode    bool                `bson:"is_main_barcode"`
 			IsUseSubBarcodes bool                `bson:"isusesubbarcodes"`
-			RefBarcodes []RefBarcodeEntry   `bson:"refbarcodes"`
-			Prices []BarcodePriceEntry `bson:"prices"`
+			RefBarcodes      []RefBarcodeEntry   `bson:"refbarcodes"`
+			Prices           []BarcodePriceEntry `bson:"prices"`
 		}
 		if err := cursor.Decode(&doc); err != nil {
 			logger.Warn("[MCP GetRefBarcodes] decode error: %v", err)
@@ -211,10 +211,10 @@ func GetRefBarcodes(ctx context.Context, shopID, itemCode, barcode string) (*Get
 		productName = barcodes[0].ProductName
 	}
 
-	logger.Info("[MCP GetRefBarcodes] shopID=%s, itemcode=%s, product=%s, count=%d", shopID, itemCode, productName, len(barcodes))
+	logger.Info("[MCP GetRefBarcodes] holdingCode=%s, itemcode=%s, product=%s, count=%d", holdingCode, itemCode, productName, len(barcodes))
 
 	return &GetRefBarcodesResponse{
-		ShopID:      shopID,
+		HoldingCode: holdingCode,
 		ItemCode:    itemCode,
 		ProductName: productName,
 		Barcodes:    barcodes,
@@ -260,19 +260,19 @@ func buildUnitChain(barcodes []RefBarcodeDetail) []UnitChainEntry {
 
 // SetRefBarcodeResponse ผลลัพธ์จากการตั้ง reference barcode
 type SetRefBarcodeResponse struct {
-	Success bool      `json:"success"`
-	Message string    `json:"message"`
-	Barcode string    `json:"barcode"`
-	RefBarcode string    `json:"ref_barcode"`
-	KafkaSync string    `json:"kafka_sync"`
-	KafkaError string    `json:"kafka_error,omitempty"`
+	Success     bool      `json:"success"`
+	Message     string    `json:"message"`
+	Barcode     string    `json:"barcode"`
+	RefBarcode  string    `json:"ref_barcode"`
+	KafkaSync   string    `json:"kafka_sync"`
+	KafkaError  string    `json:"kafka_error,omitempty"`
 	GeneratedAt time.Time `json:"generated_at"`
 }
 
 // SetRefBarcode ตั้ง reference barcode ให้ barcode ที่ระบุ
-func SetRefBarcode(ctx context.Context, shopID, barcode, refBarcode string, qty, standValue, divideValue float64, condition bool) (*SetRefBarcodeResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func SetRefBarcode(ctx context.Context, holdingCode, barcode, refBarcode string, qty, standValue, divideValue float64, condition bool) (*SetRefBarcodeResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 	if barcode == "" {
 		return nil, fmt.Errorf("barcode is required")
@@ -301,9 +301,9 @@ func SetRefBarcode(ctx context.Context, shopID, barcode, refBarcode string, qty,
 	// ตรวจสอบ barcode ต้นทาง
 	var sourceDoc BarcodeDocument
 	err := coll.FindOne(ctx, bson.M{
-		"shopid":  shopID,
-		"barcode": barcode,
-		"$or":     notDeletedFilter,
+		"holding_code": holdingCode,
+		"barcode":      barcode,
+		"$or":          notDeletedFilter,
 	}).Decode(&sourceDoc)
 	if err != nil {
 		return nil, fmt.Errorf("ไม่พบ barcode '%s'", barcode)
@@ -312,9 +312,9 @@ func SetRefBarcode(ctx context.Context, shopID, barcode, refBarcode string, qty,
 	// ตรวจสอบ ref barcode ปลายทาง
 	var refDoc BarcodeDocument
 	err = coll.FindOne(ctx, bson.M{
-		"shopid":  shopID,
-		"barcode": refBarcode,
-		"$or":     notDeletedFilter,
+		"holding_code": holdingCode,
+		"barcode":      refBarcode,
+		"$or":          notDeletedFilter,
 	}).Decode(&refDoc)
 	if err != nil {
 		return nil, fmt.Errorf("ไม่พบ ref_barcode '%s'", refBarcode)
@@ -327,7 +327,7 @@ func SetRefBarcode(ctx context.Context, shopID, barcode, refBarcode string, qty,
 	}
 
 	// ตรวจสอบ circular reference
-	if err := checkCircularRef(ctx, coll, shopID, barcode, refBarcode); err != nil {
+	if err := checkCircularRef(ctx, coll, holdingCode, barcode, refBarcode); err != nil {
 		return nil, err
 	}
 
@@ -355,15 +355,15 @@ func SetRefBarcode(ctx context.Context, shopID, barcode, refBarcode string, qty,
 	// Update barcode — set refbarcodes + isusesubbarcodes
 	now := time.Now()
 	_, err = coll.UpdateOne(ctx, bson.M{
-		"shopid":  shopID,
-		"barcode": barcode,
-		"$or":     notDeletedFilter,
+		"holding_code": holdingCode,
+		"barcode":      barcode,
+		"$or":          notDeletedFilter,
 	}, bson.M{
 		"$set": bson.M{
 			"refbarcodes":      []RefBarcodeEntry{refEntry},
 			"isusesubbarcodes": true,
 			"updatedby":        "mcp-tool",
-			"updated_at":        now,
+			"updated_at":       now,
 		},
 	})
 	if err != nil {
@@ -381,7 +381,7 @@ func SetRefBarcode(ctx context.Context, shopID, barcode, refBarcode string, qty,
 		logger.Warn("[MCP SetRefBarcode] Kafka publish ล้มเหลว: %v", err)
 	}
 
-	logger.Info("[MCP SetRefBarcode] barcode=%s → ref=%s สำเร็จ (shop=%s)", barcode, refBarcode, shopID)
+	logger.Info("[MCP SetRefBarcode] barcode=%s → ref=%s สำเร็จ (shop=%s)", barcode, refBarcode, holdingCode)
 
 	return &SetRefBarcodeResponse{
 		Success:     true,
@@ -395,7 +395,7 @@ func SetRefBarcode(ctx context.Context, shopID, barcode, refBarcode string, qty,
 }
 
 // checkCircularRef ตรวจสอบ circular reference
-func checkCircularRef(ctx context.Context, coll *mongo.Collection, shopID, sourceBarcode, targetRefBarcode string) error {
+func checkCircularRef(ctx context.Context, coll *mongo.Collection, holdingCode, sourceBarcode, targetRefBarcode string) error {
 	visited := map[string]bool{sourceBarcode: true}
 	current := targetRefBarcode
 
@@ -414,9 +414,9 @@ func checkCircularRef(ctx context.Context, coll *mongo.Collection, shopID, sourc
 			RefBarcodes []RefBarcodeEntry `bson:"refbarcodes"`
 		}
 		err := coll.FindOne(ctx, bson.M{
-			"shopid":  shopID,
-			"barcode": current,
-			"$or":     notDeletedFilter,
+			"holding_code": holdingCode,
+			"barcode":      current,
+			"$or":          notDeletedFilter,
 		}).Decode(&doc)
 		if err != nil {
 			break // ไม่พบ → ไม่มี loop
@@ -433,31 +433,31 @@ func checkCircularRef(ctx context.Context, coll *mongo.Collection, shopID, sourc
 
 // MultiUnitItem หน่วยนับที่ต้องการสร้าง
 type MultiUnitItem struct {
-	Barcode string              `json:"barcode"`
-	ItemUnitCode string              `json:"item_unit_code"`
+	Barcode       string              `json:"barcode"`
+	ItemUnitCode  string              `json:"item_unit_code"`
 	ItemUnitNames []BarcodeNameEntry  `json:"itemunitnames"`
-	Names []BarcodeNameEntry  `json:"names"`
-	StandValue float64             `json:"standvalue"`
-	DivideValue float64             `json:"dividevalue"`
-	Prices []BarcodePriceEntry `json:"prices"`
+	Names         []BarcodeNameEntry  `json:"names"`
+	StandValue    float64             `json:"standvalue"`
+	DivideValue   float64             `json:"dividevalue"`
+	Prices        []BarcodePriceEntry `json:"prices"`
 }
 
 // CreateMultiUnitBarcodeResponse ผลลัพธ์จากการสร้าง multi-unit barcode
 type CreateMultiUnitBarcodeResponse struct {
-	Success bool              `json:"success"`
-	Message string            `json:"message"`
-	ItemCode string            `json:"itemcode"`
-	Created []BarcodeDocument `json:"created"`
-	RefLinks []string          `json:"ref_links"`
-	KafkaSync string            `json:"kafka_sync"`
-	KafkaError string            `json:"kafka_error,omitempty"`
+	Success     bool              `json:"success"`
+	Message     string            `json:"message"`
+	ItemCode    string            `json:"itemcode"`
+	Created     []BarcodeDocument `json:"created"`
+	RefLinks    []string          `json:"ref_links"`
+	KafkaSync   string            `json:"kafka_sync"`
+	KafkaError  string            `json:"kafka_error,omitempty"`
 	GeneratedAt time.Time         `json:"generated_at"`
 }
 
 // CreateMultiUnitBarcode สร้างสินค้าพร้อมหลายหน่วยนับ + ตั้ง reference อัตโนมัติ
-func CreateMultiUnitBarcode(ctx context.Context, shopID, itemCode, namesJSON, unitsJSON string) (*CreateMultiUnitBarcodeResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func CreateMultiUnitBarcode(ctx context.Context, holdingCode, itemCode, namesJSON, unitsJSON string) (*CreateMultiUnitBarcodeResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 	if itemCode == "" {
 		return nil, fmt.Errorf("itemcode is required")
@@ -517,8 +517,8 @@ func CreateMultiUnitBarcode(ctx context.Context, shopID, itemCode, namesJSON, un
 		barcodeValues = append(barcodeValues, u.Barcode)
 	}
 	existFilter := bson.M{
-		"shopid":  shopID,
-		"barcode": bson.M{"$in": barcodeValues},
+		"holding_code": holdingCode,
+		"barcode":      bson.M{"$in": barcodeValues},
 		"$or": []bson.M{
 			{"deleted_by": bson.M{"$exists": false}},
 			{"deleted_by": ""},
@@ -551,13 +551,13 @@ func CreateMultiUnitBarcode(ctx context.Context, shopID, itemCode, namesJSON, un
 		// Auto-lookup: ถ้าไม่ได้ระบุ itemunitnames แต่ระบุ itemunitcode → ดึงจาก units collection
 		unitNames := u.ItemUnitNames
 		if len(unitNames) == 0 && u.ItemUnitCode != "" {
-			if looked := lookupUnitNames(ctx, shopID, u.ItemUnitCode); looked != nil {
+			if looked := lookupUnitNames(ctx, holdingCode, u.ItemUnitCode); looked != nil {
 				unitNames = looked
 			}
 		}
 
 		doc := BarcodeDocument{
-			ShopID:        shopID,
+			HoldingCode:   holdingCode,
 			GuidFixed:     uuid.New().String(),
 			Barcode:       u.Barcode,
 			ItemCode:      itemCode,
@@ -635,9 +635,9 @@ func CreateMultiUnitBarcode(ctx context.Context, shopID, itemCode, namesJSON, un
 		}
 
 		_, updateErr := coll.UpdateOne(ctx, bson.M{
-			"shopid":  shopID,
-			"barcode": u.Barcode,
-			"$or":     notDeletedFilter,
+			"holding_code": holdingCode,
+			"barcode":      u.Barcode,
+			"$or":          notDeletedFilter,
 		}, bson.M{
 			"$set": bson.M{
 				"refbarcodes":      []RefBarcodeEntry{refEntry},
@@ -665,7 +665,7 @@ func CreateMultiUnitBarcode(ctx context.Context, shopID, itemCode, namesJSON, un
 	}
 
 	logger.Info("[MCP CreateMultiUnit] สร้าง %d units สำหรับ itemcode=%s (shop=%s, refs=%d)",
-		len(createdDocs), itemCode, shopID, len(refLinks))
+		len(createdDocs), itemCode, holdingCode, len(refLinks))
 
 	return &CreateMultiUnitBarcodeResponse{
 		Success:     true,

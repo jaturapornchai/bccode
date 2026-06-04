@@ -25,7 +25,7 @@ func storageNormalizeObjectKey(objectKey string) string {
 	return strings.Trim(normalized, "/")
 }
 
-func storageObjectShopID(objectKey string) string {
+func storageObjectHoldingCode(objectKey string) string {
 	normalized := storageNormalizeObjectKey(objectKey)
 	if normalized == "" || strings.Contains(normalized, "..") {
 		return ""
@@ -34,30 +34,30 @@ func storageObjectShopID(objectKey string) string {
 	return strings.TrimSpace(parts[0])
 }
 
-func storageObjectBelongsToShop(objectKey string, shopID string) bool {
-	shopID = strings.TrimSpace(shopID)
-	if shopID == "" {
+func storageObjectBelongsToShop(objectKey string, holdingCode string) bool {
+	holdingCode = strings.TrimSpace(holdingCode)
+	if holdingCode == "" {
 		return false
 	}
-	return storageObjectShopID(objectKey) == shopID
+	return storageObjectHoldingCode(objectKey) == holdingCode
 }
 
-func storageContextShopID(c echo.Context) string {
+func storageContextHoldingCode(c echo.Context) string {
 	userInfo, ok := c.Get("UserInfo").(msmodels.UserInfo)
 	if !ok {
 		return ""
 	}
-	return strings.TrimSpace(userInfo.ShopID)
+	return strings.TrimSpace(userInfo.HoldingCode)
 }
 
-func storageAuthorizedShopID(c echo.Context, requestedShopID string) (string, int) {
-	tokenShopID := storageContextShopID(c)
-	if tokenShopID == "" {
+func storageAuthorizedHoldingCode(c echo.Context, requestedHoldingCode string) (string, int) {
+	tokenHoldingCode := storageContextHoldingCode(c)
+	if tokenHoldingCode == "" {
 		return "", http.StatusUnauthorized
 	}
-	requestedShopID = strings.TrimSpace(requestedShopID)
-	if requestedShopID != "" && requestedShopID != tokenShopID {
+	requestedHoldingCode = strings.TrimSpace(requestedHoldingCode)
+	if requestedHoldingCode != "" && requestedHoldingCode != tokenHoldingCode {
 		return "", http.StatusForbidden
 	}
-	return tokenShopID, http.StatusOK
+	return tokenHoldingCode, http.StatusOK
 }

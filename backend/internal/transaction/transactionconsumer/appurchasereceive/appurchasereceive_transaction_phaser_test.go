@@ -16,7 +16,7 @@ func TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_Success(t *testing.T)
 
 	validMsg := `{
 		"id": "000000000000000000000000",
-		"shopid": "2PrIIqTWxoBXv16K310sNwfHmfY",
+		"holding_code": "2PrIIqTWxoBXv16K310sNwfHmfY",
 		"guid_fixed": "38mCBH7gD2Eiig00wVyUHzUfQSh",
 		"docno": "PI2026012600001",
 		"docdatetime": "2026-01-26T02:39:29.115Z",
@@ -152,8 +152,8 @@ func TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_Success(t *testing.T)
 		t.Errorf("Expected GuidRef to be 'bed1331f-ce78-4b9e-9798-3f46304fc328', got: %s", result.GuidRef)
 	}
 
-	if result.ShopID != "2PrIIqTWxoBXv16K310sNwfHmfY" {
-		t.Errorf("Expected ShopID to be '2PrIIqTWxoBXv16K310sNwfHmfY', got: %s", result.ShopID)
+	if result.HoldingCode != "2PrIIqTWxoBXv16K310sNwfHmfY" {
+		t.Errorf("Expected HoldingCode to be '2PrIIqTWxoBXv16K310sNwfHmfY', got: %s", result.HoldingCode)
 	}
 
 	if result.DocNo != "PI2026012600001" {
@@ -257,8 +257,8 @@ func TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_Success(t *testing.T)
 		t.Errorf("Expected item DocNo to be 'PI2026012600001', got: %s", item.DocNo)
 	}
 
-	if item.ShopID != "2PrIIqTWxoBXv16K310sNwfHmfY" {
-		t.Errorf("Expected item ShopID to be '2PrIIqTWxoBXv16K310sNwfHmfY', got: %s", item.ShopID)
+	if item.HoldingCode != "2PrIIqTWxoBXv16K310sNwfHmfY" {
+		t.Errorf("Expected item HoldingCode to be '2PrIIqTWxoBXv16K310sNwfHmfY', got: %s", item.HoldingCode)
 	}
 
 	if item.LineNumber != 1 {
@@ -378,7 +378,7 @@ func TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_SuccessWithNilDetails
 
 	validMsgWithNilDetails := `{
 		"id": "000000000000000000000000",
-		"shopid": "2PrIIqTWxoBXv16K310sNwfHmfY",
+		"holding_code": "2PrIIqTWxoBXv16K310sNwfHmfY",
 		"guid_fixed": "38mCBH7gD2Eiig00wVyUHzUfQSh",
 		"docno": "PI2026012600002",
 		"docdatetime": "2026-01-26T02:39:29.115Z",
@@ -476,7 +476,7 @@ func TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_InvalidJSON(t *testin
 
 	invalidJSON := `{
 		"id": "000000000000000000000000",
-		"shopid": "2PrIIqTWxoBXv16K310sNwfHmfY",
+		"holding_code": "2PrIIqTWxoBXv16K310sNwfHmfY",
 		"guid_fixed": "38mCBH7gD2Eiig00wVyUHzUfQSh",
 		"docno": "PI2026012600001",
 		"docdatetime": "2026-01-26T02:39:29.115Z",
@@ -639,8 +639,8 @@ func TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_EmptyJSON(t *testing.
 		t.Errorf("Expected DocNo to be empty, got: %s", result.DocNo)
 	}
 
-	if result.ShopID != "" {
-		t.Errorf("Expected ShopID to be empty, got: %s", result.ShopID)
+	if result.HoldingCode != "" {
+		t.Errorf("Expected HoldingCode to be empty, got: %s", result.HoldingCode)
 	}
 
 	if result.TransFlag != 12 {
@@ -694,7 +694,7 @@ func TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_InvalidDataType(t *te
 
 	invalidDataTypeJSON := `{
 		"id": "000000000000000000000000",
-		"shopid": "2PrIIqTWxoBXv16K310sNwfHmfY",
+		"holding_code": "2PrIIqTWxoBXv16K310sNwfHmfY",
 		"guid_fixed": "38mCBH7gD2Eiig00wVyUHzUfQSh",
 		"docno": "PI2026012600001",
 		"docdatetime": "2026-01-26T02:39:29.115Z",
@@ -835,7 +835,7 @@ func TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_MultipleDetails(t *te
 
 	validMsgWithMultipleDetails := `{
 		"id": "000000000000000000000000",
-		"shopid": "2PrIIqTWxoBXv16K310sNwfHmfY",
+		"holding_code": "2PrIIqTWxoBXv16K310sNwfHmfY",
 		"guid_fixed": "38mCBH7gD2Eiig00wVyUHzUfQSh",
 		"docno": "PI2026012600003",
 		"docdatetime": "2026-01-26T02:39:29.115Z",
@@ -1096,7 +1096,7 @@ func TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_SpecialCharacters(t *
 
 	validMsgWithSpecialChars := `{
 		"id": "000000000000000000000000",
-		"shopid": "2PrIIqTWxoBXv16K310sNwfHmfY",
+		"holding_code": "2PrIIqTWxoBXv16K310sNwfHmfY",
 		"guid_fixed": "38mCBH7gD2Eiig00wVyUHzUfQSh",
 		"docno": "PI2026012600004",
 		"docdatetime": "2026-01-26T02:39:29.115Z",
@@ -1269,7 +1269,7 @@ func TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_IsCancelTrue(t *testi
 
 	cancelledMsg := `{
 		"id": "000000000000000000000000",
-		"shopid": "2PrIIqTWxoBXv16K310sNwfHmfY",
+		"holding_code": "2PrIIqTWxoBXv16K310sNwfHmfY",
 		"guid_fixed": "38mCBH7gD2Eiig00wVyUHzUfQSh",
 		"docno": "PI2026012600005",
 		"docdatetime": "2026-01-26T02:39:29.115Z",
@@ -1415,7 +1415,7 @@ func TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_ZeroValues(t *testing
 
 	zeroValuesMsg := `{
 		"id": "000000000000000000000000",
-		"shopid": "2PrIIqTWxoBXv16K310sNwfHmfY",
+		"holding_code": "2PrIIqTWxoBXv16K310sNwfHmfY",
 		"guid_fixed": "38mCBH7gD2Eiig00wVyUHzUfQSh",
 		"docno": "PI2026012600006",
 		"docdatetime": "2026-01-26T02:39:29.115Z",
@@ -1604,7 +1604,7 @@ func TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_ReturnsCorrectType(t 
 
 	validMsg := `{
 		"id": "000000000000000000000000",
-		"shopid": "2PrIIqTWxoBXv16K310sNwfHmfY",
+		"holding_code": "2PrIIqTWxoBXv16K310sNwfHmfY",
 		"guid_fixed": "38mCBH7gD2Eiig00wVyUHzUfQSh",
 		"docno": "PI2026012600007",
 		"docdatetime": "2026-01-26T02:39:29.115Z",
@@ -1739,8 +1739,8 @@ func TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_ReturnsCorrectType(t 
 		t.Error("Expected GuidFixed to be set")
 	}
 
-	if result.ShopID == "" {
-		t.Error("Expected ShopID to be set")
+	if result.HoldingCode == "" {
+		t.Error("Expected HoldingCode to be set")
 	}
 
 	// Verify the AccrualReceiveTransactionPG specific fields are accessible

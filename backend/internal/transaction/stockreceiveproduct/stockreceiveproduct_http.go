@@ -67,7 +67,7 @@ func (h StockReceiveProductHttp) RegisterHttp() {
 // @Router /transaction/stock-receive-product [post]
 func (h StockReceiveProductHttp) CreateStockReceiveProduct(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.StockReceiveProduct{}
@@ -83,7 +83,7 @@ func (h StockReceiveProductHttp) CreateStockReceiveProduct(ctx microservice.ICon
 		return err
 	}
 
-	idx, docNo, err := h.svc.CreateStockReceiveProduct(shopID, authUsername, *docReq)
+	idx, docNo, err := h.svc.CreateStockReceiveProduct(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -111,7 +111,7 @@ func (h StockReceiveProductHttp) CreateStockReceiveProduct(ctx microservice.ICon
 func (h StockReceiveProductHttp) UpdateStockReceiveProduct(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -129,7 +129,7 @@ func (h StockReceiveProductHttp) UpdateStockReceiveProduct(ctx microservice.ICon
 		return err
 	}
 
-	err = h.svc.UpdateStockReceiveProduct(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateStockReceiveProduct(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -155,12 +155,12 @@ func (h StockReceiveProductHttp) UpdateStockReceiveProduct(ctx microservice.ICon
 // @Router /transaction/stock-receive-product/{id} [delete]
 func (h StockReceiveProductHttp) DeleteStockReceiveProduct(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteStockReceiveProduct(shopID, id, authUsername)
+	err := h.svc.DeleteStockReceiveProduct(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -186,7 +186,7 @@ func (h StockReceiveProductHttp) DeleteStockReceiveProduct(ctx microservice.ICon
 // @Router /transaction/stock-receive-product [delete]
 func (h StockReceiveProductHttp) DeleteStockReceiveProductByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -199,7 +199,7 @@ func (h StockReceiveProductHttp) DeleteStockReceiveProductByGUIDs(ctx microservi
 		return err
 	}
 
-	err = h.svc.DeleteStockReceiveProductByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteStockReceiveProductByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -224,12 +224,12 @@ func (h StockReceiveProductHttp) DeleteStockReceiveProductByGUIDs(ctx microservi
 // @Router /transaction/stock-receive-product/{id} [get]
 func (h StockReceiveProductHttp) InfoStockReceiveProduct(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get StockReceiveProduct %v", id)
-	doc, err := h.svc.InfoStockReceiveProduct(shopID, id)
+	doc, err := h.svc.InfoStockReceiveProduct(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -255,11 +255,11 @@ func (h StockReceiveProductHttp) InfoStockReceiveProduct(ctx microservice.IConte
 // @Router /transaction/stock-receive-product/code/{code} [get]
 func (h StockReceiveProductHttp) InfoStockReceiveProductByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoStockReceiveProductByCode(shopID, code)
+	doc, err := h.svc.InfoStockReceiveProductByCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -290,7 +290,7 @@ func (h StockReceiveProductHttp) InfoStockReceiveProductByCode(ctx microservice.
 // @Router /transaction/stock-receive-product [get]
 func (h StockReceiveProductHttp) SearchStockReceiveProductPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -311,7 +311,7 @@ func (h StockReceiveProductHttp) SearchStockReceiveProductPage(ctx microservice.
 		},
 	})
 
-	docList, pagination, err := h.svc.SearchStockReceiveProduct(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchStockReceiveProduct(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -344,7 +344,7 @@ func (h StockReceiveProductHttp) SearchStockReceiveProductPage(ctx microservice.
 // @Router /transaction/stock-receive-product/list [get]
 func (h StockReceiveProductHttp) SearchStockReceiveProductStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -367,7 +367,7 @@ func (h StockReceiveProductHttp) SearchStockReceiveProductStep(ctx microservice.
 		},
 	})
 
-	docList, total, err := h.svc.SearchStockReceiveProductStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchStockReceiveProductStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -395,7 +395,7 @@ func (h StockReceiveProductHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -407,7 +407,7 @@ func (h StockReceiveProductHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

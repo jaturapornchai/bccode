@@ -11,9 +11,9 @@ type ITransactionDocConsumer interface {
 }
 
 // type ITransactionConsumerService interface {
-// 	Upsert(shopID string, docNo string, doc models.StockTransaction) error
-// 	Delete(shopID string, docNo string) error
-// 	// UpsertPurchaseTrx(shopID string, docNo string, doc purchaseModels.PurchaseDoc) error
+// 	Upsert(holdingCode string, docNo string, doc models.StockTransaction) error
+// 	Delete(holdingCode string, docNo string) error
+// 	// UpsertPurchaseTrx(holdingCode string, docNo string, doc purchaseModels.PurchaseDoc) error
 // }
 
 // func NewTransactionConsumerService(pst microservice.IPersister, producer microservice.IProducer) ITransactionConsumerService {
@@ -32,9 +32,9 @@ type ITransactionDocConsumer interface {
 // 	stockProcessMGRepo stockProcessRepository.IStockProcessMessageQueueRepository
 // }
 
-// func (svc *TransactionConsumerService) Upsert(shopID string, docNo string, doc models.StockTransaction) error {
+// func (svc *TransactionConsumerService) Upsert(holdingCode string, docNo string, doc models.StockTransaction) error {
 
-// 	findTrx, err := svc.transactionPGRepo.Get(shopID, docNo)
+// 	findTrx, err := svc.transactionPGRepo.Get(holdingCode, docNo)
 // 	if err != nil {
 // 		if err != gorm.ErrRecordNotFound {
 // 			return err
@@ -63,7 +63,7 @@ type ITransactionDocConsumer interface {
 
 // 		if !isEqual {
 
-// 			err = svc.transactionPGRepo.Update(shopID, docNo, doc)
+// 			err = svc.transactionPGRepo.Update(holdingCode, docNo, doc)
 // 			if err != nil {
 // 				return err
 // 			}
@@ -77,7 +77,7 @@ type ITransactionDocConsumer interface {
 
 // 			if item.Barcode != "" {
 // 				requestStockProcessLists = append(requestStockProcessLists, stockProcessModels.StockProcessRequest{
-// 					ShopID:  shopID,
+// 					HoldingCode:  holdingCode,
 // 					Barcode: item.Barcode,
 // 				})
 // 			}
@@ -89,8 +89,8 @@ type ITransactionDocConsumer interface {
 // 	return nil
 // }
 
-// func (svc *TransactionConsumerService) Delete(shopID string, docNo string) error {
-// 	err := svc.transactionPGRepo.Delete(shopID, docNo)
+// func (svc *TransactionConsumerService) Delete(holdingCode string, docNo string) error {
+// 	err := svc.transactionPGRepo.Delete(holdingCode, docNo)
 // 	if err != nil {
 // 		return err
 // 	}

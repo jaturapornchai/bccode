@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	mastersync "smlcloudplatform/internal/mastersync/repositories"
-	common "smlcloudplatform/internal/models"
 	"smlcloudplatform/internal/logistics/vehicle/models"
 	"smlcloudplatform/internal/logistics/vehicle/repositories"
+	mastersync "smlcloudplatform/internal/mastersync/repositories"
+	common "smlcloudplatform/internal/models"
 	"smlcloudplatform/internal/services"
 	"smlcloudplatform/internal/utils"
 	"smlcloudplatform/internal/utils/importdata"
@@ -19,15 +19,15 @@ import (
 )
 
 type IVehicleHttpService interface {
-	CreateVehicle(shopID string, authUsername string, doc models.Vehicle) (string, error)
-	UpdateVehicle(shopID string, guid string, authUsername string, doc models.Vehicle) error
-	DeleteVehicle(shopID string, guid string, authUsername string) error
-	DeleteVehicleByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoVehicle(shopID string, guid string) (models.VehicleInfo, error)
-	InfoVehicleByCode(shopID string, code string) (models.VehicleInfo, error)
-	SearchVehicle(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.VehicleInfo, mongopagination.PaginationData, error)
-	SearchVehicleStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.VehicleInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.Vehicle) (common.BulkImport, error)
+	CreateVehicle(holdingCode string, authUsername string, doc models.Vehicle) (string, error)
+	UpdateVehicle(holdingCode string, guid string, authUsername string, doc models.Vehicle) error
+	DeleteVehicle(holdingCode string, guid string, authUsername string) error
+	DeleteVehicleByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoVehicle(holdingCode string, guid string) (models.VehicleInfo, error)
+	InfoVehicleByCode(holdingCode string, code string) (models.VehicleInfo, error)
+	SearchVehicle(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.VehicleInfo, mongopagination.PaginationData, error)
+	SearchVehicleStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.VehicleInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.Vehicle) (common.BulkImport, error)
 
 	GetModuleName() string
 }
@@ -58,7 +58,7 @@ func (svc VehicleHttpService) getContextTimeout() (context.Context, context.Canc
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc VehicleHttpService) CreateVehicle(shopID string, authUsername string, doc models.Vehicle) (string, error) {
+func (svc VehicleHttpService) CreateVehicle(holdingCode string, authUsername string, doc models.Vehicle) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -66,7 +66,7 @@ func (svc VehicleHttpService) CreateVehicle(shopID string, authUsername string, 
 	// ตรวจสอบว่ามี vehicle code นี้อยู่แล้วหรือไม่
 	findDoc, err := svc.repo.FindOneFilter(
 		ctx,
-		shopID,
+		holdingCode,
 		map[string]interface{}{
 			"code": doc.Code,
 		},
@@ -82,7 +82,7 @@ func (svc VehicleHttpService) CreateVehicle(shopID string, authUsername string, 
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.VehicleDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.Vehicle = doc
 
@@ -95,17 +95,17 @@ func (svc VehicleHttpService) CreateVehicle(shopID string, authUsername string, 
 		return "", err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return newGuidFixed, nil
 }
 
-func (svc VehicleHttpService) UpdateVehicle(shopID string, guid string, authUsername string, doc models.Vehicle) error {
+func (svc VehicleHttpService) UpdateVehicle(holdingCode string, guid string, authUsername string, doc models.Vehicle) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -123,23 +123,23 @@ func (svc VehicleHttpService) UpdateVehicle(shopID string, guid string, authUser
 	docData.UpdatedBy = authUsername
 	docData.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, docData)
+	err = svc.repo.Update(ctx, holdingCode, guid, docData)
 
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc VehicleHttpService) DeleteVehicle(shopID string, guid string, authUsername string) error {
+func (svc VehicleHttpService) DeleteVehicle(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -149,17 +149,17 @@ func (svc VehicleHttpService) DeleteVehicle(shopID string, guid string, authUser
 		return errors.New("ไม่พบข้อมูลยานพาหนะ")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc VehicleHttpService) DeleteVehicleByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc VehicleHttpService) DeleteVehicleByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -168,22 +168,22 @@ func (svc VehicleHttpService) DeleteVehicleByGUIDs(shopID string, authUsername s
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc VehicleHttpService) InfoVehicle(shopID string, guid string) (models.VehicleInfo, error) {
+func (svc VehicleHttpService) InfoVehicle(holdingCode string, guid string) (models.VehicleInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.VehicleInfo{}, err
@@ -196,12 +196,12 @@ func (svc VehicleHttpService) InfoVehicle(shopID string, guid string) (models.Ve
 	return findDoc.VehicleInfo, nil
 }
 
-func (svc VehicleHttpService) InfoVehicleByCode(shopID string, code string) (models.VehicleInfo, error) {
+func (svc VehicleHttpService) InfoVehicleByCode(holdingCode string, code string) (models.VehicleInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", code)
 
 	if err != nil {
 		return models.VehicleInfo{}, err
@@ -214,7 +214,7 @@ func (svc VehicleHttpService) InfoVehicleByCode(shopID string, code string) (mod
 	return findDoc.VehicleInfo, nil
 }
 
-func (svc VehicleHttpService) SearchVehicle(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.VehicleInfo, mongopagination.PaginationData, error) {
+func (svc VehicleHttpService) SearchVehicle(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.VehicleInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -227,7 +227,7 @@ func (svc VehicleHttpService) SearchVehicle(shopID string, filters map[string]in
 		"drivername",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.VehicleInfo{}, pagination, err
@@ -236,7 +236,7 @@ func (svc VehicleHttpService) SearchVehicle(shopID string, filters map[string]in
 	return docList, pagination, nil
 }
 
-func (svc VehicleHttpService) SearchVehicleStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.VehicleInfo, int, error) {
+func (svc VehicleHttpService) SearchVehicleStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.VehicleInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -251,7 +251,7 @@ func (svc VehicleHttpService) SearchVehicleStep(shopID string, langCode string, 
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.VehicleInfo{}, 0, err
@@ -260,7 +260,7 @@ func (svc VehicleHttpService) SearchVehicleStep(shopID string, langCode string, 
 	return docList, total, nil
 }
 
-func (svc VehicleHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.Vehicle) (common.BulkImport, error) {
+func (svc VehicleHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.Vehicle) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -272,7 +272,7 @@ func (svc VehicleHttpService) SaveInBatch(shopID string, authUsername string, da
 		itemCodeGuidList = append(itemCodeGuidList, doc.Code)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuids(ctx, shopID, "code", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuids(ctx, holdingCode, "code", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -284,18 +284,18 @@ func (svc VehicleHttpService) SaveInBatch(shopID string, authUsername string, da
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.Vehicle, models.VehicleDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.Vehicle) models.VehicleDoc {
+		func(holdingCode string, authUsername string, doc models.Vehicle) models.VehicleDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.VehicleDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.Vehicle = doc
 
 			currentTime := time.Now()
@@ -306,23 +306,23 @@ func (svc VehicleHttpService) SaveInBatch(shopID string, authUsername string, da
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.Vehicle, models.VehicleDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.VehicleDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", guid)
+		func(holdingCode string, guid string) (models.VehicleDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", guid)
 		},
 		func(doc models.VehicleDoc) bool {
 			return doc.Code != ""
 		},
-		func(shopID string, authUsername string, data models.Vehicle, doc models.VehicleDoc) error {
+		func(holdingCode string, authUsername string, data models.Vehicle, doc models.VehicleDoc) error {
 
 			doc.Vehicle = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -361,7 +361,7 @@ func (svc VehicleHttpService) SaveInBatch(shopID string, authUsername string, da
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	tempCreateDataKey := svc.toSliceString(createDataKey)
 	tempUpdateDataKey := svc.toSliceString(updateDataKey)
@@ -389,9 +389,9 @@ func (svc VehicleHttpService) getDocIDKey(doc models.Vehicle) string {
 	return doc.Code
 }
 
-func (svc VehicleHttpService) saveMasterSync(shopID string) {
+func (svc VehicleHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("บันทึก %s cache ผิดพลาด :: %s", svc.GetModuleName(), err.Error())

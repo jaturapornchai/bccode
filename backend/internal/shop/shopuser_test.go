@@ -66,7 +66,7 @@ func TestShopMemberFindByShop(t *testing.T) {
 	}
 	setup()
 
-	members, err := shopUserRepo.FindByShopID(context.TODO(), "mx1")
+	members, err := shopUserRepo.FindByHoldingCode(context.TODO(), "mx1")
 
 	if err != nil {
 		t.Error(err)

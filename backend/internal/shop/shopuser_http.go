@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"smlcloudplatform/internal/authentication/models"
 	"smlcloudplatform/internal/config"
@@ -35,13 +36,18 @@ func NewShopMemberHttp(ms *microservice.Microservice, cfg config.IConfig) *ShopM
 
 func (h *ShopMemberHttp) RegisterHttp() {
 	h.ms.GET("/user/permissions", h.ListShopUser)
+	h.ms.GET("/holding/users", h.ListUserInShop)
 	h.ms.GET("/shop/users", h.ListUserInShop)
 
+	h.ms.PUT("/holding/permission", h.SaveUserPermissionShop)
 	h.ms.PUT("/shop/permission", h.SaveUserPermissionShop)
+	h.ms.GET("/holding/permission/:username", h.InfoShopUser)
 	h.ms.GET("/shop/permission/:username", h.InfoShopUser)
+	h.ms.DELETE("/holding/permission/:username", h.DeleteUserPermissionShop)
 	h.ms.DELETE("/shop/permission/:username", h.DeleteUserPermissionShop)
 
 	// Cleanup endpoint สำหรับลบ users ที่ username ว่าง
+	h.ms.DELETE("/holding/users/cleanup", h.CleanupEmptyUsers)
 	h.ms.DELETE("/shop/users/cleanup", h.CleanupEmptyUsers)
 
 	// Public endpoint สำหรับ sync LINE data จาก lineoa-liff (LIFF callback)
@@ -64,7 +70,7 @@ func (h *ShopMemberHttp) RegisterHttp() {
 // @Router /shop/users [get]
 func (h ShopMemberHttp) ListUserInShop(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	if userInfo.Role != models.ROLE_OWNER {
 		ctx.Response(http.StatusOK, &common.ApiResponse{
@@ -77,7 +83,7 @@ func (h ShopMemberHttp) ListUserInShop(ctx microservice.IContext) error {
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.ListUserInShop(shopID, pageable)
+	docList, pagination, err := h.svc.ListUserInShop(holdingCode, pageable)
 
 	if err != nil {
 		ctx.ResponseError(400, "find failed")
@@ -104,7 +110,7 @@ func (h ShopMemberHttp) ListUserInShop(ctx microservice.IContext) error {
 // @Router /shop/permission/{username} [get]
 func (h ShopMemberHttp) InfoShopUser(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	// if userInfo.Role != models.ROLE_OWNER {
 	// 	ctx.Response(http.StatusOK, &common.ApiResponse{
@@ -115,14 +121,14 @@ func (h ShopMemberHttp) InfoShopUser(ctx microservice.IContext) error {
 	// 	return errors.New("permission denied")
 	// }
 
-	username := ctx.Param("username")
+	username := strings.TrimSpace(decodePathUsername(ctx.Param("username")))
 
 	if len(username) < 1 {
 		ctx.ResponseError(400, "username invalid")
 		return nil
 	}
 
-	doc, err := h.svc.InfoShopByUser(shopID, username)
+	doc, err := h.svc.InfoShopByUser(holdingCode, username)
 
 	if err != nil {
 		ctx.ResponseError(400, "find failed")
@@ -197,7 +203,7 @@ func (h ShopMemberHttp) ListShopUser(ctx microservice.IContext) error {
 func (h ShopMemberHttp) SaveUserPermissionShop(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	if userInfo.Role != models.ROLE_OWNER {
 		ctx.Response(http.StatusOK, &common.ApiResponse{
@@ -224,7 +230,7 @@ func (h ShopMemberHttp) SaveUserPermissionShop(ctx microservice.IContext) error 
 	h.ms.Logger.Debug("SaveUserPermissionShop - LineDisplayName: " + userRoleReq.LineDisplayName)
 
 	// ใช้ SaveUserFullProfile เพื่อบันทึกข้อมูลทั้งหมด (รวม position, department, LINE, approval)
-	err = h.svc.SaveUserFullProfile(shopID, authUsername, userRoleReq)
+	err = h.svc.SaveUserFullProfile(holdingCode, authUsername, userRoleReq)
 	if err != nil {
 		ctx.ResponseError(400, err.Error())
 		return err
@@ -249,11 +255,11 @@ func (h ShopMemberHttp) SaveUserPermissionShop(ctx microservice.IContext) error 
 func (h ShopMemberHttp) DeleteUserPermissionShop(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	// Debug log
 	h.ms.Logger.Debug("DeleteUserPermissionShop - authUsername: " + authUsername)
-	h.ms.Logger.Debug("DeleteUserPermissionShop - shopID: " + shopID)
+	h.ms.Logger.Debug("DeleteUserPermissionShop - holdingCode: " + holdingCode)
 
 	if userInfo.Role != models.ROLE_OWNER {
 		ctx.Response(http.StatusOK, &common.ApiResponse{
@@ -264,7 +270,7 @@ func (h ShopMemberHttp) DeleteUserPermissionShop(ctx microservice.IContext) erro
 		return errors.New("permission denied")
 	}
 
-	username := ctx.Param("username")
+	username := strings.TrimSpace(decodePathUsername(ctx.Param("username")))
 
 	// Debug log
 	h.ms.Logger.Debug("DeleteUserPermissionShop - target username: " + username)
@@ -275,7 +281,7 @@ func (h ShopMemberHttp) DeleteUserPermissionShop(ctx microservice.IContext) erro
 		return nil
 	}
 
-	err := h.svc.DeleteUserPermissionShop(shopID, authUsername, username)
+	err := h.svc.DeleteUserPermissionShop(holdingCode, authUsername, username)
 
 	if err != nil {
 		h.ms.Logger.Error("DeleteUserPermissionShop - error: " + err.Error())
@@ -292,6 +298,14 @@ func (h ShopMemberHttp) DeleteUserPermissionShop(ctx microservice.IContext) erro
 	return nil
 }
 
+func decodePathUsername(value string) string {
+	decoded, err := url.PathUnescape(value)
+	if err != nil {
+		return value
+	}
+	return decoded
+}
+
 // CleanupEmptyUsers - ลบ users ที่ username ว่างออกจากระบบ
 // @Description cleanup users with empty username
 // @Tags		ShopUser
@@ -302,7 +316,7 @@ func (h ShopMemberHttp) DeleteUserPermissionShop(ctx microservice.IContext) erro
 // @Router /shop/users/cleanup [delete]
 func (h ShopMemberHttp) CleanupEmptyUsers(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	// ต้องเป็น Owner เท่านั้น
 	if userInfo.Role != models.ROLE_OWNER {
@@ -313,10 +327,10 @@ func (h ShopMemberHttp) CleanupEmptyUsers(ctx microservice.IContext) error {
 		return nil
 	}
 
-	h.ms.Logger.Debug("CleanupEmptyUsers - shopID: " + shopID)
+	h.ms.Logger.Debug("CleanupEmptyUsers - holdingCode: " + holdingCode)
 
 	// ลบ users ที่ username ว่าง
-	deletedCount, err := h.svc.CleanupEmptyUsers(shopID)
+	deletedCount, err := h.svc.CleanupEmptyUsers(holdingCode)
 
 	if err != nil {
 		h.ms.Logger.Error("CleanupEmptyUsers - error: " + err.Error())
@@ -337,7 +351,7 @@ func (h ShopMemberHttp) CleanupEmptyUsers(ctx microservice.IContext) error {
 
 // LineSyncRequest - request body สำหรับ sync LINE data
 type LineSyncRequest struct {
-	ShopID          string `json:"shop_id"`
+	HoldingCode     string `json:"holding_code"`
 	Username        string `json:"username"`
 	EmployeeCode    string `json:"employee_code"` // alias for username
 	LineUserID      string `json:"line_user_id"`
@@ -372,7 +386,7 @@ func (h ShopMemberHttp) SyncLineData(ctx microservice.IContext) error {
 		return errors.New("line sync api key is not configured")
 	}
 	if requestAPIKey == "" || subtle.ConstantTimeCompare([]byte(requestAPIKey), []byte(configuredAPIKey)) != 1 {
-		h.ms.Logger.Error("SyncLineData - unauthorized request for shop: " + req.ShopID)
+		h.ms.Logger.Error("SyncLineData - unauthorized request for shop: " + req.HoldingCode)
 		ctx.ResponseError(http.StatusUnauthorized, "Unauthorized")
 		return errors.New("line sync unauthorized")
 	}
@@ -383,15 +397,15 @@ func (h ShopMemberHttp) SyncLineData(ctx microservice.IContext) error {
 		username = req.EmployeeCode
 	}
 
-	if req.ShopID == "" || username == "" {
-		ctx.ResponseError(400, "shop_id and username/employee_code are required")
+	if req.HoldingCode == "" || username == "" {
+		ctx.ResponseError(400, "holding_code and username/employee_code are required")
 		return errors.New("missing required fields")
 	}
 
-	h.ms.Logger.Debug("SyncLineData - authenticated request for: " + username + " in shop: " + req.ShopID)
+	h.ms.Logger.Debug("SyncLineData - authenticated request for: " + username + " in shop: " + req.HoldingCode)
 
 	// Sync LINE data
-	err = h.svc.SyncLineData(req.ShopID, username, req.LineUserID, req.LineDisplayName, req.LinePictureURL)
+	err = h.svc.SyncLineData(req.HoldingCode, username, req.LineUserID, req.LineDisplayName, req.LinePictureURL)
 
 	if err != nil {
 		h.ms.Logger.Error("SyncLineData - error: " + err.Error())
@@ -399,7 +413,7 @@ func (h ShopMemberHttp) SyncLineData(ctx microservice.IContext) error {
 		return err
 	}
 
-	h.ms.Logger.Debug("SyncLineData - success for: " + username + " in shop: " + req.ShopID)
+	h.ms.Logger.Debug("SyncLineData - success for: " + username + " in shop: " + req.HoldingCode)
 	ctx.Response(http.StatusOK,
 		common.ApiResponse{
 			Success: true,
@@ -427,7 +441,7 @@ type MyLineDataRequest struct {
 // @Router /profile/my-line [put]
 func (h ShopMemberHttp) SaveMyLineData(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	username := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -440,12 +454,12 @@ func (h ShopMemberHttp) SaveMyLineData(ctx microservice.IContext) error {
 		return err
 	}
 
-	h.ms.Logger.Debug("SaveMyLineData - user: " + username + " in shop: " + shopID)
+	h.ms.Logger.Debug("SaveMyLineData - user: " + username + " in shop: " + holdingCode)
 	h.ms.Logger.Debug("SaveMyLineData - LineUserID: " + req.LineUserID)
 	h.ms.Logger.Debug("SaveMyLineData - LineDisplayName: " + req.LineDisplayName)
 
 	// บันทึก LINE data ของตัวเอง
-	err = h.svc.SaveMyLineData(shopID, username, req.LineUserID, req.LineDisplayName, req.LinePictureURL)
+	err = h.svc.SaveMyLineData(holdingCode, username, req.LineUserID, req.LineDisplayName, req.LinePictureURL)
 
 	if err != nil {
 		h.ms.Logger.Error("SaveMyLineData - error: " + err.Error())

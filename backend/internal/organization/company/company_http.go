@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"smlcloudplatform/internal/config"
 	common "smlcloudplatform/internal/models"
+	branchModels "smlcloudplatform/internal/organization/branch/models"
 	companyModels "smlcloudplatform/internal/organization/company/models"
 	orgEvents "smlcloudplatform/internal/organization/events"
 	"smlcloudplatform/internal/utils"
@@ -20,9 +21,11 @@ import (
 )
 
 const (
-	companyTopicCreated = "when-organization-company-created"
-	companyTopicUpdated = "when-organization-company-updated"
-	companyTopicDeleted = "when-organization-company-deleted"
+	companyTopicCreated              = "when-organization-company-created"
+	companyTopicUpdated              = "when-organization-company-updated"
+	companyTopicDeleted              = "when-organization-company-deleted"
+	companyDefaultBranchTopicCreated = "when-organization-branch-created"
+	companyBranchTopicDeleted        = "when-organization-branch-deleted"
 )
 
 type CompanyHttp struct {
@@ -46,7 +49,7 @@ func (h CompanyHttp) RegisterHttp() {
 }
 
 func (h CompanyHttp) CreateCompany(ctx microservice.IContext) error {
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	authUsername := ctx.UserInfo().Username
 	input := ctx.ReadInput()
 
@@ -60,18 +63,18 @@ func (h CompanyHttp) CreateCompany(ctx microservice.IContext) error {
 	defer cancel()
 	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
 
-	req.Code = strings.TrimSpace(req.Code)
+	req.Code = companyModels.NormalizeCompanyCode(req.Code)
 	if req.Code == "" {
 		ctx.ResponseError(http.StatusBadRequest, "company code is required")
 		return errors.New("company code is required")
 	}
-	if err := ensureCompanyCodeAvailable(mongoCtx, pst, shopID, req.Code, ""); err != nil {
+	if err := ensureCompanyCodeAvailable(mongoCtx, pst, holdingCode, req.Code, ""); err != nil {
 		ctx.ResponseError(http.StatusConflict, err.Error())
 		return err
 	}
 
 	now := time.Now()
-	req.ShopID = shopID
+	req.HoldingCode = holdingCode
 	if req.GuidFixed == "" {
 		req.GuidFixed = utils.NewGUID()
 	}
@@ -85,7 +88,12 @@ func (h CompanyHttp) CreateCompany(ctx microservice.IContext) error {
 		return err
 	}
 
-	kafkaSync, err := orgEvents.PublishOrOutbox(mongoCtx, pst, h.ms.Producer(h.cfg.MQConfig()), shopID, "organization_company", "created", companyTopicCreated, req.GuidFixed, req)
+	kafkaSync, err := orgEvents.PublishOrOutbox(mongoCtx, pst, h.ms.Producer(h.cfg.MQConfig()), holdingCode, "organization_company", "created", companyTopicCreated, req.GuidFixed, req)
+	if err != nil {
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		return err
+	}
+	branchID, branchKafkaSync, err := h.ensureDefaultHeadOfficeBranch(mongoCtx, pst, holdingCode, authUsername, req.GuidFixed, req.Names)
 	if err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
@@ -94,13 +102,103 @@ func (h CompanyHttp) CreateCompany(ctx microservice.IContext) error {
 	ctx.Response(http.StatusCreated, common.ApiResponse{
 		Success: true,
 		ID:      req.GuidFixed,
-		Data:    map[string]string{"kafka_sync": kafkaSync},
+		Data: map[string]string{
+			"kafka_sync":        kafkaSync,
+			"default_branch_id": branchID,
+			"branch_kafka_sync": branchKafkaSync,
+		},
 	})
 	return nil
 }
 
+func (h CompanyHttp) ensureDefaultHeadOfficeBranch(
+	ctx context.Context,
+	pst microservice.IPersisterMongo,
+	holdingCode string,
+	authUsername string,
+	companyGuid string,
+	companyNames common.JSONB,
+) (string, string, error) {
+	filter := visibleCompanyBranchFilter(holdingCode, companyGuid)
+	count, err := pst.Count(ctx, branchModels.BranchOrgDoc{}, filter)
+	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
+		return "", "", err
+	}
+	if count > 0 {
+		return "", "", nil
+	}
+
+	now := time.Now()
+	branch := branchModels.BranchOrgDoc{
+		HoldingCode: holdingCode,
+		GuidFixed:   utils.NewGUID(),
+		CompanyGuid: companyGuid,
+		Code:        branchModels.ThaiHeadOfficeBranchCode,
+		Names:       defaultHeadOfficeNames(companyNames),
+		IsActive:    true,
+		CreatedAt:   now,
+		UpdatedAt:   now,
+		CreatedBy:   authUsername,
+	}
+	if _, err := pst.Create(ctx, branchModels.BranchOrgDoc{}, branch); err != nil {
+		return "", "", err
+	}
+
+	kafkaSync, err := orgEvents.PublishOrOutbox(ctx, pst, h.ms.Producer(h.cfg.MQConfig()), holdingCode, "organization_branch", "created", companyDefaultBranchTopicCreated, branch.GuidFixed, branch)
+	if err != nil {
+		return "", "", err
+	}
+	return branch.GuidFixed, kafkaSync, nil
+}
+
+func visibleCompanyBranchFilter(holdingCode string, companyGuid string) bson.M {
+	return bson.M{
+		"holding_code": holdingCode,
+		"company_guid": companyGuid,
+		"deleted_at":   bson.M{"$exists": false},
+	}
+}
+
+func defaultHeadOfficeNames(companyNames common.JSONB) common.JSONB {
+	names := common.JSONB{}
+	seen := map[string]bool{}
+	for _, item := range companyNames {
+		if item.Code == nil {
+			continue
+		}
+		code := strings.ToLower(strings.TrimSpace(*item.Code))
+		if code == "" || seen[code] {
+			continue
+		}
+		seen[code] = true
+		names = append(names, *common.NewNameXWithCodeName(code, defaultHeadOfficeNameForLanguage(code)))
+	}
+	if len(names) == 0 {
+		names = append(names,
+			*common.NewNameXWithCodeName("th", "สำนักงานใหญ่"),
+			*common.NewNameXWithCodeName("en", "Head Office"),
+		)
+	}
+	return names
+}
+
+func defaultHeadOfficeNameForLanguage(code string) string {
+	switch strings.ToLower(strings.TrimSpace(code)) {
+	case "en":
+		return "Head Office"
+	case "lo":
+		return "ສຳນັກງານໃຫຍ່"
+	case "km":
+		return "ការិយាល័យកណ្តាល"
+	case "vi":
+		return "Trụ sở chính"
+	default:
+		return "สำนักงานใหญ่"
+	}
+}
+
 func (h CompanyHttp) SearchCompany(ctx microservice.IContext) error {
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 
 	mongoCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
@@ -108,7 +206,7 @@ func (h CompanyHttp) SearchCompany(ctx microservice.IContext) error {
 
 	var list []companyModels.CompanyDoc
 	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: 1}, {Key: "code", Value: 1}})
-	if err := pst.Find(mongoCtx, companyModels.CompanyDoc{}, visibleCompanyFilter(shopID), &list, opts); err != nil {
+	if err := pst.Find(mongoCtx, companyModels.CompanyDoc{}, visibleCompanyFilter(holdingCode), &list, opts); err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
 	}
@@ -121,7 +219,7 @@ func (h CompanyHttp) SearchCompany(ctx microservice.IContext) error {
 }
 
 func (h CompanyHttp) InfoCompany(ctx microservice.IContext) error {
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	id := ctx.Param("id")
 
 	mongoCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -129,9 +227,13 @@ func (h CompanyHttp) InfoCompany(ctx microservice.IContext) error {
 	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
 
 	var data companyModels.CompanyDoc
-	if err := pst.FindOne(mongoCtx, companyModels.CompanyDoc{}, bson.M{"shopid": shopID, "guid_fixed": id, "deleted_at": bson.M{"$exists": false}}, &data); err != nil {
+	if err := pst.FindOne(mongoCtx, companyModels.CompanyDoc{}, bson.M{"holding_code": holdingCode, "guid_fixed": id, "deleted_at": bson.M{"$exists": false}}, &data); err != nil {
 		ctx.ResponseError(http.StatusNotFound, "Company not found")
 		return err
+	}
+	if strings.TrimSpace(data.GuidFixed) == "" {
+		ctx.ResponseError(http.StatusNotFound, "Company not found")
+		return errors.New("Company not found")
 	}
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
@@ -142,7 +244,7 @@ func (h CompanyHttp) InfoCompany(ctx microservice.IContext) error {
 }
 
 func (h CompanyHttp) UpdateCompany(ctx microservice.IContext) error {
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	authUsername := ctx.UserInfo().Username
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -152,9 +254,13 @@ func (h CompanyHttp) UpdateCompany(ctx microservice.IContext) error {
 	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
 
 	var existing companyModels.CompanyDoc
-	if err := pst.FindOne(mongoCtx, companyModels.CompanyDoc{}, bson.M{"shopid": shopID, "guid_fixed": id, "deleted_at": bson.M{"$exists": false}}, &existing); err != nil {
+	if err := pst.FindOne(mongoCtx, companyModels.CompanyDoc{}, bson.M{"holding_code": holdingCode, "guid_fixed": id, "deleted_at": bson.M{"$exists": false}}, &existing); err != nil {
 		ctx.ResponseError(http.StatusNotFound, "Company not found")
 		return err
+	}
+	if strings.TrimSpace(existing.GuidFixed) == "" {
+		ctx.ResponseError(http.StatusNotFound, "Company not found")
+		return errors.New("Company not found")
 	}
 
 	var req companyModels.CompanyDoc
@@ -162,12 +268,12 @@ func (h CompanyHttp) UpdateCompany(ctx microservice.IContext) error {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
-	req.Code = strings.TrimSpace(req.Code)
+	req.Code = companyModels.NormalizeCompanyCode(req.Code)
 	if req.Code == "" {
 		ctx.ResponseError(http.StatusBadRequest, "company code is required")
 		return errors.New("company code is required")
 	}
-	if err := ensureCompanyCodeAvailable(mongoCtx, pst, shopID, req.Code, id); err != nil {
+	if err := ensureCompanyCodeAvailable(mongoCtx, pst, holdingCode, req.Code, id); err != nil {
 		ctx.ResponseError(http.StatusConflict, err.Error())
 		return err
 	}
@@ -179,7 +285,7 @@ func (h CompanyHttp) UpdateCompany(ctx microservice.IContext) error {
 	existing.UpdatedAt = time.Now()
 	existing.UpdatedBy = authUsername
 
-	if err := pst.Update(mongoCtx, companyModels.CompanyDoc{}, bson.M{"shopid": shopID, "guid_fixed": id, "deleted_at": bson.M{"$exists": false}}, bson.M{"$set": bson.M{
+	if err := pst.Update(mongoCtx, companyModels.CompanyDoc{}, bson.M{"holding_code": holdingCode, "guid_fixed": id, "deleted_at": bson.M{"$exists": false}}, bson.M{"$set": bson.M{
 		"names":      existing.Names,
 		"tax_id":     existing.TaxID,
 		"code":       existing.Code,
@@ -191,7 +297,7 @@ func (h CompanyHttp) UpdateCompany(ctx microservice.IContext) error {
 		return err
 	}
 
-	kafkaSync, err := orgEvents.PublishOrOutbox(mongoCtx, pst, h.ms.Producer(h.cfg.MQConfig()), shopID, "organization_company", "updated", companyTopicUpdated, id, existing)
+	kafkaSync, err := orgEvents.PublishOrOutbox(mongoCtx, pst, h.ms.Producer(h.cfg.MQConfig()), holdingCode, "organization_company", "updated", companyTopicUpdated, id, existing)
 	if err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
@@ -206,34 +312,50 @@ func (h CompanyHttp) UpdateCompany(ctx microservice.IContext) error {
 }
 
 func (h CompanyHttp) DeleteCompany(ctx microservice.IContext) error {
-	shopID := ctx.UserInfo().ShopID
-	authUsername := ctx.UserInfo().Username
+	holdingCode := ctx.UserInfo().HoldingCode
 	id := ctx.Param("id")
 
 	mongoCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
 
+	companyFilter := bson.M{"holding_code": holdingCode, "guid_fixed": id, "deleted_at": bson.M{"$exists": false}}
 	var data companyModels.CompanyDoc
-	if err := pst.FindOne(mongoCtx, companyModels.CompanyDoc{}, bson.M{"shopid": shopID, "guid_fixed": id, "deleted_at": bson.M{"$exists": false}}, &data); err != nil {
+	if err := pst.FindOne(mongoCtx, companyModels.CompanyDoc{}, companyFilter, &data); err != nil {
 		ctx.ResponseError(http.StatusNotFound, "Company not found")
 		return err
 	}
+	if strings.TrimSpace(data.GuidFixed) == "" {
+		ctx.ResponseError(http.StatusNotFound, "Company not found")
+		return errors.New("Company not found")
+	}
 
-	now := time.Now()
-	data.DeletedAt = &now
-	data.DeletedBy = authUsername
-	data.UpdatedAt = now
-	if err := pst.Update(mongoCtx, companyModels.CompanyDoc{}, bson.M{"shopid": shopID, "guid_fixed": id, "deleted_at": bson.M{"$exists": false}}, bson.M{"$set": bson.M{
-		"deleted_at": data.DeletedAt,
-		"deletedby":  data.DeletedBy,
-		"updated_at": data.UpdatedAt,
-	}}); err != nil {
+	branchFilter := visibleCompanyBranchFilter(holdingCode, id)
+	var branches []branchModels.BranchOrgDoc
+	if err := pst.Find(mongoCtx, branchModels.BranchOrgDoc{}, branchFilter, &branches); err != nil {
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		return err
+	}
+	if err := pst.Delete(mongoCtx, branchModels.BranchOrgDoc{}, branchFilter); err != nil {
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		return err
+	}
+	if err := pst.Delete(mongoCtx, companyModels.CompanyDoc{}, companyFilter); err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
 	}
 
-	kafkaSync, err := orgEvents.PublishOrOutbox(mongoCtx, pst, h.ms.Producer(h.cfg.MQConfig()), shopID, "organization_company", "deleted", companyTopicDeleted, id, data)
+	lastBranchKafkaSync := ""
+	for _, branch := range branches {
+		branchKafkaSync, err := orgEvents.PublishOrOutbox(mongoCtx, pst, h.ms.Producer(h.cfg.MQConfig()), holdingCode, "organization_branch", "deleted", companyBranchTopicDeleted, branch.GuidFixed, branch)
+		if err != nil {
+			ctx.ResponseError(http.StatusInternalServerError, err.Error())
+			return err
+		}
+		lastBranchKafkaSync = branchKafkaSync
+	}
+
+	kafkaSync, err := orgEvents.PublishOrOutbox(mongoCtx, pst, h.ms.Producer(h.cfg.MQConfig()), holdingCode, "organization_company", "deleted", companyTopicDeleted, id, data)
 	if err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
@@ -242,17 +364,20 @@ func (h CompanyHttp) DeleteCompany(ctx microservice.IContext) error {
 	ctx.Response(http.StatusOK, common.ApiResponse{
 		Success: true,
 		ID:      id,
-		Data:    map[string]string{"kafka_sync": kafkaSync},
+		Data: map[string]string{
+			"kafka_sync":        kafkaSync,
+			"branch_kafka_sync": lastBranchKafkaSync,
+		},
 	})
 	return nil
 }
 
-func visibleCompanyFilter(shopID string) bson.M {
-	return bson.M{"shopid": shopID, "deleted_at": bson.M{"$exists": false}}
+func visibleCompanyFilter(holdingCode string) bson.M {
+	return bson.M{"holding_code": holdingCode, "deleted_at": bson.M{"$exists": false}}
 }
 
-func ensureCompanyCodeAvailable(ctx context.Context, pst microservice.IPersisterMongo, shopID string, code string, excludeGuid string) error {
-	filter := visibleCompanyFilter(shopID)
+func ensureCompanyCodeAvailable(ctx context.Context, pst microservice.IPersisterMongo, holdingCode string, code string, excludeGuid string) error {
+	filter := visibleCompanyFilter(holdingCode)
 	filter["code"] = code
 	if excludeGuid != "" {
 		filter["guid_fixed"] = bson.M{"$ne": excludeGuid}

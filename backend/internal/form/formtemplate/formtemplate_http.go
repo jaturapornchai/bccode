@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"net/http"
 	"smlcloudplatform/internal/config"
-	mastersync "smlcloudplatform/internal/mastersync/repositories"
-	common "smlcloudplatform/internal/models"
 	"smlcloudplatform/internal/form/formtemplate/models"
 	"smlcloudplatform/internal/form/formtemplate/repositories"
 	"smlcloudplatform/internal/form/formtemplate/services"
+	mastersync "smlcloudplatform/internal/mastersync/repositories"
+	common "smlcloudplatform/internal/models"
 	"smlcloudplatform/internal/utils"
 	"smlcloudplatform/pkg/microservice"
 )
@@ -48,7 +48,7 @@ func (h FormTemplateHttp) RegisterHttp() {
 
 func (h FormTemplateHttp) CreateFormTemplate(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.FormTemplate{}
@@ -63,7 +63,7 @@ func (h FormTemplateHttp) CreateFormTemplate(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreateFormTemplate(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateFormTemplate(holdingCode, authUsername, *docReq)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -78,7 +78,7 @@ func (h FormTemplateHttp) CreateFormTemplate(ctx microservice.IContext) error {
 
 func (h FormTemplateHttp) SaveFormTemplate(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.FormTemplate{}
@@ -93,7 +93,7 @@ func (h FormTemplateHttp) SaveFormTemplate(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.SaveFormTemplate(shopID, authUsername, *docReq)
+	idx, err := h.svc.SaveFormTemplate(holdingCode, authUsername, *docReq)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -109,7 +109,7 @@ func (h FormTemplateHttp) SaveFormTemplate(ctx microservice.IContext) error {
 func (h FormTemplateHttp) UpdateFormTemplate(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -126,7 +126,7 @@ func (h FormTemplateHttp) UpdateFormTemplate(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateFormTemplate(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateFormTemplate(holdingCode, id, authUsername, *docReq)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -141,12 +141,12 @@ func (h FormTemplateHttp) UpdateFormTemplate(ctx microservice.IContext) error {
 
 func (h FormTemplateHttp) DeleteFormTemplate(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteFormTemplate(shopID, id, authUsername)
+	err := h.svc.DeleteFormTemplate(holdingCode, id, authUsername)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -161,7 +161,7 @@ func (h FormTemplateHttp) DeleteFormTemplate(ctx microservice.IContext) error {
 
 func (h FormTemplateHttp) DeleteFormTemplateByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -173,7 +173,7 @@ func (h FormTemplateHttp) DeleteFormTemplateByGUIDs(ctx microservice.IContext) e
 		return err
 	}
 
-	err = h.svc.DeleteFormTemplateByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteFormTemplateByGUIDs(holdingCode, authUsername, docReq)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -187,11 +187,11 @@ func (h FormTemplateHttp) DeleteFormTemplateByGUIDs(ctx microservice.IContext) e
 
 func (h FormTemplateHttp) InfoFormTemplate(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
-	doc, err := h.svc.InfoFormTemplate(shopID, id)
+	doc, err := h.svc.InfoFormTemplate(holdingCode, id)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -206,7 +206,7 @@ func (h FormTemplateHttp) InfoFormTemplate(ctx microservice.IContext) error {
 
 func (h FormTemplateHttp) SearchFormTemplatePage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -217,7 +217,7 @@ func (h FormTemplateHttp) SearchFormTemplatePage(ctx microservice.IContext) erro
 		filters["doc_type"] = docType
 	}
 
-	docList, pagination, err := h.svc.SearchFormTemplate(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchFormTemplate(holdingCode, filters, pageable)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -233,12 +233,12 @@ func (h FormTemplateHttp) SearchFormTemplatePage(ctx microservice.IContext) erro
 
 func (h FormTemplateHttp) SearchFormTemplateStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 	lang := ctx.QueryParam("lang")
 
-	docList, total, err := h.svc.SearchFormTemplateStep(shopID, lang, pageableStep)
+	docList, total, err := h.svc.SearchFormTemplateStep(holdingCode, lang, pageableStep)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -255,7 +255,7 @@ func (h FormTemplateHttp) SearchFormTemplateStep(ctx microservice.IContext) erro
 func (h FormTemplateHttp) SaveBulk(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -266,7 +266,7 @@ func (h FormTemplateHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 	if err != nil {
 		ctx.ResponseError(400, err.Error())
 		return err

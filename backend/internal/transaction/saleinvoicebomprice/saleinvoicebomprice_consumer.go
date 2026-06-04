@@ -73,7 +73,7 @@ func (c *SaleInvoiceBomPriceConsumer) ConsumeOnCreateOrUpdate(ctx microservice.I
 		return err
 	}
 
-	err = c.svc.Upsert(doc.ShopID, doc.GuidFixed, doc)
+	err = c.svc.Upsert(doc.HoldingCode, doc.GuidFixed, doc)
 	if err != nil {
 		return err
 	}
@@ -90,7 +90,7 @@ func (c *SaleInvoiceBomPriceConsumer) ConsumeOnDelete(ctx microservice.IContext)
 		return err
 	}
 
-	err = c.svc.Delete(doc.ShopID, doc.GuidFixed)
+	err = c.svc.Delete(doc.HoldingCode, doc.GuidFixed)
 	if err != nil {
 		return err
 	}
@@ -108,7 +108,7 @@ func (c *SaleInvoiceBomPriceConsumer) ConsumeOnBulkCreateOrUpdate(ctx microservi
 	}
 
 	for _, doc := range docs {
-		err = c.svc.Upsert(doc.ShopID, doc.GuidFixed, doc)
+		err = c.svc.Upsert(doc.HoldingCode, doc.GuidFixed, doc)
 		if err != nil {
 			return err
 		}
@@ -126,7 +126,7 @@ func (c *SaleInvoiceBomPriceConsumer) ConsumeOnBulkDelete(ctx microservice.ICont
 	}
 
 	for _, doc := range docs {
-		err = c.svc.Delete(doc.ShopID, doc.GuidFixed)
+		err = c.svc.Delete(doc.HoldingCode, doc.GuidFixed)
 		if err != nil {
 			return err
 		}

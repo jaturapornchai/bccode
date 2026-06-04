@@ -24,15 +24,15 @@ import (
 )
 
 type IPurchaseRequisitionHttpService interface {
-	CreatePurchaseRequisition(shopID string, authUsername string, doc models.PurchaseRequisition) (string, string, *validators.ValidationResult, error)
-	UpdatePurchaseRequisition(shopID string, guid string, authUsername string, doc models.PurchaseRequisition) (*validators.ValidationResult, error)
-	DeletePurchaseRequisition(shopID string, guid string, authUsername string) error
-	DeletePurchaseRequisitionByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoPurchaseRequisition(shopID string, guid string) (models.PurchaseRequisitionInfo, error)
-	InfoPurchaseRequisitionByCode(shopID string, code string) (models.PurchaseRequisitionInfo, error)
-	SearchPurchaseRequisition(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.PurchaseRequisitionInfo, mongopagination.PaginationData, error)
-	SearchPurchaseRequisitionStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.PurchaseRequisitionInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.PurchaseRequisition) (common.BulkImport, error)
+	CreatePurchaseRequisition(holdingCode string, authUsername string, doc models.PurchaseRequisition) (string, string, *validators.ValidationResult, error)
+	UpdatePurchaseRequisition(holdingCode string, guid string, authUsername string, doc models.PurchaseRequisition) (*validators.ValidationResult, error)
+	DeletePurchaseRequisition(holdingCode string, guid string, authUsername string) error
+	DeletePurchaseRequisitionByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoPurchaseRequisition(holdingCode string, guid string) (models.PurchaseRequisitionInfo, error)
+	InfoPurchaseRequisitionByCode(holdingCode string, code string) (models.PurchaseRequisitionInfo, error)
+	SearchPurchaseRequisition(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.PurchaseRequisitionInfo, mongopagination.PaginationData, error)
+	SearchPurchaseRequisitionStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.PurchaseRequisitionInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.PurchaseRequisition) (common.BulkImport, error)
 	GetModuleName() string
 }
 
@@ -88,10 +88,10 @@ func (svc PurchaseRequisitionHttpService) getDocNoPrefix(docDateLocalStr string)
 	return fmt.Sprintf("%s%s", MODULE_NAME, docDateStr)
 }
 
-func (svc PurchaseRequisitionHttpService) generateNewDocNo(ctx context.Context, shopID, prefixDocNo string, docNumber int) (string, int, error) {
-	prevoiusDocNumber, err := svc.repoCache.Get(shopID, prefixDocNo)
+func (svc PurchaseRequisitionHttpService) generateNewDocNo(ctx context.Context, holdingCode, prefixDocNo string, docNumber int) (string, int, error) {
+	prevoiusDocNumber, err := svc.repoCache.Get(holdingCode, prefixDocNo)
 	if prevoiusDocNumber == 0 || err != nil {
-		lastDoc, err := svc.repo.FindLastDocNo(ctx, shopID, prefixDocNo)
+		lastDoc, err := svc.repo.FindLastDocNo(ctx, holdingCode, prefixDocNo)
 		if err != nil {
 			return "", 0, err
 		}
@@ -105,7 +105,7 @@ func (svc PurchaseRequisitionHttpService) generateNewDocNo(ctx context.Context, 
 	}
 	newDocNumber := prevoiusDocNumber + 1
 	newDocNo := fmt.Sprintf("%s%05d", prefixDocNo, newDocNumber)
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", newDocNo)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", newDocNo)
 	if err != nil {
 		return "", 0, err
 	}
@@ -115,7 +115,7 @@ func (svc PurchaseRequisitionHttpService) generateNewDocNo(ctx context.Context, 
 	return newDocNo, newDocNumber, nil
 }
 
-func (svc PurchaseRequisitionHttpService) CreatePurchaseRequisition(shopID string, authUsername string, doc models.PurchaseRequisition) (string, string, *validators.ValidationResult, error) {
+func (svc PurchaseRequisitionHttpService) CreatePurchaseRequisition(holdingCode string, authUsername string, doc models.PurchaseRequisition) (string, string, *validators.ValidationResult, error) {
 	validationResult := validators.ValidatePurchaseRequisition(&doc)
 	if !validationResult.IsValid() {
 		return "", "", validationResult, nil
@@ -125,14 +125,14 @@ func (svc PurchaseRequisitionHttpService) CreatePurchaseRequisition(shopID strin
 	defer ctxCancel()
 
 	prefixDocNo := svc.getDocNoPrefix(doc.DocDateLocal)
-	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, shopID, prefixDocNo, 1)
+	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, holdingCode, prefixDocNo, 1)
 	if err != nil {
 		return "", "", nil, err
 	}
 
 	newGuidFixed := utils.NewGUID()
 	docData := models.PurchaseRequisitionDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.PurchaseRequisition = doc
 	docData.DocNo = newDocNo
@@ -156,21 +156,21 @@ func (svc PurchaseRequisitionHttpService) CreatePurchaseRequisition(shopID strin
 		return "", "", nil, err
 	}
 
-	go svc.repoCache.Save(shopID, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
+	go svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
 
 	go func() {
 		err := svc.repoMq.Create(docData)
 		if err != nil {
 			fmt.Printf("[KAFKA-ERROR] Failed to publish PR create message: DocNo=%s, Error=%v\n", docData.DocNo, err)
 		}
-		svc.repoCache.Save(shopID, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
-		svc.saveMasterSync(shopID)
+		svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return newGuidFixed, newDocNo, nil, nil
 }
 
-func (svc PurchaseRequisitionHttpService) UpdatePurchaseRequisition(shopID string, guid string, authUsername string, doc models.PurchaseRequisition) (*validators.ValidationResult, error) {
+func (svc PurchaseRequisitionHttpService) UpdatePurchaseRequisition(holdingCode string, guid string, authUsername string, doc models.PurchaseRequisition) (*validators.ValidationResult, error) {
 	validationResult := validators.ValidatePurchaseRequisition(&doc)
 	if !validationResult.IsValid() {
 		return validationResult, nil
@@ -179,7 +179,7 @@ func (svc PurchaseRequisitionHttpService) UpdatePurchaseRequisition(shopID strin
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +205,7 @@ func (svc PurchaseRequisitionHttpService) UpdatePurchaseRequisition(shopID strin
 
 	sanitizeExchangeRate(&docData.PurchaseRequisition)
 
-	err = svc.repo.Update(ctx, shopID, guid, docData)
+	err = svc.repo.Update(ctx, holdingCode, guid, docData)
 	if err != nil {
 		return nil, err
 	}
@@ -215,17 +215,17 @@ func (svc PurchaseRequisitionHttpService) UpdatePurchaseRequisition(shopID strin
 		if err != nil {
 			fmt.Printf("[KAFKA-ERROR] Failed to publish PR update message: DocNo=%s, Error=%v\n", docData.DocNo, err)
 		}
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil, nil
 }
 
-func (svc PurchaseRequisitionHttpService) DeletePurchaseRequisition(shopID string, guid string, authUsername string) error {
+func (svc PurchaseRequisitionHttpService) DeletePurchaseRequisition(holdingCode string, guid string, authUsername string) error {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 	if err != nil {
 		return err
 	}
@@ -233,7 +233,7 @@ func (svc PurchaseRequisitionHttpService) DeletePurchaseRequisition(shopID strin
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
@@ -243,38 +243,38 @@ func (svc PurchaseRequisitionHttpService) DeletePurchaseRequisition(shopID strin
 		if err != nil {
 			fmt.Printf("[KAFKA-ERROR] Failed to publish PR delete message: DocNo=%s, Error=%v\n", findDoc.DocNo, err)
 		}
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc PurchaseRequisitionHttpService) DeletePurchaseRequisitionByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc PurchaseRequisitionHttpService) DeletePurchaseRequisitionByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
 	deleteFilterQuery := map[string]interface{}{
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
 
 	func() {
-		docs, _ := svc.repo.FindByGuids(ctx, shopID, GUIDs)
+		docs, _ := svc.repo.FindByGuids(ctx, holdingCode, GUIDs)
 		svc.repoMq.DeleteInBatch(docs)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc PurchaseRequisitionHttpService) InfoPurchaseRequisition(shopID string, guid string) (models.PurchaseRequisitionInfo, error) {
+func (svc PurchaseRequisitionHttpService) InfoPurchaseRequisition(holdingCode string, guid string) (models.PurchaseRequisitionInfo, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 	if err != nil {
 		return models.PurchaseRequisitionInfo{}, err
 	}
@@ -284,11 +284,11 @@ func (svc PurchaseRequisitionHttpService) InfoPurchaseRequisition(shopID string,
 	return findDoc.PurchaseRequisitionInfo, nil
 }
 
-func (svc PurchaseRequisitionHttpService) InfoPurchaseRequisitionByCode(shopID string, code string) (models.PurchaseRequisitionInfo, error) {
+func (svc PurchaseRequisitionHttpService) InfoPurchaseRequisitionByCode(holdingCode string, code string) (models.PurchaseRequisitionInfo, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", code)
 	if err != nil {
 		return models.PurchaseRequisitionInfo{}, err
 	}
@@ -298,32 +298,32 @@ func (svc PurchaseRequisitionHttpService) InfoPurchaseRequisitionByCode(shopID s
 	return findDoc.PurchaseRequisitionInfo, nil
 }
 
-func (svc PurchaseRequisitionHttpService) SearchPurchaseRequisition(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.PurchaseRequisitionInfo, mongopagination.PaginationData, error) {
+func (svc PurchaseRequisitionHttpService) SearchPurchaseRequisition(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.PurchaseRequisitionInfo, mongopagination.PaginationData, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
 	searchInFields := []string{"docno", "requestercode", "requestername", "departmentcode", "purpose"}
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 	if err != nil {
 		return []models.PurchaseRequisitionInfo{}, pagination, err
 	}
 	return docList, pagination, nil
 }
 
-func (svc PurchaseRequisitionHttpService) SearchPurchaseRequisitionStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.PurchaseRequisitionInfo, int, error) {
+func (svc PurchaseRequisitionHttpService) SearchPurchaseRequisitionStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.PurchaseRequisitionInfo, int, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
 	searchInFields := []string{"docno", "requestercode", "requestername", "departmentcode", "purpose"}
 	selectFields := map[string]interface{}{}
-	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 	if err != nil {
 		return []models.PurchaseRequisitionInfo{}, 0, err
 	}
 	return docList, total, nil
 }
 
-func (svc PurchaseRequisitionHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.PurchaseRequisition) (common.BulkImport, error) {
+func (svc PurchaseRequisitionHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.PurchaseRequisition) (common.BulkImport, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
@@ -334,7 +334,7 @@ func (svc PurchaseRequisitionHttpService) SaveInBatch(shopID string, authUsernam
 		itemCodeGuidList = append(itemCodeGuidList, doc.DocNo)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "docno", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "docno", itemCodeGuidList)
 	if err != nil {
 		return common.BulkImport{}, err
 	}
@@ -345,12 +345,12 @@ func (svc PurchaseRequisitionHttpService) SaveInBatch(shopID string, authUsernam
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.PurchaseRequisition, models.PurchaseRequisitionDoc](
-		shopID, authUsername, foundItemGuidList, payloadList, svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.PurchaseRequisition) models.PurchaseRequisitionDoc {
+		holdingCode, authUsername, foundItemGuidList, payloadList, svc.getDocIDKey,
+		func(holdingCode string, authUsername string, doc models.PurchaseRequisition) models.PurchaseRequisitionDoc {
 			newGuid := utils.NewGUID()
 			dataDoc := models.PurchaseRequisitionDoc{}
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.PurchaseRequisition = doc
 			dataDoc.CreatedBy = authUsername
 			dataDoc.CreatedAt = time.Now()
@@ -359,18 +359,18 @@ func (svc PurchaseRequisitionHttpService) SaveInBatch(shopID string, authUsernam
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.PurchaseRequisition, models.PurchaseRequisitionDoc](
-		shopID, authUsername, duplicateDataList, svc.getDocIDKey,
-		func(shopID string, guid string) (models.PurchaseRequisitionDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", guid)
+		holdingCode, authUsername, duplicateDataList, svc.getDocIDKey,
+		func(holdingCode string, guid string) (models.PurchaseRequisitionDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", guid)
 		},
 		func(doc models.PurchaseRequisitionDoc) bool {
 			return doc.DocNo != ""
 		},
-		func(shopID string, authUsername string, data models.PurchaseRequisition, doc models.PurchaseRequisitionDoc) error {
+		func(holdingCode string, authUsername string, data models.PurchaseRequisition, doc models.PurchaseRequisitionDoc) error {
 			doc.PurchaseRequisition = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -402,7 +402,7 @@ func (svc PurchaseRequisitionHttpService) SaveInBatch(shopID string, authUsernam
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -416,9 +416,9 @@ func (svc PurchaseRequisitionHttpService) getDocIDKey(doc models.PurchaseRequisi
 	return doc.DocNo
 }
 
-func (svc PurchaseRequisitionHttpService) saveMasterSync(shopID string) {
+func (svc PurchaseRequisitionHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())
 		}

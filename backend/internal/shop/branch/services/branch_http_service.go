@@ -18,13 +18,13 @@ import (
 )
 
 type IBranchHttpService interface {
-	CreateBranch(shopID string, authUsername string, doc models.Branch) (string, error)
-	UpdateBranch(shopID string, guid string, authUsername string, doc models.Branch) error
-	DeleteBranch(shopID string, guid string, authUsername string) error
-	DeleteBranchByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoBranch(shopID string, guid string) (models.BranchInfo, error)
-	SearchBranch(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.BranchInfo, mongopagination.PaginationData, error)
-	SearchBranchStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.BranchInfo, int, error)
+	CreateBranch(holdingCode string, authUsername string, doc models.Branch) (string, error)
+	UpdateBranch(holdingCode string, guid string, authUsername string, doc models.Branch) error
+	DeleteBranch(holdingCode string, guid string, authUsername string) error
+	DeleteBranchByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoBranch(holdingCode string, guid string) (models.BranchInfo, error)
+	SearchBranch(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.BranchInfo, mongopagination.PaginationData, error)
+	SearchBranchStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.BranchInfo, int, error)
 
 	GetModuleName() string
 }
@@ -56,12 +56,12 @@ func (svc BranchHttpService) getContextTimeout() (context.Context, context.Cance
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc BranchHttpService) CreateBranch(shopID string, authUsername string, doc models.Branch) (string, error) {
+func (svc BranchHttpService) CreateBranch(holdingCode string, authUsername string, doc models.Branch) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", doc.Code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", doc.Code)
 
 	if err != nil {
 		return "", err
@@ -74,7 +74,7 @@ func (svc BranchHttpService) CreateBranch(shopID string, authUsername string, do
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.BranchDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.Branch = doc
 
@@ -87,17 +87,17 @@ func (svc BranchHttpService) CreateBranch(shopID string, authUsername string, do
 		return "", err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return newGuidFixed, nil
 }
 
-func (svc BranchHttpService) UpdateBranch(shopID string, guid string, authUsername string, doc models.Branch) error {
+func (svc BranchHttpService) UpdateBranch(holdingCode string, guid string, authUsername string, doc models.Branch) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -112,23 +112,23 @@ func (svc BranchHttpService) UpdateBranch(shopID string, guid string, authUserna
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, findDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, findDoc)
 
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc BranchHttpService) DeleteBranch(shopID string, guid string, authUsername string) error {
+func (svc BranchHttpService) DeleteBranch(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -138,17 +138,17 @@ func (svc BranchHttpService) DeleteBranch(shopID string, guid string, authUserna
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc BranchHttpService) DeleteBranchByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc BranchHttpService) DeleteBranchByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -157,7 +157,7 @@ func (svc BranchHttpService) DeleteBranchByGUIDs(shopID string, authUsername str
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
@@ -165,12 +165,12 @@ func (svc BranchHttpService) DeleteBranchByGUIDs(shopID string, authUsername str
 	return nil
 }
 
-func (svc BranchHttpService) InfoBranch(shopID string, guid string) (models.BranchInfo, error) {
+func (svc BranchHttpService) InfoBranch(holdingCode string, guid string) (models.BranchInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.BranchInfo{}, err
@@ -184,7 +184,7 @@ func (svc BranchHttpService) InfoBranch(shopID string, guid string) (models.Bran
 
 }
 
-func (svc BranchHttpService) SearchBranch(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.BranchInfo, mongopagination.PaginationData, error) {
+func (svc BranchHttpService) SearchBranch(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.BranchInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -193,7 +193,7 @@ func (svc BranchHttpService) SearchBranch(shopID string, filters map[string]inte
 		"code",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.BranchInfo{}, pagination, err
@@ -202,7 +202,7 @@ func (svc BranchHttpService) SearchBranch(shopID string, filters map[string]inte
 	return docList, pagination, nil
 }
 
-func (svc BranchHttpService) SearchBranchStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.BranchInfo, int, error) {
+func (svc BranchHttpService) SearchBranchStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.BranchInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -213,7 +213,7 @@ func (svc BranchHttpService) SearchBranchStep(shopID string, langCode string, pa
 
 	selectFields := map[string]interface{}{
 		"guid_fixed": 1,
-		"code":      1,
+		"code":       1,
 	}
 
 	if langCode != "" {
@@ -222,7 +222,7 @@ func (svc BranchHttpService) SearchBranchStep(shopID string, langCode string, pa
 		selectFields["names"] = 1
 	}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.BranchInfo{}, 0, err
@@ -231,9 +231,9 @@ func (svc BranchHttpService) SearchBranchStep(shopID string, langCode string, pa
 	return docList, total, nil
 }
 
-func (svc BranchHttpService) saveMasterSync(shopID string) {
+func (svc BranchHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

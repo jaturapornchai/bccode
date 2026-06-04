@@ -130,4 +130,4 @@ Write-Host "`n=== Done ===" -ForegroundColor Cyan
 Write-Host "Now run in psql:" -ForegroundColor Yellow
 Write-Host "  CREATE EXTENSION vector;" -ForegroundColor White
 Write-Host "`nThen rebuild embeddings via MCP tool:" -ForegroundColor Yellow
-Write-Host "  rebuild_embeddings { shop_id: 'YOUR_SHOP_ID', force_all: true }" -ForegroundColor White
+Write-Host "  rebuild_embeddings { holding_code: 'YOUR_HOLDING_CODE', force_all: true }" -ForegroundColor White

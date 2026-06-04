@@ -142,13 +142,13 @@ export function normalizeImageUploadPayload(
 }
 
 function imageObjectKey(data: Record<string, unknown>): string {
-  const shopID = stringValue(data.shopid ?? data.shop_id);
+  const holdingCode = stringValue(data.holding_code ?? data.holding_code ?? data.holding_code);
   const category = sanitizeUploadCategory(data.category);
   const fileName = stringValue(
     data.file_name ?? data.filename ?? data.fileName ?? data.name,
   );
-  if (!shopID || !fileName) return "";
-  return [shopID, category, fileName]
+  if (!holdingCode || !fileName) return "";
+  return [holdingCode, category, fileName]
     .filter(Boolean)
     .map((part) => encodeURIComponent(part).replace(/%2F/gi, "/"))
     .join("/");

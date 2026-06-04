@@ -14,28 +14,28 @@ import (
 )
 
 type ISaleInvoiceReturnRepository interface {
-	Count(ctx context.Context, shopID string) (int, error)
+	Count(ctx context.Context, holdingCode string) (int, error)
 	Create(ctx context.Context, doc models.SaleInvoiceReturnDoc) (string, error)
 	CreateInBatch(ctx context.Context, docList []models.SaleInvoiceReturnDoc) error
-	Update(ctx context.Context, shopID string, guid string, doc models.SaleInvoiceReturnDoc) error
-	DeleteByGuidfixed(ctx context.Context, shopID string, guid string, username string) error
-	Delete(ctx context.Context, shopID string, username string, filters map[string]interface{}) error
-	FindPage(ctx context.Context, shopID string, searchInFields []string, pageable micromodels.Pageable) ([]models.SaleInvoiceReturnInfo, mongopagination.PaginationData, error)
-	FindByGuid(ctx context.Context, shopID string, guid string) (models.SaleInvoiceReturnDoc, error)
-	FindByGuids(ctx context.Context, shopID string, guids []string) ([]models.SaleInvoiceReturnDoc, error)
+	Update(ctx context.Context, holdingCode string, guid string, doc models.SaleInvoiceReturnDoc) error
+	DeleteByGuidfixed(ctx context.Context, holdingCode string, guid string, username string) error
+	Delete(ctx context.Context, holdingCode string, username string, filters map[string]interface{}) error
+	FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable micromodels.Pageable) ([]models.SaleInvoiceReturnInfo, mongopagination.PaginationData, error)
+	FindByGuid(ctx context.Context, holdingCode string, guid string) (models.SaleInvoiceReturnDoc, error)
+	FindByGuids(ctx context.Context, holdingCode string, guids []string) ([]models.SaleInvoiceReturnDoc, error)
 
-	FindInItemGuid(ctx context.Context, shopID string, columnName string, itemGuidList []string) ([]models.SaleInvoiceReturnItemGuid, error)
-	FindByDocIndentityGuid(ctx context.Context, shopID string, indentityField string, indentityValue interface{}) (models.SaleInvoiceReturnDoc, error)
-	FindPageFilter(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.SaleInvoiceReturnInfo, mongopagination.PaginationData, error)
-	FindStep(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableLimit micromodels.PageableStep) ([]models.SaleInvoiceReturnInfo, int, error)
+	FindInItemGuid(ctx context.Context, holdingCode string, columnName string, itemGuidList []string) ([]models.SaleInvoiceReturnItemGuid, error)
+	FindByDocIndentityGuid(ctx context.Context, holdingCode string, indentityField string, indentityValue interface{}) (models.SaleInvoiceReturnDoc, error)
+	FindPageFilter(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.SaleInvoiceReturnInfo, mongopagination.PaginationData, error)
+	FindStep(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableLimit micromodels.PageableStep) ([]models.SaleInvoiceReturnInfo, int, error)
 
-	FindDeletedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.SaleInvoiceReturnDeleteActivity, mongopagination.PaginationData, error)
-	FindCreatedOrUpdatedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.SaleInvoiceReturnActivity, mongopagination.PaginationData, error)
-	FindDeletedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.SaleInvoiceReturnDeleteActivity, error)
-	FindCreatedOrUpdatedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.SaleInvoiceReturnActivity, error)
+	FindDeletedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.SaleInvoiceReturnDeleteActivity, mongopagination.PaginationData, error)
+	FindCreatedOrUpdatedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.SaleInvoiceReturnActivity, mongopagination.PaginationData, error)
+	FindDeletedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.SaleInvoiceReturnDeleteActivity, error)
+	FindCreatedOrUpdatedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.SaleInvoiceReturnActivity, error)
 
-	FindLastPOSDocNo(ctx context.Context, shopID string, posID string, maxDocNo string) (string, error)
-	FindLastDocNo(ctx context.Context, shopID string, prefixDocNo string) (models.SaleInvoiceReturnDoc, error)
+	FindLastPOSDocNo(ctx context.Context, holdingCode string, posID string, maxDocNo string) (string, error)
+	FindLastDocNo(ctx context.Context, holdingCode string, prefixDocNo string) (models.SaleInvoiceReturnDoc, error)
 }
 
 type SaleInvoiceReturnRepository struct {
@@ -60,14 +60,14 @@ func NewSaleInvoiceReturnRepository(pst microservice.IPersisterMongo) *SaleInvoi
 	return insRepo
 }
 
-func (repo SaleInvoiceReturnRepository) FindLastPOSDocNo(ctx context.Context, shopID string, posID string, maxDocNo string) (string, error) {
+func (repo SaleInvoiceReturnRepository) FindLastPOSDocNo(ctx context.Context, holdingCode string, posID string, maxDocNo string) (string, error) {
 
 	opts := options.FindOneOptions{}
 	opts.SetSort(bson.M{"docno": -1})
 
 	filters := bson.M{
-		"shopid": shopID,
-		"posid":  posID,
+		"holding_code": holdingCode,
+		"posid":        posID,
 		"docno": bson.M{
 			"$lte": maxDocNo,
 		},
@@ -83,9 +83,9 @@ func (repo SaleInvoiceReturnRepository) FindLastPOSDocNo(ctx context.Context, sh
 	return doc.DocNo, nil
 }
 
-func (repo SaleInvoiceReturnRepository) FindLastDocNo(ctx context.Context, shopID string, prefixDocNo string) (models.SaleInvoiceReturnDoc, error) {
+func (repo SaleInvoiceReturnRepository) FindLastDocNo(ctx context.Context, holdingCode string, prefixDocNo string) (models.SaleInvoiceReturnDoc, error) {
 	filters := bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 		"deleted_at": bson.M{
 			"$exists": false,
 		},

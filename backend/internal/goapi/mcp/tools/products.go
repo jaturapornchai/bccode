@@ -37,7 +37,7 @@ type TokenizeResponse struct {
 
 // ProductSearchRequest represents the search request
 type ProductSearchRequest struct {
-	ShopID         string `json:"shopid"`
+	HoldingCode    string `json:"holding_code"`
 	Keyword        string `json:"keyword"`
 	WHCode         string `json:"whcode"`
 	LocationCode   string `json:"locationcode"`
@@ -97,7 +97,7 @@ type ProductSearchResponse struct {
 
 // SearchProducts queries the PostgreSQL projection/read model for smart Thai product search.
 // MongoDB remains the authoritative operational source for product data.
-func SearchProducts(ctx context.Context, shopID, keyword, whcode, locationcode string, limit int, includeBalance bool) (*ProductSearchResponse, error) {
+func SearchProducts(ctx context.Context, holdingCode, keyword, whcode, locationcode string, limit int, includeBalance bool) (*ProductSearchResponse, error) {
 	if keyword == "" {
 		return nil, fmt.Errorf("keyword is required")
 	}
@@ -110,8 +110,8 @@ func SearchProducts(ctx context.Context, shopID, keyword, whcode, locationcode s
 		limit = 200
 	}
 
-	logger.Info("[MCP SearchProducts] shopid=%s, keyword=%s, limit=%d, include_balance=%v",
-		shopID, keyword, limit, includeBalance)
+	logger.Info("[MCP SearchProducts] holding_code=%s, keyword=%s, limit=%d, include_balance=%v",
+		holdingCode, keyword, limit, includeBalance)
 
 	// 1. Tokenize keyword using Thai NLP
 	tokens, err := tokenizeKeyword(keyword)
@@ -122,7 +122,7 @@ func SearchProducts(ctx context.Context, shopID, keyword, whcode, locationcode s
 	logger.Info("[MCP SearchProducts] Tokens: %v", tokens)
 
 	// 2. Connect to PostgreSQL projection store
-	db, err := mypg.PgSqlFastConnect(shopID)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		return nil, fmt.Errorf("database connection failed: %w", err)
 	}

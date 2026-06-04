@@ -20,10 +20,10 @@ import (
 
 // ─── S3 client สำหรับ token storage ───
 var (
-	tokenS3Client     *s3.Client
-	tokenS3Bucket     string
-	tokenS3Once       sync.Once
-	tokenS3Err        error
+	tokenS3Client *s3.Client
+	tokenS3Bucket string
+	tokenS3Once   sync.Once
+	tokenS3Err    error
 )
 
 func getTokenS3Client() (*s3.Client, string, error) {
@@ -59,22 +59,22 @@ func getTokenS3Client() (*s3.Client, string, error) {
 	return tokenS3Client, tokenS3Bucket, tokenS3Err
 }
 
-// ==================== Token Export (JSON per shopid) ====================
+// ==================== Token Export (JSON per holding_code) ====================
 
 // TokenExportData โครงสร้างข้อมูล export สำหรับ MCP client config
 type TokenExportData struct {
-	APIKey string                 `json:"api_key"`
-	ShopID string                 `json:"shop_id"`
-	Name string                 `json:"name"`
-	ExpiresAt *string                `json:"expires_at,omitempty"`
-	CreatedAt string                 `json:"created_at"`
+	APIKey              string                 `json:"api_key"`
+	HoldingCode         string                 `json:"holding_code"`
+	Name                string                 `json:"name"`
+	ExpiresAt           *string                `json:"expires_at,omitempty"`
+	CreatedAt           string                 `json:"created_at"`
 	ClaudeDesktopConfig map[string]interface{} `json:"claude_desktop_config"`
-	ClaudeCodeConfig map[string]interface{} `json:"claude_code_config"`
+	ClaudeCodeConfig    map[string]interface{} `json:"claude_code_config"`
 }
 
 // GenerateTokenExport สร้าง export data สำหรับ MCP client
 // ใช้ stdio transport ผ่าน Node.js MCP server — เสถียรกว่า mcp-remote (SSE)
-func GenerateTokenExport(apiKey, shopID, name, serverURL string, expiresAt *time.Time, createdAt time.Time) *TokenExportData {
+func GenerateTokenExport(apiKey, holdingCode, name, serverURL string, expiresAt *time.Time, createdAt time.Time) *TokenExportData {
 	if serverURL == "" {
 		serverURL = "http://localhost:8888"
 	}
@@ -102,7 +102,7 @@ func GenerateTokenExport(apiKey, shopID, name, serverURL string, expiresAt *time
 
 	return &TokenExportData{
 		APIKey:              apiKey,
-		ShopID:              shopID,
+		HoldingCode:         holdingCode,
 		Name:                name,
 		ExpiresAt:           expiresStr,
 		CreatedAt:           createdAt.Format(time.RFC3339),
@@ -112,7 +112,7 @@ func GenerateTokenExport(apiKey, shopID, name, serverURL string, expiresAt *time
 }
 
 // SaveTokenFile บันทึก token config เป็น JSON file ไป S3
-func SaveTokenFile(shopID, tokenID string, data *TokenExportData) error {
+func SaveTokenFile(holdingCode, tokenID string, data *TokenExportData) error {
 	jsonData, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return fmt.Errorf("แปลง JSON ล้มเหลว: %w", err)
@@ -122,10 +122,10 @@ func SaveTokenFile(shopID, tokenID string, data *TokenExportData) error {
 	if s3Err != nil {
 		// fallback: เก็บ local (backward compatible)
 		logger.Warn("[Token Export] S3 not available, saving locally: %v", s3Err)
-		return saveTokenFileLocal(shopID, tokenID, jsonData)
+		return saveTokenFileLocal(holdingCode, tokenID, jsonData)
 	}
 
-	objectKey := fmt.Sprintf("mcp-tokens/%s/%s.json", shopID, tokenID)
+	objectKey := fmt.Sprintf("mcp-tokens/%s/%s.json", holdingCode, tokenID)
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
@@ -144,14 +144,14 @@ func SaveTokenFile(shopID, tokenID string, data *TokenExportData) error {
 }
 
 // DeleteTokenFile ลบ token file จาก S3
-func DeleteTokenFile(shopID, tokenID string) error {
+func DeleteTokenFile(holdingCode, tokenID string) error {
 	client, bucket, s3Err := getTokenS3Client()
 	if s3Err != nil {
 		// fallback: ลบ local
-		return deleteTokenFileLocal(shopID, tokenID)
+		return deleteTokenFileLocal(holdingCode, tokenID)
 	}
 
-	objectKey := fmt.Sprintf("mcp-tokens/%s/%s.json", shopID, tokenID)
+	objectKey := fmt.Sprintf("mcp-tokens/%s/%s.json", holdingCode, tokenID)
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
@@ -169,8 +169,8 @@ func DeleteTokenFile(shopID, tokenID string) error {
 
 // ─── Local fallback (backward compatible) ───
 
-func saveTokenFileLocal(shopID, tokenID string, jsonData []byte) error {
-	dir := fmt.Sprintf("/app/mcp-tokens/%s", shopID)
+func saveTokenFileLocal(holdingCode, tokenID string, jsonData []byte) error {
+	dir := fmt.Sprintf("/app/mcp-tokens/%s", holdingCode)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("สร้าง directory ล้มเหลว: %w", err)
 	}
@@ -182,8 +182,8 @@ func saveTokenFileLocal(shopID, tokenID string, jsonData []byte) error {
 	return nil
 }
 
-func deleteTokenFileLocal(shopID, tokenID string) error {
-	filePath := fmt.Sprintf("/app/mcp-tokens/%s/%s.json", shopID, tokenID)
+func deleteTokenFileLocal(holdingCode, tokenID string) error {
+	filePath := fmt.Sprintf("/app/mcp-tokens/%s/%s.json", holdingCode, tokenID)
 	if err := os.Remove(filePath); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("ลบไฟล์ล้มเหลว: %w", err)
 	}

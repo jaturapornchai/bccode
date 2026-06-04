@@ -9,8 +9,8 @@ import (
 )
 
 type IStockBalanceTransactionAdminRepository interface {
-	FindStockBalanceDocByShopID(ctx context.Context, shopID string) ([]stockBalanceProductModels.StockBalanceDoc, error)
-	FindStockBalanceDocDeleteByShopID(ctx context.Context, shopID string) ([]stockBalanceProductModels.StockBalanceDoc, error)
+	FindStockBalanceDocByHoldingCode(ctx context.Context, holdingCode string) ([]stockBalanceProductModels.StockBalanceDoc, error)
+	FindStockBalanceDocDeleteByHoldingCode(ctx context.Context, holdingCode string) ([]stockBalanceProductModels.StockBalanceDoc, error)
 }
 
 type StockBalanceTransactionAdminRepository struct {
@@ -23,11 +23,11 @@ func NewStockBalanceTransactionAdminRepository(pst microservice.IPersisterMongo)
 	}
 }
 
-func (r *StockBalanceTransactionAdminRepository) FindStockBalanceDocByShopID(ctx context.Context, shopID string) ([]stockBalanceProductModels.StockBalanceDoc, error) {
+func (r *StockBalanceTransactionAdminRepository) FindStockBalanceDocByHoldingCode(ctx context.Context, holdingCode string) ([]stockBalanceProductModels.StockBalanceDoc, error) {
 	docList := []stockBalanceProductModels.StockBalanceDoc{}
 
 	err := r.pst.Find(ctx, &stockBalanceProductModels.StockBalanceDoc{},
-		bson.M{"shopid": shopID,
+		bson.M{"holding_code": holdingCode,
 			"deleted_at": bson.M{"$exists": false},
 		},
 		&docList)
@@ -38,11 +38,11 @@ func (r *StockBalanceTransactionAdminRepository) FindStockBalanceDocByShopID(ctx
 	return docList, nil
 }
 
-func (r *StockBalanceTransactionAdminRepository) FindStockBalanceDocDeleteByShopID(ctx context.Context, shopID string) ([]stockBalanceProductModels.StockBalanceDoc, error) {
+func (r *StockBalanceTransactionAdminRepository) FindStockBalanceDocDeleteByHoldingCode(ctx context.Context, holdingCode string) ([]stockBalanceProductModels.StockBalanceDoc, error) {
 	docList := []stockBalanceProductModels.StockBalanceDoc{}
 
 	err := r.pst.Find(ctx, &stockBalanceProductModels.StockBalanceDoc{},
-		bson.M{"shopid": shopID,
+		bson.M{"holding_code": holdingCode,
 			"deleted_at": bson.M{"$exists": true},
 		},
 		&docList)

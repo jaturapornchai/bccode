@@ -14,14 +14,14 @@ import (
 
 // StockReportBarcodesRequest - request สำหรับดึง barcodes ตาม item codes
 type StockReportBarcodesRequest struct {
-	ShopID string   `json:"shop_id"`
-	ItemCodes []string `json:"item_codes"`
+	HoldingCode string   `json:"holding_code"`
+	ItemCodes   []string `json:"item_codes"`
 }
 
 // StockReportWarehousesRequest - request สำหรับดึง warehouses + locations ตาม barcodes
 type StockReportWarehousesRequest struct {
-	ShopID string   `json:"shop_id"`
-	Barcodes []string `json:"barcodes"`
+	HoldingCode string   `json:"holding_code"`
+	Barcodes    []string `json:"barcodes"`
 }
 
 // StockReportBarcodesHandler - ดึง barcodes จาก productbarcodeprocess ตาม item codes
@@ -35,10 +35,10 @@ func StockReportBarcodesHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" {
+	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "shop_id is required",
-			"code":  "MISSING_SHOP_ID",
+			"error": "holding_code is required",
+			"code":  "MISSING_HOLDING_CODE",
 		})
 	}
 
@@ -49,7 +49,7 @@ func StockReportBarcodesHandler(c echo.Context) error {
 		})
 	}
 
-	db, err := mypg.PgSqlFastConnect(req.ShopID)
+	db, err := mypg.PgSqlFastConnect(req.HoldingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "Database connection failed",
@@ -60,8 +60,8 @@ func StockReportBarcodesHandler(c echo.Context) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	query := `SELECT barcode FROM productbarcodeprocess WHERE shopid = $1 AND barcoderef = ANY($2) ORDER BY barcode`
-	rows, err := db.QueryContext(ctx, query, req.ShopID, pq.Array(req.ItemCodes))
+	query := `SELECT barcode FROM productbarcodeprocess WHERE holding_code = $1 AND barcoderef = ANY($2) ORDER BY barcode`
+	rows, err := db.QueryContext(ctx, query, req.HoldingCode, pq.Array(req.ItemCodes))
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "Query execution failed",
@@ -96,14 +96,14 @@ func StockReportWarehousesHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" {
+	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "shop_id is required",
-			"code":  "MISSING_SHOP_ID",
+			"error": "holding_code is required",
+			"code":  "MISSING_HOLDING_CODE",
 		})
 	}
 
-	db, err := mypg.PgSqlFastConnect(req.ShopID)
+	db, err := mypg.PgSqlFastConnect(req.HoldingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "Database connection failed",
@@ -136,7 +136,7 @@ func StockReportWarehousesHandler(c echo.Context) error {
 
 	// Group locations by warehouse
 	type warehouseData struct {
-		WHCode string   `json:"whcode"`
+		WHCode    string   `json:"whcode"`
 		Locations []string `json:"locations"`
 	}
 
@@ -172,7 +172,7 @@ func StockReportWarehousesHandler(c echo.Context) error {
 // POST /api/stock-report/item-barcodes
 func StockReportItemBarcodesHandler(c echo.Context) error {
 	var req struct {
-		ShopID string `json:"shop_id"`
+		HoldingCode string `json:"holding_code"`
 	}
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
@@ -181,14 +181,14 @@ func StockReportItemBarcodesHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" {
+	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "shop_id is required",
-			"code":  "MISSING_SHOP_ID",
+			"error": "holding_code is required",
+			"code":  "MISSING_HOLDING_CODE",
 		})
 	}
 
-	db, err := mypg.PgSqlFastConnect(req.ShopID)
+	db, err := mypg.PgSqlFastConnect(req.HoldingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "Database connection failed",
@@ -199,8 +199,8 @@ func StockReportItemBarcodesHandler(c echo.Context) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	query := fmt.Sprintf(`SELECT DISTINCT barcode, barcoderef FROM productbarcodeprocess WHERE shopid = $1 ORDER BY barcode LIMIT 10000`)
-	rows, err := db.QueryContext(ctx, query, req.ShopID)
+	query := fmt.Sprintf(`SELECT DISTINCT barcode, barcoderef FROM productbarcodeprocess WHERE holding_code = $1 ORDER BY barcode LIMIT 10000`)
+	rows, err := db.QueryContext(ctx, query, req.HoldingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "Query execution failed",
@@ -210,7 +210,7 @@ func StockReportItemBarcodesHandler(c echo.Context) error {
 	defer rows.Close()
 
 	type itemBarcode struct {
-		Barcode string `json:"barcode"`
+		Barcode    string `json:"barcode"`
 		BarcodeRef string `json:"barcoderef"`
 	}
 	items := make([]itemBarcode, 0)

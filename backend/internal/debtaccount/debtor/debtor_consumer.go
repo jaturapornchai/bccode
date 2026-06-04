@@ -73,7 +73,7 @@ func (c *DebtorConsumer) ConsumeOnCreateOrUpdate(ctx microservice.IContext) erro
 		return err
 	}
 
-	err = c.svc.Upsert(doc.ShopID, doc.Code, doc)
+	err = c.svc.Upsert(doc.HoldingCode, doc.Code, doc)
 	if err != nil {
 		return err
 	}
@@ -90,7 +90,7 @@ func (c *DebtorConsumer) ConsumeOnDelete(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = c.svc.Delete(doc.ShopID, doc.Code)
+	err = c.svc.Delete(doc.HoldingCode, doc.Code)
 	if err != nil {
 		return err
 	}
@@ -108,7 +108,7 @@ func (c *DebtorConsumer) ConsumeOnBulkCreateOrUpdate(ctx microservice.IContext) 
 	}
 
 	for _, doc := range docs {
-		err = c.svc.Upsert(doc.ShopID, doc.Code, doc)
+		err = c.svc.Upsert(doc.HoldingCode, doc.Code, doc)
 		if err != nil {
 			return err
 		}
@@ -126,7 +126,7 @@ func (c *DebtorConsumer) ConsumeOnBulkDelete(ctx microservice.IContext) error {
 	}
 
 	for _, doc := range docs {
-		err = c.svc.Delete(doc.ShopID, doc.Code)
+		err = c.svc.Delete(doc.HoldingCode, doc.Code)
 		if err != nil {
 			return err
 		}

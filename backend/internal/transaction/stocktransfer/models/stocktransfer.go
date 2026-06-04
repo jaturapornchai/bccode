@@ -16,7 +16,7 @@ type StockTransfer struct {
 
 type StockTransferInfo struct {
 	models.DocIdentity `bson:"inline"`
-	StockTransfer  `bson:"inline"`
+	StockTransfer      `bson:"inline"`
 }
 
 func (StockTransferInfo) CollectionName() string {
@@ -24,12 +24,12 @@ func (StockTransferInfo) CollectionName() string {
 }
 
 type StockTransferData struct {
-	models.ShopIdentity `bson:"inline"`
-	StockTransferInfo  `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	StockTransferInfo        `bson:"inline"`
 }
 
 type StockTransferDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	StockTransferData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
@@ -47,7 +47,7 @@ func (StockTransferItemGuid) CollectionName() string {
 }
 
 type StockTransferActivity struct {
-	StockTransferData  `bson:"inline"`
+	StockTransferData   `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

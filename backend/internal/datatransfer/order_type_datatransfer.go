@@ -17,7 +17,7 @@ type OrderTypeDataTransfer struct {
 }
 
 type IOrderTypeDataTransferRepository interface {
-	FindPage(ctx context.Context, shopID string, searchInFields []string, pageable msModels.Pageable) ([]models.OrderTypeDoc, mongopagination.PaginationData, error)
+	FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable msModels.Pageable) ([]models.OrderTypeDoc, mongopagination.PaginationData, error)
 }
 
 type OrderTypeDataTransferRepository struct {
@@ -34,9 +34,9 @@ func NewOrderTypeDataTransferRepository(mongodbPersister microservice.IPersister
 	return repo
 }
 
-func (repo OrderTypeDataTransferRepository) FindPage(ctx context.Context, shopID string, searchInFields []string, pageable msModels.Pageable) ([]models.OrderTypeDoc, mongopagination.PaginationData, error) {
+func (repo OrderTypeDataTransferRepository) FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable msModels.Pageable) ([]models.OrderTypeDoc, mongopagination.PaginationData, error) {
 
-	results, pagination, err := repo.SearchRepository.FindPage(ctx, shopID, searchInFields, pageable)
+	results, pagination, err := repo.SearchRepository.FindPage(ctx, holdingCode, searchInFields, pageable)
 
 	if err != nil {
 		return nil, mongopagination.PaginationData{}, err
@@ -51,7 +51,7 @@ func NewOrderTypeDataTransfer(transferConnection IDataTransferConnection) IDataT
 	}
 }
 
-func (pdt *OrderTypeDataTransfer) StartTransfer(ctx context.Context, shopID string, targetShopID string) error {
+func (pdt *OrderTypeDataTransfer) StartTransfer(ctx context.Context, holdingCode string, targetHoldingCode string) error {
 
 	sourceRepository := NewOrderTypeDataTransferRepository(pdt.transferConnection.GetSourceConnection())
 	targetRepository := orderTypeRepository.NewOrderTypeRepository(pdt.transferConnection.GetTargetConnection())
@@ -63,16 +63,16 @@ func (pdt *OrderTypeDataTransfer) StartTransfer(ctx context.Context, shopID stri
 
 	for {
 
-		docs, pages, err := sourceRepository.FindPage(ctx, shopID, nil, pageRequest)
+		docs, pages, err := sourceRepository.FindPage(ctx, holdingCode, nil, pageRequest)
 		if err != nil {
 			return err
 		}
 
 		if len(docs) > 0 {
 
-			if targetShopID != "" {
+			if targetHoldingCode != "" {
 				for i := range docs {
-					docs[i].ShopID = targetShopID
+					docs[i].HoldingCode = targetHoldingCode
 					docs[i].ID = primitive.NewObjectID()
 				}
 			}

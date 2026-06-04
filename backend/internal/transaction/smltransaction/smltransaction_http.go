@@ -49,7 +49,7 @@ func (h SMLTransactionHttp) RegisterHttp() {
 }
 
 type Data struct {
-	DocNo string                 `json:"docno"`
+	DocNo       string                 `json:"docno"`
 	DynamicData map[string]interface{} `json:",inline"`
 }
 
@@ -90,7 +90,7 @@ func (h SMLTransactionHttp) Query2(ctx microservice.IContext) error {
 // @Router /sml-transaction [get]
 func (h SMLTransactionHttp) Query(ctx microservice.IContext) error {
 	// authUsername := ctx.UserInfo().Username
-	// shopID := ctx.UserInfo().ShopID
+	// holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	pageable := utils.GetPageable(ctx.QueryParam)
@@ -146,7 +146,7 @@ func (h SMLTransactionHttp) Query(ctx microservice.IContext) error {
 // @Router /sml-transaction [post]
 func (h SMLTransactionHttp) CreateSMLTransaction(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := models.SMLTransactionRequest{}
@@ -168,7 +168,7 @@ func (h SMLTransactionHttp) CreateSMLTransaction(ctx microservice.IContext) erro
 		return err
 	}
 
-	idx, err := h.svc.CreateSMLTransaction(shopID, authUsername, docReq)
+	idx, err := h.svc.CreateSMLTransaction(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -193,7 +193,7 @@ func (h SMLTransactionHttp) CreateSMLTransaction(ctx microservice.IContext) erro
 // @Router /sml-transaction/bulk [post]
 func (h SMLTransactionHttp) BulkCreateSMLTransaction(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := models.SMLTransactionBulkRequest{}
@@ -209,7 +209,7 @@ func (h SMLTransactionHttp) BulkCreateSMLTransaction(ctx microservice.IContext) 
 		return err
 	}
 
-	_, err = h.svc.SaveInBatch(shopID, authUsername, docReq)
+	_, err = h.svc.SaveInBatch(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -233,7 +233,7 @@ func (h SMLTransactionHttp) BulkCreateSMLTransaction(ctx microservice.IContext) 
 // @Router /sml-transaction [delete]
 func (h SMLTransactionHttp) DeleteSMLTransaction(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -251,7 +251,7 @@ func (h SMLTransactionHttp) DeleteSMLTransaction(ctx microservice.IContext) erro
 		return err
 	}
 
-	keys, err := h.svc.DeleteSMLTransaction(shopID, authUsername, docReq)
+	keys, err := h.svc.DeleteSMLTransaction(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

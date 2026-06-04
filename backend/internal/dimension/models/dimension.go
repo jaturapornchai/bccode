@@ -10,20 +10,20 @@ const dimensionCollectionName = "dimension"
 
 type Dimension struct {
 	models.PartitionIdentity `bson:"inline"`
-	Names *[]models.NameX `json:"names" bson:"names"`
-	IsDisabled bool            `json:"isdisabled" bson:"isdisabled"`
-	Items []DimensionItem `json:"items" bson:"items"`
+	Names                    *[]models.NameX `json:"names" bson:"names"`
+	IsDisabled               bool            `json:"isdisabled" bson:"isdisabled"`
+	Items                    []DimensionItem `json:"items" bson:"items"`
 }
 
 type DimensionItem struct {
 	models.DocIdentity `bson:"inline"`
-	Names *[]models.NameX `json:"names" bson:"names"`
-	IsDisabled bool            `json:"isdisabled" bson:"isdisabled"`
+	Names              *[]models.NameX `json:"names" bson:"names"`
+	IsDisabled         bool            `json:"isdisabled" bson:"isdisabled"`
 }
 
 type DimensionInfo struct {
 	models.DocIdentity `bson:"inline"`
-	Dimension  `bson:"inline"`
+	Dimension          `bson:"inline"`
 }
 
 func (DimensionInfo) CollectionName() string {
@@ -31,13 +31,13 @@ func (DimensionInfo) CollectionName() string {
 }
 
 type DimensionData struct {
-	models.ShopIdentity `bson:"inline"`
-	DimensionInfo  `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	DimensionInfo            `bson:"inline"`
 }
 
 type DimensionDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	DimensionData  `bson:"inline"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	DimensionData      `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -54,7 +54,7 @@ func (DimensionItemGuid) CollectionName() string {
 }
 
 type DimensionActivity struct {
-	DimensionData  `bson:"inline"`
+	DimensionData       `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

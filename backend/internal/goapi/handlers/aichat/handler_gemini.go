@@ -2,8 +2,8 @@ package aichat
 
 import (
 	"context"
-	"smlcloudplatform/internal/goapi/logger"
 	"net/http"
+	"smlcloudplatform/internal/goapi/logger"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -23,10 +23,10 @@ func ChatGemini(c echo.Context) error {
 	}
 
 	// Validate request
-	if req.ShopID == "" {
+	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, ChatHTMLResponse{
 			Success:   false,
-			Message:   "shop_id is required",
+			Message:   "holding_code is required",
 			Timestamp: time.Now(),
 		})
 	}
@@ -46,7 +46,7 @@ func ChatGemini(c echo.Context) error {
 	ctx := context.Background()
 	startTime := time.Now()
 
-	logger.Info("[ChatGemini] Question: %s (shop: %s, function: %s)", req.Question, req.ShopID, req.FunctionName)
+	logger.Info("[ChatGemini] Question: %s (shop: %s, function: %s)", req.Question, req.HoldingCode, req.FunctionName)
 
 	// STEP 1: AI interprets question and generates SQL query
 	logger.Info("[ChatGemini] Step 1: Generating query...")
@@ -76,7 +76,7 @@ func ChatGemini(c echo.Context) error {
 			limit = 100 // Default limit
 		}
 
-		queryResult, err = ExecuteQuery(ctx, req.ShopID, intent.SQL, limit)
+		queryResult, err = ExecuteQuery(ctx, req.HoldingCode, intent.SQL, limit)
 		if err != nil {
 			logger.Error("Failed to execute query: %v", err)
 			return c.JSON(http.StatusInternalServerError, ChatHTMLResponse{

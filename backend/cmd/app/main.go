@@ -178,10 +178,15 @@ func main() {
 	}
 
 	exceptShopPath := []string{
+		"/holding",
 		"/shop",
+		"/list-holding",
 		"/list-shop",
+		"/select-holding",
 		"/select-shop",
+		"/create-holding",
 		"/create-shop",
+		"/favorite-holding",
 		"/verify-token",
 	}
 

@@ -20,8 +20,8 @@ func (p APPurchaseReceiveCreditorTransactionPhaser) PhaseSingleDoc(doc models.AP
 
 func (p APPurchaseReceiveCreditorTransactionPhaser) PhaseAPPurchaseReceiveCreditor(doc models.APPurchaseReceivePG) (*models.CreditorTransactionPG, error) {
 	transaction := models.CreditorTransactionPG{
-		ShopIdentity: pkgModels.ShopIdentity{
-			ShopID: doc.ShopID,
+		HoldingCodeentity: pkgModels.HoldingCodeentity{
+			HoldingCode: doc.HoldingCode,
 		},
 		GuidFixed:      doc.GuidFixed,
 		DocNo:          doc.DocNo,

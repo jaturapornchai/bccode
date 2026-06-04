@@ -27,7 +27,7 @@ func (svc *ActivityService[TCU, TDEL]) InitialActivityService(pst microservice.I
 	svc.repo = repo
 }
 
-func (svc ActivityService[TCU, TDEL]) LastActivity(shopID string, action string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) (common.LastActivity, mongopagination.PaginationData, error) {
+func (svc ActivityService[TCU, TDEL]) LastActivity(holdingCode string, action string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) (common.LastActivity, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := context.WithTimeout(context.Background(), time.Duration(15)*time.Second)
 	defer ctxCancel()
@@ -45,7 +45,7 @@ func (svc ActivityService[TCU, TDEL]) LastActivity(shopID string, action string,
 	if isActionRemove {
 		wg.Add(1)
 		go func() {
-			deleteDocList, pagination1, errFindDel = svc.repo.FindDeletedPage(ctx, shopID, lastUpdatedDate, filters, pageable)
+			deleteDocList, pagination1, errFindDel = svc.repo.FindDeletedPage(ctx, holdingCode, lastUpdatedDate, filters, pageable)
 			wg.Done()
 		}()
 	}
@@ -57,7 +57,7 @@ func (svc ActivityService[TCU, TDEL]) LastActivity(shopID string, action string,
 	if isActionNew {
 		wg.Add(1)
 		go func() {
-			createAndUpdateDocList, pagination2, errFindCreateUpdate = svc.repo.FindCreatedOrUpdatedPage(ctx, shopID, lastUpdatedDate, filters, pageable)
+			createAndUpdateDocList, pagination2, errFindCreateUpdate = svc.repo.FindCreatedOrUpdatedPage(ctx, holdingCode, lastUpdatedDate, filters, pageable)
 			wg.Done()
 		}()
 	}
@@ -87,7 +87,7 @@ func (svc ActivityService[TCU, TDEL]) LastActivity(shopID string, action string,
 	return lastActivity, pagination, nil
 }
 
-func (svc ActivityService[TCU, TDEL]) LastActivityStep(shopID string, action string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) (common.LastActivity, error) {
+func (svc ActivityService[TCU, TDEL]) LastActivityStep(holdingCode string, action string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) (common.LastActivity, error) {
 
 	ctx, ctxCancel := context.WithTimeout(context.Background(), time.Duration(15)*time.Second)
 	defer ctxCancel()
@@ -104,7 +104,7 @@ func (svc ActivityService[TCU, TDEL]) LastActivityStep(shopID string, action str
 	if isActionRemove {
 		wg.Add(1)
 		go func() {
-			deleteDocList, errFindDel = svc.repo.FindDeletedStep(ctx, shopID, lastUpdatedDate, filters, pageableStep)
+			deleteDocList, errFindDel = svc.repo.FindDeletedStep(ctx, holdingCode, lastUpdatedDate, filters, pageableStep)
 			wg.Done()
 		}()
 	}
@@ -114,7 +114,7 @@ func (svc ActivityService[TCU, TDEL]) LastActivityStep(shopID string, action str
 	if isActionNew {
 		wg.Add(1)
 		go func() {
-			createAndUpdateDocList, errFindCreateUpdate = svc.repo.FindCreatedOrUpdatedStep(ctx, shopID, lastUpdatedDate, filters, pageableStep)
+			createAndUpdateDocList, errFindCreateUpdate = svc.repo.FindCreatedOrUpdatedStep(ctx, holdingCode, lastUpdatedDate, filters, pageableStep)
 			wg.Done()
 		}()
 	}

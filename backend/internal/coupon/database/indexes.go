@@ -75,7 +75,7 @@ func CreateCouponReservationIndexes(pst microservice.IPersisterMongo) error {
 		{
 			name: "idx_shop_coupon_status_expires",
 			keys: bson.D{
-				{Key: "shopid", Value: 1},
+				{Key: "holding_code", Value: 1},
 				{Key: "coupon_id", Value: 1},
 				{Key: "status", Value: 1},
 				{Key: "expires_at", Value: 1},
@@ -107,14 +107,14 @@ func CreateCouponReservationIndexes(pst microservice.IPersisterMongo) error {
 		{
 			name: "idx_shop_customer_nonunique",
 			keys: bson.D{
-				{Key: "shopid", Value: 1},
+				{Key: "holding_code", Value: 1},
 				{Key: "customer_id", Value: 1},
 			},
 		},
 		{
 			name: "idx_shop_customer_status_nonunique",
 			keys: bson.D{
-				{Key: "shopid", Value: 1},
+				{Key: "holding_code", Value: 1},
 				{Key: "customer_id", Value: 1},
 				{Key: "status", Value: 1},
 			},

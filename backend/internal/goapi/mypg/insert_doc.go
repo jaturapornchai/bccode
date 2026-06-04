@@ -259,7 +259,7 @@ func insertDocListWithTx(ctx context.Context, tx *sql.Tx, data []models.DocStruc
 	return nil
 }
 
-func InsertDocDetailListToPostgreSql(ctx context.Context, pgdb *sql.DB, shopId string, data []models.DocDetailStruct) error {
+func InsertDocDetailListToPostgreSql(ctx context.Context, pgdb *sql.DB, holdingCode string, data []models.DocDetailStruct) error {
 	if pgdb == nil {
 		return fmt.Errorf("database connection is nil")
 	}
@@ -269,7 +269,7 @@ func InsertDocDetailListToPostgreSql(ctx context.Context, pgdb *sql.DB, shopId s
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 
-	if err := insertDocDetailListWithTx(ctx, tx, shopId, data); err != nil {
+	if err := insertDocDetailListWithTx(ctx, tx, holdingCode, data); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -277,14 +277,14 @@ func InsertDocDetailListToPostgreSql(ctx context.Context, pgdb *sql.DB, shopId s
 	return tx.Commit()
 }
 
-func InsertDocDetailListToPostgreSqlTx(ctx context.Context, tx *sql.Tx, shopId string, data []models.DocDetailStruct) error {
+func InsertDocDetailListToPostgreSqlTx(ctx context.Context, tx *sql.Tx, holdingCode string, data []models.DocDetailStruct) error {
 	if tx == nil {
 		return fmt.Errorf("transaction is nil")
 	}
-	return insertDocDetailListWithTx(ctx, tx, shopId, data)
+	return insertDocDetailListWithTx(ctx, tx, holdingCode, data)
 }
 
-func insertDocDetailListWithTx(ctx context.Context, tx *sql.Tx, shopId string, data []models.DocDetailStruct) error {
+func insertDocDetailListWithTx(ctx context.Context, tx *sql.Tx, holdingCode string, data []models.DocDetailStruct) error {
 	if len(data) == 0 {
 		return nil
 	}
@@ -329,8 +329,8 @@ func insertDocDetailListWithTx(ctx context.Context, tx *sql.Tx, shopId string, d
 
 		// Query productbarcode
 		queryProduct := `
-			SELECT barcode, itemcode, barcoderefunitstand, barcoderefunitdivide 
-			FROM productbarcode 
+			SELECT barcode, itemcode, barcoderefunitstand, barcoderefunitdivide
+			FROM productbarcode
 			WHERE barcode = ANY($1)
 		`
 

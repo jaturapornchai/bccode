@@ -1,7 +1,7 @@
 #Requires -Version 7.0
 
 param(
-  [Parameter(Mandatory = $true)][string]$ShopId,
+  [Parameter(Mandatory = $true)][string]$HoldingCode,
   [Parameter(Mandatory = $true)][string]$Username,
   [string]$BaseUrl = "http://localhost:8888",
   [int]$Count = 200
@@ -10,16 +10,16 @@ param(
 $ErrorActionPreference = "Stop"
 
 function Get-SelectedToken {
-  param([string]$ShopId, [string]$Username)
+  param([string]$HoldingCode, [string]$Username)
   $keys = docker exec redis redis-cli --scan --pattern "auth-*"
   foreach ($key in $keys) {
     if ([string]::IsNullOrWhiteSpace($key)) { continue }
-    $values = docker exec redis redis-cli HMGET $key username shopid
-    if ($values[0] -eq $Username -and $values[1] -eq $ShopId) {
+    $values = docker exec redis redis-cli HMGET $key username holding_code
+    if ($values[0] -eq $Username -and $values[1] -eq $HoldingCode) {
       return $key.Substring(5)
     }
   }
-  throw "No selected auth token found for shop $ShopId"
+  throw "No selected auth token found for shop $HoldingCode"
 }
 
 function Invoke-JsonApi {
@@ -201,7 +201,7 @@ function Resolve-Unit {
   return $units.plate
 }
 
-$token = Get-SelectedToken -ShopId $ShopId -Username $Username
+$token = Get-SelectedToken -HoldingCode $HoldingCode -Username $Username
 
 $existing = Invoke-GetJson -Path "/product?limit=500&q=MENU-" -Token $token
 $existingCodes = @{}
@@ -301,7 +301,7 @@ $barcodeCheck = Invoke-GetJson -Path "/product/barcode?limit=500&q=MENU-" -Token
 $setBarcodeCheck = Invoke-GetJson -Path "/product/barcode/pk/8852605299001" -Token $token
 
 [pscustomobject]@{
-  shopid = $ShopId
+  holding_code = $HoldingCode
   products_created = $productsCreated
   products_skipped = $productsSkipped
   sets_created = $setsCreated

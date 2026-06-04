@@ -61,7 +61,7 @@ func (h CreditorGroupHttp) RegisterHttp() {
 // @Router /debtaccount/creditor-group [post]
 func (h CreditorGroupHttp) CreateCreditorGroup(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.CreditorGroup{}
@@ -77,7 +77,7 @@ func (h CreditorGroupHttp) CreateCreditorGroup(ctx microservice.IContext) error 
 		return err
 	}
 
-	idx, err := h.svc.CreateCreditorGroup(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateCreditorGroup(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -104,7 +104,7 @@ func (h CreditorGroupHttp) CreateCreditorGroup(ctx microservice.IContext) error 
 func (h CreditorGroupHttp) UpdateCreditorGroup(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -122,7 +122,7 @@ func (h CreditorGroupHttp) UpdateCreditorGroup(ctx microservice.IContext) error 
 		return err
 	}
 
-	err = h.svc.UpdateCreditorGroup(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateCreditorGroup(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -148,12 +148,12 @@ func (h CreditorGroupHttp) UpdateCreditorGroup(ctx microservice.IContext) error 
 // @Router /debtaccount/creditor-group/{id} [delete]
 func (h CreditorGroupHttp) DeleteCreditorGroup(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteCreditorGroup(shopID, id, authUsername)
+	err := h.svc.DeleteCreditorGroup(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -179,7 +179,7 @@ func (h CreditorGroupHttp) DeleteCreditorGroup(ctx microservice.IContext) error 
 // @Router /debtaccount/creditor-group [delete]
 func (h CreditorGroupHttp) DeleteCreditorGroupByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -192,7 +192,7 @@ func (h CreditorGroupHttp) DeleteCreditorGroupByGUIDs(ctx microservice.IContext)
 		return err
 	}
 
-	err = h.svc.DeleteCreditorGroupByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteCreditorGroupByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -217,12 +217,12 @@ func (h CreditorGroupHttp) DeleteCreditorGroupByGUIDs(ctx microservice.IContext)
 // @Router /debtaccount/creditor-group/{id} [get]
 func (h CreditorGroupHttp) InfoCreditorGroup(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get CreditorGroup %v", id)
-	doc, err := h.svc.InfoCreditorGroup(shopID, id)
+	doc, err := h.svc.InfoCreditorGroup(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -250,11 +250,11 @@ func (h CreditorGroupHttp) InfoCreditorGroup(ctx microservice.IContext) error {
 // @Router /debtaccount/creditor-group [get]
 func (h CreditorGroupHttp) SearchCreditorGroupPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.SearchCreditorGroup(shopID, map[string]interface{}{}, pageable)
+	docList, pagination, err := h.svc.SearchCreditorGroup(holdingCode, map[string]interface{}{}, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -283,13 +283,13 @@ func (h CreditorGroupHttp) SearchCreditorGroupPage(ctx microservice.IContext) er
 // @Router /debtaccount/creditor-group/list [get]
 func (h CreditorGroupHttp) SearchCreditorGroupStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
 	lang := ctx.QueryParam("lang")
 
-	docList, total, err := h.svc.SearchCreditorGroupStep(shopID, lang, pageableStep)
+	docList, total, err := h.svc.SearchCreditorGroupStep(holdingCode, lang, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -317,7 +317,7 @@ func (h CreditorGroupHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -329,7 +329,7 @@ func (h CreditorGroupHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

@@ -9,7 +9,7 @@ import (
 )
 
 type IDebtorAdminMongoRepository interface {
-	FindDebtorByShopId(ctx context.Context, shopID string) ([]debtorModels.DebtorDoc, error)
+	FindDebtorByHoldingCode(ctx context.Context, holdingCode string) ([]debtorModels.DebtorDoc, error)
 }
 
 type DebtorAdminMongoRepository struct {
@@ -22,10 +22,10 @@ func NewDebtorAdminMongoRepository(pst microservice.IPersisterMongo) IDebtorAdmi
 	}
 }
 
-func (r DebtorAdminMongoRepository) FindDebtorByShopId(ctx context.Context, shopID string) ([]debtorModels.DebtorDoc, error) {
+func (r DebtorAdminMongoRepository) FindDebtorByHoldingCode(ctx context.Context, holdingCode string) ([]debtorModels.DebtorDoc, error) {
 
 	docList := []debtorModels.DebtorDoc{}
-	err := r.pst.Find(ctx, &debtorModels.DebtorDoc{}, bson.M{"shopid": shopID}, &docList)
+	err := r.pst.Find(ctx, &debtorModels.DebtorDoc{}, bson.M{"holding_code": holdingCode}, &docList)
 	if err != nil {
 		return nil, err
 	}

@@ -11,14 +11,14 @@ import (
 )
 
 type IPaymentMasterRepository interface {
-	Count(ctx context.Context, shopID string) (int, error)
+	Count(ctx context.Context, holdingCode string) (int, error)
 	Create(category models.PaymentMasterDoc) (string, error)
 	CreateInBatch(ctx context.Context, docList []models.PaymentMasterDoc) error
-	Update(ctx context.Context, shopID string, guid string, category models.PaymentMasterDoc) error
-	DeleteByGuidfixed(ctx context.Context, shopID string, guid string, username string) error
-	Find(shopID string, searchInFields []string, q string) ([]models.PaymentMasterInfo, error)
-	FindPage(ctx context.Context, shopID string, searchInFields []string, pageable micromodels.Pageable) ([]models.PaymentMasterInfo, mongopagination.PaginationData, error)
-	FindByGuid(ctx context.Context, shopID string, guid string) (models.PaymentMasterDoc, error)
+	Update(ctx context.Context, holdingCode string, guid string, category models.PaymentMasterDoc) error
+	DeleteByGuidfixed(ctx context.Context, holdingCode string, guid string, username string) error
+	Find(holdingCode string, searchInFields []string, q string) ([]models.PaymentMasterInfo, error)
+	FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable micromodels.Pageable) ([]models.PaymentMasterInfo, mongopagination.PaginationData, error)
+	FindByGuid(ctx context.Context, holdingCode string, guid string) (models.PaymentMasterDoc, error)
 }
 
 type PaymentMasterRepository struct {

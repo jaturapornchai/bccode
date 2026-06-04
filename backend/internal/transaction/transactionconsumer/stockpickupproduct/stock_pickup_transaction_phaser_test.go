@@ -18,8 +18,8 @@ func wantStockPickupTransferStruct() models.StockPickUpTransactionPG {
 
 	want := models.StockPickUpTransactionPG{
 		TransactionPG: models.TransactionPG{
-			ShopIdentity: pkgModels.ShopIdentity{
-				ShopID: "2PrIIqTWxoBXv16K310sNwfHmfY",
+			HoldingCodeentity: pkgModels.HoldingCodeentity{
+				HoldingCode: "2PrIIqTWxoBXv16K310sNwfHmfY",
 			},
 			GuidFixed:      "2PxeyrNxaW54VXcEOeyGcrMskcv",
 			TransFlag:      56,
@@ -53,7 +53,7 @@ func wantStockPickupTransferStruct() models.StockPickUpTransactionPG {
 					DocRef:              "",
 					DocRefDateTime:      time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC),
 					DocNo:               "PO23051516490133",
-					ShopID:              "2PrIIqTWxoBXv16K310sNwfHmfY",
+					HoldingCode:         "2PrIIqTWxoBXv16K310sNwfHmfY",
 					LineNumber:          0,
 					ItemGuid:            "2Pxcf33JyR8jRXiKpH2cNc9lH9v",
 					Barcode:             "BARCODE015",
@@ -86,7 +86,7 @@ func TestStockPickupTransactionDoc(t *testing.T) {
 
 	giveInput := `{
 		"id": "6465f4d9dfc8097596db4227",
-		"shopid": "2PrIIqTWxoBXv16K310sNwfHmfY",
+		"holding_code": "2PrIIqTWxoBXv16K310sNwfHmfY",
 		"guid_fixed": "2PxeyrNxaW54VXcEOeyGcrMskcv",
 		"docno": "PO23051516490133",
 		"docdatetime": "2023-05-15T09:49:58.000Z",
@@ -245,7 +245,7 @@ func TestStockPickupTransactionDoc(t *testing.T) {
 
 	assert.Nil(t, err)
 
-	assert.Equal(t, get.ShopID, want.ShopID, "shopid")
+	assert.Equal(t, get.HoldingCode, want.HoldingCode, "holding_code")
 	assert.Equal(t, get.GuidFixed, want.GuidFixed, "guid_fixed")
 	assert.Equal(t, get.TransFlag, want.TransFlag, "transflag")
 	assert.Equal(t, get.DocNo, want.DocNo, "docno")
@@ -272,7 +272,7 @@ func TestStockPickupTransactionDoc(t *testing.T) {
 	// detail
 	assert.Equal(t, (*get.Items)[0].GuidFixed, (*want.Items)[0].GuidFixed, "item.guidfixed")
 	assert.Equal(t, (*get.Items)[0].DocNo, (*want.Items)[0].DocNo, "item.docno")
-	assert.Equal(t, (*get.Items)[0].ShopID, (*want.Items)[0].ShopID, "item.shopid")
+	assert.Equal(t, (*get.Items)[0].HoldingCode, (*want.Items)[0].HoldingCode, "item.holding_code")
 	assert.Equal(t, (*get.Items)[0].LineNumber, (*want.Items)[0].LineNumber, "item.linenumber")
 	assert.Equal(t, (*get.Items)[0].ItemGuid, (*want.Items)[0].ItemGuid, "item.itemguid")
 	assert.Equal(t, (*get.Items)[0].Barcode, (*want.Items)[0].Barcode, "item.barcode")

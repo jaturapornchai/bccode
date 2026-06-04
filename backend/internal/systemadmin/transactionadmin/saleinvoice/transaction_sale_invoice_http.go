@@ -54,7 +54,7 @@ func (s *SaleInvoiceTransactionAdminHttp) ReSyncSaleInvoiceTransaction(ctx micro
 		return err
 	}
 
-	err = s.svc.ReSyncSaleInvoiceDoc(req.ShopID)
+	err = s.svc.ReSyncSaleInvoiceDoc(req.HoldingCode)
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, common.ApiResponse{
 			Success: false,
@@ -84,7 +84,7 @@ func (s *SaleInvoiceTransactionAdminHttp) ReSyncSaleInvoiceDeleteTransaction(ctx
 		return err
 	}
 
-	err = s.svc.ReSyncSaleInvoiceDeleteDoc(req.ShopID)
+	err = s.svc.ReSyncSaleInvoiceDeleteDoc(req.HoldingCode)
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, common.ApiResponse{
 			Success: false,
@@ -114,7 +114,7 @@ func (s *SaleInvoiceTransactionAdminHttp) ReSyncSaleInvoiceTransactionByDate(ctx
 		return err
 	}
 
-	err = s.svc.ReSyncSaleInvoiceDocByDate(req.ShopID, req.Date)
+	err = s.svc.ReSyncSaleInvoiceDocByDate(req.HoldingCode, req.Date)
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, common.ApiResponse{
 			Success: false,
@@ -144,7 +144,7 @@ func (s *SaleInvoiceTransactionAdminHttp) ReSyncSaleInvoiceDeleteTransactionByDa
 		return err
 	}
 
-	err = s.svc.ReSyncSaleInvoiceDeleteDoc(req.ShopID)
+	err = s.svc.ReSyncSaleInvoiceDeleteDoc(req.HoldingCode)
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, common.ApiResponse{
 			Success: false,

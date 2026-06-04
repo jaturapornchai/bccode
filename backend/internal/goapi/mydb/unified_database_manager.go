@@ -26,12 +26,12 @@ const (
 
 // DatabaseManager จัดการ database connections แบบ unified พร้อม circuit breaker
 type DatabaseManager struct {
-	postgreSQLConn *sql.DB
-	clickHouseConn clickhouse.Conn
-	postgresMutex  sync.RWMutex
+	postgreSQLConn  *sql.DB
+	clickHouseConn  clickhouse.Conn
+	postgresMutex   sync.RWMutex
 	clickHouseMutex sync.RWMutex
-	perfLogger     *DatabasePerformanceLogger
-	statsCollector *QueryStatsCollector
+	perfLogger      *DatabasePerformanceLogger
+	statsCollector  *QueryStatsCollector
 
 	// Circuit breakers สำหรับป้องกัน cascade failures
 	pgCircuitBreaker *CircuitBreaker
@@ -132,7 +132,7 @@ func (dm *DatabaseManager) connectPostgreSQL(config DatabaseConfig) error {
 	defer dm.postgresMutex.Unlock()
 
 	if config.PostgreSQLDatabase == "" {
-		return fmt.Errorf("database name is required (shop_id must not be empty)")
+		return fmt.Errorf("database name is required (holding_code must not be empty)")
 	}
 
 	// Ensure sslmode has a valid value (empty = lib/pq defaults to "require")
@@ -614,8 +614,8 @@ func (dm *DatabaseManager) PingAll() map[string]error {
 // GetCircuitBreakerStats - ดึงสถิติของ circuit breakers
 func (dm *DatabaseManager) GetCircuitBreakerStats() map[string]interface{} {
 	return map[string]interface{}{
-		"postgresql":  dm.pgCircuitBreaker.GetStats(),
-		"clickhouse":  dm.chCircuitBreaker.GetStats(),
+		"postgresql": dm.pgCircuitBreaker.GetStats(),
+		"clickhouse": dm.chCircuitBreaker.GetStats(),
 	}
 }
 
@@ -627,21 +627,21 @@ func (dm *DatabaseManager) ResetCircuitBreakers() {
 }
 
 // GetGlobalConnection - ดึง connection สำหรับ shop (backward compatibility)
-func GetGlobalConnection(shopId string) (*sql.DB, error) {
+func GetGlobalConnection(holdingCode string) (*sql.DB, error) {
 	// สร้าง config จาก environment
 	config := DatabaseConfig{
 		PostgreSQLHost:     getEnv("POSTGRES_HOST", "localhost"),
 		PostgreSQLPort:     getEnv("POSTGRES_PORT", "5432"),
 		PostgreSQLUser:     getEnv("POSTGRES_USER", "postgres"),
 		PostgreSQLPassword: getEnv("POSTGRES_PASSWORD", ""),
-		PostgreSQLDatabase: shopId,
+		PostgreSQLDatabase: holdingCode,
 		PostgreSQLSSLMode:  getEnv("POSTGRES_SSL_MODE", "disable"),
 
 		ClickHouseHost:     getEnv("CLICKHOUSE_HOST", "localhost"),
 		ClickHousePort:     getEnv("CLICKHOUSE_PORT", "9000"),
 		ClickHouseUser:     getEnv("CLICKHOUSE_USER", "default"),
 		ClickHousePassword: getEnv("CLICKHOUSE_PASSWORD", ""),
-		ClickHouseDatabase: shopId,
+		ClickHouseDatabase: holdingCode,
 	}
 
 	// สร้าง manager และ return PostgreSQL connection
@@ -654,21 +654,21 @@ func GetGlobalConnection(shopId string) (*sql.DB, error) {
 }
 
 // GetGlobalManager - ดึง DatabaseManager สำหรับ shop (backward compatibility)
-func GetGlobalManager(shopId string) (*DatabaseManager, error) {
+func GetGlobalManager(holdingCode string) (*DatabaseManager, error) {
 	// สร้าง config จาก environment
 	config := DatabaseConfig{
 		PostgreSQLHost:     getEnv("POSTGRES_HOST", "localhost"),
 		PostgreSQLPort:     getEnv("POSTGRES_PORT", "5432"),
 		PostgreSQLUser:     getEnv("POSTGRES_USER", "postgres"),
 		PostgreSQLPassword: getEnv("POSTGRES_PASSWORD", ""),
-		PostgreSQLDatabase: shopId,
+		PostgreSQLDatabase: holdingCode,
 		PostgreSQLSSLMode:  getEnv("POSTGRES_SSL_MODE", "disable"),
 
 		ClickHouseHost:     getEnv("CLICKHOUSE_HOST", "localhost"),
 		ClickHousePort:     getEnv("CLICKHOUSE_PORT", "9000"),
 		ClickHouseUser:     getEnv("CLICKHOUSE_USER", "default"),
 		ClickHousePassword: getEnv("CLICKHOUSE_PASSWORD", ""),
-		ClickHouseDatabase: shopId,
+		ClickHouseDatabase: holdingCode,
 	}
 
 	return NewDatabaseManager(config)

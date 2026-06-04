@@ -19,11 +19,11 @@ import (
 
 type IProductHttpService interface {
 	GetModuleName() string
-	GetProduct(shopID string, code string) (*models.ProductDoc, error)
-	ProductList(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ProductInfo, mongopagination.PaginationData, error)
+	GetProduct(holdingCode string, code string) (*models.ProductDoc, error)
+	ProductList(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ProductInfo, mongopagination.PaginationData, error)
 	Create(doc *models.ProductDoc) error
-	Update(shopID string, code string, authUsername string, doc *models.ProductDoc) (models.ProductDoc, error)
-	Delete(shopID string, guid string, authUsername string) error
+	Update(holdingCode string, code string, authUsername string, doc *models.ProductDoc) (models.ProductDoc, error)
+	Delete(holdingCode string, guid string, authUsername string) error
 }
 
 type ProductHttpService struct {
@@ -55,19 +55,19 @@ func (svc ProductHttpService) GetModuleName() string {
 }
 
 // ✅ **GetProduct (ดึงข้อมูล Product)**
-func (svc ProductHttpService) GetProduct(shopID string, code string) (*models.ProductDoc, error) {
+func (svc ProductHttpService) GetProduct(holdingCode string, code string) (*models.ProductDoc, error) {
 	ctx, cancel := svc.getContextTimeout()
 	defer cancel()
 
 	// ✅ ดึงข้อมูล Product จาก PostgreSQL
-	product, err := svc.repo.FindByGuid(ctx, shopID, code)
+	product, err := svc.repo.FindByGuid(ctx, holdingCode, code)
 	if err != nil {
 		return nil, err
 	}
 
 	// ✅ ดึงข้อมูล Manufacturer ถ้ามีค่า `ManufacturerGUID`
 	if product.ManufacturerGUID != "" {
-		findDoc, err := svc.repomgCreditror.FindByGuid(ctx, shopID, product.ManufacturerGUID)
+		findDoc, err := svc.repomgCreditror.FindByGuid(ctx, holdingCode, product.ManufacturerGUID)
 		if err == nil { // ไม่คืนค่า error ถ้าไม่เจอข้อมูล
 			product.ManufacturerCode = findDoc.Code
 			product.ManufacturerNames = findDoc.Names
@@ -75,7 +75,7 @@ func (svc ProductHttpService) GetProduct(shopID string, code string) (*models.Pr
 	}
 
 	// ✅ ดึงข้อมูล Barcode จาก MongoDB
-	barcodes, err := svc.repomgProductBarcode.FindByItemCode(ctx, shopID, product.Code)
+	barcodes, err := svc.repomgProductBarcode.FindByItemCode(ctx, holdingCode, product.Code)
 	if err != nil || barcodes == nil {
 		// ถ้าไม่เจอข้อมูล หรือเกิดข้อผิดพลาด ให้ตั้งค่า barcodes = []
 		barcodes = []barcodeModel.ProductBarcodeDoc{}
@@ -129,7 +129,7 @@ func (svc ProductHttpService) GetProduct(shopID string, code string) (*models.Pr
 	return &product, nil
 }
 
-func (svc ProductHttpService) ProductList(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ProductInfo, mongopagination.PaginationData, error) {
+func (svc ProductHttpService) ProductList(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ProductInfo, mongopagination.PaginationData, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
@@ -140,7 +140,7 @@ func (svc ProductHttpService) ProductList(shopID string, filters map[string]inte
 		"groupnames.name",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.ProductInfo{}, pagination, err
@@ -169,8 +169,8 @@ func (svc ProductHttpService) Create(doc *models.ProductDoc) error {
 	ctx, cancel := svc.getContextTimeout()
 	defer cancel()
 
-	if doc.ShopID == "" || doc.Code == "" {
-		return errors.New("ShopID and Code are required")
+	if doc.HoldingCode == "" || doc.Code == "" {
+		return errors.New("HoldingCode and Code are required")
 	}
 
 	if err := barcodeModel.ValidateProductClassification(doc.ItemType, doc.MaterialType); err != nil {
@@ -202,22 +202,22 @@ func (svc ProductHttpService) Create(doc *models.ProductDoc) error {
 }
 
 // ✅ **Update (อัปเดต Product)**
-func (svc ProductHttpService) Update(shopID string, code string, authUsername string, doc *models.ProductDoc) (models.ProductDoc, error) {
+func (svc ProductHttpService) Update(holdingCode string, code string, authUsername string, doc *models.ProductDoc) (models.ProductDoc, error) {
 	ctx, cancel := svc.getContextTimeout()
 	defer cancel()
 
-	if shopID == "" || code == "" {
-		return models.ProductDoc{}, errors.New("ShopID and Code are required")
+	if holdingCode == "" || code == "" {
+		return models.ProductDoc{}, errors.New("HoldingCode and Code are required")
 	}
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, code)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, code)
 
 	if err != nil {
 		return models.ProductDoc{}, err
 	}
 
 	if findDoc.ID == primitive.NilObjectID {
-		findDoc, err = svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", code)
+		findDoc, err = svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", code)
 		if err != nil {
 			return models.ProductDoc{}, err
 		}
@@ -237,7 +237,7 @@ func (svc ProductHttpService) Update(shopID string, code string, authUsername st
 	docData.UpdatedAt = time.Now()
 
 	// ✅ เรียก Repository เพื่ออัปเดตข้อมูล
-	errx := svc.repo.Update(ctx, shopID, code, docData)
+	errx := svc.repo.Update(ctx, holdingCode, code, docData)
 	if errx != nil {
 		return models.ProductDoc{}, errx
 	}
@@ -246,15 +246,15 @@ func (svc ProductHttpService) Update(shopID string, code string, authUsername st
 }
 
 // ✅ **Delete (ลบ Product)**
-func (svc ProductHttpService) Delete(shopID string, guid string, user string) error {
+func (svc ProductHttpService) Delete(holdingCode string, guid string, user string) error {
 	ctx, cancel := svc.getContextTimeout()
 	defer cancel()
 
-	if shopID == "" || guid == "" {
-		return errors.New("ShopID and Code are required")
+	if holdingCode == "" || guid == "" {
+		return errors.New("HoldingCode and Code are required")
 	}
 
-	err := svc.repo.DeleteByGuidfixed(ctx, shopID, guid, user)
+	err := svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, user)
 	if err != nil {
 		return err
 	}

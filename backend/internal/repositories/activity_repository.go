@@ -15,10 +15,10 @@ import (
 
 type IActivityRepository[TCU any, TDEL any] interface {
 	// InitialActivityRepository(pst microservice.IPersisterMongo)
-	FindDeletedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageable micromodels.Pageable) ([]TDEL, mongopagination.PaginationData, error)
-	FindCreatedOrUpdatedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageable micromodels.Pageable) ([]TCU, mongopagination.PaginationData, error)
-	FindDeletedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageableStep micromodels.PageableStep) ([]TDEL, error)
-	FindCreatedOrUpdatedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageableStep micromodels.PageableStep) ([]TCU, error)
+	FindDeletedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageable micromodels.Pageable) ([]TDEL, mongopagination.PaginationData, error)
+	FindCreatedOrUpdatedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageable micromodels.Pageable) ([]TCU, mongopagination.PaginationData, error)
+	FindDeletedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageableStep micromodels.PageableStep) ([]TDEL, error)
+	FindCreatedOrUpdatedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageableStep micromodels.PageableStep) ([]TCU, error)
 }
 type ActivityRepository[TCU any, TDEL any] struct {
 	pst microservice.IPersisterMongo
@@ -34,11 +34,11 @@ func (repo *ActivityRepository[TCU, TDEL]) InitialActivityRepository(pst microse
 	repo.pst = pst
 }
 
-func (repo ActivityRepository[TCU, TDEL]) FindDeletedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageable micromodels.Pageable) ([]TDEL, mongopagination.PaginationData, error) {
+func (repo ActivityRepository[TCU, TDEL]) FindDeletedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageable micromodels.Pageable) ([]TDEL, mongopagination.PaginationData, error) {
 
 	filterQueries := bson.M{
-		"shopid":    shopID,
-		"deleted_at": bson.M{"$gte": lastUpdatedDate},
+		"holding_code": holdingCode,
+		"deleted_at":   bson.M{"$gte": lastUpdatedDate},
 	}
 
 	extraFilterQueries := repo.generateExtraFilters(extraFilters)
@@ -56,11 +56,11 @@ func (repo ActivityRepository[TCU, TDEL]) FindDeletedPage(ctx context.Context, s
 	return docList, pagination, nil
 }
 
-func (repo ActivityRepository[TCU, TDEL]) FindCreatedOrUpdatedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageable micromodels.Pageable) ([]TCU, mongopagination.PaginationData, error) {
+func (repo ActivityRepository[TCU, TDEL]) FindCreatedOrUpdatedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageable micromodels.Pageable) ([]TCU, mongopagination.PaginationData, error) {
 
 	filterQueries := bson.M{
-		"shopid":    shopID,
-		"deleted_at": bson.M{"$not": bson.M{"$gte": lastUpdatedDate}},
+		"holding_code": holdingCode,
+		"deleted_at":   bson.M{"$not": bson.M{"$gte": lastUpdatedDate}},
 		"$or": []interface{}{
 			bson.M{"created_at": bson.M{"$gte": lastUpdatedDate}},
 			bson.M{"updated_at": bson.M{"$gte": lastUpdatedDate}},
@@ -82,25 +82,25 @@ func (repo ActivityRepository[TCU, TDEL]) FindCreatedOrUpdatedPage(ctx context.C
 	return docList, pagination, nil
 }
 
-func (repo ActivityRepository[TCU, TDEL]) FindDeletedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageableStep micromodels.PageableStep) ([]TDEL, error) {
+func (repo ActivityRepository[TCU, TDEL]) FindDeletedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageableStep micromodels.PageableStep) ([]TDEL, error) {
 
 	docList := []TDEL{}
 
-	// Handle multiple shop IDs separated by comma
-	var shopIDFilter interface{}
-	if strings.Contains(shopID, ",") {
-		shopIDs := strings.Split(shopID, ",")
-		for i, id := range shopIDs {
-			shopIDs[i] = strings.TrimSpace(id)
+	// Handle multiple holding Codes separated by comma
+	var holdingCodeFilter interface{}
+	if strings.Contains(holdingCode, ",") {
+		holdingCodes := strings.Split(holdingCode, ",")
+		for i, id := range holdingCodes {
+			holdingCodes[i] = strings.TrimSpace(id)
 		}
-		shopIDFilter = bson.M{"$in": shopIDs}
+		holdingCodeFilter = bson.M{"$in": holdingCodes}
 	} else {
-		shopIDFilter = shopID
+		holdingCodeFilter = holdingCode
 	}
 
 	filterQueries := bson.M{
-		"shopid":    shopIDFilter,
-		"deleted_at": bson.M{"$gte": lastUpdatedDate},
+		"holding_code": holdingCodeFilter,
+		"deleted_at":   bson.M{"$gte": lastUpdatedDate},
 	}
 
 	extraFilterQueries := repo.generateExtraFilters(extraFilters)
@@ -121,25 +121,25 @@ func (repo ActivityRepository[TCU, TDEL]) FindDeletedStep(ctx context.Context, s
 	return docList, nil
 }
 
-func (repo ActivityRepository[TCU, TDEL]) FindCreatedOrUpdatedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageableStep micromodels.PageableStep) ([]TCU, error) {
+func (repo ActivityRepository[TCU, TDEL]) FindCreatedOrUpdatedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageableStep micromodels.PageableStep) ([]TCU, error) {
 
 	docList := []TCU{}
 
-	// Handle multiple shop IDs separated by comma
-	var shopIDFilter interface{}
-	if strings.Contains(shopID, ",") {
-		shopIDs := strings.Split(shopID, ",")
-		for i, id := range shopIDs {
-			shopIDs[i] = strings.TrimSpace(id)
+	// Handle multiple holding Codes separated by comma
+	var holdingCodeFilter interface{}
+	if strings.Contains(holdingCode, ",") {
+		holdingCodes := strings.Split(holdingCode, ",")
+		for i, id := range holdingCodes {
+			holdingCodes[i] = strings.TrimSpace(id)
 		}
-		shopIDFilter = bson.M{"$in": shopIDs}
+		holdingCodeFilter = bson.M{"$in": holdingCodes}
 	} else {
-		shopIDFilter = shopID
+		holdingCodeFilter = holdingCode
 	}
 
 	filterQueries := bson.M{
-		"shopid":    shopIDFilter,
-		"deleted_at": bson.M{"$not": bson.M{"$gte": lastUpdatedDate}},
+		"holding_code": holdingCodeFilter,
+		"deleted_at":   bson.M{"$not": bson.M{"$gte": lastUpdatedDate}},
 		"$or": []interface{}{
 			bson.M{"created_at": bson.M{"$gte": lastUpdatedDate}},
 			bson.M{"updated_at": bson.M{"$gte": lastUpdatedDate}},

@@ -27,7 +27,7 @@ type ProductUnit = {
   names: ProductUnitName[];
 };
 
-type ShopName = {
+type HoldingNameEntry = {
   code?: string;
   name?: string;
   isauto?: boolean;
@@ -42,6 +42,7 @@ type MainApiResult = {
 
 const UNIT_TEMPLATE_URL = "https://raw.githubusercontent.com/smlsoft/dedepos_template/main/unit.json";
 const API_TIMEOUT_MS = 20000;
+const holdingCodePattern = /^[a-z][a-z0-9_]{2,29}$/;
 
 export async function GET(request: Request, context: WorkspaceProxyContext) {
   const { workspacePath } = await context.params;
@@ -59,12 +60,13 @@ export async function GET(request: Request, context: WorkspaceProxyContext) {
 
   const url = new URL(request.url);
   switch (path) {
-    case "shops":
-      return listShopsWithDisplayNames(request, mainApiUrl);
-    case "shop-info": {
-      const shopid = url.searchParams.get("shopid")?.trim() ?? "";
-      if (!shopid) return NextResponse.json({ success: false, message: "ไม่พบรหัสบริษัท" }, { status: 400 });
-      return proxyMainApiJson(request, mainApiUrl, `/shop/${encodeURIComponent(shopid)}`, { method: "GET" });
+    case "holdings":
+      return listHoldingsWithDisplayNames(request, mainApiUrl);
+    case "holding-info": {
+      const holdingCode = holdingCodeFromSearchParams(url.searchParams);
+      const holding_code = url.searchParams.get("holding_code")?.trim() || holdingCode;
+      if (!holdingCode && !holding_code) return NextResponse.json({ success: false, message: "ไม่พบรหัส holding" }, { status: 400 });
+      return proxyMainApiJson(request, mainApiUrl, `/holding/${encodeURIComponent(holding_code)}`, { method: "GET" });
     }
     case "branches": {
       const offset = url.searchParams.get("offset") ?? "0";
@@ -82,15 +84,15 @@ export async function GET(request: Request, context: WorkspaceProxyContext) {
     }
     case "product-units/search": {
       const limit = url.searchParams.get("limit") ?? "1";
-      const shopsid = url.searchParams.get("shopsid") ?? "";
-      const unitPath = `/unit?limit=${encodeURIComponent(limit)}&shopsid=${encodeURIComponent(shopsid)}`;
+      const holdingCode = url.searchParams.get("holding_code") ?? "";
+      const unitPath = `/unit?limit=${encodeURIComponent(limit)}&holding_code=${encodeURIComponent(holdingCode)}`;
       return proxyMainApiJson(request, mainApiUrl, unitPath, { method: "GET" });
     }
     case "product-units/standard": {
-      const mainShopId = url.searchParams.get("mainShopId")?.trim() ?? url.searchParams.get("main_shop_id")?.trim() ?? "";
+      const mainHoldingCode = url.searchParams.get("mainHoldingCode")?.trim() ?? url.searchParams.get("main_holding_code")?.trim() ?? "";
       const query = url.searchParams.get("q")?.trim() ?? "";
       const includeExisting = url.searchParams.get("includeExisting") === "true";
-      return listMissingStandardProductUnits(request, mainApiUrl, mainShopId, query, includeExisting);
+      return listMissingStandardProductUnits(request, mainApiUrl, mainHoldingCode, query, includeExisting);
     }
     default:
       return NextResponse.json({ success: false, message: "ไม่พบ workspace endpoint" }, { status: 404 });
@@ -122,12 +124,12 @@ export async function POST(request: Request, context: WorkspaceProxyContext) {
   void _backendUrl;
 
   switch (path) {
-    case "select-shop": {
-      const shopid = typeof payload.shopid === "string" ? payload.shopid.trim() : "";
-      if (!shopid) return NextResponse.json({ success: false, message: "ไม่พบรหัสบริษัท" }, { status: 400 });
-      return proxyMainApiJson(request, mainApiUrl, "/select-shop", {
+    case "select-holding": {
+      const holdingCode = holdingCodeFromPayload(payload);
+      if (!holdingCode) return NextResponse.json({ success: false, message: "ไม่พบรหัส holding" }, { status: 400 });
+      return proxyMainApiJson(request, mainApiUrl, "/select-holding", {
         method: "POST",
-        body: JSON.stringify({ shopid }),
+        body: JSON.stringify({ holding_code: holdingCode }),
       });
     }
     case "branch": {
@@ -140,21 +142,42 @@ export async function POST(request: Request, context: WorkspaceProxyContext) {
         body: JSON.stringify(branch),
       });
     }
-    case "create-shop":
-      return proxyMainApiJson(request, mainApiUrl, "/create-shop", {
+    case "create-holding": {
+      if (Object.prototype.hasOwnProperty.call(payload, "holding_code")) {
+        const holdingCode = holdingCodeFromPayload(payload).toLowerCase();
+        if (!holdingCode) {
+          return NextResponse.json({ success: false, message: "กรุณากรอกรหัส Holding" }, { status: 400 });
+        }
+        if (!holdingCodePattern.test(holdingCode)) {
+          return NextResponse.json(
+            { success: false, message: "holding_code ต้องเป็น a-z, 0-9, _ ยาว 3-30 ตัว และขึ้นต้นด้วย a-z" },
+            { status: 400 },
+          );
+        }
+        payload.holding_code = holdingCode;
+      }
+      const holdingName = holdingNameFromPayload(payload);
+      if (!holdingName) {
+        return NextResponse.json({ success: false, message: "กรุณากรอกชื่อ Holding" }, { status: 400 });
+      }
+      applyHoldingDisplayName(payload, holdingName);
+      return proxyMainApiJson(request, mainApiUrl, "/create-holding", {
         method: "POST",
         body: JSON.stringify(payload),
       });
+    }
+    case "update-holding":
+      return updateHoldingDisplayName(request, mainApiUrl, payload);
     case "product-units/defaults": {
-      const mainShopId = getPayloadString(payload, "mainShopId") ?? getPayloadString(payload, "main_shop_id") ?? getPayloadString(payload, "mainshopid") ?? "";
-      return createDefaultProductUnits(request, mainApiUrl, mainShopId, getPayloadStringArray(payload, "unitcodes"));
+      const mainHoldingCode = getPayloadString(payload, "mainHoldingCode") ?? getPayloadString(payload, "main_holding_code") ?? getPayloadString(payload, "mainholding_code") ?? "";
+      return createDefaultProductUnits(request, mainApiUrl, mainHoldingCode, getPayloadStringArray(payload, "unitcodes"));
     }
     default:
       return NextResponse.json({ success: false, message: "ไม่พบ workspace endpoint" }, { status: 404 });
   }
 }
 
-async function listMissingStandardProductUnits(request: Request, mainApiUrl: string, mainShopId: string, query: string, includeExisting = false): Promise<NextResponse> {
+async function listMissingStandardProductUnits(request: Request, mainApiUrl: string, mainHoldingCode: string, query: string, includeExisting = false): Promise<NextResponse> {
   const authorization = requireBearerToken(request);
   if (typeof authorization !== "string") return authorization;
 
@@ -162,7 +185,7 @@ async function listMissingStandardProductUnits(request: Request, mainApiUrl: str
     const existing = await loadExistingUnitCodes(request, mainApiUrl, authorization);
     if (!existing.ok) return mainApiError(existing.result, "ตรวจสอบหน่วยนับสินค้าไม่สำเร็จ");
 
-    const source = await loadStandardUnits(request, mainApiUrl, authorization, mainShopId);
+    const source = await loadStandardUnits(request, mainApiUrl, authorization, mainHoldingCode);
     const units = filterMissingUnits(source.units, existing.codes, query, [], includeExisting);
 
     return NextResponse.json({
@@ -176,33 +199,30 @@ async function listMissingStandardProductUnits(request: Request, mainApiUrl: str
   }
 }
 
-async function listShopsWithDisplayNames(request: Request, mainApiUrl: string): Promise<NextResponse> {
+async function listHoldingsWithDisplayNames(request: Request, mainApiUrl: string): Promise<NextResponse> {
   const authorization = requireBearerToken(request);
   if (typeof authorization !== "string") return authorization;
   const url = new URL(request.url);
-  const activeShopId =
-    url.searchParams.get("active_shopid")?.trim() ??
-    url.searchParams.get("shopid")?.trim() ??
-    "";
+  const activeHoldingCode = holdingCodeFromSearchParams(url.searchParams);
 
   try {
-    const result = await callMainApiJson(request, mainApiUrl, "/list-shop?limit=100", { method: "GET" }, authorization);
+    const result = await callMainApiJson(request, mainApiUrl, "/list-holding?limit=100", { method: "GET" }, authorization);
     if (!result.ok || isApiFailure(result.payload)) return mainApiError(result, "โหลดบริษัทไม่สำเร็จ");
 
-    const shops = getArrayFromPayload(result.payload, "data");
-    const enriched = await Promise.all(shops.map((shop) => enrichShopDisplayName(request, mainApiUrl, authorization, shop)));
+    const holdings = getArrayFromPayload(result.payload, "data");
+    const enriched = await Promise.all(holdings.map((holding) => enrichHoldingDisplayName(request, mainApiUrl, authorization, holding)));
 
-    // Fetch companies and branches sequentially for each shop using session select-shop
+    // Fetch companies and branches sequentially for each holding using session select-holding.
     const enrichedWithBranches = [];
-    for (const shop of enriched) {
-      if (!isRecord(shop)) {
-        enrichedWithBranches.push(shop);
+    for (const holding of enriched) {
+      if (!isRecord(holding)) {
+        enrichedWithBranches.push(holding);
         continue;
       }
 
-      const shopid = getPayloadString(shop, "shopid")?.trim();
-      if (!shopid) {
-        enrichedWithBranches.push({ ...shop, companies: [], branches: [] });
+      const holdingCode = holdingCodeFromPayload(holding);
+      if (!holdingCode) {
+        enrichedWithBranches.push({ ...holding, companies: [], branches: [] });
         continue;
       }
 
@@ -210,10 +230,10 @@ async function listShopsWithDisplayNames(request: Request, mainApiUrl: string): 
         const selectResult = await callMainApiJson(
           request,
           mainApiUrl,
-          "/select-shop",
+          "/select-holding",
           {
             method: "POST",
-            body: JSON.stringify({ shopid }),
+            body: JSON.stringify({ holding_code: holdingCode }),
           },
           authorization,
         );
@@ -238,10 +258,15 @@ async function listShopsWithDisplayNames(request: Request, mainApiUrl: string): 
           );
 
           if (compResult.ok && branchResult.ok) {
-            const companies = getArrayFromPayload(compResult.payload, "data");
-            const branches = getArrayFromPayload(branchResult.payload, "data");
+            const companies = visibleOrganizationRecords(compResult.payload);
+            const visibleCompanyGuids = new Set(companies.map(organizationGuid).filter(Boolean));
+            const branches = visibleOrganizationRecords(branchResult.payload)
+              .filter((branch) => {
+                const companyGuid = stringFromUnknown(branch.company_guid);
+                return !companyGuid || visibleCompanyGuids.has(companyGuid);
+              });
             enrichedWithBranches.push({
-              ...shop,
+              ...holding,
               companies,
               branches,
             });
@@ -249,24 +274,24 @@ async function listShopsWithDisplayNames(request: Request, mainApiUrl: string): 
           }
         }
       } catch (err) {
-        console.error(`Error loading organization data for shop ${shopid}:`, err);
+        console.error(`Error loading organization data for holding ${holdingCode}:`, err);
       }
 
       enrichedWithBranches.push({
-        ...shop,
+        ...holding,
         companies: [],
         branches: [],
       });
     }
 
-    if (activeShopId) {
+    if (activeHoldingCode) {
       const restoreResult = await callMainApiJson(
         request,
         mainApiUrl,
-        "/select-shop",
+        "/select-holding",
         {
           method: "POST",
-          body: JSON.stringify({ shopid: activeShopId }),
+          body: JSON.stringify({ holding_code: activeHoldingCode }),
         },
         authorization,
       );
@@ -285,31 +310,102 @@ async function listShopsWithDisplayNames(request: Request, mainApiUrl: string): 
   }
 }
 
-async function enrichShopDisplayName(request: Request, mainApiUrl: string, authorization: string, shop: unknown): Promise<unknown> {
-  if (!isRecord(shop)) return shop;
+async function updateHoldingDisplayName(
+  request: Request,
+  mainApiUrl: string,
+  payload: Record<string, unknown>,
+): Promise<NextResponse> {
+  const authorization = requireBearerToken(request);
+  if (typeof authorization !== "string") return authorization;
 
-  const shopid = getPayloadString(shop, "shopid")?.trim();
-  if (!shopid) return shop;
-
-  let shopInfo: Record<string, unknown> = shop;
-  if (!hasShopDisplayName(shop) || !hasWorkspaceMetadata(shop)) {
-    const result = await callMainApiJson(request, mainApiUrl, `/shop/${encodeURIComponent(shopid)}`, { method: "GET" }, authorization);
-    const detailed = result.ok && !isApiFailure(result.payload) ? payloadDataRecord(result.payload) : null;
-    if (detailed) shopInfo = { ...shop, ...detailed };
+  const holdingCode = holdingCodeFromPayload(payload).toLowerCase();
+  if (!holdingCode) return NextResponse.json({ success: false, message: "กรุณากรอกรหัส Holding" }, { status: 400 });
+  if (!holdingCodePattern.test(holdingCode)) {
+    return NextResponse.json(
+      { success: false, message: "holding_code ต้องเป็น a-z, 0-9, _ ยาว 3-30 ตัว และขึ้นต้นด้วย a-z" },
+      { status: 400 },
+    );
   }
 
-  const names = getArray(shopInfo, "names")
-    .map((name) => normalizeShopName(name))
-    .filter((name): name is ShopName => Boolean(name));
-  const name = firstPayloadString(shopInfo, ["name1", "companyname", "company_name", "name"]);
-  const settings = shopSettings(shopInfo);
+  const holdingName = holdingNameFromPayload(payload);
+  if (!holdingName) return NextResponse.json({ success: false, message: "กรุณากรอกชื่อ Holding" }, { status: 400 });
+
+  try {
+    const selected = await callMainApiJson(
+      request,
+      mainApiUrl,
+      "/select-holding",
+      {
+        method: "POST",
+        body: JSON.stringify({ holding_code: holdingCode }),
+      },
+      authorization,
+    );
+    if (!selected.ok || isApiFailure(selected.payload)) return mainApiError(selected, "ตรวจสอบสิทธิ์ owner ไม่สำเร็จ");
+
+    const current = await callMainApiJson(
+      request,
+      mainApiUrl,
+      `/holding/${encodeURIComponent(holdingCode)}`,
+      { method: "GET" },
+      authorization,
+    );
+    if (!current.ok || isApiFailure(current.payload)) return mainApiError(current, "โหลดข้อมูล Holding ไม่สำเร็จ");
+
+    const currentHolding = payloadDataRecord(current.payload);
+    if (!currentHolding) return NextResponse.json({ success: false, message: "ข้อมูล Holding ไม่ถูกต้อง" }, { status: 502 });
+
+    const updatedHolding: Record<string, unknown> = {
+      ...currentHolding,
+      holding_code: holdingCode,
+    };
+    applyHoldingDisplayName(updatedHolding, holdingName);
+
+    const saved = await callMainApiJson(
+      request,
+      mainApiUrl,
+      `/holding/${encodeURIComponent(holdingCode)}`,
+      {
+        method: "PUT",
+        body: JSON.stringify(updatedHolding),
+      },
+      authorization,
+    );
+    if (!saved.ok || isApiFailure(saved.payload)) return mainApiError(saved, "บันทึกชื่อ Holding ไม่สำเร็จ");
+
+    return NextResponse.json(saved.payload, { status: saved.status });
+  } catch (error) {
+    return NextResponse.json({ success: false, message: workspaceErrorMessage(error, "บันทึกชื่อ Holding ไม่สำเร็จ") }, { status: 504 });
+  }
+}
+
+async function enrichHoldingDisplayName(request: Request, mainApiUrl: string, authorization: string, holding: unknown): Promise<unknown> {
+  if (!isRecord(holding)) return holding;
+
+  const holding_code = getPayloadString(holding, "holding_code")?.trim();
+  const holdingCode = holdingCodeFromPayload(holding);
+  if (!holding_code && !holdingCode) return holding;
+
+  let holdingInfo: Record<string, unknown> = holding;
+  if (!hasHoldingDisplayName(holding) || !hasWorkspaceMetadata(holding)) {
+    const result = await callMainApiJson(request, mainApiUrl, `/holding/${encodeURIComponent(holding_code || holdingCode)}`, { method: "GET" }, authorization);
+    const detailed = result.ok && !isApiFailure(result.payload) ? payloadDataRecord(result.payload) : null;
+    if (detailed) holdingInfo = { ...holding, ...detailed };
+  }
+
+  const names = getArray(holdingInfo, "names")
+    .map((name) => normalizeHoldingNameEntry(name))
+    .filter((name): name is HoldingNameEntry => Boolean(name));
+  const name = firstPayloadString(holdingInfo, ["name1", "companyname", "company_name", "name"]);
+  const settings = holdingSettings(holdingInfo);
   const activeLanguages = activeLanguageCodes(settings);
   const currencies = currencyCodes(settings);
 
   return {
-    ...shop,
-    ...(!hasShopDisplayName(shop) && name ? { name, name1: name } : {}),
-    ...(!hasShopDisplayName(shop) && names.length > 0 ? { names } : {}),
+    ...holding,
+    ...(realHoldingCodeFromPayload(holdingInfo) ? { holding_code: realHoldingCodeFromPayload(holdingInfo) } : {}),
+    ...(!hasHoldingDisplayName(holding) && name ? { name, name1: name } : {}),
+    ...(!hasHoldingDisplayName(holding) && names.length > 0 ? { names } : {}),
     active_languages: activeLanguages,
     language: getPayloadString(settings, "language") ?? activeLanguages[0],
     languageconfigs: getArray(settings, "languageconfigs"),
@@ -324,7 +420,7 @@ async function enrichShopDisplayName(request: Request, mainApiUrl: string, autho
   };
 }
 
-async function createDefaultProductUnits(request: Request, mainApiUrl: string, mainShopId: string, selectedCodes: string[]): Promise<NextResponse> {
+async function createDefaultProductUnits(request: Request, mainApiUrl: string, mainHoldingCode: string, selectedCodes: string[]): Promise<NextResponse> {
   const authorization = requireBearerToken(request);
   if (typeof authorization !== "string") return authorization;
 
@@ -332,13 +428,13 @@ async function createDefaultProductUnits(request: Request, mainApiUrl: string, m
     const existing = await loadExistingUnitCodes(request, mainApiUrl, authorization);
     if (!existing.ok) return mainApiError(existing.result, "ตรวจสอบหน่วยนับสินค้าไม่สำเร็จ");
 
-    const source = await loadStandardUnits(request, mainApiUrl, authorization, mainShopId);
+    const source = await loadStandardUnits(request, mainApiUrl, authorization, mainHoldingCode);
     const units = filterMissingUnits(
       source.units,
       existing.codes,
       "",
       selectedCodes,
-      selectedCodes.length > 0,
+      false,
     );
 
     if (units.length === 0) {
@@ -379,7 +475,7 @@ async function loadExistingUnitCodes(
   const codes = new Set<string>();
   for (const item of getArrayFromPayload(result.payload, "data")) {
     if (!isRecord(item)) continue;
-    const unitcode = getPayloadString(item, "unitcode")?.trim();
+    const unitcode = firstPayloadString(item, ["unitcode", "unit_code", "code"]);
     if (unitcode) codes.add(normalizeUnitCode(unitcode));
   }
   return { ok: true, codes };
@@ -389,19 +485,19 @@ async function loadStandardUnits(
   request: Request,
   mainApiUrl: string,
   authorization: string,
-  mainShopId: string,
+  mainHoldingCode: string,
 ): Promise<{ source: string; units: ProductUnit[] }> {
-  if (mainShopId) {
-    const mainShopUnits = await callMainApiJson(
+  if (mainHoldingCode) {
+    const mainHoldingUnits = await callMainApiJson(
       request,
       mainApiUrl,
-      `/unit?limit=1000&shopsid=${encodeURIComponent(mainShopId)}`,
+      `/unit?limit=1000&holding_code=${encodeURIComponent(mainHoldingCode)}`,
       { method: "GET" },
       authorization,
     );
-    if (mainShopUnits.ok) {
-      const units = normalizeUnitList(getArrayFromPayload(mainShopUnits.payload, "data"));
-      if (units.length > 0) return { source: "main-shop", units };
+    if (mainHoldingUnits.ok) {
+      const units = normalizeUnitList(getArrayFromPayload(mainHoldingUnits.payload, "data"));
+      if (units.length > 0) return { source: "main-holding", units };
     }
   }
 
@@ -492,13 +588,13 @@ function normalizeUnitList(value: unknown[]): ProductUnit[] {
 
 function normalizeUnit(value: unknown): ProductUnit | null {
   if (!isRecord(value)) return null;
-  const unitcode = getPayloadString(value, "unitcode")?.trim();
+  const unitcode = firstPayloadString(value, ["unitcode", "unit_code", "code"]);
   const names = getArray(value, "names")
     .map((name) => normalizeUnitName(name))
     .filter((name): name is ProductUnitName => Boolean(name));
 
   if (!unitcode || names.length === 0) return null;
-  return { unitcode, names };
+  return { unitcode: normalizeUnitCode(unitcode), names };
 }
 
 function normalizeUnitName(value: unknown): ProductUnitName | null {
@@ -513,7 +609,7 @@ function normalizeUnitName(value: unknown): ProductUnitName | null {
   };
 }
 
-function normalizeShopName(value: unknown): ShopName | null {
+function normalizeHoldingNameEntry(value: unknown): HoldingNameEntry | null {
   if (!isRecord(value)) return null;
   const name = getPayloadString(value, "name")?.trim();
   if (!name) return null;
@@ -525,8 +621,50 @@ function normalizeShopName(value: unknown): ShopName | null {
   };
 }
 
-function hasWorkspaceMetadata(shop: Record<string, unknown>): boolean {
-  const settings = shopSettings(shop);
+function holdingNameFromPayload(payload: Record<string, unknown>): string {
+  return normalizeHoldingName(
+    firstPayloadString(payload, ["name1", "name", "companyname", "company_name"]) ??
+      firstNameFromNames(payload.names),
+  );
+}
+
+function firstNameFromNames(value: unknown): string {
+  if (!Array.isArray(value)) return "";
+  for (const item of value) {
+    if (!isRecord(item)) continue;
+    const name = getPayloadString(item, "name")?.trim();
+    if (name) return name;
+  }
+  return "";
+}
+
+function normalizeHoldingName(value: string | undefined): string {
+  return (value ?? "")
+    .replace(/[\u0000-\u001F\u007F]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 120);
+}
+
+function applyHoldingDisplayName(payload: Record<string, unknown>, name: string): void {
+  payload.name1 = name;
+  payload.names = upsertThaiName(payload.names, name);
+}
+
+function upsertThaiName(value: unknown, name: string): HoldingNameEntry[] {
+  const names = Array.isArray(value)
+    ? value.map((item) => normalizeHoldingNameEntry(item)).filter((item): item is HoldingNameEntry => Boolean(item))
+    : [];
+  const thaiIndex = names.findIndex((item) => item.code?.trim().toLowerCase() === "th");
+  if (thaiIndex >= 0) {
+    names[thaiIndex] = { ...names[thaiIndex], code: names[thaiIndex].code || "th", name };
+    return names;
+  }
+  return [{ code: "th", name }, ...names];
+}
+
+function hasWorkspaceMetadata(holding: Record<string, unknown>): boolean {
+  const settings = holdingSettings(holding);
   return getArray(settings, "languageconfigs").length > 0 ||
     payloadStringArray(settings, "currencies").length > 0 ||
     Boolean(
@@ -537,8 +675,8 @@ function hasWorkspaceMetadata(shop: Record<string, unknown>): boolean {
     );
 }
 
-function shopSettings(shopInfo: Record<string, unknown>): Record<string, unknown> {
-  const settings = isRecord(shopInfo.settings) ? { ...shopInfo.settings } : {};
+function holdingSettings(holdingInfo: Record<string, unknown>): Record<string, unknown> {
+  const settings = isRecord(holdingInfo.settings) ? { ...holdingInfo.settings } : {};
   for (const key of [
     "language",
     "languageconfigs",
@@ -555,7 +693,7 @@ function shopSettings(shopInfo: Record<string, unknown>): Record<string, unknown
     "year_type",
     "usebuddhistcalendar",
   ]) {
-    if (settings[key] === undefined && shopInfo[key] !== undefined) settings[key] = shopInfo[key];
+    if (settings[key] === undefined && holdingInfo[key] !== undefined) settings[key] = holdingInfo[key];
   }
   return settings;
 }
@@ -646,8 +784,35 @@ function getPayloadStringArray(payload: Record<string, unknown>, key: string): s
   return value.map((item) => stringFromUnknown(item)).filter(Boolean);
 }
 
+function holdingCodeFromPayload(payload: Record<string, unknown>): string {
+  return getPayloadString(payload, "holding_code")?.trim() || "";
+}
+
+function realHoldingCodeFromPayload(payload: Record<string, unknown>): string {
+  return getPayloadString(payload, "holding_code")?.trim() || "";
+}
+
+function holdingCodeFromSearchParams(searchParams: URLSearchParams): string {
+  return searchParams.get("holding_code")?.trim() || searchParams.get("active_holding_code")?.trim() || "";
+}
+
 function getArrayFromPayload(payload: unknown, key: string): unknown[] {
   return isRecord(payload) ? getArray(payload, key) : [];
+}
+
+function visibleOrganizationRecords(payload: unknown): Record<string, unknown>[] {
+  return getArrayFromPayload(payload, "data")
+    .filter((item): item is Record<string, unknown> => isVisibleOrganizationRecord(item));
+}
+
+function isVisibleOrganizationRecord(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  if (value.is_active === false || value.isdelete === true || value.is_delete === true) return false;
+  return stringFromUnknown(value.deleted_at).length === 0;
+}
+
+function organizationGuid(value: Record<string, unknown>): string {
+  return stringFromUnknown(value.guid_fixed) || stringFromUnknown(value.guid);
 }
 
 function isApiFailure(payload: unknown): boolean {
@@ -659,13 +824,13 @@ function payloadDataRecord(payload: unknown): Record<string, unknown> | null {
   return isRecord(payload.data) ? payload.data : payload;
 }
 
-function hasShopDisplayName(shop: Record<string, unknown>): boolean {
-  const shopid = getPayloadString(shop, "shopid")?.trim();
-  const directName = firstPayloadString(shop, ["name1", "companyname", "company_name", "name"]);
-  if (directName && directName !== shopid) return true;
-  return getArray(shop, "names").some((name) => {
+function hasHoldingDisplayName(holding: Record<string, unknown>): boolean {
+  const holding_code = getPayloadString(holding, "holding_code")?.trim();
+  const directName = firstPayloadString(holding, ["name1", "companyname", "company_name", "name"]);
+  if (directName && directName !== holding_code) return true;
+  return getArray(holding, "names").some((name) => {
     const displayName = isRecord(name) ? getPayloadString(name, "name")?.trim() : "";
-    return Boolean(displayName && displayName !== shopid);
+    return Boolean(displayName && displayName !== holding_code);
   });
 }
 

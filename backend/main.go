@@ -304,12 +304,17 @@ func main() {
 		}
 
 		exceptShopPath := []string{
+			"/holding",
 			"/shop",
 			"/profile",
 			"/profile/disable-user",
+			"/list-holding",
 			"/list-shop",
+			"/select-holding",
 			"/select-shop",
+			"/create-holding",
 			"/create-shop",
+			"/favorite-holding",
 			"/favorite-shop",
 		}
 
@@ -561,7 +566,7 @@ func main() {
 		cleanupService := coupon_services.NewCouponCleanupService(reservationRepo)
 
 		// เริ่ม background scheduler ที่ตรวจสอบทุก 5 นาที
-		// ใช้ empty shopID เพื่อ cleanup ทุกร้าน (จะปรับปรุงในอนาคตให้สำหรับแต่ละร้าน)
+		// ใช้ empty holdingCode เพื่อ cleanup ทุกร้าน (จะปรับปรุงในอนาคตให้สำหรับแต่ละร้าน)
 		go cleanupService.StartCleanupScheduler(context.Background(), 5*time.Minute, "")
 
 		// === GoAPI Routes (BI/Analytics) ===

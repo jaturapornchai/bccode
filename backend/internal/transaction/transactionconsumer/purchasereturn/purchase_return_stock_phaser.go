@@ -27,7 +27,7 @@ func (p PurchaseReturnTransactionStockPhaser) PhasePurchaseReturnStock(doc model
 		for i, detail := range *doc.Items {
 
 			stockDetail := models.StockTransactionDetail{
-				ShopID:              doc.ShopID,
+				HoldingCode:         doc.HoldingCode,
 				DocNo:               doc.DocNo,
 				Barcode:             detail.Barcode,
 				ItemType:            detail.ItemType,
@@ -57,8 +57,8 @@ func (p PurchaseReturnTransactionStockPhaser) PhasePurchaseReturnStock(doc model
 
 	stockTransaction := models.StockTransaction{
 		GuidFixed: doc.GuidFixed,
-		ShopIdentity: pkgModels.ShopIdentity{
-			ShopID: doc.ShopID,
+		HoldingCodeentity: pkgModels.HoldingCodeentity{
+			HoldingCode: doc.HoldingCode,
 		},
 		TransFlag:      16,
 		InquiryType:    doc.InquiryType,

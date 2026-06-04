@@ -10,8 +10,8 @@ import (
 	"smlcloudplatform/internal/goapi/process/build"
 )
 
-func ReportProductBalanceByLocationAndItem(shopId string, guid string, finalDate string, timezoneCode string, languageCode string) string {
-	db, err := mypg.PgSqlFastConnect(shopId)
+func ReportProductBalanceByLocationAndItem(holdingCode string, guid string, finalDate string, timezoneCode string, languageCode string) string {
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		logger.Info("Failed to connect to PostgreSQL: %v", err)
 		return ""

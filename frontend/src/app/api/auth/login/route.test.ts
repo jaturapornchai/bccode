@@ -1,0 +1,66 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { POST } from "./route";
+
+describe("password login route", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("requires holding_code before password login", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await POST(new Request("http://localhost/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        backendUrl: "http://localhost:8888/goapi",
+        username: "demo",
+        password: "secret",
+      }),
+    }));
+    const json = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(json).toMatchObject({
+      success: false,
+      message: "กรุณากรอกรหัส Holding ก่อนเข้าสู่ระบบด้วย User , Password",
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("forwards normalized holding_code to mainapi login", async () => {
+    const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+      expect(String(url)).toBe("http://localhost:8888/login");
+      expect(init?.method).toBe("POST");
+      expect(JSON.parse(String(init?.body))).toEqual({
+        username: "demo",
+        password: "secret",
+        holding_code: "bc_demo",
+      });
+      return Response.json({ success: true, token: "token-1", refresh: "refresh-1" });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await POST(new Request("http://localhost/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        backendUrl: "http://localhost:8888/goapi",
+        username: "demo",
+        password: "secret",
+        holding_code: "BC_Demo",
+      }),
+    }));
+    const json = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(json).toMatchObject({
+      success: true,
+      token: "token-1",
+      refresh: "refresh-1",
+      backendUrl: "http://localhost:8888/goapi",
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});

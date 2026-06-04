@@ -22,15 +22,15 @@ import (
 )
 
 type IReceivableOtherHttpService interface {
-	CreateReceivableOther(shopID string, authUsername string, doc models.ReceivableOther) (string, string, error)
-	UpdateReceivableOther(shopID string, guid string, authUsername string, doc models.ReceivableOther) error
-	DeleteReceivableOther(shopID string, guid string, authUsername string) error
-	DeleteReceivableOtherByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoReceivableOther(shopID string, guid string) (models.ReceivableOtherInfo, error)
-	InfoReceivableOtherByCode(shopID string, code string) (models.ReceivableOtherInfo, error)
-	SearchReceivableOther(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ReceivableOtherInfo, mongopagination.PaginationData, error)
-	SearchReceivableOtherStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ReceivableOtherInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.ReceivableOther) (common.BulkImport, error)
+	CreateReceivableOther(holdingCode string, authUsername string, doc models.ReceivableOther) (string, string, error)
+	UpdateReceivableOther(holdingCode string, guid string, authUsername string, doc models.ReceivableOther) error
+	DeleteReceivableOther(holdingCode string, guid string, authUsername string) error
+	DeleteReceivableOtherByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoReceivableOther(holdingCode string, guid string) (models.ReceivableOtherInfo, error)
+	InfoReceivableOtherByCode(holdingCode string, code string) (models.ReceivableOtherInfo, error)
+	SearchReceivableOther(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ReceivableOtherInfo, mongopagination.PaginationData, error)
+	SearchReceivableOtherStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ReceivableOtherInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.ReceivableOther) (common.BulkImport, error)
 
 	GetModuleName() string
 }
@@ -77,11 +77,11 @@ func (svc ReceivableOtherHttpService) getDocNoPrefix(docDate time.Time) string {
 	return fmt.Sprintf("%s%s", MODULE_NAME, docDateStr)
 }
 
-func (svc ReceivableOtherHttpService) generateNewDocNo(ctx context.Context, shopID, prefixDocNo string, docNumber int) (string, int, error) {
-	prevoiusDocNumber, err := svc.repoCache.Get(shopID, prefixDocNo)
+func (svc ReceivableOtherHttpService) generateNewDocNo(ctx context.Context, holdingCode, prefixDocNo string, docNumber int) (string, int, error) {
+	prevoiusDocNumber, err := svc.repoCache.Get(holdingCode, prefixDocNo)
 
 	if prevoiusDocNumber == 0 || err != nil {
-		lastDoc, err := svc.repo.FindLastDocNo(ctx, shopID, prefixDocNo)
+		lastDoc, err := svc.repo.FindLastDocNo(ctx, holdingCode, prefixDocNo)
 
 		if err != nil {
 			return "", 0, err
@@ -100,7 +100,7 @@ func (svc ReceivableOtherHttpService) generateNewDocNo(ctx context.Context, shop
 	newDocNumber := prevoiusDocNumber + 1
 	newDocNo := fmt.Sprintf("%s%05d", prefixDocNo, newDocNumber)
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", newDocNo)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", newDocNo)
 
 	if err != nil {
 		return "", 0, err
@@ -113,7 +113,7 @@ func (svc ReceivableOtherHttpService) generateNewDocNo(ctx context.Context, shop
 	return newDocNo, newDocNumber, nil
 }
 
-func (svc ReceivableOtherHttpService) CreateReceivableOther(shopID string, authUsername string, doc models.ReceivableOther) (string, string, error) {
+func (svc ReceivableOtherHttpService) CreateReceivableOther(holdingCode string, authUsername string, doc models.ReceivableOther) (string, string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -121,7 +121,7 @@ func (svc ReceivableOtherHttpService) CreateReceivableOther(shopID string, authU
 	docDate := doc.DocDatetime
 	prefixDocNo := svc.getDocNoPrefix(docDate)
 
-	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, shopID, prefixDocNo, 1)
+	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, holdingCode, prefixDocNo, 1)
 
 	if err != nil {
 		return "", "", err
@@ -130,7 +130,7 @@ func (svc ReceivableOtherHttpService) CreateReceivableOther(shopID string, authU
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.ReceivableOtherDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.ReceivableOther = doc
 
@@ -144,9 +144,9 @@ func (svc ReceivableOtherHttpService) CreateReceivableOther(shopID string, authU
 		return "", "", err
 	}
 
-	go svc.repoCache.Save(shopID, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
+	go svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	go func() {
 		svc.repoMq.Create(docData)
@@ -155,12 +155,12 @@ func (svc ReceivableOtherHttpService) CreateReceivableOther(shopID string, authU
 	return newGuidFixed, newDocNo, nil
 }
 
-func (svc ReceivableOtherHttpService) UpdateReceivableOther(shopID string, guid string, authUsername string, doc models.ReceivableOther) error {
+func (svc ReceivableOtherHttpService) UpdateReceivableOther(holdingCode string, guid string, authUsername string, doc models.ReceivableOther) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -177,13 +177,13 @@ func (svc ReceivableOtherHttpService) UpdateReceivableOther(shopID string, guid 
 	dataDoc.UpdatedBy = authUsername
 	dataDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, dataDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, dataDoc)
 
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	go func() {
 		svc.repoMq.Update(findDoc)
@@ -192,12 +192,12 @@ func (svc ReceivableOtherHttpService) UpdateReceivableOther(shopID string, guid 
 	return nil
 }
 
-func (svc ReceivableOtherHttpService) DeleteReceivableOther(shopID string, guid string, authUsername string) error {
+func (svc ReceivableOtherHttpService) DeleteReceivableOther(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -207,12 +207,12 @@ func (svc ReceivableOtherHttpService) DeleteReceivableOther(shopID string, guid 
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	go func() {
 		svc.repoMq.Delete(findDoc)
@@ -221,7 +221,7 @@ func (svc ReceivableOtherHttpService) DeleteReceivableOther(shopID string, guid 
 	return nil
 }
 
-func (svc ReceivableOtherHttpService) DeleteReceivableOtherByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc ReceivableOtherHttpService) DeleteReceivableOtherByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -230,7 +230,7 @@ func (svc ReceivableOtherHttpService) DeleteReceivableOtherByGUIDs(shopID string
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
@@ -238,12 +238,12 @@ func (svc ReceivableOtherHttpService) DeleteReceivableOtherByGUIDs(shopID string
 	return nil
 }
 
-func (svc ReceivableOtherHttpService) InfoReceivableOther(shopID string, guid string) (models.ReceivableOtherInfo, error) {
+func (svc ReceivableOtherHttpService) InfoReceivableOther(holdingCode string, guid string) (models.ReceivableOtherInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.ReceivableOtherInfo{}, err
@@ -256,12 +256,12 @@ func (svc ReceivableOtherHttpService) InfoReceivableOther(shopID string, guid st
 	return findDoc.ReceivableOtherInfo, nil
 }
 
-func (svc ReceivableOtherHttpService) InfoReceivableOtherByCode(shopID string, code string) (models.ReceivableOtherInfo, error) {
+func (svc ReceivableOtherHttpService) InfoReceivableOtherByCode(holdingCode string, code string) (models.ReceivableOtherInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", code)
 
 	if err != nil {
 		return models.ReceivableOtherInfo{}, err
@@ -274,7 +274,7 @@ func (svc ReceivableOtherHttpService) InfoReceivableOtherByCode(shopID string, c
 	return findDoc.ReceivableOtherInfo, nil
 }
 
-func (svc ReceivableOtherHttpService) SearchReceivableOther(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ReceivableOtherInfo, mongopagination.PaginationData, error) {
+func (svc ReceivableOtherHttpService) SearchReceivableOther(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ReceivableOtherInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -283,7 +283,7 @@ func (svc ReceivableOtherHttpService) SearchReceivableOther(shopID string, filte
 		"docno",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.ReceivableOtherInfo{}, pagination, err
@@ -292,7 +292,7 @@ func (svc ReceivableOtherHttpService) SearchReceivableOther(shopID string, filte
 	return docList, pagination, nil
 }
 
-func (svc ReceivableOtherHttpService) SearchReceivableOtherStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ReceivableOtherInfo, int, error) {
+func (svc ReceivableOtherHttpService) SearchReceivableOtherStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ReceivableOtherInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -303,7 +303,7 @@ func (svc ReceivableOtherHttpService) SearchReceivableOtherStep(shopID string, l
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.ReceivableOtherInfo{}, 0, err
@@ -312,7 +312,7 @@ func (svc ReceivableOtherHttpService) SearchReceivableOtherStep(shopID string, l
 	return docList, total, nil
 }
 
-func (svc ReceivableOtherHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.ReceivableOther) (common.BulkImport, error) {
+func (svc ReceivableOtherHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.ReceivableOther) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -324,7 +324,7 @@ func (svc ReceivableOtherHttpService) SaveInBatch(shopID string, authUsername st
 		itemCodeGuidList = append(itemCodeGuidList, doc.DocNo)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "docno", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "docno", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -336,18 +336,18 @@ func (svc ReceivableOtherHttpService) SaveInBatch(shopID string, authUsername st
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.ReceivableOther, models.ReceivableOtherDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.ReceivableOther) models.ReceivableOtherDoc {
+		func(holdingCode string, authUsername string, doc models.ReceivableOther) models.ReceivableOtherDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.ReceivableOtherDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.ReceivableOther = doc
 
 			currentTime := time.Now()
@@ -358,23 +358,23 @@ func (svc ReceivableOtherHttpService) SaveInBatch(shopID string, authUsername st
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.ReceivableOther, models.ReceivableOtherDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.ReceivableOtherDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", guid)
+		func(holdingCode string, guid string) (models.ReceivableOtherDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", guid)
 		},
 		func(doc models.ReceivableOtherDoc) bool {
 			return doc.DocNo != ""
 		},
-		func(shopID string, authUsername string, data models.ReceivableOther, doc models.ReceivableOtherDoc) error {
+		func(holdingCode string, authUsername string, data models.ReceivableOther, doc models.ReceivableOtherDoc) error {
 
 			doc.ReceivableOther = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -422,7 +422,7 @@ func (svc ReceivableOtherHttpService) SaveInBatch(shopID string, authUsername st
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -436,9 +436,9 @@ func (svc ReceivableOtherHttpService) getDocIDKey(doc models.ReceivableOther) st
 	return doc.DocNo
 }
 
-func (svc ReceivableOtherHttpService) saveMasterSync(shopID string) {
+func (svc ReceivableOtherHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

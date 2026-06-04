@@ -20,14 +20,14 @@ import (
 )
 
 type IQrPaymentHttpService interface {
-	CreateQrPayment(shopID string, authUsername string, doc models.QrPayment) (string, error)
-	UpdateQrPayment(shopID string, guid string, authUsername string, doc models.QrPayment) error
-	DeleteQrPayment(shopID string, guid string, authUsername string) error
-	DeleteQrPaymentByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoQrPayment(shopID string, guid string) (models.QrPaymentInfo, error)
-	SearchQrPayment(shopID string, pageable micromodels.Pageable) ([]models.QrPaymentInfo, mongopagination.PaginationData, error)
-	SearchQrPaymentStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.QrPaymentInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.QrPayment) (common.BulkImport, error)
+	CreateQrPayment(holdingCode string, authUsername string, doc models.QrPayment) (string, error)
+	UpdateQrPayment(holdingCode string, guid string, authUsername string, doc models.QrPayment) error
+	DeleteQrPayment(holdingCode string, guid string, authUsername string) error
+	DeleteQrPaymentByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoQrPayment(holdingCode string, guid string) (models.QrPaymentInfo, error)
+	SearchQrPayment(holdingCode string, pageable micromodels.Pageable) ([]models.QrPaymentInfo, mongopagination.PaginationData, error)
+	SearchQrPaymentStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.QrPaymentInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.QrPayment) (common.BulkImport, error)
 
 	GetModuleName() string
 }
@@ -59,12 +59,12 @@ func (svc QrPaymentHttpService) getContextTimeout() (context.Context, context.Ca
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc QrPaymentHttpService) CreateQrPayment(shopID string, authUsername string, doc models.QrPayment) (string, error) {
+func (svc QrPaymentHttpService) CreateQrPayment(holdingCode string, authUsername string, doc models.QrPayment) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", doc.Code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", doc.Code)
 
 	if err != nil {
 		return "", err
@@ -77,7 +77,7 @@ func (svc QrPaymentHttpService) CreateQrPayment(shopID string, authUsername stri
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.QrPaymentDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.QrPayment = doc
 
@@ -90,17 +90,17 @@ func (svc QrPaymentHttpService) CreateQrPayment(shopID string, authUsername stri
 		return "", err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return newGuidFixed, nil
 }
 
-func (svc QrPaymentHttpService) UpdateQrPayment(shopID string, guid string, authUsername string, doc models.QrPayment) error {
+func (svc QrPaymentHttpService) UpdateQrPayment(holdingCode string, guid string, authUsername string, doc models.QrPayment) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -115,23 +115,23 @@ func (svc QrPaymentHttpService) UpdateQrPayment(shopID string, guid string, auth
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, findDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, findDoc)
 
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc QrPaymentHttpService) DeleteQrPayment(shopID string, guid string, authUsername string) error {
+func (svc QrPaymentHttpService) DeleteQrPayment(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -141,17 +141,17 @@ func (svc QrPaymentHttpService) DeleteQrPayment(shopID string, guid string, auth
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc QrPaymentHttpService) DeleteQrPaymentByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc QrPaymentHttpService) DeleteQrPaymentByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -160,7 +160,7 @@ func (svc QrPaymentHttpService) DeleteQrPaymentByGUIDs(shopID string, authUserna
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
@@ -168,12 +168,12 @@ func (svc QrPaymentHttpService) DeleteQrPaymentByGUIDs(shopID string, authUserna
 	return nil
 }
 
-func (svc QrPaymentHttpService) InfoQrPayment(shopID string, guid string) (models.QrPaymentInfo, error) {
+func (svc QrPaymentHttpService) InfoQrPayment(holdingCode string, guid string) (models.QrPaymentInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.QrPaymentInfo{}, err
@@ -187,7 +187,7 @@ func (svc QrPaymentHttpService) InfoQrPayment(shopID string, guid string) (model
 
 }
 
-func (svc QrPaymentHttpService) SearchQrPayment(shopID string, pageable micromodels.Pageable) ([]models.QrPaymentInfo, mongopagination.PaginationData, error) {
+func (svc QrPaymentHttpService) SearchQrPayment(holdingCode string, pageable micromodels.Pageable) ([]models.QrPaymentInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -197,7 +197,7 @@ func (svc QrPaymentHttpService) SearchQrPayment(shopID string, pageable micromod
 		"qrnames.name",
 	}
 
-	docList, pagination, err := svc.repo.FindPage(ctx, shopID, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPage(ctx, holdingCode, searchInFields, pageable)
 
 	if err != nil {
 		return []models.QrPaymentInfo{}, pagination, err
@@ -206,7 +206,7 @@ func (svc QrPaymentHttpService) SearchQrPayment(shopID string, pageable micromod
 	return docList, pagination, nil
 }
 
-func (svc QrPaymentHttpService) SearchQrPaymentStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.QrPaymentInfo, int, error) {
+func (svc QrPaymentHttpService) SearchQrPaymentStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.QrPaymentInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -218,7 +218,7 @@ func (svc QrPaymentHttpService) SearchQrPaymentStep(shopID string, langCode stri
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.QrPaymentInfo{}, 0, err
@@ -227,7 +227,7 @@ func (svc QrPaymentHttpService) SearchQrPaymentStep(shopID string, langCode stri
 	return docList, total, nil
 }
 
-func (svc QrPaymentHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.QrPayment) (common.BulkImport, error) {
+func (svc QrPaymentHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.QrPayment) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -239,7 +239,7 @@ func (svc QrPaymentHttpService) SaveInBatch(shopID string, authUsername string, 
 		itemCodeGuidList = append(itemCodeGuidList, doc.Code)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "code", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "code", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -251,18 +251,18 @@ func (svc QrPaymentHttpService) SaveInBatch(shopID string, authUsername string, 
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.QrPayment, models.QrPaymentDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.QrPayment) models.QrPaymentDoc {
+		func(holdingCode string, authUsername string, doc models.QrPayment) models.QrPaymentDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.QrPaymentDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.QrPayment = doc
 
 			currentTime := time.Now()
@@ -273,23 +273,23 @@ func (svc QrPaymentHttpService) SaveInBatch(shopID string, authUsername string, 
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.QrPayment, models.QrPaymentDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.QrPaymentDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", guid)
+		func(holdingCode string, guid string) (models.QrPaymentDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", guid)
 		},
 		func(doc models.QrPaymentDoc) bool {
 			return doc.Code != ""
 		},
-		func(shopID string, authUsername string, data models.QrPayment, doc models.QrPaymentDoc) error {
+		func(holdingCode string, authUsername string, data models.QrPayment, doc models.QrPaymentDoc) error {
 
 			doc.QrPayment = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -328,7 +328,7 @@ func (svc QrPaymentHttpService) SaveInBatch(shopID string, authUsername string, 
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -342,9 +342,9 @@ func (svc QrPaymentHttpService) getDocIDKey(doc models.QrPayment) string {
 	return doc.Code
 }
 
-func (svc QrPaymentHttpService) saveMasterSync(shopID string) {
+func (svc QrPaymentHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

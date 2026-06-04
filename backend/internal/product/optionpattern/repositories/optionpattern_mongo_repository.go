@@ -11,16 +11,16 @@ import (
 )
 
 type IOptionPatternRepository interface {
-	Count(ctx context.Context, shopID string) (int, error)
+	Count(ctx context.Context, holdingCode string) (int, error)
 	Create(ctx context.Context, doc models.OptionPatternDoc) (string, error)
 	CreateInBatch(ctx context.Context, docList []models.OptionPatternDoc) error
-	Update(ctx context.Context, shopID string, guid string, doc models.OptionPatternDoc) error
-	DeleteByGuidfixed(ctx context.Context, shopID string, guid string, username string) error
-	FindPage(ctx context.Context, shopID string, searchInFields []string, pageable micromodels.Pageable) ([]models.OptionPatternInfo, mongopagination.PaginationData, error)
-	FindByGuid(ctx context.Context, shopID string, guid string) (models.OptionPatternDoc, error)
+	Update(ctx context.Context, holdingCode string, guid string, doc models.OptionPatternDoc) error
+	DeleteByGuidfixed(ctx context.Context, holdingCode string, guid string, username string) error
+	FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable micromodels.Pageable) ([]models.OptionPatternInfo, mongopagination.PaginationData, error)
+	FindByGuid(ctx context.Context, holdingCode string, guid string) (models.OptionPatternDoc, error)
 
-	FindInItemGuid(ctx context.Context, shopID string, columnName string, itemGuidList []string) ([]models.OptionPatternItemGuid, error)
-	FindByDocIndentityGuid(ctx context.Context, shopID string, indentityField string, indentityValue interface{}) (models.OptionPatternDoc, error)
+	FindInItemGuid(ctx context.Context, holdingCode string, columnName string, itemGuidList []string) ([]models.OptionPatternItemGuid, error)
+	FindByDocIndentityGuid(ctx context.Context, holdingCode string, indentityField string, indentityValue interface{}) (models.OptionPatternDoc, error)
 }
 
 type OptionPatternRepository struct {

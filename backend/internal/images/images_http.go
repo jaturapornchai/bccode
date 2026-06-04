@@ -49,9 +49,9 @@ func (svc ImagesHttp) RegisterHttp() {
 	svc.ms.POST("/upload/images", svc.UploadImage)
 	svc.ms.POST("/upload/productimage", svc.UploadImageToProduct)
 
-	svc.ms.GET("/productimage/:shopid/:itemguid", svc.GetProductImage)
-	svc.ms.GET("/productimage/:shopid/:itemguid/:index", svc.GetProductImage)
-	svc.ms.GET("/slip/:shopid/:posid/:docdate/:docno", svc.GetSlipImage)
+	svc.ms.GET("/productimage/:holding_code/:itemguid", svc.GetProductImage)
+	svc.ms.GET("/productimage/:holding_code/:itemguid/:index", svc.GetProductImage)
+	svc.ms.GET("/slip/:holding_code/:posid/:docdate/:docno", svc.GetSlipImage)
 
 	svc.ms.Echo().Static("/images", storageConfig.StorageDataPath())
 	// check config storage
@@ -60,7 +60,7 @@ func (svc ImagesHttp) RegisterHttp() {
 
 func (svc ImagesHttp) GetProductImage(ctx microservice.IContext) error {
 
-	// get image format {shopid}-{itemguid}-{index} ex xxx-xxx-1
+	// get image format {holding_code}-{itemguid}-{index} ex xxx-xxx-1
 	// queryParams := strings.Split(ctx.Param("id"), "-")
 
 	// if len(queryParams) < 2 {
@@ -71,7 +71,7 @@ func (svc ImagesHttp) GetProductImage(ctx microservice.IContext) error {
 	// 	return nil
 	// }
 
-	shopId := ctx.Param("shopid")
+	holdingCode := ctx.Param("holding_code")
 	itemguid := ctx.Param("item_guid")
 	imageIndex := ctx.Param("index")
 
@@ -93,7 +93,7 @@ func (svc ImagesHttp) GetProductImage(ctx microservice.IContext) error {
 		index = 1
 	}
 
-	fileName, buffer, err := svc.service.GetImageByProductCode(shopId, itemguid, index)
+	fileName, buffer, err := svc.service.GetImageByProductCode(holdingCode, itemguid, index)
 
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, &common.ApiResponse{
@@ -140,10 +140,10 @@ func (svc ImagesHttp) GetProductImage(ctx microservice.IContext) error {
 func (svc ImagesHttp) UploadImage(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
-	shopId := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	fileHeader, _ := ctx.FormFile("file")
 	var image *models.Image
-	image, err := svc.service.UploadImage(shopId, fileHeader)
+	image, err := svc.service.UploadImage(holdingCode, fileHeader)
 
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, &common.ApiResponse{
@@ -175,9 +175,9 @@ func (svc ImagesHttp) UploadImageToProduct(ctx microservice.IContext) error {
 
 	fileHeader, _ := ctx.FormFile("file")
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	// find
-	err := svc.service.UploadImageToProduct(shopID, fileHeader)
+	err := svc.service.UploadImageToProduct(holdingCode, fileHeader)
 
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, &common.ApiResponse{
@@ -197,7 +197,7 @@ func (svc ImagesHttp) UploadImageToProduct(ctx microservice.IContext) error {
 // @Description GET Slip Image
 // @Tags		Common
 // @Accept 		json
-// @Param		shopid  path      string  true  "Shop ID"
+// @Param		holding_code  path      string  true  "Holding Code"
 // @Param		posid  path      string  true  "POS ID"
 // @Param		docdate  path      string  true  "Doc Date"
 // @Param		docno  path      string  true  "Doc No"
@@ -206,10 +206,10 @@ func (svc ImagesHttp) UploadImageToProduct(ctx microservice.IContext) error {
 // @Failure		400	{object}	common.AuthResponseFailed
 // @Failure		500	{object}	common.AuthResponseFailed
 // @Security     AccessToken
-// @Router /slip/{shopid}/{posid}/{docdate}/{docno} [get]
+// @Router /slip/{holding_code}/{posid}/{docdate}/{docno} [get]
 func (svc ImagesHttp) GetSlipImage(ctx microservice.IContext) error {
 
-	shopId := ctx.Param("shopid")
+	holdingCode := ctx.Param("holding_code")
 	posID := ctx.Param("posid")
 	docDate := ctx.Param("docdate")
 	docNo := ctx.Param("docno")
@@ -225,7 +225,7 @@ func (svc ImagesHttp) GetSlipImage(ctx microservice.IContext) error {
 		return nil
 	}
 
-	fileName, buffer, err := svc.service.GetSlipImage(shopId, posID, docDateFilter, docNo)
+	fileName, buffer, err := svc.service.GetSlipImage(holdingCode, posID, docDateFilter, docNo)
 
 	if err != nil {
 		ctx.Response(http.StatusNotFound, "")

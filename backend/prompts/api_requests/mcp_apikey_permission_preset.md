@@ -93,7 +93,7 @@ POST /goapi/api/mcp/keys
 Content-Type: application/json
 
 {
-  "shop_id": "...",
+  "holding_code": "...",
   "name": "Claude Desktop Key",
   "description": "สำหรับ Claude Desktop ใช้ค้นหา API",
   "allowed_tools": ["readonly"],        // ← เปลี่ยนตรงนี้
@@ -107,7 +107,7 @@ POST /goapi/api/mcp/keys/create-with-export
 Content-Type: application/json
 
 {
-  "shop_id": "...",
+  "holding_code": "...",
   "name": "Backend Dev Key",
   "allowed_tools": ["*"],               // ← Developer preset
   "created_by": "admin"

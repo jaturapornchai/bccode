@@ -10,7 +10,7 @@ import (
 
 type BranchOrgDoc struct {
 	ID          primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	ShopID      string             `json:"shopid" bson:"shopid"`
+	HoldingCode string             `json:"holding_code" bson:"holding_code"`
 	GuidFixed   string             `json:"guid_fixed" bson:"guid_fixed"`
 	CompanyGuid string             `json:"company_guid" bson:"company_guid"`
 	Code        string             `json:"code" bson:"code"`

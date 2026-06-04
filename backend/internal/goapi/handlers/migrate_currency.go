@@ -3,31 +3,31 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"smlcloudplatform/internal/goapi/config"
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/myclickhouse"
 	myGlobal "smlcloudplatform/internal/goapi/myglobal"
 	"smlcloudplatform/internal/goapi/mypg"
-	"net/http"
 
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
 // MigrateCurrencyColumnsHandler adds currency columns to doc table
-// GET /api/migrate/currency?shopid=xxx
+// GET /api/migrate/currency?holding_code=xxx
 func MigrateCurrencyColumnsHandler(c echo.Context) error {
-	shopId := c.QueryParam("shopid")
-	if shopId == "" {
+	holdingCode := c.QueryParam("holding_code")
+	if holdingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"error": "shopid is required",
+			"error": "holding_code is required",
 		})
 	}
 
-	logger.Info("[MIGRATE-CURRENCY] Starting migration for shop: %s", shopId)
+	logger.Info("[MIGRATE-CURRENCY] Starting migration for shop: %s", holdingCode)
 
 	// Get PostgreSQL connection
-	db, err := mypg.PgSqlFastConnect(shopId)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		logger.Error("[MIGRATE-CURRENCY] Failed to connect to PostgreSQL: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
@@ -102,7 +102,7 @@ ALTER TABLE doc ADD COLUMN IF NOT EXISTS isdelete BOOLEAN DEFAULT FALSE;
 	// Create indexes
 	indexSQL := `
 CREATE INDEX IF NOT EXISTS idx_doc_currency ON doc(currency);
-CREATE INDEX IF NOT EXISTS idx_doc_currency_shop ON doc(currency, shopid);
+CREATE INDEX IF NOT EXISTS idx_doc_currency_shop ON doc(currency, holding_code);
 CREATE INDEX IF NOT EXISTS idx_doc_isdelete ON doc(isdelete);
 CREATE INDEX IF NOT EXISTS idx_doc_docno_transflag_isdelete ON doc(docno, transflag, isdelete);
 `
@@ -145,16 +145,16 @@ CREATE INDEX IF NOT EXISTS idx_doc_docno_transflag_isdelete ON doc(docno, transf
 
 // BackfillCurrencyDataHandler อ่าน currency data จาก MongoDB แล้วอัพเดท PostgreSQL
 // สำหรับเอกสารเก่าที่ถูก Kafka consume ก่อนแก้ TagName: "json"
-// GET /api/migrate/currency-backfill?shopid=xxx
+// GET /api/migrate/currency-backfill?holding_code=xxx
 func BackfillCurrencyDataHandler(c echo.Context) error {
-	shopId := c.QueryParam("shopid")
-	if shopId == "" {
+	holdingCode := c.QueryParam("holding_code")
+	if holdingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"error": "shopid is required",
+			"error": "holding_code is required",
 		})
 	}
 
-	logger.Info("[BACKFILL-CURRENCY] เริ่ม backfill currency data สำหรับ shop: %s", shopId)
+	logger.Info("[BACKFILL-CURRENCY] เริ่ม backfill currency data สำหรับ shop: %s", holdingCode)
 
 	// เชื่อมต่อ MongoDB
 	mongoClient := myGlobal.SafeMongoConnectFast()
@@ -169,7 +169,7 @@ func BackfillCurrencyDataHandler(c echo.Context) error {
 	mongoDB := mongoClient.Database(mongoDBName)
 
 	// เชื่อมต่อ PostgreSQL
-	pgDB, err := mypg.PgSqlFastConnect(shopId)
+	pgDB, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		logger.Error("[BACKFILL-CURRENCY] PostgreSQL connection failed: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
@@ -198,7 +198,7 @@ func BackfillCurrencyDataHandler(c echo.Context) error {
 
 		// ค้นหาเอกสารที่มี doc_currency ไม่ว่าง และเป็น shop ที่ต้องการ
 		filter := bson.M{
-			"shopid":       shopId,
+			"holding_code": holdingCode,
 			"doc_currency": bson.M{"$exists": true, "$ne": ""},
 		}
 

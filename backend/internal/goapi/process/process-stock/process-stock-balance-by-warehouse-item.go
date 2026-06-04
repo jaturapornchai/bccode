@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/models"
-	"math"
 	"strings"
 	"time"
 
@@ -14,13 +14,13 @@ import (
 	"smlcloudplatform/internal/goapi/mypg"
 )
 
-func ProcessProductBalanceByWareHouseAndItem(shopId string, finalDate string, balanceOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct) (result models.ResultModel) {
+func ProcessProductBalanceByWareHouseAndItem(holdingCode string, finalDate string, balanceOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct) (result models.ResultModel) {
 	// Default to Thailand timezone for backward compatibility
-	return ProcessProductBalanceByWareHouseAndItemWithTimezone(shopId, finalDate, balanceOnly, itemCodeList, warehouseList, "TH")
+	return ProcessProductBalanceByWareHouseAndItemWithTimezone(holdingCode, finalDate, balanceOnly, itemCodeList, warehouseList, "TH")
 }
 
 // Deprecated: ใช้ ProcessProductBalanceByWhCodeBarcodeWithTimezone แทน
-func ProcessProductBalanceByWareHouseAndItemWithCountry(shopId string, finalDate string, balanceOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct, countryCode string) (result models.ResultModel) {
+func ProcessProductBalanceByWareHouseAndItemWithCountry(holdingCode string, finalDate string, balanceOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct, countryCode string) (result models.ResultModel) {
 	// Convert country code to timezone code for backward compatibility
 	timezoneCode := countryCode
 	switch countryCode {
@@ -29,16 +29,16 @@ func ProcessProductBalanceByWareHouseAndItemWithCountry(shopId string, finalDate
 	case "US":
 		timezoneCode = "US_EST" // Default to Eastern Time
 	}
-	return ProcessProductBalanceByWareHouseAndItemWithTimezone(shopId, finalDate, balanceOnly, itemCodeList, warehouseList, timezoneCode)
+	return ProcessProductBalanceByWareHouseAndItemWithTimezone(holdingCode, finalDate, balanceOnly, itemCodeList, warehouseList, timezoneCode)
 }
 
-func ProcessProductBalanceByWareHouseAndItemWithTimezone(shopId string, finalDate string, balanceOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct, timezoneCode string) (result models.ResultModel) {
+func ProcessProductBalanceByWareHouseAndItemWithTimezone(holdingCode string, finalDate string, balanceOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct, timezoneCode string) (result models.ResultModel) {
 	logger.Info("ProcessProductBalanceByWhCodeBarcode with Timezone: %s", timezoneCode)
 	startTime := time.Now()
 
 	ctx := context.Background()
 
-	db, err := mypg.PgSqlFastConnect(shopId)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		logger.Info("Failed to connect to PostgreSQL: %v", err)
 		return models.ResultModel{
@@ -108,7 +108,7 @@ WITH item_names AS (
 		itemcode,
 		STRING_AGG(DISTINCT name0, ', ') AS itemname
 	FROM productbarcode
-	WHERE itemcode IS NOT NULL 
+	WHERE itemcode IS NOT NULL
 	AND itemcode <> ''
 	GROUP BY itemcode
 ),
@@ -117,24 +117,24 @@ barcode_list AS (
 		itemcode,
 		STRING_AGG(DISTINCT barcode, ', ') AS barcodelist
 	FROM productbarcode
-	WHERE itemcode IS NOT NULL 
+	WHERE itemcode IS NOT NULL
 	AND itemcode <> ''
 	GROUP BY itemcode
 ),
 auto_packing AS (
 	SELECT
 		itemcode,
-		COUNT(DISTINCT CASE 
-			WHEN barcoderefunitstand > 0 AND barcoderefunitdivide > 0 
+		COUNT(DISTINCT CASE
+			WHEN barcoderefunitstand > 0 AND barcoderefunitdivide > 0
 			AND (barcoderefunitstand != barcoderefunitdivide)
-			THEN barcoderefunitstand || '-' || barcoderefunitdivide 
+			THEN barcoderefunitstand || '-' || barcoderefunitdivide
 		END) AS countpacking
 	FROM productbarcode
-	WHERE itemcode IS NOT NULL 
+	WHERE itemcode IS NOT NULL
 	AND itemcode <> ''
 	GROUP BY itemcode
 )
-SELECT 
+SELECT
     main.*,
     n.itemname AS itemname,
     pb2.unitcode AS unitcode,
@@ -152,7 +152,7 @@ FROM (
             itemcode,
             whcode,
             ROW_NUMBER() OVER (
-                PARTITION BY itemcode, whcode 
+                PARTITION BY itemcode, whcode
                 ORDER BY docdatetime DESC
             ) AS rn
         FROM processstockcost
@@ -182,7 +182,7 @@ LEFT JOIN (
 		MAX(unitcode) AS unitcode,
 		MAX(unitname) AS unitname
 	FROM productbarcode
-	WHERE barcoderefunitstand = 1 
+	WHERE barcoderefunitstand = 1
 	  AND barcoderefunitdivide = 1
 	GROUP BY itemcode
 ) pb2 ON main.itemcode = pb2.itemcode

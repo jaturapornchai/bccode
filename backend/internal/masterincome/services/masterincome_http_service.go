@@ -19,15 +19,15 @@ import (
 )
 
 type IMasterIncomeHttpService interface {
-	CreateMasterIncome(shopID string, authUsername string, doc models.MasterIncome) (string, error)
-	UpdateMasterIncome(shopID string, guid string, authUsername string, doc models.MasterIncome) error
-	DeleteMasterIncome(shopID string, guid string, authUsername string) error
-	DeleteMasterIncomeByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoMasterIncome(shopID string, guid string) (models.MasterIncomeInfo, error)
-	InfoMasterIncomeByCode(shopID string, code string) (models.MasterIncomeInfo, error)
-	SearchMasterIncome(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.MasterIncomeInfo, mongopagination.PaginationData, error)
-	SearchMasterIncomeStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.MasterIncomeInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.MasterIncome) (common.BulkImport, error)
+	CreateMasterIncome(holdingCode string, authUsername string, doc models.MasterIncome) (string, error)
+	UpdateMasterIncome(holdingCode string, guid string, authUsername string, doc models.MasterIncome) error
+	DeleteMasterIncome(holdingCode string, guid string, authUsername string) error
+	DeleteMasterIncomeByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoMasterIncome(holdingCode string, guid string) (models.MasterIncomeInfo, error)
+	InfoMasterIncomeByCode(holdingCode string, code string) (models.MasterIncomeInfo, error)
+	SearchMasterIncome(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.MasterIncomeInfo, mongopagination.PaginationData, error)
+	SearchMasterIncomeStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.MasterIncomeInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.MasterIncome) (common.BulkImport, error)
 
 	GetModuleName() string
 }
@@ -63,12 +63,12 @@ func (svc MasterIncomeHttpService) getContextTimeout() (context.Context, context
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc MasterIncomeHttpService) CreateMasterIncome(shopID string, authUsername string, doc models.MasterIncome) (string, error) {
+func (svc MasterIncomeHttpService) CreateMasterIncome(holdingCode string, authUsername string, doc models.MasterIncome) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	err := svc.existsCode(ctx, shopID, doc.Code)
+	err := svc.existsCode(ctx, holdingCode, doc.Code)
 	if err != nil {
 		return "", err
 	}
@@ -76,7 +76,7 @@ func (svc MasterIncomeHttpService) CreateMasterIncome(shopID string, authUsernam
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.MasterIncomeDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.MasterIncome = doc
 
@@ -90,15 +90,15 @@ func (svc MasterIncomeHttpService) CreateMasterIncome(shopID string, authUsernam
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
-		svc.cacheRepo.ClearCreatedCode(shopID, doc.Code)
+		svc.saveMasterSync(holdingCode)
+		svc.cacheRepo.ClearCreatedCode(holdingCode, doc.Code)
 	}()
 
 	return newGuidFixed, nil
 }
 
-func (svc MasterIncomeHttpService) existsCode(ctx context.Context, shopID string, code string) error {
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", code)
+func (svc MasterIncomeHttpService) existsCode(ctx context.Context, holdingCode string, code string) error {
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", code)
 
 	if err != nil {
 		return err
@@ -108,7 +108,7 @@ func (svc MasterIncomeHttpService) existsCode(ctx context.Context, shopID string
 		return errors.New("code is exists")
 	}
 
-	createCodeSuccess, err := svc.cacheRepo.CreateCode(shopID, code, 60*time.Second)
+	createCodeSuccess, err := svc.cacheRepo.CreateCode(holdingCode, code, 60*time.Second)
 
 	if err != nil {
 		return errors.New("code is exists")
@@ -120,12 +120,12 @@ func (svc MasterIncomeHttpService) existsCode(ctx context.Context, shopID string
 	return nil
 }
 
-func (svc MasterIncomeHttpService) UpdateMasterIncome(shopID string, guid string, authUsername string, doc models.MasterIncome) error {
+func (svc MasterIncomeHttpService) UpdateMasterIncome(holdingCode string, guid string, authUsername string, doc models.MasterIncome) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -142,25 +142,25 @@ func (svc MasterIncomeHttpService) UpdateMasterIncome(shopID string, guid string
 	dataDoc.UpdatedBy = authUsername
 	dataDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, dataDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, dataDoc)
 
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc MasterIncomeHttpService) DeleteMasterIncome(shopID string, guid string, authUsername string) error {
+func (svc MasterIncomeHttpService) DeleteMasterIncome(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -170,19 +170,19 @@ func (svc MasterIncomeHttpService) DeleteMasterIncome(shopID string, guid string
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc MasterIncomeHttpService) DeleteMasterIncomeByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc MasterIncomeHttpService) DeleteMasterIncomeByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -191,24 +191,24 @@ func (svc MasterIncomeHttpService) DeleteMasterIncomeByGUIDs(shopID string, auth
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc MasterIncomeHttpService) InfoMasterIncome(shopID string, guid string) (models.MasterIncomeInfo, error) {
+func (svc MasterIncomeHttpService) InfoMasterIncome(holdingCode string, guid string) (models.MasterIncomeInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.MasterIncomeInfo{}, err
@@ -221,12 +221,12 @@ func (svc MasterIncomeHttpService) InfoMasterIncome(shopID string, guid string) 
 	return findDoc.MasterIncomeInfo, nil
 }
 
-func (svc MasterIncomeHttpService) InfoMasterIncomeByCode(shopID string, code string) (models.MasterIncomeInfo, error) {
+func (svc MasterIncomeHttpService) InfoMasterIncomeByCode(holdingCode string, code string) (models.MasterIncomeInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", code)
 
 	if err != nil {
 		return models.MasterIncomeInfo{}, err
@@ -239,7 +239,7 @@ func (svc MasterIncomeHttpService) InfoMasterIncomeByCode(shopID string, code st
 	return findDoc.MasterIncomeInfo, nil
 }
 
-func (svc MasterIncomeHttpService) SearchMasterIncome(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.MasterIncomeInfo, mongopagination.PaginationData, error) {
+func (svc MasterIncomeHttpService) SearchMasterIncome(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.MasterIncomeInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -248,7 +248,7 @@ func (svc MasterIncomeHttpService) SearchMasterIncome(shopID string, filters map
 		"code",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.MasterIncomeInfo{}, pagination, err
@@ -257,7 +257,7 @@ func (svc MasterIncomeHttpService) SearchMasterIncome(shopID string, filters map
 	return docList, pagination, nil
 }
 
-func (svc MasterIncomeHttpService) SearchMasterIncomeStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.MasterIncomeInfo, int, error) {
+func (svc MasterIncomeHttpService) SearchMasterIncomeStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.MasterIncomeInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -276,7 +276,7 @@ func (svc MasterIncomeHttpService) SearchMasterIncomeStep(shopID string, langCod
 		}
 	*/
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.MasterIncomeInfo{}, 0, err
@@ -285,7 +285,7 @@ func (svc MasterIncomeHttpService) SearchMasterIncomeStep(shopID string, langCod
 	return docList, total, nil
 }
 
-func (svc MasterIncomeHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.MasterIncome) (common.BulkImport, error) {
+func (svc MasterIncomeHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.MasterIncome) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -297,7 +297,7 @@ func (svc MasterIncomeHttpService) SaveInBatch(shopID string, authUsername strin
 		itemCodeGuidList = append(itemCodeGuidList, doc.Code)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "code", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "code", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -309,18 +309,18 @@ func (svc MasterIncomeHttpService) SaveInBatch(shopID string, authUsername strin
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.MasterIncome, models.MasterIncomeDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.MasterIncome) models.MasterIncomeDoc {
+		func(holdingCode string, authUsername string, doc models.MasterIncome) models.MasterIncomeDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.MasterIncomeDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.MasterIncome = doc
 
 			currentTime := time.Now()
@@ -331,23 +331,23 @@ func (svc MasterIncomeHttpService) SaveInBatch(shopID string, authUsername strin
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.MasterIncome, models.MasterIncomeDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.MasterIncomeDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", guid)
+		func(holdingCode string, guid string) (models.MasterIncomeDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", guid)
 		},
 		func(doc models.MasterIncomeDoc) bool {
 			return doc.Code != ""
 		},
-		func(shopID string, authUsername string, data models.MasterIncome, doc models.MasterIncomeDoc) error {
+		func(holdingCode string, authUsername string, data models.MasterIncome, doc models.MasterIncomeDoc) error {
 
 			doc.MasterIncome = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -386,7 +386,7 @@ func (svc MasterIncomeHttpService) SaveInBatch(shopID string, authUsername strin
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -400,9 +400,9 @@ func (svc MasterIncomeHttpService) getDocIDKey(doc models.MasterIncome) string {
 	return doc.Code
 }
 
-func (svc MasterIncomeHttpService) saveMasterSync(shopID string) {
+func (svc MasterIncomeHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

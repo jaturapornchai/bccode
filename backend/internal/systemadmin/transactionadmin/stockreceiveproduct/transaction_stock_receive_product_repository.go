@@ -9,8 +9,8 @@ import (
 )
 
 type IStockReceiveTransactionAdminRepository interface {
-	FindStockReceiveDocByShopID(ctx context.Context, shopID string) ([]stockReceiveProductModels.StockReceiveProductDoc, error)
-	FindStockReceiveDeleteDocByShopID(ctx context.Context, shopID string) ([]stockReceiveProductModels.StockReceiveProductDoc, error)
+	FindStockReceiveDocByHoldingCode(ctx context.Context, holdingCode string) ([]stockReceiveProductModels.StockReceiveProductDoc, error)
+	FindStockReceiveDeleteDocByHoldingCode(ctx context.Context, holdingCode string) ([]stockReceiveProductModels.StockReceiveProductDoc, error)
 }
 
 type StockReceiveTransactionAdminRepository struct {
@@ -23,13 +23,13 @@ func NewStockReceiveTransactionAdminRepository(pst microservice.IPersisterMongo)
 	}
 }
 
-func (r *StockReceiveTransactionAdminRepository) FindStockReceiveDocByShopID(ctx context.Context, shopID string) ([]stockReceiveProductModels.StockReceiveProductDoc, error) {
+func (r *StockReceiveTransactionAdminRepository) FindStockReceiveDocByHoldingCode(ctx context.Context, holdingCode string) ([]stockReceiveProductModels.StockReceiveProductDoc, error) {
 	docList := []stockReceiveProductModels.StockReceiveProductDoc{}
 
 	err := r.pst.Find(ctx, &stockReceiveProductModels.StockReceiveProductDoc{},
 		bson.M{
-			"shopid":    shopID,
-			"deleted_at": bson.M{"$exists": false},
+			"holding_code": holdingCode,
+			"deleted_at":   bson.M{"$exists": false},
 		},
 		&docList)
 	if err != nil {
@@ -39,13 +39,13 @@ func (r *StockReceiveTransactionAdminRepository) FindStockReceiveDocByShopID(ctx
 	return docList, nil
 }
 
-func (r *StockReceiveTransactionAdminRepository) FindStockReceiveDeleteDocByShopID(ctx context.Context, shopID string) ([]stockReceiveProductModels.StockReceiveProductDoc, error) {
+func (r *StockReceiveTransactionAdminRepository) FindStockReceiveDeleteDocByHoldingCode(ctx context.Context, holdingCode string) ([]stockReceiveProductModels.StockReceiveProductDoc, error) {
 	docList := []stockReceiveProductModels.StockReceiveProductDoc{}
 
 	err := r.pst.Find(ctx, &stockReceiveProductModels.StockReceiveProductDoc{},
 		bson.M{
-			"shopid":    shopID,
-			"deleted_at": bson.M{"$exists": true},
+			"holding_code": holdingCode,
+			"deleted_at":   bson.M{"$exists": true},
 		},
 		&docList)
 	if err != nil {

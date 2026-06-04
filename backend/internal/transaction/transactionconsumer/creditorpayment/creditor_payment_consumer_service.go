@@ -6,8 +6,8 @@ import (
 )
 
 type ICreditorPaymentTransactionConsumerService interface {
-	Upsert(shopID string, docNo string, doc models.CreditorPaymentTransactionPG) error
-	Delete(shopID string, docNo string) error
+	Upsert(holdingCode string, docNo string, doc models.CreditorPaymentTransactionPG) error
+	Delete(holdingCode string, docNo string) error
 }
 
 type CreditorPaymentTransactionConsumerService struct {
@@ -20,8 +20,8 @@ func NewCreditorPaymentTransactionConsumerService(repo ICreditorPaymentTransacti
 	}
 }
 
-func (s *CreditorPaymentTransactionConsumerService) Upsert(shopID string, docNo string, doc models.CreditorPaymentTransactionPG) error {
-	findDoc, err := s.repo.Get(shopID, docNo)
+func (s *CreditorPaymentTransactionConsumerService) Upsert(holdingCode string, docNo string, doc models.CreditorPaymentTransactionPG) error {
+	findDoc, err := s.repo.Get(holdingCode, docNo)
 	if err != nil {
 		err = s.repo.Create(doc)
 		if err != nil {
@@ -32,7 +32,7 @@ func (s *CreditorPaymentTransactionConsumerService) Upsert(shopID string, docNo 
 		isEqual := findDoc.CompareTo(&doc)
 
 		if isEqual == false {
-			err = s.repo.Update(shopID, docNo, doc)
+			err = s.repo.Update(holdingCode, docNo, doc)
 			if err != nil {
 				return err
 			}
@@ -44,10 +44,10 @@ func (s *CreditorPaymentTransactionConsumerService) Upsert(shopID string, docNo 
 	return nil
 }
 
-func (s *CreditorPaymentTransactionConsumerService) Delete(shopID string, docNo string) error {
-	err := s.repo.Delete(shopID, docNo, models.CreditorPaymentTransactionPG{
-		ShopIdentity: pkgModels.ShopIdentity{
-			ShopID: shopID,
+func (s *CreditorPaymentTransactionConsumerService) Delete(holdingCode string, docNo string) error {
+	err := s.repo.Delete(holdingCode, docNo, models.CreditorPaymentTransactionPG{
+		HoldingCodeentity: pkgModels.HoldingCodeentity{
+			HoldingCode: holdingCode,
 		},
 		DocNo: docNo,
 	})

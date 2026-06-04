@@ -1,7 +1,8 @@
+import type { CSSProperties } from "react";
 import type { Metadata, Viewport } from "next";
-import Script from "next/script";
+import { cookies } from "next/headers";
 import "./globals.css";
-import { getThemesMap } from "@/lib/theme-data";
+import { colorThemeStorageKey, getThemesMap, normalizeColorTheme, themeStorageKey, type ThemeMode } from "@/lib/theme-data";
 
 export const metadata: Metadata = {
   title: "BC Ai Account Login",
@@ -16,41 +17,20 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const cookieStore = await cookies();
+  const savedTheme = cookieStore.get(themeStorageKey)?.value;
+  const themeMode: ThemeMode = savedTheme === "dark" || savedTheme === "light" ? savedTheme : "light";
+  const colorTheme = normalizeColorTheme(cookieStore.get(colorThemeStorageKey)?.value ?? null);
   const themesMap = getThemesMap();
+  const themeVars = themesMap[colorTheme]?.[themeMode] ?? {};
+  const htmlStyle = {
+    colorScheme: themeMode,
+    ...themeVars,
+  } as CSSProperties;
 
   return (
-    <html lang="th" suppressHydrationWarning>
-      <head>
-        <Script
-          id="bc-theme-init"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  var theme = localStorage.getItem('bc_theme');
-                  var colorTheme = localStorage.getItem('bc_color_theme') || 'ban-chiang';
-                  if (!theme) {
-                    theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-                  }
-                  document.documentElement.setAttribute('data-theme', theme);
-                  document.documentElement.setAttribute('data-color-theme', colorTheme);
-                  document.documentElement.style.colorScheme = theme;
-
-                  var themes = ${JSON.stringify(themesMap)};
-                  var vars = themes[colorTheme] ? themes[colorTheme][theme] : null;
-                  if (vars) {
-                    for (var name in vars) {
-                      document.documentElement.style.setProperty(name, vars[name]);
-                    }
-                  }
-                } catch (e) {}
-              })();
-            `,
-          }}
-        />
-      </head>
+    <html lang="th" data-theme={themeMode} data-color-theme={colorTheme} style={htmlStyle} suppressHydrationWarning>
       <body>{children}</body>
     </html>
   );

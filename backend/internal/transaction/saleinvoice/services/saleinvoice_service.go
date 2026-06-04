@@ -30,21 +30,21 @@ import (
 )
 
 type ISaleInvoiceService interface {
-	CreateSaleInvoice(shopID string, authUsername string, doc models.SaleInvoice) (string, string, error)
-	CreateSaleInvoiceWithAutoCoupon(shopID string, authUsername string, doc models.SaleInvoice) (string, string, error)
-	UpdateSaleInvoice(shopID string, guid string, authUsername string, doc models.SaleInvoice) error
-	UpdateSlip(shopID string, authUsername string, docNo string, mode uint8, machineCode string, zoneGroupNumber string, imageUrl string) error
-	RecalPoint(shopID string, code string, authUsername string) error
-	DeleteSaleInvoice(shopID string, guid string, authUsername string) error
-	DeleteSaleInvoiceByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoSaleInvoice(shopID string, guid string) (models.SaleInvoiceInfo, error)
-	InfoSaleInvoiceByCode(shopID string, code string) (models.SaleInvoiceInfo, error)
-	InfoSaleInvoiceByGuidPos(shopID string, code string) (models.SaleInvoiceInfo, error)
-	SearchSaleInvoice(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.SaleInvoiceInfo, mongopagination.PaginationData, error)
-	SearchSaleInvoiceStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.SaleInvoiceInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.SaleInvoice) (common.BulkImport, error)
-	GetLastPOSDocNo(shopID, posID, maxDocNo string) (string, error)
-	Export(languageCode string, shopID string, languageHeader map[string]string) ([][]string, error)
+	CreateSaleInvoice(holdingCode string, authUsername string, doc models.SaleInvoice) (string, string, error)
+	CreateSaleInvoiceWithAutoCoupon(holdingCode string, authUsername string, doc models.SaleInvoice) (string, string, error)
+	UpdateSaleInvoice(holdingCode string, guid string, authUsername string, doc models.SaleInvoice) error
+	UpdateSlip(holdingCode string, authUsername string, docNo string, mode uint8, machineCode string, zoneGroupNumber string, imageUrl string) error
+	RecalPoint(holdingCode string, code string, authUsername string) error
+	DeleteSaleInvoice(holdingCode string, guid string, authUsername string) error
+	DeleteSaleInvoiceByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoSaleInvoice(holdingCode string, guid string) (models.SaleInvoiceInfo, error)
+	InfoSaleInvoiceByCode(holdingCode string, code string) (models.SaleInvoiceInfo, error)
+	InfoSaleInvoiceByGuidPos(holdingCode string, code string) (models.SaleInvoiceInfo, error)
+	SearchSaleInvoice(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.SaleInvoiceInfo, mongopagination.PaginationData, error)
+	SearchSaleInvoiceStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.SaleInvoiceInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.SaleInvoice) (common.BulkImport, error)
+	GetLastPOSDocNo(holdingCode, posID, maxDocNo string) (string, error)
+	Export(languageCode string, holdingCode string, languageHeader map[string]string) ([][]string, error)
 
 	GetModuleName() string
 }
@@ -137,11 +137,11 @@ func (svc SaleInvoiceService) getDocNoPrefix(docDate time.Time) string {
 	return fmt.Sprintf("%s%s", MODULE_NAME, docDateStr)
 }
 
-func (svc SaleInvoiceService) generateNewDocNo(ctx context.Context, shopID, prefixDocNo string, docNumber int) (string, int, error) {
-	prevoiusDocNumber, err := svc.repoCache.Get(shopID, prefixDocNo)
+func (svc SaleInvoiceService) generateNewDocNo(ctx context.Context, holdingCode, prefixDocNo string, docNumber int) (string, int, error) {
+	prevoiusDocNumber, err := svc.repoCache.Get(holdingCode, prefixDocNo)
 
 	if prevoiusDocNumber == 0 || err != nil {
-		lastDoc, err := svc.repo.FindLastDocNo(ctx, shopID, prefixDocNo)
+		lastDoc, err := svc.repo.FindLastDocNo(ctx, holdingCode, prefixDocNo)
 
 		if err != nil {
 			return "", 0, err
@@ -161,7 +161,7 @@ func (svc SaleInvoiceService) generateNewDocNo(ctx context.Context, shopID, pref
 	newDocNumber := prevoiusDocNumber + 1
 	newDocNo := fmt.Sprintf("%s%05d", prefixDocNo, newDocNumber)
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", newDocNo)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", newDocNo)
 
 	if err != nil {
 		return "", 0, err
@@ -174,9 +174,9 @@ func (svc SaleInvoiceService) generateNewDocNo(ctx context.Context, shopID, pref
 	return newDocNo, newDocNumber, nil
 }
 
-func (svc SaleInvoiceService) processPointTransactions(ctx context.Context, shopID string, authUsername string, custCode string, pointsCode string, docNo string, docDate time.Time, getPoint float64, usePoint float64) error {
+func (svc SaleInvoiceService) processPointTransactions(ctx context.Context, holdingCode string, authUsername string, custCode string, pointsCode string, docNo string, docDate time.Time, getPoint float64, usePoint float64) error {
 	svc.logger.Debug("Starting point transaction processing",
-		slog.String("shopID", shopID),
+		slog.String("holdingCode", holdingCode),
 		slog.String("custCode", custCode),
 		slog.String("pointsCode", pointsCode),
 		slog.String("docNo", docNo),
@@ -217,7 +217,7 @@ func (svc SaleInvoiceService) processPointTransactions(ctx context.Context, shop
 			slog.Float64("usePoint", usePoint),
 		)
 
-		err := svc.processUsePointTransaction(extendedCtx, shopID, authUsername, custCode, docNo, docDate, usePoint)
+		err := svc.processUsePointTransaction(extendedCtx, holdingCode, authUsername, custCode, docNo, docDate, usePoint)
 		if err != nil {
 			svc.logger.Error("UsePoint transaction failed",
 				slog.String("error", err.Error()),
@@ -235,7 +235,7 @@ func (svc SaleInvoiceService) processPointTransactions(ctx context.Context, shop
 			slog.Float64("getPoint", getPoint),
 		)
 
-		err := svc.processGetPointTransaction(extendedCtx, shopID, authUsername, custCode, pointsCode, docNo, docDate, getPoint)
+		err := svc.processGetPointTransaction(extendedCtx, holdingCode, authUsername, custCode, pointsCode, docNo, docDate, getPoint)
 		if err != nil {
 			svc.logger.Error("GetPoint transaction failed",
 				slog.String("error", err.Error()),
@@ -255,7 +255,7 @@ func (svc SaleInvoiceService) processPointTransactions(ctx context.Context, shop
 	return nil
 }
 
-func (svc SaleInvoiceService) RecalPoint(shopID string, code string, authUsername string) error {
+func (svc SaleInvoiceService) RecalPoint(holdingCode string, code string, authUsername string) error {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
@@ -265,7 +265,7 @@ func (svc SaleInvoiceService) RecalPoint(shopID string, code string, authUsernam
 
 	updateCust := &custModels.DebtorDoc{}
 
-	findCust, err := svc.repoCust.FindByDocIndentityGuid(ctx, shopID, "code", code)
+	findCust, err := svc.repoCust.FindByDocIndentityGuid(ctx, holdingCode, "code", code)
 
 	if err != nil {
 		return err
@@ -280,7 +280,7 @@ func (svc SaleInvoiceService) RecalPoint(shopID string, code string, authUsernam
 		"custcode",
 	}
 
-	findDoc, err := svc.repo.Find(context.Background(), shopID, searchInFields, code)
+	findDoc, err := svc.repo.Find(context.Background(), holdingCode, searchInFields, code)
 
 	if err != nil {
 		return err
@@ -296,7 +296,7 @@ func (svc SaleInvoiceService) RecalPoint(shopID string, code string, authUsernam
 		}
 	}
 	updateCust.PointBalance = CalGetPoint - CalUsePoint
-	err = svc.repoCust.Update(ctx, shopID, code, *updateCust)
+	err = svc.repoCust.Update(ctx, holdingCode, code, *updateCust)
 	if err != nil {
 		return err
 	}
@@ -304,7 +304,7 @@ func (svc SaleInvoiceService) RecalPoint(shopID string, code string, authUsernam
 	return nil
 }
 
-func (svc SaleInvoiceService) CreateSaleInvoice(shopID string, authUsername string, doc models.SaleInvoice) (string, string, error) {
+func (svc SaleInvoiceService) CreateSaleInvoice(holdingCode string, authUsername string, doc models.SaleInvoice) (string, string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -317,7 +317,7 @@ func (svc SaleInvoiceService) CreateSaleInvoice(shopID string, authUsername stri
 		docDate := doc.DocDatetime
 		prefixDocNo = svc.getDocNoPrefix(docDate)
 
-		tempNewDocNo, tempNewDocNumber, err := svc.generateNewDocNo(ctx, shopID, prefixDocNo, 1)
+		tempNewDocNo, tempNewDocNumber, err := svc.generateNewDocNo(ctx, holdingCode, prefixDocNo, 1)
 
 		if err != nil {
 			return "", "", err
@@ -334,7 +334,7 @@ func (svc SaleInvoiceService) CreateSaleInvoice(shopID string, authUsername stri
 	}
 
 	if isGenerateDocNo {
-		findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", docNo)
+		findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", docNo)
 
 		if err != nil {
 			return "", "", err
@@ -348,7 +348,7 @@ func (svc SaleInvoiceService) CreateSaleInvoice(shopID string, authUsername stri
 	newGuidFixed := utils.NewGUID()
 
 	dataDoc := models.SaleInvoiceDoc{}
-	dataDoc.ShopID = shopID
+	dataDoc.HoldingCode = holdingCode
 	dataDoc.GuidFixed = newGuidFixed
 	dataDoc.SaleInvoice = doc
 	dataDoc.IsClose = false
@@ -359,7 +359,7 @@ func (svc SaleInvoiceService) CreateSaleInvoice(shopID string, authUsername stri
 		dataDoc.TaxDocNo = docNo
 	}
 
-	productBarcodes, err := svc.GetDetailProductBarcodes(ctx, shopID, *doc.Details)
+	productBarcodes, err := svc.GetDetailProductBarcodes(ctx, holdingCode, *doc.Details)
 	if err != nil {
 		return "", "", err
 	}
@@ -369,7 +369,7 @@ func (svc SaleInvoiceService) CreateSaleInvoice(shopID string, authUsername stri
 
 	if dataDoc.PointsCode != "" {
 		// Handle point transactions (earning and redeeming)
-		err := svc.processPointTransactions(ctx, shopID, authUsername, dataDoc.CustCode, dataDoc.PointsCode, dataDoc.DocNo, dataDoc.DocDatetime, dataDoc.GetPoint, dataDoc.UsePoint)
+		err := svc.processPointTransactions(ctx, holdingCode, authUsername, dataDoc.CustCode, dataDoc.PointsCode, dataDoc.DocNo, dataDoc.DocDatetime, dataDoc.GetPoint, dataDoc.UsePoint)
 		if err != nil {
 			return "", "", err
 		}
@@ -389,10 +389,10 @@ func (svc SaleInvoiceService) CreateSaleInvoice(shopID string, authUsername stri
 		if err != nil {
 			fmt.Printf("create mq error :: %s", err.Error())
 		}
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 
 		if isGenerateDocNo {
-			svc.repoCache.Save(shopID, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
+			svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
 		}
 	}()
 
@@ -401,16 +401,16 @@ func (svc SaleInvoiceService) CreateSaleInvoice(shopID string, authUsername stri
 
 // CreateSaleInvoiceWithAutoCoupon creates a sale invoice and processes coupons asynchronously
 // This method provides automatic coupon usage with error isolation between invoice creation and coupon processing
-func (svc SaleInvoiceService) CreateSaleInvoiceWithAutoCoupon(shopID string, authUsername string, doc models.SaleInvoice) (string, string, error) {
+func (svc SaleInvoiceService) CreateSaleInvoiceWithAutoCoupon(holdingCode string, authUsername string, doc models.SaleInvoice) (string, string, error) {
 	svc.logger.Info("Starting CreateSaleInvoiceWithAutoCoupon",
-		slog.String("shopID", shopID),
+		slog.String("holdingCode", holdingCode),
 		slog.String("authUsername", authUsername),
 		slog.String("docNo", doc.DocNo),
 		slog.Int("couponCount", len(doc.Coupons)),
 	)
 
 	// Step 1: Create the sale invoice normally (synchronous)
-	invoiceID, docNo, err := svc.CreateSaleInvoice(shopID, authUsername, doc)
+	invoiceID, docNo, err := svc.CreateSaleInvoice(holdingCode, authUsername, doc)
 	if err != nil {
 		svc.logger.Error("Failed to create sale invoice",
 			slog.String("error", err.Error()),
@@ -426,19 +426,19 @@ func (svc SaleInvoiceService) CreateSaleInvoiceWithAutoCoupon(shopID string, aut
 
 	// Step 2: Process coupons asynchronously in background (non-blocking)
 	if len(doc.Coupons) > 0 {
-		go svc.processAutoCoupons(shopID, authUsername, invoiceID, docNo, doc.Coupons, doc.CustCode)
+		go svc.processAutoCoupons(holdingCode, authUsername, invoiceID, docNo, doc.Coupons, doc.CustCode)
 	}
 
 	return invoiceID, docNo, nil
 }
 
 // processAutoCoupons handles the asynchronous coupon processing
-func (svc SaleInvoiceService) processAutoCoupons(shopID, authUsername, invoiceID, docNo string, coupons []trans_models.SaleInvoiceCoupon, customerID string) {
+func (svc SaleInvoiceService) processAutoCoupons(holdingCode, authUsername, invoiceID, docNo string, coupons []trans_models.SaleInvoiceCoupon, customerID string) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
 	svc.logger.Info("Starting async coupon processing",
-		slog.String("shopID", shopID),
+		slog.String("holdingCode", holdingCode),
 		slog.String("invoiceID", invoiceID),
 		slog.String("docNo", docNo),
 		slog.Int("couponCount", len(coupons)),
@@ -448,7 +448,7 @@ func (svc SaleInvoiceService) processAutoCoupons(shopID, authUsername, invoiceID
 	var successCount, failureCount int
 
 	for _, coupon := range coupons {
-		err := svc.processSingleCoupon(ctx, shopID, authUsername, invoiceID, docNo, coupon, customerID)
+		err := svc.processSingleCoupon(ctx, holdingCode, authUsername, invoiceID, docNo, coupon, customerID)
 		if err != nil {
 			failureCount++
 			svc.logger.Error("Failed to process coupon",
@@ -475,9 +475,9 @@ func (svc SaleInvoiceService) processAutoCoupons(shopID, authUsername, invoiceID
 }
 
 // processSingleCoupon processes a single coupon usage
-func (svc SaleInvoiceService) processSingleCoupon(ctx context.Context, shopID, authUsername, invoiceID, docNo string, coupon trans_models.SaleInvoiceCoupon, customerID string) error {
+func (svc SaleInvoiceService) processSingleCoupon(ctx context.Context, holdingCode, authUsername, invoiceID, docNo string, coupon trans_models.SaleInvoiceCoupon, customerID string) error {
 	// Find the coupon by code to get its ID
-	coupons, err := svc.couponService.SearchCoupon(shopID, coupon.CouponNo)
+	coupons, err := svc.couponService.SearchCoupon(holdingCode, coupon.CouponNo)
 	if err != nil {
 		return fmt.Errorf("failed to search coupon %s: %w", coupon.CouponNo, err)
 	}
@@ -499,7 +499,7 @@ func (svc SaleInvoiceService) processSingleCoupon(ctx context.Context, shopID, a
 	}
 
 	// Use the coupon
-	_, err = svc.couponService.UseCoupon(couponID, shopID, authUsername, useCouponReq)
+	_, err = svc.couponService.UseCoupon(couponID, holdingCode, authUsername, useCouponReq)
 	if err != nil {
 		return fmt.Errorf("failed to use coupon %s: %w", coupon.CouponNo, err)
 	}
@@ -507,12 +507,12 @@ func (svc SaleInvoiceService) processSingleCoupon(ctx context.Context, shopID, a
 	return nil
 }
 
-func (svc SaleInvoiceService) GetDetailProductBarcodes(ctx context.Context, shopID string, details []trans_models.Detail) ([]productbarcode_models.ProductBarcodeInfo, error) {
+func (svc SaleInvoiceService) GetDetailProductBarcodes(ctx context.Context, holdingCode string, details []trans_models.Detail) ([]productbarcode_models.ProductBarcodeInfo, error) {
 	var tempBarcodes []string
 	for _, doc := range details {
 		tempBarcodes = append(tempBarcodes, doc.Barcode)
 	}
-	return svc.productbarcodeRepo.FindByBarcodes(ctx, shopID, tempBarcodes)
+	return svc.productbarcodeRepo.FindByBarcodes(ctx, holdingCode, tempBarcodes)
 }
 
 func (svc SaleInvoiceService) PrepareDetail(details []trans_models.Detail, productBarcodes []productbarcode_models.ProductBarcodeInfo) []trans_models.Detail {
@@ -538,12 +538,12 @@ func (svc SaleInvoiceService) PrepareDetail(details []trans_models.Detail, produ
 	return details
 }
 
-func (svc SaleInvoiceService) UpdateSaleInvoice(shopID string, guid string, authUsername string, doc models.SaleInvoice) error {
+func (svc SaleInvoiceService) UpdateSaleInvoice(holdingCode string, guid string, authUsername string, doc models.SaleInvoice) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -556,7 +556,7 @@ func (svc SaleInvoiceService) UpdateSaleInvoice(shopID string, guid string, auth
 	dataDoc := findDoc
 	dataDoc.SaleInvoice = doc
 
-	productBarcodes, err := svc.GetDetailProductBarcodes(ctx, shopID, *doc.Details)
+	productBarcodes, err := svc.GetDetailProductBarcodes(ctx, holdingCode, *doc.Details)
 	if err != nil {
 		return err
 	}
@@ -577,7 +577,7 @@ func (svc SaleInvoiceService) UpdateSaleInvoice(shopID string, guid string, auth
 	// Handle point transactions when updating
 	// Step 1: Delete old point transactions for this document
 	if findDoc.PointsCode != "" && (findDoc.GetPoint > 0 || findDoc.UsePoint > 0) {
-		err := svc.pointTransactionRepo.DeletePointTransactionsByDocNo(ctx, shopID, findDoc.DocNo, authUsername)
+		err := svc.pointTransactionRepo.DeletePointTransactionsByDocNo(ctx, holdingCode, findDoc.DocNo, authUsername)
 		if err != nil {
 			return fmt.Errorf("failed to delete old point transactions: %w", err)
 		}
@@ -586,13 +586,13 @@ func (svc SaleInvoiceService) UpdateSaleInvoice(shopID string, guid string, auth
 	// Step 2: Handle point refund when cancelling transaction (iscancel = true)
 	if doc.IsCancel && !findDoc.IsCancel && dataDoc.PointsCode != "" {
 		// Process point refund when cancelling a transaction
-		err := svc.processPointCancelTransactions(ctx, shopID, authUsername, dataDoc.CustCode, dataDoc.PointsCode, dataDoc.DocNo, dataDoc.DocDatetime, dataDoc.GetPoint, dataDoc.UsePoint)
+		err := svc.processPointCancelTransactions(ctx, holdingCode, authUsername, dataDoc.CustCode, dataDoc.PointsCode, dataDoc.DocNo, dataDoc.DocDatetime, dataDoc.GetPoint, dataDoc.UsePoint)
 		if err != nil {
 			return err
 		}
 	} else if !doc.IsCancel && dataDoc.PointsCode != "" {
 		// Step 3: Create new point transactions if not cancelled
-		err := svc.processPointTransactions(ctx, shopID, authUsername, dataDoc.CustCode, dataDoc.PointsCode, dataDoc.DocNo, dataDoc.DocDatetime, dataDoc.GetPoint, dataDoc.UsePoint)
+		err := svc.processPointTransactions(ctx, holdingCode, authUsername, dataDoc.CustCode, dataDoc.PointsCode, dataDoc.DocNo, dataDoc.DocDatetime, dataDoc.GetPoint, dataDoc.UsePoint)
 		if err != nil {
 			return fmt.Errorf("failed to process point transactions: %w", err)
 		}
@@ -600,13 +600,13 @@ func (svc SaleInvoiceService) UpdateSaleInvoice(shopID string, guid string, auth
 
 	// Step 4: Recalculate point balance
 	if dataDoc.PointsCode != "" {
-		err := svc.pointTransactionRepo.RecalculatePointBalanceByPointsCode(ctx, shopID, dataDoc.PointsCode)
+		err := svc.pointTransactionRepo.RecalculatePointBalanceByPointsCode(ctx, holdingCode, dataDoc.PointsCode)
 		if err != nil {
 			return fmt.Errorf("failed to recalculate point balance: %w", err)
 		}
 	}
 
-	err = svc.repo.Update(ctx, shopID, guid, dataDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, dataDoc)
 
 	if err != nil {
 		return err
@@ -617,18 +617,18 @@ func (svc SaleInvoiceService) UpdateSaleInvoice(shopID string, guid string, auth
 		if err != nil {
 			fmt.Printf("create mq error :: %s", err.Error())
 		}
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc SaleInvoiceService) UpdateSlip(shopID string, authUsername string, docNo string, mode uint8, machineCode string, zoneGroupNumber string, imageUrl string) error {
+func (svc SaleInvoiceService) UpdateSlip(holdingCode string, authUsername string, docNo string, mode uint8, machineCode string, zoneGroupNumber string, imageUrl string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", docNo)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", docNo)
 
 	if err != nil {
 		return err
@@ -660,7 +660,7 @@ func (svc SaleInvoiceService) UpdateSlip(shopID string, authUsername string, doc
 	dataDoc.UpdatedBy = authUsername
 	dataDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, findDoc.GuidFixed, dataDoc)
+	err = svc.repo.Update(ctx, holdingCode, findDoc.GuidFixed, dataDoc)
 
 	if err != nil {
 		return err
@@ -671,18 +671,18 @@ func (svc SaleInvoiceService) UpdateSlip(shopID string, authUsername string, doc
 		if err != nil {
 			fmt.Printf("create mq error :: %s", err.Error())
 		}
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc SaleInvoiceService) DeleteSaleInvoice(shopID string, guid string, authUsername string) error {
+func (svc SaleInvoiceService) DeleteSaleInvoice(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -695,7 +695,7 @@ func (svc SaleInvoiceService) DeleteSaleInvoice(shopID string, guid string, auth
 	// Step 1: Refund points before deleting if document has points
 	if findDoc.PointsCode != "" && (findDoc.GetPoint > 0 || findDoc.UsePoint > 0) {
 		// Process point refund (reverse both GetPoint and UsePoint)
-		err := svc.processPointCancelTransactions(ctx, shopID, authUsername, findDoc.CustCode, findDoc.PointsCode, findDoc.DocNo, findDoc.DocDatetime, findDoc.GetPoint, findDoc.UsePoint)
+		err := svc.processPointCancelTransactions(ctx, holdingCode, authUsername, findDoc.CustCode, findDoc.PointsCode, findDoc.DocNo, findDoc.DocDatetime, findDoc.GetPoint, findDoc.UsePoint)
 		if err != nil {
 			return fmt.Errorf("failed to refund points: %w", err)
 		}
@@ -703,7 +703,7 @@ func (svc SaleInvoiceService) DeleteSaleInvoice(shopID string, guid string, auth
 
 	// Step 2: Delete all point transactions for this document
 	if findDoc.DocNo != "" {
-		err := svc.pointTransactionRepo.DeletePointTransactionsByDocNo(ctx, shopID, findDoc.DocNo, authUsername)
+		err := svc.pointTransactionRepo.DeletePointTransactionsByDocNo(ctx, holdingCode, findDoc.DocNo, authUsername)
 		if err != nil {
 			return fmt.Errorf("failed to delete point transactions: %w", err)
 		}
@@ -711,33 +711,33 @@ func (svc SaleInvoiceService) DeleteSaleInvoice(shopID string, guid string, auth
 
 	// Step 3: Recalculate point balance
 	if findDoc.PointsCode != "" {
-		err := svc.pointTransactionRepo.RecalculatePointBalanceByPointsCode(ctx, shopID, findDoc.PointsCode)
+		err := svc.pointTransactionRepo.RecalculatePointBalanceByPointsCode(ctx, holdingCode, findDoc.PointsCode)
 		if err != nil {
 			return fmt.Errorf("failed to recalculate point balance: %w", err)
 		}
 	}
 
 	// Step 4: Delete the sale invoice document
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
 	go func() {
 		svc.repoMq.Delete(findDoc)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc SaleInvoiceService) DeleteSaleInvoiceByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc SaleInvoiceService) DeleteSaleInvoiceByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
 	// Step 1: Find all documents first before deleting
-	docs, err := svc.repo.FindByGuids(ctx, shopID, GUIDs)
+	docs, err := svc.repo.FindByGuids(ctx, holdingCode, GUIDs)
 	if err != nil {
 		return fmt.Errorf("failed to find documents: %w", err)
 	}
@@ -746,7 +746,7 @@ func (svc SaleInvoiceService) DeleteSaleInvoiceByGUIDs(shopID string, authUserna
 	for _, doc := range docs {
 		if doc.PointsCode != "" && (doc.GetPoint > 0 || doc.UsePoint > 0) {
 			// Process point refund (reverse both GetPoint and UsePoint)
-			err := svc.processPointCancelTransactions(ctx, shopID, authUsername, doc.CustCode, doc.PointsCode, doc.DocNo, doc.DocDatetime, doc.GetPoint, doc.UsePoint)
+			err := svc.processPointCancelTransactions(ctx, holdingCode, authUsername, doc.CustCode, doc.PointsCode, doc.DocNo, doc.DocDatetime, doc.GetPoint, doc.UsePoint)
 			if err != nil {
 				return fmt.Errorf("failed to refund points for doc %s: %w", doc.DocNo, err)
 			}
@@ -754,7 +754,7 @@ func (svc SaleInvoiceService) DeleteSaleInvoiceByGUIDs(shopID string, authUserna
 
 		// Delete point transactions for this document
 		if doc.DocNo != "" {
-			err := svc.pointTransactionRepo.DeletePointTransactionsByDocNo(ctx, shopID, doc.DocNo, authUsername)
+			err := svc.pointTransactionRepo.DeletePointTransactionsByDocNo(ctx, holdingCode, doc.DocNo, authUsername)
 			if err != nil {
 				return fmt.Errorf("failed to delete point transactions for doc %s: %w", doc.DocNo, err)
 			}
@@ -770,7 +770,7 @@ func (svc SaleInvoiceService) DeleteSaleInvoiceByGUIDs(shopID string, authUserna
 	}
 
 	for pointsCode := range pointsCodeSet {
-		err := svc.pointTransactionRepo.RecalculatePointBalanceByPointsCode(ctx, shopID, pointsCode)
+		err := svc.pointTransactionRepo.RecalculatePointBalanceByPointsCode(ctx, holdingCode, pointsCode)
 		if err != nil {
 			return fmt.Errorf("failed to recalculate point balance for %s: %w", pointsCode, err)
 		}
@@ -781,24 +781,24 @@ func (svc SaleInvoiceService) DeleteSaleInvoiceByGUIDs(shopID string, authUserna
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err = svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err = svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
 
 	func() {
 		svc.repoMq.DeleteInBatch(docs)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc SaleInvoiceService) GetLastPOSDocNo(shopID, posID, maxDocNo string) (string, error) {
+func (svc SaleInvoiceService) GetLastPOSDocNo(holdingCode, posID, maxDocNo string) (string, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	lastDocNo, err := svc.repo.FindLastPOSDocNo(ctx, shopID, posID, maxDocNo)
+	lastDocNo, err := svc.repo.FindLastPOSDocNo(ctx, holdingCode, posID, maxDocNo)
 
 	if err != nil {
 		return "", err
@@ -807,12 +807,12 @@ func (svc SaleInvoiceService) GetLastPOSDocNo(shopID, posID, maxDocNo string) (s
 	return lastDocNo, nil
 }
 
-func (svc SaleInvoiceService) InfoSaleInvoice(shopID string, guid string) (models.SaleInvoiceInfo, error) {
+func (svc SaleInvoiceService) InfoSaleInvoice(holdingCode string, guid string) (models.SaleInvoiceInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.SaleInvoiceInfo{}, err
@@ -825,12 +825,12 @@ func (svc SaleInvoiceService) InfoSaleInvoice(shopID string, guid string) (model
 	return findDoc.SaleInvoiceInfo, nil
 }
 
-func (svc SaleInvoiceService) InfoSaleInvoiceByCode(shopID string, code string) (models.SaleInvoiceInfo, error) {
+func (svc SaleInvoiceService) InfoSaleInvoiceByCode(holdingCode string, code string) (models.SaleInvoiceInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", code)
 
 	if err != nil {
 		return models.SaleInvoiceInfo{}, err
@@ -843,12 +843,12 @@ func (svc SaleInvoiceService) InfoSaleInvoiceByCode(shopID string, code string) 
 	return findDoc.SaleInvoiceInfo, nil
 }
 
-func (svc SaleInvoiceService) InfoSaleInvoiceByGuidPos(shopID string, code string) (models.SaleInvoiceInfo, error) {
+func (svc SaleInvoiceService) InfoSaleInvoiceByGuidPos(holdingCode string, code string) (models.SaleInvoiceInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "guidpos", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "guidpos", code)
 
 	if err != nil {
 		return models.SaleInvoiceInfo{}, err
@@ -861,7 +861,7 @@ func (svc SaleInvoiceService) InfoSaleInvoiceByGuidPos(shopID string, code strin
 	return findDoc.SaleInvoiceInfo, nil
 }
 
-func (svc SaleInvoiceService) SearchSaleInvoice(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.SaleInvoiceInfo, mongopagination.PaginationData, error) {
+func (svc SaleInvoiceService) SearchSaleInvoice(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.SaleInvoiceInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -924,7 +924,7 @@ func (svc SaleInvoiceService) SearchSaleInvoice(shopID string, filters map[strin
 
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.SaleInvoiceInfo{}, pagination, err
@@ -933,7 +933,7 @@ func (svc SaleInvoiceService) SearchSaleInvoice(shopID string, filters map[strin
 	return docList, pagination, nil
 }
 
-func (svc SaleInvoiceService) SearchSaleInvoiceStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.SaleInvoiceInfo, int, error) {
+func (svc SaleInvoiceService) SearchSaleInvoiceStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.SaleInvoiceInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -944,7 +944,7 @@ func (svc SaleInvoiceService) SearchSaleInvoiceStep(shopID string, langCode stri
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.SaleInvoiceInfo{}, 0, err
@@ -953,7 +953,7 @@ func (svc SaleInvoiceService) SearchSaleInvoiceStep(shopID string, langCode stri
 	return docList, total, nil
 }
 
-func (svc SaleInvoiceService) SaveInBatch(shopID string, authUsername string, dataList []models.SaleInvoice) (common.BulkImport, error) {
+func (svc SaleInvoiceService) SaveInBatch(holdingCode string, authUsername string, dataList []models.SaleInvoice) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -965,7 +965,7 @@ func (svc SaleInvoiceService) SaveInBatch(shopID string, authUsername string, da
 		itemCodeGuidList = append(itemCodeGuidList, doc.DocNo)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "docno", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "docno", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -977,18 +977,18 @@ func (svc SaleInvoiceService) SaveInBatch(shopID string, authUsername string, da
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.SaleInvoice, models.SaleInvoiceDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.SaleInvoice) models.SaleInvoiceDoc {
+		func(holdingCode string, authUsername string, doc models.SaleInvoice) models.SaleInvoiceDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.SaleInvoiceDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.SaleInvoice = doc
 
 			dataDoc.TransFlag = TRANS_FLAG
@@ -1000,24 +1000,24 @@ func (svc SaleInvoiceService) SaveInBatch(shopID string, authUsername string, da
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.SaleInvoice, models.SaleInvoiceDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.SaleInvoiceDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", guid)
+		func(holdingCode string, guid string) (models.SaleInvoiceDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", guid)
 		},
 		func(doc models.SaleInvoiceDoc) bool {
 			return doc.DocNo != ""
 		},
-		func(shopID string, authUsername string, data models.SaleInvoice, doc models.SaleInvoiceDoc) error {
+		func(holdingCode string, authUsername string, data models.SaleInvoice, doc models.SaleInvoiceDoc) error {
 
 			doc.SaleInvoice = data
 			doc.TransFlag = TRANS_FLAG
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -1056,7 +1056,7 @@ func (svc SaleInvoiceService) SaveInBatch(shopID string, authUsername string, da
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -1070,9 +1070,9 @@ func (svc SaleInvoiceService) getDocIDKey(doc models.SaleInvoice) string {
 	return doc.DocNo
 }
 
-func (svc SaleInvoiceService) saveMasterSync(shopID string) {
+func (svc SaleInvoiceService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())
@@ -1084,12 +1084,12 @@ func (svc SaleInvoiceService) GetModuleName() string {
 	return "saleInvoice"
 }
 
-func (svc SaleInvoiceService) Export(shopID string, languageCode string, languageHeader map[string]string) ([][]string, error) {
+func (svc SaleInvoiceService) Export(holdingCode string, languageCode string, languageHeader map[string]string) ([][]string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	docs, err := svc.repo.Find(ctx, shopID, []string{}, "")
+	docs, err := svc.repo.Find(ctx, holdingCode, []string{}, "")
 
 	if err != nil {
 		return [][]string{}, err
@@ -1101,11 +1101,11 @@ func (svc SaleInvoiceService) Export(shopID string, languageCode string, languag
 		"barcode",        //บาร์โค้ด",
 		"productname",    //"ชื่อสินค้า",
 		"unitcode",       //"หน่วยนับ",
-		"unit_name",       //"ชื่อหน่วยนับ",
+		"unit_name",      //"ชื่อหน่วยนับ",
 		"qty",            //"จำนวน",
 		"price",          //ราคา",
 		"discountamount", // "มูลค่าส่วนลด",
-		"sum_amount",      //"มูลค่าสินค้า",
+		"sum_amount",     //"มูลค่าสินค้า",
 	}
 
 	headerRow := []string{}
@@ -1130,7 +1130,7 @@ func (svc SaleInvoiceService) Export(shopID string, languageCode string, languag
 }
 
 // processPointCancelTransactions handles point refund when cancelling a sale invoice
-func (svc SaleInvoiceService) processPointCancelTransactions(ctx context.Context, shopID string, authUsername string, custCode string, pointsCode string, docNo string, docDate time.Time, getPoint float64, usePoint float64) error {
+func (svc SaleInvoiceService) processPointCancelTransactions(ctx context.Context, holdingCode string, authUsername string, custCode string, pointsCode string, docNo string, docDate time.Time, getPoint float64, usePoint float64) error {
 	// Skip processing if no points involved
 	if getPoint == 0 && usePoint == 0 {
 		return nil
@@ -1149,7 +1149,7 @@ func (svc SaleInvoiceService) processPointCancelTransactions(ctx context.Context
 	// GetPoint cancellation - ใช้ pointsCode
 	if getPoint > 0 && pointsCode != "" {
 		// Find customer by pointsCode for GetPoint cancellation (allow non-members)
-		findCustForGet, err := svc.repoCust.FindByDocIndentityGuid(ctx, shopID, "points_code", pointsCode)
+		findCustForGet, err := svc.repoCust.FindByDocIndentityGuid(ctx, holdingCode, "points_code", pointsCode)
 		if err != nil {
 			return err
 		}
@@ -1166,7 +1166,7 @@ func (svc SaleInvoiceService) processPointCancelTransactions(ctx context.Context
 		// Create point transaction for cancelling earned points (works for both members and non-members)
 		pointTransaction := custModels.PointTransactionDoc{
 			PointTransactionData: custModels.PointTransactionData{
-				ShopIdentity: common.ShopIdentity{ShopID: shopID},
+				HoldingCodeentity: common.HoldingCodeentity{HoldingCode: holdingCode},
 				PointTransactionInfo: custModels.PointTransactionInfo{
 					DocIdentity: common.DocIdentity{GuidFixed: utils.NewGUID()},
 					PointTransaction: custModels.PointTransaction{
@@ -1195,7 +1195,7 @@ func (svc SaleInvoiceService) processPointCancelTransactions(ctx context.Context
 
 		// Update balance only if customer exists in debtor table
 		if customerExists {
-			err = svc.pointTransactionRepo.UpdateDebtorPointBalanceByPointsCode(ctx, shopID, pointsCode, -getPoint)
+			err = svc.pointTransactionRepo.UpdateDebtorPointBalanceByPointsCode(ctx, holdingCode, pointsCode, -getPoint)
 			if err != nil {
 				return err
 			}
@@ -1208,7 +1208,7 @@ func (svc SaleInvoiceService) processPointCancelTransactions(ctx context.Context
 	// UsePoint refund - ใช้ custCode (การคืนแต้มจากการใช้ ใช้ custCode)
 	if usePoint > 0 && custCode != "" {
 		// Find customer by custCode for UsePoint refund
-		findCustForUse, err := svc.repoCust.FindByDocIndentityGuid(ctx, shopID, "code", custCode)
+		findCustForUse, err := svc.repoCust.FindByDocIndentityGuid(ctx, holdingCode, "code", custCode)
 		if err != nil {
 			return err
 		}
@@ -1221,7 +1221,7 @@ func (svc SaleInvoiceService) processPointCancelTransactions(ctx context.Context
 		// Create point transaction for refunding used points (adding back to balance)
 		pointTransaction := custModels.PointTransactionDoc{
 			PointTransactionData: custModels.PointTransactionData{
-				ShopIdentity: common.ShopIdentity{ShopID: shopID},
+				HoldingCodeentity: common.HoldingCodeentity{HoldingCode: holdingCode},
 				PointTransactionInfo: custModels.PointTransactionInfo{
 					DocIdentity: common.DocIdentity{GuidFixed: utils.NewGUID()},
 					PointTransaction: custModels.PointTransaction{
@@ -1249,7 +1249,7 @@ func (svc SaleInvoiceService) processPointCancelTransactions(ctx context.Context
 		}
 
 		// Update balance using custCode for UsePoint refund (การคืนแต้มจากการใช้)
-		err = svc.pointTransactionRepo.UpdateDebtorPointBalanceByCode(ctx, shopID, custCode, usePoint)
+		err = svc.pointTransactionRepo.UpdateDebtorPointBalanceByCode(ctx, holdingCode, custCode, usePoint)
 		if err != nil {
 			return err
 		}
@@ -1348,14 +1348,14 @@ func (svc SaleInvoiceService) getPointTransactionContext() (context.Context, con
 }
 
 // processUsePointTransaction handles the UsePoint (redemption) operation
-func (svc SaleInvoiceService) processUsePointTransaction(ctx context.Context, shopID string, authUsername string, custCode string, docNo string, docDate time.Time, usePoint float64) error {
+func (svc SaleInvoiceService) processUsePointTransaction(ctx context.Context, holdingCode string, authUsername string, custCode string, docNo string, docDate time.Time, usePoint float64) error {
 	svc.logger.Debug("Processing UsePoint transaction",
 		slog.String("custCode", custCode),
 		slog.Float64("usePoint", usePoint),
 	)
 
 	// Find customer by custCode for UsePoint (ใช้ custCode เหมือนเดิม)
-	findCustForUse, err := svc.repoCust.FindByDocIndentityGuid(ctx, shopID, "code", custCode)
+	findCustForUse, err := svc.repoCust.FindByDocIndentityGuid(ctx, holdingCode, "code", custCode)
 	if err != nil {
 		return &models.PointTransactionError{
 			Operation: "UsePoint",
@@ -1386,7 +1386,7 @@ func (svc SaleInvoiceService) processUsePointTransaction(ctx context.Context, sh
 	// Create point transaction for redemption using custCode (ใช้ custCode เหมือนเดิม)
 	pointTransaction := custModels.PointTransactionDoc{
 		PointTransactionData: custModels.PointTransactionData{
-			ShopIdentity: common.ShopIdentity{ShopID: shopID},
+			HoldingCodeentity: common.HoldingCodeentity{HoldingCode: holdingCode},
 			PointTransactionInfo: custModels.PointTransactionInfo{
 				DocIdentity: common.DocIdentity{GuidFixed: utils.NewGUID()},
 				PointTransaction: custModels.PointTransaction{
@@ -1419,7 +1419,7 @@ func (svc SaleInvoiceService) processUsePointTransaction(ctx context.Context, sh
 	}
 
 	// Update balance using custCode for UsePoint (ใช้ custCode เหมือนเดิม)
-	err = svc.pointTransactionRepo.UpdateDebtorPointBalanceByCode(ctx, shopID, custCode, -usePoint)
+	err = svc.pointTransactionRepo.UpdateDebtorPointBalanceByCode(ctx, holdingCode, custCode, -usePoint)
 	if err != nil {
 		return &models.PointTransactionError{
 			Operation: "UsePoint",
@@ -1439,7 +1439,7 @@ func (svc SaleInvoiceService) processUsePointTransaction(ctx context.Context, sh
 }
 
 // processGetPointTransaction handles the GetPoint (earning) operation
-func (svc SaleInvoiceService) processGetPointTransaction(ctx context.Context, shopID string, authUsername string, custCode string, pointsCode string, docNo string, docDate time.Time, getPoint float64) error {
+func (svc SaleInvoiceService) processGetPointTransaction(ctx context.Context, holdingCode string, authUsername string, custCode string, pointsCode string, docNo string, docDate time.Time, getPoint float64) error {
 	svc.logger.Debug("Processing GetPoint transaction",
 		slog.String("custCode", custCode),
 		slog.String("pointsCode", pointsCode),
@@ -1447,7 +1447,7 @@ func (svc SaleInvoiceService) processGetPointTransaction(ctx context.Context, sh
 	)
 
 	// Find customer by pointsCode for GetPoint (allow non-members)
-	findCustForGet, err := svc.repoCust.FindByDocIndentityGuid(ctx, shopID, "points_code", pointsCode)
+	findCustForGet, err := svc.repoCust.FindByDocIndentityGuid(ctx, holdingCode, "points_code", pointsCode)
 	if err != nil {
 		return &models.PointTransactionError{
 			Operation: "GetPoint",
@@ -1477,7 +1477,7 @@ func (svc SaleInvoiceService) processGetPointTransaction(ctx context.Context, sh
 	// Create point transaction for earning using pointsCode (works for both members and non-members)
 	pointTransaction := custModels.PointTransactionDoc{
 		PointTransactionData: custModels.PointTransactionData{
-			ShopIdentity: common.ShopIdentity{ShopID: shopID},
+			HoldingCodeentity: common.HoldingCodeentity{HoldingCode: holdingCode},
 			PointTransactionInfo: custModels.PointTransactionInfo{
 				DocIdentity: common.DocIdentity{GuidFixed: utils.NewGUID()},
 				PointTransaction: custModels.PointTransaction{
@@ -1511,7 +1511,7 @@ func (svc SaleInvoiceService) processGetPointTransaction(ctx context.Context, sh
 
 	// Update balance only if customer exists in debtor table
 	if customerExists {
-		err = svc.pointTransactionRepo.UpdateDebtorPointBalanceByPointsCode(ctx, shopID, pointsCode, getPoint)
+		err = svc.pointTransactionRepo.UpdateDebtorPointBalanceByPointsCode(ctx, holdingCode, pointsCode, getPoint)
 		if err != nil {
 			return &models.PointTransactionError{
 				Operation: "GetPoint",

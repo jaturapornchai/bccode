@@ -7,8 +7,8 @@ import (
 )
 
 type IMasterExpenseCacheRepository interface {
-	CreateCode(shopID string, code string, expire time.Duration) (bool, error)
-	ClearCreatedCode(shopID string, code string) error
+	CreateCode(holdingCode string, code string, expire time.Duration) (bool, error)
+	ClearCreatedCode(holdingCode string, code string) error
 }
 
 type MasterExpenseCacheRepository struct {
@@ -21,16 +21,16 @@ func NewMasterExpenseCacheRepository(cache microservice.ICacher) MasterExpenseCa
 	}
 }
 
-func (r MasterExpenseCacheRepository) CreateCode(shopID string, code string, expire time.Duration) (bool, error) {
-	cacheKey := r.createCodeCacheKey(shopID, code)
+func (r MasterExpenseCacheRepository) CreateCode(holdingCode string, code string, expire time.Duration) (bool, error) {
+	cacheKey := r.createCodeCacheKey(holdingCode, code)
 	return r.cache.SetNX(cacheKey, "", expire)
 }
 
-func (r MasterExpenseCacheRepository) ClearCreatedCode(shopID string, code string) error {
-	cacheKey := r.createCodeCacheKey(shopID, code)
+func (r MasterExpenseCacheRepository) ClearCreatedCode(holdingCode string, code string) error {
+	cacheKey := r.createCodeCacheKey(holdingCode, code)
 	return r.cache.Del(cacheKey)
 }
 
-func (r MasterExpenseCacheRepository) createCodeCacheKey(shopID string, code string) string {
-	return fmt.Sprintf("masterexpense:%s-%s:createcode", shopID, code)
+func (r MasterExpenseCacheRepository) createCodeCacheKey(holdingCode string, code string) string {
+	return fmt.Sprintf("masterexpense:%s-%s:createcode", holdingCode, code)
 }

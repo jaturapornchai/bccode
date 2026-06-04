@@ -20,7 +20,7 @@ type SettingRecord = Record<string, unknown>;
 
 interface ProductCategoryTreeViewProps {
   auth: { token: string; backendUrl: string } | null;
-  workspace: { shop: { shopid: string } } | null;
+  workspace: { shop: { holding_code: string } } | null;
   language: string;
   records: SettingRecord[];
   groupNumber: number | null;
@@ -50,6 +50,11 @@ interface CategoryNode {
 type CategoryName = { code: string; name: string };
 type CategoryXSort = { code: string; xorder: number };
 type XSortPayload = { guid_fixed: string; code: string; xorder: number };
+type GroupSummary = {
+  count: number;
+  itemCount: number;
+  label: string;
+};
 
 const GROUP_CARD_GAP_PX = 8;
 const GROUP_CARD_MIN_WIDTH_PX = 230;
@@ -130,6 +135,9 @@ const recordParentGuid = (record: SettingRecord): string =>
 
 const recordGroupNumber = (record: SettingRecord): number =>
   Number(record.group_number ?? record.groupnumber ?? 0);
+
+const recordCodelistCount = (record: SettingRecord): number =>
+  Array.isArray(record.codelist) ? record.codelist.length : 0;
 
 const toCategoryNames = (value: unknown): CategoryName[] =>
   Array.isArray(value)
@@ -509,17 +517,32 @@ export function ProductCategoryTreeView({
     categoryTreeLookupsRef.current = categoryTreeLookups;
   }, [categoryTreeLookups]);
 
-  // Count of records per group
-  const groupCounts = useMemo<Record<number, number>>(() => {
-    const counts: Record<number, number> = {};
+  const groupSummaries = useMemo<Record<number, GroupSummary>>(() => {
+    const summaries: Record<number, GroupSummary> = {};
     for (const r of records) {
       const gn = recordGroupNumber(r);
       if (gn >= 1 && gn <= 20) {
-        counts[gn] = (counts[gn] || 0) + 1;
+        if (!summaries[gn]) {
+          summaries[gn] = { count: 0, itemCount: 0, label: "" };
+        }
+        summaries[gn].count += 1;
+        summaries[gn].itemCount += recordCodelistCount(r);
       }
     }
-    return counts;
-  }, [records]);
+    for (const gn of Object.keys(summaries).map(Number)) {
+      const rootNames = records
+        .filter((record) => recordGroupNumber(record) === gn && !recordParentGuid(record))
+        .sort((a, b) => {
+          const aSort = toCategoryXSorts(a.xsorts)[0]?.xorder ?? 0;
+          const bSort = toCategoryXSorts(b.xsorts)[0]?.xorder ?? 0;
+          return aSort - bSort;
+        })
+        .map((record) => getDisplayName(toCategoryNames(record.names)))
+        .filter(Boolean);
+      summaries[gn].label = rootNames.join(" / ");
+    }
+    return summaries;
+  }, [records, getDisplayName]);
 
   // Group selector: compact 20 group buttons
   if (groupNumber === null) {
@@ -549,7 +572,12 @@ export function ProductCategoryTreeView({
         ) : (
           <main ref={groupSelectorRef} className="flex w-full flex-wrap gap-2">
             {Array.from({ length: 20 }, (_, i) => i + 1).map((num) => {
-              const count = groupCounts[num] || 0;
+              const summary = groupSummaries[num] ?? { count: 0, itemCount: 0, label: "" };
+              const hasData = summary.count > 0;
+              const groupLabel = summary.label || (language === "th" ? "ยังไม่กำหนดชื่อกลุ่ม" : "No group name");
+              const countLabel = language === "th"
+                ? `${summary.count} หมวด / ${summary.itemCount} สินค้า`
+                : `${summary.count} categories / ${summary.itemCount} items`;
               return (
                 <button
                   type="button"
@@ -561,29 +589,29 @@ export function ProductCategoryTreeView({
                   }
                   className={cn(
                     "group flex min-h-12 flex-none items-center gap-2 rounded-xl border border-border bg-card px-2.5 py-2 text-left shadow-sm transition-[background-color,border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:bg-primary/5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-                    count > 0 && "border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/60 dark:bg-emerald-950/20",
+                    hasData && "border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/60 dark:bg-emerald-950/20",
                   )}
                   onClick={() => setGroupNumber(num)}
                 >
                   <span className={cn(
                     "grid size-9 shrink-0 place-items-center rounded-lg text-lg font-black transition-colors",
-                    count > 0
+                    hasData
                       ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300"
                       : "bg-muted text-foreground group-hover:bg-primary/10 group-hover:text-primary",
                   )}>
                     {num}
                   </span>
                   <span className="grid min-w-0 flex-1 gap-0.5">
-                    <span className="text-xs font-semibold leading-none text-muted-foreground">
-                      {language === "th" ? "กลุ่มหมวด" : "Group"}
+                    <span className="whitespace-normal break-words text-xs font-semibold leading-snug text-foreground">
+                      {groupLabel}
                     </span>
                     <span className={cn(
                       "w-fit rounded-full px-2 py-0.5 text-xs font-bold leading-none",
-                      count > 0
+                      hasData
                         ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300"
                         : "bg-muted text-muted-foreground",
                     )}>
-                      {language === "th" ? `${count} รายการ` : `${count} items`}
+                      {countLabel}
                     </span>
                   </span>
                 </button>
@@ -658,7 +686,7 @@ export function ProductCategoryTreeView({
     if (!auth || !workspace || updateList.length === 0) return;
     const payload = validateXSortPayload(updateList);
     const response = await fetch(
-      `/api/system-settings/product_category_group_select_screen/xsort?shopid=${encodeURIComponent(workspace.shop.shopid)}`,
+      `/api/system-settings/product_category_group_select_screen/xsort?holding_code=${encodeURIComponent(workspace.shop.holding_code)}`,
       {
         method: "PUT",
         headers: {
@@ -678,7 +706,7 @@ export function ProductCategoryTreeView({
   const saveCategoryRecord = async (guid: string, payload: SettingRecord) => {
     if (!auth || !workspace) return;
     const response = await fetch(
-      `/api/system-settings/product_category_group_select_screen/${encodeURIComponent(guid)}?shopid=${encodeURIComponent(workspace.shop.shopid)}`,
+      `/api/system-settings/product_category_group_select_screen/${encodeURIComponent(guid)}?holding_code=${encodeURIComponent(workspace.shop.holding_code)}`,
       {
         method: "PUT",
         headers: {

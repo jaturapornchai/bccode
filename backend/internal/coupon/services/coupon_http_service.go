@@ -17,40 +17,40 @@ import (
 )
 
 type ICouponHttpService interface {
-	CreateCoupon(shopID string, authUsername string, doc models.Coupon) (string, error)
-	UpdateCoupon(guid string, shopID string, authUsername string, doc models.Coupon) error
-	DeleteCoupon(guid string, shopID string, authUsername string) error
-	InfoCoupon(guid string, shopID string) (models.CouponInfo, error)
-	InfoCouponByCode(couponCode string, shopID string) (models.CouponInfo, error)
-	SearchCoupon(shopID string, q string) ([]models.CouponInfo, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.Coupon) (common.BulkImport, error)
-	PreviewBulkImport(shopID string, dataList []models.Coupon) (common.BulkPreviewData, error)
+	CreateCoupon(holdingCode string, authUsername string, doc models.Coupon) (string, error)
+	UpdateCoupon(guid string, holdingCode string, authUsername string, doc models.Coupon) error
+	DeleteCoupon(guid string, holdingCode string, authUsername string) error
+	InfoCoupon(guid string, holdingCode string) (models.CouponInfo, error)
+	InfoCouponByCode(couponCode string, holdingCode string) (models.CouponInfo, error)
+	SearchCoupon(holdingCode string, q string) ([]models.CouponInfo, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.Coupon) (common.BulkImport, error)
+	PreviewBulkImport(holdingCode string, dataList []models.Coupon) (common.BulkPreviewData, error)
 
 	// เพิ่มฟังก์ชันใหม่สำหรับการจัดการการจองคูปอง
-	CheckCouponAvailability(couponCode, shopID, customerID string) (*models.CouponAvailabilityResponse, error)
-	CheckCouponAvailabilityAdvanced(couponCode, shopID string, req *models.CouponAvailabilityCheckRequest) (*models.CouponAvailabilityAdvancedResponse, error)
-	ReserveCoupon(couponCode, shopID string, req models.ReserveCouponRequest) (*models.CouponReservationResponse, error)
-	CancelReserveCoupon(couponCode, shopID string, req models.CancelReserveCouponRequest) error
-	UseCoupon(couponCode, shopID, authUsername string, req models.UseCouponRequest) (*models.UseCouponResponse, error)
-	FindActiveReservationsByCustomerAndCoupon(shopID, customerID, couponID string) ([]models.CouponReservationDoc, error)
+	CheckCouponAvailability(couponCode, holdingCode, customerID string) (*models.CouponAvailabilityResponse, error)
+	CheckCouponAvailabilityAdvanced(couponCode, holdingCode string, req *models.CouponAvailabilityCheckRequest) (*models.CouponAvailabilityAdvancedResponse, error)
+	ReserveCoupon(couponCode, holdingCode string, req models.ReserveCouponRequest) (*models.CouponReservationResponse, error)
+	CancelReserveCoupon(couponCode, holdingCode string, req models.CancelReserveCouponRequest) error
+	UseCoupon(couponCode, holdingCode, authUsername string, req models.UseCouponRequest) (*models.UseCouponResponse, error)
+	FindActiveReservationsByCustomerAndCoupon(holdingCode, customerID, couponID string) ([]models.CouponReservationDoc, error)
 
 	// ฟังก์ชันสำหรับ cleanup expired reservations
-	CleanupExpiredReservations(shopID string) error
+	CleanupExpiredReservations(holdingCode string) error
 
 	// ฟังก์ชันสำหรับคำนวนคูปอง
-	CalculateCoupons(shopID string, req models.CalculateCouponRequest) (*models.CalculateCouponResponse, error)
+	CalculateCoupons(holdingCode string, req models.CalculateCouponRequest) (*models.CalculateCouponResponse, error)
 
 	// ฟังก์ชันสำหรับเช็คสถานะการจอง
-	CheckReservationByTransactionID(transactionID, shopID string) (*models.ReservationStatusResponse, error)
-	LookupReservationDetails(shopID string, req models.ReservationLookupRequest) (*models.ReservationLookupResponse, error)
+	CheckReservationByTransactionID(transactionID, holdingCode string) (*models.ReservationStatusResponse, error)
+	LookupReservationDetails(holdingCode string, req models.ReservationLookupRequest) (*models.ReservationLookupResponse, error)
 
 	// ฟังก์ชันสำหรับประวัติการใช้คูปอง
-	CreateUsageHistory(shopID, authUsername string, req models.CreateUsageHistoryRequest) (string, error)
-	GetUsageHistory(shopID string, req models.CouponUsageHistoryRequest) (*models.CouponUsageHistoryResponse, error)
-	GetUsageHistoryByCoupon(shopID, couponID string, page, pageSize int) (*models.CouponUsageHistoryResponse, error)
-	GetUsageHistoryByCustomer(shopID, customerID string, page, pageSize int) (*models.CouponUsageHistoryResponse, error)
-	GetUsageHistoryBySaleInvoice(shopID, saleInvoiceID string) ([]models.CouponUsageHistoryItem, error)
-	GetUsageHistoryByTransactionID(shopID, transactionID string) ([]models.CouponUsageHistoryItem, error)
+	CreateUsageHistory(holdingCode, authUsername string, req models.CreateUsageHistoryRequest) (string, error)
+	GetUsageHistory(holdingCode string, req models.CouponUsageHistoryRequest) (*models.CouponUsageHistoryResponse, error)
+	GetUsageHistoryByCoupon(holdingCode, couponID string, page, pageSize int) (*models.CouponUsageHistoryResponse, error)
+	GetUsageHistoryByCustomer(holdingCode, customerID string, page, pageSize int) (*models.CouponUsageHistoryResponse, error)
+	GetUsageHistoryBySaleInvoice(holdingCode, saleInvoiceID string) ([]models.CouponUsageHistoryItem, error)
+	GetUsageHistoryByTransactionID(holdingCode, transactionID string) ([]models.CouponUsageHistoryItem, error)
 }
 
 type CouponHttpService struct {
@@ -87,9 +87,9 @@ func (svc CouponHttpService) getContextTimeout() (context.Context, context.Cance
 }
 
 // ตรวจสอบเงื่อนไขสินค้า
-func (svc CouponHttpService) checkProductCondition(ctx context.Context, shopID, barcode string, condition *models.CouponProductCondition) (bool, string, error) {
+func (svc CouponHttpService) checkProductCondition(ctx context.Context, holdingCode, barcode string, condition *models.CouponProductCondition) (bool, string, error) {
 	// หาข้อมูลสินค้าจาก barcode
-	productInfo, err := svc.productBarcodeRepo.FindByBarcode(ctx, shopID, barcode)
+	productInfo, err := svc.productBarcodeRepo.FindByBarcode(ctx, holdingCode, barcode)
 	if err != nil {
 		return false, "", fmt.Errorf("error finding product by barcode: %v", err)
 	}
@@ -201,12 +201,12 @@ func (svc CouponHttpService) getDocIDKey(doc models.Coupon) string {
 	return doc.CouponCode
 }
 
-func (svc CouponHttpService) CreateCoupon(shopID string, authUsername string, doc models.Coupon) (string, error) {
+func (svc CouponHttpService) CreateCoupon(holdingCode string, authUsername string, doc models.Coupon) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "coupon_code", doc.CouponCode)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "coupon_code", doc.CouponCode)
 
 	if err != nil {
 		return "", err
@@ -219,7 +219,7 @@ func (svc CouponHttpService) CreateCoupon(shopID string, authUsername string, do
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.CouponDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.Coupon = doc
 
@@ -235,12 +235,12 @@ func (svc CouponHttpService) CreateCoupon(shopID string, authUsername string, do
 	return newGuidFixed, nil
 }
 
-func (svc CouponHttpService) UpdateCoupon(guid string, shopID string, authUsername string, doc models.Coupon) error {
+func (svc CouponHttpService) UpdateCoupon(guid string, holdingCode string, authUsername string, doc models.Coupon) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -255,7 +255,7 @@ func (svc CouponHttpService) UpdateCoupon(guid string, shopID string, authUserna
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now().UTC() // Use UTC time consistently
 
-	err = svc.repo.Update(ctx, shopID, guid, findDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, findDoc)
 
 	if err != nil {
 		return err
@@ -264,12 +264,12 @@ func (svc CouponHttpService) UpdateCoupon(guid string, shopID string, authUserna
 	return nil
 }
 
-func (svc CouponHttpService) DeleteCoupon(guid string, shopID string, authUsername string) error {
+func (svc CouponHttpService) DeleteCoupon(guid string, holdingCode string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -279,7 +279,7 @@ func (svc CouponHttpService) DeleteCoupon(guid string, shopID string, authUserna
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
@@ -287,12 +287,12 @@ func (svc CouponHttpService) DeleteCoupon(guid string, shopID string, authUserna
 	return nil
 }
 
-func (svc CouponHttpService) InfoCoupon(guid string, shopID string) (models.CouponInfo, error) {
+func (svc CouponHttpService) InfoCoupon(guid string, holdingCode string) (models.CouponInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.CouponInfo{}, err
@@ -306,12 +306,12 @@ func (svc CouponHttpService) InfoCoupon(guid string, shopID string) (models.Coup
 
 }
 
-func (svc CouponHttpService) InfoCouponByCode(couponCode string, shopID string) (models.CouponInfo, error) {
+func (svc CouponHttpService) InfoCouponByCode(couponCode string, holdingCode string) (models.CouponInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "coupon_code", couponCode)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "coupon_code", couponCode)
 
 	if err != nil {
 		return models.CouponInfo{}, err
@@ -325,7 +325,7 @@ func (svc CouponHttpService) InfoCouponByCode(couponCode string, shopID string) 
 
 }
 
-func (svc CouponHttpService) SearchCoupon(shopID string, q string) ([]models.CouponInfo, error) {
+func (svc CouponHttpService) SearchCoupon(holdingCode string, q string) ([]models.CouponInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -336,7 +336,7 @@ func (svc CouponHttpService) SearchCoupon(shopID string, q string) ([]models.Cou
 		"customercode",
 	}
 
-	docList, err := svc.repo.Find(ctx, shopID, searchInFields, q)
+	docList, err := svc.repo.Find(ctx, holdingCode, searchInFields, q)
 
 	if err != nil {
 		return []models.CouponInfo{}, err
@@ -345,7 +345,7 @@ func (svc CouponHttpService) SearchCoupon(shopID string, q string) ([]models.Cou
 	return docList, nil
 }
 
-func (svc CouponHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.Coupon) (common.BulkImport, error) {
+func (svc CouponHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.Coupon) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -357,7 +357,7 @@ func (svc CouponHttpService) SaveInBatch(shopID string, authUsername string, dat
 		itemCodeGuidList = append(itemCodeGuidList, doc.CouponCode)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "coupon_code", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "coupon_code", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -369,18 +369,18 @@ func (svc CouponHttpService) SaveInBatch(shopID string, authUsername string, dat
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.Coupon, models.CouponDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.Coupon) models.CouponDoc {
+		func(holdingCode string, authUsername string, doc models.Coupon) models.CouponDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.CouponDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.Coupon = doc
 
 			currentTime := time.Now().UTC() // Use UTC time consistently
@@ -391,23 +391,23 @@ func (svc CouponHttpService) SaveInBatch(shopID string, authUsername string, dat
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.Coupon, models.CouponDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.CouponDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "coupon_code", guid)
+		func(holdingCode string, guid string) (models.CouponDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "coupon_code", guid)
 		},
 		func(doc models.CouponDoc) bool {
 			return doc.CouponCode != ""
 		},
-		func(shopID string, authUsername string, data models.Coupon, doc models.CouponDoc) error {
+		func(holdingCode string, authUsername string, data models.Coupon, doc models.CouponDoc) error {
 
 			doc.Coupon = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now().UTC() // Use UTC time consistently
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -454,7 +454,7 @@ func (svc CouponHttpService) SaveInBatch(shopID string, authUsername string, dat
 }
 
 // Preview Bulk Import - ตรวจสอบข้อมูลก่อนนำเข้าจริง
-func (svc CouponHttpService) PreviewBulkImport(shopID string, dataList []models.Coupon) (common.BulkPreviewData, error) {
+func (svc CouponHttpService) PreviewBulkImport(holdingCode string, dataList []models.Coupon) (common.BulkPreviewData, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
@@ -468,7 +468,7 @@ func (svc CouponHttpService) PreviewBulkImport(shopID string, dataList []models.
 	}
 
 	// ค้นหา CouponCode ที่มีอยู่ในระบบ
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "coupon_code", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "coupon_code", itemCodeGuidList)
 	if err != nil {
 		return common.BulkPreviewData{}, err
 	}
@@ -512,12 +512,12 @@ func (svc CouponHttpService) PreviewBulkImport(shopID string, dataList []models.
 }
 
 // ตรวจสอบความพร้อมใช้งานของคูปอง
-func (svc CouponHttpService) CheckCouponAvailability(couponCode, shopID, customerID string) (*models.CouponAvailabilityResponse, error) {
+func (svc CouponHttpService) CheckCouponAvailability(couponCode, holdingCode, customerID string) (*models.CouponAvailabilityResponse, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
 	// หาข้อมูลคูปองจาก CouponCode
-	coupon, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "coupon_code", couponCode)
+	coupon, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "coupon_code", couponCode)
 	if err != nil {
 		return nil, err
 	}
@@ -556,7 +556,7 @@ func (svc CouponHttpService) CheckCouponAvailability(couponCode, shopID, custome
 			Page:       1,
 			PageSize:   10000, // เอาทั้งหมดเพื่อนับ
 		}
-		_, total, err := svc.usageHistoryRepo.SearchUsageHistory(ctx, shopID, searchReq)
+		_, total, err := svc.usageHistoryRepo.SearchUsageHistory(ctx, holdingCode, searchReq)
 		if err != nil {
 			return nil, err
 		}
@@ -564,7 +564,7 @@ func (svc CouponHttpService) CheckCouponAvailability(couponCode, shopID, custome
 		maxUsage = coupon.Coupon.GetMaxUsageLimit()
 
 		// นับจำนวน active reservations ทั้งหมด
-		activeReservations, err = svc.reservationRepo.CountActiveReservations(ctx, shopID, coupon.GuidFixed)
+		activeReservations, err = svc.reservationRepo.CountActiveReservations(ctx, holdingCode, coupon.GuidFixed)
 		if err != nil {
 			return nil, err
 		}
@@ -581,7 +581,7 @@ func (svc CouponHttpService) CheckCouponAvailability(couponCode, shopID, custome
 			Page:       1,
 			PageSize:   10000, // เอาทั้งหมดเพื่อนับ
 		}
-		_, customerTotal, err := svc.usageHistoryRepo.SearchUsageHistory(ctx, shopID, searchReq)
+		_, customerTotal, err := svc.usageHistoryRepo.SearchUsageHistory(ctx, holdingCode, searchReq)
 		if err != nil {
 			return nil, err
 		}
@@ -589,7 +589,7 @@ func (svc CouponHttpService) CheckCouponAvailability(couponCode, shopID, custome
 		maxUsage = coupon.Coupon.GetMaxUsageLimit()
 
 		// นับจำนวน active reservations ของลูกค้าคนนี้
-		activeReservations, err = svc.reservationRepo.CountActiveReservationsByCustomer(ctx, shopID, coupon.GuidFixed, customerID)
+		activeReservations, err = svc.reservationRepo.CountActiveReservationsByCustomer(ctx, holdingCode, coupon.GuidFixed, customerID)
 		if err != nil {
 			return nil, err
 		}
@@ -655,18 +655,18 @@ func (svc CouponHttpService) CheckCouponAvailability(couponCode, shopID, custome
 }
 
 // ตรวจสอบความพร้อมใช้งานของคูปองแบบขั้นสูง (พร้อมตรวจสอบสินค้าและสาขา)
-func (svc CouponHttpService) CheckCouponAvailabilityAdvanced(couponCode, shopID string, req *models.CouponAvailabilityCheckRequest) (*models.CouponAvailabilityAdvancedResponse, error) {
+func (svc CouponHttpService) CheckCouponAvailabilityAdvanced(couponCode, holdingCode string, req *models.CouponAvailabilityCheckRequest) (*models.CouponAvailabilityAdvancedResponse, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
 	// 1. ตรวจสอบคูปองพื้นฐาน
-	basicAvailability, err := svc.CheckCouponAvailability(couponCode, shopID, req.CustomerID)
+	basicAvailability, err := svc.CheckCouponAvailability(couponCode, holdingCode, req.CustomerID)
 	if err != nil {
 		return nil, err
 	}
 
 	// 2. หาข้อมูลคูปองจาก CouponCode
-	coupon, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "coupon_code", couponCode)
+	coupon, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "coupon_code", couponCode)
 	if err != nil {
 		return nil, err
 	}
@@ -707,7 +707,7 @@ func (svc CouponHttpService) CheckCouponAvailabilityAdvanced(couponCode, shopID 
 
 		// ตรวจสอบเงื่อนไขสินค้า
 		if coupon.Coupon.ProductCondition != nil {
-			isEligible, matchedCategory, err := svc.checkProductCondition(ctx, shopID, item.Barcode, coupon.Coupon.ProductCondition)
+			isEligible, matchedCategory, err := svc.checkProductCondition(ctx, holdingCode, item.Barcode, coupon.Coupon.ProductCondition)
 			if err != nil {
 				itemResult.Message = fmt.Sprintf("Error checking product condition: %v", err)
 			} else {
@@ -804,12 +804,12 @@ func (svc CouponHttpService) CheckCouponAvailabilityAdvanced(couponCode, shopID 
 }
 
 // จองคูปอง
-func (svc CouponHttpService) ReserveCoupon(couponCode, shopID string, req models.ReserveCouponRequest) (*models.CouponReservationResponse, error) {
+func (svc CouponHttpService) ReserveCoupon(couponCode, holdingCode string, req models.ReserveCouponRequest) (*models.CouponReservationResponse, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
 	// 1. ตรวจสอบคูปองจาก CouponCode
-	coupon, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "coupon_code", couponCode)
+	coupon, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "coupon_code", couponCode)
 	if err != nil {
 		return nil, err
 	}
@@ -835,14 +835,14 @@ func (svc CouponHttpService) ReserveCoupon(couponCode, shopID string, req models
 			Page:       1,
 			PageSize:   10000,
 		}
-		_, total, err := svc.usageHistoryRepo.SearchUsageHistory(ctx, shopID, searchReq)
+		_, total, err := svc.usageHistoryRepo.SearchUsageHistory(ctx, holdingCode, searchReq)
 		if err != nil {
 			return nil, err
 		}
 		totalUsage = total
 
 		// นับจำนวน active reservations ทั้งหมด
-		activeReservations, err = svc.reservationRepo.CountActiveReservations(ctx, shopID, coupon.GuidFixed)
+		activeReservations, err = svc.reservationRepo.CountActiveReservations(ctx, holdingCode, coupon.GuidFixed)
 		if err != nil {
 			return nil, err
 		}
@@ -854,14 +854,14 @@ func (svc CouponHttpService) ReserveCoupon(couponCode, shopID string, req models
 			Page:       1,
 			PageSize:   10000,
 		}
-		_, customerTotal, err := svc.usageHistoryRepo.SearchUsageHistory(ctx, shopID, searchReq)
+		_, customerTotal, err := svc.usageHistoryRepo.SearchUsageHistory(ctx, holdingCode, searchReq)
 		if err != nil {
 			return nil, err
 		}
 		totalUsage = customerTotal
 
 		// นับจำนวน active reservations ของลูกค้าคนนี้
-		activeReservations, err = svc.reservationRepo.CountActiveReservationsByCustomer(ctx, shopID, coupon.GuidFixed, req.CustomerID)
+		activeReservations, err = svc.reservationRepo.CountActiveReservationsByCustomer(ctx, holdingCode, coupon.GuidFixed, req.CustomerID)
 		if err != nil {
 			return nil, err
 		}
@@ -897,7 +897,7 @@ func (svc CouponHttpService) ReserveCoupon(couponCode, shopID string, req models
 	}
 
 	// 7. บันทึกการจองลงฐานข้อมูล
-	reservationID, err := svc.reservationRepo.CreateReservation(ctx, shopID, reservationDoc)
+	reservationID, err := svc.reservationRepo.CreateReservation(ctx, holdingCode, reservationDoc)
 	if err != nil {
 		return nil, err
 	}
@@ -914,12 +914,12 @@ func (svc CouponHttpService) ReserveCoupon(couponCode, shopID string, req models
 }
 
 // ยกเลิกการจองคูปอง
-func (svc CouponHttpService) CancelReserveCoupon(couponCode, shopID string, req models.CancelReserveCouponRequest) error {
+func (svc CouponHttpService) CancelReserveCoupon(couponCode, holdingCode string, req models.CancelReserveCouponRequest) error {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
 	// ยกเลิกการจองในฐานข้อมูล (ไม่ต้องตรวจสอบคูปองเพราะใช้ ReservationID)
-	err := svc.reservationRepo.CancelReservation(ctx, shopID, req.ReservationID, req.CustomerID)
+	err := svc.reservationRepo.CancelReservation(ctx, holdingCode, req.ReservationID, req.CustomerID)
 	if err != nil {
 		return err
 	}
@@ -928,12 +928,12 @@ func (svc CouponHttpService) CancelReserveCoupon(couponCode, shopID string, req 
 }
 
 // ใช้คูปอง
-func (svc CouponHttpService) UseCoupon(couponCode, shopID, authUsername string, req models.UseCouponRequest) (*models.UseCouponResponse, error) {
+func (svc CouponHttpService) UseCoupon(couponCode, holdingCode, authUsername string, req models.UseCouponRequest) (*models.UseCouponResponse, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
 	// 1. ตรวจสอบการจอง
-	reservation, err := svc.reservationRepo.FindReservationByID(ctx, shopID, req.ReservationID)
+	reservation, err := svc.reservationRepo.FindReservationByID(ctx, holdingCode, req.ReservationID)
 	if err != nil {
 		return nil, err
 	}
@@ -947,7 +947,7 @@ func (svc CouponHttpService) UseCoupon(couponCode, shopID, authUsername string, 
 	}
 
 	// 2. ตรวจสอบคูปองจาก CouponCode
-	coupon, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "coupon_code", couponCode)
+	coupon, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "coupon_code", couponCode)
 	if err != nil {
 		return nil, err
 	}
@@ -1006,7 +1006,7 @@ func (svc CouponHttpService) UseCoupon(couponCode, shopID, authUsername string, 
 			Page:       1,
 			PageSize:   10000,
 		}
-		_, total, err := svc.usageHistoryRepo.SearchUsageHistory(ctx, shopID, searchReq)
+		_, total, err := svc.usageHistoryRepo.SearchUsageHistory(ctx, holdingCode, searchReq)
 		if err != nil {
 			return nil, err
 		}
@@ -1019,7 +1019,7 @@ func (svc CouponHttpService) UseCoupon(couponCode, shopID, authUsername string, 
 			Page:       1,
 			PageSize:   10000,
 		}
-		_, customerTotal, err := svc.usageHistoryRepo.SearchUsageHistory(ctx, shopID, searchReq)
+		_, customerTotal, err := svc.usageHistoryRepo.SearchUsageHistory(ctx, holdingCode, searchReq)
 		if err != nil {
 			return nil, err
 		}
@@ -1040,7 +1040,7 @@ func (svc CouponHttpService) UseCoupon(couponCode, shopID, authUsername string, 
 	// 7. ไม่ต้องอัพเดท RemainingValue อีกต่อไป
 
 	// 8. อัพเดทสถานะการจอง
-	err = svc.reservationRepo.UpdateReservationStatus(ctx, shopID, req.ReservationID, models.ReservationStatusUsed)
+	err = svc.reservationRepo.UpdateReservationStatus(ctx, holdingCode, req.ReservationID, models.ReservationStatusUsed)
 	if err != nil {
 		return nil, err
 	}
@@ -1077,7 +1077,7 @@ func (svc CouponHttpService) UseCoupon(couponCode, shopID, authUsername string, 
 	}
 
 	// บันทึกประวัติการใช้ (ไม่ให้ error หยุดการทำงาน)
-	if _, historyErr := svc.usageHistoryRepo.CreateUsageHistory(ctx, shopID, historyDoc); historyErr != nil {
+	if _, historyErr := svc.usageHistoryRepo.CreateUsageHistory(ctx, holdingCode, historyDoc); historyErr != nil {
 		// Log error but don't fail the transaction
 		// TODO: Add proper logging
 		_ = historyErr // Acknowledge we're intentionally ignoring this error
@@ -1094,11 +1094,11 @@ func (svc CouponHttpService) UseCoupon(couponCode, shopID, authUsername string, 
 }
 
 // FindActiveReservationsByCustomerAndCoupon ค้นหาการจองที่ยังใช้งานได้ของลูกค้าและคูปองเฉพาะ
-func (svc CouponHttpService) FindActiveReservationsByCustomerAndCoupon(shopID, customerID, couponID string) ([]models.CouponReservationDoc, error) {
+func (svc CouponHttpService) FindActiveReservationsByCustomerAndCoupon(holdingCode, customerID, couponID string) ([]models.CouponReservationDoc, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	reservations, err := svc.reservationRepo.FindActiveReservationsByCustomerAndCoupon(ctx, shopID, customerID, couponID)
+	reservations, err := svc.reservationRepo.FindActiveReservationsByCustomerAndCoupon(ctx, holdingCode, customerID, couponID)
 	if err != nil {
 		return nil, err
 	}
@@ -1107,11 +1107,11 @@ func (svc CouponHttpService) FindActiveReservationsByCustomerAndCoupon(shopID, c
 }
 
 // ล้างการจองที่หมดอายุ
-func (svc CouponHttpService) CleanupExpiredReservations(shopID string) error {
+func (svc CouponHttpService) CleanupExpiredReservations(holdingCode string) error {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	err := svc.reservationRepo.CleanupExpiredReservations(ctx, shopID)
+	err := svc.reservationRepo.CleanupExpiredReservations(ctx, holdingCode)
 	if err != nil {
 		return err
 	}
@@ -1120,7 +1120,7 @@ func (svc CouponHttpService) CleanupExpiredReservations(shopID string) error {
 }
 
 // คำนวนส่วนลดจากคูปอง
-func (svc CouponHttpService) CalculateCoupons(shopID string, req models.CalculateCouponRequest) (*models.CalculateCouponResponse, error) {
+func (svc CouponHttpService) CalculateCoupons(holdingCode string, req models.CalculateCouponRequest) (*models.CalculateCouponResponse, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
@@ -1136,7 +1136,7 @@ func (svc CouponHttpService) CalculateCoupons(shopID string, req models.Calculat
 
 	// วนลูปคำนวนแต่ละคูปอง
 	for _, couponReq := range req.Coupons {
-		result, err := svc.calculateSingleCouponAdvanced(ctx, shopID, currentOrderAmount, currentItems, req.BranchCode, couponReq, req.CustomerID)
+		result, err := svc.calculateSingleCouponAdvanced(ctx, holdingCode, currentOrderAmount, currentItems, req.BranchCode, couponReq, req.CustomerID)
 		if err != nil {
 			// เก็บ error แต่ยังคำนวนคูปองอื่นต่อ
 			errors = append(errors, models.CouponCalculationError{
@@ -1200,9 +1200,9 @@ func (svc CouponHttpService) CalculateCoupons(shopID string, req models.Calculat
 }
 
 // คำนวนคูปองแต่ละตัว
-func (svc CouponHttpService) calculateSingleCoupon(ctx context.Context, shopID string, orderAmount float64, couponReq models.CalculateCouponItemRequest, customerID string) (*models.CalculateCouponItemResponse, error) {
+func (svc CouponHttpService) calculateSingleCoupon(ctx context.Context, holdingCode string, orderAmount float64, couponReq models.CalculateCouponItemRequest, customerID string) (*models.CalculateCouponItemResponse, error) {
 	// ค้นหาคูปอง
-	coupon, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "coupon_code", couponReq.CouponCode)
+	coupon, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "coupon_code", couponReq.CouponCode)
 	if err != nil {
 		return nil, err
 	}
@@ -1323,7 +1323,7 @@ func (svc CouponHttpService) calculateSingleCoupon(ctx context.Context, shopID s
 			Page:       1,
 			PageSize:   10000,
 		}
-		_, total, err := svc.usageHistoryRepo.SearchUsageHistory(ctx, shopID, searchReq)
+		_, total, err := svc.usageHistoryRepo.SearchUsageHistory(ctx, holdingCode, searchReq)
 		if err != nil {
 			return nil, err
 		}
@@ -1342,7 +1342,7 @@ func (svc CouponHttpService) calculateSingleCoupon(ctx context.Context, shopID s
 			Page:       1,
 			PageSize:   10000,
 		}
-		_, customerTotal, err := svc.usageHistoryRepo.SearchUsageHistory(ctx, shopID, searchReq)
+		_, customerTotal, err := svc.usageHistoryRepo.SearchUsageHistory(ctx, holdingCode, searchReq)
 		if err != nil {
 			return nil, err
 		}
@@ -1370,9 +1370,9 @@ func (svc CouponHttpService) calculateSingleCoupon(ctx context.Context, shopID s
 }
 
 // คำนวนคูปองแต่ละตัวแบบขั้นสูง (รวม Product Condition และ Branch Exclusion)
-func (svc CouponHttpService) calculateSingleCouponAdvanced(ctx context.Context, shopID string, orderAmount float64, items []models.CouponCheckItem, branchCode string, couponReq models.CalculateCouponItemRequest, customerID string) (*models.CalculateCouponItemResponse, error) {
+func (svc CouponHttpService) calculateSingleCouponAdvanced(ctx context.Context, holdingCode string, orderAmount float64, items []models.CouponCheckItem, branchCode string, couponReq models.CalculateCouponItemRequest, customerID string) (*models.CalculateCouponItemResponse, error) {
 	// ค้นหาคูปอง
-	coupon, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "coupon_code", couponReq.CouponCode)
+	coupon, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "coupon_code", couponReq.CouponCode)
 	if err != nil {
 		return nil, err
 	}
@@ -1464,7 +1464,7 @@ func (svc CouponHttpService) calculateSingleCouponAdvanced(ctx context.Context, 
 		// มีเงื่อนไขสินค้า - ต้องตรวจสอบแต่ละรายการ
 		for _, item := range items {
 			// ตรวจสอบสินค้าแต่ละรายการ
-			isEligible, category, err := svc.checkProductCondition(ctx, shopID, item.Barcode, coupon.Coupon.ProductCondition)
+			isEligible, category, err := svc.checkProductCondition(ctx, holdingCode, item.Barcode, coupon.Coupon.ProductCondition)
 			if err != nil {
 				// ถ้าเกิดข้อผิดพลาดในการตรวจสอบ ถือว่าไม่เข้าเงื่อนไข
 				isEligible = false
@@ -1631,7 +1631,7 @@ func (svc CouponHttpService) calculateSingleCouponAdvanced(ctx context.Context, 
 			Page:       1,
 			PageSize:   10000,
 		}
-		_, total, err := svc.usageHistoryRepo.SearchUsageHistory(ctx, shopID, searchReq)
+		_, total, err := svc.usageHistoryRepo.SearchUsageHistory(ctx, holdingCode, searchReq)
 		if err != nil {
 			return nil, err
 		}
@@ -1645,7 +1645,7 @@ func (svc CouponHttpService) calculateSingleCouponAdvanced(ctx context.Context, 
 			Page:       1,
 			PageSize:   10000,
 		}
-		_, customerTotal, err := svc.usageHistoryRepo.SearchUsageHistory(ctx, shopID, searchReq)
+		_, customerTotal, err := svc.usageHistoryRepo.SearchUsageHistory(ctx, holdingCode, searchReq)
 		if err != nil {
 			return nil, err
 		}
@@ -1758,12 +1758,12 @@ func (svc CouponHttpService) updateItemAmountsAfterCouponApplied(items []models.
 }
 
 // CheckReservationByTransactionID เช็คสถานะการจองด้วย Transaction ID
-func (svc CouponHttpService) CheckReservationByTransactionID(transactionID, shopID string) (*models.ReservationStatusResponse, error) {
+func (svc CouponHttpService) CheckReservationByTransactionID(transactionID, holdingCode string) (*models.ReservationStatusResponse, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
 	// ค้นหาการจองด้วย transaction ID
-	reservation, err := svc.reservationRepo.FindReservationByTransactionID(ctx, shopID, transactionID)
+	reservation, err := svc.reservationRepo.FindReservationByTransactionID(ctx, holdingCode, transactionID)
 	if err != nil {
 		return &models.ReservationStatusResponse{
 			TransactionID:     transactionID,
@@ -1794,7 +1794,7 @@ func (svc CouponHttpService) CheckReservationByTransactionID(transactionID, shop
 	}
 
 	// ค้นหาข้อมูลคูปองเพื่อแสดงรายละเอียด
-	coupon, err := svc.repo.FindByGuid(ctx, shopID, reservation.CouponID)
+	coupon, err := svc.repo.FindByGuid(ctx, holdingCode, reservation.CouponID)
 	couponCode := ""
 	if err == nil {
 		couponCode = coupon.Coupon.CouponCode
@@ -1823,12 +1823,12 @@ func (svc CouponHttpService) CheckReservationByTransactionID(transactionID, shop
 }
 
 // LookupReservationDetails ค้นหารายละเอียดการจองแบบละเอียด
-func (svc CouponHttpService) LookupReservationDetails(shopID string, req models.ReservationLookupRequest) (*models.ReservationLookupResponse, error) {
+func (svc CouponHttpService) LookupReservationDetails(holdingCode string, req models.ReservationLookupRequest) (*models.ReservationLookupResponse, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
 	// ค้นหาการจองด้วย transaction ID
-	reservation, err := svc.reservationRepo.FindReservationByTransactionID(ctx, shopID, req.TransactionID)
+	reservation, err := svc.reservationRepo.FindReservationByTransactionID(ctx, holdingCode, req.TransactionID)
 	if err != nil {
 		return &models.ReservationLookupResponse{
 			TransactionID: req.TransactionID,
@@ -1836,10 +1836,10 @@ func (svc CouponHttpService) LookupReservationDetails(shopID string, req models.
 			Reservations:  []models.ReservationInfo{},
 			Summary: struct {
 				TotalReservations int `json:"total_reservations"`
-				ActiveCount int `json:"active_count"`
-				UsedCount int `json:"used_count"`
-				ExpiredCount int `json:"expired_count"`
-				CancelledCount int `json:"cancelled_count"`
+				ActiveCount       int `json:"active_count"`
+				UsedCount         int `json:"used_count"`
+				ExpiredCount      int `json:"expired_count"`
+				CancelledCount    int `json:"cancelled_count"`
 			}{
 				TotalReservations: 0,
 				ActiveCount:       0,
@@ -1871,15 +1871,15 @@ func (svc CouponHttpService) LookupReservationDetails(shopID string, req models.
 	var reservations []models.ReservationInfo
 	var summary struct {
 		TotalReservations int `json:"total_reservations"`
-		ActiveCount int `json:"active_count"`
-		UsedCount int `json:"used_count"`
-		ExpiredCount int `json:"expired_count"`
-		CancelledCount int `json:"cancelled_count"`
+		ActiveCount       int `json:"active_count"`
+		UsedCount         int `json:"used_count"`
+		ExpiredCount      int `json:"expired_count"`
+		CancelledCount    int `json:"cancelled_count"`
 	}
 
 	if shouldInclude {
 		// ค้นหาข้อมูลคูปอง
-		coupon, err := svc.repo.FindByGuid(ctx, shopID, reservation.CouponID)
+		coupon, err := svc.repo.FindByGuid(ctx, holdingCode, reservation.CouponID)
 		couponCode := ""
 		if err == nil {
 			couponCode = coupon.Coupon.CouponCode
@@ -1940,7 +1940,7 @@ func (svc CouponHttpService) LookupReservationDetails(shopID string, req models.
 // Usage History Service Methods
 
 // CreateUsageHistory สร้างประวัติการใช้คูปอง
-func (svc CouponHttpService) CreateUsageHistory(shopID, authUsername string, req models.CreateUsageHistoryRequest) (string, error) {
+func (svc CouponHttpService) CreateUsageHistory(holdingCode, authUsername string, req models.CreateUsageHistoryRequest) (string, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
@@ -1971,7 +1971,7 @@ func (svc CouponHttpService) CreateUsageHistory(shopID, authUsername string, req
 	}
 
 	// สร้างประวัติการใช้
-	historyID, err := svc.usageHistoryRepo.CreateUsageHistory(ctx, shopID, historyDoc)
+	historyID, err := svc.usageHistoryRepo.CreateUsageHistory(ctx, holdingCode, historyDoc)
 	if err != nil {
 		return "", err
 	}
@@ -1980,11 +1980,11 @@ func (svc CouponHttpService) CreateUsageHistory(shopID, authUsername string, req
 }
 
 // GetUsageHistory ดึงประวัติการใช้คูปองตามเงื่อนไข
-func (svc CouponHttpService) GetUsageHistory(shopID string, req models.CouponUsageHistoryRequest) (*models.CouponUsageHistoryResponse, error) {
+func (svc CouponHttpService) GetUsageHistory(holdingCode string, req models.CouponUsageHistoryRequest) (*models.CouponUsageHistoryResponse, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	response, err := svc.usageHistoryRepo.GetUsageHistorySummary(ctx, shopID, req)
+	response, err := svc.usageHistoryRepo.GetUsageHistorySummary(ctx, holdingCode, req)
 	if err != nil {
 		return nil, err
 	}
@@ -1993,7 +1993,7 @@ func (svc CouponHttpService) GetUsageHistory(shopID string, req models.CouponUsa
 }
 
 // GetUsageHistoryByCoupon ดึงประวัติการใช้คูปองตามรหัสคูปอง
-func (svc CouponHttpService) GetUsageHistoryByCoupon(shopID, couponID string, page, pageSize int) (*models.CouponUsageHistoryResponse, error) {
+func (svc CouponHttpService) GetUsageHistoryByCoupon(holdingCode, couponID string, page, pageSize int) (*models.CouponUsageHistoryResponse, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
@@ -2003,7 +2003,7 @@ func (svc CouponHttpService) GetUsageHistoryByCoupon(shopID, couponID string, pa
 		PageSize: pageSize,
 	}
 
-	response, err := svc.usageHistoryRepo.GetUsageHistorySummary(ctx, shopID, req)
+	response, err := svc.usageHistoryRepo.GetUsageHistorySummary(ctx, holdingCode, req)
 	if err != nil {
 		return nil, err
 	}
@@ -2012,7 +2012,7 @@ func (svc CouponHttpService) GetUsageHistoryByCoupon(shopID, couponID string, pa
 }
 
 // GetUsageHistoryByCustomer ดึงประวัติการใช้คูปองตามรหัสลูกค้า
-func (svc CouponHttpService) GetUsageHistoryByCustomer(shopID, customerID string, page, pageSize int) (*models.CouponUsageHistoryResponse, error) {
+func (svc CouponHttpService) GetUsageHistoryByCustomer(holdingCode, customerID string, page, pageSize int) (*models.CouponUsageHistoryResponse, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
@@ -2022,7 +2022,7 @@ func (svc CouponHttpService) GetUsageHistoryByCustomer(shopID, customerID string
 		PageSize:   pageSize,
 	}
 
-	response, err := svc.usageHistoryRepo.GetUsageHistorySummary(ctx, shopID, req)
+	response, err := svc.usageHistoryRepo.GetUsageHistorySummary(ctx, holdingCode, req)
 	if err != nil {
 		return nil, err
 	}
@@ -2031,11 +2031,11 @@ func (svc CouponHttpService) GetUsageHistoryByCustomer(shopID, customerID string
 }
 
 // GetUsageHistoryBySaleInvoice ดึงประวัติการใช้คูปองตามรหัสใบกำกับสินค้า
-func (svc CouponHttpService) GetUsageHistoryBySaleInvoice(shopID, saleInvoiceID string) ([]models.CouponUsageHistoryItem, error) {
+func (svc CouponHttpService) GetUsageHistoryBySaleInvoice(holdingCode, saleInvoiceID string) ([]models.CouponUsageHistoryItem, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	histories, err := svc.usageHistoryRepo.FindUsageHistoryBySaleInvoice(ctx, shopID, saleInvoiceID)
+	histories, err := svc.usageHistoryRepo.FindUsageHistoryBySaleInvoice(ctx, holdingCode, saleInvoiceID)
 	if err != nil {
 		return nil, err
 	}
@@ -2072,11 +2072,11 @@ func (svc CouponHttpService) GetUsageHistoryBySaleInvoice(shopID, saleInvoiceID 
 }
 
 // GetUsageHistoryByTransactionID ดึงประวัติการใช้คูปองตาม Transaction ID
-func (svc CouponHttpService) GetUsageHistoryByTransactionID(shopID, transactionID string) ([]models.CouponUsageHistoryItem, error) {
+func (svc CouponHttpService) GetUsageHistoryByTransactionID(holdingCode, transactionID string) ([]models.CouponUsageHistoryItem, error) {
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	histories, err := svc.usageHistoryRepo.FindUsageHistoryByTransactionID(ctx, shopID, transactionID)
+	histories, err := svc.usageHistoryRepo.FindUsageHistoryByTransactionID(ctx, holdingCode, transactionID)
 	if err != nil {
 		return nil, err
 	}

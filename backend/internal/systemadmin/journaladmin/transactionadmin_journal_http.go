@@ -51,7 +51,7 @@ func (s *JournalTransactionAdminHttp) ReSyncJournalTransaction(ctx microservice.
 		return err
 	}
 
-	err = s.svc.ReSyncJournalTransactionDoc(req.ShopID)
+	err = s.svc.ReSyncJournalTransactionDoc(req.HoldingCode)
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, common.ApiResponse{
 			Success: false,
@@ -81,7 +81,7 @@ func (h *JournalTransactionAdminHttp) ReSyncJournalDeleteTransaction(ctx microse
 		return err
 	}
 
-	err = h.svc.ReSyncJournalDeleteTransactionDoc(req.ShopID)
+	err = h.svc.ReSyncJournalDeleteTransactionDoc(req.HoldingCode)
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, common.ApiResponse{
 			Success: false,

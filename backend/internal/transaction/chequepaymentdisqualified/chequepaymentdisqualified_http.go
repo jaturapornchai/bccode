@@ -67,7 +67,7 @@ func (h ChequePaymentDisqualifiedHttp) RegisterHttp() {
 // @Router /transaction/chequepayment/chequepaymentdisqualified [post]
 func (h ChequePaymentDisqualifiedHttp) CreateChequePaymentDisqualified(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.ChequePaymentDisqualified{}
@@ -83,7 +83,7 @@ func (h ChequePaymentDisqualifiedHttp) CreateChequePaymentDisqualified(ctx micro
 		return err
 	}
 
-	idx, docNo, err := h.svc.CreateChequePaymentDisqualified(shopID, authUsername, *docReq)
+	idx, docNo, err := h.svc.CreateChequePaymentDisqualified(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -111,7 +111,7 @@ func (h ChequePaymentDisqualifiedHttp) CreateChequePaymentDisqualified(ctx micro
 func (h ChequePaymentDisqualifiedHttp) UpdateChequePaymentDisqualified(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -129,7 +129,7 @@ func (h ChequePaymentDisqualifiedHttp) UpdateChequePaymentDisqualified(ctx micro
 		return err
 	}
 
-	err = h.svc.UpdateChequePaymentDisqualified(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateChequePaymentDisqualified(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -155,12 +155,12 @@ func (h ChequePaymentDisqualifiedHttp) UpdateChequePaymentDisqualified(ctx micro
 // @Router /transaction/chequepayment/chequepaymentdisqualified/{id} [delete]
 func (h ChequePaymentDisqualifiedHttp) DeleteChequePaymentDisqualified(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteChequePaymentDisqualified(shopID, id, authUsername)
+	err := h.svc.DeleteChequePaymentDisqualified(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -186,7 +186,7 @@ func (h ChequePaymentDisqualifiedHttp) DeleteChequePaymentDisqualified(ctx micro
 // @Router /transaction/chequepayment/chequepaymentdisqualified [delete]
 func (h ChequePaymentDisqualifiedHttp) DeleteChequePaymentDisqualifiedByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -199,7 +199,7 @@ func (h ChequePaymentDisqualifiedHttp) DeleteChequePaymentDisqualifiedByGUIDs(ct
 		return err
 	}
 
-	err = h.svc.DeleteChequePaymentDisqualifiedByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteChequePaymentDisqualifiedByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -224,12 +224,12 @@ func (h ChequePaymentDisqualifiedHttp) DeleteChequePaymentDisqualifiedByGUIDs(ct
 // @Router /transaction/chequepayment/chequepaymentdisqualified/{id} [get]
 func (h ChequePaymentDisqualifiedHttp) InfoChequePaymentDisqualified(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get ChequePaymentDisqualified %v", id)
-	doc, err := h.svc.InfoChequePaymentDisqualified(shopID, id)
+	doc, err := h.svc.InfoChequePaymentDisqualified(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -255,11 +255,11 @@ func (h ChequePaymentDisqualifiedHttp) InfoChequePaymentDisqualified(ctx microse
 // @Router /transaction/chequepayment/chequepaymentdisqualified/code/{code} [get]
 func (h ChequePaymentDisqualifiedHttp) InfoChequePaymentDisqualifiedByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoChequePaymentDisqualifiedByCode(shopID, code)
+	doc, err := h.svc.InfoChequePaymentDisqualifiedByCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -290,7 +290,7 @@ func (h ChequePaymentDisqualifiedHttp) InfoChequePaymentDisqualifiedByCode(ctx m
 // @Router /transaction/chequepayment/chequepaymentdisqualified [get]
 func (h ChequePaymentDisqualifiedHttp) SearchChequePaymentDisqualifiedPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -311,7 +311,7 @@ func (h ChequePaymentDisqualifiedHttp) SearchChequePaymentDisqualifiedPage(ctx m
 		},
 	})
 
-	docList, pagination, err := h.svc.SearchChequePaymentDisqualified(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchChequePaymentDisqualified(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -344,7 +344,7 @@ func (h ChequePaymentDisqualifiedHttp) SearchChequePaymentDisqualifiedPage(ctx m
 // @Router /transaction/chequepayment/chequepaymentdisqualified/list [get]
 func (h ChequePaymentDisqualifiedHttp) SearchChequePaymentDisqualifiedStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -367,7 +367,7 @@ func (h ChequePaymentDisqualifiedHttp) SearchChequePaymentDisqualifiedStep(ctx m
 		},
 	})
 
-	docList, total, err := h.svc.SearchChequePaymentDisqualifiedStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchChequePaymentDisqualifiedStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -395,7 +395,7 @@ func (h ChequePaymentDisqualifiedHttp) SaveBulk(ctx microservice.IContext) error
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -407,7 +407,7 @@ func (h ChequePaymentDisqualifiedHttp) SaveBulk(ctx microservice.IContext) error
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

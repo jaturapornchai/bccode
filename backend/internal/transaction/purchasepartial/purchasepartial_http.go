@@ -67,7 +67,7 @@ func (h PurchasepartialHttp) RegisterHttp() {
 // @Router /transaction/purchasepartial [post]
 func (h PurchasepartialHttp) CreatePurchasepartial(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.Purchasepartial{}
@@ -83,7 +83,7 @@ func (h PurchasepartialHttp) CreatePurchasepartial(ctx microservice.IContext) er
 		return err
 	}
 
-	idx, docNo, err := h.svc.CreatePurchasepartial(shopID, authUsername, *docReq)
+	idx, docNo, err := h.svc.CreatePurchasepartial(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -111,7 +111,7 @@ func (h PurchasepartialHttp) CreatePurchasepartial(ctx microservice.IContext) er
 func (h PurchasepartialHttp) UpdatePurchasepartial(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -129,7 +129,7 @@ func (h PurchasepartialHttp) UpdatePurchasepartial(ctx microservice.IContext) er
 		return err
 	}
 
-	err = h.svc.UpdatePurchasepartial(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdatePurchasepartial(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -155,12 +155,12 @@ func (h PurchasepartialHttp) UpdatePurchasepartial(ctx microservice.IContext) er
 // @Router /transaction/purchasepartial/{id} [delete]
 func (h PurchasepartialHttp) DeletePurchasepartial(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeletePurchasepartial(shopID, id, authUsername)
+	err := h.svc.DeletePurchasepartial(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -186,7 +186,7 @@ func (h PurchasepartialHttp) DeletePurchasepartial(ctx microservice.IContext) er
 // @Router /transaction/purchasepartial [delete]
 func (h PurchasepartialHttp) DeletePurchasepartialByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -199,7 +199,7 @@ func (h PurchasepartialHttp) DeletePurchasepartialByGUIDs(ctx microservice.ICont
 		return err
 	}
 
-	err = h.svc.DeletePurchasepartialByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeletePurchasepartialByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -224,12 +224,12 @@ func (h PurchasepartialHttp) DeletePurchasepartialByGUIDs(ctx microservice.ICont
 // @Router /transaction/purchasepartial/{id} [get]
 func (h PurchasepartialHttp) InfoPurchasepartial(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get Purchasepartial %v", id)
-	doc, err := h.svc.InfoPurchasepartial(shopID, id)
+	doc, err := h.svc.InfoPurchasepartial(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -255,11 +255,11 @@ func (h PurchasepartialHttp) InfoPurchasepartial(ctx microservice.IContext) erro
 // @Router /transaction/purchasepartial/code/{code} [get]
 func (h PurchasepartialHttp) InfoPurchasepartialByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoPurchasepartialByCode(shopID, code)
+	doc, err := h.svc.InfoPurchasepartialByCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -290,7 +290,7 @@ func (h PurchasepartialHttp) InfoPurchasepartialByCode(ctx microservice.IContext
 // @Router /transaction/purchasepartial [get]
 func (h PurchasepartialHttp) SearchPurchasepartialPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -311,7 +311,7 @@ func (h PurchasepartialHttp) SearchPurchasepartialPage(ctx microservice.IContext
 		},
 	})
 
-	docList, pagination, err := h.svc.SearchPurchasepartial(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchPurchasepartial(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -344,7 +344,7 @@ func (h PurchasepartialHttp) SearchPurchasepartialPage(ctx microservice.IContext
 // @Router /transaction/purchasepartial/list [get]
 func (h PurchasepartialHttp) SearchPurchasepartialStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -367,7 +367,7 @@ func (h PurchasepartialHttp) SearchPurchasepartialStep(ctx microservice.IContext
 		},
 	})
 
-	docList, total, err := h.svc.SearchPurchasepartialStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchPurchasepartialStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -395,7 +395,7 @@ func (h PurchasepartialHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -407,7 +407,7 @@ func (h PurchasepartialHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

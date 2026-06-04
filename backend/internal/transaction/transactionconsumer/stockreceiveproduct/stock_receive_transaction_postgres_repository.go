@@ -7,11 +7,11 @@ import (
 )
 
 type IStockReceiveTransactionPGRepository interface {
-	Get(shopID string, docNo string) (*models.StockReceiveProductTransactionPG, error)
+	Get(holdingCode string, docNo string) (*models.StockReceiveProductTransactionPG, error)
 	Create(doc models.StockReceiveProductTransactionPG) error
-	Update(shopID string, docNo string, doc models.StockReceiveProductTransactionPG) error
-	Delete(shopID string, docNo string, doc models.StockReceiveProductTransactionPG) error
-	DeleteData(shopID string, docNo string, doc models.StockReceiveProductTransactionPG) error
+	Update(holdingCode string, docNo string, doc models.StockReceiveProductTransactionPG) error
+	Delete(holdingCode string, docNo string, doc models.StockReceiveProductTransactionPG) error
+	DeleteData(holdingCode string, docNo string, doc models.StockReceiveProductTransactionPG) error
 }
 
 type StockReceiveTransactionPGRepository struct {
@@ -37,11 +37,11 @@ func (repo StockReceiveTransactionPGRepository) Create(doc models.StockReceivePr
 	return nil
 }
 
-func (repo StockReceiveTransactionPGRepository) Update(shopID string, docNo string, doc models.StockReceiveProductTransactionPG) error {
+func (repo StockReceiveTransactionPGRepository) Update(holdingCode string, docNo string, doc models.StockReceiveProductTransactionPG) error {
 
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"shopid": shopID,
-		"docno":  docNo,
+		"holding_code": holdingCode,
+		"docno":        docNo,
 	})
 
 	if err != nil {
@@ -50,20 +50,20 @@ func (repo StockReceiveTransactionPGRepository) Update(shopID string, docNo stri
 	return nil
 }
 
-func (repo *StockReceiveTransactionPGRepository) DeleteData(shopID string, docNo string, doc models.StockReceiveProductTransactionPG) error {
+func (repo *StockReceiveTransactionPGRepository) DeleteData(holdingCode string, docNo string, doc models.StockReceiveProductTransactionPG) error {
 
 	var details *[]models.StockReceiveProductTransactionDetailPG
 	tx := repo.pst.DBClient().Begin()
 
-	tx.Model(&models.StockReceiveProductTransactionDetailPG{}).Where(" shopid=? AND docno=?", shopID, docNo).Find(&details)
+	tx.Model(&models.StockReceiveProductTransactionDetailPG{}).Where(" holding_code=? AND docno=?", holdingCode, docNo).Find(&details)
 	for _, tmp := range *details {
 		// mark delete
 		tx.Delete(&models.StockReceiveProductTransactionDetailPG{}, tmp.ID)
 	}
 
 	err := tx.Delete(models.StockReceiveProductTransactionPG{}, map[string]interface{}{
-		"shopid": shopID,
-		"docno":  docNo,
+		"holding_code": holdingCode,
+		"docno":        docNo,
 	}).Error
 
 	if err != nil {

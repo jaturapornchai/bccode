@@ -64,7 +64,7 @@ func (h GradeProductHttp) RegisterHttp() {
 // @Router /aicloud/grade [post]
 func (h GradeProductHttp) CreateGradeProduct(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 	docReq := &models.GradeProduct{}
 	if err := json.Unmarshal([]byte(input), docReq); err != nil {
@@ -77,7 +77,7 @@ func (h GradeProductHttp) CreateGradeProduct(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreateGradeProduct(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateGradeProduct(holdingCode, authUsername, *docReq)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -103,7 +103,7 @@ func (h GradeProductHttp) CreateGradeProduct(ctx microservice.IContext) error {
 func (h GradeProductHttp) UpdateGradeProduct(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -118,7 +118,7 @@ func (h GradeProductHttp) UpdateGradeProduct(ctx microservice.IContext) error {
 		return err
 	}
 
-	err := h.svc.UpdateGradeProduct(shopID, id, authUsername, *docReq)
+	err := h.svc.UpdateGradeProduct(holdingCode, id, authUsername, *docReq)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -142,12 +142,12 @@ func (h GradeProductHttp) UpdateGradeProduct(ctx microservice.IContext) error {
 // @Router /aicloud/grade/{id} [delete]
 func (h GradeProductHttp) DeleteGradeProduct(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteGradeProduct(shopID, id, authUsername)
+	err := h.svc.DeleteGradeProduct(holdingCode, id, authUsername)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -171,7 +171,7 @@ func (h GradeProductHttp) DeleteGradeProduct(ctx microservice.IContext) error {
 // @Router /aicloud/grade [delete]
 func (h GradeProductHttp) DeleteGradeProductByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -181,7 +181,7 @@ func (h GradeProductHttp) DeleteGradeProductByGUIDs(ctx microservice.IContext) e
 		return err
 	}
 
-	err := h.svc.DeleteGradeProductByGUIDs(shopID, authUsername, docReq)
+	err := h.svc.DeleteGradeProductByGUIDs(holdingCode, authUsername, docReq)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -204,12 +204,12 @@ func (h GradeProductHttp) DeleteGradeProductByGUIDs(ctx microservice.IContext) e
 // @Router /aicloud/grade/{id} [get]
 func (h GradeProductHttp) InfoGradeProduct(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get GradeProduct %v", id)
-	doc, err := h.svc.InfoGradeProduct(shopID, id)
+	doc, err := h.svc.InfoGradeProduct(holdingCode, id)
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -234,10 +234,10 @@ func (h GradeProductHttp) InfoGradeProduct(ctx microservice.IContext) error {
 // @Router /aicloud/grade/code/{code} [get]
 func (h GradeProductHttp) InfoGradeProductByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
-	doc, err := h.svc.InfoGradeProductByCode(shopID, code)
+	doc, err := h.svc.InfoGradeProductByCode(holdingCode, code)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -263,10 +263,10 @@ func (h GradeProductHttp) InfoGradeProductByCode(ctx microservice.IContext) erro
 // @Router /aicloud/grade [get]
 func (h GradeProductHttp) SearchGradeProductPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
-	docList, pagination, err := h.svc.SearchGradeProduct(shopID, map[string]interface{}{}, pageable)
+	docList, pagination, err := h.svc.SearchGradeProduct(holdingCode, map[string]interface{}{}, pageable)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -294,11 +294,11 @@ func (h GradeProductHttp) SearchGradeProductPage(ctx microservice.IContext) erro
 // @Router /aicloud/grade/list [get]
 func (h GradeProductHttp) SearchGradeProductStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 	lang := ctx.QueryParam("lang")
-	docList, total, err := h.svc.SearchGradeProductStep(shopID, lang, pageableStep)
+	docList, total, err := h.svc.SearchGradeProductStep(holdingCode, lang, pageableStep)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -324,7 +324,7 @@ func (h GradeProductHttp) SearchGradeProductStep(ctx microservice.IContext) erro
 func (h GradeProductHttp) SaveBulk(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 	dataReq := []models.GradeProduct{}
@@ -333,7 +333,7 @@ func (h GradeProductHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 	if err != nil {
 		ctx.ResponseError(400, err.Error())
 		return err

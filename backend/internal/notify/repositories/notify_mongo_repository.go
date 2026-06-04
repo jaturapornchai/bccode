@@ -13,25 +13,25 @@ import (
 )
 
 type INotifyRepository interface {
-	Count(ctx context.Context, shopID string) (int, error)
+	Count(ctx context.Context, holdingCode string) (int, error)
 	Create(ctx context.Context, doc models.NotifyDoc) (string, error)
 	CreateInBatch(ctx context.Context, docList []models.NotifyDoc) error
-	Update(ctx context.Context, shopID string, guid string, doc models.NotifyDoc) error
+	Update(ctx context.Context, holdingCode string, guid string, doc models.NotifyDoc) error
 	DeleteByGuidfixed(sctx context.Context, hopID string, guid string, username string) error
-	Delete(ctx context.Context, shopID string, username string, filters map[string]interface{}) error
-	FindPage(ctx context.Context, shopID string, searchInFields []string, pageable micromodels.Pageable) ([]models.NotifyInfo, mongopagination.PaginationData, error)
-	FindByGuid(ctx context.Context, shopID string, guid string) (models.NotifyDoc, error)
-	FindByGuids(ctx context.Context, shopID string, guids []string) ([]models.NotifyDoc, error)
-	Find(ctx context.Context, shopID string, filters map[string]interface{}) ([]models.NotifyInfo, error)
+	Delete(ctx context.Context, holdingCode string, username string, filters map[string]interface{}) error
+	FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable micromodels.Pageable) ([]models.NotifyInfo, mongopagination.PaginationData, error)
+	FindByGuid(ctx context.Context, holdingCode string, guid string) (models.NotifyDoc, error)
+	FindByGuids(ctx context.Context, holdingCode string, guids []string) ([]models.NotifyDoc, error)
+	Find(ctx context.Context, holdingCode string, filters map[string]interface{}) ([]models.NotifyInfo, error)
 
-	FindByDocIndentityGuid(ctx context.Context, shopID string, indentityField string, indentityValue interface{}) (models.NotifyDoc, error)
-	FindPageFilter(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.NotifyInfo, mongopagination.PaginationData, error)
-	FindStep(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableLimit micromodels.PageableStep) ([]models.NotifyInfo, int, error)
+	FindByDocIndentityGuid(ctx context.Context, holdingCode string, indentityField string, indentityValue interface{}) (models.NotifyDoc, error)
+	FindPageFilter(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.NotifyInfo, mongopagination.PaginationData, error)
+	FindStep(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableLimit micromodels.PageableStep) ([]models.NotifyInfo, int, error)
 
-	FindDeletedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.NotifyDeleteActivity, mongopagination.PaginationData, error)
+	FindDeletedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.NotifyDeleteActivity, mongopagination.PaginationData, error)
 	FindCreatedOrUpdatedPage(sctx context.Context, hopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.NotifyActivity, mongopagination.PaginationData, error)
-	FindDeletedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.NotifyDeleteActivity, error)
-	FindCreatedOrUpdatedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.NotifyActivity, error)
+	FindDeletedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.NotifyDeleteActivity, error)
+	FindCreatedOrUpdatedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.NotifyActivity, error)
 }
 
 type NotifyRepository struct {
@@ -55,7 +55,7 @@ func NewNotifyRepository(pst microservice.IPersisterMongo) *NotifyRepository {
 	return insRepo
 }
 
-func (repo NotifyRepository) Find(ctx context.Context, shopID string, filters map[string]interface{}) ([]models.NotifyInfo, error) {
+func (repo NotifyRepository) Find(ctx context.Context, holdingCode string, filters map[string]interface{}) ([]models.NotifyInfo, error) {
 	result := []models.NotifyInfo{}
 
 	matchFilterList := []interface{}{}
@@ -65,8 +65,8 @@ func (repo NotifyRepository) Find(ctx context.Context, shopID string, filters ma
 	}
 
 	queryFilters := bson.M{
-		"shopid":    shopID,
-		"deleted_at": bson.M{"$exists": false},
+		"holding_code": holdingCode,
+		"deleted_at":   bson.M{"$exists": false},
 	}
 
 	if len(matchFilterList) > 0 {

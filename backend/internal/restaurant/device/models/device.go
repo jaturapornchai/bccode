@@ -10,14 +10,14 @@ const deviceCollectionName = "restarantDevices"
 
 type Device struct {
 	models.PartitionIdentity `bson:"inline"`
-	Code string          `json:"code" bson:"code" validate:"required" `
-	Type int16           `json:"type" bson:"type" `
-	Names *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
+	Code                     string          `json:"code" bson:"code" validate:"required" `
+	Type                     int16           `json:"type" bson:"type" `
+	Names                    *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
 }
 
 type DeviceInfo struct {
 	models.DocIdentity `bson:"inline"`
-	Device  `bson:"inline"`
+	Device             `bson:"inline"`
 }
 
 func (DeviceInfo) CollectionName() string {
@@ -25,13 +25,13 @@ func (DeviceInfo) CollectionName() string {
 }
 
 type DeviceData struct {
-	models.ShopIdentity `bson:"inline"`
-	DeviceInfo  `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	DeviceInfo               `bson:"inline"`
 }
 
 type DeviceDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	DeviceData  `bson:"inline"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	DeviceData         `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -48,7 +48,7 @@ func (DeviceItemGuid) CollectionName() string {
 }
 
 type DeviceActivity struct {
-	DeviceData  `bson:"inline"`
+	DeviceData          `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

@@ -11,7 +11,7 @@ import (
 func TestPurchaseReceiveTransactionPhaser(t *testing.T) {
 	giveMsg := `{
 	"id": "000000000000000000000000",
-	"shopid": "30LbRx3l0SLaK84gLpcF0W4x9Z0",
+	"holding_code": "30LbRx3l0SLaK84gLpcF0W4x9Z0",
 	"guid_fixed": "32Y3x1r0sqYOww0mRXrh0ftiIxV",
 	"docno": "PP2025091100001",
 	"docdatetime": "2025-09-11T09:44:52.81Z",
@@ -260,7 +260,7 @@ func TestPurchaseReceiveTransactionPhaser(t *testing.T) {
 
 	// Test header fields from TransactionPG
 	assert.Equal(t, "32Y3x1r0sqYOww0mRXrh0ftiIxV", gotDoc.GuidFixed)
-	assert.Equal(t, "30LbRx3l0SLaK84gLpcF0W4x9Z0", gotDoc.ShopID)
+	assert.Equal(t, "30LbRx3l0SLaK84gLpcF0W4x9Z0", gotDoc.HoldingCode)
 	assert.Equal(t, int16(310), gotDoc.TransFlag)
 	assert.Equal(t, "PP2025091100001", gotDoc.DocNo)
 
@@ -324,7 +324,7 @@ func TestPurchaseReceiveTransactionPhaser(t *testing.T) {
 	assert.Equal(t, expectedItemDocRefDate, item.DocRefDateTime)
 
 	assert.Equal(t, "PP2025091100001", item.DocNo)
-	assert.Equal(t, "30LbRx3l0SLaK84gLpcF0W4x9Z0", item.ShopID)
+	assert.Equal(t, "30LbRx3l0SLaK84gLpcF0W4x9Z0", item.HoldingCode)
 	assert.Equal(t, int8(1), item.LineNumber)
 	assert.Equal(t, "885002", item.Barcode)
 	assert.Equal(t, float64(1), item.Qty)
@@ -362,7 +362,7 @@ func TestPurchaseReceiveTransactionPhaser(t *testing.T) {
 func TestPurchaseReceiveTransactionPhaser_InvalidJSON(t *testing.T) {
 	invalidJSONMsg := `{
 		"id": "000000000000000000000000",
-		"shopid": "30LbRx3l0SLaK84gLpcF0W4x9Z0",
+		"holding_code": "30LbRx3l0SLaK84gLpcF0W4x9Z0",
 		"guid_fixed": "invalid json structure`
 
 	phaser := purchasereceive.PurchaseReceiveTransactionPhaser{}
@@ -376,7 +376,7 @@ func TestPurchaseReceiveTransactionPhaser_InvalidJSON(t *testing.T) {
 func TestPurchaseReceiveTransactionPhaser_EmptyDetails(t *testing.T) {
 	emptyDetailsMsg := `{
 		"id": "000000000000000000000000",
-		"shopid": "30LbRx3l0SLaK84gLpcF0W4x9Z0",
+		"holding_code": "30LbRx3l0SLaK84gLpcF0W4x9Z0",
 		"guid_fixed": "32Y3x1r0sqYOww0mRXrh0ftiIxV",
 		"docno": "PP2025091100001",
 		"docdatetime": "2025-09-11T09:44:52.81Z",
@@ -439,7 +439,7 @@ func TestPurchaseReceiveTransactionPhaser_EmptyDetails(t *testing.T) {
 func TestPurchaseReceiveTransactionPhaser_MultipleItems(t *testing.T) {
 	multipleItemsMsg := `{
 		"id": "000000000000000000000000",
-		"shopid": "30LbRx3l0SLaK84gLpcF0W4x9Z0",
+		"holding_code": "30LbRx3l0SLaK84gLpcF0W4x9Z0",
 		"guid_fixed": "32Y3x1r0sqYOww0mRXrh0ftiIxV",
 		"docno": "PP2025091100001",
 		"docdatetime": "2025-09-11T09:44:52.81Z",
@@ -642,7 +642,7 @@ func TestPurchaseReceiveTransactionPhaser_MultipleItems(t *testing.T) {
 func TestPurchaseReceiveTransactionPhaser_DateTimeParsing(t *testing.T) {
 	dateTimeMsg := `{
 		"id": "000000000000000000000000",
-		"shopid": "30LbRx3l0SLaK84gLpcF0W4x9Z0",
+		"holding_code": "30LbRx3l0SLaK84gLpcF0W4x9Z0",
 		"guid_fixed": "32Y3x1r0sqYOww0mRXrh0ftiIxV",
 		"docno": "PP2025091100001",
 		"docdatetime": "2025-12-31T23:59:59.999Z",

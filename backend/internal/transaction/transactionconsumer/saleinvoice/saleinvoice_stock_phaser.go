@@ -28,7 +28,7 @@ func (p SaleInvoiceTransactionStockPhaser) PhaseSaleInvoiceDoc(doc models.SaleIn
 			stockDetail := models.StockTransactionDetail{
 				CalcFlag:            -1,
 				DocRef:              detail.DocRef,
-				ShopID:              doc.ShopID,
+				HoldingCode:         doc.HoldingCode,
 				DocNo:               doc.DocNo,
 				Barcode:             detail.Barcode,
 				ItemType:            detail.ItemType,
@@ -55,8 +55,8 @@ func (p SaleInvoiceTransactionStockPhaser) PhaseSaleInvoiceDoc(doc models.SaleIn
 	}
 
 	stockTransaction := models.StockTransaction{
-		ShopIdentity: pkgModels.ShopIdentity{
-			ShopID: doc.ShopID,
+		HoldingCodeentity: pkgModels.HoldingCodeentity{
+			HoldingCode: doc.HoldingCode,
 		},
 		GuidFixed:      doc.GuidFixed,
 		GuidRef:        doc.GuidRef,

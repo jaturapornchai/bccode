@@ -11,11 +11,11 @@ import (
 
 // ProcessDocPurchaseBatch - ประมวลผลสถานะเอกสารแบบ batch สำหรับ rebuild (เร็วกว่าแบบ 1:1)
 // ใช้ SQL batch queries แทนการ loop ทีละเอกสาร
-func ProcessDocPurchaseBatch(shopId string) {
-	logger.Info("Starting ProcessDocPurchaseBatch for shop %s (OPTIMIZED FOR REBUILD)", shopId)
+func ProcessDocPurchaseBatch(holdingCode string) {
+	logger.Info("Starting ProcessDocPurchaseBatch for shop %s (OPTIMIZED FOR REBUILD)", holdingCode)
 	ctx := context.Background()
 
-	db, err := mypg.PgSqlFastConnect(shopId)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		logger.Error("Failed to connect to PostgreSQL: %v", err)
 		return
@@ -25,10 +25,10 @@ func ProcessDocPurchaseBatch(shopId string) {
 	logger.Debug("Step 1: Batch updating isref for all purchase orders...")
 	queryUpdateIsRef := `
 		UPDATE doc
-		SET isref = CASE 
+		SET isref = CASE
 			WHEN EXISTS (
-				SELECT 1 FROM docref 
-				WHERE docref.docnoref = doc.docno 
+				SELECT 1 FROM docref
+				WHERE docref.docnoref = doc.docno
 				AND docref.docnotransflag IN (310, 12)
 			) THEN true
 			ELSE false
@@ -48,7 +48,7 @@ func ProcessDocPurchaseBatch(shopId string) {
 	logger.Debug("Step 2: Batch updating iscomparedsuccess and isclosed...")
 	queryUpdateStatus := `
 		WITH doc_comparison AS (
-			SELECT 
+			SELECT
 				dds.docno,
 				SUM(COALESCE(dds.totalqty * (dds.unitstand / NULLIF(dds.unitdivide, 0)), dds.totalqty)) AS totalordered,
 				COALESCE(SUM(drc.totalqty * (drc.unitstand / NULLIF(drc.unitdivide, 0))), 0) AS totalreceived
@@ -70,7 +70,7 @@ func ProcessDocPurchaseBatch(shopId string) {
 			GROUP BY dds.docno
 		)
 		UPDATE doc
-		SET 
+		SET
 			iscomparedsuccess = CASE
 				WHEN dc.totalreceived = 0 THEN 0
 				WHEN dc.totalreceived = dc.totalordered THEN 1
@@ -106,19 +106,19 @@ func ProcessDocPurchaseBatch(shopId string) {
 		logger.Success("Step 3 completed: Deleted %d records from docwaitprocess", rowsAffected)
 	}
 
-	logger.Success("ProcessDocPurchaseBatch completed for shop %s (BATCH MODE - FAST!)", shopId)
+	logger.Success("ProcessDocPurchaseBatch completed for shop %s (BATCH MODE - FAST!)", holdingCode)
 }
 
 // ProcessDocPurchaseBatchByDocNos - ประมวลผลเฉพาะ docno ที่ระบุแบบ batch (สำหรับ Kafka ที่มีหลายเอกสาร)
-func ProcessDocPurchaseBatchByDocNos(shopId string, docNos []string) {
+func ProcessDocPurchaseBatchByDocNos(holdingCode string, docNos []string) {
 	if len(docNos) == 0 {
 		return
 	}
 
-	logger.Info("Starting ProcessDocPurchaseBatchByDocNos for shop %s with %d documents", shopId, len(docNos))
+	logger.Info("Starting ProcessDocPurchaseBatchByDocNos for shop %s with %d documents", holdingCode, len(docNos))
 	ctx := context.Background()
 
-	db, err := mypg.PgSqlFastConnect(shopId)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		logger.Error("Failed to connect to PostgreSQL: %v", err)
 		return
@@ -136,10 +136,10 @@ func ProcessDocPurchaseBatchByDocNos(shopId string, docNos []string) {
 	// Step 1: UPDATE isref สำหรับ docno ที่ระบุ
 	queryUpdateIsRef := fmt.Sprintf(`
 		UPDATE doc
-		SET isref = CASE 
+		SET isref = CASE
 			WHEN EXISTS (
-				SELECT 1 FROM docref 
-				WHERE docref.docnoref = doc.docno 
+				SELECT 1 FROM docref
+				WHERE docref.docnoref = doc.docno
 				AND docref.docnotransflag IN (310, 12)
 			) THEN true
 			ELSE false
@@ -158,7 +158,7 @@ func ProcessDocPurchaseBatchByDocNos(shopId string, docNos []string) {
 	// Step 2: UPDATE iscomparedsuccess และ isclosed สำหรับ docno ที่ระบุ
 	queryUpdateStatus := fmt.Sprintf(`
 		WITH doc_comparison AS (
-			SELECT 
+			SELECT
 				dds.docno,
 				SUM(COALESCE(dds.totalqty * (dds.unitstand / NULLIF(dds.unitdivide, 0)), dds.totalqty)) AS totalordered,
 				COALESCE(SUM(drc.totalqty * (drc.unitstand / NULLIF(drc.unitdivide, 0))), 0) AS totalreceived
@@ -179,7 +179,7 @@ func ProcessDocPurchaseBatchByDocNos(shopId string, docNos []string) {
 			GROUP BY dds.docno
 		)
 		UPDATE doc
-		SET 
+		SET
 			iscomparedsuccess = CASE
 				WHEN dc.totalreceived = 0 THEN 0
 				WHEN dc.totalreceived = dc.totalordered THEN 1

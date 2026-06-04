@@ -9,14 +9,14 @@ import (
 
 type StockTransferTransactionPG struct {
 	TransactionPG `gorm:"embedded;"`
-	Items *[]StockTransferTransactionDetailPG `json:"items" gorm:"items;foreignKey:shopid,docno"`
+	Items         *[]StockTransferTransactionDetailPG `json:"items" gorm:"items;foreignKey:holding_code,docno"`
 }
 
 type StockTransferTransactionDetailPG struct {
 	TransactionDetailPG `gorm:"embedded;"`
-	ToWhCode string `json:"towhcode" bson:"towhcode"`
-	ToLocationCode string `json:"tolocationcode" bson:"tolocationcode"`
-	CalcFlag int8   `json:"calcflag" gorm:"column:calcflag"`
+	ToWhCode            string `json:"towhcode" bson:"towhcode"`
+	ToLocationCode      string `json:"tolocationcode" bson:"tolocationcode"`
+	CalcFlag            int8   `json:"calcflag" gorm:"column:calcflag"`
 }
 
 func (StockTransferTransactionPG) TableName() string {
@@ -31,7 +31,7 @@ func (j *StockTransferTransactionPG) BeforeUpdate(tx *gorm.DB) (err error) {
 
 	// find old data
 	var details *[]StockTransferTransactionDetailPG
-	tx.Model(&StockTransferTransactionDetailPG{}).Where(" shopid=? AND docno=?", j.ShopID, j.DocNo).Find(&details)
+	tx.Model(&StockTransferTransactionDetailPG{}).Where(" holding_code=? AND docno=?", j.HoldingCode, j.DocNo).Find(&details)
 
 	// delete un use data
 	for _, tmp := range *details {

@@ -10,13 +10,13 @@ const creditorgroupCollectionName = "creditorGroup"
 
 type CreditorGroup struct {
 	models.PartitionIdentity `bson:"inline"`
-	GroupCode string          `json:"group_code" bson:"group_code"`
-	Names *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
+	GroupCode                string          `json:"group_code" bson:"group_code"`
+	Names                    *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
 }
 
 type CreditorGroupInfo struct {
 	models.DocIdentity `bson:"inline"`
-	CreditorGroup  `bson:"inline"`
+	CreditorGroup      `bson:"inline"`
 }
 
 func (CreditorGroupInfo) CollectionName() string {
@@ -24,12 +24,12 @@ func (CreditorGroupInfo) CollectionName() string {
 }
 
 type CreditorGroupData struct {
-	models.ShopIdentity `bson:"inline"`
-	CreditorGroupInfo  `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	CreditorGroupInfo        `bson:"inline"`
 }
 
 type CreditorGroupDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	CreditorGroupData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
@@ -47,7 +47,7 @@ func (CreditorGroupItemGuid) CollectionName() string {
 }
 
 type CreditorGroupActivity struct {
-	CreditorGroupData  `bson:"inline"`
+	CreditorGroupData   `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

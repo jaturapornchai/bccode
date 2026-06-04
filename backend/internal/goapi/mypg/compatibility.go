@@ -8,19 +8,19 @@ import (
 )
 
 // PgSqlFastConnectV2 - เชื่อมต่อ PostgreSQL โดยใช้ unified database manager
-func PgSqlFastConnectV2(shopId string) (*sql.DB, error) {
-	return mydb.GetGlobalConnectionFromPool(shopId)
+func PgSqlFastConnectV2(holdingCode string) (*sql.DB, error) {
+	return mydb.GetGlobalConnectionFromPool(holdingCode)
 }
 
 // GetDatabaseManager - ดึง DatabaseManager สำหรับ shop
 // ใช้สำหรับ advanced features เช่น QueryPostgreSQL, circuit breaker stats
-func GetDatabaseManager(shopId string) (*mydb.DatabaseManager, error) {
-	return mydb.GetGlobalManagerFromPool(shopId)
+func GetDatabaseManager(holdingCode string) (*mydb.DatabaseManager, error) {
+	return mydb.GetGlobalManagerFromPool(holdingCode)
 }
 
 // QueryPostgreSQL - รัน query บน PostgreSQL พร้อม circuit breaker (แบบใหม่)
-func QueryPostgreSQL(ctx context.Context, shopId, query string, args ...any) ([]map[string]any, error) {
-	manager, err := GetDatabaseManager(shopId)
+func QueryPostgreSQL(ctx context.Context, holdingCode, query string, args ...any) ([]map[string]any, error) {
+	manager, err := GetDatabaseManager(holdingCode)
 	if err != nil {
 		return nil, err
 	}
@@ -29,8 +29,8 @@ func QueryPostgreSQL(ctx context.Context, shopId, query string, args ...any) ([]
 }
 
 // ExecPostgreSQL - รัน exec บน PostgreSQL พร้อม circuit breaker (แบบใหม่)
-func ExecPostgreSQL(ctx context.Context, shopId, query string, args ...any) (sql.Result, error) {
-	manager, err := GetDatabaseManager(shopId)
+func ExecPostgreSQL(ctx context.Context, holdingCode, query string, args ...any) (sql.Result, error) {
+	manager, err := GetDatabaseManager(holdingCode)
 	if err != nil {
 		return nil, err
 	}
@@ -39,8 +39,8 @@ func ExecPostgreSQL(ctx context.Context, shopId, query string, args ...any) (sql
 }
 
 // GetCircuitBreakerStats - ดึงสถิติ circuit breaker สำหรับ shop
-func GetCircuitBreakerStats(shopId string) (map[string]interface{}, error) {
-	manager, err := GetDatabaseManager(shopId)
+func GetCircuitBreakerStats(holdingCode string) (map[string]interface{}, error) {
+	manager, err := GetDatabaseManager(holdingCode)
 	if err != nil {
 		return nil, err
 	}

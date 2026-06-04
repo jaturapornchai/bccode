@@ -61,7 +61,7 @@ func (h BankMasterHttp) RegisterHttp() {
 // @Router /payment/bankmaster [post]
 func (h BankMasterHttp) CreateBankMaster(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.BankMaster{}
@@ -77,7 +77,7 @@ func (h BankMasterHttp) CreateBankMaster(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreateBankMaster(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateBankMaster(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -104,7 +104,7 @@ func (h BankMasterHttp) CreateBankMaster(ctx microservice.IContext) error {
 func (h BankMasterHttp) UpdateBankMaster(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -122,7 +122,7 @@ func (h BankMasterHttp) UpdateBankMaster(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateBankMaster(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateBankMaster(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -148,12 +148,12 @@ func (h BankMasterHttp) UpdateBankMaster(ctx microservice.IContext) error {
 // @Router /payment/bankmaster/{id} [delete]
 func (h BankMasterHttp) DeleteBankMaster(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteBankMaster(shopID, id, authUsername)
+	err := h.svc.DeleteBankMaster(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -179,7 +179,7 @@ func (h BankMasterHttp) DeleteBankMaster(ctx microservice.IContext) error {
 // @Router /payment/bankmaster [delete]
 func (h BankMasterHttp) DeleteBankMasterByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -192,7 +192,7 @@ func (h BankMasterHttp) DeleteBankMasterByGUIDs(ctx microservice.IContext) error
 		return err
 	}
 
-	err = h.svc.DeleteBankMasterByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteBankMasterByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -217,12 +217,12 @@ func (h BankMasterHttp) DeleteBankMasterByGUIDs(ctx microservice.IContext) error
 // @Router /payment/bankmaster/{id} [get]
 func (h BankMasterHttp) InfoBankMaster(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get BankMaster %v", id)
-	doc, err := h.svc.InfoBankMaster(shopID, id)
+	doc, err := h.svc.InfoBankMaster(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -250,10 +250,10 @@ func (h BankMasterHttp) InfoBankMaster(ctx microservice.IContext) error {
 // @Router /payment/bankmaster [get]
 func (h BankMasterHttp) SearchBankMasterPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
-	docList, pagination, err := h.svc.SearchBankMaster(shopID, pageable)
+	docList, pagination, err := h.svc.SearchBankMaster(holdingCode, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -282,13 +282,13 @@ func (h BankMasterHttp) SearchBankMasterPage(ctx microservice.IContext) error {
 // @Router /payment/bankmaster/list [get]
 func (h BankMasterHttp) SearchBankMasterLimit(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageStep := utils.GetPageableStep(ctx.QueryParam)
 
 	lang := ctx.QueryParam("lang")
 
-	docList, total, err := h.svc.SearchBankMasterStep(shopID, lang, pageStep)
+	docList, total, err := h.svc.SearchBankMasterStep(holdingCode, lang, pageStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -316,7 +316,7 @@ func (h BankMasterHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -328,7 +328,7 @@ func (h BankMasterHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

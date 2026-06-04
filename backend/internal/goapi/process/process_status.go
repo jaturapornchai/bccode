@@ -8,8 +8,8 @@ import (
 
 // ProcessPurchaseOrderStatus - ประมวลผลสถานะของ Purchase Order
 // เช่น คำนวณจำนวนที่รับแล้ว, ยังค้างรับ, ฯลฯ
-func ProcessPurchaseOrderStatus(ctx context.Context, shopId, docNo string) error {
-	logger.Info("Processing Purchase Order status: shop=%s, docno=%s", shopId, docNo)
+func ProcessPurchaseOrderStatus(ctx context.Context, holdingCode, docNo string) error {
+	logger.Info("Processing Purchase Order status: shop=%s, docno=%s", holdingCode, docNo)
 
 	// TODO: implement logic จริง
 	// 1. ดึงข้อมูล PO จาก database
@@ -23,8 +23,8 @@ func ProcessPurchaseOrderStatus(ctx context.Context, shopId, docNo string) error
 
 // ProcessSaleInvoiceStatus - ประมวลผลสถานะของ Sale Invoice
 // เช่น คำนวณยอดค้างชำระ, ชำระแล้ว, ฯลฯ
-func ProcessSaleInvoiceStatus(ctx context.Context, shopId, docNo string) error {
-	logger.Info("Processing Sale Invoice status: shop=%s, docno=%s", shopId, docNo)
+func ProcessSaleInvoiceStatus(ctx context.Context, holdingCode, docNo string) error {
+	logger.Info("Processing Sale Invoice status: shop=%s, docno=%s", holdingCode, docNo)
 
 	// TODO: implement logic จริง
 	// 1. ดึงข้อมูล SI จาก database
@@ -37,24 +37,24 @@ func ProcessSaleInvoiceStatus(ctx context.Context, shopId, docNo string) error {
 }
 
 // ProcessCreditorStatus - ประมวลผลสถานะของ Creditor
-func ProcessCreditorStatus(ctx context.Context, shopId, custCode string) error {
-	logger.Info("Processing Creditor status: shop=%s, custcode=%s", shopId, custCode)
+func ProcessCreditorStatus(ctx context.Context, holdingCode, custCode string) error {
+	logger.Info("Processing Creditor status: shop=%s, custcode=%s", holdingCode, custCode)
 
 	// TODO: implement
 	return fmt.Errorf("not implemented yet")
 }
 
 // ProcessCustomerStatus - ประมวลผลสถานะของ Customer
-func ProcessCustomerStatus(ctx context.Context, shopId, custCode string) error {
-	logger.Info("Processing Customer status: shop=%s, custcode=%s", shopId, custCode)
+func ProcessCustomerStatus(ctx context.Context, holdingCode, custCode string) error {
+	logger.Info("Processing Customer status: shop=%s, custcode=%s", holdingCode, custCode)
 
 	// TODO: implement
 	return fmt.Errorf("not implemented yet")
 }
 
 // ProcessDebtorStatus - ประมวลผลสถานะของ Debtor
-func ProcessDebtorStatus(ctx context.Context, shopId, custCode string) error {
-	logger.Info("Processing Debtor status: shop=%s, custcode=%s", shopId, custCode)
+func ProcessDebtorStatus(ctx context.Context, holdingCode, custCode string) error {
+	logger.Info("Processing Debtor status: shop=%s, custcode=%s", holdingCode, custCode)
 
 	// TODO: implement
 	return fmt.Errorf("not implemented yet")

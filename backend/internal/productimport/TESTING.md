@@ -415,7 +415,7 @@ Test with large Excel files:
 
 **Check:**
 1. Code is exactly the same (case-sensitive)
-2. Code belongs to correct shop_id
+2. Code belongs to correct holding_code
 3. Master data is not soft-deleted
 
 ### Issue: Import succeeds but master data fields are empty

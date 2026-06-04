@@ -316,8 +316,8 @@ func BeginTransaction(db *sql.DB) (*sql.Tx, error) {
 func IsTableExists(db *sql.DB, tableName string) (bool, error) {
 	query := `
 		SELECT EXISTS (
-			SELECT FROM information_schema.tables 
-			WHERE table_schema = 'public' 
+			SELECT FROM information_schema.tables
+			WHERE table_schema = 'public'
 			AND table_name = $1
 		);
 	`
@@ -334,10 +334,10 @@ func IsTableExists(db *sql.DB, tableName string) (bool, error) {
 // GetTableColumns ดึงรายชื่อคอลัมน์ของตาราง
 func GetTableColumns(db *sql.DB, tableName string) ([]string, error) {
 	query := `
-		SELECT column_name 
-		FROM information_schema.columns 
-		WHERE table_schema = 'public' 
-		AND table_name = $1 
+		SELECT column_name
+		FROM information_schema.columns
+		WHERE table_schema = 'public'
+		AND table_name = $1
 		ORDER BY ordinal_position;
 	`
 
@@ -559,8 +559,8 @@ func ReplaceQueryParams(query string, args ...any) string {
 	return result
 }
 
-func DatabaseIsReady(shopId string) bool {
-	db, err := PgSqlFastConnect(shopId)
+func DatabaseIsReady(holdingCode string) bool {
+	db, err := PgSqlFastConnect(holdingCode)
 	if err != nil {
 		return false
 	}
@@ -571,30 +571,30 @@ func DatabaseIsReady(shopId string) bool {
 }
 
 func GetStringValue(row map[string]any, key string) string {
-    if val, ok := row[key].(string); ok {
-        return val
-    }
-    return ""
+	if val, ok := row[key].(string); ok {
+		return val
+	}
+	return ""
 }
 
 func GetFloat64Value(row map[string]any, key string) float64 {
-    if val, ok := row[key].(float64); ok {
-        return val
-    }
-    if val, ok := row[key].(int64); ok {
-        return float64(val)
-    }
-    return 0.0
+	if val, ok := row[key].(float64); ok {
+		return val
+	}
+	if val, ok := row[key].(int64); ok {
+		return float64(val)
+	}
+	return 0.0
 }
 
 func GetIntValue(row map[string]any, key string) int {
-    if val, ok := row[key].(int64); ok {
-        return int(val)
-    }
-    if val, ok := row[key].(int); ok {
-        return val
-    }
-    return 0
+	if val, ok := row[key].(int64); ok {
+		return int(val)
+	}
+	if val, ok := row[key].(int); ok {
+		return val
+	}
+	return 0
 }
 
 func GetBoolValue(row map[string]any, key string) bool {
@@ -608,7 +608,7 @@ func GetTimeValue(row map[string]any, key string) time.Time {
 	if val, ok := row[key].(time.Time); ok {
 		return val
 	}
-	return time.Time{}		
+	return time.Time{}
 }
 
 func GetInt64Value(row map[string]any, key string) int64 {

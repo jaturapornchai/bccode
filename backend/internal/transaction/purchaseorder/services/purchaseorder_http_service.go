@@ -25,15 +25,15 @@ import (
 )
 
 type IPurchaseOrderHttpService interface {
-	CreatePurchaseOrder(shopID string, authUsername string, doc models.PurchaseOrder) (string, string, *validators.ValidationResult, error)
-	UpdatePurchaseOrder(shopID string, guid string, authUsername string, doc models.PurchaseOrder) (*validators.ValidationResult, error)
-	DeletePurchaseOrder(shopID string, guid string, authUsername string) error
-	DeletePurchaseOrderByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoPurchaseOrder(shopID string, guid string) (models.PurchaseOrderInfo, error)
-	InfoPurchaseOrderByCode(shopID string, code string) (models.PurchaseOrderInfo, error)
-	SearchPurchaseOrder(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.PurchaseOrderInfo, mongopagination.PaginationData, error)
-	SearchPurchaseOrderStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.PurchaseOrderInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.PurchaseOrder) (common.BulkImport, error)
+	CreatePurchaseOrder(holdingCode string, authUsername string, doc models.PurchaseOrder) (string, string, *validators.ValidationResult, error)
+	UpdatePurchaseOrder(holdingCode string, guid string, authUsername string, doc models.PurchaseOrder) (*validators.ValidationResult, error)
+	DeletePurchaseOrder(holdingCode string, guid string, authUsername string) error
+	DeletePurchaseOrderByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoPurchaseOrder(holdingCode string, guid string) (models.PurchaseOrderInfo, error)
+	InfoPurchaseOrderByCode(holdingCode string, code string) (models.PurchaseOrderInfo, error)
+	SearchPurchaseOrder(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.PurchaseOrderInfo, mongopagination.PaginationData, error)
+	SearchPurchaseOrderStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.PurchaseOrderInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.PurchaseOrder) (common.BulkImport, error)
 
 	GetModuleName() string
 }
@@ -126,7 +126,7 @@ func getDefaultCurrencySymbol(currencyCode string) string {
 }
 
 // populateCurrencySymbol - ดึง currency symbol จาก currency code (มี fallback กรณี database ไม่มีข้อมูล)
-func (svc PurchaseOrderHttpService) populateCurrencySymbol(ctx context.Context, shopID string, doc *models.PurchaseOrder) {
+func (svc PurchaseOrderHttpService) populateCurrencySymbol(ctx context.Context, holdingCode string, doc *models.PurchaseOrder) {
 	fmt.Printf("[CURRENCY-SYMBOL] Start - Currency='%s'\n", doc.Currency)
 
 	// ถ้าไม่มี currency ให้ default เป็น THB
@@ -140,8 +140,8 @@ func (svc PurchaseOrderHttpService) populateCurrencySymbol(ctx context.Context, 
 	currencyCode := strings.ToUpper(doc.Currency)
 
 	// พยายามดึงข้อมูล currency จาก database ก่อน
-	fmt.Printf("[CURRENCY-SYMBOL] Looking up currency code: %s for shop: %s\n", currencyCode, shopID)
-	currencyDoc, err := svc.currencyRepo.FindByCode(ctx, shopID, currencyCode)
+	fmt.Printf("[CURRENCY-SYMBOL] Looking up currency code: %s for shop: %s\n", currencyCode, holdingCode)
+	currencyDoc, err := svc.currencyRepo.FindByCode(ctx, holdingCode, currencyCode)
 
 	if err == nil && len(currencyDoc.GuidFixed) > 0 && currencyDoc.Symbol != "" {
 		// พบข้อมูลใน database และมี symbol
@@ -182,11 +182,11 @@ func (svc PurchaseOrderHttpService) getDocNoPrefix(docDateLocalStr string) strin
 	return fmt.Sprintf("%s%s", MODULE_NAME, docDateStr)
 }
 
-func (svc PurchaseOrderHttpService) generateNewDocNo(ctx context.Context, shopID, prefixDocNo string, docNumber int) (string, int, error) {
-	prevoiusDocNumber, err := svc.repoCache.Get(shopID, prefixDocNo)
+func (svc PurchaseOrderHttpService) generateNewDocNo(ctx context.Context, holdingCode, prefixDocNo string, docNumber int) (string, int, error) {
+	prevoiusDocNumber, err := svc.repoCache.Get(holdingCode, prefixDocNo)
 
 	if prevoiusDocNumber == 0 || err != nil {
-		lastDoc, err := svc.repo.FindLastDocNo(ctx, shopID, prefixDocNo)
+		lastDoc, err := svc.repo.FindLastDocNo(ctx, holdingCode, prefixDocNo)
 
 		if err != nil {
 			return "", 0, err
@@ -206,7 +206,7 @@ func (svc PurchaseOrderHttpService) generateNewDocNo(ctx context.Context, shopID
 	newDocNumber := prevoiusDocNumber + 1
 	newDocNo := fmt.Sprintf("%s%05d", prefixDocNo, newDocNumber)
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", newDocNo)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", newDocNo)
 
 	if err != nil {
 		return "", 0, err
@@ -219,7 +219,7 @@ func (svc PurchaseOrderHttpService) generateNewDocNo(ctx context.Context, shopID
 	return newDocNo, newDocNumber, nil
 }
 
-func (svc PurchaseOrderHttpService) CreatePurchaseOrder(shopID string, authUsername string, doc models.PurchaseOrder) (string, string, *validators.ValidationResult, error) {
+func (svc PurchaseOrderHttpService) CreatePurchaseOrder(holdingCode string, authUsername string, doc models.PurchaseOrder) (string, string, *validators.ValidationResult, error) {
 
 	// Layer 2: Business validation — ตรวจสอบข้อมูล PO ก่อนบันทึก
 	validationResult := validators.ValidatePurchaseOrder(&doc)
@@ -232,7 +232,7 @@ func (svc PurchaseOrderHttpService) CreatePurchaseOrder(shopID string, authUsern
 
 	prefixDocNo := svc.getDocNoPrefix(doc.DocDateLocal)
 
-	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, shopID, prefixDocNo, 1)
+	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, holdingCode, prefixDocNo, 1)
 
 	if err != nil {
 		return "", "", nil, err
@@ -241,7 +241,7 @@ func (svc PurchaseOrderHttpService) CreatePurchaseOrder(shopID string, authUsern
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.PurchaseOrderDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.PurchaseOrder = doc
 
@@ -260,7 +260,7 @@ func (svc PurchaseOrderHttpService) CreatePurchaseOrder(shopID string, authUsern
 
 	// ตรวจสอบ exchange rate และดึง currency symbol
 	sanitizeExchangeRate(&docData.PurchaseOrder)
-	svc.populateCurrencySymbol(ctx, shopID, &docData.PurchaseOrder)
+	svc.populateCurrencySymbol(ctx, holdingCode, &docData.PurchaseOrder)
 
 	_, err = svc.repo.Create(ctx, docData)
 
@@ -268,7 +268,7 @@ func (svc PurchaseOrderHttpService) CreatePurchaseOrder(shopID string, authUsern
 		return "", "", nil, err
 	}
 
-	go svc.repoCache.Save(shopID, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
+	go svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
 
 	go func() {
 		err := svc.repoMq.Create(docData)
@@ -277,14 +277,14 @@ func (svc PurchaseOrderHttpService) CreatePurchaseOrder(shopID string, authUsern
 		} else {
 			fmt.Printf("[KAFKA-OK] Published PO create message: DocNo=%s\n", docData.DocNo)
 		}
-		svc.repoCache.Save(shopID, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
-		svc.saveMasterSync(shopID)
+		svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return newGuidFixed, newDocNo, nil, nil
 }
 
-func (svc PurchaseOrderHttpService) UpdatePurchaseOrder(shopID string, guid string, authUsername string, doc models.PurchaseOrder) (*validators.ValidationResult, error) {
+func (svc PurchaseOrderHttpService) UpdatePurchaseOrder(holdingCode string, guid string, authUsername string, doc models.PurchaseOrder) (*validators.ValidationResult, error) {
 
 	// Layer 2: Business validation — ตรวจสอบข้อมูล PO ก่อนบันทึก
 	validationResult := validators.ValidatePurchaseOrder(&doc)
@@ -295,7 +295,7 @@ func (svc PurchaseOrderHttpService) UpdatePurchaseOrder(shopID string, guid stri
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return nil, err
@@ -329,9 +329,9 @@ func (svc PurchaseOrderHttpService) UpdatePurchaseOrder(shopID string, guid stri
 
 	// ตรวจสอบ exchange rate และดึง currency symbol
 	sanitizeExchangeRate(&docData.PurchaseOrder)
-	svc.populateCurrencySymbol(ctx, shopID, &docData.PurchaseOrder)
+	svc.populateCurrencySymbol(ctx, holdingCode, &docData.PurchaseOrder)
 
-	err = svc.repo.Update(ctx, shopID, guid, docData)
+	err = svc.repo.Update(ctx, holdingCode, guid, docData)
 
 	if err != nil {
 		return nil, err
@@ -344,18 +344,18 @@ func (svc PurchaseOrderHttpService) UpdatePurchaseOrder(shopID string, guid stri
 		} else {
 			fmt.Printf("[KAFKA-OK] Published PO update message: DocNo=%s\n", docData.DocNo)
 		}
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil, nil
 }
 
-func (svc PurchaseOrderHttpService) DeletePurchaseOrder(shopID string, guid string, authUsername string) error {
+func (svc PurchaseOrderHttpService) DeletePurchaseOrder(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -365,7 +365,7 @@ func (svc PurchaseOrderHttpService) DeletePurchaseOrder(shopID string, guid stri
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
@@ -377,13 +377,13 @@ func (svc PurchaseOrderHttpService) DeletePurchaseOrder(shopID string, guid stri
 		} else {
 			fmt.Printf("[KAFKA-OK] Published PO delete message: DocNo=%s\n", findDoc.DocNo)
 		}
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc PurchaseOrderHttpService) DeletePurchaseOrderByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc PurchaseOrderHttpService) DeletePurchaseOrderByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -392,26 +392,26 @@ func (svc PurchaseOrderHttpService) DeletePurchaseOrderByGUIDs(shopID string, au
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
 
 	func() {
-		docs, _ := svc.repo.FindByGuids(ctx, shopID, GUIDs)
+		docs, _ := svc.repo.FindByGuids(ctx, holdingCode, GUIDs)
 		svc.repoMq.DeleteInBatch(docs)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc PurchaseOrderHttpService) InfoPurchaseOrder(shopID string, guid string) (models.PurchaseOrderInfo, error) {
+func (svc PurchaseOrderHttpService) InfoPurchaseOrder(holdingCode string, guid string) (models.PurchaseOrderInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.PurchaseOrderInfo{}, err
@@ -424,12 +424,12 @@ func (svc PurchaseOrderHttpService) InfoPurchaseOrder(shopID string, guid string
 	return findDoc.PurchaseOrderInfo, nil
 }
 
-func (svc PurchaseOrderHttpService) InfoPurchaseOrderByCode(shopID string, code string) (models.PurchaseOrderInfo, error) {
+func (svc PurchaseOrderHttpService) InfoPurchaseOrderByCode(holdingCode string, code string) (models.PurchaseOrderInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", code)
 
 	if err != nil {
 		return models.PurchaseOrderInfo{}, err
@@ -442,7 +442,7 @@ func (svc PurchaseOrderHttpService) InfoPurchaseOrderByCode(shopID string, code 
 	return findDoc.PurchaseOrderInfo, nil
 }
 
-func (svc PurchaseOrderHttpService) SearchPurchaseOrder(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.PurchaseOrderInfo, mongopagination.PaginationData, error) {
+func (svc PurchaseOrderHttpService) SearchPurchaseOrder(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.PurchaseOrderInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -451,7 +451,7 @@ func (svc PurchaseOrderHttpService) SearchPurchaseOrder(shopID string, filters m
 		"docno",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.PurchaseOrderInfo{}, pagination, err
@@ -460,7 +460,7 @@ func (svc PurchaseOrderHttpService) SearchPurchaseOrder(shopID string, filters m
 	return docList, pagination, nil
 }
 
-func (svc PurchaseOrderHttpService) SearchPurchaseOrderStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.PurchaseOrderInfo, int, error) {
+func (svc PurchaseOrderHttpService) SearchPurchaseOrderStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.PurchaseOrderInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -471,7 +471,7 @@ func (svc PurchaseOrderHttpService) SearchPurchaseOrderStep(shopID string, langC
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.PurchaseOrderInfo{}, 0, err
@@ -480,7 +480,7 @@ func (svc PurchaseOrderHttpService) SearchPurchaseOrderStep(shopID string, langC
 	return docList, total, nil
 }
 
-func (svc PurchaseOrderHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.PurchaseOrder) (common.BulkImport, error) {
+func (svc PurchaseOrderHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.PurchaseOrder) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -492,7 +492,7 @@ func (svc PurchaseOrderHttpService) SaveInBatch(shopID string, authUsername stri
 		itemCodeGuidList = append(itemCodeGuidList, doc.DocNo)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "docno", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "docno", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -504,18 +504,18 @@ func (svc PurchaseOrderHttpService) SaveInBatch(shopID string, authUsername stri
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.PurchaseOrder, models.PurchaseOrderDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.PurchaseOrder) models.PurchaseOrderDoc {
+		func(holdingCode string, authUsername string, doc models.PurchaseOrder) models.PurchaseOrderDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.PurchaseOrderDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.PurchaseOrder = doc
 
 			currentTime := time.Now()
@@ -526,23 +526,23 @@ func (svc PurchaseOrderHttpService) SaveInBatch(shopID string, authUsername stri
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.PurchaseOrder, models.PurchaseOrderDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.PurchaseOrderDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", guid)
+		func(holdingCode string, guid string) (models.PurchaseOrderDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", guid)
 		},
 		func(doc models.PurchaseOrderDoc) bool {
 			return doc.DocNo != ""
 		},
-		func(shopID string, authUsername string, data models.PurchaseOrder, doc models.PurchaseOrderDoc) error {
+		func(holdingCode string, authUsername string, data models.PurchaseOrder, doc models.PurchaseOrderDoc) error {
 
 			doc.PurchaseOrder = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -581,7 +581,7 @@ func (svc PurchaseOrderHttpService) SaveInBatch(shopID string, authUsername stri
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -595,9 +595,9 @@ func (svc PurchaseOrderHttpService) getDocIDKey(doc models.PurchaseOrder) string
 	return doc.DocNo
 }
 
-func (svc PurchaseOrderHttpService) saveMasterSync(shopID string) {
+func (svc PurchaseOrderHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

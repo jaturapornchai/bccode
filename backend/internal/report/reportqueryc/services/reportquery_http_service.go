@@ -16,17 +16,17 @@ import (
 )
 
 type IReportQueryHttpService interface {
-	PlaygroundReportQuery(shopID string, queryParam models.Query) ([]map[string]interface{}, error)
-	ExecuteReportQuery(shopID string, reportCode string, queryParamRequest []models.QueryParamRequest, pageable micromodels.Pageable) ([]map[string]interface{}, common.Pagination, error)
+	PlaygroundReportQuery(holdingCode string, queryParam models.Query) ([]map[string]interface{}, error)
+	ExecuteReportQuery(holdingCode string, reportCode string, queryParamRequest []models.QueryParamRequest, pageable micromodels.Pageable) ([]map[string]interface{}, common.Pagination, error)
 
-	CreateReportQuery(shopID string, authUsername string, doc models.ReportQuery) (string, error)
-	UpdateReportQuery(shopID string, guid string, authUsername string, doc models.ReportQuery) error
-	DeleteReportQuery(shopID string, guid string, authUsername string) error
-	DeleteReportQueryByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoReportQuery(shopID string, guid string) (models.ReportQueryInfo, error)
-	InfoReportQueryByCode(shopID string, code string) (models.ReportQueryInfo, error)
-	SearchReportQuery(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ReportQueryInfo, mongopagination.PaginationData, error)
-	SearchReportQueryStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.ReportQueryInfo, int, error)
+	CreateReportQuery(holdingCode string, authUsername string, doc models.ReportQuery) (string, error)
+	UpdateReportQuery(holdingCode string, guid string, authUsername string, doc models.ReportQuery) error
+	DeleteReportQuery(holdingCode string, guid string, authUsername string) error
+	DeleteReportQueryByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoReportQuery(holdingCode string, guid string) (models.ReportQueryInfo, error)
+	InfoReportQueryByCode(holdingCode string, code string) (models.ReportQueryInfo, error)
+	SearchReportQuery(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ReportQueryInfo, mongopagination.PaginationData, error)
+	SearchReportQueryStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.ReportQueryInfo, int, error)
 
 	GetModuleName() string
 }
@@ -54,12 +54,12 @@ func (svc ReportQueryHttpService) getContextTimeout() (context.Context, context.
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc ReportQueryHttpService) CreateReportQuery(shopID string, authUsername string, doc models.ReportQuery) (string, error) {
+func (svc ReportQueryHttpService) CreateReportQuery(holdingCode string, authUsername string, doc models.ReportQuery) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", doc.Code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", doc.Code)
 
 	if err != nil {
 		return "", err
@@ -72,7 +72,7 @@ func (svc ReportQueryHttpService) CreateReportQuery(shopID string, authUsername 
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.ReportQueryDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.ReportQuery = doc
 
@@ -91,12 +91,12 @@ func (svc ReportQueryHttpService) CreateReportQuery(shopID string, authUsername 
 	return newGuidFixed, nil
 }
 
-func (svc ReportQueryHttpService) UpdateReportQuery(shopID string, guid string, authUsername string, doc models.ReportQuery) error {
+func (svc ReportQueryHttpService) UpdateReportQuery(holdingCode string, guid string, authUsername string, doc models.ReportQuery) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -116,7 +116,7 @@ func (svc ReportQueryHttpService) UpdateReportQuery(shopID string, guid string, 
 	docData.UpdatedBy = authUsername
 	docData.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, docData)
+	err = svc.repo.Update(ctx, holdingCode, guid, docData)
 
 	if err != nil {
 		return err
@@ -125,12 +125,12 @@ func (svc ReportQueryHttpService) UpdateReportQuery(shopID string, guid string, 
 	return nil
 }
 
-func (svc ReportQueryHttpService) DeleteReportQuery(shopID string, guid string, authUsername string) error {
+func (svc ReportQueryHttpService) DeleteReportQuery(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -140,7 +140,7 @@ func (svc ReportQueryHttpService) DeleteReportQuery(shopID string, guid string, 
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
@@ -148,7 +148,7 @@ func (svc ReportQueryHttpService) DeleteReportQuery(shopID string, guid string, 
 	return nil
 }
 
-func (svc ReportQueryHttpService) DeleteReportQueryByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc ReportQueryHttpService) DeleteReportQueryByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -157,7 +157,7 @@ func (svc ReportQueryHttpService) DeleteReportQueryByGUIDs(shopID string, authUs
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
@@ -165,12 +165,12 @@ func (svc ReportQueryHttpService) DeleteReportQueryByGUIDs(shopID string, authUs
 	return nil
 }
 
-func (svc ReportQueryHttpService) InfoReportQuery(shopID string, guid string) (models.ReportQueryInfo, error) {
+func (svc ReportQueryHttpService) InfoReportQuery(holdingCode string, guid string) (models.ReportQueryInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.ReportQueryInfo{}, err
@@ -183,12 +183,12 @@ func (svc ReportQueryHttpService) InfoReportQuery(shopID string, guid string) (m
 	return findDoc.ReportQueryInfo, nil
 }
 
-func (svc ReportQueryHttpService) InfoReportQueryByCode(shopID string, code string) (models.ReportQueryInfo, error) {
+func (svc ReportQueryHttpService) InfoReportQueryByCode(holdingCode string, code string) (models.ReportQueryInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", code)
 
 	if err != nil {
 		return models.ReportQueryInfo{}, err
@@ -201,7 +201,7 @@ func (svc ReportQueryHttpService) InfoReportQueryByCode(shopID string, code stri
 	return findDoc.ReportQueryInfo, nil
 }
 
-func (svc ReportQueryHttpService) SearchReportQuery(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ReportQueryInfo, mongopagination.PaginationData, error) {
+func (svc ReportQueryHttpService) SearchReportQuery(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ReportQueryInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -210,7 +210,7 @@ func (svc ReportQueryHttpService) SearchReportQuery(shopID string, filters map[s
 		"code",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.ReportQueryInfo{}, pagination, err
@@ -219,7 +219,7 @@ func (svc ReportQueryHttpService) SearchReportQuery(shopID string, filters map[s
 	return docList, pagination, nil
 }
 
-func (svc ReportQueryHttpService) SearchReportQueryStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.ReportQueryInfo, int, error) {
+func (svc ReportQueryHttpService) SearchReportQueryStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.ReportQueryInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -236,7 +236,7 @@ func (svc ReportQueryHttpService) SearchReportQueryStep(shopID string, langCode 
 		selectFields["names"] = 1
 	}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.ReportQueryInfo{}, 0, err
@@ -245,7 +245,7 @@ func (svc ReportQueryHttpService) SearchReportQueryStep(shopID string, langCode 
 	return docList, total, nil
 }
 
-func (svc ReportQueryHttpService) PlaygroundReportQuery(shopID string, queryParam models.Query) ([]map[string]interface{}, error) {
+func (svc ReportQueryHttpService) PlaygroundReportQuery(holdingCode string, queryParam models.Query) ([]map[string]interface{}, error) {
 
 	result, err := svc.repoClickHouse.Playground(queryParam)
 	if err != nil {
@@ -255,7 +255,7 @@ func (svc ReportQueryHttpService) PlaygroundReportQuery(shopID string, queryPara
 	return result, nil
 }
 
-func (svc ReportQueryHttpService) ExecuteReportQuery(shopID string, reportCode string, queryParamRequest []models.QueryParamRequest, pageable micromodels.Pageable) ([]map[string]interface{}, common.Pagination, error) {
+func (svc ReportQueryHttpService) ExecuteReportQuery(holdingCode string, reportCode string, queryParamRequest []models.QueryParamRequest, pageable micromodels.Pageable) ([]map[string]interface{}, common.Pagination, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()

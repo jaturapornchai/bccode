@@ -8,14 +8,14 @@ import (
 	"smlcloudplatform/internal/goapi/myglobal"
 )
 
-func InsertDocListToClickHouse(ctx context.Context, shopId string, data []models.DocStruct, docRefData []models.DocRefStruct, docPaymentData []models.DocPaymentStruct) error {
+func InsertDocListToClickHouse(ctx context.Context, holdingCode string, data []models.DocStruct, docRefData []models.DocRefStruct, docPaymentData []models.DocPaymentStruct) error {
 	if len(data) == 0 && len(docRefData) == 0 && len(docPaymentData) == 0 {
 		return nil
 	}
 
 	// DELETE-before-INSERT pattern
 	if len(data) > 0 {
-		DocDeleteClickHouse(ctx, shopId, data[0].DocNo)
+		DocDeleteClickHouse(ctx, holdingCode, data[0].DocNo)
 	}
 
 	connClickHouse, err := ClickHouseFastConnect()
@@ -27,7 +27,7 @@ func InsertDocListToClickHouse(ctx context.Context, shopId string, data []models
 	if len(data) > 0 {
 		insertBatch, err := connClickHouse.PrepareBatch(ctx, fmt.Sprintf(`
 			INSERT INTO %s (
-				shopid, branchid, docno, docdatetime, perioddatetime,
+				holding_code, branchid, docno, docdatetime, perioddatetime,
 				totalamount, paycashamount, paycashchange, paycashbalance,
 				roundamount, checksum, slipurl, salechannelcode, deliveryamount,
 				guidfixed, iscancel, cancelreason, guidpos, guidbranch, transflag,
@@ -41,7 +41,7 @@ func InsertDocListToClickHouse(ctx context.Context, shopId string, data []models
 			defer insertBatch.Close()
 			for _, item := range data {
 				insertBatch.Append(
-					shopId, item.BranchID, item.DocNo, item.DocDateTime, item.PeriodDateTime,
+					holdingCode, item.BranchID, item.DocNo, item.DocDateTime, item.PeriodDateTime,
 					item.TotalAmount, item.PayCashAmount, item.PayCashChange, item.PayCashBalance,
 					item.RoundAmount, item.Checksum, item.SlipURL, item.SaleChannelCode, item.DeliveryAmount,
 					item.GuidFixed, item.IsCancel, item.CancelReason, item.GuidPOS, item.GuidBranch, item.TransFlag,
@@ -64,13 +64,13 @@ func InsertDocListToClickHouse(ctx context.Context, shopId string, data []models
 	if len(docRefData) > 0 {
 		insertBatch, err := connClickHouse.PrepareBatch(ctx, fmt.Sprintf(`
 			INSERT INTO %s (
-				shopid, docno, docnotransflag, docnoref, docnoreftransflag
+				holding_code, docno, docnotransflag, docnoref, docnoreftransflag
 			) VALUES (?, ?, ?, ?, ?)
 		`, TableName("docref")))
 		if err == nil {
 			defer insertBatch.Close()
 			for _, item := range docRefData {
-				insertBatch.Append(shopId, item.DocNo, item.DocNoTransFlag, item.DocRefNo, item.DocRefNoTransFlag)
+				insertBatch.Append(holdingCode, item.DocNo, item.DocNoTransFlag, item.DocRefNo, item.DocRefNoTransFlag)
 			}
 			insertBatch.Send()
 		}
@@ -80,7 +80,7 @@ func InsertDocListToClickHouse(ctx context.Context, shopId string, data []models
 	if len(docPaymentData) > 0 {
 		insertBatch, err := connClickHouse.PrepareBatch(ctx, fmt.Sprintf(`
 			INSERT INTO %s (
-				shopid, branchid, docdatetime, perioddatetime, amount,
+				holding_code, branchid, docdatetime, perioddatetime, amount,
 				description, docno, trans_flag, guidfixed, guidbranch
 			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`, TableName("docpayment")))
@@ -89,7 +89,7 @@ func InsertDocListToClickHouse(ctx context.Context, shopId string, data []models
 			for _, item := range docPaymentData {
 				amountDecimal := fmt.Sprintf("%.6f", item.Amount)
 				insertBatch.Append(
-					shopId, item.BranchID, item.DocDateTime, item.PeriodDateTime, amountDecimal,
+					holdingCode, item.BranchID, item.DocDateTime, item.PeriodDateTime, amountDecimal,
 					item.Description, item.DocNo, item.TransFlag, item.GuidFixed, item.GuidBranch,
 				)
 			}
@@ -100,7 +100,7 @@ func InsertDocListToClickHouse(ctx context.Context, shopId string, data []models
 	return nil
 }
 
-func InsertDocDetailListToClickHouse(ctx context.Context, shopId string, data []models.DocDetailStruct) error {
+func InsertDocDetailListToClickHouse(ctx context.Context, holdingCode string, data []models.DocDetailStruct) error {
 	if len(data) == 0 {
 		return nil
 	}
@@ -128,8 +128,8 @@ func InsertDocDetailListToClickHouse(ctx context.Context, shopId string, data []
 			barcodeListForQuery += fmt.Sprintf("'%s'", barcode)
 		}
 
-		query := fmt.Sprintf(`SELECT barcode,itemcode,unitcode,unitstand,unitdivide FROM %s WHERE shopid = ? and barcode in (`, TableName("productbarcode")) + barcodeListForQuery + `) order by barcode`
-		rows, err := connClickHouse.Query(ctx, query, shopId)
+		query := fmt.Sprintf(`SELECT barcode,itemcode,unitcode,unitstand,unitdivide FROM %s WHERE holding_code = ? and barcode in (`, TableName("productbarcode")) + barcodeListForQuery + `) order by barcode`
+		rows, err := connClickHouse.Query(ctx, query, holdingCode)
 		if err == nil {
 			defer rows.Close()
 			for rows.Next() {
@@ -148,7 +148,7 @@ func InsertDocDetailListToClickHouse(ctx context.Context, shopId string, data []
 	// Prepare batch insert
 	insertBatch, err := connClickHouse.PrepareBatch(ctx, fmt.Sprintf(`
 		INSERT INTO %s (
-			shopid, branchid, docno, docdatetime, perioddatetime,
+			holding_code, branchid, docno, docdatetime, perioddatetime,
 			line_number, barcode, barcodemain, qty, price, sumamount, discountamount,
 			itemname, itemnames, refguid, sumamountchoice, ischoice, guidfixed, guidpos,
 			guidbranch, transflag, itemcode, unitcode, unitstand, unitdivide, calcflag, calcseq, iscalcstock,
@@ -202,7 +202,7 @@ func InsertDocDetailListToClickHouse(ctx context.Context, shopId string, data []
 		}
 
 		insertBatch.Append(
-			shopId, "00000", docDetail.DocNo, docDetail.DocDateTime, docDetail.DocDateTime,
+			holdingCode, "00000", docDetail.DocNo, docDetail.DocDateTime, docDetail.DocDateTime,
 			docDetail.LineNumber, barcode, docDetail.BarcodeMain, docDetail.TotalQty, docDetail.Price,
 			docDetail.SumAmount, 0.0, itemName, itemName, "", docDetail.SumAmount, 0, "", "", "",
 			docDetail.TransFlag, itemCode, docDetail.UnitCode, unitStand, unitDivide,

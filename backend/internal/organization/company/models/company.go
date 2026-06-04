@@ -1,6 +1,7 @@
 package models
 
 import (
+	"strings"
 	"time"
 
 	common "smlcloudplatform/internal/models"
@@ -18,18 +19,22 @@ type Company struct {
 }
 
 type CompanyDoc struct {
-	ID        primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	ShopID    string             `json:"shopid" bson:"shopid"`
-	GuidFixed string             `json:"guid_fixed" bson:"guid_fixed"`
-	Company   `bson:"inline"`
-	CreatedAt time.Time  `json:"created_at" bson:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at" bson:"updated_at"`
-	DeletedAt *time.Time `json:"deleted_at,omitempty" bson:"deleted_at,omitempty"`
-	CreatedBy string     `json:"createdby,omitempty" bson:"createdby,omitempty"`
-	UpdatedBy string     `json:"updatedby,omitempty" bson:"updatedby,omitempty"`
-	DeletedBy string     `json:"deletedby,omitempty" bson:"deletedby,omitempty"`
+	ID          primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	HoldingCode string             `json:"holding_code" bson:"holding_code"`
+	GuidFixed   string             `json:"guid_fixed" bson:"guid_fixed"`
+	Company     `bson:"inline"`
+	CreatedAt   time.Time  `json:"created_at" bson:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at" bson:"updated_at"`
+	DeletedAt   *time.Time `json:"deleted_at,omitempty" bson:"deleted_at,omitempty"`
+	CreatedBy   string     `json:"createdby,omitempty" bson:"createdby,omitempty"`
+	UpdatedBy   string     `json:"updatedby,omitempty" bson:"updatedby,omitempty"`
+	DeletedBy   string     `json:"deletedby,omitempty" bson:"deletedby,omitempty"`
 }
 
 func (CompanyDoc) CollectionName() string {
 	return companyCollectionName
+}
+
+func NormalizeCompanyCode(value string) string {
+	return strings.ToUpper(strings.TrimSpace(value))
 }

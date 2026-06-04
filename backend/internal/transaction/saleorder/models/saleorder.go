@@ -15,7 +15,7 @@ type SaleOrder struct {
 }
 type SaleOrderInfo struct {
 	models.DocIdentity `bson:"inline"`
-	SaleOrder  `bson:"inline"`
+	SaleOrder          `bson:"inline"`
 }
 
 func (SaleOrderInfo) CollectionName() string {
@@ -23,13 +23,13 @@ func (SaleOrderInfo) CollectionName() string {
 }
 
 type SaleOrderData struct {
-	models.ShopIdentity `bson:"inline"`
-	SaleOrderInfo  `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	SaleOrderInfo            `bson:"inline"`
 }
 
 type SaleOrderDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	SaleOrderData  `bson:"inline"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	SaleOrderData      `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -46,7 +46,7 @@ func (SaleOrderItemGuid) CollectionName() string {
 }
 
 type SaleOrderActivity struct {
-	SaleOrderData  `bson:"inline"`
+	SaleOrderData       `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

@@ -17,15 +17,15 @@ import (
 )
 
 type IExchangeRateHistoryHttpService interface {
-	CreateExchangeRateHistory(shopID string, authUsername string, currency string, date string, rate float64) (string, error)
-	UpdateExchangeRateHistory(shopID string, guid string, authUsername string, date string, rate float64) error
-	DeleteExchangeRateHistory(shopID string, guid string, authUsername string) error
-	DeleteExchangeRateHistoryByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoExchangeRateHistory(shopID string, guid string) (models.ExchangeRateEntry, error)
-	SearchExchangeRateHistory(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ExchangeRateEntry, mongopagination.PaginationData, error)
-	SearchExchangeRateHistoryStep(shopID string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ExchangeRateEntry, int, error)
+	CreateExchangeRateHistory(holdingCode string, authUsername string, currency string, date string, rate float64) (string, error)
+	UpdateExchangeRateHistory(holdingCode string, guid string, authUsername string, date string, rate float64) error
+	DeleteExchangeRateHistory(holdingCode string, guid string, authUsername string) error
+	DeleteExchangeRateHistoryByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoExchangeRateHistory(holdingCode string, guid string) (models.ExchangeRateEntry, error)
+	SearchExchangeRateHistory(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ExchangeRateEntry, mongopagination.PaginationData, error)
+	SearchExchangeRateHistoryStep(holdingCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ExchangeRateEntry, int, error)
 
-	GetLatestExchangeRate(shopID string, currency string, date string) (models.ExchangeRateEntry, error)
+	GetLatestExchangeRate(holdingCode string, currency string, date string) (models.ExchangeRateEntry, error)
 
 	GetModuleName() string
 }
@@ -59,7 +59,7 @@ func (svc ExchangeRateHistoryHttpService) getContextTimeout() (context.Context, 
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc ExchangeRateHistoryHttpService) CreateExchangeRateHistory(shopID string, authUsername string, currency string, date string, rate float64) (string, error) {
+func (svc ExchangeRateHistoryHttpService) CreateExchangeRateHistory(holdingCode string, authUsername string, currency string, date string, rate float64) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -68,7 +68,7 @@ func (svc ExchangeRateHistoryHttpService) CreateExchangeRateHistory(shopID strin
 	currency = strings.ToUpper(strings.TrimSpace(currency))
 
 	// Find currency document
-	currencyDoc, err := svc.currencyRepo.FindByCode(ctx, shopID, currency)
+	currencyDoc, err := svc.currencyRepo.FindByCode(ctx, holdingCode, currency)
 	if err != nil {
 		return "", err
 	}
@@ -94,25 +94,25 @@ func (svc ExchangeRateHistoryHttpService) CreateExchangeRateHistory(shopID strin
 	currencyDoc.UpdatedBy = authUsername
 	currencyDoc.UpdatedAt = time.Now()
 
-	err = svc.currencyRepo.Update(ctx, shopID, currencyDoc.GuidFixed, currencyDoc)
+	err = svc.currencyRepo.Update(ctx, holdingCode, currencyDoc.GuidFixed, currencyDoc)
 	if err != nil {
 		return "", err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return newGuidFixed, nil
 }
 
-func (svc ExchangeRateHistoryHttpService) UpdateExchangeRateHistory(shopID string, guid string, authUsername string, date string, rate float64) error {
+func (svc ExchangeRateHistoryHttpService) UpdateExchangeRateHistory(holdingCode string, guid string, authUsername string, date string, rate float64) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
 	// Find currency containing this exchange rate guid
-	currencyDoc, err := svc.currencyRepo.FindByExchangeRateGuid(ctx, shopID, guid)
+	currencyDoc, err := svc.currencyRepo.FindByExchangeRateGuid(ctx, holdingCode, guid)
 	if err != nil {
 		return err
 	}
@@ -139,25 +139,25 @@ func (svc ExchangeRateHistoryHttpService) UpdateExchangeRateHistory(shopID strin
 	currencyDoc.UpdatedBy = authUsername
 	currencyDoc.UpdatedAt = time.Now()
 
-	err = svc.currencyRepo.Update(ctx, shopID, currencyDoc.GuidFixed, currencyDoc)
+	err = svc.currencyRepo.Update(ctx, holdingCode, currencyDoc.GuidFixed, currencyDoc)
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc ExchangeRateHistoryHttpService) DeleteExchangeRateHistory(shopID string, guid string, authUsername string) error {
+func (svc ExchangeRateHistoryHttpService) DeleteExchangeRateHistory(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
 	// Find currency containing this exchange rate guid
-	currencyDoc, err := svc.currencyRepo.FindByExchangeRateGuid(ctx, shopID, guid)
+	currencyDoc, err := svc.currencyRepo.FindByExchangeRateGuid(ctx, holdingCode, guid)
 	if err != nil {
 		return err
 	}
@@ -178,23 +178,23 @@ func (svc ExchangeRateHistoryHttpService) DeleteExchangeRateHistory(shopID strin
 	currencyDoc.UpdatedBy = authUsername
 	currencyDoc.UpdatedAt = time.Now()
 
-	err = svc.currencyRepo.Update(ctx, shopID, currencyDoc.GuidFixed, currencyDoc)
+	err = svc.currencyRepo.Update(ctx, holdingCode, currencyDoc.GuidFixed, currencyDoc)
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc ExchangeRateHistoryHttpService) DeleteExchangeRateHistoryByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc ExchangeRateHistoryHttpService) DeleteExchangeRateHistoryByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	// Delete each GUID individually
 	for _, guid := range GUIDs {
-		err := svc.DeleteExchangeRateHistory(shopID, guid, authUsername)
+		err := svc.DeleteExchangeRateHistory(holdingCode, guid, authUsername)
 		if err != nil {
 			// Continue with other deletes even if one fails
 			continue
@@ -204,13 +204,13 @@ func (svc ExchangeRateHistoryHttpService) DeleteExchangeRateHistoryByGUIDs(shopI
 	return nil
 }
 
-func (svc ExchangeRateHistoryHttpService) InfoExchangeRateHistory(shopID string, guid string) (models.ExchangeRateEntry, error) {
+func (svc ExchangeRateHistoryHttpService) InfoExchangeRateHistory(holdingCode string, guid string) (models.ExchangeRateEntry, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
 	// Find currency containing this exchange rate guid
-	currencyDoc, err := svc.currencyRepo.FindByExchangeRateGuid(ctx, shopID, guid)
+	currencyDoc, err := svc.currencyRepo.FindByExchangeRateGuid(ctx, holdingCode, guid)
 	if err != nil {
 		return models.ExchangeRateEntry{}, err
 	}
@@ -228,7 +228,7 @@ func (svc ExchangeRateHistoryHttpService) InfoExchangeRateHistory(shopID string,
 	return models.ExchangeRateEntry{}, errors.New("exchange rate entry not found in array")
 }
 
-func (svc ExchangeRateHistoryHttpService) SearchExchangeRateHistory(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ExchangeRateEntry, mongopagination.PaginationData, error) {
+func (svc ExchangeRateHistoryHttpService) SearchExchangeRateHistory(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ExchangeRateEntry, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -246,7 +246,7 @@ func (svc ExchangeRateHistoryHttpService) SearchExchangeRateHistory(shopID strin
 	}
 
 	// Get all currencies matching filter
-	currencies, _, err := svc.currencyRepo.FindPageFilter(ctx, shopID, currencyFilters, []string{"code"}, micromodels.Pageable{
+	currencies, _, err := svc.currencyRepo.FindPageFilter(ctx, holdingCode, currencyFilters, []string{"code"}, micromodels.Pageable{
 		Page:  1,
 		Limit: 1000, // Get all currencies
 	})
@@ -258,7 +258,7 @@ func (svc ExchangeRateHistoryHttpService) SearchExchangeRateHistory(shopID strin
 	allRates := []models.ExchangeRateEntry{}
 	for _, currency := range currencies {
 		// Get full currency doc to access exchange_rates
-		currencyDoc, err := svc.currencyRepo.FindByGuid(ctx, shopID, currency.GuidFixed)
+		currencyDoc, err := svc.currencyRepo.FindByGuid(ctx, holdingCode, currency.GuidFixed)
 		if err != nil {
 			continue
 		}
@@ -284,7 +284,7 @@ func (svc ExchangeRateHistoryHttpService) SearchExchangeRateHistory(shopID strin
 	return paginatedRates, pagination, nil
 }
 
-func (svc ExchangeRateHistoryHttpService) SearchExchangeRateHistoryStep(shopID string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ExchangeRateEntry, int, error) {
+func (svc ExchangeRateHistoryHttpService) SearchExchangeRateHistoryStep(holdingCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ExchangeRateEntry, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -302,7 +302,7 @@ func (svc ExchangeRateHistoryHttpService) SearchExchangeRateHistoryStep(shopID s
 	}
 
 	// Get all currencies matching filter
-	currencies, _, err := svc.currencyRepo.FindStep(ctx, shopID, currencyFilters, []string{"code"}, map[string]interface{}{}, micromodels.PageableStep{
+	currencies, _, err := svc.currencyRepo.FindStep(ctx, holdingCode, currencyFilters, []string{"code"}, map[string]interface{}{}, micromodels.PageableStep{
 		Skip:  0,
 		Limit: 1000, // Get all currencies
 	})
@@ -314,7 +314,7 @@ func (svc ExchangeRateHistoryHttpService) SearchExchangeRateHistoryStep(shopID s
 	allRates := []models.ExchangeRateEntry{}
 	for _, currency := range currencies {
 		// Get full currency doc to access exchange_rates
-		currencyDoc, err := svc.currencyRepo.FindByGuid(ctx, shopID, currency.GuidFixed)
+		currencyDoc, err := svc.currencyRepo.FindByGuid(ctx, holdingCode, currency.GuidFixed)
 		if err != nil {
 			continue
 		}
@@ -335,7 +335,7 @@ func (svc ExchangeRateHistoryHttpService) SearchExchangeRateHistoryStep(shopID s
 }
 
 // GetLatestExchangeRate - หาอัตราแลกเปลี่ยนล่าสุดที่ <= วันที่ที่ระบุ
-func (svc ExchangeRateHistoryHttpService) GetLatestExchangeRate(shopID string, currency string, date string) (models.ExchangeRateEntry, error) {
+func (svc ExchangeRateHistoryHttpService) GetLatestExchangeRate(holdingCode string, currency string, date string) (models.ExchangeRateEntry, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -343,7 +343,7 @@ func (svc ExchangeRateHistoryHttpService) GetLatestExchangeRate(shopID string, c
 	currency = strings.ToUpper(strings.TrimSpace(currency))
 
 	// Find currency by code
-	currencyDoc, err := svc.currencyRepo.FindByCode(ctx, shopID, currency)
+	currencyDoc, err := svc.currencyRepo.FindByCode(ctx, holdingCode, currency)
 	if err != nil {
 		return models.ExchangeRateEntry{}, err
 	}
@@ -370,9 +370,9 @@ func (svc ExchangeRateHistoryHttpService) GetLatestExchangeRate(shopID string, c
 	return *latestRate, nil
 }
 
-func (svc ExchangeRateHistoryHttpService) saveMasterSync(shopID string) {
+func (svc ExchangeRateHistoryHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

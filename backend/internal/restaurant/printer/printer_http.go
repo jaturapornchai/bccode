@@ -58,7 +58,7 @@ func (h PrinterHttp) RegisterHttp() {
 // @Router /restaurant/printer [post]
 func (h PrinterHttp) CreatePrinter(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.Printer{}
@@ -69,7 +69,7 @@ func (h PrinterHttp) CreatePrinter(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreatePrinter(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreatePrinter(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -96,7 +96,7 @@ func (h PrinterHttp) CreatePrinter(ctx microservice.IContext) error {
 func (h PrinterHttp) UpdatePrinter(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -109,7 +109,7 @@ func (h PrinterHttp) UpdatePrinter(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdatePrinter(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdatePrinter(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -135,12 +135,12 @@ func (h PrinterHttp) UpdatePrinter(ctx microservice.IContext) error {
 // @Router /restaurant/printer/{id} [delete]
 func (h PrinterHttp) DeletePrinter(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeletePrinter(shopID, id, authUsername)
+	err := h.svc.DeletePrinter(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -166,12 +166,12 @@ func (h PrinterHttp) DeletePrinter(ctx microservice.IContext) error {
 // @Router /restaurant/printer/{id} [get]
 func (h PrinterHttp) InfoPrinter(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get Printer %v", id)
-	doc, err := h.svc.InfoPrinter(shopID, id)
+	doc, err := h.svc.InfoPrinter(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -199,10 +199,10 @@ func (h PrinterHttp) InfoPrinter(ctx microservice.IContext) error {
 // @Router /restaurant/printer [get]
 func (h PrinterHttp) SearchPrinter(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
-	docList, pagination, err := h.svc.SearchPrinter(shopID, pageable)
+	docList, pagination, err := h.svc.SearchPrinter(holdingCode, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -230,11 +230,11 @@ func (h PrinterHttp) SearchPrinter(ctx microservice.IContext) error {
 // @Router /restaurant/printer/list [get]
 func (h PrinterHttp) SearchPrinterLimit(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
-	docList, total, err := h.svc.SearchPrinterStep(shopID, "", pageableStep)
+	docList, total, err := h.svc.SearchPrinterStep(holdingCode, "", pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -262,7 +262,7 @@ func (h PrinterHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -274,7 +274,7 @@ func (h PrinterHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

@@ -37,7 +37,7 @@ function buildPriceHistoryPath(request: Request, segments: string[] = []): strin
   const forwarded = new URLSearchParams();
 
   source.forEach((value, key) => {
-    if (key !== "backendUrl" && key !== "shopid" && key !== "shop_id") forwarded.append(key, value);
+    if (key !== "backendUrl" && key !== "holding_code" && key !== "holding_code") forwarded.append(key, value);
   });
 
   const query = forwarded.toString();

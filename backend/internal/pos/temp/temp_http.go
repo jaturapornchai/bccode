@@ -51,7 +51,7 @@ func (h POSTempHttp) RegisterHttp() {
 // @Router /pos/temp [post]
 func (h POSTempHttp) CreatePOSTemp(ctx microservice.IContext) error {
 
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	branchCode := strings.Trim(ctx.QueryParam("branch-code"), " ")
 
 	if branchCode == "" {
@@ -61,7 +61,7 @@ func (h POSTempHttp) CreatePOSTemp(ctx microservice.IContext) error {
 
 	input := ctx.ReadInput()
 
-	err := h.svc.SaveTemp(shopID, branchCode, input)
+	err := h.svc.SaveTemp(holdingCode, branchCode, input)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -84,7 +84,7 @@ func (h POSTempHttp) CreatePOSTemp(ctx microservice.IContext) error {
 // @Router /pos/temp [get]
 func (h POSTempHttp) InfoPOSTemp(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	branchCode := strings.Trim(ctx.QueryParam("branch-code"), " ")
 
 	if branchCode == "" {
@@ -92,7 +92,7 @@ func (h POSTempHttp) InfoPOSTemp(ctx microservice.IContext) error {
 		return nil
 	}
 
-	result, err := h.svc.InfoTemp(shopID, branchCode)
+	result, err := h.svc.InfoTemp(holdingCode, branchCode)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -117,7 +117,7 @@ func (h POSTempHttp) InfoPOSTemp(ctx microservice.IContext) error {
 // @Router /pos/temp [delete]
 func (h POSTempHttp) DeletePOSTemp(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	branchCode := strings.Trim(ctx.QueryParam("branch-code"), " ")
 
 	if branchCode == "" {
@@ -125,7 +125,7 @@ func (h POSTempHttp) DeletePOSTemp(ctx microservice.IContext) error {
 		return nil
 	}
 
-	err := h.svc.DeleteTemp(shopID, branchCode)
+	err := h.svc.DeleteTemp(holdingCode, branchCode)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

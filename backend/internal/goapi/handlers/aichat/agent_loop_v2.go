@@ -122,10 +122,10 @@ const maxIterationsV2 = 12
 
 // AgentV2Request — request สำหรับ น้องกุ้ง agent v2
 type AgentV2Request struct {
-	ShopID    string   `json:"shop_id" validate:"required"`
-	SessionID string   `json:"session_id"`
-	Question  string   `json:"question" validate:"required"`
-	Images    []string `json:"images,omitempty"` // base64 encoded images
+	HoldingCode string   `json:"holding_code" validate:"required"`
+	SessionID   string   `json:"session_id"`
+	Question    string   `json:"question" validate:"required"`
+	Images      []string `json:"images,omitempty"` // base64 encoded images
 	// OutputFormat — "html" or "markdown" (default markdown).
 	// Flutter น้องกุ้ง overlay sets "html" (rendered by flutter_html).
 	// OpenClaw / external OpenAI-compatible clients use "markdown".
@@ -150,8 +150,8 @@ type SSEEvent struct {
 }
 
 // getProviderBaseURL — ดึง base URL ของ provider จาก DB config ของ shop
-func getProviderBaseURL(shopID, providerName string) string {
-	configs, err := getAIProviderConfigs(shopID)
+func getProviderBaseURL(holdingCode, providerName string) string {
+	configs, err := getAIProviderConfigs(holdingCode)
 	if err != nil {
 		return ""
 	}
@@ -574,25 +574,25 @@ Even though THIS prompt is in English, your final answer MUST be in Thai. This i
 
 // RunAgentLoopV2 — น้องกุ้ง agent loop with planning, reflection, memory, and SSE streaming
 func RunAgentLoopV2(ctx context.Context, req AgentV2Request, emitSSE func(SSEEvent)) (*AgentChatResponse, error) {
-	shopID := req.ShopID
-	sessionKey := BuildSessionKey(shopID, req.SessionID)
+	holdingCode := req.HoldingCode
+	sessionKey := BuildSessionKey(holdingCode, req.SessionID)
 	logger.Info("[น้องกุ้ง] session_key=%s", sessionKey)
 
 	// 1. Load session memory (in-memory only — backend ห้ามเขียน DB)
 	var session *ChatSessionDoc
 	if req.SessionID != "" {
 		var err error
-		session, err = loadSession(req.SessionID, shopID)
+		session, err = loadSession(req.SessionID, holdingCode)
 		if err != nil {
 			logger.Warn("[น้องกุ้ง] loadSession error: %v — starting fresh", err)
-			session = &ChatSessionDoc{SessionID: req.SessionID, ShopID: shopID}
+			session = &ChatSessionDoc{SessionID: req.SessionID, HoldingCode: holdingCode}
 		}
 	}
 
 	// 2. Get AI providers
 	emitSSE(SSEEvent{Type: "status", Data: "กำลังเตรียมพร้อม..."})
 
-	providers := aiprovider.GetShopToolCallingProviders(shopID)
+	providers := aiprovider.GetShopToolCallingProviders(holdingCode)
 	if len(providers) == 0 {
 		return nil, fmt.Errorf("ไม่มี AI Provider — กรุณาตั้งค่าในหน้า AI Provider Settings")
 	}
@@ -654,7 +654,7 @@ func RunAgentLoopV2(ctx context.Context, req AgentV2Request, emitSSE func(SSEEve
 	// ignore them and use its other tools — which is the correct behavior.
 	var citations []Citation
 	if !hasImages && searchEnabled(req.SearchKB) {
-		if kbCtx, kbCites := buildKBContextMessage(shopID, req.Question); kbCtx != "" {
+		if kbCtx, kbCites := buildKBContextMessage(holdingCode, req.Question); kbCtx != "" {
 			messages = append(messages, aiprovider.OAIMessage{
 				Role:    "system",
 				Content: kbCtx,
@@ -717,7 +717,7 @@ func RunAgentLoopV2(ctx context.Context, req AgentV2Request, emitSSE func(SSEEve
 			logger.Info("[น้องกุ้ง] Iteration %d: ส่งรูปไม่มี tools (BCProxyAI compatibility)", iterations)
 		}
 
-		resp, providerName, err := callWithFallback(ctx, shopID, providers, messages, iterTools, 0.3)
+		resp, providerName, err := callWithFallback(ctx, holdingCode, providers, messages, iterTools, 0.3)
 		if err != nil {
 			logger.Error("[น้องกุ้ง] AI call failed at iteration %d: %v", iterations, err)
 			return nil, fmt.Errorf("AI ตอบไม่ได้: %w", err)
@@ -875,7 +875,7 @@ func RunAgentLoopV2(ctx context.Context, req AgentV2Request, emitSSE func(SSEEve
 				if resp.Model != "" {
 					actualModel = resp.Model
 				}
-				baseURL := getProviderBaseURL(shopID, providerName)
+				baseURL := getProviderBaseURL(holdingCode, providerName)
 				if baseURL != "" {
 					answerSnippet := cleanAnswer
 					if len(answerSnippet) > 500 {
@@ -1003,7 +1003,7 @@ func RunAgentLoopV2(ctx context.Context, req AgentV2Request, emitSSE func(SSEEve
 				continue
 			}
 
-			task.params["shop_id"] = shopID
+			task.params["holding_code"] = holdingCode
 
 			// Build per-tool signature for batch-level loop detection
 			toolArgBytes, _ := json.Marshal(task.params)
@@ -1078,7 +1078,7 @@ func RunAgentLoopV2(ctx context.Context, req AgentV2Request, emitSSE func(SSEEve
 			// Single tool — sequential เหมือนเดิม ไม่ต้อง spawn goroutine
 			t := execTasks[0]
 			start := time.Now()
-			t.execResult, t.execErr = dispatchAgentTool(ctx, mcpServer.ExecuteToolDirect, shopID, t.toolName, t.params)
+			t.execResult, t.execErr = dispatchAgentTool(ctx, mcpServer.ExecuteToolDirect, holdingCode, t.toolName, t.params)
 			t.durationMs = time.Since(start).Milliseconds()
 		} else if len(execTasks) > 1 {
 			// Multi-tool — parallel execution
@@ -1094,7 +1094,7 @@ func RunAgentLoopV2(ctx context.Context, req AgentV2Request, emitSSE func(SSEEve
 						}
 					}()
 					start := time.Now()
-					task.execResult, task.execErr = dispatchAgentTool(ctx, mcpServer.ExecuteToolDirect, shopID, task.toolName, task.params)
+					task.execResult, task.execErr = dispatchAgentTool(ctx, mcpServer.ExecuteToolDirect, holdingCode, task.toolName, task.params)
 					task.durationMs = time.Since(start).Milliseconds()
 				}(t)
 			}
@@ -1182,7 +1182,7 @@ func RunAgentLoopV2(ctx context.Context, req AgentV2Request, emitSSE func(SSEEve
 
 	var lastAnswer string
 	// Reuse the same provider-fallback call path but pass nil tools to force a text response.
-	synthResp, _, synthErr := callWithFallback(ctx, shopID, providers, messages, nil, 0.3)
+	synthResp, _, synthErr := callWithFallback(ctx, holdingCode, providers, messages, nil, 0.3)
 	if synthErr == nil && synthResp != nil && len(synthResp.Choices) > 0 {
 		lastAnswer = aiprovider.GetContentString(synthResp.Choices[0].Message.Content)
 		totalPromptTokens += synthResp.Usage.PromptTokens

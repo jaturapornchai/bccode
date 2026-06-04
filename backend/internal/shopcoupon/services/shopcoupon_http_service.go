@@ -14,11 +14,11 @@ import (
 )
 
 type IShopCouponHttpService interface {
-	CreateShopCoupon(shopID string, authUsername string, doc models.ShopCoupon) (string, error)
-	UpdateShopCoupon(shopID string, guid string, authUsername string, doc models.ShopCoupon) error
-	DeleteShopCoupon(shopID string, guid string, authUsername string) error
-	InfoShopCoupon(shopID string, guid string) (models.ShopCouponInfo, error)
-	SearchShopCoupon(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ShopCouponInfo, mongopagination.PaginationData, error)
+	CreateShopCoupon(holdingCode string, authUsername string, doc models.ShopCoupon) (string, error)
+	UpdateShopCoupon(holdingCode string, guid string, authUsername string, doc models.ShopCoupon) error
+	DeleteShopCoupon(holdingCode string, guid string, authUsername string) error
+	InfoShopCoupon(holdingCode string, guid string) (models.ShopCouponInfo, error)
+	SearchShopCoupon(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ShopCouponInfo, mongopagination.PaginationData, error)
 }
 
 type ShopCouponHttpService struct {
@@ -40,7 +40,7 @@ func (svc ShopCouponHttpService) getContextTimeout() (context.Context, context.C
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc ShopCouponHttpService) CreateShopCoupon(shopID string, authUsername string, doc models.ShopCoupon) (string, error) {
+func (svc ShopCouponHttpService) CreateShopCoupon(holdingCode string, authUsername string, doc models.ShopCoupon) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -48,7 +48,7 @@ func (svc ShopCouponHttpService) CreateShopCoupon(shopID string, authUsername st
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.ShopCouponDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.ShopCoupon = doc
 
@@ -64,12 +64,12 @@ func (svc ShopCouponHttpService) CreateShopCoupon(shopID string, authUsername st
 	return newGuidFixed, nil
 }
 
-func (svc ShopCouponHttpService) UpdateShopCoupon(shopID string, guid string, authUsername string, doc models.ShopCoupon) error {
+func (svc ShopCouponHttpService) UpdateShopCoupon(holdingCode string, guid string, authUsername string, doc models.ShopCoupon) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -84,7 +84,7 @@ func (svc ShopCouponHttpService) UpdateShopCoupon(shopID string, guid string, au
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, findDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, findDoc)
 
 	if err != nil {
 		return err
@@ -93,12 +93,12 @@ func (svc ShopCouponHttpService) UpdateShopCoupon(shopID string, guid string, au
 	return nil
 }
 
-func (svc ShopCouponHttpService) DeleteShopCoupon(shopID string, guid string, authUsername string) error {
+func (svc ShopCouponHttpService) DeleteShopCoupon(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -108,7 +108,7 @@ func (svc ShopCouponHttpService) DeleteShopCoupon(shopID string, guid string, au
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
@@ -116,12 +116,12 @@ func (svc ShopCouponHttpService) DeleteShopCoupon(shopID string, guid string, au
 	return nil
 }
 
-func (svc ShopCouponHttpService) InfoShopCoupon(shopID string, guid string) (models.ShopCouponInfo, error) {
+func (svc ShopCouponHttpService) InfoShopCoupon(holdingCode string, guid string) (models.ShopCouponInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.ShopCouponInfo{}, err
@@ -135,7 +135,7 @@ func (svc ShopCouponHttpService) InfoShopCoupon(shopID string, guid string) (mod
 
 }
 
-func (svc ShopCouponHttpService) SearchShopCoupon(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ShopCouponInfo, mongopagination.PaginationData, error) {
+func (svc ShopCouponHttpService) SearchShopCoupon(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ShopCouponInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -144,7 +144,7 @@ func (svc ShopCouponHttpService) SearchShopCoupon(shopID string, filters map[str
 		"name1",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.ShopCouponInfo{}, pagination, err

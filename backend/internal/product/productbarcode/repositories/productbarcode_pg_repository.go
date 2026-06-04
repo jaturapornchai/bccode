@@ -8,12 +8,12 @@ import (
 )
 
 type IProductBarcodePGRepository interface {
-	FindByBarcode(shopID string, barcode string) (*models.ProductBarcodePg, error)
-	FindByBarcodes(shopID string, barcodes []string) ([]models.ProductBarcodePg, error)
-	Get(shopID string, barcode string) (*models.ProductBarcodePg, error)
+	FindByBarcode(holdingCode string, barcode string) (*models.ProductBarcodePg, error)
+	FindByBarcodes(holdingCode string, barcodes []string) ([]models.ProductBarcodePg, error)
+	Get(holdingCode string, barcode string) (*models.ProductBarcodePg, error)
 	Create(doc *models.ProductBarcodePg) error
-	Update(shopID string, barcode string, doc *models.ProductBarcodePg) error
-	Delete(shopID string, barcode string) error
+	Update(holdingCode string, barcode string, doc *models.ProductBarcodePg) error
+	Delete(holdingCode string, barcode string) error
 }
 
 type ProductBarcodePGRepository struct {
@@ -26,9 +26,9 @@ func NewProductBarcodePGRepository(pst microservice.IPersister) *ProductBarcodeP
 	}
 }
 
-func (repo *ProductBarcodePGRepository) Get(shopID string, barcode string) (*models.ProductBarcodePg, error) {
+func (repo *ProductBarcodePGRepository) Get(holdingCode string, barcode string) (*models.ProductBarcodePg, error) {
 	var result models.ProductBarcodePg
-	_, err := repo.pst.First(&result, "shopid=? AND barcode=?", shopID, barcode)
+	_, err := repo.pst.First(&result, "holding_code=? AND barcode=?", holdingCode, barcode)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
@@ -40,9 +40,9 @@ func (repo *ProductBarcodePGRepository) Get(shopID string, barcode string) (*mod
 	return &result, nil
 }
 
-func (repo *ProductBarcodePGRepository) FindByBarcode(shopID string, barcode string) (*models.ProductBarcodePg, error) {
+func (repo *ProductBarcodePGRepository) FindByBarcode(holdingCode string, barcode string) (*models.ProductBarcodePg, error) {
 	var result models.ProductBarcodePg
-	_, err := repo.pst.First(&result, "shopid=? AND barcode = ?", shopID, barcode)
+	_, err := repo.pst.First(&result, "holding_code=? AND barcode = ?", holdingCode, barcode)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
@@ -54,9 +54,9 @@ func (repo *ProductBarcodePGRepository) FindByBarcode(shopID string, barcode str
 	return &result, nil
 }
 
-func (repo *ProductBarcodePGRepository) FindByBarcodes(shopID string, barcodes []string) ([]models.ProductBarcodePg, error) {
+func (repo *ProductBarcodePGRepository) FindByBarcodes(holdingCode string, barcodes []string) ([]models.ProductBarcodePg, error) {
 	var results []models.ProductBarcodePg
-	_, err := repo.pst.Where(&results, "shopid=? AND barcode IN ?", shopID, barcodes)
+	_, err := repo.pst.Where(&results, "holding_code=? AND barcode IN ?", holdingCode, barcodes)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
@@ -76,10 +76,10 @@ func (repo *ProductBarcodePGRepository) Create(doc *models.ProductBarcodePg) err
 	return nil
 }
 
-func (repo *ProductBarcodePGRepository) Update(shopID string, barcode string, doc *models.ProductBarcodePg) error {
+func (repo *ProductBarcodePGRepository) Update(holdingCode string, barcode string, doc *models.ProductBarcodePg) error {
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"shopid":  shopID,
-		"barcode": barcode,
+		"holding_code": holdingCode,
+		"barcode":      barcode,
 	})
 
 	if err != nil {
@@ -88,11 +88,11 @@ func (repo *ProductBarcodePGRepository) Update(shopID string, barcode string, do
 	return nil
 }
 
-func (repo *ProductBarcodePGRepository) Delete(shopID string, barcode string) error {
+func (repo *ProductBarcodePGRepository) Delete(holdingCode string, barcode string) error {
 
 	err := repo.pst.Delete(&models.ProductBarcodePg{}, map[string]interface{}{
-		"shopid":  shopID,
-		"barcode": barcode,
+		"holding_code": holdingCode,
+		"barcode":      barcode,
 	})
 
 	if err != nil {

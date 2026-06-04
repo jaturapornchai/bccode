@@ -10,19 +10,19 @@ const saleInvoiceBOMPriceCollectionName = "transactionSaleinvoiceBOMPrices"
 
 type SaleInvoiceBomPrice struct {
 	BOMGuid string             `json:"bomguid" bson:"bomguid"`
-	DocNo string             `json:"docno" bson:"docno"`
-	Prices []SaleInvoicePrice `json:"prices" bson:"prices"`
+	DocNo   string             `json:"docno" bson:"docno"`
+	Prices  []SaleInvoicePrice `json:"prices" bson:"prices"`
 	Barcode string             `json:"barcode" bson:"barcode"`
-	Qty float64            `json:"qty" bson:"qty"`
-	Price float64            `json:"price" bson:"price"`
-	Ratio float64            `json:"ratio" bson:"ratio"`
+	Qty     float64            `json:"qty" bson:"qty"`
+	Price   float64            `json:"price" bson:"price"`
+	Ratio   float64            `json:"ratio" bson:"ratio"`
 }
 
 type SaleInvoicePrice struct {
 	Barcode string  `json:"barcode" bson:"barcode"`
-	Qty float64 `json:"qty" bson:"qty"`
-	Price float64 `json:"price" bson:"price"`
-	Ratio float64 `json:"ratio" bson:"ratio"`
+	Qty     float64 `json:"qty" bson:"qty"`
+	Price   float64 `json:"price" bson:"price"`
+	Ratio   float64 `json:"ratio" bson:"ratio"`
 }
 
 type SaleInvoiceBomPriceInfo struct {
@@ -35,12 +35,12 @@ func (SaleInvoiceBomPriceInfo) CollectionName() string {
 }
 
 type SaleInvoiceBomPriceData struct {
-	models.ShopIdentity     `bson:"inline"`
-	SaleInvoiceBomPriceInfo `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	SaleInvoiceBomPriceInfo  `bson:"inline"`
 }
 
 type SaleInvoiceBomPriceDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                      primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	SaleInvoiceBomPriceData `bson:"inline"`
 	models.ActivityDoc      `bson:"inline"`
 }

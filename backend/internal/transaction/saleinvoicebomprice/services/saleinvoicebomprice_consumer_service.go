@@ -6,8 +6,8 @@ import (
 )
 
 type ISaleInvoiceBomPriceConsumerService interface {
-	Upsert(shopID string, guidFixed string, doc models.SaleInvoiceBomPricePg) error
-	Delete(shopID string, guidFixed string) error
+	Upsert(holdingCode string, guidFixed string, doc models.SaleInvoiceBomPricePg) error
+	Delete(holdingCode string, guidFixed string) error
 }
 
 type SaleInvoiceBomPriceConsumerService struct {
@@ -20,8 +20,8 @@ func NewSaleInvoiceBomPriceConsumerService(repo repositories.ISaleInvoiceBomPric
 	}
 }
 
-func (s *SaleInvoiceBomPriceConsumerService) Upsert(shopID string, guidFixed string, doc models.SaleInvoiceBomPricePg) error {
-	findDoc, err := s.repo.Get(shopID, guidFixed)
+func (s *SaleInvoiceBomPriceConsumerService) Upsert(holdingCode string, guidFixed string, doc models.SaleInvoiceBomPricePg) error {
+	findDoc, err := s.repo.Get(holdingCode, guidFixed)
 	if err != nil || findDoc == nil {
 		err = s.repo.Create(doc)
 		if err != nil {
@@ -32,7 +32,7 @@ func (s *SaleInvoiceBomPriceConsumerService) Upsert(shopID string, guidFixed str
 		isEqual := findDoc.CompareTo(&doc)
 
 		if !isEqual {
-			err = s.repo.Update(shopID, guidFixed, doc)
+			err = s.repo.Update(holdingCode, guidFixed, doc)
 			if err != nil {
 				return err
 			}
@@ -42,8 +42,8 @@ func (s *SaleInvoiceBomPriceConsumerService) Upsert(shopID string, guidFixed str
 	return nil
 }
 
-func (s *SaleInvoiceBomPriceConsumerService) Delete(shopID string, guidFixed string) error {
-	err := s.repo.Delete(shopID, guidFixed)
+func (s *SaleInvoiceBomPriceConsumerService) Delete(holdingCode string, guidFixed string) error {
+	err := s.repo.Delete(holdingCode, guidFixed)
 	if err != nil {
 		return err
 	}

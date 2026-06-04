@@ -13,66 +13,66 @@ import (
 // ==================== Profit Analysis ====================
 
 type ProfitAnalysisRequest struct {
-	ShopID string `json:"shop_id"`
-	FromDate string `json:"from_date"`
-	ToDate string `json:"to_date"`
+	HoldingCode string `json:"holding_code"`
+	FromDate    string `json:"from_date"`
+	ToDate      string `json:"to_date"`
 }
 
 type ProfitAnalysisResponse struct {
-	Period string            `json:"period"`
-	Revenue RevenueBreakdown  `json:"revenue"`
-	Costs CostBreakdown     `json:"costs"`
-	Profit ProfitBreakdown   `json:"profit"`
-	ByCategory []CategoryProfit  `json:"by_category"`
-	Trend []ProfitTrend     `json:"trend"`
-	GeneratedAt time.Time         `json:"generated_at"`
+	Period      string           `json:"period"`
+	Revenue     RevenueBreakdown `json:"revenue"`
+	Costs       CostBreakdown    `json:"costs"`
+	Profit      ProfitBreakdown  `json:"profit"`
+	ByCategory  []CategoryProfit `json:"by_category"`
+	Trend       []ProfitTrend    `json:"trend"`
+	GeneratedAt time.Time        `json:"generated_at"`
 }
 
 type RevenueBreakdown struct {
-	TotalSales float64 `json:"total_sales"`
+	TotalSales     float64 `json:"total_sales"`
 	TotalSalesWord string  `json:"total_sales_word"`
-	Returns float64 `json:"returns"`
-	Discounts float64 `json:"discounts"`
-	NetRevenue float64 `json:"net_revenue"`
+	Returns        float64 `json:"returns"`
+	Discounts      float64 `json:"discounts"`
+	NetRevenue     float64 `json:"net_revenue"`
 }
 
 type CostBreakdown struct {
 	CostOfGoodsSold float64 `json:"cost_of_goods_sold"`
-	COGSWord string  `json:"cogs_word"`
-	OperatingCosts float64 `json:"operating_costs"`
-	TotalCosts float64 `json:"total_costs"`
+	COGSWord        string  `json:"cogs_word"`
+	OperatingCosts  float64 `json:"operating_costs"`
+	TotalCosts      float64 `json:"total_costs"`
 }
 
 type ProfitBreakdown struct {
-	GrossProfit float64 `json:"gross_profit"`
+	GrossProfit     float64 `json:"gross_profit"`
 	GrossProfitWord string  `json:"gross_profit_word"`
-	GrossMargin float64 `json:"gross_margin_percent"`
+	GrossMargin     float64 `json:"gross_margin_percent"`
 	OperatingProfit float64 `json:"operating_profit"`
 	OperatingMargin float64 `json:"operating_margin_percent"`
-	NetProfit float64 `json:"net_profit"`
-	NetMargin float64 `json:"net_margin_percent"`
+	NetProfit       float64 `json:"net_profit"`
+	NetMargin       float64 `json:"net_margin_percent"`
 }
 
 type CategoryProfit struct {
 	CategoryCode string  `json:"category_code"`
 	CategoryName string  `json:"category_name"`
-	Revenue float64 `json:"revenue"`
-	Cost float64 `json:"cost"`
-	Profit float64 `json:"profit"`
-	Margin float64 `json:"margin_percent"`
+	Revenue      float64 `json:"revenue"`
+	Cost         float64 `json:"cost"`
+	Profit       float64 `json:"profit"`
+	Margin       float64 `json:"margin_percent"`
 }
 
 type ProfitTrend struct {
-	Date string  `json:"date"`
+	Date    string  `json:"date"`
 	Revenue float64 `json:"revenue"`
-	Cost float64 `json:"cost"`
-	Profit float64 `json:"profit"`
-	Margin float64 `json:"margin_percent"`
+	Cost    float64 `json:"cost"`
+	Profit  float64 `json:"profit"`
+	Margin  float64 `json:"margin_percent"`
 }
 
-func GetProfitAnalysis(ctx context.Context, shopID, fromDate, toDate string) (*ProfitAnalysisResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func GetProfitAnalysis(ctx context.Context, holdingCode, fromDate, toDate string) (*ProfitAnalysisResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 
 	// Default dates
@@ -84,9 +84,9 @@ func GetProfitAnalysis(ctx context.Context, shopID, fromDate, toDate string) (*P
 		toDate = now.Format("2006-01-02")
 	}
 
-	logger.Info("[Profit Analysis] shopid=%s, from=%s, to=%s", shopID, fromDate, toDate)
+	logger.Info("[Profit Analysis] holding_code=%s, from=%s, to=%s", holdingCode, fromDate, toDate)
 
-	db, err := mypg.PgSqlFastConnect(shopID)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		return nil, fmt.Errorf("database connection failed: %w", err)
 	}
@@ -218,58 +218,58 @@ func GetProfitAnalysis(ctx context.Context, shopID, fromDate, toDate string) (*P
 // ==================== Accounts Receivable ====================
 
 type AccountsReceivableRequest struct {
-	ShopID string `json:"shop_id"`
+	HoldingCode string `json:"holding_code"`
 }
 
 type AccountsReceivableResponse struct {
-	Summary ARSummary         `json:"summary"`
-	AgingBuckets []AgingBucket     `json:"aging_buckets"`
-	TopDebtors []Debtor          `json:"top_debtors"`
-	OverdueAlerts []OverdueAlert    `json:"overdue_alerts"`
-	GeneratedAt time.Time         `json:"generated_at"`
+	Summary       ARSummary      `json:"summary"`
+	AgingBuckets  []AgingBucket  `json:"aging_buckets"`
+	TopDebtors    []Debtor       `json:"top_debtors"`
+	OverdueAlerts []OverdueAlert `json:"overdue_alerts"`
+	GeneratedAt   time.Time      `json:"generated_at"`
 }
 
 type ARSummary struct {
-	TotalReceivable float64 `json:"total_receivable"`
-	TotalReceivableWord string `json:"total_receivable_word"`
-	OverdueAmount float64 `json:"overdue_amount"`
-	OverduePercent float64 `json:"overdue_percent"`
-	AverageDaysToCollect int   `json:"average_days_to_collect"`
+	TotalReceivable      float64 `json:"total_receivable"`
+	TotalReceivableWord  string  `json:"total_receivable_word"`
+	OverdueAmount        float64 `json:"overdue_amount"`
+	OverduePercent       float64 `json:"overdue_percent"`
+	AverageDaysToCollect int     `json:"average_days_to_collect"`
 }
 
 type AgingBucket struct {
-	Label string  `json:"label"`      // "Current", "1-30 days", "31-60 days", etc.
-	Amount float64 `json:"amount"`
+	Label      string  `json:"label"` // "Current", "1-30 days", "31-60 days", etc.
+	Amount     float64 `json:"amount"`
 	Percentage float64 `json:"percentage"`
-	Count int     `json:"count"`
+	Count      int     `json:"count"`
 }
 
 type Debtor struct {
-	CustomerCode string  `json:"customer_code"`
-	CustomerName string  `json:"customer_name"`
-	TotalOwed float64 `json:"total_owed"`
+	CustomerCode  string  `json:"customer_code"`
+	CustomerName  string  `json:"customer_name"`
+	TotalOwed     float64 `json:"total_owed"`
 	OverdueAmount float64 `json:"overdue_amount"`
 	OldestInvoice string  `json:"oldest_invoice_date"`
-	DaysOverdue int     `json:"days_overdue"`
+	DaysOverdue   int     `json:"days_overdue"`
 }
 
 type OverdueAlert struct {
-	DocNo string  `json:"docno"`
+	DocNo        string  `json:"docno"`
 	CustomerName string  `json:"customer_name"`
-	Amount float64 `json:"amount"`
-	DueDate string  `json:"due_date"`
-	DaysOverdue int     `json:"days_overdue"`
-	Priority string  `json:"priority"` // high, medium, low
+	Amount       float64 `json:"amount"`
+	DueDate      string  `json:"due_date"`
+	DaysOverdue  int     `json:"days_overdue"`
+	Priority     string  `json:"priority"` // high, medium, low
 }
 
-func GetAccountsReceivable(ctx context.Context, shopID string) (*AccountsReceivableResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func GetAccountsReceivable(ctx context.Context, holdingCode string) (*AccountsReceivableResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 
-	logger.Info("[Accounts Receivable] shopid=%s", shopID)
+	logger.Info("[Accounts Receivable] holding_code=%s", holdingCode)
 
-	db, err := mypg.PgSqlFastConnect(shopID)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		return nil, fmt.Errorf("database connection failed: %w", err)
 	}
@@ -305,10 +305,10 @@ func GetAccountsReceivable(ctx context.Context, shopID string) (*AccountsReceiva
 	}
 
 	response.Summary = ARSummary{
-		TotalReceivable:     totalReceivable,
-		TotalReceivableWord: formatAmountWord(totalReceivable),
-		OverdueAmount:       overdueAmount,
-		OverduePercent:      overduePercent,
+		TotalReceivable:      totalReceivable,
+		TotalReceivableWord:  formatAmountWord(totalReceivable),
+		OverdueAmount:        overdueAmount,
+		OverduePercent:       overduePercent,
 		AverageDaysToCollect: 30, // Simplified
 	}
 
@@ -432,48 +432,48 @@ func GetAccountsReceivable(ctx context.Context, shopID string) (*AccountsReceiva
 // ==================== Accounts Payable ====================
 
 type AccountsPayableRequest struct {
-	ShopID string `json:"shop_id"`
+	HoldingCode string `json:"holding_code"`
 }
 
 type AccountsPayableResponse struct {
-	Summary APSummary         `json:"summary"`
-	AgingBuckets []AgingBucket     `json:"aging_buckets"`
-	TopCreditors []Creditor        `json:"top_creditors"`
+	Summary          APSummary         `json:"summary"`
+	AgingBuckets     []AgingBucket     `json:"aging_buckets"`
+	TopCreditors     []Creditor        `json:"top_creditors"`
 	UpcomingPayments []UpcomingPayment `json:"upcoming_payments"`
-	GeneratedAt time.Time         `json:"generated_at"`
+	GeneratedAt      time.Time         `json:"generated_at"`
 }
 
 type APSummary struct {
-	TotalPayable float64 `json:"total_payable"`
+	TotalPayable     float64 `json:"total_payable"`
 	TotalPayableWord string  `json:"total_payable_word"`
-	OverdueAmount float64 `json:"overdue_amount"`
-	OverduePercent float64 `json:"overdue_percent"`
-	DueThisWeek float64 `json:"due_this_week"`
+	OverdueAmount    float64 `json:"overdue_amount"`
+	OverduePercent   float64 `json:"overdue_percent"`
+	DueThisWeek      float64 `json:"due_this_week"`
 }
 
 type Creditor struct {
-	SupplierCode string  `json:"supplier_code"`
-	SupplierName string  `json:"supplier_name"`
-	TotalOwed float64 `json:"total_owed"`
+	SupplierCode  string  `json:"supplier_code"`
+	SupplierName  string  `json:"supplier_name"`
+	TotalOwed     float64 `json:"total_owed"`
 	OldestInvoice string  `json:"oldest_invoice_date"`
 }
 
 type UpcomingPayment struct {
-	DocNo string  `json:"docno"`
+	DocNo        string  `json:"docno"`
 	SupplierName string  `json:"supplier_name"`
-	Amount float64 `json:"amount"`
-	DueDate string  `json:"due_date"`
+	Amount       float64 `json:"amount"`
+	DueDate      string  `json:"due_date"`
 	DaysUntilDue int     `json:"days_until_due"`
 }
 
-func GetAccountsPayable(ctx context.Context, shopID string) (*AccountsPayableResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func GetAccountsPayable(ctx context.Context, holdingCode string) (*AccountsPayableResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 
-	logger.Info("[Accounts Payable] shopid=%s", shopID)
+	logger.Info("[Accounts Payable] holding_code=%s", holdingCode)
 
-	db, err := mypg.PgSqlFastConnect(shopID)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		return nil, fmt.Errorf("database connection failed: %w", err)
 	}
@@ -585,49 +585,49 @@ func GetAccountsPayable(ctx context.Context, shopID string) (*AccountsPayableRes
 // ==================== Cash Flow ====================
 
 type CashFlowRequest struct {
-	ShopID string `json:"shop_id"`
-	FromDate string `json:"from_date"`
-	ToDate string `json:"to_date"`
+	HoldingCode string `json:"holding_code"`
+	FromDate    string `json:"from_date"`
+	ToDate      string `json:"to_date"`
 }
 
 type CashFlowResponse struct {
-	Period string          `json:"period"`
-	Summary CashFlowSummary `json:"summary"`
-	Inflows []CashFlowItem  `json:"inflows"`
-	Outflows []CashFlowItem  `json:"outflows"`
-	DailyFlow []DailyCashFlow `json:"daily_flow"`
+	Period      string          `json:"period"`
+	Summary     CashFlowSummary `json:"summary"`
+	Inflows     []CashFlowItem  `json:"inflows"`
+	Outflows    []CashFlowItem  `json:"outflows"`
+	DailyFlow   []DailyCashFlow `json:"daily_flow"`
 	GeneratedAt time.Time       `json:"generated_at"`
 }
 
 type CashFlowSummary struct {
-	OpeningBalance float64 `json:"opening_balance"`
-	TotalInflows float64 `json:"total_inflows"`
-	TotalInflowsWord string  `json:"total_inflows_word"`
-	TotalOutflows float64 `json:"total_outflows"`
-	TotalOutflowsWord string `json:"total_outflows_word"`
-	NetCashFlow float64 `json:"net_cash_flow"`
-	NetCashFlowWord string  `json:"net_cash_flow_word"`
-	ClosingBalance float64 `json:"closing_balance"`
+	OpeningBalance    float64 `json:"opening_balance"`
+	TotalInflows      float64 `json:"total_inflows"`
+	TotalInflowsWord  string  `json:"total_inflows_word"`
+	TotalOutflows     float64 `json:"total_outflows"`
+	TotalOutflowsWord string  `json:"total_outflows_word"`
+	NetCashFlow       float64 `json:"net_cash_flow"`
+	NetCashFlowWord   string  `json:"net_cash_flow_word"`
+	ClosingBalance    float64 `json:"closing_balance"`
 }
 
 type CashFlowItem struct {
-	Category string  `json:"category"`
+	Category    string  `json:"category"`
 	Description string  `json:"description"`
-	Amount float64 `json:"amount"`
-	Percentage float64 `json:"percentage"`
+	Amount      float64 `json:"amount"`
+	Percentage  float64 `json:"percentage"`
 }
 
 type DailyCashFlow struct {
-	Date string  `json:"date"`
-	Inflows float64 `json:"inflows"`
+	Date     string  `json:"date"`
+	Inflows  float64 `json:"inflows"`
 	Outflows float64 `json:"outflows"`
-	NetFlow float64 `json:"net_flow"`
-	Balance float64 `json:"balance"`
+	NetFlow  float64 `json:"net_flow"`
+	Balance  float64 `json:"balance"`
 }
 
-func GetCashFlow(ctx context.Context, shopID, fromDate, toDate string) (*CashFlowResponse, error) {
-	if shopID == "" {
-		return nil, fmt.Errorf("shop_id is required")
+func GetCashFlow(ctx context.Context, holdingCode, fromDate, toDate string) (*CashFlowResponse, error) {
+	if holdingCode == "" {
+		return nil, fmt.Errorf("holding_code is required")
 	}
 
 	now := time.Now()
@@ -638,18 +638,18 @@ func GetCashFlow(ctx context.Context, shopID, fromDate, toDate string) (*CashFlo
 		toDate = now.Format("2006-01-02")
 	}
 
-	logger.Info("[Cash Flow] shopid=%s, from=%s, to=%s", shopID, fromDate, toDate)
+	logger.Info("[Cash Flow] holding_code=%s, from=%s, to=%s", holdingCode, fromDate, toDate)
 
-	db, err := mypg.PgSqlFastConnect(shopID)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		return nil, fmt.Errorf("database connection failed: %w", err)
 	}
 
 	response := &CashFlowResponse{
 		Period:      fmt.Sprintf("%s to %s", fromDate, toDate),
-		Inflows:    []CashFlowItem{},
-		Outflows:   []CashFlowItem{},
-		DailyFlow:  []DailyCashFlow{},
+		Inflows:     []CashFlowItem{},
+		Outflows:    []CashFlowItem{},
+		DailyFlow:   []DailyCashFlow{},
 		GeneratedAt: now,
 	}
 

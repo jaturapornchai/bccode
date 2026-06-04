@@ -20,7 +20,6 @@ import {
   MessageCircle,
   Plus,
   Search,
-  Store,
   UserRound,
 } from "lucide-react";
 import Image from "next/image";
@@ -36,6 +35,8 @@ import {
   type AuthSession,
   type BranchListItem,
   type ShopListItem,
+  type WorkspaceCompany,
+  WORKSPACE_CHANGED_EVENT,
   workspaceStorageKeys,
   notifyWorkspaceChanged,
 } from "@/lib/workspace-models";
@@ -69,6 +70,7 @@ type LineLinkStatusResponse = {
 };
 type PendingUnitSetup = {
   shop: ShopListItem;
+  company: WorkspaceCompany | null;
   branch: BranchListItem | null;
   shopInfo: Record<string, unknown> | null;
   selectedCodes: string[];
@@ -99,13 +101,46 @@ const emptyLineDialog: LineDialogState = {
   expired: false,
 };
 const accessSettingNavItems = [
-  { route: "/active_languages", label: { th: "ภาษาที่ใช้งาน", en: "Active Languages" } },
-  { route: "/company", label: { th: "ข้อมูลบริษัทและสาขา", en: "Company & Branch" } },
-  { route: "/user", label: { th: "ผู้ใช้งาน", en: "Users" } },
-  { route: "/permission_link", label: { th: "กำหนดสิทธิ์ผู้ใช้งาน", en: "Permission Link" } },
-  { route: "/permission_definition", label: { th: "กำหนดสิทธิ์หน้าจอ", en: "Permission Definition" } },
-  { route: "/permission_group", label: { th: "กำหนดสิทธิ์ตามกลุ่ม", en: "Permission Group" } },
-  { route: "/approval_setting", label: { th: "สิทธิ์การอนุมัติ", en: "Approval Permission" } },
+  {
+    route: "/active_languages",
+    label: { th: "ภาษาที่ใช้งาน", en: "Active Languages" },
+    helper: { th: "กำหนดก่อนข้อมูลอื่น", en: "Set before other data" },
+  },
+  {
+    route: "/company",
+    label: { th: "ข้อมูลบริษัทและสาขา", en: "Company & Branch" },
+    helper: { th: "สร้างบริษัทและสำนักงานใหญ่", en: "Create companies and branches" },
+  },
+  {
+    route: "/user",
+    label: { th: "ผู้ใช้งาน", en: "Users" },
+    helper: { th: "เพิ่มคนเข้าใช้งาน", en: "Add system users" },
+  },
+  {
+    route: "/permission_definition",
+    label: { th: "กำหนดสิทธิ์หน้าจอ", en: "Permission Definition" },
+    helper: { th: "เลือกหน้าจอที่เข้าได้", en: "Choose accessible screens" },
+  },
+  {
+    route: "/permission_group",
+    label: { th: "กำหนดสิทธิ์ตามกลุ่ม", en: "Permission Group" },
+    helper: { th: "รวมสิทธิ์เป็นชุด", en: "Group permission sets" },
+  },
+  {
+    route: "/permission_link",
+    label: { th: "กำหนดสิทธิ์ผู้ใช้งาน", en: "User Permissions" },
+    helper: { th: "ผูกกลุ่มกับผู้ใช้", en: "Assign groups to users" },
+  },
+  {
+    route: "/approval_setting",
+    label: { th: "สิทธิ์การอนุมัติ", en: "Approval Permission" },
+    helper: { th: "วงเงินและเอกสารอนุมัติ", en: "Approval limits and documents" },
+  },
+  {
+    route: "/user_access_audit",
+    label: { th: "ตรวจสอบสถานะผู้ใช้งาน", en: "User Access Audit" },
+    helper: { th: "รายงานสิทธิ์และการเข้าถึง", en: "Access and permission report" },
+  },
 ] as const;
 
 const workspaceTextEn = {
@@ -330,28 +365,52 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     setStep("loading");
     setNotice(null);
     try {
-      const payload = await callWorkspaceApi<{ data?: ShopListItem[] }>(currentAuth, "shops");
-      const nextShops = Array.isArray(payload.data) ? payload.data : [];
+      const selectedHoldingCode = activeHoldingCodeFromAuth(currentAuth);
+      const endpoint = selectedHoldingCode
+        ? `holdings?active_holding_code=${encodeURIComponent(selectedHoldingCode)}`
+        : "holdings";
+      const payload = await callWorkspaceApi<{ data?: ShopListItem[] }>(currentAuth, endpoint);
+      const allShops = Array.isArray(payload.data) ? payload.data : [];
+      const nextShops = selectedHoldingCode
+        ? allShops.filter((shop) => tenantCodeForShop(shop) === selectedHoldingCode)
+        : allShops;
       setShops(nextShops);
       setStep("shops");
-      if (nextShops.length === 0 && !canAuthCreateCompany(currentAuth)) {
+      if (selectedHoldingCode && nextShops.length === 0) {
+        setNotice({
+          type: "error",
+          text: language === "th"
+            ? `ไม่พบ Holding ${selectedHoldingCode} สำหรับบัญชีนี้`
+            : `Holding ${selectedHoldingCode} is not available for this account.`,
+        });
+      } else if (nextShops.length === 0 && !canAuthCreateCompany(currentAuth)) {
         setNotice({ type: "info", textKey: "createCompanyRequiresGoogle" });
       }
     } catch (error) {
       setStep("shops");
       setNotice(error instanceof Error && error.message ? { type: "error", text: error.message } : { type: "error", textKey: "loadShopsFailed" });
     }
-  }, []);
+  }, [language]);
 
   useEffect(() => {
     const savedLanguage = normalizeLanguage(localStorage.getItem("user_language") ?? initialLanguage);
     setLanguage(savedLanguage);
     document.documentElement.lang = savedLanguage;
 
-    const savedAuth = readAuth();
+    let savedAuth = readAuth();
     if (!savedAuth) {
       router.replace("/");
       return;
+    }
+
+    const selectedHoldingCode = activeHoldingCodeFromAuth(savedAuth);
+    if (savedAuth.method === "google" && !selectedHoldingCode) {
+      router.replace("/holding");
+      return;
+    }
+    if (selectedHoldingCode && !savedAuth.holding_code) {
+      savedAuth = { ...savedAuth, holding_code: selectedHoldingCode };
+      localStorage.setItem(workspaceStorageKeys.auth, JSON.stringify(savedAuth));
     }
 
     setAuth(savedAuth);
@@ -362,6 +421,22 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     document.documentElement.lang = language;
     localStorage.setItem("user_language", language);
   }, [language]);
+
+  useEffect(() => {
+    const reloadWorkspaceCompanies = () => {
+      if (step !== "shops") return;
+      const nextAuth = readAuth();
+      if (!nextAuth) return;
+      setAuth(nextAuth);
+      void loadShops(nextAuth);
+    };
+    window.addEventListener(WORKSPACE_CHANGED_EVENT, reloadWorkspaceCompanies);
+    window.addEventListener("storage", reloadWorkspaceCompanies);
+    return () => {
+      window.removeEventListener(WORKSPACE_CHANGED_EVENT, reloadWorkspaceCompanies);
+      window.removeEventListener("storage", reloadWorkspaceCompanies);
+    };
+  }, [loadShops, step]);
 
   useEffect(() => {
     return () => stopLinePolling();
@@ -395,10 +470,10 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
         const companyName = localizedName(item.company.names, item.company.code || "");
         const companyCode = item.company.code || "";
         const shopName = shopDisplayName(item.shop);
-        
+
         const matchCompany = `${companyName} ${companyCode}`.toLowerCase().includes(needle);
-        const matchShop = `${shopName} ${item.shop.shopid}`.toLowerCase().includes(needle);
-        const matchBranch = item.branches.some((b) => 
+        const matchShop = `${shopName} ${tenantCodeForShop(item.shop)} ${item.shop.holding_code}`.toLowerCase().includes(needle);
+        const matchBranch = item.branches.some((b) =>
           `${branchDisplayName(b)} ${b.code || ""}`.toLowerCase().includes(needle)
         );
 
@@ -418,8 +493,8 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
       };
     }).sort((a, b) => {
       // Sort by shop name/id first
-      const shopA = shopDisplayName(a.shop) || a.shop.shopid || "";
-      const shopB = shopDisplayName(b.shop) || b.shop.shopid || "";
+      const shopA = shopDisplayName(a.shop) || tenantCodeForShop(a.shop) || "";
+      const shopB = shopDisplayName(b.shop) || tenantCodeForShop(b.shop) || "";
       const shopCmp = shopA.localeCompare(shopB, "th", { sensitivity: "base" });
       if (shopCmp !== 0) return shopCmp;
 
@@ -428,7 +503,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
       const codeB = b.company.code || "";
       const cmp = codeA.localeCompare(codeB, undefined, { numeric: true, sensitivity: "base" });
       if (cmp !== 0) return cmp;
-      
+
       const nameA = localizedName(a.company.names, a.company.code || "");
       const nameB = localizedName(b.company.names, b.company.code || "");
       return nameA.localeCompare(nameB, "th", { sensitivity: "base" });
@@ -449,34 +524,35 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     const seen = new Set<string>();
     const options: Array<{ shop: ShopListItem; label: string }> = [];
 
-    flatCompanies.forEach(({ shop, company }) => {
-      const shopid = shop.shopid?.trim();
-      if (!shopid || seen.has(shopid)) return;
-      seen.add(shopid);
-
-      const companyCode = typeof company.code === "string" ? company.code.trim() : "";
-      const companyName = localizedName(company.names, companyCode || shopDisplayName(shop));
-      options.push({
-        shop,
-        label: companyCode ? `[${companyCode}] ${companyName}` : shopAccessDisplayName(shop, language),
-      });
-    });
-
     shops.forEach((shop) => {
-      const shopid = shop.shopid?.trim();
-      if (!shopid || seen.has(shopid)) return;
-      seen.add(shopid);
-      options.push({ shop, label: shopAccessDisplayName(shop, language) });
+      const holdingCode = tenantCodeForShop(shop);
+      if (!holdingCode || seen.has(holdingCode)) return;
+      seen.add(holdingCode);
+      options.push({ shop, label: holdingAccessDisplayName(shop, language) });
     });
 
-    return options;
-  }, [flatCompanies, language, shops]);
+    return options.sort((a, b) => a.label.localeCompare(b.label, language === "th" ? "th" : "en", { sensitivity: "base" }));
+  }, [language, shops]);
 
   const selectedAccessShopLabel = useMemo(() => {
-    if (!selectedShopForAccess) return language === "th" ? "เลือกกิจการ" : "Select business";
-    return accessShopOptions.find((option) => option.shop.shopid === selectedShopForAccess.shopid)?.label
-      ?? shopAccessDisplayName(selectedShopForAccess, language);
+    if (!selectedShopForAccess) return language === "th" ? "เลือก Holding" : "Select Holding";
+    return accessShopOptions.find((option) => tenantCodeForShop(option.shop) === tenantCodeForShop(selectedShopForAccess))?.label
+      ?? holdingAccessDisplayName(selectedShopForAccess, language);
   }, [accessShopOptions, language, selectedShopForAccess]);
+  const activeHoldingContext = useMemo(() => {
+    const activeHoldingCode = auth ? activeHoldingCodeFromAuth(auth) : "";
+    const activeShop =
+      selectedShopForAccess ??
+      selectedShop ??
+      (activeHoldingCode
+        ? shops.find((shop) => tenantCodeForShop(shop) === activeHoldingCode)
+        : null) ??
+      (shops.length === 1 ? shops[0] : null);
+    const code = tenantCodeForShop(activeShop) || activeHoldingCode;
+    if (!code) return null;
+    const name = activeShop ? shopDisplayName(activeShop) : code;
+    return { code, name: name || code };
+  }, [auth, selectedShop, selectedShopForAccess, shops]);
 
   const signedInAs = auth?.profile?.email || auth?.username || "";
   const currentTitle = step === "branches" ? text("selectBranchTitle") : text("selectCompanyTitle");
@@ -613,11 +689,11 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     setBusy(true);
     setNotice(null);
     try {
-      await callWorkspaceApi(auth, "select-shop", {
+      await callWorkspaceApi(auth, "select-holding", {
         method: "POST",
-        body: { shopid: shop.shopid },
+        body: { holding_code: tenantCodeForShop(shop) },
       });
-      const shopInfo = await callWorkspaceApi<{ data?: Record<string, unknown> }>(auth, `shop-info?shopid=${encodeURIComponent(shop.shopid)}`);
+      const shopInfo = await callWorkspaceApi<{ data?: Record<string, unknown> }>(auth, `holding-info?holding_code=${encodeURIComponent(tenantCodeForShop(shop))}`);
       localStorage.setItem(workspaceStorageKeys.shopInfo, JSON.stringify(shopInfo.data ?? null));
       setSelectedShop(shop);
 
@@ -638,11 +714,11 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     setBusy(true);
     setNotice(null);
     try {
-      await callWorkspaceApi(auth, "select-shop", {
+      await callWorkspaceApi(auth, "select-holding", {
         method: "POST",
-        body: { shopid: shop.shopid },
+        body: { holding_code: tenantCodeForShop(shop) },
       });
-      const shopInfo = await callWorkspaceApi<{ data?: Record<string, unknown> }>(auth, `shop-info?shopid=${encodeURIComponent(shop.shopid)}`);
+      const shopInfo = await callWorkspaceApi<{ data?: Record<string, unknown> }>(auth, `holding-info?holding_code=${encodeURIComponent(tenantCodeForShop(shop))}`);
       const branchPayload = await callWorkspaceApi<{ data?: BranchListItem[] }>(auth, "branches?offset=0&limit=100&q=");
       let nextBranches = Array.isArray(branchPayload.data) ? branchPayload.data : [];
 
@@ -679,11 +755,11 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     setBusy(true);
     setNotice(null);
     try {
-      await callWorkspaceApi(auth, "select-shop", {
+      await callWorkspaceApi(auth, "select-holding", {
         method: "POST",
-        body: { shopid: shop.shopid },
+        body: { holding_code: tenantCodeForShop(shop) },
       });
-      const shopInfo = await callWorkspaceApi<{ data?: Record<string, unknown> }>(auth, `shop-info?shopid=${encodeURIComponent(shop.shopid)}`);
+      const shopInfo = await callWorkspaceApi<{ data?: Record<string, unknown> }>(auth, `holding-info?holding_code=${encodeURIComponent(tenantCodeForShop(shop))}`);
       const branchPayload = await callWorkspaceApi<{ data?: BranchListItem[] }>(auth, "branches?offset=0&limit=100&q=");
       let nextBranches = Array.isArray(branchPayload.data) ? branchPayload.data : [];
 
@@ -720,18 +796,18 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     if (!auth) return;
     const representativeShop = accessShopOptions[0]?.shop;
     if (!representativeShop) {
-      setNotice({ type: "error", text: language === "th" ? "ไม่พบข้อมูลบริษัทสำหรับกำหนดสิทธิ์" : "No companies found for access control." });
+      setNotice({ type: "error", text: language === "th" ? "ไม่พบ Holding สำหรับกำหนดสิทธิ์" : "No Holding found for access control." });
       return;
     }
     setBusy(true);
     setNotice(null);
     try {
       setSelectedShopForAccess(representativeShop);
-      await callWorkspaceApi(auth, "select-shop", {
+      await callWorkspaceApi(auth, "select-holding", {
         method: "POST",
-        body: { shopid: representativeShop.shopid },
+        body: { holding_code: tenantCodeForShop(representativeShop) },
       });
-      const shopInfo = await callWorkspaceApi<{ data?: Record<string, unknown> }>(auth, `shop-info?shopid=${encodeURIComponent(representativeShop.shopid)}`);
+      const shopInfo = await callWorkspaceApi<{ data?: Record<string, unknown> }>(auth, `holding-info?holding_code=${encodeURIComponent(tenantCodeForShop(representativeShop))}`);
       const branchPayload = await callWorkspaceApi<{ data?: BranchListItem[] }>(auth, "branches?offset=0&limit=100&q=");
       const nextBranches = Array.isArray(branchPayload.data) ? branchPayload.data : [];
       const defaultBranch = nextBranches[0] ?? null;
@@ -754,11 +830,11 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     setNotice(null);
     try {
       setSelectedShopForAccess(shop);
-      await callWorkspaceApi(auth, "select-shop", {
+      await callWorkspaceApi(auth, "select-holding", {
         method: "POST",
-        body: { shopid: shop.shopid },
+        body: { holding_code: tenantCodeForShop(shop) },
       });
-      const shopInfo = await callWorkspaceApi<{ data?: Record<string, unknown> }>(auth, `shop-info?shopid=${encodeURIComponent(shop.shopid)}`);
+      const shopInfo = await callWorkspaceApi<{ data?: Record<string, unknown> }>(auth, `holding-info?holding_code=${encodeURIComponent(tenantCodeForShop(shop))}`);
       const branchPayload = await callWorkspaceApi<{ data?: BranchListItem[] }>(auth, "branches?offset=0&limit=100&q=");
       const nextBranches = Array.isArray(branchPayload.data) ? branchPayload.data : [];
       const defaultBranch = nextBranches[0] ?? null;
@@ -791,7 +867,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     setBusy(true);
     setNotice(null);
     try {
-      await callWorkspaceApi(auth, "create-shop", {
+      await callWorkspaceApi(auth, "create-holding", {
         method: "POST",
         body: createShopPayload(name),
       });
@@ -812,7 +888,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     const shopInfoRaw = localStorage.getItem(workspaceStorageKeys.shopInfo);
     const shopInfo = parseShopInfo(shopInfoRaw);
     try {
-      await enterWorkspaceWithUnitCheck(selectedShop, branch, shopInfo);
+      await enterWorkspaceWithUnitCheck(selectedShop, branch, shopInfo, selectedCompany);
     } catch (error) {
       setNotice(error instanceof Error && error.message ? { type: "error", text: error.message } : { type: "error", text: text("requestFailed") });
     } finally {
@@ -820,9 +896,14 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     }
   }
 
-  async function enterWorkspaceWithUnitCheck(shop: ShopListItem, branch: BranchListItem | null, shopInfo: Record<string, unknown> | null) {
+  async function enterWorkspaceWithUnitCheck(
+    shop: ShopListItem,
+    branch: BranchListItem | null,
+    shopInfo: Record<string, unknown> | null,
+    company: WorkspaceCompany | null = null,
+  ) {
     if (!auth) return;
-    persistWorkspace(shop, branch, shopInfo);
+    persistWorkspace(shop, branch, shopInfo, company);
     const payload = await callWorkspaceApi<{ data?: unknown[]; total?: number }>(auth, "product-units?offset=0&limit=1&q=");
 
     if (getApiTotal(payload) > 0) {
@@ -830,14 +911,15 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
       return;
     }
 
-    const mainShopId = getMainShopId(shopInfo);
+    const mainHoldingCode = getMainHoldingCode(shopInfo);
     const standardUnits = await callWorkspaceApi<StandardProductUnitResponse>(
       auth,
-      `product-units/standard?mainShopId=${encodeURIComponent(mainShopId)}&q=`,
+      `product-units/standard?mainHoldingCode=${encodeURIComponent(mainHoldingCode)}&q=`,
     );
     const units = Array.isArray(standardUnits.data) ? standardUnits.data : [];
     setPendingUnitSetup({
       shop,
+      company,
       branch,
       shopInfo,
       units,
@@ -853,7 +935,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     try {
       const payload = await callWorkspaceApi<{ success?: boolean; message?: string; data?: Record<string, unknown> }>(auth, "product-units/defaults", {
         method: "POST",
-        body: { mainShopId: getMainShopId(pendingUnitSetup.shopInfo), unitcodes: pendingUnitSetup.selectedCodes },
+        body: { mainHoldingCode: getMainHoldingCode(pendingUnitSetup.shopInfo), unitcodes: pendingUnitSetup.selectedCodes },
       });
       if (payload.success === false) throw new Error(payload.message ?? text("requestFailed"));
       setPendingUnitSetup(null);
@@ -927,7 +1009,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                     type="button"
                     disabled={busy || accessShopOptions.length <= 1}
                   >
-                    <Store size={16} className="shrink-0 text-muted-foreground" />
+                    <Crown size={16} className="shrink-0 text-muted-foreground" />
                     <span className="min-w-0 truncate">
                       {selectedAccessShopLabel}
                     </span>
@@ -935,15 +1017,15 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-80">
                   {accessShopOptions.map(({ shop, label }) => {
-                    const active = shop.shopid === selectedShopForAccess?.shopid;
+                    const active = tenantCodeForShop(shop) === tenantCodeForShop(selectedShopForAccess);
                     return (
                       <DropdownMenuItem
                         className="gap-2"
                         disabled={busy || active}
-                        key={shop.shopid}
+                        key={tenantCodeForShop(shop)}
                         onClick={() => void handleAccessShopChange(shop)}
                       >
-                        <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        <Crown className="h-4 w-4 shrink-0 text-muted-foreground" />
                         <span className="min-w-0 flex-1 truncate">{label}</span>
                         {active ? <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" /> : null}
                       </DropdownMenuItem>
@@ -951,13 +1033,6 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                   })}
                 </DropdownMenuContent>
               </DropdownMenu>
-              <button
-                className="icon-button dialog-close"
-                type="button"
-                onClick={() => void returnToShopSelection()}
-              >
-                ×
-              </button>
             </div>
           </div>
           <div className="flex-1 min-h-0 flex bg-card overflow-hidden">
@@ -966,12 +1041,12 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
               <p className="px-2 mb-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">
                 {language === "th" ? "ตั้งค่าระบบและการเข้าถึง" : "Settings & Access"}
               </p>
-              {accessSettingNavItems.map((item) => {
+              {accessSettingNavItems.map((item, index) => {
                 const isActive = activeAccessRoute === item.route;
                 return (
                   <button
                     key={item.route}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 ${
+                    className={`w-full text-left px-2.5 py-2 rounded-lg text-sm font-semibold transition-colors flex items-start gap-2 ${
                       isActive
                         ? "bg-primary text-primary-foreground shadow-sm"
                         : "text-foreground hover:bg-muted"
@@ -979,7 +1054,29 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                     type="button"
                     onClick={() => setActiveAccessRoute(item.route)}
                   >
-                    <span>{language === "th" ? item.label.th : item.label.en}</span>
+                    <span
+                      className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+                        isActive
+                          ? "bg-primary-foreground/20 text-primary-foreground"
+                          : "bg-primary/10 text-primary"
+                      }`}
+                    >
+                      {index + 1}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate">
+                        {language === "th" ? item.label.th : item.label.en}
+                      </span>
+                      <span
+                        className={`block truncate text-[10px] font-medium ${
+                          isActive
+                            ? "text-primary-foreground/80"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        {language === "th" ? item.helper.th : item.helper.en}
+                      </span>
+                    </span>
                   </button>
                 );
               })}
@@ -987,8 +1084,26 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
 
             {/* คอนเทนต์แสดงผลฝั่งขวา */}
             <div className="flex-1 min-h-0 overflow-y-auto p-4">
+              {activeAccessRoute !== "/active_languages" &&
+              !hasExplicitLanguageSettings(selectedShopForAccess) ? (
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-primary/25 bg-primary/10 px-3 py-2 text-sm text-foreground">
+                  <span className="min-w-0 text-xs font-semibold text-muted-foreground">
+                    {language === "th"
+                      ? "ยังไม่ได้ยืนยันภาษาที่ใช้งาน ระบบใช้ภาษาไทยเป็นค่าเริ่มต้น ควรกำหนดภาษาก่อนกรอกชื่อหลายภาษา"
+                      : "Active languages are not confirmed yet. The system uses Thai by default; set languages before entering multilingual names."}
+                  </span>
+                  <button
+                    className="secondary-button inline-flex items-center gap-1.5 px-2.5 py-1 text-xs"
+                    type="button"
+                    onClick={() => setActiveAccessRoute("/active_languages")}
+                  >
+                    <Languages size={14} />
+                    <span>{language === "th" ? "ไปตั้งภาษา" : "Set languages"}</span>
+                  </button>
+                </div>
+              ) : null}
               <SystemSettingsScreen
-                key={`${activeAccessRoute}:${selectedShopForAccess?.shopid ?? ""}`}
+                key={`${activeAccessRoute}:${tenantCodeForShop(selectedShopForAccess)}`}
                 route={activeAccessRoute}
                 embedded
                 hideChrome
@@ -1012,6 +1127,18 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
             <p>BC Ai Account</p>
             <h1>{currentTitle}</h1>
             {signedInAs ? <small>{text("signedInAs")}: {signedInAs}</small> : null}
+            {activeHoldingContext ? (
+              <div
+                className="workspace-holding-context"
+                title={`${activeHoldingContext.name} (${activeHoldingContext.code})`}
+              >
+                <span>{language === "th" ? "Holding ที่ใช้งาน" : "Active Holding"}</span>
+                <strong>{activeHoldingContext.name}</strong>
+                {activeHoldingContext.name !== activeHoldingContext.code ? (
+                  <code>holding_code: {activeHoldingContext.code}</code>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </div>
         <div className="workspace-actions">
@@ -1088,24 +1215,34 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                   <Building2 size={32} />
                 </div>
                 <strong className="text-base text-foreground font-bold mb-2">
-                  {language === "th" 
-                    ? "ยังไม่มีบริษัทเปิดใช้งานในระบบของคุณ" 
+                  {language === "th"
+                    ? "ยังไม่มีบริษัทเปิดใช้งานในระบบของคุณ"
                     : "No active companies found in your system"}
                 </strong>
                 <p className="text-xs text-muted-foreground mb-6">
                   {language === "th"
-                    ? "กรุณาสร้างบริษัทแรกเพื่อเปิดสิทธิ์และกำหนดสิทธิ์เข้าใช้งานระบบ"
-                    : "Please create your first company to grant workspace access."}
+                    ? "เริ่มจากกำหนดภาษาที่ใช้งานก่อน แล้วค่อยสร้างบริษัทและสาขา"
+                    : "Start with active languages, then create the company and branches."}
                 </p>
-                
+
+                <button
+                  className="secondary-button mb-4 inline-flex items-center gap-1.5"
+                  type="button"
+                  onClick={() => void openAccessSettings("/active_languages")}
+                  disabled={busy || accessShopOptions.length === 0}
+                >
+                  <Languages size={16} />
+                  <span>{language === "th" ? "ตั้งค่าภาษาก่อน" : "Set languages first"}</span>
+                </button>
+
                 <div className="w-full text-left bg-accent/35 border border-border/60 rounded-xl p-4 space-y-3.5">
                   <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5 border-b pb-2">
                     <HelpCircle size={14} className="text-primary" />
                     <span>
-                      {language === "th" ? "ขั้นตอนการสร้างบริษัทสำหรับเริ่มต้นใช้งาน" : "Getting Started: Setup Company"}
+                      {language === "th" ? "ขั้นตอนเริ่มต้นใช้งาน" : "Getting Started"}
                     </span>
                   </h4>
-                  
+
                   <ul className="space-y-3 text-[11px] text-muted-foreground">
                     <li className="flex items-start gap-2.5">
                       <span className="w-4 h-4 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[9px] shrink-0 mt-0.5">1</span>
@@ -1114,37 +1251,65 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                           {language === "th" ? "เข้าเมนูตั้งค่าระบบ" : "Go to Settings"}
                         </strong>
                         <span>
-                          {language === "th" 
-                            ? "คลิกปุ่ม 'ตั้งค่าระบบ' 🔑 สีน้ำเงินที่มุมขวาบนของหน้านี้" 
+                          {language === "th"
+                            ? "คลิกปุ่ม 'ตั้งค่าระบบ' 🔑 สีน้ำเงินที่มุมขวาบนของหน้านี้"
                             : "Click the 'Settings' 🔑 button at the top-right of this panel."}
                         </span>
                       </div>
                     </li>
-                    
+
                     <li className="flex items-start gap-2.5">
                       <span className="w-4 h-4 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[9px] shrink-0 mt-0.5">2</span>
                       <div>
                         <strong className="text-foreground block">
-                          {language === "th" ? "เลือกหัวข้อข้อมูลบริษัท" : "Select Company & Branch Info"}
+                          {language === "th" ? "เลือกหัวข้อภาษาที่ใช้งาน" : "Select Active Languages"}
                         </strong>
                         <span>
                           {language === "th"
-                            ? "ที่แถบเมนูด้านซ้าย เลือกหัวข้อ 'ข้อมูลบริษัทและสาขา'"
-                            : "On the left sidebar, select 'Company & Branch Info'."}
+                            ? "ตรวจภาษาไทยที่เป็นค่าเริ่มต้น เพิ่มภาษาอื่นที่ต้องใช้ และลากภาษาแรกไว้บนสุด"
+                            : "Review Thai as the default, add any other active languages, and keep the primary language first."}
                         </span>
                       </div>
                     </li>
-                    
+
                     <li className="flex items-start gap-2.5">
                       <span className="w-4 h-4 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[9px] shrink-0 mt-0.5">3</span>
+                      <div>
+                        <strong className="text-foreground block">
+                          {language === "th" ? "เลือกข้อมูลบริษัทและสาขา" : "Select Company & Branch Info"}
+                        </strong>
+                        <span>
+                          {language === "th"
+                            ? "หลังตั้งภาษาแล้ว ให้เลือกหัวข้อ 'ข้อมูลบริษัทและสาขา'"
+                            : "After setting languages, select 'Company & Branch Info'."}
+                        </span>
+                      </div>
+                    </li>
+
+                    <li className="flex items-start gap-2.5">
+                      <span className="w-4 h-4 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[9px] shrink-0 mt-0.5">4</span>
                       <div>
                         <strong className="text-foreground block">
                           {language === "th" ? "เพิ่มบริษัทใหม่และบันทึก" : "Add Company & Save"}
                         </strong>
                         <span>
                           {language === "th"
-                            ? "คลิก '+ เพิ่มบริษัท' ด้านขวา กรอกข้อมูล (รหัส, ชื่อภาษาไทย) แล้วเลื่อนแถบด้านล่างสุดเพื่อบันทึก"
-                            : "Click '+ Add Company', fill in details, then slide to confirm saving."}
+                            ? "คลิก '+ เพิ่มบริษัท' กรอกรหัสและชื่อบริษัทตามภาษาที่ตั้งไว้ แล้วบันทึก"
+                            : "Click '+ Add Company', fill in the code and localized company names, then save."}
+                        </span>
+                      </div>
+                    </li>
+
+                    <li className="flex items-start gap-2.5">
+                      <span className="w-4 h-4 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[9px] shrink-0 mt-0.5">5</span>
+                      <div>
+                        <strong className="text-foreground block">
+                          {language === "th" ? "สร้างผู้ใช้และสิทธิ์" : "Create Users & Permissions"}
+                        </strong>
+                        <span>
+                          {language === "th"
+                            ? "เพิ่มผู้ใช้งาน กำหนดสิทธิ์หน้าจอ รวมเป็นกลุ่ม แล้วผูกกลุ่มให้ผู้ใช้"
+                            : "Add users, define screen permissions, group them, then assign groups to users."}
                         </span>
                       </div>
                     </li>
@@ -1160,17 +1325,20 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                   const languageCodes = shopLanguageCodes(shop);
                   const currencyLabel = shopCurrencyLabel(shop, language);
                   const compName = localizedName(company.names, company.code || "");
-                  
+                  const holdingLabel = shop.holding_code?.trim()
+                    ? `holding_code: ${shop.holding_code.trim()}`
+                    : `legacy_holding_code: ${shop.holding_code}`;
+
                   return (
                     <button
-                      key={`${shop.shopid}-${company.guid_fixed || company.code}`}
+                      key={`${shop.holding_code}-${company.guid_fixed || company.code}`}
                       disabled={busy}
                       onClick={() => void selectCompany(shop, company)}
                       className="group/company text-left relative w-full md:w-[calc(50%-12px)] lg:w-[350px] shrink-0 border border-border/80 rounded-2xl bg-card/85 backdrop-blur-md overflow-hidden shadow-md hover:shadow-xl hover:border-primary/40 hover:scale-[1.01] transition-all duration-300"
                     >
                       {/* Left color bar accent */}
                       <div className={`absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b ${index % 2 === 0 ? "from-indigo-500 to-indigo-600" : "from-teal-500 to-emerald-500"}`} />
-                      
+
                       {/* Company Header */}
                       <div className="flex flex-col p-4 pl-6">
                         <div className="flex items-center gap-3">
@@ -1181,14 +1349,14 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                             <h3 className="font-bold text-foreground text-sm sm:text-base tracking-tight truncate" title={compName}>
                               [{company.code}] {compName}
                             </h3>
-                            <p className="text-[10px] text-muted-foreground/80 mt-0.5 font-mono truncate">Shop ID: {shop.shopid}</p>
+                            <p className="text-[10px] text-muted-foreground/80 mt-0.5 font-mono truncate">{holdingLabel}</p>
                           </div>
                         </div>
-                        
+
                         <div className="flex flex-wrap items-center gap-1.5 mt-3 mb-4">
                           <span className={`px-2 py-0.5 text-[9px] font-bold rounded border uppercase shrink-0 ${
-                            isCreator 
-                              ? "bg-amber-500/10 text-amber-600 dark:text-amber-500 border-amber-500/20" 
+                            isCreator
+                              ? "bg-amber-500/10 text-amber-600 dark:text-amber-500 border-amber-500/20"
                               : "bg-blue-500/10 text-blue-600 dark:text-blue-500 border-blue-500/20"
                           }`}>
                             {isCreator ? "OWNER" : "USER"}
@@ -1399,6 +1567,13 @@ function canAuthCreateCompany(auth: AuthSession | null): boolean {
   return auth?.method === "google";
 }
 
+function activeHoldingCodeFromAuth(auth: AuthSession | null): string {
+  const authHoldingCode = auth?.holding_code?.trim();
+  if (authHoldingCode) return authHoldingCode;
+  if (typeof window === "undefined") return "";
+  return localStorage.getItem(workspaceStorageKeys.holdingCode)?.trim() || "";
+}
+
 async function callWorkspaceApi<T extends Record<string, unknown>>(
   auth: AuthSession,
   path: string,
@@ -1421,9 +1596,22 @@ async function callWorkspaceApi<T extends Record<string, unknown>>(
   return data;
 }
 
-function persistWorkspace(shop: ShopListItem, branch: BranchListItem | null, shopInfo: Record<string, unknown> | null) {
-  localStorage.setItem(workspaceStorageKeys.workspace, JSON.stringify({ shop, branch, shopInfo }));
+function persistWorkspace(
+  shop: ShopListItem,
+  branch: BranchListItem | null,
+  shopInfo: Record<string, unknown> | null,
+  company: WorkspaceCompany | null = null,
+) {
+  localStorage.setItem(workspaceStorageKeys.workspace, JSON.stringify({ shop, company, branch, shopInfo }));
   localStorage.setItem(workspaceStorageKeys.branch, JSON.stringify(branch));
+}
+
+function tenantCodeForShop(shop: ShopListItem | null | undefined): string {
+  return shop?.holding_code?.trim() || shop?.holding_code?.trim() || "";
+}
+
+function hasExplicitLanguageSettings(shop: ShopListItem | null | undefined): boolean {
+  return Array.isArray(shop?.languageconfigs) && shop.languageconfigs.length > 0;
 }
 
 function getApiTotal(payload: { data?: unknown[]; total?: number }): number {
@@ -1431,10 +1619,10 @@ function getApiTotal(payload: { data?: unknown[]; total?: number }): number {
   return Array.isArray(payload.data) ? payload.data.length : 0;
 }
 
-function getMainShopId(shopInfo: Record<string, unknown> | null): string {
+function getMainHoldingCode(shopInfo: Record<string, unknown> | null): string {
   if (!shopInfo) return "";
-  const mainShopId = shopInfo.main_shop_id ?? shopInfo.mainshopid ?? shopInfo.mainShopId;
-  return typeof mainShopId === "string" ? mainShopId.trim() : "";
+  const mainHoldingCode = shopInfo.main_holding_code ?? shopInfo.mainholding_code ?? shopInfo.mainHoldingCode;
+  return typeof mainHoldingCode === "string" ? mainHoldingCode.trim() : "";
 }
 
 function unitDisplayName(unit: ProductUnitOption, language: LanguageCode): string {
@@ -1613,24 +1801,12 @@ function recordValue(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null;
 }
 
-function shopAccessDisplayName(shop: ShopListItem, language: LanguageCode): string {
-  const shopWithCompanies = shop as ShopListItem & { companies?: unknown[] };
-  const companies = Array.isArray(shopWithCompanies.companies)
-    ? shopWithCompanies.companies
-      .map((item) => recordValue(item))
-      .filter((item): item is Record<string, unknown> => Boolean(item && isVisibleOrganizationRecord(item)))
-    : [];
-  if (companies.length === 1) {
-    const company = companies[0];
-    const code = stringValue(company.code);
-    const name = localizedName(company.names as { code?: string; name?: string }[] | undefined, code);
-    return code ? `[${code}] ${name || code}` : name || shopDisplayName(shop);
-  }
-  if (companies.length > 1) {
-    const countLabel = language === "th" ? `${companies.length} บริษัท` : `${companies.length} companies`;
-    return `${shopDisplayName(shop)} (${countLabel})`;
-  }
-  return shopDisplayName(shop);
+function holdingAccessDisplayName(shop: ShopListItem, language: LanguageCode): string {
+  const holdingCode = tenantCodeForShop(shop);
+  const holdingName = shopDisplayName(shop) || holdingCode;
+  const prefix = language === "th" ? "Holding" : "Holding";
+  if (!holdingCode || holdingName === holdingCode) return `${prefix}: ${holdingName}`;
+  return `${prefix}: ${holdingName} (${holdingCode})`;
 }
 
 function isVisibleOrganizationRecord(value: unknown): boolean {

@@ -6,8 +6,8 @@ import (
 )
 
 type IStockReceiveTransactionConsumerService interface {
-	Upsert(shopID string, docNo string, doc models.StockReceiveProductTransactionPG) error
-	Delete(shopID string, docNo string) error
+	Upsert(holdingCode string, docNo string, doc models.StockReceiveProductTransactionPG) error
+	Delete(holdingCode string, docNo string) error
 }
 
 type StockReceiveTransactionConsumerService struct {
@@ -21,8 +21,8 @@ func NewStockReceiveTransactionConsumerService(repo IStockReceiveTransactionPGRe
 	}
 }
 
-func (s *StockReceiveTransactionConsumerService) Upsert(shopID string, docNo string, doc models.StockReceiveProductTransactionPG) error {
-	findDoc, err := s.repo.Get(shopID, docNo)
+func (s *StockReceiveTransactionConsumerService) Upsert(holdingCode string, docNo string, doc models.StockReceiveProductTransactionPG) error {
+	findDoc, err := s.repo.Get(holdingCode, docNo)
 	if err != nil {
 		err = s.repo.Create(doc)
 		if err != nil {
@@ -33,7 +33,7 @@ func (s *StockReceiveTransactionConsumerService) Upsert(shopID string, docNo str
 		isEqual := findDoc.CompareTo(&doc)
 
 		if !isEqual {
-			err = s.repo.Update(shopID, docNo, doc)
+			err = s.repo.Update(holdingCode, docNo, doc)
 			if err != nil {
 				return err
 			}
@@ -43,11 +43,11 @@ func (s *StockReceiveTransactionConsumerService) Upsert(shopID string, docNo str
 	return nil
 }
 
-func (s *StockReceiveTransactionConsumerService) Delete(shopID string, docNo string) error {
-	err := s.repo.DeleteData(shopID, docNo, models.StockReceiveProductTransactionPG{
+func (s *StockReceiveTransactionConsumerService) Delete(holdingCode string, docNo string) error {
+	err := s.repo.DeleteData(holdingCode, docNo, models.StockReceiveProductTransactionPG{
 		TransactionPG: models.TransactionPG{
-			ShopIdentity: pkgModels.ShopIdentity{
-				ShopID: shopID,
+			HoldingCodeentity: pkgModels.HoldingCodeentity{
+				HoldingCode: holdingCode,
 			},
 			DocNo: docNo,
 		},

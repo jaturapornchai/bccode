@@ -15,27 +15,27 @@ import (
 type IDocumentImageRepository interface {
 	Create(ctx context.Context, doc models.DocumentImageDoc) (string, error)
 	CreateInBatch(ctx context.Context, doc []models.DocumentImageDoc) error
-	Update(ctx context.Context, shopID string, guid string, doc models.DocumentImageDoc) error
-	DeleteByGuidfixed(ctx context.Context, shopID string, guid string, username string) error
-	FindOne(ctx context.Context, shopID string, filters interface{}) (models.DocumentImageDoc, error)
-	FindByReferenceDocNo(ctx context.Context, shopID string, docNo string) ([]models.DocumentImageDoc, error)
-	FindByReference(ctx context.Context, shopID string, reference models.Reference) ([]models.DocumentImageDoc, error)
-	FindByGuid(ctx context.Context, shopID string, guid string) (models.DocumentImageDoc, error)
+	Update(ctx context.Context, holdingCode string, guid string, doc models.DocumentImageDoc) error
+	DeleteByGuidfixed(ctx context.Context, holdingCode string, guid string, username string) error
+	FindOne(ctx context.Context, holdingCode string, filters interface{}) (models.DocumentImageDoc, error)
+	FindByReferenceDocNo(ctx context.Context, holdingCode string, docNo string) ([]models.DocumentImageDoc, error)
+	FindByReference(ctx context.Context, holdingCode string, reference models.Reference) ([]models.DocumentImageDoc, error)
+	FindByGuid(ctx context.Context, holdingCode string, guid string) (models.DocumentImageDoc, error)
 
-	FindPage(ctx context.Context, shopID string, searchInFields []string, pageable micromodels.Pageable) ([]models.DocumentImageInfo, mongopagination.PaginationData, error)
-	FindPageFilter(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.DocumentImageInfo, mongopagination.PaginationData, error)
+	FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable micromodels.Pageable) ([]models.DocumentImageInfo, mongopagination.PaginationData, error)
+	FindPageFilter(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.DocumentImageInfo, mongopagination.PaginationData, error)
 
-	FindInItemGuid(ctx context.Context, shopID string, columnName string, itemGuidList []string) ([]models.DocumentImageItemGuid, error)
-	FindInGUIDs(ctx context.Context, shopID string, docImageGUIDs []string) ([]models.DocumentImageDoc, error)
+	FindInItemGuid(ctx context.Context, holdingCode string, columnName string, itemGuidList []string) ([]models.DocumentImageItemGuid, error)
+	FindInGUIDs(ctx context.Context, holdingCode string, docImageGUIDs []string) ([]models.DocumentImageDoc, error)
 
 	FindAll(ctx context.Context) ([]models.DocumentImageDoc, error)
 	UpdateAll(ctx context.Context, doc models.DocumentImageDoc) error
 
-	// UpdateDocumentImageStatus(shopID string, guid string, docnoGUIDRef string, status int8) error
-	// UpdateDocumentImageStatusByDocumentRef(shopID string, docRef string, docnoGUIDRef string, status int8) error
-	// SaveDocumentImageDocRefGroup(shopID string, docRef string, docImages []models.DocumentImageGroup) error
-	// ListDocumentImageGroup(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.DocumentImageGroup, mongopagination.PaginationData, error)
-	// GetDocumentImageGroup(shopID string, docRef string) (models.DocumentImageGroup, error)
+	// UpdateDocumentImageStatus(holdingCode string, guid string, docnoGUIDRef string, status int8) error
+	// UpdateDocumentImageStatusByDocumentRef(holdingCode string, docRef string, docnoGUIDRef string, status int8) error
+	// SaveDocumentImageDocRefGroup(holdingCode string, docRef string, docImages []models.DocumentImageGroup) error
+	// ListDocumentImageGroup(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.DocumentImageGroup, mongopagination.PaginationData, error)
+	// GetDocumentImageGroup(holdingCode string, docRef string) (models.DocumentImageGroup, error)
 }
 
 type DocumentImageRepository struct {
@@ -57,7 +57,7 @@ func NewDocumentImageRepository(pst microservice.IPersisterMongo) DocumentImageR
 	return insRepo
 }
 
-func (repo DocumentImageRepository) FindInGUIDs(ctx context.Context, shopID string, docImageGUIDs []string) ([]models.DocumentImageDoc, error) {
+func (repo DocumentImageRepository) FindInGUIDs(ctx context.Context, holdingCode string, docImageGUIDs []string) ([]models.DocumentImageDoc, error) {
 	docList := []models.DocumentImageDoc{}
 	err := repo.pst.Find(
 		ctx,
@@ -76,13 +76,33 @@ func (repo DocumentImageRepository) FindInGUIDs(ctx context.Context, shopID stri
 	return docList, nil
 }
 
-func (repo DocumentImageRepository) FindByReferenceDocNo(ctx context.Context, shopID string, docNo string) ([]models.DocumentImageDoc, error) {
+func (repo DocumentImageRepository) FindByReferenceDocNo(ctx context.Context, holdingCode string, docNo string) ([]models.DocumentImageDoc, error) {
 	docList := []models.DocumentImageDoc{}
 	err := repo.pst.Find(
 		ctx,
 		models.DocumentImageDoc{},
 		bson.M{
 			"references.docno": docNo,
+			"deleted_at":       bson.M{"$exists": false},
+		},
+		&docList,
+	)
+
+	if err != nil {
+		return []models.DocumentImageDoc{}, err
+	}
+
+	return docList, nil
+}
+
+func (repo DocumentImageRepository) FindByReference(ctx context.Context, holdingCode string, reference models.Reference) ([]models.DocumentImageDoc, error) {
+	docList := []models.DocumentImageDoc{}
+	err := repo.pst.Find(
+		ctx,
+		models.DocumentImageDoc{},
+		bson.M{
+			"references.module": reference.Module,
+			"references.docno":  reference.DocNo,
 			"deleted_at":        bson.M{"$exists": false},
 		},
 		&docList,
@@ -95,30 +115,10 @@ func (repo DocumentImageRepository) FindByReferenceDocNo(ctx context.Context, sh
 	return docList, nil
 }
 
-func (repo DocumentImageRepository) FindByReference(ctx context.Context, shopID string, reference models.Reference) ([]models.DocumentImageDoc, error) {
-	docList := []models.DocumentImageDoc{}
-	err := repo.pst.Find(
-		ctx,
-		models.DocumentImageDoc{},
-		bson.M{
-			"references.module": reference.Module,
-			"references.docno":  reference.DocNo,
-			"deleted_at":         bson.M{"$exists": false},
-		},
-		&docList,
-	)
-
-	if err != nil {
-		return []models.DocumentImageDoc{}, err
-	}
-
-	return docList, nil
-}
-
-func (repo DocumentImageRepository) UpdateReject(ctx context.Context, shopID string, authUsername string, updatedAt time.Time, docImageGUID string, isReject bool) error {
+func (repo DocumentImageRepository) UpdateReject(ctx context.Context, holdingCode string, authUsername string, updatedAt time.Time, docImageGUID string, isReject bool) error {
 	fillter := bson.M{
-		"shopid":    shopID,
-		"guid_fixed": docImageGUID,
+		"holding_code": holdingCode,
+		"guid_fixed":   docImageGUID,
 	}
 
 	data := bson.M{

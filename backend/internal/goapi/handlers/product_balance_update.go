@@ -11,7 +11,7 @@ import (
 
 // ProductBalanceUpdateRequest — request body
 type ProductBalanceUpdateRequest struct {
-	ShopID string `json:"shopid"`
+	HoldingCode string `json:"holding_code"`
 }
 
 // ProductBalanceUpdateHandler — POST /api/process/product-balance
@@ -25,20 +25,20 @@ func ProductBalanceUpdateHandler(c echo.Context) error {
 		})
 	}
 
-	shopID := req.ShopID
-	if shopID == "" {
-		shopID = c.QueryParam("shopid")
+	holdingCode := req.HoldingCode
+	if holdingCode == "" {
+		holdingCode = c.QueryParam("holding_code")
 	}
-	if shopID == "" {
+	if holdingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"success": false,
-			"message": "Missing required parameter: shopid",
+			"message": "Missing required parameter: holding_code",
 		})
 	}
 
-	logger.Info("ProductBalanceUpdateHandler: processing shopID=%s", shopID)
+	logger.Info("ProductBalanceUpdateHandler: processing holdingCode=%s", holdingCode)
 
-	if err := processstock.ProcessProductBalanceUpdate(shopID); err != nil {
+	if err := processstock.ProcessProductBalanceUpdate(holdingCode); err != nil {
 		logger.Error("ProductBalanceUpdateHandler: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
 			"success": false,

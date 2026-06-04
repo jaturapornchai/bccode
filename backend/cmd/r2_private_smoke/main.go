@@ -27,7 +27,7 @@ type r2SmokeConfig struct {
 	AccessKeyID     string
 	SecretAccessKey string
 	BucketName      string
-	ShopID          string
+	HoldingCode     string
 }
 
 type bootstrapConfig struct {
@@ -57,13 +57,13 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	objectKey := fmt.Sprintf("%s/__r2_private_smoke__/%s.txt", cfg.ShopID, suffix)
+	objectKey := fmt.Sprintf("%s/__r2_private_smoke__/%s.txt", cfg.HoldingCode, suffix)
 	body := []byte("bc account r2 private smoke " + time.Now().UTC().Format(time.RFC3339Nano))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	fmt.Printf("%s smoke: bucket=%s shopid=%s key=%s\n", cfg.Provider, cfg.BucketName, cfg.ShopID, objectKey)
+	fmt.Printf("%s smoke: bucket=%s holding_code=%s key=%s\n", cfg.Provider, cfg.BucketName, cfg.HoldingCode, objectKey)
 
 	_, err = client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket:      aws.String(cfg.BucketName),
@@ -121,7 +121,7 @@ func loadConfig() (r2SmokeConfig, error) {
 		AccessKeyID:     firstNonEmpty(os.Getenv("R2_ACCESS_KEY_ID"), bootstrapValue(bootstrap, "r2_access_key_id")),
 		SecretAccessKey: firstNonEmpty(os.Getenv("R2_SECRET_ACCESS_KEY"), bootstrapValue(bootstrap, "r2_secret_access_key")),
 		BucketName:      firstNonEmpty(os.Getenv("R2_BUCKET_NAME"), bootstrapValue(bootstrap, "r2_bucket_name")),
-		ShopID:          strings.Trim(strings.TrimSpace(os.Getenv("BC_R2_SMOKE_SHOPID")), "/"),
+		HoldingCode:     strings.Trim(strings.TrimSpace(os.Getenv("BC_R2_SMOKE_HOLDING_CODE")), "/"),
 	}
 
 	if cfg.AccountID != "" {
@@ -163,14 +163,14 @@ func loadConfig() (r2SmokeConfig, error) {
 			missing = append(missing, "R2_BUCKET_NAME")
 		}
 	}
-	if cfg.ShopID == "" {
-		missing = append(missing, "BC_R2_SMOKE_SHOPID")
+	if cfg.HoldingCode == "" {
+		missing = append(missing, "BC_R2_SMOKE_HOLDING_CODE")
 	}
 	if len(missing) > 0 {
 		return cfg, fmt.Errorf("missing environment variables: %s", strings.Join(missing, ", "))
 	}
-	if strings.Contains(cfg.ShopID, "..") || strings.Contains(cfg.ShopID, "\\") || strings.Contains(cfg.ShopID, "/") {
-		return cfg, fmt.Errorf("BC_R2_SMOKE_SHOPID must be a single shopid segment")
+	if strings.Contains(cfg.HoldingCode, "..") || strings.Contains(cfg.HoldingCode, "\\") || strings.Contains(cfg.HoldingCode, "/") {
+		return cfg, fmt.Errorf("BC_R2_SMOKE_HOLDING_CODE must be a single holding_code segment")
 	}
 	return cfg, nil
 }

@@ -3,10 +3,10 @@ package datatransfer
 import "context"
 
 type IDataTransfer interface {
-	StartTransfer(ctx context.Context, shopID string, targetShopID string) error
-	// CheckingBeforeTransfer(ctx context.Context, shopID string) (bool, error)
+	StartTransfer(ctx context.Context, holdingCode string, targetHoldingCode string) error
+	// CheckingBeforeTransfer(ctx context.Context, holdingCode string) (bool, error)
 }
 
 type IDBTransfer interface {
-	BeginTransfer(shopID string, targetShopID string)
+	BeginTransfer(holdingCode string, targetHoldingCode string)
 }

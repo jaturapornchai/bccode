@@ -110,8 +110,8 @@ func purchaesReceiveDoc() models.PurchaseReceiveTransactionPG {
 	return models.PurchaseReceiveTransactionPG{
 		TransactionPG: models.TransactionPG{
 			GuidFixed: "test-guid-fixed",
-			ShopIdentity: microModels.ShopIdentity{
-				ShopID: "TESTSHOP",
+			HoldingCodeentity: microModels.HoldingCodeentity{
+				HoldingCode: "TESTSHOP",
 			},
 			InquiryType: 1,
 			TransFlag:   1,
@@ -135,9 +135,9 @@ func purchaesReceiveDoc() models.PurchaseReceiveTransactionPG {
 		Items: &[]models.PurchaseReceiveTransactionDetailPG{
 			{
 				TransactionDetailPG: models.TransactionDetailPG{
-					ShopID:  "TESTSHOP",
-					DocNo:   testDocNo,
-					Barcode: "ITEM001",
+					HoldingCode: "TESTSHOP",
+					DocNo:       testDocNo,
+					Barcode:     "ITEM001",
 					ItemNames: microModels.JSONB{
 						microModels.NameX{
 							Code: &thaiLang,
@@ -166,9 +166,9 @@ func purchaesReceiveDoc() models.PurchaseReceiveTransactionPG {
 			},
 			{
 				TransactionDetailPG: models.TransactionDetailPG{
-					ShopID:  "TESTSHOP",
-					DocNo:   "TEST_001",
-					Barcode: "ITEM002",
+					HoldingCode: "TESTSHOP",
+					DocNo:       "TEST_001",
+					Barcode:     "ITEM002",
 					ItemNames: microModels.JSONB{
 						microModels.NameX{
 							Code: &thaiLang,
@@ -202,7 +202,7 @@ func purchaesReceiveDoc() models.PurchaseReceiveTransactionPG {
 
 func CleanUpData(pst *microservice.Persister) {
 
-	_ = pst.DBClient().Exec("DELETE FROM purchasereceive_transaction_detail WHERE shopid='TESTSHOP' AND docno like 'TEST_%'").Error
-	_ = pst.DBClient().Exec("DELETE FROM purchasereceive_transaction WHERE shopid='TESTSHOP' AND docno like 'TEST_%'").Error
+	_ = pst.DBClient().Exec("DELETE FROM purchasereceive_transaction_detail WHERE holding_code='TESTSHOP' AND docno like 'TEST_%'").Error
+	_ = pst.DBClient().Exec("DELETE FROM purchasereceive_transaction WHERE holding_code='TESTSHOP' AND docno like 'TEST_%'").Error
 
 }

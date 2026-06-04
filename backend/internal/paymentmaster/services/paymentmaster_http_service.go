@@ -14,12 +14,12 @@ import (
 )
 
 type IPaymentMasterHttpService interface {
-	CreatePaymentMaster(shopID string, authUsername string, doc models.PaymentMaster) (string, error)
-	UpdatePaymentMaster(guid string, shopID string, authUsername string, doc models.PaymentMaster) error
-	DeletePaymentMaster(guid string, shopID string, authUsername string) error
-	InfoPaymentMaster(guid string, shopID string) (models.PaymentMasterInfo, error)
-	SearchPaymentMaster(shopID string, q string) ([]models.PaymentMasterInfo, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.PaymentMaster) (common.BulkImport, error)
+	CreatePaymentMaster(holdingCode string, authUsername string, doc models.PaymentMaster) (string, error)
+	UpdatePaymentMaster(guid string, holdingCode string, authUsername string, doc models.PaymentMaster) error
+	DeletePaymentMaster(guid string, holdingCode string, authUsername string) error
+	InfoPaymentMaster(guid string, holdingCode string) (models.PaymentMasterInfo, error)
+	SearchPaymentMaster(holdingCode string, q string) ([]models.PaymentMasterInfo, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.PaymentMaster) (common.BulkImport, error)
 }
 
 type PaymentMasterHttpService struct {
@@ -41,12 +41,12 @@ func (svc PaymentMasterHttpService) getContextTimeout() (context.Context, contex
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc PaymentMasterHttpService) CreatePaymentMaster(shopID string, authUsername string, doc models.PaymentMaster) (string, error) {
+func (svc PaymentMasterHttpService) CreatePaymentMaster(holdingCode string, authUsername string, doc models.PaymentMaster) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "paymentcode", doc.PaymentCode)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "paymentcode", doc.PaymentCode)
 
 	if err != nil {
 		return "", err
@@ -59,7 +59,7 @@ func (svc PaymentMasterHttpService) CreatePaymentMaster(shopID string, authUsern
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.PaymentMasterDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.PaymentMaster = doc
 
@@ -75,12 +75,12 @@ func (svc PaymentMasterHttpService) CreatePaymentMaster(shopID string, authUsern
 	return newGuidFixed, nil
 }
 
-func (svc PaymentMasterHttpService) UpdatePaymentMaster(guid string, shopID string, authUsername string, doc models.PaymentMaster) error {
+func (svc PaymentMasterHttpService) UpdatePaymentMaster(guid string, holdingCode string, authUsername string, doc models.PaymentMaster) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -95,7 +95,7 @@ func (svc PaymentMasterHttpService) UpdatePaymentMaster(guid string, shopID stri
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, findDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, findDoc)
 
 	if err != nil {
 		return err
@@ -104,12 +104,12 @@ func (svc PaymentMasterHttpService) UpdatePaymentMaster(guid string, shopID stri
 	return nil
 }
 
-func (svc PaymentMasterHttpService) DeletePaymentMaster(guid string, shopID string, authUsername string) error {
+func (svc PaymentMasterHttpService) DeletePaymentMaster(guid string, holdingCode string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -119,7 +119,7 @@ func (svc PaymentMasterHttpService) DeletePaymentMaster(guid string, shopID stri
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
@@ -127,12 +127,12 @@ func (svc PaymentMasterHttpService) DeletePaymentMaster(guid string, shopID stri
 	return nil
 }
 
-func (svc PaymentMasterHttpService) InfoPaymentMaster(guid string, shopID string) (models.PaymentMasterInfo, error) {
+func (svc PaymentMasterHttpService) InfoPaymentMaster(guid string, holdingCode string) (models.PaymentMasterInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.PaymentMasterInfo{}, err
@@ -146,7 +146,7 @@ func (svc PaymentMasterHttpService) InfoPaymentMaster(guid string, shopID string
 
 }
 
-func (svc PaymentMasterHttpService) SearchPaymentMaster(shopID string, q string) ([]models.PaymentMasterInfo, error) {
+func (svc PaymentMasterHttpService) SearchPaymentMaster(holdingCode string, q string) ([]models.PaymentMasterInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -156,7 +156,7 @@ func (svc PaymentMasterHttpService) SearchPaymentMaster(shopID string, q string)
 		"paymentcode",
 	}
 
-	docList, err := svc.repo.Find(ctx, shopID, searchInFields, q)
+	docList, err := svc.repo.Find(ctx, holdingCode, searchInFields, q)
 
 	if err != nil {
 		return []models.PaymentMasterInfo{}, err
@@ -165,7 +165,7 @@ func (svc PaymentMasterHttpService) SearchPaymentMaster(shopID string, q string)
 	return docList, nil
 }
 
-func (svc PaymentMasterHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.PaymentMaster) (common.BulkImport, error) {
+func (svc PaymentMasterHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.PaymentMaster) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -180,7 +180,7 @@ func (svc PaymentMasterHttpService) SaveInBatch(shopID string, authUsername stri
 		itemCodeGuidList = append(itemCodeGuidList, doc.PaymentCode)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "paymentcode", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "paymentcode", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -192,18 +192,18 @@ func (svc PaymentMasterHttpService) SaveInBatch(shopID string, authUsername stri
 	}
 
 	duplicateDataList, createDataList = importdata.PreparePayloadData[models.PaymentMaster, models.PaymentMasterDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.PaymentMaster) models.PaymentMasterDoc {
+		func(holdingCode string, authUsername string, doc models.PaymentMaster) models.PaymentMasterDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.PaymentMasterDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.PaymentMaster = doc
 
 			currentTime := time.Now()
@@ -214,12 +214,12 @@ func (svc PaymentMasterHttpService) SaveInBatch(shopID string, authUsername stri
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.PaymentMaster, models.PaymentMasterDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.PaymentMasterDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "paymentcode", guid)
+		func(holdingCode string, guid string) (models.PaymentMasterDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "paymentcode", guid)
 		},
 		func(doc models.PaymentMasterDoc) bool {
 			if doc.PaymentCode != "" {
@@ -227,13 +227,13 @@ func (svc PaymentMasterHttpService) SaveInBatch(shopID string, authUsername stri
 			}
 			return false
 		},
-		func(shopID string, authUsername string, data models.PaymentMaster, doc models.PaymentMasterDoc) error {
+		func(holdingCode string, authUsername string, data models.PaymentMaster, doc models.PaymentMasterDoc) error {
 
 			doc.PaymentMaster = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}

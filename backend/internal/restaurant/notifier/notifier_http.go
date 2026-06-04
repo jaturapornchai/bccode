@@ -57,7 +57,7 @@ func (h NotifierHttp) RegisterHttp() {
 // @Router /restaurant/notifier [post]
 func (h NotifierHttp) CreateNotifier(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.Notifier{}
@@ -73,7 +73,7 @@ func (h NotifierHttp) CreateNotifier(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreateNotifier(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateNotifier(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -100,7 +100,7 @@ func (h NotifierHttp) CreateNotifier(ctx microservice.IContext) error {
 func (h NotifierHttp) UpdateNotifier(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -118,7 +118,7 @@ func (h NotifierHttp) UpdateNotifier(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateNotifier(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateNotifier(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -144,12 +144,12 @@ func (h NotifierHttp) UpdateNotifier(ctx microservice.IContext) error {
 // @Router /restaurant/notifier/{id} [delete]
 func (h NotifierHttp) DeleteNotifier(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteNotifier(shopID, id, authUsername)
+	err := h.svc.DeleteNotifier(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -175,7 +175,7 @@ func (h NotifierHttp) DeleteNotifier(ctx microservice.IContext) error {
 // @Router /restaurant/notifier [delete]
 func (h NotifierHttp) DeleteNotifierByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -188,7 +188,7 @@ func (h NotifierHttp) DeleteNotifierByGUIDs(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.DeleteNotifierByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteNotifierByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -213,12 +213,12 @@ func (h NotifierHttp) DeleteNotifierByGUIDs(ctx microservice.IContext) error {
 // @Router /restaurant/notifier/{id} [get]
 func (h NotifierHttp) InfoNotifier(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get Notifier %v", id)
-	doc, err := h.svc.InfoNotifier(shopID, id)
+	doc, err := h.svc.InfoNotifier(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -244,11 +244,11 @@ func (h NotifierHttp) InfoNotifier(ctx microservice.IContext) error {
 // @Router /restaurant/notifier/code/{code} [get]
 func (h NotifierHttp) InfoNotifierByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoNotifierByCode(shopID, code)
+	doc, err := h.svc.InfoNotifierByCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -275,11 +275,11 @@ func (h NotifierHttp) InfoNotifierByCode(ctx microservice.IContext) error {
 // @Router /restaurant/notifier [get]
 func (h NotifierHttp) SearchNotifierPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.SearchNotifier(shopID, map[string]interface{}{}, pageable)
+	docList, pagination, err := h.svc.SearchNotifier(holdingCode, map[string]interface{}{}, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

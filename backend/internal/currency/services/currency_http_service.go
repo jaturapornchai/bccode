@@ -18,13 +18,13 @@ import (
 )
 
 type ICurrencyHttpService interface {
-	CreateCurrency(shopID string, authUsername string, doc models.Currency) (string, error)
-	UpdateCurrency(shopID string, guid string, authUsername string, doc models.Currency) error
-	DeleteCurrency(shopID string, guid string, authUsername string) error
-	DeleteCurrencyByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoCurrency(shopID string, guid string) (models.CurrencyInfo, error)
-	SearchCurrency(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.CurrencyInfo, mongopagination.PaginationData, error)
-	SearchCurrencyStep(shopID string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.CurrencyInfo, int, error)
+	CreateCurrency(holdingCode string, authUsername string, doc models.Currency) (string, error)
+	UpdateCurrency(holdingCode string, guid string, authUsername string, doc models.Currency) error
+	DeleteCurrency(holdingCode string, guid string, authUsername string) error
+	DeleteCurrencyByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoCurrency(holdingCode string, guid string) (models.CurrencyInfo, error)
+	SearchCurrency(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.CurrencyInfo, mongopagination.PaginationData, error)
+	SearchCurrencyStep(holdingCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.CurrencyInfo, int, error)
 
 	GetModuleName() string
 }
@@ -58,14 +58,14 @@ func (svc CurrencyHttpService) getContextTimeout() (context.Context, context.Can
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc CurrencyHttpService) CreateCurrency(shopID string, authUsername string, doc models.Currency) (string, error) {
+func (svc CurrencyHttpService) CreateCurrency(holdingCode string, authUsername string, doc models.Currency) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
 	// Validate: code ต้องไม่ซ้ำ
 	doc.Code = strings.ToUpper(strings.TrimSpace(doc.Code))
-	existingDoc, err := svc.repo.FindByCode(ctx, shopID, doc.Code)
+	existingDoc, err := svc.repo.FindByCode(ctx, holdingCode, doc.Code)
 	if err == nil && len(existingDoc.GuidFixed) > 0 {
 		return "", errors.New("currency code already exists")
 	}
@@ -73,7 +73,7 @@ func (svc CurrencyHttpService) CreateCurrency(shopID string, authUsername string
 	newGuidFixed := utils.NewGUID()
 
 	dataDoc := models.CurrencyDoc{}
-	dataDoc.ShopID = shopID
+	dataDoc.HoldingCode = holdingCode
 	dataDoc.GuidFixed = newGuidFixed
 	dataDoc.Currency = doc
 
@@ -87,18 +87,18 @@ func (svc CurrencyHttpService) CreateCurrency(shopID string, authUsername string
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return newGuidFixed, nil
 }
 
-func (svc CurrencyHttpService) UpdateCurrency(shopID string, guid string, authUsername string, doc models.Currency) error {
+func (svc CurrencyHttpService) UpdateCurrency(holdingCode string, guid string, authUsername string, doc models.Currency) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -111,7 +111,7 @@ func (svc CurrencyHttpService) UpdateCurrency(shopID string, guid string, authUs
 	// Validate: ถ้าเปลี่ยน code ต้องไม่ซ้ำกับรายการอื่น
 	doc.Code = strings.ToUpper(strings.TrimSpace(doc.Code))
 	if findDoc.Code != doc.Code {
-		existingDoc, err := svc.repo.FindByCode(ctx, shopID, doc.Code)
+		existingDoc, err := svc.repo.FindByCode(ctx, holdingCode, doc.Code)
 		if err == nil && len(existingDoc.GuidFixed) > 0 && existingDoc.GuidFixed != guid {
 			return errors.New("currency code already exists")
 		}
@@ -124,25 +124,25 @@ func (svc CurrencyHttpService) UpdateCurrency(shopID string, guid string, authUs
 	dataDoc.UpdatedBy = authUsername
 	dataDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, dataDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, dataDoc)
 
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc CurrencyHttpService) DeleteCurrency(shopID string, guid string, authUsername string) error {
+func (svc CurrencyHttpService) DeleteCurrency(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -152,19 +152,19 @@ func (svc CurrencyHttpService) DeleteCurrency(shopID string, guid string, authUs
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc CurrencyHttpService) DeleteCurrencyByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc CurrencyHttpService) DeleteCurrencyByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -173,24 +173,24 @@ func (svc CurrencyHttpService) DeleteCurrencyByGUIDs(shopID string, authUsername
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc CurrencyHttpService) InfoCurrency(shopID string, guid string) (models.CurrencyInfo, error) {
+func (svc CurrencyHttpService) InfoCurrency(holdingCode string, guid string) (models.CurrencyInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.CurrencyInfo{}, err
@@ -203,7 +203,7 @@ func (svc CurrencyHttpService) InfoCurrency(shopID string, guid string) (models.
 	return findDoc.CurrencyInfo, nil
 }
 
-func (svc CurrencyHttpService) SearchCurrency(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.CurrencyInfo, mongopagination.PaginationData, error) {
+func (svc CurrencyHttpService) SearchCurrency(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.CurrencyInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -215,7 +215,7 @@ func (svc CurrencyHttpService) SearchCurrency(shopID string, filters map[string]
 		"symbol",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.CurrencyInfo{}, pagination, err
@@ -224,7 +224,7 @@ func (svc CurrencyHttpService) SearchCurrency(shopID string, filters map[string]
 	return docList, pagination, nil
 }
 
-func (svc CurrencyHttpService) SearchCurrencyStep(shopID string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.CurrencyInfo, int, error) {
+func (svc CurrencyHttpService) SearchCurrencyStep(holdingCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.CurrencyInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -238,7 +238,7 @@ func (svc CurrencyHttpService) SearchCurrencyStep(shopID string, filters map[str
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.CurrencyInfo{}, 0, err
@@ -247,9 +247,9 @@ func (svc CurrencyHttpService) SearchCurrencyStep(shopID string, filters map[str
 	return docList, total, nil
 }
 
-func (svc CurrencyHttpService) saveMasterSync(shopID string) {
+func (svc CurrencyHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

@@ -5,7 +5,10 @@ type LoginBody = {
   backendUrl?: string;
   username?: string;
   password?: string;
+  holding_code?: string;
 };
+
+const holdingCodePattern = /^[a-z][a-z0-9_]{2,29}$/;
 
 export async function POST(request: Request) {
   let body: LoginBody;
@@ -17,12 +20,25 @@ export async function POST(request: Request) {
 
   const username = body.username?.trim() ?? "";
   const password = body.password ?? "";
+  const holdingCode = body.holding_code?.trim().toLowerCase() ?? "";
 
   if (!username) {
     return NextResponse.json({ success: false, message: "กรุณากรอกชื่อผู้ใช้" }, { status: 400 });
   }
   if (!password) {
     return NextResponse.json({ success: false, message: "กรุณากรอกรหัสผ่าน" }, { status: 400 });
+  }
+  if (!holdingCode) {
+    return NextResponse.json(
+      { success: false, message: "กรุณากรอกรหัส Holding ก่อนเข้าสู่ระบบด้วย User , Password" },
+      { status: 400 },
+    );
+  }
+  if (!holdingCodePattern.test(holdingCode)) {
+    return NextResponse.json(
+      { success: false, message: "holding_code ต้องเป็น a-z, 0-9, _ ยาว 3-30 ตัว และขึ้นต้นด้วย a-z" },
+      { status: 400 },
+    );
   }
 
   let mainApiUrl: string;
@@ -45,7 +61,7 @@ export async function POST(request: Request) {
     const response = await fetch(`${mainApiUrl}/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ username, password, holding_code: holdingCode }),
       signal: controller.signal,
       cache: "no-store",
     });

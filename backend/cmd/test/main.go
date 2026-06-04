@@ -28,7 +28,7 @@ func testUpdate() {
 	var journal_json string = `
 	{
 		"id": "628c4ee982bcbf8133668cf6",
-		"shopid": "27dcEdktOoaSBYFmnN6G6ett4Jb",
+		"holding_code": "27dcEdktOoaSBYFmnN6G6ett4Jb",
 		"guidfixed": "29asDMDazTOCwD7Qm7FDi9GDMu0",
 		"parid": "0000000",
 		"batchId": "1124541",
@@ -76,7 +76,7 @@ func testUpdate() {
 	}
 
 	journalService := services.NewJournalConsumeService(repo)
-	resp, err := journalService.UpSert(doc.ShopID, doc.DocNo, doc)
+	resp, err := journalService.UpSert(doc.HoldingCode, doc.DocNo, doc)
 	if err != nil {
 		fmt.Printf("error %s", err.Error())
 	}
@@ -97,7 +97,7 @@ func testCreateJournal() {
 
 	var journal_json string = `{
 		"id": "000000000000000000000000",
-		"shopid": "27dcEdktOoaSBYFmnN6G6ett4Jb",
+		"holding_code": "27dcEdktOoaSBYFmnN6G6ett4Jb",
 		"guidfixed": "2ABh7CJyA7RbeZ1WmdwXWvs0GQa",
 		"parid": "0000000",
 		"batchId": "",

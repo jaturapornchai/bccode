@@ -12,12 +12,12 @@ import (
 // การรับเงิน
 type PaidTransactionPG struct {
 	TransactionPayPaidPG `gorm:"embedded;"`
-	CreditorCode string                    `json:"creditorcode" gorm:"column:creditorcode"`
-	CreditorNames pkgModels.JSONB           `json:"creditornames" gorm:"column:creditornames;type:jsonb"`
-	TotalPayCash float64                   `json:"totalpaycash" gorm:"column:totalpaycash"`
-	TotalPayTransfer float64                   `json:"totalpaytransfer" gorm:"column:totalpaytransfer"`
-	TotalPayCredit float64                   `json:"totalpaycredit" gorm:"column:totalpaycredit"`
-	Items *[]PayTransactionDetailPG `json:"items" gorm:"items;foreignKey:shopid,docno"`
+	CreditorCode         string                    `json:"creditorcode" gorm:"column:creditorcode"`
+	CreditorNames        pkgModels.JSONB           `json:"creditornames" gorm:"column:creditornames;type:jsonb"`
+	TotalPayCash         float64                   `json:"totalpaycash" gorm:"column:totalpaycash"`
+	TotalPayTransfer     float64                   `json:"totalpaytransfer" gorm:"column:totalpaytransfer"`
+	TotalPayCredit       float64                   `json:"totalpaycredit" gorm:"column:totalpaycredit"`
+	Items                *[]PayTransactionDetailPG `json:"items" gorm:"items;foreignKey:holding_code,docno"`
 }
 
 // รายละเอียดการรับเงิน
@@ -41,7 +41,7 @@ func (j *PaidTransactionPG) BeforeUpdate(tx *gorm.DB) (err error) {
 
 	// find old data
 	var details *[]PayTransactionDetailPG
-	tx.Model(&PayTransactionDetailPG{}).Where(" shopid=? AND docno=?", j.ShopID, j.DocNo).Find(&details)
+	tx.Model(&PayTransactionDetailPG{}).Where(" holding_code=? AND docno=?", j.HoldingCode, j.DocNo).Find(&details)
 
 	// delete un use data
 	for _, tmp := range *details {

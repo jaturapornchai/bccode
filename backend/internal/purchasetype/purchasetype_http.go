@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"net/http"
 	"smlcloudplatform/internal/config"
+	mastersync "smlcloudplatform/internal/mastersync/repositories"
+	common "smlcloudplatform/internal/models"
 	"smlcloudplatform/internal/purchasetype/models"
 	"smlcloudplatform/internal/purchasetype/repositories"
 	"smlcloudplatform/internal/purchasetype/services"
-	mastersync "smlcloudplatform/internal/mastersync/repositories"
-	common "smlcloudplatform/internal/models"
 	"smlcloudplatform/internal/utils"
 	"smlcloudplatform/internal/utils/requestfilter"
 	"smlcloudplatform/pkg/microservice"
@@ -61,7 +61,7 @@ func (h PurchaseTypeHttp) RegisterHttp() {
 // @Router /purchase-type [post]
 func (h PurchaseTypeHttp) CreatePurchaseType(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.PurchaseType{}
@@ -77,7 +77,7 @@ func (h PurchaseTypeHttp) CreatePurchaseType(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreatePurchaseType(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreatePurchaseType(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -104,7 +104,7 @@ func (h PurchaseTypeHttp) CreatePurchaseType(ctx microservice.IContext) error {
 func (h PurchaseTypeHttp) UpdatePurchaseType(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -122,7 +122,7 @@ func (h PurchaseTypeHttp) UpdatePurchaseType(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdatePurchaseType(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdatePurchaseType(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -148,12 +148,12 @@ func (h PurchaseTypeHttp) UpdatePurchaseType(ctx microservice.IContext) error {
 // @Router /purchase-type/{id} [delete]
 func (h PurchaseTypeHttp) DeletePurchaseType(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeletePurchaseType(shopID, id, authUsername)
+	err := h.svc.DeletePurchaseType(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -179,7 +179,7 @@ func (h PurchaseTypeHttp) DeletePurchaseType(ctx microservice.IContext) error {
 // @Router /purchase-type [delete]
 func (h PurchaseTypeHttp) DeletePurchaseTypeByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -192,7 +192,7 @@ func (h PurchaseTypeHttp) DeletePurchaseTypeByGUIDs(ctx microservice.IContext) e
 		return err
 	}
 
-	err = h.svc.DeletePurchaseTypeByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeletePurchaseTypeByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -217,12 +217,12 @@ func (h PurchaseTypeHttp) DeletePurchaseTypeByGUIDs(ctx microservice.IContext) e
 // @Router /purchase-type/{id} [get]
 func (h PurchaseTypeHttp) InfoPurchaseType(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get PurchaseType %v", id)
-	doc, err := h.svc.InfoPurchaseType(shopID, id)
+	doc, err := h.svc.InfoPurchaseType(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -248,11 +248,11 @@ func (h PurchaseTypeHttp) InfoPurchaseType(ctx microservice.IContext) error {
 // @Router /purchase-type/code/{code} [get]
 func (h PurchaseTypeHttp) InfoPurchaseTypeByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoPurchaseTypeByCode(shopID, code)
+	doc, err := h.svc.InfoPurchaseTypeByCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -279,13 +279,13 @@ func (h PurchaseTypeHttp) InfoPurchaseTypeByCode(ctx microservice.IContext) erro
 // @Router /purchase-type [get]
 func (h PurchaseTypeHttp) SearchPurchaseTypePage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
 	filters := requestfilter.GenerateFilters(ctx.QueryParam, []requestfilter.FilterRequest{})
 
-	docList, pagination, err := h.svc.SearchPurchaseType(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchPurchaseType(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -314,7 +314,7 @@ func (h PurchaseTypeHttp) SearchPurchaseTypePage(ctx microservice.IContext) erro
 // @Router /purchase-type/list [get]
 func (h PurchaseTypeHttp) SearchPurchaseTypeStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -322,7 +322,7 @@ func (h PurchaseTypeHttp) SearchPurchaseTypeStep(ctx microservice.IContext) erro
 
 	filters := requestfilter.GenerateFilters(ctx.QueryParam, []requestfilter.FilterRequest{})
 
-	docList, total, err := h.svc.SearchPurchaseTypeStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchPurchaseTypeStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

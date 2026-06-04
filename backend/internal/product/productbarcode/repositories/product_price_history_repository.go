@@ -14,11 +14,11 @@ import (
 type IProductPriceHistoryRepository interface {
 	Create(ctx context.Context, doc models.ProductPriceHistory) (string, error)
 	CreateInBatch(ctx context.Context, docList []models.ProductPriceHistory) error
-	FindPage(ctx context.Context, shopID string, searchInFields []string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error)
-	FindPageFilter(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error)
-	FindByProductBarcode(ctx context.Context, shopID string, productBarcodeGUID string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error)
-	FindByBarcode(ctx context.Context, shopID string, barcode string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error)
-	CountByDateRange(ctx context.Context, shopID string, fromDate, toDate time.Time) (int, error)
+	FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error)
+	FindPageFilter(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error)
+	FindByProductBarcode(ctx context.Context, holdingCode string, productBarcodeGUID string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error)
+	FindByBarcode(ctx context.Context, holdingCode string, barcode string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error)
+	CountByDateRange(ctx context.Context, holdingCode string, fromDate, toDate time.Time) (int, error)
 }
 
 type ProductPriceHistoryRepository struct {
@@ -38,27 +38,27 @@ func NewProductPriceHistoryRepository(pst microservice.IPersisterMongo) *Product
 	return repo
 }
 
-func (repo ProductPriceHistoryRepository) FindByProductBarcode(ctx context.Context, shopID string, productBarcodeGUID string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error) {
+func (repo ProductPriceHistoryRepository) FindByProductBarcode(ctx context.Context, holdingCode string, productBarcodeGUID string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error) {
 	filters := map[string]interface{}{
 		"productbarcodeguid": productBarcodeGUID,
 	}
 
 	searchInFields := []string{"barcode", "productname", "createdby"}
 
-	return repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	return repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 }
 
-func (repo ProductPriceHistoryRepository) FindByBarcode(ctx context.Context, shopID string, barcode string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error) {
+func (repo ProductPriceHistoryRepository) FindByBarcode(ctx context.Context, holdingCode string, barcode string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error) {
 	filters := map[string]interface{}{
 		"barcode": barcode,
 	}
 
 	searchInFields := []string{"barcode", "productname", "createdby"}
 
-	return repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	return repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 }
 
-func (repo ProductPriceHistoryRepository) CountByDateRange(ctx context.Context, shopID string, fromDate, toDate time.Time) (int, error) {
+func (repo ProductPriceHistoryRepository) CountByDateRange(ctx context.Context, holdingCode string, fromDate, toDate time.Time) (int, error) {
 	filters := map[string]interface{}{
 		"created_at": map[string]interface{}{
 			"$gte": fromDate,

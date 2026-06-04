@@ -16,6 +16,17 @@ describe("i18n helpers", () => {
     expect(t("en", "login")).toBe("Login");
   });
 
+  it("states that Google login acts as first-time signup", () => {
+    expect(t("th", "firstUseDescription")).toContain("Google");
+    expect(t("th", "firstUseDescription")).toContain("สมัครสมาชิก");
+    expect(t("th", "createHoldingDescription")).toContain("หลัง login");
+    expect(t("th", "firstUseStepGoogle")).toContain("ผูกบัญชี");
+    expect(t("th", "holdingCodeHint")).toContain("ต้องมีรหัส Holding");
+    expect(t("th", "holdingCodeHint")).not.toContain("กดสร้าง Holding");
+    expect(t("th", "passwordLoginSectionTitle")).toContain("User , Password");
+    expect(t("th", "authLoginSectionTitle")).toContain("ยืนยันตัวตน");
+  });
+
   it("returns translated theme toggle labels", () => {
     expect(t("th", "switchToDarkTheme")).toBe("เปลี่ยนเป็นธีมมืด");
     expect(t("en", "switchToLightTheme")).toBe("Switch to light theme");
@@ -31,27 +42,27 @@ describe("i18n helpers", () => {
       "firstUseTitle",
       "firstUseDescription",
       "multiCompanyDescription",
+      "authLoginSectionTitle",
       "loginWithGoogle",
-      "loginWithLine",
       "localGoogleTestLogin",
       "socialLoginSeparator",
       "popupBlocked",
       "googleLoginTimeout",
-      "signUp",
-      "signUpWithEmail",
-      "signUpDescription",
-      "displayName",
-      "confirmPassword",
-      "passwordMismatch",
-      "registerSuccess",
-      "registerFailed",
-      "creatingAccount",
-      "createAccount",
+      "createHoldingDescription",
+      "enterHoldingCode",
+      "firstUseStepGoogle",
+      "firstUseStepHolding",
+      "firstUseStepWorkspace",
+      "holdingCode",
+      "holdingCodeHint",
+      "holdingCodeInvalid",
+      "passwordLoginSectionDescription",
+      "passwordLoginSectionTitle",
     ] as const;
 
     for (const language of LANGUAGES) {
       for (const key of keys) {
-        expect(t(language.code, key)).toBeTruthy();
+        expect(t(language.code, key)).not.toBe(key);
       }
     }
   });
@@ -59,6 +70,7 @@ describe("i18n helpers", () => {
   it("does not fall back to Thai when another language is selected", () => {
     expect(t("km", "firstUseTitle")).not.toBe(t("th", "firstUseTitle"));
     expect(t("km", "loginWithGoogle")).not.toBe(t("th", "loginWithGoogle"));
+    expect(t("km", "passwordLoginSectionTitle")).not.toBe(t("th", "passwordLoginSectionTitle"));
   });
 
   it("falls back to the key id when a selected-language value is missing", () => {

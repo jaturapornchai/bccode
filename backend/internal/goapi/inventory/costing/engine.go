@@ -27,7 +27,7 @@ type CostingEngine interface {
 	ProcessAdjustment(ctx context.Context, tx *sql.Tx, params inv.AdjustmentParams) (*inv.CostTransactionResult, error)
 
 	// GetCurrentValuation — ดูมูลค่าสินค้าปัจจุบัน
-	GetCurrentValuation(ctx context.Context, tx *sql.Tx, shopID, itemCode, whCode string) (*inv.StockValuation, error)
+	GetCurrentValuation(ctx context.Context, tx *sql.Tx, holdingCode, itemCode, whCode string) (*inv.StockValuation, error)
 
 	// Method — ชื่อวิธีคำนวณ
 	Method() string
@@ -53,19 +53,19 @@ func NewCostingEngine(method string) (CostingEngine, error) {
 
 // === Helper Functions สำหรับทุก Engine ===
 
-// getOrCreateBalance — ดึง stock balance หรือสร้างใหม่ถ้ายังไม่มี
-func getOrCreateBalance(ctx context.Context, tx *sql.Tx, shopID, itemCode, barcode, whCode, locationCode string) (*inv.InventoryStockBalance, error) {
+// getOrCreateBalance — ดึง stock balance ตามบัญชี หรือสร้างใหม่ถ้ายังไม่มี
+func getOrCreateBalance(ctx context.Context, tx *sql.Tx, holdingCode, itemCode, barcode, whCode, locationCode string) (*inv.InventoryStockBalance, error) {
 	var balance inv.InventoryStockBalance
 	err := tx.QueryRowContext(ctx,
-		`SELECT id, shopid, itemcode, barcode, whcode, locationcode,
+		`SELECT id, holding_code, itemcode, barcode, whcode, locationcode,
 		        currentqty, currentavgcost, currenttotalvalue,
 		        lastpurchasecost, lastpurchasedate, updatedat
 		 FROM inventory_stock_balances
-		 WHERE shopid = $1 AND itemcode = $2 AND whcode = $3 AND locationcode = $4
+		 WHERE holding_code = $1 AND itemcode = $2 AND whcode = $3 AND locationcode = $4
 		 FOR UPDATE`,
-		shopID, itemCode, whCode, locationCode,
+		holdingCode, itemCode, whCode, locationCode,
 	).Scan(
-		&balance.ID, &balance.ShopID, &balance.ItemCode, &balance.Barcode,
+		&balance.ID, &balance.HoldingCode, &balance.ItemCode, &balance.Barcode,
 		&balance.WhCode, &balance.LocationCode,
 		&balance.CurrentQty, &balance.CurrentAvgCost, &balance.CurrentTotalValue,
 		&balance.LastPurchaseCost, &balance.LastPurchaseDate, &balance.UpdatedAt,
@@ -73,7 +73,7 @@ func getOrCreateBalance(ctx context.Context, tx *sql.Tx, shopID, itemCode, barco
 	if err == sql.ErrNoRows {
 		// สร้าง balance ใหม่
 		balance = inv.InventoryStockBalance{
-			ShopID:       shopID,
+			HoldingCode:  holdingCode,
 			ItemCode:     itemCode,
 			Barcode:      barcode,
 			WhCode:       whCode,
@@ -81,10 +81,10 @@ func getOrCreateBalance(ctx context.Context, tx *sql.Tx, shopID, itemCode, barco
 		}
 		err = tx.QueryRowContext(ctx,
 			`INSERT INTO inventory_stock_balances
-			 (shopid, itemcode, barcode, whcode, locationcode, currentqty, currentavgcost, currenttotalvalue, updatedat)
+			 (holding_code, itemcode, barcode, whcode, locationcode, currentqty, currentavgcost, currenttotalvalue, updatedat)
 			 VALUES ($1, $2, $3, $4, $5, 0, 0, 0, NOW())
 			 RETURNING id`,
-			shopID, itemCode, barcode, whCode, locationCode,
+			holdingCode, itemCode, barcode, whCode, locationCode,
 		).Scan(&balance.ID)
 		if err != nil {
 			return nil, fmt.Errorf("สร้าง stock balance ไม่สำเร็จ: %w", err)
@@ -117,13 +117,13 @@ func updateBalance(ctx context.Context, tx *sql.Tx, balance *inv.InventoryStockB
 func insertCostTransaction(ctx context.Context, tx *sql.Tx, ct *inv.InventoryCostTransaction) error {
 	return tx.QueryRowContext(ctx,
 		`INSERT INTO inventory_cost_transactions
-		 (shopid, itemcode, barcode, whcode, locationcode, transactiontype, transflag,
+		 (holding_code, itemcode, barcode, whcode, locationcode, transactiontype, transflag,
 		  refdoctype, refdocno, qty, unitcost, totalcost, landedcost, lotnumber, expirydate,
 		  costlayerid, balanceqty, balanceavgcost, balancetotalvalue, costingmethodused,
 		  transactiondate, accountingperiod, createdby, createdat, isreversed)
 		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,NOW(),false)
 		 RETURNING id`,
-		ct.ShopID, ct.ItemCode, ct.Barcode, ct.WhCode, ct.LocationCode,
+		ct.HoldingCode, ct.ItemCode, ct.Barcode, ct.WhCode, ct.LocationCode,
 		ct.TransactionType, ct.TransFlag, ct.RefDocType, ct.RefDocNo,
 		ct.Qty, ct.UnitCost, ct.TotalCost, ct.LandedCost,
 		ct.LotNumber, ct.ExpiryDate, ct.CostLayerID,
@@ -136,13 +136,13 @@ func insertCostTransaction(ctx context.Context, tx *sql.Tx, ct *inv.InventoryCos
 func insertCostLayer(ctx context.Context, tx *sql.Tx, layer *inv.InventoryCostLayer) error {
 	return tx.QueryRowContext(ctx,
 		`INSERT INTO inventory_cost_layers
-		 (shopid, itemcode, barcode, whcode, locationcode, layertype, refdoctype, refdocno,
+		 (holding_code, itemcode, barcode, whcode, locationcode, layertype, refdoctype, refdocno,
 		  originalqty, remainingqty, unitcost, landedcostperunit, totalunitcost,
 		  lotnumber, supplierlotnumber, manufacturingdate, expirydate, qualitystatus,
 		  receiveddate, createdat, updatedat)
 		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,NOW(),NOW())
 		 RETURNING id`,
-		layer.ShopID, layer.ItemCode, layer.Barcode, layer.WhCode, layer.LocationCode,
+		layer.HoldingCode, layer.ItemCode, layer.Barcode, layer.WhCode, layer.LocationCode,
 		layer.LayerType, layer.RefDocType, layer.RefDocNo,
 		layer.OriginalQty, layer.RemainingQty, layer.UnitCost, layer.LandedCostPerUnit, layer.TotalUnitCost,
 		layer.LotNumber, layer.SupplierLotNumber, layer.ManufacturingDate, layer.ExpiryDate, layer.QualityStatus,

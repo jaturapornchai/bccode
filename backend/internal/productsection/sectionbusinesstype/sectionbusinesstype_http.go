@@ -62,7 +62,7 @@ func (h SectionBusinessTypeHttp) RegisterHttp() {
 func (h SectionBusinessTypeHttp) SaveSectionBusinessType(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -79,7 +79,7 @@ func (h SectionBusinessTypeHttp) SaveSectionBusinessType(ctx microservice.IConte
 		return err
 	}
 
-	id, err := h.svc.SaveSectionBusinessType(shopID, authUsername, *docReq)
+	id, err := h.svc.SaveSectionBusinessType(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -105,12 +105,12 @@ func (h SectionBusinessTypeHttp) SaveSectionBusinessType(ctx microservice.IConte
 // @Router /product-section/business-type/{id} [delete]
 func (h SectionBusinessTypeHttp) DeleteSectionBusinessType(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteSectionBusinessType(shopID, id, authUsername)
+	err := h.svc.DeleteSectionBusinessType(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -136,7 +136,7 @@ func (h SectionBusinessTypeHttp) DeleteSectionBusinessType(ctx microservice.ICon
 // @Router /product-section/business-type [delete]
 func (h SectionBusinessTypeHttp) DeleteSectionBusinessTypeByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -149,7 +149,7 @@ func (h SectionBusinessTypeHttp) DeleteSectionBusinessTypeByGUIDs(ctx microservi
 		return err
 	}
 
-	err = h.svc.DeleteSectionBusinessTypeByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteSectionBusinessTypeByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -174,12 +174,12 @@ func (h SectionBusinessTypeHttp) DeleteSectionBusinessTypeByGUIDs(ctx microservi
 // @Router /product-section/business-type/{id} [get]
 func (h SectionBusinessTypeHttp) InfoSectionBusinessType(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get SectionBusinessType %v", id)
-	doc, err := h.svc.InfoSectionBusinessType(shopID, id)
+	doc, err := h.svc.InfoSectionBusinessType(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -205,11 +205,11 @@ func (h SectionBusinessTypeHttp) InfoSectionBusinessType(ctx microservice.IConte
 // @Router /product-section/business-type/code/{code} [get]
 func (h SectionBusinessTypeHttp) InfoSectionBusinessTypeByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoSectionBusinessTypeByBusinessTypeCode(shopID, code)
+	doc, err := h.svc.InfoSectionBusinessTypeByBusinessTypeCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -236,11 +236,11 @@ func (h SectionBusinessTypeHttp) InfoSectionBusinessTypeByCode(ctx microservice.
 // @Router /product-section/business-type [get]
 func (h SectionBusinessTypeHttp) SearchSectionBusinessTypePage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.SearchSectionBusinessType(shopID, map[string]interface{}{}, pageable)
+	docList, pagination, err := h.svc.SearchSectionBusinessType(holdingCode, map[string]interface{}{}, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -269,13 +269,13 @@ func (h SectionBusinessTypeHttp) SearchSectionBusinessTypePage(ctx microservice.
 // @Router /product-section/business-type/list [get]
 func (h SectionBusinessTypeHttp) SearchSectionBusinessTypeStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
 	lang := ctx.QueryParam("lang")
 
-	docList, total, err := h.svc.SearchSectionBusinessTypeStep(shopID, lang, pageableStep)
+	docList, total, err := h.svc.SearchSectionBusinessTypeStep(holdingCode, lang, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -303,7 +303,7 @@ func (h SectionBusinessTypeHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -315,7 +315,7 @@ func (h SectionBusinessTypeHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

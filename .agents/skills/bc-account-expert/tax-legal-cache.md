@@ -1,6 +1,6 @@
 # Thai Tax & Legal Knowledge Cache
 
-Verified findings cached so agents do not re-research every time. Primarily Thai tax / legal / accounting, but any researched business-domain fact you were unsure about (e.g. how a competitor models a document or flow) belongs here too. Rule that created this file: core-rules "Tax & Accounting Correctness (Research-First)" — trigger is **uncertainty about any domain knowledge**, not only tax features.
+Verified findings cached so agents can use local knowledge first. Primarily Thai tax / legal / accounting, but any externally verified business-domain fact belongs here too. Current rule: core-rules "Tax & Accounting Correctness (Local-First)" — do not search news or the web by default; ask Jead before external verification unless explicitly requested.
 
 > ⚠️ **Tax rules are version-sensitive.** Every entry below is dated. Before shipping a rate/field/form to production or using it for real filing, re-verify the CURRENT value on `rd.go.th`. Royal Decrees and incentive schemes change yearly. Append new dated entries; do not silently overwrite — keep history so we can see when a value changed.
 
@@ -59,4 +59,4 @@ _As of 2026-05-29 — currently **voluntary** (not mandatory); paper invoices ma
 ---
 
 ## How to extend this file
-After researching a new tax/accounting topic, append a dated section here with: the verified fact, the date checked, and the source URL(s). If a cached value is now stale, add a new dated line above the old one (keep the old for history) and note the change.
+Only after Jead explicitly asks for external verification, append a dated section with: the verified fact, the date checked, and the source URL(s). If a cached value is now stale, add a new dated line above the old one (keep the old for history) and note the change.

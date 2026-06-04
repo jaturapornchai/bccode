@@ -18,13 +18,13 @@ type StandardEngine struct{}
 func (e *StandardEngine) Method() string { return inv.CostingMethodStandard }
 
 func (e *StandardEngine) ProcessReceipt(ctx context.Context, tx *sql.Tx, params inv.ReceiptParams) (*inv.CostTransactionResult, error) {
-	balance, err := getOrCreateBalance(ctx, tx, params.ShopID, params.ItemCode, params.Barcode, params.WhCode, params.LocationCode)
+	balance, err := getOrCreateBalance(ctx, tx, params.HoldingCode, params.ItemCode, params.Barcode, params.WhCode, params.LocationCode)
 	if err != nil {
 		return nil, err
 	}
 
 	// ดึง standard cost จาก product config
-	standardCost, err := getStandardCost(ctx, tx, params.ShopID, params.ItemCode)
+	standardCost, err := getStandardCost(ctx, tx, params.HoldingCode, params.ItemCode)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func (e *StandardEngine) ProcessReceipt(ctx context.Context, tx *sql.Tx, params 
 	if params.UnitCost != standardCost {
 		varianceAmount := (params.UnitCost - standardCost) * params.Qty
 		variance = &inv.InventoryVariance{
-			ShopID:          params.ShopID,
+			HoldingCode:     params.HoldingCode,
 			ItemCode:        params.ItemCode,
 			WhCode:          params.WhCode,
 			VarianceType:    inv.VariancePurchasePrice,
@@ -69,14 +69,14 @@ func (e *StandardEngine) ProcessReceipt(ctx context.Context, tx *sql.Tx, params 
 	}
 
 	ct := &inv.InventoryCostTransaction{
-		ShopID: params.ShopID, ItemCode: params.ItemCode, Barcode: params.Barcode,
+		HoldingCode: params.HoldingCode, ItemCode: params.ItemCode, Barcode: params.Barcode,
 		WhCode: params.WhCode, LocationCode: params.LocationCode,
 		TransactionType: inv.TxTypePurchaseReceipt, TransFlag: params.TransFlag,
 		RefDocType: params.RefDocType, RefDocNo: params.RefDocNo,
 		Qty: params.Qty, UnitCost: standardCost, TotalCost: totalCost,
 		BalanceQty: newQty, BalanceAvgCost: newAvgCost, BalanceTotalValue: newTotalValue,
 		CostingMethodUsed: inv.CostingMethodStandard,
-		TransactionDate: params.ReceivedDate, CreatedBy: params.CreatedBy,
+		TransactionDate:   params.ReceivedDate, CreatedBy: params.CreatedBy,
 	}
 	if err := insertCostTransaction(ctx, tx, ct); err != nil {
 		return nil, err
@@ -89,7 +89,7 @@ func (e *StandardEngine) ProcessReceipt(ctx context.Context, tx *sql.Tx, params 
 }
 
 func (e *StandardEngine) ProcessIssue(ctx context.Context, tx *sql.Tx, params inv.IssueParams) (*inv.CostTransactionResult, error) {
-	balance, err := getOrCreateBalance(ctx, tx, params.ShopID, params.ItemCode, params.Barcode, params.WhCode, params.LocationCode)
+	balance, err := getOrCreateBalance(ctx, tx, params.HoldingCode, params.ItemCode, params.Barcode, params.WhCode, params.LocationCode)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func (e *StandardEngine) ProcessIssue(ctx context.Context, tx *sql.Tx, params in
 		return nil, fmt.Errorf("สต็อกไม่พอ: คงเหลือ %.4f ต้องการ %.4f", balance.CurrentQty, params.Qty)
 	}
 
-	standardCost, err := getStandardCost(ctx, tx, params.ShopID, params.ItemCode)
+	standardCost, err := getStandardCost(ctx, tx, params.HoldingCode, params.ItemCode)
 	if err != nil {
 		return nil, err
 	}
@@ -118,14 +118,14 @@ func (e *StandardEngine) ProcessIssue(ctx context.Context, tx *sql.Tx, params in
 	}
 
 	ct := &inv.InventoryCostTransaction{
-		ShopID: params.ShopID, ItemCode: params.ItemCode, Barcode: params.Barcode,
+		HoldingCode: params.HoldingCode, ItemCode: params.ItemCode, Barcode: params.Barcode,
 		WhCode: params.WhCode, LocationCode: params.LocationCode,
 		TransactionType: inv.TxTypeSalesIssue, TransFlag: params.TransFlag,
 		RefDocType: params.RefDocType, RefDocNo: params.RefDocNo,
 		Qty: -params.Qty, UnitCost: standardCost, TotalCost: -totalCost,
 		BalanceQty: newQty, BalanceAvgCost: standardCost, BalanceTotalValue: newTotalValue,
 		CostingMethodUsed: inv.CostingMethodStandard,
-		TransactionDate: params.TransactionDate, CreatedBy: params.CreatedBy,
+		TransactionDate:   params.TransactionDate, CreatedBy: params.CreatedBy,
 	}
 	if err := insertCostTransaction(ctx, tx, ct); err != nil {
 		return nil, err
@@ -137,12 +137,12 @@ func (e *StandardEngine) ProcessIssue(ctx context.Context, tx *sql.Tx, params in
 }
 
 func (e *StandardEngine) ProcessSalesReturn(ctx context.Context, tx *sql.Tx, params inv.SalesReturnParams) (*inv.CostTransactionResult, error) {
-	balance, err := getOrCreateBalance(ctx, tx, params.ShopID, params.ItemCode, params.Barcode, params.WhCode, params.LocationCode)
+	balance, err := getOrCreateBalance(ctx, tx, params.HoldingCode, params.ItemCode, params.Barcode, params.WhCode, params.LocationCode)
 	if err != nil {
 		return nil, err
 	}
 
-	standardCost, err := getStandardCost(ctx, tx, params.ShopID, params.ItemCode)
+	standardCost, err := getStandardCost(ctx, tx, params.HoldingCode, params.ItemCode)
 	if err != nil {
 		return nil, err
 	}
@@ -163,9 +163,9 @@ func (e *StandardEngine) ProcessSalesReturn(ctx context.Context, tx *sql.Tx, par
 	if params.OriginalCost > 0 && params.OriginalCost != standardCost {
 		varianceAmount := (params.OriginalCost - standardCost) * params.Qty
 		variance = &inv.InventoryVariance{
-			ShopID: params.ShopID, ItemCode: params.ItemCode, WhCode: params.WhCode,
+			HoldingCode: params.HoldingCode, ItemCode: params.ItemCode, WhCode: params.WhCode,
 			VarianceType: inv.VariancePurchasePrice,
-			RefDocType: params.RefDocType, RefDocNo: params.RefDocNo,
+			RefDocType:   params.RefDocType, RefDocNo: params.RefDocNo,
 			StandardCost: standardCost, ActualCost: params.OriginalCost,
 			Qty: params.Qty, VarianceAmount: varianceAmount,
 			TransactionDate: params.TransactionDate,
@@ -176,14 +176,14 @@ func (e *StandardEngine) ProcessSalesReturn(ctx context.Context, tx *sql.Tx, par
 	}
 
 	ct := &inv.InventoryCostTransaction{
-		ShopID: params.ShopID, ItemCode: params.ItemCode, Barcode: params.Barcode,
+		HoldingCode: params.HoldingCode, ItemCode: params.ItemCode, Barcode: params.Barcode,
 		WhCode: params.WhCode, LocationCode: params.LocationCode,
 		TransactionType: inv.TxTypeSalesReturn, TransFlag: params.TransFlag,
 		RefDocType: params.RefDocType, RefDocNo: params.RefDocNo,
 		Qty: params.Qty, UnitCost: standardCost, TotalCost: totalCost,
 		BalanceQty: newQty, BalanceAvgCost: standardCost, BalanceTotalValue: newTotalValue,
 		CostingMethodUsed: inv.CostingMethodStandard,
-		TransactionDate: params.TransactionDate, CreatedBy: params.CreatedBy,
+		TransactionDate:   params.TransactionDate, CreatedBy: params.CreatedBy,
 	}
 	if err := insertCostTransaction(ctx, tx, ct); err != nil {
 		return nil, err
@@ -196,12 +196,12 @@ func (e *StandardEngine) ProcessSalesReturn(ctx context.Context, tx *sql.Tx, par
 }
 
 func (e *StandardEngine) ProcessPurchaseReturn(ctx context.Context, tx *sql.Tx, params inv.PurchaseReturnParams) (*inv.CostTransactionResult, error) {
-	balance, err := getOrCreateBalance(ctx, tx, params.ShopID, params.ItemCode, params.Barcode, params.WhCode, params.LocationCode)
+	balance, err := getOrCreateBalance(ctx, tx, params.HoldingCode, params.ItemCode, params.Barcode, params.WhCode, params.LocationCode)
 	if err != nil {
 		return nil, err
 	}
 
-	standardCost, err := getStandardCost(ctx, tx, params.ShopID, params.ItemCode)
+	standardCost, err := getStandardCost(ctx, tx, params.HoldingCode, params.ItemCode)
 	if err != nil {
 		return nil, err
 	}
@@ -222,14 +222,14 @@ func (e *StandardEngine) ProcessPurchaseReturn(ctx context.Context, tx *sql.Tx, 
 	}
 
 	ct := &inv.InventoryCostTransaction{
-		ShopID: params.ShopID, ItemCode: params.ItemCode, Barcode: params.Barcode,
+		HoldingCode: params.HoldingCode, ItemCode: params.ItemCode, Barcode: params.Barcode,
 		WhCode: params.WhCode, LocationCode: params.LocationCode,
 		TransactionType: inv.TxTypePurchaseReturn, TransFlag: params.TransFlag,
 		RefDocType: params.RefDocType, RefDocNo: params.RefDocNo,
 		Qty: -params.Qty, UnitCost: standardCost, TotalCost: -totalCost,
 		BalanceQty: newQty, BalanceAvgCost: standardCost, BalanceTotalValue: newTotalValue,
 		CostingMethodUsed: inv.CostingMethodStandard,
-		TransactionDate: params.TransactionDate, CreatedBy: params.CreatedBy,
+		TransactionDate:   params.TransactionDate, CreatedBy: params.CreatedBy,
 	}
 	if err := insertCostTransaction(ctx, tx, ct); err != nil {
 		return nil, err
@@ -241,12 +241,12 @@ func (e *StandardEngine) ProcessPurchaseReturn(ctx context.Context, tx *sql.Tx, 
 }
 
 func (e *StandardEngine) ProcessAdjustment(ctx context.Context, tx *sql.Tx, params inv.AdjustmentParams) (*inv.CostTransactionResult, error) {
-	balance, err := getOrCreateBalance(ctx, tx, params.ShopID, params.ItemCode, params.Barcode, params.WhCode, params.LocationCode)
+	balance, err := getOrCreateBalance(ctx, tx, params.HoldingCode, params.ItemCode, params.Barcode, params.WhCode, params.LocationCode)
 	if err != nil {
 		return nil, err
 	}
 
-	standardCost, err := getStandardCost(ctx, tx, params.ShopID, params.ItemCode)
+	standardCost, err := getStandardCost(ctx, tx, params.HoldingCode, params.ItemCode)
 	if err != nil {
 		return nil, err
 	}
@@ -280,14 +280,14 @@ func (e *StandardEngine) ProcessAdjustment(ctx context.Context, tx *sql.Tx, para
 	}
 
 	ct := &inv.InventoryCostTransaction{
-		ShopID: params.ShopID, ItemCode: params.ItemCode, Barcode: params.Barcode,
+		HoldingCode: params.HoldingCode, ItemCode: params.ItemCode, Barcode: params.Barcode,
 		WhCode: params.WhCode, LocationCode: params.LocationCode,
 		TransactionType: txType, TransFlag: params.TransFlag,
 		RefDocType: params.RefDocType, RefDocNo: params.RefDocNo,
 		Qty: qty, UnitCost: standardCost, TotalCost: totalCost * float64(boolToSign(params.IsIncrease)),
 		BalanceQty: newQty, BalanceAvgCost: standardCost, BalanceTotalValue: newTotalValue,
 		CostingMethodUsed: inv.CostingMethodStandard,
-		TransactionDate: params.TransactionDate, CreatedBy: params.CreatedBy,
+		TransactionDate:   params.TransactionDate, CreatedBy: params.CreatedBy,
 	}
 	if err := insertCostTransaction(ctx, tx, ct); err != nil {
 		return nil, err
@@ -298,9 +298,9 @@ func (e *StandardEngine) ProcessAdjustment(ctx context.Context, tx *sql.Tx, para
 	}, nil
 }
 
-func (e *StandardEngine) GetCurrentValuation(ctx context.Context, tx *sql.Tx, shopID, itemCode, whCode string) (*inv.StockValuation, error) {
+func (e *StandardEngine) GetCurrentValuation(ctx context.Context, tx *sql.Tx, holdingCode, itemCode, whCode string) (*inv.StockValuation, error) {
 	fifo := &FIFOEngine{}
-	val, err := fifo.GetCurrentValuation(ctx, tx, shopID, itemCode, whCode)
+	val, err := fifo.GetCurrentValuation(ctx, tx, holdingCode, itemCode, whCode)
 	if err != nil {
 		return nil, err
 	}
@@ -311,11 +311,11 @@ func (e *StandardEngine) GetCurrentValuation(ctx context.Context, tx *sql.Tx, sh
 // === Helper Functions ===
 
 // getStandardCost — ดึง standard cost จาก product config
-func getStandardCost(ctx context.Context, tx *sql.Tx, shopID, itemCode string) (float64, error) {
+func getStandardCost(ctx context.Context, tx *sql.Tx, holdingCode, itemCode string) (float64, error) {
 	var cost float64
 	err := tx.QueryRowContext(ctx,
-		`SELECT COALESCE(standardcost, 0) FROM product_costing_config WHERE shopid = $1 AND itemcode = $2`,
-		shopID, itemCode,
+		`SELECT COALESCE(standardcost, 0) FROM product_costing_config WHERE holding_code = $1 AND itemcode = $2`,
+		holdingCode, itemCode,
 	).Scan(&cost)
 	if err == sql.ErrNoRows {
 		return 0, fmt.Errorf("ไม่พบ standard cost สำหรับสินค้า %s — ต้องตั้งค่า standard cost ก่อน", itemCode)
@@ -333,12 +333,12 @@ func getStandardCost(ctx context.Context, tx *sql.Tx, shopID, itemCode string) (
 func insertVariance(ctx context.Context, tx *sql.Tx, v *inv.InventoryVariance) error {
 	return tx.QueryRowContext(ctx,
 		`INSERT INTO inventory_variances
-		 (shopid, itemcode, whcode, variancetype, refdoctype, refdocno,
+		 (holding_code, itemcode, whcode, variancetype, refdoctype, refdocno,
 		  standardcost, actualcost, qty, varianceamount,
 		  transactiondate, accountingperiod, createdat)
 		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,NOW())
 		 RETURNING id`,
-		v.ShopID, v.ItemCode, v.WhCode, v.VarianceType, v.RefDocType, v.RefDocNo,
+		v.HoldingCode, v.ItemCode, v.WhCode, v.VarianceType, v.RefDocType, v.RefDocNo,
 		v.StandardCost, v.ActualCost, v.Qty, v.VarianceAmount,
 		v.TransactionDate, v.AccountingPeriod,
 	).Scan(&v.ID)

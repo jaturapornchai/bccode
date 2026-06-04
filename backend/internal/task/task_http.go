@@ -74,7 +74,7 @@ func (h TaskHttp) RegisterHttp() {
 // @Router /task [post]
 func (h TaskHttp) CreateTask(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.Task{}
@@ -90,7 +90,7 @@ func (h TaskHttp) CreateTask(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreateTask(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateTask(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -117,7 +117,7 @@ func (h TaskHttp) CreateTask(ctx microservice.IContext) error {
 func (h TaskHttp) UpdateTask(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -135,7 +135,7 @@ func (h TaskHttp) UpdateTask(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateTask(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateTask(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -163,7 +163,7 @@ func (h TaskHttp) UpdateTask(ctx microservice.IContext) error {
 func (h TaskHttp) UpdateTaskStatus(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -181,7 +181,7 @@ func (h TaskHttp) UpdateTaskStatus(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateTaskStatus(shopID, id, authUsername, docReq.Status)
+	err = h.svc.UpdateTaskStatus(holdingCode, id, authUsername, docReq.Status)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -207,12 +207,12 @@ func (h TaskHttp) UpdateTaskStatus(ctx microservice.IContext) error {
 // @Router /task/{id} [delete]
 func (h TaskHttp) DeleteTask(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteTask(shopID, id, authUsername)
+	err := h.svc.DeleteTask(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -238,7 +238,7 @@ func (h TaskHttp) DeleteTask(ctx microservice.IContext) error {
 // @Router /task [delete]
 func (h TaskHttp) DeleteTaskByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -251,7 +251,7 @@ func (h TaskHttp) DeleteTaskByGUIDs(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.DeleteTaskByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteTaskByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -275,10 +275,10 @@ func (h TaskHttp) DeleteTaskByGUIDs(ctx microservice.IContext) error {
 // @Router /task/generate-code [get]
 func (h TaskHttp) GenerateTaskCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
-	newTaskCode, err := h.svc.GenerateTaskID(shopID, authUsername)
+	newTaskCode, err := h.svc.GenerateTaskID(holdingCode, authUsername)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error generate task code: %v", err)
@@ -304,12 +304,12 @@ func (h TaskHttp) GenerateTaskCode(ctx microservice.IContext) error {
 // @Router /task/{id} [get]
 func (h TaskHttp) InfoTask(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get Task %v", id)
-	doc, err := h.svc.InfoTask(shopID, id)
+	doc, err := h.svc.InfoTask(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -335,13 +335,13 @@ func (h TaskHttp) InfoTask(ctx microservice.IContext) error {
 // @Router /task/reject/{guid} [get]
 func (h TaskHttp) GetTaskReject(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	taskGUID := ctx.Param("guid")
 
 	module := ctx.QueryParam("module")
 
-	docList, err := h.svc.GetTaskReject(shopID, module, taskGUID)
+	docList, err := h.svc.GetTaskReject(holdingCode, module, taskGUID)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -371,7 +371,7 @@ func (h TaskHttp) GetTaskReject(ctx microservice.IContext) error {
 // @Router /task [get]
 func (h TaskHttp) SearchTaskPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -419,7 +419,7 @@ func (h TaskHttp) SearchTaskPage(ctx microservice.IContext) error {
 		}
 	}
 
-	docList, pagination, err := h.svc.SearchTask(shopID, module, filters, pageable)
+	docList, pagination, err := h.svc.SearchTask(holdingCode, module, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -448,13 +448,13 @@ func (h TaskHttp) SearchTaskPage(ctx microservice.IContext) error {
 // @Router /task/list [get]
 func (h TaskHttp) SearchTaskLimit(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
 	lang := ctx.QueryParam("lang")
 
-	docList, total, err := h.svc.SearchTaskStep(shopID, lang, pageableStep)
+	docList, total, err := h.svc.SearchTaskStep(holdingCode, lang, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -482,7 +482,7 @@ func (h TaskHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -494,7 +494,7 @@ func (h TaskHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

@@ -67,10 +67,10 @@ func GetGlobalManagerPool() *ManagerPool {
 }
 
 // GetManager - ดึง DatabaseManager สำหรับ shop (สร้างใหม่หากยังไม่มี)
-func (p *ManagerPool) GetManager(shopId string) (*DatabaseManager, error) {
+func (p *ManagerPool) GetManager(holdingCode string) (*DatabaseManager, error) {
 	// ลอง read lock ก่อน
 	p.mu.RLock()
-	if manager, exists := p.managers[shopId]; exists {
+	if manager, exists := p.managers[holdingCode]; exists {
 		p.mu.RUnlock()
 
 		// ตรวจสอบสุขภาพ
@@ -79,9 +79,9 @@ func (p *ManagerPool) GetManager(shopId string) (*DatabaseManager, error) {
 		}
 
 		// ถ้า unhealthy ให้ลบออกและสร้างใหม่
-		logger.Warn("DatabaseManager สำหรับ shop=%s ไม่ healthy, จะสร้างใหม่", shopId)
+		logger.Warn("DatabaseManager สำหรับ shop=%s ไม่ healthy, จะสร้างใหม่", holdingCode)
 		p.mu.Lock()
-		delete(p.managers, shopId)
+		delete(p.managers, holdingCode)
 		p.mu.Unlock()
 	} else {
 		p.mu.RUnlock()
@@ -92,7 +92,7 @@ func (p *ManagerPool) GetManager(shopId string) (*DatabaseManager, error) {
 	defer p.mu.Unlock()
 
 	// Double-check หลัง lock
-	if manager, exists := p.managers[shopId]; exists {
+	if manager, exists := p.managers[holdingCode]; exists {
 		return manager, nil
 	}
 
@@ -102,31 +102,31 @@ func (p *ManagerPool) GetManager(shopId string) (*DatabaseManager, error) {
 		PostgreSQLPort:     p.config.PostgreSQLPort,
 		PostgreSQLUser:     p.config.PostgreSQLUser,
 		PostgreSQLPassword: p.config.PostgreSQLPassword,
-		PostgreSQLDatabase: shopId,
+		PostgreSQLDatabase: holdingCode,
 		PostgreSQLSSLMode:  p.config.PostgreSQLSSLMode,
 
 		ClickHouseHost:     p.config.ClickHouseHost,
 		ClickHousePort:     p.config.ClickHousePort,
 		ClickHouseUser:     p.config.ClickHouseUser,
 		ClickHousePassword: p.config.ClickHousePassword,
-		ClickHouseDatabase: shopId,
+		ClickHouseDatabase: holdingCode,
 	}
 
-	logger.Info("สร้าง DatabaseManager ใหม่สำหรับ shop=%s", shopId)
+	logger.Info("สร้าง DatabaseManager ใหม่สำหรับ shop=%s", holdingCode)
 	manager, err := NewDatabaseManager(dbConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create DatabaseManager for shop=%s: %w", shopId, err)
+		return nil, fmt.Errorf("failed to create DatabaseManager for shop=%s: %w", holdingCode, err)
 	}
 
-	p.managers[shopId] = manager
-	logger.Success("✅ สร้าง DatabaseManager สำหรับ shop=%s เรียบร้อย (รวม %d shops)", shopId, len(p.managers))
+	p.managers[holdingCode] = manager
+	logger.Success("✅ สร้าง DatabaseManager สำหรับ shop=%s เรียบร้อย (รวม %d shops)", holdingCode, len(p.managers))
 
 	return manager, nil
 }
 
 // GetConnection - ดึง PostgreSQL connection สำหรับ shop
-func (p *ManagerPool) GetConnection(shopId string) (*sql.DB, error) {
-	manager, err := p.GetManager(shopId)
+func (p *ManagerPool) GetConnection(holdingCode string) (*sql.DB, error) {
+	manager, err := p.GetManager(holdingCode)
 	if err != nil {
 		return nil, err
 	}
@@ -134,16 +134,16 @@ func (p *ManagerPool) GetConnection(shopId string) (*sql.DB, error) {
 }
 
 // CloseManager - ปิด manager สำหรับ shop เฉพาะ
-func (p *ManagerPool) CloseManager(shopId string) error {
+func (p *ManagerPool) CloseManager(holdingCode string) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	if manager, exists := p.managers[shopId]; exists {
+	if manager, exists := p.managers[holdingCode]; exists {
 		if err := manager.Close(); err != nil {
-			return fmt.Errorf("failed to close manager for shop=%s: %w", shopId, err)
+			return fmt.Errorf("failed to close manager for shop=%s: %w", holdingCode, err)
 		}
-		delete(p.managers, shopId)
-		logger.Info("ปิด DatabaseManager สำหรับ shop=%s", shopId)
+		delete(p.managers, holdingCode)
+		logger.Info("ปิด DatabaseManager สำหรับ shop=%s", holdingCode)
 	}
 
 	return nil
@@ -155,11 +155,11 @@ func (p *ManagerPool) CloseAll() error {
 	defer p.mu.Unlock()
 
 	var errors []error
-	for shopId, manager := range p.managers {
+	for holdingCode, manager := range p.managers {
 		if err := manager.Close(); err != nil {
-			errors = append(errors, fmt.Errorf("shop=%s: %w", shopId, err))
+			errors = append(errors, fmt.Errorf("shop=%s: %w", holdingCode, err))
 		} else {
-			logger.Info("ปิด DatabaseManager สำหรับ shop=%s", shopId)
+			logger.Info("ปิด DatabaseManager สำหรับ shop=%s", holdingCode)
 		}
 	}
 
@@ -183,8 +183,8 @@ func (p *ManagerPool) GetStats() map[string]interface{} {
 		"shops":          make([]string, 0, len(p.managers)),
 	}
 
-	for shopId := range p.managers {
-		stats["shops"] = append(stats["shops"].([]string), shopId)
+	for holdingCode := range p.managers {
+		stats["shops"] = append(stats["shops"].([]string), holdingCode)
 	}
 
 	return stats
@@ -207,16 +207,16 @@ func (dm *DatabaseManager) IsHealthy() bool {
 
 // GetGlobalConnection - ดึง PostgreSQL connection สำหรับ shop
 // ใช้ global manager pool
-func GetGlobalConnectionFromPool(shopId string) (*sql.DB, error) {
+func GetGlobalConnectionFromPool(holdingCode string) (*sql.DB, error) {
 	pool := GetGlobalManagerPool()
-	return pool.GetConnection(shopId)
+	return pool.GetConnection(holdingCode)
 }
 
 // GetGlobalManagerFromPool - ดึง DatabaseManager สำหรับ shop
 // ใช้ global manager pool
-func GetGlobalManagerFromPool(shopId string) (*DatabaseManager, error) {
+func GetGlobalManagerFromPool(holdingCode string) (*DatabaseManager, error) {
 	pool := GetGlobalManagerPool()
-	return pool.GetManager(shopId)
+	return pool.GetManager(holdingCode)
 }
 
 // CloseAllManagers - ปิด managers ทั้งหมดใน global pool

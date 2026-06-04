@@ -8,10 +8,10 @@ import (
 )
 
 type IPurchaseOrderTransactionPGRepository interface {
-	Get(shopID string, docNo string) (*models.PurchaseOrderTransactionPG, error)
+	Get(holdingCode string, docNo string) (*models.PurchaseOrderTransactionPG, error)
 	Create(doc models.PurchaseOrderTransactionPG) error
-	Update(shopID string, docNo string, doc models.PurchaseOrderTransactionPG) error
-	DeleteData(shopID string, docNo string, doc models.PurchaseOrderTransactionPG) error
+	Update(holdingCode string, docNo string, doc models.PurchaseOrderTransactionPG) error
+	DeleteData(holdingCode string, docNo string, doc models.PurchaseOrderTransactionPG) error
 }
 
 type PurchaseOrderTransactionPGRepository struct {
@@ -42,10 +42,10 @@ func (repo PurchaseOrderTransactionPGRepository) Create(doc models.PurchaseOrder
 	return nil
 }
 
-func (repo PurchaseOrderTransactionPGRepository) Update(shopID string, docNo string, doc models.PurchaseOrderTransactionPG) error {
+func (repo PurchaseOrderTransactionPGRepository) Update(holdingCode string, docNo string, doc models.PurchaseOrderTransactionPG) error {
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"shopid": shopID,
-		"docno":  docNo,
+		"holding_code": holdingCode,
+		"docno":        docNo,
 	})
 
 	if err != nil {
@@ -54,12 +54,12 @@ func (repo PurchaseOrderTransactionPGRepository) Update(shopID string, docNo str
 	return nil
 }
 
-func (repo *PurchaseOrderTransactionPGRepository) DeleteData(shopID string, docNo string, doc models.PurchaseOrderTransactionPG) error {
+func (repo *PurchaseOrderTransactionPGRepository) DeleteData(holdingCode string, docNo string, doc models.PurchaseOrderTransactionPG) error {
 
 	var details *[]models.PurchaseOrderDetailTransactionPG
 	tx := repo.pst.DBClient().Begin()
 
-	tx.Model(&models.PurchaseOrderDetailTransactionPG{}).Where(" shopid=? AND docno=?", shopID, docNo).Find(&details)
+	tx.Model(&models.PurchaseOrderDetailTransactionPG{}).Where(" holding_code=? AND docno=?", holdingCode, docNo).Find(&details)
 	for _, tmp := range *details {
 		// mark delete
 		err := tx.Delete(&models.PurchaseOrderDetailTransactionPG{}, tmp.ID).Error
@@ -70,8 +70,8 @@ func (repo *PurchaseOrderTransactionPGRepository) DeleteData(shopID string, docN
 	}
 
 	err := tx.Delete(models.PurchaseOrderTransactionPG{}, map[string]interface{}{
-		"shopid": shopID,
-		"docno":  docNo,
+		"holding_code": holdingCode,
+		"docno":        docNo,
 	}).Error
 
 	if err != nil {

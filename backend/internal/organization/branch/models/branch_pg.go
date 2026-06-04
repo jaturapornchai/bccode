@@ -9,7 +9,7 @@ import (
 )
 
 type BranchPg struct {
-	ShopID      string          `json:"shopid" gorm:"column:shopid;index;uniqueIndex:idx_branch_shop_company_code,where:deleted_at IS NULL"`
+	HoldingCode string          `json:"holding_code" gorm:"column:holding_code;index;uniqueIndex:idx_branch_shop_company_code,where:deleted_at IS NULL"`
 	GuidFixed   string          `json:"guid_fixed" gorm:"column:guid_fixed;primaryKey"`
 	CompanyGuid string          `json:"company_guid" gorm:"column:company_guid;index;uniqueIndex:idx_branch_shop_company_code,where:deleted_at IS NULL"`
 	Code        string          `json:"code" gorm:"column:code;index;uniqueIndex:idx_branch_shop_company_code,where:deleted_at IS NULL"`

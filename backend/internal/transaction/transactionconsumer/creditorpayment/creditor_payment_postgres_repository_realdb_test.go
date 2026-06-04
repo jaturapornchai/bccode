@@ -37,13 +37,13 @@ func TestInsertData(t *testing.T) {
 	err := repo.Create(*giveDoc)
 	assert.Nil(t, err)
 
-	gotDoc, err := repo.Get(giveDoc.ShopID, giveDoc.DocNo)
+	gotDoc, err := repo.Get(giveDoc.HoldingCode, giveDoc.DocNo)
 	assert.Nil(t, err)
 	assert.Equal(t, giveDoc.DocNo, gotDoc.DocNo)
 
 	giveDoc.TotalAmount = 99999
 
-	err = repo.Update(giveDoc.ShopID, giveDoc.DocNo, *giveDoc)
+	err = repo.Update(giveDoc.HoldingCode, giveDoc.DocNo, *giveDoc)
 	assert.Nil(t, err)
 
 }
@@ -52,9 +52,9 @@ func TestDeleteDoc(t *testing.T) {
 	repo := newRealDBRepository(t)
 
 	giveDoc := wantDataCreditPayment()
-	err := repo.Delete(giveDoc.ShopID, giveDoc.DocNo, models.CreditorPaymentTransactionPG{
-		ShopIdentity: pkgModels.ShopIdentity{
-			ShopID: giveDoc.ShopID,
+	err := repo.Delete(giveDoc.HoldingCode, giveDoc.DocNo, models.CreditorPaymentTransactionPG{
+		HoldingCodeentity: pkgModels.HoldingCodeentity{
+			HoldingCode: giveDoc.HoldingCode,
 		},
 		DocNo: giveDoc.DocNo,
 	})

@@ -23,12 +23,12 @@ func (ChequePaymentReturnInfo) CollectionName() string {
 }
 
 type ChequePaymentReturnData struct {
-	models.ShopIdentity     `bson:"inline"`
-	ChequePaymentReturnInfo `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	ChequePaymentReturnInfo  `bson:"inline"`
 }
 
 type ChequePaymentReturnDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                      primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	ChequePaymentReturnData `bson:"inline"`
 	models.ActivityDoc      `bson:"inline"`
 }

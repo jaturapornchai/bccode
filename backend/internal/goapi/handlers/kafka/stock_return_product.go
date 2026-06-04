@@ -81,12 +81,12 @@ func OnConsumeMessageStockReturnProductDelete(msg string) error {
 	logger.Info("OnConsumeMessageStockReturnProductDelete: Processing deletion message")
 
 	docData := TransStockReturnProductDecode(msg)
-	if docData.ShopId == "" || docData.DocNo == "" {
-		logger.Error("OnConsumeMessageStockReturnProductDelete: Invalid data - missing ShopId or DocNo")
+	if docData.HoldingCode == "" || docData.DocNo == "" {
+		logger.Error("OnConsumeMessageStockReturnProductDelete: Invalid data - missing HoldingCode or DocNo")
 		return fmt.Errorf("invalid stock return product data")
 	}
 
-	return DeleteDocumentFromDatabases(context.Background(), docData.ShopId, docData.DocNo, TRANS_FLAG_STOCK_RETURN_PRODUCT)
+	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.DocNo, TRANS_FLAG_STOCK_RETURN_PRODUCT)
 }
 
 // TransStockReturnProductDecode - decode JSON message to StockReturnProductStruct
@@ -106,15 +106,15 @@ func ProcessStockReturnProductDocument(docData models.StockReturnProductStruct) 
 	}()
 
 	logger.Info("ProcessStockReturnProductDocument: Starting processing for DocNo=%s", docData.DocNo)
-	build.DatabaseChecker(docData.ShopId, false)
+	build.DatabaseChecker(docData.HoldingCode, false)
 
 	// Step 1: Convert Kafka message to ProcessMongoTransModel
 	logger.Info("ProcessStockReturnProductDocument: Step 1 - Converting Kafka message to ProcessMongoTransModel")
 	processData := ConvertStockReturnProductMongoDocToProcessModel(docData)
 
 	// Step 2: Connect to PostgreSQL
-	logger.Info("ProcessStockReturnProductDocument: Step 2 - Connecting to PostgreSQL for shopId=%s", docData.ShopId)
-	db, err := mypg.PgSqlFastConnect(docData.ShopId)
+	logger.Info("ProcessStockReturnProductDocument: Step 2 - Connecting to PostgreSQL for holdingCode=%s", docData.HoldingCode)
+	db, err := mypg.PgSqlFastConnect(docData.HoldingCode)
 	if err != nil {
 		logger.Error("ProcessStockReturnProductDocument: Failed to connect to PostgreSQL: %v", err)
 		return fmt.Errorf("failed to connect to PostgreSQL: %v", err)
@@ -128,8 +128,8 @@ func ProcessStockReturnProductDocument(docData models.StockReturnProductStruct) 
 
 	// Step 4: Convert process model to build-doc structs
 	logger.Info("ProcessStockReturnProductDocument: Step 4 - Converting process model to build-doc structs")
-	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, docData.ShopId)
-	docDetailStructs := MapStockReturnProductToDocDetailStructs(processData, docData.ShopId)
+	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, docData.HoldingCode)
+	docDetailStructs := MapStockReturnProductToDocDetailStructs(processData, docData.HoldingCode)
 
 	// Step 5: Create document references
 	logger.Info("ProcessStockReturnProductDocument: Step 5 - Creating document references")
@@ -145,18 +145,18 @@ func ProcessStockReturnProductDocument(docData models.StockReturnProductStruct) 
 		return fmt.Errorf("failed to insert document to PostgreSQL: %w", err)
 	}
 
-	err = InsertDocDetailToPostgreSQL(ctx, db, docData.ShopId, docDetailStructs, 7)
+	err = InsertDocDetailToPostgreSQL(ctx, db, docData.HoldingCode, docDetailStructs, 7)
 	if err != nil {
 		return fmt.Errorf("failed to insert doc details to PostgreSQL: %w", err)
 	}
 
-	err = InsertDocumentToClickHouse(ctx, docData.ShopId, docStruct, docRefStructs, docPaymentStruct, docDetailStructs, 8)
+	err = InsertDocumentToClickHouse(ctx, docData.HoldingCode, docStruct, docRefStructs, docPaymentStruct, docDetailStructs, 8)
 	if err != nil {
 		return fmt.Errorf("failed to insert to ClickHouse: %w", err)
 	}
 
 	// Step 9: Calculate stock cost using global config
-	err = ProcessDocumentStockCalculation(db, docData.ShopId, docDetailStructs, 9)
+	err = ProcessDocumentStockCalculation(db, docData.HoldingCode, docDetailStructs, 9)
 	if err != nil {
 		logger.Error("Failed to calculate stock cost: %v", err)
 		// Don't return error, just log it
@@ -240,7 +240,7 @@ func ConvertStockReturnProductMongoDocToProcessModel(docData models.StockReturnP
 
 	logger.Info("ConvertStockReturnProductMongoDocToProcessModel: Creating final ProcessMongoTransModel")
 	result := models.ProcessMongoTransModel{
-		ShopId:           docData.ShopId,
+		HoldingCode:      docData.HoldingCode,
 		BranchId:         docData.BranchId,
 		GuidFixed:        docData.GuidFixed,
 		DocNo:            docData.DocNo,
@@ -266,7 +266,7 @@ func ConvertStockReturnProductMongoDocToProcessModel(docData models.StockReturnP
 }
 
 // MapStockReturnProductToDocDetailStructs - converts stock return product to document detail structs
-func MapStockReturnProductToDocDetailStructs(processData models.ProcessMongoTransModel, shopId string) []models.DocDetailStruct {
+func MapStockReturnProductToDocDetailStructs(processData models.ProcessMongoTransModel, holdingCode string) []models.DocDetailStruct {
 	var docDetailStructs []models.DocDetailStruct
 
 	for i, detail := range processData.Details {

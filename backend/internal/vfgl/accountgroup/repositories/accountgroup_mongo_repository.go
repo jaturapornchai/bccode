@@ -11,14 +11,14 @@ import (
 )
 
 type IAccountGroupMongoRepository interface {
-	Count(ctx context.Context, shopID string) (int, error)
+	Count(ctx context.Context, holdingCode string) (int, error)
 	Create(ctx context.Context, doc models.AccountGroupDoc) (string, error)
 	CreateInBatch(ctx context.Context, docList []models.AccountGroupDoc) error
-	Update(ctx context.Context, shopID string, guid string, doc models.AccountGroupDoc) error
-	DeleteByGuidfixed(ctx context.Context, shopID string, guid string, username string) error
-	FindOne(ctx context.Context, shopID string, filters interface{}) (models.AccountGroupDoc, error)
-	FindPage(ctx context.Context, shopID string, searchInFields []string, pageable micromodels.Pageable) ([]models.AccountGroupInfo, mongopagination.PaginationData, error)
-	FindByGuid(ctx context.Context, shopID string, guid string) (models.AccountGroupDoc, error)
+	Update(ctx context.Context, holdingCode string, guid string, doc models.AccountGroupDoc) error
+	DeleteByGuidfixed(ctx context.Context, holdingCode string, guid string, username string) error
+	FindOne(ctx context.Context, holdingCode string, filters interface{}) (models.AccountGroupDoc, error)
+	FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable micromodels.Pageable) ([]models.AccountGroupInfo, mongopagination.PaginationData, error)
+	FindByGuid(ctx context.Context, holdingCode string, guid string) (models.AccountGroupDoc, error)
 }
 
 type AccountGroupMongoRepository struct {

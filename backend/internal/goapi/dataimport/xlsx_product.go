@@ -34,117 +34,117 @@ const (
 
 // ProductPrepareSession - session การประมวลผล
 type ProductPrepareSession struct {
-	ShopID string                 `json:"shop_id"`
-	FileName string                 `json:"file_name"`
-	FilePath string                 `json:"file_path"`
-	Status ProductPrepareStatus   `json:"status"`
-	Progress float64                `json:"progress"`
-	TotalRows int                    `json:"total_rows"`
-	ProcessedRows int                    `json:"processed_rows"`
-	SuccessCount int                    `json:"success_count"`
-	ErrorCount int                    `json:"error_count"`
-	StartTime time.Time              `json:"start_time"`
-	EndTime *time.Time             `json:"end_time,omitempty"`
-	Result []ProductPrepareResult `json:"result,omitempty"`
-	ComparisonResult *ComparisonSummary     `json:"comparison,omitempty"`        // เพิ่ม: ผลการเปรียบเทียบกับ MongoDB
-	ErrorMessage string                 `json:"error_message,omitempty"`      // ข้อความ error แบบ string (เก่า)
+	HoldingCode       string                 `json:"holding_code"`
+	FileName          string                 `json:"file_name"`
+	FilePath          string                 `json:"file_path"`
+	Status            ProductPrepareStatus   `json:"status"`
+	Progress          float64                `json:"progress"`
+	TotalRows         int                    `json:"total_rows"`
+	ProcessedRows     int                    `json:"processed_rows"`
+	SuccessCount      int                    `json:"success_count"`
+	ErrorCount        int                    `json:"error_count"`
+	StartTime         time.Time              `json:"start_time"`
+	EndTime           *time.Time             `json:"end_time,omitempty"`
+	Result            []ProductPrepareResult `json:"result,omitempty"`
+	ComparisonResult  *ComparisonSummary     `json:"comparison,omitempty"`         // เพิ่ม: ผลการเปรียบเทียบกับ MongoDB
+	ErrorMessage      string                 `json:"error_message,omitempty"`      // ข้อความ error แบบ string (เก่า)
 	DuplicateBarcodes []DuplicateBarcodeInfo `json:"duplicate_barcodes,omitempty"` // รายการ barcode ซ้ำแบบ JSON
-	Mutex sync.RWMutex           `json:"-"`
+	Mutex             sync.RWMutex           `json:"-"`
 }
 
 // ProductPrepareResult - ผลลัพธ์จากการ parse แถวใน Excel
 type ProductPrepareResult struct {
-	RowNumber int                    `json:"row_number"` // เลขแถวใน Excel (เริ่มจาก 1)
-	Barcode string                 `json:"barcode"`
-	ItemCode string                 `json:"item_code"`
-	Name string                 `json:"name"`
-	ShortName string                 `json:"short_name"`
-	NameEN string                 `json:"name_en"`
-	NameCN string                 `json:"name_cn"`
-	UnitCode string                 `json:"unit_code"`
-	ProductType string                 `json:"product_type"`
-	TaxType string                 `json:"tax_type"`
-	Code string                 `json:"code"`
-	Price float64                `json:"price"`
-	PriceMember float64                `json:"price_member"`
-	PriceDelivery float64                `json:"price_delivery"`
-	PriceOne float64                `json:"price_one"`
-	PriceTwo float64                `json:"price_two"`
-	PriceThree float64                `json:"price_three"`
-	PriceFour float64                `json:"price_four"`
-	PriceFive float64                `json:"price_five"`
-	PriceSix float64                `json:"price_six"`
-	PriceSeven float64                `json:"price_seven"`
-	PriceEight float64                `json:"price_eight"`
-	PriceNine float64                `json:"price_nine"`
-	GroupCode string                 `json:"group_code"`
+	RowNumber       int                    `json:"row_number"` // เลขแถวใน Excel (เริ่มจาก 1)
+	Barcode         string                 `json:"barcode"`
+	ItemCode        string                 `json:"item_code"`
+	Name            string                 `json:"name"`
+	ShortName       string                 `json:"short_name"`
+	NameEN          string                 `json:"name_en"`
+	NameCN          string                 `json:"name_cn"`
+	UnitCode        string                 `json:"unit_code"`
+	ProductType     string                 `json:"product_type"`
+	TaxType         string                 `json:"tax_type"`
+	Code            string                 `json:"code"`
+	Price           float64                `json:"price"`
+	PriceMember     float64                `json:"price_member"`
+	PriceDelivery   float64                `json:"price_delivery"`
+	PriceOne        float64                `json:"price_one"`
+	PriceTwo        float64                `json:"price_two"`
+	PriceThree      float64                `json:"price_three"`
+	PriceFour       float64                `json:"price_four"`
+	PriceFive       float64                `json:"price_five"`
+	PriceSix        float64                `json:"price_six"`
+	PriceSeven      float64                `json:"price_seven"`
+	PriceEight      float64                `json:"price_eight"`
+	PriceNine       float64                `json:"price_nine"`
+	GroupCode       string                 `json:"group_code"`
 	GroupsuboneCode string                 `json:"groupsubone_code"`
 	GroupsubtwoCode string                 `json:"groupsubtwo_code"`
-	BrandCode string                 `json:"brand_code"`
-	DesignCode string                 `json:"design_code"`
-	ModelCode string                 `json:"model_code"`
-	PatternCode string                 `json:"pattern_code"`
-	GradeCode string                 `json:"grade_code"`
-	CategoryCode string                 `json:"category_code"`
-	ClassCode string                 `json:"class_code"`
-	StandValue float64                `json:"stand_value"`
-	DivideValue float64                `json:"divide_value"`
-	Status string                 `json:"status"` // "success", "error", "warning"
-	Message string                 `json:"message"`
-	Data map[string]interface{} `json:"data,omitempty"`
+	BrandCode       string                 `json:"brand_code"`
+	DesignCode      string                 `json:"design_code"`
+	ModelCode       string                 `json:"model_code"`
+	PatternCode     string                 `json:"pattern_code"`
+	GradeCode       string                 `json:"grade_code"`
+	CategoryCode    string                 `json:"category_code"`
+	ClassCode       string                 `json:"class_code"`
+	StandValue      float64                `json:"stand_value"`
+	DivideValue     float64                `json:"divide_value"`
+	Status          string                 `json:"status"` // "success", "error", "warning"
+	Message         string                 `json:"message"`
+	Data            map[string]interface{} `json:"data,omitempty"`
 }
 
 // DuplicateBarcodeInfo - ข้อมูล barcode ที่ซ้ำ
 type DuplicateBarcodeInfo struct {
-	Barcode string `json:"barcode"`
-	Count int    `json:"count"`
+	Barcode    string `json:"barcode"`
+	Count      int    `json:"count"`
 	RowNumbers []int  `json:"row_numbers"` // เลขแถวใน Excel ที่ barcode นี้ปรากฏ
 }
 
 // ComparisonSummary - สรุปผลการเปรียบเทียบ
 type ComparisonSummary struct {
-	ShopID string           `json:"shop_id"`
-	TotalExcelRows int              `json:"total_excel_rows"`
-	TotalMongoProducts int              `json:"total_mongo_products"`
-	NewProductCount int              `json:"new_product_count"`     // action = 1
+	HoldingCode         string           `json:"holding_code"`
+	TotalExcelRows      int              `json:"total_excel_rows"`
+	TotalMongoProducts  int              `json:"total_mongo_products"`
+	NewProductCount     int              `json:"new_product_count"`     // action = 1
 	UpdatedProductCount int              `json:"updated_product_count"` // action = 2
-	UnchangedCount int              `json:"unchanged_count"`      // action = 0
-	ProcessTime time.Time        `json:"process_time"`
-	Products []ProductCompact `json:"products"` // รวมทุก product ไว้ที่เดียว
+	UnchangedCount      int              `json:"unchanged_count"`       // action = 0
+	ProcessTime         time.Time        `json:"process_time"`
+	Products            []ProductCompact `json:"products"` // รวมทุก product ไว้ที่เดียว
 }
 
 // ProductCompact - ข้อมูลสินค้าแบบย่อ (แสดงทั้ง MongoDB และ Excel)
 type ProductCompact struct {
 	Barcode string              `json:"barcode"`
-	Mongo *ProductCompactData `json:"mongo"`           // ข้อมูลจาก MongoDB
-	Excel *ProductCompactData `json:"excel,omitempty"` // ข้อมูลจาก Excel (ถ้ามี)
-	Action int                 `json:"action"`          // 0=match, 1=insert, 2=update
+	Mongo   *ProductCompactData `json:"mongo"`           // ข้อมูลจาก MongoDB
+	Excel   *ProductCompactData `json:"excel,omitempty"` // ข้อมูลจาก Excel (ถ้ามี)
+	Action  int                 `json:"action"`          // 0=match, 1=insert, 2=update
 }
 
 // ProductCompactData - ข้อมูล 5 fields ที่ compare
 type ProductCompactData struct {
-	Code string  `json:"code"`        // itemcode
-	Name string  `json:"name"`        // names[code='th'].name
-	UnitCode string  `json:"unit_code"`    // itemunitcode (mongo) / unitcode (excel)
+	Code        string  `json:"code"`         // itemcode
+	Name        string  `json:"name"`         // names[code='th'].name
+	UnitCode    string  `json:"unit_code"`    // itemunitcode (mongo) / unitcode (excel)
 	DivideValue float64 `json:"divide_value"` // dividevalue
-	StandValue float64 `json:"stand_value"`  // standvalue
+	StandValue  float64 `json:"stand_value"`  // standvalue
 }
 
 var (
-	// เก็บ session ตาม shopId
+	// เก็บ session ตาม holdingCode
 	productPrepareSessions = make(map[string]*ProductPrepareSession)
 	xlsxSessionMutex       sync.RWMutex
 )
 
 // StartProductPrepareHandler - เริ่มประมวลผลไฟล์ Excel
 // POST /xlsx/product/start
-// JSON body: {"shopId": "xxx", "fileName": "uploaded_file.xlsx"}
+// JSON body: {"holdingCode": "xxx", "fileName": "uploaded_file.xlsx"}
 func StartProductPrepareHandler(c echo.Context) error {
 	// รับ JSON body
 	var request struct {
-		ShopID string `json:"shop_id"`
-		FileName string `json:"file_name"`
-		FileUrl string `json:"file_url"`  // presigned URL สำหรับ download จาก S3
+		HoldingCode string `json:"holding_code"`
+		FileName    string `json:"file_name"`
+		FileUrl     string `json:"file_url"` // presigned URL สำหรับ download จาก S3
 	}
 
 	if err := c.Bind(&request); err != nil {
@@ -154,9 +154,9 @@ func StartProductPrepareHandler(c echo.Context) error {
 		})
 	}
 
-	if request.ShopID == "" {
+	if request.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"error": "shopId is required",
+			"error": "holdingCode is required",
 		})
 	}
 
@@ -168,7 +168,7 @@ func StartProductPrepareHandler(c echo.Context) error {
 
 	// ตรวจสอบว่ามี session ทำงานอยู่แล้วหรือไม่
 	xlsxSessionMutex.RLock()
-	existingSession, exists := productPrepareSessions[request.ShopID]
+	existingSession, exists := productPrepareSessions[request.HoldingCode]
 	xlsxSessionMutex.RUnlock()
 
 	if exists && existingSession.Status == StatusProcessing {
@@ -181,7 +181,7 @@ func StartProductPrepareHandler(c echo.Context) error {
 
 	// หาไฟล์ที่ upload ไว้แล้ว
 	tempDir := os.TempDir()
-	uploadDir := filepath.Join(tempDir, "uploads", "xlsx", request.ShopID)
+	uploadDir := filepath.Join(tempDir, "uploads", "xlsx", request.HoldingCode)
 	os.MkdirAll(uploadDir, 0755)
 	filePath := filepath.Join(uploadDir, request.FileName)
 
@@ -225,22 +225,22 @@ func StartProductPrepareHandler(c echo.Context) error {
 	}
 
 	logger.Info("File ready for processing: %s", filePath)
-	logger.Info("Starting Excel processing for shop %s", request.ShopID)
+	logger.Info("Starting Excel processing for shop %s", request.HoldingCode)
 
 	// สร้าง session ใหม่
 	session := &ProductPrepareSession{
-		ShopID:    request.ShopID,
-		FileName:  request.FileName,
-		FilePath:  filePath,
-		Status:    StatusProcessing,
-		Progress:  0,
-		StartTime: time.Now(),
-		Result:    []ProductPrepareResult{},
+		HoldingCode: request.HoldingCode,
+		FileName:    request.FileName,
+		FilePath:    filePath,
+		Status:      StatusProcessing,
+		Progress:    0,
+		StartTime:   time.Now(),
+		Result:      []ProductPrepareResult{},
 	}
 
 	// เก็บ session
 	xlsxSessionMutex.Lock()
-	productPrepareSessions[request.ShopID] = session
+	productPrepareSessions[request.HoldingCode] = session
 	xlsxSessionMutex.Unlock()
 
 	// ประมวลผล Excel แบบ synchronous (รอให้เสร็จก่อน return)
@@ -251,7 +251,7 @@ func StartProductPrepareHandler(c echo.Context) error {
 	session.Mutex.RLock()
 	response := map[string]interface{}{
 		"success":      true,
-		"shopId":       session.ShopID,
+		"holdingCode":  session.HoldingCode,
 		"fileName":     session.FileName,
 		"status":       session.Status,
 		"totalRows":    session.TotalRows,
@@ -288,23 +288,23 @@ func StartProductPrepareHandler(c echo.Context) error {
 }
 
 // GetProductPrepareStatusHandler - ตรวจสอบสถานะการประมวลผล
-// GET /xlsx/product/status?shopId=xxx
+// GET /xlsx/product/status?holdingCode=xxx
 func GetProductPrepareStatusHandler(c echo.Context) error {
-	shopID := c.QueryParam("shopId")
-	if shopID == "" {
+	holdingCode := c.QueryParam("holdingCode")
+	if holdingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"error": "shopId is required",
+			"error": "holdingCode is required",
 		})
 	}
 
 	xlsxSessionMutex.RLock()
-	session, exists := productPrepareSessions[shopID]
+	session, exists := productPrepareSessions[holdingCode]
 	xlsxSessionMutex.RUnlock()
 
 	if !exists {
 		return c.JSON(http.StatusOK, map[string]interface{}{
-			"shopId": shopID,
-			"status": StatusNotStarted,
+			"holdingCode": holdingCode,
+			"status":      StatusNotStarted,
 		})
 	}
 
@@ -312,7 +312,7 @@ func GetProductPrepareStatusHandler(c echo.Context) error {
 	defer session.Mutex.RUnlock()
 
 	response := map[string]interface{}{
-		"shopId":        session.ShopID,
+		"holdingCode":   session.HoldingCode,
 		"fileName":      session.FileName,
 		"status":        session.Status,
 		"progress":      session.Progress,
@@ -341,17 +341,17 @@ func GetProductPrepareStatusHandler(c echo.Context) error {
 }
 
 // GetProductPrepareResultHandler - ดึงผลลัพธ์การประมวลผล
-// GET /xlsx/product/result?shopId=xxx
+// GET /xlsx/product/result?holdingCode=xxx
 func GetProductPrepareResultHandler(c echo.Context) error {
-	shopID := c.QueryParam("shopId")
-	if shopID == "" {
+	holdingCode := c.QueryParam("holdingCode")
+	if holdingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"error": "shopId is required",
+			"error": "holdingCode is required",
 		})
 	}
 
 	xlsxSessionMutex.RLock()
-	session, exists := productPrepareSessions[shopID]
+	session, exists := productPrepareSessions[holdingCode]
 	xlsxSessionMutex.RUnlock()
 
 	if !exists {
@@ -366,15 +366,15 @@ func GetProductPrepareResultHandler(c echo.Context) error {
 
 	if session.Status == StatusProcessing {
 		return c.JSON(http.StatusOK, map[string]interface{}{
-			"shopId":   shopID,
-			"status":   StatusProcessing,
-			"message":  "Still processing, please wait",
-			"progress": session.Progress,
+			"holdingCode": holdingCode,
+			"status":      StatusProcessing,
+			"message":     "Still processing, please wait",
+			"progress":    session.Progress,
 		})
 	}
 
 	response := map[string]interface{}{
-		"shopId":        session.ShopID,
+		"holdingCode":   session.HoldingCode,
 		"fileName":      session.FileName,
 		"status":        session.Status,
 		"totalRows":     session.TotalRows,
@@ -417,7 +417,7 @@ func processProductExcel(session *ProductPrepareSession) {
 		}
 	}()
 
-	logger.Info("Starting Excel processing for shop %s: %s", session.ShopID, session.FilePath)
+	logger.Info("Starting Excel processing for shop %s: %s", session.HoldingCode, session.FilePath)
 
 	// เปิดไฟล์ Excel
 	f, err := excelize.OpenFile(session.FilePath)
@@ -509,7 +509,7 @@ func processProductExcel(session *ProductPrepareSession) {
 		row := rows[i]
 		rowNumber := i + 1 // เพิ่ม 1 เพราะนับรวม header
 
-		rowResults := processProductRow(session.ShopID, rowNumber, headers, row)
+		rowResults := processProductRow(session.HoldingCode, rowNumber, headers, row)
 
 		// ถ้า barcode มีหลายตัว (แบ่งด้วย /) ให้แยกออกเป็นหลายแถว
 		expandedResults := expandBarcodeRows(rowResults)
@@ -585,8 +585,8 @@ func processProductExcel(session *ProductPrepareSession) {
 	logger.Info("No duplicate barcodes found")
 
 	// เปรียบเทียบกับ MongoDB
-	logger.Info("Starting MongoDB comparison for shop %s with %d valid rows", session.ShopID, len(successResults))
-	comparisonSummary, err := compareWithMongo(session.ShopID, successResults)
+	logger.Info("Starting MongoDB comparison for shop %s with %d valid rows", session.HoldingCode, len(successResults))
+	comparisonSummary, err := compareWithMongo(session.HoldingCode, successResults)
 	if err != nil {
 		logger.Error("Failed to compare with MongoDB: %v", err)
 	} else {
@@ -603,7 +603,7 @@ func processProductExcel(session *ProductPrepareSession) {
 
 	duration := endTime.Sub(session.StartTime)
 	logger.Success("Excel processing completed for shop %s: %d rows in %s (Success: %d, Error: %d)",
-		session.ShopID, totalRows, duration, session.SuccessCount, session.ErrorCount)
+		session.HoldingCode, totalRows, duration, session.SuccessCount, session.ErrorCount)
 
 	// ลบไฟล์ Excel หลังประมวลผลเสร็จ (เป็น temp copy จาก S3)
 	if session.FilePath != "" {
@@ -659,7 +659,7 @@ func expandBarcodeRows(result ProductPrepareResult) []ProductPrepareResult {
 }
 
 // processProductRow - ประมวลผลแต่ละแถว
-func processProductRow(shopID string, rowNumber int, headers []string, row []string) ProductPrepareResult {
+func processProductRow(holdingCode string, rowNumber int, headers []string, row []string) ProductPrepareResult {
 	result := ProductPrepareResult{
 		RowNumber: rowNumber,
 		Status:    "success",
@@ -754,7 +754,7 @@ func processProductRow(shopID string, rowNumber int, headers []string, row []str
 
 	// เก็บข้อมูลทั้งหมด
 	result.Data["rowData"] = rowData
-	result.Data["shopId"] = shopID
+	result.Data["holdingCode"] = holdingCode
 
 	if result.Message == "" {
 		result.Message = "Processed successfully"
@@ -809,7 +809,7 @@ func checkDuplicateBarcodes(results []ProductPrepareResult) []DuplicateBarcodeIn
 }
 
 // loadMongoProducts - ดึงข้อมูลสินค้าจาก MongoDB
-func loadMongoProducts(shopID string) ([]models.MongoProductBarcodeModel, error) {
+func loadMongoProducts(holdingCode string) ([]models.MongoProductBarcodeModel, error) {
 	ctx := context.Background()
 
 	// Get MongoDB client
@@ -825,8 +825,8 @@ func loadMongoProducts(shopID string) ([]models.MongoProductBarcodeModel, error)
 	// ใช้ database และ collection
 	collection := mongoClient.Database(databaseName).Collection("productBarcodes")
 
-	// Query โดยใช้ shopId
-	filter := bson.M{"shopid": shopID}
+	// Query โดยใช้ holdingCode
+	filter := bson.M{"holding_code": holdingCode}
 
 	cursor, err := collection.Find(ctx, filter)
 	if err != nil {
@@ -839,7 +839,7 @@ func loadMongoProducts(shopID string) ([]models.MongoProductBarcodeModel, error)
 		return nil, fmt.Errorf("failed to decode MongoDB results: %v", err)
 	}
 
-	logger.Info("Loaded %d products from MongoDB for shop %s", len(products), shopID)
+	logger.Info("Loaded %d products from MongoDB for shop %s", len(products), holdingCode)
 
 	// Debug: แสดง sample product เพื่อตรวจสอบค่า
 	if len(products) > 0 {
@@ -852,9 +852,9 @@ func loadMongoProducts(shopID string) ([]models.MongoProductBarcodeModel, error)
 }
 
 // compareWithMongo - เปรียบเทียบข้อมูล Excel กับ MongoDB (ใช้ Excel เป็นหลัก)
-func compareWithMongo(shopID string, excelResults []ProductPrepareResult) (*ComparisonSummary, error) {
+func compareWithMongo(holdingCode string, excelResults []ProductPrepareResult) (*ComparisonSummary, error) {
 	// ดึงข้อมูลจาก MongoDB
-	mongoProducts, err := loadMongoProducts(shopID)
+	mongoProducts, err := loadMongoProducts(holdingCode)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load MongoDB products: %v", err)
 	}
@@ -877,7 +877,7 @@ func compareWithMongo(shopID string, excelResults []ProductPrepareResult) (*Comp
 	}
 
 	summary := &ComparisonSummary{
-		ShopID:             shopID,
+		HoldingCode:        holdingCode,
 		TotalExcelRows:     len(excelResults),
 		TotalMongoProducts: len(mongoProducts),
 		Products:           []ProductCompact{},
@@ -1006,17 +1006,17 @@ func downloadFileFromURL(fileURL string, destPath string) error {
 }
 
 // ClearProductPrepareSession - ลบ session (เรียกใช้หลังดึงผลลัพธ์แล้ว)
-func ClearProductPrepareSession(shopID string) {
+func ClearProductPrepareSession(holdingCode string) {
 	xlsxSessionMutex.Lock()
 	defer xlsxSessionMutex.Unlock()
 
-	if session, exists := productPrepareSessions[shopID]; exists {
+	if session, exists := productPrepareSessions[holdingCode]; exists {
 		// ลบไฟล์
 		if session.FilePath != "" {
 			os.Remove(session.FilePath)
 			logger.Info("Cleaned up Excel file: %s", session.FilePath)
 		}
-		delete(productPrepareSessions, shopID)
+		delete(productPrepareSessions, holdingCode)
 	}
 }
 

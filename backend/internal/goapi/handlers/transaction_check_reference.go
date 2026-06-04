@@ -15,16 +15,16 @@ type CheckReferenceResponse struct {
 }
 
 // CheckPOReferenceHandler - ตรวจสอบว่า PO ถูกอ้างอิงโดยเอกสารอื่นหรือไม่
-// GET /api/transaction/check-reference?shopid=xxx&docno=PO2026010700001
+// GET /api/transaction/check-reference?holding_code=xxx&docno=PO2026010700001
 func CheckPOReferenceHandler(c echo.Context) error {
-	shopID := c.QueryParam("shopid")
+	holdingCode := c.QueryParam("holding_code")
 	docNo := c.QueryParam("docno")
 
 	// Validate required parameters
-	if shopID == "" {
+	if holdingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"success": false,
-			"message": "shopid is required",
+			"message": "holding_code is required",
 		})
 	}
 
@@ -36,7 +36,7 @@ func CheckPOReferenceHandler(c echo.Context) error {
 	}
 
 	// Connect to database
-	db, err := mypg.PgSqlFastConnect(shopID)
+	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
 			"success": false,

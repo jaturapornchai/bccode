@@ -3,7 +3,7 @@
 -- UP
 
 CREATE TABLE IF NOT EXISTS productbarcode (
-    shopid TEXT NOT NULL,
+    holding_code TEXT NOT NULL,
     barcode TEXT NOT NULL,
     parid TEXT DEFAULT '',
     guidfixed TEXT DEFAULT '',
@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS productbarcode (
     bom JSONB NOT NULL DEFAULT '[]'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    PRIMARY KEY (shopid, barcode)
+    PRIMARY KEY (holding_code, barcode)
 );
 
 ALTER TABLE IF EXISTS productbarcode
@@ -108,10 +108,10 @@ DO $$
 BEGIN
     IF to_regclass('public.productbarcode') IS NOT NULL THEN
         CREATE INDEX IF NOT EXISTS idx_productbarcode_shop_barcode
-            ON productbarcode(shopid, barcode);
+            ON productbarcode(holding_code, barcode);
 
         CREATE INDEX IF NOT EXISTS idx_productbarcode_shop_item_material
-            ON productbarcode(shopid, itemtype, materialtype);
+            ON productbarcode(holding_code, itemtype, materialtype);
     END IF;
 END $$;
 

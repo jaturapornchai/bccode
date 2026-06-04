@@ -22,15 +22,15 @@ import (
 )
 
 type IAccrualreceiveHttpService interface {
-	CreateAccrualreceive(shopID string, authUsername string, doc models.Accrualreceive) (string, string, error)
-	UpdateAccrualreceive(shopID string, guid string, authUsername string, doc models.Accrualreceive) error
-	DeleteAccrualreceive(shopID string, guid string, authUsername string) error
-	DeleteAccrualreceiveByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoAccrualreceive(shopID string, guid string) (models.AccrualreceiveInfo, error)
-	InfoAccrualreceiveByCode(shopID string, code string) (models.AccrualreceiveInfo, error)
-	SearchAccrualreceive(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.AccrualreceiveInfo, mongopagination.PaginationData, error)
-	SearchAccrualreceiveStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.AccrualreceiveInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.Accrualreceive) (common.BulkImport, error)
+	CreateAccrualreceive(holdingCode string, authUsername string, doc models.Accrualreceive) (string, string, error)
+	UpdateAccrualreceive(holdingCode string, guid string, authUsername string, doc models.Accrualreceive) error
+	DeleteAccrualreceive(holdingCode string, guid string, authUsername string) error
+	DeleteAccrualreceiveByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoAccrualreceive(holdingCode string, guid string) (models.AccrualreceiveInfo, error)
+	InfoAccrualreceiveByCode(holdingCode string, code string) (models.AccrualreceiveInfo, error)
+	SearchAccrualreceive(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.AccrualreceiveInfo, mongopagination.PaginationData, error)
+	SearchAccrualreceiveStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.AccrualreceiveInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.Accrualreceive) (common.BulkImport, error)
 
 	GetModuleName() string
 }
@@ -81,11 +81,11 @@ func (svc AccrualreceiveHttpService) getDocNoPrefix(docDate time.Time) string {
 	return fmt.Sprintf("%s%s", MODULE_NAME, docDateStr)
 }
 
-func (svc AccrualreceiveHttpService) generateNewDocNo(ctx context.Context, shopID, prefixDocNo string, docNumber int) (string, int, error) {
-	prevoiusDocNumber, err := svc.repoCache.Get(shopID, prefixDocNo)
+func (svc AccrualreceiveHttpService) generateNewDocNo(ctx context.Context, holdingCode, prefixDocNo string, docNumber int) (string, int, error) {
+	prevoiusDocNumber, err := svc.repoCache.Get(holdingCode, prefixDocNo)
 
 	if prevoiusDocNumber == 0 || err != nil {
-		lastDoc, err := svc.repo.FindLastDocNo(ctx, shopID, prefixDocNo)
+		lastDoc, err := svc.repo.FindLastDocNo(ctx, holdingCode, prefixDocNo)
 
 		if err != nil {
 			return "", 0, err
@@ -105,7 +105,7 @@ func (svc AccrualreceiveHttpService) generateNewDocNo(ctx context.Context, shopI
 	newDocNumber := prevoiusDocNumber + 1
 	newDocNo := fmt.Sprintf("%s%05d", prefixDocNo, newDocNumber)
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", newDocNo)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", newDocNo)
 
 	if err != nil {
 		return "", 0, err
@@ -118,7 +118,7 @@ func (svc AccrualreceiveHttpService) generateNewDocNo(ctx context.Context, shopI
 	return newDocNo, newDocNumber, nil
 }
 
-func (svc AccrualreceiveHttpService) CreateAccrualreceive(shopID string, authUsername string, doc models.Accrualreceive) (string, string, error) {
+func (svc AccrualreceiveHttpService) CreateAccrualreceive(holdingCode string, authUsername string, doc models.Accrualreceive) (string, string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -126,7 +126,7 @@ func (svc AccrualreceiveHttpService) CreateAccrualreceive(shopID string, authUse
 	docDate := doc.DocDatetime
 	prefixDocNo := svc.getDocNoPrefix(docDate)
 
-	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, shopID, prefixDocNo, 1)
+	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, holdingCode, prefixDocNo, 1)
 
 	if err != nil {
 		return "", "", err
@@ -135,7 +135,7 @@ func (svc AccrualreceiveHttpService) CreateAccrualreceive(shopID string, authUse
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.AccrualreceiveDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.Accrualreceive = doc
 
@@ -149,23 +149,23 @@ func (svc AccrualreceiveHttpService) CreateAccrualreceive(shopID string, authUse
 		return "", "", err
 	}
 
-	go svc.repoCache.Save(shopID, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
+	go svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
 
 	go func() {
 		svc.repoMq.Create(docData)
-		svc.repoCache.Save(shopID, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
-		svc.saveMasterSync(shopID)
+		svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return newGuidFixed, newDocNo, nil
 }
 
-func (svc AccrualreceiveHttpService) UpdateAccrualreceive(shopID string, guid string, authUsername string, doc models.Accrualreceive) error {
+func (svc AccrualreceiveHttpService) UpdateAccrualreceive(holdingCode string, guid string, authUsername string, doc models.Accrualreceive) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -182,7 +182,7 @@ func (svc AccrualreceiveHttpService) UpdateAccrualreceive(shopID string, guid st
 	docData.UpdatedBy = authUsername
 	docData.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, docData)
+	err = svc.repo.Update(ctx, holdingCode, guid, docData)
 
 	if err != nil {
 		return err
@@ -190,18 +190,18 @@ func (svc AccrualreceiveHttpService) UpdateAccrualreceive(shopID string, guid st
 
 	func() {
 		svc.repoMq.Update(docData)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc AccrualreceiveHttpService) DeleteAccrualreceive(shopID string, guid string, authUsername string) error {
+func (svc AccrualreceiveHttpService) DeleteAccrualreceive(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -211,20 +211,20 @@ func (svc AccrualreceiveHttpService) DeleteAccrualreceive(shopID string, guid st
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
 	func() {
 		svc.repoMq.Delete(findDoc)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc AccrualreceiveHttpService) DeleteAccrualreceiveByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc AccrualreceiveHttpService) DeleteAccrualreceiveByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -233,26 +233,26 @@ func (svc AccrualreceiveHttpService) DeleteAccrualreceiveByGUIDs(shopID string, 
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
 
 	func() {
-		docs, _ := svc.repo.FindByGuids(ctx, shopID, GUIDs)
+		docs, _ := svc.repo.FindByGuids(ctx, holdingCode, GUIDs)
 		svc.repoMq.DeleteInBatch(docs)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc AccrualreceiveHttpService) InfoAccrualreceive(shopID string, guid string) (models.AccrualreceiveInfo, error) {
+func (svc AccrualreceiveHttpService) InfoAccrualreceive(holdingCode string, guid string) (models.AccrualreceiveInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.AccrualreceiveInfo{}, err
@@ -265,12 +265,12 @@ func (svc AccrualreceiveHttpService) InfoAccrualreceive(shopID string, guid stri
 	return findDoc.AccrualreceiveInfo, nil
 }
 
-func (svc AccrualreceiveHttpService) InfoAccrualreceiveByCode(shopID string, code string) (models.AccrualreceiveInfo, error) {
+func (svc AccrualreceiveHttpService) InfoAccrualreceiveByCode(holdingCode string, code string) (models.AccrualreceiveInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", code)
 
 	if err != nil {
 		return models.AccrualreceiveInfo{}, err
@@ -283,7 +283,7 @@ func (svc AccrualreceiveHttpService) InfoAccrualreceiveByCode(shopID string, cod
 	return findDoc.AccrualreceiveInfo, nil
 }
 
-func (svc AccrualreceiveHttpService) SearchAccrualreceive(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.AccrualreceiveInfo, mongopagination.PaginationData, error) {
+func (svc AccrualreceiveHttpService) SearchAccrualreceive(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.AccrualreceiveInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -292,7 +292,7 @@ func (svc AccrualreceiveHttpService) SearchAccrualreceive(shopID string, filters
 		"docno",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.AccrualreceiveInfo{}, pagination, err
@@ -301,7 +301,7 @@ func (svc AccrualreceiveHttpService) SearchAccrualreceive(shopID string, filters
 	return docList, pagination, nil
 }
 
-func (svc AccrualreceiveHttpService) SearchAccrualreceiveStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.AccrualreceiveInfo, int, error) {
+func (svc AccrualreceiveHttpService) SearchAccrualreceiveStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.AccrualreceiveInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -312,7 +312,7 @@ func (svc AccrualreceiveHttpService) SearchAccrualreceiveStep(shopID string, lan
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.AccrualreceiveInfo{}, 0, err
@@ -321,7 +321,7 @@ func (svc AccrualreceiveHttpService) SearchAccrualreceiveStep(shopID string, lan
 	return docList, total, nil
 }
 
-func (svc AccrualreceiveHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.Accrualreceive) (common.BulkImport, error) {
+func (svc AccrualreceiveHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.Accrualreceive) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -333,7 +333,7 @@ func (svc AccrualreceiveHttpService) SaveInBatch(shopID string, authUsername str
 		itemCodeGuidList = append(itemCodeGuidList, doc.DocNo)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "docno", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "docno", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -345,18 +345,18 @@ func (svc AccrualreceiveHttpService) SaveInBatch(shopID string, authUsername str
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.Accrualreceive, models.AccrualreceiveDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.Accrualreceive) models.AccrualreceiveDoc {
+		func(holdingCode string, authUsername string, doc models.Accrualreceive) models.AccrualreceiveDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.AccrualreceiveDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.Accrualreceive = doc
 
 			currentTime := time.Now()
@@ -367,23 +367,23 @@ func (svc AccrualreceiveHttpService) SaveInBatch(shopID string, authUsername str
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.Accrualreceive, models.AccrualreceiveDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.AccrualreceiveDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", guid)
+		func(holdingCode string, guid string) (models.AccrualreceiveDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", guid)
 		},
 		func(doc models.AccrualreceiveDoc) bool {
 			return doc.DocNo != ""
 		},
-		func(shopID string, authUsername string, data models.Accrualreceive, doc models.AccrualreceiveDoc) error {
+		func(holdingCode string, authUsername string, data models.Accrualreceive, doc models.AccrualreceiveDoc) error {
 
 			doc.Accrualreceive = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -422,7 +422,7 @@ func (svc AccrualreceiveHttpService) SaveInBatch(shopID string, authUsername str
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -436,9 +436,9 @@ func (svc AccrualreceiveHttpService) getDocIDKey(doc models.Accrualreceive) stri
 	return doc.DocNo
 }
 
-func (svc AccrualreceiveHttpService) saveMasterSync(shopID string) {
+func (svc AccrualreceiveHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

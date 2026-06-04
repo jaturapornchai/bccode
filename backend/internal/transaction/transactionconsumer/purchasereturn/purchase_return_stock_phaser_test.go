@@ -16,8 +16,8 @@ func TestPurchaseReturnStockPhaser(t *testing.T) {
 	givePurchaseReturn := PurchaseReturnTransactionStruct()
 	want := models.StockTransaction{
 		GuidFixed: "2PxduUIwAoptr2OTwROegQ98Uvq",
-		ShopIdentity: pkgModels.ShopIdentity{
-			ShopID: "2PrIIqTWxoBXv16K310sNwfHmfY",
+		HoldingCodeentity: pkgModels.HoldingCodeentity{
+			HoldingCode: "2PrIIqTWxoBXv16K310sNwfHmfY",
 		},
 		TransFlag:      16,
 		InquiryType:    1,
@@ -42,7 +42,7 @@ func TestPurchaseReturnStockPhaser(t *testing.T) {
 		IsCancel:       false,
 		Details: &[]models.StockTransactionDetail{
 			{
-				ShopID:              "2PrIIqTWxoBXv16K310sNwfHmfY",
+				HoldingCode:         "2PrIIqTWxoBXv16K310sNwfHmfY",
 				DocNo:               "PO23050616392C90",
 				Barcode:             "BARCODE015",
 				UnitCode:            "PCE",
@@ -71,7 +71,7 @@ func TestPurchaseReturnStockPhaser(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, want.GuidFixed, get.GuidFixed, "GuidFixed")
-	assert.Equal(t, want.ShopID, get.ShopID, "ShopID")
+	assert.Equal(t, want.HoldingCode, get.HoldingCode, "HoldingCode")
 	assert.Equal(t, want.TransFlag, get.TransFlag, "TransFlag")
 	assert.Equal(t, want.InquiryType, get.InquiryType, "InquiryType")
 	assert.Equal(t, want.DocNo, get.DocNo, "DocNo")
@@ -93,7 +93,7 @@ func TestPurchaseReturnStockPhaser(t *testing.T) {
 	assert.Equal(t, want.Status, get.Status, "Status")
 	assert.Equal(t, want.IsCancel, get.IsCancel, "IsCancel")
 
-	assert.Equal(t, (*want.Details)[0].ShopID, (*get.Details)[0].ShopID, "Details[0].ShopID")
+	assert.Equal(t, (*want.Details)[0].HoldingCode, (*get.Details)[0].HoldingCode, "Details[0].HoldingCode")
 	assert.Equal(t, (*want.Details)[0].DocNo, (*get.Details)[0].DocNo, "Details[0].DocNo")
 	assert.Equal(t, (*want.Details)[0].Barcode, (*get.Details)[0].Barcode, "Details[0].Barcode")
 	assert.Equal(t, (*want.Details)[0].UnitCode, (*get.Details)[0].UnitCode, "Details[0].UnitCode")

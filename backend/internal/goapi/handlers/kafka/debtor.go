@@ -5,11 +5,11 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"runtime/debug"
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/models"
 	"smlcloudplatform/internal/goapi/myglobal"
 	"smlcloudplatform/internal/goapi/mypg"
-	"runtime/debug"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
@@ -25,19 +25,19 @@ func OnConsumeMessageDebtorCreateOrUpdate(msg string) error {
 // OnConsumeMessageDebtorDelete - handles debtor delete messages
 func OnConsumeMessageDebtorDelete(msg string) error {
 	// รับ Message จาก Kafka ที่เป็นการลบข้อมูล Debtor
-	// msg จะเป็น JSON string ที่มีข้อมูล เช่น {"shopid": "shop123", "code": "AR0001"}
+	// msg จะเป็น JSON string ที่มีข้อมูล เช่น {"holding_code": "shop123", "code": "AR0001"}
 
 	logger.Info("OnConsumeMessageDebtorDelete: %s", msg)
 
 	debtorData := TransDebtorDecode(msg)
 
-	if debtorData.ShopId == "" || debtorData.Code == "" {
-		logger.Error("ข้อมูล debtor ไม่ถูกต้อง - ไม่มี ShopId หรือ Code")
+	if debtorData.HoldingCode == "" || debtorData.Code == "" {
+		logger.Error("ข้อมูล debtor ไม่ถูกต้อง - ไม่มี HoldingCode หรือ Code")
 		return fmt.Errorf("invalid debtor data")
 	}
 
 	// ลบข้อมูลใน PostgreSQL
-	db, err := mypg.PgSqlFastConnect(debtorData.ShopId)
+	db, err := mypg.PgSqlFastConnect(debtorData.HoldingCode)
 	if err != nil {
 		logger.Error("ไม่สามารถเชื่อมต่อ PostgreSQL: %v", err)
 		return err
@@ -50,7 +50,7 @@ func OnConsumeMessageDebtorDelete(msg string) error {
 		return err
 	}
 
-	logger.Info("ลบ debtor สำเร็จ: ShopID=%s, Code=%s", debtorData.ShopId, debtorData.Code)
+	logger.Info("ลบ debtor สำเร็จ: HoldingCode=%s, Code=%s", debtorData.HoldingCode, debtorData.Code)
 	return nil
 }
 
@@ -70,17 +70,17 @@ func ProcessDebtorMasterData(msg string) error {
 	// Decode debtor from JSON message
 	logger.Debug("Step 1: กำลัง Decode JSON message... ")
 	debtorData := TransDebtorDecode(msg)
-	logger.Info("Step 1: Decode debtor สำเร็จ - ShopID=%s, Code=%s, TaxID=%s, Names=%d",
-		debtorData.ShopId, debtorData.Code, debtorData.TaxID, len(debtorData.Names))
+	logger.Info("Step 1: Decode debtor สำเร็จ - HoldingCode=%s, Code=%s, TaxID=%s, Names=%d",
+		debtorData.HoldingCode, debtorData.Code, debtorData.TaxID, len(debtorData.Names))
 
-	if debtorData.ShopId == "" || debtorData.Code == "" {
-		logger.Error("ข้อมูล debtor ไม่ถูกต้อง - ShopId='%s', Code='%s'", debtorData.ShopId, debtorData.Code)
-		return fmt.Errorf("invalid debtor data - missing ShopId or Code")
+	if debtorData.HoldingCode == "" || debtorData.Code == "" {
+		logger.Error("ข้อมูล debtor ไม่ถูกต้อง - HoldingCode='%s', Code='%s'", debtorData.HoldingCode, debtorData.Code)
+		return fmt.Errorf("invalid debtor data - missing HoldingCode or Code")
 	}
 
 	// Connect to database
 	logger.Debug("Step 2: กำลังเชื่อมต่อ PostgreSQL...")
-	db, err := mypg.PgSqlFastConnect(debtorData.ShopId)
+	db, err := mypg.PgSqlFastConnect(debtorData.HoldingCode)
 	if err != nil {
 		logger.Error("ไม่สามารถเชื่อมต่อ database: %v", err)
 		return fmt.Errorf("failed to connect to database: %v", err)
@@ -212,12 +212,12 @@ func OnConsumeMessageDebtorBulkDelete(msg string) error {
 			}
 
 			debtorData := TransDebtorDecode(string(rawJSON))
-			if debtorData.ShopId == "" || debtorData.Code == "" {
-				logger.Warn("debtor[%d] ไม่มี ShopId/Code — ข้าม", i)
+			if debtorData.HoldingCode == "" || debtorData.Code == "" {
+				logger.Warn("debtor[%d] ไม่มี HoldingCode/Code — ข้าม", i)
 				continue
 			}
 
-			db, err := mypg.PgSqlFastConnect(debtorData.ShopId)
+			db, err := mypg.PgSqlFastConnect(debtorData.HoldingCode)
 			if err != nil {
 				logger.Error("debtor[%d] เชื่อมต่อ PG ล้มเหลว: %v", i, err)
 				continue

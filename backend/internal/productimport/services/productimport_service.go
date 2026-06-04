@@ -48,33 +48,33 @@ import (
 )
 
 type IProductImportService interface {
-	List(shopID string, taskID string, pageable micromodels.Pageable) ([]models.ProductImportInfo, models.PaginationData, error)
-	Create(shopID string, authUsername string, req *models.ProductImport) error
-	Update(shopID string, guid string, doc models.ProductImportRaw) error
-	Delete(shopID string, guid string) error
-	DeleteTask(shopID string, taskID string) error
-	ImportFromFile(shopID string, authUsername string, fileUpload io.Reader) (string, error)
-	SaveTask(shopID string, authUsername string, taskID string, docHeader models.ProductImportHeader) error
-	Verify(shopID string, taskID string) error
-	GetTaskStatus(shopID string, taskID string) (models.TaskStatusModel, error)
+	List(holdingCode string, taskID string, pageable micromodels.Pageable) ([]models.ProductImportInfo, models.PaginationData, error)
+	Create(holdingCode string, authUsername string, req *models.ProductImport) error
+	Update(holdingCode string, guid string, doc models.ProductImportRaw) error
+	Delete(holdingCode string, guid string) error
+	DeleteTask(holdingCode string, taskID string) error
+	ImportFromFile(holdingCode string, authUsername string, fileUpload io.Reader) (string, error)
+	SaveTask(holdingCode string, authUsername string, taskID string, docHeader models.ProductImportHeader) error
+	Verify(holdingCode string, taskID string) error
+	GetTaskStatus(holdingCode string, taskID string) (models.TaskStatusModel, error)
 
 	// Enhanced methods สำหรับ compare และ insert/update functionality
-	SaveTaskWithMode(shopID string, authUsername string, taskID string, docHeader models.ProductImportHeader, importMode string, forceUpdate bool) error
-	PreviewSave(shopID string, taskID string, docHeader models.ProductImportHeader, importMode string) (*models.CompareResult, error)
-	CompareWithExisting(shopID string, taskID string) (*models.CompareResult, error)
-	GetCompareResult(shopID string, taskID string) (*models.CompareResult, error)
-	PreviewChanges(shopID string, taskID string, importMode string) (*models.PreviewResult, error)
-	ApplyChanges(shopID string, authUsername string, taskID string, importMode string, forceUpdate bool) error
-	GetImportSummary(shopID string, taskID string) (*models.ImportSummary, error)
+	SaveTaskWithMode(holdingCode string, authUsername string, taskID string, docHeader models.ProductImportHeader, importMode string, forceUpdate bool) error
+	PreviewSave(holdingCode string, taskID string, docHeader models.ProductImportHeader, importMode string) (*models.CompareResult, error)
+	CompareWithExisting(holdingCode string, taskID string) (*models.CompareResult, error)
+	GetCompareResult(holdingCode string, taskID string) (*models.CompareResult, error)
+	PreviewChanges(holdingCode string, taskID string, importMode string) (*models.PreviewResult, error)
+	ApplyChanges(holdingCode string, authUsername string, taskID string, importMode string, forceUpdate bool) error
+	GetImportSummary(holdingCode string, taskID string) (*models.ImportSummary, error)
 
 	// 🚀 เพิ่ม methods ใหม่สำหรับ pagination และ performance
-	GetCompareResultPaginated(shopID string, taskID string, pageable micromodels.Pageable) (*models.CompareResult, models.PaginationData, error)
-	GetCompareResultSummary(shopID string, taskID string) (*models.CompareSummary, error)
+	GetCompareResultPaginated(holdingCode string, taskID string, pageable micromodels.Pageable) (*models.CompareResult, models.PaginationData, error)
+	GetCompareResultSummary(holdingCode string, taskID string) (*models.CompareSummary, error)
 
 	// 🔧 เพิ่ม methods สำหรับ task status management และ progress tracking
-	CreateTaskStatus(shopID string, taskID string, status string, progress int, message string) error
-	UpdateTaskStatus(shopID string, taskID string, status string, progress int, message string) error
-	ApplyChangesWithProgress(shopID string, authUsername string, taskID string, importMode string, forceUpdate bool, batchSize ...int) error
+	CreateTaskStatus(holdingCode string, taskID string, status string, progress int, message string) error
+	UpdateTaskStatus(holdingCode string, taskID string, status string, progress int, message string) error
+	ApplyChangesWithProgress(holdingCode string, authUsername string, taskID string, importMode string, forceUpdate bool, batchSize ...int) error
 }
 
 type ProductImportService struct {
@@ -152,8 +152,8 @@ func NewProductImportService(
 	}
 }
 
-func (svc *ProductImportService) List(shopID string, taskID string, pageable micromodels.Pageable) ([]models.ProductImportInfo, models.PaginationData, error) {
-	findDocs, pagination, err := svc.chRepo.List(context.Background(), shopID, taskID, pageable)
+func (svc *ProductImportService) List(holdingCode string, taskID string, pageable micromodels.Pageable) ([]models.ProductImportInfo, models.PaginationData, error) {
+	findDocs, pagination, err := svc.chRepo.List(context.Background(), holdingCode, taskID, pageable)
 
 	if err != nil {
 		return []models.ProductImportInfo{}, models.PaginationData{}, err
@@ -169,13 +169,13 @@ func (svc *ProductImportService) List(shopID string, taskID string, pageable mic
 
 }
 
-func (svc *ProductImportService) Create(shopID string, authUsername string, doc *models.ProductImport) error {
+func (svc *ProductImportService) Create(holdingCode string, authUsername string, doc *models.ProductImport) error {
 	docData := models.ProductImportDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GUIDFixed = svc.generateGUID()
 	docData.ProductImport = *doc
 
-	result, err := svc.chRepo.FindOne(context.Background(), shopID, doc.TaskID, []micromodels.KeyInt{
+	result, err := svc.chRepo.FindOne(context.Background(), holdingCode, doc.TaskID, []micromodels.KeyInt{
 		{
 			Key:   "rownumber",
 			Value: -1,
@@ -196,7 +196,7 @@ func (svc *ProductImportService) Create(shopID string, authUsername string, doc 
 	return svc.chRepo.Create(context.Background(), docData)
 }
 
-func (svc *ProductImportService) ImportFromFile(shopID string, authUsername string, fileUpload io.Reader) (string, error) {
+func (svc *ProductImportService) ImportFromFile(holdingCode string, authUsername string, fileUpload io.Reader) (string, error) {
 
 	f, err := excelize.OpenReader(fileUpload)
 	if err != nil {
@@ -258,7 +258,7 @@ func (svc *ProductImportService) ImportFromFile(shopID string, authUsername stri
 			continue
 		}
 
-		tempDataList, err := svc.prepareData(shopID, taskID, float64(i), colIdxs, doc)
+		tempDataList, err := svc.prepareData(holdingCode, taskID, float64(i), colIdxs, doc)
 		if err != nil {
 			return "", err
 		}
@@ -284,12 +284,12 @@ func (svc *ProductImportService) ImportFromFile(shopID string, authUsername stri
 	log.Printf("Creating initial task status with timestamp: %v", now)
 
 	status := models.TaskStatusModel{
-		TaskID:    taskID,
-		ShopID:    shopID,
-		Status:    "UPLOADED", // เปลี่ยนเป็น string แทน constant
-		Progress:  int32(0),
-		CreatedAt: now,
-		UpdatedAt: now,
+		TaskID:      taskID,
+		HoldingCode: holdingCode,
+		Status:      "UPLOADED", // เปลี่ยนเป็น string แทน constant
+		Progress:    int32(0),
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
 
 	if err := svc.taskStatusRepo.Create(context.Background(), status); err != nil {
@@ -302,7 +302,7 @@ func (svc *ProductImportService) ImportFromFile(shopID string, authUsername stri
 	return taskID, nil
 }
 
-func (svc *ProductImportService) prepareData(shopID string, taskID string, rowNumber float64, colIdx map[string]int, doc []string) ([]models.ProductImportDoc, error) {
+func (svc *ProductImportService) prepareData(holdingCode string, taskID string, rowNumber float64, colIdx map[string]int, doc []string) ([]models.ProductImportDoc, error) {
 
 	// Helper function เพื่อรับค่าจาก column อย่างปลอดภัย
 	getColumnValue := func(columnName string) string {
@@ -399,7 +399,7 @@ func (svc *ProductImportService) prepareData(shopID string, taskID string, rowNu
 
 		dataDoc := models.ProductImportDoc{}
 		dataDoc.GUIDFixed = newGUID
-		dataDoc.ShopID = shopID
+		dataDoc.HoldingCode = holdingCode
 		dataDoc.TaskID = taskID
 		dataDoc.RowNumber = rowNumber + float64(i)*0.001 // ใช้ decimal เพื่อแยก barcode ในแถวเดียวกัน
 		dataDoc.Barcode = barcode
@@ -445,20 +445,20 @@ func (svc *ProductImportService) prepareData(shopID string, taskID string, rowNu
 	return resultDocs, nil
 }
 
-func (svc *ProductImportService) Update(shopID string, guid string, doc models.ProductImportRaw) error {
-	return svc.chRepo.Update(context.Background(), shopID, guid, doc)
+func (svc *ProductImportService) Update(holdingCode string, guid string, doc models.ProductImportRaw) error {
+	return svc.chRepo.Update(context.Background(), holdingCode, guid, doc)
 }
 
-func (svc *ProductImportService) Delete(shopID string, guid string) error {
-	return svc.chRepo.DeleteByGUID(context.Background(), shopID, guid)
+func (svc *ProductImportService) Delete(holdingCode string, guid string) error {
+	return svc.chRepo.DeleteByGUID(context.Background(), holdingCode, guid)
 }
 
-func (svc *ProductImportService) DeleteTask(shopID string, taskID string) error {
-	return svc.chRepo.DeleteByTaskID(context.Background(), shopID, taskID)
+func (svc *ProductImportService) DeleteTask(holdingCode string, taskID string) error {
+	return svc.chRepo.DeleteByTaskID(context.Background(), holdingCode, taskID)
 }
 
-func (svc ProductImportService) Verify(shopID string, taskID string) error {
-	docs, err := svc.chRepo.All(context.Background(), shopID, taskID)
+func (svc ProductImportService) Verify(holdingCode string, taskID string) error {
+	docs, err := svc.chRepo.All(context.Background(), holdingCode, taskID)
 
 	if err != nil {
 		return err
@@ -500,7 +500,7 @@ func (svc ProductImportService) Verify(shopID string, taskID string) error {
 		tempUnitCodes = append(tempUnitCodes, doc.UnitCode)
 
 		if (i > 1 && i%5000 == 0) || i == len(docs)-1 {
-			productList, err := svc.productBarcodeRepo.FindByBarcodes(context.Background(), shopID, tempBarcodes)
+			productList, err := svc.productBarcodeRepo.FindByBarcodes(context.Background(), holdingCode, tempBarcodes)
 			if err != nil {
 				return err
 			}
@@ -510,7 +510,7 @@ func (svc ProductImportService) Verify(shopID string, taskID string) error {
 				delete(itemDulpicated, product.Barcode)
 			}
 
-			unitList, err := svc.productUnitRepo.FindByUnitCodes(context.Background(), shopID, tempUnitCodes)
+			unitList, err := svc.productUnitRepo.FindByUnitCodes(context.Background(), holdingCode, tempUnitCodes)
 			if err != nil {
 				return err
 			}
@@ -527,32 +527,32 @@ func (svc ProductImportService) Verify(shopID string, taskID string) error {
 			}
 
 			//Clear previous duplicate
-			if err := svc.updateDuplicate(shopID, taskID, false, previousDuplicate); err != nil {
+			if err := svc.updateDuplicate(holdingCode, taskID, false, previousDuplicate); err != nil {
 				return err
 			}
 
 			//Update duplicate
-			if err := svc.updateDuplicate(shopID, taskID, true, itemDulpicated); err != nil {
+			if err := svc.updateDuplicate(holdingCode, taskID, true, itemDulpicated); err != nil {
 				return err
 			}
 
 			//Clear previous exist
-			if err := svc.updateExist(shopID, taskID, false, previousExist); err != nil {
+			if err := svc.updateExist(holdingCode, taskID, false, previousExist); err != nil {
 				return err
 			}
 
 			// Update exist
-			if err := svc.updateExist(shopID, taskID, true, itemExist); err != nil {
+			if err := svc.updateExist(holdingCode, taskID, true, itemExist); err != nil {
 				return err
 			}
 
 			// clear previous unit not exist
-			if err := svc.updateUnitExist(shopID, taskID, false, previousUnitNotExist); err != nil {
+			if err := svc.updateUnitExist(holdingCode, taskID, false, previousUnitNotExist); err != nil {
 				return err
 			}
 
 			// Update unit not exist
-			if err := svc.updateUnitExist(shopID, taskID, true, itemUnitNotExist); err != nil {
+			if err := svc.updateUnitExist(holdingCode, taskID, true, itemUnitNotExist); err != nil {
 				return err
 			}
 
@@ -568,7 +568,7 @@ func (svc ProductImportService) Verify(shopID string, taskID string) error {
 
 }
 
-func (svc ProductImportService) updateDuplicate(shopID string, taskID string, isDuplicate bool, barcodes map[string]struct{}) error {
+func (svc ProductImportService) updateDuplicate(holdingCode string, taskID string, isDuplicate bool, barcodes map[string]struct{}) error {
 
 	if len(barcodes) == 0 {
 		return nil
@@ -578,7 +578,7 @@ func (svc ProductImportService) updateDuplicate(shopID string, taskID string, is
 	for barcode := range barcodes {
 		tempPreviousDuplicate = append(tempPreviousDuplicate, barcode)
 	}
-	err := svc.chRepo.UpdateDuplicate(context.Background(), shopID, taskID, isDuplicate, tempPreviousDuplicate)
+	err := svc.chRepo.UpdateDuplicate(context.Background(), holdingCode, taskID, isDuplicate, tempPreviousDuplicate)
 
 	if err != nil {
 		return err
@@ -587,7 +587,7 @@ func (svc ProductImportService) updateDuplicate(shopID string, taskID string, is
 	return nil
 }
 
-func (svc ProductImportService) updateExist(shopID string, taskID string, isExist bool, barcodes map[string]struct{}) error {
+func (svc ProductImportService) updateExist(holdingCode string, taskID string, isExist bool, barcodes map[string]struct{}) error {
 	if len(barcodes) == 0 {
 		return nil
 	}
@@ -596,7 +596,7 @@ func (svc ProductImportService) updateExist(shopID string, taskID string, isExis
 	for barcode := range barcodes {
 		tempPreviousExist = append(tempPreviousExist, barcode)
 	}
-	err := svc.chRepo.UpdateExist(context.Background(), shopID, taskID, isExist, tempPreviousExist)
+	err := svc.chRepo.UpdateExist(context.Background(), holdingCode, taskID, isExist, tempPreviousExist)
 
 	if err != nil {
 		return err
@@ -605,7 +605,7 @@ func (svc ProductImportService) updateExist(shopID string, taskID string, isExis
 	return nil
 }
 
-func (svc ProductImportService) updateUnitExist(shopID string, taskID string, isExist bool, unitCodes map[string]struct{}) error {
+func (svc ProductImportService) updateUnitExist(holdingCode string, taskID string, isExist bool, unitCodes map[string]struct{}) error {
 	if len(unitCodes) == 0 {
 		return nil
 	}
@@ -614,7 +614,7 @@ func (svc ProductImportService) updateUnitExist(shopID string, taskID string, is
 	for barcode := range unitCodes {
 		tempPreviousExist = append(tempPreviousExist, barcode)
 	}
-	err := svc.chRepo.UpdateUnitExist(context.Background(), shopID, taskID, isExist, tempPreviousExist)
+	err := svc.chRepo.UpdateUnitExist(context.Background(), holdingCode, taskID, isExist, tempPreviousExist)
 
 	if err != nil {
 		return err
@@ -623,15 +623,15 @@ func (svc ProductImportService) updateUnitExist(shopID string, taskID string, is
 	return nil
 }
 
-func (svc ProductImportService) SaveTask(shopID string, authUsername string, taskID string, docHeader models.ProductImportHeader) error {
+func (svc ProductImportService) SaveTask(holdingCode string, authUsername string, taskID string, docHeader models.ProductImportHeader) error {
 	// สร้าง status เป็น processing
 	status := models.TaskStatusModel{
-		TaskID:    taskID,
-		ShopID:    shopID,
-		Status:    models.TaskStatusModelProcessing,
-		Progress:  int32(0),
-		CreatedAt: svc.timeNow(),
-		UpdatedAt: svc.timeNow(),
+		TaskID:      taskID,
+		HoldingCode: holdingCode,
+		Status:      models.TaskStatusModelProcessing,
+		Progress:    int32(0),
+		CreatedAt:   svc.timeNow(),
+		UpdatedAt:   svc.timeNow(),
 	}
 
 	if err := svc.taskStatusRepo.Create(context.Background(), status); err != nil {
@@ -645,7 +645,7 @@ func (svc ProductImportService) SaveTask(shopID string, authUsername string, tas
 		fmt.Printf("Failed to update task status progress: %v\n", updateErr)
 	}
 
-	err := svc.Verify(shopID, taskID)
+	err := svc.Verify(holdingCode, taskID)
 	if err != nil {
 		// Update status เป็น failed
 		status.Status = models.TaskStatusModelFailed
@@ -664,7 +664,7 @@ func (svc ProductImportService) SaveTask(shopID string, authUsername string, tas
 		fmt.Printf("Failed to update task status progress: %v\n", updateErr)
 	}
 
-	countDuplicate, err := svc.chRepo.CountDuplicate(context.Background(), shopID, taskID, true)
+	countDuplicate, err := svc.chRepo.CountDuplicate(context.Background(), holdingCode, taskID, true)
 	if err != nil {
 		status.Status = models.TaskStatusModelFailed
 		status.ErrorMsg = "counting duplicate failed"
@@ -692,7 +692,7 @@ func (svc ProductImportService) SaveTask(shopID string, authUsername string, tas
 		fmt.Printf("Failed to update task status progress: %v\n", updateErr)
 	}
 
-	countExist, err := svc.chRepo.CountExist(context.Background(), shopID, taskID, true)
+	countExist, err := svc.chRepo.CountExist(context.Background(), holdingCode, taskID, true)
 	if err != nil {
 		status.Status = models.TaskStatusModelFailed
 		status.ErrorMsg = "counting exist failed"
@@ -721,7 +721,7 @@ func (svc ProductImportService) SaveTask(shopID string, authUsername string, tas
 		fmt.Printf("Failed to update task status progress: %v\n", updateErr)
 	}
 
-	countUnitNotExist, err := svc.chRepo.CountUnitExist(context.Background(), shopID, taskID, true)
+	countUnitNotExist, err := svc.chRepo.CountUnitExist(context.Background(), holdingCode, taskID, true)
 	if err != nil {
 		status.Status = models.TaskStatusModelFailed
 		status.ErrorMsg = "counting unit not exist failed"
@@ -749,7 +749,7 @@ func (svc ProductImportService) SaveTask(shopID string, authUsername string, tas
 		fmt.Printf("Failed to update task status progress: %v\n", updateErr)
 	}
 
-	docs, err := svc.chRepo.All(context.Background(), shopID, taskID)
+	docs, err := svc.chRepo.All(context.Background(), holdingCode, taskID)
 	if err != nil {
 		status.Status = models.TaskStatusModelFailed
 		status.ErrorMsg = err.Error()
@@ -774,7 +774,7 @@ func (svc ProductImportService) SaveTask(shopID string, authUsername string, tas
 		tempUnitCodes = append(tempUnitCodes, doc.UnitCode)
 	}
 
-	unitDocs, err := svc.productUnitRepo.FindByUnitCodes(context.Background(), shopID, tempUnitCodes)
+	unitDocs, err := svc.productUnitRepo.FindByUnitCodes(context.Background(), holdingCode, tempUnitCodes)
 	if err != nil {
 		status.Status = models.TaskStatusModelFailed
 		status.ErrorMsg = err.Error()
@@ -795,7 +795,7 @@ func (svc ProductImportService) SaveTask(shopID string, authUsername string, tas
 	}
 
 	// Prepare master data
-	dataDocs, err = svc.prepareMasterData(shopID, dataDocs)
+	dataDocs, err = svc.prepareMasterData(holdingCode, dataDocs)
 	if err != nil {
 		status.Status = models.TaskStatusModelFailed
 		status.ErrorMsg = err.Error()
@@ -813,7 +813,7 @@ func (svc ProductImportService) SaveTask(shopID string, authUsername string, tas
 		fmt.Printf("Failed to update task status progress: %v\n", updateErr)
 	}
 
-	_, err = svc.productBarcodeService.SaveInBatch(shopID, authUsername, dataDocs)
+	_, err = svc.productBarcodeService.SaveInBatch(holdingCode, authUsername, dataDocs)
 	if err != nil {
 		status.Status = models.TaskStatusModelFailed
 		status.ErrorMsg = err.Error()
@@ -831,7 +831,7 @@ func (svc ProductImportService) SaveTask(shopID string, authUsername string, tas
 		fmt.Printf("Failed to update task status progress: %v\n", updateErr)
 	}
 
-	err = svc.DeleteTask(shopID, taskID)
+	err = svc.DeleteTask(holdingCode, taskID)
 	if err != nil {
 		status.Status = models.TaskStatusModelFailed
 		status.ErrorMsg = err.Error()
@@ -843,7 +843,7 @@ func (svc ProductImportService) SaveTask(shopID string, authUsername string, tas
 	}
 
 	// เช็คและอัพเดท refbarcodes ถ้ามี BarcodeRef
-	refUpdateCount, err := svc.processRefBarcodeUpdates(context.Background(), shopID, authUsername, docs)
+	refUpdateCount, err := svc.processRefBarcodeUpdates(context.Background(), holdingCode, authUsername, docs)
 	if err != nil {
 		fmt.Printf("Warning: Failed to update some refbarcodes: %v\n", err)
 	} else if refUpdateCount > 0 {
@@ -861,7 +861,7 @@ func (svc ProductImportService) SaveTask(shopID string, authUsername string, tas
 	}
 
 	// ลบ task status หลังจากสำเร็จ (อาจเก็บไว้สักพักหรือลบทันที)
-	if deleteErr := svc.taskStatusRepo.Delete(context.Background(), shopID, taskID); deleteErr != nil {
+	if deleteErr := svc.taskStatusRepo.Delete(context.Background(), holdingCode, taskID); deleteErr != nil {
 		fmt.Printf("Failed to delete task status: %v\n", deleteErr)
 	}
 
@@ -907,7 +907,7 @@ type MasterDataCache struct {
 	Units        map[string]productunit_models.UnitInfo
 }
 
-func (svc ProductImportService) fetchMasterDataCache(ctx context.Context, shopID string, importDataList []models.ProductImportRaw) (*MasterDataCache, error) {
+func (svc ProductImportService) fetchMasterDataCache(ctx context.Context, holdingCode string, importDataList []models.ProductImportRaw) (*MasterDataCache, error) {
 	cache := &MasterDataCache{
 		Groups:       make(map[string]groupproduct_models.GroupProductInfo),
 		Groupsubones: make(map[string]groupsuboneproduct_models.GroupsuboneProductInfo),
@@ -979,7 +979,7 @@ func (svc ProductImportService) fetchMasterDataCache(ctx context.Context, shopID
 		for code := range groupCodes {
 			codes = append(codes, code)
 		}
-		if groups, err := svc.groupProductRepo.FindByCodes(ctx, shopID, codes); err == nil {
+		if groups, err := svc.groupProductRepo.FindByCodes(ctx, holdingCode, codes); err == nil {
 			for _, g := range groups {
 				cache.Groups[g.Code] = g
 			}
@@ -992,7 +992,7 @@ func (svc ProductImportService) fetchMasterDataCache(ctx context.Context, shopID
 		for code := range groupsuboneCodes {
 			codes = append(codes, code)
 		}
-		if groupsubones, err := svc.groupsuboneProductRepo.FindByCodes(ctx, shopID, codes); err == nil {
+		if groupsubones, err := svc.groupsuboneProductRepo.FindByCodes(ctx, holdingCode, codes); err == nil {
 			for _, g := range groupsubones {
 				cache.Groupsubones[g.Code] = g
 			}
@@ -1005,7 +1005,7 @@ func (svc ProductImportService) fetchMasterDataCache(ctx context.Context, shopID
 		for code := range groupsubtwoCodes {
 			codes = append(codes, code)
 		}
-		if groupsubtwos, err := svc.groupsubtwoproductRepo.FindByCodes(ctx, shopID, codes); err == nil {
+		if groupsubtwos, err := svc.groupsubtwoproductRepo.FindByCodes(ctx, holdingCode, codes); err == nil {
 			for _, g := range groupsubtwos {
 				cache.Groupsubtwos[g.Code] = g
 			}
@@ -1018,7 +1018,7 @@ func (svc ProductImportService) fetchMasterDataCache(ctx context.Context, shopID
 		for code := range brandCodes {
 			codes = append(codes, code)
 		}
-		if brands, err := svc.brandProductRepo.FindByCodes(ctx, shopID, codes); err == nil {
+		if brands, err := svc.brandProductRepo.FindByCodes(ctx, holdingCode, codes); err == nil {
 			for _, b := range brands {
 				cache.Brands[b.Code] = b
 			}
@@ -1031,7 +1031,7 @@ func (svc ProductImportService) fetchMasterDataCache(ctx context.Context, shopID
 		for code := range designCodes {
 			codes = append(codes, code)
 		}
-		if designs, err := svc.designProductRepo.FindByCodes(ctx, shopID, codes); err == nil {
+		if designs, err := svc.designProductRepo.FindByCodes(ctx, holdingCode, codes); err == nil {
 			for _, d := range designs {
 				cache.Designs[d.Code] = d
 			}
@@ -1044,7 +1044,7 @@ func (svc ProductImportService) fetchMasterDataCache(ctx context.Context, shopID
 		for code := range modelCodes {
 			codes = append(codes, code)
 		}
-		if models, err := svc.modelProductRepo.FindByCodes(ctx, shopID, codes); err == nil {
+		if models, err := svc.modelProductRepo.FindByCodes(ctx, holdingCode, codes); err == nil {
 			for _, m := range models {
 				cache.Models[m.Code] = m
 			}
@@ -1057,7 +1057,7 @@ func (svc ProductImportService) fetchMasterDataCache(ctx context.Context, shopID
 		for code := range patternCodes {
 			codes = append(codes, code)
 		}
-		if patterns, err := svc.patternProductRepo.FindByCodes(ctx, shopID, codes); err == nil {
+		if patterns, err := svc.patternProductRepo.FindByCodes(ctx, holdingCode, codes); err == nil {
 			for _, p := range patterns {
 				cache.Patterns[p.Code] = p
 			}
@@ -1070,7 +1070,7 @@ func (svc ProductImportService) fetchMasterDataCache(ctx context.Context, shopID
 		for code := range gradeCodes {
 			codes = append(codes, code)
 		}
-		if grades, err := svc.gradeProductRepo.FindByCodes(ctx, shopID, codes); err == nil {
+		if grades, err := svc.gradeProductRepo.FindByCodes(ctx, holdingCode, codes); err == nil {
 			for _, g := range grades {
 				cache.Grades[g.Code] = g
 			}
@@ -1083,7 +1083,7 @@ func (svc ProductImportService) fetchMasterDataCache(ctx context.Context, shopID
 		for code := range categoryCodes {
 			codes = append(codes, code)
 		}
-		if categories, err := svc.categoryProductRepo.FindByCodes(ctx, shopID, codes); err == nil {
+		if categories, err := svc.categoryProductRepo.FindByCodes(ctx, holdingCode, codes); err == nil {
 			for _, c := range categories {
 				cache.Categories[c.Code] = c
 			}
@@ -1096,7 +1096,7 @@ func (svc ProductImportService) fetchMasterDataCache(ctx context.Context, shopID
 		for code := range classCodes {
 			codes = append(codes, code)
 		}
-		if classes, err := svc.classProductRepo.FindByCodes(ctx, shopID, codes); err == nil {
+		if classes, err := svc.classProductRepo.FindByCodes(ctx, holdingCode, codes); err == nil {
 			for _, c := range classes {
 				cache.Classes[c.Code] = c
 			}
@@ -1109,7 +1109,7 @@ func (svc ProductImportService) fetchMasterDataCache(ctx context.Context, shopID
 		for code := range unitCodes {
 			codes = append(codes, code)
 		}
-		if units, err := svc.productUnitRepo.FindByUnitCodes(ctx, shopID, codes); err == nil {
+		if units, err := svc.productUnitRepo.FindByUnitCodes(ctx, holdingCode, codes); err == nil {
 			for _, u := range units {
 				cache.Units[u.UnitCode] = u
 			}
@@ -1390,14 +1390,14 @@ func (svc ProductImportService) applyMasterDataUpdatesFromCache(updateData bson.
 	return nil
 }
 
-func (svc ProductImportService) prepareMasterData(shopID string, docs []product_models.ProductBarcode) ([]product_models.ProductBarcode, error) {
+func (svc ProductImportService) prepareMasterData(holdingCode string, docs []product_models.ProductBarcode) ([]product_models.ProductBarcode, error) {
 	// Fetch business types from branch code "00000" once for all products
 	branchBusinessTypes := []product_models.ProductBarcodeBusinessType{}
-	branchDoc, err := svc.branchRepo.FindByDocIndentityGuid(context.Background(), shopID, "code", "00000")
+	branchDoc, err := svc.branchRepo.FindByDocIndentityGuid(context.Background(), holdingCode, "code", "00000")
 	if err == nil && len(branchDoc.GuidFixed) > 0 {
 		if branchDoc.Branch.BusinessTypes != nil {
 			for _, businessTypeGUID := range *branchDoc.Branch.BusinessTypes {
-				businessTypeDoc, err := svc.businessTypeRepo.FindByGuid(context.Background(), shopID, businessTypeGUID)
+				businessTypeDoc, err := svc.businessTypeRepo.FindByGuid(context.Background(), holdingCode, businessTypeGUID)
 				if err == nil && len(businessTypeDoc.GuidFixed) > 0 {
 					branchBusinessTypes = append(branchBusinessTypes, product_models.ProductBarcodeBusinessType{
 						DocIdentity: businessTypeDoc.DocIdentity,
@@ -1510,7 +1510,7 @@ func (svc ProductImportService) prepareMasterData(shopID string, docs []product_
 	// Fetch master data
 	groupDict := make(map[string]groupproduct_models.GroupProductInfo)
 	if len(groupCodesList) > 0 {
-		groupDocs, err := svc.groupProductRepo.FindByCodes(context.Background(), shopID, groupCodesList)
+		groupDocs, err := svc.groupProductRepo.FindByCodes(context.Background(), holdingCode, groupCodesList)
 		if err == nil {
 			for _, group := range groupDocs {
 				groupDict[group.Code] = group
@@ -1520,7 +1520,7 @@ func (svc ProductImportService) prepareMasterData(shopID string, docs []product_
 
 	groupsuboneDict := make(map[string]groupsuboneproduct_models.GroupsuboneProductInfo)
 	if len(groupsuboneCodesList) > 0 {
-		groupsuboneDocs, err := svc.groupsuboneProductRepo.FindByCodes(context.Background(), shopID, groupsuboneCodesList)
+		groupsuboneDocs, err := svc.groupsuboneProductRepo.FindByCodes(context.Background(), holdingCode, groupsuboneCodesList)
 		if err == nil {
 			for _, groupsubone := range groupsuboneDocs {
 				groupsuboneDict[groupsubone.Code] = groupsubone
@@ -1530,7 +1530,7 @@ func (svc ProductImportService) prepareMasterData(shopID string, docs []product_
 
 	groupsubtwoDict := make(map[string]groupsubtwoproduct_models.GroupsubtwoProductInfo)
 	if len(groupsubtwoCodesList) > 0 {
-		groupsubtwoDocs, err := svc.groupsubtwoproductRepo.FindByCodes(context.Background(), shopID, groupsubtwoCodesList)
+		groupsubtwoDocs, err := svc.groupsubtwoproductRepo.FindByCodes(context.Background(), holdingCode, groupsubtwoCodesList)
 		if err == nil {
 			for _, groupsubtwo := range groupsubtwoDocs {
 				groupsubtwoDict[groupsubtwo.Code] = groupsubtwo
@@ -1540,7 +1540,7 @@ func (svc ProductImportService) prepareMasterData(shopID string, docs []product_
 
 	brandDict := make(map[string]brandproduct_models.BrandProductInfo)
 	if len(brandCodesList) > 0 {
-		brandDocs, err := svc.brandProductRepo.FindByCodes(context.Background(), shopID, brandCodesList)
+		brandDocs, err := svc.brandProductRepo.FindByCodes(context.Background(), holdingCode, brandCodesList)
 		if err == nil {
 			for _, brand := range brandDocs {
 				brandDict[brand.Code] = brand
@@ -1550,7 +1550,7 @@ func (svc ProductImportService) prepareMasterData(shopID string, docs []product_
 
 	designDict := make(map[string]designproduct_models.DesignProductInfo)
 	if len(designCodesList) > 0 {
-		designDocs, err := svc.designProductRepo.FindByCodes(context.Background(), shopID, designCodesList)
+		designDocs, err := svc.designProductRepo.FindByCodes(context.Background(), holdingCode, designCodesList)
 		if err == nil {
 			for _, design := range designDocs {
 				designDict[design.Code] = design
@@ -1560,7 +1560,7 @@ func (svc ProductImportService) prepareMasterData(shopID string, docs []product_
 
 	modelDict := make(map[string]modelproduct_models.ModelProductInfo)
 	if len(modelCodesList) > 0 {
-		modelDocs, err := svc.modelProductRepo.FindByCodes(context.Background(), shopID, modelCodesList)
+		modelDocs, err := svc.modelProductRepo.FindByCodes(context.Background(), holdingCode, modelCodesList)
 		if err == nil {
 			for _, model := range modelDocs {
 				modelDict[model.Code] = model
@@ -1570,7 +1570,7 @@ func (svc ProductImportService) prepareMasterData(shopID string, docs []product_
 
 	patternDict := make(map[string]patternproduct_models.PatternProductInfo)
 	if len(patternCodesList) > 0 {
-		patternDocs, err := svc.patternProductRepo.FindByCodes(context.Background(), shopID, patternCodesList)
+		patternDocs, err := svc.patternProductRepo.FindByCodes(context.Background(), holdingCode, patternCodesList)
 		if err == nil {
 			for _, pattern := range patternDocs {
 				patternDict[pattern.Code] = pattern
@@ -1580,7 +1580,7 @@ func (svc ProductImportService) prepareMasterData(shopID string, docs []product_
 
 	gradeDict := make(map[string]gradeproduct_models.GradeProductInfo)
 	if len(gradeCodesList) > 0 {
-		gradeDocs, err := svc.gradeProductRepo.FindByCodes(context.Background(), shopID, gradeCodesList)
+		gradeDocs, err := svc.gradeProductRepo.FindByCodes(context.Background(), holdingCode, gradeCodesList)
 		if err == nil {
 			for _, grade := range gradeDocs {
 				gradeDict[grade.Code] = grade
@@ -1590,7 +1590,7 @@ func (svc ProductImportService) prepareMasterData(shopID string, docs []product_
 
 	categoryDict := make(map[string]categoryproduct_models.CategoryProductInfo)
 	if len(categoryCodesList) > 0 {
-		categoryDocs, err := svc.categoryProductRepo.FindByCodes(context.Background(), shopID, categoryCodesList)
+		categoryDocs, err := svc.categoryProductRepo.FindByCodes(context.Background(), holdingCode, categoryCodesList)
 		if err == nil {
 			for _, category := range categoryDocs {
 				categoryDict[category.Code] = category
@@ -1600,7 +1600,7 @@ func (svc ProductImportService) prepareMasterData(shopID string, docs []product_
 
 	classDict := make(map[string]classproduct_models.ClassProductInfo)
 	if len(classCodesList) > 0 {
-		classDocs, err := svc.classProductRepo.FindByCodes(context.Background(), shopID, classCodesList)
+		classDocs, err := svc.classProductRepo.FindByCodes(context.Background(), holdingCode, classCodesList)
 		if err == nil {
 			for _, class := range classDocs {
 				classDict[class.Code] = class
@@ -1802,9 +1802,9 @@ func (svc ProductImportService) PrepareProductBarcodes(langCode string, docs []m
 	return dataDocs
 }
 
-func (svc *ProductImportService) GetTaskStatus(shopID string, taskID string) (models.TaskStatusModel, error) {
-	log.Printf("GetTaskStatus called for shopID: %s, taskID: %s", shopID, taskID)
-	status, err := svc.taskStatusRepo.FindByTaskID(context.Background(), shopID, taskID)
+func (svc *ProductImportService) GetTaskStatus(holdingCode string, taskID string) (models.TaskStatusModel, error) {
+	log.Printf("GetTaskStatus called for holdingCode: %s, taskID: %s", holdingCode, taskID)
+	status, err := svc.taskStatusRepo.FindByTaskID(context.Background(), holdingCode, taskID)
 	if err != nil {
 		log.Printf("GetTaskStatus error: %v", err)
 	} else {
@@ -1814,7 +1814,7 @@ func (svc *ProductImportService) GetTaskStatus(shopID string, taskID string) (mo
 }
 
 // processRefBarcodeUpdates processes refbarcode updates for products that have BarcodeRef
-func (svc *ProductImportService) processRefBarcodeUpdates(ctx context.Context, shopID, authUsername string, docs []models.ProductImportDoc) (int, error) {
+func (svc *ProductImportService) processRefBarcodeUpdates(ctx context.Context, holdingCode, authUsername string, docs []models.ProductImportDoc) (int, error) {
 	// Extract products that need refbarcode processing
 	var refRequests []string
 	refMap := make(map[string]models.ProductImportDoc)
@@ -1852,7 +1852,7 @@ func (svc *ProductImportService) processRefBarcodeUpdates(ctx context.Context, s
 
 			// ถ้าไม่พบตัวหลักใน import data ให้ลอง query จาก DB
 			if mainDoc == nil {
-				products, err := svc.productBarcodeRepo.FindByItemCode(ctx, shopID, itemCode)
+				products, err := svc.productBarcodeRepo.FindByItemCode(ctx, holdingCode, itemCode)
 				if err != nil {
 					fmt.Printf("Warning: Failed to find product by ItemCode %s: %v\n", itemCode, err)
 					continue
@@ -1899,7 +1899,7 @@ func (svc *ProductImportService) processRefBarcodeUpdates(ctx context.Context, s
 	}
 
 	// Find all relevant products by barcodes
-	products, err := svc.productBarcodeRepo.FindByBarcodesMap(shopID, refRequests)
+	products, err := svc.productBarcodeRepo.FindByBarcodesMap(holdingCode, refRequests)
 	if err != nil {
 		return 0, fmt.Errorf("failed to find products: %v", err)
 	}
@@ -1947,10 +1947,10 @@ func (svc *ProductImportService) processRefBarcodeUpdates(ctx context.Context, s
 		updateData := bson.M{
 			"$set": bson.M{
 				"refbarcodes":      []product_models.RefProductBarcode{refBarcode},
-				"is_main_barcode":    false,
+				"is_main_barcode":  false,
 				"isusesubbarcodes": true,
 				"updatedby":        authUsername,
-				"updated_at":        time.Now(),
+				"updated_at":       time.Now(),
 			},
 		}
 
@@ -1970,9 +1970,9 @@ func (svc *ProductImportService) processRefBarcodeUpdates(ctx context.Context, s
 
 // Enhanced methods สำหรับ compare และ insert/update functionality
 
-func (svc ProductImportService) SaveTaskWithMode(shopID string, authUsername string, taskID string, docHeader models.ProductImportHeader, importMode string, forceUpdate bool) error {
+func (svc ProductImportService) SaveTaskWithMode(holdingCode string, authUsername string, taskID string, docHeader models.ProductImportHeader, importMode string, forceUpdate bool) error {
 	// First compare to get the analysis
-	compareResult, err := svc.CompareWithExisting(shopID, taskID)
+	compareResult, err := svc.CompareWithExisting(holdingCode, taskID)
 	if err != nil {
 		return fmt.Errorf("failed to compare with existing data: %w", err)
 	}
@@ -1980,7 +1980,7 @@ func (svc ProductImportService) SaveTaskWithMode(shopID string, authUsername str
 	ctx := context.Background()
 
 	// Get all import data
-	importDocList, err := svc.chRepo.All(ctx, shopID, taskID)
+	importDocList, err := svc.chRepo.All(ctx, holdingCode, taskID)
 	if err != nil {
 		return fmt.Errorf("failed to get import data: %w", err)
 	}
@@ -2015,7 +2015,7 @@ func (svc ProductImportService) SaveTaskWithMode(shopID string, authUsername str
 		switch importMode {
 		case "INSERT_ONLY":
 			if compareItem.Status == "NEW" {
-				err := svc.insertNewProduct(shopID, authUsername, importData, docHeader)
+				err := svc.insertNewProduct(holdingCode, authUsername, importData, docHeader)
 				if err != nil {
 					failed++
 					// Log error but continue processing
@@ -2029,7 +2029,7 @@ func (svc ProductImportService) SaveTaskWithMode(shopID string, authUsername str
 
 		case "UPDATE_ONLY":
 			if compareItem.Status == "UPDATE" || (compareItem.Status == "EXISTING" && forceUpdate) {
-				err := svc.updateExistingProduct(shopID, authUsername, importData, compareItem, docHeader)
+				err := svc.updateExistingProduct(holdingCode, authUsername, importData, compareItem, docHeader)
 				if err != nil {
 					failed++
 					// Log error but continue processing
@@ -2043,7 +2043,7 @@ func (svc ProductImportService) SaveTaskWithMode(shopID string, authUsername str
 
 		case "BOTH", "AUTO":
 			if compareItem.Status == "NEW" {
-				err := svc.insertNewProduct(shopID, authUsername, importData, docHeader)
+				err := svc.insertNewProduct(holdingCode, authUsername, importData, docHeader)
 				if err != nil {
 					failed++
 					// Log error but continue processing
@@ -2052,7 +2052,7 @@ func (svc ProductImportService) SaveTaskWithMode(shopID string, authUsername str
 					successInsert++
 				}
 			} else if compareItem.Status == "UPDATE" || (compareItem.Status == "EXISTING" && forceUpdate) {
-				err := svc.updateExistingProduct(shopID, authUsername, importData, compareItem, docHeader)
+				err := svc.updateExistingProduct(holdingCode, authUsername, importData, compareItem, docHeader)
 				if err != nil {
 					failed++
 					// Log error but continue processing
@@ -2090,7 +2090,7 @@ func (svc ProductImportService) SaveTaskWithMode(shopID string, authUsername str
 	}
 
 	// เช็คและอัพเดท refbarcodes ถ้ามี BarcodeRef หลังจากทำการ import เสร็จ
-	refUpdateCount, err := svc.processRefBarcodeUpdates(context.Background(), shopID, authUsername, importDocList)
+	refUpdateCount, err := svc.processRefBarcodeUpdates(context.Background(), holdingCode, authUsername, importDocList)
 	if err != nil {
 		log.Printf("Warning: Failed to update some refbarcodes: %v\n", err)
 	} else if refUpdateCount > 0 {
@@ -2098,7 +2098,7 @@ func (svc ProductImportService) SaveTaskWithMode(shopID string, authUsername str
 	}
 
 	// ลบ task หลังจากทำการ import เสร็จ (เหมือน SaveTask เดิม)
-	err = svc.DeleteTask(shopID, taskID)
+	err = svc.DeleteTask(holdingCode, taskID)
 	if err != nil {
 		log.Printf("Warning: Failed to delete task %s: %v\n", taskID, err)
 		// ไม่ return error เพราะการ import สำเร็จแล้ว
@@ -2107,9 +2107,9 @@ func (svc ProductImportService) SaveTaskWithMode(shopID string, authUsername str
 	return nil
 }
 
-func (svc ProductImportService) PreviewSave(shopID string, taskID string, docHeader models.ProductImportHeader, importMode string) (*models.CompareResult, error) {
+func (svc ProductImportService) PreviewSave(holdingCode string, taskID string, docHeader models.ProductImportHeader, importMode string) (*models.CompareResult, error) {
 	// This method returns a preview of what would happen without actually saving
-	compareResult, err := svc.CompareWithExisting(shopID, taskID)
+	compareResult, err := svc.CompareWithExisting(holdingCode, taskID)
 	if err != nil {
 		return nil, err
 	}
@@ -2145,11 +2145,11 @@ func (svc ProductImportService) PreviewSave(shopID string, taskID string, docHea
 	return compareResult, nil
 }
 
-func (svc ProductImportService) CompareWithExisting(shopID string, taskID string) (*models.CompareResult, error) {
+func (svc ProductImportService) CompareWithExisting(holdingCode string, taskID string) (*models.CompareResult, error) {
 	ctx := context.Background()
 
 	// Get all import data for this task
-	importDocList, err := svc.chRepo.All(ctx, shopID, taskID)
+	importDocList, err := svc.chRepo.All(ctx, holdingCode, taskID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get import data: %w", err)
 	}
@@ -2177,7 +2177,7 @@ func (svc ProductImportService) CompareWithExisting(shopID string, taskID string
 	updatedRecords := 0
 
 	// 🚀 เปลี่ยนจาก FindByBarcode ทีละตัว เป็น FindByBarcodesMap ครั้งเดียว
-	existingProductsMap, err := svc.productBarcodeRepo.FindByBarcodesMap(shopID, barcodes)
+	existingProductsMap, err := svc.productBarcodeRepo.FindByBarcodesMap(holdingCode, barcodes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find existing products: %w", err)
 	}
@@ -2460,16 +2460,16 @@ func (svc ProductImportService) createCompareSummary(items []models.ProductBarco
 	}
 }
 
-func (svc ProductImportService) GetCompareResult(shopID string, taskID string) (*models.CompareResult, error) {
+func (svc ProductImportService) GetCompareResult(holdingCode string, taskID string) (*models.CompareResult, error) {
 	// 🔧 เพิ่ม simple caching mechanism
-	// cacheKey := fmt.Sprintf("compare_result:%s:%s", shopID, taskID)
+	// cacheKey := fmt.Sprintf("compare_result:%s:%s", holdingCode, taskID)
 
 	// TODO: ถ้ามี cache service สามารถเพิ่มได้
 	// if cached := svc.cache.Get(cacheKey); cached != nil {
 	//     return cached.(*models.CompareResult), nil
 	// }
 
-	result, err := svc.CompareWithExisting(shopID, taskID)
+	result, err := svc.CompareWithExisting(holdingCode, taskID)
 	if err != nil {
 		return nil, err
 	}
@@ -2481,15 +2481,15 @@ func (svc ProductImportService) GetCompareResult(shopID string, taskID string) (
 }
 
 // 🚀 เพิ่มฟังก์ชันใหม่สำหรับ pagination ที่แท้จริง
-func (svc ProductImportService) GetCompareResultPaginated(shopID string, taskID string, pageable micromodels.Pageable) (*models.CompareResult, models.PaginationData, error) {
+func (svc ProductImportService) GetCompareResultPaginated(holdingCode string, taskID string, pageable micromodels.Pageable) (*models.CompareResult, models.PaginationData, error) {
 	ctx := context.Background()
 
 	// 📋 Log input parameters
-	log.Printf("[GetCompareResultPaginated] START - ShopID: %s, TaskID: %s, Page: %d, Limit: %d",
-		shopID, taskID, pageable.Page, pageable.Limit)
+	log.Printf("[GetCompareResultPaginated] START - HoldingCode: %s, TaskID: %s, Page: %d, Limit: %d",
+		holdingCode, taskID, pageable.Page, pageable.Limit)
 
 	// Get paginated import data for this task
-	importDocList, paginationData, err := svc.chRepo.List(ctx, shopID, taskID, pageable)
+	importDocList, paginationData, err := svc.chRepo.List(ctx, holdingCode, taskID, pageable)
 	if err != nil {
 		log.Printf("[GetCompareResultPaginated] ERROR - Failed to get import data: %v", err)
 		return nil, models.PaginationData{}, fmt.Errorf("failed to get import data: %w", err)
@@ -2526,7 +2526,7 @@ func (svc ProductImportService) GetCompareResultPaginated(shopID string, taskID 
 	updatedRecords := 0
 
 	// 🚀 เปลี่ยนจาก FindByBarcode ทีละตัว เป็น FindByBarcodesMap ครั้งเดียว
-	existingProductsMap, err := svc.productBarcodeRepo.FindByBarcodesMap(shopID, barcodes)
+	existingProductsMap, err := svc.productBarcodeRepo.FindByBarcodesMap(holdingCode, barcodes)
 	if err != nil {
 		log.Printf("[GetCompareResultPaginated] ERROR - Failed to find existing products: %v", err)
 		return nil, models.PaginationData{}, fmt.Errorf("failed to find existing products: %w", err)
@@ -2642,11 +2642,11 @@ func (svc ProductImportService) GetCompareResultPaginated(shopID string, taskID 
 }
 
 // 🚀 เพิ่มฟังก์ชันสำหรับดึง summary เฉพาะ (เร็วมาก)
-func (svc ProductImportService) GetCompareResultSummary(shopID string, taskID string) (*models.CompareSummary, error) {
+func (svc ProductImportService) GetCompareResultSummary(holdingCode string, taskID string) (*models.CompareSummary, error) {
 	ctx := context.Background()
 
 	// Get count only - very fast
-	importDocList, err := svc.chRepo.All(ctx, shopID, taskID)
+	importDocList, err := svc.chRepo.All(ctx, holdingCode, taskID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get import data: %w", err)
 	}
@@ -2659,7 +2659,7 @@ func (svc ProductImportService) GetCompareResultSummary(shopID string, taskID st
 	}
 
 	// 🚀 Quick check for existing products
-	existingProductsMap, err := svc.productBarcodeRepo.FindByBarcodesMap(shopID, barcodes)
+	existingProductsMap, err := svc.productBarcodeRepo.FindByBarcodesMap(holdingCode, barcodes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find existing products: %w", err)
 	}
@@ -2697,8 +2697,8 @@ func (svc ProductImportService) GetCompareResultSummary(shopID string, taskID st
 	return summary, nil
 }
 
-func (svc ProductImportService) PreviewChanges(shopID string, taskID string, importMode string) (*models.PreviewResult, error) {
-	compareResult, err := svc.CompareWithExisting(shopID, taskID)
+func (svc ProductImportService) PreviewChanges(holdingCode string, taskID string, importMode string) (*models.PreviewResult, error) {
+	compareResult, err := svc.CompareWithExisting(holdingCode, taskID)
 	if err != nil {
 		return nil, err
 	}
@@ -2753,13 +2753,13 @@ func (svc ProductImportService) PreviewChanges(shopID string, taskID string, imp
 	return preview, nil
 }
 
-func (svc ProductImportService) ApplyChanges(shopID string, authUsername string, taskID string, importMode string, forceUpdate bool) error {
+func (svc ProductImportService) ApplyChanges(holdingCode string, authUsername string, taskID string, importMode string, forceUpdate bool) error {
 	// 🔧 เปลี่ยนให้เรียก ApplyChangesWithProgress แทน SaveTaskWithMode
 	log.Printf("ApplyChanges called for task: %s, mode: %s", taskID, importMode)
-	return svc.ApplyChangesWithProgress(shopID, authUsername, taskID, importMode, forceUpdate)
+	return svc.ApplyChangesWithProgress(holdingCode, authUsername, taskID, importMode, forceUpdate)
 }
 
-func (svc ProductImportService) GetImportSummary(shopID string, taskID string) (*models.ImportSummary, error) {
+func (svc ProductImportService) GetImportSummary(holdingCode string, taskID string) (*models.ImportSummary, error) {
 	// TODO: Implement retrieval from database/cache where summary was stored during import
 	// For now, return a placeholder
 	return &models.ImportSummary{
@@ -2771,7 +2771,7 @@ func (svc ProductImportService) GetImportSummary(shopID string, taskID string) (
 
 // Helper functions
 
-func (svc ProductImportService) insertNewProduct(shopID string, authUsername string, importData models.ProductImportRaw, docHeader models.ProductImportHeader, masterCache ...*MasterDataCache) error {
+func (svc ProductImportService) insertNewProduct(holdingCode string, authUsername string, importData models.ProductImportRaw, docHeader models.ProductImportHeader, masterCache ...*MasterDataCache) error {
 	// สร้าง ProductBarcodeRequest โดยใช้ field จาก ProductBarcodeBase
 	productBase := product_models.ProductBarcodeBase{
 		ItemCode:         importData.Code,
@@ -2807,7 +2807,7 @@ func (svc ProductImportService) insertNewProduct(shopID string, authUsername str
 
 		// Group
 		if importData.GroupCode != "" {
-			if groups, err := svc.groupProductRepo.FindByCodes(ctx, shopID, []string{importData.GroupCode}); err == nil && len(groups) > 0 {
+			if groups, err := svc.groupProductRepo.FindByCodes(ctx, holdingCode, []string{importData.GroupCode}); err == nil && len(groups) > 0 {
 				productBase.GroupGuid = groups[0].GuidFixed
 				productBase.GroupNames = groups[0].Names
 			}
@@ -2815,7 +2815,7 @@ func (svc ProductImportService) insertNewProduct(shopID string, authUsername str
 
 		// Groupsubone
 		if importData.GroupsuboneCode != "" {
-			if groupsubones, err := svc.groupsuboneProductRepo.FindByCodes(ctx, shopID, []string{importData.GroupsuboneCode}); err == nil && len(groupsubones) > 0 {
+			if groupsubones, err := svc.groupsuboneProductRepo.FindByCodes(ctx, holdingCode, []string{importData.GroupsuboneCode}); err == nil && len(groupsubones) > 0 {
 				productBase.GroupsuboneGuid = groupsubones[0].GuidFixed
 				productBase.GroupsuboneNames = groupsubones[0].Names
 			}
@@ -2823,7 +2823,7 @@ func (svc ProductImportService) insertNewProduct(shopID string, authUsername str
 
 		// Groupsubtwo
 		if importData.GroupsubtwoCode != "" {
-			if groupsubtwos, err := svc.groupsubtwoproductRepo.FindByCodes(ctx, shopID, []string{importData.GroupsubtwoCode}); err == nil && len(groupsubtwos) > 0 {
+			if groupsubtwos, err := svc.groupsubtwoproductRepo.FindByCodes(ctx, holdingCode, []string{importData.GroupsubtwoCode}); err == nil && len(groupsubtwos) > 0 {
 				productBase.GroupsubtwoGuid = groupsubtwos[0].GuidFixed
 				productBase.GroupsubtwoNames = groupsubtwos[0].Names
 			}
@@ -2831,7 +2831,7 @@ func (svc ProductImportService) insertNewProduct(shopID string, authUsername str
 
 		// Brand
 		if importData.BrandCode != "" {
-			if brands, err := svc.brandProductRepo.FindByCodes(ctx, shopID, []string{importData.BrandCode}); err == nil && len(brands) > 0 {
+			if brands, err := svc.brandProductRepo.FindByCodes(ctx, holdingCode, []string{importData.BrandCode}); err == nil && len(brands) > 0 {
 				productBase.BrandGuid = brands[0].GuidFixed
 				productBase.BrandNames = brands[0].Names
 			}
@@ -2839,7 +2839,7 @@ func (svc ProductImportService) insertNewProduct(shopID string, authUsername str
 
 		// Design
 		if importData.DesignCode != "" {
-			if designs, err := svc.designProductRepo.FindByCodes(ctx, shopID, []string{importData.DesignCode}); err == nil && len(designs) > 0 {
+			if designs, err := svc.designProductRepo.FindByCodes(ctx, holdingCode, []string{importData.DesignCode}); err == nil && len(designs) > 0 {
 				productBase.DesignGuid = designs[0].GuidFixed
 				productBase.DesignNames = designs[0].Names
 			}
@@ -2847,7 +2847,7 @@ func (svc ProductImportService) insertNewProduct(shopID string, authUsername str
 
 		// Model
 		if importData.ModelCode != "" {
-			if models, err := svc.modelProductRepo.FindByCodes(ctx, shopID, []string{importData.ModelCode}); err == nil && len(models) > 0 {
+			if models, err := svc.modelProductRepo.FindByCodes(ctx, holdingCode, []string{importData.ModelCode}); err == nil && len(models) > 0 {
 				productBase.ModelGuid = models[0].GuidFixed
 				productBase.ModelNames = models[0].Names
 			}
@@ -2855,7 +2855,7 @@ func (svc ProductImportService) insertNewProduct(shopID string, authUsername str
 
 		// Pattern
 		if importData.PatternCode != "" {
-			if patterns, err := svc.patternProductRepo.FindByCodes(ctx, shopID, []string{importData.PatternCode}); err == nil && len(patterns) > 0 {
+			if patterns, err := svc.patternProductRepo.FindByCodes(ctx, holdingCode, []string{importData.PatternCode}); err == nil && len(patterns) > 0 {
 				productBase.PatternGuid = patterns[0].GuidFixed
 				productBase.PatternNames = patterns[0].Names
 			}
@@ -2863,7 +2863,7 @@ func (svc ProductImportService) insertNewProduct(shopID string, authUsername str
 
 		// Grade
 		if importData.GradeCode != "" {
-			if grades, err := svc.gradeProductRepo.FindByCodes(ctx, shopID, []string{importData.GradeCode}); err == nil && len(grades) > 0 {
+			if grades, err := svc.gradeProductRepo.FindByCodes(ctx, holdingCode, []string{importData.GradeCode}); err == nil && len(grades) > 0 {
 				productBase.GradeGuid = grades[0].GuidFixed
 				productBase.GradeNames = grades[0].Names
 			}
@@ -2871,7 +2871,7 @@ func (svc ProductImportService) insertNewProduct(shopID string, authUsername str
 
 		// Category
 		if importData.CategoryCode != "" {
-			if categories, err := svc.categoryProductRepo.FindByCodes(ctx, shopID, []string{importData.CategoryCode}); err == nil && len(categories) > 0 {
+			if categories, err := svc.categoryProductRepo.FindByCodes(ctx, holdingCode, []string{importData.CategoryCode}); err == nil && len(categories) > 0 {
 				productBase.CategoryGuid = categories[0].GuidFixed
 				productBase.CategoryNames = categories[0].Names
 			}
@@ -2879,7 +2879,7 @@ func (svc ProductImportService) insertNewProduct(shopID string, authUsername str
 
 		// Class
 		if importData.ClassCode != "" {
-			if classes, err := svc.classProductRepo.FindByCodes(ctx, shopID, []string{importData.ClassCode}); err == nil && len(classes) > 0 {
+			if classes, err := svc.classProductRepo.FindByCodes(ctx, holdingCode, []string{importData.ClassCode}); err == nil && len(classes) > 0 {
 				productBase.ClassGuid = classes[0].GuidFixed
 				productBase.ClassNames = classes[0].Names
 			}
@@ -2934,20 +2934,20 @@ func (svc ProductImportService) insertNewProduct(shopID string, authUsername str
 	}
 
 	// เรียกใช้ CreateProductBarcode service
-	_, err := svc.productBarcodeService.CreateProductBarcode(shopID, authUsername, productReq)
+	_, err := svc.productBarcodeService.CreateProductBarcode(holdingCode, authUsername, productReq)
 	return err
 }
 
-func (svc ProductImportService) updateExistingProduct(shopID string, authUsername string, importData models.ProductImportRaw, compareItem *models.ProductBarcodeCompare, docHeader models.ProductImportHeader, masterCache ...*MasterDataCache) error {
+func (svc ProductImportService) updateExistingProduct(holdingCode string, authUsername string, importData models.ProductImportRaw, compareItem *models.ProductBarcodeCompare, docHeader models.ProductImportHeader, masterCache ...*MasterDataCache) error {
 	// Update existing product with new data
-	existingProduct, err := svc.productBarcodeRepo.FindByBarcode(context.Background(), shopID, importData.Barcode)
+	existingProduct, err := svc.productBarcodeRepo.FindByBarcode(context.Background(), holdingCode, importData.Barcode)
 	if err != nil {
 		return err
 	}
 
 	// สร้างข้อมูลที่จะ update
 	updateData := bson.M{
-		"updatedby": authUsername,
+		"updatedby":  authUsername,
 		"updated_at": time.Now(),
 	}
 
@@ -2977,7 +2977,7 @@ func (svc ProductImportService) updateExistingProduct(shopID string, authUsernam
 			updateData["item_unit_code"] = importData.UnitCode
 			// อาจต้องอัปเดต unit names ด้วย
 			if importData.UnitCode != "" {
-				unitDocs, err := svc.productUnitRepo.FindByUnitCodes(context.Background(), shopID, []string{importData.UnitCode})
+				unitDocs, err := svc.productUnitRepo.FindByUnitCodes(context.Background(), holdingCode, []string{importData.UnitCode})
 				if err == nil && len(unitDocs) > 0 {
 					updateData["itemunitnames"] = unitDocs[0].Names
 				}
@@ -3116,7 +3116,7 @@ func (svc ProductImportService) updateExistingProduct(shopID string, authUsernam
 			switch change.Field {
 			case "group_code":
 				if importData.GroupCode != "" {
-					if groups, err := svc.groupProductRepo.FindByCodes(ctx, shopID, []string{importData.GroupCode}); err == nil && len(groups) > 0 {
+					if groups, err := svc.groupProductRepo.FindByCodes(ctx, holdingCode, []string{importData.GroupCode}); err == nil && len(groups) > 0 {
 						updateData["groupguid"] = groups[0].GuidFixed
 						updateData["group_names"] = groups[0].Names
 					}
@@ -3126,7 +3126,7 @@ func (svc ProductImportService) updateExistingProduct(shopID string, authUsernam
 				}
 			case "groupsubonecode":
 				if importData.GroupsuboneCode != "" {
-					if groupsubones, err := svc.groupsuboneProductRepo.FindByCodes(ctx, shopID, []string{importData.GroupsuboneCode}); err == nil && len(groupsubones) > 0 {
+					if groupsubones, err := svc.groupsuboneProductRepo.FindByCodes(ctx, holdingCode, []string{importData.GroupsuboneCode}); err == nil && len(groupsubones) > 0 {
 						updateData["groupsuboneguid"] = groupsubones[0].GuidFixed
 						updateData["groupsubonenames"] = groupsubones[0].Names
 					}
@@ -3136,7 +3136,7 @@ func (svc ProductImportService) updateExistingProduct(shopID string, authUsernam
 				}
 			case "groupsubtwocode":
 				if importData.GroupsubtwoCode != "" {
-					if groupsubtwos, err := svc.groupsubtwoproductRepo.FindByCodes(ctx, shopID, []string{importData.GroupsubtwoCode}); err == nil && len(groupsubtwos) > 0 {
+					if groupsubtwos, err := svc.groupsubtwoproductRepo.FindByCodes(ctx, holdingCode, []string{importData.GroupsubtwoCode}); err == nil && len(groupsubtwos) > 0 {
 						updateData["groupsubtwoguid"] = groupsubtwos[0].GuidFixed
 						updateData["groupsubtwonames"] = groupsubtwos[0].Names
 					}
@@ -3146,7 +3146,7 @@ func (svc ProductImportService) updateExistingProduct(shopID string, authUsernam
 				}
 			case "brand_code":
 				if importData.BrandCode != "" {
-					if brands, err := svc.brandProductRepo.FindByCodes(ctx, shopID, []string{importData.BrandCode}); err == nil && len(brands) > 0 {
+					if brands, err := svc.brandProductRepo.FindByCodes(ctx, holdingCode, []string{importData.BrandCode}); err == nil && len(brands) > 0 {
 						updateData["brandguid"] = brands[0].GuidFixed
 						updateData["brandnames"] = brands[0].Names
 					}
@@ -3156,7 +3156,7 @@ func (svc ProductImportService) updateExistingProduct(shopID string, authUsernam
 				}
 			case "designcode":
 				if importData.DesignCode != "" {
-					if designs, err := svc.designProductRepo.FindByCodes(ctx, shopID, []string{importData.DesignCode}); err == nil && len(designs) > 0 {
+					if designs, err := svc.designProductRepo.FindByCodes(ctx, holdingCode, []string{importData.DesignCode}); err == nil && len(designs) > 0 {
 						updateData["designguid"] = designs[0].GuidFixed
 						updateData["designnames"] = designs[0].Names
 					}
@@ -3166,7 +3166,7 @@ func (svc ProductImportService) updateExistingProduct(shopID string, authUsernam
 				}
 			case "modelcode":
 				if importData.ModelCode != "" {
-					if models, err := svc.modelProductRepo.FindByCodes(ctx, shopID, []string{importData.ModelCode}); err == nil && len(models) > 0 {
+					if models, err := svc.modelProductRepo.FindByCodes(ctx, holdingCode, []string{importData.ModelCode}); err == nil && len(models) > 0 {
 						updateData["modelguid"] = models[0].GuidFixed
 						updateData["modelnames"] = models[0].Names
 					}
@@ -3176,7 +3176,7 @@ func (svc ProductImportService) updateExistingProduct(shopID string, authUsernam
 				}
 			case "patterncode":
 				if importData.PatternCode != "" {
-					if patterns, err := svc.patternProductRepo.FindByCodes(ctx, shopID, []string{importData.PatternCode}); err == nil && len(patterns) > 0 {
+					if patterns, err := svc.patternProductRepo.FindByCodes(ctx, holdingCode, []string{importData.PatternCode}); err == nil && len(patterns) > 0 {
 						updateData["patternguid"] = patterns[0].GuidFixed
 						updateData["patternnames"] = patterns[0].Names
 					}
@@ -3186,7 +3186,7 @@ func (svc ProductImportService) updateExistingProduct(shopID string, authUsernam
 				}
 			case "gradecode":
 				if importData.GradeCode != "" {
-					if grades, err := svc.gradeProductRepo.FindByCodes(ctx, shopID, []string{importData.GradeCode}); err == nil && len(grades) > 0 {
+					if grades, err := svc.gradeProductRepo.FindByCodes(ctx, holdingCode, []string{importData.GradeCode}); err == nil && len(grades) > 0 {
 						updateData["gradeguid"] = grades[0].GuidFixed
 						updateData["gradenames"] = grades[0].Names
 					}
@@ -3196,7 +3196,7 @@ func (svc ProductImportService) updateExistingProduct(shopID string, authUsernam
 				}
 			case "categorycode":
 				if importData.CategoryCode != "" {
-					if categories, err := svc.categoryProductRepo.FindByCodes(ctx, shopID, []string{importData.CategoryCode}); err == nil && len(categories) > 0 {
+					if categories, err := svc.categoryProductRepo.FindByCodes(ctx, holdingCode, []string{importData.CategoryCode}); err == nil && len(categories) > 0 {
 						updateData["category_guid"] = categories[0].GuidFixed
 						updateData["category_names"] = categories[0].Names
 					}
@@ -3206,7 +3206,7 @@ func (svc ProductImportService) updateExistingProduct(shopID string, authUsernam
 				}
 			case "classcode":
 				if importData.ClassCode != "" {
-					if classes, err := svc.classProductRepo.FindByCodes(ctx, shopID, []string{importData.ClassCode}); err == nil && len(classes) > 0 {
+					if classes, err := svc.classProductRepo.FindByCodes(ctx, holdingCode, []string{importData.ClassCode}); err == nil && len(classes) > 0 {
 						updateData["classguid"] = classes[0].GuidFixed
 						updateData["classnames"] = classes[0].Names
 					}
@@ -3338,17 +3338,17 @@ func updatePriceInArray(prices *[]product_models.ProductPrice, keyNumber int, ne
 
 // 🔧 เพิ่ม methods สำหรับ task status management และ progress tracking
 
-func (svc ProductImportService) CreateTaskStatus(shopID string, taskID string, status string, progress int, message string) error {
+func (svc ProductImportService) CreateTaskStatus(holdingCode string, taskID string, status string, progress int, message string) error {
 	// 🔧 ใช้ time.Now().UTC() แทน svc.timeNow() เพื่อป้องกัน datetime overflow
 	now := time.Now().UTC()
 
 	taskStatus := models.TaskStatusModel{
-		TaskID:    taskID,
-		ShopID:    shopID,
-		Status:    status,
-		Progress:  int32(progress),
-		CreatedAt: now,
-		UpdatedAt: now,
+		TaskID:      taskID,
+		HoldingCode: holdingCode,
+		Status:      status,
+		Progress:    int32(progress),
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
 
 	err := svc.taskStatusRepo.Create(context.Background(), taskStatus)
@@ -3360,16 +3360,16 @@ func (svc ProductImportService) CreateTaskStatus(shopID string, taskID string, s
 	return err
 }
 
-func (svc ProductImportService) UpdateTaskStatus(shopID string, taskID string, status string, progress int, message string) error {
+func (svc ProductImportService) UpdateTaskStatus(holdingCode string, taskID string, status string, progress int, message string) error {
 	// 🔧 ใช้ time.Now().UTC() แทน svc.timeNow() เพื่อป้องกัน datetime overflow
 	now := time.Now().UTC()
 
 	taskStatus := models.TaskStatusModel{
-		TaskID:    taskID,
-		ShopID:    shopID,
-		Status:    status,
-		Progress:  int32(progress),
-		UpdatedAt: now,
+		TaskID:      taskID,
+		HoldingCode: holdingCode,
+		Status:      status,
+		Progress:    int32(progress),
+		UpdatedAt:   now,
 	}
 
 	// ✅ เซ็ต ErrorMsg ถ้าเป็น error status หรือมี message
@@ -3386,7 +3386,7 @@ func (svc ProductImportService) UpdateTaskStatus(shopID string, taskID string, s
 	return err
 }
 
-func (svc ProductImportService) ApplyChangesWithProgress(shopID string, authUsername string, taskID string, importMode string, forceUpdate bool, batchSize ...int) error {
+func (svc ProductImportService) ApplyChangesWithProgress(holdingCode string, authUsername string, taskID string, importMode string, forceUpdate bool, batchSize ...int) error {
 	ctx := context.Background()
 
 	// 🔧 กำหนด batch size (default = 100)
@@ -3397,11 +3397,11 @@ func (svc ProductImportService) ApplyChangesWithProgress(shopID string, authUser
 	log.Printf("[ApplyChangesWithProgress] Using batch size: %d", bSize)
 
 	// 🔧 เช็คว่ามี task status อยู่แล้วหรือไม่
-	_, err := svc.GetTaskStatus(shopID, taskID)
+	_, err := svc.GetTaskStatus(holdingCode, taskID)
 	if err != nil {
 		// ไม่มี task status ให้สร้างใหม่
 		log.Printf("[ApplyChangesWithProgress] No existing task status found, creating new one for task: %s", taskID)
-		err = svc.CreateTaskStatus(shopID, taskID, "APPLYING", 0, "Starting import process...")
+		err = svc.CreateTaskStatus(holdingCode, taskID, "APPLYING", 0, "Starting import process...")
 		if err != nil {
 			log.Printf("[ApplyChangesWithProgress] Failed to create task status: %v", err)
 			return fmt.Errorf("failed to create task status: %w", err)
@@ -3409,18 +3409,18 @@ func (svc ProductImportService) ApplyChangesWithProgress(shopID string, authUser
 	} else {
 		// มี task status แล้ว ให้ update
 		log.Printf("[ApplyChangesWithProgress] Found existing task status, updating for task: %s", taskID)
-		_ = svc.UpdateTaskStatus(shopID, taskID, "APPLYING", 0, "Starting import process...")
+		_ = svc.UpdateTaskStatus(holdingCode, taskID, "APPLYING", 0, "Starting import process...")
 	}
 
 	// อัพเดต status เป็น processing
-	_ = svc.UpdateTaskStatus(shopID, taskID, "PROCESSING", 5, "Getting import data...")
+	_ = svc.UpdateTaskStatus(holdingCode, taskID, "PROCESSING", 5, "Getting import data...")
 	log.Printf("[ApplyChangesWithProgress] Updated task status to PROCESSING for task: %s", taskID)
 
 	// Get all import data for this task
-	importDocList, err := svc.chRepo.All(ctx, shopID, taskID)
+	importDocList, err := svc.chRepo.All(ctx, holdingCode, taskID)
 	if err != nil {
 		errorMsg := fmt.Sprintf("Failed to get import data: %v", err)
-		_ = svc.UpdateTaskStatus(shopID, taskID, "ERROR", 5, errorMsg)
+		_ = svc.UpdateTaskStatus(holdingCode, taskID, "ERROR", 5, errorMsg)
 		log.Printf("[ApplyChangesWithProgress] %s", errorMsg)
 		return fmt.Errorf("failed to get import data: %w", err)
 	}
@@ -3429,12 +3429,12 @@ func (svc ProductImportService) ApplyChangesWithProgress(shopID string, authUser
 	log.Printf("[ApplyChangesWithProgress] Retrieved %d total records", totalRecords)
 
 	if totalRecords == 0 {
-		_ = svc.UpdateTaskStatus(shopID, taskID, "COMPLETED", 100, "No records to process")
+		_ = svc.UpdateTaskStatus(holdingCode, taskID, "COMPLETED", 100, "No records to process")
 		log.Printf("[ApplyChangesWithProgress] No records to process, completed")
 		return nil
 	}
 
-	_ = svc.UpdateTaskStatus(shopID, taskID, "PROCESSING", 10, fmt.Sprintf("Processing %d records with batch size %d...", totalRecords, bSize))
+	_ = svc.UpdateTaskStatus(holdingCode, taskID, "PROCESSING", 10, fmt.Sprintf("Processing %d records with batch size %d...", totalRecords, bSize))
 
 	// Convert to raw data and get barcodes
 	var importDataList []models.ProductImportRaw
@@ -3445,13 +3445,13 @@ func (svc ProductImportService) ApplyChangesWithProgress(shopID string, authUser
 		barcodes = append(barcodes, doc.Barcode)
 	}
 
-	_ = svc.UpdateTaskStatus(shopID, taskID, "PROCESSING", 20, "Checking existing products...")
+	_ = svc.UpdateTaskStatus(holdingCode, taskID, "PROCESSING", 20, "Checking existing products...")
 
 	// Check existing products
-	existingProductsMap, err := svc.productBarcodeRepo.FindByBarcodesMap(shopID, barcodes)
+	existingProductsMap, err := svc.productBarcodeRepo.FindByBarcodesMap(holdingCode, barcodes)
 	if err != nil {
 		errorMsg := fmt.Sprintf("Failed to check existing products: %v", err)
-		_ = svc.UpdateTaskStatus(shopID, taskID, "ERROR", 20, errorMsg)
+		_ = svc.UpdateTaskStatus(holdingCode, taskID, "ERROR", 20, errorMsg)
 		log.Printf("[ApplyChangesWithProgress] %s", errorMsg)
 		return fmt.Errorf("failed to find existing products: %w", err)
 	}
@@ -3468,7 +3468,7 @@ func (svc ProductImportService) ApplyChangesWithProgress(shopID string, authUser
 		}
 	}
 
-	_ = svc.UpdateTaskStatus(shopID, taskID, "PROCESSING", 30, fmt.Sprintf("Found %d new, %d existing products", len(newRecords), len(updateRecords)))
+	_ = svc.UpdateTaskStatus(holdingCode, taskID, "PROCESSING", 30, fmt.Sprintf("Found %d new, %d existing products", len(newRecords), len(updateRecords)))
 	log.Printf("[ApplyChangesWithProgress] Categorized: %d new, %d existing products", len(newRecords), len(updateRecords))
 
 	processedCount := 0
@@ -3495,7 +3495,7 @@ func (svc ProductImportService) ApplyChangesWithProgress(shopID string, authUser
 			log.Printf("[ApplyChangesWithProgress] Processing batch #%d: records %d-%d (%d records)", batchCount, i+1, end, batchSize)
 
 			// 🚀 Pre-fetch master data cache for this batch (เพิ่ม performance)
-			masterCache, err := svc.fetchMasterDataCache(ctx, shopID, batch)
+			masterCache, err := svc.fetchMasterDataCache(ctx, holdingCode, batch)
 			if err != nil {
 				log.Printf("[ApplyChangesWithProgress] Warning: Failed to fetch master data cache for batch #%d: %v", batchCount, err)
 			} else {
@@ -3503,7 +3503,7 @@ func (svc ProductImportService) ApplyChangesWithProgress(shopID string, authUser
 			}
 
 			for _, importData := range batch {
-				err := svc.insertNewProduct(shopID, authUsername, importData, models.ProductImportHeader{}, masterCache)
+				err := svc.insertNewProduct(holdingCode, authUsername, importData, models.ProductImportHeader{}, masterCache)
 				if err != nil {
 					errMsg := fmt.Sprintf("Barcode %s: %v", importData.Barcode, err)
 					log.Printf("[ApplyChangesWithProgress] ERROR inserting %s", errMsg)
@@ -3515,7 +3515,7 @@ func (svc ProductImportService) ApplyChangesWithProgress(shopID string, authUser
 
 			// อัพเดต progress หลังแต่ละ batch
 			progress := 30 + (processedCount*50)/totalInsert
-			_ = svc.UpdateTaskStatus(shopID, taskID, "PROCESSING", progress,
+			_ = svc.UpdateTaskStatus(holdingCode, taskID, "PROCESSING", progress,
 				fmt.Sprintf("Inserted %d/%d records (batch #%d, errors: %d)", processedCount, totalInsert, batchCount, errorCount))
 			log.Printf("[ApplyChangesWithProgress] Batch #%d completed: %d/%d records processed, %d errors", batchCount, processedCount, totalInsert, errorCount)
 		}
@@ -3538,7 +3538,7 @@ func (svc ProductImportService) ApplyChangesWithProgress(shopID string, authUser
 			log.Printf("[ApplyChangesWithProgress] Processing UPDATE batch #%d: records %d-%d (%d records)", batchCount, i+1, end, batchSize)
 
 			// 🚀 Pre-fetch master data cache for this batch (เพิ่ม performance)
-			masterCache, err := svc.fetchMasterDataCache(ctx, shopID, batch)
+			masterCache, err := svc.fetchMasterDataCache(ctx, holdingCode, batch)
 			if err != nil {
 				log.Printf("[ApplyChangesWithProgress] Warning: Failed to fetch master data cache for batch #%d: %v", batchCount, err)
 			} else {
@@ -3594,7 +3594,7 @@ func (svc ProductImportService) ApplyChangesWithProgress(shopID string, authUser
 				}
 
 				if len(changes) > 0 {
-					err := svc.updateExistingProduct(shopID, authUsername, importData, compareItem, models.ProductImportHeader{}, masterCache)
+					err := svc.updateExistingProduct(holdingCode, authUsername, importData, compareItem, models.ProductImportHeader{}, masterCache)
 					if err != nil {
 						errMsg := fmt.Sprintf("Barcode %s: %v", importData.Barcode, err)
 						log.Printf("[ApplyChangesWithProgress] ERROR updating %s", errMsg)
@@ -3607,7 +3607,7 @@ func (svc ProductImportService) ApplyChangesWithProgress(shopID string, authUser
 
 			// อัพเดต progress หลังแต่ละ batch
 			progress := 30 + (processedCount*50)/totalUpdate
-			_ = svc.UpdateTaskStatus(shopID, taskID, "PROCESSING", progress,
+			_ = svc.UpdateTaskStatus(holdingCode, taskID, "PROCESSING", progress,
 				fmt.Sprintf("Updated %d/%d records (batch #%d, errors: %d)", processedCount, totalUpdate, batchCount, errorCount))
 			log.Printf("[ApplyChangesWithProgress] UPDATE batch #%d completed: %d/%d records processed, %d errors", batchCount, processedCount, totalUpdate, errorCount)
 		}
@@ -3633,7 +3633,7 @@ func (svc ProductImportService) ApplyChangesWithProgress(shopID string, authUser
 				log.Printf("[ApplyChangesWithProgress] Processing INSERT batch #%d: records %d-%d (%d records)", batchCount, i+1, end, batchSize)
 
 				// 🚀 Pre-fetch master data cache for this batch (เพิ่ม performance)
-				masterCache, err := svc.fetchMasterDataCache(ctx, shopID, batch)
+				masterCache, err := svc.fetchMasterDataCache(ctx, holdingCode, batch)
 				if err != nil {
 					log.Printf("[ApplyChangesWithProgress] Warning: Failed to fetch master data cache for INSERT batch #%d: %v", batchCount, err)
 				} else {
@@ -3641,7 +3641,7 @@ func (svc ProductImportService) ApplyChangesWithProgress(shopID string, authUser
 				}
 
 				for _, importData := range batch {
-					err := svc.insertNewProduct(shopID, authUsername, importData, models.ProductImportHeader{}, masterCache)
+					err := svc.insertNewProduct(holdingCode, authUsername, importData, models.ProductImportHeader{}, masterCache)
 					if err != nil {
 						errMsg := fmt.Sprintf("Barcode %s: %v", importData.Barcode, err)
 						log.Printf("[ApplyChangesWithProgress] ERROR inserting %s", errMsg)
@@ -3652,7 +3652,7 @@ func (svc ProductImportService) ApplyChangesWithProgress(shopID string, authUser
 				}
 
 				progress := 30 + (processedCount*50)/totalToProcess
-				_ = svc.UpdateTaskStatus(shopID, taskID, "PROCESSING", progress,
+				_ = svc.UpdateTaskStatus(holdingCode, taskID, "PROCESSING", progress,
 					fmt.Sprintf("Processing %d/%d records (batch #%d, errors: %d)", processedCount, totalToProcess, batchCount, errorCount))
 				log.Printf("[ApplyChangesWithProgress] INSERT batch #%d completed: %d/%d total processed", batchCount, processedCount, totalToProcess)
 			}
@@ -3675,7 +3675,7 @@ func (svc ProductImportService) ApplyChangesWithProgress(shopID string, authUser
 				log.Printf("[ApplyChangesWithProgress] Processing UPDATE batch #%d: records %d-%d (%d records)", updateBatchCount, i+1, end, batchSize)
 
 				// 🚀 Pre-fetch master data cache for this batch (เพิ่ม performance)
-				masterCache, err := svc.fetchMasterDataCache(ctx, shopID, batch)
+				masterCache, err := svc.fetchMasterDataCache(ctx, holdingCode, batch)
 				if err != nil {
 					log.Printf("[ApplyChangesWithProgress] Warning: Failed to fetch master data cache for UPDATE batch #%d: %v", updateBatchCount, err)
 				} else {
@@ -3732,7 +3732,7 @@ func (svc ProductImportService) ApplyChangesWithProgress(shopID string, authUser
 					}
 
 					if len(changes) > 0 {
-						err := svc.updateExistingProduct(shopID, authUsername, importData, compareItem, models.ProductImportHeader{}, masterCache)
+						err := svc.updateExistingProduct(holdingCode, authUsername, importData, compareItem, models.ProductImportHeader{}, masterCache)
 						if err != nil {
 							errMsg := fmt.Sprintf("Barcode %s: %v", importData.Barcode, err)
 							log.Printf("[ApplyChangesWithProgress] ERROR updating %s", errMsg)
@@ -3744,7 +3744,7 @@ func (svc ProductImportService) ApplyChangesWithProgress(shopID string, authUser
 				}
 
 				progress := 30 + (processedCount*50)/totalToProcess
-				_ = svc.UpdateTaskStatus(shopID, taskID, "PROCESSING", progress,
+				_ = svc.UpdateTaskStatus(holdingCode, taskID, "PROCESSING", progress,
 					fmt.Sprintf("Processing %d/%d records (batch #%d, errors: %d)", processedCount, totalToProcess, batchCount+updateBatchCount, errorCount))
 				log.Printf("[ApplyChangesWithProgress] UPDATE batch #%d completed: %d/%d total processed", updateBatchCount, processedCount, totalToProcess)
 			}
@@ -3753,9 +3753,9 @@ func (svc ProductImportService) ApplyChangesWithProgress(shopID string, authUser
 
 	// 🔧 Process RefBarcode updates หลังจากบันทึกข้อมูลเสร็จแล้ว
 	log.Printf("[ApplyChangesWithProgress] Starting RefBarcode processing...")
-	_ = svc.UpdateTaskStatus(shopID, taskID, "PROCESSING", 85, "Processing RefBarcodes...")
+	_ = svc.UpdateTaskStatus(holdingCode, taskID, "PROCESSING", 85, "Processing RefBarcodes...")
 
-	refUpdateCount, refErr := svc.processRefBarcodeUpdates(ctx, shopID, authUsername, importDocList)
+	refUpdateCount, refErr := svc.processRefBarcodeUpdates(ctx, holdingCode, authUsername, importDocList)
 	if refErr != nil {
 		log.Printf("[ApplyChangesWithProgress] Warning: RefBarcode processing failed: %v", refErr)
 		// ไม่ return error เพราะ main process สำเร็จแล้ว
@@ -3769,10 +3769,10 @@ func (svc ProductImportService) ApplyChangesWithProgress(shopID string, authUser
 	if errorCount > 0 {
 		// 🆕 สร้าง error response เป็น JSON format
 		type ErrorDetail struct {
-			Summary string   `json:"summary"`
-			TotalErrors int      `json:"total_errors"`
+			Summary      string   `json:"summary"`
+			TotalErrors  int      `json:"total_errors"`
 			TotalRecords int      `json:"total_records"`
-			Errors []string `json:"errors"`
+			Errors       []string `json:"errors"`
 		}
 
 		errorDetail := ErrorDetail{
@@ -3787,14 +3787,14 @@ func (svc ProductImportService) ApplyChangesWithProgress(shopID string, authUser
 		if err != nil {
 			log.Printf("[ApplyChangesWithProgress] Warning: Failed to marshal error details: %v", err)
 			// Fallback to simple message
-			_ = svc.UpdateTaskStatus(shopID, taskID, "COMPLETED_WITH_ERRORS", 100,
+			_ = svc.UpdateTaskStatus(holdingCode, taskID, "COMPLETED_WITH_ERRORS", 100,
 				fmt.Sprintf("Completed with %d errors out of %d records", errorCount, processedCount))
 		} else {
-			_ = svc.UpdateTaskStatus(shopID, taskID, "COMPLETED_WITH_ERRORS", 100, string(errorJSON))
+			_ = svc.UpdateTaskStatus(holdingCode, taskID, "COMPLETED_WITH_ERRORS", 100, string(errorJSON))
 		}
 		log.Printf("[ApplyChangesWithProgress] Task completed with %d errors", errorCount)
 	} else {
-		_ = svc.UpdateTaskStatus(shopID, taskID, "COMPLETED", 100,
+		_ = svc.UpdateTaskStatus(holdingCode, taskID, "COMPLETED", 100,
 			fmt.Sprintf("Successfully processed %d records (RefBarcodes: %d updated)", processedCount, refUpdateCount))
 		log.Printf("[ApplyChangesWithProgress] Task completed successfully")
 	}

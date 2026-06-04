@@ -16,11 +16,11 @@ func NewShopDataTransfer(transferConnection IDataTransferConnection) IDataTransf
 	}
 }
 
-func (sdt *ShopDataTransfer) StartTransfer(ctx context.Context, shopID string, targetShopID string) error {
+func (sdt *ShopDataTransfer) StartTransfer(ctx context.Context, holdingCode string, targetHoldingCode string) error {
 
 	shopSourceRepository := shopModule.NewShopRepository(sdt.transferConnection.GetSourceConnection())
 
-	showDoc, err := shopSourceRepository.FindByGuid(ctx, shopID)
+	showDoc, err := shopSourceRepository.FindByGuid(ctx, holdingCode)
 	if err != nil {
 		return err
 	}
@@ -31,16 +31,16 @@ func (sdt *ShopDataTransfer) StartTransfer(ctx context.Context, shopID string, t
 		return err
 	}
 
-	fmt.Println("Shop ID: ", id)
+	fmt.Println("Holding Code: ", id)
 	return nil
 
 }
 
-func (sdt *ShopDataTransfer) CheckingBeforeTransfer(ctx context.Context, shopID string) (bool, error) {
+func (sdt *ShopDataTransfer) CheckingBeforeTransfer(ctx context.Context, holdingCode string) (bool, error) {
 
 	shopSourceRepository := shopModule.NewShopRepository(sdt.transferConnection.GetSourceConnection())
 
-	shopInfo, err := shopSourceRepository.FindByGuid(ctx, shopID)
+	shopInfo, err := shopSourceRepository.FindByGuid(ctx, holdingCode)
 	if err != nil {
 		return false, err
 	}

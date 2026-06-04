@@ -9,7 +9,7 @@ import (
 // AttachmentMetadata - ข้อมูลไฟล์แนบเอกสาร (PO, Sale, Purchase, etc.)
 type AttachmentMetadata struct {
 	ID           primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	ShopID       string             `bson:"shopid" json:"shopid"`
+	HoldingCode  string             `bson:"holding_code" json:"holding_code"`
 	ScreenType   string             `bson:"screen_type" json:"screen_type"`                     // purchaseorder, sale, purchase, etc.
 	DocNo        string             `bson:"docno" json:"docno"`                                 // เลขที่เอกสาร
 	GuidFixed    string             `bson:"guid_fixed" json:"guid_fixed"`                       // GUID ของเอกสาร
@@ -27,10 +27,10 @@ type AttachmentMetadata struct {
 }
 
 // AttachmentUploadRequest - request สำหรับ upload attachment
-// Form data: file, shopid, screen_type, docno, guidfixed, description, uploaded_by, uploaded_name
+// Form data: file, holding_code, screen_type, docno, guidfixed, description, uploaded_by, uploaded_name
 type AttachmentUploadRequest struct {
 	File         string `form:"file"` // multipart file
-	ShopID       string `form:"shopid"`
+	HoldingCode  string `form:"holding_code"`
 	ScreenType   string `form:"screen_type"`
 	DocNo        string `form:"docno"`
 	GuidFixed    string `form:"guid_fixed"`
@@ -41,17 +41,17 @@ type AttachmentUploadRequest struct {
 
 // AttachmentListRequest - request สำหรับ list attachments
 type AttachmentListRequest struct {
-	ShopID     string `json:"shopid"`
-	ScreenType string `json:"screen_type,omitempty"`
-	DocNo      string `json:"docno,omitempty"`
-	GuidFixed  string `json:"guid_fixed,omitempty"`
-	Limit      int64  `json:"limit,omitempty"`
-	Skip       int64  `json:"skip,omitempty"`
+	HoldingCode string `json:"holding_code"`
+	ScreenType  string `json:"screen_type,omitempty"`
+	DocNo       string `json:"docno,omitempty"`
+	GuidFixed   string `json:"guid_fixed,omitempty"`
+	Limit       int64  `json:"limit,omitempty"`
+	Skip        int64  `json:"skip,omitempty"`
 }
 
 // AttachmentDeleteRequest - request สำหรับ delete attachment
 type AttachmentDeleteRequest struct {
-	ShopID       string `json:"shopid"`
+	HoldingCode  string `json:"holding_code"`
 	AttachmentID string `json:"attachment_id,omitempty"`
 	FileName     string `json:"file_name,omitempty"`
 }
@@ -67,7 +67,7 @@ type AttachmentResponse struct {
 // AttachmentListDataItem - attachment item with private backend URL
 type AttachmentListDataItem struct {
 	ID           primitive.ObjectID `json:"id"`
-	ShopID       string             `json:"shopid"`
+	HoldingCode  string             `json:"holding_code"`
 	ScreenType   string             `json:"screen_type"`
 	DocNo        string             `json:"docno"`
 	GuidFixed    string             `json:"guid_fixed"`

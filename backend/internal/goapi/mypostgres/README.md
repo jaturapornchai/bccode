@@ -21,7 +21,7 @@
 ```sql
 CREATE TABLE queues (
     id BIGSERIAL PRIMARY KEY,
-    shop_id VARCHAR(100) NOT NULL,
+    holding_code VARCHAR(100) NOT NULL,
     doc_no VARCHAR(100) NOT NULL,
     trans_flag VARCHAR(10) NOT NULL,
     retry_count INTEGER DEFAULT 0,
@@ -31,8 +31,8 @@ CREATE TABLE queues (
     processed_at TIMESTAMP NULL,
     error_message TEXT NULL,
 
-    INDEX idx_queues_shop_status (shop_id, status),
-    INDEX idx_queues_pop (shop_id, created_at) WHERE status = 'pending'
+    INDEX idx_queues_shop_status (holding_code, status),
+    INDEX idx_queues_pop (holding_code, created_at) WHERE status = 'pending'
 );
 ```
 
@@ -40,7 +40,7 @@ CREATE TABLE queues (
 ```sql
 CREATE TABLE dead_letter_queue (
     id BIGSERIAL PRIMARY KEY,
-    shop_id VARCHAR(100) NOT NULL,
+    holding_code VARCHAR(100) NOT NULL,
     doc_no VARCHAR(100) NOT NULL,
     trans_flag VARCHAR(10) NOT NULL,
     retry_count INTEGER DEFAULT 0,
@@ -48,7 +48,7 @@ CREATE TABLE dead_letter_queue (
     failed_at TIMESTAMP DEFAULT NOW(),
     error_message TEXT NOT NULL,
 
-    INDEX idx_dlq_shop_id (shop_id),
+    INDEX idx_dlq_holding_code (holding_code),
     INDEX idx_dlq_failed_at (failed_at)
 );
 ```
@@ -114,7 +114,7 @@ import "goapi/mypostgres"
 // เพิ่มงานเข้า queue
 qm := mypostgres.NewQueueManager(db)
 item := mypostgres.QueueItem{
-    ShopId:    "SHOP001",
+    HoldingCode:    "SHOP001",
     DocNo:     "PO-2024-001",
     TransFlag: "6",
     CreatedAt: time.Now(),
@@ -176,7 +176,7 @@ defer lock.Release(ctx)
 ## Performance Considerations
 
 ### Indexing
-- สร้าง index บน `(shop_id, status)` สำหรับ PopFromQueue
+- สร้าง index บน `(holding_code, status)` สำหรับ PopFromQueue
 - สร้าง partial index `WHERE status = 'pending'` สำหรับเพิ่มประสิทธิภาพ
 
 ### Connection Pooling
@@ -233,15 +233,15 @@ FROM queues
 GROUP BY status;
 
 -- Shop ที่มีงานรอมากที่สุด
-SELECT shop_id, COUNT(*) as pending_count
+SELECT holding_code, COUNT(*) as pending_count
 FROM queues
 WHERE status = 'pending'
-GROUP BY shop_id
+GROUP BY holding_code
 ORDER BY pending_count DESC
 LIMIT 10;
 
 -- งานที่ล้มเหลว
-SELECT shop_id, doc_no, error_message, failed_at
+SELECT holding_code, doc_no, error_message, failed_at
 FROM dead_letter_queue
 ORDER BY failed_at DESC
 LIMIT 20;
@@ -262,7 +262,7 @@ ORDER BY acquired_at DESC;
 ### ปัญหา: งาน stuck ใน processing
 ```sql
 -- หางานที่ processing นานเกินไป (เกิน 1 ชม.)
-SELECT id, shop_id, doc_no, processed_at
+SELECT id, holding_code, doc_no, processed_at
 FROM queues
 WHERE status = 'processing'
   AND processed_at < NOW() - INTERVAL '1 hour';
@@ -291,12 +291,12 @@ WHERE lock_key = 'stock:calc:SHOP001:ITEM001';
 ### QueueManager Methods
 
 - `AddToQueue(ctx, item)` - เพิ่มงานเข้า queue
-- `PopFromQueue(ctx, shopId)` - ดึงงานจาก queue (FIFO)
+- `PopFromQueue(ctx, holdingCode)` - ดึงงานจาก queue (FIFO)
 - `RequeueItem(ctx, item)` - ใส่งานกลับเข้า queue
 - `AddToDeadLetterQueue(ctx, item, error)` - ส่งงานไป DLQ
 - `GetActiveShops(ctx)` - ดึงรายชื่อ shop ที่มีงาน
-- `GetQueueLength(ctx, shopId)` - ดึงความยาว queue
-- `GetQueueStats(ctx, shopId)` - ดึงสถิติ queue ของ shop
+- `GetQueueLength(ctx, holdingCode)` - ดึงความยาว queue
+- `GetQueueStats(ctx, holdingCode)` - ดึงสถิติ queue ของ shop
 - `GetQueueSummary(ctx)` - ดึงสรุปข้อมูล queue ทั้งหมด
 - `MarkAsCompleted(ctx, itemId)` - ทำเครื่องหมายงานเสร็จ
 - `CleanupOldCompletedItems(ctx, duration)` - ทำความสะอาดงานเก่า

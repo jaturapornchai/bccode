@@ -120,7 +120,7 @@ func (h SlipImageHttp) RegisterHttp() {
 // @Router /slipimage [post]
 func (h SlipImageHttp) UploadSlipImage(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	fileHeader, err := ctx.FormFile("file")
 
 	if err != nil {
@@ -195,7 +195,7 @@ func (h SlipImageHttp) UploadSlipImage(ctx microservice.IContext) error {
 		ZoneGroupNumber: zoneGroupNumber,
 	}
 
-	data, err := h.svc.CreateSlipImage(shopID, authUsername, payload)
+	data, err := h.svc.CreateSlipImage(holdingCode, authUsername, payload)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -220,12 +220,12 @@ func (h SlipImageHttp) UploadSlipImage(ctx microservice.IContext) error {
 // @Router /slipimage/{id} [delete]
 func (h SlipImageHttp) DeleteSlipImage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteSlipImage(shopID, id, authUsername)
+	err := h.svc.DeleteSlipImage(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -251,7 +251,7 @@ func (h SlipImageHttp) DeleteSlipImage(ctx microservice.IContext) error {
 // @Router /slipimage [delete]
 func (h SlipImageHttp) DeleteSlipImageByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -264,7 +264,7 @@ func (h SlipImageHttp) DeleteSlipImageByGUIDs(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.DeleteSlipImageByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteSlipImageByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -289,12 +289,12 @@ func (h SlipImageHttp) DeleteSlipImageByGUIDs(ctx microservice.IContext) error {
 // @Router /slipimage/{id} [get]
 func (h SlipImageHttp) InfoSlipImage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get SlipImage %v", id)
-	doc, err := h.svc.InfoSlipImage(shopID, id)
+	doc, err := h.svc.InfoSlipImage(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -328,13 +328,13 @@ func (h SlipImageHttp) InfoSlipImage(ctx microservice.IContext) error {
 // @Router /slipimage [get]
 func (h SlipImageHttp) SearchSlipImagePage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
 	filters := h.searchFilter(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.SearchSlipImage(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchSlipImage(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -369,7 +369,7 @@ func (h SlipImageHttp) SearchSlipImagePage(ctx microservice.IContext) error {
 // @Router /slipimage/list [get]
 func (h SlipImageHttp) SearchSlipImageStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -377,7 +377,7 @@ func (h SlipImageHttp) SearchSlipImageStep(ctx microservice.IContext) error {
 
 	filters := h.searchFilter(ctx.QueryParam)
 
-	docList, total, err := h.svc.SearchSlipImageStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchSlipImageStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

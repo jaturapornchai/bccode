@@ -30,12 +30,12 @@ type FileUploadResponse struct {
 
 // FileUploadHandler - handles file upload to Cloudflare R2
 // POST /upload
-// Form data: file (multipart/form-data), shopid (optional, must match auth token if provided)
+// Form data: file (multipart/form-data), holding_code (optional, must match auth token if provided)
 // Returns: JSON with file name and presigned URL
 func FileUploadHandler(c echo.Context) error {
 	logger.Info("File upload request received from %s", c.RealIP())
 
-	shopID, authStatus := storageAuthorizedShopID(c, c.FormValue("shopid"))
+	holdingCode, authStatus := storageAuthorizedHoldingCode(c, c.FormValue("holding_code"))
 	if authStatus != http.StatusOK {
 		return c.JSON(authStatus, FileUploadResponse{
 			Success: false,
@@ -97,7 +97,7 @@ func FileUploadHandler(c echo.Context) error {
 	ext := filepath.Ext(file.Filename)
 	newFileName := uuid.New().String() + ext
 
-	objectKey := fmt.Sprintf("%s/uploads/%s/%s", shopID, time.Now().Format("20060102"), newFileName)
+	objectKey := fmt.Sprintf("%s/uploads/%s/%s", holdingCode, time.Now().Format("20060102"), newFileName)
 
 	// Detect content type
 	contentType := file.Header.Get("Content-Type")
@@ -155,13 +155,13 @@ func FileDownloadHandler(c echo.Context) error {
 
 	// URL decode (key อาจมี / encoded)
 	objectKey = storageNormalizeObjectKey(strings.ReplaceAll(objectKey, "%2F", "/"))
-	shopID := storageContextShopID(c)
-	if shopID == "" {
+	holdingCode := storageContextHoldingCode(c)
+	if holdingCode == "" {
 		return c.JSON(http.StatusUnauthorized, map[string]interface{}{
 			"error": "shop not selected",
 		})
 	}
-	if !storageObjectBelongsToShop(objectKey, shopID) {
+	if !storageObjectBelongsToShop(objectKey, holdingCode) {
 		return c.JSON(http.StatusForbidden, map[string]interface{}{
 			"error": "forbidden",
 		})

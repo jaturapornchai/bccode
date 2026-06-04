@@ -63,7 +63,7 @@ func (h DeviceHttp) RegisterHttp() {
 // @Router /order/device [post]
 func (h DeviceHttp) CreateDevice(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.OrderDevice{}
@@ -79,7 +79,7 @@ func (h DeviceHttp) CreateDevice(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreateDevice(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateDevice(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -106,7 +106,7 @@ func (h DeviceHttp) CreateDevice(ctx microservice.IContext) error {
 func (h DeviceHttp) UpdateDevice(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -124,7 +124,7 @@ func (h DeviceHttp) UpdateDevice(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateDevice(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateDevice(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -150,12 +150,12 @@ func (h DeviceHttp) UpdateDevice(ctx microservice.IContext) error {
 // @Router /order/device/{id} [delete]
 func (h DeviceHttp) DeleteDevice(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteDevice(shopID, id, authUsername)
+	err := h.svc.DeleteDevice(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -181,7 +181,7 @@ func (h DeviceHttp) DeleteDevice(ctx microservice.IContext) error {
 // @Router /order/device [delete]
 func (h DeviceHttp) DeleteDeviceByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -194,7 +194,7 @@ func (h DeviceHttp) DeleteDeviceByGUIDs(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.DeleteDeviceByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteDeviceByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -219,12 +219,12 @@ func (h DeviceHttp) DeleteDeviceByGUIDs(ctx microservice.IContext) error {
 // @Router /order/device/{id} [get]
 func (h DeviceHttp) InfoDevice(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get Device %v", id)
-	doc, err := h.svc.InfoDevice(shopID, id)
+	doc, err := h.svc.InfoDevice(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -250,11 +250,11 @@ func (h DeviceHttp) InfoDevice(ctx microservice.IContext) error {
 // @Router /order/device/code/{code} [get]
 func (h DeviceHttp) InfoDeviceByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoDeviceByCode(shopID, code)
+	doc, err := h.svc.InfoDeviceByCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -281,11 +281,11 @@ func (h DeviceHttp) InfoDeviceByCode(ctx microservice.IContext) error {
 // @Router /order/device [get]
 func (h DeviceHttp) SearchDevicePage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.SearchDevice(shopID, map[string]interface{}{}, pageable)
+	docList, pagination, err := h.svc.SearchDevice(holdingCode, map[string]interface{}{}, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -314,13 +314,13 @@ func (h DeviceHttp) SearchDevicePage(ctx microservice.IContext) error {
 // @Router /order/device/list [get]
 func (h DeviceHttp) SearchDeviceStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
 	lang := ctx.QueryParam("lang")
 
-	docList, total, err := h.svc.SearchDeviceStep(shopID, lang, map[string]interface{}{}, pageableStep)
+	docList, total, err := h.svc.SearchDeviceStep(holdingCode, lang, map[string]interface{}{}, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -348,7 +348,7 @@ func (h DeviceHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -360,7 +360,7 @@ func (h DeviceHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

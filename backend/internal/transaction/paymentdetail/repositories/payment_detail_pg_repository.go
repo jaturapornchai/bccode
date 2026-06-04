@@ -7,10 +7,10 @@ import (
 )
 
 type IPaymentDetailRepository interface {
-	Get(shopID string, docNo string) (*models.TransactionPaymentDetail, error)
+	Get(holdingCode string, docNo string) (*models.TransactionPaymentDetail, error)
 	Create(doc models.TransactionPaymentDetail) error
-	Update(shopID string, docNo string, doc models.TransactionPaymentDetail) error
-	Delete(shopID string, docNo string, doc models.TransactionPaymentDetail) error
+	Update(holdingCode string, docNo string, doc models.TransactionPaymentDetail) error
+	Delete(holdingCode string, docNo string, doc models.TransactionPaymentDetail) error
 }
 
 type PaymentDetailRepository struct {

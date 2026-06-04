@@ -12,21 +12,21 @@ import (
 )
 
 type ISaleInvoiceBomPriceRepository interface {
-	Count(ctx context.Context, shopID string) (int, error)
+	Count(ctx context.Context, holdingCode string) (int, error)
 	Create(ctx context.Context, doc models.SaleInvoiceBomPriceDoc) (string, error)
 	CreateInBatch(ctx context.Context, docList []models.SaleInvoiceBomPriceDoc) error
-	Update(ctx context.Context, shopID string, guid string, doc models.SaleInvoiceBomPriceDoc) error
-	DeleteByGuidfixed(ctx context.Context, shopID string, guid string, username string) error
-	Delete(ctx context.Context, shopID string, username string, filters map[string]interface{}) error
-	FindPage(ctx context.Context, shopID string, searchInFields []string, pageable micromodels.Pageable) ([]models.SaleInvoiceBomPriceInfo, mongopagination.PaginationData, error)
-	FindByGuid(ctx context.Context, shopID string, guid string) (models.SaleInvoiceBomPriceDoc, error)
-	FindByGuids(ctx context.Context, shopID string, guids []string) ([]models.SaleInvoiceBomPriceDoc, error)
-	FindByDocNo(ctx context.Context, shopID string, docNo string) ([]models.SaleInvoiceBomPriceInfo, error)
+	Update(ctx context.Context, holdingCode string, guid string, doc models.SaleInvoiceBomPriceDoc) error
+	DeleteByGuidfixed(ctx context.Context, holdingCode string, guid string, username string) error
+	Delete(ctx context.Context, holdingCode string, username string, filters map[string]interface{}) error
+	FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable micromodels.Pageable) ([]models.SaleInvoiceBomPriceInfo, mongopagination.PaginationData, error)
+	FindByGuid(ctx context.Context, holdingCode string, guid string) (models.SaleInvoiceBomPriceDoc, error)
+	FindByGuids(ctx context.Context, holdingCode string, guids []string) ([]models.SaleInvoiceBomPriceDoc, error)
+	FindByDocNo(ctx context.Context, holdingCode string, docNo string) ([]models.SaleInvoiceBomPriceInfo, error)
 
-	FindInItemGuid(ctx context.Context, shopID string, columnName string, itemGuidList []string) ([]models.SaleInvoiceBomPriceItemGuid, error)
-	FindByDocIndentityGuid(ctx context.Context, shopID string, indentityField string, indentityValue interface{}) (models.SaleInvoiceBomPriceDoc, error)
-	FindPageFilter(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.SaleInvoiceBomPriceInfo, mongopagination.PaginationData, error)
-	FindStep(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableLimit micromodels.PageableStep) ([]models.SaleInvoiceBomPriceInfo, int, error)
+	FindInItemGuid(ctx context.Context, holdingCode string, columnName string, itemGuidList []string) ([]models.SaleInvoiceBomPriceItemGuid, error)
+	FindByDocIndentityGuid(ctx context.Context, holdingCode string, indentityField string, indentityValue interface{}) (models.SaleInvoiceBomPriceDoc, error)
+	FindPageFilter(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.SaleInvoiceBomPriceInfo, mongopagination.PaginationData, error)
+	FindStep(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableLimit micromodels.PageableStep) ([]models.SaleInvoiceBomPriceInfo, int, error)
 }
 
 type SaleInvoiceBomPriceRepository struct {
@@ -49,12 +49,12 @@ func NewSaleInvoiceBomPriceRepository(pst microservice.IPersisterMongo) *SaleInv
 	return insRepo
 }
 
-func (repo SaleInvoiceBomPriceRepository) FindByDocNo(ctx context.Context, shopID string, docNo string) ([]models.SaleInvoiceBomPriceInfo, error) {
+func (repo SaleInvoiceBomPriceRepository) FindByDocNo(ctx context.Context, holdingCode string, docNo string) ([]models.SaleInvoiceBomPriceInfo, error) {
 	var docs []models.SaleInvoiceBomPriceInfo
 	filters := map[string]interface{}{
-		"shopid":    shopID,
-		"deleted_at": bson.M{"$exists": false},
-		"docno":     docNo,
+		"holding_code": holdingCode,
+		"deleted_at":   bson.M{"$exists": false},
+		"docno":        docNo,
 	}
 	err := repo.pst.Find(ctx, models.SaleInvoiceBomPriceInfo{}, filters, &docs)
 	return docs, err

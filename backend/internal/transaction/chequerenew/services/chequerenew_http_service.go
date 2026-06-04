@@ -22,15 +22,15 @@ import (
 )
 
 type IChequeRenewHttpService interface {
-	CreateChequeRenew(shopID string, authUsername string, doc models.ChequeRenew) (string, string, error)
-	UpdateChequeRenew(shopID string, guid string, authUsername string, doc models.ChequeRenew) error
-	DeleteChequeRenew(shopID string, guid string, authUsername string) error
-	DeleteChequeRenewByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoChequeRenew(shopID string, guid string) (models.ChequeRenewInfo, error)
-	InfoChequeRenewByCode(shopID string, code string) (models.ChequeRenewInfo, error)
-	SearchChequeRenew(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ChequeRenewInfo, mongopagination.PaginationData, error)
-	SearchChequeRenewStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ChequeRenewInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.ChequeRenew) (common.BulkImport, error)
+	CreateChequeRenew(holdingCode string, authUsername string, doc models.ChequeRenew) (string, string, error)
+	UpdateChequeRenew(holdingCode string, guid string, authUsername string, doc models.ChequeRenew) error
+	DeleteChequeRenew(holdingCode string, guid string, authUsername string) error
+	DeleteChequeRenewByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoChequeRenew(holdingCode string, guid string) (models.ChequeRenewInfo, error)
+	InfoChequeRenewByCode(holdingCode string, code string) (models.ChequeRenewInfo, error)
+	SearchChequeRenew(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ChequeRenewInfo, mongopagination.PaginationData, error)
+	SearchChequeRenewStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ChequeRenewInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.ChequeRenew) (common.BulkImport, error)
 
 	GetModuleName() string
 }
@@ -81,11 +81,11 @@ func (svc ChequeRenewHttpService) getDocNoPrefix(docDate time.Time) string {
 	return fmt.Sprintf("%s%s", MODULE_NAME, docDateStr)
 }
 
-func (svc ChequeRenewHttpService) generateNewDocNo(ctx context.Context, shopID, prefixDocNo string, docNumber int) (string, int, error) {
-	prevoiusDocNumber, err := svc.repoCache.Get(shopID, prefixDocNo)
+func (svc ChequeRenewHttpService) generateNewDocNo(ctx context.Context, holdingCode, prefixDocNo string, docNumber int) (string, int, error) {
+	prevoiusDocNumber, err := svc.repoCache.Get(holdingCode, prefixDocNo)
 
 	if prevoiusDocNumber == 0 || err != nil {
-		lastDoc, err := svc.repo.FindLastDocNo(ctx, shopID, prefixDocNo)
+		lastDoc, err := svc.repo.FindLastDocNo(ctx, holdingCode, prefixDocNo)
 
 		if err != nil {
 			return "", 0, err
@@ -105,7 +105,7 @@ func (svc ChequeRenewHttpService) generateNewDocNo(ctx context.Context, shopID, 
 	newDocNumber := prevoiusDocNumber + 1
 	newDocNo := fmt.Sprintf("%s%05d", prefixDocNo, newDocNumber)
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", newDocNo)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", newDocNo)
 
 	if err != nil {
 		return "", 0, err
@@ -118,7 +118,7 @@ func (svc ChequeRenewHttpService) generateNewDocNo(ctx context.Context, shopID, 
 	return newDocNo, newDocNumber, nil
 }
 
-func (svc ChequeRenewHttpService) CreateChequeRenew(shopID string, authUsername string, doc models.ChequeRenew) (string, string, error) {
+func (svc ChequeRenewHttpService) CreateChequeRenew(holdingCode string, authUsername string, doc models.ChequeRenew) (string, string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -126,7 +126,7 @@ func (svc ChequeRenewHttpService) CreateChequeRenew(shopID string, authUsername 
 	docDate := doc.DocDatetime
 	prefixDocNo := svc.getDocNoPrefix(docDate)
 
-	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, shopID, prefixDocNo, 1)
+	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, holdingCode, prefixDocNo, 1)
 
 	if err != nil {
 		return "", "", err
@@ -135,7 +135,7 @@ func (svc ChequeRenewHttpService) CreateChequeRenew(shopID string, authUsername 
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.ChequeRenewDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.ChequeRenew = doc
 
@@ -149,23 +149,23 @@ func (svc ChequeRenewHttpService) CreateChequeRenew(shopID string, authUsername 
 		return "", "", err
 	}
 
-	go svc.repoCache.Save(shopID, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
+	go svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
 
 	go func() {
 		svc.repoMq.Create(docData)
-		svc.repoCache.Save(shopID, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
-		svc.saveMasterSync(shopID)
+		svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return newGuidFixed, newDocNo, nil
 }
 
-func (svc ChequeRenewHttpService) UpdateChequeRenew(shopID string, guid string, authUsername string, doc models.ChequeRenew) error {
+func (svc ChequeRenewHttpService) UpdateChequeRenew(holdingCode string, guid string, authUsername string, doc models.ChequeRenew) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -182,7 +182,7 @@ func (svc ChequeRenewHttpService) UpdateChequeRenew(shopID string, guid string, 
 	docData.UpdatedBy = authUsername
 	docData.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, docData)
+	err = svc.repo.Update(ctx, holdingCode, guid, docData)
 
 	if err != nil {
 		return err
@@ -190,18 +190,18 @@ func (svc ChequeRenewHttpService) UpdateChequeRenew(shopID string, guid string, 
 
 	func() {
 		svc.repoMq.Update(docData)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc ChequeRenewHttpService) DeleteChequeRenew(shopID string, guid string, authUsername string) error {
+func (svc ChequeRenewHttpService) DeleteChequeRenew(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -211,20 +211,20 @@ func (svc ChequeRenewHttpService) DeleteChequeRenew(shopID string, guid string, 
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
 	func() {
 		svc.repoMq.Delete(findDoc)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc ChequeRenewHttpService) DeleteChequeRenewByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc ChequeRenewHttpService) DeleteChequeRenewByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -233,26 +233,26 @@ func (svc ChequeRenewHttpService) DeleteChequeRenewByGUIDs(shopID string, authUs
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
 
 	func() {
-		docs, _ := svc.repo.FindByGuids(ctx, shopID, GUIDs)
+		docs, _ := svc.repo.FindByGuids(ctx, holdingCode, GUIDs)
 		svc.repoMq.DeleteInBatch(docs)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc ChequeRenewHttpService) InfoChequeRenew(shopID string, guid string) (models.ChequeRenewInfo, error) {
+func (svc ChequeRenewHttpService) InfoChequeRenew(holdingCode string, guid string) (models.ChequeRenewInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.ChequeRenewInfo{}, err
@@ -265,12 +265,12 @@ func (svc ChequeRenewHttpService) InfoChequeRenew(shopID string, guid string) (m
 	return findDoc.ChequeRenewInfo, nil
 }
 
-func (svc ChequeRenewHttpService) InfoChequeRenewByCode(shopID string, code string) (models.ChequeRenewInfo, error) {
+func (svc ChequeRenewHttpService) InfoChequeRenewByCode(holdingCode string, code string) (models.ChequeRenewInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", code)
 
 	if err != nil {
 		return models.ChequeRenewInfo{}, err
@@ -283,7 +283,7 @@ func (svc ChequeRenewHttpService) InfoChequeRenewByCode(shopID string, code stri
 	return findDoc.ChequeRenewInfo, nil
 }
 
-func (svc ChequeRenewHttpService) SearchChequeRenew(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ChequeRenewInfo, mongopagination.PaginationData, error) {
+func (svc ChequeRenewHttpService) SearchChequeRenew(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ChequeRenewInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -292,7 +292,7 @@ func (svc ChequeRenewHttpService) SearchChequeRenew(shopID string, filters map[s
 		"docno",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.ChequeRenewInfo{}, pagination, err
@@ -301,7 +301,7 @@ func (svc ChequeRenewHttpService) SearchChequeRenew(shopID string, filters map[s
 	return docList, pagination, nil
 }
 
-func (svc ChequeRenewHttpService) SearchChequeRenewStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ChequeRenewInfo, int, error) {
+func (svc ChequeRenewHttpService) SearchChequeRenewStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ChequeRenewInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -312,7 +312,7 @@ func (svc ChequeRenewHttpService) SearchChequeRenewStep(shopID string, langCode 
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.ChequeRenewInfo{}, 0, err
@@ -321,7 +321,7 @@ func (svc ChequeRenewHttpService) SearchChequeRenewStep(shopID string, langCode 
 	return docList, total, nil
 }
 
-func (svc ChequeRenewHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.ChequeRenew) (common.BulkImport, error) {
+func (svc ChequeRenewHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.ChequeRenew) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -333,7 +333,7 @@ func (svc ChequeRenewHttpService) SaveInBatch(shopID string, authUsername string
 		itemCodeGuidList = append(itemCodeGuidList, doc.DocNo)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "docno", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "docno", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -345,18 +345,18 @@ func (svc ChequeRenewHttpService) SaveInBatch(shopID string, authUsername string
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.ChequeRenew, models.ChequeRenewDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.ChequeRenew) models.ChequeRenewDoc {
+		func(holdingCode string, authUsername string, doc models.ChequeRenew) models.ChequeRenewDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.ChequeRenewDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.ChequeRenew = doc
 
 			currentTime := time.Now()
@@ -367,23 +367,23 @@ func (svc ChequeRenewHttpService) SaveInBatch(shopID string, authUsername string
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.ChequeRenew, models.ChequeRenewDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.ChequeRenewDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", guid)
+		func(holdingCode string, guid string) (models.ChequeRenewDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", guid)
 		},
 		func(doc models.ChequeRenewDoc) bool {
 			return doc.DocNo != ""
 		},
-		func(shopID string, authUsername string, data models.ChequeRenew, doc models.ChequeRenewDoc) error {
+		func(holdingCode string, authUsername string, data models.ChequeRenew, doc models.ChequeRenewDoc) error {
 
 			doc.ChequeRenew = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -422,7 +422,7 @@ func (svc ChequeRenewHttpService) SaveInBatch(shopID string, authUsername string
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -436,9 +436,9 @@ func (svc ChequeRenewHttpService) getDocIDKey(doc models.ChequeRenew) string {
 	return doc.DocNo
 }
 
-func (svc ChequeRenewHttpService) saveMasterSync(shopID string) {
+func (svc ChequeRenewHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

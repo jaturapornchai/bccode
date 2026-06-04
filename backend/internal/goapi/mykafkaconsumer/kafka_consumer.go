@@ -31,8 +31,8 @@ type WorkerMetadata struct {
 }
 
 type KafkaConsumer struct {
-	// ไม่ใช้ fixed worker count แล้ว เพราะจะสร้าง worker แยกตาม shopid
-	shopWorkers map[string]*WorkerMetadata // แยก queue ตาม shopid with metadata
+	// ไม่ใช้ fixed worker count แล้ว เพราะจะสร้าง worker แยกตาม holding_code
+	shopWorkers map[string]*WorkerMetadata // แยก queue ตาม holding_code with metadata
 	mutex       sync.RWMutex               // ป้องกัน race condition
 
 	// Configuration for worker cleanup
@@ -55,16 +55,16 @@ type KafkaConsumer struct {
 
 // MessageJob represents a message to be processed
 type MessageJob struct {
-	shopID    string // เพิ่ม shopID เพื่อแยก partition
-	topic     string
-	offset    int64
-	partition int
-	value     string
-	handler   ConsumerHandleFunc
+	holdingCode string // เพิ่ม holdingCode เพื่อแยก partition
+	topic       string
+	offset      int64
+	partition   int
+	value       string
+	handler     ConsumerHandleFunc
 }
 
-// ShopIDExtractor extracts shopID from message payload
-type ShopIDExtractor func(msg string) string
+// HoldingCodeExtractor extracts holdingCode from message payload
+type HoldingCodeExtractor func(msg string) string
 
 func NewKafkaConsumer() IKafkaConsumer {
 	kc := &KafkaConsumer{
@@ -129,14 +129,14 @@ func isTransientKafkaError(err error) bool {
 	return false
 }
 
-// getOrCreateShopWorker สร้างหรือดึง worker channel สำหรับ shopid นั้นๆ
-func (kc *KafkaConsumer) getOrCreateShopWorker(shopID string) chan MessageJob {
+// getOrCreateShopWorker สร้างหรือดึง worker channel สำหรับ holding_code นั้นๆ
+func (kc *KafkaConsumer) getOrCreateShopWorker(holdingCode string) chan MessageJob {
 	// ตรวจสอบว่ามี worker สำหรับ shop นี้แล้วหรือยัง
 	kc.mutex.RLock()
-	if worker, exists := kc.shopWorkers[shopID]; exists {
+	if worker, exists := kc.shopWorkers[holdingCode]; exists {
 		kc.mutex.RUnlock()
 		// Update last activity time (thread-safe update)
-		kc.updateWorkerActivity(shopID)
+		kc.updateWorkerActivity(holdingCode)
 		return worker.channel
 	}
 	kc.mutex.RUnlock()
@@ -146,7 +146,7 @@ func (kc *KafkaConsumer) getOrCreateShopWorker(shopID string) chan MessageJob {
 	defer kc.mutex.Unlock()
 
 	// Double-check (อาจมีคนอื่นสร้างไปแล้วระหว่างรอ lock)
-	if worker, exists := kc.shopWorkers[shopID]; exists {
+	if worker, exists := kc.shopWorkers[holdingCode]; exists {
 		return worker.channel
 	}
 
@@ -165,32 +165,32 @@ func (kc *KafkaConsumer) getOrCreateShopWorker(shopID string) chan MessageJob {
 		messageCount: 0,
 		createdAt:    now,
 	}
-	kc.shopWorkers[shopID] = metadata
+	kc.shopWorkers[holdingCode] = metadata
 
 	// เริ่ม worker pool สำหรับ shop นี้ (parallel processing)
 	for i := 0; i < kc.workersPerShop; i++ {
-		go kc.startShopWorker(shopID, workerChan, i+1)
+		go kc.startShopWorker(holdingCode, workerChan, i+1)
 	}
 
-	logger.Info("✨ สร้าง worker pool สำหรับ ShopID: %s (%d workers, ร้านค้าทั้งหมด: %d)",
-		shopID, kc.workersPerShop, len(kc.shopWorkers))
+	logger.Info("✨ สร้าง worker pool สำหรับ HoldingCode: %s (%d workers, ร้านค้าทั้งหมด: %d)",
+		holdingCode, kc.workersPerShop, len(kc.shopWorkers))
 	return workerChan
 }
 
 // updateWorkerActivity updates the last activity timestamp for a worker
-func (kc *KafkaConsumer) updateWorkerActivity(shopID string) {
+func (kc *KafkaConsumer) updateWorkerActivity(holdingCode string) {
 	kc.mutex.Lock()
 	defer kc.mutex.Unlock()
-	if worker, exists := kc.shopWorkers[shopID]; exists {
+	if worker, exists := kc.shopWorkers[holdingCode]; exists {
 		worker.lastActivity = time.Now()
 		worker.messageCount++
 	}
 }
 
 // startShopWorker เริ่มต้น worker สำหรับ shop นั้นๆ (ประมวลผลแบบ parallel with timeout)
-func (kc *KafkaConsumer) startShopWorker(shopID string, jobChan <-chan MessageJob, workerID int) {
-	logger.Info("🔧 Worker #%d เริ่มทำงานสำหรับ ShopID: %s (การประมวลผลแบบพาราเรล พร้อม timeout %v)",
-		workerID, shopID, kc.jobTimeout)
+func (kc *KafkaConsumer) startShopWorker(holdingCode string, jobChan <-chan MessageJob, workerID int) {
+	logger.Info("🔧 Worker #%d เริ่มทำงานสำหรับ HoldingCode: %s (การประมวลผลแบบพาราเรล พร้อม timeout %v)",
+		workerID, holdingCode, kc.jobTimeout)
 
 	messageCount := 0
 	errorCount := 0
@@ -216,28 +216,28 @@ func (kc *KafkaConsumer) startShopWorker(shopID string, jobChan <-chan MessageJo
 			cancel()
 			if err != nil {
 				errorCount++
-				logger.Error("❌ ShopID %s Worker #%d ล้มเหลว (topic=%s, offset=%d): %v",
-					shopID, workerID, job.topic, job.offset, err)
+				logger.Error("❌ HoldingCode %s Worker #%d ล้มเหลว (topic=%s, offset=%d): %v",
+					holdingCode, workerID, job.topic, job.offset, err)
 			} else {
 				duration := time.Since(startTime)
 				totalDuration += duration
 				avgDuration := totalDuration / time.Duration(messageCount)
 
 				if messageCount%10 == 0 {
-					logger.Info("✅ ShopID %s Worker #%d: ประมวลผล=%d, ข้อผิดพลาด=%d, timeout=%d, เฉลี่ย=%.2fs, ครั้งล่าสุด=%.2fs",
-						shopID, workerID, messageCount, errorCount, timeoutCount, avgDuration.Seconds(), duration.Seconds())
+					logger.Info("✅ HoldingCode %s Worker #%d: ประมวลผล=%d, ข้อผิดพลาด=%d, timeout=%d, เฉลี่ย=%.2fs, ครั้งล่าสุด=%.2fs",
+						holdingCode, workerID, messageCount, errorCount, timeoutCount, avgDuration.Seconds(), duration.Seconds())
 				}
 			}
 		case <-ctx.Done():
 			cancel()
 			timeoutCount++
-			logger.Error("⏱️ ShopID %s Worker #%d TIMEOUT (topic=%s, offset=%d, ระยะเวลา=%v)",
-				shopID, workerID, job.topic, job.offset, kc.jobTimeout)
+			logger.Error("⏱️ HoldingCode %s Worker #%d TIMEOUT (topic=%s, offset=%d, ระยะเวลา=%v)",
+				holdingCode, workerID, job.topic, job.offset, kc.jobTimeout)
 		}
 	}
 
-	logger.Info("🛑 Worker #%d หยุดทำงานสำหรับ ShopID: %s (ประมวลผล=%d, ข้อผิดพลาด=%d, timeout=%d)",
-		workerID, shopID, messageCount, errorCount, timeoutCount)
+	logger.Info("🛑 Worker #%d หยุดทำงานสำหรับ HoldingCode: %s (ประมวลผล=%d, ข้อผิดพลาด=%d, timeout=%d)",
+		workerID, holdingCode, messageCount, errorCount, timeoutCount)
 }
 
 func (kc *KafkaConsumer) ConsumeMessage(server string, topic string, groupID string, partition int32, h ConsumerHandleFunc) error {
@@ -317,38 +317,38 @@ func (kc *KafkaConsumer) consumeWithRetry(server string, topic string, groupID s
 		messageCount++
 		msgValue := string(msg.Value)
 
-		// 🔑 Extract ShopID from message
-		shopID := extractShopIDFromMessage(msgValue)
-		if shopID == "" {
-			logger.Warn("⚠️ ไม่สามารถแยก ShopID จากข้อความได้ (offset=%d), ข้าม", msg.Offset)
+		// 🔑 Extract HoldingCode from message
+		holdingCode := extractHoldingCodeFromMessage(msgValue)
+		if holdingCode == "" {
+			logger.Warn("⚠️ ไม่สามารถแยก HoldingCode จากข้อความได้ (offset=%d), ข้าม", msg.Offset)
 			continue
 		}
 
 		// อัปเดต stats
-		shopStats[shopID]++
+		shopStats[holdingCode]++
 
 		// 🎯 ส่ง message ไปยัง worker ของ shop นั้นๆ (สร้างถ้ายังไม่มี)
-		shopWorker := kc.getOrCreateShopWorker(shopID)
+		shopWorker := kc.getOrCreateShopWorker(holdingCode)
 
 		job := MessageJob{
-			shopID:    shopID,
-			topic:     topic,
-			offset:    msg.Offset,
-			partition: msg.Partition,
-			value:     msgValue,
-			handler:   h,
+			holdingCode: holdingCode,
+			topic:       topic,
+			offset:      msg.Offset,
+			partition:   msg.Partition,
+			value:       msgValue,
+			handler:     h,
 		}
 
 		// ส่ง job ไปยัง shop worker (non-blocking with timeout)
 		select {
 		case shopWorker <- job:
 			// Message sent successfully
-			logger.Debug("📤 Message queued for ShopID %s (offset=%d, queue_size=%d)",
-				shopID, msg.Offset, len(shopWorker))
+			logger.Debug("📤 Message queued for HoldingCode %s (offset=%d, queue_size=%d)",
+				holdingCode, msg.Offset, len(shopWorker))
 		case <-time.After(5 * time.Second):
 			// Worker กำลังยุ่ง, log คำเตือนและส่งต่อ (blocking)
-			logger.Warn("⚠️ ShopID %s worker กำลังยุ่ง, ข้อความถูกจัดคิวโดยมีความล่าช้า (offset=%d)",
-				shopID, msg.Offset)
+			logger.Warn("⚠️ HoldingCode %s worker กำลังยุ่ง, ข้อความถูกจัดคิวโดยมีความล่าช้า (offset=%d)",
+				holdingCode, msg.Offset)
 			shopWorker <- job
 		}
 
@@ -361,8 +361,8 @@ func (kc *KafkaConsumer) consumeWithRetry(server string, topic string, groupID s
 
 			// แสดง top 5 shops ที่มี message มากที่สุด
 			type shopCount struct {
-				shopID string
-				count  int
+				holdingCode string
+				count       int
 			}
 			var topShops []shopCount
 			for sid, count := range shopStats {
@@ -486,18 +486,18 @@ func (kc *KafkaConsumer) cleanupIdleWorkers() {
 	removedCount := 0
 	totalMessages := int64(0)
 
-	for shopID, worker := range kc.shopWorkers {
+	for holdingCode, worker := range kc.shopWorkers {
 		idleDuration := now.Sub(worker.lastActivity)
 
 		if idleDuration > kc.maxIdleTime {
 			// Close the channel to signal the worker to stop
 			close(worker.channel)
 			totalMessages += worker.messageCount
-			delete(kc.shopWorkers, shopID)
+			delete(kc.shopWorkers, holdingCode)
 			removedCount++
 
-			logger.Info("🧹 ทำความสะอาด idle worker สำหรับ ShopID: %s (idle: %v, ข้อความ: %d)",
-				shopID, idleDuration.Round(time.Second), worker.messageCount)
+			logger.Info("🧹 ทำความสะอาด idle worker สำหรับ HoldingCode: %s (idle: %v, ข้อความ: %d)",
+				holdingCode, idleDuration.Round(time.Second), worker.messageCount)
 		}
 	}
 
@@ -515,34 +515,34 @@ func (kc *KafkaConsumer) evictLRUWorker() {
 	}
 
 	// Find the worker with oldest lastActivity
-	var oldestShopID string
+	var oldestHoldingCode string
 	var oldestTime time.Time
 	firstIteration := true
 
-	for shopID, worker := range kc.shopWorkers {
+	for holdingCode, worker := range kc.shopWorkers {
 		if firstIteration || worker.lastActivity.Before(oldestTime) {
-			oldestShopID = shopID
+			oldestHoldingCode = holdingCode
 			oldestTime = worker.lastActivity
 			firstIteration = false
 		}
 	}
 
 	// Remove the oldest worker
-	if oldestShopID != "" {
-		worker := kc.shopWorkers[oldestShopID]
+	if oldestHoldingCode != "" {
+		worker := kc.shopWorkers[oldestHoldingCode]
 		close(worker.channel)
-		delete(kc.shopWorkers, oldestShopID)
+		delete(kc.shopWorkers, oldestHoldingCode)
 
-		logger.Warn("⚠️ LRU eviction: ลบ worker สำหรับ ShopID: %s (idle: %v, ข้อความ: %d, max workers: %d)",
-			oldestShopID, time.Since(worker.lastActivity).Round(time.Second),
+		logger.Warn("⚠️ LRU eviction: ลบ worker สำหรับ HoldingCode: %s (idle: %v, ข้อความ: %d, max workers: %d)",
+			oldestHoldingCode, time.Since(worker.lastActivity).Round(time.Second),
 			worker.messageCount, kc.maxWorkers)
 	}
 }
 
-// extractShopIDFromMessage ดึง shopID จาก JSON message
-// รองรับหลายรูปแบบ: shopid, shopId, shop_id, ShopID
-// รองรับทั้ง JSON object (single doc) และ JSON array (bulk docs — ดึง shopID จากตัวแรก)
-func extractShopIDFromMessage(msg string) string {
+// extractHoldingCodeFromMessage ดึง holdingCode จาก JSON message
+// รองรับหลายรูปแบบ: holding_code, holdingCode, holding_code, HoldingCode
+// รองรับทั้ง JSON object (single doc) และ JSON array (bulk docs — ดึง holdingCode จากตัวแรก)
+func extractHoldingCodeFromMessage(msg string) string {
 	// ลอง parse เป็น object ก่อน
 	var data map[string]interface{}
 	if err := json.Unmarshal([]byte(msg), &data); err != nil {
@@ -553,14 +553,14 @@ func extractShopIDFromMessage(msg string) string {
 			return ""
 		}
 		if len(arr) == 0 {
-			logger.Warn("JSON array ว่าง — ไม่สามารถดึง ShopID ได้")
+			logger.Warn("JSON array ว่าง — ไม่สามารถดึง HoldingCode ได้")
 			return ""
 		}
-		data = arr[0] // ใช้ตัวแรกในการดึง ShopID
+		data = arr[0] // ใช้ตัวแรกในการดึง HoldingCode
 	}
 
-	// ลองหา shopID ในหลายรูปแบบ (case-insensitive)
-	possibleKeys := []string{"shopid", "shopId", "shop_id", "ShopID", "SHOPID", "shop"}
+	// ลองหา holdingCode ในหลายรูปแบบ (case-insensitive)
+	possibleKeys := []string{"holding_code", "holdingCode", "holding_code", "HoldingCode", "HOLDING_CODE", "shop"}
 
 	for _, key := range possibleKeys {
 		// ตรวจสอบ key ตรงๆ
@@ -576,7 +576,7 @@ func extractShopIDFromMessage(msg string) string {
 		}
 	}
 
-	logger.Warn("ไม่พบ ShopID ในข้อความ, คีย์ที่มี: %v", getKeys(data))
+	logger.Warn("ไม่พบ HoldingCode ในข้อความ, คีย์ที่มี: %v", getKeys(data))
 	return ""
 }
 

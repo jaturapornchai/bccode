@@ -9,7 +9,7 @@ import (
 func (m *MigrationService) InitJournalBookCenter() error {
 	books := JournalBookCenter()
 	for _, book := range *books {
-		findBook, err := m.journalBookRepo.FindByGuid(context.TODO(), book.ShopID, book.GuidFixed)
+		findBook, err := m.journalBookRepo.FindByGuid(context.TODO(), book.HoldingCode, book.GuidFixed)
 		if err != nil {
 			m.logger.Errorf("Error Find Account Group %s:%s", book.Code, book.Name1)
 		}
@@ -20,7 +20,7 @@ func (m *MigrationService) InitJournalBookCenter() error {
 				m.logger.Errorf("Error Create Account %s:%s", book.Code, book.Name1)
 			}
 		} else {
-			m.logger.Infof("Account %s:%s:%s is Already", book.ShopID, book.Code, book.Name1)
+			m.logger.Infof("Account %s:%s:%s is Already", book.HoldingCode, book.Code, book.Name1)
 		}
 	}
 	return nil
@@ -30,35 +30,35 @@ func JournalBookCenter() *[]journalBookModels.JournalBookDoc {
 	books := &[]journalBookModels.JournalBookDoc{}
 	jsonStr := `[
 		{
-		  "shopid": "999999999",
+		  "holding_code": "999999999",
 		  "guid_fixed": "1",
 		  "code": "1",
 		  "name1": "สมุดรายวันทั่วไป",
 		  "iscenterbook": true
 		},
 		{
-		  "shopid": "999999999",
+		  "holding_code": "999999999",
 		  "guid_fixed": "2",
 		  "code": "2",
 		  "name1": "สมุดเงินสดรับ",
 		  "iscenterbook": true
 		},
 		{
-		  "shopid": "999999999",
+		  "holding_code": "999999999",
 		  "guid_fixed": "3",
 		  "code": "3",
 		  "name1": "สมุดเงินสดจ่าย",
 		  "iscenterbook": true
 		},
 		{
-		  "shopid": "999999999",
+		  "holding_code": "999999999",
 		  "guid_fixed": "4",
 		  "code": "4",
 		  "name1": "สมุดรายวันขาย",
 		  "iscenterbook": true
 		},
 		{
-		  "shopid": "999999999",
+		  "holding_code": "999999999",
 		  "guid_fixed": "5",
 		  "code": "5",
 		  "name1": "สมุดรายวันซื้อ",

@@ -62,7 +62,7 @@ func (h ZoneHttp) RegisterHttp() {
 // @Router /restaurant/zone [post]
 func (h ZoneHttp) CreateZone(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.Zone{}
@@ -73,7 +73,7 @@ func (h ZoneHttp) CreateZone(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreateZone(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateZone(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -100,7 +100,7 @@ func (h ZoneHttp) CreateZone(ctx microservice.IContext) error {
 func (h ZoneHttp) UpdateZone(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -113,7 +113,7 @@ func (h ZoneHttp) UpdateZone(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateZone(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateZone(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -139,12 +139,12 @@ func (h ZoneHttp) UpdateZone(ctx microservice.IContext) error {
 // @Router /restaurant/zone/{id} [delete]
 func (h ZoneHttp) DeleteZone(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteZone(shopID, id, authUsername)
+	err := h.svc.DeleteZone(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -170,7 +170,7 @@ func (h ZoneHttp) DeleteZone(ctx microservice.IContext) error {
 // @Router /restaurant/zone [delete]
 func (h ZoneHttp) DeleteByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -183,7 +183,7 @@ func (h ZoneHttp) DeleteByGUIDs(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.DeleteByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -208,12 +208,12 @@ func (h ZoneHttp) DeleteByGUIDs(ctx microservice.IContext) error {
 // @Router /restaurant/zone/{id} [get]
 func (h ZoneHttp) InfoZone(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get Zone %v", id)
-	doc, err := h.svc.InfoZone(shopID, id)
+	doc, err := h.svc.InfoZone(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -239,7 +239,7 @@ func (h ZoneHttp) InfoZone(ctx microservice.IContext) error {
 // @Router /restaurant/zone/by-code [get]
 func (h ZoneHttp) InfoArray(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	codesReq, err := url.QueryUnescape(ctx.QueryParam("codes"))
 
@@ -257,7 +257,7 @@ func (h ZoneHttp) InfoArray(ctx microservice.IContext) error {
 	}
 
 	// where to filter array
-	doc, err := h.svc.InfoWTFArray(shopID, docReq)
+	doc, err := h.svc.InfoWTFArray(holdingCode, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -285,7 +285,7 @@ func (h ZoneHttp) InfoArray(ctx microservice.IContext) error {
 // @Router /restaurant/zone [get]
 func (h ZoneHttp) SearchZone(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 	filters := requestfilter.GenerateFilters(ctx.QueryParam, []requestfilter.FilterRequest{
@@ -296,7 +296,7 @@ func (h ZoneHttp) SearchZone(ctx microservice.IContext) error {
 		},
 	})
 
-	docList, pagination, err := h.svc.SearchZone(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchZone(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -324,7 +324,7 @@ func (h ZoneHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -336,7 +336,7 @@ func (h ZoneHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

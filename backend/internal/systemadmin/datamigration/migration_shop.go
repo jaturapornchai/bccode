@@ -64,7 +64,7 @@ func (m *MigrationService) ImportShopUser(shop shopModel.ShopDoc) error {
 		}
 	}
 
-	findUserShop, err := m.userShopRepo.FindByShopIDAndUsername(context.TODO(), shop.GuidFixed, username)
+	findUserShop, err := m.userShopRepo.FindByHoldingCodeAndUsername(context.TODO(), shop.GuidFixed, username)
 	if err != nil {
 		return err
 	}

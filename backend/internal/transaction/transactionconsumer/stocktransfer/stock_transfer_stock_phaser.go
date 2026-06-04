@@ -14,7 +14,7 @@ func (p StockTransferStockPhaser) PhaseSingleDoc(doc models.StockTransferTransac
 		stockDetail := models.StockTransactionDetail{
 			CalcFlag:            detail.CalcFlag,
 			DocRef:              detail.DocRef,
-			ShopID:              doc.ShopID,
+			HoldingCode:         doc.HoldingCode,
 			DocNo:               doc.DocNo,
 			Barcode:             detail.Barcode,
 			ItemType:            detail.ItemType,
@@ -40,8 +40,8 @@ func (p StockTransferStockPhaser) PhaseSingleDoc(doc models.StockTransferTransac
 	}
 
 	stockTransaction := models.StockTransaction{
-		ShopIdentity: pkgModels.ShopIdentity{
-			ShopID: doc.ShopID,
+		HoldingCodeentity: pkgModels.HoldingCodeentity{
+			HoldingCode: doc.HoldingCode,
 		},
 		GuidFixed:      doc.GuidFixed,
 		GuidRef:        doc.GuidRef,

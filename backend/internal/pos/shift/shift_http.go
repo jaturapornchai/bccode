@@ -99,7 +99,7 @@ func (h ShiftHttp) RegisterHttp() {
 // @Router /pos/shift [post]
 func (h ShiftHttp) CreateShift(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.Shift{}
@@ -115,7 +115,7 @@ func (h ShiftHttp) CreateShift(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreateShift(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateShift(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -142,7 +142,7 @@ func (h ShiftHttp) CreateShift(ctx microservice.IContext) error {
 func (h ShiftHttp) UpdateShift(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -160,7 +160,7 @@ func (h ShiftHttp) UpdateShift(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateShift(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateShift(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -186,12 +186,12 @@ func (h ShiftHttp) UpdateShift(ctx microservice.IContext) error {
 // @Router /pos/shift/{id} [delete]
 func (h ShiftHttp) DeleteShift(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteShift(shopID, id, authUsername)
+	err := h.svc.DeleteShift(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -217,7 +217,7 @@ func (h ShiftHttp) DeleteShift(ctx microservice.IContext) error {
 // @Router /pos/shift [delete]
 func (h ShiftHttp) DeleteShiftByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -230,7 +230,7 @@ func (h ShiftHttp) DeleteShiftByGUIDs(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.DeleteShiftByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteShiftByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -255,12 +255,12 @@ func (h ShiftHttp) DeleteShiftByGUIDs(ctx microservice.IContext) error {
 // @Router /pos/shift/{id} [get]
 func (h ShiftHttp) InfoShift(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get Shift %v", id)
-	doc, err := h.svc.InfoShift(shopID, id)
+	doc, err := h.svc.InfoShift(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -286,12 +286,12 @@ func (h ShiftHttp) InfoShift(ctx microservice.IContext) error {
 // @Router /pos/shift/report/{id} [get]
 func (h ShiftHttp) ReportShift(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get Shift Report %v", id)
-	doc, err := h.svc.(*services.ShiftHttpService).ReportShiftReport(shopID, id)
+	doc, err := h.svc.(*services.ShiftHttpService).ReportShiftReport(holdingCode, id)
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -316,11 +316,11 @@ func (h ShiftHttp) ReportShift(ctx microservice.IContext) error {
 // @Router /pos/shift/code/{code} [get]
 func (h ShiftHttp) InfoShiftByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoShiftByCode(shopID, code)
+	doc, err := h.svc.InfoShiftByCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -352,7 +352,7 @@ func (h ShiftHttp) InfoShiftByCode(ctx microservice.IContext) error {
 // @Router /pos/shift [get]
 func (h ShiftHttp) SearchShiftPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -379,7 +379,7 @@ func (h ShiftHttp) SearchShiftPage(ctx microservice.IContext) error {
 		},
 	})
 
-	docList, pagination, err := h.svc.SearchShift(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchShift(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -409,7 +409,7 @@ func (h ShiftHttp) SearchShiftPage(ctx microservice.IContext) error {
 // @Router /pos/shift/list [get]
 func (h ShiftHttp) SearchShiftStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -422,7 +422,7 @@ func (h ShiftHttp) SearchShiftStep(ctx microservice.IContext) error {
 		},
 	})
 
-	docList, total, err := h.svc.SearchShiftStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchShiftStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -450,7 +450,7 @@ func (h ShiftHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -462,7 +462,7 @@ func (h ShiftHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

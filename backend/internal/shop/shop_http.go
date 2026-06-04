@@ -12,10 +12,10 @@ import (
 	branch_model "smlcloudplatform/internal/organization/branch/models"
 	branch_repositories "smlcloudplatform/internal/organization/branch/repositories"
 	branch_services "smlcloudplatform/internal/organization/branch/services"
-	company_model "smlcloudplatform/internal/organization/company/models"
 	businesstype_models "smlcloudplatform/internal/organization/businesstype/models"
 	businesstype_repositories "smlcloudplatform/internal/organization/businesstype/repositories"
 	businesstype_services "smlcloudplatform/internal/organization/businesstype/services"
+	company_model "smlcloudplatform/internal/organization/company/models"
 	deparment_repositories "smlcloudplatform/internal/organization/department/repositories"
 	"smlcloudplatform/internal/shop/models"
 	"smlcloudplatform/internal/utils"
@@ -84,15 +84,20 @@ func NewShopHttp(ms *microservice.Microservice, cfg config.IConfig) ShopHttp {
 }
 
 func (h ShopHttp) RegisterHttpMember() {
+	h.ms.GET("/holding/:id", h.InfoShop)
 	h.ms.GET("/shop/:id", h.InfoShop)
 }
 
 func (h ShopHttp) RegisterHttp() {
+	h.ms.GET("/holding/:id", h.InfoShop)
 	h.ms.GET("/shop/:id", h.InfoShop)
 	// h.ms.GET("/shop", h.SearchShop)
 
+	h.ms.POST("/holding", h.CreateShop, h.authService.MWFuncWithShop(h.ms.Cacher(h.cfg.CacherConfig())))
 	h.ms.POST("/shop", h.CreateShop, h.authService.MWFuncWithShop(h.ms.Cacher(h.cfg.CacherConfig())))
+	h.ms.PUT("/holding/:id", h.UpdateShop)
 	h.ms.PUT("/shop/:id", h.UpdateShop)
+	h.ms.DELETE("/holding/:id", h.DeleteShop)
 	h.ms.DELETE("/shop/:id", h.DeleteShop)
 }
 
@@ -137,7 +142,7 @@ func (h ShopHttp) CreateShop(ctx microservice.IContext) error {
 
 	shopTemp := shopPayload.Shop
 
-	shopID, err := h.service.CreateShop(authUsername, shopTemp)
+	holdingCode, err := h.service.CreateShop(authUsername, shopTemp)
 
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, &common.ApiResponse{
@@ -147,10 +152,10 @@ func (h ShopHttp) CreateShop(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.initialShop(shopID, authUsername, *shopPayload)
+	err = h.initialShop(holdingCode, authUsername, *shopPayload)
 
 	if err != nil {
-		err2 := h.service.DeleteShop(shopID, authUsername)
+		err2 := h.service.DeleteShop(holdingCode, authUsername)
 
 		if err2 != nil {
 			logger.GetLogger().Error("HTTP:: Error Rollback Shop " + err.Error())
@@ -165,12 +170,12 @@ func (h ShopHttp) CreateShop(ctx microservice.IContext) error {
 
 	ctx.Response(http.StatusOK, &common.ApiResponse{
 		Success: true,
-		ID:      shopID,
+		ID:      holdingCode,
 	})
 
 	return nil
 }
-func (h ShopHttp) initialShop(shopID string, authUsername string, shopReq models.ShopRequest) (err error) {
+func (h ShopHttp) initialShop(holdingCode string, authUsername string, shopReq models.ShopRequest) (err error) {
 
 	businessTypeDefault := businesstype_models.BusinessType{}
 
@@ -201,7 +206,7 @@ func (h ShopHttp) initialShop(shopID string, authUsername string, shopReq models
 
 	}
 
-	businessTypeGUIDFixed, err := h.servicebusinessType.CreateBusinessType(shopID, authUsername, businessTypeDefault)
+	businessTypeGUIDFixed, err := h.servicebusinessType.CreateBusinessType(holdingCode, authUsername, businessTypeDefault)
 
 	if err != nil {
 		return err
@@ -253,9 +258,9 @@ func (h ShopHttp) initialShop(shopID string, authUsername string, shopReq models
 		},
 	}
 
-	if shopReq.Shop.MainShopId != "" {
+	if shopReq.Shop.MainHoldingCode != "" {
 		branchDefault.IsMainShop = false
-		branchDefault.MainShopId = shopReq.Shop.MainShopId
+		branchDefault.MainHoldingCode = shopReq.Shop.MainHoldingCode
 	}
 	branchDefault.BusinessType.GuidFixed = businessTypeGUIDFixed
 	branchDefault.BusinessType.Code = businessTypeDefault.Code
@@ -353,10 +358,10 @@ func (h ShopHttp) initialShop(shopID string, authUsername string, shopReq models
 		},
 	}
 
-	branchGUIDFixed, err := h.serviceBranch.CreateBranch(shopID, authUsername, branchDefault)
+	branchGUIDFixed, err := h.serviceBranch.CreateBranch(holdingCode, authUsername, branchDefault)
 
 	if err != nil {
-		err = h.servicebusinessType.DeleteBusinessType(shopID, businessTypeGUIDFixed, authUsername)
+		err = h.servicebusinessType.DeleteBusinessType(holdingCode, businessTypeGUIDFixed, authUsername)
 		if err != nil {
 			logger.GetLogger().Error("HTTP:: Error Rollback BusinessType " + err.Error())
 		}
@@ -383,17 +388,17 @@ func (h ShopHttp) initialShop(shopID string, authUsername string, shopReq models
 		},
 	}
 
-	_, err = h.serviceWarehouse.CreateWarehouse(shopID, authUsername, warehouseDefault)
+	_, err = h.serviceWarehouse.CreateWarehouse(holdingCode, authUsername, warehouseDefault)
 
 	if err != nil {
 
-		err = h.serviceBranch.DeleteBranch(shopID, branchGUIDFixed, authUsername)
+		err = h.serviceBranch.DeleteBranch(holdingCode, branchGUIDFixed, authUsername)
 
 		if err != nil {
 			logger.GetLogger().Error("HTTP:: Error Rollback Branch " + err.Error())
 		}
 
-		err = h.servicebusinessType.DeleteBusinessType(shopID, businessTypeGUIDFixed, authUsername)
+		err = h.servicebusinessType.DeleteBusinessType(holdingCode, businessTypeGUIDFixed, authUsername)
 
 		if err != nil {
 			logger.GetLogger().Error("HTTP:: Error Rollback BusinessType " + err.Error())
@@ -403,7 +408,7 @@ func (h ShopHttp) initialShop(shopID string, authUsername string, shopReq models
 	}
 
 	// Insert default company, branch, and warehouse into PostgreSQL tenant DB
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
+	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
 	dbPg := pst.DBClient()
 
 	companyNames := common.JSONB{}
@@ -415,13 +420,13 @@ func (h ShopHttp) initialShop(shopID string, authUsername string, shopReq models
 
 	companyGUIDFixed := utils.NewGUID()
 	companyPg := company_model.CompanyPg{
-		ShopID:    shopID,
-		GuidFixed: companyGUIDFixed,
-		Code:      "00000",
-		Names:     companyNames,
-		IsActive:  true,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		HoldingCode: holdingCode,
+		GuidFixed:   companyGUIDFixed,
+		Code:        "00000",
+		Names:       companyNames,
+		IsActive:    true,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
 	}
 
 	if err := dbPg.Create(&companyPg).Error; err != nil {
@@ -449,13 +454,13 @@ func (h ShopHttp) initialShop(shopID string, authUsername string, shopReq models
 
 	company2GUIDFixed := utils.NewGUID()
 	company2Pg := company_model.CompanyPg{
-		ShopID:    shopID,
-		GuidFixed: company2GUIDFixed,
-		Code:      "00001",
-		Names:     company2Names,
-		IsActive:  true,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		HoldingCode: holdingCode,
+		GuidFixed:   company2GUIDFixed,
+		Code:        "00001",
+		Names:       company2Names,
+		IsActive:    true,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
 	}
 
 	if err := dbPg.Create(&company2Pg).Error; err != nil {
@@ -468,7 +473,7 @@ func (h ShopHttp) initialShop(shopID string, authUsername string, shopReq models
 	}
 
 	branchPg := branch_model.BranchPg{
-		ShopID:      shopID,
+		HoldingCode: holdingCode,
 		GuidFixed:   branchGUIDFixed,
 		CompanyGuid: companyGUIDFixed,
 		Code:        "00000",
@@ -489,13 +494,13 @@ func (h ShopHttp) initialShop(shopID string, authUsername string, shopReq models
 
 	warehouseGUIDFixed := utils.NewGUID()
 	warehousePg := warehouse_models.WarehousePg{
-		ShopID:    shopID,
-		GuidFixed: warehouseGUIDFixed,
-		Code:      "00000",
-		Names:     whNames,
-		IsActive:  true,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		HoldingCode: holdingCode,
+		GuidFixed:   warehouseGUIDFixed,
+		Code:        "00000",
+		Names:       whNames,
+		IsActive:    true,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
 	}
 
 	if err := dbPg.Create(&warehousePg).Error; err != nil {
@@ -518,7 +523,7 @@ func (h ShopHttp) initialShop(shopID string, authUsername string, shopReq models
 // @Description Update Shop
 // @Tags		Shop
 // @Accept 		json
-// @Param		id	path     string  true  "Shop ID"
+// @Param		id	path     string  true  "Holding Code"
 // @Param		Shop  body      models.Shop  true  "Shop Body"
 // @Success		200	{object}		models.Shop
 // @Failure		401 {object}	common.AuthResponseFailed
@@ -568,7 +573,7 @@ func (h ShopHttp) UpdateShop(ctx microservice.IContext) error {
 // @Description Delete Shop
 // @Tags		Shop
 // @Accept 		json
-// @Param		id	path     string  true  "Shop ID"
+// @Param		id	path     string  true  "Holding Code"
 // @Success		200	{object}		models.Shop
 // @Failure		401 {object}	common.AuthResponseFailed
 // @Security     AccessToken
@@ -609,7 +614,7 @@ func (h ShopHttp) DeleteShop(ctx microservice.IContext) error {
 // @Description Infomation Shop Profile
 // @Tags		Shop
 // @Accept 		json
-// @Param		id	path     string  true  "Shop ID"
+// @Param		id	path     string  true  "Holding Code"
 // @Success		200	{array}	models.ShopInfo
 // @Failure		401 {object}	common.ApiResponse
 // @Security     AccessToken

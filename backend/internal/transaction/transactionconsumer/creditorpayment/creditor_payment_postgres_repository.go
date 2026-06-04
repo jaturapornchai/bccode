@@ -7,10 +7,10 @@ import (
 )
 
 type ICreditorPaymentTransactionPGRepository interface {
-	Get(shopID string, docNo string) (*models.CreditorPaymentTransactionPG, error)
+	Get(holdingCode string, docNo string) (*models.CreditorPaymentTransactionPG, error)
 	Create(doc models.CreditorPaymentTransactionPG) error
-	Update(shopID string, docNo string, doc models.CreditorPaymentTransactionPG) error
-	Delete(shopID string, docNo string, doc models.CreditorPaymentTransactionPG) error
+	Update(holdingCode string, docNo string, doc models.CreditorPaymentTransactionPG) error
+	Delete(holdingCode string, docNo string, doc models.CreditorPaymentTransactionPG) error
 	MigrationDatabase() error
 }
 

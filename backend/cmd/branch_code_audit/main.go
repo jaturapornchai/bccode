@@ -21,7 +21,7 @@ const maxExampleRows = 50
 
 type branchRecord struct {
 	ID              primitive.ObjectID `bson:"_id"`
-	ShopID          string             `bson:"shopid"`
+	HoldingCode     string             `bson:"holding_code"`
 	GuidFixed       string             `bson:"guid_fixed"`
 	Code            any                `bson:"code"`
 	IsVatRegistered bool               `bson:"is_vat_registered"`
@@ -31,7 +31,7 @@ type branchRecord struct {
 }
 
 type auditIssue struct {
-	ShopID         string `json:"shopid"`
+	HoldingCode    string `json:"holding_code"`
 	GuidFixed      string `json:"guid_fixed,omitempty"`
 	Code           string `json:"code,omitempty"`
 	NormalizedCode string `json:"normalized_code,omitempty"`
@@ -143,7 +143,7 @@ func discoverAndAudit(ctx context.Context, client *mongo.Client, fallbackDBName 
 func auditCollection(ctx context.Context, client *mongo.Client, dbName string, collectionName string) (auditSummary, error) {
 	collection := client.Database(dbName).Collection(collectionName)
 	cursor, err := collection.Find(ctx, bson.M{}, options.Find().SetProjection(bson.M{
-		"shopid":            1,
+		"holding_code":      1,
 		"guid_fixed":        1,
 		"code":              1,
 		"is_vat_registered": 1,
@@ -168,30 +168,30 @@ func auditCollection(ctx context.Context, client *mongo.Client, dbName string, c
 		}
 		summary.TotalBranches++
 
-		shopID := strings.TrimSpace(record.ShopID)
-		if shopID == "" {
-			shopID = "(missing)"
+		holdingCode := strings.TrimSpace(record.HoldingCode)
+		if holdingCode == "" {
+			holdingCode = "(missing)"
 		}
-		if companies[shopID] == nil {
-			companies[shopID] = &companyAudit{branches: map[string][]branchRecord{}}
+		if companies[holdingCode] == nil {
+			companies[holdingCode] = &companyAudit{branches: map[string][]branchRecord{}}
 		}
 
 		code := branchCodeString(record.Code)
 		normalizedCode, err := models.NormalizeThaiTaxBranchCode(code)
 		if err != nil {
 			summary.InvalidCodeCount++
-			addExample(&summary, auditIssue{ShopID: shopID, GuidFixed: record.GuidFixed, Code: code, Reason: err.Error()})
+			addExample(&summary, auditIssue{HoldingCode: holdingCode, GuidFixed: record.GuidFixed, Code: code, Reason: err.Error()})
 			continue
 		}
 
 		if normalizedCode == models.ThaiHeadOfficeBranchCode {
-			companies[shopID].hasHeadOffice = true
+			companies[holdingCode].hasHeadOffice = true
 		}
-		companies[shopID].branches[normalizedCode] = append(companies[shopID].branches[normalizedCode], record)
+		companies[holdingCode].branches[normalizedCode] = append(companies[holdingCode].branches[normalizedCode], record)
 
 		if record.IsVatRegistered && strings.TrimSpace(record.POS.TaxID) == "" {
 			summary.VatMissingTaxIDCount++
-			addExample(&summary, auditIssue{ShopID: shopID, GuidFixed: record.GuidFixed, Code: code, NormalizedCode: normalizedCode, Reason: "VAT registered branch has empty pos.tax_id"})
+			addExample(&summary, auditIssue{HoldingCode: holdingCode, GuidFixed: record.GuidFixed, Code: code, NormalizedCode: normalizedCode, Reason: "VAT registered branch has empty pos.tax_id"})
 		}
 	}
 	if err := cursor.Err(); err != nil {
@@ -199,25 +199,25 @@ func auditCollection(ctx context.Context, client *mongo.Client, dbName string, c
 	}
 
 	summary.TotalCompanies = len(companies)
-	for shopID, company := range companies {
+	for holdingCode, company := range companies {
 		if !company.hasHeadOffice {
 			summary.MissingHeadOfficeCount++
-			addExample(&summary, auditIssue{ShopID: shopID, NormalizedCode: models.ThaiHeadOfficeBranchCode, Reason: "company has no head-office branch 00000"})
+			addExample(&summary, auditIssue{HoldingCode: holdingCode, NormalizedCode: models.ThaiHeadOfficeBranchCode, Reason: "company has no head-office branch 00000"})
 		}
 		for normalizedCode, records := range company.branches {
 			if len(records) <= 1 {
 				continue
 			}
 			summary.DuplicateNormalizedCount++
-			addExample(&summary, auditIssue{ShopID: shopID, NormalizedCode: normalizedCode, Reason: fmt.Sprintf("%d branches normalize to the same tax branch code", len(records))})
+			addExample(&summary, auditIssue{HoldingCode: holdingCode, NormalizedCode: normalizedCode, Reason: fmt.Sprintf("%d branches normalize to the same tax branch code", len(records))})
 		}
 	}
 
 	sort.Slice(summary.Examples, func(i, j int) bool {
-		if summary.Examples[i].ShopID == summary.Examples[j].ShopID {
+		if summary.Examples[i].HoldingCode == summary.Examples[j].HoldingCode {
 			return summary.Examples[i].Reason < summary.Examples[j].Reason
 		}
-		return summary.Examples[i].ShopID < summary.Examples[j].ShopID
+		return summary.Examples[i].HoldingCode < summary.Examples[j].HoldingCode
 	})
 
 	return summary, nil

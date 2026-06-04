@@ -56,7 +56,7 @@ openssl genrsa -out private.key 4096
 openssl rsa -in private.key -pubout -out public.key
 ```
 
-### Run Swagger 
+### Run Swagger
 ```
 swag init
 go run main.go
@@ -86,7 +86,7 @@ make runswagger
 
 
 
-## Github Registry 
+## Github Registry
 ## https://ghcr.io
 
 ```
@@ -125,13 +125,13 @@ linux_syscall.c:73:13: note: did you mean 'setreuid'?
 /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/unistd.h:595:6: note: 'setreuid' declared here
 ```
 
-fix by 
+fix by
 ```
 brew install FiloSottile/musl-cross/musl-cross
 
 ```
 
-and build with 
+and build with
 ```
 CGO_ENABLED=1 GOOS=linux GOARCH=amd64 CC=x86_64-linux-musl-gcc  CXX=x86_64-linux-musl-g++  go build  -o go-app -tags musl main.go
 ```
@@ -140,7 +140,7 @@ CGO_ENABLED=1 GOOS=linux GOARCH=amd64 CC=x86_64-linux-musl-gcc  CXX=x86_64-linux
 
 CREATE TABLE task_status (
     task_id String,
-    shop_id String,
+    holding_code String,
     status String,
     error_message String,
     progress Int32,
@@ -148,4 +148,4 @@ CREATE TABLE task_status (
     updated_at DateTime,
     completed_at Nullable(DateTime)
 ) ENGINE = MergeTree()
-ORDER BY (shop_id, task_id, created_at);
+ORDER BY (holding_code, task_id, created_at);

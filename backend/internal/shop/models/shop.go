@@ -19,6 +19,7 @@ type ShopBusinessType struct {
 }
 
 type Shop struct {
+	HoldingCode          string         `json:"holding_code" bson:"holding_code"`
 	ProfilePicture       string         `json:"profilepicture" bson:"profilepicture"`
 	Name1                string         `json:"name1" bson:"name1"`
 	Names                []models.NameX `json:"names" bson:"names"`
@@ -28,7 +29,7 @@ type Shop struct {
 	PosProductCenterType int8           `json:"posproductcentertype" bson:"posproductcentertype"`
 	ProductCenterType    int8           `json:"productcentertype" bson:"productcentertype"`
 	DebtorCenterType     int8           `json:"debtorcentertype" bson:"debtorcentertype"`
-	MainShopId           string         `json:"main_shop_id" bson:"main_shop_id"`
+	MainHoldingCode      string         `json:"main_holding_code" bson:"main_holding_code"`
 	Address              []models.NameX `json:"address" bson:"address"`
 	Images               []ShopImage    `json:"images" bson:"images"`
 	Logo                 string         `json:"logo" bson:"logo"`
@@ -63,6 +64,7 @@ type ShopSettings struct {
 	InquiryTypePurchase   int              `json:"inquirytypepurchase" bson:"inquirytypepurchase"`
 	LanguageConfigs       []LanguageConfig `json:"languageconfigs" bson:"languageconfigs"`
 	BaseCurrency          string           `json:"base_currency" bson:"base_currency"` // สกุลเงินหลักของบริษัท (เช่น THB, USD)
+	CurrencyCodes         []string         `json:"currency_codes" bson:"currency_codes"`
 	Timezone              string           `json:"timezone" bson:"timezone"`
 	TimezoneLabel         string           `json:"timezone_label" bson:"timezone_label"`
 	TimezoneOffset        string           `json:"timezone_offset" bson:"timezone_offset"`

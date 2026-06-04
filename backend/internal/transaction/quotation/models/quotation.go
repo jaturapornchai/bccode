@@ -15,7 +15,7 @@ type Quotation struct {
 }
 type QuotationInfo struct {
 	models.DocIdentity `bson:"inline"`
-	Quotation  `bson:"inline"`
+	Quotation          `bson:"inline"`
 }
 
 func (QuotationInfo) CollectionName() string {
@@ -23,13 +23,13 @@ func (QuotationInfo) CollectionName() string {
 }
 
 type QuotationData struct {
-	models.ShopIdentity `bson:"inline"`
-	QuotationInfo  `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	QuotationInfo            `bson:"inline"`
 }
 
 type QuotationDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	QuotationData  `bson:"inline"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	QuotationData      `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -46,7 +46,7 @@ func (QuotationItemGuid) CollectionName() string {
 }
 
 type QuotationActivity struct {
-	QuotationData  `bson:"inline"`
+	QuotationData       `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

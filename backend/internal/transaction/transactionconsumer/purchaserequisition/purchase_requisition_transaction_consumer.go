@@ -70,7 +70,7 @@ func (c *PurchaseRequisitionTransactionConsumer) ConsumeOnCreateOrUpdate(ctx mic
 		logger.GetLogger().Errorf("Cannot phase purchase requisition doc: %v", err.Error())
 		return err
 	}
-	err = c.svc.Upsert(transaction.ShopID, transaction.DocNo, *transaction)
+	err = c.svc.Upsert(transaction.HoldingCode, transaction.DocNo, *transaction)
 	if err != nil {
 		logger.GetLogger().Errorf("Cannot insert purchase requisition transaction pg: %v", err.Error())
 		return err
@@ -86,7 +86,7 @@ func (c *PurchaseRequisitionTransactionConsumer) ConsumeOnBulkCreateOrUpdate(ctx
 		return err
 	}
 	for _, transaction := range *transactions {
-		err = c.svc.Upsert(transaction.ShopID, transaction.DocNo, transaction)
+		err = c.svc.Upsert(transaction.HoldingCode, transaction.DocNo, transaction)
 		if err != nil {
 			logger.GetLogger().Errorf("Cannot insert purchase requisition transaction pg: %v", err.Error())
 			return err
@@ -102,7 +102,7 @@ func (c *PurchaseRequisitionTransactionConsumer) ConsumeOnDelete(ctx microservic
 		logger.GetLogger().Errorf("Cannot phase purchase requisition doc: %v", err.Error())
 		return err
 	}
-	err = c.svc.Delete(transaction.ShopID, transaction.DocNo)
+	err = c.svc.Delete(transaction.HoldingCode, transaction.DocNo)
 	if err != nil {
 		logger.GetLogger().Errorf("Cannot delete purchase requisition transaction pg: %v", err.Error())
 		return err
@@ -118,7 +118,7 @@ func (c *PurchaseRequisitionTransactionConsumer) ConsumeOnBulkDelete(ctx microse
 		return err
 	}
 	for _, transaction := range *transactions {
-		err = c.svc.Delete(transaction.ShopID, transaction.DocNo)
+		err = c.svc.Delete(transaction.HoldingCode, transaction.DocNo)
 		if err != nil {
 			logger.GetLogger().Errorf("Cannot delete purchase requisition transaction pg: %v", err.Error())
 			return err

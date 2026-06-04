@@ -20,19 +20,19 @@ func OnConsumeMessageSaleOrderCreateOrUpdate(msg string) error {
 }
 
 // OnConsumeMessageSaleOrderDelete - รับ message จาก Kafka สำหรับลบใบสั่งขาย
-// msg คือ JSON string เช่น {"shopid": "shop123", "docno": "SO2024001"}
+// msg คือ JSON string เช่น {"holding_code": "shop123", "docno": "SO2024001"}
 func OnConsumeMessageSaleOrderDelete(msg string) error {
 
 	logger.Info("OnConsumeMessageSaleOrderDelete: %s", msg)
 
 	docData := TransSaleOrderDecode(msg)
 
-	if docData.ShopId == "" || docData.DocNo == "" {
-		logger.Error("Invalid sale order data - missing ShopId or DocNo")
+	if docData.HoldingCode == "" || docData.DocNo == "" {
+		logger.Error("Invalid sale order data - missing HoldingCode or DocNo")
 		return fmt.Errorf("invalid sale order data")
 	}
 
-	return DeleteDocumentFromDatabases(context.Background(), docData.ShopId, docData.DocNo, TRANS_FLAG_SALE_ORDER)
+	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.DocNo, TRANS_FLAG_SALE_ORDER)
 }
 
 // ProcessSaleOrderDocument - ประมวลผลเอกสาร Sale Order (ใบสั่งขาย)
@@ -52,12 +52,12 @@ func ProcessSaleOrderDocument(msg string) error {
 	// Step 1: แปลง JSON message เป็น struct
 	logger.Debug("Step 1: Decoding JSON message... ")
 	saleOrderData := TransSaleOrderDecode(msg)
-	logger.Info("Step 1: Sale Order decoded successfully - ShopID=%s, DocNo=%s, TotalAmount=%.2f, Details=%d",
-		saleOrderData.ShopId, saleOrderData.DocNo, saleOrderData.TotalAmount, len(saleOrderData.Details))
+	logger.Info("Step 1: Sale Order decoded successfully - HoldingCode=%s, DocNo=%s, TotalAmount=%.2f, Details=%d",
+		saleOrderData.HoldingCode, saleOrderData.DocNo, saleOrderData.TotalAmount, len(saleOrderData.Details))
 
-	if saleOrderData.ShopId == "" || saleOrderData.DocNo == "" {
-		logger.Error("Invalid sale order data - ShopId='%s', DocNo='%s'", saleOrderData.ShopId, saleOrderData.DocNo)
-		return fmt.Errorf("invalid sale order data - missing ShopId or DocNo")
+	if saleOrderData.HoldingCode == "" || saleOrderData.DocNo == "" {
+		logger.Error("Invalid sale order data - HoldingCode='%s', DocNo='%s'", saleOrderData.HoldingCode, saleOrderData.DocNo)
+		return fmt.Errorf("invalid sale order data - missing HoldingCode or DocNo")
 	}
 
 	// Step 2: แปลง MongoDocModel เป็น ProcessMongoTransModel
@@ -68,7 +68,7 @@ func ProcessSaleOrderDocument(msg string) error {
 
 	// Step 3: เชื่อมต่อ PostgreSQL
 	logger.Debug("Step 3: Connecting to PostgreSQL...")
-	db, err := mypg.PgSqlFastConnect(saleOrderData.ShopId)
+	db, err := mypg.PgSqlFastConnect(saleOrderData.HoldingCode)
 	if err != nil {
 		logger.Error("Failed to connect to database: %v", err)
 		return fmt.Errorf("failed to connect to database: %v", err)
@@ -84,8 +84,8 @@ func ProcessSaleOrderDocument(msg string) error {
 
 	// Step 5: แปลงเป็น build-doc structs
 	logger.Debug("Step 5: Converting to build-doc structs...")
-	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, saleOrderData.ShopId)
-	docDetailStructs := MapSaleOrderToDocDetailStructs(processData, saleOrderData.ShopId)
+	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, saleOrderData.HoldingCode)
+	docDetailStructs := MapSaleOrderToDocDetailStructs(processData, saleOrderData.HoldingCode)
 	logger.Debug("Step 5 completed: Converted to %d doc details", len(docDetailStructs))
 
 	// Step 6: สร้าง document references (ถ้ามี)
@@ -103,18 +103,18 @@ func ProcessSaleOrderDocument(msg string) error {
 		return fmt.Errorf("failed to insert document to PostgreSQL: %w", err)
 	}
 
-	err = InsertDocDetailToPostgreSQL(ctx, db, saleOrderData.ShopId, docDetailStructs, 8)
+	err = InsertDocDetailToPostgreSQL(ctx, db, saleOrderData.HoldingCode, docDetailStructs, 8)
 	if err != nil {
 		return fmt.Errorf("failed to insert doc details to PostgreSQL: %w", err)
 	}
 
-	err = InsertDocumentToClickHouse(ctx, saleOrderData.ShopId, docStruct, docRefStructs, docPaymentStruct, docDetailStructs, 9)
+	err = InsertDocumentToClickHouse(ctx, saleOrderData.HoldingCode, docStruct, docRefStructs, docPaymentStruct, docDetailStructs, 9)
 	if err != nil {
 		return fmt.Errorf("failed to insert to ClickHouse: %w", err)
 	}
 
 	// Step 10: คำนวณต้นทุนสต็อก
-	err = ProcessDocumentStockCalculation(db, saleOrderData.ShopId, docDetailStructs, 10)
+	err = ProcessDocumentStockCalculation(db, saleOrderData.HoldingCode, docDetailStructs, 10)
 	if err != nil {
 		logger.Error("Failed to calculate stock cost: %v", err)
 		// Don't return error, just log it
@@ -126,8 +126,8 @@ func ProcessSaleOrderDocument(msg string) error {
 	logger.Debug("Step 11 completed: Added to processing queues")
 
 	// Step 12: ประมวลผลสถานะเอกสาร
-	logger.Debug("Step 12: Processing document status for shopId=%s", saleOrderData.ShopId)
-	ProcessDocumentStatusAsync(saleOrderData.ShopId)
+	logger.Debug("Step 12: Processing document status for holdingCode=%s", saleOrderData.HoldingCode)
+	ProcessDocumentStatusAsync(saleOrderData.HoldingCode)
 
 	logger.Info("--- ProcessSaleOrderDocument COMPLETED SUCCESSFULLY: %s ---", saleOrderData.DocNo)
 	return nil
@@ -178,7 +178,7 @@ func ConvertSaleOrderMongoDocToProcessModel(mongoDoc models.MongoDocModel) model
 
 	logger.Info("ConvertSaleOrderMongoDocToProcessModel: Creating final ProcessMongoTransModel")
 	result := models.ProcessMongoTransModel{
-		ShopId:           mongoDoc.ShopId,
+		HoldingCode:      mongoDoc.HoldingCode,
 		BranchId:         mongoDoc.BranchId,
 		GuidFixed:        mongoDoc.GuidFixed,
 		DocNo:            mongoDoc.DocNo,
@@ -217,7 +217,7 @@ func ConvertSaleOrderMongoDocToProcessModel(mongoDoc models.MongoDocModel) model
 
 // MapSaleOrderToDocDetailStructs - แปลงข้อมูลใบสั่งขายเป็น DocDetailStruct สำหรับบันทึกลง database
 // CalcFlag = 0 หมายถึงไม่เคลื่อนไหวสต็อก (รอแปลงเป็นใบขายก่อน)
-func MapSaleOrderToDocDetailStructs(processData models.ProcessMongoTransModel, shopId string) []models.DocDetailStruct {
+func MapSaleOrderToDocDetailStructs(processData models.ProcessMongoTransModel, holdingCode string) []models.DocDetailStruct {
 	var docDetailStructs []models.DocDetailStruct
 
 	for i, detail := range processData.Details {

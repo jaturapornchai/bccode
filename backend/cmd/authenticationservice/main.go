@@ -24,9 +24,13 @@ func main() {
 		"/login",
 		"/poslogin",
 		"/register",
+		"/list-holding",
 		"/list-shop",
+		"/select-holding",
 		"/select-shop",
+		"/create-holding",
 		"/create-shop",
+		"/favorite-holding",
 		"/healthz",
 	}
 

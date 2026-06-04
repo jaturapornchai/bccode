@@ -23,12 +23,12 @@ func (ReceiveDepositRefundInfo) CollectionName() string {
 }
 
 type ReceiveDepositRefundData struct {
-	models.ShopIdentity      `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
 	ReceiveDepositRefundInfo `bson:"inline"`
 }
 
 type ReceiveDepositRefundDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                       primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	ReceiveDepositRefundData `bson:"inline"`
 	models.ActivityDoc       `bson:"inline"`
 }

@@ -21,13 +21,13 @@ import (
 )
 
 type ISlipImageHttpService interface {
-	CreateSlipImage(shopID string, authUsername string, doc models.SlipImageRequest) (models.SlipImageInfo, error)
-	DeleteSlipImage(shopID string, guid string, authUsername string) error
-	DeleteSlipImageByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoSlipImage(shopID string, guid string) (models.SlipImageInfo, error)
-	InfoSlipImageByDocno(shopID string, mode uint8, docNo string) ([]models.SlipImageInfo, error)
-	SearchSlipImage(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.SlipImageInfo, mongopagination.PaginationData, error)
-	SearchSlipImageStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.SlipImageInfo, int, error)
+	CreateSlipImage(holdingCode string, authUsername string, doc models.SlipImageRequest) (models.SlipImageInfo, error)
+	DeleteSlipImage(holdingCode string, guid string, authUsername string) error
+	DeleteSlipImageByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoSlipImage(holdingCode string, guid string) (models.SlipImageInfo, error)
+	InfoSlipImageByDocno(holdingCode string, mode uint8, docNo string) ([]models.SlipImageInfo, error)
+	SearchSlipImage(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.SlipImageInfo, mongopagination.PaginationData, error)
+	SearchSlipImageStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.SlipImageInfo, int, error)
 }
 
 type SlipImageHttpService struct {
@@ -67,7 +67,7 @@ func (svc SlipImageHttpService) getContextTimeout() (context.Context, context.Ca
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc SlipImageHttpService) CreateSlipImage(shopID string, authUsername string, payload models.SlipImageRequest) (models.SlipImageInfo, error) {
+func (svc SlipImageHttpService) CreateSlipImage(holdingCode string, authUsername string, payload models.SlipImageRequest) (models.SlipImageInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -82,7 +82,7 @@ func (svc SlipImageHttpService) CreateSlipImage(shopID string, authUsername stri
 	tempSplitFileName := strings.Split(payload.File.Filename, ".")
 	fileExt := tempSplitFileName[len(tempSplitFileName)-1]
 
-	// fileName := fmt.Sprintf("%s/slip/%s/%s/%s", shopID, payload.PosID, docDateStr, payload.DocNo)
+	// fileName := fmt.Sprintf("%s/slip/%s/%s/%s", holdingCode, payload.PosID, docDateStr, payload.DocNo)
 	fileNameUUId := fmt.Sprintf("%s-%s", utils.NewUUID(), utils.NewUUID())
 	fileName := fmt.Sprintf("slip/%s", fileNameUUId)
 
@@ -99,7 +99,7 @@ func (svc SlipImageHttpService) CreateSlipImage(shopID string, authUsername stri
 	}
 
 	docData := models.SlipImageDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.SlipImage = models.SlipImage{
 		Mode:            mode,
@@ -122,13 +122,13 @@ func (svc SlipImageHttpService) CreateSlipImage(shopID string, authUsername stri
 		return models.SlipImageInfo{}, err
 	}
 
-	err = svc.svcSaleInvoice.UpdateSlip(shopID, authUsername, payload.DocNo, mode, payload.MachineCode, payload.ZoneGroupNumber, uploadUri)
+	err = svc.svcSaleInvoice.UpdateSlip(holdingCode, authUsername, payload.DocNo, mode, payload.MachineCode, payload.ZoneGroupNumber, uploadUri)
 
 	if err != nil {
 		logger.GetLogger().Error(err)
 	}
 
-	err = svc.svcSaleInvoiceReturn.UpdateSlip(shopID, authUsername, payload.DocNo, mode, payload.MachineCode, payload.ZoneGroupNumber, uploadUri)
+	err = svc.svcSaleInvoiceReturn.UpdateSlip(holdingCode, authUsername, payload.DocNo, mode, payload.MachineCode, payload.ZoneGroupNumber, uploadUri)
 
 	if err != nil {
 		logger.GetLogger().Error(err)
@@ -137,12 +137,12 @@ func (svc SlipImageHttpService) CreateSlipImage(shopID string, authUsername stri
 	return docData.SlipImageInfo, nil
 }
 
-func (svc SlipImageHttpService) DeleteSlipImage(shopID string, guid string, authUsername string) error {
+func (svc SlipImageHttpService) DeleteSlipImage(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -152,7 +152,7 @@ func (svc SlipImageHttpService) DeleteSlipImage(shopID string, guid string, auth
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
@@ -160,7 +160,7 @@ func (svc SlipImageHttpService) DeleteSlipImage(shopID string, guid string, auth
 	return nil
 }
 
-func (svc SlipImageHttpService) DeleteSlipImageByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc SlipImageHttpService) DeleteSlipImageByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -169,7 +169,7 @@ func (svc SlipImageHttpService) DeleteSlipImageByGUIDs(shopID string, authUserna
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
@@ -177,12 +177,12 @@ func (svc SlipImageHttpService) DeleteSlipImageByGUIDs(shopID string, authUserna
 	return nil
 }
 
-func (svc SlipImageHttpService) InfoSlipImage(shopID string, guid string) (models.SlipImageInfo, error) {
+func (svc SlipImageHttpService) InfoSlipImage(holdingCode string, guid string) (models.SlipImageInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.SlipImageInfo{}, err
@@ -195,12 +195,12 @@ func (svc SlipImageHttpService) InfoSlipImage(shopID string, guid string) (model
 	return findDoc.SlipImageInfo, nil
 }
 
-func (svc SlipImageHttpService) InfoSlipImageByDocno(shopID string, mode uint8, docNo string) ([]models.SlipImageInfo, error) {
+func (svc SlipImageHttpService) InfoSlipImageByDocno(holdingCode string, mode uint8, docNo string) ([]models.SlipImageInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDocs, err := svc.repo.FindByDocNo(ctx, shopID, mode, docNo)
+	findDocs, err := svc.repo.FindByDocNo(ctx, holdingCode, mode, docNo)
 
 	if err != nil {
 		return []models.SlipImageInfo{}, err
@@ -213,7 +213,7 @@ func (svc SlipImageHttpService) InfoSlipImageByDocno(shopID string, mode uint8, 
 	return findDocs, nil
 }
 
-func (svc SlipImageHttpService) SearchSlipImage(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.SlipImageInfo, mongopagination.PaginationData, error) {
+func (svc SlipImageHttpService) SearchSlipImage(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.SlipImageInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -222,7 +222,7 @@ func (svc SlipImageHttpService) SearchSlipImage(shopID string, filters map[strin
 		"docno",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.SlipImageInfo{}, pagination, err
@@ -231,7 +231,7 @@ func (svc SlipImageHttpService) SearchSlipImage(shopID string, filters map[strin
 	return docList, pagination, nil
 }
 
-func (svc SlipImageHttpService) SearchSlipImageStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.SlipImageInfo, int, error) {
+func (svc SlipImageHttpService) SearchSlipImageStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.SlipImageInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -242,7 +242,7 @@ func (svc SlipImageHttpService) SearchSlipImageStep(shopID string, langCode stri
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.SlipImageInfo{}, 0, err

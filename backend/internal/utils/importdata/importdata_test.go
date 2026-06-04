@@ -62,20 +62,20 @@ func TestPreparePayloadData(t *testing.T) {
 
 	}
 
-	duplicateDataList, userCreateDataList := importdata.PreparePayloadData[MockUser, MockUser]("shopID", "authUser", userMockGuidList, userMockList, getMockUserID, prepareData)
+	duplicateDataList, userCreateDataList := importdata.PreparePayloadData[MockUser, MockUser]("holdingCode", "authUser", userMockGuidList, userMockList, getMockUserID, prepareData)
 
 	require.Equal(t, len(userCreateDataList), 5, "case 1: filtered data  invalid")
 	require.Equal(t, len(duplicateDataList), 0, "case 1: duplicate data invalid")
 
 	userMockGuidList = append(userMockGuidList, "code001")
 
-	duplicateDataList, userCreateDataList = importdata.PreparePayloadData[MockUser, MockUser]("shopID", "authUser", userMockGuidList, userMockList, getMockUserID, prepareData)
+	duplicateDataList, userCreateDataList = importdata.PreparePayloadData[MockUser, MockUser]("holdingCode", "authUser", userMockGuidList, userMockList, getMockUserID, prepareData)
 
 	require.Equal(t, len(userCreateDataList), 4, "case 2: filtered data  invalid")
 	require.Equal(t, len(duplicateDataList), 1, "case 2: duplicate data invalid")
 }
 
-func prepareData(shopID string, authUser string, user MockUser) MockUser {
+func prepareData(holdingCode string, authUser string, user MockUser) MockUser {
 	return user
 }
 
@@ -92,15 +92,15 @@ func TestUpdateOnDuplicate(t *testing.T) {
 		})
 	}
 
-	updateSuccess, updateFail := importdata.UpdateOnDuplicate[MockUser]("shopID", "authUser", userMockList, getMockUserID, findGuid, checkExistDoc, updateDoc)
+	updateSuccess, updateFail := importdata.UpdateOnDuplicate[MockUser]("holdingCode", "authUser", userMockList, getMockUserID, findGuid, checkExistDoc, updateDoc)
 
 	require.Equal(t, len(updateSuccess), 5, "case 1: filtered data  invalid")
 	require.Equal(t, len(updateFail), 0, "case 1: duplicate data invalid")
 }
 
-func findGuid(shopID string, authUser string) (MockUser, error) {
+func findGuid(holdingCode string, authUser string) (MockUser, error) {
 	return MockUser{
-		Code: shopID,
+		Code: holdingCode,
 		Name: authUser,
 	}, nil
 }
@@ -109,6 +109,6 @@ func checkExistDoc(u MockUser) bool {
 	return true
 }
 
-func updateDoc(shopID string, authUser string, u1 MockUser, u2 MockUser) error {
+func updateDoc(holdingCode string, authUser string, u1 MockUser, u2 MockUser) error {
 	return nil
 }

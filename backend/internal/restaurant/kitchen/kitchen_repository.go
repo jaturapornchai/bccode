@@ -13,24 +13,24 @@ import (
 )
 
 type IKitchenRepository interface {
-	Count(ctx context.Context, shopID string) (int, error)
+	Count(ctx context.Context, holdingCode string) (int, error)
 	Create(ctx context.Context, category models.KitchenDoc) (string, error)
 	CreateInBatch(ctx context.Context, docList []models.KitchenDoc) error
-	Update(ctx context.Context, shopID string, guid string, category models.KitchenDoc) error
-	DeleteByGuidfixed(ctx context.Context, shopID string, guid string, username string) error
-	Delete(ctx context.Context, shopID string, authUsername string, filters map[string]interface{}) error
-	FindPage(ctx context.Context, shopID string, searchInFields []string, pageable micromodels.Pageable) ([]models.KitchenInfo, mongopagination.PaginationData, error)
-	FindPageFilter(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.KitchenInfo, mongopagination.PaginationData, error)
-	FindByGuid(ctx context.Context, shopID string, guid string) (models.KitchenDoc, error)
-	FindInItemGuid(ctx context.Context, shopID string, columnName string, itemGuidList []string) ([]models.KitchenItemGuid, error)
-	FindByDocIndentityGuid(ctx context.Context, shopID string, columnName string, filters interface{}) (models.KitchenDoc, error)
-	FindStep(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableLimit micromodels.PageableStep) ([]models.KitchenInfo, int, error)
-	Find(ctx context.Context, shopID string, filters map[string]interface{}) ([]models.KitchenInfo, error)
+	Update(ctx context.Context, holdingCode string, guid string, category models.KitchenDoc) error
+	DeleteByGuidfixed(ctx context.Context, holdingCode string, guid string, username string) error
+	Delete(ctx context.Context, holdingCode string, authUsername string, filters map[string]interface{}) error
+	FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable micromodels.Pageable) ([]models.KitchenInfo, mongopagination.PaginationData, error)
+	FindPageFilter(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.KitchenInfo, mongopagination.PaginationData, error)
+	FindByGuid(ctx context.Context, holdingCode string, guid string) (models.KitchenDoc, error)
+	FindInItemGuid(ctx context.Context, holdingCode string, columnName string, itemGuidList []string) ([]models.KitchenItemGuid, error)
+	FindByDocIndentityGuid(ctx context.Context, holdingCode string, columnName string, filters interface{}) (models.KitchenDoc, error)
+	FindStep(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableLimit micromodels.PageableStep) ([]models.KitchenInfo, int, error)
+	Find(ctx context.Context, holdingCode string, filters map[string]interface{}) ([]models.KitchenInfo, error)
 
-	FindDeletedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageable micromodels.Pageable) ([]models.KitchenDeleteActivity, mongopagination.PaginationData, error)
-	FindCreatedOrUpdatedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageable micromodels.Pageable) ([]models.KitchenActivity, mongopagination.PaginationData, error)
-	FindDeletedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.KitchenDeleteActivity, error)
-	FindCreatedOrUpdatedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.KitchenActivity, error)
+	FindDeletedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageable micromodels.Pageable) ([]models.KitchenDeleteActivity, mongopagination.PaginationData, error)
+	FindCreatedOrUpdatedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageable micromodels.Pageable) ([]models.KitchenActivity, mongopagination.PaginationData, error)
+	FindDeletedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.KitchenDeleteActivity, error)
+	FindCreatedOrUpdatedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.KitchenActivity, error)
 }
 
 type KitchenRepository struct {
@@ -55,7 +55,7 @@ func NewKitchenRepository(pst microservice.IPersisterMongo) KitchenRepository {
 	return insRepo
 }
 
-func (repo KitchenRepository) Find(ctx context.Context, shopID string, filters map[string]interface{}) ([]models.KitchenInfo, error) {
+func (repo KitchenRepository) Find(ctx context.Context, holdingCode string, filters map[string]interface{}) ([]models.KitchenInfo, error) {
 	result := []models.KitchenInfo{}
 
 	matchFilterList := []interface{}{}
@@ -65,8 +65,8 @@ func (repo KitchenRepository) Find(ctx context.Context, shopID string, filters m
 	}
 
 	queryFilters := bson.M{
-		"shopid":    shopID,
-		"deleted_at": bson.M{"$exists": false},
+		"holding_code": holdingCode,
+		"deleted_at":   bson.M{"$exists": false},
 	}
 
 	if len(matchFilterList) > 0 {

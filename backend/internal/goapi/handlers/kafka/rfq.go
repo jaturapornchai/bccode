@@ -24,12 +24,12 @@ func OnConsumeMessageRFQDelete(msg string) error {
 
 	docData := TransRFQDecode(msg)
 
-	if docData.ShopId == "" || docData.DocNo == "" {
-		logger.Error("Invalid RFQ data - missing ShopId or DocNo")
+	if docData.HoldingCode == "" || docData.DocNo == "" {
+		logger.Error("Invalid RFQ data - missing HoldingCode or DocNo")
 		return fmt.Errorf("invalid RFQ data")
 	}
 
-	return DeleteDocumentFromDatabases(context.Background(), docData.ShopId, docData.DocNo, TRANS_FLAG_RFQ)
+	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.DocNo, TRANS_FLAG_RFQ)
 }
 
 // ProcessRFQDocument - processes RFQ using build-doc system
@@ -45,18 +45,18 @@ func ProcessRFQDocument(msg string) error {
 
 	// Decode RFQ from JSON message
 	rfqData := TransRFQDecode(msg)
-	logger.Info("RFQ decoded - ShopID=%s, DocNo=%s, TotalAmount=%.2f, Details=%d",
-		rfqData.ShopId, rfqData.DocNo, rfqData.TotalAmount, len(rfqData.Details))
+	logger.Info("RFQ decoded - HoldingCode=%s, DocNo=%s, TotalAmount=%.2f, Details=%d",
+		rfqData.HoldingCode, rfqData.DocNo, rfqData.TotalAmount, len(rfqData.Details))
 
-	if rfqData.ShopId == "" || rfqData.DocNo == "" {
-		return fmt.Errorf("invalid RFQ data - missing ShopId or DocNo")
+	if rfqData.HoldingCode == "" || rfqData.DocNo == "" {
+		return fmt.Errorf("invalid RFQ data - missing HoldingCode or DocNo")
 	}
 
 	// Convert MongoDocModel to ProcessMongoTransModel
 	processData := ConvertRFQMongoDocToProcessModel(rfqData)
 
 	// Connect to database
-	db, err := mypg.PgSqlFastConnect(rfqData.ShopId)
+	db, err := mypg.PgSqlFastConnect(rfqData.HoldingCode)
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %v", err)
 	}
@@ -67,8 +67,8 @@ func ProcessRFQDocument(msg string) error {
 	mypg.DeleteDocPgSql(ctx, db, rfqData.DocNo, TRANS_FLAG_RFQ)
 
 	// Convert to build-doc structs
-	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, rfqData.ShopId)
-	docDetailStructs := MapRFQToDocDetailStructs(processData, rfqData.ShopId)
+	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, rfqData.HoldingCode)
+	docDetailStructs := MapRFQToDocDetailStructs(processData, rfqData.HoldingCode)
 
 	// Create doc references if any
 	var docRefStructs []models.DocRefStruct
@@ -83,13 +83,13 @@ func ProcessRFQDocument(msg string) error {
 		return fmt.Errorf("failed to insert document to PostgreSQL: %w", err)
 	}
 
-	err = InsertDocDetailToPostgreSQL(ctx, db, rfqData.ShopId, docDetailStructs, 0)
+	err = InsertDocDetailToPostgreSQL(ctx, db, rfqData.HoldingCode, docDetailStructs, 0)
 	if err != nil {
 		return fmt.Errorf("failed to insert doc details to PostgreSQL: %w", err)
 	}
 
 	// Insert to ClickHouse
-	err = InsertDocumentToClickHouse(ctx, rfqData.ShopId, docStruct, docRefStructs, docPaymentStruct, docDetailStructs, 0)
+	err = InsertDocumentToClickHouse(ctx, rfqData.HoldingCode, docStruct, docRefStructs, docPaymentStruct, docDetailStructs, 0)
 	if err != nil {
 		return fmt.Errorf("failed to insert to ClickHouse: %w", err)
 	}
@@ -102,7 +102,7 @@ func ProcessRFQDocument(msg string) error {
 }
 
 // MapRFQToDocDetailStructs - converts RFQ to document detail structs
-func MapRFQToDocDetailStructs(processData models.ProcessMongoTransModel, shopId string) []models.DocDetailStruct {
+func MapRFQToDocDetailStructs(processData models.ProcessMongoTransModel, holdingCode string) []models.DocDetailStruct {
 	var docDetailStructs []models.DocDetailStruct
 
 	for i, detail := range processData.Details {
@@ -187,7 +187,7 @@ func ConvertRFQMongoDocToProcessModel(mongoDoc models.MongoDocModel) models.Proc
 	}
 
 	return models.ProcessMongoTransModel{
-		ShopId:           mongoDoc.ShopId,
+		HoldingCode:      mongoDoc.HoldingCode,
 		BranchId:         mongoDoc.BranchId,
 		GuidFixed:        mongoDoc.GuidFixed,
 		CustCode:         mongoDoc.CustCode,

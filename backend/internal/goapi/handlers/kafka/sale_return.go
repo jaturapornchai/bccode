@@ -3,8 +3,8 @@ package kafka
 import (
 	"context"
 	"fmt"
-	"smlcloudplatform/internal/goapi/logger"
 	"runtime/debug"
+	"smlcloudplatform/internal/goapi/logger"
 
 	"smlcloudplatform/internal/goapi/models"
 	"smlcloudplatform/internal/goapi/myglobal"
@@ -21,18 +21,18 @@ func OnConsumeMessageSaleInvoiceReturnCreateOrUpdate(msg string) error {
 // OnConsumeMessageSaleInvoiceReturnDelete - handles sale invoice return delete messages
 func OnConsumeMessageSaleInvoiceReturnDelete(msg string) error {
 	// รับ Message จาก Kafka ที่เป็นการลบเอกสาร Sale Invoice Return
-	// msg จะเป็น JSON string ที่มีข้อมูลของเอกสารที่ต้องการลบ เช่น {"shopid": "shop123", "docno": "SR2024001"}
+	// msg จะเป็น JSON string ที่มีข้อมูลของเอกสารที่ต้องการลบ เช่น {"holding_code": "shop123", "docno": "SR2024001"}
 
 	logger.Info("OnConsumeMessageSaleInvoiceReturnDelete: %s", msg)
 
 	docData := TransSaleInvoiceReturnDecode(msg)
 
-	if docData.ShopId == "" || docData.DocNo == "" {
-		logger.Error("Invalid sale invoice return data - missing ShopId or DocNo")
+	if docData.HoldingCode == "" || docData.DocNo == "" {
+		logger.Error("Invalid sale invoice return data - missing HoldingCode or DocNo")
 		return fmt.Errorf("invalid sale invoice return data")
 	}
 
-	return DeleteDocumentFromDatabases(context.Background(), docData.ShopId, docData.DocNo, TRANS_FLAG_SALE_INVOICE_RETURN)
+	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.DocNo, TRANS_FLAG_SALE_INVOICE_RETURN)
 }
 
 // ProcessSaleInvoiceReturnDocument - processes sale invoice return using build-doc system
@@ -51,12 +51,12 @@ func ProcessSaleInvoiceReturnDocument(msg string) error {
 	// Decode sale invoice return from JSON message
 	logger.Debug("Step 1: Decoding JSON message... ")
 	saleInvoiceReturnData := TransSaleInvoiceReturnDecode(msg)
-	logger.Info("Step 1: Sale Invoice Return decoded successfully - ShopID=%s, DocNo=%s, TotalAmount=%.2f, Details=%d",
-		saleInvoiceReturnData.ShopId, saleInvoiceReturnData.DocNo, saleInvoiceReturnData.TotalAmount, len(saleInvoiceReturnData.Details))
+	logger.Info("Step 1: Sale Invoice Return decoded successfully - HoldingCode=%s, DocNo=%s, TotalAmount=%.2f, Details=%d",
+		saleInvoiceReturnData.HoldingCode, saleInvoiceReturnData.DocNo, saleInvoiceReturnData.TotalAmount, len(saleInvoiceReturnData.Details))
 
-	if saleInvoiceReturnData.ShopId == "" || saleInvoiceReturnData.DocNo == "" {
-		logger.Error("Invalid sale invoice return data - ShopId='%s', DocNo='%s'", saleInvoiceReturnData.ShopId, saleInvoiceReturnData.DocNo)
-		return fmt.Errorf("invalid sale invoice return data - missing ShopId or DocNo")
+	if saleInvoiceReturnData.HoldingCode == "" || saleInvoiceReturnData.DocNo == "" {
+		logger.Error("Invalid sale invoice return data - HoldingCode='%s', DocNo='%s'", saleInvoiceReturnData.HoldingCode, saleInvoiceReturnData.DocNo)
+		return fmt.Errorf("invalid sale invoice return data - missing HoldingCode or DocNo")
 	}
 
 	// Convert MongoDocModel to ProcessMongoTransModel
@@ -67,7 +67,7 @@ func ProcessSaleInvoiceReturnDocument(msg string) error {
 
 	// Connect to database
 	logger.Debug("Step 3: Connecting to PostgreSQL...")
-	db, err := mypg.PgSqlFastConnect(saleInvoiceReturnData.ShopId)
+	db, err := mypg.PgSqlFastConnect(saleInvoiceReturnData.HoldingCode)
 	if err != nil {
 		logger.Error("Failed to connect to database: %v", err)
 		return fmt.Errorf("failed to connect to database: %v", err)
@@ -83,8 +83,8 @@ func ProcessSaleInvoiceReturnDocument(msg string) error {
 
 	// Convert to build-doc structs
 	logger.Debug("Step 5: Converting to build-doc structs...")
-	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, saleInvoiceReturnData.ShopId)
-	docDetailStructs := MapSaleInvoiceReturnToDocDetailStructs(processData, saleInvoiceReturnData.ShopId)
+	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, saleInvoiceReturnData.HoldingCode)
+	docDetailStructs := MapSaleInvoiceReturnToDocDetailStructs(processData, saleInvoiceReturnData.HoldingCode)
 	logger.Debug("Step 5 completed: Converted to %d doc details", len(docDetailStructs))
 
 	// Create doc references if any
@@ -102,18 +102,18 @@ func ProcessSaleInvoiceReturnDocument(msg string) error {
 		return fmt.Errorf("failed to insert document to PostgreSQL: %w", err)
 	}
 
-	err = InsertDocDetailToPostgreSQL(ctx, db, saleInvoiceReturnData.ShopId, docDetailStructs, 8)
+	err = InsertDocDetailToPostgreSQL(ctx, db, saleInvoiceReturnData.HoldingCode, docDetailStructs, 8)
 	if err != nil {
 		return fmt.Errorf("failed to insert doc details to PostgreSQL: %w", err)
 	}
 
-	err = InsertDocumentToClickHouse(ctx, saleInvoiceReturnData.ShopId, docStruct, docRefStructs, docPaymentStruct, docDetailStructs, 9)
+	err = InsertDocumentToClickHouse(ctx, saleInvoiceReturnData.HoldingCode, docStruct, docRefStructs, docPaymentStruct, docDetailStructs, 9)
 	if err != nil {
 		return fmt.Errorf("failed to insert to ClickHouse: %w", err)
 	}
 
 	// Step 10: Calculate stock cost using global config
-	err = ProcessDocumentStockCalculation(db, saleInvoiceReturnData.ShopId, docDetailStructs, 10)
+	err = ProcessDocumentStockCalculation(db, saleInvoiceReturnData.HoldingCode, docDetailStructs, 10)
 	if err != nil {
 		logger.Error("Failed to calculate stock cost: %v", err)
 		// Don't return error, just log it
@@ -125,8 +125,8 @@ func ProcessSaleInvoiceReturnDocument(msg string) error {
 	logger.Debug("Step 11 completed: Added to processing queues")
 
 	// Step 12: Process document status immediately after insert
-	logger.Debug("Step 12: Processing document status for shopId=%s", saleInvoiceReturnData.ShopId)
-	ProcessDocumentStatusAsync(saleInvoiceReturnData.ShopId)
+	logger.Debug("Step 12: Processing document status for holdingCode=%s", saleInvoiceReturnData.HoldingCode)
+	ProcessDocumentStatusAsync(saleInvoiceReturnData.HoldingCode)
 
 	logger.Info("--- ProcessSaleInvoiceReturnDocument COMPLETED SUCCESSFULLY: %s ---", saleInvoiceReturnData.DocNo)
 	return nil
@@ -177,7 +177,7 @@ func ConvertSaleInvoiceReturnMongoDocToProcessModel(mongoDoc models.MongoDocMode
 
 	logger.Info("ConvertSaleInvoiceReturnMongoDocToProcessModel: Creating final ProcessMongoTransModel")
 	result := models.ProcessMongoTransModel{
-		ShopId:           mongoDoc.ShopId,
+		HoldingCode:      mongoDoc.HoldingCode,
 		BranchId:         mongoDoc.BranchId,
 		GuidFixed:        mongoDoc.GuidFixed,
 		DocNo:            mongoDoc.DocNo,
@@ -215,7 +215,7 @@ func ConvertSaleInvoiceReturnMongoDocToProcessModel(mongoDoc models.MongoDocMode
 }
 
 // MapSaleInvoiceReturnToDocDetailStructs - converts sale invoice return to document detail structs
-func MapSaleInvoiceReturnToDocDetailStructs(processData models.ProcessMongoTransModel, shopId string) []models.DocDetailStruct {
+func MapSaleInvoiceReturnToDocDetailStructs(processData models.ProcessMongoTransModel, holdingCode string) []models.DocDetailStruct {
 	var docDetailStructs []models.DocDetailStruct
 
 	for i, detail := range processData.Details {

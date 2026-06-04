@@ -23,12 +23,12 @@ func (PaidAdvanceRefundInfo) CollectionName() string {
 }
 
 type PaidAdvanceRefundData struct {
-	models.ShopIdentity   `bson:"inline"`
-	PaidAdvanceRefundInfo `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	PaidAdvanceRefundInfo    `bson:"inline"`
 }
 
 type PaidAdvanceRefundDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                    primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	PaidAdvanceRefundData `bson:"inline"`
 	models.ActivityDoc    `bson:"inline"`
 }

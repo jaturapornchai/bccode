@@ -10,8 +10,8 @@ import (
 )
 
 type IStockTransactionConsumerService interface {
-	Upsert(shopID string, docNo string, doc models.StockTransaction) error
-	Delete(shopID string, docNo string) error
+	Upsert(holdingCode string, docNo string, doc models.StockTransaction) error
+	Delete(holdingCode string, docNo string) error
 }
 
 func NewStockTransactionConsumerService(
@@ -36,9 +36,9 @@ type StockTransactionConsumerService struct {
 	stockProcessPhaser IStockProcessTransactionPhaser
 }
 
-func (svc *StockTransactionConsumerService) Upsert(shopID string, docNo string, doc models.StockTransaction) error {
+func (svc *StockTransactionConsumerService) Upsert(holdingCode string, docNo string, doc models.StockTransaction) error {
 
-	findTrx, err := svc.transactionPGRepo.Get(shopID, docNo)
+	findTrx, err := svc.transactionPGRepo.Get(holdingCode, docNo)
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return err
 	}
@@ -60,7 +60,7 @@ func (svc *StockTransactionConsumerService) Upsert(shopID string, docNo string, 
 		isEqual := findTrx.CompareTo(&doc)
 
 		if !isEqual {
-			err = svc.transactionPGRepo.Update(shopID, docNo, doc)
+			err = svc.transactionPGRepo.Update(holdingCode, docNo, doc)
 			if err != nil {
 				return err
 			}
@@ -80,11 +80,11 @@ func (svc *StockTransactionConsumerService) Upsert(shopID string, docNo string, 
 	return nil
 }
 
-func (svc *StockTransactionConsumerService) Delete(shopID string, docNo string) error {
+func (svc *StockTransactionConsumerService) Delete(holdingCode string, docNo string) error {
 
-	getDoc, _ := svc.transactionPGRepo.Get(shopID, docNo)
+	getDoc, _ := svc.transactionPGRepo.Get(holdingCode, docNo)
 
-	err := svc.transactionPGRepo.Delete(shopID, docNo)
+	err := svc.transactionPGRepo.Delete(holdingCode, docNo)
 	if err != nil {
 		return err
 	}

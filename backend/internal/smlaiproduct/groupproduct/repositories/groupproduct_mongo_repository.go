@@ -12,26 +12,26 @@ import (
 )
 
 type IGroupProductRepository interface {
-	Count(ctx context.Context, shopID string) (int, error)
+	Count(ctx context.Context, holdingCode string) (int, error)
 	Create(ctx context.Context, doc groupmodels.GroupProductDoc) (string, error)
 	CreateInBatch(ctx context.Context, docList []groupmodels.GroupProductDoc) error
-	Update(ctx context.Context, shopID string, guid string, doc groupmodels.GroupProductDoc) error
-	DeleteByGuidfixed(ctx context.Context, shopID string, guid string, username string) error
-	Delete(ctx context.Context, shopID string, username string, filters map[string]interface{}) error
-	FindPage(ctx context.Context, shopID string, searchInFields []string, pageable micromodels.Pageable) ([]groupmodels.GroupProductInfo, mongopagination.PaginationData, error)
-	FindByGuid(ctx context.Context, shopID string, guid string) (groupmodels.GroupProductDoc, error)
-	FindByGuids(ctx context.Context, shopID string, guids []string) ([]groupmodels.GroupProductDoc, error)
-	FindByCodes(ctx context.Context, shopID string, codes []string) ([]groupmodels.GroupProductInfo, error)
+	Update(ctx context.Context, holdingCode string, guid string, doc groupmodels.GroupProductDoc) error
+	DeleteByGuidfixed(ctx context.Context, holdingCode string, guid string, username string) error
+	Delete(ctx context.Context, holdingCode string, username string, filters map[string]interface{}) error
+	FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable micromodels.Pageable) ([]groupmodels.GroupProductInfo, mongopagination.PaginationData, error)
+	FindByGuid(ctx context.Context, holdingCode string, guid string) (groupmodels.GroupProductDoc, error)
+	FindByGuids(ctx context.Context, holdingCode string, guids []string) ([]groupmodels.GroupProductDoc, error)
+	FindByCodes(ctx context.Context, holdingCode string, codes []string) ([]groupmodels.GroupProductInfo, error)
 
-	FindInItemGuid(ctx context.Context, shopID string, columnName string, itemGuidList []string) ([]groupmodels.GroupProductItemGuid, error)
-	FindByDocIndentityGuid(ctx context.Context, shopID string, indentityField string, indentityValue interface{}) (groupmodels.GroupProductDoc, error)
-	FindPageFilter(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]groupmodels.GroupProductInfo, mongopagination.PaginationData, error)
-	FindStep(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableLimit micromodels.PageableStep) ([]groupmodels.GroupProductInfo, int, error)
+	FindInItemGuid(ctx context.Context, holdingCode string, columnName string, itemGuidList []string) ([]groupmodels.GroupProductItemGuid, error)
+	FindByDocIndentityGuid(ctx context.Context, holdingCode string, indentityField string, indentityValue interface{}) (groupmodels.GroupProductDoc, error)
+	FindPageFilter(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]groupmodels.GroupProductInfo, mongopagination.PaginationData, error)
+	FindStep(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableLimit micromodels.PageableStep) ([]groupmodels.GroupProductInfo, int, error)
 
-	FindDeletedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]groupmodels.GroupProductDeleteActivity, mongopagination.PaginationData, error)
-	FindCreatedOrUpdatedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]groupmodels.GroupProductActivity, mongopagination.PaginationData, error)
-	FindDeletedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]groupmodels.GroupProductDeleteActivity, error)
-	FindCreatedOrUpdatedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]groupmodels.GroupProductActivity, error)
+	FindDeletedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]groupmodels.GroupProductDeleteActivity, mongopagination.PaginationData, error)
+	FindCreatedOrUpdatedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]groupmodels.GroupProductActivity, mongopagination.PaginationData, error)
+	FindDeletedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]groupmodels.GroupProductDeleteActivity, error)
+	FindCreatedOrUpdatedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]groupmodels.GroupProductActivity, error)
 }
 
 type GroupProductRepository struct {
@@ -57,7 +57,7 @@ func NewGroupProductRepository(pst microservice.IPersisterMongo) *GroupProductRe
 }
 
 // FindByCodes finds GroupProduct documents by multiple codes
-func (repo *GroupProductRepository) FindByCodes(ctx context.Context, shopID string, codes []string) ([]groupmodels.GroupProductInfo, error) {
+func (repo *GroupProductRepository) FindByCodes(ctx context.Context, holdingCode string, codes []string) ([]groupmodels.GroupProductInfo, error) {
 	if len(codes) == 0 {
 		return []groupmodels.GroupProductInfo{}, nil
 	}
@@ -68,7 +68,7 @@ func (repo *GroupProductRepository) FindByCodes(ctx context.Context, shopID stri
 		},
 	}
 
-	docs, _, err := repo.FindPageFilter(ctx, shopID, filters, []string{}, micromodels.Pageable{
+	docs, _, err := repo.FindPageFilter(ctx, holdingCode, filters, []string{}, micromodels.Pageable{
 		Page:  1,
 		Limit: len(codes),
 	})

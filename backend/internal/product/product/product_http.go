@@ -70,12 +70,12 @@ func (h ProductHttp) RegisterHttp() {
 // @Router		/product [get]
 func (h ProductHttp) SearchProduct(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	pageable := utils.GetPageable(ctx.QueryParam)
 
 	filters := h.searchFilter(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.ProductList(shopID, filters, pageable)
+	docList, pagination, err := h.svc.ProductList(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -104,7 +104,7 @@ func (h ProductHttp) SearchProduct(ctx microservice.IContext) error {
 // @Router		/product [post]
 func (h ProductHttp) CreateProduct(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := strings.TrimSpace(userInfo.ShopID)
+	holdingCode := strings.TrimSpace(userInfo.HoldingCode)
 
 	input := strings.TrimSpace(ctx.ReadInput())
 	if input == "" {
@@ -120,8 +120,8 @@ func (h ProductHttp) CreateProduct(ctx microservice.IContext) error {
 		return err
 	}
 
-	// ✅ กำหนดค่า `ShopID` และ `GuidFixed`
-	newProduct.ShopID = shopID
+	// ✅ กำหนดค่า `HoldingCode` และ `GuidFixed`
+	newProduct.HoldingCode = holdingCode
 	newProduct.GuidFixed = utils.NewGUID()
 
 	// ✅ ตรวจสอบ Validation
@@ -166,14 +166,14 @@ func (h ProductHttp) CreateProduct(ctx microservice.IContext) error {
 func (h ProductHttp) InfoProduct(ctx microservice.IContext) error {
 	code := strings.TrimSpace(ctx.Param("guid"))
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	if code == "" {
 		ctx.ResponseError(http.StatusBadRequest, "Product Code is required")
 		return errors.New("Product Code is required")
 	}
 
-	product, err := h.svc.GetProduct(shopID, code)
+	product, err := h.svc.GetProduct(holdingCode, code)
 	if err != nil {
 		ctx.ResponseError(http.StatusNotFound, "Product not found")
 		return err
@@ -201,7 +201,7 @@ func (h ProductHttp) InfoProduct(ctx microservice.IContext) error {
 func (h ProductHttp) UpdateProduct(ctx microservice.IContext) error {
 	code := strings.TrimSpace(ctx.Param("guid"))
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	if code == "" {
 		ctx.ResponseError(http.StatusBadRequest, "Product Code is required")
@@ -229,7 +229,7 @@ func (h ProductHttp) UpdateProduct(ctx microservice.IContext) error {
 	fmt.Println("Updating Product:", updateData)
 
 	// ✅ อัปเดต Product
-	docData, err := h.svc.Update(shopID, code, userInfo.Username, updateData)
+	docData, err := h.svc.Update(holdingCode, code, userInfo.Username, updateData)
 	if err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
@@ -257,14 +257,14 @@ func (h ProductHttp) UpdateProduct(ctx microservice.IContext) error {
 func (h ProductHttp) DeleteProduct(ctx microservice.IContext) error {
 	code := strings.TrimSpace(ctx.Param("guid"))
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	if code == "" {
 		ctx.ResponseError(http.StatusBadRequest, "Product Code is required")
 		return errors.New("Product Code is required")
 	}
 
-	err := h.svc.Delete(shopID, code, userInfo.Username)
+	err := h.svc.Delete(holdingCode, code, userInfo.Username)
 	if err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err

@@ -59,7 +59,7 @@ func (h KitchenHttp) RegisterHttp() {
 // @Router /restaurant/kitchen [post]
 func (h KitchenHttp) CreateKitchen(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.Kitchen{}
@@ -70,7 +70,7 @@ func (h KitchenHttp) CreateKitchen(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreateKitchen(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateKitchen(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -97,7 +97,7 @@ func (h KitchenHttp) CreateKitchen(ctx microservice.IContext) error {
 func (h KitchenHttp) UpdateKitchen(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -110,7 +110,7 @@ func (h KitchenHttp) UpdateKitchen(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateKitchen(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateKitchen(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -136,12 +136,12 @@ func (h KitchenHttp) UpdateKitchen(ctx microservice.IContext) error {
 // @Router /restaurant/kitchen/{id} [delete]
 func (h KitchenHttp) DeleteKitchen(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteKitchen(shopID, id, authUsername)
+	err := h.svc.DeleteKitchen(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -167,12 +167,12 @@ func (h KitchenHttp) DeleteKitchen(ctx microservice.IContext) error {
 // @Router /restaurant/kitchen/{id} [get]
 func (h KitchenHttp) InfoKitchen(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get Kitchen %v", id)
-	doc, err := h.svc.InfoKitchen(shopID, id)
+	doc, err := h.svc.InfoKitchen(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -201,7 +201,7 @@ func (h KitchenHttp) InfoKitchen(ctx microservice.IContext) error {
 // @Router /restaurant/kitchen [get]
 func (h KitchenHttp) SearchKitchen(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -213,7 +213,7 @@ func (h KitchenHttp) SearchKitchen(ctx microservice.IContext) error {
 		},
 	})
 
-	docList, pagination, err := h.svc.SearchKitchen(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchKitchen(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -238,9 +238,9 @@ func (h KitchenHttp) SearchKitchen(ctx microservice.IContext) error {
 // @Router /restaurant/kitchen/products [get]
 func (h KitchenHttp) GetKitchenProductBarcode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
-	docList, err := h.svc.GetProductBarcodeKitchen(shopID)
+	docList, err := h.svc.GetProductBarcodeKitchen(holdingCode)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -268,7 +268,7 @@ func (h KitchenHttp) GetKitchenProductBarcode(ctx microservice.IContext) error {
 // @Router /restaurant/kitchen/list [get]
 func (h KitchenHttp) SearchKitchenStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -280,7 +280,7 @@ func (h KitchenHttp) SearchKitchenStep(ctx microservice.IContext) error {
 		},
 	})
 
-	docList, total, err := h.svc.SearchKitchenStep(shopID, "", filters, pageableStep)
+	docList, total, err := h.svc.SearchKitchenStep(holdingCode, "", filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -308,7 +308,7 @@ func (h KitchenHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -320,7 +320,7 @@ func (h KitchenHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

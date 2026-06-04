@@ -43,7 +43,7 @@ func StartChartOfAccountConsumerCreated(ms *microservice.Microservice, cfg msCon
 		repo := repositories.NewChartOfAccountPgRepository(pst)
 		svc := services.NewChartOfAccountConsumeService(repo)
 
-		_, err = svc.Upsert(doc.ShopID, doc)
+		_, err = svc.Upsert(doc.HoldingCode, doc)
 
 		if err != nil {
 			ms.Logger.Errorf(moduleName, err.Error())
@@ -76,7 +76,7 @@ func StartChartOfAccountConsumerUpdated(ms *microservice.Microservice, cfg msCon
 		repo := repositories.NewChartOfAccountPgRepository(pst)
 		svc := services.NewChartOfAccountConsumeService(repo)
 
-		_, err = svc.Upsert(doc.ShopID, doc)
+		_, err = svc.Upsert(doc.HoldingCode, doc)
 
 		if err != nil {
 			ms.Logger.Errorf(moduleName, err.Error())
@@ -109,7 +109,7 @@ func StartChartOfAccountConsumerDeleted(ms *microservice.Microservice, cfg msCon
 		repo := repositories.NewChartOfAccountPgRepository(pst)
 		svc := services.NewChartOfAccountConsumeService(repo)
 
-		err = svc.Delete(doc.ShopID, doc.AccountCode)
+		err = svc.Delete(doc.HoldingCode, doc.AccountCode)
 
 		if err != nil {
 			ms.Logger.Errorf(moduleName, err.Error())

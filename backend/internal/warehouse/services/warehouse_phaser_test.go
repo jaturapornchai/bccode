@@ -11,7 +11,7 @@ func TestCreditPaymentTransactionPhaser(t *testing.T) {
 
 	giveInput := `{
 		"guid_fixed": "guid001",
-		"shopid": "shop001",
+		"holding_code": "shop001",
 		"code": "code001",
 		"names": [
 			{
@@ -43,7 +43,7 @@ func TestCreditPaymentTransactionPhaser(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Equal(t, "guid001", got.GuidFixed)
-	assert.Equal(t, "shop001", got.ShopID)
+	assert.Equal(t, "shop001", got.HoldingCode)
 	assert.Equal(t, "code001", got.Code)
 	assert.Equal(t, "warehouse name 001", *(got.Names)[0].Name)
 	assert.Equal(t, "loc001", got.Location[0].Code)

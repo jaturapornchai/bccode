@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"runtime/debug"
 	"smlcloudplatform/internal/goapi/handlers/approval"
 	"smlcloudplatform/internal/goapi/handlers/datahistory"
 	"smlcloudplatform/internal/goapi/logger"
-	"runtime/debug"
 	"time"
 
 	"smlcloudplatform/internal/goapi/models"
@@ -26,7 +26,7 @@ func OnConsumeMessagePurchaseOrderCreateOrUpdate(msg string) error {
 // OnConsumeMessagePurchaseOrderDelete - handles purchase order delete messages
 func OnConsumeMessagePurchaseOrderDelete(msg string) error {
 	docData := TransPurchaseOrderDecode(msg)
-	if docData.ShopId == "" || docData.DocNo == "" {
+	if docData.HoldingCode == "" || docData.DocNo == "" {
 		return fmt.Errorf("invalid purchase order data")
 	}
 
@@ -43,7 +43,7 @@ func OnConsumeMessagePurchaseOrderDelete(msg string) error {
 			userName = "System"
 		}
 		if err := datahistory.SavePOHistory(
-			docData.ShopId,
+			docData.HoldingCode,
 			docData.DocNo,
 			docData.GuidFixed,
 			userCode,
@@ -56,7 +56,7 @@ func OnConsumeMessagePurchaseOrderDelete(msg string) error {
 		}
 	}()
 
-	return DeleteDocumentFromDatabases(context.Background(), docData.ShopId, docData.DocNo, TRANS_FLAG_PURCHASE_ORDER)
+	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.DocNo, TRANS_FLAG_PURCHASE_ORDER)
 }
 
 // ProcessPurchaseOrderDocument - processes purchase order using build-doc system
@@ -69,15 +69,15 @@ func ProcessPurchaseOrderDocument(msg string) error {
 
 	// Decode purchase order
 	purchaseOrderData := TransPurchaseOrderDecode(msg)
-	if purchaseOrderData.ShopId == "" || purchaseOrderData.DocNo == "" {
-		return fmt.Errorf("invalid purchase order data - missing ShopId or DocNo")
+	if purchaseOrderData.HoldingCode == "" || purchaseOrderData.DocNo == "" {
+		return fmt.Errorf("invalid purchase order data - missing HoldingCode or DocNo")
 	}
 
 	// Convert to process model
 	processData := ConvertPurchaseOrderMongoDocToProcessModel(purchaseOrderData)
 
 	// Connect to database
-	db, err := mypg.PgSqlFastConnect(purchaseOrderData.ShopId)
+	db, err := mypg.PgSqlFastConnect(purchaseOrderData.HoldingCode)
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %v", err)
 	}
@@ -111,8 +111,8 @@ func ProcessPurchaseOrderDocument(msg string) error {
 	}
 
 	// Convert to build-doc structs
-	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, purchaseOrderData.ShopId)
-	docDetailStructs := MapPurchaseOrderToDocDetailStructs(processData, purchaseOrderData.ShopId)
+	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, purchaseOrderData.HoldingCode)
+	docDetailStructs := MapPurchaseOrderToDocDetailStructs(processData, purchaseOrderData.HoldingCode)
 
 	// Create doc references
 	var docRefStructs []models.DocRefStruct
@@ -126,7 +126,7 @@ func ProcessPurchaseOrderDocument(msg string) error {
 	}
 
 	// Insert document details
-	if err = InsertDocDetailToPostgreSQLTx(ctx, tx, purchaseOrderData.ShopId, docDetailStructs, 0); err != nil {
+	if err = InsertDocDetailToPostgreSQLTx(ctx, tx, purchaseOrderData.HoldingCode, docDetailStructs, 0); err != nil {
 		return err
 	}
 
@@ -147,22 +147,22 @@ func ProcessPurchaseOrderDocument(msg string) error {
 
 	// Insert to ClickHouse (async)
 	go func() {
-		InsertDocumentToClickHouse(ctx, purchaseOrderData.ShopId, docStruct, docRefStructs, docPaymentStruct, docDetailStructs, 0)
+		InsertDocumentToClickHouse(ctx, purchaseOrderData.HoldingCode, docStruct, docRefStructs, docPaymentStruct, docDetailStructs, 0)
 	}()
 
 	// Add to processing queue
-	if err = AddDocToProcessQueue(purchaseOrderData.ShopId, purchaseOrderData.DocNo, TRANS_FLAG_PURCHASE_ORDER); err != nil {
+	if err = AddDocToProcessQueue(purchaseOrderData.HoldingCode, purchaseOrderData.DocNo, TRANS_FLAG_PURCHASE_ORDER); err != nil {
 		mypg.AddToDocWaitProcessQueues(ctx, db, purchaseOrderData.DocNo, TRANS_FLAG_PURCHASE_ORDER)
 	}
 
 	// Process document status
-	processdoc.ProcessDocumentStatusByDocNo(purchaseOrderData.ShopId, purchaseOrderData.DocNo)
+	processdoc.ProcessDocumentStatusByDocNo(purchaseOrderData.HoldingCode, purchaseOrderData.DocNo)
 
 	// บันทึก history (create หรือ update) — เฉพาะเมื่อมีการเปลี่ยนแปลงจริง
 	dataAfter := convertPOToMap(purchaseOrderData)
 	go func() {
 		// ตรวจสอบว่าเป็น create หรือ update โดยดูจาก history ที่มีอยู่
-		lastSnapshot := datahistory.GetLastPOSnapshot(purchaseOrderData.ShopId, purchaseOrderData.GuidFixed)
+		lastSnapshot := datahistory.GetLastPOSnapshot(purchaseOrderData.HoldingCode, purchaseOrderData.GuidFixed)
 
 		var action datahistory.ActionType
 		if lastSnapshot == nil {
@@ -195,7 +195,7 @@ func ProcessPurchaseOrderDocument(msg string) error {
 		}
 
 		if err := datahistory.SavePOHistory(
-			purchaseOrderData.ShopId,
+			purchaseOrderData.HoldingCode,
 			purchaseOrderData.DocNo,
 			purchaseOrderData.GuidFixed,
 			userCode,
@@ -212,7 +212,7 @@ func ProcessPurchaseOrderDocument(msg string) error {
 	if purchaseOrderData.IsCancel {
 		logger.Info("[PO] Document %s is cancelled - updating approval status", purchaseOrderData.DocNo)
 		if err := approval.UpdatePOApprovalStatusToCancelled(
-			purchaseOrderData.ShopId,
+			purchaseOrderData.HoldingCode,
 			purchaseOrderData.DocNo,
 			purchaseOrderData.CancelReason,
 			"", // ไม่มีข้อมูล cancel user code ใน MongoDocModel
@@ -227,7 +227,7 @@ func ProcessPurchaseOrderDocument(msg string) error {
 }
 
 // MapPurchaseOrderToDocDetailStructs - converts purchase order to document detail structs
-func MapPurchaseOrderToDocDetailStructs(processData models.ProcessMongoTransModel, shopId string) []models.DocDetailStruct {
+func MapPurchaseOrderToDocDetailStructs(processData models.ProcessMongoTransModel, holdingCode string) []models.DocDetailStruct {
 	var docDetailStructs []models.DocDetailStruct
 
 	for i, detail := range processData.Details {
@@ -311,7 +311,7 @@ func ConvertPurchaseOrderMongoDocToProcessModel(mongoDoc models.MongoDocModel) m
 	}
 
 	return models.ProcessMongoTransModel{
-		ShopId:           mongoDoc.ShopId,
+		HoldingCode:      mongoDoc.HoldingCode,
 		BranchId:         mongoDoc.BranchId,
 		GuidFixed:        mongoDoc.GuidFixed,
 		CustCode:         mongoDoc.CustCode,

@@ -55,18 +55,18 @@ type FieldChange struct {
 
 // DataHistory - โครงสร้างข้อมูล history
 type DataHistory struct {
-	ID         primitive.ObjectID     `json:"_id,omitempty" bson:"_id,omitempty"`
-	ShopID     string                 `json:"shopid" bson:"shopid"`
-	ScreenType ScreenType             `json:"screen_type" bson:"screen_type"`
-	Action     ActionType             `json:"action" bson:"action"`
-	DocNo      string                 `json:"docno" bson:"docno"`
-	GuidFixed  string                 `json:"guid_fixed" bson:"guid_fixed"`
-	UserCode   string                 `json:"user_code" bson:"user_code"`
-	UserName   string                 `json:"user_name" bson:"user_name"`
-	Timestamp  time.Time              `json:"timestamp" bson:"timestamp"`
-	DataBefore map[string]interface{} `json:"data_before" bson:"data_before"` // null ถ้า create
-	DataAfter  map[string]interface{} `json:"data_after" bson:"data_after"`   // null ถ้า delete
-	Changes    []FieldChange          `json:"changes" bson:"changes"`         // สรุปสิ่งที่เปลี่ยน
+	ID          primitive.ObjectID     `json:"_id,omitempty" bson:"_id,omitempty"`
+	HoldingCode string                 `json:"holding_code" bson:"holding_code"`
+	ScreenType  ScreenType             `json:"screen_type" bson:"screen_type"`
+	Action      ActionType             `json:"action" bson:"action"`
+	DocNo       string                 `json:"docno" bson:"docno"`
+	GuidFixed   string                 `json:"guid_fixed" bson:"guid_fixed"`
+	UserCode    string                 `json:"user_code" bson:"user_code"`
+	UserName    string                 `json:"user_name" bson:"user_name"`
+	Timestamp   time.Time              `json:"timestamp" bson:"timestamp"`
+	DataBefore  map[string]interface{} `json:"data_before" bson:"data_before"` // null ถ้า create
+	DataAfter   map[string]interface{} `json:"data_after" bson:"data_after"`   // null ถ้า delete
+	Changes     []FieldChange          `json:"changes" bson:"changes"`         // สรุปสิ่งที่เปลี่ยน
 }
 
 // getCollection - ดึง collection สำหรับ datahistory
@@ -100,13 +100,13 @@ func SaveHistory(history DataHistory) error {
 		return err
 	}
 
-	logger.Debug("[DataHistory] Saved: shopid=%s, screen=%s, action=%s, docno=%s",
-		history.ShopID, history.ScreenType, history.Action, history.DocNo)
+	logger.Debug("[DataHistory] Saved: holding_code=%s, screen=%s, action=%s, docno=%s",
+		history.HoldingCode, history.ScreenType, history.Action, history.DocNo)
 	return nil
 }
 
 // HasPOHistory - ตรวจสอบว่า PO มี history อยู่แล้วหรือไม่ (ใช้แยก create กับ update)
-func HasPOHistory(shopID, guidFixed string) bool {
+func HasPOHistory(holdingCode, guidFixed string) bool {
 	collection, err := getCollection()
 	if err != nil {
 		logger.Error("[DataHistory] Failed to get collection for check: %v", err)
@@ -118,9 +118,9 @@ func HasPOHistory(shopID, guidFixed string) bool {
 
 	// ค้นหาจาก guidfixed เพราะ docno อาจเปลี่ยนได้
 	filter := bson.M{
-		"shopid":      shopID,
-		"screen_type": ScreenPurchaseOrder,
-		"guid_fixed":  guidFixed,
+		"holding_code": holdingCode,
+		"screen_type":  ScreenPurchaseOrder,
+		"guid_fixed":   guidFixed,
 	}
 
 	count, err := collection.CountDocuments(ctx, filter)
@@ -133,7 +133,7 @@ func HasPOHistory(shopID, guidFixed string) bool {
 }
 
 // GetLastPOSnapshot - ดึง dataAfter ล่าสุดของ PO (ใช้เปรียบเทียบกับข้อมูลใหม่)
-func GetLastPOSnapshot(shopID, guidFixed string) map[string]interface{} {
+func GetLastPOSnapshot(holdingCode, guidFixed string) map[string]interface{} {
 	collection, err := getCollection()
 	if err != nil {
 		return nil
@@ -143,9 +143,9 @@ func GetLastPOSnapshot(shopID, guidFixed string) map[string]interface{} {
 	defer cancel()
 
 	filter := bson.M{
-		"shopid":      shopID,
-		"screen_type": ScreenPurchaseOrder,
-		"guid_fixed":  guidFixed,
+		"holding_code": holdingCode,
+		"screen_type":  ScreenPurchaseOrder,
+		"guid_fixed":   guidFixed,
 	}
 
 	opts := options.FindOne().SetSort(bson.D{{Key: "timestamp", Value: -1}})
@@ -213,19 +213,19 @@ func HasMeaningfulChanges(oldData, newData map[string]interface{}) bool {
 }
 
 // SavePOHistory - บันทึก history สำหรับ Purchase Order
-func SavePOHistory(shopID, docNo, guidFixed, userCode, userName string, action ActionType, dataBefore, dataAfter map[string]interface{}) error {
+func SavePOHistory(holdingCode, docNo, guidFixed, userCode, userName string, action ActionType, dataBefore, dataAfter map[string]interface{}) error {
 	history := DataHistory{
-		ShopID:     shopID,
-		ScreenType: ScreenPurchaseOrder,
-		Action:     action,
-		DocNo:      docNo,
-		GuidFixed:  guidFixed,
-		UserCode:   userCode,
-		UserName:   userName,
-		Timestamp:  time.Now().UTC(),
-		DataBefore: dataBefore,
-		DataAfter:  dataAfter,
-		Changes:    calculateChanges(dataBefore, dataAfter),
+		HoldingCode: holdingCode,
+		ScreenType:  ScreenPurchaseOrder,
+		Action:      action,
+		DocNo:       docNo,
+		GuidFixed:   guidFixed,
+		UserCode:    userCode,
+		UserName:    userName,
+		Timestamp:   time.Now().UTC(),
+		DataBefore:  dataBefore,
+		DataAfter:   dataAfter,
+		Changes:     calculateChanges(dataBefore, dataAfter),
 	}
 	return SaveHistory(history)
 }
@@ -317,14 +317,14 @@ func compareValues(a, b interface{}) bool {
 
 // GetHistoryHandler - API endpoint สำหรับดึง history
 func GetHistoryHandler(c echo.Context) error {
-	shopID := c.QueryParam("shopid")
+	holdingCode := c.QueryParam("holding_code")
 	screenType := c.QueryParam("screen_type")
 	docNo := c.QueryParam("docno")
 
-	if shopID == "" {
+	if holdingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"success": false,
-			"message": "shopid is required",
+			"message": "holding_code is required",
 		})
 	}
 
@@ -340,7 +340,7 @@ func GetHistoryHandler(c echo.Context) error {
 	defer cancel()
 
 	// สร้าง filter
-	filter := bson.M{"shopid": shopID}
+	filter := bson.M{"holding_code": holdingCode}
 	if screenType != "" {
 		filter["screen_type"] = screenType
 	}
@@ -383,13 +383,13 @@ func GetHistoryHandler(c echo.Context) error {
 
 // GetPOHistoryHandler - API endpoint สำหรับดึง history ของใบสั่งซื้อ
 func GetPOHistoryHandler(c echo.Context) error {
-	shopID := c.QueryParam("shopid")
+	holdingCode := c.QueryParam("holding_code")
 	docNo := c.QueryParam("docno")
 
-	if shopID == "" || docNo == "" {
+	if holdingCode == "" || docNo == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"success": false,
-			"message": "shopid and docno are required",
+			"message": "holding_code and docno are required",
 		})
 	}
 
@@ -406,9 +406,9 @@ func GetPOHistoryHandler(c echo.Context) error {
 
 	// Filter สำหรับ PO เฉพาะ docno
 	filter := bson.M{
-		"shopid":      shopID,
-		"screen_type": ScreenPurchaseOrder,
-		"docno":       docNo,
+		"holding_code": holdingCode,
+		"screen_type":  ScreenPurchaseOrder,
+		"docno":        docNo,
 	}
 
 	// เรียงลำดับตาม timestamp ล่าสุดก่อน

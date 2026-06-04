@@ -193,8 +193,8 @@ func (h MasterSyncHttp) RegisterHttp() {
 // @Router /master-sync/status [get]
 func (h MasterSyncHttp) SyncStatus(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
-	status, _ := h.svcMasterSync.GetStatus(shopID, h.activityModuleManager.GetModules())
+	holdingCode := userInfo.HoldingCode
+	status, _ := h.svcMasterSync.GetStatus(holdingCode, h.activityModuleManager.GetModules())
 
 	ctx.Response(
 		http.StatusOK,
@@ -217,7 +217,7 @@ func (h MasterSyncHttp) SyncStatus(ctx microservice.IContext) error {
 // @Router /master-sync [get]
 func (h MasterSyncHttp) LastActivitySync(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	layout := "2006-01-02T15:04:05"
 	lastUpdateStr := ctx.QueryParam("lastupdate")
@@ -260,11 +260,11 @@ func (h MasterSyncHttp) LastActivitySync(ctx microservice.IContext) error {
 	}
 
 	results, pagination, err := listDataModulePage(h.activityModuleManager.GetList(), moduleSelectList, ActivityParamPage{
-		ShopID:     shopID,
-		Action:     action,
-		LastUpdate: lastUpdate,
-		Filters:    filterParam,
-		Pageable:   pageable,
+		HoldingCode: holdingCode,
+		Action:      action,
+		LastUpdate:  lastUpdate,
+		Filters:     filterParam,
+		Pageable:    pageable,
 	})
 
 	if err != nil {
@@ -295,7 +295,7 @@ func (h MasterSyncHttp) LastActivitySync(ctx microservice.IContext) error {
 // @Router /master-sync/list [get]
 func (h MasterSyncHttp) LastActivitySyncOffset(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	layout := "2006-01-02T15:04:05"
 	lastUpdateStr := ctx.QueryParam("lastupdate")
@@ -348,7 +348,7 @@ func (h MasterSyncHttp) LastActivitySyncOffset(ctx microservice.IContext) error 
 	}
 
 	results, err := listDataModuleOffset(h.activityModuleManager.GetList(), moduleSelectList, ActivityParamOffset{
-		ShopID:       shopID,
+		HoldingCode:  holdingCode,
 		Action:       action,
 		LastUpdate:   lastUpdate,
 		Filters:      filterParam,

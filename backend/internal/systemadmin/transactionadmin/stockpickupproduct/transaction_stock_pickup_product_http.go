@@ -48,7 +48,7 @@ func (s *StockPickupTransactionAdminHttp) ReSyncStockPickupTransaction(ctx micro
 		return err
 	}
 
-	err = s.svc.ReSyncStockPickupTransaction(req.ShopID)
+	err = s.svc.ReSyncStockPickupTransaction(req.HoldingCode)
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, common.ApiResponse{
 			Success: false,
@@ -77,7 +77,7 @@ func (s *StockPickupTransactionAdminHttp) ReSyncStockPickupDeleteTransaction(ctx
 		return err
 	}
 
-	err = s.svc.ReSyncStockPickupDeleteTransaction(req.ShopID)
+	err = s.svc.ReSyncStockPickupDeleteTransaction(req.HoldingCode)
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, common.ApiResponse{
 			Success: false,

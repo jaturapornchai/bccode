@@ -15,7 +15,7 @@ type ChequeChange struct {
 }
 type ChequeChangeInfo struct {
 	models.DocIdentity `bson:"inline"`
-	ChequeChange  `bson:"inline"`
+	ChequeChange       `bson:"inline"`
 }
 
 func (ChequeChangeInfo) CollectionName() string {
@@ -23,13 +23,13 @@ func (ChequeChangeInfo) CollectionName() string {
 }
 
 type ChequeChangeData struct {
-	models.ShopIdentity `bson:"inline"`
-	ChequeChangeInfo  `bson:"inline"`
+	models.HoldingCodeentity `bson:"inline"`
+	ChequeChangeInfo         `bson:"inline"`
 }
 
 type ChequeChangeDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	ChequeChangeData  `bson:"inline"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ChequeChangeData   `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -46,7 +46,7 @@ func (ChequeChangeItemGuid) CollectionName() string {
 }
 
 type ChequeChangeActivity struct {
-	ChequeChangeData  `bson:"inline"`
+	ChequeChangeData    `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

@@ -10227,8 +10227,8 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Shop ID",
-                        "name": "shopid",
+                        "description": "Holding Code",
+                        "name": "holding_code",
                         "in": "query"
                     },
                     {
@@ -10338,8 +10338,8 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Shop ID",
-                        "name": "shopid",
+                        "description": "Holding Code",
+                        "name": "holding_code",
                         "in": "query"
                     },
                     {
@@ -10378,8 +10378,8 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Shop ID",
-                        "name": "shopid",
+                        "description": "Holding Code",
+                        "name": "holding_code",
                         "in": "query"
                     },
                     {
@@ -10647,8 +10647,8 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Shop ID",
-                        "name": "shopid",
+                        "description": "Holding Code",
+                        "name": "holding_code",
                         "in": "query"
                     },
                     {
@@ -10689,8 +10689,8 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Shop ID",
-                        "name": "shopid",
+                        "description": "Holding Code",
+                        "name": "holding_code",
                         "in": "query"
                     },
                     {
@@ -12524,8 +12524,8 @@
                     },
                     {
                         "type": "string",
-                        "description": "Shop IDs comma-separated",
-                        "name": "shopids",
+                        "description": "Holding Codes comma-separated",
+                        "name": "holding_codes",
                         "in": "query"
                     }
                 ],
@@ -13202,7 +13202,7 @@
                 }
             }
         },
-        "/gl/journal/rebuild/{shopid}": {
+        "/gl/journal/rebuild/{holding_code}": {
             "get": {
                 "security": [
                     {
@@ -13220,8 +13220,8 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Journal Shop ID",
-                        "name": "shopid",
+                        "description": "Journal Holding Code",
+                        "name": "holding_code",
                         "in": "path",
                         "required": true
                     }
@@ -33833,7 +33833,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Shop ID",
+                        "description": "Holding Code",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -33873,7 +33873,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Shop ID",
+                        "description": "Holding Code",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -33919,7 +33919,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Shop ID",
+                        "description": "Holding Code",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -33941,7 +33941,7 @@
                 }
             }
         },
-        "/slip/{shopid}/{posid}/{docdate}/{docno}": {
+        "/slip/{holding_code}/{posid}/{docdate}/{docno}": {
             "get": {
                 "security": [
                     {
@@ -33958,8 +33958,8 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Shop ID",
-                        "name": "shopid",
+                        "description": "Holding Code",
+                        "name": "holding_code",
                         "in": "path",
                         "required": true
                     },
@@ -57736,7 +57736,7 @@
                     },
                     {
                         "type": "string",
-                        "description": "shopid filter ex. \\",
+                        "description": "holding_code filter ex. \\",
                         "name": "shopsid",
                         "in": "query"
                     }
@@ -61141,7 +61141,7 @@
                     "description": "ผลกระทบต่องบการเงิน 1=ทั่วไป, 2=ต้นทุนขาย",
                     "type": "integer"
                 },
-                "shopid": {
+                "holding_code": {
                     "type": "string"
                 }
             }
@@ -67523,7 +67523,7 @@
                 "lineaccesstoken": {
                     "type": "string"
                 },
-                "shopid": {
+                "holding_code": {
                     "type": "string"
                 }
             }
@@ -70513,7 +70513,7 @@
                 "username"
             ],
             "properties": {
-                "shopid": {
+                "holding_code": {
                     "type": "string"
                 },
                 "username": {
@@ -71342,7 +71342,7 @@
                         "$ref": "#/definitions/models.NameX"
                     }
                 },
-                "shopid": {
+                "holding_code": {
                     "type": "string"
                 },
                 "unitguid": {
@@ -71684,7 +71684,7 @@
                     "description": "ผลกระทบต่องบการเงิน 1=ทั่วไป, 2=ต้นทุนขาย",
                     "type": "integer"
                 },
-                "shopid": {
+                "holding_code": {
                     "type": "string"
                 }
             }
@@ -77543,7 +77543,7 @@
                 "logo": {
                     "type": "string"
                 },
-                "mainshopid": {
+                "mainholding_code": {
                     "type": "string"
                 },
                 "name1": {
@@ -77601,7 +77601,7 @@
                 "monthlyaverage": {
                     "type": "number"
                 },
-                "shopid": {
+                "holding_code": {
                     "type": "string"
                 },
                 "shopname": {
@@ -77624,7 +77624,7 @@
                 "isfavorite": {
                     "type": "boolean"
                 },
-                "shopid": {
+                "holding_code": {
                     "type": "string"
                 }
             }
@@ -77676,7 +77676,7 @@
                 "logo": {
                     "type": "string"
                 },
-                "mainshopid": {
+                "mainholding_code": {
                     "type": "string"
                 },
                 "name1": {
@@ -77744,7 +77744,7 @@
                 "logo": {
                     "type": "string"
                 },
-                "mainshopid": {
+                "mainholding_code": {
                     "type": "string"
                 },
                 "name1": {
@@ -81389,7 +81389,7 @@
                     "description": "ยอดสะสมเดบิต",
                     "type": "number"
                 },
-                "shopid": {
+                "holding_code": {
                     "type": "string"
                 },
                 "sumbalancecredit": {
@@ -81604,7 +81604,7 @@
                     "type": "string",
                     "maxLength": 100
                 },
-                "shopid": {
+                "holding_code": {
                     "type": "string"
                 }
             }
@@ -82132,7 +82132,7 @@
                 "line_user_id": {
                     "type": "string"
                 },
-                "shop_id": {
+                "holding_code": {
                     "type": "string"
                 },
                 "username": {
@@ -82184,10 +82184,10 @@
         "smlcloudplatform_internal_authentication_models.ShopSelectRequest": {
             "type": "object",
             "required": [
-                "shopid"
+                "holding_code"
             ],
             "properties": {
-                "shopid": {
+                "holding_code": {
                     "type": "string"
                 }
             }
@@ -82207,7 +82207,7 @@
                 "lastaccessedat": {
                     "type": "string"
                 },
-                "mainshopid": {
+                "mainholding_code": {
                     "description": "Name1          string         `json:\"name1\" bson:\"name1\"`",
                     "type": "string"
                 },
@@ -82223,7 +82223,7 @@
                 "role": {
                     "$ref": "#/definitions/smlcloudplatform_internal_authentication_models.UserRole"
                 },
-                "shopid": {
+                "holding_code": {
                     "type": "string"
                 }
             }
@@ -82240,7 +82240,7 @@
                     "maxLength": 233,
                     "minLength": 5
                 },
-                "shopid": {
+                "holding_code": {
                     "type": "string"
                 },
                 "username": {
@@ -82428,7 +82428,7 @@
                 "role": {
                     "$ref": "#/definitions/smlcloudplatform_internal_authentication_models.UserRole"
                 },
-                "shopid": {
+                "holding_code": {
                     "type": "string"
                 },
                 "username": {

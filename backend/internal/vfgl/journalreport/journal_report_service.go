@@ -14,11 +14,11 @@ import (
 )
 
 type IJournalReportService interface {
-	ProcessTrialBalanceSheetReport(shopId string, accountGroup string, includeCloseAccountMode bool, startDate time.Time, endDate time.Time) (*models.TrialBalanceSheetReport, error)
-	ProcessProfitAndLossSheetReport(shopId string, accountGroup string, includeCloseAccountMode bool, startDate time.Time, endDate time.Time) (*models.ProfitAndLossSheetReport, error)
-	ProcessBalanceSheetReport(shopId string, accountGroup string, includeCloseAccountMode bool, endDate time.Time) (*models.BalanceSheetReport, error)
-	ProcessLedgerAccount(shopId string, accountGroup string, creditorCode string, debtorCode string, consolidateAccountCode string, accountRanges []models.LedgerAccountCodeRange, bookCode string, startDate time.Time, endDate time.Time) ([]models.LedgerAccount, error)
-	ProcessMultiShopDashboard(username string, shopIDs []string, startDate time.Time, endDate time.Time) (*models.MultiShopDashboardResponse, error)
+	ProcessTrialBalanceSheetReport(holdingCode string, accountGroup string, includeCloseAccountMode bool, startDate time.Time, endDate time.Time) (*models.TrialBalanceSheetReport, error)
+	ProcessProfitAndLossSheetReport(holdingCode string, accountGroup string, includeCloseAccountMode bool, startDate time.Time, endDate time.Time) (*models.ProfitAndLossSheetReport, error)
+	ProcessBalanceSheetReport(holdingCode string, accountGroup string, includeCloseAccountMode bool, endDate time.Time) (*models.BalanceSheetReport, error)
+	ProcessLedgerAccount(holdingCode string, accountGroup string, creditorCode string, debtorCode string, consolidateAccountCode string, accountRanges []models.LedgerAccountCodeRange, bookCode string, startDate time.Time, endDate time.Time) ([]models.LedgerAccount, error)
+	ProcessMultiShopDashboard(username string, holdingCodes []string, startDate time.Time, endDate time.Time) (*models.MultiShopDashboardResponse, error)
 }
 
 type JournalReportService struct {
@@ -55,10 +55,10 @@ func (svc JournalReportService) getContextTimeout() (context.Context, context.Ca
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc JournalReportService) ProcessTrialBalanceSheetReport(shopId string, accountGroup string, includeCloseAccountMode bool, startDate time.Time, endDate time.Time) (*models.TrialBalanceSheetReport, error) {
-	// mock := MockTrialBalanceSheetReport(shopId, accountGroup, startDate, endDate)
+func (svc JournalReportService) ProcessTrialBalanceSheetReport(holdingCode string, accountGroup string, includeCloseAccountMode bool, startDate time.Time, endDate time.Time) (*models.TrialBalanceSheetReport, error) {
+	// mock := MockTrialBalanceSheetReport(holdingCode, accountGroup, startDate, endDate)
 	// return mock, nil
-	details, err := svc.repoPg.GetDataTrialBalance(shopId, accountGroup, includeCloseAccountMode, startDate, endDate)
+	details, err := svc.repoPg.GetDataTrialBalance(holdingCode, accountGroup, includeCloseAccountMode, startDate, endDate)
 
 	var totalBalanceDebit float64
 	var totalBalanceCredit float64
@@ -115,10 +115,10 @@ func (svc JournalReportService) ProcessTrialBalanceSheetReport(shopId string, ac
 	return result, err
 }
 
-func (svc JournalReportService) ProcessProfitAndLossSheetReport(shopId string, accountGroup string, includeCloseAccountMode bool, startDate time.Time, endDate time.Time) (*models.ProfitAndLossSheetReport, error) {
-	// mock := MockProfitAndLossSheetReport(shopId, accountGroup, startDate, endDate)
+func (svc JournalReportService) ProcessProfitAndLossSheetReport(holdingCode string, accountGroup string, includeCloseAccountMode bool, startDate time.Time, endDate time.Time) (*models.ProfitAndLossSheetReport, error) {
+	// mock := MockProfitAndLossSheetReport(holdingCode, accountGroup, startDate, endDate)
 	// return mock, nil
-	details, err := svc.repoPg.GetDataProfitAndLoss(shopId, accountGroup, includeCloseAccountMode, startDate, endDate)
+	details, err := svc.repoPg.GetDataProfitAndLoss(holdingCode, accountGroup, includeCloseAccountMode, startDate, endDate)
 	if err != nil {
 		return nil, err
 	}
@@ -160,10 +160,10 @@ func (svc JournalReportService) ProcessProfitAndLossSheetReport(shopId string, a
 	return result, nil
 }
 
-func (svc JournalReportService) ProcessBalanceSheetReport(shopId string, accountGroup string, includeCloseAccountMode bool, endDate time.Time) (*models.BalanceSheetReport, error) {
-	// mock := MockBalanceSheetReport(shopId, accountGroup, endDate)
+func (svc JournalReportService) ProcessBalanceSheetReport(holdingCode string, accountGroup string, includeCloseAccountMode bool, endDate time.Time) (*models.BalanceSheetReport, error) {
+	// mock := MockBalanceSheetReport(holdingCode, accountGroup, endDate)
 	// return mock, nil
-	details, err := svc.repoPg.GetDataBalanceSheet(shopId, accountGroup, includeCloseAccountMode, endDate)
+	details, err := svc.repoPg.GetDataBalanceSheet(holdingCode, accountGroup, includeCloseAccountMode, endDate)
 	if err != nil {
 		return nil, err
 	}
@@ -237,12 +237,12 @@ func (svc JournalReportService) ProcessBalanceSheetReport(shopId string, account
 	return result, nil
 }
 
-func (svc JournalReportService) ProcessLedgerAccount(shopID string, accountGroup string, creditorCode string, debtorCode string, consolidateAccountCode string, accountRanges []models.LedgerAccountCodeRange, bookCode string, startDate time.Time, endDate time.Time) ([]models.LedgerAccount, error) {
+func (svc JournalReportService) ProcessLedgerAccount(holdingCode string, accountGroup string, creditorCode string, debtorCode string, consolidateAccountCode string, accountRanges []models.LedgerAccountCodeRange, bookCode string, startDate time.Time, endDate time.Time) ([]models.LedgerAccount, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	rawDocList, err := svc.repoPg.GetDataLedgerAccount(shopID, accountGroup, creditorCode, debtorCode, consolidateAccountCode, accountRanges, bookCode, startDate, endDate)
+	rawDocList, err := svc.repoPg.GetDataLedgerAccount(holdingCode, accountGroup, creditorCode, debtorCode, consolidateAccountCode, accountRanges, bookCode, startDate, endDate)
 
 	if err != nil {
 		return nil, err
@@ -306,7 +306,7 @@ func (svc JournalReportService) ProcessLedgerAccount(shopID string, accountGroup
 			tempDocNoList = append(tempDocNoList, k)
 		}
 
-		journalSummaryList, err := svc.repoMongo.FindCountDetailByDocs(ctx, shopID, tempDocNoList)
+		journalSummaryList, err := svc.repoMongo.FindCountDetailByDocs(ctx, holdingCode, tempDocNoList)
 
 		if err != nil {
 			return nil, err
@@ -327,7 +327,7 @@ func (svc JournalReportService) ProcessLedgerAccount(shopID string, accountGroup
 			}
 		}
 
-		journalImageSummaryList, err := svc.repoMongo.FindCountImageByDocs(ctx, shopID, tempDocNoList)
+		journalImageSummaryList, err := svc.repoMongo.FindCountImageByDocs(ctx, holdingCode, tempDocNoList)
 
 		if err != nil {
 			return nil, err
@@ -354,7 +354,7 @@ func (svc JournalReportService) ProcessLedgerAccount(shopID string, accountGroup
 
 func (svc JournalReportService) ProcessMultiShopDashboard(
 	username string,
-	shopIDs []string,
+	holdingCodes []string,
 	startDate time.Time,
 	endDate time.Time,
 ) (*models.MultiShopDashboardResponse, error) {
@@ -369,9 +369,9 @@ func (svc JournalReportService) ProcessMultiShopDashboard(
 	}
 
 	// 2. Filter target shops
-	targetShopIDs := svc.filterAccessibleShops(accessibleShops, shopIDs)
+	targetHoldingCodes := svc.filterAccessibleShops(accessibleShops, holdingCodes)
 
-	if len(targetShopIDs) == 0 {
+	if len(targetHoldingCodes) == 0 {
 		return &models.MultiShopDashboardResponse{
 			Success: true,
 			Data:    []models.ShopDashboardSummary{},
@@ -380,23 +380,23 @@ func (svc JournalReportService) ProcessMultiShopDashboard(
 	}
 
 	// 3. Get shop names
-	shopDetails := svc.getShopDetails(ctx, targetShopIDs)
+	shopDetails := svc.getShopDetails(ctx, targetHoldingCodes)
 
 	// 4. Get revenue/expense data (PostgreSQL)
-	revenueData, err := svc.repoPg.GetMultiShopRevenue(targetShopIDs, startDate, endDate)
+	revenueData, err := svc.repoPg.GetMultiShopRevenue(targetHoldingCodes, startDate, endDate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get revenue data: %w", err)
 	}
 
 	// 5. Get image counts (MongoDB) - count all images per shop
-	imageCounts, err := svc.repoMongo.CountAllImagesByShops(ctx, targetShopIDs)
+	imageCounts, err := svc.repoMongo.CountAllImagesByShops(ctx, targetHoldingCodes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get image counts: %w", err)
 	}
 
 	// 6. Aggregate and calculate
 	summaries := svc.aggregateShopData(
-		targetShopIDs,
+		targetHoldingCodes,
 		shopDetails,
 		revenueData,
 		imageCounts,
@@ -414,17 +414,17 @@ func (svc JournalReportService) ProcessMultiShopDashboard(
 // Helper: Filter shops by user permission
 func (svc JournalReportService) filterAccessibleShops(
 	accessibleShops *[]authModels.ShopUser,
-	filterShopIDs []string,
+	filterHoldingCodes []string,
 ) []string {
 
 	accessMap := make(map[string]bool)
 	for _, shop := range *accessibleShops {
-		accessMap[shop.ShopID] = true
+		accessMap[shop.HoldingCode] = true
 	}
 
-	if len(filterShopIDs) > 0 {
+	if len(filterHoldingCodes) > 0 {
 		result := []string{}
-		for _, sid := range filterShopIDs {
+		for _, sid := range filterHoldingCodes {
 			if accessMap[sid] {
 				result = append(result, sid)
 			}
@@ -433,8 +433,8 @@ func (svc JournalReportService) filterAccessibleShops(
 	}
 
 	result := []string{}
-	for shopID := range accessMap {
-		result = append(result, shopID)
+	for holdingCode := range accessMap {
+		result = append(result, holdingCode)
 	}
 	return result
 }
@@ -442,16 +442,16 @@ func (svc JournalReportService) filterAccessibleShops(
 // Helper: Get shop details (names)
 func (svc JournalReportService) getShopDetails(
 	ctx context.Context,
-	shopIDs []string,
+	holdingCodes []string,
 ) map[string]string {
 
 	shopDetails := make(map[string]string)
-	for _, shopID := range shopIDs {
-		shop, err := svc.shopRepo.FindByGuid(ctx, shopID)
+	for _, holdingCode := range holdingCodes {
+		shop, err := svc.shopRepo.FindByGuid(ctx, holdingCode)
 		if err == nil {
-			shopDetails[shopID] = shop.Name1
+			shopDetails[holdingCode] = shop.Name1
 		} else {
-			shopDetails[shopID] = shopID
+			shopDetails[holdingCode] = holdingCode
 		}
 	}
 	return shopDetails
@@ -459,7 +459,7 @@ func (svc JournalReportService) getShopDetails(
 
 // Helper: Aggregate all data
 func (svc JournalReportService) aggregateShopData(
-	shopIDs []string,
+	holdingCodes []string,
 	shopDetails map[string]string,
 	revenueData []models.MultiShopRevenueRaw,
 	imageCounts []models.ShopImageCount,
@@ -473,14 +473,14 @@ func (svc JournalReportService) aggregateShopData(
 
 	for _, data := range revenueData {
 		if data.AccountCategory == 4 {
-			shopRevenue[data.ShopID] = data.TotalAmount
+			shopRevenue[data.HoldingCode] = data.TotalAmount
 		} else if data.AccountCategory == 5 {
-			shopExpense[data.ShopID] = data.TotalAmount
+			shopExpense[data.HoldingCode] = data.TotalAmount
 		}
 	}
 
 	for _, img := range imageCounts {
-		shopImages[img.ShopID] = img.ImageCount
+		shopImages[img.HoldingCode] = img.ImageCount
 	}
 
 	totalDays := svc.calculateTotalDays(startDate, endDate)
@@ -488,17 +488,17 @@ func (svc JournalReportService) aggregateShopData(
 	totalYears := svc.calculateYearsBetween(startDate, endDate)
 
 	results := []models.ShopDashboardSummary{}
-	for _, shopID := range shopIDs {
-		revenue := shopRevenue[shopID]
-		expense := shopExpense[shopID]
+	for _, holdingCode := range holdingCodes {
+		revenue := shopRevenue[holdingCode]
+		expense := shopExpense[holdingCode]
 		profit := revenue - expense
 
 		summary := models.ShopDashboardSummary{
-			ShopID:         shopID,
-			ShopName:       shopDetails[shopID],
+			HoldingCode:    holdingCode,
+			ShopName:       shopDetails[holdingCode],
 			TotalRevenue:   revenue,
 			TotalProfit:    profit,
-			ImageCount:     shopImages[shopID],
+			ImageCount:     shopImages[holdingCode],
 			DailyAverage:   revenue / float64(totalDays),
 			MonthlyAverage: revenue / float64(totalMonths),
 			YearlyAverage:  revenue / float64(totalYears),

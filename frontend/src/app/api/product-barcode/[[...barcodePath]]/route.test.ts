@@ -69,7 +69,7 @@ describe("product barcode proxy route", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const payload = { shopid: "bctest01", barcode: "8850002", names: [{ code: "th", name: "สินค้า" }] };
+    const payload = { holding_code: "bctest01", barcode: "8850002", names: [{ code: "th", name: "สินค้า" }] };
     const response = await POST(
       new Request("http://localhost/api/product-barcode", {
         method: "POST",
@@ -99,7 +99,7 @@ describe("product barcode proxy route", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const payload = { shopid: "bctest01", guid_fixed: "PB-GUID", barcode: "8850002" };
+    const payload = { holding_code: "bctest01", guid_fixed: "PB-GUID", barcode: "8850002" };
     const response = await PUT(
       new Request("http://localhost/api/product-barcode/PB-GUID", {
         method: "PUT",

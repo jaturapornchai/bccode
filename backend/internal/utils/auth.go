@@ -35,16 +35,16 @@ func NormalizeName(username string) string {
 
 func HasPermissionShop(pst microservice.IPersisterMongo, ctx microservice.IContext) (bool, error) {
 
-	shopID := ctx.Param("shop_id")
+	holdingCode := ctx.Param("holding_code")
 
-	return HasPermissionShopByID(pst, ctx, shopID)
+	return HasPermissionShopByID(pst, ctx, holdingCode)
 }
 
-func HasPermissionShopByID(pst microservice.IPersisterMongo, ctx microservice.IContext, shopID string) (bool, error) {
+func HasPermissionShopByID(pst microservice.IPersisterMongo, ctx microservice.IContext, holdingCode string) (bool, error) {
 
 	authUsername := ctx.UserInfo().Username
 
-	if len(shopID) < 1 {
+	if len(holdingCode) < 1 {
 		return false, fmt.Errorf("shop not found")
 	}
 
@@ -53,7 +53,7 @@ func HasPermissionShopByID(pst microservice.IPersisterMongo, ctx microservice.IC
 
 	shop := &models.ShopDoc{}
 
-	pst.FindOne(pstContect, &models.Shop{}, bson.M{"guid_fixed": shopID, "deleted_at": bson.M{"$exists": false}}, shop)
+	pst.FindOne(pstContect, &models.Shop{}, bson.M{"guid_fixed": holdingCode, "deleted_at": bson.M{"$exists": false}}, shop)
 
 	if len(shop.GuidFixed) < 1 {
 		return false, fmt.Errorf("shop invalid")

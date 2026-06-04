@@ -66,7 +66,7 @@ func (h OrderTypeHttp) RegisterHttp() {
 // @Router /product/order-type [post]
 func (h OrderTypeHttp) CreateOrderType(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.OrderType{}
@@ -82,7 +82,7 @@ func (h OrderTypeHttp) CreateOrderType(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreateOrderType(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateOrderType(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -109,7 +109,7 @@ func (h OrderTypeHttp) CreateOrderType(ctx microservice.IContext) error {
 func (h OrderTypeHttp) UpdateOrderType(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -127,7 +127,7 @@ func (h OrderTypeHttp) UpdateOrderType(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateOrderType(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateOrderType(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -153,12 +153,12 @@ func (h OrderTypeHttp) UpdateOrderType(ctx microservice.IContext) error {
 // @Router /product/order-type/{id} [delete]
 func (h OrderTypeHttp) DeleteOrderType(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteOrderType(shopID, id, authUsername)
+	err := h.svc.DeleteOrderType(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -184,7 +184,7 @@ func (h OrderTypeHttp) DeleteOrderType(ctx microservice.IContext) error {
 // @Router /product/order-type [delete]
 func (h OrderTypeHttp) DeleteOrderTypeByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -197,7 +197,7 @@ func (h OrderTypeHttp) DeleteOrderTypeByGUIDs(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.DeleteOrderTypeByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteOrderTypeByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -222,12 +222,12 @@ func (h OrderTypeHttp) DeleteOrderTypeByGUIDs(ctx microservice.IContext) error {
 // @Router /product/order-type/{id} [get]
 func (h OrderTypeHttp) InfoOrderType(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get OrderType %v", id)
-	doc, err := h.svc.InfoOrderType(shopID, id)
+	doc, err := h.svc.InfoOrderType(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -253,11 +253,11 @@ func (h OrderTypeHttp) InfoOrderType(ctx microservice.IContext) error {
 // @Router /product/order-type/code/{code} [get]
 func (h OrderTypeHttp) InfoOrderTypeByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoOrderTypeByCode(shopID, code)
+	doc, err := h.svc.InfoOrderTypeByCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -284,11 +284,11 @@ func (h OrderTypeHttp) InfoOrderTypeByCode(ctx microservice.IContext) error {
 // @Router /product/order-type [get]
 func (h OrderTypeHttp) SearchOrderTypePage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.SearchOrderType(shopID, map[string]interface{}{}, pageable)
+	docList, pagination, err := h.svc.SearchOrderType(holdingCode, map[string]interface{}{}, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -317,13 +317,13 @@ func (h OrderTypeHttp) SearchOrderTypePage(ctx microservice.IContext) error {
 // @Router /product/order-type/list [get]
 func (h OrderTypeHttp) SearchOrderTypeStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
 	lang := ctx.QueryParam("lang")
 
-	docList, total, err := h.svc.SearchOrderTypeStep(shopID, lang, pageableStep)
+	docList, total, err := h.svc.SearchOrderTypeStep(holdingCode, lang, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -351,7 +351,7 @@ func (h OrderTypeHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -363,7 +363,7 @@ func (h OrderTypeHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

@@ -48,7 +48,7 @@ func (s *ChartOfAccountAdminHttp) ReSyncChartOfAccount(ctx microservice.IContext
 		return err
 	}
 
-	err = s.svc.ReSyncChartOfAccountDoc(req.ShopID)
+	err = s.svc.ReSyncChartOfAccountDoc(req.HoldingCode)
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, common.ApiResponse{
 			Success: false,

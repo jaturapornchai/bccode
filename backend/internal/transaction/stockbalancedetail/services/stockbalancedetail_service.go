@@ -21,15 +21,15 @@ import (
 )
 
 type IStockBalanceDetailService interface {
-	CreateStockBalanceDetail(shopID string, authUsername string, doc []models.StockBalanceDetail) error
-	UpdateStockBalanceDetail(shopID string, guid string, authUsername string, doc models.StockBalanceDetail) error
-	DeleteStockBalanceDetail(shopID string, guid string, authUsername string) error
-	DeleteStockBalanceDetailByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	DeleteStockBalanceDetailByDocNo(shopID string, authUsername string, docNo string) error
-	InfoStockBalanceDetail(shopID string, guid string) (models.StockBalanceDetailInfo, error)
-	InfoStockBalanceDetailByCode(shopID string, code string) (models.StockBalanceDetailInfo, error)
-	SearchStockBalanceDetail(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.StockBalanceDetailInfo, mongopagination.PaginationData, error)
-	SearchStockBalanceDetailStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.StockBalanceDetailInfo, int, error)
+	CreateStockBalanceDetail(holdingCode string, authUsername string, doc []models.StockBalanceDetail) error
+	UpdateStockBalanceDetail(holdingCode string, guid string, authUsername string, doc models.StockBalanceDetail) error
+	DeleteStockBalanceDetail(holdingCode string, guid string, authUsername string) error
+	DeleteStockBalanceDetailByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	DeleteStockBalanceDetailByDocNo(holdingCode string, authUsername string, docNo string) error
+	InfoStockBalanceDetail(holdingCode string, guid string) (models.StockBalanceDetailInfo, error)
+	InfoStockBalanceDetailByCode(holdingCode string, code string) (models.StockBalanceDetailInfo, error)
+	SearchStockBalanceDetail(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.StockBalanceDetailInfo, mongopagination.PaginationData, error)
+	SearchStockBalanceDetailStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.StockBalanceDetailInfo, int, error)
 
 	GetModuleName() string
 }
@@ -81,7 +81,7 @@ func (svc StockBalanceDetailService) getContextTimeout() (context.Context, conte
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc StockBalanceDetailService) CreateStockBalanceDetail(shopID string, authUsername string, docs []models.StockBalanceDetail) error {
+func (svc StockBalanceDetailService) CreateStockBalanceDetail(holdingCode string, authUsername string, docs []models.StockBalanceDetail) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -92,14 +92,14 @@ func (svc StockBalanceDetailService) CreateStockBalanceDetail(shopID string, aut
 		newGuidFixed := utils.NewGUID()
 
 		dataDoc := models.StockBalanceDetailDoc{}
-		dataDoc.ShopID = shopID
+		dataDoc.HoldingCode = holdingCode
 		dataDoc.GuidFixed = newGuidFixed
 		dataDoc.StockBalanceDetail = doc
 
 		dataDoc.CreatedBy = authUsername
 		dataDoc.CreatedAt = time.Now()
 
-		productBarcode, err := svc.GetDetailProductBarcode(ctx, shopID, doc.Barcode)
+		productBarcode, err := svc.GetDetailProductBarcode(ctx, holdingCode, doc.Barcode)
 		if err != nil {
 			return err
 		}
@@ -117,14 +117,14 @@ func (svc StockBalanceDetailService) CreateStockBalanceDetail(shopID string, aut
 
 	go func() {
 		svc.repoMq.CreateInBatch(prepareDocs)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc StockBalanceDetailService) GetDetailProductBarcode(ctx context.Context, shopID string, barcode string) (productbarcode_models.ProductBarcodeInfo, error) {
-	results, err := svc.productBarcodeRepo.FindByBarcodes(ctx, shopID, []string{barcode})
+func (svc StockBalanceDetailService) GetDetailProductBarcode(ctx context.Context, holdingCode string, barcode string) (productbarcode_models.ProductBarcodeInfo, error) {
+	results, err := svc.productBarcodeRepo.FindByBarcodes(ctx, holdingCode, []string{barcode})
 
 	if err != nil {
 		return productbarcode_models.ProductBarcodeInfo{}, err
@@ -144,12 +144,12 @@ func (svc StockBalanceDetailService) PrepareDetail(detail trans_models.Detail, p
 	return resultDetail
 }
 
-func (svc StockBalanceDetailService) UpdateStockBalanceDetail(shopID string, guid string, authUsername string, doc models.StockBalanceDetail) error {
+func (svc StockBalanceDetailService) UpdateStockBalanceDetail(holdingCode string, guid string, authUsername string, doc models.StockBalanceDetail) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -166,7 +166,7 @@ func (svc StockBalanceDetailService) UpdateStockBalanceDetail(shopID string, gui
 	dataDoc.UpdatedBy = authUsername
 	dataDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, dataDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, dataDoc)
 
 	if err != nil {
 		return err
@@ -174,18 +174,18 @@ func (svc StockBalanceDetailService) UpdateStockBalanceDetail(shopID string, gui
 
 	func() {
 		svc.repoMq.Update(dataDoc)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc StockBalanceDetailService) DeleteStockBalanceDetail(shopID string, guid string, authUsername string) error {
+func (svc StockBalanceDetailService) DeleteStockBalanceDetail(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -195,26 +195,26 @@ func (svc StockBalanceDetailService) DeleteStockBalanceDetail(shopID string, gui
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
 	func() {
 		svc.repoMq.Delete(findDoc)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc StockBalanceDetailService) DeleteStockBalanceDetailByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc StockBalanceDetailService) DeleteStockBalanceDetailByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
 	// prepare item for message queue
-	docs, err := svc.repo.FindByGuids(ctx, shopID, GUIDs)
+	docs, err := svc.repo.FindByGuids(ctx, holdingCode, GUIDs)
 	if err != nil {
 		return err
 	}
@@ -223,25 +223,25 @@ func (svc StockBalanceDetailService) DeleteStockBalanceDetailByGUIDs(shopID stri
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err = svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err = svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
 
 	func() {
 		svc.repoMq.DeleteInBatch(docs)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc StockBalanceDetailService) DeleteStockBalanceDetailByDocNo(shopID string, authUsername string, docNo string) error {
+func (svc StockBalanceDetailService) DeleteStockBalanceDetailByDocNo(holdingCode string, authUsername string, docNo string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	docs, err := svc.repo.FindByDocIndentityGuids(ctx, shopID, "docno", docNo)
+	docs, err := svc.repo.FindByDocIndentityGuids(ctx, holdingCode, "docno", docNo)
 	if err != nil {
 		return err
 	}
@@ -250,25 +250,25 @@ func (svc StockBalanceDetailService) DeleteStockBalanceDetailByDocNo(shopID stri
 		"docno": docNo,
 	}
 
-	err = svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err = svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
 
 	func() {
 		svc.repoMq.DeleteInBatch(docs)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc StockBalanceDetailService) InfoStockBalanceDetail(shopID string, guid string) (models.StockBalanceDetailInfo, error) {
+func (svc StockBalanceDetailService) InfoStockBalanceDetail(holdingCode string, guid string) (models.StockBalanceDetailInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.StockBalanceDetailInfo{}, err
@@ -281,12 +281,12 @@ func (svc StockBalanceDetailService) InfoStockBalanceDetail(shopID string, guid 
 	return findDoc.StockBalanceDetailInfo, nil
 }
 
-func (svc StockBalanceDetailService) InfoStockBalanceDetailByCode(shopID string, code string) (models.StockBalanceDetailInfo, error) {
+func (svc StockBalanceDetailService) InfoStockBalanceDetailByCode(holdingCode string, code string) (models.StockBalanceDetailInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", code)
 
 	if err != nil {
 		return models.StockBalanceDetailInfo{}, err
@@ -299,7 +299,7 @@ func (svc StockBalanceDetailService) InfoStockBalanceDetailByCode(shopID string,
 	return findDoc.StockBalanceDetailInfo, nil
 }
 
-func (svc StockBalanceDetailService) SearchStockBalanceDetail(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.StockBalanceDetailInfo, mongopagination.PaginationData, error) {
+func (svc StockBalanceDetailService) SearchStockBalanceDetail(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.StockBalanceDetailInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -308,7 +308,7 @@ func (svc StockBalanceDetailService) SearchStockBalanceDetail(shopID string, fil
 		"docno",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.StockBalanceDetailInfo{}, pagination, err
@@ -317,7 +317,7 @@ func (svc StockBalanceDetailService) SearchStockBalanceDetail(shopID string, fil
 	return docList, pagination, nil
 }
 
-func (svc StockBalanceDetailService) SearchStockBalanceDetailStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.StockBalanceDetailInfo, int, error) {
+func (svc StockBalanceDetailService) SearchStockBalanceDetailStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.StockBalanceDetailInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -328,7 +328,7 @@ func (svc StockBalanceDetailService) SearchStockBalanceDetailStep(shopID string,
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.StockBalanceDetailInfo{}, 0, err
@@ -337,9 +337,9 @@ func (svc StockBalanceDetailService) SearchStockBalanceDetailStep(shopID string,
 	return docList, total, nil
 }
 
-func (svc StockBalanceDetailService) saveMasterSync(shopID string) {
+func (svc StockBalanceDetailService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

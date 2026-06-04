@@ -33,26 +33,26 @@ func (m *MockJournalRepsitory) Create(doc models.JournalPg) error {
 	return ret.Error(0)
 }
 
-func (m *MockJournalRepsitory) Update(shopID string, docNo string, doc models.JournalPg) error {
-	ret := m.Called(shopID, docNo, doc)
+func (m *MockJournalRepsitory) Update(holdingCode string, docNo string, doc models.JournalPg) error {
+	ret := m.Called(holdingCode, docNo, doc)
 	return ret.Error(0)
 }
 
-func (m *MockJournalRepsitory) Delete(shopID string, docNo string) error {
-	ret := m.Called(shopID, docNo)
+func (m *MockJournalRepsitory) Delete(holdingCode string, docNo string) error {
+	ret := m.Called(holdingCode, docNo)
 	return ret.Error(0)
 }
 
-func (m *MockJournalRepsitory) Get(shopID string, docNo string) (*models.JournalPg, error) {
-	ret := m.Called(shopID, docNo)
+func (m *MockJournalRepsitory) Get(holdingCode string, docNo string) (*models.JournalPg, error) {
+	ret := m.Called(holdingCode, docNo)
 	return ret.Get(0).(*models.JournalPg), ret.Error(1)
 }
 
 func TestJournalConsumeServiceCreated(t *testing.T) {
 
 	get := models.JournalPg{
-		ShopIdentity: common.ShopIdentity{
-			ShopID: "27dcEdktOoaSBYFmnN6G6ett4Jb",
+		HoldingCodeentity: common.HoldingCodeentity{
+			HoldingCode: "27dcEdktOoaSBYFmnN6G6ett4Jb",
 		},
 		PartitionIdentity: common.PartitionIdentity{
 			ParID: "0000000",
@@ -86,8 +86,8 @@ func TestJournalConsumeServiceCreated(t *testing.T) {
 
 	give := models.JournalDoc{
 		JournalData: models.JournalData{
-			ShopIdentity: common.ShopIdentity{
-				ShopID: "27dcEdktOoaSBYFmnN6G6ett4Jb",
+			HoldingCodeentity: common.HoldingCodeentity{
+				HoldingCode: "27dcEdktOoaSBYFmnN6G6ett4Jb",
 			},
 			JournalInfo: models.JournalInfo{
 				Journal: models.Journal{
@@ -127,7 +127,7 @@ func TestJournalConsumeServiceCreated(t *testing.T) {
 	mockRepo.On("Create", get).Return(nil)
 
 	journalService := services.NewJournalConsumeService(mockRepo)
-	_, err := journalService.UpSert(give.ShopID, give.DocNo, give)
+	_, err := journalService.UpSert(give.HoldingCode, give.DocNo, give)
 	assert.Nil(t, err, "Error should be nil")
 }
 
@@ -152,10 +152,10 @@ func TestJournalConsumeServiceUpdate(t *testing.T) {
 	}
 
 	mockRepo := new(MockJournalRepsitory)
-	mockRepo.On("Update", "SHOPID", "0001", get).Return(nil)
+	mockRepo.On("Update", "HOLDING_CODE", "0001", get).Return(nil)
 
 	journalService := services.NewJournalConsumeService(mockRepo)
-	_, err := journalService.UpSert("SHOPID", "0001", give)
+	_, err := journalService.UpSert("HOLDING_CODE", "0001", give)
 	assert.Nil(t, err, "Error should be nil")
 }
 
@@ -163,8 +163,8 @@ func TestJournalConsumeServiceInsertWhenGetDataNotFound(t *testing.T) {
 
 	giveJournalMongoDB := models.JournalDoc{
 		JournalData: models.JournalData{
-			ShopIdentity: common.ShopIdentity{
-				ShopID: "SHOPID",
+			HoldingCodeentity: common.HoldingCodeentity{
+				HoldingCode: "HOLDING_CODE",
 			},
 			JournalInfo: models.JournalInfo{
 				Journal: models.Journal{
@@ -179,18 +179,18 @@ func TestJournalConsumeServiceInsertWhenGetDataNotFound(t *testing.T) {
 	}
 
 	giveJournalPG := models.JournalPg{
-		ShopIdentity: common.ShopIdentity{
-			ShopID: "SHOPID",
+		HoldingCodeentity: common.HoldingCodeentity{
+			HoldingCode: "HOLDING_CODE",
 		},
 		JournalBody: giveJournalMongoDB.JournalBody,
 	}
 
 	mockRepo := new(MockJournalRepsitory)
-	mockRepo.On("Get", "SHOPID", "0001").Return(&models.JournalPg{}, gorm.ErrRecordNotFound)
+	mockRepo.On("Get", "HOLDING_CODE", "0001").Return(&models.JournalPg{}, gorm.ErrRecordNotFound)
 	mockRepo.On("Create", giveJournalPG).Return(nil)
 
 	journalService := services.NewJournalConsumeService(mockRepo)
-	get, err := journalService.UpSert("SHOPID", "0001", giveJournalMongoDB)
+	get, err := journalService.UpSert("HOLDING_CODE", "0001", giveJournalMongoDB)
 
 	assert.Nil(t, err, "Failed Upsert Journal Comsume")
 	assert.NotNil(t, get, "Failed Upsert Data is Nil")
@@ -200,8 +200,8 @@ func TestJournalConsumeServiceInsertWhenGetDataNotFound(t *testing.T) {
 func TestJournalConsumeServiceUpdateWhenFoundOldData(t *testing.T) {
 	giveJournalMongoDB := models.JournalDoc{
 		JournalData: models.JournalData{
-			ShopIdentity: common.ShopIdentity{
-				ShopID: "SHOPID",
+			HoldingCodeentity: common.HoldingCodeentity{
+				HoldingCode: "HOLDING_CODE",
 			},
 			JournalInfo: models.JournalInfo{
 				Journal: models.Journal{
@@ -231,8 +231,8 @@ func TestJournalConsumeServiceUpdateWhenFoundOldData(t *testing.T) {
 	}
 
 	giveJournalPG := models.JournalPg{
-		ShopIdentity: common.ShopIdentity{
-			ShopID: "SHOPID",
+		HoldingCodeentity: common.HoldingCodeentity{
+			HoldingCode: "HOLDING_CODE",
 		},
 		JournalBody: giveJournalMongoDB.JournalBody,
 		AccountBook: &[]models.JournalDetailPg{
@@ -250,8 +250,8 @@ func TestJournalConsumeServiceUpdateWhenFoundOldData(t *testing.T) {
 	}
 
 	want := models.JournalPg{
-		ShopIdentity: common.ShopIdentity{
-			ShopID: "SHOPID",
+		HoldingCodeentity: common.HoldingCodeentity{
+			HoldingCode: "HOLDING_CODE",
 		},
 		JournalBody: giveJournalMongoDB.JournalBody,
 		AccountBook: &[]models.JournalDetailPg{
@@ -272,11 +272,11 @@ func TestJournalConsumeServiceUpdateWhenFoundOldData(t *testing.T) {
 	}
 
 	mockRepo := new(MockJournalRepsitory)
-	mockRepo.On("Get", giveJournalMongoDB.ShopID, giveJournalMongoDB.DocNo).Return(&giveJournalPG, nil)
-	mockRepo.On("Update", giveJournalMongoDB.ShopID, giveJournalMongoDB.DocNo, want).Return(nil)
+	mockRepo.On("Get", giveJournalMongoDB.HoldingCode, giveJournalMongoDB.DocNo).Return(&giveJournalPG, nil)
+	mockRepo.On("Update", giveJournalMongoDB.HoldingCode, giveJournalMongoDB.DocNo, want).Return(nil)
 
 	journalService := services.NewJournalConsumeService(mockRepo)
-	get, err := journalService.UpSert("SHOPID", "DOC0001", giveJournalMongoDB)
+	get, err := journalService.UpSert("HOLDING_CODE", "DOC0001", giveJournalMongoDB)
 
 	assert.Nil(t, err, "Failed Upsert Journal Comsume")
 	assert.NotNil(t, get, "Failed Upsert Data is Nil")
@@ -285,7 +285,7 @@ func TestJournalConsumeServiceUpdateWhenFoundOldData(t *testing.T) {
 
 func TestConsumerServiceCreateDocFromJson(t *testing.T) {
 	jsonStr := `
-	{"id":"000000000000000000000000","shopid":"2E1NVOURRw9sxHxDFfdnmamPWXI","guid_fixed":"2E4CzDZN07hcoq3mesUDWpI5upa","batchId":"","docno":"IV6506006","docdate":"2022-06-16T17:00:00Z","documentref":"","accountperiod":6,"accountyear":2565,"accountgroup":"0001","amount":8639.71,"accountdescription":"","bookcode":"01","vats":[],"taxes":[],"journaltype":0,"parid":"0000000","journaldetail":[{"accountcode":"115840","accountname":"ค่าภาษีเงินได้นิติบุคคลถูกหัก.-ณ.ที่จ่าย","debitamount":86.32,"creditamount":0},{"accountcode":"111110","accountname":"เงินสดในมือ","debitamount":8553.39,"creditamount":0},{"accountcode":"410010","accountname":"รายได้จากการขายสินค้า","debitamount":0,"creditamount":8521.21},{"accountcode":"410010","accountname":"รายได้จากการขายสินค้า","debitamount":0,"creditamount":29},{"accountcode":"410010","accountname":"รายได้จากการขายสินค้า","debitamount":0,"creditamount":81.75},{"accountcode":"215500","accountname":"ค่าภาษีขาย","debitamount":0,"creditamount":7.75}]}
+	{"id":"000000000000000000000000","holding_code":"2E1NVOURRw9sxHxDFfdnmamPWXI","guid_fixed":"2E4CzDZN07hcoq3mesUDWpI5upa","batchId":"","docno":"IV6506006","docdate":"2022-06-16T17:00:00Z","documentref":"","accountperiod":6,"accountyear":2565,"accountgroup":"0001","amount":8639.71,"accountdescription":"","bookcode":"01","vats":[],"taxes":[],"journaltype":0,"parid":"0000000","journaldetail":[{"accountcode":"115840","accountname":"ค่าภาษีเงินได้นิติบุคคลถูกหัก.-ณ.ที่จ่าย","debitamount":86.32,"creditamount":0},{"accountcode":"111110","accountname":"เงินสดในมือ","debitamount":8553.39,"creditamount":0},{"accountcode":"410010","accountname":"รายได้จากการขายสินค้า","debitamount":0,"creditamount":8521.21},{"accountcode":"410010","accountname":"รายได้จากการขายสินค้า","debitamount":0,"creditamount":29},{"accountcode":"410010","accountname":"รายได้จากการขายสินค้า","debitamount":0,"creditamount":81.75},{"accountcode":"215500","accountname":"ค่าภาษีขาย","debitamount":0,"creditamount":7.75}]}
 	`
 
 	fmt.Print(jsonStr)
@@ -301,14 +301,14 @@ func TestConsumerServiceCreateFromJsonFailed(t *testing.T) {
 		models.JournalDetailPg{},
 	)
 
-	jsonStr := `{"id":"63106c165ae33da0f2f6a1a2","shopid":"2BYWCndV194TYXVEO7NlRLuJYWY","guid_fixed":"2E9vUVOMvjkg2QCJOV7tDB5GxyL","batchId":"","docno":"JO-20220901F9CC9F","docdate":"2017-12-30T17:00:00Z","documentref":"","accountperiod":12,"accountyear":2560,"accountgroup":"1","amount":2314735,"accountdescription":"ยอดยกมาปี 2560","bookcode":"1","vats":[],"taxes":[],"parid":"0000000","journaldetail":[{"accountcode":"11010","accountname":"เงินสด - บัญชี 1 (เงินล้าน) ","debitamount":7084,"creditamount":0},{"accountcode":"12111","accountname":"เงินฝากธนาคาร บัญชี 1 (เงินล้าน) ธนาคารออมสิน","debitamount":1428252,"creditamount":0},{"accountcode":"13010","accountname":"ลูกหนี้เงินกู้ - บัญชี 1 (เงินล้าน)","debitamount":879399,"creditamount":0},{"accountcode":"32010","accountname":"ทุน - บัญชี 1 (เงินล้าน)","debitamount":0,"creditamount":1000000},{"accountcode":"32020","accountname":"ทุน - โครงการ 3A","debitamount":0,"creditamount":200000},{"accountcode":"32030","accountname":"ทุน - เงินเพิ่มทุนระยะ 2","debitamount":0,"creditamount":1000000},{"accountcode":"33104","accountname":"เงินประกันความเสี่ยง - กำไรที่จัดสรร - บัญชี 1 (เงินล้าน) ","debitamount":0,"creditamount":95400},{"accountcode":"33105","accountname":"เงินสมทบกองทุน - กำไรที่จัดสรร - บัญชี 1 (เงินล้าน) ","debitamount":0,"creditamount":11050},{"accountcode":"34010","accountname":"กำไรสะสม (ขาดทุน) สะสม บัญชี 1 (เงินล้าน) ","debitamount":0,"creditamount":0},{"accountcode":"35010","accountname":"กำไร ( ขาดทุน ) บัญชี 1 (เงินล้าน) ","debitamount":0,"creditamount":0},{"accountcode":"41010","accountname":"รายได้ - ดอกเบี้ยเงินกู้ - บัญชี 1 (เงินล้าน) ","debitamount":0,"creditamount":8200},{"accountcode":"45010","accountname":"รายได้ - ดอกเบี้ยเงินฝากธนาคาร -บัญชี 1 (เงินล้าน) ","debitamount":0,"creditamount":85}]}`
+	jsonStr := `{"id":"63106c165ae33da0f2f6a1a2","holding_code":"2BYWCndV194TYXVEO7NlRLuJYWY","guid_fixed":"2E9vUVOMvjkg2QCJOV7tDB5GxyL","batchId":"","docno":"JO-20220901F9CC9F","docdate":"2017-12-30T17:00:00Z","documentref":"","accountperiod":12,"accountyear":2560,"accountgroup":"1","amount":2314735,"accountdescription":"ยอดยกมาปี 2560","bookcode":"1","vats":[],"taxes":[],"parid":"0000000","journaldetail":[{"accountcode":"11010","accountname":"เงินสด - บัญชี 1 (เงินล้าน) ","debitamount":7084,"creditamount":0},{"accountcode":"12111","accountname":"เงินฝากธนาคาร บัญชี 1 (เงินล้าน) ธนาคารออมสิน","debitamount":1428252,"creditamount":0},{"accountcode":"13010","accountname":"ลูกหนี้เงินกู้ - บัญชี 1 (เงินล้าน)","debitamount":879399,"creditamount":0},{"accountcode":"32010","accountname":"ทุน - บัญชี 1 (เงินล้าน)","debitamount":0,"creditamount":1000000},{"accountcode":"32020","accountname":"ทุน - โครงการ 3A","debitamount":0,"creditamount":200000},{"accountcode":"32030","accountname":"ทุน - เงินเพิ่มทุนระยะ 2","debitamount":0,"creditamount":1000000},{"accountcode":"33104","accountname":"เงินประกันความเสี่ยง - กำไรที่จัดสรร - บัญชี 1 (เงินล้าน) ","debitamount":0,"creditamount":95400},{"accountcode":"33105","accountname":"เงินสมทบกองทุน - กำไรที่จัดสรร - บัญชี 1 (เงินล้าน) ","debitamount":0,"creditamount":11050},{"accountcode":"34010","accountname":"กำไรสะสม (ขาดทุน) สะสม บัญชี 1 (เงินล้าน) ","debitamount":0,"creditamount":0},{"accountcode":"35010","accountname":"กำไร ( ขาดทุน ) บัญชี 1 (เงินล้าน) ","debitamount":0,"creditamount":0},{"accountcode":"41010","accountname":"รายได้ - ดอกเบี้ยเงินกู้ - บัญชี 1 (เงินล้าน) ","debitamount":0,"creditamount":8200},{"accountcode":"45010","accountname":"รายได้ - ดอกเบี้ยเงินฝากธนาคาร -บัญชี 1 (เงินล้าน) ","debitamount":0,"creditamount":85}]}`
 
 	var journalPg models.JournalDoc
 	json.Unmarshal([]byte(jsonStr), &journalPg)
 
 	assert.NotNil(t, journalPg, "Failed Upsert Data is Nil")
 	journalService := services.NewJournalConsumeService(repo)
-	journalPG, err := journalService.UpSert(journalPg.ShopID, journalPg.DocNo, journalPg)
+	journalPG, err := journalService.UpSert(journalPg.HoldingCode, journalPg.DocNo, journalPg)
 	assert.Nil(t, err, "Failed Upsert Data is Nil")
 
 	assert.NotNil(t, journalPG, "Failed Upsert Data is Nil")

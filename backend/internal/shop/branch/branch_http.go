@@ -39,12 +39,19 @@ func NewBranchHttp(ms *microservice.Microservice, cfg config.IConfig) BranchHttp
 
 func (h BranchHttp) RegisterHttp() {
 
+	h.ms.GET("/holding/branch", h.SearchBranchPage)
 	h.ms.GET("/shop/branch", h.SearchBranchPage)
+	h.ms.GET("/holding/branch/list", h.SearchBranchStep)
 	h.ms.GET("/shop/branch/list", h.SearchBranchStep)
+	h.ms.POST("/holding/branch", h.CreateBranch)
 	h.ms.POST("/shop/branch", h.CreateBranch)
+	h.ms.GET("/holding/branch/:id", h.InfoBranch)
 	h.ms.GET("/shop/branch/:id", h.InfoBranch)
+	h.ms.PUT("/holding/branch/:id", h.UpdateBranch)
 	h.ms.PUT("/shop/branch/:id", h.UpdateBranch)
+	h.ms.DELETE("/holding/branch/:id", h.DeleteBranch)
 	h.ms.DELETE("/shop/branch/:id", h.DeleteBranch)
+	h.ms.DELETE("/holding/branch", h.DeleteBranchByGUIDs)
 	h.ms.DELETE("/shop/branch", h.DeleteBranchByGUIDs)
 }
 
@@ -59,7 +66,7 @@ func (h BranchHttp) RegisterHttp() {
 // @Router /shop/branch [post]
 func (h BranchHttp) CreateBranch(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.Branch{}
@@ -75,7 +82,7 @@ func (h BranchHttp) CreateBranch(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreateBranch(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateBranch(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -102,7 +109,7 @@ func (h BranchHttp) CreateBranch(ctx microservice.IContext) error {
 func (h BranchHttp) UpdateBranch(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -120,7 +127,7 @@ func (h BranchHttp) UpdateBranch(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateBranch(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateBranch(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -146,12 +153,12 @@ func (h BranchHttp) UpdateBranch(ctx microservice.IContext) error {
 // @Router /shop/branch/{id} [delete]
 func (h BranchHttp) DeleteBranch(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteBranch(shopID, id, authUsername)
+	err := h.svc.DeleteBranch(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -177,7 +184,7 @@ func (h BranchHttp) DeleteBranch(ctx microservice.IContext) error {
 // @Router /shop/branch [delete]
 func (h BranchHttp) DeleteBranchByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -190,7 +197,7 @@ func (h BranchHttp) DeleteBranchByGUIDs(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.DeleteBranchByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteBranchByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -215,12 +222,12 @@ func (h BranchHttp) DeleteBranchByGUIDs(ctx microservice.IContext) error {
 // @Router /shop/branch/{id} [get]
 func (h BranchHttp) InfoBranch(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get Branch %v", id)
-	doc, err := h.svc.InfoBranch(shopID, id)
+	doc, err := h.svc.InfoBranch(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -248,11 +255,11 @@ func (h BranchHttp) InfoBranch(ctx microservice.IContext) error {
 // @Router /shop/branch [get]
 func (h BranchHttp) SearchBranchPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.SearchBranch(shopID, map[string]interface{}{}, pageable)
+	docList, pagination, err := h.svc.SearchBranch(holdingCode, map[string]interface{}{}, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -281,13 +288,13 @@ func (h BranchHttp) SearchBranchPage(ctx microservice.IContext) error {
 // @Router /shop/branch/list [get]
 func (h BranchHttp) SearchBranchStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
 	lang := ctx.QueryParam("lang")
 
-	docList, total, err := h.svc.SearchBranchStep(shopID, lang, pageableStep)
+	docList, total, err := h.svc.SearchBranchStep(holdingCode, lang, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

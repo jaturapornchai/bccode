@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	mastersync "smlcloudplatform/internal/mastersync/repositories"
-	common "smlcloudplatform/internal/models"
 	"smlcloudplatform/internal/form/formtemplate/models"
 	"smlcloudplatform/internal/form/formtemplate/repositories"
+	mastersync "smlcloudplatform/internal/mastersync/repositories"
+	common "smlcloudplatform/internal/models"
 	"smlcloudplatform/internal/services"
 	"smlcloudplatform/internal/utils"
 	"smlcloudplatform/internal/utils/importdata"
@@ -20,15 +20,15 @@ import (
 )
 
 type IFormTemplateHttpService interface {
-	SaveFormTemplate(shopID string, authUsername string, doc models.FormTemplate) (string, error)
-	CreateFormTemplate(shopID string, authUsername string, doc models.FormTemplate) (string, error)
-	UpdateFormTemplate(shopID string, guid string, authUsername string, doc models.FormTemplate) error
-	DeleteFormTemplate(shopID string, guid string, authUsername string) error
-	DeleteFormTemplateByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoFormTemplate(shopID string, guid string) (models.FormTemplateInfo, error)
-	SearchFormTemplate(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.FormTemplateInfo, mongopagination.PaginationData, error)
-	SearchFormTemplateStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.FormTemplateInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.FormTemplate) (common.BulkImport, error)
+	SaveFormTemplate(holdingCode string, authUsername string, doc models.FormTemplate) (string, error)
+	CreateFormTemplate(holdingCode string, authUsername string, doc models.FormTemplate) (string, error)
+	UpdateFormTemplate(holdingCode string, guid string, authUsername string, doc models.FormTemplate) error
+	DeleteFormTemplate(holdingCode string, guid string, authUsername string) error
+	DeleteFormTemplateByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoFormTemplate(holdingCode string, guid string) (models.FormTemplateInfo, error)
+	SearchFormTemplate(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.FormTemplateInfo, mongopagination.PaginationData, error)
+	SearchFormTemplateStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.FormTemplateInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.FormTemplate) (common.BulkImport, error)
 	GetModuleName() string
 }
 
@@ -61,25 +61,25 @@ func (svc FormTemplateHttpService) getContextTimeout() (context.Context, context
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc FormTemplateHttpService) SaveFormTemplate(shopID string, authUsername string, doc models.FormTemplate) (string, error) {
+func (svc FormTemplateHttpService) SaveFormTemplate(holdingCode string, authUsername string, doc models.FormTemplate) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", doc.Code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", doc.Code)
 
 	if err != nil {
 		return "", err
 	}
 
 	if len(findDoc.Code) > 0 {
-		docData, err := svc.update(shopID, authUsername, findDoc.GuidFixed, findDoc, doc)
+		docData, err := svc.update(holdingCode, authUsername, findDoc.GuidFixed, findDoc, doc)
 		if err != nil {
 			return "", err
 		}
 		return docData.GuidFixed, nil
 	} else {
-		docData, err := svc.create(shopID, authUsername, doc)
+		docData, err := svc.create(holdingCode, authUsername, doc)
 		if err != nil {
 			return "", err
 		}
@@ -87,12 +87,12 @@ func (svc FormTemplateHttpService) SaveFormTemplate(shopID string, authUsername 
 	}
 }
 
-func (svc FormTemplateHttpService) CreateFormTemplate(shopID string, authUsername string, doc models.FormTemplate) (string, error) {
+func (svc FormTemplateHttpService) CreateFormTemplate(holdingCode string, authUsername string, doc models.FormTemplate) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", doc.Code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", doc.Code)
 
 	if err != nil {
 		return "", err
@@ -102,18 +102,18 @@ func (svc FormTemplateHttpService) CreateFormTemplate(shopID string, authUsernam
 		return "", errors.New("code is exists")
 	}
 
-	docData, err := svc.create(shopID, authUsername, doc)
+	docData, err := svc.create(holdingCode, authUsername, doc)
 
 	if err != nil {
 		return "", err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return docData.GuidFixed, nil
 }
 
-func (svc FormTemplateHttpService) create(shopID string, authUsername string, doc models.FormTemplate) (models.FormTemplateDoc, error) {
+func (svc FormTemplateHttpService) create(holdingCode string, authUsername string, doc models.FormTemplate) (models.FormTemplateDoc, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -121,7 +121,7 @@ func (svc FormTemplateHttpService) create(shopID string, authUsername string, do
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.FormTemplateDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.FormTemplate = doc
 
@@ -137,12 +137,12 @@ func (svc FormTemplateHttpService) create(shopID string, authUsername string, do
 	return docData, nil
 }
 
-func (svc FormTemplateHttpService) UpdateFormTemplate(shopID string, guid string, authUsername string, doc models.FormTemplate) error {
+func (svc FormTemplateHttpService) UpdateFormTemplate(holdingCode string, guid string, authUsername string, doc models.FormTemplate) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -152,18 +152,18 @@ func (svc FormTemplateHttpService) UpdateFormTemplate(shopID string, guid string
 		return errors.New("document not found")
 	}
 
-	_, err = svc.update(shopID, authUsername, guid, findDoc, doc)
+	_, err = svc.update(holdingCode, authUsername, guid, findDoc, doc)
 
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc FormTemplateHttpService) update(shopID string, authUsername string, guid string, findDoc models.FormTemplateDoc, docUpdate models.FormTemplate) (models.FormTemplateDoc, error) {
+func (svc FormTemplateHttpService) update(holdingCode string, authUsername string, guid string, findDoc models.FormTemplateDoc, docUpdate models.FormTemplate) (models.FormTemplateDoc, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -173,7 +173,7 @@ func (svc FormTemplateHttpService) update(shopID string, authUsername string, gu
 	docData.UpdatedBy = authUsername
 	docData.UpdatedAt = time.Now()
 
-	err := svc.repo.Update(ctx, shopID, guid, docData)
+	err := svc.repo.Update(ctx, holdingCode, guid, docData)
 
 	if err != nil {
 		return models.FormTemplateDoc{}, err
@@ -182,12 +182,12 @@ func (svc FormTemplateHttpService) update(shopID string, authUsername string, gu
 	return docData, nil
 }
 
-func (svc FormTemplateHttpService) DeleteFormTemplate(shopID, guid, authUsername string) error {
+func (svc FormTemplateHttpService) DeleteFormTemplate(holdingCode, guid, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -197,17 +197,17 @@ func (svc FormTemplateHttpService) DeleteFormTemplate(shopID, guid, authUsername
 		return nil
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc FormTemplateHttpService) DeleteFormTemplateByGUIDs(shopID, authUsername string, GUIDs []string) error {
+func (svc FormTemplateHttpService) DeleteFormTemplateByGUIDs(holdingCode, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -216,22 +216,22 @@ func (svc FormTemplateHttpService) DeleteFormTemplateByGUIDs(shopID, authUsernam
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc FormTemplateHttpService) InfoFormTemplate(shopID string, guid string) (models.FormTemplateInfo, error) {
+func (svc FormTemplateHttpService) InfoFormTemplate(holdingCode string, guid string) (models.FormTemplateInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.FormTemplateInfo{}, err
@@ -244,7 +244,7 @@ func (svc FormTemplateHttpService) InfoFormTemplate(shopID string, guid string) 
 	return findDoc.FormTemplateInfo, nil
 }
 
-func (svc FormTemplateHttpService) SearchFormTemplate(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.FormTemplateInfo, mongopagination.PaginationData, error) {
+func (svc FormTemplateHttpService) SearchFormTemplate(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.FormTemplateInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -255,7 +255,7 @@ func (svc FormTemplateHttpService) SearchFormTemplate(shopID string, filters map
 		"doc_type",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.FormTemplateInfo{}, pagination, err
@@ -264,7 +264,7 @@ func (svc FormTemplateHttpService) SearchFormTemplate(shopID string, filters map
 	return docList, pagination, nil
 }
 
-func (svc FormTemplateHttpService) SearchFormTemplateStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.FormTemplateInfo, int, error) {
+func (svc FormTemplateHttpService) SearchFormTemplateStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.FormTemplateInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -277,7 +277,7 @@ func (svc FormTemplateHttpService) SearchFormTemplateStep(shopID string, langCod
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.FormTemplateInfo{}, 0, err
@@ -286,7 +286,7 @@ func (svc FormTemplateHttpService) SearchFormTemplateStep(shopID string, langCod
 	return docList, total, nil
 }
 
-func (svc FormTemplateHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.FormTemplate) (common.BulkImport, error) {
+func (svc FormTemplateHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.FormTemplate) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -298,7 +298,7 @@ func (svc FormTemplateHttpService) SaveInBatch(shopID string, authUsername strin
 		itemCodeGuidList = append(itemCodeGuidList, doc.Code)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "code", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "code", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -310,17 +310,17 @@ func (svc FormTemplateHttpService) SaveInBatch(shopID string, authUsername strin
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.FormTemplate, models.FormTemplateDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.FormTemplate) models.FormTemplateDoc {
+		func(holdingCode string, authUsername string, doc models.FormTemplate) models.FormTemplateDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.FormTemplateDoc{}
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.FormTemplate = doc
 
 			currentTime := time.Now()
@@ -331,22 +331,22 @@ func (svc FormTemplateHttpService) SaveInBatch(shopID string, authUsername strin
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.FormTemplate, models.FormTemplateDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.FormTemplateDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", guid)
+		func(holdingCode string, guid string) (models.FormTemplateDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", guid)
 		},
 		func(doc models.FormTemplateDoc) bool {
 			return doc.Code != ""
 		},
-		func(shopID string, authUsername string, data models.FormTemplate, doc models.FormTemplateDoc) error {
+		func(holdingCode string, authUsername string, data models.FormTemplate, doc models.FormTemplateDoc) error {
 			doc.FormTemplate = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -381,7 +381,7 @@ func (svc FormTemplateHttpService) SaveInBatch(shopID string, authUsername strin
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -395,9 +395,9 @@ func (svc FormTemplateHttpService) getDocIDKey(doc models.FormTemplate) string {
 	return doc.Code
 }
 
-func (svc FormTemplateHttpService) saveMasterSync(shopID string) {
+func (svc FormTemplateHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())
 		}

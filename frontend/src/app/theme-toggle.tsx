@@ -24,9 +24,12 @@ export function ThemeToggle({ language }: { language: LanguageCode }) {
   useEffect(() => {
     const savedTheme = localStorage.getItem(themeStorageKey);
     const savedColorTheme = normalizeColorTheme(localStorage.getItem(colorThemeStorageKey));
+    const htmlTheme = document.documentElement.dataset.theme;
     const nextTheme =
       savedTheme === "light" || savedTheme === "dark"
         ? savedTheme
+        : htmlTheme === "light" || htmlTheme === "dark"
+          ? htmlTheme
         : window.matchMedia("(prefers-color-scheme: dark)").matches
           ? "dark"
           : "light";
@@ -42,6 +45,8 @@ export function ThemeToggle({ language }: { language: LanguageCode }) {
     applyVisualTheme(themeMode, colorTheme);
     localStorage.setItem(themeStorageKey, themeMode);
     localStorage.setItem(colorThemeStorageKey, colorTheme);
+    writeThemeCookie(themeStorageKey, themeMode);
+    writeThemeCookie(colorThemeStorageKey, colorTheme);
   }, [colorTheme, themeMode, themeReady]);
 
   useEffect(() => {
@@ -125,4 +130,8 @@ export function ThemeToggle({ language }: { language: LanguageCode }) {
       </button>
     </div>
   );
+}
+
+function writeThemeCookie(name: string, value: string) {
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=31536000; SameSite=Lax`;
 }

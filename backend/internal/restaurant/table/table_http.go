@@ -61,7 +61,7 @@ func (h TableHttp) RegisterHttp() {
 // @Router /restaurant/table [post]
 func (h TableHttp) CreateTable(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.Table{}
@@ -72,7 +72,7 @@ func (h TableHttp) CreateTable(ctx microservice.IContext) error {
 		return err
 	}
 
-	idx, err := h.svc.CreateTable(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateTable(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -99,7 +99,7 @@ func (h TableHttp) CreateTable(ctx microservice.IContext) error {
 func (h TableHttp) UpdateTable(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -112,7 +112,7 @@ func (h TableHttp) UpdateTable(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.UpdateTable(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateTable(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -138,12 +138,12 @@ func (h TableHttp) UpdateTable(ctx microservice.IContext) error {
 // @Router /restaurant/table/{id} [delete]
 func (h TableHttp) DeleteTable(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteTable(shopID, id, authUsername)
+	err := h.svc.DeleteTable(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -169,7 +169,7 @@ func (h TableHttp) DeleteTable(ctx microservice.IContext) error {
 // @Router /restaurant/table [delete]
 func (h TableHttp) DeleteByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -182,7 +182,7 @@ func (h TableHttp) DeleteByGUIDs(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.DeleteByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -207,7 +207,7 @@ func (h TableHttp) DeleteByGUIDs(ctx microservice.IContext) error {
 // @Router /restaurant/table [delete]
 func (h TableHttp) DeleteTableByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -220,7 +220,7 @@ func (h TableHttp) DeleteTableByGUIDs(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.DeleteTableByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteTableByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -245,12 +245,12 @@ func (h TableHttp) DeleteTableByGUIDs(ctx microservice.IContext) error {
 // @Router /restaurant/table/{id} [get]
 func (h TableHttp) InfoTable(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get Table %v", id)
-	doc, err := h.svc.InfoTable(shopID, id)
+	doc, err := h.svc.InfoTable(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -279,7 +279,7 @@ func (h TableHttp) InfoTable(ctx microservice.IContext) error {
 // @Router /restaurant/table [get]
 func (h TableHttp) SearchTable(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -291,7 +291,7 @@ func (h TableHttp) SearchTable(ctx microservice.IContext) error {
 		},
 	})
 
-	docList, pagination, err := h.svc.SearchTable(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchTable(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -319,7 +319,7 @@ func (h TableHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -331,7 +331,7 @@ func (h TableHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())
@@ -361,7 +361,7 @@ func (h TableHttp) SaveBulk(ctx microservice.IContext) error {
 func (h TableHttp) SaveXOrder(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -378,7 +378,7 @@ func (h TableHttp) SaveXOrder(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.SaveXOrder(shopID, authUsername, req)
+	err = h.svc.SaveXOrder(holdingCode, authUsername, req)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

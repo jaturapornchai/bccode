@@ -8,10 +8,10 @@ import (
 )
 
 type IRFQTransactionPGRepository interface {
-	Get(shopID string, docNo string) (*models.RFQTransactionPG, error)
+	Get(holdingCode string, docNo string) (*models.RFQTransactionPG, error)
 	Create(doc models.RFQTransactionPG) error
-	Update(shopID string, docNo string, doc models.RFQTransactionPG) error
-	DeleteData(shopID string, docNo string, doc models.RFQTransactionPG) error
+	Update(holdingCode string, docNo string, doc models.RFQTransactionPG) error
+	DeleteData(holdingCode string, docNo string, doc models.RFQTransactionPG) error
 }
 
 type RFQTransactionPGRepository struct {
@@ -38,10 +38,10 @@ func (repo RFQTransactionPGRepository) Create(doc models.RFQTransactionPG) error
 	return nil
 }
 
-func (repo RFQTransactionPGRepository) Update(shopID string, docNo string, doc models.RFQTransactionPG) error {
+func (repo RFQTransactionPGRepository) Update(holdingCode string, docNo string, doc models.RFQTransactionPG) error {
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"shopid": shopID,
-		"docno":  docNo,
+		"holding_code": holdingCode,
+		"docno":        docNo,
 	})
 	if err != nil {
 		return err
@@ -49,11 +49,11 @@ func (repo RFQTransactionPGRepository) Update(shopID string, docNo string, doc m
 	return nil
 }
 
-func (repo *RFQTransactionPGRepository) DeleteData(shopID string, docNo string, doc models.RFQTransactionPG) error {
+func (repo *RFQTransactionPGRepository) DeleteData(holdingCode string, docNo string, doc models.RFQTransactionPG) error {
 	var details *[]models.RFQDetailTransactionPG
 	tx := repo.pst.DBClient().Begin()
 
-	tx.Model(&models.RFQDetailTransactionPG{}).Where(" shopid=? AND docno=?", shopID, docNo).Find(&details)
+	tx.Model(&models.RFQDetailTransactionPG{}).Where(" holding_code=? AND docno=?", holdingCode, docNo).Find(&details)
 	for _, tmp := range *details {
 		err := tx.Delete(&models.RFQDetailTransactionPG{}, tmp.ID).Error
 		if err != nil {
@@ -63,8 +63,8 @@ func (repo *RFQTransactionPGRepository) DeleteData(shopID string, docNo string, 
 	}
 
 	err := tx.Delete(models.RFQTransactionPG{}, map[string]interface{}{
-		"shopid": shopID,
-		"docno":  docNo,
+		"holding_code": holdingCode,
+		"docno":        docNo,
 	}).Error
 	if err != nil {
 		tx.Rollback()

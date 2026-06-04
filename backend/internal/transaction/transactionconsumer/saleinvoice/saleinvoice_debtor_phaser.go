@@ -19,8 +19,8 @@ func (p SaleInvoiceDebtorTransactionPhaser) PhaseSingleDoc(doc models.SaleInvoic
 
 func (p SaleInvoiceDebtorTransactionPhaser) PhaseSaleInvoiceDebtorDoc(doc models.SaleInvoiceTransactionPG) (*models.DebtorTransactionPG, error) {
 	transaction := models.DebtorTransactionPG{
-		ShopIdentity: pkgModels.ShopIdentity{
-			ShopID: doc.ShopID,
+		HoldingCodeentity: pkgModels.HoldingCodeentity{
+			HoldingCode: doc.HoldingCode,
 		},
 		GuidFixed:      doc.GuidFixed,
 		DocNo:          doc.DocNo,

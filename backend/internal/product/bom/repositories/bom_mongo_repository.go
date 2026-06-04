@@ -13,26 +13,26 @@ import (
 )
 
 type IBomRepository interface {
-	Count(ctx context.Context, shopID string) (int, error)
+	Count(ctx context.Context, holdingCode string) (int, error)
 	Create(ctx context.Context, doc models.ProductBarcodeBOMViewDoc) (string, error)
 	CreateInBatch(ctx context.Context, docList []models.ProductBarcodeBOMViewDoc) error
-	Update(ctx context.Context, shopID string, guid string, doc models.ProductBarcodeBOMViewDoc) error
-	DeleteByGuidfixed(ctx context.Context, shopID string, guid string, username string) error
-	Delete(ctx context.Context, shopID string, username string, filters map[string]interface{}) error
-	FindPageFilter(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.ProductBarcodeBOMViewInfo, mongopagination.PaginationData, error)
-	FindByGuid(ctx context.Context, shopID string, guid string) (models.ProductBarcodeBOMViewDoc, error)
+	Update(ctx context.Context, holdingCode string, guid string, doc models.ProductBarcodeBOMViewDoc) error
+	DeleteByGuidfixed(ctx context.Context, holdingCode string, guid string, username string) error
+	Delete(ctx context.Context, holdingCode string, username string, filters map[string]interface{}) error
+	FindPageFilter(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.ProductBarcodeBOMViewInfo, mongopagination.PaginationData, error)
+	FindByGuid(ctx context.Context, holdingCode string, guid string) (models.ProductBarcodeBOMViewDoc, error)
 
-	FindInItemGuid(ctx context.Context, shopID string, columnName string, itemGuidList []string) ([]models.ProductBarcodeBOMViewGuid, error)
-	FindByDocIndentityGuid(ctx context.Context, shopID string, indentityField string, indentityValue interface{}) (models.ProductBarcodeBOMViewDoc, error)
-	FindStep(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, selectFields map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ProductBarcodeBOMViewInfo, int, error)
+	FindInItemGuid(ctx context.Context, holdingCode string, columnName string, itemGuidList []string) ([]models.ProductBarcodeBOMViewGuid, error)
+	FindByDocIndentityGuid(ctx context.Context, holdingCode string, indentityField string, indentityValue interface{}) (models.ProductBarcodeBOMViewDoc, error)
+	FindStep(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, selectFields map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ProductBarcodeBOMViewInfo, int, error)
 
-	FindDeletedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageable micromodels.Pageable) ([]models.ProductBarcodeBOMViewDeleteActivity, mongopagination.PaginationData, error)
-	FindCreatedOrUpdatedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageable micromodels.Pageable) ([]models.ProductBarcodeBOMViewActivity, mongopagination.PaginationData, error)
-	FindDeletedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ProductBarcodeBOMViewDeleteActivity, error)
-	FindCreatedOrUpdatedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ProductBarcodeBOMViewActivity, error)
+	FindDeletedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageable micromodels.Pageable) ([]models.ProductBarcodeBOMViewDeleteActivity, mongopagination.PaginationData, error)
+	FindCreatedOrUpdatedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageable micromodels.Pageable) ([]models.ProductBarcodeBOMViewActivity, mongopagination.PaginationData, error)
+	FindDeletedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ProductBarcodeBOMViewDeleteActivity, error)
+	FindCreatedOrUpdatedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ProductBarcodeBOMViewActivity, error)
 
-	FindUseBOMByBarcode(ctx context.Context, shopID string, barcode string) (models.ProductBarcodeBOMViewDoc, error)
-	ClearUseBOMByBarcode(ctx context.Context, shopID string, barcode string) error
+	FindUseBOMByBarcode(ctx context.Context, holdingCode string, barcode string) (models.ProductBarcodeBOMViewDoc, error)
+	ClearUseBOMByBarcode(ctx context.Context, holdingCode string, barcode string) error
 }
 
 type BomRepository struct {
@@ -57,13 +57,13 @@ func NewBomRepository(pst microservice.IPersisterMongo) *BomRepository {
 	return insRepo
 }
 
-func (repo BomRepository) FindUseBOMByBarcode(ctx context.Context, shopID string, barcode string) (models.ProductBarcodeBOMViewDoc, error) {
+func (repo BomRepository) FindUseBOMByBarcode(ctx context.Context, holdingCode string, barcode string) (models.ProductBarcodeBOMViewDoc, error) {
 
 	filters := bson.M{
-		"shopid":       shopID,
+		"holding_code": holdingCode,
 		"iscurrentuse": true,
 		"barcode":      barcode,
-		"deleted_at":    bson.M{"$exists": false},
+		"deleted_at":   bson.M{"$exists": false},
 	}
 
 	doc := models.ProductBarcodeBOMViewDoc{}
@@ -82,13 +82,13 @@ func (repo BomRepository) FindUseBOMByBarcode(ctx context.Context, shopID string
 	return doc, nil
 }
 
-func (repo BomRepository) ClearUseBOMByBarcode(ctx context.Context, shopID string, barcode string) error {
+func (repo BomRepository) ClearUseBOMByBarcode(ctx context.Context, holdingCode string, barcode string) error {
 
 	filters := bson.M{
-		"shopid":       shopID,
+		"holding_code": holdingCode,
 		"barcode":      barcode,
 		"iscurrentuse": true,
-		"deleted_at":    bson.M{"$exists": false},
+		"deleted_at":   bson.M{"$exists": false},
 	}
 
 	err := repo.pst.Update(ctx, models.ProductBarcodeBOMViewDoc{}, filters, bson.M{"$set": bson.M{"iscurrentuse": false}})

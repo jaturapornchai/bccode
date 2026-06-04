@@ -19,7 +19,7 @@ type IStockCalculator interface {
 }
 
 type StockCalculator struct {
-	ShopID        string
+	HoldingCode   string
 	Barcode       string
 	AmountDigit   int8
 	balanceQty    float64
@@ -27,7 +27,7 @@ type StockCalculator struct {
 	averageCost   float64
 }
 
-func NewStockCalculator(shopID string, barcode string, amountDigit int8, balanceQtyFirst float64, balanceAmountFirst float64) IStockCalculator {
+func NewStockCalculator(holdingCode string, barcode string, amountDigit int8, balanceQtyFirst float64, balanceAmountFirst float64) IStockCalculator {
 
 	if amountDigit <= 0 {
 		amountDigit = 2
@@ -39,7 +39,7 @@ func NewStockCalculator(shopID string, barcode string, amountDigit int8, balance
 	}
 
 	return &StockCalculator{
-		ShopID:        shopID,
+		HoldingCode:   holdingCode,
 		Barcode:       barcode,
 		AmountDigit:   amountDigit,
 		balanceQty:    balanceQtyFirst,

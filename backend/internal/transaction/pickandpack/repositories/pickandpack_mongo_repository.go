@@ -14,28 +14,28 @@ import (
 )
 
 type IPickandpackRepository interface {
-	Count(ctx context.Context, shopID string) (int, error)
+	Count(ctx context.Context, holdingCode string) (int, error)
 	Create(ctx context.Context, doc models.PickandpackDoc) (string, error)
 	CreateInBatch(ctx context.Context, docList []models.PickandpackDoc) error
-	Update(ctx context.Context, shopID string, guid string, doc models.PickandpackDoc) error
-	DeleteByGuidfixed(ctx context.Context, shopID string, guid string, username string) error
-	Delete(ctx context.Context, shopID string, username string, filters map[string]interface{}) error
-	FindPage(ctx context.Context, shopID string, searchInFields []string, pageable micromodels.Pageable) ([]models.PickandpackInfo, mongopagination.PaginationData, error)
-	FindByGuid(ctx context.Context, shopID string, guid string) (models.PickandpackDoc, error)
-	FindByGuids(ctx context.Context, shopID string, guids []string) ([]models.PickandpackDoc, error)
+	Update(ctx context.Context, holdingCode string, guid string, doc models.PickandpackDoc) error
+	DeleteByGuidfixed(ctx context.Context, holdingCode string, guid string, username string) error
+	Delete(ctx context.Context, holdingCode string, username string, filters map[string]interface{}) error
+	FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable micromodels.Pageable) ([]models.PickandpackInfo, mongopagination.PaginationData, error)
+	FindByGuid(ctx context.Context, holdingCode string, guid string) (models.PickandpackDoc, error)
+	FindByGuids(ctx context.Context, holdingCode string, guids []string) ([]models.PickandpackDoc, error)
 
-	FindInItemGuid(ctx context.Context, shopID string, columnName string, itemGuidList []string) ([]models.PickandpackItemGuid, error)
-	FindByDocIndentityGuid(ctx context.Context, shopID string, indentityField string, indentityValue interface{}) (models.PickandpackDoc, error)
-	FindPageFilter(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.PickandpackInfo, mongopagination.PaginationData, error)
-	FindStep(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableLimit micromodels.PageableStep) ([]models.PickandpackInfo, int, error)
+	FindInItemGuid(ctx context.Context, holdingCode string, columnName string, itemGuidList []string) ([]models.PickandpackItemGuid, error)
+	FindByDocIndentityGuid(ctx context.Context, holdingCode string, indentityField string, indentityValue interface{}) (models.PickandpackDoc, error)
+	FindPageFilter(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.PickandpackInfo, mongopagination.PaginationData, error)
+	FindStep(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableLimit micromodels.PageableStep) ([]models.PickandpackInfo, int, error)
 
-	FindDeletedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.PickandpackDeleteActivity, mongopagination.PaginationData, error)
-	FindCreatedOrUpdatedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.PickandpackActivity, mongopagination.PaginationData, error)
-	FindDeletedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.PickandpackDeleteActivity, error)
-	FindCreatedOrUpdatedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.PickandpackActivity, error)
+	FindDeletedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.PickandpackDeleteActivity, mongopagination.PaginationData, error)
+	FindCreatedOrUpdatedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.PickandpackActivity, mongopagination.PaginationData, error)
+	FindDeletedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.PickandpackDeleteActivity, error)
+	FindCreatedOrUpdatedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.PickandpackActivity, error)
 
-	FindLastDocNo(ctx context.Context, shopID string, prefixDocNo string) (models.PickandpackDoc, error)
-	AggregateWarehouseDashboard(ctx context.Context, shopID string, whcodes []string, locationcodes []string, fromDate, toDate string) ([]models.PickandpackWarehouseDashboard, error)
+	FindLastDocNo(ctx context.Context, holdingCode string, prefixDocNo string) (models.PickandpackDoc, error)
+	AggregateWarehouseDashboard(ctx context.Context, holdingCode string, whcodes []string, locationcodes []string, fromDate, toDate string) ([]models.PickandpackWarehouseDashboard, error)
 }
 
 type PickandpackRepository struct {
@@ -59,9 +59,9 @@ func NewPickandpackRepository(pst microservice.IPersisterMongo) *PickandpackRepo
 
 	return insRepo
 }
-func (repo PickandpackRepository) FindLastDocNo(ctx context.Context, shopID string, prefixDocNo string) (models.PickandpackDoc, error) {
+func (repo PickandpackRepository) FindLastDocNo(ctx context.Context, holdingCode string, prefixDocNo string) (models.PickandpackDoc, error) {
 	filters := bson.M{
-		"shopid": shopID,
+		"holding_code": holdingCode,
 		"deleted_at": bson.M{
 			"$exists": false,
 		},
@@ -86,11 +86,11 @@ func (repo PickandpackRepository) FindLastDocNo(ctx context.Context, shopID stri
 }
 
 // AggregateWarehouseDashboard aggregates warehouse dashboard data
-func (repo PickandpackRepository) AggregateWarehouseDashboard(ctx context.Context, shopID string, whcodes []string, locationcodes []string, fromDate, toDate string) ([]models.PickandpackWarehouseDashboard, error) {
+func (repo PickandpackRepository) AggregateWarehouseDashboard(ctx context.Context, holdingCode string, whcodes []string, locationcodes []string, fromDate, toDate string) ([]models.PickandpackWarehouseDashboard, error) {
 	// Build filter query
 	filterQuery := bson.M{
-		"shopid":   shopID,
-		"iscancel": false,
+		"holding_code": holdingCode,
+		"iscancel":     false,
 	}
 
 	// Add date range filter if provided

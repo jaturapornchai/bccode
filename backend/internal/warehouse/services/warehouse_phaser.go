@@ -48,7 +48,7 @@ func (c *WarehousePhaser) PhaseWarehouseDoc(doc models.WarehouseDoc) (*models.Wa
 
 	dataDoc := models.WarehousePG{}
 
-	dataDoc.ShopID = doc.ShopID
+	dataDoc.HoldingCode = doc.HoldingCode
 	dataDoc.GuidFixed = doc.GuidFixed
 	dataDoc.Code = doc.Code
 	dataDoc.Names = *doc.Names

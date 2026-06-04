@@ -13,7 +13,7 @@ Split the single Marketplace configuration tab out of the product edit form, and
   - `Lazada Mappings` -> `/marketplace/lazada`
   - `TikTok Mappings` -> `/marketplace/tiktok`
 - Implemented `MarketplaceMappingsScreen` in `frontend/src/app/menu/marketplace-screen.tsx` which accepts a `platform` prop and displays:
-  - **Connections**: Manage active shop ID bindings for the specific platform.
+  - **Connections**: Manage active holding Code bindings for the specific platform.
   - **Mappings**: View all system product barcodes, customize mapping details (Seller SKU, Market Variant/Model ID), and perform Client-side Bulk Imports by dropping a CSV file or copying-pasting Excel columns directly.
   - **Logs**: Simulated platform sync logs to be replaced with real API database logs.
 - Integrated the route matching in `WorkTabPanel` of `frontend/src/app/menu/main-menu-screen.tsx`.
@@ -34,7 +34,7 @@ Currently, mappings are submitted via `updateBarcode` API. When Codex designs th
 ```json
 {
   "platform": "shopee",
-  "shop_id": "shop_01",
+  "holding_code": "shop_01",
   "mappings": [
     {
       "barcode": "8850123456789",

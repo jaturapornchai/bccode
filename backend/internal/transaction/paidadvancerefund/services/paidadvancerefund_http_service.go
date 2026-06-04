@@ -22,15 +22,15 @@ import (
 )
 
 type IPaidAdvanceRefundHttpService interface {
-	CreatePaidAdvanceRefund(shopID string, authUsername string, doc models.PaidAdvanceRefund) (string, string, error)
-	UpdatePaidAdvanceRefund(shopID string, guid string, authUsername string, doc models.PaidAdvanceRefund) error
-	DeletePaidAdvanceRefund(shopID string, guid string, authUsername string) error
-	DeletePaidAdvanceRefundByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoPaidAdvanceRefund(shopID string, guid string) (models.PaidAdvanceRefundInfo, error)
-	InfoPaidAdvanceRefundByCode(shopID string, code string) (models.PaidAdvanceRefundInfo, error)
-	SearchPaidAdvanceRefund(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.PaidAdvanceRefundInfo, mongopagination.PaginationData, error)
-	SearchPaidAdvanceRefundStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.PaidAdvanceRefundInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.PaidAdvanceRefund) (common.BulkImport, error)
+	CreatePaidAdvanceRefund(holdingCode string, authUsername string, doc models.PaidAdvanceRefund) (string, string, error)
+	UpdatePaidAdvanceRefund(holdingCode string, guid string, authUsername string, doc models.PaidAdvanceRefund) error
+	DeletePaidAdvanceRefund(holdingCode string, guid string, authUsername string) error
+	DeletePaidAdvanceRefundByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoPaidAdvanceRefund(holdingCode string, guid string) (models.PaidAdvanceRefundInfo, error)
+	InfoPaidAdvanceRefundByCode(holdingCode string, code string) (models.PaidAdvanceRefundInfo, error)
+	SearchPaidAdvanceRefund(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.PaidAdvanceRefundInfo, mongopagination.PaginationData, error)
+	SearchPaidAdvanceRefundStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.PaidAdvanceRefundInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.PaidAdvanceRefund) (common.BulkImport, error)
 
 	GetModuleName() string
 }
@@ -81,11 +81,11 @@ func (svc PaidAdvanceRefundHttpService) getDocNoPrefix(docDate time.Time) string
 	return fmt.Sprintf("%s%s", MODULE_NAME, docDateStr)
 }
 
-func (svc PaidAdvanceRefundHttpService) generateNewDocNo(ctx context.Context, shopID, prefixDocNo string, docNumber int) (string, int, error) {
-	prevoiusDocNumber, err := svc.repoCache.Get(shopID, prefixDocNo)
+func (svc PaidAdvanceRefundHttpService) generateNewDocNo(ctx context.Context, holdingCode, prefixDocNo string, docNumber int) (string, int, error) {
+	prevoiusDocNumber, err := svc.repoCache.Get(holdingCode, prefixDocNo)
 
 	if prevoiusDocNumber == 0 || err != nil {
-		lastDoc, err := svc.repo.FindLastDocNo(ctx, shopID, prefixDocNo)
+		lastDoc, err := svc.repo.FindLastDocNo(ctx, holdingCode, prefixDocNo)
 
 		if err != nil {
 			return "", 0, err
@@ -105,7 +105,7 @@ func (svc PaidAdvanceRefundHttpService) generateNewDocNo(ctx context.Context, sh
 	newDocNumber := prevoiusDocNumber + 1
 	newDocNo := fmt.Sprintf("%s%05d", prefixDocNo, newDocNumber)
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", newDocNo)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", newDocNo)
 
 	if err != nil {
 		return "", 0, err
@@ -118,7 +118,7 @@ func (svc PaidAdvanceRefundHttpService) generateNewDocNo(ctx context.Context, sh
 	return newDocNo, newDocNumber, nil
 }
 
-func (svc PaidAdvanceRefundHttpService) CreatePaidAdvanceRefund(shopID string, authUsername string, doc models.PaidAdvanceRefund) (string, string, error) {
+func (svc PaidAdvanceRefundHttpService) CreatePaidAdvanceRefund(holdingCode string, authUsername string, doc models.PaidAdvanceRefund) (string, string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -126,7 +126,7 @@ func (svc PaidAdvanceRefundHttpService) CreatePaidAdvanceRefund(shopID string, a
 	docDate := doc.DocDatetime
 	prefixDocNo := svc.getDocNoPrefix(docDate)
 
-	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, shopID, prefixDocNo, 1)
+	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, holdingCode, prefixDocNo, 1)
 
 	if err != nil {
 		return "", "", err
@@ -135,7 +135,7 @@ func (svc PaidAdvanceRefundHttpService) CreatePaidAdvanceRefund(shopID string, a
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.PaidAdvanceRefundDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.PaidAdvanceRefund = doc
 
@@ -149,23 +149,23 @@ func (svc PaidAdvanceRefundHttpService) CreatePaidAdvanceRefund(shopID string, a
 		return "", "", err
 	}
 
-	go svc.repoCache.Save(shopID, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
+	go svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
 
 	go func() {
 		svc.repoMq.Create(docData)
-		svc.repoCache.Save(shopID, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
-		svc.saveMasterSync(shopID)
+		svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return newGuidFixed, newDocNo, nil
 }
 
-func (svc PaidAdvanceRefundHttpService) UpdatePaidAdvanceRefund(shopID string, guid string, authUsername string, doc models.PaidAdvanceRefund) error {
+func (svc PaidAdvanceRefundHttpService) UpdatePaidAdvanceRefund(holdingCode string, guid string, authUsername string, doc models.PaidAdvanceRefund) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -182,7 +182,7 @@ func (svc PaidAdvanceRefundHttpService) UpdatePaidAdvanceRefund(shopID string, g
 	docData.UpdatedBy = authUsername
 	docData.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, docData)
+	err = svc.repo.Update(ctx, holdingCode, guid, docData)
 
 	if err != nil {
 		return err
@@ -190,18 +190,18 @@ func (svc PaidAdvanceRefundHttpService) UpdatePaidAdvanceRefund(shopID string, g
 
 	func() {
 		svc.repoMq.Update(docData)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc PaidAdvanceRefundHttpService) DeletePaidAdvanceRefund(shopID string, guid string, authUsername string) error {
+func (svc PaidAdvanceRefundHttpService) DeletePaidAdvanceRefund(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -211,20 +211,20 @@ func (svc PaidAdvanceRefundHttpService) DeletePaidAdvanceRefund(shopID string, g
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
 	func() {
 		svc.repoMq.Delete(findDoc)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc PaidAdvanceRefundHttpService) DeletePaidAdvanceRefundByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc PaidAdvanceRefundHttpService) DeletePaidAdvanceRefundByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -233,26 +233,26 @@ func (svc PaidAdvanceRefundHttpService) DeletePaidAdvanceRefundByGUIDs(shopID st
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
 
 	func() {
-		docs, _ := svc.repo.FindByGuids(ctx, shopID, GUIDs)
+		docs, _ := svc.repo.FindByGuids(ctx, holdingCode, GUIDs)
 		svc.repoMq.DeleteInBatch(docs)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc PaidAdvanceRefundHttpService) InfoPaidAdvanceRefund(shopID string, guid string) (models.PaidAdvanceRefundInfo, error) {
+func (svc PaidAdvanceRefundHttpService) InfoPaidAdvanceRefund(holdingCode string, guid string) (models.PaidAdvanceRefundInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.PaidAdvanceRefundInfo{}, err
@@ -265,12 +265,12 @@ func (svc PaidAdvanceRefundHttpService) InfoPaidAdvanceRefund(shopID string, gui
 	return findDoc.PaidAdvanceRefundInfo, nil
 }
 
-func (svc PaidAdvanceRefundHttpService) InfoPaidAdvanceRefundByCode(shopID string, code string) (models.PaidAdvanceRefundInfo, error) {
+func (svc PaidAdvanceRefundHttpService) InfoPaidAdvanceRefundByCode(holdingCode string, code string) (models.PaidAdvanceRefundInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", code)
 
 	if err != nil {
 		return models.PaidAdvanceRefundInfo{}, err
@@ -283,7 +283,7 @@ func (svc PaidAdvanceRefundHttpService) InfoPaidAdvanceRefundByCode(shopID strin
 	return findDoc.PaidAdvanceRefundInfo, nil
 }
 
-func (svc PaidAdvanceRefundHttpService) SearchPaidAdvanceRefund(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.PaidAdvanceRefundInfo, mongopagination.PaginationData, error) {
+func (svc PaidAdvanceRefundHttpService) SearchPaidAdvanceRefund(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.PaidAdvanceRefundInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -292,7 +292,7 @@ func (svc PaidAdvanceRefundHttpService) SearchPaidAdvanceRefund(shopID string, f
 		"docno",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.PaidAdvanceRefundInfo{}, pagination, err
@@ -301,7 +301,7 @@ func (svc PaidAdvanceRefundHttpService) SearchPaidAdvanceRefund(shopID string, f
 	return docList, pagination, nil
 }
 
-func (svc PaidAdvanceRefundHttpService) SearchPaidAdvanceRefundStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.PaidAdvanceRefundInfo, int, error) {
+func (svc PaidAdvanceRefundHttpService) SearchPaidAdvanceRefundStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.PaidAdvanceRefundInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -312,7 +312,7 @@ func (svc PaidAdvanceRefundHttpService) SearchPaidAdvanceRefundStep(shopID strin
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.PaidAdvanceRefundInfo{}, 0, err
@@ -321,7 +321,7 @@ func (svc PaidAdvanceRefundHttpService) SearchPaidAdvanceRefundStep(shopID strin
 	return docList, total, nil
 }
 
-func (svc PaidAdvanceRefundHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.PaidAdvanceRefund) (common.BulkImport, error) {
+func (svc PaidAdvanceRefundHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.PaidAdvanceRefund) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -333,7 +333,7 @@ func (svc PaidAdvanceRefundHttpService) SaveInBatch(shopID string, authUsername 
 		itemCodeGuidList = append(itemCodeGuidList, doc.DocNo)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "docno", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "docno", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -345,18 +345,18 @@ func (svc PaidAdvanceRefundHttpService) SaveInBatch(shopID string, authUsername 
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.PaidAdvanceRefund, models.PaidAdvanceRefundDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.PaidAdvanceRefund) models.PaidAdvanceRefundDoc {
+		func(holdingCode string, authUsername string, doc models.PaidAdvanceRefund) models.PaidAdvanceRefundDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.PaidAdvanceRefundDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.PaidAdvanceRefund = doc
 
 			currentTime := time.Now()
@@ -367,23 +367,23 @@ func (svc PaidAdvanceRefundHttpService) SaveInBatch(shopID string, authUsername 
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.PaidAdvanceRefund, models.PaidAdvanceRefundDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.PaidAdvanceRefundDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", guid)
+		func(holdingCode string, guid string) (models.PaidAdvanceRefundDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", guid)
 		},
 		func(doc models.PaidAdvanceRefundDoc) bool {
 			return doc.DocNo != ""
 		},
-		func(shopID string, authUsername string, data models.PaidAdvanceRefund, doc models.PaidAdvanceRefundDoc) error {
+		func(holdingCode string, authUsername string, data models.PaidAdvanceRefund, doc models.PaidAdvanceRefundDoc) error {
 
 			doc.PaidAdvanceRefund = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -422,7 +422,7 @@ func (svc PaidAdvanceRefundHttpService) SaveInBatch(shopID string, authUsername 
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -436,9 +436,9 @@ func (svc PaidAdvanceRefundHttpService) getDocIDKey(doc models.PaidAdvanceRefund
 	return doc.DocNo
 }
 
-func (svc PaidAdvanceRefundHttpService) saveMasterSync(shopID string) {
+func (svc PaidAdvanceRefundHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

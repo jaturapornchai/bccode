@@ -9,14 +9,14 @@ import (
 
 // GetCustomerData retrieves customer/debtor information from legacy PostgreSQL projections.
 // MongoDB remains the operational source of truth for debtor/creditor CRUD.
-func GetCustomerData(ctx context.Context, shopID string) ([]StockData, error) {
-	db, err := mydb.GetGlobalConnectionFromPool(shopID)
+func GetCustomerData(ctx context.Context, holdingCode string) ([]StockData, error) {
+	db, err := mydb.GetGlobalConnectionFromPool(holdingCode)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database connection: %w", err)
 	}
 
 	query := `
-		SELECT 
+		SELECT
 			code as product_code,
 			name0 as product_name,
 			COALESCE(phone, '') as barcode_list,
@@ -24,10 +24,10 @@ func GetCustomerData(ctx context.Context, shopID string) ([]StockData, error) {
 			COALESCE(creditlimit::text, '0') as stock_qty
 		FROM customer
 		WHERE code IS NOT NULL
-		
+
 		UNION ALL
-		
-		SELECT 
+
+		SELECT
 			code as product_code,
 			name0 as product_name,
 			COALESCE(phone, '') as barcode_list,
@@ -35,7 +35,7 @@ func GetCustomerData(ctx context.Context, shopID string) ([]StockData, error) {
 			COALESCE(creditlimit::text, '0') as stock_qty
 		FROM debtor
 		WHERE code IS NOT NULL
-		
+
 		ORDER BY product_code
 	`
 
@@ -65,6 +65,6 @@ func GetCustomerData(ctx context.Context, shopID string) ([]StockData, error) {
 		return nil, fmt.Errorf("error iterating customer rows: %w", err)
 	}
 
-	logger.Info("Retrieved %d customer/debtor items for shop %s", len(customerData), shopID)
+	logger.Info("Retrieved %d customer/debtor items for shop %s", len(customerData), holdingCode)
 	return customerData, nil
 }

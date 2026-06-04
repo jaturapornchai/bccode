@@ -8,8 +8,8 @@ import (
 )
 
 type IStockAdjustmentTransactionAdminService interface {
-	ReSyncStockAdjustmentDoc(shopID string) error
-	ReSyncStockAdjustmentDeleteDoc(shopID string) error
+	ReSyncStockAdjustmentDoc(holdingCode string) error
+	ReSyncStockAdjustmentDeleteDoc(holdingCode string) error
 }
 
 type StockAdjustmentTransactionAdminService struct {
@@ -30,12 +30,12 @@ func NewStockAdjustmentTransactionAdminService(pst microservice.IPersisterMongo,
 	}
 }
 
-func (s *StockAdjustmentTransactionAdminService) ReSyncStockAdjustmentDoc(shopID string) error {
+func (s *StockAdjustmentTransactionAdminService) ReSyncStockAdjustmentDoc(holdingCode string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeoutDuration)
 	defer cancel()
 
-	docs, err := s.mongoRepo.FindStockAdjustmentDocByShopID(ctx, shopID)
+	docs, err := s.mongoRepo.FindStockAdjustmentDocByHoldingCode(ctx, holdingCode)
 	if err != nil {
 		return err
 	}
@@ -48,12 +48,12 @@ func (s *StockAdjustmentTransactionAdminService) ReSyncStockAdjustmentDoc(shopID
 
 }
 
-func (s *StockAdjustmentTransactionAdminService) ReSyncStockAdjustmentDeleteDoc(shopID string) error {
+func (s *StockAdjustmentTransactionAdminService) ReSyncStockAdjustmentDeleteDoc(holdingCode string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeoutDuration)
 	defer cancel()
 
-	docs, err := s.mongoRepo.FindStockAdjustmentDocDeleteByShopID(ctx, shopID)
+	docs, err := s.mongoRepo.FindStockAdjustmentDocDeleteByHoldingCode(ctx, holdingCode)
 
 	if err != nil {
 		return err

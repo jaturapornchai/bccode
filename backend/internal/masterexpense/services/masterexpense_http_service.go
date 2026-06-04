@@ -19,15 +19,15 @@ import (
 )
 
 type IMasterExpenseHttpService interface {
-	CreateMasterExpense(shopID string, authUsername string, doc models.MasterExpense) (string, error)
-	UpdateMasterExpense(shopID string, guid string, authUsername string, doc models.MasterExpense) error
-	DeleteMasterExpense(shopID string, guid string, authUsername string) error
-	DeleteMasterExpenseByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoMasterExpense(shopID string, guid string) (models.MasterExpenseInfo, error)
-	InfoMasterExpenseByCode(shopID string, code string) (models.MasterExpenseInfo, error)
-	SearchMasterExpense(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.MasterExpenseInfo, mongopagination.PaginationData, error)
-	SearchMasterExpenseStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.MasterExpenseInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.MasterExpense) (common.BulkImport, error)
+	CreateMasterExpense(holdingCode string, authUsername string, doc models.MasterExpense) (string, error)
+	UpdateMasterExpense(holdingCode string, guid string, authUsername string, doc models.MasterExpense) error
+	DeleteMasterExpense(holdingCode string, guid string, authUsername string) error
+	DeleteMasterExpenseByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoMasterExpense(holdingCode string, guid string) (models.MasterExpenseInfo, error)
+	InfoMasterExpenseByCode(holdingCode string, code string) (models.MasterExpenseInfo, error)
+	SearchMasterExpense(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.MasterExpenseInfo, mongopagination.PaginationData, error)
+	SearchMasterExpenseStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.MasterExpenseInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.MasterExpense) (common.BulkImport, error)
 
 	GetModuleName() string
 }
@@ -63,12 +63,12 @@ func (svc MasterExpenseHttpService) getContextTimeout() (context.Context, contex
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc MasterExpenseHttpService) CreateMasterExpense(shopID string, authUsername string, doc models.MasterExpense) (string, error) {
+func (svc MasterExpenseHttpService) CreateMasterExpense(holdingCode string, authUsername string, doc models.MasterExpense) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	err := svc.existsCode(ctx, shopID, doc.Code)
+	err := svc.existsCode(ctx, holdingCode, doc.Code)
 
 	if err != nil {
 		return "", err
@@ -79,7 +79,7 @@ func (svc MasterExpenseHttpService) CreateMasterExpense(shopID string, authUsern
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.MasterExpenseDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.MasterExpense = doc
 
@@ -93,15 +93,15 @@ func (svc MasterExpenseHttpService) CreateMasterExpense(shopID string, authUsern
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
-		svc.cacheRepo.ClearCreatedCode(shopID, doc.Code)
+		svc.saveMasterSync(holdingCode)
+		svc.cacheRepo.ClearCreatedCode(holdingCode, doc.Code)
 	}()
 
 	return newGuidFixed, nil
 }
 
-func (svc MasterExpenseHttpService) existsCode(ctx context.Context, shopID string, code string) error {
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", code)
+func (svc MasterExpenseHttpService) existsCode(ctx context.Context, holdingCode string, code string) error {
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", code)
 
 	if err != nil {
 		return err
@@ -111,7 +111,7 @@ func (svc MasterExpenseHttpService) existsCode(ctx context.Context, shopID strin
 		return errors.New("code is exists")
 	}
 
-	createCodeSuccess, err := svc.cacheRepo.CreateCode(shopID, code, 15*time.Second)
+	createCodeSuccess, err := svc.cacheRepo.CreateCode(holdingCode, code, 15*time.Second)
 
 	if err != nil {
 		return errors.New("code is exists")
@@ -123,12 +123,12 @@ func (svc MasterExpenseHttpService) existsCode(ctx context.Context, shopID strin
 	return nil
 }
 
-func (svc MasterExpenseHttpService) UpdateMasterExpense(shopID string, guid string, authUsername string, doc models.MasterExpense) error {
+func (svc MasterExpenseHttpService) UpdateMasterExpense(holdingCode string, guid string, authUsername string, doc models.MasterExpense) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -145,25 +145,25 @@ func (svc MasterExpenseHttpService) UpdateMasterExpense(shopID string, guid stri
 	dataDoc.UpdatedBy = authUsername
 	dataDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, dataDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, dataDoc)
 
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc MasterExpenseHttpService) DeleteMasterExpense(shopID string, guid string, authUsername string) error {
+func (svc MasterExpenseHttpService) DeleteMasterExpense(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -173,19 +173,19 @@ func (svc MasterExpenseHttpService) DeleteMasterExpense(shopID string, guid stri
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc MasterExpenseHttpService) DeleteMasterExpenseByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc MasterExpenseHttpService) DeleteMasterExpenseByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -194,24 +194,24 @@ func (svc MasterExpenseHttpService) DeleteMasterExpenseByGUIDs(shopID string, au
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc MasterExpenseHttpService) InfoMasterExpense(shopID string, guid string) (models.MasterExpenseInfo, error) {
+func (svc MasterExpenseHttpService) InfoMasterExpense(holdingCode string, guid string) (models.MasterExpenseInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.MasterExpenseInfo{}, err
@@ -224,12 +224,12 @@ func (svc MasterExpenseHttpService) InfoMasterExpense(shopID string, guid string
 	return findDoc.MasterExpenseInfo, nil
 }
 
-func (svc MasterExpenseHttpService) InfoMasterExpenseByCode(shopID string, code string) (models.MasterExpenseInfo, error) {
+func (svc MasterExpenseHttpService) InfoMasterExpenseByCode(holdingCode string, code string) (models.MasterExpenseInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", code)
 
 	if err != nil {
 		return models.MasterExpenseInfo{}, err
@@ -242,7 +242,7 @@ func (svc MasterExpenseHttpService) InfoMasterExpenseByCode(shopID string, code 
 	return findDoc.MasterExpenseInfo, nil
 }
 
-func (svc MasterExpenseHttpService) SearchMasterExpense(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.MasterExpenseInfo, mongopagination.PaginationData, error) {
+func (svc MasterExpenseHttpService) SearchMasterExpense(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.MasterExpenseInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -251,7 +251,7 @@ func (svc MasterExpenseHttpService) SearchMasterExpense(shopID string, filters m
 		"code",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.MasterExpenseInfo{}, pagination, err
@@ -260,7 +260,7 @@ func (svc MasterExpenseHttpService) SearchMasterExpense(shopID string, filters m
 	return docList, pagination, nil
 }
 
-func (svc MasterExpenseHttpService) SearchMasterExpenseStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.MasterExpenseInfo, int, error) {
+func (svc MasterExpenseHttpService) SearchMasterExpenseStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.MasterExpenseInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -279,7 +279,7 @@ func (svc MasterExpenseHttpService) SearchMasterExpenseStep(shopID string, langC
 		}
 	*/
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.MasterExpenseInfo{}, 0, err
@@ -288,7 +288,7 @@ func (svc MasterExpenseHttpService) SearchMasterExpenseStep(shopID string, langC
 	return docList, total, nil
 }
 
-func (svc MasterExpenseHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.MasterExpense) (common.BulkImport, error) {
+func (svc MasterExpenseHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.MasterExpense) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -300,7 +300,7 @@ func (svc MasterExpenseHttpService) SaveInBatch(shopID string, authUsername stri
 		itemCodeGuidList = append(itemCodeGuidList, doc.Code)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "code", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "code", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -312,18 +312,18 @@ func (svc MasterExpenseHttpService) SaveInBatch(shopID string, authUsername stri
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.MasterExpense, models.MasterExpenseDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.MasterExpense) models.MasterExpenseDoc {
+		func(holdingCode string, authUsername string, doc models.MasterExpense) models.MasterExpenseDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.MasterExpenseDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.MasterExpense = doc
 
 			currentTime := time.Now()
@@ -334,23 +334,23 @@ func (svc MasterExpenseHttpService) SaveInBatch(shopID string, authUsername stri
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.MasterExpense, models.MasterExpenseDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.MasterExpenseDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", guid)
+		func(holdingCode string, guid string) (models.MasterExpenseDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", guid)
 		},
 		func(doc models.MasterExpenseDoc) bool {
 			return doc.Code != ""
 		},
-		func(shopID string, authUsername string, data models.MasterExpense, doc models.MasterExpenseDoc) error {
+		func(holdingCode string, authUsername string, data models.MasterExpense, doc models.MasterExpenseDoc) error {
 
 			doc.MasterExpense = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -389,7 +389,7 @@ func (svc MasterExpenseHttpService) SaveInBatch(shopID string, authUsername stri
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -403,9 +403,9 @@ func (svc MasterExpenseHttpService) getDocIDKey(doc models.MasterExpense) string
 	return doc.Code
 }
 
-func (svc MasterExpenseHttpService) saveMasterSync(shopID string) {
+func (svc MasterExpenseHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

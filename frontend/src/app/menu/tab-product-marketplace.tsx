@@ -149,7 +149,7 @@ export function TabProductMarketplace({
     const delimiter = firstLine.includes("\t") ? "\t" : (firstLine.includes(",") ? "," : ";");
     const headers = firstLine.split(delimiter).map(h => h.trim().toLowerCase());
 
-    const shopIdIdx = headers.findIndex(h => h.includes("shop") || h.includes("ร้านค้า") || h.includes("บัญชี"));
+    const holdingCodeIdx = headers.findIndex(h => h.includes("shop") || h.includes("ร้านค้า") || h.includes("บัญชี"));
     const marketItemIdIdx = headers.findIndex(h => h.includes("product_id") || h.includes("item_id") || h.includes("สินค้าบนเว็บ") || h.includes("market_item_id"));
     const sellerSkuIdx = headers.findIndex(h => h.includes("seller_sku") || h.includes("sku") || h.includes("รหัสคู่ค้า") || h.includes("sellersku"));
     const barcodeIdx = headers.findIndex(h => h.includes("barcode") || h.includes("บาร์โค้ด") || h.includes("รหัสบาร์โค้ด") || h.includes("บาร์โค๊ด"));
@@ -175,7 +175,7 @@ export function TabProductMarketplace({
       const row = lines[i].split(delimiter).map(v => v.trim());
       if (row.length === 0 || (row.length === 1 && !row[0])) continue;
 
-      const shopId = shopIdIdx !== -1 && row[shopIdIdx] ? row[shopIdIdx] : "shop_01";
+      const holdingCode = holdingCodeIdx !== -1 && row[holdingCodeIdx] ? row[holdingCodeIdx] : "shop_01";
       const marketItemId = marketItemIdIdx !== -1 && row[marketItemIdIdx] ? row[marketItemIdIdx] : "";
       const sellerSku = sellerSkuIdx !== -1 && row[sellerSkuIdx] ? row[sellerSkuIdx] : "";
       const barcodeValue = barcodeIdx !== -1 && row[barcodeIdx] ? row[barcodeIdx] : "";
@@ -197,14 +197,14 @@ export function TabProductMarketplace({
 
       const entry = nextRefBarcodes[matchedBarcodeIdx];
 
-      if (shopId && marketItemId) {
+      if (holdingCode && marketItemId) {
         const hasShopMap = nextProductMaps.some(
-          m => m.platform === platform && m.shop_id === shopId && m.market_item_id === marketItemId
+          m => m.platform === platform && m.holding_code === holdingCode && m.market_item_id === marketItemId
         );
         if (!hasShopMap) {
           nextProductMaps.push({
             ...emptyMarketplaceProductMap(platform),
-            shop_id: shopId,
+            holding_code: holdingCode,
             market_item_id: marketItemId,
             sync_status: "linked",
           });
@@ -212,13 +212,13 @@ export function TabProductMarketplace({
       }
 
       const mappings = entry.marketplace_sku_mappings || [];
-      const matchMapIdx = mappings.findIndex(m => m.platform === platform && m.shop_id === shopId);
+      const matchMapIdx = mappings.findIndex(m => m.platform === platform && m.holding_code === holdingCode);
       let nextMappings = [...mappings];
 
       const mappingData: MarketplaceSKUMap = {
         platform,
         account_id: "",
-        shop_id: shopId,
+        holding_code: holdingCode,
         market_item_id: marketItemId,
         market_model_id: marketModelId,
         seller_sku: sellerSku || entry.seller_sku || "",
@@ -248,7 +248,7 @@ export function TabProductMarketplace({
       };
 
       successCount++;
-      logs.push(`Row ${i + 1}: Mapped (Barcode: ${entry.barcode || "—"}, SKU: ${sellerSku || "—"} -> Shop: ${shopId})`);
+      logs.push(`Row ${i + 1}: Mapped (Barcode: ${entry.barcode || "—"}, SKU: ${sellerSku || "—"} -> Shop: ${holdingCode})`);
     }
 
     onChange((c) => {
@@ -333,16 +333,16 @@ export function TabProductMarketplace({
   }, [setRefBarcodes]);
 
   // Update specific SKU mapping
-  const handleSkuMapChange = useCallback((barcodeIdx: number, shopId: string, fields: Partial<MarketplaceSKUMap>) => {
+  const handleSkuMapChange = useCallback((barcodeIdx: number, holdingCode: string, fields: Partial<MarketplaceSKUMap>) => {
     const market_item_id = value.marketplace_products?.find(
-      (m) => m.platform === platform && m.shop_id === shopId
+      (m) => m.platform === platform && m.holding_code === holdingCode
     )?.market_item_id || "";
 
     setRefBarcodes((rows) =>
       rows.map((row, idx) => {
         if (idx !== barcodeIdx) return row;
         const mappings = row.marketplace_sku_mappings || [];
-        const matchIdx = mappings.findIndex(m => m.platform === platform && m.shop_id === shopId);
+        const matchIdx = mappings.findIndex(m => m.platform === platform && m.holding_code === holdingCode);
         let nextMappings = [...mappings];
         if (matchIdx >= 0) {
           nextMappings[matchIdx] = { ...nextMappings[matchIdx], ...fields };
@@ -350,7 +350,7 @@ export function TabProductMarketplace({
           nextMappings.push({
             platform,
             account_id: "",
-            shop_id: shopId,
+            holding_code: holdingCode,
             market_item_id: market_item_id,
             market_model_id: "",
             seller_sku: row.seller_sku || "",
@@ -467,7 +467,7 @@ export function TabProductMarketplace({
               <p className="font-semibold text-foreground">💡 วิธีการใช้งาน:</p>
               <ul className="list-disc pl-4 space-y-0.5">
                 <li>เตรียมคอลัมน์ใน Excel/CSV อย่างน้อย: <code className="bg-muted px-1 py-0.5 rounded font-mono">Barcode</code> หรือ <code className="bg-muted px-1 py-0.5 rounded font-mono">Seller SKU</code> เพื่อใช้ระบุสินค้า</li>
-                <li>สามารถระบุข้อมูลที่จะจับคู่ด้วย: <code className="bg-muted px-1 py-0.5 rounded font-mono">Shop ID</code> (รหัสร้านค้า), <code className="bg-muted px-1 py-0.5 rounded font-mono">Market Product ID</code> (รหัสสินค้าบนเว็บ), และ <code className="bg-muted px-1 py-0.5 rounded font-mono">Market Variant ID</code> (รหัสย่อย)</li>
+                <li>สามารถระบุข้อมูลที่จะจับคู่ด้วย: <code className="bg-muted px-1 py-0.5 rounded font-mono">Holding Code</code> (รหัสร้านค้า), <code className="bg-muted px-1 py-0.5 rounded font-mono">Market Product ID</code> (รหัสสินค้าบนเว็บ), และ <code className="bg-muted px-1 py-0.5 rounded font-mono">Market Variant ID</code> (รหัสย่อย)</li>
                 <li>บันทึกเป็นไฟล์ CSV หรือคัดลอก (Copy) ตารางจาก Excel แล้ววางในช่องข้อความด้านล่างได้ทันที</li>
               </ul>
             </div>
@@ -495,7 +495,7 @@ export function TabProductMarketplace({
               </div>
 
               <textarea
-                placeholder="วางข้อมูลแถวที่นี่ (เช่น:&#10;Shop ID&#9;Barcode&#9;Seller SKU&#9;Market Product ID&#9;Market Variant ID&#10;shop_01&#9;8850123456789&#9;sku-red-01&#9;12345678&#9;98765432)"
+                placeholder="วางข้อมูลแถวที่นี่ (เช่น:&#10;Holding Code&#9;Barcode&#9;Seller SKU&#9;Market Product ID&#9;Market Variant ID&#10;shop_01&#9;8850123456789&#9;sku-red-01&#9;12345678&#9;98765432)"
                 value={importText}
                 onChange={(e) => setImportText(e.target.value)}
                 className="h-24 w-full rounded border border-input bg-background p-2 font-mono text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
@@ -562,11 +562,11 @@ export function TabProductMarketplace({
                 key={originalIdx}
                 className="grid grid-cols-1 items-end gap-3 rounded-md border border-border p-3 md:grid-cols-[1.5fr_1.5fr_1fr_40px]"
               >
-                <FieldRow label={`รหัสร้านค้า (Shop ID) #${mapIdx + 1}`} required>
+                <FieldRow label={`รหัสร้านค้า (Holding Code) #${mapIdx + 1}`} required>
                   <Input
                     placeholder="เช่น shop_shopee_01"
-                    value={item.shop_id || ""}
-                    onChange={(e) => updateShopMapping(originalIdx, { shop_id: e.target.value })}
+                    value={item.holding_code || ""}
+                    onChange={(e) => updateShopMapping(originalIdx, { holding_code: e.target.value })}
                   />
                 </FieldRow>
                 <FieldRow label={`รหัสสินค้าบนเว็บ (Marketplace Product ID)`} required>
@@ -604,19 +604,19 @@ export function TabProductMarketplace({
           </h4>
 
           {platformProductMaps.map(({ item }) => {
-            const shopId = item.shop_id;
-            if (!shopId) return null;
+            const holdingCode = item.holding_code;
+            if (!holdingCode) return null;
 
             return (
-              <Section key={shopId} title={`ร้านค้า: ${shopId}`}>
+              <Section key={holdingCode} title={`ร้านค้า: ${holdingCode}`}>
                 <div className="space-y-3">
                   {(value.refbarcodes || []).map((entry, barcodeIdx) => {
-                    // Find mapping for this platform and shop_id
+                    // Find mapping for this platform and holding_code
                     const mapping = entry.marketplace_sku_mappings?.find(
-                      (m) => m.platform === platform && m.shop_id === shopId
+                      (m) => m.platform === platform && m.holding_code === holdingCode
                     ) || {
                       platform,
-                      shop_id: shopId,
+                      holding_code: holdingCode,
                       market_item_id: item.market_item_id,
                       market_model_id: "",
                       sync_stock: true,
@@ -650,25 +650,25 @@ export function TabProductMarketplace({
                             <Input
                               placeholder="เช่น 55678912"
                               value={mapping.market_model_id || ""}
-                              onChange={(e) => handleSkuMapChange(barcodeIdx, shopId, { market_model_id: e.target.value })}
+                              onChange={(e) => handleSkuMapChange(barcodeIdx, holdingCode, { market_model_id: e.target.value })}
                             />
                           </FieldRow>
                           <FieldRow label="ราคาขายเฉพาะช่องทาง">
                             <NumberField
                               value={mapping.custom_price ?? 0}
-                              onChange={(n) => handleSkuMapChange(barcodeIdx, shopId, { custom_price: n })}
+                              onChange={(n) => handleSkuMapChange(barcodeIdx, holdingCode, { custom_price: n })}
                               min={0}
                             />
                           </FieldRow>
                           <div className="flex flex-col justify-end gap-2 pb-2">
                             <Toggle
                               checked={mapping.sync_stock ?? true}
-                              onCheckedChange={(n) => handleSkuMapChange(barcodeIdx, shopId, { sync_stock: n })}
+                              onCheckedChange={(n) => handleSkuMapChange(barcodeIdx, holdingCode, { sync_stock: n })}
                               label="ซิงค์จำนวนสต๊อกสินค้าหลัก"
                             />
                             <Toggle
                               checked={mapping.sync_price ?? true}
-                              onCheckedChange={(n) => handleSkuMapChange(barcodeIdx, shopId, { sync_price: n })}
+                              onCheckedChange={(n) => handleSkuMapChange(barcodeIdx, holdingCode, { sync_price: n })}
                               label="ซิงค์ราคาขายบนเว็บบอร์ด"
                             />
                           </div>

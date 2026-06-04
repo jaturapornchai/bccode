@@ -14,11 +14,11 @@ import (
 
 type IOptionRepository interface {
 	Create(ctx context.Context, doc models.InventoryOptionMainDoc) (string, error)
-	Update(ctx context.Context, shopID string, guid string, doc models.InventoryOptionMainDoc) error
-	Delete(ctx context.Context, shopID string, guid string, username string) error
-	FindByGuid(ctx context.Context, shopID string, guid string) (models.InventoryOptionMainDoc, error)
-	FindPage(ctx context.Context, shopID string, pageable micromodels.Pageable) ([]models.InventoryOptionMainInfo, mongopagination.PaginationData, error)
-	FindByDocIndentityGuid(ctx context.Context, shopID string, indentityField string, indentityValue interface{}) (models.InventoryOptionMainDoc, error)
+	Update(ctx context.Context, holdingCode string, guid string, doc models.InventoryOptionMainDoc) error
+	Delete(ctx context.Context, holdingCode string, guid string, username string) error
+	FindByGuid(ctx context.Context, holdingCode string, guid string) (models.InventoryOptionMainDoc, error)
+	FindPage(ctx context.Context, holdingCode string, pageable micromodels.Pageable) ([]models.InventoryOptionMainInfo, mongopagination.PaginationData, error)
+	FindByDocIndentityGuid(ctx context.Context, holdingCode string, indentityField string, indentityValue interface{}) (models.InventoryOptionMainDoc, error)
 }
 
 type OptionRepository struct {
@@ -45,11 +45,11 @@ func (repo OptionRepository) Create(ctx context.Context, doc models.InventoryOpt
 	return idx.Hex(), nil
 }
 
-func (repo OptionRepository) Update(ctx context.Context, shopID string, guid string, doc models.InventoryOptionMainDoc) error {
+func (repo OptionRepository) Update(ctx context.Context, holdingCode string, guid string, doc models.InventoryOptionMainDoc) error {
 
 	filterDoc := map[string]interface{}{
-		"shopid":    shopID,
-		"guid_fixed": guid,
+		"holding_code": holdingCode,
+		"guid_fixed":   guid,
 	}
 
 	err := repo.pst.UpdateOne(ctx, &models.InventoryOptionMainDoc{}, filterDoc, doc)
@@ -61,8 +61,8 @@ func (repo OptionRepository) Update(ctx context.Context, shopID string, guid str
 	return nil
 }
 
-func (repo OptionRepository) Delete(ctx context.Context, shopID string, guid string, username string) error {
-	err := repo.pst.SoftDelete(ctx, &models.InventoryOptionMainDoc{}, username, bson.M{"guid_fixed": guid, "shopid": shopID})
+func (repo OptionRepository) Delete(ctx context.Context, holdingCode string, guid string, username string) error {
+	err := repo.pst.SoftDelete(ctx, &models.InventoryOptionMainDoc{}, username, bson.M{"guid_fixed": guid, "holding_code": holdingCode})
 
 	if err != nil {
 		return err
@@ -71,10 +71,10 @@ func (repo OptionRepository) Delete(ctx context.Context, shopID string, guid str
 	return nil
 }
 
-func (repo OptionRepository) FindByGuid(ctx context.Context, shopID string, guid string) (models.InventoryOptionMainDoc, error) {
+func (repo OptionRepository) FindByGuid(ctx context.Context, holdingCode string, guid string) (models.InventoryOptionMainDoc, error) {
 
 	doc := &models.InventoryOptionMainDoc{}
-	err := repo.pst.FindOne(ctx, &models.InventoryOptionMainDoc{}, bson.M{"guid_fixed": guid, "shopid": shopID, "deleted_at": bson.M{"$exists": false}}, doc)
+	err := repo.pst.FindOne(ctx, &models.InventoryOptionMainDoc{}, bson.M{"guid_fixed": guid, "holding_code": holdingCode, "deleted_at": bson.M{"$exists": false}}, doc)
 
 	if err != nil {
 		return models.InventoryOptionMainDoc{}, err
@@ -83,11 +83,11 @@ func (repo OptionRepository) FindByGuid(ctx context.Context, shopID string, guid
 	return *doc, nil
 }
 
-func (repo OptionRepository) FindPage(ctx context.Context, shopID string, pageable micromodels.Pageable) ([]models.InventoryOptionMainInfo, mongopagination.PaginationData, error) {
+func (repo OptionRepository) FindPage(ctx context.Context, holdingCode string, pageable micromodels.Pageable) ([]models.InventoryOptionMainInfo, mongopagination.PaginationData, error) {
 
 	filterQueries := bson.M{
-		"shopid":    shopID,
-		"deleted_at": bson.M{"$exists": false},
+		"holding_code": holdingCode,
+		"deleted_at":   bson.M{"$exists": false},
 		"$or": []interface{}{
 			bson.M{"guid_fixed": bson.M{"$regex": primitive.Regex{
 				Pattern: ".*" + pageable.Query + ".*",

@@ -9,7 +9,7 @@ import (
 )
 
 type IChartOfAccountAdminService interface {
-	ReSyncChartOfAccountDoc(shopID string) error
+	ReSyncChartOfAccountDoc(holdingCode string) error
 }
 
 type ChartOfAccountAdminService struct {
@@ -28,7 +28,7 @@ func NewChartOfAccountAdminService(pst microservice.IPersisterMongo, kfProducer 
 		timeoutDuration: time.Duration(30) * time.Second,
 	}
 }
-func (s *ChartOfAccountAdminService) ReSyncChartOfAccountDoc(shopID string) error {
+func (s *ChartOfAccountAdminService) ReSyncChartOfAccountDoc(holdingCode string) error {
 
 	pageRequest := msModels.Pageable{
 		Limit: 20,
@@ -45,7 +45,7 @@ func (s *ChartOfAccountAdminService) ReSyncChartOfAccountDoc(shopID string) erro
 		ctx, cancel := context.WithTimeout(context.Background(), s.timeoutDuration)
 		defer cancel()
 
-		docs, pages, err := s.mongoRepo.FindChartOfAccountDocByShopID(ctx, shopID, false, pageRequest)
+		docs, pages, err := s.mongoRepo.FindChartOfAccountDocByHoldingCode(ctx, holdingCode, false, pageRequest)
 		if err != nil {
 			return err
 		}

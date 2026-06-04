@@ -22,15 +22,15 @@ import (
 )
 
 type IPaidAdvanceHttpService interface {
-	CreatePaidAdvance(shopID string, authUsername string, doc models.PaidAdvance) (string, string, error)
-	UpdatePaidAdvance(shopID string, guid string, authUsername string, doc models.PaidAdvance) error
-	DeletePaidAdvance(shopID string, guid string, authUsername string) error
-	DeletePaidAdvanceByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoPaidAdvance(shopID string, guid string) (models.PaidAdvanceInfo, error)
-	InfoPaidAdvanceByCode(shopID string, code string) (models.PaidAdvanceInfo, error)
-	SearchPaidAdvance(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.PaidAdvanceInfo, mongopagination.PaginationData, error)
-	SearchPaidAdvanceStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.PaidAdvanceInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.PaidAdvance) (common.BulkImport, error)
+	CreatePaidAdvance(holdingCode string, authUsername string, doc models.PaidAdvance) (string, string, error)
+	UpdatePaidAdvance(holdingCode string, guid string, authUsername string, doc models.PaidAdvance) error
+	DeletePaidAdvance(holdingCode string, guid string, authUsername string) error
+	DeletePaidAdvanceByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoPaidAdvance(holdingCode string, guid string) (models.PaidAdvanceInfo, error)
+	InfoPaidAdvanceByCode(holdingCode string, code string) (models.PaidAdvanceInfo, error)
+	SearchPaidAdvance(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.PaidAdvanceInfo, mongopagination.PaginationData, error)
+	SearchPaidAdvanceStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.PaidAdvanceInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.PaidAdvance) (common.BulkImport, error)
 
 	GetModuleName() string
 }
@@ -81,11 +81,11 @@ func (svc PaidAdvanceHttpService) getDocNoPrefix(docDate time.Time) string {
 	return fmt.Sprintf("%s%s", MODULE_NAME, docDateStr)
 }
 
-func (svc PaidAdvanceHttpService) generateNewDocNo(ctx context.Context, shopID, prefixDocNo string, docNumber int) (string, int, error) {
-	prevoiusDocNumber, err := svc.repoCache.Get(shopID, prefixDocNo)
+func (svc PaidAdvanceHttpService) generateNewDocNo(ctx context.Context, holdingCode, prefixDocNo string, docNumber int) (string, int, error) {
+	prevoiusDocNumber, err := svc.repoCache.Get(holdingCode, prefixDocNo)
 
 	if prevoiusDocNumber == 0 || err != nil {
-		lastDoc, err := svc.repo.FindLastDocNo(ctx, shopID, prefixDocNo)
+		lastDoc, err := svc.repo.FindLastDocNo(ctx, holdingCode, prefixDocNo)
 
 		if err != nil {
 			return "", 0, err
@@ -105,7 +105,7 @@ func (svc PaidAdvanceHttpService) generateNewDocNo(ctx context.Context, shopID, 
 	newDocNumber := prevoiusDocNumber + 1
 	newDocNo := fmt.Sprintf("%s%05d", prefixDocNo, newDocNumber)
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", newDocNo)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", newDocNo)
 
 	if err != nil {
 		return "", 0, err
@@ -118,7 +118,7 @@ func (svc PaidAdvanceHttpService) generateNewDocNo(ctx context.Context, shopID, 
 	return newDocNo, newDocNumber, nil
 }
 
-func (svc PaidAdvanceHttpService) CreatePaidAdvance(shopID string, authUsername string, doc models.PaidAdvance) (string, string, error) {
+func (svc PaidAdvanceHttpService) CreatePaidAdvance(holdingCode string, authUsername string, doc models.PaidAdvance) (string, string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -126,7 +126,7 @@ func (svc PaidAdvanceHttpService) CreatePaidAdvance(shopID string, authUsername 
 	docDate := doc.DocDatetime
 	prefixDocNo := svc.getDocNoPrefix(docDate)
 
-	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, shopID, prefixDocNo, 1)
+	newDocNo, newDocNumber, err := svc.generateNewDocNo(ctx, holdingCode, prefixDocNo, 1)
 
 	if err != nil {
 		return "", "", err
@@ -135,7 +135,7 @@ func (svc PaidAdvanceHttpService) CreatePaidAdvance(shopID string, authUsername 
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.PaidAdvanceDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.PaidAdvance = doc
 
@@ -149,23 +149,23 @@ func (svc PaidAdvanceHttpService) CreatePaidAdvance(shopID string, authUsername 
 		return "", "", err
 	}
 
-	go svc.repoCache.Save(shopID, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
+	go svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
 
 	go func() {
 		svc.repoMq.Create(docData)
-		svc.repoCache.Save(shopID, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
-		svc.saveMasterSync(shopID)
+		svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return newGuidFixed, newDocNo, nil
 }
 
-func (svc PaidAdvanceHttpService) UpdatePaidAdvance(shopID string, guid string, authUsername string, doc models.PaidAdvance) error {
+func (svc PaidAdvanceHttpService) UpdatePaidAdvance(holdingCode string, guid string, authUsername string, doc models.PaidAdvance) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -182,7 +182,7 @@ func (svc PaidAdvanceHttpService) UpdatePaidAdvance(shopID string, guid string, 
 	docData.UpdatedBy = authUsername
 	docData.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, docData)
+	err = svc.repo.Update(ctx, holdingCode, guid, docData)
 
 	if err != nil {
 		return err
@@ -190,18 +190,18 @@ func (svc PaidAdvanceHttpService) UpdatePaidAdvance(shopID string, guid string, 
 
 	func() {
 		svc.repoMq.Update(docData)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc PaidAdvanceHttpService) DeletePaidAdvance(shopID string, guid string, authUsername string) error {
+func (svc PaidAdvanceHttpService) DeletePaidAdvance(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -211,20 +211,20 @@ func (svc PaidAdvanceHttpService) DeletePaidAdvance(shopID string, guid string, 
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
 	func() {
 		svc.repoMq.Delete(findDoc)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc PaidAdvanceHttpService) DeletePaidAdvanceByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc PaidAdvanceHttpService) DeletePaidAdvanceByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -233,26 +233,26 @@ func (svc PaidAdvanceHttpService) DeletePaidAdvanceByGUIDs(shopID string, authUs
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
 
 	func() {
-		docs, _ := svc.repo.FindByGuids(ctx, shopID, GUIDs)
+		docs, _ := svc.repo.FindByGuids(ctx, holdingCode, GUIDs)
 		svc.repoMq.DeleteInBatch(docs)
-		svc.saveMasterSync(shopID)
+		svc.saveMasterSync(holdingCode)
 	}()
 
 	return nil
 }
 
-func (svc PaidAdvanceHttpService) InfoPaidAdvance(shopID string, guid string) (models.PaidAdvanceInfo, error) {
+func (svc PaidAdvanceHttpService) InfoPaidAdvance(holdingCode string, guid string) (models.PaidAdvanceInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.PaidAdvanceInfo{}, err
@@ -265,12 +265,12 @@ func (svc PaidAdvanceHttpService) InfoPaidAdvance(shopID string, guid string) (m
 	return findDoc.PaidAdvanceInfo, nil
 }
 
-func (svc PaidAdvanceHttpService) InfoPaidAdvanceByCode(shopID string, code string) (models.PaidAdvanceInfo, error) {
+func (svc PaidAdvanceHttpService) InfoPaidAdvanceByCode(holdingCode string, code string) (models.PaidAdvanceInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", code)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", code)
 
 	if err != nil {
 		return models.PaidAdvanceInfo{}, err
@@ -283,7 +283,7 @@ func (svc PaidAdvanceHttpService) InfoPaidAdvanceByCode(shopID string, code stri
 	return findDoc.PaidAdvanceInfo, nil
 }
 
-func (svc PaidAdvanceHttpService) SearchPaidAdvance(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.PaidAdvanceInfo, mongopagination.PaginationData, error) {
+func (svc PaidAdvanceHttpService) SearchPaidAdvance(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.PaidAdvanceInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -292,7 +292,7 @@ func (svc PaidAdvanceHttpService) SearchPaidAdvance(shopID string, filters map[s
 		"docno",
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.PaidAdvanceInfo{}, pagination, err
@@ -301,7 +301,7 @@ func (svc PaidAdvanceHttpService) SearchPaidAdvance(shopID string, filters map[s
 	return docList, pagination, nil
 }
 
-func (svc PaidAdvanceHttpService) SearchPaidAdvanceStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.PaidAdvanceInfo, int, error) {
+func (svc PaidAdvanceHttpService) SearchPaidAdvanceStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.PaidAdvanceInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -312,7 +312,7 @@ func (svc PaidAdvanceHttpService) SearchPaidAdvanceStep(shopID string, langCode 
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.PaidAdvanceInfo{}, 0, err
@@ -321,7 +321,7 @@ func (svc PaidAdvanceHttpService) SearchPaidAdvanceStep(shopID string, langCode 
 	return docList, total, nil
 }
 
-func (svc PaidAdvanceHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.PaidAdvance) (common.BulkImport, error) {
+func (svc PaidAdvanceHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.PaidAdvance) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -333,7 +333,7 @@ func (svc PaidAdvanceHttpService) SaveInBatch(shopID string, authUsername string
 		itemCodeGuidList = append(itemCodeGuidList, doc.DocNo)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "docno", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "docno", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -345,18 +345,18 @@ func (svc PaidAdvanceHttpService) SaveInBatch(shopID string, authUsername string
 	}
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.PaidAdvance, models.PaidAdvanceDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
-		func(shopID string, authUsername string, doc models.PaidAdvance) models.PaidAdvanceDoc {
+		func(holdingCode string, authUsername string, doc models.PaidAdvance) models.PaidAdvanceDoc {
 			newGuid := utils.NewGUID()
 
 			dataDoc := models.PaidAdvanceDoc{}
 
 			dataDoc.GuidFixed = newGuid
-			dataDoc.ShopID = shopID
+			dataDoc.HoldingCode = holdingCode
 			dataDoc.PaidAdvance = doc
 
 			currentTime := time.Now()
@@ -367,23 +367,23 @@ func (svc PaidAdvanceHttpService) SaveInBatch(shopID string, authUsername string
 	)
 
 	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.PaidAdvance, models.PaidAdvanceDoc](
-		shopID,
+		holdingCode,
 		authUsername,
 		duplicateDataList,
 		svc.getDocIDKey,
-		func(shopID string, guid string) (models.PaidAdvanceDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "docno", guid)
+		func(holdingCode string, guid string) (models.PaidAdvanceDoc, error) {
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "docno", guid)
 		},
 		func(doc models.PaidAdvanceDoc) bool {
 			return doc.DocNo != ""
 		},
-		func(shopID string, authUsername string, data models.PaidAdvance, doc models.PaidAdvanceDoc) error {
+		func(holdingCode string, authUsername string, data models.PaidAdvance, doc models.PaidAdvanceDoc) error {
 
 			doc.PaidAdvance = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
 			if err != nil {
 				return nil
 			}
@@ -422,7 +422,7 @@ func (svc PaidAdvanceHttpService) SaveInBatch(shopID string, authUsername string
 		updateFailDataKey = append(updateFailDataKey, svc.getDocIDKey(doc))
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return common.BulkImport{
 		Created:          createDataKey,
@@ -436,9 +436,9 @@ func (svc PaidAdvanceHttpService) getDocIDKey(doc models.PaidAdvance) string {
 	return doc.DocNo
 }
 
-func (svc PaidAdvanceHttpService) saveMasterSync(shopID string) {
+func (svc PaidAdvanceHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

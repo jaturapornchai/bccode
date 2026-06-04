@@ -54,7 +54,7 @@ type MarketplaceScreenProps = {
 
 type ShopConnection = {
   id: string;
-  shop_id: string;
+  holding_code: string;
   shop_name: string;
   platform: "shopee" | "lazada" | "tiktok";
   status: "connected" | "disconnected";
@@ -96,7 +96,7 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
   const [shops, setShops] = useState<ShopConnection[]>([
     {
       id: "conn_1",
-      shop_id: "shop_shopee_th",
+      holding_code: "shop_shopee_th",
       shop_name: "Ban Chiang Official Store (Shopee)",
       platform: "shopee",
       status: "connected",
@@ -105,7 +105,7 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
     },
     {
       id: "conn_2",
-      shop_id: "shop_laz_b2c",
+      holding_code: "shop_laz_b2c",
       shop_name: "Ban Chiang Outlet (Lazada)",
       platform: "lazada",
       status: "connected",
@@ -114,7 +114,7 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
     },
     {
       id: "conn_3",
-      shop_id: "shop_tiktok_mall",
+      holding_code: "shop_tiktok_mall",
       shop_name: "Ban Chiang Store (TikTok Shop)",
       platform: "tiktok",
       status: "disconnected",
@@ -126,11 +126,11 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
   // Auth Dialog state
   const [authDialog, setAuthDialog] = useState<{
     open: boolean;
-    shopId: string;
+    holdingCode: string;
     shopName: string;
   }>({
     open: false,
-    shopId: "",
+    holdingCode: "",
     shopName: ""
   });
 
@@ -142,7 +142,7 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
     if (workspaceRaw) setWorkspace(JSON.parse(workspaceRaw));
   }, []);
 
-  const activeShopId = workspace?.shop.shopid ?? "";
+  const activeHoldingCode = workspace?.shop.holding_code ?? "";
   const dateDisplayOptions = useMemo(
     () => resolveWorkspaceDateTimeDisplayOptions(workspace, lang),
     [lang, workspace],
@@ -150,12 +150,12 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
 
   // Load product list
   const loadProductBarcodes = useCallback(async () => {
-    if (!auth || !activeShopId) return;
+    if (!auth || !activeHoldingCode) return;
     setLoading(true);
     setNotice(null);
     try {
       const res = await listBarcodes(auth, {
-        shopid: activeShopId,
+        holding_code: activeHoldingCode,
         limit: 100,
         offset: 0,
         sort_field: "barcode",
@@ -171,30 +171,30 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
     } finally {
       setLoading(false);
     }
-  }, [auth, activeShopId]);
+  }, [auth, activeHoldingCode]);
 
   useEffect(() => {
-    if (auth && activeShopId && activeTab === "mappings") {
+    if (auth && activeHoldingCode && activeTab === "mappings") {
       void loadProductBarcodes();
     }
-  }, [auth, activeShopId, activeTab, loadProductBarcodes]);
+  }, [auth, activeHoldingCode, activeTab, loadProductBarcodes]);
 
   // Handle new shop auth
   const handleConnectShop = () => {
-    if (!authDialog.shopId) return;
+    if (!authDialog.holdingCode) return;
 
     setShops((prev) =>
       prev.map(s => s.platform === platform ? {
         ...s,
-        shop_id: authDialog.shopId,
-        shop_name: authDialog.shopName || `ร้านค้า ${platform.toUpperCase()} (${authDialog.shopId})`,
+        holding_code: authDialog.holdingCode,
+        shop_name: authDialog.shopName || `ร้านค้า ${platform.toUpperCase()} (${authDialog.holdingCode})`,
         status: "connected",
         connected_at: new Date().toISOString(),
         item_count: 0
       } : s)
     );
 
-    setAuthDialog({ open: false, shopId: "", shopName: "" });
+    setAuthDialog({ open: false, holdingCode: "", shopName: "" });
     setNotice({ type: "success", text: `เชื่อมต่อร้านค้า ${platformName} สำเร็จ!` });
   };
 
@@ -228,7 +228,7 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
     const delimiter = firstLine.includes("\t") ? "\t" : (firstLine.includes(",") ? "," : ";");
     const headers = firstLine.split(delimiter).map(h => h.trim().toLowerCase());
 
-    const shopIdIdx = headers.findIndex(h => h.includes("shop") || h.includes("ร้านค้า") || h.includes("บัญชี"));
+    const holdingCodeIdx = headers.findIndex(h => h.includes("shop") || h.includes("ร้านค้า") || h.includes("บัญชี"));
     const marketItemIdIdx = headers.findIndex(h => h.includes("product_id") || h.includes("item_id") || h.includes("สินค้าบนเว็บ") || h.includes("market_item_id"));
     const sellerSkuIdx = headers.findIndex(h => h.includes("seller_sku") || h.includes("sku") || h.includes("รหัสคู่ค้า") || h.includes("sellersku"));
     const barcodeIdx = headers.findIndex(h => h.includes("barcode") || h.includes("บาร์โค้ด") || h.includes("รหัสบาร์โค้ด") || h.includes("บาร์โค๊ด"));
@@ -254,7 +254,7 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
       const row = lines[i].split(delimiter).map(v => v.trim());
       if (row.length === 0 || (row.length === 1 && !row[0])) continue;
 
-      const shopId = shopIdIdx !== -1 && row[shopIdIdx] ? row[shopIdIdx] : `shop_${platform}_01`;
+      const holdingCode = holdingCodeIdx !== -1 && row[holdingCodeIdx] ? row[holdingCodeIdx] : `shop_${platform}_01`;
       const marketItemId = marketItemIdIdx !== -1 && row[marketItemIdIdx] ? row[marketItemIdIdx] : "";
       const sellerSku = sellerSkuIdx !== -1 && row[sellerSkuIdx] ? row[sellerSkuIdx] : "";
       const barcodeValue = barcodeIdx !== -1 && row[barcodeIdx] ? row[barcodeIdx] : "";
@@ -288,16 +288,16 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
           throw new Error("Failed to load details");
         }
 
-        const fullProduct: ProductBarcode = rawToProductBarcode(productData.data, { shopid: activeShopId } as any);
+        const fullProduct: ProductBarcode = rawToProductBarcode(productData.data, { holding_code: activeHoldingCode } as any);
 
         const mProducts = fullProduct.marketplace_products || [];
         const hasShopMap = mProducts.some(
-          m => m.platform === platform && m.shop_id === shopId && m.market_item_id === marketItemId
+          m => m.platform === platform && m.holding_code === holdingCode && m.market_item_id === marketItemId
         );
         if (!hasShopMap) {
           mProducts.push({
             ...emptyMarketplaceProductMap(platform),
-            shop_id: shopId,
+            holding_code: holdingCode,
             market_item_id: marketItemId,
             sync_status: "linked",
           });
@@ -309,12 +309,12 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
         if (subBarcodeIdx !== -1) {
           const subB = refBarcodes[subBarcodeIdx];
           const mappings = subB.marketplace_sku_mappings || [];
-          const matchMapIdx = mappings.findIndex(m => m.platform === platform && m.shop_id === shopId);
+          const matchMapIdx = mappings.findIndex(m => m.platform === platform && m.holding_code === holdingCode);
 
           const mappingData: MarketplaceSKUMap = {
             platform,
             account_id: "",
-            shop_id: shopId,
+            holding_code: holdingCode,
             market_item_id: marketItemId,
             market_model_id: marketModelId,
             seller_sku: sellerSku || subB.seller_sku || "",
@@ -348,7 +348,7 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
         }
 
         successCount++;
-        logs.push(`Row ${i + 1}: สำเร็จ (Barcode: ${item.barcode} -> Shop: ${shopId})`);
+        logs.push(`Row ${i + 1}: สำเร็จ (Barcode: ${item.barcode} -> Shop: ${holdingCode})`);
       } catch (err: any) {
         failedCount++;
         logs.push(`Row ${i + 1}: ล้มเหลวขณะบันทึกข้อมูล (${err.message})`);
@@ -363,7 +363,7 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
     });
 
     void loadProductBarcodes();
-  }, [auth, barcodes, platform, activeShopId, loadProductBarcodes]);
+  }, [auth, barcodes, platform, activeHoldingCode, loadProductBarcodes]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -522,7 +522,7 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
                   {shop.status === "connected" ? shop.shop_name : `ผูกบัญชี ${platformName}`}
                 </CardTitle>
                 <CardDescription className="font-mono text-xs">
-                  Shop ID: {shop.status === "connected" ? shop.shop_id : "-"}
+                  Holding Code: {shop.status === "connected" ? shop.holding_code : "-"}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4 pt-0">
@@ -558,7 +558,7 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
                       className="h-8"
                       onClick={() => setAuthDialog({
                         open: true,
-                        shopId: "",
+                        holdingCode: "",
                         shopName: ""
                       })}
                     >
@@ -630,7 +630,7 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
 
                 <div className="space-y-1">
                   <textarea
-                    placeholder={`วางข้อมูลแถวที่มีหัวตารางที่นี่ (เช่น:&#10;Shop ID&#9;Barcode&#9;Seller SKU&#9;Market Product ID&#9;Market Variant ID&#10;shop_${platform}_01&#9;8850123456789&#9;sku-red-01&#9;123456789&#9;98765432)`}
+                    placeholder={`วางข้อมูลแถวที่มีหัวตารางที่นี่ (เช่น:&#10;Holding Code&#9;Barcode&#9;Seller SKU&#9;Market Product ID&#9;Market Variant ID&#10;shop_${platform}_01&#9;8850123456789&#9;sku-red-01&#9;123456789&#9;98765432)`}
                     value={importText}
                     onChange={(e) => setImportText(e.target.value)}
                     className="h-28 w-full rounded border border-input bg-background p-2 font-mono text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
@@ -755,7 +755,7 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
                                 platform === "lazada" && "bg-[#101566]/10 text-[#101566] border-[#101566]/20",
                                 platform === "tiktok" && "bg-black/5 text-black border-black/10 dark:bg-white/10 dark:text-white"
                               )}>
-                                {platformMap.shop_id}
+                                {platformMap.holding_code}
                               </Badge>
                             ) : (
                               <span className="text-[11px] text-muted-foreground italic">ไม่มีข้อมูลร้านค้า</span>
@@ -829,7 +829,7 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
                   variant="ghost"
                   size="icon"
                   className="h-6 w-6 text-muted-foreground hover:text-foreground"
-                  onClick={() => setAuthDialog({ open: false, shopId: "", shopName: "" })}
+                  onClick={() => setAuthDialog({ open: false, holdingCode: "", shopName: "" })}
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -840,11 +840,11 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
               <div className="space-y-1">
-                <span className="font-semibold text-xs text-muted-foreground">รหัสร้านค้า (Shop ID) *</span>
+                <span className="font-semibold text-xs text-muted-foreground">รหัสร้านค้า (Holding Code) *</span>
                 <Input
                   placeholder={`เช่น shop_${platform}_01`}
-                  value={authDialog.shopId}
-                  onChange={(e) => setAuthDialog(prev => ({ ...prev, shopId: e.target.value }))}
+                  value={authDialog.holdingCode}
+                  onChange={(e) => setAuthDialog(prev => ({ ...prev, holdingCode: e.target.value }))}
                 />
               </div>
               <div className="space-y-1">
@@ -864,13 +864,13 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setAuthDialog({ open: false, shopId: "", shopName: "" })}
+                  onClick={() => setAuthDialog({ open: false, holdingCode: "", shopName: "" })}
                 >
                   ยกเลิก
                 </Button>
                 <Button
                   size="sm"
-                  disabled={!authDialog.shopId}
+                  disabled={!authDialog.holdingCode}
                   onClick={handleConnectShop}
                 >
                   บันทึกและเชื่อมต่อ

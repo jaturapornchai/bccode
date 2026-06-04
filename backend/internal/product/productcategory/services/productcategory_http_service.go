@@ -23,17 +23,17 @@ import (
 )
 
 type IProductCategoryHttpService interface {
-	CreateProductCategory(shopID string, authUsername string, doc models.ProductCategory) (string, error)
-	UpdateProductCategory(shopID string, guid string, authUsername string, doc models.ProductCategory) error
-	DeleteProductCategory(shopID string, guid string, authUsername string) error
-	DeleteProductCategoryByGUIDs(shopID string, authUsername string, GUIDs []string) error
-	InfoProductCategory(shopID string, guid string) (models.ProductCategoryInfo, error)
-	SearchProductCategory(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ProductCategoryInfo, mongopagination.PaginationData, error)
-	SearchProductCategoryStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ProductCategoryInfo, int, error)
-	SaveInBatch(shopID string, authUsername string, dataList []models.ProductCategory) error
-	XSortsSave(shopID string, authUsername string, xsorts []common.XSortModifyReqesut) error
-	XBarcodesSave(shopID string, authUsername string, xsorts []common.XSortModifyReqesut) error
-	UpdateBarcode(shopID string, codeXSort models.CodeXSort) error
+	CreateProductCategory(holdingCode string, authUsername string, doc models.ProductCategory) (string, error)
+	UpdateProductCategory(holdingCode string, guid string, authUsername string, doc models.ProductCategory) error
+	DeleteProductCategory(holdingCode string, guid string, authUsername string) error
+	DeleteProductCategoryByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
+	InfoProductCategory(holdingCode string, guid string) (models.ProductCategoryInfo, error)
+	SearchProductCategory(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ProductCategoryInfo, mongopagination.PaginationData, error)
+	SearchProductCategoryStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ProductCategoryInfo, int, error)
+	SaveInBatch(holdingCode string, authUsername string, dataList []models.ProductCategory) error
+	XSortsSave(holdingCode string, authUsername string, xsorts []common.XSortModifyReqesut) error
+	XBarcodesSave(holdingCode string, authUsername string, xsorts []common.XSortModifyReqesut) error
+	UpdateBarcode(holdingCode string, codeXSort models.CodeXSort) error
 
 	GetModuleName() string
 }
@@ -67,7 +67,7 @@ func (svc ProductCategoryHttpService) getContextTimeout() (context.Context, cont
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc ProductCategoryHttpService) buildDefaultAllProductsCategory(ctx context.Context, shopID string, groupNumber int) (models.ProductCategoryInfo, error) {
+func (svc ProductCategoryHttpService) buildDefaultAllProductsCategory(ctx context.Context, holdingCode string, groupNumber int) (models.ProductCategoryInfo, error) {
 	// Set multi-language names
 	thName := "สินค้าทั้งหมด"
 	enName := "All"
@@ -85,7 +85,7 @@ func (svc ProductCategoryHttpService) buildDefaultAllProductsCategory(ctx contex
 
 	// Fetch all products where materialtype != 1
 	filters := bson.M{
-		"shopid":       shopID,
+		"holding_code": holdingCode,
 		"deleted_at":   bson.M{"$exists": false},
 		"materialtype": bson.M{"$ne": 1},
 	}
@@ -101,7 +101,7 @@ func (svc ProductCategoryHttpService) buildDefaultAllProductsCategory(ctx contex
 	})
 	findOpts.SetSort(bson.M{"barcode": 1})
 
-	products, err := svc.productBarcodeRepo.Find(ctx, shopID, filters, findOpts)
+	products, err := svc.productBarcodeRepo.Find(ctx, holdingCode, filters, findOpts)
 	if err != nil {
 		return models.ProductCategoryInfo{}, err
 	}
@@ -155,7 +155,7 @@ func (svc ProductCategoryHttpService) buildDefaultAllProductsCategory(ctx contex
 	return categoryInfo, nil
 }
 
-func (svc ProductCategoryHttpService) CreateProductCategory(shopID string, authUsername string, doc models.ProductCategory) (string, error) {
+func (svc ProductCategoryHttpService) CreateProductCategory(holdingCode string, authUsername string, doc models.ProductCategory) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -163,7 +163,7 @@ func (svc ProductCategoryHttpService) CreateProductCategory(shopID string, authU
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.ProductCategoryDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.ProductCategory = doc
 
@@ -178,17 +178,17 @@ func (svc ProductCategoryHttpService) CreateProductCategory(shopID string, authU
 		return "", err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return newGuidFixed, nil
 }
 
-func (svc ProductCategoryHttpService) UpdateProductCategory(shopID string, guid string, authUsername string, doc models.ProductCategory) error {
+func (svc ProductCategoryHttpService) UpdateProductCategory(holdingCode string, guid string, authUsername string, doc models.ProductCategory) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -203,31 +203,31 @@ func (svc ProductCategoryHttpService) UpdateProductCategory(shopID string, guid 
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, findDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, findDoc)
 
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc ProductCategoryHttpService) UpdateBarcode(shopID string, codeXSort models.CodeXSort) error {
+func (svc ProductCategoryHttpService) UpdateBarcode(holdingCode string, codeXSort models.CodeXSort) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	return svc.repo.UpdateCodeList(ctx, shopID, codeXSort)
+	return svc.repo.UpdateCodeList(ctx, holdingCode, codeXSort)
 }
 
-func (svc ProductCategoryHttpService) DeleteProductCategory(shopID string, guid string, authUsername string) error {
+func (svc ProductCategoryHttpService) DeleteProductCategory(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -237,22 +237,22 @@ func (svc ProductCategoryHttpService) DeleteProductCategory(shopID string, guid 
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc ProductCategoryHttpService) InfoProductCategory(shopID string, guid string) (models.ProductCategoryInfo, error) {
+func (svc ProductCategoryHttpService) InfoProductCategory(holdingCode string, guid string) (models.ProductCategoryInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.ProductCategoryInfo{}, err
@@ -266,7 +266,7 @@ func (svc ProductCategoryHttpService) InfoProductCategory(shopID string, guid st
 
 }
 
-func (svc ProductCategoryHttpService) SearchProductCategory(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ProductCategoryInfo, mongopagination.PaginationData, error) {
+func (svc ProductCategoryHttpService) SearchProductCategory(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ProductCategoryInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -280,7 +280,7 @@ func (svc ProductCategoryHttpService) SearchProductCategory(shopID string, filte
 	}
 
 	// Build default "All Products" category
-	defaultCategory, err := svc.buildDefaultAllProductsCategory(ctx, shopID, groupNumber)
+	defaultCategory, err := svc.buildDefaultAllProductsCategory(ctx, holdingCode, groupNumber)
 	if err != nil {
 		// Log error but continue without default category
 		log.Printf("Failed to build default category: %v", err)
@@ -297,7 +297,7 @@ func (svc ProductCategoryHttpService) SearchProductCategory(shopID string, filte
 		}
 	}
 
-	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 
 	if err != nil {
 		return []models.ProductCategoryInfo{}, pagination, err
@@ -324,7 +324,7 @@ func (svc ProductCategoryHttpService) SearchProductCategory(shopID string, filte
 	return finalDocList, pagination, nil
 }
 
-func (svc ProductCategoryHttpService) SearchProductCategoryStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ProductCategoryInfo, int, error) {
+func (svc ProductCategoryHttpService) SearchProductCategoryStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ProductCategoryInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -342,7 +342,7 @@ func (svc ProductCategoryHttpService) SearchProductCategoryStep(shopID string, l
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.ProductCategoryInfo{}, 0, err
@@ -357,7 +357,7 @@ func (svc ProductCategoryHttpService) SearchProductCategoryStep(shopID string, l
 	return docList, total, nil
 }
 
-func (svc ProductCategoryHttpService) SaveInBatch(shopID string, authUsername string, dataList []models.ProductCategory) error {
+func (svc ProductCategoryHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.ProductCategory) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -370,7 +370,7 @@ func (svc ProductCategoryHttpService) SaveInBatch(shopID string, authUsername st
 		newGuidFixed := utils.NewGUID()
 
 		docData := models.ProductCategoryDoc{}
-		docData.ShopID = shopID
+		docData.HoldingCode = holdingCode
 		docData.GuidFixed = newGuidFixed
 		docData.ProductCategory = doc
 
@@ -391,12 +391,12 @@ func (svc ProductCategoryHttpService) SaveInBatch(shopID string, authUsername st
 
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc ProductCategoryHttpService) XSortsSave(shopID string, authUsername string, xsorts []common.XSortModifyReqesut) error {
+func (svc ProductCategoryHttpService) XSortsSave(holdingCode string, authUsername string, xsorts []common.XSortModifyReqesut) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -405,7 +405,7 @@ func (svc ProductCategoryHttpService) XSortsSave(shopID string, authUsername str
 		if len(xsort.GUIDFixed) < 1 {
 			continue
 		}
-		findDoc, err := svc.repo.FindByGuid(ctx, shopID, xsort.GUIDFixed)
+		findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, xsort.GUIDFixed)
 
 		if err != nil {
 			return err
@@ -438,20 +438,20 @@ func (svc ProductCategoryHttpService) XSortsSave(shopID string, authUsername str
 
 		findDoc.XSorts = &tempXSorts
 
-		err = svc.repo.UpdateXSorts(ctx, shopID, findDoc.GuidFixed, tempXSorts, authUsername, time.Now())
+		err = svc.repo.UpdateXSorts(ctx, holdingCode, findDoc.GuidFixed, tempXSorts, authUsername, time.Now())
 
 		if err != nil {
 			return err
 		}
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 
 }
 
-func (svc ProductCategoryHttpService) XBarcodesSave(shopID string, authUsername string, xsorts []common.XSortModifyReqesut) error {
+func (svc ProductCategoryHttpService) XBarcodesSave(holdingCode string, authUsername string, xsorts []common.XSortModifyReqesut) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -460,7 +460,7 @@ func (svc ProductCategoryHttpService) XBarcodesSave(shopID string, authUsername 
 		if len(xsort.GUIDFixed) < 1 {
 			continue
 		}
-		findDoc, err := svc.repo.FindByGuid(ctx, shopID, xsort.GUIDFixed)
+		findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, xsort.GUIDFixed)
 
 		if err != nil {
 			return err
@@ -496,7 +496,7 @@ func (svc ProductCategoryHttpService) XBarcodesSave(shopID string, authUsername 
 		findDoc.UpdatedBy = authUsername
 		findDoc.UpdatedAt = time.Now()
 
-		err = svc.repo.Update(ctx, shopID, findDoc.GuidFixed, findDoc)
+		err = svc.repo.Update(ctx, holdingCode, findDoc.GuidFixed, findDoc)
 
 		if err != nil {
 			return err
@@ -504,13 +504,13 @@ func (svc ProductCategoryHttpService) XBarcodesSave(shopID string, authUsername 
 
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 
 }
 
-func (svc ProductCategoryHttpService) DeleteProductCategoryByGUIDs(shopID string, authUsername string, GUIDs []string) error {
+func (svc ProductCategoryHttpService) DeleteProductCategoryByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -519,19 +519,19 @@ func (svc ProductCategoryHttpService) DeleteProductCategoryByGUIDs(shopID string
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
 
-	svc.saveMasterSync(shopID)
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
 
-func (svc ProductCategoryHttpService) saveMasterSync(shopID string) {
+func (svc ProductCategoryHttpService) saveMasterSync(holdingCode string) {
 	if svc.syncCacheRepo != nil {
-		err := svc.syncCacheRepo.Save(shopID, svc.GetModuleName())
+		err := svc.syncCacheRepo.Save(holdingCode, svc.GetModuleName())
 
 		if err != nil {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())

@@ -10,9 +10,9 @@ import (
 )
 
 type IStockReceiveTransactionConsumerService interface {
-	GetStockBalanceDetail(shopID string, docNo string) (*[]models.StockBalanceTransactionDetailPG, error)
-	Upsert(shopID string, docNo string, doc models.StockBalanceTransactionPG) error
-	Delete(shopID string, docNo string) error
+	GetStockBalanceDetail(holdingCode string, docNo string) (*[]models.StockBalanceTransactionDetailPG, error)
+	Upsert(holdingCode string, docNo string, doc models.StockBalanceTransactionPG) error
+	Delete(holdingCode string, docNo string) error
 }
 
 type StockReceiveTransactionConsumerService struct {
@@ -28,8 +28,8 @@ func NewStockReceiveTransactionConsumerService(repo IStockReceiveTransactionPGRe
 	}
 }
 
-func (s *StockReceiveTransactionConsumerService) Upsert(shopID string, docNo string, doc models.StockBalanceTransactionPG) error {
-	findDoc, err := s.repo.Get(shopID, docNo)
+func (s *StockReceiveTransactionConsumerService) Upsert(holdingCode string, docNo string, doc models.StockBalanceTransactionPG) error {
+	findDoc, err := s.repo.Get(holdingCode, docNo)
 	if err != nil {
 		err = s.repo.Create(doc)
 		if err != nil {
@@ -40,7 +40,7 @@ func (s *StockReceiveTransactionConsumerService) Upsert(shopID string, docNo str
 		isEqual := findDoc.CompareTo(&doc)
 
 		if !isEqual {
-			err = s.repo.Update(shopID, docNo, doc)
+			err = s.repo.Update(holdingCode, docNo, doc)
 			if err != nil {
 				return err
 			}
@@ -50,11 +50,11 @@ func (s *StockReceiveTransactionConsumerService) Upsert(shopID string, docNo str
 	return nil
 }
 
-func (s *StockReceiveTransactionConsumerService) Delete(shopID string, docNo string) error {
-	err := s.repo.DeleteData(shopID, docNo, models.StockBalanceTransactionPG{
+func (s *StockReceiveTransactionConsumerService) Delete(holdingCode string, docNo string) error {
+	err := s.repo.DeleteData(holdingCode, docNo, models.StockBalanceTransactionPG{
 		TransactionPG: models.TransactionPG{
-			ShopIdentity: pkgModels.ShopIdentity{
-				ShopID: shopID,
+			HoldingCodeentity: pkgModels.HoldingCodeentity{
+				HoldingCode: holdingCode,
 			},
 			DocNo: docNo,
 		},
@@ -65,7 +65,7 @@ func (s *StockReceiveTransactionConsumerService) Delete(shopID string, docNo str
 	return nil
 }
 
-func (s *StockReceiveTransactionConsumerService) GetStockBalanceDetail(shopID string, docNo string) (*[]models.StockBalanceTransactionDetailPG, error) {
+func (s *StockReceiveTransactionConsumerService) GetStockBalanceDetail(holdingCode string, docNo string) (*[]models.StockBalanceTransactionDetailPG, error) {
 
 	filters := map[string]interface{}{
 		"docno": docNo,
@@ -95,7 +95,7 @@ func (s *StockReceiveTransactionConsumerService) GetStockBalanceDetail(shopID st
 		ctx, cancel := context.WithTimeout(context.Background(), timeOut)
 		defer cancel()
 
-		docs, pages, err := s.stockBalanceDetailMongoRepository.FindPageFilter(ctx, shopID, filters, searchInFields, pageRequest)
+		docs, pages, err := s.stockBalanceDetailMongoRepository.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageRequest)
 		if err != nil {
 			return nil, err
 		}
@@ -107,7 +107,7 @@ func (s *StockReceiveTransactionConsumerService) GetStockBalanceDetail(shopID st
 				TransactionDetailPG: models.TransactionDetailPG{
 					GuidFixed:           doc.GuidFixed,
 					DocNo:               doc.DocNo,
-					ShopID:              shopID,
+					HoldingCode:         holdingCode,
 					LineNumber:          int8(doc.LineNumber),
 					DocRef:              doc.DocRef,
 					Barcode:             doc.Barcode,

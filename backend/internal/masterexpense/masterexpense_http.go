@@ -64,7 +64,7 @@ func (h MasterExpenseHttp) RegisterHttp() {
 // @Router /master-expense [post]
 func (h MasterExpenseHttp) CreateMasterExpense(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.MasterExpense{}
@@ -80,7 +80,7 @@ func (h MasterExpenseHttp) CreateMasterExpense(ctx microservice.IContext) error 
 		return err
 	}
 
-	idx, err := h.svc.CreateMasterExpense(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateMasterExpense(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -107,7 +107,7 @@ func (h MasterExpenseHttp) CreateMasterExpense(ctx microservice.IContext) error 
 func (h MasterExpenseHttp) UpdateMasterExpense(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -125,7 +125,7 @@ func (h MasterExpenseHttp) UpdateMasterExpense(ctx microservice.IContext) error 
 		return err
 	}
 
-	err = h.svc.UpdateMasterExpense(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateMasterExpense(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -151,12 +151,12 @@ func (h MasterExpenseHttp) UpdateMasterExpense(ctx microservice.IContext) error 
 // @Router /master-expense/{id} [delete]
 func (h MasterExpenseHttp) DeleteMasterExpense(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteMasterExpense(shopID, id, authUsername)
+	err := h.svc.DeleteMasterExpense(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -182,7 +182,7 @@ func (h MasterExpenseHttp) DeleteMasterExpense(ctx microservice.IContext) error 
 // @Router /master-expense [delete]
 func (h MasterExpenseHttp) DeleteMasterExpenseByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -195,7 +195,7 @@ func (h MasterExpenseHttp) DeleteMasterExpenseByGUIDs(ctx microservice.IContext)
 		return err
 	}
 
-	err = h.svc.DeleteMasterExpenseByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteMasterExpenseByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -220,12 +220,12 @@ func (h MasterExpenseHttp) DeleteMasterExpenseByGUIDs(ctx microservice.IContext)
 // @Router /master-expense/{id} [get]
 func (h MasterExpenseHttp) InfoMasterExpense(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get MasterExpense %v", id)
-	doc, err := h.svc.InfoMasterExpense(shopID, id)
+	doc, err := h.svc.InfoMasterExpense(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -251,11 +251,11 @@ func (h MasterExpenseHttp) InfoMasterExpense(ctx microservice.IContext) error {
 // @Router /master-expense/code/{code} [get]
 func (h MasterExpenseHttp) InfoMasterExpenseByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoMasterExpenseByCode(shopID, code)
+	doc, err := h.svc.InfoMasterExpenseByCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -282,13 +282,13 @@ func (h MasterExpenseHttp) InfoMasterExpenseByCode(ctx microservice.IContext) er
 // @Router /master-expense [get]
 func (h MasterExpenseHttp) SearchMasterExpensePage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
 	filters := requestfilter.GenerateFilters(ctx.QueryParam, []requestfilter.FilterRequest{})
 
-	docList, pagination, err := h.svc.SearchMasterExpense(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchMasterExpense(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -317,7 +317,7 @@ func (h MasterExpenseHttp) SearchMasterExpensePage(ctx microservice.IContext) er
 // @Router /master-expense/list [get]
 func (h MasterExpenseHttp) SearchMasterExpenseStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -325,7 +325,7 @@ func (h MasterExpenseHttp) SearchMasterExpenseStep(ctx microservice.IContext) er
 
 	filters := requestfilter.GenerateFilters(ctx.QueryParam, []requestfilter.FilterRequest{})
 
-	docList, total, err := h.svc.SearchMasterExpenseStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchMasterExpenseStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -353,7 +353,7 @@ func (h MasterExpenseHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -365,7 +365,7 @@ func (h MasterExpenseHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

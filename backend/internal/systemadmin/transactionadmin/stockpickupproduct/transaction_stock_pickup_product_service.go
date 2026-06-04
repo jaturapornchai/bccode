@@ -8,8 +8,8 @@ import (
 )
 
 type IStockPickupTransactionAdminService interface {
-	ReSyncStockPickupTransaction(shopID string) error
-	ReSyncStockPickupDeleteTransaction(shopID string) error
+	ReSyncStockPickupTransaction(holdingCode string) error
+	ReSyncStockPickupDeleteTransaction(holdingCode string) error
 }
 
 type StockPickupTransactionAdminService struct {
@@ -33,12 +33,12 @@ func NewStockPickupTransactionAdminService(
 	}
 }
 
-func (s *StockPickupTransactionAdminService) ReSyncStockPickupTransaction(shopID string) error {
+func (s *StockPickupTransactionAdminService) ReSyncStockPickupTransaction(holdingCode string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeoutDuration)
 	defer cancel()
 
-	docs, err := s.mongoRepo.FindStockPickupDocByShopID(ctx, shopID)
+	docs, err := s.mongoRepo.FindStockPickupDocByHoldingCode(ctx, holdingCode)
 	if err != nil {
 		return err
 	}
@@ -51,12 +51,12 @@ func (s *StockPickupTransactionAdminService) ReSyncStockPickupTransaction(shopID
 	return nil
 }
 
-func (s *StockPickupTransactionAdminService) ReSyncStockPickupDeleteTransaction(shopID string) error {
+func (s *StockPickupTransactionAdminService) ReSyncStockPickupDeleteTransaction(holdingCode string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeoutDuration)
 	defer cancel()
 
-	docs, err := s.mongoRepo.FindStockPickupDocDeleteByShopID(ctx, shopID)
+	docs, err := s.mongoRepo.FindStockPickupDocDeleteByHoldingCode(ctx, holdingCode)
 
 	if err != nil {
 		return err

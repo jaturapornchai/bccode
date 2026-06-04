@@ -15,30 +15,30 @@ import (
 )
 
 type IUnitRepository interface {
-	Count(ctx context.Context, shopID string) (int, error)
+	Count(ctx context.Context, holdingCode string) (int, error)
 	Create(ctx context.Context, doc models.UnitDoc) (string, error)
 	CreateInBatch(ctx context.Context, docList []models.UnitDoc) error
-	Update(ctx context.Context, shopID string, guid string, doc models.UnitDoc) error
-	DeleteByGuidfixed(ctx context.Context, shopID string, guid string, username string) error
-	Delete(ctx context.Context, shopID string, username string, filters map[string]interface{}) error
-	FindPage(ctx context.Context, shopID string, searchInFields []string, pageable micromodels.Pageable) ([]models.UnitInfo, mongopagination.PaginationData, error)
-	FindByGuid(ctx context.Context, shopID string, guid string) (models.UnitDoc, error)
-	FindByGuids(ctx context.Context, shopID string, guids []string) ([]models.UnitDoc, error)
+	Update(ctx context.Context, holdingCode string, guid string, doc models.UnitDoc) error
+	DeleteByGuidfixed(ctx context.Context, holdingCode string, guid string, username string) error
+	Delete(ctx context.Context, holdingCode string, username string, filters map[string]interface{}) error
+	FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable micromodels.Pageable) ([]models.UnitInfo, mongopagination.PaginationData, error)
+	FindByGuid(ctx context.Context, holdingCode string, guid string) (models.UnitDoc, error)
+	FindByGuids(ctx context.Context, holdingCode string, guids []string) ([]models.UnitDoc, error)
 
-	FindInItemGuid(ctx context.Context, shopID string, columnName string, itemGuidList []string) ([]models.UnitItemGuid, error)
-	FindByDocIndentityGuid(ctx context.Context, shopID string, indentityField string, indentityValue interface{}) (models.UnitDoc, error)
+	FindInItemGuid(ctx context.Context, holdingCode string, columnName string, itemGuidList []string) ([]models.UnitItemGuid, error)
+	FindByDocIndentityGuid(ctx context.Context, holdingCode string, indentityField string, indentityValue interface{}) (models.UnitDoc, error)
 
-	FindPageFilter(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.UnitInfo, mongopagination.PaginationData, error)
-	FindPageFilterNoShopid(ctx context.Context, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.UnitInfo, mongopagination.PaginationData, error)
-	FindStep(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, selectFields map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.UnitInfo, int, error)
+	FindPageFilter(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.UnitInfo, mongopagination.PaginationData, error)
+	FindPageFilterNoHoldingCode(ctx context.Context, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.UnitInfo, mongopagination.PaginationData, error)
+	FindStep(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, selectFields map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.UnitInfo, int, error)
 
-	FindDeletedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageable micromodels.Pageable) ([]models.UnitDeleteActivity, mongopagination.PaginationData, error)
-	FindCreatedOrUpdatedPage(ctx context.Context, shopID string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageable micromodels.Pageable) ([]models.UnitActivity, mongopagination.PaginationData, error)
-	FindDeletedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.UnitDeleteActivity, error)
-	FindCreatedOrUpdatedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.UnitActivity, error)
+	FindDeletedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageable micromodels.Pageable) ([]models.UnitDeleteActivity, mongopagination.PaginationData, error)
+	FindCreatedOrUpdatedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageable micromodels.Pageable) ([]models.UnitActivity, mongopagination.PaginationData, error)
+	FindDeletedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.UnitDeleteActivity, error)
+	FindCreatedOrUpdatedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.UnitActivity, error)
 	FindMasterInCodes(ctx context.Context, codes []string) ([]models.UnitInfo, error)
 
-	FindByUnitCodes(ctx context.Context, shopID string, unitCodes []string) ([]models.UnitInfo, error)
+	FindByUnitCodes(ctx context.Context, holdingCode string, unitCodes []string) ([]models.UnitInfo, error)
 
 	Transaction(ctx context.Context, callback func(ctx context.Context) error) error
 }
@@ -67,16 +67,16 @@ func NewUnitRepository(pst microservice.IPersisterMongo) *UnitRepository {
 
 func (repo UnitRepository) FindMasterInCodes(ctx context.Context, codes []string) ([]models.UnitInfo, error) {
 
-	masterShopID := os.Getenv("MASTER_SHOP_ID")
+	masterHoldingCode := os.Getenv("MASTER_HOLDING_CODE")
 
-	if len(masterShopID) == 0 {
-		return []models.UnitInfo{}, errors.New("master shop id is empty")
+	if len(masterHoldingCode) == 0 {
+		return []models.UnitInfo{}, errors.New("master holding code is empty")
 	}
 
 	docList := []models.UnitInfo{}
 
 	filters := bson.M{
-		"shopid": masterShopID,
+		"holding_code": masterHoldingCode,
 		"unitcode": bson.M{
 			"$in": codes,
 		},
@@ -91,12 +91,12 @@ func (repo UnitRepository) FindMasterInCodes(ctx context.Context, codes []string
 	return docList, nil
 }
 
-func (repo UnitRepository) FindByUnitCodes(ctx context.Context, shopID string, unitCodes []string) ([]models.UnitInfo, error) {
+func (repo UnitRepository) FindByUnitCodes(ctx context.Context, holdingCode string, unitCodes []string) ([]models.UnitInfo, error) {
 
 	filters := bson.M{
-		"shopid":    shopID,
-		"deleted_at": bson.M{"$exists": false},
-		"unitcode":  bson.M{"$in": unitCodes},
+		"holding_code": holdingCode,
+		"deleted_at":   bson.M{"$exists": false},
+		"unitcode":     bson.M{"$in": unitCodes},
 	}
 
 	var results []models.UnitInfo

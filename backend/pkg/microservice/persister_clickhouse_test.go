@@ -40,15 +40,15 @@ func (m *TestClickHouseModel) TableName() string {
 }
 
 type StockBalanceImport struct {
-	ShopID    string  `json:"shopid" ch:"shopid"`
-	TaskID    string  `json:"taskid" ch:"taskid"`
-	RowNumber uint32  `json:"rownumber" ch:"rownumber"`
-	Barcode   string  `json:"barcode" ch:"barcode"`
-	Name      string  `json:"name" ch:"name"`
-	UnitCode  string  `json:"unitcode" ch:"unitcode"`
-	Qty       float64 `json:"qty" ch:"qty"`
-	Price     float64 `json:"price" ch:"price"`
-	SumAmount float64 `json:"sumamount" ch:"sumamount"`
+	HoldingCode string  `json:"holding_code" ch:"holding_code"`
+	TaskID      string  `json:"taskid" ch:"taskid"`
+	RowNumber   uint32  `json:"rownumber" ch:"rownumber"`
+	Barcode     string  `json:"barcode" ch:"barcode"`
+	Name        string  `json:"name" ch:"name"`
+	UnitCode    string  `json:"unitcode" ch:"unitcode"`
+	Qty         float64 `json:"qty" ch:"qty"`
+	Price       float64 `json:"price" ch:"price"`
+	SumAmount   float64 `json:"sumamount" ch:"sumamount"`
 }
 
 func (StockBalanceImport) TableName() string {
@@ -77,15 +77,15 @@ func TestClickHouseProductInsert(t *testing.T) {
 	pst := microservice.NewPersisterClickHouse(clickhouseCfg)
 
 	data := &StockBalanceImport{
-		ShopID:    "123",
-		TaskID:    "123",
-		RowNumber: 1,
-		Barcode:   "123",
-		Name:      "123",
-		UnitCode:  "123",
-		Qty:       1.0,
-		Price:     1.0,
-		SumAmount: 1.0,
+		HoldingCode: "123",
+		TaskID:      "123",
+		RowNumber:   1,
+		Barcode:     "123",
+		Name:        "123",
+		UnitCode:    "123",
+		Qty:         1.0,
+		Price:       1.0,
+		SumAmount:   1.0,
 	}
 
 	err := pst.Create(context.Background(), data)
@@ -104,26 +104,26 @@ func TestClickHouseProductBulkInsert(t *testing.T) {
 
 	data := []StockBalanceImport{
 		{
-			ShopID:    "123",
-			TaskID:    "123",
-			RowNumber: 1,
-			Barcode:   "123",
-			Name:      "123",
-			UnitCode:  "123",
-			Qty:       1.0,
-			Price:     2.0,
-			SumAmount: 3.0,
+			HoldingCode: "123",
+			TaskID:      "123",
+			RowNumber:   1,
+			Barcode:     "123",
+			Name:        "123",
+			UnitCode:    "123",
+			Qty:         1.0,
+			Price:       2.0,
+			SumAmount:   3.0,
 		},
 		{
-			ShopID:    "123",
-			TaskID:    "123",
-			RowNumber: 1,
-			Barcode:   "123",
-			Name:      "123",
-			UnitCode:  "123",
-			Qty:       4.0,
-			Price:     5.0,
-			SumAmount: 6.0,
+			HoldingCode: "123",
+			TaskID:      "123",
+			RowNumber:   1,
+			Barcode:     "123",
+			Name:        "123",
+			UnitCode:    "123",
+			Qty:         4.0,
+			Price:       5.0,
+			SumAmount:   6.0,
 		},
 	}
 

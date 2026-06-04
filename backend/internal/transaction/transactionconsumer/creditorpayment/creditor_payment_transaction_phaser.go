@@ -54,7 +54,7 @@ func (c *CreditorPaymentTransactionPhaser) PhaseCreditPaymentTransactionDoc(doc 
 	for i, detail := range *doc.Details {
 		d := models.CreditorPaymentTransactionDetailPG{
 			DocNo:         doc.DocNo,
-			ShopID:        doc.ShopID,
+			HoldingCode:   doc.HoldingCode,
 			LineNumber:    int8(i),
 			BillingNo:     detail.DocNo,
 			BillType:      detail.TransFlag,
@@ -86,8 +86,8 @@ func (c *CreditorPaymentTransactionPhaser) PhaseCreditPaymentTransactionDoc(doc 
 	}
 
 	transaction := models.CreditorPaymentTransactionPG{
-		ShopIdentity: pkgModels.ShopIdentity{
-			ShopID: doc.ShopID,
+		HoldingCodeentity: pkgModels.HoldingCodeentity{
+			HoldingCode: doc.HoldingCode,
 		},
 		GuidFixed:        doc.GuidFixed,
 		DocNo:            doc.DocNo,

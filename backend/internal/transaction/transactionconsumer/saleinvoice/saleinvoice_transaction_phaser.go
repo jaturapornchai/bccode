@@ -18,9 +18,9 @@ func (p SalesInvoiceTransactionPhaser) PhaseSaleInvoiceDoc(doc saleInvoiceModel.
 
 		stockDetail := models.SaleInvoiceTransactionDetailPG{
 			TransactionDetailPG: models.TransactionDetailPG{
-				GuidFixed: doc.GuidFixed,
-				DocNo:     doc.DocNo,
-				ShopID:    doc.ShopID,
+				GuidFixed:   doc.GuidFixed,
+				DocNo:       doc.DocNo,
+				HoldingCode: doc.HoldingCode,
 
 				LineNumber:          int8(detail.LineNumber),
 				FoodType:            detail.FoodType,
@@ -79,8 +79,8 @@ func (p SalesInvoiceTransactionPhaser) PhaseSaleInvoiceDoc(doc saleInvoiceModel.
 
 	stockTransaction := models.SaleInvoiceTransactionPG{
 		TransactionPG: models.TransactionPG{
-			ShopIdentity: pkgModels.ShopIdentity{
-				ShopID: doc.ShopID,
+			HoldingCodeentity: pkgModels.HoldingCodeentity{
+				HoldingCode: doc.HoldingCode,
 			},
 
 			GuidFixed:           doc.GuidFixed,

@@ -81,12 +81,12 @@ func OnConsumeMessageStockPickupProductDelete(msg string) error {
 	logger.Info("OnConsumeMessageStockPickupProductDelete: Processing deletion message")
 
 	docData := TransStockPickupProductDecode(msg)
-	if docData.ShopId == "" || docData.DocNo == "" {
-		logger.Error("OnConsumeMessageStockPickupProductDelete: Invalid data - missing ShopId or DocNo")
+	if docData.HoldingCode == "" || docData.DocNo == "" {
+		logger.Error("OnConsumeMessageStockPickupProductDelete: Invalid data - missing HoldingCode or DocNo")
 		return fmt.Errorf("invalid stock pickup product data")
 	}
 
-	return DeleteDocumentFromDatabases(context.Background(), docData.ShopId, docData.DocNo, TRANS_FLAG_STOCK_PICKUP_PRODUCT)
+	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.DocNo, TRANS_FLAG_STOCK_PICKUP_PRODUCT)
 }
 
 // ProcessStockPickupProductDocument - processes stock pickup product document following standardized 10-step pattern
@@ -99,15 +99,15 @@ func ProcessStockPickupProductDocument(docData models.StockPickupProductStruct) 
 	}()
 
 	logger.Info("ProcessStockPickupProductDocument: Starting processing for DocNo=%s", docData.DocNo)
-	build.DatabaseChecker(docData.ShopId, false)
+	build.DatabaseChecker(docData.HoldingCode, false)
 
 	// Step 1: Convert Kafka message to ProcessMongoTransModel
 	logger.Info("ProcessStockPickupProductDocument: Step 1 - Converting Kafka message to ProcessMongoTransModel")
 	processData := ConvertStockPickupProductMongoDocToProcessModel(docData)
 
 	// Step 2: Connect to PostgreSQL
-	logger.Info("ProcessStockPickupProductDocument: Step 2 - Connecting to PostgreSQL for shopId=%s", docData.ShopId)
-	db, err := mypg.PgSqlFastConnect(docData.ShopId)
+	logger.Info("ProcessStockPickupProductDocument: Step 2 - Connecting to PostgreSQL for holdingCode=%s", docData.HoldingCode)
+	db, err := mypg.PgSqlFastConnect(docData.HoldingCode)
 	if err != nil {
 		logger.Error("ProcessStockPickupProductDocument: Failed to connect to PostgreSQL: %v", err)
 		return fmt.Errorf("failed to connect to PostgreSQL: %v", err)
@@ -121,8 +121,8 @@ func ProcessStockPickupProductDocument(docData models.StockPickupProductStruct) 
 
 	// Step 4: Convert process model to build-doc structs
 	logger.Info("ProcessStockPickupProductDocument: Step 4 - Converting process model to build-doc structs")
-	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, docData.ShopId)
-	docDetailStructs := MapStockPickupProductToDocDetailStructs(processData, docData.ShopId)
+	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, docData.HoldingCode)
+	docDetailStructs := MapStockPickupProductToDocDetailStructs(processData, docData.HoldingCode)
 
 	// Step 5: Create document references
 	logger.Info("ProcessStockPickupProductDocument: Step 5 - Creating document references")
@@ -138,18 +138,18 @@ func ProcessStockPickupProductDocument(docData models.StockPickupProductStruct) 
 		return fmt.Errorf("failed to insert document to PostgreSQL: %w", err)
 	}
 
-	err = InsertDocDetailToPostgreSQL(ctx, db, docData.ShopId, docDetailStructs, 7)
+	err = InsertDocDetailToPostgreSQL(ctx, db, docData.HoldingCode, docDetailStructs, 7)
 	if err != nil {
 		return fmt.Errorf("failed to insert doc details to PostgreSQL: %w", err)
 	}
 
-	err = InsertDocumentToClickHouse(ctx, docData.ShopId, docStruct, docRefStructs, docPaymentStruct, docDetailStructs, 8)
+	err = InsertDocumentToClickHouse(ctx, docData.HoldingCode, docStruct, docRefStructs, docPaymentStruct, docDetailStructs, 8)
 	if err != nil {
 		return fmt.Errorf("failed to insert to ClickHouse: %w", err)
 	}
 
 	// Step 9: Calculate stock cost using global config
-	err = ProcessDocumentStockCalculation(db, docData.ShopId, docDetailStructs, 9)
+	err = ProcessDocumentStockCalculation(db, docData.HoldingCode, docDetailStructs, 9)
 	if err != nil {
 		logger.Error("Failed to calculate stock cost: %v", err)
 		// Don't return error, just log it
@@ -164,7 +164,7 @@ func ProcessStockPickupProductDocument(docData models.StockPickupProductStruct) 
 }
 
 // MapStockPickupProductToDocDetailStructs - converts stock pickup product to document detail structs
-func MapStockPickupProductToDocDetailStructs(processData models.ProcessMongoTransModel, shopId string) []models.DocDetailStruct {
+func MapStockPickupProductToDocDetailStructs(processData models.ProcessMongoTransModel, holdingCode string) []models.DocDetailStruct {
 	var docDetailStructs []models.DocDetailStruct
 
 	for i, detail := range processData.Details {
@@ -268,7 +268,7 @@ func ConvertStockPickupProductMongoDocToProcessModel(docData models.StockPickupP
 
 	logger.Info("ConvertStockPickupProductToProcessModel: Creating final ProcessMongoTransModel")
 	result := models.ProcessMongoTransModel{
-		ShopId:           docData.ShopId,
+		HoldingCode:      docData.HoldingCode,
 		BranchId:         docData.BranchId,
 		GuidFixed:        docData.GuidFixed,
 		DocNo:            docData.DocNo,

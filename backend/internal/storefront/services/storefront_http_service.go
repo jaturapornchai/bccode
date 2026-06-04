@@ -14,11 +14,11 @@ import (
 )
 
 type IStorefrontHttpService interface {
-	CreateStorefront(shopID string, authUsername string, doc models.Storefront) (string, error)
-	UpdateStorefront(shopID string, guid string, authUsername string, doc models.Storefront) error
-	DeleteStorefront(shopID string, guid string, authUsername string) error
-	InfoStorefront(shopID string, guid string) (models.StorefrontInfo, error)
-	SearchStorefront(shopID string, pageable micromodels.Pageable) ([]models.StorefrontInfo, mongopagination.PaginationData, error)
+	CreateStorefront(holdingCode string, authUsername string, doc models.Storefront) (string, error)
+	UpdateStorefront(holdingCode string, guid string, authUsername string, doc models.Storefront) error
+	DeleteStorefront(holdingCode string, guid string, authUsername string) error
+	InfoStorefront(holdingCode string, guid string) (models.StorefrontInfo, error)
+	SearchStorefront(holdingCode string, pageable micromodels.Pageable) ([]models.StorefrontInfo, mongopagination.PaginationData, error)
 }
 
 type StorefrontHttpService struct {
@@ -40,7 +40,7 @@ func (svc StorefrontHttpService) getContextTimeout() (context.Context, context.C
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc StorefrontHttpService) CreateStorefront(shopID string, authUsername string, doc models.Storefront) (string, error) {
+func (svc StorefrontHttpService) CreateStorefront(holdingCode string, authUsername string, doc models.Storefront) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -48,7 +48,7 @@ func (svc StorefrontHttpService) CreateStorefront(shopID string, authUsername st
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.StorefrontDoc{}
-	docData.ShopID = shopID
+	docData.HoldingCode = holdingCode
 	docData.GuidFixed = newGuidFixed
 	docData.Storefront = doc
 
@@ -64,12 +64,12 @@ func (svc StorefrontHttpService) CreateStorefront(shopID string, authUsername st
 	return newGuidFixed, nil
 }
 
-func (svc StorefrontHttpService) UpdateStorefront(shopID string, guid string, authUsername string, doc models.Storefront) error {
+func (svc StorefrontHttpService) UpdateStorefront(holdingCode string, guid string, authUsername string, doc models.Storefront) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -84,7 +84,7 @@ func (svc StorefrontHttpService) UpdateStorefront(shopID string, guid string, au
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, findDoc)
+	err = svc.repo.Update(ctx, holdingCode, guid, findDoc)
 
 	if err != nil {
 		return err
@@ -93,12 +93,12 @@ func (svc StorefrontHttpService) UpdateStorefront(shopID string, guid string, au
 	return nil
 }
 
-func (svc StorefrontHttpService) DeleteStorefront(shopID string, guid string, authUsername string) error {
+func (svc StorefrontHttpService) DeleteStorefront(holdingCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return err
@@ -108,7 +108,7 @@ func (svc StorefrontHttpService) DeleteStorefront(shopID string, guid string, au
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
 	}
@@ -116,12 +116,12 @@ func (svc StorefrontHttpService) DeleteStorefront(shopID string, guid string, au
 	return nil
 }
 
-func (svc StorefrontHttpService) InfoStorefront(shopID string, guid string) (models.StorefrontInfo, error) {
+func (svc StorefrontHttpService) InfoStorefront(holdingCode string, guid string) (models.StorefrontInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
 	if err != nil {
 		return models.StorefrontInfo{}, err
@@ -135,7 +135,7 @@ func (svc StorefrontHttpService) InfoStorefront(shopID string, guid string) (mod
 
 }
 
-func (svc StorefrontHttpService) SearchStorefront(shopID string, pageable micromodels.Pageable) ([]models.StorefrontInfo, mongopagination.PaginationData, error) {
+func (svc StorefrontHttpService) SearchStorefront(holdingCode string, pageable micromodels.Pageable) ([]models.StorefrontInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -145,7 +145,7 @@ func (svc StorefrontHttpService) SearchStorefront(shopID string, pageable microm
 		"code",
 	}
 
-	docList, pagination, err := svc.repo.FindPage(ctx, shopID, searchInFields, pageable)
+	docList, pagination, err := svc.repo.FindPage(ctx, holdingCode, searchInFields, pageable)
 
 	if err != nil {
 		return []models.StorefrontInfo{}, pagination, err

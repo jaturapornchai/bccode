@@ -67,7 +67,7 @@ func (h SaleDebitNoteHttp) RegisterHttp() {
 // @Router /transaction/bank/saledebitnote [post]
 func (h SaleDebitNoteHttp) CreateSaleDebitNote(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.SaleDebitNote{}
@@ -83,7 +83,7 @@ func (h SaleDebitNoteHttp) CreateSaleDebitNote(ctx microservice.IContext) error 
 		return err
 	}
 
-	idx, docNo, err := h.svc.CreateSaleDebitNote(shopID, authUsername, *docReq)
+	idx, docNo, err := h.svc.CreateSaleDebitNote(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -111,7 +111,7 @@ func (h SaleDebitNoteHttp) CreateSaleDebitNote(ctx microservice.IContext) error 
 func (h SaleDebitNoteHttp) UpdateSaleDebitNote(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -129,7 +129,7 @@ func (h SaleDebitNoteHttp) UpdateSaleDebitNote(ctx microservice.IContext) error 
 		return err
 	}
 
-	err = h.svc.UpdateSaleDebitNote(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateSaleDebitNote(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -155,12 +155,12 @@ func (h SaleDebitNoteHttp) UpdateSaleDebitNote(ctx microservice.IContext) error 
 // @Router /transaction/bank/saledebitnote/{id} [delete]
 func (h SaleDebitNoteHttp) DeleteSaleDebitNote(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteSaleDebitNote(shopID, id, authUsername)
+	err := h.svc.DeleteSaleDebitNote(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -186,7 +186,7 @@ func (h SaleDebitNoteHttp) DeleteSaleDebitNote(ctx microservice.IContext) error 
 // @Router /transaction/bank/saledebitnote [delete]
 func (h SaleDebitNoteHttp) DeleteSaleDebitNoteByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -199,7 +199,7 @@ func (h SaleDebitNoteHttp) DeleteSaleDebitNoteByGUIDs(ctx microservice.IContext)
 		return err
 	}
 
-	err = h.svc.DeleteSaleDebitNoteByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteSaleDebitNoteByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -224,12 +224,12 @@ func (h SaleDebitNoteHttp) DeleteSaleDebitNoteByGUIDs(ctx microservice.IContext)
 // @Router /transaction/bank/saledebitnote/{id} [get]
 func (h SaleDebitNoteHttp) InfoSaleDebitNote(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get SaleDebitNote %v", id)
-	doc, err := h.svc.InfoSaleDebitNote(shopID, id)
+	doc, err := h.svc.InfoSaleDebitNote(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -255,11 +255,11 @@ func (h SaleDebitNoteHttp) InfoSaleDebitNote(ctx microservice.IContext) error {
 // @Router /transaction/bank/saledebitnote/code/{code} [get]
 func (h SaleDebitNoteHttp) InfoSaleDebitNoteByCode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
 
-	doc, err := h.svc.InfoSaleDebitNoteByCode(shopID, code)
+	doc, err := h.svc.InfoSaleDebitNoteByCode(holdingCode, code)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -290,7 +290,7 @@ func (h SaleDebitNoteHttp) InfoSaleDebitNoteByCode(ctx microservice.IContext) er
 // @Router /transaction/bank/saledebitnote [get]
 func (h SaleDebitNoteHttp) SearchSaleDebitNotePage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
@@ -311,7 +311,7 @@ func (h SaleDebitNoteHttp) SearchSaleDebitNotePage(ctx microservice.IContext) er
 		},
 	})
 
-	docList, pagination, err := h.svc.SearchSaleDebitNote(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchSaleDebitNote(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -344,7 +344,7 @@ func (h SaleDebitNoteHttp) SearchSaleDebitNotePage(ctx microservice.IContext) er
 // @Router /transaction/bank/saledebitnote/list [get]
 func (h SaleDebitNoteHttp) SearchSaleDebitNoteStep(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -367,7 +367,7 @@ func (h SaleDebitNoteHttp) SearchSaleDebitNoteStep(ctx microservice.IContext) er
 		},
 	})
 
-	docList, total, err := h.svc.SearchSaleDebitNoteStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchSaleDebitNoteStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -395,7 +395,7 @@ func (h SaleDebitNoteHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -407,7 +407,7 @@ func (h SaleDebitNoteHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

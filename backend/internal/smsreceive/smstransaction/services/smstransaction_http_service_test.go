@@ -26,8 +26,8 @@ type SmsTransactionRepositoryMock struct {
 	mock.Mock
 }
 
-func (m *SmsTransactionRepositoryMock) Count(ctx context.Context, shopID string) (int, error) {
-	args := m.Called(shopID)
+func (m *SmsTransactionRepositoryMock) Count(ctx context.Context, holdingCode string) (int, error) {
+	args := m.Called(holdingCode)
 	return args.Int(0), args.Error(1)
 }
 
@@ -41,38 +41,38 @@ func (m *SmsTransactionRepositoryMock) CreateInBatch(docList []models.SmsTransac
 	return args.Error(0)
 }
 
-func (m *SmsTransactionRepositoryMock) Update(shopID string, guid string, doc models.SmsTransactionDoc) error {
-	args := m.Called(shopID, guid, doc)
+func (m *SmsTransactionRepositoryMock) Update(holdingCode string, guid string, doc models.SmsTransactionDoc) error {
+	args := m.Called(holdingCode, guid, doc)
 	return args.Error(0)
 }
 
-func (m *SmsTransactionRepositoryMock) DeleteByGuidfixed(shopID string, guid string, username string) error {
-	args := m.Called(shopID, guid, username)
+func (m *SmsTransactionRepositoryMock) DeleteByGuidfixed(holdingCode string, guid string, username string) error {
+	args := m.Called(holdingCode, guid, username)
 	return args.Error(0)
 }
 
-func (m *SmsTransactionRepositoryMock) FindPage(shopID string, searchInFields []string, pageable micromodels.Pageable)([]models.SmsTransactionInfo, mongopagination.PaginationData, error) {
-	args := m.Called(shopID, searchInFields, pageable)
+func (m *SmsTransactionRepositoryMock) FindPage(holdingCode string, searchInFields []string, pageable micromodels.Pageable)([]models.SmsTransactionInfo, mongopagination.PaginationData, error) {
+	args := m.Called(holdingCode, searchInFields, pageable)
 	return args.Get(0).([]models.SmsTransactionInfo), args.Get(1).(mongopagination.PaginationData), args.Error(2)
 }
 
-func (m *SmsTransactionRepositoryMock) FindByGuid(shopID string, guid string) (models.SmsTransactionDoc, error) {
-	args := m.Called(shopID, guid)
+func (m *SmsTransactionRepositoryMock) FindByGuid(holdingCode string, guid string) (models.SmsTransactionDoc, error) {
+	args := m.Called(holdingCode, guid)
 	return args.Get(0).(models.SmsTransactionDoc), args.Error(1)
 }
 
-func (m *SmsTransactionRepositoryMock) FindByDocIndentityGuid(shopID string, indentityField string, indentityValue interface{}) (models.SmsTransactionDoc, error) {
-	args := m.Called(shopID, indentityField, indentityValue)
+func (m *SmsTransactionRepositoryMock) FindByDocIndentityGuid(holdingCode string, indentityField string, indentityValue interface{}) (models.SmsTransactionDoc, error) {
+	args := m.Called(holdingCode, indentityField, indentityValue)
 	return args.Get(0).(models.SmsTransactionDoc), args.Error(1)
 }
 
-func (m *SmsTransactionRepositoryMock) FindPage(shopID string, searchInFields []string, pageable micromodels.Pageable) ([]models.SmsTransactionInfo, mongopagination.PaginationData, error) {
-	args := m.Called(shopID, searchInFields, pageable, sorts)
+func (m *SmsTransactionRepositoryMock) FindPage(holdingCode string, searchInFields []string, pageable micromodels.Pageable) ([]models.SmsTransactionInfo, mongopagination.PaginationData, error) {
+	args := m.Called(holdingCode, searchInFields, pageable, sorts)
 	return args.Get(0).([]models.SmsTransactionInfo), args.Get(1).(mongopagination.PaginationData), args.Error(2)
 }
 
-func (m *SmsTransactionRepositoryMock) FindFilterSms(shopID string, address string, startTime time.Time, endTime time.Time) ([]models.SmsTransactionInfo, error) {
-	args := m.Called(shopID, address, startTime, endTime)
+func (m *SmsTransactionRepositoryMock) FindFilterSms(holdingCode string, address string, startTime time.Time, endTime time.Time) ([]models.SmsTransactionInfo, error) {
+	args := m.Called(holdingCode, address, startTime, endTime)
 	return args.Get(0).([]models.SmsTransactionInfo), args.Error(1)
 }
 
@@ -114,7 +114,7 @@ func TestFillterSms(t *testing.T) {
 	}, nil)
 
 	type args struct {
-		shopID    string
+		holdingCode    string
 		amount    float64
 		startTime time.Time
 		endTime   time.Time
@@ -131,7 +131,7 @@ func TestFillterSms(t *testing.T) {
 			wantErr:  false,
 			wantData: 1170.00,
 			args: args{
-				shopID:    "TESTSHOP",
+				holdingCode:    "TESTSHOP",
 				amount:    1170.00,
 				startTime: startTime,
 				endTime:   endTime,
@@ -142,7 +142,7 @@ func TestFillterSms(t *testing.T) {
 			wantErr:  true,
 			wantData: 0.00,
 			args: args{
-				shopID:    "TESTSHOP",
+				holdingCode:    "TESTSHOP",
 				amount:    0,
 				startTime: utilmock.MockTime(),
 				endTime:   utilmock.MockTime(),
@@ -153,7 +153,7 @@ func TestFillterSms(t *testing.T) {
 			wantErr:  true,
 			wantData: 0.00,
 			args: args{
-				shopID:    "TESTSHOP",
+				holdingCode:    "TESTSHOP",
 				startTime: utilmock.MockTime(),
 				endTime:   utilmock.MockTime(),
 			},

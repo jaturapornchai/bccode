@@ -7,11 +7,11 @@ import (
 )
 
 type IAPPurchaseReceiveTransactionPostgresRepository interface {
-	Get(shopID string, docNo string) (*models.APPurchaseReceivePG, error)
+	Get(holdingCode string, docNo string) (*models.APPurchaseReceivePG, error)
 	Create(doc models.APPurchaseReceivePG) error
-	Update(shopID string, docNo string, doc models.APPurchaseReceivePG) error
-	Delete(shopID string, docNo string, doc models.APPurchaseReceivePG) error
-	DeleteData(shopID string, docNo string, doc models.APPurchaseReceivePG) error
+	Update(holdingCode string, docNo string, doc models.APPurchaseReceivePG) error
+	Delete(holdingCode string, docNo string, doc models.APPurchaseReceivePG) error
+	DeleteData(holdingCode string, docNo string, doc models.APPurchaseReceivePG) error
 }
 
 type APPurchaseReceiveTransactionPostgresRepository struct {
@@ -37,11 +37,11 @@ func (repo APPurchaseReceiveTransactionPostgresRepository) Create(doc models.APP
 	return nil
 }
 
-func (repo APPurchaseReceiveTransactionPostgresRepository) Update(shopID string, docNo string, doc models.APPurchaseReceivePG) error {
+func (repo APPurchaseReceiveTransactionPostgresRepository) Update(holdingCode string, docNo string, doc models.APPurchaseReceivePG) error {
 
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"shopid": shopID,
-		"docno":  docNo,
+		"holding_code": holdingCode,
+		"docno":        docNo,
 	})
 
 	if err != nil {
@@ -50,12 +50,12 @@ func (repo APPurchaseReceiveTransactionPostgresRepository) Update(shopID string,
 	return nil
 }
 
-func (repo *APPurchaseReceiveTransactionPostgresRepository) DeleteData(shopID string, docNo string, doc models.APPurchaseReceivePG) error {
+func (repo *APPurchaseReceiveTransactionPostgresRepository) DeleteData(holdingCode string, docNo string, doc models.APPurchaseReceivePG) error {
 
 	var details *[]models.APPurchaseReceiveDetailPG
 	tx := repo.pst.DBClient().Begin()
 
-	tx.Model(&models.APPurchaseReceiveDetailPG{}).Where(" shopid=? AND docno=?", shopID, docNo).Find(&details)
+	tx.Model(&models.APPurchaseReceiveDetailPG{}).Where(" holding_code=? AND docno=?", holdingCode, docNo).Find(&details)
 	for _, tmp := range *details {
 		// mark delete
 		err := tx.Delete(&models.APPurchaseReceiveDetailPG{}, tmp.ID).Error
@@ -66,8 +66,8 @@ func (repo *APPurchaseReceiveTransactionPostgresRepository) DeleteData(shopID st
 	}
 
 	err := tx.Delete(&models.APPurchaseReceivePG{}, map[string]interface{}{
-		"shopid": shopID,
-		"docno":  docNo,
+		"holding_code": holdingCode,
+		"docno":        docNo,
 	}).Error
 	if err != nil {
 		tx.Rollback()

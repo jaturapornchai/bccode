@@ -25,7 +25,7 @@ func TestPrepareCreateBranchRequiresCompanyGuid(t *testing.T) {
 func TestPrepareCreateBranchScopesTenantAndNormalizesCode(t *testing.T) {
 	now := time.Date(2026, 5, 31, 10, 0, 0, 0, time.UTC)
 	req := BranchPg{
-		ShopID:      "client-shop",
+		HoldingCode: "client-shop",
 		Code:        "1",
 		CompanyGuid: " company-1 ",
 	}
@@ -35,8 +35,8 @@ func TestPrepareCreateBranchScopesTenantAndNormalizesCode(t *testing.T) {
 		t.Fatalf("prepare create branch: %v", err)
 	}
 
-	if req.ShopID != "token-shop" {
-		t.Fatalf("ShopID = %q, want token-shop", req.ShopID)
+	if req.HoldingCode != "token-shop" {
+		t.Fatalf("HoldingCode = %q, want token-shop", req.HoldingCode)
 	}
 	if req.CompanyGuid != "company-1" {
 		t.Fatalf("CompanyGuid = %q, want company-1", req.CompanyGuid)
@@ -61,7 +61,7 @@ func TestBranchDuplicateLookupScopesByCompanyGuid(t *testing.T) {
 	stmt := BranchDuplicateLookup(db, "shop-1", "company-1", "00001", "branch-1").
 		First(&BranchPg{}).Statement
 
-	assertSQLContains(t, stmt.SQL.String(), "shopid", "company_guid", "code", "guid_fixed")
+	assertSQLContains(t, stmt.SQL.String(), "holding_code", "company_guid", "code", "guid_fixed")
 	assertVars(t, stmt.Vars, "shop-1", "company-1", "00001", "branch-1")
 }
 
@@ -70,7 +70,7 @@ func TestCompanyBranchCountLookupScopesByCompanyGuid(t *testing.T) {
 
 	stmt := CompanyBranchCountLookup(db, "shop-1", "company-1").Count(new(int64)).Statement
 
-	assertSQLContains(t, stmt.SQL.String(), "shopid", "company_guid")
+	assertSQLContains(t, stmt.SQL.String(), "holding_code", "company_guid")
 	assertVars(t, stmt.Vars, "shop-1", "company-1")
 }
 

@@ -25,14 +25,14 @@ const (
 // WebhookHandler handles LINE webhook events
 // POST /api/lineoa/webhook
 func WebhookHandler(c echo.Context) error {
-	// Get shop_id from query parameter or header
-	shopID := c.QueryParam("shop_id")
-	if shopID == "" {
-		shopID = c.Request().Header.Get("X-Shop-ID")
+	// Get holding_code from query parameter or header
+	holdingCode := c.QueryParam("holding_code")
+	if holdingCode == "" {
+		holdingCode = c.Request().Header.Get("X-Shop-ID")
 	}
 
-	if shopID == "" {
-		logger.Warn("[LINE Webhook] Missing shop_id")
+	if holdingCode == "" {
+		logger.Warn("[LINE Webhook] Missing holding_code")
 		return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 	}
 
@@ -50,58 +50,58 @@ func WebhookHandler(c echo.Context) error {
 	}
 
 	// Process events asynchronously
-	go processWebhookEvents(shopID, webhookReq.Events)
+	go processWebhookEvents(holdingCode, webhookReq.Events)
 
 	// Always return 200 OK immediately (LINE requires fast response)
 	return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 }
 
 // processWebhookEvents processes LINE events
-func processWebhookEvents(shopID string, events []LineEvent) {
+func processWebhookEvents(holdingCode string, events []LineEvent) {
 	for _, event := range events {
 		switch event.Type {
 		case "message":
 			if event.Message != nil && event.Message.Type == "text" {
-				handleTextMessage(shopID, event)
+				handleTextMessage(holdingCode, event)
 			}
 		case "postback":
 			if event.Postback != nil {
-				handlePostback(shopID, event)
+				handlePostback(holdingCode, event)
 			}
 		case "follow":
-			handleFollow(shopID, event)
+			handleFollow(holdingCode, event)
 		}
 	}
 }
 
 // handleTextMessage processes text messages with AI
-func handleTextMessage(shopID string, event LineEvent) {
+func handleTextMessage(holdingCode string, event LineEvent) {
 	userID := event.Source.UserID
 	userMessage := event.Message.Text
 	replyToken := event.ReplyToken
 
-	logger.Info("[LINE Chat] Shop: %s, User: %s, Message: %s", shopID, userID, userMessage)
+	logger.Info("[LINE Chat] Shop: %s, User: %s, Message: %s", holdingCode, userID, userMessage)
 
 	// Get or create conversation session
-	session, err := getOrCreateSession(shopID, userID)
+	session, err := getOrCreateSession(holdingCode, userID)
 	if err != nil {
 		logger.Error("[LINE Chat] Failed to get session: %v", err)
-		sendTextReply(shopID, replyToken, "ขออภัยครับ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง", nil)
+		sendTextReply(holdingCode, replyToken, "ขออภัยครับ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง", nil)
 		return
 	}
 
 	// Check for special commands
 	lowerMsg := strings.ToLower(strings.TrimSpace(userMessage))
 	if lowerMsg == "เริ่มใหม่" || lowerMsg == "reset" || lowerMsg == "clear" {
-		clearSession(shopID, userID)
-		quickReplies := getMainMenuQuickReplies(shopID)
-		sendTextReply(shopID, replyToken, "เริ่มการสนทนาใหม่แล้วครับ\n\nสามารถถามคำถามได้เลยครับ หรือเลือกเมนูด้านล่าง", quickReplies)
+		clearSession(holdingCode, userID)
+		quickReplies := getMainMenuQuickReplies(holdingCode)
+		sendTextReply(holdingCode, replyToken, "เริ่มการสนทนาใหม่แล้วครับ\n\nสามารถถามคำถามได้เลยครับ หรือเลือกเมนูด้านล่าง", quickReplies)
 		return
 	}
 
 	// Handle "เชื่อมต่อบัญชี" command
 	if strings.Contains(lowerMsg, "เชื่อมต่อ") || strings.Contains(lowerMsg, "link") {
-		handleLinkAccountCommand(shopID, event)
+		handleLinkAccountCommand(holdingCode, event)
 		return
 	}
 
@@ -113,7 +113,7 @@ func handleTextMessage(shopID string, event LineEvent) {
 	})
 
 	// Generate AI response
-	aiResponse, suggestedReplies := generateAIResponse(shopID, session)
+	aiResponse, suggestedReplies := generateAIResponse(holdingCode, session)
 
 	// Add AI response to session
 	session.Messages = append(session.Messages, ConversationMessage{
@@ -132,16 +132,16 @@ func handleTextMessage(shopID string, event LineEvent) {
 	}
 
 	// Send reply
-	sendTextReply(shopID, replyToken, aiResponse, quickReplies)
+	sendTextReply(holdingCode, replyToken, aiResponse, quickReplies)
 }
 
 // handlePostback processes postback events (button clicks)
-func handlePostback(shopID string, event LineEvent) {
+func handlePostback(holdingCode string, event LineEvent) {
 	userID := event.Source.UserID
 	data := event.Postback.Data
 	replyToken := event.ReplyToken
 
-	logger.Info("[LINE Postback] Shop: %s, User: %s, Data: %s", shopID, userID, data)
+	logger.Info("[LINE Postback] Shop: %s, User: %s, Data: %s", holdingCode, userID, data)
 
 	// Parse postback data
 	parts := strings.Split(data, "=")
@@ -169,34 +169,34 @@ func handlePostback(shopID string, event LineEvent) {
 			quickReplies = buildQuickReplies([]string{"รายงานประจำวัน", "รายงานสต็อก", "กลับเมนูหลัก"})
 		case "main":
 			response = "กลับมาที่เมนูหลักแล้วครับ\n\nเลือกหัวข้อที่ต้องการ หรือพิมพ์คำถามได้เลยครับ"
-			quickReplies = getMainMenuQuickReplies(shopID)
+			quickReplies = getMainMenuQuickReplies(holdingCode)
 		}
 	}
 
 	if response != "" {
-		sendTextReply(shopID, replyToken, response, quickReplies)
+		sendTextReply(holdingCode, replyToken, response, quickReplies)
 	}
 }
 
 // handleFollow handles follow events (new friend)
-func handleFollow(shopID string, event LineEvent) {
+func handleFollow(holdingCode string, event LineEvent) {
 	replyToken := event.ReplyToken
 
 	welcomeMessage := "สวัสดีครับ! ยินดีต้อนรับสู่ BC Ai Account 🎉\n\nผมคือ AI ผู้ช่วยของคุณ สามารถช่วยเรื่อง:\n• 📦 ดูข้อมูลสินค้าและสต็อก\n• 💰 ตรวจสอบยอดขาย\n• 📊 ดูรายงานต่างๆ\n\nลองเลือกเมนูด้านล่าง หรือพิมพ์คำถามได้เลยครับ"
 
-	quickReplies := getMainMenuQuickReplies(shopID)
-	sendTextReply(shopID, replyToken, welcomeMessage, quickReplies)
+	quickReplies := getMainMenuQuickReplies(holdingCode)
+	sendTextReply(holdingCode, replyToken, welcomeMessage, quickReplies)
 }
 
 // generateAIResponse generates response using AI provider
-func generateAIResponse(shopID string, session *ConversationSession) (string, []string) {
+func generateAIResponse(holdingCode string, session *ConversationSession) (string, []string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	ai := aiprovider.GetProvider()
 
 	// Build system prompt
-	systemPrompt := buildSystemPrompt(shopID)
+	systemPrompt := buildSystemPrompt(holdingCode)
 
 	// Build conversation history as user prompt
 	var historyBuilder strings.Builder
@@ -237,11 +237,11 @@ func generateAIResponse(shopID string, session *ConversationSession) (string, []
 }
 
 // buildSystemPrompt creates the system prompt for AI
-func buildSystemPrompt(shopID string) string {
+func buildSystemPrompt(holdingCode string) string {
 	return fmt.Sprintf(`คุณเป็น AI ผู้ช่วยร้านค้าของระบบ BC Ai Account
 
 **ข้อมูลร้าน:**
-- Shop ID: %s
+- Holding Code: %s
 
 **หน้าที่ของคุณ:**
 1. ตอบคำถามเกี่ยวกับสินค้า สต็อก ยอดขาย และรายงานต่างๆ
@@ -265,7 +265,7 @@ AI: "💰 ยอดขายวันนี้ ฿15,000 ครับ (12 บิ
 
 **คำแนะนำ:**
 ท้ายคำตอบ ให้แนะนำคำถามที่เกี่ยวข้อง 2-3 ข้อ ในรูปแบบ:
-[แนะนำ: คำถาม1 | คำถาม2 | คำถาม3]`, shopID)
+[แนะนำ: คำถาม1 | คำถาม2 | คำถาม3]`, holdingCode)
 }
 
 // extractSuggestedReplies extracts suggested questions from AI response
@@ -317,7 +317,7 @@ func cleanAIResponse(text string) string {
 }
 
 // getOrCreateSession gets existing session or creates new one
-func getOrCreateSession(shopID, userID string) (*ConversationSession, error) {
+func getOrCreateSession(holdingCode, userID string) (*ConversationSession, error) {
 	if !IsConnected() {
 		return nil, fmt.Errorf("MongoDB not connected")
 	}
@@ -326,7 +326,7 @@ func getOrCreateSession(shopID, userID string) (*ConversationSession, error) {
 	defer cancel()
 
 	collection := getCollection(ConversationCollection)
-	sessionID := fmt.Sprintf("%s_%s", shopID, userID)
+	sessionID := fmt.Sprintf("%s_%s", holdingCode, userID)
 
 	var session ConversationSession
 	err := collection.FindOne(ctx, bson.M{
@@ -337,14 +337,14 @@ func getOrCreateSession(shopID, userID string) (*ConversationSession, error) {
 	if err != nil {
 		// Create new session
 		session = ConversationSession{
-			SessionID:  sessionID,
-			ShopID:     shopID,
-			LineUserID: userID,
-			Messages:   []ConversationMessage{},
-			Context:    make(map[string]string),
-			CreatedAt:  time.Now(),
-			UpdatedAt:  time.Now(),
-			ExpiresAt:  time.Now().Add(SessionExpiry),
+			SessionID:   sessionID,
+			HoldingCode: holdingCode,
+			LineUserID:  userID,
+			Messages:    []ConversationMessage{},
+			Context:     make(map[string]string),
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+			ExpiresAt:   time.Now().Add(SessionExpiry),
 		}
 	}
 
@@ -381,7 +381,7 @@ func saveSession(session *ConversationSession) error {
 }
 
 // clearSession clears conversation history
-func clearSession(shopID, userID string) error {
+func clearSession(holdingCode, userID string) error {
 	if !IsConnected() {
 		return fmt.Errorf("MongoDB not connected")
 	}
@@ -390,14 +390,14 @@ func clearSession(shopID, userID string) error {
 	defer cancel()
 
 	collection := getCollection(ConversationCollection)
-	sessionID := fmt.Sprintf("%s_%s", shopID, userID)
+	sessionID := fmt.Sprintf("%s_%s", holdingCode, userID)
 
 	_, err := collection.DeleteOne(ctx, bson.M{"session_id": sessionID})
 	return err
 }
 
 // getMainMenuQuickReplies returns main menu quick reply buttons
-func getMainMenuQuickReplies(shopID string) *LineQuickReply {
+func getMainMenuQuickReplies(holdingCode string) *LineQuickReply {
 	items := []LineQuickReplyItem{
 		{
 			Type: "action",
@@ -426,9 +426,9 @@ func getMainMenuQuickReplies(shopID string) *LineQuickReply {
 	}
 
 	// Add LIFF link button if configured
-	liffID, err := getShopLiffID(shopID)
+	liffID, err := getShopLiffID(holdingCode)
 	if err == nil && liffID != "" {
-		liffURL := fmt.Sprintf("https://liff.line.me/%s?shop_id=%s", liffID, shopID)
+		liffURL := fmt.Sprintf("https://liff.line.me/%s?holding_code=%s", liffID, holdingCode)
 		items = append(items, LineQuickReplyItem{
 			Type: "action",
 			Action: LineQuickAction{
@@ -473,9 +473,9 @@ func buildQuickReplies(suggestions []string) *LineQuickReply {
 }
 
 // sendTextReply sends text reply with optional quick replies
-func sendTextReply(shopID, replyToken, text string, quickReply *LineQuickReply) error {
+func sendTextReply(holdingCode, replyToken, text string, quickReply *LineQuickReply) error {
 	// Get access token for this shop
-	accessToken, err := getShopAccessToken(shopID)
+	accessToken, err := getShopAccessToken(holdingCode)
 	if err != nil {
 		logger.Error("[LINE Reply] Failed to get access token: %v", err)
 		return err
@@ -496,7 +496,7 @@ func sendTextReply(shopID, replyToken, text string, quickReply *LineQuickReply) 
 }
 
 // getShopAccessToken gets LINE access token for shop
-func getShopAccessToken(shopID string) (string, error) {
+func getShopAccessToken(holdingCode string) (string, error) {
 	if !IsConnected() {
 		return "", fmt.Errorf("MongoDB not connected")
 	}
@@ -508,8 +508,8 @@ func getShopAccessToken(shopID string) (string, error) {
 
 	var config ConfigDoc
 	err := collection.FindOne(ctx, bson.M{
-		"shop_id":   shopID,
-		"is_active": true,
+		"holding_code": holdingCode,
+		"is_active":    true,
 	}).Decode(&config)
 
 	if err != nil {
@@ -570,8 +570,8 @@ func buildLiffQuickReplyItem(label, liffURL string) LineQuickReplyItem {
 }
 
 // getLiffURL generates LIFF URL with parameters
-func getLiffURL(shopID, liffID string, params map[string]string) string {
-	url := fmt.Sprintf("https://liff.line.me/%s?shop_id=%s", liffID, shopID)
+func getLiffURL(holdingCode, liffID string, params map[string]string) string {
+	url := fmt.Sprintf("https://liff.line.me/%s?holding_code=%s", liffID, holdingCode)
 	for key, value := range params {
 		url += fmt.Sprintf("&%s=%s", key, value)
 	}
@@ -579,8 +579,8 @@ func getLiffURL(shopID, liffID string, params map[string]string) string {
 }
 
 // sendFlexMessageWithLiffButton sends a Flex message with LIFF button
-func sendFlexMessageWithLiffButton(shopID, replyToken, title, description, buttonLabel, liffURL string) error {
-	accessToken, err := getShopAccessToken(shopID)
+func sendFlexMessageWithLiffButton(holdingCode, replyToken, title, description, buttonLabel, liffURL string) error {
+	accessToken, err := getShopAccessToken(holdingCode)
 	if err != nil {
 		logger.Error("[LINE Reply] Failed to get access token: %v", err)
 		return err
@@ -644,8 +644,8 @@ func sendFlexMessageWithLiffButton(shopID, replyToken, title, description, butto
 }
 
 // sendTextWithLiffButton sends text message with LIFF quick reply button
-func sendTextWithLiffButton(shopID, replyToken, text, buttonLabel, liffURL string, additionalReplies []LineQuickReplyItem) error {
-	accessToken, err := getShopAccessToken(shopID)
+func sendTextWithLiffButton(holdingCode, replyToken, text, buttonLabel, liffURL string, additionalReplies []LineQuickReplyItem) error {
+	accessToken, err := getShopAccessToken(holdingCode)
 	if err != nil {
 		logger.Error("[LINE Reply] Failed to get access token: %v", err)
 		return err
@@ -674,30 +674,30 @@ func sendTextWithLiffButton(shopID, replyToken, text, buttonLabel, liffURL strin
 }
 
 // Example: Handle "เชื่อมต่อบัญชี" command to open LIFF
-func handleLinkAccountCommand(shopID string, event LineEvent) {
+func handleLinkAccountCommand(holdingCode string, event LineEvent) {
 	replyToken := event.ReplyToken
 	userID := event.Source.UserID
 
 	// Get LIFF ID from shop config
-	liffID, err := getShopLiffID(shopID)
+	liffID, err := getShopLiffID(holdingCode)
 	if err != nil || liffID == "" {
-		sendTextReply(shopID, replyToken, "ขออภัยครับ ยังไม่ได้ตั้งค่า LIFF สำหรับร้านนี้", nil)
+		sendTextReply(holdingCode, replyToken, "ขออภัยครับ ยังไม่ได้ตั้งค่า LIFF สำหรับร้านนี้", nil)
 		return
 	}
 
 	// Generate link token
-	linkToken := generateLinkToken(shopID, userID)
+	linkToken := generateLinkToken(holdingCode, userID)
 	if linkToken == "" {
-		sendTextReply(shopID, replyToken, "ขออภัยครับ ไม่สามารถสร้างลิงก์ได้", nil)
+		sendTextReply(holdingCode, replyToken, "ขออภัยครับ ไม่สามารถสร้างลิงก์ได้", nil)
 		return
 	}
 
 	// Build LIFF URL
-	liffURL := fmt.Sprintf("https://liff.line.me/%s?token=%s&shop_id=%s", liffID, linkToken, shopID)
+	liffURL := fmt.Sprintf("https://liff.line.me/%s?token=%s&holding_code=%s", liffID, linkToken, holdingCode)
 
 	// Send Flex message with LIFF button
 	sendFlexMessageWithLiffButton(
-		shopID,
+		holdingCode,
 		replyToken,
 		"🔗 เชื่อมต่อบัญชี",
 		"กดปุ่มด้านล่างเพื่อเชื่อมต่อบัญชี LINE กับระบบ",
@@ -707,7 +707,7 @@ func handleLinkAccountCommand(shopID string, event LineEvent) {
 }
 
 // getShopLiffID gets LIFF ID for shop
-func getShopLiffID(shopID string) (string, error) {
+func getShopLiffID(holdingCode string) (string, error) {
 	if !IsConnected() {
 		return "", fmt.Errorf("MongoDB not connected")
 	}
@@ -719,8 +719,8 @@ func getShopLiffID(shopID string) (string, error) {
 
 	var config ConfigDoc
 	err := collection.FindOne(ctx, bson.M{
-		"shop_id":   shopID,
-		"is_active": true,
+		"holding_code": holdingCode,
+		"is_active":    true,
 	}).Decode(&config)
 
 	if err != nil {
@@ -731,7 +731,7 @@ func getShopLiffID(shopID string) (string, error) {
 }
 
 // generateLinkToken generates a temporary link token
-func generateLinkToken(shopID, userID string) string {
+func generateLinkToken(holdingCode, userID string) string {
 	if !IsConnected() {
 		return ""
 	}
@@ -743,12 +743,12 @@ func generateLinkToken(shopID, userID string) string {
 
 	token := fmt.Sprintf("%d", time.Now().UnixNano())
 	tokenDoc := LinkTokenDoc{
-		Token:     token,
-		ShopID:    shopID,
-		Username:  userID, // Use LINE user ID as identifier
-		TokenType: "chatbot_link",
-		ExpiresAt: time.Now().Add(24 * time.Hour),
-		CreatedAt: time.Now(),
+		Token:       token,
+		HoldingCode: holdingCode,
+		Username:    userID, // Use LINE user ID as identifier
+		TokenType:   "chatbot_link",
+		ExpiresAt:   time.Now().Add(24 * time.Hour),
+		CreatedAt:   time.Now(),
 	}
 
 	_, err := collection.InsertOne(ctx, tokenDoc)

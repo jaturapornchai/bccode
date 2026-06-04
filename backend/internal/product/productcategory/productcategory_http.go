@@ -6,10 +6,10 @@ import (
 	"smlcloudplatform/internal/config"
 	mastersync "smlcloudplatform/internal/mastersync/repositories"
 	common "smlcloudplatform/internal/models"
+	productbarcodeRepo "smlcloudplatform/internal/product/productbarcode/repositories"
 	"smlcloudplatform/internal/product/productcategory/models"
 	"smlcloudplatform/internal/product/productcategory/repositories"
 	"smlcloudplatform/internal/product/productcategory/services"
-	productbarcodeRepo "smlcloudplatform/internal/product/productbarcode/repositories"
 	"smlcloudplatform/internal/utils"
 	"smlcloudplatform/internal/utils/requestfilter"
 	"smlcloudplatform/pkg/microservice"
@@ -66,7 +66,7 @@ func (h ProductCategoryHttp) RegisterHttp() {
 // @Router /product/category [post]
 func (h ProductCategoryHttp) CreateProductCategory(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
+	holdingCode := ctx.UserInfo().HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.ProductCategory{}
@@ -90,7 +90,7 @@ func (h ProductCategoryHttp) CreateProductCategory(ctx microservice.IContext) er
 		return err
 	}
 
-	idx, err := h.svc.CreateProductCategory(shopID, authUsername, *docReq)
+	idx, err := h.svc.CreateProductCategory(holdingCode, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -117,7 +117,7 @@ func (h ProductCategoryHttp) CreateProductCategory(ctx microservice.IContext) er
 func (h ProductCategoryHttp) UpdateProductCategory(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
@@ -143,7 +143,7 @@ func (h ProductCategoryHttp) UpdateProductCategory(ctx microservice.IContext) er
 		return err
 	}
 
-	err = h.svc.UpdateProductCategory(shopID, id, authUsername, *docReq)
+	err = h.svc.UpdateProductCategory(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -170,7 +170,7 @@ func (h ProductCategoryHttp) UpdateProductCategory(ctx microservice.IContext) er
 func (h ProductCategoryHttp) UpdateProductCategoryXSort(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -187,7 +187,7 @@ func (h ProductCategoryHttp) UpdateProductCategoryXSort(ctx microservice.IContex
 		return err
 	}
 
-	err = h.svc.XSortsSave(shopID, authUsername, *req)
+	err = h.svc.XSortsSave(holdingCode, authUsername, *req)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -213,7 +213,7 @@ func (h ProductCategoryHttp) UpdateProductCategoryXSort(ctx microservice.IContex
 func (h ProductCategoryHttp) UpdateProductCategoryBarcodes(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -230,7 +230,7 @@ func (h ProductCategoryHttp) UpdateProductCategoryBarcodes(ctx microservice.ICon
 		return err
 	}
 
-	err = h.svc.XBarcodesSave(shopID, authUsername, *req)
+	err = h.svc.XBarcodesSave(holdingCode, authUsername, *req)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -255,12 +255,12 @@ func (h ProductCategoryHttp) UpdateProductCategoryBarcodes(ctx microservice.ICon
 // @Router /product/category/{id} [delete]
 func (h ProductCategoryHttp) DeleteProductCategory(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteProductCategory(shopID, id, authUsername)
+	err := h.svc.DeleteProductCategory(holdingCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -286,12 +286,12 @@ func (h ProductCategoryHttp) DeleteProductCategory(ctx microservice.IContext) er
 // @Router /product/category/{id} [get]
 func (h ProductCategoryHttp) InfoProductCategory(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get ProductCategory %v", id)
-	doc, err := h.svc.InfoProductCategory(shopID, id)
+	doc, err := h.svc.InfoProductCategory(holdingCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
@@ -320,7 +320,7 @@ func (h ProductCategoryHttp) InfoProductCategory(ctx microservice.IContext) erro
 // @Router /product/category [get]
 func (h ProductCategoryHttp) SearchProductCategoryPage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 	filters := requestfilter.GenerateFilters(ctx.QueryParam, []requestfilter.FilterRequest{
@@ -331,7 +331,7 @@ func (h ProductCategoryHttp) SearchProductCategoryPage(ctx microservice.IContext
 		},
 	})
 
-	docList, pagination, err := h.svc.SearchProductCategory(shopID, filters, pageable)
+	docList, pagination, err := h.svc.SearchProductCategory(holdingCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -361,7 +361,7 @@ func (h ProductCategoryHttp) SearchProductCategoryPage(ctx microservice.IContext
 // @Router /product/category/list [get]
 func (h ProductCategoryHttp) SearchProductCategoryLimit(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
@@ -375,7 +375,7 @@ func (h ProductCategoryHttp) SearchProductCategoryLimit(ctx microservice.IContex
 
 	lang := ctx.QueryParam("lang")
 
-	docList, total, err := h.svc.SearchProductCategoryStep(shopID, lang, filters, pageableStep)
+	docList, total, err := h.svc.SearchProductCategoryStep(holdingCode, lang, filters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -403,7 +403,7 @@ func (h ProductCategoryHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
 
@@ -415,7 +415,7 @@ func (h ProductCategoryHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.SaveInBatch(shopID, authUsername, dataReq)
+	err = h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())
@@ -443,7 +443,7 @@ func (h ProductCategoryHttp) SaveBulk(ctx microservice.IContext) error {
 // @Router /product/category [delete]
 func (h ProductCategoryHttp) DeleteProductCategoryByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
@@ -456,7 +456,7 @@ func (h ProductCategoryHttp) DeleteProductCategoryByGUIDs(ctx microservice.ICont
 		return err
 	}
 
-	err = h.svc.DeleteProductCategoryByGUIDs(shopID, authUsername, docReq)
+	err = h.svc.DeleteProductCategoryByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

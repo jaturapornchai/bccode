@@ -8,7 +8,7 @@ import (
 )
 
 type ICreditorPaymentTransactionAdminService interface {
-	ReSyncCreditorPaymentDoc(shopID string) error
+	ReSyncCreditorPaymentDoc(holdingCode string) error
 }
 
 type CreditorPaymentTransactionAdminService struct {
@@ -28,12 +28,12 @@ func NewCreditorPaymentTransactionAdminService(pst microservice.IPersisterMongo,
 	}
 }
 
-func (s *CreditorPaymentTransactionAdminService) ReSyncCreditorPaymentDoc(shopID string) error {
+func (s *CreditorPaymentTransactionAdminService) ReSyncCreditorPaymentDoc(holdingCode string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeoutDuration)
 	defer cancel()
 
-	docs, err := s.mongoRepo.FindCreditorPaymentDocByShopID(ctx, shopID)
+	docs, err := s.mongoRepo.FindCreditorPaymentDocByHoldingCode(ctx, holdingCode)
 	if err != nil {
 		return err
 	}

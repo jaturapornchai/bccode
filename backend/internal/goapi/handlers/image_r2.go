@@ -167,8 +167,8 @@ func getImageFromR2(client *s3.Client, r2Key string) ([]byte, string, error) {
 // ImageUploadHandler - อัปโหลดรูปภาพไปยัง R2 และบันทึก metadata ใน MongoDB
 // POST /image/upload
 func ImageUploadHandler(c echo.Context) error {
-	// Get shopid from auth context and reject multipart tenant tampering.
-	shopID, authStatus := storageAuthorizedShopID(c, c.FormValue("shopid"))
+	// Get holding_code from auth context and reject multipart tenant tampering.
+	holdingCode, authStatus := storageAuthorizedHoldingCode(c, c.FormValue("holding_code"))
 	if authStatus != http.StatusOK {
 		message := "shop not selected"
 		if authStatus == http.StatusForbidden {
@@ -261,16 +261,16 @@ func ImageUploadHandler(c echo.Context) error {
 	hash := sha256.Sum256(buf.Bytes())
 	hashStr := hex.EncodeToString(hash[:])[:16] // ใช้ 16 ตัวแรก
 
-	// Generate filename: shopid/category/timestamp_hash.ext
-	// ถ้ามี category จะแยก folder เช่น shopid/slip_money_in/filename.png
+	// Generate filename: holding_code/category/timestamp_hash.ext
+	// ถ้ามี category จะแยก folder เช่น holding_code/slip_money_in/filename.png
 	timestamp := time.Now().Format("20060102_150405")
 	fileName := fmt.Sprintf("%s_%s%s", timestamp, hashStr, ext)
 	category := c.FormValue("category")
 	var r2Key string
 	if category != "" {
-		r2Key = fmt.Sprintf("%s/%s/%s", shopID, category, fileName)
+		r2Key = fmt.Sprintf("%s/%s/%s", holdingCode, category, fileName)
 	} else {
-		r2Key = fmt.Sprintf("%s/%s", shopID, fileName)
+		r2Key = fmt.Sprintf("%s/%s", holdingCode, fileName)
 	}
 
 	// Detect content type
@@ -310,7 +310,7 @@ func ImageUploadHandler(c echo.Context) error {
 	// Save metadata to MongoDB (ไม่เก็บ URL)
 	now := time.Now()
 	imageDoc := models.ImageMetadata{
-		ShopID:       shopID,
+		HoldingCode:  holdingCode,
 		FileName:     fileName,
 		OriginalName: file.Filename,
 		ContentType:  contentType,
@@ -340,7 +340,7 @@ func ImageUploadHandler(c echo.Context) error {
 		imageDoc.ID = oid
 	}
 
-	logger.Success("Image uploaded successfully: %s (shop: %s, size: %d bytes)", fileName, shopID, file.Size)
+	logger.Success("Image uploaded successfully: %s (shop: %s, size: %d bytes)", fileName, holdingCode, file.Size)
 
 	return c.JSON(http.StatusOK, models.ImageResponse{
 		Status:  "success",
@@ -350,7 +350,7 @@ func ImageUploadHandler(c echo.Context) error {
 	})
 }
 
-// ImageListHandler - ดึงรายการรูปภาพตาม shopid
+// ImageListHandler - ดึงรายการรูปภาพตาม holding_code
 // POST /image/list
 func ImageListHandler(c echo.Context) error {
 	if atlasClient == nil {
@@ -370,7 +370,7 @@ func ImageListHandler(c echo.Context) error {
 		})
 	}
 
-	shopID, authStatus := storageAuthorizedShopID(c, req.ShopID)
+	holdingCode, authStatus := storageAuthorizedHoldingCode(c, req.HoldingCode)
 	if authStatus != http.StatusOK {
 		message := "shop not selected"
 		if authStatus == http.StatusForbidden {
@@ -384,7 +384,7 @@ func ImageListHandler(c echo.Context) error {
 	}
 
 	// Build filter
-	filter := bson.M{"shopid": shopID}
+	filter := bson.M{"holding_code": holdingCode}
 	if req.Category != "" {
 		filter["category"] = req.Category
 	}
@@ -439,7 +439,7 @@ func ImageListHandler(c echo.Context) error {
 	for _, img := range images {
 		item := models.ImageListDataItem{
 			ID:           img.ID,
-			ShopID:       img.ShopID,
+			HoldingCode:  img.HoldingCode,
 			FileName:     img.FileName,
 			OriginalName: img.OriginalName,
 			ContentType:  img.ContentType,
@@ -451,8 +451,8 @@ func ImageListHandler(c echo.Context) error {
 			CreatedAt:    img.CreatedAt,
 			UpdatedAt:    img.UpdatedAt,
 		}
-		// สร้าง private backend URL เฉพาะไฟล์ที่อยู่ใต้ shopid เดียวกัน
-		if client != nil && img.R2Key != "" && storageObjectBelongsToShop(img.R2Key, img.ShopID) {
+		// สร้าง private backend URL เฉพาะไฟล์ที่อยู่ใต้ holding_code เดียวกัน
+		if client != nil && img.R2Key != "" && storageObjectBelongsToShop(img.R2Key, img.HoldingCode) {
 			url, err := getPresignedURL(client, img.R2Key, 60)
 			if err == nil {
 				item.URL = url
@@ -533,7 +533,7 @@ func ImageGetHandler(c echo.Context) error {
 		})
 	}
 
-	shopID, authStatus := storageAuthorizedShopID(c, req.ShopID)
+	holdingCode, authStatus := storageAuthorizedHoldingCode(c, req.HoldingCode)
 	if authStatus != http.StatusOK {
 		message := "shop not selected"
 		if authStatus == http.StatusForbidden {
@@ -560,8 +560,8 @@ func ImageGetHandler(c echo.Context) error {
 
 	collection := atlasDB.Collection("images")
 	filter := bson.M{
-		"shopid":    shopID,
-		"file_name": req.FileName,
+		"holding_code": holdingCode,
+		"file_name":    req.FileName,
 	}
 
 	var imageDoc models.ImageMetadata
@@ -574,8 +574,8 @@ func ImageGetHandler(c echo.Context) error {
 		})
 	}
 
-	if !storageObjectBelongsToShop(imageDoc.R2Key, shopID) {
-		logger.Warn("Image get blocked: requested_shop=%s object_shop=%s", shopID, storageObjectShopID(imageDoc.R2Key))
+	if !storageObjectBelongsToShop(imageDoc.R2Key, holdingCode) {
+		logger.Warn("Image get blocked: requested_shop=%s object_shop=%s", holdingCode, storageObjectHoldingCode(imageDoc.R2Key))
 		return c.JSON(http.StatusForbidden, map[string]interface{}{
 			"status":  "error",
 			"code":    403,
@@ -634,7 +634,7 @@ func ImageDeleteHandler(c echo.Context) error {
 		})
 	}
 
-	shopID, authStatus := storageAuthorizedShopID(c, req.ShopID)
+	holdingCode, authStatus := storageAuthorizedHoldingCode(c, req.HoldingCode)
 	if authStatus != http.StatusOK {
 		message := "shop not selected"
 		if authStatus == http.StatusForbidden {
@@ -661,7 +661,7 @@ func ImageDeleteHandler(c echo.Context) error {
 	collection := atlasDB.Collection("images")
 
 	// Build filter
-	filter := bson.M{"shopid": shopID}
+	filter := bson.M{"holding_code": holdingCode}
 	if req.ImageID != "" {
 		oid, err := primitive.ObjectIDFromHex(req.ImageID)
 		if err != nil {
@@ -687,8 +687,8 @@ func ImageDeleteHandler(c echo.Context) error {
 		})
 	}
 
-	if !storageObjectBelongsToShop(imageDoc.R2Key, shopID) {
-		logger.Warn("Image delete blocked: requested_shop=%s object_shop=%s", shopID, storageObjectShopID(imageDoc.R2Key))
+	if !storageObjectBelongsToShop(imageDoc.R2Key, holdingCode) {
+		logger.Warn("Image delete blocked: requested_shop=%s object_shop=%s", holdingCode, storageObjectHoldingCode(imageDoc.R2Key))
 		return c.JSON(http.StatusForbidden, map[string]interface{}{
 			"status":  "error",
 			"code":    403,
@@ -717,7 +717,7 @@ func ImageDeleteHandler(c echo.Context) error {
 		})
 	}
 
-	logger.Success("Image deleted: %s (shop: %s)", imageDoc.FileName, shopID)
+	logger.Success("Image deleted: %s (shop: %s)", imageDoc.FileName, holdingCode)
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"status":  "success",
@@ -746,7 +746,7 @@ func ImageInfoHandler(c echo.Context) error {
 		})
 	}
 
-	shopID, authStatus := storageAuthorizedShopID(c, req.ShopID)
+	holdingCode, authStatus := storageAuthorizedHoldingCode(c, req.HoldingCode)
 	if authStatus != http.StatusOK {
 		message := "shop not selected"
 		if authStatus == http.StatusForbidden {
@@ -772,8 +772,8 @@ func ImageInfoHandler(c echo.Context) error {
 
 	collection := atlasDB.Collection("images")
 	filter := bson.M{
-		"shopid":    shopID,
-		"file_name": req.FileName,
+		"holding_code": holdingCode,
+		"file_name":    req.FileName,
 	}
 
 	var imageDoc models.ImageMetadata
@@ -840,7 +840,7 @@ func ImageVerifyHandler(c echo.Context) error {
 	// ตอนนี้ใช้วิธี: ถ้าส่งมาเป็น false และไม่ระบุ field อื่นๆ ก็จะเป็น true
 	checkDuplicate := true // Default เป็น true เสมอ
 
-	shopID, authStatus := storageAuthorizedShopID(c, req.ShopID)
+	holdingCode, authStatus := storageAuthorizedHoldingCode(c, req.HoldingCode)
 	if authStatus != http.StatusOK {
 		message := "shop not selected"
 		if authStatus == http.StatusForbidden {
@@ -867,7 +867,7 @@ func ImageVerifyHandler(c echo.Context) error {
 	collection := atlasDB.Collection("images")
 
 	// Build filter
-	filter := bson.M{"shopid": shopID}
+	filter := bson.M{"holding_code": holdingCode}
 	if req.ImageID != "" {
 		oid, err := primitive.ObjectIDFromHex(req.ImageID)
 		if err != nil {
@@ -893,8 +893,8 @@ func ImageVerifyHandler(c echo.Context) error {
 		})
 	}
 
-	if !storageObjectBelongsToShop(imageDoc.R2Key, shopID) {
-		logger.Warn("Image verify blocked: requested_shop=%s object_shop=%s", shopID, storageObjectShopID(imageDoc.R2Key))
+	if !storageObjectBelongsToShop(imageDoc.R2Key, holdingCode) {
+		logger.Warn("Image verify blocked: requested_shop=%s object_shop=%s", holdingCode, storageObjectHoldingCode(imageDoc.R2Key))
 		return c.JSON(http.StatusForbidden, map[string]interface{}{
 			"status":  "error",
 			"code":    403,
