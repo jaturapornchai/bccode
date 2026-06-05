@@ -649,7 +649,7 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
       return;
     }
 
-    const selectedItems = items.filter((item) => checkedBarcodes.includes(item.barcode));
+    const selectedItems = items.filter((item, index) => checkedBarcodes.includes(barcodeRowKey(item, index)));
     const guids = selectedItems.map((item) => item.guidFixed.trim()).filter(Boolean);
     if (guids.length === 0) {
       setNotice({ type: "error", text: text.missingGuid });
@@ -912,14 +912,13 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
             ) : null}
           </CardHeader>
           <CardContent className="grid min-h-[420px] p-0 xl:min-h-0 xl:flex-1 xl:grid-rows-[auto_minmax(0,1fr)]">
-            <div className="bc-list-header hidden lg:grid grid-cols-[1.2fr_2fr_0.8fr_1.1fr_0.8fr_0.9fr_80px] gap-x-2">
+            <div className="bc-list-header hidden lg:grid grid-cols-[1.35fr_2fr_0.8fr_1.1fr_0.8fr_0.9fr] gap-x-2">
               <span>{text.barcode}</span>
               <span>{text.productName}</span>
               <span>{text.unit}</span>
               <span>{text.itemCode}</span>
               <span>{text.balance}</span>
               <span className="text-right">{text.retailPrice}</span>
-              <span className="text-center">{text.actions}</span>
             </div>
             <div className="relative min-h-[360px] xl:min-h-0">
               {loading ? (
@@ -939,24 +938,25 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
                 </div>
               ) : (
                 <div className="min-h-[360px] overflow-auto xl:h-full xl:min-h-0">
-                  {items.map((item, index) => (
+                  {items.map((item, index) => {
+                    const rowKey = barcodeRowKey(item, index);
+                    return (
                     <BarcodeRow
-                      checked={checkedBarcodes.includes(item.barcode)}
+                      checked={checkedBarcodes.includes(rowKey)}
                       imageUrl={resolveImageUrl(item.imageUri, auth?.backendUrl)}
                       index={index}
                       item={item}
-                      key={item.guidFixed || item.barcode}
-                      onDelete={() => void deleteCurrentItem(item)}
-                      onEdit={() => void openEditEditor(item)}
+                      key={rowKey}
                       onSelect={() => void selectListItem(item)}
-                      onToggleChecked={() => toggleChecked(item.barcode)}
+                      onToggleChecked={() => toggleChecked(rowKey)}
                       selected={selected?.barcode === item.barcode}
                       editing={selected?.barcode === item.barcode && editorOpen && editorMode === "edit"}
                       selectMode={selectMode}
                       showImage={showImage}
                       text={text}
                     />
-                  ))}
+                  );
+                  })}
                 </div>
               )}
             </div>
@@ -1042,8 +1042,6 @@ function BarcodeRow({
   imageUrl,
   index,
   item,
-  onDelete,
-  onEdit,
   onSelect,
   onToggleChecked,
   selected,
@@ -1056,8 +1054,6 @@ function BarcodeRow({
   imageUrl: string;
   index: number;
   item: ProductBarcodeRecord;
-  onDelete: () => void;
-  onEdit: () => void;
   onSelect: () => void;
   onToggleChecked: () => void;
   selected: boolean;
@@ -1078,7 +1074,7 @@ function BarcodeRow({
       aria-label={`${text.barcode}: ${item.barcode || item.itemCode || "-"}`}
       aria-pressed={selected}
       className={cn(
-        "bc-list-row grid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 lg:grid-cols-[1.2fr_2fr_0.8fr_1.1fr_0.8fr_0.9fr_80px] gap-x-2",
+        "bc-list-row grid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 lg:grid-cols-[1.35fr_2fr_0.8fr_1.1fr_0.8fr_0.9fr] gap-x-2",
         editing
           ? "bg-amber-100/70 hover:bg-amber-100/90 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100 border-amber-200/50"
           : selected
@@ -1088,14 +1084,30 @@ function BarcodeRow({
               : "bg-muted/20 hover:bg-primary/5",
       )}
       onClick={selectMode ? onToggleChecked : onSelect}
-      onDoubleClick={selectMode ? undefined : onEdit}
       onKeyDown={handleRowKeyDown}
       role="button"
       tabIndex={0}
     >
       <div className="min-w-0">
         <span className="lg:hidden text-xs font-semibold text-muted-foreground">{text.barcode}</span>
-        <div className="truncate">{item.barcode || "-"}</div>
+        <div className="flex min-w-0 items-center gap-2">
+          {selectMode ? (
+            <span className={cn("grid size-6 shrink-0 place-items-center rounded-md border", checked && "border-primary bg-primary text-primary-foreground")}>
+              {checked ? <CheckSquare size={14} /> : null}
+            </span>
+          ) : null}
+          {showImage ? (
+            imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img alt="" className="size-8 shrink-0 rounded-lg border border-border object-cover" src={imageUrl} />
+            ) : (
+              <span className="grid size-8 shrink-0 place-items-center rounded-lg border border-border text-muted-foreground">
+                <ImageOff size={14} />
+              </span>
+            )
+          ) : null}
+          <span className="truncate">{item.barcode || "-"}</span>
+        </div>
       </div>
       <div className="min-w-0">
         <span className="lg:hidden text-xs font-semibold text-muted-foreground">{text.productName}</span>
@@ -1121,51 +1133,12 @@ function BarcodeRow({
         <span className="lg:hidden text-xs font-semibold text-muted-foreground">{text.retailPrice}</span>
         <div>{formatMoney(item.price)}</div>
       </div>
-      <div
-        className="flex items-center justify-start gap-2 lg:justify-center"
-        onClick={(event) => event.stopPropagation()}
-        onDoubleClick={(event) => event.stopPropagation()}
-      >
-        {showImage ? (
-          imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img alt="" className="size-8 rounded-lg border border-border object-cover" src={imageUrl} />
-          ) : (
-            <span className="grid size-8 place-items-center rounded-lg border border-border text-muted-foreground">
-              <ImageOff size={14} />
-            </span>
-          )
-        ) : null}
-        {selectMode ? (
-          <span className={cn("grid size-6 place-items-center rounded-md border", checked && "border-primary bg-primary text-primary-foreground")}>
-            {checked ? <CheckSquare size={14} /> : null}
-          </span>
-        ) : null}
-        <Button
-          aria-label={text.edit}
-          className="size-8 rounded-lg bg-background/90 text-primary shadow-sm hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
-          onClick={onEdit}
-          size="icon"
-          title={text.edit}
-          type="button"
-          variant="outline"
-        >
-          <Pencil className="size-4" />
-        </Button>
-        <Button
-          aria-label={text.delete}
-          className="size-8 rounded-lg bg-background/90 text-destructive shadow-sm hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
-          onClick={onDelete}
-          size="icon"
-          title={text.delete}
-          type="button"
-          variant="outline"
-        >
-          <Trash2 className="size-4" />
-        </Button>
-      </div>
     </div>
   );
+}
+
+function barcodeRowKey(item: ProductBarcodeRecord, index: number): string {
+  return item.guidFixed || `${item.barcode || "barcode"}-${item.itemCode || "item"}-${index}`;
 }
 
 function ProductBarcodeDetail({

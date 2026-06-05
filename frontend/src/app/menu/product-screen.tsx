@@ -2,7 +2,11 @@
 
 import {
   AlertCircle,
+  CheckSquare,
   FolderOpen,
+  Filter,
+  ImageIcon,
+  ImageOff,
   Loader2,
   Package,
   Pencil,
@@ -141,6 +145,11 @@ export function ProductScreen({
   const [notice, setNotice] = useState<{ type: "success" | "error" | "info"; text: string } | null>(null);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [listItemTypeFilter, setListItemTypeFilter] = useState("all");
+  const [showListImage, setShowListImage] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
+  const [checkedProductKeys, setCheckedProductKeys] = useState<string[]>([]);
 
   // Resizable split states
   const [splitLeftPercent, setSplitLeftPercent] = useState(PRODUCT_SPLIT_DEFAULT_LEFT);
@@ -359,6 +368,11 @@ const [pickerType, setPickerType] = useState<string>("");
   const selectedProduct = useMemo(() => {
     return items.find((item) => item.code === selectedCode) ?? items[0] ?? null;
   }, [items, selectedCode]);
+
+  const visibleItems = useMemo(() => {
+    if (listItemTypeFilter === "all") return items;
+    return items.filter((item) => String(item.item_type ?? 0) === listItemTypeFilter);
+  }, [items, listItemTypeFilter]);
 
   const isFormDirty = useMemo(() => {
     if (!editorOpen || !editProduct || !selectedProduct) return false;
@@ -615,6 +629,49 @@ const [pickerType, setPickerType] = useState<string>("");
       setNotice({ type: "success", text: text.deleteSuccess });
       void loadProducts();
       setSelectedCode("");
+    } catch (err) {
+      setNotice({ type: "error", text: err instanceof Error ? err.message : "Delete failed" });
+    }
+  };
+
+  const toggleCheckedProduct = (key: string) => {
+    setCheckedProductKeys((current) =>
+      current.includes(key) ? current.filter((item) => item !== key) : [...current, key],
+    );
+  };
+
+  const handleDeleteSelectedProducts = async () => {
+    if (!auth || checkedProductKeys.length === 0) return;
+    const selectedItems = visibleItems.filter((item, index) => checkedProductKeys.includes(productRowKey(item, index)));
+    const guids = selectedItems.map((item) => item.guidfixed).filter(Boolean);
+    if (guids.length === 0) return;
+    const ok = await confirm({
+      title: text.deleteConfirm,
+      description: `เลือกไว้ ${guids.length.toLocaleString("th-TH")} รายการ`,
+      tone: "danger",
+      confirmLabel: text.delete,
+      cancelLabel: text.cancel,
+    });
+    if (!ok) return;
+    try {
+      for (const guid of guids) {
+        const res = await fetch(`/api/product/${encodeURIComponent(guid)}`, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${auth.token}`,
+            "x-bc-backend-url": auth.backendUrl,
+          },
+        });
+        const data = await res.json();
+        if (!res.ok || data.success === false) {
+          throw new Error(data.message || "Delete failed");
+        }
+      }
+      setCheckedProductKeys([]);
+      setSelectMode(false);
+      setSelectedCode("");
+      setNotice({ type: "success", text: text.deleteSuccess });
+      void loadProducts();
     } catch (err) {
       setNotice({ type: "error", text: err instanceof Error ? err.message : "Delete failed" });
     }
@@ -916,28 +973,69 @@ const [pickerType, setPickerType] = useState<string>("");
           selectedCode && !editorOpen ? "hidden xl:flex" : "flex"
         )}>
           <div className="p-3 border-b border-border">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder={text.search}
-                className="!pl-10"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-              />
+            <div className="flex flex-wrap gap-2">
+              <div className="relative min-w-[240px] flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder={text.search}
+                  className="!pl-10"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                />
+              </div>
+              <Button variant={filterOpen ? "secondary" : "outline"} size="sm" type="button" onClick={() => setFilterOpen((current) => !current)}>
+                <Filter className="h-4 w-4" />
+                ตัวกรอง
+              </Button>
+              <Button variant="outline" size="sm" type="button" onClick={() => setShowListImage((current) => !current)}>
+                {showListImage ? <ImageOff className="h-4 w-4" /> : <ImageIcon className="h-4 w-4" />}
+                รูป
+              </Button>
+              <Button
+                variant={selectMode ? "secondary" : "outline"}
+                size="sm"
+                type="button"
+                onClick={() => {
+                  setSelectMode((current) => !current);
+                  setCheckedProductKeys([]);
+                }}
+              >
+                {selectMode ? <X className="h-4 w-4" /> : <CheckSquare className="h-4 w-4" />}
+                {selectMode ? "ยกเลิกเลือก" : "เลือกเพื่อลบ"}
+              </Button>
+              <Button variant="outline" size="sm" type="button" onClick={() => void handleDeleteSelectedProducts()} disabled={!selectMode || checkedProductKeys.length === 0}>
+                <Trash2 className="h-4 w-4" />
+                {checkedProductKeys.length || ""}
+              </Button>
             </div>
+            {filterOpen ? (
+              <div className="mt-3 flex flex-wrap gap-2 rounded-lg border border-border bg-muted/20 p-2">
+                <Button variant={listItemTypeFilter === "all" ? "secondary" : "outline"} size="sm" type="button" onClick={() => setListItemTypeFilter("all")}>ทั้งหมด</Button>
+                {itemTypes.map((itemType) => (
+                  <Button
+                    key={itemType.value}
+                    variant={listItemTypeFilter === String(itemType.value) ? "secondary" : "outline"}
+                    size="sm"
+                    type="button"
+                    onClick={() => setListItemTypeFilter(String(itemType.value))}
+                  >
+                    {itemType.label}
+                  </Button>
+                ))}
+              </div>
+            ) : null}
           </div>
           <div className="bc-list-toolbar shrink-0">
             <span>{isSetOnly ? "สินค้าชุดทั้งหมด" : "สินค้าทั้งหมด"}</span>
-            <span>{items.length} รายการ</span>
+            <span>{visibleItems.length} / {items.length} รายการ</span>
           </div>
 
           {/* Table Header inside list on Desktop */}
-          <div className="bc-list-header hidden lg:grid grid-cols-[minmax(90px,1.2fr)_minmax(150px,2.8fr)_minmax(80px,1fr)_72px] gap-x-3 shrink-0">
+          <div className="bc-list-header hidden lg:grid grid-cols-[minmax(90px,1.2fr)_minmax(150px,2.8fr)_minmax(80px,1fr)] gap-x-3 shrink-0">
             <span>{text.itemCode ?? "รหัสสินค้า"}</span>
             <span>{text.productName ?? "ชื่อสินค้า"}</span>
             <span>{text.itemType ?? "ประเภท"}</span>
-            <span className="text-center">จัดการ</span>
           </div>
 
           <div className="flex-1 overflow-y-auto min-h-[360px] xl:h-full xl:min-h-0">
@@ -946,11 +1044,12 @@ const [pickerType, setPickerType] = useState<string>("");
                 <Loader2 className="h-4 w-4 animate-spin" />
                 {text.loading}
               </div>
-            ) : items.length === 0 ? (
+            ) : visibleItems.length === 0 ? (
               <div className="p-8 text-center text-sm text-muted-foreground">{text.noData}</div>
             ) : (
-              items.map((item, index) => {
+              visibleItems.map((item, index) => {
                 const active = item.code === selectedCode;
+                const rowKey = productRowKey(item, index);
                 const isEditing = active && editorOpen && editorMode === "edit";
                 const typeLabel = item.item_type === 2
                   ? text.itemTypeSet
@@ -959,7 +1058,7 @@ const [pickerType, setPickerType] = useState<string>("");
                   <div
                     key={item.guidfixed || item.code}
                     className={cn(
-                      "bc-list-row grid lg:grid-cols-[minmax(90px,1.2fr)_minmax(150px,2.8fr)_minmax(80px,1fr)_72px] gap-x-3",
+                      "bc-list-row grid lg:grid-cols-[minmax(90px,1.2fr)_minmax(150px,2.8fr)_minmax(80px,1fr)] gap-x-3",
                       isEditing
                         ? "bg-amber-100/70 hover:bg-amber-100/90 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100 border-amber-200/50"
                         : active
@@ -968,11 +1067,28 @@ const [pickerType, setPickerType] = useState<string>("");
                             ? "bg-background hover:bg-primary/5"
                             : "bg-muted/10 hover:bg-primary/5",
                     )}
-                    onClick={() => handleSelectProduct(item.code)}
+                    onClick={() => selectMode ? toggleCheckedProduct(rowKey) : handleSelectProduct(item.code)}
                   >
                     <div className="min-w-0">
                       <span className="lg:hidden text-[10px] font-semibold text-muted-foreground block">{text.itemCode ?? "รหัสสินค้า"}</span>
-                      <div className={cn("truncate font-medium text-foreground", isEditing && "text-amber-950 dark:text-amber-100")}>{item.code || "-"}</div>
+                      <div className="flex min-w-0 items-center gap-2">
+                        {selectMode ? (
+                          <span className={cn("grid size-6 shrink-0 place-items-center rounded-md border", checkedProductKeys.includes(rowKey) && "border-primary bg-primary text-primary-foreground")}>
+                            {checkedProductKeys.includes(rowKey) ? <CheckSquare className="h-3.5 w-3.5" /> : null}
+                          </span>
+                        ) : null}
+                        {showListImage ? (
+                          item.imageuri ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img alt="" className="size-8 shrink-0 rounded-lg border border-border object-cover" src={item.imageuri} />
+                          ) : (
+                            <span className="grid size-8 shrink-0 place-items-center rounded-lg border border-border text-muted-foreground">
+                              <ImageOff className="h-3.5 w-3.5" />
+                            </span>
+                          )
+                        ) : null}
+                        <span className={cn("truncate font-medium text-foreground", isEditing && "text-amber-950 dark:text-amber-100")}>{item.code || "-"}</span>
+                      </div>
                     </div>
                     <div className="min-w-0">
                       <span className="lg:hidden text-[10px] font-semibold text-muted-foreground block">{text.productName ?? "ชื่อสินค้า"}</span>
@@ -981,26 +1097,6 @@ const [pickerType, setPickerType] = useState<string>("");
                     <div className="min-w-0">
                       <span className="lg:hidden text-[10px] font-semibold text-muted-foreground block">{text.itemType ?? "ประเภท"}</span>
                       <div className={cn("truncate text-muted-foreground", isEditing && "text-amber-900/60 dark:text-amber-200/60")}>{typeLabel}</div>
-                    </div>
-                    <div className="flex items-center gap-1.5 justify-start lg:justify-center" onClick={(e) => e.stopPropagation()}>
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        className="size-7 rounded-lg bg-background text-primary hover:bg-primary/10 border-border"
-                        onClick={() => handleEditOpen(item)}
-                        title={text.edit}
-                      >
-                        <Pencil className="size-3.5" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        className="size-7 rounded-lg bg-background text-destructive hover:bg-destructive/10 border-border"
-                        onClick={() => void handleDelete(item)}
-                        title={text.delete}
-                      >
-                        <Trash2 className="size-3.5" />
-                      </Button>
                     </div>
                   </div>
                 );
@@ -1899,6 +1995,10 @@ function setNameXEntry(list: NameX[] | undefined, code: string, name: string): N
     arr.push({ code, name });
   }
   return arr;
+}
+
+function productRowKey(item: Product, index: number): string {
+  return item.guidfixed || `${item.code || "product"}-${index}`;
 }
 
 // ─── Tab Components ───────────────────────────────────────────────────────

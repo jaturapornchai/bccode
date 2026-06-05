@@ -3,6 +3,8 @@
 import { useState, useEffect, useMemo, useRef, useCallback, type FormEvent } from "react";
 import {
   FolderOpen,
+  CheckSquare,
+  Filter,
   Loader2,
   Package,
   Pencil,
@@ -70,6 +72,10 @@ type ProductSetScreenProps = {
   embedded?: boolean;
   language?: LanguageCode;
 };
+
+function productSetRowKey(item: Product, index: number): string {
+  return item.guidfixed || `${item.code || "product-set"}-${index}`;
+}
 
 async function ensureActiveProductSetHolding(auth: AuthSession, holding_code: string): Promise<void> {
   const response = await fetch("/api/workspace/select-holding", {
@@ -241,6 +247,10 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
   const [notice, setNotice] = useState<{ type: "success" | "error" | "info"; text: string } | null>(null);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [setFilter, setSetFilter] = useState("all");
+  const [selectMode, setSelectMode] = useState(false);
+  const [checkedSetKeys, setCheckedSetKeys] = useState<string[]>([]);
 
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorMode, setEditorMode] = useState<"create" | "edit">("create");
@@ -338,6 +348,12 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
   const selectedProduct = useMemo(() => {
     return items.find((item) => item.guidfixed === selectedGuid) ?? items[0] ?? null;
   }, [items, selectedGuid]);
+
+  const visibleSets = useMemo(() => {
+    if (setFilter === "component_stock") return items.filter((item) => item.isusesubbarcodes);
+    if (setFilter === "bundle_stock") return items.filter((item) => !item.isusesubbarcodes);
+    return items;
+  }, [items, setFilter]);
 
   // Load component live details (price, stock, unit)
   const loadComponentDetails = useCallback(async (barcodes: string[]) => {
@@ -573,6 +589,49 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
       setNotice({ type: "success", text: text.deleteSuccess });
       void loadProductSets();
       setSelectedGuid("");
+    } catch (err: any) {
+      setNotice({ type: "error", text: err.message || "Delete failed" });
+    }
+  };
+
+  const toggleCheckedSet = (key: string) => {
+    setCheckedSetKeys((current) =>
+      current.includes(key) ? current.filter((item) => item !== key) : [...current, key],
+    );
+  };
+
+  const handleDeleteSelectedSets = async () => {
+    if (!auth || checkedSetKeys.length === 0) return;
+    const selectedItems = visibleSets.filter((item, index) => checkedSetKeys.includes(productSetRowKey(item, index)));
+    const guids = selectedItems.map((item) => item.guidfixed).filter(Boolean);
+    if (guids.length === 0) return;
+    const ok = await confirm({
+      title: "ยืนยันการลบสินค้าชุด?",
+      description: `เลือกไว้ ${guids.length.toLocaleString("th-TH")} รายการ`,
+      tone: "danger",
+      confirmLabel: text.delete,
+      cancelLabel: text.cancel,
+    });
+    if (!ok) return;
+    try {
+      for (const guid of guids) {
+        const res = await fetch(`/api/product/${encodeURIComponent(guid)}`, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${auth.token}`,
+            "x-bc-backend-url": auth.backendUrl,
+          },
+        });
+        const data = await res.json();
+        if (!res.ok || data.success === false) {
+          throw new Error(data.message || "Delete failed");
+        }
+      }
+      setCheckedSetKeys([]);
+      setSelectMode(false);
+      setSelectedGuid("");
+      setNotice({ type: "success", text: text.deleteSuccess });
+      void loadProductSets();
     } catch (err: any) {
       setNotice({ type: "error", text: err.message || "Delete failed" });
     }
@@ -874,15 +933,48 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
           </div>
 
           <div className="p-3 border-b border-border bg-card">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="ค้นหารหัส หรือชื่อสินค้าชุด..."
-                className="h-9 !pl-10 bg-background"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-              />
+            <div className="flex flex-wrap gap-2">
+              <div className="relative min-w-[220px] flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="ค้นหารหัส หรือชื่อสินค้าชุด..."
+                  className="h-9 !pl-10 bg-background"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                />
+              </div>
+              <Button variant={filterOpen ? "secondary" : "outline"} size="sm" type="button" onClick={() => setFilterOpen((current) => !current)}>
+                <Filter className="h-4 w-4" />
+                ตัวกรอง
+              </Button>
+              <Button
+                variant={selectMode ? "secondary" : "outline"}
+                size="sm"
+                type="button"
+                onClick={() => {
+                  setSelectMode((current) => !current);
+                  setCheckedSetKeys([]);
+                }}
+              >
+                {selectMode ? <X className="h-4 w-4" /> : <CheckSquare className="h-4 w-4" />}
+                {selectMode ? "ยกเลิกเลือก" : "เลือกเพื่อลบ"}
+              </Button>
+              <Button variant="outline" size="sm" type="button" onClick={() => void handleDeleteSelectedSets()} disabled={!selectMode || checkedSetKeys.length === 0}>
+                <Trash2 className="h-4 w-4" />
+                {checkedSetKeys.length || ""}
+              </Button>
+            </div>
+            {filterOpen ? (
+              <div className="mt-3 flex flex-wrap gap-2 rounded-lg border border-border bg-muted/20 p-2">
+                <Button variant={setFilter === "all" ? "secondary" : "outline"} size="sm" type="button" onClick={() => setSetFilter("all")}>ทั้งหมด</Button>
+                <Button variant={setFilter === "component_stock" ? "secondary" : "outline"} size="sm" type="button" onClick={() => setSetFilter("component_stock")}>ตัดชิ้นส่วน</Button>
+                <Button variant={setFilter === "bundle_stock" ? "secondary" : "outline"} size="sm" type="button" onClick={() => setSetFilter("bundle_stock")}>สต๊อกชุด</Button>
+              </div>
+            ) : null}
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-muted-foreground">
+              <span>สินค้าชุดทั้งหมด</span>
+              <span>{visibleSets.length} / {items.length} รายการ</span>
             </div>
           </div>
 
@@ -892,11 +984,12 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
                 <Loader2 className="h-4 w-4 animate-spin text-primary" />
                 กำลังโหลด...
               </div>
-            ) : items.length === 0 ? (
+            ) : visibleSets.length === 0 ? (
               <div className="py-12 text-center text-sm text-muted-foreground italic">ไม่พบข้อมูลสินค้าชุด</div>
             ) : (
-              items.map((item) => {
+              visibleSets.map((item, index) => {
                 const active = item.guidfixed === selectedGuid;
+                const rowKey = productSetRowKey(item, index);
                 const optionCount = item.options?.length || 0;
                 const isCompStock = item.isusesubbarcodes ?? false;
 
@@ -910,15 +1003,23 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
                         : "border-transparent text-foreground"
                     )}
                     onClick={() => {
-                      setSelectedGuid(item.guidfixed);
-                      setEditorOpen(false);
+                      if (selectMode) {
+                        toggleCheckedSet(rowKey);
+                      } else {
+                        setSelectedGuid(item.guidfixed);
+                        setEditorOpen(false);
+                      }
                     }}
                   >
                     <div className={cn(
                       "p-2 rounded-lg shrink-0 mt-0.5",
                       active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
                     )}>
-                      <Layers className="h-4 w-4" />
+                      {selectMode ? (
+                        checkedSetKeys.includes(rowKey) ? <CheckSquare className="h-4 w-4" /> : null
+                      ) : (
+                        <Layers className="h-4 w-4" />
+                      )}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="font-bold truncate text-sm text-foreground">{item.code}</div>
