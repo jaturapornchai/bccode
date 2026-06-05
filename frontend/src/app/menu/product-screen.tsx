@@ -924,8 +924,14 @@ const [pickerType, setPickerType] = useState<string>("");
       {/* Header Toolbar */}
       <div className="flex shrink-0 items-center justify-between border-b border-border bg-card px-4 py-3">
         <div>
-          <h2 className="text-lg font-bold">{isSetOnly ? "สินค้าชุด" : text.title}</h2>
-          <p className="text-xs text-muted-foreground">{isSetOnly ? "จัดการข้อมูลสินค้าชุดและส่วนประกอบทั้งหมด" : text.subtitle}</p>
+          <h2 className="text-lg font-bold">{isSetOnly ? "สินค้าชุด" : text.productMenuName}</h2>
+          <p className="text-xs text-muted-foreground">
+            {isSetOnly
+              ? "จัดการข้อมูลสินค้าชุดและส่วนประกอบทั้งหมด"
+              : lang === "th"
+                ? "จัดการสินค้าและข้อมูลที่เกี่ยวข้องทั้งหมด"
+                : "Manage products and related data"}
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => void loadProducts()} disabled={loading}>
@@ -1107,7 +1113,7 @@ const [pickerType, setPickerType] = useState<string>("");
 
         {/* Resizable split separator bar */}
         <div
-          aria-label={text.resizeAriaLabel ?? "Adjust layout split"}
+          aria-label={isSetOnly ? "ปรับขนาดรายการสินค้าชุดและรายละเอียดสินค้าชุด" : "ปรับขนาดรายการสินค้าและรายละเอียดสินค้า"}
           aria-orientation="vertical"
           aria-valuemax={PRODUCT_SPLIT_MAX_LEFT}
           aria-valuemin={PRODUCT_SPLIT_MIN_LEFT}
@@ -1524,7 +1530,7 @@ const [pickerType, setPickerType] = useState<string>("");
               <CardHeader className="shrink-0 border-b border-border bg-muted/5 p-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <span className="block text-[10px] font-bold text-primary">{text.detailTitle}</span>
+                    <span className="block text-[10px] font-bold text-primary">{isSetOnly ? "รายละเอียดสินค้าชุด" : text.productMasterDetailTitle}</span>
                     <h3 className="break-words text-xl font-extrabold leading-tight text-foreground">{selectedProduct.code}</h3>
                     <p className="mt-0.5 break-words text-xs font-semibold leading-snug text-muted-foreground">{pickName(selectedProduct.names, lang)}</p>
                   </div>

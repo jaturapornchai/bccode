@@ -496,7 +496,7 @@ const barcodeTextTh = {
   miscDescPlaceholder: "รายละเอียดสินค้าสำหรับระบบหลังบ้านหรือการจัดส่ง...",
   unsavedDetail: "การเปลี่ยนแปลงในฟอร์มนี้ยังไม่ได้บันทึก ถ้ายืนยัน ระบบจะปิดฟอร์มและทิ้งข้อมูลที่แก้ไขอยู่",
   discardLabel: "ทิ้งการแก้ไข",
-  resizeAriaLabel: "ปรับขนาดรายการสินค้าและรายละเอียดบาร์โค้ด",
+  resizeAriaLabel: "ปรับขนาดรายการบาร์โค้ดและรายละเอียดบาร์โค้ด",
 
   // Competitor-grade features
   generateBarcode: "สร้างบาร์โค้ดอัตโนมัติ",
@@ -1013,7 +1013,7 @@ const barcodeTextEn: BarcodeText = {
   miscDescPlaceholder: "Product description for back-office or delivery...",
   unsavedDetail: "Changes in this form are not yet saved. If you confirm, the form will close and edits will be discarded.",
   discardLabel: "Discard changes",
-  resizeAriaLabel: "Resize product list and barcode detail panels",
+  resizeAriaLabel: "Resize barcode list and barcode detail panels",
 
   // Competitor-grade features
   generateBarcode: "Generate barcode",
