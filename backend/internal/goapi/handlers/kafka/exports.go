@@ -24,31 +24,31 @@ var (
 
 // Re-export consumer functions for direct testing
 var (
-	ProcessSaleInvoiceMessage           = OnConsumeMessageSaleInvoiceCreateOrUpdate
-	ProcessSaleInvoiceDeleteMessage     = OnConsumeMessageSaleInvoiceDelete
-	ProcessSaleReturnMessage            = OnConsumeMessageSaleInvoiceReturnCreateOrUpdate
-	ProcessSaleReturnDeleteMessage      = OnConsumeMessageSaleInvoiceReturnDelete
-	ProcessSaleOrderMessage             = OnConsumeMessageSaleOrderCreateOrUpdate
-	ProcessSaleOrderDeleteMessage       = OnConsumeMessageSaleOrderDelete
-	ProcessInventoryMessage             = OnConsumeMessageInventoryCreateOrUpdate
-	ProcessInventoryDeleteMessage       = OnConsumeMessageInventoryDelete
-	ProcessInventoryBulkMessage         = OnConsumeMessageInventoryBulkCreateOrUpdate
-	ProcessWarehouseMessage             = OnConsumeMessageWarehouseCreateOrUpdate
-	ProcessWarehouseDeleteMessage       = OnConsumeMessageWarehouseDelete
-	ProcessPurchaseMessage              = OnConsumeMessagePurchaseCreateOrUpdate
-	ProcessPurchaseDeleteMessage        = OnConsumeMessagePurchaseDelete
-	ProcessPurchaseOrderMessage         = OnConsumeMessagePurchaseOrderCreateOrUpdate
-	ProcessPurchaseOrderDeleteMessage   = OnConsumeMessagePurchaseOrderDelete
-	ProcessPurchasePartialMessage       = OnConsumeMessagePurchasePartialCreateOrUpdate
-	ProcessPurchasePartialDeleteMessage = OnConsumeMessagePurchasePartialDelete
-	ProcessPurchaseReturnMessage        = OnConsumeMessagePurchaseReturnCreateOrUpdate
-	ProcessPurchaseReturnDeleteMessage  = OnConsumeMessagePurchaseReturnDelete
-	ProcessStockTransferMessage                = OnConsumeMessageStockTransferCreateOrUpdate
-	ProcessStockTransferDeleteMessage          = OnConsumeMessageStockTransferDelete
-	ProcessPurchaseRequisitionMessage           = OnConsumeMessagePurchaseRequisitionCreateOrUpdate
-	ProcessPurchaseRequisitionDeleteMessage     = OnConsumeMessagePurchaseRequisitionDelete
-	ProcessRFQMessage                          = OnConsumeMessageRFQCreateOrUpdate
-	ProcessRFQDeleteMessage                    = OnConsumeMessageRFQDelete
+	ProcessSaleInvoiceMessage               = OnConsumeMessageSaleInvoiceCreateOrUpdate
+	ProcessSaleInvoiceDeleteMessage         = OnConsumeMessageSaleInvoiceDelete
+	ProcessSaleReturnMessage                = OnConsumeMessageSaleInvoiceReturnCreateOrUpdate
+	ProcessSaleReturnDeleteMessage          = OnConsumeMessageSaleInvoiceReturnDelete
+	ProcessSaleOrderMessage                 = OnConsumeMessageSaleOrderCreateOrUpdate
+	ProcessSaleOrderDeleteMessage           = OnConsumeMessageSaleOrderDelete
+	ProcessInventoryMessage                 = OnConsumeMessageInventoryCreateOrUpdate
+	ProcessInventoryDeleteMessage           = OnConsumeMessageInventoryDelete
+	ProcessInventoryBulkMessage             = OnConsumeMessageInventoryBulkCreateOrUpdate
+	ProcessWarehouseMessage                 = OnConsumeMessageWarehouseCreateOrUpdate
+	ProcessWarehouseDeleteMessage           = OnConsumeMessageWarehouseDelete
+	ProcessPurchaseMessage                  = OnConsumeMessagePurchaseCreateOrUpdate
+	ProcessPurchaseDeleteMessage            = OnConsumeMessagePurchaseDelete
+	ProcessPurchaseOrderMessage             = OnConsumeMessagePurchaseOrderCreateOrUpdate
+	ProcessPurchaseOrderDeleteMessage       = OnConsumeMessagePurchaseOrderDelete
+	ProcessPurchasePartialMessage           = OnConsumeMessagePurchasePartialCreateOrUpdate
+	ProcessPurchasePartialDeleteMessage     = OnConsumeMessagePurchasePartialDelete
+	ProcessPurchaseReturnMessage            = OnConsumeMessagePurchaseReturnCreateOrUpdate
+	ProcessPurchaseReturnDeleteMessage      = OnConsumeMessagePurchaseReturnDelete
+	ProcessStockTransferMessage             = OnConsumeMessageStockTransferCreateOrUpdate
+	ProcessStockTransferDeleteMessage       = OnConsumeMessageStockTransferDelete
+	ProcessPurchaseRequisitionMessage       = OnConsumeMessagePurchaseRequisitionCreateOrUpdate
+	ProcessPurchaseRequisitionDeleteMessage = OnConsumeMessagePurchaseRequisitionDelete
+	ProcessRFQMessage                       = OnConsumeMessageRFQCreateOrUpdate
+	ProcessRFQDeleteMessage                 = OnConsumeMessageRFQDelete
 )
 
 // Re-export utility functions

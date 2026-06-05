@@ -6,8 +6,8 @@ import (
 	orgBranch "smlcloudplatform/internal/organization/branch/models"
 	orgCompany "smlcloudplatform/internal/organization/company/models"
 	pbModels "smlcloudplatform/internal/product/productbarcode/models"
-	whModels "smlcloudplatform/internal/warehouse/models"
 	vfgl "smlcloudplatform/internal/vfgl/journal/models"
+	whModels "smlcloudplatform/internal/warehouse/models"
 	"smlcloudplatform/pkg/microservice"
 )
 

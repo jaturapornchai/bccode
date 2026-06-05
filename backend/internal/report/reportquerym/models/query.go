@@ -1,20 +1,20 @@
 package models
 
 type QueryParam struct {
-	Name string      `json:"name"`
-	Type string      `json:"type"`
+	Name  string      `json:"name"`
+	Type  string      `json:"type"`
 	Value interface{} `json:"value"`
 }
 
 type Query struct {
 	Collection string       `json:"collection"`
-	Filter string       `json:"filter"`
-	Fields []string     `json:"fields"`
-	Params []QueryParam `json:"params"`
+	Filter     string       `json:"filter"`
+	Fields     []string     `json:"fields"`
+	Params     []QueryParam `json:"params"`
 }
 
 type QueryParamRequest struct {
-	Name string      `json:"name"`
+	Name  string      `json:"name"`
 	Value interface{} `json:"value"`
 }
 

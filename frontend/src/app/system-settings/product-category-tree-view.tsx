@@ -20,7 +20,7 @@ type SettingRecord = Record<string, unknown>;
 
 interface ProductCategoryTreeViewProps {
   auth: { token: string; backendUrl: string } | null;
-  workspace: { shop: { holding_code: string } } | null;
+  workspace: { shop: { holdingcode: string } } | null;
   language: string;
   records: SettingRecord[];
   groupNumber: number | null;
@@ -38,7 +38,7 @@ interface ProductCategoryTreeViewProps {
 }
 
 interface CategoryNode {
-  guid_fixed: string;
+  guidfixed: string;
   parent_guid: string;
   parentguidall: string;
   names: CategoryName[];
@@ -49,7 +49,7 @@ interface CategoryNode {
 
 type CategoryName = { code: string; name: string };
 type CategoryXSort = { code: string; xorder: number };
-type XSortPayload = { guid_fixed: string; code: string; xorder: number };
+type XSortPayload = { guidfixed: string; code: string; xorder: number };
 type GroupSummary = {
   count: number;
   itemCount: number;
@@ -128,7 +128,7 @@ const categoryLevelStyle = (level: number) =>
   CATEGORY_LEVEL_STYLES[Math.min(Math.max(level, 0), CATEGORY_LEVEL_STYLES.length - 1)];
 
 const recordGuid = (record: SettingRecord): string =>
-  String(record.guid_fixed || record.guidfixed || record.guid || "");
+  String(record.guidfixed || record.guidfixed || record.guid || "");
 
 const recordParentGuid = (record: SettingRecord): string =>
   String(record.parent_guid || record.parentguid || "");
@@ -439,7 +439,7 @@ export function ProductCategoryTreeView({
       const orderOverride = previewOrderOverrides[guid] ?? orderOverrides[guid];
       const parentOverride = parentOverrides[guid];
       return {
-        guid_fixed: guid,
+        guidfixed: guid,
         parent_guid: parentOverride?.parentGuid ?? recordParentGuid(r),
         parentguidall: parentOverride?.parentGuidAll ?? String(r.parentguidall || ""),
         names: toCategoryNames(r.names),
@@ -473,7 +473,7 @@ export function ProductCategoryTreeView({
 
     // Create node wrappers
     for (const item of sorted) {
-      nodeMap.set(item.guid_fixed, {
+      nodeMap.set(item.guidfixed, {
         detail: item,
         childCategories: [],
       });
@@ -502,8 +502,8 @@ export function ProductCategoryTreeView({
 
     const visit = (nodes: CategoryTreeNode[]) => {
       for (const node of nodes) {
-        nodeByGuid.set(node.detail.guid_fixed, node);
-        siblingsByGuid.set(node.detail.guid_fixed, nodes);
+        nodeByGuid.set(node.detail.guidfixed, node);
+        siblingsByGuid.set(node.detail.guidfixed, nodes);
         visit(node.childCategories);
       }
     };
@@ -668,16 +668,16 @@ export function ProductCategoryTreeView({
   const validateXSortPayload = (items: XSortPayload[]): XSortPayload[] => {
     const seen = new Set<string>();
     for (const item of items) {
-      if (!item.guid_fixed.trim()) {
-        throw new Error(language === "th" ? "ข้อมูลลำดับไม่ครบ: guid_fixed ว่าง" : "Invalid order payload: empty guid_fixed");
+      if (!item.guidfixed.trim()) {
+        throw new Error(language === "th" ? "ข้อมูลลำดับไม่ครบ: guidfixed ว่าง" : "Invalid order payload: empty guidfixed");
       }
-      if (seen.has(item.guid_fixed)) {
-        throw new Error(language === "th" ? "ข้อมูลลำดับซ้ำ: guid_fixed ซ้ำ" : "Invalid order payload: duplicated guid_fixed");
+      if (seen.has(item.guidfixed)) {
+        throw new Error(language === "th" ? "ข้อมูลลำดับซ้ำ: guidfixed ซ้ำ" : "Invalid order payload: duplicated guidfixed");
       }
       if (!Number.isFinite(item.xorder) || item.xorder < 1) {
         throw new Error(language === "th" ? "ข้อมูลลำดับไม่ถูกต้อง: xorder ต้องมากกว่า 0" : "Invalid order payload: xorder must be greater than 0");
       }
-      seen.add(item.guid_fixed);
+      seen.add(item.guidfixed);
     }
     return items;
   };
@@ -686,7 +686,7 @@ export function ProductCategoryTreeView({
     if (!auth || !workspace || updateList.length === 0) return;
     const payload = validateXSortPayload(updateList);
     const response = await fetch(
-      `/api/system-settings/product_category_group_select_screen/xsort?holding_code=${encodeURIComponent(workspace.shop.holding_code)}`,
+      `/api/system-settings/product_category_group_select_screen/xsort?holdingcode=${encodeURIComponent(workspace.shop.holdingcode)}`,
       {
         method: "PUT",
         headers: {
@@ -706,7 +706,7 @@ export function ProductCategoryTreeView({
   const saveCategoryRecord = async (guid: string, payload: SettingRecord) => {
     if (!auth || !workspace) return;
     const response = await fetch(
-      `/api/system-settings/product_category_group_select_screen/${encodeURIComponent(guid)}?holding_code=${encodeURIComponent(workspace.shop.holding_code)}`,
+      `/api/system-settings/product_category_group_select_screen/${encodeURIComponent(guid)}?holdingcode=${encodeURIComponent(workspace.shop.holdingcode)}`,
       {
         method: "PUT",
         headers: {
@@ -725,7 +725,7 @@ export function ProductCategoryTreeView({
 
   const buildParentGuidAll = (parentGuid: string): string => {
     if (!parentGuid) return "";
-    const parent = typedCategories.find((item) => item.guid_fixed === parentGuid);
+    const parent = typedCategories.find((item) => item.guidfixed === parentGuid);
     if (!parent) return parentGuid;
     return parent.parentguidall ? `${parent.parentguidall},${parentGuid}` : parentGuid;
   };
@@ -739,14 +739,14 @@ export function ProductCategoryTreeView({
     items.map((item, index) => {
       const detail = "detail" in item ? item.detail : item;
       return {
-        guid_fixed: detail.guid_fixed,
+        guidfixed: detail.guidfixed,
         code: "X",
         xorder: index + 1,
       };
     });
 
   const uniqueXSortPayload = (items: XSortPayload[]): XSortPayload[] =>
-    Array.from(new Map(items.map((item) => [item.guid_fixed, item])).values());
+    Array.from(new Map(items.map((item) => [item.guidfixed, item])).values());
 
   const hasPreviewOrder = () => Object.keys(previewOrderOverridesRef.current).length > 0;
 
@@ -769,23 +769,23 @@ export function ProductCategoryTreeView({
     const previewKey = `${activeDrag.guid}:${targetGuid}:${position}`;
     if (previewDropKeyRef.current === previewKey) return true;
 
-    const draggedNode = siblings.find((item) => item.detail.guid_fixed === activeDrag.guid);
-    const targetIndex = siblings.findIndex((item) => item.detail.guid_fixed === targetGuid);
+    const draggedNode = siblings.find((item) => item.detail.guidfixed === activeDrag.guid);
+    const targetIndex = siblings.findIndex((item) => item.detail.guidfixed === targetGuid);
     if (!draggedNode || targetIndex === -1) return false;
 
-    const withoutDragged = siblings.filter((item) => item.detail.guid_fixed !== activeDrag.guid);
-    const targetIndexAfterRemoval = withoutDragged.findIndex((item) => item.detail.guid_fixed === targetGuid);
+    const withoutDragged = siblings.filter((item) => item.detail.guidfixed !== activeDrag.guid);
+    const targetIndexAfterRemoval = withoutDragged.findIndex((item) => item.detail.guidfixed === targetGuid);
     const insertIndex = targetIndexAfterRemoval + (position === "after" ? 1 : 0);
     const reorderedSiblings = [...withoutDragged];
     reorderedSiblings.splice(insertIndex, 0, draggedNode);
 
-    const sameOrder = siblings.every((item, index) => item.detail.guid_fixed === reorderedSiblings[index]?.detail.guid_fixed);
+    const sameOrder = siblings.every((item, index) => item.detail.guidfixed === reorderedSiblings[index]?.detail.guidfixed);
     if (sameOrder) return false;
 
     captureTreeLayout();
     previewDropKeyRef.current = previewKey;
     setPreviewOrderOverridesState(
-      Object.fromEntries(normalizeSiblingOrders(reorderedSiblings).map((item) => [item.guid_fixed, item.xorder]))
+      Object.fromEntries(normalizeSiblingOrders(reorderedSiblings).map((item) => [item.guidfixed, item.xorder]))
     );
     return true;
   };
@@ -825,8 +825,8 @@ export function ProductCategoryTreeView({
     const previewActive = hasPreviewOrder();
 
     const draggedRecord = records.find((record) => recordGuid(record) === draggedGuid);
-    const draggedCategory = typedCategories.find((item) => item.guid_fixed === draggedGuid);
-    const targetCategory = typedCategories.find((item) => item.guid_fixed === targetGuid);
+    const draggedCategory = typedCategories.find((item) => item.guidfixed === draggedGuid);
+    const targetCategory = typedCategories.find((item) => item.guidfixed === targetGuid);
     if (!draggedRecord || !draggedCategory || !targetCategory) return;
 
     const targetParentGuid = targetCategory.parent_guid || "";
@@ -850,8 +850,8 @@ export function ProductCategoryTreeView({
     const currentTargetSiblings = siblings.length
       ? siblings.map((item) => item.detail)
       : sortedChildrenOf(targetParentGuid);
-    const withoutDragged = currentTargetSiblings.filter((item) => item.guid_fixed !== draggedGuid);
-    const targetIndexAfterRemoval = withoutDragged.findIndex((item) => item.guid_fixed === targetGuid);
+    const withoutDragged = currentTargetSiblings.filter((item) => item.guidfixed !== draggedGuid);
+    const targetIndexAfterRemoval = withoutDragged.findIndex((item) => item.guidfixed === targetGuid);
     if (targetIndexAfterRemoval === -1) return;
     const insertIndex = targetIndexAfterRemoval + (position === "after" ? 1 : 0);
     const reorderedSiblings = [...withoutDragged];
@@ -862,15 +862,15 @@ export function ProductCategoryTreeView({
     };
     reorderedSiblings.splice(insertIndex, 0, movedCategory);
 
-    const sameOrder = currentTargetSiblings.every((item, index) => item.guid_fixed === reorderedSiblings[index]?.guid_fixed);
+    const sameOrder = currentTargetSiblings.every((item, index) => item.guidfixed === reorderedSiblings[index]?.guidfixed);
     if (!previewActive && !movingAcrossParents && sameOrder) return;
 
     const targetSiblingPayload = normalizeSiblingOrders(reorderedSiblings);
     const oldSiblingPayload = movingAcrossParents
-      ? normalizeSiblingOrders(sortedChildrenOf(oldParentGuid).filter((item) => item.guid_fixed !== draggedGuid))
+      ? normalizeSiblingOrders(sortedChildrenOf(oldParentGuid).filter((item) => item.guidfixed !== draggedGuid))
       : [];
     const updateList = uniqueXSortPayload([...oldSiblingPayload, ...targetSiblingPayload]);
-    const draggedOrder = targetSiblingPayload.find((item) => item.guid_fixed === draggedGuid)?.xorder ?? 1;
+    const draggedOrder = targetSiblingPayload.find((item) => item.guidfixed === draggedGuid)?.xorder ?? 1;
     const payload: SettingRecord = {
       ...draggedRecord,
       parent_guid: targetParentGuid,
@@ -892,7 +892,7 @@ export function ProductCategoryTreeView({
     }));
     setOrderOverrides((prev) => ({
       ...prev,
-      ...Object.fromEntries(updateList.map((item) => [item.guid_fixed, item.xorder])),
+      ...Object.fromEntries(updateList.map((item) => [item.guidfixed, item.xorder])),
     }));
 
     try {
@@ -912,8 +912,8 @@ export function ProductCategoryTreeView({
     if (draggedGuid === targetGuid) return;
 
     const draggedRecord = records.find((record) => recordGuid(record) === draggedGuid);
-    const draggedCategory = typedCategories.find((item) => item.guid_fixed === draggedGuid);
-    const targetCategory = typedCategories.find((item) => item.guid_fixed === targetGuid);
+    const draggedCategory = typedCategories.find((item) => item.guidfixed === draggedGuid);
+    const targetCategory = typedCategories.find((item) => item.guidfixed === targetGuid);
     if (!draggedRecord || !draggedCategory || !targetCategory) return;
 
     const targetParentChain = targetCategory.parentguidall
@@ -930,10 +930,10 @@ export function ProductCategoryTreeView({
     }
 
     const newParentGuidAll = buildParentGuidAll(targetGuid);
-    const nextChildren = sortedChildrenOf(targetGuid).filter((item) => item.guid_fixed !== draggedGuid);
+    const nextChildren = sortedChildrenOf(targetGuid).filter((item) => item.guidfixed !== draggedGuid);
     const nextOrder = nextChildren.length + 1;
     const oldParentGuid = draggedCategory.parent_guid || "";
-    const oldSiblings = sortedChildrenOf(oldParentGuid).filter((item) => item.guid_fixed !== draggedGuid);
+    const oldSiblings = sortedChildrenOf(oldParentGuid).filter((item) => item.guidfixed !== draggedGuid);
     const payload: SettingRecord = {
       ...draggedRecord,
       parent_guid: targetGuid,
@@ -953,7 +953,7 @@ export function ProductCategoryTreeView({
     setOrderOverrides((prev) => ({
       ...prev,
       [draggedGuid]: nextOrder,
-      ...Object.fromEntries(normalizeSiblingOrders(oldSiblings).map((item) => [item.guid_fixed, item.xorder])),
+      ...Object.fromEntries(normalizeSiblingOrders(oldSiblings).map((item) => [item.guidfixed, item.xorder])),
     }));
 
     try {
@@ -973,12 +973,12 @@ export function ProductCategoryTreeView({
     if (!auth || !workspace) return;
 
     const draggedRecord = records.find((record) => recordGuid(record) === draggedGuid);
-    const draggedCategory = typedCategories.find((item) => item.guid_fixed === draggedGuid);
+    const draggedCategory = typedCategories.find((item) => item.guidfixed === draggedGuid);
     if (!draggedRecord || !draggedCategory) return;
 
     const oldParentGuid = draggedCategory.parent_guid || "";
-    const oldSiblings = sortedChildrenOf(oldParentGuid).filter((item) => item.guid_fixed !== draggedGuid);
-    const rootSiblings = sortedChildrenOf("").filter((item) => item.guid_fixed !== draggedGuid);
+    const oldSiblings = sortedChildrenOf(oldParentGuid).filter((item) => item.guidfixed !== draggedGuid);
+    const rootSiblings = sortedChildrenOf("").filter((item) => item.guidfixed !== draggedGuid);
     const nextRootOrder = rootSiblings.length + 1;
     const nextRootItems: CategoryNode[] = [
       ...rootSiblings,
@@ -1003,7 +1003,7 @@ export function ProductCategoryTreeView({
     }));
     setOrderOverrides((prev) => ({
       ...prev,
-      ...Object.fromEntries(uniqueXSortPayload([...oldSiblingPayload, ...rootOrderPayload]).map((item) => [item.guid_fixed, item.xorder])),
+      ...Object.fromEntries(uniqueXSortPayload([...oldSiblingPayload, ...rootOrderPayload]).map((item) => [item.guidfixed, item.xorder])),
     }));
 
     try {
@@ -1037,7 +1037,7 @@ export function ProductCategoryTreeView({
     _siblings: CategoryTreeNode[],
     position: DropPosition
   ) => {
-    if (activeDrag.guid === node.detail.guid_fixed) return false;
+    if (activeDrag.guid === node.detail.guidfixed) return false;
     const targetParentChain = node.detail.parentguidall
       .split(",")
       .map((item) => item.trim())
@@ -1293,7 +1293,7 @@ export function ProductCategoryTreeView({
     const rect = event.currentTarget.getBoundingClientRect();
     event.currentTarget.setPointerCapture(event.pointerId);
     pointerDragRef.current = {
-      guid: node.detail.guid_fixed,
+      guid: node.detail.guidfixed,
       parentGuid: node.detail.parent_guid || "",
       offsetX: 0,
       offsetY: 0,
@@ -1334,7 +1334,7 @@ export function ProductCategoryTreeView({
     if (!dragState) return null;
 
     const node = categoryTreeLookups.nodeByGuid.get(dragState.guid);
-    const detail = node?.detail ?? typedCategories.find((item) => item.guid_fixed === dragState.guid);
+    const detail = node?.detail ?? typedCategories.find((item) => item.guidfixed === dragState.guid);
     if (!detail) return null;
 
     const childCount = node?.childCategories.length ?? 0;
@@ -1391,11 +1391,11 @@ export function ProductCategoryTreeView({
         {nodes.map((node, index) => {
           const childCount = node.childCategories.length;
           const hasChildren = childCount > 0;
-          const isExpanded = expandedNodes[node.detail.guid_fixed] ?? false;
-          const isSelected = selectedGuid === node.detail.guid_fixed;
-          const isDragging = dragState?.guid === node.detail.guid_fixed;
-          const isArrivalHighlighted = arrivalHighlight?.guid === node.detail.guid_fixed;
-          const activeDropTarget = dropTarget?.guid === node.detail.guid_fixed ? dropTarget.position : null;
+          const isExpanded = expandedNodes[node.detail.guidfixed] ?? false;
+          const isSelected = selectedGuid === node.detail.guidfixed;
+          const isDragging = dragState?.guid === node.detail.guidfixed;
+          const isArrivalHighlighted = arrivalHighlight?.guid === node.detail.guidfixed;
+          const activeDropTarget = dropTarget?.guid === node.detail.guidfixed ? dropTarget.position : null;
           const canAcceptChildDrop = dragState
             ? canDropOnTarget(dragState, node, [], "inside")
             : false;
@@ -1404,7 +1404,7 @@ export function ProductCategoryTreeView({
           const displayName = getDisplayName(node.detail.names);
           const levelStyle = categoryLevelStyle(level);
           return (
-            <div key={node.detail.guid_fixed} className="grid w-full">
+            <div key={node.detail.guidfixed} className="grid w-full">
               <div
                 className={cn(
                   "group/row relative flex items-center justify-between border-b border-border/40 py-2 px-3 transition-[background-color,border-color,box-shadow,opacity,transform] duration-200 ease-out",
@@ -1419,7 +1419,7 @@ export function ProductCategoryTreeView({
                   activeDropTarget && "bg-primary/10 shadow-[0_0_0_1px_var(--primary)]",
                   activeDropTarget === "inside" && "ring-2 ring-primary/30"
                 )}
-                data-category-row-guid={node.detail.guid_fixed}
+                data-category-row-guid={node.detail.guidfixed}
                 style={{
                   paddingLeft: `${level * 24 + 12}px`,
                 }}
@@ -1434,10 +1434,10 @@ export function ProductCategoryTreeView({
                     event.stopPropagation();
                     return;
                   }
-                  setSelectedGuid(node.detail.guid_fixed);
+                  setSelectedGuid(node.detail.guidfixed);
                   // Find original SettingRecord and open it for edit
                   const orig = records.find(
-                    (r) => recordGuid(r) === node.detail.guid_fixed
+                    (r) => recordGuid(r) === node.detail.guidfixed
                   );
                   if (orig) onOpenEdit(recordWithOptimisticOverrides(orig));
                 }}
@@ -1477,7 +1477,7 @@ export function ProductCategoryTreeView({
                       "size-6 flex items-center justify-center rounded hover:bg-muted text-muted-foreground",
                       !hasChildren && "invisible"
                     )}
-                    onClick={(e) => toggleExpand(node.detail.guid_fixed, e)}
+                    onClick={(e) => toggleExpand(node.detail.guidfixed, e)}
                   >
                     {isExpanded ? (
                       <ChevronDown className={cn("size-4", levelStyle.caret)} />
@@ -1507,7 +1507,7 @@ export function ProductCategoryTreeView({
                           ? `${isExpanded ? "ซ่อน" : "แสดง"}หมวดย่อย`
                           : `${isExpanded ? "Hide" : "Show"} children`
                       }
-                      onClick={(e) => toggleExpand(node.detail.guid_fixed, e)}
+                      onClick={(e) => toggleExpand(node.detail.guidfixed, e)}
                     >
                       {language === "th"
                         ? `ลูก ${childCount}`
@@ -1521,7 +1521,7 @@ export function ProductCategoryTreeView({
                   </span>
                   {isArrivalHighlighted ? (
                     <span
-                      key={arrivalHighlight?.nonce ?? node.detail.guid_fixed}
+                      key={arrivalHighlight?.nonce ?? node.detail.guidfixed}
                       className="shrink-0 animate-pulse rounded-full bg-emerald-600 px-2 py-0.5 text-[11px] font-semibold leading-5 text-white shadow-sm"
                     >
                       {language === "th" ? "ย้ายมาแล้ว" : "Moved here"}
@@ -1534,7 +1534,7 @@ export function ProductCategoryTreeView({
                         activeDropTarget === "inside" &&
                           "scale-110 border-emerald-700 bg-emerald-600 text-white shadow-md dark:bg-emerald-500 dark:text-white"
                       )}
-                      data-category-child-drop-guid={node.detail.guid_fixed}
+                      data-category-child-drop-guid={node.detail.guidfixed}
                       aria-label={language === "th" ? "วางเป็นหมวดย่อย" : "Drop as child category"}
                     >
                       {language === "th" ? "วางเป็นลูก" : "Drop child"}
@@ -1553,8 +1553,8 @@ export function ProductCategoryTreeView({
                       aria-label={language === "th" ? "เพิ่มหมวดย่อย" : "Add subcategory"}
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedGuid(node.detail.guid_fixed);
-                        onOpenCreate(node.detail.guid_fixed);
+                        setSelectedGuid(node.detail.guidfixed);
+                        onOpenCreate(node.detail.guidfixed);
                       }}
                     >
                       <FolderPlus className="size-3.5" />
@@ -1567,9 +1567,9 @@ export function ProductCategoryTreeView({
                       aria-label={language === "th" ? "แก้ไข" : "Edit"}
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedGuid(node.detail.guid_fixed);
+                        setSelectedGuid(node.detail.guidfixed);
                         const orig = records.find(
-                          (r) => recordGuid(r) === node.detail.guid_fixed
+                          (r) => recordGuid(r) === node.detail.guidfixed
                         );
                         if (orig) onOpenEdit(recordWithOptimisticOverrides(orig));
                       }}
@@ -1585,7 +1585,7 @@ export function ProductCategoryTreeView({
                       onClick={(e) => {
                         e.stopPropagation();
                         const orig = records.find(
-                          (r) => recordGuid(r) === node.detail.guid_fixed
+                          (r) => recordGuid(r) === node.detail.guidfixed
                         );
                         if (orig) onDeleteRecord(orig);
                       }}

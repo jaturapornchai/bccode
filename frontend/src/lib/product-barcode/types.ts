@@ -125,7 +125,7 @@ export type MarketplaceStatus = (typeof MARKETPLACE_STATUS)[number];
 export interface MarketplaceProductMap {
   platform: string;
   account_id: string;
-  holding_code: string;
+  holdingcode: string;
   market_item_id: string;
   market_model_id: string;
   item_url: string;
@@ -173,7 +173,7 @@ export interface MarketplaceDimensionStock {
 export interface MarketplaceSKUMap {
   platform: string;
   account_id: string;
-  holding_code: string;
+  holdingcode: string;
   market_item_id: string;
   market_model_id: string;
   seller_sku: string;
@@ -201,7 +201,7 @@ export function emptyMarketplaceSKUMap(
   return {
     platform,
     account_id: "",
-    holding_code: holdingCode,
+    holdingcode: holdingCode,
     market_item_id: marketItemId,
     market_model_id: "",
     seller_sku: "",
@@ -225,7 +225,7 @@ export function emptyMarketplaceProductMap(platform: MarketplacePlatform): Marke
   return {
     platform,
     account_id: "",
-    holding_code: "",
+    holdingcode: "",
     market_item_id: "",
     market_model_id: "",
     item_url: "",
@@ -258,7 +258,7 @@ export function emptyMarketplaceProductMap(platform: MarketplacePlatform): Marke
 
 /** Sub/ref barcode — matches Go `RefProductBarcode`. */
 export interface RefProductBarcode {
-  guid_fixed: string;
+  guidfixed: string;
   names: NameX[];
   item_unit_code: string;
   itemunitnames: NameX[];
@@ -401,7 +401,7 @@ export type ProductType = number;
 export interface ProductBarcode {
   // Identity
   guidfixed: string;
-  holding_code?: string;
+  holdingcode?: string;
   itemcode: string;
   barcode: string;
   names: NameX[];
@@ -543,7 +543,7 @@ export type ProductBarcodeUpdateRequest = ProductBarcode;
 /** Row shape returned by `POST /goapi/api/product/barcode/list` (PG list). */
 export interface ProductBarcodeListRow {
   guidfixed: string;
-  holding_code?: string;
+  holdingcode?: string;
   barcode: string;
   names: NameX[];
   itemunitcode: string;
@@ -606,7 +606,7 @@ export interface ProductBarcodeListFilters {
 
 /** Request body for list endpoint. */
 export interface ProductBarcodeListRequest extends ProductBarcodeListFilters {
-  holding_code: string;
+  holdingcode: string;
 }
 
 /** Response envelope from list endpoint. */
@@ -621,7 +621,7 @@ export interface ProductBarcodeListResponse {
 export function emptyProductBarcode(): ProductBarcode {
   return {
     guidfixed: "",
-    holding_code: "",
+    holdingcode: "",
     itemcode: "",
     barcode: "",
     names: [],
@@ -743,20 +743,20 @@ export function emptyProductBarcode(): ProductBarcode {
 }
 
 export interface ProductManufacturer {
-  guid_fixed: string;
+  guidfixed: string;
   code: string;
   names: NameX[];
 }
 
 export interface ProductSupplier {
-  guid_fixed: string;
+  guidfixed: string;
   code: string;
   names: NameX[];
 }
 
 export interface Product {
   guidfixed: string;
-  holding_code: string;
+  holdingcode: string;
   code: string;
   names: NameX[];
   group_code: string;

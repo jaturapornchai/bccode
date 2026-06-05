@@ -7,8 +7,8 @@ import (
 
 type TrialBalanceSheetReport struct {
 	ReportDate             time.Time                         `json:"reportdate"`             // วันที่ทำรายการ
-	StartDate              time.Time                         `json:"start_date"`             // วันที่เริ่มต้น
-	EndDate                time.Time                         `json:"end_date"`               // วันที่สิ้นสุด
+	StartDate              time.Time                         `json:"startdate"`              // วันที่เริ่มต้น
+	EndDate                time.Time                         `json:"enddate"`                // วันที่สิ้นสุด
 	AccountGroup           string                            `json:"accountgroup"`           // เล่มบัญชี
 	AccountDetails         *[]TrialBalanceSheetAccountDetail `json:"accountdetails"`         // รายละเอียดบัญชี
 	TotalBalanceDebit      float64                           `json:"totalbalancedebit"`      // รวมยอดยกมาเดบิต
@@ -42,7 +42,7 @@ type BalanceSheetReport struct {
 	// วันที่ทำรายการ
 	ReportDate time.Time `json:"reportdate"`
 	// วันที่สิ้นสุด
-	EndDate time.Time `json:"end_date"`
+	EndDate time.Time `json:"enddate"`
 	// เล่มบัญชี
 	AccountGroup string `json:"accountgroup"`
 	// สินทรัพย์
@@ -71,9 +71,9 @@ type ProfitAndLossSheetReport struct {
 	// วันที่ทำรายการ
 	ReportDate time.Time `json:"reportdate"`
 	// วันที่เริ่มต้น
-	StartDate time.Time `json:"start_date"`
+	StartDate time.Time `json:"startdate"`
 	// วันที่สิ้นสุด
-	EndDate time.Time `json:"end_date"`
+	EndDate time.Time `json:"enddate"`
 	// เล่มบัญชี
 	AccountGroup string `json:"accountgroup"`
 	// รายการรายได้
@@ -170,7 +170,7 @@ func (JournalImageSummary) CollectionName() string {
 }
 
 type JournalDocNoByShop struct {
-	HoldingCode string `json:"holding_code" bson:"holding_code"`
+	HoldingCode string `json:"holdingcode" bson:"holdingcode"`
 	DocNo       string `json:"docno" bson:"docno"`
 }
 
@@ -187,7 +187,7 @@ type MultiShopDashboardResponse struct {
 
 // Summary per shop
 type ShopDashboardSummary struct {
-	HoldingCode    string  `json:"holding_code"`
+	HoldingCode    string  `json:"holdingcode"`
 	ShopName       string  `json:"shopname"`
 	DailyAverage   float64 `json:"dailyaverage"`
 	MonthlyAverage float64 `json:"monthlyaverage"`
@@ -199,21 +199,21 @@ type ShopDashboardSummary struct {
 
 // Period metadata
 type PeriodInfo struct {
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate time.Time `json:"startdate"`
+	EndDate   time.Time `json:"enddate"`
 	TotalDays int       `json:"totaldays"`
 }
 
 // PostgreSQL raw result (internal use)
 type MultiShopRevenueRaw struct {
-	HoldingCode     string  `gorm:"column:holding_code"`
+	HoldingCode     string  `gorm:"column:holdingcode"`
 	AccountCategory int16   `gorm:"column:accountcategory"`
-	TotalAmount     float64 `gorm:"column:total_amount"`
+	TotalAmount     float64 `gorm:"column:totalamount"`
 }
 
 // MongoDB image count result
 type ShopImageCount struct {
-	HoldingCode string `json:"holding_code" bson:"holding_code"`
+	HoldingCode string `json:"holdingcode" bson:"holdingcode"`
 	ImageCount  int    `json:"imagecount" bson:"imagecount"`
 }
 

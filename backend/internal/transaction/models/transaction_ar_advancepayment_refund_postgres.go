@@ -14,7 +14,7 @@ type ARAdvancePaymentRefundTransactionPG struct {
 	GeneralTransactionPG `gorm:"embedded;"`
 	CreditorCode         string                                       `json:"creditorcode" gorm:"column:creditorcode"`
 	CreditorNames        pkgModels.JSONB                              `json:"creditornames" gorm:"column:creditornames;type:jsonb"`
-	Items                *[]ARAdvancePaymentRefundTransactionDetailPG `json:"items" gorm:"items;foreignKey:holding_code,docno"`
+	Items                *[]ARAdvancePaymentRefundTransactionDetailPG `json:"items" gorm:"items;foreignKey:holdingcode,docno"`
 }
 
 // รายละเอียด คืนเงินล่วงหน้าลูกหนี้
@@ -34,7 +34,7 @@ func (m *ARAdvancePaymentRefundTransactionPG) BeforeUpdate(tx *gorm.DB) (err err
 
 	// find old data
 	var details *[]ARAdvancePaymentRefundTransactionDetailPG
-	tx.Model(&ARAdvancePaymentRefundTransactionDetailPG{}).Where(" holding_code=? AND docno=?", m.HoldingCode, m.DocNo).Find(&details)
+	tx.Model(&ARAdvancePaymentRefundTransactionDetailPG{}).Where(" holdingcode=? AND docno=?", m.HoldingCode, m.DocNo).Find(&details)
 
 	// delete un use data
 	for _, tmp := range *details {

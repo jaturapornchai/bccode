@@ -576,7 +576,7 @@ class DetailedUser(BaseModel):
     id: str
     name: str
     email: str
-    created_at: datetime
+    createdat: datetime
     metadata: Dict[str, Any]
 
 @mcp.tool()

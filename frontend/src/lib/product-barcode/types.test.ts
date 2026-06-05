@@ -31,7 +31,7 @@ describe("product barcode marketplace contracts", () => {
   it("builds marketplace SKU mappings with dimension stock projections", () => {
     expect(emptyMarketplaceSKUMap("shopee", "shop-a", "ITEM-1")).toMatchObject({
       platform: "shopee",
-      holding_code: "shop-a",
+      holdingcode: "shop-a",
       market_item_id: "ITEM-1",
       platform_stock: 0,
       marketplace_dimension_stocks: [],

@@ -132,7 +132,7 @@ func hasImageContent(messages []aiprovider.OAIMessage) bool {
 	for _, m := range messages {
 		if parts, ok := m.Content.([]aiprovider.ContentPart); ok {
 			for _, p := range parts {
-				if p.Type == "image_url" {
+				if p.Type == "imageurl" {
 					return true
 				}
 			}
@@ -152,7 +152,7 @@ func stripImageContent(messages []aiprovider.OAIMessage) []aiprovider.OAIMessage
 			for _, p := range parts {
 				if p.Type == "text" && p.Text != "" {
 					textParts = append(textParts, p.Text)
-				} else if p.Type == "image_url" {
+				} else if p.Type == "imageurl" {
 					imageCount++
 				}
 			}
@@ -285,8 +285,8 @@ func RunAgentLoop(ctx context.Context, holdingCode string, question string) (*Ag
 				continue
 			}
 
-			// Inject holding_code
-			params["holding_code"] = holdingCode
+			// Inject holdingcode
+			params["holdingcode"] = holdingCode
 
 			logger.Info("[Agent] Executing tool: %s", toolName)
 

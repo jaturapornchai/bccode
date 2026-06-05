@@ -51,7 +51,7 @@ func CreateInventoryCostingTables(db *sql.DB) error {
 const ddlProductCostingConfig = `
 CREATE TABLE IF NOT EXISTS product_costing_config (
     id SERIAL PRIMARY KEY,
-    holding_code TEXT NOT NULL,
+    holdingcode TEXT NOT NULL,
     itemcode TEXT NOT NULL,
     costingmethod VARCHAR(20) NOT NULL DEFAULT 'moving_average',
     lottrackingenabled BOOLEAN NOT NULL DEFAULT false,
@@ -67,13 +67,13 @@ CREATE TABLE IF NOT EXISTS product_costing_config (
     standardcosteffectivedate DATE,
     createdat TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updatedat TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE (holding_code, itemcode)
+    UNIQUE (holdingcode, itemcode)
 )`
 
 const ddlInventoryCostLayers = `
 CREATE TABLE IF NOT EXISTS inventory_cost_layers (
     id BIGSERIAL PRIMARY KEY,
-    holding_code TEXT NOT NULL,
+    holdingcode TEXT NOT NULL,
     itemcode TEXT NOT NULL,
     barcode TEXT,
     whcode TEXT NOT NULL,
@@ -100,7 +100,7 @@ CREATE TABLE IF NOT EXISTS inventory_cost_layers (
 const ddlInventoryStockBalances = `
 CREATE TABLE IF NOT EXISTS inventory_stock_balances (
     id BIGSERIAL PRIMARY KEY,
-    holding_code TEXT NOT NULL,
+    holdingcode TEXT NOT NULL,
     itemcode TEXT NOT NULL,
     barcode TEXT,
     whcode TEXT NOT NULL,
@@ -112,13 +112,13 @@ CREATE TABLE IF NOT EXISTS inventory_stock_balances (
     lastpurchasecost NUMERIC(18,4) DEFAULT 0,
     lastpurchasedate DATE,
     updatedat TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE (holding_code, itemcode, whcode, locationcode)
+    UNIQUE (holdingcode, itemcode, whcode, locationcode)
 )`
 
 const ddlMarketplaceStockBalances = `
 CREATE TABLE IF NOT EXISTS marketplace_stock_balances (
     id BIGSERIAL PRIMARY KEY,
-    holding_code TEXT NOT NULL,
+    holdingcode TEXT NOT NULL,
     item_code TEXT NOT NULL,
     dimension_key TEXT NOT NULL DEFAULT '',
     dimension_values JSONB NOT NULL DEFAULT '{}'::jsonb,
@@ -126,14 +126,14 @@ CREATE TABLE IF NOT EXISTS marketplace_stock_balances (
     reserved_qty NUMERIC(18,4) NOT NULL DEFAULT 0,
     available_qty NUMERIC(18,4) NOT NULL DEFAULT 0,
     source TEXT NOT NULL DEFAULT 'accounting',
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE (holding_code, item_code, dimension_key)
+    updatedat TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (holdingcode, item_code, dimension_key)
 )`
 
 const ddlMarketplaceDimensionPrices = `
 CREATE TABLE IF NOT EXISTS marketplace_dimension_prices (
     id BIGSERIAL PRIMARY KEY,
-    holding_code TEXT NOT NULL,
+    holdingcode TEXT NOT NULL,
     item_code TEXT NOT NULL,
     barcode TEXT NOT NULL DEFAULT '',
     dimension_key TEXT NOT NULL DEFAULT '',
@@ -146,15 +146,15 @@ CREATE TABLE IF NOT EXISTS marketplace_dimension_prices (
     compare_at_price NUMERIC(18,4) NOT NULL DEFAULT 0,
     effective_from TIMESTAMPTZ,
     effective_to TIMESTAMPTZ,
-    is_active BOOLEAN NOT NULL DEFAULT true,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE (holding_code, item_code, barcode, dimension_key, price_level, marketplace, currency)
+    isactive BOOLEAN NOT NULL DEFAULT true,
+    updatedat TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (holdingcode, item_code, barcode, dimension_key, price_level, marketplace, currency)
 )`
 
 const ddlInventoryCostTransactions = `
 CREATE TABLE IF NOT EXISTS inventory_cost_transactions (
     id BIGSERIAL PRIMARY KEY,
-    holding_code TEXT NOT NULL,
+    holdingcode TEXT NOT NULL,
     itemcode TEXT NOT NULL,
     barcode TEXT,
     whcode TEXT NOT NULL,
@@ -185,7 +185,7 @@ CREATE TABLE IF NOT EXISTS inventory_cost_transactions (
 const ddlInventoryVariances = `
 CREATE TABLE IF NOT EXISTS inventory_variances (
     id BIGSERIAL PRIMARY KEY,
-    holding_code TEXT NOT NULL,
+    holdingcode TEXT NOT NULL,
     itemcode TEXT NOT NULL,
     whcode TEXT NOT NULL,
     variancetype VARCHAR(30) NOT NULL,
@@ -203,7 +203,7 @@ CREATE TABLE IF NOT EXISTS inventory_variances (
 const ddlInventoryLandedCosts = `
 CREATE TABLE IF NOT EXISTS inventory_landed_costs (
     id BIGSERIAL PRIMARY KEY,
-    holding_code TEXT NOT NULL,
+    holdingcode TEXT NOT NULL,
     refdoctype VARCHAR(50) NOT NULL,
     refdocno VARCHAR(50) NOT NULL,
     costtype VARCHAR(50) NOT NULL,
@@ -221,7 +221,7 @@ CREATE TABLE IF NOT EXISTS inventory_landed_costs (
 const ddlInventoryLandedCostAllocations = `
 CREATE TABLE IF NOT EXISTS inventory_landed_cost_allocations (
     id BIGSERIAL PRIMARY KEY,
-    holding_code TEXT NOT NULL,
+    holdingcode TEXT NOT NULL,
     landedcostid BIGINT NOT NULL,
     itemcode TEXT NOT NULL,
     whcode TEXT NOT NULL,
@@ -235,7 +235,7 @@ CREATE TABLE IF NOT EXISTS inventory_landed_cost_allocations (
 const ddlInventoryAccountingPeriods = `
 CREATE TABLE IF NOT EXISTS inventory_accounting_periods (
     id BIGSERIAL PRIMARY KEY,
-    holding_code TEXT NOT NULL,
+    holdingcode TEXT NOT NULL,
     periodcode VARCHAR(7) NOT NULL,
     startdate DATE NOT NULL,
     enddate DATE NOT NULL,
@@ -244,29 +244,29 @@ CREATE TABLE IF NOT EXISTS inventory_accounting_periods (
     closedby VARCHAR(50),
     closedat TIMESTAMPTZ,
     createdat TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE (holding_code, periodcode)
+    UNIQUE (holdingcode, periodcode)
 )`
 
 // inventoryIndexes — indexes สำหรับ performance
 var inventoryIndexes = []string{
 	// Cost Layers — FIFO sort
-	`CREATE INDEX IF NOT EXISTS idx_cl_fifo ON inventory_cost_layers (holding_code, itemcode, whcode, locationcode, receiveddate ASC, id ASC) WHERE remainingqty > 0`,
+	`CREATE INDEX IF NOT EXISTS idx_cl_fifo ON inventory_cost_layers (holdingcode, itemcode, whcode, locationcode, receiveddate ASC, id ASC) WHERE remainingqty > 0`,
 	// Cost Layers — LIFO sort
-	`CREATE INDEX IF NOT EXISTS idx_cl_lifo ON inventory_cost_layers (holding_code, itemcode, whcode, locationcode, receiveddate DESC, id DESC) WHERE remainingqty > 0`,
+	`CREATE INDEX IF NOT EXISTS idx_cl_lifo ON inventory_cost_layers (holdingcode, itemcode, whcode, locationcode, receiveddate DESC, id DESC) WHERE remainingqty > 0`,
 	// Cost Layers — FEFO sort
-	`CREATE INDEX IF NOT EXISTS idx_cl_fefo ON inventory_cost_layers (holding_code, itemcode, whcode, locationcode, expirydate ASC, receiveddate ASC) WHERE remainingqty > 0`,
+	`CREATE INDEX IF NOT EXISTS idx_cl_fefo ON inventory_cost_layers (holdingcode, itemcode, whcode, locationcode, expirydate ASC, receiveddate ASC) WHERE remainingqty > 0`,
 	// Cost Layers — Lot lookup
-	`CREATE INDEX IF NOT EXISTS idx_cl_lot ON inventory_cost_layers (holding_code, itemcode, whcode, lotnumber) WHERE remainingqty > 0`,
+	`CREATE INDEX IF NOT EXISTS idx_cl_lot ON inventory_cost_layers (holdingcode, itemcode, whcode, lotnumber) WHERE remainingqty > 0`,
 	// Cost Transactions — product + date
-	`CREATE INDEX IF NOT EXISTS idx_ct_product ON inventory_cost_transactions (holding_code, itemcode, whcode, transactiondate)`,
+	`CREATE INDEX IF NOT EXISTS idx_ct_product ON inventory_cost_transactions (holdingcode, itemcode, whcode, transactiondate)`,
 	// Cost Transactions — period
-	`CREATE INDEX IF NOT EXISTS idx_ct_period ON inventory_cost_transactions (holding_code, accountingperiod, itemcode)`,
+	`CREATE INDEX IF NOT EXISTS idx_ct_period ON inventory_cost_transactions (holdingcode, accountingperiod, itemcode)`,
 	// Cost Transactions — doc reference
-	`CREATE INDEX IF NOT EXISTS idx_ct_ref ON inventory_cost_transactions (holding_code, refdoctype, refdocno)`,
+	`CREATE INDEX IF NOT EXISTS idx_ct_ref ON inventory_cost_transactions (holdingcode, refdoctype, refdocno)`,
 	// Variances — product
-	`CREATE INDEX IF NOT EXISTS idx_var_product ON inventory_variances (holding_code, itemcode, transactiondate)`,
+	`CREATE INDEX IF NOT EXISTS idx_var_product ON inventory_variances (holdingcode, itemcode, transactiondate)`,
 	// Stock Balances — shop
-	`CREATE INDEX IF NOT EXISTS idx_sb_shop ON inventory_stock_balances (holding_code, itemcode)`,
-	`CREATE INDEX IF NOT EXISTS idx_marketplace_stock_dimension ON marketplace_stock_balances (holding_code, item_code, dimension_key)`,
-	`CREATE INDEX IF NOT EXISTS idx_marketplace_price_dimension ON marketplace_dimension_prices (holding_code, item_code, dimension_key, marketplace, price_level)`,
+	`CREATE INDEX IF NOT EXISTS idx_sb_shop ON inventory_stock_balances (holdingcode, itemcode)`,
+	`CREATE INDEX IF NOT EXISTS idx_marketplace_stock_dimension ON marketplace_stock_balances (holdingcode, item_code, dimension_key)`,
+	`CREATE INDEX IF NOT EXISTS idx_marketplace_price_dimension ON marketplace_dimension_prices (holdingcode, item_code, dimension_key, marketplace, price_level)`,
 }

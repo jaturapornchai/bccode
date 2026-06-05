@@ -164,7 +164,7 @@ export interface MasterListRequest {
   page?: number;
   limit?: number;
   lang?: string;
-  company_guid?: string;
+  companyguid?: string;
   filters?: Record<string, string | number | boolean | undefined>;
 }
 
@@ -178,7 +178,7 @@ export function listMaster(
   if (request.page) qs.set("page", String(request.page));
   if (request.limit) qs.set("limit", String(request.limit));
   if (request.lang) qs.set("lang", request.lang);
-  if (request.company_guid) qs.set("company_guid", request.company_guid);
+  if (request.companyguid) qs.set("companyguid", request.companyguid);
   for (const [key, value] of Object.entries(request.filters ?? {})) {
     const normalized = String(value ?? "").trim();
     if (normalized) qs.set(key, normalized);

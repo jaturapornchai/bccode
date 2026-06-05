@@ -38,7 +38,7 @@ func (s *JournalTransactionAdminService) ReSyncJournalTransactionDoc(holdingCode
 		Page:  1,
 		Sorts: []msModels.KeyInt{
 			{
-				Key:   "guid_fixed",
+				Key:   "guidfixed",
 				Value: -1,
 			},
 		},
@@ -75,7 +75,7 @@ func (s *JournalTransactionAdminService) ReSyncJournalDeleteTransactionDoc(holdi
 		Page:  1,
 		Sorts: []msModels.KeyInt{
 			{
-				Key:   "guid_fixed",
+				Key:   "guidfixed",
 				Value: -1,
 			},
 		},

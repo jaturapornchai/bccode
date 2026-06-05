@@ -12,61 +12,61 @@ import (
 // ==================== Year-over-Year Comparison ====================
 
 type YoYComparisonRequest struct {
-	HoldingCode string `json:"holding_code"`
+	HoldingCode string `json:"holdingcode"`
 	Year        int    `json:"year"`
 	Month       int    `json:"month"` // Optional - if provided, compare specific month
 }
 
 type YoYComparisonResponse struct {
 	Period           string            `json:"period"`
-	CurrentYear      int               `json:"current_year"`
-	PreviousYear     int               `json:"previous_year"`
+	CurrentYear      int               `json:"currentyear"`
+	PreviousYear     int               `json:"previousyear"`
 	Summary          ComparisonSummary `json:"summary"`
-	MonthlyBreakdown []MonthComparison `json:"monthly_breakdown"`
-	TopChanges       []ChangeHighlight `json:"top_changes"`
-	GeneratedAt      time.Time         `json:"generated_at"`
+	MonthlyBreakdown []MonthComparison `json:"monthlybreakdown"`
+	TopChanges       []ChangeHighlight `json:"topchanges"`
+	GeneratedAt      time.Time         `json:"generatedat"`
 }
 
 type ComparisonSummary struct {
-	CurrentRevenue       float64 `json:"current_revenue"`
-	CurrentRevenueWord   string  `json:"current_revenue_word"`
-	PreviousRevenue      float64 `json:"previous_revenue"`
-	PreviousRevenueWord  string  `json:"previous_revenue_word"`
-	RevenueChange        float64 `json:"revenue_change"`
-	RevenueChangePercent float64 `json:"revenue_change_percent"`
-	ChangeDirection      string  `json:"change_direction"` // up, down, stable
+	CurrentRevenue       float64 `json:"currentrevenue"`
+	CurrentRevenueWord   string  `json:"currentrevenueword"`
+	PreviousRevenue      float64 `json:"previousrevenue"`
+	PreviousRevenueWord  string  `json:"previousrevenueword"`
+	RevenueChange        float64 `json:"revenuechange"`
+	RevenueChangePercent float64 `json:"revenuechangepercent"`
+	ChangeDirection      string  `json:"changedirection"` // up, down, stable
 
-	CurrentOrders       int     `json:"current_orders"`
-	PreviousOrders      int     `json:"previous_orders"`
-	OrdersChangePercent float64 `json:"orders_change_percent"`
+	CurrentOrders       int     `json:"currentorders"`
+	PreviousOrders      int     `json:"previousorders"`
+	OrdersChangePercent float64 `json:"orderschangepercent"`
 
-	CurrentProfit       float64 `json:"current_profit"`
-	PreviousProfit      float64 `json:"previous_profit"`
-	ProfitChangePercent float64 `json:"profit_change_percent"`
+	CurrentProfit       float64 `json:"currentprofit"`
+	PreviousProfit      float64 `json:"previousprofit"`
+	ProfitChangePercent float64 `json:"profitchangepercent"`
 
-	CurrentAvgOrder  float64 `json:"current_avg_order"`
-	PreviousAvgOrder float64 `json:"previous_avg_order"`
+	CurrentAvgOrder  float64 `json:"currentavgorder"`
+	PreviousAvgOrder float64 `json:"previousavgorder"`
 }
 
 type MonthComparison struct {
 	Month           string  `json:"month"`
-	MonthName       string  `json:"month_name"`
-	CurrentRevenue  float64 `json:"current_revenue"`
-	PreviousRevenue float64 `json:"previous_revenue"`
-	ChangePercent   float64 `json:"change_percent"`
-	ChangeDirection string  `json:"change_direction"`
+	MonthName       string  `json:"monthname"`
+	CurrentRevenue  float64 `json:"currentrevenue"`
+	PreviousRevenue float64 `json:"previousrevenue"`
+	ChangePercent   float64 `json:"changepercent"`
+	ChangeDirection string  `json:"changedirection"`
 }
 
 type ChangeHighlight struct {
 	Metric      string  `json:"metric"`
 	Description string  `json:"description"`
-	Change      float64 `json:"change_percent"`
+	Change      float64 `json:"changepercent"`
 	Trend       string  `json:"trend"` // positive, negative
 }
 
 func GetYoYComparison(ctx context.Context, holdingCode string, year, month int) (*YoYComparisonResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 
 	now := time.Now()
@@ -75,7 +75,7 @@ func GetYoYComparison(ctx context.Context, holdingCode string, year, month int) 
 	}
 	previousYear := year - 1
 
-	logger.Info("[YoY Comparison] holding_code=%s, year=%d, month=%d", holdingCode, year, month)
+	logger.Info("[YoY Comparison] holdingcode=%s, year=%d, month=%d", holdingCode, year, month)
 
 	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
@@ -215,43 +215,43 @@ func GetYoYComparison(ctx context.Context, holdingCode string, year, month int) 
 // ==================== Month-over-Month Comparison ====================
 
 type MoMComparisonRequest struct {
-	HoldingCode string `json:"holding_code"`
+	HoldingCode string `json:"holdingcode"`
 	Year        int    `json:"year"`
 	Month       int    `json:"month"`
 }
 
 type MoMComparisonResponse struct {
 	Period          string            `json:"period"`
-	CurrentMonth    MonthInfo         `json:"current_month"`
-	PreviousMonth   MonthInfo         `json:"previous_month"`
+	CurrentMonth    MonthInfo         `json:"currentmonth"`
+	PreviousMonth   MonthInfo         `json:"previousmonth"`
 	Summary         ComparisonSummary `json:"summary"`
-	WeeklyBreakdown []WeekComparison  `json:"weekly_breakdown"`
-	DailyTrend      []DailyComparison `json:"daily_trend"`
-	GeneratedAt     time.Time         `json:"generated_at"`
+	WeeklyBreakdown []WeekComparison  `json:"weeklybreakdown"`
+	DailyTrend      []DailyComparison `json:"dailytrend"`
+	GeneratedAt     time.Time         `json:"generatedat"`
 }
 
 type MonthInfo struct {
 	Year      int    `json:"year"`
 	Month     int    `json:"month"`
-	MonthName string `json:"month_name"`
+	MonthName string `json:"monthname"`
 }
 
 type WeekComparison struct {
 	Week            int     `json:"week"`
-	CurrentRevenue  float64 `json:"current_revenue"`
-	PreviousRevenue float64 `json:"previous_revenue"`
-	ChangePercent   float64 `json:"change_percent"`
+	CurrentRevenue  float64 `json:"currentrevenue"`
+	PreviousRevenue float64 `json:"previousrevenue"`
+	ChangePercent   float64 `json:"changepercent"`
 }
 
 type DailyComparison struct {
 	Day             int     `json:"day"`
-	CurrentRevenue  float64 `json:"current_revenue"`
-	PreviousRevenue float64 `json:"previous_revenue"`
+	CurrentRevenue  float64 `json:"currentrevenue"`
+	PreviousRevenue float64 `json:"previousrevenue"`
 }
 
 func GetMoMComparison(ctx context.Context, holdingCode string, year, month int) (*MoMComparisonResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 
 	now := time.Now()
@@ -273,7 +273,7 @@ func GetMoMComparison(ctx context.Context, holdingCode string, year, month int) 
 	monthNames := []string{"", "January", "February", "March", "April", "May", "June",
 		"July", "August", "September", "October", "November", "December"}
 
-	logger.Info("[MoM Comparison] holding_code=%s, current=%d-%02d, previous=%d-%02d", holdingCode, year, month, prevYear, prevMonth)
+	logger.Info("[MoM Comparison] holdingcode=%s, current=%d-%02d, previous=%d-%02d", holdingCode, year, month, prevYear, prevMonth)
 
 	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {

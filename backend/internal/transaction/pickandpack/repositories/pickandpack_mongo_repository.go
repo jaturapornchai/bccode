@@ -61,8 +61,8 @@ func NewPickandpackRepository(pst microservice.IPersisterMongo) *PickandpackRepo
 }
 func (repo PickandpackRepository) FindLastDocNo(ctx context.Context, holdingCode string, prefixDocNo string) (models.PickandpackDoc, error) {
 	filters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at": bson.M{
+		"holdingcode": holdingCode,
+		"deletedat": bson.M{
 			"$exists": false,
 		},
 		"docno": bson.M{
@@ -89,8 +89,8 @@ func (repo PickandpackRepository) FindLastDocNo(ctx context.Context, holdingCode
 func (repo PickandpackRepository) AggregateWarehouseDashboard(ctx context.Context, holdingCode string, whcodes []string, locationcodes []string, fromDate, toDate string) ([]models.PickandpackWarehouseDashboard, error) {
 	// Build filter query
 	filterQuery := bson.M{
-		"holding_code": holdingCode,
-		"iscancel":     false,
+		"holdingcode": holdingCode,
+		"iscancel":    false,
 	}
 
 	// Add date range filter if provided

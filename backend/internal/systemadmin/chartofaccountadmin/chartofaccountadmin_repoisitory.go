@@ -28,14 +28,14 @@ func (r ChartOfAccountAdminRepository) FindChartOfAccountDocByHoldingCode(ctx co
 
 	docList := []chartOfAccountModels.ChartOfAccountDoc{}
 
-	// err := r.pst.Find(ctx, &chartOfAccountModels.ChartOfAccountDoc{}, bson.M{"holding_code": holdingCode}, &docList)
+	// err := r.pst.Find(ctx, &chartOfAccountModels.ChartOfAccountDoc{}, bson.M{"holdingcode": holdingCode}, &docList)
 	// if err != nil {
 	// 	return nil, err
 	// }
 
 	queryFilters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at":   bson.M{"$exists": isDeleted},
+		"holdingcode": holdingCode,
+		"deletedat":   bson.M{"$exists": isDeleted},
 	}
 
 	pagination, err := r.pst.FindPage(ctx, &chartOfAccountModels.ChartOfAccountDoc{}, queryFilters, pageable, &docList)

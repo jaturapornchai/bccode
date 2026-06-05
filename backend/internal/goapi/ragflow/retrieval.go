@@ -1,6 +1,6 @@
 package ragflow
 
-// Retrieval API — used by the AI agent's query_knowledge_base tool.
+// Retrieval API — used by the AI agent's queryknowledgebase tool.
 //
 // Unlike the chat assistant, retrieval returns RAW chunks with similarity scores
 // — the agent's LLM does the synthesis itself. This keeps responses fast,

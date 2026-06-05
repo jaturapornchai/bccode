@@ -28,7 +28,7 @@ type SaleDebitNoteData struct {
 }
 
 type SaleDebitNoteDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	SaleDebitNoteData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

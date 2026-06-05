@@ -27,7 +27,7 @@ const (
 var (
 	// Production default: แสดงเฉพาะ INFO, SUCCESS, WARN, ERROR, FATAL
 	CurrentLogLevel = INFO
-	
+
 	// Map string to LogLevel
 	logLevelMap = map[string]LogLevel{
 		"DEBUG":   DEBUG,
@@ -43,13 +43,13 @@ func init() {
 	// ตั้งค่า Production mode
 	log.SetFlags(log.Ldate | log.Ltime)
 	log.SetOutput(os.Stdout)
-	
+
 	// อ่าน LOG_LEVEL จาก environment (default: INFO)
 	logLevelStr := strings.ToUpper(os.Getenv("LOG_LEVEL"))
 	if level, exists := logLevelMap[logLevelStr]; exists {
 		CurrentLogLevel = level
 	}
-	
+
 	// ไม่แสดง log ข้อมูลการเริ่มต้นใน production
 	// log.Println("[LOGGER] Production mode - selective logging enabled")
 }
@@ -155,7 +155,7 @@ func InitProductionMode() {
 	if os.Getenv("ENVIRONMENT") == "production" {
 		os.Setenv("LOG_LEVEL", "INFO") // Production: INFO level
 	}
-	
+
 	// อ่านค่า log level
 	logLevelStr := strings.ToUpper(os.Getenv("LOG_LEVEL"))
 	if level, exists := logLevelMap[logLevelStr]; exists {

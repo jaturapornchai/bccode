@@ -116,7 +116,7 @@ describe("utils — price/refbarcode/bom arrays", () => {
     const result = toRefBarcodeArray([{ barcode: "X1" }]);
     expect(result).toEqual([
       {
-        guid_fixed: "",
+        guidfixed: "",
         names: [],
         item_unit_code: "",
         itemunitnames: [],
@@ -193,13 +193,13 @@ describe("utils — toProductUnitOptions", () => {
       names: [{ code: "th", name: "สินค้า" }],
       barcodes: [
         {
-          guid_fixed: "BARCODE-GUID-1",
+          guidfixed: "BARCODE-GUID-1",
           barcode: "885-PCS",
           item_unit_code: "PCS",
           itemunitnames: [{ code: "th", name: "ชิ้น" }],
         },
         {
-          guid_fixed: "BARCODE-GUID-2",
+          guidfixed: "BARCODE-GUID-2",
           barcode: "885-BOX",
           item_unit_code: "BOX",
           itemunitnames: [{ code: "th", name: "กล่อง" }],
@@ -209,8 +209,8 @@ describe("utils — toProductUnitOptions", () => {
     });
 
     expect(options).toEqual([
-      expect.objectContaining({ guid_fixed: "BARCODE-GUID-1", barcode: "885-PCS", item_unit_code: "PCS" }),
-      expect.objectContaining({ guid_fixed: "BARCODE-GUID-2", barcode: "885-BOX", item_unit_code: "BOX" }),
+      expect.objectContaining({ guidfixed: "BARCODE-GUID-1", barcode: "885-PCS", item_unit_code: "PCS" }),
+      expect.objectContaining({ guidfixed: "BARCODE-GUID-2", barcode: "885-BOX", item_unit_code: "BOX" }),
     ]);
   });
 

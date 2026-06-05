@@ -11,7 +11,7 @@ The frontend `WarehouseTreeView` component (in `frontend/src/app/system-settings
 When creating, editing, reordering, or deleting locations/shelves, it sends a single `PUT` request to `/api/system-settings/product_warehouse_screen/{warehouse_guid}` containing the full nested payload:
 ```json
 {
-  "guid_fixed": "warehouse-guid",
+  "guidfixed": "warehouse-guid",
   "code": "00000",
   "names": [...],
   "location": [
@@ -26,7 +26,7 @@ When creating, editing, reordering, or deleting locations/shelves, it sends a si
       ]
     }
   ],
-  "company_guids": [...]
+  "companyguids": [...]
 }
 ```
 Currently, the UI does not display nested child locations/shelves because the backend fails to persist the nested `"location"` (Zones) and `"shelf"` (Shelves) structure.
@@ -49,13 +49,13 @@ Codex must modify the `UpdateWarehouse` handler:
 The request payload is structured as `WarehousePg` with pre-loaded `Zones` (as `location` array) and `Shelves` (as `shelf` array inside each location):
 ```typescript
 interface WarehouseRecord {
-  guid_fixed?: string;
+  guidfixed?: string;
   code?: string;
   names?: LocalizedNames;
   location?: WarehouseLocation[]; // mapped to Zones in Go struct
   latitude?: number;
   longitude?: number;
-  company_guids?: string[];
+  companyguids?: string[];
 }
 ```
 

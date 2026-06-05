@@ -1544,16 +1544,16 @@ func (svc ProductBarcodeHttpService) SearchProductBarcode(holdingCode string, fi
 		delete(filters, "_shelf_search")
 	}
 
-	// Check if holding_code filter exists (from shopsid parameter)
+	// Check if holdingcode filter exists (from shopsid parameter)
 	var docList []models.ProductBarcodeInfo
 	var pagination mongopagination.PaginationData
 	var err error
 
-	if _, hasHoldingCodeFilter := filters["holding_code"]; hasHoldingCodeFilter {
-		// Use FindPageFilterNoHoldingCode when holding_code filter exists
+	if _, hasHoldingCodeFilter := filters["holdingcode"]; hasHoldingCodeFilter {
+		// Use FindPageFilterNoHoldingCode when holdingcode filter exists
 		docList, pagination, err = svc.repo.FindPageFilterNoHoldingCode(ctx, filters, searchInFields, pageable)
 	} else {
-		// Use regular FindPageFilter when no holding_code filter
+		// Use regular FindPageFilter when no holdingcode filter
 		docList, pagination, err = svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 	}
 
@@ -1888,7 +1888,7 @@ func (svc ProductBarcodeHttpService) DeleteProductBarcodeByGUIDs(holdingCode str
 	}
 
 	deleteFilterQuery := map[string]interface{}{
-		"guid_fixed": bson.M{"$in": GUIDs},
+		"guidfixed": bson.M{"$in": GUIDs},
 	}
 
 	err = svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
@@ -2498,7 +2498,7 @@ func (s ProductBarcodeHttpService) processBatchRefBarcodeUpdate(holdingCode, aut
 				"refbarcodes":      []models.RefProductBarcode{refBarcode},
 				"is_main_barcode":  false,
 				"updatedby":        authUsername,
-				"updated_at":       time.Now(),
+				"updatedat":        time.Now(),
 				"isusesubbarcodes": true,
 			},
 		}

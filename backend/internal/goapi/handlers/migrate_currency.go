@@ -15,12 +15,12 @@ import (
 )
 
 // MigrateCurrencyColumnsHandler adds currency columns to doc table
-// GET /api/migrate/currency?holding_code=xxx
+// GET /api/migrate/currency?holdingcode=xxx
 func MigrateCurrencyColumnsHandler(c echo.Context) error {
-	holdingCode := c.QueryParam("holding_code")
+	holdingCode := c.QueryParam("holdingcode")
 	if holdingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"error": "holding_code is required",
+			"error": "holdingcode is required",
 		})
 	}
 
@@ -102,7 +102,7 @@ ALTER TABLE doc ADD COLUMN IF NOT EXISTS isdelete BOOLEAN DEFAULT FALSE;
 	// Create indexes
 	indexSQL := `
 CREATE INDEX IF NOT EXISTS idx_doc_currency ON doc(currency);
-CREATE INDEX IF NOT EXISTS idx_doc_currency_shop ON doc(currency, holding_code);
+CREATE INDEX IF NOT EXISTS idx_doc_currency_shop ON doc(currency, holdingcode);
 CREATE INDEX IF NOT EXISTS idx_doc_isdelete ON doc(isdelete);
 CREATE INDEX IF NOT EXISTS idx_doc_docno_transflag_isdelete ON doc(docno, transflag, isdelete);
 `
@@ -145,12 +145,12 @@ CREATE INDEX IF NOT EXISTS idx_doc_docno_transflag_isdelete ON doc(docno, transf
 
 // BackfillCurrencyDataHandler อ่าน currency data จาก MongoDB แล้วอัพเดท PostgreSQL
 // สำหรับเอกสารเก่าที่ถูก Kafka consume ก่อนแก้ TagName: "json"
-// GET /api/migrate/currency-backfill?holding_code=xxx
+// GET /api/migrate/currency-backfill?holdingcode=xxx
 func BackfillCurrencyDataHandler(c echo.Context) error {
-	holdingCode := c.QueryParam("holding_code")
+	holdingCode := c.QueryParam("holdingcode")
 	if holdingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"error": "holding_code is required",
+			"error": "holdingcode is required",
 		})
 	}
 
@@ -198,7 +198,7 @@ func BackfillCurrencyDataHandler(c echo.Context) error {
 
 		// ค้นหาเอกสารที่มี doc_currency ไม่ว่าง และเป็น shop ที่ต้องการ
 		filter := bson.M{
-			"holding_code": holdingCode,
+			"holdingcode":  holdingCode,
 			"doc_currency": bson.M{"$exists": true, "$ne": ""},
 		}
 

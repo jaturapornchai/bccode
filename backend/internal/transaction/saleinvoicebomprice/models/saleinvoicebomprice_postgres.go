@@ -10,8 +10,8 @@ import (
 )
 
 type SaleInvoiceBomPricePg struct {
-	HoldingCode string                `json:"holding_code" gorm:"column:holding_code"`
-	GuidFixed   string                `json:"guid_fixed" bson:"guid_fixed" gorm:"column:guid_fixed;primaryKey"`
+	HoldingCode string                `json:"holdingcode" gorm:"column:holdingcode"`
+	GuidFixed   string                `json:"guidfixed" bson:"guidfixed" gorm:"column:guidfixed;primaryKey"`
 	BOMGuid     string                `json:"bomguid" gorm:"column:bomguid"`
 	DocNo       string                `json:"docno" gorm:"column:docno"`
 	Prices      SaleInvoicePriceJSONB `json:"prices" gorm:"column:prices"`

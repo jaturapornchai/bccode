@@ -28,7 +28,7 @@ type SaleOrderData struct {
 }
 
 type SaleOrderDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	SaleOrderData      `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

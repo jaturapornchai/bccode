@@ -11,8 +11,8 @@ func TestPhasePurchaseOrderMsg(t *testing.T) {
 
 	giveMsg := `{
 	"id": "000000000000000000000000",
-	"holding_code": "30LbRx3l0SLaK84gLpcF0W4x9Z0",
-	"guid_fixed": "32sPNAFfVGHiVjgN6amwMr0i1mS",
+	"holdingcode": "30LbRx3l0SLaK84gLpcF0W4x9Z0",
+	"guidfixed": "32sPNAFfVGHiVjgN6amwMr0i1mS",
 	"docno": "PO2025091800001",
 	"docdatetime": "2025-09-18T14:37:15.211Z",
 	"guid_ref": "3e52d89b-0621-4c4b-a5f2-ae1e950fe710",
@@ -70,7 +70,7 @@ func TestPhasePurchaseOrderMsg(t *testing.T) {
 	"paycashamount": 0,
 	"paypointamount": 0,
 	"branch": {
-		"guid_fixed": "30LbS0SnNu5luOq9DWkLp3vvoZK",
+		"guidfixed": "30LbS0SnNu5luOq9DWkLp3vvoZK",
 		"code": "00000",
 		"names": [
 			{

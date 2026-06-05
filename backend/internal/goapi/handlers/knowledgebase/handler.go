@@ -31,70 +31,70 @@ import (
 // ====== request structs ======
 
 type listRequest struct {
-	HoldingCode string `json:"holding_code"`
-	BranchID    string `json:"branch_id"`
+	HoldingCode string `json:"holdingcode"`
+	BranchID    string `json:"branchid"`
 	Limit       int    `json:"limit"`
 	Skip        int    `json:"skip"`
 }
 
 type uploadRequest struct {
-	HoldingCode string   `json:"holding_code"`
-	BranchID    string   `json:"branch_id"`
-	Filename    string   `json:"file_name"`
-	ContentType string   `json:"content_type"`
+	HoldingCode string   `json:"holdingcode"`
+	BranchID    string   `json:"branchid"`
+	Filename    string   `json:"filename"`
+	ContentType string   `json:"contenttype"`
 	Content     string   `json:"content"` // base64
-	UploadedBy  string   `json:"uploaded_by"`
+	UploadedBy  string   `json:"uploadedby"`
 	Description string   `json:"description"`
 	Tags        []string `json:"tags"`
 	Status      bool     `json:"status"`
-	AllDay      bool     `json:"all_day"`
+	AllDay      bool     `json:"allday"`
 }
 
 type deleteRequest struct {
-	HoldingCode string `json:"holding_code"`
-	BranchID    string `json:"branch_id"`
-	Filename    string `json:"file_name"`
+	HoldingCode string `json:"holdingcode"`
+	BranchID    string `json:"branchid"`
+	Filename    string `json:"filename"`
 }
 
 type updateStatusRequest struct {
-	HoldingCode string `json:"holding_code"`
-	BranchID    string `json:"branch_id"`
-	Filename    string `json:"file_name"`
+	HoldingCode string `json:"holdingcode"`
+	BranchID    string `json:"branchid"`
+	Filename    string `json:"filename"`
 	Status      bool   `json:"status"`
 }
 
 type updateAllDayRequest struct {
-	HoldingCode string `json:"holding_code"`
-	BranchID    string `json:"branch_id"`
-	Filename    string `json:"file_name"`
-	AllDay      bool   `json:"all_day"`
+	HoldingCode string `json:"holdingcode"`
+	BranchID    string `json:"branchid"`
+	Filename    string `json:"filename"`
+	AllDay      bool   `json:"allday"`
 }
 
 type updateScheduleRequest struct {
-	HoldingCode   string  `json:"holding_code"`
-	BranchID      string  `json:"branch_id"`
-	Filename      string  `json:"file_name"`
-	StartDateTime *string `json:"start_date_time"`
-	EndDateTime   *string `json:"end_date_time"`
+	HoldingCode   string  `json:"holdingcode"`
+	BranchID      string  `json:"branchid"`
+	Filename      string  `json:"filename"`
+	StartDateTime *string `json:"startdatetime"`
+	EndDateTime   *string `json:"enddatetime"`
 }
 
 // ====== response shape — matches Flutter DocumentModel ======
 
 type documentResponse struct {
-	HoldingCode   string   `json:"holding_code"`
-	BranchID      string   `json:"branch_id"`
-	Filename      string   `json:"file_name"`
-	ContentType   string   `json:"content_type"`
+	HoldingCode   string   `json:"holdingcode"`
+	BranchID      string   `json:"branchid"`
+	Filename      string   `json:"filename"`
+	ContentType   string   `json:"contenttype"`
 	Size          int64    `json:"size"`
-	UploadedAt    string   `json:"uploaded_at"`
-	UploadedBy    string   `json:"uploaded_by"`
+	UploadedAt    string   `json:"uploadedat"`
+	UploadedBy    string   `json:"uploadedby"`
 	Description   string   `json:"description"`
 	Tags          []string `json:"tags"`
 	Version       int      `json:"version"`
 	Status        bool     `json:"status"`
-	AllDay        bool     `json:"all_day"`
-	StartDateTime *string  `json:"start_date_time,omitempty"`
-	EndDateTime   *string  `json:"end_date_time,omitempty"`
+	AllDay        bool     `json:"allday"`
+	StartDateTime *string  `json:"startdatetime,omitempty"`
+	EndDateTime   *string  `json:"enddatetime,omitempty"`
 }
 
 func toResponse(meta KBDocMeta) documentResponse {
@@ -133,7 +133,7 @@ func ListDocuments(c echo.Context) error {
 		return errorJSON(c, http.StatusBadRequest, "invalid request: "+err.Error())
 	}
 	if req.HoldingCode == "" {
-		return errorJSON(c, http.StatusBadRequest, "holding_code required")
+		return errorJSON(c, http.StatusBadRequest, "holdingcode required")
 	}
 	metas, err := GetMetaByShop(req.HoldingCode, req.BranchID)
 	if err != nil {
@@ -160,7 +160,7 @@ func UploadDocument(c echo.Context) error {
 		return errorJSON(c, http.StatusBadRequest, "invalid request: "+err.Error())
 	}
 	if req.HoldingCode == "" || req.Filename == "" || req.Content == "" {
-		return errorJSON(c, http.StatusBadRequest, "holding_code, filename, content required")
+		return errorJSON(c, http.StatusBadRequest, "holdingcode, filename, content required")
 	}
 	if req.BranchID == "" {
 		req.BranchID = "*"
@@ -240,7 +240,7 @@ func DeleteDocument(c echo.Context) error {
 		return errorJSON(c, http.StatusBadRequest, "invalid request: "+err.Error())
 	}
 	if req.HoldingCode == "" || req.Filename == "" {
-		return errorJSON(c, http.StatusBadRequest, "holding_code, filename required")
+		return errorJSON(c, http.StatusBadRequest, "holdingcode, filename required")
 	}
 
 	meta, err := FindByFilename(req.HoldingCode, req.Filename)
@@ -276,7 +276,7 @@ func UpdateStatus(c echo.Context) error {
 		return errorJSON(c, http.StatusBadRequest, "invalid request: "+err.Error())
 	}
 	if req.HoldingCode == "" || req.Filename == "" {
-		return errorJSON(c, http.StatusBadRequest, "holding_code, filename required")
+		return errorJSON(c, http.StatusBadRequest, "holdingcode, filename required")
 	}
 	if err := UpdateFields(req.HoldingCode, req.Filename, bson.M{"status": req.Status}); err != nil {
 		return errorJSON(c, http.StatusInternalServerError, err.Error())
@@ -291,7 +291,7 @@ func UpdateAllDay(c echo.Context) error {
 		return errorJSON(c, http.StatusBadRequest, "invalid request: "+err.Error())
 	}
 	if req.HoldingCode == "" || req.Filename == "" {
-		return errorJSON(c, http.StatusBadRequest, "holding_code, filename required")
+		return errorJSON(c, http.StatusBadRequest, "holdingcode, filename required")
 	}
 	if err := UpdateFields(req.HoldingCode, req.Filename, bson.M{"allday": req.AllDay}); err != nil {
 		return errorJSON(c, http.StatusInternalServerError, err.Error())
@@ -306,18 +306,18 @@ func UpdateSchedule(c echo.Context) error {
 		return errorJSON(c, http.StatusBadRequest, "invalid request: "+err.Error())
 	}
 	if req.HoldingCode == "" || req.Filename == "" {
-		return errorJSON(c, http.StatusBadRequest, "holding_code, filename required")
+		return errorJSON(c, http.StatusBadRequest, "holdingcode, filename required")
 	}
 	set := bson.M{}
 	if req.StartDateTime != nil && strings.TrimSpace(*req.StartDateTime) != "" {
-		set["start_date_time"] = *req.StartDateTime
+		set["startdatetime"] = *req.StartDateTime
 	} else {
-		set["start_date_time"] = nil
+		set["startdatetime"] = nil
 	}
 	if req.EndDateTime != nil && strings.TrimSpace(*req.EndDateTime) != "" {
-		set["end_date_time"] = *req.EndDateTime
+		set["enddatetime"] = *req.EndDateTime
 	} else {
-		set["end_date_time"] = nil
+		set["enddatetime"] = nil
 	}
 	if err := UpdateFields(req.HoldingCode, req.Filename, set); err != nil {
 		return errorJSON(c, http.StatusInternalServerError, err.Error())
@@ -348,12 +348,12 @@ func Health(c echo.Context) error {
 	if _, err := client.FindDatasetByName("__health_probe__"); err != nil {
 		resp["status"] = "unreachable"
 		resp["message"] = "ไม่สามารถเชื่อม RAGFlow ได้: " + err.Error()
-		resp["latency_ms"] = time.Since(start).Milliseconds()
+		resp["latencyms"] = time.Since(start).Milliseconds()
 		return c.JSON(http.StatusOK, resp)
 	}
 	resp["status"] = "ok"
 	resp["message"] = "RAGFlow online"
-	resp["latency_ms"] = time.Since(start).Milliseconds()
+	resp["latencyms"] = time.Since(start).Milliseconds()
 	return c.JSON(http.StatusOK, resp)
 }
 
@@ -365,9 +365,9 @@ func Health(c echo.Context) error {
 //   - Smoke-testing the full Go→RAGFlow path without depending on a tool-calling LLM
 //   - Frontend "search KB" feature (separate from chat)
 type queryRequest struct {
-	HoldingCode string `json:"holding_code"`
+	HoldingCode string `json:"holdingcode"`
 	Query       string `json:"query"`
-	TopK        int    `json:"top_k"`
+	TopK        int    `json:"topk"`
 }
 
 func Query(c echo.Context) error {
@@ -376,7 +376,7 @@ func Query(c echo.Context) error {
 		return errorJSON(c, http.StatusBadRequest, "invalid request: "+err.Error())
 	}
 	if req.HoldingCode == "" || strings.TrimSpace(req.Query) == "" {
-		return errorJSON(c, http.StatusBadRequest, "holding_code and query are required")
+		return errorJSON(c, http.StatusBadRequest, "holdingcode and query are required")
 	}
 	if req.TopK <= 0 || req.TopK > 50 {
 		req.TopK = 8
@@ -404,29 +404,29 @@ func Query(c echo.Context) error {
 		results = append(results, map[string]any{
 			"rank":       i + 1,
 			"content":    ch.Content,
-			"doc_name":   ch.DocumentKeyword,
+			"docname":    ch.DocumentKeyword,
 			"similarity": ch.Similarity,
 		})
 	}
 
 	return c.JSON(http.StatusOK, map[string]any{
-		"success":      true,
-		"holding_code": req.HoldingCode,
-		"dataset_id":   datasetID,
-		"query":        req.Query,
-		"total":        len(chunks),
-		"chunks":       results,
+		"success":     true,
+		"holdingcode": req.HoldingCode,
+		"datasetid":   datasetID,
+		"query":       req.Query,
+		"total":       len(chunks),
+		"chunks":      results,
 	})
 }
 
-// ViewDocument — GET /api/v1/kb/view?holding_code=X&doc_id=Y
+// ViewDocument — GET /api/v1/kb/view?holdingcode=X&docid=Y
 // Returns an HTML page rendering all chunks of the specified document.
 // Used as clickable citation target in AI chatbot responses.
 func ViewDocument(c echo.Context) error {
-	holdingCode := strings.TrimSpace(c.QueryParam("holding_code"))
-	docID := strings.TrimSpace(c.QueryParam("doc_id"))
+	holdingCode := strings.TrimSpace(c.QueryParam("holdingcode"))
+	docID := strings.TrimSpace(c.QueryParam("docid"))
 	if holdingCode == "" || docID == "" {
-		return c.HTML(http.StatusBadRequest, "<h3>Missing holding_code or doc_id</h3>")
+		return c.HTML(http.StatusBadRequest, "<h3>Missing holdingcode or docid</h3>")
 	}
 
 	client := ragflow.GetClient()
@@ -440,7 +440,7 @@ func ViewDocument(c echo.Context) error {
 		return c.HTML(http.StatusInternalServerError, "<h3>Failed to load dataset</h3>")
 	}
 
-	// Use empty query + doc_id filter via Retrieve — request large topK then filter client-side.
+	// Use empty query + docid filter via Retrieve — request large topK then filter client-side.
 	// RAGFlow /retrieval accepts document_ids; we reuse Retrieve with a generic query.
 	chunks, err := client.RetrieveByDocument(datasetID, docID, 50)
 	if err != nil {

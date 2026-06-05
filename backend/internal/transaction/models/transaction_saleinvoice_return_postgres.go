@@ -27,9 +27,9 @@ type SaleInvoiceReturnTransactionPG struct {
 	TotalDiscountVatAmount       float64 `json:"totaldiscountvatamount" gorm:"column:totaldiscountvatamount;default:0"`
 	TotalDiscountExceptVatAmount float64 `json:"totaldiscountexceptvatamount" gorm:"column:totaldiscountexceptvatamount;default:0"`
 	DetailTotalDiscount          float64 `json:"detailtotaldiscount" gorm:"column:detailtotaldiscount;default:0"`
-	PointsCode                   string  `json:"points_code" gorm:"column:points_code"`
+	PointsCode                   string  `json:"pointscode" gorm:"column:pointscode"`
 
-	Items *[]SaleInvoiceReturnTransactionDetailPG `json:"items" gorm:"items;foreignKey:holding_code,docno"`
+	Items *[]SaleInvoiceReturnTransactionDetailPG `json:"items" gorm:"items;foreignKey:holdingcode,docno"`
 }
 
 type SaleInvoiceReturnTransactionDetailPG struct {
@@ -64,7 +64,7 @@ func (j *SaleInvoiceReturnTransactionPG) BeforeUpdate(tx *gorm.DB) (err error) {
 
 	// find old data
 	var details *[]SaleInvoiceReturnTransactionDetailPG
-	tx.Model(&SaleInvoiceReturnTransactionDetailPG{}).Where(" holding_code=? AND docno=?", j.HoldingCode, j.DocNo).Find(&details)
+	tx.Model(&SaleInvoiceReturnTransactionDetailPG{}).Where(" holdingcode=? AND docno=?", j.HoldingCode, j.DocNo).Find(&details)
 
 	// delete un use data
 	for _, tmp := range *details {

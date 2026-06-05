@@ -29,8 +29,8 @@ func (r PurchaseTransactionAdminRepositories) FindPurchaseDocByHoldingCode(ctx c
 
 	err := r.pst.Find(ctx, &purchaseModels.PurchaseDoc{},
 		bson.M{
-			"holding_code": holdingCode,
-			"deleted_at":   bson.M{"$exists": false},
+			"holdingcode": holdingCode,
+			"deletedat":   bson.M{"$exists": false},
 		},
 		&docList)
 	if err != nil {
@@ -45,8 +45,8 @@ func (r PurchaseTransactionAdminRepositories) FindPurchaseDocDeleteByHoldingCode
 
 	err := r.pst.Find(ctx, &purchaseModels.PurchaseDoc{},
 		bson.M{
-			"holding_code": holdingCode,
-			"deleted_at":   bson.M{"$exists": true},
+			"holdingcode": holdingCode,
+			"deletedat":   bson.M{"$exists": true},
 		},
 		&docList)
 	if err != nil {

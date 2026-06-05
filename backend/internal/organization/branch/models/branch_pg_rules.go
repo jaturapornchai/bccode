@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	ErrBranchCompanyGuidRequired = errors.New("company_guid is required")
+	ErrBranchCompanyGuidRequired = errors.New("companyguid is required")
 	ErrBranchCompanyNotFound     = errors.New("company not found")
 	ErrBranchCodeExists          = errors.New("branch code is exists")
 )
@@ -45,19 +45,19 @@ func PrepareUpdateBranch(req *BranchPg) error {
 }
 
 func BranchCompanyLookup(db *gorm.DB, holdingCode string, companyGuid string) *gorm.DB {
-	return db.Where("holding_code = ? AND guid_fixed = ?", holdingCode, companyGuid)
+	return db.Where("holdingcode = ? AND guidfixed = ?", holdingCode, companyGuid)
 }
 
 func BranchDuplicateLookup(db *gorm.DB, holdingCode string, companyGuid string, code string, excludeGuid string) *gorm.DB {
-	query := db.Where("holding_code = ? AND company_guid = ? AND code = ?", holdingCode, companyGuid, code)
+	query := db.Where("holdingcode = ? AND companyguid = ? AND code = ?", holdingCode, companyGuid, code)
 	if excludeGuid != "" {
-		query = query.Where("guid_fixed <> ?", excludeGuid)
+		query = query.Where("guidfixed <> ?", excludeGuid)
 	}
 	return query
 }
 
 func CompanyBranchCountLookup(db *gorm.DB, holdingCode string, companyGuid string) *gorm.DB {
-	return db.Model(&BranchPg{}).Where("holding_code = ? AND company_guid = ?", holdingCode, companyGuid)
+	return db.Model(&BranchPg{}).Where("holdingcode = ? AND companyguid = ?", holdingCode, companyGuid)
 }
 
 func EnsureCompanyExists(db *gorm.DB, holdingCode string, companyGuid string) error {

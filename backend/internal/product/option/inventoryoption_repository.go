@@ -48,8 +48,8 @@ func (repo OptionRepository) Create(ctx context.Context, doc models.InventoryOpt
 func (repo OptionRepository) Update(ctx context.Context, holdingCode string, guid string, doc models.InventoryOptionMainDoc) error {
 
 	filterDoc := map[string]interface{}{
-		"holding_code": holdingCode,
-		"guid_fixed":   guid,
+		"holdingcode": holdingCode,
+		"guidfixed":   guid,
 	}
 
 	err := repo.pst.UpdateOne(ctx, &models.InventoryOptionMainDoc{}, filterDoc, doc)
@@ -62,7 +62,7 @@ func (repo OptionRepository) Update(ctx context.Context, holdingCode string, gui
 }
 
 func (repo OptionRepository) Delete(ctx context.Context, holdingCode string, guid string, username string) error {
-	err := repo.pst.SoftDelete(ctx, &models.InventoryOptionMainDoc{}, username, bson.M{"guid_fixed": guid, "holding_code": holdingCode})
+	err := repo.pst.SoftDelete(ctx, &models.InventoryOptionMainDoc{}, username, bson.M{"guidfixed": guid, "holdingcode": holdingCode})
 
 	if err != nil {
 		return err
@@ -74,7 +74,7 @@ func (repo OptionRepository) Delete(ctx context.Context, holdingCode string, gui
 func (repo OptionRepository) FindByGuid(ctx context.Context, holdingCode string, guid string) (models.InventoryOptionMainDoc, error) {
 
 	doc := &models.InventoryOptionMainDoc{}
-	err := repo.pst.FindOne(ctx, &models.InventoryOptionMainDoc{}, bson.M{"guid_fixed": guid, "holding_code": holdingCode, "deleted_at": bson.M{"$exists": false}}, doc)
+	err := repo.pst.FindOne(ctx, &models.InventoryOptionMainDoc{}, bson.M{"guidfixed": guid, "holdingcode": holdingCode, "deletedat": bson.M{"$exists": false}}, doc)
 
 	if err != nil {
 		return models.InventoryOptionMainDoc{}, err
@@ -86,10 +86,10 @@ func (repo OptionRepository) FindByGuid(ctx context.Context, holdingCode string,
 func (repo OptionRepository) FindPage(ctx context.Context, holdingCode string, pageable micromodels.Pageable) ([]models.InventoryOptionMainInfo, mongopagination.PaginationData, error) {
 
 	filterQueries := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at":   bson.M{"$exists": false},
+		"holdingcode": holdingCode,
+		"deletedat":   bson.M{"$exists": false},
 		"$or": []interface{}{
-			bson.M{"guid_fixed": bson.M{"$regex": primitive.Regex{
+			bson.M{"guidfixed": bson.M{"$regex": primitive.Regex{
 				Pattern: ".*" + pageable.Query + ".*",
 				Options: "",
 			}}},

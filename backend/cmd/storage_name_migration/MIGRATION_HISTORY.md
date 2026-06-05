@@ -155,13 +155,13 @@ storage name migration: no rename needed
 | `docdatetime` | `doc_datetime` |
 | `custCode` | `cust_code` |
 | `custcode` | `cust_code` |
-| `holding_code` | `holding_code` |
+| `holdingcode` | `holdingcode` |
 | `transflag` | `trans_flag` |
 | `itemcode` | `item_code` |
 | `unitcode` | `unit_code` |
 | `whcode` | `wh_code` |
 | `warehousecode` | `warehouse_code` |
-| `branchcode` | `branch_code` |
+| `branchcode` | `branchcode` |
 
 หมายเหตุ: รอบ 2026-05-20/2026-05-21 ยังไม่ apply rename field จริงใน database เพราะ field migration ต้องตรวจ query/API/report ทุกจุดและต้องมี backup ก่อนเสมอ
 

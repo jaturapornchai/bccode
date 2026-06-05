@@ -4,9 +4,9 @@ import "time"
 
 // ChatHTMLRequest represents the request structure for chat-html endpoint
 type ChatHTMLRequest struct {
-	HoldingCode  string `json:"holding_code" validate:"required"`
+	HoldingCode  string `json:"holdingcode" validate:"required"`
 	Question     string `json:"question" validate:"required"`
-	FunctionName string `json:"function_name" validate:"required"` // "product" or "customer"
+	FunctionName string `json:"functionname" validate:"required"` // "product" or "customer"
 }
 
 // ChatHTMLResponse represents the response structure
@@ -17,8 +17,8 @@ type ChatHTMLResponse struct {
 	Error              string            `json:"error,omitempty"`
 	Cached             bool              `json:"cached"`
 	Timestamp          time.Time         `json:"timestamp"`
-	TokenUsage         *TokenUsage       `json:"token_usage,omitempty"`
-	SuggestedQuestions []string          `json:"suggested_questions,omitempty"`
+	TokenUsage         *TokenUsage       `json:"tokenusage,omitempty"`
+	SuggestedQuestions []string          `json:"suggestedquestions,omitempty"`
 }
 
 // ChatResponseData contains the actual answer
@@ -29,22 +29,22 @@ type ChatResponseData struct {
 
 // TokenUsage represents token consumption and cost
 type TokenUsage struct {
-	PromptTokens     int     `json:"prompt_tokens"`
-	CompletionTokens int     `json:"completion_tokens"`
-	TotalTokens      int     `json:"total_tokens"`
-	CostUSD          float64 `json:"cost_usd"`
-	CostTHB          float64 `json:"cost_thb"`
+	PromptTokens     int     `json:"prompttokens"`
+	CompletionTokens int     `json:"completiontokens"`
+	TotalTokens      int     `json:"totaltokens"`
+	CostUSD          float64 `json:"costusd"`
+	CostTHB          float64 `json:"costthb"`
 	Model            string  `json:"model"`
-	HasThinking      bool    `json:"has_thinking"`
+	HasThinking      bool    `json:"hasthinking"`
 }
 
 // StockData represents product/customer data information
 type StockData struct {
-	ProductCode string `json:"product_code"`
-	ProductName string `json:"product_name"`
-	BarcodeList string `json:"barcode_list"`
-	UnitStruct  string `json:"unit_structure"`
-	StockQty    string `json:"stock_qty"`
+	ProductCode string `json:"productcode"`
+	ProductName string `json:"productname"`
+	BarcodeList string `json:"barcodelist"`
+	UnitStruct  string `json:"unitstructure"`
+	StockQty    string `json:"stockqty"`
 }
 
 // PromptCache stores cached prompt data

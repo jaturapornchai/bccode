@@ -52,7 +52,7 @@ GEMINI_CLI_TRUST_WORKSPACE=true gemini -p "<brief>" --approval-mode plan -o text
 1. **GOAL** — เป้าหมาย 1-2 ประโยค
 2. **CONTEXT** — ไฟล์/โมดูลที่เกี่ยว (`path:line`)
 3. **DECISIONS** — สิ่งที่ตัดสินใจแล้ว (stack, ห้ามเพิ่ม dep ฯลฯ)
-4. **CONSTRAINTS** — กฎ (snake_case, holding_code tenant, MongoDB-first, security)
+4. **CONSTRAINTS** — กฎ (snake_case, holdingcode tenant, MongoDB-first, security)
 5. **VERIFICATION** — คำสั่งที่ต้องผ่าน (`cd frontend; npm run typecheck` / touched-package `go build` / `/healthz`)
 
 ข้ามสายงานยาว ใช้ `.agents/handoffs/` (template มีอยู่แล้ว) เป็น context contract.
@@ -62,7 +62,7 @@ GEMINI_CLI_TRUST_WORKSPACE=true gemini -p "<brief>" --approval-mode plan -o text
 - [ ] **รัน VERIFICATION จริงเอง** — ไม่เชื่อคำลูกน้อง (กฎ VERIFY BEFORE DONE)
 - [ ] ไม่มี hallucination (เรียก API/func/file ที่ไม่มีจริง — grep ตรวจ)
 - [ ] ปลอดภัย (ไม่มี secret hardcode, ไม่มี string-concat SQL, จัดการ error)
-- [ ] multi-tenant: แยก `holding_code` ถูก ไม่รั่วข้าม tenant
+- [ ] multi-tenant: แยก `holdingcode` ถูก ไม่รั่วข้าม tenant
 - [ ] อ่านง่าย/ไม่ over-engineer (YAGNI)
 - [ ] (งาน UI) สวย + ใช้ง่าย + เข้าใจง่าย ตามโจทย์
 ไม่ผ่าน → เขียน feedback ชัด ส่งกลับ agent เดิมแก้ (อย่าแก้เอง).

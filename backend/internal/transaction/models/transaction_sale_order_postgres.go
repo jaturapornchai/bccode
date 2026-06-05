@@ -14,7 +14,7 @@ type SaleOrderPG struct {
 	TransactionPG `gorm:"embedded;"`
 	DebtorCode    string               `json:"creditorcode" gorm:"column:creditorcode"`
 	DebtorNames   pkgModels.JSONB      `json:"creditornames" gorm:"column:creditornames;type:jsonb"`
-	Items         *[]SaleOrderDetailPG `json:"items" gorm:"items;foreignKey:holding_code,docno"`
+	Items         *[]SaleOrderDetailPG `json:"items" gorm:"items;foreignKey:holdingcode,docno"`
 }
 
 // รายละเอียด ใบสั่งขาย
@@ -34,7 +34,7 @@ func (m *SaleOrderPG) BeforeUpdate(tx *gorm.DB) error {
 
 	// find old data
 	var details *[]SaleOrderDetailPG
-	tx.Model(&SaleOrderDetailPG{}).Where(" holding_code=? AND docno=?", m.HoldingCode, m.DocNo).Find(&details)
+	tx.Model(&SaleOrderDetailPG{}).Where(" holdingcode=? AND docno=?", m.HoldingCode, m.DocNo).Find(&details)
 
 	// delete un use data
 	for _, tmp := range *details {

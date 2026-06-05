@@ -1,5 +1,5 @@
 {
-    "myguid" : "holding_code+barcode",
+    "myguid" : "holdingcode+barcode",
     "table_code" : "",
     "mode" : 0,
     "data" : {

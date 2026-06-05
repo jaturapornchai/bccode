@@ -9,15 +9,15 @@ ALTER TABLE product_costing_config
 
 ALTER TABLE inventory_stock_balances
     DROP CONSTRAINT IF EXISTS inventory_stock_balances_scope_dimension_unique,
-    DROP CONSTRAINT IF EXISTS inventory_stock_balances_holding_code_itemcode_whcode_locationcode_key;
+    DROP CONSTRAINT IF EXISTS inventory_stock_balances_holdingcode_itemcode_whcode_locationcode_key;
 
 ALTER TABLE inventory_stock_balances
-    ADD CONSTRAINT inventory_stock_balances_holding_code_itemcode_whcode_locationcode_key
-    UNIQUE (holding_code, itemcode, whcode, locationcode);
+    ADD CONSTRAINT inventory_stock_balances_holdingcode_itemcode_whcode_locationcode_key
+    UNIQUE (holdingcode, itemcode, whcode, locationcode);
 
 CREATE TABLE IF NOT EXISTS marketplace_stock_balances (
     id BIGSERIAL PRIMARY KEY,
-    holding_code TEXT NOT NULL,
+    holdingcode TEXT NOT NULL,
     item_code TEXT NOT NULL,
     dimension_key TEXT NOT NULL DEFAULT '',
     dimension_values JSONB NOT NULL DEFAULT '{}'::jsonb,
@@ -25,13 +25,13 @@ CREATE TABLE IF NOT EXISTS marketplace_stock_balances (
     reserved_qty NUMERIC(18,4) NOT NULL DEFAULT 0,
     available_qty NUMERIC(18,4) NOT NULL DEFAULT 0,
     source TEXT NOT NULL DEFAULT 'accounting',
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE (holding_code, item_code, dimension_key)
+    updatedat TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (holdingcode, item_code, dimension_key)
 );
 
 CREATE TABLE IF NOT EXISTS marketplace_dimension_prices (
     id BIGSERIAL PRIMARY KEY,
-    holding_code TEXT NOT NULL,
+    holdingcode TEXT NOT NULL,
     item_code TEXT NOT NULL,
     barcode TEXT NOT NULL DEFAULT '',
     dimension_key TEXT NOT NULL DEFAULT '',
@@ -44,9 +44,9 @@ CREATE TABLE IF NOT EXISTS marketplace_dimension_prices (
     compare_at_price NUMERIC(18,4) NOT NULL DEFAULT 0,
     effective_from TIMESTAMPTZ,
     effective_to TIMESTAMPTZ,
-    is_active BOOLEAN NOT NULL DEFAULT true,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE (holding_code, item_code, barcode, dimension_key, price_level, marketplace, currency)
+    isactive BOOLEAN NOT NULL DEFAULT true,
+    updatedat TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (holdingcode, item_code, barcode, dimension_key, price_level, marketplace, currency)
 );
 
 DO $$
@@ -76,8 +76,8 @@ BEGIN
         ALTER TABLE marketplace_stock_balances RENAME COLUMN availableqty TO available_qty;
     END IF;
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_stock_balances' AND column_name = 'updatedat')
-       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_stock_balances' AND column_name = 'updated_at') THEN
-        ALTER TABLE marketplace_stock_balances RENAME COLUMN updatedat TO updated_at;
+       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_stock_balances' AND column_name = 'updatedat') THEN
+        ALTER TABLE marketplace_stock_balances RENAME COLUMN updatedat TO updatedat;
     END IF;
 END $$;
 
@@ -116,17 +116,17 @@ BEGIN
         ALTER TABLE marketplace_dimension_prices RENAME COLUMN effectiveto TO effective_to;
     END IF;
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_dimension_prices' AND column_name = 'isactive')
-       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_dimension_prices' AND column_name = 'is_active') THEN
-        ALTER TABLE marketplace_dimension_prices RENAME COLUMN isactive TO is_active;
+       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_dimension_prices' AND column_name = 'isactive') THEN
+        ALTER TABLE marketplace_dimension_prices RENAME COLUMN isactive TO isactive;
     END IF;
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_dimension_prices' AND column_name = 'updatedat')
-       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_dimension_prices' AND column_name = 'updated_at') THEN
-        ALTER TABLE marketplace_dimension_prices RENAME COLUMN updatedat TO updated_at;
+       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_dimension_prices' AND column_name = 'updatedat') THEN
+        ALTER TABLE marketplace_dimension_prices RENAME COLUMN updatedat TO updatedat;
     END IF;
 END $$;
 
 CREATE INDEX IF NOT EXISTS idx_marketplace_stock_dimension
-    ON marketplace_stock_balances (holding_code, item_code, dimension_key);
+    ON marketplace_stock_balances (holdingcode, item_code, dimension_key);
 
 CREATE INDEX IF NOT EXISTS idx_marketplace_price_dimension
-    ON marketplace_dimension_prices (holding_code, item_code, dimension_key, marketplace, price_level);
+    ON marketplace_dimension_prices (holdingcode, item_code, dimension_key, marketplace, price_level);

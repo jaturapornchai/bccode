@@ -25,7 +25,7 @@ type NotifyBranchEvent struct {
 }
 
 type NotifyBranch struct {
-	GuidFixed string         `json:"guid_fixed" bson:"guid_fixed"`
+	GuidFixed string         `json:"guidfixed" bson:"guidfixed"`
 	Code      string         `json:"code" bson:"code"`
 	Names     []models.NameX `json:"names" bson:"names"`
 }
@@ -46,7 +46,7 @@ type NotifyData struct {
 }
 
 type NotifyDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	NotifyData         `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

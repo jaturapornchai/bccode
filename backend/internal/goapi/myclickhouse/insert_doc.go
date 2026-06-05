@@ -27,7 +27,7 @@ func InsertDocListToClickHouse(ctx context.Context, holdingCode string, data []m
 	if len(data) > 0 {
 		insertBatch, err := connClickHouse.PrepareBatch(ctx, fmt.Sprintf(`
 			INSERT INTO %s (
-				holding_code, branchid, docno, docdatetime, perioddatetime,
+				holdingcode, branchid, docno, docdatetime, perioddatetime,
 				totalamount, paycashamount, paycashchange, paycashbalance,
 				roundamount, checksum, slipurl, salechannelcode, deliveryamount,
 				guidfixed, iscancel, cancelreason, guidpos, guidbranch, transflag,
@@ -64,7 +64,7 @@ func InsertDocListToClickHouse(ctx context.Context, holdingCode string, data []m
 	if len(docRefData) > 0 {
 		insertBatch, err := connClickHouse.PrepareBatch(ctx, fmt.Sprintf(`
 			INSERT INTO %s (
-				holding_code, docno, docnotransflag, docnoref, docnoreftransflag
+				holdingcode, docno, docnotransflag, docnoref, docnoreftransflag
 			) VALUES (?, ?, ?, ?, ?)
 		`, TableName("docref")))
 		if err == nil {
@@ -80,7 +80,7 @@ func InsertDocListToClickHouse(ctx context.Context, holdingCode string, data []m
 	if len(docPaymentData) > 0 {
 		insertBatch, err := connClickHouse.PrepareBatch(ctx, fmt.Sprintf(`
 			INSERT INTO %s (
-				holding_code, branchid, docdatetime, perioddatetime, amount,
+				holdingcode, branchid, docdatetime, perioddatetime, amount,
 				description, docno, trans_flag, guidfixed, guidbranch
 			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`, TableName("docpayment")))
@@ -128,7 +128,7 @@ func InsertDocDetailListToClickHouse(ctx context.Context, holdingCode string, da
 			barcodeListForQuery += fmt.Sprintf("'%s'", barcode)
 		}
 
-		query := fmt.Sprintf(`SELECT barcode,itemcode,unitcode,unitstand,unitdivide FROM %s WHERE holding_code = ? and barcode in (`, TableName("productbarcode")) + barcodeListForQuery + `) order by barcode`
+		query := fmt.Sprintf(`SELECT barcode,itemcode,unitcode,unitstand,unitdivide FROM %s WHERE holdingcode = ? and barcode in (`, TableName("productbarcode")) + barcodeListForQuery + `) order by barcode`
 		rows, err := connClickHouse.Query(ctx, query, holdingCode)
 		if err == nil {
 			defer rows.Close()
@@ -148,7 +148,7 @@ func InsertDocDetailListToClickHouse(ctx context.Context, holdingCode string, da
 	// Prepare batch insert
 	insertBatch, err := connClickHouse.PrepareBatch(ctx, fmt.Sprintf(`
 		INSERT INTO %s (
-			holding_code, branchid, docno, docdatetime, perioddatetime,
+			holdingcode, branchid, docno, docdatetime, perioddatetime,
 			line_number, barcode, barcodemain, qty, price, sumamount, discountamount,
 			itemname, itemnames, refguid, sumamountchoice, ischoice, guidfixed, guidpos,
 			guidbranch, transflag, itemcode, unitcode, unitstand, unitdivide, calcflag, calcseq, iscalcstock,

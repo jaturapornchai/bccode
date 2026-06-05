@@ -60,8 +60,8 @@ func NewReceiveDepositRefundRepository(pst microservice.IPersisterMongo) *Receiv
 }
 func (repo ReceiveDepositRefundRepository) FindLastDocNo(ctx context.Context, holdingCode string, prefixDocNo string) (models.ReceiveDepositRefundDoc, error) {
 	filters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at": bson.M{
+		"holdingcode": holdingCode,
+		"deletedat": bson.M{
 			"$exists": false,
 		},
 		"docno": bson.M{

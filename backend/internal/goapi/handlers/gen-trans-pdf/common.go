@@ -134,43 +134,43 @@ type ThemeColors struct {
 
 // ThemeHeader - สีส่วนหัวเอกสาร
 type ThemeHeader struct {
-	TitleColor    string  `json:"title_color"`    // สีหัวเรื่อง
-	SubtitleColor string  `json:"subtitle_color"` // สีข้อความรอง
-	LineColor     string  `json:"line_color"`     // สีเส้นคั่น
-	LineWidth     float64 `json:"line_width"`     // ความหนาเส้น
+	TitleColor    string  `json:"titlecolor"`    // สีหัวเรื่อง
+	SubtitleColor string  `json:"subtitlecolor"` // สีข้อความรอง
+	LineColor     string  `json:"linecolor"`     // สีเส้นคั่น
+	LineWidth     float64 `json:"linewidth"`     // ความหนาเส้น
 }
 
 // ThemeSection - สีส่วน section
 type ThemeSection struct {
-	LabelColor      string `json:"label_color"`      // สีหัวข้อ
-	TextColor       string `json:"text_color"`       // สีข้อความ
-	BackgroundColor string `json:"background_color"` // สีพื้นหลัง
+	LabelColor      string `json:"labelcolor"`      // สีหัวข้อ
+	TextColor       string `json:"textcolor"`       // สีข้อความ
+	BackgroundColor string `json:"backgroundcolor"` // สีพื้นหลัง
 }
 
 // ThemeTable - สีตาราง
 type ThemeTable struct {
-	HeaderBgColor   string  `json:"header_bg_color"`   // สีพื้นหลังหัวตาราง
-	HeaderTextColor string  `json:"header_text_color"` // สีข้อความหัวตาราง
-	RowTextColor    string  `json:"row_text_color"`    // สีข้อความแถว
-	RowBgColor      string  `json:"row_bg_color"`      // สีพื้นหลังแถว
-	RowAltBgColor   string  `json:"row_alt_bg_color"`  // สีพื้นหลังแถวสลับ
-	BorderColor     string  `json:"border_color"`      // สีเส้นขอบ
-	BorderWidth     float64 `json:"border_width"`      // ความหนาเส้นขอบ
+	HeaderBgColor   string  `json:"headerbgcolor"`   // สีพื้นหลังหัวตาราง
+	HeaderTextColor string  `json:"headertextcolor"` // สีข้อความหัวตาราง
+	RowTextColor    string  `json:"rowtextcolor"`    // สีข้อความแถว
+	RowBgColor      string  `json:"rowbgcolor"`      // สีพื้นหลังแถว
+	RowAltBgColor   string  `json:"rowaltbgcolor"`   // สีพื้นหลังแถวสลับ
+	BorderColor     string  `json:"bordercolor"`     // สีเส้นขอบ
+	BorderWidth     float64 `json:"borderwidth"`     // ความหนาเส้นขอบ
 }
 
 // ThemeSummary - สีส่วนสรุป
 type ThemeSummary struct {
-	BgColor            string `json:"bg_color"`             // สีพื้นหลัง
-	TextColor          string `json:"text_color"`           // สีข้อความ
-	HighlightBgColor   string `json:"highlight_bg_color"`   // สีพื้นหลังยอดรวม
-	HighlightTextColor string `json:"highlight_text_color"` // สีข้อความยอดรวม
-	BorderColor        string `json:"border_color"`         // สีเส้นขอบ
+	BgColor            string `json:"bgcolor"`            // สีพื้นหลัง
+	TextColor          string `json:"textcolor"`          // สีข้อความ
+	HighlightBgColor   string `json:"highlightbgcolor"`   // สีพื้นหลังยอดรวม
+	HighlightTextColor string `json:"highlighttextcolor"` // สีข้อความยอดรวม
+	BorderColor        string `json:"bordercolor"`        // สีเส้นขอบ
 }
 
 // ThemeFooter - สีส่วนท้าย
 type ThemeFooter struct {
-	TextColor string `json:"text_color"` // สีข้อความ
-	LineColor string `json:"line_color"` // สีเส้น
+	TextColor string `json:"textcolor"` // สีข้อความ
+	LineColor string `json:"linecolor"` // สีเส้น
 }
 
 // Theme - โครงสร้างธีมทั้งหมด
@@ -443,43 +443,43 @@ func getDefaultLabelsMap(language string) map[string]string {
 // BorderStyles: none, solid, dashed, double, rounded
 // LogoStyles: normal, large, small, circular, withBackground
 type Template struct {
-	ID                   string  `json:"id"`                     // รหัสเทมเพลต
-	Name                 string  `json:"name"`                   // ชื่อเทมเพลต
-	HeaderLayout         string  `json:"header_layout"`          // รูปแบบหัวเอกสาร
-	TableStyle           string  `json:"table_style"`            // รูปแบบตาราง
-	SummaryLayout        string  `json:"summary_layout"`         // รูปแบบส่วนสรุป
-	FooterStyle          string  `json:"footer_style"`           // รูปแบบท้ายเอกสาร
-	ShowLogo             bool    `json:"show_logo"`              // แสดงโลโก้
-	LogoStyle            string  `json:"logo_style"`             // รูปแบบโลโก้
-	ShowWatermark        bool    `json:"show_watermark"`         // แสดงลายน้ำ
-	WatermarkText        string  `json:"watermark_text"`         // ข้อความลายน้ำ
-	ShowBorder           bool    `json:"show_border"`            // แสดงกรอบ
-	BorderStyle          string  `json:"border_style"`           // รูปแบบกรอบ
-	ShowDocTitle         bool    `json:"show_doc_title"`         // แสดงหัวเอกสาร
-	ShowCompanyInfo      bool    `json:"show_company_info"`      // แสดงข้อมูลบริษัท
-	ShowCustomerInfo     bool    `json:"show_customer_info"`     // แสดงข้อมูลลูกค้า
-	ShowPaymentInfo      bool    `json:"show_payment_info"`      // แสดงข้อมูลการชำระเงิน
-	ShowNotes            bool    `json:"show_notes"`             // แสดงหมายเหตุ
-	ShowSignature        bool    `json:"show_signature"`         // แสดงลายเซ็น
-	HeaderSpacing        float64 `json:"header_spacing"`         // ระยะห่างหัวเอกสาร
-	TableSpacing         float64 `json:"table_spacing"`          // ระยะห่างตาราง
-	SummarySpacing       float64 `json:"summary_spacing"`        // ระยะห่างส่วนสรุป
-	MarginTop            float64 `json:"margin_top"`             // ระยะขอบบน
-	MarginBottom         float64 `json:"margin_bottom"`          // ระยะขอบล่าง
-	MarginLeft           float64 `json:"margin_left"`            // ระยะขอบซ้าย
-	MarginRight          float64 `json:"margin_right"`           // ระยะขอบขวา
-	ShowRowNumber        bool    `json:"show_row_number"`        // แสดงลำดับแถว
-	ShowUnitPrice        bool    `json:"show_unit_price"`        // แสดงราคาต่อหน่วย
-	ShowDiscount         bool    `json:"show_discount"`          // แสดงส่วนลด
-	ShowTax              bool    `json:"show_tax"`               // แสดงภาษี
-	AlternateRowColor    bool    `json:"alternate_row_color"`    // สลับสีแถว
-	ShowHeaderLine       bool    `json:"show_header_line"`       // แสดงเส้นหัวเอกสาร
-	HeaderLineWidth      float64 `json:"header_line_width"`      // ความหนาเส้นหัวเอกสาร
-	ShowHeaderBackground bool    `json:"show_header_background"` // แสดงพื้นหลังหัวตาราง
-	ShowSubtotal         bool    `json:"show_subtotal"`          // แสดงยอดรวมย่อย
-	ShowTotalDiscount    bool    `json:"show_total_discount"`    // แสดงส่วนลดรวม
-	ShowTotalTax         bool    `json:"show_total_tax"`         // แสดงภาษีรวม
-	HighlightTotal       bool    `json:"highlight_total"`        // เน้นยอดรวม
+	ID                   string  `json:"id"`                   // รหัสเทมเพลต
+	Name                 string  `json:"name"`                 // ชื่อเทมเพลต
+	HeaderLayout         string  `json:"headerlayout"`         // รูปแบบหัวเอกสาร
+	TableStyle           string  `json:"tablestyle"`           // รูปแบบตาราง
+	SummaryLayout        string  `json:"summarylayout"`        // รูปแบบส่วนสรุป
+	FooterStyle          string  `json:"footerstyle"`          // รูปแบบท้ายเอกสาร
+	ShowLogo             bool    `json:"showlogo"`             // แสดงโลโก้
+	LogoStyle            string  `json:"logostyle"`            // รูปแบบโลโก้
+	ShowWatermark        bool    `json:"showwatermark"`        // แสดงลายน้ำ
+	WatermarkText        string  `json:"watermarktext"`        // ข้อความลายน้ำ
+	ShowBorder           bool    `json:"showborder"`           // แสดงกรอบ
+	BorderStyle          string  `json:"borderstyle"`          // รูปแบบกรอบ
+	ShowDocTitle         bool    `json:"showdoctitle"`         // แสดงหัวเอกสาร
+	ShowCompanyInfo      bool    `json:"showcompanyinfo"`      // แสดงข้อมูลบริษัท
+	ShowCustomerInfo     bool    `json:"showcustomerinfo"`     // แสดงข้อมูลลูกค้า
+	ShowPaymentInfo      bool    `json:"showpaymentinfo"`      // แสดงข้อมูลการชำระเงิน
+	ShowNotes            bool    `json:"shownotes"`            // แสดงหมายเหตุ
+	ShowSignature        bool    `json:"showsignature"`        // แสดงลายเซ็น
+	HeaderSpacing        float64 `json:"headerspacing"`        // ระยะห่างหัวเอกสาร
+	TableSpacing         float64 `json:"tablespacing"`         // ระยะห่างตาราง
+	SummarySpacing       float64 `json:"summaryspacing"`       // ระยะห่างส่วนสรุป
+	MarginTop            float64 `json:"margintop"`            // ระยะขอบบน
+	MarginBottom         float64 `json:"marginbottom"`         // ระยะขอบล่าง
+	MarginLeft           float64 `json:"marginleft"`           // ระยะขอบซ้าย
+	MarginRight          float64 `json:"marginright"`          // ระยะขอบขวา
+	ShowRowNumber        bool    `json:"showrownumber"`        // แสดงลำดับแถว
+	ShowUnitPrice        bool    `json:"showunitprice"`        // แสดงราคาต่อหน่วย
+	ShowDiscount         bool    `json:"showdiscount"`         // แสดงส่วนลด
+	ShowTax              bool    `json:"showtax"`              // แสดงภาษี
+	AlternateRowColor    bool    `json:"alternaterowcolor"`    // สลับสีแถว
+	ShowHeaderLine       bool    `json:"showheaderline"`       // แสดงเส้นหัวเอกสาร
+	HeaderLineWidth      float64 `json:"headerlinewidth"`      // ความหนาเส้นหัวเอกสาร
+	ShowHeaderBackground bool    `json:"showheaderbackground"` // แสดงพื้นหลังหัวตาราง
+	ShowSubtotal         bool    `json:"showsubtotal"`         // แสดงยอดรวมย่อย
+	ShowTotalDiscount    bool    `json:"showtotaldiscount"`    // แสดงส่วนลดรวม
+	ShowTotalTax         bool    `json:"showtotaltax"`         // แสดงภาษีรวม
+	HighlightTotal       bool    `json:"highlighttotal"`       // เน้นยอดรวม
 }
 
 // TableStyleConfig - การตั้งค่าสไตล์ตาราง
@@ -601,33 +601,33 @@ func GetTableStyleConfig(styleName string) TableStyleConfig {
 
 // GenPDFPayload - payload สำหรับการสร้าง PDF จาก MongoDB document
 type GenPDFPayload struct {
-	HoldingCode string     `json:"holding_code"`
+	HoldingCode string     `json:"holdingcode"`
 	Collection  string     `json:"collection"`
 	DocNo       string     `json:"docno"` // เลขที่เอกสาร
 	Title       string     `json:"title"`
-	PageSize    string     `json:"pagesize"`     // A4, A3, Letter, Legal
-	Orientation string     `json:"orientation"`  // P (Portrait), L (Landscape)
-	FontSize    int        `json:"fontsize"`     // ขนาดฟอนต์พื้นฐาน (8-16) - ใช้เป็น fallback
-	FontSizes   *FontSizes `json:"fontsizes"`    // ขนาด font แยกตามส่วน
-	FontFamily  string     `json:"font_family"`  // ชื่อ font family (Sarabun, Kanit, Prompt, etc.) - default: GoNotoCurrent
-	LineSpacing float64    `json:"line_spacing"` // ระยะห่างระหว่างบรรทัด (1.0 = ปกติ, 1.5 = 1.5 เท่า, 2.0 = 2 เท่า) - default: 1.0
-	ColorMode   *bool      `json:"colormode"`    // true = สี, false = ขาวดำ (default: true)
-	DateFormat  string     `json:"date_format"`  // รูปแบบวันที่: DD/MM/YYYY, DD/MM/BBBB, DD MMM YY, DD MMMM BBBB, etc.
-	Language    string     `json:"language"`     // ภาษา: th, en, ai:cn, ai:ja, ai:ko, ai:lo, ai:km, ai:my, ai:vi
-	ThemeName   string     `json:"theme_name"`   // ชื่อ preset theme (modern-blue, professional, etc.)
-	TemplateID  string     `json:"template_id"`  // รหัส preset template (standard, modern, etc.)
-	Theme       *Theme     `json:"theme"`        // ธีมแบบ custom (ถ้าต้องการกำหนดเอง)
-	Template    *Template  `json:"template"`     // เทมเพลตแบบ custom (ถ้าต้องการกำหนดเอง)
+	PageSize    string     `json:"pagesize"`    // A4, A3, Letter, Legal
+	Orientation string     `json:"orientation"` // P (Portrait), L (Landscape)
+	FontSize    int        `json:"fontsize"`    // ขนาดฟอนต์พื้นฐาน (8-16) - ใช้เป็น fallback
+	FontSizes   *FontSizes `json:"fontsizes"`   // ขนาด font แยกตามส่วน
+	FontFamily  string     `json:"fontfamily"`  // ชื่อ font family (Sarabun, Kanit, Prompt, etc.) - default: GoNotoCurrent
+	LineSpacing float64    `json:"linespacing"` // ระยะห่างระหว่างบรรทัด (1.0 = ปกติ, 1.5 = 1.5 เท่า, 2.0 = 2 เท่า) - default: 1.0
+	ColorMode   *bool      `json:"colormode"`   // true = สี, false = ขาวดำ (default: true)
+	DateFormat  string     `json:"dateformat"`  // รูปแบบวันที่: DD/MM/YYYY, DD/MM/BBBB, DD MMM YY, DD MMMM BBBB, etc.
+	Language    string     `json:"language"`    // ภาษา: th, en, ai:cn, ai:ja, ai:ko, ai:lo, ai:km, ai:my, ai:vi
+	ThemeName   string     `json:"themename"`   // ชื่อ preset theme (modern-blue, professional, etc.)
+	TemplateID  string     `json:"templateid"`  // รหัส preset template (standard, modern, etc.)
+	Theme       *Theme     `json:"theme"`       // ธีมแบบ custom (ถ้าต้องการกำหนดเอง)
+	Template    *Template  `json:"template"`    // เทมเพลตแบบ custom (ถ้าต้องการกำหนดเอง)
 
 	// Multi-currency display option
-	ShowDualCurrency *bool `json:"show_dual_currency"` // true = แสดง 2 สกุลเงิน (default), false = แสดงเฉพาะ doc currency
+	ShowDualCurrency *bool `json:"showdualcurrency"` // true = แสดง 2 สกุลเงิน (default), false = แสดงเฉพาะ doc currency
 
 	// Preview mode - รับข้อมูลจาก payload โดยตรง (ไม่ดึงจาก DB)
-	IsPreview bool                   `json:"is_preview"` // true = แสดง watermark "Preview"
-	Document  map[string]interface{} `json:"document"`   // ข้อมูลเอกสารสำหรับ preview (กรณียังไม่ save)
+	IsPreview bool                   `json:"ispreview"` // true = แสดง watermark "Preview"
+	Document  map[string]interface{} `json:"document"`  // ข้อมูลเอกสารสำหรับ preview (กรณียังไม่ save)
 
 	// User info for history tracking
-	PrintedBy string `json:"printed_by"` // ผู้พิมพ์ (optional)
+	PrintedBy string `json:"printedby"` // ผู้พิมพ์ (optional)
 }
 
 // GetPresetTheme - ดึง preset theme ตามชื่อ

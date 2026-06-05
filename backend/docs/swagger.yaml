@@ -130,7 +130,7 @@ definitions:
         items:
           $ref: '#/definitions/models.SaleInvoiceCoupon'
         type: array
-      created_at:
+      createdat:
         description: วันเวลาที่สร้างเอกสาร
         type: string
       creator_code:
@@ -441,7 +441,7 @@ definitions:
         items:
           $ref: '#/definitions/models.SaleInvoiceCoupon'
         type: array
-      created_at:
+      createdat:
         description: วันเวลาที่สร้างเอกสาร
         type: string
       creator_code:
@@ -748,7 +748,7 @@ definitions:
         items:
           $ref: '#/definitions/models.SaleInvoiceCoupon'
         type: array
-      created_at:
+      createdat:
         description: วันเวลาที่สร้างเอกสาร
         type: string
       creator_code:
@@ -1091,7 +1091,7 @@ definitions:
       financialstatements:
         description: ผลกระทบต่องบการเงิน 1=ทั่วไป, 2=ต้นทุนขาย
         type: integer
-      holding_code:
+      holdingcode:
         type: string
     type: object
   models.BalanceSheetReport:
@@ -1599,7 +1599,7 @@ definitions:
     type: object
   models.CalculateCouponRequest:
     properties:
-      branch_code:
+      branchcode:
         description: รหัสสาขา (สำหรับตรวจสอบ IgnoreBranchCode)
         type: string
       coupons:
@@ -1621,7 +1621,7 @@ definitions:
         description: ยอดรวมการสั่งซื้อ
         type: number
     required:
-    - branch_code
+    - branchcode
     - coupons
     - items
     - order_amount
@@ -2823,7 +2823,7 @@ definitions:
       expirydate:
         description: วันที่หมดอายุคูปอง
         type: string
-      ignore_branch_code:
+      ignore_branchcode:
         description: รายการสาขาที่ไม่ต้องการใช้คูปอง
         items:
           type: string
@@ -2899,7 +2899,7 @@ definitions:
     type: object
   models.CouponAvailabilityCheckRequest:
     properties:
-      branch_code:
+      branchcode:
         description: รหัสสาขา
         type: string
       customer_id:
@@ -2912,7 +2912,7 @@ definitions:
         minItems: 1
         type: array
     required:
-    - branch_code
+    - branchcode
     - items
     type: object
   models.CouponAvailabilityResponse:
@@ -2955,7 +2955,7 @@ definitions:
         type: integer
       total_rows:
         type: integer
-      updated_at:
+      updatedat:
         type: string
     type: object
   models.CouponCalculationError:
@@ -3039,7 +3039,7 @@ definitions:
         type: string
       guidfixed:
         type: string
-      ignore_branch_code:
+      ignore_branchcode:
         description: รายการสาขาที่ไม่ต้องการใช้คูปอง
         items:
           type: string
@@ -3633,7 +3633,7 @@ definitions:
         items:
           $ref: '#/definitions/models.SaleInvoiceCoupon'
         type: array
-      created_at:
+      createdat:
         description: วันเวลาที่สร้างเอกสาร
         type: string
       creator_code:
@@ -4031,7 +4031,7 @@ definitions:
         items:
           $ref: '#/definitions/models.SaleInvoiceCoupon'
         type: array
-      created_at:
+      createdat:
         description: วันเวลาที่สร้างเอกสาร
         type: string
       creator_code:
@@ -5443,7 +5443,7 @@ definitions:
     properties:
       lineaccesstoken:
         type: string
-      holding_code:
+      holdingcode:
         type: string
     type: object
   models.LineLoginRequest:
@@ -6253,7 +6253,7 @@ definitions:
         items:
           $ref: '#/definitions/models.SaleInvoiceCoupon'
         type: array
-      created_at:
+      createdat:
         description: วันเวลาที่สร้างเอกสาร
         type: string
       creator_code:
@@ -6560,7 +6560,7 @@ definitions:
         items:
           $ref: '#/definitions/models.SaleInvoiceCoupon'
         type: array
-      created_at:
+      createdat:
         description: วันเวลาที่สร้างเอกสาร
         type: string
       creator_code:
@@ -7191,7 +7191,7 @@ definitions:
         items:
           $ref: '#/definitions/models.SaleInvoiceCoupon'
         type: array
-      created_at:
+      createdat:
         description: วันเวลาที่สร้างเอกสาร
         type: string
       creator_code:
@@ -7536,7 +7536,7 @@ definitions:
     type: object
   models.PosLoginRequest:
     properties:
-      holding_code:
+      holdingcode:
         type: string
       username:
         description: validate:"required,alphanum,gte=3,max=233"
@@ -8091,7 +8091,7 @@ definitions:
         minItems: 1
         type: array
         uniqueItems: true
-      holding_code:
+      holdingcode:
         type: string
       unitguid:
         type: string
@@ -8326,7 +8326,7 @@ definitions:
       financialstatements:
         description: ผลกระทบต่องบการเงิน 1=ทั่วไป, 2=ต้นทุนขาย
         type: integer
-      holding_code:
+      holdingcode:
         type: string
     type: object
   models.ProfitAndLossSheetReport:
@@ -8441,7 +8441,7 @@ definitions:
         items:
           $ref: '#/definitions/models.SaleInvoiceCoupon'
         type: array
-      created_at:
+      createdat:
         description: วันเวลาที่สร้างเอกสาร
         type: string
       creator_code:
@@ -8839,7 +8839,7 @@ definitions:
         items:
           $ref: '#/definitions/models.SaleInvoiceCoupon'
         type: array
-      created_at:
+      createdat:
         description: วันเวลาที่สร้างเอกสาร
         type: string
       creator_code:
@@ -9146,7 +9146,7 @@ definitions:
         items:
           $ref: '#/definitions/models.SaleInvoiceCoupon'
         type: array
-      created_at:
+      createdat:
         description: วันเวลาที่สร้างเอกสาร
         type: string
       creator_code:
@@ -9479,7 +9479,7 @@ definitions:
         items:
           $ref: '#/definitions/models.SaleInvoiceCoupon'
         type: array
-      created_at:
+      createdat:
         description: วันเวลาที่สร้างเอกสาร
         type: string
       creator_code:
@@ -9847,7 +9847,7 @@ definitions:
         items:
           $ref: '#/definitions/models.SaleInvoiceCoupon'
         type: array
-      created_at:
+      createdat:
         description: วันเวลาที่สร้างเอกสาร
         type: string
       creator_code:
@@ -10235,7 +10235,7 @@ definitions:
         items:
           $ref: '#/definitions/models.SaleInvoiceCoupon'
         type: array
-      created_at:
+      createdat:
         description: วันเวลาที่สร้างเอกสาร
         type: string
       creator_code:
@@ -10542,7 +10542,7 @@ definitions:
         items:
           $ref: '#/definitions/models.SaleInvoiceCoupon'
         type: array
-      created_at:
+      createdat:
         description: วันเวลาที่สร้างเอกสาร
         type: string
       creator_code:
@@ -11252,7 +11252,7 @@ definitions:
         items:
           $ref: '#/definitions/models.SaleInvoiceCoupon'
         type: array
-      created_at:
+      createdat:
         description: วันเวลาที่สร้างเอกสาร
         type: string
       creator_code:
@@ -11653,7 +11653,7 @@ definitions:
         items:
           $ref: '#/definitions/models.SaleInvoiceCoupon'
         type: array
-      created_at:
+      createdat:
         description: วันเวลาที่สร้างเอกสาร
         type: string
       creator_code:
@@ -12000,7 +12000,7 @@ definitions:
         items:
           $ref: '#/definitions/models.SaleInvoiceCoupon'
         type: array
-      created_at:
+      createdat:
         description: วันเวลาที่สร้างเอกสาร
         type: string
       creator_code:
@@ -12525,7 +12525,7 @@ definitions:
         type: boolean
       logo:
         type: string
-      mainholding_code:
+      mainholdingcode:
         type: string
       name1:
         type: string
@@ -12563,7 +12563,7 @@ definitions:
         type: integer
       monthlyaverage:
         type: number
-      holding_code:
+      holdingcode:
         type: string
       shopname:
         type: string
@@ -12578,7 +12578,7 @@ definitions:
     properties:
       isfavorite:
         type: boolean
-      holding_code:
+      holdingcode:
         type: string
     type: object
   models.ShopImage:
@@ -12612,7 +12612,7 @@ definitions:
         type: boolean
       logo:
         type: string
-      mainholding_code:
+      mainholdingcode:
         type: string
       name1:
         type: string
@@ -12657,7 +12657,7 @@ definitions:
         type: boolean
       logo:
         type: string
-      mainholding_code:
+      mainholdingcode:
         type: string
       name1:
         type: string
@@ -12861,7 +12861,7 @@ definitions:
         items:
           $ref: '#/definitions/models.SaleInvoiceCoupon'
         type: array
-      created_at:
+      createdat:
         description: วันเวลาที่สร้างเอกสาร
         type: string
       creator_code:
@@ -13168,7 +13168,7 @@ definitions:
         items:
           $ref: '#/definitions/models.SaleInvoiceCoupon'
         type: array
-      created_at:
+      createdat:
         description: วันเวลาที่สร้างเอกสาร
         type: string
       creator_code:
@@ -13471,7 +13471,7 @@ definitions:
         items:
           $ref: '#/definitions/models.SaleInvoiceCoupon'
         type: array
-      created_at:
+      createdat:
         description: วันเวลาที่สร้างเอกสาร
         type: string
       creator_code:
@@ -13799,7 +13799,7 @@ definitions:
         items:
           $ref: '#/definitions/models.SaleInvoiceCoupon'
         type: array
-      created_at:
+      createdat:
         description: วันเวลาที่สร้างเอกสาร
         type: string
       creator_code:
@@ -14106,7 +14106,7 @@ definitions:
         items:
           $ref: '#/definitions/models.SaleInvoiceCoupon'
         type: array
-      created_at:
+      createdat:
         description: วันเวลาที่สร้างเอกสาร
         type: string
       creator_code:
@@ -14413,7 +14413,7 @@ definitions:
         items:
           $ref: '#/definitions/models.SaleInvoiceCoupon'
         type: array
-      created_at:
+      createdat:
         description: วันเวลาที่สร้างเอกสาร
         type: string
       creator_code:
@@ -14720,7 +14720,7 @@ definitions:
         items:
           $ref: '#/definitions/models.SaleInvoiceCoupon'
         type: array
-      created_at:
+      createdat:
         description: วันเวลาที่สร้างเอกสาร
         type: string
       creator_code:
@@ -15286,7 +15286,7 @@ definitions:
       nextbalancedebitamount:
         description: ยอดสะสมเดบิต
         type: number
-      holding_code:
+      holdingcode:
         type: string
       sumbalancecredit:
         type: number
@@ -15434,7 +15434,7 @@ definitions:
       phonenumber:
         maxLength: 100
         type: string
-      holding_code:
+      holdingcode:
         type: string
     required:
     - countrycode
@@ -15795,7 +15795,7 @@ definitions:
         type: string
       line_user_id:
         type: string
-      holding_code:
+      holdingcode:
         type: string
       username:
         type: string
@@ -15829,10 +15829,10 @@ definitions:
     type: object
   smlcloudplatform_internal_authentication_models.ShopSelectRequest:
     properties:
-      holding_code:
+      holdingcode:
         type: string
     required:
-    - holding_code
+    - holdingcode
     type: object
   smlcloudplatform_internal_authentication_models.ShopUserInfo:
     properties:
@@ -15844,7 +15844,7 @@ definitions:
         type: boolean
       lastaccessedat:
         type: string
-      mainholding_code:
+      mainholdingcode:
         description: Name1          string         `json:"name1" bson:"name1"`
         type: string
       name:
@@ -15855,7 +15855,7 @@ definitions:
         type: array
       role:
         $ref: '#/definitions/smlcloudplatform_internal_authentication_models.UserRole'
-      holding_code:
+      holdingcode:
         type: string
     type: object
   smlcloudplatform_internal_authentication_models.UserLoginRequest:
@@ -15864,7 +15864,7 @@ definitions:
         maxLength: 233
         minLength: 5
         type: string
-      holding_code:
+      holdingcode:
         type: string
       username:
         description: validate:"required,alphanum,gte=3,max=233"
@@ -15999,7 +15999,7 @@ definitions:
         $ref: '#/definitions/smlcloudplatform_internal_authentication_models.DocumentApproval'
       role:
         $ref: '#/definitions/smlcloudplatform_internal_authentication_models.UserRole'
-      holding_code:
+      holdingcode:
         type: string
       username:
         type: string
@@ -20140,7 +20140,7 @@ paths:
       description: |-
         คำนวนส่วนลดและมูลค่าแทนเงินสดจากรายการคูปองที่ส่งมา รองรับ Dynamic Usage Count Logic และตรวจสอบเงื่อนไขสินค้า/สาขา
         use_amount: 0 = ใช้เต็มจำนวน, >0 = ใช้ตามจำนวนที่ระบุ
-        branch_code: รหัสสาขาสำหรับตรวจสอบ IgnoreBranchCode
+        branchcode: รหัสสาขาสำหรับตรวจสอบ IgnoreBranchCode
         items: รายการสินค้าสำหรับตรวจสอบเงื่อนไขสินค้าและคำนวนส่วนลด
       parameters:
       - description: calculation data
@@ -23342,7 +23342,7 @@ paths:
       parameters:
       - description: Holding Code
         in: query
-        name: holding_code
+        name: holdingcode
         type: string
       - description: Search Value
         in: query
@@ -23414,7 +23414,7 @@ paths:
       parameters:
       - description: Holding Code
         in: query
-        name: holding_code
+        name: holdingcode
         type: string
       - description: barcode json array
         in: query
@@ -23440,7 +23440,7 @@ paths:
       parameters:
       - description: Holding Code
         in: query
-        name: holding_code
+        name: holdingcode
         type: string
       - description: barcode json array
         in: body
@@ -23614,7 +23614,7 @@ paths:
       parameters:
       - description: Holding Code
         in: query
-        name: holding_code
+        name: holdingcode
         type: string
       - description: Order station code
         in: query
@@ -23641,7 +23641,7 @@ paths:
       parameters:
       - description: Holding Code
         in: query
-        name: holding_code
+        name: holdingcode
         type: string
       - description: Order station code
         in: query
@@ -24786,7 +24786,7 @@ paths:
         type: string
       - description: Holding Codes comma-separated
         in: query
-        name: holding_codes
+        name: holdingcodes
         type: string
       responses:
         "200":
@@ -25295,7 +25295,7 @@ paths:
       summary: แสดงรายละเอียดข้อมูลรายวัน
       tags:
       - GL
-  /gl/journal/rebuild/{holding_code}:
+  /gl/journal/rebuild/{holdingcode}:
     get:
       consumes:
       - application/json
@@ -25303,7 +25303,7 @@ paths:
       parameters:
       - description: Journal Holding Code
         in: path
-        name: holding_code
+        name: holdingcode
         required: true
         type: string
       responses:
@@ -38115,7 +38115,7 @@ paths:
       - AccessToken: []
       tags:
       - ShopUser
-  /slip/{holding_code}/{posid}/{docdate}/{docno}:
+  /slip/{holdingcode}/{posid}/{docdate}/{docno}:
     get:
       consumes:
       - application/json
@@ -38123,7 +38123,7 @@ paths:
       parameters:
       - description: Holding Code
         in: path
-        name: holding_code
+        name: holdingcode
         required: true
         type: string
       - description: POS ID
@@ -53026,7 +53026,7 @@ paths:
         in: query
         name: unitcode
         type: string
-      - description: holding_code filter ex. \
+      - description: holdingcode filter ex. \
         in: query
         name: shopsid
         type: string

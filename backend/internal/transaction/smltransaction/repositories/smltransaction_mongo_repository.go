@@ -44,8 +44,8 @@ func (repo SMLTransactionRepository) Filter(collectionName string, filters bson.
 		context.Background(),
 		&models.DynamicCollection{Collection: collectionName},
 		bson.M{
-			"holding_code": 0,
-			"_id":          0,
+			"holdingcode": 0,
+			"_id":         0,
 		}, filters,
 		pageable,
 		&docList,
@@ -71,8 +71,8 @@ func (repo SMLTransactionRepository) Create(collectionName string, doc map[strin
 
 func (repo SMLTransactionRepository) Update(collectionName string, holdingCode string, guid string, doc map[string]interface{}) error {
 	filterDoc := map[string]interface{}{
-		"holding_code": holdingCode,
-		"guid_fixed":   guid,
+		"holdingcode": holdingCode,
+		"guidfixed":   guid,
 	}
 
 	err := repo.pst.UpdateOne(context.Background(), &models.DynamicCollection{Collection: collectionName}, filterDoc, doc)
@@ -111,7 +111,7 @@ func (repo SMLTransactionRepository) FindByDocIndentityKey(collectionName string
 	err := repo.pst.FindOne(
 		context.Background(),
 		&models.DynamicCollection{Collection: collectionName},
-		bson.M{"holding_code": holdingCode, "deleted_at": bson.M{"$exists": false},
+		bson.M{"holdingcode": holdingCode, "deletedat": bson.M{"$exists": false},
 			indentityField: indentityValue},
 		&doc,
 	)
@@ -127,7 +127,7 @@ func (repo SMLTransactionRepository) DeleteByGuidfixed(collectionName string, ho
 	err := repo.pst.SoftDelete(
 		context.Background(),
 		&models.DynamicCollection{Collection: collectionName},
-		username, bson.M{"guid_fixed": guid, "holding_code": holdingCode},
+		username, bson.M{"guidfixed": guid, "holdingcode": holdingCode},
 	)
 
 	if err != nil {
@@ -145,7 +145,7 @@ func (repo SMLTransactionRepository) Delete(collectionName string, holdingCode s
 	// 	filterQuery[col] = val
 	// }
 
-	// filterQuery["holding_code"] = holdingCode
+	// filterQuery["holdingcode"] = holdingCode
 
 	// err := repo.pst.SoftDelete(&models.DynamicCollection{Collection: collectionName}, username, filterQuery)
 
@@ -159,7 +159,7 @@ func (repo SMLTransactionRepository) Delete(collectionName string, holdingCode s
 		filterQuery[col] = val
 	}
 
-	filterQuery["holding_code"] = holdingCode
+	filterQuery["holdingcode"] = holdingCode
 
 	err := repo.pst.Delete(
 		context.Background(),
@@ -181,7 +181,7 @@ func (repo SMLTransactionRepository) Transaction(fnc func(ctx context.Context) e
 func (repo SMLTransactionRepository) CreateIndex(collectionName string, keyID string) (string, error) {
 	indexName := "idx_smlx_" + keyID
 	keys := bson.D{
-		{Key: "holding_code", Value: 1},
+		{Key: "holdingcode", Value: 1},
 		{Key: keyID, Value: 1},
 	}
 	return repo.pst.CreateIndex(

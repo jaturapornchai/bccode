@@ -696,9 +696,9 @@ func (h ProductBarcodeHttp) SearchProductBarcodeLimit(ctx microservice.IContext)
 			shopsList[i] = strings.Trim(shop, " ")
 		}
 
-		// Remove any existing holding_code filter and replace with multiple shops
-		delete(filters, "holding_code")
-		filters["holding_code"] = map[string]interface{}{
+		// Remove any existing holdingcode filter and replace with multiple shops
+		delete(filters, "holdingcode")
+		filters["holdingcode"] = map[string]interface{}{
 			"$in": shopsList,
 		}
 
@@ -1039,7 +1039,7 @@ func (h ProductBarcodeHttp) searchFilter(queryParam func(string) string) map[str
 		},
 		{
 			Param: "shopsid",
-			Field: "holding_code",
+			Field: "holdingcode",
 			Type:  requestfilter.FieldTypeString,
 		},
 		// Group filters

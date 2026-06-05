@@ -73,13 +73,13 @@ func (svc ShopUserRepository) Create(ctx context.Context, shopUser *models.ShopU
 
 func (svc ShopUserRepository) Update(ctx context.Context, id primitive.ObjectID, holdingCode string, username string, role models.UserRole) error {
 	existing := &models.ShopUser{}
-	_ = svc.pst.FindOne(ctx, &models.ShopUser{}, bson.M{"_id": id, "holding_code": holdingCode}, existing)
+	_ = svc.pst.FindOne(ctx, &models.ShopUser{}, bson.M{"_id": id, "holdingcode": holdingCode}, existing)
 	userUID := strings.TrimSpace(existing.UserUID)
 	if userUID == "" {
 		userUID = svc.lookupUserUID(ctx, username)
 	}
 
-	err := svc.pst.Update(ctx, &models.ShopUser{}, bson.M{"_id": id, "holding_code": holdingCode}, bson.M{"$set": bson.M{"username": username, "role": role, "user_uid": userUID}})
+	err := svc.pst.Update(ctx, &models.ShopUser{}, bson.M{"_id": id, "holdingcode": holdingCode}, bson.M{"$set": bson.M{"username": username, "role": role, "user_uid": userUID}})
 
 	if err != nil {
 		return err
@@ -90,9 +90,9 @@ func (svc ShopUserRepository) Update(ctx context.Context, id primitive.ObjectID,
 
 func (svc ShopUserRepository) Save(ctx context.Context, holdingCode string, username string, role models.UserRole) error {
 	userUID := svc.lookupUserUID(ctx, username)
-	filter := bson.M{"holding_code": holdingCode, "username": username}
+	filter := bson.M{"holdingcode": holdingCode, "username": username}
 	if userUID != "" {
-		filter = bson.M{"holding_code": holdingCode, "user_uid": userUID}
+		filter = bson.M{"holdingcode": holdingCode, "user_uid": userUID}
 	}
 
 	optUpdate := options.Update().SetUpsert(true)
@@ -135,11 +135,11 @@ func (svc ShopUserRepository) SaveFullProfile(ctx context.Context, holdingCode s
 		updateData["quotation_approval"] = req.QuotationApproval
 	}
 
-	filter := bson.M{"holding_code": holdingCode, "username": req.Username}
+	filter := bson.M{"holdingcode": holdingCode, "username": req.Username}
 	if userUID != "" {
-		filter = bson.M{"holding_code": holdingCode, "user_uid": userUID}
+		filter = bson.M{"holdingcode": holdingCode, "user_uid": userUID}
 	} else if strings.TrimSpace(req.EditUsername) != "" {
-		filter = bson.M{"holding_code": holdingCode, "username": req.EditUsername}
+		filter = bson.M{"holdingcode": holdingCode, "username": req.EditUsername}
 	}
 
 	optUpdate := options.Update().SetUpsert(true)
@@ -172,7 +172,7 @@ func (svc ShopUserRepository) saveUserLoginProfile(ctx context.Context, req *mod
 	if len(updateData) == 0 {
 		return nil
 	}
-	updateData["updated_at"] = time.Now().UTC()
+	updateData["updatedat"] = time.Now().UTC()
 
 	optUpdate := options.Update().SetUpsert(false)
 	return svc.pst.Update(ctx, &models.UserDoc{}, bson.M{"username": username}, bson.M{"$set": updateData}, optUpdate)
@@ -223,7 +223,7 @@ func (svc ShopUserRepository) DeleteEmptyUsernames(ctx context.Context, holdingC
 
 	// ลบ users ที่ username ว่าง, เป็น null, หรือเป็น empty string
 	filter := bson.M{
-		"holding_code": holdingCode,
+		"holdingcode": holdingCode,
 		"$or": []bson.M{
 			{"username": ""},
 			{"username": bson.M{"$exists": false}},
@@ -241,7 +241,7 @@ func (svc ShopUserRepository) DeleteEmptyUsernames(ctx context.Context, holdingC
 
 func (svc ShopUserRepository) FindByHoldingCodeAndUserUIDInfo(ctx context.Context, holdingCode string, userUID string) (models.ShopUserInfo, error) {
 	shopUser := &models.ShopUserInfo{}
-	err := svc.pst.FindOne(ctx, &models.ShopUserInfo{}, bson.M{"holding_code": holdingCode, "user_uid": userUID}, shopUser)
+	err := svc.pst.FindOne(ctx, &models.ShopUserInfo{}, bson.M{"holdingcode": holdingCode, "user_uid": userUID}, shopUser)
 	if err != nil {
 		return models.ShopUserInfo{}, err
 	}
@@ -250,10 +250,10 @@ func (svc ShopUserRepository) FindByHoldingCodeAndUserUIDInfo(ctx context.Contex
 
 func (svc ShopUserRepository) ResolveHoldingCodeByHoldingCode(ctx context.Context, holdingCode string) (string, error) {
 	shopDoc := &shopmodels.ShopDoc{}
-	err := svc.pst.FindOne(ctx, &shopmodels.ShopDoc{}, bson.M{"holding_code": holdingCode, "deleted_at": bson.M{"$exists": false}}, shopDoc)
+	err := svc.pst.FindOne(ctx, &shopmodels.ShopDoc{}, bson.M{"holdingcode": holdingCode, "deletedat": bson.M{"$exists": false}}, shopDoc)
 	if err != nil || strings.TrimSpace(shopDoc.GuidFixed) == "" {
 		legacyDoc := &shopmodels.ShopDoc{}
-		legacyErr := svc.pst.FindOne(ctx, &shopmodels.ShopDoc{}, bson.M{"guid_fixed": holdingCode, "deleted_at": bson.M{"$exists": false}}, legacyDoc)
+		legacyErr := svc.pst.FindOne(ctx, &shopmodels.ShopDoc{}, bson.M{"guidfixed": holdingCode, "deletedat": bson.M{"$exists": false}}, legacyDoc)
 		if legacyErr != nil {
 			if err != nil {
 				return "", err
@@ -270,7 +270,7 @@ func (svc ShopUserRepository) ResolveHoldingCodeByHoldingCode(ctx context.Contex
 
 func (svc ShopUserRepository) FindByHoldingCodeAndUserUID(ctx context.Context, holdingCode string, userUID string) (models.ShopUser, error) {
 	shopUser := &models.ShopUser{}
-	err := svc.pst.FindOne(ctx, &models.ShopUser{}, bson.M{"holding_code": holdingCode, "user_uid": userUID}, shopUser)
+	err := svc.pst.FindOne(ctx, &models.ShopUser{}, bson.M{"holdingcode": holdingCode, "user_uid": userUID}, shopUser)
 	if err != nil {
 		return models.ShopUser{}, err
 	}
@@ -284,11 +284,11 @@ func (svc ShopUserRepository) FindByHoldingCodeAndUsernameInfo(ctx context.Conte
 
 	var err error
 	if userUID != "" {
-		err = svc.pst.FindOne(ctx, &models.ShopUserInfo{}, bson.M{"holding_code": holdingCode, "user_uid": userUID}, shopUser)
+		err = svc.pst.FindOne(ctx, &models.ShopUserInfo{}, bson.M{"holdingcode": holdingCode, "user_uid": userUID}, shopUser)
 	}
 
 	if err != nil || userUID == "" {
-		err = svc.pst.FindOne(ctx, &models.ShopUserInfo{}, bson.M{"holding_code": holdingCode, "username": username}, shopUser)
+		err = svc.pst.FindOne(ctx, &models.ShopUserInfo{}, bson.M{"holdingcode": holdingCode, "username": username}, shopUser)
 	}
 
 	if err != nil {
@@ -305,11 +305,11 @@ func (svc ShopUserRepository) FindByHoldingCodeAndUsername(ctx context.Context, 
 
 	var err error
 	if userUID != "" {
-		err = svc.pst.FindOne(ctx, &models.ShopUser{}, bson.M{"holding_code": holdingCode, "user_uid": userUID}, shopUser)
+		err = svc.pst.FindOne(ctx, &models.ShopUser{}, bson.M{"holdingcode": holdingCode, "user_uid": userUID}, shopUser)
 	}
 
 	if err != nil || userUID == "" {
-		err = svc.pst.FindOne(ctx, &models.ShopUser{}, bson.M{"holding_code": holdingCode, "username": username}, shopUser)
+		err = svc.pst.FindOne(ctx, &models.ShopUser{}, bson.M{"holdingcode": holdingCode, "username": username}, shopUser)
 	}
 
 	if err != nil {
@@ -322,7 +322,7 @@ func (svc ShopUserRepository) FindByHoldingCodeAndUsername(ctx context.Context, 
 func (svc ShopUserRepository) FindShopCreatedBy(ctx context.Context, holdingCode string) (string, error) {
 	shopDoc := &shopmodels.ShopDoc{}
 
-	err := svc.pst.FindOne(ctx, &shopmodels.ShopDoc{}, bson.M{"guid_fixed": holdingCode}, shopDoc)
+	err := svc.pst.FindOne(ctx, &shopmodels.ShopDoc{}, bson.M{"guidfixed": holdingCode}, shopDoc)
 	if err != nil {
 		return "", err
 	}
@@ -334,7 +334,7 @@ func (svc ShopUserRepository) FindShopCreatedBy(ctx context.Context, holdingCode
 func (svc ShopUserRepository) FindByHoldingCodeAndLineUserID(ctx context.Context, holdingCode string, lineUserID string) (models.ShopUser, error) {
 	shopUser := &models.ShopUser{}
 
-	err := svc.pst.FindOne(ctx, &models.ShopUser{}, bson.M{"holding_code": holdingCode, "line_user_id": lineUserID}, shopUser)
+	err := svc.pst.FindOne(ctx, &models.ShopUser{}, bson.M{"holdingcode": holdingCode, "line_user_id": lineUserID}, shopUser)
 	if err != nil {
 		return models.ShopUser{}, err
 	}
@@ -369,7 +369,7 @@ func (svc ShopUserRepository) FindRole(ctx context.Context, holdingCode string, 
 func (svc ShopUserRepository) FindByHoldingCode(ctx context.Context, holdingCode string) (*[]models.ShopUser, error) {
 	shopUsers := &[]models.ShopUser{}
 
-	err := svc.pst.Find(ctx, &models.ShopUser{}, bson.M{"holding_code": holdingCode}, shopUsers)
+	err := svc.pst.Find(ctx, &models.ShopUser{}, bson.M{"holdingcode": holdingCode}, shopUsers)
 
 	if err != nil {
 		return nil, err
@@ -412,7 +412,7 @@ func (repo ShopUserRepository) findByUserPage(ctx context.Context, userMatch bso
 	searchFilterList := []interface{}{}
 
 	searchInFields := []string{
-		"holding_code",
+		"holdingcode",
 		"names",
 	}
 
@@ -427,21 +427,21 @@ func (repo ShopUserRepository) findByUserPage(ctx context.Context, userMatch bso
 		bson.M{"$match": matchFilter},
 		bson.M{"$lookup": bson.M{
 			"from":         "shops",
-			"localField":   "holding_code",
-			"foreignField": "guid_fixed",
+			"localField":   "holdingcode",
+			"foreignField": "guidfixed",
 			"as":           "shopInfo",
 		}},
 		bson.M{"$lookup": bson.M{
 			"from": "currency",
-			"let":  bson.M{"holdingCode": "$holding_code"},
+			"let":  bson.M{"holdingCode": "$holdingcode"},
 			"pipeline": []bson.M{
 				{"$match": bson.M{
 					"$expr": bson.M{"$and": []interface{}{
-						bson.M{"$eq": []interface{}{"$holding_code", "$$holdingCode"}},
+						bson.M{"$eq": []interface{}{"$holdingcode", "$$holdingCode"}},
 						bson.M{"$ne": []interface{}{"$isdisabled", true}},
 					}},
-					"deletedat":  bson.M{"$exists": false},
-					"deleted_at": bson.M{"$exists": false},
+					"deletedat": bson.M{"$exists": false},
+					"deletedat": bson.M{"$exists": false},
 				}},
 				{"$project": bson.M{"code": 1}},
 			},
@@ -449,31 +449,31 @@ func (repo ShopUserRepository) findByUserPage(ctx context.Context, userMatch bso
 		}},
 		bson.M{
 			"$match": bson.M{
-				"shopInfo.0":          bson.M{"$exists": true},
-				"shopInfo.deleted_at": bson.M{"$exists": false},
-				"shopInfo.deletedAt":  bson.M{"$exists": false},
-				"shopInfo.deletedat":  bson.M{"$exists": false},
+				"shopInfo.0":         bson.M{"$exists": true},
+				"shopInfo.deletedat": bson.M{"$exists": false},
+				"shopInfo.deletedAt": bson.M{"$exists": false},
+				"shopInfo.deletedat": bson.M{"$exists": false},
 			},
 		},
 		bson.M{
 			"$project": bson.M{
-				"_id":               1,
-				"role":              1,
-				"isfavorite":        1,
-				"lastaccessedat":    1,
-				"isaccessdisabled":  1,
-				"accessdisabledat":  1,
-				"accessdisabledby":  1,
-				"accessenabledat":   1,
-				"accessenabledby":   1,
-				"main_holding_code": bson.M{"$first": "$shopInfo.main_holding_code"},
-				"holding_code":      bson.M{"$first": "$shopInfo.holding_code"},
-				"names":             bson.M{"$first": "$shopInfo.names"},
-				"branchcode":        bson.M{"$first": "$shopInfo.branchcode"},
-				"createdby":         bson.M{"$first": "$shopInfo.createdby"},
-				"language":          bson.M{"$first": "$shopInfo.settings.language"},
-				"languageconfigs":   bson.M{"$ifNull": []interface{}{bson.M{"$first": "$shopInfo.settings.languageconfigs"}, []interface{}{}}},
-				"base_currency":     bson.M{"$first": "$shopInfo.settings.base_currency"},
+				"_id":              1,
+				"role":             1,
+				"isfavorite":       1,
+				"lastaccessedat":   1,
+				"isaccessdisabled": 1,
+				"accessdisabledat": 1,
+				"accessdisabledby": 1,
+				"accessenabledat":  1,
+				"accessenabledby":  1,
+				"main_holdingcode": bson.M{"$first": "$shopInfo.main_holdingcode"},
+				"holdingcode":      bson.M{"$first": "$shopInfo.holdingcode"},
+				"names":            bson.M{"$first": "$shopInfo.names"},
+				"branchcode":       bson.M{"$first": "$shopInfo.branchcode"},
+				"createdby":        bson.M{"$first": "$shopInfo.createdby"},
+				"language":         bson.M{"$first": "$shopInfo.settings.language"},
+				"languageconfigs":  bson.M{"$ifNull": []interface{}{bson.M{"$first": "$shopInfo.settings.languageconfigs"}, []interface{}{}}},
+				"base_currency":    bson.M{"$first": "$shopInfo.settings.base_currency"},
 				"currencies": bson.M{"$map": bson.M{
 					"input": "$currencyInfo",
 					"as":    "currency",
@@ -534,7 +534,7 @@ func (repo ShopUserRepository) FindByUserInShopPageWithProfileMatches(ctx contex
 	}
 
 	filtter := bson.M{
-		"holding_code": holdingCode,
+		"holdingcode": holdingCode,
 	}
 	if len(searchFilterList) > 0 {
 		filtter["$or"] = searchFilterList
@@ -651,9 +651,9 @@ func isEmailUsername(username string) bool {
 }
 
 func (svc ShopUserRepository) shopUserIdentityFilter(ctx context.Context, holdingCode string, username string) bson.M {
-	filter := bson.M{"holding_code": holdingCode, "username": username}
+	filter := bson.M{"holdingcode": holdingCode, "username": username}
 	if userUID := svc.lookupUserUID(ctx, username); userUID != "" {
-		filter = bson.M{"holding_code": holdingCode, "user_uid": userUID}
+		filter = bson.M{"holdingcode": holdingCode, "user_uid": userUID}
 	}
 	return filter
 }

@@ -31,8 +31,8 @@ func TestLoadConfigRejectsNestedHoldingCode(t *testing.T) {
 	t.Setenv("BC_R2_SMOKE_HOLDING_CODE", "SHOP001/other")
 
 	_, err := loadConfig()
-	if err == nil || !strings.Contains(err.Error(), "single holding_code segment") {
-		t.Fatalf("expected single holding_code segment error, got %v", err)
+	if err == nil || !strings.Contains(err.Error(), "single holdingcode segment") {
+		t.Fatalf("expected single holdingcode segment error, got %v", err)
 	}
 }
 

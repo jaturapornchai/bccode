@@ -28,17 +28,17 @@ func NewConnectionPoolManager() *ConnectionPoolManager {
 
 // PoolConfig การตั้งค่า pool
 type PoolConfig struct {
-	MaxOpenConns     int           // จำนวน connection เปิดสูงสุด
-	MaxIdleConns     int           // จำนวน idle connection สูงสุด
-	ConnMaxLifetime  time.Duration // อายุของ connection
-	ConnMaxIdleTime  time.Duration // เวลา idle สูงสุด
-	HealthCheck      bool          // เปิด health check
+	MaxOpenConns    int           // จำนวน connection เปิดสูงสุด
+	MaxIdleConns    int           // จำนวน idle connection สูงสุด
+	ConnMaxLifetime time.Duration // อายุของ connection
+	ConnMaxIdleTime time.Duration // เวลา idle สูงสุด
+	HealthCheck     bool          // เปิด health check
 }
 
 // DefaultHighTrafficConfig การตั้งค่าสำหรับ high traffic (ลดลงครึ่งหนึ่งเพื่อไม่กระทบระบบอื่น)
 var DefaultHighTrafficConfig = PoolConfig{
-	MaxOpenConns:    75,     // ลดลงครึ่งหนึ่ง
-	MaxIdleConns:    25,     // ลดลงครึ่งหนึ่ง
+	MaxOpenConns:    75,               // ลดลงครึ่งหนึ่ง
+	MaxIdleConns:    25,               // ลดลงครึ่งหนึ่ง
 	ConnMaxLifetime: 30 * time.Minute, // ลดจาก 1 ชั่วโมงเป็น 30 นาที
 	ConnMaxIdleTime: 10 * time.Minute, // ลดจาก 15 เป็น 10 นาที
 	HealthCheck:     true,
@@ -106,7 +106,7 @@ func (pm *ConnectionPoolManager) createPool(databaseName string) (*sql.DB, error
 
 	pm.pools[databaseName] = db
 
-	logger.Success("Created connection pool for %s (max_open=%d, max_idle=%d, lifetime=%v)", 
+	logger.Success("Created connection pool for %s (max_open=%d, max_idle=%d, lifetime=%v)",
 		databaseName, config.MaxOpenConns, config.MaxIdleConns, config.ConnMaxLifetime)
 
 	return db, nil
@@ -180,14 +180,14 @@ func (pm *ConnectionPoolManager) GetStats() map[string]interface{} {
 	for databaseName, db := range pm.pools {
 		dbStats := db.Stats()
 		stats["pools"].(map[string]interface{})[databaseName] = map[string]interface{}{
-			"max_open_conns":      dbStats.MaxOpenConnections,
-			"open_conns":          dbStats.OpenConnections,
-			"idle_conns":          0, // sql.DBStats ไม่มี field นี้
-			"in_use_conns":        dbStats.InUse,
-			"wait_count":          dbStats.WaitCount,
-			"wait_duration":       dbStats.WaitDuration,
-			"max_idle_time":       0, // sql.DBStats ไม่มี field นี้
-			"max_lifetime":        0, // sql.DBStats ไม่มี field นี้
+			"max_open_conns": dbStats.MaxOpenConnections,
+			"open_conns":     dbStats.OpenConnections,
+			"idle_conns":     0, // sql.DBStats ไม่มี field นี้
+			"in_use_conns":   dbStats.InUse,
+			"wait_count":     dbStats.WaitCount,
+			"wait_duration":  dbStats.WaitDuration,
+			"max_idle_time":  0, // sql.DBStats ไม่มี field นี้
+			"max_lifetime":   0, // sql.DBStats ไม่มี field นี้
 		}
 	}
 
@@ -206,12 +206,12 @@ func (pm *ConnectionPoolManager) CleanupIdleConnections() {
 		// Note: sql.DB doesn't have a direct method to close idle connections
 		// but setting MaxIdleConns to 0 will prevent new idle connections
 		oldMaxIdle := 30 // ค่าเริ่มต้น
-		
+
 		db.SetMaxIdleConns(0)
 
 		// Restore original setting
 		db.SetMaxIdleConns(oldMaxIdle)
-		
+
 		logger.Debug("Cleaned idle connections for database: %s", databaseName)
 	}
 
@@ -227,10 +227,10 @@ func (pm *ConnectionPoolManager) PeriodicMaintenance(interval time.Duration) {
 		select {
 		case <-ticker.C:
 			logger.Info("Running periodic connection pool maintenance...")
-			
+
 			// Cleanup idle connections
 			pm.CleanupIdleConnections()
-			
+
 			// Log statistics
 			stats := pm.GetStats()
 			logger.Info("Connection pool statistics: %+v", stats)
@@ -266,7 +266,7 @@ func (opo *DatabasePoolOptimizer) OptimizePool(databaseName string) error {
 	}
 
 	stats := db.Stats()
-	
+
 	// ปรับปรุง connection limits ตามการใช้งาน
 	if stats.OpenConnections < stats.MaxOpenConnections/2 {
 		// ลดจำนวน max connections หากไม่ได้ใช้เต็ม
@@ -293,7 +293,7 @@ func (opo *DatabasePoolOptimizer) OptimizePool(databaseName string) error {
 func (opo *DatabasePoolOptimizer) GetOptimizerStats() map[string]interface{} {
 	return map[string]interface{}{
 		"optimization_enabled": opo.optimization,
-		"pool_stats":          opo.pm.GetStats(),
+		"pool_stats":           opo.pm.GetStats(),
 		"config": map[string]interface{}{
 			"max_open_conns":     opo.config.MaxOpenConns,
 			"max_idle_conns":     opo.config.MaxIdleConns,

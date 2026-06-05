@@ -30,7 +30,7 @@ type AccrualreceiveData struct {
 }
 
 type AccrualreceiveDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	AccrualreceiveData `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

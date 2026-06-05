@@ -30,7 +30,7 @@ type DeviceData struct {
 }
 
 type DeviceDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	DeviceData         `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

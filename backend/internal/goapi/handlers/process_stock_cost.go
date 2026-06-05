@@ -14,22 +14,22 @@ import (
 
 // ProcessStockCostRequest - request payload for process stock cost queries
 type ProcessStockCostRequest struct {
-	HoldingCode  string   `json:"holding_code"`
-	FromDate     string   `json:"from_date"`
-	ToDate       string   `json:"to_date"`
-	BranchCodes  []string `json:"branch_codes,omitempty"`
-	ProductCodes []string `json:"product_codes,omitempty"`
+	HoldingCode  string   `json:"holdingcode"`
+	FromDate     string   `json:"fromdate"`
+	ToDate       string   `json:"todate"`
+	BranchCodes  []string `json:"branchcodes,omitempty"`
+	ProductCodes []string `json:"productcodes,omitempty"`
 	Limit        int      `json:"limit,omitempty"`
 	Offset       int      `json:"offset,omitempty"`
 }
 
 // ProcessStockCostSummaryRequest - request for summary queries
 type ProcessStockCostSummaryRequest struct {
-	HoldingCode  string   `json:"holding_code"`
-	FromDate     string   `json:"from_date"`
-	ToDate       string   `json:"to_date"`
-	BranchCodes  []string `json:"branch_codes,omitempty"`
-	ProductCodes []string `json:"product_codes,omitempty"`
+	HoldingCode  string   `json:"holdingcode"`
+	FromDate     string   `json:"fromdate"`
+	ToDate       string   `json:"todate"`
+	BranchCodes  []string `json:"branchcodes,omitempty"`
+	ProductCodes []string `json:"productcodes,omitempty"`
 }
 
 // ProcessStockCostHandler - secure handler for process stock cost queries
@@ -46,7 +46,7 @@ func ProcessStockCostHandler(c echo.Context) error {
 	// Validate required fields
 	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "holding_code is required",
+			"error": "holdingcode is required",
 			"code":  "MISSING_HOLDING_CODE",
 		})
 	}
@@ -165,7 +165,7 @@ func ProcessStockCostSummaryHandler(c echo.Context) error {
 	// Validate required fields
 	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "holding_code is required",
+			"error": "holdingcode is required",
 			"code":  "MISSING_HOLDING_CODE",
 		})
 	}
@@ -272,7 +272,7 @@ func ProcessStockCostCheckHandler(c echo.Context) error {
 
 	if req.HoldingCode == "" || req.FromDate == "" || req.ToDate == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "holding_code, from_date and to_date are required",
+			"error": "holdingcode, from_date and to_date are required",
 			"code":  "MISSING_REQUIRED_FIELDS",
 		})
 	}

@@ -14,7 +14,7 @@ func NormalizeHoldingCode(value string) (string, error) {
 		return "", nil
 	}
 	if !holdingCodePattern.MatchString(holdingCode) {
-		return "", errors.New("holding_code invalid")
+		return "", errors.New("holdingcode invalid")
 	}
 	return holdingCode, nil
 }

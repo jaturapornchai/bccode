@@ -9,15 +9,15 @@ import (
 )
 
 type BranchPg struct {
-	HoldingCode string          `json:"holding_code" gorm:"column:holding_code;index;uniqueIndex:idx_branch_shop_company_code,where:deleted_at IS NULL"`
-	GuidFixed   string          `json:"guid_fixed" gorm:"column:guid_fixed;primaryKey"`
-	CompanyGuid string          `json:"company_guid" gorm:"column:company_guid;index;uniqueIndex:idx_branch_shop_company_code,where:deleted_at IS NULL"`
-	Code        string          `json:"code" gorm:"column:code;index;uniqueIndex:idx_branch_shop_company_code,where:deleted_at IS NULL"`
+	HoldingCode string          `json:"holdingcode" gorm:"column:holdingcode;index;uniqueIndex:idx_branch_shop_company_code,where:deletedat IS NULL"`
+	GuidFixed   string          `json:"guidfixed" gorm:"column:guidfixed;primaryKey"`
+	CompanyGuid string          `json:"companyguid" gorm:"column:companyguid;index;uniqueIndex:idx_branch_shop_company_code,where:deletedat IS NULL"`
+	Code        string          `json:"code" gorm:"column:code;index;uniqueIndex:idx_branch_shop_company_code,where:deletedat IS NULL"`
 	Names       pkgModels.JSONB `json:"names" gorm:"column:names;type:jsonb"`
-	IsActive    bool            `json:"is_active" gorm:"column:is_active;default:true"`
-	CreatedAt   time.Time       `json:"created_at"`
-	UpdatedAt   time.Time       `json:"updated_at"`
-	DeletedAt   gorm.DeletedAt  `json:"deleted_at" gorm:"index"`
+	IsActive    bool            `json:"isactive" gorm:"column:isactive;default:true"`
+	CreatedAt   time.Time       `json:"createdat"`
+	UpdatedAt   time.Time       `json:"updatedat"`
+	DeletedAt   gorm.DeletedAt  `json:"deletedat" gorm:"index"`
 }
 
 func (BranchPg) TableName() string {

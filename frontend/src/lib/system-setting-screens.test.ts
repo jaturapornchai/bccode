@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import { getSystemSettingConfig } from "./system-setting-screens";
 
 describe("system setting screen configs", () => {
-  it("uses the immutable guid_fixed field when deleting product units", () => {
+  it("uses the immutable guidfixed field when deleting product units", () => {
     const config = getSystemSettingConfig("productunit");
 
     expect(config?.basePath).toBe("/unit");
-    expect(config?.idField).toBe("guid_fixed");
+    expect(config?.idField).toBe("guidfixed");
   });
 
   it("keeps branch settings aligned with the legacy Flutter branch model", () => {
@@ -119,31 +119,31 @@ describe("system setting screen configs", () => {
       route: "/product_color",
       kind: "atlas",
       collection: "product_colors",
-      idField: "guid_fixed",
+      idField: "guidfixed",
     });
     expect(size).toMatchObject({
       route: "/product_size",
       kind: "atlas",
       collection: "product_sizes",
-      idField: "guid_fixed",
+      idField: "guidfixed",
     });
     expect(matrix).toMatchObject({
       route: "/product_variant_matrix",
       kind: "atlas",
       collection: "product_variant_matrices",
-      idField: "guid_fixed",
+      idField: "guidfixed",
     });
     expect(serialRegistry).toMatchObject({
       route: "/product_serial_registry",
       kind: "atlas",
       collection: "product_serial_registries",
-      idField: "guid_fixed",
+      idField: "guidfixed",
     });
     expect(channelPrice).toMatchObject({
       route: "/channel_price",
       kind: "atlas",
       collection: "product_channel_prices",
-      idField: "guid_fixed",
+      idField: "guidfixed",
     });
 
     expect(color?.fields.map((field) => field.key)).toContain("aliases");
@@ -158,7 +158,7 @@ describe("system setting screen configs", () => {
         "integration_profiles",
         "payload_examples",
         "serial_tracking_mode",
-        "business_codes",
+        "businesscodes",
       ]),
     );
     expect(serialRegistry?.fields.map((field) => field.key)).toEqual(
@@ -170,7 +170,7 @@ describe("system setting screen configs", () => {
         "barcode",
         "warranty_start_date",
         "warranty_end_date",
-        "business_codes",
+        "businesscodes",
       ]),
     );
     expect(channelPrice?.fields.map((field) => field.key)).toEqual(
@@ -183,7 +183,7 @@ describe("system setting screen configs", () => {
         "sale_price",
         "start_date",
         "end_date",
-        "business_codes",
+        "businesscodes",
       ]),
     );
   });

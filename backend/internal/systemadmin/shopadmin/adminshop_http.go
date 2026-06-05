@@ -145,7 +145,7 @@ func (s *ShopAdminHttp) ListShopUsers(ctx microservice.IContext) error {
 
 func (s *ShopAdminHttp) ListShopUsersByHoldingCode(ctx microservice.IContext) error {
 
-	holdingCode := ctx.QueryParam("holding_code")
+	holdingCode := ctx.QueryParam("holdingcode")
 
 	shopList, err := s.shopadminsvc.ListShopUsersByHoldingCode(holdingCode)
 

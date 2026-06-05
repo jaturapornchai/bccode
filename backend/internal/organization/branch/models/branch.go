@@ -24,46 +24,46 @@ type Branch struct {
 	Contact                  Contact                 `json:"contact" bson:"contact"`
 	POS                      BranchPOS               `json:"pos" bson:"pos"`
 	BusinessType             BranchBusinessType      `json:"businesstype" bson:"businesstype"`
-	CompanyRegistrationNo    string                  `json:"company_registration_no" bson:"company_registration_no"`
-	IsVatRegistered          bool                    `json:"is_vat_registered" bson:"is_vat_registered"`
+	CompanyRegistrationNo    string                  `json:"companyregistrationno" bson:"companyregistrationno"`
+	IsVatRegistered          bool                    `json:"isvatregistered" bson:"isvatregistered"`
 	PaymentRounding          PaymentRoundingSettings `json:"paymentrounding" bson:"paymentrounding"`
 	PointConfig              PointConfig             `json:"pointconfig" bson:"pointconfig"`
 	IsMainShop               bool                    `json:"ismainshop" bson:"ismainshop"`
-	MainHoldingCode          string                  `json:"main_holding_code" bson:"main_holding_code"`
+	MainHoldingCode          string                  `json:"mainholdingcode" bson:"mainholdingcode"`
 	ProductCenterType        int8                    `json:"productcentertype" bson:"productcentertype"`
 	DebtorCenterType         int8                    `json:"debtorcentertype" bson:"debtorcentertype"`
 	CouponUseType            int8                    `json:"couponusetype" bson:"couponusetype"`
-	BaseCurrency             string                  `json:"base_currency" bson:"base_currency"`
+	BaseCurrency             string                  `json:"basecurrency" bson:"basecurrency"`
 	Language                 string                  `json:"language" bson:"language"`
 	Timezone                 string                  `json:"timezone" bson:"timezone"`
-	DateFormat               string                  `json:"date_format" bson:"date_format"`
-	YearType                 string                  `json:"year_type" bson:"year_type"`
-	TimezoneLabel            string                  `json:"timezone_label" bson:"timezone_label"`
-	TimezoneOffset           string                  `json:"timezone_offset" bson:"timezone_offset"`
-	DecimalQuantity          int8                    `json:"decimal_quantity" bson:"decimal_quantity"`
-	DecimalPrice             int8                    `json:"decimal_price" bson:"decimal_price"`
-	DecimalDocument          int8                    `json:"decimal_document" bson:"decimal_document"`
-	IsRestaurant             bool                    `json:"is_restaurant" bson:"is_restaurant"`
-	IsTire                   bool                    `json:"is_tire" bson:"is_tire"`
-	IsAgriculture            bool                    `json:"is_agriculture" bson:"is_agriculture"`
-	IsPharmacy               bool                    `json:"is_pharmacy" bson:"is_pharmacy"`
-	IsRetail                 bool                    `json:"is_retail" bson:"is_retail"`
-	IsService                bool                    `json:"is_service" bson:"is_service"`
-	IsWholesale              bool                    `json:"is_wholesale" bson:"is_wholesale"`
-	IsManufacturing          bool                    `json:"is_manufacturing" bson:"is_manufacturing"`
-	IsImportExport           bool                    `json:"is_import_export" bson:"is_import_export"`
-	IsContractor             bool                    `json:"is_contractor" bson:"is_contractor"`
-	IsRental                 bool                    `json:"is_rental" bson:"is_rental"`
-	IsEcommerce              bool                    `json:"is_ecommerce" bson:"is_ecommerce"`
-	IsLogistics              bool                    `json:"is_logistics" bson:"is_logistics"`
-	IsEducation              bool                    `json:"is_education" bson:"is_education"`
-	IsHotel                  bool                    `json:"is_hotel" bson:"is_hotel"`
-	IsBeauty                 bool                    `json:"is_beauty" bson:"is_beauty"`
-	IsGoldShop               bool                    `json:"is_gold_shop" bson:"is_gold_shop"`
-	IsAccountingFirm         bool                    `json:"is_accounting_firm" bson:"is_accounting_firm"`
-	IsConstruction           bool                    `json:"is_construction" bson:"is_construction"`
-	IsElectronics            bool                    `json:"is_electronics" bson:"is_electronics"`
-	IsMobileShop             bool                    `json:"is_mobile_shop" bson:"is_mobile_shop"`
+	DateFormat               string                  `json:"dateformat" bson:"dateformat"`
+	YearType                 string                  `json:"yeartype" bson:"yeartype"`
+	TimezoneLabel            string                  `json:"timezonelabel" bson:"timezonelabel"`
+	TimezoneOffset           string                  `json:"timezoneoffset" bson:"timezoneoffset"`
+	DecimalQuantity          int8                    `json:"decimalquantity" bson:"decimalquantity"`
+	DecimalPrice             int8                    `json:"decimalprice" bson:"decimalprice"`
+	DecimalDocument          int8                    `json:"decimaldocument" bson:"decimaldocument"`
+	IsRestaurant             bool                    `json:"isrestaurant" bson:"isrestaurant"`
+	IsTire                   bool                    `json:"istire" bson:"istire"`
+	IsAgriculture            bool                    `json:"isagriculture" bson:"isagriculture"`
+	IsPharmacy               bool                    `json:"ispharmacy" bson:"ispharmacy"`
+	IsRetail                 bool                    `json:"isretail" bson:"isretail"`
+	IsService                bool                    `json:"isservice" bson:"isservice"`
+	IsWholesale              bool                    `json:"iswholesale" bson:"iswholesale"`
+	IsManufacturing          bool                    `json:"ismanufacturing" bson:"ismanufacturing"`
+	IsImportExport           bool                    `json:"isimportexport" bson:"isimportexport"`
+	IsContractor             bool                    `json:"iscontractor" bson:"iscontractor"`
+	IsRental                 bool                    `json:"isrental" bson:"isrental"`
+	IsEcommerce              bool                    `json:"isecommerce" bson:"isecommerce"`
+	IsLogistics              bool                    `json:"islogistics" bson:"islogistics"`
+	IsEducation              bool                    `json:"iseducation" bson:"iseducation"`
+	IsHotel                  bool                    `json:"ishotel" bson:"ishotel"`
+	IsBeauty                 bool                    `json:"isbeauty" bson:"isbeauty"`
+	IsGoldShop               bool                    `json:"isgoldshop" bson:"isgoldshop"`
+	IsAccountingFirm         bool                    `json:"isaccountingfirm" bson:"isaccountingfirm"`
+	IsConstruction           bool                    `json:"isconstruction" bson:"isconstruction"`
+	IsElectronics            bool                    `json:"iselectronics" bson:"iselectronics"`
+	IsMobileShop             bool                    `json:"ismobileshop" bson:"ismobileshop"`
 }
 
 type PaymentRoundingRule struct {
@@ -94,7 +94,7 @@ type BranchBusinessType struct {
 }
 
 type BranchPOS struct {
-	TaxID               string  `json:"tax_id" bson:"tax_id"`
+	TaxID               string  `json:"taxid" bson:"taxid"`
 	IsBom               bool    `json:"isbom" bson:"isbom"`
 	VatRate             float64 `json:"vatrate" bson:"vatrate"`
 	VatTypeSale         int8    `json:"vattypesale" bson:"vattypesale"`
@@ -107,12 +107,12 @@ type BranchPOS struct {
 
 type Contact struct {
 	Address         []models.NameX `json:"address" bson:"addressx"`
-	CountryCode     string         `json:"country_code" bson:"country_code"`
-	ProvinceCode    string         `json:"province_code" bson:"province_code"`
-	DistrictCode    string         `json:"district_code" bson:"district_code"`
-	SubDistrictCode string         `json:"sub_district_code" bson:"sub_district_code"`
-	ZipCode         string         `json:"zip_code" bson:"zip_code"`
-	PhoneNumber     string         `json:"phone_number" bson:"phone_number"`
+	CountryCode     string         `json:"countrycode" bson:"countrycode"`
+	ProvinceCode    string         `json:"provincecode" bson:"provincecode"`
+	DistrictCode    string         `json:"districtcode" bson:"districtcode"`
+	SubDistrictCode string         `json:"subdistrictcode" bson:"subdistrictcode"`
+	ZipCode         string         `json:"zipcode" bson:"zipcode"`
+	PhoneNumber     string         `json:"phonenumber" bson:"phonenumber"`
 	Latitude        float64        `json:"latitude" bson:"latitude"`
 	Longitude       float64        `json:"longitude" bson:"longitude"`
 }
@@ -132,7 +132,7 @@ type BranchData struct {
 }
 
 type BranchDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	BranchData         `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
@@ -174,13 +174,13 @@ type BranchInfoResponse struct {
 }
 
 type Department struct {
-	// GuidFixed string         `json:"guid_fixed"`
+	// GuidFixed string         `json:"guidfixed"`
 	Code  string         `json:"code"`
 	Names []models.NameX `json:"names"`
 }
 
 type BusinessType struct {
-	GuidFixed string         `json:"guid_fixed"`
+	GuidFixed string         `json:"guidfixed"`
 	Code      string         `json:"code"`
 	Names     []models.NameX `json:"names"`
 }
@@ -198,15 +198,15 @@ const (
 )
 
 type PointGeneralRule struct {
-	StartDate   time.Time `json:"start_date" bson:"start_date"`
-	EndDate     time.Time `json:"end_date" bson:"end_date"`
+	StartDate   time.Time `json:"startdate" bson:"startdate"`
+	EndDate     time.Time `json:"enddate" bson:"enddate"`
 	PayPerPoint float64   `json:"payperpoint" bson:"payperpoint"`
 	PointValue  float64   `json:"pointvalue" bson:"pointvalue"`
 }
 
 type PointSpecialRule struct {
-	StartDate       time.Time `json:"start_date" bson:"start_date"`
-	EndDate         time.Time `json:"end_date" bson:"end_date"`
+	StartDate       time.Time `json:"startdate" bson:"startdate"`
+	EndDate         time.Time `json:"enddate" bson:"enddate"`
 	Multiplier      float64   `json:"multiplier" bson:"multiplier"`
 	Sunday          bool      `json:"sunday" bson:"sunday"`
 	Monday          bool      `json:"monday" bson:"monday"`

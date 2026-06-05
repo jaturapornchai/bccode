@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"smlcloudplatform/internal/goapi/logger"
 	"io"
 	"net/http"
+	"smlcloudplatform/internal/goapi/logger"
 	"time"
 )
 
@@ -36,7 +36,7 @@ type EmbedRequest struct {
 // EmbedResponse - Ollama API response
 type EmbedResponse struct {
 	Embeddings [][]float32 `json:"embeddings"`
-	Model string      `json:"model"`
+	Model      string      `json:"model"`
 }
 
 // GenerateEmbeddings - สร้าง embeddings จาก Ollama E5

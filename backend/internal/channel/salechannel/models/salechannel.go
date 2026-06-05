@@ -12,7 +12,7 @@ type SaleChannel struct {
 	Code        string  `json:"code" bson:"code" validate:"required,min=1"`
 	Name        string  `json:"name" bson:"name" validate:"required,min=1"`
 	GP          float64 `json:"gp" bson:"gp"`
-	GPType      int8    `json:"gp_type" bson:"gp_type"`
+	GPType      int8    `json:"gptype" bson:"gptype"`
 	PriceNumber int8    `json:"price" bson:"price"`
 	ImageUri    string  `json:"imageuri" bson:"imageuri"`
 }
@@ -33,7 +33,7 @@ type SaleChannelData struct {
 }
 
 type SaleChannelDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	SaleChannelData    `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

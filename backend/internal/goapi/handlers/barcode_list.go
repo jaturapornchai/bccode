@@ -21,11 +21,11 @@ import (
 
 // BarcodeListRequest — Request body สำหรับดึงรายการบาร์โค้ด
 type BarcodeListRequest struct {
-	HoldingCode        string   `json:"holding_code"`
+	HoldingCode        string   `json:"holdingcode"`
 	Keyword            string   `json:"keyword"`
-	GroupCode          string   `json:"group_code"`
+	GroupCode          string   `json:"groupcode"`
 	GroupCodeLegacy    string   `json:"groupcode"`
-	BrandCode          string   `json:"brand_code"`
+	BrandCode          string   `json:"brandcode"`
 	BrandCodeLegacy    string   `json:"brandcode"`
 	CategoryCode       string   `json:"categorycode"`
 	ClassCode          string   `json:"classcode"`
@@ -33,16 +33,16 @@ type BarcodeListRequest struct {
 	GradeCode          string   `json:"gradecode"`
 	ModelCode          string   `json:"modelcode"`
 	PatternCode        string   `json:"patterncode"`
-	ItemType           *int     `json:"item_type"`
+	ItemType           *int     `json:"itemtype"`
 	ItemTypeLegacy     *int     `json:"itemtype"`
 	MaterialType       *int     `json:"materialtype"`
-	MaterialTypeLegacy *int     `json:"material_type"`
-	PriceMin           *float64 `json:"price_min"`
-	PriceMax           *float64 `json:"price_max"`
+	MaterialTypeLegacy *int     `json:"materialtype"`
+	PriceMin           *float64 `json:"pricemin"`
+	PriceMax           *float64 `json:"pricemax"`
 	Limit              int      `json:"limit"`
 	Offset             int      `json:"offset"`
-	SortField          string   `json:"sort_field"`
-	SortOrder          string   `json:"sort_order"`
+	SortField          string   `json:"sortfield"`
+	SortOrder          string   `json:"sortorder"`
 }
 
 func mapString(doc bson.M, key string) string {
@@ -177,8 +177,8 @@ func barcodeStockDimensions(doc bson.M) []map[string]string {
 				item = itemMap
 			}
 		}
-		dimensionGuid := mapStringAny(dim, "guid_fixed", "guidfixed", "guid", "dimension_guid", "dimension_code", "code")
-		itemGuid := mapStringAny(item, "guid_fixed", "guidfixed", "guid", "item_guid", "option_guid", "value_code", "code")
+		dimensionGuid := mapStringAny(dim, "guidfixed", "guidfixed", "guid", "dimension_guid", "dimension_code", "code")
+		itemGuid := mapStringAny(item, "guidfixed", "guidfixed", "guid", "item_guid", "option_guid", "value_code", "code")
 		dimensionName := firstMappedName(mapNames(dim, "names"))
 		itemName := firstMappedName(mapNames(item, "names"))
 		if dimensionGuid == "" && itemGuid == "" && dimensionName == "" && itemName == "" {
@@ -271,7 +271,7 @@ func BarcodeListHandler(c echo.Context) error {
 	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"success": false,
-			"message": "Missing required parameter: holding_code",
+			"message": "Missing required parameter: holdingcode",
 		})
 	}
 	if req.GroupCode == "" {
@@ -313,7 +313,7 @@ func BarcodeListHandler(c echo.Context) error {
 	defer cancel()
 
 	// Build MongoDB filter
-	filter := bson.M{"holding_code": req.HoldingCode}
+	filter := bson.M{"holdingcode": req.HoldingCode}
 
 	if req.Keyword != "" {
 		keyword := strings.TrimSpace(req.Keyword)
@@ -473,7 +473,7 @@ func BarcodeListHandler(c echo.Context) error {
 		dimensionKey := stockDimensionKey(stockDimensions)
 
 		resultList = append(resultList, map[string]interface{}{
-			"guid_fixed":          mapString(doc, "guidfixed"),
+			"guidfixed":           mapString(doc, "guidfixed"),
 			"barcode":             mapString(doc, "barcode"),
 			"names":               mapNames(doc, "names"),
 			"item_unit_code":      mapString(doc, "itemunitcode"),
@@ -521,7 +521,7 @@ func BarcodeListHandler(c echo.Context) error {
 			"material_type":       materialType,
 			"isusesubbarcodes":    mapBool(doc, "isusesubbarcodes"),
 			"checksum":            mapString(doc, "checksum"),
-			"holding_code":        mapString(doc, "holding_code"),
+			"holdingcode":         mapString(doc, "holdingcode"),
 			"refbarcodes":         doc["refbarcodes"],
 			"bom":                 doc["bom"],
 			"businesstypes":       doc["businesstypes"],
@@ -540,8 +540,8 @@ func BarcodeListHandler(c echo.Context) error {
 	// 1. Enrich Unit Info from MongoDB
 	if len(itemCodes) > 0 {
 		unitFilter := bson.M{
-			"holding_code": req.HoldingCode,
-			"itemcode":     bson.M{"$in": itemCodes},
+			"holdingcode": req.HoldingCode,
+			"itemcode":    bson.M{"$in": itemCodes},
 		}
 		unitCursor, err := collection.Find(ctx, unitFilter)
 		if err == nil {
@@ -649,7 +649,7 @@ func BarcodeListHandler(c echo.Context) error {
 				        %s,
 				        COALESCE(SUM(currenttotalvalue), 0)
 				   FROM inventory_stock_balances
-				  WHERE holding_code = $1 AND itemcode IN (%s)
+				  WHERE holdingcode = $1 AND itemcode IN (%s)
 				  GROUP BY itemcode`,
 				reservedExpr,
 				strings.Join(placeholders, ","),
@@ -685,7 +685,7 @@ func BarcodeListHandler(c echo.Context) error {
 					        COALESCE(SUM(reserved_qty), 0),
 					        COALESCE(SUM(available_qty), 0)
 					   FROM marketplace_stock_balances
-					  WHERE holding_code = $1 AND item_code IN (%s)
+					  WHERE holdingcode = $1 AND item_code IN (%s)
 					  GROUP BY item_code, COALESCE(dimension_key, '')`,
 					strings.Join(placeholders, ","),
 				)

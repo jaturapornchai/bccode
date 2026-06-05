@@ -23,7 +23,7 @@ const smltransactionCollectionName = "smlTransactions"
 type SMLTransaction struct {
 	models.PartitionIdentity `bson:"inline"`
 	DocNo                    string                 `json:"docno" bson:"docno"`
-	DynamicData              map[string]interface{} `json:"dynamic_data,omitempty"`
+	DynamicData              map[string]interface{} `json:"dynamicdata,omitempty"`
 	// MetaData2                map[string]map[string]interface{}
 }
 
@@ -42,7 +42,7 @@ type SMLTransactionData struct {
 }
 
 type SMLTransactionDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	SMLTransactionData `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

@@ -132,7 +132,7 @@ func (dm *DatabaseManager) connectPostgreSQL(config DatabaseConfig) error {
 	defer dm.postgresMutex.Unlock()
 
 	if config.PostgreSQLDatabase == "" {
-		return fmt.Errorf("database name is required (holding_code must not be empty)")
+		return fmt.Errorf("database name is required (holdingcode must not be empty)")
 	}
 
 	// Ensure sslmode has a valid value (empty = lib/pq defaults to "require")

@@ -13,7 +13,7 @@ type Department struct {
 	Code                     string          `json:"code" bson:"code"`
 	BranchCode               string          `json:"branchcode" bson:"branchcode"`
 	BranchGuid               string          `json:"branchguid" bson:"branchguid"`
-	BranchKey                string          `json:"branch_key" bson:"branch_key"`
+	BranchKey                string          `json:"branchkey" bson:"branchkey"`
 	Names                    *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
 }
 
@@ -32,7 +32,7 @@ type DepartmentData struct {
 }
 
 type DepartmentDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	DepartmentData     `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

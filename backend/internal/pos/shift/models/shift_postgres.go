@@ -9,14 +9,14 @@ import (
 )
 
 type ShiftPG struct {
-	HoldingCode              string `json:"holding_code" gorm:"column:holding_code"`
-	GuidFixed                string `json:"guid_fixed" bson:"guid_fixed" gorm:"column:guid_fixed;primaryKey"`
+	HoldingCode              string `json:"holdingcode" gorm:"column:holdingcode"`
+	GuidFixed                string `json:"guidfixed" bson:"guidfixed" gorm:"column:guidfixed;primaryKey"`
 	models.PartitionIdentity `gorm:"embedded;"`
 	PosId                    string       `json:"posid" gorm:"column:posid"`
 	DocNo                    string       `json:"docno" gorm:"column:docno"`
 	UserCode                 string       `json:"usercode" gorm:"column:usercode"`
 	Username                 models.JSONB `json:"names"  gorm:"column:names;type:jsonb" `
-	DocType                  int          `json:"doc_type" gorm:"column:doc_type"`
+	DocType                  int          `json:"doctype" gorm:"column:doctype"`
 	DocDate                  time.Time    `json:"docdate" gorm:"column:docdate"`
 	Remark                   string       `json:"remark" gorm:"column:remark"`
 	Amount                   float64      `json:"amount" gorm:"column:amount"`

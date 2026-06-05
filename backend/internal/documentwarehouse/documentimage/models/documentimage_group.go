@@ -27,25 +27,25 @@ type DocumentImageGroup struct {
 	References          []Reference       `json:"references" bson:"references"`
 	Tags                *[]string         `json:"tags,omitempty" bson:"tags,omitempty"`
 	ImageReferences     *[]ImageReference `json:"imagereferences" bson:"imagereferences"`
-	UploadedBy          string            `json:"uploaded_by" bson:"uploaded_by"`
-	UploadedAt          time.Time         `json:"uploaded_at" bson:"uploaded_at"`
+	UploadedBy          string            `json:"uploadedby" bson:"uploadedby"`
+	UploadedAt          time.Time         `json:"uploadedat" bson:"uploadedat"`
 	Status              int8              `json:"status" bson:"status"`
 	Description         string            `json:"description" bson:"description"`
-	TaskGUID            string            `json:"task_guid" bson:"task_guid" validate:"required,min=1"`
+	TaskGUID            string            `json:"taskguid" bson:"taskguid" validate:"required,min=1"`
 	PathTask            string            `json:"pathtask" bson:"pathtask"`
 	IsTaskCompleted     bool              `json:"iscompleted" bson:"iscompleted"`
-	RejectFromGroupGUID string            `json:"reject_from_group_guid" bson:"reject_from_group_guid"`
+	RejectFromGroupGUID string            `json:"rejectfromgroupguid" bson:"rejectfromgroupguid"`
 	XOrder              int               `json:"xorder" bson:"xorder"`
 	RejectRemark        string            `json:"rejectremark" bson:"rejectremark"`
-	StatusChangedBy     string            `json:"status_changed_by" bson:"status_changed_by"`
-	StatusChangedAt     time.Time         `json:"status_changed_at" bson:"status_changed_at"`
+	StatusChangedBy     string            `json:"statuschangedby" bson:"statuschangedby"`
+	StatusChangedAt     time.Time         `json:"statuschangedat" bson:"statuschangedat"`
 	StatusHistories     []StatusHistory   `json:"statushistories" bson:"statushistories"`
 }
 
 type StatusHistory struct {
 	Status    int8      `json:"status" bson:"status"`
-	ChangedBy string    `json:"changed_by" bson:"changed_by"`
-	ChangedAt time.Time `json:"changed_at" bson:"changed_at"`
+	ChangedBy string    `json:"changedby" bson:"changedby"`
+	ChangedAt time.Time `json:"changedat" bson:"changedat"`
 }
 
 type DocumentImageGroupBody struct {
@@ -55,7 +55,7 @@ type DocumentImageGroupBody struct {
 
 type ImageReferenceBody struct {
 	XOrder            int    `json:"xorder" bson:"xorder"`
-	DocumentImageGUID string `json:"document_image_guid" bson:"document_image_guid"`
+	DocumentImageGUID string `json:"documentimageguid" bson:"documentimageguid"`
 }
 type ImageReference struct {
 	ImageReferenceBody `bson:",inline"`
@@ -65,9 +65,9 @@ type ImageReference struct {
 	// ImageEditURI       string `json:"imageedituri" bson:"imageedituri"`
 	Name string `json:"name" bson:"name"`
 	// IsReject           bool      `json:"isreject" bson:"isreject"`
-	UploadedBy string    `json:"uploaded_by" bson:"uploaded_by"`
-	UploadedAt time.Time `json:"uploaded_at" bson:"uploaded_at"`
-	MetaFileAt time.Time `json:"meta_file_at" bson:"meta_file_at"`
+	UploadedBy string    `json:"uploadedby" bson:"uploadedby"`
+	UploadedAt time.Time `json:"uploadedat" bson:"uploadedat"`
+	MetaFileAt time.Time `json:"metafileat" bson:"metafileat"`
 }
 
 func (DocumentImageGroup) CollectionName() string {
@@ -89,7 +89,7 @@ type DocumentImageGroupData struct {
 }
 
 type DocumentImageGroupDoc struct {
-	ID                     primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                     primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	DocumentImageGroupData `bson:"inline"`
 	models.ActivityDoc     `bson:"inline"`
 	models.LastUpdate      `bson:"inline"`
@@ -104,7 +104,7 @@ type Status struct {
 }
 
 type XSortDocumentImageGroupRequest struct {
-	GUIDFixed string `json:"guid_fixed" bson:"guid_fixed" validate:"required,min=1"`
+	GUIDFixed string `json:"guidfixed" bson:"guidfixed" validate:"required,min=1"`
 	XOrder    uint   `json:"xorder" bson:"xorder" validate:"min=0,max=4294967295"`
 }
 

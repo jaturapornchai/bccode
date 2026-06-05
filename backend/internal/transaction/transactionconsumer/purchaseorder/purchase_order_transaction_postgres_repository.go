@@ -44,8 +44,8 @@ func (repo PurchaseOrderTransactionPGRepository) Create(doc models.PurchaseOrder
 
 func (repo PurchaseOrderTransactionPGRepository) Update(holdingCode string, docNo string, doc models.PurchaseOrderTransactionPG) error {
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"holding_code": holdingCode,
-		"docno":        docNo,
+		"holdingcode": holdingCode,
+		"docno":       docNo,
 	})
 
 	if err != nil {
@@ -59,7 +59,7 @@ func (repo *PurchaseOrderTransactionPGRepository) DeleteData(holdingCode string,
 	var details *[]models.PurchaseOrderDetailTransactionPG
 	tx := repo.pst.DBClient().Begin()
 
-	tx.Model(&models.PurchaseOrderDetailTransactionPG{}).Where(" holding_code=? AND docno=?", holdingCode, docNo).Find(&details)
+	tx.Model(&models.PurchaseOrderDetailTransactionPG{}).Where(" holdingcode=? AND docno=?", holdingCode, docNo).Find(&details)
 	for _, tmp := range *details {
 		// mark delete
 		err := tx.Delete(&models.PurchaseOrderDetailTransactionPG{}, tmp.ID).Error
@@ -70,8 +70,8 @@ func (repo *PurchaseOrderTransactionPGRepository) DeleteData(holdingCode string,
 	}
 
 	err := tx.Delete(models.PurchaseOrderTransactionPG{}, map[string]interface{}{
-		"holding_code": holdingCode,
-		"docno":        docNo,
+		"holdingcode": holdingCode,
+		"docno":       docNo,
 	}).Error
 
 	if err != nil {

@@ -236,19 +236,19 @@ func CopyMongoUatToDevHandler(c echo.Context) error {
 
 	if payLoad.SourceHoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "source_holding_code is required",
+			"error": "source_holdingcode is required",
 			"code":  "MISSING_SOURCE_HOLDING_CODE",
 		})
 	}
 	if payLoad.TargetHoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "target_holding_code is required",
+			"error": "target_holdingcode is required",
 			"code":  "MISSING_TARGET_HOLDING_CODE",
 		})
 	}
 	if payLoad.SourceHoldingCode == payLoad.TargetHoldingCode {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "source_holding_code and target_holding_code cannot be the same",
+			"error": "source_holdingcode and target_holdingcode cannot be the same",
 			"code":  "SAME_HOLDING_CODE",
 		})
 	}
@@ -280,14 +280,14 @@ func CopyMongoUatToDevHandler(c echo.Context) error {
 	}()
 
 	return c.JSON(http.StatusAccepted, map[string]any{
-		"message":             "Copy process started in background",
-		"status":              "accepted",
-		"code":                202,
-		"source_environment":  sourceEnv,
-		"target_environment":  targetEnv,
-		"source_holding_code": payLoad.SourceHoldingCode,
-		"target_holding_code": payLoad.TargetHoldingCode,
-		"note":                "Check server logs for progress",
+		"message":            "Copy process started in background",
+		"status":             "accepted",
+		"code":               202,
+		"source_environment": sourceEnv,
+		"target_environment": targetEnv,
+		"source_holdingcode": payLoad.SourceHoldingCode,
+		"target_holdingcode": payLoad.TargetHoldingCode,
+		"note":               "Check server logs for progress",
 	})
 }
 
@@ -334,14 +334,14 @@ func copyMongoData(ctx context.Context, payLoad models.PayLoadCopyMongoStruct) e
 	logger.Info("Source HoldingCode: %s", payLoad.SourceHoldingCode)
 	logger.Info("Target HoldingCode: %s", payLoad.TargetHoldingCode)
 
-	// Scan collections with holding_code field
+	// Scan collections with holdingcode field
 	logger.Info("\n=== Scanning Collections ===")
 	collectionsWithHoldingCode := []string{}
 	for i, collectionName := range collections {
 		logger.Info("  [%d/%d] Scanning: %s", i+1, len(collections), collectionName)
 
 		collection := sourceDB.Collection(collectionName)
-		filter := bson.M{"holding_code": bson.M{"$exists": true}}
+		filter := bson.M{"holdingcode": bson.M{"$exists": true}}
 
 		countCtx, countCancel := context.WithTimeout(ctx, 5*time.Second)
 		count, err := collection.CountDocuments(countCtx, filter)
@@ -354,19 +354,19 @@ func copyMongoData(ctx context.Context, payLoad models.PayLoadCopyMongoStruct) e
 
 		if count > 0 {
 			collectionsWithHoldingCode = append(collectionsWithHoldingCode, collectionName)
-			logger.Info("      ✓ %d documents with holding_code", count)
+			logger.Info("      ✓ %d documents with holdingcode", count)
 		}
 	}
 
 	logger.Info("\n=== Summary ===")
-	logger.Info("Collections with holding_code: %d/%d", len(collectionsWithHoldingCode), len(collections))
+	logger.Info("Collections with holdingcode: %d/%d", len(collectionsWithHoldingCode), len(collections))
 
 	// Delete existing documents in target
 	logger.Info("\n=== Cleaning Target ===")
 	totalDeleted := int64(0)
 	for _, collectionName := range collectionsWithHoldingCode {
 		collection := targetDB.Collection(collectionName)
-		deleteFilter := bson.M{"holding_code": payLoad.TargetHoldingCode}
+		deleteFilter := bson.M{"holdingcode": payLoad.TargetHoldingCode}
 
 		deleteCtx, deleteCancel := context.WithTimeout(ctx, 30*time.Second)
 		deleteResult, err := collection.DeleteMany(deleteCtx, deleteFilter)
@@ -395,7 +395,7 @@ func copyMongoData(ctx context.Context, payLoad models.PayLoadCopyMongoStruct) e
 		sourceCollection := sourceDB.Collection(collectionName)
 		targetCollection := targetDB.Collection(collectionName)
 
-		copyFilter := bson.M{"holding_code": payLoad.SourceHoldingCode}
+		copyFilter := bson.M{"holdingcode": payLoad.SourceHoldingCode}
 
 		copyCtx, copyCancel := context.WithTimeout(ctx, 5*time.Minute)
 
@@ -420,7 +420,7 @@ func copyMongoData(ctx context.Context, payLoad models.PayLoadCopyMongoStruct) e
 			}
 
 			delete(doc, "_id")
-			doc["holding_code"] = payLoad.TargetHoldingCode
+			doc["holdingcode"] = payLoad.TargetHoldingCode
 			documents = append(documents, doc)
 			batchSize++
 
@@ -470,7 +470,7 @@ func copyMongoData(ctx context.Context, payLoad models.PayLoadCopyMongoStruct) e
 		}
 
 		if len(documents) == 0 && batchSize == 0 {
-			logger.Info("⚠️  No documents in %s with holding_code %s", collectionName, payLoad.SourceHoldingCode)
+			logger.Info("⚠️  No documents in %s with holdingcode %s", collectionName, payLoad.SourceHoldingCode)
 		}
 	}
 
@@ -524,7 +524,7 @@ func PreviewCopyMongoHandler(c echo.Context) error {
 	}
 
 	if payLoad.SourceHoldingCode == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "source_holding_code is required"})
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "source_holdingcode is required"})
 	}
 	sourceEnv, targetEnv, err := validateMongoCopyEnvironment(payLoad)
 	if err != nil {
@@ -564,7 +564,7 @@ func PreviewCopyMongoHandler(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": fmt.Sprintf("ดึง collection list ไม่ได้: %v", err)})
 	}
 
-	// นับ documents ที่มี holding_code = source ในแต่ละ collection
+	// นับ documents ที่มี holdingcode = source ในแต่ละ collection
 	type CollectionInfo struct {
 		Name  string `json:"name"`
 		Count int64  `json:"count"`
@@ -575,7 +575,7 @@ func PreviewCopyMongoHandler(c echo.Context) error {
 
 	for _, collName := range collections {
 		coll := sourceDB.Collection(collName)
-		filter := bson.M{"holding_code": payLoad.SourceHoldingCode}
+		filter := bson.M{"holdingcode": payLoad.SourceHoldingCode}
 
 		countCtx, countCancel := context.WithTimeout(ctx, 5*time.Second)
 		count, err := coll.CountDocuments(countCtx, filter)
@@ -595,13 +595,13 @@ func PreviewCopyMongoHandler(c echo.Context) error {
 	logger.Info("Preview: %d collections, %d total documents for shop %s", len(results), totalDocs, payLoad.SourceHoldingCode)
 
 	return c.JSON(http.StatusOK, map[string]any{
-		"success":             true,
-		"source_environment":  sourceEnv,
-		"target_environment":  targetEnv,
-		"source_holding_code": payLoad.SourceHoldingCode,
-		"collections":         results,
-		"collection_count":    len(results),
-		"total_documents":     totalDocs,
+		"success":            true,
+		"source_environment": sourceEnv,
+		"target_environment": targetEnv,
+		"source_holdingcode": payLoad.SourceHoldingCode,
+		"collections":        results,
+		"collection_count":   len(results),
+		"total_documents":    totalDocs,
 	})
 }
 
@@ -643,7 +643,7 @@ func ListSourceShopsHandler(c echo.Context) error {
 
 	// Query shops — เอาเฉพาะ field ที่ต้องการ
 	projection := bson.M{
-		"guid_fixed": 1,
+		"guidfixed":  1,
 		"names":      1,
 		"name1":      1,
 		"branchcode": 1,
@@ -652,7 +652,7 @@ func ListSourceShopsHandler(c echo.Context) error {
 
 	// ไม่เอา shop ที่ถูกลบ
 	filter := bson.M{
-		"deleted_at": bson.M{"$exists": false},
+		"deletedat": bson.M{"$exists": false},
 	}
 
 	cursor, err := collection.Find(ctx, filter, findOpts)

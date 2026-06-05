@@ -48,10 +48,10 @@ func connectAndService(holdingCode string) (*InventoryCostingService, error) {
 // === Config Handlers ===
 
 func GetCostingConfig(c echo.Context) error {
-	holdingCode := c.QueryParam("holding_code")
+	holdingCode := c.QueryParam("holdingcode")
 	itemCode := c.Param("itemcode")
 	if holdingCode == "" || itemCode == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ต้องระบุ holding_code และ itemcode"})
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ต้องระบุ holdingcode และ itemcode"})
 	}
 
 	svc, err := connectAndService(holdingCode)
@@ -67,7 +67,7 @@ func GetCostingConfig(c echo.Context) error {
 }
 
 func UpdateCostingConfig(c echo.Context) error {
-	holdingCode := c.QueryParam("holding_code")
+	holdingCode := c.QueryParam("holdingcode")
 	itemCode := c.Param("itemcode")
 
 	var config m.ProductCostingConfig
@@ -97,7 +97,7 @@ func ProcessReceipt(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ข้อมูลไม่ถูกต้อง"})
 	}
 	if params.HoldingCode == "" || params.ItemCode == "" || params.Qty <= 0 {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ต้องระบุ holding_code, item_code, qty > 0"})
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ต้องระบุ holdingcode, item_code, qty > 0"})
 	}
 
 	svc, err := connectAndService(params.HoldingCode)
@@ -205,9 +205,9 @@ func ProcessPurchaseReturn(c echo.Context) error {
 // === Report Handlers ===
 
 func GetInventoryValuation(c echo.Context) error {
-	holdingCode := c.QueryParam("holding_code")
+	holdingCode := c.QueryParam("holdingcode")
 	if holdingCode == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ต้องระบุ holding_code"})
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ต้องระบุ holdingcode"})
 	}
 
 	svc, err := connectAndService(holdingCode)
@@ -223,13 +223,13 @@ func GetInventoryValuation(c echo.Context) error {
 }
 
 func GetStockCard(c echo.Context) error {
-	holdingCode := c.QueryParam("holding_code")
+	holdingCode := c.QueryParam("holdingcode")
 	itemCode := c.Param("itemcode")
 	fromDate := c.QueryParam("from")
 	toDate := c.QueryParam("to")
 
 	if holdingCode == "" || itemCode == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ต้องระบุ holding_code และ itemcode"})
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ต้องระบุ holdingcode และ itemcode"})
 	}
 
 	from, err := time.Parse("2006-01-02", fromDate)
@@ -254,12 +254,12 @@ func GetStockCard(c echo.Context) error {
 }
 
 func GetCostLayers(c echo.Context) error {
-	holdingCode := c.QueryParam("holding_code")
+	holdingCode := c.QueryParam("holdingcode")
 	itemCode := c.Param("itemcode")
 	whCode := c.QueryParam("whcode")
 
 	if holdingCode == "" || itemCode == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ต้องระบุ holding_code และ itemcode"})
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ต้องระบุ holdingcode และ itemcode"})
 	}
 
 	svc, err := connectAndService(holdingCode)
@@ -277,9 +277,9 @@ func GetCostLayers(c echo.Context) error {
 // === Database Handler ===
 
 func CreateTablesHandler(c echo.Context) error {
-	holdingCode := c.QueryParam("holding_code")
+	holdingCode := c.QueryParam("holdingcode")
 	if holdingCode == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ต้องระบุ holding_code"})
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ต้องระบุ holdingcode"})
 	}
 
 	db, err := myPg.PgSqlFastConnect(holdingCode)

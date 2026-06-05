@@ -10,7 +10,7 @@ const shopcouponCollectionName = "shopCoupon"
 
 type ShopCoupon struct {
 	models.PartitionIdentity `bson:"inline"`
-	CouponType               int16  `json:"coupon_type" bson:"coupon_type"`
+	CouponType               int16  `json:"coupontype" bson:"coupontype"`
 	Logo                     string `json:"logo" bson:"logo"`
 	models.Name              `bson:"inline"`
 }
@@ -30,7 +30,7 @@ type ShopCouponData struct {
 }
 
 type ShopCouponDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	ShopCouponData     `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

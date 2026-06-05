@@ -42,7 +42,7 @@ func (repo ShopRepository) Create(ctx context.Context, shop models.ShopDoc) (str
 
 func (repo ShopRepository) Update(ctx context.Context, guid string, shop models.ShopDoc) error {
 	filterDoc := map[string]interface{}{
-		"guid_fixed": guid,
+		"guidfixed": guid,
 	}
 	err := repo.pst.UpdateOne(ctx, &models.ShopDoc{}, filterDoc, shop)
 
@@ -55,7 +55,7 @@ func (repo ShopRepository) Update(ctx context.Context, guid string, shop models.
 
 func (repo ShopRepository) FindByGuid(ctx context.Context, guid string) (models.ShopDoc, error) {
 	findShop := &models.ShopDoc{}
-	err := repo.pst.FindOne(ctx, &models.ShopDoc{}, bson.M{"guid_fixed": guid, "deleted_at": bson.M{"$exists": false}}, findShop)
+	err := repo.pst.FindOne(ctx, &models.ShopDoc{}, bson.M{"guidfixed": guid, "deletedat": bson.M{"$exists": false}}, findShop)
 
 	if err != nil {
 		return repo.FindByHoldingCode(ctx, guid)
@@ -68,7 +68,7 @@ func (repo ShopRepository) FindByGuid(ctx context.Context, guid string) (models.
 
 func (repo ShopRepository) FindByHoldingCode(ctx context.Context, holdingCode string) (models.ShopDoc, error) {
 	findShop := &models.ShopDoc{}
-	err := repo.pst.FindOne(ctx, &models.ShopDoc{}, bson.M{"holding_code": holdingCode, "deleted_at": bson.M{"$exists": false}}, findShop)
+	err := repo.pst.FindOne(ctx, &models.ShopDoc{}, bson.M{"holdingcode": holdingCode, "deletedat": bson.M{"$exists": false}}, findShop)
 
 	if err != nil {
 		return models.ShopDoc{}, err
@@ -81,7 +81,7 @@ func (repo ShopRepository) FindByHoldingCode(ctx context.Context, holdingCode st
 
 func (repo ShopRepository) FindPage(ctx context.Context, pageable micromodels.Pageable) ([]models.ShopInfo, mongopagination.PaginationData, error) {
 	filterQueries := bson.M{
-		"deleted_at": bson.M{"$exists": false},
+		"deletedat": bson.M{"$exists": false},
 		"name1": bson.M{"$regex": primitive.Regex{
 			Pattern: ".*" + pageable.Query + ".*",
 			Options: "",
@@ -99,7 +99,7 @@ func (repo ShopRepository) FindPage(ctx context.Context, pageable micromodels.Pa
 }
 
 func (repo ShopRepository) Delete(ctx context.Context, guid string, username string) error {
-	err := repo.pst.SoftDelete(ctx, &models.ShopDoc{}, username, bson.M{"guid_fixed": guid, "deleted_at": bson.M{"$exists": false}})
+	err := repo.pst.SoftDelete(ctx, &models.ShopDoc{}, username, bson.M{"guidfixed": guid, "deletedat": bson.M{"$exists": false}})
 	if err != nil {
 		return err
 	}

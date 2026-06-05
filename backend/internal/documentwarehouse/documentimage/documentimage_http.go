@@ -617,10 +617,10 @@ func (h DocumentImageHttp) ListDocumentImageGroup(ctx microservice.IContext) err
 
 			if err == nil && len(docRef) > 0 {
 				// User นี้ select เอกสารไว้ -> แสดงเฉพาะเอกสารนั้น
-				matchFilters["guid_fixed"] = docRef
+				matchFilters["guidfixed"] = docRef
 			} else {
 				// ✅ User นี้ยังไม่ได้ select -> ไม่แสดงอะไรเลย (empty result)
-				matchFilters["guid_fixed"] = "" // force empty result
+				matchFilters["guidfixed"] = "" // force empty result
 			}
 		} else {
 			// ✅ Filter ทั้ง shop (reserveby=0 หรือไม่ส่ง) - แสดงเฉพาะที่ยังไม่มีใคร select
@@ -631,7 +631,7 @@ func (h DocumentImageHttp) ListDocumentImageGroup(ctx microservice.IContext) err
 				for docRef := range docRefPoolList {
 					docRefList = append(docRefList, docRef)
 				}
-				matchFilters["guid_fixed"] = bson.M{"$nin": docRefList}
+				matchFilters["guidfixed"] = bson.M{"$nin": docRefList}
 			}
 		}
 

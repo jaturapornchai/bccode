@@ -39,8 +39,8 @@ func (repo PaymentRepository) Create(doc models.TransactionPayment) error {
 func (repo PaymentRepository) Update(holdingCode string, docNo string, doc models.TransactionPayment) error {
 
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"holding_code": holdingCode,
-		"docno":        docNo,
+		"holdingcode": holdingCode,
+		"docno":       docNo,
 	})
 
 	if err != nil {

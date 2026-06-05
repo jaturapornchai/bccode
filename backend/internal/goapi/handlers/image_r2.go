@@ -167,8 +167,8 @@ func getImageFromR2(client *s3.Client, r2Key string) ([]byte, string, error) {
 // ImageUploadHandler - อัปโหลดรูปภาพไปยัง R2 และบันทึก metadata ใน MongoDB
 // POST /image/upload
 func ImageUploadHandler(c echo.Context) error {
-	// Get holding_code from auth context and reject multipart tenant tampering.
-	holdingCode, authStatus := storageAuthorizedHoldingCode(c, c.FormValue("holding_code"))
+	// Get holdingcode from auth context and reject multipart tenant tampering.
+	holdingCode, authStatus := storageAuthorizedHoldingCode(c, c.FormValue("holdingcode"))
 	if authStatus != http.StatusOK {
 		message := "shop not selected"
 		if authStatus == http.StatusForbidden {
@@ -261,8 +261,8 @@ func ImageUploadHandler(c echo.Context) error {
 	hash := sha256.Sum256(buf.Bytes())
 	hashStr := hex.EncodeToString(hash[:])[:16] // ใช้ 16 ตัวแรก
 
-	// Generate filename: holding_code/category/timestamp_hash.ext
-	// ถ้ามี category จะแยก folder เช่น holding_code/slip_money_in/filename.png
+	// Generate filename: holdingcode/category/timestamp_hash.ext
+	// ถ้ามี category จะแยก folder เช่น holdingcode/slip_money_in/filename.png
 	timestamp := time.Now().Format("20060102_150405")
 	fileName := fmt.Sprintf("%s_%s%s", timestamp, hashStr, ext)
 	category := c.FormValue("category")
@@ -350,7 +350,7 @@ func ImageUploadHandler(c echo.Context) error {
 	})
 }
 
-// ImageListHandler - ดึงรายการรูปภาพตาม holding_code
+// ImageListHandler - ดึงรายการรูปภาพตาม holdingcode
 // POST /image/list
 func ImageListHandler(c echo.Context) error {
 	if atlasClient == nil {
@@ -384,13 +384,13 @@ func ImageListHandler(c echo.Context) error {
 	}
 
 	// Build filter
-	filter := bson.M{"holding_code": holdingCode}
+	filter := bson.M{"holdingcode": holdingCode}
 	if req.Category != "" {
 		filter["category"] = req.Category
 	}
 
 	// Query options
-	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}})
+	opts := options.Find().SetSort(bson.D{{Key: "createdat", Value: -1}})
 	if req.Limit > 0 {
 		opts.SetLimit(req.Limit)
 	} else {
@@ -451,7 +451,7 @@ func ImageListHandler(c echo.Context) error {
 			CreatedAt:    img.CreatedAt,
 			UpdatedAt:    img.UpdatedAt,
 		}
-		// สร้าง private backend URL เฉพาะไฟล์ที่อยู่ใต้ holding_code เดียวกัน
+		// สร้าง private backend URL เฉพาะไฟล์ที่อยู่ใต้ holdingcode เดียวกัน
 		if client != nil && img.R2Key != "" && storageObjectBelongsToShop(img.R2Key, img.HoldingCode) {
 			url, err := getPresignedURL(client, img.R2Key, 60)
 			if err == nil {
@@ -560,8 +560,8 @@ func ImageGetHandler(c echo.Context) error {
 
 	collection := atlasDB.Collection("images")
 	filter := bson.M{
-		"holding_code": holdingCode,
-		"file_name":    req.FileName,
+		"holdingcode": holdingCode,
+		"file_name":   req.FileName,
 	}
 
 	var imageDoc models.ImageMetadata
@@ -661,7 +661,7 @@ func ImageDeleteHandler(c echo.Context) error {
 	collection := atlasDB.Collection("images")
 
 	// Build filter
-	filter := bson.M{"holding_code": holdingCode}
+	filter := bson.M{"holdingcode": holdingCode}
 	if req.ImageID != "" {
 		oid, err := primitive.ObjectIDFromHex(req.ImageID)
 		if err != nil {
@@ -772,8 +772,8 @@ func ImageInfoHandler(c echo.Context) error {
 
 	collection := atlasDB.Collection("images")
 	filter := bson.M{
-		"holding_code": holdingCode,
-		"file_name":    req.FileName,
+		"holdingcode": holdingCode,
+		"file_name":   req.FileName,
 	}
 
 	var imageDoc models.ImageMetadata
@@ -867,7 +867,7 @@ func ImageVerifyHandler(c echo.Context) error {
 	collection := atlasDB.Collection("images")
 
 	// Build filter
-	filter := bson.M{"holding_code": holdingCode}
+	filter := bson.M{"holdingcode": holdingCode}
 	if req.ImageID != "" {
 		oid, err := primitive.ObjectIDFromHex(req.ImageID)
 		if err != nil {
@@ -946,7 +946,7 @@ func ImageVerifyHandler(c echo.Context) error {
 		"$set": bson.M{
 			"verified":    verifyResult.Success,
 			"verified_at": now,
-			"updated_at":  now,
+			"updatedat":   now,
 			"slip_type":   detectedType, // bank หรือ truewallet
 		},
 	}

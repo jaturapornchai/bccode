@@ -92,9 +92,9 @@ func (repo AccountPeriodMasterRepository) FindByPeriod(ctx context.Context, hold
 func (repo AccountPeriodMasterRepository) FindAll(ctx context.Context, holdingCode string) ([]models.AccountPeriodMasterDoc, error) {
 
 	filterQuery := bson.M{
-		"holding_code": holdingCode,
-		"isdisabled":   false,
-		"deleted_at":   bson.M{"$exists": false},
+		"holdingcode": holdingCode,
+		"isdisabled":  false,
+		"deletedat":   bson.M{"$exists": false},
 	}
 
 	findDocList := []models.AccountPeriodMasterDoc{}

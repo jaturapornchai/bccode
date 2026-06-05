@@ -218,18 +218,18 @@ func QueueStatusHandler(c echo.Context) error {
 
 // QueueShopStatusHandler - ตรวจสอบสถานะ queue ของ shop ที่ระบุ (PostgreSQL-based)
 func QueueShopStatusHandler(c echo.Context) error {
-	holdingCode := c.Param("holding_code")
+	holdingCode := c.Param("holdingcode")
 	if holdingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  "error",
-			"message": "holding_code parameter is required",
+			"message": "holdingcode parameter is required",
 		})
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"status":       "ok",
-		"holding_code": holdingCode,
-		"message":      "Queue now managed by PostgreSQL - use SystemHealthHandler for details",
+		"status":      "ok",
+		"holdingcode": holdingCode,
+		"message":     "Queue now managed by PostgreSQL - use SystemHealthHandler for details",
 	})
 }
 

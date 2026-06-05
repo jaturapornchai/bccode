@@ -25,14 +25,14 @@ const (
 // WebhookHandler handles LINE webhook events
 // POST /api/lineoa/webhook
 func WebhookHandler(c echo.Context) error {
-	// Get holding_code from query parameter or header
-	holdingCode := c.QueryParam("holding_code")
+	// Get holdingcode from query parameter or header
+	holdingCode := c.QueryParam("holdingcode")
 	if holdingCode == "" {
 		holdingCode = c.Request().Header.Get("X-Shop-ID")
 	}
 
 	if holdingCode == "" {
-		logger.Warn("[LINE Webhook] Missing holding_code")
+		logger.Warn("[LINE Webhook] Missing holdingcode")
 		return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 	}
 
@@ -428,7 +428,7 @@ func getMainMenuQuickReplies(holdingCode string) *LineQuickReply {
 	// Add LIFF link button if configured
 	liffID, err := getShopLiffID(holdingCode)
 	if err == nil && liffID != "" {
-		liffURL := fmt.Sprintf("https://liff.line.me/%s?holding_code=%s", liffID, holdingCode)
+		liffURL := fmt.Sprintf("https://liff.line.me/%s?holdingcode=%s", liffID, holdingCode)
 		items = append(items, LineQuickReplyItem{
 			Type: "action",
 			Action: LineQuickAction{
@@ -508,8 +508,8 @@ func getShopAccessToken(holdingCode string) (string, error) {
 
 	var config ConfigDoc
 	err := collection.FindOne(ctx, bson.M{
-		"holding_code": holdingCode,
-		"is_active":    true,
+		"holdingcode": holdingCode,
+		"isactive":    true,
 	}).Decode(&config)
 
 	if err != nil {
@@ -571,7 +571,7 @@ func buildLiffQuickReplyItem(label, liffURL string) LineQuickReplyItem {
 
 // getLiffURL generates LIFF URL with parameters
 func getLiffURL(holdingCode, liffID string, params map[string]string) string {
-	url := fmt.Sprintf("https://liff.line.me/%s?holding_code=%s", liffID, holdingCode)
+	url := fmt.Sprintf("https://liff.line.me/%s?holdingcode=%s", liffID, holdingCode)
 	for key, value := range params {
 		url += fmt.Sprintf("&%s=%s", key, value)
 	}
@@ -693,7 +693,7 @@ func handleLinkAccountCommand(holdingCode string, event LineEvent) {
 	}
 
 	// Build LIFF URL
-	liffURL := fmt.Sprintf("https://liff.line.me/%s?token=%s&holding_code=%s", liffID, linkToken, holdingCode)
+	liffURL := fmt.Sprintf("https://liff.line.me/%s?token=%s&holdingcode=%s", liffID, linkToken, holdingCode)
 
 	// Send Flex message with LIFF button
 	sendFlexMessageWithLiffButton(
@@ -719,8 +719,8 @@ func getShopLiffID(holdingCode string) (string, error) {
 
 	var config ConfigDoc
 	err := collection.FindOne(ctx, bson.M{
-		"holding_code": holdingCode,
-		"is_active":    true,
+		"holdingcode": holdingCode,
+		"isactive":    true,
 	}).Decode(&config)
 
 	if err != nil {

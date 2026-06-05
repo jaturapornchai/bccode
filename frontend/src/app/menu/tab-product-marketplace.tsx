@@ -201,12 +201,12 @@ export function TabProductMarketplace({
 
       if (holdingCode && marketItemId) {
         const hasShopMap = nextProductMaps.some(
-          m => m.platform === platform && m.holding_code === holdingCode && m.market_item_id === marketItemId
+          m => m.platform === platform && m.holdingcode === holdingCode && m.market_item_id === marketItemId
         );
         if (!hasShopMap) {
           nextProductMaps.push({
             ...emptyMarketplaceProductMap(platform),
-            holding_code: holdingCode,
+            holdingcode: holdingCode,
             market_item_id: marketItemId,
             sync_status: "linked",
           });
@@ -214,7 +214,7 @@ export function TabProductMarketplace({
       }
 
       const mappings = entry.marketplace_sku_mappings || [];
-      const matchMapIdx = mappings.findIndex(m => m.platform === platform && m.holding_code === holdingCode);
+      const matchMapIdx = mappings.findIndex(m => m.platform === platform && m.holdingcode === holdingCode);
       let nextMappings = [...mappings];
 
       const mappingData: MarketplaceSKUMap = {
@@ -325,14 +325,14 @@ export function TabProductMarketplace({
   // Update specific SKU mapping
   const handleSkuMapChange = useCallback((barcodeIdx: number, holdingCode: string, fields: Partial<MarketplaceSKUMap>) => {
     const market_item_id = value.marketplace_products?.find(
-      (m) => m.platform === platform && m.holding_code === holdingCode
+      (m) => m.platform === platform && m.holdingcode === holdingCode
     )?.market_item_id || "";
 
     setRefBarcodes((rows) =>
       rows.map((row, idx) => {
         if (idx !== barcodeIdx) return row;
         const mappings = row.marketplace_sku_mappings || [];
-        const matchIdx = mappings.findIndex(m => m.platform === platform && m.holding_code === holdingCode);
+        const matchIdx = mappings.findIndex(m => m.platform === platform && m.holdingcode === holdingCode);
         let nextMappings = [...mappings];
         if (matchIdx >= 0) {
           nextMappings[matchIdx] = { ...nextMappings[matchIdx], ...fields };
@@ -351,13 +351,13 @@ export function TabProductMarketplace({
   const updateDimensionStocks = useCallback(
     (barcodeIdx: number, holdingCode: string, mutator: (rows: MarketplaceDimensionStock[]) => MarketplaceDimensionStock[]) => {
       const marketItemId = value.marketplace_products?.find(
-        (m) => m.platform === platform && m.holding_code === holdingCode,
+        (m) => m.platform === platform && m.holdingcode === holdingCode,
       )?.market_item_id || "";
 
       handleSkuMapChange(barcodeIdx, holdingCode, {
         marketplace_dimension_stocks: mutator(
           value.refbarcodes?.[barcodeIdx]?.marketplace_sku_mappings?.find(
-            (m) => m.platform === platform && m.holding_code === holdingCode,
+            (m) => m.platform === platform && m.holdingcode === holdingCode,
           )?.marketplace_dimension_stocks || [],
         ),
         market_item_id: marketItemId,
@@ -596,8 +596,8 @@ export function TabProductMarketplace({
                 <FieldRow label={`รหัสร้านค้า (Holding Code) #${mapIdx + 1}`} required>
                   <Input
                     placeholder="เช่น shop_shopee_01"
-                    value={item.holding_code || ""}
-                    onChange={(e) => updateShopMapping(originalIdx, { holding_code: e.target.value })}
+                    value={item.holdingcode || ""}
+                    onChange={(e) => updateShopMapping(originalIdx, { holdingcode: e.target.value })}
                   />
                 </FieldRow>
                 <FieldRow label={`รหัสสินค้าบนเว็บ (Marketplace Product ID)`} required>
@@ -635,16 +635,16 @@ export function TabProductMarketplace({
           </h4>
 
           {platformProductMaps.map(({ item }) => {
-            const holdingCode = item.holding_code;
+            const holdingCode = item.holdingcode;
             if (!holdingCode) return null;
 
             return (
               <Section key={holdingCode} title={`ร้านค้า: ${holdingCode}`}>
                 <div className="space-y-3">
                   {(value.refbarcodes || []).map((entry, barcodeIdx) => {
-                    // Find mapping for this platform and holding_code
+                    // Find mapping for this platform and holdingcode
                     const mapping = entry.marketplace_sku_mappings?.find(
-                      (m) => m.platform === platform && m.holding_code === holdingCode
+                      (m) => m.platform === platform && m.holdingcode === holdingCode
                     ) || emptyMarketplaceSKUMap(platform, holdingCode, item.market_item_id);
 
                     return (

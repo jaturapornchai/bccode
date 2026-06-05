@@ -507,7 +507,7 @@ func (lm *LockManager) GetLockInfo(ctx context.Context, lockKey string) (map[str
 			"acquired_at": entry.acquiredAt,
 			"expires_at":  entry.expiresAt,
 			"ttl":         time.Until(entry.expiresAt).Seconds(),
-			"is_active":   entry.expiresAt.After(time.Now()),
+			"isactive":    entry.expiresAt.After(time.Now()),
 		}, nil
 	}
 
@@ -541,7 +541,7 @@ func (lm *LockManager) GetLockInfo(ctx context.Context, lockKey string) (map[str
 		"acquired_at": acquiredAt,
 		"expires_at":  expiresAt,
 		"ttl":         time.Until(expiresAt).Seconds(),
-		"is_active":   expiresAt.After(time.Now()),
+		"isactive":    expiresAt.After(time.Now()),
 	}, nil
 }
 

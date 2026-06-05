@@ -351,7 +351,7 @@ func (r JournalReportHttp) ProcessReportLedgerAccount(ctx microservice.IContext)
 // @Param        startdate query string true "จากวันที่ (YYYY-MM-DD)"
 // @Param        enddate query string true "ถึงวันที่ (YYYY-MM-DD)"
 // @Param        timezone query string false "TimeZone (default: +00)"
-// @Param        holding_codes query string false "Holding Codes comma-separated"
+// @Param        holdingcodes query string false "Holding Codes comma-separated"
 // @Accept       json
 // @Success      200 {object} models.MultiShopDashboardResponse
 // @Failure      400 {object} common.AuthResponseFailed
@@ -367,7 +367,7 @@ func (r JournalReportHttp) ProcessMultiShopDashboard(ctx microservice.IContext) 
 	startDateStr := ctx.QueryParam("start_date")
 	endDateStr := ctx.QueryParam("end_date")
 	timeZone := ctx.QueryParam("timezone")
-	holdingCodesParam := ctx.QueryParam("holding_codes")
+	holdingCodesParam := ctx.QueryParam("holdingcodes")
 
 	// Validate
 	if len(startDateStr) < 1 || len(endDateStr) < 1 {

@@ -20,9 +20,9 @@ import (
 func MongoGetDataHandler(c echo.Context) error {
 	logger.Info("MongoSelectHandler called")
 	var payLoad struct {
-		HoldingCode string `json:"holding_code"`
+		HoldingCode string `json:"holdingcode"`
 		Collection  string `json:"collection"`
-		GuidFixed   string `json:"guid_fixed"`
+		GuidFixed   string `json:"guidfixed"`
 	}
 
 	if err := c.Bind(&payLoad); err != nil {
@@ -33,12 +33,12 @@ func MongoGetDataHandler(c echo.Context) error {
 	}
 
 	// Debug: Log incoming payload
-	logger.Info("[MongoGetDataHandler] Payload: holding_code=%s, collection=%s, guidfixed=%s", payLoad.HoldingCode, payLoad.Collection, payLoad.GuidFixed)
+	logger.Info("[MongoGetDataHandler] Payload: holdingcode=%s, collection=%s, guidfixed=%s", payLoad.HoldingCode, payLoad.Collection, payLoad.GuidFixed)
 
 	// ⭐ แก้ไข: เพิ่มการตรวจสอบ Collection
 	if payLoad.HoldingCode == "" || payLoad.GuidFixed == "" || payLoad.Collection == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Missing holding_code, collection, or guidfixed",
+			"error": "Missing holdingcode, collection, or guidfixed",
 			"code":  "MISSING_PARAMETERS",
 		})
 	}
@@ -57,7 +57,7 @@ func MongoGetDataHandler(c echo.Context) error {
 	MongodbDatabaseName := svcConfig.MongodbDatabaseName()
 	collection := mongoClient.Database(MongodbDatabaseName).Collection(payLoad.Collection)
 
-	filter := bson.M{"holding_code": payLoad.HoldingCode, "guid_fixed": payLoad.GuidFixed}
+	filter := bson.M{"holdingcode": payLoad.HoldingCode, "guidfixed": payLoad.GuidFixed}
 
 	// ⭐ แก้ไข: Log ก่อน Find และใช้ collection name ที่ถูกต้อง
 	logger.Info("Finding documents in MongoDB collection '%s' with filter: %+v", payLoad.Collection, filter)
@@ -115,7 +115,7 @@ func PgGetDocHandler(c echo.Context) error {
 	logger.Info("PgGetDoc called")
 	// รับ JSON payLoad จาก request body
 	var payLoad struct {
-		HoldingCode string   `json:"holding_code"`
+		HoldingCode string   `json:"holdingcode"`
 		System      string   `json:"system"`
 		OffSet      int      `json:"offset"`
 		Limit       int      `json:"limit"`
@@ -232,7 +232,7 @@ func PgGetDocHandler(c echo.Context) error {
 	// ใช้ DISTINCT ON เพื่อป้องกันรายการซ้ำ (กรณีมีข้อมูลซ้ำใน database)
 	// ใช้ subquery เพื่อให้ DISTINCT ON ทำงานก่อน แล้วค่อยเรียงลำดับทีหลัง
 	// ใช้ COALESCE เพื่อ handle NULL values สำหรับ creator fields (เอกสารเก่าไม่มี fields เหล่านี้)
-	distinctQuery := fmt.Sprintf("SELECT DISTINCT ON (docno) guidfixed, docdatetime, docno, custcode, coalesce((select name0 from creditor where creditor.code = doc.custcode), 'X') as custname, totalamount, (select count(*) from docdetail where docdetail.docno = doc.docno and docdetail.transflag = doc.transflag) as detailcount, transflag, isref, islocked, isclosed, COALESCE(creator_code, '') as creator_code, COALESCE(creator_name, '') as creator_name, COALESCE(created_at, docdatetime) as created_at, COALESCE(doc_currency, '') as doc_currency, COALESCE(doc_currency_symbol, '') as doc_currency_symbol, COALESCE(exchange_rate, 0) as exchange_rate, COALESCE(totalamount_doc, 0) as totalamount_doc, COALESCE(iscancel, false) as iscancel, COALESCE(isdelete, false) as isdelete, COALESCE(iscomparedsuccess, 0) as iscomparedsuccess, COALESCE(isclosedmanual, false) as isclosedmanual, COALESCE(closedmanual_by_code, '') as closedmanual_by_code, COALESCE(closedmanual_by_name, '') as closedmanual_by_name, COALESCE(closedmanual_at, '1970-01-01') as closedmanual_at, COALESCE(closedmanual_reason, '') as closedmanual_reason FROM doc WHERE %s ORDER BY docno, docdatetime DESC", whereClause)
+	distinctQuery := fmt.Sprintf("SELECT DISTINCT ON (docno) guidfixed, docdatetime, docno, custcode, coalesce((select name0 from creditor where creditor.code = doc.custcode), 'X') as custname, totalamount, (select count(*) from docdetail where docdetail.docno = doc.docno and docdetail.transflag = doc.transflag) as detailcount, transflag, isref, islocked, isclosed, COALESCE(creator_code, '') as creator_code, COALESCE(creator_name, '') as creator_name, COALESCE(createdat, docdatetime) as createdat, COALESCE(doc_currency, '') as doc_currency, COALESCE(doc_currency_symbol, '') as doc_currency_symbol, COALESCE(exchange_rate, 0) as exchange_rate, COALESCE(totalamount_doc, 0) as totalamount_doc, COALESCE(iscancel, false) as iscancel, COALESCE(isdelete, false) as isdelete, COALESCE(iscomparedsuccess, 0) as iscomparedsuccess, COALESCE(isclosedmanual, false) as isclosedmanual, COALESCE(closedmanual_by_code, '') as closedmanual_by_code, COALESCE(closedmanual_by_name, '') as closedmanual_by_name, COALESCE(closedmanual_at, '1970-01-01') as closedmanual_at, COALESCE(closedmanual_reason, '') as closedmanual_reason FROM doc WHERE %s ORDER BY docno, docdatetime DESC", whereClause)
 	query := fmt.Sprintf("SELECT * FROM (%s) AS unique_docs ORDER BY docdatetime", distinctQuery)
 	// เรียงลำดับวันที่/เวลา (ใช้ docdatetime เต็มรวมเวลาด้วย)
 	if payLoad.DateOrder == 1 {
@@ -286,7 +286,7 @@ func PgGetDocHandler(c echo.Context) error {
 		}
 
 		results = append(results, map[string]any{
-			"guid_fixed":           guidfixed,
+			"guidfixed":            guidfixed,
 			"docdatetime":          docdatetime.UTC().Format("2006-01-02T15:04:05.000Z"),
 			"docno":                docno,
 			"custcode":             custcode,
@@ -299,7 +299,7 @@ func PgGetDocHandler(c echo.Context) error {
 			"isclosed":             isclosed,
 			"creator_code":         creatorCode,
 			"creator_name":         creatorName,
-			"created_at":           createdAt.UTC().Format("2006-01-02T15:04:05.000Z"),
+			"createdat":            createdAt.UTC().Format("2006-01-02T15:04:05.000Z"),
 			"doc_currency":         docCurrency,
 			"doc_currencysymbol":   docCurrencySymbol,
 			"exchange_rate":        exchangeRate,

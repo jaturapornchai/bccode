@@ -1950,7 +1950,7 @@ func (svc *ProductImportService) processRefBarcodeUpdates(ctx context.Context, h
 				"is_main_barcode":  false,
 				"isusesubbarcodes": true,
 				"updatedby":        authUsername,
-				"updated_at":       time.Now(),
+				"updatedat":        time.Now(),
 			},
 		}
 
@@ -2947,8 +2947,8 @@ func (svc ProductImportService) updateExistingProduct(holdingCode string, authUs
 
 	// สร้างข้อมูลที่จะ update
 	updateData := bson.M{
-		"updatedby":  authUsername,
-		"updated_at": time.Now(),
+		"updatedby": authUsername,
+		"updatedat": time.Now(),
 	}
 
 	// จัดการ prices array แยกต่างหาก
@@ -3770,8 +3770,8 @@ func (svc ProductImportService) ApplyChangesWithProgress(holdingCode string, aut
 		// 🆕 สร้าง error response เป็น JSON format
 		type ErrorDetail struct {
 			Summary      string   `json:"summary"`
-			TotalErrors  int      `json:"total_errors"`
-			TotalRecords int      `json:"total_records"`
+			TotalErrors  int      `json:"totalerrors"`
+			TotalRecords int      `json:"totalrecords"`
 			Errors       []string `json:"errors"`
 		}
 

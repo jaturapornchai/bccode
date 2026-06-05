@@ -49,12 +49,12 @@ func (e *PointTransactionError) Unwrap() error {
 
 // Point Transaction Constants
 const (
-	TransactionTypeEarn          = 1
-	TransactionTypeRedeem        = 2
-	TransactionTypeOpeningBalance = 3  // การเพิ่มแต้มด้วยตนเอง (Manual Add - can be used for opening balance, adjustments, promotions, etc.)
-	TransactionTypeAdjustment    = 4  // สำรอง (Reserved for future use)
-	TransactionTypeCancelSale    = 5
-	TransactionTypeCancelRefund  = 6
-	TransactionTypeReturnCancel  = 7
-	TransactionTypeReturnRefund  = 8
+	TransactionTypeEarn           = 1
+	TransactionTypeRedeem         = 2
+	TransactionTypeOpeningBalance = 3 // การเพิ่มแต้มด้วยตนเอง (Manual Add - can be used for opening balance, adjustments, promotions, etc.)
+	TransactionTypeAdjustment     = 4 // สำรอง (Reserved for future use)
+	TransactionTypeCancelSale     = 5
+	TransactionTypeCancelRefund   = 6
+	TransactionTypeReturnCancel   = 7
+	TransactionTypeReturnRefund   = 8
 )

@@ -152,7 +152,7 @@ func (svc ReportQueryHttpService) DeleteReportQueryByGUIDs(holdingCode string, a
 	defer ctxCancel()
 
 	deleteFilterQuery := map[string]interface{}{
-		"guid_fixed": bson.M{"$in": GUIDs},
+		"guidfixed": bson.M{"$in": GUIDs},
 	}
 
 	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
@@ -251,7 +251,7 @@ func (svc ReportQueryHttpService) PlaygroundReportQuery(holdingCode string, quer
 	selectFields := bson.M{}
 
 	for _, v := range query.Fields {
-		if v == "deleted_at" || v == "deleted_by" {
+		if v == "deletedat" || v == "deletedby" {
 			continue
 		}
 		selectFields[v] = 1
@@ -276,7 +276,7 @@ func (svc ReportQueryHttpService) PlaygroundReportQuery(holdingCode string, quer
 
 	filters, err := ReplacePlaceholdersInMap(filterRaw, &params)
 
-	filters["deleted_at"] = bson.M{"$exists": false}
+	filters["deletedat"] = bson.M{"$exists": false}
 
 	if err != nil {
 		return []map[string]interface{}{}, err
@@ -345,7 +345,7 @@ func (svc ReportQueryHttpService) ExecuteReportQuery(holdingCode string, reportC
 	selectFields := bson.M{}
 
 	for _, v := range query.Fields {
-		if v == "deleted_at" || v == "deleted_by" {
+		if v == "deletedat" || v == "deletedby" {
 			continue
 		}
 		selectFields[v] = 1
@@ -370,7 +370,7 @@ func (svc ReportQueryHttpService) ExecuteReportQuery(holdingCode string, reportC
 
 	filters, err := ReplacePlaceholdersInMap(filterRaw, &params)
 
-	filters["deleted_at"] = bson.M{"$exists": false}
+	filters["deletedat"] = bson.M{"$exists": false}
 
 	if err != nil {
 		return []map[string]interface{}{}, common.Pagination{}, err

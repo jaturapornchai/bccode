@@ -58,7 +58,7 @@ export async function GET(request: Request, context: MasterContext) {
 
   const url = new URL(request.url);
   const qs = new URLSearchParams();
-  for (const key of ["q", "page", "limit", "lang", "company_guid", "item_type", "materialtype"] as const) {
+  for (const key of ["q", "page", "limit", "lang", "companyguid", "item_type", "materialtype"] as const) {
     const value = url.searchParams.get(key);
     if (value) qs.set(key, value);
   }
@@ -75,11 +75,11 @@ export async function GET(request: Request, context: MasterContext) {
     const rawData = Array.isArray(payload.data) ? payload.data : [];
     const entries = rawData.flatMap((entry: unknown) => {
       if (!isRecord(entry)) return [];
-      let guid = String(entry.guidfixed ?? entry.guid_fixed ?? "");
+      let guid = String(entry.guidfixed ?? entry.guidfixed ?? "");
       let code = String(entry.code ?? entry.unitcode ?? entry.itemunitcode ?? entry.groupcode ?? entry.brand_code ?? entry.categorycode ?? "");
       if (masterKey === "branch") {
-        guid = String(entry.holding_code ?? "");
-        code = String(entry.branchcode && entry.branchcode !== "" ? entry.branchcode : (entry.holding_code ?? ""));
+        guid = String(entry.holdingcode ?? "");
+        code = String(entry.branchcode && entry.branchcode !== "" ? entry.branchcode : (entry.holdingcode ?? ""));
       }
       const namesSource = entry.names ?? entry.unitnames ?? entry.unit_names ?? entry.itemunitnames ?? entry.item_unit_names;
       const names = Array.isArray(namesSource) ? namesSource : [];

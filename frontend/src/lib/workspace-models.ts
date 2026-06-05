@@ -4,7 +4,7 @@ export type LocalizedName = {
 };
 
 export type ShopListItem = {
-  holding_code: string;
+  holdingcode: string;
   companies?: WorkspaceCompany[];
   name?: string;
   name1?: string;
@@ -32,8 +32,8 @@ export type ShopListItem = {
 };
 
 export type BranchListItem = {
-  guid_fixed: string;
-  company_guid?: string;
+  guidfixed: string;
+  companyguid?: string;
   code?: string;
   names?: LocalizedName[];
   companynames?: LocalizedName[];
@@ -46,7 +46,7 @@ export type BranchListItem = {
 };
 
 export type WorkspaceCompany = {
-  guid_fixed?: string;
+  guidfixed?: string;
   code?: string;
   names?: LocalizedName[];
   name?: string;
@@ -61,7 +61,7 @@ export type AuthSession = {
   username: string;
   backendUrl: string;
   method?: string;
-  holding_code?: string;
+  holdingcode?: string;
   profile?: {
     email?: string;
     name?: string;
@@ -78,7 +78,7 @@ export type WorkspaceSession = {
 
 export const workspaceStorageKeys = {
   auth: "bc_auth",
-  holdingCode: "saved_holding_code",
+  holdingCode: "saved_holdingcode",
   workspace: "bc_workspace",
   shopInfo: "bc_shop_info",
   branch: "bc_branch",
@@ -105,11 +105,11 @@ export function shopDisplayName(shop: ShopListItem): string {
     shop.companyname?.trim() ||
     shop.company_name?.trim() ||
     shop.name?.trim() ||
-    shop.holding_code;
+    shop.holdingcode;
 }
 
 export function branchDisplayName(branch: BranchListItem): string {
-  return localizedName(branch.names, branch.code || branch.guid_fixed);
+  return localizedName(branch.names, branch.code || branch.guidfixed);
 }
 
 export function companyDisplayName(company: WorkspaceCompany): string {
@@ -120,7 +120,7 @@ export function companyDisplayName(company: WorkspaceCompany): string {
     company.company_name?.trim() ||
     company.name?.trim() ||
     company.code?.trim() ||
-    company.guid_fixed?.trim() ||
+    company.guidfixed?.trim() ||
     "-";
   return company.code?.trim() && name !== company.code.trim()
     ? `[${company.code.trim()}] ${name}`
@@ -146,7 +146,7 @@ function localizedNameFromUnknown(value: unknown, fallback = ""): string {
 }
 
 export function holdingDisplayName(workspace: WorkspaceSession): string {
-  const holdingCode = stringRecordValue(workspace.shopInfo, "holding_code") || workspace.shop.holding_code.trim();
+  const holdingCode = stringRecordValue(workspace.shopInfo, "holdingcode") || workspace.shop.holdingcode.trim();
   const holdingName =
     localizedNameFromUnknown(workspace.shopInfo?.names) ||
     stringRecordValue(workspace.shopInfo, "name1") ||
@@ -162,9 +162,9 @@ export function holdingDisplayName(workspace: WorkspaceSession): string {
 
 export function workspaceCompanyDisplayName(workspace: WorkspaceSession): string {
   if (workspace.company) return companyDisplayName(workspace.company);
-  const branchCompanyGuid = workspace.branch?.company_guid?.trim();
+  const branchCompanyGuid = workspace.branch?.companyguid?.trim();
   const companyFromHolding = Array.isArray(workspace.shop.companies)
-    ? workspace.shop.companies.find((company) => company.guid_fixed?.trim() === branchCompanyGuid)
+    ? workspace.shop.companies.find((company) => company.guidfixed?.trim() === branchCompanyGuid)
     : undefined;
   if (companyFromHolding) return companyDisplayName(companyFromHolding);
   if (workspace.branch?.companynames?.length) {

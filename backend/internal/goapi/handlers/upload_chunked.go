@@ -46,9 +46,9 @@ var (
 // Returns: { "uploadID": "uuid", "chunkSize": 5242880, "totalChunks": 205 }
 func InitChunkedUploadHandler(c echo.Context) error {
 	var req struct {
-		FileName  string `json:"file_name"`
-		TotalSize int64  `json:"total_size"`
-		ChunkSize int64  `json:"chunk_size"`
+		FileName  string `json:"filename"`
+		TotalSize int64  `json:"totalsize"`
+		ChunkSize int64  `json:"chunksize"`
 	}
 
 	if err := c.Bind(&req); err != nil {
@@ -232,12 +232,12 @@ func UploadChunkHandler(c echo.Context) error {
 
 // MergeChunksHandler merges all uploaded chunks and uploads to Cloudflare R2
 // POST /upload/merge
-// JSON body: { "uploadID": "uuid", "holding_code": "optional" }
+// JSON body: { "uploadID": "uuid", "holdingcode": "optional" }
 // Returns: { "success": true, "fileName": "guid.ext", "fileUrl": "presigned", "checksum": "md5hash" }
 func MergeChunksHandler(c echo.Context) error {
 	var req struct {
-		UploadID    string `json:"upload_id"`
-		HoldingCode string `json:"holding_code"`
+		UploadID    string `json:"uploadid"`
+		HoldingCode string `json:"holdingcode"`
 	}
 
 	if err := c.Bind(&req); err != nil {

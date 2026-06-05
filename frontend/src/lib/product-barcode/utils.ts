@@ -126,7 +126,7 @@ export function toRefBarcodeArray(value: unknown): RefProductBarcode[] {
     if (!isRecord(entry)) return [];
     return [
       {
-        guid_fixed: getFirstString(entry, ["guid_fixed", "guidfixed"]),
+        guidfixed: getFirstString(entry, ["guidfixed", "guidfixed"]),
         names: toNameXArray(entry.names),
         item_unit_code: getFirstString(entry, ["item_unit_code", "itemunitcode"]),
         itemunitnames: toNameXArray(entry.itemunitnames),
@@ -151,7 +151,7 @@ export type ProductUnitOption = RefProductBarcode & {
 /** Normalize unit/barcode choices from product detail. */
 export function toProductUnitOptions(product: unknown): ProductUnitOption[] {
   if (!isRecord(product)) return [];
-  const productGuid = getFirstString(product, ["guid_fixed", "guidfixed"]);
+  const productGuid = getFirstString(product, ["guidfixed", "guidfixed"]);
   const productCode = getString(product, "code");
   const productNames = toNameXArray(product.names);
   const source = Array.isArray(product.barcodes) ? product.barcodes : [];
@@ -162,7 +162,7 @@ export function toProductUnitOptions(product: unknown): ProductUnitOption[] {
     if (!barcode) return [];
     return [
       {
-        guid_fixed: getFirstString(entry, ["guid_fixed", "guidfixed", "barcodeguidfixed"]),
+        guidfixed: getFirstString(entry, ["guidfixed", "guidfixed", "barcodeguidfixed"]),
         names: toNameXArray(entry.names).length ? toNameXArray(entry.names) : productNames,
         item_unit_code: getFirstString(entry, ["item_unit_code", "itemunitcode", "unitcode"]),
         itemunitnames: toNameXArray(entry.itemunitnames).length
@@ -190,7 +190,7 @@ export function toBomArray(value: unknown): BOMProductBarcode[] {
     if (!isRecord(entry)) return [];
     return [
       {
-        barcodeguidfixed: getFirstString(entry, ["barcodeguidfixed", "guid_fixed", "guidfixed"]),
+        barcodeguidfixed: getFirstString(entry, ["barcodeguidfixed", "guidfixed", "guidfixed"]),
         names: toNameXArray(entry.names),
         item_unit_code: getFirstString(entry, ["item_unit_code", "itemunitcode"]),
         itemunitnames: toNameXArray(entry.itemunitnames),
@@ -216,7 +216,7 @@ export function toMasterArray(
     if (!isRecord(entry)) return [];
     return [
       {
-        guidfixed: getString(entry, guidKey) || getString(entry, "guid_fixed"),
+        guidfixed: getString(entry, guidKey) || getString(entry, "guidfixed"),
         code: getString(entry, codeKey),
         names: toNameXArray(entry[namesKey]),
       },
@@ -228,7 +228,7 @@ export function toMasterArray(
 export function listRowToBarcode(row: ProductBarcodeListRow): Partial<ProductBarcode> {
   return {
     guidfixed: row.guidfixed,
-    holding_code: row.holding_code,
+    holdingcode: row.holdingcode,
     barcode: row.barcode,
     names: row.names ?? [],
     item_unit_code: row.itemunitcode ?? "",
@@ -258,8 +258,8 @@ export function isValidBarcode(value: string): boolean {
 export function rawToProduct(raw: unknown): Product {
   const r: Record<string, unknown> = isRecord(raw) ? raw : {};
   return {
-    guidfixed: getFirstString(r, ["guid_fixed", "guidfixed"]),
-    holding_code: getString(r, "holding_code"),
+    guidfixed: getFirstString(r, ["guidfixed", "guidfixed"]),
+    holdingcode: getString(r, "holdingcode"),
     code: getString(r, "code"),
     names: toNameXArray(r.names),
     group_code: getString(r, "group_code"),
@@ -319,8 +319,8 @@ export function rawToProductBarcode(raw: unknown, base: ProductBarcode): Product
   const r = raw;
   return {
     ...base,
-    guidfixed: getFirstString(r, ["guidfixed", "guid_fixed"]) || base.guidfixed,
-    holding_code: getFirstString(r, ["holding_code", "holding_code"]) || base.holding_code,
+    guidfixed: getFirstString(r, ["guidfixed", "guidfixed"]) || base.guidfixed,
+    holdingcode: getFirstString(r, ["holdingcode", "holdingcode"]) || base.holdingcode,
     itemcode: getString(r, "itemcode") || base.itemcode,
     barcode: getString(r, "barcode") || base.barcode,
     names: toNameXArray(r.names) || base.names,

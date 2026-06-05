@@ -34,7 +34,7 @@ Currently, mappings are submitted via `updateBarcode` API. When Codex designs th
 ```json
 {
   "platform": "shopee",
-  "holding_code": "shop_01",
+  "holdingcode": "shop_01",
   "mappings": [
     {
       "barcode": "8850123456789",

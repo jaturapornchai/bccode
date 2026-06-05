@@ -41,8 +41,8 @@ func (repo SaleDebitNoteTransactionPGRepository) Create(doc models.SaleDebitNote
 func (repo SaleDebitNoteTransactionPGRepository) Update(holdingCode string, docNo string, doc models.SaleDebitNoteTransactionPG) error {
 
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"holding_code": holdingCode,
-		"docno":        docNo,
+		"holdingcode": holdingCode,
+		"docno":       docNo,
 	})
 
 	if err != nil {
@@ -56,13 +56,13 @@ func (repo *SaleDebitNoteTransactionPGRepository) DeleteData(holdingCode string,
 	var details *[]models.SaleDebitNoteTransactionDetailPG
 	tx := repo.pst.DBClient().Begin()
 
-	tx.Model(&models.SaleDebitNoteTransactionDetailPG{}).Where(" holding_code=? AND docno=?", holdingCode, docNo).Find(&details)
+	tx.Model(&models.SaleDebitNoteTransactionDetailPG{}).Where(" holdingcode=? AND docno=?", holdingCode, docNo).Find(&details)
 	for _, tmp := range *details {
 		// mark delete
 		tx.Delete(&models.SaleDebitNoteTransactionDetailPG{}, tmp.ID)
 	}
 
-	err := tx.Delete(&models.SaleDebitNoteTransactionPG{}, " holding_code=? AND docno=?", holdingCode, docNo).Error
+	err := tx.Delete(&models.SaleDebitNoteTransactionPG{}, " holdingcode=? AND docno=?", holdingCode, docNo).Error
 	if err != nil {
 		tx.Rollback()
 		return err

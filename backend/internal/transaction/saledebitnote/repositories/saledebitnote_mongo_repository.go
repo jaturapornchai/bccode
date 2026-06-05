@@ -60,8 +60,8 @@ func NewSaleDebitNoteRepository(pst microservice.IPersisterMongo) *SaleDebitNote
 }
 func (repo SaleDebitNoteRepository) FindLastDocNo(ctx context.Context, holdingCode string, prefixDocNo string) (models.SaleDebitNoteDoc, error) {
 	filters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at": bson.M{
+		"holdingcode": holdingCode,
+		"deletedat": bson.M{
 			"$exists": false,
 		},
 		"docno": bson.M{

@@ -49,24 +49,24 @@ const (
 // FieldChange - รายละเอียดการเปลี่ยนแปลง field
 type FieldChange struct {
 	Field    string      `json:"field" bson:"field"`
-	OldValue interface{} `json:"old_value" bson:"old_value"`
-	NewValue interface{} `json:"new_value" bson:"new_value"`
+	OldValue interface{} `json:"oldvalue" bson:"oldvalue"`
+	NewValue interface{} `json:"newvalue" bson:"newvalue"`
 }
 
 // DataHistory - โครงสร้างข้อมูล history
 type DataHistory struct {
-	ID          primitive.ObjectID     `json:"_id,omitempty" bson:"_id,omitempty"`
-	HoldingCode string                 `json:"holding_code" bson:"holding_code"`
-	ScreenType  ScreenType             `json:"screen_type" bson:"screen_type"`
+	ID          primitive.ObjectID     `json:"id,omitempty" bson:"id,omitempty"`
+	HoldingCode string                 `json:"holdingcode" bson:"holdingcode"`
+	ScreenType  ScreenType             `json:"screentype" bson:"screentype"`
 	Action      ActionType             `json:"action" bson:"action"`
 	DocNo       string                 `json:"docno" bson:"docno"`
-	GuidFixed   string                 `json:"guid_fixed" bson:"guid_fixed"`
-	UserCode    string                 `json:"user_code" bson:"user_code"`
-	UserName    string                 `json:"user_name" bson:"user_name"`
+	GuidFixed   string                 `json:"guidfixed" bson:"guidfixed"`
+	UserCode    string                 `json:"usercode" bson:"usercode"`
+	UserName    string                 `json:"username" bson:"username"`
 	Timestamp   time.Time              `json:"timestamp" bson:"timestamp"`
-	DataBefore  map[string]interface{} `json:"data_before" bson:"data_before"` // null ถ้า create
-	DataAfter   map[string]interface{} `json:"data_after" bson:"data_after"`   // null ถ้า delete
-	Changes     []FieldChange          `json:"changes" bson:"changes"`         // สรุปสิ่งที่เปลี่ยน
+	DataBefore  map[string]interface{} `json:"databefore" bson:"databefore"` // null ถ้า create
+	DataAfter   map[string]interface{} `json:"dataafter" bson:"dataafter"`   // null ถ้า delete
+	Changes     []FieldChange          `json:"changes" bson:"changes"`       // สรุปสิ่งที่เปลี่ยน
 }
 
 // getCollection - ดึง collection สำหรับ datahistory
@@ -100,7 +100,7 @@ func SaveHistory(history DataHistory) error {
 		return err
 	}
 
-	logger.Debug("[DataHistory] Saved: holding_code=%s, screen=%s, action=%s, docno=%s",
+	logger.Debug("[DataHistory] Saved: holdingcode=%s, screen=%s, action=%s, docno=%s",
 		history.HoldingCode, history.ScreenType, history.Action, history.DocNo)
 	return nil
 }
@@ -118,9 +118,9 @@ func HasPOHistory(holdingCode, guidFixed string) bool {
 
 	// ค้นหาจาก guidfixed เพราะ docno อาจเปลี่ยนได้
 	filter := bson.M{
-		"holding_code": holdingCode,
-		"screen_type":  ScreenPurchaseOrder,
-		"guid_fixed":   guidFixed,
+		"holdingcode": holdingCode,
+		"screen_type": ScreenPurchaseOrder,
+		"guidfixed":   guidFixed,
 	}
 
 	count, err := collection.CountDocuments(ctx, filter)
@@ -143,9 +143,9 @@ func GetLastPOSnapshot(holdingCode, guidFixed string) map[string]interface{} {
 	defer cancel()
 
 	filter := bson.M{
-		"holding_code": holdingCode,
-		"screen_type":  ScreenPurchaseOrder,
-		"guid_fixed":   guidFixed,
+		"holdingcode": holdingCode,
+		"screen_type": ScreenPurchaseOrder,
+		"guidfixed":   guidFixed,
 	}
 
 	opts := options.FindOne().SetSort(bson.D{{Key: "timestamp", Value: -1}})
@@ -317,14 +317,14 @@ func compareValues(a, b interface{}) bool {
 
 // GetHistoryHandler - API endpoint สำหรับดึง history
 func GetHistoryHandler(c echo.Context) error {
-	holdingCode := c.QueryParam("holding_code")
+	holdingCode := c.QueryParam("holdingcode")
 	screenType := c.QueryParam("screen_type")
 	docNo := c.QueryParam("docno")
 
 	if holdingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"success": false,
-			"message": "holding_code is required",
+			"message": "holdingcode is required",
 		})
 	}
 
@@ -340,7 +340,7 @@ func GetHistoryHandler(c echo.Context) error {
 	defer cancel()
 
 	// สร้าง filter
-	filter := bson.M{"holding_code": holdingCode}
+	filter := bson.M{"holdingcode": holdingCode}
 	if screenType != "" {
 		filter["screen_type"] = screenType
 	}
@@ -383,13 +383,13 @@ func GetHistoryHandler(c echo.Context) error {
 
 // GetPOHistoryHandler - API endpoint สำหรับดึง history ของใบสั่งซื้อ
 func GetPOHistoryHandler(c echo.Context) error {
-	holdingCode := c.QueryParam("holding_code")
+	holdingCode := c.QueryParam("holdingcode")
 	docNo := c.QueryParam("docno")
 
 	if holdingCode == "" || docNo == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"success": false,
-			"message": "holding_code and docno are required",
+			"message": "holdingcode and docno are required",
 		})
 	}
 
@@ -406,9 +406,9 @@ func GetPOHistoryHandler(c echo.Context) error {
 
 	// Filter สำหรับ PO เฉพาะ docno
 	filter := bson.M{
-		"holding_code": holdingCode,
-		"screen_type":  ScreenPurchaseOrder,
-		"docno":        docNo,
+		"holdingcode": holdingCode,
+		"screen_type": ScreenPurchaseOrder,
+		"docno":       docNo,
 	}
 
 	// เรียงลำดับตาม timestamp ล่าสุดก่อน

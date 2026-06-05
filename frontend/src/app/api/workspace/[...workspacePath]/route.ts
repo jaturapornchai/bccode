@@ -64,9 +64,9 @@ export async function GET(request: Request, context: WorkspaceProxyContext) {
       return listHoldingsWithDisplayNames(request, mainApiUrl);
     case "holding-info": {
       const holdingCode = holdingCodeFromSearchParams(url.searchParams);
-      const holding_code = url.searchParams.get("holding_code")?.trim() || holdingCode;
-      if (!holdingCode && !holding_code) return NextResponse.json({ success: false, message: "ไม่พบรหัส holding" }, { status: 400 });
-      return proxyMainApiJson(request, mainApiUrl, `/holding/${encodeURIComponent(holding_code)}`, { method: "GET" });
+      const holdingcode = url.searchParams.get("holdingcode")?.trim() || holdingCode;
+      if (!holdingCode && !holdingcode) return NextResponse.json({ success: false, message: "ไม่พบรหัส holding" }, { status: 400 });
+      return proxyMainApiJson(request, mainApiUrl, `/holding/${encodeURIComponent(holdingcode)}`, { method: "GET" });
     }
     case "branches": {
       const offset = url.searchParams.get("offset") ?? "0";
@@ -84,12 +84,12 @@ export async function GET(request: Request, context: WorkspaceProxyContext) {
     }
     case "product-units/search": {
       const limit = url.searchParams.get("limit") ?? "1";
-      const holdingCode = url.searchParams.get("holding_code") ?? "";
-      const unitPath = `/unit?limit=${encodeURIComponent(limit)}&holding_code=${encodeURIComponent(holdingCode)}`;
+      const holdingCode = url.searchParams.get("holdingcode") ?? "";
+      const unitPath = `/unit?limit=${encodeURIComponent(limit)}&holdingcode=${encodeURIComponent(holdingCode)}`;
       return proxyMainApiJson(request, mainApiUrl, unitPath, { method: "GET" });
     }
     case "product-units/standard": {
-      const mainHoldingCode = url.searchParams.get("mainHoldingCode")?.trim() ?? url.searchParams.get("main_holding_code")?.trim() ?? "";
+      const mainHoldingCode = url.searchParams.get("mainHoldingCode")?.trim() ?? url.searchParams.get("main_holdingcode")?.trim() ?? "";
       const query = url.searchParams.get("q")?.trim() ?? "";
       const includeExisting = url.searchParams.get("includeExisting") === "true";
       return listMissingStandardProductUnits(request, mainApiUrl, mainHoldingCode, query, includeExisting);
@@ -129,7 +129,7 @@ export async function POST(request: Request, context: WorkspaceProxyContext) {
       if (!holdingCode) return NextResponse.json({ success: false, message: "ไม่พบรหัส holding" }, { status: 400 });
       return proxyMainApiJson(request, mainApiUrl, "/select-holding", {
         method: "POST",
-        body: JSON.stringify({ holding_code: holdingCode }),
+        body: JSON.stringify({ holdingcode: holdingCode }),
       });
     }
     case "branch": {
@@ -143,18 +143,18 @@ export async function POST(request: Request, context: WorkspaceProxyContext) {
       });
     }
     case "create-holding": {
-      if (Object.prototype.hasOwnProperty.call(payload, "holding_code")) {
+      if (Object.prototype.hasOwnProperty.call(payload, "holdingcode")) {
         const holdingCode = holdingCodeFromPayload(payload).toLowerCase();
         if (!holdingCode) {
           return NextResponse.json({ success: false, message: "กรุณากรอกรหัส Holding" }, { status: 400 });
         }
         if (!holdingCodePattern.test(holdingCode)) {
           return NextResponse.json(
-            { success: false, message: "holding_code ต้องเป็น a-z, 0-9, _ ยาว 3-30 ตัว และขึ้นต้นด้วย a-z" },
+            { success: false, message: "holdingcode ต้องเป็น a-z, 0-9, _ ยาว 3-30 ตัว และขึ้นต้นด้วย a-z" },
             { status: 400 },
           );
         }
-        payload.holding_code = holdingCode;
+        payload.holdingcode = holdingCode;
       }
       const holdingName = holdingNameFromPayload(payload);
       if (!holdingName) {
@@ -169,7 +169,7 @@ export async function POST(request: Request, context: WorkspaceProxyContext) {
     case "update-holding":
       return updateHoldingDisplayName(request, mainApiUrl, payload);
     case "product-units/defaults": {
-      const mainHoldingCode = getPayloadString(payload, "mainHoldingCode") ?? getPayloadString(payload, "main_holding_code") ?? getPayloadString(payload, "mainholding_code") ?? "";
+      const mainHoldingCode = getPayloadString(payload, "mainHoldingCode") ?? getPayloadString(payload, "main_holdingcode") ?? getPayloadString(payload, "mainholdingcode") ?? "";
       return createDefaultProductUnits(request, mainApiUrl, mainHoldingCode, getPayloadStringArray(payload, "unitcodes"));
     }
     default:
@@ -233,7 +233,7 @@ async function listHoldingsWithDisplayNames(request: Request, mainApiUrl: string
           "/select-holding",
           {
             method: "POST",
-            body: JSON.stringify({ holding_code: holdingCode }),
+            body: JSON.stringify({ holdingcode: holdingCode }),
           },
           authorization,
         );
@@ -262,7 +262,7 @@ async function listHoldingsWithDisplayNames(request: Request, mainApiUrl: string
             const visibleCompanyGuids = new Set(companies.map(organizationGuid).filter(Boolean));
             const branches = visibleOrganizationRecords(branchResult.payload)
               .filter((branch) => {
-                const companyGuid = stringFromUnknown(branch.company_guid);
+                const companyGuid = stringFromUnknown(branch.companyguid);
                 return !companyGuid || visibleCompanyGuids.has(companyGuid);
               });
             enrichedWithBranches.push({
@@ -291,7 +291,7 @@ async function listHoldingsWithDisplayNames(request: Request, mainApiUrl: string
         "/select-holding",
         {
           method: "POST",
-          body: JSON.stringify({ holding_code: activeHoldingCode }),
+          body: JSON.stringify({ holdingcode: activeHoldingCode }),
         },
         authorization,
       );
@@ -322,7 +322,7 @@ async function updateHoldingDisplayName(
   if (!holdingCode) return NextResponse.json({ success: false, message: "กรุณากรอกรหัส Holding" }, { status: 400 });
   if (!holdingCodePattern.test(holdingCode)) {
     return NextResponse.json(
-      { success: false, message: "holding_code ต้องเป็น a-z, 0-9, _ ยาว 3-30 ตัว และขึ้นต้นด้วย a-z" },
+      { success: false, message: "holdingcode ต้องเป็น a-z, 0-9, _ ยาว 3-30 ตัว และขึ้นต้นด้วย a-z" },
       { status: 400 },
     );
   }
@@ -337,7 +337,7 @@ async function updateHoldingDisplayName(
       "/select-holding",
       {
         method: "POST",
-        body: JSON.stringify({ holding_code: holdingCode }),
+        body: JSON.stringify({ holdingcode: holdingCode }),
       },
       authorization,
     );
@@ -357,7 +357,7 @@ async function updateHoldingDisplayName(
 
     const updatedHolding: Record<string, unknown> = {
       ...currentHolding,
-      holding_code: holdingCode,
+      holdingcode: holdingCode,
     };
     applyHoldingDisplayName(updatedHolding, holdingName);
 
@@ -382,13 +382,13 @@ async function updateHoldingDisplayName(
 async function enrichHoldingDisplayName(request: Request, mainApiUrl: string, authorization: string, holding: unknown): Promise<unknown> {
   if (!isRecord(holding)) return holding;
 
-  const holding_code = getPayloadString(holding, "holding_code")?.trim();
+  const holdingcode = getPayloadString(holding, "holdingcode")?.trim();
   const holdingCode = holdingCodeFromPayload(holding);
-  if (!holding_code && !holdingCode) return holding;
+  if (!holdingcode && !holdingCode) return holding;
 
   let holdingInfo: Record<string, unknown> = holding;
   if (!hasHoldingDisplayName(holding) || !hasWorkspaceMetadata(holding)) {
-    const result = await callMainApiJson(request, mainApiUrl, `/holding/${encodeURIComponent(holding_code || holdingCode)}`, { method: "GET" }, authorization);
+    const result = await callMainApiJson(request, mainApiUrl, `/holding/${encodeURIComponent(holdingcode || holdingCode)}`, { method: "GET" }, authorization);
     const detailed = result.ok && !isApiFailure(result.payload) ? payloadDataRecord(result.payload) : null;
     if (detailed) holdingInfo = { ...holding, ...detailed };
   }
@@ -403,7 +403,7 @@ async function enrichHoldingDisplayName(request: Request, mainApiUrl: string, au
 
   return {
     ...holding,
-    ...(realHoldingCodeFromPayload(holdingInfo) ? { holding_code: realHoldingCodeFromPayload(holdingInfo) } : {}),
+    ...(realHoldingCodeFromPayload(holdingInfo) ? { holdingcode: realHoldingCodeFromPayload(holdingInfo) } : {}),
     ...(!hasHoldingDisplayName(holding) && name ? { name, name1: name } : {}),
     ...(!hasHoldingDisplayName(holding) && names.length > 0 ? { names } : {}),
     active_languages: activeLanguages,
@@ -491,7 +491,7 @@ async function loadStandardUnits(
     const mainHoldingUnits = await callMainApiJson(
       request,
       mainApiUrl,
-      `/unit?limit=1000&holding_code=${encodeURIComponent(mainHoldingCode)}`,
+      `/unit?limit=1000&holdingcode=${encodeURIComponent(mainHoldingCode)}`,
       { method: "GET" },
       authorization,
     );
@@ -785,15 +785,15 @@ function getPayloadStringArray(payload: Record<string, unknown>, key: string): s
 }
 
 function holdingCodeFromPayload(payload: Record<string, unknown>): string {
-  return getPayloadString(payload, "holding_code")?.trim() || "";
+  return getPayloadString(payload, "holdingcode")?.trim() || "";
 }
 
 function realHoldingCodeFromPayload(payload: Record<string, unknown>): string {
-  return getPayloadString(payload, "holding_code")?.trim() || "";
+  return getPayloadString(payload, "holdingcode")?.trim() || "";
 }
 
 function holdingCodeFromSearchParams(searchParams: URLSearchParams): string {
-  return searchParams.get("holding_code")?.trim() || searchParams.get("active_holding_code")?.trim() || "";
+  return searchParams.get("holdingcode")?.trim() || searchParams.get("active_holdingcode")?.trim() || "";
 }
 
 function getArrayFromPayload(payload: unknown, key: string): unknown[] {
@@ -807,12 +807,12 @@ function visibleOrganizationRecords(payload: unknown): Record<string, unknown>[]
 
 function isVisibleOrganizationRecord(value: unknown): boolean {
   if (!isRecord(value)) return false;
-  if (value.is_active === false || value.isdelete === true || value.is_delete === true) return false;
-  return stringFromUnknown(value.deleted_at).length === 0;
+  if (value.isactive === false || value.isdelete === true || value.is_delete === true) return false;
+  return stringFromUnknown(value.deletedat).length === 0;
 }
 
 function organizationGuid(value: Record<string, unknown>): string {
-  return stringFromUnknown(value.guid_fixed) || stringFromUnknown(value.guid);
+  return stringFromUnknown(value.guidfixed) || stringFromUnknown(value.guid);
 }
 
 function isApiFailure(payload: unknown): boolean {
@@ -825,12 +825,12 @@ function payloadDataRecord(payload: unknown): Record<string, unknown> | null {
 }
 
 function hasHoldingDisplayName(holding: Record<string, unknown>): boolean {
-  const holding_code = getPayloadString(holding, "holding_code")?.trim();
+  const holdingcode = getPayloadString(holding, "holdingcode")?.trim();
   const directName = firstPayloadString(holding, ["name1", "companyname", "company_name", "name"]);
-  if (directName && directName !== holding_code) return true;
+  if (directName && directName !== holdingcode) return true;
   return getArray(holding, "names").some((name) => {
     const displayName = isRecord(name) ? getPayloadString(name, "name")?.trim() : "";
-    return Boolean(displayName && displayName !== holding_code);
+    return Boolean(displayName && displayName !== holdingcode);
   });
 }
 

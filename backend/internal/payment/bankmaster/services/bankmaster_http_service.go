@@ -156,7 +156,7 @@ func (svc BankMasterHttpService) DeleteBankMasterByGUIDs(holdingCode string, aut
 	defer ctxCancel()
 
 	deleteFilterQuery := map[string]interface{}{
-		"guid_fixed": bson.M{"$in": GUIDs},
+		"guidfixed": bson.M{"$in": GUIDs},
 	}
 
 	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
@@ -216,9 +216,9 @@ func (svc BankMasterHttpService) SearchBankMasterStep(holdingCode string, langCo
 	}
 
 	selectFields := map[string]interface{}{
-		"guid_fixed": 1,
-		"code":       1,
-		"logo":       1,
+		"guidfixed": 1,
+		"code":      1,
+		"logo":      1,
 	}
 
 	if langCode != "" {

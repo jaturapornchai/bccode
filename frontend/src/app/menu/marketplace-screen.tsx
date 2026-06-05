@@ -55,7 +55,7 @@ type MarketplaceScreenProps = {
 
 type ShopConnection = {
   id: string;
-  holding_code: string;
+  holdingcode: string;
   shop_name: string;
   platform: "shopee" | "lazada" | "tiktok";
   status: "connected" | "disconnected";
@@ -97,7 +97,7 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
   const [shops, setShops] = useState<ShopConnection[]>([
     {
       id: "conn_1",
-      holding_code: "shop_shopee_th",
+      holdingcode: "shop_shopee_th",
       shop_name: "Ban Chiang Official Store (Shopee)",
       platform: "shopee",
       status: "connected",
@@ -106,7 +106,7 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
     },
     {
       id: "conn_2",
-      holding_code: "shop_laz_b2c",
+      holdingcode: "shop_laz_b2c",
       shop_name: "Ban Chiang Outlet (Lazada)",
       platform: "lazada",
       status: "connected",
@@ -115,7 +115,7 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
     },
     {
       id: "conn_3",
-      holding_code: "shop_tiktok_mall",
+      holdingcode: "shop_tiktok_mall",
       shop_name: "Ban Chiang Store (TikTok Shop)",
       platform: "tiktok",
       status: "disconnected",
@@ -143,7 +143,7 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
     if (workspaceRaw) setWorkspace(JSON.parse(workspaceRaw));
   }, []);
 
-  const activeHoldingCode = workspace?.shop.holding_code ?? "";
+  const activeHoldingCode = workspace?.shop.holdingcode ?? "";
   const dateDisplayOptions = useMemo(
     () => resolveWorkspaceDateTimeDisplayOptions(workspace, lang),
     [lang, workspace],
@@ -156,7 +156,7 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
     setNotice(null);
     try {
       const res = await listBarcodes(auth, {
-        holding_code: activeHoldingCode,
+        holdingcode: activeHoldingCode,
         limit: 100,
         offset: 0,
         sort_field: "barcode",
@@ -187,7 +187,7 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
     setShops((prev) =>
       prev.map(s => s.platform === platform ? {
         ...s,
-        holding_code: authDialog.holdingCode,
+        holdingcode: authDialog.holdingCode,
         shop_name: authDialog.shopName || `ร้านค้า ${platform.toUpperCase()} (${authDialog.holdingCode})`,
         status: "connected",
         connected_at: new Date().toISOString(),
@@ -289,16 +289,16 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
           throw new Error("Failed to load details");
         }
 
-        const fullProduct: ProductBarcode = rawToProductBarcode(productData.data, { holding_code: activeHoldingCode } as any);
+        const fullProduct: ProductBarcode = rawToProductBarcode(productData.data, { holdingcode: activeHoldingCode } as any);
 
         const mProducts = fullProduct.marketplace_products || [];
         const hasShopMap = mProducts.some(
-          m => m.platform === platform && m.holding_code === holdingCode && m.market_item_id === marketItemId
+          m => m.platform === platform && m.holdingcode === holdingCode && m.market_item_id === marketItemId
         );
         if (!hasShopMap) {
           mProducts.push({
             ...emptyMarketplaceProductMap(platform),
-            holding_code: holdingCode,
+            holdingcode: holdingCode,
             market_item_id: marketItemId,
             sync_status: "linked",
           });
@@ -310,7 +310,7 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
         if (subBarcodeIdx !== -1) {
           const subB = refBarcodes[subBarcodeIdx];
           const mappings = subB.marketplace_sku_mappings || [];
-          const matchMapIdx = mappings.findIndex(m => m.platform === platform && m.holding_code === holdingCode);
+          const matchMapIdx = mappings.findIndex(m => m.platform === platform && m.holdingcode === holdingCode);
 
           const mappingData: MarketplaceSKUMap = {
             ...emptyMarketplaceSKUMap(platform, holdingCode, marketItemId),
@@ -511,7 +511,7 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
                   {shop.status === "connected" ? shop.shop_name : `ผูกบัญชี ${platformName}`}
                 </CardTitle>
                 <CardDescription className="font-mono text-xs">
-                  Holding Code: {shop.status === "connected" ? shop.holding_code : "-"}
+                  Holding Code: {shop.status === "connected" ? shop.holdingcode : "-"}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4 pt-0">
@@ -744,7 +744,7 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
                                 platform === "lazada" && "bg-[#101566]/10 text-[#101566] border-[#101566]/20",
                                 platform === "tiktok" && "bg-black/5 text-black border-black/10 dark:bg-white/10 dark:text-white"
                               )}>
-                                {platformMap.holding_code}
+                                {platformMap.holdingcode}
                               </Badge>
                             ) : (
                               <span className="text-[11px] text-muted-foreground italic">ไม่มีข้อมูลร้านค้า</span>

@@ -29,7 +29,7 @@ type AccountGroupData struct {
 }
 
 type AccountGroupDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	AccountGroupData   `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

@@ -14,7 +14,7 @@ function Get-SelectedToken {
   $keys = docker exec redis redis-cli --scan --pattern "auth-*"
   foreach ($key in $keys) {
     if ([string]::IsNullOrWhiteSpace($key)) { continue }
-    $values = docker exec redis redis-cli HMGET $key username holding_code
+    $values = docker exec redis redis-cli HMGET $key username holdingcode
     if ($values[0] -eq $Username -and $values[1] -eq $HoldingCode) {
       return $key.Substring(5)
     }
@@ -286,7 +286,7 @@ foreach ($set in $sets) {
   }
   $payload = New-BarcodePayload -Code $set.code -Barcode $set.barcode -Thai $set.thai -English $set.english -ItemType 2 -MaterialType 3 -Unit $units.set -Price 159 -Bom $bom
   $current = Invoke-GetJson -Path "/product/barcode/pk/$($set.barcode)" -Token $token
-  $guid = [string]($current.data.guid_fixed ?? $current.data.guidfixed)
+  $guid = [string]($current.data.guidfixed ?? $current.data.guidfixed)
   if ([string]::IsNullOrWhiteSpace($guid)) {
     throw "Set barcode $($set.barcode) has no guidfixed after bulk seed"
   }
@@ -301,7 +301,7 @@ $barcodeCheck = Invoke-GetJson -Path "/product/barcode?limit=500&q=MENU-" -Token
 $setBarcodeCheck = Invoke-GetJson -Path "/product/barcode/pk/8852605299001" -Token $token
 
 [pscustomobject]@{
-  holding_code = $HoldingCode
+  holdingcode = $HoldingCode
   products_created = $productsCreated
   products_skipped = $productsSkipped
   sets_created = $setsCreated

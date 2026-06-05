@@ -158,7 +158,7 @@ func (svc OptionPatternHttpService) SearchOptionPattern(holdingCode string, page
 	defer ctxCancel()
 
 	searchInFields := []string{
-		"guid_fixed",
+		"guidfixed",
 		"patterncode",
 	}
 

@@ -6,7 +6,7 @@ import (
 )
 
 type TransactionPG struct {
-	GuidFixed                string `json:"guid_fixed" gorm:"column:guid_fixed"`
+	GuidFixed                string `json:"guidfixed" gorm:"column:guidfixed"`
 	models.HoldingCodeentity `bson:"inline"`
 	models.PartitionIdentity `gorm:"embedded;"`
 	InquiryType              int          `json:"inquirytype" gorm:"column:inquirytype"`
@@ -26,7 +26,7 @@ type TransactionPG struct {
 	IsCancel                 bool         `json:"iscancel" gorm:"column:iscancel"`
 	IsBom                    bool         `json:"isbom" gorm:"column:isbom"`
 	Status                   int8         `json:"status" gorm:"column:status"`
-	VatType                  int8         `json:"vat_type" gorm:"column:vat_type" `
+	VatType                  int8         `json:"vattype" gorm:"column:vattype" `
 	VatRate                  float64      `json:"vatrate" gorm:"column:vatrate"`
 	TotalValue               float64      `json:"totalvalue" gorm:"column:totalvalue"`
 	DiscountWord             string       `json:"discountword" gorm:"column:discountword"`
@@ -36,8 +36,8 @@ type TransactionPG struct {
 	TotalVatValue            float64      `json:"totalvatvalue" gorm:"column:totalvatvalue"`
 	TotalExceptVat           float64      `json:"totalexceptvat" gorm:"column:totalexceptvat"`
 	TotalAfterVat            float64      `json:"totalaftervat" gorm:"column:totalaftervat"`
-	TotalAmount              float64      `json:"total_amount" gorm:"column:total_amount"`
-	GuidRef                  string       `json:"guid_ref" gorm:"column:guid_ref"`
+	TotalAmount              float64      `json:"totalamount" gorm:"column:totalamount"`
+	GuidRef                  string       `json:"guidref" gorm:"column:guidref"`
 	PointDiscountAmount      float64      `json:"pointdiscountamount" gorm:"column:pointdiscountamount"`
 	PayPointAmount           float64      `json:"paypointamount" gorm:"column:paypointamount"`
 	IsManualAmount           bool         `json:"ismanualamount" gorm:"column:ismanualamount"`
@@ -49,11 +49,11 @@ type TransactionPG struct {
 
 type TransactionDetailPG struct {
 	ID                       uint   `gorm:"primarykey"`
-	HoldingCode              string `json:"holding_code" gorm:"column:holding_code"`
-	GuidFixed                string `json:"guid_fixed" gorm:"column:guid_fixed"`
+	HoldingCode              string `json:"holdingcode" gorm:"column:holdingcode"`
+	GuidFixed                string `json:"guidfixed" gorm:"column:guidfixed"`
 	models.PartitionIdentity `gorm:"embedded;"`
 	DocNo                    string       `json:"docno" gorm:"column:docno"`
-	LineNumber               int8         `json:"line_number" gorm:"column:line_number"`
+	LineNumber               int8         `json:"linenumber" gorm:"column:linenumber"`
 	Barcode                  string       `json:"barcode" gorm:"column:barcode"`
 	ItemNames                models.JSONB `json:"itemnames" gorm:"column:itemnames;type:jsonb"`
 	UnitCode                 string       `json:"unitcode" gorm:"column:unitcode"`
@@ -62,7 +62,7 @@ type TransactionDetailPG struct {
 	PriceExcludeVat          float64      `json:"priceexcludevat" gorm:"column:priceexcludevat"`
 	Discount                 string       `json:"discount" gorm:"column:discount"`
 	DiscountAmount           float64      `json:"discountamount" gorm:"column:discountamount"`
-	SumAmount                float64      `json:"sum_amount" gorm:"column:sum_amount"`
+	SumAmount                float64      `json:"sumamount" gorm:"column:sumamount"`
 	SumAmountExcludeVat      float64      `json:"sumamountexcludevat" gorm:"column:sumamountexcludevat"`
 	SumAmountChoice          float64      `json:"sumamountchoice" gorm:"column:sumamountchoice"`
 	RefGuid                  string       `json:"refguid" gorm:"column:refguid"`
@@ -72,13 +72,13 @@ type TransactionDetailPG struct {
 	LocationNames            models.JSONB `json:"locationnames" gorm:"column:locationnames;type:jsonb"`
 	VatCal                   int8         `json:"vatcal" gorm:"column:vatcal"`
 	FoodType                 int8         `json:"foodtype" gorm:"column:foodtype"`
-	VatType                  int8         `json:"vat_type" gorm:"column:vat_type"`
-	TaxType                  int8         `json:"tax_type" gorm:"column:tax_type"`
+	VatType                  int8         `json:"vattype" gorm:"column:vattype"`
+	TaxType                  int8         `json:"taxtype" gorm:"column:taxtype"`
 	IsChoice                 int8         `json:"ischoice" gorm:"column:ischoice"`
 	StandValue               float64      `json:"standvalue" gorm:"column:standvalue"`
 	DivideValue              float64      `json:"dividevalue" gorm:"column:dividevalue"`
-	ItemType                 int8         `json:"item_type" gorm:"column:item_type"`
-	ItemGuid                 string       `json:"item_guid" gorm:"column:item_guid"`
+	ItemType                 int8         `json:"itemtype" gorm:"column:itemtype"`
+	ItemGuid                 string       `json:"itemguid" gorm:"column:itemguid"`
 	TotalValueVat            float64      `json:"totalvaluevat" gorm:"column:totalvaluevat"`
 	DocRef                   string       `json:"docref" gorm:"column:docref"`
 	DocRefDateTime           time.Time    `json:"docrefdatetime" gorm:"column:docrefdatetime"`
@@ -88,13 +88,13 @@ type TransactionDetailPG struct {
 	LocationCodeDestination  string       `json:"locationcodedestination" gorm:"column:locationcodedestination"`
 	LocationDestination      models.JSONB `json:"locationdestination" gorm:"column:locationdestination;type:jsonb"`
 	UnitNames                models.JSONB `json:"unitnames" gorm:"column:unitnames;type:jsonb"`
-	GroupCode                string       `json:"group_code" gorm:"column:group_code"`
-	GroupNames               models.JSONB `json:"group_names" gorm:"column:group_names;type:jsonb"`
+	GroupCode                string       `json:"groupcode" gorm:"column:groupcode"`
+	GroupNames               models.JSONB `json:"groupnames" gorm:"column:groupnames;type:jsonb"`
 	DocDate                  time.Time    `json:"docdate" gorm:"column:docdate"`
 }
 
 type GeneralTransactionPG struct {
-	GuidFixed                string `json:"guid_fixed" gorm:"column:guid_fixed"`
+	GuidFixed                string `json:"guidfixed" gorm:"column:guidfixed"`
 	models.HoldingCodeentity `bson:"inline"`
 	models.PartitionIdentity `gorm:"embedded;"`
 	InquiryType              int          `json:"inquirytype" gorm:"column:inquirytype"`
@@ -106,24 +106,24 @@ type GeneralTransactionPG struct {
 	TaxDocDate               time.Time    `json:"taxdocdate" gorm:"column:taxdocdate"`
 	BranchCode               string       `json:"branchcode" gorm:"column:branchcode"`
 	BranchNames              models.JSONB `json:"branchnames" gorm:"column:branchnames;type:jsonb"`
-	VatType                  int8         `json:"vat_type" gorm:"column:vat_type" `
+	VatType                  int8         `json:"vattype" gorm:"column:vattype" `
 	VatRate                  float64      `json:"vatrate" gorm:"column:vatrate"`
 	TotalValue               float64      `json:"totalvalue" gorm:"column:totalvalue"`
 	TotalBeforeVat           float64      `json:"totalbeforevat" gorm:"column:totalbeforevat"`
 	TotalVatValue            float64      `json:"totalvatvalue" gorm:"column:totalvatvalue"`
 	TotalAfterVat            float64      `json:"totalaftervat" gorm:"column:totalaftervat"`
-	TotalAmount              float64      `json:"total_amount" gorm:"column:total_amount"`
+	TotalAmount              float64      `json:"totalamount" gorm:"column:totalamount"`
 	IsManualAmount           bool         `json:"ismanualamount" gorm:"column:ismanualamount"`
 }
 
 type GeneralTransactionDetailPG struct {
 	ID                       uint   `gorm:"primarykey"`
-	HoldingCode              string `json:"holding_code" gorm:"column:holding_code"`
-	GuidFixed                string `json:"guid_fixed" gorm:"column:guid_fixed"`
+	HoldingCode              string `json:"holdingcode" gorm:"column:holdingcode"`
+	GuidFixed                string `json:"guidfixed" gorm:"column:guidfixed"`
 	models.PartitionIdentity `gorm:"embedded;"`
 	DocNo                    string    `json:"docno" gorm:"column:docno"`
 	DocDate                  time.Time `json:"docdate" gorm:"column:docdate"`
-	LineNumber               int8      `json:"line_number" gorm:"column:line_number"`
+	LineNumber               int8      `json:"linenumber" gorm:"column:linenumber"`
 	Description              string    `json:"description" gorm:"column:description"`
 	Amount                   float64   `json:"amount" gorm:"column:amount"`
 }

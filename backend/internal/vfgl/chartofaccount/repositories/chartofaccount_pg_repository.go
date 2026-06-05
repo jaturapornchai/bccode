@@ -41,8 +41,8 @@ func (repo ChartOfAccountPgRepository) Create(doc models.ChartOfAccountPG) error
 
 func (repo ChartOfAccountPgRepository) Update(holdingCode string, accountCode string, doc models.ChartOfAccountPG) error {
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"holding_code": holdingCode,
-		"accountcode":  accountCode,
+		"holdingcode": holdingCode,
+		"accountcode": accountCode,
 	})
 
 	if err != nil {
@@ -53,8 +53,8 @@ func (repo ChartOfAccountPgRepository) Update(holdingCode string, accountCode st
 
 func (repo ChartOfAccountPgRepository) Delete(holdingCode string, accountCode string) error {
 	err := repo.pst.Delete(models.ChartOfAccountPG{}, map[string]interface{}{
-		"holding_code": holdingCode,
-		"accountcode":  accountCode,
+		"holdingcode": holdingCode,
+		"accountcode": accountCode,
 	})
 
 	if err != nil {
@@ -65,7 +65,7 @@ func (repo ChartOfAccountPgRepository) Delete(holdingCode string, accountCode st
 
 func (repo ChartOfAccountPgRepository) Get(holdingCode string, accountCode string) (*models.ChartOfAccountPG, error) {
 	var result models.ChartOfAccountPG
-	_, err := repo.pst.First(&result, "holding_code=? AND accountcode=?", holdingCode, accountCode)
+	_, err := repo.pst.First(&result, "holdingcode=? AND accountcode=?", holdingCode, accountCode)
 	if err != nil {
 		return nil, err
 	}

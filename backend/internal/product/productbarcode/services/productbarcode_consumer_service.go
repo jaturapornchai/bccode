@@ -143,7 +143,7 @@ func (svc ProductBarcodeConsumeService) ReSync(holdingCode string) error {
 		Page:  1,
 		Sorts: []msModels.KeyInt{
 			{
-				Key:   "guid_fixed",
+				Key:   "guidfixed",
 				Value: -1,
 			},
 		},

@@ -29,7 +29,7 @@ type StockTransferData struct {
 }
 
 type StockTransferDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	StockTransferData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

@@ -14,18 +14,18 @@ const companyCollectionName = "organizationCompanies"
 type Company struct {
 	Code     string       `json:"code" bson:"code"`
 	Names    common.JSONB `json:"names" bson:"names"`
-	TaxID    string       `json:"tax_id" bson:"tax_id"`
-	IsActive bool         `json:"is_active" bson:"is_active"`
+	TaxID    string       `json:"taxid" bson:"taxid"`
+	IsActive bool         `json:"isactive" bson:"isactive"`
 }
 
 type CompanyDoc struct {
-	ID          primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	HoldingCode string             `json:"holding_code" bson:"holding_code"`
-	GuidFixed   string             `json:"guid_fixed" bson:"guid_fixed"`
+	ID          primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	HoldingCode string             `json:"holdingcode" bson:"holdingcode"`
+	GuidFixed   string             `json:"guidfixed" bson:"guidfixed"`
 	Company     `bson:"inline"`
-	CreatedAt   time.Time  `json:"created_at" bson:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at" bson:"updated_at"`
-	DeletedAt   *time.Time `json:"deleted_at,omitempty" bson:"deleted_at,omitempty"`
+	CreatedAt   time.Time  `json:"createdat" bson:"createdat"`
+	UpdatedAt   time.Time  `json:"updatedat" bson:"updatedat"`
+	DeletedAt   *time.Time `json:"deletedat,omitempty" bson:"deletedat,omitempty"`
 	CreatedBy   string     `json:"createdby,omitempty" bson:"createdby,omitempty"`
 	UpdatedBy   string     `json:"updatedby,omitempty" bson:"updatedby,omitempty"`
 	DeletedBy   string     `json:"deletedby,omitempty" bson:"deletedby,omitempty"`

@@ -36,7 +36,7 @@ func (repo ProductBarcodeClickhouseRepository) Search(holdingCode string, pageab
 
 	conn := repo.pst.Conn()
 
-	where := "WHERE holding_code = ? "
+	where := "WHERE holdingcode = ? "
 
 	whereSerach := ""
 

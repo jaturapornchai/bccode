@@ -2,12 +2,13 @@
 //
 // ============================================================================
 // PURPOSE / จุดประสงค์:
-//   This package validates Purchase Order data at the backend (mainapi) before
-//   saving to MongoDB and publishing to Kafka. It serves as the "single source
-//   of truth" for PO data integrity.
 //
-//   Package นี้ตรวจสอบข้อมูลใบสั่งซื้อที่ backend (mainapi) ก่อนบันทึกลง MongoDB
-//   และส่งไป Kafka เพื่อเป็นจุดตรวจสอบข้อมูลที่เชื่อถือได้จุดเดียว
+//	This package validates Purchase Order data at the backend (mainapi) before
+//	saving to MongoDB and publishing to Kafka. It serves as the "single source
+//	of truth" for PO data integrity.
+//
+//	Package นี้ตรวจสอบข้อมูลใบสั่งซื้อที่ backend (mainapi) ก่อนบันทึกลง MongoDB
+//	และส่งไป Kafka เพื่อเป็นจุดตรวจสอบข้อมูลที่เชื่อถือได้จุดเดียว
 //
 // WHY BACKEND VALIDATION? / ทำไมต้อง validate ที่ backend?:
 //   - External clients (customers, partners) will submit POs via API/MCP
@@ -16,11 +17,12 @@
 //   - Frontend validation alone cannot guarantee data integrity
 //
 // ARCHITECTURE / สถาปัตยกรรม:
-//   Request → [Layer 1: Struct Tags] → [Layer 2: Business Validator (this file)] → [Layer 3: Sanitizer] → Save
 //
-//   Layer 1: go-playground/validator tags — basic required/range checks
-//   Layer 2: Business rules (this file) — complex PO-specific validation
-//   Layer 3: Sanitizer (in service layer) — auto-fix minor issues (e.g. exchange rate ≤ 0 → 1.0)
+//	Request → [Layer 1: Struct Tags] → [Layer 2: Business Validator (this file)] → [Layer 3: Sanitizer] → Save
+//
+//	Layer 1: go-playground/validator tags — basic required/range checks
+//	Layer 2: Business rules (this file) — complex PO-specific validation
+//	Layer 3: Sanitizer (in service layer) — auto-fix minor issues (e.g. exchange rate ≤ 0 → 1.0)
 //
 // ERROR HANDLING / การจัดการ error:
 //   - Collects ALL errors before returning (does NOT stop at first error)
@@ -32,6 +34,7 @@
 //   - Field paths use dot notation for nested fields (e.g. "details[2].qty")
 //   - Messages are bilingual — parse "en" for English, "th" for Thai
 //   - HTTP 400 = validation error, check "errors" array for details
+//
 // ============================================================================
 package validators
 

@@ -63,8 +63,8 @@ func NewBusinessTypeRepository(pst microservice.IPersisterMongo) *BusinessTypeRe
 func (repo BusinessTypeRepository) ClearDefault(ctx context.Context, holdingCode string) error {
 
 	filter := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at": bson.M{
+		"holdingcode": holdingCode,
+		"deletedat": bson.M{
 			"$exists": false,
 		},
 		"isdefault": true,
@@ -82,8 +82,8 @@ func (repo BusinessTypeRepository) ClearDefault(ctx context.Context, holdingCode
 func (repo BusinessTypeRepository) GetDefault(ctx context.Context, holdingCode string) (models.BusinessTypeDoc, error) {
 
 	filter := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at": bson.M{
+		"holdingcode": holdingCode,
+		"deletedat": bson.M{
 			"$exists": false,
 		},
 		"isdefault": true,

@@ -44,16 +44,16 @@ type SetupConfigEntry struct {
 	Category    string    `json:"category" bson:"category"`       // "service_urls", "mongodb", "postgresql", "clickhouse", "redis", "kafka", "integrations"
 	Key         string    `json:"key" bson:"key"`                 // เช่น "mainapi_url", "MONGODB_URI"
 	Value       string    `json:"value" bson:"value"`             // ค่า config
-	IsSecret    bool      `json:"is_secret" bson:"is_secret"`     // true = แสดงเป็น *** ใน response
+	IsSecret    bool      `json:"issecret" bson:"issecret"`       // true = แสดงเป็น *** ใน response
 	Description string    `json:"description" bson:"description"` // คำอธิบาย
-	UpdatedAt   time.Time `json:"updated_at" bson:"updated_at"`
-	UpdatedBy   string    `json:"updated_by" bson:"updated_by"`
+	UpdatedAt   time.Time `json:"updatedat" bson:"updatedat"`
+	UpdatedBy   string    `json:"updatedby" bson:"updatedby"`
 }
 
 // SetupPasswordDoc โครงสร้างเก็บ password
 type SetupPasswordDoc struct {
-	PasswordHash string    `json:"password_hash" bson:"password_hash"`
-	UpdatedAt    time.Time `json:"updated_at" bson:"updated_at"`
+	PasswordHash string    `json:"passwordhash" bson:"passwordhash"`
+	UpdatedAt    time.Time `json:"updatedat" bson:"updatedat"`
 }
 
 // ==========================================
@@ -136,8 +136,8 @@ func SetupVerifyPasswordHandler(c echo.Context) error {
 
 func SetupChangePasswordHandler(c echo.Context) error {
 	var req struct {
-		CurrentPassword string `json:"current_password"`
-		NewPassword     string `json:"new_password"`
+		CurrentPassword string `json:"currentpassword"`
+		NewPassword     string `json:"newpassword"`
 	}
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{

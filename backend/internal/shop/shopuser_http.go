@@ -351,13 +351,13 @@ func (h ShopMemberHttp) CleanupEmptyUsers(ctx microservice.IContext) error {
 
 // LineSyncRequest - request body สำหรับ sync LINE data
 type LineSyncRequest struct {
-	HoldingCode     string `json:"holding_code"`
+	HoldingCode     string `json:"holdingcode"`
 	Username        string `json:"username"`
-	EmployeeCode    string `json:"employee_code"` // alias for username
-	LineUserID      string `json:"line_user_id"`
-	LineDisplayName string `json:"line_display_name"`
-	LinePictureURL  string `json:"line_picture_url"`
-	APIKey          string `json:"api_key"` // สำหรับ authentication
+	EmployeeCode    string `json:"employeecode"` // alias for username
+	LineUserID      string `json:"lineuserid"`
+	LineDisplayName string `json:"linedisplayname"`
+	LinePictureURL  string `json:"linepictureurl"`
+	APIKey          string `json:"apikey"` // สำหรับ authentication
 }
 
 // SyncLineData - Public endpoint สำหรับ sync LINE data จาก lineoa-liff
@@ -398,7 +398,7 @@ func (h ShopMemberHttp) SyncLineData(ctx microservice.IContext) error {
 	}
 
 	if req.HoldingCode == "" || username == "" {
-		ctx.ResponseError(400, "holding_code and username/employee_code are required")
+		ctx.ResponseError(400, "holdingcode and username/employee_code are required")
 		return errors.New("missing required fields")
 	}
 
@@ -425,9 +425,9 @@ func (h ShopMemberHttp) SyncLineData(ctx microservice.IContext) error {
 
 // MyLineDataRequest - request body สำหรับ user อัปเดต LINE data ของตัวเอง
 type MyLineDataRequest struct {
-	LineUserID      string `json:"line_user_id"`
-	LineDisplayName string `json:"line_display_name"`
-	LinePictureURL  string `json:"line_picture_url"`
+	LineUserID      string `json:"lineuserid"`
+	LineDisplayName string `json:"linedisplayname"`
+	LinePictureURL  string `json:"linepictureurl"`
 }
 
 // SaveMyLineData - ให้ผู้ใช้อัปเดต LINE data ของตัวเอง (ใช้จาก Flutter หลัง LIFF linking)

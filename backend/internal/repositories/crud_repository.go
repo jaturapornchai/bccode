@@ -39,7 +39,7 @@ func NewCrudRepository[T any](pst microservice.IPersisterMongo) CrudRepository[T
 
 func (repo CrudRepository[T]) Count(ctx context.Context, holdingCode string) (int, error) {
 
-	count, err := repo.pst.Count(ctx, new(T), bson.M{"holding_code": holdingCode})
+	count, err := repo.pst.Count(ctx, new(T), bson.M{"holdingcode": holdingCode})
 
 	if err != nil {
 		return 0, err
@@ -50,9 +50,9 @@ func (repo CrudRepository[T]) Count(ctx context.Context, holdingCode string) (in
 func (repo CrudRepository[T]) CountByKey(ctx context.Context, holdingCode string, keyName string, keyValue string) (int, error) {
 
 	filters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at":   bson.M{"$exists": false},
-		keyName:        keyValue,
+		"holdingcode": holdingCode,
+		"deletedat":   bson.M{"$exists": false},
+		keyName:       keyValue,
 	}
 
 	return repo.pst.Count(ctx, new(T), filters)
@@ -61,9 +61,9 @@ func (repo CrudRepository[T]) CountByKey(ctx context.Context, holdingCode string
 func (repo CrudRepository[T]) CountByInKeys(ctx context.Context, holdingCode string, keyName string, keyValues []string) (int, error) {
 
 	filters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at":   bson.M{"$exists": false},
-		keyName:        bson.M{"$in": keyValues},
+		"holdingcode": holdingCode,
+		"deletedat":   bson.M{"$exists": false},
+		keyName:       bson.M{"$in": keyValues},
 	}
 
 	return repo.pst.Count(ctx, new(T), filters)
@@ -96,8 +96,8 @@ func (repo CrudRepository[T]) CreateInBatch(ctx context.Context, docList []T) er
 
 func (repo CrudRepository[T]) Update(ctx context.Context, holdingCode string, guid string, doc T) error {
 	filterDoc := map[string]interface{}{
-		"holding_code": holdingCode,
-		"guid_fixed":   guid,
+		"holdingcode": holdingCode,
+		"guidfixed":   guid,
 	}
 
 	err := repo.pst.UpdateOne(ctx, new(T), filterDoc, doc)
@@ -117,7 +117,7 @@ func (repo CrudRepository[T]) Delete(ctx context.Context, holdingCode string, us
 		filterQuery[col] = val
 	}
 
-	filterQuery["holding_code"] = holdingCode
+	filterQuery["holdingcode"] = holdingCode
 
 	err := repo.pst.SoftDelete(ctx, new(T), username, filterQuery)
 
@@ -129,7 +129,7 @@ func (repo CrudRepository[T]) Delete(ctx context.Context, holdingCode string, us
 }
 
 func (repo CrudRepository[T]) DeleteByGuidfixed(ctx context.Context, holdingCode string, guid string, username string) error {
-	err := repo.pst.SoftDelete(ctx, new(T), username, bson.M{"guid_fixed": guid, "holding_code": holdingCode})
+	err := repo.pst.SoftDelete(ctx, new(T), username, bson.M{"guidfixed": guid, "holdingcode": holdingCode})
 
 	if err != nil {
 		return err
@@ -145,13 +145,13 @@ func (repo CrudRepository[T]) FindOne(ctx context.Context, holdingCode string, f
 	switch filters.(type) {
 	case bson.M:
 		tempFilterQuery := filters.(bson.M)
-		tempFilterQuery["holding_code"] = holdingCode
-		tempFilterQuery["deleted_at"] = bson.M{"$exists": false}
+		tempFilterQuery["holdingcode"] = holdingCode
+		tempFilterQuery["deletedat"] = bson.M{"$exists": false}
 		filterQuery = tempFilterQuery
 	case bson.D:
 		tempFilterQuery := filters.(bson.D)
-		tempFilterQuery = append(tempFilterQuery, bson.E{"holding_code", holdingCode})
-		tempFilterQuery = append(tempFilterQuery, bson.E{"deleted_at", bson.D{{"$exists", false}}})
+		tempFilterQuery = append(tempFilterQuery, bson.E{"holdingcode", holdingCode})
+		tempFilterQuery = append(tempFilterQuery, bson.E{"deletedat", bson.D{{"$exists", false}}})
 
 		filterQuery = tempFilterQuery
 	default:
@@ -176,7 +176,7 @@ func (repo CrudRepository[T]) FindByGuid(ctx context.Context, holdingCode string
 	err := repo.pst.FindOne(
 		ctx,
 		new(T),
-		bson.M{"guid_fixed": guid, "holding_code": holdingCode, "deleted_at": bson.M{"$exists": false}},
+		bson.M{"guidfixed": guid, "holdingcode": holdingCode, "deletedat": bson.M{"$exists": false}},
 		doc,
 	)
 
@@ -194,7 +194,7 @@ func (repo CrudRepository[T]) FindByGuids(ctx context.Context, holdingCode strin
 	err := repo.pst.Find(
 		ctx,
 		new(T),
-		bson.M{"guid_fixed": bson.M{"$in": guids}, "holding_code": holdingCode, "deleted_at": bson.M{"$exists": false}},
+		bson.M{"guidfixed": bson.M{"$in": guids}, "holdingcode": holdingCode, "deletedat": bson.M{"$exists": false}},
 		doc,
 	)
 
@@ -209,7 +209,7 @@ func (repo CrudRepository[T]) FindByDocIndentityGuid(ctx context.Context, holdin
 
 	doc := new(T)
 
-	err := repo.pst.FindOne(ctx, new(T), bson.M{"holding_code": holdingCode, "deleted_at": bson.M{"$exists": false}, indentityField: indentityValue}, doc)
+	err := repo.pst.FindOne(ctx, new(T), bson.M{"holdingcode": holdingCode, "deletedat": bson.M{"$exists": false}, indentityField: indentityValue}, doc)
 
 	if err != nil {
 		return *new(T), err
@@ -232,7 +232,7 @@ func (repo CrudRepository[T]) FindByDocIndentityGuids(ctx context.Context, holdi
 
 	doc := new([]T)
 
-	err := repo.pst.Find(ctx, new(T), bson.M{"holding_code": holdingCode, "deleted_at": bson.M{"$exists": false}, indentityField: bson.M{"$in": values}}, doc)
+	err := repo.pst.Find(ctx, new(T), bson.M{"holdingcode": holdingCode, "deletedat": bson.M{"$exists": false}, indentityField: bson.M{"$in": values}}, doc)
 
 	if err != nil {
 		return *new([]T), err
@@ -251,8 +251,8 @@ func (repo CrudRepository[T]) FindOneFilter(ctx context.Context, holdingCode str
 		findFilters[col] = val
 	}
 
-	findFilters["holding_code"] = holdingCode
-	findFilters["deleted_at"] = bson.M{"$exists": false}
+	findFilters["holdingcode"] = holdingCode
+	findFilters["deletedat"] = bson.M{"$exists": false}
 
 	err := repo.pst.FindOne(ctx, new(T), findFilters, doc)
 
@@ -273,8 +273,8 @@ func (repo CrudRepository[T]) FindFilter(ctx context.Context, holdingCode string
 		findFilters[col] = val
 	}
 
-	findFilters["holding_code"] = holdingCode
-	findFilters["deleted_at"] = bson.M{"$exists": false}
+	findFilters["holdingcode"] = holdingCode
+	findFilters["deletedat"] = bson.M{"$exists": false}
 
 	err := repo.pst.Find(ctx, new(T), findFilters, doc)
 

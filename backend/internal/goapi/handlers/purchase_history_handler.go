@@ -14,7 +14,7 @@ import (
 
 // PurchaseHistoryRequest - request สำหรับดึงประวัติการสั่งซื้อ
 type PurchaseHistoryRequest struct {
-	HoldingCode string   `json:"holding_code"`
+	HoldingCode string   `json:"holdingcode"`
 	Barcodes    []string `json:"barcodes"`
 	Months      int      `json:"months"` // จำนวนเดือนย้อนหลัง (default 3)
 }
@@ -29,7 +29,7 @@ type PurchaseHistoryItem struct {
 	TotalQty  float64 `json:"totalqty"`
 	UnitCode  string  `json:"unitcode"`
 	Price     float64 `json:"price"`
-	SumAmount float64 `json:"sum_amount"`
+	SumAmount float64 `json:"sumamount"`
 	TransFlag int     `json:"transflag"`
 }
 
@@ -49,7 +49,7 @@ func PurchaseHistoryHandler(c echo.Context) error {
 	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"success": false,
-			"error":   "Missing required parameter: holding_code",
+			"error":   "Missing required parameter: holdingcode",
 			"code":    "MISSING_HOLDING_CODE",
 		})
 	}
@@ -79,7 +79,7 @@ func PurchaseHistoryHandler(c echo.Context) error {
 		})
 	}
 
-	// Connect to database (holding_code is used as database name)
+	// Connect to database (holdingcode is used as database name)
 	db, err := mypg.PgSqlFastConnect(req.HoldingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]interface{}{

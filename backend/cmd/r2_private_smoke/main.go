@@ -63,7 +63,7 @@ func run() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	fmt.Printf("%s smoke: bucket=%s holding_code=%s key=%s\n", cfg.Provider, cfg.BucketName, cfg.HoldingCode, objectKey)
+	fmt.Printf("%s smoke: bucket=%s holdingcode=%s key=%s\n", cfg.Provider, cfg.BucketName, cfg.HoldingCode, objectKey)
 
 	_, err = client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket:      aws.String(cfg.BucketName),
@@ -170,7 +170,7 @@ func loadConfig() (r2SmokeConfig, error) {
 		return cfg, fmt.Errorf("missing environment variables: %s", strings.Join(missing, ", "))
 	}
 	if strings.Contains(cfg.HoldingCode, "..") || strings.Contains(cfg.HoldingCode, "\\") || strings.Contains(cfg.HoldingCode, "/") {
-		return cfg, fmt.Errorf("BC_R2_SMOKE_HOLDING_CODE must be a single holding_code segment")
+		return cfg, fmt.Errorf("BC_R2_SMOKE_HOLDING_CODE must be a single holdingcode segment")
 	}
 	return cfg, nil
 }

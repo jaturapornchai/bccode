@@ -12,22 +12,22 @@ import (
 
 // BalanceDetail - รายละเอียดยอดคงเหลือแยกตามคลัง/ที่เก็บ
 type BalanceDetail struct {
-	WHCode string  `json:"whcode"`
+	WHCode       string  `json:"whcode"`
 	LocationCode string  `json:"locationcode"`
-	Balance float64 `json:"balance"`
+	Balance      float64 `json:"balance"`
 }
 
 // ProductBalance - ยอดคงเหลือของสินค้าพร้อมรายละเอียด
 type ProductBalance struct {
-	ItemCode string          `json:"itemcode"`
-	TotalBalance float64         `json:"total_balance"`
-	Details []BalanceDetail `json:"details"`
+	ItemCode     string          `json:"itemcode"`
+	TotalBalance float64         `json:"totalbalance"`
+	Details      []BalanceDetail `json:"details"`
 }
 
 // GetProductBalancesHandler - ดึงยอดคงเหลือของสินค้าหลายรายการพร้อม aggregate ใน Go
 func GetProductBalancesHandler(c echo.Context) error {
 	var payload struct {
-		Database string   `json:"database"`
+		Database  string   `json:"database"`
 		ItemCodes []string `json:"itemcodes"`
 	}
 

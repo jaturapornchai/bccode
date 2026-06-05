@@ -202,7 +202,7 @@ func purchaesReceiveDoc() models.PurchaseReceiveTransactionPG {
 
 func CleanUpData(pst *microservice.Persister) {
 
-	_ = pst.DBClient().Exec("DELETE FROM purchasereceive_transaction_detail WHERE holding_code='TESTSHOP' AND docno like 'TEST_%'").Error
-	_ = pst.DBClient().Exec("DELETE FROM purchasereceive_transaction WHERE holding_code='TESTSHOP' AND docno like 'TEST_%'").Error
+	_ = pst.DBClient().Exec("DELETE FROM purchasereceive_transaction_detail WHERE holdingcode='TESTSHOP' AND docno like 'TEST_%'").Error
+	_ = pst.DBClient().Exec("DELETE FROM purchasereceive_transaction WHERE holdingcode='TESTSHOP' AND docno like 'TEST_%'").Error
 
 }

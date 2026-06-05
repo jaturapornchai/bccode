@@ -75,12 +75,12 @@ func ClickHouseQueryHandler(c echo.Context) error {
 // ClickHouseSelectHandler - Simplified SELECT with parameters
 func ClickHouseSelectHandler(c echo.Context) error {
 	var reqBody struct {
-		Table string                 `json:"table"`   // Table name
+		Table   string                 `json:"table"`   // Table name
 		Columns []string               `json:"columns"` // Column names (empty = SELECT *)
-		Where map[string]interface{} `json:"where"`   // WHERE conditions
-		OrderBy string                 `json:"order_by"`
-		Limit int                    `json:"limit"`
-		Offset int                    `json:"offset"`
+		Where   map[string]interface{} `json:"where"`   // WHERE conditions
+		OrderBy string                 `json:"orderby"`
+		Limit   int                    `json:"limit"`
+		Offset  int                    `json:"offset"`
 	}
 
 	if err := c.Bind(&reqBody); err != nil {
@@ -227,12 +227,12 @@ func ClickHouseMultiQueryHandler(c echo.Context) error {
 
 	// Execute all queries and collect results
 	type QueryResult struct {
-		Index int                      `json:"index"`
-		Query string                   `json:"query"`
+		Index  int                      `json:"index"`
+		Query  string                   `json:"query"`
 		Status string                   `json:"status"`
-		Count int                      `json:"count,omitempty"`
-		Data []map[string]interface{} `json:"data,omitempty"`
-		Error string                   `json:"error,omitempty"`
+		Count  int                      `json:"count,omitempty"`
+		Data   []map[string]interface{} `json:"data,omitempty"`
+		Error  string                   `json:"error,omitempty"`
 	}
 
 	results := make([]QueryResult, len(reqBody.Queries))

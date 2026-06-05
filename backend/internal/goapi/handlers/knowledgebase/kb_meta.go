@@ -4,7 +4,7 @@ package knowledgebase
 //
 // RAGFlow tracks doc id/name/size/chunks/status, but BC needs additional
 // per-document fields (branch, on/off, schedule). We keep them in a Mongo
-// collection keyed by (holding_code, ragflow_doc_id).
+// collection keyed by (holdingcode, ragflowdocid).
 //
 // On every list call we fetch RAGFlow's docs THEN merge with this metadata.
 
@@ -26,22 +26,22 @@ const kbMetaCollection = "kbDocumentMetadata"
 
 // KBDocMeta — bccaccount-specific metadata that lives outside RAGFlow
 type KBDocMeta struct {
-	HoldingCode   string    `bson:"holding_code" json:"holding_code"`
-	RagflowDocID  string    `bson:"ragflow_doc_id" json:"ragflow_doc_id"`
-	Filename      string    `bson:"file_name" json:"file_name"`
-	BranchID      string    `bson:"branch_id" json:"branch_id"`
-	ContentType   string    `bson:"content_type" json:"content_type"`
+	HoldingCode   string    `bson:"holdingcode" json:"holdingcode"`
+	RagflowDocID  string    `bson:"ragflowdocid" json:"ragflowdocid"`
+	Filename      string    `bson:"filename" json:"filename"`
+	BranchID      string    `bson:"branchid" json:"branchid"`
+	ContentType   string    `bson:"contenttype" json:"contenttype"`
 	Size          int64     `bson:"size" json:"size"`
-	UploadedBy    string    `bson:"uploaded_by" json:"uploaded_by"`
+	UploadedBy    string    `bson:"uploadedby" json:"uploadedby"`
 	Description   string    `bson:"description" json:"description"`
 	Tags          []string  `bson:"tags" json:"tags"`
-	Status        bool      `bson:"status" json:"status"`  // enabled?
-	AllDay        bool      `bson:"allday" json:"all_day"` // active 24/7?
-	StartDateTime *string   `bson:"start_date_time,omitempty" json:"start_date_time,omitempty"`
-	EndDateTime   *string   `bson:"end_date_time,omitempty" json:"end_date_time,omitempty"`
+	Status        bool      `bson:"status" json:"status"` // enabled?
+	AllDay        bool      `bson:"allday" json:"allday"` // active 24/7?
+	StartDateTime *string   `bson:"startdatetime,omitempty" json:"startdatetime,omitempty"`
+	EndDateTime   *string   `bson:"enddatetime,omitempty" json:"enddatetime,omitempty"`
 	Version       int       `bson:"version" json:"version"`
-	UploadedAt    time.Time `bson:"uploaded_at" json:"uploaded_at"`
-	UpdatedAt     time.Time `bson:"updated_at" json:"updated_at"`
+	UploadedAt    time.Time `bson:"uploadedat" json:"uploadedat"`
+	UpdatedAt     time.Time `bson:"updatedat" json:"updatedat"`
 }
 
 var (
@@ -60,8 +60,8 @@ func getCollection() (*mongo.Collection, error) {
 		defer cancel()
 		_, err := col.Indexes().CreateOne(ctx, mongo.IndexModel{
 			Keys: bson.D{
-				{Key: "holding_code", Value: 1},
-				{Key: "ragflow_doc_id", Value: 1},
+				{Key: "holdingcode", Value: 1},
+				{Key: "ragflowdocid", Value: 1},
 			},
 			Options: options.Index().SetUnique(true),
 		})
@@ -87,7 +87,7 @@ func UpsertMeta(meta *KBDocMeta) error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	filter := bson.M{"holding_code": meta.HoldingCode, "ragflow_doc_id": meta.RagflowDocID}
+	filter := bson.M{"holdingcode": meta.HoldingCode, "ragflowdocid": meta.RagflowDocID}
 	_, err = col.ReplaceOne(ctx, filter, meta, options.Replace().SetUpsert(true))
 	return err
 }
@@ -101,9 +101,9 @@ func GetMetaByShop(holdingCode, branchID string) ([]KBDocMeta, error) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	filter := bson.M{"holding_code": holdingCode}
+	filter := bson.M{"holdingcode": holdingCode}
 	if branchID != "" && branchID != "*" {
-		filter["branch_id"] = bson.M{"$in": []string{branchID, "*"}}
+		filter["branchid"] = bson.M{"$in": []string{branchID, "*"}}
 	}
 	cur, err := col.Find(ctx, filter)
 	if err != nil {
@@ -126,7 +126,7 @@ func FindByFilename(holdingCode, filename string) (*KBDocMeta, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	var meta KBDocMeta
-	err = col.FindOne(ctx, bson.M{"holding_code": holdingCode, "file_name": filename}).Decode(&meta)
+	err = col.FindOne(ctx, bson.M{"holdingcode": holdingCode, "filename": filename}).Decode(&meta)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
@@ -136,7 +136,7 @@ func FindByFilename(holdingCode, filename string) (*KBDocMeta, error) {
 	return &meta, nil
 }
 
-// UpdateFields applies a partial update to one doc by (holding_code, filename).
+// UpdateFields applies a partial update to one doc by (holdingcode, filename).
 func UpdateFields(holdingCode, filename string, set bson.M) error {
 	col, err := getCollection()
 	if err != nil {
@@ -144,15 +144,15 @@ func UpdateFields(holdingCode, filename string, set bson.M) error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	set["updated_at"] = time.Now()
+	set["updatedat"] = time.Now()
 	_, err = col.UpdateOne(ctx,
-		bson.M{"holding_code": holdingCode, "file_name": filename},
+		bson.M{"holdingcode": holdingCode, "filename": filename},
 		bson.M{"$set": set},
 	)
 	return err
 }
 
-// DeleteMeta removes a row by (holding_code, ragflow_doc_id).
+// DeleteMeta removes a row by (holdingcode, ragflowdocid).
 func DeleteMeta(holdingCode, ragflowDocID string) error {
 	col, err := getCollection()
 	if err != nil {
@@ -160,6 +160,6 @@ func DeleteMeta(holdingCode, ragflowDocID string) error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	_, err = col.DeleteOne(ctx, bson.M{"holding_code": holdingCode, "ragflow_doc_id": ragflowDocID})
+	_, err = col.DeleteOne(ctx, bson.M{"holdingcode": holdingCode, "ragflowdocid": ragflowDocID})
 	return err
 }

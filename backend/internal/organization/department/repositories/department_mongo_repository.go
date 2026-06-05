@@ -61,9 +61,9 @@ func NewDepartmentRepository(pst microservice.IPersisterMongo) *DepartmentReposi
 func (repo DepartmentRepository) FindOneByCode(ctx context.Context, holdingCode string, branchCode, departmentCode string) (models.DepartmentDoc, error) {
 	doc := models.DepartmentDoc{}
 	filter := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at":   bson.M{"$exists": false},
-		"code":         departmentCode,
+		"holdingcode": holdingCode,
+		"deletedat":   bson.M{"$exists": false},
+		"code":        departmentCode,
 	}
 	if branchCode != "" {
 		filter["branchcode"] = branchCode

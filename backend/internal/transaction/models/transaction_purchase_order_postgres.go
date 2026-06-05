@@ -14,7 +14,7 @@ type PurchaseOrderTransactionPG struct {
 	TransactionPG `gorm:"embedded;"`
 	CreditorCode  string                              `json:"creditorcode" gorm:"column:creditorcode"`
 	CreditorNames pkgModels.JSONB                     `json:"creditornames" gorm:"column:creditornames;type:jsonb"`
-	Items         *[]PurchaseOrderDetailTransactionPG `json:"items" gorm:"items;foreignKey:holding_code,docno"`
+	Items         *[]PurchaseOrderDetailTransactionPG `json:"items" gorm:"items;foreignKey:holdingcode,docno"`
 }
 
 // รายละเอียด ใบสั่งซื้อ
@@ -34,7 +34,7 @@ func (s *PurchaseOrderTransactionPG) BeforeUpdate(tx *gorm.DB) (err error) {
 
 	// find old data
 	var details *[]PurchaseOrderDetailTransactionPG
-	tx.Model(&PurchaseOrderDetailTransactionPG{}).Where(" holding_code=? AND docno=?", s.HoldingCode, s.DocNo).Find(&details)
+	tx.Model(&PurchaseOrderDetailTransactionPG{}).Where(" holdingcode=? AND docno=?", s.HoldingCode, s.DocNo).Find(&details)
 
 	// delete un use data
 	for _, tmp := range *details {

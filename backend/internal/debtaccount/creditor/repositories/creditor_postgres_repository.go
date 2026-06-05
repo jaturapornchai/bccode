@@ -26,7 +26,7 @@ func NewCreditorPostgresRepository(pst microservice.IPersister) ICreditorPostgre
 
 func (repo *CreditorPostgresRepository) Get(holdingCode string, creditorCode string) (*creditorModels.CreditorPG, error) {
 	var result creditorModels.CreditorPG
-	_, err := repo.pst.First(&result, "holding_code=? AND code=?", holdingCode, creditorCode)
+	_, err := repo.pst.First(&result, "holdingcode=? AND code=?", holdingCode, creditorCode)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
@@ -48,8 +48,8 @@ func (repo *CreditorPostgresRepository) Create(doc creditorModels.CreditorPG) er
 
 func (repo *CreditorPostgresRepository) Update(holdingCode string, creditorCode string, doc creditorModels.CreditorPG) error {
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"holding_code": holdingCode,
-		"code":         creditorCode,
+		"holdingcode": holdingCode,
+		"code":        creditorCode,
 	})
 
 	if err != nil {
@@ -60,8 +60,8 @@ func (repo *CreditorPostgresRepository) Update(holdingCode string, creditorCode 
 
 func (repo *CreditorPostgresRepository) Delete(holdingCode string, creditorCode string) error {
 	err := repo.pst.Delete(&creditorModels.CreditorPG{}, map[string]interface{}{
-		"holding_code": holdingCode,
-		"code":         creditorCode,
+		"holdingcode": holdingCode,
+		"code":        creditorCode,
 	})
 
 	if err != nil {

@@ -39,8 +39,8 @@ description: Generate CRUD endpoint with model, handler, validator, test. Trigge
 
 ## Patterns
 - Pagination: `limit` (def 20, max 100), `offset`
-- Soft delete: `deleted_at`
-- Audit: `created_at`, `updated_at` auto
+- Soft delete: `deletedat`
+- Audit: `createdat`, `updatedat` auto
 - Errors: 400/404/409/500
 - Response: `{data, meta:{total,page,limit}}`
 

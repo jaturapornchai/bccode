@@ -25,7 +25,7 @@ func OnConsumeMessageCustomerCreateOrUpdate(msg string) error {
 // OnConsumeMessageCustomerDelete - handles customer delete messages
 func OnConsumeMessageCustomerDelete(msg string) error {
 	// รับ Message จาก Kafka ที่เป็นการลบข้อมูล Customer
-	// msg จะเป็น JSON string ที่มีข้อมูล เช่น {"holding_code": "shop123", "code": "C0001"}
+	// msg จะเป็น JSON string ที่มีข้อมูล เช่น {"holdingcode": "shop123", "code": "C0001"}
 
 	logger.Info("OnConsumeMessageCustomerDelete: %s", msg)
 

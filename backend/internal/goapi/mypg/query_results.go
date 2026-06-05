@@ -14,11 +14,11 @@ import (
 type QueryResult struct {
 	ID          int64           `json:"id"`
 	GUID        string          `json:"guid"`
-	HoldingCode string          `json:"holding_code"`
+	HoldingCode string          `json:"holdingcode"`
 	DocDatetime time.Time       `json:"docdatetime"`
-	LineNumber  int             `json:"line_number"`
+	LineNumber  int             `json:"linenumber"`
 	DataJSON    json.RawMessage `json:"datajson"`
-	CreatedAt   time.Time       `json:"created_at"`
+	CreatedAt   time.Time       `json:"createdat"`
 }
 
 // CreateResultTableIfNotExists สร้าง query_results table ถ้ายังไม่มี
@@ -27,18 +27,18 @@ func CreateResultTableIfNotExists(db *sql.DB) error {
 		CREATE TABLE IF NOT EXISTS public.query_results (
 			id SERIAL PRIMARY KEY,
 			guid TEXT NOT NULL,
-			holding_code TEXT NOT NULL,
+			holdingcode TEXT NOT NULL,
 			docdatetime TIMESTAMPTZ DEFAULT NOW(),
 			linenumber INTEGER NOT NULL,
 			datajson JSONB NOT NULL,
-			created_at TIMESTAMPTZ DEFAULT NOW()
+			createdat TIMESTAMPTZ DEFAULT NOW()
 		);
 
 		CREATE INDEX IF NOT EXISTS idx_query_results_guid
 		ON public.query_results(guid);
 
-		CREATE INDEX IF NOT EXISTS idx_query_results_holding_code_guid
-		ON public.query_results(holding_code, guid);
+		CREATE INDEX IF NOT EXISTS idx_query_results_holdingcode_guid
+		ON public.query_results(holdingcode, guid);
 	`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -61,7 +61,7 @@ func InsertQueryResult(db *sql.DB, guid, holdingCode string, lineNumber int, dat
 	}
 
 	query := `
-		INSERT INTO public.query_results (guid, holding_code, linenumber, datajson)
+		INSERT INTO public.query_results (guid, holdingcode, linenumber, datajson)
 		VALUES ($1, $2, $3, $4)
 	`
 
@@ -92,7 +92,7 @@ func InsertQueryResultsBatch(db *sql.DB, guid, holdingCode string, results []map
 	defer tx.Rollback()
 
 	stmt, err := tx.PrepareContext(ctx, `
-		INSERT INTO public.query_results (guid, holding_code, linenumber, datajson)
+		INSERT INTO public.query_results (guid, holdingcode, linenumber, datajson)
 		VALUES ($1, $2, $3, $4)
 	`)
 	if err != nil {
@@ -126,7 +126,7 @@ func GetQueryResults(db *sql.DB, holdingCode, guid string, limit, offset int) ([
 
 	// Get total count
 	var total int
-	countQuery := `SELECT COUNT(*) FROM public.query_results WHERE holding_code = $1 AND guid = $2`
+	countQuery := `SELECT COUNT(*) FROM public.query_results WHERE holdingcode = $1 AND guid = $2`
 	err := db.QueryRowContext(ctx, countQuery, holdingCode, guid).Scan(&total)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get count: %w", err)
@@ -135,7 +135,7 @@ func GetQueryResults(db *sql.DB, holdingCode, guid string, limit, offset int) ([
 	// Get data with pagination
 	query := `
 		SELECT datajson FROM public.query_results
-		WHERE holding_code = $1 AND guid = $2
+		WHERE holdingcode = $1 AND guid = $2
 		ORDER BY linenumber
 		LIMIT $3 OFFSET $4
 	`
@@ -170,7 +170,7 @@ func GetQueryResults(db *sql.DB, holdingCode, guid string, limit, offset int) ([
 
 // DeleteQueryResults deletes query results by GUID
 func DeleteQueryResults(db *sql.DB, holdingCode, guid string) error {
-	query := `DELETE FROM public.query_results WHERE holding_code = $1 AND guid = $2`
+	query := `DELETE FROM public.query_results WHERE holdingcode = $1 AND guid = $2`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()

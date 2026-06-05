@@ -19,7 +19,7 @@ type CheckSumModel struct {
 }
 
 type productOrderModel struct {
-	HoldingCode     string                     `json:"holding_code"`
+	HoldingCode     string                     `json:"holdingcode"`
 	Barcode         string                     `json:"barcode"`
 	Itemcode        string                     `json:"itemcode"`
 	Names           []languageNameModel        `json:"names"`
@@ -29,7 +29,7 @@ type productOrderModel struct {
 	Unitcost        string                     `json:"unitcost"`
 	Unitstandard    string                     `json:"unitstandard"`
 	Multiunit       bool                       `json:"multiunit"`
-	Itemtype        int                        `json:"item_type"`
+	Itemtype        int                        `json:"itemtype"`
 	Itemvat         int                        `json:"itemvat"`
 	Normalprice     float64                    `json:"normalprice"`
 	Price           float64                    `json:"price"`
@@ -108,7 +108,7 @@ type productOrderBalanceOptionDetailModel struct {
 
 func DataProductForTest() productOrderModel {
 	return productOrderModel{
-		HoldingCode: "holding_code",
+		HoldingCode: "holdingcode",
 		Barcode:     "barcode",
 		Itemcode:    "A001X",
 		Names: []languageNameModel{
@@ -225,7 +225,7 @@ func main() {
 
 // Warehouse models for Kafka messages
 type MongoWarehouseModel struct {
-	HoldingCode string                        `json:"holding_code"`
+	HoldingCode string                        `json:"holdingcode"`
 	Code        string                        `json:"code"`
 	Names       []languageNameModel           `json:"names"`
 	Location    []MongoWarehouseLocationModel `json:"location"`

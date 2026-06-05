@@ -32,7 +32,7 @@ func main() {
 	collection := client.Database(dbName).Collection("units")
 
 	var results []bson.M
-	cursor, err := collection.Find(ctx, bson.M{"holding_code": "3EL6B3jlbAcZTxiMLkGMwGNzzUo"})
+	cursor, err := collection.Find(ctx, bson.M{"holdingcode": "3EL6B3jlbAcZTxiMLkGMwGNzzUo"})
 	if err != nil {
 		log.Fatalf("find error: %v", err)
 	}

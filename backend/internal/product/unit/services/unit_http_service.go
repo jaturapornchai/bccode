@@ -437,7 +437,7 @@ func (svc UnitHttpService) DeleteUnitByGUIDs(holdingCode, authUsername string, G
 	}
 
 	deleteFilterQuery := map[string]interface{}{
-		"guid_fixed": bson.M{"$in": GUIDs},
+		"guidfixed": bson.M{"$in": GUIDs},
 	}
 
 	err = svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
@@ -544,9 +544,9 @@ func (svc UnitHttpService) SearchUnit(holdingCode string, companyGuid string, co
 
 	if len(companyGuid) > 0 {
 		filters["$or"] = []interface{}{
-			bson.M{"company_guids": bson.M{"$exists": false}},
-			bson.M{"company_guids": bson.M{"$size": 0}},
-			bson.M{"company_guids": companyGuid},
+			bson.M{"companyguids": bson.M{"$exists": false}},
+			bson.M{"companyguids": bson.M{"$size": 0}},
+			bson.M{"companyguids": companyGuid},
 		}
 	}
 
@@ -571,9 +571,9 @@ func (svc UnitHttpService) SearchUnitMultiShops(shopsID []string, codeFilters []
 
 	filters := map[string]interface{}{}
 
-	// Add holding_code filter for multi-shop query
+	// Add holdingcode filter for multi-shop query
 	if len(shopsID) > 0 {
-		filters["holding_code"] = bson.M{"$in": shopsID}
+		filters["holdingcode"] = bson.M{"$in": shopsID}
 	}
 
 	if len(codeFilters) > 0 {
@@ -600,9 +600,9 @@ func (svc UnitHttpService) SearchUnitLimit(holdingCode string, companyGuid strin
 	}
 
 	selectFields := map[string]interface{}{
-		"guid_fixed":    1,
-		"unitcode":      1,
-		"company_guids": 1,
+		"guidfixed":    1,
+		"unitcode":     1,
+		"companyguids": 1,
 	}
 
 	if langCode != "" {
@@ -618,9 +618,9 @@ func (svc UnitHttpService) SearchUnitLimit(holdingCode string, companyGuid strin
 
 	if len(companyGuid) > 0 {
 		filters["$or"] = []interface{}{
-			bson.M{"company_guids": bson.M{"$exists": false}},
-			bson.M{"company_guids": bson.M{"$size": 0}},
-			bson.M{"company_guids": companyGuid},
+			bson.M{"companyguids": bson.M{"$exists": false}},
+			bson.M{"companyguids": bson.M{"$size": 0}},
+			bson.M{"companyguids": companyGuid},
 		}
 	}
 

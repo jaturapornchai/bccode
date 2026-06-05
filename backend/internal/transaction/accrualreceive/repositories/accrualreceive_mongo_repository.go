@@ -60,8 +60,8 @@ func NewAccrualreceiveRepository(pst microservice.IPersisterMongo) *Accrualrecei
 }
 func (repo AccrualreceiveRepository) FindLastDocNo(ctx context.Context, holdingCode string, prefixDocNo string) (models.AccrualreceiveDoc, error) {
 	filters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at": bson.M{
+		"holdingcode": holdingCode,
+		"deletedat": bson.M{
 			"$exists": false,
 		},
 		"docno": bson.M{

@@ -7,29 +7,29 @@ import (
 
 type TransactionPaymentDetail struct {
 	ID            int64   `json:"id" gorm:"column:id;primary"`
-	HoldingCode   string  `json:"holding_code" gorm:"column:holding_code"`
+	HoldingCode   string  `json:"holdingcode" gorm:"column:holdingcode"`
 	DocNo         string  `json:"docno" gorm:"column:docno"`
-	TransFlag     int     `json:"trans_flag" gorm:"column:trans_flag"`
-	PaymentType   int     `json:"payment_type" gorm:"column:payment_type"`
+	TransFlag     int     `json:"transflag" gorm:"column:transflag"`
+	PaymentType   int     `json:"paymenttype" gorm:"column:paymenttype"`
 	Amount        float64 `json:"amount" gorm:"column:amount"`
-	DocMode       int     `json:"doc_mode" gorm:"column:doc_mode"`
-	BankCode      string  `json:"bank_code" gorm:"column:bank_code"`
-	BankName      string  `json:"bank_name" gorm:"column:bank_name"`
-	BookBankCode  string  `json:"book_bank_code" gorm:"column:book_bank_code"`
-	CardNumber    string  `json:"card_number" gorm:"column:card_number"`
-	ApprovedCode  string  `json:"approved_code" gorm:"column:approved_code"`
-	DocDateTime   string  `json:"doc_date_time" gorm:"column:doc_date_time"`
-	BranchNumber  string  `json:"branch_number" gorm:"column:branch_number"`
-	BankReference string  `json:"bank_reference" gorm:"column:bank_reference"`
-	DueDate       string  `json:"due_date" gorm:"column:due_date"`
-	ChequeNumber  string  `json:"cheque_number" gorm:"column:cheque_number"`
+	DocMode       int     `json:"docmode" gorm:"column:docmode"`
+	BankCode      string  `json:"bankcode" gorm:"column:bankcode"`
+	BankName      string  `json:"bankname" gorm:"column:bankname"`
+	BookBankCode  string  `json:"bookbankcode" gorm:"column:bookbankcode"`
+	CardNumber    string  `json:"cardnumber" gorm:"column:cardnumber"`
+	ApprovedCode  string  `json:"approvedcode" gorm:"column:approvedcode"`
+	DocDateTime   string  `json:"docdatetime" gorm:"column:docdatetime"`
+	BranchNumber  string  `json:"branchnumber" gorm:"column:branchnumber"`
+	BankReference string  `json:"bankreference" gorm:"column:bankreference"`
+	DueDate       string  `json:"duedate" gorm:"column:duedate"`
+	ChequeNumber  string  `json:"chequenumber" gorm:"column:chequenumber"`
 	Code          string  `json:"code" gorm:"column:code"`
 	Description   string  `json:"description" gorm:"column:description"`
 	Number        string  `json:"number" gorm:"column:number"`
-	ReferenceOne  string  `json:"reference_one" gorm:"column:reference_one"`
-	ReferenceTwo  string  `json:"reference_two" gorm:"column:reference_two"`
-	ProviderCode  string  `json:"provider_code" gorm:"column:provider_code"`
-	ProviderName  string  `json:"provider_name" gorm:"column:provider_name"`
+	ReferenceOne  string  `json:"referenceone" gorm:"column:referenceone"`
+	ReferenceTwo  string  `json:"referencetwo" gorm:"column:referencetwo"`
+	ProviderCode  string  `json:"providercode" gorm:"column:providercode"`
+	ProviderName  string  `json:"providername" gorm:"column:providername"`
 }
 
 func (TransactionPaymentDetail) TableName() string {

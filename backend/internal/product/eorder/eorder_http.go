@@ -175,7 +175,7 @@ func (h EOrderHttp) RegisterHttp() {
 // List Product Category
 // @Description List Product Category
 // @Tags		E-Order
-// @Param		holding_code		query	string		false  "Holding Code"
+// @Param		holdingcode		query	string		false  "Holding Code"
 // @Param		q		query	string		false  "Search Value"
 // @Param		group-number		query	int		false  "group number"
 // @Param		page	query	integer		false  "Page"
@@ -185,10 +185,10 @@ func (h EOrderHttp) RegisterHttp() {
 // @Failure		401 {object}	common.AuthResponseFailed
 // @Router /e-order/category [get]
 func (h EOrderHttp) SearchProductCategoryPage(ctx microservice.IContext) error {
-	holdingCode := ctx.QueryParam("holding_code")
+	holdingCode := ctx.QueryParam("holdingcode")
 
 	if len(holdingCode) == 0 {
-		ctx.ResponseError(http.StatusBadRequest, "holding_code is empty")
+		ctx.ResponseError(http.StatusBadRequest, "holdingcode is empty")
 		return nil
 	}
 
@@ -218,7 +218,7 @@ func (h EOrderHttp) SearchProductCategoryPage(ctx microservice.IContext) error {
 // List Product
 // @Description List Product
 // @Tags		E-Order
-// @Param		holding_code		query	string		false  "Holding Code"
+// @Param		holdingcode		query	string		false  "Holding Code"
 // @Param		barcodes		query	string		false  "barcode json array"
 // @Param		isalacarte		query	string		false  "is A La Carte"
 // @Param		ordertypes		query	string		false  "order types ex. a01,a02"
@@ -230,10 +230,10 @@ func (h EOrderHttp) SearchProductCategoryPage(ctx microservice.IContext) error {
 // @Failure		401 {object}	common.AuthResponseFailed
 // @Router /e-order/product-barcode [get]
 func (h EOrderHttp) SearchProductBarcodePage(ctx microservice.IContext) error {
-	holdingCode := ctx.QueryParam("holding_code")
+	holdingCode := ctx.QueryParam("holdingcode")
 
 	if len(holdingCode) == 0 {
-		ctx.ResponseError(http.StatusBadRequest, "holding_code is empty")
+		ctx.ResponseError(http.StatusBadRequest, "holdingcode is empty")
 		return nil
 	}
 
@@ -280,7 +280,7 @@ func (h EOrderHttp) SearchProductBarcodePage(ctx microservice.IContext) error {
 // List Product
 // @Description List Product
 // @Tags		E-Order
-// @Param		holding_code		query	string		false  "Holding Code"
+// @Param		holdingcode		query	string		false  "Holding Code"
 // @Param		barcodes		body	[]string	false  "barcode json array"
 // @Param		isalacarte		query	string		false  "is A La Carte"
 // @Param		ordertypes		query	string		false  "order types ex. a01,a02"
@@ -292,10 +292,10 @@ func (h EOrderHttp) SearchProductBarcodePage(ctx microservice.IContext) error {
 // @Failure		401 {object}	common.AuthResponseFailed
 // @Router /e-order/product-barcode [post]
 func (h EOrderHttp) SearchProductBarcodeManyBarcodePage(ctx microservice.IContext) error {
-	holdingCode := ctx.QueryParam("holding_code")
+	holdingCode := ctx.QueryParam("holdingcode")
 
 	if len(holdingCode) == 0 {
-		ctx.ResponseError(http.StatusBadRequest, "holding_code is empty")
+		ctx.ResponseError(http.StatusBadRequest, "holdingcode is empty")
 		return nil
 	}
 
@@ -342,17 +342,17 @@ func (h EOrderHttp) SearchProductBarcodeManyBarcodePage(ctx microservice.IContex
 // List Product By Barcodes
 // @Description List Product By Barcodes
 // @Tags		E-Order
-// @Param		holding_code		query	string		false  "Holding Code"
+// @Param		holdingcode		query	string		false  "Holding Code"
 // @Param		barcodes		query	string		false  "barcode json array"
 // @Accept 		json
 // @Success		200	{array}		common.ApiResponse
 // @Failure		401 {object}	common.AuthResponseFailed
 // @Router /e-order/product-barcode [get]
 func (h EOrderHttp) GetProductBarcodeByBarcodes(ctx microservice.IContext) error {
-	holdingCode := ctx.QueryParam("holding_code")
+	holdingCode := ctx.QueryParam("holdingcode")
 
 	if len(holdingCode) == 0 {
-		ctx.ResponseError(http.StatusBadRequest, "holding_code is empty")
+		ctx.ResponseError(http.StatusBadRequest, "holdingcode is empty")
 		return nil
 	}
 
@@ -380,18 +380,18 @@ func (h EOrderHttp) GetProductBarcodeByBarcodes(ctx microservice.IContext) error
 // Get Shop Info
 // @Description Get Shop Info
 // @Tags		E-Order
-// @Param		holding_code		query	string		false  "Holding Code"
+// @Param		holdingcode		query	string		false  "Holding Code"
 // @Param		order-station		query	string		false  "Order station code"
 // @Accept 		json
 // @Success		200	{array}		common.ApiResponse
 // @Failure		401 {object}	common.AuthResponseFailed
 // @Router /e-order/shop-info [get]
 func (h EOrderHttp) ShopInfoOld(ctx microservice.IContext) error {
-	holdingCode := ctx.QueryParam("holding_code")
+	holdingCode := ctx.QueryParam("holdingcode")
 	orderStationCode := ctx.QueryParam("order-station")
 
 	if len(holdingCode) == 0 {
-		ctx.ResponseError(http.StatusBadRequest, "holding_code is empty")
+		ctx.ResponseError(http.StatusBadRequest, "holdingcode is empty")
 		return nil
 	}
 
@@ -412,18 +412,18 @@ func (h EOrderHttp) ShopInfoOld(ctx microservice.IContext) error {
 // Get Shop Info v1.1
 // @Description Get Shop Info v1.1
 // @Tags		E-Order
-// @Param		holding_code		query	string		false  "Holding Code"
+// @Param		holdingcode		query	string		false  "Holding Code"
 // @Param		order-station		query	string		false  "Order station code"
 // @Accept 		json
 // @Success		200	{array}		common.ApiResponse
 // @Failure		401 {object}	common.AuthResponseFailed
 // @Router /e-order/shop-info/v1.1 [get]
 func (h EOrderHttp) ShopInfo(ctx microservice.IContext) error {
-	holdingCode := ctx.QueryParam("holding_code")
+	holdingCode := ctx.QueryParam("holdingcode")
 	orderStationCode := ctx.QueryParam("order-station")
 
 	if len(holdingCode) == 0 {
-		ctx.ResponseError(http.StatusBadRequest, "holding_code is empty")
+		ctx.ResponseError(http.StatusBadRequest, "holdingcode is empty")
 		return nil
 	}
 
@@ -453,10 +453,10 @@ func (h EOrderHttp) ShopInfo(ctx microservice.IContext) error {
 // @Failure		401 {object}	common.AuthResponseFailed
 // @Router /e-order/restaurant/zone [get]
 func (h EOrderHttp) SearchZone(ctx microservice.IContext) error {
-	holdingCode := ctx.QueryParam("holding_code")
+	holdingCode := ctx.QueryParam("holdingcode")
 
 	if len(holdingCode) == 0 {
-		ctx.ResponseError(http.StatusBadRequest, "holding_code is empty")
+		ctx.ResponseError(http.StatusBadRequest, "holdingcode is empty")
 		return nil
 	}
 
@@ -496,10 +496,10 @@ func (h EOrderHttp) SearchZone(ctx microservice.IContext) error {
 // @Failure		401 {object}	common.AuthResponseFailed
 // @Router /e-order/restaurant/kitchen [get]
 func (h EOrderHttp) SearchKitchen(ctx microservice.IContext) error {
-	holdingCode := ctx.QueryParam("holding_code")
+	holdingCode := ctx.QueryParam("holdingcode")
 
 	if len(holdingCode) == 0 {
-		ctx.ResponseError(http.StatusBadRequest, "holding_code is empty")
+		ctx.ResponseError(http.StatusBadRequest, "holdingcode is empty")
 		return nil
 	}
 
@@ -540,10 +540,10 @@ func (h EOrderHttp) SearchKitchen(ctx microservice.IContext) error {
 // @Failure		401 {object}	common.AuthResponseFailed
 // @Router /e-order/restaurant/table [get]
 func (h EOrderHttp) SearchTable(ctx microservice.IContext) error {
-	holdingCode := ctx.QueryParam("holding_code")
+	holdingCode := ctx.QueryParam("holdingcode")
 
 	if len(holdingCode) == 0 {
-		ctx.ResponseError(http.StatusBadRequest, "holding_code is empty")
+		ctx.ResponseError(http.StatusBadRequest, "holdingcode is empty")
 		return nil
 	}
 
@@ -582,9 +582,9 @@ func (h EOrderHttp) SearchTable(ctx microservice.IContext) error {
 // @Failure		401 {object}	common.AuthResponseFailed
 // @Router /e-order/sale-invoice/last-pos-docno [get]
 func (h EOrderHttp) GetLastPOSDocNo(ctx microservice.IContext) error {
-	holdingCode := ctx.QueryParam("holding_code")
+	holdingCode := ctx.QueryParam("holdingcode")
 	if len(holdingCode) == 0 {
-		ctx.ResponseError(http.StatusBadRequest, "holding_code is empty")
+		ctx.ResponseError(http.StatusBadRequest, "holdingcode is empty")
 		return nil
 	}
 
@@ -629,10 +629,10 @@ func (h EOrderHttp) Test(ctx microservice.IContext) error {
 // @Failure		401 {object}	common.AuthResponseFailed
 // @Router /e-order/notify [get]
 func (h EOrderHttp) Notify(ctx microservice.IContext) error {
-	holdingCode := ctx.QueryParam("holding_code")
+	holdingCode := ctx.QueryParam("holdingcode")
 
 	if len(holdingCode) == 0 {
-		ctx.ResponseError(http.StatusBadRequest, "holding_code is empty")
+		ctx.ResponseError(http.StatusBadRequest, "holdingcode is empty")
 		return nil
 	}
 

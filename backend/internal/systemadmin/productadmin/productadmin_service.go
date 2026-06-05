@@ -40,7 +40,7 @@ func NewProductAdminService(pst microservice.IPersisterMongo, kfProducer microse
 
 func (svc ProductAdminService) ReSyncProductBarcode(holdingCode string) error {
 
-	// find product barcode by holding_code
+	// find product barcode by holdingcode
 	ctx, cancel := context.WithTimeout(context.Background(), svc.timeoutDuration)
 	defer cancel()
 
@@ -49,7 +49,7 @@ func (svc ProductAdminService) ReSyncProductBarcode(holdingCode string) error {
 		Page:  1,
 		Sorts: []msModels.KeyInt{
 			{
-				Key:   "guid_fixed",
+				Key:   "guidfixed",
 				Value: -1,
 			},
 		},
@@ -147,7 +147,7 @@ func (svc ProductAdminService) DeleteProductBarcodeAll(holdingCode string, userN
 		Page:  1,
 		Sorts: []msModels.KeyInt{
 			{
-				Key:   "guid_fixed",
+				Key:   "guidfixed",
 				Value: -1,
 			},
 		},

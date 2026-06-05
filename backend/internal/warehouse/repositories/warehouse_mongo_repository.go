@@ -74,8 +74,8 @@ func (repo WarehouseRepository) FindLocationPage(ctx context.Context, holdingCod
 
 	mainQuery := bson.M{
 		"$match": bson.M{
-			"holding_code": holdingCode,
-			"deleted_at":   bson.M{"$exists": false},
+			"holdingcode": holdingCode,
+			"deletedat":   bson.M{"$exists": false},
 		},
 	}
 	criteria = append(criteria, mainQuery)
@@ -91,7 +91,7 @@ func (repo WarehouseRepository) FindLocationPage(ctx context.Context, holdingCod
 	criteria = append(criteria, unwindQuery)
 
 	projectQuery := bson.M{"$project": bson.M{
-		"guid_fixed":     "$guidfixed",
+		"guidfixed":      "$guidfixed",
 		"warehousecode":  "$code",
 		"warehousenames": "$names",
 		"locationcode":   "$location.code",
@@ -121,8 +121,8 @@ func (repo WarehouseRepository) FindShelfPage(ctx context.Context, holdingCode s
 
 	mainQuery := bson.M{
 		"$match": bson.M{
-			"holding_code": holdingCode,
-			"deleted_at":   bson.M{"$exists": false},
+			"holdingcode": holdingCode,
+			"deletedat":   bson.M{"$exists": false},
 		},
 	}
 	criteria = append(criteria, mainQuery)
@@ -141,7 +141,7 @@ func (repo WarehouseRepository) FindShelfPage(ctx context.Context, holdingCode s
 	criteria = append(criteria, unwindQueryLevel2)
 
 	projectQuery := bson.M{"$project": bson.M{
-		"guid_fixed":     "$guidfixed",
+		"guidfixed":      "$guidfixed",
 		"warehousecode":  "$code",
 		"warehousenames": "$names",
 		"locationcode":   "$location.code",
@@ -170,7 +170,7 @@ func (repo WarehouseRepository) FindShelfPage(ctx context.Context, holdingCode s
 func (repo WarehouseRepository) FindWarehouseByLocation(ctx context.Context, holdingCode, warehouseCode, locationCode string) (models.WarehouseDoc, error) {
 
 	filters := bson.M{
-		"holding_code":  holdingCode,
+		"holdingcode":   holdingCode,
 		"code":          warehouseCode,
 		"location.code": locationCode,
 	}
@@ -188,7 +188,7 @@ func (repo WarehouseRepository) FindWarehouseByLocation(ctx context.Context, hol
 func (repo WarehouseRepository) FindWarehouseByShelf(ctx context.Context, holdingCode, warehouseCode, locationCode, shelfCode string) (models.WarehouseDoc, error) {
 
 	filters := bson.M{
-		"holding_code":        holdingCode,
+		"holdingcode":         holdingCode,
 		"code":                warehouseCode,
 		"location.code":       locationCode,
 		"location.shelf.code": shelfCode,

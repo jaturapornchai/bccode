@@ -3,14 +3,14 @@ package models
 import "time"
 
 type TaskStatusModel struct {
-	TaskID      string     `json:"task_id" ch:"task_id"`
-	HoldingCode string     `json:"holding_code" ch:"holding_code"`
+	TaskID      string     `json:"taskid" ch:"taskid"`
+	HoldingCode string     `json:"holdingcode" ch:"holdingcode"`
 	Status      string     `json:"status" ch:"status"`
-	ErrorMsg    string     `json:"error_message,omitempty" ch:"error_message"`
+	ErrorMsg    string     `json:"errormessage,omitempty" ch:"errormessage"`
 	Progress    int32      `json:"progress" ch:"progress"`
-	CreatedAt   time.Time  `json:"created_at" ch:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at" ch:"updated_at"`
-	CompletedAt *time.Time `json:"completed_at,omitempty" ch:"completed_at"`
+	CreatedAt   time.Time  `json:"createdat" ch:"createdat"`
+	UpdatedAt   time.Time  `json:"updatedat" ch:"updatedat"`
+	CompletedAt *time.Time `json:"completedat,omitempty" ch:"completedat"`
 }
 
 func (TaskStatusModel) TableName() string {

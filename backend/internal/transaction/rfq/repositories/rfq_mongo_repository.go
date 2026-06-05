@@ -55,8 +55,8 @@ func NewRFQRepository(pst microservice.IPersisterMongo) *RFQRepository {
 
 func (repo RFQRepository) FindLastDocNo(ctx context.Context, holdingCode string, prefixDocNo string) (models.RFQDoc, error) {
 	filters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at": bson.M{
+		"holdingcode": holdingCode,
+		"deletedat": bson.M{
 			"$exists": false,
 		},
 		"docno": bson.M{

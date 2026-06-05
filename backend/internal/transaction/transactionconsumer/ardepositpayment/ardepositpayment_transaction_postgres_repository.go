@@ -40,8 +40,8 @@ func (repo ARDepositPaymentTransactionPGRepository) Create(doc models.ARDepositP
 func (repo ARDepositPaymentTransactionPGRepository) Update(holdingCode string, docNo string, doc models.ARDepositPaymentTransactionPG) error {
 
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"holding_code": holdingCode,
-		"docno":        docNo,
+		"holdingcode": holdingCode,
+		"docno":       docNo,
 	})
 
 	if err != nil {
@@ -55,7 +55,7 @@ func (repo *ARDepositPaymentTransactionPGRepository) DeleteData(holdingCode stri
 	var details *[]models.ARDepositPaymentTransactionDetailPG
 	tx := repo.pst.DBClient().Begin()
 
-	tx.Model(&models.ARDepositPaymentTransactionDetailPG{}).Where(" holding_code=? AND docno=?", holdingCode, docNo).Find(&details)
+	tx.Model(&models.ARDepositPaymentTransactionDetailPG{}).Where(" holdingcode=? AND docno=?", holdingCode, docNo).Find(&details)
 	for _, tmp := range *details {
 		err := tx.Delete(&models.ARDepositPaymentTransactionDetailPG{}, tmp.ID).Error
 		if err != nil {
@@ -65,8 +65,8 @@ func (repo *ARDepositPaymentTransactionPGRepository) DeleteData(holdingCode stri
 	}
 
 	err := tx.Delete(&models.ARDepositPaymentTransactionPG{}, map[string]interface{}{
-		"holding_code": holdingCode,
-		"docno":        docNo,
+		"holdingcode": holdingCode,
+		"docno":       docNo,
 	}).Error
 	if err != nil {
 		tx.Rollback()

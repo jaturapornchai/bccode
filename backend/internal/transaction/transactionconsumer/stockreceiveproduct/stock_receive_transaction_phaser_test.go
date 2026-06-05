@@ -85,8 +85,8 @@ func wantStockReceiveProductTransactionPGStruct() models.StockReceiveProductTran
 func TestStockReceiveProductTransactionPhaser(t *testing.T) {
 	giveInput := `{
 		"id": "647e919242c9a6d317361d78",
-		"holding_code": "2PrIIqTWxoBXv16K310sNwfHmfY",
-		"guid_fixed": "2QoOKOZ7Bv8dSUv38VTkkS2AZ0J",
+		"holdingcode": "2PrIIqTWxoBXv16K310sNwfHmfY",
+		"guidfixed": "2QoOKOZ7Bv8dSUv38VTkkS2AZ0J",
 		"docno": "IF2023060100001",
 		"docdatetime": "2023-06-01T01:52:44.000Z",
 		"guid_ref": "665f61bf-a49a-420b-9140-9824a704ef15",
@@ -245,8 +245,8 @@ func TestStockReceiveProductTransactionPhaser(t *testing.T) {
 
 	assert.Nil(t, err)
 
-	assert.Equal(t, get.HoldingCode, want.HoldingCode, "holding_code")
-	assert.Equal(t, get.GuidFixed, want.GuidFixed, "guid_fixed")
+	assert.Equal(t, get.HoldingCode, want.HoldingCode, "holdingcode")
+	assert.Equal(t, get.GuidFixed, want.GuidFixed, "guidfixed")
 	assert.Equal(t, get.TransFlag, want.TransFlag, "transflag")
 	assert.Equal(t, get.DocNo, want.DocNo, "docno")
 	assert.Equal(t, get.DocDate, want.DocDate, "docdate")
@@ -272,7 +272,7 @@ func TestStockReceiveProductTransactionPhaser(t *testing.T) {
 	// detail
 	assert.Equal(t, (*get.Items)[0].GuidFixed, (*want.Items)[0].GuidFixed, "item.guidfixed")
 	assert.Equal(t, (*get.Items)[0].DocNo, (*want.Items)[0].DocNo, "item.docno")
-	assert.Equal(t, (*get.Items)[0].HoldingCode, (*want.Items)[0].HoldingCode, "item.holding_code")
+	assert.Equal(t, (*get.Items)[0].HoldingCode, (*want.Items)[0].HoldingCode, "item.holdingcode")
 	assert.Equal(t, (*get.Items)[0].LineNumber, (*want.Items)[0].LineNumber, "item.linenumber")
 	assert.Equal(t, (*get.Items)[0].ItemGuid, (*want.Items)[0].ItemGuid, "item.itemguid")
 	assert.Equal(t, (*get.Items)[0].Barcode, (*want.Items)[0].Barcode, "item.barcode")

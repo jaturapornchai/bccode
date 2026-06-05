@@ -20,33 +20,33 @@ import (
 const maxExampleRows = 50
 
 type branchRecord struct {
-	ID              primitive.ObjectID `bson:"_id"`
-	HoldingCode     string             `bson:"holding_code"`
-	GuidFixed       string             `bson:"guid_fixed"`
+	ID              primitive.ObjectID `bson:"id"`
+	HoldingCode     string             `bson:"holdingcode"`
+	GuidFixed       string             `bson:"guidfixed"`
 	Code            any                `bson:"code"`
-	IsVatRegistered bool               `bson:"is_vat_registered"`
+	IsVatRegistered bool               `bson:"isvatregistered"`
 	POS             struct {
-		TaxID string `bson:"tax_id"`
+		TaxID string `bson:"taxid"`
 	} `bson:"pos"`
 }
 
 type auditIssue struct {
-	HoldingCode    string `json:"holding_code"`
-	GuidFixed      string `json:"guid_fixed,omitempty"`
+	HoldingCode    string `json:"holdingcode"`
+	GuidFixed      string `json:"guidfixed,omitempty"`
 	Code           string `json:"code,omitempty"`
-	NormalizedCode string `json:"normalized_code,omitempty"`
+	NormalizedCode string `json:"normalizedcode,omitempty"`
 	Reason         string `json:"reason"`
 }
 
 type auditSummary struct {
 	Database                 string       `json:"database"`
 	Collection               string       `json:"collection"`
-	TotalBranches            int          `json:"total_branches"`
-	TotalCompanies           int          `json:"total_companies"`
-	InvalidCodeCount         int          `json:"invalid_code_count"`
-	DuplicateNormalizedCount int          `json:"duplicate_normalized_count"`
-	MissingHeadOfficeCount   int          `json:"missing_head_office_count"`
-	VatMissingTaxIDCount     int          `json:"vat_missing_tax_id_count"`
+	TotalBranches            int          `json:"totalbranches"`
+	TotalCompanies           int          `json:"totalcompanies"`
+	InvalidCodeCount         int          `json:"invalidcodecount"`
+	DuplicateNormalizedCount int          `json:"duplicatenormalizedcount"`
+	MissingHeadOfficeCount   int          `json:"missingheadofficecount"`
+	VatMissingTaxIDCount     int          `json:"vatmissingtaxidcount"`
 	Examples                 []auditIssue `json:"examples"`
 }
 
@@ -143,8 +143,8 @@ func discoverAndAudit(ctx context.Context, client *mongo.Client, fallbackDBName 
 func auditCollection(ctx context.Context, client *mongo.Client, dbName string, collectionName string) (auditSummary, error) {
 	collection := client.Database(dbName).Collection(collectionName)
 	cursor, err := collection.Find(ctx, bson.M{}, options.Find().SetProjection(bson.M{
-		"holding_code":      1,
-		"guid_fixed":        1,
+		"holdingcode":       1,
+		"guidfixed":         1,
 		"code":              1,
 		"is_vat_registered": 1,
 		"pos.tax_id":        1,

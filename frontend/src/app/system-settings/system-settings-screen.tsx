@@ -846,7 +846,7 @@ const systemSettingBackendKeys: Record<string, string> = {
 
 const fieldBackendKeys: Record<string, string> = {
   "branch.base_currency": "base_currency",
-  "branch.code": "branch_code",
+  "branch.code": "branchcode",
   "branch.company_registration_no": "company_registration_no",
   "branch.contact.country_code": "country_code",
   "branch.contact.district_code": "district",
@@ -928,29 +928,29 @@ const fieldBackendKeys: Record<string, string> = {
 const fieldValueAliases: Record<string, string[]> = {
   "company.settings.language_configs": ["settings.languageconfigs"],
   "productunit.unit_code": ["unitcode"],
-  "productunit.business_codes": ["company_guids"],
-  "employee.business_codes": ["company_guids"],
-  "user.business_codes": ["company_guids"],
-  "user.access_scopes": ["scope_rules", "business_codes", "company_guids"],
+  "productunit.businesscodes": ["companyguids"],
+  "employee.businesscodes": ["companyguids"],
+  "user.businesscodes": ["companyguids"],
+  "user.access_scopes": ["scope_rules", "businesscodes", "companyguids"],
   "approval_setting.approval_code": ["approvalCode"],
   "approval_setting.approval_name": ["approvalName"],
-  "approval_setting.is_active": ["isActive"],
+  "approval_setting.isactive": ["isActive"],
   "approval_setting.approval_rules": ["scope_rules"],
   "permission_definition.permission_code": ["permissionCode"],
   "permission_definition.permission_name": ["permissionName"],
-  "permission_definition.is_active": ["isActive"],
+  "permission_definition.isactive": ["isActive"],
   "permission_definition.scope_rules": ["access_scopes"],
   "permission_definition.access_rules": ["branches"],
   "permission_group.group_code": ["groupCode"],
   "permission_group.group_name": ["groupName"],
-  "permission_group.is_active": ["isActive"],
+  "permission_group.isactive": ["isActive"],
   "permission_group.scope_rules": ["access_scopes"],
   "permission_group.permission_codes": ["permissionCodes"],
   "permission_link.employee_code": ["employeeCode"],
   "permission_link.employee_name": ["employeeName"],
   "permission_link.group_code": ["groupCode"],
-  "permission_link.scope_rules": ["access_scopes", "business_codes", "company_guids"],
-  "permission_link.business_codes": ["company_guids"],
+  "permission_link.scope_rules": ["access_scopes", "businesscodes", "companyguids"],
+  "permission_link.businesscodes": ["companyguids"],
   "permission_link.permission_codes": ["permissionCodes"],
   "permission_link.approval_codes": ["approvalCodes"],
   "branch.contact.country_code": ["contact.countrycode"],
@@ -1790,11 +1790,11 @@ export function SystemSettingsScreen({
         setEditing(payload);
       } else {
         if (currentConfig.slug === "branch") {
-          const payloadGuid = payload.guid_fixed ?? payload.guid ?? id;
+          const payloadGuid = payload.guidfixed ?? payload.guid ?? id;
           if (
             payloadGuid &&
             workspace.branch &&
-            (payloadGuid === workspace.branch.guid_fixed ||
+            (payloadGuid === workspace.branch.guidfixed ||
               payloadGuid === workspace.branch.code)
           ) {
             const nextBranch = { ...workspace.branch, ...payload };
@@ -1984,7 +1984,7 @@ export function SystemSettingsScreen({
         body: JSON.stringify({
           backendUrl: auth.backendUrl,
           username,
-          holding_code: workspace.shop.holding_code,
+          holdingcode: workspace.shop.holdingcode,
         }),
       });
       const data = (await response.json()) as unknown;
@@ -2046,8 +2046,8 @@ export function SystemSettingsScreen({
             backendUrl: auth.backendUrl,
             source_environment: copySourceEnvironment,
             target_environment: "dev",
-            source_holding_code: sourceHoldingCode,
-            target_holding_code: workspace.shop.holding_code,
+            source_holdingcode: sourceHoldingCode,
+            target_holdingcode: workspace.shop.holdingcode,
           }),
         },
       );
@@ -2345,7 +2345,7 @@ export function SystemSettingsScreen({
           setSelected={setSourceHoldingCode}
           sourceEnvironment={copySourceEnvironment}
           setSourceEnvironment={setCopySourceEnvironment}
-          targetHoldingCode={workspace?.shop.holding_code ?? ""}
+          targetHoldingCode={workspace?.shop.holdingcode ?? ""}
           text={text}
         />
       ) : config.slug === "work_day_screen" ? (
@@ -2410,7 +2410,7 @@ export function SystemSettingsScreen({
                   onClick={() => {
                     const today = new Date().toISOString().substring(0, 10);
                     const newVirtualBOM: any = {
-                      guid_fixed: "virtual-" + Math.random().toString(36).substring(2, 11),
+                      guidfixed: "virtual-" + Math.random().toString(36).substring(2, 11),
                       isNew: true,
                       barcode: "",
                       itemcode: "",
@@ -2419,13 +2419,13 @@ export function SystemSettingsScreen({
                       itemunitnames: [{ code: language, name: language === "th" ? "สูตร" : "Recipe" }],
                       price: 0,
                       bom: [],
-                      boms: [{ guid_fixed: "", start_date: today, end_date: null, bom: [] }],
+                      boms: [{ guidfixed: "", start_date: today, end_date: null, bom: [] }],
                     };
                     setRecords((prev) => {
-                      const clean = prev.filter((r: any) => !r.guid_fixed?.startsWith("virtual-"));
+                      const clean = prev.filter((r: any) => !r.guidfixed?.startsWith("virtual-"));
                       return [newVirtualBOM, ...clean];
                     });
-                    setSelectedRecordId(newVirtualBOM.guid_fixed);
+                    setSelectedRecordId(newVirtualBOM.guidfixed);
                   }}
                   disabled={loading}
                 >
@@ -3550,7 +3550,7 @@ function CompanyMultiSelectCell({
     if (Array.isArray(value)) {
       return value.map((item) => {
         if (typeof item === "string") return item.trim();
-        if (isRecord(item)) return stringValue(item.guid_fixed ?? item.guidfixed ?? item.guid ?? "");
+        if (isRecord(item)) return stringValue(item.guidfixed ?? item.guidfixed ?? item.guid ?? "");
         return "";
       }).filter(Boolean);
     }
@@ -3571,8 +3571,8 @@ function CompanyMultiSelectCell({
       .then((payload) => {
         if (payload && payload.success && Array.isArray(payload.data)) {
           const parsed = payload.data.map((shop: any) => ({
-            guidfixed: shop.business_code || shop.code || shop.holding_code,
-            code: shop.business_code || shop.code || "",
+            guidfixed: shop.businesscode || shop.code || shop.holdingcode,
+            code: shop.businesscode || shop.code || "",
             names: shop.names || [{ code: "th", name: shop.name1 || shop.name || "" }]
           }));
           setOptions(parsed);
@@ -5532,7 +5532,7 @@ function permissionLinkOption(
   return {
     code,
     description,
-    isActive: Boolean(record.is_active ?? record.isActive ?? record.isactive ?? true),
+    isActive: Boolean(record.isactive ?? record.isActive ?? record.isactive ?? true),
     name,
   };
 }
@@ -6229,14 +6229,14 @@ type HoldingScopeType = "holding" | "company" | "branch";
 
 type HoldingScopeRule = {
   scope_type: HoldingScopeType;
-  business_code?: string;
-  branch_code?: string;
+  businesscode?: string;
+  branchcode?: string;
   all_branches?: boolean;
 };
 
 type CompanyScopeOption = {
-  business_code: string;
-  guid_fixed: string;
+  businesscode: string;
+  guidfixed: string;
   name: string;
 };
 
@@ -6261,12 +6261,12 @@ function recordToCompanyScopeOption(
   record: SettingRecord,
   language: LanguageCode,
 ): CompanyScopeOption | null {
-  const businessCode = normalizeBusinessCode(record.business_code ?? record.code);
-  const guidFixed = stringValue(record.guid_fixed ?? record.guidfixed ?? record.guid ?? record.guidFixed);
+  const businessCode = normalizeBusinessCode(record.businesscode ?? record.code);
+  const guidFixed = stringValue(record.guidfixed ?? record.guidfixed ?? record.guid ?? record.guidFixed);
   if (!businessCode) return null;
   return {
-    business_code: businessCode,
-    guid_fixed: guidFixed,
+    businesscode: businessCode,
+    guidfixed: guidFixed,
     name:
       localizedValue(record.names, language) ||
       stringValue(record.name1 ?? record.name ?? record.company_name ?? record.companyname) ||
@@ -6279,10 +6279,10 @@ function selectedCompanyScopesFromRules(
   companies: CompanyScopeOption[],
   branches: BranchOption[],
 ): SelectedCompanyScope[] {
-  const companyByCode = new Map(companies.map((company) => [company.business_code, company]));
+  const companyByCode = new Map(companies.map((company) => [company.businesscode, company]));
   const branchByKey = new Map(
     branches.map((branch) => [
-      `${normalizeBusinessCode(branch.business_code)}|${normalizeScopeBranchCode(branch.code)}`,
+      `${normalizeBusinessCode(branch.businesscode)}|${normalizeScopeBranchCode(branch.code)}`,
       branch,
     ]),
   );
@@ -6294,8 +6294,8 @@ function selectedCompanyScopesFromRules(
     if (existing) return existing;
     const company =
       companyByCode.get(normalizedBusinessCode) ?? {
-        business_code: normalizedBusinessCode,
-        guid_fixed: "",
+        businesscode: normalizedBusinessCode,
+        guidfixed: "",
         name: normalizedBusinessCode,
       };
     const scope: SelectedCompanyScope = {
@@ -6309,22 +6309,22 @@ function selectedCompanyScopesFromRules(
 
   for (const rule of rules) {
     if (rule.scope_type === "holding") continue;
-    const businessCode = normalizeBusinessCode(rule.business_code);
+    const businessCode = normalizeBusinessCode(rule.businesscode);
     if (!businessCode) continue;
     const scope = ensureScope(businessCode);
     if (rule.scope_type === "company" || rule.all_branches) {
       scope.all_branches = true;
       continue;
     }
-    const branchCode = normalizeScopeBranchCode(rule.branch_code);
+    const branchCode = normalizeScopeBranchCode(rule.branchcode);
     if (!branchCode) continue;
     if (scope.branches.some((branch) => normalizeScopeBranchCode(branch.code) === branchCode)) continue;
     scope.branches.push(
       branchByKey.get(`${businessCode}|${branchCode}`) ?? {
-        guid_fixed: "",
+        guidfixed: "",
         code: branchCode,
         names: [],
-        business_code: businessCode,
+        businesscode: businessCode,
       },
     );
   }
@@ -6802,7 +6802,7 @@ async function loadAuditHoldingData(
 ): Promise<{ branches: BranchOption[]; companies: CompanyScopeOption[] }> {
   const activeHoldingCode = workspaceHoldingCode(workspace);
   const params = new URLSearchParams();
-  if (activeHoldingCode) params.set("active_holding_code", activeHoldingCode);
+  if (activeHoldingCode) params.set("active_holdingcode", activeHoldingCode);
   const response = await fetch(`/api/workspace/holdings${params.size ? `?${params.toString()}` : ""}`, {
     headers: requestHeaders(auth),
     cache: "no-store",
@@ -6815,7 +6815,7 @@ async function loadAuditHoldingData(
   const holdingRecords = extractListRecords(payload);
   const activeHolding = activeHoldingCode.toLowerCase();
   const currentHolding =
-    holdingRecords.find((record) => stringValue(record.holding_code).toLowerCase() === activeHolding) ??
+    holdingRecords.find((record) => stringValue(record.holdingcode).toLowerCase() === activeHolding) ??
     holdingRecords[0] ??
     {};
   const rawCompanies = Array.isArray(currentHolding.companies)
@@ -6827,12 +6827,12 @@ async function loadAuditHoldingData(
   const companies = rawCompanies
     .map((record) => recordToCompanyScopeOption(record, language))
     .filter((item): item is CompanyScopeOption => item !== null);
-  const companyByGuid = new Map(companies.map((company) => [company.guid_fixed, company]));
+  const companyByGuid = new Map(companies.map((company) => [company.guidfixed, company]));
   const branches = rawBranches.flatMap((record) => {
     const option = recordToBranchOption(record);
-    const company = companyByGuid.get(option.company_guid ?? "");
-    if (!company || (!option.code && !option.guid_fixed)) return [];
-    return [{ ...option, business_code: company.business_code }];
+    const company = companyByGuid.get(option.companyguid ?? "");
+    if (!company || (!option.code && !option.guidfixed)) return [];
+    return [{ ...option, businesscode: company.businesscode }];
   });
   return { branches, companies };
 }
@@ -6875,7 +6875,7 @@ function buildUserAccessAuditSummary(
   );
   const userScopes = user
     ? auditScopeLines(
-        normalizeHoldingScopeRules(user.access_scopes ?? user.scope_rules, user.business_codes ?? user.company_guids),
+        normalizeHoldingScopeRules(user.access_scopes ?? user.scope_rules, user.businesscodes ?? user.companyguids),
         data,
         language,
       )
@@ -6883,7 +6883,7 @@ function buildUserAccessAuditSummary(
   const linkLines = links.flatMap((link) => {
     const linkCode = stringValue(link.group_code ?? link.groupCode) || auditCodeList(link.permission_codes ?? link.permissionCodes).join(", ") || "-";
     const scopeLines = auditScopeLines(
-      normalizeHoldingScopeRules(link.scope_rules ?? link.access_scopes, link.business_codes ?? link.company_guids),
+      normalizeHoldingScopeRules(link.scope_rules ?? link.access_scopes, link.businesscodes ?? link.companyguids),
       data,
       language,
     );
@@ -6932,7 +6932,7 @@ function auditScopeLines(
     return [language === "th" ? "ทั้ง Holding" : "Whole Holding"];
   }
   return selectedCompanyScopesFromRules(rules, data.companies, data.branches).flatMap((scope) => {
-    const companyLabel = `${scope.company.business_code} - ${scope.company.name}`;
+    const companyLabel = `${scope.company.businesscode} - ${scope.company.name}`;
     if (scope.all_branches) {
       return [language === "th" ? `${companyLabel} / ทุกสาขา` : `${companyLabel} / all branches`];
     }
@@ -6959,7 +6959,7 @@ function auditPermissionLinksForUser(user: SettingRecord, links: SettingRecord[]
       auditUserUid(user),
       auditUserCode(user),
       stringValue(user.email),
-      stringValue(user.guid_fixed ?? user.guidfixed ?? user.guid),
+      stringValue(user.guidfixed ?? user.guidfixed ?? user.guid),
     ]
       .map((value) => value.trim().toLowerCase())
       .filter(Boolean),
@@ -6973,7 +6973,7 @@ function auditPermissionLinksForUser(user: SettingRecord, links: SettingRecord[]
       link.employeeCode,
       link.username,
       link.email,
-      link.guid_fixed,
+      link.guidfixed,
       link.guid,
     ].some((value) => identities.has(stringValue(value).trim().toLowerCase())),
   );
@@ -7002,7 +7002,7 @@ function auditUserKey(user: SettingRecord | null | undefined): string {
 }
 
 function auditUserUid(user: SettingRecord): string {
-  return stringValue(user.user_uid ?? user.userUid ?? user.uid ?? user.guid_fixed ?? user.guidfixed ?? user.guid);
+  return stringValue(user.user_uid ?? user.userUid ?? user.uid ?? user.guidfixed ?? user.guidfixed ?? user.guid);
 }
 
 function auditUserCode(user: SettingRecord): string {
@@ -7053,7 +7053,7 @@ function HoldingScopeRulesEditor({
   const [activeBusinessCode, setActiveBusinessCode] = useState("");
   const [branchAddCodes, setBranchAddCodes] = useState<Record<string, string>>({});
   const rules = useMemo(
-    () => normalizeHoldingScopeRules(form[field.key], form.business_codes ?? form.company_guids),
+    () => normalizeHoldingScopeRules(form[field.key], form.businesscodes ?? form.companyguids),
     [field.key, form],
   );
   const holdingSelected = rules.some((rule) => rule.scope_type === "holding");
@@ -7062,7 +7062,7 @@ function HoldingScopeRulesEditor({
     [branches, companies, rules],
   );
   const activeCompanyScope =
-    selectedCompanyScopes.find((scope) => scope.company.business_code === activeBusinessCode) ??
+    selectedCompanyScopes.find((scope) => scope.company.businesscode === activeBusinessCode) ??
     selectedCompanyScopes[0] ??
     null;
 
@@ -7075,7 +7075,7 @@ function HoldingScopeRulesEditor({
 
     const activeHoldingCode = workspaceHoldingCode(workspace);
     const params = new URLSearchParams();
-    if (activeHoldingCode) params.set("active_holding_code", activeHoldingCode);
+    if (activeHoldingCode) params.set("active_holdingcode", activeHoldingCode);
 
     void fetch(`/api/workspace/holdings${params.size ? `?${params.toString()}` : ""}`, {
       headers: requestHeaders(auth),
@@ -7091,7 +7091,7 @@ function HoldingScopeRulesEditor({
         const holdingRecords = extractListRecords(payload);
         const activeHolding = activeHoldingCode.toLowerCase();
         const currentHolding =
-          holdingRecords.find((record) => stringValue(record.holding_code).toLowerCase() === activeHolding) ??
+          holdingRecords.find((record) => stringValue(record.holdingcode).toLowerCase() === activeHolding) ??
           holdingRecords[0] ??
           {};
         const rawCompanies = Array.isArray(currentHolding.companies)
@@ -7105,20 +7105,20 @@ function HoldingScopeRulesEditor({
           .filter((item): item is CompanyScopeOption => item !== null);
         setCompanies(companyOptions);
 
-        const companyByGuid = new Map(companyOptions.map((company) => [company.guid_fixed, company]));
+        const companyByGuid = new Map(companyOptions.map((company) => [company.guidfixed, company]));
         const branchOptions = rawBranches
           .flatMap((record) => {
             const option = recordToBranchOption(record);
-            const company = companyByGuid.get(option.company_guid ?? "");
-            if (!company || (!option.code && !option.guid_fixed)) return [];
+            const company = companyByGuid.get(option.companyguid ?? "");
+            if (!company || (!option.code && !option.guidfixed)) return [];
             const scopedBranch: BranchOption = {
               ...option,
-              business_code: company.business_code,
+              businesscode: company.businesscode,
             };
             return [scopedBranch];
           })
           .sort((a, b) => {
-            const companyCompare = stringValue(a.business_code).localeCompare(stringValue(b.business_code));
+            const companyCompare = stringValue(a.businesscode).localeCompare(stringValue(b.businesscode));
             if (companyCompare !== 0) return companyCompare;
             return stringValue(a.code).localeCompare(stringValue(b.code), undefined, { numeric: true, sensitivity: "base" });
           });
@@ -7151,8 +7151,8 @@ function HoldingScopeRulesEditor({
       if (activeBusinessCode) setActiveBusinessCode("");
       return;
     }
-    if (!selectedCompanyScopes.some((scope) => scope.company.business_code === activeBusinessCode)) {
-      setActiveBusinessCode(selectedCompanyScopes[0].company.business_code);
+    if (!selectedCompanyScopes.some((scope) => scope.company.businesscode === activeBusinessCode)) {
+      setActiveBusinessCode(selectedCompanyScopes[0].company.businesscode);
     }
   }, [activeBusinessCode, holdingSelected, selectedCompanyScopes]);
 
@@ -7176,14 +7176,14 @@ function HoldingScopeRulesEditor({
     const hasCompany =
       nextRules.some(
         (rule) =>
-          rule.business_code === normalizedBusinessCode &&
+          rule.businesscode === normalizedBusinessCode &&
           (rule.scope_type === "company" || rule.scope_type === "branch"),
       );
     if (!hasCompany) {
       nextRules.push({
         scope_type: "branch",
-        business_code: normalizedBusinessCode,
-        branch_code: "",
+        businesscode: normalizedBusinessCode,
+        branchcode: "",
         all_branches: false,
       });
     }
@@ -7196,7 +7196,7 @@ function HoldingScopeRulesEditor({
     const normalizedBusinessCode = normalizeBusinessCode(businessCode);
     commit(
       rules.filter(
-        (rule) => rule.scope_type === "holding" || rule.business_code !== normalizedBusinessCode,
+        (rule) => rule.scope_type === "holding" || rule.businesscode !== normalizedBusinessCode,
       ),
     );
     setBranchAddCodes((current) => {
@@ -7210,19 +7210,19 @@ function HoldingScopeRulesEditor({
     const normalizedBusinessCode = normalizeBusinessCode(businessCode);
     if (!normalizedBusinessCode) return;
     const nextRules = rules.filter(
-      (rule) => !(rule.scope_type === "company" && rule.business_code === normalizedBusinessCode),
+      (rule) => !(rule.scope_type === "company" && rule.businesscode === normalizedBusinessCode),
     );
     if (enabled) {
       nextRules.push({
         scope_type: "company",
-        business_code: normalizedBusinessCode,
+        businesscode: normalizedBusinessCode,
         all_branches: true,
       });
-    } else if (!nextRules.some((rule) => rule.scope_type === "branch" && rule.business_code === normalizedBusinessCode)) {
+    } else if (!nextRules.some((rule) => rule.scope_type === "branch" && rule.businesscode === normalizedBusinessCode)) {
       nextRules.push({
         scope_type: "branch",
-        business_code: normalizedBusinessCode,
-        branch_code: "",
+        businesscode: normalizedBusinessCode,
+        branchcode: "",
         all_branches: false,
       });
     }
@@ -7237,14 +7237,14 @@ function HoldingScopeRulesEditor({
       (rule) =>
         !(
           rule.scope_type === "branch" &&
-          rule.business_code === normalizedBusinessCode &&
-          (!rule.branch_code || rule.branch_code === normalizedBranchCode)
+          rule.businesscode === normalizedBusinessCode &&
+          (!rule.branchcode || rule.branchcode === normalizedBranchCode)
         ),
     );
     nextRules.push({
       scope_type: "branch",
-      business_code: normalizedBusinessCode,
-      branch_code: normalizedBranchCode,
+      businesscode: normalizedBusinessCode,
+      branchcode: normalizedBranchCode,
       all_branches: false,
     });
     commit(nextRules);
@@ -7258,15 +7258,15 @@ function HoldingScopeRulesEditor({
       (rule) =>
         !(
           rule.scope_type === "branch" &&
-          rule.business_code === normalizedBusinessCode &&
-          rule.branch_code === normalizedBranchCode
+          rule.businesscode === normalizedBusinessCode &&
+          rule.branchcode === normalizedBranchCode
         ),
     );
-    if (!nextRules.some((rule) => rule.business_code === normalizedBusinessCode)) {
+    if (!nextRules.some((rule) => rule.businesscode === normalizedBusinessCode)) {
       nextRules.push({
         scope_type: "branch",
-        business_code: normalizedBusinessCode,
-        branch_code: "",
+        businesscode: normalizedBusinessCode,
+        branchcode: "",
         all_branches: false,
       });
     }
@@ -7277,7 +7277,7 @@ function HoldingScopeRulesEditor({
     if (holdingSelected) return branches.length;
     return selectedCompanyScopes.reduce((count, scope) => {
       if (scope.all_branches) {
-        return count + branches.filter((branch) => branch.business_code === scope.company.business_code).length;
+        return count + branches.filter((branch) => branch.businesscode === scope.company.businesscode).length;
       }
       return count + scope.branches.length;
     }, 0);
@@ -7287,8 +7287,8 @@ function HoldingScopeRulesEditor({
     if (holdingSelected) return companies.length;
     return new Set(
       rules
-        .filter((rule) => rule.business_code)
-        .map((rule) => rule.business_code as string),
+        .filter((rule) => rule.businesscode)
+        .map((rule) => rule.businesscode as string),
     ).size;
   }
 
@@ -7384,7 +7384,7 @@ function HoldingScopeRulesEditor({
               ) : (
                 <div className="grid gap-2">
                   {selectedCompanyScopes.map((scope) => {
-                    const active = scope.company.business_code === activeCompanyScope?.company.business_code;
+                    const active = scope.company.businesscode === activeCompanyScope?.company.businesscode;
                     const branchLabel =
                       scope.all_branches
                         ? language === "th"
@@ -7399,14 +7399,14 @@ function HoldingScopeRulesEditor({
                           "grid w-full min-w-0 gap-1 rounded-xl border p-3 text-left text-xs transition hover:border-primary/50 hover:bg-primary/5",
                           active ? "border-primary bg-primary/10 text-primary" : "border-border bg-card",
                         )}
-                        key={scope.company.business_code}
+                        key={scope.company.businesscode}
                         type="button"
-                        onClick={() => setActiveBusinessCode(scope.company.business_code)}
+                        onClick={() => setActiveBusinessCode(scope.company.businesscode)}
                       >
                         <span className="flex min-w-0 items-center gap-2">
                           <Building2 className="size-4 shrink-0" />
                           <span className="min-w-0 flex-1 truncate text-sm font-bold">
-                            {scope.company.business_code} - {scope.company.name}
+                            {scope.company.businesscode} - {scope.company.name}
                           </span>
                           {!readOnly ? (
                             <span
@@ -7415,13 +7415,13 @@ function HoldingScopeRulesEditor({
                               className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-destructive"
                               onClick={(event) => {
                                 event.stopPropagation();
-                                removeCompanyScope(scope.company.business_code);
+                                removeCompanyScope(scope.company.businesscode);
                               }}
                               onKeyDown={(event) => {
                                 if (event.key === "Enter" || event.key === " ") {
                                   event.preventDefault();
                                   event.stopPropagation();
-                                  removeCompanyScope(scope.company.business_code);
+                                  removeCompanyScope(scope.company.businesscode);
                                 }
                               }}
                             >
@@ -7442,7 +7442,7 @@ function HoldingScopeRulesEditor({
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-bold">
-                        {activeCompanyScope.company.business_code} - {activeCompanyScope.company.name}
+                        {activeCompanyScope.company.businesscode} - {activeCompanyScope.company.name}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {language === "th"
@@ -7467,7 +7467,7 @@ function HoldingScopeRulesEditor({
                       checked={activeCompanyScope.all_branches}
                       disabled={readOnly}
                       onChange={(event) =>
-                        setCompanyAllBranches(activeCompanyScope.company.business_code, event.target.checked)
+                        setCompanyAllBranches(activeCompanyScope.company.businesscode, event.target.checked)
                       }
                     />
                     {language === "th" ? "ใช้กับทุกสาขาในบริษัทนี้" : "Apply to all branches in this company"}
@@ -7484,15 +7484,15 @@ function HoldingScopeRulesEditor({
                         <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
                           <BranchScopeSearchPicker
                             branches={branches.filter(
-                              (branch) => branch.business_code === activeCompanyScope.company.business_code,
+                              (branch) => branch.businesscode === activeCompanyScope.company.businesscode,
                             )}
                             disabled={readOnly || loading}
                             language={language}
-                            value={branchAddCodes[activeCompanyScope.company.business_code] ?? ""}
+                            value={branchAddCodes[activeCompanyScope.company.businesscode] ?? ""}
                             onChange={(branchCode) =>
                               setBranchAddCodes((current) => ({
                                 ...current,
-                                [activeCompanyScope.company.business_code]: branchCode,
+                                [activeCompanyScope.company.businesscode]: branchCode,
                               }))
                             }
                           />
@@ -7501,11 +7501,11 @@ function HoldingScopeRulesEditor({
                             size="sm"
                             onClick={() =>
                               addBranchScope(
-                                activeCompanyScope.company.business_code,
-                                branchAddCodes[activeCompanyScope.company.business_code] ?? "",
+                                activeCompanyScope.company.businesscode,
+                                branchAddCodes[activeCompanyScope.company.businesscode] ?? "",
                               )
                             }
-                            disabled={!branchAddCodes[activeCompanyScope.company.business_code]}
+                            disabled={!branchAddCodes[activeCompanyScope.company.businesscode]}
                           >
                             <Plus className="size-3.5" />
                             {language === "th" ? "เพิ่มสาขา" : "Add branch"}
@@ -7533,7 +7533,7 @@ function HoldingScopeRulesEditor({
                                   size="icon"
                                   variant="outline"
                                   className="size-8 shrink-0 text-destructive"
-                                  onClick={() => removeBranchScope(activeCompanyScope.company.business_code, branch.code)}
+                                  onClick={() => removeBranchScope(activeCompanyScope.company.businesscode, branch.code)}
                                 >
                                   <Trash2 className="size-4" />
                                 </Button>
@@ -7571,8 +7571,8 @@ function CompanyScopeSearchPicker({
   onChange: (businessCode: string) => void;
   value: string;
 }) {
-  const selected = companies.find((company) => company.business_code === normalizeBusinessCode(value));
-  const selectedLabel = selected ? `${selected.business_code} - ${selected.name}` : value;
+  const selected = companies.find((company) => company.businesscode === normalizeBusinessCode(value));
+  const selectedLabel = selected ? `${selected.businesscode} - ${selected.name}` : value;
   const [query, setQuery] = useState(selectedLabel);
   const [open, setOpen] = useState(false);
 
@@ -7586,7 +7586,7 @@ function CompanyScopeSearchPicker({
     return companies
       .filter((company) => {
         if (searchAll) return true;
-        return `${company.business_code} ${company.name}`.toLowerCase().includes(normalizedQuery);
+        return `${company.businesscode} ${company.name}`.toLowerCase().includes(normalizedQuery);
       })
       .slice(0, 30);
   }, [companies, query, selectedLabel]);
@@ -7617,20 +7617,20 @@ function CompanyScopeSearchPicker({
               <button
                 className={cn(
                   "flex w-full min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs font-semibold hover:bg-muted",
-                  company.business_code === selected?.business_code && "bg-primary/10 text-primary",
+                  company.businesscode === selected?.businesscode && "bg-primary/10 text-primary",
                 )}
-                key={company.business_code}
+                key={company.businesscode}
                 type="button"
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => {
-                  onChange(company.business_code);
-                  setQuery(`${company.business_code} - ${company.name}`);
+                  onChange(company.businesscode);
+                  setQuery(`${company.businesscode} - ${company.name}`);
                   setOpen(false);
                 }}
               >
                 <Building2 className="size-3.5 shrink-0" />
                 <span className="min-w-0 flex-1 truncate">
-                  {company.business_code} - {company.name}
+                  {company.businesscode} - {company.name}
                 </span>
               </button>
             ))
@@ -7727,12 +7727,12 @@ function BranchScopeSearchPicker({
 
 function normalizeHoldingScopeRules(value: unknown, fallbackCompanies?: unknown): HoldingScopeRule[] {
   const raw = holdingScopeRawArray(value);
-  const source = raw.length ? raw : holdingScopeRawArray(fallbackCompanies).map((item) => ({ scope_type: "company", business_code: item }));
+  const source = raw.length ? raw : holdingScopeRawArray(fallbackCompanies).map((item) => ({ scope_type: "company", businesscode: item }));
   const seen = new Set<string>();
   const result: HoldingScopeRule[] = [];
   for (const item of source) {
     const normalized = normalizeHoldingScopeRule(item);
-    const key = `${normalized.scope_type}|${normalized.business_code ?? ""}|${normalized.branch_code ?? ""}`;
+    const key = `${normalized.scope_type}|${normalized.businesscode ?? ""}|${normalized.branchcode ?? ""}`;
     if (seen.has(key)) continue;
     seen.add(key);
     result.push(normalized);
@@ -7754,18 +7754,18 @@ function normalizeHoldingScopeRule(value: unknown): HoldingScopeRule {
   if (typeof value === "string") {
     const businessCode = normalizeBusinessCode(value);
     return businessCode
-      ? { scope_type: "company", business_code: businessCode, all_branches: true }
+      ? { scope_type: "company", businesscode: businessCode, all_branches: true }
       : { scope_type: "holding" };
   }
   const record = isRecord(value) ? value : {};
   const scopeType = normalizeHoldingScopeType(record.scope_type ?? record.scopeType);
-  const businessCode = normalizeBusinessCode(record.business_code ?? record.businessCode ?? record.company_code ?? record.companyCode);
-  const branchCode = normalizeScopeBranchCode(record.branch_code ?? record.branchCode ?? record.code);
+  const businessCode = normalizeBusinessCode(record.businesscode ?? record.businessCode ?? record.company_code ?? record.companyCode);
+  const branchCode = normalizeScopeBranchCode(record.branchcode ?? record.branchCode ?? record.code);
   if (scopeType === "holding" || !businessCode) return { scope_type: "holding", all_branches: false };
   if (scopeType === "company" || booleanLikeValue(record.all_branches ?? record.allBranches)) {
-    return { scope_type: "company", business_code: businessCode, all_branches: true };
+    return { scope_type: "company", businesscode: businessCode, all_branches: true };
   }
-  return { scope_type: "branch", business_code: businessCode, branch_code: branchCode, all_branches: false };
+  return { scope_type: "branch", businesscode: businessCode, branchcode: branchCode, all_branches: false };
 }
 
 function hasInvalidHoldingScopeRules(value: unknown, required: boolean): boolean {
@@ -7774,8 +7774,8 @@ function hasInvalidHoldingScopeRules(value: unknown, required: boolean): boolean
   if (rules.some((rule) => rule.scope_type === "holding")) return false;
   return rules.some((rule) => {
     if (rule.scope_type === "holding") return false;
-    if (!rule.business_code) return true;
-    return rule.scope_type === "branch" && !rule.branch_code;
+    if (!rule.businesscode) return true;
+    return rule.scope_type === "branch" && !rule.branchcode;
   });
 }
 
@@ -7799,9 +7799,9 @@ function normalizeScopeBranchCode(value: unknown): string {
 function workspaceBusinessCode(workspace: WorkspaceSession | null): string {
   if (!workspace) return "";
   return normalizeBusinessCode(
-    (workspace.shop as Record<string, unknown>).business_code ??
+    (workspace.shop as Record<string, unknown>).businesscode ??
       (workspace.shop as Record<string, unknown>).code ??
-      workspace.shop.holding_code,
+      workspace.shop.holdingcode,
   );
 }
 
@@ -11308,7 +11308,7 @@ function ImageUploadFieldEditor({
     : undefined;
 
   // Reset local preview and errors when active form record changes (e.g., category changes)
-  const formGuid = String(form.guid_fixed || form.guidfixed || form.guid || "");
+  const formGuid = String(form.guidfixed || form.guidfixed || form.guid || "");
   useEffect(() => {
     setLocalPreview("");
     setError("");
@@ -11909,12 +11909,12 @@ function GalleryReadOnlyItem({
 }
 
 type BranchOption = {
-  guid_fixed: string;
+  guidfixed: string;
   code: string;
   names: Array<{ code?: string; name?: string }>;
-  business_code?: string;
-  company_guid?: string;
-  holding_code?: string;
+  businesscode?: string;
+  companyguid?: string;
+  holdingcode?: string;
   shop_name?: string;
 };
 
@@ -11929,7 +11929,7 @@ function branchOptionDisplayName(
     names.find((item) => item.code?.toLowerCase() === "th" && item.name)
       ?.name ??
     names.find((item) => item.name)?.name;
-  const branchName = (localized ?? option.code ?? option.guid_fixed).trim();
+  const branchName = (localized ?? option.code ?? option.guidfixed).trim();
   if (option.shop_name) {
     return `${option.shop_name} - ${branchName}`;
   }
@@ -11945,9 +11945,9 @@ function recordToBranchOption(record: SettingRecord): BranchOption {
       name: stringValue(entry.name),
     }));
   return {
-    guid_fixed: stringValue(record.guid_fixed ?? record.guidfixed ?? record.guid ?? record.guidFixed),
+    guidfixed: stringValue(record.guidfixed ?? record.guidfixed ?? record.guid ?? record.guidFixed),
     code: stringValue(record.code),
-    company_guid: stringValue(record.company_guid ?? record.companyguid ?? record.companyGuid),
+    companyguid: stringValue(record.companyguid ?? record.companyguid ?? record.companyGuid),
     names,
   };
 }
@@ -11959,7 +11959,7 @@ function selectedBranchesFromValue(value: unknown): BranchOption[] {
       if (typeof item === "string") {
         const trimmed = item.trim();
         if (!trimmed) return null;
-        return { guid_fixed: trimmed, code: "", names: [] } as BranchOption;
+        return { guidfixed: trimmed, code: "", names: [] } as BranchOption;
       }
       if (!isRecord(item)) return null;
       const namesRaw = Array.isArray(item.names) ? item.names : [];
@@ -11969,17 +11969,17 @@ function selectedBranchesFromValue(value: unknown): BranchOption[] {
           code: stringValue(entry.code),
           name: stringValue(entry.name),
         }));
-      const guid = stringValue(item.guid_fixed ?? item.guidfixed ?? item.guid);
+      const guid = stringValue(item.guidfixed ?? item.guidfixed ?? item.guid);
       const code = stringValue(item.code);
       if (!guid && !code) return null;
-      return { guid_fixed: guid, code, names } as BranchOption;
+      return { guidfixed: guid, code, names } as BranchOption;
     })
     .filter((item): item is BranchOption => item !== null);
 }
 
-function branchKeyOf(option: { guid_fixed?: string; code?: string; business_code?: string; holding_code?: string }): string {
-  const shopPrefix = option.business_code || option.holding_code ? `${option.business_code ?? option.holding_code}_` : "";
-  const coreKey = stringValue(option.guid_fixed) || stringValue(option.code);
+function branchKeyOf(option: { guidfixed?: string; code?: string; businesscode?: string; holdingcode?: string }): string {
+  const shopPrefix = option.businesscode || option.holdingcode ? `${option.businesscode ?? option.holdingcode}_` : "";
+  const coreKey = stringValue(option.guidfixed) || stringValue(option.code);
   return `${shopPrefix}${coreKey}`;
 }
 
@@ -12011,7 +12011,7 @@ function BranchMultiSelectFieldEditor({
       if (match) {
         return {
           ...item,
-          holding_code: match.holding_code,
+          holdingcode: match.holdingcode,
           shop_name: match.shop_name,
           names: match.names,
         };
@@ -12027,15 +12027,15 @@ function BranchMultiSelectFieldEditor({
     setLoading(true);
     setError("");
 
-    let holding_codes: string[] = [];
-    const formCompanies = form.business_codes ?? form.company_guids;
+    let holdingcodes: string[] = [];
+    const formCompanies = form.businesscodes ?? form.companyguids;
     if (Array.isArray(formCompanies) && formCompanies.length > 0) {
-      holding_codes = formCompanies
-        .map((s) => (typeof s === "string" ? s.trim() : stringValue(s?.guid_fixed ?? s?.holding_code ?? "")))
+      holdingcodes = formCompanies
+        .map((s) => (typeof s === "string" ? s.trim() : stringValue(s?.guidfixed ?? s?.holdingcode ?? "")))
         .filter(Boolean);
     }
-    if (holding_codes.length === 0) {
-      holding_codes = [workspace.shop.holding_code];
+    if (holdingcodes.length === 0) {
+      holdingcodes = [workspace.shop.holdingcode];
     }
 
     void fetch(`/api/workspace/holdings`, {
@@ -12052,14 +12052,14 @@ function BranchMultiSelectFieldEditor({
         const shopsList = Array.isArray(shopsPayload.data) ? shopsPayload.data : [];
         const shopNameMap = new Map<string, string>();
         for (const s of shopsList) {
-          shopNameMap.set(s.holding_code, s.name1 || s.name || s.holding_code);
+          shopNameMap.set(s.holdingcode, s.name1 || s.name || s.holdingcode);
         }
 
-        const fetchPromises = holding_codes.map(async (sid) => {
+        const fetchPromises = holdingcodes.map(async (sid) => {
           const params = new URLSearchParams({
             limit: "1000",
             offset: "0",
-            holding_code: sid,
+            holdingcode: sid,
           });
           const response = await fetch(`/api/system-settings/branch?${params.toString()}`, {
             headers: requestHeaders(auth),
@@ -12071,10 +12071,10 @@ function BranchMultiSelectFieldEditor({
           const records = extractListRecords(payload);
           return records
             .map(recordToBranchOption)
-            .filter((opt) => opt.guid_fixed || opt.code)
+            .filter((opt) => opt.guidfixed || opt.code)
             .map((opt) => ({
               ...opt,
-              holding_code: sid,
+              holdingcode: sid,
               shop_name: shopNameMap.get(sid) || sid,
             }));
         });
@@ -12108,7 +12108,7 @@ function BranchMultiSelectFieldEditor({
       cancelled = true;
       controller.abort();
     };
-  }, [auth, language, workspace, form.business_codes, form.company_guids]);
+  }, [auth, language, workspace, form.businesscodes, form.companyguids]);
 
   function commitSelection(next: BranchOption[]) {
     setForm({ ...form, [field.key]: next });
@@ -12492,11 +12492,11 @@ function CompanyMultiSelectFieldEditor({
   const [error, setError] = useState("");
 
   const selectedHoldingCodes = useMemo(() => {
-    const val = form[field.key] ?? form.company_guids;
+    const val = form[field.key] ?? form.companyguids;
     if (Array.isArray(val)) {
       return val.map((item) => {
         if (typeof item === "string") return item.trim();
-        if (isRecord(item)) return stringValue(item.guid_fixed ?? item.guidfixed ?? item.guid ?? "");
+        if (isRecord(item)) return stringValue(item.guidfixed ?? item.guidfixed ?? item.guid ?? "");
         return "";
       }).filter(Boolean);
     }
@@ -12511,8 +12511,8 @@ function CompanyMultiSelectFieldEditor({
     setError("");
 
     const params = new URLSearchParams();
-    const activeHoldingCode = stringValue(workspace.shop.holding_code);
-    if (activeHoldingCode) params.set("active_holding_code", activeHoldingCode);
+    const activeHoldingCode = stringValue(workspace.shop.holdingcode);
+    if (activeHoldingCode) params.set("active_holdingcode", activeHoldingCode);
 
     void fetch(`/api/workspace/holdings${params.size > 0 ? `?${params.toString()}` : ""}`, {
       headers: requestHeaders(auth),
@@ -12583,7 +12583,7 @@ function CompanyMultiSelectFieldEditor({
       {!loading && !error && shops.length > 0 ? (
         <div className="flex flex-col gap-2.5 py-1">
           {shops.map((shop) => {
-            const sid = stringValue(shop.business_code ?? shop.code ?? shop.holding_code);
+            const sid = stringValue(shop.businesscode ?? shop.code ?? shop.holdingcode);
             const shopName = shop.names?.find((n: any) => n.code === language)?.name || shop.name1 || shop.name || sid;
             const isShopChecked = selectedHoldingCodes.includes(sid);
 
@@ -12625,7 +12625,7 @@ function CompanyMultiSelectReadOnlyDetail({
     if (Array.isArray(value)) {
       return value.map((item) => {
         if (typeof item === "string") return item.trim();
-        if (isRecord(item)) return stringValue(item.guid_fixed ?? item.guidfixed ?? item.guid ?? "");
+        if (isRecord(item)) return stringValue(item.guidfixed ?? item.guidfixed ?? item.guid ?? "");
         return "";
       }).filter(Boolean);
     }
@@ -12646,7 +12646,7 @@ function CompanyMultiSelectReadOnlyDetail({
       .then((payload) => {
         if (payload && payload.success && Array.isArray(payload.data)) {
           const parsed = payload.data.map((shop: any) => ({
-            guidfixed: shop.holding_code,
+            guidfixed: shop.holdingcode,
             code: "",
             names: shop.names || [{ code: "th", name: shop.name1 || shop.name || "" }]
           }));
@@ -13340,7 +13340,7 @@ function ProductGroupUnifiedView({
 
 function branchRecordToListItem(record: SettingRecord): BranchListItem {
   return {
-    guid_fixed: stringValue(record.guid_fixed),
+    guidfixed: stringValue(record.guidfixed),
     code: stringValue(record.code),
     names: Array.isArray(record.names)
       ? (record.names as BranchListItem["names"])
@@ -14119,7 +14119,7 @@ function CopyUatPanel({
               <option value="">{text("selectSourceShop")}</option>
               {records.map((record, index) => {
                 const id = String(
-                  record.guid_fixed ?? record.holding_code ?? record._id ?? "",
+                  record.guidfixed ?? record.holdingcode ?? record._id ?? "",
                 );
                 return (
                   <option key={`${id}-${index}`} value={id}>
@@ -14196,7 +14196,7 @@ function readWorkspace(): WorkspaceSession | null {
     const raw = localStorage.getItem(workspaceStorageKeys.workspace);
     if (!raw) return null;
     const workspace = JSON.parse(raw) as WorkspaceSession;
-    return workspace?.shop?.holding_code ? workspace : null;
+    return workspace?.shop?.holdingcode ? workspace : null;
   } catch {
     return null;
   }
@@ -14212,7 +14212,7 @@ function companyRecordForEdit(
 function companyRecordFromWorkspace(
   workspace: WorkspaceSession | null,
 ): SettingRecord | null {
-  if (!workspace?.shop?.holding_code) return null;
+  if (!workspace?.shop?.holdingcode) return null;
   const shopInfo = isRecord(workspace.shopInfo)
     ? { ...workspace.shopInfo }
     : {};
@@ -14225,7 +14225,7 @@ function companyRecordFromWorkspace(
         : [];
   return {
     ...shopInfo,
-    holding_code: stringValue(shopInfo.holding_code) || workspace.shop.holding_code,
+    holdingcode: stringValue(shopInfo.holdingcode) || workspace.shop.holdingcode,
     names,
     settings: isRecord(shopInfo.settings) ? shopInfo.settings : {},
   };
@@ -14236,8 +14236,8 @@ function getMainHoldingCodeFromWorkspace(
 ): string {
   if (!workspace?.shopInfo) return "";
   const mainHoldingCode =
-    workspace.shopInfo.main_holding_code ??
-    workspace.shopInfo.mainholding_code ??
+    workspace.shopInfo.main_holdingcode ??
+    workspace.shopInfo.mainholdingcode ??
     workspace.shopInfo.mainHoldingCode;
   return typeof mainHoldingCode === "string" ? mainHoldingCode.trim() : "";
 }
@@ -14251,22 +14251,22 @@ function requestHeaders(auth: AuthSession): HeadersInit {
 }
 
 function workspaceHoldingCode(workspace: WorkspaceSession): string {
-  return workspace.shop.holding_code?.trim() || "";
+  return workspace.shop.holdingcode?.trim() || "";
 }
 
 function workspaceTenantPayload(workspace: WorkspaceSession): Record<string, string> {
   const holdingCode = workspaceHoldingCode(workspace);
   return {
-    holding_code: workspace.shop.holding_code,
-    ...(holdingCode ? { holding_code: holdingCode } : {}),
+    holdingcode: workspace.shop.holdingcode,
+    ...(holdingCode ? { holdingcode: holdingCode } : {}),
   };
 }
 
 function applyWorkspaceTenantParams(params: URLSearchParams, workspace: WorkspaceSession): URLSearchParams {
-  params.set("holding_code", workspace.shop.holding_code);
+  params.set("holdingcode", workspace.shop.holdingcode);
   const holdingCode = workspaceHoldingCode(workspace);
-  if (holdingCode) params.set("holding_code", holdingCode);
-  else params.delete("holding_code");
+  if (holdingCode) params.set("holdingcode", holdingCode);
+  else params.delete("holdingcode");
   return params;
 }
 
@@ -14342,7 +14342,7 @@ function extractCompanyRecord(
   if (isRecord(shop)) return shop;
   const result = payload.result;
   if (isRecord(result)) return result;
-  if (payload.holding_code || payload.names || payload.settings) return payload;
+  if (payload.holdingcode || payload.names || payload.settings) return payload;
   return null;
 }
 
@@ -14621,7 +14621,7 @@ function defaultForm(
     if (field.type === "checkbox")
       form[field.key] =
         field.key === "isActive" ||
-        field.key === "is_active" ||
+        field.key === "isactive" ||
         field.key === "isenabled";
     else if (field.type === "names")
       form[field.key] = Object.fromEntries(
@@ -14657,17 +14657,17 @@ function defaultForm(
   if (config.slug === "mcp_apikey") {
     form.allowed_tools = JSON.stringify(["readonly"], null, 2);
     form.rate_limit_per_minute = "600";
-    form.is_active = true;
+    form.isactive = true;
   }
   if (config.slug === "ai_provider") {
     form.provider_name = "ollama";
-    form.is_active = true;
+    form.isactive = true;
     form.priority = "1";
   }
   if (config.slug === "approval_setting") {
     form.approval_code = "default";
     form.approval_name = "Default";
-    form.is_active = true;
+    form.isactive = true;
     form.approvals = {};
   }
   if (config.slug === "permission_definition") {
@@ -14708,7 +14708,7 @@ function formFromRecord(
     else if (field.type === "holding-scope-rules")
       form[field.key] = normalizeHoldingScopeRules(
         value,
-        recordValueForField(record, config, { ...field, key: "business_codes" }),
+        recordValueForField(record, config, { ...field, key: "businesscodes" }),
       );
     else if (field.type === "string-list")
       form[field.key] = normalizeStringListValue(value);
@@ -14765,7 +14765,7 @@ function formFromRecord(
             typeof v === "string"
               ? v.trim()
               : isRecord(v)
-                ? String(v.business_code ?? v.code ?? v.guidfixed ?? v.guid_fixed ?? "")
+                ? String(v.businesscode ?? v.code ?? v.guidfixed ?? v.guidfixed ?? "")
                 : "",
           ).filter(Boolean)
         : [];
@@ -14781,7 +14781,7 @@ function formFromRecord(
   }
   applyCompanyDefaults(form, config);
   applyBranchDefaults(form, config);
-  form.guid_fixed = record.guid_fixed || record.guidfixed || record.guid || "";
+  form.guidfixed = record.guidfixed || record.guidfixed || record.guid || "";
   return form;
 }
 
@@ -14941,7 +14941,7 @@ function buildPayload(
               typeof v === "string"
                 ? v.trim()
                 : isRecord(v)
-                  ? String(v.business_code ?? v.code ?? v.guidfixed ?? v.guid_fixed ?? "")
+                  ? String(v.businesscode ?? v.code ?? v.guidfixed ?? v.guidfixed ?? "")
                   : "",
             ).filter(Boolean)
           : [],
@@ -14994,26 +14994,26 @@ function buildPayload(
   if (config.kind === "atlas") {
     const now = new Date().toISOString();
     const holdingCode = workspaceHoldingCode(workspace);
-    if (holdingCode) payload.holding_code = holdingCode;
-    else delete payload.holding_code;
-    payload.guid_fixed = stringValue(payload.guid_fixed) || newClientGuidFixed();
-    payload.updated_at = now;
+    if (holdingCode) payload.holdingcode = holdingCode;
+    else delete payload.holdingcode;
+    payload.guidfixed = stringValue(payload.guidfixed) || newClientGuidFixed();
+    payload.updatedat = now;
     payload.updated_by = auth.username;
     if (!editing) {
-      payload.created_at = now;
+      payload.createdat = now;
       payload.created_by = auth.username;
     }
   }
 
   if (config.kind === "goapi-crud") {
-    payload.holding_code = workspace.shop.holding_code;
+    payload.holdingcode = workspace.shop.holdingcode;
     payload.created_by = payload.created_by ?? auth.username;
     if (!editing && config.slug === "mcp_apikey")
       payload.createWithExport = true;
   }
 
   if (config.kind === "ai-provider") {
-    payload.holding_code = workspace.shop.holding_code;
+    payload.holdingcode = workspace.shop.holdingcode;
     if (!payload.api_key && String(payload.provider_name) !== "ollama") {
       throw new Error(
         language === "th"
@@ -15032,7 +15032,7 @@ function buildPayload(
     setByPath(payload, "settings.language_configs", configs);
     deleteByPath(payload, "settings.languageconfigs");
     setByPath(payload, "settings.language", configs[0]?.code ?? "th");
-    payload.holding_code = workspace.shop.holding_code;
+    payload.holdingcode = workspace.shop.holdingcode;
   }
 
   if (config.slug === "branch") {
@@ -15087,7 +15087,7 @@ function buildPayload(
   }
 
   if (config.slug === "user") {
-    payload.holding_code = workspace.shop.holding_code;
+    payload.holdingcode = workspace.shop.holdingcode;
     if (editing) payload.editusername = recordId(editing, config);
     if (isEmailLike(payload.username)) {
       payload.email = payload.username;
@@ -15128,7 +15128,7 @@ function resolveDateTimeScope(
   const branch = workspace?.branch ?? null;
   const shopInfo = workspace?.shopInfo ?? null;
   const branchcode = stringValue(branch?.code ?? workspace?.shop.branchcode);
-  const branchguid = stringValue(branch?.guid_fixed);
+  const branchguid = stringValue(branch?.guidfixed);
   const shopTimezone = stringValue(getByPath(shopInfo, "settings.timezone"));
   const shopTimezoneLabel = stringValue(
     getByPath(shopInfo, "settings.timezone_label"),
@@ -15207,7 +15207,7 @@ function stringValue(value: unknown): string {
 
 function productCategoryGuid(record: SettingRecord | null | undefined): string {
   if (!record) return "";
-  return stringValue(record.guid_fixed ?? record.guidfixed ?? record.guid);
+  return stringValue(record.guidfixed ?? record.guidfixed ?? record.guid);
 }
 
 function productCategoryParentGuid(
@@ -15267,7 +15267,7 @@ function recordId(
   const value = config.idField ? getByPath(record, config.idField) : undefined;
   return String(
     value ??
-      record.guid_fixed ??
+      record.guidfixed ??
       record.guidfixed ??
       record.id ??
       record._id ??
@@ -15280,7 +15280,7 @@ function recordId(
       record.groupCode ??
       record.employeeCode ??
       record.code ??
-      record.holding_code ??
+      record.holdingcode ??
       record.provider_name ??
       "",
   );
@@ -15311,7 +15311,7 @@ function recordTitle(
       record.username ??
       record.provider_name ??
       record.code ??
-      record.guid_fixed ??
+      record.guidfixed ??
       record.guidfixed ??
       config?.slug ??
       "",
@@ -16351,7 +16351,7 @@ function safeJsonParse(value: string, fallback: unknown): unknown {
 function isActiveRecord(record: SettingRecord): boolean {
   if ("is_access_disabled" in record || "is_access_disabled" in record)
     return !userAccessDisabled(record);
-  if ("is_active" in record) return Boolean(record.is_active);
+  if ("isactive" in record) return Boolean(record.isactive);
   if ("isActive" in record) return Boolean(record.isActive);
   if ("isenabled" in record) return Boolean(record.isenabled);
   if ("isdisabled" in record) return !record.isdisabled;

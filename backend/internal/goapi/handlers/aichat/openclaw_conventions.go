@@ -13,7 +13,7 @@ import (
 // /v1/chat/completions ตามปกติ. แต่เรา "ยืม pattern" ของ OpenClaw มาใช้เพื่อให้
 // โครงสร้างข้อมูลในระบบเรา consistent กับมาตรฐาน OpenClaw:
 //
-// 1. session_key format: agent:{agentId}:{channel}:{type}:{identifier}
+// 1. sessionkey format: agent:{agentId}:{channel}:{type}:{identifier}
 // 2. Error envelope: {code, message, details: {code, reason, recommendedNextStep}}
 // 3. Untrusted external content wrapping (อยู่ใน untrusted_wrap.go)
 //
@@ -31,7 +31,7 @@ const (
 	sessionTypeShop = "shop"
 )
 
-// BuildSessionKey สร้าง session_key รูปแบบ OpenClaw
+// BuildSessionKey สร้าง sessionkey รูปแบบ OpenClaw
 //
 //	agent:nongkung:webchat:shop:{holdingCode}:{sessionID}
 //
@@ -61,10 +61,10 @@ type OpenClawError struct {
 
 // OpenClawErrorDetail — รายละเอียดเพิ่มเติม + คำแนะนำว่า client ควรทำอะไรต่อ
 type OpenClawErrorDetail struct {
-	Code                string `json:"code,omitempty"`                  // เช่น "MODEL_TIMEOUT"
-	Reason              string `json:"reason,omitempty"`                // human-readable why
-	RecommendedNextStep string `json:"recommended_next_step,omitempty"` // hint ให้ client
-	CanRetry            bool   `json:"can_retry,omitempty"`             // retry แล้วน่าจะหายไหม
+	Code                string `json:"code,omitempty"`                // เช่น "MODEL_TIMEOUT"
+	Reason              string `json:"reason,omitempty"`              // human-readable why
+	RecommendedNextStep string `json:"recommendednextstep,omitempty"` // hint ให้ client
+	CanRetry            bool   `json:"canretry,omitempty"`            // retry แล้วน่าจะหายไหม
 }
 
 // Standard error codes (ตรงกับ OpenClaw spec ที่เราใช้)
@@ -80,10 +80,10 @@ const (
 // recommendedNextStep values (ตรงกับ OpenClaw spec)
 const (
 	NextStepRetry             = "retry"
-	NextStepRetryWithBackoff  = "wait_then_retry"
-	NextStepConfigureProvider = "configure_provider"
-	NextStepReviewConfig      = "review_auth_configuration"
-	NextStepUpdateCredentials = "update_auth_credentials"
+	NextStepRetryWithBackoff  = "waitthenretry"
+	NextStepConfigureProvider = "configureprovider"
+	NextStepReviewConfig      = "reviewauthconfiguration"
+	NextStepUpdateCredentials = "updateauthcredentials"
 )
 
 // NewOpenClawError สร้าง error envelope แบบเร็ว

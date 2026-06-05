@@ -20,19 +20,19 @@ const aiProviderCollection = "aiProviderConfigs"
 
 // AIProviderConfig — config ของ AI provider ต่อ shop
 type AIProviderConfig struct {
-	HoldingCode   string     `bson:"holding_code" json:"holding_code"`
-	ProviderName  string     `bson:"provider_name" json:"provider_name"`
-	APIKey        string     `bson:"apikey" json:"api_key"`
-	BaseURL       string     `bson:"baseurl" json:"base_url"`
+	HoldingCode   string     `bson:"holdingcode" json:"holdingcode"`
+	ProviderName  string     `bson:"providername" json:"providername"`
+	APIKey        string     `bson:"apikey" json:"apikey"`
+	BaseURL       string     `bson:"baseurl" json:"baseurl"`
 	Model         string     `bson:"model" json:"model"`
 	Capabilities  []string   `bson:"capabilities" json:"capabilities"` // ["tools","vision","thinking"]
-	IsActive      bool       `bson:"isactive" json:"is_active"`
+	IsActive      bool       `bson:"isactive" json:"isactive"`
 	Priority      int        `bson:"priority" json:"priority"`
-	LastError     string     `bson:"lasterror" json:"last_error"`
-	LastErrorAt   *time.Time `bson:"last_error_at" json:"last_error_at"`
-	CooldownUntil *time.Time `bson:"cooldownuntil" json:"cooldown_until"`
-	CreatedAt     time.Time  `bson:"created_at" json:"created_at"`
-	UpdatedAt     time.Time  `bson:"updated_at" json:"updated_at"`
+	LastError     string     `bson:"lasterror" json:"lasterror"`
+	LastErrorAt   *time.Time `bson:"lasterrorat" json:"lasterrorat"`
+	CooldownUntil *time.Time `bson:"cooldownuntil" json:"cooldownuntil"`
+	CreatedAt     time.Time  `bson:"createdat" json:"createdat"`
+	UpdatedAt     time.Time  `bson:"updatedat" json:"updatedat"`
 }
 
 // getAIProviderCollection คืน MongoDB collection
@@ -46,15 +46,15 @@ func getAIProviderCollection() (*mongo.Collection, error) {
 	return mongoClient.Database(dbName).Collection(aiProviderCollection), nil
 }
 
-// ensureAIProviderIndex สร้าง unique index (holding_code + providername)
+// ensureAIProviderIndex สร้าง unique index (holdingcode + providername)
 func ensureAIProviderIndex(col *mongo.Collection) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	_, err := col.Indexes().CreateOne(ctx, mongo.IndexModel{
 		Keys: bson.D{
-			{Key: "holding_code", Value: 1},
-			{Key: "provider_name", Value: 1},
+			{Key: "holdingcode", Value: 1},
+			{Key: "providername", Value: 1},
 		},
 		Options: options.Index().SetUnique(true),
 	})
@@ -73,7 +73,7 @@ func getAIProviderConfigs(holdingCode string) ([]AIProviderConfig, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	filter := bson.M{"holding_code": holdingCode}
+	filter := bson.M{"holdingcode": holdingCode}
 	opts := options.Find().SetSort(bson.D{{Key: "priority", Value: 1}})
 
 	cur, err := col.Find(ctx, filter, opts)
@@ -105,14 +105,14 @@ func upsertAIProviderConfig(holdingCode string, cfg AIProviderConfig) error {
 	cfg.HoldingCode = holdingCode
 	cfg.UpdatedAt = now
 
-	filter := bson.M{"holding_code": holdingCode, "provider_name": cfg.ProviderName}
+	filter := bson.M{"holdingcode": holdingCode, "providername": cfg.ProviderName}
 	setFields := bson.M{
 		"model":         cfg.Model,
 		"baseurl":       cfg.BaseURL,
 		"capabilities":  cfg.Capabilities,
 		"isactive":      cfg.IsActive,
 		"priority":      cfg.Priority,
-		"updated_at":    now,
+		"updatedat":     now,
 		"lasterror":     "",
 		"cooldownuntil": nil,
 	}
@@ -123,9 +123,9 @@ func upsertAIProviderConfig(holdingCode string, cfg AIProviderConfig) error {
 	update := bson.M{
 		"$set": setFields,
 		"$setOnInsert": bson.M{
-			"holding_code":  holdingCode,
-			"provider_name": cfg.ProviderName,
-			"created_at":    now,
+			"holdingcode":  holdingCode,
+			"providername": cfg.ProviderName,
+			"createdat":    now,
 		},
 	}
 
@@ -150,7 +150,7 @@ func deleteAIProviderConfig(holdingCode, providerName string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	result, err := col.DeleteOne(ctx, bson.M{"holding_code": holdingCode, "provider_name": providerName})
+	result, err := col.DeleteOne(ctx, bson.M{"holdingcode": holdingCode, "providername": providerName})
 	if err != nil {
 		return fmt.Errorf("deleteAIProviderConfig: %w", err)
 	}
@@ -172,13 +172,13 @@ func updateAIProviderCooldown(holdingCode, providerName string, errMsg string, c
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	filter := bson.M{"holding_code": holdingCode, "provider_name": providerName}
+	filter := bson.M{"holdingcode": holdingCode, "providername": providerName}
 	update := bson.M{
 		"$set": bson.M{
 			"lasterror":     errMsg,
-			"last_error_at": time.Now(),
+			"lasterrorat":   time.Now(),
 			"cooldownuntil": cooldownUntil,
-			"updated_at":    time.Now(),
+			"updatedat":     time.Now(),
 		},
 	}
 	_, err = col.UpdateOne(ctx, filter, update)
@@ -199,12 +199,12 @@ func clearAIProviderCooldown(holdingCode, providerName string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	filter := bson.M{"holding_code": holdingCode, "provider_name": providerName}
+	filter := bson.M{"holdingcode": holdingCode, "providername": providerName}
 	update := bson.M{
 		"$set": bson.M{
 			"lasterror":     "",
 			"cooldownuntil": nil,
-			"updated_at":    time.Now(),
+			"updatedat":     time.Now(),
 		},
 		"$unset": bson.M{
 			"cooldownuntil": "",

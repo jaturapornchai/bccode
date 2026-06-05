@@ -28,7 +28,7 @@ type AdvancePaymentRefundData struct {
 }
 
 type AdvancePaymentRefundDoc struct {
-	ID                       primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                       primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	AdvancePaymentRefundData `bson:"inline"`
 	models.ActivityDoc       `bson:"inline"`
 }

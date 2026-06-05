@@ -28,7 +28,7 @@ func testUpdate() {
 	var journal_json string = `
 	{
 		"id": "628c4ee982bcbf8133668cf6",
-		"holding_code": "27dcEdktOoaSBYFmnN6G6ett4Jb",
+		"holdingcode": "27dcEdktOoaSBYFmnN6G6ett4Jb",
 		"guidfixed": "29asDMDazTOCwD7Qm7FDi9GDMu0",
 		"parid": "0000000",
 		"batchId": "1124541",
@@ -97,7 +97,7 @@ func testCreateJournal() {
 
 	var journal_json string = `{
 		"id": "000000000000000000000000",
-		"holding_code": "27dcEdktOoaSBYFmnN6G6ett4Jb",
+		"holdingcode": "27dcEdktOoaSBYFmnN6G6ett4Jb",
 		"guidfixed": "2ABh7CJyA7RbeZ1WmdwXWvs0GQa",
 		"parid": "0000000",
 		"batchId": "",

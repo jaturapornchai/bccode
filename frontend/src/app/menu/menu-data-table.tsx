@@ -102,7 +102,7 @@ export function MenuDataTable({ data, dictionary, globalSearch, onGlobalSearchCh
       },
       {
         accessorKey: "updatedAt",
-        header: backendText(dictionary, "updated_at"),
+        header: backendText(dictionary, "updatedat"),
       },
       {
         accessorKey: "route",

@@ -24,7 +24,7 @@ func NewCostCenterPGRepository(pst microservice.IPersister) *CostCenterPGReposit
 
 func (repo *CostCenterPGRepository) Get(holdingCode string, guidFixed string) (*models.CostCenterPg, error) {
 	var result models.CostCenterPg
-	_, err := repo.pst.First(&result, "holding_code=? AND guidfixed=?", holdingCode, guidFixed)
+	_, err := repo.pst.First(&result, "holdingcode=? AND guidfixed=?", holdingCode, guidFixed)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
@@ -44,8 +44,8 @@ func (repo *CostCenterPGRepository) Create(doc models.CostCenterPg) error {
 
 func (repo *CostCenterPGRepository) Update(holdingCode string, guidFixed string, doc models.CostCenterPg) error {
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"holding_code": holdingCode,
-		"guid_fixed":   guidFixed,
+		"holdingcode": holdingCode,
+		"guidfixed":   guidFixed,
 	})
 	if err != nil {
 		return err
@@ -55,8 +55,8 @@ func (repo *CostCenterPGRepository) Update(holdingCode string, guidFixed string,
 
 func (repo *CostCenterPGRepository) Delete(holdingCode string, guidFixed string) error {
 	err := repo.pst.Delete(&models.CostCenterPg{}, map[string]interface{}{
-		"holding_code": holdingCode,
-		"guid_fixed":   guidFixed,
+		"holdingcode": holdingCode,
+		"guidfixed":   guidFixed,
 	})
 	if err != nil {
 		return err

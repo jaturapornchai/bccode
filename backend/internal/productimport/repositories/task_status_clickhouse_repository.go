@@ -23,13 +23,13 @@ func (repo *TaskStatusClickHouseRepository) Create(ctx context.Context, status m
 }
 
 func (repo *TaskStatusClickHouseRepository) Update(ctx context.Context, taskID string, status models.TaskStatusModel) error {
-	// ✅ ดึง existing record ก่อนเพื่อใช้ created_at เดิม
+	// ✅ ดึง existing record ก่อนเพื่อใช้ createdat เดิม
 	existing, err := repo.FindByTaskID(ctx, status.HoldingCode, taskID)
 	if err != nil {
-		// ถ้าไม่เจอ record เดิม ให้ใช้ created_at ใหม่
+		// ถ้าไม่เจอ record เดิม ให้ใช้ createdat ใหม่
 		status.CreatedAt = status.UpdatedAt
 	} else {
-		// ใช้ created_at จาก record เดิม
+		// ใช้ createdat จาก record เดิม
 		status.CreatedAt = existing.CreatedAt
 	}
 
@@ -41,7 +41,7 @@ func (repo *TaskStatusClickHouseRepository) Update(ctx context.Context, taskID s
 func (repo *TaskStatusClickHouseRepository) FindByTaskID(ctx context.Context, holdingCode, taskID string) (models.TaskStatusModel, error) {
 	results := []models.TaskStatusModel{}
 
-	sqlExpr := "SELECT * FROM task_status WHERE holding_code = ? AND task_id = ? ORDER BY updated_at DESC LIMIT 1"
+	sqlExpr := "SELECT * FROM task_status WHERE holdingcode = ? AND task_id = ? ORDER BY updatedat DESC LIMIT 1"
 	err := repo.pst.Select(ctx, &results, sqlExpr, holdingCode, taskID)
 
 	if err != nil {
@@ -58,6 +58,6 @@ func (repo *TaskStatusClickHouseRepository) FindByTaskID(ctx context.Context, ho
 func (repo *TaskStatusClickHouseRepository) Delete(ctx context.Context, holdingCode, taskID string) error {
 	// ใช้ ALTER TABLE DELETE เหมือน ProductImport
 	return repo.pst.Exec(ctx,
-		"ALTER TABLE task_status DELETE WHERE holding_code = ? AND task_id = ?",
+		"ALTER TABLE task_status DELETE WHERE holdingcode = ? AND task_id = ?",
 		holdingCode, taskID)
 }

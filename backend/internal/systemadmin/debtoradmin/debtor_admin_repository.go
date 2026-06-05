@@ -25,7 +25,7 @@ func NewDebtorAdminMongoRepository(pst microservice.IPersisterMongo) IDebtorAdmi
 func (r DebtorAdminMongoRepository) FindDebtorByHoldingCode(ctx context.Context, holdingCode string) ([]debtorModels.DebtorDoc, error) {
 
 	docList := []debtorModels.DebtorDoc{}
-	err := r.pst.Find(ctx, &debtorModels.DebtorDoc{}, bson.M{"holding_code": holdingCode}, &docList)
+	err := r.pst.Find(ctx, &debtorModels.DebtorDoc{}, bson.M{"holdingcode": holdingCode}, &docList)
 	if err != nil {
 		return nil, err
 	}

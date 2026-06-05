@@ -14,7 +14,7 @@ import (
 )
 
 type ShopBrief struct {
-	GuidFixed string `bson:"guid_fixed"`
+	GuidFixed string `bson:"guidfixed"`
 	Names     []struct {
 		Code string `bson:"code"`
 		Name string `bson:"name"`
@@ -40,7 +40,7 @@ func main() {
 	collection := client.Database(dbName).Collection("shops")
 
 	var results []ShopBrief
-	cursor, err := collection.Find(ctx, bson.M{}, options.Find().SetProjection(bson.M{"guid_fixed": 1, "names": 1}))
+	cursor, err := collection.Find(ctx, bson.M{}, options.Find().SetProjection(bson.M{"guidfixed": 1, "names": 1}))
 	if err != nil {
 		log.Fatalf("find error: %v", err)
 	}

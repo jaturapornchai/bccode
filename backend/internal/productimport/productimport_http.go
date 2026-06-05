@@ -45,15 +45,15 @@ type IProductImportHttp interface{}
 // SaveTaskRequest - Request structure for SaveTask endpoint
 type SaveTaskRequest struct {
 	models.ProductImportHeader
-	ImportMode  string `json:"import_mode"`  // "INSERT_ONLY" | "UPDATE_ONLY" | "BOTH" | "AUTO"
-	Preview     bool   `json:"preview"`      // true = แสดงผลเฉพาะ, false = บันทึกจริง
-	ForceUpdate bool   `json:"force_update"` // true = บังคับ update แม้ไม่มีการเปลี่ยนแปลง
+	ImportMode  string `json:"importmode"`  // "INSERT_ONLY" | "UPDATE_ONLY" | "BOTH" | "AUTO"
+	Preview     bool   `json:"preview"`     // true = แสดงผลเฉพาะ, false = บันทึกจริง
+	ForceUpdate bool   `json:"forceupdate"` // true = บังคับ update แม้ไม่มีการเปลี่ยนแปลง
 }
 
 // ApplyChangesRequest - Request structure for ApplyChanges endpoint
 type ApplyChangesRequest struct {
-	ImportMode  string `json:"import_mode"`  // "INSERT_ONLY" | "UPDATE_ONLY" | "BOTH" | "AUTO"
-	ForceUpdate bool   `json:"force_update"` // Force update even if no changes detected
+	ImportMode  string `json:"importmode"`  // "INSERT_ONLY" | "UPDATE_ONLY" | "BOTH" | "AUTO"
+	ForceUpdate bool   `json:"forceupdate"` // Force update even if no changes detected
 }
 
 type ProductImportHttp struct {

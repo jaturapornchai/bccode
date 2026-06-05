@@ -13,7 +13,7 @@ type FileStatus struct {
 	XOrder                   int                    `json:"xorder" bson:"xorder"`
 	Username                 string                 `json:"-" bson:"username"`
 	Menu                     string                 `json:"menu" bson:"menu"`
-	JobID                    string                 `json:"job_id" bson:"job_id"`
+	JobID                    string                 `json:"jobid" bson:"jobid"`
 	Path                     string                 `json:"path" bson:"path"`
 	Status                   string                 `json:"status" bson:"status"`
 	Filter                   map[string]interface{} `json:"filter" bson:"filter"`
@@ -34,7 +34,7 @@ type FileStatusData struct {
 }
 
 type FileStatusDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	FileStatusData     `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

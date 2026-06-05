@@ -110,8 +110,8 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 
 	giveInput := `{
 		"id": "000000000000000000000000",
-		"holding_code": "2Eh6e3pfWvXTp0yV3CyFEhKPjdI",
-		"guid_fixed": "2TKOzSqEElEKNuIacaMHxbc4GgU",
+		"holdingcode": "2Eh6e3pfWvXTp0yV3CyFEhKPjdI",
+		"guidfixed": "2TKOzSqEElEKNuIacaMHxbc4GgU",
 		"docno": "a91d29f5-67af-4334-8999-8bc49ed73b4a",
 		"docdatetime": "2023-07-31T07:29:28.000Z",
 		"transflag": 12,
@@ -263,8 +263,8 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 
 	assert.Nil(t, err)
 
-	assert.Equal(t, get.HoldingCode, want.HoldingCode, "holding_code")
-	assert.Equal(t, get.GuidFixed, want.GuidFixed, "guid_fixed")
+	assert.Equal(t, get.HoldingCode, want.HoldingCode, "holdingcode")
+	assert.Equal(t, get.GuidFixed, want.GuidFixed, "guidfixed")
 	assert.Equal(t, get.TransFlag, want.TransFlag, "transflag")
 	assert.Equal(t, get.DocNo, want.DocNo, "docno")
 	assert.Equal(t, get.DocDate, want.DocDate, "docdate")
@@ -293,7 +293,7 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 	// detail
 	assert.Equal(t, (*get.Items)[0].GuidFixed, (*want.Items)[0].GuidFixed, "item.guidfixed")
 	assert.Equal(t, (*get.Items)[0].DocNo, (*want.Items)[0].DocNo, "item.docno")
-	assert.Equal(t, (*get.Items)[0].HoldingCode, (*want.Items)[0].HoldingCode, "item.holding_code")
+	assert.Equal(t, (*get.Items)[0].HoldingCode, (*want.Items)[0].HoldingCode, "item.holdingcode")
 	assert.Equal(t, (*get.Items)[0].LineNumber, (*want.Items)[0].LineNumber, "item.linenumber")
 	assert.Equal(t, (*get.Items)[0].ItemGuid, (*want.Items)[0].ItemGuid, "item.itemguid")
 	assert.Equal(t, (*get.Items)[0].Barcode, (*want.Items)[0].Barcode, "item.barcode")
@@ -340,8 +340,8 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 
 func TestDataFromPOS(t *testing.T) {
 	rawData := `{
-		"holding_code": "2Eh6e3pfWvXTp0yV3CyFEhKPjdI",
-		"guid_fixed": "2TKOzSqEElEKNuIacaMHxbc4GgU",
+		"holdingcode": "2Eh6e3pfWvXTp0yV3CyFEhKPjdI",
+		"guidfixed": "2TKOzSqEElEKNuIacaMHxbc4GgU",
 		"docno": "002240212-0009",
 		"docdatetime": "2024-02-12T07:51:56.336Z",
 		"guid_ref": "",
@@ -391,7 +391,7 @@ func TestDataFromPOS(t *testing.T) {
 		"paymentdetailraw": "[]",
 		"paycashamount": 600,
 		"branch": {
-		  "guid_fixed": "",
+		  "guidfixed": "",
 		  "code": "b01",
 		  "names": [
 			{
@@ -695,10 +695,10 @@ func TestDataFromPOS(t *testing.T) {
 
 	require.Nil(t, err)
 
-	assert.Equal(t, "2Eh6e3pfWvXTp0yV3CyFEhKPjdI", get.HoldingCode, "holding_code")
+	assert.Equal(t, "2Eh6e3pfWvXTp0yV3CyFEhKPjdI", get.HoldingCode, "holdingcode")
 	assert.Equal(t, "002240212-0009", get.DocNo, "doc no")
 	assert.Equal(t, "b01", get.BranchCode, "branch code")
 	assert.Equal(t, "สาขาที่ 1", *(get.BranchNames[0].Name), "branch name")
 
-	assert.Equal(t, "2TKOzSqEElEKNuIacaMHxbc4GgU", get.GuidFixed, "guid_fixed")
+	assert.Equal(t, "2TKOzSqEElEKNuIacaMHxbc4GgU", get.GuidFixed, "guidfixed")
 }

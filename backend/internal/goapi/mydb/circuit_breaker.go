@@ -38,10 +38,10 @@ type CircuitBreaker struct {
 	name string
 
 	// Configuration
-	maxFailures       uint32        // จำนวน failure สูงสุดก่อนเปิด circuit
-	resetTimeout      time.Duration // เวลาที่รอก่อนเปลี่ยนจาก Open → Half-Open
-	halfOpenMaxCalls  uint32        // จำนวน call สูงสุดที่อนุญาตใน Half-Open state
-	successThreshold  uint32        // จำนวน success ต่อเนื่องที่ต้องการเพื่อปิด circuit
+	maxFailures      uint32        // จำนวน failure สูงสุดก่อนเปิด circuit
+	resetTimeout     time.Duration // เวลาที่รอก่อนเปลี่ยนจาก Open → Half-Open
+	halfOpenMaxCalls uint32        // จำนวน call สูงสุดที่อนุญาตใน Half-Open state
+	successThreshold uint32        // จำนวน success ต่อเนื่องที่ต้องการเพื่อปิด circuit
 
 	// State
 	mu              sync.RWMutex
@@ -61,13 +61,13 @@ type CircuitBreaker struct {
 // NewCircuitBreaker - สร้าง circuit breaker ใหม่
 func NewCircuitBreaker(name string) *CircuitBreaker {
 	return &CircuitBreaker{
-		name:              name,
-		maxFailures:       5,                // เปิด circuit หลัง fail 5 ครั้ง
-		resetTimeout:      10 * time.Second, // รอ 10 วิก่อนลองใหม่
-		halfOpenMaxCalls:  3,                // ลองส่ง 3 calls ใน half-open
-		successThreshold:  2,                // ต้อง success 2 ครั้งติดกันจึงจะปิด circuit
-		state:             StateClosed,
-		lastStateChange:   time.Now(),
+		name:             name,
+		maxFailures:      5,                // เปิด circuit หลัง fail 5 ครั้ง
+		resetTimeout:     10 * time.Second, // รอ 10 วิก่อนลองใหม่
+		halfOpenMaxCalls: 3,                // ลองส่ง 3 calls ใน half-open
+		successThreshold: 2,                // ต้อง success 2 ครั้งติดกันจึงจะปิด circuit
+		state:            StateClosed,
+		lastStateChange:  time.Now(),
 	}
 }
 

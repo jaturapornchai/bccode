@@ -63,8 +63,8 @@ func (repo SectionDepartmentRepository) FindOneByCode(ctx context.Context, holdi
 	err := repo.pst.FindOne(
 		ctx,
 		models.SectionDepartmentDoc{}, bson.M{
-			"holding_code":   holdingCode,
-			"deleted_at":     bson.M{"$exists": false},
+			"holdingcode":    holdingCode,
+			"deletedat":      bson.M{"$exists": false},
 			"branchcode":     branchCode,
 			"departmentcode": departmentCode,
 		},

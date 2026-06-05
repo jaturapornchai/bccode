@@ -54,7 +54,7 @@ func (repo ProductImportClickHouseRepository) All(ctx context.Context, holdingCo
 
 	results := []models.ProductImportDoc{}
 
-	sqlExpr := "SELECT * FROM productbarcodeimport WHERE holding_code = ? AND taskid = ?"
+	sqlExpr := "SELECT * FROM productbarcodeimport WHERE holdingcode = ? AND taskid = ?"
 	err := repo.pst.Select(ctx, &results, sqlExpr, holdingCode, taskID)
 
 	if err != nil {
@@ -91,7 +91,7 @@ func (repo ProductImportClickHouseRepository) FindOne(ctx context.Context, holdi
 
 	results := []models.ProductImportDoc{}
 
-	sqlExpr := fmt.Sprintf("SELECT * FROM productbarcodeimport WHERE holding_code = ? AND taskid = ? %s LIMIT 1 OFFSET 0", orderExpr)
+	sqlExpr := fmt.Sprintf("SELECT * FROM productbarcodeimport WHERE holdingcode = ? AND taskid = ? %s LIMIT 1 OFFSET 0", orderExpr)
 	err := repo.pst.Select(ctx, &results, sqlExpr, holdingCode, taskID)
 
 	if err != nil {
@@ -148,7 +148,7 @@ func (repo ProductImportClickHouseRepository) List(ctx context.Context, holdingC
 	args = append(args, searchArgs...)
 	args = append(args, pageable.Limit, offset)
 
-	sqlExpr := fmt.Sprintf("SELECT * FROM productbarcodeimport WHERE holding_code = ? AND taskid = ? %s %s LIMIT ? OFFSET ?", exprSeach, orderExpr)
+	sqlExpr := fmt.Sprintf("SELECT * FROM productbarcodeimport WHERE holdingcode = ? AND taskid = ? %s %s LIMIT ? OFFSET ?", exprSeach, orderExpr)
 	err := repo.pst.Select(ctx, &results, sqlExpr, args...)
 
 	if err != nil {
@@ -159,7 +159,7 @@ func (repo ProductImportClickHouseRepository) List(ctx context.Context, holdingC
 	countArgs = append(countArgs, holdingCode, taskID)
 	countArgs = append(countArgs, searchArgs...)
 
-	exprCount := fmt.Sprintf("holding_code = ? AND taskid = ? %s", exprSeach)
+	exprCount := fmt.Sprintf("holdingcode = ? AND taskid = ? %s", exprSeach)
 	count, err := repo.pst.Count(ctx, &models.ProductImportDoc{}, exprCount, countArgs...)
 
 	if err != nil {
@@ -189,35 +189,35 @@ func (repo ProductImportClickHouseRepository) CreateInBatch(ctx context.Context,
 
 func (repo ProductImportClickHouseRepository) Update(ctx context.Context, holdingCode string, guid string, doc models.ProductImportRaw) error {
 	return repo.pst.Exec(ctx,
-		"ALTER TABLE productbarcodeimport UPDATE barcode = ?, name = ?, unitcode = ?,  price = ? , pricemember = ? , code = ? WHERE holding_code = ? AND guidfixed = ?",
+		"ALTER TABLE productbarcodeimport UPDATE barcode = ?, name = ?, unitcode = ?,  price = ? , pricemember = ? , code = ? WHERE holdingcode = ? AND guidfixed = ?",
 		doc.Barcode, doc.Name, doc.UnitCode, doc.Price, doc.PriceMember, doc.Code, holdingCode, guid)
 }
 
 func (repo ProductImportClickHouseRepository) DeleteByGUID(ctx context.Context, holdingCode string, guid string) error {
 	return repo.pst.Exec(ctx,
-		"ALTER TABLE productbarcodeimport DELETE WHERE holding_code = ? AND guidfixed = ?",
+		"ALTER TABLE productbarcodeimport DELETE WHERE holdingcode = ? AND guidfixed = ?",
 		holdingCode, guid)
 }
 
 func (repo ProductImportClickHouseRepository) DeleteByTaskID(ctx context.Context, holdingCode string, taskID string) error {
 	return repo.pst.Exec(ctx,
-		"ALTER TABLE productbarcodeimport DELETE WHERE holding_code = ? AND taskid = ?",
+		"ALTER TABLE productbarcodeimport DELETE WHERE holdingcode = ? AND taskid = ?",
 		holdingCode, taskID)
 }
 
 func (repo ProductImportClickHouseRepository) UpdateDuplicate(ctx context.Context, holdingCode string, taskID string, isDuplicate bool, barcodes []string) error {
 	return repo.pst.Exec(ctx,
-		"ALTER TABLE productbarcodeimport UPDATE isduplicate = ? WHERE holding_code = ? AND taskid = ? AND barcode IN (?)", isDuplicate, holdingCode, taskID, barcodes)
+		"ALTER TABLE productbarcodeimport UPDATE isduplicate = ? WHERE holdingcode = ? AND taskid = ? AND barcode IN (?)", isDuplicate, holdingCode, taskID, barcodes)
 }
 
 func (repo ProductImportClickHouseRepository) UpdateExist(ctx context.Context, holdingCode string, taskID string, isExist bool, barcodes []string) error {
 	return repo.pst.Exec(ctx,
-		"ALTER TABLE productbarcodeimport UPDATE isexist = ? WHERE holding_code = ? AND taskid = ? AND barcode IN (?)", isExist, holdingCode, taskID, barcodes)
+		"ALTER TABLE productbarcodeimport UPDATE isexist = ? WHERE holdingcode = ? AND taskid = ? AND barcode IN (?)", isExist, holdingCode, taskID, barcodes)
 }
 
 func (repo ProductImportClickHouseRepository) UpdateUnitExist(ctx context.Context, holdingCode string, taskID string, isExist bool, unitCodes []string) error {
 	return repo.pst.Exec(ctx,
-		"ALTER TABLE productbarcodeimport UPDATE isunitnotexist = ? WHERE holding_code = ? AND taskid = ? AND unitcode IN (?)", isExist, holdingCode, taskID, unitCodes)
+		"ALTER TABLE productbarcodeimport UPDATE isunitnotexist = ? WHERE holdingcode = ? AND taskid = ? AND unitcode IN (?)", isExist, holdingCode, taskID, unitCodes)
 }
 
 func (repo ProductImportClickHouseRepository) CountExist(ctx context.Context, holdingCode string, taskID string, isExist bool) (int, error) {
@@ -225,7 +225,7 @@ func (repo ProductImportClickHouseRepository) CountExist(ctx context.Context, ho
 	countArgs := []interface{}{}
 	countArgs = append(countArgs, holdingCode, taskID, isExist)
 
-	exprCount := "holding_code = ? AND taskid = ? AND isexist = ?"
+	exprCount := "holdingcode = ? AND taskid = ? AND isexist = ?"
 	count, err := repo.pst.Count(ctx, &models.ProductImportDoc{}, exprCount, countArgs...)
 
 	if err != nil {
@@ -240,7 +240,7 @@ func (repo ProductImportClickHouseRepository) CountDuplicate(ctx context.Context
 	countArgs := []interface{}{}
 	countArgs = append(countArgs, holdingCode, taskID, isDuplicate)
 
-	exprCount := "holding_code = ? AND taskid = ? AND isduplicate = ?"
+	exprCount := "holdingcode = ? AND taskid = ? AND isduplicate = ?"
 	count, err := repo.pst.Count(ctx, &models.ProductImportDoc{}, exprCount, countArgs...)
 
 	if err != nil {
@@ -255,7 +255,7 @@ func (repo ProductImportClickHouseRepository) CountUnitExist(ctx context.Context
 	countArgs := []interface{}{}
 	countArgs = append(countArgs, holdingCode, taskID, isNotExist)
 
-	exprCount := "holding_code = ? AND taskid = ? AND isunitnotexist = ?"
+	exprCount := "holdingcode = ? AND taskid = ? AND isunitnotexist = ?"
 	count, err := repo.pst.Count(ctx, &models.ProductImportDoc{}, exprCount, countArgs...)
 
 	if err != nil {

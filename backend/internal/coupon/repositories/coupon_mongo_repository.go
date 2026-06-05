@@ -104,13 +104,13 @@ func NewCouponUsageHistoryRepository(pst microservice.IPersisterMongo) CouponUsa
 // UpdateCouponUsage อัพเดทการใช้งานคูปอง
 func (repo CouponRepository) UpdateCouponUsage(ctx context.Context, holdingCode string, couponID string, remainingValue float64, isOnceOnly bool) error {
 	filter := bson.M{
-		"holding_code": holdingCode,
-		"guid_fixed":   couponID,
+		"holdingcode": holdingCode,
+		"guidfixed":   couponID,
 	}
 
 	updateFields := bson.M{
 		"remainingvalue": remainingValue,
-		"updated_at":     time.Now().UTC(), // Use UTC time consistently
+		"updatedat":      time.Now().UTC(), // Use UTC time consistently
 	}
 
 	// ถ้าเป็นคูปองใช้ครั้งเดียวและมูลค่าเหลือ 0 ให้ยกเลิกคูปอง
@@ -150,8 +150,8 @@ func (repo CouponReservationRepository) FindReservationByID(ctx context.Context,
 	}
 
 	filter := bson.M{
-		"_id":          objID,
-		"holding_code": holdingCode,
+		"_id":         objID,
+		"holdingcode": holdingCode,
 	}
 
 	err = repo.pst.FindOne(ctx, &models.CouponReservationDoc{}, filter, &reservation)
@@ -164,7 +164,7 @@ func (repo CouponReservationRepository) FindReservationByTransactionID(ctx conte
 
 	filter := bson.M{
 		"transaction_id": transactionID,
-		"holding_code":   holdingCode,
+		"holdingcode":    holdingCode,
 	}
 
 	err := repo.pst.FindOne(ctx, &models.CouponReservationDoc{}, filter, &reservation)
@@ -176,10 +176,10 @@ func (repo CouponReservationRepository) FindActiveReservationsByCoupon(ctx conte
 	var reservations []models.CouponReservationDoc
 
 	filter := bson.M{
-		"holding_code": holdingCode,
-		"coupon_id":    couponID,
-		"status":       models.ReservationStatusActive,
-		"expires_at":   bson.M{"$gt": time.Now().UTC()}, // Use UTC time for MongoDB queries
+		"holdingcode": holdingCode,
+		"coupon_id":   couponID,
+		"status":      models.ReservationStatusActive,
+		"expires_at":  bson.M{"$gt": time.Now().UTC()}, // Use UTC time for MongoDB queries
 	}
 
 	err := repo.pst.Find(ctx, &models.CouponReservationDoc{}, filter, &reservations)
@@ -191,11 +191,11 @@ func (repo CouponReservationRepository) FindActiveReservationsByCustomerAndCoupo
 	var reservations []models.CouponReservationDoc
 
 	filter := bson.M{
-		"holding_code": holdingCode,
-		"customer_id":  customerID,
-		"coupon_id":    couponID,
-		"status":       models.ReservationStatusActive,
-		"expires_at":   bson.M{"$gt": time.Now().UTC()}, // Use UTC time for MongoDB queries
+		"holdingcode": holdingCode,
+		"customer_id": customerID,
+		"coupon_id":   couponID,
+		"status":      models.ReservationStatusActive,
+		"expires_at":  bson.M{"$gt": time.Now().UTC()}, // Use UTC time for MongoDB queries
 	}
 
 	err := repo.pst.Find(ctx, &models.CouponReservationDoc{}, filter, &reservations)
@@ -205,10 +205,10 @@ func (repo CouponReservationRepository) FindActiveReservationsByCustomerAndCoupo
 // CountActiveReservations นับจำนวนการจองที่ยังใช้งานได้ของคูปอง
 func (repo CouponReservationRepository) CountActiveReservations(ctx context.Context, holdingCode string, couponID string) (int, error) {
 	filter := bson.M{
-		"holding_code": holdingCode,
-		"coupon_id":    couponID,
-		"status":       models.ReservationStatusActive,
-		"expires_at":   bson.M{"$gt": time.Now().UTC()}, // Use UTC time for MongoDB queries
+		"holdingcode": holdingCode,
+		"coupon_id":   couponID,
+		"status":      models.ReservationStatusActive,
+		"expires_at":  bson.M{"$gt": time.Now().UTC()}, // Use UTC time for MongoDB queries
 	}
 
 	return repo.pst.Count(ctx, &models.CouponReservationDoc{}, filter)
@@ -217,11 +217,11 @@ func (repo CouponReservationRepository) CountActiveReservations(ctx context.Cont
 // CountActiveReservationsByCustomer นับจำนวนการจองที่ยังใช้งานได้ของลูกค้าและคูปองเฉพาะ
 func (repo CouponReservationRepository) CountActiveReservationsByCustomer(ctx context.Context, holdingCode string, couponID string, customerID string) (int, error) {
 	filter := bson.M{
-		"holding_code": holdingCode,
-		"customer_id":  customerID,
-		"coupon_id":    couponID,
-		"status":       models.ReservationStatusActive,
-		"expires_at":   bson.M{"$gt": time.Now().UTC()}, // Use UTC time for MongoDB queries
+		"holdingcode": holdingCode,
+		"customer_id": customerID,
+		"coupon_id":   couponID,
+		"status":      models.ReservationStatusActive,
+		"expires_at":  bson.M{"$gt": time.Now().UTC()}, // Use UTC time for MongoDB queries
 	}
 
 	return repo.pst.Count(ctx, &models.CouponReservationDoc{}, filter)
@@ -235,13 +235,13 @@ func (repo CouponReservationRepository) UpdateReservationStatus(ctx context.Cont
 	}
 
 	filter := bson.M{
-		"_id":          objID,
-		"holding_code": holdingCode,
+		"_id":         objID,
+		"holdingcode": holdingCode,
 	}
 
 	updateFields := bson.M{
-		"status":     status,
-		"updated_at": time.Now().UTC(), // Use UTC time consistently
+		"status":    status,
+		"updatedat": time.Now().UTC(), // Use UTC time consistently
 	}
 
 	// เพิ่มเวลาที่ใช้งานหรือยกเลิก
@@ -266,16 +266,16 @@ func (repo CouponReservationRepository) CancelReservation(ctx context.Context, h
 	}
 
 	filter := bson.M{
-		"_id":          objID,
-		"holding_code": holdingCode,
-		"customer_id":  customerID,
-		"status":       models.ReservationStatusActive,
+		"_id":         objID,
+		"holdingcode": holdingCode,
+		"customer_id": customerID,
+		"status":      models.ReservationStatusActive,
 	}
 
 	updateFields := bson.M{
 		"status":      models.ReservationStatusCanceled,
 		"canceled_at": time.Now().UTC(), // Use UTC time consistently
-		"updated_at":  time.Now().UTC(), // Use UTC time consistently
+		"updatedat":   time.Now().UTC(), // Use UTC time consistently
 	}
 
 	update := bson.M{
@@ -294,9 +294,9 @@ func (repo CouponReservationRepository) FindExpiredReservations(ctx context.Cont
 		"expires_at": bson.M{"$lt": time.Now().UTC()}, // Use UTC time for MongoDB queries
 	}
 
-	// ถ้า holdingCode ไม่ใช่ empty string ให้เพิ่มเงื่อนไข holding_code
+	// ถ้า holdingCode ไม่ใช่ empty string ให้เพิ่มเงื่อนไข holdingcode
 	if holdingCode != "" {
-		filter["holding_code"] = holdingCode
+		filter["holdingcode"] = holdingCode
 	}
 
 	err := repo.pst.Find(ctx, &models.CouponReservationDoc{}, filter, &reservations)
@@ -310,14 +310,14 @@ func (repo CouponReservationRepository) CleanupExpiredReservations(ctx context.C
 		"expires_at": bson.M{"$lt": time.Now().UTC()}, // Use UTC time for MongoDB queries
 	}
 
-	// ถ้า holdingCode ไม่ใช่ empty string ให้เพิ่มเงื่อนไข holding_code
+	// ถ้า holdingCode ไม่ใช่ empty string ให้เพิ่มเงื่อนไข holdingcode
 	if holdingCode != "" {
-		filter["holding_code"] = holdingCode
+		filter["holdingcode"] = holdingCode
 	}
 
 	updateFields := bson.M{
-		"status":     models.ReservationStatusExpired,
-		"updated_at": time.Now().UTC(), // Use UTC time consistently
+		"status":    models.ReservationStatusExpired,
+		"updatedat": time.Now().UTC(), // Use UTC time consistently
 	}
 
 	update := bson.M{
@@ -351,8 +351,8 @@ func (repo CouponUsageHistoryRepository) FindUsageHistoryByID(ctx context.Contex
 	}
 
 	filter := bson.M{
-		"_id":          objID,
-		"holding_code": holdingCode,
+		"_id":         objID,
+		"holdingcode": holdingCode,
 	}
 
 	err = repo.pst.FindOne(ctx, &models.CouponUsageHistoryDoc{}, filter, &history)
@@ -363,8 +363,8 @@ func (repo CouponUsageHistoryRepository) FindUsageHistoryByCoupon(ctx context.Co
 	var histories []models.CouponUsageHistoryDoc
 
 	filter := bson.M{
-		"coupon_id":    couponID,
-		"holding_code": holdingCode,
+		"coupon_id":   couponID,
+		"holdingcode": holdingCode,
 	}
 
 	skip := (page - 1) * pageSize
@@ -388,8 +388,8 @@ func (repo CouponUsageHistoryRepository) FindUsageHistoryByCustomer(ctx context.
 	var histories []models.CouponUsageHistoryDoc
 
 	filter := bson.M{
-		"customer_id":  customerID,
-		"holding_code": holdingCode,
+		"customer_id": customerID,
+		"holdingcode": holdingCode,
 	}
 
 	skip := (page - 1) * pageSize
@@ -414,7 +414,7 @@ func (repo CouponUsageHistoryRepository) FindUsageHistoryBySaleInvoice(ctx conte
 
 	filter := bson.M{
 		"sale_invoice_id": saleInvoiceID,
-		"holding_code":    holdingCode,
+		"holdingcode":     holdingCode,
 	}
 
 	opts := options.Find().SetSort(bson.M{"used_at": -1})
@@ -428,7 +428,7 @@ func (repo CouponUsageHistoryRepository) FindUsageHistoryByTransactionID(ctx con
 
 	filter := bson.M{
 		"transaction_id": transactionID,
-		"holding_code":   holdingCode,
+		"holdingcode":    holdingCode,
 	}
 
 	opts := options.Find().SetSort(bson.M{"used_at": -1})
@@ -441,7 +441,7 @@ func (repo CouponUsageHistoryRepository) SearchUsageHistory(ctx context.Context,
 	var histories []models.CouponUsageHistoryDoc
 
 	// Build filter
-	filter := bson.M{"holding_code": holdingCode}
+	filter := bson.M{"holdingcode": holdingCode}
 
 	if req.CouponID != "" {
 		filter["coupon_id"] = req.CouponID
@@ -556,9 +556,9 @@ func (repo CouponUsageHistoryRepository) GetUsageHistorySummary(ctx context.Cont
 		UsageHistory: items,
 		Pagination: struct {
 			Page      int `json:"page"`
-			PageSize  int `json:"page_size"`
+			PageSize  int `json:"pagesize"`
 			Total     int `json:"total"`
-			TotalPage int `json:"total_page"`
+			TotalPage int `json:"totalpage"`
 		}{
 			Page:      page,
 			PageSize:  pageSize,
@@ -566,10 +566,10 @@ func (repo CouponUsageHistoryRepository) GetUsageHistorySummary(ctx context.Cont
 			TotalPage: totalPage,
 		},
 		Summary: struct {
-			TotalUsed        int     `json:"total_used"`
-			TotalDiscount    float64 `json:"total_discount"`
-			TotalCashVoucher float64 `json:"total_cash_voucher"`
-			TotalOrderAmount float64 `json:"total_order_amount"`
+			TotalUsed        int     `json:"totalused"`
+			TotalDiscount    float64 `json:"totaldiscount"`
+			TotalCashVoucher float64 `json:"totalcashvoucher"`
+			TotalOrderAmount float64 `json:"totalorderamount"`
 		}{
 			TotalUsed:        len(items),
 			TotalDiscount:    totalDiscount,

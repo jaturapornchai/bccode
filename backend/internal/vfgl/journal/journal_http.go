@@ -70,7 +70,7 @@ func (h JournalHttp) RegisterHttp() {
 	h.ms.GET("/gl/journal/check-vatdocno", h.CheckVatDocNo)
 	h.ms.GET("/gl/journal/check-taxdocno", h.CheckTaxDocNo)
 	h.ms.GET("/gl/journal/:id", h.InfoJournal)
-	h.ms.GET("/gl/journal/rebuild/:holding_code", h.RebuildPgJournal)
+	h.ms.GET("/gl/journal/rebuild/:holdingcode", h.RebuildPgJournal)
 	h.ms.GET("/gl/journal/docno/:docno", h.InfoJournalByDocno)
 	h.ms.GET("/gl/journal/docref/:doc", h.InfoJournalByDocumentRef)
 	h.ms.PUT("/gl/journal/:id", h.UpdateJournal)
@@ -186,15 +186,15 @@ func (h JournalHttp) CreateJournal(ctx microservice.IContext) error {
 // @Description บันทึกข้อมูลรายวัน
 // @Tags		GL
 // @Accept 		json
-// @Param		holding_code  path      string  true  "Journal Holding Code"
+// @Param		holdingcode  path      string  true  "Journal Holding Code"
 // @Success		200	{object}	common.ResponseSuccessWithID
 // @Failure		401 {object}	common.AuthResponseFailed
 // @Security     AccessToken
-// @Router /gl/journal/rebuild/{holding_code}  [get]
+// @Router /gl/journal/rebuild/{holdingcode}  [get]
 func (h JournalHttp) RebuildPgJournal(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
 	// holdingCode := ctx.UserInfo().HoldingCode
-	holdingCode := ctx.Param("holding_code")
+	holdingCode := ctx.Param("holdingcode")
 
 	idx, err := h.svc.RebuildPgJournal(holdingCode, authUsername)
 
@@ -609,7 +609,7 @@ func (h JournalHttp) SearchJournal(ctx microservice.IContext) error {
 			Type:  "string",
 		},
 		{
-			Field: "created_at",
+			Field: "createdat",
 			Type:  "time.Time",
 		},
 		{

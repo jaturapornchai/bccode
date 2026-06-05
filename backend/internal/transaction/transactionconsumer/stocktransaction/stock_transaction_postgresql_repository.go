@@ -28,7 +28,7 @@ func (repo *StockTransactionPGRepository) Get(holdingCode string, docNo string) 
 	var data models.StockTransaction
 
 	err := repo.pst.DBClient().Preload(clause.Associations).
-		Where("holding_code=? AND docno=?", holdingCode, docNo).
+		Where("holdingcode=? AND docno=?", holdingCode, docNo).
 		First(&data).Error
 	if err != nil {
 		return nil, err
@@ -47,8 +47,8 @@ func (repo *StockTransactionPGRepository) Create(doc models.StockTransaction) er
 
 func (repo *StockTransactionPGRepository) Update(holdingCode string, docNo string, doc models.StockTransaction) error {
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"holding_code": holdingCode,
-		"docno":        docNo,
+		"holdingcode": holdingCode,
+		"docno":       docNo,
 	})
 
 	if err != nil {
@@ -60,15 +60,15 @@ func (repo *StockTransactionPGRepository) Update(holdingCode string, docNo strin
 func (repo *StockTransactionPGRepository) Delete(holdingCode string, docNo string) error {
 	var details *[]models.StockTransactionDetail
 	tx := repo.pst.DBClient().Begin()
-	tx.Model(&models.StockTransactionDetail{}).Where(" holding_code=? AND docno=?", holdingCode, docNo).Find(&details)
+	tx.Model(&models.StockTransactionDetail{}).Where(" holdingcode=? AND docno=?", holdingCode, docNo).Find(&details)
 	for _, tmp := range *details {
 		// mark delete
 		tx.Delete(&models.StockTransactionDetail{}, tmp.ID)
 	}
 
 	err := tx.Delete(models.StockTransaction{}, map[string]interface{}{
-		"holding_code": holdingCode,
-		"docno":        docNo,
+		"holdingcode": holdingCode,
+		"docno":       docNo,
 	}).Error
 
 	if err != nil {

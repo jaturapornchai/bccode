@@ -11,8 +11,8 @@ import (
 
 // SubmitComplaintRequest — request ร้องเรียน AI จาก frontend
 type SubmitComplaintRequest struct {
-	HoldingCode string `json:"holding_code" validate:"required"`
-	ModelID     string `json:"model_id" validate:"required"`
+	HoldingCode string `json:"holdingcode" validate:"required"`
+	ModelID     string `json:"modelid" validate:"required"`
 	Category    string `json:"category" validate:"required"` // wrong_answer, gibberish, wrong_language, refused, hallucination, too_short, irrelevant
 	Question    string `json:"question,omitempty"`
 	Answer      string `json:"answer,omitempty"`
@@ -29,7 +29,7 @@ func SubmitComplaint(c echo.Context) error {
 	}
 	if req.HoldingCode == "" || req.ModelID == "" || req.Category == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
-			"success": false, "message": "holding_code, model_id, and category are required",
+			"success": false, "message": "holdingcode, modelid, and category are required",
 		})
 	}
 

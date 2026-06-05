@@ -40,7 +40,7 @@ interface CodeXSort {
 
 export interface ProductCategoryItemsEditorProps {
   auth: AuthSession | null;
-  workspace: { shop: { holding_code: string } } | null;
+  workspace: { shop: { holdingcode: string } } | null;
   language: string;
   categorySelectedGuid: string;
   categoryRecord: SettingRecord | null;
@@ -137,14 +137,14 @@ export function ProductCategoryItemsEditor({
   useEffect(() => {
     if (!searchDialogOpen || !auth || !workspace) return;
 
-    const holding_code = workspace.shop.holding_code;
+    const holdingcode = workspace.shop.holdingcode;
     let active = true;
     async function fetchBarcodes() {
       setSearching(true);
       setSearchError("");
       try {
         const response = await listBarcodes(auth, {
-          holding_code,
+          holdingcode,
           keyword: debouncedQuery,
           limit: 50,
         });
@@ -168,7 +168,7 @@ export function ProductCategoryItemsEditor({
     };
   }, [debouncedQuery, searchDialogOpen, auth, workspace]);
 
-  const isSelectedLoading = categorySelectedGuid && (!categoryRecord || (categoryRecord.guid_fixed !== categorySelectedGuid && categoryRecord.guidfixed !== categorySelectedGuid));
+  const isSelectedLoading = categorySelectedGuid && (!categoryRecord || (categoryRecord.guidfixed !== categorySelectedGuid && categoryRecord.guidfixed !== categorySelectedGuid));
 
   if (isSelectedLoading) {
     return (
@@ -262,7 +262,7 @@ export function ProductCategoryItemsEditor({
     setSaving(true);
     setNotice(null);
 
-    const guid = String(categoryRecord.guid_fixed || categoryRecord.guidfixed || "");
+    const guid = String(categoryRecord.guidfixed || categoryRecord.guidfixed || "");
     try {
       const payload = {
         ...categoryRecord,
@@ -270,7 +270,7 @@ export function ProductCategoryItemsEditor({
       };
 
       const response = await fetch(
-        `/api/system-settings/productcategorylist/${encodeURIComponent(guid)}?holding_code=${encodeURIComponent(workspace.shop.holding_code)}`,
+        `/api/system-settings/productcategorylist/${encodeURIComponent(guid)}?holdingcode=${encodeURIComponent(workspace.shop.holdingcode)}`,
         {
           method: "PUT",
           headers: {
@@ -281,7 +281,7 @@ export function ProductCategoryItemsEditor({
           body: JSON.stringify({
             ...payload,
             backendUrl: auth.backendUrl,
-            holding_code: workspace.shop.holding_code,
+            holdingcode: workspace.shop.holdingcode,
           }),
         }
       );
@@ -371,7 +371,7 @@ export function ProductCategoryItemsEditor({
                   const uName = pickName(item.itemunitnames, language) || item.itemunitcode || "";
                   return (
                     <div
-                      key={item.guidfixed || item.guid_fixed || `${item.barcode || ""}-${item.itemunitcode || ""}-${idx}`}
+                      key={item.guidfixed || item.guidfixed || `${item.barcode || ""}-${item.itemunitcode || ""}-${idx}`}
                       className="flex items-center justify-between gap-4 p-3 hover:bg-muted/40 rounded-lg transition-colors"
                     >
                       <div className="min-w-0 flex-1">

@@ -25,7 +25,7 @@ func OnConsumeMessageDebtorCreateOrUpdate(msg string) error {
 // OnConsumeMessageDebtorDelete - handles debtor delete messages
 func OnConsumeMessageDebtorDelete(msg string) error {
 	// รับ Message จาก Kafka ที่เป็นการลบข้อมูล Debtor
-	// msg จะเป็น JSON string ที่มีข้อมูล เช่น {"holding_code": "shop123", "code": "AR0001"}
+	// msg จะเป็น JSON string ที่มีข้อมูล เช่น {"holdingcode": "shop123", "code": "AR0001"}
 
 	logger.Info("OnConsumeMessageDebtorDelete: %s", msg)
 
@@ -107,12 +107,12 @@ func insertOrUpdateDebtor(ctx context.Context, db *sql.DB, debtor models.Process
 	name0 := getDebtorName(debtor.Names)
 
 	query := `
-        INSERT INTO debtor (code, name0, taxid, created_at, updated_at)
+        INSERT INTO debtor (code, name0, taxid, createdat, updatedat)
         VALUES ($1, $2, $3, NOW(), NOW())
         ON CONFLICT (code) DO UPDATE SET
             name0 = EXCLUDED.name0,
             taxid = EXCLUDED.taxid,
-            updated_at = NOW()
+            updatedat = NOW()
     `
 
 	_, err := db.ExecContext(ctx, query, debtor.Code, name0, debtor.TaxID)

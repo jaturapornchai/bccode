@@ -1,6 +1,6 @@
 package models
 
 type MongoShopModel struct {
-	HoldingCode string              `json:"guid_fixed" bson:"guid_fixed"`
+	HoldingCode string              `json:"guidfixed" bson:"guidfixed"`
 	Names       []languageNameModel `json:"name" bson:"names"`
 }

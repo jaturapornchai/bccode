@@ -38,7 +38,7 @@ type QrPayment struct {
 	Token   string `json:"token" bson:"token"`
 
 	// PaymentCode   string          `json:"paymentcode" bson:"paymentcode"`
-	// CountryCode   string          `json:"country_code" bson:"country_code"`
+	// CountryCode   string          `json:"countrycode" bson:"countrycode"`
 	// PaymentLogo   string          `json:"paymentlogo" bson:"paymentlogo"`
 	// PaymentType   int8            `json:"paymenttype" bson:"paymenttype"`
 	// FeeRate       float64         `json:"feerate" bson:"feerate"`
@@ -63,7 +63,7 @@ type QrPaymentData struct {
 }
 
 type QrPaymentDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	QrPaymentData      `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

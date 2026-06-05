@@ -48,7 +48,7 @@ type SaleInvoice struct {
 	SaleChannelGP     float64 `json:"salechannelgp" bson:"salechannelgp"`
 	SaleChannelGPType int8    `json:"salechannelgptype" bson:"salechannelgptype"`
 	TakeAway          int8    `json:"takeaway" bson:"takeaway"`
-	PointsCode        string  `json:"points_code" bson:"points_code"`
+	PointsCode        string  `json:"pointscode" bson:"pointscode"`
 
 	SlipUrl            string   `json:"slipurl" bson:"slipurl"`
 	SlipQrUrl          string   `json:"slipqrurl" bson:"slipqrurl"`
@@ -85,7 +85,7 @@ type SaleInvoiceData struct {
 }
 
 type SaleInvoiceDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	SaleInvoiceData    `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

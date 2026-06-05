@@ -31,9 +31,9 @@ import (
 // }
 
 type Product struct {
-	ID          primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	ProductCode string             `json:"product_code" bson:"product_code"`
-	ProductName string             `json:"product_name" bson:"product_name"`
+	ID          primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ProductCode string             `json:"productcode" bson:"productcode"`
+	ProductName string             `json:"productname" bson:"productname"`
 }
 
 func (pdt *Product) CollectionName() string {
@@ -47,7 +47,7 @@ var (
 )
 
 type negateCodec struct {
-	ID int64 `bson:"_id"`
+	ID int64 `bson:"id"`
 }
 
 func (e *negateCodec) EncodeValue(ectx bsoncodec.EncodeContext, vw bsonrw.ValueWriter, val reflect.Value) error {

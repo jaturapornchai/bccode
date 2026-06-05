@@ -57,11 +57,11 @@ func NewCostingEngine(method string) (CostingEngine, error) {
 func getOrCreateBalance(ctx context.Context, tx *sql.Tx, holdingCode, itemCode, barcode, whCode, locationCode string) (*inv.InventoryStockBalance, error) {
 	var balance inv.InventoryStockBalance
 	err := tx.QueryRowContext(ctx,
-		`SELECT id, holding_code, itemcode, barcode, whcode, locationcode,
+		`SELECT id, holdingcode, itemcode, barcode, whcode, locationcode,
 		        currentqty, currentavgcost, currenttotalvalue,
 		        lastpurchasecost, lastpurchasedate, updatedat
 		 FROM inventory_stock_balances
-		 WHERE holding_code = $1 AND itemcode = $2 AND whcode = $3 AND locationcode = $4
+		 WHERE holdingcode = $1 AND itemcode = $2 AND whcode = $3 AND locationcode = $4
 		 FOR UPDATE`,
 		holdingCode, itemCode, whCode, locationCode,
 	).Scan(
@@ -81,7 +81,7 @@ func getOrCreateBalance(ctx context.Context, tx *sql.Tx, holdingCode, itemCode, 
 		}
 		err = tx.QueryRowContext(ctx,
 			`INSERT INTO inventory_stock_balances
-			 (holding_code, itemcode, barcode, whcode, locationcode, currentqty, currentavgcost, currenttotalvalue, updatedat)
+			 (holdingcode, itemcode, barcode, whcode, locationcode, currentqty, currentavgcost, currenttotalvalue, updatedat)
 			 VALUES ($1, $2, $3, $4, $5, 0, 0, 0, NOW())
 			 RETURNING id`,
 			holdingCode, itemCode, barcode, whCode, locationCode,
@@ -117,7 +117,7 @@ func updateBalance(ctx context.Context, tx *sql.Tx, balance *inv.InventoryStockB
 func insertCostTransaction(ctx context.Context, tx *sql.Tx, ct *inv.InventoryCostTransaction) error {
 	return tx.QueryRowContext(ctx,
 		`INSERT INTO inventory_cost_transactions
-		 (holding_code, itemcode, barcode, whcode, locationcode, transactiontype, transflag,
+		 (holdingcode, itemcode, barcode, whcode, locationcode, transactiontype, transflag,
 		  refdoctype, refdocno, qty, unitcost, totalcost, landedcost, lotnumber, expirydate,
 		  costlayerid, balanceqty, balanceavgcost, balancetotalvalue, costingmethodused,
 		  transactiondate, accountingperiod, createdby, createdat, isreversed)
@@ -136,7 +136,7 @@ func insertCostTransaction(ctx context.Context, tx *sql.Tx, ct *inv.InventoryCos
 func insertCostLayer(ctx context.Context, tx *sql.Tx, layer *inv.InventoryCostLayer) error {
 	return tx.QueryRowContext(ctx,
 		`INSERT INTO inventory_cost_layers
-		 (holding_code, itemcode, barcode, whcode, locationcode, layertype, refdoctype, refdocno,
+		 (holdingcode, itemcode, barcode, whcode, locationcode, layertype, refdoctype, refdocno,
 		  originalqty, remainingqty, unitcost, landedcostperunit, totalunitcost,
 		  lotnumber, supplierlotnumber, manufacturingdate, expirydate, qualitystatus,
 		  receiveddate, createdat, updatedat)

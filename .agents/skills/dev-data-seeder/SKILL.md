@@ -7,7 +7,7 @@ description: Use when creating or verifying real DEV seed data for BC Account sc
 
 ## Core Rules
 - Seed only into DEV and only through real application/backend APIs unless Jead explicitly approves another path.
-- Resolve the active tenant first. For UI issues, match the browser-selected company/shop to the backend auth token `holding_code`; do not seed into a guessed tenant.
+- Resolve the active tenant first. For UI issues, match the browser-selected company/shop to the backend auth token `holdingcode`; do not seed into a guessed tenant.
 - Do not store tokens, passwords, MongoDB URIs, R2 keys, or server credentials in scripts, docs, commits, or chat.
 - Prefix/generated codes must be deterministic and easy to audit. Use business-readable names, but keep technical codes stable enough to re-run safely.
 - Verify after seeding through the same API path the screen uses, and separately verify specialized flows such as product set classification or barcode lookup.
@@ -19,7 +19,7 @@ description: Use when creating or verifying real DEV seed data for BC Account sc
 - For PowerShell JSON payloads, force arrays to stay arrays (`@(...)`) for `names`, `prices`, `barcodes`, `refbarcodes`, and `bom`.
 - Prefer `curl.exe` for local backend API calls; `Invoke-RestMethod` has timed out in this workspace.
 - Run bundled PowerShell scripts with `pwsh` (PowerShell 7+) so UTF-8 Thai seed names are parsed correctly.
-- If using the bundled script, pass the current `holding_code` and username; the script reads the matching runtime Redis auth token without printing it.
+- If using the bundled script, pass the current `holdingcode` and username; the script reads the matching runtime Redis auth token without printing it.
 
 ## Product Category Group Seeding
 - `productCategories.group_number` is a usage/device/channel group, not a flat product-menu category. Examples: group 1 ordering/tablet, group 2 cashier/POS, group 3 kitchen/KDS, group 4 delivery.
@@ -31,16 +31,16 @@ description: Use when creating or verifying real DEV seed data for BC Account sc
 - `scripts/seed-companies-branches-dev.ps1`
   - Creates real DEV organization companies through `POST /organization/company`.
   - Relies on backend auto-creation of head-office branch `00000`, then creates 1-3 additional branches per company with `POST /organization/branch`.
-  - Uses the selected runtime Redis auth token for the provided `holding_code` and username without printing the token.
+  - Uses the selected runtime Redis auth token for the provided `holdingcode` and username without printing the token.
 - `scripts/seed-restaurant-menu-dev.ps1`
-  - Creates real DEV restaurant menu products, barcodes, and Product Set records for the selected `holding_code`.
+  - Creates real DEV restaurant menu products, barcodes, and Product Set records for the selected `holdingcode`.
   - Default count is 200 normal products plus 5 product sets.
   - Uses `POST /product`, `POST /product/barcode/bulk`, then item-level `PUT /product/barcode/:guid` for Product Set BOM, and verifies `/product`, `/product/barcode`, and `/product/barcode/pk/:barcode`.
 
 Example:
 ```powershell
 pwsh -NoProfile -ExecutionPolicy Bypass -File .agents/skills/dev-data-seeder/scripts/seed-restaurant-menu-dev.ps1 `
-  -HoldingCode "selected-holding_code" `
+  -HoldingCode "selected-holdingcode" `
   -Username "user@example.com" `
   -BaseUrl "http://localhost:8888" `
   -Count 200

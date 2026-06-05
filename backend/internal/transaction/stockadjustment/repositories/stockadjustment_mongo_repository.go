@@ -60,8 +60,8 @@ func NewStockAdjustmentRepository(pst microservice.IPersisterMongo) *StockAdjust
 }
 func (repo StockAdjustmentRepository) FindLastDocNo(ctx context.Context, holdingCode string, prefixDocNo string) (models.StockAdjustmentDoc, error) {
 	filters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at": bson.M{
+		"holdingcode": holdingCode,
+		"deletedat": bson.M{
 			"$exists": false,
 		},
 		"docno": bson.M{

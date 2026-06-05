@@ -24,7 +24,7 @@ func NewJobProjectPGRepository(pst microservice.IPersister) *JobProjectPGReposit
 
 func (repo *JobProjectPGRepository) Get(holdingCode string, guidFixed string) (*models.JobProjectPg, error) {
 	var result models.JobProjectPg
-	_, err := repo.pst.First(&result, "holding_code=? AND guidfixed=?", holdingCode, guidFixed)
+	_, err := repo.pst.First(&result, "holdingcode=? AND guidfixed=?", holdingCode, guidFixed)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
@@ -44,8 +44,8 @@ func (repo *JobProjectPGRepository) Create(doc models.JobProjectPg) error {
 
 func (repo *JobProjectPGRepository) Update(holdingCode string, guidFixed string, doc models.JobProjectPg) error {
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"holding_code": holdingCode,
-		"guid_fixed":   guidFixed,
+		"holdingcode": holdingCode,
+		"guidfixed":   guidFixed,
 	})
 	if err != nil {
 		return err
@@ -55,8 +55,8 @@ func (repo *JobProjectPGRepository) Update(holdingCode string, guidFixed string,
 
 func (repo *JobProjectPGRepository) Delete(holdingCode string, guidFixed string) error {
 	err := repo.pst.Delete(&models.JobProjectPg{}, map[string]interface{}{
-		"holding_code": holdingCode,
-		"guid_fixed":   guidFixed,
+		"holdingcode": holdingCode,
+		"guidfixed":   guidFixed,
 	})
 	if err != nil {
 		return err

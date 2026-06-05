@@ -9,7 +9,7 @@ package tools
 //
 // Architecture — JSON-RPC over stdin/stdout:
 //   1. Go spawn python3 -I -S -c "<prelude + user_code>"
-//   2. Prelude กำหนด query_pg/query_mongo/query_ch/log เป็น Python function
+//   2. Prelude กำหนด querypg/querymongo/querych/log เป็น Python function
 //      ที่เขียน JSON line ไปยัง stdout (RPC:), flush, แล้วอ่าน stdin (RES:) กลับมา
 //   3. Main loop ฝั่ง Go อ่าน stdout ทีละบรรทัด:
 //        RPC:<json>   → execute query ด้วย Go helper → เขียน RES:<json> กลับ stdin
@@ -51,7 +51,7 @@ const (
 // การทำงาน: แต่ละ helper เขียน RPC:<json>\n ลง stdout แล้ว flush
 // จากนั้นอ่าน response 1 บรรทัดจาก stdin (RES:<json>)
 //
-// Return value: script ต้อง assign ค่าสุดท้ายใส่ตัวแปร __result__
+// Return value: script ต้อง assign ค่าสุดท้ายใส่ตัวแปร resultvalue
 // (เพราะ Python ไม่มี implicit return จาก top-level เหมือน JS IIFE)
 const PythonPrelude = `
 import sys, json
@@ -69,21 +69,21 @@ def __rpc(op, **kwargs):
         raise RuntimeError(resp.get("error") or "query failed")
     return resp.get("data")
 
-def query_pg(sql, limit=200):
+def querypg(sql, limit=200):
     """Run readonly SELECT on PostgreSQL. Returns list[dict]."""
-    return __rpc("query_pg", sql=sql, limit=limit)
+    return __rpc("querypg", sql=sql, limit=limit)
 
-def query_mongo(collection, filter=None, limit=200):
+def querymongo(collection, filter=None, limit=200):
     """Query MongoDB. filter is a dict (or JSON string). Returns list[dict]."""
     if filter is None:
         filter = {}
     if isinstance(filter, dict):
         filter = json.dumps(filter, ensure_ascii=False)
-    return __rpc("query_mongo", collection=collection, filter=filter, limit=limit)
+    return __rpc("querymongo", collection=collection, filter=filter, limit=limit)
 
-def query_ch(sql, limit=200):
+def querych(sql, limit=200):
     """Run readonly SELECT on ClickHouse. Returns list[dict]."""
-    return __rpc("query_ch", sql=sql, limit=limit)
+    return __rpc("querych", sql=sql, limit=limit)
 
 def log(*args):
     """Print a debug line back to the agent."""
@@ -91,11 +91,11 @@ def log(*args):
     sys.stdout.write("LOG:" + msg + "\n")
     sys.stdout.flush()
 
-__result__ = None
+resultvalue = None
 `
 
 const pythonFooter = `
-sys.stdout.write("RESULT:" + json.dumps(__result__, ensure_ascii=False, default=str) + "\n")
+sys.stdout.write("RESULT:" + json.dumps(resultvalue, ensure_ascii=False, default=str) + "\n")
 sys.stdout.flush()
 sys.stdout.write("DONE\n")
 sys.stdout.flush()
@@ -107,23 +107,23 @@ type PyExecResponse struct {
 	Result      any      `json:"result,omitempty"`
 	Logs        []string `json:"logs,omitempty"`
 	Error       string   `json:"error,omitempty"`
-	ExecutionMs int64    `json:"execution_ms"`
-	QueriesRun  int      `json:"queries_run"`
+	ExecutionMs int64    `json:"executionms"`
+	QueriesRun  int      `json:"queriesrun"`
 }
 
 // ExecutePython รัน Python 3 script ใน subprocess sandbox
 //
-// User script เขียน Python ปกติ และ assign ค่าสุดท้ายให้ __result__
+// User script เขียน Python ปกติ และ assign ค่าสุดท้ายให้ resultvalue
 // เช่น:
 //
-//	rows = query_mongo("productBarcodes", {"names.name": {"$regex": "coffee", "$options": "i"}}, 10)
-//	__result__ = {"count": len(rows), "items": rows}
+//	rows = querymongo("productbarcodes", {"names.name": {"$regex": "coffee", "$options": "i"}}, 10)
+//	resultvalue = {"count": len(rows), "items": rows}
 //
 // หรือแบบง่ายกว่า — ให้ AI คืนค่าจาก expression สุดท้ายอัตโนมัติไม่ได้
 // เพราะ Python ไม่มี implicit return ที่ top level
 func ExecutePython(ctx context.Context, holdingCode, code string) (*PyExecResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 	if strings.TrimSpace(code) == "" {
 		return nil, fmt.Errorf("code is empty")
@@ -295,7 +295,7 @@ func ExecutePython(ctx context.Context, holdingCode, code string) (*PyExecRespon
 // คืนค่า (data, error) — data จะถูก wrap ใน {"ok":true,"data":...}
 func handlePythonRPC(ctx context.Context, holdingCode, op string, req map[string]any) (any, error) {
 	switch op {
-	case "query_pg":
+	case "querypg":
 		sql, _ := req["sql"].(string)
 		limit := pyArgInt(req, "limit", 200)
 		if err := validateReadonlySQL(sql); err != nil {
@@ -303,11 +303,11 @@ func handlePythonRPC(ctx context.Context, holdingCode, op string, req map[string
 		}
 		result, err := ExecutePgCommand(ctx, holdingCode, sql, limit)
 		if err != nil {
-			return nil, fmt.Errorf("query_pg: %w", err)
+			return nil, fmt.Errorf("querypg: %w", err)
 		}
 		return result.Rows, nil
 
-	case "query_mongo":
+	case "querymongo":
 		collection, _ := req["collection"].(string)
 		filter, _ := req["filter"].(string)
 		if filter == "" {
@@ -316,11 +316,11 @@ func handlePythonRPC(ctx context.Context, holdingCode, op string, req map[string
 		limit := pyArgInt(req, "limit", 200)
 		result, err := QueryMongoDB(ctx, holdingCode, "bcaiclouddb", collection, filter, limit)
 		if err != nil {
-			return nil, fmt.Errorf("query_mongo: %w", err)
+			return nil, fmt.Errorf("querymongo: %w", err)
 		}
 		return result.Documents, nil
 
-	case "query_ch":
+	case "querych":
 		sql, _ := req["sql"].(string)
 		limit := pyArgInt(req, "limit", 200)
 		if err := validateReadonlySQL(sql); err != nil {
@@ -328,7 +328,7 @@ func handlePythonRPC(ctx context.Context, holdingCode, op string, req map[string
 		}
 		result, err := QueryClickHouse(ctx, holdingCode, "", sql, limit)
 		if err != nil {
-			return nil, fmt.Errorf("query_ch: %w", err)
+			return nil, fmt.Errorf("querych: %w", err)
 		}
 		return result.Rows, nil
 

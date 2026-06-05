@@ -10,21 +10,21 @@ import (
 
 // CheckReferenceResponse - response สำหรับตรวจสอบการอ้างอิง
 type CheckReferenceResponse struct {
-	IsReferenced bool     `json:"is_referenced"`
-	ReferencedBy []string `json:"referenced_by,omitempty"` // รายการ docno ที่อ้างอิง
+	IsReferenced bool     `json:"isreferenced"`
+	ReferencedBy []string `json:"referencedby,omitempty"` // รายการ docno ที่อ้างอิง
 }
 
 // CheckPOReferenceHandler - ตรวจสอบว่า PO ถูกอ้างอิงโดยเอกสารอื่นหรือไม่
-// GET /api/transaction/check-reference?holding_code=xxx&docno=PO2026010700001
+// GET /api/transaction/check-reference?holdingcode=xxx&docno=PO2026010700001
 func CheckPOReferenceHandler(c echo.Context) error {
-	holdingCode := c.QueryParam("holding_code")
+	holdingCode := c.QueryParam("holdingcode")
 	docNo := c.QueryParam("docno")
 
 	// Validate required parameters
 	if holdingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"success": false,
-			"message": "holding_code is required",
+			"message": "holdingcode is required",
 		})
 	}
 

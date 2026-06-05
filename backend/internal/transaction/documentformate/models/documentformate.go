@@ -19,7 +19,7 @@ type DocumentFormate struct {
 	Description              string                   `json:"description" bson:"description"`
 	Details                  *[]DocumentFormateDetail `json:"details" bson:"details"`
 	IsAutoFormat             bool                     `json:"isautoformat" bson:"isautoformat"`
-	YearType                 int8                     `json:"year_type" bson:"year_type"`
+	YearType                 int8                     `json:"yeartype" bson:"yeartype"`
 	AccountGroup             string                   `json:"accountgroup" bson:"accountgroup"`
 	BookCode                 string                   `json:"bookcode" bson:"bookcode"`
 	PromptDescription        string                   `json:"promptdescription" bson:"promptdescription"`
@@ -51,7 +51,7 @@ type DocumentFormateData struct {
 }
 
 type DocumentFormateDoc struct {
-	ID                  primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                  primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	DocumentFormateData `bson:"inline"`
 	models.ActivityDoc  `bson:"inline"`
 }

@@ -16,27 +16,27 @@ type ModelSchemaRequest struct {
 
 type ModelSchemaResponse struct {
 	Models      []ModelDef `json:"models"`
-	TotalCount  int        `json:"total_count"`
+	TotalCount  int        `json:"totalcount"`
 	Categories  []string   `json:"categories"`
-	GeneratedAt time.Time  `json:"generated_at"`
+	GeneratedAt time.Time  `json:"generatedat"`
 }
 
 type ModelDef struct {
 	Name        string     `json:"name"`
 	Description string     `json:"description"`
 	Category    string     `json:"category"`
-	SourceFile  string     `json:"source_file"`
+	SourceFile  string     `json:"sourcefile"`
 	Fields      []FieldDef `json:"fields"`
-	DartClass   string     `json:"dart_class"`
-	TSInterface string     `json:"ts_interface"`
+	DartClass   string     `json:"dartclass"`
+	TSInterface string     `json:"tsinterface"`
 }
 
 type FieldDef struct {
 	Name        string `json:"name"`
-	JSONName    string `json:"json_name"`
-	Type        string `json:"go_type"`
-	DartType    string `json:"dart_type"`
-	TSType      string `json:"ts_type"`
+	JSONName    string `json:"jsonname"`
+	Type        string `json:"gotype"`
+	DartType    string `json:"darttype"`
+	TSType      string `json:"tstype"`
 	Required    bool   `json:"required"`
 	Description string `json:"description,omitempty"`
 }
@@ -192,14 +192,14 @@ func getAllModels() []ModelDef {
 			Category:    "transaction",
 			SourceFile:  "internal/goapi/models/mongo-trans-model.go",
 			Fields: []FieldDef{
-				{Name: "HoldingCode", JSONName: "holding_code", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Holding Code"},
+				{Name: "HoldingCode", JSONName: "holdingcode", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Holding Code"},
 				{Name: "BranchId", JSONName: "branch_id", Type: "string", DartType: "String", TSType: "string", Description: "Branch ID"},
 				{Name: "DocNo", JSONName: "docno", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Document number"},
 				{Name: "DocDateTime", JSONName: "docdatetime", Type: "time.Time", DartType: "DateTime", TSType: "Date", Required: true, Description: "Document date/time"},
 				{Name: "TransFlag", JSONName: "transflag", Type: "int", DartType: "int", TSType: "number", Required: true, Description: "Transaction type (see transflag enum)"},
-				{Name: "VatType", JSONName: "vat_type", Type: "int", DartType: "int", TSType: "number", Description: "VAT type (0=excluded, 1=included, 2=non-taxable)"},
+				{Name: "VatType", JSONName: "vattype", Type: "int", DartType: "int", TSType: "number", Description: "VAT type (0=excluded, 1=included, 2=non-taxable)"},
 				{Name: "CustCode", JSONName: "custcode", Type: "string", DartType: "String", TSType: "string", Description: "Customer/vendor code"},
-				{Name: "TotalAmount", JSONName: "total_amount", Type: "float64", DartType: "double", TSType: "number", Description: "Total amount"},
+				{Name: "TotalAmount", JSONName: "totalamount", Type: "float64", DartType: "double", TSType: "number", Description: "Total amount"},
 				{Name: "TotalQty", JSONName: "totalqty", Type: "float64", DartType: "double", TSType: "number", Description: "Total quantity"},
 				{Name: "Currency", JSONName: "currency", Type: "string", DartType: "String", TSType: "string", Description: "Base currency code"},
 				{Name: "DocCurrency", JSONName: "doccurrency", Type: "string", DartType: "String", TSType: "string", Description: "Document currency code"},
@@ -209,7 +209,7 @@ func getAllModels() []ModelDef {
 				{Name: "IsDelete", JSONName: "isdelete", Type: "int", DartType: "int", TSType: "number", Description: "0=active, 1=deleted (soft delete)"},
 				{Name: "CreatorCode", JSONName: "creatorcode", Type: "string", DartType: "String", TSType: "string", Description: "Creator employee code"},
 				{Name: "CreatorName", JSONName: "creatorname", Type: "string", DartType: "String", TSType: "string", Description: "Creator name"},
-				{Name: "CreatedAt", JSONName: "created_at", Type: "time.Time", DartType: "DateTime", TSType: "Date", Description: "Created timestamp"},
+				{Name: "CreatedAt", JSONName: "createdat", Type: "time.Time", DartType: "DateTime", TSType: "Date", Description: "Created timestamp"},
 			},
 		},
 
@@ -243,12 +243,12 @@ func getAllModels() []ModelDef {
 			Category:    "transaction",
 			SourceFile:  "internal/goapi/models/process-doc-model.go",
 			Fields: []FieldDef{
-				{Name: "HoldingCode", JSONName: "holding_code", Type: "string", DartType: "String", TSType: "string", Required: true},
+				{Name: "HoldingCode", JSONName: "holdingcode", Type: "string", DartType: "String", TSType: "string", Required: true},
 				{Name: "CustCode", JSONName: "custcode", Type: "string", DartType: "String", TSType: "string"},
 				{Name: "TransFlag", JSONName: "transflag", Type: "int", DartType: "int", TSType: "number", Required: true},
 				{Name: "DocNo", JSONName: "docno", Type: "string", DartType: "String", TSType: "string", Required: true},
 				{Name: "DocDateTime", JSONName: "docdatetime", Type: "time.Time", DartType: "DateTime", TSType: "Date", Required: true},
-				{Name: "TotalAmount", JSONName: "total_amount", Type: "float64", DartType: "double", TSType: "number"},
+				{Name: "TotalAmount", JSONName: "totalamount", Type: "float64", DartType: "double", TSType: "number"},
 				{Name: "Currency", JSONName: "currency", Type: "string", DartType: "String", TSType: "string"},
 				{Name: "DocCurrency", JSONName: "doccurrency", Type: "string", DartType: "String", TSType: "string"},
 				{Name: "ExchangeRate", JSONName: "exchange_rate", Type: "float64", DartType: "double", TSType: "number"},
@@ -256,7 +256,7 @@ func getAllModels() []ModelDef {
 				{Name: "ApprovalStatus", JSONName: "approvalstatus", Type: "string", DartType: "String", TSType: "string", Description: "draft/pending/approved/rejected"},
 				{Name: "IsDelete", JSONName: "isdelete", Type: "int", DartType: "int", TSType: "number", Description: "Soft delete flag"},
 				{Name: "CreatorCode", JSONName: "creatorcode", Type: "string", DartType: "String", TSType: "string"},
-				{Name: "CreatedAt", JSONName: "created_at", Type: "time.Time", DartType: "DateTime", TSType: "Date"},
+				{Name: "CreatedAt", JSONName: "createdat", Type: "time.Time", DartType: "DateTime", TSType: "Date"},
 			},
 		},
 
@@ -267,11 +267,11 @@ func getAllModels() []ModelDef {
 			Category:    "transaction",
 			SourceFile:  "internal/goapi/models/process-doc-model.go",
 			Fields: []FieldDef{
-				{Name: "HoldingCode", JSONName: "holding_code", Type: "string", DartType: "String", TSType: "string", Required: true},
+				{Name: "HoldingCode", JSONName: "holdingcode", Type: "string", DartType: "String", TSType: "string", Required: true},
 				{Name: "DocNo", JSONName: "docno", Type: "string", DartType: "String", TSType: "string", Required: true},
 				{Name: "TransFlag", JSONName: "transflag", Type: "int", DartType: "int", TSType: "number"},
 				{Name: "DocDateTime", JSONName: "docdatetime", Type: "time.Time", DartType: "DateTime", TSType: "Date"},
-				{Name: "ProviderName", JSONName: "provider_name", Type: "string", DartType: "String", TSType: "string", Description: "Payment provider/method name"},
+				{Name: "ProviderName", JSONName: "providername", Type: "string", DartType: "String", TSType: "string", Description: "Payment provider/method name"},
 				{Name: "Amount", JSONName: "amount", Type: "float64", DartType: "double", TSType: "number", Required: true},
 				{Name: "Description", JSONName: "description", Type: "string", DartType: "String", TSType: "string"},
 			},
@@ -284,7 +284,7 @@ func getAllModels() []ModelDef {
 			Category:    "product",
 			SourceFile:  "internal/goapi/models/barcode-model.go",
 			Fields: []FieldDef{
-				{Name: "HoldingCode", JSONName: "holding_code", Type: "string", DartType: "String", TSType: "string", Required: true},
+				{Name: "HoldingCode", JSONName: "holdingcode", Type: "string", DartType: "String", TSType: "string", Required: true},
 				{Name: "ItemCode", JSONName: "itemcode", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Product code"},
 				{Name: "Barcode", JSONName: "barcode", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Barcode number"},
 				{Name: "Name0", JSONName: "name0", Type: "string", DartType: "String", TSType: "string", Description: "Product name (primary language)"},
@@ -295,7 +295,7 @@ func getAllModels() []ModelDef {
 				{Name: "UnitStand", JSONName: "unitstand", Type: "float64", DartType: "double", TSType: "number", Description: "Unit stand (multiplier)"},
 				{Name: "UnitDivide", JSONName: "unitdivide", Type: "float64", DartType: "double", TSType: "number", Description: "Unit divide (divisor)"},
 				{Name: "IsStock", JSONName: "isstock", Type: "int", DartType: "int", TSType: "number", Description: "1=track stock, 0=no stock"},
-				{Name: "ItemType", JSONName: "item_type", Type: "int", DartType: "int", TSType: "number", Description: "0=Stock, 1=Service, 2=Set, 3=Not Stock"},
+				{Name: "ItemType", JSONName: "itemtype", Type: "int", DartType: "int", TSType: "number", Description: "0=Stock, 1=Service, 2=Set, 3=Not Stock"},
 				{Name: "MaterialType", JSONName: "materialtype", Type: "int", DartType: "int", TSType: "number", Description: "0=General, 1=Material, 2=Semi-Finished, 3=Set, 4=Agricultural"},
 				{Name: "ImageUri", JSONName: "imageuri", Type: "string", DartType: "String", TSType: "string", Description: "Product image URL"},
 			},
@@ -328,11 +328,11 @@ func getAllModels() []ModelDef {
 			SourceFile:  "internal/debtaccount/customer/models/customer.go",
 			Fields: []FieldDef{
 				{Name: "Code", JSONName: "code", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Customer code"},
-				{Name: "PersonalType", JSONName: "personal_type", Type: "int", DartType: "int", TSType: "number", Description: "0=company, 1=individual"},
-				{Name: "TaxId", JSONName: "tax_id", Type: "string", DartType: "String", TSType: "string", Description: "Tax ID (13 digits)"},
+				{Name: "PersonalType", JSONName: "personaltype", Type: "int", DartType: "int", TSType: "number", Description: "0=company, 1=individual"},
+				{Name: "TaxId", JSONName: "taxid", Type: "string", DartType: "String", TSType: "string", Description: "Tax ID (13 digits)"},
 				{Name: "Email", JSONName: "email", Type: "string", DartType: "String", TSType: "string"},
 				{Name: "CustomerType", JSONName: "customer_type", Type: "int", DartType: "int", TSType: "number"},
-				{Name: "BranchNumber", JSONName: "branch_number", Type: "string", DartType: "String", TSType: "string", Description: "Branch number (สำหรับออกใบกำกับภาษี)"},
+				{Name: "BranchNumber", JSONName: "branchnumber", Type: "string", DartType: "String", TSType: "string", Description: "Branch number (สำหรับออกใบกำกับภาษี)"},
 				{Name: "IsCreditor", JSONName: "iscreditor", Type: "bool", DartType: "bool", TSType: "boolean", Description: "Also a creditor"},
 				{Name: "IsDebtor", JSONName: "isdebtor", Type: "bool", DartType: "bool", TSType: "boolean", Description: "Also a debtor"},
 				{Name: "CreditDay", JSONName: "creditday", Type: "int", DartType: "int", TSType: "number", Description: "Credit days"},
@@ -348,10 +348,10 @@ func getAllModels() []ModelDef {
 			SourceFile:  "internal/debtaccount/creditor/models/creditor.go",
 			Fields: []FieldDef{
 				{Name: "Code", JSONName: "code", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Creditor code"},
-				{Name: "PersonalType", JSONName: "personal_type", Type: "int", DartType: "int", TSType: "number", Description: "0=company, 1=individual"},
-				{Name: "TaxId", JSONName: "tax_id", Type: "string", DartType: "String", TSType: "string"},
+				{Name: "PersonalType", JSONName: "personaltype", Type: "int", DartType: "int", TSType: "number", Description: "0=company, 1=individual"},
+				{Name: "TaxId", JSONName: "taxid", Type: "string", DartType: "String", TSType: "string"},
 				{Name: "Email", JSONName: "email", Type: "string", DartType: "String", TSType: "string"},
-				{Name: "BranchNumber", JSONName: "branch_number", Type: "string", DartType: "String", TSType: "string"},
+				{Name: "BranchNumber", JSONName: "branchnumber", Type: "string", DartType: "String", TSType: "string"},
 				{Name: "FundCode", JSONName: "fund_code", Type: "string", DartType: "String", TSType: "string"},
 				{Name: "CreditDay", JSONName: "creditday", Type: "int", DartType: "int", TSType: "number"},
 				{Name: "IsMember", JSONName: "ismember", Type: "bool", DartType: "bool", TSType: "boolean"},
@@ -366,8 +366,8 @@ func getAllModels() []ModelDef {
 			SourceFile:  "internal/debtaccount/debtor/models/debtor.go",
 			Fields: []FieldDef{
 				{Name: "Code", JSONName: "code", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Debtor code"},
-				{Name: "PersonalType", JSONName: "personal_type", Type: "int", DartType: "int", TSType: "number", Description: "0=company, 1=individual"},
-				{Name: "TaxId", JSONName: "tax_id", Type: "string", DartType: "String", TSType: "string"},
+				{Name: "PersonalType", JSONName: "personaltype", Type: "int", DartType: "int", TSType: "number", Description: "0=company, 1=individual"},
+				{Name: "TaxId", JSONName: "taxid", Type: "string", DartType: "String", TSType: "string"},
 				{Name: "Email", JSONName: "email", Type: "string", DartType: "String", TSType: "string"},
 				{Name: "PointBalance", JSONName: "pointbalance", Type: "float64", DartType: "double", TSType: "number", Description: "Point balance"},
 				{Name: "CreditDay", JSONName: "creditday", Type: "int", DartType: "int", TSType: "number"},
@@ -383,8 +383,8 @@ func getAllModels() []ModelDef {
 			SourceFile:  "internal/goapi/models/image-model.go",
 			Fields: []FieldDef{
 				{Name: "ID", JSONName: "id", Type: "ObjectID", DartType: "String", TSType: "string", Required: true},
-				{Name: "HoldingCode", JSONName: "holding_code", Type: "string", DartType: "String", TSType: "string", Required: true},
-				{Name: "FileName", JSONName: "file_name", Type: "string", DartType: "String", TSType: "string", Required: true},
+				{Name: "HoldingCode", JSONName: "holdingcode", Type: "string", DartType: "String", TSType: "string", Required: true},
+				{Name: "FileName", JSONName: "filename", Type: "string", DartType: "String", TSType: "string", Required: true},
 				{Name: "OriginalName", JSONName: "original_name", Type: "string", DartType: "String", TSType: "string"},
 				{Name: "ContentType", JSONName: "content_type", Type: "string", DartType: "String", TSType: "string"},
 				{Name: "Size", JSONName: "size", Type: "int64", DartType: "int", TSType: "number"},
@@ -392,7 +392,7 @@ func getAllModels() []ModelDef {
 				{Name: "Description", JSONName: "description", Type: "string", DartType: "String", TSType: "string"},
 				{Name: "Tags", JSONName: "tags", Type: "[]string", DartType: "List<String>", TSType: "string[]"},
 				{Name: "UploadedBy", JSONName: "uploaded_by", Type: "string", DartType: "String", TSType: "string"},
-				{Name: "CreatedAt", JSONName: "created_at", Type: "time.Time", DartType: "DateTime", TSType: "Date"},
+				{Name: "CreatedAt", JSONName: "createdat", Type: "time.Time", DartType: "DateTime", TSType: "Date"},
 			},
 		},
 
@@ -404,16 +404,16 @@ func getAllModels() []ModelDef {
 			SourceFile:  "internal/goapi/models/attachment-model.go",
 			Fields: []FieldDef{
 				{Name: "ID", JSONName: "id", Type: "ObjectID", DartType: "String", TSType: "string", Required: true},
-				{Name: "HoldingCode", JSONName: "holding_code", Type: "string", DartType: "String", TSType: "string", Required: true},
-				{Name: "ScreenType", JSONName: "screen_type", Type: "string", DartType: "String", TSType: "string", Description: "Screen/document type"},
+				{Name: "HoldingCode", JSONName: "holdingcode", Type: "string", DartType: "String", TSType: "string", Required: true},
+				{Name: "ScreenType", JSONName: "screentype", Type: "string", DartType: "String", TSType: "string", Description: "Screen/document type"},
 				{Name: "DocNo", JSONName: "doc_no", Type: "string", DartType: "String", TSType: "string"},
-				{Name: "FileName", JSONName: "file_name", Type: "string", DartType: "String", TSType: "string", Required: true},
+				{Name: "FileName", JSONName: "filename", Type: "string", DartType: "String", TSType: "string", Required: true},
 				{Name: "OriginalName", JSONName: "original_name", Type: "string", DartType: "String", TSType: "string"},
 				{Name: "ContentType", JSONName: "content_type", Type: "string", DartType: "String", TSType: "string"},
 				{Name: "FileType", JSONName: "file_type", Type: "string", DartType: "String", TSType: "string"},
 				{Name: "Size", JSONName: "size", Type: "int64", DartType: "int", TSType: "number"},
 				{Name: "Description", JSONName: "description", Type: "string", DartType: "String", TSType: "string"},
-				{Name: "CreatedAt", JSONName: "created_at", Type: "time.Time", DartType: "DateTime", TSType: "Date"},
+				{Name: "CreatedAt", JSONName: "createdat", Type: "time.Time", DartType: "DateTime", TSType: "Date"},
 			},
 		},
 
@@ -425,17 +425,17 @@ func getAllModels() []ModelDef {
 			SourceFile:  "internal/goapi/models/pdf-history-model.go",
 			Fields: []FieldDef{
 				{Name: "ID", JSONName: "id", Type: "ObjectID", DartType: "String", TSType: "string", Required: true},
-				{Name: "HoldingCode", JSONName: "holding_code", Type: "string", DartType: "String", TSType: "string", Required: true},
+				{Name: "HoldingCode", JSONName: "holdingcode", Type: "string", DartType: "String", TSType: "string", Required: true},
 				{Name: "DocNo", JSONName: "doc_no", Type: "string", DartType: "String", TSType: "string", Required: true},
 				{Name: "Title", JSONName: "title", Type: "string", DartType: "String", TSType: "string"},
-				{Name: "FileName", JSONName: "file_name", Type: "string", DartType: "String", TSType: "string"},
-				{Name: "FileSize", JSONName: "file_size", Type: "int64", DartType: "int", TSType: "number"},
-				{Name: "PageSize", JSONName: "page_size", Type: "string", DartType: "String", TSType: "string", Description: "A4, A5, Letter"},
+				{Name: "FileName", JSONName: "filename", Type: "string", DartType: "String", TSType: "string"},
+				{Name: "FileSize", JSONName: "filesize", Type: "int64", DartType: "int", TSType: "number"},
+				{Name: "PageSize", JSONName: "pagesize", Type: "string", DartType: "String", TSType: "string", Description: "A4, A5, Letter"},
 				{Name: "Orientation", JSONName: "orientation", Type: "string", DartType: "String", TSType: "string", Description: "L=landscape, P=portrait"},
 				{Name: "PrintedBy", JSONName: "printed_by", Type: "string", DartType: "String", TSType: "string"},
 				{Name: "PrintedAt", JSONName: "printed_at", Type: "time.Time", DartType: "DateTime", TSType: "Date"},
 				{Name: "ReprintCount", JSONName: "reprint_count", Type: "int", DartType: "int", TSType: "number"},
-				{Name: "TotalAmount", JSONName: "total_amount", Type: "float64", DartType: "double", TSType: "number"},
+				{Name: "TotalAmount", JSONName: "totalamount", Type: "float64", DartType: "double", TSType: "number"},
 			},
 		},
 
@@ -446,7 +446,7 @@ func getAllModels() []ModelDef {
 			Category:    "master",
 			SourceFile:  "internal/goapi/models/mongo-warehouse-model.go",
 			Fields: []FieldDef{
-				{Name: "HoldingCode", JSONName: "holding_code", Type: "string", DartType: "String", TSType: "string", Required: true},
+				{Name: "HoldingCode", JSONName: "holdingcode", Type: "string", DartType: "String", TSType: "string", Required: true},
 				{Name: "Code", JSONName: "code", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Warehouse code"},
 				{Name: "Names", JSONName: "names", Type: "[]LanguageModel", DartType: "List<Map<String, dynamic>>", TSType: "Array<{code: string, name: string}>", Description: "Warehouse name (multi-language)"},
 			},
@@ -461,7 +461,7 @@ func getAllModels() []ModelDef {
 			Fields: []FieldDef{
 				{Name: "Code", JSONName: "code", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Employee code"},
 				{Name: "Name", JSONName: "name", Type: "string", DartType: "String", TSType: "string", Description: "Employee name"},
-				{Name: "HoldingCode", JSONName: "holding_code", Type: "string", DartType: "String", TSType: "string"},
+				{Name: "HoldingCode", JSONName: "holdingcode", Type: "string", DartType: "String", TSType: "string"},
 				{Name: "Position", JSONName: "position", Type: "string", DartType: "String", TSType: "string"},
 				{Name: "Department", JSONName: "department", Type: "string", DartType: "String", TSType: "string"},
 				{Name: "ApprovalRole", JSONName: "approvalrole", Type: "string", DartType: "String", TSType: "string", Description: "Role for PO approval"},
@@ -476,7 +476,7 @@ func getAllModels() []ModelDef {
 			Category:    "query",
 			SourceFile:  "internal/goapi/models/query-result-model.go",
 			Fields: []FieldDef{
-				{Name: "HoldingCode", JSONName: "holding_code", Type: "string", DartType: "String", TSType: "string", Required: true},
+				{Name: "HoldingCode", JSONName: "holdingcode", Type: "string", DartType: "String", TSType: "string", Required: true},
 				{Name: "Query", JSONName: "query", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "SQL query"},
 				{Name: "GUID", JSONName: "guid", Type: "string", DartType: "String", TSType: "string", Description: "Optional GUID for result caching"},
 			},
@@ -506,18 +506,18 @@ func getAllModels() []ModelDef {
 			Category:    "mainapi-master",
 			SourceFile:  "pkg/models/shop.go",
 			Fields: []FieldDef{
-				{Name: "GuidFixed", JSONName: "guid_fixed", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Shop GUID (unique identifier)"},
+				{Name: "GuidFixed", JSONName: "guidfixed", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Shop GUID (unique identifier)"},
 				{Name: "Name1", JSONName: "name1", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Shop name (primary)"},
 				{Name: "Name2", JSONName: "name2", Type: "string", DartType: "String", TSType: "string", Description: "Shop name (secondary)"},
-				{Name: "TaxId", JSONName: "tax_id", Type: "string", DartType: "String", TSType: "string", Description: "Tax ID (13 digits)"},
+				{Name: "TaxId", JSONName: "taxid", Type: "string", DartType: "String", TSType: "string", Description: "Tax ID (13 digits)"},
 				{Name: "Phone", JSONName: "phone", Type: "string", DartType: "String", TSType: "string"},
 				{Name: "Email", JSONName: "email", Type: "string", DartType: "String", TSType: "string"},
 				{Name: "Address", JSONName: "address", Type: "string", DartType: "String", TSType: "string"},
-				{Name: "BranchNumber", JSONName: "branch_number", Type: "string", DartType: "String", TSType: "string", Description: "Branch number (head office = 00000)"},
+				{Name: "BranchNumber", JSONName: "branchnumber", Type: "string", DartType: "String", TSType: "string", Description: "Branch number (head office = 00000)"},
 				{Name: "IsActive", JSONName: "isactive", Type: "bool", DartType: "bool", TSType: "boolean", Description: "Shop active status"},
 				{Name: "Settings", JSONName: "settings", Type: "ShopSettings", DartType: "Map<String, dynamic>", TSType: "Record<string, any>", Description: "Shop settings (VAT rate, currency, etc.)"},
-				{Name: "CreatedAt", JSONName: "created_at", Type: "time.Time", DartType: "DateTime", TSType: "Date"},
-				{Name: "UpdatedAt", JSONName: "updated_at", Type: "time.Time", DartType: "DateTime", TSType: "Date"},
+				{Name: "CreatedAt", JSONName: "createdat", Type: "time.Time", DartType: "DateTime", TSType: "Date"},
+				{Name: "UpdatedAt", JSONName: "updatedat", Type: "time.Time", DartType: "DateTime", TSType: "Date"},
 			},
 		},
 
@@ -532,11 +532,11 @@ func getAllModels() []ModelDef {
 				{Name: "Name", JSONName: "name", Type: "string", DartType: "String", TSType: "string", Description: "Display name"},
 				{Name: "Email", JSONName: "email", Type: "string", DartType: "String", TSType: "string"},
 				{Name: "Role", JSONName: "role", Type: "int", DartType: "int", TSType: "number", Required: true, Description: "0=user, 1=admin, 2=owner, 255=system (see user_role enum)"},
-				{Name: "HoldingCode", JSONName: "holding_code", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Shop GUID"},
+				{Name: "HoldingCode", JSONName: "holdingcode", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Shop GUID"},
 				{Name: "IsActive", JSONName: "isactive", Type: "bool", DartType: "bool", TSType: "boolean"},
 				{Name: "ApprovalLimit", JSONName: "approvallimit", Type: "float64", DartType: "double", TSType: "number", Description: "Max approval amount"},
 				{Name: "ApprovalRole", JSONName: "approvalrole", Type: "string", DartType: "String", TSType: "string", Description: "Approval role name"},
-				{Name: "CreatedAt", JSONName: "created_at", Type: "time.Time", DartType: "DateTime", TSType: "Date"},
+				{Name: "CreatedAt", JSONName: "createdat", Type: "time.Time", DartType: "DateTime", TSType: "Date"},
 			},
 		},
 
@@ -547,14 +547,14 @@ func getAllModels() []ModelDef {
 			Category:    "mainapi-product",
 			SourceFile:  "internal/microservice/product/models.go",
 			Fields: []FieldDef{
-				{Name: "GuidFixed", JSONName: "guid_fixed", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Product GUID"},
+				{Name: "GuidFixed", JSONName: "guidfixed", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Product GUID"},
 				{Name: "ItemCode", JSONName: "itemcode", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Item code"},
 				{Name: "Names", JSONName: "names", Type: "[]NameX", DartType: "List<Map<String, dynamic>>", TSType: "Array<{code: string, name: string}>", Description: "Product names (multi-language)"},
-				{Name: "ItemType", JSONName: "item_type", Type: "int", DartType: "int", TSType: "number", Description: "0=Stock, 1=Service, 2=Set, 3=Not Stock"},
+				{Name: "ItemType", JSONName: "itemtype", Type: "int", DartType: "int", TSType: "number", Description: "0=Stock, 1=Service, 2=Set, 3=Not Stock"},
 				{Name: "MaterialType", JSONName: "materialtype", Type: "int", DartType: "int", TSType: "number", Description: "0=General, 1=Material, 2=Semi-Finished, 3=Set, 4=Agricultural"},
-				{Name: "GroupCode", JSONName: "group_code", Type: "string", DartType: "String", TSType: "string", Description: "Product group code"},
+				{Name: "GroupCode", JSONName: "groupcode", Type: "string", DartType: "String", TSType: "string", Description: "Product group code"},
 				{Name: "CategoryGuid", JSONName: "category_guid", Type: "string", DartType: "String", TSType: "string", Description: "Category GUID"},
-				{Name: "TaxType", JSONName: "tax_type", Type: "int", DartType: "int", TSType: "number", Description: "0=taxable, 1=tax-exempt (see vat_cal enum)"},
+				{Name: "TaxType", JSONName: "taxtype", Type: "int", DartType: "int", TSType: "number", Description: "0=taxable, 1=tax-exempt (see vat_cal enum)"},
 				{Name: "IsStock", JSONName: "isstock", Type: "bool", DartType: "bool", TSType: "boolean", Description: "Track stock inventory"},
 				{Name: "IsActive", JSONName: "isactive", Type: "bool", DartType: "bool", TSType: "boolean", Description: "Product active status"},
 				{Name: "ImageUri", JSONName: "imageuri", Type: "string", DartType: "String", TSType: "string", Description: "Product image URL"},
@@ -576,7 +576,7 @@ func getAllModels() []ModelDef {
 				{Name: "DivideValue", JSONName: "dividevalue", Type: "float64", DartType: "double", TSType: "number", Description: "Unit divisor"},
 				{Name: "Price", JSONName: "price", Type: "float64", DartType: "double", TSType: "number", Description: "Selling price"},
 				{Name: "AverageCost", JSONName: "averagecost", Type: "float64", DartType: "double", TSType: "number", Description: "Average cost"},
-				{Name: "ItemType", JSONName: "item_type", Type: "int", DartType: "int", TSType: "number", Description: "0=Stock, 1=Service, 2=Set, 3=Not Stock"},
+				{Name: "ItemType", JSONName: "itemtype", Type: "int", DartType: "int", TSType: "number", Description: "0=Stock, 1=Service, 2=Set, 3=Not Stock"},
 				{Name: "MaterialType", JSONName: "materialtype", Type: "int", DartType: "int", TSType: "number", Description: "0=General, 1=Material, 2=Semi-Finished, 3=Set, 4=Agricultural"},
 				{Name: "IsDefault", JSONName: "isdefault", Type: "bool", DartType: "bool", TSType: "boolean", Description: "Default barcode/unit for product"},
 			},
@@ -589,11 +589,11 @@ func getAllModels() []ModelDef {
 			Category:    "mainapi-master",
 			SourceFile:  "internal/microservice/branch/models.go",
 			Fields: []FieldDef{
-				{Name: "GuidFixed", JSONName: "guid_fixed", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Branch GUID"},
+				{Name: "GuidFixed", JSONName: "guidfixed", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Branch GUID"},
 				{Name: "Code", JSONName: "code", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Branch code"},
 				{Name: "Names", JSONName: "names", Type: "[]NameX", DartType: "List<Map<String, dynamic>>", TSType: "Array<{code: string, name: string}>", Description: "Branch names (multi-language)"},
-				{Name: "BranchNumber", JSONName: "branch_number", Type: "string", DartType: "String", TSType: "string", Description: "Revenue department branch number"},
-				{Name: "TaxId", JSONName: "tax_id", Type: "string", DartType: "String", TSType: "string"},
+				{Name: "BranchNumber", JSONName: "branchnumber", Type: "string", DartType: "String", TSType: "string", Description: "Revenue department branch number"},
+				{Name: "TaxId", JSONName: "taxid", Type: "string", DartType: "String", TSType: "string"},
 				{Name: "Phone", JSONName: "phone", Type: "string", DartType: "String", TSType: "string"},
 				{Name: "Address", JSONName: "address", Type: "string", DartType: "String", TSType: "string"},
 				{Name: "IsActive", JSONName: "isactive", Type: "bool", DartType: "bool", TSType: "boolean"},
@@ -609,7 +609,7 @@ func getAllModels() []ModelDef {
 			Category:    "mainapi-master",
 			SourceFile:  "internal/microservice/warehouse/models.go",
 			Fields: []FieldDef{
-				{Name: "GuidFixed", JSONName: "guid_fixed", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Warehouse GUID"},
+				{Name: "GuidFixed", JSONName: "guidfixed", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Warehouse GUID"},
 				{Name: "Code", JSONName: "code", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Warehouse code"},
 				{Name: "Names", JSONName: "names", Type: "[]NameX", DartType: "List<Map<String, dynamic>>", TSType: "Array<{code: string, name: string}>", Description: "Warehouse names (multi-language)"},
 				{Name: "BranchCode", JSONName: "branchcode", Type: "string", DartType: "String", TSType: "string", Description: "Linked branch code"},
@@ -626,7 +626,7 @@ func getAllModels() []ModelDef {
 			Category:    "mainapi-master",
 			SourceFile:  "internal/microservice/currency/models.go",
 			Fields: []FieldDef{
-				{Name: "GuidFixed", JSONName: "guid_fixed", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Currency GUID"},
+				{Name: "GuidFixed", JSONName: "guidfixed", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Currency GUID"},
 				{Name: "Code", JSONName: "code", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Currency code (e.g., THB, USD)"},
 				{Name: "Names", JSONName: "names", Type: "[]NameX", DartType: "List<Map<String, dynamic>>", TSType: "Array<{code: string, name: string}>", Description: "Currency names (multi-language)"},
 				{Name: "Symbol", JSONName: "symbol", Type: "string", DartType: "String", TSType: "string", Description: "Currency symbol (e.g., ฿, $)"},

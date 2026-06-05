@@ -25,7 +25,7 @@ func OnConsumeMessageCreditorCreateOrUpdate(msg string) error {
 // OnConsumeMessageCreditorDelete - handles creditor delete messages
 func OnConsumeMessageCreditorDelete(msg string) error {
 	// รับ Message จาก Kafka ที่เป็นการลบข้อมูล Creditor
-	// msg จะเป็น JSON string ที่มีข้อมูล เช่น {"holding_code": "shop123", "code": "AP0001"}
+	// msg จะเป็น JSON string ที่มีข้อมูล เช่น {"holdingcode": "shop123", "code": "AP0001"}
 
 	logger.Info("OnConsumeMessageCreditorDelete: %s", msg)
 

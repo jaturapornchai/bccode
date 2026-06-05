@@ -64,7 +64,7 @@ type TaskData struct {
 }
 
 type TaskDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	TaskData           `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
@@ -124,7 +124,7 @@ func (TaskTotalReject) CollectionName() string {
 }
 
 type TaskChild struct {
-	GuidFixed string `json:"guid_fixed" bson:"guid_fixed"`
+	GuidFixed string `json:"guidfixed" bson:"guidfixed"`
 	Code      string `json:"code" bson:"code"`
 	Name      string `json:"name" bson:"name"`
 	Status    int8   `json:"status" bson:"status"`

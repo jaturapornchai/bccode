@@ -138,9 +138,9 @@ func (repo ProductBarcodeRepository) CountByOrderTypes(ctx context.Context, hold
 func (repo ProductBarcodeRepository) FindByItemCode(ctx context.Context, holdingCode string, itemcode string) ([]models.ProductBarcodeDoc, error) {
 
 	filters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at":   bson.M{"$exists": false},
-		"itemcode":     itemcode,
+		"holdingcode": holdingCode,
+		"deletedat":   bson.M{"$exists": false},
+		"itemcode":    itemcode,
 	}
 
 	result, err := repo.Find(ctx, holdingCode, filters)
@@ -191,9 +191,9 @@ func (repo ProductBarcodeRepository) CountByGroupsubtwoProducts(ctx context.Cont
 func (repo ProductBarcodeRepository) UpdateParentGuidByGuids(ctx context.Context, holdingCode string, parentGUID string, guids []string) error {
 
 	filters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at":   bson.M{"$exists": false},
-		"guid_fixed":   bson.M{"$in": guids},
+		"holdingcode": holdingCode,
+		"deletedat":   bson.M{"$exists": false},
+		"guidfixed":   bson.M{"$in": guids},
 	}
 
 	return repo.pst.Update(ctx, models.ProductBarcodeDoc{}, filters, bson.M{"$set": bson.M{"parent_guid": parentGUID}})
@@ -206,8 +206,8 @@ func (repo ProductBarcodeRepository) Find(ctx context.Context, holdingCode strin
 	switch filterType := filters.(type) {
 	case bson.M:
 		tempQuery := filterType
-		tempQuery["holding_code"] = holdingCode
-		tempQuery["deleted_at"] = bson.M{"$exists": false}
+		tempQuery["holdingcode"] = holdingCode
+		tempQuery["deletedat"] = bson.M{"$exists": false}
 		filterQuery = tempQuery
 	default:
 		return nil, errors.New("invalid query filter type")
@@ -234,7 +234,7 @@ func (repo ProductBarcodeRepository) FindMasterInCodes(ctx context.Context, code
 	docList := []models.ProductBarcodeInfo{}
 
 	filters := bson.M{
-		"holding_code": masterHoldingCode,
+		"holdingcode": masterHoldingCode,
 		"barcode": bson.M{
 			"$in": codes,
 		},
@@ -254,10 +254,10 @@ func (repo ProductBarcodeRepository) FindByRefBarcode(ctx context.Context, holdi
 	docList := []models.ProductBarcodeDoc{}
 
 	filters := bson.M{
-		"holding_code":        holdingCode,
+		"holdingcode":         holdingCode,
 		"refbarcodes.barcode": barcode,
 		"item_type":           bson.M{"$ne": 2},
-		"deleted_at":          bson.M{"$exists": false},
+		"deletedat":           bson.M{"$exists": false},
 	}
 
 	err := repo.pst.Find(ctx, models.ProductBarcodeDoc{}, filters, &docList)
@@ -274,10 +274,10 @@ func (repo ProductBarcodeRepository) FindByBOMBarcode(ctx context.Context, holdi
 	docList := []models.ProductBarcodeDoc{}
 
 	filters := bson.M{
-		"holding_code": holdingCode,
-		"bom.barcode":  barcode,
-		"item_type":    bson.M{"$ne": 2},
-		"deleted_at":   bson.M{"$exists": false},
+		"holdingcode": holdingCode,
+		"bom.barcode": barcode,
+		"item_type":   bson.M{"$ne": 2},
+		"deletedat":   bson.M{"$exists": false},
 	}
 
 	err := repo.pst.Find(ctx, models.ProductBarcodeDoc{}, filters, &docList)
@@ -307,9 +307,9 @@ func (repo ProductBarcodeRepository) FindPage(ctx context.Context, holdingCode s
 func (repo ProductBarcodeRepository) FindByBarcode(ctx context.Context, holdingCode string, barcode string) (models.ProductBarcodeDoc, error) {
 
 	filters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at":   bson.M{"$exists": false},
-		"barcode":      barcode,
+		"holdingcode": holdingCode,
+		"deletedat":   bson.M{"$exists": false},
+		"barcode":     barcode,
 	}
 
 	result, err := repo.FindOne(ctx, holdingCode, filters)
@@ -324,9 +324,9 @@ func (repo ProductBarcodeRepository) FindByBarcode(ctx context.Context, holdingC
 func (repo ProductBarcodeRepository) FindByBarcodes(ctx context.Context, holdingCode string, barcodes []string) ([]models.ProductBarcodeInfo, error) {
 
 	filters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at":   bson.M{"$exists": false},
-		"barcode":      bson.M{"$in": barcodes},
+		"holdingcode": holdingCode,
+		"deletedat":   bson.M{"$exists": false},
+		"barcode":     bson.M{"$in": barcodes},
 	}
 
 	var results []models.ProductBarcodeInfo
@@ -342,8 +342,8 @@ func (repo ProductBarcodeRepository) FindByBarcodes(ctx context.Context, holding
 func (repo ProductBarcodeRepository) FindPageByUnits(ctx context.Context, holdingCode string, unitCodes []string, pageable micromodels.Pageable) ([]models.ProductBarcodeInfo, mongopagination.PaginationData, error) {
 
 	filters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at": bson.M{
+		"holdingcode": holdingCode,
+		"deletedat": bson.M{
 			"$exists": false,
 		},
 		"item_unit_code": bson.M{
@@ -364,8 +364,8 @@ func (repo ProductBarcodeRepository) FindPageByUnits(ctx context.Context, holdin
 func (repo ProductBarcodeRepository) FindPageByGroups(ctx context.Context, holdingCode string, groupCodes []string, pageable micromodels.Pageable) ([]models.ProductBarcodeInfo, mongopagination.PaginationData, error) {
 
 	filters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at": bson.M{
+		"holdingcode": holdingCode,
+		"deletedat": bson.M{
 			"$exists": false,
 		},
 		"group_code": bson.M{
@@ -386,8 +386,8 @@ func (repo ProductBarcodeRepository) FindPageByGroups(ctx context.Context, holdi
 func (repo ProductBarcodeRepository) UpdateRefBarcodeByGUID(ctx context.Context, holdingCode string, guid string, refBarcode models.RefProductBarcode) error {
 
 	filters := bson.M{
-		"holding_code":          holdingCode,
-		"deleted_at":            bson.M{"$exists": false},
+		"holdingcode":           holdingCode,
+		"deletedat":             bson.M{"$exists": false},
 		"refbarcodes.guidfixed": guid,
 	}
 
@@ -408,8 +408,8 @@ func (repo ProductBarcodeRepository) UpdateRefBarcodeByGUID(ctx context.Context,
 
 func (repo ProductBarcodeRepository) UpdateAllProductTypeByGUID(ctx context.Context, holdingCode string, guid string, doc models.ProductType) error {
 	filters := bson.M{
-		"holding_code":          holdingCode,
-		"deleted_at":            bson.M{"$exists": false},
+		"holdingcode":           holdingCode,
+		"deletedat":             bson.M{"$exists": false},
 		"producttype.guidfixed": guid,
 	}
 
@@ -425,9 +425,9 @@ func (repo ProductBarcodeRepository) UpdateAllProductTypeByGUID(ctx context.Cont
 
 func (repo ProductBarcodeRepository) UpdateAllProductGroupByCode(ctx context.Context, holdingCode string, doc models.ProductGroup) error {
 	filters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at":   bson.M{"$exists": false},
-		"group_code":   doc.Code,
+		"holdingcode": holdingCode,
+		"deletedat":   bson.M{"$exists": false},
+		"group_code":  doc.Code,
 	}
 
 	update := bson.M{
@@ -442,8 +442,8 @@ func (repo ProductBarcodeRepository) UpdateAllProductGroupByCode(ctx context.Con
 
 func (repo ProductBarcodeRepository) UpdateAllProductUnitByCode(ctx context.Context, holdingCode string, doc models.ProductUnit) error {
 	filters := bson.M{
-		"holding_code":   holdingCode,
-		"deleted_at":     bson.M{"$exists": false},
+		"holdingcode":    holdingCode,
+		"deletedat":      bson.M{"$exists": false},
 		"item_unit_code": doc.UnitCode,
 	}
 
@@ -459,8 +459,8 @@ func (repo ProductBarcodeRepository) UpdateAllProductUnitByCode(ctx context.Cont
 
 func (repo ProductBarcodeRepository) UpdateAllProductOrderTypeByGUID(ctx context.Context, holdingCode string, guid string, doc models.ProductOrderType) error {
 	filters := bson.M{
-		"holding_code":         holdingCode,
-		"deleted_at":           bson.M{"$exists": false},
+		"holdingcode":          holdingCode,
+		"deletedat":            bson.M{"$exists": false},
 		"ordertypes.guidfixed": guid,
 	}
 
@@ -477,9 +477,9 @@ func (repo ProductBarcodeRepository) UpdateAllProductOrderTypeByGUID(ctx context
 
 func (repo ProductBarcodeRepository) UpdateBranch(ctx context.Context, holdingCode string, branch models.ProductBarcodeBranch, productBarcodeGUIDFixedes []string) error {
 	filters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at":   bson.M{"$exists": false},
-		"guid_fixed":   bson.M{"$in": productBarcodeGUIDFixedes},
+		"holdingcode": holdingCode,
+		"deletedat":   bson.M{"$exists": false},
+		"guidfixed":   bson.M{"$in": productBarcodeGUIDFixedes},
 		"branches.code": bson.M{
 			"$ne": branch.Code,
 		},
@@ -496,9 +496,9 @@ func (repo ProductBarcodeRepository) UpdateBranch(ctx context.Context, holdingCo
 
 func (repo ProductBarcodeRepository) UpdateBusinessType(ctx context.Context, holdingCode string, businessType models.ProductBarcodeBusinessType, productBarcodeGUIDFixedes []string) error {
 	filters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at":   bson.M{"$exists": false},
-		"guid_fixed":   bson.M{"$in": productBarcodeGUIDFixedes},
+		"holdingcode": holdingCode,
+		"deletedat":   bson.M{"$exists": false},
+		"guidfixed":   bson.M{"$in": productBarcodeGUIDFixedes},
 		"branches.code": bson.M{
 			"$ne": businessType.Code,
 		},
@@ -515,9 +515,9 @@ func (repo ProductBarcodeRepository) UpdateBusinessType(ctx context.Context, hol
 
 func (repo ProductBarcodeRepository) FindByBarcodesMap(holdingCode string, barcodes []string) (map[string]models.ProductBarcodeInfo, error) {
 	filter := bson.M{
-		"holding_code": holdingCode,
-		"barcode":      bson.M{"$in": barcodes},
-		"deleted_at":   bson.M{"$exists": false},
+		"holdingcode": holdingCode,
+		"barcode":     bson.M{"$in": barcodes},
+		"deletedat":   bson.M{"$exists": false},
 	}
 
 	var docs []models.ProductBarcodeInfo
@@ -536,8 +536,8 @@ func (repo ProductBarcodeRepository) FindByBarcodesMap(holdingCode string, barco
 
 func (repo ProductBarcodeRepository) UpdateByID(id string, updateData bson.M) error {
 	filter := bson.M{
-		"guid_fixed": id,
-		"deleted_at": bson.M{"$exists": false},
+		"guidfixed": id,
+		"deletedat": bson.M{"$exists": false},
 	}
 	return repo.pst.Update(context.Background(), models.ProductBarcodeDoc{}, filter, updateData)
 }

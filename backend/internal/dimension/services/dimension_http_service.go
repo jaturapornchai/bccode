@@ -180,7 +180,7 @@ func (svc DimensionHttpService) DeleteDimensionByGUIDs(holdingCode string, authU
 	defer ctxCancel()
 
 	deleteFilterQuery := map[string]interface{}{
-		"guid_fixed": bson.M{"$in": GUIDs},
+		"guidfixed": bson.M{"$in": GUIDs},
 	}
 
 	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
@@ -219,7 +219,7 @@ func (svc DimensionHttpService) SearchDimension(holdingCode string, filters map[
 	defer ctxCancel()
 
 	searchInFields := []string{
-		"guid_fixed",
+		"guidfixed",
 		"names",
 	}
 
@@ -238,7 +238,7 @@ func (svc DimensionHttpService) SearchDimensionStep(holdingCode string, langCode
 	defer ctxCancel()
 
 	searchInFields := []string{
-		"guid_fixed",
+		"guidfixed",
 		"names",
 	}
 

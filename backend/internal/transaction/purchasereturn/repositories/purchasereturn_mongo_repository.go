@@ -65,8 +65,8 @@ func NewPurchaseReturnRepository(pst microservice.IPersisterMongo) *PurchaseRetu
 
 func (repo PurchaseReturnRepository) FindLastDocNo(ctx context.Context, holdingCode string, prefixDocNo string) (models.PurchaseReturnDoc, error) {
 	filters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at": bson.M{
+		"holdingcode": holdingCode,
+		"deletedat": bson.M{
 			"$exists": false,
 		},
 		"docno": bson.M{

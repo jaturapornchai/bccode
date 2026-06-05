@@ -10,18 +10,18 @@ import (
 const productBarcodeBOMCollectionName = "productBarcodeBOMs"
 
 type BOMProductBarcode struct {
-	BarcodeGuidFixed string          `json:"guid_fixed" bson:"guid_fixed"`
+	BarcodeGuidFixed string          `json:"guidfixed" bson:"guidfixed"`
 	Level            int             `json:"level" bson:"level"`
 	Names            *[]models.NameX `json:"names" bson:"names"`
-	ItemUnitCode     string          `json:"item_unit_code" bson:"item_unit_code"`
+	ItemUnitCode     string          `json:"itemunitcode" bson:"itemunitcode"`
 	ItemUnitNames    *[]models.NameX `json:"itemunitnames" bson:"itemunitnames"`
 	Barcode          string          `json:"barcode" bson:"barcode" validate:"required,min=1"`
-	RefType          string          `json:"ref_type" bson:"ref_type,omitempty"`
+	RefType          string          `json:"reftype" bson:"reftype,omitempty"`
 	Condition        bool            `json:"condition" bson:"condition"`
 	DivideValue      float64         `json:"dividevalue" bson:"dividevalue"`
 	StandValue       float64         `json:"standvalue" bson:"standvalue"`
 	Qty              float64         `json:"qty" bson:"qty"`
-	YieldPercent     float64         `json:"yield_percent" bson:"yield_percent,omitempty"`
+	YieldPercent     float64         `json:"yieldpercent" bson:"yieldpercent,omitempty"`
 	AverageCost      float64         `json:"averagecost" bson:"averagecost,omitempty"`
 	Price            float64         `json:"price" bson:"price,omitempty"`
 	MaterialType     int8            `json:"materialtype" bson:"materialtype,omitempty"`
@@ -34,17 +34,17 @@ type ProductBarcodeBOMView struct {
 }
 
 type ProductBarcodeBOMVersion struct {
-	GuidFixed string                   `json:"guid_fixed" bson:"guid_fixed"`
-	StartDate time.Time                `json:"start_date" bson:"start_date"`
-	EndDate   *time.Time               `json:"end_date" bson:"end_date"`
+	GuidFixed string                   `json:"guidfixed" bson:"guidfixed"`
+	StartDate time.Time                `json:"startdate" bson:"startdate"`
+	EndDate   *time.Time               `json:"enddate" bson:"enddate"`
 	BOM       *[]ProductBarcodeBOMView `json:"bom" bson:"bom"`
 }
 
 type ProductBarcodeBOMSaveRequest struct {
-	GuidFixed     string                     `json:"guid_fixed"`
+	GuidFixed     string                     `json:"guidfixed"`
 	Barcode       string                     `json:"barcode"`
 	Names         *[]models.NameX            `json:"names"`
-	ItemUnitCode  string                     `json:"item_unit_code"`
+	ItemUnitCode  string                     `json:"itemunitcode"`
 	ItemUnitNames *[]models.NameX            `json:"itemunitnames"`
 	Price         float64                    `json:"price"`
 	BOM           []ProductBarcodeBOMView    `json:"bom"`
@@ -87,7 +87,7 @@ type ProductBarcodeBOMViewData struct {
 }
 
 type ProductBarcodeBOMViewDoc struct {
-	ID                        primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                        primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	ProductBarcodeBOMViewData `bson:"inline"`
 	models.ActivityDoc        `bson:"inline"`
 }

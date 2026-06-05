@@ -29,7 +29,7 @@ type BrandProductData struct {
 }
 
 type BrandProductDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	BrandProductData   `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

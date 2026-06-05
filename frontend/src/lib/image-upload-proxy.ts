@@ -142,7 +142,7 @@ export function normalizeImageUploadPayload(
 }
 
 function imageObjectKey(data: Record<string, unknown>): string {
-  const holdingCode = stringValue(data.holding_code ?? data.holding_code ?? data.holding_code);
+  const holdingCode = stringValue(data.holdingcode ?? data.holdingcode ?? data.holdingcode);
   const category = sanitizeUploadCategory(data.category);
   const fileName = stringValue(
     data.file_name ?? data.filename ?? data.fileName ?? data.name,

@@ -25,7 +25,7 @@ func NewCreditorAdminMongoRepository(pst microservice.IPersisterMongo) ICreditor
 func (r CreditorAdminMongoRepository) FindCreditorByHoldingCode(ctx context.Context, holdingCode string) ([]creditorModels.CreditorDoc, error) {
 
 	docList := []creditorModels.CreditorDoc{}
-	err := r.pst.Find(ctx, &creditorModels.CreditorDoc{}, bson.M{"holding_code": holdingCode}, &docList)
+	err := r.pst.Find(ctx, &creditorModels.CreditorDoc{}, bson.M{"holdingcode": holdingCode}, &docList)
 	if err != nil {
 		return nil, err
 	}

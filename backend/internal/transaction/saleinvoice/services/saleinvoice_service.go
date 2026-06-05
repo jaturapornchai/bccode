@@ -778,7 +778,7 @@ func (svc SaleInvoiceService) DeleteSaleInvoiceByGUIDs(holdingCode string, authU
 
 	// Step 4: Delete all documents
 	deleteFilterQuery := map[string]interface{}{
-		"guid_fixed": bson.M{"$in": GUIDs},
+		"guidfixed": bson.M{"$in": GUIDs},
 	}
 
 	err = svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
@@ -880,7 +880,7 @@ func (svc SaleInvoiceService) SearchSaleInvoice(holdingCode string, filters map[
 		}
 
 		// append new filter
-		filters["created_at"] = bson.M{"$gt": createDateTimeAfter}
+		filters["createdat"] = bson.M{"$gt": createDateTimeAfter}
 
 		// remove createdatetimeafter from filters
 		delete(filters, "createdatetimeafter")
@@ -897,7 +897,7 @@ func (svc SaleInvoiceService) SearchSaleInvoice(holdingCode string, filters map[
 		}
 
 		// append new filter
-		filters["updated_at"] = bson.M{"$gt": createDateTimeAfter}
+		filters["updatedat"] = bson.M{"$gt": createDateTimeAfter}
 
 		// remove createdatetimeafter from filters
 		delete(filters, "updateafterdatetime")
@@ -915,8 +915,8 @@ func (svc SaleInvoiceService) SearchSaleInvoice(holdingCode string, filters map[
 
 		// append new filter
 		filters["$or"] = []bson.M{
-			{"created_at": bson.M{"$gt": createDateTimeAfter}},
-			{"updated_at": bson.M{"$gt": createDateTimeAfter}},
+			{"createdat": bson.M{"$gt": createDateTimeAfter}},
+			{"updatedat": bson.M{"$gt": createDateTimeAfter}},
 		}
 
 		// remove createdatetimeafter from filters

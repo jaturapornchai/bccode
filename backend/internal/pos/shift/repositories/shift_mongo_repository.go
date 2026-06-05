@@ -61,8 +61,8 @@ func NewShiftRepository(pst microservice.IPersisterMongo) *ShiftRepository {
 func (repo ShiftRepository) FindByDocNo(ctx context.Context, holdingCode string, docNo string) ([]models.ShiftDoc, error) {
 
 	filter := bson.M{
-		"holding_code": holdingCode,
-		"docno":        docNo,
+		"holdingcode": holdingCode,
+		"docno":       docNo,
 	}
 
 	var docs []models.ShiftDoc

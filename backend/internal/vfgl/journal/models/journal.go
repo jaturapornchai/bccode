@@ -24,7 +24,7 @@ type JournalBody struct {
 	AccountGroup       string               `json:"accountgroup" bson:"accountgroup" gorm:"column:accountgroup"`
 	Amount             float64              `json:"amount" bson:"amount" gorm:"column:amount"`
 	AccountDescription string               `json:"accountdescription" bson:"accountdescription" gorm:"column:accountdescription"`
-	BookCode           string               `json:"bookcode" bson:"bookcode" gorm:"column:book_code"`
+	BookCode           string               `json:"bookcode" bson:"bookcode" gorm:"column:bookcode"`
 	Vats               []Vat                `json:"vats" bson:"vats" gorm:"-"`
 	Taxes              []Tax                `json:"taxes" bson:"taxes" gorm:"-"`
 	JournalType        int                  `json:"journaltype" bson:"journaltype" gorm:"column:journaltype"` // ประเภทข้อมูลรายวัน (0 = ทั่วไป, 1=ปิดยอด)
@@ -39,12 +39,12 @@ type JournalBody struct {
 }
 
 type JournalDebtAccount struct {
-	GuidFixed         string                    `json:"guid_fixed" bson:"guid_fixed" gorm:"guid_fixed"`
+	GuidFixed         string                    `json:"guidfixed" bson:"guidfixed" gorm:"guidfixed"`
 	Code              string                    `json:"code" bson:"code" gorm:"code"`
-	PersonalType      int8                      `json:"personal_type" bson:"personal_type" gorm:"personal_type"`
-	CustomerType      int                       `json:"customer_type" bson:"customer_type" gorm:"customer_type"`
-	BranchNumber      string                    `json:"branch_number" bson:"branch_number" gorm:"branch_number"`
-	TaxId             string                    `json:"tax_id" bson:"tax_id" gorm:"tax_id"`
+	PersonalType      int8                      `json:"personaltype" bson:"personaltype" gorm:"personal_type"`
+	CustomerType      int                       `json:"customertype" bson:"customertype" gorm:"customer_type"`
+	BranchNumber      string                    `json:"branchnumber" bson:"branchnumber" gorm:"branch_number"`
+	TaxId             string                    `json:"taxid" bson:"taxid" gorm:"tax_id"`
 	Names             *[]models.NameX           `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive" gorm:"names"`
 	AddressForBilling JournalDebtAccountAddress `json:"addressforbilling" bson:"addressforbilling" gorm:"addressforbilling"`
 }
@@ -68,14 +68,14 @@ func (a JournalDebtAccountPg) Scan(value interface{}) error {
 type JournalDebtAccountAddress struct {
 	GUID            string          `json:"guid" bson:"guid" gorm:"guid"`
 	Address         *[]string       `json:"address" bson:"address" gorm:"address"`
-	CountryCode     string          `json:"country_code" bson:"country_code" gorm:"country_code"`
-	ProvinceCode    string          `json:"province_code" bson:"province_code" gorm:"province_code"`
-	DistrictCode    string          `json:"district_code" bson:"district_code" gorm:"district_code"`
-	SubDistrictCode string          `json:"sub_district_code" bson:"sub_district_code" gorm:"sub_district_code"`
-	ZipCode         string          `json:"zip_code" bson:"zip_code" gorm:"zip_code"`
+	CountryCode     string          `json:"countrycode" bson:"countrycode" gorm:"country_code"`
+	ProvinceCode    string          `json:"provincecode" bson:"provincecode" gorm:"province_code"`
+	DistrictCode    string          `json:"districtcode" bson:"districtcode" gorm:"district_code"`
+	SubDistrictCode string          `json:"subdistrictcode" bson:"subdistrictcode" gorm:"sub_district_code"`
+	ZipCode         string          `json:"zipcode" bson:"zipcode" gorm:"zip_code"`
 	ContactNames    *[]models.NameX `json:"contactnames" bson:"contactnames" gorm:"contactnames"`
-	PhonePrimary    string          `json:"phone_primary" bson:"phone_primary" gorm:"phone_primary"`
-	PhoneSecondary  string          `json:"phone_secondary" bson:"phone_secondary" gorm:"phone_secondary"`
+	PhonePrimary    string          `json:"phoneprimary" bson:"phoneprimary" gorm:"phone_primary"`
+	PhoneSecondary  string          `json:"phonesecondary" bson:"phonesecondary" gorm:"phone_secondary"`
 	Latitude        float64         `json:"latitude" bson:"latitude" gorm:"latitude"`
 	Longitude       float64         `json:"longitude" bson:"longitude" gorm:"longitude"`
 }
@@ -98,7 +98,7 @@ type JournalInfo struct {
 	Journal            `bson:"inline"`
 
 	CreatedBy string    `json:"createdby" bson:"createdby"`
-	CreatedAt time.Time `json:"created_at" bson:"created_at"`
+	CreatedAt time.Time `json:"createdat" bson:"createdat"`
 }
 
 func (JournalInfo) CollectionName() string {
@@ -111,7 +111,7 @@ type JournalData struct {
 }
 
 type JournalDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	JournalData        `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
@@ -162,7 +162,7 @@ type VatDocNoCheckResult struct {
 
 type TaxVatCustomer struct {
 	CustTaxID    string `json:"custtaxid" bson:"custtaxid"`
-	CustName     string `json:"cust_name" bson:"cust_name"`
+	CustName     string `json:"custname" bson:"custname"`
 	CustType     int8   `json:"custtype" bson:"custtype"`
 	Organization int8   `json:"organization" bson:"organization"`
 	BranchCode   string `json:"branchcode" bson:"branchcode"`
@@ -172,7 +172,7 @@ type TaxVatCustomer struct {
 type Vat struct {
 	VatDocNo       string    `json:"vatdocno" bson:"vatdocno"`
 	VatDate        time.Time `json:"vatdate" bson:"vatdate"`
-	VatType        int8      `json:"vat_type" bson:"vat_type"`
+	VatType        int8      `json:"vattype" bson:"vattype"`
 	VatMode        int8      `json:"vatmode" bson:"vatmode"`
 	VatPeriod      int8      `json:"vatperiod" bson:"vatperiod"`
 	VatYear        int16     `json:"vatyear" bson:"vatyear" `
@@ -188,7 +188,7 @@ type Vat struct {
 type Tax struct {
 	TaxDocNo       string    `json:"taxdocno" bson:"taxdocno"`
 	TaxDate        time.Time `json:"taxdate" gorm:"column:taxdate"`
-	TaxType        int8      `json:"tax_type" bson:"tax_type"`
+	TaxType        int8      `json:"taxtype" bson:"taxtype"`
 	TaxAmount      float64   `json:"taxamount" bson:"taxamount"`
 	TaxVatCustomer `bson:"inline"`
 	Details        *[]TaxDetail `json:"details" bson:"details"`
@@ -207,9 +207,9 @@ type JournalPg struct {
 	models.PartitionIdentity `gorm:"embedded;"`
 	JournalBody              `gorm:"embedded;"`
 
-	Vats        *[]JournalVatPg    `json:"vats" gorm:"journalvats_details;foreignKey:holding_code,docno"`
-	Taxes       *[]JournalTaxPg    `json:"taxes" gorm:"journaltaxes_details;foreignKey:holding_code,docno"`
-	AccountBook *[]JournalDetailPg `json:"journaldetail" gorm:"journals_detail;foreignKey:holding_code,docno"`
+	Vats        *[]JournalVatPg    `json:"vats" gorm:"journalvats_details;foreignKey:holdingcode,docno"`
+	Taxes       *[]JournalTaxPg    `json:"taxes" gorm:"journaltaxes_details;foreignKey:holdingcode,docno"`
+	AccountBook *[]JournalDetailPg `json:"journaldetail" gorm:"journals_detail;foreignKey:holdingcode,docno"`
 }
 
 func (JournalPg) TableName() string {
@@ -218,12 +218,12 @@ func (JournalPg) TableName() string {
 
 type JournalVatPg struct {
 	ID                       uint   `gorm:"primarykey"`
-	HoldingCode              string `json:"holding_code" gorm:"column:holding_code"`
+	HoldingCode              string `json:"holdingcode" gorm:"column:holdingcode"`
 	models.PartitionIdentity `gorm:"embedded;"`
 	Docno                    string    `json:"docno" gorm:"column:docno"`
 	VatDocNo                 string    `json:"vatdocno" gorm:"column:vatdocno"`
 	VatDate                  time.Time `json:"vatdate" gorm:"column:vatdate"`
-	VatType                  int8      `json:"vat_type" gorm:"column:vat_type"`
+	VatType                  int8      `json:"vattype" gorm:"column:vattype"`
 	VatMode                  int8      `json:"vatmode" gorm:"column:vatmode"`
 	VatPeriod                int8      `json:"vatperiod" gorm:"column:vatperiod"`
 	VatYear                  int16     `json:"vatyear" gorm:"column:vatyear"`
@@ -234,7 +234,7 @@ type JournalVatPg struct {
 	VatSubmit                bool      `json:"vatsubmit" gorm:"column:vatsubmit"`
 	Remark                   string    `json:"remark" gorm:"column:remark"`
 	CustTaxID                string    `json:"custtaxid" gorm:"column:custtaxid"`
-	CustName                 string    `json:"cust_name" gorm:"column:cust_name"`
+	CustName                 string    `json:"custname" gorm:"column:custname"`
 	CustType                 int8      `json:"custtype" gorm:"column:custtype"`
 	Organization             int8      `json:"organization" gorm:"column:organization"`
 	BranchCode               string    `json:"branchcode" gorm:"column:branchcode"`
@@ -247,15 +247,15 @@ func (JournalVatPg) TableName() string {
 
 type JournalTaxPg struct {
 	ID                       uint   `gorm:"primarykey"`
-	HoldingCode              string `json:"holding_code" gorm:"column:holding_code;index:idx_shop_doc,unique"`
+	HoldingCode              string `json:"holdingcode" gorm:"column:holdingcode;index:idx_shop_doc,unique"`
 	models.PartitionIdentity `gorm:"embedded;"`
 	Docno                    string     `json:"docno" gorm:"column:docno;index:idx_shop_doc,unique"`
 	TaxDocNo                 string     `json:"taxdocno" gorm:"column:taxdocno"`
 	TaxDate                  time.Time  `json:"taxdate" gorm:"column:taxdate"`
-	TaxType                  int8       `json:"tax_type" gorm:"column:tax_type"`
+	TaxType                  int8       `json:"taxtype" gorm:"column:taxtype"`
 	TaxAmount                float64    `json:"taxamount" gorm:"column:taxamount"`
 	CustTaxID                string     `json:"custtaxid" gorm:"column:custtaxid"`
-	CustName                 string     `json:"cust_name" gorm:"column:cust_name"`
+	CustName                 string     `json:"custname" gorm:"column:custname"`
 	CustType                 int8       `json:"custtype" gorm:"column:custtype"`
 	Organization             int8       `json:"organization" gorm:"column:organization"`
 	BranchCode               string     `json:"branchcode" gorm:"column:branchcode"`
@@ -294,7 +294,7 @@ func (td *TaxDetails) Scan(value interface{}) error {
 
 type JournalDetailPg struct {
 	ID                       uint   `gorm:"primarykey"`
-	HoldingCode              string `json:"holding_code" gorm:"column:holding_code"`
+	HoldingCode              string `json:"holdingcode" gorm:"column:holdingcode"`
 	models.PartitionIdentity `gorm:"embedded;"`
 	Docno                    string  `json:"docno" gorm:"column:docno"`
 	AccountCode              string  `json:"accountcode" gorm:"column:accountcode"`
@@ -322,13 +322,13 @@ func (j *JournalPg) BeforeUpdate(tx *gorm.DB) (err error) {
 
 	// find old data
 	var details *[]JournalDetailPg
-	tx.Model(&JournalDetailPg{}).Where(" holding_code=? AND docno=?", j.HoldingCode, j.DocNo).Find(&details)
+	tx.Model(&JournalDetailPg{}).Where(" holdingcode=? AND docno=?", j.HoldingCode, j.DocNo).Find(&details)
 
 	var vats *[]JournalVatPg
-	tx.Model(&JournalVatPg{}).Where(" holding_code=? AND docno=?", j.HoldingCode, j.DocNo).Find(&vats)
+	tx.Model(&JournalVatPg{}).Where(" holdingcode=? AND docno=?", j.HoldingCode, j.DocNo).Find(&vats)
 
 	var taxes *[]JournalTaxPg
-	tx.Model(&JournalTaxPg{}).Where(" holding_code=? AND docno=?", j.HoldingCode, j.DocNo).Find(&taxes)
+	tx.Model(&JournalTaxPg{}).Where(" holdingcode=? AND docno=?", j.HoldingCode, j.DocNo).Find(&taxes)
 
 	// delete unuse data
 	for _, tmp := range *details {
@@ -401,7 +401,7 @@ func (t *JournalTaxPg) BeforeCreate(tx *gorm.DB) error {
 
 // 	// find old data
 // 	var details *[]JournalDetailPg
-// 	tx.Model(&JournalDetailPg{}).Where(" holding_code=? AND docno=?", j.HoldingCode, j.DocNo).Find(&details)
+// 	tx.Model(&JournalDetailPg{}).Where(" holdingcode=? AND docno=?", j.HoldingCode, j.DocNo).Find(&details)
 
 // 	// delete unuse data
 // 	for _, tmp := range *details {

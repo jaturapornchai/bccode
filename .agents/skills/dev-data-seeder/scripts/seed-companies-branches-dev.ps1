@@ -16,7 +16,7 @@ function Get-SelectedToken {
   $keys = docker exec redis redis-cli --scan --pattern "auth-*"
   foreach ($key in $keys) {
     if ([string]::IsNullOrWhiteSpace($key)) { continue }
-    $values = docker exec redis redis-cli HMGET $key username holding_code
+    $values = docker exec redis redis-cli HMGET $key username holdingcode
     if ($values[0] -eq $Username -and $values[1] -eq $HoldingCode) {
       return $key.Substring(5)
     }
@@ -95,7 +95,7 @@ for ($i = 1; $i -le $CompanyCount; $i++) {
     code = $code
     names = @(New-Names -Thai $companyThai -English $companyEn)
     tax_id = ("0999999999{0:D3}" -f $i)
-    is_active = $true
+    isactive = $true
   }
   $companyResult = Invoke-JsonApi -Method "POST" -Path "/organization/company" -Payload $companyPayload -Token $token
   $companyGuid = [string]$companyResult.id
@@ -107,10 +107,10 @@ for ($i = 1; $i -le $CompanyCount; $i++) {
     $branchThai = $branchNamePool[(($i + $b - 2) % $branchNamePool.Count)]
     $branchEn = "Branch $b"
     $branchPayload = @{
-      company_guid = $companyGuid
+      companyguid = $companyGuid
       code = $branchCode
       names = @(New-Names -Thai $branchThai -English $branchEn)
-      is_active = $true
+      isactive = $true
     }
     [void](Invoke-JsonApi -Method "POST" -Path "/organization/branch" -Payload $branchPayload -Token $token)
     $branchCodes += $branchCode
@@ -119,7 +119,7 @@ for ($i = 1; $i -le $CompanyCount; $i++) {
   $created += [pscustomobject]@{
     code = $code
     name_th = $companyThai
-    company_guid = $companyGuid
+    companyguid = $companyGuid
     branches = ($branchCodes -join ",")
   }
   $existingCodes[$code] = $true
@@ -128,7 +128,7 @@ for ($i = 1; $i -le $CompanyCount; $i++) {
 $companiesAfter = Invoke-GetJson -Path "/organization/company" -Token $token
 $branchesAfter = Invoke-GetJson -Path "/organization/branch" -Token $token
 [pscustomobject]@{
-  holding_code = $HoldingCode
+  holdingcode = $HoldingCode
   companies_created = $created.Count
   total_companies = @($companiesAfter.data).Count
   total_branches = @($branchesAfter.data).Count

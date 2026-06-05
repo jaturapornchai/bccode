@@ -49,7 +49,7 @@ func (svc ShopService) CreateShop(username string, doc models.Shop) (string, err
 	}
 	if holdingCode != "" {
 		if existing, findErr := svc.shopRepo.FindByHoldingCode(context.Background(), holdingCode); findErr == nil && existing.GuidFixed != "" {
-			return "", errors.New("holding_code is exists")
+			return "", errors.New("holdingcode is exists")
 		}
 	}
 	dataDoc.GuidFixed = holdingCode
@@ -108,7 +108,7 @@ func (svc ShopService) UpdateShop(guid string, username string, shop models.Shop
 		}
 		if holdingCode != findShop.HoldingCode {
 			if existing, findErr := svc.shopRepo.FindByHoldingCode(context.Background(), holdingCode); findErr == nil && existing.GuidFixed != "" && existing.GuidFixed != guid {
-				return errors.New("holding_code is exists")
+				return errors.New("holdingcode is exists")
 			}
 		}
 		shop.HoldingCode = holdingCode

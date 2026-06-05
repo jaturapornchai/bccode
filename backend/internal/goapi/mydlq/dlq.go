@@ -10,15 +10,15 @@ import (
 
 // DLQMessage โครงสร้าง message ที่ล้มเหลว
 type DLQMessage struct {
-	ID string                 `json:"id"`
-	OriginalTopic string                 `json:"original_topic"`
-	OriginalKey string                 `json:"original_key"`
-	OriginalValue string                 `json:"original_value"`
-	Error string                 `json:"error"`
-	RetryCount int                    `json:"retry_count"`
-	FirstFailedAt time.Time              `json:"first_failed_at"`
-	LastFailedAt time.Time              `json:"last_failed_at"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	ID            string                 `json:"id"`
+	OriginalTopic string                 `json:"originaltopic"`
+	OriginalKey   string                 `json:"originalkey"`
+	OriginalValue string                 `json:"originalvalue"`
+	Error         string                 `json:"error"`
+	RetryCount    int                    `json:"retrycount"`
+	FirstFailedAt time.Time              `json:"firstfailedat"`
+	LastFailedAt  time.Time              `json:"lastfailedat"`
+	Metadata      map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // DLQHandler interface สำหรับจัดการ DLQ
@@ -143,15 +143,15 @@ func GetDLQHandler() DLQHandler {
 // SendToDLQ ส่ง message ไปยัง DLQ
 func SendToDLQ(ctx context.Context, topic string, key string, value string, err error, retryCount int, metadata map[string]interface{}) error {
 	msg := &DLQMessage{
-		ID:             fmt.Sprintf("%d", time.Now().UnixNano()),
-		OriginalTopic:  topic,
-		OriginalKey:    key,
-		OriginalValue:  value,
-		Error:          err.Error(),
-		RetryCount:     retryCount,
-		FirstFailedAt:  time.Now(),
-		LastFailedAt:   time.Now(),
-		Metadata:       metadata,
+		ID:            fmt.Sprintf("%d", time.Now().UnixNano()),
+		OriginalTopic: topic,
+		OriginalKey:   key,
+		OriginalValue: value,
+		Error:         err.Error(),
+		RetryCount:    retryCount,
+		FirstFailedAt: time.Now(),
+		LastFailedAt:  time.Now(),
+		Metadata:      metadata,
 	}
 
 	return globalDLQHandler.Send(ctx, msg)

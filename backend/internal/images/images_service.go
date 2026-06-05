@@ -21,8 +21,8 @@ import (
 type IImagesService interface {
 	UploadImage(holdingCode string, fh *multipart.FileHeader) (*models.Image, error)
 	UploadImageToProduct(holdingCode string, fh *multipart.FileHeader) error
-	GetImageByProductCode(holding_code string, itemguid string, index int) (string, *bytes.Buffer, error)
-	GetSlipImage(holding_code string, posID string, docDate time.Time, docNo string) (string, *bytes.Buffer, error)
+	GetImageByProductCode(holdingcode string, itemguid string, index int) (string, *bytes.Buffer, error)
+	GetSlipImage(holdingcode string, posID string, docDate time.Time, docNo string) (string, *bytes.Buffer, error)
 }
 
 type ImagesService struct {
@@ -126,12 +126,12 @@ func (svc ImagesService) UploadImageToProduct(holdingCode string, fh *multipart.
 	return err
 }
 
-func (svc ImagesService) GetImageByProductCode(holding_code string, itemguid string, index int) (string, *bytes.Buffer, error) {
+func (svc ImagesService) GetImageByProductCode(holdingcode string, itemguid string, index int) (string, *bytes.Buffer, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.invRepo.FindByGuid(ctx, holding_code, itemguid)
+	findDoc, err := svc.invRepo.FindByGuid(ctx, holdingcode, itemguid)
 
 	if err != nil {
 		return "", nil, err
@@ -157,12 +157,12 @@ func (svc ImagesService) GetImageByProductCode(holding_code string, itemguid str
 	return imageUri, buffer, nil
 }
 
-func (svc ImagesService) GetSlipImage(holding_code string, posID string, docDate time.Time, docNo string) (string, *bytes.Buffer, error) {
+func (svc ImagesService) GetSlipImage(holdingcode string, posID string, docDate time.Time, docNo string) (string, *bytes.Buffer, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.slipimageRepo.FindOne(ctx, holding_code, bson.M{"posid": posID, "docdate": docDate, "docno": docNo})
+	findDoc, err := svc.slipimageRepo.FindOne(ctx, holdingcode, bson.M{"posid": posID, "docdate": docDate, "docno": docNo})
 
 	if err != nil {
 		return "", nil, err

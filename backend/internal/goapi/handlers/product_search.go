@@ -23,38 +23,38 @@ import (
 
 // UnifiedSearchRequest - Request body สำหรับค้นหาสินค้าแบบ Unified
 type UnifiedSearchRequest struct {
-	HoldingCode    string `json:"holding_code"`
+	HoldingCode    string `json:"holdingcode"`
 	Keyword        string `json:"keyword"`
 	WHCode         string `json:"whcode"`
 	LocationCode   string `json:"locationcode"`
 	Limit          int    `json:"limit"`
 	Offset         int    `json:"offset"` // สำหรับ pagination (infinite scroll)
-	IncludeBalance bool   `json:"include_balance"`
+	IncludeBalance bool   `json:"includebalance"`
 }
 
 // SearchProductUnit - หน่วยสินค้าพร้อมราคา
 type SearchProductUnit struct {
 	Barcode     string  `json:"barcode"`
 	UnitCode    string  `json:"unitcode"`
-	UnitName    string  `json:"unit_name"`
+	UnitName    string  `json:"unitname"`
 	UnitStand   float64 `json:"unitstand"`
 	UnitDivide  float64 `json:"unitdivide"`
 	Price1      float64 `json:"price1"`
-	PriceRetail float64 `json:"price_retail"`
+	PriceRetail float64 `json:"priceretail"`
 }
 
 // SearchLocationBalance - ยอดคงเหลือแยกตาม Location
 type SearchLocationBalance struct {
-	LocationCode string  `json:"location_code"`
-	BalanceQty   float64 `json:"balance_qty"`
-	BalanceWord  string  `json:"balance_word"`
+	LocationCode string  `json:"locationcode"`
+	BalanceQty   float64 `json:"balanceqty"`
+	BalanceWord  string  `json:"balanceword"`
 }
 
 // SearchWarehouseBalance - ยอดคงเหลือแยกตาม Warehouse พร้อม Locations
 type SearchWarehouseBalance struct {
-	WarehouseCode string                  `json:"warehouse_code"`
-	BalanceQty    float64                 `json:"balance_qty"`
-	BalanceWord   string                  `json:"balance_word"`
+	WarehouseCode string                  `json:"warehousecode"`
+	BalanceQty    float64                 `json:"balanceqty"`
+	BalanceWord   string                  `json:"balanceword"`
 	Locations     []SearchLocationBalance `json:"locations,omitempty"`
 }
 
@@ -64,11 +64,11 @@ type SearchBalanceInfo struct {
 	Formatted  string                   `json:"formatted"`
 	Warehouses []SearchWarehouseBalance `json:"warehouses,omitempty"`
 	// ค้างรับ (PO ที่ยังไม่ได้รับของ)
-	PendingRecvQty  float64 `json:"pending_recv_qty"`
-	PendingRecvWord string  `json:"pending_recv_word"`
+	PendingRecvQty  float64 `json:"pendingrecvqty"`
+	PendingRecvWord string  `json:"pendingrecvword"`
 	// ค้างส่ง (SO ที่ยังไม่ได้ส่งของ)
-	PendingSendQty  float64 `json:"pending_send_qty"`
-	PendingSendWord string  `json:"pending_send_word"`
+	PendingSendQty  float64 `json:"pendingsendqty"`
+	PendingSendWord string  `json:"pendingsendword"`
 }
 
 // SearchProductItem - สินค้าที่ค้นพบ
@@ -84,8 +84,8 @@ type SearchProductItem struct {
 type UnifiedSearchResponse struct {
 	Status   string              `json:"status"`
 	Count    int                 `json:"count"`
-	Total    int                 `json:"total"`    // จำนวนสินค้าทั้งหมดที่พบ (ก่อน pagination)
-	HasMore  bool                `json:"has_more"` // มีข้อมูลเพิ่มหรือไม่ (สำหรับ infinite scroll)
+	Total    int                 `json:"total"`   // จำนวนสินค้าทั้งหมดที่พบ (ก่อน pagination)
+	HasMore  bool                `json:"hasmore"` // มีข้อมูลเพิ่มหรือไม่ (สำหรับ infinite scroll)
 	Products []SearchProductItem `json:"products"`
 	Tokens   []string            `json:"tokens"`
 }
@@ -109,7 +109,7 @@ func UnifiedProductSearchHandler(c echo.Context) error {
 	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  "error",
-			"message": "Missing required parameter: holding_code",
+			"message": "Missing required parameter: holdingcode",
 		})
 	}
 
@@ -128,7 +128,7 @@ func UnifiedProductSearchHandler(c echo.Context) error {
 		req.Limit = 500
 	}
 
-	logger.Info("[UnifiedSearch] holding_code=%s, keyword=%s, limit=%d, include_balance=%v",
+	logger.Info("[UnifiedSearch] holdingcode=%s, keyword=%s, limit=%d, include_balance=%v",
 		req.HoldingCode, req.Keyword, req.Limit, req.IncludeBalance)
 
 	totalStart := time.Now()

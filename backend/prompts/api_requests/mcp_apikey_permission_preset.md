@@ -4,7 +4,7 @@
 
 Backend ปรับระบบ MCP API Key permission แล้ว — แยก tools เป็น 2 กลุ่ม:
 - **Readonly (35 tools):** ดูข้อมูลอย่างเดียว (sales, dashboard, inventory, units ฯลฯ)
-- **Write (6 tools):** สร้าง/แก้ไข/ลบข้อมูล (create_unit, create_units, update_unit, delete_unit, delete_units)
+- **Write (6 tools):** สร้าง/แก้ไข/ลบข้อมูล (createunit, createunits, updateunit, deleteunit, deleteunits)
 
 ## MCP มีหลาย user ที่ใช้ — ต้องแยกให้ชัดเจน
 
@@ -25,16 +25,16 @@ Backend ปรับระบบ MCP API Key permission แล้ว — แย�
 
 เพิ่ม dropdown/radio ให้เลือก preset **ก่อน** ส่วนเลือก tools:
 
-| Preset | `allowed_tools` ที่ส่ง | คำอธิบาย |
+| Preset | `allowedtools` ที่ส่ง | คำอธิบาย |
 |--------|----------------------|----------|
 | **Readonly** (ค่าเริ่มต้น) | `["readonly"]` | ดูข้อมูลอย่างเดียว — เหมาะกับ Claude Desktop, frontend dev |
 | **Developer** | `["*"]` | ทุก tool (อ่าน+เขียน) — เหมาะกับ backend dev |
-| **Custom** | `["readonly", "create_unit", ...]` | เลือก tools เองทีละตัว |
+| **Custom** | `["readonly", "createunit", ...]` | เลือก tools เองทีละตัว |
 
 **UX Flow:**
 1. เลือก Preset → ถ้าเป็น Readonly หรือ Developer → ซ่อน tool checkboxes (ไม่ต้องเลือก)
 2. เลือก Custom → แสดง tool checkboxes ให้เลือกทีละตัว
-3. ส่ง `allowed_tools` ตาม preset ที่เลือก
+3. ส่ง `allowedtools` ตาม preset ที่เลือก
 
 ### 2. อัปเดตรายการ Tool Categories
 
@@ -42,40 +42,40 @@ Backend ปรับระบบ MCP API Key permission แล้ว — แย�
 
 | Category | Tools |
 |----------|-------|
-| Sales | `get_daily_sales`, `get_monthly_sales`, `get_sales_by_product`, `get_sales_by_channel`, `get_sales_by_payment` |
-| Dashboard | `get_dashboard_summary`, `get_top_products`, `get_hourly_sales` |
-| Financial | `get_profit_loss`, `get_revenue_trend`, `get_tax_summary`, `get_payment_summary` |
-| Inventory | `get_stock_balance`, `get_low_stock_alerts`, `get_stock_movement`, `get_stock_value` |
-| Customers | `get_customer_summary`, `get_top_customers`, `get_new_customers`, `get_customer_purchase_history` |
-| Comparison | `compare_sales_periods` |
-| Products | `list_products`, `search_products` |
-| **Unit of Measure** (ใหม่) | `list_units`, `search_units`, `create_unit`, `create_units`, `update_unit`, `delete_unit`, `delete_units` |
-| **API Development** (ใหม่) | `get_api_catalog`, `get_api_spec` |
-| **Database** (ใหม่) | `query_clickhouse`, `query_mongodb` |
-| **Schema** (ใหม่) | `get_model_schema`, `get_enum_catalog` |
+| Sales | `getdailysales`, `getmonthlysales`, `getsalesbyproduct`, `getsalesbychannel`, `getsalesbypayment` |
+| Dashboard | `getdashboardsummary`, `gettopproducts`, `gethourlysales` |
+| Financial | `getprofitloss`, `getrevenuetrend`, `gettaxsummary`, `getpaymentsummary` |
+| Inventory | `getstockbalance`, `getlowstockalerts`, `getstockmovement`, `getstockvalue` |
+| Customers | `getcustomersummary`, `gettopcustomers`, `getnewcustomers`, `getcustomerpurchasehistory` |
+| Comparison | `comparesalesperiods` |
+| Products | `listproducts`, `searchproducts` |
+| **Unit of Measure** (ใหม่) | `listunits`, `searchunits`, `createunit`, `createunits`, `updateunit`, `deleteunit`, `deleteunits` |
+| **API Development** (ใหม่) | `getapicatalog`, `getapispec` |
+| **Database** (ใหม่) | `queryclickhouse`, `querymongodb` |
+| **Schema** (ใหม่) | `getmodelschema`, `getenumcatalog` |
 
 **หมายเหตุ:** Tools ที่มี badge `write` = เฉพาะ Developer preset ถึงจะใช้ได้:
-- `create_unit`, `create_units`, `update_unit`, `delete_unit`, `delete_units`
+- `createunit`, `createunits`, `updateunit`, `deleteunit`, `deleteunits`
 
 ### 3. แก้ไขการแสดงจำนวน Tools
 
-ปัจจุบันแสดง "1 tools" เพราะนับจำนวน string ใน `allowed_tools[]`
+ปัจจุบันแสดง "1 tools" เพราะนับจำนวน string ใน `allowedtools[]`
 
-**แก้ไข:** ถ้า `allowed_tools` มี keyword → แสดง label แทนตัวเลข:
+**แก้ไข:** ถ้า `allowedtools` มี keyword → แสดง label แทนตัวเลข:
 
-| `allowed_tools` | แสดงผล |
+| `allowedtools` | แสดงผล |
 |----------------|--------|
 | `["readonly"]` | "Readonly (35 tools)" |
 | `["*"]` | "All tools (41 tools)" |
 | `["readwrite"]` | "All tools (41 tools)" |
-| `["get_daily_sales", "list_units"]` | "2 tools" |
-| `["readonly", "create_unit"]` | "Readonly + 1 write tool" |
+| `["getdailysales", "listunits"]` | "2 tools" |
+| `["readonly", "createunit"]` | "Readonly + 1 write tool" |
 
 ### 4. แสดง Permission Badge ในรายการ Keys
 
 ในหน้ารายการ API Keys ให้แสดง badge ระดับสิทธิ์:
 
-| `allowed_tools` | Badge |
+| `allowedtools` | Badge |
 |----------------|-------|
 | `["*"]` หรือ `["readwrite"]` | 🔧 Developer |
 | `["readonly"]` | 👁 Readonly |
@@ -85,7 +85,7 @@ Backend ปรับระบบ MCP API Key permission แล้ว — แย�
 
 ## API Endpoints (ไม่เปลี่ยน)
 
-Backend API ยังเหมือนเดิม — แค่ส่ง `allowed_tools` ต่างกัน:
+Backend API ยังเหมือนเดิม — แค่ส่ง `allowedtools` ต่างกัน:
 
 ### สร้าง Key
 ```
@@ -93,11 +93,11 @@ POST /goapi/api/mcp/keys
 Content-Type: application/json
 
 {
-  "holding_code": "...",
+  "holdingcode": "...",
   "name": "Claude Desktop Key",
   "description": "สำหรับ Claude Desktop ใช้ค้นหา API",
-  "allowed_tools": ["readonly"],        // ← เปลี่ยนตรงนี้
-  "created_by": "admin"
+  "allowedtools": ["readonly"],        // ← เปลี่ยนตรงนี้
+  "createdby": "admin"
 }
 ```
 
@@ -107,10 +107,10 @@ POST /goapi/api/mcp/keys/create-with-export
 Content-Type: application/json
 
 {
-  "holding_code": "...",
+  "holdingcode": "...",
   "name": "Backend Dev Key",
-  "allowed_tools": ["*"],               // ← Developer preset
-  "created_by": "admin"
+  "allowedtools": ["*"],               // ← Developer preset
+  "createdby": "admin"
 }
 ```
 
@@ -120,19 +120,19 @@ PUT /goapi/api/mcp/keys/:id
 Content-Type: application/json
 
 {
-  "allowed_tools": ["readonly"]          // ← เปลี่ยน permission
+  "allowedtools": ["readonly"]          // ← เปลี่ยน permission
 }
 ```
 
-### ค่า `allowed_tools` ที่ Backend รองรับ
+### ค่า `allowedtools` ที่ Backend รองรับ
 
 | ค่า | ความหมาย |
 |-----|---------|
 | `["readonly"]` | Readonly ทั้งหมด (35 tools) — **ค่าเริ่มต้น** ถ้าไม่ส่ง |
 | `["*"]` | ทุก tool (41 tools) |
 | `["readwrite"]` | เหมือน `["*"]` |
-| `["readonly", "create_unit"]` | Readonly + create_unit |
-| `["get_daily_sales", "list_units"]` | เฉพาะ tools ที่ระบุ |
+| `["readonly", "createunit"]` | Readonly + createunit |
+| `["getdailysales", "listunits"]` | เฉพาะ tools ที่ระบุ |
 
 ---
 

@@ -17,11 +17,11 @@ func GetProductData(ctx context.Context, holdingCode string) ([]StockData, error
 
 	query := `
 		SELECT
-			p.itemcode as product_code,
-			p.name0 as product_name,
-			COALESCE(STRING_AGG(DISTINCT pb.barcode, ','), '') as barcode_list,
-			COALESCE(p.unitname, '') as unit_structure,
-			'0' as stock_qty
+			p.itemcode as productcode,
+			p.name0 as productname,
+			COALESCE(STRING_AGG(DISTINCT pb.barcode, ','), '') as barcodelist,
+			COALESCE(p.unitname, '') as unitstructure,
+			'0' as stockqty
 		FROM product p
 		LEFT JOIN productbarcode pb ON p.itemcode = pb.itemcode
 		WHERE p.itemcode IS NOT NULL

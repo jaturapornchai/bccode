@@ -4,7 +4,7 @@ import { getBackendUrlFromRequest, isRecord, readJsonOrText, requireBearerToken 
 
 type ProductBarcodeListBody = Record<string, unknown> & {
   backendUrl?: string;
-  holding_code?: string;
+  holdingcode?: string;
 };
 
 export async function POST(request: Request) {
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
   const authorization = requireBearerToken(request);
   if (typeof authorization !== "string") return authorization;
 
-  const holdingCode = String(body.holding_code ?? "").trim();
+  const holdingCode = String(body.holdingcode ?? "").trim();
   if (!holdingCode) return NextResponse.json({ success: false, message: "กรุณาเลือก holding ก่อน" }, { status: 400 });
 
   let goApiUrl: string;
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { backendUrl: _backendUrl, holding_code: _holdingCode, ...payload } = body;
+  const { backendUrl: _backendUrl, holdingcode: _holdingCode, ...payload } = body;
   void _backendUrl;
   void _holdingCode;
 
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
         "Accept-Language": request.headers.get("accept-language") ?? "th",
         Authorization: authorization,
       },
-      body: JSON.stringify({ ...payload, holding_code: holdingCode }),
+      body: JSON.stringify({ ...payload, holdingcode: holdingCode }),
       signal: controller.signal,
       cache: "no-store",
     });

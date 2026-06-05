@@ -11,8 +11,8 @@ import (
 func TestPurchaseReceiveTransactionPhaser(t *testing.T) {
 	giveMsg := `{
 	"id": "000000000000000000000000",
-	"holding_code": "30LbRx3l0SLaK84gLpcF0W4x9Z0",
-	"guid_fixed": "32Y3x1r0sqYOww0mRXrh0ftiIxV",
+	"holdingcode": "30LbRx3l0SLaK84gLpcF0W4x9Z0",
+	"guidfixed": "32Y3x1r0sqYOww0mRXrh0ftiIxV",
 	"docno": "PP2025091100001",
 	"docdatetime": "2025-09-11T09:44:52.81Z",
 	"guid_ref": "5335d4d3-66ff-4b5d-a2c4-b9fb67e4db7c",
@@ -23,7 +23,7 @@ func TestPurchaseReceiveTransactionPhaser(t *testing.T) {
 	"docreftype": 0,
 	"docreferences": [
 		{
-			"guid_fixed": "32Y3jQOpI9qn0tKdvaI38LBdERe",
+			"guidfixed": "32Y3jQOpI9qn0tKdvaI38LBdERe",
 			"docno": "PO2025091100003",
 			"docdatetime": "2025-09-11T09:41:11.668Z"
 		}
@@ -77,7 +77,7 @@ func TestPurchaseReceiveTransactionPhaser(t *testing.T) {
 	"paycashamount": 0,
 	"paypointamount": 0,
 	"branch": {
-		"guid_fixed": "30LbS0SnNu5luOq9DWkLp3vvoZK",
+		"guidfixed": "30LbS0SnNu5luOq9DWkLp3vvoZK",
 		"code": "00000",
 		"names": [
 			{
@@ -362,8 +362,8 @@ func TestPurchaseReceiveTransactionPhaser(t *testing.T) {
 func TestPurchaseReceiveTransactionPhaser_InvalidJSON(t *testing.T) {
 	invalidJSONMsg := `{
 		"id": "000000000000000000000000",
-		"holding_code": "30LbRx3l0SLaK84gLpcF0W4x9Z0",
-		"guid_fixed": "invalid json structure`
+		"holdingcode": "30LbRx3l0SLaK84gLpcF0W4x9Z0",
+		"guidfixed": "invalid json structure`
 
 	phaser := purchasereceive.PurchaseReceiveTransactionPhaser{}
 	gotDoc, err := phaser.PhaseSingleDoc(invalidJSONMsg)
@@ -376,8 +376,8 @@ func TestPurchaseReceiveTransactionPhaser_InvalidJSON(t *testing.T) {
 func TestPurchaseReceiveTransactionPhaser_EmptyDetails(t *testing.T) {
 	emptyDetailsMsg := `{
 		"id": "000000000000000000000000",
-		"holding_code": "30LbRx3l0SLaK84gLpcF0W4x9Z0",
-		"guid_fixed": "32Y3x1r0sqYOww0mRXrh0ftiIxV",
+		"holdingcode": "30LbRx3l0SLaK84gLpcF0W4x9Z0",
+		"guidfixed": "32Y3x1r0sqYOww0mRXrh0ftiIxV",
 		"docno": "PP2025091100001",
 		"docdatetime": "2025-09-11T09:44:52.81Z",
 		"guid_ref": "5335d4d3-66ff-4b5d-a2c4-b9fb67e4db7c",
@@ -411,7 +411,7 @@ func TestPurchaseReceiveTransactionPhaser_EmptyDetails(t *testing.T) {
 		"iscancel": false,
 		"ismanualamount": false,
 		"branch": {
-			"guid_fixed": "30LbS0SnNu5luOq9DWkLp3vvoZK",
+			"guidfixed": "30LbS0SnNu5luOq9DWkLp3vvoZK",
 			"code": "00000",
 			"names": [
 				{
@@ -439,8 +439,8 @@ func TestPurchaseReceiveTransactionPhaser_EmptyDetails(t *testing.T) {
 func TestPurchaseReceiveTransactionPhaser_MultipleItems(t *testing.T) {
 	multipleItemsMsg := `{
 		"id": "000000000000000000000000",
-		"holding_code": "30LbRx3l0SLaK84gLpcF0W4x9Z0",
-		"guid_fixed": "32Y3x1r0sqYOww0mRXrh0ftiIxV",
+		"holdingcode": "30LbRx3l0SLaK84gLpcF0W4x9Z0",
+		"guidfixed": "32Y3x1r0sqYOww0mRXrh0ftiIxV",
 		"docno": "PP2025091100001",
 		"docdatetime": "2025-09-11T09:44:52.81Z",
 		"guid_ref": "5335d4d3-66ff-4b5d-a2c4-b9fb67e4db7c",
@@ -474,7 +474,7 @@ func TestPurchaseReceiveTransactionPhaser_MultipleItems(t *testing.T) {
 		"iscancel": false,
 		"ismanualamount": false,
 		"branch": {
-			"guid_fixed": "30LbS0SnNu5luOq9DWkLp3vvoZK",
+			"guidfixed": "30LbS0SnNu5luOq9DWkLp3vvoZK",
 			"code": "00000",
 			"names": [
 				{
@@ -642,8 +642,8 @@ func TestPurchaseReceiveTransactionPhaser_MultipleItems(t *testing.T) {
 func TestPurchaseReceiveTransactionPhaser_DateTimeParsing(t *testing.T) {
 	dateTimeMsg := `{
 		"id": "000000000000000000000000",
-		"holding_code": "30LbRx3l0SLaK84gLpcF0W4x9Z0",
-		"guid_fixed": "32Y3x1r0sqYOww0mRXrh0ftiIxV",
+		"holdingcode": "30LbRx3l0SLaK84gLpcF0W4x9Z0",
+		"guidfixed": "32Y3x1r0sqYOww0mRXrh0ftiIxV",
 		"docno": "PP2025091100001",
 		"docdatetime": "2025-12-31T23:59:59.999Z",
 		"guid_ref": "5335d4d3-66ff-4b5d-a2c4-b9fb67e4db7c",
@@ -677,7 +677,7 @@ func TestPurchaseReceiveTransactionPhaser_DateTimeParsing(t *testing.T) {
 		"iscancel": false,
 		"ismanualamount": false,
 		"branch": {
-			"guid_fixed": "30LbS0SnNu5luOq9DWkLp3vvoZK",
+			"guidfixed": "30LbS0SnNu5luOq9DWkLp3vvoZK",
 			"code": "00000",
 			"names": [
 				{

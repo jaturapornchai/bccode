@@ -4,7 +4,7 @@ description: Use when writing SQL, schema design, migration, or query optimizati
 ---
 
 ## 1. Multi-Tenant Isolation
-- **Boundary**: Filter every query by `tenant_id` (physically mapped to `holding_code` or `holding_code`).
+- **Boundary**: Filter every query by `tenant_id` (physically mapped to `holdingcode` or `holdingcode`).
 - **No Leaks**: Never perform cross-tenant queries unless explicitly auditing.
 - **Indexes**: Ensure every `WHERE` and `JOIN` column is indexed.
 

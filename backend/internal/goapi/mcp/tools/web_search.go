@@ -15,17 +15,17 @@ import (
 
 // WebSearchResponse ผลลัพธ์จากการค้นหาเว็บ
 type WebSearchResponse struct {
-	Query string            `json:"query"`
-	Results []WebSearchResult `json:"results"`
-	Count int               `json:"count"`
-	Source string            `json:"source"`
-	GeneratedAt time.Time         `json:"generated_at"`
+	Query       string            `json:"query"`
+	Results     []WebSearchResult `json:"results"`
+	Count       int               `json:"count"`
+	Source      string            `json:"source"`
+	GeneratedAt time.Time         `json:"generatedat"`
 }
 
 // WebSearchResult รายการผลลัพธ์แต่ละรายการ
 type WebSearchResult struct {
-	Title string `json:"title"`
-	URL string `json:"url"`
+	Title   string `json:"title"`
+	URL     string `json:"url"`
 	Snippet string `json:"snippet"`
 }
 
@@ -97,13 +97,13 @@ func searchDDGInstant(ctx context.Context, query string) ([]WebSearchResult, err
 	}
 
 	var ddgResp struct {
-		Abstract string `json:"abstract"`
-		AbstractURL string `json:"abstract_url"`
-		AbstractSource string `json:"abstract_source"`
+		Abstract       string `json:"abstract"`
+		AbstractURL    string `json:"abstracturl"`
+		AbstractSource string `json:"abstractsource"`
 		RelatedTopics  []struct {
-			Text string `json:"text"`
-			FirstURL string `json:"first_url"`
-		} `json:"RelatedTopics"`
+			Text     string `json:"text"`
+			FirstURL string `json:"firsturl"`
+		} `json:"relatedtopics"`
 	}
 	if err := json.Unmarshal(body, &ddgResp); err != nil {
 		return nil, err

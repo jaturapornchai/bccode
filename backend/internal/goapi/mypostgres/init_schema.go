@@ -19,12 +19,12 @@ func InitQueueSchema(db *sql.DB) error {
 -- Table: queues
 CREATE TABLE IF NOT EXISTS queues (
     id BIGSERIAL PRIMARY KEY,
-    holding_code VARCHAR(100) NOT NULL,
+    holdingcode VARCHAR(100) NOT NULL,
     doc_no VARCHAR(100) NOT NULL,
     trans_flag VARCHAR(10) NOT NULL,
     retry_count INTEGER NOT NULL DEFAULT 0,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    createdat TIMESTAMP NOT NULL DEFAULT NOW(),
+    updatedat TIMESTAMP NOT NULL DEFAULT NOW(),
     status VARCHAR(20) NOT NULL DEFAULT 'pending',
     processed_at TIMESTAMP NULL,
     error_message TEXT NULL
@@ -33,11 +33,11 @@ CREATE TABLE IF NOT EXISTS queues (
 -- Table: dead_letter_queue
 CREATE TABLE IF NOT EXISTS dead_letter_queue (
     id BIGSERIAL PRIMARY KEY,
-    holding_code VARCHAR(100) NOT NULL,
+    holdingcode VARCHAR(100) NOT NULL,
     doc_no VARCHAR(100) NOT NULL,
     trans_flag VARCHAR(10) NOT NULL,
     retry_count INTEGER NOT NULL DEFAULT 0,
-    created_at TIMESTAMP NOT NULL,
+    createdat TIMESTAMP NOT NULL,
     failed_at TIMESTAMP NOT NULL DEFAULT NOW(),
     error_message TEXT NOT NULL
 );
@@ -51,31 +51,31 @@ CREATE TABLE IF NOT EXISTS distributed_locks (
 );
 
 -- Indexes
-CREATE INDEX IF NOT EXISTS idx_queues_shop_status ON queues(holding_code, status);
-CREATE INDEX IF NOT EXISTS idx_queues_created_at ON queues(created_at);
+CREATE INDEX IF NOT EXISTS idx_queues_shop_status ON queues(holdingcode, status);
+CREATE INDEX IF NOT EXISTS idx_queues_createdat ON queues(createdat);
 CREATE INDEX IF NOT EXISTS idx_queues_status ON queues(status);
-CREATE INDEX IF NOT EXISTS idx_dlq_holding_code ON dead_letter_queue(holding_code);
+CREATE INDEX IF NOT EXISTS idx_dlq_holdingcode ON dead_letter_queue(holdingcode);
 CREATE INDEX IF NOT EXISTS idx_dlq_failed_at ON dead_letter_queue(failed_at);
 CREATE INDEX IF NOT EXISTS idx_locks_expires_at ON distributed_locks(expires_at);
-CREATE INDEX IF NOT EXISTS idx_queues_pop ON queues(holding_code, created_at) WHERE status = 'pending';
-CREATE INDEX IF NOT EXISTS idx_queues_active_shops ON queues(holding_code) WHERE status = 'pending';
-CREATE INDEX IF NOT EXISTS idx_queues_processing ON queues(holding_code, processed_at) WHERE status = 'processing';
+CREATE INDEX IF NOT EXISTS idx_queues_pop ON queues(holdingcode, createdat) WHERE status = 'pending';
+CREATE INDEX IF NOT EXISTS idx_queues_active_shops ON queues(holdingcode) WHERE status = 'pending';
+CREATE INDEX IF NOT EXISTS idx_queues_processing ON queues(holdingcode, processed_at) WHERE status = 'processing';
 
--- Function: อัปเดต updated_at อัตโนมัติ
-CREATE OR REPLACE FUNCTION update_updated_at_column()
+-- Function: อัปเดต updatedat อัตโนมัติ
+CREATE OR REPLACE FUNCTION update_updatedat_column()
 RETURNS TRIGGER AS $$
 BEGIN
-    NEW.updated_at = NOW();
+    NEW.updatedat = NOW();
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
--- Trigger: อัปเดต updated_at
-DROP TRIGGER IF EXISTS update_queues_updated_at ON queues;
-CREATE TRIGGER update_queues_updated_at
+-- Trigger: อัปเดต updatedat
+DROP TRIGGER IF EXISTS update_queues_updatedat ON queues;
+CREATE TRIGGER update_queues_updatedat
     BEFORE UPDATE ON queues
     FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+    EXECUTE FUNCTION update_updatedat_column();
 
 -- Function: ทำความสะอาด expired locks
 CREATE OR REPLACE FUNCTION cleanup_expired_locks()
@@ -91,14 +91,14 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Function: ดึงงานจาก queue
-CREATE OR REPLACE FUNCTION pop_from_queue(p_holding_code VARCHAR)
+CREATE OR REPLACE FUNCTION pop_from_queue(p_holdingcode VARCHAR)
 RETURNS TABLE(
     id BIGINT,
-    holding_code VARCHAR,
+    holdingcode VARCHAR,
     doc_no VARCHAR,
     trans_flag VARCHAR,
     retry_count INTEGER,
-    created_at TIMESTAMP
+    createdat TIMESTAMP
 ) AS $$
 BEGIN
     RETURN QUERY
@@ -108,31 +108,31 @@ BEGIN
     WHERE queues.id = (
         SELECT queues.id
         FROM queues
-        WHERE queues.holding_code = p_holding_code
+        WHERE queues.holdingcode = p_holdingcode
           AND queues.status = 'pending'
-        ORDER BY queues.created_at ASC
+        ORDER BY queues.createdat ASC
         LIMIT 1
         FOR UPDATE SKIP LOCKED
     )
     RETURNING
         queues.id,
-        queues.holding_code,
+        queues.holdingcode,
         queues.doc_no,
         queues.trans_flag,
         queues.retry_count,
-        queues.created_at;
+        queues.createdat;
 END;
 $$ LANGUAGE plpgsql;
 
 -- Function: ดึง active shops
 CREATE OR REPLACE FUNCTION get_active_shops()
-RETURNS TABLE(holding_code VARCHAR, queue_count BIGINT) AS $$
+RETURNS TABLE(holdingcode VARCHAR, queue_count BIGINT) AS $$
 BEGIN
     RETURN QUERY
-    SELECT q.holding_code, COUNT(*) as queue_count
+    SELECT q.holdingcode, COUNT(*) as queue_count
     FROM queues q
     WHERE q.status = 'pending'
-    GROUP BY q.holding_code
+    GROUP BY q.holdingcode
     ORDER BY queue_count DESC;
 END;
 $$ LANGUAGE plpgsql;

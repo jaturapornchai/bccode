@@ -42,14 +42,14 @@ headers = {
 
 # 2. Get shops list or Create a new shop
 print("\n2. Getting/Creating a shop...")
-holding_code = ""
+holdingcode = ""
 try:
     resp = requests.get(f"{BASE_URL}/shop", headers=headers)
     shops = resp.json()
     if isinstance(shops, list) and len(shops) > 0:
-        holding_code = shops[0]["holding_code"]
+        holdingcode = shops[0]["holdingcode"]
     elif isinstance(shops, dict) and isinstance(shops.get("data"), list) and len(shops["data"]) > 0:
-        holding_code = shops["data"][0]["holding_code"]
+        holdingcode = shops["data"][0]["holdingcode"]
     else:
         shop_payload = {
             "code": "UATSH2",
@@ -61,20 +61,20 @@ try:
         }
         resp = requests.post(f"{BASE_URL}/shop", json=shop_payload, headers=headers)
         shop_data = resp.json()
-        holding_code = shop_data["id"]
+        holdingcode = shop_data["id"]
 
-    print(f"Active Holding Code: {holding_code}")
+    print(f"Active Holding Code: {holdingcode}")
 except Exception as e:
     print("Error getting/creating shop:", e)
     sys.exit(1)
 
-# 3. Request Token with holding_code bound
+# 3. Request Token with holdingcode bound
 print("\n3. Binding token to Holding Code...")
 try:
     resp = requests.post(f"{BASE_URL}/login", json={
         "username": reg_payload["username"],
         "password": reg_payload["password"],
-        "holding_code": holding_code
+        "holdingcode": holdingcode
     })
     shop_login_data = resp.json()
     token = shop_login_data["token"]
@@ -102,19 +102,19 @@ product_payload = {
     "category_names": [{"code": "th", "name": "หมวดทดสอบ"}],
     "manufacturers": [
         {
-            "guid_fixed": "mfr-guid-1",
+            "guidfixed": "mfr-guid-1",
             "code": "MFR001",
             "names": [{"code": "th", "name": "ผู้ผลิตทดสอบ 1"}]
         },
         {
-            "guid_fixed": "mfr-guid-2",
+            "guidfixed": "mfr-guid-2",
             "code": "MFR002",
             "names": [{"code": "th", "name": "ผู้ผลิตทดสอบ 2"}]
         }
     ],
     "suppliers": [
         {
-            "guid_fixed": "spl-guid-1",
+            "guidfixed": "spl-guid-1",
             "code": "SPL001",
             "names": [{"code": "th", "name": "ผู้จำหน่ายทดสอบ 1"}]
         }
@@ -131,7 +131,7 @@ try:
         sys.exit(1)
 
     data_obj = prod_data.get("data", {})
-    product_guid = data_obj.get("guidfixed") or data_obj.get("guid_fixed") or data_obj.get("guid") or ""
+    product_guid = data_obj.get("guidfixed") or data_obj.get("guidfixed") or data_obj.get("guid") or ""
     print(f"Created Product GUID: {product_guid}")
 except Exception as e:
     print("Error creating product:", e)
@@ -162,7 +162,7 @@ try:
         sys.exit(1)
 
     # Check return field for guid
-    barcode_guid = bar_data.get("id") or bar_data.get("guidfixed") or bar_data.get("guid_fixed") or ""
+    barcode_guid = bar_data.get("id") or bar_data.get("guidfixed") or bar_data.get("guidfixed") or ""
     print(f"Created Barcode GUID: {barcode_guid}")
 except Exception as e:
     print("Error creating barcode:", e)

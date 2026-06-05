@@ -40,7 +40,7 @@ func (svc CreditorAdminService) ReSyncCreditor(holdingCode string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), svc.timeoutDuration)
 	defer cancel()
 
-	// find creditor by holding_code
+	// find creditor by holdingcode
 	creditors, err := svc.mongoRepo.FindCreditorByHoldingCode(ctx, holdingCode)
 	if err != nil {
 		return err

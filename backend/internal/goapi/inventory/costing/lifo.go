@@ -84,7 +84,7 @@ func (e *LIFOEngine) consumeLayersLIFO(ctx context.Context, tx *sql.Tx, holdingC
 	rows, err := tx.QueryContext(ctx,
 		`SELECT id, remainingqty, totalunitcost
 		 FROM inventory_cost_layers
-		 WHERE holding_code = $1 AND itemcode = $2 AND whcode = $3 AND locationcode = $4 AND remainingqty > 0
+		 WHERE holdingcode = $1 AND itemcode = $2 AND whcode = $3 AND locationcode = $4 AND remainingqty > 0
 		 ORDER BY receiveddate DESC, id DESC
 		 FOR UPDATE`,
 		holdingCode, itemCode, whCode, locationCode,

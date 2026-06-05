@@ -66,8 +66,8 @@ func (repo StockBalanceRepository) Transaction(ctx context.Context, execFunc fun
 
 func (repo StockBalanceRepository) FindLastDocNo(ctx context.Context, holdingCode string, prefixDocNo string) (models.StockBalanceDoc, error) {
 	filters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at": bson.M{
+		"holdingcode": holdingCode,
+		"deletedat": bson.M{
 			"$exists": false,
 		},
 		"docno": bson.M{

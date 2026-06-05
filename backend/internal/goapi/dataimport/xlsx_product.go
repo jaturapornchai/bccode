@@ -34,61 +34,61 @@ const (
 
 // ProductPrepareSession - session การประมวลผล
 type ProductPrepareSession struct {
-	HoldingCode       string                 `json:"holding_code"`
-	FileName          string                 `json:"file_name"`
-	FilePath          string                 `json:"file_path"`
+	HoldingCode       string                 `json:"holdingcode"`
+	FileName          string                 `json:"filename"`
+	FilePath          string                 `json:"filepath"`
 	Status            ProductPrepareStatus   `json:"status"`
 	Progress          float64                `json:"progress"`
-	TotalRows         int                    `json:"total_rows"`
-	ProcessedRows     int                    `json:"processed_rows"`
-	SuccessCount      int                    `json:"success_count"`
-	ErrorCount        int                    `json:"error_count"`
-	StartTime         time.Time              `json:"start_time"`
-	EndTime           *time.Time             `json:"end_time,omitempty"`
+	TotalRows         int                    `json:"totalrows"`
+	ProcessedRows     int                    `json:"processedrows"`
+	SuccessCount      int                    `json:"successcount"`
+	ErrorCount        int                    `json:"errorcount"`
+	StartTime         time.Time              `json:"starttime"`
+	EndTime           *time.Time             `json:"endtime,omitempty"`
 	Result            []ProductPrepareResult `json:"result,omitempty"`
-	ComparisonResult  *ComparisonSummary     `json:"comparison,omitempty"`         // เพิ่ม: ผลการเปรียบเทียบกับ MongoDB
-	ErrorMessage      string                 `json:"error_message,omitempty"`      // ข้อความ error แบบ string (เก่า)
-	DuplicateBarcodes []DuplicateBarcodeInfo `json:"duplicate_barcodes,omitempty"` // รายการ barcode ซ้ำแบบ JSON
+	ComparisonResult  *ComparisonSummary     `json:"comparison,omitempty"`        // เพิ่ม: ผลการเปรียบเทียบกับ MongoDB
+	ErrorMessage      string                 `json:"errormessage,omitempty"`      // ข้อความ error แบบ string (เก่า)
+	DuplicateBarcodes []DuplicateBarcodeInfo `json:"duplicatebarcodes,omitempty"` // รายการ barcode ซ้ำแบบ JSON
 	Mutex             sync.RWMutex           `json:"-"`
 }
 
 // ProductPrepareResult - ผลลัพธ์จากการ parse แถวใน Excel
 type ProductPrepareResult struct {
-	RowNumber       int                    `json:"row_number"` // เลขแถวใน Excel (เริ่มจาก 1)
+	RowNumber       int                    `json:"rownumber"` // เลขแถวใน Excel (เริ่มจาก 1)
 	Barcode         string                 `json:"barcode"`
-	ItemCode        string                 `json:"item_code"`
+	ItemCode        string                 `json:"itemcode"`
 	Name            string                 `json:"name"`
-	ShortName       string                 `json:"short_name"`
-	NameEN          string                 `json:"name_en"`
-	NameCN          string                 `json:"name_cn"`
-	UnitCode        string                 `json:"unit_code"`
-	ProductType     string                 `json:"product_type"`
-	TaxType         string                 `json:"tax_type"`
+	ShortName       string                 `json:"shortname"`
+	NameEN          string                 `json:"nameen"`
+	NameCN          string                 `json:"namecn"`
+	UnitCode        string                 `json:"unitcode"`
+	ProductType     string                 `json:"producttype"`
+	TaxType         string                 `json:"taxtype"`
 	Code            string                 `json:"code"`
 	Price           float64                `json:"price"`
-	PriceMember     float64                `json:"price_member"`
-	PriceDelivery   float64                `json:"price_delivery"`
-	PriceOne        float64                `json:"price_one"`
-	PriceTwo        float64                `json:"price_two"`
-	PriceThree      float64                `json:"price_three"`
-	PriceFour       float64                `json:"price_four"`
-	PriceFive       float64                `json:"price_five"`
-	PriceSix        float64                `json:"price_six"`
-	PriceSeven      float64                `json:"price_seven"`
-	PriceEight      float64                `json:"price_eight"`
-	PriceNine       float64                `json:"price_nine"`
-	GroupCode       string                 `json:"group_code"`
-	GroupsuboneCode string                 `json:"groupsubone_code"`
-	GroupsubtwoCode string                 `json:"groupsubtwo_code"`
-	BrandCode       string                 `json:"brand_code"`
-	DesignCode      string                 `json:"design_code"`
-	ModelCode       string                 `json:"model_code"`
-	PatternCode     string                 `json:"pattern_code"`
-	GradeCode       string                 `json:"grade_code"`
-	CategoryCode    string                 `json:"category_code"`
-	ClassCode       string                 `json:"class_code"`
-	StandValue      float64                `json:"stand_value"`
-	DivideValue     float64                `json:"divide_value"`
+	PriceMember     float64                `json:"pricemember"`
+	PriceDelivery   float64                `json:"pricedelivery"`
+	PriceOne        float64                `json:"priceone"`
+	PriceTwo        float64                `json:"pricetwo"`
+	PriceThree      float64                `json:"pricethree"`
+	PriceFour       float64                `json:"pricefour"`
+	PriceFive       float64                `json:"pricefive"`
+	PriceSix        float64                `json:"pricesix"`
+	PriceSeven      float64                `json:"priceseven"`
+	PriceEight      float64                `json:"priceeight"`
+	PriceNine       float64                `json:"pricenine"`
+	GroupCode       string                 `json:"groupcode"`
+	GroupsuboneCode string                 `json:"groupsubonecode"`
+	GroupsubtwoCode string                 `json:"groupsubtwocode"`
+	BrandCode       string                 `json:"brandcode"`
+	DesignCode      string                 `json:"designcode"`
+	ModelCode       string                 `json:"modelcode"`
+	PatternCode     string                 `json:"patterncode"`
+	GradeCode       string                 `json:"gradecode"`
+	CategoryCode    string                 `json:"categorycode"`
+	ClassCode       string                 `json:"classcode"`
+	StandValue      float64                `json:"standvalue"`
+	DivideValue     float64                `json:"dividevalue"`
 	Status          string                 `json:"status"` // "success", "error", "warning"
 	Message         string                 `json:"message"`
 	Data            map[string]interface{} `json:"data,omitempty"`
@@ -98,18 +98,18 @@ type ProductPrepareResult struct {
 type DuplicateBarcodeInfo struct {
 	Barcode    string `json:"barcode"`
 	Count      int    `json:"count"`
-	RowNumbers []int  `json:"row_numbers"` // เลขแถวใน Excel ที่ barcode นี้ปรากฏ
+	RowNumbers []int  `json:"rownumbers"` // เลขแถวใน Excel ที่ barcode นี้ปรากฏ
 }
 
 // ComparisonSummary - สรุปผลการเปรียบเทียบ
 type ComparisonSummary struct {
-	HoldingCode         string           `json:"holding_code"`
-	TotalExcelRows      int              `json:"total_excel_rows"`
-	TotalMongoProducts  int              `json:"total_mongo_products"`
-	NewProductCount     int              `json:"new_product_count"`     // action = 1
-	UpdatedProductCount int              `json:"updated_product_count"` // action = 2
-	UnchangedCount      int              `json:"unchanged_count"`       // action = 0
-	ProcessTime         time.Time        `json:"process_time"`
+	HoldingCode         string           `json:"holdingcode"`
+	TotalExcelRows      int              `json:"totalexcelrows"`
+	TotalMongoProducts  int              `json:"totalmongoproducts"`
+	NewProductCount     int              `json:"newproductcount"`     // action = 1
+	UpdatedProductCount int              `json:"updatedproductcount"` // action = 2
+	UnchangedCount      int              `json:"unchangedcount"`      // action = 0
+	ProcessTime         time.Time        `json:"processtime"`
 	Products            []ProductCompact `json:"products"` // รวมทุก product ไว้ที่เดียว
 }
 
@@ -123,11 +123,11 @@ type ProductCompact struct {
 
 // ProductCompactData - ข้อมูล 5 fields ที่ compare
 type ProductCompactData struct {
-	Code        string  `json:"code"`         // itemcode
-	Name        string  `json:"name"`         // names[code='th'].name
-	UnitCode    string  `json:"unit_code"`    // itemunitcode (mongo) / unitcode (excel)
-	DivideValue float64 `json:"divide_value"` // dividevalue
-	StandValue  float64 `json:"stand_value"`  // standvalue
+	Code        string  `json:"code"`        // itemcode
+	Name        string  `json:"name"`        // names[code='th'].name
+	UnitCode    string  `json:"unitcode"`    // itemunitcode (mongo) / unitcode (excel)
+	DivideValue float64 `json:"dividevalue"` // dividevalue
+	StandValue  float64 `json:"standvalue"`  // standvalue
 }
 
 var (
@@ -142,9 +142,9 @@ var (
 func StartProductPrepareHandler(c echo.Context) error {
 	// รับ JSON body
 	var request struct {
-		HoldingCode string `json:"holding_code"`
-		FileName    string `json:"file_name"`
-		FileUrl     string `json:"file_url"` // presigned URL สำหรับ download จาก S3
+		HoldingCode string `json:"holdingcode"`
+		FileName    string `json:"filename"`
+		FileUrl     string `json:"fileurl"` // presigned URL สำหรับ download จาก S3
 	}
 
 	if err := c.Bind(&request); err != nil {
@@ -826,7 +826,7 @@ func loadMongoProducts(holdingCode string) ([]models.MongoProductBarcodeModel, e
 	collection := mongoClient.Database(databaseName).Collection("productBarcodes")
 
 	// Query โดยใช้ holdingCode
-	filter := bson.M{"holding_code": holdingCode}
+	filter := bson.M{"holdingcode": holdingCode}
 
 	cursor, err := collection.Find(ctx, filter)
 	if err != nil {

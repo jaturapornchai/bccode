@@ -102,8 +102,8 @@ func TestPurchaseReturnTransactionPhaser(t *testing.T) {
 
 	giveInput := `{
 		"id": "6465f2c8dfc8097596db4215",
-		"holding_code": "2PrIIqTWxoBXv16K310sNwfHmfY",
-		"guid_fixed": "2PxduUIwAoptr2OTwROegQ98Uvq",
+		"holdingcode": "2PrIIqTWxoBXv16K310sNwfHmfY",
+		"guidfixed": "2PxduUIwAoptr2OTwROegQ98Uvq",
 		"transflag": 16,
 		"docno": "PO23050616392C90",
 		"docdatetime": "2023-05-06T09:41:21.000Z",
@@ -310,8 +310,8 @@ func TestPurchaseReturnTransactionPhaser(t *testing.T) {
 	// 	cmpopts.IgnoreFields(models.PurchaseReturnTransactionDetailPG{}, "ID"),
 	// )
 	assert.Nil(t, err)
-	assert.Equal(t, get.HoldingCode, want.HoldingCode, "holding_code")
-	assert.Equal(t, get.GuidFixed, want.GuidFixed, "guid_fixed")
+	assert.Equal(t, get.HoldingCode, want.HoldingCode, "holdingcode")
+	assert.Equal(t, get.GuidFixed, want.GuidFixed, "guidfixed")
 	assert.Equal(t, get.TransFlag, want.TransFlag, "transflag")
 	assert.Equal(t, get.DocNo, want.DocNo, "docno")
 	assert.Equal(t, get.DocDate, want.DocDate, "docdate")
@@ -340,7 +340,7 @@ func TestPurchaseReturnTransactionPhaser(t *testing.T) {
 	// detail
 	assert.Equal(t, (*get.Items)[0].GuidFixed, (*want.Items)[0].GuidFixed, "item.guidfixed")
 	assert.Equal(t, (*get.Items)[0].DocNo, (*want.Items)[0].DocNo, "item.docno")
-	assert.Equal(t, (*get.Items)[0].HoldingCode, (*want.Items)[0].HoldingCode, "item.holding_code")
+	assert.Equal(t, (*get.Items)[0].HoldingCode, (*want.Items)[0].HoldingCode, "item.holdingcode")
 	assert.Equal(t, (*get.Items)[0].LineNumber, (*want.Items)[0].LineNumber, "item.linenumber")
 	assert.Equal(t, (*get.Items)[0].ItemGuid, (*want.Items)[0].ItemGuid, "item.itemguid")
 	assert.Equal(t, (*get.Items)[0].Barcode, (*want.Items)[0].Barcode, "item.barcode")

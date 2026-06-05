@@ -23,7 +23,7 @@ import (
 // Report Get Handler - handles report generation and file serving
 func ReportGetHandler(c echo.Context) error {
 	commandId := c.QueryParam("command_id")
-	holdingCode := c.QueryParam("holding_code")
+	holdingCode := c.QueryParam("holdingcode")
 	guid := c.QueryParam("guid")
 
 	// ดึงข้อมูลจาก PostgreSQL เพื่อแสดงผล

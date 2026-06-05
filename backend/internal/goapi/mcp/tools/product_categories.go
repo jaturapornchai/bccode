@@ -30,19 +30,19 @@ type ProductCategoryNameEntry struct {
 
 // ProductCategoryDocument เอกสารหมวดสินค้าใน MongoDB
 type ProductCategoryDocument struct {
-	ID          primitive.ObjectID         `json:"id" bson:"_id,omitempty"`
-	HoldingCode string                     `json:"holding_code" bson:"holding_code"`
-	GuidFixed   string                     `json:"guid_fixed" bson:"guid_fixed"`
+	ID          primitive.ObjectID         `json:"id" bson:"id,omitempty"`
+	HoldingCode string                     `json:"holdingcode" bson:"holdingcode"`
+	GuidFixed   string                     `json:"guidfixed" bson:"guidfixed"`
 	Names       []ProductCategoryNameEntry `json:"names" bson:"names"`
-	ParentGUID  string                     `json:"parent_guid,omitempty" bson:"parent_guid,omitempty"`
-	GroupNumber int                        `json:"group_number,omitempty" bson:"group_number,omitempty"`
+	ParentGUID  string                     `json:"parentguid,omitempty" bson:"parentguid,omitempty"`
+	GroupNumber int                        `json:"groupnumber,omitempty" bson:"groupnumber,omitempty"`
 	ImageURI    string                     `json:"imageuri,omitempty" bson:"imageuri,omitempty"`
 	IsDisabled  bool                       `json:"isdisabled,omitempty" bson:"isdisabled,omitempty"`
 	CreatedBy   string                     `json:"createdby" bson:"createdby"`
-	CreatedAt   time.Time                  `json:"created_at" bson:"created_at"`
+	CreatedAt   time.Time                  `json:"createdat" bson:"createdat"`
 	UpdatedBy   string                     `json:"updatedby,omitempty" bson:"updatedby,omitempty"`
-	UpdatedAt   time.Time                  `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
-	DeletedAt   time.Time                  `json:"deleted_at,omitempty" bson:"deleted_at,omitempty"`
+	UpdatedAt   time.Time                  `json:"updatedat,omitempty" bson:"updatedat,omitempty"`
+	DeletedAt   time.Time                  `json:"deletedat,omitempty" bson:"deletedat,omitempty"`
 }
 
 // ==================== List Product Categories ====================
@@ -51,12 +51,12 @@ type ListProductCategoriesResponse struct {
 	Categories  []ProductCategoryDocument `json:"categories"`
 	Count       int                       `json:"count"`
 	Keyword     string                    `json:"keyword,omitempty"`
-	GeneratedAt time.Time                 `json:"generated_at"`
+	GeneratedAt time.Time                 `json:"generatedat"`
 }
 
 func ListProductCategories(ctx context.Context, holdingCode, keyword string, limit int) (*ListProductCategoriesResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 
 	if limit <= 0 {
@@ -75,17 +75,17 @@ func ListProductCategories(ctx context.Context, holdingCode, keyword string, lim
 	dbName := svcConfig.MongodbDatabaseName()
 
 	filter := bson.M{
-		"holding_code": holdingCode,
+		"holdingcode": holdingCode,
 		"$or": []bson.M{
-			{"deleted_at": bson.M{"$exists": false}},
-			{"deleted_at": time.Time{}},
+			{"deletedat": bson.M{"$exists": false}},
+			{"deletedat": time.Time{}},
 		},
 	}
 
 	if keyword != "" {
 		keywordFilter := bson.M{
 			"$or": []bson.M{
-				{"guid_fixed": bson.M{"$regex": keyword, "$options": "i"}},
+				{"guidfixed": bson.M{"$regex": keyword, "$options": "i"}},
 				{"names.name": bson.M{"$regex": keyword, "$options": "i"}},
 			},
 		}
@@ -97,7 +97,7 @@ func ListProductCategories(ctx context.Context, holdingCode, keyword string, lim
 	coll := mongoClient.Database(dbName).Collection(productCategoryCollection)
 	opts := options.Find().
 		SetLimit(int64(limit)).
-		SetSort(bson.D{{Key: "group_number", Value: 1}, {Key: "names.name", Value: 1}})
+		SetSort(bson.D{{Key: "groupnumber", Value: 1}, {Key: "names.name", Value: 1}})
 
 	cursor, err := coll.Find(ctx, filter, opts)
 	if err != nil {
@@ -128,14 +128,14 @@ type CreateProductCategoryResponse struct {
 	Success     bool                    `json:"success"`
 	Message     string                  `json:"message"`
 	Category    ProductCategoryDocument `json:"category"`
-	KafkaSync   string                  `json:"kafka_sync"`
-	KafkaError  string                  `json:"kafka_error,omitempty"`
-	GeneratedAt time.Time               `json:"generated_at"`
+	KafkaSync   string                  `json:"kafkasync"`
+	KafkaError  string                  `json:"kafkaerror,omitempty"`
+	GeneratedAt time.Time               `json:"generatedat"`
 }
 
 func CreateProductCategory(ctx context.Context, holdingCode, namesJSON, parentGUID string, groupNumber int) (*CreateProductCategoryResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 
 	mongoClient := myGlobal.SafeMongoConnectFast()
@@ -202,8 +202,8 @@ func CreateProductCategory(ctx context.Context, holdingCode, namesJSON, parentGU
 
 type CreateProductCategoriesItem struct {
 	Names       []ProductCategoryNameEntry `json:"names"`
-	ParentGUID  string                     `json:"parent_guid,omitempty"`
-	GroupNumber int                        `json:"group_number,omitempty"`
+	ParentGUID  string                     `json:"parentguid,omitempty"`
+	GroupNumber int                        `json:"groupnumber,omitempty"`
 }
 
 type CreateProductCategoriesResponse struct {
@@ -211,16 +211,16 @@ type CreateProductCategoriesResponse struct {
 	Message      string                    `json:"message"`
 	Created      []ProductCategoryDocument `json:"created"`
 	Skipped      []string                  `json:"skipped,omitempty"`
-	CreatedCount int                       `json:"created_count"`
-	SkippedCount int                       `json:"skipped_count"`
-	KafkaSync    string                    `json:"kafka_sync"`
-	KafkaError   string                    `json:"kafka_error,omitempty"`
-	GeneratedAt  time.Time                 `json:"generated_at"`
+	CreatedCount int                       `json:"createdcount"`
+	SkippedCount int                       `json:"skippedcount"`
+	KafkaSync    string                    `json:"kafkasync"`
+	KafkaError   string                    `json:"kafkaerror,omitempty"`
+	GeneratedAt  time.Time                 `json:"generatedat"`
 }
 
 func CreateProductCategories(ctx context.Context, holdingCode, categoriesJSON string) (*CreateProductCategoriesResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 	if categoriesJSON == "" {
 		return nil, fmt.Errorf("categories JSON is required")
@@ -309,14 +309,14 @@ type UpdateProductCategoryResponse struct {
 	Success     bool                    `json:"success"`
 	Message     string                  `json:"message"`
 	Category    ProductCategoryDocument `json:"category"`
-	KafkaSync   string                  `json:"kafka_sync"`
-	KafkaError  string                  `json:"kafka_error,omitempty"`
-	GeneratedAt time.Time               `json:"generated_at"`
+	KafkaSync   string                  `json:"kafkasync"`
+	KafkaError  string                  `json:"kafkaerror,omitempty"`
+	GeneratedAt time.Time               `json:"generatedat"`
 }
 
 func UpdateProductCategory(ctx context.Context, holdingCode, guidFixed, namesJSON, parentGUID string, groupNumber int) (*UpdateProductCategoryResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 	if guidFixed == "" {
 		return nil, fmt.Errorf("guidfixed is required")
@@ -332,11 +332,11 @@ func UpdateProductCategory(ctx context.Context, holdingCode, guidFixed, namesJSO
 	coll := mongoClient.Database(dbName).Collection(productCategoryCollection)
 
 	filter := bson.M{
-		"holding_code": holdingCode,
-		"guid_fixed":   guidFixed,
+		"holdingcode": holdingCode,
+		"guidfixed":   guidFixed,
 		"$or": []bson.M{
-			{"deleted_at": bson.M{"$exists": false}},
-			{"deleted_at": time.Time{}},
+			{"deletedat": bson.M{"$exists": false}},
+			{"deletedat": time.Time{}},
 		},
 	}
 
@@ -347,8 +347,8 @@ func UpdateProductCategory(ctx context.Context, holdingCode, guidFixed, namesJSO
 	}
 
 	updateFields := bson.M{
-		"updated_at": time.Now(),
-		"updatedby":  "mcp-tool",
+		"updatedat": time.Now(),
+		"updatedby": "mcp-tool",
 	}
 	if namesJSON != "" {
 		var names []ProductCategoryNameEntry
@@ -358,10 +358,10 @@ func UpdateProductCategory(ctx context.Context, holdingCode, guidFixed, namesJSO
 		updateFields["names"] = names
 	}
 	if parentGUID != "" {
-		updateFields["parent_guid"] = parentGUID
+		updateFields["parentguid"] = parentGUID
 	}
 	if groupNumber > 0 {
-		updateFields["group_number"] = groupNumber
+		updateFields["groupnumber"] = groupNumber
 	}
 
 	_, err = coll.UpdateOne(ctx, filter, bson.M{"$set": updateFields})
@@ -397,15 +397,15 @@ func UpdateProductCategory(ctx context.Context, holdingCode, guidFixed, namesJSO
 type DeleteProductCategoryResponse struct {
 	Success     bool      `json:"success"`
 	Message     string    `json:"message"`
-	GuidFixed   string    `json:"guid_fixed"`
-	KafkaSync   string    `json:"kafka_sync"`
-	KafkaError  string    `json:"kafka_error,omitempty"`
-	GeneratedAt time.Time `json:"generated_at"`
+	GuidFixed   string    `json:"guidfixed"`
+	KafkaSync   string    `json:"kafkasync"`
+	KafkaError  string    `json:"kafkaerror,omitempty"`
+	GeneratedAt time.Time `json:"generatedat"`
 }
 
 func DeleteProductCategory(ctx context.Context, holdingCode, guidFixed string) (*DeleteProductCategoryResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 	if guidFixed == "" {
 		return nil, fmt.Errorf("guidfixed is required")
@@ -421,8 +421,8 @@ func DeleteProductCategory(ctx context.Context, holdingCode, guidFixed string) (
 	coll := mongoClient.Database(dbName).Collection(productCategoryCollection)
 
 	filter := bson.M{
-		"holding_code": holdingCode,
-		"guid_fixed":   guidFixed,
+		"holdingcode": holdingCode,
+		"guidfixed":   guidFixed,
 	}
 
 	var docToDelete ProductCategoryDocument
@@ -467,17 +467,17 @@ type DeleteProductCategoriesResponse struct {
 	Success       bool      `json:"success"`
 	Message       string    `json:"message"`
 	Deleted       []string  `json:"deleted"`
-	NotFound      []string  `json:"not_found,omitempty"`
-	DeletedCount  int       `json:"deleted_count"`
-	NotFoundCount int       `json:"not_found_count"`
-	KafkaSync     string    `json:"kafka_sync"`
-	KafkaError    string    `json:"kafka_error,omitempty"`
-	GeneratedAt   time.Time `json:"generated_at"`
+	NotFound      []string  `json:"notfound,omitempty"`
+	DeletedCount  int       `json:"deletedcount"`
+	NotFoundCount int       `json:"notfoundcount"`
+	KafkaSync     string    `json:"kafkasync"`
+	KafkaError    string    `json:"kafkaerror,omitempty"`
+	GeneratedAt   time.Time `json:"generatedat"`
 }
 
 func DeleteProductCategories(ctx context.Context, holdingCode, guidfixedsJSON string) (*DeleteProductCategoriesResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 	if guidfixedsJSON == "" {
 		return nil, fmt.Errorf("guidfixeds is required")
@@ -504,10 +504,10 @@ func DeleteProductCategories(ctx context.Context, holdingCode, guidfixedsJSON st
 	coll := mongoClient.Database(dbName).Collection(productCategoryCollection)
 
 	existFilter := bson.M{
-		"holding_code": holdingCode,
-		"guid_fixed":   bson.M{"$in": guidfixeds},
+		"holdingcode": holdingCode,
+		"guidfixed":   bson.M{"$in": guidfixeds},
 	}
-	cursor, err := coll.Find(ctx, existFilter, options.Find().SetProjection(bson.M{"guid_fixed": 1}))
+	cursor, err := coll.Find(ctx, existFilter, options.Find().SetProjection(bson.M{"guidfixed": 1}))
 	if err != nil {
 		return nil, fmt.Errorf("ค้นหาหมวดสินค้าล้มเหลว: %w", err)
 	}
@@ -516,7 +516,7 @@ func DeleteProductCategories(ctx context.Context, holdingCode, guidfixedsJSON st
 	existingGuids := make(map[string]bool)
 	for cursor.Next(ctx) {
 		var doc struct {
-			GuidFixed string `bson:"guid_fixed"`
+			GuidFixed string `bson:"guidfixed"`
 		}
 		if err := cursor.Decode(&doc); err == nil {
 			existingGuids[doc.GuidFixed] = true
@@ -538,8 +538,8 @@ func DeleteProductCategories(ctx context.Context, holdingCode, guidfixedsJSON st
 	var docsToDelete []interface{}
 	if len(deleted) > 0 {
 		delCursor, _ := coll.Find(ctx, bson.M{
-			"holding_code": holdingCode,
-			"guid_fixed":   bson.M{"$in": deleted},
+			"holdingcode": holdingCode,
+			"guidfixed":   bson.M{"$in": deleted},
 		})
 		if delCursor != nil {
 			var docs []ProductCategoryDocument
@@ -553,8 +553,8 @@ func DeleteProductCategories(ctx context.Context, holdingCode, guidfixedsJSON st
 
 	if len(deleted) > 0 {
 		deleteFilter := bson.M{
-			"holding_code": holdingCode,
-			"guid_fixed":   bson.M{"$in": deleted},
+			"holdingcode": holdingCode,
+			"guidfixed":   bson.M{"$in": deleted},
 		}
 		_, err = coll.DeleteMany(ctx, deleteFilter)
 		if err != nil {
@@ -593,37 +593,37 @@ func GetProductCategorySchema() map[string]interface{} {
 		"collection":  productCategoryCollection,
 		"description": "หมวดสินค้า (Product Category) — ใช้จัดหมวดหมู่สินค้าแบบ hierarchy เช่น เนื้อสัตว์, ผัก, เครื่องปรุง",
 		"fields": map[string]interface{}{
-			"_id":          "ObjectID — MongoDB auto-generated ID",
-			"holding_code": "string — Holding Code (tenant isolation)",
-			"guid_fixed":   "string — UUID สำหรับอ้างอิง (ใช้เป็น key สำหรับ update/delete)",
-			"names":        "array (required) — ชื่อหลายภาษา [{code:'th', name:'เนื้อสัตว์'}, {code:'en', name:'Meat'}]",
-			"parent_guid":  "string (optional) — guidfixed ของหมวดแม่ (สำหรับ hierarchy)",
-			"group_number": "number (optional) — ลำดับกลุ่ม/หมวด",
-			"imageuri":     "string (optional) — URL รูปภาพหมวดสินค้า",
-			"isdisabled":   "boolean (optional) — ปิดใช้งานหมวดนี้",
-			"createdby":    "string — ผู้สร้าง",
-			"created_at":   "datetime — วันที่สร้าง",
-			"updatedby":    "string — ผู้แก้ไขล่าสุด",
-			"updated_at":   "datetime — วันที่แก้ไขล่าสุด",
-			"deleted_at":   "datetime — วันที่ลบ (soft delete)",
+			"_id":         "ObjectID — MongoDB auto-generated ID",
+			"holdingcode": "string — Holding Code (tenant isolation)",
+			"guidfixed":   "string — UUID สำหรับอ้างอิง (ใช้เป็น key สำหรับ update/delete)",
+			"names":       "array (required) — ชื่อหลายภาษา [{code:'th', name:'เนื้อสัตว์'}, {code:'en', name:'Meat'}]",
+			"parentguid":  "string (optional) — guidfixed ของหมวดแม่ (สำหรับ hierarchy)",
+			"groupnumber": "number (optional) — ลำดับกลุ่ม/หมวด",
+			"imageuri":    "string (optional) — URL รูปภาพหมวดสินค้า",
+			"isdisabled":  "boolean (optional) — ปิดใช้งานหมวดนี้",
+			"createdby":   "string — ผู้สร้าง",
+			"createdat":   "datetime — วันที่สร้าง",
+			"updatedby":   "string — ผู้แก้ไขล่าสุด",
+			"updatedat":   "datetime — วันที่แก้ไขล่าสุด",
+			"deletedat":   "datetime — วันที่ลบ (soft delete)",
 		},
 		"indexes": []string{
-			"holding_code + guidfixed (unique)",
-			"holding_code + parentguid",
-			"holding_code + groupnumber",
+			"holdingcode + guidfixed (unique)",
+			"holdingcode + parentguid",
+			"holdingcode + groupnumber",
 		},
 		"examples": []map[string]interface{}{
 			{
-				"names":        []map[string]string{{"code": "th", "name": "เนื้อสัตว์"}, {"code": "en", "name": "Meat"}},
-				"group_number": 1,
+				"names":       []map[string]string{{"code": "th", "name": "เนื้อสัตว์"}, {"code": "en", "name": "Meat"}},
+				"groupnumber": 1,
 			},
 			{
-				"names":        []map[string]string{{"code": "th", "name": "ผักสด"}, {"code": "en", "name": "Fresh Vegetables"}},
-				"group_number": 2,
+				"names":       []map[string]string{{"code": "th", "name": "ผักสด"}, {"code": "en", "name": "Fresh Vegetables"}},
+				"groupnumber": 2,
 			},
 		},
-		"related_collections": []string{
-			"productBarcodes — ใช้ categorycode (= guidfixed) อ้างอิงหมวดสินค้า",
+		"relatedcollections": []string{
+			"productbarcodes — ใช้ categorycode (= guidfixed) อ้างอิงหมวดสินค้า",
 		},
 	}
 }

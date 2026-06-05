@@ -63,10 +63,10 @@ func (repo DocumentImageRepository) FindInGUIDs(ctx context.Context, holdingCode
 		ctx,
 		models.DocumentImageDoc{},
 		bson.M{
-			"guid_fixed": bson.M{
+			"guidfixed": bson.M{
 				"$in": docImageGUIDs,
 			},
-			"deleted_at": bson.M{"$exists": false},
+			"deletedat": bson.M{"$exists": false},
 		}, &docList)
 
 	if err != nil {
@@ -83,7 +83,7 @@ func (repo DocumentImageRepository) FindByReferenceDocNo(ctx context.Context, ho
 		models.DocumentImageDoc{},
 		bson.M{
 			"references.docno": docNo,
-			"deleted_at":       bson.M{"$exists": false},
+			"deletedat":        bson.M{"$exists": false},
 		},
 		&docList,
 	)
@@ -103,7 +103,7 @@ func (repo DocumentImageRepository) FindByReference(ctx context.Context, holding
 		bson.M{
 			"references.module": reference.Module,
 			"references.docno":  reference.DocNo,
-			"deleted_at":        bson.M{"$exists": false},
+			"deletedat":         bson.M{"$exists": false},
 		},
 		&docList,
 	)
@@ -117,12 +117,12 @@ func (repo DocumentImageRepository) FindByReference(ctx context.Context, holding
 
 func (repo DocumentImageRepository) UpdateReject(ctx context.Context, holdingCode string, authUsername string, updatedAt time.Time, docImageGUID string, isReject bool) error {
 	fillter := bson.M{
-		"holding_code": holdingCode,
-		"guid_fixed":   docImageGUID,
+		"holdingcode": holdingCode,
+		"guidfixed":   docImageGUID,
 	}
 
 	data := bson.M{
-		"$set": bson.M{"isreject": isReject, "updatedby": authUsername, "updated_at": updatedAt},
+		"$set": bson.M{"isreject": isReject, "updatedby": authUsername, "updatedat": updatedAt},
 	}
 
 	return repo.pst.Update(ctx,
@@ -145,7 +145,7 @@ func (repo DocumentImageRepository) FindAll(ctx context.Context) ([]models.Docum
 
 func (repo DocumentImageRepository) UpdateAll(ctx context.Context, doc models.DocumentImageDoc) error {
 	filterDoc := map[string]interface{}{
-		"guid_fixed": doc.GuidFixed,
+		"guidfixed": doc.GuidFixed,
 	}
 
 	err := repo.pst.UpdateOne(ctx, models.DocumentImageDoc{}, filterDoc, doc)

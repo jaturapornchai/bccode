@@ -37,16 +37,16 @@ Header: X-API-Key: bc_live_xxx
 ```bash
 curl -X POST {BASE_URL}/goapi/api/mcp/keys/create-with-export \
   -H "Content-Type: application/json" \
-  -d '{"name":"frontend-dev","description":"For frontend AI","holding_code":"YOUR_HOLDING_CODE"}'
+  -d '{"name":"frontend-dev","description":"For frontend AI","holdingcode":"YOUR_HOLDING_CODE"}'
 ```
 
-Response จะได้ `api_key` กลับมา — เก็บไว้ใช้ทุก request
+Response จะได้ `apikey` กลับมา — เก็บไว้ใช้ทุก request
 
-### holding_code ไม่ต้องส่ง
+### holdingcode ไม่ต้องส่ง
 
-API key มี `holding_code` ฝังอยู่แล้ว — **ไม่ต้องส่ง holding_code ในทุก request**
+API key มี `holdingcode` ฝังอยู่แล้ว — **ไม่ต้องส่ง holdingcode ในทุก request**
 
-Backend auto-inject holding_code จาก API key ให้ทุก tool
+Backend auto-inject holdingcode จาก API key ให้ทุก tool
 
 ---
 
@@ -56,7 +56,7 @@ Backend auto-inject holding_code จาก API key ให้ทุก tool
 {
   "tool": "ชื่อ tool",
   "params": {
-    // parameters ตาม tool (ไม่ต้องมี holding_code)
+    // parameters ตาม tool (ไม่ต้องมี holdingcode)
   }
 }
 ```
@@ -68,7 +68,7 @@ Backend auto-inject holding_code จาก API key ให้ทุก tool
   "success": true,
   "data": { ... },
   "timestamp": "2025-02-25T10:00:00Z",
-  "tool": "tool_name"
+  "tool": "toolname"
 }
 ```
 
@@ -77,9 +77,9 @@ Error:
 {
   "success": false,
   "error": "error message",
-  "error_code": "ERROR_CODE",
+  "errorcode": "ERROR_CODE",
   "timestamp": "...",
-  "tool": "tool_name"
+  "tool": "toolname"
 }
 ```
 
@@ -92,7 +92,7 @@ Error:
 curl -X POST {BASE_URL}/goapi/mcp/invoke \
   -H "Content-Type: application/json" \
   -H "X-API-Key: bc_live_xxx" \
-  -d '{"tool":"search_products","params":{"keyword":"กาแฟ"}}'
+  -d '{"tool":"searchproducts","params":{"keyword":"กาแฟ"}}'
 ```
 
 ### ยอดขายวันนี้
@@ -100,7 +100,7 @@ curl -X POST {BASE_URL}/goapi/mcp/invoke \
 curl -X POST {BASE_URL}/goapi/mcp/invoke \
   -H "Content-Type: application/json" \
   -H "X-API-Key: bc_live_xxx" \
-  -d '{"tool":"get_daily_sales","params":{"date":"2025-02-25"}}'
+  -d '{"tool":"getdailysales","params":{"date":"2025-02-25"}}'
 ```
 
 ### ดู API spec ของ /login
@@ -108,7 +108,7 @@ curl -X POST {BASE_URL}/goapi/mcp/invoke \
 curl -X POST {BASE_URL}/goapi/mcp/invoke \
   -H "Content-Type: application/json" \
   -H "X-API-Key: bc_live_xxx" \
-  -d '{"tool":"get_api_spec","params":{"path":"/login"}}'
+  -d '{"tool":"getapispec","params":{"path":"/login"}}'
 ```
 
 ### ดู enum values
@@ -116,7 +116,7 @@ curl -X POST {BASE_URL}/goapi/mcp/invoke \
 curl -X POST {BASE_URL}/goapi/mcp/invoke \
   -H "Content-Type: application/json" \
   -H "X-API-Key: bc_live_xxx" \
-  -d '{"tool":"list_enums","params":{"keyword":"transflag"}}'
+  -d '{"tool":"listenums","params":{"keyword":"transflag"}}'
 ```
 
 ### ดู Dart model schema
@@ -124,7 +124,7 @@ curl -X POST {BASE_URL}/goapi/mcp/invoke \
 curl -X POST {BASE_URL}/goapi/mcp/invoke \
   -H "Content-Type: application/json" \
   -H "X-API-Key: bc_live_xxx" \
-  -d '{"tool":"get_model_schema","params":{"model":"Shop"}}'
+  -d '{"tool":"getmodelschema","params":{"model":"Shop"}}'
 ```
 
 ---
@@ -135,95 +135,95 @@ curl -X POST {BASE_URL}/goapi/mcp/invoke \
 
 | Tool | คำอธิบาย | Parameters |
 |------|----------|------------|
-| `search_products` | ค้นสินค้า Thai full-text search + stock balance | `keyword` (required), `limit`, `whcode`, `locationcode`, `include_balance` |
+| `searchproducts` | ค้นสินค้า Thai full-text search + stock balance | `keyword` (required), `limit`, `whcode`, `locationcode`, `includebalance` |
 
 ### ยอดขาย (Sales)
 
 | Tool | คำอธิบาย | Parameters |
 |------|----------|------------|
-| `get_daily_sales` | ยอดขายรายวัน | `date` (required, YYYY-MM-DD), `branch_code` |
-| `get_sales_by_date_range` | ยอดขายตามช่วงวัน | `from_date`, `to_date` (required), `group_by` (day/week/month), `branch_code` |
-| `get_top_selling_products` | สินค้าขายดี | `from_date`, `to_date` (required), `limit`, `branch_code` |
-| `get_sales_by_seller` | ยอดขายตามช่องทาง | `from_date`, `to_date` (required) |
-| `get_monthly_summary` | สรุปยอดขายรายเดือน | `year`, `month` (required) |
+| `getdailysales` | ยอดขายรายวัน | `date` (required, YYYY-MM-DD), `branchcode` |
+| `getsalesbydaterange` | ยอดขายตามช่วงวัน | `fromdate`, `todate` (required), `groupby` (day/week/month), `branchcode` |
+| `gettopsellingproducts` | สินค้าขายดี | `fromdate`, `todate` (required), `limit`, `branchcode` |
+| `getsalesbyseller` | ยอดขายตามช่องทาง | `fromdate`, `todate` (required) |
+| `getmonthlysummary` | สรุปยอดขายรายเดือน | `year`, `month` (required) |
 
 ### Dashboard
 
 | Tool | คำอธิบาย | Parameters |
 |------|----------|------------|
-| `get_dashboard_kpis` | KPI dashboard สำหรับ CEO | `period` (today/this_week/this_month/this_year) |
-| `get_business_health` | คะแนนสุขภาพธุรกิจ (0-100) | - |
+| `getdashboardkpis` | KPI dashboard สำหรับ CEO | `period` (today/thisweek/thismonth/thisyear) |
+| `getbusinesshealth` | คะแนนสุขภาพธุรกิจ (0-100) | - |
 
 ### การเงิน (Financial)
 
 | Tool | คำอธิบาย | Parameters |
 |------|----------|------------|
-| `get_profit_analysis` | วิเคราะห์กำไร | `from_date`, `to_date` (required) |
-| `get_accounts_receivable` | ลูกหนี้ค้างชำระ (aging) | `limit` |
-| `get_accounts_payable` | เจ้าหนี้ค้างชำระ (aging) | `limit` |
-| `get_cash_flow` | กระแสเงินสด | `from_date`, `to_date` (required) |
+| `getprofitanalysis` | วิเคราะห์กำไร | `fromdate`, `todate` (required) |
+| `getaccountsreceivable` | ลูกหนี้ค้างชำระ (aging) | `limit` |
+| `getaccountspayable` | เจ้าหนี้ค้างชำระ (aging) | `limit` |
+| `getcashflow` | กระแสเงินสด | `fromdate`, `todate` (required) |
 
 ### สต็อก (Inventory)
 
 | Tool | คำอธิบาย | Parameters |
 |------|----------|------------|
-| `get_inventory_value` | มูลค่าสินค้าคงคลัง | `whcode` |
-| `get_low_stock_alerts` | แจ้งเตือนสต็อกต่ำ | `threshold`, `limit` |
-| `get_dead_stock` | สินค้าไม่เคลื่อนไหว | `days_no_movement`, `limit` |
-| `get_inventory_turnover` | อัตราหมุนเวียนสินค้า | `from_date`, `to_date` (required), `limit` |
+| `getinventoryvalue` | มูลค่าสินค้าคงคลัง | `whcode` |
+| `getlowstockalerts` | แจ้งเตือนสต็อกต่ำ | `threshold`, `limit` |
+| `getdeadstock` | สินค้าไม่เคลื่อนไหว | `daysnomovement`, `limit` |
+| `getinventoryturnover` | อัตราหมุนเวียนสินค้า | `fromdate`, `todate` (required), `limit` |
 
 ### ลูกค้า (Customer)
 
 | Tool | คำอธิบาย | Parameters |
 |------|----------|------------|
-| `get_top_customers` | ลูกค้า top revenue | `from_date`, `to_date` (required), `limit` |
-| `get_customer_growth` | การเติบโตของลูกค้า | `from_date`, `to_date` (required) |
-| `get_customer_segments` | วิเคราะห์ RFM segmentation | - |
+| `gettopcustomers` | ลูกค้า top revenue | `fromdate`, `todate` (required), `limit` |
+| `getcustomergrowth` | การเติบโตของลูกค้า | `fromdate`, `todate` (required) |
+| `getcustomersegments` | วิเคราะห์ RFM segmentation | - |
 
 ### เปรียบเทียบ (Comparison)
 
 | Tool | คำอธิบาย | Parameters |
 |------|----------|------------|
-| `get_yoy_comparison` | เทียบปีต่อปี | `year`, `month` |
-| `get_mom_comparison` | เทียบเดือนต่อเดือน | `year`, `month` |
+| `getyoycomparison` | เทียบปีต่อปี | `year`, `month` |
+| `getmomcomparison` | เทียบเดือนต่อเดือน | `year`, `month` |
 
 ### Database Query
 
 | Tool | คำอธิบาย | Parameters |
 |------|----------|------------|
-| `get_database_schema` | ดูโครงสร้าง tables | `table_name` |
-| `execute_query` | รัน SQL SELECT (readonly) | `query` (required), `limit` |
-| `get_table_sample` | ดูตัวอย่างข้อมูล | `table_name` (required), `limit` |
+| `getdatabaseschema` | ดูโครงสร้าง tables | `tablename` |
+| `executequery` | รัน SQL SELECT (readonly) | `query` (required), `limit` |
+| `gettablesample` | ดูตัวอย่างข้อมูล | `tablename` (required), `limit` |
 
 ### MongoDB
 
 | Tool | คำอธิบาย | Parameters |
 |------|----------|------------|
-| `query_mongodb` | Query collection | `collection` (required), `filter`, `limit`, `database` |
-| `list_mongodb_collections` | ดู collections ทั้งหมด | `database` |
-| `aggregate_mongodb` | Aggregation pipeline | `collection`, `pipeline` (required), `limit`, `database` |
+| `querymongodb` | Query collection | `collection` (required), `filter`, `limit`, `database` |
+| `listmongodbcollections` | ดู collections ทั้งหมด | `database` |
+| `aggregatemongodb` | Aggregation pipeline | `collection`, `pipeline` (required), `limit`, `database` |
 
 ### ClickHouse (OLAP)
 
 | Tool | คำอธิบาย | Parameters |
 |------|----------|------------|
-| `query_clickhouse` | รัน SQL SELECT (readonly) | `query` (required), `limit`, `database` |
-| `list_clickhouse_tables` | ดู tables ทั้งหมด | `database` |
+| `queryclickhouse` | รัน SQL SELECT (readonly) | `query` (required), `limit`, `database` |
+| `listclickhousetables` | ดู tables ทั้งหมด | `database` |
 
 ### API Reference (สำหรับ AI เขียนโค้ด)
 
 | Tool | คำอธิบาย | Parameters |
 |------|----------|------------|
-| `list_api_endpoints` | ดู API ทั้งหมด (1,427 endpoints) | `keyword`, `method`, `category`, `source` (goapi/mainapi), `limit` |
-| `get_api_spec` | ดู spec ละเอียด (params, request/response schema) | `path` (required), `method` |
-| `get_api_example` | ดูตัวอย่าง curl + Dart + TypeScript | `path` (required), `method` |
+| `listapiendpoints` | ดู API ทั้งหมด (1,427 endpoints) | `keyword`, `method`, `category`, `source` (goapi/mainapi), `limit` |
+| `getapispec` | ดู spec ละเอียด (params, request/response schema) | `path` (required), `method` |
+| `getapiexample` | ดูตัวอย่าง curl + Dart + TypeScript | `path` (required), `method` |
 
 ### Enum & Model (สำหรับ AI เขียนโค้ด)
 
 | Tool | คำอธิบาย | Parameters |
 |------|----------|------------|
-| `list_enums` | ดู enum values ทั้งหมด (30 groups) | `category`, `keyword` |
-| `get_model_schema` | ดู struct → JSON schema + Dart class + TS interface | `model`, `category`, `keyword` |
+| `listenums` | ดู enum values ทั้งหมด (30 groups) | `category`, `keyword` |
+| `getmodelschema` | ดู struct → JSON schema + Dart class + TS interface | `model`, `category`, `keyword` |
 
 ---
 
@@ -258,19 +258,19 @@ MCP tools เรียกผ่าน curl/HTTP ได้โดยตรง แ�
 
 | Need | MCP Tool |
 |------|----------|
-| ค้นหา API endpoints | `list_api_endpoints` |
-| ดู request/response spec | `get_api_spec`, `get_api_example` |
-| สร้าง model จาก schema | `get_model_schema`, `get_database_schema`, `get_table_sample` |
-| ดู enum values/constants | `list_enums` |
+| ค้นหา API endpoints | `listapiendpoints` |
+| ดู request/response spec | `getapispec`, `getapiexample` |
+| สร้าง model จาก schema | `getmodelschema`, `getdatabaseschema`, `gettablesample` |
+| ดู enum values/constants | `listenums` |
 | ตรวจ MCP server | `GET /goapi/mcp/health`, `GET /goapi/mcp/tools` |
 
 ### Workflow แนะนำ
 
 1. เริ่ม dev session → ตรวจ `GET {BASE_URL}/goapi/mcp/health`
-2. หา API → เรียก `list_api_endpoints`
-3. ดู spec ละเอียด → เรียก `get_api_spec`
-4. สร้าง model → เรียก `get_model_schema`
-5. ดู enum values → เรียก `list_enums`
+2. หา API → เรียก `listapiendpoints`
+3. ดู spec ละเอียด → เรียก `getapispec`
+4. สร้าง model → เรียก `getmodelschema`
+5. ดู enum values → เรียก `listenums`
 
 ---
 
@@ -300,6 +300,6 @@ MCP tools เรียกผ่าน curl/HTTP ได้โดยตรง แ�
 
 - ทุก tool เป็น **readonly** — ไม่แก้ไขข้อมูล
 - Database query tools อนุญาตเฉพาะ `SELECT` / `SHOW`
-- Data isolation: ทุก query filter by `holding_code` จาก API key อัตโนมัติ
+- Data isolation: ทุก query filter by `holdingcode` จาก API key อัตโนมัติ
 - Rate limit: ยังไม่มี (อนาคตจะเพิ่ม)
 - ใช้ project-local docs/source เป็นหลัก ไม่พึ่ง shared local skills folder

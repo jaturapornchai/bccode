@@ -13,12 +13,12 @@ import (
 
 // BCProxyComplaint — ร้องเรียน model ผ่าน bcproxyai POST /api/complaint
 type BCProxyComplaint struct {
-	ModelID string `json:"model_id"`
-	Category string `json:"category"`                    // wrong_answer, gibberish, wrong_language, refused, hallucination, too_short, irrelevant
-	Reason string `json:"reason,omitempty"`             // เหตุผลเพิ่มเติม
-	UserMessage string `json:"user_message,omitempty"`       // คำถามของผู้ใช้
-	AssistantMessage string `json:"assistant_message,omitempty"`  // คำตอบของ AI
-	Source string `json:"source,omitempty"`             // "api" or "auto"
+	ModelID          string `json:"model_id"`
+	Category         string `json:"category"`                    // wrong_answer, gibberish, wrong_language, refused, hallucination, too_short, irrelevant
+	Reason           string `json:"reason,omitempty"`            // เหตุผลเพิ่มเติม
+	UserMessage      string `json:"user_message,omitempty"`      // คำถามของผู้ใช้
+	AssistantMessage string `json:"assistant_message,omitempty"` // คำตอบของ AI
+	Source           string `json:"source,omitempty"`            // "api" or "auto"
 }
 
 // ComplaintCategory constants

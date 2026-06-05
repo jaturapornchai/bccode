@@ -42,7 +42,7 @@ func (s *SaleInvoiceTransactionAdminService) ReSyncSaleInvoiceDoc(holdingCode st
 		Page:  1,
 		Sorts: []msModels.KeyInt{
 			{
-				Key:   "guid_fixed",
+				Key:   "guidfixed",
 				Value: -1,
 			},
 		},
@@ -103,7 +103,7 @@ func (s *SaleInvoiceTransactionAdminService) ReSyncSaleInvoiceDocByDate(holdingC
 		Page:  1,
 		Sorts: []msModels.KeyInt{
 			{
-				Key:   "guid_fixed",
+				Key:   "guidfixed",
 				Value: -1,
 			},
 		},

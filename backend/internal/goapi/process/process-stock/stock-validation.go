@@ -18,7 +18,7 @@ func ValidateStockBeforeSale(ctx context.Context, db *sql.DB, holdingCode int, i
 			ELSE 0
 		END), 0) as current_stock
 		FROM docdetail
-		WHERE holding_code = $1
+		WHERE holdingcode = $1
 		  AND itemcode = $2
 		  AND iscalcstock = 1
 	`
@@ -91,7 +91,7 @@ func GetCurrentStock(ctx context.Context, db *sql.DB, holdingCode int, itemCode 
 			ELSE 0
 		END), 0) as current_stock
 		FROM docdetail
-		WHERE holding_code = $1
+		WHERE holdingcode = $1
 		  AND itemcode = $2
 		  AND iscalcstock = 1
 	`
@@ -120,7 +120,7 @@ func CheckNegativeStock(ctx context.Context, db *sql.DB, holdingCode int) ([]Neg
 				ELSE 0
 			END) as current_stock
 		FROM docdetail
-		WHERE holding_code = $1
+		WHERE holdingcode = $1
 		  AND iscalcstock = 1
 		GROUP BY itemcode
 		HAVING SUM(totalqty * CASE

@@ -185,14 +185,14 @@ MCP เป็น bridge ให้ AI tools ฝั่ง frontend เข้าถ
 ### Multi-Tenant With tenant_id
 - `tenant_id` is the canonical tenant boundary for new backend/API/report work.
 - `tenant_id` represents one company/business/legal entity/workspace. It must not represent the owner user because one user can own or access many companies.
-- For existing production data, `tenant_id` is a logical alias whose value is the existing core `holding_code`. Do not create a second tenant id for old records.
+- For existing production data, `tenant_id` is a logical alias whose value is the existing core `holdingcode`. Do not create a second tenant id for old records.
 - User/company access must be modeled through membership/role data: `user_id` -> many `tenant_id`; each `tenant_id` -> many `branch_id`.
 - Owner-level overview across many companies uses `company_group_id` above many `tenant_id` values. Keep authorization tenant-scoped and pass only authorized tenant lists to ClickHouse.
-- Existing core storage uses `holding_code` as the physical tenant identity in many current tables, collections, ClickHouse rows, and Kafka payloads. Some GoAPI/MCP/AI/approval DTOs use `holding_code`; inspect the module before choosing the physical key. Keep existing field names as-is unless a later migration has a functional reason beyond naming consistency.
+- Existing core storage uses `holdingcode` as the physical tenant identity in many current tables, collections, ClickHouse rows, and Kafka payloads. Some GoAPI/MCP/AI/approval DTOs use `holdingcode`; inspect the module before choosing the physical key. Keep existing field names as-is unless a later migration has a functional reason beyond naming consistency.
 - Every handler must derive `tenant_id` from authenticated user/workspace membership, validate access, and pass it through repository/service/report/job layers.
-- Every customer-data query must filter by the logical `tenant_id`. In legacy repositories, map that value to physical `holding_code` or module-specific `holding_code` and keep the filter in the same query.
-- New standalone schema should include `tenant_id` and composite indexes such as `(tenant_id, id)`, `(tenant_id, branch_id, doc_no)`, or the best key for the access pattern. Legacy schema may keep its real physical tenant key, usually `holding_code`.
-- Do not remove or rename existing `holding_code` / `holding_code` fields until all callers, migrations, indexes, tests, reports, Kafka consumers, and object paths are verified and there is a real functional benefit.
+- Every customer-data query must filter by the logical `tenant_id`. In legacy repositories, map that value to physical `holdingcode` or module-specific `holdingcode` and keep the filter in the same query.
+- New standalone schema should include `tenant_id` and composite indexes such as `(tenant_id, id)`, `(tenant_id, branch_id, doc_no)`, or the best key for the access pattern. Legacy schema may keep its real physical tenant key, usually `holdingcode`.
+- Do not remove or rename existing `holdingcode` / `holdingcode` fields until all callers, migrations, indexes, tests, reports, Kafka consumers, and object paths are verified and there is a real functional benefit.
 - Cross-tenant admin/report operations require explicit admin permission, audit log, and clear code-level naming.
 - Use `architecture/high-scale-multitenant-bi.md` as the blueprint for MongoDB -> Kafka -> PostgreSQL -> Kafka -> ClickHouse at high concurrency.
 - Use `architecture/admin-access-control.md` for platform admins, group owners, tenant admins, branch grants, first-admin bootstrap, and policy-based access resolution.

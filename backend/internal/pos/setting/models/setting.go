@@ -51,7 +51,7 @@ type Setting struct {
 	ServiceCharge     float64                           `json:"servicecharge" bson:"servicecharge"` // ค่าบริการ
 	IsCopyReceipt     bool                              `json:"iscopyreceipt" bson:"iscopyreceipt"` // ภาษี
 	IsVatRegister     bool                              `json:"isvatregister" bson:"isvatregister"` // จดทะเบียนภาษี
-	VatType           int8                              `json:"vat_type" bson:"vat_type"`           // ราคารวมภาษี หรือ ราคาไม่รวมภาษี
+	VatType           int8                              `json:"vattype" bson:"vattype"`             // ราคารวมภาษี หรือ ราคาไม่รวมภาษี
 	VatRate           float64                           `json:"vatrate" bson:"vatrate"`             // อัตราภาษี
 }
 
@@ -109,7 +109,7 @@ type SettingData struct {
 }
 
 type SettingDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	SettingData        `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

@@ -41,8 +41,8 @@ type CurrencyScreenProps = {
 };
 
 type CurrencyRecord = {
-  guid_fixed: string;
-  duplicate_guid_fixeds?: string[];
+  guidfixed: string;
+  duplicate_guidfixeds?: string[];
   code: string;
   name: string;
   symbol: string;
@@ -51,7 +51,7 @@ type CurrencyRecord = {
 };
 
 type ExchangeRateEntry = {
-  guid_fixed?: string;
+  guidfixed?: string;
   date?: string;
   rate?: number;
 };
@@ -499,7 +499,7 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
     }
     const duplicate = currencies.some((currency) =>
       currency.code === payload.code &&
-      (!editing || currency.guid_fixed !== editing.guid_fixed),
+      (!editing || currency.guidfixed !== editing.guidfixed),
     );
     if (duplicate) {
       setNotice({ type: "error", text: text("duplicateCode") });
@@ -509,7 +509,7 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
     setSaving(true);
     setNotice(null);
     try {
-      const path = editing ? `/api/currency/${encodeURIComponent(editing.guid_fixed)}` : "/api/currency";
+      const path = editing ? `/api/currency/${encodeURIComponent(editing.guidfixed)}` : "/api/currency";
       const response = await fetch(path, {
         method: editing ? "PUT" : "POST",
         headers: {
@@ -519,7 +519,7 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
         },
         body: JSON.stringify({
           backendUrl: auth.backendUrl,
-          guid_fixed: editing?.guid_fixed ?? "",
+          guidfixed: editing?.guidfixed ?? "",
           ...payload,
         }),
       });
@@ -541,7 +541,7 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
 
   async function deleteCurrency(currency: CurrencyRecord) {
     if (!auth) return;
-    const deleteIds = uniqueStrings([currency.guid_fixed, ...(currency.duplicate_guid_fixeds ?? [])]);
+    const deleteIds = uniqueStrings([currency.guidfixed, ...(currency.duplicate_guidfixeds ?? [])]);
     if (!deleteIds.length) {
       setNotice({ type: "error", text: text("requestFailed") });
       return;
@@ -549,8 +549,8 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
     const confirmed = await confirm({
       title: text("deleteConfirm"),
       description: `${currency.code} ${currency.name}`.trim(),
-      details: currency.duplicate_guid_fixeds && currency.duplicate_guid_fixeds.length > 1
-        ? `${language === "th" ? "จะลบรายการซ้ำทั้งหมด" : "All duplicate entries will be deleted"}: ${currency.duplicate_guid_fixeds.length}`
+      details: currency.duplicate_guidfixeds && currency.duplicate_guidfixeds.length > 1
+        ? `${language === "th" ? "จะลบรายการซ้ำทั้งหมด" : "All duplicate entries will be deleted"}: ${currency.duplicate_guidfixeds.length}`
         : undefined,
       confirmLabel: text("delete"),
       cancelLabel: text("cancel"),
@@ -670,7 +670,7 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
             <CurrencyCard
               baseCurrency={baseCurrency}
               currency={currency}
-              key={currency.guid_fixed || currency.code}
+              key={currency.guidfixed || currency.code}
               onDelete={deleteCurrency}
               onEdit={openEdit}
               text={text}
@@ -909,7 +909,7 @@ function readWorkspace(): WorkspaceSession | null {
     const raw = localStorage.getItem(workspaceStorageKeys.workspace);
     if (!raw) return null;
     const workspace = JSON.parse(raw) as WorkspaceSession;
-    return workspace?.shop?.holding_code ? workspace : null;
+    return workspace?.shop?.holdingcode ? workspace : null;
   } catch {
     return null;
   }
@@ -918,17 +918,17 @@ function readWorkspace(): WorkspaceSession | null {
 function normalizeCurrencies(value: unknown): CurrencyRecord[] {
   if (!Array.isArray(value)) return [];
   const currencies = value.map(normalizeCurrency).filter((currency): currency is CurrencyRecord => Boolean(currency));
-  const byCode = new Map<string, CurrencyRecord & { duplicate_guid_fixeds: string[] }>();
+  const byCode = new Map<string, CurrencyRecord & { duplicate_guidfixeds: string[] }>();
   for (const currency of currencies) {
     const existing = byCode.get(currency.code);
     if (!existing) {
-      byCode.set(currency.code, { ...currency, duplicate_guid_fixeds: uniqueStrings([currency.guid_fixed]) });
+      byCode.set(currency.code, { ...currency, duplicate_guidfixeds: uniqueStrings([currency.guidfixed]) });
       continue;
     }
 
-    existing.duplicate_guid_fixeds = uniqueStrings([...existing.duplicate_guid_fixeds, currency.guid_fixed]);
-    if ((existing.isdisabled && !currency.isdisabled) || (!existing.guid_fixed && currency.guid_fixed)) {
-      byCode.set(currency.code, { ...currency, duplicate_guid_fixeds: existing.duplicate_guid_fixeds });
+    existing.duplicate_guidfixeds = uniqueStrings([...existing.duplicate_guidfixeds, currency.guidfixed]);
+    if ((existing.isdisabled && !currency.isdisabled) || (!existing.guidfixed && currency.guidfixed)) {
+      byCode.set(currency.code, { ...currency, duplicate_guidfixeds: existing.duplicate_guidfixeds });
     }
   }
   return [...byCode.values()];
@@ -941,7 +941,7 @@ function normalizeCurrency(value: unknown): CurrencyRecord | null {
   if (!code) return null;
 
   return {
-    guid_fixed: toStringValue(item.guid_fixed || item.guidfixed || item.guidFixed || item.id || item._id),
+    guidfixed: toStringValue(item.guidfixed || item.guidfixed || item.guidFixed || item.id || item._id),
     code,
     name: toStringValue(item.name),
     symbol: toStringValue(item.symbol),

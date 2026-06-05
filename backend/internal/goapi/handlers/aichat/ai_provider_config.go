@@ -36,35 +36,35 @@ var providerDefaultModels = map[string]string{
 // ---- Request structs ----
 
 type listAIProvidersReq struct {
-	HoldingCode string `json:"holding_code"`
+	HoldingCode string `json:"holdingcode"`
 }
 
 type saveAIProviderReq struct {
-	HoldingCode  string   `json:"holding_code"`
-	ProviderName string   `json:"provider_name"`
-	APIKey       string   `json:"api_key"`
-	BaseURL      string   `json:"base_url"`
+	HoldingCode  string   `json:"holdingcode"`
+	ProviderName string   `json:"providername"`
+	APIKey       string   `json:"apikey"`
+	BaseURL      string   `json:"baseurl"`
 	Model        string   `json:"model"`
 	Capabilities []string `json:"capabilities"`
-	IsActive     bool     `json:"is_active"`
+	IsActive     bool     `json:"isactive"`
 	Priority     int      `json:"priority"`
 }
 
 type deleteAIProviderReq struct {
-	HoldingCode  string `json:"holding_code"`
-	ProviderName string `json:"provider_name"`
+	HoldingCode  string `json:"holdingcode"`
+	ProviderName string `json:"providername"`
 }
 
 type testAIProviderReq struct {
-	HoldingCode  string `json:"holding_code"`
-	ProviderName string `json:"provider_name"`
-	APIKey       string `json:"api_key"`
-	BaseURL      string `json:"base_url"`
+	HoldingCode  string `json:"holdingcode"`
+	ProviderName string `json:"providername"`
+	APIKey       string `json:"apikey"`
+	BaseURL      string `json:"baseurl"`
 	Model        string `json:"model"`
 }
 
 type aiProviderStatusReq struct {
-	HoldingCode string `json:"holding_code"`
+	HoldingCode string `json:"holdingcode"`
 }
 
 // ---- Handlers ----
@@ -81,11 +81,11 @@ func ListAIProviders(c echo.Context) error {
 	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "holding_code is required",
+			"message": "holdingcode is required",
 		})
 	}
 
-	logger.Info("[AIProvider] list holding_code=%s", req.HoldingCode)
+	logger.Info("[AIProvider] list holdingcode=%s", req.HoldingCode)
 	configs, err := getAIProviderConfigs(req.HoldingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]any{
@@ -98,18 +98,18 @@ func ListAIProviders(c echo.Context) error {
 	masked := make([]map[string]any, 0, len(configs))
 	for _, cfg := range configs {
 		m := map[string]any{
-			"provider_name":  cfg.ProviderName,
-			"api_key_masked": maskAPIKey(cfg.APIKey),
-			"base_url":       cfg.BaseURL,
-			"model":          cfg.Model,
-			"capabilities":   cfg.Capabilities,
-			"is_active":      cfg.IsActive,
-			"priority":       cfg.Priority,
-			"last_error":     cfg.LastError,
-			"last_error_at":  cfg.LastErrorAt,
-			"cooldown_until": cfg.CooldownUntil,
-			"created_at":     cfg.CreatedAt,
-			"updated_at":     cfg.UpdatedAt,
+			"providername":  cfg.ProviderName,
+			"apikey_masked": maskAPIKey(cfg.APIKey),
+			"baseurl":       cfg.BaseURL,
+			"model":         cfg.Model,
+			"capabilities":  cfg.Capabilities,
+			"isactive":      cfg.IsActive,
+			"priority":      cfg.Priority,
+			"lasterror":     cfg.LastError,
+			"lasterrorat":   cfg.LastErrorAt,
+			"cooldownuntil": cfg.CooldownUntil,
+			"createdat":     cfg.CreatedAt,
+			"updatedat":     cfg.UpdatedAt,
 		}
 		masked = append(masked, m)
 	}
@@ -133,14 +133,14 @@ func SaveAIProvider(c echo.Context) error {
 	if req.HoldingCode == "" || req.ProviderName == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "holding_code and provider_name are required",
+			"message": "holdingcode and providername are required",
 		})
 	}
-	// custom provider ไม่บังคับ api_key (เช่น Ollama, local proxy)
+	// custom provider ไม่บังคับ apikey (เช่น Ollama, local proxy)
 	if !strings.HasPrefix(req.ProviderName, "custom") && req.ProviderName != "ollama" && req.APIKey == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "api_key is required",
+			"message": "apikey is required",
 		})
 	}
 	if !isSupportedProvider(req.ProviderName) {
@@ -150,11 +150,11 @@ func SaveAIProvider(c echo.Context) error {
 		})
 	}
 
-	// Custom provider ต้องมี base_url
+	// Custom provider ต้องมี baseurl
 	if strings.HasPrefix(req.ProviderName, "custom") && req.BaseURL == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "custom provider ต้องระบุ base_url",
+			"message": "custom provider ต้องระบุ baseurl",
 		})
 	}
 
@@ -197,7 +197,7 @@ func DeleteAIProvider(c echo.Context) error {
 	if req.HoldingCode == "" || req.ProviderName == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "holding_code and provider_name are required",
+			"message": "holdingcode and providername are required",
 		})
 	}
 
@@ -226,13 +226,13 @@ func TestAIProvider(c echo.Context) error {
 	if req.ProviderName == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "provider_name is required",
+			"message": "providername is required",
 		})
 	}
 	if !strings.HasPrefix(req.ProviderName, "custom") && req.ProviderName != "ollama" && req.APIKey == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "api_key is required",
+			"message": "apikey is required",
 		})
 	}
 	if !isSupportedProvider(req.ProviderName) {
@@ -257,11 +257,11 @@ func TestAIProvider(c echo.Context) error {
 	if req.ProviderName == "gemini" {
 		responseText, testErr = testGeminiProvider(ctx, req.APIKey, model)
 	} else if strings.HasPrefix(req.ProviderName, "custom") {
-		// Custom provider — ใช้ base_url จาก request
+		// Custom provider — ใช้ baseurl จาก request
 		if req.BaseURL == "" {
 			return c.JSON(http.StatusBadRequest, map[string]any{
 				"success": false,
-				"message": "custom provider ต้องระบุ base_url",
+				"message": "custom provider ต้องระบุ baseurl",
 			})
 		}
 		chatURL := req.BaseURL
@@ -270,7 +270,7 @@ func TestAIProvider(c echo.Context) error {
 		}
 		responseText, testErr = testOpenAICompatProviderURL(ctx, chatURL, req.APIKey, model)
 	} else if req.ProviderName == "ollama" {
-		// Ollama — ใช้ base_url จาก request หรือ default
+		// Ollama — ใช้ baseurl จาก request หรือ default
 		chatURL := providerBaseURLs["ollama"]
 		if req.BaseURL != "" {
 			chatURL = strings.TrimRight(req.BaseURL, "/") + "/chat/completions"
@@ -339,7 +339,7 @@ func AIProviderStatus(c echo.Context) error {
 	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "holding_code is required",
+			"message": "holdingcode is required",
 		})
 	}
 
@@ -362,14 +362,14 @@ func AIProviderStatus(c echo.Context) error {
 		}
 
 		statuses = append(statuses, map[string]any{
-			"provider_name":  cfg.ProviderName,
-			"model":          cfg.Model,
-			"is_active":      cfg.IsActive,
-			"priority":       cfg.Priority,
-			"status":         status,
-			"last_error":     cfg.LastError,
-			"last_error_at":  cfg.LastErrorAt,
-			"cooldown_until": cfg.CooldownUntil,
+			"providername":  cfg.ProviderName,
+			"model":         cfg.Model,
+			"isactive":      cfg.IsActive,
+			"priority":      cfg.Priority,
+			"status":        status,
+			"lasterror":     cfg.LastError,
+			"lasterrorat":   cfg.LastErrorAt,
+			"cooldownuntil": cfg.CooldownUntil,
 		})
 	}
 
@@ -508,7 +508,7 @@ func detectCapabilities(ctx context.Context, chatURL, apiKey, model string) []st
 				"role": "user",
 				"content": []map[string]any{
 					{"type": "text", "text": "What color is this?"},
-					{"type": "image_url", "image_url": map[string]string{
+					{"type": "imageurl", "imageurl": map[string]string{
 						"url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==",
 					}},
 				},
@@ -563,9 +563,9 @@ func testRequest(ctx context.Context, chatURL, apiKey string, reqBody map[string
 // ---- List Models ----
 
 type listModelsReq struct {
-	ProviderName string `json:"provider_name"`
-	APIKey       string `json:"api_key"`
-	BaseURL      string `json:"base_url"`
+	ProviderName string `json:"providername"`
+	APIKey       string `json:"apikey"`
+	BaseURL      string `json:"baseurl"`
 }
 
 // ListAIModels — POST /api/v1/ai-provider/models
@@ -581,13 +581,13 @@ func ListAIModels(c echo.Context) error {
 	if req.ProviderName == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "provider_name is required",
+			"message": "providername is required",
 		})
 	}
 	if !strings.HasPrefix(req.ProviderName, "custom") && req.ProviderName != "ollama" && req.APIKey == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "api_key is required",
+			"message": "apikey is required",
 		})
 	}
 
@@ -603,7 +603,7 @@ func ListAIModels(c echo.Context) error {
 		if req.BaseURL == "" {
 			return c.JSON(http.StatusBadRequest, map[string]any{
 				"success": false,
-				"message": "custom provider ต้องระบุ base_url",
+				"message": "custom provider ต้องระบุ baseurl",
 			})
 		}
 		modelsURL = strings.TrimRight(req.BaseURL, "/") + "/models"
@@ -616,7 +616,7 @@ func ListAIModels(c echo.Context) error {
 				"message": fmt.Sprintf("provider '%s' ไม่รองรับ", req.ProviderName),
 			})
 		}
-		// Ollama: ถ้า user ส่ง base_url มา (เครื่องอื่น) → ใช้ค่านั้น
+		// Ollama: ถ้า user ส่ง baseurl มา (เครื่องอื่น) → ใช้ค่านั้น
 		if req.ProviderName == "ollama" && req.BaseURL != "" {
 			chatURL = strings.TrimRight(req.BaseURL, "/") + "/chat/completions"
 		}

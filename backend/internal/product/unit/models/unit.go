@@ -13,7 +13,7 @@ type Unit struct {
 	UnitCode                 string `json:"unitcode" bson:"unitcode" validate:"required,max=100"`
 	models.UnitName          `bson:"inline"`
 	Names                    *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
-	CompanyGuids             []string        `json:"company_guids" bson:"company_guids"`
+	CompanyGuids             []string        `json:"companyguids" bson:"companyguids"`
 }
 
 type UnitInfo struct {
@@ -31,7 +31,7 @@ type UnitData struct {
 }
 
 type UnitDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	UnitData           `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

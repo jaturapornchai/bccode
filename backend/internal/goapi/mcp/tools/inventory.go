@@ -13,48 +13,48 @@ import (
 // ==================== Inventory Value ====================
 
 type InventoryValueRequest struct {
-	HoldingCode string `json:"holding_code"`
+	HoldingCode string `json:"holdingcode"`
 	WHCode      string `json:"whcode"`
 }
 
 type InventoryValueResponse struct {
 	Summary       InvValueSummary  `json:"summary"`
-	ByWarehouse   []WarehouseValue `json:"by_warehouse"`
-	ByCategory    []CategoryValue  `json:"by_category"`
-	TopValueItems []TopValueItem   `json:"top_value_items"`
-	GeneratedAt   time.Time        `json:"generated_at"`
+	ByWarehouse   []WarehouseValue `json:"bywarehouse"`
+	ByCategory    []CategoryValue  `json:"bycategory"`
+	TopValueItems []TopValueItem   `json:"topvalueitems"`
+	GeneratedAt   time.Time        `json:"generatedat"`
 }
 
 type InvValueSummary struct {
-	TotalValue         float64 `json:"total_value"`
-	TotalValueWord     string  `json:"total_value_word"`
-	TotalItems         int     `json:"total_items"`
-	TotalSKUs          int     `json:"total_skus"`
-	AverageValuePerSKU float64 `json:"average_value_per_sku"`
+	TotalValue         float64 `json:"totalvalue"`
+	TotalValueWord     string  `json:"totalvalueword"`
+	TotalItems         int     `json:"totalitems"`
+	TotalSKUs          int     `json:"totalskus"`
+	AverageValuePerSKU float64 `json:"averagevaluepersku"`
 }
 
 type WarehouseValue struct {
-	WarehouseCode string  `json:"warehouse_code"`
-	WarehouseName string  `json:"warehouse_name"`
+	WarehouseCode string  `json:"warehousecode"`
+	WarehouseName string  `json:"warehousename"`
 	Value         float64 `json:"value"`
 	Percentage    float64 `json:"percentage"`
-	ItemCount     int     `json:"item_count"`
+	ItemCount     int     `json:"itemcount"`
 }
 
 type CategoryValue struct {
-	CategoryCode string  `json:"category_code"`
-	CategoryName string  `json:"category_name"`
+	CategoryCode string  `json:"categorycode"`
+	CategoryName string  `json:"categoryname"`
 	Value        float64 `json:"value"`
 	Percentage   float64 `json:"percentage"`
-	ItemCount    int     `json:"item_count"`
+	ItemCount    int     `json:"itemcount"`
 }
 
 type TopValueItem struct {
 	ItemCode   string  `json:"itemcode"`
 	Name       string  `json:"name"`
 	Quantity   float64 `json:"quantity"`
-	UnitCost   float64 `json:"unit_cost"`
-	TotalValue float64 `json:"total_value"`
+	UnitCost   float64 `json:"unitcost"`
+	TotalValue float64 `json:"totalvalue"`
 	Percentage float64 `json:"percentage"`
 }
 
@@ -62,10 +62,10 @@ type TopValueItem struct {
 // MongoDB remains the authoritative operational source for inventory documents.
 func GetInventoryValue(ctx context.Context, holdingCode, whcode string) (*InventoryValueResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 
-	logger.Info("[Inventory Value] holding_code=%s, whcode=%s", holdingCode, whcode)
+	logger.Info("[Inventory Value] holdingcode=%s, whcode=%s", holdingCode, whcode)
 
 	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
@@ -88,7 +88,7 @@ func GetInventoryValue(ctx context.Context, holdingCode, whcode string) (*Invent
 	query := fmt.Sprintf(`
 		SELECT
 			COUNT(DISTINCT itemcode) as sku_count,
-			COALESCE(SUM(ABS(balance_qty)), 0) as total_qty,
+			COALESCE(SUM(ABS(balance_qty)), 0) as totalqty,
 			COALESCE(SUM(ABS(balance_qty) * COALESCE(avgcost, 0)), 0) as total_value
 		FROM (
 			SELECT
@@ -246,7 +246,7 @@ func GetInventoryValue(ctx context.Context, holdingCode, whcode string) (*Invent
 // ==================== Low Stock Alerts ====================
 
 type LowStockAlertsRequest struct {
-	HoldingCode string `json:"holding_code"`
+	HoldingCode string `json:"holdingcode"`
 	Threshold   int    `json:"threshold"` // Default 10
 	Limit       int    `json:"limit"`     // Default 50
 }
@@ -254,33 +254,33 @@ type LowStockAlertsRequest struct {
 type LowStockAlertsResponse struct {
 	Summary     LowStockSummary `json:"summary"`
 	Alerts      []LowStockItem  `json:"alerts"`
-	GeneratedAt time.Time       `json:"generated_at"`
+	GeneratedAt time.Time       `json:"generatedat"`
 }
 
 type LowStockSummary struct {
-	TotalLowStock   int `json:"total_low_stock"`
-	TotalOutOfStock int `json:"total_out_of_stock"`
-	CriticalCount   int `json:"critical_count"` // < 5 units
-	WarningCount    int `json:"warning_count"`  // 5-10 units
+	TotalLowStock   int `json:"totallowstock"`
+	TotalOutOfStock int `json:"totaloutofstock"`
+	CriticalCount   int `json:"criticalcount"` // < 5 units
+	WarningCount    int `json:"warningcount"`  // 5-10 units
 }
 
 type LowStockItem struct {
 	ItemCode      string  `json:"itemcode"`
 	Name          string  `json:"name"`
-	CurrentStock  float64 `json:"current_stock"`
-	StockWord     string  `json:"stock_word"`
-	MinStock      float64 `json:"min_stock"`
-	ReorderQty    float64 `json:"reorder_qty"`
-	LastSaleDate  string  `json:"last_sale_date"`
-	AvgDailySales float64 `json:"avg_daily_sales"`
-	DaysOfStock   int     `json:"days_of_stock"`
+	CurrentStock  float64 `json:"currentstock"`
+	StockWord     string  `json:"stockword"`
+	MinStock      float64 `json:"minstock"`
+	ReorderQty    float64 `json:"reorderqty"`
+	LastSaleDate  string  `json:"lastsaledate"`
+	AvgDailySales float64 `json:"avgdailysales"`
+	DaysOfStock   int     `json:"daysofstock"`
 	Priority      string  `json:"priority"` // critical, high, medium, low
-	WarehouseCode string  `json:"warehouse_code"`
+	WarehouseCode string  `json:"warehousecode"`
 }
 
 func GetLowStockAlerts(ctx context.Context, holdingCode string, threshold, limit int) (*LowStockAlertsResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 
 	if threshold <= 0 {
@@ -293,7 +293,7 @@ func GetLowStockAlerts(ctx context.Context, holdingCode string, threshold, limit
 		limit = 200
 	}
 
-	logger.Info("[Low Stock Alerts] holding_code=%s, threshold=%d, limit=%d", holdingCode, threshold, limit)
+	logger.Info("[Low Stock Alerts] holdingcode=%s, threshold=%d, limit=%d", holdingCode, threshold, limit)
 
 	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
@@ -379,7 +379,7 @@ func GetLowStockAlerts(ctx context.Context, holdingCode string, threshold, limit
 // ==================== Dead Stock ====================
 
 type DeadStockRequest struct {
-	HoldingCode string `json:"holding_code"`
+	HoldingCode string `json:"holdingcode"`
 	Days        int    `json:"days"` // No movement for X days (default 90)
 	Limit       int    `json:"limit"`
 }
@@ -387,35 +387,35 @@ type DeadStockRequest struct {
 type DeadStockResponse struct {
 	Summary     DeadStockSummary `json:"summary"`
 	Items       []DeadStockItem  `json:"items"`
-	GeneratedAt time.Time        `json:"generated_at"`
+	GeneratedAt time.Time        `json:"generatedat"`
 }
 
 type DeadStockSummary struct {
-	TotalItems     int         `json:"total_items"`
-	TotalValue     float64     `json:"total_value"`
-	TotalValueWord string      `json:"total_value_word"`
-	ByAgeBucket    []AgeBucket `json:"by_age_bucket"`
+	TotalItems     int         `json:"totalitems"`
+	TotalValue     float64     `json:"totalvalue"`
+	TotalValueWord string      `json:"totalvalueword"`
+	ByAgeBucket    []AgeBucket `json:"byagebucket"`
 }
 
 type AgeBucket struct {
 	Label     string  `json:"label"`
-	ItemCount int     `json:"item_count"`
+	ItemCount int     `json:"itemcount"`
 	Value     float64 `json:"value"`
 }
 
 type DeadStockItem struct {
 	ItemCode       string  `json:"itemcode"`
 	Name           string  `json:"name"`
-	CurrentStock   float64 `json:"current_stock"`
-	StockValue     float64 `json:"stock_value"`
-	LastMovement   string  `json:"last_movement_date"`
-	DaysSinceMove  int     `json:"days_since_movement"`
+	CurrentStock   float64 `json:"currentstock"`
+	StockValue     float64 `json:"stockvalue"`
+	LastMovement   string  `json:"lastmovementdate"`
+	DaysSinceMove  int     `json:"dayssincemovement"`
 	Recommendation string  `json:"recommendation"`
 }
 
 func GetDeadStock(ctx context.Context, holdingCode string, days, limit int) (*DeadStockResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 
 	if days <= 0 {
@@ -425,7 +425,7 @@ func GetDeadStock(ctx context.Context, holdingCode string, days, limit int) (*De
 		limit = 50
 	}
 
-	logger.Info("[Dead Stock] holding_code=%s, days=%d, limit=%d", holdingCode, days, limit)
+	logger.Info("[Dead Stock] holdingcode=%s, days=%d, limit=%d", holdingCode, days, limit)
 
 	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
@@ -529,46 +529,46 @@ func GetDeadStock(ctx context.Context, holdingCode string, days, limit int) (*De
 // ==================== Inventory Turnover ====================
 
 type InventoryTurnoverRequest struct {
-	HoldingCode string `json:"holding_code"`
-	FromDate    string `json:"from_date"`
-	ToDate      string `json:"to_date"`
+	HoldingCode string `json:"holdingcode"`
+	FromDate    string `json:"fromdate"`
+	ToDate      string `json:"todate"`
 }
 
 type InventoryTurnoverResponse struct {
 	Summary     TurnoverSummary    `json:"summary"`
-	ByCategory  []CategoryTurnover `json:"by_category"`
-	FastMovers  []TurnoverItem     `json:"fast_movers"`
-	SlowMovers  []TurnoverItem     `json:"slow_movers"`
-	GeneratedAt time.Time          `json:"generated_at"`
+	ByCategory  []CategoryTurnover `json:"bycategory"`
+	FastMovers  []TurnoverItem     `json:"fastmovers"`
+	SlowMovers  []TurnoverItem     `json:"slowmovers"`
+	GeneratedAt time.Time          `json:"generatedat"`
 }
 
 type TurnoverSummary struct {
-	OverallTurnover     float64 `json:"overall_turnover_ratio"`
-	TurnoverDescription string  `json:"turnover_description"`
-	AverageDaysToSell   int     `json:"average_days_to_sell"`
+	OverallTurnover     float64 `json:"overallturnoverratio"`
+	TurnoverDescription string  `json:"turnoverdescription"`
+	AverageDaysToSell   int     `json:"averagedaystosell"`
 	COGS                float64 `json:"cogs"`
-	AverageInventory    float64 `json:"average_inventory"`
+	AverageInventory    float64 `json:"averageinventory"`
 }
 
 type CategoryTurnover struct {
-	CategoryCode string  `json:"category_code"`
-	CategoryName string  `json:"category_name"`
-	Turnover     float64 `json:"turnover_ratio"`
-	DaysToSell   int     `json:"days_to_sell"`
+	CategoryCode string  `json:"categorycode"`
+	CategoryName string  `json:"categoryname"`
+	Turnover     float64 `json:"turnoverratio"`
+	DaysToSell   int     `json:"daystosell"`
 }
 
 type TurnoverItem struct {
 	ItemCode     string  `json:"itemcode"`
 	Name         string  `json:"name"`
-	Turnover     float64 `json:"turnover_ratio"`
-	DaysToSell   int     `json:"days_to_sell"`
-	UnitsSold    float64 `json:"units_sold"`
-	CurrentStock float64 `json:"current_stock"`
+	Turnover     float64 `json:"turnoverratio"`
+	DaysToSell   int     `json:"daystosell"`
+	UnitsSold    float64 `json:"unitssold"`
+	CurrentStock float64 `json:"currentstock"`
 }
 
 func GetInventoryTurnover(ctx context.Context, holdingCode, fromDate, toDate string) (*InventoryTurnoverResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 
 	now := time.Now()
@@ -579,7 +579,7 @@ func GetInventoryTurnover(ctx context.Context, holdingCode, fromDate, toDate str
 		toDate = now.Format("2006-01-02")
 	}
 
-	logger.Info("[Inventory Turnover] holding_code=%s, from=%s, to=%s", holdingCode, fromDate, toDate)
+	logger.Info("[Inventory Turnover] holdingcode=%s, from=%s, to=%s", holdingCode, fromDate, toDate)
 
 	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {

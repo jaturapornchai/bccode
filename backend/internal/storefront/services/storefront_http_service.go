@@ -141,7 +141,7 @@ func (svc StorefrontHttpService) SearchStorefront(holdingCode string, pageable m
 	defer ctxCancel()
 
 	searchInFields := []string{
-		"guid_fixed",
+		"guidfixed",
 		"code",
 	}
 

@@ -66,8 +66,8 @@ func (repo SaleInvoiceReturnRepository) FindLastPOSDocNo(ctx context.Context, ho
 	opts.SetSort(bson.M{"docno": -1})
 
 	filters := bson.M{
-		"holding_code": holdingCode,
-		"posid":        posID,
+		"holdingcode": holdingCode,
+		"posid":       posID,
 		"docno": bson.M{
 			"$lte": maxDocNo,
 		},
@@ -85,8 +85,8 @@ func (repo SaleInvoiceReturnRepository) FindLastPOSDocNo(ctx context.Context, ho
 
 func (repo SaleInvoiceReturnRepository) FindLastDocNo(ctx context.Context, holdingCode string, prefixDocNo string) (models.SaleInvoiceReturnDoc, error) {
 	filters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at": bson.M{
+		"holdingcode": holdingCode,
+		"deletedat": bson.M{
 			"$exists": false,
 		},
 		"docno": bson.M{

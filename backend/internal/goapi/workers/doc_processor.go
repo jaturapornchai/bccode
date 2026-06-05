@@ -36,11 +36,11 @@ type DynamicWorker struct {
 
 // WorkerStats - สถิติของ worker
 type WorkerStats struct {
-	WorkerID       int       `json:"worker_id"`
-	TotalProcessed uint64    `json:"total_processed"`
+	WorkerID       int       `json:"workerid"`
+	TotalProcessed uint64    `json:"totalprocessed"`
 	Status         string    `json:"status"`
-	CurrentShop    string    `json:"current_shop"`
-	LastProcessed  time.Time `json:"last_processed"`
+	CurrentShop    string    `json:"currentshop"`
+	LastProcessed  time.Time `json:"lastprocessed"`
 }
 
 // OptimalWorkerCount คำนวณจำนวน worker ที่เหมาะสมตาม CPU cores

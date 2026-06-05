@@ -130,7 +130,7 @@ func CheckItemChanged(ctx context.Context, db *sql.DB, holdingCode, itemCode str
 	// Get last checksum from stock_calculation_state
 	var lastChecksum sql.NullString
 	err = db.QueryRowContext(ctx,
-		"SELECT last_checksum FROM stock_calculation_state WHERE holding_code = $1 AND item_code = $2",
+		"SELECT last_checksum FROM stock_calculation_state WHERE holdingcode = $1 AND item_code = $2",
 		holdingCode, itemCode,
 	).Scan(&lastChecksum)
 
@@ -155,13 +155,13 @@ func CheckItemChanged(ctx context.Context, db *sql.DB, holdingCode, itemCode str
 // UpdateItemChecksum - Update the checksum after successful calculation
 func UpdateItemChecksum(ctx context.Context, db *sql.DB, holdingCode, itemCode, checksum string) error {
 	query := `
-		INSERT INTO stock_calculation_state (holding_code, item_code, last_checksum, last_calc_time, version, created_at, updated_at)
+		INSERT INTO stock_calculation_state (holdingcode, item_code, last_checksum, last_calc_time, version, createdat, updatedat)
 		VALUES ($1, $2, $3, NOW(), 1, NOW(), NOW())
-		ON CONFLICT (holding_code, item_code) DO UPDATE
+		ON CONFLICT (holdingcode, item_code) DO UPDATE
 		SET last_checksum = EXCLUDED.last_checksum,
 			last_calc_time = EXCLUDED.last_calc_time,
 			version = stock_calculation_state.version + 1,
-			updated_at = NOW()
+			updatedat = NOW()
 	`
 
 	_, err := db.ExecContext(ctx, query, holdingCode, itemCode, checksum)
@@ -175,7 +175,7 @@ func UpdateItemChecksum(ctx context.Context, db *sql.DB, holdingCode, itemCode, 
 // DeleteItemChecksum - Delete the checksum when item data is cleared
 func DeleteItemChecksum(ctx context.Context, db *sql.DB, holdingCode, itemCode string) error {
 	_, err := db.ExecContext(ctx,
-		"DELETE FROM stock_calculation_state WHERE holding_code = $1 AND item_code = $2",
+		"DELETE FROM stock_calculation_state WHERE holdingcode = $1 AND item_code = $2",
 		holdingCode, itemCode,
 	)
 	if err != nil {
@@ -186,11 +186,11 @@ func DeleteItemChecksum(ctx context.Context, db *sql.DB, holdingCode, itemCode s
 
 // IncrementalStats - Statistics for incremental calculation
 type IncrementalStats struct {
-	TotalItems      int           `json:"total_items"`
-	SkippedItems    int           `json:"skipped_items"`
-	ProcessedItems  int           `json:"processed_items"`
+	TotalItems      int           `json:"totalitems"`
+	SkippedItems    int           `json:"skippeditems"`
+	ProcessedItems  int           `json:"processeditems"`
 	Duration        time.Duration `json:"duration"`
-	WALSavedPercent float64       `json:"wal_saved_percent"`
+	WALSavedPercent float64       `json:"walsavedpercent"`
 }
 
 // LogIncrementalStats - Log statistics for incremental calculation
@@ -214,14 +214,14 @@ func LogIncrementalStats(holdingCode string, stats IncrementalStats) {
 func EnsureStockCalculationStateTable(ctx context.Context, db *sql.DB) error {
 	query := `
 		CREATE TABLE IF NOT EXISTS stock_calculation_state (
-			holding_code VARCHAR(100) NOT NULL,
+			holdingcode VARCHAR(100) NOT NULL,
 			item_code VARCHAR(100) NOT NULL,
 			last_checksum CHAR(32),
 			last_calc_time TIMESTAMPTZ DEFAULT NOW(),
 			version INTEGER DEFAULT 0,
-			created_at TIMESTAMPTZ DEFAULT NOW(),
-			updated_at TIMESTAMPTZ DEFAULT NOW(),
-			PRIMARY KEY (holding_code, item_code)
+			createdat TIMESTAMPTZ DEFAULT NOW(),
+			updatedat TIMESTAMPTZ DEFAULT NOW(),
+			PRIMARY KEY (holdingcode, item_code)
 		)
 	`
 
@@ -232,7 +232,7 @@ func EnsureStockCalculationStateTable(ctx context.Context, db *sql.DB) error {
 
 	// Create indexes
 	indexQueries := []string{
-		"CREATE INDEX IF NOT EXISTS idx_stock_calc_state_shop_item ON stock_calculation_state(holding_code, item_code)",
+		"CREATE INDEX IF NOT EXISTS idx_stock_calc_state_shop_item ON stock_calculation_state(holdingcode, item_code)",
 		"CREATE INDEX IF NOT EXISTS idx_stock_calc_state_last_calc_time ON stock_calculation_state(last_calc_time)",
 	}
 

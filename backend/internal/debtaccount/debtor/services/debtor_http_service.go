@@ -336,7 +336,7 @@ func (svc DebtorHttpService) DeleteDebtorByGUIDs(holdingCode string, authUsernam
 	}
 
 	deleteFilterQuery := map[string]interface{}{
-		"guid_fixed": bson.M{"$in": GUIDs},
+		"guidfixed": bson.M{"$in": GUIDs},
 	}
 
 	err = svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
@@ -482,16 +482,16 @@ func (svc DebtorHttpService) SearchDebtor(holdingCode string, filters map[string
 		"addressforbilling.phonesecondary",
 	}
 
-	// Check if holding_code filter exists (from shopsid parameter)
+	// Check if holdingcode filter exists (from shopsid parameter)
 	var docList []models.DebtorInfo
 	var pagination mongopagination.PaginationData
 	var err error
 
-	if _, hasHoldingCodeFilter := filters["holding_code"]; hasHoldingCodeFilter {
-		// Use FindPageFilterNoHoldingCode when holding_code filter exists
+	if _, hasHoldingCodeFilter := filters["holdingcode"]; hasHoldingCodeFilter {
+		// Use FindPageFilterNoHoldingCode when holdingcode filter exists
 		docList, pagination, err = svc.repo.FindPageFilterNoHoldingCode(ctx, filters, searchInFields, pageable)
 	} else {
-		// Use regular FindPageFilter when no holding_code filter
+		// Use regular FindPageFilter when no holdingcode filter
 		docList, pagination, err = svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 	}
 
@@ -540,16 +540,16 @@ func (svc DebtorHttpService) SearchDebtorStep(holdingCode string, langCode strin
 
 	selectFields := map[string]interface{}{}
 
-	// Check if holding_code filter exists (from shopsid parameter)
+	// Check if holdingcode filter exists (from shopsid parameter)
 	var docList []models.DebtorInfo
 	var total int
 	var err error
 
-	if _, hasHoldingCodeFilter := filters["holding_code"]; hasHoldingCodeFilter {
-		// Use FindStepNoHoldingCode when holding_code filter exists
+	if _, hasHoldingCodeFilter := filters["holdingcode"]; hasHoldingCodeFilter {
+		// Use FindStepNoHoldingCode when holdingcode filter exists
 		docList, total, err = svc.repo.FindStepNoHoldingCode(ctx, filters, searchInFields, selectFields, pageableStep)
 	} else {
-		// Use regular FindStep when no holding_code filter
+		// Use regular FindStep when no holdingcode filter
 		docList, total, err = svc.repo.FindStep(ctx, holdingCode, filters, searchInFields, selectFields, pageableStep)
 	}
 

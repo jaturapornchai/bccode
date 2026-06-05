@@ -30,16 +30,16 @@ type ProductGroupNameEntry struct {
 
 // ProductGroupDocument เอกสารกลุ่มสินค้าใน MongoDB
 type ProductGroupDocument struct {
-	ID          primitive.ObjectID      `json:"id" bson:"_id,omitempty"`
-	HoldingCode string                  `json:"holding_code" bson:"holding_code"`
-	GuidFixed   string                  `json:"guid_fixed" bson:"guid_fixed"`
+	ID          primitive.ObjectID      `json:"id" bson:"id,omitempty"`
+	HoldingCode string                  `json:"holdingcode" bson:"holdingcode"`
+	GuidFixed   string                  `json:"guidfixed" bson:"guidfixed"`
 	Code        string                  `json:"code" bson:"code"`
 	Names       []ProductGroupNameEntry `json:"names" bson:"names"`
 	CreatedBy   string                  `json:"createdby" bson:"createdby"`
-	CreatedAt   time.Time               `json:"created_at" bson:"created_at"`
+	CreatedAt   time.Time               `json:"createdat" bson:"createdat"`
 	UpdatedBy   string                  `json:"updatedby,omitempty" bson:"updatedby,omitempty"`
-	UpdatedAt   time.Time               `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
-	DeletedAt   time.Time               `json:"deleted_at,omitempty" bson:"deleted_at,omitempty"`
+	UpdatedAt   time.Time               `json:"updatedat,omitempty" bson:"updatedat,omitempty"`
+	DeletedAt   time.Time               `json:"deletedat,omitempty" bson:"deletedat,omitempty"`
 }
 
 // ==================== List Product Groups ====================
@@ -49,13 +49,13 @@ type ListProductGroupsResponse struct {
 	Groups      []ProductGroupDocument `json:"groups"`
 	Count       int                    `json:"count"`
 	Keyword     string                 `json:"keyword,omitempty"`
-	GeneratedAt time.Time              `json:"generated_at"`
+	GeneratedAt time.Time              `json:"generatedat"`
 }
 
 // ListProductGroups ดึง/ค้นหากลุ่มสินค้า
 func ListProductGroups(ctx context.Context, holdingCode, keyword string, limit int) (*ListProductGroupsResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 
 	if limit <= 0 {
@@ -74,10 +74,10 @@ func ListProductGroups(ctx context.Context, holdingCode, keyword string, limit i
 	dbName := svcConfig.MongodbDatabaseName()
 
 	filter := bson.M{
-		"holding_code": holdingCode,
+		"holdingcode": holdingCode,
 		"$or": []bson.M{
-			{"deleted_at": bson.M{"$exists": false}},
-			{"deleted_at": time.Time{}},
+			{"deletedat": bson.M{"$exists": false}},
+			{"deletedat": time.Time{}},
 		},
 	}
 
@@ -128,15 +128,15 @@ type CreateProductGroupResponse struct {
 	Success     bool                 `json:"success"`
 	Message     string               `json:"message"`
 	Group       ProductGroupDocument `json:"group"`
-	KafkaSync   string               `json:"kafka_sync"`
-	KafkaError  string               `json:"kafka_error,omitempty"`
-	GeneratedAt time.Time            `json:"generated_at"`
+	KafkaSync   string               `json:"kafkasync"`
+	KafkaError  string               `json:"kafkaerror,omitempty"`
+	GeneratedAt time.Time            `json:"generatedat"`
 }
 
 // CreateProductGroup สร้างกลุ่มสินค้าใหม่
 func CreateProductGroup(ctx context.Context, holdingCode, code, namesJSON string) (*CreateProductGroupResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 	if code == "" {
 		return nil, fmt.Errorf("code is required")
@@ -153,11 +153,11 @@ func CreateProductGroup(ctx context.Context, holdingCode, code, namesJSON string
 
 	// ตรวจสอบ code ซ้ำ
 	existFilter := bson.M{
-		"holding_code": holdingCode,
-		"code":         code,
+		"holdingcode": holdingCode,
+		"code":        code,
 		"$or": []bson.M{
-			{"deleted_at": bson.M{"$exists": false}},
-			{"deleted_at": time.Time{}},
+			{"deletedat": bson.M{"$exists": false}},
+			{"deletedat": time.Time{}},
 		},
 	}
 	count, err := coll.CountDocuments(ctx, existFilter)
@@ -230,16 +230,16 @@ type CreateProductGroupsResponse struct {
 	Message      string                 `json:"message"`
 	Created      []ProductGroupDocument `json:"created"`
 	Skipped      []string               `json:"skipped,omitempty"`
-	CreatedCount int                    `json:"created_count"`
-	SkippedCount int                    `json:"skipped_count"`
-	KafkaSync    string                 `json:"kafka_sync"`
-	KafkaError   string                 `json:"kafka_error,omitempty"`
-	GeneratedAt  time.Time              `json:"generated_at"`
+	CreatedCount int                    `json:"createdcount"`
+	SkippedCount int                    `json:"skippedcount"`
+	KafkaSync    string                 `json:"kafkasync"`
+	KafkaError   string                 `json:"kafkaerror,omitempty"`
+	GeneratedAt  time.Time              `json:"generatedat"`
 }
 
 func CreateProductGroups(ctx context.Context, holdingCode, groupsJSON string) (*CreateProductGroupsResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 	if groupsJSON == "" {
 		return nil, fmt.Errorf("groups JSON is required")
@@ -271,11 +271,11 @@ func CreateProductGroups(ctx context.Context, holdingCode, groupsJSON string) (*
 	}
 
 	existFilter := bson.M{
-		"holding_code": holdingCode,
-		"code":         bson.M{"$in": codes},
+		"holdingcode": holdingCode,
+		"code":        bson.M{"$in": codes},
 		"$or": []bson.M{
-			{"deleted_at": bson.M{"$exists": false}},
-			{"deleted_at": time.Time{}},
+			{"deletedat": bson.M{"$exists": false}},
+			{"deletedat": time.Time{}},
 		},
 	}
 	cursor, err := coll.Find(ctx, existFilter)
@@ -364,14 +364,14 @@ type UpdateProductGroupResponse struct {
 	Success     bool                 `json:"success"`
 	Message     string               `json:"message"`
 	Group       ProductGroupDocument `json:"group"`
-	KafkaSync   string               `json:"kafka_sync"`
-	KafkaError  string               `json:"kafka_error,omitempty"`
-	GeneratedAt time.Time            `json:"generated_at"`
+	KafkaSync   string               `json:"kafkasync"`
+	KafkaError  string               `json:"kafkaerror,omitempty"`
+	GeneratedAt time.Time            `json:"generatedat"`
 }
 
 func UpdateProductGroup(ctx context.Context, holdingCode, code, namesJSON string) (*UpdateProductGroupResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 	if code == "" {
 		return nil, fmt.Errorf("code is required")
@@ -387,11 +387,11 @@ func UpdateProductGroup(ctx context.Context, holdingCode, code, namesJSON string
 	coll := mongoClient.Database(dbName).Collection(productGroupCollection)
 
 	filter := bson.M{
-		"holding_code": holdingCode,
-		"code":         code,
+		"holdingcode": holdingCode,
+		"code":        code,
 		"$or": []bson.M{
-			{"deleted_at": bson.M{"$exists": false}},
-			{"deleted_at": time.Time{}},
+			{"deletedat": bson.M{"$exists": false}},
+			{"deletedat": time.Time{}},
 		},
 	}
 
@@ -402,8 +402,8 @@ func UpdateProductGroup(ctx context.Context, holdingCode, code, namesJSON string
 	}
 
 	updateFields := bson.M{
-		"updated_at": time.Now(),
-		"updatedby":  "mcp-tool",
+		"updatedat": time.Now(),
+		"updatedby": "mcp-tool",
 	}
 	if namesJSON != "" {
 		var names []ProductGroupNameEntry
@@ -447,14 +447,14 @@ type DeleteProductGroupResponse struct {
 	Success     bool      `json:"success"`
 	Message     string    `json:"message"`
 	Code        string    `json:"code"`
-	KafkaSync   string    `json:"kafka_sync"`
-	KafkaError  string    `json:"kafka_error,omitempty"`
-	GeneratedAt time.Time `json:"generated_at"`
+	KafkaSync   string    `json:"kafkasync"`
+	KafkaError  string    `json:"kafkaerror,omitempty"`
+	GeneratedAt time.Time `json:"generatedat"`
 }
 
 func DeleteProductGroup(ctx context.Context, holdingCode, code string) (*DeleteProductGroupResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 	if code == "" {
 		return nil, fmt.Errorf("code is required")
@@ -470,8 +470,8 @@ func DeleteProductGroup(ctx context.Context, holdingCode, code string) (*DeleteP
 	coll := mongoClient.Database(dbName).Collection(productGroupCollection)
 
 	filter := bson.M{
-		"holding_code": holdingCode,
-		"code":         code,
+		"holdingcode": holdingCode,
+		"code":        code,
 	}
 
 	var docToDelete ProductGroupDocument
@@ -516,17 +516,17 @@ type DeleteProductGroupsResponse struct {
 	Success       bool      `json:"success"`
 	Message       string    `json:"message"`
 	Deleted       []string  `json:"deleted"`
-	NotFound      []string  `json:"not_found,omitempty"`
-	DeletedCount  int       `json:"deleted_count"`
-	NotFoundCount int       `json:"not_found_count"`
-	KafkaSync     string    `json:"kafka_sync"`
-	KafkaError    string    `json:"kafka_error,omitempty"`
-	GeneratedAt   time.Time `json:"generated_at"`
+	NotFound      []string  `json:"notfound,omitempty"`
+	DeletedCount  int       `json:"deletedcount"`
+	NotFoundCount int       `json:"notfoundcount"`
+	KafkaSync     string    `json:"kafkasync"`
+	KafkaError    string    `json:"kafkaerror,omitempty"`
+	GeneratedAt   time.Time `json:"generatedat"`
 }
 
 func DeleteProductGroups(ctx context.Context, holdingCode, codesJSON string) (*DeleteProductGroupsResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 	if codesJSON == "" {
 		return nil, fmt.Errorf("codes is required")
@@ -553,8 +553,8 @@ func DeleteProductGroups(ctx context.Context, holdingCode, codesJSON string) (*D
 	coll := mongoClient.Database(dbName).Collection(productGroupCollection)
 
 	existFilter := bson.M{
-		"holding_code": holdingCode,
-		"code":         bson.M{"$in": codes},
+		"holdingcode": holdingCode,
+		"code":        bson.M{"$in": codes},
 	}
 	cursor, err := coll.Find(ctx, existFilter, options.Find().SetProjection(bson.M{"code": 1}))
 	if err != nil {
@@ -587,8 +587,8 @@ func DeleteProductGroups(ctx context.Context, holdingCode, codesJSON string) (*D
 	var docsToDelete []interface{}
 	if len(deleted) > 0 {
 		delCursor, _ := coll.Find(ctx, bson.M{
-			"holding_code": holdingCode,
-			"code":         bson.M{"$in": deleted},
+			"holdingcode": holdingCode,
+			"code":        bson.M{"$in": deleted},
 		})
 		if delCursor != nil {
 			var docs []ProductGroupDocument
@@ -602,8 +602,8 @@ func DeleteProductGroups(ctx context.Context, holdingCode, codesJSON string) (*D
 
 	if len(deleted) > 0 {
 		deleteFilter := bson.M{
-			"holding_code": holdingCode,
-			"code":         bson.M{"$in": deleted},
+			"holdingcode": holdingCode,
+			"code":        bson.M{"$in": deleted},
 		}
 		_, err = coll.DeleteMany(ctx, deleteFilter)
 		if err != nil {
@@ -642,20 +642,20 @@ func GetProductGroupSchema() map[string]interface{} {
 		"collection":  productGroupCollection,
 		"description": "กลุ่มสินค้า (Product Group) — ใช้จัดกลุ่มสินค้า เช่น อาหาร, เครื่องดื่ม, อุปกรณ์",
 		"fields": map[string]interface{}{
-			"_id":          "ObjectID — MongoDB auto-generated ID",
-			"holding_code": "string — Holding Code (tenant isolation)",
-			"guid_fixed":   "string — UUID สำหรับอ้างอิงภายใน",
-			"code":         "string (required, unique per shop) — รหัสกลุ่มสินค้า เช่น FOOD, DRINK, TOOL",
-			"names":        "array (required) — ชื่อหลายภาษา [{code:'th', name:'อาหาร'}, {code:'en', name:'Food'}]",
-			"createdby":    "string — ผู้สร้าง",
-			"created_at":   "datetime — วันที่สร้าง",
-			"updatedby":    "string — ผู้แก้ไขล่าสุด",
-			"updated_at":   "datetime — วันที่แก้ไขล่าสุด",
-			"deleted_at":   "datetime — วันที่ลบ (soft delete)",
+			"_id":         "ObjectID — MongoDB auto-generated ID",
+			"holdingcode": "string — Holding Code (tenant isolation)",
+			"guidfixed":   "string — UUID สำหรับอ้างอิงภายใน",
+			"code":        "string (required, unique per shop) — รหัสกลุ่มสินค้า เช่น FOOD, DRINK, TOOL",
+			"names":       "array (required) — ชื่อหลายภาษา [{code:'th', name:'อาหาร'}, {code:'en', name:'Food'}]",
+			"createdby":   "string — ผู้สร้าง",
+			"createdat":   "datetime — วันที่สร้าง",
+			"updatedby":   "string — ผู้แก้ไขล่าสุด",
+			"updatedat":   "datetime — วันที่แก้ไขล่าสุด",
+			"deletedat":   "datetime — วันที่ลบ (soft delete)",
 		},
 		"indexes": []string{
-			"holding_code + code (unique per shop)",
-			"holding_code + guidfixed",
+			"holdingcode + code (unique per shop)",
+			"holdingcode + guidfixed",
 		},
 		"examples": []map[string]interface{}{
 			{
@@ -667,8 +667,8 @@ func GetProductGroupSchema() map[string]interface{} {
 				"names": []map[string]string{{"code": "th", "name": "เครื่องดื่ม"}, {"code": "en", "name": "Beverage"}},
 			},
 		},
-		"related_collections": []string{
-			"productBarcodes — ใช้ groupcode อ้างอิง code ของกลุ่มสินค้า",
+		"relatedcollections": []string{
+			"productbarcodes — ใช้ groupcode อ้างอิง code ของกลุ่มสินค้า",
 		},
 	}
 }

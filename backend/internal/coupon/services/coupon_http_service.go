@@ -331,7 +331,7 @@ func (svc CouponHttpService) SearchCoupon(holdingCode string, q string) ([]model
 	defer ctxCancel()
 
 	searchInFields := []string{
-		"guid_fixed",
+		"guidfixed",
 		"coupon_code",
 		"customercode",
 	}
@@ -1835,11 +1835,11 @@ func (svc CouponHttpService) LookupReservationDetails(holdingCode string, req mo
 			Found:         false,
 			Reservations:  []models.ReservationInfo{},
 			Summary: struct {
-				TotalReservations int `json:"total_reservations"`
-				ActiveCount       int `json:"active_count"`
-				UsedCount         int `json:"used_count"`
-				ExpiredCount      int `json:"expired_count"`
-				CancelledCount    int `json:"cancelled_count"`
+				TotalReservations int `json:"totalreservations"`
+				ActiveCount       int `json:"activecount"`
+				UsedCount         int `json:"usedcount"`
+				ExpiredCount      int `json:"expiredcount"`
+				CancelledCount    int `json:"cancelledcount"`
 			}{
 				TotalReservations: 0,
 				ActiveCount:       0,
@@ -1870,11 +1870,11 @@ func (svc CouponHttpService) LookupReservationDetails(holdingCode string, req mo
 
 	var reservations []models.ReservationInfo
 	var summary struct {
-		TotalReservations int `json:"total_reservations"`
-		ActiveCount       int `json:"active_count"`
-		UsedCount         int `json:"used_count"`
-		ExpiredCount      int `json:"expired_count"`
-		CancelledCount    int `json:"cancelled_count"`
+		TotalReservations int `json:"totalreservations"`
+		ActiveCount       int `json:"activecount"`
+		UsedCount         int `json:"usedcount"`
+		ExpiredCount      int `json:"expiredcount"`
+		CancelledCount    int `json:"cancelledcount"`
 	}
 
 	if shouldInclude {

@@ -12,20 +12,20 @@ const customerCollectionName = "customers"
 type Customer struct {
 	models.PartitionIdentity `bson:"inline"`
 	Code                     string          `json:"code" bson:"code"`
-	PersonalType             int8            `json:"personal_type" bson:"personal_type"`
+	PersonalType             int8            `json:"personaltype" bson:"personaltype"`
 	Images                   *[]Image        `json:"images" bson:"images"`
 	Names                    *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
 
 	AddressForBilling  Address    `json:"addressforbilling" bson:"addressforbilling"`
 	AddressForShipping *[]Address `json:"addressforshipping" bson:"addressforshipping"`
-	TaxId              string     `json:"tax_id" bson:"tax_id"`
+	TaxId              string     `json:"taxid" bson:"taxid"`
 	Email              string     `json:"email" bson:"email"`
-	CustomerType       int        `json:"customer_type" bson:"customer_type"`
-	BranchNumber       string     `json:"branch_number" bson:"branch_number"`
+	CustomerType       int        `json:"customertype" bson:"customertype"`
+	BranchNumber       string     `json:"branchnumber" bson:"branchnumber"`
 	IsCreditor         bool       `json:"iscreditor" bson:"iscreditor"`
 	IsDebtor           bool       `json:"isdebtor" bson:"isdebtor"`
 
-	FundCode   string    `json:"fund_code" bson:"fund_code"`
+	FundCode   string    `json:"fundcode" bson:"fundcode"`
 	CreditDay  int       `json:"creditday" bson:"creditday"`
 	GroupGUIDs *[]string `json:"-" bson:"groups"`
 }
@@ -33,14 +33,14 @@ type Customer struct {
 type Address struct {
 	GUID            string          `json:"guid" bson:"guid"`
 	Address         *[]string       `json:"address" bson:"address"`
-	CountryCode     string          `json:"country_code" bson:"country_code"`
-	ProvinceCode    string          `json:"province_code" bson:"province_code"`
-	DistrictCode    string          `json:"district_code" bson:"district_code"`
-	SubDistrictCode string          `json:"sub_district_code" bson:"sub_district_code"`
-	ZipCode         string          `json:"zip_code" bson:"zip_code"`
+	CountryCode     string          `json:"countrycode" bson:"countrycode"`
+	ProvinceCode    string          `json:"provincecode" bson:"provincecode"`
+	DistrictCode    string          `json:"districtcode" bson:"districtcode"`
+	SubDistrictCode string          `json:"subdistrictcode" bson:"subdistrictcode"`
+	ZipCode         string          `json:"zipcode" bson:"zipcode"`
 	ContactNames    *[]models.NameX `json:"contactnames" bson:"contactnames"`
-	PhonePrimary    string          `json:"phone_primary" bson:"phone_primary"`
-	PhoneSecondary  string          `json:"phone_secondary" bson:"phone_secondary"`
+	PhonePrimary    string          `json:"phoneprimary" bson:"phoneprimary"`
+	PhoneSecondary  string          `json:"phonesecondary" bson:"phonesecondary"`
 	Latitude        float64         `json:"latitude" bson:"latitude"`
 	Longitude       float64         `json:"longitude" bson:"longitude"`
 }
@@ -71,7 +71,7 @@ type CustomerData struct {
 }
 
 type CustomerDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	CustomerData       `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

@@ -10,7 +10,7 @@ const debtorgroupCollectionName = "debtorGroup"
 
 type DebtorGroup struct {
 	models.PartitionIdentity `bson:"inline"`
-	GroupCode                string          `json:"group_code" bson:"group_code"`
+	GroupCode                string          `json:"groupcode" bson:"groupcode"`
 	Names                    *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
 }
 
@@ -29,7 +29,7 @@ type DebtorGroupData struct {
 }
 
 type DebtorGroupDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	DebtorGroupData    `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
@@ -39,7 +39,7 @@ func (DebtorGroupDoc) CollectionName() string {
 }
 
 type DebtorGroupItemGuid struct {
-	GroupCode string `json:"group_code" bson:"group_code"`
+	GroupCode string `json:"groupcode" bson:"groupcode"`
 }
 
 func (DebtorGroupItemGuid) CollectionName() string {

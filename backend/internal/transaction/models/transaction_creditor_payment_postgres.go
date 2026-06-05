@@ -12,7 +12,7 @@ import (
 )
 
 type CreditorPaymentTransactionPG struct {
-	GuidFixed                string `json:"guid_fixed" gorm:"column:guid_fixed"`
+	GuidFixed                string `json:"guidfixed" gorm:"column:guidfixed"`
 	models.HoldingCodeentity `bson:"inline"`
 	models.PartitionIdentity `gorm:"embedded;"`
 	DocNo                    string                                `json:"docno" gorm:"column:docno;primaryKey"`
@@ -21,11 +21,11 @@ type CreditorPaymentTransactionPG struct {
 	BranchNames              models.JSONB                          `json:"branchnames" gorm:"column:branchnames;type:jsonb"`
 	CreditorCode             string                                `json:"creditorcode" gorm:"column:creditorcode"`
 	CreditorNames            pkgModels.JSONB                       `json:"creditornames" gorm:"column:creditornames;type:jsonb"`
-	TotalAmount              float64                               `json:"total_amount" gorm:"column:total_amount"`
+	TotalAmount              float64                               `json:"totalamount" gorm:"column:totalamount"`
 	TotalPayCash             float64                               `json:"totalpaycash" gorm:"column:totalpaycash"`
 	TotalPayTransfer         float64                               `json:"totalpaytransfer" gorm:"column:totalpaytransfer"`
 	TotalPayCredit           float64                               `json:"totalpaycredit" gorm:"column:totalpaycredit"`
-	Details                  *[]CreditorPaymentTransactionDetailPG `json:"details" gorm:"details;foreignKey:holding_code,docno"`
+	Details                  *[]CreditorPaymentTransactionDetailPG `json:"details" gorm:"details;foreignKey:holdingcode,docno"`
 }
 
 func (CreditorPaymentTransactionPG) TableName() string {
@@ -34,10 +34,10 @@ func (CreditorPaymentTransactionPG) TableName() string {
 
 type CreditorPaymentTransactionDetailPG struct {
 	ID                       uint   `gorm:"primarykey"`
-	HoldingCode              string `json:"holding_code" gorm:"column:holding_code"`
+	HoldingCode              string `json:"holdingcode" gorm:"column:holdingcode"`
 	models.PartitionIdentity `gorm:"embedded;"`
 	DocNo                    string  `json:"docno" gorm:"column:docno"`
-	LineNumber               int8    `json:"line_number" gorm:"column:line_number"`
+	LineNumber               int8    `json:"linenumber" gorm:"column:linenumber"`
 	BillingNo                string  `json:"billingno" gorm:"column:billingno"`
 	BillType                 int8    `json:"billtype" gorm:"column:billtype"`
 	BillAmount               float64 `json:"billamount" gorm:"column:billamount"`
@@ -53,7 +53,7 @@ func (j *CreditorPaymentTransactionPG) BeforeUpdate(tx *gorm.DB) (err error) {
 
 	// find old data
 	var details *[]CreditorPaymentTransactionDetailPG
-	tx.Model(&CreditorPaymentTransactionDetailPG{}).Where(" holding_code=? AND docno=?", j.HoldingCode, j.DocNo).Find(&details)
+	tx.Model(&CreditorPaymentTransactionDetailPG{}).Where(" holdingcode=? AND docno=?", j.HoldingCode, j.DocNo).Find(&details)
 
 	// delete un use data
 	for _, tmp := range *details {
@@ -84,7 +84,7 @@ func (j *CreditorPaymentTransactionPG) BeforeDelete(tx *gorm.DB) (err error) {
 
 	// find old data
 	var details *[]CreditorPaymentTransactionDetailPG
-	tx.Model(&CreditorPaymentTransactionDetailPG{}).Where(" holding_code=? AND docno=?", j.HoldingCode, j.DocNo).Find(&details)
+	tx.Model(&CreditorPaymentTransactionDetailPG{}).Where(" holdingcode=? AND docno=?", j.HoldingCode, j.DocNo).Find(&details)
 
 	// delete unuse data
 	for _, tmp := range *details {

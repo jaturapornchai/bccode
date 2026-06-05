@@ -21,18 +21,18 @@ import (
 )
 
 const (
-	resultStoreTTL          = 10 * time.Minute
-	resultStoreMaxEntries   = 200
+	resultStoreTTL            = 10 * time.Minute
+	resultStoreMaxEntries     = 200
 	resultStoreLargeThreshold = 6000 // bytes ของ JSON เต็ม — ถ้าเกินนี้ → store + ส่ง preview
 	resultStorePreviewItems   = 10   // จำนวน rows ที่ส่งเป็น preview ให้ LLM
 )
 
 type resultEntry struct {
-	id        string
-	tool      string
-	data      any
-	rowCount  int
-	storedAt  time.Time
+	id       string
+	tool     string
+	data     any
+	rowCount int
+	storedAt time.Time
 }
 
 var (

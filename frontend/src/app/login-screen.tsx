@@ -56,7 +56,7 @@ const storageKeys = {
   legacyPassword: "saved_password",
   legacyRememberPassword: "remember_password",
   rememberUsername: "remember_username",
-  holdingCode: "saved_holding_code",
+  holdingCode: "saved_holdingcode",
   auth: "bc_auth",
 };
 
@@ -353,7 +353,7 @@ export function LoginScreen() {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ backendUrl, username, password, holding_code: normalizedHoldingCode }),
+        body: JSON.stringify({ backendUrl, username, password, holdingcode: normalizedHoldingCode }),
       });
       const data = (await response.json()) as {
         success?: boolean;
@@ -442,7 +442,7 @@ export function LoginScreen() {
         backendUrl: runtimeBackendUrl,
         method,
         profile: profile ?? null,
-        ...(nextHoldingCode ? { holding_code: nextHoldingCode } : {}),
+        ...(nextHoldingCode ? { holdingcode: nextHoldingCode } : {}),
       }),
     );
   }

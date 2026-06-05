@@ -14,10 +14,10 @@ import (
 
 // UnifiedQueryRequest แทนคำขอ unified query
 type UnifiedQueryRequest struct {
-	HoldingCode     string                 `json:"holding_code"`
+	HoldingCode     string                 `json:"holdingcode"`
 	Question        string                 `json:"question"`
-	QueryType       string                 `json:"query_type"` // "chat", "search", "stock", "document", "unified"
-	IncludeRealTime bool                   `json:"include_real_time"`
+	QueryType       string                 `json:"querytype"` // "chat", "search", "stock", "document", "unified"
+	IncludeRealTime bool                   `json:"includerealtime"`
 	Filters         map[string]interface{} `json:"filters"`
 	Context         map[string]interface{} `json:"context"`
 }
@@ -25,48 +25,48 @@ type UnifiedQueryRequest struct {
 // UnifiedQueryResponse แทนคำตอบ unified query
 type UnifiedQueryResponse struct {
 	Success        bool                   `json:"success"`
-	ResponseType   string                 `json:"response_type"`
+	ResponseType   string                 `json:"responsetype"`
 	Data           map[string]interface{} `json:"data"`
-	AIResponse     string                 `json:"ai_response"`
-	SearchResults  []SearchResult         `json:"search_results"`
-	StockData      *StockData             `json:"stock_data"`
-	RealTimeData   interface{}            `json:"real_time_data"`
-	CacheStatus    string                 `json:"cache_status"` // "hit", "miss", "partial"
-	ProcessingTime time.Duration          `json:"processing_time"`
-	TokenUsage     *TokenUsage            `json:"token_usage"`
+	AIResponse     string                 `json:"airesponse"`
+	SearchResults  []SearchResult         `json:"searchresults"`
+	StockData      *StockData             `json:"stockdata"`
+	RealTimeData   interface{}            `json:"realtimedata"`
+	CacheStatus    string                 `json:"cachestatus"` // "hit", "miss", "partial"
+	ProcessingTime time.Duration          `json:"processingtime"`
+	TokenUsage     *TokenUsage            `json:"tokenusage"`
 	Timestamp      time.Time              `json:"timestamp"`
 }
 
 // SearchResult แทนผลการค้นหา
 type SearchResult struct {
-	ItemCode       string  `json:"item_code"`
+	ItemCode       string  `json:"itemcode"`
 	Name           string  `json:"name"`
 	Barcode        string  `json:"barcode"`
 	Unit           string  `json:"unit"`
-	ImageURL       string  `json:"image_url"`
-	RelevanceScore float64 `json:"relevance_score"`
-	CurrentStock   float64 `json:"current_stock"`
+	ImageURL       string  `json:"imageurl"`
+	RelevanceScore float64 `json:"relevancescore"`
+	CurrentStock   float64 `json:"currentstock"`
 	Warehouse      string  `json:"warehouse"`
 	Location       string  `json:"location"`
 }
 
 // StockData แทนข้อมูลสต็อก
 type StockData struct {
-	CurrentBalance float64   `json:"current_balance"`
+	CurrentBalance float64   `json:"currentbalance"`
 	Warehouse      string    `json:"warehouse"`
 	Location       string    `json:"location"`
-	LastUpdated    time.Time `json:"last_updated"`
-	MovementType   string    `json:"movement_type"` // "increase", "decrease", "transfer"
-	ChangeQuantity float64   `json:"change_quantity"`
+	LastUpdated    time.Time `json:"lastupdated"`
+	MovementType   string    `json:"movementtype"` // "increase", "decrease", "transfer"
+	ChangeQuantity float64   `json:"changequantity"`
 }
 
 // TokenUsage แทนการใช้งาน token
 type TokenUsage struct {
-	PromptTokens     int     `json:"prompt_tokens"`
-	CompletionTokens int     `json:"completion_tokens"`
-	TotalTokens      int     `json:"total_tokens"`
-	CostUSD          float64 `json:"cost_usd"`
-	CostTHB          float64 `json:"cost_thb"`
+	PromptTokens     int     `json:"prompttokens"`
+	CompletionTokens int     `json:"completiontokens"`
+	TotalTokens      int     `json:"totaltokens"`
+	CostUSD          float64 `json:"costusd"`
+	CostTHB          float64 `json:"costthb"`
 	Model            string  `json:"model"`
 }
 
@@ -136,8 +136,8 @@ func (s *UnifiedAPIServer) ProcessUnifiedQuery(c echo.Context) error {
 	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"success":   false,
-			"error":     "holding_code is required",
-			"message":   "จำเป็นต้องระบุ holding_code",
+			"error":     "holdingcode is required",
+			"message":   "จำเป็นต้องระบุ holdingcode",
 			"timestamp": time.Now(),
 		})
 	}
@@ -260,7 +260,7 @@ func (s *UnifiedAPIServer) ProcessUnifiedMultiSourceQuery(ctx context.Context, r
 	if response.StockData != nil {
 		response.Data["stock_data"] = response.StockData
 	}
-	response.Data["holding_code"] = req.HoldingCode
+	response.Data["holdingcode"] = req.HoldingCode
 	response.Data["query_type"] = "unified"
 	response.Data["include_real_time"] = req.IncludeRealTime
 

@@ -44,8 +44,8 @@ func (repo JournalPgRepository) Create(doc models.JournalPg) error {
 func (repo JournalPgRepository) Update(holdingCode string, docNo string, doc models.JournalPg) error {
 
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"holding_code": holdingCode,
-		"docno":        docNo,
+		"holdingcode": holdingCode,
+		"docno":       docNo,
 	})
 
 	if err != nil {
@@ -58,29 +58,29 @@ func (repo JournalPgRepository) Delete(holdingCode string, docNo string) error {
 
 	var details *[]models.JournalDetailPg
 	tx := repo.pst.DBClient().Begin()
-	tx.Model(&models.JournalDetailPg{}).Where(" holding_code=? AND docno=?", holdingCode, docNo).Find(&details)
+	tx.Model(&models.JournalDetailPg{}).Where(" holdingcode=? AND docno=?", holdingCode, docNo).Find(&details)
 	for _, tmp := range *details {
 		// mark delete
 		tx.Delete(&models.JournalDetailPg{}, tmp.ID)
 	}
 
 	var vats []*models.JournalVatPg
-	tx.Model(&models.JournalVatPg{}).Where(" holding_code=? AND docno=?", holdingCode, docNo).Find(&vats)
+	tx.Model(&models.JournalVatPg{}).Where(" holdingcode=? AND docno=?", holdingCode, docNo).Find(&vats)
 	for _, tmp := range vats {
 		// mark delete
 		tx.Delete(&models.JournalVatPg{}, tmp.ID)
 	}
 
 	var taxes []*models.JournalTaxPg
-	tx.Model(&models.JournalTaxPg{}).Where(" holding_code=? AND docno=?", holdingCode, docNo).Find(&taxes)
+	tx.Model(&models.JournalTaxPg{}).Where(" holdingcode=? AND docno=?", holdingCode, docNo).Find(&taxes)
 	for _, tmp := range taxes {
 		// mark delete
 		tx.Delete(&models.JournalTaxPg{}, tmp.ID)
 	}
 
 	err := tx.Delete(models.JournalPg{}, map[string]interface{}{
-		"holding_code": holdingCode,
-		"docno":        docNo,
+		"holdingcode": holdingCode,
+		"docno":       docNo,
 	}).Error
 
 	if err != nil {
@@ -96,7 +96,7 @@ func (repo JournalPgRepository) Get(holdingCode string, docNo string) (*models.J
 	var data models.JournalPg
 
 	err := repo.pst.DBClient().Preload(clause.Associations).
-		Where("holding_code=? AND docno=?", holdingCode, docNo).
+		Where("holdingcode=? AND docno=?", holdingCode, docNo).
 		First(&data).Error
 	if err != nil {
 		return nil, err

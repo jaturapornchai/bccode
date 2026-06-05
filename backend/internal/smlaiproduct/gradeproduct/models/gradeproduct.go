@@ -29,7 +29,7 @@ type GradeProductData struct {
 }
 
 type GradeProductDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	GradeProductData   `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

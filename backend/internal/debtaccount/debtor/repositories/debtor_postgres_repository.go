@@ -26,7 +26,7 @@ func NewDebtorPostgresRepository(pst microservice.IPersister) IDebtorPostgresRep
 
 func (repo *DebtorPostgresRepository) Get(holdingCode string, code string) (*debtorModels.DebtorPG, error) {
 	var result debtorModels.DebtorPG
-	_, err := repo.pst.First(&result, "holding_code=? AND code=?", holdingCode, code)
+	_, err := repo.pst.First(&result, "holdingcode=? AND code=?", holdingCode, code)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
@@ -48,8 +48,8 @@ func (repo *DebtorPostgresRepository) Create(doc debtorModels.DebtorPG) error {
 
 func (repo *DebtorPostgresRepository) Update(holdingCode string, code string, doc debtorModels.DebtorPG) error {
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"holding_code": holdingCode,
-		"code":         code,
+		"holdingcode": holdingCode,
+		"code":        code,
 	})
 
 	if err != nil {
@@ -60,8 +60,8 @@ func (repo *DebtorPostgresRepository) Update(holdingCode string, code string, do
 
 func (repo *DebtorPostgresRepository) Delete(holdingCode string, code string) error {
 	err := repo.pst.Delete(&debtorModels.DebtorPG{}, map[string]interface{}{
-		"holding_code": holdingCode,
-		"code":         code,
+		"holdingcode": holdingCode,
+		"code":        code,
 	})
 	if err != nil {
 		return err

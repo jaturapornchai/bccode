@@ -141,7 +141,7 @@ func (s *InventoryCostingService) GetValuation(ctx context.Context, holdingCode,
 		var costByWarehouse bool
 		err = tx.QueryRowContext(ctx,
 			`SELECT COALESCE(cost_by_warehouse, false)
-			 FROM product_costing_config WHERE holding_code = $1 AND itemcode = $2`,
+			 FROM product_costing_config WHERE holdingcode = $1 AND itemcode = $2`,
 			holdingCode, itemCode,
 		).Scan(&costByWarehouse)
 		if err == sql.ErrNoRows {
@@ -169,7 +169,7 @@ func (s *InventoryCostingService) GetCostingConfig(ctx context.Context, holdingC
 		`SELECT itemcode, costingmethod, lottrackingenabled, expirytrackingenabled,
 		        expiryalertdays, autoblockexpired, allownegativestock,
 		        COALESCE(cost_by_warehouse, false), standardcost
-		 FROM product_costing_config WHERE holding_code = $1 AND itemcode = $2`,
+		 FROM product_costing_config WHERE holdingcode = $1 AND itemcode = $2`,
 		holdingCode, itemCode,
 	).Scan(&config.ItemCode, &config.CostingMethod, &config.LotTrackingEnabled,
 		&config.ExpiryTrackingEnabled, &config.ExpiryAlertDays,
@@ -215,10 +215,10 @@ func (s *InventoryCostingService) UpdateCostingConfig(ctx context.Context, holdi
 
 	_, err := s.db.ExecContext(ctx,
 		`INSERT INTO product_costing_config
-		 (holding_code, itemcode, costingmethod, lottrackingenabled, expirytrackingenabled,
+		 (holdingcode, itemcode, costingmethod, lottrackingenabled, expirytrackingenabled,
 		  expiryalertdays, autoblockexpired, allownegativestock, cost_by_warehouse, standardcost, updatedat)
 		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,NOW())
-		 ON CONFLICT (holding_code, itemcode) DO UPDATE SET
+		 ON CONFLICT (holdingcode, itemcode) DO UPDATE SET
 		  costingmethod = EXCLUDED.costingmethod,
 		  lottrackingenabled = EXCLUDED.lottrackingenabled,
 		  expirytrackingenabled = EXCLUDED.expirytrackingenabled,
@@ -242,7 +242,7 @@ func (s *InventoryCostingService) GetStockCard(ctx context.Context, holdingCode,
 		`SELECT transactiondate, refdocno, transactiontype, transflag,
 		        qty, unitcost, totalcost, balanceqty, balancetotalvalue, balanceavgcost
 		 FROM inventory_cost_transactions
-		 WHERE holding_code = $1 AND itemcode = $2 AND transactiondate >= $3 AND transactiondate <= $4
+		 WHERE holdingcode = $1 AND itemcode = $2 AND transactiondate >= $3 AND transactiondate <= $4
 		 ORDER BY transactiondate ASC, id ASC`,
 		holdingCode, itemCode, fromDate, toDate,
 	)
@@ -281,13 +281,13 @@ func (s *InventoryCostingService) GetStockCard(ctx context.Context, holdingCode,
 // GetCostLayers — ดู cost layers ที่ยังเหลือ (สำหรับ FIFO/LIFO/FEFO/Lot)
 func (s *InventoryCostingService) GetCostLayers(ctx context.Context, holdingCode, itemCode, whCode string) ([]m.InventoryCostLayer, error) {
 	rows, err := s.db.QueryContext(ctx,
-		`SELECT id, holding_code, itemcode, barcode, whcode, locationcode,
+		`SELECT id, holdingcode, itemcode, barcode, whcode, locationcode,
 		        layertype, refdoctype, refdocno, originalqty, remainingqty,
 		        unitcost, landedcostperunit, totalunitcost,
 		        lotnumber, supplierlotnumber, manufacturingdate, expirydate,
 		        qualitystatus, receiveddate, createdat
 		 FROM inventory_cost_layers
-		 WHERE holding_code = $1 AND itemcode = $2 AND whcode = $3 AND remainingqty > 0
+		 WHERE holdingcode = $1 AND itemcode = $2 AND whcode = $3 AND remainingqty > 0
 		 ORDER BY receiveddate ASC, id ASC`,
 		holdingCode, itemCode, whCode,
 	)
@@ -318,8 +318,8 @@ func (s *InventoryCostingService) GetInventoryValuation(ctx context.Context, hol
 		`SELECT sb.itemcode, sb.whcode, sb.currentqty, sb.currentavgcost, sb.currenttotalvalue,
 		        COALESCE(pc.costingmethod, 'moving_average')
 		 FROM inventory_stock_balances sb
-		 LEFT JOIN product_costing_config pc ON sb.holding_code = pc.holding_code AND sb.itemcode = pc.itemcode
-		 WHERE sb.holding_code = $1 AND sb.currentqty > 0
+		 LEFT JOIN product_costing_config pc ON sb.holdingcode = pc.holdingcode AND sb.itemcode = pc.itemcode
+		 WHERE sb.holdingcode = $1 AND sb.currentqty > 0
 		 ORDER BY sb.itemcode, sb.whcode`,
 		holdingCode,
 	)
@@ -352,7 +352,7 @@ func (s *InventoryCostingService) GetInventoryValuation(ctx context.Context, hol
 func (s *InventoryCostingService) getEngineForProduct(ctx context.Context, tx *sql.Tx, holdingCode, itemCode string) (costing.CostingEngine, error) {
 	var method string
 	err := tx.QueryRowContext(ctx,
-		`SELECT COALESCE(costingmethod, 'moving_average') FROM product_costing_config WHERE holding_code = $1 AND itemcode = $2`,
+		`SELECT COALESCE(costingmethod, 'moving_average') FROM product_costing_config WHERE holdingcode = $1 AND itemcode = $2`,
 		holdingCode, itemCode,
 	).Scan(&method)
 	if err == sql.ErrNoRows {

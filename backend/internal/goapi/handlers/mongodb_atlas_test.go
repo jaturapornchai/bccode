@@ -50,7 +50,7 @@ func TestAtlasIdentityFilterUsesGuidFixedWithLegacyReadFallback(t *testing.T) {
 	got := atlasIdentityFilter("GUID001", "user@example.com", "CART001", "UID001")
 	want := bson.M{
 		"$or": []bson.M{
-			{"guid_fixed": "GUID001"},
+			{"guidfixed": "GUID001"},
 			{"email": "GUID001", "cartid": "GUID001"},
 			{"email": "user@example.com", "cartid": "CART001"},
 			{"user_uid": "UID001"},

@@ -48,7 +48,7 @@ func (repo StockBalanceImportClickHouseRepository) All(ctx context.Context, hold
 
 	results := []models.StockBalanceImportDoc{}
 
-	sqlExpr := "SELECT * FROM stockbalanceimport WHERE holding_code = ? AND taskid = ?"
+	sqlExpr := "SELECT * FROM stockbalanceimport WHERE holdingcode = ? AND taskid = ?"
 	err := repo.pst.Select(ctx, &results, sqlExpr, holdingCode, taskID)
 
 	if err != nil {
@@ -62,7 +62,7 @@ func (repo StockBalanceImportClickHouseRepository) Meta(ctx context.Context, hol
 
 	results := []models.StockBalanceImportMeta{}
 
-	sqlExpr := "SELECT COUNT(*) totalitem, SUM(sumamount) totalamount FROM stockbalanceimport WHERE holding_code = ? AND taskid = ?"
+	sqlExpr := "SELECT COUNT(*) totalitem, SUM(sumamount) totalamount FROM stockbalanceimport WHERE holdingcode = ? AND taskid = ?"
 	err := repo.pst.Select(ctx, &results, sqlExpr, holdingCode, taskID)
 
 	if err != nil {
@@ -99,7 +99,7 @@ func (repo StockBalanceImportClickHouseRepository) FindOne(ctx context.Context, 
 
 	results := []models.StockBalanceImportDoc{}
 
-	sqlExpr := fmt.Sprintf("SELECT * FROM stockbalanceimport WHERE holding_code = ? AND taskid = ? %s LIMIT 1 OFFSET 0", orderExpr)
+	sqlExpr := fmt.Sprintf("SELECT * FROM stockbalanceimport WHERE holdingcode = ? AND taskid = ? %s LIMIT 1 OFFSET 0", orderExpr)
 	err := repo.pst.Select(ctx, &results, sqlExpr, holdingCode, taskID)
 
 	if err != nil {
@@ -174,7 +174,7 @@ func (repo StockBalanceImportClickHouseRepository) List(ctx context.Context, hol
 	args = append(args, searchArgs...)
 	args = append(args, pageable.Limit, offset)
 
-	sqlExpr := fmt.Sprintf("SELECT * FROM stockbalanceimport WHERE holding_code = ? AND taskid = ? %s %s %s LIMIT ? OFFSET ?", filterExpr, searchExpr, orderExpr)
+	sqlExpr := fmt.Sprintf("SELECT * FROM stockbalanceimport WHERE holdingcode = ? AND taskid = ? %s %s %s LIMIT ? OFFSET ?", filterExpr, searchExpr, orderExpr)
 	err := repo.pst.Select(ctx, &results, sqlExpr, args...)
 
 	if err != nil {
@@ -185,7 +185,7 @@ func (repo StockBalanceImportClickHouseRepository) List(ctx context.Context, hol
 	countArgs = append(countArgs, holdingCode, taskID)
 	countArgs = append(countArgs, searchArgs...)
 
-	exprCount := fmt.Sprintf("holding_code = ? AND taskid = ? %s", searchExpr)
+	exprCount := fmt.Sprintf("holdingcode = ? AND taskid = ? %s", searchExpr)
 	count, err := repo.pst.Count(ctx, &models.StockBalanceImportDoc{}, exprCount, countArgs...)
 
 	if err != nil {
@@ -215,19 +215,19 @@ func (repo StockBalanceImportClickHouseRepository) CreateInBatch(ctx context.Con
 
 func (repo StockBalanceImportClickHouseRepository) Update(ctx context.Context, holdingCode string, guid string, doc models.StockBalanceImportRaw) error {
 	return repo.pst.Exec(ctx,
-		"ALTER TABLE stockbalanceimport UPDATE barcode = ?, name = ?, unitcode = ?, qty = ?, price = ? , sumamount = ? WHERE holding_code = ? AND guidfixed = ?",
+		"ALTER TABLE stockbalanceimport UPDATE barcode = ?, name = ?, unitcode = ?, qty = ?, price = ? , sumamount = ? WHERE holdingcode = ? AND guidfixed = ?",
 		doc.Barcode, doc.Name, doc.UnitCode, doc.Qty, doc.Price, doc.SumAmount, holdingCode, guid)
 }
 
 func (repo StockBalanceImportClickHouseRepository) DeleteByGUID(ctx context.Context, holdingCode string, guid string) error {
 	return repo.pst.Exec(ctx,
-		"ALTER TABLE stockbalanceimport DELETE WHERE holding_code = ? AND guidfixed = ?",
+		"ALTER TABLE stockbalanceimport DELETE WHERE holdingcode = ? AND guidfixed = ?",
 		holdingCode, guid)
 }
 
 func (repo StockBalanceImportClickHouseRepository) DeleteByTaskID(ctx context.Context, holdingCode string, taskID string) error {
 	return repo.pst.Exec(ctx,
-		"ALTER TABLE stockbalanceimport DELETE WHERE holding_code = ? AND taskid = ?",
+		"ALTER TABLE stockbalanceimport DELETE WHERE holdingcode = ? AND taskid = ?",
 		holdingCode, taskID)
 }
 
@@ -235,7 +235,7 @@ func (repo StockBalanceImportClickHouseRepository) UpdateExist(ctx context.Conte
 
 	isNotExist := !isExist
 	return repo.pst.Exec(ctx,
-		"ALTER TABLE stockbalanceimport UPDATE isnotexist = ? WHERE holding_code = ? AND taskid = ? AND barcode IN (?)", isNotExist, holdingCode, taskID, barcodes)
+		"ALTER TABLE stockbalanceimport UPDATE isnotexist = ? WHERE holdingcode = ? AND taskid = ? AND barcode IN (?)", isNotExist, holdingCode, taskID, barcodes)
 }
 
 func (repo StockBalanceImportClickHouseRepository) CountExist(ctx context.Context, holdingCode string, taskID string, isExist bool) (int, error) {
@@ -245,7 +245,7 @@ func (repo StockBalanceImportClickHouseRepository) CountExist(ctx context.Contex
 	countArgs := []interface{}{}
 	countArgs = append(countArgs, holdingCode, taskID, isNotExist)
 
-	exprCount := "holding_code = ? AND taskid = ? AND isnotexist = ?"
+	exprCount := "holdingcode = ? AND taskid = ? AND isnotexist = ?"
 	count, err := repo.pst.Count(ctx, &models.StockBalanceImportDoc{}, exprCount, countArgs...)
 
 	if err != nil {

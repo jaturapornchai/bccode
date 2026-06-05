@@ -51,8 +51,8 @@ func TestDebtorPaymentDocumentPhaser(t *testing.T) {
 
 	giveStr := `{
 		"id": "000000000000000000000000",
-		"holding_code": "2IZS0jFeRXWPidSupyXN7zQIlaS",
-		"guid_fixed": "2UIExOige65Ekkq6O2nj7F6BEez",
+		"holdingcode": "2IZS0jFeRXWPidSupyXN7zQIlaS",
+		"guidfixed": "2UIExOige65Ekkq6O2nj7F6BEez",
 		"docno": "EE2023062200001",
 		"docdatetime": "2023-06-22T06:48:15.000Z",
 		"doc_type": 1,
@@ -198,8 +198,8 @@ func TestDebtorPaymentDocumentPhaser(t *testing.T) {
 
 	assert.Nil(t, err)
 
-	assert.Equal(t, want.GuidFixed, got.GuidFixed, "guid_fixed")
-	assert.Equal(t, want.HoldingCode, got.HoldingCode, "holding_code")
+	assert.Equal(t, want.GuidFixed, got.GuidFixed, "guidfixed")
+	assert.Equal(t, want.HoldingCode, got.HoldingCode, "holdingcode")
 	assert.Equal(t, want.DocNo, got.DocNo, "docno")
 	assert.Equal(t, want.DocDate, got.DocDate, "docdate")
 	assert.Equal(t, want.DebtorCode, got.DebtorCode, "debtorcode")
@@ -209,7 +209,7 @@ func TestDebtorPaymentDocumentPhaser(t *testing.T) {
 	assert.Equal(t, want.TotalPayCredit, got.TotalPayCredit, "totalpaycredit")
 
 	assert.Equal(t, (*got.Details)[0].DocNo, (*want.Details)[0].DocNo, "item.docno")
-	assert.Equal(t, (*got.Details)[0].HoldingCode, (*want.Details)[0].HoldingCode, "item.holding_code")
+	assert.Equal(t, (*got.Details)[0].HoldingCode, (*want.Details)[0].HoldingCode, "item.holdingcode")
 	assert.Equal(t, (*got.Details)[0].LineNumber, (*want.Details)[0].LineNumber, "item.linenumber")
 	assert.Equal(t, (*got.Details)[0].BillingNo, (*want.Details)[0].BillingNo, "item.billingno")
 	assert.Equal(t, (*got.Details)[0].BillType, (*want.Details)[0].BillType, "item.billtype")

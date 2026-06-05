@@ -21,18 +21,18 @@
 ```sql
 CREATE TABLE queues (
     id BIGSERIAL PRIMARY KEY,
-    holding_code VARCHAR(100) NOT NULL,
+    holdingcode VARCHAR(100) NOT NULL,
     doc_no VARCHAR(100) NOT NULL,
     trans_flag VARCHAR(10) NOT NULL,
     retry_count INTEGER DEFAULT 0,
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW(),
+    createdat TIMESTAMP DEFAULT NOW(),
+    updatedat TIMESTAMP DEFAULT NOW(),
     status VARCHAR(20) DEFAULT 'pending',
     processed_at TIMESTAMP NULL,
     error_message TEXT NULL,
 
-    INDEX idx_queues_shop_status (holding_code, status),
-    INDEX idx_queues_pop (holding_code, created_at) WHERE status = 'pending'
+    INDEX idx_queues_shop_status (holdingcode, status),
+    INDEX idx_queues_pop (holdingcode, createdat) WHERE status = 'pending'
 );
 ```
 
@@ -40,15 +40,15 @@ CREATE TABLE queues (
 ```sql
 CREATE TABLE dead_letter_queue (
     id BIGSERIAL PRIMARY KEY,
-    holding_code VARCHAR(100) NOT NULL,
+    holdingcode VARCHAR(100) NOT NULL,
     doc_no VARCHAR(100) NOT NULL,
     trans_flag VARCHAR(10) NOT NULL,
     retry_count INTEGER DEFAULT 0,
-    created_at TIMESTAMP NOT NULL,
+    createdat TIMESTAMP NOT NULL,
     failed_at TIMESTAMP DEFAULT NOW(),
     error_message TEXT NOT NULL,
 
-    INDEX idx_dlq_holding_code (holding_code),
+    INDEX idx_dlq_holdingcode (holdingcode),
     INDEX idx_dlq_failed_at (failed_at)
 );
 ```
@@ -176,7 +176,7 @@ defer lock.Release(ctx)
 ## Performance Considerations
 
 ### Indexing
-- สร้าง index บน `(holding_code, status)` สำหรับ PopFromQueue
+- สร้าง index บน `(holdingcode, status)` สำหรับ PopFromQueue
 - สร้าง partial index `WHERE status = 'pending'` สำหรับเพิ่มประสิทธิภาพ
 
 ### Connection Pooling
@@ -188,7 +188,7 @@ defer lock.Release(ctx)
 ```sql
 DELETE FROM queues
 WHERE status = 'completed'
-  AND updated_at < NOW() - INTERVAL '7 days';
+  AND updatedat < NOW() - INTERVAL '7 days';
 ```
 
 - ทำความสะอาด expired locks:
@@ -233,15 +233,15 @@ FROM queues
 GROUP BY status;
 
 -- Shop ที่มีงานรอมากที่สุด
-SELECT holding_code, COUNT(*) as pending_count
+SELECT holdingcode, COUNT(*) as pending_count
 FROM queues
 WHERE status = 'pending'
-GROUP BY holding_code
+GROUP BY holdingcode
 ORDER BY pending_count DESC
 LIMIT 10;
 
 -- งานที่ล้มเหลว
-SELECT holding_code, doc_no, error_message, failed_at
+SELECT holdingcode, doc_no, error_message, failed_at
 FROM dead_letter_queue
 ORDER BY failed_at DESC
 LIMIT 20;
@@ -262,7 +262,7 @@ ORDER BY acquired_at DESC;
 ### ปัญหา: งาน stuck ใน processing
 ```sql
 -- หางานที่ processing นานเกินไป (เกิน 1 ชม.)
-SELECT id, holding_code, doc_no, processed_at
+SELECT id, holdingcode, doc_no, processed_at
 FROM queues
 WHERE status = 'processing'
   AND processed_at < NOW() - INTERVAL '1 hour';

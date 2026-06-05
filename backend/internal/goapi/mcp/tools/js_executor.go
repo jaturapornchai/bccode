@@ -26,24 +26,24 @@ type JSExecResponse struct {
 	Result      interface{} `json:"result,omitempty"`
 	Logs        []string    `json:"logs,omitempty"`
 	Error       string      `json:"error,omitempty"`
-	ExecutionMs int64       `json:"execution_ms"`
-	QueriesRun  int         `json:"queries_run"`
+	ExecutionMs int64       `json:"executionms"`
+	QueriesRun  int         `json:"queriesrun"`
 }
 
 // ExecuteJS รัน JavaScript code ใน Goja sandbox (readonly)
 //
 // Sandbox helpers ที่ AI ใช้ได้:
 //
-//	query_pg(sql, limit?)              → array of rows
-//	query_mongo(collection, filter?, limit?) → array of documents
-//	query_ch(sql, limit?)              → array of rows
+//	querypg(sql, limit?)              → array of rows
+//	querymongo(collection, filter?, limit?) → array of documents
+//	querych(sql, limit?)              → array of rows
 //	log(...)                           → server log + return ใน .logs
 //
 // Script ต้อง return ค่าออกมา (ค่าเดียว — object/array/string/number)
 // หรือใช้ statement สุดท้ายเป็นค่า (เพราะ wrap ใน IIFE)
 func ExecuteJS(ctx context.Context, holdingCode, code string) (*JSExecResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 	if strings.TrimSpace(code) == "" {
 		return nil, fmt.Errorf("code is empty")
@@ -82,8 +82,8 @@ func ExecuteJS(ctx context.Context, holdingCode, code string) (*JSExecResponse, 
 		return goja.Undefined()
 	})
 
-	// query_pg(sql, limit?) → []row
-	_ = vm.Set("query_pg", func(call goja.FunctionCall) goja.Value {
+	// querypg(sql, limit?) → []row
+	_ = vm.Set("querypg", func(call goja.FunctionCall) goja.Value {
 		sql := call.Argument(0).String()
 		limit := argInt(call, 1, 200)
 		if err := validateReadonlySQL(sql); err != nil {
@@ -92,13 +92,13 @@ func ExecuteJS(ctx context.Context, holdingCode, code string) (*JSExecResponse, 
 		queryCount++
 		result, err := ExecutePgCommand(queryCtx, holdingCode, sql, limit)
 		if err != nil {
-			panic(vm.NewGoError(fmt.Errorf("query_pg: %w", err)))
+			panic(vm.NewGoError(fmt.Errorf("querypg: %w", err)))
 		}
 		return vm.ToValue(result.Rows)
 	})
 
-	// query_mongo(collection, filter?, limit?) → []document
-	_ = vm.Set("query_mongo", func(call goja.FunctionCall) goja.Value {
+	// querymongo(collection, filter?, limit?) → []document
+	_ = vm.Set("querymongo", func(call goja.FunctionCall) goja.Value {
 		collection := call.Argument(0).String()
 		filter := "{}"
 		if len(call.Arguments) > 1 && !goja.IsUndefined(call.Argument(1)) {
@@ -108,13 +108,13 @@ func ExecuteJS(ctx context.Context, holdingCode, code string) (*JSExecResponse, 
 		queryCount++
 		result, err := QueryMongoDB(queryCtx, holdingCode, "bcaiclouddb", collection, filter, limit)
 		if err != nil {
-			panic(vm.NewGoError(fmt.Errorf("query_mongo: %w", err)))
+			panic(vm.NewGoError(fmt.Errorf("querymongo: %w", err)))
 		}
 		return vm.ToValue(result.Documents)
 	})
 
-	// query_ch(sql, limit?) → []row
-	_ = vm.Set("query_ch", func(call goja.FunctionCall) goja.Value {
+	// querych(sql, limit?) → []row
+	_ = vm.Set("querych", func(call goja.FunctionCall) goja.Value {
 		sql := call.Argument(0).String()
 		limit := argInt(call, 1, 200)
 		if err := validateReadonlySQL(sql); err != nil {
@@ -123,7 +123,7 @@ func ExecuteJS(ctx context.Context, holdingCode, code string) (*JSExecResponse, 
 		queryCount++
 		result, err := QueryClickHouse(queryCtx, holdingCode, "", sql, limit)
 		if err != nil {
-			panic(vm.NewGoError(fmt.Errorf("query_ch: %w", err)))
+			panic(vm.NewGoError(fmt.Errorf("querych: %w", err)))
 		}
 		return vm.ToValue(result.Rows)
 	})

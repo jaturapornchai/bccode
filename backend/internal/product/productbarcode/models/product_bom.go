@@ -12,9 +12,9 @@ const productBarcodeBOMCollectionName = "productBarcodeBOMs"
 // type ProductBarcodeBOM struct {
 // 	Level         int             `json:"level" gorm:"column:level"`
 // 	MainBarcode   string          `json:"mainbarcode" gorm:"column:mainbarcode"`
-// 	GuidFixed     string          `json:"guid_fixed" gorm:"column:guidfixed"`
+// 	GuidFixed     string          `json:"guidfixed" gorm:"column:guidfixed"`
 // 	Names         *[]models.NameX `json:"names" gorm:"column:names"`
-// 	ItemUnitCode  string          `json:"item_unit_code" gorm:"column:itemunitcode"`
+// 	ItemUnitCode  string          `json:"itemunitcode" gorm:"column:itemunitcode"`
 // 	ItemUnitNames *[]models.NameX `json:"itemunitnames" gorm:"column:itemunitnames"`
 // 	Barcode       string          `json:"barcode" gorm:"column:barcode"`
 // 	Condition     bool            `json:"condition" gorm:"column:condition"`
@@ -24,10 +24,10 @@ const productBarcodeBOMCollectionName = "productBarcodeBOMs"
 // }
 
 type BOMProductBarcode struct {
-	BarcodeGuidFixed string          `json:"guid_fixed" bson:"guid_fixed"`
+	BarcodeGuidFixed string          `json:"guidfixed" bson:"guidfixed"`
 	Level            int             `json:"level" bson:"level"`
 	Names            *[]models.NameX `json:"names" bson:"names"`
-	ItemUnitCode     string          `json:"item_unit_code" bson:"item_unit_code"`
+	ItemUnitCode     string          `json:"itemunitcode" bson:"itemunitcode"`
 	ItemUnitNames    *[]models.NameX `json:"itemunitnames" bson:"itemunitnames"`
 	Barcode          string          `json:"barcode" bson:"barcode" validate:"required,min=1"`
 	Condition        bool            `json:"condition" bson:"condition"`
@@ -62,7 +62,7 @@ type ProductBarcodeBOMViewData struct {
 }
 
 type ProductBarcodeBOMViewDoc struct {
-	ID                        primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                        primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	ProductBarcodeBOMViewData `bson:"inline"`
 	models.ActivityDoc        `bson:"inline"`
 }

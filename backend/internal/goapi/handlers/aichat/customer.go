@@ -17,26 +17,26 @@ func GetCustomerData(ctx context.Context, holdingCode string) ([]StockData, erro
 
 	query := `
 		SELECT
-			code as product_code,
-			name0 as product_name,
-			COALESCE(phone, '') as barcode_list,
-			COALESCE(address, '') as unit_structure,
-			COALESCE(creditlimit::text, '0') as stock_qty
+			code as productcode,
+			name0 as productname,
+			COALESCE(phone, '') as barcodelist,
+			COALESCE(address, '') as unitstructure,
+			COALESCE(creditlimit::text, '0') as stockqty
 		FROM customer
 		WHERE code IS NOT NULL
 
 		UNION ALL
 
 		SELECT
-			code as product_code,
-			name0 as product_name,
-			COALESCE(phone, '') as barcode_list,
-			COALESCE(address, '') as unit_structure,
-			COALESCE(creditlimit::text, '0') as stock_qty
+			code as productcode,
+			name0 as productname,
+			COALESCE(phone, '') as barcodelist,
+			COALESCE(address, '') as unitstructure,
+			COALESCE(creditlimit::text, '0') as stockqty
 		FROM debtor
 		WHERE code IS NOT NULL
 
-		ORDER BY product_code
+		ORDER BY productcode
 	`
 
 	rows, err := db.QueryContext(ctx, query)

@@ -15,7 +15,7 @@ describe("workspace product unit setup route", () => {
         expect(init?.method).toBe("GET");
         return Response.json({
           success: true,
-          data: [{ holding_code: "SHOP001", name: "SHOP001", names: null }],
+          data: [{ holdingcode: "SHOP001", name: "SHOP001", names: null }],
           total: 1,
         });
       }
@@ -32,7 +32,7 @@ describe("workspace product unit setup route", () => {
       }
       if (requestUrl === "http://localhost:8888/select-holding") {
         expect(init?.method).toBe("POST");
-        expect(JSON.parse(String(init?.body))).toEqual({ holding_code: "SHOP001" });
+        expect(JSON.parse(String(init?.body))).toEqual({ holdingcode: "SHOP001" });
         return Response.json({ success: true });
       }
       if (requestUrl === "http://localhost:8888/organization/company") {
@@ -58,7 +58,7 @@ describe("workspace product unit setup route", () => {
 
     expect(response.status).toBe(200);
     expect(json.data[0]).toMatchObject({
-      holding_code: "SHOP001",
+      holdingcode: "SHOP001",
       name: "บริษัท ทดสอบ จำกัด",
       names: [{ code: "th", name: "บริษัท ทดสอบ จำกัด" }],
       companies: [],
@@ -76,7 +76,7 @@ describe("workspace product unit setup route", () => {
         return Response.json({
           success: true,
           data: [{
-            holding_code: "SHOP001",
+            holdingcode: "SHOP001",
             names: [{ code: "th", name: "บริษัท ทดสอบ จำกัด" }],
             language: "th",
             languageconfigs: [
@@ -95,7 +95,7 @@ describe("workspace product unit setup route", () => {
       }
       if (requestUrl === "http://localhost:8888/select-holding") {
         expect(init?.method).toBe("POST");
-        expect(JSON.parse(String(init?.body))).toEqual({ holding_code: "SHOP001" });
+        expect(JSON.parse(String(init?.body))).toEqual({ holdingcode: "SHOP001" });
         return Response.json({ success: true });
       }
       if (requestUrl === "http://localhost:8888/organization/company") {
@@ -121,7 +121,7 @@ describe("workspace product unit setup route", () => {
 
     expect(response.status).toBe(200);
     expect(json.data[0]).toMatchObject({
-      holding_code: "SHOP001",
+      holdingcode: "SHOP001",
       active_languages: ["th", "en", "lo"],
       base_currency: "THB",
       currencies: ["THB", "USD"],
@@ -145,12 +145,12 @@ describe("workspace product unit setup route", () => {
           success: true,
           data: [
             {
-              holding_code: "SHOP_EMPTY",
+              holdingcode: "SHOP_EMPTY",
               names: [{ code: "th", name: "กิจการว่าง" }],
               languageconfigs: [{ code: "th", name: "ภาษาไทย", is_use: true, isdefault: true }],
             },
             {
-              holding_code: "SHOP_WITH_ORG",
+              holdingcode: "SHOP_WITH_ORG",
               names: [{ code: "th", name: "กิจการมีบริษัท" }],
               languageconfigs: [{ code: "th", name: "ภาษาไทย", is_use: true, isdefault: true }],
             },
@@ -159,14 +159,14 @@ describe("workspace product unit setup route", () => {
         });
       }
       if (requestUrl === "http://localhost:8888/select-holding") {
-        selectedShop = JSON.parse(String(init?.body)).holding_code;
+        selectedShop = JSON.parse(String(init?.body)).holdingcode;
         return Response.json({ success: true });
       }
       if (requestUrl === "http://localhost:8888/organization/company") {
         return Response.json({
           success: true,
           data: selectedShop === "SHOP_WITH_ORG"
-            ? [{ guid_fixed: "COMP001", code: "001", names: [{ code: "th", name: "บริษัท A" }] }]
+            ? [{ guidfixed: "COMP001", code: "001", names: [{ code: "th", name: "บริษัท A" }] }]
             : [],
         });
       }
@@ -174,7 +174,7 @@ describe("workspace product unit setup route", () => {
         return Response.json({
           success: true,
           data: selectedShop === "SHOP_WITH_ORG"
-            ? [{ guid_fixed: "BR001", company_guid: "COMP001", code: "00000", names: [{ code: "th", name: "สำนักงานใหญ่" }] }]
+            ? [{ guidfixed: "BR001", companyguid: "COMP001", code: "00000", names: [{ code: "th", name: "สำนักงานใหญ่" }] }]
             : [],
         });
       }
@@ -192,11 +192,11 @@ describe("workspace product unit setup route", () => {
     const json = await response.json();
 
     expect(response.status).toBe(200);
-    expect(json.data[0]).toMatchObject({ holding_code: "SHOP_EMPTY", companies: [], branches: [] });
+    expect(json.data[0]).toMatchObject({ holdingcode: "SHOP_EMPTY", companies: [], branches: [] });
     expect(json.data[1]).toMatchObject({
-      holding_code: "SHOP_WITH_ORG",
-      companies: [{ guid_fixed: "COMP001", code: "001" }],
-      branches: [{ guid_fixed: "BR001", company_guid: "COMP001", code: "00000" }],
+      holdingcode: "SHOP_WITH_ORG",
+      companies: [{ guidfixed: "COMP001", code: "001" }],
+      branches: [{ guidfixed: "BR001", companyguid: "COMP001", code: "00000" }],
     });
     expect(fetchMock).toHaveBeenCalledTimes(7);
   });
@@ -210,7 +210,7 @@ describe("workspace product unit setup route", () => {
         return Response.json({
           success: true,
           data: [{
-            holding_code: "SHOP_WITH_DELETED_ORG",
+            holdingcode: "SHOP_WITH_DELETED_ORG",
             names: [{ code: "th", name: "กิจการมีข้อมูลถูกลบ" }],
             languageconfigs: [{ code: "th", name: "ภาษาไทย", is_use: true, isdefault: true }],
           }],
@@ -218,15 +218,15 @@ describe("workspace product unit setup route", () => {
         });
       }
       if (requestUrl === "http://localhost:8888/select-holding") {
-        expect(JSON.parse(String(init?.body))).toEqual({ holding_code: "SHOP_WITH_DELETED_ORG" });
+        expect(JSON.parse(String(init?.body))).toEqual({ holdingcode: "SHOP_WITH_DELETED_ORG" });
         return Response.json({ success: true });
       }
       if (requestUrl === "http://localhost:8888/organization/company") {
         return Response.json({
           success: true,
           data: [
-            { guid_fixed: "COMP_ACTIVE", code: "001", names: [{ code: "th", name: "บริษัทใช้งาน" }] },
-            { guid_fixed: "COMP_DELETED", code: "002", names: [{ code: "th", name: "บริษัทลบแล้ว" }], deleted_at: "2026-06-03T00:00:00Z" },
+            { guidfixed: "COMP_ACTIVE", code: "001", names: [{ code: "th", name: "บริษัทใช้งาน" }] },
+            { guidfixed: "COMP_DELETED", code: "002", names: [{ code: "th", name: "บริษัทลบแล้ว" }], deletedat: "2026-06-03T00:00:00Z" },
           ],
         });
       }
@@ -234,9 +234,9 @@ describe("workspace product unit setup route", () => {
         return Response.json({
           success: true,
           data: [
-            { guid_fixed: "BR_ACTIVE", company_guid: "COMP_ACTIVE", code: "00000", names: [{ code: "th", name: "สำนักงานใหญ่" }] },
-            { guid_fixed: "BR_DELETED", company_guid: "COMP_ACTIVE", code: "00001", names: [{ code: "th", name: "สาขาลบแล้ว" }], deleted_at: "2026-06-03T00:00:00Z" },
-            { guid_fixed: "BR_ORPHAN", company_guid: "COMP_DELETED", code: "00002", names: [{ code: "th", name: "สาขาของบริษัทลบแล้ว" }] },
+            { guidfixed: "BR_ACTIVE", companyguid: "COMP_ACTIVE", code: "00000", names: [{ code: "th", name: "สำนักงานใหญ่" }] },
+            { guidfixed: "BR_DELETED", companyguid: "COMP_ACTIVE", code: "00001", names: [{ code: "th", name: "สาขาลบแล้ว" }], deletedat: "2026-06-03T00:00:00Z" },
+            { guidfixed: "BR_ORPHAN", companyguid: "COMP_DELETED", code: "00002", names: [{ code: "th", name: "สาขาของบริษัทลบแล้ว" }] },
           ],
         });
       }
@@ -255,9 +255,9 @@ describe("workspace product unit setup route", () => {
 
     expect(response.status).toBe(200);
     expect(json.data[0]).toMatchObject({
-      holding_code: "SHOP_WITH_DELETED_ORG",
-      companies: [{ guid_fixed: "COMP_ACTIVE", code: "001" }],
-      branches: [{ guid_fixed: "BR_ACTIVE", company_guid: "COMP_ACTIVE", code: "00000" }],
+      holdingcode: "SHOP_WITH_DELETED_ORG",
+      companies: [{ guidfixed: "COMP_ACTIVE", code: "001" }],
+      branches: [{ guidfixed: "BR_ACTIVE", companyguid: "COMP_ACTIVE", code: "00000" }],
     });
     expect(fetchMock).toHaveBeenCalledTimes(4);
   });
@@ -283,12 +283,12 @@ describe("workspace product unit setup route", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it("normalizes holding_code before creating a Holding", async () => {
+  it("normalizes holdingcode before creating a Holding", async () => {
     const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
       expect(String(url)).toBe("http://localhost:8888/create-holding");
       expect(init?.method).toBe("POST");
       expect(JSON.parse(String(init?.body))).toMatchObject({
-        holding_code: "bc_new1",
+        holdingcode: "bc_new1",
         name1: "New Holding",
       });
       return Response.json({ success: true, ID: "bc_new1" });
@@ -301,7 +301,7 @@ describe("workspace product unit setup route", () => {
         headers: { "Content-Type": "application/json", Authorization: "Bearer test-token" },
         body: JSON.stringify({
           backendUrl: "http://localhost:8888/goapi",
-          holding_code: "BC_New1",
+          holdingcode: "BC_New1",
           name1: "New Holding",
           names: [{ code: "th", name: "New Holding" }],
         }),
@@ -315,7 +315,7 @@ describe("workspace product unit setup route", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it("rejects invalid holding_code before creating a Holding", async () => {
+  it("rejects invalid holdingcode before creating a Holding", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
@@ -325,7 +325,7 @@ describe("workspace product unit setup route", () => {
         headers: { "Content-Type": "application/json", Authorization: "Bearer test-token" },
         body: JSON.stringify({
           backendUrl: "http://localhost:8888/goapi",
-          holding_code: "bc-demo",
+          holdingcode: "bc-demo",
           name1: "New Holding",
         }),
       }),
@@ -334,7 +334,7 @@ describe("workspace product unit setup route", () => {
     const json = await response.json();
 
     expect(response.status).toBe(400);
-    expect(json).toMatchObject({ success: false, message: "holding_code ต้องเป็น a-z, 0-9, _ ยาว 3-30 ตัว และขึ้นต้นด้วย a-z" });
+    expect(json).toMatchObject({ success: false, message: "holdingcode ต้องเป็น a-z, 0-9, _ ยาว 3-30 ตัว และขึ้นต้นด้วย a-z" });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -348,7 +348,7 @@ describe("workspace product unit setup route", () => {
         headers: { "Content-Type": "application/json", Authorization: "Bearer test-token" },
         body: JSON.stringify({
           backendUrl: "http://localhost:8888/goapi",
-          holding_code: "bc_new1",
+          holdingcode: "bc_new1",
           name1: "   ",
         }),
       }),
@@ -367,7 +367,7 @@ describe("workspace product unit setup route", () => {
       const requestUrl = String(url);
       if (requestUrl === "http://localhost:8888/select-holding") {
         expect(init?.method).toBe("POST");
-        expect(JSON.parse(String(init?.body))).toEqual({ holding_code: "bc_new1" });
+        expect(JSON.parse(String(init?.body))).toEqual({ holdingcode: "bc_new1" });
         selected = true;
         return Response.json({ success: true });
       }
@@ -378,7 +378,7 @@ describe("workspace product unit setup route", () => {
         return Response.json({
           success: true,
           data: {
-            holding_code: "bc_new1",
+            holdingcode: "bc_new1",
             name1: "Old Holding Name",
             names: [
               { code: "th", name: "Old Holding Name" },
@@ -391,7 +391,7 @@ describe("workspace product unit setup route", () => {
       }
       if (requestUrl === "http://localhost:8888/holding/bc_new1" && init?.method === "PUT") {
         expect(JSON.parse(String(init?.body))).toMatchObject({
-          holding_code: "bc_new1",
+          holdingcode: "bc_new1",
           name1: "New Holding Name",
           names: [
             { code: "th", name: "New Holding Name" },
@@ -412,7 +412,7 @@ describe("workspace product unit setup route", () => {
         headers: { "Content-Type": "application/json", Authorization: "Bearer owner-token" },
         body: JSON.stringify({
           backendUrl: "http://localhost:8888/goapi",
-          holding_code: "bc_new1",
+          holdingcode: "bc_new1",
           name1: "New Holding Name",
         }),
       }),

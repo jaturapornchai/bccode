@@ -16,7 +16,7 @@ type PurchaseReturnTransactionPG struct {
 	TotalPayCash     float64                              `json:"totalpaycash" gorm:"column:totalpaycash"`
 	TotalPayTransfer float64                              `json:"totalpaytransfer" gorm:"column:totalpaytransfer"`
 	TotalPayCredit   float64                              `json:"totalpaycredit" gorm:"column:totalpaycredit"`
-	Items            *[]PurchaseReturnTransactionDetailPG `json:"items" gorm:"items;foreignKey:holding_code,docno"`
+	Items            *[]PurchaseReturnTransactionDetailPG `json:"items" gorm:"items;foreignKey:holdingcode,docno"`
 }
 
 type PurchaseReturnTransactionDetailPG struct {
@@ -49,7 +49,7 @@ func (j *PurchaseReturnTransactionPG) BeforeUpdate(tx *gorm.DB) (err error) {
 
 	// find old data
 	var details *[]PurchaseTransactionDetailPG
-	tx.Model(&PurchaseTransactionDetailPG{}).Where(" holding_code=? AND docno=?", j.HoldingCode, j.DocNo).Find(&details)
+	tx.Model(&PurchaseTransactionDetailPG{}).Where(" holdingcode=? AND docno=?", j.HoldingCode, j.DocNo).Find(&details)
 
 	// delete un use data
 	for _, tmp := range *details {

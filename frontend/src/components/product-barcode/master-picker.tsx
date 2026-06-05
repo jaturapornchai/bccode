@@ -110,7 +110,7 @@ export function MasterPicker({
       q: debounced,
       limit: 50,
       lang: String(language),
-      company_guid: companyGuid,
+      companyguid: companyGuid,
       filters,
     });
     if (!response.success) {

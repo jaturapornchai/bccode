@@ -12,9 +12,9 @@ import (
 const OutboxCollectionName = "organizationCrudOutbox"
 
 type OutboxEventDoc struct {
-	ID          primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	HoldingCode string             `json:"holding_code" bson:"holding_code"`
-	GuidFixed   string             `json:"guid_fixed" bson:"guid_fixed"`
+	ID          primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	HoldingCode string             `json:"holdingcode" bson:"holdingcode"`
+	GuidFixed   string             `json:"guidfixed" bson:"guidfixed"`
 	Module      string             `json:"module" bson:"module"`
 	Action      string             `json:"action" bson:"action"`
 	Topic       string             `json:"topic" bson:"topic"`
@@ -22,8 +22,8 @@ type OutboxEventDoc struct {
 	Payload     interface{}        `json:"payload" bson:"payload"`
 	Status      string             `json:"status" bson:"status"`
 	Error       string             `json:"error,omitempty" bson:"error,omitempty"`
-	CreatedAt   time.Time          `json:"created_at" bson:"created_at"`
-	UpdatedAt   time.Time          `json:"updated_at" bson:"updated_at"`
+	CreatedAt   time.Time          `json:"createdat" bson:"createdat"`
+	UpdatedAt   time.Time          `json:"updatedat" bson:"updatedat"`
 }
 
 func (OutboxEventDoc) CollectionName() string {

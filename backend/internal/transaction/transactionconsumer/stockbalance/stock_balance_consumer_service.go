@@ -80,7 +80,7 @@ func (s *StockReceiveTransactionConsumerService) GetStockBalanceDetail(holdingCo
 		Page:  1,
 		Sorts: []micromodels.KeyInt{
 			{
-				Key:   "guid_fixed",
+				Key:   "guidfixed",
 				Value: -1,
 			},
 		},

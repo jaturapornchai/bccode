@@ -6,7 +6,7 @@ describe("password login route", () => {
     vi.unstubAllGlobals();
   });
 
-  it("requires holding_code before password login", async () => {
+  it("requires holdingcode before password login", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
@@ -29,14 +29,14 @@ describe("password login route", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("forwards normalized holding_code to mainapi login", async () => {
+  it("forwards normalized holdingcode to mainapi login", async () => {
     const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
       expect(String(url)).toBe("http://localhost:8888/login");
       expect(init?.method).toBe("POST");
       expect(JSON.parse(String(init?.body))).toEqual({
         username: "demo",
         password: "secret",
-        holding_code: "bc_demo",
+        holdingcode: "bc_demo",
       });
       return Response.json({ success: true, token: "token-1", refresh: "refresh-1" });
     });
@@ -49,7 +49,7 @@ describe("password login route", () => {
         backendUrl: "http://localhost:8888/goapi",
         username: "demo",
         password: "secret",
-        holding_code: "BC_Demo",
+        holdingcode: "BC_Demo",
       }),
     }));
     const json = await response.json();

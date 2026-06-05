@@ -473,7 +473,7 @@ booking_receipt	ใบรับจอง	Booking Receipt	Booking Receipt	Booking
 booknumber	เลขที่เล่ม	Book Number	书号	ブック番号	លេខសៀវភៅ	책 번호	ເລກປຶ້ມ	စာအုပ်နံပါတ်	Số sách	Book Number	Book Number	Book Number
 border_display	การแสดงกรอบ	Border display	边框显示	枠線表示	ការបង្ហាញស៊ុម	테두리 표시	ການສະແດງກອບ	ဘောင်ပြသမှု	Hiển thị viền	Border display	Border display	Border display
 branch	สาขา	Branch	分店	支店	សាខា	지점	ສາຂາ	ဌာနခွဲ	Chi nhánh	Branch	Branch	Branch
-branch_code	รหัสสาขา	Branch Code	分店代码	支店コード	លេខកូដសាខា	지점 코드	ລະຫັດສາຂາ	ဌာနခွဲကုဒ်	Mã chi nhánh	Branch Code	Branch Code	Branch Code
+branchcode	รหัสสาขา	Branch Code	分店代码	支店コード	លេខកូដសាខា	지점 코드	ລະຫັດສາຂາ	ဌာနခွဲကုဒ်	Mã chi nhánh	Branch Code	Branch Code	Branch Code
 branch_config_changed	การตั้งค่าสาขาเปลี่ยนแปลง	Branch Config Changed	Branch Config Changed	Branch Config Changed	Branch Config Changed	Branch Config Changed	Branch Config Changed	Branch Config Changed	Branch Config Changed	Branch Config Changed	Branch Config Changed	Branch Config Changed
 branch_initial_setup	ตั้งค่าเริ่มต้นสาขา	Branch Initial Setup	分店初始设置	支店初期設定	ការដំឡើងសាខាដំបូង	지점 초기 설정	ຕັ້ງຄ່າສາຂາເບື້ອງຕົ້ນ	ဌာနခွဲ အစပိုင်း ထည့်သွင်းမှု	Cài đặt chi nhánh ban đầu	Branch Initial Setup	Branch Initial Setup	Branch Initial Setup
 branch_language	ภาษาที่ใช้ในสาขา	Branch Language	分店语言	支店言語	ភាសាសាខា	지점 언어	ພາສາສາຂາ	ဌာနခွဲဘာသာစကား	Ngôn ngữ chi nhánh	Branch Language	Branch Language	Branch Language
@@ -489,7 +489,7 @@ buddhist_calendar	พุทธศักราช	Buddhist Era	佛历	仏暦	ព�
 buddhist_era	พุทธศักราช (พ.ศ.)	Buddhist Era (B.E.)	佛历	仏暦	ពុទ្ធសករាជ	불력	ພຸດທະສັກກະຣາດ	ဗုဒ္ဓသက္ကရာဇ်	Phật lịch	Buddhist Era (B.E.)	Buddhist Era (B.E.)	Buddhist Era (B.E.)
 buddhist_era_short	พ.ศ.	B.E.	佛历	仏暦	ព.ស.	불기	ພ.ສ.	သာသနာနှစ်	P.L.	B.E.	B.E.	B.E.
 business_agriculture	ธุรกิจการเกษตร	Agriculture	农业	農業	កសិកម្ម	농업	ກະສິກຳ	စိုက်ပျိုးရေး	Nông nghiệp	Agriculture	Agriculture	Agriculture
-business_code	รหัสประเภทธุรกิจ	Business Code	业务代码	ビジネスコード	លេខកូដអាជីវកម្ម	비즈니스 코드	ລະຫັດທຸລະກິດ	စီးပွားရေးကုဒ်	Mã doanh nghiệp	Business Code	Business Code	Business Code
+businesscode	รหัสประเภทธุรกิจ	Business Code	业务代码	ビジネスコード	លេខកូដអាជីវកម្ម	비즈니스 코드	ລະຫັດທຸລະກິດ	စီးပွားရေးကုဒ်	Mã doanh nghiệp	Business Code	Business Code	Business Code
 business_health	สุขภาพธุรกิจ	Business Health	企业健康	ビジネスヘルス	សុខភាពអាជីវកម្ម	비즈니스 건강도	ສຸຂະພາບທຸລະກິດ	လုပ်ငန်းကျန်းမာရေး	Sức khỏe doanh nghiệp	Business Health	Business Health	Business Health
 business_name	ชื่อประเภทธุรกิจ	Business Name	业务名称	ビジネス名	ឈ្មោះអាជីវកម្ម	비즈니스명	ຊື່ທຸລະກິດ	စီးပွားရေးအမည်	Tên doanh nghiệp	Business Name	Business Name	Business Name
 business_pharmacy	ธุรกิจขายยา	Pharmacy	药店	薬局	ឱសថស្ថាន	약국	ຮ້ານຂາຍຢາ	ဆေးဆိုင်	Nhà thuốc	Pharmacy	Pharmacy	Pharmacy
@@ -691,7 +691,7 @@ chatbot_suggestion_monthly_profit	กำไรเดือนนี้เท่�
 chatbot_suggestion_top_customers	ลูกค้ารายใหญ่ 5 อันดับแรก	Top 5 customers	Top 5 customers	Top 5 customers	Top 5 customers	Top 5 customers	Top 5 customers	Top 5 customers	Top 5 customers	Top 5 customers	Top 5 customers	Top 5 customers
 chatbot_suggestion_top_selling	สินค้าขายดี 10 อันดับเดือนนี้	Top 10 selling products this month	Top 10 selling products this month	Top 10 selling products this month	Top 10 selling products this month	Top 10 selling products this month	Top 10 selling products this month	Top 10 selling products this month	Top 10 selling products this month	Top 10 selling products this month	Top 10 selling products this month	Top 10 selling products this month
 chatbot_timeout_retry	AI ใช้เวลานานเกินไป กรุณาลองใหม่	AI took too long, please try again	AI处理时间过长，请重试	AIの処理に時間がかかりすぎました、もう一度お試しください	AI ចំណាយពេលយូរពេក សូមព្យាយាមម្តងទៀត	AI 처리 시간이 너무 오래 걸렸습니다. 다시 시도해 주세요	AI ໃຊ້ເວລາດົນເກີນໄປ ກະລຸນາລອງໃໝ່	AI အချိန်ကြာလွန်းသည်၊ ထပ်စမ်းကြည့်ပါ	AI mất quá nhiều thời gian, vui lòng thử lại	AI took too long, please try again	AI took too long, please try again	AI took too long, please try again
-chatbot_tools_used	AI ใช้ข้อมูลจาก:	AI used data from:	AI used data from:	AI used data from:	AI used data from:	AI used data from:	AI used data from:	AI used data from:	AI used data from:	AI used data from:	AI used data from:	AI used data from:
+chatbot_toolsused	AI ใช้ข้อมูลจาก:	AI used data from:	AI used data from:	AI used data from:	AI used data from:	AI used data from:	AI used data from:	AI used data from:	AI used data from:	AI used data from:	AI used data from:	AI used data from:
 chatbot_type_message	พิมพ์ข้อความ...	Type a message...	输入消息...	メッセージを入力...	វាយសារ...	메시지 입력...	ພິມຂໍ້ຄວາມ...	စာတိုရိုက်ပါ...	Nhập tin nhắn...	Type a message...	Type a message...	Type a message...
 chatbot_search_database	ฐานข้อมูล	Database	数据库	データベース	មូលដ្ឋានទិន្នន័យ	데이터베이스	ຖານຂໍ້ມູນ	ဒေတာဘေ့စ်	Cơ sở dữ liệu	Database	Database	Database
 chatbot_search_kb	ฐานความรู้	Knowledge Base	知识库	ナレッジベース	មូលដ្ឋានចំណេះដឹង	지식 베이스	ຖານຄວາມຮູ້	ဗဟုသုတဘေ့စ်	Cơ sở tri thức	Knowledge Base	Knowledge Base	Knowledge Base
@@ -777,7 +777,7 @@ company_profile	ข้อมูลบริษัท	Company Profile	公司资�
 company_address	ที่อยู่	Address	地址	住所	អាសយដ្ឋាន	주소	ທີ່ຢູ່	လိပ်စာ	Địa chỉ	Address	Address	Address
 company_branch	สาขา	Branch	分店	支店	សាខា	지점	ສາຂາ	ဌာနခွဲ	Chi nhánh	Branch	Branch	Branch
 company_branch_address	ที่อยู่สาขา	Branch Address	分店地址	支店住所	អាសយដ្ឋានសាខា	지점 주소	ທີ່ຢູ່ສາຂາ	ဌာနခွဲလိပ်စာ	Địa chỉ chi nhánh	Branch Address	Branch Address	Branch Address
-company_branch_code	รหัสสาขา	Branch Code	分店代码	支店コード	លេខកូដសាខា	지점 코드	ລະຫັດສາຂາ	ဌာနခွဲကုဒ်	Mã chi nhánh	Branch Code	Branch Code	Branch Code
+company_branchcode	รหัสสาขา	Branch Code	分店代码	支店コード	លេខកូដសាខា	지점 코드	ລະຫັດສາຂາ	ဌာနခွဲကုဒ်	Mã chi nhánh	Branch Code	Branch Code	Branch Code
 company_branch_data	ข้อมูลสาขา	Branch Data	分店数据	支店データ	ទិន្នន័យសាខា	지점 데이터	ຂໍ້ມູນສາຂາ	ဌာနခွဲအချက်အလက်	Dữ liệu chi nhánh	Branch Data	Branch Data	Branch Data
 company_branch_department	แผนก	Department	部门	部署	ផ្នែក	부서	ພະແນກ	ဌာန	Phòng ban	Department	Department	Department
 company_branch_name	ชื่อสาขา	Branch Name	分店名称	支店名	ឈ្មោះសាខា	지점명	ຊື່ສາຂາ	ဌာနခွဲအမည်	Tên chi nhánh	Branch Name	Branch Name	Branch Name
@@ -1028,7 +1028,7 @@ create_shop	สร้างร้านค้า	Create Shop	创建商店	店舗
 create_special_promo_multiply_points	สร้างโปรโมชั่นพิเศษคูณแต้ม	Create special promotion to multiply points	创建特殊促销积分翻倍	ポイント倍増特別プロモーションを作成	បង្កើតការផ្សព្វផ្សាយពិសេសគុណពិន្ទុ	포인트 배수 특별 프로모션 만들기	ສ້າງໂປຣໂມຊັ່ນພິເສດຄູນແຕ້ມ	အမှတ်မြှောက်အထူးပရိုမိုးရှင်းဖန်တီးရန်	Tạo khuyến mãi đặc biệt nhân điểm	Create special promotion to multiply points	Create special promotion to multiply points	Create special promotion to multiply points
 create_sub_shop	สร้างร้านย่อย	Create Sub-Shop	创建子店	サブショップを作成	បង្កើតហាងរង	하위 매장 생성	ສ້າງຮ້ານຍ່ອຍ	ဆိုင်ခွဲဖန်တီးရန်	Tạo cửa hàng phụ	Create Sub-Shop	Create Sub-Shop	Create Sub-Shop
 created	สร้างเมื่อ	Created	创建于	作成日	បានបង្កើត	생성됨	ສ້າງເມື່ອ	ဖန်တီးခဲ့သည်	Đã tạo	Created	Created	Created
-created_at	สร้างเมื่อ	Created At	创建时间	作成日時	បានបង្កើតនៅ	생성일	ສ້າງເມື່ອ	ဖန်တီးခဲ့သည့်ရက်	Tạo vào	Created At	Created At	Created At
+createdat	สร้างเมื่อ	Created At	创建时间	作成日時	បានបង្កើតនៅ	생성일	ສ້າງເມື່ອ	ဖန်တီးခဲ့သည့်ရက်	Tạo vào	Created At	Created At	Created At
 created_by	สร้างโดย	Created By	创建者	作成者	បង្កើតដោយ	생성자	ສ້າງໂດຍ	ဖန်တီးသူ	Tạo bởi	Created By	Created By	Created By
 creating_code	กำลังสร้างรหัส...	Creating code...	Creating code...	Creating code...	Creating code...	Creating code...	Creating code...	Creating code...	Creating code...	Creating code...	Creating code...	Creating code...
 creating_data_in_clickhouse	กำลังสร้างข้อมูลใน ClickHouse	Creating data in ClickHouse	正在ClickHouse中创建数据	ClickHouseでデータを作成中	កំពុងបង្កើតទិន្នន័យក្នុង ClickHouse	ClickHouse에서 데이터 생성 중	ກຳລັງສ້າງຂໍ້ມູນໃນ ClickHouse	ClickHouse တွင် ဒေတာ ဖန်တီးနေသည်	Đang tạo dữ liệu trong ClickHouse	Creating data in ClickHouse	Creating data in ClickHouse	Creating data in ClickHouse
@@ -1064,7 +1064,7 @@ currency_name	ชื่อสกุลเงิน	Currency Name	货币名称	�
 currency_name_example	ดอลลาร์สหรัฐ, ยูโร, เยน เป็นต้น	US Dollar, Euro, Japanese Yen, etc.	US Dollar, Euro, Japanese Yen, etc.	US Dollar, Euro, Japanese Yen, etc.	US Dollar, Euro, Japanese Yen, etc.	US Dollar, Euro, Japanese Yen, etc.	US Dollar, Euro, Japanese Yen, etc.	US Dollar, Euro, Japanese Yen, etc.	US Dollar, Euro, Japanese Yen, etc.	US Dollar, Euro, Japanese Yen, etc.	US Dollar, Euro, Japanese Yen, etc.	US Dollar, Euro, Japanese Yen, etc.
 current_document	เอกสารปัจจุบัน	Current Document	当前文档	現在のドキュメント	ឯកសារបច្ចុប្បន្ន	현재 문서	ເອກະສານປັດຈຸບັນ	လက်ရှိစာရွက်စာတမ်း	Tài liệu hiện tại	Current Document	Current Document	Current Document
 current_shop	ร้านค้าปัจจุบัน	Current Shop	当前商店	現在の店舗	ហាងបច្ចុប្បន្ន	현재 매장	ຮ້ານຄ້າປັດຈຸບັນ	လက်ရှိဆိုင်	Cửa hàng hiện tại	Current Shop	Current Shop	Current Shop
-current_holding_code	Holding Code ปัจจุบัน:	Current Holding Code:	Current Holding Code:	Current Holding Code:	Current Holding Code:	Current Holding Code:	Current Holding Code:	Current Holding Code:	Current Holding Code:	Current Holding Code:	Current Holding Code:	Current Holding Code:
+currentholdingcode	Holding Code ปัจจุบัน:	Current Holding Code:	Current Holding Code:	Current Holding Code:	Current Holding Code:	Current Holding Code:	Current Holding Code:	Current Holding Code:	Current Holding Code:	Current Holding Code:	Current Holding Code:	Current Holding Code:
 current_status	สถานะปัจจุบัน	Current Status	当前状态	現在のステータス	ស្ថានភាពបច្ចុប្បន្ន	현재 상태	ສະຖານະປັດຈຸບັນ	လက်ရှိအခြေအနေ	Trạng thái hiện tại	Current Status	Current Status	Current Status
 custom_form	ฟอร์มที่กำหนดเอง	Custom Form	Custom Form	Custom Form	Custom Form	Custom Form	Custom Form	Custom Form	Custom Form	Custom Form	Custom Form	Custom Form
 customer	ลูกค้า	Customer	客户	顧客	អតិថិជន	고객	ລູກຄ້າ	ဖောက်သည်	Khách hàng	Customer	Customer	Customer
@@ -3964,7 +3964,7 @@ tap_add_customer_to_start	แตะปุ่มเพิ่มลูกค้า
 tap_add_product_button	แตะปุ่ม เพิ่มสินค้า เพื่อเริ่มต้น	Tap Add Product button to start	点击添加产品按钮开始	商品追加ボタンをタップして開始	ប៉ះប៊ូតុងបន្ថែមផលិតផលដើម្បីចាប់ផ្តើម	제품 추가 버튼을 탭하여 시작	ແຕະປຸ່ມ ເພີ່ມສິນຄ້າ ເພື່ອເລີ່ມຕົ້ນ	ထုတ်ကုန်ထည့်ခလုတ်တို့၍စတင်ပါ	Chạm nút Thêm sản phẩm để bắt đầu	Tap Add Product button to start	Tap Add Product button to start	Tap Add Product button to start
 tap_to_select_document	แตะเพื่อเลือกเอกสาร	Tap to select document	Tap to select document	Tap to select document	Tap to select document	Tap to select document	Tap to select document	Tap to select document	Tap to select document	Tap to select document	Tap to select document	Tap to select document
 tap_to_view_detail	กดเพื่อดูรายละเอียด	Tap to view detail	点击查看详情	タップして詳細を表示	ចុចដើម្បីមើលព័ត៌មានលម្អិត	탭하여 상세 보기	ກົດເພື່ອເບິ່ງລາຍລະອຽດ	အသေးစိတ်ကြည့်ရန် နှိပ်ပါ	Nhấn để xem chi tiết	Tap to view detail	Tap to view detail	Tap to view detail
-target_holding_code_not_found	ไม่พบ Holding Code ปลายทาง	Target Holding Code not found	未找到目标商店ID	宛先ショップIDが見つかりません	រកមិនឃើញ Holding Code គោលដៅ	대상 매장 ID를 찾을 수 없습니다	ບໍ່ພົບ Holding Code ປາຍທາງ	ဦးတည်ရာ Holding Code ရှာမတွေ့ပါ	Không tìm thấy Holding Code đích	Target Holding Code not found	Target Holding Code not found	Target Holding Code not found
+targetholdingcodenotfound	ไม่พบ Holding Code ปลายทาง	Target Holding Code not found	未找到目标商店ID	宛先ショップIDが見つかりません	រកមិនឃើញ Holding Code គោលដៅ	대상 매장 ID를 찾을 수 없습니다	ບໍ່ພົບ Holding Code ປາຍທາງ	ဦးတည်ရာ Holding Code ရှာမတွေ့ပါ	Không tìm thấy Holding Code đích	Target Holding Code not found	Target Holding Code not found	Target Holding Code not found
 tax	ภาษี	Tax	税	税	ពន្ធ	세금	ພາສີ	အခွန်	Thuế	Tax	Tax	Tax
 tax_address_1	ที่อยู่เอกสารภาษี 1	Tax Document Address 1	税务文件地址 1	税務書類住所 1	អាសយដ្ឋានឯកសារពន្ធ 1	세금 문서 주소 1	ທີ່ຢູ່ເອກະສານພາສີ 1	အခွန်စာရွက်စာတမ်းလိပ်စာ 1	Địa chỉ tài liệu thuế 1	Tax Document Address 1	Tax Document Address 1	Tax Document Address 1
 tax_address_2	ที่อยู่เอกสารภาษီ 2	Tax Document Address 2	税务文件地址 2	税務書類住所 2	អាសយដ្ឋានឯកសារពន្ធ 2	세금 문서 주소 2	ທີ່ຢູ່ເອກະສານພາສີ 2	အခွန်စာရွက်စာတမ်းလိပ်စာ 2	Địa chỉ tài liệu thuế 2	Tax Document Address 2	Tax Document Address 2	Tax Document Address 2
@@ -4604,7 +4604,7 @@ status_planned	วางแผน	Planned	已计划	計画済み	បានគ្
 status_ready	พร้อมใช้	Ready	就绪	準備完了	រួចរាល់	준비됨	ພ້ອມໃຊ້	အသင့်ဖြစ်သည်	Sẵn sàng	Sedia	Siap	Handa
 stock_group	คลังสินค้า	Stock	库存	在庫	ស្តុក	재고	ຄັງສິນຄ້າ	ကုန်လက်ကျန်	Tồn kho	Stok	Stok	Stock
 target	เป้าหมาย	Target	目标	対象	គោលដៅ	대상	ເປົ້າໝາຍ	ပစ်မှတ်	Mục tiêu	Sasaran	Target	Target
-updated_at	อัปเดต	Updated	已更新	更新日	បានអាប់ដេត	업데이트됨	ອັບເດດ	အပ်ဒိတ်လုပ်ပြီး	Đã cập nhật	Dikemas kini	Diperbarui	Na-update
+updatedat	อัปเดต	Updated	已更新	更新日	បានអាប់ដេត	업데이트됨	ອັບເດດ	အပ်ဒိတ်လုပ်ပြီး	Đã cập nhật	Dikemas kini	Diperbarui	Na-update
 waiting_report_screen_migration	รอ migrate หน้าจอรายงาน	Waiting for report screen migration	等待报表页面迁移	レポート画面の移行待ち	រង់ចាំ migrate អេក្រង់របាយការណ៍	보고서 화면 마이그레이션 대기	ລໍຖ້າ migrate ໜ້າຈໍລາຍງານ	အစီရင်ခံစာမျက်နှာပြင် migration စောင့်နေသည်	Đang chờ migrate màn hình báo cáo	Menunggu migrasi skrin laporan	Menunggu migrasi layar laporan	Naghihintay ng migration ng report screen
 book_bank	สมุดบัญชีธนาคาร	Bank Book	银行存折	銀行口座帳	សៀវភៅគណនីធនាគារ	은행 통장	ປື້ມບັນຊີທະນາຄານ	ဘဏ်စာအုပ်	Sổ ngân hàng	Buku bank	Buku bank	Bank book
 stock_transfer	โอนสินค้า	Stock Transfer	库存调拨	在庫移動	ផ្ទេរស្តុក	재고 이동	ໂອນສິນຄ້າ	ကုန်ပစ္စည်းလွှဲပြောင်း	Chuyển kho	Pindahan stok	Transfer stok	Paglipat ng stock

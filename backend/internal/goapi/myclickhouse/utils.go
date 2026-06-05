@@ -504,9 +504,9 @@ func DocDeleteClickHouse(ctx context.Context, holdingCode string, docNo string) 
 	}
 
 	deleteCommands := []string{
-		fmt.Sprintf("ALTER TABLE %s DELETE WHERE holding_code = '%s' AND docno = '%s'", TableName("doc"), holdingCode, docNo),
-		fmt.Sprintf("ALTER TABLE %s DELETE WHERE holding_code = '%s' AND docno = '%s'", TableName("docdetail"), holdingCode, docNo),
-		fmt.Sprintf("ALTER TABLE %s DELETE WHERE holding_code = '%s' AND docno = '%s'", TableName("docpayment"), holdingCode, docNo),
+		fmt.Sprintf("ALTER TABLE %s DELETE WHERE holdingcode = '%s' AND docno = '%s'", TableName("doc"), holdingCode, docNo),
+		fmt.Sprintf("ALTER TABLE %s DELETE WHERE holdingcode = '%s' AND docno = '%s'", TableName("docdetail"), holdingCode, docNo),
+		fmt.Sprintf("ALTER TABLE %s DELETE WHERE holdingcode = '%s' AND docno = '%s'", TableName("docpayment"), holdingCode, docNo),
 	}
 
 	for _, cmd := range deleteCommands {
@@ -530,7 +530,7 @@ func DocUpdate(docData models.MongoDocModel) {
 			checkSumMongodb = uuid.NewString()
 		}
 
-		query := fmt.Sprintf("SELECT checksum FROM %s WHERE holding_code = '%s' AND docno = '%s'", TableName("doc"), docData.HoldingCode, docData.DocNo)
+		query := fmt.Sprintf("SELECT checksum FROM %s WHERE holdingcode = '%s' AND docno = '%s'", TableName("doc"), docData.HoldingCode, docData.DocNo)
 		dataRows, err := QuerySelectAll(clickHouseConn, query)
 		if err != nil {
 			return
@@ -550,7 +550,7 @@ func DocUpdate(docData models.MongoDocModel) {
 
 		insertCommands := []string{
 			fmt.Sprintf(`INSERT INTO %s (
-            holding_code, branchid, docno, docdatetime, perioddatetime,
+            holdingcode, branchid, docno, docdatetime, perioddatetime,
             totalamount, paycashamount, paycashchange, paycashbalance,
             roundamount, checksum, slipurl, salechannelcode, deliveryamount,
             guidfixed, iscancel, cancelreason, guidpos, guidbranch
@@ -573,7 +573,7 @@ func DocUpdate(docData models.MongoDocModel) {
 			}
 			insertCommands = append(insertCommands,
 				fmt.Sprintf(`INSERT INTO %s (
-                holding_code, branchid, docno, docdatetime, perioddatetime,
+                holdingcode, branchid, docno, docdatetime, perioddatetime,
                 line_number, barcode, qty, price, sumamount, discountamount,
                 itemnames, refguid, sumamountchoice, ischoice, guidfixed, guidpos, guidbranch
             ) VALUES (
@@ -596,7 +596,7 @@ func DocUpdate(docData models.MongoDocModel) {
 				trans_flag := payment["trans_flag"].(float64)
 				insertCommands = append(insertCommands,
 					fmt.Sprintf(`INSERT INTO %s (
-                    holding_code, branchid, docno, docdatetime, perioddatetime,
+                    holdingcode, branchid, docno, docdatetime, perioddatetime,
                     description, amount, trans_flag, guidfixed, guidbranch
                 ) VALUES (
                     '%s', '%s', '%s', '%s', '%s', '%s', %f, %f, '%s', '%s'
@@ -623,7 +623,7 @@ func ProductBarcodeUpdate(productData models.MongoProductBarcodeModel) error {
 	checkSumMongodb := myglobal.CalculateMD5(productDataStr)
 	updateClickHouse := false
 
-	query := fmt.Sprintf("SELECT checksum FROM %s WHERE holding_code = '%s' AND barcode = '%s'", TableName("productbarcode"), productData.HoldingCode, productData.Barcode)
+	query := fmt.Sprintf("SELECT checksum FROM %s WHERE holdingcode = '%s' AND barcode = '%s'", TableName("productbarcode"), productData.HoldingCode, productData.Barcode)
 	dataRows, err := QuerySelectAll(conn, query)
 	if err != nil {
 		return err
@@ -641,7 +641,7 @@ func ProductBarcodeUpdate(productData models.MongoProductBarcodeModel) error {
 
 		// สร้างคำสั่ง SQL หลายประเภทที่ต้องการรันพร้อมกัน
 		deleteCommands := []string{
-			fmt.Sprintf("ALTER TABLE %s DELETE WHERE holding_code = '%s' AND barcode = '%s'", TableName("productbarcode"), productData.HoldingCode, productData.Barcode),
+			fmt.Sprintf("ALTER TABLE %s DELETE WHERE holdingcode = '%s' AND barcode = '%s'", TableName("productbarcode"), productData.HoldingCode, productData.Barcode),
 		}
 
 		productName := ""
@@ -696,7 +696,7 @@ func ProductBarcodeUpdate(productData models.MongoProductBarcodeModel) error {
 		}
 
 		insertCommands := []string{
-			fmt.Sprintf("INSERT INTO %s (holding_code, itemcode, barcode, barcoderef, name0, name1, name2, name3, name4, name5, checksum, groupcode, groupnames, unitcode, unitname, price1, unitstand, unitdivide) VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %.2f, %.8f, %.8f)", TableName("productbarcode"),
+			fmt.Sprintf("INSERT INTO %s (holdingcode, itemcode, barcode, barcoderef, name0, name1, name2, name3, name4, name5, checksum, groupcode, groupnames, unitcode, unitname, price1, unitstand, unitdivide) VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %.2f, %.8f, %.8f)", TableName("productbarcode"),
 				productData.HoldingCode,
 				productData.ItemCode,
 				productData.Barcode,

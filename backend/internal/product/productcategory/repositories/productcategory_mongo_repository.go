@@ -61,7 +61,7 @@ func NewProductCategoryRepository(pst microservice.IPersisterMongo) *ProductCate
 func (repo ProductCategoryRepository) UpdateCodeList(ctx context.Context, holdingCode string, codeXSort models.CodeXSort) error {
 
 	filters := bson.M{
-		"holding_code":     holdingCode,
+		"holdingcode":      holdingCode,
 		"codelist.barcode": codeXSort.Barcode,
 	}
 
@@ -84,16 +84,16 @@ func (repo ProductCategoryRepository) UpdateCodeList(ctx context.Context, holdin
 
 func (repo ProductCategoryRepository) UpdateXSorts(ctx context.Context, holdingCode string, guid string, xsorts []common.XSort, username string, updatedAt time.Time) error {
 	filters := bson.M{
-		"holding_code": holdingCode,
-		"guid_fixed":   guid,
-		"deleted_at":   bson.M{"$exists": false},
+		"holdingcode": holdingCode,
+		"guidfixed":   guid,
+		"deletedat":   bson.M{"$exists": false},
 	}
 
 	doc := bson.M{
 		"$set": bson.M{
-			"xsorts":     xsorts,
-			"updatedby":  username,
-			"updated_at": updatedAt,
+			"xsorts":    xsorts,
+			"updatedby": username,
+			"updatedat": updatedAt,
 		},
 	}
 

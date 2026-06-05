@@ -29,7 +29,7 @@ package handlers
 // 	ListBarcode(data processModel.ProcessMongoTransModel) []string
 // 	ProcessUpSertDocData(holdingCode string, data processModel.ProcessMongoTransModel) error
 // 	ProcessDeleteDocData(holdingCode string, data processModel.ProcessMongoTransModel) error
-// 	InvokeProcess(holding_code string)
+// 	InvokeProcess(holdingcode string)
 // }
 
 // type ProcessConsumer struct {
@@ -103,9 +103,9 @@ package handlers
 // 	return postgresDB, nil
 // }
 
-// func (p *ProcessConsumer) InvokeProcess(holding_code string) {
-// 	go processstock.ProcessStockCostAll(holding_code)
-// 	go processDoc.ProcessDocPurchaseAll(holding_code)
+// func (p *ProcessConsumer) InvokeProcess(holdingcode string) {
+// 	go processstock.ProcessStockCostAll(holdingcode)
+// 	go processDoc.ProcessDocPurchaseAll(holdingcode)
 // }
 
 // func (p *ProcessDB) GetShopDB(holdingCode string) (*sql.DB, error) {

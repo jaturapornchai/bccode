@@ -60,8 +60,8 @@ func NewPayRepository(pst microservice.IPersisterMongo) *PayRepository {
 
 func (repo PayRepository) FindLastDocNo(ctx context.Context, holdingCode string, prefixDocNo string) (models.PayDoc, error) {
 	filters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at": bson.M{
+		"holdingcode": holdingCode,
+		"deletedat": bson.M{
 			"$exists": false,
 		},
 		"docno": bson.M{

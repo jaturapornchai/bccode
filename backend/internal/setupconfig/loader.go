@@ -11,10 +11,10 @@ import (
 // Redis และ Kafka ไม่อยู่ใน bootstrap.json — ใช้ค่า default (redis:6379, kafka:9092)
 type bootstrapConfig struct {
 	MongoDB           map[string]string `json:"mongodb"`
-	MongoDBDev        map[string]string `json:"mongodb_dev"`
-	MongoDBUAT        map[string]string `json:"mongodb_uat"`
-	MongoDBPRO        map[string]string `json:"mongodb_pro"`
-	MongoDBProduction map[string]string `json:"mongodb_production"`
+	MongoDBDev        map[string]string `json:"mongodbdev"`
+	MongoDBUAT        map[string]string `json:"mongodbuat"`
+	MongoDBPRO        map[string]string `json:"mongodbpro"`
+	MongoDBProduction map[string]string `json:"mongodbproduction"`
 	PostgreSQL        map[string]string `json:"postgresql"`
 	ClickHouse        map[string]string `json:"clickhouse"`
 	Service           map[string]string `json:"service"`

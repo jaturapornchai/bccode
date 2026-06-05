@@ -22,7 +22,7 @@ func NewMemberPGRepository(pst microservice.IPersister) MemberPGRepository {
 	}
 }
 func (repo MemberPGRepository) Count(holdingCode string, guid string) (int, error) {
-	count, err := repo.pst.Count(models.MemberIndex{}, " holding_code = ? AND guid_fixed = ?", holdingCode, guid)
+	count, err := repo.pst.Count(models.MemberIndex{}, " holdingcode = ? AND guidfixed = ?", holdingCode, guid)
 	if err != nil {
 		return 0, err
 	}
@@ -39,7 +39,7 @@ func (repo MemberPGRepository) Create(member models.MemberIndex) error {
 
 func (repo MemberPGRepository) Delete(holdingCode string, guid string) error {
 	tableName := models.MemberIndex{}.TableName()
-	err := repo.pst.Exec("DELETE FROM "+tableName+" WHERE holding_code = ? AND guid_fixed = ?", holdingCode, guid)
+	err := repo.pst.Exec("DELETE FROM "+tableName+" WHERE holdingcode = ? AND guidfixed = ?", holdingCode, guid)
 	if err != nil {
 		return err
 	}
@@ -48,7 +48,7 @@ func (repo MemberPGRepository) Delete(holdingCode string, guid string) error {
 
 func (repo MemberPGRepository) FindByGuid(holdingCode string, guid string) (models.MemberIndex, error) {
 	inv := models.MemberIndex{}
-	_, err := repo.pst.Where(&inv, "  holding_code = ? AND guid_fixed = ?", holdingCode, guid)
+	_, err := repo.pst.Where(&inv, "  holdingcode = ? AND guidfixed = ?", holdingCode, guid)
 	if err != nil {
 		return inv, err
 	}

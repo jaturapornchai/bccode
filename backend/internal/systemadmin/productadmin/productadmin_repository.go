@@ -35,7 +35,7 @@ func NewProductAdminMongoRepository(pst microservice.IPersisterMongo) IProductAd
 func (r ProductAdminMongoRepository) FindProductBarcodeByHoldingCode(ctx context.Context, holdingCode string) ([]productBarcodeModel.ProductBarcodeDoc, error) {
 
 	docList := []productBarcodeModel.ProductBarcodeDoc{}
-	err := r.pst.Find(ctx, &productBarcodeModel.ProductBarcodeDoc{}, bson.M{"holding_code": holdingCode}, &docList)
+	err := r.pst.Find(ctx, &productBarcodeModel.ProductBarcodeDoc{}, bson.M{"holdingcode": holdingCode}, &docList)
 	if err != nil {
 		return nil, err
 	}
@@ -55,12 +55,12 @@ func (r ProductAdminMongoRepository) FindPage(ctx context.Context, holdingCode s
 }
 
 func (r ProductAdminMongoRepository) DeleteProductBarcodeByHoldingCode(ctx context.Context, holdingCode string, userName string, ids []string) error {
-	// err := r.pst.Delete(&productBarcodeModel.ProductBarcodeDoc{}, bson.M{"holding_code": holdingCode})
+	// err := r.pst.Delete(&productBarcodeModel.ProductBarcodeDoc{}, bson.M{"holdingcode": holdingCode})
 	// if err != nil {
 	// 	return err
 	// }
 
-	// err := r.pst.DeleteByID(&productBarcodeModel.ProductBarcodeDoc{}, bson.M{"holding_code": holdingCode})
+	// err := r.pst.DeleteByID(&productBarcodeModel.ProductBarcodeDoc{}, bson.M{"holdingcode": holdingCode})
 	// if err != nil {
 	// 	return err
 	// }
@@ -76,7 +76,7 @@ func (r ProductAdminMongoRepository) DeleteProductBarcodeByHoldingCode(ctx conte
 func (r ProductAdminMongoRepository) FindProductAndBarcode(ctx context.Context, holdingCode string, barcode string) (models.ProductBarcodeDoc, error) {
 
 	var doc models.ProductBarcodeDoc
-	err := r.pst.FindOne(ctx, &models.ProductBarcodeDoc{}, bson.M{"holding_code": holdingCode, "barcode": barcode}, &doc)
+	err := r.pst.FindOne(ctx, &models.ProductBarcodeDoc{}, bson.M{"holdingcode": holdingCode, "barcode": barcode}, &doc)
 	if err != nil {
 		return models.ProductBarcodeDoc{}, err
 	}

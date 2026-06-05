@@ -11,11 +11,11 @@ import (
 
 // QueryIntent represents AI's interpretation of the question
 type QueryIntent struct {
-	QueryType    string `json:"query_type"`    // "count", "list", "search", "stat", "general"
-	SQL          string `json:"sql"`           // Generated SQL query
-	NeedsData    bool   `json:"needs_data"`    // Whether to execute query
-	DirectAnswer string `json:"direct_answer"` // If no query needed
-	Limit        int    `json:"limit"`         // Result limit
+	QueryType    string `json:"querytype"`    // "count", "list", "search", "stat", "general"
+	SQL          string `json:"sql"`          // Generated SQL query
+	NeedsData    bool   `json:"needsdata"`    // Whether to execute query
+	DirectAnswer string `json:"directanswer"` // If no query needed
+	Limit        int    `json:"limit"`        // Result limit
 }
 
 // GenerateQueryFromQuestion is the legacy chat-gemini SQL planner.
@@ -27,7 +27,7 @@ func GenerateQueryFromQuestion(ctx context.Context, question string, functionNam
 
 ใช้ได้เฉพาะ PostgreSQL projection/read model ที่ sync/ประมวลผลมาจาก MongoDB เท่านั้น
 ห้ามอธิบายว่า PostgreSQL เป็น source of truth ของ CRUD; source of truth คือ MongoDB
-ถ้าต้องการ operational CRUD/master/document data แบบจริง ให้ใช้ chat-agent/query_mongodb แทน chat-gemini
+ถ้าต้องการ operational CRUD/master/document data แบบจริง ให้ใช้ chat-agent/querymongodb แทน chat-gemini
 	
 **PostgreSQL Projection Schema (read-only):**
 ตาราง product:
@@ -42,34 +42,34 @@ func GenerateQueryFromQuestion(ctx context.Context, question string, functionNam
 **หน้าที่:**
 1. วิเคราะห์คำถามของผู้ใช้
 2. สร้าง SQL query ที่เหมาะสมต่อ projection table เท่านั้น
-3. กำหนด query_type: "count" (นับจำนวน), "list" (แสดงรายการ), "search" (ค้นหา), "stat" (สถิติ), "general" (คำถามทั่วไป)
+3. กำหนด querytype: "count" (นับจำนวน), "list" (แสดงรายการ), "search" (ค้นหา), "stat" (สถิติ), "general" (คำถามทั่วไป)
 
 **ตัวอย่าง:**
 
 คำถาม: "มีสินค้ากี่รายการ"
 Response:
 {
-  "query_type": "count",
+  "querytype": "count",
   "sql": "SELECT COUNT(*) as total FROM product WHERE itemcode IS NOT NULL",
-  "needs_data": true,
+  "needsdata": true,
   "limit": 0
 }
 
 คำถาม: "แสดงสินค้า MAKITA 5 รายการแรก"
 Response:
 {
-  "query_type": "list",
+  "querytype": "list",
   "sql": "SELECT p.itemcode, p.name0, p.unitname, COALESCE(STRING_AGG(DISTINCT pb.barcode, ','), '') as barcodes FROM product p LEFT JOIN productbarcode pb ON p.itemcode = pb.itemcode WHERE UPPER(p.name0) LIKE '%MAKITA%' GROUP BY p.itemcode, p.name0, p.unitname LIMIT 5",
-  "needs_data": true,
+  "needsdata": true,
   "limit": 5
 }
 
 คำถาม: "สินค้าไหนมีราคาแพงที่สุด"
 Response:
 {
-  "query_type": "stat",
+  "querytype": "stat",
   "sql": "SELECT p.itemcode, p.name0, p.unitname FROM product p WHERE itemcode IS NOT NULL ORDER BY p.itemcode LIMIT 10",
-  "needs_data": true,
+  "needsdata": true,
   "limit": 10
 }
 
@@ -79,7 +79,7 @@ Response:
 - GROUP BY ต้องรวม p.itemcode, p.name0, p.unitname
 - ใช้ COALESCE สำหรับ barcode
 - LIMIT สูงสุด 100
-- ถ้าคำถามไม่เกี่ยวข้องกับข้อมูล ให้ needs_data = false
+- ถ้าคำถามไม่เกี่ยวข้องกับข้อมูล ให้ needsdata = false
 
 **Output Format:** JSON เท่านั้น ไม่ต้องมี markdown หรือคำอธิบาย`
 

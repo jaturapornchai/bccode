@@ -26,7 +26,7 @@ func NewBOMPostgresRepository(pst microservice.IPersister) IBOMPostgresRepositor
 
 func (repo *BOMPostgresRepository) Get(holdingCode string, creditorCode string) (*models.ProductBarcodeBOMViewPG, error) {
 	var result models.ProductBarcodeBOMViewPG
-	_, err := repo.pst.First(&result, "holding_code=? AND code=?", holdingCode, creditorCode)
+	_, err := repo.pst.First(&result, "holdingcode=? AND code=?", holdingCode, creditorCode)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
@@ -48,8 +48,8 @@ func (repo *BOMPostgresRepository) Create(doc models.ProductBarcodeBOMViewPG) er
 
 func (repo *BOMPostgresRepository) Update(holdingCode string, creditorCode string, doc models.ProductBarcodeBOMViewPG) error {
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"holding_code": holdingCode,
-		"code":         creditorCode,
+		"holdingcode": holdingCode,
+		"code":        creditorCode,
 	})
 
 	if err != nil {
@@ -60,8 +60,8 @@ func (repo *BOMPostgresRepository) Update(holdingCode string, creditorCode strin
 
 func (repo *BOMPostgresRepository) Delete(holdingCode string, creditorCode string) error {
 	err := repo.pst.Delete(&models.ProductBarcodeBOMViewPG{}, map[string]interface{}{
-		"holding_code": holdingCode,
-		"code":         creditorCode,
+		"holdingcode": holdingCode,
+		"code":        creditorCode,
 	})
 
 	if err != nil {

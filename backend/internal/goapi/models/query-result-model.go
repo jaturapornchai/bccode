@@ -6,33 +6,33 @@ package models
 
 // ResultFromQueryRequest - Request model สำหรับ /resultfromquery
 type ResultFromQueryRequest struct {
-	HoldingCode string `json:"holding_code" binding:"required"` // Holding Code
-	Query       string `json:"query" binding:"required"`        // SQL SELECT query to execute
-	GUID        string `json:"guid,omitempty"`                  // Optional GUID, will generate if not provided
+	HoldingCode string `json:"holdingcode" binding:"required"` // Holding Code
+	Query       string `json:"query" binding:"required"`       // SQL SELECT query to execute
+	GUID        string `json:"guid,omitempty"`                 // Optional GUID, will generate if not provided
 }
 
 // ResultGetRequest - Request model สำหรับ /resultget
 type ResultGetRequest struct {
-	HoldingCode string `json:"holding_code" binding:"required"` // Holding Code
-	GUID        string `json:"guid" binding:"required"`         // GUID of the query result
-	Limit       int    `json:"limit,omitempty"`                 // Number of rows to return (max 1000)
-	Offset      int    `json:"offset,omitempty"`                // Number of rows to skip
+	HoldingCode string `json:"holdingcode" binding:"required"` // Holding Code
+	GUID        string `json:"guid" binding:"required"`        // GUID of the query result
+	Limit       int    `json:"limit,omitempty"`                // Number of rows to return (max 1000)
+	Offset      int    `json:"offset,omitempty"`               // Number of rows to skip
 }
 
 // PDFConfig - PDF configuration
 type PDFConfig struct {
 	Title       string `json:"title,omitempty"`       // PDF title (default: "รายงาน")
 	Orientation string `json:"orientation,omitempty"` // Page orientation (L=Landscape, P=Portrait)
-	PageSize    string `json:"page_size,omitempty"`   // Page size (A4, Letter, etc.)
+	PageSize    string `json:"pagesize,omitempty"`    // Page size (A4, Letter, etc.)
 }
 
 // ResultToPDFRequest - Request model สำหรับ /resulttopdf
 type ResultToPDFRequest struct {
-	HoldingCode string            `json:"holding_code" binding:"required"` // Holding Code
-	GUID        string            `json:"guid" binding:"required"`         // GUID of the query result
-	PDFConfig   PDFConfig         `json:"pdf_config,omitempty"`            // PDF configuration
-	ColumnOrder []string          `json:"column_order,omitempty"`          // Order of columns in PDF
-	ColumnNames map[string]string `json:"column_names,omitempty"`          // Thai names for columns
+	HoldingCode string            `json:"holdingcode" binding:"required"` // Holding Code
+	GUID        string            `json:"guid" binding:"required"`        // GUID of the query result
+	PDFConfig   PDFConfig         `json:"pdfconfig,omitempty"`            // PDF configuration
+	ColumnOrder []string          `json:"columnorder,omitempty"`          // Order of columns in PDF
+	ColumnNames map[string]string `json:"columnnames,omitempty"`          // Thai names for columns
 }
 
 // ===== Response Models =====

@@ -272,7 +272,7 @@ func createGoAPIAuthMiddleware(cacher microservice.ICacher) echo.MiddlewareFunc 
 			}
 
 			if isDevelopmentMode() {
-				logger.Info("[DEV][GoAPI auth] method=%s route=%s user=%s holding_code=%s requested_holding_code=%s",
+				logger.Info("[DEV][GoAPI auth] method=%s route=%s user=%s holdingcode=%s requested_holdingcode=%s",
 					c.Request().Method, c.Path(), userInfo.Username, userInfo.HoldingCode, requestedHoldingCode)
 			}
 
@@ -288,7 +288,7 @@ func authenticateGoAPIRedisToken(cacher microservice.ICacher, tokenText string) 
 	}
 
 	cacheKey := "auth-" + tokenText
-	raw, err := cacher.HMGet(cacheKey, []string{"username", "name", "holding_code", "role"})
+	raw, err := cacher.HMGet(cacheKey, []string{"username", "name", "holdingcode", "role"})
 	if err != nil || len(raw) < 4 || raw[0] == nil {
 		return msmodels.UserInfo{}, false
 	}
@@ -359,7 +359,7 @@ func getBearerToken(authorization string) (string, error) {
 }
 
 func goAPIRequestHoldingCode(c echo.Context) (string, error) {
-	for _, key := range []string{"holding_code", "holding_code", "tenant_id"} {
+	for _, key := range []string{"holdingcode", "holdingcode", "tenant_id"} {
 		if value := strings.TrimSpace(c.QueryParam(key)); value != "" {
 			return value, nil
 		}
@@ -390,7 +390,7 @@ func goAPIRequestHoldingCode(c echo.Context) (string, error) {
 }
 
 func holdingCodeFromPayload(payload map[string]interface{}) (string, error) {
-	for _, key := range []string{"holding_code", "holding_code", "tenant_id"} {
+	for _, key := range []string{"holdingcode", "holdingcode", "tenant_id"} {
 		if value := payloadString(payload[key]); value != "" {
 			return value, nil
 		}
@@ -456,7 +456,7 @@ func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string) {
 	g.GET("/api/health/kafka", handlers.KafkaHealthHandler)
 	g.GET("/api/health/background", handlers.BackgroundTaskStatusHandler)
 	g.GET("/api/health/queue", handlers.QueueStatusHandler)
-	g.GET("/api/health/queue/:holding_code", handlers.QueueShopStatusHandler)
+	g.GET("/api/health/queue/:holdingcode", handlers.QueueShopStatusHandler)
 	g.GET("/api/health/database", handlers.DatabaseHealthHandler)
 	g.GET("/api/health/system", handlers.SystemHealthHandler)
 

@@ -16,10 +16,10 @@ type StockTransaction struct {
 	//SaleCode		string                    `json:"salecode" gorm:"column:salecode"`
 	models.HoldingCodeentity `bson:"inline"`
 	models.PartitionIdentity `gorm:"embedded;"`
-	GuidFixed                string                    `json:"guid_fixed" gorm:"column:guid_fixed"`
+	GuidFixed                string                    `json:"guidfixed" gorm:"column:guidfixed"`
 	DocNo                    string                    `json:"docno" gorm:"column:docno;primaryKey"`
 	DocDate                  time.Time                 `json:"docdate" gorm:"column:docdate"`
-	GuidRef                  string                    `json:"guid_ref" gorm:"column:guid_ref"`
+	GuidRef                  string                    `json:"guidref" gorm:"column:guidref"`
 	DocRefType               int8                      `json:"docreftype" gorm:"column:docreftype"`
 	DocRefNo                 string                    `json:"docrefno" gorm:"column:docrefno"`
 	DocRefDate               time.Time                 `json:"docrefdate" gorm:"column:docrefdate"`
@@ -27,9 +27,9 @@ type StockTransaction struct {
 	BranchNames              models.JSONB              `json:"branchnames" gorm:"column:branchnames;type:jsonb"`
 	InquiryType              int                       `json:"inquirytype" gorm:"column:inquirytype"`
 	TransFlag                int16                     `json:"transflag" gorm:"column:transflag" `
-	VatType                  int8                      `json:"vat_type" gorm:"column:vat_type" `
+	VatType                  int8                      `json:"vattype" gorm:"column:vattype" `
 	VatRate                  float64                   `json:"vatrate" gorm:"column:vatrate"`
-	Details                  *[]StockTransactionDetail `json:"details" gorm:"details;foreignKey:holding_code,docno"`
+	Details                  *[]StockTransactionDetail `json:"details" gorm:"details;foreignKey:holdingcode,docno"`
 	Description              string                    `json:"description" gorm:"column:description"`
 	TotalValue               float64                   `json:"totalvalue" gorm:"column:totalvalue"`
 	DiscountWord             string                    `json:"discountword" gorm:"column:discountword"`
@@ -38,8 +38,8 @@ type StockTransaction struct {
 	TotalVatValue            float64                   `json:"totalvatvalue" gorm:"column:totalvatvalue"`
 	TotalExceptVat           float64                   `json:"totalexceptvat" gorm:"column:totalexceptvat"`
 	TotalAfterVat            float64                   `json:"totalaftervat" gorm:"column:totalaftervat"`
-	TotalAmount              float64                   `json:"total_amount" gorm:"column:total_amount"`
-	TotalCost                float64                   `json:"total_cost" gorm:"column:total_cost"`
+	TotalAmount              float64                   `json:"totalamount" gorm:"column:totalamount"`
+	TotalCost                float64                   `json:"totalcost" gorm:"column:totalcost"`
 	Status                   int8                      `json:"status" gorm:"column:status"`
 	IsCancel                 bool                      `json:"iscancel" gorm:"column:iscancel"`
 	PosID                    string                    `json:"posid" gorm:"column:posid"`
@@ -51,7 +51,7 @@ func (StockTransaction) TableName() string {
 
 type StockTransactionDetail struct {
 	ID                       uint   `gorm:"primarykey"`
-	HoldingCode              string `json:"holding_code" gorm:"column:holding_code"`
+	HoldingCode              string `json:"holdingcode" gorm:"column:holdingcode"`
 	models.PartitionIdentity `gorm:"embedded;"`
 	DocNo                    string  `json:"docno" gorm:"column:docno"`
 	Barcode                  string  `json:"barcode" gorm:"column:barcode"`
@@ -61,24 +61,24 @@ type StockTransactionDetail struct {
 	Price                    float64 `json:"price" gorm:"column:price"`
 	Discount                 string  `json:"discount" gorm:"column:discount"`
 	DiscountAmount           float64 `json:"discountamount" gorm:"column:discountamount"`
-	SumAmount                float64 `json:"sum_amount" gorm:"column:sum_amount"`
+	SumAmount                float64 `json:"sumamount" gorm:"column:sumamount"`
 	StandValue               float64 `json:"standvalue" gorm:"column:standvalue"`
 	DivideValue              float64 `json:"dividevalue" gorm:"column:dividevalue"`
 	CalcFlag                 int8    `json:"calcflag" gorm:"column:calcflag"`
-	LineNumber               int8    `json:"line_number" gorm:"column:line_number"`
+	LineNumber               int8    `json:"linenumber" gorm:"column:linenumber"`
 	CostPerUnit              float64 `json:"costperunit" gorm:"column:costperunit"` // ทุนต่อหน่วย
-	TotalCost                float64 `json:"total_cost" gorm:"column:total_cost"`   // ต้นทุนรวม
+	TotalCost                float64 `json:"totalcost" gorm:"column:totalcost"`     // ต้นทุนรวม
 	WhCode                   string  `json:"whcode" gorm:"whcode"`
 	LocationCode             string  `json:"locationcode" gorm:"locationcode"`
 	SumAmountExcludeVat      float64 `json:"sumamountexcludevat" gorm:"column:sumamountexcludevat"`
 	TotalValueVat            float64 `json:"totalvaluevat" gorm:"column:totalvaluevat"`
-	ItemGuid                 string  `json:"item_guid" gorm:"column:item_guid"`
-	VatType                  int8    `json:"vat_type" gorm:"column:vat_type"`
-	TaxType                  int8    `json:"tax_type" gorm:"column:tax_type"`
+	ItemGuid                 string  `json:"itemguid" gorm:"column:itemguid"`
+	VatType                  int8    `json:"vattype" gorm:"column:vattype"`
+	TaxType                  int8    `json:"taxtype" gorm:"column:taxtype"`
 	PriceExcludeVat          float64 `json:"priceexcludevat" gorm:"column:priceexcludevat"`
-	ItemType                 int8    `json:"item_type" gorm:"column:item_type"`
+	ItemType                 int8    `json:"itemtype" gorm:"column:itemtype"`
 	DocRef                   string  `json:"docref" gorm:"column:docref"`
-	BalanceQty               float64 `json:"balance_qty" gorm:"column:balance_qty"`       // ยอดคงเหลือ
+	BalanceQty               float64 `json:"balanceqty" gorm:"column:balanceqty"`         // ยอดคงเหลือ
 	BalanceAmount            float64 `json:"balanceamount" gorm:"column:balanceamount"`   // มูลค่าคงเหลือ
 	BalanceAverage           float64 `json:"balanceaverage" gorm:"column:balanceaverage"` // ต้นทุนเฉลี่ยคงเหลือ
 	// SumOfCost                float64 `json:"sumofcost" gorm:"column:sumofcost"`
@@ -93,7 +93,7 @@ func (j *StockTransaction) BeforeUpdate(tx *gorm.DB) (err error) {
 
 	// find old data
 	var details *[]StockTransactionDetail
-	tx.Model(&StockTransactionDetail{}).Where(" holding_code=? AND docno=?", j.HoldingCode, j.DocNo).Find(&details)
+	tx.Model(&StockTransactionDetail{}).Where(" holdingcode=? AND docno=?", j.HoldingCode, j.DocNo).Find(&details)
 
 	// delete un use data
 	for _, tmp := range *details {

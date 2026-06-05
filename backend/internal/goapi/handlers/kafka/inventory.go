@@ -236,14 +236,14 @@ func ProductBarcodeInsertOrUpdateToPostgreSQL(productData models.MongoProductBar
 	}
 
 	// Delete existing record
-	_, err = db.ExecContext(ctx, "DELETE FROM productbarcode WHERE holding_code = $1 AND barcode = $2", productData.HoldingCode, productData.Barcode)
+	_, err = db.ExecContext(ctx, "DELETE FROM productbarcode WHERE holdingcode = $1 AND barcode = $2", productData.HoldingCode, productData.Barcode)
 	if err != nil {
 		logger.Warn("Could not delete existing barcode %s: %v", productData.Barcode, err)
 	}
 
 	// Insert new record (PostgreSQL)
 	_, err = db.ExecContext(ctx,
-		`INSERT INTO productbarcode (holding_code, barcode, itemcode, name0, checksum, groupcode, groupnames, unitcode, unitname, price1, barcoderefunitstand, barcoderefunitdivide, itemtype, materialtype)
+		`INSERT INTO productbarcode (holdingcode, barcode, itemcode, name0, checksum, groupcode, groupnames, unitcode, unitname, price1, barcoderefunitstand, barcoderefunitdivide, itemtype, materialtype)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
 		productData.HoldingCode,
 		productData.Barcode,
@@ -339,7 +339,7 @@ func productBarcodeBulkUpdateInternalWithLogging(ctx context.Context, db *sql.DB
 		}
 
 		// For bulk update, use prepared statement to delete existing records
-		deleteQuery := "DELETE FROM productbarcode WHERE holding_code = $1 AND barcode = $2"
+		deleteQuery := "DELETE FROM productbarcode WHERE holdingcode = $1 AND barcode = $2"
 		_, err := db.ExecContext(ctx, deleteQuery, productData.HoldingCode, productData.Barcode)
 		if err != nil {
 			logger.Warn("Could not delete existing barcode %s: %v", productData.Barcode, err)
@@ -366,7 +366,7 @@ func productBarcodeBulkUpdateInternalWithLogging(ctx context.Context, db *sql.DB
 
 	// Use COPY FROM for bulk insert (PostgreSQL)
 	columns := []string{
-		"holding_code", "barcode", "itemcode", "name0", "checksum",
+		"holdingcode", "barcode", "itemcode", "name0", "checksum",
 		"groupcode", "groupnames", "unitcode", "unitname", "price1",
 		"barcoderefunitstand", "barcoderefunitdivide", "itemtype", "materialtype",
 	}
@@ -396,7 +396,7 @@ func ProductBarcodeDeleteFromPostgreSQL(productData models.MongoProductBarcodeMo
 	ctx := context.Background()
 
 	// ลบข้อมูลสินค้า (PostgreSQL)
-	result, err := db.ExecContext(ctx, "DELETE FROM productbarcode WHERE holding_code = $1 AND barcode = $2", productData.HoldingCode, productData.Barcode)
+	result, err := db.ExecContext(ctx, "DELETE FROM productbarcode WHERE holdingcode = $1 AND barcode = $2", productData.HoldingCode, productData.Barcode)
 	if err != nil {
 		return fmt.Errorf("error deleting product barcode %s: %v", productData.Barcode, err)
 	}
@@ -457,7 +457,7 @@ func productBarcodeBulkDeleteInternalWithLogging(ctx context.Context, db *sql.DB
 	var failedBarcodes []string
 
 	for _, productData := range productDataList {
-		result, err := db.ExecContext(ctx, "DELETE FROM productbarcode WHERE holding_code = $1 AND barcode = $2", productData.HoldingCode, productData.Barcode)
+		result, err := db.ExecContext(ctx, "DELETE FROM productbarcode WHERE holdingcode = $1 AND barcode = $2", productData.HoldingCode, productData.Barcode)
 		if err != nil {
 			logger.Error("failed to delete barcode %s: %v", productData.Barcode, err)
 			failedBarcodes = append(failedBarcodes, productData.Barcode)

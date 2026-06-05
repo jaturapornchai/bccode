@@ -7,7 +7,7 @@ import (
 
 type StockBalanceImportMeta struct {
 	TotalItem   uint64  `json:"totalitem" ch:"totalitem"`
-	TotalAmount float64 `json:"total_amount" ch:"total_amount"`
+	TotalAmount float64 `json:"totalamount" ch:"totalamount"`
 }
 
 type StockBalanceImportRaw struct {
@@ -18,7 +18,7 @@ type StockBalanceImportRaw struct {
 	ShelfCode     string  `json:"shelfcode" ch:"shelfcode"`
 	Qty           float64 `json:"qty" ch:"qty"`
 	Price         float64 `json:"price" ch:"price"`
-	SumAmount     float64 `json:"sum_amount" ch:"sum_amount"`
+	SumAmount     float64 `json:"sumamount" ch:"sumamount"`
 	IsNotExist    bool    `json:"isnotexist" ch:"isnotexist"`
 }
 
@@ -29,14 +29,14 @@ type StockBalanceImport struct {
 }
 
 type StockBalanceImportInfo struct {
-	GUIDFixed   string `json:"guid_fixed" ch:"guid_fixed"`
-	HoldingCode string `json:"holding_code" ch:"holding_code"`
+	GUIDFixed   string `json:"guidfixed" ch:"guidfixed"`
+	HoldingCode string `json:"holdingcode" ch:"holdingcode"`
 	StockBalanceImport
 }
 
 type StockBalanceImportDoc struct {
 	StockBalanceImportInfo
-	CreatedAt time.Time `json:"created_at" ch:"created_at"`
+	CreatedAt time.Time `json:"createdat" ch:"createdat"`
 	CreatedBy string    `json:"createdby" ch:"createdby"`
 }
 
@@ -59,10 +59,10 @@ const (
 type PaginationData struct {
 	Total     int64 `json:"total"`
 	Page      int64 `json:"page"`
-	PerPage   int64 `json:"per_page"`
+	PerPage   int64 `json:"perpage"`
 	Prev      int64 `json:"prev"`
 	Next      int64 `json:"next"`
-	TotalPage int64 `json:"total_page"`
+	TotalPage int64 `json:"totalpage"`
 }
 
 func (p *PaginationData) Build() {

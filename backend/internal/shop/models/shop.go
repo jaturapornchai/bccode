@@ -19,7 +19,7 @@ type ShopBusinessType struct {
 }
 
 type Shop struct {
-	HoldingCode          string         `json:"holding_code" bson:"holding_code"`
+	HoldingCode          string         `json:"holdingcode" bson:"holdingcode"`
 	ProfilePicture       string         `json:"profilepicture" bson:"profilepicture"`
 	Name1                string         `json:"name1" bson:"name1"`
 	Names                []models.NameX `json:"names" bson:"names"`
@@ -29,7 +29,7 @@ type Shop struct {
 	PosProductCenterType int8           `json:"posproductcentertype" bson:"posproductcentertype"`
 	ProductCenterType    int8           `json:"productcentertype" bson:"productcentertype"`
 	DebtorCenterType     int8           `json:"debtorcentertype" bson:"debtorcentertype"`
-	MainHoldingCode      string         `json:"main_holding_code" bson:"main_holding_code"`
+	MainHoldingCode      string         `json:"mainholdingcode" bson:"mainholdingcode"`
 	Address              []models.NameX `json:"address" bson:"address"`
 	Images               []ShopImage    `json:"images" bson:"images"`
 	Logo                 string         `json:"logo" bson:"logo"`
@@ -45,9 +45,9 @@ type ShopImage struct {
 }
 
 type ShopSettings struct {
-	TaxID                 string           `json:"tax_id" bson:"tax_id"`
-	CompanyRegistrationNo string           `json:"company_registration_no" bson:"company_registration_no"`
-	CountryCode           string           `json:"country_code" bson:"country_code"`
+	TaxID                 string           `json:"taxid" bson:"taxid"`
+	CompanyRegistrationNo string           `json:"companyregistrationno" bson:"companyregistrationno"`
+	CountryCode           string           `json:"countrycode" bson:"countrycode"`
 	Language              string           `json:"language" bson:"language"`
 	EmailOwners           []string         `json:"emailowners" bson:"emailowners"`
 	EmailStaffs           []string         `json:"emailstaffs" bson:"emailstaffs"`
@@ -56,29 +56,29 @@ type ShopSettings struct {
 	IsUseBranch           bool             `json:"isusebranch" bson:"isusebranch"`
 	IsUseDepartment       bool             `json:"isusedepartment" bson:"isusedepartment"`
 	UseBuddhistCalendar   bool             `json:"usebuddhistcalendar" bson:"usebuddhistcalendar"` // true = พ.ศ., false = ค.ศ.
-	IsVatRegistered       bool             `json:"is_vat_registered" bson:"is_vat_registered"`
+	IsVatRegistered       bool             `json:"isvatregistered" bson:"isvatregistered"`
 	VatRate               float64          `json:"vatrate" bson:"vatrate"`
 	VatTypeSale           float64          `json:"vattypesale" bson:"vattypesale"`
 	VateTypePurchase      int              `json:"vattypepurchase" bson:"vattypepurchase"`
 	InquiryTypeSale       int              `json:"inquirytypesale" bson:"inquirytypesale"`
 	InquiryTypePurchase   int              `json:"inquirytypepurchase" bson:"inquirytypepurchase"`
 	LanguageConfigs       []LanguageConfig `json:"languageconfigs" bson:"languageconfigs"`
-	BaseCurrency          string           `json:"base_currency" bson:"base_currency"` // สกุลเงินหลักของบริษัท (เช่น THB, USD)
-	CurrencyCodes         []string         `json:"currency_codes" bson:"currency_codes"`
+	BaseCurrency          string           `json:"basecurrency" bson:"basecurrency"` // สกุลเงินหลักของบริษัท (เช่น THB, USD)
+	CurrencyCodes         []string         `json:"currencycodes" bson:"currencycodes"`
 	Timezone              string           `json:"timezone" bson:"timezone"`
-	TimezoneLabel         string           `json:"timezone_label" bson:"timezone_label"`
-	TimezoneOffset        string           `json:"timezone_offset" bson:"timezone_offset"`
-	DateFormat            string           `json:"date_format" bson:"date_format"`
-	DecimalQuantity       int8             `json:"decimal_quantity" bson:"decimal_quantity"`
-	DecimalPrice          int8             `json:"decimal_price" bson:"decimal_price"`
-	DecimalDocument       int8             `json:"decimal_document" bson:"decimal_document"`
+	TimezoneLabel         string           `json:"timezonelabel" bson:"timezonelabel"`
+	TimezoneOffset        string           `json:"timezoneoffset" bson:"timezoneoffset"`
+	DateFormat            string           `json:"dateformat" bson:"dateformat"`
+	DecimalQuantity       int8             `json:"decimalquantity" bson:"decimalquantity"`
+	DecimalPrice          int8             `json:"decimalprice" bson:"decimalprice"`
+	DecimalDocument       int8             `json:"decimaldocument" bson:"decimaldocument"`
 }
 
 type LanguageConfig struct {
 	Code           string `json:"code" bson:"code"`
 	CodeTranslator string `json:"codetranslator" bson:"codetranslator"`
 	Name           string `json:"name" bson:"name"`
-	IsUse          bool   `json:"is_use" bson:"is_use"`
+	IsUse          bool   `json:"isuse" bson:"isuse"`
 	IsDefault      bool   `json:"isdefault" bson:"isdefault"`
 }
 
@@ -92,7 +92,7 @@ func (ShopInfo) CollectionName() string {
 }
 
 type ShopDoc struct {
-	ID                 primitive.ObjectID `json:"-" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"-" bson:"id,omitempty"`
 	ShopInfo           `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

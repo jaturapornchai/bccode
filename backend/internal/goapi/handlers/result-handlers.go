@@ -146,31 +146,31 @@ func fontWeightToStyle(weight string) string {
 
 // SummaryLevel โครงสร้างสำหรับแต่ละระดับของยอดรวม
 type SummaryLevel struct {
-	GroupByFields []string `json:"group_by_fields"` // เช่น ["docno"], ["docdate","docno"]
-	SumFields     []string `json:"sum_fields"`      // fields ที่จะ sum
-	TypeJSON      int      `json:"typejson"`        // ค่า typejson สำหรับระดับนี้ (1=level1, 2=level2, ...)
+	GroupByFields []string `json:"groupbyfields"` // เช่น ["docno"], ["docdate","docno"]
+	SumFields     []string `json:"sumfields"`     // fields ที่จะ sum
+	TypeJSON      int      `json:"typejson"`      // ค่า typejson สำหรับระดับนี้ (1=level1, 2=level2, ...)
 }
 
 // SummaryConfig โครงสร้างสำหรับการกำหนดค่าสรุปยอดรวมของแต่ละ query
 type SummaryConfig struct {
-	Levels         []SummaryLevel `json:"levels"`           // ระดับยอดรวมหลายระดับ
-	GrandTotal     bool           `json:"grand_total"`      // มียอดรวมทั้งหมดหรือไม่
-	GrandTotalType int            `json:"grand_total_type"` // typejson สำหรับยอดรวมทั้งหมด (default=99)
+	Levels         []SummaryLevel `json:"levels"`         // ระดับยอดรวมหลายระดับ
+	GrandTotal     bool           `json:"grandtotal"`     // มียอดรวมทั้งหมดหรือไม่
+	GrandTotalType int            `json:"grandtotaltype"` // typejson สำหรับยอดรวมทั้งหมด (default=99)
 }
 
 // LinkConfig ใข้กำหนดความสัมพันธ์ระหว่าง parent และ child query
 type LinkConfig struct {
-	ParentAlias string   `json:"parent_alias"`
-	ParentKeys  []string `json:"parent_keys"`
-	ChildKeys   []string `json:"child_keys"`
+	ParentAlias string   `json:"parentalias"`
+	ParentKeys  []string `json:"parentkeys"`
+	ChildKeys   []string `json:"childkeys"`
 }
 
 // QueryItem โครงสร้างสำหรับ query พร้อม config ยอดรวมและ alias
 type QueryItem struct {
 	Alias         string         `json:"alias"`
-	Query         string         `json:"query"`          // SQL query
-	SummaryConfig *SummaryConfig `json:"summary_config"` // optional - config ยอดรวมสำหรับ query นี้
-	LinkConfig    *LinkConfig    `json:"link_config"`
+	Query         string         `json:"query"`         // SQL query
+	SummaryConfig *SummaryConfig `json:"summaryconfig"` // optional - config ยอดรวมสำหรับ query นี้
+	LinkConfig    *LinkConfig    `json:"linkconfig"`
 }
 
 // resultRowPayload เก็บข้อมูลชั่วคราวสำหรับการจัดเรียงผลลัพธ์ตามลำดับ parent-child
@@ -188,8 +188,8 @@ type resultRowPayload struct {
 const rootGroupKey = "__root__"
 
 type resultFromQueryPayload struct {
-	HoldingCode string      `json:"holding_code"`
-	QueryItems  []QueryItem `json:"query_items"`
+	HoldingCode string      `json:"holdingcode"`
+	QueryItems  []QueryItem `json:"queryitems"`
 	Queries     []QueryItem `json:"queries"`
 	Guid        string      `json:"guid"`
 }
@@ -214,10 +214,10 @@ func ResultFromQueryHandler(c echo.Context) error {
 		queries = payload.Queries
 	}
 
-	// Validate holding_code parameter
+	// Validate holdingcode parameter
 	if payload.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Missing required parameter: holding_code",
+			"error": "Missing required parameter: holdingcode",
 			"code":  "MISSING_HOLDING_CODE",
 		})
 	}
@@ -285,9 +285,9 @@ func ResultFromQueryHandler(c echo.Context) error {
 	}
 
 	// Log sanitized payload for troubleshooting
-	logger.Info("ResultFromQuery payload | holding_code=%s guid=%s queries=%d", payload.HoldingCode, guid, len(queries))
+	logger.Info("ResultFromQuery payload | holdingcode=%s guid=%s queries=%d", payload.HoldingCode, guid, len(queries))
 
-	// Connect to database (ใช้ชื่อ database ตาม holding_code)
+	// Connect to database (ใช้ชื่อ database ตาม holdingcode)
 	db, err := mypg.PgSqlFastConnect(payload.HoldingCode)
 	if err != nil {
 		logger.Error("Database connection error: %v", err)
@@ -555,7 +555,7 @@ func ResultGetHandler(c echo.Context) error {
 
 	// รับ JSON payload จาก request body
 	var payload struct {
-		HoldingCode string `json:"holding_code"`
+		HoldingCode string `json:"holdingcode"`
 		Guid        string `json:"guid"`
 		Limit       int    `json:"limit"`
 		Offset      int    `json:"offset"`
@@ -567,10 +567,10 @@ func ResultGetHandler(c echo.Context) error {
 		})
 	}
 
-	// Validate holding_code parameter
+	// Validate holdingcode parameter
 	if payload.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Missing required parameter: holding_code",
+			"error": "Missing required parameter: holdingcode",
 			"code":  "MISSING_HOLDING_CODE",
 		})
 	}
@@ -596,7 +596,7 @@ func ResultGetHandler(c echo.Context) error {
 		payload.Limit = 1000
 	}
 
-	// Connect to database (ใช้ชื่อ database ตาม holding_code)
+	// Connect to database (ใช้ชื่อ database ตาม holdingcode)
 	db, err := mypg.PgSqlFastConnect(payload.HoldingCode)
 	if err != nil {
 		logger.Error("Database connection error: %v", err)
@@ -724,7 +724,7 @@ func ResultToPDFHandler(c echo.Context) error {
 	// Validate parameters
 	if payload.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Missing required parameter: holding_code",
+			"error": "Missing required parameter: holdingcode",
 			"code":  "MISSING_HOLDING_CODE",
 		})
 	}
@@ -2457,7 +2457,7 @@ func marshalRowToJSON(row map[string]any, alias string, guid string, queryNum in
 type PDFConfig struct {
 	Title       string `json:"title"`       // ชื่อรายงาน
 	Orientation string `json:"orientation"` // "P" (Portrait) หรือ "L" (Landscape)
-	PageSize    string `json:"page_size"`   // "A4", "A3", "Letter" เป็นต้น
+	PageSize    string `json:"pagesize"`    // "A4", "A3", "Letter" เป็นต้น
 }
 
 type PDFColumnConfig struct {
@@ -2466,18 +2466,18 @@ type PDFColumnConfig struct {
 	Flex            int    `json:"flex"`
 	Align           string `json:"align"`
 	Numeric         bool   `json:"numeric"`
-	HideWhenSummary bool   `json:"hide_when_summary"`
-	DecimalPlaces   *int   `json:"decimal_places"`
-	FormatNumber    string `json:"format_number"`
-	DataType        string `json:"data_type"`
+	HideWhenSummary bool   `json:"hidewhensummary"`
+	DecimalPlaces   *int   `json:"decimalplaces"`
+	FormatNumber    string `json:"formatnumber"`
+	DataType        string `json:"datatype"`
 	Format          string `json:"format"`
-	UseBuddhistYear bool   `json:"use_buddhist_year"`
+	UseBuddhistYear bool   `json:"usebuddhistyear"`
 }
 
 type PDFSectionConfig struct {
 	Alias   string            `json:"alias"`
 	Title   string            `json:"title"`
-	RowType string            `json:"row_type"`
+	RowType string            `json:"rowtype"`
 	Visible *bool             `json:"visible"`
 	Columns []PDFColumnConfig `json:"columns"`
 }
@@ -2486,18 +2486,18 @@ type PDFStyleBlockConfig struct {
 	Background string `json:"background"`
 	Text       string `json:"text"`
 	Border     string `json:"border"`
-	FontWeight string `json:"font_weight"`
+	FontWeight string `json:"fontweight"`
 }
 
 type PDFTableStyleConfig struct {
-	RowSpacing    float64 `json:"row_spacing"`
-	ColumnSpacing float64 `json:"column_spacing"`
-	GridColor     string  `json:"grid_color"`
+	RowSpacing    float64 `json:"rowspacing"`
+	ColumnSpacing float64 `json:"columnspacing"`
+	GridColor     string  `json:"gridcolor"`
 }
 
 type PDFStyles struct {
 	Palette string              `json:"palette"`
-	UseFill bool                `json:"use_fill"`
+	UseFill bool                `json:"usefill"`
 	Header  PDFStyleBlockConfig `json:"header"`
 	Detail  PDFStyleBlockConfig `json:"detail"`
 	Summary PDFStyleBlockConfig `json:"summary"`
@@ -2508,27 +2508,27 @@ type PDFColumnSchema struct {
 	Label           string `json:"label"`
 	Flex            int    `json:"flex"`
 	Align           string `json:"align"`
-	DataType        string `json:"data_type"`
+	DataType        string `json:"datatype"`
 	Format          string `json:"format"`
-	HideWhenSummary bool   `json:"hide_when_summary"`
-	UseBuddhistYear bool   `json:"use_buddhist_year"`
+	HideWhenSummary bool   `json:"hidewhensummary"`
+	UseBuddhistYear bool   `json:"usebuddhistyear"`
 }
 
 type PDFLayoutConfig struct {
-	SchemaVersion int                        `json:"schema_version"`
+	SchemaVersion int                        `json:"schemaversion"`
 	Sections      []PDFSectionConfig         `json:"sections"`
 	Styles        PDFStyles                  `json:"styles"`
-	ColumnSchema  map[string]PDFColumnSchema `json:"column_schema"`
-	NumberFormats map[string]string          `json:"number_formats"`
+	ColumnSchema  map[string]PDFColumnSchema `json:"columnschema"`
+	NumberFormats map[string]string          `json:"numberformats"`
 }
 
 type resultToPDFPayload struct {
-	HoldingCode  string            `json:"holding_code"`
+	HoldingCode  string            `json:"holdingcode"`
 	Guid         string            `json:"guid"`
-	PDFConfig    PDFConfig         `json:"pdf_config"`
-	ColumnOrder  []string          `json:"column_order"`
-	ColumnNames  map[string]string `json:"column_names"`
-	LayoutConfig PDFLayoutConfig   `json:"layout_config"`
+	PDFConfig    PDFConfig         `json:"pdfconfig"`
+	ColumnOrder  []string          `json:"columnorder"`
+	ColumnNames  map[string]string `json:"columnnames"`
+	LayoutConfig PDFLayoutConfig   `json:"layoutconfig"`
 }
 
 type pdfResultRow struct {

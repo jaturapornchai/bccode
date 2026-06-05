@@ -14,8 +14,8 @@ describe("system settings API route security", () => {
     process.env.JWT_SECRET_KEY = SECRET;
 
     const response = await GET(
-      new Request("http://localhost/api/system-settings/permission_definition?holding_code=SHOP002", {
-        headers: { Authorization: `Bearer ${signJwt({ username: "user@example.com", holding_code: "SHOP001" })}` },
+      new Request("http://localhost/api/system-settings/permission_definition?holdingcode=SHOP002", {
+        headers: { Authorization: `Bearer ${signJwt({ username: "user@example.com", holdingcode: "SHOP001" })}` },
       }),
       { params: Promise.resolve({ settingPath: ["permission_definition"] }) },
     );
@@ -33,15 +33,15 @@ describe("system settings API route security", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const response = await POST(
-      new Request("http://localhost/api/system-settings/user?holding_code=SHOP001", {
+      new Request("http://localhost/api/system-settings/user?holdingcode=SHOP001", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${signJwt({ username: "owner@example.com", holding_code: "SHOP001" })}`,
+          Authorization: `Bearer ${signJwt({ username: "owner@example.com", holdingcode: "SHOP001" })}`,
         },
         body: JSON.stringify({
           backendUrl: "http://localhost:8888",
-          holding_code: "SHOP001",
+          holdingcode: "SHOP001",
           username: "new-user",
           name: "New User",
         }),
@@ -65,7 +65,7 @@ describe("system settings API route security", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const response = await DELETE(
-      new Request("http://localhost/api/system-settings/productunit/UNIT-GUID?holding_code=SHOP001", {
+      new Request("http://localhost/api/system-settings/productunit/UNIT-GUID?holdingcode=SHOP001", {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -73,7 +73,7 @@ describe("system settings API route security", () => {
         },
         body: JSON.stringify({
           backendUrl: "http://localhost:8888",
-          holding_code: "SHOP001",
+          holdingcode: "SHOP001",
         }),
       }),
       { params: Promise.resolve({ settingPath: ["productunit", "UNIT-GUID"] }) },
@@ -82,7 +82,7 @@ describe("system settings API route security", () => {
     expect(response.status).toBe(200);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [proxiedUrl, proxiedInit] = fetchMock.mock.calls[0] as [string | URL | Request, RequestInit | undefined];
-    expect(String(proxiedUrl)).toBe("http://localhost:8888/unit/UNIT-GUID?holding_code=SHOP001");
+    expect(String(proxiedUrl)).toBe("http://localhost:8888/unit/UNIT-GUID?holdingcode=SHOP001");
     expect(proxiedInit?.method).toBe("DELETE");
     expect(proxiedInit?.body).toBeUndefined();
   });
@@ -96,7 +96,7 @@ describe("system settings API route security", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const response = await GET(
-      new Request("http://localhost/api/system-settings/user/demo.admin01%40example.com?holding_code=SHOP001", {
+      new Request("http://localhost/api/system-settings/user/demo.admin01%40example.com?holdingcode=SHOP001", {
         headers: {
           Authorization: "Bearer test-token",
           "x-bc-backend-url": "http://localhost:8888/goapi",
@@ -122,9 +122,9 @@ describe("system settings API route security", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const response = await GET(
-      new Request("http://localhost/api/system-settings/permission_link/demo.admin01%40example.com?holding_code=SHOP001", {
+      new Request("http://localhost/api/system-settings/permission_link/demo.admin01%40example.com?holdingcode=SHOP001", {
         headers: {
-          Authorization: `Bearer ${signJwt({ username: "owner@example.com", holding_code: "SHOP001" })}`,
+          Authorization: `Bearer ${signJwt({ username: "owner@example.com", holdingcode: "SHOP001" })}`,
           "x-bc-backend-url": "http://localhost:8888/goapi",
         },
       }),
@@ -137,13 +137,13 @@ describe("system settings API route security", () => {
     const body = JSON.parse(String(proxiedInit?.body));
     expect(body).toMatchObject({
       collection: "employee_permissions",
-      holding_code: "SHOP001",
+      holdingcode: "SHOP001",
       email: "demo.admin01@example.com",
       cartid: "demo.admin01@example.com",
     });
   });
 
-  it("passes real holding_code separately from legacy holding_code for atlas reads", async () => {
+  it("passes real holdingcode separately from legacy holdingcode for atlas reads", async () => {
     process.env.JWT_SECRET_KEY = SECRET;
     const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
       void url;
@@ -153,9 +153,9 @@ describe("system settings API route security", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const response = await GET(
-      new Request("http://localhost/api/system-settings/permission_link?holding_code=SHOP001", {
+      new Request("http://localhost/api/system-settings/permission_link?holdingcode=SHOP001", {
         headers: {
-          Authorization: `Bearer ${signJwt({ username: "owner@example.com", holding_code: "SHOP001" })}`,
+          Authorization: `Bearer ${signJwt({ username: "owner@example.com", holdingcode: "SHOP001" })}`,
           "x-bc-backend-url": "http://localhost:8888/goapi",
         },
       }),
@@ -168,7 +168,7 @@ describe("system settings API route security", () => {
     const body = JSON.parse(String(proxiedInit?.body));
     expect(body).toMatchObject({
       collection: "employee_permissions",
-      holding_code: "SHOP001",
+      holdingcode: "SHOP001",
     });
   });
 });

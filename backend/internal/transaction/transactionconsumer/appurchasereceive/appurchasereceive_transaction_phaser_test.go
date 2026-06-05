@@ -16,8 +16,8 @@ func TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_Success(t *testing.T)
 
 	validMsg := `{
 		"id": "000000000000000000000000",
-		"holding_code": "2PrIIqTWxoBXv16K310sNwfHmfY",
-		"guid_fixed": "38mCBH7gD2Eiig00wVyUHzUfQSh",
+		"holdingcode": "2PrIIqTWxoBXv16K310sNwfHmfY",
+		"guidfixed": "38mCBH7gD2Eiig00wVyUHzUfQSh",
 		"docno": "PI2026012600001",
 		"docdatetime": "2026-01-26T02:39:29.115Z",
 		"guid_ref": "bed1331f-ce78-4b9e-9798-3f46304fc328",
@@ -50,7 +50,7 @@ func TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_Success(t *testing.T)
 		"total_amount": 50,
 		"iscancel": false,
 		"branch": {
-			"guid_fixed": "2Prp2MbDKqpDBAgSYBtqbVXODwT",
+			"guidfixed": "2Prp2MbDKqpDBAgSYBtqbVXODwT",
 			"code": "00000",
 			"names": [
 				{
@@ -378,8 +378,8 @@ func TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_SuccessWithNilDetails
 
 	validMsgWithNilDetails := `{
 		"id": "000000000000000000000000",
-		"holding_code": "2PrIIqTWxoBXv16K310sNwfHmfY",
-		"guid_fixed": "38mCBH7gD2Eiig00wVyUHzUfQSh",
+		"holdingcode": "2PrIIqTWxoBXv16K310sNwfHmfY",
+		"guidfixed": "38mCBH7gD2Eiig00wVyUHzUfQSh",
 		"docno": "PI2026012600002",
 		"docdatetime": "2026-01-26T02:39:29.115Z",
 		"guid_ref": "bed1331f-ce78-4b9e-9798-3f46304fc328",
@@ -412,7 +412,7 @@ func TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_SuccessWithNilDetails
 		"total_amount": 100,
 		"iscancel": false,
 		"branch": {
-			"guid_fixed": "2Prp2MbDKqpDBAgSYBtqbVXODwT",
+			"guidfixed": "2Prp2MbDKqpDBAgSYBtqbVXODwT",
 			"code": "00001",
 			"names": [
 				{
@@ -476,8 +476,8 @@ func TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_InvalidJSON(t *testin
 
 	invalidJSON := `{
 		"id": "000000000000000000000000",
-		"holding_code": "2PrIIqTWxoBXv16K310sNwfHmfY",
-		"guid_fixed": "38mCBH7gD2Eiig00wVyUHzUfQSh",
+		"holdingcode": "2PrIIqTWxoBXv16K310sNwfHmfY",
+		"guidfixed": "38mCBH7gD2Eiig00wVyUHzUfQSh",
 		"docno": "PI2026012600001",
 		"docdatetime": "2026-01-26T02:39:29.115Z",
 		"guid_ref": "bed1331f-ce78-4b9e-9798-3f46304fc328",
@@ -510,7 +510,7 @@ func TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_InvalidJSON(t *testin
 		"total_amount": 50,
 		"iscancel": false,
 		"branch": {
-			"guid_fixed": "2Prp2MbDKqpDBAgSYBtqbVXODwT",
+			"guidfixed": "2Prp2MbDKqpDBAgSYBtqbVXODwT",
 			"code": "00000",
 			"names": [
 				{
@@ -694,8 +694,8 @@ func TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_InvalidDataType(t *te
 
 	invalidDataTypeJSON := `{
 		"id": "000000000000000000000000",
-		"holding_code": "2PrIIqTWxoBXv16K310sNwfHmfY",
-		"guid_fixed": "38mCBH7gD2Eiig00wVyUHzUfQSh",
+		"holdingcode": "2PrIIqTWxoBXv16K310sNwfHmfY",
+		"guidfixed": "38mCBH7gD2Eiig00wVyUHzUfQSh",
 		"docno": "PI2026012600001",
 		"docdatetime": "2026-01-26T02:39:29.115Z",
 		"guid_ref": "bed1331f-ce78-4b9e-9798-3f46304fc328",
@@ -728,7 +728,7 @@ func TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_InvalidDataType(t *te
 		"total_amount": 50,
 		"iscancel": false,
 		"branch": {
-			"guid_fixed": "2Prp2MbDKqpDBAgSYBtqbVXODwT",
+			"guidfixed": "2Prp2MbDKqpDBAgSYBtqbVXODwT",
 			"code": "00000",
 			"names": [
 				{
@@ -835,8 +835,8 @@ func TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_MultipleDetails(t *te
 
 	validMsgWithMultipleDetails := `{
 		"id": "000000000000000000000000",
-		"holding_code": "2PrIIqTWxoBXv16K310sNwfHmfY",
-		"guid_fixed": "38mCBH7gD2Eiig00wVyUHzUfQSh",
+		"holdingcode": "2PrIIqTWxoBXv16K310sNwfHmfY",
+		"guidfixed": "38mCBH7gD2Eiig00wVyUHzUfQSh",
 		"docno": "PI2026012600003",
 		"docdatetime": "2026-01-26T02:39:29.115Z",
 		"guid_ref": "bed1331f-ce78-4b9e-9798-3f46304fc328",
@@ -869,7 +869,7 @@ func TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_MultipleDetails(t *te
 		"total_amount": 150,
 		"iscancel": false,
 		"branch": {
-			"guid_fixed": "2Prp2MbDKqpDBAgSYBtqbVXODwT",
+			"guidfixed": "2Prp2MbDKqpDBAgSYBtqbVXODwT",
 			"code": "00000",
 			"names": [
 				{
@@ -1096,8 +1096,8 @@ func TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_SpecialCharacters(t *
 
 	validMsgWithSpecialChars := `{
 		"id": "000000000000000000000000",
-		"holding_code": "2PrIIqTWxoBXv16K310sNwfHmfY",
-		"guid_fixed": "38mCBH7gD2Eiig00wVyUHzUfQSh",
+		"holdingcode": "2PrIIqTWxoBXv16K310sNwfHmfY",
+		"guidfixed": "38mCBH7gD2Eiig00wVyUHzUfQSh",
 		"docno": "PI2026012600004",
 		"docdatetime": "2026-01-26T02:39:29.115Z",
 		"guid_ref": "bed1331f-ce78-4b9e-9798-3f46304fc328",
@@ -1130,7 +1130,7 @@ func TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_SpecialCharacters(t *
 		"total_amount": 50,
 		"iscancel": false,
 		"branch": {
-			"guid_fixed": "2Prp2MbDKqpDBAgSYBtqbVXODwT",
+			"guidfixed": "2Prp2MbDKqpDBAgSYBtqbVXODwT",
 			"code": "00000",
 			"names": [
 				{
@@ -1269,8 +1269,8 @@ func TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_IsCancelTrue(t *testi
 
 	cancelledMsg := `{
 		"id": "000000000000000000000000",
-		"holding_code": "2PrIIqTWxoBXv16K310sNwfHmfY",
-		"guid_fixed": "38mCBH7gD2Eiig00wVyUHzUfQSh",
+		"holdingcode": "2PrIIqTWxoBXv16K310sNwfHmfY",
+		"guidfixed": "38mCBH7gD2Eiig00wVyUHzUfQSh",
 		"docno": "PI2026012600005",
 		"docdatetime": "2026-01-26T02:39:29.115Z",
 		"guid_ref": "bed1331f-ce78-4b9e-9798-3f46304fc328",
@@ -1303,7 +1303,7 @@ func TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_IsCancelTrue(t *testi
 		"total_amount": 50,
 		"iscancel": true,
 		"branch": {
-			"guid_fixed": "2Prp2MbDKqpDBAgSYBtqbVXODwT",
+			"guidfixed": "2Prp2MbDKqpDBAgSYBtqbVXODwT",
 			"code": "00000",
 			"names": [
 				{
@@ -1415,8 +1415,8 @@ func TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_ZeroValues(t *testing
 
 	zeroValuesMsg := `{
 		"id": "000000000000000000000000",
-		"holding_code": "2PrIIqTWxoBXv16K310sNwfHmfY",
-		"guid_fixed": "38mCBH7gD2Eiig00wVyUHzUfQSh",
+		"holdingcode": "2PrIIqTWxoBXv16K310sNwfHmfY",
+		"guidfixed": "38mCBH7gD2Eiig00wVyUHzUfQSh",
 		"docno": "PI2026012600006",
 		"docdatetime": "2026-01-26T02:39:29.115Z",
 		"guid_ref": "bed1331f-ce78-4b9e-9798-3f46304fc328",
@@ -1449,7 +1449,7 @@ func TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_ZeroValues(t *testing
 		"total_amount": 0,
 		"iscancel": false,
 		"branch": {
-			"guid_fixed": "2Prp2MbDKqpDBAgSYBtqbVXODwT",
+			"guidfixed": "2Prp2MbDKqpDBAgSYBtqbVXODwT",
 			"code": "00000",
 			"names": [
 				{
@@ -1604,8 +1604,8 @@ func TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_ReturnsCorrectType(t 
 
 	validMsg := `{
 		"id": "000000000000000000000000",
-		"holding_code": "2PrIIqTWxoBXv16K310sNwfHmfY",
-		"guid_fixed": "38mCBH7gD2Eiig00wVyUHzUfQSh",
+		"holdingcode": "2PrIIqTWxoBXv16K310sNwfHmfY",
+		"guidfixed": "38mCBH7gD2Eiig00wVyUHzUfQSh",
 		"docno": "PI2026012600007",
 		"docdatetime": "2026-01-26T02:39:29.115Z",
 		"guid_ref": "bed1331f-ce78-4b9e-9798-3f46304fc328",
@@ -1638,7 +1638,7 @@ func TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_ReturnsCorrectType(t 
 		"total_amount": 50,
 		"iscancel": false,
 		"branch": {
-			"guid_fixed": "2Prp2MbDKqpDBAgSYBtqbVXODwT",
+			"guidfixed": "2Prp2MbDKqpDBAgSYBtqbVXODwT",
 			"code": "00000",
 			"names": [
 				{

@@ -12,14 +12,14 @@ import (
 )
 
 var (
-	holdingCode    = flag.String("holding_code", "", "holdingCode to transfer")
-	toHoldingCode  = flag.String("toholding_code", "", "holdingCode to transfer")
+	holdingCode    = flag.String("holdingcode", "", "holdingCode to transfer")
+	toHoldingCode  = flag.String("toholdingcode", "", "holdingCode to transfer")
 	confirmTranser = flag.Bool("confirm", false, "confirm transfer")
 )
 
 func main() {
 
-	// read holding_code from std in
+	// read holdingcode from std in
 	godotenv.Load()
 
 	flag.Parse()

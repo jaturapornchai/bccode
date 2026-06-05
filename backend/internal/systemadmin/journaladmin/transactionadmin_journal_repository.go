@@ -29,8 +29,8 @@ func (r JournalTransactionAdminRepository) FindJournalTransactionDocByHoldingCod
 	docList := []journalModels.JournalDoc{}
 
 	queryFilters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at":   bson.M{"$exists": isDeleted},
+		"holdingcode": holdingCode,
+		"deletedat":   bson.M{"$exists": isDeleted},
 	}
 
 	pagination, err := r.pst.FindPage(ctx, &journalModels.JournalDoc{}, queryFilters, pageable, &docList)

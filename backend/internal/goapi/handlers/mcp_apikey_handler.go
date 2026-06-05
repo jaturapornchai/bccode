@@ -30,22 +30,22 @@ func NewMCPAPIKeyHandler() *MCPAPIKeyHandler {
 
 // CreateAPIKeyRequest represents a request to create an API key
 type CreateAPIKeyRequest struct {
-	HoldingCode        string   `json:"holding_code"`
+	HoldingCode        string   `json:"holdingcode"`
 	Name               string   `json:"name"`
 	Description        string   `json:"description"`
-	AllowedTools       []string `json:"allowed_tools"`
-	RateLimitPerMinute int      `json:"rate_limit_per_minute"`
-	ExpiresAt          *string  `json:"expires_at,omitempty"` // Format: YYYY-MM-DD
-	CreatedBy          string   `json:"created_by"`
+	AllowedTools       []string `json:"allowedtools"`
+	RateLimitPerMinute int      `json:"ratelimitperminute"`
+	ExpiresAt          *string  `json:"expiresat,omitempty"` // Format: YYYY-MM-DD
+	CreatedBy          string   `json:"createdby"`
 }
 
 // CreateAPIKeyResponse represents the response for creating an API key
 type CreateAPIKeyResponse struct {
 	ID          string    `json:"id"`
 	Name        string    `json:"name"`
-	HoldingCode string    `json:"holding_code"`
-	CreatedAt   time.Time `json:"created_at"`
-	ExpiresAt   *string   `json:"expires_at,omitempty"`
+	HoldingCode string    `json:"holdingcode"`
+	CreatedAt   time.Time `json:"createdat"`
+	ExpiresAt   *string   `json:"expiresat,omitempty"`
 }
 
 // CreateAPIKeyHandler creates a new MCP API key
@@ -61,7 +61,7 @@ func (h *MCPAPIKeyHandler) CreateAPIKeyHandler(c echo.Context) error {
 	// Validate required fields
 	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "holding_code is required",
+			"error": "holdingcode is required",
 			"code":  "MISSING_HOLDING_CODE",
 		})
 	}
@@ -141,14 +141,14 @@ func (h *MCPAPIKeyHandler) CreateAPIKeyHandler(c echo.Context) error {
 
 // ListAPIKeysHandler lists all API keys for a shop
 type ListAPIKeysRequest struct {
-	HoldingCode string `query:"holding_code"`
+	HoldingCode string `query:"holdingcode"`
 }
 
 func (h *MCPAPIKeyHandler) ListAPIKeysHandler(c echo.Context) error {
-	holdingCode := c.QueryParam("holding_code")
+	holdingCode := c.QueryParam("holdingcode")
 	if holdingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "holding_code is required",
+			"error": "holdingcode is required",
 			"code":  "MISSING_HOLDING_CODE",
 		})
 	}
@@ -172,11 +172,11 @@ func (h *MCPAPIKeyHandler) ListAPIKeysHandler(c echo.Context) error {
 			"id":                    key.ID.Hex(),
 			"name":                  key.Name,
 			"description":           key.Description,
-			"holding_code":          key.HoldingCode,
-			"is_active":             key.IsActive,
+			"holdingcode":           key.HoldingCode,
+			"isactive":              key.IsActive,
 			"allowed_tools":         key.AllowedTools,
 			"rate_limit_per_minute": key.RateLimitPerMinute,
-			"created_at":            key.CreatedAt,
+			"createdat":             key.CreatedAt,
 			"created_by":            key.CreatedBy,
 		}
 
@@ -199,7 +199,7 @@ func (h *MCPAPIKeyHandler) ListAPIKeysHandler(c echo.Context) error {
 
 // DeleteAPIKeyRequest represents a request to delete an API key
 type DeleteAPIKeyRequest struct {
-	KeyID string `json:"key_id"`
+	KeyID string `json:"keyid"`
 }
 
 // DeleteAPIKeyHandler soft deletes an API key
@@ -251,9 +251,9 @@ func (h *MCPAPIKeyHandler) DeleteAPIKeyHandler(c echo.Context) error {
 type UpdateAPIKeyRequest struct {
 	Name               *string  `json:"name,omitempty"`
 	Description        *string  `json:"description,omitempty"`
-	IsActive           *bool    `json:"is_active,omitempty"`
-	AllowedTools       []string `json:"allowed_tools,omitempty"`
-	RateLimitPerMinute *int     `json:"rate_limit_per_minute,omitempty"`
+	IsActive           *bool    `json:"isactive,omitempty"`
+	AllowedTools       []string `json:"allowedtools,omitempty"`
+	RateLimitPerMinute *int     `json:"ratelimitperminute,omitempty"`
 }
 
 // UpdateAPIKeyHandler updates an API key
@@ -283,7 +283,7 @@ func (h *MCPAPIKeyHandler) UpdateAPIKeyHandler(c echo.Context) error {
 		updates["description"] = *req.Description
 	}
 	if req.IsActive != nil {
-		updates["is_active"] = *req.IsActive
+		updates["isactive"] = *req.IsActive
 	}
 	if req.AllowedTools != nil {
 		updates["allowed_tools"] = req.AllowedTools
@@ -367,11 +367,11 @@ func (h *MCPAPIKeyHandler) GetAPIKeyHandler(c echo.Context) error {
 		"id":                    apiKey.ID.Hex(),
 		"name":                  apiKey.Name,
 		"description":           apiKey.Description,
-		"holding_code":          apiKey.HoldingCode,
-		"is_active":             apiKey.IsActive,
+		"holdingcode":           apiKey.HoldingCode,
+		"isactive":              apiKey.IsActive,
 		"allowed_tools":         apiKey.AllowedTools,
 		"rate_limit_per_minute": apiKey.RateLimitPerMinute,
-		"created_at":            apiKey.CreatedAt,
+		"createdat":             apiKey.CreatedAt,
 		"created_by":            apiKey.CreatedBy,
 	}
 
@@ -390,16 +390,16 @@ func (h *MCPAPIKeyHandler) GetAPIKeyHandler(c echo.Context) error {
 
 // GetAuditLogsHandler gets audit logs for a shop
 type GetAuditLogsRequest struct {
-	HoldingCode string `query:"holding_code"`
+	HoldingCode string `query:"holdingcode"`
 	Limit       int64  `query:"limit"`
 	Skip        int64  `query:"skip"`
 }
 
 func (h *MCPAPIKeyHandler) GetAuditLogsHandler(c echo.Context) error {
-	holdingCode := c.QueryParam("holding_code")
+	holdingCode := c.QueryParam("holdingcode")
 	if holdingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "holding_code is required",
+			"error": "holdingcode is required",
 			"code":  "MISSING_HOLDING_CODE",
 		})
 	}
@@ -435,12 +435,12 @@ func (h *MCPAPIKeyHandler) GetAuditLogsHandler(c echo.Context) error {
 		logData := map[string]interface{}{
 			"id":                log.ID.Hex(),
 			"api_key_id":        log.APIKeyID.Hex(),
-			"holding_code":      log.HoldingCode,
+			"holdingcode":       log.HoldingCode,
 			"tool_name":         log.ToolName,
 			"request_params":    log.RequestParams,
 			"response_status":   log.ResponseStatus,
 			"execution_time_ms": log.ExecutionTimeMs,
-			"created_at":        log.CreatedAt.Format("2006-01-02 15:04:05"),
+			"createdat":         log.CreatedAt.Format("2006-01-02 15:04:05"),
 		}
 
 		if log.ErrorMessage != "" {
@@ -529,7 +529,7 @@ func (h *MCPAPIKeyHandler) CreateAPIKeyWithExportHandler(c echo.Context) error {
 
 	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "holding_code is required",
+			"error": "holdingcode is required",
 			"code":  "MISSING_HOLDING_CODE",
 		})
 	}
@@ -616,10 +616,10 @@ func (h *MCPAPIKeyHandler) CreateAPIKeyWithExportHandler(c echo.Context) error {
 	return c.JSON(http.StatusCreated, map[string]interface{}{
 		"success": true,
 		"data": map[string]interface{}{
-			"id":           createdKey.ID.Hex(),
-			"name":         createdKey.Name,
-			"holding_code": createdKey.HoldingCode,
-			"created_at":   createdKey.CreatedAt,
+			"id":          createdKey.ID.Hex(),
+			"name":        createdKey.Name,
+			"holdingcode": createdKey.HoldingCode,
+			"createdat":   createdKey.CreatedAt,
 			"expires_at": func() *string {
 				if createdKey.ExpiresAt != nil {
 					s := createdKey.ExpiresAt.Format("2006-01-02")
@@ -636,7 +636,7 @@ func (h *MCPAPIKeyHandler) CreateAPIKeyWithExportHandler(c echo.Context) error {
 type ToolInfo struct {
 	Name     string `json:"name"`
 	Category string `json:"category"`
-	IsWrite  bool   `json:"is_write"`
+	IsWrite  bool   `json:"iswrite"`
 }
 
 // GetAvailableToolsHandler returns all MCP tools grouped by category + write flag
@@ -662,11 +662,11 @@ func (h *MCPAPIKeyHandler) GetAvailableToolsHandler(c echo.Context) error {
 		{"get_cash_flow", "Financial", false},
 		// Inventory
 		{"get_inventory_value", "Inventory", false},
-		{"get_low_stock_alerts", "Inventory", false},
+		{"getlowstockalerts", "Inventory", false},
 		{"get_dead_stock", "Inventory", false},
 		{"get_inventory_turnover", "Inventory", false},
 		// Customers
-		{"get_top_customers", "Customers", false},
+		{"gettopcustomers", "Customers", false},
 		{"get_customer_growth", "Customers", false},
 		{"get_customer_segments", "Customers", false},
 		// Comparison
@@ -677,11 +677,11 @@ func (h *MCPAPIKeyHandler) GetAvailableToolsHandler(c echo.Context) error {
 		{"execute_query", "Database", false},
 		{"get_table_sample", "Database", false},
 		// Database (MongoDB)
-		{"query_mongodb", "Database", false},
+		{"querymongodb", "Database", false},
 		{"list_mongodb_collections", "Database", false},
 		{"aggregate_mongodb", "Database", false},
 		// Database (ClickHouse)
-		{"query_clickhouse", "Database", false},
+		{"queryclickhouse", "Database", false},
 		{"list_clickhouse_tables", "Database", false},
 		// API Development
 		{"list_api_endpoints", "API Development", false},

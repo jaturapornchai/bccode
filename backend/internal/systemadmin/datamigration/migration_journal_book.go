@@ -30,36 +30,36 @@ func JournalBookCenter() *[]journalBookModels.JournalBookDoc {
 	books := &[]journalBookModels.JournalBookDoc{}
 	jsonStr := `[
 		{
-		  "holding_code": "999999999",
-		  "guid_fixed": "1",
+		  "holdingcode": "999999999",
+		  "guidfixed": "1",
 		  "code": "1",
 		  "name1": "สมุดรายวันทั่วไป",
 		  "iscenterbook": true
 		},
 		{
-		  "holding_code": "999999999",
-		  "guid_fixed": "2",
+		  "holdingcode": "999999999",
+		  "guidfixed": "2",
 		  "code": "2",
 		  "name1": "สมุดเงินสดรับ",
 		  "iscenterbook": true
 		},
 		{
-		  "holding_code": "999999999",
-		  "guid_fixed": "3",
+		  "holdingcode": "999999999",
+		  "guidfixed": "3",
 		  "code": "3",
 		  "name1": "สมุดเงินสดจ่าย",
 		  "iscenterbook": true
 		},
 		{
-		  "holding_code": "999999999",
-		  "guid_fixed": "4",
+		  "holdingcode": "999999999",
+		  "guidfixed": "4",
 		  "code": "4",
 		  "name1": "สมุดรายวันขาย",
 		  "iscenterbook": true
 		},
 		{
-		  "holding_code": "999999999",
-		  "guid_fixed": "5",
+		  "holdingcode": "999999999",
+		  "guidfixed": "5",
 		  "code": "5",
 		  "name1": "สมุดรายวันซื้อ",
 		  "iscenterbook": true

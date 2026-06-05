@@ -86,8 +86,8 @@ func TestStockPickupTransactionDoc(t *testing.T) {
 
 	giveInput := `{
 		"id": "6465f4d9dfc8097596db4227",
-		"holding_code": "2PrIIqTWxoBXv16K310sNwfHmfY",
-		"guid_fixed": "2PxeyrNxaW54VXcEOeyGcrMskcv",
+		"holdingcode": "2PrIIqTWxoBXv16K310sNwfHmfY",
+		"guidfixed": "2PxeyrNxaW54VXcEOeyGcrMskcv",
 		"docno": "PO23051516490133",
 		"docdatetime": "2023-05-15T09:49:58.000Z",
 		"guid_ref": "a71e8f3e-1efe-4222-994a-47c869599735",
@@ -245,8 +245,8 @@ func TestStockPickupTransactionDoc(t *testing.T) {
 
 	assert.Nil(t, err)
 
-	assert.Equal(t, get.HoldingCode, want.HoldingCode, "holding_code")
-	assert.Equal(t, get.GuidFixed, want.GuidFixed, "guid_fixed")
+	assert.Equal(t, get.HoldingCode, want.HoldingCode, "holdingcode")
+	assert.Equal(t, get.GuidFixed, want.GuidFixed, "guidfixed")
 	assert.Equal(t, get.TransFlag, want.TransFlag, "transflag")
 	assert.Equal(t, get.DocNo, want.DocNo, "docno")
 	assert.Equal(t, get.DocDate, want.DocDate, "docdate")
@@ -272,7 +272,7 @@ func TestStockPickupTransactionDoc(t *testing.T) {
 	// detail
 	assert.Equal(t, (*get.Items)[0].GuidFixed, (*want.Items)[0].GuidFixed, "item.guidfixed")
 	assert.Equal(t, (*get.Items)[0].DocNo, (*want.Items)[0].DocNo, "item.docno")
-	assert.Equal(t, (*get.Items)[0].HoldingCode, (*want.Items)[0].HoldingCode, "item.holding_code")
+	assert.Equal(t, (*get.Items)[0].HoldingCode, (*want.Items)[0].HoldingCode, "item.holdingcode")
 	assert.Equal(t, (*get.Items)[0].LineNumber, (*want.Items)[0].LineNumber, "item.linenumber")
 	assert.Equal(t, (*get.Items)[0].ItemGuid, (*want.Items)[0].ItemGuid, "item.itemguid")
 	assert.Equal(t, (*get.Items)[0].Barcode, (*want.Items)[0].Barcode, "item.barcode")

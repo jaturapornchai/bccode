@@ -18,16 +18,16 @@ import (
 type RebuildProductsResponse struct {
 	Success     bool      `json:"success"`
 	Message     string    `json:"message"`
-	HoldingCode string    `json:"holding_code"`
+	HoldingCode string    `json:"holdingcode"`
 	Duration    string    `json:"duration"`
-	GeneratedAt time.Time `json:"generated_at"`
+	GeneratedAt time.Time `json:"generatedat"`
 }
 
 // RebuildProducts ทำ full rebuild สินค้าจาก MongoDB ลง PostgreSQL + ClickHouse
 // flow เหมือน frontend: POST /api/report { command_id: "rebuild-products" }
 func RebuildProducts(ctx context.Context, holdingCode string) (*RebuildProductsResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 
 	logger.Info("[MCP RebuildProducts] เริ่ม full rebuild สำหรับ shop=%s", holdingCode)

@@ -3,10 +3,10 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"smlcloudplatform/internal/goapi/config"
-	"smlcloudplatform/internal/goapi/logger"
 	"net/http"
 	"os"
+	"smlcloudplatform/internal/goapi/config"
+	"smlcloudplatform/internal/goapi/logger"
 
 	"smlcloudplatform/internal/goapi/mykafkaconsumer"
 
@@ -1136,22 +1136,22 @@ func GetConsumerStatus(c echo.Context) error {
 		"is_valid":     kafkaServer != "",
 		"batch_size":   5000,
 		"consumer_groups": map[string]string{
-			"sale_invoice":     "goapi-saleinvoice-consumer",
-			"sale_return":      "goapi-saleinvoicereturn-consumer",
-			"sale_order":       "goapi-saleorder-consumer",
-			"inventory":        "biapi-inventory-consumer",
-			"inventory_bulk":   "biapi-inventory-bulk-consumer",
-			"warehouse":        "biapi-warehouse-consumer",
-			"purchase":         "goapi-purchase-consumer",
-			"purchase_order":   "goapi-purchaseorder-consumer",
-			"purchase_partial": "goapi-purchasepartial-consumer",
-			"purchase_return":       "goapi-purchasereturn-consumer",
+			"sale_invoice":         "goapi-saleinvoice-consumer",
+			"sale_return":          "goapi-saleinvoicereturn-consumer",
+			"sale_order":           "goapi-saleorder-consumer",
+			"inventory":            "biapi-inventory-consumer",
+			"inventory_bulk":       "biapi-inventory-bulk-consumer",
+			"warehouse":            "biapi-warehouse-consumer",
+			"purchase":             "goapi-purchase-consumer",
+			"purchase_order":       "goapi-purchaseorder-consumer",
+			"purchase_partial":     "goapi-purchasepartial-consumer",
+			"purchase_return":      "goapi-purchasereturn-consumer",
 			"purchase_requisition": "goapi-purchaserequisition-consumer",
 			"rfq":                  "goapi-rfq-consumer",
-			"creditor":         "goapi-creditor-consumer",
-			"customer":         "goapi-customer-consumer",
-			"employee":         "goapi-employee-consumer",
-			"debtor":           "goapi-debtor-consumer",
+			"creditor":             "goapi-creditor-consumer",
+			"customer":             "goapi-customer-consumer",
+			"employee":             "goapi-employee-consumer",
+			"debtor":               "goapi-debtor-consumer",
 		},
 		"topics": map[string]interface{}{
 			"sale_invoice": []string{

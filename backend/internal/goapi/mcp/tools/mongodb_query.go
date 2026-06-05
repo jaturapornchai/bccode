@@ -19,7 +19,7 @@ import (
 
 // MongoQueryRequest คำขอ query MongoDB
 type MongoQueryRequest struct {
-	HoldingCode string `json:"holding_code"`
+	HoldingCode string `json:"holdingcode"`
 	Database    string `json:"database"`   // ถ้าไม่ระบุจะใช้ค่า default จาก config
 	Collection  string `json:"collection"` // ชื่อ collection ที่ต้องการ query
 	Filter      string `json:"filter"`     // JSON filter (bson.M format)
@@ -33,8 +33,8 @@ type MongoQueryResponse struct {
 	Documents   []map[string]interface{} `json:"documents"`
 	Count       int                      `json:"count"`
 	Truncated   bool                     `json:"truncated"`
-	ExecutionMs int64                    `json:"execution_ms"`
-	GeneratedAt time.Time                `json:"generated_at"`
+	ExecutionMs int64                    `json:"executionms"`
+	GeneratedAt time.Time                `json:"generatedat"`
 }
 
 // QueryMongoDB ค้นหาข้อมูลใน MongoDB (readonly — ใช้ Find เท่านั้น)
@@ -75,9 +75,9 @@ func QueryMongoDB(ctx context.Context, holdingCode, database, collection, filter
 		filter = bson.M{}
 	}
 
-	// เพิ่ม holding_code filter ถ้ามี (ป้องกันการดูข้อมูลข้าม shop)
+	// เพิ่ม holdingcode filter ถ้ามี (ป้องกันการดูข้อมูลข้าม shop)
 	if holdingCode != "" {
-		filter["holding_code"] = holdingCode
+		filter["holdingcode"] = holdingCode
 	}
 
 	startTime := time.Now()
@@ -125,7 +125,7 @@ type MongoListCollectionsResponse struct {
 	Database    string           `json:"database"`
 	Collections []CollectionInfo `json:"collections"`
 	Count       int              `json:"count"`
-	GeneratedAt time.Time        `json:"generated_at"`
+	GeneratedAt time.Time        `json:"generatedat"`
 }
 
 // CollectionInfo ข้อมูล collection
@@ -175,7 +175,7 @@ func ListMongoDBCollections(ctx context.Context, database string) (*MongoListCol
 
 // MongoAggregateRequest คำขอ aggregation pipeline
 type MongoAggregateRequest struct {
-	HoldingCode string `json:"holding_code"`
+	HoldingCode string `json:"holdingcode"`
 	Database    string `json:"database"`
 	Collection  string `json:"collection"`
 	Pipeline    string `json:"pipeline"` // JSON array ของ pipeline stages
@@ -225,9 +225,9 @@ func AggregateMongoDB(ctx context.Context, holdingCode, database, collection, pi
 		return nil, fmt.Errorf("pipeline JSON ไม่ถูกต้อง: %w", err)
 	}
 
-	// เพิ่ม $match holding_code ถ้ามี (ป้องกันการดูข้อมูลข้าม shop)
+	// เพิ่ม $match holdingcode ถ้ามี (ป้องกันการดูข้อมูลข้าม shop)
 	if holdingCode != "" {
-		matchStage := bson.M{"$match": bson.M{"holding_code": holdingCode}}
+		matchStage := bson.M{"$match": bson.M{"holdingcode": holdingCode}}
 		pipeline = append([]bson.M{matchStage}, pipeline...)
 	}
 

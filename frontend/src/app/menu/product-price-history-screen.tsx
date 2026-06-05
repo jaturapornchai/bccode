@@ -123,7 +123,7 @@ export function ProductPriceHistoryScreen({ embedded = false, language: external
         },
         body: JSON.stringify({
           backendUrl: currentAuth.backendUrl,
-          holding_code: currentWorkspace.shop.holding_code,
+          holdingcode: currentWorkspace.shop.holdingcode,
           keyword: searchText.trim(),
           limit: 80,
           offset: 0,
@@ -320,7 +320,7 @@ function readWorkspace(): WorkspaceSession | null {
     const raw = localStorage.getItem(workspaceStorageKeys.workspace);
     if (!raw) return null;
     const workspace = JSON.parse(raw) as WorkspaceSession;
-    return workspace?.shop?.holding_code ? workspace : null;
+    return workspace?.shop?.holdingcode ? workspace : null;
   } catch {
     return null;
   }
@@ -334,7 +334,7 @@ function normalizeProducts(value: unknown): ProductSummary[] {
 function normalizeProduct(value: unknown): ProductSummary | null {
   if (!isRecord(value)) return null;
   return {
-    guidFixed: getString(value, "guid_fixed") || getString(value, "guidFixed"),
+    guidFixed: getString(value, "guidfixed") || getString(value, "guidFixed"),
     barcode: getString(value, "barcode"),
     name: localizedName(getArray(value, "names") as LocalizedName[], "th") || getString(value, "name") || getString(value, "productname"),
     itemCode: getString(value, "itemcode") || getString(value, "item_code"),
@@ -351,7 +351,7 @@ function normalizeHistory(value: unknown): PriceHistoryRecord[] {
 function normalizeHistoryRecord(value: unknown): PriceHistoryRecord | null {
   if (!isRecord(value)) return null;
   return {
-    guidFixed: getString(value, "guid_fixed") || getString(value, "guidFixed"),
+    guidFixed: getString(value, "guidfixed") || getString(value, "guidFixed"),
     barcode: getString(value, "barcode"),
     productName: getString(value, "productname") || getString(value, "productName"),
     priceType: getString(value, "pricetype") || getString(value, "priceType"),
@@ -361,7 +361,7 @@ function normalizeHistoryRecord(value: unknown): PriceHistoryRecord | null {
     difference: getNumber(value, "pricedifference") || getNumber(value, "priceDifference"),
     action: getString(value, "action"),
     createdBy: getString(value, "createdby") || getString(value, "createdBy"),
-    createdAt: getString(value, "created_at") || getString(value, "createdAt"),
+    createdAt: getString(value, "createdat") || getString(value, "createdAt"),
     remark: getString(value, "remark"),
   };
 }

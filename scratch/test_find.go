@@ -13,7 +13,7 @@ import (
 )
 
 type DocIdentity struct {
-	GuidFixed string `bson:"guid_fixed"`
+	GuidFixed string `bson:"guidfixed"`
 }
 
 type UnitInfo struct {
@@ -22,7 +22,7 @@ type UnitInfo struct {
 }
 
 type UnitData struct {
-	HoldingCode string `bson:"holding_code"`
+	HoldingCode string `bson:"holdingcode"`
 	UnitInfo    `bson:"inline"`
 }
 
@@ -54,9 +54,9 @@ func main() {
 	guid := "3EL6Bv3bDVDjiiyYZpLdQBPsLfD"
 
 	filter := bson.M{
-		"guid_fixed":   guid,
-		"holding_code": holdingCode,
-		"deleted_at":   bson.M{"$exists": false},
+		"guidfixed":   guid,
+		"holdingcode": holdingCode,
+		"deletedat":   bson.M{"$exists": false},
 	}
 
 	var doc UnitDoc

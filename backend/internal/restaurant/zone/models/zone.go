@@ -10,7 +10,7 @@ import (
 const shopZoneCollectionName = "restaurantZones"
 
 type Zone struct {
-	GroupNumber int                   `json:"group_number" bson:"group_number"`
+	GroupNumber int                   `json:"groupnumber" bson:"groupnumber"`
 	Code        string                `json:"code" bson:"code"`
 	Names       *[]models.NameX       `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
 	Printer     *printerModel.Printer `json:"printer" bson:"printer"`
@@ -31,7 +31,7 @@ type ZoneData struct {
 }
 
 type ZoneDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	ZoneData           `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 	models.LastUpdate  `bson:"inline"`

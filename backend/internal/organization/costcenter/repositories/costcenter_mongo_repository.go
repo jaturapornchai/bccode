@@ -62,8 +62,8 @@ func (repo CostCenterRepository) FindOneByCode(ctx context.Context, holdingCode 
 	err := repo.pst.FindOne(ctx,
 		models.CostCenterDoc{},
 		bson.M{
-			"holding_code":   holdingCode,
-			"deleted_at":     bson.M{"$exists": false},
+			"holdingcode":    holdingCode,
+			"deletedat":      bson.M{"$exists": false},
 			"branchcode":     branchCode,
 			"costcentercode": costCenterCode,
 		}, &doc)

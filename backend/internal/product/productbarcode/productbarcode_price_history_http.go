@@ -107,17 +107,17 @@ func (h ProductBarcodeHttp) priceHistoryFilter(queryParam func(string) string) m
 	// Date range filters
 	if fromDate := queryParam("fromdate"); fromDate != "" {
 		if toDate := queryParam("todate"); toDate != "" {
-			filters["created_at"] = map[string]interface{}{
+			filters["createdat"] = map[string]interface{}{
 				"$gte": fromDate + "T00:00:00Z",
 				"$lte": toDate + "T23:59:59Z",
 			}
 		} else {
-			filters["created_at"] = map[string]interface{}{
+			filters["createdat"] = map[string]interface{}{
 				"$gte": fromDate + "T00:00:00Z",
 			}
 		}
 	} else if toDate := queryParam("todate"); toDate != "" {
-		filters["created_at"] = map[string]interface{}{
+		filters["createdat"] = map[string]interface{}{
 			"$lte": toDate + "T23:59:59Z",
 		}
 	}

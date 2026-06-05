@@ -31,7 +31,7 @@ describe("LINE OA user route", () => {
       expect(String(url)).toBe("http://localhost:8888/goapi/api/user/lineoa/link");
       expect(init?.method).toBe("POST");
       expect(JSON.parse(String(init?.body))).toEqual({
-        holding_code: "SHOP001",
+        holdingcode: "SHOP001",
         username: "user@example.com",
       });
       return Response.json({ status: "success", link: "https://liff.line.me/123?token=abc" });
@@ -42,7 +42,7 @@ describe("LINE OA user route", () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${signJwt({ username: "user@example.com", holding_code: "SHOP001" })}`,
+        Authorization: `Bearer ${signJwt({ username: "user@example.com", holdingcode: "SHOP001" })}`,
       },
       body: JSON.stringify({
         action: "link",
@@ -70,7 +70,7 @@ describe("LINE OA user route", () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${signJwt({ username: "user@example.com", holding_code: "SHOP001" })}`,
+        Authorization: `Bearer ${signJwt({ username: "user@example.com", holdingcode: "SHOP001" })}`,
       },
       body: JSON.stringify({
         action: "profile",

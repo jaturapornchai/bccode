@@ -108,7 +108,7 @@ func DatasetNameFromShop(holdingCode string) string {
 // Cached in-memory after first lookup.
 func (c *Client) EnsureDataset(holdingCode string) (string, error) {
 	if holdingCode == "" {
-		return "", fmt.Errorf("holding_code is required")
+		return "", fmt.Errorf("holdingcode is required")
 	}
 	if id := getCachedDataset(holdingCode); id != "" {
 		return id, nil

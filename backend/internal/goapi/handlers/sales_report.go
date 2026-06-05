@@ -14,13 +14,13 @@ import (
 
 // SalesReportRequest - request สำหรับรายงานขาย
 type SalesReportRequest struct {
-	HoldingCode   string   `json:"holding_code"`
-	FromDate      string   `json:"from_date"`
-	ToDate        string   `json:"to_date"`
-	BranchCodes   []string `json:"branch_codes,omitempty"`
-	ProductCodes  []string `json:"product_codes,omitempty"`
-	SortAscending bool     `json:"sort_ascending"`
-	ReportType    string   `json:"report_type"` // "header" or "detail"
+	HoldingCode   string   `json:"holdingcode"`
+	FromDate      string   `json:"fromdate"`
+	ToDate        string   `json:"todate"`
+	BranchCodes   []string `json:"branchcodes,omitempty"`
+	ProductCodes  []string `json:"productcodes,omitempty"`
+	SortAscending bool     `json:"sortascending"`
+	ReportType    string   `json:"reporttype"` // "header" or "detail"
 	Limit         int      `json:"limit,omitempty"`
 	Offset        int      `json:"offset,omitempty"`
 }
@@ -38,7 +38,7 @@ func SalesReportByDocumentHandler(c echo.Context) error {
 	// Validate required fields
 	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "holding_code is required",
+			"error": "holdingcode is required",
 			"code":  "MISSING_HOLDING_CODE",
 		})
 	}
@@ -311,7 +311,7 @@ func SalesReportSummaryHandler(c echo.Context) error {
 
 	if req.HoldingCode == "" || req.FromDate == "" || req.ToDate == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "holding_code, from_date and to_date are required",
+			"error": "holdingcode, from_date and to_date are required",
 			"code":  "MISSING_REQUIRED_FIELDS",
 		})
 	}

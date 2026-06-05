@@ -35,7 +35,7 @@ interface CompanyBranchTreeViewProps {
 }
 
 interface CompanyWorkspace {
-  shop: { holding_code: string };
+  shop: { holdingcode: string };
   shopInfo?: {
     settings?: {
       language?: string;
@@ -54,21 +54,21 @@ interface LocalizedNameEntry {
 type LocalizedNames = LocalizedNameEntry[] | Record<string, unknown> | null | undefined;
 
 interface CompanyRecord {
-  guid_fixed?: string;
+  guidfixed?: string;
   code?: string;
   names?: LocalizedNames;
   tax_id?: string;
-  is_active?: boolean;
-  deleted_at?: string | null;
+  isactive?: boolean;
+  deletedat?: string | null;
 }
 
 interface BranchRecord {
-  guid_fixed?: string;
-  company_guid?: string;
+  guidfixed?: string;
+  companyguid?: string;
   code?: string;
   names?: LocalizedNames;
-  is_active?: boolean;
-  deleted_at?: string | null;
+  isactive?: boolean;
+  deletedat?: string | null;
 }
 
 type NodeType = "company" | "branch";
@@ -77,8 +77,8 @@ type OrganizationFormType = "view_company" | "view_branch" | "edit_company" | "e
 
 interface SelectedNode {
   type: NodeType;
-  guid_fixed?: string;
-  company_guid?: string;
+  guidfixed?: string;
+  companyguid?: string;
   data: Partial<CompanyRecord> | Partial<BranchRecord>;
 }
 
@@ -92,9 +92,9 @@ const getNameFromObject = (names: LocalizedNames, code: string): string => {
   return typeof value === "string" ? value : "";
 };
 
-const isVisibleOrganizationRecord = <T extends { is_active?: boolean; deleted_at?: string | null }>(record: T): boolean => {
-  if (record.is_active === false) return false;
-  return !record.deleted_at || String(record.deleted_at).trim().length === 0;
+const isVisibleOrganizationRecord = <T extends { isactive?: boolean; deletedat?: string | null }>(record: T): boolean => {
+  if (record.isactive === false) return false;
+  return !record.deletedat || String(record.deletedat).trim().length === 0;
 };
 
 export function CompanyBranchTreeView({
@@ -122,8 +122,8 @@ export function CompanyBranchTreeView({
   }, [auth]);
 
   const ensureActiveWorkspaceHolding = useCallback(async () => {
-    const holding_code = workspace?.shop?.holding_code?.trim();
-    if (!auth || !holding_code) return;
+    const holdingcode = workspace?.shop?.holdingcode?.trim();
+    if (!auth || !holdingcode) return;
 
     const res = await fetch("/api/workspace/select-holding", {
       method: "POST",
@@ -132,7 +132,7 @@ export function CompanyBranchTreeView({
         "x-bc-backend-url": auth.backendUrl,
         Authorization: `Bearer ${auth.token}`,
       },
-      body: JSON.stringify({ backendUrl: auth.backendUrl, holding_code }),
+      body: JSON.stringify({ backendUrl: auth.backendUrl, holdingcode }),
     });
     const json = (await res.json().catch(() => ({}))) as { success?: boolean; message?: string };
     if (!res.ok || json.success === false) {
@@ -261,7 +261,7 @@ export function CompanyBranchTreeView({
     });
 
     setFormCode(selectedNode.type === "company" ? normalizeBusinessCode(selectedNode.data.code) : selectedNode.data.code || "");
-    setFormIsActive(selectedNode.data.is_active !== false);
+    setFormIsActive(selectedNode.data.isactive !== false);
     setFormNames(list);
 
     if (selectedNode.type === "company") {
@@ -293,34 +293,34 @@ export function CompanyBranchTreeView({
           code: normalizedCompanyCode,
           names: namesList,
           tax_id: formTaxId,
-          is_active: formIsActive,
+          isactive: formIsActive,
         };
       } else if (formType === "edit_company") {
-        url = `${mainApiUrl}/organization/company/${selectedNode.guid_fixed}`;
+        url = `${mainApiUrl}/organization/company/${selectedNode.guidfixed}`;
         method = "PUT";
         body = {
           code: normalizedCompanyCode,
           names: namesList,
           tax_id: formTaxId,
-          is_active: formIsActive,
+          isactive: formIsActive,
         };
       } else if (formType === "create_branch") {
         url = `${mainApiUrl}/organization/branch`;
         method = "POST";
         body = {
-          company_guid: selectedNode.company_guid,
+          companyguid: selectedNode.companyguid,
           code: normalizedBranchCode,
           names: namesList,
-          is_active: formIsActive,
+          isactive: formIsActive,
         };
       } else if (formType === "edit_branch") {
-        url = `${mainApiUrl}/organization/branch/${selectedNode.guid_fixed}`;
+        url = `${mainApiUrl}/organization/branch/${selectedNode.guidfixed}`;
         method = "PUT";
         body = {
-          company_guid: selectedNode.company_guid,
+          companyguid: selectedNode.companyguid,
           code: normalizedBranchCode,
           names: namesList,
-          is_active: formIsActive,
+          isactive: formIsActive,
         };
       }
 
@@ -347,25 +347,25 @@ export function CompanyBranchTreeView({
         if (formType.startsWith("create")) {
           const createdCode = formType === "create_branch" ? normalizedBranchCode : normalizedCompanyCode;
           const createdData = {
-            guid_fixed: json.id,
+            guidfixed: json.id,
             code: createdCode,
             names: namesList,
-            is_active: formIsActive,
+            isactive: formIsActive,
             ...(formType === "create_company" ? { tax_id: formTaxId } : {}),
           };
           if (formType === "create_company") {
-            setCompanies((prev) => prev.some((row) => row.guid_fixed === json.id) ? prev : [...prev, createdData]);
+            setCompanies((prev) => prev.some((row) => row.guidfixed === json.id) ? prev : [...prev, createdData]);
           } else {
-            setBranches((prev) => prev.some((row) => row.guid_fixed === json.id) ? prev : [
+            setBranches((prev) => prev.some((row) => row.guidfixed === json.id) ? prev : [
               ...prev,
-              { ...createdData, company_guid: selectedNode.company_guid },
+              { ...createdData, companyguid: selectedNode.companyguid },
             ]);
           }
           // Select newly created node
           setSelectedNode({
             type: formType === "create_company" ? "company" : "branch",
-            guid_fixed: json.id,
-            company_guid: selectedNode.company_guid,
+            guidfixed: json.id,
+            companyguid: selectedNode.companyguid,
             data: createdData,
           });
           setFormType(formType === "create_company" ? "edit_company" : "edit_branch");
@@ -381,13 +381,13 @@ export function CompanyBranchTreeView({
 
   // Handle Delete
   const handleDelete = async (node: SelectedNode) => {
-    if (!auth || !node.guid_fixed) return;
+    if (!auth || !node.guidfixed) return;
 
     setLoading(true);
     try {
       await ensureActiveWorkspaceHolding();
 
-      const url = `${mainApiUrl}/organization/${node.type}/${node.guid_fixed}`;
+      const url = `${mainApiUrl}/organization/${node.type}/${node.guidfixed}`;
       const res = await fetch(url, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${auth.token}` },
@@ -414,14 +414,14 @@ export function CompanyBranchTreeView({
   };
 
   const pruneDeletedNode = (node: SelectedNode) => {
-    const deletedGuid = node.guid_fixed ?? "";
+    const deletedGuid = node.guidfixed ?? "";
     if (!deletedGuid) return;
     if (node.type === "company") {
-      setCompanies((prev) => prev.filter((company) => company.guid_fixed !== deletedGuid));
-      setBranches((prev) => prev.filter((branch) => branch.company_guid !== deletedGuid));
+      setCompanies((prev) => prev.filter((company) => company.guidfixed !== deletedGuid));
+      setBranches((prev) => prev.filter((branch) => branch.companyguid !== deletedGuid));
       return;
     }
-    setBranches((prev) => prev.filter((branch) => branch.guid_fixed !== deletedGuid));
+    setBranches((prev) => prev.filter((branch) => branch.guidfixed !== deletedGuid));
   };
 
   const sortedCompanies = useMemo(() => {
@@ -499,12 +499,12 @@ export function CompanyBranchTreeView({
           ) : (
             <div className="space-y-2">
               {sortedCompanies.map((comp) => {
-                const compGuid = comp.guid_fixed || "";
+                const compGuid = comp.guidfixed || "";
                 const companyCode = normalizeBusinessCode(comp.code);
                 const isCollapsed = collapsedCompanies[compGuid];
-                const isSelected = selectedNode?.type === "company" && selectedNode.guid_fixed === compGuid;
+                const isSelected = selectedNode?.type === "company" && selectedNode.guidfixed === compGuid;
                 const isEditingCompany = isSelected && formType === "edit_company";
-                const compBranches = sortedBranches.filter((b) => b.company_guid === compGuid);
+                const compBranches = sortedBranches.filter((b) => b.companyguid === compGuid);
 
                 return (
                   <div key={compGuid} className="space-y-1">
@@ -520,7 +520,7 @@ export function CompanyBranchTreeView({
                       onClick={() => {
                         setSelectedNode({
                           type: "company",
-                          guid_fixed: compGuid,
+                          guidfixed: compGuid,
                           data: comp,
                         });
                         setFormType("view_company");
@@ -558,7 +558,7 @@ export function CompanyBranchTreeView({
                             e.stopPropagation();
                             setSelectedNode({
                               type: "company",
-                              guid_fixed: compGuid,
+                              guidfixed: compGuid,
                               data: comp,
                             });
                             setFormType("edit_company");
@@ -575,7 +575,7 @@ export function CompanyBranchTreeView({
                             e.stopPropagation();
                             setSelectedNode({
                               type: "branch",
-                              company_guid: compGuid,
+                              companyguid: compGuid,
                               data: {},
                             });
                             setFormType("create_branch");
@@ -591,7 +591,7 @@ export function CompanyBranchTreeView({
                             e.stopPropagation();
                             showConfirmCodeDialog("delete", {
                               type: "company",
-                              guid_fixed: compGuid,
+                              guidfixed: compGuid,
                               data: comp,
                             });
                           }}
@@ -605,8 +605,8 @@ export function CompanyBranchTreeView({
                     {!isCollapsed && compBranches.length > 0 && (
                       <div className="pl-6 border-l ml-4 space-y-1 my-1">
                         {compBranches.map((br) => {
-                          const brGuid = br.guid_fixed || "";
-                          const isBrSelected = selectedNode?.type === "branch" && selectedNode.guid_fixed === brGuid;
+                          const brGuid = br.guidfixed || "";
+                          const isBrSelected = selectedNode?.type === "branch" && selectedNode.guidfixed === brGuid;
                           const isEditingBranch = isBrSelected && formType === "edit_branch";
                           const cannotDeleteBranch = isThaiHeadOfficeBranchCode(br.code) || compBranches.length <= 1;
 
@@ -624,8 +624,8 @@ export function CompanyBranchTreeView({
                               onClick={() => {
                                 setSelectedNode({
                                   type: "branch",
-                                  guid_fixed: brGuid,
-                                  company_guid: compGuid,
+                                  guidfixed: brGuid,
+                                  companyguid: compGuid,
                                   data: br,
                                 });
                                 setFormType("view_branch");
@@ -647,8 +647,8 @@ export function CompanyBranchTreeView({
                                     e.stopPropagation();
                                     setSelectedNode({
                                       type: "branch",
-                                      guid_fixed: brGuid,
-                                      company_guid: compGuid,
+                                      guidfixed: brGuid,
+                                      companyguid: compGuid,
                                       data: br,
                                     });
                                     setFormType("edit_branch");
@@ -667,8 +667,8 @@ export function CompanyBranchTreeView({
                                     if (cannotDeleteBranch) return;
                                     showConfirmCodeDialog("delete", {
                                       type: "branch",
-                                      guid_fixed: brGuid,
-                                      company_guid: compGuid,
+                                      guidfixed: brGuid,
+                                      companyguid: compGuid,
                                       data: br,
                                     });
                                   }}
@@ -718,7 +718,7 @@ export function CompanyBranchTreeView({
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  {isReadOnlyMode && selectedNode?.guid_fixed && (
+                  {isReadOnlyMode && selectedNode?.guidfixed && (
                     <Button
                       size="icon"
                       variant="outline"
@@ -729,7 +729,7 @@ export function CompanyBranchTreeView({
                       <Edit3 className="w-4 h-4" />
                     </Button>
                   )}
-                  {(formType === "view_company" || formType === "edit_company") && selectedNode?.guid_fixed && (
+                  {(formType === "view_company" || formType === "edit_company") && selectedNode?.guidfixed && (
                     <Button
                       size="sm"
                       variant="outline"
@@ -737,7 +737,7 @@ export function CompanyBranchTreeView({
                       onClick={() => {
                         setSelectedNode({
                           type: "branch",
-                          company_guid: selectedNode.guid_fixed,
+                          companyguid: selectedNode.guidfixed,
                           data: {},
                         });
                         setFormType("create_branch");
@@ -800,13 +800,13 @@ export function CompanyBranchTreeView({
                  <div className="flex items-center gap-2 pt-2">
                   <input
                     type="checkbox"
-                    id="is_active"
+                    id="isactive"
                     checked={formIsActive}
                     onChange={(e) => setFormIsActive(e.target.checked)}
                     disabled={isReadOnlyMode}
                     className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
                   />
-                  <label htmlFor="is_active" className="text-sm font-semibold text-foreground cursor-pointer select-none">
+                  <label htmlFor="isactive" className="text-sm font-semibold text-foreground cursor-pointer select-none">
                     เปิดใช้งานในระบบ
                   </label>
                 </div>
@@ -929,7 +929,7 @@ function saveErrorMessage(message: string | undefined, formType: OrganizationFor
     case "branch code must be numeric and no more than 5 digits":
     case "branch code must be no more than 5 digits":
       return "รหัสสาขาต้องเป็นตัวเลขไม่เกิน 5 หลัก";
-    case "company_guid is required":
+    case "companyguid is required":
       return "ไม่พบบริษัทของสาขาที่กำลังเพิ่ม กรุณากดเพิ่มสาขาจากบริษัทอีกครั้ง";
     case "company not found":
       return "ไม่พบบริษัทในกิจการนี้ กรุณาโหลดข้อมูลใหม่แล้วลองอีกครั้ง";

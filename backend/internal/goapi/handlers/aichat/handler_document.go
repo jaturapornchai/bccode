@@ -15,9 +15,9 @@ import (
 
 // DocumentAnalysisRequest represents the request for document analysis
 type DocumentAnalysisRequest struct {
-	HoldingCode  string                 `json:"holding_code" validate:"required"`
-	DocumentType string                 `json:"document_type" validate:"required"` // ประเภทเอกสาร
-	DocumentData map[string]interface{} `json:"document_data" validate:"required"` // ข้อมูลเอกสาร
+	HoldingCode  string                 `json:"holdingcode" validate:"required"`
+	DocumentType string                 `json:"documenttype" validate:"required"` // ประเภทเอกสาร
+	DocumentData map[string]interface{} `json:"documentdata" validate:"required"` // ข้อมูลเอกสาร
 }
 
 // DocumentAnalysisResponse represents the response
@@ -27,16 +27,16 @@ type DocumentAnalysisResponse struct {
 	Analysis   *DocumentAnalysisData `json:"analysis,omitempty"`
 	Error      string                `json:"error,omitempty"`
 	Timestamp  time.Time             `json:"timestamp"`
-	TokenUsage *TokenUsage           `json:"token_usage,omitempty"`
+	TokenUsage *TokenUsage           `json:"tokenusage,omitempty"`
 }
 
 // DocumentAnalysisData contains the analysis result
 type DocumentAnalysisData struct {
-	Strengths       []string `json:"strengths"`        // จุดแข็ง
-	Weaknesses      []string `json:"weaknesses"`       // จุดอ่อน
-	Recommendations []string `json:"recommendations"`  // คำแนะนำ
-	AdditionalCheck []string `json:"additional_check"` // ข้อมูลที่ควรตรวจสอบเพิ่มเติม
-	Summary         string   `json:"summary"`          // สรุปภาพรวม
+	Strengths       []string `json:"strengths"`       // จุดแข็ง
+	Weaknesses      []string `json:"weaknesses"`      // จุดอ่อน
+	Recommendations []string `json:"recommendations"` // คำแนะนำ
+	AdditionalCheck []string `json:"additionalcheck"` // ข้อมูลที่ควรตรวจสอบเพิ่มเติม
+	Summary         string   `json:"summary"`         // สรุปภาพรวม
 }
 
 // AnalyzeDocument handles document analysis requests
@@ -56,7 +56,7 @@ func AnalyzeDocument(c echo.Context) error {
 	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, DocumentAnalysisResponse{
 			Success:   false,
-			Message:   "holding_code is required",
+			Message:   "holdingcode is required",
 			Timestamp: time.Now(),
 		})
 	}
@@ -64,7 +64,7 @@ func AnalyzeDocument(c echo.Context) error {
 	if req.DocumentType == "" {
 		return c.JSON(http.StatusBadRequest, DocumentAnalysisResponse{
 			Success:   false,
-			Message:   "document_type is required",
+			Message:   "documenttype is required",
 			Timestamp: time.Now(),
 		})
 	}
@@ -72,7 +72,7 @@ func AnalyzeDocument(c echo.Context) error {
 	if req.DocumentData == nil {
 		return c.JSON(http.StatusBadRequest, DocumentAnalysisResponse{
 			Success:   false,
-			Message:   "document_data is required",
+			Message:   "documentdata is required",
 			Timestamp: time.Now(),
 		})
 	}
@@ -150,7 +150,7 @@ func getDocumentAnalysisPrompt(docType string) string {
 1. จุดแข็งของเอกสาร (strengths)
 2. จุดอ่อน/ข้อควรระวัง (weaknesses)
 3. คำแนะนำในการปรับปรุง (recommendations)
-4. ข้อมูลที่ควรตรวจสอบเพิ่มเติม (additional_check)
+4. ข้อมูลที่ควรตรวจสอบเพิ่มเติม (additionalcheck)
 5. สรุปภาพรวม (summary)
 
 **Output Format:** JSON เท่านั้น ตามรูปแบบ:
@@ -158,14 +158,14 @@ func getDocumentAnalysisPrompt(docType string) string {
   "strengths": ["จุดแข็ง 1", "จุดแข็ง 2"],
   "weaknesses": ["จุดอ่อน 1", "จุดอ่อน 2"],
   "recommendations": ["คำแนะนำ 1", "คำแนะนำ 2"],
-  "additional_check": ["ตรวจสอบ 1", "ตรวจสอบ 2"],
+  "additionalcheck": ["ตรวจสอบ 1", "ตรวจสอบ 2"],
   "summary": "สรุปภาพรวม"
 }
 `
 
 	// เพิ่ม context ตามประเภทเอกสาร
 	switch docType {
-	case "purchase_order", "ใบสั่งซื้อ", "PO":
+	case "purchaseorder", "ใบสั่งซื้อ", "PO":
 		return basePrompt + `
 **ประเภทเอกสาร: ใบสั่งซื้อ (Purchase Order)**
 ตรวจสอบ:
@@ -175,7 +175,7 @@ func getDocumentAnalysisPrompt(docType string) string {
 - เงื่อนไขการชำระเงิน
 - วันที่ส่งมอบสินค้า`
 
-	case "sales_order", "ใบสั่งขาย", "SO":
+	case "salesorder", "ใบสั่งขาย", "SO":
 		return basePrompt + `
 **ประเภทเอกสาร: ใบสั่งขาย (Sales Order)**
 ตรวจสอบ:
@@ -204,7 +204,7 @@ func getDocumentAnalysisPrompt(docType string) string {
 - ข้อมูลผู้รับชำระ
 - เลขที่เอกสารอ้างอิง`
 
-	case "goods_receive", "ใบรับสินค้า", "GR":
+	case "goodsreceive", "ใบรับสินค้า", "GR":
 		return basePrompt + `
 **ประเภทเอกสาร: ใบรับสินค้า (Goods Receive)**
 ตรวจสอบ:
@@ -213,7 +213,7 @@ func getDocumentAnalysisPrompt(docType string) string {
 - เอกสารอ้างอิง (PO)
 - ข้อมูลคลังสินค้าที่รับ`
 
-	case "goods_issue", "ใบส่งสินค้า", "GI":
+	case "goodsissue", "ใบส่งสินค้า", "GI":
 		return basePrompt + `
 **ประเภทเอกสาร: ใบส่งสินค้า (Goods Issue)**
 ตรวจสอบ:
@@ -299,7 +299,7 @@ func parseAnalysisResponse(response string) *DocumentAnalysisData {
 		Strengths       []string `json:"strengths"`
 		Weaknesses      []string `json:"weaknesses"`
 		Recommendations []string `json:"recommendations"`
-		AdditionalCheck []string `json:"additional_check"`
+		AdditionalCheck []string `json:"additionalcheck"`
 		Summary         string   `json:"summary"`
 	}
 

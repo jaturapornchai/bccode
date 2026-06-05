@@ -12,22 +12,22 @@ import (
 
 // DashboardKPIsRequest represents the request for dashboard KPIs
 type DashboardKPIsRequest struct {
-	HoldingCode string `json:"holding_code"`
-	Period      string `json:"period"` // today, this_week, this_month, this_year
+	HoldingCode string `json:"holdingcode"`
+	Period      string `json:"period"` // today, thisweek, thismonth, thisyear
 }
 
 // DashboardKPIsResponse represents the dashboard KPIs
 type DashboardKPIsResponse struct {
 	Period      string            `json:"period"`
-	DateRange   DateRangeInfo     `json:"date_range"`
+	DateRange   DateRangeInfo     `json:"daterange"`
 	Sales       SalesKPI          `json:"sales"`
 	Orders      OrdersKPI         `json:"orders"`
 	Profit      ProfitKPI         `json:"profit"`
 	Customers   CustomersKPI      `json:"customers"`
 	Inventory   InventoryKPI      `json:"inventory"`
-	TopProducts []TopProductKPI   `json:"top_products"`
-	SalesTrend  []SalesTrendPoint `json:"sales_trend"`
-	GeneratedAt time.Time         `json:"generated_at"`
+	TopProducts []TopProductKPI   `json:"topproducts"`
+	SalesTrend  []SalesTrendPoint `json:"salestrend"`
+	GeneratedAt time.Time         `json:"generatedat"`
 }
 
 type DateRangeInfo struct {
@@ -36,39 +36,39 @@ type DateRangeInfo struct {
 }
 
 type SalesKPI struct {
-	TotalAmount     float64 `json:"total_amount"`
-	TotalAmountWord string  `json:"total_amount_word"`
-	GrowthPercent   float64 `json:"growth_percent"`
-	GrowthDirection string  `json:"growth_direction"` // up, down, stable
-	PreviousAmount  float64 `json:"previous_amount"`
+	TotalAmount     float64 `json:"totalamount"`
+	TotalAmountWord string  `json:"totalamountword"`
+	GrowthPercent   float64 `json:"growthpercent"`
+	GrowthDirection string  `json:"growthdirection"` // up, down, stable
+	PreviousAmount  float64 `json:"previousamount"`
 }
 
 type OrdersKPI struct {
-	TotalCount      int     `json:"total_count"`
-	AverageValue    float64 `json:"average_value"`
-	GrowthPercent   float64 `json:"growth_percent"`
-	GrowthDirection string  `json:"growth_direction"`
+	TotalCount      int     `json:"totalcount"`
+	AverageValue    float64 `json:"averagevalue"`
+	GrowthPercent   float64 `json:"growthpercent"`
+	GrowthDirection string  `json:"growthdirection"`
 }
 
 type ProfitKPI struct {
-	GrossProfit     float64 `json:"gross_profit"`
-	GrossProfitWord string  `json:"gross_profit_word"`
-	GrossMargin     float64 `json:"gross_margin_percent"`
-	NetProfit       float64 `json:"net_profit"`
-	NetMargin       float64 `json:"net_margin_percent"`
+	GrossProfit     float64 `json:"grossprofit"`
+	GrossProfitWord string  `json:"grossprofitword"`
+	GrossMargin     float64 `json:"grossmarginpercent"`
+	NetProfit       float64 `json:"netprofit"`
+	NetMargin       float64 `json:"netmarginpercent"`
 }
 
 type CustomersKPI struct {
-	TotalActive   int     `json:"total_active"`
-	NewCustomers  int     `json:"new_customers"`
-	ReturningRate float64 `json:"returning_rate_percent"`
+	TotalActive   int     `json:"totalactive"`
+	NewCustomers  int     `json:"newcustomers"`
+	ReturningRate float64 `json:"returningratepercent"`
 }
 
 type InventoryKPI struct {
-	TotalValue      float64 `json:"total_value"`
-	TotalValueWord  string  `json:"total_value_word"`
-	LowStockCount   int     `json:"low_stock_count"`
-	OutOfStockCount int     `json:"out_of_stock_count"`
+	TotalValue      float64 `json:"totalvalue"`
+	TotalValueWord  string  `json:"totalvalueword"`
+	LowStockCount   int     `json:"lowstockcount"`
+	OutOfStockCount int     `json:"outofstockcount"`
 }
 
 type TopProductKPI struct {
@@ -87,12 +87,12 @@ type SalesTrendPoint struct {
 // ClickHouse remains the target store for BI/reporting facts.
 func GetDashboardKPIs(ctx context.Context, holdingCode, period string) (*DashboardKPIsResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 
 	// Default period
 	if period == "" {
-		period = "this_month"
+		period = "thismonth"
 	}
 
 	// Calculate date range based on period
@@ -106,7 +106,7 @@ func GetDashboardKPIs(ctx context.Context, holdingCode, period string) (*Dashboa
 		toDate = now
 		prevFromDate = fromDate.AddDate(0, 0, -1)
 		prevToDate = fromDate.Add(-time.Second)
-	case "this_week":
+	case "thisweek":
 		weekday := int(now.Weekday())
 		if weekday == 0 {
 			weekday = 7
@@ -115,12 +115,12 @@ func GetDashboardKPIs(ctx context.Context, holdingCode, period string) (*Dashboa
 		toDate = now
 		prevFromDate = fromDate.AddDate(0, 0, -7)
 		prevToDate = fromDate.Add(-time.Second)
-	case "this_month":
+	case "thismonth":
 		fromDate = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
 		toDate = now
 		prevFromDate = fromDate.AddDate(0, -1, 0)
 		prevToDate = fromDate.Add(-time.Second)
-	case "this_year":
+	case "thisyear":
 		fromDate = time.Date(now.Year(), 1, 1, 0, 0, 0, 0, now.Location())
 		toDate = now
 		prevFromDate = fromDate.AddDate(-1, 0, 0)
@@ -132,7 +132,7 @@ func GetDashboardKPIs(ctx context.Context, holdingCode, period string) (*Dashboa
 		prevToDate = fromDate.Add(-time.Second)
 	}
 
-	logger.Info("[Dashboard KPIs] holding_code=%s, period=%s, from=%s, to=%s",
+	logger.Info("[Dashboard KPIs] holdingcode=%s, period=%s, from=%s, to=%s",
 		holdingCode, period, fromDate.Format("2006-01-02"), toDate.Format("2006-01-02"))
 
 	db, err := mypg.PgSqlFastConnect(holdingCode)
@@ -237,16 +237,16 @@ func GetDashboardKPIs(ctx context.Context, holdingCode, period string) (*Dashboa
 
 // BusinessHealthRequest represents the request for business health
 type BusinessHealthRequest struct {
-	HoldingCode string `json:"holding_code"`
+	HoldingCode string `json:"holdingcode"`
 }
 
 // BusinessHealthResponse represents overall business health
 type BusinessHealthResponse struct {
-	OverallScore    int            `json:"overall_score"`  // 0-100
-	OverallStatus   string         `json:"overall_status"` // excellent, good, fair, poor
+	OverallScore    int            `json:"overallscore"`  // 0-100
+	OverallStatus   string         `json:"overallstatus"` // excellent, good, fair, poor
 	Metrics         []HealthMetric `json:"metrics"`
 	Recommendations []string       `json:"recommendations"`
-	GeneratedAt     time.Time      `json:"generated_at"`
+	GeneratedAt     time.Time      `json:"generatedat"`
 }
 
 type HealthMetric struct {
@@ -261,7 +261,7 @@ type HealthMetric struct {
 // GetBusinessHealth returns overall business health assessment
 func GetBusinessHealth(ctx context.Context, holdingCode string) (*BusinessHealthResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 
 	db, err := mypg.PgSqlFastConnect(holdingCode)
@@ -376,7 +376,7 @@ func getSalesSummary(db interface{}, from, to time.Time) (totalAmount float64, o
 
 	query := `
 		SELECT
-			COALESCE(SUM(totalamount), 0) as total_amount,
+			COALESCE(SUM(totalamount), 0) as totalamount,
 			COUNT(DISTINCT docno) as order_count,
 			COALESCE(SUM(totalamount - COALESCE(totalcost, 0)), 0) as profit
 		FROM doc
@@ -512,9 +512,9 @@ func getSalesTrend(db interface{}, from, to time.Time, period string) ([]SalesTr
 	switch period {
 	case "today":
 		dateExpr = "TO_CHAR(docdate, 'HH24:00')"
-	case "this_week", "this_month":
+	case "thisweek", "thismonth":
 		dateExpr = "TO_CHAR(docdate, 'YYYY-MM-DD')"
-	case "this_year":
+	case "thisyear":
 		dateExpr = "TO_CHAR(docdate, 'YYYY-MM')"
 	default:
 		dateExpr = "TO_CHAR(docdate, 'YYYY-MM-DD')"

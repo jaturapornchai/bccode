@@ -28,7 +28,7 @@ type ChequePaymentChangeData struct {
 }
 
 type ChequePaymentChangeDoc struct {
-	ID                      primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                      primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	ChequePaymentChangeData `bson:"inline"`
 	models.ActivityDoc      `bson:"inline"`
 }

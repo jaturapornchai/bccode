@@ -21,7 +21,7 @@ func OnConsumeMessageSaleInvoiceReturnCreateOrUpdate(msg string) error {
 // OnConsumeMessageSaleInvoiceReturnDelete - handles sale invoice return delete messages
 func OnConsumeMessageSaleInvoiceReturnDelete(msg string) error {
 	// รับ Message จาก Kafka ที่เป็นการลบเอกสาร Sale Invoice Return
-	// msg จะเป็น JSON string ที่มีข้อมูลของเอกสารที่ต้องการลบ เช่น {"holding_code": "shop123", "docno": "SR2024001"}
+	// msg จะเป็น JSON string ที่มีข้อมูลของเอกสารที่ต้องการลบ เช่น {"holdingcode": "shop123", "docno": "SR2024001"}
 
 	logger.Info("OnConsumeMessageSaleInvoiceReturnDelete: %s", msg)
 

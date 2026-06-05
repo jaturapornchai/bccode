@@ -219,7 +219,7 @@ func (svc JournalHttpService) DeleteJournalByGUIDs(holdingCode string, authUsern
 	docs, _ := svc.repo.FindByGuids(ctx, holdingCode, GUIDs)
 
 	deleteFilterQuery := map[string]interface{}{
-		"guid_fixed": bson.M{"$in": GUIDs},
+		"guidfixed": bson.M{"$in": GUIDs},
 	}
 
 	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)

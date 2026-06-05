@@ -16,7 +16,7 @@ import (
 
 func TestGoAPIRequestHoldingCodeReadsJSONAndPreservesBody(t *testing.T) {
 	e := echo.New()
-	req := httptest.NewRequest(http.MethodPost, "/get", strings.NewReader(`{"holding_code":"SHOP001"}`))
+	req := httptest.NewRequest(http.MethodPost, "/get", strings.NewReader(`{"holdingcode":"SHOP001"}`))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
@@ -33,14 +33,14 @@ func TestGoAPIRequestHoldingCodeReadsJSONAndPreservesBody(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read preserved body: %v", err)
 	}
-	if string(body) != `{"holding_code":"SHOP001"}` {
+	if string(body) != `{"holdingcode":"SHOP001"}` {
 		t.Fatalf("body = %q, want original body", string(body))
 	}
 }
 
 func TestHoldingCodeFromPayloadReadsNestedJSONBody(t *testing.T) {
 	holdingCode, err := holdingCodeFromPayload(map[string]interface{}{
-		"body": `{"holding_code":"SHOP002"}`,
+		"body": `{"holdingcode":"SHOP002"}`,
 	})
 	if err != nil {
 		t.Fatalf("holdingCodeFromPayload returned error: %v", err)

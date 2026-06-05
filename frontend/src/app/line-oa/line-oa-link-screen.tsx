@@ -460,7 +460,7 @@ async function callLineOaUserApi(
     body: JSON.stringify({
       action,
       backendUrl: auth.backendUrl,
-      holdingCode: workspace.shop.holding_code,
+      holdingCode: workspace.shop.holdingcode,
       username: auth.username,
     }),
   });

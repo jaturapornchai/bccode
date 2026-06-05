@@ -65,8 +65,8 @@ func (repo NotifyRepository) Find(ctx context.Context, holdingCode string, filte
 	}
 
 	queryFilters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at":   bson.M{"$exists": false},
+		"holdingcode": holdingCode,
+		"deletedat":   bson.M{"$exists": false},
 	}
 
 	if len(matchFilterList) > 0 {

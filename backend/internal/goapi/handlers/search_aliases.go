@@ -17,34 +17,34 @@ type SearchAlias struct {
 	ID        int    `json:"id"`
 	Alias     string `json:"alias"`
 	Target    string `json:"target"`
-	AliasType string `json:"alias_type"`
+	AliasType string `json:"aliastype"`
 }
 
 // SearchAliasCreateRequest — request body สำหรับสร้าง alias
 type SearchAliasCreateRequest struct {
-	HoldingCode string `json:"holding_code"`
+	HoldingCode string `json:"holdingcode"`
 	Alias       string `json:"alias"`
 	Target      string `json:"target"`
-	AliasType   string `json:"alias_type"`
+	AliasType   string `json:"aliastype"`
 }
 
 // SearchAliasListRequest — request body สำหรับดูรายการ aliases
 type SearchAliasListRequest struct {
-	HoldingCode string `json:"holding_code"`
+	HoldingCode string `json:"holdingcode"`
 }
 
 // SearchAliasDeleteRequest — request body สำหรับลบ alias
 type SearchAliasDeleteRequest struct {
-	HoldingCode string `json:"holding_code"`
+	HoldingCode string `json:"holdingcode"`
 }
 
-// SearchAliasListHandler — GET /api/search/aliases?holding_code=xxx
+// SearchAliasListHandler — GET /api/search/aliases?holdingcode=xxx
 func SearchAliasListHandler(c echo.Context) error {
-	holdingCode := c.QueryParam("holding_code")
+	holdingCode := c.QueryParam("holdingcode")
 	if holdingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"success": false,
-			"message": "Missing required parameter: holding_code",
+			"message": "Missing required parameter: holdingcode",
 		})
 	}
 
@@ -101,7 +101,7 @@ func SearchAliasCreateHandler(c echo.Context) error {
 	if req.HoldingCode == "" || req.Alias == "" || req.Target == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"success": false,
-			"message": "Missing required fields: holding_code, alias, target",
+			"message": "Missing required fields: holdingcode, alias, target",
 		})
 	}
 
@@ -144,13 +144,13 @@ func SearchAliasCreateHandler(c echo.Context) error {
 	})
 }
 
-// SearchAliasDeleteHandler — DELETE /api/search/aliases/:id?holding_code=xxx
+// SearchAliasDeleteHandler — DELETE /api/search/aliases/:id?holdingcode=xxx
 func SearchAliasDeleteHandler(c echo.Context) error {
-	holdingCode := c.QueryParam("holding_code")
+	holdingCode := c.QueryParam("holdingcode")
 	if holdingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"success": false,
-			"message": "Missing required parameter: holding_code",
+			"message": "Missing required parameter: holdingcode",
 		})
 	}
 

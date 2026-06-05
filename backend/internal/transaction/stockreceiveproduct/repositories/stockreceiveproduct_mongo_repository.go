@@ -61,8 +61,8 @@ func NewStockReceiveProductRepository(pst microservice.IPersisterMongo) *StockRe
 
 func (repo StockReceiveProductRepository) FindLastDocNo(ctx context.Context, holdingCode string, prefixDocNo string) (models.StockReceiveProductDoc, error) {
 	filters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at": bson.M{
+		"holdingcode": holdingCode,
+		"deletedat": bson.M{
 			"$exists": false,
 		},
 		"docno": bson.M{

@@ -37,7 +37,7 @@ type EmployeeData struct {
 }
 
 type EmployeeDoc struct {
-	ID               primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID               primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	EmployeeData     `bson:"inline"`
 	ActivityDoc      `bson:"inline"`
 	EmployeePassword `bson:"inline" gorm:"embedded;"`
@@ -75,9 +75,9 @@ type EmployeePageResponse struct {
 
 type EmployeeActivity struct {
 	EmployeeData `bson:"inline"`
-	CreatedAt    *time.Time `json:"created_at,omitempty" bson:"created_at,omitempty"`
-	UpdatedAt    *time.Time `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
-	DeletedAt    *time.Time `json:"deleted_at,omitempty" bson:"deleted_at,omitempty"`
+	CreatedAt    *time.Time `json:"createdat,omitempty" bson:"createdat,omitempty"`
+	UpdatedAt    *time.Time `json:"updatedat,omitempty" bson:"updatedat,omitempty"`
+	DeletedAt    *time.Time `json:"deletedat,omitempty" bson:"deletedat,omitempty"`
 }
 
 func (EmployeeActivity) CollectionName() string {
@@ -86,9 +86,9 @@ func (EmployeeActivity) CollectionName() string {
 
 type EmployeeDeleteActivity struct {
 	Identity  `bson:"inline"`
-	CreatedAt *time.Time `json:"created_at,omitempty" bson:"created_at,omitempty"`
-	UpdatedAt *time.Time `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
-	DeletedAt *time.Time `json:"deleted_at,omitempty" bson:"deleted_at,omitempty"`
+	CreatedAt *time.Time `json:"createdat,omitempty" bson:"createdat,omitempty"`
+	UpdatedAt *time.Time `json:"updatedat,omitempty" bson:"updatedat,omitempty"`
+	DeletedAt *time.Time `json:"deletedat,omitempty" bson:"deletedat,omitempty"`
 }
 
 func (EmployeeDeleteActivity) CollectionName() string {

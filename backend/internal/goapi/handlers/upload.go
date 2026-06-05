@@ -21,21 +21,21 @@ import (
 // FileUploadResponse - response structure for file upload
 type FileUploadResponse struct {
 	Success   bool   `json:"success"`
-	FileName  string `json:"file_name"`
-	FileURL   string `json:"file_url"`
-	ObjectKey string `json:"object_key,omitempty"` // S3 object key สำหรับ download ภายหลัง
-	FileSize  int64  `json:"file_size"`
+	FileName  string `json:"filename"`
+	FileURL   string `json:"fileurl"`
+	ObjectKey string `json:"objectkey,omitempty"` // S3 object key สำหรับ download ภายหลัง
+	FileSize  int64  `json:"filesize"`
 	Message   string `json:"message"`
 }
 
 // FileUploadHandler - handles file upload to Cloudflare R2
 // POST /upload
-// Form data: file (multipart/form-data), holding_code (optional, must match auth token if provided)
+// Form data: file (multipart/form-data), holdingcode (optional, must match auth token if provided)
 // Returns: JSON with file name and presigned URL
 func FileUploadHandler(c echo.Context) error {
 	logger.Info("File upload request received from %s", c.RealIP())
 
-	holdingCode, authStatus := storageAuthorizedHoldingCode(c, c.FormValue("holding_code"))
+	holdingCode, authStatus := storageAuthorizedHoldingCode(c, c.FormValue("holdingcode"))
 	if authStatus != http.StatusOK {
 		return c.JSON(authStatus, FileUploadResponse{
 			Success: false,

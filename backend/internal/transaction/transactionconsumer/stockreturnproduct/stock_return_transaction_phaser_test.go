@@ -84,8 +84,8 @@ func TestStockReturnTransactionPhaser(t *testing.T) {
 
 	giveInput := `{
 		"id": "6499444f684e0b206e0b2118",
-		"holding_code": "2PrIIqTWxoBXv16K310sNwfHmfY",
-		"guid_fixed": "2RjalZEcCV3BzRybaHGeqXhfw6C",
+		"holdingcode": "2PrIIqTWxoBXv16K310sNwfHmfY",
+		"guidfixed": "2RjalZEcCV3BzRybaHGeqXhfw6C",
 		"docno": "IR2023062600001",
 		"docdatetime": "2023-06-26T07:54:41.000Z",
 		"guid_ref": "61360335-818d-4df5-acd4-98a8f4aab685",
@@ -244,8 +244,8 @@ func TestStockReturnTransactionPhaser(t *testing.T) {
 
 	assert.Nil(t, err)
 
-	assert.Equal(t, get.HoldingCode, want.HoldingCode, "holding_code")
-	assert.Equal(t, get.GuidFixed, want.GuidFixed, "guid_fixed")
+	assert.Equal(t, get.HoldingCode, want.HoldingCode, "holdingcode")
+	assert.Equal(t, get.GuidFixed, want.GuidFixed, "guidfixed")
 	assert.Equal(t, get.TransFlag, want.TransFlag, "transflag")
 	assert.Equal(t, get.DocNo, want.DocNo, "docno")
 	assert.Equal(t, get.DocDate, want.DocDate, "docdate")
@@ -271,7 +271,7 @@ func TestStockReturnTransactionPhaser(t *testing.T) {
 	// detail
 	assert.Equal(t, (*get.Items)[0].GuidFixed, (*want.Items)[0].GuidFixed, "item.guidfixed")
 	assert.Equal(t, (*get.Items)[0].DocNo, (*want.Items)[0].DocNo, "item.docno")
-	assert.Equal(t, (*get.Items)[0].HoldingCode, (*want.Items)[0].HoldingCode, "item.holding_code")
+	assert.Equal(t, (*get.Items)[0].HoldingCode, (*want.Items)[0].HoldingCode, "item.holdingcode")
 	assert.Equal(t, (*get.Items)[0].LineNumber, (*want.Items)[0].LineNumber, "item.linenumber")
 	assert.Equal(t, (*get.Items)[0].ItemGuid, (*want.Items)[0].ItemGuid, "item.itemguid")
 	assert.Equal(t, (*get.Items)[0].Barcode, (*want.Items)[0].Barcode, "item.barcode")

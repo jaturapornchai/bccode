@@ -182,7 +182,7 @@ export function TabProductUnits({
                     setRef((rows) => [
                       ...rows,
                       {
-                        guid_fixed: "",
+                        guidfixed: "",
                         names: [],
                         item_unit_code: "",
                         itemunitnames: [],

@@ -26,7 +26,7 @@ func NewShiftPostgresRepository(pst microservice.IPersister) IShiftPostgresRepos
 
 func (repo *ShiftPostgresRepository) Get(holdingCode string, shiftCode string) (*shiftModels.ShiftPG, error) {
 	var result shiftModels.ShiftPG
-	_, err := repo.pst.First(&result, "holding_code=? AND guidfixed=?", holdingCode, shiftCode)
+	_, err := repo.pst.First(&result, "holdingcode=? AND guidfixed=?", holdingCode, shiftCode)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
@@ -48,8 +48,8 @@ func (repo *ShiftPostgresRepository) Create(doc shiftModels.ShiftPG) error {
 
 func (repo *ShiftPostgresRepository) Update(holdingCode string, shiftCode string, doc shiftModels.ShiftPG) error {
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"holding_code": holdingCode,
-		"guid_fixed":   shiftCode,
+		"holdingcode": holdingCode,
+		"guidfixed":   shiftCode,
 	})
 
 	if err != nil {
@@ -60,8 +60,8 @@ func (repo *ShiftPostgresRepository) Update(holdingCode string, shiftCode string
 
 func (repo *ShiftPostgresRepository) Delete(holdingCode string, shiftCode string) error {
 	err := repo.pst.Delete(&shiftModels.ShiftPG{}, map[string]interface{}{
-		"holding_code": holdingCode,
-		"guid_fixed":   shiftCode,
+		"holdingcode": holdingCode,
+		"guidfixed":   shiftCode,
 	})
 
 	if err != nil {

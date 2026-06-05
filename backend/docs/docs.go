@@ -4745,7 +4745,7 @@ const docTemplate = `{
                         "AccessToken": []
                     }
                 ],
-                "description": "คำนวนส่วนลดและมูลค่าแทนเงินสดจากรายการคูปองที่ส่งมา รองรับ Dynamic Usage Count Logic และตรวจสอบเงื่อนไขสินค้า/สาขา\nuse_amount: 0 = ใช้เต็มจำนวน, \u003e0 = ใช้ตามจำนวนที่ระบุ\nbranch_code: รหัสสาขาสำหรับตรวจสอบ IgnoreBranchCode\nitems: รายการสินค้าสำหรับตรวจสอบเงื่อนไขสินค้าและคำนวนส่วนลด",
+                "description": "คำนวนส่วนลดและมูลค่าแทนเงินสดจากรายการคูปองที่ส่งมา รองรับ Dynamic Usage Count Logic และตรวจสอบเงื่อนไขสินค้า/สาขา\nuse_amount: 0 = ใช้เต็มจำนวน, \u003e0 = ใช้ตามจำนวนที่ระบุ\nbranchcode: รหัสสาขาสำหรับตรวจสอบ IgnoreBranchCode\nitems: รายการสินค้าสำหรับตรวจสอบเงื่อนไขสินค้าและคำนวนส่วนลด",
                 "consumes": [
                     "application/json"
                 ],
@@ -10233,7 +10233,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "Holding Code",
-                        "name": "holding_code",
+                        "name": "holdingcode",
                         "in": "query"
                     },
                     {
@@ -10344,7 +10344,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "Holding Code",
-                        "name": "holding_code",
+                        "name": "holdingcode",
                         "in": "query"
                     },
                     {
@@ -10384,7 +10384,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "Holding Code",
-                        "name": "holding_code",
+                        "name": "holdingcode",
                         "in": "query"
                     },
                     {
@@ -10653,7 +10653,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "Holding Code",
-                        "name": "holding_code",
+                        "name": "holdingcode",
                         "in": "query"
                     },
                     {
@@ -10695,7 +10695,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "Holding Code",
-                        "name": "holding_code",
+                        "name": "holdingcode",
                         "in": "query"
                     },
                     {
@@ -12530,7 +12530,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "Holding Codes comma-separated",
-                        "name": "holding_codes",
+                        "name": "holdingcodes",
                         "in": "query"
                     }
                 ],
@@ -13207,7 +13207,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/gl/journal/rebuild/{holding_code}": {
+        "/gl/journal/rebuild/{holdingcode}": {
             "get": {
                 "security": [
                     {
@@ -13226,7 +13226,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "Journal Holding Code",
-                        "name": "holding_code",
+                        "name": "holdingcode",
                         "in": "path",
                         "required": true
                     }
@@ -33946,7 +33946,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/slip/{holding_code}/{posid}/{docdate}/{docno}": {
+        "/slip/{holdingcode}/{posid}/{docdate}/{docno}": {
             "get": {
                 "security": [
                     {
@@ -33964,7 +33964,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "Holding Code",
-                        "name": "holding_code",
+                        "name": "holdingcode",
                         "in": "path",
                         "required": true
                     },
@@ -57741,7 +57741,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "holding_code filter ex. \\",
+                        "description": "holdingcode filter ex. \\",
                         "name": "shopsid",
                         "in": "query"
                     }
@@ -59834,7 +59834,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.SaleInvoiceCoupon"
                     }
                 },
-                "created_at": {
+                "createdat": {
                     "description": "วันเวลาที่สร้างเอกสาร",
                     "type": "string"
                 },
@@ -60259,7 +60259,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.SaleInvoiceCoupon"
                     }
                 },
-                "created_at": {
+                "createdat": {
                     "description": "วันเวลาที่สร้างเอกสาร",
                     "type": "string"
                 },
@@ -60678,7 +60678,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.SaleInvoiceCoupon"
                     }
                 },
-                "created_at": {
+                "createdat": {
                     "description": "วันเวลาที่สร้างเอกสาร",
                     "type": "string"
                 },
@@ -61146,7 +61146,7 @@ const docTemplate = `{
                     "description": "ผลกระทบต่องบการเงิน 1=ทั่วไป, 2=ต้นทุนขาย",
                     "type": "integer"
                 },
-                "holding_code": {
+                "holdingcode": {
                     "type": "string"
                 }
             }
@@ -61899,13 +61899,13 @@ const docTemplate = `{
         "models.CalculateCouponRequest": {
             "type": "object",
             "required": [
-                "branch_code",
+                "branchcode",
                 "coupons",
                 "items",
                 "order_amount"
             ],
             "properties": {
-                "branch_code": {
+                "branchcode": {
                     "description": "รหัสสาขา (สำหรับตรวจสอบ IgnoreBranchCode)",
                     "type": "string"
                 },
@@ -63727,7 +63727,7 @@ const docTemplate = `{
                     "description": "วันที่หมดอายุคูปอง",
                     "type": "string"
                 },
-                "ignore_branch_code": {
+                "ignore_branchcode": {
                     "description": "รายการสาขาที่ไม่ต้องการใช้คูปอง",
                     "type": "array",
                     "items": {
@@ -63836,11 +63836,11 @@ const docTemplate = `{
         "models.CouponAvailabilityCheckRequest": {
             "type": "object",
             "required": [
-                "branch_code",
+                "branchcode",
                 "items"
             ],
             "properties": {
-                "branch_code": {
+                "branchcode": {
                     "description": "รหัสสาขา",
                     "type": "string"
                 },
@@ -63916,7 +63916,7 @@ const docTemplate = `{
                 "total_rows": {
                     "type": "integer"
                 },
-                "updated_at": {
+                "updatedat": {
                     "type": "string"
                 }
             }
@@ -64044,7 +64044,7 @@ const docTemplate = `{
                 "guidfixed": {
                     "type": "string"
                 },
-                "ignore_branch_code": {
+                "ignore_branchcode": {
                     "description": "รายการสาขาที่ไม่ต้องการใช้คูปอง",
                     "type": "array",
                     "items": {
@@ -64911,7 +64911,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.SaleInvoiceCoupon"
                     }
                 },
-                "created_at": {
+                "createdat": {
                     "description": "วันเวลาที่สร้างเอกสาร",
                     "type": "string"
                 },
@@ -65467,7 +65467,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.SaleInvoiceCoupon"
                     }
                 },
-                "created_at": {
+                "createdat": {
                     "description": "วันเวลาที่สร้างเอกสาร",
                     "type": "string"
                 },
@@ -67528,7 +67528,7 @@ const docTemplate = `{
                 "lineaccesstoken": {
                     "type": "string"
                 },
-                "holding_code": {
+                "holdingcode": {
                     "type": "string"
                 }
             }
@@ -68718,7 +68718,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.SaleInvoiceCoupon"
                     }
                 },
-                "created_at": {
+                "createdat": {
                     "description": "วันเวลาที่สร้างเอกสาร",
                     "type": "string"
                 },
@@ -69137,7 +69137,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.SaleInvoiceCoupon"
                     }
                 },
-                "created_at": {
+                "createdat": {
                     "description": "วันเวลาที่สร้างเอกสาร",
                     "type": "string"
                 },
@@ -70041,7 +70041,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.SaleInvoiceCoupon"
                     }
                 },
-                "created_at": {
+                "createdat": {
                     "description": "วันเวลาที่สร้างเอกสาร",
                     "type": "string"
                 },
@@ -70518,7 +70518,7 @@ const docTemplate = `{
                 "username"
             ],
             "properties": {
-                "holding_code": {
+                "holdingcode": {
                     "type": "string"
                 },
                 "username": {
@@ -71347,7 +71347,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.NameX"
                     }
                 },
-                "holding_code": {
+                "holdingcode": {
                     "type": "string"
                 },
                 "unitguid": {
@@ -71689,7 +71689,7 @@ const docTemplate = `{
                     "description": "ผลกระทบต่องบการเงิน 1=ทั่วไป, 2=ต้นทุนขาย",
                     "type": "integer"
                 },
-                "holding_code": {
+                "holdingcode": {
                     "type": "string"
                 }
             }
@@ -71859,7 +71859,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.SaleInvoiceCoupon"
                     }
                 },
-                "created_at": {
+                "createdat": {
                     "description": "วันเวลาที่สร้างเอกสาร",
                     "type": "string"
                 },
@@ -72415,7 +72415,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.SaleInvoiceCoupon"
                     }
                 },
-                "created_at": {
+                "createdat": {
                     "description": "วันเวลาที่สร้างเอกสาร",
                     "type": "string"
                 },
@@ -72834,7 +72834,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.SaleInvoiceCoupon"
                     }
                 },
-                "created_at": {
+                "createdat": {
                     "description": "วันเวลาที่สร้างเอกสาร",
                     "type": "string"
                 },
@@ -73290,7 +73290,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.SaleInvoiceCoupon"
                     }
                 },
-                "created_at": {
+                "createdat": {
                     "description": "วันเวลาที่สร้างเอกสาร",
                     "type": "string"
                 },
@@ -73799,7 +73799,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.SaleInvoiceCoupon"
                     }
                 },
-                "created_at": {
+                "createdat": {
                     "description": "วันเวลาที่สร้างเอกสาร",
                     "type": "string"
                 },
@@ -74337,7 +74337,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.SaleInvoiceCoupon"
                     }
                 },
-                "created_at": {
+                "createdat": {
                     "description": "วันเวลาที่สร้างเอกสาร",
                     "type": "string"
                 },
@@ -74756,7 +74756,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.SaleInvoiceCoupon"
                     }
                 },
-                "created_at": {
+                "createdat": {
                     "description": "วันเวลาที่สร้างเอกสาร",
                     "type": "string"
                 },
@@ -75770,7 +75770,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.SaleInvoiceCoupon"
                     }
                 },
-                "created_at": {
+                "createdat": {
                     "description": "วันเวลาที่สร้างเอกสาร",
                     "type": "string"
                 },
@@ -76330,7 +76330,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.SaleInvoiceCoupon"
                     }
                 },
-                "created_at": {
+                "createdat": {
                     "description": "วันเวลาที่สร้างเอกสาร",
                     "type": "string"
                 },
@@ -76807,7 +76807,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.SaleInvoiceCoupon"
                     }
                 },
-                "created_at": {
+                "createdat": {
                     "description": "วันเวลาที่สร้างเอกสาร",
                     "type": "string"
                 },
@@ -77548,7 +77548,7 @@ const docTemplate = `{
                 "logo": {
                     "type": "string"
                 },
-                "mainholding_code": {
+                "mainholdingcode": {
                     "type": "string"
                 },
                 "name1": {
@@ -77606,7 +77606,7 @@ const docTemplate = `{
                 "monthlyaverage": {
                     "type": "number"
                 },
-                "holding_code": {
+                "holdingcode": {
                     "type": "string"
                 },
                 "shopname": {
@@ -77629,7 +77629,7 @@ const docTemplate = `{
                 "isfavorite": {
                     "type": "boolean"
                 },
-                "holding_code": {
+                "holdingcode": {
                     "type": "string"
                 }
             }
@@ -77681,7 +77681,7 @@ const docTemplate = `{
                 "logo": {
                     "type": "string"
                 },
-                "mainholding_code": {
+                "mainholdingcode": {
                     "type": "string"
                 },
                 "name1": {
@@ -77749,7 +77749,7 @@ const docTemplate = `{
                 "logo": {
                     "type": "string"
                 },
-                "mainholding_code": {
+                "mainholdingcode": {
                     "type": "string"
                 },
                 "name1": {
@@ -78056,7 +78056,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.SaleInvoiceCoupon"
                     }
                 },
-                "created_at": {
+                "createdat": {
                     "description": "วันเวลาที่สร้างเอกสาร",
                     "type": "string"
                 },
@@ -78475,7 +78475,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.SaleInvoiceCoupon"
                     }
                 },
-                "created_at": {
+                "createdat": {
                     "description": "วันเวลาที่สร้างเอกสาร",
                     "type": "string"
                 },
@@ -78888,7 +78888,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.SaleInvoiceCoupon"
                     }
                 },
-                "created_at": {
+                "createdat": {
                     "description": "วันเวลาที่สร้างเอกสาร",
                     "type": "string"
                 },
@@ -79339,7 +79339,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.SaleInvoiceCoupon"
                     }
                 },
-                "created_at": {
+                "createdat": {
                     "description": "วันเวลาที่สร้างเอกสาร",
                     "type": "string"
                 },
@@ -79758,7 +79758,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.SaleInvoiceCoupon"
                     }
                 },
-                "created_at": {
+                "createdat": {
                     "description": "วันเวลาที่สร้างเอกสาร",
                     "type": "string"
                 },
@@ -80177,7 +80177,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.SaleInvoiceCoupon"
                     }
                 },
-                "created_at": {
+                "createdat": {
                     "description": "วันเวลาที่สร้างเอกสาร",
                     "type": "string"
                 },
@@ -80596,7 +80596,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.SaleInvoiceCoupon"
                     }
                 },
-                "created_at": {
+                "createdat": {
                     "description": "วันเวลาที่สร้างเอกสาร",
                     "type": "string"
                 },
@@ -81394,7 +81394,7 @@ const docTemplate = `{
                     "description": "ยอดสะสมเดบิต",
                     "type": "number"
                 },
-                "holding_code": {
+                "holdingcode": {
                     "type": "string"
                 },
                 "sumbalancecredit": {
@@ -81609,7 +81609,7 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 100
                 },
-                "holding_code": {
+                "holdingcode": {
                     "type": "string"
                 }
             }
@@ -82137,7 +82137,7 @@ const docTemplate = `{
                 "line_user_id": {
                     "type": "string"
                 },
-                "holding_code": {
+                "holdingcode": {
                     "type": "string"
                 },
                 "username": {
@@ -82189,10 +82189,10 @@ const docTemplate = `{
         "smlcloudplatform_internal_authentication_models.ShopSelectRequest": {
             "type": "object",
             "required": [
-                "holding_code"
+                "holdingcode"
             ],
             "properties": {
-                "holding_code": {
+                "holdingcode": {
                     "type": "string"
                 }
             }
@@ -82212,7 +82212,7 @@ const docTemplate = `{
                 "lastaccessedat": {
                     "type": "string"
                 },
-                "mainholding_code": {
+                "mainholdingcode": {
                     "description": "Name1          string         ` + "`" + `json:\"name1\" bson:\"name1\"` + "`" + `",
                     "type": "string"
                 },
@@ -82228,7 +82228,7 @@ const docTemplate = `{
                 "role": {
                     "$ref": "#/definitions/smlcloudplatform_internal_authentication_models.UserRole"
                 },
-                "holding_code": {
+                "holdingcode": {
                     "type": "string"
                 }
             }
@@ -82245,7 +82245,7 @@ const docTemplate = `{
                     "maxLength": 233,
                     "minLength": 5
                 },
-                "holding_code": {
+                "holdingcode": {
                     "type": "string"
                 },
                 "username": {
@@ -82433,7 +82433,7 @@ const docTemplate = `{
                 "role": {
                     "$ref": "#/definitions/smlcloudplatform_internal_authentication_models.UserRole"
                 },
-                "holding_code": {
+                "holdingcode": {
                     "type": "string"
                 },
                 "username": {

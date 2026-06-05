@@ -98,7 +98,7 @@ func (h BranchHttp) CreateBranch(ctx microservice.IContext) error {
 
 func (h BranchHttp) SearchBranch(ctx microservice.IContext) error {
 	holdingCode := ctx.UserInfo().HoldingCode
-	companyGuid := ctx.QueryParam("company_guid")
+	companyGuid := ctx.QueryParam("companyguid")
 
 	mongoCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
@@ -106,11 +106,11 @@ func (h BranchHttp) SearchBranch(ctx microservice.IContext) error {
 
 	filter := visibleBranchFilter(holdingCode)
 	if companyGuid != "" {
-		filter["company_guid"] = strings.TrimSpace(companyGuid)
+		filter["companyguid"] = strings.TrimSpace(companyGuid)
 	}
 
 	var list []branchModels.BranchOrgDoc
-	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: 1}, {Key: "code", Value: 1}})
+	opts := options.Find().SetSort(bson.D{{Key: "createdat", Value: 1}, {Key: "code", Value: 1}})
 	if err := pst.Find(mongoCtx, branchModels.BranchOrgDoc{}, filter, &list, opts); err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
@@ -132,7 +132,7 @@ func (h BranchHttp) InfoBranch(ctx microservice.IContext) error {
 	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
 
 	var data branchModels.BranchOrgDoc
-	if err := pst.FindOne(mongoCtx, branchModels.BranchOrgDoc{}, bson.M{"holding_code": holdingCode, "guid_fixed": id, "deleted_at": bson.M{"$exists": false}}, &data); err != nil {
+	if err := pst.FindOne(mongoCtx, branchModels.BranchOrgDoc{}, bson.M{"holdingcode": holdingCode, "guidfixed": id, "deletedat": bson.M{"$exists": false}}, &data); err != nil {
 		ctx.ResponseError(http.StatusNotFound, "Branch not found")
 		return err
 	}
@@ -159,7 +159,7 @@ func (h BranchHttp) UpdateBranch(ctx microservice.IContext) error {
 	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
 
 	var existing branchModels.BranchOrgDoc
-	if err := pst.FindOne(mongoCtx, branchModels.BranchOrgDoc{}, bson.M{"holding_code": holdingCode, "guid_fixed": id, "deleted_at": bson.M{"$exists": false}}, &existing); err != nil {
+	if err := pst.FindOne(mongoCtx, branchModels.BranchOrgDoc{}, bson.M{"holdingcode": holdingCode, "guidfixed": id, "deletedat": bson.M{"$exists": false}}, &existing); err != nil {
 		ctx.ResponseError(http.StatusNotFound, "Branch not found")
 		return err
 	}
@@ -193,13 +193,13 @@ func (h BranchHttp) UpdateBranch(ctx microservice.IContext) error {
 	existing.UpdatedAt = time.Now()
 	existing.UpdatedBy = authUsername
 
-	if err := pst.Update(mongoCtx, branchModels.BranchOrgDoc{}, bson.M{"holding_code": holdingCode, "guid_fixed": id, "deleted_at": bson.M{"$exists": false}}, bson.M{"$set": bson.M{
-		"names":        existing.Names,
-		"code":         existing.Code,
-		"company_guid": existing.CompanyGuid,
-		"is_active":    existing.IsActive,
-		"updated_at":   existing.UpdatedAt,
-		"updatedby":    existing.UpdatedBy,
+	if err := pst.Update(mongoCtx, branchModels.BranchOrgDoc{}, bson.M{"holdingcode": holdingCode, "guidfixed": id, "deletedat": bson.M{"$exists": false}}, bson.M{"$set": bson.M{
+		"names":       existing.Names,
+		"code":        existing.Code,
+		"companyguid": existing.CompanyGuid,
+		"isactive":    existing.IsActive,
+		"updatedat":   existing.UpdatedAt,
+		"updatedby":   existing.UpdatedBy,
 	}}); err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
@@ -227,7 +227,7 @@ func (h BranchHttp) DeleteBranch(ctx microservice.IContext) error {
 	defer cancel()
 	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
 
-	branchFilter := bson.M{"holding_code": holdingCode, "guid_fixed": id, "deleted_at": bson.M{"$exists": false}}
+	branchFilter := bson.M{"holdingcode": holdingCode, "guidfixed": id, "deletedat": bson.M{"$exists": false}}
 	var data branchModels.BranchOrgDoc
 	if err := pst.FindOne(mongoCtx, branchModels.BranchOrgDoc{}, branchFilter, &data); err != nil {
 		ctx.ResponseError(http.StatusNotFound, "Branch not found")
@@ -321,7 +321,7 @@ func (h BranchHttp) SearchBranchStep(ctx microservice.IContext) error {
 	}
 
 	var list []branchModels.BranchOrgDoc
-	opts := options.Find().SetSkip(int64(offset)).SetLimit(int64(limit)).SetSort(bson.D{{Key: "created_at", Value: 1}, {Key: "code", Value: 1}})
+	opts := options.Find().SetSkip(int64(offset)).SetLimit(int64(limit)).SetSort(bson.D{{Key: "createdat", Value: 1}, {Key: "code", Value: 1}})
 	if err := pst.Find(mongoCtx, branchModels.BranchOrgDoc{}, filter, &list, opts); err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
@@ -366,12 +366,12 @@ func prepareBranchUpdate(req *branchModels.BranchOrgDoc) error {
 }
 
 func visibleBranchFilter(holdingCode string) bson.M {
-	return bson.M{"holding_code": holdingCode, "deleted_at": bson.M{"$exists": false}}
+	return bson.M{"holdingcode": holdingCode, "deletedat": bson.M{"$exists": false}}
 }
 
 func ensureBranchCompanyExists(ctx context.Context, pst microservice.IPersisterMongo, holdingCode string, companyGuid string) error {
 	var company companyModels.CompanyDoc
-	err := pst.FindOne(ctx, companyModels.CompanyDoc{}, bson.M{"holding_code": holdingCode, "guid_fixed": companyGuid, "deleted_at": bson.M{"$exists": false}}, &company)
+	err := pst.FindOne(ctx, companyModels.CompanyDoc{}, bson.M{"holdingcode": holdingCode, "guidfixed": companyGuid, "deletedat": bson.M{"$exists": false}}, &company)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		return branchModels.ErrBranchCompanyNotFound
 	}
@@ -386,10 +386,10 @@ func ensureBranchCompanyExists(ctx context.Context, pst microservice.IPersisterM
 
 func ensureBranchCodeAvailableMongo(ctx context.Context, pst microservice.IPersisterMongo, holdingCode string, companyGuid string, code string, excludeGuid string) error {
 	filter := visibleBranchFilter(holdingCode)
-	filter["company_guid"] = companyGuid
+	filter["companyguid"] = companyGuid
 	filter["code"] = code
 	if excludeGuid != "" {
-		filter["guid_fixed"] = bson.M{"$ne": excludeGuid}
+		filter["guidfixed"] = bson.M{"$ne": excludeGuid}
 	}
 	count, err := pst.Count(ctx, branchModels.BranchOrgDoc{}, filter)
 	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
@@ -403,6 +403,6 @@ func ensureBranchCodeAvailableMongo(ctx context.Context, pst microservice.IPersi
 
 func countCompanyBranches(ctx context.Context, pst microservice.IPersisterMongo, holdingCode string, companyGuid string) (int, error) {
 	filter := visibleBranchFilter(holdingCode)
-	filter["company_guid"] = companyGuid
+	filter["companyguid"] = companyGuid
 	return pst.Count(ctx, branchModels.BranchOrgDoc{}, filter)
 }

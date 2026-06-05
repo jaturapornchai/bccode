@@ -32,7 +32,7 @@ func ProductBarcodeUpdate(productData models.MongoProductBarcodeModel) error {
 	updatePostgreSQL := false
 
 	// เช็คว่ามีข้อมูลอยู่แล้วหรือไม่และ checksum ตรงกันหรือไม่
-	query := "SELECT checksum FROM productbarcode WHERE holding_code = $1 AND barcode = $2"
+	query := "SELECT checksum FROM productbarcode WHERE holdingcode = $1 AND barcode = $2"
 	dataRows, err := QuerySelectAll(db, query, productData.HoldingCode, productData.Barcode)
 	if err != nil {
 		return fmt.Errorf("failed to check existing product: %w", err)
@@ -55,7 +55,7 @@ func ProductBarcodeUpdate(productData models.MongoProductBarcodeModel) error {
 		defer tx.Rollback()
 
 		// ลบข้อมูลเก่า
-		_, err = tx.ExecContext(ctx, "DELETE FROM productbarcode WHERE holding_code = $1 AND barcode = $2", productData.HoldingCode, productData.Barcode)
+		_, err = tx.ExecContext(ctx, "DELETE FROM productbarcode WHERE holdingcode = $1 AND barcode = $2", productData.HoldingCode, productData.Barcode)
 		if err != nil {
 			return fmt.Errorf("failed to delete existing product: %w", err)
 		}
@@ -100,7 +100,7 @@ func ProductBarcodeUpdate(productData models.MongoProductBarcodeModel) error {
 				groupcode, groupnames, price1, price_retail,
 				barcoderefunitstand, barcoderefunitdivide,
 				isstock, itemtype, materialtype, checksum,
-				holding_code, guidfixed, imageuri, isusesubbarcodes,
+				holdingcode, guidfixed, imageuri, isusesubbarcodes,
 				brandcode, brandnames, categorycode, categorynames,
 				classcode, classnames, designcode, designnames,
 				gradecode, gradenames, modelcode, modelnames,

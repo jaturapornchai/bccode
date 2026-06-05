@@ -24,7 +24,7 @@ func (r DebtorPaymentTransactionAdminRepository) FindDebtorPaymentDocByHoldingCo
 
 	docs := []debtorPaymentModels.PaidDoc{}
 
-	err := r.pst.Find(ctx, &debtorPaymentModels.PaidDoc{}, map[string]interface{}{"holding_code": holdingCode}, &docs)
+	err := r.pst.Find(ctx, &debtorPaymentModels.PaidDoc{}, map[string]interface{}{"holdingcode": holdingCode}, &docs)
 	if err != nil {
 		return nil, err
 	}

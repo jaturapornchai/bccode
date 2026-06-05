@@ -49,9 +49,9 @@ func (svc ImagesHttp) RegisterHttp() {
 	svc.ms.POST("/upload/images", svc.UploadImage)
 	svc.ms.POST("/upload/productimage", svc.UploadImageToProduct)
 
-	svc.ms.GET("/productimage/:holding_code/:itemguid", svc.GetProductImage)
-	svc.ms.GET("/productimage/:holding_code/:itemguid/:index", svc.GetProductImage)
-	svc.ms.GET("/slip/:holding_code/:posid/:docdate/:docno", svc.GetSlipImage)
+	svc.ms.GET("/productimage/:holdingcode/:itemguid", svc.GetProductImage)
+	svc.ms.GET("/productimage/:holdingcode/:itemguid/:index", svc.GetProductImage)
+	svc.ms.GET("/slip/:holdingcode/:posid/:docdate/:docno", svc.GetSlipImage)
 
 	svc.ms.Echo().Static("/images", storageConfig.StorageDataPath())
 	// check config storage
@@ -60,7 +60,7 @@ func (svc ImagesHttp) RegisterHttp() {
 
 func (svc ImagesHttp) GetProductImage(ctx microservice.IContext) error {
 
-	// get image format {holding_code}-{itemguid}-{index} ex xxx-xxx-1
+	// get image format {holdingcode}-{itemguid}-{index} ex xxx-xxx-1
 	// queryParams := strings.Split(ctx.Param("id"), "-")
 
 	// if len(queryParams) < 2 {
@@ -71,7 +71,7 @@ func (svc ImagesHttp) GetProductImage(ctx microservice.IContext) error {
 	// 	return nil
 	// }
 
-	holdingCode := ctx.Param("holding_code")
+	holdingCode := ctx.Param("holdingcode")
 	itemguid := ctx.Param("item_guid")
 	imageIndex := ctx.Param("index")
 
@@ -197,7 +197,7 @@ func (svc ImagesHttp) UploadImageToProduct(ctx microservice.IContext) error {
 // @Description GET Slip Image
 // @Tags		Common
 // @Accept 		json
-// @Param		holding_code  path      string  true  "Holding Code"
+// @Param		holdingcode  path      string  true  "Holding Code"
 // @Param		posid  path      string  true  "POS ID"
 // @Param		docdate  path      string  true  "Doc Date"
 // @Param		docno  path      string  true  "Doc No"
@@ -206,10 +206,10 @@ func (svc ImagesHttp) UploadImageToProduct(ctx microservice.IContext) error {
 // @Failure		400	{object}	common.AuthResponseFailed
 // @Failure		500	{object}	common.AuthResponseFailed
 // @Security     AccessToken
-// @Router /slip/{holding_code}/{posid}/{docdate}/{docno} [get]
+// @Router /slip/{holdingcode}/{posid}/{docdate}/{docno} [get]
 func (svc ImagesHttp) GetSlipImage(ctx microservice.IContext) error {
 
-	holdingCode := ctx.Param("holding_code")
+	holdingCode := ctx.Param("holdingcode")
 	posID := ctx.Param("posid")
 	docDate := ctx.Param("docdate")
 	docNo := ctx.Param("docno")

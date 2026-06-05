@@ -30,7 +30,7 @@ type NotifierDeviceData struct {
 }
 
 type NotifierDeviceDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	NotifierDeviceData `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
@@ -40,7 +40,7 @@ func (NotifierDeviceDoc) CollectionName() string {
 }
 
 type NotifierDeviceAuth struct {
-	HoldingCode string `json:"holding_code" bson:"holding_code"`
+	HoldingCode string `json:"holdingcode" bson:"holdingcode"`
 	UserAddedBy string `json:"useraddedby" bson:"useraddedby"`
 	RefCode     string `json:"refcode" bson:"refcode"`
 }

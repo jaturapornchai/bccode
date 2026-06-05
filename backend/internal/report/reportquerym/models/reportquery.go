@@ -39,7 +39,7 @@ type ReportQueryData struct {
 }
 
 type ReportQueryDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	ReportQueryData    `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

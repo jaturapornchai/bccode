@@ -265,7 +265,7 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
     setSplitLeftPercent(next);
   }, []);
 
-  const activeHoldingCode = workspace?.shop.holding_code ?? "";
+  const activeHoldingCode = workspace?.shop.holdingcode ?? "";
   const shopLanguages = useMemo(() => languageCodesFromWorkspace(workspace), [workspace]);
 
   const selectedBase = useMemo(
@@ -384,7 +384,7 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
     setNotice(null);
     try {
       const data = await listBarcodes(auth, {
-        holding_code: activeHoldingCode,
+        holdingcode: activeHoldingCode,
         keyword: search.trim(),
         groupcode: debouncedFilters.groupCode.trim(),
         brandcode: debouncedFilters.brandCode.trim(),
@@ -555,7 +555,7 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
     setEditorGuid("");
     setEditorDirty(false);
     const next = emptyProductBarcode();
-    next.holding_code = activeHoldingCode;
+    next.holdingcode = activeHoldingCode;
     setEditorBarcode(next);
     setEditorOpen(true);
   }
@@ -569,7 +569,7 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
     setEditorGuid(target.guidFixed);
     setEditorDirty(false);
     const base = emptyProductBarcode();
-    base.holding_code = activeHoldingCode;
+    base.holdingcode = activeHoldingCode;
     setEditorBarcode(rawToProductBarcode(target.raw, base));
     setEditorOpen(true);
   }
@@ -581,10 +581,10 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
     setEditorGuid("");
     setEditorDirty(true);
     const base = emptyProductBarcode();
-    base.holding_code = activeHoldingCode;
+    base.holdingcode = activeHoldingCode;
     const next = rawToProductBarcode(selected.raw, base);
     next.guidfixed = "";
-    next.holding_code = activeHoldingCode;
+    next.holdingcode = activeHoldingCode;
     setEditorBarcode(next);
     setEditorOpen(true);
   }
@@ -592,7 +592,7 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
   function copyCurrentEditorValue() {
     const next = JSON.parse(JSON.stringify(editorBarcode)) as ProductBarcodeObject;
     next.guidfixed = "";
-    next.holding_code = activeHoldingCode;
+    next.holdingcode = activeHoldingCode;
     setEditorMode("create");
     setEditorGuid("");
     setEditorBarcode(next);
@@ -625,7 +625,7 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
       if (keepOpen) {
         // "Save & add new": reset to a blank record and stay open
         const next = emptyProductBarcode();
-        next.holding_code = activeHoldingCode;
+        next.holdingcode = activeHoldingCode;
         setEditorGuid("");
         setEditorDirty(false);
         setEditorBarcode(next);
@@ -1002,7 +1002,7 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
             language={lang}
             shopLanguages={shopLanguages}
             auth={auth}
-            companyGuid={workspace?.branch?.company_guid}
+            companyGuid={workspace?.branch?.companyguid}
             extraActions={
               editorMode === "edit" ? (
                 <>
@@ -1393,7 +1393,7 @@ function readWorkspaceSession(): WorkspaceSession | null {
     const raw = localStorage.getItem(workspaceStorageKeys.workspace);
     if (!raw) return null;
     const workspace = JSON.parse(raw) as WorkspaceSession;
-    return workspace.shop?.holding_code ? workspace : null;
+    return workspace.shop?.holdingcode ? workspace : null;
   } catch {
     return null;
   }
@@ -1410,8 +1410,8 @@ function normalizeBarcodeRecord(value: unknown): ProductBarcodeRecord {
   const record = isRecord(value) ? value : {};
   return {
     raw: record,
-    guidFixed: getFirstString(record, ["guid_fixed", "guidfixed"]),
-    holdingCode: getFirstString(record, ["holding_code", "holding_code"]),
+    guidFixed: getFirstString(record, ["guidfixed", "guidfixed"]),
+    holdingCode: getFirstString(record, ["holdingcode", "holdingcode"]),
     barcode: getFirstString(record, ["barcode"]),
     barcodeRef: getFirstString(record, ["barcoderef", "barcode_ref", "refbarcode"]),
     name: localizedNameFromKeys(record, ["names"], getFirstString(record, ["name0", "name", "item_name"])),
@@ -1419,7 +1419,7 @@ function normalizeBarcodeRecord(value: unknown): ProductBarcodeRecord {
     unitCode: getFirstString(record, ["item_unit_code", "itemunitcode", "unitcode"]),
     itemCode: getFirstString(record, ["itemcode", "item_code"]),
     itemGuid: getFirstString(record, ["itemguid", "item_guid"]),
-    itemGuidFixed: getFirstString(record, ["itemguidfixed", "item_guid_fixed"]),
+    itemGuidFixed: getFirstString(record, ["itemguidfixed", "item_guidfixed"]),
     parentGuid: getFirstString(record, ["parentguid", "parent_guid"]),
     groupName: localizedNameFromKeys(record, ["group_names", "groupnames"], getFirstString(record, ["group_name", "groupname"])),
     groupCode: getFirstString(record, ["group_code", "groupcode"]),

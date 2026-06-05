@@ -55,7 +55,7 @@ func TestMarketplaceProductMapJSONRoundTrip(t *testing.T) {
 
 	// Contract guard: these JSON keys must stay in sync with the frontend type.
 	wantKeys := []string{
-		"platform", "account_id", "holding_code", "market_item_id", "market_model_id",
+		"platform", "account_id", "holdingcode", "market_item_id", "market_model_id",
 		"item_url", "seller_sku", "shop_sku", "gtin", "category_id", "category_name",
 		"brand_id", "currency", "custom_price", "platform_price", "platform_stock",
 		"sync_stock", "sync_price", "status", "reject_reason", "days_to_ship",

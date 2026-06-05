@@ -137,7 +137,7 @@ func validateExecQuery(query string) (bool, string) {
 func PgSelectHandler(c echo.Context) error {
 	var payload struct {
 		Database string   `json:"database"`
-		Queries []string `json:"queries"`
+		Queries  []string `json:"queries"`
 	}
 
 	if err := c.Bind(&payload); err != nil {
@@ -317,7 +317,7 @@ func PgExecHandler(c echo.Context) error {
 	// รับ JSON payload จาก request body
 	var payload struct {
 		Database string   `json:"database"`
-		Queries []string `json:"queries"`
+		Queries  []string `json:"queries"`
 	}
 
 	if err := c.Bind(&payload); err != nil {

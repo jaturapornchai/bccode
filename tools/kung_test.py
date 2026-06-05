@@ -57,10 +57,10 @@ QUESTIONS = [
 
 def ask(idx: int, q: str, out_dir: Path) -> dict:
     body = json.dumps({
-        "holding_code": SHOP,
+        "holdingcode": SHOP,
         "question": q,
-        "session_id": f"pytest-{int(time.time())}-{idx}",
-        "output_format": "html",
+        "sessionid": f"pytest-{int(time.time())}-{idx}",
+        "outputformat": "html",
     }).encode("utf-8")
     req = urllib.request.Request(
         URL,
@@ -86,9 +86,9 @@ def analyze(r: dict) -> dict:
         return {**r, "verdict": "ERROR"}
     d = (r["data"].get("data") or {})
     ans = d.get("answer", "") or ""
-    tools = d.get("tools_used") or []
+    tools = d.get("toolsused") or []
     iters = d.get("iterations", 0)
-    model = r["data"].get("token_usage", {}).get("model", "?")
+    model = r["data"].get("tokenusage", {}).get("model", "?")
     tnames = [t.get("tool", "?") for t in tools]
 
     has_html = any(tag in ans for tag in ("<h2", "<table", "<p>", "<ul>"))

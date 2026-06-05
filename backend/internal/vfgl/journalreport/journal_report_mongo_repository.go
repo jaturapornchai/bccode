@@ -34,10 +34,10 @@ func NewJournalMongoRepository(pst microservice.IPersisterMongo) *JournalMongoRe
 func (repo *JournalMongoRepository) FindCountDetailByDocs(ctx context.Context, holdingCode string, docs []string) ([]models.JournalSummary, error) {
 
 	matchQuery := bson.M{
-		"holding_code": holdingCode,
-		"docno":        bson.M{"$in": docs},
-		"vats":         bson.M{"$exists": true, "$type": "array"},
-		"taxes":        bson.M{"$exists": true, "$type": "array"},
+		"holdingcode": holdingCode,
+		"docno":       bson.M{"$in": docs},
+		"vats":        bson.M{"$exists": true, "$type": "array"},
+		"taxes":       bson.M{"$exists": true, "$type": "array"},
 	}
 
 	projectQuery := bson.M{
@@ -64,7 +64,7 @@ func (repo *JournalMongoRepository) FindCountDetailByDocs(ctx context.Context, h
 func (repo *JournalMongoRepository) FindCountImageByDocs(ctx context.Context, holdingCode string, docs []string) ([]models.JournalImageSummary, error) {
 
 	matchQuery := bson.M{
-		"holding_code":      holdingCode,
+		"holdingcode":       holdingCode,
 		"imagereferences":   bson.M{"$exists": true},
 		"references.module": "GL",
 		"references.docno":  bson.M{"$in": docs},
@@ -101,12 +101,12 @@ func (repo *JournalMongoRepository) FindImageCountByShops(
 	// Then count images that reference those docnos
 	// This is a two-step aggregation:
 	// 1. Unwind references array
-	// 2. Match by holding_code, module=GL, and references in the docno list
-	// 3. Group by holding_code and count imagereferences
+	// 2. Match by holdingcode, module=GL, and references in the docno list
+	// 3. Group by holdingcode and count imagereferences
 
 	// Match stage - find all document image groups with GL module references
 	matchStage := bson.M{
-		"holding_code":      bson.M{"$in": holdingCodes},
+		"holdingcode":       bson.M{"$in": holdingCodes},
 		"references.module": "GL",
 		"imagereferences":   bson.M{"$exists": true},
 	}
@@ -125,17 +125,17 @@ func (repo *JournalMongoRepository) FindImageCountByShops(
 	// Group stage - sum image counts per shop
 	groupStage := bson.M{
 		"_id": bson.M{
-			"holding_code": "$holding_code",
-			"docno":        "$references.docno",
+			"holdingcode": "$holdingcode",
+			"docno":       "$references.docno",
 		},
 		"imagecount": bson.M{
 			"$sum": bson.M{"$size": "$imagereferences"},
 		},
 	}
 
-	// Group again by holding_code to sum all images
+	// Group again by holdingcode to sum all images
 	groupByShopStage := bson.M{
-		"_id": "$_id.holding_code",
+		"_id": "$_id.holdingcode",
 		"imagecount": bson.M{
 			"$sum": "$imagecount",
 		},
@@ -143,9 +143,9 @@ func (repo *JournalMongoRepository) FindImageCountByShops(
 
 	// Project stage
 	projectStage := bson.M{
-		"holding_code": "$_id",
-		"imagecount":   1,
-		"_id":          0,
+		"holdingcode": "$_id",
+		"imagecount":  1,
+		"_id":         0,
 	}
 
 	pipeline := []interface{}{
@@ -176,7 +176,7 @@ func (repo *JournalMongoRepository) GetDocNosByShopsAndDateRange(
 ) (map[string][]string, error) {
 
 	matchStage := bson.M{
-		"holding_code": bson.M{"$in": holdingCodes},
+		"holdingcode": bson.M{"$in": holdingCodes},
 		"docdate": bson.M{
 			"$gte": startDate,
 			"$lte": endDate,
@@ -185,9 +185,9 @@ func (repo *JournalMongoRepository) GetDocNosByShopsAndDateRange(
 	}
 
 	projectStage := bson.M{
-		"holding_code": 1,
-		"docno":        1,
-		"_id":          0,
+		"holdingcode": 1,
+		"docno":       1,
+		"_id":         0,
 	}
 
 	pipeline := []interface{}{
@@ -227,23 +227,23 @@ func (repo *JournalMongoRepository) CountImagesByDocNos(
 
 		// Match documentImageGroups that reference these docnos for this shop
 		matchStage := bson.M{
-			"holding_code":      holdingCode,
+			"holdingcode":       holdingCode,
 			"references.module": "GL",
 			"references.docno":  bson.M{"$in": docNos},
 			"imagereferences":   bson.M{"$exists": true},
 		}
 
 		groupStage := bson.M{
-			"_id": "$holding_code",
+			"_id": "$holdingcode",
 			"imagecount": bson.M{
 				"$sum": bson.M{"$size": "$imagereferences"},
 			},
 		}
 
 		projectStage := bson.M{
-			"holding_code": "$_id",
-			"imagecount":   1,
-			"_id":          0,
+			"holdingcode": "$_id",
+			"imagecount":  1,
+			"_id":         0,
 		}
 
 		pipeline := []interface{}{
@@ -273,13 +273,13 @@ func (repo *JournalMongoRepository) CountAllImagesByShops(
 
 	// Match all documentImageGroups for the given shops that have imagereferences
 	matchStage := bson.M{
-		"holding_code":    bson.M{"$in": holdingCodes},
+		"holdingcode":     bson.M{"$in": holdingCodes},
 		"imagereferences": bson.M{"$exists": true},
 	}
 
-	// Group by holding_code and sum all imagereferences sizes
+	// Group by holdingcode and sum all imagereferences sizes
 	groupStage := bson.M{
-		"_id": "$holding_code",
+		"_id": "$holdingcode",
 		"imagecount": bson.M{
 			"$sum": bson.M{"$size": "$imagereferences"},
 		},
@@ -287,9 +287,9 @@ func (repo *JournalMongoRepository) CountAllImagesByShops(
 
 	// Project to match our model structure
 	projectStage := bson.M{
-		"holding_code": "$_id",
-		"imagecount":   1,
-		"_id":          0,
+		"holdingcode": "$_id",
+		"imagecount":  1,
+		"_id":         0,
 	}
 
 	pipeline := []interface{}{

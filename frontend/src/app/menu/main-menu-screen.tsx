@@ -221,7 +221,7 @@ function isWorkspaceOwner(workspace: WorkspaceSession | null, auth: AuthSession 
 
 function workspacePermissionKeys(workspace: WorkspaceSession): string[] {
   return Array.from(new Set([
-    stringValue(workspace.branch?.guid_fixed),
+    stringValue(workspace.branch?.guidfixed),
     stringValue(workspace.branch?.code),
     stringValue(workspace.shop.branchcode),
     "company",
@@ -297,20 +297,20 @@ function WorkspaceContextPanel({
 }
 
 type WorkspaceAccessContext = {
-  holding_code: string;
-  business_code: string;
-  branch_code: string;
+  holdingcode: string;
+  businesscode: string;
+  branchcode: string;
 };
 
 function workspaceAccessContext(workspace: WorkspaceSession): WorkspaceAccessContext {
   return {
-    holding_code: stringValue(workspace.shop.holding_code),
-    business_code: normalizeBusinessCode(
-      (workspace.shop as SettingRecord).business_code ??
+    holdingcode: stringValue(workspace.shop.holdingcode),
+    businesscode: normalizeBusinessCode(
+      (workspace.shop as SettingRecord).businesscode ??
         (workspace.shop as SettingRecord).code ??
-        workspace.shop.holding_code,
+        workspace.shop.holdingcode,
     ),
-    branch_code: normalizeBranchCode(workspace.branch?.code ?? workspace.shop.branchcode),
+    branchcode: normalizeBranchCode(workspace.branch?.code ?? workspace.shop.branchcode),
   };
 }
 
@@ -338,12 +338,12 @@ function scopeRulesApply(value: unknown, context: WorkspaceAccessContext, defaul
   return rules.some((rule) => {
     const scopeType = stringValue(settingValue(rule, "scope_type", "scopeType")).toLowerCase();
     if (!scopeType || scopeType === "holding") return true;
-    const businessCode = normalizeBusinessCode(settingValue(rule, "business_code", "businessCode", "company_code", "companyCode"));
-    if (!businessCode || businessCode !== context.business_code) return false;
+    const businessCode = normalizeBusinessCode(settingValue(rule, "businesscode", "businessCode", "company_code", "companyCode"));
+    if (!businessCode || businessCode !== context.businesscode) return false;
     if (scopeType === "company" || booleanSetting(settingValue(rule, "all_branches", "allBranches", "use_all_branches"))) return true;
     if (scopeType === "branch") {
-      const branchCode = normalizeBranchCode(settingValue(rule, "branch_code", "branchCode", "code"));
-      return Boolean(branchCode && branchCode === context.branch_code);
+      const branchCode = normalizeBranchCode(settingValue(rule, "branchcode", "branchCode", "code"));
+      return Boolean(branchCode && branchCode === context.branchcode);
     }
     return false;
   });
@@ -352,7 +352,7 @@ function scopeRulesApply(value: unknown, context: WorkspaceAccessContext, defaul
 function scopeRuleArray(value: unknown): SettingRecord[] {
   if (Array.isArray(value)) {
     return value
-      .map((item) => (isRecord(item) ? item : typeof item === "string" ? { scope_type: "company", business_code: item } : null))
+      .map((item) => (isRecord(item) ? item : typeof item === "string" ? { scope_type: "company", businesscode: item } : null))
       .filter((item): item is SettingRecord => item !== null);
   }
   if (typeof value === "string" && value.trim()) {
@@ -360,7 +360,7 @@ function scopeRuleArray(value: unknown): SettingRecord[] {
       const parsed = JSON.parse(value) as unknown;
       if (Array.isArray(parsed)) return scopeRuleArray(parsed);
     } catch {
-      return value.split(",").map((item) => ({ scope_type: "company", business_code: item.trim() })).filter((item) => item.business_code);
+      return value.split(",").map((item) => ({ scope_type: "company", businesscode: item.trim() })).filter((item) => item.businesscode);
     }
   }
   return [];
@@ -398,12 +398,12 @@ async function fetchAllowedMenuIds(auth: AuthSession, workspace: WorkspaceSessio
     "x-bc-backend-url": auth.backendUrl,
     Authorization: `Bearer ${auth.token}`,
   };
-  const holding_code = encodeURIComponent(workspace.shop.holding_code);
+  const holdingcode = encodeURIComponent(workspace.shop.holdingcode);
   try {
     const [linksResponse, definitionsResponse, groupsResponse] = await Promise.all([
-      fetch(`/api/system-settings/permission_link?limit=1000&offset=0&holding_code=${holding_code}`, { headers, cache: "no-store" }),
-      fetch(`/api/system-settings/permission_definition?limit=1000&offset=0&holding_code=${holding_code}`, { headers, cache: "no-store" }),
-      fetch(`/api/system-settings/permission_group?limit=1000&offset=0&holding_code=${holding_code}`, { headers, cache: "no-store" }).catch(() => null),
+      fetch(`/api/system-settings/permission_link?limit=1000&offset=0&holdingcode=${holdingcode}`, { headers, cache: "no-store" }),
+      fetch(`/api/system-settings/permission_definition?limit=1000&offset=0&holdingcode=${holdingcode}`, { headers, cache: "no-store" }),
+      fetch(`/api/system-settings/permission_group?limit=1000&offset=0&holdingcode=${holdingcode}`, { headers, cache: "no-store" }).catch(() => null),
     ]);
     if (!linksResponse.ok || !definitionsResponse.ok) return new Set();
 
@@ -424,7 +424,7 @@ async function fetchAllowedMenuIds(auth: AuthSession, workspace: WorkspaceSessio
     const permissionLink = normalizeSettingRecords(linksPayload).find((record) =>
       userKeys.has(stringValue(settingValue(record, "employee_code", "employeeCode")).toLowerCase()) &&
       scopeRulesApply(
-        settingValue(record, "scope_rules", "access_scopes", "business_codes", "company_guids"),
+        settingValue(record, "scope_rules", "access_scopes", "businesscodes", "companyguids"),
         accessContext,
         true,
       ),

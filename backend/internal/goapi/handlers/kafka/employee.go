@@ -25,7 +25,7 @@ func OnConsumeMessageEmployeeCreateOrUpdate(msg string) error {
 // OnConsumeMessageEmployeeDelete - handles employee delete messages
 func OnConsumeMessageEmployeeDelete(msg string) error {
 	// รับ Message จาก Kafka ที่เป็นการลบข้อมูล Employee
-	// msg จะเป็น JSON string ที่มีข้อมูล เช่น {"holding_code": "shop123", "code": "E0001"}
+	// msg จะเป็น JSON string ที่มีข้อมูล เช่น {"holdingcode": "shop123", "code": "E0001"}
 
 	logger.Info("OnConsumeMessageEmployeeDelete: %s", msg)
 

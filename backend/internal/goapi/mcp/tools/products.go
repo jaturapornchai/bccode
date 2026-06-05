@@ -37,37 +37,37 @@ type TokenizeResponse struct {
 
 // ProductSearchRequest represents the search request
 type ProductSearchRequest struct {
-	HoldingCode    string `json:"holding_code"`
+	HoldingCode    string `json:"holdingcode"`
 	Keyword        string `json:"keyword"`
 	WHCode         string `json:"whcode"`
 	LocationCode   string `json:"locationcode"`
 	Limit          int    `json:"limit"`
-	IncludeBalance bool   `json:"include_balance"`
+	IncludeBalance bool   `json:"includebalance"`
 }
 
 // ProductUnit represents a product unit with price
 type ProductUnit struct {
 	Barcode     string  `json:"barcode"`
 	UnitCode    string  `json:"unitcode"`
-	UnitName    string  `json:"unit_name"`
+	UnitName    string  `json:"unitname"`
 	UnitStand   float64 `json:"unitstand"`
 	UnitDivide  float64 `json:"unitdivide"`
 	Price1      float64 `json:"price1"`
-	PriceRetail float64 `json:"price_retail"`
+	PriceRetail float64 `json:"priceretail"`
 }
 
 // LocationBalance represents stock balance by location
 type LocationBalance struct {
-	LocationCode string  `json:"location_code"`
-	BalanceQty   float64 `json:"balance_qty"`
-	BalanceWord  string  `json:"balance_word"`
+	LocationCode string  `json:"locationcode"`
+	BalanceQty   float64 `json:"balanceqty"`
+	BalanceWord  string  `json:"balanceword"`
 }
 
 // WarehouseBalance represents stock balance by warehouse
 type WarehouseBalance struct {
-	WarehouseCode string            `json:"warehouse_code"`
-	BalanceQty    float64           `json:"balance_qty"`
-	BalanceWord   string            `json:"balance_word"`
+	WarehouseCode string            `json:"warehousecode"`
+	BalanceQty    float64           `json:"balanceqty"`
+	BalanceWord   string            `json:"balanceword"`
 	Locations     []LocationBalance `json:"locations,omitempty"`
 }
 
@@ -110,7 +110,7 @@ func SearchProducts(ctx context.Context, holdingCode, keyword, whcode, locationc
 		limit = 200
 	}
 
-	logger.Info("[MCP SearchProducts] holding_code=%s, keyword=%s, limit=%d, include_balance=%v",
+	logger.Info("[MCP SearchProducts] holdingcode=%s, keyword=%s, limit=%d, includebalance=%v",
 		holdingCode, keyword, limit, includeBalance)
 
 	// 1. Tokenize keyword using Thai NLP
@@ -340,7 +340,7 @@ func getThaiNLPURL() string {
 // searchFields — columns to search (includes brand, category, group names)
 var searchFields = []string{
 	"itemcode", "barcode", "name0", "unitcode", "unit_name",
-	"brandnames", "category_names", "group_names",
+	"brandnames", "categorynames", "groupnames",
 }
 
 // mergeProducts combines two product lists, deduplicating by ItemCode
@@ -479,7 +479,7 @@ func searchProductsVector(db *sql.DB, keyword string, limit int) ([]ProductItem,
 	if err := db.QueryRow(`
 		SELECT EXISTS(
 			SELECT 1 FROM information_schema.columns
-			WHERE table_name = 'productbarcode' AND column_name = 'name_embedding'
+			WHERE tablename = 'productbarcode' AND column_name = 'nameembedding'
 		)
 	`).Scan(&colExists); err != nil || !colExists {
 		return nil, nil // ยังไม่มี column → skip quietly
@@ -487,7 +487,7 @@ func searchProductsVector(db *sql.DB, keyword string, limit int) ([]ProductItem,
 
 	// ตรวจว่ามี embedding อยู่จริง (ไม่ใช่ column ว่าง)
 	var hasEmbeddings bool
-	if err := db.QueryRow(`SELECT EXISTS(SELECT 1 FROM productbarcode WHERE name_embedding IS NOT NULL LIMIT 1)`).Scan(&hasEmbeddings); err != nil || !hasEmbeddings {
+	if err := db.QueryRow(`SELECT EXISTS(SELECT 1 FROM productbarcode WHERE nameembedding IS NOT NULL LIMIT 1)`).Scan(&hasEmbeddings); err != nil || !hasEmbeddings {
 		return nil, nil
 	}
 
@@ -503,14 +503,14 @@ func searchProductsVector(db *sql.DB, keyword string, limit int) ([]ProductItem,
 
 	// ค้นหา nearest neighbors ด้วย cosine distance (<=>)
 	query := fmt.Sprintf(`
-		SELECT itemcode, name0, (name_embedding <=> $1::vector) as distance
+		SELECT itemcode, name0, (nameembedding <=> $1::vector) as distance
 		FROM (
-			SELECT DISTINCT ON (itemcode) itemcode, name0, name_embedding
+			SELECT DISTINCT ON (itemcode) itemcode, name0, nameembedding
 			FROM productbarcode
-			WHERE name_embedding IS NOT NULL
+			WHERE nameembedding IS NOT NULL
 			ORDER BY itemcode, id
 		) sub
-		ORDER BY name_embedding <=> $1::vector
+		ORDER BY nameembedding <=> $1::vector
 		LIMIT %d
 	`, limit)
 

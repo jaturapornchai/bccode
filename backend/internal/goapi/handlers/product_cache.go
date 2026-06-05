@@ -174,13 +174,13 @@ func (pc *ProductCache) Stats() map[string]any {
 
 // ProductSearchRequest - Request for product search
 type ProductSearchRequest struct {
-	HoldingCode      string `json:"holding_code"`
+	HoldingCode      string `json:"holdingcode"`
 	Search           string `json:"search"`
-	BranchCode       string `json:"branch_code"`
-	BusinessTypeCode string `json:"business_type_code"`
+	BranchCode       string `json:"branchcode"`
+	BusinessTypeCode string `json:"businesstypecode"`
 	Limit            int    `json:"limit"`
 	Offset           int    `json:"offset"`
-	UseCache         bool   `json:"use_cache"`
+	UseCache         bool   `json:"usecache"`
 }
 
 // generateCacheKey - Generate cache key from request
@@ -204,7 +204,7 @@ func ProductSearchHandler(c echo.Context) error {
 
 	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "holding_code is required",
+			"error": "holdingcode is required",
 			"code":  "MISSING_HOLDING_CODE",
 		})
 	}
@@ -394,7 +394,7 @@ func ProductCacheStatsHandler(c echo.Context) error {
 // ProductCacheClearHandler - Clear product cache
 func ProductCacheClearHandler(c echo.Context) error {
 	var req struct {
-		HoldingCode string `json:"holding_code"`
+		HoldingCode string `json:"holdingcode"`
 		Prefix      string `json:"prefix"`
 	}
 
@@ -420,7 +420,7 @@ func ProductCacheClearHandler(c echo.Context) error {
 // ProductBarcodeSearchHandler - Search by barcode (optimized single lookup)
 func ProductBarcodeSearchHandler(c echo.Context) error {
 	var req struct {
-		HoldingCode string `json:"holding_code"`
+		HoldingCode string `json:"holdingcode"`
 		Barcode     string `json:"barcode"`
 	}
 
@@ -433,7 +433,7 @@ func ProductBarcodeSearchHandler(c echo.Context) error {
 
 	if req.HoldingCode == "" || req.Barcode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "holding_code and barcode are required",
+			"error": "holdingcode and barcode are required",
 			"code":  "MISSING_REQUIRED_FIELDS",
 		})
 	}

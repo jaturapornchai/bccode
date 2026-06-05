@@ -24,7 +24,7 @@ func CloneClickHouseDatabase() {
 	}
 
 	// ดึงข้อมูล shopgroup
-	rows, err := myPgConn.Query("SELECT groupname, holding_codelist FROM shopgroup")
+	rows, err := myPgConn.Query("SELECT groupname, holdingcodelist FROM shopgroup")
 	if err != nil {
 		logger.Error("Failed to query shopgroup: %v", err)
 		return
@@ -123,7 +123,7 @@ func CloneClickHouseDatabaseStart(databaseName string, holdingCodeList string) e
 	}
 	if tableExists {
 		// ลบข้อมูลเก่าออก
-		delQuery := "ALTER TABLE " + databaseName + ".docdetail DELETE WHERE holding_code IN (" + formattedHoldingCodeList + ")"
+		delQuery := "ALTER TABLE " + databaseName + ".docdetail DELETE WHERE holdingcode IN (" + formattedHoldingCodeList + ")"
 		err = chClient.Exec(ctx, delQuery)
 		if err != nil {
 			logger.Error("Failed to delete old data from docdetail in database %s: %v", databaseName, err)
@@ -142,7 +142,7 @@ func CloneClickHouseDatabaseStart(databaseName string, holdingCodeList string) e
 	insertQuery := `INSERT INTO ` + databaseName + `.docdetail
 	SELECT *
 	FROM ` + sourceDB + `.docdetail
-	WHERE holding_code IN (` + formattedHoldingCodeList + `)`
+	WHERE holdingcode IN (` + formattedHoldingCodeList + `)`
 
 	err = chClient.Exec(ctx, insertQuery)
 	if err != nil {

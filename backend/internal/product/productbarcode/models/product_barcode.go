@@ -16,8 +16,8 @@ type ProductBarcodeBase struct {
 	ItemCode         string          `json:"itemcode" bson:"itemcode"`
 	Barcode          string          `json:"barcode" bson:"barcode" validate:"required,min=1"`
 	GroupGuid        string          `json:"groupguid" bson:"groupguid"`
-	GroupCode        string          `json:"group_code" bson:"group_code"`
-	GroupNames       *[]models.NameX `json:"group_names" bson:"group_names"`
+	GroupCode        string          `json:"groupcode" bson:"groupcode"`
+	GroupNames       *[]models.NameX `json:"groupnames" bson:"groupnames"`
 	GroupsuboneGuid  string          `json:"groupsuboneguid" bson:"groupsuboneguid"`
 	GroupsuboneCode  string          `json:"groupsubonecode" bson:"groupsubonecode"`
 	GroupsuboneNames *[]models.NameX `json:"groupsubonenames" bson:"groupsubonenames"`
@@ -25,7 +25,7 @@ type ProductBarcodeBase struct {
 	GroupsubtwoCode  string          `json:"groupsubtwocode" bson:"groupsubtwocode"`
 	GroupsubtwoNames *[]models.NameX `json:"groupsubtwonames" bson:"groupsubtwonames"`
 	BrandGuid        string          `json:"brandguid" bson:"brandguid"`
-	BrandCode        string          `json:"brand_code" bson:"brand_code"`
+	BrandCode        string          `json:"brandcode" bson:"brandcode"`
 	BrandNames       *[]models.NameX `json:"brandnames" bson:"brandnames"`
 	DesignGuid       string          `json:"designguid" bson:"designguid"`
 	DesignCode       string          `json:"designcode" bson:"designcode"`
@@ -39,9 +39,9 @@ type ProductBarcodeBase struct {
 	GradeGuid        string          `json:"gradeguid" bson:"gradeguid"`
 	GradeCode        string          `json:"gradecode" bson:"gradecode"`
 	GradeNames       *[]models.NameX `json:"gradenames" bson:"gradenames"`
-	CategoryGuid     string          `json:"category_guid" bson:"category_guid"`
+	CategoryGuid     string          `json:"categoryguid" bson:"categoryguid"`
 	CategoryCode     string          `json:"categorycode" bson:"categorycode"`
-	CategoryNames    *[]models.NameX `json:"category_names" bson:"category_names"`
+	CategoryNames    *[]models.NameX `json:"categorynames" bson:"categorynames"`
 	ClassGuid        string          `json:"classguid" bson:"classguid"`
 	ClassCode        string          `json:"classcode" bson:"classcode"`
 	ClassNames       *[]models.NameX `json:"classnames" bson:"classnames"`
@@ -52,9 +52,9 @@ type ProductBarcodeBase struct {
 
 	Names           *[]models.NameX  `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
 	XSorts          *[]models.XSort  `json:"xsorts" bson:"xsorts" validate:"unique=Code,dive"`
-	ItemGuid        string           `json:"item_guid" bson:"item_guid"`
+	ItemGuid        string           `json:"itemguid" bson:"itemguid"`
 	ItemUnitGuid    string           `json:"itemunitguid" bson:"itemunitguid"`
-	ItemUnitCode    string           `json:"item_unit_code" bson:"item_unit_code"`
+	ItemUnitCode    string           `json:"itemunitcode" bson:"itemunitcode"`
 	ItemUnitNames   *[]models.NameX  `json:"itemunitnames" bson:"itemunitnames"`
 	ItemUnitSize    float64          `json:"itemunitsize" bson:"itemunitsize"`
 	Prices          *[]ProductPrice  `json:"prices" bson:"prices"`
@@ -69,19 +69,19 @@ type ProductBarcodeBase struct {
 	DivideValue      float64 `json:"dividevalue" bson:"dividevalue"`
 	StandValue       float64 `json:"standvalue" bson:"standvalue"`
 	IsUseSubBarcodes bool    `json:"isusesubbarcodes" bson:"isusesubbarcodes"`
-	IsMainBarcode    bool    `json:"is_main_barcode" bson:"is_main_barcode"`
+	IsMainBarcode    bool    `json:"ismainbarcode" bson:"ismainbarcode"`
 
 	// Marketplace & Logistics
-	PackageWeight       float64                  `json:"package_weight" bson:"package_weight"`
-	PackageLength       float64                  `json:"package_length" bson:"package_length"`
-	PackageWidth        float64                  `json:"package_width" bson:"package_width"`
-	PackageHeight       float64                  `json:"package_height" bson:"package_height"`
-	MarketplaceProducts *[]MarketplaceProductMap `json:"marketplace_products" bson:"marketplace_products"`
+	PackageWeight       float64                  `json:"packageweight" bson:"packageweight"`
+	PackageLength       float64                  `json:"packagelength" bson:"packagelength"`
+	PackageWidth        float64                  `json:"packagewidth" bson:"packagewidth"`
+	PackageHeight       float64                  `json:"packageheight" bson:"packageheight"`
+	MarketplaceProducts *[]MarketplaceProductMap `json:"marketplaceproducts" bson:"marketplaceproducts"`
 
-	ItemType     int8   `json:"item_type" bson:"item_type"`
+	ItemType     int8   `json:"itemtype" bson:"itemtype"`
 	MaterialType int8   `json:"materialtype" bson:"materialtype"`
-	TaxType      int8   `json:"tax_type" bson:"tax_type"`
-	VatType      int8   `json:"vat_type" bson:"vat_type"`
+	TaxType      int8   `json:"taxtype" bson:"taxtype"`
+	VatType      int8   `json:"vattype" bson:"vattype"`
 	IsSumPoint   bool   `json:"issumpoint" bson:"issumpoint"`
 	MaxDiscount  string `json:"maxdiscount" bson:"maxdiscount"`
 	IsDividend   bool   `json:"isdividend" bson:"isdividend"`
@@ -150,9 +150,9 @@ type ProductDimensionItem struct {
 }
 
 type RefProductBarcode struct {
-	GuidFixed     string          `json:"guid_fixed" bson:"guid_fixed"`
+	GuidFixed     string          `json:"guidfixed" bson:"guidfixed"`
 	Names         *[]models.NameX `json:"names" bson:"names"`
-	ItemUnitCode  string          `json:"item_unit_code" bson:"item_unit_code"`
+	ItemUnitCode  string          `json:"itemunitcode" bson:"itemunitcode"`
 	ItemUnitNames *[]models.NameX `json:"itemunitnames" bson:"itemunitnames"`
 	Barcode       string          `json:"barcode" bson:"barcode" validate:"required,min=1"`
 	Condition     bool            `json:"condition" bson:"condition"`
@@ -161,18 +161,18 @@ type RefProductBarcode struct {
 	Qty           float64         `json:"qty" bson:"qty"`
 
 	// Marketplace & SKU Logistics
-	SellerSKU              string               `json:"seller_sku" bson:"seller_sku"`
-	SkuPackageWeight       float64              `json:"sku_package_weight" bson:"sku_package_weight"`
-	SkuPackageLength       float64              `json:"sku_package_length" bson:"sku_package_length"`
-	SkuPackageWidth        float64              `json:"sku_package_width" bson:"sku_package_width"`
-	SkuPackageHeight       float64              `json:"sku_package_height" bson:"sku_package_height"`
-	MarketplaceSKUMappings *[]MarketplaceSKUMap `json:"marketplace_sku_mappings" bson:"marketplace_sku_mappings"`
+	SellerSKU              string               `json:"sellersku" bson:"sellersku"`
+	SkuPackageWeight       float64              `json:"skupackageweight" bson:"skupackageweight"`
+	SkuPackageLength       float64              `json:"skupackagelength" bson:"skupackagelength"`
+	SkuPackageWidth        float64              `json:"skupackagewidth" bson:"skupackagewidth"`
+	SkuPackageHeight       float64              `json:"skupackageheight" bson:"skupackageheight"`
+	MarketplaceSKUMappings *[]MarketplaceSKUMap `json:"marketplaceskumappings" bson:"marketplaceskumappings"`
 }
 
 type ProductBarcodeBOMVersion struct {
-	GuidFixed string               `json:"guid_fixed" bson:"guid_fixed"`
-	StartDate time.Time            `json:"start_date" bson:"start_date"`
-	EndDate   *time.Time           `json:"end_date" bson:"end_date"`
+	GuidFixed string               `json:"guidfixed" bson:"guidfixed"`
+	StartDate time.Time            `json:"startdate" bson:"startdate"`
+	EndDate   *time.Time           `json:"enddate" bson:"enddate"`
 	BOM       *[]BOMProductBarcode `json:"bom" bson:"bom"`
 }
 
@@ -220,55 +220,55 @@ type ProductImage struct {
 type MarketplaceMediaAsset struct {
 	Kind           string `json:"kind" bson:"kind"` // main, gallery, sku, size_chart, video, description
 	URI            string `json:"uri" bson:"uri"`
-	ExternalID     string `json:"external_id" bson:"external_id"`
-	ExternalURL    string `json:"external_url" bson:"external_url"`
-	OptionCode     string `json:"option_code" bson:"option_code"`
-	OptionValue    string `json:"option_value" bson:"option_value"`
-	SortOrder      int    `json:"sort_order" bson:"sort_order"`
-	AltText        string `json:"alt_text" bson:"alt_text"`
-	UseCase        string `json:"use_case" bson:"use_case"`
-	MimeType       string `json:"mime_type" bson:"mime_type"`
+	ExternalID     string `json:"externalid" bson:"externalid"`
+	ExternalURL    string `json:"externalurl" bson:"externalurl"`
+	OptionCode     string `json:"optioncode" bson:"optioncode"`
+	OptionValue    string `json:"optionvalue" bson:"optionvalue"`
+	SortOrder      int    `json:"sortorder" bson:"sortorder"`
+	AltText        string `json:"alttext" bson:"alttext"`
+	UseCase        string `json:"usecase" bson:"usecase"`
+	MimeType       string `json:"mimetype" bson:"mimetype"`
 	Width          int    `json:"width" bson:"width"`
 	Height         int    `json:"height" bson:"height"`
-	LastImportedAt string `json:"last_imported_at" bson:"last_imported_at"`
+	LastImportedAt string `json:"lastimportedat" bson:"lastimportedat"`
 }
 
 type MarketplaceAttributeValue struct {
-	ValueID       string `json:"value_id" bson:"value_id"`
-	ValueCode     string `json:"value_code" bson:"value_code"`
-	ValueText     string `json:"value_text" bson:"value_text"`
-	DisplayText   string `json:"display_text" bson:"display_text"`
-	UnitCode      string `json:"unit_code" bson:"unit_code"`
-	SortOrder     int    `json:"sort_order" bson:"sort_order"`
-	IsCustomValue bool   `json:"is_custom_value" bson:"is_custom_value"`
+	ValueID       string `json:"valueid" bson:"valueid"`
+	ValueCode     string `json:"valuecode" bson:"valuecode"`
+	ValueText     string `json:"valuetext" bson:"valuetext"`
+	DisplayText   string `json:"displaytext" bson:"displaytext"`
+	UnitCode      string `json:"unitcode" bson:"unitcode"`
+	SortOrder     int    `json:"sortorder" bson:"sortorder"`
+	IsCustomValue bool   `json:"iscustomvalue" bson:"iscustomvalue"`
 }
 
 type MarketplaceAttribute struct {
-	AttributeID   string                       `json:"attribute_id" bson:"attribute_id"`
-	AttributeCode string                       `json:"attribute_code" bson:"attribute_code"`
-	AttributeName string                       `json:"attribute_name" bson:"attribute_name"`
-	InputType     string                       `json:"input_type" bson:"input_type"` // text, single_select, multi_select, number, date, boolean
-	Scope         string                       `json:"scope" bson:"scope"`           // product, sku, package, compliance
-	IsRequired    bool                         `json:"is_required" bson:"is_required"`
-	IsSaleProp    bool                         `json:"is_sale_prop" bson:"is_sale_prop"`
-	IsCustom      bool                         `json:"is_custom" bson:"is_custom"`
+	AttributeID   string                       `json:"attributeid" bson:"attributeid"`
+	AttributeCode string                       `json:"attributecode" bson:"attributecode"`
+	AttributeName string                       `json:"attributename" bson:"attributename"`
+	InputType     string                       `json:"inputtype" bson:"inputtype"` // text, single_select, multi_select, number, date, boolean
+	Scope         string                       `json:"scope" bson:"scope"`         // product, sku, package, compliance
+	IsRequired    bool                         `json:"isrequired" bson:"isrequired"`
+	IsSaleProp    bool                         `json:"issaleprop" bson:"issaleprop"`
+	IsCustom      bool                         `json:"iscustom" bson:"iscustom"`
 	Values        *[]MarketplaceAttributeValue `json:"values" bson:"values"`
 }
 
 type MarketplaceSpecificationGroup struct {
-	GroupCode  string                  `json:"group_code" bson:"group_code"`
-	GroupName  string                  `json:"group_name" bson:"group_name"`
+	GroupCode  string                  `json:"groupcode" bson:"groupcode"`
+	GroupName  string                  `json:"groupname" bson:"groupname"`
 	Attributes *[]MarketplaceAttribute `json:"attributes" bson:"attributes"`
 }
 
 type MarketplacePayloadExample struct {
 	Direction string `json:"direction" bson:"direction"` // import, export, stock_update, price_update, order_import
-	UseCase   string `json:"use_case" bson:"use_case"`
+	UseCase   string `json:"usecase" bson:"usecase"`
 	Payload   any    `json:"payload" bson:"payload"`
 }
 
 type ProductPrice struct {
-	KeyNumber int     `json:"key_number" bson:"key_number"`
+	KeyNumber int     `json:"keynumber" bson:"keynumber"`
 	Price     float64 `json:"price" bson:"price"`
 }
 
@@ -288,7 +288,7 @@ type ProductBarcodeData struct {
 }
 
 type ProductBarcodeDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	ProductBarcodeData `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
@@ -360,33 +360,33 @@ func (ProductBarcodeSearch) TableName() string {
 // Names                    datatypes.JSON `json:"names"  gorm:"column:names;type:jsonb;default:'[]'" `
 // Names                    *JSONB  `json:"names"  gorm:"column:names;type:jsonb" `
 type ProductBarcodePg struct {
-	HoldingCode              string `json:"holding_code" gorm:"column:holding_code;primaryKey"`
+	HoldingCode              string `json:"holdingcode" gorm:"column:holdingcode;primaryKey"`
 	models.PartitionIdentity `gorm:"embedded;"`
 	Barcode                  string              `json:"barcode" gorm:"column:barcode;primaryKey"`
 	Names                    JSONB               `json:"names"  gorm:"column:names;type:jsonb" `
-	UnitCode                 string              `json:"item_unit_code" gorm:"column:unitcode"`
+	UnitCode                 string              `json:"itemunitcode" gorm:"column:unitcode"`
 	UnitNames                JSONB               `json:"itemunitnames" gorm:"column:unitnames;type:jsonb"`
-	BalanceQty               float64             `json:"balance_qty" gorm:"column:balance_qty"`
+	BalanceQty               float64             `json:"balanceqty" gorm:"column:balanceqty"`
 	MainBarcodeRef           string              `json:"mainbarcoderef" gorm:"column:mainbarcoderef"`
 	StandValue               float64             `json:"standvalue" gorm:"column:standvalue"`
 	DivideValue              float64             `json:"dividevalue" gorm:"column:dividevalue"`
 	BalanceAmount            float64             `json:"balanceamount" gorm:"column:balanceamount"`
 	AverageCost              float64             `json:"averagecost" gorm:"column:averagecost"`
 	ItemCode                 string              `json:"itemcode" gorm:"column:itemcode"`
-	ItemType                 int8                `json:"item_type" gorm:"column:itemtype"`
+	ItemType                 int8                `json:"itemtype" gorm:"column:itemtype"`
 	MaterialType             int8                `json:"materialtype" gorm:"column:materialtype"`
-	BrandCode                string              `json:"brand_code" gorm:"column:brand_code"`
+	BrandCode                string              `json:"brandcode" gorm:"column:brandcode"`
 	BrandName                JSONB               `json:"brandnames" gorm:"column:brandnames;type:jsonb"`
 	CategoryCode             string              `json:"categorycode" gorm:"column:categorycode"`
-	CategoryName             JSONB               `json:"category_names" gorm:"column:category_names;type:jsonb"`
+	CategoryName             JSONB               `json:"categorynames" gorm:"column:categorynames;type:jsonb"`
 	ClassCode                string              `json:"classcode" gorm:"column:classcode"`
 	ClassNames               JSONB               `json:"classnames" gorm:"column:classnames;type:jsonb"`
 	DesignCode               string              `json:"designcode" gorm:"column:designcode"`
 	DesignNames              JSONB               `json:"designnames" gorm:"column:designnames;type:jsonb"`
 	GradeCode                string              `json:"gradecode" gorm:"column:gradecode"`
 	GradeNames               JSONB               `json:"gradenames" gorm:"column:gradenames;type:jsonb"`
-	GroupCode                string              `json:"group_code" gorm:"column:group_code"`
-	GroupNames               JSONB               `json:"group_names" gorm:"column:group_names;type:jsonb"`
+	GroupCode                string              `json:"groupcode" gorm:"column:groupcode"`
+	GroupNames               JSONB               `json:"groupnames" gorm:"column:groupnames;type:jsonb"`
 	GroupSubOneCode          string              `json:"groupsubonecode" gorm:"column:groupsubonecode"`
 	GroupSubOneNames         JSONB               `json:"groupsubonenames" gorm:"column:groupsubonenames;type:jsonb"`
 	GroupSubTwoCode          string              `json:"groupsubtwocode" gorm:"column:groupsubtwocode"`
@@ -445,80 +445,80 @@ func (a *JSONB) Scan(value interface{}) error {
 type MarketplaceProductMap struct {
 	// Platform identity
 	Platform    string `json:"platform" bson:"platform"`
-	AccountID   string `json:"account_id" bson:"account_id"`     // seller/shop account on the platform
-	HoldingCode string `json:"holding_code" bson:"holding_code"` // legacy field, kept for backward-compat
+	AccountID   string `json:"accountid" bson:"accountid"`     // seller/shop account on the platform
+	HoldingCode string `json:"holdingcode" bson:"holdingcode"` // legacy field, kept for backward-compat
 	// Item identity on the marketplace
-	MarketItemID  string `json:"market_item_id" bson:"market_item_id"`   // Shopee item_id / Lazada item_id / TikTok product_id
-	MarketModelID string `json:"market_model_id" bson:"market_model_id"` // variation/model/sku id for this listing
-	ItemURL       string `json:"item_url" bson:"item_url"`
+	MarketItemID  string `json:"marketitemid" bson:"marketitemid"`   // Shopee item_id / Lazada item_id / TikTok product_id
+	MarketModelID string `json:"marketmodelid" bson:"marketmodelid"` // variation/model/sku id for this listing
+	ItemURL       string `json:"itemurl" bson:"itemurl"`
 	// SKU identity
-	SellerSKU string `json:"seller_sku" bson:"seller_sku"` // our SKU pushed to the platform
-	ShopSKU   string `json:"shop_sku" bson:"shop_sku"`     // platform-generated SKU (Lazada ShopSku)
-	GTIN      string `json:"gtin" bson:"gtin"`             // EAN/UPC/GTIN (TikTok mandatory for some categories)
+	SellerSKU string `json:"sellersku" bson:"sellersku"` // our SKU pushed to the platform
+	ShopSKU   string `json:"shopsku" bson:"shopsku"`     // platform-generated SKU (Lazada ShopSku)
+	GTIN      string `json:"gtin" bson:"gtin"`           // EAN/UPC/GTIN (TikTok mandatory for some categories)
 	// Catalog mapping (each platform has its own category/brand tree)
-	CategoryID   string `json:"category_id" bson:"category_id"`
-	CategoryName string `json:"category_name" bson:"category_name"`
-	BrandID      string `json:"brand_id" bson:"brand_id"`
+	CategoryID   string `json:"categoryid" bson:"categoryid"`
+	CategoryName string `json:"categoryname" bson:"categoryname"`
+	BrandID      string `json:"brandid" bson:"brandid"`
 	// Media and specifications are internal import/sync structures. Normal product UI should display
 	// merged product images/specs, not expose marketplace origin labels.
-	MediaAssets         *[]MarketplaceMediaAsset         `json:"media_assets" bson:"media_assets"`
-	SpecificationGroups *[]MarketplaceSpecificationGroup `json:"specification_groups" bson:"specification_groups"`
-	RawAttributes       *[]MarketplaceAttribute          `json:"raw_attributes" bson:"raw_attributes"`
-	PayloadExamples     *[]MarketplacePayloadExample     `json:"payload_examples" bson:"payload_examples"`
+	MediaAssets         *[]MarketplaceMediaAsset         `json:"mediaassets" bson:"mediaassets"`
+	SpecificationGroups *[]MarketplaceSpecificationGroup `json:"specificationgroups" bson:"specificationgroups"`
+	RawAttributes       *[]MarketplaceAttribute          `json:"rawattributes" bson:"rawattributes"`
+	PayloadExamples     *[]MarketplacePayloadExample     `json:"payloadexamples" bson:"payloadexamples"`
 	// Price & stock (current value on platform + sync intent)
 	Currency      string  `json:"currency" bson:"currency"`
-	CustomPrice   float64 `json:"custom_price" bson:"custom_price"`     // price we intend to push
-	PlatformPrice float64 `json:"platform_price" bson:"platform_price"` // actual price on platform (inbound)
-	PlatformStock int     `json:"platform_stock" bson:"platform_stock"` // actual stock on platform (inbound)
-	SyncStock     bool    `json:"sync_stock" bson:"sync_stock"`
-	SyncPrice     bool    `json:"sync_price" bson:"sync_price"`
+	CustomPrice   float64 `json:"customprice" bson:"customprice"`     // price we intend to push
+	PlatformPrice float64 `json:"platformprice" bson:"platformprice"` // actual price on platform (inbound)
+	PlatformStock int     `json:"platformstock" bson:"platformstock"` // actual stock on platform (inbound)
+	SyncStock     bool    `json:"syncstock" bson:"syncstock"`
+	SyncPrice     bool    `json:"syncprice" bson:"syncprice"`
 	// Listing & sync status
 	Status        string `json:"status" bson:"status"` // LIVE / UNLIST / REVIEWING / REJECTED / DELETED
-	RejectReason  string `json:"reject_reason" bson:"reject_reason"`
-	DaysToShip    int    `json:"days_to_ship" bson:"days_to_ship"`
-	IsPreOrder    bool   `json:"is_pre_order" bson:"is_pre_order"`
-	SyncEnabled   bool   `json:"sync_enabled" bson:"sync_enabled"`
-	SyncStatus    string `json:"sync_status" bson:"sync_status"` // legacy field, kept for backward-compat
-	LastSyncAt    string `json:"last_sync_at" bson:"last_sync_at"`
-	LastSyncError string `json:"last_sync_error" bson:"last_sync_error"`
+	RejectReason  string `json:"rejectreason" bson:"rejectreason"`
+	DaysToShip    int    `json:"daystoship" bson:"daystoship"`
+	IsPreOrder    bool   `json:"ispreorder" bson:"ispreorder"`
+	SyncEnabled   bool   `json:"syncenabled" bson:"syncenabled"`
+	SyncStatus    string `json:"syncstatus" bson:"syncstatus"` // legacy field, kept for backward-compat
+	LastSyncAt    string `json:"lastsyncat" bson:"lastsyncat"`
+	LastSyncError string `json:"lastsyncerror" bson:"lastsyncerror"`
 }
 
 // MarketplaceSKUMap maps a sub/variation barcode (RefProductBarcode) to a
 // marketplace SKU. Same unified field set as MarketplaceProductMap minus the
 // item-level catalog fields, so sub-barcode variations sync consistently.
 type MarketplaceDimensionStock struct {
-	DimensionKey      string  `json:"dimension_key" bson:"dimension_key"`
-	DimensionName     string  `json:"dimension_name" bson:"dimension_name"`
-	MarketDimensionID string  `json:"market_dimension_id" bson:"market_dimension_id"`
-	AvailableQty      float64 `json:"available_qty" bson:"available_qty"`
-	ReservedQty       float64 `json:"reserved_qty" bson:"reserved_qty"`
-	InboundQty        float64 `json:"inbound_qty" bson:"inbound_qty"`
-	OversellBufferQty float64 `json:"oversell_buffer_qty" bson:"oversell_buffer_qty"`
-	LastPlatformStock float64 `json:"last_platform_stock" bson:"last_platform_stock"`
-	LastSyncedAt      string  `json:"last_synced_at" bson:"last_synced_at"`
-	LastSyncStatus    string  `json:"last_sync_status" bson:"last_sync_status"`
-	LastSyncError     string  `json:"last_sync_error" bson:"last_sync_error"`
+	DimensionKey      string  `json:"dimensionkey" bson:"dimensionkey"`
+	DimensionName     string  `json:"dimensionname" bson:"dimensionname"`
+	MarketDimensionID string  `json:"marketdimensionid" bson:"marketdimensionid"`
+	AvailableQty      float64 `json:"availableqty" bson:"availableqty"`
+	ReservedQty       float64 `json:"reservedqty" bson:"reservedqty"`
+	InboundQty        float64 `json:"inboundqty" bson:"inboundqty"`
+	OversellBufferQty float64 `json:"oversellbufferqty" bson:"oversellbufferqty"`
+	LastPlatformStock float64 `json:"lastplatformstock" bson:"lastplatformstock"`
+	LastSyncedAt      string  `json:"lastsyncedat" bson:"lastsyncedat"`
+	LastSyncStatus    string  `json:"lastsyncstatus" bson:"lastsyncstatus"`
+	LastSyncError     string  `json:"lastsyncerror" bson:"lastsyncerror"`
 }
 
 type MarketplaceSKUMap struct {
 	Platform                   string                       `json:"platform" bson:"platform"`
-	AccountID                  string                       `json:"account_id" bson:"account_id"`
-	HoldingCode                string                       `json:"holding_code" bson:"holding_code"`
-	MarketItemID               string                       `json:"market_item_id" bson:"market_item_id"`
-	MarketModelID              string                       `json:"market_model_id" bson:"market_model_id"`
-	SellerSKU                  string                       `json:"seller_sku" bson:"seller_sku"`
-	ShopSKU                    string                       `json:"shop_sku" bson:"shop_sku"`
+	AccountID                  string                       `json:"accountid" bson:"accountid"`
+	HoldingCode                string                       `json:"holdingcode" bson:"holdingcode"`
+	MarketItemID               string                       `json:"marketitemid" bson:"marketitemid"`
+	MarketModelID              string                       `json:"marketmodelid" bson:"marketmodelid"`
+	SellerSKU                  string                       `json:"sellersku" bson:"sellersku"`
+	ShopSKU                    string                       `json:"shopsku" bson:"shopsku"`
 	GTIN                       string                       `json:"gtin" bson:"gtin"`
-	MediaAssets                *[]MarketplaceMediaAsset     `json:"media_assets" bson:"media_assets"`
-	RawAttributes              *[]MarketplaceAttribute      `json:"raw_attributes" bson:"raw_attributes"`
+	MediaAssets                *[]MarketplaceMediaAsset     `json:"mediaassets" bson:"mediaassets"`
+	RawAttributes              *[]MarketplaceAttribute      `json:"rawattributes" bson:"rawattributes"`
 	Currency                   string                       `json:"currency" bson:"currency"`
-	SyncStock                  bool                         `json:"sync_stock" bson:"sync_stock"`
-	SyncPrice                  bool                         `json:"sync_price" bson:"sync_price"`
-	CustomPrice                float64                      `json:"custom_price" bson:"custom_price"`
-	PlatformPrice              float64                      `json:"platform_price" bson:"platform_price"`
-	PlatformStock              int                          `json:"platform_stock" bson:"platform_stock"`
-	MarketplaceDimensionStocks *[]MarketplaceDimensionStock `json:"marketplace_dimension_stocks" bson:"marketplace_dimension_stocks"`
+	SyncStock                  bool                         `json:"syncstock" bson:"syncstock"`
+	SyncPrice                  bool                         `json:"syncprice" bson:"syncprice"`
+	CustomPrice                float64                      `json:"customprice" bson:"customprice"`
+	PlatformPrice              float64                      `json:"platformprice" bson:"platformprice"`
+	PlatformStock              int                          `json:"platformstock" bson:"platformstock"`
+	MarketplaceDimensionStocks *[]MarketplaceDimensionStock `json:"marketplacedimensionstocks" bson:"marketplacedimensionstocks"`
 	Status                     string                       `json:"status" bson:"status"`
-	SyncEnabled                bool                         `json:"sync_enabled" bson:"sync_enabled"`
-	LastSyncAt                 string                       `json:"last_sync_at" bson:"last_sync_at"`
+	SyncEnabled                bool                         `json:"syncenabled" bson:"syncenabled"`
+	LastSyncAt                 string                       `json:"lastsyncat" bson:"lastsyncat"`
 }

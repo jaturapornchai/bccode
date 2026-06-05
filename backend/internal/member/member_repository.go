@@ -47,7 +47,7 @@ func (repo MemberRepository) Create(ctx context.Context, doc models.MemberDoc) (
 
 func (repo MemberRepository) Update(ctx context.Context, guid string, doc models.MemberDoc) error {
 	filterDoc := map[string]interface{}{
-		"guid_fixed": guid,
+		"guidfixed": guid,
 	}
 	err := repo.pst.UpdateOne(ctx, &models.MemberDoc{}, filterDoc, doc)
 	if err != nil {
@@ -58,7 +58,7 @@ func (repo MemberRepository) Update(ctx context.Context, guid string, doc models
 
 func (repo MemberRepository) FindByGuid(ctx context.Context, holdingCode string, guid string) (models.MemberDoc, error) {
 	doc := &models.MemberDoc{}
-	err := repo.pst.FindOne(ctx, &models.MemberDoc{}, bson.M{"guid_fixed": guid, "shops": holdingCode, "deleted_at": bson.M{"$exists": false}}, doc)
+	err := repo.pst.FindOne(ctx, &models.MemberDoc{}, bson.M{"guidfixed": guid, "shops": holdingCode, "deletedat": bson.M{"$exists": false}}, doc)
 	if err != nil {
 		return *doc, err
 	}
@@ -67,7 +67,7 @@ func (repo MemberRepository) FindByGuid(ctx context.Context, holdingCode string,
 
 func (repo MemberRepository) FindByLineUID(ctx context.Context, lineUID string) (models.MemberDoc, error) {
 	doc := &models.MemberDoc{}
-	err := repo.pst.FindOne(ctx, &models.MemberDoc{}, bson.M{"line_uid": lineUID, "deleted_at": bson.M{"$exists": false}}, doc)
+	err := repo.pst.FindOne(ctx, &models.MemberDoc{}, bson.M{"line_uid": lineUID, "deletedat": bson.M{"$exists": false}}, doc)
 	if err != nil {
 		return *doc, err
 	}
@@ -81,8 +81,8 @@ func (repo MemberRepository) FindPageFilter(ctx context.Context, holdingCode str
 	searchFilterQuery := search.CreateTextFilter(searchInFields, pageable.Query)
 
 	queryFilters := bson.M{
-		"shops":      holdingCode,
-		"deleted_at": bson.M{"$exists": false},
+		"shops":     holdingCode,
+		"deletedat": bson.M{"$exists": false},
 	}
 
 	if len(matchFilterList) > 0 {
@@ -90,7 +90,7 @@ func (repo MemberRepository) FindPageFilter(ctx context.Context, holdingCode str
 	}
 
 	if len(pageable.Sorts) < 1 {
-		pageable.Sorts = append(pageable.Sorts, micro_models.KeyInt{Key: "created_at", Value: 1})
+		pageable.Sorts = append(pageable.Sorts, micro_models.KeyInt{Key: "createdat", Value: 1})
 	}
 
 	if len(searchFilterQuery) > 0 {
@@ -114,8 +114,8 @@ func (repo MemberRepository) FindPageFilter(ctx context.Context, holdingCode str
 func (repo MemberRepository) FindStep(ctx context.Context, holdingCode string, searchInFields []string, projects map[string]interface{}, pageableStep micro_models.PageableStep) ([]models.MemberInfo, int, error) {
 
 	filterQuery := bson.M{
-		"shops":      holdingCode,
-		"deleted_at": bson.M{"$exists": false},
+		"shops":     holdingCode,
+		"deletedat": bson.M{"$exists": false},
 	}
 
 	matchFilterList := []interface{}{}
@@ -154,7 +154,7 @@ func (repo MemberRepository) FindStep(ctx context.Context, holdingCode string, s
 	}
 
 	if len(pageableStep.Sorts) < 1 {
-		tempOptions.SetSort(bson.M{"created_at": 1})
+		tempOptions.SetSort(bson.M{"createdat": 1})
 	}
 
 	docList := []models.MemberInfo{}

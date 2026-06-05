@@ -150,7 +150,7 @@ func (svc ZoneService) DeleteByGUIDs(holdingCode string, authUsername string, GU
 	defer ctxCancel()
 
 	deleteFilterQuery := map[string]interface{}{
-		"guid_fixed": bson.M{"$in": GUIDs},
+		"guidfixed": bson.M{"$in": GUIDs},
 	}
 
 	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)

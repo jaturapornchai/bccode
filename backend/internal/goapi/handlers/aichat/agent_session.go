@@ -23,11 +23,11 @@ const (
 
 // ChatSessionDoc — เก็บ conversation history ใน RAM (ชื่อเดิมเพื่อ backward compat)
 type ChatSessionDoc struct {
-	SessionID   string           `json:"session_id"`
-	HoldingCode string           `json:"holding_code"`
+	SessionID   string           `json:"sessionid"`
+	HoldingCode string           `json:"holdingcode"`
 	Messages    []SessionMessage `json:"messages"`
-	CreatedAt   time.Time        `json:"created_at"`
-	UpdatedAt   time.Time        `json:"updated_at"`
+	CreatedAt   time.Time        `json:"createdat"`
+	UpdatedAt   time.Time        `json:"updatedat"`
 }
 
 // SessionMessage — message ใน session (เก็บแค่ user + assistant, ไม่เก็บ tool/system)

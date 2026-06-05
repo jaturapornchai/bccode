@@ -72,7 +72,7 @@ type InventoryOptionMainData struct {
 }
 
 type InventoryOptionMainDoc struct {
-	ID                      primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                      primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	InventoryOptionMainData `bson:"inline" gorm:"embedded;"`
 	common.ActivityDoc      `bson:"inline" gorm:"embedded;"`
 }

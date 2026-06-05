@@ -74,7 +74,7 @@ func (repo *ShopAdminRepository) ListShopUsersByHoldingCode(ctx context.Context,
 
 	shopUserList := []ShopUserDoc{}
 
-	err := repo.pst.Find(ctx, ShopUserDoc{}, bson.M{"holding_code": holdingCode}, &shopUserList)
+	err := repo.pst.Find(ctx, ShopUserDoc{}, bson.M{"holdingcode": holdingCode}, &shopUserList)
 
 	if err != nil {
 		return []ShopUserDoc{}, err

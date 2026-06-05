@@ -1,9 +1,9 @@
 package models
 
 type ProductDimensionPg struct {
-	HoldingCode   string `json:"holding_code" gorm:"column:holding_code;primaryKey;default:''"`
-	ProductGuid   string `json:"product_guid" gorm:"column:product_guid;primaryKey"`
-	DimensionGuid string `json:"dimension_guid" gorm:"column:dimension_guid;primaryKey"`
+	HoldingCode   string `json:"holdingcode" gorm:"column:holdingcode;primaryKey;default:''"`
+	ProductGuid   string `json:"productguid" gorm:"column:productguid;primaryKey"`
+	DimensionGuid string `json:"dimensionguid" gorm:"column:dimensionguid;primaryKey"`
 }
 
 func (ProductDimensionPg) TableName() string {

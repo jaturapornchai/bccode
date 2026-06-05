@@ -100,7 +100,7 @@ export function ProductBarcodeShelfScreen({ embedded = false, language: external
         },
         body: JSON.stringify({
           backendUrl: currentAuth.backendUrl,
-          holding_code: currentWorkspace.shop.holding_code,
+          holdingcode: currentWorkspace.shop.holdingcode,
           keyword: searchText.trim(),
           limit: 80,
           offset: 0,
@@ -339,7 +339,7 @@ function readWorkspace(): WorkspaceSession | null {
     const raw = localStorage.getItem(workspaceStorageKeys.workspace);
     if (!raw) return null;
     const workspace = JSON.parse(raw) as WorkspaceSession;
-    return workspace?.shop?.holding_code ? workspace : null;
+    return workspace?.shop?.holdingcode ? workspace : null;
   } catch {
     return null;
   }
@@ -353,7 +353,7 @@ function normalizeProducts(value: unknown): ProductForLabel[] {
 function normalizeProduct(value: unknown): ProductForLabel | null {
   if (!isRecord(value)) return null;
   return {
-    guidFixed: getString(value, "guid_fixed") || getString(value, "guidFixed"),
+    guidFixed: getString(value, "guidfixed") || getString(value, "guidFixed"),
     barcode: getString(value, "barcode"),
     name: localizedName(getArray(value, "names") as LocalizedName[], "th") || getString(value, "name") || getString(value, "productname"),
     itemCode: getString(value, "itemcode") || getString(value, "item_code"),

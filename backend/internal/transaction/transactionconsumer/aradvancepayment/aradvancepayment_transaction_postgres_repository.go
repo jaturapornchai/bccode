@@ -40,8 +40,8 @@ func (repo ARAdvancePaymentTransactionPGRepository) Create(doc models.ARAdvanceP
 func (repo ARAdvancePaymentTransactionPGRepository) Update(holdingCode string, docNo string, doc models.ARAdvancePaymentTransactionPG) error {
 
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"holding_code": holdingCode,
-		"docno":        docNo,
+		"holdingcode": holdingCode,
+		"docno":       docNo,
 	})
 
 	if err != nil {
@@ -55,7 +55,7 @@ func (repo *ARAdvancePaymentTransactionPGRepository) DeleteData(holdingCode stri
 	var details *[]models.ARAdvancePaymentTransactionDetailPG
 	tx := repo.pst.DBClient().Begin()
 
-	tx.Model(&models.ARAdvancePaymentTransactionDetailPG{}).Where(" holding_code=? AND docno=?", holdingCode, docNo).Find(&details)
+	tx.Model(&models.ARAdvancePaymentTransactionDetailPG{}).Where(" holdingcode=? AND docno=?", holdingCode, docNo).Find(&details)
 	for _, tmp := range *details {
 		// mark delete
 		err := tx.Delete(&models.ARAdvancePaymentTransactionDetailPG{}, tmp.ID).Error
@@ -65,7 +65,7 @@ func (repo *ARAdvancePaymentTransactionPGRepository) DeleteData(holdingCode stri
 		}
 	}
 
-	err := tx.Delete(&models.ARAdvancePaymentTransactionPG{}, "holding_code=? AND docno=?", holdingCode, docNo).Error
+	err := tx.Delete(&models.ARAdvancePaymentTransactionPG{}, "holdingcode=? AND docno=?", holdingCode, docNo).Error
 	if err != nil {
 		tx.Rollback()
 		return err

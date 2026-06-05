@@ -59,7 +59,7 @@ func TestJournalRepositoryCreate(t *testing.T) {
 		},
 	}
 
-	// journal_mock_cols := []string{"holding_code", "parid", "docno", "batchid", "docdate", "accountperiod", "accountyear", "accountgroup", "amount", "accountdescription"}
+	// journal_mock_cols := []string{"holdingcode", "parid", "docno", "batchid", "docdate", "accountperiod", "accountyear", "accountgroup", "amount", "accountdescription"}
 	// rows := sqlmock.NewRows(journal_mock_cols).
 	// 	AddRow(
 	// 		s.journal.HoldingCode,

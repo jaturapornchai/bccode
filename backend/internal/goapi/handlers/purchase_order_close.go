@@ -14,12 +14,12 @@ import (
 
 // ManualClosePORequest — request สำหรับปิด/เปิดเอกสารใบสั่งซื้อด้วยมือ
 type ManualClosePORequest struct {
-	HoldingCode  string `json:"holding_code"`
+	HoldingCode  string `json:"holdingcode"`
 	DocNo        string `json:"docno"`
-	Action       string `json:"action"`         // "close" หรือ "open"
-	ActionByCode string `json:"action_by_code"` // รหัสผู้กระทำ
-	ActionByName string `json:"action_by_name"` // ชื่อผู้กระทำ
-	Reason       string `json:"reason"`         // เหตุผล (ต้องกรอก)
+	Action       string `json:"action"`       // "close" หรือ "open"
+	ActionByCode string `json:"actionbycode"` // รหัสผู้กระทำ
+	ActionByName string `json:"actionbyname"` // ชื่อผู้กระทำ
+	Reason       string `json:"reason"`       // เหตุผล (ต้องกรอก)
 }
 
 // ManualClosePOHandler — ปิด/เปิดเอกสารใบสั่งซื้อด้วยมือ
@@ -39,7 +39,7 @@ func ManualClosePOHandler(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"status":  "error",
 			"code":    400,
-			"message": "กรุณาระบุ holding_code",
+			"message": "กรุณาระบุ holdingcode",
 		})
 	}
 	if req.DocNo == "" {
@@ -172,7 +172,7 @@ func updateClickHouseManualClose(ctx context.Context, holdingCode, docNo string,
 
 	tableName := myclickhouse.TableName("doc")
 	query := fmt.Sprintf(
-		"ALTER TABLE %s UPDATE isclosedmanual = %t, closedmanual_by_code = '%s', closedmanual_by_name = '%s', closedmanual_at = '%s', closedmanual_reason = '%s' WHERE holding_code = '%s' AND docno = '%s'",
+		"ALTER TABLE %s UPDATE isclosedmanual = %t, closedmanual_by_code = '%s', closedmanual_by_name = '%s', closedmanual_at = '%s', closedmanual_reason = '%s' WHERE holdingcode = '%s' AND docno = '%s'",
 		tableName, isClosedManual, byCode, byName, at.Format("2006-01-02 15:04:05"), reason, holdingCode, docNo,
 	)
 

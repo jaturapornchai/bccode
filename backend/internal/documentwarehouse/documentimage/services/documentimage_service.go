@@ -429,7 +429,7 @@ func (svc DocumentImageService) SearchDocumentImage(holdingCode string, matchFil
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	searchInFields := []string{"guid_fixed", "documentref", "module"}
+	searchInFields := []string{"guidfixed", "documentref", "module"}
 	docList, pagination, err := svc.repoImage.FindPageFilter(ctx, holdingCode, matchFilters, searchInFields, pageable)
 
 	if err != nil {

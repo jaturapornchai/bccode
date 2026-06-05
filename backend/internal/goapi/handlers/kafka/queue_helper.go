@@ -81,7 +81,7 @@ func AddDocToProcessQueueWithPriority(holdingCode, docNo string, transFlag inter
 		return fmt.Errorf("failed to get database connection: %w", err)
 	}
 
-	// สร้าง QueueItem (PostgreSQL จะจัดเรียงตาม created_at โดยอัตโนมัติ)
+	// สร้าง QueueItem (PostgreSQL จะจัดเรียงตาม createdat โดยอัตโนมัติ)
 	queueItem := mypostgres.QueueItem{
 		HoldingCode: holdingCode,
 		DocNo:       docNo,

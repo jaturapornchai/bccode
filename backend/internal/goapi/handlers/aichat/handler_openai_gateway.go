@@ -9,8 +9,8 @@ package aichat
 //	                                              ผลลัพธ์กลับในรูป OpenAI SSE format
 //	GET  /goapi/api/aichat/v1/models            — list models ที่ gateway นี้ให้บริการ
 //
-// Holding Code: OpenClaw ไม่รู้จัก holding_code → ใช้ default จาก bootstrap.json
-// (openclaw.default_holding_code) ถ้าไม่มีจะใช้ constant fallback ด้านล่าง
+// Holding Code: OpenClaw ไม่รู้จัก holdingcode → ใช้ default จาก bootstrap.json
+// (openclaw.default_holdingcode) ถ้าไม่มีจะใช้ constant fallback ด้านล่าง
 //
 // Session ID: รับจาก query `?session=xxx` หรือ `user` field ของ request
 // ถ้าไม่มี generate ใหม่จาก timestamp (no memory cross-request)
@@ -43,11 +43,11 @@ func truncateForLog(s string, max int) string {
 // osGetenv — wrapper เพื่อให้ test mock ได้ (ตอนนี้ยังไม่ mock ใช้ os.Getenv ตรงๆ)
 var osGetenv = os.Getenv
 
-// defaultOpenclawHoldingCode — holding_code ที่ OpenClaw gateway จะใช้
+// defaultOpenclawHoldingCode — holdingcode ที่ OpenClaw gateway จะใช้
 // (single-tenant dev mode — ถ้าต้องการเปลี่ยน ให้ override ผ่าน env OPENCLAW_HOLDING_CODE)
 const defaultOpenclawHoldingCode = "3AEz8tu22GHPpAZ0XhwPFM4fjY9"
 
-// getOpenclawHoldingCode — คืน holding_code ที่จะใช้สำหรับ OpenClaw gateway
+// getOpenclawHoldingCode — คืน holdingcode ที่จะใช้สำหรับ OpenClaw gateway
 func getOpenclawHoldingCode() string {
 	if v := strings.TrimSpace(osGetenv("OPENCLAW_HOLDING_CODE")); v != "" {
 		return v
@@ -67,7 +67,7 @@ type openaiChatRequest struct {
 	Model    string              `json:"model"`
 	Messages []openaiChatMessage `json:"messages"`
 	Stream   bool                `json:"stream"`
-	User     string              `json:"user,omitempty"` // ใช้เป็น session_id
+	User     string              `json:"user,omitempty"` // ใช้เป็น sessionid
 }
 
 type openaiChoice struct {

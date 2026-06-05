@@ -4,19 +4,19 @@
 
 -- Create table for storing calculation state
 CREATE TABLE IF NOT EXISTS stock_calculation_state (
-    holding_code VARCHAR(100) NOT NULL,
+    holdingcode VARCHAR(100) NOT NULL,
     item_code VARCHAR(100) NOT NULL,
     last_checksum CHAR(32),
     last_calc_time TIMESTAMPTZ DEFAULT NOW(),
     version INTEGER DEFAULT 0,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW(),
-    PRIMARY KEY (holding_code, item_code)
+    createdat TIMESTAMPTZ DEFAULT NOW(),
+    updatedat TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY (holdingcode, item_code)
 );
 
 -- Create index for faster lookups
 CREATE INDEX IF NOT EXISTS idx_stock_calc_state_shop_item
-ON stock_calculation_state(holding_code, item_code);
+ON stock_calculation_state(holdingcode, item_code);
 
 CREATE INDEX IF NOT EXISTS idx_stock_calc_state_last_calc_time
 ON stock_calculation_state(last_calc_time);
@@ -27,7 +27,7 @@ ON stock_calculation_state(last_calc_time);
 
 -- Comment
 COMMENT ON TABLE stock_calculation_state IS 'Tracks item checksums for incremental stock cost calculation';
-COMMENT ON COLUMN stock_calculation_state.holding_code IS 'Holding codeentifier';
+COMMENT ON COLUMN stock_calculation_state.holdingcode IS 'Holding codeentifier';
 COMMENT ON COLUMN stock_calculation_state.item_code IS 'Item code';
 COMMENT ON COLUMN stock_calculation_state.last_checksum IS 'MD5 checksum of item data at last calculation';
 COMMENT ON COLUMN stock_calculation_state.last_calc_time IS 'Timestamp of last calculation';

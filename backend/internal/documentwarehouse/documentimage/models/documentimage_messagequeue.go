@@ -5,8 +5,8 @@ type CountStatus struct {
 	Count  int  `json:"count"`
 }
 type DocumentImageTaskChangeMessage struct {
-	HoldingCode      string        `json:"holding_code"`
-	TaskGUID         string        `json:"task_guid"`
+	HoldingCode      string        `json:"holdingcode"`
+	TaskGUID         string        `json:"taskguid"`
 	Count            int           `json:"count"`
 	BillCount        float64       `json:"billcount"`
 	ReferenceCount   float64       `json:"referencecount"`
@@ -16,8 +16,8 @@ type DocumentImageTaskChangeMessage struct {
 }
 
 type DocumentImageTaskRejectMessage struct {
-	HoldingCode string `json:"holding_code"`
-	TaskGUID    string `json:"task_guid"`
+	HoldingCode string `json:"holdingcode"`
+	TaskGUID    string `json:"taskguid"`
 	Count       int    `json:"count"`
 	// Event    TaskRejectEvent `json:"event"`
 }

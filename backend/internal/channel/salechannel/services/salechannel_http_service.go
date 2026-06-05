@@ -137,7 +137,7 @@ func (svc SaleChannelHttpService) DeleteSaleChannel(holdingCode string, guid str
 func (svc SaleChannelHttpService) DeleteSaleChannelByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
 
 	deleteFilterQuery := map[string]interface{}{
-		"guid_fixed": bson.M{"$in": GUIDs},
+		"guidfixed": bson.M{"$in": GUIDs},
 	}
 
 	err := svc.repo.Delete(context.Background(), holdingCode, authUsername, deleteFilterQuery)

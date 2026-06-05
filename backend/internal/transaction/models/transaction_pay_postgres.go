@@ -17,7 +17,7 @@ type PayTransactionPG struct {
 	TotalPayCash         float64                   `json:"totalpaycash" gorm:"column:totalpaycash"`
 	TotalPayTransfer     float64                   `json:"totalpaytransfer" gorm:"column:totalpaytransfer"`
 	TotalPayCredit       float64                   `json:"totalpaycredit" gorm:"column:totalpaycredit"`
-	Items                *[]PayTransactionDetailPG `json:"items" gorm:"items;foreignKey:holding_code,docno"`
+	Items                *[]PayTransactionDetailPG `json:"items" gorm:"items;foreignKey:holdingcode,docno"`
 }
 
 // รายละเอียดการจ่ายเงิน
@@ -41,7 +41,7 @@ func (j *PayTransactionPG) BeforeUpdate(tx *gorm.DB) (err error) {
 
 	// find old data
 	var details *[]PayTransactionDetailPG
-	tx.Model(&PayTransactionDetailPG{}).Where(" holding_code=? AND docno=?", j.HoldingCode, j.DocNo).Find(&details)
+	tx.Model(&PayTransactionDetailPG{}).Where(" holdingcode=? AND docno=?", j.HoldingCode, j.DocNo).Find(&details)
 
 	// delete un use data
 	for _, tmp := range *details {

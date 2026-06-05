@@ -56,7 +56,7 @@ func getRequestLanguage(ctx microservice.IContext) string {
 func sanitizeEmptyTimeFields(input string) string {
 	timeFields := []string{
 		"docdatetime", "docrefdate", "taxdocdate",
-		"created_at", "modified_at", "docrefdatetime",
+		"createdat", "modified_at", "docrefdatetime",
 	}
 	result := input
 	for _, field := range timeFields {

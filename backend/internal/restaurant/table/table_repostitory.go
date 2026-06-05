@@ -44,9 +44,9 @@ type TableRepository struct {
 
 func (repo TableRepository) FindByTwoColumns(ctx context.Context, holdingCode string, column1 string, value1 interface{}, column2 string, value2 interface{}) (models.TableDoc, error) {
 	filters := bson.M{
-		"holding_code": holdingCode,
-		column1:        value1,
-		column2:        value2,
+		"holdingcode": holdingCode,
+		column1:       value1,
+		column2:       value2,
 	}
 
 	var result models.TableDoc
@@ -73,8 +73,8 @@ func NewTableRepository(pst microservice.IPersisterMongo) *TableRepository {
 func (repo TableRepository) SaveXOrder(ctx context.Context, holdingCode string, guid string, xorder uint) error {
 
 	filters := bson.M{
-		"holding_code": holdingCode,
-		"guid_fixed":   guid,
+		"holdingcode": holdingCode,
+		"guidfixed":   guid,
 	}
 
 	return repo.pst.Update(ctx, models.TableDoc{}, filters, bson.M{"$set": bson.M{"xorder": xorder}})

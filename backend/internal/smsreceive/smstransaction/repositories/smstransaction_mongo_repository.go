@@ -52,12 +52,12 @@ func NewSmsTransactionRepository(pst microservice.IPersisterMongo) SmsTransactio
 func (repo SmsTransactionRepository) FindFilterSms(ctx context.Context, holdingCode string, storefrontGUID string, address string, startTime time.Time, endTime time.Time) ([]models.SmsTransactionInfo, error) {
 
 	filters := bson.M{
-		"holding_code":   holdingCode,
+		"holdingcode":    holdingCode,
 		"storefrontguid": storefrontGUID,
-		"deleted_at":     bson.M{"$exists": false},
+		"deletedat":      bson.M{"$exists": false},
 		"address":        address,
 		"status":         0,
-		"created_at": bson.M{
+		"createdat": bson.M{
 			"$gte": startTime,
 			"$lte": endTime,
 		},

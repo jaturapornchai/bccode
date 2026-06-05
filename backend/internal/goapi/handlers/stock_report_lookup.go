@@ -14,13 +14,13 @@ import (
 
 // StockReportBarcodesRequest - request สำหรับดึง barcodes ตาม item codes
 type StockReportBarcodesRequest struct {
-	HoldingCode string   `json:"holding_code"`
-	ItemCodes   []string `json:"item_codes"`
+	HoldingCode string   `json:"holdingcode"`
+	ItemCodes   []string `json:"itemcodes"`
 }
 
 // StockReportWarehousesRequest - request สำหรับดึง warehouses + locations ตาม barcodes
 type StockReportWarehousesRequest struct {
-	HoldingCode string   `json:"holding_code"`
+	HoldingCode string   `json:"holdingcode"`
 	Barcodes    []string `json:"barcodes"`
 }
 
@@ -37,7 +37,7 @@ func StockReportBarcodesHandler(c echo.Context) error {
 
 	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "holding_code is required",
+			"error": "holdingcode is required",
 			"code":  "MISSING_HOLDING_CODE",
 		})
 	}
@@ -60,7 +60,7 @@ func StockReportBarcodesHandler(c echo.Context) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	query := `SELECT barcode FROM productbarcodeprocess WHERE holding_code = $1 AND barcoderef = ANY($2) ORDER BY barcode`
+	query := `SELECT barcode FROM productbarcodeprocess WHERE holdingcode = $1 AND barcoderef = ANY($2) ORDER BY barcode`
 	rows, err := db.QueryContext(ctx, query, req.HoldingCode, pq.Array(req.ItemCodes))
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
@@ -98,7 +98,7 @@ func StockReportWarehousesHandler(c echo.Context) error {
 
 	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "holding_code is required",
+			"error": "holdingcode is required",
 			"code":  "MISSING_HOLDING_CODE",
 		})
 	}
@@ -172,7 +172,7 @@ func StockReportWarehousesHandler(c echo.Context) error {
 // POST /api/stock-report/item-barcodes
 func StockReportItemBarcodesHandler(c echo.Context) error {
 	var req struct {
-		HoldingCode string `json:"holding_code"`
+		HoldingCode string `json:"holdingcode"`
 	}
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
@@ -183,7 +183,7 @@ func StockReportItemBarcodesHandler(c echo.Context) error {
 
 	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "holding_code is required",
+			"error": "holdingcode is required",
 			"code":  "MISSING_HOLDING_CODE",
 		})
 	}
@@ -199,7 +199,7 @@ func StockReportItemBarcodesHandler(c echo.Context) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	query := fmt.Sprintf(`SELECT DISTINCT barcode, barcoderef FROM productbarcodeprocess WHERE holding_code = $1 ORDER BY barcode LIMIT 10000`)
+	query := fmt.Sprintf(`SELECT DISTINCT barcode, barcoderef FROM productbarcodeprocess WHERE holdingcode = $1 ORDER BY barcode LIMIT 10000`)
 	rows, err := db.QueryContext(ctx, query, req.HoldingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{

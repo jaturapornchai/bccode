@@ -892,7 +892,7 @@ function TabProductDetail({
                     <span className="text-xs text-muted-foreground">—</span>
                   ) : (
                     productDetail.manufacturers.map((m: ProductManufacturer) => (
-                      <Badge key={m.guid_fixed} variant="outline" className="text-xs py-1">
+                      <Badge key={m.guidfixed} variant="outline" className="text-xs py-1">
                         {m.code} — {pickName(m.names, language)}
                       </Badge>
                     ))
@@ -906,7 +906,7 @@ function TabProductDetail({
                     <span className="text-xs text-muted-foreground">—</span>
                   ) : (
                     productDetail.suppliers.map((s: ProductSupplier) => (
-                      <Badge key={s.guid_fixed} variant="outline" className="text-xs py-1">
+                      <Badge key={s.guidfixed} variant="outline" className="text-xs py-1">
                         {s.code} — {pickName(s.names, language)}
                       </Badge>
                     ))

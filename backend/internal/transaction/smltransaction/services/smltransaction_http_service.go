@@ -128,15 +128,15 @@ func (svc SMLTransactionHttpService) save(holdingCode string, authUsername strin
 func (svc SMLTransactionHttpService) update(holdingCode string, authUsername string, findDoc map[string]interface{}, smlRequest models.SMLTransactionRequest) (string, error) {
 	collectionName := svc.getCollectionName(smlRequest.Collection)
 
-	guidFixed := fmt.Sprintf("%v", findDoc["guid_fixed"])
+	guidFixed := fmt.Sprintf("%v", findDoc["guidfixed"])
 	docData := smlRequest.Body
-	docData["holding_code"] = findDoc["holding_code"]
-	docData["guid_fixed"] = guidFixed
+	docData["holdingcode"] = findDoc["holdingcode"]
+	docData["guidfixed"] = guidFixed
 	docData["createdby"] = findDoc["createdby"]
-	docData["created_at"] = findDoc["created_at"]
+	docData["createdat"] = findDoc["createdat"]
 
 	docData["updatedby"] = authUsername
-	docData["updated_at"] = time.Now()
+	docData["updatedat"] = time.Now()
 
 	err := svc.repo.Update(collectionName, holdingCode, guidFixed, docData)
 
@@ -153,10 +153,10 @@ func (svc SMLTransactionHttpService) create(holdingCode string, authUsername str
 	docData := smlRequest.Body
 	newGuidFixed := utils.NewGUID()
 
-	docData["holding_code"] = holdingCode
-	docData["guid_fixed"] = newGuidFixed
+	docData["holdingcode"] = holdingCode
+	docData["guidfixed"] = newGuidFixed
 	docData["createdby"] = authUsername
-	docData["created_at"] = time.Now()
+	docData["createdat"] = time.Now()
 
 	_, err := svc.repo.Create(collectionName, docData)
 
@@ -172,10 +172,10 @@ func (svc SMLTransactionHttpService) createBody(holdingCode string, authUsername
 	docData := bodyRequest
 	newGuidFixed := utils.NewGUID()
 
-	docData["holding_code"] = holdingCode
-	docData["guid_fixed"] = newGuidFixed
+	docData["holdingcode"] = holdingCode
+	docData["guidfixed"] = newGuidFixed
 	docData["createdby"] = authUsername
-	docData["created_at"] = time.Now()
+	docData["createdat"] = time.Now()
 
 	return docData
 }

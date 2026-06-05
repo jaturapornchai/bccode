@@ -15,7 +15,7 @@ type TransactionHeader struct {
 	DocDateLocal                    string                  `json:"docdatelocal,omitempty" bson:"docdatelocal,omitempty"` // วันที่ local เช่น "20260107"
 	DocTimeLocal                    string                  `json:"doctimelocal,omitempty" bson:"doctimelocal,omitempty"` // เวลา local เช่น "08:30:00"
 	Timezone                        string                  `json:"timezone,omitempty" bson:"timezone,omitempty"`         // timezone name เช่น "Asia/Bangkok"
-	GuidRef                         string                  `json:"guid_ref" bson:"guid_ref"`
+	GuidRef                         string                  `json:"guidref" bson:"guidref"`
 	ShiftDocNo                      string                  `json:"shiftdocno" bson:"shiftdocno"`
 	DeviceName                      string                  `json:"devicename" bson:"devicename"`
 	GuidPos                         string                  `json:"guidpos" bson:"guidpos"`
@@ -28,10 +28,10 @@ type TransactionHeader struct {
 	AdvancePaymentDocs              []TransactionDepositDoc `json:"advancepaymentdocs,omitempty" bson:"advancepaymentdocs,omitempty"`
 	TaxDocDate                      time.Time               `json:"taxdocdate" bson:"taxdocdate"`
 	TaxDocNo                        string                  `json:"taxdocno" bson:"taxdocno"`
-	DocType                         int8                    `json:"doc_type" bson:"doc_type"`
+	DocType                         int8                    `json:"doctype" bson:"doctype"`
 	ImageUri                        string                  `json:"imageuri" bson:"imageurl"`
 	InquiryType                     int                     `json:"inquirytype" bson:"inquirytype"`
-	VatType                         int8                    `json:"vat_type" bson:"vat_type"`
+	VatType                         int8                    `json:"vattype" bson:"vattype"`
 	VatRate                         float64                 `json:"vatrate" bson:"vatrate"`
 	CustCode                        string                  `json:"custcode" bson:"custcode"`
 	CustNames                       *[]models.NameX         `json:"custnames" bson:"custnames"`
@@ -46,8 +46,8 @@ type TransactionHeader struct {
 	TotalAfterVat                   float64                 `json:"totalaftervat" bson:"totalaftervat"`
 	TotalBeforeVat                  float64                 `json:"totalbeforevat" bson:"totalbeforevat"`
 	TotalVatValue                   float64                 `json:"totalvatvalue" bson:"totalvatvalue"`
-	TotalAmount                     float64                 `json:"total_amount" bson:"total_amount"`
-	TotalCost                       float64                 `json:"total_cost" bson:"total_cost"`
+	TotalAmount                     float64                 `json:"totalamount" bson:"totalamount"`
+	TotalCost                       float64                 `json:"totalcost" bson:"totalcost"`
 	PosID                           string                  `json:"posid" bson:"posid"`
 	CashierCode                     string                  `json:"cashiercode" bson:"cashiercode"`
 	SaleCode                        string                  `json:"salecode" bson:"salecode"`
@@ -120,15 +120,15 @@ type TransactionHeader struct {
 	// ข้อมูลผู้สร้างเอกสาร - ส่งไป backend ผ่าน Kafka
 	// NOTE: JSON tags ใช้ snake_case ให้ตรงกับ Flutter (@JsonKey) และ PostgreSQL column names
 	// BSON tags ยังคงเดิม (backward compatible กับ MongoDB data)
-	CreatorCode string    `json:"creator_code" bson:"creatorcode"` // รหัสผู้สร้าง
-	CreatorName string    `json:"creator_name" bson:"creatorname"` // ชื่อผู้สร้าง
-	CreatedAt   time.Time `json:"created_at" bson:"created_at"`    // วันเวลาที่สร้างเอกสาร
+	CreatorCode string    `json:"creatorcode" bson:"creatorcode"` // รหัสผู้สร้าง
+	CreatorName string    `json:"creatorname" bson:"creatorname"` // ชื่อผู้สร้าง
+	CreatedAt   time.Time `json:"createdat" bson:"createdat"`     // วันเวลาที่สร้างเอกสาร
 
 	// ข้อมูลผู้แก้ไขเอกสารล่าสุด - ส่งไป backend ผ่าน Kafka
 	// NOTE: ใช้ "modifier" แทน "updater" ให้ตรงกับ Flutter/PostgreSQL naming
-	UpdaterCode string    `json:"modifier_code" bson:"updatercode"` // รหัสผู้แก้ไข
-	UpdaterName string    `json:"modifier_name" bson:"updatername"` // ชื่อผู้แก้ไข
-	UpdatedAt   time.Time `json:"modified_at" bson:"updated_at"`    // วันเวลาที่แก้ไข
+	UpdaterCode string    `json:"modifiercode" bson:"updatercode"` // รหัสผู้แก้ไข
+	UpdaterName string    `json:"modifiername" bson:"updatername"` // ชื่อผู้แก้ไข
+	UpdatedAt   time.Time `json:"modifiedat" bson:"updatedat"`     // วันเวลาที่แก้ไข
 
 	// ============ Multi-Currency Fields ============
 	// ข้อมูลสกุลเงินและอัตราแลกเปลี่ยน (สำหรับ PO)
@@ -141,25 +141,25 @@ type TransactionHeader struct {
 
 	// DocCurrency (field ใหม่) = Document Currency (สกุลเงินของเอกสาร)
 	// สกุลเงินที่ใช้บันทึกเอกสาร (อาจต่างจาก Base Currency ในกรณีเอกสารต่างประเทศ)
-	DocCurrency       string  `json:"doc_currency" bson:"doc_currency,omitempty"`             // สกุลเงินเอกสาร (THB, USD, JPY, EUR, ...)
-	DocCurrencySymbol string  `json:"doc_currencysymbol" bson:"doc_currencysymbol,omitempty"` // สัญลักษณ์สกุลเงินเอกสาร ($, €, ¥, ฿, ...)
-	ExchangeRate      float64 `json:"exchange_rate" bson:"exchange_rate"`                     // อัตราแลกเปลี่ยน (1 Document Currency = ? Base Currency)
+	DocCurrency       string  `json:"doccurrency" bson:"doccurrency,omitempty"`             // สกุลเงินเอกสาร (THB, USD, JPY, EUR, ...)
+	DocCurrencySymbol string  `json:"doccurrencysymbol" bson:"doccurrencysymbol,omitempty"` // สัญลักษณ์สกุลเงินเอกสาร ($, €, ¥, ฿, ...)
+	ExchangeRate      float64 `json:"exchangerate" bson:"exchangerate"`                     // อัตราแลกเปลี่ยน (1 Document Currency = ? Base Currency)
 
 	// ============ Document Currency Fields (ยอดรวมในสกุลเงินเอกสาร) ============
 	// NOTE: Fields เดิม (TotalValue, TotalAmount, etc.) เก็บยอดในสกุลเงินหลัก (Base Currency = THB)
 	// Fields ใหม่นี้เก็บยอดในสกุลเงินเอกสาร (Document Currency = USD, JPY, etc.)
 	// ลบ omitempty จาก json tag เพื่อส่งค่า 0 ไป Kafka ได้ (แต่เก็บ omitempty ใน bson tag สำหรับ MongoDB)
-	TotalValueDoc     float64 `json:"totalvalue_doc" bson:"totalvalue_doc,omitempty"`         // มูลค่ารวมสินค้า (Document Currency)
-	TotalDiscountDoc  float64 `json:"totaldiscount_doc" bson:"totaldiscount_doc,omitempty"`   // ส่วนลดท้ายบิล (Document Currency)
-	TotalVatValueDoc  float64 `json:"totalvatvalue_doc" bson:"totalvatvalue_doc,omitempty"`   // มูลค่าภาษี (Document Currency)
-	TotalBeforeVatDoc float64 `json:"totalbeforevat_doc" bson:"totalbeforevat_doc,omitempty"` // มูลค่าก่อนหักภาษี (Document Currency)
-	TotalAfterVatDoc  float64 `json:"totalaftervat_doc" bson:"totalaftervat_doc,omitempty"`   // มูลค่าหลังหักภาษี (Document Currency)
-	TotalAmountDoc    float64 `json:"totalamount_doc" bson:"totalamount_doc,omitempty"`       // มูลค่ารวมทั้งหมด (Document Currency)
+	TotalValueDoc     float64 `json:"totalvaluedoc" bson:"totalvaluedoc,omitempty"`         // มูลค่ารวมสินค้า (Document Currency)
+	TotalDiscountDoc  float64 `json:"totaldiscountdoc" bson:"totaldiscountdoc,omitempty"`   // ส่วนลดท้ายบิล (Document Currency)
+	TotalVatValueDoc  float64 `json:"totalvatvaluedoc" bson:"totalvatvaluedoc,omitempty"`   // มูลค่าภาษี (Document Currency)
+	TotalBeforeVatDoc float64 `json:"totalbeforevatdoc" bson:"totalbeforevatdoc,omitempty"` // มูลค่าก่อนหักภาษี (Document Currency)
+	TotalAfterVatDoc  float64 `json:"totalaftervatdoc" bson:"totalaftervatdoc,omitempty"`   // มูลค่าหลังหักภาษี (Document Currency)
+	TotalAmountDoc    float64 `json:"totalamountdoc" bson:"totalamountdoc,omitempty"`       // มูลค่ารวมทั้งหมด (Document Currency)
 
 	// ============ WHT (Withholding Tax) Fields ============
 	// ภาษีหัก ณ ที่จ่าย (สำหรับ PO) - array เพราะอาจมีหลายอัตราในเอกสารเดียวกัน
 	// NOTE: ไม่ใช้ omitempty ใน bson tag เพื่อให้ empty array ถูก update ด้วย (เพื่อเคลียร์ค่าเดิม)
-	WHTEntries []WHTEntry `json:"wht_entries,omitempty" bson:"wht_entries"`
+	WHTEntries []WHTEntry `json:"whtentries,omitempty" bson:"whtentries"`
 
 	// ============ Credit Terms Fields ============
 	// เงื่อนไขการชำระเงิน (สำหรับ PO)
@@ -171,7 +171,7 @@ type TransactionHeader struct {
 type TransactionMoneyHeader struct {
 	DocNo       string    `json:"docno" bson:"docno"`
 	DocDatetime time.Time `json:"docdatetime" bson:"docdatetime"`
-	GuidRef     string    `json:"guid_ref" bson:"guid_ref"`
+	GuidRef     string    `json:"guidref" bson:"guidref"`
 	ShiftDocNo  string    `json:"shiftdocno" bson:"shiftdocno"`
 
 	TransFlag             int                 `json:"transflag" bson:"transflag"`
@@ -181,13 +181,13 @@ type TransactionMoneyHeader struct {
 	DocRefDate            time.Time           `json:"docrefdate" bson:"docrefdate"`
 	TaxDocDate            time.Time           `json:"taxdocdate" bson:"taxdocdate"`
 	TaxDocNo              string              `json:"taxdocno" bson:"taxdocno"`
-	DocType               int8                `json:"doc_type" bson:"doc_type"`
+	DocType               int8                `json:"doctype" bson:"doctype"`
 	ImageUri              string              `json:"imageuri" bson:"imageurl"`
 	InquiryType           int                 `json:"inquirytype" bson:"inquirytype"`
 	CustCode              string              `json:"custcode" bson:"custcode"`
 	CustNames             *[]models.NameX     `json:"custnames" bson:"custnames"`
 	Description           string              `json:"description" bson:"description"`
-	TotalAmount           float64             `json:"total_amount" bson:"total_amount"`
+	TotalAmount           float64             `json:"totalamount" bson:"totalamount"`
 	SaleCode              string              `json:"salecode" bson:"salecode"`
 	SaleName              string              `json:"salename" bson:"salename"`
 	MemberCode            string              `json:"membercode" bson:"membercode"`
@@ -235,7 +235,7 @@ type DetailMoney struct {
 	Fee              float64         `json:"fee" bson:"fee"`
 	TotalValue       float64         `json:"totalvalue" bson:"totalvalue"`
 	TotalExpense     float64         `json:"totalexpense" bson:"totalexpense"`
-	TotalAmount      float64         `json:"total_amount" bson:"total_amount"`
+	TotalAmount      float64         `json:"totalamount" bson:"totalamount"`
 	Remark           string          `json:"remark" bson:"remark"`
 	CreditCardNumber string          `json:"creditcardnumber" bson:"creditcardnumber"`
 	CreditCardType   string          `json:"creditcardtype" bson:"creditcardtype"`
@@ -263,7 +263,7 @@ type TransactionDepositDoc struct {
 	models.DocIdentity `bson:"inline"`
 	DocNo              string    `json:"docno" bson:"docno"`
 	DocDatetime        time.Time `json:"docdatetime" bson:"docdatetime"`
-	TotalAmount        float64   `json:"total_amount" bson:"total_amount"`
+	TotalAmount        float64   `json:"totalamount" bson:"totalamount"`
 	Balance            float64   `json:"balance" bson:"balance"`
 	UseAmount          float64   `json:"useamount" bson:"useamount"`
 	Remark             string    `json:"remark" bson:"remark"`
@@ -298,7 +298,7 @@ func (a *JSONBTransactionBranch) Scan(value interface{}) error {
 
 type Detail struct {
 	InquiryType         int8            `json:"inquirytype" bson:"inquirytype"`
-	LineNumber          int             `json:"line_number" bson:"line_number"`
+	LineNumber          int             `json:"linenumber" bson:"linenumber"`
 	DocDatetime         time.Time       `json:"docdatetime" bson:"docdatetime"`
 	DocRef              string          `json:"docref" bson:"docref"`
 	DocRefDatetime      time.Time       `json:"docrefdatetime" bson:"docrefdatetime"`
@@ -308,8 +308,8 @@ type Detail struct {
 	ItemNames           *[]models.NameX `json:"itemnames" bson:"itemnames"`
 	UnitCode            string          `json:"unitcode" bson:"unitcode"`
 	UnitNames           *[]models.NameX `json:"unitnames" bson:"unitnames" `
-	ItemType            int8            `json:"item_type" bson:"item_type"`
-	ItemGuid            string          `json:"item_guid" bson:"item_guid"`
+	ItemType            int8            `json:"itemtype" bson:"itemtype"`
+	ItemGuid            string          `json:"itemguid" bson:"itemguid"`
 	ImageUri            string          `json:"imageuri" bson:"imageurl"`
 	Description         string          `json:"description" bson:"description"`
 	Qty                 float64         `json:"qty" bson:"qty"`
@@ -321,12 +321,12 @@ type Detail struct {
 	DiscountAmount      float64         `json:"discountamount" bson:"discountamount"`
 	TotalValueVat       float64         `json:"totalvaluevat" bson:"totalvaluevat"`
 	PriceExcludeVat     float64         `json:"priceexcludevat" bson:"priceexcludevat"`
-	SumAmount           float64         `json:"sum_amount" bson:"sum_amount"`
+	SumAmount           float64         `json:"sumamount" bson:"sumamount"`
 	SumAmountExcludeVat float64         `json:"sumamountexcludevat" bson:"sumamountexcludevat"`
 	RefGuid             string          `json:"refguid" bson:"refguid"`
 	DivideValue         float64         `json:"dividevalue" bson:"dividevalue"`
 	StandValue          float64         `json:"standvalue" bson:"standvalue"`
-	VatType             int8            `json:"vat_type" bson:"vat_type"`
+	VatType             int8            `json:"vattype" bson:"vattype"`
 	Remark              string          `json:"remark" bson:"remark"`
 	MultiUnit           bool            `json:"multiunit" bson:"multiunit"`
 	IssumPoint          bool            `json:"issumpoint" bson:"issumpoint"`
@@ -336,7 +336,7 @@ type Detail struct {
 	LastStatus          int8            `json:"laststatus" bson:"laststatus"`
 	IsChoice            int8            `json:"ischoice" bson:"ischoice"`
 	IsPos               int8            `json:"ispos" bson:"ispos"`
-	TaxType             int8            `json:"tax_type" bson:"tax_type"`
+	TaxType             int8            `json:"taxtype" bson:"taxtype"`
 	VatCal              int             `json:"vatcal" bson:"vatcal"`
 	WhCode              string          `json:"whcode" bson:"whcode"`
 	WhNames             *[]models.NameX `json:"whnames" bson:"whnames"`
@@ -349,20 +349,20 @@ type Detail struct {
 	ToLocationNames     *[]models.NameX `json:"tolocationnames" bson:"tolocationnames" `
 	SKU                 string          `json:"sku" bson:"sku"`
 	ExtraJson           string          `json:"extrajson" bson:"extrajson"`
-	GroupCode           string          `json:"group_code" bson:"group_code"`
-	GroupNames          *[]models.NameX `json:"group_names" bson:"group_names"`
+	GroupCode           string          `json:"groupcode" bson:"groupcode"`
+	GroupNames          *[]models.NameX `json:"groupnames" bson:"groupnames"`
 	ManufacturerGUID    string          `json:"manufacturerguid" bson:"manufacturerguid"`
 	ManufacturerCode    string          `json:"manufacturercode" bson:"manufacturercode"`
 	ManufacturerNames   *[]models.NameX `json:"manufacturernames" bson:"manufacturernames"`
 	SumAmountChoice     float64         `json:"sumamountchoice" bson:"sumamountchoice"`
 
 	// ราคาและยอดรวมในสกุลเงินเอกสาร (Document Currency)
-	PriceDoc               float64 `json:"price_doc" bson:"price_doc,omitempty"`
-	SumAmountDoc           float64 `json:"sumamount_doc" bson:"sumamount_doc,omitempty"`
-	DiscountAmountDoc      float64 `json:"discountamount_doc" bson:"discountamount_doc,omitempty"`
-	PriceExcludeVatDoc     float64 `json:"priceexcludevat_doc" bson:"priceexcludevat_doc,omitempty"`
-	SumAmountExcludeVatDoc float64 `json:"sumamountexcludevat_doc" bson:"sumamountexcludevat_doc,omitempty"`
-	TotalValueVatDoc       float64 `json:"totalvaluevat_doc" bson:"totalvaluevat_doc,omitempty"`
+	PriceDoc               float64 `json:"pricedoc" bson:"pricedoc,omitempty"`
+	SumAmountDoc           float64 `json:"sumamountdoc" bson:"sumamountdoc,omitempty"`
+	DiscountAmountDoc      float64 `json:"discountamountdoc" bson:"discountamountdoc,omitempty"`
+	PriceExcludeVatDoc     float64 `json:"priceexcludevatdoc" bson:"priceexcludevatdoc,omitempty"`
+	SumAmountExcludeVatDoc float64 `json:"sumamountexcludevatdoc" bson:"sumamountexcludevatdoc,omitempty"`
+	TotalValueVatDoc       float64 `json:"totalvaluevatdoc" bson:"totalvaluevatdoc,omitempty"`
 }
 
 type PaymentDetail struct {
@@ -404,5 +404,5 @@ type SaleInvoiceCoupon struct {
 	CouponNo          string  `json:"couponno" bson:"couponno"`
 	CouponAmount      float64 `json:"couponamount" bson:"couponamount"`
 	CouponDescription string  `json:"coupondescription" bson:"coupondescription"`
-	CouponType        string  `json:"coupon_type" bson:"coupon_type"`
+	CouponType        string  `json:"coupontype" bson:"coupontype"`
 }

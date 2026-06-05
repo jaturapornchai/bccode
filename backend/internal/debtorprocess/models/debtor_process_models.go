@@ -1,6 +1,6 @@
 package models
 
 type DebtorProcessRequest struct {
-	HoldingCode string `json:"holding_code" `
-	DebtorCode  string `json:"debtor_code"  `
+	HoldingCode string `json:"holdingcode" `
+	DebtorCode  string `json:"debtorcode"  `
 }

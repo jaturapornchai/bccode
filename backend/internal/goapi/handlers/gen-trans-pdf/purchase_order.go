@@ -427,10 +427,10 @@ func renderPOSummary(pdf *gofpdf.Fpdf, doc map[string]interface{}, payload GenPD
 
 	// === สร้างรายการสรุป ===
 	type summaryRow struct {
-		label      string
-		docValue   float64
-		baseValue  float64
-		highlight  bool
+		label     string
+		docValue  float64
+		baseValue float64
+		highlight bool
 	}
 
 	var rows []summaryRow

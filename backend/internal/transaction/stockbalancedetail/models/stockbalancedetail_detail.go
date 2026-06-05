@@ -33,7 +33,7 @@ type StockBalanceDetailData struct {
 }
 
 type StockBalanceDetailDoc struct {
-	ID                     primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                     primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	StockBalanceDetailData `bson:"inline"`
 	models.ActivityDoc     `bson:"inline"`
 }

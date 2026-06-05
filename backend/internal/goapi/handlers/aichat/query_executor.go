@@ -158,7 +158,7 @@ func GenerateAnswerFromData(ctx context.Context, question string, intent *QueryI
 {
   "answer": "คำตอบแบบ plain text พร้อม emoji",
   "html": "<div style='background:#fff;padding:24px;...'>HTML content with inline CSS</div>",
-  "suggested_questions": [
+  "suggestedquestions": [
     "คำถามแนะนำข้อ 1",
     "คำถามแนะนำข้อ 2",
     "คำถามแนะนำข้อ 3",
@@ -200,7 +200,7 @@ func GenerateAnswerFromData(ctx context.Context, question string, intent *QueryI
 	var aiResponse struct {
 		Answer             string   `json:"answer"`
 		HTML               string   `json:"html"`
-		SuggestedQuestions []string `json:"suggested_questions"`
+		SuggestedQuestions []string `json:"suggestedquestions"`
 	}
 
 	// Try to parse JSON

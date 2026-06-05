@@ -14,7 +14,7 @@ import (
 
 // ClickHouseQueryRequest คำขอ query ClickHouse
 type ClickHouseQueryRequest struct {
-	HoldingCode string `json:"holding_code"`
+	HoldingCode string `json:"holdingcode"`
 	Database    string `json:"database"` // ถ้าไม่ระบุจะใช้ค่าจาก env CH_DATABASE_NAME
 	Query       string `json:"query"`    // SQL SELECT query
 	Limit       int    `json:"limit"`    // จำนวนแถวสูงสุด (default=100, max=1000)
@@ -25,10 +25,10 @@ type ClickHouseQueryResponse struct {
 	Database    string                   `json:"database"`
 	Query       string                   `json:"query"`
 	Rows        []map[string]interface{} `json:"rows"`
-	RowCount    int                      `json:"row_count"`
+	RowCount    int                      `json:"rowcount"`
 	Truncated   bool                     `json:"truncated"`
-	ExecutionMs int64                    `json:"execution_ms"`
-	GeneratedAt time.Time                `json:"generated_at"`
+	ExecutionMs int64                    `json:"executionms"`
+	GeneratedAt time.Time                `json:"generatedat"`
 }
 
 // QueryClickHouse รัน SELECT query บน ClickHouse (readonly)
@@ -74,13 +74,13 @@ func QueryClickHouse(ctx context.Context, holdingCode, database, query string, l
 		query = fmt.Sprintf("%s LIMIT %d", strings.TrimSuffix(strings.TrimSpace(query), ";"), limit)
 	}
 
-	// เพิ่ม holding_code filter ถ้ามี (ป้องกันการดูข้อมูลข้าม shop)
+	// เพิ่ม holdingcode filter ถ้ามี (ป้องกันการดูข้อมูลข้าม shop)
 	if holdingCode != "" && strings.HasPrefix(normalizedQuery, "SELECT") {
 		if strings.Contains(normalizedQuery, "WHERE") {
-			// เพิ่ม AND holding_code = 'xxx' หลัง WHERE
+			// เพิ่ม AND holdingcode = 'xxx' หลัง WHERE
 			query = addHoldingCodeToClickHouseQuery(query, holdingCode)
 		} else {
-			// เพิ่ม WHERE holding_code = 'xxx'
+			// เพิ่ม WHERE holdingcode = 'xxx'
 			query = addHoldingCodeWhereClause(query, holdingCode)
 		}
 	}
@@ -127,8 +127,8 @@ func QueryClickHouse(ctx context.Context, holdingCode, database, query string, l
 type ClickHouseTableInfo struct {
 	Name       string `json:"name"`
 	Engine     string `json:"engine"`
-	TotalRows  int    `json:"total_rows"`
-	TotalBytes int    `json:"total_bytes"`
+	TotalRows  int    `json:"totalrows"`
+	TotalBytes int    `json:"totalbytes"`
 }
 
 // ClickHouseListTablesResponse ผลลัพธ์รายการ tables
@@ -136,7 +136,7 @@ type ClickHouseListTablesResponse struct {
 	Database    string                `json:"database"`
 	Tables      []ClickHouseTableInfo `json:"tables"`
 	Count       int                   `json:"count"`
-	GeneratedAt time.Time             `json:"generated_at"`
+	GeneratedAt time.Time             `json:"generatedat"`
 }
 
 // ListClickHouseTables แสดงรายการ tables ใน ClickHouse database
@@ -202,7 +202,7 @@ func ListClickHouseTables(ctx context.Context, database string) (*ClickHouseList
 
 // ==================== Helper Functions ====================
 
-// addHoldingCodeToClickHouseQuery เพิ่ม holding_code condition เข้าไปใน WHERE clause ที่มีอยู่
+// addHoldingCodeToClickHouseQuery เพิ่ม holdingcode condition เข้าไปใน WHERE clause ที่มีอยู่
 func addHoldingCodeToClickHouseQuery(query, holdingCode string) string {
 	// หาตำแหน่ง WHERE (case-insensitive)
 	upperQuery := strings.ToUpper(query)
@@ -211,15 +211,15 @@ func addHoldingCodeToClickHouseQuery(query, holdingCode string) string {
 		return query
 	}
 
-	// แทรก holding_code = 'xxx' AND หลัง WHERE
+	// แทรก holdingcode = 'xxx' AND หลัง WHERE
 	insertPos := whereIdx + len("WHERE")
-	return query[:insertPos] + fmt.Sprintf(" holding_code = '%s' AND", holdingCode) + query[insertPos:]
+	return query[:insertPos] + fmt.Sprintf(" holdingcode = '%s' AND", holdingCode) + query[insertPos:]
 }
 
-// addHoldingCodeWhereClause เพิ่ม WHERE holding_code = 'xxx' เข้าไปก่อน ORDER BY/GROUP BY/HAVING/LIMIT
+// addHoldingCodeWhereClause เพิ่ม WHERE holdingcode = 'xxx' เข้าไปก่อน ORDER BY/GROUP BY/HAVING/LIMIT
 func addHoldingCodeWhereClause(query, holdingCode string) string {
 	upperQuery := strings.ToUpper(strings.TrimSpace(query))
-	whereClause := fmt.Sprintf(" WHERE holding_code = '%s'", holdingCode)
+	whereClause := fmt.Sprintf(" WHERE holdingcode = '%s'", holdingCode)
 
 	// หาตำแหน่งแรกสุดจาก keywords ทั้งหมด (ต้องแทรก WHERE ก่อน keyword ที่อยู่ใกล้ FROM ที่สุด)
 	insertKeywords := []string{"ORDER BY", "GROUP BY", "HAVING", "LIMIT"}

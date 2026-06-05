@@ -167,7 +167,7 @@ func (svc AccountPeriodMasterHttpService) DeleteAccountPeriodMasterByGUIDs(holdi
 	defer ctxCancel()
 
 	deleteFilterQuery := map[string]interface{}{
-		"guid_fixed": bson.M{"$in": GUIDs},
+		"guidfixed": bson.M{"$in": GUIDs},
 	}
 
 	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
@@ -222,7 +222,7 @@ func (svc AccountPeriodMasterHttpService) SearchAccountPeriodMaster(holdingCode 
 	defer ctxCancel()
 
 	searchInFields := []string{
-		"guid_fixed",
+		"guidfixed",
 		"docno",
 	}
 
@@ -241,13 +241,13 @@ func (svc AccountPeriodMasterHttpService) SearchAccountPeriodMasterStep(holdingC
 	defer ctxCancel()
 
 	searchInFields := []string{
-		"guid_fixed",
+		"guidfixed",
 		"docno",
 	}
 
 	selectFields := map[string]interface{}{
-		"guid_fixed": 1,
-		"docno":      1,
+		"guidfixed": 1,
+		"docno":     1,
 	}
 
 	if langCode != "" {

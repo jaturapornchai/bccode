@@ -13,44 +13,44 @@ import (
 // ==================== Database Schema ====================
 
 type DatabaseSchemaRequest struct {
-	HoldingCode string `json:"holding_code"`
-	TableName   string `json:"table_name"` // Optional - specific table
+	HoldingCode string `json:"holdingcode"`
+	TableName   string `json:"tablename"` // Optional - specific table
 }
 
 type DatabaseSchemaResponse struct {
-	DatabaseName string        `json:"database_name"`
+	DatabaseName string        `json:"databasename"`
 	Tables       []TableSchema `json:"tables"`
-	TableCount   int           `json:"table_count"`
-	GeneratedAt  time.Time     `json:"generated_at"`
+	TableCount   int           `json:"tablecount"`
+	GeneratedAt  time.Time     `json:"generatedat"`
 }
 
 type TableSchema struct {
-	TableName   string         `json:"table_name"`
-	TableType   string         `json:"table_type"` // BASE TABLE, VIEW
+	TableName   string         `json:"tablename"`
+	TableType   string         `json:"tabletype"` // BASE TABLE, VIEW
 	Columns     []ColumnSchema `json:"columns"`
-	ColumnCount int            `json:"column_count"`
-	RowCount    int64          `json:"row_count_estimate"`
+	ColumnCount int            `json:"columncount"`
+	RowCount    int64          `json:"rowcountestimate"`
 	Description string         `json:"description,omitempty"`
 }
 
 type ColumnSchema struct {
-	ColumnName    string `json:"column_name"`
-	DataType      string `json:"data_type"`
-	IsNullable    string `json:"is_nullable"`
-	ColumnDefault string `json:"column_default,omitempty"`
-	MaxLength     int    `json:"max_length,omitempty"`
-	IsPrimaryKey  bool   `json:"is_primary_key"`
-	IsForeignKey  bool   `json:"is_foreign_key"`
+	ColumnName    string `json:"columnname"`
+	DataType      string `json:"datatype"`
+	IsNullable    string `json:"isnullable"`
+	ColumnDefault string `json:"columndefault,omitempty"`
+	MaxLength     int    `json:"maxlength,omitempty"`
+	IsPrimaryKey  bool   `json:"isprimarykey"`
+	IsForeignKey  bool   `json:"isforeignkey"`
 	Description   string `json:"description,omitempty"`
 }
 
 // GetDatabaseSchema returns the database schema information
 func GetDatabaseSchema(ctx context.Context, holdingCode, tableName string) (*DatabaseSchemaResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 
-	logger.Info("[Database Schema] holding_code=%s, table=%s", holdingCode, tableName)
+	logger.Info("[Database Schema] holdingcode=%s, table=%s", holdingCode, tableName)
 
 	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
@@ -66,7 +66,7 @@ func GetDatabaseSchema(ctx context.Context, holdingCode, tableName string) (*Dat
 	// Build query for tables
 	tableQuery := `
 		SELECT
-			table_name,
+			tablename,
 			table_type
 		FROM information_schema.tables
 		WHERE table_schema = 'public'
@@ -74,11 +74,11 @@ func GetDatabaseSchema(ctx context.Context, holdingCode, tableName string) (*Dat
 	args := []interface{}{}
 
 	if tableName != "" {
-		tableQuery += " AND table_name ILIKE $1"
+		tableQuery += " AND tablename ILIKE $1"
 		args = append(args, "%"+tableName+"%")
 	}
 
-	tableQuery += " ORDER BY table_name"
+	tableQuery += " ORDER BY tablename"
 
 	rows, err := db.Query(tableQuery, args...)
 	if err != nil {
@@ -120,9 +120,9 @@ func GetDatabaseSchema(ctx context.Context, holdingCode, tableName string) (*Dat
 				SELECT ku.column_name
 				FROM information_schema.table_constraints tc
 				JOIN information_schema.key_column_usage ku ON tc.constraint_name = ku.constraint_name
-				WHERE tc.table_name = $1 AND tc.constraint_type = 'PRIMARY KEY'
+				WHERE tc.tablename = $1 AND tc.constraint_type = 'PRIMARY KEY'
 			) pk ON c.column_name = pk.column_name
-			WHERE c.table_schema = 'public' AND c.table_name = $1
+			WHERE c.table_schema = 'public' AND c.tablename = $1
 			ORDER BY c.ordinal_position
 		`
 
@@ -161,7 +161,7 @@ func GetDatabaseSchema(ctx context.Context, holdingCode, tableName string) (*Dat
 // ==================== Execute Query (Readonly) ====================
 
 type ExecuteQueryRequest struct {
-	HoldingCode string `json:"holding_code"`
+	HoldingCode string `json:"holdingcode"`
 	Query       string `json:"query"`
 	Limit       int    `json:"limit"` // Max rows to return
 }
@@ -170,16 +170,16 @@ type ExecuteQueryResponse struct {
 	Query       string                   `json:"query"`
 	Columns     []string                 `json:"columns"`
 	Rows        []map[string]interface{} `json:"rows"`
-	RowCount    int                      `json:"row_count"`
-	ExecutionMs int64                    `json:"execution_ms"`
+	RowCount    int                      `json:"rowcount"`
+	ExecutionMs int64                    `json:"executionms"`
 	Truncated   bool                     `json:"truncated"`
-	GeneratedAt time.Time                `json:"generated_at"`
+	GeneratedAt time.Time                `json:"generatedat"`
 }
 
 // ExecuteReadonlyQuery executes a SELECT query and returns results
 func ExecuteReadonlyQuery(ctx context.Context, holdingCode, query string, limit int) (*ExecuteQueryResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 	if query == "" {
 		return nil, fmt.Errorf("query is required")
@@ -215,7 +215,7 @@ func ExecuteReadonlyQuery(ctx context.Context, holdingCode, query string, limit 
 		query = fmt.Sprintf("%s LIMIT %d", strings.TrimSuffix(query, ";"), limit)
 	}
 
-	logger.Info("[Execute Query] holding_code=%s, query=%s", holdingCode, query)
+	logger.Info("[Execute Query] holdingcode=%s, query=%s", holdingCode, query)
 
 	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
@@ -288,27 +288,27 @@ func ExecuteReadonlyQuery(ctx context.Context, holdingCode, query string, limit 
 // ==================== Get Table Sample Data ====================
 
 type TableSampleRequest struct {
-	HoldingCode string `json:"holding_code"`
-	TableName   string `json:"table_name"`
+	HoldingCode string `json:"holdingcode"`
+	TableName   string `json:"tablename"`
 	Limit       int    `json:"limit"`
 }
 
 type TableSampleResponse struct {
-	TableName   string                   `json:"table_name"`
+	TableName   string                   `json:"tablename"`
 	Columns     []string                 `json:"columns"`
 	Rows        []map[string]interface{} `json:"rows"`
-	RowCount    int                      `json:"row_count"`
-	TotalRows   int64                    `json:"total_rows_estimate"`
-	GeneratedAt time.Time                `json:"generated_at"`
+	RowCount    int                      `json:"rowcount"`
+	TotalRows   int64                    `json:"totalrowsestimate"`
+	GeneratedAt time.Time                `json:"generatedat"`
 }
 
 // GetTableSample returns sample data from a table
 func GetTableSample(ctx context.Context, holdingCode, tableName string, limit int) (*TableSampleResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 	if tableName == "" {
-		return nil, fmt.Errorf("table_name is required")
+		return nil, fmt.Errorf("tablename is required")
 	}
 
 	// Sanitize table name (allow only alphanumeric and underscore)
@@ -325,7 +325,7 @@ func GetTableSample(ctx context.Context, holdingCode, tableName string, limit in
 		limit = 100
 	}
 
-	logger.Info("[Table Sample] holding_code=%s, table=%s, limit=%d", holdingCode, tableName, limit)
+	logger.Info("[Table Sample] holdingcode=%s, table=%s, limit=%d", holdingCode, tableName, limit)
 
 	// Use ExecuteReadonlyQuery for the actual query
 	query := fmt.Sprintf("SELECT * FROM %s LIMIT %d", tableName, limit)

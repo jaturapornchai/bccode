@@ -31,7 +31,7 @@ func (repo WarehousePGRepository) Get(holdingCode string, guidFixed string) (mod
 
 	var data models.WarehousePG
 	err := repo.pst.DBClient().Preload(clause.Associations).
-		Where("holding_code=? AND guidfixed=?", holdingCode, guidFixed).
+		Where("holdingcode=? AND guidfixed=?", holdingCode, guidFixed).
 		First(&data).Error
 
 	if err != nil {
@@ -52,8 +52,8 @@ func (repo WarehousePGRepository) Create(doc models.WarehousePG) error {
 func (repo WarehousePGRepository) Update(holdingCode string, guidFixed string, doc models.WarehousePG) error {
 
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"holding_code": holdingCode,
-		"guid_fixed":   guidFixed,
+		"holdingcode": holdingCode,
+		"guidfixed":   guidFixed,
 	})
 
 	if err != nil {
@@ -65,8 +65,8 @@ func (repo WarehousePGRepository) Update(holdingCode string, guidFixed string, d
 func (repo *WarehousePGRepository) Delete(holdingCode string, guidFixed string) error {
 
 	err := repo.pst.Delete(models.WarehousePG{}, map[string]interface{}{
-		"holding_code": holdingCode,
-		"guid_fixed":   guidFixed,
+		"holdingcode": holdingCode,
+		"guidfixed":   guidFixed,
 	})
 
 	if err != nil {

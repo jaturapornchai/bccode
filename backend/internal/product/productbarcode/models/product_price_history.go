@@ -11,7 +11,7 @@ const productPriceHistoryCollectionName = "productBarcodesPriceHistory"
 
 // ประวัติการแก้ไขราคาสินค้า
 type ProductPriceHistory struct {
-	ID                       primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                       primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	models.HoldingCodeentity `bson:"inline"`
 	models.DocIdentity       `bson:"inline"`
 
@@ -21,8 +21,8 @@ type ProductPriceHistory struct {
 	ProductName        string `json:"productname" bson:"productname"`
 
 	// ข้อมูลราคา
-	PriceType       string  `json:"pricetype" bson:"pricetype"`   // "normal", "member", "delivery"
-	KeyNumber       int     `json:"key_number" bson:"key_number"` // 1=normal, 2=member, 3=delivery
+	PriceType       string  `json:"pricetype" bson:"pricetype"` // "normal", "member", "delivery"
+	KeyNumber       int     `json:"keynumber" bson:"keynumber"` // 1=normal, 2=member, 3=delivery
 	OldPrice        float64 `json:"oldprice" bson:"oldprice"`
 	NewPrice        float64 `json:"newprice" bson:"newprice"`
 	PriceDifference float64 `json:"pricedifference" bson:"pricedifference"` // NewPrice - OldPrice
@@ -30,7 +30,7 @@ type ProductPriceHistory struct {
 	// ข้อมูลการทำรายการ
 	Action    string    `json:"action" bson:"action"`       // "create", "update"
 	CreatedBy string    `json:"createdby" bson:"createdby"` // Username ผู้ทำรายการ
-	CreatedAt time.Time `json:"created_at" bson:"created_at"`
+	CreatedAt time.Time `json:"createdat" bson:"createdat"`
 
 	// ข้อมูลเพิ่มเติม
 	Remark string `json:"remark" bson:"remark"`

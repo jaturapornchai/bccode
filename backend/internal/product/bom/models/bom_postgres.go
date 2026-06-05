@@ -38,10 +38,10 @@ func (j *JSONB) Scan(value interface{}) error {
 
 // BomProductBarcodePg holds data for the BOM product barcode
 type BomProductBarcodePg struct {
-	BarcodeGuidFixed string  `json:"guid_fixed" gorm:"column:guid_fixed"`
+	BarcodeGuidFixed string  `json:"guidfixed" gorm:"column:guidfixed"`
 	Level            int     `json:"level" gorm:"column:level"`
 	Names            JSONB   `json:"names" gorm:"column:names;type:jsonb"`
-	ItemUnitCode     string  `json:"item_unit_code" gorm:"column:item_unit_code"`
+	ItemUnitCode     string  `json:"itemunitcode" gorm:"column:itemunitcode"`
 	ItemUnitNames    JSONB   `json:"itemunitnames" gorm:"column:itemunitnames;type:jsonb"`
 	Barcode          string  `json:"barcode" gorm:"column:barcode" validate:"required,min=1"`
 	Condition        bool    `json:"condition" gorm:"column:condition"`
@@ -52,8 +52,8 @@ type BomProductBarcodePg struct {
 
 // ProductBarcodeBOMViewPG represents a view for product barcode BOMs
 type ProductBarcodeBOMViewPG struct {
-	HoldingCode       string              `json:"holding_code" gorm:"column:holding_code"`
-	GuidFixed         string              `json:"guid_fixed" bson:"guid_fixed" gorm:"column:guid_fixed;primaryKey"`
+	HoldingCode       string              `json:"holdingcode" gorm:"column:holdingcode"`
+	GuidFixed         string              `json:"guidfixed" bson:"guidfixed" gorm:"column:guidfixed;primaryKey"`
 	BOMProductBarcode BomProductBarcodePg `gorm:"embedded;"`
 	ImageURI          string              `json:"imageuri" gorm:"column:imageuri"`
 	BOM               BOMViewPg           `json:"bom" gorm:"foreignKey:BOMForeignKey;references:BOMReference"` // Update ForeignKey and References

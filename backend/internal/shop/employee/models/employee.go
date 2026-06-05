@@ -29,12 +29,12 @@ type EmployeeBranch struct {
 
 type EmployeeContact struct {
 	Address         string  `json:"address" bson:"address"`
-	CountryCode     string  `json:"country_code" bson:"country_code"`
-	ProvinceCode    string  `json:"province_code" bson:"province_code"`
-	DistrictCode    string  `json:"district_code" bson:"district_code"`
-	SubDistrictCode string  `json:"sub_district_code" bson:"sub_district_code"`
-	ZipCode         string  `json:"zip_code" bson:"zip_code"`
-	PhoneNumber     string  `json:"phone_number" bson:"phone_number"`
+	CountryCode     string  `json:"countrycode" bson:"countrycode"`
+	ProvinceCode    string  `json:"provincecode" bson:"provincecode"`
+	DistrictCode    string  `json:"districtcode" bson:"districtcode"`
+	SubDistrictCode string  `json:"subdistrictcode" bson:"subdistrictcode"`
+	ZipCode         string  `json:"zipcode" bson:"zipcode"`
+	PhoneNumber     string  `json:"phonenumber" bson:"phonenumber"`
 	Latitude        float64 `json:"latitude" bson:"latitude"`
 	Longitude       float64 `json:"longitude" bson:"longitude"`
 }
@@ -54,7 +54,7 @@ type EmployeeData struct {
 }
 
 type EmployeeDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	EmployeeData       `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 	EmployeePassword   `bson:"inline" gorm:"embedded;"`

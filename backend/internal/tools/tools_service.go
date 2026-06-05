@@ -66,10 +66,10 @@ func (svc *ToolsService) MockAuth(ctx microservice.IContext) error {
 
 	cacheKey := "auth-" + curProfile.AuthKey
 	cacher.HMSet(cacheKey, map[string]interface{}{
-		"username":     curProfile.Username,
-		"name":         curProfile.Name,
-		"holding_code": curProfile.HoldingCode,
-		"role":         curProfile.Role,
+		"username":    curProfile.Username,
+		"name":        curProfile.Name,
+		"holdingcode": curProfile.HoldingCode,
+		"role":        curProfile.Role,
 	})
 
 	cacher.Expire(cacheKey, time.Hour*168) // 7 days

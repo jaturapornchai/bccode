@@ -32,10 +32,10 @@ type ProductImportRaw struct {
 	IsExist        bool `json:"isexist" ch:"isexist"`
 	IsUnitNotExist bool `json:"isunitnotexist" ch:"isunitnotexist"`
 	// เพิ่มฟิลด์ใหม่
-	GroupCode       string  `json:"group_code" ch:"group_code"`
+	GroupCode       string  `json:"groupcode" ch:"groupcode"`
 	GroupsuboneCode string  `json:"groupsubonecode" ch:"groupsubonecode"`
 	GroupsubtwoCode string  `json:"groupsubtwocode" ch:"groupsubtwocode"`
-	BrandCode       string  `json:"brand_code" ch:"brand_code"`
+	BrandCode       string  `json:"brandcode" ch:"brandcode"`
 	DesignCode      string  `json:"designcode" ch:"designcode"`
 	ModelCode       string  `json:"modelcode" ch:"modelcode"`
 	PatternCode     string  `json:"patterncode" ch:"patterncode"`
@@ -55,14 +55,14 @@ type ProductImport struct {
 }
 
 type ProductImportInfo struct {
-	GUIDFixed   string `json:"guid_fixed" ch:"guid_fixed"`
-	HoldingCode string `json:"holding_code" ch:"holding_code"`
+	GUIDFixed   string `json:"guidfixed" ch:"guidfixed"`
+	HoldingCode string `json:"holdingcode" ch:"holdingcode"`
 	ProductImport
 }
 
 type ProductImportDoc struct {
 	ProductImportInfo
-	CreatedAt time.Time `json:"created_at" ch:"created_at"`
+	CreatedAt time.Time `json:"createdat" ch:"createdat"`
 	CreatedBy string    `json:"createdby" ch:"createdby"`
 }
 
@@ -85,10 +85,10 @@ const (
 type PaginationData struct {
 	Total     int64 `json:"total"`
 	Page      int64 `json:"page"`
-	PerPage   int64 `json:"per_page"`
+	PerPage   int64 `json:"perpage"`
 	Prev      int64 `json:"prev"`
 	Next      int64 `json:"next"`
-	TotalPage int64 `json:"total_page"`
+	TotalPage int64 `json:"totalpage"`
 }
 
 func (p *PaginationData) Build() {
@@ -110,25 +110,25 @@ func (p *PaginationData) Build() {
 
 // Enhanced models สำหรับ compare และ insert/update functionality
 type CompareResult struct {
-	TaskID          string                  `json:"task_id"`
-	TotalRecords    int                     `json:"total_records"`
-	NewRecords      int                     `json:"new_records"`
-	ExistingRecords int                     `json:"existing_records"`
-	UpdatedRecords  int                     `json:"updated_records"`
-	ConflictRecords int                     `json:"conflict_records"`
+	TaskID          string                  `json:"taskid"`
+	TotalRecords    int                     `json:"totalrecords"`
+	NewRecords      int                     `json:"newrecords"`
+	ExistingRecords int                     `json:"existingrecords"`
+	UpdatedRecords  int                     `json:"updatedrecords"`
+	ConflictRecords int                     `json:"conflictrecords"`
 	Items           []ProductBarcodeCompare `json:"items"`
 	Summary         *CompareSummary         `json:"summary"`
-	CreatedAt       time.Time               `json:"created_at"`
+	CreatedAt       time.Time               `json:"createdat"`
 }
 
 type ProductBarcodeCompare struct {
-	ImportData   ProductImportRaw        `json:"import_data"`
-	ExistingData *ProductBarcodeExisting `json:"existing_data,omitempty"`
+	ImportData   ProductImportRaw        `json:"importdata"`
+	ExistingData *ProductBarcodeExisting `json:"existingdata,omitempty"`
 	Status       string                  `json:"status"` // "NEW", "EXISTING", "UPDATE", "CONFLICT"
 	Changes      []FieldChange           `json:"changes,omitempty"`
 	Conflicts    []FieldConflict         `json:"conflicts,omitempty"`
-	CanUpdate    bool                    `json:"can_update"`
-	UpdateReason string                  `json:"update_reason,omitempty"`
+	CanUpdate    bool                    `json:"canupdate"`
+	UpdateReason string                  `json:"updatereason,omitempty"`
 }
 
 type ProductBarcodeExisting struct {
@@ -152,10 +152,10 @@ type ProductBarcodeExisting struct {
 	PriceNine  float64 `json:"pricenine"`
 
 	// Master data codes
-	GroupCode       string `json:"group_code"`
+	GroupCode       string `json:"groupcode"`
 	GroupsuboneCode string `json:"groupsubonecode"`
 	GroupsubtwoCode string `json:"groupsubtwocode"`
-	BrandCode       string `json:"brand_code"`
+	BrandCode       string `json:"brandcode"`
 	DesignCode      string `json:"designcode"`
 	ModelCode       string `json:"modelcode"`
 	PatternCode     string `json:"patterncode"`
@@ -169,51 +169,51 @@ type ProductBarcodeExisting struct {
 	StandValue  float64 `json:"standvalue"`
 	DivideValue float64 `json:"dividevalue"`
 
-	LastModified time.Time `json:"last_modified"`
-	ModifiedBy   string    `json:"modified_by"`
+	LastModified time.Time `json:"lastmodified"`
+	ModifiedBy   string    `json:"modifiedby"`
 }
 
 type FieldChange struct {
 	Field    string      `json:"field"`
-	OldValue interface{} `json:"old_value"`
-	NewValue interface{} `json:"new_value"`
+	OldValue interface{} `json:"oldvalue"`
+	NewValue interface{} `json:"newvalue"`
 	Reason   string      `json:"reason,omitempty"`
 }
 
 type FieldConflict struct {
 	Field        string      `json:"field"`
-	ImportValue  interface{} `json:"import_value"`
-	CurrentValue interface{} `json:"current_value"`
+	ImportValue  interface{} `json:"importvalue"`
+	CurrentValue interface{} `json:"currentvalue"`
 	Severity     string      `json:"severity"` // "LOW", "MEDIUM", "HIGH"
 	Suggestion   string      `json:"suggestion,omitempty"`
 }
 
 type CompareSummary struct {
-	ImportMode        string    `json:"import_mode"`
-	TotalChanges      int       `json:"total_changes"`
-	PriceChanges      int       `json:"price_changes"`
-	NameChanges       int       `json:"name_changes"`
-	UnitChanges       int       `json:"unit_changes"`
-	MasterDataChanges int       `json:"master_data_changes"`
-	RefBarcodeChanges int       `json:"ref_barcode_changes"`
-	TotalConflicts    int       `json:"total_conflicts"`
-	HighConflicts     int       `json:"high_conflicts"`
-	MediumConflicts   int       `json:"medium_conflicts"`
-	LowConflicts      int       `json:"low_conflicts"`
-	EstimatedTime     string    `json:"estimated_time"`
-	CreatedAt         time.Time `json:"created_at"`
+	ImportMode        string    `json:"importmode"`
+	TotalChanges      int       `json:"totalchanges"`
+	PriceChanges      int       `json:"pricechanges"`
+	NameChanges       int       `json:"namechanges"`
+	UnitChanges       int       `json:"unitchanges"`
+	MasterDataChanges int       `json:"masterdatachanges"`
+	RefBarcodeChanges int       `json:"refbarcodechanges"`
+	TotalConflicts    int       `json:"totalconflicts"`
+	HighConflicts     int       `json:"highconflicts"`
+	MediumConflicts   int       `json:"mediumconflicts"`
+	LowConflicts      int       `json:"lowconflicts"`
+	EstimatedTime     string    `json:"estimatedtime"`
+	CreatedAt         time.Time `json:"createdat"`
 }
 
 type PreviewResult struct {
-	TaskID          string                  `json:"task_id"`
-	ImportMode      string                  `json:"import_mode"`
-	WillInsert      []ProductImportRaw      `json:"will_insert"`
-	WillUpdate      []ProductBarcodeCompare `json:"will_update"`
-	WillSkip        []ProductBarcodeCompare `json:"will_skip"`
+	TaskID          string                  `json:"taskid"`
+	ImportMode      string                  `json:"importmode"`
+	WillInsert      []ProductImportRaw      `json:"willinsert"`
+	WillUpdate      []ProductBarcodeCompare `json:"willupdate"`
+	WillSkip        []ProductBarcodeCompare `json:"willskip"`
 	Warnings        []PreviewWarning        `json:"warnings"`
-	EstimatedTime   string                  `json:"estimated_time"`
-	RequiredActions []string                `json:"required_actions"`
-	CreatedAt       time.Time               `json:"created_at"`
+	EstimatedTime   string                  `json:"estimatedtime"`
+	RequiredActions []string                `json:"requiredactions"`
+	CreatedAt       time.Time               `json:"createdat"`
 }
 
 type PreviewWarning struct {
@@ -226,18 +226,18 @@ type PreviewWarning struct {
 }
 
 type ImportSummary struct {
-	TaskID        string        `json:"task_id"`
-	ImportMode    string        `json:"import_mode"`
-	StartTime     time.Time     `json:"start_time"`
-	EndTime       time.Time     `json:"end_time"`
+	TaskID        string        `json:"taskid"`
+	ImportMode    string        `json:"importmode"`
+	StartTime     time.Time     `json:"starttime"`
+	EndTime       time.Time     `json:"endtime"`
 	Duration      string        `json:"duration"`
-	TotalRecords  int           `json:"total_records"`
-	SuccessInsert int           `json:"success_insert"`
-	SuccessUpdate int           `json:"success_update"`
+	TotalRecords  int           `json:"totalrecords"`
+	SuccessInsert int           `json:"successinsert"`
+	SuccessUpdate int           `json:"successupdate"`
 	Failed        int           `json:"failed"`
 	Skipped       int           `json:"skipped"`
 	Errors        []ImportError `json:"errors,omitempty"`
-	CreatedBy     string        `json:"created_by"`
+	CreatedBy     string        `json:"createdby"`
 	Status        string        `json:"status"` // "COMPLETED", "PARTIAL", "FAILED"
 }
 

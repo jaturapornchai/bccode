@@ -68,7 +68,7 @@ interface WarehouseTreeViewProps {
 type NodeType = "warehouse" | "location" | "shelf";
 
 interface WarehouseWorkspace {
-  shop: { holding_code: string };
+  shop: { holdingcode: string };
   shopInfo?: {
     settings?: {
       language?: string;
@@ -111,7 +111,7 @@ interface WarehouseLocation {
 }
 
 interface WarehouseRecord {
-  guid_fixed?: string;
+  guidfixed?: string;
   code?: string;
   names?: LocalizedNames;
   location?: WarehouseLocation[] | string;
@@ -129,11 +129,11 @@ interface SelectedNode {
 }
 
 interface CompanyRecord {
-  guid_fixed?: string;
+  guidfixed?: string;
   code?: string;
   names?: LocalizedNames;
   tax_id?: string;
-  is_active?: boolean;
+  isactive?: boolean;
 }
 
 interface ApiResponse {
@@ -209,7 +209,7 @@ export function WarehouseTreeView({
       const first = records[0];
       setSelectedNode({
         type: "warehouse",
-        warehouseId: first.guid_fixed || "",
+        warehouseId: first.guidfixed || "",
         data: {
           code: first.code || "",
           names: first.names || [],
@@ -239,7 +239,7 @@ export function WarehouseTreeView({
     suitable_product_types: string;
     latitude: string;
     longitude: string;
-    company_guids?: string[];
+    companyguids?: string[];
     // Bulk parameters
     bulkPrefix?: string;
     bulkStartNum?: string;
@@ -257,7 +257,7 @@ export function WarehouseTreeView({
     suitable_product_types: "",
     latitude: "",
     longitude: "",
-    company_guids: [],
+    companyguids: [],
   });
 
   const [formError, setFormError] = useState("");
@@ -283,7 +283,7 @@ export function WarehouseTreeView({
         suitable_product_types: "",
         latitude: "",
         longitude: "",
-        company_guids: [],
+        companyguids: [],
       });
       return;
     }
@@ -292,7 +292,7 @@ export function WarehouseTreeView({
     setFormError("");
 
     const warehouseId = selectedNode.warehouseId;
-    const warehouse = records.find((r) => r.guid_fixed === warehouseId) || records[0];
+    const warehouse = records.find((r) => r.guidfixed === warehouseId) || records[0];
 
     if (formType === "edit_warehouse") {
       const namesMap: Record<string, string> = {};
@@ -318,7 +318,7 @@ export function WarehouseTreeView({
         suitable_product_types: "",
         latitude: warehouse?.latitude !== undefined && warehouse?.latitude !== 0 ? String(warehouse.latitude) : "",
         longitude: warehouse?.longitude !== undefined && warehouse?.longitude !== 0 ? String(warehouse.longitude) : "",
-        company_guids: (warehouse as any)?.company_guids || [],
+        companyguids: (warehouse as any)?.companyguids || [],
       });
     } else if (formType === "edit_location" && selectedNode.type === "location") {
       const loc = selectedNode.data as WarehouseLocation;
@@ -449,7 +449,7 @@ export function WarehouseTreeView({
     targetWarehouse: WarehouseRecord,
     updatedLocations: WarehouseLocation[],
   ) => {
-    if (!auth || !workspace || !targetWarehouse.guid_fixed) return;
+    if (!auth || !workspace || !targetWarehouse.guidfixed) return;
     setIsSavingLocal(true);
     setFormError("");
     try {
@@ -457,11 +457,11 @@ export function WarehouseTreeView({
         ...targetWarehouse,
         location: updatedLocations,
         backendUrl: auth.backendUrl,
-        holding_code: workspace.shop.holding_code,
+        holdingcode: workspace.shop.holdingcode,
       };
 
       const response = await fetch(
-        `/api/system-settings/product_warehouse_screen/${targetWarehouse.guid_fixed}`,
+        `/api/system-settings/product_warehouse_screen/${targetWarehouse.guidfixed}`,
         {
           method: "PUT",
           headers: {
@@ -491,7 +491,7 @@ export function WarehouseTreeView({
     e.preventDefault();
     if (!workspace) return;
     const warehouseId = selectedNode?.warehouseId;
-    const warehouse = records.find((r) => r.guid_fixed === warehouseId) || records[0];
+    const warehouse = records.find((r) => r.guidfixed === warehouseId) || records[0];
     if (!warehouse && formType !== "create_warehouse") return;
 
     const code = formFields.code.trim();
@@ -529,12 +529,12 @@ export function WarehouseTreeView({
           names: namesArray,
           latitude: latVal,
           longitude: lngVal,
-          company_guids: formFields.company_guids || [],
+          companyguids: formFields.companyguids || [],
         };
 
         const url = isCreate
           ? `${auth?.backendUrl}/warehouse`
-          : `${auth?.backendUrl}/warehouse/${warehouse.guid_fixed || ""}`;
+          : `${auth?.backendUrl}/warehouse/${warehouse.guidfixed || ""}`;
 
         const response = await fetch(
           url,
@@ -773,7 +773,7 @@ export function WarehouseTreeView({
   // Reorder Locations
   const moveLocation = async (warehouseId: string, fromIdx: number, toIdx: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    const warehouse = records.find((r) => r.guid_fixed === warehouseId);
+    const warehouse = records.find((r) => r.guidfixed === warehouseId);
     if (!warehouse) return;
     const locationsList = getLocationsList(warehouse);
     if (toIdx < 0 || toIdx >= locationsList.length) return;
@@ -786,7 +786,7 @@ export function WarehouseTreeView({
   // Reorder Shelves
   const moveShelf = async (warehouseId: string, locIdx: number, fromIdx: number, toIdx: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    const warehouse = records.find((r) => r.guid_fixed === warehouseId);
+    const warehouse = records.find((r) => r.guidfixed === warehouseId);
     if (!warehouse) return;
     const locationsList = getLocationsList(warehouse);
     const loc = locationsList[locIdx];
@@ -804,7 +804,7 @@ export function WarehouseTreeView({
   // Delete handlers
   const handleDeleteWarehouse = async (warehouseId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const warehouse = records.find((r) => r.guid_fixed === warehouseId);
+    const warehouse = records.find((r) => r.guidfixed === warehouseId);
     if (!warehouse) return;
     const confirmed = window.confirm(
       language === "th"
@@ -832,11 +832,11 @@ export function WarehouseTreeView({
 
       if (onRefresh) onRefresh();
 
-      const remaining = records.filter((r) => r.guid_fixed !== warehouseId);
+      const remaining = records.filter((r) => r.guidfixed !== warehouseId);
       if (remaining.length > 0) {
         setSelectedNode({
           type: "warehouse",
-          warehouseId: remaining[0].guid_fixed || "",
+          warehouseId: remaining[0].guidfixed || "",
           data: {
             code: remaining[0].code || "",
             names: remaining[0].names || [],
@@ -856,7 +856,7 @@ export function WarehouseTreeView({
 
   const handleDeleteLocation = async (warehouseId: string, index: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    const warehouse = records.find((r) => r.guid_fixed === warehouseId);
+    const warehouse = records.find((r) => r.guidfixed === warehouseId);
     if (!warehouse) return;
     const locationsList = getLocationsList(warehouse);
     const location = locationsList[index];
@@ -874,7 +874,7 @@ export function WarehouseTreeView({
 
   const handleDeleteShelf = async (warehouseId: string, locIndex: number, shelfIndex: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    const warehouse = records.find((r) => r.guid_fixed === warehouseId);
+    const warehouse = records.find((r) => r.guidfixed === warehouseId);
     if (!warehouse) return;
     const locationsList = getLocationsList(warehouse);
     const loc = locationsList[locIndex];
@@ -975,7 +975,7 @@ export function WarehouseTreeView({
           ) : (
             <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
               {filteredWarehouses.map((w, warehouseIdx) => {
-                const warehouseId = w.guid_fixed || "";
+                const warehouseId = w.guidfixed || "";
                 const isWarehouseSelected =
                   selectedNode?.type === "warehouse" && selectedNode?.warehouseId === warehouseId;
                 const isWarehouseCollapsed = collapsedWarehouses[warehouseId] ?? false;
@@ -1879,12 +1879,12 @@ export function WarehouseTreeView({
                   size="sm"
                   onClick={() => {
                     setFormType("edit_warehouse");
-                    const targetId = selectedNode?.warehouseId || records[0]?.guid_fixed || "";
-                    const w = records.find((r) => r.guid_fixed === targetId);
+                    const targetId = selectedNode?.warehouseId || records[0]?.guidfixed || "";
+                    const w = records.find((r) => r.guidfixed === targetId);
                     if (w) {
                       setSelectedNode({
                         type: "warehouse",
-                        warehouseId: w.guid_fixed || "",
+                        warehouseId: w.guidfixed || "",
                         data: {
                           code: w.code || "",
                           names: w.names || [],

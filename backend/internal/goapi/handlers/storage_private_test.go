@@ -168,8 +168,8 @@ func newMultipartUploadContext(t *testing.T, e *echo.Echo, formHoldingCode strin
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	if formHoldingCode != "" {
-		if err := writer.WriteField("holding_code", formHoldingCode); err != nil {
-			t.Fatalf("write holding_code field: %v", err)
+		if err := writer.WriteField("holdingcode", formHoldingCode); err != nil {
+			t.Fatalf("write holdingcode field: %v", err)
 		}
 	}
 	part, err := writer.CreateFormFile("file", "noop.png")
@@ -199,7 +199,7 @@ func TestImageUploadHandlerRejectsCrossShopForm(t *testing.T) {
 		t.Fatalf("ImageUploadHandler returned error: %v", err)
 	}
 	if rec.Code != http.StatusForbidden {
-		t.Fatalf("expected status %d when form holding_code mismatches token, got %d", http.StatusForbidden, rec.Code)
+		t.Fatalf("expected status %d when form holdingcode mismatches token, got %d", http.StatusForbidden, rec.Code)
 	}
 	if !strings.Contains(rec.Body.String(), "Forbidden") {
 		t.Fatalf("expected response body to mention Forbidden, got %s", rec.Body.String())
@@ -227,7 +227,7 @@ func TestFileUploadHandlerRejectsCrossShopForm(t *testing.T) {
 		t.Fatalf("FileUploadHandler returned error: %v", err)
 	}
 	if rec.Code != http.StatusForbidden {
-		t.Fatalf("expected status %d when form holding_code mismatches token, got %d", http.StatusForbidden, rec.Code)
+		t.Fatalf("expected status %d when form holdingcode mismatches token, got %d", http.StatusForbidden, rec.Code)
 	}
 }
 
@@ -240,13 +240,13 @@ func TestAttachmentUploadHandlerRejectsCrossShopForm(t *testing.T) {
 		t.Fatalf("AttachmentUploadHandler returned error: %v", err)
 	}
 	if rec.Code != http.StatusForbidden {
-		t.Fatalf("expected status %d when form holding_code mismatches token, got %d", http.StatusForbidden, rec.Code)
+		t.Fatalf("expected status %d when form holdingcode mismatches token, got %d", http.StatusForbidden, rec.Code)
 	}
 }
 
 func TestAttachmentDownloadHandlerRejectsCrossShopQuery(t *testing.T) {
 	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/api/attachment/download/507f1f77bcf86cd799439011?holding_code=SHOP002", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/attachment/download/507f1f77bcf86cd799439011?holdingcode=SHOP002", nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetParamNames("id")
@@ -257,6 +257,6 @@ func TestAttachmentDownloadHandlerRejectsCrossShopQuery(t *testing.T) {
 		t.Fatalf("AttachmentDownloadHandler returned error: %v", err)
 	}
 	if rec.Code != http.StatusForbidden {
-		t.Fatalf("expected status %d when query holding_code mismatches token, got %d", http.StatusForbidden, rec.Code)
+		t.Fatalf("expected status %d when query holdingcode mismatches token, got %d", http.StatusForbidden, rec.Code)
 	}
 }

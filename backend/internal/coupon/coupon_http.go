@@ -554,7 +554,7 @@ func (h CouponHttp) DownloadImportTemplate(ctx microservice.IContext) error {
 		"category_codes",           // รายการ CategoryCode (ถ้ามีหลายตัวใช้ ;)
 		"class_codes",              // รายการ ClassCode (ถ้ามีหลายตัวใช้ ;)
 		"minimum_amount",           // มูลค่าขั้นต่ำของสินค้าที่เข้าเงื่อนไข (0 = ไม่จำกัด)
-		"ignore_branch_code",       // รายการสาขาที่ไม่ต้องการใช้คูปอง (ถ้ามีหลายตัวใช้ ;)
+		"ignore_branchcode",        // รายการสาขาที่ไม่ต้องการใช้คูปอง (ถ้ามีหลายตัวใช้ ;)
 	}
 
 	// เขียนหัวตาราง
@@ -590,7 +590,7 @@ func (h CouponHttp) DownloadImportTemplate(ctx microservice.IContext) error {
 			"CAT001;CAT002",   // category_codes
 			"",                // class_codes
 			2000.00,           // minimum_amount (ขั้นต่ำ 2000 บาท)
-			"BR001;BR002",     // ignore_branch_code
+			"BR001;BR002",     // ignore_branchcode
 		},
 		{
 			"EXAMPLE002",
@@ -617,7 +617,7 @@ func (h CouponHttp) DownloadImportTemplate(ctx microservice.IContext) error {
 			"",              // category_codes
 			"CLS001",        // class_codes
 			500.00,          // minimum_amount (ขั้นต่ำ 500 บาท)
-			"",              // ignore_branch_code
+			"",              // ignore_branchcode
 		},
 		{
 			"EXAMPLE003",
@@ -644,7 +644,7 @@ func (h CouponHttp) DownloadImportTemplate(ctx microservice.IContext) error {
 			"", // category_codes
 			"", // class_codes
 			0,  // minimum_amount (0 = ไม่จำกัด)
-			"", // ignore_branch_code
+			"", // ignore_branchcode
 		},
 	}
 
@@ -700,7 +700,7 @@ func (h CouponHttp) DownloadImportTemplate(ctx microservice.IContext) error {
 			"   - class_codes: รายการรหัสคลาส เช่น 'CLS001;CLS002'",
 			"",
 			"6. การยกเว้นสาขา (Branch Exclusion):",
-			"   - ignore_branch_code: รายการรหัสสาขาที่ไม่ต้องการใช้คูปอง เช่น 'BR001;BR002'",
+			"   - ignore_branchcode: รายการรหัสสาขาที่ไม่ต้องการใช้คูปอง เช่น 'BR001;BR002'",
 			"   - ว่าง = ใช้ได้ทุกสาขา",
 			"",
 			"7. ตัวอย่างการใช้งาน:",
@@ -708,7 +708,7 @@ func (h CouponHttp) DownloadImportTemplate(ctx microservice.IContext) error {
 			"   - คูปองเฉพาะสินค้า: product_codes='PROD001;PROD002', อื่นๆ = ว่าง",
 			"   - คูปองเฉพาะหมวดหมู่: category_codes='CAT001;CAT002', อื่นๆ = ว่าง",
 			"   - คูปองแบบผสม: สามารถกรอกหลายคอลัมน์พร้อมกันได้",
-			"   - ยกเว้นสาขา: ignore_branch_code='BR001;BR003' = ไม่ใช้ที่สาขา BR001 และ BR003",
+			"   - ยกเว้นสาขา: ignore_branchcode='BR001;BR003' = ไม่ใช้ที่สาขา BR001 และ BR003",
 			"",
 			"8. Logic การใช้งาน:",
 			"   - หาก isonetimeuse = true: maxusagecount และ maxusagecountpercustomer จะถูกตั้งเป็น 1 อัตโนมัติ",
@@ -743,7 +743,7 @@ func (h CouponHttp) DownloadImportTemplate(ctx microservice.IContext) error {
 	_ = f.SetColWidth(sheetName, "U", "U", 18) // grade_codes
 	_ = f.SetColWidth(sheetName, "V", "V", 20) // category_codes
 	_ = f.SetColWidth(sheetName, "W", "W", 18) // class_codes
-	_ = f.SetColWidth(sheetName, "X", "X", 25) // ignore_branch_code
+	_ = f.SetColWidth(sheetName, "X", "X", 25) // ignore_branchcode
 
 	// จัดรูปแบบหัวตาราง
 	headerStyle, err := f.NewStyle(&excelize.Style{
@@ -1010,7 +1010,7 @@ func (h CouponHttp) CheckCouponAvailabilityAdvanced(ctx microservice.IContext) e
 
 	// Validate required fields
 	if checkReq.BranchCode == "" {
-		ctx.ResponseError(400, "branch_code is required")
+		ctx.ResponseError(400, "branchcode is required")
 		return nil
 	}
 
@@ -1241,7 +1241,7 @@ func (h CouponHttp) UseCoupon(ctx microservice.IContext) error {
 // @Summary		คำนวนส่วนลดจากคูปอง
 // @Description คำนวนส่วนลดและมูลค่าแทนเงินสดจากรายการคูปองที่ส่งมา รองรับ Dynamic Usage Count Logic และตรวจสอบเงื่อนไขสินค้า/สาขา
 // @Description use_amount: 0 = ใช้เต็มจำนวน, >0 = ใช้ตามจำนวนที่ระบุ
-// @Description branch_code: รหัสสาขาสำหรับตรวจสอบ IgnoreBranchCode
+// @Description branchcode: รหัสสาขาสำหรับตรวจสอบ IgnoreBranchCode
 // @Description items: รายการสินค้าสำหรับตรวจสอบเงื่อนไขสินค้าและคำนวนส่วนลด
 // @Tags		Coupon
 // @Param		CalculateCoupon  body  models.CalculateCouponRequest  true  "calculation data"
@@ -1276,7 +1276,7 @@ func (h CouponHttp) CalculateCoupons(ctx microservice.IContext) error {
 
 	// Validate new required fields
 	if calcReq.BranchCode == "" {
-		ctx.ResponseError(400, "branch_code is required")
+		ctx.ResponseError(400, "branchcode is required")
 		return nil
 	}
 

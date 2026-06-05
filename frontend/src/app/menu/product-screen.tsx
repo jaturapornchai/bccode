@@ -97,7 +97,7 @@ function readWorkspaceSession(): WorkspaceSession | null {
   }
 }
 
-async function ensureActiveProductHolding(auth: AuthSession, holding_code: string): Promise<void> {
+async function ensureActiveProductHolding(auth: AuthSession, holdingcode: string): Promise<void> {
   const response = await fetch("/api/workspace/select-holding", {
     method: "POST",
     headers: {
@@ -105,7 +105,7 @@ async function ensureActiveProductHolding(auth: AuthSession, holding_code: strin
       "x-bc-backend-url": auth.backendUrl,
       Authorization: `Bearer ${auth.token}`,
     },
-    body: JSON.stringify({ backendUrl: auth.backendUrl, holding_code }),
+    body: JSON.stringify({ backendUrl: auth.backendUrl, holdingcode }),
     cache: "no-store",
   });
   const data = await response.json().catch(() => null) as { success?: boolean; message?: string } | null;
@@ -339,13 +339,13 @@ const [pickerType, setPickerType] = useState<string>("");
     };
   }, []);
 
-  const activeHoldingCode = workspace?.shop.holding_code ?? "";
+  const activeHoldingCode = workspace?.shop.holdingcode ?? "";
 
   useEffect(() => {
     if (!showBarcodePicker || !auth) return;
     let active = true;
     setLoadingBarcodes(true);
-    listBarcodes(auth, { holding_code: activeHoldingCode, keyword: barcodeSearch, limit: 100 })
+    listBarcodes(auth, { holdingcode: activeHoldingCode, keyword: barcodeSearch, limit: 100 })
       .then((resData) => {
         if (active && resData.success && resData.data) {
           // Filter unlinked barcodes (itemcode is empty — no product linked yet)
@@ -429,7 +429,7 @@ const [pickerType, setPickerType] = useState<string>("");
       const params = new URLSearchParams({
         q: search,
         limit: isSetOnly ? "120" : "80",
-        holding_code: activeHoldingCode,
+        holdingcode: activeHoldingCode,
       });
       if (isSetOnly) {
         params.set("item_type", "2");
@@ -475,7 +475,7 @@ const [pickerType, setPickerType] = useState<string>("");
 
   const makeBlankProduct = useCallback((): Product => ({
     guidfixed: "",
-    holding_code: activeHoldingCode,
+    holdingcode: activeHoldingCode,
     code: "",
     names: [{ code: "th", name: "" }, { code: "en", name: "" }],
     group_code: "",
@@ -513,7 +513,7 @@ const [pickerType, setPickerType] = useState<string>("");
     setEditProduct({
       ...selectedProduct,
       guidfixed: "",
-      holding_code: activeHoldingCode,
+      holdingcode: activeHoldingCode,
     });
     setProductTab("basic");
     setEditorOpen(true);
@@ -813,18 +813,18 @@ const [pickerType, setPickerType] = useState<string>("");
     if (pickerType === "creditor") {
       if (pickerTarget === "manufacturers") {
         const current = editProduct.manufacturers || [];
-        if (!current.some((m) => m.guid_fixed === entry.guidfixed)) {
+        if (!current.some((m) => m.guidfixed === entry.guidfixed)) {
           setEditProduct({
             ...editProduct,
-            manufacturers: [...current, { guid_fixed: entry.guidfixed, code: entry.code, names: entry.names }],
+            manufacturers: [...current, { guidfixed: entry.guidfixed, code: entry.code, names: entry.names }],
           });
         }
       } else if (pickerTarget === "suppliers") {
         const current = editProduct.suppliers || [];
-        if (!current.some((s) => s.guid_fixed === entry.guidfixed)) {
+        if (!current.some((s) => s.guidfixed === entry.guidfixed)) {
           setEditProduct({
             ...editProduct,
-            suppliers: [...current, { guid_fixed: entry.guidfixed, code: entry.code, names: entry.names }],
+            suppliers: [...current, { guidfixed: entry.guidfixed, code: entry.code, names: entry.names }],
           });
         }
       }
@@ -907,7 +907,7 @@ const [pickerType, setPickerType] = useState<string>("");
     const current = editProduct.manufacturers || [];
     setEditProduct({
       ...editProduct,
-      manufacturers: current.filter((m) => m.guid_fixed !== guid),
+      manufacturers: current.filter((m) => m.guidfixed !== guid),
     });
   };
 
@@ -916,7 +916,7 @@ const [pickerType, setPickerType] = useState<string>("");
     const current = editProduct.suppliers || [];
     setEditProduct({
       ...editProduct,
-      suppliers: current.filter((s) => s.guid_fixed !== guid),
+      suppliers: current.filter((s) => s.guidfixed !== guid),
     });
   };
 
@@ -1328,9 +1328,9 @@ const [pickerType, setPickerType] = useState<string>("");
                           <p className="text-xs text-muted-foreground text-center py-2">{text.noManufacturerData}</p>
                         ) : (
                           editProduct.manufacturers.map((m) => (
-                            <div key={m.guid_fixed} className="flex items-center justify-between bg-muted/40 p-2 rounded text-sm border border-border/40">
+                            <div key={m.guidfixed} className="flex items-center justify-between bg-muted/40 p-2 rounded text-sm border border-border/40">
                               <span className="truncate font-medium">{m.code} — {pickName(m.names, lang)}</span>
-                              <Button type="button" size="sm" variant="ghost" className="text-destructive hover:bg-destructive/10" onClick={() => removeManufacturer(m.guid_fixed)}>
+                              <Button type="button" size="sm" variant="ghost" className="text-destructive hover:bg-destructive/10" onClick={() => removeManufacturer(m.guidfixed)}>
                                 <Trash2 className="h-3.5 w-3.5" />
                               </Button>
                             </div>
@@ -1353,9 +1353,9 @@ const [pickerType, setPickerType] = useState<string>("");
                           <p className="text-xs text-muted-foreground text-center py-2">{text.noSupplierData}</p>
                         ) : (
                           editProduct.suppliers.map((s) => (
-                            <div key={s.guid_fixed} className="flex items-center justify-between bg-muted/40 p-2 rounded text-sm border border-border/40">
+                            <div key={s.guidfixed} className="flex items-center justify-between bg-muted/40 p-2 rounded text-sm border border-border/40">
                               <span className="truncate font-medium">{s.code} — {pickName(s.names, lang)}</span>
-                              <Button type="button" size="sm" variant="ghost" className="text-destructive hover:bg-destructive/10" onClick={() => removeSupplier(s.guid_fixed)}>
+                              <Button type="button" size="sm" variant="ghost" className="text-destructive hover:bg-destructive/10" onClick={() => removeSupplier(s.guidfixed)}>
                                 <Trash2 className="h-3.5 w-3.5" />
                               </Button>
                             </div>
@@ -1719,7 +1719,7 @@ const [pickerType, setPickerType] = useState<string>("");
                   title={text.tabMisc ?? "อื่น ๆ"}
                   fields={[
                     { label: "รหัสภายในสินค้า", value: selectedProduct.guidfixed || "-" },
-                    { label: "รหัส Holding", value: selectedProduct.holding_code || "-" },
+                    { label: "รหัส Holding", value: selectedProduct.holdingcode || "-" },
                     { label: "GUID หน่วยนับ", value: selectedProduct.unitguid || "-" },
                     { label: "เปิดคำเตือน", value: formatYesNo(selectedProduct.isalert) },
                     { label: "ข้อความคำเตือน", value: selectedProduct.alertdescription || "-" },
@@ -1736,7 +1736,7 @@ const [pickerType, setPickerType] = useState<string>("");
                     ) : (
                       <div className="mt-1 grid gap-1">
                         {selectedProduct.manufacturers.map((m) => (
-                          <div key={m.guid_fixed} className="break-words rounded-md border border-border/50 bg-background/70 px-2 py-1 text-xs font-semibold text-foreground">
+                          <div key={m.guidfixed} className="break-words rounded-md border border-border/50 bg-background/70 px-2 py-1 text-xs font-semibold text-foreground">
                             {m.code} — {pickName(m.names, lang)}
                           </div>
                         ))}
@@ -1751,7 +1751,7 @@ const [pickerType, setPickerType] = useState<string>("");
                     ) : (
                       <div className="mt-1 grid gap-1">
                         {selectedProduct.suppliers.map((s) => (
-                          <div key={s.guid_fixed} className="break-words rounded-md border border-border/50 bg-background/70 px-2 py-1 text-xs font-semibold text-foreground">
+                          <div key={s.guidfixed} className="break-words rounded-md border border-border/50 bg-background/70 px-2 py-1 text-xs font-semibold text-foreground">
                             {s.code} — {pickName(s.names, lang)}
                           </div>
                         ))}
@@ -3012,7 +3012,7 @@ function TabProductMisc({
             <Input value={value.guidfixed || ""} readOnly className="bg-muted/50" />
           </FieldRow>
           <FieldRow label={textMisc.miscHoldingCode}>
-            <Input value={value.holding_code || ""} readOnly className="bg-muted/50" />
+            <Input value={value.holdingcode || ""} readOnly className="bg-muted/50" />
           </FieldRow>
           <FieldRow label={textMisc.miscUnitGuid}>
             <Input value={value.unitguid || ""} readOnly className="bg-muted/50" />
@@ -3195,7 +3195,7 @@ function formatRefBarcodeList(items: RefProductBarcode[] | undefined, language: 
             .map((stock) => `${stock.dimension_name || stock.dimension_key}: พร้อมขาย ${stock.available_qty}`)
             .join("; ");
           return [
-            [mapping.platform, mapping.holding_code, mapping.seller_sku].filter(Boolean).join(" / "),
+            [mapping.platform, mapping.holdingcode, mapping.seller_sku].filter(Boolean).join(" / "),
             stockText,
           ].filter(Boolean).join(" => ");
         })

@@ -60,10 +60,10 @@ func NewBomRepository(pst microservice.IPersisterMongo) *BomRepository {
 func (repo BomRepository) FindUseBOMByBarcode(ctx context.Context, holdingCode string, barcode string) (models.ProductBarcodeBOMViewDoc, error) {
 
 	filters := bson.M{
-		"holding_code": holdingCode,
+		"holdingcode":  holdingCode,
 		"iscurrentuse": true,
 		"barcode":      barcode,
-		"deleted_at":   bson.M{"$exists": false},
+		"deletedat":    bson.M{"$exists": false},
 	}
 
 	doc := models.ProductBarcodeBOMViewDoc{}
@@ -85,10 +85,10 @@ func (repo BomRepository) FindUseBOMByBarcode(ctx context.Context, holdingCode s
 func (repo BomRepository) ClearUseBOMByBarcode(ctx context.Context, holdingCode string, barcode string) error {
 
 	filters := bson.M{
-		"holding_code": holdingCode,
+		"holdingcode":  holdingCode,
 		"barcode":      barcode,
 		"iscurrentuse": true,
-		"deleted_at":   bson.M{"$exists": false},
+		"deletedat":    bson.M{"$exists": false},
 	}
 
 	err := repo.pst.Update(ctx, models.ProductBarcodeBOMViewDoc{}, filters, bson.M{"$set": bson.M{"iscurrentuse": false}})

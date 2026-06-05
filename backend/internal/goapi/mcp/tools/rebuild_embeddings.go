@@ -23,14 +23,14 @@ const embeddingBatchSize = 50
 type RebuildEmbeddingsResponse struct {
 	Success     bool      `json:"success"`
 	Message     string    `json:"message"`
-	HoldingCode string    `json:"holding_code"`
-	EntityType  string    `json:"entity_type"`
+	HoldingCode string    `json:"holdingcode"`
+	EntityType  string    `json:"entitytype"`
 	Total       int       `json:"total"`
 	Updated     int       `json:"updated"`
 	Skipped     int       `json:"skipped"`
 	Errors      int       `json:"errors"`
 	Duration    string    `json:"duration"`
-	GeneratedAt time.Time `json:"generated_at"`
+	GeneratedAt time.Time `json:"generatedat"`
 }
 
 // embedRow — generic row สำหรับ embedding (key เป็น string เพราะ debtor/creditor ใช้ guidfixed)
@@ -43,7 +43,7 @@ type embedRow struct {
 // MongoDB remains the authoritative operational source for entity data.
 func RebuildEmbeddings(ctx context.Context, holdingCode string, forceAll bool, entityType string) (*RebuildEmbeddingsResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 	if entityType == "" {
 		entityType = "product"
@@ -151,8 +151,8 @@ func RebuildEmbeddings(ctx context.Context, holdingCode string, forceAll bool, e
 
 type entityConfig struct {
 	tableName string
-	keyColumn string // column ที่ใช้เป็น key: "id" for product/customer, "guid_fixed" for debtor/creditor
-	query     string // SQL: SELECT key, text ... WHERE name_embedding IS NULL
+	keyColumn string // column ที่ใช้เป็น key: "id" for product/customer, "guidfixed" for debtor/creditor
+	query     string // SQL: SELECT key, text ... WHERE nameembedding IS NULL
 	queryAll  string // SQL: SELECT key, text ... (force all)
 }
 
@@ -163,9 +163,9 @@ func getEntityConfig(entityType string) (*entityConfig, error) {
 			tableName: "productbarcode",
 			keyColumn: "id",
 			query: `SELECT id::text, CONCAT_WS(' | ', name0, NULLIF(brandnames,''), NULLIF(categorynames,''), NULLIF(groupnames,''))
-				FROM (SELECT DISTINCT ON (itemcode) id, itemcode, name0, brandnames, categorynames, groupnames, name_embedding
+				FROM (SELECT DISTINCT ON (itemcode) id, itemcode, name0, brandnames, categorynames, groupnames, nameembedding
 					FROM productbarcode ORDER BY itemcode, id) sub
-				WHERE name0 != '' AND name_embedding IS NULL ORDER BY itemcode`,
+				WHERE name0 != '' AND nameembedding IS NULL ORDER BY itemcode`,
 			queryAll: `SELECT id::text, CONCAT_WS(' | ', name0, NULLIF(brandnames,''), NULLIF(categorynames,''), NULLIF(groupnames,''))
 				FROM (SELECT DISTINCT ON (itemcode) id, itemcode, name0, brandnames, categorynames, groupnames
 					FROM productbarcode ORDER BY itemcode, id) sub
@@ -175,10 +175,10 @@ func getEntityConfig(entityType string) (*entityConfig, error) {
 	case "debtor":
 		return &entityConfig{
 			tableName: "debtor",
-			keyColumn: "guid_fixed",
+			keyColumn: "guidfixed",
 			query: `SELECT d.guidfixed, CONCAT_WS(' | ', d.code, string_agg(n.elem->>'name', ' / '))
 				FROM debtor d, jsonb_array_elements(d.names) AS n(elem)
-				WHERE d.names IS NOT NULL AND jsonb_array_length(d.names) > 0 AND d.name_embedding IS NULL
+				WHERE d.names IS NOT NULL AND jsonb_array_length(d.names) > 0 AND d.nameembedding IS NULL
 				GROUP BY d.guidfixed, d.code`,
 			queryAll: `SELECT d.guidfixed, CONCAT_WS(' | ', d.code, string_agg(n.elem->>'name', ' / '))
 				FROM debtor d, jsonb_array_elements(d.names) AS n(elem)
@@ -189,10 +189,10 @@ func getEntityConfig(entityType string) (*entityConfig, error) {
 	case "creditor":
 		return &entityConfig{
 			tableName: "creditor",
-			keyColumn: "guid_fixed",
+			keyColumn: "guidfixed",
 			query: `SELECT d.guidfixed, CONCAT_WS(' | ', d.code, string_agg(n.elem->>'name', ' / '))
 				FROM creditor d, jsonb_array_elements(d.names) AS n(elem)
-				WHERE d.names IS NOT NULL AND jsonb_array_length(d.names) > 0 AND d.name_embedding IS NULL
+				WHERE d.names IS NOT NULL AND jsonb_array_length(d.names) > 0 AND d.nameembedding IS NULL
 				GROUP BY d.guidfixed, d.code`,
 			queryAll: `SELECT d.guidfixed, CONCAT_WS(' | ', d.code, string_agg(n.elem->>'name', ' / '))
 				FROM creditor d, jsonb_array_elements(d.names) AS n(elem)
@@ -206,14 +206,14 @@ func getEntityConfig(entityType string) (*entityConfig, error) {
 			keyColumn: "id",
 			query: `SELECT id::text, CONCAT_WS(' | ', code, name0)
 				FROM customer
-				WHERE name0 IS NOT NULL AND name0 != '' AND name_embedding IS NULL`,
+				WHERE name0 IS NOT NULL AND name0 != '' AND nameembedding IS NULL`,
 			queryAll: `SELECT id::text, CONCAT_WS(' | ', code, name0)
 				FROM customer
 				WHERE name0 IS NOT NULL AND name0 != ''`,
 		}, nil
 
 	default:
-		return nil, fmt.Errorf("unsupported entity_type: %s (ใช้ได้: product, debtor, creditor, customer)", entityType)
+		return nil, fmt.Errorf("unsupported entitytype: %s (ใช้ได้: product, debtor, creditor, customer)", entityType)
 	}
 }
 
@@ -235,10 +235,10 @@ func ensureVectorExtension(db *sql.DB) error {
 
 func ensureEmbeddingColumn(db *sql.DB, tableName string) {
 	var colExists bool
-	db.QueryRow(`SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name = $1 AND column_name = 'name_embedding')`, tableName).Scan(&colExists)
+	db.QueryRow(`SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE tablename = $1 AND column_name = 'nameembedding')`, tableName).Scan(&colExists)
 	if !colExists {
-		db.Exec(fmt.Sprintf(`ALTER TABLE %s ADD COLUMN IF NOT EXISTS name_embedding vector(768)`, tableName))
-		db.Exec(fmt.Sprintf(`CREATE INDEX IF NOT EXISTS idx_%s_embedding_hnsw ON %s USING hnsw (name_embedding vector_cosine_ops) WITH (m = 16, ef_construction = 64)`, tableName, tableName))
+		db.Exec(fmt.Sprintf(`ALTER TABLE %s ADD COLUMN IF NOT EXISTS nameembedding vector(768)`, tableName))
+		db.Exec(fmt.Sprintf(`CREATE INDEX IF NOT EXISTS idx_%s_embedding_hnsw ON %s USING hnsw (nameembedding vectorcosineops) WITH (m = 16, ef_construction = 64)`, tableName, tableName))
 	}
 }
 
@@ -269,7 +269,7 @@ func fetchRowsForEmbedding(db *sql.DB, cfg *entityConfig, forceAll bool) ([]embe
 
 func updateEmbedding(db *sql.DB, cfg *entityConfig, key string, embedding []float32) error {
 	vecStr := float32SliceToVectorString(embedding)
-	query := fmt.Sprintf(`UPDATE %s SET name_embedding = $1::vector WHERE %s = $2`, cfg.tableName, cfg.keyColumn)
+	query := fmt.Sprintf(`UPDATE %s SET nameembedding = $1::vector WHERE %s = $2`, cfg.tableName, cfg.keyColumn)
 	_, err := db.Exec(query, vecStr, key)
 	return err
 }

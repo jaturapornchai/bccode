@@ -113,7 +113,7 @@ func TestChartOfAccountRepositoryCreate(t *testing.T) {
 	s.mock.ExpectBegin()
 
 	s.mock.ExpectExec(
-		regexp.QuoteMeta(`INSERT INTO "chartofaccounts" ("holding_code","parid","accountcode","accountname","accountcategory","accountbalancetype","accountgroup","accountlevel","consolidateaccountcode")
+		regexp.QuoteMeta(`INSERT INTO "chartofaccounts" ("holdingcode","parid","accountcode","accountname","accountcategory","accountbalancetype","accountgroup","accountlevel","consolidateaccountcode")
 	                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`)).
 		WithArgs(
 			s.chartofaccount.HoldingCode, s.chartofaccount.ParID, s.chartofaccount.AccountCode, s.chartofaccount.AccountName,
@@ -122,7 +122,7 @@ func TestChartOfAccountRepositoryCreate(t *testing.T) {
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	// s.mock.ExpectQuery(regexp.QuoteMeta(
-	// 	`INSERT INTO "chartofaccounts" ("holding_code", "accountcode","accountname")
+	// 	`INSERT INTO "chartofaccounts" ("holdingcode", "accountcode","accountname")
 	// 						VALUES ($1,$2,$3) RETURNING "chartofaccounts"."accountcode"`)).
 	// 	WithArgs(s.chartofaccount.HoldingCode, s.chartofaccount.ParID, s.chartofaccount.AccountCode, s.chartofaccount.AccountName, s.chartofaccount.AccountCategory, s.chartofaccount.AccountBalanceType, s.chartofaccount.AccountGroup, s.chartofaccount.AccountLevel, s.chartofaccount.ConsolidateAccountCode).
 	// 	WillReturnRows(sqlmock.NewRows([]string{"0001"}).
@@ -172,7 +172,7 @@ func TestChartOfAccountRepositoryGetByHoldingCodeAndAccountCode(t *testing.T) {
 		ConsolidateAccountCode: "",
 	}
 
-	colums := []string{"holding_code", "parid", "accountcode", "accountname", "accountcategory", "accountbalancetype", "accountgroup", "accountlevel", "consolidateaccountcode"}
+	colums := []string{"holdingcode", "parid", "accountcode", "accountname", "accountcategory", "accountbalancetype", "accountgroup", "accountlevel", "consolidateaccountcode"}
 	rows := sqlmock.NewRows(colums).
 		AddRow(
 			s.chartofaccount.HoldingCodeentity.HoldingCode,
@@ -190,7 +190,7 @@ func TestChartOfAccountRepositoryGetByHoldingCodeAndAccountCode(t *testing.T) {
 	//s.mock.ExpectBegin()
 
 	s.mock.ExpectQuery(
-		regexp.QuoteMeta(`SELECT * FROM "chartofaccounts" WHERE holding_code=$1 AND accountcode=$2`)).
+		regexp.QuoteMeta(`SELECT * FROM "chartofaccounts" WHERE holdingcode=$1 AND accountcode=$2`)).
 		WithArgs(s.chartofaccount.HoldingCode, s.chartofaccount.AccountCode).
 		WillReturnRows(rows)
 
@@ -239,14 +239,14 @@ func TestChartOfAccountRepositoryGetByHoldingCodeAndAccountCodeAssertNotFoundDat
 		ConsolidateAccountCode: "",
 	}
 
-	// colums := []string{"holding_code", "parid", "accountcode", "accountname", "accountcategory", "accountbalancetype", "accountgroup", "accountlevel", "consolidateaccountcode"}
+	// colums := []string{"holdingcode", "parid", "accountcode", "accountname", "accountcategory", "accountbalancetype", "accountgroup", "accountlevel", "consolidateaccountcode"}
 	// rows := sqlmock.NewRows(colums)
 
 	s.mock.MatchExpectationsInOrder(false)
 	//s.mock.ExpectBegin()
 
 	s.mock.ExpectQuery(
-		regexp.QuoteMeta(`SELECT * FROM "chartofaccounts" WHERE holding_code=$1 AND accountcode=$2`)).
+		regexp.QuoteMeta(`SELECT * FROM "chartofaccounts" WHERE holdingcode=$1 AND accountcode=$2`)).
 		WithArgs(s.chartofaccount.HoldingCode, s.chartofaccount.AccountCode).
 		WillReturnError(gorm.ErrRecordNotFound)
 		//WillReturnRows(rows)

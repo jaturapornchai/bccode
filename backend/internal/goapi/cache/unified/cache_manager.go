@@ -22,11 +22,11 @@ var CacheTTL = map[string]time.Duration{
 
 // CacheKeyPatterns สำหรับการสร้าง key
 var CacheKeyPatterns = map[string]string{
-	"ai_chat":        "ai:chat:{holding_code}:{hash}",
-	"product_search": "product:search:{holding_code}:{hash}",
-	"stock_realtime": "stock:realtime:{holding_code}:{item_code}:{warehouse}:{location}",
-	"document":       "doc:{holding_code}:{doc_no}:{version}",
-	"analytics":      "analytics:{holding_code}:{type}:{period}",
+	"ai_chat":        "ai:chat:{holdingcode}:{hash}",
+	"product_search": "product:search:{holdingcode}:{hash}",
+	"stock_realtime": "stock:realtime:{holdingcode}:{item_code}:{warehouse}:{location}",
+	"document":       "doc:{holdingcode}:{doc_no}:{version}",
+	"analytics":      "analytics:{holdingcode}:{type}:{period}",
 }
 
 // CacheEntry แสดงข้อมูลใน cache
@@ -34,19 +34,19 @@ type CacheEntry struct {
 	Data       interface{}   `json:"data"`
 	Timestamp  time.Time     `json:"timestamp"`
 	TTL        time.Duration `json:"ttl"`
-	HitCount   int64         `json:"hit_count"`
-	LastAccess time.Time     `json:"last_access"`
+	HitCount   int64         `json:"hitcount"`
+	LastAccess time.Time     `json:"lastaccess"`
 }
 
 // CacheStats สถิติการใช้งาน cache
 type CacheStats struct {
-	TotalEntries int64            `json:"total_entries"`
-	TotalHits    int64            `json:"total_hits"`
-	TotalMisses  int64            `json:"total_misses"`
-	HitRate      float64          `json:"hit_rate"`
-	MemoryUsage  int64            `json:"memory_usage"`
-	ByType       map[string]int64 `json:"by_type"`
-	LastUpdated  time.Time        `json:"last_updated"`
+	TotalEntries int64            `json:"totalentries"`
+	TotalHits    int64            `json:"totalhits"`
+	TotalMisses  int64            `json:"totalmisses"`
+	HitRate      float64          `json:"hitrate"`
+	MemoryUsage  int64            `json:"memoryusage"`
+	ByType       map[string]int64 `json:"bytype"`
+	LastUpdated  time.Time        `json:"lastupdated"`
 }
 
 // UnifiedCacheManager จัดการ cache หลายระดับ

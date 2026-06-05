@@ -1,27 +1,27 @@
 package models
 
 type MongoProductBarcodeModel struct {
-	HoldingCode      string                               `json:"holding_code" bson:"holding_code"`
-	GuidFixed        string                               `json:"guid_fixed" bson:"guid_fixed"`
+	HoldingCode      string                               `json:"holdingcode" bson:"holdingcode"`
+	GuidFixed        string                               `json:"guidfixed" bson:"guidfixed"`
 	ItemCode         string                               `json:"itemcode" bson:"itemcode"`
 	Barcode          string                               `json:"barcode" bson:"barcode"`
 	Names            []LanguageModel                      `json:"names" bson:"names"`
-	GroupCode        string                               `json:"group_code" bson:"group_code"`
-	GroupNames       []LanguageModel                      `json:"group_names" bson:"group_names"`
-	ItemUnitCode     string                               `json:"item_unit_code" bson:"item_unit_code"`
+	GroupCode        string                               `json:"groupcode" bson:"groupcode"`
+	GroupNames       []LanguageModel                      `json:"groupnames" bson:"groupnames"`
+	ItemUnitCode     string                               `json:"itemunitcode" bson:"itemunitcode"`
 	ItemUnitNames    []LanguageModel                      `json:"itemunitnames" bson:"itemunitnames"`
 	Prices           []PriceModel                         `json:"prices" bson:"prices"`
 	DivideValue      float64                              `json:"dividevalue" bson:"dividevalue"`
 	StandValue       float64                              `json:"standvalue" bson:"standvalue"`
 	RefBarCodes      []ProcessMongoBarcodeRefBarcodeModel `json:"refbarcodes" bson:"refbarcodes"`
-	ItemType         int                                  `json:"item_type" bson:"item_type"`
+	ItemType         int                                  `json:"itemtype" bson:"itemtype"`
 	MaterialType     int                                  `json:"materialtype" bson:"materialtype"`
 	IsUseSubBarcodes bool                                 `json:"isusesubbarcodes" bson:"isusesubbarcodes"`
 	ImageUri         string                               `json:"imageuri" bson:"imageuri"`
-	BrandCode        string                               `json:"brand_code" bson:"brand_code"`
+	BrandCode        string                               `json:"brandcode" bson:"brandcode"`
 	BrandNames       []LanguageModel                      `json:"brandnames" bson:"brandnames"`
 	CategoryCode     string                               `json:"categorycode" bson:"categorycode"`
-	CategoryNames    []LanguageModel                      `json:"category_names" bson:"category_names"`
+	CategoryNames    []LanguageModel                      `json:"categorynames" bson:"categorynames"`
 	ClassCode        string                               `json:"classcode" bson:"classcode"`
 	ClassNames       []LanguageModel                      `json:"classnames" bson:"classnames"`
 	DesignCode       string                               `json:"designcode" bson:"designcode"`
@@ -39,6 +39,6 @@ type MongoProductBarcodeModel struct {
 }
 
 type PriceModel struct {
-	KeyNumber int     `json:"key_number" bson:"key_number"`
+	KeyNumber int     `json:"keynumber" bson:"keynumber"`
 	Price     float64 `json:"price" bson:"price"`
 }

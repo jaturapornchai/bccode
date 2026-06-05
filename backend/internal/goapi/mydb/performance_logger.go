@@ -10,15 +10,15 @@ import (
 
 // PerformanceMetric เก็บข้อมูล performance ของแต่ละ query
 type PerformanceMetric struct {
-	Query string        `json:"query"`
-	Database string        `json:"database"`
-	Operation string        `json:"operation"`
-	Duration time.Duration `json:"duration"`
-	RowsAffected int64        `json:"rows_affected"`
-	Status string        `json:"status"` // "success", "error"
-	Error string        `json:"error,omitempty"`
-	Timestamp time.Time     `json:"timestamp"`
-	Context string        `json:"context,omitempty"` // เพิ่มเติมเพื่อระบุ context
+	Query        string        `json:"query"`
+	Database     string        `json:"database"`
+	Operation    string        `json:"operation"`
+	Duration     time.Duration `json:"duration"`
+	RowsAffected int64         `json:"rowsaffected"`
+	Status       string        `json:"status"` // "success", "error"
+	Error        string        `json:"error,omitempty"`
+	Timestamp    time.Time     `json:"timestamp"`
+	Context      string        `json:"context,omitempty"` // เพิ่มเติมเพื่อระบุ context
 }
 
 // QueryPerformanceLogger interface สำหรับ logging performance
@@ -51,11 +51,11 @@ func (pl *DatabasePerformanceLogger) LogQuery(ctx context.Context, query string,
 		Timestamp:    time.Now(),
 		Context:      pl.getContextFromCtx(ctx),
 	}
-	
+
 	if err != nil {
 		metric.Error = err.Error()
 	}
-	
+
 	// Log ตามระดับ performance
 	pl.logPerformance(metric)
 }
@@ -66,7 +66,7 @@ func (pl *DatabasePerformanceLogger) LogBatchOperation(ctx context.Context, oper
 	if err != nil || errorRows > 0 {
 		status = "error"
 	}
-	
+
 	metric := PerformanceMetric{
 		Query:        fmt.Sprintf("BATCH_%s", operation),
 		Database:     pl.DatabaseName,
@@ -77,11 +77,11 @@ func (pl *DatabasePerformanceLogger) LogBatchOperation(ctx context.Context, oper
 		Timestamp:    time.Now(),
 		Context:      pl.getContextFromCtx(ctx),
 	}
-	
+
 	if err != nil {
 		metric.Error = err.Error()
 	}
-	
+
 	pl.logPerformance(metric)
 }
 
@@ -89,16 +89,16 @@ func (pl *DatabasePerformanceLogger) LogBatchOperation(ctx context.Context, oper
 func (pl *DatabasePerformanceLogger) logPerformance(metric PerformanceMetric) {
 	// แบ่งระดับตามเวลาในการ query
 	duration := metric.Duration
-	
+
 	var level string
 	var emoji string
-	
+
 	switch {
 	case duration < 100*time.Millisecond:
 		level = "debug"
 		emoji = "⚡"
 	case duration < 1*time.Second:
-		level = "info"  
+		level = "info"
 		emoji = "🔄"
 	case duration < 5*time.Second:
 		level = "warn"
@@ -107,15 +107,15 @@ func (pl *DatabasePerformanceLogger) logPerformance(metric PerformanceMetric) {
 		level = "error"
 		emoji = "⏰"
 	}
-	
+
 	// สร้างข้อความ log
 	logMessage := fmt.Sprintf("%s [PERF] %s.%s: %s (duration: %v, rows: %d, status: %s)",
 		emoji, metric.Database, metric.Operation, metric.Context, duration.Round(time.Millisecond), metric.RowsAffected, metric.Status)
-	
+
 	if metric.Error != "" {
 		logMessage += fmt.Sprintf(", error: %s", metric.Error)
 	}
-	
+
 	// แสดงผลตามระดับ
 	switch level {
 	case "debug":
@@ -129,10 +129,10 @@ func (pl *DatabasePerformanceLogger) logPerformance(metric PerformanceMetric) {
 	default:
 		logger.Info(logMessage)
 	}
-	
+
 	// Log summary สำหรับ slow query (เกิน 5 วินาที)
 	if duration >= 5*time.Second {
-		logger.Error("🔍 SLOW QUERY DETECTED - Database: %s, Operation: %s, Duration: %v", 
+		logger.Error("🔍 SLOW QUERY DETECTED - Database: %s, Operation: %s, Duration: %v",
 			metric.Database, metric.Operation, duration.Round(time.Millisecond))
 		logger.Error("Query: %s", metric.Query)
 		if metric.Error != "" {
@@ -157,12 +157,12 @@ func (pl *DatabasePerformanceLogger) getContextFromCtx(ctx context.Context) stri
 	if ctx == nil {
 		return "unknown"
 	}
-	
+
 	// ตัวอย่าง: ดึง requestID จาก context (ถ้ามี)
 	if requestID, ok := ctx.Value("request_id").(string); ok {
 		return requestID
 	}
-	
+
 	return "default"
 }
 
@@ -223,7 +223,7 @@ func (bqt *BatchQueryTimer) AddSuccess() {
 	bqt.totalRows++
 }
 
-// AddError เพิ่มจำนวน error rows  
+// AddError เพิ่มจำนวน error rows
 func (bqt *BatchQueryTimer) AddError() {
 	bqt.errorRows++
 	bqt.totalRows++
@@ -237,11 +237,11 @@ func (bqt *BatchQueryTimer) End(err error) {
 
 // DatabasePerformanceStats สถิติ performance ของ database
 type DatabasePerformanceStats struct {
-	TotalQueries int64                   `json:"total_queries"`
-	TotalErrors int64                   `json:"total_errors"`
-	AverageDuration time.Duration           `json:"average_duration"`
-	SlowQueries []PerformanceMetric     `json:"slow_queries,omitempty"`
-	DatabaseName string                  `json:"database_name"`
+	TotalQueries    int64               `json:"totalqueries"`
+	TotalErrors     int64               `json:"totalerrors"`
+	AverageDuration time.Duration       `json:"averageduration"`
+	SlowQueries     []PerformanceMetric `json:"slowqueries,omitempty"`
+	DatabaseName    string              `json:"databasename"`
 }
 
 // QueryStatsCollector รวบรวมสถิติ performance
@@ -271,40 +271,40 @@ func (qsc *QueryStatsCollector) GetStats(databaseName string) DatabasePerformanc
 	defer func() {
 		<-qsc.mutex // Unlock
 	}()
-	
+
 	var totalDuration time.Duration
 	var totalQueries int64
 	var totalErrors int64
 	var slowQueries []PerformanceMetric
-	
+
 	for _, metric := range qsc.metrics {
 		if metric.Database != databaseName {
 			continue
 		}
-		
+
 		totalQueries++
 		totalDuration += metric.Duration
-		
+
 		if metric.Status == "error" {
 			totalErrors++
 		}
-		
+
 		// เก็บ slow queries (เกิน 1 วินาที)
 		if metric.Duration >= 1*time.Second {
 			slowQueries = append(slowQueries, metric)
 		}
 	}
-	
+
 	// จำกัดจำนวน slow queries ที่เก็บ (เก็บ 10 อันล่าสุด)
 	if len(slowQueries) > 10 {
 		slowQueries = slowQueries[len(slowQueries)-10:]
 	}
-	
+
 	var avgDuration time.Duration
 	if totalQueries > 0 {
 		avgDuration = time.Duration(int64(totalDuration) / totalQueries)
 	}
-	
+
 	return DatabasePerformanceStats{
 		TotalQueries:    totalQueries,
 		TotalErrors:     totalErrors,

@@ -15,7 +15,7 @@ import (
 // ReplacePartitionResult ผลลัพธ์การ replace
 type ReplacePartitionResult struct {
 	Success     bool    `json:"success"`
-	HoldingCode string  `json:"holding_code"`
+	HoldingCode string  `json:"holdingcode"`
 	ItemCode    string  `json:"itemcode"`
 	Rows        int64   `json:"rows"`
 	Duration    float64 `json:"duration"`
@@ -89,7 +89,7 @@ func ReplaceProcessStockCostPartition(
 	// 2. Prepare batch insert
 	insertQuery := fmt.Sprintf(`
         INSERT INTO %s (
-            holding_code, itemcode, docdatetime, docno, linenumber, transflag,
+            holdingcode, itemcode, docdatetime, docno, linenumber, transflag,
             barcodemain, barcode, unitcode, whcode, locationcode,
             totalqty, unitstand, unitdivide, price, averagecost,
             calcamount, balanceqty, balanceamount, guid, unitcost, docref
@@ -106,7 +106,7 @@ func ReplaceProcessStockCostPartition(
 	// 3. Batch insert ข้อมูล
 	for _, row := range data {
 		err := batch.Append(
-			holdingCode,         // holding_code
+			holdingCode,         // holdingcode
 			itemCode,            // itemcode
 			row.DocDateTime,     // docdatetime
 			row.DocNo,           // docno

@@ -12,7 +12,7 @@ type FormTemplate struct {
 	models.PartitionIdentity `bson:"inline"`
 	Code                     string                 `json:"code" bson:"code"`
 	Names                    *[]models.NameX        `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
-	DocType                  string                 `json:"doc_type" bson:"doc_type"`
+	DocType                  string                 `json:"doctype" bson:"doctype"`
 	IsDefault                bool                   `json:"isdefault" bson:"isdefault"`
 	TemplateData             map[string]interface{} `json:"templatedata" bson:"templatedata"`
 }
@@ -32,7 +32,7 @@ type FormTemplateData struct {
 }
 
 type FormTemplateDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	FormTemplateData   `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

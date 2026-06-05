@@ -36,7 +36,7 @@ type DimensionData struct {
 }
 
 type DimensionDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	DimensionData      `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
@@ -46,7 +46,7 @@ func (DimensionDoc) CollectionName() string {
 }
 
 type DimensionItemGuid struct {
-	GuidFixed string `json:"guid_fixed" bson:"guid_fixed"`
+	GuidFixed string `json:"guidfixed" bson:"guidfixed"`
 }
 
 func (DimensionItemGuid) CollectionName() string {

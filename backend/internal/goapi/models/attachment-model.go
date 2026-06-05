@@ -8,32 +8,32 @@ import (
 
 // AttachmentMetadata - ข้อมูลไฟล์แนบเอกสาร (PO, Sale, Purchase, etc.)
 type AttachmentMetadata struct {
-	ID           primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	HoldingCode  string             `bson:"holding_code" json:"holding_code"`
-	ScreenType   string             `bson:"screen_type" json:"screen_type"`                     // purchaseorder, sale, purchase, etc.
+	ID           primitive.ObjectID `bson:"id,omitempty" json:"id"`
+	HoldingCode  string             `bson:"holdingcode" json:"holdingcode"`
+	ScreenType   string             `bson:"screentype" json:"screentype"`                       // purchaseorder, sale, purchase, etc.
 	DocNo        string             `bson:"docno" json:"docno"`                                 // เลขที่เอกสาร
-	GuidFixed    string             `bson:"guid_fixed" json:"guid_fixed"`                       // GUID ของเอกสาร
-	FileName     string             `bson:"file_name" json:"file_name"`                         // ชื่อไฟล์ใน R2 (timestamp_hash + extension)
-	OriginalName string             `bson:"original_name" json:"original_name"`                 // ชื่อไฟล์เดิม
-	ContentType  string             `bson:"content_type" json:"content_type"`                   // MIME type
-	FileType     string             `bson:"file_type" json:"file_type"`                         // pdf, xlsx, jpg, png
+	GuidFixed    string             `bson:"guidfixed" json:"guidfixed"`                         // GUID ของเอกสาร
+	FileName     string             `bson:"filename" json:"filename"`                           // ชื่อไฟล์ใน R2 (timestamp_hash + extension)
+	OriginalName string             `bson:"originalname" json:"originalname"`                   // ชื่อไฟล์เดิม
+	ContentType  string             `bson:"contenttype" json:"contenttype"`                     // MIME type
+	FileType     string             `bson:"filetype" json:"filetype"`                           // pdf, xlsx, jpg, png
 	Size         int64              `bson:"size" json:"size"`                                   // ขนาดไฟล์ (bytes)
-	R2Key        string             `bson:"r2_key" json:"-"`                                    // key ใน R2 bucket (ไม่ส่งออก)
+	R2Key        string             `bson:"r2key" json:"-"`                                     // key ใน R2 bucket (ไม่ส่งออก)
 	Description  string             `bson:"description,omitempty" json:"description,omitempty"` // คำอธิบาย
-	UploadedBy   string             `bson:"uploaded_by" json:"uploaded_by"`                     // user_code
-	UploadedName string             `bson:"uploaded_name" json:"uploaded_name"`                 // user_name
-	CreatedAt    time.Time          `bson:"created_at" json:"created_at"`
-	UpdatedAt    time.Time          `bson:"updated_at" json:"updated_at"`
+	UploadedBy   string             `bson:"uploadedby" json:"uploadedby"`                       // user_code
+	UploadedName string             `bson:"uploadedname" json:"uploadedname"`                   // user_name
+	CreatedAt    time.Time          `bson:"createdat" json:"createdat"`
+	UpdatedAt    time.Time          `bson:"updatedat" json:"updatedat"`
 }
 
 // AttachmentUploadRequest - request สำหรับ upload attachment
-// Form data: file, holding_code, screen_type, docno, guidfixed, description, uploaded_by, uploaded_name
+// Form data: file, holdingcode, screen_type, docno, guidfixed, description, uploaded_by, uploaded_name
 type AttachmentUploadRequest struct {
 	File         string `form:"file"` // multipart file
-	HoldingCode  string `form:"holding_code"`
+	HoldingCode  string `form:"holdingcode"`
 	ScreenType   string `form:"screen_type"`
 	DocNo        string `form:"docno"`
-	GuidFixed    string `form:"guid_fixed"`
+	GuidFixed    string `form:"guidfixed"`
 	Description  string `form:"description"`
 	UploadedBy   string `form:"uploaded_by"`
 	UploadedName string `form:"uploaded_name"`
@@ -41,19 +41,19 @@ type AttachmentUploadRequest struct {
 
 // AttachmentListRequest - request สำหรับ list attachments
 type AttachmentListRequest struct {
-	HoldingCode string `json:"holding_code"`
-	ScreenType  string `json:"screen_type,omitempty"`
+	HoldingCode string `json:"holdingcode"`
+	ScreenType  string `json:"screentype,omitempty"`
 	DocNo       string `json:"docno,omitempty"`
-	GuidFixed   string `json:"guid_fixed,omitempty"`
+	GuidFixed   string `json:"guidfixed,omitempty"`
 	Limit       int64  `json:"limit,omitempty"`
 	Skip        int64  `json:"skip,omitempty"`
 }
 
 // AttachmentDeleteRequest - request สำหรับ delete attachment
 type AttachmentDeleteRequest struct {
-	HoldingCode  string `json:"holding_code"`
-	AttachmentID string `json:"attachment_id,omitempty"`
-	FileName     string `json:"file_name,omitempty"`
+	HoldingCode  string `json:"holdingcode"`
+	AttachmentID string `json:"attachmentid,omitempty"`
+	FileName     string `json:"filename,omitempty"`
 }
 
 // AttachmentResponse - response structure
@@ -67,20 +67,20 @@ type AttachmentResponse struct {
 // AttachmentListDataItem - attachment item with private backend URL
 type AttachmentListDataItem struct {
 	ID           primitive.ObjectID `json:"id"`
-	HoldingCode  string             `json:"holding_code"`
-	ScreenType   string             `json:"screen_type"`
+	HoldingCode  string             `json:"holdingcode"`
+	ScreenType   string             `json:"screentype"`
 	DocNo        string             `json:"docno"`
-	GuidFixed    string             `json:"guid_fixed"`
-	FileName     string             `json:"file_name"`
-	OriginalName string             `json:"original_name"`
-	ContentType  string             `json:"content_type"`
-	FileType     string             `json:"file_type"`
+	GuidFixed    string             `json:"guidfixed"`
+	FileName     string             `json:"filename"`
+	OriginalName string             `json:"originalname"`
+	ContentType  string             `json:"contenttype"`
+	FileType     string             `json:"filetype"`
 	Size         int64              `json:"size"`
 	Description  string             `json:"description,omitempty"`
-	UploadedBy   string             `json:"uploaded_by"`
-	UploadedName string             `json:"uploaded_name"`
-	CreatedAt    time.Time          `json:"created_at"`
-	UpdatedAt    time.Time          `json:"updated_at"`
+	UploadedBy   string             `json:"uploadedby"`
+	UploadedName string             `json:"uploadedname"`
+	CreatedAt    time.Time          `json:"createdat"`
+	UpdatedAt    time.Time          `json:"updatedat"`
 	URL          string             `json:"url,omitempty"` // Private backend URL
 }
 

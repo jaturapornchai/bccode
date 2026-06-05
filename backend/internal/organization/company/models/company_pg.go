@@ -7,15 +7,15 @@ import (
 )
 
 type CompanyPg struct {
-	HoldingCode string          `json:"holding_code" gorm:"column:holding_code;index"`
-	GuidFixed   string          `json:"guid_fixed" gorm:"column:guid_fixed;primaryKey"`
+	HoldingCode string          `json:"holdingcode" gorm:"column:holdingcode;index"`
+	GuidFixed   string          `json:"guidfixed" gorm:"column:guidfixed;primaryKey"`
 	Code        string          `json:"code" gorm:"column:code;index:idx_company_code,unique"`
 	Names       pkgModels.JSONB `json:"names" gorm:"column:names;type:jsonb"`
-	TaxID       string          `json:"tax_id" gorm:"column:tax_id"`
-	IsActive    bool            `json:"is_active" gorm:"column:is_active;default:true"`
-	CreatedAt   time.Time       `json:"created_at"`
-	UpdatedAt   time.Time       `json:"updated_at"`
-	DeletedAt   gorm.DeletedAt  `json:"deleted_at" gorm:"index"`
+	TaxID       string          `json:"taxid" gorm:"column:taxid"`
+	IsActive    bool            `json:"isactive" gorm:"column:isactive;default:true"`
+	CreatedAt   time.Time       `json:"createdat"`
+	UpdatedAt   time.Time       `json:"updatedat"`
+	DeletedAt   gorm.DeletedAt  `json:"deletedat" gorm:"index"`
 }
 
 func (CompanyPg) TableName() string {

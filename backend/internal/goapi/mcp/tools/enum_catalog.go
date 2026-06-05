@@ -9,27 +9,27 @@ import (
 
 type EnumCatalogRequest struct {
 	Category string `json:"category"`
-	Keyword string `json:"keyword"`
+	Keyword  string `json:"keyword"`
 }
 
 type EnumCatalogResponse struct {
-	Enums []EnumGroup `json:"enums"`
-	TotalGroups int         `json:"total_groups"`
-	Categories []string    `json:"categories"`
-	GeneratedAt time.Time   `json:"generated_at"`
+	Enums       []EnumGroup `json:"enums"`
+	TotalGroups int         `json:"totalgroups"`
+	Categories  []string    `json:"categories"`
+	GeneratedAt time.Time   `json:"generatedat"`
 }
 
 type EnumGroup struct {
-	Name string      `json:"name"`
+	Name        string      `json:"name"`
 	Description string      `json:"description"`
-	Category string      `json:"category"`
-	GoSource string      `json:"go_source"`
-	Values []EnumValue `json:"values"`
+	Category    string      `json:"category"`
+	GoSource    string      `json:"gosource"`
+	Values      []EnumValue `json:"values"`
 }
 
 type EnumValue struct {
-	Key interface{} `json:"key"`
-	Label string      `json:"label"`
+	Key         interface{} `json:"key"`
+	Label       string      `json:"label"`
 	Description string      `json:"description"`
 }
 
@@ -129,7 +129,7 @@ func getAllEnums() []EnumGroup {
 
 		// ===== VAT Types =====
 		{
-			Name:        "vat_type",
+			Name:        "vattype",
 			Description: "VAT calculation types — วิธีคำนวณภาษีมูลค่าเพิ่ม",
 			Category:    "transaction",
 			GoSource:    "internal/goapi/handlers/transaction_calculator.go",
@@ -209,7 +209,7 @@ func getAllEnums() []EnumGroup {
 
 		// ===== Screen Types =====
 		{
-			Name:        "screen_type",
+			Name:        "screentype",
 			Description: "Screen/document types for data history — ประเภทหน้าจอ/เอกสาร",
 			Category:    "datahistory",
 			GoSource:    "internal/goapi/handlers/datahistory/datahistory.go",
@@ -238,7 +238,7 @@ func getAllEnums() []EnumGroup {
 
 		// ===== Personal Type =====
 		{
-			Name:        "personal_type",
+			Name:        "personaltype",
 			Description: "Personal/company type — ประเภทบุคคล/นิติบุคคล (ลูกค้า/เจ้าหนี้/ลูกหนี้)",
 			Category:    "master",
 			GoSource:    "internal/debtaccount/customer/models/customer.go",
@@ -262,7 +262,7 @@ func getAllEnums() []EnumGroup {
 
 		// ===== PDF Page Size =====
 		{
-			Name:        "pdf_page_size",
+			Name:        "pdf_pagesize",
 			Description: "PDF page sizes — ขนาดกระดาษ PDF",
 			Category:    "pdf",
 			GoSource:    "internal/goapi/config/query_config.go",

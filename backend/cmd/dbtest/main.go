@@ -18,18 +18,18 @@ import (
 
 type Config struct {
 	ClickHouse struct {
-		DatabaseName string `json:"database_name"`
+		DatabaseName string `json:"databasename"`
 		Host         string `json:"host"`
 		Password     string `json:"password"`
 		Port         string `json:"port"`
 		User         string `json:"user"`
 	} `json:"clickhouse"`
 	PostgreSQL struct {
-		DbName   string `json:"db_name"`
+		DbName   string `json:"dbname"`
 		Host     string `json:"host"`
 		Password string `json:"password"`
 		Port     string `json:"port"`
-		SSLMode  string `json:"ssl_mode"`
+		SSLMode  string `json:"sslmode"`
 		User     string `json:"user"`
 	} `json:"postgresql"`
 }
@@ -58,7 +58,7 @@ func main() {
 	targetHoldingCode := "3E0aX0qsmeRr26TjCk3kRz5vBdv"
 
 	// 2. ทดสอบ PostgreSQL (แยก Database ตาม Holding Code)
-	fmt.Printf("\n[1] ทดสอบ PostgreSQL (Database แยกตาม holding_code: %s)\n", targetHoldingCode)
+	fmt.Printf("\n[1] ทดสอบ PostgreSQL (Database แยกตาม holdingcode: %s)\n", targetHoldingCode)
 	pgConnStr := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s connect_timeout=5",
 		config.PostgreSQL.Host,
@@ -108,7 +108,7 @@ func main() {
 		}
 	}
 
-	// 3. ทดสอบ ClickHouse (รวม Database กลาง แต่แยกฟิลด์ holding_code เพื่อทำ BI)
+	// 3. ทดสอบ ClickHouse (รวม Database กลาง แต่แยกฟิลด์ holdingcode เพื่อทำ BI)
 	fmt.Printf("\n[2] ทดสอบ ClickHouse (Database กลาง: %s)\n", config.ClickHouse.DatabaseName)
 
 	chOpts := &clickhouse.Options{
@@ -153,15 +153,15 @@ func main() {
 				log.Printf("  - ดึงตาราง ClickHouse ล้มเหลว: %v\n", err)
 			}
 
-			// ดึงสถิติจำนวนเอกสารแยกตาม holding_code เพื่อแสดงการทำ BI หลายกิจการ
+			// ดึงสถิติจำนวนเอกสารแยกตาม holdingcode เพื่อแสดงการทำ BI หลายกิจการ
 			var shopStats []struct {
-				HoldingCode string `ch:"holding_code"`
+				HoldingCode string `ch:"holdingcode"`
 				Count       uint64 `ch:"cnt"`
 			}
-			statQuery := fmt.Sprintf("SELECT holding_code, count() as cnt FROM %s.doc GROUP BY holding_code LIMIT 10", config.ClickHouse.DatabaseName)
+			statQuery := fmt.Sprintf("SELECT holdingcode, count() as cnt FROM %s.doc GROUP BY holdingcode LIMIT 10", config.ClickHouse.DatabaseName)
 			err = chConn.Select(ctx, &shopStats, statQuery)
 			if err == nil {
-				fmt.Println("  - สถิติ BI (จำนวนแถวในตาราง doc แยกตาม holding_code):")
+				fmt.Println("  - สถิติ BI (จำนวนแถวในตาราง doc แยกตาม holdingcode):")
 				if len(shopStats) == 0 {
 					fmt.Println("    * ยังไม่มีข้อมูลเอกสารในระบบ")
 				}
@@ -171,13 +171,13 @@ func main() {
 			} else {
 				// อาจจะยังไม่มีตาราง doc เลยทดลองหาจาก productbarcode แทน
 				var barcodeStats []struct {
-					HoldingCode string `ch:"holding_code"`
+					HoldingCode string `ch:"holdingcode"`
 					Count       uint64 `ch:"cnt"`
 				}
-				statQuery2 := fmt.Sprintf("SELECT holding_code, count() as cnt FROM %s.productbarcode GROUP BY holding_code LIMIT 10", config.ClickHouse.DatabaseName)
+				statQuery2 := fmt.Sprintf("SELECT holdingcode, count() as cnt FROM %s.productbarcode GROUP BY holdingcode LIMIT 10", config.ClickHouse.DatabaseName)
 				err = chConn.Select(ctx, &barcodeStats, statQuery2)
 				if err == nil {
-					fmt.Println("  - สถิติ BI (จำนวนแถวในตาราง productbarcode แยกตาม holding_code):")
+					fmt.Println("  - สถิติ BI (จำนวนแถวในตาราง productbarcode แยกตาม holdingcode):")
 					if len(barcodeStats) == 0 {
 						fmt.Println("    * ยังไม่มีข้อมูลสินค้าในระบบ")
 					}

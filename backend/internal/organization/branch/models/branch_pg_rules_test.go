@@ -15,10 +15,10 @@ func TestPrepareCreateBranchRequiresCompanyGuid(t *testing.T) {
 
 	err := PrepareCreateBranch(&req, "shop-1", time.Now(), func() string { return "branch-1" })
 	if err == nil {
-		t.Fatal("expected missing company_guid error")
+		t.Fatal("expected missing companyguid error")
 	}
-	if !strings.Contains(err.Error(), "company_guid") {
-		t.Fatalf("error = %q, want company_guid", err.Error())
+	if !strings.Contains(err.Error(), "companyguid") {
+		t.Fatalf("error = %q, want companyguid", err.Error())
 	}
 }
 
@@ -61,7 +61,7 @@ func TestBranchDuplicateLookupScopesByCompanyGuid(t *testing.T) {
 	stmt := BranchDuplicateLookup(db, "shop-1", "company-1", "00001", "branch-1").
 		First(&BranchPg{}).Statement
 
-	assertSQLContains(t, stmt.SQL.String(), "holding_code", "company_guid", "code", "guid_fixed")
+	assertSQLContains(t, stmt.SQL.String(), "holdingcode", "companyguid", "code", "guidfixed")
 	assertVars(t, stmt.Vars, "shop-1", "company-1", "00001", "branch-1")
 }
 
@@ -70,7 +70,7 @@ func TestCompanyBranchCountLookupScopesByCompanyGuid(t *testing.T) {
 
 	stmt := CompanyBranchCountLookup(db, "shop-1", "company-1").Count(new(int64)).Statement
 
-	assertSQLContains(t, stmt.SQL.String(), "holding_code", "company_guid")
+	assertSQLContains(t, stmt.SQL.String(), "holdingcode", "companyguid")
 	assertVars(t, stmt.Vars, "shop-1", "company-1")
 }
 

@@ -18,32 +18,32 @@ type DocumentImage struct {
 	ReferenceGroups []ReferenceGroup `json:"referencegroups" bson:"referencegroups"`
 	BillCount       float64          `json:"billcount" bson:"billcount"`
 
-	UploadedBy     string      `json:"uploaded_by" bson:"uploaded_by"`
-	UploadedAt     time.Time   `json:"uploaded_at" bson:"uploaded_at"`
-	MetaFileAt     time.Time   `json:"meta_file_at" bson:"meta_file_at"`
+	UploadedBy     string      `json:"uploadedby" bson:"uploadedby"`
+	UploadedAt     time.Time   `json:"uploadedat" bson:"uploadedat"`
+	MetaFileAt     time.Time   `json:"metafileat" bson:"metafileat"`
 	CloneImageFrom string      `json:"cloneimagefrom" bson:"cloneimagefrom"`
 	Edits          []ImageEdit `json:"edits" bson:"edits"`
 	Comments       []Comment   `json:"comments" bson:"comments"`
 }
 
 type ReferenceGroup struct {
-	GroupType  string `json:"group_type" bson:"group_type"`
-	ParentGUID string `json:"parent_guid" bson:"parent_guid"`
+	GroupType  string `json:"grouptype" bson:"grouptype"`
+	ParentGUID string `json:"parentguid" bson:"parentguid"`
 	XOrder     int    `json:"xorder" bson:"xorder"`
 	XType      int    `json:"xtype" bson:"xtype"`
 }
 
 type Reference struct {
-	GuidFixed string `json:"guid_fixed" bson:"guid_fixed"`
+	GuidFixed string `json:"guidfixed" bson:"guidfixed"`
 	Module    string `json:"module" bson:"module"`
 	DocNo     string `json:"docno" bson:"docno" `
 }
 
 type Comment struct {
-	GuidFixed   string    `json:"guid_fixed" bson:"guid_fixed"`
+	GuidFixed   string    `json:"guidfixed" bson:"guidfixed"`
 	Comment     string    `json:"comment" bson:"comment"`
-	CommentedAt time.Time `json:"commented_at" bson:"commented_at"`
-	CommentedBy string    `json:"commented_by" bson:"commented_by"`
+	CommentedAt time.Time `json:"commentedat" bson:"commentedat"`
+	CommentedBy string    `json:"commentedby" bson:"commentedby"`
 }
 
 type CommentRequest struct {
@@ -52,21 +52,21 @@ type CommentRequest struct {
 
 type ImageEdit struct {
 	ImageURI string    `json:"imageuri" bson:"imageuri"`
-	EditedBy string    `json:"edited_by" bson:"edited_by"`
-	EditedAt time.Time `json:"edited_at" bson:"edited_at"`
+	EditedBy string    `json:"editedby" bson:"editedby"`
+	EditedAt time.Time `json:"editedat" bson:"editedat"`
 }
 
 type ImageEditRequest struct {
 	ImageURI string    `json:"imageuri" bson:"imageuri"`
-	EditedBy string    `json:"edited_by" bson:"edited_by"`
-	EditedAt time.Time `json:"edited_at" bson:"edited_at"`
+	EditedBy string    `json:"editedby" bson:"editedby"`
+	EditedAt time.Time `json:"editedat" bson:"editedat"`
 }
 
 type DocumentImageRequest struct {
 	DocumentImage          `bson:"inline"`
-	DocumentImageGroupGUID string    `json:"document_image_group_guid" bson:"document_image_group_guid"`
+	DocumentImageGroupGUID string    `json:"documentimagegroupguid" bson:"documentimagegroupguid"`
 	Tags                   *[]string `json:"tags,omitempty" bson:"tags,omitempty"`
-	TaskGUID               string    `json:"task_guid" bson:"task_guid" validate:"required,min=1"`
+	TaskGUID               string    `json:"taskguid" bson:"taskguid" validate:"required,min=1"`
 	PathTask               string    `json:"pathtask" bson:"pathtask"`
 }
 
@@ -85,7 +85,7 @@ type DocumentImageData struct {
 }
 
 type DocumentImageDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	DocumentImageData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 	models.LastUpdate  `bson:"inline"`
@@ -96,7 +96,7 @@ func (DocumentImageDoc) CollectionName() string {
 }
 
 type DocumentImageItemGuid struct {
-	DocumentImageGuid string `json:"category_guid" bson:"category_guid" gorm:"category_guid"`
+	DocumentImageGuid string `json:"categoryguid" bson:"categoryguid" gorm:"category_guid"`
 }
 
 func (DocumentImageItemGuid) CollectionName() string {
@@ -119,7 +119,7 @@ type RequestDocumentImageReject struct {
 }
 
 type DocumentImageStatus struct {
-	DocGUIDRef string `json:"doc_guid_ref" bson:"doc_guid_ref"`
+	DocGUIDRef string `json:"docguidref" bson:"docguidref"`
 	Status     int8   `json:"status" bson:"status"`
 }
 

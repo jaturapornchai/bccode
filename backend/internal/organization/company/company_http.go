@@ -153,9 +153,9 @@ func (h CompanyHttp) ensureDefaultHeadOfficeBranch(
 
 func visibleCompanyBranchFilter(holdingCode string, companyGuid string) bson.M {
 	return bson.M{
-		"holding_code": holdingCode,
-		"company_guid": companyGuid,
-		"deleted_at":   bson.M{"$exists": false},
+		"holdingcode": holdingCode,
+		"companyguid": companyGuid,
+		"deletedat":   bson.M{"$exists": false},
 	}
 }
 
@@ -205,7 +205,7 @@ func (h CompanyHttp) SearchCompany(ctx microservice.IContext) error {
 	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
 
 	var list []companyModels.CompanyDoc
-	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: 1}, {Key: "code", Value: 1}})
+	opts := options.Find().SetSort(bson.D{{Key: "createdat", Value: 1}, {Key: "code", Value: 1}})
 	if err := pst.Find(mongoCtx, companyModels.CompanyDoc{}, visibleCompanyFilter(holdingCode), &list, opts); err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
@@ -227,7 +227,7 @@ func (h CompanyHttp) InfoCompany(ctx microservice.IContext) error {
 	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
 
 	var data companyModels.CompanyDoc
-	if err := pst.FindOne(mongoCtx, companyModels.CompanyDoc{}, bson.M{"holding_code": holdingCode, "guid_fixed": id, "deleted_at": bson.M{"$exists": false}}, &data); err != nil {
+	if err := pst.FindOne(mongoCtx, companyModels.CompanyDoc{}, bson.M{"holdingcode": holdingCode, "guidfixed": id, "deletedat": bson.M{"$exists": false}}, &data); err != nil {
 		ctx.ResponseError(http.StatusNotFound, "Company not found")
 		return err
 	}
@@ -254,7 +254,7 @@ func (h CompanyHttp) UpdateCompany(ctx microservice.IContext) error {
 	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
 
 	var existing companyModels.CompanyDoc
-	if err := pst.FindOne(mongoCtx, companyModels.CompanyDoc{}, bson.M{"holding_code": holdingCode, "guid_fixed": id, "deleted_at": bson.M{"$exists": false}}, &existing); err != nil {
+	if err := pst.FindOne(mongoCtx, companyModels.CompanyDoc{}, bson.M{"holdingcode": holdingCode, "guidfixed": id, "deletedat": bson.M{"$exists": false}}, &existing); err != nil {
 		ctx.ResponseError(http.StatusNotFound, "Company not found")
 		return err
 	}
@@ -285,13 +285,13 @@ func (h CompanyHttp) UpdateCompany(ctx microservice.IContext) error {
 	existing.UpdatedAt = time.Now()
 	existing.UpdatedBy = authUsername
 
-	if err := pst.Update(mongoCtx, companyModels.CompanyDoc{}, bson.M{"holding_code": holdingCode, "guid_fixed": id, "deleted_at": bson.M{"$exists": false}}, bson.M{"$set": bson.M{
-		"names":      existing.Names,
-		"tax_id":     existing.TaxID,
-		"code":       existing.Code,
-		"is_active":  existing.IsActive,
-		"updated_at": existing.UpdatedAt,
-		"updatedby":  existing.UpdatedBy,
+	if err := pst.Update(mongoCtx, companyModels.CompanyDoc{}, bson.M{"holdingcode": holdingCode, "guidfixed": id, "deletedat": bson.M{"$exists": false}}, bson.M{"$set": bson.M{
+		"names":     existing.Names,
+		"tax_id":    existing.TaxID,
+		"code":      existing.Code,
+		"isactive":  existing.IsActive,
+		"updatedat": existing.UpdatedAt,
+		"updatedby": existing.UpdatedBy,
 	}}); err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
@@ -319,7 +319,7 @@ func (h CompanyHttp) DeleteCompany(ctx microservice.IContext) error {
 	defer cancel()
 	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
 
-	companyFilter := bson.M{"holding_code": holdingCode, "guid_fixed": id, "deleted_at": bson.M{"$exists": false}}
+	companyFilter := bson.M{"holdingcode": holdingCode, "guidfixed": id, "deletedat": bson.M{"$exists": false}}
 	var data companyModels.CompanyDoc
 	if err := pst.FindOne(mongoCtx, companyModels.CompanyDoc{}, companyFilter, &data); err != nil {
 		ctx.ResponseError(http.StatusNotFound, "Company not found")
@@ -373,14 +373,14 @@ func (h CompanyHttp) DeleteCompany(ctx microservice.IContext) error {
 }
 
 func visibleCompanyFilter(holdingCode string) bson.M {
-	return bson.M{"holding_code": holdingCode, "deleted_at": bson.M{"$exists": false}}
+	return bson.M{"holdingcode": holdingCode, "deletedat": bson.M{"$exists": false}}
 }
 
 func ensureCompanyCodeAvailable(ctx context.Context, pst microservice.IPersisterMongo, holdingCode string, code string, excludeGuid string) error {
 	filter := visibleCompanyFilter(holdingCode)
 	filter["code"] = code
 	if excludeGuid != "" {
-		filter["guid_fixed"] = bson.M{"$ne": excludeGuid}
+		filter["guidfixed"] = bson.M{"$ne": excludeGuid}
 	}
 	count, err := pst.Count(ctx, companyModels.CompanyDoc{}, filter)
 	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {

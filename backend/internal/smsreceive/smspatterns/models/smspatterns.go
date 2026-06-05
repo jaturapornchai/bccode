@@ -10,15 +10,15 @@ const smspatternsCollectionName = "smsPatterns"
 
 type SmsPatterns struct {
 	models.PartitionIdentity `bson:"inline"`
-	Code string `json:"code" bson:"code"`
-	Name string `json:"name" bson:"name"`
-	Address string `json:"address" bson:"address"`
-	Pattern string `json:"pattern" bson:"pattern"`
+	Code                     string `json:"code" bson:"code"`
+	Name                     string `json:"name" bson:"name"`
+	Address                  string `json:"address" bson:"address"`
+	Pattern                  string `json:"pattern" bson:"pattern"`
 }
 
 type SmsPatternsInfo struct {
 	models.DocIdentity `bson:"inline"`
-	SmsPatterns  `bson:"inline"`
+	SmsPatterns        `bson:"inline"`
 }
 
 func (SmsPatternsInfo) CollectionName() string {
@@ -30,8 +30,8 @@ type SmsPatternsData struct {
 }
 
 type SmsPatternsDoc struct {
-	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	SmsPatternsData  `bson:"inline"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	SmsPatternsData    `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -48,7 +48,7 @@ func (SmsPatternsItemGuid) CollectionName() string {
 }
 
 type SmsPatternsActivity struct {
-	SmsPatternsData  `bson:"inline"`
+	SmsPatternsData     `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

@@ -70,8 +70,8 @@ func NewTaskRepository(pst microservice.IPersisterMongo) *TaskRepository {
 func (repo *TaskRepository) FindTaskChild(ctx context.Context, holdingCode string, rejectFromTaskGUID string) (models.TaskChild, error) {
 
 	queryFilters := bson.M{
-		"holding_code":       holdingCode,
-		"deleted_at":         bson.M{"$exists": false},
+		"holdingcode":        holdingCode,
+		"deletedat":          bson.M{"$exists": false},
 		"rejectfromtaskguid": rejectFromTaskGUID,
 	}
 
@@ -92,8 +92,8 @@ func (repo *TaskRepository) FindTaskChild(ctx context.Context, holdingCode strin
 func (repo *TaskRepository) FindLastTaskByCode(ctx context.Context, holdingCode string, codeFormat string) (models.TaskDoc, error) {
 
 	queryFilters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at":   bson.M{"$exists": false},
+		"holdingcode": holdingCode,
+		"deletedat":   bson.M{"$exists": false},
 		"code": bson.M{"$regex": primitive.Regex{
 			Pattern: codeFormat + ".*",
 			Options: "i",
@@ -106,7 +106,7 @@ func (repo *TaskRepository) FindLastTaskByCode(ctx context.Context, holdingCode 
 
 	findDoc := new(models.TaskDoc)
 	err := repo.pst.FindOne(ctx, models.TaskDoc{}, queryFilters, &findDoc, opts)
-	// err := repo.pst.FindOne(models.TaskDoc{}, bson.M{"holding_code": holdingCode}, &findDoc)
+	// err := repo.pst.FindOne(models.TaskDoc{}, bson.M{"holdingcode": holdingCode}, &findDoc)
 
 	if err != nil {
 		return models.TaskDoc{}, err
@@ -118,8 +118,8 @@ func (repo *TaskRepository) FindLastTaskByCode(ctx context.Context, holdingCode 
 func (repo *TaskRepository) CountTaskParent(ctx context.Context, holdingCode string, taskGUID string) (int, error) {
 
 	queryFilters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at":   bson.M{"$exists": false},
+		"holdingcode": holdingCode,
+		"deletedat":   bson.M{"$exists": false},
 	}
 
 	queryFilters["parentguidfixed"] = taskGUID
@@ -136,12 +136,12 @@ func (repo *TaskRepository) CountTaskParent(ctx context.Context, holdingCode str
 func (repo *TaskRepository) UpdateTotalDocumentImageGroup(ctx context.Context, holdingCode string, taskGUID string, totalDoc int, totalDocStatus []models.TotalStatus, billCount float64, referenceCount float64, referenceBalance float64) error {
 
 	queryFilters := bson.M{
-		"holding_code": holdingCode,
-		"guid_fixed":   taskGUID,
-		"deleted_at":   bson.M{"$exists": false},
+		"holdingcode": holdingCode,
+		"guidfixed":   taskGUID,
+		"deletedat":   bson.M{"$exists": false},
 	}
 
-	queryFilters["guid_fixed"] = taskGUID
+	queryFilters["guidfixed"] = taskGUID
 
 	err := repo.pst.UpdateOne(ctx, models.TaskDocumentTotal{}, queryFilters, models.TaskDocumentTotal{TotalDocument: totalDoc, TotalDocumentStatus: &totalDocStatus, BillCount: billCount, ReferenceCount: referenceCount, ReferenceBalance: referenceBalance})
 
@@ -155,12 +155,12 @@ func (repo *TaskRepository) UpdateTotalDocumentImageGroup(ctx context.Context, h
 func (repo *TaskRepository) UpdateTotalRejectDocumentImageGroup(ctx context.Context, holdingCode string, taskGUID string, total int) error {
 
 	queryFilters := bson.M{
-		"holding_code": holdingCode,
-		"guid_fixed":   taskGUID,
-		"deleted_at":   bson.M{"$exists": false},
+		"holdingcode": holdingCode,
+		"guidfixed":   taskGUID,
+		"deletedat":   bson.M{"$exists": false},
 	}
 
-	queryFilters["guid_fixed"] = taskGUID
+	queryFilters["guidfixed"] = taskGUID
 
 	err := repo.pst.UpdateOne(ctx, models.TaskTotalReject{}, queryFilters, models.TaskTotalReject{ToTalReject: total})
 
@@ -174,8 +174,8 @@ func (repo *TaskRepository) UpdateTotalRejectDocumentImageGroup(ctx context.Cont
 func (repo *TaskRepository) FindPageByTaskReject(ctx context.Context, holdingCode string, module string, taskGUID string) ([]models.TaskInfo, error) {
 
 	queryFilters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at":   bson.M{"$exists": false},
+		"holdingcode": holdingCode,
+		"deletedat":   bson.M{"$exists": false},
 	}
 
 	if len(module) > 0 {
@@ -198,9 +198,9 @@ func (repo *TaskRepository) FindPageByTaskReject(ctx context.Context, holdingCod
 func (repo *TaskRepository) FindOneTaskByCode(ctx context.Context, holdingCode string, taskCode string) (models.TaskInfo, error) {
 
 	queryFilters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at":   bson.M{"$exists": false},
-		"code":         taskCode,
+		"holdingcode": holdingCode,
+		"deletedat":   bson.M{"$exists": false},
+		"code":        taskCode,
 	}
 
 	findDoc := models.TaskInfo{}
@@ -232,8 +232,8 @@ func (repo *TaskRepository) FindPageTask(ctx context.Context, holdingCode string
 	}
 
 	queryFilters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at":   bson.M{"$exists": false},
+		"holdingcode": holdingCode,
+		"deletedat":   bson.M{"$exists": false},
 	}
 
 	if len(module) > 0 {
@@ -248,7 +248,7 @@ func (repo *TaskRepository) FindPageTask(ctx context.Context, holdingCode string
 		queryFilters["$and"] = matchFilterList
 	}
 
-	pageable.Sorts = append(pageable.Sorts, micromodels.KeyInt{Key: "guid_fixed", Value: 1})
+	pageable.Sorts = append(pageable.Sorts, micromodels.KeyInt{Key: "guidfixed", Value: 1})
 
 	matchQuery := bson.M{
 		"$match": queryFilters,

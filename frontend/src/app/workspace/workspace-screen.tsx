@@ -367,7 +367,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     try {
       const selectedHoldingCode = activeHoldingCodeFromAuth(currentAuth);
       const endpoint = selectedHoldingCode
-        ? `holdings?active_holding_code=${encodeURIComponent(selectedHoldingCode)}`
+        ? `holdings?active_holdingcode=${encodeURIComponent(selectedHoldingCode)}`
         : "holdings";
       const payload = await callWorkspaceApi<{ data?: ShopListItem[] }>(currentAuth, endpoint);
       const allShops = Array.isArray(payload.data) ? payload.data : [];
@@ -408,8 +408,8 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
       router.replace("/holding");
       return;
     }
-    if (selectedHoldingCode && !savedAuth.holding_code) {
-      savedAuth = { ...savedAuth, holding_code: selectedHoldingCode };
+    if (selectedHoldingCode && !savedAuth.holdingcode) {
+      savedAuth = { ...savedAuth, holdingcode: selectedHoldingCode };
       localStorage.setItem(workspaceStorageKeys.auth, JSON.stringify(savedAuth));
     }
 
@@ -454,7 +454,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
       const shopBranches = Array.isArray((shop as any).branches) ? (shop as any).branches.filter(isVisibleOrganizationRecord) : [];
 
       shopCompanies.forEach((company: any) => {
-        const compBranches = shopBranches.filter((b: any) => b.company_guid === company.guid_fixed);
+        const compBranches = shopBranches.filter((b: any) => b.companyguid === company.guidfixed);
         list.push({
           shop,
           company,
@@ -472,7 +472,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
         const shopName = shopDisplayName(item.shop);
 
         const matchCompany = `${companyName} ${companyCode}`.toLowerCase().includes(needle);
-        const matchShop = `${shopName} ${tenantCodeForShop(item.shop)} ${item.shop.holding_code}`.toLowerCase().includes(needle);
+        const matchShop = `${shopName} ${tenantCodeForShop(item.shop)} ${item.shop.holdingcode}`.toLowerCase().includes(needle);
         const matchBranch = item.branches.some((b) =>
           `${branchDisplayName(b)} ${b.code || ""}`.toLowerCase().includes(needle)
         );
@@ -514,7 +514,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     const needle = branchQuery.trim().toLowerCase();
     let list = branches;
     if (selectedCompany) {
-      list = branches.filter((b) => b.company_guid === selectedCompany.guid_fixed);
+      list = branches.filter((b) => b.companyguid === selectedCompany.guidfixed);
     }
     if (!needle) return list;
     return list.filter((branch) => `${branchDisplayName(branch)} ${branch.code ?? ""}`.toLowerCase().includes(needle));
@@ -691,9 +691,9 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     try {
       await callWorkspaceApi(auth, "select-holding", {
         method: "POST",
-        body: { holding_code: tenantCodeForShop(shop) },
+        body: { holdingcode: tenantCodeForShop(shop) },
       });
-      const shopInfo = await callWorkspaceApi<{ data?: Record<string, unknown> }>(auth, `holding-info?holding_code=${encodeURIComponent(tenantCodeForShop(shop))}`);
+      const shopInfo = await callWorkspaceApi<{ data?: Record<string, unknown> }>(auth, `holding-info?holdingcode=${encodeURIComponent(tenantCodeForShop(shop))}`);
       localStorage.setItem(workspaceStorageKeys.shopInfo, JSON.stringify(shopInfo.data ?? null));
       setSelectedShop(shop);
 
@@ -716,9 +716,9 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     try {
       await callWorkspaceApi(auth, "select-holding", {
         method: "POST",
-        body: { holding_code: tenantCodeForShop(shop) },
+        body: { holdingcode: tenantCodeForShop(shop) },
       });
-      const shopInfo = await callWorkspaceApi<{ data?: Record<string, unknown> }>(auth, `holding-info?holding_code=${encodeURIComponent(tenantCodeForShop(shop))}`);
+      const shopInfo = await callWorkspaceApi<{ data?: Record<string, unknown> }>(auth, `holding-info?holdingcode=${encodeURIComponent(tenantCodeForShop(shop))}`);
       const branchPayload = await callWorkspaceApi<{ data?: BranchListItem[] }>(auth, "branches?offset=0&limit=100&q=");
       let nextBranches = Array.isArray(branchPayload.data) ? branchPayload.data : [];
 
@@ -757,20 +757,20 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     try {
       await callWorkspaceApi(auth, "select-holding", {
         method: "POST",
-        body: { holding_code: tenantCodeForShop(shop) },
+        body: { holdingcode: tenantCodeForShop(shop) },
       });
-      const shopInfo = await callWorkspaceApi<{ data?: Record<string, unknown> }>(auth, `holding-info?holding_code=${encodeURIComponent(tenantCodeForShop(shop))}`);
+      const shopInfo = await callWorkspaceApi<{ data?: Record<string, unknown> }>(auth, `holding-info?holdingcode=${encodeURIComponent(tenantCodeForShop(shop))}`);
       const branchPayload = await callWorkspaceApi<{ data?: BranchListItem[] }>(auth, "branches?offset=0&limit=100&q=");
       let nextBranches = Array.isArray(branchPayload.data) ? branchPayload.data : [];
 
       // Filter branches of the selected company
-      let compBranches = nextBranches.filter((b) => b.company_guid === company.guid_fixed);
+      let compBranches = nextBranches.filter((b) => b.companyguid === company.guidfixed);
 
       if (compBranches.length === 0) {
         // Create default branch (สำนักงานใหญ่) for this company
         const created = await callWorkspaceApi<{ data?: BranchListItem; id?: string; ID?: string }>(auth, "branch", {
           method: "POST",
-          body: { branch: createDefaultBranch(shop, shopInfo.data ?? null, company.guid_fixed) },
+          body: { branch: createDefaultBranch(shop, shopInfo.data ?? null, company.guidfixed) },
         });
         if (created.data) {
           nextBranches = [...nextBranches, created.data];
@@ -805,9 +805,9 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
       setSelectedShopForAccess(representativeShop);
       await callWorkspaceApi(auth, "select-holding", {
         method: "POST",
-        body: { holding_code: tenantCodeForShop(representativeShop) },
+        body: { holdingcode: tenantCodeForShop(representativeShop) },
       });
-      const shopInfo = await callWorkspaceApi<{ data?: Record<string, unknown> }>(auth, `holding-info?holding_code=${encodeURIComponent(tenantCodeForShop(representativeShop))}`);
+      const shopInfo = await callWorkspaceApi<{ data?: Record<string, unknown> }>(auth, `holding-info?holdingcode=${encodeURIComponent(tenantCodeForShop(representativeShop))}`);
       const branchPayload = await callWorkspaceApi<{ data?: BranchListItem[] }>(auth, "branches?offset=0&limit=100&q=");
       const nextBranches = Array.isArray(branchPayload.data) ? branchPayload.data : [];
       const defaultBranch = nextBranches[0] ?? null;
@@ -832,9 +832,9 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
       setSelectedShopForAccess(shop);
       await callWorkspaceApi(auth, "select-holding", {
         method: "POST",
-        body: { holding_code: tenantCodeForShop(shop) },
+        body: { holdingcode: tenantCodeForShop(shop) },
       });
-      const shopInfo = await callWorkspaceApi<{ data?: Record<string, unknown> }>(auth, `holding-info?holding_code=${encodeURIComponent(tenantCodeForShop(shop))}`);
+      const shopInfo = await callWorkspaceApi<{ data?: Record<string, unknown> }>(auth, `holding-info?holdingcode=${encodeURIComponent(tenantCodeForShop(shop))}`);
       const branchPayload = await callWorkspaceApi<{ data?: BranchListItem[] }>(auth, "branches?offset=0&limit=100&q=");
       const nextBranches = Array.isArray(branchPayload.data) ? branchPayload.data : [];
       const defaultBranch = nextBranches[0] ?? null;
@@ -1135,7 +1135,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 <span>{language === "th" ? "Holding ที่ใช้งาน" : "Active Holding"}</span>
                 <strong>{activeHoldingContext.name}</strong>
                 {activeHoldingContext.name !== activeHoldingContext.code ? (
-                  <code>holding_code: {activeHoldingContext.code}</code>
+                  <code>holdingcode: {activeHoldingContext.code}</code>
                 ) : null}
               </div>
             ) : null}
@@ -1325,13 +1325,13 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                   const languageCodes = shopLanguageCodes(shop);
                   const currencyLabel = shopCurrencyLabel(shop, language);
                   const compName = localizedName(company.names, company.code || "");
-                  const holdingLabel = shop.holding_code?.trim()
-                    ? `holding_code: ${shop.holding_code.trim()}`
-                    : `legacy_holding_code: ${shop.holding_code}`;
+                  const holdingLabel = shop.holdingcode?.trim()
+                    ? `holdingcode: ${shop.holdingcode.trim()}`
+                    : `legacy_holdingcode: ${shop.holdingcode}`;
 
                   return (
                     <button
-                      key={`${shop.holding_code}-${company.guid_fixed || company.code}`}
+                      key={`${shop.holdingcode}-${company.guidfixed || company.code}`}
                       disabled={busy}
                       onClick={() => void selectCompany(shop, company)}
                       className="group/company text-left relative w-full md:w-[calc(50%-12px)] lg:w-[350px] shrink-0 border border-border/80 rounded-2xl bg-card/85 backdrop-blur-md overflow-hidden shadow-md hover:shadow-xl hover:border-primary/40 hover:scale-[1.01] transition-all duration-300"
@@ -1401,11 +1401,11 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
             ) : (
               <div className="workspace-card-grid">
                 {filteredBranches.map((branch, index) => (
-                <button className="shop-card branch-card" disabled={busy} key={branch.guid_fixed || branch.code} type="button" onClick={() => void selectBranch(branch)}>
+                <button className="shop-card branch-card" disabled={busy} key={branch.guidfixed || branch.code} type="button" onClick={() => void selectBranch(branch)}>
                   <span className={`shop-avatar tone-${index % 6}`}><GitBranch size={20} /></span>
                   <span className="shop-main">
                     <strong>{branchDisplayName(branch)}</strong>
-                    <small>{branch.code || branch.guid_fixed}</small>
+                    <small>{branch.code || branch.guidfixed}</small>
                   </span>
                   <span className="shop-badges">
                     {branch.base_currency ? <b>{branch.base_currency}</b> : null}
@@ -1568,7 +1568,7 @@ function canAuthCreateCompany(auth: AuthSession | null): boolean {
 }
 
 function activeHoldingCodeFromAuth(auth: AuthSession | null): string {
-  const authHoldingCode = auth?.holding_code?.trim();
+  const authHoldingCode = auth?.holdingcode?.trim();
   if (authHoldingCode) return authHoldingCode;
   if (typeof window === "undefined") return "";
   return localStorage.getItem(workspaceStorageKeys.holdingCode)?.trim() || "";
@@ -1607,7 +1607,7 @@ function persistWorkspace(
 }
 
 function tenantCodeForShop(shop: ShopListItem | null | undefined): string {
-  return shop?.holding_code?.trim() || shop?.holding_code?.trim() || "";
+  return shop?.holdingcode?.trim() || shop?.holdingcode?.trim() || "";
 }
 
 function hasExplicitLanguageSettings(shop: ShopListItem | null | undefined): boolean {
@@ -1621,7 +1621,7 @@ function getApiTotal(payload: { data?: unknown[]; total?: number }): number {
 
 function getMainHoldingCode(shopInfo: Record<string, unknown> | null): string {
   if (!shopInfo) return "";
-  const mainHoldingCode = shopInfo.main_holding_code ?? shopInfo.mainholding_code ?? shopInfo.mainHoldingCode;
+  const mainHoldingCode = shopInfo.main_holdingcode ?? shopInfo.mainholdingcode ?? shopInfo.mainHoldingCode;
   return typeof mainHoldingCode === "string" ? mainHoldingCode.trim() : "";
 }
 
@@ -1699,9 +1699,9 @@ function createDefaultBranch(shop?: ShopListItem, shopInfo?: Record<string, unkn
   const companyNames = normalizedNames(shopInfo?.names, shop ? shopDisplayName(shop) : "");
   const companyAddress = normalizedNames(shopInfo?.address, "");
   return {
-    guid_fixed: "",
+    guidfixed: "",
     code: "00000",
-    company_guid: companyGuid || "",
+    companyguid: companyGuid || "",
     companynames: companyNames,
     names: defaultBranchNames(languageCodes),
     departments: [],
@@ -1812,8 +1812,8 @@ function holdingAccessDisplayName(shop: ShopListItem, language: LanguageCode): s
 function isVisibleOrganizationRecord(value: unknown): boolean {
   const record = recordValue(value);
   if (!record) return false;
-  if (record.is_active === false) return false;
-  const deletedAt = stringValue(record.deleted_at);
+  if (record.isactive === false) return false;
+  const deletedAt = stringValue(record.deletedat);
   return deletedAt.length === 0;
 }
 
@@ -1839,7 +1839,7 @@ function booleanValue(value: unknown, fallback = false): boolean {
 
 function createDefaultBranchListItem(guidFixed: unknown): BranchListItem {
   return {
-    guid_fixed: typeof guidFixed === "string" && guidFixed.trim() ? guidFixed.trim() : "00000",
+    guidfixed: typeof guidFixed === "string" && guidFixed.trim() ? guidFixed.trim() : "00000",
     code: "00000",
     names: [{ code: "th", name: "สำนักงานใหญ่" }],
     base_currency: "THB",

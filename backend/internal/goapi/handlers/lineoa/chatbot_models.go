@@ -16,15 +16,15 @@ type ConversationMessage struct {
 
 // ConversationSession stores chat history for context
 type ConversationSession struct {
-	SessionID   string                `bson:"session_id" json:"session_id"`
-	HoldingCode string                `bson:"holding_code" json:"holding_code"`
-	LineUserID  string                `bson:"line_user_id" json:"line_user_id"`
-	DisplayName string                `bson:"display_name" json:"display_name"`
+	SessionID   string                `bson:"sessionid" json:"sessionid"`
+	HoldingCode string                `bson:"holdingcode" json:"holdingcode"`
+	LineUserID  string                `bson:"lineuserid" json:"lineuserid"`
+	DisplayName string                `bson:"displayname" json:"displayname"`
 	Messages    []ConversationMessage `bson:"messages" json:"messages"`
 	Context     map[string]string     `bson:"context" json:"context"` // Store state like current topic
-	CreatedAt   time.Time             `bson:"created_at" json:"created_at"`
-	UpdatedAt   time.Time             `bson:"updated_at" json:"updated_at"`
-	ExpiresAt   time.Time             `bson:"expires_at" json:"expires_at"`
+	CreatedAt   time.Time             `bson:"createdat" json:"createdat"`
+	UpdatedAt   time.Time             `bson:"updatedat" json:"updatedat"`
+	ExpiresAt   time.Time             `bson:"expiresat" json:"expiresat"`
 }
 
 // LINE Webhook Types
@@ -34,7 +34,7 @@ type LineWebhookRequest struct {
 
 type LineEvent struct {
 	Type       string        `json:"type"`
-	ReplyToken string        `json:"reply_token"`
+	ReplyToken string        `json:"replytoken"`
 	Source     LineSource    `json:"source"`
 	Timestamp  int64         `json:"timestamp"`
 	Message    *LineMessage  `json:"message,omitempty"`
@@ -43,9 +43,9 @@ type LineEvent struct {
 
 type LineSource struct {
 	Type    string `json:"type"`
-	UserID  string `json:"user_id"`
-	GroupID string `json:"group_id,omitempty"`
-	RoomID  string `json:"room_id,omitempty"`
+	UserID  string `json:"userid"`
+	GroupID string `json:"groupid,omitempty"`
+	RoomID  string `json:"roomid,omitempty"`
 }
 
 type LineMessage struct {
@@ -60,14 +60,14 @@ type LinePostback struct {
 
 // LINE Reply Types
 type LineReplyRequest struct {
-	ReplyToken string        `json:"reply_token"`
+	ReplyToken string        `json:"replytoken"`
 	Messages   []interface{} `json:"messages"`
 }
 
 type LineTextMessage struct {
 	Type       string          `json:"type"`
 	Text       string          `json:"text"`
-	QuickReply *LineQuickReply `json:"quick_reply,omitempty"`
+	QuickReply *LineQuickReply `json:"quickreply,omitempty"`
 }
 
 type LineQuickReply struct {
@@ -90,7 +90,7 @@ type LineQuickAction struct {
 // Flex Message Types
 type LineFlexMessage struct {
 	Type     string      `json:"type"`
-	AltText  string      `json:"alt_text"`
+	AltText  string      `json:"alttext"`
 	Contents interface{} `json:"contents"`
 }
 
@@ -135,19 +135,19 @@ type FlexBubbleStyle struct {
 }
 
 type FlexBlockStyle struct {
-	BackgroundColor string `json:"background_color,omitempty"`
+	BackgroundColor string `json:"backgroundcolor,omitempty"`
 }
 
 // ChatbotConfig stores AI chatbot settings per shop
 type ChatbotConfig struct {
-	HoldingCode      string     `bson:"holding_code" json:"holding_code"`
-	LineOAConfigGUID string     `bson:"lineoa_config_guid" json:"lineoa_config_guid"`
-	IsEnabled        bool       `bson:"is_enabled" json:"is_enabled"`
-	WelcomeMessage   string     `bson:"welcome_message" json:"welcome_message"`
-	SystemPrompt     string     `bson:"system_prompt" json:"system_prompt"`
-	MenuItems        []MenuItem `bson:"menu_items" json:"menu_items"`
-	CreatedAt        time.Time  `bson:"created_at" json:"created_at"`
-	UpdatedAt        time.Time  `bson:"updated_at" json:"updated_at"`
+	HoldingCode      string     `bson:"holdingcode" json:"holdingcode"`
+	LineOAConfigGUID string     `bson:"lineoaconfigguid" json:"lineoaconfigguid"`
+	IsEnabled        bool       `bson:"isenabled" json:"isenabled"`
+	WelcomeMessage   string     `bson:"welcomemessage" json:"welcomemessage"`
+	SystemPrompt     string     `bson:"systemprompt" json:"systemprompt"`
+	MenuItems        []MenuItem `bson:"menuitems" json:"menuitems"`
+	CreatedAt        time.Time  `bson:"createdat" json:"createdat"`
+	UpdatedAt        time.Time  `bson:"updatedat" json:"updatedat"`
 }
 
 type MenuItem struct {

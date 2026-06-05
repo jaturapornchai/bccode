@@ -30,18 +30,18 @@ const ApprovalTokensCollection = "po_approval_tokens"
 
 // ApprovalToken เก็บ token สำหรับอนุมัติผ่าน email/LINE
 type ApprovalToken struct {
-	ID           primitive.ObjectID `bson:"_id,omitempty" json:"guid,omitempty"`
+	ID           primitive.ObjectID `bson:"id,omitempty" json:"guid,omitempty"`
 	Token        string             `bson:"token" json:"token"`
-	HoldingCode  string             `bson:"holding_code" json:"holding_code"`
+	HoldingCode  string             `bson:"holdingcode" json:"holdingcode"`
 	DocNo        string             `bson:"docno" json:"docno"`
-	GuidFixed    string             `bson:"guid_fixed" json:"guid_fixed"`
-	ApproverCode string             `bson:"approver_code" json:"approver_code"`
-	ApproverName string             `bson:"approver_name" json:"approver_name"`
+	GuidFixed    string             `bson:"guidfixed" json:"guidfixed"`
+	ApproverCode string             `bson:"approvercode" json:"approvercode"`
+	ApproverName string             `bson:"approvername" json:"approvername"`
 	Action       string             `bson:"action" json:"action"` // approve, reject
 	Used         bool               `bson:"used" json:"used"`
-	UsedAt       *time.Time         `bson:"used_at,omitempty" json:"used_at,omitempty"`
-	ExpiresAt    time.Time          `bson:"expires_at" json:"expires_at"`
-	CreatedAt    time.Time          `bson:"created_at" json:"created_at"`
+	UsedAt       *time.Time         `bson:"usedat,omitempty" json:"usedat,omitempty"`
+	ExpiresAt    time.Time          `bson:"expiresat" json:"expiresat"`
+	CreatedAt    time.Time          `bson:"createdat" json:"createdat"`
 }
 
 // getBrevoAPIKey ดึง Brevo API Key จาก environment variable
@@ -59,7 +59,7 @@ type BrevoEmailRequest struct {
 	Sender      BrevoContact   `json:"sender"`
 	To          []BrevoContact `json:"to"`
 	Subject     string         `json:"subject"`
-	HTMLContent string         `json:"html_content"`
+	HTMLContent string         `json:"htmlcontent"`
 }
 
 // BrevoContact ข้อมูลผู้ส่ง/ผู้รับ
@@ -266,7 +266,7 @@ type LinePushRequest struct {
 
 type LineMsg struct {
 	Type     string      `json:"type"`
-	AltText  string      `json:"alt_text,omitempty"`
+	AltText  string      `json:"alttext,omitempty"`
 	Contents interface{} `json:"contents,omitempty"`
 	Text     string      `json:"text,omitempty"`
 }
@@ -686,12 +686,12 @@ func SendLineNotifyCreatorOpened(params OpenedNotificationParams) error {
 	linkedAccountsCollection := lineoaDB.Collection("lineoa_linked_accounts")
 
 	var creatorAccount struct {
-		LineUserID string `bson:"line_user_id"`
+		LineUserID string `bson:"lineuserid"`
 		Status     string `bson:"status"`
 	}
 
 	err := linkedAccountsCollection.FindOne(ctx, bson.M{
-		"holding_code":  params.HoldingCode,
+		"holdingcode":   params.HoldingCode,
 		"employee_code": params.CreatorCode,
 		"status":        "linked",
 	}).Decode(&creatorAccount)
@@ -921,10 +921,10 @@ func SendLineNotifyCreatorOpened(params OpenedNotificationParams) error {
 
 // SendRealNotificationsRequest request สำหรับส่งแจ้งเตือนจริง
 type SendRealNotificationsRequest struct {
-	HoldingCode string `json:"holding_code"`
+	HoldingCode string `json:"holdingcode"`
 	DocNo       string `json:"docno"`
-	GuidFixed   string `json:"guid_fixed"`
-	BaseURL     string `json:"base_url"` // Base URL สำหรับสร้าง link (e.g., https://erp.example.com)
+	GuidFixed   string `json:"guidfixed"`
+	BaseURL     string `json:"baseurl"` // Base URL สำหรับสร้าง link (e.g., https://erp.example.com)
 }
 
 // SendRealApprovalNotificationHandler - ส่งแจ้งเตือนจริงผ่าน Email และ LINE Push
@@ -944,7 +944,7 @@ func SendRealApprovalNotificationHandler(c echo.Context) error {
 	if req.HoldingCode == "" || req.DocNo == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "holding_code and docno are required",
+			"message": "holdingcode and docno are required",
 		})
 	}
 
@@ -964,9 +964,9 @@ func SendRealApprovalNotificationHandler(c echo.Context) error {
 	statusCollection := getTokenCollection(POApprovalStatusCollection)
 	var poStatus POApprovalStatus
 	err := statusCollection.FindOne(ctx, bson.M{
-		"holding_code": req.HoldingCode,
-		"docno":        req.DocNo,
-		"status":       "pending",
+		"holdingcode": req.HoldingCode,
+		"docno":       req.DocNo,
+		"status":      "pending",
 	}).Decode(&poStatus)
 
 	if err == mongo.ErrNoDocuments {
@@ -987,7 +987,7 @@ func SendRealApprovalNotificationHandler(c echo.Context) error {
 	settingsCollection := getCollection(POApprovalSettingsCollection)
 	var setting POApprovalSetting
 	err = settingsCollection.FindOne(ctx, bson.M{
-		"holding_code":       req.HoldingCode,
+		"holdingcode":        req.HoldingCode,
 		"purchase_type_code": poStatus.PurchaseTypeCode,
 	}).Decode(&setting)
 
@@ -1036,7 +1036,7 @@ func SendRealApprovalNotificationHandler(c echo.Context) error {
 	for _, approver := range approvers {
 		// ตรวจสอบว่าเคยส่งสำเร็จแล้วหรือยัง
 		existingFilter := bson.M{
-			"holding_code":  req.HoldingCode,
+			"holdingcode":   req.HoldingCode,
 			"docno":         req.DocNo,
 			"approver_code": approver.UserCode,
 			"status":        "sent",
@@ -1060,7 +1060,7 @@ func SendRealApprovalNotificationHandler(c echo.Context) error {
 
 			approveURL := fmt.Sprintf("%s/api/approval/action?token=%s&action=approve", baseURL, approveToken)
 			rejectURL := fmt.Sprintf("%s/api/approval/action?token=%s&action=reject", baseURL, rejectToken)
-			pdfURL := fmt.Sprintf("%s/api/po/pdf?holding_code=%s&docno=%s", baseURL, req.HoldingCode, req.DocNo)
+			pdfURL := fmt.Sprintf("%s/api/po/pdf?holdingcode=%s&docno=%s", baseURL, req.HoldingCode, req.DocNo)
 
 			emailErr := SendApprovalEmail(
 				approver.Email,
@@ -1116,7 +1116,7 @@ func SendRealApprovalNotificationHandler(c echo.Context) error {
 			approveToken, _ := generateApprovalToken(req.HoldingCode, req.DocNo, poStatus.GuidFixed, approver.UserCode, approver.UserName, "approve")
 
 			// สร้าง LIFF URL พร้อม token
-			liffURL := fmt.Sprintf("https://liff.line.me/%s/approve?token=%s&holding_code=%s&docno=%s", liffID, approveToken, req.HoldingCode, req.DocNo)
+			liffURL := fmt.Sprintf("https://liff.line.me/%s/approve?token=%s&holdingcode=%s&docno=%s", liffID, approveToken, req.HoldingCode, req.DocNo)
 
 			lineErr := SendLinePushApprovalV2(ApprovalNotificationParams{
 				LineUserID:       approver.LineUserID,
@@ -1292,15 +1292,15 @@ func ApproveViaTokenHandler(c echo.Context) error {
 
 	// ใช้ FindOneAndUpdate กับ filter status=pending → ป้องกัน race condition
 	poFilter := bson.M{
-		"holding_code": tokenDoc.HoldingCode,
-		"docno":        tokenDoc.DocNo,
-		"status":       "pending",
+		"holdingcode": tokenDoc.HoldingCode,
+		"docno":       tokenDoc.DocNo,
+		"status":      "pending",
 	}
 	poUpdate := bson.M{
 		"$set": bson.M{
 			"status":       newStatus,
 			"last_comment": req.Comment,
-			"updated_at":   now,
+			"updatedat":    now,
 		},
 		"$push": bson.M{
 			"history": newHistory,
@@ -1319,8 +1319,8 @@ func ApproveViaTokenHandler(c echo.Context) error {
 		// PO ไม่อยู่ในสถานะ pending — ตรวจสอบสถานะจริง
 		var existingPO POApprovalStatus
 		findErr := statusCollection.FindOne(ctx, bson.M{
-			"holding_code": tokenDoc.HoldingCode,
-			"docno":        tokenDoc.DocNo,
+			"holdingcode": tokenDoc.HoldingCode,
+			"docno":       tokenDoc.DocNo,
 		}).Decode(&existingPO)
 
 		if findErr == mongo.ErrNoDocuments {
@@ -1350,8 +1350,8 @@ func ApproveViaTokenHandler(c echo.Context) error {
 	// อัปเดต current_approved_level จาก required_level (ใน updatedStatus)
 	if req.Action == "approve" {
 		statusCollection.UpdateOne(ctx, bson.M{
-			"holding_code": tokenDoc.HoldingCode,
-			"docno":        tokenDoc.DocNo,
+			"holdingcode": tokenDoc.HoldingCode,
+			"docno":       tokenDoc.DocNo,
 		}, bson.M{
 			"$set": bson.M{
 				"current_approved_level": updatedStatus.RequiredLevel,
@@ -1409,8 +1409,8 @@ func GetApprovalTokenInfoHandler(c echo.Context) error {
 	statusCollection := getTokenCollection(POApprovalStatusCollection)
 	var poStatus POApprovalStatus
 	err = statusCollection.FindOne(ctx, bson.M{
-		"holding_code": tokenDoc.HoldingCode,
-		"docno":        tokenDoc.DocNo,
+		"holdingcode": tokenDoc.HoldingCode,
+		"docno":       tokenDoc.DocNo,
 	}).Decode(&poStatus)
 
 	if err != nil {
@@ -1426,7 +1426,7 @@ func GetApprovalTokenInfoHandler(c echo.Context) error {
 			"token_valid":        !tokenDoc.Used && time.Now().UTC().Before(tokenDoc.ExpiresAt),
 			"token_used":         tokenDoc.Used,
 			"token_expired":      time.Now().UTC().After(tokenDoc.ExpiresAt),
-			"holding_code":       tokenDoc.HoldingCode,
+			"holdingcode":        tokenDoc.HoldingCode,
 			"docno":              tokenDoc.DocNo,
 			"total_amount":       poStatus.TotalAmount,
 			"purchase_type_name": poStatus.PurchaseTypeName,
@@ -1469,8 +1469,8 @@ func GetSMTPStatusHandler(c echo.Context) error {
 
 // TestEmailRequest request สำหรับทดสอบส่ง email
 type TestEmailRequest struct {
-	ToEmail string `json:"to_email"`
-	ToName  string `json:"to_name"`
+	ToEmail string `json:"toemail"`
+	ToName  string `json:"toname"`
 }
 
 // SendTestEmailHandler - ส่ง email ทดสอบ
@@ -1568,11 +1568,11 @@ func GetLineOAConfigStatusHandler(c echo.Context) error {
 		return err
 	}
 
-	holdingCode := c.QueryParam("holding_code")
+	holdingCode := c.QueryParam("holdingcode")
 	if holdingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "holding_code is required",
+			"message": "holdingcode is required",
 		})
 	}
 
@@ -1583,26 +1583,26 @@ func GetLineOAConfigStatusHandler(c echo.Context) error {
 	collection := atlasDB.Collection("lineoa_configs")
 
 	var config struct {
-		HoldingCode   string `bson:"holding_code"`
-		ChannelID     string `bson:"channel_id"`
-		AccessToken   string `bson:"access_token"`
-		LiffID        string `bson:"liff_id"`
-		IsActive      bool   `bson:"is_active"`
-		ChannelSecret string `bson:"channel_secret"`
+		HoldingCode   string `bson:"holdingcode"`
+		ChannelID     string `bson:"channelid"`
+		AccessToken   string `bson:"accesstoken"`
+		LiffID        string `bson:"liffid"`
+		IsActive      bool   `bson:"isactive"`
+		ChannelSecret string `bson:"channelsecret"`
 	}
 
 	err := collection.FindOne(ctx, bson.M{
-		"holding_code": holdingCode,
-		"is_active":    true,
+		"holdingcode": holdingCode,
+		"isactive":    true,
 	}).Decode(&config)
 
 	if err == mongo.ErrNoDocuments {
 		return c.JSON(http.StatusOK, map[string]any{
-			"success":      true,
-			"found":        false,
-			"message":      "ไม่พบ LINE OA config สำหรับ shop นี้",
-			"holding_code": holdingCode,
-			"diagnosis":    "ต้องสร้าง lineoa_configs document ใน MongoDB",
+			"success":     true,
+			"found":       false,
+			"message":     "ไม่พบ LINE OA config สำหรับ shop นี้",
+			"holdingcode": holdingCode,
+			"diagnosis":   "ต้องสร้าง lineoa_configs document ใน MongoDB",
 		})
 	}
 	if err != nil {
@@ -1629,7 +1629,7 @@ func GetLineOAConfigStatusHandler(c echo.Context) error {
 		issues = append(issues, "liff_id ว่าง - LINE Push จะไม่ทำงาน")
 	}
 	if !config.IsActive {
-		issues = append(issues, "is_active = false - config ถูกปิดใช้งาน")
+		issues = append(issues, "isactive = false - config ถูกปิดใช้งาน")
 	}
 
 	readyForLine := config.AccessToken != "" && config.LiffID != "" && config.IsActive
@@ -1637,13 +1637,13 @@ func GetLineOAConfigStatusHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]any{
 		"success":              true,
 		"found":                true,
-		"holding_code":         config.HoldingCode,
+		"holdingcode":          config.HoldingCode,
 		"channel_id":           config.ChannelID,
 		"has_access_token":     config.AccessToken != "",
 		"access_token_preview": accessTokenMasked,
 		"has_liff_id":          config.LiffID != "",
 		"liff_id":              config.LiffID,
-		"is_active":            config.IsActive,
+		"isactive":             config.IsActive,
 		"has_channel_secret":   config.ChannelSecret != "",
 		"ready_for_line_push":  readyForLine,
 		"issues":               issues,
@@ -1651,7 +1651,7 @@ func GetLineOAConfigStatusHandler(c echo.Context) error {
 }
 
 // ListAllLineOAConfigsHandler - แสดงรายการ LINE OA configs ทั้งหมด
-// ใช้สำหรับ debug หา holding_code ที่มี config
+// ใช้สำหรับ debug หา holdingcode ที่มี config
 func ListAllLineOAConfigsHandler(c echo.Context) error {
 	if err := checkConnection(c); err != nil {
 		return err
@@ -1674,10 +1674,10 @@ func ListAllLineOAConfigsHandler(c echo.Context) error {
 	var configs []map[string]any
 	for cursor.Next(ctx) {
 		var doc struct {
-			HoldingCode string `bson:"holding_code"`
-			ChannelID   string `bson:"channel_id"`
-			LiffID      string `bson:"liff_id"`
-			IsActive    bool   `bson:"is_active"`
+			HoldingCode string `bson:"holdingcode"`
+			ChannelID   string `bson:"channelid"`
+			LiffID      string `bson:"liffid"`
+			IsActive    bool   `bson:"isactive"`
 			HasToken    bool
 		}
 		if err := cursor.Decode(&doc); err != nil {
@@ -1693,10 +1693,10 @@ func ListAllLineOAConfigsHandler(c echo.Context) error {
 		}
 
 		configs = append(configs, map[string]any{
-			"holding_code":     doc.HoldingCode,
+			"holdingcode":      doc.HoldingCode,
 			"channel_id":       doc.ChannelID,
 			"liff_id":          doc.LiffID,
-			"is_active":        doc.IsActive,
+			"isactive":         doc.IsActive,
 			"has_access_token": hasToken,
 		})
 	}
@@ -1714,9 +1714,9 @@ func ListAllLineOAConfigsHandler(c echo.Context) error {
 
 // TestLinePushRequest request สำหรับทดสอบส่ง LINE push
 type TestLinePushRequest struct {
-	LineUserID  string `json:"line_user_id"`
-	UserName    string `json:"user_name"`
-	HoldingCode string `json:"holding_code"`
+	LineUserID  string `json:"lineuserid"`
+	UserName    string `json:"username"`
+	HoldingCode string `json:"holdingcode"`
 }
 
 // TestLinePushHandler - ส่ง LINE push message ทดสอบ
@@ -1852,13 +1852,13 @@ func TestLinePushHandler(c echo.Context) error {
 
 // PODetailItem รายการสินค้าใน PO
 type PODetailItem struct {
-	LineNumber int     `json:"line_number"`
+	LineNumber int     `json:"linenumber"`
 	ItemCode   string  `json:"itemcode"`
-	ItemName   string  `json:"item_name"`
+	ItemName   string  `json:"itemname"`
 	Qty        float64 `json:"qty"`
-	UnitName   string  `json:"unit_name"`
+	UnitName   string  `json:"unitname"`
 	Price      float64 `json:"price"`
-	SumAmount  float64 `json:"sum_amount"`
+	SumAmount  float64 `json:"sumamount"`
 }
 
 // PODetailsResponse ข้อมูล PO สำหรับแสดงใน LIFF
@@ -1866,10 +1866,10 @@ type PODetailsResponse struct {
 	DocNo            string         `json:"docno"`
 	DocDatetime      string         `json:"docdatetime"`
 	CustCode         string         `json:"custcode"`
-	CustName         string         `json:"cust_name"`
-	PurchaseTypeName string         `json:"purchase_type_name"`
-	TotalAmount      float64        `json:"total_amount"`
-	CreatedByName    string         `json:"created_by_name"`
+	CustName         string         `json:"custname"`
+	PurchaseTypeName string         `json:"purchasetypename"`
+	TotalAmount      float64        `json:"totalamount"`
+	CreatedByName    string         `json:"createdbyname"`
 	Status           string         `json:"status"`
 	Items            []PODetailItem `json:"items"`
 }
@@ -1877,7 +1877,7 @@ type PODetailsResponse struct {
 // GetPODetailsForLIFFRequest request สำหรับดึงข้อมูล PO
 type GetPODetailsForLIFFRequest struct {
 	Token       string `json:"token"`
-	HoldingCode string `json:"holding_code"`
+	HoldingCode string `json:"holdingcode"`
 	DocNo       string `json:"docno"`
 }
 
@@ -1943,8 +1943,8 @@ func GetPODetailsForLIFFHandler(c echo.Context) error {
 	statusCollection := getTokenCollection(POApprovalStatusCollection)
 	var poStatus POApprovalStatus
 	err = statusCollection.FindOne(ctx, bson.M{
-		"holding_code": tokenDoc.HoldingCode,
-		"docno":        tokenDoc.DocNo,
+		"holdingcode": tokenDoc.HoldingCode,
+		"docno":       tokenDoc.DocNo,
 	}).Decode(&poStatus)
 
 	if err == mongo.ErrNoDocuments {
@@ -1967,8 +1967,8 @@ func GetPODetailsForLIFFHandler(c echo.Context) error {
 	headerCollection := transactionDB.Collection("transaction_header")
 	var transDoc bson.M
 	err = headerCollection.FindOne(ctx, bson.M{
-		"holding_code": tokenDoc.HoldingCode,
-		"docno":        tokenDoc.DocNo,
+		"holdingcode": tokenDoc.HoldingCode,
+		"docno":       tokenDoc.DocNo,
 	}).Decode(&transDoc)
 
 	custCode := ""
@@ -1996,8 +1996,8 @@ func GetPODetailsForLIFFHandler(c echo.Context) error {
 	detailCollection := transactionDB.Collection("transaction_detail")
 
 	cursor, err := detailCollection.Find(ctx, bson.M{
-		"holding_code": tokenDoc.HoldingCode,
-		"docno":        tokenDoc.DocNo,
+		"holdingcode": tokenDoc.HoldingCode,
+		"docno":       tokenDoc.DocNo,
 	}, options.Find().SetSort(bson.M{"line_number": 1}))
 
 	if err == nil {
@@ -2066,8 +2066,8 @@ type LiffApproveRequest struct {
 	Action      string `json:"action"` // approve, reject
 	Pin         string `json:"pin"`
 	Comment     string `json:"comment"`
-	LineUserID  string `json:"line_user_id"`
-	HoldingCode string `json:"holding_code"`
+	LineUserID  string `json:"lineuserid"`
+	HoldingCode string `json:"holdingcode"`
 	DocNo       string `json:"docno"`
 }
 
@@ -2149,16 +2149,16 @@ func LiffApproveHandler(c echo.Context) error {
 
 	var userDoc bson.M
 	err = usersCollection.FindOne(ctx, bson.M{
-		"holding_code": tokenDoc.HoldingCode,
-		"username":     tokenDoc.ApproverCode,
+		"holdingcode": tokenDoc.HoldingCode,
+		"username":    tokenDoc.ApproverCode,
 	}).Decode(&userDoc)
 
 	if err == mongo.ErrNoDocuments {
 		// ถ้าไม่พบ user ลองดูจาก lineUserId
 		if req.LineUserID != "" {
 			err = usersCollection.FindOne(ctx, bson.M{
-				"holding_code": tokenDoc.HoldingCode,
-				"line_userid":  req.LineUserID,
+				"holdingcode": tokenDoc.HoldingCode,
+				"line_userid": req.LineUserID,
 			}).Decode(&userDoc)
 		}
 	}
@@ -2180,8 +2180,8 @@ func LiffApproveHandler(c echo.Context) error {
 	statusCollection := getTokenCollection(POApprovalStatusCollection)
 	var poStatus POApprovalStatus
 	err = statusCollection.FindOne(ctx, bson.M{
-		"holding_code": tokenDoc.HoldingCode,
-		"docno":        tokenDoc.DocNo,
+		"holdingcode": tokenDoc.HoldingCode,
+		"docno":       tokenDoc.DocNo,
 	}).Decode(&poStatus)
 
 	if err == mongo.ErrNoDocuments {
@@ -2243,13 +2243,13 @@ func LiffApproveHandler(c echo.Context) error {
 			"current_approved_level": poStatus.RequiredLevel,
 			"history":                history,
 			"last_comment":           req.Comment,
-			"updated_at":             now,
+			"updatedat":              now,
 		},
 	}
 
 	_, err = statusCollection.UpdateOne(ctx, bson.M{
-		"holding_code": tokenDoc.HoldingCode,
-		"docno":        tokenDoc.DocNo,
+		"holdingcode": tokenDoc.HoldingCode,
+		"docno":       tokenDoc.DocNo,
 	}, update)
 
 	if err != nil {
@@ -2335,7 +2335,7 @@ func ResendApprovalNotificationHandler(c echo.Context) error {
 	if req.HoldingCode == "" || req.DocNo == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "holding_code and docno are required",
+			"message": "holdingcode and docno are required",
 		})
 	}
 
@@ -2355,9 +2355,9 @@ func ResendApprovalNotificationHandler(c echo.Context) error {
 	statusCollection := getTokenCollection(POApprovalStatusCollection)
 	var poStatus POApprovalStatus
 	err := statusCollection.FindOne(ctx, bson.M{
-		"holding_code": req.HoldingCode,
-		"docno":        req.DocNo,
-		"status":       "pending",
+		"holdingcode": req.HoldingCode,
+		"docno":       req.DocNo,
+		"status":      "pending",
 	}).Decode(&poStatus)
 
 	if err == mongo.ErrNoDocuments {
@@ -2378,7 +2378,7 @@ func ResendApprovalNotificationHandler(c echo.Context) error {
 	settingsCollection := getCollection(POApprovalSettingsCollection)
 	var setting POApprovalSetting
 	err = settingsCollection.FindOne(ctx, bson.M{
-		"holding_code":       req.HoldingCode,
+		"holdingcode":        req.HoldingCode,
 		"purchase_type_code": poStatus.PurchaseTypeCode,
 	}).Decode(&setting)
 
@@ -2432,7 +2432,7 @@ func ResendApprovalNotificationHandler(c echo.Context) error {
 
 			approveURL := fmt.Sprintf("%s/api/approval/action?token=%s&action=approve", baseURL, approveToken)
 			rejectURL := fmt.Sprintf("%s/api/approval/action?token=%s&action=reject", baseURL, rejectToken)
-			pdfURL := fmt.Sprintf("%s/api/po/pdf?holding_code=%s&docno=%s", baseURL, req.HoldingCode, req.DocNo)
+			pdfURL := fmt.Sprintf("%s/api/po/pdf?holdingcode=%s&docno=%s", baseURL, req.HoldingCode, req.DocNo)
 
 			// ใช้ subject ที่บอกว่าเป็น reminder
 			emailErr := sendBrevoEmail(
@@ -2453,16 +2453,16 @@ func ResendApprovalNotificationHandler(c echo.Context) error {
 			} else {
 				// บันทึก log การส่ง (type = reminder)
 				_, _ = notificationCollection.InsertOne(ctx, bson.M{
-					"holding_code":      req.HoldingCode,
+					"holdingcode":       req.HoldingCode,
 					"docno":             req.DocNo,
-					"guid_fixed":        req.GuidFixed,
+					"guidfixed":         req.GuidFixed,
 					"approver_code":     approver.UserCode,
 					"approver_name":     approver.UserName,
 					"notification_type": "email_reminder",
 					"recipient_email":   approver.Email,
 					"status":            "sent",
 					"sent_at":           now,
-					"created_at":        now,
+					"createdat":         now,
 				})
 				emailSent++
 				results = append(results, map[string]any{
@@ -2477,8 +2477,8 @@ func ResendApprovalNotificationHandler(c echo.Context) error {
 		if approver.LineUserID != "" && liffID != "" {
 			// สร้าง approval token สำหรับ LIFF
 			liffToken, _ := generateApprovalToken(req.HoldingCode, req.DocNo, poStatus.GuidFixed, approver.UserCode, approver.UserName, "liff")
-			// URL ต้องมี /approve path และ holding_code, docno parameters
-			liffApproveURL := fmt.Sprintf("https://liff.line.me/%s/approve?token=%s&holding_code=%s&docno=%s", liffID, liffToken, req.HoldingCode, req.DocNo)
+			// URL ต้องมี /approve path และ holdingcode, docno parameters
+			liffApproveURL := fmt.Sprintf("https://liff.line.me/%s/approve?token=%s&holdingcode=%s&docno=%s", liffID, liffToken, req.HoldingCode, req.DocNo)
 
 			// ส่ง LINE Push พร้อมข้อความ reminder
 			lineErr := SendLinePushApprovalV2(ApprovalNotificationParams{
@@ -2506,16 +2506,16 @@ func ResendApprovalNotificationHandler(c echo.Context) error {
 			} else {
 				// บันทึก log การส่ง (type = reminder)
 				_, _ = notificationCollection.InsertOne(ctx, bson.M{
-					"holding_code":      req.HoldingCode,
+					"holdingcode":       req.HoldingCode,
 					"docno":             req.DocNo,
-					"guid_fixed":        req.GuidFixed,
+					"guidfixed":         req.GuidFixed,
 					"approver_code":     approver.UserCode,
 					"approver_name":     approver.UserName,
 					"notification_type": "line_reminder",
 					"recipient_line_id": approver.LineUserID,
 					"status":            "sent",
 					"sent_at":           now,
-					"created_at":        now,
+					"createdat":         now,
 				})
 				lineSent++
 				results = append(results, map[string]any{

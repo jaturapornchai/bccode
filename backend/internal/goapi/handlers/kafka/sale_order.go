@@ -20,7 +20,7 @@ func OnConsumeMessageSaleOrderCreateOrUpdate(msg string) error {
 }
 
 // OnConsumeMessageSaleOrderDelete - รับ message จาก Kafka สำหรับลบใบสั่งขาย
-// msg คือ JSON string เช่น {"holding_code": "shop123", "docno": "SO2024001"}
+// msg คือ JSON string เช่น {"holdingcode": "shop123", "docno": "SO2024001"}
 func OnConsumeMessageSaleOrderDelete(msg string) error {
 
 	logger.Info("OnConsumeMessageSaleOrderDelete: %s", msg)

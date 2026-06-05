@@ -31,8 +31,8 @@ type WorkerMetadata struct {
 }
 
 type KafkaConsumer struct {
-	// ไม่ใช้ fixed worker count แล้ว เพราะจะสร้าง worker แยกตาม holding_code
-	shopWorkers map[string]*WorkerMetadata // แยก queue ตาม holding_code with metadata
+	// ไม่ใช้ fixed worker count แล้ว เพราะจะสร้าง worker แยกตาม holdingcode
+	shopWorkers map[string]*WorkerMetadata // แยก queue ตาม holdingcode with metadata
 	mutex       sync.RWMutex               // ป้องกัน race condition
 
 	// Configuration for worker cleanup
@@ -129,7 +129,7 @@ func isTransientKafkaError(err error) bool {
 	return false
 }
 
-// getOrCreateShopWorker สร้างหรือดึง worker channel สำหรับ holding_code นั้นๆ
+// getOrCreateShopWorker สร้างหรือดึง worker channel สำหรับ holdingcode นั้นๆ
 func (kc *KafkaConsumer) getOrCreateShopWorker(holdingCode string) chan MessageJob {
 	// ตรวจสอบว่ามี worker สำหรับ shop นี้แล้วหรือยัง
 	kc.mutex.RLock()
@@ -540,7 +540,7 @@ func (kc *KafkaConsumer) evictLRUWorker() {
 }
 
 // extractHoldingCodeFromMessage ดึง holdingCode จาก JSON message
-// รองรับหลายรูปแบบ: holding_code, holdingCode, holding_code, HoldingCode
+// รองรับหลายรูปแบบ: holdingcode, holdingCode, holdingcode, HoldingCode
 // รองรับทั้ง JSON object (single doc) และ JSON array (bulk docs — ดึง holdingCode จากตัวแรก)
 func extractHoldingCodeFromMessage(msg string) string {
 	// ลอง parse เป็น object ก่อน
@@ -560,7 +560,7 @@ func extractHoldingCodeFromMessage(msg string) string {
 	}
 
 	// ลองหา holdingCode ในหลายรูปแบบ (case-insensitive)
-	possibleKeys := []string{"holding_code", "holdingCode", "holding_code", "HoldingCode", "HOLDING_CODE", "shop"}
+	possibleKeys := []string{"holdingcode", "holdingCode", "holdingcode", "HoldingCode", "HOLDING_CODE", "shop"}
 
 	for _, key := range possibleKeys {
 		// ตรวจสอบ key ตรงๆ

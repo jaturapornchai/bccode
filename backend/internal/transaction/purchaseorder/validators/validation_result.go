@@ -8,25 +8,27 @@
 //   - lang=th → ข้อความภาษาไทย
 //
 // Error Response Example (HTTP 400):
-//   {
-//     "success": false,
-//     "error_code": "PO_VALIDATION_FAILED",
-//     "message": "Purchase order validation failed. Please review and correct the errors.",
-//     "errors": [
-//       {
-//         "field": "custcode",
-//         "code": "REQUIRED",
-//         "message": "Supplier code is required. A purchase order must always specify a vendor."
-//       }
-//     ],
-//     "error_count": 1
-//   }
+//
+//	{
+//	  "success": false,
+//	  "error_code": "PO_VALIDATION_FAILED",
+//	  "message": "Purchase order validation failed. Please review and correct the errors.",
+//	  "errors": [
+//	    {
+//	      "field": "custcode",
+//	      "code": "REQUIRED",
+//	      "message": "Supplier code is required. A purchase order must always specify a vendor."
+//	    }
+//	  ],
+//	  "error_count": 1
+//	}
 //
 // FOR AI AGENTS:
 //   - Use "code" field for programmatic error handling (e.g. "REQUIRED", "MUST_BE_POSITIVE")
 //   - Use "field" for identifying which JSON field has the error
 //   - Use "message" for human-readable description
 //   - Send "lang" query parameter or header to choose language
+//
 // ============================================================================
 package validators
 
@@ -64,8 +66,8 @@ type ValidationError struct {
 //
 //	{"field": "custcode", "code": "REQUIRED", "message": "Supplier code is required..."}
 type ValidationErrorItem struct {
-	Field string `json:"field"`   // Field path, e.g. "custcode", "details[0].qty"
-	Code string `json:"code"`    // Machine-readable error code, e.g. "REQUIRED"
+	Field   string `json:"field"`   // Field path, e.g. "custcode", "details[0].qty"
+	Code    string `json:"code"`    // Machine-readable error code, e.g. "REQUIRED"
 	Message string `json:"message"` // Human-readable message in the selected language
 }
 
@@ -131,11 +133,11 @@ func (r *ValidationResult) AddErrorf(field, code, thFormat, enFormat string, arg
 //   - errors: array of ValidationErrorItem with details per field
 //   - error_count: total number of errors found
 type ValidationErrorResponse struct {
-	Success bool                  `json:"success"`
-	ErrorCode string                `json:"error_code"`
-	Message string                `json:"message"`
-	Errors []ValidationErrorItem `json:"errors"`
-	ErrorCount int                   `json:"error_count"`
+	Success    bool                  `json:"success"`
+	ErrorCode  string                `json:"errorcode"`
+	Message    string                `json:"message"`
+	Errors     []ValidationErrorItem `json:"errors"`
+	ErrorCount int                   `json:"errorcount"`
 }
 
 // ToErrorResponse — แปลง ValidationResult เป็น JSON response ตามภาษาที่เลือก
@@ -195,8 +197,8 @@ func (r *ValidationResult) ToUpdateErrorResponse(lang string) ValidationErrorRes
 //	{"success": true, "id": "abc123...", "docno": "PO20260208xxxxx", "message": "Purchase order saved successfully"}
 type POSuccessResponse struct {
 	Success bool   `json:"success"`
-	ID string `json:"id,omitempty"`    // GUID ของเอกสาร
-	DocNo string `json:"docno,omitempty"` // เลขที่เอกสาร
+	ID      string `json:"id,omitempty"`    // GUID ของเอกสาร
+	DocNo   string `json:"docno,omitempty"` // เลขที่เอกสาร
 	Message string `json:"message"`         // ข้อความแจ้งผลสำเร็จ
 }
 

@@ -52,9 +52,9 @@ func NewSaleInvoiceBomPriceRepository(pst microservice.IPersisterMongo) *SaleInv
 func (repo SaleInvoiceBomPriceRepository) FindByDocNo(ctx context.Context, holdingCode string, docNo string) ([]models.SaleInvoiceBomPriceInfo, error) {
 	var docs []models.SaleInvoiceBomPriceInfo
 	filters := map[string]interface{}{
-		"holding_code": holdingCode,
-		"deleted_at":   bson.M{"$exists": false},
-		"docno":        docNo,
+		"holdingcode": holdingCode,
+		"deletedat":   bson.M{"$exists": false},
+		"docno":       docNo,
 	}
 	err := repo.pst.Find(ctx, models.SaleInvoiceBomPriceInfo{}, filters, &docs)
 	return docs, err

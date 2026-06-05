@@ -46,7 +46,7 @@ func (repo SmsPatternsRepository) Create(ctx context.Context, doc models.SmsPatt
 
 func (repo SmsPatternsRepository) UpdateByGuid(ctx context.Context, guid string, doc models.SmsPatternsDoc) error {
 	filterDoc := map[string]interface{}{
-		"guid_fixed": guid,
+		"guidfixed": guid,
 	}
 
 	err := repo.pst.UpdateOne(ctx, models.SmsPatternsDoc{}, filterDoc, doc)
@@ -74,7 +74,7 @@ func (repo SmsPatternsRepository) UpdateByCode(ctx context.Context, code string,
 
 func (repo SmsPatternsRepository) DeleteByGuid(ctx context.Context, guid string) error {
 	filterDoc := map[string]interface{}{
-		"guid_fixed": guid,
+		"guidfixed": guid,
 	}
 
 	err := repo.pst.Delete(ctx, models.SmsPatternsDoc{}, filterDoc)
@@ -108,7 +108,7 @@ func (repo SmsPatternsRepository) FindByGuid(ctx context.Context, guidFixed stri
 	doc := models.SmsPatternsDoc{}
 
 	filters := bson.M{
-		"guid_fixed": guidFixed,
+		"guidfixed": guidFixed,
 	}
 
 	err := repo.pst.FindOne(ctx, models.SmsPatternsDoc{}, filters, &doc)

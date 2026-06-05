@@ -28,7 +28,7 @@ func (repo *StockProcessPGRepository) GetStockTransactionList(holdingCode string
 
 	sql := `SELECT
 	STKD.id,
-	STK.holding_code, STK.docno,  STK.docdate, STK.transflag, STK.inquirytype, STKD.docref
+	STK.holdingcode, STK.docno,  STK.docdate, STK.transflag, STK.inquirytype, STKD.docref
 	, STKD.barcode, PDB.mainbarcoderef, STKD.unitcode, STKD.qty
 	, PDB.standvalue, PDB.dividevalue
 	, STKD.calcflag
@@ -41,15 +41,15 @@ func (repo *StockProcessPGRepository) GetStockTransactionList(holdingCode string
 	, STKD.balanceamount, STKD.balanceaverage, STKD.balanceqty
 
 	FROM stock_transaction AS STK
-	JOIN stock_transaction_detail AS STKD on STKD.docno = STK.docno AND STKD.holding_code = STK.holding_code
-	JOIN productbarcode AS PDB ON PDB.barcode = STKD.barcode AND STKD.holding_code = PDB.holding_code
-	WHERE STK.holding_code = @holding_code AND STK.iscancel = false AND PDB.mainbarcoderef = (select mainbarcoderef from productbarcode where barcode = @barcode and productbarcode.holding_code = STK.holding_code )
+	JOIN stock_transaction_detail AS STKD on STKD.docno = STK.docno AND STKD.holdingcode = STK.holdingcode
+	JOIN productbarcode AS PDB ON PDB.barcode = STKD.barcode AND STKD.holdingcode = PDB.holdingcode
+	WHERE STK.holdingcode = @holdingcode AND STK.iscancel = false AND PDB.mainbarcoderef = (select mainbarcoderef from productbarcode where barcode = @barcode and productbarcode.holdingcode = STK.holdingcode )
 	ORDER BY STK.docdate, STK.docno, STKD.calcflag, STKD.linenumber`
 
-	//repo.pst.Where(&stockDatas, "holding_code = ? AND barcode = ?", holdingCode, barcode)
+	//repo.pst.Where(&stockDatas, "holdingcode = ? AND barcode = ?", holdingCode, barcode)
 	conditions := map[string]interface{}{
-		"holding_code": holdingCode,
-		"barcode":      barcode,
+		"holdingcode": holdingCode,
+		"barcode":     barcode,
 	}
 	_, err := repo.pst.Raw(sql, conditions, &stockDatas)
 
@@ -81,18 +81,18 @@ func (repo *StockProcessPGRepository) UpdateStockTransactionChange(stockData []s
 func (repo *StockProcessPGRepository) ExecuteUpdateProductBarcodeStockBalance(holdingCode string, barcode string) error {
 
 	sql := `WITH stock AS (select
-		barcode, holding_code, balanceqty
+		barcode, holdingcode, balanceqty
 		, (SELECT SUM(STKD.qty*calcflag) FROM stock_transaction_detail AS STKD
-			WHERE STKD.holding_code = productbarcode.holding_code AND STKD.barcode = productbarcode.barcode) as trx_balance_qty
+			WHERE STKD.holdingcode = productbarcode.holdingcode AND STKD.barcode = productbarcode.barcode) as trx_balance_qty
 		from productbarcode
-		where holding_code= @holding_code and barcode = @barcode
+		where holdingcode= @holdingcode and barcode = @barcode
 		)
 		UPDATE productbarcode set balanceqty = stock.trx_balance_qty
-		FROM stock  WHERE productbarcode.barcode = stock.barcode AND productbarcode.holding_code= stock.holding_code AND productbarcode.balanceqty <>  stock.trx_balance_qty
+		FROM stock  WHERE productbarcode.barcode = stock.barcode AND productbarcode.holdingcode= stock.holdingcode AND productbarcode.balanceqty <>  stock.trx_balance_qty
 		 `
 	conditions := map[string]interface{}{
-		"holding_code": holdingCode,
-		"barcode":      barcode,
+		"holdingcode": holdingCode,
+		"barcode":     barcode,
 	}
 
 	err := repo.pst.Exec(sql, conditions)

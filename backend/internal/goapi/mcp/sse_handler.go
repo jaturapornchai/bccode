@@ -47,7 +47,7 @@ type JSONRPCError struct {
 type MCPToolDef struct {
 	Name        string                 `json:"name"`
 	Description string                 `json:"description,omitempty"`
-	InputSchema map[string]interface{} `json:"input_schema"`
+	InputSchema map[string]interface{} `json:"inputschema"`
 }
 
 // SSE Session represents an active SSE connection
@@ -63,22 +63,22 @@ type SSESession struct {
 // devToolNames — tools ที่แสดงเฉพาะใน dev mode
 // general endpoint จะไม่เห็น tools เหล่านี้
 var devToolNames = map[string]bool{
-	"get_database_schema":      true,
-	"execute_query":            true,
-	"get_table_sample":         true,
-	"query_mongodb":            true,
-	"list_mongodb_collections": true,
-	"aggregate_mongodb":        true,
-	"query_clickhouse":         true,
-	"list_clickhouse_tables":   true,
-	"execute_pg_command":       true,
-	"execute_ch_command":       true,
-	"list_api_endpoints":       true,
-	"get_api_spec":             true,
-	"get_api_example":          true,
-	"list_enums":               true,
-	"get_model_schema":         true,
-	"rebuild_products":         true,
+	"getdatabaseschema":      true,
+	"executequery":           true,
+	"gettablesample":         true,
+	"querymongodb":           true,
+	"listmongodbcollections": true,
+	"aggregatemongodb":       true,
+	"queryclickhouse":        true,
+	"listclickhousetables":   true,
+	"executepgcommand":       true,
+	"executechcommand":       true,
+	"listapiendpoints":       true,
+	"getapispec":             true,
+	"getapiexample":          true,
+	"listenums":              true,
+	"getmodelschema":         true,
+	"rebuildproducts":        true,
 }
 
 // Active SSE sessions
@@ -107,7 +107,7 @@ func (s *MCPServer) HandleSSE(c echo.Context) error {
 // handleSSEInternal — shared SSE handler logic
 func (s *MCPServer) handleSSEInternal(c echo.Context, devMode bool) error {
 	// Get API key from query param or header
-	apiKeyStr := c.QueryParam("api_key")
+	apiKeyStr := c.QueryParam("apikey")
 	if apiKeyStr == "" {
 		apiKeyStr = c.Request().Header.Get("X-API-Key")
 	}
@@ -183,7 +183,7 @@ func (s *MCPServer) handleSSEInternal(c echo.Context, devMode bool) error {
 	if devMode {
 		messagePath = "/mcp/dev/message"
 	}
-	messageEndpoint := fmt.Sprintf("%s%s?session_id=%s", s.ssePrefix, messagePath, sessionID)
+	messageEndpoint := fmt.Sprintf("%s%s?sessionid=%s", s.ssePrefix, messagePath, sessionID)
 
 	// Write directly to the underlying writer
 	fmt.Fprintf(w, "event: endpoint\ndata: %s\n\n", messageEndpoint)
@@ -212,10 +212,10 @@ func (s *MCPServer) handleSSEInternal(c echo.Context, devMode bool) error {
 
 // HandleMessage handles JSON-RPC messages from MCP clients
 func (s *MCPServer) HandleMessage(c echo.Context) error {
-	sessionID := c.QueryParam("session_id")
+	sessionID := c.QueryParam("sessionid")
 	if sessionID == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "session_id required",
+			"error": "sessionid required",
 		})
 	}
 
@@ -314,7 +314,7 @@ func (s *MCPServer) handleInitialize(params json.RawMessage) map[string]interfac
 func (s *MCPServer) handleToolsList() map[string]interface{} {
 	tools := []MCPToolDef{
 		{
-			Name:        "search_products",
+			Name:        "searchproducts",
 			Description: "Search products from the PostgreSQL projection/read model built from MongoDB operational product data. Returns product info, units, prices, and stock balance by warehouse/location in formatted word (e.g., '1 กล่อง x 2 โหล x 3 ชิ้น')",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -335,7 +335,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"type":        "number",
 						"description": "Maximum number of products to return (default: 50, max: 200)",
 					},
-					"include_balance": map[string]interface{}{
+					"includebalance": map[string]interface{}{
 						"type":        "boolean",
 						"description": "Include stock balance information (default: true)",
 					},
@@ -344,7 +344,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "get_daily_sales",
+			Name:        "getdailysales",
 			Description: "Get daily sales summary for a specific date",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -353,7 +353,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"type":        "string",
 						"description": "Date in YYYY-MM-DD format",
 					},
-					"branch_code": map[string]interface{}{
+					"branchcode": map[string]interface{}{
 						"type":        "string",
 						"description": "Optional branch/warehouse code filter",
 					},
@@ -362,43 +362,43 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "get_sales_by_date_range",
+			Name:        "getsalesbydaterange",
 			Description: "Get sales data grouped by day/week/month for a date range",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
-					"from_date": map[string]interface{}{
+					"fromdate": map[string]interface{}{
 						"type":        "string",
 						"description": "Start date in YYYY-MM-DD format",
 					},
-					"to_date": map[string]interface{}{
+					"todate": map[string]interface{}{
 						"type":        "string",
 						"description": "End date in YYYY-MM-DD format",
 					},
-					"group_by": map[string]interface{}{
+					"groupby": map[string]interface{}{
 						"type":        "string",
 						"description": "Group by: day, week, month (default: day)",
 						"enum":        []string{"day", "week", "month"},
 					},
-					"branch_code": map[string]interface{}{
+					"branchcode": map[string]interface{}{
 						"type":        "string",
 						"description": "Optional branch/warehouse code filter",
 					},
 				},
-				"required": []string{"from_date", "to_date"},
+				"required": []string{"fromdate", "todate"},
 			},
 		},
 		{
-			Name:        "get_top_selling_products",
+			Name:        "gettopsellingproducts",
 			Description: "Get top selling products for a date range",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
-					"from_date": map[string]interface{}{
+					"fromdate": map[string]interface{}{
 						"type":        "string",
 						"description": "Start date in YYYY-MM-DD format",
 					},
-					"to_date": map[string]interface{}{
+					"todate": map[string]interface{}{
 						"type":        "string",
 						"description": "End date in YYYY-MM-DD format",
 					},
@@ -406,34 +406,34 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"type":        "number",
 						"description": "Number of products to return (default: 10, max: 100)",
 					},
-					"branch_code": map[string]interface{}{
+					"branchcode": map[string]interface{}{
 						"type":        "string",
 						"description": "Optional branch/warehouse code filter",
 					},
 				},
-				"required": []string{"from_date", "to_date"},
+				"required": []string{"fromdate", "todate"},
 			},
 		},
 		{
-			Name:        "get_sales_by_seller",
+			Name:        "getsalesbyseller",
 			Description: "Get sales data grouped by seller/salesperson",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
-					"from_date": map[string]interface{}{
+					"fromdate": map[string]interface{}{
 						"type":        "string",
 						"description": "Start date in YYYY-MM-DD format",
 					},
-					"to_date": map[string]interface{}{
+					"todate": map[string]interface{}{
 						"type":        "string",
 						"description": "End date in YYYY-MM-DD format",
 					},
 				},
-				"required": []string{"from_date", "to_date"},
+				"required": []string{"fromdate", "todate"},
 			},
 		},
 		{
-			Name:        "get_monthly_summary",
+			Name:        "getmonthlysummary",
 			Description: "Get monthly sales summary with comparison to previous month",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -451,21 +451,21 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 		},
 		// Dashboard Tools
 		{
-			Name:        "get_dashboard_kpis",
+			Name:        "getdashboardkpis",
 			Description: "Get comprehensive KPI dashboard from processed relational projections. Includes sales, orders, profit, customers, inventory metrics.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
 					"period": map[string]interface{}{
 						"type":        "string",
-						"description": "Period: today, this_week, this_month, this_year (default: this_month)",
-						"enum":        []string{"today", "this_week", "this_month", "this_year"},
+						"description": "Period: today, thisweek, thismonth, thisyear (default: thismonth)",
+						"enum":        []string{"today", "thisweek", "thismonth", "thisyear"},
 					},
 				},
 			},
 		},
 		{
-			Name:        "get_business_health",
+			Name:        "getbusinesshealth",
 			Description: "Get overall business health score (0-100) with key indicators and recommendations.",
 			InputSchema: map[string]interface{}{
 				"type":       "object",
@@ -474,16 +474,16 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 		},
 		// Financial Tools
 		{
-			Name:        "get_profit_analysis",
+			Name:        "getprofitanalysis",
 			Description: "Get detailed profit analysis with revenue breakdown, costs, and margins.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
-					"from_date": map[string]interface{}{
+					"fromdate": map[string]interface{}{
 						"type":        "string",
 						"description": "Start date in YYYY-MM-DD format",
 					},
-					"to_date": map[string]interface{}{
+					"todate": map[string]interface{}{
 						"type":        "string",
 						"description": "End date in YYYY-MM-DD format",
 					},
@@ -491,7 +491,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "get_accounts_receivable",
+			Name:        "getaccountsreceivable",
 			Description: "Get accounts receivable summary with aging buckets and top debtors.",
 			InputSchema: map[string]interface{}{
 				"type":       "object",
@@ -499,7 +499,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "get_accounts_payable",
+			Name:        "getaccountspayable",
 			Description: "Get accounts payable summary with aging buckets and top creditors.",
 			InputSchema: map[string]interface{}{
 				"type":       "object",
@@ -507,16 +507,16 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "get_cash_flow",
+			Name:        "getcashflow",
 			Description: "Get cash flow analysis showing inflows, outflows, and net position.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
-					"from_date": map[string]interface{}{
+					"fromdate": map[string]interface{}{
 						"type":        "string",
 						"description": "Start date in YYYY-MM-DD format",
 					},
-					"to_date": map[string]interface{}{
+					"todate": map[string]interface{}{
 						"type":        "string",
 						"description": "End date in YYYY-MM-DD format",
 					},
@@ -525,7 +525,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 		},
 		// Inventory Tools
 		{
-			Name:        "get_inventory_value",
+			Name:        "getinventoryvalue",
 			Description: "Get inventory valuation from PostgreSQL relational projections, with breakdown by category and warehouse.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -538,7 +538,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "get_low_stock_alerts",
+			Name:        "getlowstockalerts",
 			Description: "Get products that are below minimum stock level or out of stock.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -555,12 +555,12 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "get_dead_stock",
+			Name:        "getdeadstock",
 			Description: "Get products with no movement for specified days (slow-moving/dead stock).",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
-					"days_no_movement": map[string]interface{}{
+					"daysnomovement": map[string]interface{}{
 						"type":        "number",
 						"description": "Days without movement (default: 90)",
 					},
@@ -572,16 +572,16 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "get_inventory_turnover",
+			Name:        "getinventoryturnover",
 			Description: "Get inventory turnover ratio and days of inventory.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
-					"from_date": map[string]interface{}{
+					"fromdate": map[string]interface{}{
 						"type":        "string",
 						"description": "Start date in YYYY-MM-DD format",
 					},
-					"to_date": map[string]interface{}{
+					"todate": map[string]interface{}{
 						"type":        "string",
 						"description": "End date in YYYY-MM-DD format",
 					},
@@ -590,16 +590,16 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 		},
 		// Customer Tools
 		{
-			Name:        "get_top_customers",
+			Name:        "gettopcustomers",
 			Description: "Get top customers by revenue with purchase history.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
-					"from_date": map[string]interface{}{
+					"fromdate": map[string]interface{}{
 						"type":        "string",
 						"description": "Start date in YYYY-MM-DD format",
 					},
-					"to_date": map[string]interface{}{
+					"todate": map[string]interface{}{
 						"type":        "string",
 						"description": "End date in YYYY-MM-DD format",
 					},
@@ -607,7 +607,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"type":        "number",
 						"description": "Number of customers to return (default: 10)",
 					},
-					"sort_by": map[string]interface{}{
+					"sortby": map[string]interface{}{
 						"type":        "string",
 						"description": "Sort by: amount, orders, profit (default: amount)",
 						"enum":        []string{"amount", "orders", "profit"},
@@ -616,16 +616,16 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "get_customer_growth",
+			Name:        "getcustomergrowth",
 			Description: "Get customer acquisition and retention metrics.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
-					"from_date": map[string]interface{}{
+					"fromdate": map[string]interface{}{
 						"type":        "string",
 						"description": "Start date in YYYY-MM-DD format",
 					},
-					"to_date": map[string]interface{}{
+					"todate": map[string]interface{}{
 						"type":        "string",
 						"description": "End date in YYYY-MM-DD format",
 					},
@@ -633,16 +633,16 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "get_customer_segments",
+			Name:        "getcustomersegments",
 			Description: "Get customer segmentation analysis (RFM: Recency, Frequency, Monetary).",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
-					"from_date": map[string]interface{}{
+					"fromdate": map[string]interface{}{
 						"type":        "string",
 						"description": "Start date in YYYY-MM-DD format",
 					},
-					"to_date": map[string]interface{}{
+					"todate": map[string]interface{}{
 						"type":        "string",
 						"description": "End date in YYYY-MM-DD format",
 					},
@@ -651,7 +651,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 		},
 		// Comparison Tools
 		{
-			Name:        "get_yoy_comparison",
+			Name:        "getyoycomparison",
 			Description: "Get year-over-year comparison of revenue, orders, and profit.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -668,7 +668,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "get_mom_comparison",
+			Name:        "getmomcomparison",
 			Description: "Get month-over-month comparison with weekly breakdown.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -686,12 +686,12 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 		},
 		// Database Tools
 		{
-			Name:        "get_database_schema",
+			Name:        "getdatabaseschema",
 			Description: "Get database structure including tables, columns, data types. Use to explore available data.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
-					"table_name": map[string]interface{}{
+					"tablename": map[string]interface{}{
 						"type":        "string",
 						"description": "Filter by table name (partial match, optional)",
 					},
@@ -699,7 +699,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "execute_query",
+			Name:        "executequery",
 			Description: "Execute a readonly SQL query (SELECT only). For custom data retrieval.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -717,12 +717,12 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "get_table_sample",
+			Name:        "gettablesample",
 			Description: "Get sample data from a specific table.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
-					"table_name": map[string]interface{}{
+					"tablename": map[string]interface{}{
 						"type":        "string",
 						"description": "Table name to sample",
 					},
@@ -731,12 +731,12 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"description": "Number of rows (default: 10, max: 100)",
 					},
 				},
-				"required": []string{"table_name"},
+				"required": []string{"tablename"},
 			},
 		},
 		// MongoDB Tools
 		{
-			Name:        "query_mongodb",
+			Name:        "querymongodb",
 			Description: "Query MongoDB collection with JSON filter (readonly). Returns documents matching the filter.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -762,7 +762,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "list_mongodb_collections",
+			Name:        "listmongodbcollections",
 			Description: "List all collections in a MongoDB database.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -775,7 +775,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "aggregate_mongodb",
+			Name:        "aggregatemongodb",
 			Description: "Run aggregation pipeline on MongoDB collection (readonly). Blocks $out and $merge stages.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -802,7 +802,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 		},
 		// ClickHouse Tools
 		{
-			Name:        "query_clickhouse",
+			Name:        "queryclickhouse",
 			Description: "Execute readonly SELECT/SHOW query on ClickHouse (OLAP analytics database).",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -824,7 +824,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "list_clickhouse_tables",
+			Name:        "listclickhousetables",
 			Description: "List all tables in ClickHouse database with engine, row count and size info.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -838,12 +838,12 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 		},
 		// Dev Database Tools
 		{
-			Name:        "execute_pg_command",
+			Name:        "executepgcommand",
 			Description: "⚡ DEV TOOL: Execute ANY SQL on PostgreSQL (SELECT, DELETE, INSERT, UPDATE, ALTER, TRUNCATE, DROP). No readonly restriction.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
-					"holding_code": map[string]interface{}{
+					"holdingcode": map[string]interface{}{
 						"type":        "string",
 						"description": "Holding Code (= PostgreSQL database name)",
 					},
@@ -856,11 +856,11 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"description": "Max rows for SELECT (default: 100, max: 10000)",
 					},
 				},
-				"required": []string{"holding_code", "query"},
+				"required": []string{"holdingcode", "query"},
 			},
 		},
 		{
-			Name:        "execute_ch_command",
+			Name:        "executechcommand",
 			Description: "⚡ DEV TOOL: Execute ANY SQL on ClickHouse (SELECT, ALTER TABLE DELETE, INSERT, DROP, TRUNCATE). No readonly restriction.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -882,7 +882,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "list_api_endpoints",
+			Name:        "listapiendpoints",
 			Description: "List all available API endpoints with full details (method, path, parameters, request/response schema). Use to discover APIs for frontend development.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -911,7 +911,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "get_api_spec",
+			Name:        "getapispec",
 			Description: "Get detailed request/response specification for a specific API endpoint with curl example and usage notes.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -929,7 +929,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "get_api_example",
+			Name:        "getapiexample",
 			Description: "Get real request/response examples with curl command, Dart code snippet, and TypeScript code snippet.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -947,7 +947,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "list_enums",
+			Name:        "listenums",
 			Description: "List all enum values and constants used in the backend (transflag, payment types, approval status, VAT types, etc.).",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -964,7 +964,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "get_model_schema",
+			Name:        "getmodelschema",
 			Description: "Get Go struct definitions with auto-generated Dart class and TypeScript interface. Use to create frontend models matching backend.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -986,7 +986,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 		},
 		// Unit of Measure Tools (หน่วยนับ)
 		{
-			Name:        "list_units",
+			Name:        "listunits",
 			Description: "List/search units of measure (หน่วยนับ). Returns unit codes and names with multi-language support.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -1003,7 +1003,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "create_unit",
+			Name:        "createunit",
 			Description: "Create a new unit of measure (หน่วยนับ). Uses names[] for multi-language display names.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -1021,7 +1021,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "create_units",
+			Name:        "createunits",
 			Description: "Create multiple units of measure at once (bulk). Skips duplicates automatically.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -1035,7 +1035,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "update_unit",
+			Name:        "updateunit",
 			Description: "Update an existing unit of measure by unit code.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -1053,7 +1053,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "delete_unit",
+			Name:        "deleteunit",
 			Description: "Delete a unit of measure by unit code.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -1067,7 +1067,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "delete_units",
+			Name:        "deleteunits",
 			Description: "Delete multiple units of measure at once (bulk). Reports which were deleted and which were not found.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -1081,7 +1081,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "get_unit_schema",
+			Name:        "getunitschema",
 			Description: "Get the data structure/schema of unit of measure (หน่วยนับ) documents with examples.",
 			InputSchema: map[string]interface{}{
 				"type":       "object",
@@ -1090,7 +1090,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 		},
 		// Product Barcode Tools (สินค้า/บาร์โค้ด)
 		{
-			Name:        "list_barcodes",
+			Name:        "listbarcodes",
 			Description: "List/search product barcodes (สินค้า/บาร์โค้ด). Search by barcode, item code, or product name. Returns barcode, names, unit, prices, and classification.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -1107,7 +1107,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "create_barcode",
+			Name:        "createbarcode",
 			Description: "Create a new product barcode (สินค้า/บาร์โค้ด). Uses names[] for multi-language product names.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -1124,7 +1124,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"type":        "string",
 						"description": "JSON array of multi-language names e.g. [{\"code\":\"th\",\"name\":\"สินค้า A\"},{\"code\":\"en\",\"name\":\"Product A\"}]",
 					},
-					"item_unit_code": map[string]interface{}{
+					"itemunitcode": map[string]interface{}{
 						"type":        "string",
 						"description": "Unit code (e.g., 'EA', 'BOX')",
 					},
@@ -1144,11 +1144,11 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"type":        "number",
 						"description": "Unit conversion denominator (default: 1)",
 					},
-					"is_main_barcode": map[string]interface{}{
+					"ismainbarcode": map[string]interface{}{
 						"type":        "boolean",
 						"description": "Is main barcode? Auto-detected if not provided: true when standvalue=1 & dividevalue=1, false otherwise",
 					},
-					"group_code": map[string]interface{}{
+					"groupcode": map[string]interface{}{
 						"type":        "string",
 						"description": "Product group code (e.g., 'GRP-ELEC'). Auto-fills groupnames from productGroups collection.",
 					},
@@ -1161,7 +1161,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "create_barcodes",
+			Name:        "createbarcodes",
 			Description: "Create multiple product barcodes at once (bulk). Skips duplicates automatically.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -1175,12 +1175,12 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "update_barcode",
+			Name:        "updatebarcode",
 			Description: "Update an existing product barcode by guidfixed.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
-					"guid_fixed": map[string]interface{}{
+					"guidfixed": map[string]interface{}{
 						"type":        "string",
 						"description": "GuidFixed of the barcode to update",
 					},
@@ -1188,7 +1188,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"type":        "string",
 						"description": "JSON array of multi-language names [{\"code\":\"th\",\"name\":\"ชื่อใหม่\"}]",
 					},
-					"item_unit_code": map[string]interface{}{
+					"itemunitcode": map[string]interface{}{
 						"type":        "string",
 						"description": "New unit code",
 					},
@@ -1200,7 +1200,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"type":        "string",
 						"description": "JSON array of prices [{\"keynumber\":1,\"price\":150.00}]",
 					},
-					"group_code": map[string]interface{}{
+					"groupcode": map[string]interface{}{
 						"type":        "string",
 						"description": "Product group code. Auto-fills groupnames from productGroups collection.",
 					},
@@ -1209,25 +1209,25 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"description": "Product category code. Auto-fills categorynames from productCategories collection.",
 					},
 				},
-				"required": []string{"guid_fixed"},
+				"required": []string{"guidfixed"},
 			},
 		},
 		{
-			Name:        "delete_barcode",
+			Name:        "deletebarcode",
 			Description: "Delete a product barcode by guidfixed.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
-					"guid_fixed": map[string]interface{}{
+					"guidfixed": map[string]interface{}{
 						"type":        "string",
 						"description": "GuidFixed of the barcode to delete",
 					},
 				},
-				"required": []string{"guid_fixed"},
+				"required": []string{"guidfixed"},
 			},
 		},
 		{
-			Name:        "delete_barcodes",
+			Name:        "deletebarcodes",
 			Description: "Delete multiple product barcodes at once (bulk). Reports which were deleted and which were not found.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -1241,7 +1241,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "get_barcode_schema",
+			Name:        "getbarcodeschema",
 			Description: "Get the data structure/schema of product barcode (สินค้า/บาร์โค้ด) documents with examples.",
 			InputSchema: map[string]interface{}{
 				"type":       "object",
@@ -1250,7 +1250,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 		},
 		// Reference Barcodes + Multi-Unit
 		{
-			Name:        "get_ref_barcodes",
+			Name:        "getrefbarcodes",
 			Description: "Get reference barcodes and unit chain for a product. Shows all units (e.g., ชิ้น→ลัง) and how they reference each other.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -1267,7 +1267,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "set_ref_barcode",
+			Name:        "setrefbarcode",
 			Description: "Set reference barcode for a barcode (unit conversion). E.g., BOX → EA means 1 BOX = 24 EA. Checks for circular references.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -1276,7 +1276,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"type":        "string",
 						"description": "Source barcode (e.g., BOX barcode)",
 					},
-					"ref_barcode": map[string]interface{}{
+					"refbarcode": map[string]interface{}{
 						"type":        "string",
 						"description": "Target reference barcode (e.g., EA barcode). Must be same itemcode.",
 					},
@@ -1297,11 +1297,11 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"description": "Is conditional reference (default: false)",
 					},
 				},
-				"required": []string{"barcode", "ref_barcode"},
+				"required": []string{"barcode", "refbarcode"},
 			},
 		},
 		{
-			Name:        "create_multi_unit_barcode",
+			Name:        "createmultiunitbarcode",
 			Description: "Create a product with multiple units at once (e.g., ชิ้น + ลัง + แพ็ค). Automatically sets reference barcodes. The unit with standvalue=1 becomes the base unit.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -1318,7 +1318,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"type":        "string",
 						"description": "JSON array of units. Each needs barcode, itemunitcode, standvalue. e.g. [{\"barcode\":\"EA-001\",\"itemunitcode\":\"EA\",\"standvalue\":1,\"dividevalue\":1},{\"barcode\":\"BOX-001\",\"itemunitcode\":\"BOX\",\"standvalue\":24,\"dividevalue\":1}]",
 					},
-					"group_code": map[string]interface{}{
+					"groupcode": map[string]interface{}{
 						"type":        "string",
 						"description": "Product group code (shared for all units). Auto-fills groupnames.",
 					},
@@ -1332,7 +1332,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 		},
 		// Product Group Tools (กลุ่มสินค้า)
 		{
-			Name:        "list_product_groups",
+			Name:        "listproductgroups",
 			Description: "List/search product groups (กลุ่มสินค้า). Returns group codes and names with multi-language support.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -1349,7 +1349,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "create_product_group",
+			Name:        "createproductgroup",
 			Description: "Create a new product group (กลุ่มสินค้า). Uses names[] for multi-language display names.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -1367,7 +1367,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "create_product_groups",
+			Name:        "createproductgroups",
 			Description: "Create multiple product groups at once (bulk). Skips duplicates automatically.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -1381,7 +1381,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "update_product_group",
+			Name:        "updateproductgroup",
 			Description: "Update an existing product group by code.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -1399,7 +1399,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "delete_product_group",
+			Name:        "deleteproductgroup",
 			Description: "Delete a product group by code.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -1413,7 +1413,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "delete_product_groups",
+			Name:        "deleteproductgroups",
 			Description: "Delete multiple product groups at once (bulk). Reports which were deleted and which were not found.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -1427,7 +1427,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "get_product_group_schema",
+			Name:        "getproductgroupschema",
 			Description: "Get the data structure/schema of product group (กลุ่มสินค้า) documents with examples.",
 			InputSchema: map[string]interface{}{
 				"type":       "object",
@@ -1436,7 +1436,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 		},
 		// Product Category Tools (หมวดสินค้า)
 		{
-			Name:        "list_product_categories",
+			Name:        "listproductcategories",
 			Description: "List/search product categories (หมวดสินค้า). Returns category names, hierarchy, and group numbers.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -1453,7 +1453,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "create_product_category",
+			Name:        "createproductcategory",
 			Description: "Create a new product category (หมวดสินค้า). Uses names[] for multi-language display names. Supports hierarchy via parentguid.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -1462,11 +1462,11 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"type":        "string",
 						"description": "JSON array of multi-language names e.g. [{\"code\":\"th\",\"name\":\"เนื้อสัตว์\"},{\"code\":\"en\",\"name\":\"Meat\"}]",
 					},
-					"parent_guid": map[string]interface{}{
+					"parentguid": map[string]interface{}{
 						"type":        "string",
 						"description": "Parent category guidfixed (for hierarchy)",
 					},
-					"group_number": map[string]interface{}{
+					"groupnumber": map[string]interface{}{
 						"type":        "number",
 						"description": "Group/sort number",
 					},
@@ -1475,7 +1475,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "create_product_categories",
+			Name:        "createproductcategories",
 			Description: "Create multiple product categories at once (bulk). Auto-generates guidfixed for each.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -1489,12 +1489,12 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "update_product_category",
+			Name:        "updateproductcategory",
 			Description: "Update an existing product category by guidfixed.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
-					"guid_fixed": map[string]interface{}{
+					"guidfixed": map[string]interface{}{
 						"type":        "string",
 						"description": "GuidFixed of the category to update",
 					},
@@ -1502,34 +1502,34 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"type":        "string",
 						"description": "JSON array of multi-language names [{\"code\":\"th\",\"name\":\"เนื้อสัตว์\"}]",
 					},
-					"parent_guid": map[string]interface{}{
+					"parentguid": map[string]interface{}{
 						"type":        "string",
 						"description": "New parent category guidfixed",
 					},
-					"group_number": map[string]interface{}{
+					"groupnumber": map[string]interface{}{
 						"type":        "number",
 						"description": "New group/sort number",
 					},
 				},
-				"required": []string{"guid_fixed"},
+				"required": []string{"guidfixed"},
 			},
 		},
 		{
-			Name:        "delete_product_category",
+			Name:        "deleteproductcategory",
 			Description: "Delete a product category by guidfixed.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
-					"guid_fixed": map[string]interface{}{
+					"guidfixed": map[string]interface{}{
 						"type":        "string",
 						"description": "GuidFixed of the category to delete",
 					},
 				},
-				"required": []string{"guid_fixed"},
+				"required": []string{"guidfixed"},
 			},
 		},
 		{
-			Name:        "delete_product_categories",
+			Name:        "deleteproductcategories",
 			Description: "Delete multiple product categories at once (bulk). Reports which were deleted and which were not found.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -1543,7 +1543,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "get_product_category_schema",
+			Name:        "getproductcategoryschema",
 			Description: "Get the data structure/schema of product category (หมวดสินค้า) documents with examples.",
 			InputSchema: map[string]interface{}{
 				"type":       "object",
@@ -1552,7 +1552,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 		},
 		// Creditor Tools (เจ้าหนี้)
 		{
-			Name:        "list_creditors",
+			Name:        "listcreditors",
 			Description: "List/search creditors (เจ้าหนี้). Returns creditor codes, names, tax ID, and contact info.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -1569,7 +1569,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "create_creditor",
+			Name:        "createcreditor",
 			Description: "Create a new creditor (เจ้าหนี้). Uses names[] for multi-language display names.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -1582,7 +1582,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"type":        "string",
 						"description": "JSON array of multi-language names e.g. [{\"code\":\"th\",\"name\":\"บริษัท ABC\"},{\"code\":\"en\",\"name\":\"ABC Co.\"}]",
 					},
-					"tax_id": map[string]interface{}{
+					"taxid": map[string]interface{}{
 						"type":        "string",
 						"description": "Tax ID (optional)",
 					},
@@ -1590,7 +1590,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"type":        "string",
 						"description": "Email (optional)",
 					},
-					"personal_type": map[string]interface{}{
+					"personaltype": map[string]interface{}{
 						"type":        "number",
 						"description": "Personal type: 0=company, 1=individual (default: 0)",
 					},
@@ -1607,7 +1607,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "create_creditors",
+			Name:        "createcreditors",
 			Description: "Create multiple creditors at once (bulk). Skips duplicates automatically.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -1621,12 +1621,12 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "update_creditor",
+			Name:        "updatecreditor",
 			Description: "Update an existing creditor by guidfixed.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
-					"guid_fixed": map[string]interface{}{
+					"guidfixed": map[string]interface{}{
 						"type":        "string",
 						"description": "GuidFixed of the creditor to update",
 					},
@@ -1634,7 +1634,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"type":        "string",
 						"description": "JSON array of multi-language names",
 					},
-					"tax_id": map[string]interface{}{
+					"taxid": map[string]interface{}{
 						"type":        "string",
 						"description": "New tax ID",
 					},
@@ -1651,25 +1651,25 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"description": "JSON object for billing address",
 					},
 				},
-				"required": []string{"guid_fixed"},
+				"required": []string{"guidfixed"},
 			},
 		},
 		{
-			Name:        "delete_creditor",
+			Name:        "deletecreditor",
 			Description: "Delete a creditor by guidfixed (soft delete).",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
-					"guid_fixed": map[string]interface{}{
+					"guidfixed": map[string]interface{}{
 						"type":        "string",
 						"description": "GuidFixed of the creditor to delete",
 					},
 				},
-				"required": []string{"guid_fixed"},
+				"required": []string{"guidfixed"},
 			},
 		},
 		{
-			Name:        "delete_creditors",
+			Name:        "deletecreditors",
 			Description: "Delete multiple creditors at once (bulk soft delete). Reports which were deleted and which were not found.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -1683,7 +1683,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "get_creditor_schema",
+			Name:        "getcreditorschema",
 			Description: "Get the data structure/schema of creditor (เจ้าหนี้) documents with examples.",
 			InputSchema: map[string]interface{}{
 				"type":       "object",
@@ -1692,7 +1692,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 		},
 		// Debtor Tools (ลูกหนี้)
 		{
-			Name:        "list_debtors",
+			Name:        "listdebtors",
 			Description: "List/search debtors (ลูกหนี้). Returns debtor codes, names, tax ID, and contact info.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -1709,7 +1709,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "create_debtor",
+			Name:        "createdebtor",
 			Description: "Create a new debtor (ลูกหนี้). Uses names[] for multi-language display names.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -1722,7 +1722,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"type":        "string",
 						"description": "JSON array of multi-language names e.g. [{\"code\":\"th\",\"name\":\"ร้าน ABC\"},{\"code\":\"en\",\"name\":\"ABC Shop\"}]",
 					},
-					"tax_id": map[string]interface{}{
+					"taxid": map[string]interface{}{
 						"type":        "string",
 						"description": "Tax ID (optional)",
 					},
@@ -1730,7 +1730,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"type":        "string",
 						"description": "Email (optional)",
 					},
-					"personal_type": map[string]interface{}{
+					"personaltype": map[string]interface{}{
 						"type":        "number",
 						"description": "Personal type: 0=company, 1=individual (default: 0)",
 					},
@@ -1747,7 +1747,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "create_debtors",
+			Name:        "createdebtors",
 			Description: "Create multiple debtors at once (bulk). Skips duplicates automatically.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -1761,12 +1761,12 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "update_debtor",
+			Name:        "updatedebtor",
 			Description: "Update an existing debtor by guidfixed.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
-					"guid_fixed": map[string]interface{}{
+					"guidfixed": map[string]interface{}{
 						"type":        "string",
 						"description": "GuidFixed of the debtor to update",
 					},
@@ -1774,7 +1774,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"type":        "string",
 						"description": "JSON array of multi-language names",
 					},
-					"tax_id": map[string]interface{}{
+					"taxid": map[string]interface{}{
 						"type":        "string",
 						"description": "New tax ID",
 					},
@@ -1791,25 +1791,25 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"description": "JSON object for billing address",
 					},
 				},
-				"required": []string{"guid_fixed"},
+				"required": []string{"guidfixed"},
 			},
 		},
 		{
-			Name:        "delete_debtor",
+			Name:        "deletedebtor",
 			Description: "Delete a debtor by guidfixed (soft delete).",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
-					"guid_fixed": map[string]interface{}{
+					"guidfixed": map[string]interface{}{
 						"type":        "string",
 						"description": "GuidFixed of the debtor to delete",
 					},
 				},
-				"required": []string{"guid_fixed"},
+				"required": []string{"guidfixed"},
 			},
 		},
 		{
-			Name:        "delete_debtors",
+			Name:        "deletedebtors",
 			Description: "Delete multiple debtors at once (bulk soft delete). Reports which were deleted and which were not found.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -1823,7 +1823,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "get_debtor_schema",
+			Name:        "getdebtorschema",
 			Description: "Get the data structure/schema of debtor (ลูกหนี้) documents with examples.",
 			InputSchema: map[string]interface{}{
 				"type":       "object",
@@ -1831,17 +1831,17 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
-			Name:        "rebuild_products",
+			Name:        "rebuildproducts",
 			Description: "Full rebuild: sync ALL product barcodes from MongoDB → PostgreSQL + ClickHouse. Use when Kafka sync fails or data is out of sync. Same as frontend 'สร้างสินค้าใหม่' button.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
-					"holding_code": map[string]interface{}{
+					"holdingcode": map[string]interface{}{
 						"type":        "string",
 						"description": "Holding Code to rebuild products for",
 					},
 				},
-				"required": []string{"holding_code"},
+				"required": []string{"holdingcode"},
 			},
 		},
 	}
@@ -1895,11 +1895,11 @@ func (s *MCPServer) handleToolCall(ctx context.Context, session *SSESession, par
 		return nil, fmt.Errorf("tool '%s' is not allowed for this API key", callParams.Name)
 	}
 
-	// Add holding_code from API key
+	// Add holdingcode from API key
 	if callParams.Arguments == nil {
 		callParams.Arguments = make(map[string]interface{})
 	}
-	callParams.Arguments["holding_code"] = session.APIKey.HoldingCode
+	callParams.Arguments["holdingcode"] = session.APIKey.HoldingCode
 
 	// Execute tool
 	startTime := time.Now()
@@ -1908,187 +1908,187 @@ func (s *MCPServer) handleToolCall(ctx context.Context, session *SSESession, par
 
 	switch callParams.Name {
 	// Product Search
-	case "search_products":
+	case "searchproducts":
 		result, err = s.invokeSearchProducts(ctx, callParams.Arguments)
 	// Sales Tools
-	case "get_daily_sales":
+	case "getdailysales":
 		result, err = s.invokeGetDailySales(ctx, callParams.Arguments)
-	case "get_sales_by_date_range":
+	case "getsalesbydaterange":
 		result, err = s.invokeGetSalesByDateRange(ctx, callParams.Arguments)
-	case "get_top_selling_products":
+	case "gettopsellingproducts":
 		result, err = s.invokeGetTopSellingProducts(ctx, callParams.Arguments)
-	case "get_sales_by_seller":
+	case "getsalesbyseller":
 		result, err = s.invokeGetSalesBySeller(ctx, callParams.Arguments)
-	case "get_monthly_summary":
+	case "getmonthlysummary":
 		result, err = s.invokeGetMonthlySummary(ctx, callParams.Arguments)
 	// Dashboard Tools
-	case "get_dashboard_kpis":
+	case "getdashboardkpis":
 		result, err = s.invokeGetDashboardKPIs(ctx, callParams.Arguments)
-	case "get_business_health":
+	case "getbusinesshealth":
 		result, err = s.invokeGetBusinessHealth(ctx, callParams.Arguments)
 	// Financial Tools
-	case "get_profit_analysis":
+	case "getprofitanalysis":
 		result, err = s.invokeGetProfitAnalysis(ctx, callParams.Arguments)
-	case "get_accounts_receivable":
+	case "getaccountsreceivable":
 		result, err = s.invokeGetAccountsReceivable(ctx, callParams.Arguments)
-	case "get_accounts_payable":
+	case "getaccountspayable":
 		result, err = s.invokeGetAccountsPayable(ctx, callParams.Arguments)
-	case "get_cash_flow":
+	case "getcashflow":
 		result, err = s.invokeGetCashFlow(ctx, callParams.Arguments)
 	// Inventory Tools
-	case "get_inventory_value":
+	case "getinventoryvalue":
 		result, err = s.invokeGetInventoryValue(ctx, callParams.Arguments)
-	case "get_low_stock_alerts":
+	case "getlowstockalerts":
 		result, err = s.invokeGetLowStockAlerts(ctx, callParams.Arguments)
-	case "get_dead_stock":
+	case "getdeadstock":
 		result, err = s.invokeGetDeadStock(ctx, callParams.Arguments)
-	case "get_inventory_turnover":
+	case "getinventoryturnover":
 		result, err = s.invokeGetInventoryTurnover(ctx, callParams.Arguments)
 	// Customer Tools
-	case "get_top_customers":
+	case "gettopcustomers":
 		result, err = s.invokeGetTopCustomers(ctx, callParams.Arguments)
-	case "get_customer_growth":
+	case "getcustomergrowth":
 		result, err = s.invokeGetCustomerGrowth(ctx, callParams.Arguments)
-	case "get_customer_segments":
+	case "getcustomersegments":
 		result, err = s.invokeGetCustomerSegments(ctx, callParams.Arguments)
 	// Comparison Tools
-	case "get_yoy_comparison":
+	case "getyoycomparison":
 		result, err = s.invokeGetYoYComparison(ctx, callParams.Arguments)
-	case "get_mom_comparison":
+	case "getmomcomparison":
 		result, err = s.invokeGetMoMComparison(ctx, callParams.Arguments)
 	// Database Tools
-	case "get_database_schema":
+	case "getdatabaseschema":
 		result, err = s.invokeGetDatabaseSchema(ctx, callParams.Arguments)
-	case "execute_query":
+	case "executequery":
 		result, err = s.invokeExecuteQuery(ctx, callParams.Arguments)
-	case "get_table_sample":
+	case "gettablesample":
 		result, err = s.invokeGetTableSample(ctx, callParams.Arguments)
 	// MongoDB Tools
-	case "query_mongodb":
+	case "querymongodb":
 		result, err = s.invokeQueryMongoDB(ctx, callParams.Arguments)
-	case "list_mongodb_collections":
+	case "listmongodbcollections":
 		result, err = s.invokeListMongoDBCollections(ctx, callParams.Arguments)
-	case "aggregate_mongodb":
+	case "aggregatemongodb":
 		result, err = s.invokeAggregateMongoDB(ctx, callParams.Arguments)
 	// ClickHouse Tools
-	case "query_clickhouse":
+	case "queryclickhouse":
 		result, err = s.invokeQueryClickHouse(ctx, callParams.Arguments)
-	case "list_clickhouse_tables":
+	case "listclickhousetables":
 		result, err = s.invokeListClickHouseTables(ctx, callParams.Arguments)
 	// Dev Database Tools
-	case "execute_pg_command":
+	case "executepgcommand":
 		result, err = s.invokeExecutePgCommand(ctx, callParams.Arguments)
-	case "execute_ch_command":
+	case "executechcommand":
 		result, err = s.invokeExecuteChCommand(ctx, callParams.Arguments)
 	// API Catalog & Frontend Dev Tools
-	case "list_api_endpoints":
+	case "listapiendpoints":
 		result, err = s.invokeListAPIEndpoints(ctx, callParams.Arguments)
-	case "get_api_spec":
+	case "getapispec":
 		result, err = s.invokeGetAPISpec(ctx, callParams.Arguments)
-	case "get_api_example":
+	case "getapiexample":
 		result, err = s.invokeGetAPIExample(ctx, callParams.Arguments)
-	case "list_enums":
+	case "listenums":
 		result, err = s.invokeListEnums(ctx, callParams.Arguments)
-	case "get_model_schema":
+	case "getmodelschema":
 		result, err = s.invokeGetModelSchema(ctx, callParams.Arguments)
 	// Unit of Measure Tools (หน่วยนับ)
-	case "list_units":
+	case "listunits":
 		result, err = s.invokeListUnits(ctx, callParams.Arguments)
-	case "create_unit":
+	case "createunit":
 		result, err = s.invokeCreateUnit(ctx, callParams.Arguments)
-	case "create_units":
+	case "createunits":
 		result, err = s.invokeCreateUnits(ctx, callParams.Arguments)
-	case "update_unit":
+	case "updateunit":
 		result, err = s.invokeUpdateUnit(ctx, callParams.Arguments)
-	case "delete_unit":
+	case "deleteunit":
 		result, err = s.invokeDeleteUnit(ctx, callParams.Arguments)
-	case "delete_units":
+	case "deleteunits":
 		result, err = s.invokeDeleteUnits(ctx, callParams.Arguments)
-	case "get_unit_schema":
+	case "getunitschema":
 		result, err = s.invokeGetUnitSchema(ctx, callParams.Arguments)
 	// Product Barcode Tools (สินค้า/บาร์โค้ด)
-	case "list_barcodes":
+	case "listbarcodes":
 		result, err = s.invokeListBarcodes(ctx, callParams.Arguments)
-	case "create_barcode":
+	case "createbarcode":
 		result, err = s.invokeCreateBarcode(ctx, callParams.Arguments)
-	case "create_barcodes":
+	case "createbarcodes":
 		result, err = s.invokeCreateBarcodes(ctx, callParams.Arguments)
-	case "update_barcode":
+	case "updatebarcode":
 		result, err = s.invokeUpdateBarcode(ctx, callParams.Arguments)
-	case "delete_barcode":
+	case "deletebarcode":
 		result, err = s.invokeDeleteBarcode(ctx, callParams.Arguments)
-	case "delete_barcodes":
+	case "deletebarcodes":
 		result, err = s.invokeDeleteBarcodes(ctx, callParams.Arguments)
-	case "get_barcode_schema":
+	case "getbarcodeschema":
 		result, err = s.invokeGetBarcodeSchema(ctx, callParams.Arguments)
 	// Reference Barcodes + Multi-Unit
-	case "get_ref_barcodes":
+	case "getrefbarcodes":
 		result, err = s.invokeGetRefBarcodes(ctx, callParams.Arguments)
-	case "set_ref_barcode":
+	case "setrefbarcode":
 		result, err = s.invokeSetRefBarcode(ctx, callParams.Arguments)
-	case "create_multi_unit_barcode":
+	case "createmultiunitbarcode":
 		result, err = s.invokeCreateMultiUnitBarcode(ctx, callParams.Arguments)
-	case "rebuild_products":
+	case "rebuildproducts":
 		result, err = s.invokeRebuildProducts(ctx, callParams.Arguments)
 	// Product Group Tools
-	case "list_product_groups":
+	case "listproductgroups":
 		result, err = s.invokeListProductGroups(ctx, callParams.Arguments)
-	case "create_product_group":
+	case "createproductgroup":
 		result, err = s.invokeCreateProductGroup(ctx, callParams.Arguments)
-	case "create_product_groups":
+	case "createproductgroups":
 		result, err = s.invokeCreateProductGroups(ctx, callParams.Arguments)
-	case "update_product_group":
+	case "updateproductgroup":
 		result, err = s.invokeUpdateProductGroup(ctx, callParams.Arguments)
-	case "delete_product_group":
+	case "deleteproductgroup":
 		result, err = s.invokeDeleteProductGroup(ctx, callParams.Arguments)
-	case "delete_product_groups":
+	case "deleteproductgroups":
 		result, err = s.invokeDeleteProductGroups(ctx, callParams.Arguments)
-	case "get_product_group_schema":
+	case "getproductgroupschema":
 		result, err = s.invokeGetProductGroupSchema(ctx, callParams.Arguments)
 	// Product Category Tools
-	case "list_product_categories":
+	case "listproductcategories":
 		result, err = s.invokeListProductCategories(ctx, callParams.Arguments)
-	case "create_product_category":
+	case "createproductcategory":
 		result, err = s.invokeCreateProductCategory(ctx, callParams.Arguments)
-	case "create_product_categories":
+	case "createproductcategories":
 		result, err = s.invokeCreateProductCategories(ctx, callParams.Arguments)
-	case "update_product_category":
+	case "updateproductcategory":
 		result, err = s.invokeUpdateProductCategory(ctx, callParams.Arguments)
-	case "delete_product_category":
+	case "deleteproductcategory":
 		result, err = s.invokeDeleteProductCategory(ctx, callParams.Arguments)
-	case "delete_product_categories":
+	case "deleteproductcategories":
 		result, err = s.invokeDeleteProductCategories(ctx, callParams.Arguments)
-	case "get_product_category_schema":
+	case "getproductcategoryschema":
 		result, err = s.invokeGetProductCategorySchema(ctx, callParams.Arguments)
 	// Creditor Tools (เจ้าหนี้)
-	case "list_creditors":
+	case "listcreditors":
 		result, err = s.invokeListCreditors(ctx, callParams.Arguments)
-	case "create_creditor":
+	case "createcreditor":
 		result, err = s.invokeCreateCreditor(ctx, callParams.Arguments)
-	case "create_creditors":
+	case "createcreditors":
 		result, err = s.invokeCreateCreditors(ctx, callParams.Arguments)
-	case "update_creditor":
+	case "updatecreditor":
 		result, err = s.invokeUpdateCreditor(ctx, callParams.Arguments)
-	case "delete_creditor":
+	case "deletecreditor":
 		result, err = s.invokeDeleteCreditor(ctx, callParams.Arguments)
-	case "delete_creditors":
+	case "deletecreditors":
 		result, err = s.invokeDeleteCreditors(ctx, callParams.Arguments)
-	case "get_creditor_schema":
+	case "getcreditorschema":
 		result, err = s.invokeGetCreditorSchema(ctx, callParams.Arguments)
 	// Debtor Tools (ลูกหนี้)
-	case "list_debtors":
+	case "listdebtors":
 		result, err = s.invokeListDebtors(ctx, callParams.Arguments)
-	case "create_debtor":
+	case "createdebtor":
 		result, err = s.invokeCreateDebtor(ctx, callParams.Arguments)
-	case "create_debtors":
+	case "createdebtors":
 		result, err = s.invokeCreateDebtors(ctx, callParams.Arguments)
-	case "update_debtor":
+	case "updatedebtor":
 		result, err = s.invokeUpdateDebtor(ctx, callParams.Arguments)
-	case "delete_debtor":
+	case "deletedebtor":
 		result, err = s.invokeDeleteDebtor(ctx, callParams.Arguments)
-	case "delete_debtors":
+	case "deletedebtors":
 		result, err = s.invokeDeleteDebtors(ctx, callParams.Arguments)
-	case "get_debtor_schema":
+	case "getdebtorschema":
 		result, err = s.invokeGetDebtorSchema(ctx, callParams.Arguments)
 	default:
 		return nil, fmt.Errorf("unknown tool: %s", callParams.Name)

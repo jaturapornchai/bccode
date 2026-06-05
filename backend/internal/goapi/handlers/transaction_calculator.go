@@ -19,65 +19,65 @@ import (
 
 // TransactionItem - รายการสินค้าในธุรกรรม
 type TransactionItem struct {
-	ItemCode string  `json:"itemcode"`
-	ItemName string  `json:"item_name"`
-	Qty float64 `json:"qty"`
-	Price float64 `json:"price"`
-	Discount string  `json:"discount"`    // เช่น "10%" หรือ "100"
-	VatType int     `json:"vat_type"`     // 0=แยกนอก, 1=รวมใน, 2=ไม่กระทบภาษี
-	VatRate float64 `json:"vatrate"`     // อัตราภาษี เช่น 7
-	VatCal int     `json:"vatcal"`      // 0=มีภาษี (taxable), 1=ยกเว้นภาษี (exempt)
-	UnitCode string  `json:"unitcode"`
-	UnitStand float64 `json:"unitstand"`
-	UnitDivide float64 `json:"unitdivide"`
-	WHCode string  `json:"whcode"`
-	ShelfCode string  `json:"shelfcode"`
-	CalcFlag int     `json:"calcflag"`
+	ItemCode    string  `json:"itemcode"`
+	ItemName    string  `json:"itemname"`
+	Qty         float64 `json:"qty"`
+	Price       float64 `json:"price"`
+	Discount    string  `json:"discount"` // เช่น "10%" หรือ "100"
+	VatType     int     `json:"vattype"`  // 0=แยกนอก, 1=รวมใน, 2=ไม่กระทบภาษี
+	VatRate     float64 `json:"vatrate"`  // อัตราภาษี เช่น 7
+	VatCal      int     `json:"vatcal"`   // 0=มีภาษี (taxable), 1=ยกเว้นภาษี (exempt)
+	UnitCode    string  `json:"unitcode"`
+	UnitStand   float64 `json:"unitstand"`
+	UnitDivide  float64 `json:"unitdivide"`
+	WHCode      string  `json:"whcode"`
+	ShelfCode   string  `json:"shelfcode"`
+	CalcFlag    int     `json:"calcflag"`
 	InquiryType int     `json:"inquirytype,omitempty"`
 
 	// Calculated fields - enhanced (ported from calamount.dart)
-	SumAmount float64 `json:"sum_amount,omitempty"`
-	DiscountAmount float64 `json:"discountamount,omitempty"`
-	PriceExcludeVat float64 `json:"priceexcludevat,omitempty"`
+	SumAmount           float64 `json:"sumamount,omitempty"`
+	DiscountAmount      float64 `json:"discountamount,omitempty"`
+	PriceExcludeVat     float64 `json:"priceexcludevat,omitempty"`
 	SumAmountExcludeVat float64 `json:"sumamountexcludevat,omitempty"`
-	TotalValueVat float64 `json:"totalvaluevat,omitempty"`
-	TotalQty float64 `json:"totalqty,omitempty"`
+	TotalValueVat       float64 `json:"totalvaluevat,omitempty"`
+	TotalQty            float64 `json:"totalqty,omitempty"`
 
 	// Legacy calculated fields (backward compat)
-	NetAmount float64 `json:"netamount,omitempty"`
-	TaxAmount float64 `json:"taxamount,omitempty"`
-	TotalAmount float64 `json:"total_amount,omitempty"`
+	NetAmount   float64 `json:"netamount,omitempty"`
+	TaxAmount   float64 `json:"taxamount,omitempty"`
+	TotalAmount float64 `json:"totalamount,omitempty"`
 }
 
 // PaymentMethod - วิธีการชำระเงิน
 type PaymentMethod struct {
-	PayCode string  `json:"paycode"`
-	PayName string  `json:"payname"`
-	Amount float64 `json:"amount"`
-	TransferBankCode string  `json:"transfer_bank_code,omitempty"`
-	CreditCardType string  `json:"credit_card_type,omitempty"`
-	ChequeNo string  `json:"cheque_no,omitempty"`
-	ChequeDate string  `json:"cheque_date,omitempty"`
-	ChequeBankCode string  `json:"cheque_bank_code,omitempty"`
+	PayCode          string  `json:"paycode"`
+	PayName          string  `json:"payname"`
+	Amount           float64 `json:"amount"`
+	TransferBankCode string  `json:"transferbankcode,omitempty"`
+	CreditCardType   string  `json:"creditcardtype,omitempty"`
+	ChequeNo         string  `json:"chequeno,omitempty"`
+	ChequeDate       string  `json:"chequedate,omitempty"`
+	ChequeBankCode   string  `json:"chequebankcode,omitempty"`
 }
 
 // TransactionCalculateRequest - request สำหรับคำนวณธุรกรรม
 type TransactionCalculateRequest struct {
-	Items []TransactionItem `json:"items"`
-	Discount string            `json:"discount"`           // ส่วนลดท้ายบิล (discountword)
-	DetailDiscount string            `json:"detail_discount"`    // ส่วนลดก่อนชำระเงิน (detaildiscountformula)
-	VatType int               `json:"vat_type"`            // 0=แยกนอก, 1=รวมใน, 2=ไม่กระทบภาษี
-	VatRate float64           `json:"vatrate"`            // อัตราภาษี default 7
-	Payments []PaymentMethod   `json:"payments"`
-	DepositAmount float64           `json:"deposit_amount"`     // เงินมัดจำ (sumdeposit)
-	IsManualAmount bool              `json:"is_manual_amount"`   // ไม่คำนวณยอดเอง
-	InquiryType int               `json:"inquiry_type"`       // ประเภทเอกสาร
-	DocCurrency string            `json:"doc_currency"`       // สกุลเงินเอกสาร
-	BaseCurrency string            `json:"base_currency"`      // สกุลเงินหลัก
-	ExchangeRate float64           `json:"exchange_rate"`      // อัตราแลกเปลี่ยน
-	TransactionType string            `json:"transaction_type"`   // ประเภทธุรกรรม (salereturn, purchasereturn, etc.)
-	RefTotalOriginal float64           `json:"ref_total_original"` // ยอดเอกสารอ้างอิง (สำหรับ return)
-	RoundAmount float64           `json:"round_amount"`       // จำนวนปัดเศษ
+	Items            []TransactionItem `json:"items"`
+	Discount         string            `json:"discount"`       // ส่วนลดท้ายบิล (discountword)
+	DetailDiscount   string            `json:"detaildiscount"` // ส่วนลดก่อนชำระเงิน (detaildiscountformula)
+	VatType          int               `json:"vattype"`        // 0=แยกนอก, 1=รวมใน, 2=ไม่กระทบภาษี
+	VatRate          float64           `json:"vatrate"`        // อัตราภาษี default 7
+	Payments         []PaymentMethod   `json:"payments"`
+	DepositAmount    float64           `json:"depositamount"`    // เงินมัดจำ (sumdeposit)
+	IsManualAmount   bool              `json:"ismanualamount"`   // ไม่คำนวณยอดเอง
+	InquiryType      int               `json:"inquirytype"`      // ประเภทเอกสาร
+	DocCurrency      string            `json:"doccurrency"`      // สกุลเงินเอกสาร
+	BaseCurrency     string            `json:"basecurrency"`     // สกุลเงินหลัก
+	ExchangeRate     float64           `json:"exchangerate"`     // อัตราแลกเปลี่ยน
+	TransactionType  string            `json:"transactiontype"`  // ประเภทธุรกรรม (salereturn, purchasereturn, etc.)
+	RefTotalOriginal float64           `json:"reftotaloriginal"` // ยอดเอกสารอ้างอิง (สำหรับ return)
+	RoundAmount      float64           `json:"roundamount"`      // จำนวนปัดเศษ
 }
 
 // TransactionCalculateResponse - response การคำนวณ (enhanced)
@@ -85,40 +85,40 @@ type TransactionCalculateResponse struct {
 	Items []TransactionItem `json:"items"`
 
 	// === Document totals (Flutter-compatible) ===
-	TotalValue float64 `json:"total_value"`                      // ยอดรวมสินค้าทั้งหมด
-	TotalQty float64 `json:"total_qty"`                        // จำนวนสินค้าทั้งหมด
-	DetailTotalDiscount float64 `json:"detail_total_discount"`            // ส่วนลดก่อนชำระเงิน
-	TotalDiscountVatAmount float64 `json:"total_discount_vat_amount"`        // ส่วนลดสินค้ามีภาษี
-	TotalDiscountExceptVatAmount float64 `json:"total_discount_except_vat_amount"` // ส่วนลดสินค้ายกเว้นภาษี
-	TotalBeforeVat float64 `json:"total_before_vat"`                 // มูลค่าก่อนภาษี
-	TotalVatValue float64 `json:"total_vat_value"`                  // มูลค่าภาษี
-	TotalAfterVat float64 `json:"total_after_vat"`                  // มูลค่าหลังภาษี
-	TotalExceptVat float64 `json:"total_except_vat"`                 // มูลค่ายกเว้นภาษี
-	DetailTotalAmount float64 `json:"detail_total_amount"`              // ยอดรวมก่อนหักส่วนลดท้ายบิล
-	TotalDiscount float64 `json:"total_discount"`                   // ส่วนลดท้ายบิล
-	TotalAmountAfterDiscount float64 `json:"total_amount_after_discount"`      // ยอดรวมหลังหักส่วนลดทั้งหมด
-	TotalAmount float64 `json:"total_amount"`                     // ยอดรวมสุทธิ (Base Currency)
-	TotalAmountDoc float64 `json:"total_amount_doc"`                // ยอดรวมในสกุลเงินเอกสาร
-	TotalValueDoc float64 `json:"total_value_doc"`                 // มูลค่ารวมสินค้า (Document Currency)
-	TotalDiscountDoc float64 `json:"total_discount_doc"`              // ส่วนลดท้ายบิล (Document Currency)
-	TotalVatValueDoc float64 `json:"total_vat_value_doc"`             // มูลค่าภาษี (Document Currency)
-	TotalBeforeVatDoc float64 `json:"total_before_vat_doc"`            // มูลค่าก่อนภาษี (Document Currency)
-	TotalAfterVatDoc float64 `json:"total_after_vat_doc"`             // มูลค่าหลังภาษี (Document Currency)
-	RefTotalDiff float64 `json:"ref_total_diff,omitempty"`         // ผลต่างจากเอกสารอ้างอิง
-	RefTotalCorrect float64 `json:"ref_total_correct,omitempty"`      // ยอดที่ถูกต้องหลังหัก
+	TotalValue                   float64 `json:"totalvalue"`                   // ยอดรวมสินค้าทั้งหมด
+	TotalQty                     float64 `json:"totalqty"`                     // จำนวนสินค้าทั้งหมด
+	DetailTotalDiscount          float64 `json:"detailtotaldiscount"`          // ส่วนลดก่อนชำระเงิน
+	TotalDiscountVatAmount       float64 `json:"totaldiscountvatamount"`       // ส่วนลดสินค้ามีภาษี
+	TotalDiscountExceptVatAmount float64 `json:"totaldiscountexceptvatamount"` // ส่วนลดสินค้ายกเว้นภาษี
+	TotalBeforeVat               float64 `json:"totalbeforevat"`               // มูลค่าก่อนภาษี
+	TotalVatValue                float64 `json:"totalvatvalue"`                // มูลค่าภาษี
+	TotalAfterVat                float64 `json:"totalaftervat"`                // มูลค่าหลังภาษี
+	TotalExceptVat               float64 `json:"totalexceptvat"`               // มูลค่ายกเว้นภาษี
+	DetailTotalAmount            float64 `json:"detailtotalamount"`            // ยอดรวมก่อนหักส่วนลดท้ายบิล
+	TotalDiscount                float64 `json:"totaldiscount"`                // ส่วนลดท้ายบิล
+	TotalAmountAfterDiscount     float64 `json:"totalamountafterdiscount"`     // ยอดรวมหลังหักส่วนลดทั้งหมด
+	TotalAmount                  float64 `json:"totalamount"`                  // ยอดรวมสุทธิ (Base Currency)
+	TotalAmountDoc               float64 `json:"totalamountdoc"`               // ยอดรวมในสกุลเงินเอกสาร
+	TotalValueDoc                float64 `json:"totalvaluedoc"`                // มูลค่ารวมสินค้า (Document Currency)
+	TotalDiscountDoc             float64 `json:"totaldiscountdoc"`             // ส่วนลดท้ายบิล (Document Currency)
+	TotalVatValueDoc             float64 `json:"totalvatvaluedoc"`             // มูลค่าภาษี (Document Currency)
+	TotalBeforeVatDoc            float64 `json:"totalbeforevatdoc"`            // มูลค่าก่อนภาษี (Document Currency)
+	TotalAfterVatDoc             float64 `json:"totalaftervatdoc"`             // มูลค่าหลังภาษี (Document Currency)
+	RefTotalDiff                 float64 `json:"reftotaldiff,omitempty"`       // ผลต่างจากเอกสารอ้างอิง
+	RefTotalCorrect              float64 `json:"reftotalcorrect,omitempty"`    // ยอดที่ถูกต้องหลังหัก
 
 	// === Legacy fields (backward compat) ===
-	SumAmount float64            `json:"sum_amount"`
-	DiscountAmount float64            `json:"discount_amount"`
-	BeforeVatAmount float64            `json:"before_vat_amount"`
-	VatAmount float64            `json:"vat_amount"`
-	NetAmount float64            `json:"net_amount"`
-	DepositAmount float64            `json:"deposit_amount"`
-	PaymentTotal float64            `json:"payment_total"`
-	ChangeAmount float64            `json:"change_amount"`
-	RemainingAmount float64            `json:"remaining_amount"`
-	IsPaymentValid bool               `json:"is_payment_valid"`
-	PaymentBreakdown map[string]float64 `json:"payment_breakdown"`
+	SumAmount        float64            `json:"sumamount"`
+	DiscountAmount   float64            `json:"discountamount"`
+	BeforeVatAmount  float64            `json:"beforevatamount"`
+	VatAmount        float64            `json:"vatamount"`
+	NetAmount        float64            `json:"netamount"`
+	DepositAmount    float64            `json:"depositamount"`
+	PaymentTotal     float64            `json:"paymenttotal"`
+	ChangeAmount     float64            `json:"changeamount"`
+	RemainingAmount  float64            `json:"remainingamount"`
+	IsPaymentValid   bool               `json:"ispaymentvalid"`
+	PaymentBreakdown map[string]float64 `json:"paymentbreakdown"`
 }
 
 // TransactionCalculatorHandler - คำนวณธุรกรรม (enhanced)
@@ -597,10 +597,10 @@ func roundTo2Decimals(val float64) float64 {
 
 // QuickCalcRequest - request สำหรับคำนวณแบบย่อ
 type QuickCalcRequest struct {
-	Amount float64 `json:"amount"`
+	Amount   float64 `json:"amount"`
 	Discount string  `json:"discount"`
-	VatType int     `json:"vat_type"`
-	VatRate float64 `json:"vatrate"`
+	VatType  int     `json:"vattype"`
+	VatRate  float64 `json:"vatrate"`
 }
 
 // QuickCalculatorHandler - คำนวณแบบย่อ (sum amount เดียว)
@@ -653,9 +653,9 @@ func QuickCalculatorHandler(c echo.Context) error {
 
 // ValidatePaymentRequest - request ตรวจสอบการชำระเงิน
 type ValidatePaymentRequest struct {
-	TotalAmount float64         `json:"total_amount"`
-	DepositAmount float64         `json:"deposit_amount"`
-	Payments []PaymentMethod `json:"payments"`
+	TotalAmount   float64         `json:"totalamount"`
+	DepositAmount float64         `json:"depositamount"`
+	Payments      []PaymentMethod `json:"payments"`
 }
 
 // ValidatePaymentHandler - ตรวจสอบการชำระเงิน

@@ -28,7 +28,7 @@ type CreditCardWithdrawalData struct {
 }
 
 type CreditCardWithdrawalDoc struct {
-	ID                       primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                       primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	CreditCardWithdrawalData `bson:"inline"`
 	models.ActivityDoc       `bson:"inline"`
 }

@@ -45,7 +45,7 @@ func GenPDFHandler(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  "error",
 			"code":    400,
-			"message": "Missing required parameter: holding_code",
+			"message": "Missing required parameter: holdingcode",
 		})
 	}
 
@@ -139,7 +139,7 @@ func GenPDFHandler(c echo.Context) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	filter := bson.M{"holding_code": payload.HoldingCode, "docno": payload.DocNo}
+	filter := bson.M{"holdingcode": payload.HoldingCode, "docno": payload.DocNo}
 	logger.Info("Finding document in MongoDB collection '%s' with filter: %+v", payload.Collection, filter)
 
 	cur, err := collection.Find(ctx, filter)
@@ -224,7 +224,7 @@ func uploadPDFToR2AndSaveHistory(ctx context.Context, filePath string, payload g
 		return fmt.Errorf("failed to read PDF file: %v", err)
 	}
 
-	// Generate R2 key: holding_code/pdf/collection_docno_timestamp.pdf
+	// Generate R2 key: holdingcode/pdf/collection_docno_timestamp.pdf
 	timestamp := time.Now().Format("20060102_150405")
 	fileName := fmt.Sprintf("%s_%s_%s.pdf", payload.Collection, payload.DocNo, timestamp)
 	r2Key := fmt.Sprintf("%s/pdf/%s", payload.HoldingCode, fileName)
@@ -399,24 +399,24 @@ type PdfHistorySimpleItem struct {
 	VendorName   string `json:"vendorname,omitempty"`   // ชื่อเจ้าหนี้/ผู้ขาย (AP)
 
 	// ข้อมูลยอดเงิน
-	TotalAmount     float64 `json:"total_amount"`     // ยอดรวม (ตัวเลข)
-	TotalAmountText string  `json:"totalamount_text"` // ยอดรวม (format แล้ว)
+	TotalAmount     float64 `json:"totalamount"`     // ยอดรวม (ตัวเลข)
+	TotalAmountText string  `json:"totalamounttext"` // ยอดรวม (format แล้ว)
 
 	// ข้อมูล PDF
 	Theme        string `json:"theme"`            // theme ที่ใช้
 	Template     string `json:"template"`         // template ที่ใช้
-	PageSize     string `json:"page_size"`        // A4, A3, etc.
+	PageSize     string `json:"pagesize"`         // A4, A3, etc.
 	Orientation  string `json:"orientation"`      // P=Portrait, L=Landscape
 	Language     string `json:"language"`         // th, en, etc.
-	FileName     string `json:"file_name"`        // ชื่อไฟล์ PDF
+	FileName     string `json:"filename"`         // ชื่อไฟล์ PDF
 	FileSize     int64  `json:"filesize"`         // ขนาดไฟล์ (bytes)
-	FileSizeText string `json:"filesize_text"`    // ขนาดไฟล์ (format แล้ว)
+	FileSizeText string `json:"filesizetext"`     // ขนาดไฟล์ (format แล้ว)
 	PdfURL       string `json:"pdfurl,omitempty"` // Presigned URL
 
 	// ข้อมูลการพิมพ์
-	PrintedAt    string `json:"printed_at"`    // วันเวลาที่พิมพ์ (ISO format)
-	PrintedBy    string `json:"printed_by"`    // ผู้พิมพ์
-	ReprintCount int    `json:"reprint_count"` // จำนวนครั้งที่ reprint
+	PrintedAt    string `json:"printedat"`    // วันเวลาที่พิมพ์ (ISO format)
+	PrintedBy    string `json:"printedby"`    // ผู้พิมพ์
+	ReprintCount int    `json:"reprintcount"` // จำนวนครั้งที่ reprint
 }
 
 // formatFileSize - แปลงขนาดไฟล์เป็นรูปแบบที่อ่านง่าย
@@ -509,7 +509,7 @@ func buildPdfHistoryItem(h models.PdfHistory, r2Client *s3.Client) PdfHistorySim
 }
 
 // PdfHistoryGetHandler - ดึงรายการประวัติ PDF แบบ GET (query params)
-// GET /genpdf/history?holding_code=xxx&collection=xxx&docno=xxx
+// GET /genpdf/history?holdingcode=xxx&collection=xxx&docno=xxx
 func PdfHistoryGetHandler(c echo.Context) error {
 	logger.Info("-> PdfHistoryGetHandler called")
 
@@ -522,7 +522,7 @@ func PdfHistoryGetHandler(c echo.Context) error {
 	}
 
 	// Get query parameters
-	holdingCode := c.QueryParam("holding_code")
+	holdingCode := c.QueryParam("holdingcode")
 	collectionName := c.QueryParam("collection")
 	docNo := c.QueryParam("docno")
 
@@ -530,12 +530,12 @@ func PdfHistoryGetHandler(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  "error",
 			"code":    400,
-			"message": "holding_code query parameter is required",
+			"message": "holdingcode query parameter is required",
 		})
 	}
 
 	// Build filter
-	filter := bson.M{"holding_code": holdingCode}
+	filter := bson.M{"holdingcode": holdingCode}
 	if collectionName != "" {
 		filter["collection"] = collectionName
 	}
@@ -616,12 +616,12 @@ func PdfHistoryListHandler(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  "error",
 			"code":    400,
-			"message": "holding_code is required",
+			"message": "holdingcode is required",
 		})
 	}
 
 	// Build filter
-	filter := bson.M{"holding_code": req.HoldingCode}
+	filter := bson.M{"holdingcode": req.HoldingCode}
 	if req.Collection != "" {
 		filter["collection"] = req.Collection
 	}

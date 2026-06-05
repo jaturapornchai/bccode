@@ -66,7 +66,7 @@ func (r *CurrencyRepository) FindByCode(ctx context.Context, holdingCode string,
 // FindByExchangeRateGuid - หาสกุลเงินที่มี exchange rate guid ที่ระบุ
 func (r *CurrencyRepository) FindByExchangeRateGuid(ctx context.Context, holdingCode string, rateGuid string) (models.CurrencyDoc, error) {
 	filters := map[string]interface{}{
-		"exchange_rates.guid_fixed": rateGuid,
+		"exchange_rates.guidfixed": rateGuid,
 	}
 
 	doc := models.CurrencyDoc{}

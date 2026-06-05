@@ -27,7 +27,7 @@ func (repo *TransactionConsumerRepository[T]) Get(holdingCode string, docNo stri
 
 	var data T
 	err := repo.pst.DBClient().Preload(clause.Associations).
-		Where("holding_code=? AND docno=?", holdingCode, docNo).
+		Where("holdingcode=? AND docno=?", holdingCode, docNo).
 		First(&data).Error
 
 	if err != nil {
@@ -47,8 +47,8 @@ func (repo *TransactionConsumerRepository[T]) Create(doc T) error {
 
 func (repo *TransactionConsumerRepository[T]) Update(holdingCode string, docNo string, doc T) error {
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"holding_code": holdingCode,
-		"docno":        docNo,
+		"holdingcode": holdingCode,
+		"docno":       docNo,
 	})
 
 	if err != nil {
@@ -62,8 +62,8 @@ func (repo *TransactionConsumerRepository[T]) Delete(holdingCode string, docNo s
 	tx := repo.pst.DBClient().Begin()
 
 	err := tx.Delete(&doc, map[string]interface{}{
-		"holding_code": holdingCode,
-		"docno":        docNo,
+		"holdingcode": holdingCode,
+		"docno":       docNo,
 	}).Error
 
 	if err != nil {

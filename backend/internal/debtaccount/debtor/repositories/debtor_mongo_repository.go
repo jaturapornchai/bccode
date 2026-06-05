@@ -64,8 +64,8 @@ func (repo DebtorRepository) FindAuthByUsername(ctx context.Context, holdingCode
 	var doc models.DebtorDoc
 
 	filter := bson.M{
-		"holding_code":  holdingCode,
-		"deleted_at":    bson.M{"$exists": false},
+		"holdingcode":   holdingCode,
+		"deletedat":     bson.M{"$exists": false},
 		"auth.username": username,
 	}
 

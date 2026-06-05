@@ -26,7 +26,7 @@ export async function GET(request: Request, context: ProductProxyContext) {
     const q = url.searchParams.get("q") ?? "";
     const page = url.searchParams.get("page") ?? "1";
     const limit = url.searchParams.get("limit") ?? "50";
-    const holdingCode = url.searchParams.get("holding_code") ?? "";
+    const holdingCode = url.searchParams.get("holdingcode") ?? "";
     if (holdingCode) {
       return proxyProductPgListJson(request, holdingCode, q, Number(limit) || 50, pageToOffset(page, limit));
     }
@@ -72,7 +72,7 @@ async function proxyProductPgListJson(
         Authorization: authorization,
       },
       body: JSON.stringify({
-        holding_code: holdingCode,
+        holdingcode: holdingCode,
         search,
         limit,
         offset,

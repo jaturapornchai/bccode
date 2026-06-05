@@ -40,8 +40,8 @@ func (repo StockReceiveTransactionPGRepository) Create(doc models.StockBalanceTr
 func (repo StockReceiveTransactionPGRepository) Update(holdingCode string, docNo string, doc models.StockBalanceTransactionPG) error {
 
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"holding_code": holdingCode,
-		"docno":        docNo,
+		"holdingcode": holdingCode,
+		"docno":       docNo,
 	})
 
 	if err != nil {
@@ -55,15 +55,15 @@ func (repo *StockReceiveTransactionPGRepository) DeleteData(holdingCode string, 
 	var details *[]models.StockBalanceTransactionDetailPG
 	tx := repo.pst.DBClient().Begin()
 
-	tx.Model(&models.StockBalanceTransactionDetailPG{}).Where(" holding_code=? AND docno=?", holdingCode, docNo).Find(&details)
+	tx.Model(&models.StockBalanceTransactionDetailPG{}).Where(" holdingcode=? AND docno=?", holdingCode, docNo).Find(&details)
 	for _, tmp := range *details {
 		// mark delete
 		tx.Delete(&models.StockBalanceTransactionDetailPG{}, tmp.ID)
 	}
 
 	err := tx.Delete(models.StockBalanceTransactionPG{}, map[string]interface{}{
-		"holding_code": holdingCode,
-		"docno":        docNo,
+		"holdingcode": holdingCode,
+		"docno":       docNo,
 	}).Error
 
 	if err != nil {

@@ -18,7 +18,7 @@ type RFQTransactionPG struct {
 	RefPOGuidFixed   string                    `json:"refpoguidfixed" gorm:"column:refpoguidfixed"`
 	MinVendors       int8                      `json:"minvendors" gorm:"column:minvendors"`
 	ConversionStatus string                    `json:"conversionstatus" gorm:"column:conversionstatus"`
-	Items            *[]RFQDetailTransactionPG `json:"items" gorm:"items;foreignKey:holding_code,docno"`
+	Items            *[]RFQDetailTransactionPG `json:"items" gorm:"items;foreignKey:holdingcode,docno"`
 }
 
 // รายละเอียด ใบสืบราคา
@@ -36,7 +36,7 @@ func (RFQDetailTransactionPG) TableName() string {
 
 func (s *RFQTransactionPG) BeforeUpdate(tx *gorm.DB) (err error) {
 	var details *[]RFQDetailTransactionPG
-	tx.Model(&RFQDetailTransactionPG{}).Where(" holding_code=? AND docno=?", s.HoldingCode, s.DocNo).Find(&details)
+	tx.Model(&RFQDetailTransactionPG{}).Where(" holdingcode=? AND docno=?", s.HoldingCode, s.DocNo).Find(&details)
 
 	for _, tmp := range *details {
 		var foundUpdate bool = false

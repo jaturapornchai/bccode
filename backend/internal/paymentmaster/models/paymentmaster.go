@@ -11,7 +11,7 @@ const paymentmasterCollectionName = "paymentMaster"
 type PaymentMaster struct {
 	models.PartitionIdentity `bson:"inline"`
 	PaymentCode              string  `json:"paymentcode" bson:"paymentcode"`
-	CountryCode              string  `json:"country_code" bson:"country_code"`
+	CountryCode              string  `json:"countrycode" bson:"countrycode"`
 	PaymentLogo              string  `json:"paymentlogo" bson:"paymentlogo"`
 	PaymentType              int8    `json:"paymenttype" bson:"paymenttype"`
 	FeeRate                  float64 `json:"feerate" bson:"feerate"`
@@ -34,7 +34,7 @@ type PaymentMasterData struct {
 }
 
 type PaymentMasterDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	PaymentMasterData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

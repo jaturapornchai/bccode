@@ -11,7 +11,7 @@ const productcategoryCollectionName = "productCategories"
 type ProductCategory struct {
 	models.PartitionIdentity `bson:"inline"`
 	ChildCount               int                           `json:"childcount" bson:"childcount"`
-	ParentGUID               string                        `json:"parent_guid" bson:"parent_guid"`
+	ParentGUID               string                        `json:"parentguid" bson:"parentguid"`
 	ParentGUIDAll            string                        `json:"parentguidall" bson:"parentguidall"`
 	ImageUri                 string                        `json:"imageuri" bson:"imageuri"`
 	Names                    *[]models.NameX               `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
@@ -22,7 +22,7 @@ type ProductCategory struct {
 	ColorSelectHex           string                        `json:"colorselecthex" bson:"colorselecthex"`
 	IsDisabled               bool                          `json:"isdisabled" bson:"isdisabled"`
 	CoverURI                 string                        `json:"coveruri" bson:"coveruri"`
-	GroupNumber              int                           `json:"group_number" bson:"group_number"`
+	GroupNumber              int                           `json:"groupnumber" bson:"groupnumber"`
 	TimeForSales             *[]ProductCategoryTimeForSale `json:"timeforsales" bson:"timeforsales"`
 }
 
@@ -78,7 +78,7 @@ type ProductCategoryData struct {
 }
 
 type ProductCategoryDoc struct {
-	ID                  primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                  primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	ProductCategoryData `bson:"inline"`
 	models.ActivityDoc  `bson:"inline"`
 }

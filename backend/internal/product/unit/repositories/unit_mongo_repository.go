@@ -76,7 +76,7 @@ func (repo UnitRepository) FindMasterInCodes(ctx context.Context, codes []string
 	docList := []models.UnitInfo{}
 
 	filters := bson.M{
-		"holding_code": masterHoldingCode,
+		"holdingcode": masterHoldingCode,
 		"unitcode": bson.M{
 			"$in": codes,
 		},
@@ -94,9 +94,9 @@ func (repo UnitRepository) FindMasterInCodes(ctx context.Context, codes []string
 func (repo UnitRepository) FindByUnitCodes(ctx context.Context, holdingCode string, unitCodes []string) ([]models.UnitInfo, error) {
 
 	filters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at":   bson.M{"$exists": false},
-		"unitcode":     bson.M{"$in": unitCodes},
+		"holdingcode": holdingCode,
+		"deletedat":   bson.M{"$exists": false},
+		"unitcode":    bson.M{"$in": unitCodes},
 	}
 
 	var results []models.UnitInfo

@@ -5,16 +5,16 @@ type JournalRef struct {
 }
 
 type JournalEvent struct {
-	Event string      `json:"event"`
+	Event   string      `json:"event"`
 	Payload interface{} `json:"payload,omitempty"`
 }
 
 type DocRefPool struct {
-	DocRef string `json:"docref"`
+	DocRef   string `json:"docref"`
 	Username string `json:"username"`
 }
 type DocRefEvent struct {
-	DocRef string `json:"docref"`
+	DocRef   string `json:"docref"`
 	Username string `json:"username"`
-	Status string `json:"status"`
+	Status   string `json:"status"`
 }

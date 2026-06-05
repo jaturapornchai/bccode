@@ -34,7 +34,7 @@ export function verifyHs256Jwt(authorization: string): JwtVerificationResult {
 }
 
 export function getJwtClaimHoldingCode(claims: Record<string, unknown>): string {
-  const value = claims.holding_code ?? claims.holdingCode;
+  const value = claims.holdingcode ?? claims.holdingCode;
   return typeof value === "string" ? value.trim() : "";
 }
 

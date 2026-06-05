@@ -3,11 +3,11 @@ package tools
 // WriteTools คือรายการ tools ที่แก้ไขข้อมูล (create/update/delete)
 // tool ที่ไม่อยู่ใน list นี้ = readonly โดยอัตโนมัติ
 var WriteTools = map[string]bool{
-	"create_unit":  true,
-	"create_units": true,
-	"update_unit":  true,
-	"delete_unit":  true,
-	"delete_units": true,
+	"createunit":  true,
+	"createunits": true,
+	"updateunit":  true,
+	"deleteunit":  true,
+	"deleteunits": true,
 }
 
 // Permission keywords สำหรับใช้ใน AllowedTools
@@ -30,7 +30,7 @@ func IsWriteTool(toolName string) bool {
 //   - มี "readonly" → readonly ทั้งหมด (ไม่รวม write)
 //   - อื่นๆ → exact match ชื่อ tool
 //
-// สามารถผสมได้ เช่น ["readonly", "create_unit"] = readonly ทั้งหมด + create_unit
+// สามารถผสมได้ เช่น ["readonly", "createunit"] = readonly ทั้งหมด + createunit
 func IsToolAllowedByList(toolName string, allowedTools []string) bool {
 	if len(allowedTools) == 0 {
 		return !IsWriteTool(toolName)

@@ -140,12 +140,12 @@ CGO_ENABLED=1 GOOS=linux GOARCH=amd64 CC=x86_64-linux-musl-gcc  CXX=x86_64-linux
 
 CREATE TABLE task_status (
     task_id String,
-    holding_code String,
+    holdingcode String,
     status String,
     error_message String,
     progress Int32,
-    created_at DateTime,
-    updated_at DateTime,
+    createdat DateTime,
+    updatedat DateTime,
     completed_at Nullable(DateTime)
 ) ENGINE = MergeTree()
-ORDER BY (holding_code, task_id, created_at);
+ORDER BY (holdingcode, task_id, createdat);

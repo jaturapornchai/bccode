@@ -161,7 +161,7 @@ func (svc AccountGroupHttpService) Search(holdingCode string, pageable micromode
 	defer ctxCancel()
 
 	searchInFields := []string{
-		"guid_fixed",
+		"guidfixed",
 		"code",
 	}
 

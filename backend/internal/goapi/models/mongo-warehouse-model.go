@@ -1,7 +1,7 @@
 package models
 
 type ProcessMongoWarehouseModel struct {
-	HoldingCode string                               `json:"holding_code" bson:"holding_code"`
+	HoldingCode string                               `json:"holdingcode" bson:"holdingcode"`
 	Code        string                               `json:"code" bson:"code"`
 	Names       []LanguageModel                      `json:"names" bson:"names"`
 	Location    []ProcessMongoWarehouseLocationModel `json:"location" bson:"location"`

@@ -172,7 +172,7 @@ func (e *FIFOEngine) consumeLayers(ctx context.Context, tx *sql.Tx, holdingCode,
 	rows, err := tx.QueryContext(ctx,
 		`SELECT id, remainingqty, totalunitcost
 		 FROM inventory_cost_layers
-		 WHERE holding_code = $1 AND itemcode = $2 AND whcode = $3 AND locationcode = $4 AND remainingqty > 0
+		 WHERE holdingcode = $1 AND itemcode = $2 AND whcode = $3 AND locationcode = $4 AND remainingqty > 0
 		 ORDER BY receiveddate ASC, id ASC
 		 FOR UPDATE`,
 		holdingCode, itemCode, whCode, locationCode,
@@ -509,7 +509,7 @@ func (e *FIFOEngine) GetCurrentValuation(ctx context.Context, tx *sql.Tx, holdin
 			        CASE WHEN COALESCE(SUM(currentqty), 0) = 0 THEN 0 ELSE COALESCE(SUM(currenttotalvalue), 0) / SUM(currentqty) END,
 			        COALESCE(SUM(currenttotalvalue), 0)
 			 FROM inventory_stock_balances
-			 WHERE holding_code = $1 AND itemcode = $2
+			 WHERE holdingcode = $1 AND itemcode = $2
 			 GROUP BY itemcode`,
 			holdingCode, itemCode,
 		).Scan(&val.ItemCode, &val.WhCode, &val.CurrentQty, &val.AverageCost, &val.TotalValue)
@@ -520,7 +520,7 @@ func (e *FIFOEngine) GetCurrentValuation(ctx context.Context, tx *sql.Tx, holdin
 			        CASE WHEN COALESCE(SUM(currentqty), 0) = 0 THEN 0 ELSE COALESCE(SUM(currenttotalvalue), 0) / SUM(currentqty) END,
 			        COALESCE(SUM(currenttotalvalue), 0)
 			 FROM inventory_stock_balances
-			 WHERE holding_code = $1 AND itemcode = $2 AND whcode = $3
+			 WHERE holdingcode = $1 AND itemcode = $2 AND whcode = $3
 			 GROUP BY itemcode, whcode`,
 			holdingCode, itemCode, whCode,
 		).Scan(&val.ItemCode, &val.WhCode, &val.CurrentQty, &val.AverageCost, &val.TotalValue)

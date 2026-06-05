@@ -86,8 +86,8 @@ func resolveAtlasTenantIDs(holdingCode string) atlasTenantIDs {
 func atlasTenantFilter(tenantID string) bson.M {
 	return bson.M{
 		"$or": []bson.M{
-			{"holding_code": tenantID},
-			{"holding_code": tenantID},
+			{"holdingcode": tenantID},
+			{"holdingcode": tenantID},
 		},
 	}
 }
@@ -100,7 +100,7 @@ func atlasTenantFilterAny(tenantIDs ...string) bson.M {
 		if tenantID == "" || seen[tenantID] {
 			continue
 		}
-		clauses = append(clauses, bson.M{"holding_code": tenantID}, bson.M{"holding_code": tenantID})
+		clauses = append(clauses, bson.M{"holdingcode": tenantID}, bson.M{"holdingcode": tenantID})
 		seen[tenantID] = true
 	}
 	if len(clauses) == 0 {
@@ -117,7 +117,7 @@ func atlasIdentityFilter(guidFixed string, email string, cartID string, userUID 
 	identityFilters := make([]bson.M, 0, 3)
 	if guidFixed != "" {
 		identityFilters = append(identityFilters,
-			bson.M{"guid_fixed": guidFixed},
+			bson.M{"guidfixed": guidFixed},
 			bson.M{"email": guidFixed, "cartid": guidFixed},
 		)
 	}
@@ -163,7 +163,7 @@ func validateAtlasTenant(c echo.Context, requestHoldingCode string) error {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  "error",
 			"code":    400,
-			"message": "holding_code is required",
+			"message": "holdingcode is required",
 		})
 	}
 	if requestHoldingCode != userInfo.HoldingCode {
@@ -191,11 +191,11 @@ func MongoAtlasUpdateHandler(c echo.Context) error {
 	var reqBody struct {
 		Database    string                 `json:"database"` // optional - ถ้าไม่ระบุจะใช้ default
 		Collection  string                 `json:"collection"`
-		HoldingCode string                 `json:"holding_code"`
-		GuidFixed   string                 `json:"guid_fixed"`
+		HoldingCode string                 `json:"holdingcode"`
+		GuidFixed   string                 `json:"guidfixed"`
 		Email       string                 `json:"email"`
 		CartId      string                 `json:"cartid"`
-		UserUID     string                 `json:"user_uid"`
+		UserUID     string                 `json:"useruid"`
 		Data        map[string]interface{} `json:"data"`
 		Upsert      bool                   `json:"upsert"`
 	}
@@ -228,7 +228,7 @@ func MongoAtlasUpdateHandler(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  "error",
 			"code":    400,
-			"message": "holding_code is required and cannot be empty",
+			"message": "holdingcode is required and cannot be empty",
 		})
 	}
 	reqBody.GuidFixed = strings.TrimSpace(reqBody.GuidFixed)
@@ -237,7 +237,7 @@ func MongoAtlasUpdateHandler(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  "error",
 			"code":    400,
-			"message": "guid_fixed is required and cannot be empty",
+			"message": "guidfixed is required and cannot be empty",
 		})
 	}
 	if reqBody.GuidFixed == "" && reqBody.UserUID == "" && reqBody.CartId == "" {
@@ -262,17 +262,17 @@ func MongoAtlasUpdateHandler(c echo.Context) error {
 		reqBody.GuidFixed = utils.NewGUID()
 	}
 
-	// เพิ่ม identifiers ลงใน data ตาม model ใหม่ และเก็บ legacy key เฉพาะ request เก่าที่ไม่มี guid_fixed
-	reqBody.Data["holding_code"] = tenantIDs.dataTenant
-	reqBody.Data["guid_fixed"] = reqBody.GuidFixed
+	// เพิ่ม identifiers ลงใน data ตาม model ใหม่ และเก็บ legacy key เฉพาะ request เก่าที่ไม่มี guidfixed
+	reqBody.Data["holdingcode"] = tenantIDs.dataTenant
+	reqBody.Data["guidfixed"] = reqBody.GuidFixed
 	if usesLegacyIdentity {
-		reqBody.Data["holding_code"] = tenantIDs.authTenant
+		reqBody.Data["holdingcode"] = tenantIDs.authTenant
 		reqBody.Data["email"] = reqBody.Email
 		reqBody.Data["cartid"] = reqBody.CartId
 	}
 
 	// เพิ่ม timestamp
-	reqBody.Data["updated_at"] = time.Now()
+	reqBody.Data["updatedat"] = time.Now()
 
 	// Build update document
 	update := bson.M{
@@ -321,12 +321,12 @@ func MongoAtlasDeleteHandler(c echo.Context) error {
 	var reqBody struct {
 		Database    string `json:"database"` // optional - ถ้าไม่ระบุจะใช้ default
 		Collection  string `json:"collection"`
-		HoldingCode string `json:"holding_code"`
-		GuidFixed   string `json:"guid_fixed"`
+		HoldingCode string `json:"holdingcode"`
+		GuidFixed   string `json:"guidfixed"`
 		Email       string `json:"email"`
 		CartId      string `json:"cartid"`
-		UserUID     string `json:"user_uid"`
-		DeleteMany  bool   `json:"delete_many"` // true = deleteMany, false = deleteOne
+		UserUID     string `json:"useruid"`
+		DeleteMany  bool   `json:"deletemany"` // true = deleteMany, false = deleteOne
 	}
 
 	if err := c.Bind(&reqBody); err != nil {
@@ -357,7 +357,7 @@ func MongoAtlasDeleteHandler(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  "error",
 			"code":    400,
-			"message": "holding_code is required and cannot be empty",
+			"message": "holdingcode is required and cannot be empty",
 		})
 	}
 	reqBody.GuidFixed = strings.TrimSpace(reqBody.GuidFixed)
@@ -365,7 +365,7 @@ func MongoAtlasDeleteHandler(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  "error",
 			"code":    400,
-			"message": "guid_fixed is required and cannot be empty",
+			"message": "guidfixed is required and cannot be empty",
 		})
 	}
 	if reqBody.GuidFixed == "" && reqBody.UserUID == "" && reqBody.CartId == "" {
@@ -437,11 +437,11 @@ func MongoAtlasGetHandler(c echo.Context) error {
 	var reqBody struct {
 		Database    string `json:"database"` // optional - ถ้าไม่ระบุจะใช้ default
 		Collection  string `json:"collection"`
-		HoldingCode string `json:"holding_code"`
-		GuidFixed   string `json:"guid_fixed"`
+		HoldingCode string `json:"holdingcode"`
+		GuidFixed   string `json:"guidfixed"`
 		Email       string `json:"email"`
 		CartId      string `json:"cartid"`
-		UserUID     string `json:"user_uid"`
+		UserUID     string `json:"useruid"`
 		Limit       int64  `json:"limit"`
 		Skip        int64  `json:"skip"`
 	}

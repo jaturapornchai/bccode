@@ -37,8 +37,8 @@ func (repo *ActivityRepository[TCU, TDEL]) InitialActivityRepository(pst microse
 func (repo ActivityRepository[TCU, TDEL]) FindDeletedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageable micromodels.Pageable) ([]TDEL, mongopagination.PaginationData, error) {
 
 	filterQueries := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at":   bson.M{"$gte": lastUpdatedDate},
+		"holdingcode": holdingCode,
+		"deletedat":   bson.M{"$gte": lastUpdatedDate},
 	}
 
 	extraFilterQueries := repo.generateExtraFilters(extraFilters)
@@ -59,11 +59,11 @@ func (repo ActivityRepository[TCU, TDEL]) FindDeletedPage(ctx context.Context, h
 func (repo ActivityRepository[TCU, TDEL]) FindCreatedOrUpdatedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageable micromodels.Pageable) ([]TCU, mongopagination.PaginationData, error) {
 
 	filterQueries := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at":   bson.M{"$not": bson.M{"$gte": lastUpdatedDate}},
+		"holdingcode": holdingCode,
+		"deletedat":   bson.M{"$not": bson.M{"$gte": lastUpdatedDate}},
 		"$or": []interface{}{
-			bson.M{"created_at": bson.M{"$gte": lastUpdatedDate}},
-			bson.M{"updated_at": bson.M{"$gte": lastUpdatedDate}},
+			bson.M{"createdat": bson.M{"$gte": lastUpdatedDate}},
+			bson.M{"updatedat": bson.M{"$gte": lastUpdatedDate}},
 		},
 	}
 
@@ -99,8 +99,8 @@ func (repo ActivityRepository[TCU, TDEL]) FindDeletedStep(ctx context.Context, h
 	}
 
 	filterQueries := bson.M{
-		"holding_code": holdingCodeFilter,
-		"deleted_at":   bson.M{"$gte": lastUpdatedDate},
+		"holdingcode": holdingCodeFilter,
+		"deletedat":   bson.M{"$gte": lastUpdatedDate},
 	}
 
 	extraFilterQueries := repo.generateExtraFilters(extraFilters)
@@ -138,11 +138,11 @@ func (repo ActivityRepository[TCU, TDEL]) FindCreatedOrUpdatedStep(ctx context.C
 	}
 
 	filterQueries := bson.M{
-		"holding_code": holdingCodeFilter,
-		"deleted_at":   bson.M{"$not": bson.M{"$gte": lastUpdatedDate}},
+		"holdingcode": holdingCodeFilter,
+		"deletedat":   bson.M{"$not": bson.M{"$gte": lastUpdatedDate}},
 		"$or": []interface{}{
-			bson.M{"created_at": bson.M{"$gte": lastUpdatedDate}},
-			bson.M{"updated_at": bson.M{"$gte": lastUpdatedDate}},
+			bson.M{"createdat": bson.M{"$gte": lastUpdatedDate}},
+			bson.M{"updatedat": bson.M{"$gte": lastUpdatedDate}},
 		},
 	}
 

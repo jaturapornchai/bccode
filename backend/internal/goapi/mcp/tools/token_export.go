@@ -59,17 +59,17 @@ func getTokenS3Client() (*s3.Client, string, error) {
 	return tokenS3Client, tokenS3Bucket, tokenS3Err
 }
 
-// ==================== Token Export (JSON per holding_code) ====================
+// ==================== Token Export (JSON per holdingcode) ====================
 
 // TokenExportData โครงสร้างข้อมูล export สำหรับ MCP client config
 type TokenExportData struct {
-	APIKey              string                 `json:"api_key"`
-	HoldingCode         string                 `json:"holding_code"`
+	APIKey              string                 `json:"apikey"`
+	HoldingCode         string                 `json:"holdingcode"`
 	Name                string                 `json:"name"`
-	ExpiresAt           *string                `json:"expires_at,omitempty"`
-	CreatedAt           string                 `json:"created_at"`
-	ClaudeDesktopConfig map[string]interface{} `json:"claude_desktop_config"`
-	ClaudeCodeConfig    map[string]interface{} `json:"claude_code_config"`
+	ExpiresAt           *string                `json:"expiresat,omitempty"`
+	CreatedAt           string                 `json:"createdat"`
+	ClaudeDesktopConfig map[string]interface{} `json:"claudedesktopconfig"`
+	ClaudeCodeConfig    map[string]interface{} `json:"claudecodeconfig"`
 }
 
 // GenerateTokenExport สร้าง export data สำหรับ MCP client

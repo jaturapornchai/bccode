@@ -233,7 +233,7 @@ func ReportPostHandler(c echo.Context) error {
 			"status":          "success",
 			"code":            200,
 			"job_id":          job.ID,
-			"holding_code":    payLoad.HoldingCode,
+			"holdingcode":     payLoad.HoldingCode,
 			"command_id":      payLoad.CommandID,
 			"create_database": createDatabase,
 			"item_count":      len(itemCodes),
@@ -254,12 +254,12 @@ func ReportPostHandler(c echo.Context) error {
 		}()
 
 		return c.JSON(http.StatusOK, map[string]any{
-			"message":      "rebuild document flow started",
-			"status":       "success",
-			"code":         200,
-			"job_id":       job.ID,
-			"holding_code": payLoad.HoldingCode,
-			"command_id":   payLoad.CommandID,
+			"message":     "rebuild document flow started",
+			"status":      "success",
+			"code":        200,
+			"job_id":      job.ID,
+			"holdingcode": payLoad.HoldingCode,
+			"command_id":  payLoad.CommandID,
 		})
 	}
 
@@ -273,11 +273,11 @@ func ReportPostHandler(c echo.Context) error {
 			}
 		}()
 		return c.JSON(http.StatusOK, map[string]any{
-			"message":      "rebuild products only started",
-			"status":       "success",
-			"code":         200,
-			"holding_code": payLoad.HoldingCode,
-			"command_id":   payLoad.CommandID,
+			"message":     "rebuild products only started",
+			"status":      "success",
+			"code":        200,
+			"holdingcode": payLoad.HoldingCode,
+			"command_id":  payLoad.CommandID,
 		})
 	}
 
@@ -310,7 +310,7 @@ func ReportPostHandler(c echo.Context) error {
 			"message":         "process stock cost",
 			"status":          "success",
 			"code":            200,
-			"holding_code":    payLoad.HoldingCode,
+			"holdingcode":     payLoad.HoldingCode,
 			"command_id":      payLoad.CommandID,
 			"processed_items": len(results),
 			"point_qty":       pointQty,
@@ -327,12 +327,12 @@ func ReportPostHandler(c echo.Context) error {
 		ReportProductBalanceByWareHouseBarcode(payLoad.HoldingCode, payLoad.Guid, payLoad.FinalDate, timezoneCode, languageCode)
 
 		return c.JSON(http.StatusOK, map[string]any{
-			"message":      "report completed",
-			"status":       "success",
-			"code":         200,
-			"holding_code": payLoad.HoldingCode,
-			"command_id":   payLoad.CommandID,
-			"guid":         payLoad.Guid,
+			"message":     "report completed",
+			"status":      "success",
+			"code":        200,
+			"holdingcode": payLoad.HoldingCode,
+			"command_id":  payLoad.CommandID,
+			"guid":        payLoad.Guid,
 		})
 	}
 
@@ -342,12 +342,12 @@ func ReportPostHandler(c echo.Context) error {
 		ReportProductBalanceByLocationBarcode(payLoad.HoldingCode, payLoad.Guid, payLoad.FinalDate, timezoneCode, languageCode)
 
 		return c.JSON(http.StatusOK, map[string]any{
-			"message":      "report completed",
-			"status":       "success",
-			"code":         200,
-			"holding_code": payLoad.HoldingCode,
-			"command_id":   payLoad.CommandID,
-			"guid":         payLoad.Guid,
+			"message":     "report completed",
+			"status":      "success",
+			"code":        200,
+			"holdingcode": payLoad.HoldingCode,
+			"command_id":  payLoad.CommandID,
+			"guid":        payLoad.Guid,
 		})
 	}
 
@@ -363,12 +363,12 @@ func ReportPostHandler(c echo.Context) error {
 		ReportProductBalanceByBarcodeWhCodeLocationCode(payLoad.HoldingCode, payLoad.Guid, conditionInt, payLoad.FinalDate, timezoneCode, languageCode)
 
 		return c.JSON(http.StatusOK, map[string]any{
-			"message":      "report completed",
-			"status":       "success",
-			"code":         200,
-			"holding_code": payLoad.HoldingCode,
-			"command_id":   payLoad.CommandID,
-			"guid":         payLoad.Guid,
+			"message":     "report completed",
+			"status":      "success",
+			"code":        200,
+			"holdingcode": payLoad.HoldingCode,
+			"command_id":  payLoad.CommandID,
+			"guid":        payLoad.Guid,
 		})
 	}
 
@@ -378,12 +378,12 @@ func ReportPostHandler(c echo.Context) error {
 		ReportProductStockMovement(payLoad.HoldingCode, payLoad.Guid, timezoneCode, languageCode)
 
 		return c.JSON(http.StatusOK, map[string]any{
-			"message":      "report completed",
-			"status":       "success",
-			"code":         200,
-			"holding_code": payLoad.HoldingCode,
-			"command_id":   payLoad.CommandID,
-			"guid":         payLoad.Guid,
+			"message":     "report completed",
+			"status":      "success",
+			"code":        200,
+			"holdingcode": payLoad.HoldingCode,
+			"command_id":  payLoad.CommandID,
+			"guid":        payLoad.Guid,
 		})
 	}
 

@@ -77,7 +77,7 @@ function productSetRowKey(item: Product, index: number): string {
   return item.guidfixed || `${item.code || "product-set"}-${index}`;
 }
 
-async function ensureActiveProductSetHolding(auth: AuthSession, holding_code: string): Promise<void> {
+async function ensureActiveProductSetHolding(auth: AuthSession, holdingcode: string): Promise<void> {
   const response = await fetch("/api/workspace/select-holding", {
     method: "POST",
     headers: {
@@ -85,7 +85,7 @@ async function ensureActiveProductSetHolding(auth: AuthSession, holding_code: st
       "x-bc-backend-url": auth.backendUrl,
       Authorization: `Bearer ${auth.token}`,
     },
-    body: JSON.stringify({ backendUrl: auth.backendUrl, holding_code }),
+    body: JSON.stringify({ backendUrl: auth.backendUrl, holdingcode }),
     cache: "no-store",
   });
   const data = await response.json().catch(() => null) as { success?: boolean; message?: string } | null;
@@ -122,7 +122,7 @@ function BarcodePickerModal({
       try {
         const response = await listBarcodes(auth, {
           keyword: query,
-          holding_code: holdingCode,
+          holdingcode: holdingCode,
           limit: 30,
         });
         if (response.success && response.data) {
@@ -288,7 +288,7 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
     if (workspaceRaw) setWorkspace(JSON.parse(workspaceRaw));
   }, []);
 
-  const activeHoldingCode = workspace?.shop.holding_code ?? "";
+  const activeHoldingCode = workspace?.shop.holdingcode ?? "";
   const shopLanguages = useMemo(() => languageCodesFromWorkspace(workspace), [workspace]);
 
   // Load products of type SET (item_type: 2)
@@ -368,7 +368,7 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
           },
           body: JSON.stringify({
             keyword: code,
-            holding_code: activeHoldingCode,
+            holdingcode: activeHoldingCode,
             limit: 1
           })
         });
@@ -513,7 +513,7 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
 
   const makeBlankProductSet = useCallback((): Product => ({
     guidfixed: "",
-    holding_code: activeHoldingCode,
+    holdingcode: activeHoldingCode,
     code: "",
     names: [{ code: "th", name: "" }, { code: "en", name: "" }],
     group_code: "",
@@ -548,7 +548,7 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
     setEditProduct({
       ...selectedProduct,
       guidfixed: "",
-      holding_code: activeHoldingCode,
+      holdingcode: activeHoldingCode,
       item_type: 2,
       materialtype: 3,
     });

@@ -332,7 +332,7 @@ func (svc *AuthenticationService) processUserLogin(findUser auth_models.UserDoc,
 		}
 
 		if shopUser.ID == primitive.NilObjectID {
-			return models.TokenLoginResponse{}, errors.New("holding_code invalid")
+			return models.TokenLoginResponse{}, errors.New("holdingcode invalid")
 		}
 
 		if err = svc.ensureShopAccessAllowed(context.Background(), holdingCode, shopUser); err != nil {
@@ -383,7 +383,7 @@ func (svc *AuthenticationService) resolveLoginHoldingCode(ctx context.Context, h
 		return "", err
 	}
 	if holdingCode != "" && holdingCode != resolvedHoldingCode {
-		return "", errors.New("holding_code mismatch")
+		return "", errors.New("holdingcode mismatch")
 	}
 	return resolvedHoldingCode, nil
 }
@@ -826,7 +826,7 @@ func (svc AuthenticationService) AccessShop(holdingCode string, username string,
 
 	holdingCode = strings.TrimSpace(holdingCode)
 	if holdingCode == "" {
-		return errors.New("holding_code invalid")
+		return errors.New("holdingcode invalid")
 	}
 
 	if username == "" {
@@ -857,7 +857,7 @@ func (svc AuthenticationService) AccessShop(holdingCode string, username string,
 	}
 
 	if shopUser.ID == primitive.NilObjectID {
-		return errors.New("holding_code invalid")
+		return errors.New("holdingcode invalid")
 	}
 
 	if err = svc.ensureShopAccessAllowed(context.Background(), holdingCode, shopUser); err != nil {
@@ -895,7 +895,7 @@ func (svc AuthenticationService) AccessShop(holdingCode string, username string,
 func (svc AuthenticationService) UpdateFavoriteShop(holdingCode string, username string, userUID string, isFavorite bool) error {
 
 	if holdingCode == "" {
-		return errors.New("holding_code invalid")
+		return errors.New("holdingcode invalid")
 	}
 
 	if username == "" {

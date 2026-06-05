@@ -15,7 +15,7 @@ function Get-SelectedToken {
   $keys = docker exec redis redis-cli --scan --pattern "auth-*"
   foreach ($key in $keys) {
     if ([string]::IsNullOrWhiteSpace($key)) { continue }
-    $values = docker exec redis redis-cli HMGET $key username holding_code
+    $values = docker exec redis redis-cli HMGET $key username holdingcode
     if ($values[0] -eq $Username -and $values[1] -eq $HoldingCode) {
       return $key.Substring(5)
     }
@@ -160,7 +160,7 @@ $after = Invoke-JsonApi -Method "GET" -Path "/product/category/list?limit=2000&o
 $sampleAfter = @($after.data) | Where-Object { (Pick-Name $_ "") -like "ตัวอย่างหมวดสินค้า *" }
 
 [pscustomobject]@{
-  holding_code = $HoldingCode
+  holdingcode = $HoldingCode
   username = $Username
   categories_requested = $CategoryCount
   categories_created_this_run = $payload.Count

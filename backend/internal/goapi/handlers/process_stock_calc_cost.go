@@ -20,22 +20,22 @@ const processStockCalcCostCommandID = "processstockcalccost"
 
 // processStockCalcCostRequest defines the payload structure accepted by ProcessStockCalcCostHandler.
 type processStockCalcCostRequest struct {
-	HoldingCode  string          `json:"holding_code"`
-	CommandID    string          `json:"command_id"`
-	ItemCodeList json.RawMessage `json:"item_code_list"`
-	DeleteFirst  *bool           `json:"delete_first"`
-	PointQty     *int            `json:"point_qty"`
-	PointAmount  *int            `json:"point_amount"`
-	PointCost    *int            `json:"point_cost"`
+	HoldingCode  string          `json:"holdingcode"`
+	CommandID    string          `json:"commandid"`
+	ItemCodeList json.RawMessage `json:"itemcodelist"`
+	DeleteFirst  *bool           `json:"deletefirst"`
+	PointQty     *int            `json:"pointqty"`
+	PointAmount  *int            `json:"pointamount"`
+	PointCost    *int            `json:"pointcost"`
 	Incremental  *bool           `json:"incremental"` // ใช้ incremental calculation (ตรวจ checksum ก่อน)
-	MinimalLog   *bool           `json:"minimal_log"` // ใช้ UPSERT แทน DELETE+INSERT เพื่อลด WAL
+	MinimalLog   *bool           `json:"minimallog"`  // ใช้ UPSERT แทน DELETE+INSERT เพื่อลด WAL
 }
 
 // processStockCalcCostItemResult holds per-item execution metadata for API responses.
 type processStockCalcCostItemResult struct {
-	ItemCode   string `json:"item_code"`
+	ItemCode   string `json:"itemcode"`
 	Status     string `json:"status"`
-	DurationMs int64  `json:"duration_ms"`
+	DurationMs int64  `json:"durationms"`
 }
 
 // ProcessStockCalcCostHandler executes ProductCalcCost for a list of item codes.
@@ -54,7 +54,7 @@ func ProcessStockCalcCostHandler(c echo.Context) error {
 	payload.HoldingCode = strings.TrimSpace(payload.HoldingCode)
 	if payload.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
-			"error": "holding_code is required",
+			"error": "holdingcode is required",
 			"code":  "MISSING_HOLDING_CODE",
 		})
 	}
@@ -117,7 +117,7 @@ func ProcessStockCalcCostHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]any{
 		"status":          "success",
 		"code":            200,
-		"holding_code":    payload.HoldingCode,
+		"holdingcode":     payload.HoldingCode,
 		"command_id":      payload.CommandID,
 		"processed_items": len(results),
 		"duration_ms":     time.Since(start).Milliseconds(),

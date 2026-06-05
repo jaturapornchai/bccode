@@ -9,7 +9,7 @@ import (
 const kitchenCollectionName = "restaurantKitchens"
 
 type Kitchen struct {
-	GroupNumber int             `json:"group_number" bson:"group_number"`
+	GroupNumber int             `json:"groupnumber" bson:"groupnumber"`
 	Code        string          `json:"code" bson:"code"`
 	Names       *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
 	Printers    *[]string       `json:"printers" bson:"printers"`
@@ -32,7 +32,7 @@ type KitchenData struct {
 }
 
 type KitchenDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	KitchenData        `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 	models.LastUpdate  `bson:"inline"`

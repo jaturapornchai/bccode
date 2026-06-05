@@ -1,7 +1,7 @@
 [
   {
     "method": "DELETE",
-    "path": "/shop/:holding_code/member/:id",
+    "path": "/shop/:holdingcode/member/:id",
     "name": "smlcloudplatform/pkg/microservice.(*Microservice).DELETE.func1"
   },
   {
@@ -56,12 +56,12 @@
   },
   {
     "method": "GET",
-    "path": "/shop/:holding_code/member",
+    "path": "/shop/:holdingcode/member",
     "name": "smlcloudplatform/pkg/microservice.(*Microservice).GET.func1"
   },
   {
     "method": "PUT",
-    "path": "/shop/:holding_code/member/:id",
+    "path": "/shop/:holdingcode/member/:id",
     "name": "smlcloudplatform/pkg/microservice.(*Microservice).PUT.func1"
   },
   {
@@ -71,7 +71,7 @@
   },
   {
     "method": "POST",
-    "path": "/shop/:holding_code/member",
+    "path": "/shop/:holdingcode/member",
     "name": "smlcloudplatform/pkg/microservice.(*Microservice).POST.func1"
   },
   {
@@ -86,12 +86,12 @@
   },
   {
     "method": "GET",
-    "path": "/shop/:holding_code/member/:id",
+    "path": "/shop/:holdingcode/member/:id",
     "name": "smlcloudplatform/pkg/microservice.(*Microservice).GET.func1"
   },
   {
     "method": "PUT",
-    "path": "/shop/:holding_code/member/:id/password",
+    "path": "/shop/:holdingcode/member/:id/password",
     "name": "smlcloudplatform/pkg/microservice.(*Microservice).PUT.func1"
   },
   {

@@ -28,57 +28,57 @@ const (
 
 // ProductPrepareSession - session การประมวลผล
 type ProductPrepareSession struct {
-	HoldingCode   string                 `json:"holding_code"`
-	FileName      string                 `json:"file_name"`
-	FilePath      string                 `json:"file_path"`
-	JSONFilePath  string                 `json:"json_file_path"` // เพิ่ม: path ของ JSON result file
-	JSONFileName  string                 `json:"json_file_name"` // เพิ่ม: ชื่อไฟล์ JSON
+	HoldingCode   string                 `json:"holdingcode"`
+	FileName      string                 `json:"filename"`
+	FilePath      string                 `json:"filepath"`
+	JSONFilePath  string                 `json:"jsonfilepath"` // เพิ่ม: path ของ JSON result file
+	JSONFileName  string                 `json:"jsonfilename"` // เพิ่ม: ชื่อไฟล์ JSON
 	Status        ProductPrepareStatus   `json:"status"`
 	Progress      float64                `json:"progress"`
-	TotalRows     int                    `json:"total_rows"`
-	ProcessedRows int                    `json:"processed_rows"`
-	SuccessCount  int                    `json:"success_count"`
-	ErrorCount    int                    `json:"error_count"`
-	StartTime     time.Time              `json:"start_time"`
-	EndTime       *time.Time             `json:"end_time,omitempty"`
+	TotalRows     int                    `json:"totalrows"`
+	ProcessedRows int                    `json:"processedrows"`
+	SuccessCount  int                    `json:"successcount"`
+	ErrorCount    int                    `json:"errorcount"`
+	StartTime     time.Time              `json:"starttime"`
+	EndTime       *time.Time             `json:"endtime,omitempty"`
 	Result        []ProductPrepareResult `json:"result,omitempty"`
-	ErrorMessage  string                 `json:"error_message,omitempty"`
+	ErrorMessage  string                 `json:"errormessage,omitempty"`
 	Mutex         sync.RWMutex           `json:"-"`
 }
 
 // ProductPrepareResult - ผลลัพธ์แต่ละแถว
 type ProductPrepareResult struct {
-	RowNumber       int                    `json:"row_number"`
+	RowNumber       int                    `json:"rownumber"`
 	Barcode         string                 `json:"barcode"`
 	Name            string                 `json:"name"`
-	UnitCode        string                 `json:"unit_code"`
-	ProductType     string                 `json:"product_type"`
-	TaxType         string                 `json:"tax_type"`
+	UnitCode        string                 `json:"unitcode"`
+	ProductType     string                 `json:"producttype"`
+	TaxType         string                 `json:"taxtype"`
 	Code            string                 `json:"code"`
 	Price           float64                `json:"price"`
-	PriceMember     float64                `json:"price_member"`
-	PriceDelivery   float64                `json:"price_delivery"`
-	PriceOne        float64                `json:"price_one"`
-	PriceTwo        float64                `json:"price_two"`
-	PriceThree      float64                `json:"price_three"`
-	PriceFour       float64                `json:"price_four"`
-	PriceFive       float64                `json:"price_five"`
-	PriceSix        float64                `json:"price_six"`
-	PriceSeven      float64                `json:"price_seven"`
-	PriceEight      float64                `json:"price_eight"`
-	PriceNine       float64                `json:"price_nine"`
-	GroupCode       string                 `json:"group_code"`
-	GroupsuboneCode string                 `json:"groupsubone_code"`
-	GroupsubtwoCode string                 `json:"groupsubtwo_code"`
-	BrandCode       string                 `json:"brand_code"`
-	DesignCode      string                 `json:"design_code"`
-	ModelCode       string                 `json:"model_code"`
-	PatternCode     string                 `json:"pattern_code"`
-	GradeCode       string                 `json:"grade_code"`
-	CategoryCode    string                 `json:"category_code"`
-	ClassCode       string                 `json:"class_code"`
-	StandValue      float64                `json:"stand_value"`
-	DivideValue     float64                `json:"divide_value"`
+	PriceMember     float64                `json:"pricemember"`
+	PriceDelivery   float64                `json:"pricedelivery"`
+	PriceOne        float64                `json:"priceone"`
+	PriceTwo        float64                `json:"pricetwo"`
+	PriceThree      float64                `json:"pricethree"`
+	PriceFour       float64                `json:"pricefour"`
+	PriceFive       float64                `json:"pricefive"`
+	PriceSix        float64                `json:"pricesix"`
+	PriceSeven      float64                `json:"priceseven"`
+	PriceEight      float64                `json:"priceeight"`
+	PriceNine       float64                `json:"pricenine"`
+	GroupCode       string                 `json:"groupcode"`
+	GroupsuboneCode string                 `json:"groupsubonecode"`
+	GroupsubtwoCode string                 `json:"groupsubtwocode"`
+	BrandCode       string                 `json:"brandcode"`
+	DesignCode      string                 `json:"designcode"`
+	ModelCode       string                 `json:"modelcode"`
+	PatternCode     string                 `json:"patterncode"`
+	GradeCode       string                 `json:"gradecode"`
+	CategoryCode    string                 `json:"categorycode"`
+	ClassCode       string                 `json:"classcode"`
+	StandValue      float64                `json:"standvalue"`
+	DivideValue     float64                `json:"dividevalue"`
 	Status          string                 `json:"status"` // "success", "error", "warning"
 	Message         string                 `json:"message"`
 	Data            map[string]interface{} `json:"data,omitempty"`

@@ -31,12 +31,12 @@ type PromotionBarcodeInclude struct {
 }
 
 type ProductBarcode struct {
-	GuidFixed    string          `json:"guid_fixed" bson:"guid_fixed"`
+	GuidFixed    string          `json:"guidfixed" bson:"guidfixed"`
 	DiscountText string          `json:"discounttext" bson:"discounttext"`
 	Barcode      string          `json:"barcode" bson:"barcode"`
 	Name         *[]models.NameX `json:"name" bson:"name"`
 	UnitCode     string          `json:"unitcode" bson:"unitcode"`
-	UnitName     *[]models.NameX `json:"unit_name" bson:"unit_name"`
+	UnitName     *[]models.NameX `json:"unitname" bson:"unitname"`
 	Price        float64         `json:"price" bson:"price"`
 	Qty          float64         `json:"qty" bson:"qty"`
 }
@@ -63,7 +63,7 @@ type PromotionData struct {
 }
 
 type PromotionDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	PromotionData      `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

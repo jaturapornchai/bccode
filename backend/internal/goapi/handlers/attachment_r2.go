@@ -25,9 +25,9 @@ import (
 
 // AttachmentUploadHandler - อัปโหลดไฟล์แนบเอกสารไปยัง R2 และบันทึก metadata ใน MongoDB
 // POST /api/attachment/upload
-// Form data: file, holding_code, screen_type, docno, guidfixed, description, uploaded_by, uploaded_name
+// Form data: file, holdingcode, screen_type, docno, guidfixed, description, uploaded_by, uploaded_name
 func AttachmentUploadHandler(c echo.Context) error {
-	holdingCode, authStatus := storageAuthorizedHoldingCode(c, c.FormValue("holding_code"))
+	holdingCode, authStatus := storageAuthorizedHoldingCode(c, c.FormValue("holdingcode"))
 	if authStatus != http.StatusOK {
 		message := "shop not selected"
 		if authStatus == http.StatusForbidden {
@@ -63,7 +63,7 @@ func AttachmentUploadHandler(c echo.Context) error {
 	// Get required fields from form
 	screenType := c.FormValue("screen_type")
 	docNo := c.FormValue("docno")
-	guidFixed := c.FormValue("guid_fixed")
+	guidFixed := c.FormValue("guidfixed")
 	uploadedBy := c.FormValue("uploaded_by")
 	uploadedName := c.FormValue("uploaded_name")
 
@@ -71,7 +71,7 @@ func AttachmentUploadHandler(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  "error",
 			"code":    400,
-			"message": "holding_code, screen_type, docno, and guidfixed are required",
+			"message": "holdingcode, screen_type, docno, and guidfixed are required",
 		})
 	}
 
@@ -152,7 +152,7 @@ func AttachmentUploadHandler(c echo.Context) error {
 	hash := sha256.Sum256(buf.Bytes())
 	hashStr := hex.EncodeToString(hash[:])[:16] // ใช้ 16 ตัวแรก
 
-	// Generate filename: holding_code/attachments/screentype/guidfixed/timestamp_hash.ext
+	// Generate filename: holdingcode/attachments/screentype/guidfixed/timestamp_hash.ext
 	timestamp := time.Now().Format("20060102_150405")
 	fileName := fmt.Sprintf("%s_%s%s", timestamp, hashStr, ext)
 	r2Key := fmt.Sprintf("%s/attachments/%s/%s/%s", holdingCode, screenType, guidFixed, fileName)
@@ -238,7 +238,7 @@ func AttachmentUploadHandler(c echo.Context) error {
 
 // AttachmentListHandler - ดึงรายการไฟล์แนบตามเงื่อนไข
 // POST /api/attachment/list
-// Body: { holding_code, screen_type, docno, guidfixed, limit, skip }
+// Body: { holdingcode, screen_type, docno, guidfixed, limit, skip }
 func AttachmentListHandler(c echo.Context) error {
 	if atlasClient == nil {
 		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
@@ -271,7 +271,7 @@ func AttachmentListHandler(c echo.Context) error {
 	}
 
 	// Build filter
-	filter := bson.M{"holding_code": holdingCode}
+	filter := bson.M{"holdingcode": holdingCode}
 	if req.ScreenType != "" {
 		filter["screen_type"] = req.ScreenType
 	}
@@ -279,11 +279,11 @@ func AttachmentListHandler(c echo.Context) error {
 		filter["docno"] = req.DocNo
 	}
 	if req.GuidFixed != "" {
-		filter["guid_fixed"] = req.GuidFixed
+		filter["guidfixed"] = req.GuidFixed
 	}
 
 	// Query options
-	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}})
+	opts := options.Find().SetSort(bson.D{{Key: "createdat", Value: -1}})
 	if req.Limit > 0 {
 		opts.SetLimit(req.Limit)
 	} else {
@@ -348,7 +348,7 @@ func AttachmentListHandler(c echo.Context) error {
 			UpdatedAt:    att.UpdatedAt,
 		}
 
-		// สร้าง private backend URL สำหรับ stream ผ่าน goapi เฉพาะไฟล์ใต้ holding_code เดียวกัน
+		// สร้าง private backend URL สำหรับ stream ผ่าน goapi เฉพาะไฟล์ใต้ holdingcode เดียวกัน
 		if client != nil && att.R2Key != "" && storageObjectBelongsToShop(att.R2Key, att.HoldingCode) {
 			url, err := getPresignedURL(client, att.R2Key, 60)
 			if err == nil {
@@ -370,7 +370,7 @@ func AttachmentListHandler(c echo.Context) error {
 
 // AttachmentDeleteHandler - ลบไฟล์แนบจาก R2 และ MongoDB
 // POST /api/attachment/delete
-// Body: { holding_code, attachment_id or filename }
+// Body: { holdingcode, attachment_id or filename }
 func AttachmentDeleteHandler(c echo.Context) error {
 	client, err := GetR2Client()
 	if err != nil || client == nil {
@@ -425,7 +425,7 @@ func AttachmentDeleteHandler(c echo.Context) error {
 	collection := atlasDB.Collection("attachments")
 
 	// Build filter
-	filter := bson.M{"holding_code": holdingCode}
+	filter := bson.M{"holdingcode": holdingCode}
 	if req.AttachmentID != "" {
 		oid, err := primitive.ObjectIDFromHex(req.AttachmentID)
 		if err != nil {
@@ -491,7 +491,7 @@ func AttachmentDeleteHandler(c echo.Context) error {
 }
 
 // AttachmentDownloadHandler - ดาวน์โหลดไฟล์แนบโดยตรงผ่าน private backend stream
-// GET /api/attachment/download/:id?holding_code=xxx
+// GET /api/attachment/download/:id?holdingcode=xxx
 func AttachmentDownloadHandler(c echo.Context) error {
 	attachmentID := c.Param("id")
 	if attachmentID == "" {
@@ -502,7 +502,7 @@ func AttachmentDownloadHandler(c echo.Context) error {
 		})
 	}
 
-	holdingCode, authStatus := storageAuthorizedHoldingCode(c, c.QueryParam("holding_code"))
+	holdingCode, authStatus := storageAuthorizedHoldingCode(c, c.QueryParam("holdingcode"))
 	if authStatus != http.StatusOK {
 		message := "shop not selected"
 		if authStatus == http.StatusForbidden {
@@ -546,8 +546,8 @@ func AttachmentDownloadHandler(c echo.Context) error {
 
 	collection := atlasDB.Collection("attachments")
 	filter := bson.M{
-		"_id":          oid,
-		"holding_code": holdingCode,
+		"_id":         oid,
+		"holdingcode": holdingCode,
 	}
 
 	var attachmentDoc models.AttachmentMetadata

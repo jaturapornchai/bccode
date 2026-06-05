@@ -4,8 +4,8 @@ package aichat
 //
 // Phase 1 (Planner):
 //   - ยิง LLM 1 ครั้ง ให้อ่านคำถาม + history แล้วออก JSON plan:
-//       { intent_summary: "...", queries: [{tool, args, label}, ...], direct_answer: "" }
-//   - ถ้าเป็น small talk/greeting → ใส่ direct_answer, queries ว่าง → ข้าม Phase 2
+//       { intentsummary: "...", queries: [{tool, args, label}, ...], directanswer: "" }
+//   - ถ้าเป็น small talk/greeting → ใส่ directanswer, queries ว่าง → ข้าม Phase 2
 //
 // Phase 2 (Executor):
 //   - Fan-out queries ทุกตัวแบบ parallel goroutine
@@ -13,7 +13,7 @@ package aichat
 //   - รวม results ทั้งหมด (รวม error ด้วย เพื่อให้ synthesizer รู้ว่าอะไร fail)
 //
 // Phase 3 (Synthesizer):
-//   - ยิง LLM อีกครั้ง ส่ง intent_summary + results + original question
+//   - ยิง LLM อีกครั้ง ส่ง intentsummary + results + original question
 //   - ให้สร้างคำตอบเป็น Markdown มาตรฐาน
 //
 // เมื่อเทียบกับ ReAct loop เดิม:
@@ -47,9 +47,9 @@ type QueryPlanItem struct {
 
 // QueryPlan — output ของ Phase 1 (Planner)
 type QueryPlan struct {
-	IntentSummary string          `json:"intent_summary"`
+	IntentSummary string          `json:"intentsummary"`
 	Queries       []QueryPlanItem `json:"queries"`
-	DirectAnswer  string          `json:"direct_answer,omitempty"`
+	DirectAnswer  string          `json:"directanswer,omitempty"`
 }
 
 // ExecutedQuery — ผลลัพธ์ของ query 1 ตัวใน Phase 2
@@ -80,7 +80,7 @@ const (
 func RunAgentLoopPlanner(ctx context.Context, req AgentV2Request, emitSSE func(SSEEvent)) (*AgentChatResponse, error) {
 	holdingCode := req.HoldingCode
 	sessionKey := BuildSessionKey(holdingCode, req.SessionID)
-	logger.Info("[Planner] session_key=%s", sessionKey)
+	logger.Info("[Planner] sessionkey=%s", sessionKey)
 
 	providers := aiprovider.GetShopAIProviders(holdingCode)
 	if len(providers) == 0 {
@@ -110,7 +110,7 @@ func RunAgentLoopPlanner(ctx context.Context, req AgentV2Request, emitSSE func(S
 	logger.Info("[Planner] intent=%q queries=%d direct=%v",
 		plan.IntentSummary, len(plan.Queries), plan.DirectAnswer != "")
 
-	// ถ้า planner คืน direct_answer (small talk) → return เลย
+	// ถ้า planner คืน directanswer (small talk) → return เลย
 	if strings.TrimSpace(plan.DirectAnswer) != "" && len(plan.Queries) == 0 {
 		emitSSE(SSEEvent{Type: "answer", Data: plan.DirectAnswer})
 		return &AgentChatResponse{
@@ -285,14 +285,14 @@ func runExecutor(
 			ctx, cancel := context.WithTimeout(parentCtx, executorPerQueryTO)
 			defer cancel()
 
-			// inject holding_code
+			// inject holdingcode
 			if item.Args == nil {
 				item.Args = map[string]any{}
 			}
-			item.Args["holding_code"] = holdingCode
+			item.Args["holdingcode"] = holdingCode
 
 			started := time.Now()
-			emitSSE(SSEEvent{Type: "tool_start", Data: map[string]any{
+			emitSSE(SSEEvent{Type: "toolstart", Data: map[string]any{
 				"tool":  item.Tool,
 				"label": item.Label,
 				"idx":   idx,
@@ -316,11 +316,11 @@ func runExecutor(
 			}
 
 			results[idx] = ex
-			emitSSE(SSEEvent{Type: "tool_done", Data: map[string]any{
-				"tool":        item.Tool,
-				"label":       item.Label,
-				"duration_ms": dur,
-				"success":     err == nil,
+			emitSSE(SSEEvent{Type: "tooldone", Data: map[string]any{
+				"tool":       item.Tool,
+				"label":      item.Label,
+				"durationms": dur,
+				"success":    err == nil,
 			}})
 		}(i, q)
 	}
@@ -421,18 +421,18 @@ func plannerSystemPrompt() string {
 
 **ตอบเป็น JSON object เดียวเท่านั้น** (ห้ามมี prose, ห้ามมี markdown code fence):
 {
-  "intent_summary": "สรุปสั้นๆ ว่าผู้ใช้ถามอะไร (ภาษาไทย 1-2 ประโยค)",
+  "intentsummary": "สรุปสั้นๆ ว่าผู้ใช้ถามอะไร (ภาษาไทย 1-2 ประโยค)",
   "queries": [
-    {"tool": "query_mongodb", "args": {"collection": "...", "filter": "{...json...}", "limit": 20}, "label": "เหตุผล"}
+    {"tool": "querymongodb", "args": {"collection": "...", "filter": "{...json...}", "limit": 20}, "label": "เหตุผล"}
   ],
-  "direct_answer": ""
+  "directanswer": ""
 }
 
 **วันที่วันนี้:** ` + today + `
 
 ## กฎสำคัญ
-1. **ถ้าเป็น small talk/ทักทาย/ถามตัวตน** → queries=[], direct_answer="สวัสดีค่ะ ..." (ตอบแทนเลย)
-2. **ถ้าเป็นคำถามข้อมูล** → direct_answer="" แล้วใส่ queries
+1. **ถ้าเป็น small talk/ทักทาย/ถามตัวตน** → queries=[], directanswer="สวัสดีค่ะ ..." (ตอบแทนเลย)
+2. **ถ้าเป็นคำถามข้อมูล** → directanswer="" แล้วใส่ queries
 3. **แตกเป็นหลาย query ถ้าจำเป็น** (เช่น barcode ลอง exact + regex, entity ลอง debtors + creditors)
 4. **ทุก query ต้องมี filter/where** — ห้ามส่ง filter ว่าง (ได้ข้อมูลสุ่มไม่มีประโยชน์)
 5. **ถ้าเป็น SQL** → ใส่ LIMIT เสมอ
@@ -440,46 +440,46 @@ func plannerSystemPrompt() string {
 
 ## Tools ที่ใช้ได้
 
-### query_mongodb — args: {"collection": "...", "filter": "{...json...}", "limit": 20}
+### querymongodb — args: {"collection": "...", "filter": "{...json...}", "limit": 20}
 MongoDB is the operational source of truth.
 Collections:
-- ` + "`productBarcodes`" + ` (สินค้า/บาร์โค้ด) — barcode, itemcode, names[].name, prices
-- ` + "`debtors`" + ` (ลูกหนี้/ลูกค้า) — code, tax_id, email, names[].name
-- ` + "`creditors`" + ` (เจ้าหนี้/ซัพพลายเออร์) — code, tax_id, email, names[].name
+- ` + "`productbarcodes`" + ` (สินค้า/บาร์โค้ด) — barcode, itemcode, names[].name, prices
+- ` + "`debtors`" + ` (ลูกหนี้/ลูกค้า) — code, taxid, email, names[].name
+- ` + "`creditors`" + ` (เจ้าหนี้/ซัพพลายเออร์) — code, taxid, email, names[].name
 - ` + "`transactionSaleInvoice`" + ` (เอกสารขาย)
 filter เป็น JSON string ของ Mongo filter
 
-### query_postgresql — args: {"sql": "SELECT ..."}
+### querypostgresql — args: {"sql": "SELECT ..."}
 ใช้เฉพาะ relational processing/projection results เช่น posting, balance, stock costing, VAT/tax, AR/AP, GL.
 ถ้าไม่รู้ table/column ให้ introspect information_schema ก่อน ห้ามเดา และห้ามใช้ PostgreSQL เป็น CRUD source.
 
-### query_clickhouse — args: {"sql": "SELECT ..."}
+### queryclickhouse — args: {"sql": "SELECT ..."}
 BI/analytics/reporting facts ใช้เมื่อต้องการ aggregate ข้อมูลใหญ่จาก processed facts เท่านั้น
 
-### web_search — args: {"query": "..."}
+### websearch — args: {"query": "..."}
 ค้นเว็บภายนอก ใช้เมื่อผู้ใช้ถามข้อมูลที่ไม่อยู่ในระบบ (ราคาตลาด, สูตรอาหาร, ข่าว)
 
-### get_daily_sales — args: {"date": "YYYY-MM-DD"}
-### get_dashboard_kpis — args: {}
-### get_top_selling_products — args: {"start_date": "YYYY-MM-DD", "end_date": "YYYY-MM-DD", "limit": 10}
-### get_low_stock_alerts — args: {}
+### getdailysales — args: {"date": "YYYY-MM-DD"}
+### getdashboardkpis — args: {}
+### gettopsellingproducts — args: {"startdate": "YYYY-MM-DD", "enddate": "YYYY-MM-DD", "limit": 10}
+### getlowstockalerts — args: {}
 
 ## ตัวอย่าง
 
 user: "8850007003001"
-→ {"intent_summary":"ผู้ใช้ค้นหาสินค้าด้วย barcode 8850007003001","queries":[{"tool":"query_mongodb","args":{"collection":"productBarcodes","filter":"{\"barcode\":\"8850007003001\"}","limit":5},"label":"exact barcode"},{"tool":"query_mongodb","args":{"collection":"productBarcodes","filter":"{\"barcode\":{\"$regex\":\"8850007003001\",\"$options\":\"i\"}}","limit":10},"label":"partial barcode"}],"direct_answer":""}
+→ {"intentsummary":"ผู้ใช้ค้นหาสินค้าด้วย barcode 8850007003001","queries":[{"tool":"querymongodb","args":{"collection":"productbarcodes","filter":"{\"barcode\":\"8850007003001\"}","limit":5},"label":"exact barcode"},{"tool":"querymongodb","args":{"collection":"productbarcodes","filter":"{\"barcode\":{\"$regex\":\"8850007003001\",\"$options\":\"i\"}}","limit":10},"label":"partial barcode"}],"directanswer":""}
 
 user: "ร้านโฮม"
-→ {"intent_summary":"ค้นหาลูกหนี้/เจ้าหนี้ที่มีชื่อ 'โฮม'","queries":[{"tool":"query_mongodb","args":{"collection":"debtors","filter":"{\"names.name\":{\"$regex\":\"โฮม\",\"$options\":\"i\"}}","limit":20},"label":"debtors โฮม"},{"tool":"query_mongodb","args":{"collection":"creditors","filter":"{\"names.name\":{\"$regex\":\"โฮม\",\"$options\":\"i\"}}","limit":20},"label":"creditors โฮม"}],"direct_answer":""}
+→ {"intentsummary":"ค้นหาลูกหนี้/เจ้าหนี้ที่มีชื่อ 'โฮม'","queries":[{"tool":"querymongodb","args":{"collection":"debtors","filter":"{\"names.name\":{\"$regex\":\"โฮม\",\"$options\":\"i\"}}","limit":20},"label":"debtors โฮม"},{"tool":"querymongodb","args":{"collection":"creditors","filter":"{\"names.name\":{\"$regex\":\"โฮม\",\"$options\":\"i\"}}","limit":20},"label":"creditors โฮม"}],"directanswer":""}
 
 user: "สวัสดี"
-→ {"intent_summary":"ทักทาย","queries":[],"direct_answer":"สวัสดีค่ะ! น้องกุ้งยินดีให้บริการค่ะ 🦐 วันนี้อยากให้ช่วยเรื่องอะไรคะ?"}
+→ {"intentsummary":"ทักทาย","queries":[],"directanswer":"สวัสดีค่ะ! น้องกุ้งยินดีให้บริการค่ะ 🦐 วันนี้อยากให้ช่วยเรื่องอะไรคะ?"}
 
 user: "ยอดขายวันนี้"
-→ {"intent_summary":"ดูยอดขายวันนี้","queries":[{"tool":"get_daily_sales","args":{"date":"` + today + `"},"label":"daily sales today"}],"direct_answer":""}
+→ {"intentsummary":"ดูยอดขายวันนี้","queries":[{"tool":"getdailysales","args":{"date":"` + today + `"},"label":"daily sales today"}],"directanswer":""}
 
 user: "สีทาบ้านราคาเท่าไหร่"
-→ {"intent_summary":"ค้นหาสินค้าสีทาบ้านในระบบ","queries":[{"tool":"query_mongodb","args":{"collection":"productBarcodes","filter":"{\"names.name\":{\"$regex\":\"สีทา|paint\",\"$options\":\"i\"}}","limit":20},"label":"product paint"}],"direct_answer":""}`
+→ {"intentsummary":"ค้นหาสินค้าสีทาบ้านในระบบ","queries":[{"tool":"querymongodb","args":{"collection":"productbarcodes","filter":"{\"names.name\":{\"$regex\":\"สีทา|paint\",\"$options\":\"i\"}}","limit":20},"label":"product paint"}],"directanswer":""}`
 }
 
 func synthesizerSystemPrompt() string {

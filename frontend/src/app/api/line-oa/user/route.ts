@@ -11,7 +11,7 @@ import {
 type LineOaUserBody = {
   action?: "link" | "profile";
   backendUrl?: string;
-  holding_code?: string;
+  holdingcode?: string;
   holdingCode?: string;
   username?: string;
 };
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, message: "LINE OA action ไม่ถูกต้อง" }, { status: 400 });
   }
 
-  const holdingCode = (body.holding_code ?? body.holdingCode ?? "").trim();
+  const holdingCode = (body.holdingcode ?? body.holdingCode ?? "").trim();
   const username = body.username?.trim() ?? "";
   if (!holdingCode || !username) {
     return NextResponse.json({ success: false, message: "ไม่พบข้อมูลบริษัทหรือผู้ใช้" }, { status: 400 });
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
         "Accept-Language": request.headers.get("accept-language") ?? "th",
         Authorization: authorization,
       },
-      body: JSON.stringify({ holding_code: holdingCode, username }),
+      body: JSON.stringify({ holdingcode: holdingCode, username }),
       signal: controller.signal,
       cache: "no-store",
     });

@@ -33,7 +33,7 @@ type OrderDeviceData struct {
 }
 
 type OrderDeviceDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	OrderDeviceData    `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

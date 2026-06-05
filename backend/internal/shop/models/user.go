@@ -15,13 +15,13 @@ type UserDetail struct {
 	Name              string `json:"name,omitempty"  validate:"required"`
 	Avatar            string `json:"avatar"`
 	timezone.Timezone `bson:"inline"`
-	YearType          string   `json:"year_type" bson:"year_type" validate:"max=21"`
-	DedeZoom          DedeZoom `json:"dede_zoom" bson:"dede_zoom"`
+	YearType          string   `json:"yeartype" bson:"yeartype" validate:"max=21"`
+	DedeZoom          DedeZoom `json:"dedezoom" bson:"dedezoom"`
 }
 
 type DedeZoom struct {
 	Email       string `json:"email" bson:"email"`
-	PhoneNumber string `json:"phone_number" bson:"phone_number"`
+	PhoneNumber string `json:"phonenumber" bson:"phonenumber"`
 	Address     string `json:"address" bson:"address"`
 }
 
@@ -34,12 +34,12 @@ type UserPassword struct {
 }
 
 type UserDoc struct {
-	ID           primitive.ObjectID `json:"-" bson:"_id,omitempty"`
+	ID           primitive.ObjectID `json:"-" bson:"id,omitempty"`
 	UsernameCode `bson:"inline"`
 	UserPassword `bson:"inline"`
 	UserDetail   `bson:"inline"`
-	CreatedAt    time.Time `json:"-" bson:"created_at,omitempty"`
-	UpdatedAt    time.Time `json:"-" bson:"updated_at,omitempty"`
+	CreatedAt    time.Time `json:"-" bson:"createdat,omitempty"`
+	UpdatedAt    time.Time `json:"-" bson:"updatedat,omitempty"`
 }
 
 func (*UserDoc) CollectionName() string {
@@ -59,13 +59,13 @@ func (*UserRequest) CollectionName() string {
 type UserLoginRequest struct {
 	UsernameCode `bson:"inline"`
 	UserPassword `bson:"inline"`
-	HoldingCode  string `json:"holding_code,omitempty"`
+	HoldingCode  string `json:"holdingcode,omitempty"`
 }
 
 type UserProfile struct {
 	UsernameCode `bson:"inline"`
 	UserDetail   `bson:"inline"`
-	CreatedAt    time.Time `json:"-" bson:"created_at,omitempty"`
+	CreatedAt    time.Time `json:"-" bson:"createdat,omitempty"`
 }
 
 func (UserProfile) CollectionName() string {
@@ -87,7 +87,7 @@ type UserProfileReponse struct {
 }
 
 type ShopSelectRequest struct {
-	HoldingCode string `json:"holding_code"`
+	HoldingCode string `json:"holdingcode"`
 }
 
 type UserRole = uint8
@@ -102,43 +102,43 @@ const (
 
 type ShopUserBase struct {
 	Username    string   `json:"username" bson:"username"`
-	UserUID     string   `json:"user_uid" bson:"user_uid"`
-	HoldingCode string   `json:"holding_code" bson:"holding_code"`
+	UserUID     string   `json:"useruid" bson:"useruid"`
+	HoldingCode string   `json:"holdingcode" bson:"holdingcode"`
 	Role        UserRole `json:"role" bson:"role"`
 }
 
 // DocumentApproval - ข้อมูลการอนุมัติแยกตามประเภทเอกสาร
 type DocumentApproval struct {
-	ApprovalRole      int     `json:"approval_role" bson:"approval_role"`             // 0=ไม่มีสิทธิ์, 1-4=ระดับผู้อนุมัติ
-	MaxApprovalAmount float64 `json:"max_approval_amount" bson:"max_approval_amount"` // วงเงินอนุมัติสูงสุด (บาท)
+	ApprovalRole      int     `json:"approvalrole" bson:"approvalrole"`           // 0=ไม่มีสิทธิ์, 1-4=ระดับผู้อนุมัติ
+	MaxApprovalAmount float64 `json:"maxapprovalamount" bson:"maxapprovalamount"` // วงเงินอนุมัติสูงสุด (บาท)
 }
 
 type AccessScope struct {
-	ScopeType    string `json:"scope_type" bson:"scope_type"`                           // holding, company, branch
-	BusinessCode string `json:"business_code,omitempty" bson:"business_code,omitempty"` // company code
-	BranchCode   string `json:"branch_code,omitempty" bson:"branch_code,omitempty"`     // Thai tax branch code
-	AllBranches  bool   `json:"all_branches,omitempty" bson:"all_branches,omitempty"`
+	ScopeType    string `json:"scopetype" bson:"scopetype"`                           // holding, company, branch
+	BusinessCode string `json:"businesscode,omitempty" bson:"businesscode,omitempty"` // company code
+	BranchCode   string `json:"branchcode,omitempty" bson:"branchcode,omitempty"`     // Thai tax branch code
+	AllBranches  bool   `json:"allbranches,omitempty" bson:"allbranches,omitempty"`
 }
 
 type ShopUser struct {
-	ID             primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID             primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	ShopUserBase   `bson:"inline"`
-	IsFavorite     bool      `json:"is_favorite" bson:"is_favorite"`
-	LastAccessedAt time.Time `json:"last_accessed_at" bson:"last_accessed_at"`
+	IsFavorite     bool      `json:"isfavorite" bson:"isfavorite"`
+	LastAccessedAt time.Time `json:"lastaccessedat" bson:"lastaccessedat"`
 
 	// === ข้อมูลพนักงาน ===
 	Position   string `json:"position" bson:"position"`     // ตำแหน่งงาน
 	Department string `json:"department" bson:"department"` // แผนก
 
 	// === ข้อมูล LINE OA ===
-	LineUserID      string `json:"line_user_id" bson:"line_user_id"`           // LINE User ID
-	LineDisplayName string `json:"line_display_name" bson:"line_display_name"` // LINE Display Name
-	LinePictureURL  string `json:"line_picture_url" bson:"line_picture_url"`   // LINE Profile Picture URL
+	LineUserID      string `json:"lineuserid" bson:"lineuserid"`           // LINE User ID
+	LineDisplayName string `json:"linedisplayname" bson:"linedisplayname"` // LINE Display Name
+	LinePictureURL  string `json:"linepictureurl" bson:"linepictureurl"`   // LINE Profile Picture URL
 
 	// === ข้อมูลการอนุมัติแยกตามประเภทเอกสาร ===
-	POApproval        *DocumentApproval `json:"po_approval,omitempty" bson:"po_approval,omitempty"`               // อนุมัติใบสั่งซื้อ
-	QuotationApproval *DocumentApproval `json:"quotation_approval,omitempty" bson:"quotation_approval,omitempty"` // อนุมัติใบเสนอราคา
-	AccessScopes      []AccessScope     `json:"access_scopes,omitempty" bson:"access_scopes,omitempty"`
+	POApproval        *DocumentApproval `json:"poapproval,omitempty" bson:"poapproval,omitempty"`               // อนุมัติใบสั่งซื้อ
+	QuotationApproval *DocumentApproval `json:"quotationapproval,omitempty" bson:"quotationapproval,omitempty"` // อนุมัติใบเสนอราคา
+	AccessScopes      []AccessScope     `json:"accessscopes,omitempty" bson:"accessscopes,omitempty"`
 }
 
 func (*ShopUser) CollectionName() string {
@@ -146,13 +146,13 @@ func (*ShopUser) CollectionName() string {
 }
 
 type ShopUserInfo struct {
-	HoldingCode    string         `json:"holding_code" bson:"holding_code"`
+	HoldingCode    string         `json:"holdingcode" bson:"holdingcode"`
 	Name           string         `json:"name" bson:"name"`
 	Names          []models.NameX `json:"names" bson:"names"`
 	BranchCode     string         `json:"branchcode" bson:"branchcode"`
 	Role           UserRole       `json:"role" bson:"role"`
-	IsFavorite     bool           `json:"is_favorite" bson:"is_favorite"`
-	LastAccessedAt time.Time      `json:"last_accessed_at" bson:"last_accessed_at"`
+	IsFavorite     bool           `json:"isfavorite" bson:"isfavorite"`
+	LastAccessedAt time.Time      `json:"lastaccessedat" bson:"lastaccessedat"`
 	CreatedBy      string         `json:"createdby" bson:"createdby"`
 }
 
@@ -161,10 +161,10 @@ func (*ShopUserInfo) CollectionName() string {
 }
 
 type UserRoleRequest struct {
-	HoldingCode  string   `json:"holding_code" bson:"holding_code"`
+	HoldingCode  string   `json:"holdingcode" bson:"holdingcode"`
 	EditUsername string   `json:"editusername" bson:"editusername"`
 	Username     string   `json:"username" bson:"username"`
-	UserUID      string   `json:"user_uid,omitempty" bson:"user_uid,omitempty"`
+	UserUID      string   `json:"useruid,omitempty" bson:"useruid,omitempty"`
 	Role         UserRole `json:"role" bson:"role"`
 
 	// === ข้อมูลพนักงาน ===
@@ -172,22 +172,22 @@ type UserRoleRequest struct {
 	Department string `json:"department" bson:"department"` // แผนก
 
 	// === ข้อมูล LINE OA ===
-	LineUserID      string `json:"line_user_id" bson:"line_user_id"`           // LINE User ID
-	LineDisplayName string `json:"line_display_name" bson:"line_display_name"` // LINE Display Name
-	LinePictureURL  string `json:"line_picture_url" bson:"line_picture_url"`   // LINE Profile Picture URL
+	LineUserID      string `json:"lineuserid" bson:"lineuserid"`           // LINE User ID
+	LineDisplayName string `json:"linedisplayname" bson:"linedisplayname"` // LINE Display Name
+	LinePictureURL  string `json:"linepictureurl" bson:"linepictureurl"`   // LINE Profile Picture URL
 
 	// === ข้อมูลการอนุมัติแยกตามประเภทเอกสาร ===
-	POApproval        *DocumentApproval `json:"po_approval,omitempty" bson:"po_approval,omitempty"`
-	QuotationApproval *DocumentApproval `json:"quotation_approval,omitempty" bson:"quotation_approval,omitempty"`
-	AccessScopes      []AccessScope     `json:"access_scopes,omitempty" bson:"access_scopes,omitempty"`
+	POApproval        *DocumentApproval `json:"poapproval,omitempty" bson:"poapproval,omitempty"`
+	QuotationApproval *DocumentApproval `json:"quotationapproval,omitempty" bson:"quotationapproval,omitempty"`
+	AccessScopes      []AccessScope     `json:"accessscopes,omitempty" bson:"accessscopes,omitempty"`
 }
 
 type ShopUserAccessLog struct {
-	ID             primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	HoldingCode    string             `json:"holding_code" bson:"holding_code"`
+	ID             primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	HoldingCode    string             `json:"holdingcode" bson:"holdingcode"`
 	Username       string             `json:"username" bson:"username"`
 	Ip             string             `json:"ip" bson:"ip"`
-	LastAccessedAt time.Time          `json:"last_accessed_at" bson:"last_accessed_at"`
+	LastAccessedAt time.Time          `json:"lastaccessedat" bson:"lastaccessedat"`
 }
 
 func (*ShopUserAccessLog) CollectionName() string {
@@ -196,21 +196,21 @@ func (*ShopUserAccessLog) CollectionName() string {
 
 type ShopUserProfile struct {
 	ShopUserBase    `bson:"inline"`
-	UserProfileName string `json:"user_profile_name" bson:"user_profile_name"`
+	UserProfileName string `json:"userprofilename" bson:"userprofilename"`
 
 	// === ข้อมูลพนักงาน ===
 	Position   string `json:"position" bson:"position"`     // ตำแหน่งงาน
 	Department string `json:"department" bson:"department"` // แผนก
 
 	// === ข้อมูล LINE OA ===
-	LineUserID      string `json:"line_user_id" bson:"line_user_id"`           // LINE User ID
-	LineDisplayName string `json:"line_display_name" bson:"line_display_name"` // LINE Display Name
-	LinePictureURL  string `json:"line_picture_url" bson:"line_picture_url"`   // LINE Profile Picture URL
+	LineUserID      string `json:"lineuserid" bson:"lineuserid"`           // LINE User ID
+	LineDisplayName string `json:"linedisplayname" bson:"linedisplayname"` // LINE Display Name
+	LinePictureURL  string `json:"linepictureurl" bson:"linepictureurl"`   // LINE Profile Picture URL
 
 	// === ข้อมูลการอนุมัติแยกตามประเภทเอกสาร ===
-	POApproval        *DocumentApproval `json:"po_approval,omitempty" bson:"po_approval,omitempty"`
-	QuotationApproval *DocumentApproval `json:"quotation_approval,omitempty" bson:"quotation_approval,omitempty"`
-	AccessScopes      []AccessScope     `json:"access_scopes,omitempty" bson:"access_scopes,omitempty"`
+	POApproval        *DocumentApproval `json:"poapproval,omitempty" bson:"poapproval,omitempty"`
+	QuotationApproval *DocumentApproval `json:"quotationapproval,omitempty" bson:"quotationapproval,omitempty"`
+	AccessScopes      []AccessScope     `json:"accessscopes,omitempty" bson:"accessscopes,omitempty"`
 }
 
 // func (u UserRole) EqualString(userRoleStr string)  bool {

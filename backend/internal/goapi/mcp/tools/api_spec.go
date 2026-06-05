@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// ==================== get_api_spec ====================
+// ==================== getapispec ====================
 
 type APISpecRequest struct {
 	Path   string `json:"path"`
@@ -20,7 +20,7 @@ type APISpecResponse struct {
 
 type APISpecDetail struct {
 	APIEndpoint
-	CurlExample string `json:"curl_example"`
+	CurlExample string `json:"curlexample"`
 	Notes       string `json:"notes,omitempty"`
 }
 
@@ -118,7 +118,7 @@ func generateNotes(ep APIEndpoint) string {
 	return strings.Join(notes, ". ")
 }
 
-// ==================== get_api_example ====================
+// ==================== getapiexample ====================
 
 type APIExampleRequest struct {
 	Path   string `json:"path"`
@@ -129,11 +129,11 @@ type APIExampleResponse struct {
 	Path              string                 `json:"path"`
 	Method            string                 `json:"method"`
 	Description       string                 `json:"description"`
-	CurlCommand       string                 `json:"curl_command"`
-	RequestExample    map[string]interface{} `json:"request_example,omitempty"`
-	ResponseExample   map[string]interface{} `json:"response_example,omitempty"`
-	DartExample       string                 `json:"dart_example"`
-	TypeScriptExample string                 `json:"typescript_example"`
+	CurlCommand       string                 `json:"curlcommand"`
+	RequestExample    map[string]interface{} `json:"requestexample,omitempty"`
+	ResponseExample   map[string]interface{} `json:"responseexample,omitempty"`
+	DartExample       string                 `json:"dartexample"`
+	TypeScriptExample string                 `json:"typescriptexample"`
 }
 
 func GetAPIExample(req APIExampleRequest) (*APIExampleResponse, error) {
@@ -196,58 +196,58 @@ func getHardcodedExample(path, method string) (req map[string]interface{}, resp 
 
 	examples := map[string][2]map[string]interface{}{
 		"POST /goapi/api/product/search": {
-			{"holding_code": "SHOP001", "keyword": "น้ำตาล", "whcode": "WH01", "limit": 50},
+			{"holdingcode": "SHOP001", "keyword": "น้ำตาล", "whcode": "WH01", "limit": 50},
 			{"success": true, "products": []map[string]interface{}{
-				{"barcode": "8850999220017", "name": "น้ำตาลทราย 1 kg", "price": 35.00, "balance": "10 ถุง", "unit_code": "BAG"},
+				{"barcode": "8850999220017", "name": "น้ำตาลทราย 1 kg", "price": 35.00, "balance": "10 ถุง", "unitcode": "BAG"},
 			}},
 		},
 		"POST /goapi/api/product/barcode": {
-			{"holding_code": "SHOP001", "barcode": "8850999220017"},
+			{"holdingcode": "SHOP001", "barcode": "8850999220017"},
 			{"success": true, "product": map[string]interface{}{"barcode": "8850999220017", "name": "น้ำตาลทราย", "price": 35.00}},
 		},
 		"POST /goapi/api/transaction/calculate": {
-			{"holding_code": "SHOP001", "items": []map[string]interface{}{{"barcode": "001", "qty": 2, "price": 100}}, "tax_type": 1, "discount_amount": 50},
-			{"success": true, "total_before_discount": 200, "discount_amount": 50, "total_after_discount": 150, "vat_amount": 9.81, "net_amount": 150},
+			{"holdingcode": "SHOP001", "items": []map[string]interface{}{{"barcode": "001", "qty": 2, "price": 100}}, "taxtype": 1, "discountamount": 50},
+			{"success": true, "totalbeforediscount": 200, "discountamount": 50, "totalafterdiscount": 150, "vatamount": 9.81, "netamount": 150},
 		},
 		"POST /goapi/api/report/sales/summary": {
-			{"holding_code": "SHOP001", "from_date": "2025-01-01", "to_date": "2025-12-31"},
-			{"success": true, "total_amount": 1500000, "total_cost": 1000000, "total_profit": 500000, "document_count": 5000},
+			{"holdingcode": "SHOP001", "fromdate": "2025-01-01", "todate": "2025-12-31"},
+			{"success": true, "totalamount": 1500000, "totalcost": 1000000, "totalprofit": 500000, "documentcount": 5000},
 		},
 		"POST /goapi/api/approval/po-status/submit": {
-			{"holding_code": "SHOP001", "docno": "PO-2025-001", "submitted_by": "EMP001"},
+			{"holdingcode": "SHOP001", "docno": "PO-2025-001", "submittedby": "EMP001"},
 			{"success": true, "status": "pending", "message": "PO submitted for approval"},
 		},
 		"POST /goapi/api/approval/po-status/approve": {
-			{"holding_code": "SHOP001", "docno": "PO-2025-001", "approved_by": "MGR001", "comment": "อนุมัติ"},
+			{"holdingcode": "SHOP001", "docno": "PO-2025-001", "approvedby": "MGR001", "comment": "อนุมัติ"},
 			{"success": true, "status": "approved"},
 		},
 		"POST /goapi/get": {
-			{"holding_code": "SHOP001", "sql": "SELECT docno, docdate, totalamount FROM saleinvoice ORDER BY docdate DESC LIMIT 10"},
-			{"success": true, "data": []map[string]interface{}{{"docno": "INV-001", "docdate": "2025-01-15", "total_amount": 15000}}},
+			{"holdingcode": "SHOP001", "sql": "SELECT docno, docdate, totalamount FROM saleinvoice ORDER BY docdate DESC LIMIT 10"},
+			{"success": true, "data": []map[string]interface{}{{"docno": "INV-001", "docdate": "2025-01-15", "totalamount": 15000}}},
 		},
 		"POST /goapi/genpdf": {
-			{"holding_code": "SHOP001", "docno": "INV-001", "template": "invoice"},
-			{"success": true, "url": "/s3/file/SHOP001/pdf/INV-001.pdf", "file_size": 125000},
+			{"holdingcode": "SHOP001", "docno": "INV-001", "template": "invoice"},
+			{"success": true, "url": "/s3/file/SHOP001/pdf/INV-001.pdf", "filesize": 125000},
 		},
 		"POST /goapi/mcp/invoke": {
-			{"tool": "get_daily_sales", "params": map[string]interface{}{"date": "2025-01-15"}},
-			{"success": true, "data": map[string]interface{}{"date": "2025-01-15", "total_amount": 45000, "document_count": 120}, "tool": "get_daily_sales"},
+			{"tool": "getdailysales", "params": map[string]interface{}{"date": "2025-01-15"}},
+			{"success": true, "data": map[string]interface{}{"date": "2025-01-15", "totalamount": 45000, "documentcount": 120}, "tool": "getdailysales"},
 		},
 		"POST /goapi/image/upload": {
-			{"holding_code": "SHOP001", "category": "product"},
-			{"success": true, "file_name": "abc123.jpg", "url": "/s3/file/SHOP001/images/abc123.jpg"},
+			{"holdingcode": "SHOP001", "category": "product"},
+			{"success": true, "filename": "abc123.jpg", "url": "/s3/file/SHOP001/images/abc123.jpg"},
 		},
 		"POST /goapi/api/lineoa/configs": {
-			{"holding_code": "SHOP001"},
-			{"success": true, "configs": []map[string]interface{}{{"channel_id": "123456", "channel_name": "My Shop LINE"}}},
+			{"holdingcode": "SHOP001"},
+			{"success": true, "configs": []map[string]interface{}{{"channelid": "123456", "channelname": "My Shop LINE"}}},
 		},
 		"POST /goapi/api/v1/chatbot/chat-gemini": {
-			{"holding_code": "SHOP001", "message": "ยอดขายวันนี้เท่าไร?"},
+			{"holdingcode": "SHOP001", "message": "ยอดขายวันนี้เท่าไร?"},
 			{"success": true, "response": "ยอดขายวันนี้รวม 45,000 บาท จาก 120 บิล"},
 		},
 		"POST /goapi/api/v1/unified/query": {
-			{"holding_code": "SHOP001", "query": "สินค้าขายดี 10 อันดับเดือนนี้"},
-			{"success": true, "data": []map[string]interface{}{{"name": "น้ำตาลทราย", "total_qty": 500, "total_amount": 17500}}},
+			{"holdingcode": "SHOP001", "query": "สินค้าขายดี 10 อันดับเดือนนี้"},
+			{"success": true, "data": []map[string]interface{}{{"name": "น้ำตาลทราย", "totalqty": 500, "totalamount": 17500}}},
 		},
 	}
 

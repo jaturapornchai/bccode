@@ -76,8 +76,8 @@ func insertDocListWithTx(ctx context.Context, tx *sql.Tx, data []models.DocStruc
 				"total_amount", "roundamount", "paytype", "paycashamount", "paycashchange",
 				"paycashbalance", "deliverycode", "checksum", "branch_id", "slipurl",
 				"salechannelcode", "deliveryamount", "iscancel", "cancelreason",
-				"guidpos", "guidbranch", "guid_fixed",
-				"creator_code", "creator_name", "created_at",
+				"guidpos", "guidbranch", "guidfixed",
+				"creator_code", "creator_name", "createdat",
 				// Multi-Currency Fields
 				"currency", "currency_symbol",
 				"doc_currency", "doc_currency_symbol",
@@ -91,7 +91,7 @@ func insertDocListWithTx(ctx context.Context, tx *sql.Tx, data []models.DocStruc
 			// แปลง Doc เป็น [][]any สำหรับ COPY
 			rows := make([][]any, len(validData))
 			for i, data := range validData {
-				// กำหนดค่า created_at ถ้ายังไม่มี
+				// กำหนดค่า createdat ถ้ายังไม่มี
 				createdAt := data.CreatedAt
 				if createdAt.IsZero() {
 					createdAt = data.DocDateTime // ใช้ DocDateTime เป็น default
@@ -225,7 +225,7 @@ func insertDocListWithTx(ctx context.Context, tx *sql.Tx, data []models.DocStruc
 			// เตรียม columns สำหรับ COPY doc payment
 			columns := []string{
 				"branch_id", "docdatetime", "perioddatetime", "provider_name", "amount",
-				"description", "docno", "transflag", "guid_fixed", "guidbranch",
+				"description", "docno", "transflag", "guidfixed", "guidbranch",
 			}
 
 			// แปลง DocPayment เป็น [][]any สำหรับ COPY

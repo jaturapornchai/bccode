@@ -42,8 +42,8 @@ func (repo ARAdvancePaymentRefundTransactionPGRepository) Create(doc models.ARAd
 func (repo ARAdvancePaymentRefundTransactionPGRepository) Update(holdingCode string, docNo string, doc models.ARAdvancePaymentRefundTransactionPG) error {
 
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"holding_code": holdingCode,
-		"docno":        docNo,
+		"holdingcode": holdingCode,
+		"docno":       docNo,
 	})
 	if err != nil {
 		return err
@@ -56,7 +56,7 @@ func (repo *ARAdvancePaymentRefundTransactionPGRepository) DeleteData(holdingCod
 	var details *[]models.ARAdvancePaymentRefundTransactionDetailPG
 	tx := repo.pst.DBClient().Begin()
 
-	tx.Model(&models.ARAdvancePaymentRefundTransactionDetailPG{}).Where(" holding_code=? AND docno=?", holdingCode, docNo).Find(&details)
+	tx.Model(&models.ARAdvancePaymentRefundTransactionDetailPG{}).Where(" holdingcode=? AND docno=?", holdingCode, docNo).Find(&details)
 	for _, tmp := range *details {
 		err := tx.Delete(&models.ARAdvancePaymentRefundTransactionDetailPG{}, tmp.ID).Error
 		if err != nil {
@@ -66,8 +66,8 @@ func (repo *ARAdvancePaymentRefundTransactionPGRepository) DeleteData(holdingCod
 	}
 
 	err := tx.Clauses(clause.Returning{}).Delete(&models.ARAdvancePaymentRefundTransactionPG{}, map[string]interface{}{
-		"holding_code": holdingCode,
-		"docno":        docNo,
+		"holdingcode": holdingCode,
+		"docno":       docNo,
 	}).Error
 
 	if err != nil {

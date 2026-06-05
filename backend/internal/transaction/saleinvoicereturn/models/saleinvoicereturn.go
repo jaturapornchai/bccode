@@ -29,7 +29,7 @@ type SaleInvoiceReturn struct {
 	SaleChannelCode   string  `json:"salechannelcode" bson:"csalechannelode"`
 	SaleChannelGP     float64 `json:"salechannelgp" bson:"salechannelgp"`
 	SaleChannelGPType int8    `json:"salechannelgptype" bson:"salechannelgptype"`
-	PointsCode        string  `json:"points_code" bson:"points_code"`
+	PointsCode        string  `json:"pointscode" bson:"pointscode"`
 
 	RefTotalOriginal float64 `json:"reftotaloriginal" bson:"reftotaloriginal"` // มูลค่าตามใบกำกับเดิม
 	RefTotalCorrect  float64 `json:"reftotalcorrect" bson:"reftotalcorrect"`   // มูลค่าที่ถูกต้อง
@@ -59,7 +59,7 @@ type SaleInvoiceReturnData struct {
 }
 
 type SaleInvoiceReturnDoc struct {
-	ID                    primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                    primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	SaleInvoiceReturnData `bson:"inline"`
 	models.ActivityDoc    `bson:"inline"`
 }

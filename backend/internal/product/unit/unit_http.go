@@ -379,8 +379,8 @@ func (h UnitHttp) InfoArrayMaster(ctx microservice.IContext) error {
 // @Param		page	query	integer		false  "page "
 // @Param		limit	query	integer		false  "liumit "
 // @Param		unitcode	query	string		false  "unitcode filter ex. \"u001,u002,u003\""
-// @Param		holding_code	query	string		false  "holding_code filter ex. \"holding1,holding2,holding3\""
-// @Param		shopsid	query	string		false  "legacy holding_code filter"
+// @Param		holdingcode	query	string		false  "holdingcode filter ex. \"holding1,holding2,holding3\""
+// @Param		shopsid	query	string		false  "legacy holdingcode filter"
 // @Accept 		json
 // @Success		200	{array}		common.ApiResponse
 // @Failure		401 {object}	common.AuthResponseFailed
@@ -393,19 +393,19 @@ func (h UnitHttp) SearchUnit(ctx microservice.IContext) error {
 	pageable := utils.GetPageable(ctx.QueryParam)
 
 	unitCode := ctx.QueryParam("unitcode")
-	holdingCodeParam := strings.TrimSpace(ctx.QueryParam("holding_code"))
+	holdingCodeParam := strings.TrimSpace(ctx.QueryParam("holdingcode"))
 	shopsidParam := strings.TrimSpace(ctx.QueryParam("shopsid"))
 	if holdingCodeParam != "" {
 		shopsidParam = holdingCodeParam
 	}
-	companyGuid := ctx.QueryParam("company_guid")
+	companyGuid := ctx.QueryParam("companyguid")
 
 	unitCodeFilters := []string{}
 	if len(unitCode) > 0 {
 		unitCodeFilters = strings.Split(unitCode, ",")
 	}
 
-	// Check if holding_code parameter is provided for multi-holding query
+	// Check if holdingcode parameter is provided for multi-holding query
 	if shopsidParam != "" {
 		shopsidList := strings.Split(shopsidParam, ",")
 		// Remove empty strings
@@ -469,7 +469,7 @@ func (h UnitHttp) SearchUnitLimit(ctx microservice.IContext) error {
 
 	lang := ctx.QueryParam("lang")
 	unitCode := ctx.QueryParam("unitcode")
-	companyGuid := ctx.QueryParam("company_guid")
+	companyGuid := ctx.QueryParam("companyguid")
 
 	unitCodeFilters := []string{}
 	if len(unitCode) > 0 {

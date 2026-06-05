@@ -7,17 +7,17 @@ import (
 
 // Query Limits Configuration (จาก Python config.py)
 const (
-	DefaultMaxQueryRows        = 10000
+	DefaultMaxQueryRows         = 10000
 	DefaultMaxResultRowsPerPage = 1000
-	DefaultPageSize            = 100
-	DefaultQueryTimeoutSeconds = 60
+	DefaultPageSize             = 100
+	DefaultQueryTimeoutSeconds  = 60
 )
 
 // PDF Configuration (จาก Python config.py)
 const (
-	DefaultPDFFontPath       = "./fonts/THSarabunNew.ttf"
-	DefaultPDFPageSize       = "A4"
-	DefaultPDFOrientation    = "L" // L = Landscape, P = Portrait
+	DefaultPDFFontPath    = "./fonts/THSarabunNew.ttf"
+	DefaultPDFPageSize    = "A4"
+	DefaultPDFOrientation = "L" // L = Landscape, P = Portrait
 )
 
 // GetMaxQueryRows returns max rows for query results

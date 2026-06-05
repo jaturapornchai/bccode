@@ -130,7 +130,7 @@ func (authService *AuthService) MWFuncWithRedisMixShop(cacher ICacher, shopPath 
 
 			if len(tempUserInfo.Username) < 1 {
 
-				tempUserInfoRaw, err := authService.cacher.HMGet(cacheKey, []string{"username", "name", "uid", "holding_code", "role"})
+				tempUserInfoRaw, err := authService.cacher.HMGet(cacheKey, []string{"username", "name", "uid", "holdingcode", "role"})
 
 				if err != nil {
 					return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false, "message": "Token Invalid."})
@@ -235,7 +235,7 @@ func (authService *AuthService) MWFuncWithRedis(cacher ICacher, publicPath ...st
 
 			cacheKey := authService.GetPrefixCacheKey(tokenCtx.tokenType) + tokenCtx.token
 
-			tempUserInfo, err := authService.cacher.HMGet(cacheKey, []string{"username", "name", "uid", "holding_code", "role"})
+			tempUserInfo, err := authService.cacher.HMGet(cacheKey, []string{"username", "name", "uid", "holdingcode", "role"})
 
 			if err != nil || tempUserInfo[0] == nil {
 				return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false, "message": "Token Invalid."})
@@ -432,11 +432,11 @@ func (authService *AuthService) GenerateTokenWithRedisExpire(tokenType TokenType
 	cacheKey := authService.GetPrefixCacheKey(tokenType) + tokenStr
 
 	authService.cacher.HMSet(cacheKey, map[string]interface{}{
-		"username":     userInfo.Username,
-		"name":         userInfo.Name,
-		"uid":          userInfo.UID,
-		"holding_code": userInfo.HoldingCode,
-		"role":         userInfo.Role,
+		"username":    userInfo.Username,
+		"name":        userInfo.Name,
+		"uid":         userInfo.UID,
+		"holdingcode": userInfo.HoldingCode,
+		"role":        userInfo.Role,
 	})
 	authService.cacher.Expire(cacheKey, expireTime)
 
@@ -447,8 +447,8 @@ func (authService *AuthService) SelectShop(tokenType TokenType, tokenStr string,
 	cacheKey := authService.GetPrefixCacheKey(tokenType) + tokenStr
 
 	err := authService.cacher.HMSet(cacheKey, map[string]interface{}{
-		"holding_code": holdingCode,
-		"role":         role,
+		"holdingcode": holdingCode,
+		"role":        role,
 	})
 
 	if err != nil {

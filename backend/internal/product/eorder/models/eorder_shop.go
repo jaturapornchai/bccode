@@ -11,7 +11,7 @@ import (
 )
 
 type EOrderShop struct {
-	HoldingCode    string                     `json:"holding_code"`
+	HoldingCode    string                     `json:"holdingcode"`
 	Name1          string                     `json:"name1"`
 	ProfilePicture string                     `json:"profilepicture"`
 	TotalTable     int                        `json:"totaltable"`
@@ -34,7 +34,7 @@ type EOrderSetting struct {
 
 // previous version
 type EOrderShopOld struct {
-	HoldingCode    string `json:"holding_code"`
+	HoldingCode    string `json:"holdingcode"`
 	Name1          string `json:"name1"`
 	ProfilePicture string `json:"profilepicture"`
 	TotalTable     int    `json:"totaltable"`

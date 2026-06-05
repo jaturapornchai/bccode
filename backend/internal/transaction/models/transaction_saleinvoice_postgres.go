@@ -43,9 +43,9 @@ type SaleInvoiceTransactionPG struct {
 	SaleChannelGP     float64 `json:"salechannelgp" gorm:"column:salechannelgp"`
 	SaleChannelGPType int8    `json:"salechannelgptype" gorm:"column:salechannelgptype"`
 	TakeAway          int8    `json:"takeaway" gorm:"column:takeaway"`
-	PointsCode        string  `json:"points_code" gorm:"column:points_code"`
+	PointsCode        string  `json:"pointscode" gorm:"column:pointscode"`
 
-	Items *[]SaleInvoiceTransactionDetailPG `json:"items" gorm:"items;foreignKey:holding_code,docno"`
+	Items *[]SaleInvoiceTransactionDetailPG `json:"items" gorm:"items;foreignKey:holdingcode,docno"`
 }
 
 type SaleInvoiceTransactionDetailPG struct {
@@ -74,7 +74,7 @@ func (j *SaleInvoiceTransactionPG) BeforeUpdate(tx *gorm.DB) (err error) {
 
 	// find old data
 	var details *[]SaleInvoiceTransactionDetailPG
-	tx.Model(&SaleInvoiceTransactionDetailPG{}).Where(" holding_code=? AND docno=?", j.HoldingCode, j.DocNo).Find(&details)
+	tx.Model(&SaleInvoiceTransactionDetailPG{}).Where(" holdingcode=? AND docno=?", j.HoldingCode, j.DocNo).Find(&details)
 
 	// delete un use data
 	for _, tmp := range *details {

@@ -81,14 +81,14 @@
   },
   "bc_normalized_contract": {
     "product_identity": [
-      "holding_code",
-      "guid_fixed",
-      "business_code",
+      "holdingcode",
+      "guidfixed",
+      "businesscode",
       "names",
       "description",
       "brand_code",
       "category_code",
-      "business_codes"
+      "businesscodes"
     ],
     "variant_identity": [
       "seller_sku",
@@ -140,11 +140,11 @@
   },
   "bc_field_mapping": {
     "tenant": {
-      "holding_code": "BC tenant scope, never derived from marketplace payload",
-      "business_codes": "BC company availability, not marketplace shop identity"
+      "holdingcode": "BC tenant scope, never derived from marketplace payload",
+      "businesscodes": "BC company availability, not marketplace shop identity"
     },
     "product": {
-      "business_code": "Internal product/business code",
+      "businesscode": "Internal product/business code",
       "names": "AliExpress subject_list, title_multi_language_list, subject, product_name",
       "description": "AliExpress description, detail, mobile_detail, web_detail, description_multi_language_list",
       "category_code": "Internal category mapped from AliExpress category_id or children_category_id",
@@ -630,7 +630,7 @@
   "bc_sample_connected_product_family": {
     "matrix_code": "APPAREL_COLOR_SIZE",
     "product": {
-      "business_code": "APP-TSHIRT-001",
+      "businesscode": "APP-TSHIRT-001",
       "names": [
         {"code": "th", "name": "เสื้อยืดคอตตอนพรีเมียม"},
         {"code": "en", "name": "Premium Cotton T-Shirt"}

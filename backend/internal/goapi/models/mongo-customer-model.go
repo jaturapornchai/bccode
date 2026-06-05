@@ -1,12 +1,12 @@
 package models
 
 type ProcessMongoCustomerModel struct {
-	HoldingCode  string                          `json:"holding_code" bson:"holding_code"`
+	HoldingCode  string                          `json:"holdingcode" bson:"holdingcode"`
 	Code         string                          `json:"code" bson:"code"`
-	PersonalType int                             `json:"personal_type" bson:"personal_type"`
+	PersonalType int                             `json:"personaltype" bson:"personaltype"`
 	Names        []ProcessMongoCustomerNameModel `json:"names" bson:"names"`
-	TaxID        string                          `json:"tax_id" bson:"tax_id"`
-	CustomerType int                             `json:"customer_type" bson:"customer_type"`
+	TaxID        string                          `json:"taxid" bson:"taxid"`
+	CustomerType int                             `json:"customertype" bson:"customertype"`
 }
 
 type ProcessMongoCustomerNameModel struct {

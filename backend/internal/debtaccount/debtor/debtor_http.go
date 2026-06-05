@@ -385,7 +385,7 @@ func (h DebtorHttp) SearchDebtorPage(ctx microservice.IContext) error {
 		},
 		{
 			Param: "shopsid",
-			Field: "holding_code",
+			Field: "holdingcode",
 			Type:  requestfilter.FieldTypeString,
 		},
 	})
@@ -434,7 +434,7 @@ func (h DebtorHttp) SearchDebtorStep(ctx microservice.IContext) error {
 		},
 		{
 			Param: "shopsid",
-			Field: "holding_code",
+			Field: "holdingcode",
 			Type:  requestfilter.FieldTypeString,
 		},
 	})

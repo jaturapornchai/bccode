@@ -41,7 +41,7 @@ type BookBankData struct {
 }
 
 type BookBankDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	BookBankData       `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

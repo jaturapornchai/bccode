@@ -32,7 +32,7 @@ type ExchangeRateHistoryData struct {
 }
 
 type ExchangeRateHistoryDoc struct {
-	ID                      primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                      primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	ExchangeRateHistoryData `bson:"inline"`
 	models.ActivityDoc      `bson:"inline"`
 }

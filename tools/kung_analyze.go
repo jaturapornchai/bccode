@@ -16,13 +16,13 @@ type Response struct {
 		ToolsUsed  []struct {
 			Tool   string `json:"tool"`
 			Result any    `json:"result"`
-		} `json:"tools_used"`
+		} `json:"toolsused"`
 	} `json:"data"`
 	TokenUsage struct {
 		Model            string `json:"model"`
-		PromptTokens     int    `json:"prompt_tokens"`
-		CompletionTokens int    `json:"completion_tokens"`
-	} `json:"token_usage"`
+		PromptTokens     int    `json:"prompttokens"`
+		CompletionTokens int    `json:"completiontokens"`
+	} `json:"tokenusage"`
 }
 
 var questions = []string{

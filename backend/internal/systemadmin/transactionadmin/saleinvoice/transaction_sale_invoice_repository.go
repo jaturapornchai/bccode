@@ -35,8 +35,8 @@ func (r SaleInvoiceTransactionAdminRepository) FindSaleInvoiceByHoldingCode(ctx 
 
 	err := r.pst.Find(ctx, &saleInvoiceModels.SaleInvoiceDoc{},
 		bson.M{
-			"holding_code": holdingCode,
-			"deleted_at":   bson.M{"$exists": false},
+			"holdingcode": holdingCode,
+			"deletedat":   bson.M{"$exists": false},
 		},
 		&docList)
 	if err != nil {
@@ -73,8 +73,8 @@ func (r SaleInvoiceTransactionAdminRepository) FindSaleInvoiceDeleteByHoldingCod
 
 	err := r.pst.Find(ctx, &saleInvoiceModels.SaleInvoiceDoc{},
 		bson.M{
-			"holding_code": holdingCode,
-			"deleted_at":   bson.M{"$exists": true},
+			"holdingcode": holdingCode,
+			"deletedat":   bson.M{"$exists": true},
 		},
 		&docList)
 	if err != nil {

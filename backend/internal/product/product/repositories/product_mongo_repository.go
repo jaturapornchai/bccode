@@ -62,9 +62,9 @@ func (repo ProductRepository) FindOneByCode(ctx context.Context, holdingCode str
 	err := repo.pst.FindOne(ctx,
 		models.ProductDoc{},
 		bson.M{
-			"holding_code": holdingCode,
-			"deleted_at":   bson.M{"$exists": false},
-			"code":         code,
+			"holdingcode": holdingCode,
+			"deletedat":   bson.M{"$exists": false},
+			"code":        code,
 		}, &doc)
 
 	if err != nil {

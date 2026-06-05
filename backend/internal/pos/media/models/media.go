@@ -16,13 +16,13 @@ type Media struct {
 }
 
 type MediaResource struct {
-	MediaType   int8            `json:"media_type" bson:"media_type"`
+	MediaType   int8            `json:"mediatype" bson:"mediatype"`
 	Uri         string          `json:"uri" bson:"uri"`
 	DaysOfWeek  []int8          `json:"daysofweek" bson:"daysofweek"`
-	FromDate    string          `json:"from_date" bson:"from_date"`
-	ToDate      string          `json:"to_date" bson:"to_date"`
-	FromTime    string          `json:"from_time" bson:"from_time"`
-	ToTime      string          `json:"to_time" bson:"to_time"`
+	FromDate    string          `json:"fromdate" bson:"fromdate"`
+	ToDate      string          `json:"todate" bson:"todate"`
+	FromTime    string          `json:"fromtime" bson:"fromtime"`
+	ToTime      string          `json:"totime" bson:"totime"`
 	Description *[]models.NameX `json:"description" bson:"description"`
 	DisplayTime int             `json:"displaytime" bson:"displaytime"`
 }
@@ -42,7 +42,7 @@ type MediaData struct {
 }
 
 type MediaDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	MediaData          `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

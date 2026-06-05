@@ -40,8 +40,8 @@ func (repo APPurchaseReceiveTransactionPostgresRepository) Create(doc models.APP
 func (repo APPurchaseReceiveTransactionPostgresRepository) Update(holdingCode string, docNo string, doc models.APPurchaseReceivePG) error {
 
 	err := repo.pst.Update(&doc, map[string]interface{}{
-		"holding_code": holdingCode,
-		"docno":        docNo,
+		"holdingcode": holdingCode,
+		"docno":       docNo,
 	})
 
 	if err != nil {
@@ -55,7 +55,7 @@ func (repo *APPurchaseReceiveTransactionPostgresRepository) DeleteData(holdingCo
 	var details *[]models.APPurchaseReceiveDetailPG
 	tx := repo.pst.DBClient().Begin()
 
-	tx.Model(&models.APPurchaseReceiveDetailPG{}).Where(" holding_code=? AND docno=?", holdingCode, docNo).Find(&details)
+	tx.Model(&models.APPurchaseReceiveDetailPG{}).Where(" holdingcode=? AND docno=?", holdingCode, docNo).Find(&details)
 	for _, tmp := range *details {
 		// mark delete
 		err := tx.Delete(&models.APPurchaseReceiveDetailPG{}, tmp.ID).Error
@@ -66,8 +66,8 @@ func (repo *APPurchaseReceiveTransactionPostgresRepository) DeleteData(holdingCo
 	}
 
 	err := tx.Delete(&models.APPurchaseReceivePG{}, map[string]interface{}{
-		"holding_code": holdingCode,
-		"docno":        docNo,
+		"holdingcode": holdingCode,
+		"docno":       docNo,
 	}).Error
 	if err != nil {
 		tx.Rollback()

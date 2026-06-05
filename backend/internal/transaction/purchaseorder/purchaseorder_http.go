@@ -62,12 +62,12 @@ func getRequestLanguage(ctx microservice.IContext) string {
 
 // sanitizeEmptyTimeFields — แก้ empty string ใน time fields ให้เป็น Go zero time
 // ป้องกัน json.Unmarshal error เมื่อ Flutter/external client ส่ง "" สำหรับ time.Time fields
-// เช่น created_at: "" → created_at: "0001-01-01T00:00:00Z"
+// เช่น createdat: "" → createdat: "0001-01-01T00:00:00Z"
 func sanitizeEmptyTimeFields(input string) string {
 	// time fields ที่เป็น time.Time ใน Go struct แต่ Flutter อาจส่ง ""
 	timeFields := []string{
 		"docdatetime", "docrefdate", "taxdocdate",
-		"created_at", "modified_at",
+		"createdat", "modified_at",
 		"docrefdatetime",
 	}
 	result := input
@@ -113,7 +113,7 @@ func (h PurchaseOrderHttp) CreatePurchaseOrder(ctx microservice.IContext) error 
 	lang := getRequestLanguage(ctx)
 
 	docReq := &models.PurchaseOrder{}
-	// sanitize empty time fields ก่อน unmarshal — ป้องกัน error จาก Flutter ที่ส่ง created_at: "" หรือ modified_at: ""
+	// sanitize empty time fields ก่อน unmarshal — ป้องกัน error จาก Flutter ที่ส่ง createdat: "" หรือ modified_at: ""
 	err := json.Unmarshal([]byte(sanitizeEmptyTimeFields(input)), &docReq)
 
 	if err != nil {
@@ -165,7 +165,7 @@ func (h PurchaseOrderHttp) UpdatePurchaseOrder(ctx microservice.IContext) error 
 	lang := getRequestLanguage(ctx)
 
 	docReq := &models.PurchaseOrder{}
-	// sanitize empty time fields ก่อน unmarshal — ป้องกัน error จาก Flutter ที่ส่ง created_at: "" หรือ modified_at: ""
+	// sanitize empty time fields ก่อน unmarshal — ป้องกัน error จาก Flutter ที่ส่ง createdat: "" หรือ modified_at: ""
 	err := json.Unmarshal([]byte(sanitizeEmptyTimeFields(input)), &docReq)
 
 	if err != nil {

@@ -37,7 +37,7 @@ func ChatAgentV2(c echo.Context) error {
 
 	if req.HoldingCode == "" || req.Question == "" {
 		return c.JSON(http.StatusBadRequest, AgentChatResponse{
-			Success: false, Message: "holding_code and question are required", Timestamp: time.Now(),
+			Success: false, Message: "holdingcode and question are required", Timestamp: time.Now(),
 		})
 	}
 
@@ -112,7 +112,7 @@ func ChatAgentV2Sync(c echo.Context) error {
 
 	if req.HoldingCode == "" || req.Question == "" {
 		return c.JSON(http.StatusBadRequest, AgentChatResponse{
-			Success: false, Message: "holding_code and question are required", Timestamp: time.Now(),
+			Success: false, Message: "holdingcode and question are required", Timestamp: time.Now(),
 		})
 	}
 
@@ -133,7 +133,7 @@ func ChatAgentV2Sync(c echo.Context) error {
 		logger.Error("[น้องกุ้ง-sync] Agent loop failed: %v", err)
 		ocErr := classifyAgentError(err)
 		body := ocErr.AsResponseBody()
-		body["session_key"] = BuildSessionKey(req.HoldingCode, req.SessionID)
+		body["sessionkey"] = BuildSessionKey(req.HoldingCode, req.SessionID)
 		body["timestamp"] = time.Now()
 		return c.JSON(http.StatusInternalServerError, body)
 	}
@@ -145,14 +145,14 @@ func ChatAgentV2Sync(c echo.Context) error {
 // POST /api/v1/chatbot/clear-session
 func ClearChatSession(c echo.Context) error {
 	var req struct {
-		HoldingCode string `json:"holding_code"`
-		SessionID   string `json:"session_id"`
+		HoldingCode string `json:"holdingcode"`
+		SessionID   string `json:"sessionid"`
 	}
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]any{"success": false, "message": err.Error()})
 	}
 	if req.HoldingCode == "" || req.SessionID == "" {
-		return c.JSON(http.StatusBadRequest, map[string]any{"success": false, "message": "holding_code and session_id required"})
+		return c.JSON(http.StatusBadRequest, map[string]any{"success": false, "message": "holdingcode and sessionid required"})
 	}
 
 	if err := clearSession(req.SessionID, req.HoldingCode); err != nil {

@@ -62,7 +62,7 @@ func NewStockTransferRepository(pst microservice.IPersisterMongo) *StockTransfer
 
 func (repo StockTransferRepository) FindDocOne(ctx context.Context, holdingCode, docno string, transFlag int) (models.StockTransferDoc, error) {
 	doc := models.StockTransferDoc{}
-	err := repo.pst.FindOne(ctx, models.StockTransferDoc{}, bson.M{"holding_code": holdingCode, "docno": docno, "transflag": transFlag}, &doc)
+	err := repo.pst.FindOne(ctx, models.StockTransferDoc{}, bson.M{"holdingcode": holdingCode, "docno": docno, "transflag": transFlag}, &doc)
 
 	if err != nil {
 		return doc, err
@@ -73,8 +73,8 @@ func (repo StockTransferRepository) FindDocOne(ctx context.Context, holdingCode,
 
 func (repo StockTransferRepository) FindLastDocNo(ctx context.Context, holdingCode string, prefixDocNo string) (models.StockTransferDoc, error) {
 	filters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at": bson.M{
+		"holdingcode": holdingCode,
+		"deletedat": bson.M{
 			"$exists": false,
 		},
 		"docno": bson.M{

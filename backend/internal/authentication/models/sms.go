@@ -5,12 +5,12 @@ type OTPRequest struct {
 }
 
 type OTPResponse struct {
-	OTPToken string `json:"otptoken"`
+	OTPToken   string `json:"otptoken"`
 	OTPRefCode string `json:"otprefcode"`
 }
 
 type OTPVerifyRequest struct {
-	OTPToken string `json:"otptoken"`
+	OTPToken   string `json:"otptoken"`
 	OTPRefCode string `json:"otprefcode"`
-	OTPPin string `json:"otppin"`
+	OTPPin     string `json:"otppin"`
 }

@@ -10,18 +10,18 @@ const currencyCollectionName = "currency"
 
 // ExchangeRateEntry - รายการอัตราแลกเปลี่ยนแต่ละวัน (embedded ใน Currency)
 type ExchangeRateEntry struct {
-	GuidFixed string  `json:"guid_fixed" bson:"guid_fixed"` // GUID สำหรับอ้างอิง
-	Date      string  `json:"date" bson:"date"`             // YYYY-MM-DD
-	Rate      float64 `json:"rate" bson:"rate"`             // อัตราแลกเปลี่ยนเป็นเงินบาท (1 USD = X THB)
+	GuidFixed string  `json:"guidfixed" bson:"guidfixed"` // GUID สำหรับอ้างอิง
+	Date      string  `json:"date" bson:"date"`           // YYYY-MM-DD
+	Rate      float64 `json:"rate" bson:"rate"`           // อัตราแลกเปลี่ยนเป็นเงินบาท (1 USD = X THB)
 }
 
 // Currency - สกุลเงิน พร้อมประวัติอัตราแลกเปลี่ยน
 type Currency struct {
-	Code          string              `json:"code" bson:"code"`                     // USD, EUR, JPY, etc.
-	Name          string              `json:"name" bson:"name"`                     // US Dollar, Euro, Japanese Yen
-	Symbol        string              `json:"symbol" bson:"symbol"`                 // $, €, ¥
-	IsDisabled    bool                `json:"isdisabled" bson:"isdisabled"`         // สถานะการใช้งาน
-	ExchangeRates []ExchangeRateEntry `json:"exchange_rates" bson:"exchange_rates"` // ประวัติอัตราแลกเปลี่ยน
+	Code          string              `json:"code" bson:"code"`                   // USD, EUR, JPY, etc.
+	Name          string              `json:"name" bson:"name"`                   // US Dollar, Euro, Japanese Yen
+	Symbol        string              `json:"symbol" bson:"symbol"`               // $, €, ¥
+	IsDisabled    bool                `json:"isdisabled" bson:"isdisabled"`       // สถานะการใช้งาน
+	ExchangeRates []ExchangeRateEntry `json:"exchangerates" bson:"exchangerates"` // ประวัติอัตราแลกเปลี่ยน
 }
 
 type CurrencyInfo struct {
@@ -39,7 +39,7 @@ type CurrencyData struct {
 }
 
 type CurrencyDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	CurrencyData       `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

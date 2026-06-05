@@ -19,8 +19,8 @@ const shopAIProviderCollection = "aiProviderConfigs"
 
 // shopProviderDoc — document ใน MongoDB collection aiProviderConfigs
 type shopProviderDoc struct {
-	HoldingCode   string     `bson:"holding_code"`
-	ProviderName  string     `bson:"provider_name"`
+	HoldingCode   string     `bson:"holdingcode"`
+	ProviderName  string     `bson:"providername"`
 	APIKey        string     `bson:"apikey"`
 	BaseURL       string     `bson:"baseurl"`
 	Model         string     `bson:"model"`
@@ -135,7 +135,7 @@ func loadShopProviderDocs(holdingCode string) ([]shopProviderDoc, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	filter := bson.M{"holding_code": holdingCode, "isactive": true}
+	filter := bson.M{"holdingcode": holdingCode, "isactive": true}
 	opts := options.Find().SetSort(bson.D{{Key: "priority", Value: 1}})
 
 	cur, err := col.Find(ctx, filter, opts)
@@ -169,13 +169,13 @@ func updateShopProviderCooldownDB(holdingCode, providerName, errMsg string, cool
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	filter := bson.M{"holding_code": holdingCode, "provider_name": providerName}
+	filter := bson.M{"holdingcode": holdingCode, "provider_name": providerName}
 	update := bson.M{
 		"$set": bson.M{
 			"lasterror":     errMsg,
 			"last_error_at": time.Now(),
 			"cooldownuntil": cooldownUntil,
-			"updated_at":    time.Now(),
+			"updatedat":     time.Now(),
 		},
 	}
 

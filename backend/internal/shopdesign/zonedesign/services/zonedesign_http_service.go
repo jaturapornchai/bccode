@@ -130,7 +130,7 @@ func (svc ZoneDesignService) SearchZoneDesign(holdingCode string, pageable micro
 	defer ctxCancel()
 
 	searchInFields := []string{
-		"guid_fixed",
+		"guidfixed",
 	}
 
 	for i := range [5]bool{} {

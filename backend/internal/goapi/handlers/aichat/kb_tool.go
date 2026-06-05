@@ -10,10 +10,10 @@ package aichat
 // synthesizes the final answer in the Plan/Result/Analysis structure.
 // This avoids double LLM cost and keeps the agent in full control of the answer.
 //
-// Tool name (สำหรับ AI เรียก): query_knowledge_base
+// Tool name (สำหรับ AI เรียก): queryknowledgebase
 // Params:
 //   - query (required, string): คำถามที่จะถาม Knowledge Base
-//   - top_k (optional, number): จำนวน chunks ที่ดึงกลับ (default 8, max 20)
+//   - topk (optional, number): จำนวน chunks ที่ดึงกลับ (default 8, max 20)
 //
 // Configuration:
 //   - RAGFLOW_BASE_URL  (default: http://host.docker.internal:9380)
@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	kbQueryToolName    = "query_knowledge_base"
+	kbQueryToolName    = "queryknowledgebase"
 	kbResponseMaxChars = 8000 // ป้องกัน RAG response ใหญ่เกินจน context พัง
 	kbDefaultTopK      = 8
 	kbMaxTopK          = 20
@@ -42,7 +42,7 @@ const (
 func executeKBQuery(ctx context.Context, holdingCode string, params map[string]any) (any, error) {
 	_ = ctx // ragflow client uses its own timeout
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 
 	// ดึง query จาก params (รองรับชื่อ alias เผื่อ AI สับสน)
@@ -59,9 +59,9 @@ func executeKBQuery(ctx context.Context, holdingCode string, params map[string]a
 		return nil, fmt.Errorf("query is required (string)")
 	}
 
-	// optional top_k
+	// optional topk
 	topK := kbDefaultTopK
-	if v, ok := params["top_k"]; ok {
+	if v, ok := params["topk"]; ok {
 		switch n := v.(type) {
 		case float64:
 			topK = int(n)
@@ -81,7 +81,7 @@ func executeKBQuery(ctx context.Context, holdingCode string, params map[string]a
 		return nil, fmt.Errorf("knowledge base is not configured (RAGFLOW_API_KEY missing) — ขอให้ admin ตั้งค่า RAGFlow API key ก่อนใช้งาน")
 	}
 
-	logger.Info("[KB Tool] query shop=%s len=%d top_k=%d", holdingCode, len(query), topK)
+	logger.Info("[KB Tool] query shop=%s len=%d topk=%d", holdingCode, len(query), topK)
 	start := time.Now()
 
 	datasetID, err := client.EnsureDataset(holdingCode)
@@ -111,8 +111,8 @@ func executeKBQuery(ctx context.Context, holdingCode string, params map[string]a
 		results = append(results, map[string]any{
 			"rank":       i + 1,
 			"content":    content,
-			"doc_id":     ch.DocumentID,
-			"doc_name":   ch.DocumentKeyword,
+			"docid":      ch.DocumentID,
+			"docname":    ch.DocumentKeyword,
 			"similarity": ch.Similarity,
 		})
 		// Stop adding chunks if cumulative content is approaching the cap.
@@ -123,24 +123,24 @@ func executeKBQuery(ctx context.Context, holdingCode string, params map[string]a
 
 	if len(results) == 0 {
 		return map[string]any{
-			"found":          false,
-			"source":         "knowledge_base",
-			"holding_code":   holdingCode,
-			"dataset_id":     datasetID,
-			"original_query": query,
-			"message":        "ไม่พบเอกสารที่เกี่ยวข้องกับคำถามใน Knowledge Base — ลอง upload เอกสารเพิ่ม หรือใช้คำค้นอื่น",
+			"found":         false,
+			"source":        "knowledgebase",
+			"holdingcode":   holdingCode,
+			"datasetid":     datasetID,
+			"originalquery": query,
+			"message":       "ไม่พบเอกสารที่เกี่ยวข้องกับคำถามใน Knowledge Base — ลอง upload เอกสารเพิ่ม หรือใช้คำค้นอื่น",
 		}, nil
 	}
 
 	return map[string]any{
-		"found":          true,
-		"source":         "knowledge_base",
-		"holding_code":   holdingCode,
-		"dataset_id":     datasetID,
-		"original_query": query,
-		"chunk_count":    len(results),
-		"chunks":         results,
-		"took_ms":        tookMs,
+		"found":         true,
+		"source":        "knowledgebase",
+		"holdingcode":   holdingCode,
+		"datasetid":     datasetID,
+		"originalquery": query,
+		"chunkcount":    len(results),
+		"chunks":        results,
+		"tookms":        tookMs,
 	}, nil
 }
 
@@ -298,7 +298,7 @@ func truncateString(s string, maxChars int) string {
 // dispatchAgentTool — ศูนย์กลางเรียก tool ของ agent
 //
 // แยกออกมาเพื่อให้ทั้ง v2 (parallel batch) และ ReAct ใช้ logic เดียวกัน:
-//   - tool พิเศษที่ต้องรู้ holdingCode (เช่น query_knowledge_base) → handle inline
+//   - tool พิเศษที่ต้องรู้ holdingCode (เช่น queryknowledgebase) → handle inline
 //   - tool ปกติ → ส่งต่อไป MCP server
 func dispatchAgentTool(ctx context.Context, mcpExec func(context.Context, string, map[string]any) (any, error),
 	holdingCode, toolName string, params map[string]any) (any, error) {

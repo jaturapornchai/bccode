@@ -28,8 +28,8 @@ func (r *StockAdjustmentTransactionAdminRepository) FindStockAdjustmentDocByHold
 
 	err := r.pst.Find(ctx, &stockadjustmentmodels.StockAdjustmentDoc{},
 		bson.M{
-			"holding_code": holdingCode,
-			"deleted_at":   bson.M{"$exists": false},
+			"holdingcode": holdingCode,
+			"deletedat":   bson.M{"$exists": false},
 		},
 		&docList)
 	if err != nil {
@@ -44,8 +44,8 @@ func (r *StockAdjustmentTransactionAdminRepository) FindStockAdjustmentDocDelete
 
 	err := r.pst.Find(ctx, &stockadjustmentmodels.StockAdjustmentDoc{},
 		bson.M{
-			"holding_code": holdingCode,
-			"deleted_at":   bson.M{"$exists": true},
+			"holdingcode": holdingCode,
+			"deletedat":   bson.M{"$exists": true},
 		},
 		&docList)
 	if err != nil {

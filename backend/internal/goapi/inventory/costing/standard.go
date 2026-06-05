@@ -314,7 +314,7 @@ func (e *StandardEngine) GetCurrentValuation(ctx context.Context, tx *sql.Tx, ho
 func getStandardCost(ctx context.Context, tx *sql.Tx, holdingCode, itemCode string) (float64, error) {
 	var cost float64
 	err := tx.QueryRowContext(ctx,
-		`SELECT COALESCE(standardcost, 0) FROM product_costing_config WHERE holding_code = $1 AND itemcode = $2`,
+		`SELECT COALESCE(standardcost, 0) FROM product_costing_config WHERE holdingcode = $1 AND itemcode = $2`,
 		holdingCode, itemCode,
 	).Scan(&cost)
 	if err == sql.ErrNoRows {
@@ -333,7 +333,7 @@ func getStandardCost(ctx context.Context, tx *sql.Tx, holdingCode, itemCode stri
 func insertVariance(ctx context.Context, tx *sql.Tx, v *inv.InventoryVariance) error {
 	return tx.QueryRowContext(ctx,
 		`INSERT INTO inventory_variances
-		 (holding_code, itemcode, whcode, variancetype, refdoctype, refdocno,
+		 (holdingcode, itemcode, whcode, variancetype, refdoctype, refdocno,
 		  standardcost, actualcost, qty, varianceamount,
 		  transactiondate, accountingperiod, createdat)
 		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,NOW())

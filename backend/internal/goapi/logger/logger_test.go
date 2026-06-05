@@ -58,7 +58,7 @@ func TestLogLevelConfiguration(t *testing.T) {
 
 			// Use InitDebugMode to test environment variable handling
 			InitDebugMode()
-			
+
 			if CurrentLogLevel != tt.expected {
 				t.Errorf("Expected log level %v, got %v", tt.expected, CurrentLogLevel)
 			}
@@ -122,8 +122,8 @@ func TestSetLogLevel(t *testing.T) {
 		{"WARN", WARN},
 		{"ERROR", ERROR},
 		{"FATAL", FATAL},
-		{"debug", DEBUG},    // case insensitive
-		{"Info", INFO},      // case insensitive
+		{"debug", DEBUG}, // case insensitive
+		{"Info", INFO},   // case insensitive
 	}
 
 	for _, tt := range tests {
@@ -146,10 +146,10 @@ func TestSetLogLevelInvalid(t *testing.T) {
 
 	// Set to known level first
 	CurrentLogLevel = INFO
-	
+
 	// Try to set invalid level
 	SetLogLevel("unknown")
-	
+
 	// Should keep current level
 	if CurrentLogLevel != INFO {
 		t.Errorf("SetLogLevel('unknown') should keep current level INFO, got %v", CurrentLogLevel)
@@ -188,7 +188,7 @@ func BenchmarkLoggerDebug(b *testing.B) {
 	b.Run("WithLevelCheck", func(b *testing.B) {
 		CurrentLogLevel = INFO // Lower than DEBUG
 		b.ResetTimer()
-		
+
 		for i := 0; i < b.N; i++ {
 			Debug("Test message %d", i)
 		}
@@ -197,7 +197,7 @@ func BenchmarkLoggerDebug(b *testing.B) {
 	b.Run("WithLevelMatch", func(b *testing.B) {
 		CurrentLogLevel = DEBUG // Same level
 		b.ResetTimer()
-		
+
 		for i := 0; i < b.N; i++ {
 			Debug("Test message %d", i)
 		}
@@ -208,7 +208,7 @@ func BenchmarkLoggerInfo(b *testing.B) {
 	b.Run("WithLevelCheck", func(b *testing.B) {
 		CurrentLogLevel = WARN // Higher than INFO
 		b.ResetTimer()
-		
+
 		for i := 0; i < b.N; i++ {
 			Info("Test message %d", i)
 		}
@@ -217,7 +217,7 @@ func BenchmarkLoggerInfo(b *testing.B) {
 	b.Run("WithLevelMatch", func(b *testing.B) {
 		CurrentLogLevel = INFO // Same level
 		b.ResetTimer()
-		
+
 		for i := 0; i < b.N; i++ {
 			Info("Test message %d", i)
 		}

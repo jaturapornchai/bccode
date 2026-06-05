@@ -60,8 +60,8 @@ func NewChequeReturnRepository(pst microservice.IPersisterMongo) *ChequeReturnRe
 }
 func (repo ChequeReturnRepository) FindLastDocNo(ctx context.Context, holdingCode string, prefixDocNo string) (models.ChequeReturnDoc, error) {
 	filters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at": bson.M{
+		"holdingcode": holdingCode,
+		"deletedat": bson.M{
 			"$exists": false,
 		},
 		"docno": bson.M{

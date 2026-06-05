@@ -16,7 +16,7 @@ import (
 
 const (
 	HeaderAPIKey = "X-API-Key"
-	ContextKey   = "mcp_api_key"
+	ContextKey   = "mcp_apikey"
 )
 
 // AuthMiddleware handles API key validation
@@ -40,14 +40,14 @@ func (am *AuthMiddleware) APIKeyAuth(next echo.HandlerFunc) echo.HandlerFunc {
 		apiKey := c.Request().Header.Get(HeaderAPIKey)
 		if apiKey == "" {
 			// Also check query parameter
-			apiKey = c.QueryParam("api_key")
+			apiKey = c.QueryParam("apikey")
 		}
 
 		if apiKey == "" {
 			return c.JSON(http.StatusUnauthorized, map[string]interface{}{
 				"error":   "API key is required",
 				"code":    "MISSING_API_KEY",
-				"message": "Please provide an API key via X-API-Key header or api_key query parameter",
+				"message": "Please provide an API key via X-API-Key header or apikey query parameter",
 			})
 		}
 
@@ -78,10 +78,10 @@ func (am *AuthMiddleware) APIKeyAuth(next echo.HandlerFunc) echo.HandlerFunc {
 
 		if !allowed {
 			return c.JSON(http.StatusTooManyRequests, map[string]interface{}{
-				"error":       "Rate limit exceeded",
-				"code":        "RATE_LIMIT_EXCEEDED",
-				"message":     fmt.Sprintf("Rate limit of %d requests per minute exceeded", keyData.RateLimitPerMinute),
-				"retry_after": 60,
+				"error":      "Rate limit exceeded",
+				"code":       "RATE_LIMIT_EXCEEDED",
+				"message":    fmt.Sprintf("Rate limit of %d requests per minute exceeded", keyData.RateLimitPerMinute),
+				"retryafter": 60,
 			})
 		}
 

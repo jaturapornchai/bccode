@@ -26,8 +26,8 @@ func NewSearchRepository[T any](pst microservice.IPersisterMongo) SearchReposito
 func (repo SearchRepository[T]) Find(ctx context.Context, holdingCode string, searchInFields []string, q string) ([]T, error) {
 
 	filterQuery := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at":   bson.M{"$exists": false},
+		"holdingcode": holdingCode,
+		"deletedat":   bson.M{"$exists": false},
 	}
 
 	searchFilterQuery := search.CreateTextFilter(searchInFields, q)
@@ -53,8 +53,8 @@ func (repo SearchRepository[T]) Find(ctx context.Context, holdingCode string, se
 func (repo SearchRepository[T]) FindStep(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableStep models.PageableStep) ([]T, int, error) {
 
 	filterQuery := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at":   bson.M{"$exists": false},
+		"holdingcode": holdingCode,
+		"deletedat":   bson.M{"$exists": false},
 	}
 
 	matchFilterList := []interface{}{}
@@ -97,7 +97,7 @@ func (repo SearchRepository[T]) FindStep(ctx context.Context, holdingCode string
 	}
 
 	if len(pageableStep.Sorts) < 1 {
-		tempOptions.SetSort(bson.M{"created_at": -1})
+		tempOptions.SetSort(bson.M{"createdat": -1})
 	}
 
 	docList := []T{}
@@ -119,7 +119,7 @@ func (repo SearchRepository[T]) FindStep(ctx context.Context, holdingCode string
 func (repo SearchRepository[T]) FindStepNoHoldingCode(ctx context.Context, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableStep models.PageableStep) ([]T, int, error) {
 
 	filterQuery := bson.M{
-		"deleted_at": bson.M{"$exists": false},
+		"deletedat": bson.M{"$exists": false},
 	}
 
 	matchFilterList := []interface{}{}
@@ -162,7 +162,7 @@ func (repo SearchRepository[T]) FindStepNoHoldingCode(ctx context.Context, filte
 	}
 
 	if len(pageableStep.Sorts) < 1 {
-		tempOptions.SetSort(bson.M{"created_at": -1})
+		tempOptions.SetSort(bson.M{"createdat": -1})
 	}
 
 	docList := []T{}
@@ -184,8 +184,8 @@ func (repo SearchRepository[T]) FindStepNoHoldingCode(ctx context.Context, filte
 func (repo SearchRepository[T]) FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable models.Pageable) ([]T, mongopagination.PaginationData, error) {
 
 	filterQuery := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at":   bson.M{"$exists": false},
+		"holdingcode": holdingCode,
+		"deletedat":   bson.M{"$exists": false},
 	}
 
 	searchFilterQuery := search.CreateTextFilter(searchInFields, pageable.Query)
@@ -199,7 +199,7 @@ func (repo SearchRepository[T]) FindPage(ctx context.Context, holdingCode string
 	}
 
 	if len(pageable.Sorts) < 1 {
-		pageable.Sorts = append(pageable.Sorts, models.KeyInt{Key: "created_at", Value: 1})
+		pageable.Sorts = append(pageable.Sorts, models.KeyInt{Key: "createdat", Value: 1})
 	}
 
 	docList := []T{}
@@ -225,8 +225,8 @@ func (repo SearchRepository[T]) FindPageFilter(ctx context.Context, holdingCode 
 	// matchFilterList = append(matchFilterList, searchFilterQuery...)
 
 	queryFilters := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at":   bson.M{"$exists": false},
+		"holdingcode": holdingCode,
+		"deletedat":   bson.M{"$exists": false},
 	}
 
 	if len(matchFilterList) > 0 {
@@ -234,7 +234,7 @@ func (repo SearchRepository[T]) FindPageFilter(ctx context.Context, holdingCode 
 	}
 
 	if len(pageable.Sorts) < 1 {
-		pageable.Sorts = append(pageable.Sorts, models.KeyInt{Key: "created_at", Value: 1})
+		pageable.Sorts = append(pageable.Sorts, models.KeyInt{Key: "createdat", Value: 1})
 	}
 
 	if len(searchFilterQuery) > 0 {
@@ -268,7 +268,7 @@ func (repo SearchRepository[T]) FindPageFilterNoHoldingCode(ctx context.Context,
 	// matchFilterList = append(matchFilterList, searchFilterQuery...)
 
 	queryFilters := bson.M{
-		"deleted_at": bson.M{"$exists": false},
+		"deletedat": bson.M{"$exists": false},
 	}
 
 	if len(matchFilterList) > 0 {
@@ -276,7 +276,7 @@ func (repo SearchRepository[T]) FindPageFilterNoHoldingCode(ctx context.Context,
 	}
 
 	if len(pageable.Sorts) < 1 {
-		pageable.Sorts = append(pageable.Sorts, models.KeyInt{Key: "created_at", Value: 1})
+		pageable.Sorts = append(pageable.Sorts, models.KeyInt{Key: "createdat", Value: 1})
 	}
 
 	if len(searchFilterQuery) > 0 {
@@ -301,8 +301,8 @@ func (repo SearchRepository[T]) FindAggregatePage(ctx context.Context, holdingCo
 
 	mainFilter := bson.M{
 		"$match": bson.M{
-			"holding_code": holdingCode,
-			"deleted_at":   bson.M{"$exists": false},
+			"holdingcode": holdingCode,
+			"deletedat":   bson.M{"$exists": false},
 		},
 	}
 

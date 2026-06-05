@@ -178,7 +178,7 @@ func buildFlexibleThaiRegex(token string) string {
 }
 
 // BuildEntityKeywordFilter สร้าง mongo filter สำหรับค้นหา entity (debtor/creditor/customer)
-// ใช้ตัวแปร fieldNames เช่น ["code", "names.name", "tax_id"]
+// ใช้ตัวแปร fieldNames เช่น ["code", "names.name", "taxid"]
 // Logic: tokenize keyword → any token matches any field (OR of OR)
 // สำหรับ token ภาษาไทยล้วน >= 4 runes จะใช้ regex ยืดหยุ่น (space-insensitive)
 func BuildEntityKeywordFilter(keyword string, fieldNames []string) bson.M {

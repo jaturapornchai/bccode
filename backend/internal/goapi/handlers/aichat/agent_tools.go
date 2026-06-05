@@ -33,7 +33,7 @@ var lazyAnswerKeywords = []string{
 }
 
 // nonDataQueryStarters — questions that legitimately don't need a database tool
-// (still need a real answer though — Plan + Result + Analysis from own knowledge or web_search)
+// (still need a real answer though — Plan + Result + Analysis from own knowledge or websearch)
 var nonDataQueryStarters = []string{
 	"สูตร", "วิธีทำ", "ทำยังไง", "ทำอย่างไร", "อะไรคือ", "คืออะไร",
 	"recipe", "how to", "what is", "explain",
@@ -105,22 +105,22 @@ func buildLazyAnswerReminder(question string) string {
 
 	if digitCount == 13 {
 		// taxid
-		hint.WriteString(fmt.Sprintf("```javascript\n// Question is exactly 13 digits = Thai tax ID\nconst id = \"%s\";\nlet r = query_mongo(\"debtors\", {\"tax_id\": id}, 5);\nif (r.length === 0) r = query_mongo(\"creditors\", {\"tax_id\": id}, 5);\nif (r.length === 0) r = query_mongo(\"productBarcodes\", {\"barcode\": id}, 5);\nreturn {found: r.length, items: r};\n```\n\n", q))
+		hint.WriteString(fmt.Sprintf("```javascript\n// Question is exactly 13 digits = Thai tax ID\nconst id = \"%s\";\nlet r = querymongo(\"debtors\", {\"taxid\": id}, 5);\nif (r.length === 0) r = querymongo(\"creditors\", {\"taxid\": id}, 5);\nif (r.length === 0) r = querymongo(\"productbarcodes\", {\"barcode\": id}, 5);\nreturn {found: r.length, items: r};\n```\n\n", q))
 	} else if digitCount >= 8 && digitCount <= 14 {
 		// barcode-ish
-		hint.WriteString(fmt.Sprintf("```javascript\n// %d-digit number = likely a barcode\nconst rows = query_mongo(\"productBarcodes\", {\"barcode\":\"%s\"}, 5);\nreturn rows;\n```\n\n", digitCount, q))
+		hint.WriteString(fmt.Sprintf("```javascript\n// %d-digit number = likely a barcode\nconst rows = querymongo(\"productbarcodes\", {\"barcode\":\"%s\"}, 5);\nreturn rows;\n```\n\n", digitCount, q))
 	} else {
 		// generic name search
-		hint.WriteString("```javascript\n// Search operational data in MongoDB source-of-truth collections\nlet r = query_mongo(\"productBarcodes\", {\"names.name\":{\"$regex\":\"KEYWORD\",\"$options\":\"i\"}}, 5);\nif (r.length === 0) r = query_mongo(\"debtors\", {\"names.name\":{\"$regex\":\"KEYWORD\",\"$options\":\"i\"}}, 5);\nif (r.length === 0) r = query_mongo(\"creditors\", {\"names.name\":{\"$regex\":\"KEYWORD\",\"$options\":\"i\"}}, 5);\nreturn r;\n```\n\n")
+		hint.WriteString("```javascript\n// Search operational data in MongoDB source-of-truth collections\nlet r = querymongo(\"productbarcodes\", {\"names.name\":{\"$regex\":\"KEYWORD\",\"$options\":\"i\"}}, 5);\nif (r.length === 0) r = querymongo(\"debtors\", {\"names.name\":{\"$regex\":\"KEYWORD\",\"$options\":\"i\"}}, 5);\nif (r.length === 0) r = querymongo(\"creditors\", {\"names.name\":{\"$regex\":\"KEYWORD\",\"$options\":\"i\"}}, 5);\nreturn r;\n```\n\n")
 	}
 
-	hint.WriteString("**Rule:** If you still don't call a tool this round, the system will force-retry. Please call `execute_js` or `query_mongodb` **NOW**. Reply in Thai when you have data.")
+	hint.WriteString("**Rule:** If you still don't call a tool this round, the system will force-retry. Please call `executejs` or `querymongodb` **NOW**. Reply in Thai when you have data.")
 	return hint.String()
 }
 
 // truncateToolResultForUI — แปลง tool result เป็น compact preview สำหรับส่งให้ frontend
 //
-// ตัวอย่าง use case: query_pg คืน 100 rows × 50 columns = ~50KB JSON
+// ตัวอย่าง use case: querypg คืน 100 rows × 50 columns = ~50KB JSON
 // frontend ไม่ต้องการข้อมูลทั้งหมด แค่ preview ก่อน — ถ้าผู้ใช้อยากดูเต็มก็ไปดู log
 //
 // ขั้นตอน:
@@ -189,29 +189,29 @@ var (
 // agentToolNames — whitelist ของ tools ที่ agent ใช้ได้ (readonly business tools เท่านั้น)
 //
 // 2026-04-07 ลด tools จาก 27 → 8 ตัว เพื่อลด payload + ป้องกัน 503 timeout จาก upstream
-// AI ใช้ execute_js เขียน JS ที่ query ข้อมูลเองได้ — ไม่ต้องมี wrapper เยอะๆ
+// AI ใช้ executejs เขียน JS ที่ query ข้อมูลเองได้ — ไม่ต้องมี wrapper เยอะๆ
 //
 // ที่เก็บไว้:
-//   - execute_js — เครื่องมือหลัก (AI เขียน script + query เอง)
-//   - query_postgresql/query_mongodb/query_clickhouse — ใช้ตรงเมื่อ query สั้นๆ ไม่ต้องเขียน script
-//   - list_mongodb_collections/list_clickhouse_tables — สำรวจ schema
-//   - aggregate_mongodb — pipeline ที่ JS เขียนยาก
-//   - web_search — ข้อมูลภายนอก
+//   - executejs — เครื่องมือหลัก (AI เขียน script + query เอง)
+//   - querypostgresql/querymongodb/queryclickhouse — ใช้ตรงเมื่อ query สั้นๆ ไม่ต้องเขียน script
+//   - listmongodbcollections/listclickhousetables — สำรวจ schema
+//   - aggregatemongodb — pipeline ที่ JS เขียนยาก
+//   - websearch — ข้อมูลภายนอก
 var agentToolNames = map[string]bool{
 	// Code interpreters — AI เขียน + ทดสอบ + รัน เอง
 	// Python เป็น primary (LLM เขียน Python เก่งสุด), JS เป็น fallback
-	"execute_python": true,
-	"execute_js":     true,
+	"executepython": true,
+	"executejs":     true,
 	// Database query tools (readonly — สำหรับ query สั้นๆ)
-	"query_postgresql":         true,
-	"query_mongodb":            true,
-	"query_clickhouse":         true,
-	"aggregate_mongodb":        true,
-	"list_mongodb_collections": true,
-	"list_clickhouse_tables":   true,
+	"querypostgresql":        true,
+	"querymongodb":           true,
+	"queryclickhouse":        true,
+	"aggregatemongodb":       true,
+	"listmongodbcollections": true,
+	"listclickhousetables":   true,
 	// External
-	"web_search":           true,
-	"query_knowledge_base": true,
+	"websearch":          true,
+	"queryknowledgebase": true,
 }
 
 // IsAgentTool ตรวจว่า tool อยู่ใน whitelist หรือไม่
@@ -246,8 +246,8 @@ func dedupeCitations(in []Citation) []Citation {
 }
 
 // extractCitationsFromTool ดึง citations ออกจากผลลัพธ์ของ tool
-//   - web_search → citation type="web" (label=title, url=URL)
-//   - query_knowledge_base → citation type="kb" (label=doc_name, text=content)
+//   - websearch → citation type="web" (label=title, url=URL)
+//   - queryknowledgebase → citation type="kb" (label=docname, text=content)
 func extractCitationsFromTool(toolName string, result any) []Citation {
 	if result == nil {
 		return nil
@@ -257,7 +257,7 @@ func extractCitationsFromTool(toolName string, result any) []Citation {
 		return nil
 	}
 	switch toolName {
-	case "web_search":
+	case "websearch":
 		// Expected shape: {"results": [{"title","url","snippet"}, ...]}
 		raw, ok := m["results"].([]any)
 		if !ok {
@@ -280,8 +280,8 @@ func extractCitationsFromTool(toolName string, result any) []Citation {
 			out = append(out, Citation{Type: "web", Label: title, URL: url})
 		}
 		return out
-	case "query_knowledge_base":
-		// Expected shape: {"results": [{"doc_id","doc_name","content"}, ...]}
+	case "queryknowledgebase":
+		// Expected shape: {"results": [{"docid","docname","content"}, ...]}
 		raw, ok := m["results"].([]any)
 		if !ok {
 			return nil
@@ -293,8 +293,8 @@ func extractCitationsFromTool(toolName string, result any) []Citation {
 			if !ok {
 				continue
 			}
-			docID, _ := r["doc_id"].(string)
-			docName, _ := r["doc_name"].(string)
+			docID, _ := r["docid"].(string)
+			docName, _ := r["docname"].(string)
 			content, _ := r["content"].(string)
 			if docName == "" && docID == "" {
 				continue
@@ -314,9 +314,9 @@ func extractCitationsFromTool(toolName string, result any) []Citation {
 // filterAgentTools กรอง tools ตาม search flags ของ request
 // nil flag = default true = เปิดใช้งาน (OpenClaw / clients ที่ไม่ส่ง flag ค้นหาทั้งหมด)
 var dbToolNames = map[string]bool{
-	"execute_python": true, "execute_js": true,
-	"query_postgresql": true, "query_mongodb": true, "query_clickhouse": true,
-	"aggregate_mongodb": true, "list_mongodb_collections": true, "list_clickhouse_tables": true,
+	"executepython": true, "executejs": true,
+	"querypostgresql": true, "querymongodb": true, "queryclickhouse": true,
+	"aggregatemongodb": true, "listmongodbcollections": true, "listclickhousetables": true,
 }
 
 func filterAgentTools(all []aiprovider.OAITool, req AgentV2Request) []aiprovider.OAITool {
@@ -333,10 +333,10 @@ func filterAgentTools(all []aiprovider.OAITool, req AgentV2Request) []aiprovider
 		if !useDB && dbToolNames[name] {
 			continue
 		}
-		if !useKB && name == "query_knowledge_base" {
+		if !useKB && name == "queryknowledgebase" {
 			continue
 		}
-		if !useWeb && name == "web_search" {
+		if !useWeb && name == "websearch" {
 			continue
 		}
 		out = append(out, t)
@@ -362,14 +362,14 @@ func buildAgentToolDefs() []aiprovider.OAITool {
 		{
 			Type: "function",
 			Function: aiprovider.OAIFunction{
-				Name:        "query_mongodb",
+				Name:        "querymongodb",
 				Description: "ค้นหาข้อมูลใน MongoDB ด้วย filter (readonly) — ใช้เมื่อ tools สำเร็จรูปไม่มีข้อมูลที่ต้องการ",
 				Parameters: map[string]interface{}{
 					"type": "object",
 					"properties": map[string]interface{}{
 						"collection": map[string]interface{}{
 							"type":        "string",
-							"description": "ชื่อ collection เช่น productBarcodes, debtors, creditors, transactionSaleInvoice",
+							"description": "ชื่อ collection เช่น productbarcodes, debtors, creditors, transactionSaleInvoice",
 						},
 						"filter": map[string]interface{}{
 							"type":        "string",
@@ -388,7 +388,7 @@ func buildAgentToolDefs() []aiprovider.OAITool {
 		{
 			Type: "function",
 			Function: aiprovider.OAIFunction{
-				Name:        "aggregate_mongodb",
+				Name:        "aggregatemongodb",
 				Description: "รัน MongoDB aggregation pipeline (readonly) — สำหรับวิเคราะห์ข้อมูลซับซ้อน group/sum/count/avg",
 				Parameters: map[string]interface{}{
 					"type": "object",
@@ -414,7 +414,7 @@ func buildAgentToolDefs() []aiprovider.OAITool {
 		{
 			Type: "function",
 			Function: aiprovider.OAIFunction{
-				Name:        "list_mongodb_collections",
+				Name:        "listmongodbcollections",
 				Description: "แสดงรายชื่อ collections ทั้งหมดใน MongoDB database",
 				Parameters: map[string]interface{}{
 					"type":       "object",
@@ -426,7 +426,7 @@ func buildAgentToolDefs() []aiprovider.OAITool {
 		{
 			Type: "function",
 			Function: aiprovider.OAIFunction{
-				Name:        "query_clickhouse",
+				Name:        "queryclickhouse",
 				Description: "รัน SQL query บน ClickHouse (readonly SELECT เท่านั้น) — สำหรับ BI/analytics/reporting ข้อมูลขนาดใหญ่",
 				Parameters: map[string]interface{}{
 					"type": "object",
@@ -448,7 +448,7 @@ func buildAgentToolDefs() []aiprovider.OAITool {
 		{
 			Type: "function",
 			Function: aiprovider.OAIFunction{
-				Name:        "list_clickhouse_tables",
+				Name:        "listclickhousetables",
 				Description: "แสดงรายชื่อ tables ทั้งหมดใน ClickHouse database",
 				Parameters: map[string]interface{}{
 					"type":       "object",
@@ -460,7 +460,7 @@ func buildAgentToolDefs() []aiprovider.OAITool {
 		{
 			Type: "function",
 			Function: aiprovider.OAIFunction{
-				Name:        "query_postgresql",
+				Name:        "querypostgresql",
 				Description: "รัน SQL query บน PostgreSQL (readonly SELECT เท่านั้น) — สำหรับ relational processing/projection results เช่น postings, balances, tax/VAT, AR/AP, GL ไม่ใช่ CRUD source",
 				Parameters: map[string]interface{}{
 					"type": "object",
@@ -483,21 +483,21 @@ func buildAgentToolDefs() []aiprovider.OAITool {
 		{
 			Type: "function",
 			Function: aiprovider.OAIFunction{
-				Name: "execute_python",
+				Name: "executepython",
 				Description: "**PREFERRED TOOL for data queries and analysis.** Run Python 3 in a readonly sandbox. " +
 					"Write idiomatic Python — list comprehensions, dicts, f-strings, loops — exactly as you would in a Jupyter notebook. " +
-					"Sandbox helpers (already imported): query_mongo(collection, filter=None, limit=200) for MongoDB operational data, query_pg(sql, limit=200) for PostgreSQL relational projections, " +
-					"query_ch(sql, limit=200), log(*args). " +
-					"**Assign your final answer to the variable `__result__`** (no `return` at top level — this runs as a script, not a function). " +
-					"Example: `rows = query_mongo(\"productBarcodes\", {\"names.name\":{\"$regex\":\"coffee\",\"$options\":\"i\"}}, 10); " +
-					"__result__ = {\"count\": len(rows), \"items\": rows}`. " +
+					"Sandbox helpers (already imported): querymongo(collection, filter=None, limit=200) for MongoDB operational data, querypg(sql, limit=200) for PostgreSQL relational projections, " +
+					"querych(sql, limit=200), log(*args). " +
+					"**Assign your final answer to the variable `resultvalue`** (no `return` at top level — this runs as a script, not a function). " +
+					"Example: `rows = querymongo(\"productbarcodes\", {\"names.name\":{\"$regex\":\"coffee\",\"$options\":\"i\"}}, 10); " +
+					"resultvalue = {\"count\": len(rows), \"items\": rows}`. " +
 					"Use try/except to handle query errors and fall back to other searches. Timeout: 30s.",
 				Parameters: map[string]interface{}{
 					"type": "object",
 					"properties": map[string]interface{}{
 						"code": map[string]interface{}{
 							"type":        "string",
-							"description": "Python 3 code. Must assign final answer to __result__. No INSERT/UPDATE/DELETE/DROP. No network / file I/O. Timeout 30s.",
+							"description": "Python 3 code. Must assign final answer to resultvalue. No INSERT/UPDATE/DELETE/DROP. No network / file I/O. Timeout 30s.",
 						},
 					},
 					"required": []string{"code"},
@@ -508,10 +508,10 @@ func buildAgentToolDefs() []aiprovider.OAITool {
 		{
 			Type: "function",
 			Function: aiprovider.OAIFunction{
-				Name: "execute_js",
-				Description: "Fallback JavaScript sandbox (use execute_python instead when possible — Python is preferred). " +
-					"Readonly Goja sandbox. Helpers: query_mongo(collection, filter?, limit?) for MongoDB operational data, query_pg(sql, limit?) for PostgreSQL relational projections, " +
-					"query_ch(sql, limit?), log(...). Script must `return` a value. Timeout 30s.",
+				Name: "executejs",
+				Description: "Fallback JavaScript sandbox (use executepython instead when possible — Python is preferred). " +
+					"Readonly Goja sandbox. Helpers: querymongo(collection, filter?, limit?) for MongoDB operational data, querypg(sql, limit?) for PostgreSQL relational projections, " +
+					"querych(sql, limit?), log(...). Script must `return` a value. Timeout 30s.",
 				Parameters: map[string]interface{}{
 					"type": "object",
 					"properties": map[string]interface{}{
@@ -528,8 +528,8 @@ func buildAgentToolDefs() []aiprovider.OAITool {
 		{
 			Type: "function",
 			Function: aiprovider.OAIFunction{
-				Name:        "query_knowledge_base",
-				Description: "Search the shop's Knowledge Base — internal documents the shop has uploaded itself (PDF/Word/Excel/Markdown/Text) via RAG retrieval. This is the shop's own private library: handbooks, policies, manuals, contracts, internal FAQs, uploaded reports. CALL THIS TOOL whenever the user's question is plausibly answered by something the shop wrote down for itself — anything shop-specific that is NOT raw transactional data (products/sales/customers) and NOT general world knowledge. If you find yourself about to answer a shop-specific factual question (a number, a procedure, a contact, a rule) from your training data, you MUST call this tool first instead. Returning 'not found' from this tool is a valid and useful answer; fabricating an answer is not. holding_code is set automatically — pass query as a natural language question (Thai or English).",
+				Name:        "queryknowledgebase",
+				Description: "Search the shop's Knowledge Base — internal documents the shop has uploaded itself (PDF/Word/Excel/Markdown/Text) via RAG retrieval. This is the shop's own private library: handbooks, policies, manuals, contracts, internal FAQs, uploaded reports. CALL THIS TOOL whenever the user's question is plausibly answered by something the shop wrote down for itself — anything shop-specific that is NOT raw transactional data (products/sales/customers) and NOT general world knowledge. If you find yourself about to answer a shop-specific factual question (a number, a procedure, a contact, a rule) from your training data, you MUST call this tool first instead. Returning 'not found' from this tool is a valid and useful answer; fabricating an answer is not. holdingcode is set automatically — pass query as a natural language question (Thai or English).",
 				Parameters: map[string]interface{}{
 					"type": "object",
 					"properties": map[string]interface{}{
@@ -546,7 +546,7 @@ func buildAgentToolDefs() []aiprovider.OAITool {
 		{
 			Type: "function",
 			Function: aiprovider.OAIFunction{
-				Name:        "web_search",
+				Name:        "websearch",
 				Description: "ค้นหาข้อมูลจาก internet เมื่อต้องการข้อมูลภายนอก เช่น อัตราภาษี กฎหมาย ข้อมูลตลาด เทรนด์ ราคาวัตถุดิบ",
 				Parameters: map[string]interface{}{
 					"type": "object",

@@ -30,16 +30,16 @@ type UnitNameEntry struct {
 
 // UnitDocument เอกสารหน่วยนับใน MongoDB
 type UnitDocument struct {
-	ID          primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	HoldingCode string             `json:"holding_code" bson:"holding_code"`
-	GuidFixed   string             `json:"guid_fixed" bson:"guid_fixed"`
+	ID          primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	HoldingCode string             `json:"holdingcode" bson:"holdingcode"`
+	GuidFixed   string             `json:"guidfixed" bson:"guidfixed"`
 	UnitCode    string             `json:"unitcode" bson:"unitcode"`
 	Names       []UnitNameEntry    `json:"names" bson:"names"`
 	CreatedBy   string             `json:"createdby" bson:"createdby"`
-	CreatedAt   time.Time          `json:"created_at" bson:"created_at"`
+	CreatedAt   time.Time          `json:"createdat" bson:"createdat"`
 	UpdatedBy   string             `json:"updatedby,omitempty" bson:"updatedby,omitempty"`
-	UpdatedAt   time.Time          `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
-	DeletedAt   time.Time          `json:"deleted_at,omitempty" bson:"deleted_at,omitempty"`
+	UpdatedAt   time.Time          `json:"updatedat,omitempty" bson:"updatedat,omitempty"`
+	DeletedAt   time.Time          `json:"deletedat,omitempty" bson:"deletedat,omitempty"`
 }
 
 // ==================== List Units ====================
@@ -49,13 +49,13 @@ type ListUnitsResponse struct {
 	Units       []UnitDocument `json:"units"`
 	Count       int            `json:"count"`
 	Keyword     string         `json:"keyword,omitempty"`
-	GeneratedAt time.Time      `json:"generated_at"`
+	GeneratedAt time.Time      `json:"generatedat"`
 }
 
 // ListUnits ดึง/ค้นหาหน่วยนับ
 func ListUnits(ctx context.Context, holdingCode, keyword string, limit int) (*ListUnitsResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 
 	if limit <= 0 {
@@ -75,10 +75,10 @@ func ListUnits(ctx context.Context, holdingCode, keyword string, limit int) (*Li
 
 	// สร้าง filter
 	filter := bson.M{
-		"holding_code": holdingCode,
+		"holdingcode": holdingCode,
 		"$or": []bson.M{
-			{"deleted_at": bson.M{"$exists": false}},
-			{"deleted_at": time.Time{}},
+			{"deletedat": bson.M{"$exists": false}},
+			{"deletedat": time.Time{}},
 		},
 	}
 
@@ -130,16 +130,16 @@ type CreateUnitResponse struct {
 	Success     bool         `json:"success"`
 	Message     string       `json:"message"`
 	Unit        UnitDocument `json:"unit"`
-	KafkaSync   string       `json:"kafka_sync"`
-	KafkaError  string       `json:"kafka_error,omitempty"`
-	GeneratedAt time.Time    `json:"generated_at"`
+	KafkaSync   string       `json:"kafkasync"`
+	KafkaError  string       `json:"kafkaerror,omitempty"`
+	GeneratedAt time.Time    `json:"generatedat"`
 }
 
 // CreateUnit สร้างหน่วยนับใหม่
 // ใช้ names[] เป็นชื่อแสดงผล
 func CreateUnit(ctx context.Context, holdingCode, unitCode, namesJSON string) (*CreateUnitResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 	if unitCode == "" {
 		return nil, fmt.Errorf("unitcode is required")
@@ -156,11 +156,11 @@ func CreateUnit(ctx context.Context, holdingCode, unitCode, namesJSON string) (*
 
 	// ตรวจสอบ unitcode ซ้ำ
 	existFilter := bson.M{
-		"holding_code": holdingCode,
-		"unitcode":     unitCode,
+		"holdingcode": holdingCode,
+		"unitcode":    unitCode,
 		"$or": []bson.M{
-			{"deleted_at": bson.M{"$exists": false}},
-			{"deleted_at": time.Time{}},
+			{"deletedat": bson.M{"$exists": false}},
+			{"deletedat": time.Time{}},
 		},
 	}
 	count, err := coll.CountDocuments(ctx, existFilter)
@@ -237,17 +237,17 @@ type CreateUnitsResponse struct {
 	Message      string         `json:"message"`
 	Created      []UnitDocument `json:"created"`
 	Skipped      []string       `json:"skipped,omitempty"`
-	CreatedCount int            `json:"created_count"`
-	SkippedCount int            `json:"skipped_count"`
-	KafkaSync    string         `json:"kafka_sync"`
-	KafkaError   string         `json:"kafka_error,omitempty"`
-	GeneratedAt  time.Time      `json:"generated_at"`
+	CreatedCount int            `json:"createdcount"`
+	SkippedCount int            `json:"skippedcount"`
+	KafkaSync    string         `json:"kafkasync"`
+	KafkaError   string         `json:"kafkaerror,omitempty"`
+	GeneratedAt  time.Time      `json:"generatedat"`
 }
 
 // CreateUnits สร้างหน่วยนับหลายรายการพร้อมกัน
 func CreateUnits(ctx context.Context, holdingCode, unitsJSON string) (*CreateUnitsResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 	if unitsJSON == "" {
 		return nil, fmt.Errorf("units JSON is required")
@@ -280,11 +280,11 @@ func CreateUnits(ctx context.Context, holdingCode, unitsJSON string) (*CreateUni
 	}
 
 	existFilter := bson.M{
-		"holding_code": holdingCode,
-		"unitcode":     bson.M{"$in": unitCodes},
+		"holdingcode": holdingCode,
+		"unitcode":    bson.M{"$in": unitCodes},
 		"$or": []bson.M{
-			{"deleted_at": bson.M{"$exists": false}},
-			{"deleted_at": time.Time{}},
+			{"deletedat": bson.M{"$exists": false}},
+			{"deletedat": time.Time{}},
 		},
 	}
 	cursor, err := coll.Find(ctx, existFilter)
@@ -377,15 +377,15 @@ type UpdateUnitResponse struct {
 	Success     bool         `json:"success"`
 	Message     string       `json:"message"`
 	Unit        UnitDocument `json:"unit"`
-	KafkaSync   string       `json:"kafka_sync"`
-	KafkaError  string       `json:"kafka_error,omitempty"`
-	GeneratedAt time.Time    `json:"generated_at"`
+	KafkaSync   string       `json:"kafkasync"`
+	KafkaError  string       `json:"kafkaerror,omitempty"`
+	GeneratedAt time.Time    `json:"generatedat"`
 }
 
 // UpdateUnit อัปเดตหน่วยนับตาม unitcode
 func UpdateUnit(ctx context.Context, holdingCode, unitCode, namesJSON string) (*UpdateUnitResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 	if unitCode == "" {
 		return nil, fmt.Errorf("unitcode is required")
@@ -402,11 +402,11 @@ func UpdateUnit(ctx context.Context, holdingCode, unitCode, namesJSON string) (*
 
 	// ค้นหา unit ที่ต้องการอัปเดต
 	filter := bson.M{
-		"holding_code": holdingCode,
-		"unitcode":     unitCode,
+		"holdingcode": holdingCode,
+		"unitcode":    unitCode,
 		"$or": []bson.M{
-			{"deleted_at": bson.M{"$exists": false}},
-			{"deleted_at": time.Time{}},
+			{"deletedat": bson.M{"$exists": false}},
+			{"deletedat": time.Time{}},
 		},
 	}
 
@@ -418,8 +418,8 @@ func UpdateUnit(ctx context.Context, holdingCode, unitCode, namesJSON string) (*
 
 	// สร้าง update fields
 	updateFields := bson.M{
-		"updated_at": time.Now(),
-		"updatedby":  "mcp-tool",
+		"updatedat": time.Now(),
+		"updatedby": "mcp-tool",
 	}
 	if namesJSON != "" {
 		var names []UnitNameEntry
@@ -466,15 +466,15 @@ type DeleteUnitResponse struct {
 	Success     bool      `json:"success"`
 	Message     string    `json:"message"`
 	UnitCode    string    `json:"unitcode"`
-	KafkaSync   string    `json:"kafka_sync"`
-	KafkaError  string    `json:"kafka_error,omitempty"`
-	GeneratedAt time.Time `json:"generated_at"`
+	KafkaSync   string    `json:"kafkasync"`
+	KafkaError  string    `json:"kafkaerror,omitempty"`
+	GeneratedAt time.Time `json:"generatedat"`
 }
 
 // DeleteUnit ลบหน่วยนับตาม unitcode
 func DeleteUnit(ctx context.Context, holdingCode, unitCode string) (*DeleteUnitResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 	if unitCode == "" {
 		return nil, fmt.Errorf("unitcode is required")
@@ -490,8 +490,8 @@ func DeleteUnit(ctx context.Context, holdingCode, unitCode string) (*DeleteUnitR
 	coll := mongoClient.Database(dbName).Collection(unitCollection)
 
 	filter := bson.M{
-		"holding_code": holdingCode,
-		"unitcode":     unitCode,
+		"holdingcode": holdingCode,
+		"unitcode":    unitCode,
 	}
 
 	// ดึง document ก่อนลบ เพื่อส่ง Kafka event
@@ -539,18 +539,18 @@ type DeleteUnitsResponse struct {
 	Success       bool      `json:"success"`
 	Message       string    `json:"message"`
 	Deleted       []string  `json:"deleted"`
-	NotFound      []string  `json:"not_found,omitempty"`
-	DeletedCount  int       `json:"deleted_count"`
-	NotFoundCount int       `json:"not_found_count"`
-	KafkaSync     string    `json:"kafka_sync"`
-	KafkaError    string    `json:"kafka_error,omitempty"`
-	GeneratedAt   time.Time `json:"generated_at"`
+	NotFound      []string  `json:"notfound,omitempty"`
+	DeletedCount  int       `json:"deletedcount"`
+	NotFoundCount int       `json:"notfoundcount"`
+	KafkaSync     string    `json:"kafkasync"`
+	KafkaError    string    `json:"kafkaerror,omitempty"`
+	GeneratedAt   time.Time `json:"generatedat"`
 }
 
 // DeleteUnits ลบหน่วยนับหลายรายการพร้อมกัน
 func DeleteUnits(ctx context.Context, holdingCode, unitcodesJSON string) (*DeleteUnitsResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 	if unitcodesJSON == "" {
 		return nil, fmt.Errorf("unitcodes is required")
@@ -578,8 +578,8 @@ func DeleteUnits(ctx context.Context, holdingCode, unitcodesJSON string) (*Delet
 
 	// ค้นหา unitcodes ที่มีอยู่จริง
 	existFilter := bson.M{
-		"holding_code": holdingCode,
-		"unitcode":     bson.M{"$in": unitCodes},
+		"holdingcode": holdingCode,
+		"unitcode":    bson.M{"$in": unitCodes},
 	}
 	cursor, err := coll.Find(ctx, existFilter, options.Find().SetProjection(bson.M{"unitcode": 1}))
 	if err != nil {
@@ -613,8 +613,8 @@ func DeleteUnits(ctx context.Context, holdingCode, unitcodesJSON string) (*Delet
 	var docsToDelete []interface{}
 	if len(deleted) > 0 {
 		delCursor, _ := coll.Find(ctx, bson.M{
-			"holding_code": holdingCode,
-			"unitcode":     bson.M{"$in": deleted},
+			"holdingcode": holdingCode,
+			"unitcode":    bson.M{"$in": deleted},
 		})
 		if delCursor != nil {
 			var docs []UnitDocument
@@ -629,8 +629,8 @@ func DeleteUnits(ctx context.Context, holdingCode, unitcodesJSON string) (*Delet
 	// ลบทั้งหมดที่มีอยู่ด้วย DeleteMany
 	if len(deleted) > 0 {
 		deleteFilter := bson.M{
-			"holding_code": holdingCode,
-			"unitcode":     bson.M{"$in": deleted},
+			"holdingcode": holdingCode,
+			"unitcode":    bson.M{"$in": deleted},
 		}
 		_, err = coll.DeleteMany(ctx, deleteFilter)
 		if err != nil {
@@ -671,20 +671,20 @@ func GetUnitSchema() map[string]interface{} {
 		"collection":  unitCollection,
 		"description": "หน่วยนับ (Unit of Measure) — ใช้กำหนดหน่วยของสินค้า เช่น ชิ้น, กล่อง, กิโลกรัม",
 		"fields": map[string]interface{}{
-			"_id":          "ObjectID — MongoDB auto-generated ID",
-			"holding_code": "string — Holding Code (tenant isolation)",
-			"guid_fixed":   "string — UUID สำหรับอ้างอิงภายใน",
-			"unitcode":     "string (required, max 100) — รหัสหน่วยนับ เช่น EA, BOX, KG, PACK",
-			"names":        "array (required) — ชื่อหลายภาษา [{code:'th', name:'ชิ้น'}, {code:'en', name:'Each'}]",
-			"createdby":    "string — ผู้สร้าง",
-			"created_at":   "datetime — วันที่สร้าง",
-			"updatedby":    "string — ผู้แก้ไขล่าสุด",
-			"updated_at":   "datetime — วันที่แก้ไขล่าสุด",
-			"deleted_at":   "datetime — วันที่ลบ (soft delete)",
+			"_id":         "ObjectID — MongoDB auto-generated ID",
+			"holdingcode": "string — Holding Code (tenant isolation)",
+			"guidfixed":   "string — UUID สำหรับอ้างอิงภายใน",
+			"unitcode":    "string (required, max 100) — รหัสหน่วยนับ เช่น EA, BOX, KG, PACK",
+			"names":       "array (required) — ชื่อหลายภาษา [{code:'th', name:'ชิ้น'}, {code:'en', name:'Each'}]",
+			"createdby":   "string — ผู้สร้าง",
+			"createdat":   "datetime — วันที่สร้าง",
+			"updatedby":   "string — ผู้แก้ไขล่าสุด",
+			"updatedat":   "datetime — วันที่แก้ไขล่าสุด",
+			"deletedat":   "datetime — วันที่ลบ (soft delete)",
 		},
 		"indexes": []string{
-			"holding_code + unitcode (unique per shop)",
-			"holding_code + guidfixed",
+			"holdingcode + unitcode (unique per shop)",
+			"holdingcode + guidfixed",
 		},
 		"examples": []map[string]interface{}{
 			{
@@ -700,7 +700,7 @@ func GetUnitSchema() map[string]interface{} {
 				"names":    []map[string]string{{"code": "th", "name": "กิโลกรัม"}, {"code": "en", "name": "Kilogram"}},
 			},
 		},
-		"related_collections": []string{
+		"relatedcollections": []string{
 			"productbarcodes — ใช้ itemunitcode อ้างอิง unitcode",
 		},
 	}

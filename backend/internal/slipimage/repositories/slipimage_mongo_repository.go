@@ -62,9 +62,9 @@ func NewSlipImageMongoRepository(pst microservice.IPersisterMongo) *SlipImageMon
 func (repo SlipImageMongoRepository) FindByDocNo(ctx context.Context, holdingCode string, mode uint8, docNo string) ([]models.SlipImageInfo, error) {
 
 	filter := bson.M{
-		"holding_code": holdingCode,
-		"mode":         mode,
-		"docno":        docNo,
+		"holdingcode": holdingCode,
+		"mode":        mode,
+		"docno":       docNo,
 	}
 
 	var docs []models.SlipImageInfo

@@ -19,9 +19,9 @@ type APIEndpoint struct {
 	Description  string          `json:"description"`
 	Category     string          `json:"category"`
 	Source       string          `json:"source"` // "goapi" or "mainapi"
-	AuthRequired bool            `json:"auth_required"`
+	AuthRequired bool            `json:"authrequired"`
 	Parameters   []APIParam      `json:"parameters,omitempty"`
-	RequestBody  *APIRequestBody `json:"request_body,omitempty"`
+	RequestBody  *APIRequestBody `json:"requestbody,omitempty"`
 	Response     *APIResponse    `json:"response,omitempty"`
 }
 
@@ -34,18 +34,18 @@ type APIParam struct {
 }
 
 type APIRequestBody struct {
-	ContentType string                 `json:"content_type"`
+	ContentType string                 `json:"contenttype"`
 	Schema      map[string]interface{} `json:"schema,omitempty"`
 	Fields      []SchemaField          `json:"fields,omitempty"`
-	ModelName   string                 `json:"model_name,omitempty"`
+	ModelName   string                 `json:"modelname,omitempty"`
 	Example     map[string]interface{} `json:"example,omitempty"`
 }
 
 type APIResponse struct {
-	ContentType string                 `json:"content_type"`
+	ContentType string                 `json:"contenttype"`
 	Schema      map[string]interface{} `json:"schema,omitempty"`
 	Fields      []SchemaField          `json:"fields,omitempty"`
-	ModelName   string                 `json:"model_name,omitempty"`
+	ModelName   string                 `json:"modelname,omitempty"`
 	Example     map[string]interface{} `json:"example,omitempty"`
 }
 
@@ -67,10 +67,10 @@ type APICatalogRequest struct {
 
 type APICatalogResponse struct {
 	Endpoints     []APIEndpoint `json:"endpoints"`
-	TotalCount    int           `json:"total_count"`
-	FilteredCount int           `json:"filtered_count"`
+	TotalCount    int           `json:"totalcount"`
+	FilteredCount int           `json:"filteredcount"`
 	Categories    []string      `json:"categories"`
-	GeneratedAt   time.Time     `json:"generated_at"`
+	GeneratedAt   time.Time     `json:"generatedat"`
 }
 
 // ==================== Swagger Parsing Structs ====================
@@ -432,14 +432,14 @@ func getDescriptionOverride(method, path string) (string, bool) {
 		"POST /login/phonenumber": "Login with phone number/password",
 		"POST /login/line":        "Login with LINE access token",
 		"POST /login/google":      "Login with Google account",
-		"POST /login/pos":         "POS machine login (holding_code + username)",
+		"POST /login/pos":         "POS machine login (holdingcode + username)",
 		"POST /register":          "Register new user account",
 		"POST /refresh":           "Refresh expired JWT access token",
 		"POST /logout":            "Logout and invalidate token",
 
 		// ===== Holding =====
 		"GET /list-holding":     "List all holdings for current user",
-		"GET /holding/{id}":     "Get holding profile by holding_code",
+		"GET /holding/{id}":     "Get holding profile by holdingcode",
 		"PUT /holding/{id}":     "Update holding information",
 		"DELETE /holding/{id}":  "Delete holding",
 		"POST /select-holding":  "Select active holding for session",
@@ -563,8 +563,8 @@ func getGoAPIEndpoints() []APIEndpoint {
 		{Method: "GET", Path: "/goapi/api/health/kafka", Description: "Kafka connection health check", Category: "health", Source: "goapi", AuthRequired: false},
 		{Method: "GET", Path: "/goapi/api/health/background", Description: "Background task status", Category: "health", Source: "goapi", AuthRequired: false},
 		{Method: "GET", Path: "/goapi/api/health/queue", Description: "Queue system status", Category: "health", Source: "goapi", AuthRequired: false},
-		{Method: "GET", Path: "/goapi/api/health/queue/:holding_code", Description: "Queue status for specific shop", Category: "health", Source: "goapi", AuthRequired: false,
-			Parameters: []APIParam{{Name: "holding_code", In: "path", Type: "string", Required: true, Description: "Holding Code"}}},
+		{Method: "GET", Path: "/goapi/api/health/queue/:holdingcode", Description: "Queue status for specific shop", Category: "health", Source: "goapi", AuthRequired: false,
+			Parameters: []APIParam{{Name: "holdingcode", In: "path", Type: "string", Required: true, Description: "Holding Code"}}},
 		{Method: "GET", Path: "/goapi/api/health/database", Description: "Database connection health check for projection/BI stores (PostgreSQL + ClickHouse)", Category: "health", Source: "goapi", AuthRequired: false},
 		{Method: "GET", Path: "/goapi/api/health/system", Description: "System health - memory, goroutines, uptime", Category: "health", Source: "goapi", AuthRequired: false},
 
@@ -574,36 +574,36 @@ func getGoAPIEndpoints() []APIEndpoint {
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
 					"type":     "object",
-					"required": []string{"holding_code", "sql"},
+					"required": []string{"holdingcode", "sql"},
 					"properties": map[string]interface{}{
-						"holding_code": map[string]interface{}{"type": "string", "description": "Holding Code (database name)"},
-						"sql":          map[string]interface{}{"type": "string", "description": "SQL SELECT query to execute"},
+						"holdingcode": map[string]interface{}{"type": "string", "description": "Holding Code (database name)"},
+						"sql":         map[string]interface{}{"type": "string", "description": "SQL SELECT query to execute"},
 					},
 				},
-				Example: map[string]interface{}{"holding_code": "SHOP001", "sql": "SELECT * FROM products LIMIT 10"}}},
+				Example: map[string]interface{}{"holdingcode": "SHOP001", "sql": "SELECT * FROM products LIMIT 10"}}},
 		{Method: "POST", Path: "/goapi/exec", Description: "Execute PostgreSQL projection/admin command (INSERT/UPDATE/DELETE)", Category: "database", Source: "goapi", AuthRequired: false,
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
 					"type":     "object",
-					"required": []string{"holding_code", "sql"},
+					"required": []string{"holdingcode", "sql"},
 					"properties": map[string]interface{}{
-						"holding_code": map[string]interface{}{"type": "string", "description": "Holding Code (database name)"},
-						"sql":          map[string]interface{}{"type": "string", "description": "SQL command (INSERT/UPDATE/DELETE)"},
+						"holdingcode": map[string]interface{}{"type": "string", "description": "Holding Code (database name)"},
+						"sql":         map[string]interface{}{"type": "string", "description": "SQL command (INSERT/UPDATE/DELETE)"},
 					},
 				},
-				Example: map[string]interface{}{"holding_code": "SHOP001", "sql": "UPDATE products SET name='test' WHERE id=1"}}},
+				Example: map[string]interface{}{"holdingcode": "SHOP001", "sql": "UPDATE products SET name='test' WHERE id=1"}}},
 		{Method: "POST", Path: "/goapi/getdoc", Description: "Get legacy document projection data from PostgreSQL", Category: "database", Source: "goapi", AuthRequired: false,
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
 					"type":     "object",
-					"required": []string{"holding_code", "docno"},
+					"required": []string{"holdingcode", "docno"},
 					"properties": map[string]interface{}{
-						"holding_code": map[string]interface{}{"type": "string", "description": "Holding Code"},
-						"docno":        map[string]interface{}{"type": "string", "description": "Document number"},
-						"transflag":    map[string]interface{}{"type": "integer", "description": "Transaction type flag (optional filter)"},
+						"holdingcode": map[string]interface{}{"type": "string", "description": "Holding Code"},
+						"docno":       map[string]interface{}{"type": "string", "description": "Document number"},
+						"transflag":   map[string]interface{}{"type": "integer", "description": "Transaction type flag (optional filter)"},
 					},
 				},
-				Example: map[string]interface{}{"holding_code": "SHOP001", "docno": "INV-001"}}},
+				Example: map[string]interface{}{"holdingcode": "SHOP001", "docno": "INV-001"}}},
 		{Method: "POST", Path: "/goapi/mongogetdata", Description: "Query MongoDB collection", Category: "database", Source: "goapi", AuthRequired: false,
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
@@ -617,14 +617,14 @@ func getGoAPIEndpoints() []APIEndpoint {
 						"limit":      map[string]interface{}{"type": "integer", "description": "Max results (default: 100)"},
 					},
 				},
-				Example: map[string]interface{}{"database": "dbname", "collection": "collname", "filter": map[string]interface{}{"holding_code": "SHOP001"}}}},
+				Example: map[string]interface{}{"database": "dbname", "collection": "collname", "filter": map[string]interface{}{"holdingcode": "SHOP001"}}}},
 		{Method: "POST", Path: "/goapi/reportpost", Description: "Generate report via POST", Category: "database", Source: "goapi", AuthRequired: false},
 		{Method: "GET", Path: "/goapi/rebuild/progress/:jobId", Description: "SSE endpoint for rebuild progress tracking", Category: "database", Source: "goapi", AuthRequired: false,
 			Parameters: []APIParam{{Name: "jobId", In: "path", Type: "string", Required: true, Description: "Job ID for progress tracking"}}},
 
 		// ===== Result Table =====
 		{Method: "POST", Path: "/goapi/resultfromquery", Description: "Generate result table from SQL query", Category: "database", Source: "goapi", AuthRequired: false,
-			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"holding_code": "SHOP001", "sql": "SELECT * FROM products"}}},
+			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"holdingcode": "SHOP001", "sql": "SELECT * FROM products"}}},
 		{Method: "POST", Path: "/goapi/resultget", Description: "Get pre-generated result table", Category: "database", Source: "goapi", AuthRequired: false},
 		{Method: "POST", Path: "/goapi/resulttopdf", Description: "Convert result table to PDF", Category: "database", Source: "goapi", AuthRequired: false},
 
@@ -633,23 +633,23 @@ func getGoAPIEndpoints() []APIEndpoint {
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
 					"type":     "object",
-					"required": []string{"holding_code", "docno"},
+					"required": []string{"holdingcode", "docno"},
 					"properties": map[string]interface{}{
-						"holding_code": map[string]interface{}{"type": "string", "description": "Holding Code"},
-						"docno":        map[string]interface{}{"type": "string", "description": "Document number"},
-						"template":     map[string]interface{}{"type": "string", "description": "PDF template name (e.g., invoice, receipt, po)"},
-						"orientation":  map[string]interface{}{"type": "string", "description": "L=landscape, P=portrait (see pdf_orientation enum)"},
-						"page_size":    map[string]interface{}{"type": "string", "description": "A4, A5, Letter (see pdf_page_size enum)"},
+						"holdingcode": map[string]interface{}{"type": "string", "description": "Holding Code"},
+						"docno":       map[string]interface{}{"type": "string", "description": "Document number"},
+						"template":    map[string]interface{}{"type": "string", "description": "PDF template name (e.g., invoice, receipt, po)"},
+						"orientation": map[string]interface{}{"type": "string", "description": "L=landscape, P=portrait (see pdf_orientation enum)"},
+						"pagesize":    map[string]interface{}{"type": "string", "description": "A4, A5, Letter (see pdf_pagesize enum)"},
 					},
 				},
-				Example: map[string]interface{}{"holding_code": "SHOP001", "docno": "INV-001", "template": "invoice"}},
+				Example: map[string]interface{}{"holdingcode": "SHOP001", "docno": "INV-001", "template": "invoice"}},
 			Response: &APIResponse{ContentType: "application/json",
 				Schema: map[string]interface{}{
 					"type": "object",
 					"properties": map[string]interface{}{
-						"success":   map[string]interface{}{"type": "boolean"},
-						"url":       map[string]interface{}{"type": "string", "description": "PDF file URL path"},
-						"file_size": map[string]interface{}{"type": "integer", "description": "File size in bytes"},
+						"success":  map[string]interface{}{"type": "boolean"},
+						"url":      map[string]interface{}{"type": "string", "description": "PDF file URL path"},
+						"filesize": map[string]interface{}{"type": "integer", "description": "File size in bytes"},
 					},
 				}}},
 		{Method: "GET", Path: "/goapi/genpdf/history", Description: "Get PDF generation history", Category: "pdf", Source: "goapi", AuthRequired: false},
@@ -659,11 +659,11 @@ func getGoAPIEndpoints() []APIEndpoint {
 
 		// ===== Stock =====
 		{Method: "POST", Path: "/goapi/processstockcalccost", Description: "Process stock calculation and costing", Category: "stock", Source: "goapi", AuthRequired: false,
-			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"holding_code": "SHOP001"}}},
+			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"holdingcode": "SHOP001"}}},
 		{Method: "POST", Path: "/goapi/api/stockcost/query", Description: "Query stock cost data", Category: "stock", Source: "goapi", AuthRequired: false,
-			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"holding_code": "SHOP001", "barcode": "1234567890"}}},
+			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"holdingcode": "SHOP001", "barcode": "1234567890"}}},
 		{Method: "POST", Path: "/goapi/api/stockcost/summary", Description: "Get stock cost summary", Category: "stock", Source: "goapi", AuthRequired: false,
-			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"holding_code": "SHOP001"}}},
+			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"holdingcode": "SHOP001"}}},
 		{Method: "POST", Path: "/goapi/api/stockcost/check", Description: "Check stock cost status", Category: "stock", Source: "goapi", AuthRequired: false},
 
 		// ===== Transaction Calculator =====
@@ -671,76 +671,76 @@ func getGoAPIEndpoints() []APIEndpoint {
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
 					"type":     "object",
-					"required": []string{"holding_code", "items"},
+					"required": []string{"holdingcode", "items"},
 					"properties": map[string]interface{}{
-						"holding_code":    map[string]interface{}{"type": "string", "description": "Holding Code"},
-						"items":           map[string]interface{}{"type": "array", "description": "Line items", "items": map[string]interface{}{"type": "object", "properties": map[string]interface{}{"barcode": map[string]interface{}{"type": "string"}, "qty": map[string]interface{}{"type": "number"}, "price": map[string]interface{}{"type": "number"}, "discount": map[string]interface{}{"type": "string", "description": "Discount text e.g. '10%'"}}}},
-						"tax_type":        map[string]interface{}{"type": "integer", "description": "0=excluded, 1=included, 2=non-taxable (see vat_type enum)"},
-						"discount_amount": map[string]interface{}{"type": "number", "description": "Document-level discount amount"},
+						"holdingcode":    map[string]interface{}{"type": "string", "description": "Holding Code"},
+						"items":          map[string]interface{}{"type": "array", "description": "Line items", "items": map[string]interface{}{"type": "object", "properties": map[string]interface{}{"barcode": map[string]interface{}{"type": "string"}, "qty": map[string]interface{}{"type": "number"}, "price": map[string]interface{}{"type": "number"}, "discount": map[string]interface{}{"type": "string", "description": "Discount text e.g. '10%'"}}}},
+						"taxtype":        map[string]interface{}{"type": "integer", "description": "0=excluded, 1=included, 2=non-taxable (see vattype enum)"},
+						"discountamount": map[string]interface{}{"type": "number", "description": "Document-level discount amount"},
 					},
 				},
 				Example: map[string]interface{}{
-					"holding_code": "SHOP001", "items": []map[string]interface{}{{"barcode": "001", "qty": 2, "price": 100}},
-					"tax_type": 1, "discount_amount": 50,
+					"holdingcode": "SHOP001", "items": []map[string]interface{}{{"barcode": "001", "qty": 2, "price": 100}},
+					"taxtype": 1, "discountamount": 50,
 				}},
 			Response: &APIResponse{ContentType: "application/json",
 				Schema: map[string]interface{}{
 					"type": "object",
 					"properties": map[string]interface{}{
-						"total_amount":    map[string]interface{}{"type": "number", "description": "Total before discount"},
-						"discount_amount": map[string]interface{}{"type": "number", "description": "Total discount"},
-						"net_amount":      map[string]interface{}{"type": "number", "description": "Net amount after discount"},
-						"tax_amount":      map[string]interface{}{"type": "number", "description": "VAT amount"},
-						"items":           map[string]interface{}{"type": "array", "description": "Calculated line items with amounts"},
+						"totalamount":    map[string]interface{}{"type": "number", "description": "Total before discount"},
+						"discountamount": map[string]interface{}{"type": "number", "description": "Total discount"},
+						"netamount":      map[string]interface{}{"type": "number", "description": "Net amount after discount"},
+						"taxamount":      map[string]interface{}{"type": "number", "description": "VAT amount"},
+						"items":          map[string]interface{}{"type": "array", "description": "Calculated line items with amounts"},
 					},
 				},
 				Example: map[string]interface{}{
-					"total_amount": 200, "discount_amount": 50, "net_amount": 150, "tax_amount": 9.81,
+					"totalamount": 200, "discountamount": 50, "netamount": 150, "taxamount": 9.81,
 				}}},
 		{Method: "POST", Path: "/goapi/api/transaction/quick-calc", Description: "Quick calculation without full transaction context", Category: "transaction", Source: "goapi", AuthRequired: false},
 		{Method: "POST", Path: "/goapi/api/transaction/validate-payment", Description: "Validate payment amounts and methods", Category: "transaction", Source: "goapi", AuthRequired: false},
 		{Method: "POST", Path: "/goapi/api/transaction/purchase-history", Description: "Get purchase history for products", Category: "transaction", Source: "goapi", AuthRequired: false,
-			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"holding_code": "SHOP001", "barcode": "001"}}},
+			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"holdingcode": "SHOP001", "barcode": "001"}}},
 
 		// ===== Sales Report =====
 		{Method: "POST", Path: "/goapi/api/report/sales/by-document", Description: "Sales report grouped by document", Category: "sales-report", Source: "goapi", AuthRequired: false,
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
 					"type":     "object",
-					"required": []string{"holding_code", "from_date", "to_date"},
+					"required": []string{"holdingcode", "fromdate", "todate"},
 					"properties": map[string]interface{}{
-						"holding_code": map[string]interface{}{"type": "string", "description": "Holding Code"},
-						"from_date":    map[string]interface{}{"type": "string", "format": "date", "description": "Start date (YYYY-MM-DD)"},
-						"to_date":      map[string]interface{}{"type": "string", "format": "date", "description": "End date (YYYY-MM-DD)"},
-						"whcode":       map[string]interface{}{"type": "string", "description": "Filter by warehouse code"},
-						"transflag":    map[string]interface{}{"type": "integer", "description": "Filter by transaction type (see transflag enum)"},
+						"holdingcode": map[string]interface{}{"type": "string", "description": "Holding Code"},
+						"fromdate":    map[string]interface{}{"type": "string", "format": "date", "description": "Start date (YYYY-MM-DD)"},
+						"todate":      map[string]interface{}{"type": "string", "format": "date", "description": "End date (YYYY-MM-DD)"},
+						"whcode":      map[string]interface{}{"type": "string", "description": "Filter by warehouse code"},
+						"transflag":   map[string]interface{}{"type": "integer", "description": "Filter by transaction type (see transflag enum)"},
 					},
 				},
 				Example: map[string]interface{}{
-					"holding_code": "SHOP001", "from_date": "2025-01-01", "to_date": "2025-12-31",
+					"holdingcode": "SHOP001", "fromdate": "2025-01-01", "todate": "2025-12-31",
 				}}},
 		{Method: "POST", Path: "/goapi/api/report/sales/summary", Description: "Sales summary report with totals", Category: "sales-report", Source: "goapi", AuthRequired: false,
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
 					"type":     "object",
-					"required": []string{"holding_code", "from_date", "to_date"},
+					"required": []string{"holdingcode", "fromdate", "todate"},
 					"properties": map[string]interface{}{
-						"holding_code": map[string]interface{}{"type": "string", "description": "Holding Code"},
-						"from_date":    map[string]interface{}{"type": "string", "format": "date", "description": "Start date (YYYY-MM-DD)"},
-						"to_date":      map[string]interface{}{"type": "string", "format": "date", "description": "End date (YYYY-MM-DD)"},
+						"holdingcode": map[string]interface{}{"type": "string", "description": "Holding Code"},
+						"fromdate":    map[string]interface{}{"type": "string", "format": "date", "description": "Start date (YYYY-MM-DD)"},
+						"todate":      map[string]interface{}{"type": "string", "format": "date", "description": "End date (YYYY-MM-DD)"},
 					},
 				},
 				Example: map[string]interface{}{
-					"holding_code": "SHOP001", "from_date": "2025-01-01", "to_date": "2025-12-31",
+					"holdingcode": "SHOP001", "fromdate": "2025-01-01", "todate": "2025-12-31",
 				}},
 			Response: &APIResponse{ContentType: "application/json",
 				Schema: map[string]interface{}{
 					"type": "object",
 					"properties": map[string]interface{}{
-						"total_amount":   map[string]interface{}{"type": "number", "description": "Total sales amount"},
-						"total_cost":     map[string]interface{}{"type": "number", "description": "Total cost"},
-						"total_profit":   map[string]interface{}{"type": "number", "description": "Total profit"},
-						"document_count": map[string]interface{}{"type": "integer", "description": "Number of documents"},
+						"totalamount":   map[string]interface{}{"type": "number", "description": "Total sales amount"},
+						"totalcost":     map[string]interface{}{"type": "number", "description": "Total cost"},
+						"totalprofit":   map[string]interface{}{"type": "number", "description": "Total profit"},
+						"documentcount": map[string]interface{}{"type": "integer", "description": "Number of documents"},
 					},
 				}}},
 
@@ -749,24 +749,24 @@ func getGoAPIEndpoints() []APIEndpoint {
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
 					"type":     "object",
-					"required": []string{"holding_code"},
+					"required": []string{"holdingcode"},
 					"properties": map[string]interface{}{
-						"holding_code": map[string]interface{}{"type": "string", "description": "Holding Code"},
-						"keyword":      map[string]interface{}{"type": "string", "description": "Search keyword (Thai full-text supported)"},
-						"whcode":       map[string]interface{}{"type": "string", "description": "Warehouse code filter"},
-						"limit":        map[string]interface{}{"type": "integer", "description": "Max results (default: 50, max: 200)"},
-						"offset":       map[string]interface{}{"type": "integer", "description": "Offset for pagination"},
+						"holdingcode": map[string]interface{}{"type": "string", "description": "Holding Code"},
+						"keyword":     map[string]interface{}{"type": "string", "description": "Search keyword (Thai full-text supported)"},
+						"whcode":      map[string]interface{}{"type": "string", "description": "Warehouse code filter"},
+						"limit":       map[string]interface{}{"type": "integer", "description": "Max results (default: 50, max: 200)"},
+						"offset":      map[string]interface{}{"type": "integer", "description": "Offset for pagination"},
 					},
 				},
 				Example: map[string]interface{}{
-					"holding_code": "SHOP001", "keyword": "น้ำตาล", "whcode": "WH01", "limit": 50,
+					"holdingcode": "SHOP001", "keyword": "น้ำตาล", "whcode": "WH01", "limit": 50,
 				}},
 			Response: &APIResponse{ContentType: "application/json",
 				Schema: map[string]interface{}{
 					"type": "object",
 					"properties": map[string]interface{}{
-						"products":    map[string]interface{}{"type": "array", "description": "Matched products with barcode, name, price, balance, unit info"},
-						"total_count": map[string]interface{}{"type": "integer", "description": "Total matching products"},
+						"products":   map[string]interface{}{"type": "array", "description": "Matched products with barcode, name, price, balance, unit info"},
+						"totalcount": map[string]interface{}{"type": "integer", "description": "Total matching products"},
 					},
 				},
 				Example: map[string]interface{}{
@@ -776,27 +776,27 @@ func getGoAPIEndpoints() []APIEndpoint {
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
 					"type":     "object",
-					"required": []string{"holding_code", "barcode"},
+					"required": []string{"holdingcode", "barcode"},
 					"properties": map[string]interface{}{
-						"holding_code": map[string]interface{}{"type": "string", "description": "Holding Code"},
-						"barcode":      map[string]interface{}{"type": "string", "description": "Exact barcode to lookup"},
+						"holdingcode": map[string]interface{}{"type": "string", "description": "Holding Code"},
+						"barcode":     map[string]interface{}{"type": "string", "description": "Exact barcode to lookup"},
 					},
 				},
-				Example: map[string]interface{}{"holding_code": "SHOP001", "barcode": "8850999220017"}}},
+				Example: map[string]interface{}{"holdingcode": "SHOP001", "barcode": "8850999220017"}}},
 		{Method: "GET", Path: "/goapi/api/product/cache/stats", Description: "Get product cache statistics", Category: "product", Source: "goapi", AuthRequired: false},
 		{Method: "POST", Path: "/goapi/api/product/cache/clear", Description: "Clear product cache for a shop", Category: "product", Source: "goapi", AuthRequired: false},
 		{Method: "POST", Path: "/goapi/api/product/search/unified", Description: "Unified product search across multiple sources", Category: "product", Source: "goapi", AuthRequired: false,
-			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"holding_code": "SHOP001", "keyword": "สินค้า", "limit": 20}}},
+			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"holdingcode": "SHOP001", "keyword": "สินค้า", "limit": 20}}},
 
 		// ===== Stock Report =====
 		{Method: "POST", Path: "/goapi/api/stock-report/barcodes", Description: "Get stock report by barcodes", Category: "stock-report", Source: "goapi", AuthRequired: false,
-			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"holding_code": "SHOP001", "barcodes": []string{"001", "002"}}}},
+			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"holdingcode": "SHOP001", "barcodes": []string{"001", "002"}}}},
 		{Method: "POST", Path: "/goapi/api/stock-report/warehouses", Description: "Get stock report by warehouses", Category: "stock-report", Source: "goapi", AuthRequired: false,
-			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"holding_code": "SHOP001", "whcodes": []string{"WH01"}}}},
+			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"holdingcode": "SHOP001", "whcodes": []string{"WH01"}}}},
 
 		// ===== LINE OA =====
 		{Method: "POST", Path: "/goapi/api/lineoa/configs", Description: "Get all LINE OA configurations", Category: "lineoa", Source: "goapi", AuthRequired: false,
-			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"holding_code": "SHOP001"}}},
+			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"holdingcode": "SHOP001"}}},
 		{Method: "POST", Path: "/goapi/api/lineoa/config", Description: "Get specific LINE OA config", Category: "lineoa", Source: "goapi", AuthRequired: false},
 		{Method: "POST", Path: "/goapi/api/lineoa/config/save", Description: "Save LINE OA configuration", Category: "lineoa", Source: "goapi", AuthRequired: false},
 		{Method: "POST", Path: "/goapi/api/lineoa/test", Description: "Test LINE OA configuration (send test message)", Category: "lineoa", Source: "goapi", AuthRequired: false},
@@ -812,7 +812,7 @@ func getGoAPIEndpoints() []APIEndpoint {
 
 		// ===== Approval System =====
 		{Method: "POST", Path: "/goapi/api/approval/po-settings", Description: "Get all PO approval settings", Category: "approval", Source: "goapi", AuthRequired: false,
-			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"holding_code": "SHOP001"}}},
+			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"holdingcode": "SHOP001"}}},
 		{Method: "POST", Path: "/goapi/api/approval/po-setting", Description: "Get specific PO approval setting", Category: "approval", Source: "goapi", AuthRequired: false},
 		{Method: "POST", Path: "/goapi/api/approval/po-setting/save", Description: "Save PO approval setting (create/update)", Category: "approval", Source: "goapi", AuthRequired: false},
 		{Method: "POST", Path: "/goapi/api/approval/po-setting/delete", Description: "Delete PO approval setting", Category: "approval", Source: "goapi", AuthRequired: false},
@@ -822,35 +822,35 @@ func getGoAPIEndpoints() []APIEndpoint {
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
 					"type":     "object",
-					"required": []string{"holding_code", "docno", "submitted_by"},
+					"required": []string{"holdingcode", "docno", "submittedby"},
 					"properties": map[string]interface{}{
-						"holding_code": map[string]interface{}{"type": "string", "description": "Holding Code"},
-						"docno":        map[string]interface{}{"type": "string", "description": "PO document number"},
-						"submitted_by": map[string]interface{}{"type": "string", "description": "Employee code who submits"},
+						"holdingcode": map[string]interface{}{"type": "string", "description": "Holding Code"},
+						"docno":       map[string]interface{}{"type": "string", "description": "PO document number"},
+						"submittedby": map[string]interface{}{"type": "string", "description": "Employee code who submits"},
 					},
 				}}},
 		{Method: "POST", Path: "/goapi/api/approval/po-status/approve", Description: "Approve PO", Category: "approval", Source: "goapi", AuthRequired: false,
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
 					"type":     "object",
-					"required": []string{"holding_code", "docno", "approved_by"},
+					"required": []string{"holdingcode", "docno", "approvedby"},
 					"properties": map[string]interface{}{
-						"holding_code": map[string]interface{}{"type": "string", "description": "Holding Code"},
-						"docno":        map[string]interface{}{"type": "string", "description": "PO document number"},
-						"approved_by":  map[string]interface{}{"type": "string", "description": "Approver employee code"},
-						"comment":      map[string]interface{}{"type": "string", "description": "Approval comment"},
+						"holdingcode": map[string]interface{}{"type": "string", "description": "Holding Code"},
+						"docno":       map[string]interface{}{"type": "string", "description": "PO document number"},
+						"approvedby":  map[string]interface{}{"type": "string", "description": "Approver employee code"},
+						"comment":     map[string]interface{}{"type": "string", "description": "Approval comment"},
 					},
 				}}},
 		{Method: "POST", Path: "/goapi/api/approval/po-status/reject", Description: "Reject PO", Category: "approval", Source: "goapi", AuthRequired: false,
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
 					"type":     "object",
-					"required": []string{"holding_code", "docno", "rejected_by"},
+					"required": []string{"holdingcode", "docno", "rejectedby"},
 					"properties": map[string]interface{}{
-						"holding_code": map[string]interface{}{"type": "string", "description": "Holding Code"},
-						"docno":        map[string]interface{}{"type": "string", "description": "PO document number"},
-						"rejected_by":  map[string]interface{}{"type": "string", "description": "Rejecter employee code"},
-						"reason":       map[string]interface{}{"type": "string", "description": "Rejection reason"},
+						"holdingcode": map[string]interface{}{"type": "string", "description": "Holding Code"},
+						"docno":       map[string]interface{}{"type": "string", "description": "PO document number"},
+						"rejectedby":  map[string]interface{}{"type": "string", "description": "Rejecter employee code"},
+						"reason":      map[string]interface{}{"type": "string", "description": "Rejection reason"},
 					},
 				}}},
 		{Method: "POST", Path: "/goapi/api/approval/po-status/withdraw", Description: "Withdraw PO from approval", Category: "approval", Source: "goapi", AuthRequired: false},
@@ -880,14 +880,14 @@ func getGoAPIEndpoints() []APIEndpoint {
 		// ===== Data History =====
 		{Method: "GET", Path: "/goapi/api/datahistory", Description: "Get data change history", Category: "datahistory", Source: "goapi", AuthRequired: false,
 			Parameters: []APIParam{
-				{Name: "holding_code", In: "query", Type: "string", Required: true, Description: "Holding Code"},
+				{Name: "holdingcode", In: "query", Type: "string", Required: true, Description: "Holding Code"},
 				{Name: "collection", In: "query", Type: "string", Required: true, Description: "Collection/table name"},
 			}},
 		{Method: "GET", Path: "/goapi/api/datahistory/po", Description: "Get PO-specific data history", Category: "datahistory", Source: "goapi", AuthRequired: false},
 
 		// ===== Purchase Order =====
 		{Method: "POST", Path: "/goapi/api/purchase-order/manual-close", Description: "Manually close a purchase order", Category: "purchase-order", Source: "goapi", AuthRequired: false,
-			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"holding_code": "SHOP001", "docno": "PO-001"}}},
+			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"holdingcode": "SHOP001", "docno": "PO-001"}}},
 
 		// ===== Migration =====
 		{Method: "GET", Path: "/goapi/api/migrate/currency", Description: "Migrate currency columns", Category: "migration", Source: "goapi", AuthRequired: false},
@@ -905,7 +905,7 @@ func getGoAPIEndpoints() []APIEndpoint {
 
 		// ===== ClickHouse =====
 		{Method: "POST", Path: "/goapi/clickhouse/query", Description: "Execute ClickHouse query", Category: "clickhouse", Source: "goapi", AuthRequired: false,
-			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"holding_code": "SHOP001", "sql": "SELECT count() FROM sales"}}},
+			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"holdingcode": "SHOP001", "sql": "SELECT count() FROM sales"}}},
 		{Method: "POST", Path: "/goapi/clickhouse/querys", Description: "Execute multiple ClickHouse queries", Category: "clickhouse", Source: "goapi", AuthRequired: false},
 		{Method: "POST", Path: "/goapi/clickhouse/select", Description: "Execute ClickHouse SELECT query", Category: "clickhouse", Source: "goapi", AuthRequired: false},
 
@@ -916,16 +916,16 @@ func getGoAPIEndpoints() []APIEndpoint {
 		{Method: "POST", Path: "/goapi/test/purchase-partial", Description: "Test: publish purchase partial Kafka message", Category: "test", Source: "goapi", AuthRequired: false},
 
 		// ===== File / S3 =====
-		{Method: "GET", Path: "/goapi/s3/file/*", Description: "Stream private object from S3/R2 storage — requires auth, object key must be under caller's holding_code", Category: "file", Source: "goapi", AuthRequired: true},
+		{Method: "GET", Path: "/goapi/s3/file/*", Description: "Stream private object from S3/R2 storage — requires auth, object key must be under caller's holdingcode", Category: "file", Source: "goapi", AuthRequired: true},
 
 		// ===== Upload (private, shop-scoped) =====
-		{Method: "POST", Path: "/goapi/upload", Description: "Upload file (single file) — holding_code resolved from auth context, object key is holding_code/...", Category: "upload", Source: "goapi", AuthRequired: true,
+		{Method: "POST", Path: "/goapi/upload", Description: "Upload file (single file) — holdingcode resolved from auth context, object key is holdingcode/...", Category: "upload", Source: "goapi", AuthRequired: true,
 			RequestBody: &APIRequestBody{ContentType: "multipart/form-data"}},
 		{Method: "POST", Path: "/goapi/upload/init", Description: "Initialize chunked upload session", Category: "upload", Source: "goapi", AuthRequired: true,
-			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"file_name": "file.xlsx", "total_chunks": 5}}},
+			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"filename": "file.xlsx", "totalchunks": 5}}},
 		{Method: "POST", Path: "/goapi/upload/chunk", Description: "Upload a file chunk", Category: "upload", Source: "goapi", AuthRequired: true,
 			RequestBody: &APIRequestBody{ContentType: "multipart/form-data"}},
-		{Method: "POST", Path: "/goapi/upload/merge", Description: "Merge uploaded chunks into final file — holding_code resolved from auth context", Category: "upload", Source: "goapi", AuthRequired: true},
+		{Method: "POST", Path: "/goapi/upload/merge", Description: "Merge uploaded chunks into final file — holdingcode resolved from auth context", Category: "upload", Source: "goapi", AuthRequired: true},
 		{Method: "GET", Path: "/goapi/upload/status/:uploadID", Description: "Get chunked upload status", Category: "upload", Source: "goapi", AuthRequired: true,
 			Parameters: []APIParam{{Name: "uploadID", In: "path", Type: "string", Required: true, Description: "Upload session ID"}}},
 		{Method: "DELETE", Path: "/goapi/upload/cancel/:uploadID", Description: "Cancel chunked upload", Category: "upload", Source: "goapi", AuthRequired: true,
@@ -936,22 +936,22 @@ func getGoAPIEndpoints() []APIEndpoint {
 			Parameters: []APIParam{{Name: "lang", In: "path", Type: "string", Required: true, Description: "Language code (e.g., th, en)"}}},
 
 		// ===== Image (private, shop-scoped) =====
-		{Method: "POST", Path: "/goapi/image/upload", Description: "Upload image — object key is {holding_code}/..., holding_code resolved from auth context; mismatched form holding_code is rejected with 403", Category: "image", Source: "goapi", AuthRequired: true,
+		{Method: "POST", Path: "/goapi/image/upload", Description: "Upload image — object key is {holdingcode}/..., holdingcode resolved from auth context; mismatched form holdingcode is rejected with 403", Category: "image", Source: "goapi", AuthRequired: true,
 			RequestBody: &APIRequestBody{ContentType: "multipart/form-data"}},
 		{Method: "POST", Path: "/goapi/image/list", Description: "List images for the caller's shop; response URLs are backend proxy URLs only", Category: "image", Source: "goapi", AuthRequired: true,
-			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"holding_code": "SHOP001", "prefix": "products/"}}},
+			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"holdingcode": "SHOP001", "prefix": "products/"}}},
 		{Method: "POST", Path: "/goapi/image/get", Description: "Get image by filename for the caller's shop", Category: "image", Source: "goapi", AuthRequired: true},
 		{Method: "POST", Path: "/goapi/image/info", Description: "Get image metadata for the caller's shop", Category: "image", Source: "goapi", AuthRequired: true},
 		{Method: "POST", Path: "/goapi/image/delete", Description: "Delete image for the caller's shop", Category: "image", Source: "goapi", AuthRequired: true},
 		{Method: "POST", Path: "/goapi/image/promptpayverify", Description: "Verify PromptPay QR from image", Category: "image", Source: "goapi", AuthRequired: true},
 
 		// ===== Attachment (private, shop-scoped) =====
-		{Method: "POST", Path: "/goapi/api/attachment/upload", Description: "Upload document attachment — object key is {holding_code}/attachments/..., holding_code resolved from auth context", Category: "attachment", Source: "goapi", AuthRequired: true,
+		{Method: "POST", Path: "/goapi/api/attachment/upload", Description: "Upload document attachment — object key is {holdingcode}/attachments/..., holdingcode resolved from auth context", Category: "attachment", Source: "goapi", AuthRequired: true,
 			RequestBody: &APIRequestBody{ContentType: "multipart/form-data"}},
 		{Method: "POST", Path: "/goapi/api/attachment/list", Description: "List document attachments for the caller's shop; URLs are backend proxy URLs only", Category: "attachment", Source: "goapi", AuthRequired: true,
-			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"holding_code": "SHOP001", "screen_type": "purchaseorder", "docno": "PO-0001"}}},
+			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"holdingcode": "SHOP001", "screentype": "purchaseorder", "docno": "PO-0001"}}},
 		{Method: "POST", Path: "/goapi/api/attachment/delete", Description: "Delete document attachment for the caller's shop", Category: "attachment", Source: "goapi", AuthRequired: true},
-		{Method: "GET", Path: "/goapi/api/attachment/download/:id", Description: "Stream attachment through backend after holding_code check (no presigned URL redirect)", Category: "attachment", Source: "goapi", AuthRequired: true,
+		{Method: "GET", Path: "/goapi/api/attachment/download/:id", Description: "Stream attachment through backend after holdingcode check (no presigned URL redirect)", Category: "attachment", Source: "goapi", AuthRequired: true,
 			Parameters: []APIParam{{Name: "id", In: "path", Type: "string", Required: true, Description: "Attachment Mongo ObjectID"}}},
 
 		// ===== Excel Import =====
@@ -963,14 +963,14 @@ func getGoAPIEndpoints() []APIEndpoint {
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
 					"type":     "object",
-					"required": []string{"holding_code", "message"},
+					"required": []string{"holdingcode", "message"},
 					"properties": map[string]interface{}{
-						"holding_code":    map[string]interface{}{"type": "string", "description": "Holding Code"},
-						"message":         map[string]interface{}{"type": "string", "description": "User message (Thai/English)"},
-						"conversation_id": map[string]interface{}{"type": "string", "description": "Conversation ID for context continuity"},
+						"holdingcode":    map[string]interface{}{"type": "string", "description": "Holding Code"},
+						"message":        map[string]interface{}{"type": "string", "description": "User message (Thai/English)"},
+						"conversationid": map[string]interface{}{"type": "string", "description": "Conversation ID for context continuity"},
 					},
 				},
-				Example: map[string]interface{}{"holding_code": "SHOP001", "message": "ยอดขายวันนี้เท่าไร?"}}},
+				Example: map[string]interface{}{"holdingcode": "SHOP001", "message": "ยอดขายวันนี้เท่าไร?"}}},
 		{Method: "POST", Path: "/goapi/api/v1/chatbot/analyze-document", Description: "Analyze document with Gemini AI", Category: "chatbot", Source: "goapi", AuthRequired: false},
 
 		// ===== Unified API =====
@@ -978,13 +978,13 @@ func getGoAPIEndpoints() []APIEndpoint {
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
 					"type":     "object",
-					"required": []string{"holding_code", "query"},
+					"required": []string{"holdingcode", "query"},
 					"properties": map[string]interface{}{
-						"holding_code": map[string]interface{}{"type": "string", "description": "Holding Code"},
-						"query":        map[string]interface{}{"type": "string", "description": "Natural language query (Thai/English)"},
+						"holdingcode": map[string]interface{}{"type": "string", "description": "Holding Code"},
+						"query":       map[string]interface{}{"type": "string", "description": "Natural language query (Thai/English)"},
 					},
 				},
-				Example: map[string]interface{}{"holding_code": "SHOP001", "query": "ยอดขายเดือนนี้"}}},
+				Example: map[string]interface{}{"holdingcode": "SHOP001", "query": "ยอดขายเดือนนี้"}}},
 		{Method: "GET", Path: "/goapi/api/v1/unified/health", Description: "Unified API health check", Category: "unified", Source: "goapi", AuthRequired: false},
 		{Method: "GET", Path: "/goapi/api/v1/unified/cache/stats", Description: "Unified API cache statistics", Category: "unified", Source: "goapi", AuthRequired: false},
 
@@ -995,11 +995,11 @@ func getGoAPIEndpoints() []APIEndpoint {
 					"type":     "object",
 					"required": []string{"tool"},
 					"properties": map[string]interface{}{
-						"tool":   map[string]interface{}{"type": "string", "description": "MCP tool name (e.g., get_daily_sales, search_products)"},
+						"tool":   map[string]interface{}{"type": "string", "description": "MCP tool name (e.g., getdailysales, searchproducts)"},
 						"params": map[string]interface{}{"type": "object", "description": "Tool-specific parameters"},
 					},
 				},
-				Example: map[string]interface{}{"tool": "get_daily_sales", "params": map[string]interface{}{"date": "2025-01-01"}}},
+				Example: map[string]interface{}{"tool": "getdailysales", "params": map[string]interface{}{"date": "2025-01-01"}}},
 			Parameters: []APIParam{{Name: "X-API-Key", In: "header", Type: "string", Required: true, Description: "MCP API Key"}}},
 		{Method: "GET", Path: "/goapi/mcp/tools", Description: "List all available MCP tools (no auth)", Category: "mcp", Source: "goapi", AuthRequired: false},
 		{Method: "GET", Path: "/goapi/mcp/health", Description: "MCP server health check", Category: "mcp", Source: "goapi", AuthRequired: false},
@@ -1009,7 +1009,7 @@ func getGoAPIEndpoints() []APIEndpoint {
 		// ===== MCP API Key Management =====
 		{Method: "POST", Path: "/goapi/api/mcp/keys", Description: "Create new MCP API key", Category: "mcp-keys", Source: "goapi", AuthRequired: false,
 			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{
-				"holding_code": "SHOP001", "name": "Frontend Dev", "allowed_tools": []string{"get_daily_sales", "search_products"},
+				"holdingcode": "SHOP001", "name": "Frontend Dev", "allowedtools": []string{"getdailysales", "searchproducts"},
 			}}},
 		{Method: "GET", Path: "/goapi/api/mcp/keys", Description: "List all MCP API keys", Category: "mcp-keys", Source: "goapi", AuthRequired: false},
 		{Method: "GET", Path: "/goapi/api/mcp/keys/:id", Description: "Get specific MCP API key", Category: "mcp-keys", Source: "goapi", AuthRequired: false,

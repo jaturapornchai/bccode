@@ -40,7 +40,7 @@ func TestShopUserSave(t *testing.T) {
 func TestShopUserDeleteCannotDeleteCreator(t *testing.T) {
 	shopUserRepo := new(ShopUserRepositoryMock)
 	ctx := context.Background()
-	holdingCode := "holding_code"
+	holdingCode := "holdingcode"
 	authUsername := "owner@example.com"
 	creatorUsername := "creator@example.com"
 
@@ -59,7 +59,7 @@ func TestShopUserDeleteCannotDeleteCreator(t *testing.T) {
 func TestShopUserSaveFullProfileCreatorCannotBeDisabled(t *testing.T) {
 	shopUserRepo := new(ShopUserRepositoryMock)
 	ctx := context.Background()
-	holdingCode := "holding_code"
+	holdingCode := "holdingcode"
 	authUsername := "owner@example.com"
 	creatorUsername := "creator@example.com"
 
@@ -82,7 +82,7 @@ func TestShopUserSaveFullProfileCreatorCannotBeDisabled(t *testing.T) {
 func TestShopUserSaveFullProfileDisablesMember(t *testing.T) {
 	shopUserRepo := new(ShopUserRepositoryMock)
 	ctx := context.Background()
-	holdingCode := "holding_code"
+	holdingCode := "holdingcode"
 	authUsername := "owner@example.com"
 	targetUsername := "member@example.com"
 
@@ -107,7 +107,7 @@ func TestShopUserSaveFullProfileDisablesMember(t *testing.T) {
 func TestShopUserSaveFullProfilePreservesUserUIDWhenUsernameChanges(t *testing.T) {
 	shopUserRepo := new(ShopUserRepositoryMock)
 	ctx := context.Background()
-	holdingCode := "holding_code"
+	holdingCode := "holdingcode"
 	authUsername := "owner@example.com"
 	oldUsername := "old@example.com"
 	newUsername := "new@example.com"

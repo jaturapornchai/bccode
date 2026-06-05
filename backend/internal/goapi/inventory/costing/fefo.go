@@ -137,7 +137,7 @@ func (e *FEFOEngine) consumeLayersFEFO(ctx context.Context, tx *sql.Tx, holdingC
 	rows, err := tx.QueryContext(ctx,
 		`SELECT id, remainingqty, totalunitcost, expirydate
 		 FROM inventory_cost_layers
-		 WHERE holding_code = $1 AND itemcode = $2 AND whcode = $3 AND locationcode = $4 AND remainingqty > 0
+		 WHERE holdingcode = $1 AND itemcode = $2 AND whcode = $3 AND locationcode = $4 AND remainingqty > 0
 		 ORDER BY expirydate ASC, receiveddate ASC, id ASC
 		 FOR UPDATE`,
 		holdingCode, itemCode, whCode, locationCode,

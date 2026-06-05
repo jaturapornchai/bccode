@@ -14,12 +14,12 @@ function Get-SelectedToken {
   $keys = docker exec redis redis-cli --scan --pattern "auth-*"
   foreach ($key in $keys) {
     if ([string]::IsNullOrWhiteSpace($key)) { continue }
-    $values = docker exec redis redis-cli HMGET $key username holding_code
+    $values = docker exec redis redis-cli HMGET $key username holdingcode
     if ($values[0] -eq $Username -and $values[1] -eq $HoldingCode) {
       return $key.Substring(5)
     }
   }
-  throw "No selected auth token found for holding_code $HoldingCode"
+  throw "No selected auth token found for holdingcode $HoldingCode"
 }
 
 function ConvertTo-QueryText {
@@ -92,7 +92,7 @@ function New-RestaurantFlags {
 
 function Get-DocGuid {
   param([object]$Doc)
-  foreach ($name in @("guid_fixed", "guidfixed", "GuidFixed", "guid")) {
+  foreach ($name in @("guidfixed", "guidfixed", "GuidFixed", "guid")) {
     if ($Doc.PSObject.Properties.Name -contains $name) {
       $value = [string]$Doc.$name
       if (-not [string]::IsNullOrWhiteSpace($value)) { return $value }
@@ -332,7 +332,7 @@ function Get-ResponseGuid {
   param([object]$Response)
   if ($null -eq $Response) { return "" }
   if ($Response -is [string]) { return [string]$Response }
-  foreach ($name in @("id", "ID", "guid_fixed", "guidfixed", "guid")) {
+  foreach ($name in @("id", "ID", "guidfixed", "guidfixed", "guid")) {
     if ($Response.PSObject.Properties.Name -contains $name) {
       $value = [string]$Response.$name
       if (-not [string]::IsNullOrWhiteSpace($value)) { return $value }
@@ -839,7 +839,7 @@ foreach ($row in $verifyGroup1Rows) {
 }
 
 [pscustomobject]@{
-  holding_code = $HoldingCode
+  holdingcode = $HoldingCode
   cleanup = @{
     categories_deleted = $categoryDelete.deleted
     category_delete_errors = @($categoryDelete.errors)

@@ -86,7 +86,7 @@ func (svc EOrderService) GetShopInfoOld(holdingCode string, orderStationCode str
 
 		tempOrderStation := models.EOrderShopOrderOld{}
 		if orderDevice.Code != "" {
-			order, err := svc.repoOrder.FindByDocIndentityGuid(ctx, holdingCode, "guid_fixed", orderDevice.SettingCode)
+			order, err := svc.repoOrder.FindByDocIndentityGuid(ctx, holdingCode, "guidfixed", orderDevice.SettingCode)
 
 			if err != nil {
 				return models.EOrderShopOld{}, err
@@ -198,7 +198,7 @@ func (svc EOrderService) GetShopInfo(holdingCode string, orderStationCode string
 		if orderDevice.Code != "" {
 			tempOrderStation.OrderDevice = orderDevice.OrderDevice
 
-			order, err := svc.repoOrder.FindByDocIndentityGuid(ctx, holdingCode, "guid_fixed", orderDevice.SettingCode)
+			order, err := svc.repoOrder.FindByDocIndentityGuid(ctx, holdingCode, "guidfixed", orderDevice.SettingCode)
 
 			if err != nil {
 				return models.EOrderShop{}, err

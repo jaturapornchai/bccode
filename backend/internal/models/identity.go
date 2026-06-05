@@ -1,16 +1,16 @@
 package models
 
 type Identity struct {
-	HoldingCode string `json:"holding_code" bson:"holding_code" gorm:"column:holding_code;primaryKey"`
-	GuidFixed   string `json:"guid_fixed" bson:"guid_fixed" gorm:"column:guid_fixed;primaryKey"`
+	HoldingCode string `json:"holdingcode" bson:"holdingcode" gorm:"column:holdingcode;primaryKey"`
+	GuidFixed   string `json:"guidfixed" bson:"guidfixed" gorm:"column:guidfixed;primaryKey"`
 }
 
 type HoldingCodeentity struct {
-	HoldingCode string `json:"holding_code" bson:"holding_code" gorm:"column:holding_code;primaryKey"`
+	HoldingCode string `json:"holdingcode" bson:"holdingcode" gorm:"column:holdingcode;primaryKey"`
 }
 
 type DocIdentity struct {
-	GuidFixed string `json:"guid_fixed" bson:"guid_fixed" gorm:"column:guid_fixed;primaryKey" `
+	GuidFixed string `json:"guidfixed" bson:"guidfixed" gorm:"column:guidfixed;primaryKey" `
 }
 
 type PartitionIdentity struct {

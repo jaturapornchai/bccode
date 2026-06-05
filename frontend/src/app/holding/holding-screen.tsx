@@ -36,13 +36,13 @@ type HoldingListItem = ShopListItem & {
 };
 
 type CreateHoldingForm = {
-  holding_code: string;
+  holdingcode: string;
   name: string;
   confirm_code: string;
   challenge_code: string;
 };
 type EditHoldingForm = {
-  holding_code: string;
+  holdingcode: string;
   name: string;
 };
 
@@ -88,7 +88,7 @@ type HoldingTextKey =
   | "updateSuccess";
 
 const emptyCreateHoldingForm: CreateHoldingForm = {
-  holding_code: "",
+  holdingcode: "",
   name: "",
   confirm_code: "",
   challenge_code: "",
@@ -105,19 +105,19 @@ const holdingTextEn: Record<HoldingTextKey, string> = {
   confirmCodeHelp: "Type the 4-digit code shown here to confirm real Holding creation.",
   create: "Create Holding",
   createFailed: "Could not create Holding.",
-  createHoldingDescription: "Use a unique lowercase holding_code. This code cannot be changed after creation.",
+  createHoldingDescription: "Use a unique lowercase holdingcode. This code cannot be changed after creation.",
   createHoldingTitle: "Create Holding",
   createSuccess: "Holding created. Opening company selection.",
   creating: "Creating Holding",
   description: "Select the Holding you want to work in, then continue to company selection.",
-  duplicateHolding: "This holding_code already exists in your Holding list.",
+  duplicateHolding: "This holdingcode already exists in your Holding list.",
   edit: "Edit",
   emailLoginRequired: "Sign in with email authentication before creating a Holding.",
   emptyDescription: "This account has no Holding access yet. Create or assign a Holding after Google sign-in.",
   emptyTitle: "No Holding found",
   eyebrow: "Step 2",
-  holdingCode: "holding_code",
-  holdingCodeInvalid: "holding_code must use a-z, 0-9, _, be 3-30 characters, and start with a-z.",
+  holdingCode: "holdingcode",
+  holdingCodeInvalid: "holdingcode must use a-z, 0-9, _, be 3-30 characters, and start with a-z.",
   holdingCodePlaceholder: "bc_demo",
   holdingName: "Holding name",
   holdingNamePlaceholder: "Example Holding",
@@ -147,19 +147,19 @@ const holdingText: Record<LanguageCode, Record<HoldingTextKey, string>> = {
     confirmCodeHelp: "พิมพ์รหัส 4 ตัวที่แสดง เพื่อยืนยันว่าต้องการสร้าง Holding จริง",
     create: "สร้าง Holding",
     createFailed: "สร้าง Holding ไม่สำเร็จ",
-    createHoldingDescription: "ใช้ holding_code ตัวเล็กไม่ซ้ำ รหัสนี้เปลี่ยนไม่ได้หลังสร้าง",
+    createHoldingDescription: "ใช้ holdingcode ตัวเล็กไม่ซ้ำ รหัสนี้เปลี่ยนไม่ได้หลังสร้าง",
     createHoldingTitle: "สร้าง Holding",
     createSuccess: "สร้าง Holding แล้ว กำลังเปิดหน้าเลือกบริษัท",
     creating: "กำลังสร้าง Holding",
     description: "เลือก Holding ที่ต้องการใช้งาน แล้วไปหน้าเลือกบริษัท",
-    duplicateHolding: "holding_code นี้มีอยู่แล้วในรายการ Holding ของบัญชีนี้",
+    duplicateHolding: "holdingcode นี้มีอยู่แล้วในรายการ Holding ของบัญชีนี้",
     edit: "แก้ไข",
     emailLoginRequired: "ต้องเข้าสู่ระบบด้วยการยืนยันตัวตนผ่านอีเมลก่อนสร้าง Holding",
     emptyDescription: "บัญชีนี้ยังไม่มีสิทธิ์เข้า Holding ให้สร้างหรือกำหนด Holding หลังเข้าสู่ระบบด้วย Google",
     emptyTitle: "ยังไม่มี Holding",
     eyebrow: "ขั้นตอนที่ 2",
-    holdingCode: "holding_code",
-    holdingCodeInvalid: "holding_code ต้องเป็น a-z, 0-9, _ ยาว 3-30 ตัว และขึ้นต้นด้วย a-z",
+    holdingCode: "holdingcode",
+    holdingCodeInvalid: "holdingcode ต้องเป็น a-z, 0-9, _ ยาว 3-30 ตัว และขึ้นต้นด้วย a-z",
     holdingCodePlaceholder: "bc_demo",
     holdingName: "ชื่อ Holding",
     holdingNamePlaceholder: "เช่น Holding ตัวอย่าง",
@@ -188,19 +188,19 @@ const holdingText: Record<LanguageCode, Record<HoldingTextKey, string>> = {
     confirmCodeHelp: "输入这里显示的 4 位数字，以确认真的要创建 Holding。",
     create: "创建 Holding",
     createFailed: "无法创建 Holding。",
-    createHoldingDescription: "使用唯一的小写 holding_code。创建后不能更改。",
+    createHoldingDescription: "使用唯一的小写 holdingcode。创建后不能更改。",
     createHoldingTitle: "创建 Holding",
     createSuccess: "Holding 已创建。正在打开公司选择。",
     creating: "正在创建 Holding",
     description: "选择要使用的 Holding，然后进入公司选择。",
-    duplicateHolding: "此 holding_code 已存在于你的 Holding 列表中。",
+    duplicateHolding: "此 holdingcode 已存在于你的 Holding 列表中。",
     edit: "编辑",
     emailLoginRequired: "请先使用邮箱验证登录后再创建 Holding。",
     emptyDescription: "此账号尚无 Holding 权限。请在 Google 登录后创建或分配 Holding。",
     emptyTitle: "未找到 Holding",
     eyebrow: "第 2 步",
-    holdingCode: "holding_code",
-    holdingCodeInvalid: "holding_code 只能使用 a-z、0-9、_，长度 3-30，并以 a-z 开头。",
+    holdingCode: "holdingcode",
+    holdingCodeInvalid: "holdingcode 只能使用 a-z、0-9、_，长度 3-30，并以 a-z 开头。",
     holdingCodePlaceholder: "bc_demo",
     holdingName: "Holding 名称",
     holdingNamePlaceholder: "示例 Holding",
@@ -228,19 +228,19 @@ const holdingText: Record<LanguageCode, Record<HoldingTextKey, string>> = {
     confirmCodeHelp: "ここに表示された4桁のコードを入力して、Holding 作成を確認してください。",
     create: "Holding を作成",
     createFailed: "Holding を作成できません。",
-    createHoldingDescription: "一意の小文字 holding_code を使用してください。作成後は変更できません。",
+    createHoldingDescription: "一意の小文字 holdingcode を使用してください。作成後は変更できません。",
     createHoldingTitle: "Holding 作成",
     createSuccess: "Holding を作成しました。会社選択を開きます。",
     creating: "Holding を作成中",
     description: "利用する Holding を選択して、会社選択へ進みます。",
-    duplicateHolding: "この holding_code は Holding 一覧に既に存在します。",
+    duplicateHolding: "この holdingcode は Holding 一覧に既に存在します。",
     edit: "編集",
     emailLoginRequired: "Holding を作成する前にメール認証でログインしてください。",
     emptyDescription: "このアカウントには Holding 権限がありません。Google ログイン後に作成または割り当ててください。",
     emptyTitle: "Holding がありません",
     eyebrow: "ステップ 2",
-    holdingCode: "holding_code",
-    holdingCodeInvalid: "holding_code は a-z、0-9、_ のみ、3-30文字、先頭は a-z です。",
+    holdingCode: "holdingcode",
+    holdingCodeInvalid: "holdingcode は a-z、0-9、_ のみ、3-30文字、先頭は a-z です。",
     holdingCodePlaceholder: "bc_demo",
     holdingName: "Holding 名",
     holdingNamePlaceholder: "サンプル Holding",
@@ -268,19 +268,19 @@ const holdingText: Record<LanguageCode, Record<HoldingTextKey, string>> = {
     confirmCodeHelp: "표시된 4자리 코드를 입력해 Holding 생성을 확인하세요.",
     create: "Holding 생성",
     createFailed: "Holding을 생성할 수 없습니다.",
-    createHoldingDescription: "중복 없는 소문자 holding_code를 사용하세요. 생성 후 변경할 수 없습니다.",
+    createHoldingDescription: "중복 없는 소문자 holdingcode를 사용하세요. 생성 후 변경할 수 없습니다.",
     createHoldingTitle: "Holding 생성",
     createSuccess: "Holding을 생성했습니다. 회사 선택을 엽니다.",
     creating: "Holding 생성 중",
     description: "사용할 Holding을 선택한 뒤 회사 선택으로 이동합니다.",
-    duplicateHolding: "이 holding_code는 Holding 목록에 이미 있습니다.",
+    duplicateHolding: "이 holdingcode는 Holding 목록에 이미 있습니다.",
     edit: "수정",
     emailLoginRequired: "Holding을 생성하려면 이메일 인증으로 로그인하세요.",
     emptyDescription: "이 계정에는 Holding 권한이 없습니다. Google 로그인 후 생성하거나 배정하세요.",
     emptyTitle: "Holding 없음",
     eyebrow: "2단계",
-    holdingCode: "holding_code",
-    holdingCodeInvalid: "holding_code는 a-z, 0-9, _ 만 사용하고 3-30자이며 a-z로 시작해야 합니다.",
+    holdingCode: "holdingcode",
+    holdingCodeInvalid: "holdingcode는 a-z, 0-9, _ 만 사용하고 3-30자이며 a-z로 시작해야 합니다.",
     holdingCodePlaceholder: "bc_demo",
     holdingName: "Holding 이름",
     holdingNamePlaceholder: "예시 Holding",
@@ -308,19 +308,19 @@ const holdingText: Record<LanguageCode, Record<HoldingTextKey, string>> = {
     confirmCodeHelp: "ພິມລະຫັດ 4 ຕົວທີ່ສະແດງເພື່ອຢືນຢັນການສ້າງ Holding.",
     create: "ສ້າງ Holding",
     createFailed: "ສ້າງ Holding ບໍ່ສຳເລັດ.",
-    createHoldingDescription: "ໃຊ້ holding_code ຕົວພິມນ້ອຍທີ່ບໍ່ຊ້ຳ. ສ້າງແລ້ວປ່ຽນບໍ່ໄດ້.",
+    createHoldingDescription: "ໃຊ້ holdingcode ຕົວພິມນ້ອຍທີ່ບໍ່ຊ້ຳ. ສ້າງແລ້ວປ່ຽນບໍ່ໄດ້.",
     createHoldingTitle: "ສ້າງ Holding",
     createSuccess: "ສ້າງ Holding ແລ້ວ ກຳລັງເປີດໜ້າເລືອກບໍລິສັດ.",
     creating: "ກຳລັງສ້າງ Holding",
     description: "ເລືອກ Holding ທີ່ຈະໃຊ້ ແລ້ວໄປໜ້າເລືອກບໍລິສັດ.",
-    duplicateHolding: "holding_code ນີ້ມີຢູ່ໃນລາຍການ Holding ແລ້ວ.",
+    duplicateHolding: "holdingcode ນີ້ມີຢູ່ໃນລາຍການ Holding ແລ້ວ.",
     edit: "ແກ້ໄຂ",
     emailLoginRequired: "ຕ້ອງ login ດ້ວຍການຢືນຢັນອີເມວກ່ອນສ້າງ Holding.",
     emptyDescription: "ບັນຊີນີ້ຍັງບໍ່ມີສິດ Holding. ສ້າງ ຫຼື ກຳນົດ Holding ຫຼັງ login ດ້ວຍ Google.",
     emptyTitle: "ບໍ່ພົບ Holding",
     eyebrow: "ຂັ້ນຕອນ 2",
-    holdingCode: "holding_code",
-    holdingCodeInvalid: "holding_code ໃຊ້ໄດ້ a-z, 0-9, _ ຍາວ 3-30 ຕົວ ແລະຂຶ້ນຕົ້ນດ້ວຍ a-z.",
+    holdingCode: "holdingcode",
+    holdingCodeInvalid: "holdingcode ໃຊ້ໄດ້ a-z, 0-9, _ ຍາວ 3-30 ຕົວ ແລະຂຶ້ນຕົ້ນດ້ວຍ a-z.",
     holdingCodePlaceholder: "bc_demo",
     holdingName: "ຊື່ Holding",
     holdingNamePlaceholder: "Holding ຕົວຢ່າງ",
@@ -348,19 +348,19 @@ const holdingText: Record<LanguageCode, Record<HoldingTextKey, string>> = {
     confirmCodeHelp: "Holding ဖန်တီးရန် သေချာကြောင်း အတည်ပြုရန် ပြထားသော 4 လုံးကုဒ်ကို ရိုက်ပါ။",
     create: "Holding ဖန်တီးရန်",
     createFailed: "Holding ဖန်တီး၍ မရပါ။",
-    createHoldingDescription: "မတူညီသော lowercase holding_code ကိုသုံးပါ။ ဖန်တီးပြီးနောက် ပြောင်း၍မရပါ။",
+    createHoldingDescription: "မတူညီသော lowercase holdingcode ကိုသုံးပါ။ ဖန်တီးပြီးနောက် ပြောင်း၍မရပါ။",
     createHoldingTitle: "Holding ဖန်တီးရန်",
     createSuccess: "Holding ဖန်တီးပြီးပါပြီ။ ကုမ္ပဏီရွေးချယ်မှုကို ဖွင့်နေသည်။",
     creating: "Holding ဖန်တီးနေသည်",
     description: "အသုံးပြုမည့် Holding ကိုရွေးပြီး ကုမ္ပဏီရွေးချယ်မှုသို့ ဆက်သွားပါ။",
-    duplicateHolding: "ဤ holding_code သည် သင့် Holding စာရင်းတွင် ရှိပြီးသားဖြစ်သည်။",
+    duplicateHolding: "ဤ holdingcode သည် သင့် Holding စာရင်းတွင် ရှိပြီးသားဖြစ်သည်။",
     edit: "ပြင်ရန်",
     emailLoginRequired: "Holding မဖန်တီးမီ အီးမေးလ်အတည်ပြု login ဖြင့် ဝင်ပါ။",
     emptyDescription: "ဤအကောင့်တွင် Holding အသုံးပြုခွင့် မရှိသေးပါ။ Google login ပြီးနောက် ဖန်တီး/သတ်မှတ်ပါ။",
     emptyTitle: "Holding မတွေ့ပါ",
     eyebrow: "အဆင့် 2",
-    holdingCode: "holding_code",
-    holdingCodeInvalid: "holding_code သည် a-z, 0-9, _ ကိုသာသုံးပြီး 3-30 လုံးရှိရမည်၊ a-z ဖြင့်စတင်ရမည်။",
+    holdingCode: "holdingcode",
+    holdingCodeInvalid: "holdingcode သည် a-z, 0-9, _ ကိုသာသုံးပြီး 3-30 လုံးရှိရမည်၊ a-z ဖြင့်စတင်ရမည်။",
     holdingCodePlaceholder: "bc_demo",
     holdingName: "Holding အမည်",
     holdingNamePlaceholder: "ဥပမာ Holding",
@@ -388,19 +388,19 @@ const holdingText: Record<LanguageCode, Record<HoldingTextKey, string>> = {
     confirmCodeHelp: "វាយលេខកូដ 4 ខ្ទង់ដែលបង្ហាញនៅទីនេះ ដើម្បីបញ្ជាក់ការបង្កើត Holding។",
     create: "បង្កើត Holding",
     createFailed: "មិនអាចបង្កើត Holding បាន។",
-    createHoldingDescription: "ប្រើ holding_code អក្សរតូចដែលមិនស្ទួន។ បង្កើតរួចមិនអាចកែបាន។",
+    createHoldingDescription: "ប្រើ holdingcode អក្សរតូចដែលមិនស្ទួន។ បង្កើតរួចមិនអាចកែបាន។",
     createHoldingTitle: "បង្កើត Holding",
     createSuccess: "បានបង្កើត Holding។ កំពុងបើកជម្រើសក្រុមហ៊ុន។",
     creating: "កំពុងបង្កើត Holding",
     description: "ជ្រើស Holding ដែលត្រូវប្រើ បន្ទាប់មកបន្តទៅជ្រើសក្រុមហ៊ុន។",
-    duplicateHolding: "holding_code នេះមានរួចហើយក្នុងបញ្ជី Holding របស់អ្នក។",
+    duplicateHolding: "holdingcode នេះមានរួចហើយក្នុងបញ្ជី Holding របស់អ្នក។",
     edit: "កែសម្រួល",
     emailLoginRequired: "សូម login ដោយផ្ទៀងផ្ទាត់អ៊ីមែល មុនពេលបង្កើត Holding។",
     emptyDescription: "គណនីនេះមិនទាន់មានសិទ្ធិ Holding ទេ។ សូមបង្កើត ឬកំណត់បន្ទាប់ពី login ដោយ Google។",
     emptyTitle: "រកមិនឃើញ Holding",
     eyebrow: "ជំហាន 2",
-    holdingCode: "holding_code",
-    holdingCodeInvalid: "holding_code ត្រូវប្រើ a-z, 0-9, _ ប្រវែង 3-30 តួ និងចាប់ផ្តើមដោយ a-z។",
+    holdingCode: "holdingcode",
+    holdingCodeInvalid: "holdingcode ត្រូវប្រើ a-z, 0-9, _ ប្រវែង 3-30 តួ និងចាប់ផ្តើមដោយ a-z។",
     holdingCodePlaceholder: "bc_demo",
     holdingName: "ឈ្មោះ Holding",
     holdingNamePlaceholder: "Holding គំរូ",
@@ -428,19 +428,19 @@ const holdingText: Record<LanguageCode, Record<HoldingTextKey, string>> = {
     confirmCodeHelp: "Nhập mã 4 chữ số hiển thị ở đây để xác nhận tạo Holding.",
     create: "Tạo Holding",
     createFailed: "Không thể tạo Holding.",
-    createHoldingDescription: "Dùng holding_code chữ thường và không trùng. Mã này không thể đổi sau khi tạo.",
+    createHoldingDescription: "Dùng holdingcode chữ thường và không trùng. Mã này không thể đổi sau khi tạo.",
     createHoldingTitle: "Tạo Holding",
     createSuccess: "Đã tạo Holding. Đang mở trang chọn công ty.",
     creating: "Đang tạo Holding",
     description: "Chọn Holding cần làm việc, sau đó chuyển sang chọn công ty.",
-    duplicateHolding: "holding_code này đã có trong danh sách Holding của bạn.",
+    duplicateHolding: "holdingcode này đã có trong danh sách Holding của bạn.",
     edit: "Sửa",
     emailLoginRequired: "Hãy đăng nhập bằng xác thực email trước khi tạo Holding.",
     emptyDescription: "Tài khoản này chưa có quyền Holding. Hãy tạo hoặc gán Holding sau khi đăng nhập Google.",
     emptyTitle: "Không có Holding",
     eyebrow: "Bước 2",
-    holdingCode: "holding_code",
-    holdingCodeInvalid: "holding_code chỉ dùng a-z, 0-9, _, dài 3-30 ký tự và bắt đầu bằng a-z.",
+    holdingCode: "holdingcode",
+    holdingCodeInvalid: "holdingcode chỉ dùng a-z, 0-9, _, dài 3-30 ký tự và bắt đầu bằng a-z.",
     holdingCodePlaceholder: "bc_demo",
     holdingName: "Tên Holding",
     holdingNamePlaceholder: "Holding mẫu",
@@ -468,19 +468,19 @@ const holdingText: Record<LanguageCode, Record<HoldingTextKey, string>> = {
     confirmCodeHelp: "Taip kod 4 digit yang dipaparkan di sini untuk mengesahkan ciptaan Holding.",
     create: "Cipta Holding",
     createFailed: "Tidak dapat mencipta Holding.",
-    createHoldingDescription: "Gunakan holding_code huruf kecil yang unik. Kod ini tidak boleh diubah selepas dicipta.",
+    createHoldingDescription: "Gunakan holdingcode huruf kecil yang unik. Kod ini tidak boleh diubah selepas dicipta.",
     createHoldingTitle: "Cipta Holding",
     createSuccess: "Holding dicipta. Membuka pilihan syarikat.",
     creating: "Mencipta Holding",
     description: "Pilih Holding untuk digunakan, kemudian teruskan ke pilihan syarikat.",
-    duplicateHolding: "holding_code ini sudah wujud dalam senarai Holding anda.",
+    duplicateHolding: "holdingcode ini sudah wujud dalam senarai Holding anda.",
     edit: "Edit",
     emailLoginRequired: "Log masuk dengan pengesahan e-mel sebelum mencipta Holding.",
     emptyDescription: "Akaun ini belum mempunyai akses Holding. Cipta atau tetapkan Holding selepas log masuk Google.",
     emptyTitle: "Tiada Holding",
     eyebrow: "Langkah 2",
-    holdingCode: "holding_code",
-    holdingCodeInvalid: "holding_code mesti menggunakan a-z, 0-9, _, 3-30 aksara dan bermula dengan a-z.",
+    holdingCode: "holdingcode",
+    holdingCodeInvalid: "holdingcode mesti menggunakan a-z, 0-9, _, 3-30 aksara dan bermula dengan a-z.",
     holdingCodePlaceholder: "bc_demo",
     holdingName: "Nama Holding",
     holdingNamePlaceholder: "Holding contoh",
@@ -508,19 +508,19 @@ const holdingText: Record<LanguageCode, Record<HoldingTextKey, string>> = {
     confirmCodeHelp: "Ketik kode 4 digit yang ditampilkan di sini untuk mengonfirmasi pembuatan Holding.",
     create: "Buat Holding",
     createFailed: "Tidak dapat membuat Holding.",
-    createHoldingDescription: "Gunakan holding_code huruf kecil yang unik. Kode ini tidak dapat diubah setelah dibuat.",
+    createHoldingDescription: "Gunakan holdingcode huruf kecil yang unik. Kode ini tidak dapat diubah setelah dibuat.",
     createHoldingTitle: "Buat Holding",
     createSuccess: "Holding dibuat. Membuka pemilihan perusahaan.",
     creating: "Membuat Holding",
     description: "Pilih Holding yang akan digunakan, lalu lanjut ke pemilihan perusahaan.",
-    duplicateHolding: "holding_code ini sudah ada di daftar Holding Anda.",
+    duplicateHolding: "holdingcode ini sudah ada di daftar Holding Anda.",
     edit: "Edit",
     emailLoginRequired: "Masuk dengan verifikasi email sebelum membuat Holding.",
     emptyDescription: "Akun ini belum memiliki akses Holding. Buat atau tetapkan Holding setelah masuk Google.",
     emptyTitle: "Holding tidak ditemukan",
     eyebrow: "Langkah 2",
-    holdingCode: "holding_code",
-    holdingCodeInvalid: "holding_code harus memakai a-z, 0-9, _, 3-30 karakter dan diawali a-z.",
+    holdingCode: "holdingcode",
+    holdingCodeInvalid: "holdingcode harus memakai a-z, 0-9, _, 3-30 karakter dan diawali a-z.",
     holdingCodePlaceholder: "bc_demo",
     holdingName: "Nama Holding",
     holdingNamePlaceholder: "Holding contoh",
@@ -548,19 +548,19 @@ const holdingText: Record<LanguageCode, Record<HoldingTextKey, string>> = {
     confirmCodeHelp: "I-type ang 4-digit code na ipinapakita dito para kumpirmahin ang paggawa ng Holding.",
     create: "Gumawa ng Holding",
     createFailed: "Hindi magawa ang Holding.",
-    createHoldingDescription: "Gumamit ng unique lowercase holding_code. Hindi na ito mababago pagkatapos malikha.",
+    createHoldingDescription: "Gumamit ng unique lowercase holdingcode. Hindi na ito mababago pagkatapos malikha.",
     createHoldingTitle: "Gumawa ng Holding",
     createSuccess: "Nagawa ang Holding. Binubuksan ang pagpili ng kumpanya.",
     creating: "Ginagawa ang Holding",
     description: "Piliin ang Holding na gagamitin, pagkatapos ay magpatuloy sa pagpili ng kumpanya.",
-    duplicateHolding: "Mayroon na ang holding_code na ito sa iyong Holding list.",
+    duplicateHolding: "Mayroon na ang holdingcode na ito sa iyong Holding list.",
     edit: "I-edit",
     emailLoginRequired: "Mag-login gamit ang email authentication bago gumawa ng Holding.",
     emptyDescription: "Wala pang Holding access ang account na ito. Gumawa o magtalaga ng Holding pagkatapos ng Google login.",
     emptyTitle: "Walang Holding",
     eyebrow: "Hakbang 2",
-    holdingCode: "holding_code",
-    holdingCodeInvalid: "Ang holding_code ay dapat gumamit ng a-z, 0-9, _, 3-30 character, at magsimula sa a-z.",
+    holdingCode: "holdingcode",
+    holdingCodeInvalid: "Ang holdingcode ay dapat gumamit ng a-z, 0-9, _, 3-30 character, at magsimula sa a-z.",
     holdingCodePlaceholder: "bc_demo",
     holdingName: "Pangalan ng Holding",
     holdingNamePlaceholder: "Halimbawang Holding",
@@ -639,7 +639,7 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
   const canCreateHolding = Boolean(
     auth && auth.method !== "password" && (auth.profile?.email || auth.username.includes("@")),
   );
-  const normalizedCreateHoldingCode = normalizeHoldingCode(createForm.holding_code);
+  const normalizedCreateHoldingCode = normalizeHoldingCode(createForm.holdingcode);
   const createHoldingDuplicate = useMemo(() => {
     if (!normalizedCreateHoldingCode) return false;
     return holdings.some((shop) => tenantCodeForShop(shop).toLowerCase() === normalizedCreateHoldingCode);
@@ -689,7 +689,7 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
       return;
     }
 
-    const holdingCode = normalizeHoldingCode(createForm.holding_code);
+    const holdingCode = normalizeHoldingCode(createForm.holdingcode);
     const name = normalizeDisplayName(createForm.name);
     if (!holdingCode || !holdingCodePattern.test(holdingCode)) {
       setNotice({ type: "error", text: ht(language, "holdingCodeInvalid") });
@@ -734,7 +734,7 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
     if (!holdingCode) return;
     setCreateOpen(false);
     setEditForm({
-      holding_code: holdingCode,
+      holdingcode: holdingCode,
       name: displayNameForEdit(shop),
     });
     setNotice(null);
@@ -749,7 +749,7 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
     event.preventDefault();
     if (!auth || !editForm) return;
 
-    const holdingCode = normalizeHoldingCode(editForm.holding_code);
+    const holdingCode = normalizeHoldingCode(editForm.holdingcode);
     const name = normalizeDisplayName(editForm.name);
     if (!holdingCode || !holdingCodePattern.test(holdingCode)) {
       setNotice({ type: "error", text: ht(language, "holdingCodeInvalid") });
@@ -765,7 +765,7 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
     try {
       await callWorkspaceApi(auth, "update-holding", {
         method: "POST",
-        body: { holding_code: holdingCode, name1: name },
+        body: { holdingcode: holdingCode, name1: name },
       });
       setEditForm(null);
       await loadHoldings(auth, language, { preserveNotice: true });
@@ -806,9 +806,9 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
     if (!auth) return;
     await callWorkspaceApi(auth, "select-holding", {
       method: "POST",
-      body: { holding_code: holdingCode },
+      body: { holdingcode: holdingCode },
     });
-    const nextAuth: AuthSession = { ...auth, holding_code: holdingCode };
+    const nextAuth: AuthSession = { ...auth, holdingcode: holdingCode };
     localStorage.setItem(workspaceStorageKeys.auth, JSON.stringify(nextAuth));
     localStorage.setItem(workspaceStorageKeys.holdingCode, holdingCode);
     localStorage.removeItem(workspaceStorageKeys.workspace);
@@ -914,9 +914,9 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
                   <Building2 aria-hidden="true" size={18} />
                   <input
                     autoComplete="off"
-                    value={createForm.holding_code}
+                    value={createForm.holdingcode}
                     onChange={(event) => {
-                      setCreateForm((current) => ({ ...current, holding_code: normalizeHoldingCode(event.target.value) }));
+                      setCreateForm((current) => ({ ...current, holdingcode: normalizeHoldingCode(event.target.value) }));
                     }}
                     placeholder={ht(language, "holdingCodePlaceholder")}
                   />
@@ -1000,7 +1000,7 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
             <form className="holding-create-panel holding-edit-panel" onSubmit={updateHolding}>
               <div className="holding-create-head">
                 <div>
-                  <strong>{ht(language, "edit")}: {editForm.holding_code}</strong>
+                  <strong>{ht(language, "edit")}: {editForm.holdingcode}</strong>
                   <span>{ht(language, "holdingNameRequired")}</span>
                 </div>
                 <button className="icon-button" type="button" onClick={closeEditHolding} aria-label={ht(language, "cancel")} title={ht(language, "cancel")}>
@@ -1192,7 +1192,7 @@ function readAuth(): AuthSession | null {
 }
 
 function activeHoldingCode(auth: AuthSession): string {
-  return auth.holding_code?.trim() || localStorage.getItem(workspaceStorageKeys.holdingCode)?.trim() || "";
+  return auth.holdingcode?.trim() || localStorage.getItem(workspaceStorageKeys.holdingCode)?.trim() || "";
 }
 
 async function callWorkspaceApi<T extends Record<string, unknown>>(
@@ -1230,7 +1230,7 @@ function dedupeHoldings(shops: HoldingListItem[]): HoldingListItem[] {
 }
 
 function tenantCodeForShop(shop: HoldingListItem | null | undefined): string {
-  return shop?.holding_code?.trim() || "";
+  return shop?.holdingcode?.trim() || "";
 }
 
 function displayNameForEdit(shop: HoldingListItem): string {
@@ -1254,7 +1254,7 @@ function createHoldingPayload(holdingCode: string, name: string, ownerEmail: str
   return {
     address: [],
     branchcode: "",
-    holding_code: holdingCode,
+    holdingcode: holdingCode,
     images: [],
     logo: "",
     name1: name,

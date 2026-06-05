@@ -13,7 +13,7 @@ function Get-SelectedToken {
   $keys = docker exec redis redis-cli --scan --pattern "auth-*"
   foreach ($key in $keys) {
     if ([string]::IsNullOrWhiteSpace($key)) { continue }
-    $values = docker exec redis redis-cli HMGET $key username holding_code
+    $values = docker exec redis redis-cli HMGET $key username holdingcode
     if ($values[0] -eq $Username -and $values[1] -eq $HoldingCode) {
       return $key.Substring(5)
     }
@@ -58,8 +58,8 @@ function Invoke-AtlasUpsert {
   param([string]$Collection, [hashtable]$Data, [string]$Token)
   $payload = @{
     collection = $Collection
-    holding_code = $HoldingCode
-    guid_fixed = $Data.guid_fixed
+    holdingcode = $HoldingCode
+    guidfixed = $Data.guidfixed
     upsert = $true
     data = $Data
   }
@@ -70,7 +70,7 @@ function Invoke-AtlasGetCount {
   param([string]$Collection, [string]$Token)
   $payload = @{
     collection = $Collection
-    holding_code = $HoldingCode
+    holdingcode = $HoldingCode
     limit = 2000
     skip = 0
   }
@@ -188,7 +188,7 @@ function Get-CompanyCodes {
   try {
     $result = Invoke-JsonApi -Method "GET" -Path "/organization/company" -Payload $null -Token $Token
     return @($result.data) |
-      ForEach-Object { [string]($_.code ?? $_.business_code ?? "") } |
+      ForEach-Object { [string]($_.code ?? $_.businesscode ?? "") } |
       Where-Object { $_.Trim() -ne "" } |
       ForEach-Object { $_.Trim().ToUpperInvariant() } |
       Select-Object -Unique
@@ -206,28 +206,28 @@ $companyB = if ($companyCodes.Count -ge 2) { @($companyCodes[1]) } else { @() }
 $companyC = if ($companyCodes.Count -ge 3) { @($companyCodes[2]) } else { @() }
 
 $colors = @(
-  @{ code = "BLACK"; th = "ดำ"; en = "Black"; hex = "#111827"; family = "neutral"; aliases = @("ดำ", "สีดำ", "black", "BK"); business_codes = $allCompanies },
-  @{ code = "WHITE"; th = "ขาว"; en = "White"; hex = "#F9FAFB"; family = "neutral"; aliases = @("ขาว", "สีขาว", "white", "WH"); business_codes = $allCompanies },
-  @{ code = "GREY"; th = "เทา"; en = "Grey"; hex = "#6B7280"; family = "neutral"; aliases = @("เทา", "สีเทา", "gray", "grey"); business_codes = $allCompanies },
-  @{ code = "NAVY"; th = "น้ำเงิน"; en = "Navy"; hex = "#1E3A8A"; family = "blue"; aliases = @("กรม", "น้ำเงิน", "navy", "dark blue"); business_codes = $companyA },
-  @{ code = "KHAKI"; th = "กากี"; en = "Khaki"; hex = "#A16207"; family = "brown"; aliases = @("กากี", "khaki", "tan"); business_codes = $companyA },
-  @{ code = "GREEN"; th = "เขียว"; en = "Green"; hex = "#15803D"; family = "green"; aliases = @("เขียว", "สีเขียว", "green"); business_codes = $companyB },
-  @{ code = "CREAM"; th = "ครีม"; en = "Cream"; hex = "#F5E8C7"; family = "yellow"; aliases = @("ครีม", "cream", "ivory"); business_codes = $companyB },
-  @{ code = "RED"; th = "แดง"; en = "Red"; hex = "#DC2626"; family = "red"; aliases = @("แดง", "red", "scarlet"); business_codes = $companyC }
+  @{ code = "BLACK"; th = "ดำ"; en = "Black"; hex = "#111827"; family = "neutral"; aliases = @("ดำ", "สีดำ", "black", "BK"); businesscodes = $allCompanies },
+  @{ code = "WHITE"; th = "ขาว"; en = "White"; hex = "#F9FAFB"; family = "neutral"; aliases = @("ขาว", "สีขาว", "white", "WH"); businesscodes = $allCompanies },
+  @{ code = "GREY"; th = "เทา"; en = "Grey"; hex = "#6B7280"; family = "neutral"; aliases = @("เทา", "สีเทา", "gray", "grey"); businesscodes = $allCompanies },
+  @{ code = "NAVY"; th = "น้ำเงิน"; en = "Navy"; hex = "#1E3A8A"; family = "blue"; aliases = @("กรม", "น้ำเงิน", "navy", "dark blue"); businesscodes = $companyA },
+  @{ code = "KHAKI"; th = "กากี"; en = "Khaki"; hex = "#A16207"; family = "brown"; aliases = @("กากี", "khaki", "tan"); businesscodes = $companyA },
+  @{ code = "GREEN"; th = "เขียว"; en = "Green"; hex = "#15803D"; family = "green"; aliases = @("เขียว", "สีเขียว", "green"); businesscodes = $companyB },
+  @{ code = "CREAM"; th = "ครีม"; en = "Cream"; hex = "#F5E8C7"; family = "yellow"; aliases = @("ครีม", "cream", "ivory"); businesscodes = $companyB },
+  @{ code = "RED"; th = "แดง"; en = "Red"; hex = "#DC2626"; family = "red"; aliases = @("แดง", "red", "scarlet"); businesscodes = $companyC }
 )
 
 $sizes = @(
-  @{ code = "XS"; th = "XS"; en = "XS"; system = "intl"; type = "regular"; order = 10; aliases = @("XS", "Extra Small"); business_codes = $allCompanies },
-  @{ code = "S"; th = "S (29-32)"; en = "S"; system = "intl"; type = "regular"; order = 20; aliases = @("S", "S(29-32)", "S 29-32"); business_codes = $allCompanies },
-  @{ code = "M"; th = "M (32-34)"; en = "M"; system = "intl"; type = "regular"; order = 30; aliases = @("M", "M(40-50kg)", "M 32-34"); business_codes = $allCompanies },
-  @{ code = "L"; th = "L (34-36)"; en = "L"; system = "intl"; type = "regular"; order = 40; aliases = @("L", "L(50-60kg)", "L 34-36"); business_codes = $allCompanies },
-  @{ code = "XL"; th = "XL (36-37)"; en = "XL"; system = "intl"; type = "regular"; order = 50; aliases = @("XL", "XL(60-70kg)", "XL 36-37"); business_codes = $companyA },
-  @{ code = "2XL"; th = "2XL (37-38)"; en = "2XL"; system = "intl"; type = "plus"; order = 60; aliases = @("XXL", "2XL", "2XL(70-80kg)"); business_codes = $companyA },
-  @{ code = "128GB"; th = "128GB"; en = "128GB"; system = "intl"; type = "regular"; order = 100; aliases = @("128G", "128 GB", "128GB"); business_codes = $companyB },
-  @{ code = "256GB"; th = "256GB"; en = "256GB"; system = "intl"; type = "regular"; order = 110; aliases = @("256G", "256 GB", "256GB"); business_codes = $companyB },
-  @{ code = "512GB"; th = "512GB"; en = "512GB"; system = "intl"; type = "regular"; order = 120; aliases = @("512G", "512 GB", "512GB"); business_codes = $companyB },
-  @{ code = "ESIM"; th = "eSIM"; en = "eSIM"; system = "intl"; type = "regular"; order = 130; aliases = @("ESIM", "e-sim", "embedded sim"); business_codes = $companyC },
-  @{ code = "NANO_SIM"; th = "Nano SIM"; en = "Nano SIM"; system = "intl"; type = "regular"; order = 140; aliases = @("nano", "nano sim", "ซิมนาโน"); business_codes = $companyC }
+  @{ code = "XS"; th = "XS"; en = "XS"; system = "intl"; type = "regular"; order = 10; aliases = @("XS", "Extra Small"); businesscodes = $allCompanies },
+  @{ code = "S"; th = "S (29-32)"; en = "S"; system = "intl"; type = "regular"; order = 20; aliases = @("S", "S(29-32)", "S 29-32"); businesscodes = $allCompanies },
+  @{ code = "M"; th = "M (32-34)"; en = "M"; system = "intl"; type = "regular"; order = 30; aliases = @("M", "M(40-50kg)", "M 32-34"); businesscodes = $allCompanies },
+  @{ code = "L"; th = "L (34-36)"; en = "L"; system = "intl"; type = "regular"; order = 40; aliases = @("L", "L(50-60kg)", "L 34-36"); businesscodes = $allCompanies },
+  @{ code = "XL"; th = "XL (36-37)"; en = "XL"; system = "intl"; type = "regular"; order = 50; aliases = @("XL", "XL(60-70kg)", "XL 36-37"); businesscodes = $companyA },
+  @{ code = "2XL"; th = "2XL (37-38)"; en = "2XL"; system = "intl"; type = "plus"; order = 60; aliases = @("XXL", "2XL", "2XL(70-80kg)"); businesscodes = $companyA },
+  @{ code = "128GB"; th = "128GB"; en = "128GB"; system = "intl"; type = "regular"; order = 100; aliases = @("128G", "128 GB", "128GB"); businesscodes = $companyB },
+  @{ code = "256GB"; th = "256GB"; en = "256GB"; system = "intl"; type = "regular"; order = 110; aliases = @("256G", "256 GB", "256GB"); businesscodes = $companyB },
+  @{ code = "512GB"; th = "512GB"; en = "512GB"; system = "intl"; type = "regular"; order = 120; aliases = @("512G", "512 GB", "512GB"); businesscodes = $companyB },
+  @{ code = "ESIM"; th = "eSIM"; en = "eSIM"; system = "intl"; type = "regular"; order = 130; aliases = @("ESIM", "e-sim", "embedded sim"); businesscodes = $companyC },
+  @{ code = "NANO_SIM"; th = "Nano SIM"; en = "Nano SIM"; system = "intl"; type = "regular"; order = 140; aliases = @("nano", "nano sim", "ซิมนาโน"); businesscodes = $companyC }
 )
 
 function New-ExternalIntegrationProfiles {
@@ -351,7 +351,7 @@ $matrices = @(
     names = @(New-Names "เสื้อผ้า สี x ไซซ์" "Apparel color x size")
     matrix_type = "apparel"
     serial_tracking_mode = "none"
-    business_codes = $companyA
+    businesscodes = $companyA
     media_assets = @(
       New-MediaAsset -Kind "main" -Uri "images/products/apparel-premium-tshirt-main.webp" -SortOrder 1
       New-MediaAsset -Kind "gallery" -Uri "images/products/apparel-premium-tshirt-detail.webp" -SortOrder 2
@@ -405,7 +405,7 @@ $matrices = @(
     names = @(New-Names "มือถือ สี x ความจุ" "Mobile color x storage")
     matrix_type = "mobile_phone"
     serial_tracking_mode = "imei"
-    business_codes = $companyB
+    businesscodes = $companyB
     media_assets = @(
       New-MediaAsset -Kind "main" -Uri "images/products/mobile-pro-main.webp" -SortOrder 1
       New-MediaAsset -Kind "gallery" -Uri "images/products/mobile-pro-camera.webp" -SortOrder 2
@@ -465,7 +465,7 @@ $matrices = @(
     names = @(New-Names "ซิม เครือข่าย x แพ็กเกจ" "SIM network x plan")
     matrix_type = "sim"
     serial_tracking_mode = "iccid"
-    business_codes = $companyC
+    businesscodes = $companyC
     media_assets = @(
       New-MediaAsset -Kind "main" -Uri "images/products/sim-starter-main.webp" -SortOrder 1
       New-MediaAsset -Kind "gallery" -Uri "images/products/sim-package-back.webp" -SortOrder 2
@@ -519,7 +519,7 @@ $matrices = @(
     names = @(New-Names "คอมพิวเตอร์ CPU x RAM x Storage" "Computer CPU x RAM x storage")
     matrix_type = "computer"
     serial_tracking_mode = "serial_no"
-    business_codes = $allCompanies
+    businesscodes = $allCompanies
     media_assets = @(
       New-MediaAsset -Kind "main" -Uri "images/products/notebook-workstation-main.webp" -SortOrder 1
       New-MediaAsset -Kind "gallery" -Uri "images/products/notebook-ports.webp" -SortOrder 2
@@ -582,14 +582,14 @@ $created = @{
 foreach ($item in $colors) {
   $guid = "seed-product-color-$($item.code.ToLowerInvariant())"
   $data = @{
-    guid_fixed = $guid
-    holding_code = $HoldingCode
+    guidfixed = $guid
+    holdingcode = $HoldingCode
     code = $item.code
     names = @(New-Names $item.th $item.en)
     hex_color = $item.hex
     color_family = $item.family
     aliases = @($item.aliases)
-    business_codes = @($item.business_codes)
+    businesscodes = @($item.businesscodes)
     isdisabled = $false
     seed_group = "product_variant_master"
   }
@@ -600,15 +600,15 @@ foreach ($item in $colors) {
 foreach ($item in $sizes) {
   $guid = "seed-product-size-$($item.code.ToLowerInvariant().Replace('_', '-'))"
   $data = @{
-    guid_fixed = $guid
-    holding_code = $HoldingCode
+    guidfixed = $guid
+    holdingcode = $HoldingCode
     code = $item.code
     names = @(New-Names $item.th $item.en)
     size_system = $item.system
     size_type = $item.type
     sort_order = $item.order
     aliases = @($item.aliases)
-    business_codes = @($item.business_codes)
+    businesscodes = @($item.businesscodes)
     isdisabled = $false
     seed_group = "product_variant_master"
   }
@@ -619,8 +619,8 @@ foreach ($item in $sizes) {
 foreach ($item in $matrices) {
   $guid = "seed-product-variant-matrix-$($item.code.ToLowerInvariant().Replace('_', '-'))"
   $data = @{
-    guid_fixed = $guid
-    holding_code = $HoldingCode
+    guidfixed = $guid
+    holdingcode = $HoldingCode
     code = $item.code
     names = @($item.names)
     matrix_type = $item.matrix_type
@@ -632,7 +632,7 @@ foreach ($item in $matrices) {
     import_attribute_maps = @($item.import_attribute_maps)
     integration_profiles = @($item.integration_profiles)
     payload_examples = @($item.payload_examples)
-    business_codes = @($item.business_codes)
+    businesscodes = @($item.businesscodes)
     isdisabled = $false
     seed_group = "product_variant_master"
   }
@@ -641,7 +641,7 @@ foreach ($item in $matrices) {
 }
 
 [pscustomobject]@{
-  holding_code = $HoldingCode
+  holdingcode = $HoldingCode
   username = $Username
   company_codes_found = $companyCodes
   upserted_this_run = $created

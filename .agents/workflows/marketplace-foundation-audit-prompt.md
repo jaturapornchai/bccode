@@ -36,7 +36,7 @@ This is an audit/design task first. Do not implement production code unless Jead
 4. Do not guess APIs, schemas, enum values, model fields, workflow, or business behavior.
 5. If evidence is missing, write `ยังยืนยันไม่ได้` and list exactly what was checked.
 6. Do not commit secrets, tokens, passwords, marketplace credentials, or real customer data.
-7. Use `holding_code` as tenant/workspace scope and `guid_fixed`/`guid` as immutable CRUD identity.
+7. Use `holdingcode` as tenant/workspace scope and `guidfixed`/`guid` as immutable CRUD identity.
 8. New persistent/API contracts must use lower `snake_case`.
 9. User-facing UI must not show raw JSON for normal users. Raw payloads are allowed only in importer/debug/admin tools.
 10. Marketplace stock and price must not break accounting rules:
@@ -330,9 +330,9 @@ Include compact but realistic JSON examples for:
 
 Rules for JSON examples:
 - Use lower `snake_case`.
-- Include `holding_code`.
-- Include immutable `guid_fixed` where it is a BC record.
-- Include user-facing codes such as `business_code`, `item_code`, `barcode`, `sku_code`.
+- Include `holdingcode`.
+- Include immutable `guidfixed` where it is a BC record.
+- Include user-facing codes such as `businesscode`, `item_code`, `barcode`, `sku_code`.
 - Do not include secrets or real customer data.
 - Keep examples readable; do not dump huge raw payloads.
 

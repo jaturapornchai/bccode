@@ -11,13 +11,13 @@ const rfqCollectionName = "transactionRequestForQuotation"
 
 // VendorItem — รายการสินค้าของ vendor แต่ละราย
 type VendorItem struct {
-	LineNumber int             `json:"line_number" bson:"line_number"`
+	LineNumber int             `json:"linenumber" bson:"linenumber"`
 	ItemCode   string          `json:"itemcode" bson:"itemcode"`
 	ItemNames  *[]models.NameX `json:"itemnames" bson:"itemnames"`
 	UnitCode   string          `json:"unitcode" bson:"unitcode"`
 	Qty        float64         `json:"qty" bson:"qty"`
 	Price      float64         `json:"price" bson:"price"`
-	SumAmount  float64         `json:"sum_amount" bson:"sum_amount"`
+	SumAmount  float64         `json:"sumamount" bson:"sumamount"`
 	Remark     string          `json:"remark,omitempty" bson:"remark,omitempty"`
 }
 
@@ -31,7 +31,7 @@ type VendorEntry struct {
 	DeliveryDays   int             `json:"deliverydays" bson:"deliverydays"`
 	DeliveryTerms  string          `json:"deliveryterms,omitempty" bson:"deliveryterms,omitempty"`
 	QualityNotes   string          `json:"qualitynotes,omitempty" bson:"qualitynotes,omitempty"`
-	TotalAmount    float64         `json:"total_amount" bson:"total_amount"`
+	TotalAmount    float64         `json:"totalamount" bson:"totalamount"`
 	IsSelected     bool            `json:"isselected" bson:"isselected"`
 	Items          []VendorItem    `json:"items" bson:"items"`
 }
@@ -69,7 +69,7 @@ type RFQData struct {
 }
 
 type RFQDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	RFQData            `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

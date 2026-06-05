@@ -16,37 +16,37 @@ import (
 )
 
 const (
-	CollectionAPIKeys  = "mcp_api_keys"
-	CollectionAuditLog = "mcp_audit_log"
+	CollectionAPIKeys  = "mcpapikeys"
+	CollectionAuditLog = "mcpauditlog"
 )
 
 // APIKey represents an MCP API Key
 type APIKey struct {
-	ID                 primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	APIKey             string             `bson:"api_key" json:"api_key"`
-	HoldingCode        string             `bson:"holding_code" json:"holding_code"`
+	ID                 primitive.ObjectID `bson:"id,omitempty" json:"id"`
+	APIKey             string             `bson:"apikey" json:"apikey"`
+	HoldingCode        string             `bson:"holdingcode" json:"holdingcode"`
 	Name               string             `bson:"name" json:"name"`
 	Description        string             `bson:"description" json:"description"`
-	IsActive           bool               `bson:"is_active" json:"is_active"`
-	AllowedTools       []string           `bson:"allowed_tools" json:"allowed_tools"`
-	RateLimitPerMinute int                `bson:"rate_limit_per_minute" json:"rate_limit_per_minute"`
-	CreatedAt          time.Time          `bson:"created_at" json:"created_at"`
-	ExpiresAt          *time.Time         `bson:"expires_at,omitempty" json:"expires_at,omitempty"`
-	LastUsedAt         *time.Time         `bson:"last_used_at,omitempty" json:"last_used_at,omitempty"`
-	CreatedBy          string             `bson:"created_by" json:"created_by"`
+	IsActive           bool               `bson:"isactive" json:"isactive"`
+	AllowedTools       []string           `bson:"allowedtools" json:"allowedtools"`
+	RateLimitPerMinute int                `bson:"ratelimitperminute" json:"ratelimitperminute"`
+	CreatedAt          time.Time          `bson:"createdat" json:"createdat"`
+	ExpiresAt          *time.Time         `bson:"expiresat,omitempty" json:"expiresat,omitempty"`
+	LastUsedAt         *time.Time         `bson:"lastusedat,omitempty" json:"lastusedat,omitempty"`
+	CreatedBy          string             `bson:"createdby" json:"createdby"`
 }
 
 // AuditLog represents an MCP audit log entry
 type AuditLog struct {
-	ID              primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	APIKeyID        primitive.ObjectID `bson:"api_key_id" json:"api_key_id"`
-	HoldingCode     string             `bson:"holding_code" json:"holding_code"`
-	ToolName        string             `bson:"tool_name" json:"tool_name"`
-	RequestParams   bson.M             `bson:"request_params" json:"request_params"`
-	ResponseStatus  string             `bson:"response_status" json:"response_status"`
-	ErrorMessage    string             `bson:"error_message,omitempty" json:"error_message,omitempty"`
-	ExecutionTimeMs int64              `bson:"execution_time_ms" json:"execution_time_ms"`
-	CreatedAt       time.Time          `bson:"created_at" json:"created_at"`
+	ID              primitive.ObjectID `bson:"id,omitempty" json:"id"`
+	APIKeyID        primitive.ObjectID `bson:"apikeyid" json:"apikeyid"`
+	HoldingCode     string             `bson:"holdingcode" json:"holdingcode"`
+	ToolName        string             `bson:"toolname" json:"toolname"`
+	RequestParams   bson.M             `bson:"requestparams" json:"requestparams"`
+	ResponseStatus  string             `bson:"responsestatus" json:"responsestatus"`
+	ErrorMessage    string             `bson:"errormessage,omitempty" json:"errormessage,omitempty"`
+	ExecutionTimeMs int64              `bson:"executiontimems" json:"executiontimems"`
+	CreatedAt       time.Time          `bson:"createdat" json:"createdat"`
 }
 
 // KeysRepository handles API key operations
@@ -88,8 +88,8 @@ func (r *KeysRepository) GetAPIKeyByKey(ctx context.Context, key string) (*APIKe
 
 	var apiKey APIKey
 	err := collection.FindOne(ctx, bson.M{
-		"api_key":   key,
-		"is_active": true,
+		"apikey":   key,
+		"isactive": true,
 	}).Decode(&apiKey)
 
 	if err != nil {
@@ -136,8 +136,8 @@ func (r *KeysRepository) GetAPIKeysByShop(ctx context.Context, holdingCode strin
 	collection := r.db.Collection(CollectionAPIKeys)
 
 	cursor, err := collection.Find(ctx, bson.M{
-		"holding_code": holdingCode,
-	}, options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}}))
+		"holdingcode": holdingCode,
+	}, options.Find().SetSort(bson.D{{Key: "createdat", Value: -1}}))
 
 	if err != nil {
 		logger.Error("Failed to get API keys by shop: %v", err)
@@ -163,7 +163,7 @@ func (r *KeysRepository) UpdateAPIKey(ctx context.Context, id string, updates bs
 
 	collection := r.db.Collection(CollectionAPIKeys)
 
-	updates["updated_at"] = time.Now()
+	updates["updatedat"] = time.Now()
 
 	_, err = collection.UpdateOne(ctx,
 		bson.M{"_id": objectID},
@@ -178,7 +178,7 @@ func (r *KeysRepository) UpdateAPIKey(ctx context.Context, id string, updates bs
 	return nil
 }
 
-// DeleteAPIKey soft deletes an API key by setting is_active to false
+// DeleteAPIKey soft deletes an API key by setting isactive to false
 func (r *KeysRepository) DeleteAPIKey(ctx context.Context, id string) error {
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
@@ -191,8 +191,8 @@ func (r *KeysRepository) DeleteAPIKey(ctx context.Context, id string) error {
 		bson.M{"_id": objectID},
 		bson.M{
 			"$set": bson.M{
-				"is_active":  false,
-				"updated_at": time.Now(),
+				"isactive":  false,
+				"updatedat": time.Now(),
 			},
 		},
 	)
@@ -211,8 +211,8 @@ func (r *KeysRepository) UpdateLastUsedAt(ctx context.Context, key string) error
 	now := time.Now()
 
 	_, err := collection.UpdateOne(ctx,
-		bson.M{"api_key": key},
-		bson.M{"$set": bson.M{"last_used_at": now}},
+		bson.M{"apikey": key},
+		bson.M{"$set": bson.M{"lastusedat": now}},
 	)
 
 	if err != nil {
@@ -244,11 +244,11 @@ func (r *KeysRepository) GetAuditLogsByShop(ctx context.Context, holdingCode str
 	collection := r.db.Collection(CollectionAuditLog)
 
 	opts := options.Find().
-		SetSort(bson.D{{Key: "created_at", Value: -1}}).
+		SetSort(bson.D{{Key: "createdat", Value: -1}}).
 		SetLimit(limit).
 		SetSkip(skip)
 
-	cursor, err := collection.Find(ctx, bson.M{"holding_code": holdingCode}, opts)
+	cursor, err := collection.Find(ctx, bson.M{"holdingcode": holdingCode}, opts)
 	if err != nil {
 		logger.Error("Failed to get audit logs: %v", err)
 		return nil, fmt.Errorf("failed to get audit logs: %w", err)
@@ -276,19 +276,19 @@ func (r *KeysRepository) EnsureIndexes(ctx context.Context) error {
 
 	indexes := []mongo.IndexModel{
 		{
-			Keys:    bson.D{{Key: "api_key", Value: 1}},
+			Keys:    bson.D{{Key: "apikey", Value: 1}},
 			Options: options.Index().SetUnique(true),
 		},
 		{
-			Keys: bson.D{{Key: "holding_code", Value: 1}},
+			Keys: bson.D{{Key: "holdingcode", Value: 1}},
 		},
 		{
-			Keys: bson.D{{Key: "is_active", Value: 1}},
+			Keys: bson.D{{Key: "isactive", Value: 1}},
 		},
 		{
 			Keys: bson.D{
-				{Key: "api_key", Value: 1},
-				{Key: "is_active", Value: 1},
+				{Key: "apikey", Value: 1},
+				{Key: "isactive", Value: 1},
 			},
 		},
 	}
@@ -304,18 +304,18 @@ func (r *KeysRepository) EnsureIndexes(ctx context.Context) error {
 
 	auditIndexes := []mongo.IndexModel{
 		{
-			Keys: bson.D{{Key: "api_key_id", Value: 1}},
+			Keys: bson.D{{Key: "apikeyid", Value: 1}},
 		},
 		{
-			Keys: bson.D{{Key: "holding_code", Value: 1}},
+			Keys: bson.D{{Key: "holdingcode", Value: 1}},
 		},
 		{
-			Keys: bson.D{{Key: "created_at", Value: -1}},
+			Keys: bson.D{{Key: "createdat", Value: -1}},
 		},
 		{
 			Keys: bson.D{
-				{Key: "holding_code", Value: 1},
-				{Key: "created_at", Value: -1},
+				{Key: "holdingcode", Value: 1},
+				{Key: "createdat", Value: -1},
 			},
 		},
 	}

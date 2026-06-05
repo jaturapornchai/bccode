@@ -27,8 +27,8 @@ func (r *StockBalanceTransactionAdminRepository) FindStockBalanceDocByHoldingCod
 	docList := []stockBalanceProductModels.StockBalanceDoc{}
 
 	err := r.pst.Find(ctx, &stockBalanceProductModels.StockBalanceDoc{},
-		bson.M{"holding_code": holdingCode,
-			"deleted_at": bson.M{"$exists": false},
+		bson.M{"holdingcode": holdingCode,
+			"deletedat": bson.M{"$exists": false},
 		},
 		&docList)
 	if err != nil {
@@ -42,8 +42,8 @@ func (r *StockBalanceTransactionAdminRepository) FindStockBalanceDocDeleteByHold
 	docList := []stockBalanceProductModels.StockBalanceDoc{}
 
 	err := r.pst.Find(ctx, &stockBalanceProductModels.StockBalanceDoc{},
-		bson.M{"holding_code": holdingCode,
-			"deleted_at": bson.M{"$exists": true},
+		bson.M{"holdingcode": holdingCode,
+			"deletedat": bson.M{"$exists": true},
 		},
 		&docList)
 	if err != nil {

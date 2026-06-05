@@ -47,14 +47,14 @@ interface BOMItemInput {
 }
 
 interface BOMVersion {
-  guid_fixed: string;
+  guidfixed: string;
   start_date: string;
   end_date: string | null;
   bom: BOMItemInput[];
 }
 
 interface ProductBOMRecord {
-  guid_fixed: string;
+  guidfixed: string;
   barcode_guid?: string;
   barcode: string;
   itemcode?: string;
@@ -154,7 +154,7 @@ export function ProductBomEditor({
     }));
 
     const newVer: BOMVersion = {
-      guid_fixed: "",
+      guidfixed: "",
       start_date: new Date().toISOString().substring(0, 10),
       end_date: null,
       bom: copiedBOM,
@@ -204,7 +204,7 @@ export function ProductBomEditor({
   useEffect(() => {
     const mapItems = (items: any[] = []): BOMItemInput[] =>
       items.map((item) => ({
-        barcodeguidfixed: item.guid_fixed || item.barcodeguidfixed || item.barcode_guid || "",
+        barcodeguidfixed: item.guidfixed || item.barcodeguidfixed || item.barcode_guid || "",
         barcode: item.barcode || "",
         ref_type: item.ref_type === "recipe" ? "recipe" : "product",
         names: item.names || [],
@@ -230,14 +230,14 @@ export function ProductBomEditor({
       const versions =
         record.boms && record.boms.length > 0
           ? record.boms.map((ver: any) => ({
-              guid_fixed: ver.guid_fixed || "",
+              guidfixed: ver.guidfixed || "",
               start_date: ver.start_date ? ver.start_date.substring(0, 10) : new Date().toISOString().substring(0, 10),
               end_date: ver.end_date ? ver.end_date.substring(0, 10) : null,
               bom: mapItems(ver.bom || []),
             }))
           : [
               {
-                guid_fixed: "",
+                guidfixed: "",
                 start_date: new Date().toISOString().substring(0, 10),
                 end_date: null,
                 bom: defaultBom,
@@ -255,7 +255,7 @@ export function ProductBomEditor({
       setUnsavedChanges(markDirty);
     };
 
-    if (selectedRecord.guid_fixed.startsWith("virtual-")) {
+    if (selectedRecord.guidfixed.startsWith("virtual-")) {
       loadFromRecord(selectedRecord, true);
       return;
     }
@@ -266,7 +266,7 @@ export function ProductBomEditor({
     }
 
     setLoading(true);
-    fetch(`/api/system-settings/product_bom/${encodeURIComponent(selectedRecord.guid_fixed)}?holding_code=${encodeURIComponent(workspace.shop.holding_code)}`, {
+    fetch(`/api/system-settings/product_bom/${encodeURIComponent(selectedRecord.guidfixed)}?holdingcode=${encodeURIComponent(workspace.shop.holdingcode)}`, {
       headers: {
         Authorization: `Bearer ${auth.token}`,
         "x-bc-backend-url": auth.backendUrl || "",
@@ -407,7 +407,7 @@ export function ProductBomEditor({
 
     const materialType = Number(productData.materialtype);
     const newItem: BOMItemInput = {
-      barcodeguidfixed: unitOpt.guid_fixed,
+      barcodeguidfixed: unitOpt.guidfixed,
       barcode: unitOpt.barcode,
       ref_type: "product",
       names: productData.names || [],
@@ -427,11 +427,11 @@ export function ProductBomEditor({
       records.filter((record) => {
         const code = String(record.barcode || record.itemcode || "").trim();
         if (!code) return false;
-        if (record.guid_fixed === selectedRecord?.guid_fixed) return false;
-        if (record.guid_fixed?.startsWith("virtual-")) return false;
+        if (record.guidfixed === selectedRecord?.guidfixed) return false;
+        if (record.guidfixed?.startsWith("virtual-")) return false;
         return true;
       }),
-    [records, selectedRecord?.guid_fixed],
+    [records, selectedRecord?.guidfixed],
   );
 
   const addRecipeToBOM = (recipe: ProductBOMRecord) => {
@@ -457,7 +457,7 @@ export function ProductBomEditor({
     }
 
     const newItem: BOMItemInput = {
-      barcodeguidfixed: recipe.guid_fixed,
+      barcodeguidfixed: recipe.guidfixed,
       barcode: recipeCode,
       ref_type: "recipe",
       names: recipe.names || [],
@@ -547,9 +547,9 @@ export function ProductBomEditor({
 
     setSaving(true);
     try {
-      const isCreate = selectedRecord.guid_fixed.startsWith("virtual-");
+      const isCreate = selectedRecord.guidfixed.startsWith("virtual-");
       const serializeItem = (item: BOMItemInput): Record<string, unknown> => ({
-        guid_fixed: item.barcodeguidfixed,
+        guidfixed: item.barcodeguidfixed,
         barcode: item.barcode,
         ref_type: item.ref_type || "product",
         names: item.names || [],
@@ -571,7 +571,7 @@ export function ProductBomEditor({
         const calculatedEndDate = nextVersion ? new Date(nextVersion.start_date).toISOString() : null;
 
         return {
-          guid_fixed: v.guid_fixed || undefined,
+          guidfixed: v.guidfixed || undefined,
           start_date: new Date(v.start_date).toISOString(),
           end_date: calculatedEndDate,
           bom: v.bom.map(serializeItem),
@@ -590,7 +590,7 @@ export function ProductBomEditor({
       const activeBOM = targetVer ? targetVer.bom.map(serializeItem) : [];
 
       const payload = {
-        guid_fixed: isCreate ? undefined : selectedRecord.guid_fixed,
+        guidfixed: isCreate ? undefined : selectedRecord.guidfixed,
         barcode: recipeCode,
         names: parentNames,
         item_unit_code: parentUnitCode.trim() || "RECIPE",
@@ -598,13 +598,13 @@ export function ProductBomEditor({
         price: parentPrice,
         bom: activeBOM,
         boms: payloadBOMs,
-        holding_code: workspace.shop.holding_code,
+        holdingcode: workspace.shop.holdingcode,
       };
 
       const saveResponse = await fetch(
         isCreate
-          ? `/api/system-settings/product_bom?holding_code=${encodeURIComponent(workspace.shop.holding_code)}`
-          : `/api/system-settings/product_bom/${encodeURIComponent(selectedRecord.guid_fixed)}?holding_code=${encodeURIComponent(workspace.shop.holding_code)}`,
+          ? `/api/system-settings/product_bom?holdingcode=${encodeURIComponent(workspace.shop.holdingcode)}`
+          : `/api/system-settings/product_bom/${encodeURIComponent(selectedRecord.guidfixed)}?holdingcode=${encodeURIComponent(workspace.shop.holdingcode)}`,
         {
           method: isCreate ? "POST" : "PUT",
           headers: {
@@ -799,7 +799,7 @@ export function ProductBomEditor({
             <CardDescription className="text-xs text-muted-foreground/90 font-medium">
               {language === "th" ? "สูตรผลิต" : "Recipe"}{" "}
               <span className="text-foreground font-semibold">{productName}</span>{" "}
-              {selectedRecord.guid_fixed.startsWith("virtual-")
+              {selectedRecord.guidfixed.startsWith("virtual-")
                 ? (parentItemCode ? `[รหัสสูตร: ${parentItemCode}]` : "")
                 : (selectedRecord.itemcode || selectedRecord.barcode ? `[รหัสสูตร: ${selectedRecord.itemcode || selectedRecord.barcode}]` : "")}
             </CardDescription>
@@ -1232,7 +1232,7 @@ export function ProductBomEditor({
                   const recipeName = pickName(recipe.names, language) || recipeCode;
                   return (
                     <button
-                      key={recipe.guid_fixed}
+                      key={recipe.guidfixed}
                       type="button"
                       onClick={() => addRecipeToBOM(recipe)}
                       className="w-full rounded-lg border border-border bg-card p-3 text-left hover:bg-muted/40 transition-colors"
@@ -1265,7 +1265,7 @@ export function ProductBomEditor({
                 </CardTitle>
                 <CardDescription>
                   {productName}{" "}
-                  {selectedRecord.guid_fixed.startsWith("virtual-")
+                  {selectedRecord.guidfixed.startsWith("virtual-")
                     ? (parentItemCode ? `(รหัสสูตร: ${parentItemCode})` : "")
                     : (selectedRecord.itemcode || selectedRecord.barcode ? `(รหัสสูตร: ${selectedRecord.itemcode || selectedRecord.barcode})` : "")}
                 </CardDescription>

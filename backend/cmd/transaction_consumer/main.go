@@ -11,9 +11,9 @@ import (
 	costcenter_consumer "smlcloudplatform/internal/transaction/transactionconsumer/costcenter"
 	jobproject_consumer "smlcloudplatform/internal/transaction/transactionconsumer/jobproject"
 	purchaseorder_consumer "smlcloudplatform/internal/transaction/transactionconsumer/purchaseorder"
+	purchasereceive_consumer "smlcloudplatform/internal/transaction/transactionconsumer/purchasereceive"
 	purchaserequisition_consumer "smlcloudplatform/internal/transaction/transactionconsumer/purchaserequisition"
 	rfq_consumer "smlcloudplatform/internal/transaction/transactionconsumer/rfq"
-	purchasereceive_consumer "smlcloudplatform/internal/transaction/transactionconsumer/purchasereceive"
 
 	"github.com/joho/godotenv"
 )

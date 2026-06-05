@@ -21,7 +21,7 @@ type PurchaseRequisitionTransactionPG struct {
 	BudgetAmount     float64                                   `json:"budgetamount" gorm:"column:budgetamount"`
 	Urgency          int8                                      `json:"urgency" gorm:"column:urgency"`
 	ConversionStatus string                                    `json:"conversionstatus" gorm:"column:conversionstatus"`
-	Items            *[]PurchaseRequisitionDetailTransactionPG `json:"items" gorm:"items;foreignKey:holding_code,docno"`
+	Items            *[]PurchaseRequisitionDetailTransactionPG `json:"items" gorm:"items;foreignKey:holdingcode,docno"`
 }
 
 // รายละเอียด ใบขอซื้อ
@@ -39,7 +39,7 @@ func (PurchaseRequisitionDetailTransactionPG) TableName() string {
 
 func (s *PurchaseRequisitionTransactionPG) BeforeUpdate(tx *gorm.DB) (err error) {
 	var details *[]PurchaseRequisitionDetailTransactionPG
-	tx.Model(&PurchaseRequisitionDetailTransactionPG{}).Where(" holding_code=? AND docno=?", s.HoldingCode, s.DocNo).Find(&details)
+	tx.Model(&PurchaseRequisitionDetailTransactionPG{}).Where(" holdingcode=? AND docno=?", s.HoldingCode, s.DocNo).Find(&details)
 
 	for _, tmp := range *details {
 		var foundUpdate bool = false

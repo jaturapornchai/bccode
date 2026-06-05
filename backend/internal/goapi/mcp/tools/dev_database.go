@@ -19,19 +19,19 @@ import (
 
 type PgCommandResponse struct {
 	Query        string                   `json:"query"`
-	CommandType  string                   `json:"command_type"` // SELECT, DELETE, INSERT, etc.
+	CommandType  string                   `json:"commandtype"` // SELECT, DELETE, INSERT, etc.
 	Rows         []map[string]interface{} `json:"rows,omitempty"`
-	RowCount     int                      `json:"row_count"`
-	RowsAffected int64                    `json:"rows_affected"`
+	RowCount     int                      `json:"rowcount"`
+	RowsAffected int64                    `json:"rowsaffected"`
 	Truncated    bool                     `json:"truncated"`
-	ExecutionMs  int64                    `json:"execution_ms"`
-	GeneratedAt  time.Time                `json:"generated_at"`
+	ExecutionMs  int64                    `json:"executionms"`
+	GeneratedAt  time.Time                `json:"generatedat"`
 }
 
 // ExecutePgCommand รัน SQL query/command บน PostgreSQL (dev — ไม่จำกัด readonly)
 func ExecutePgCommand(ctx context.Context, holdingCode, query string, limit int) (*PgCommandResponse, error) {
 	if holdingCode == "" {
-		return nil, fmt.Errorf("holding_code is required")
+		return nil, fmt.Errorf("holdingcode is required")
 	}
 	if query == "" {
 		return nil, fmt.Errorf("query is required")
@@ -47,7 +47,7 @@ func ExecutePgCommand(ctx context.Context, holdingCode, query string, limit int)
 	normalizedQuery := strings.ToUpper(strings.TrimSpace(query))
 	commandType := detectCommandType(normalizedQuery)
 
-	logger.Info("[Dev PG Command] holding_code=%s, type=%s, query=%s", holdingCode, commandType, query)
+	logger.Info("[Dev PG Command] holdingcode=%s, type=%s, query=%s", holdingCode, commandType, query)
 
 	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
@@ -147,12 +147,12 @@ func ExecutePgCommand(ctx context.Context, holdingCode, query string, limit int)
 type ChCommandResponse struct {
 	Database    string                   `json:"database"`
 	Query       string                   `json:"query"`
-	CommandType string                   `json:"command_type"`
+	CommandType string                   `json:"commandtype"`
 	Rows        []map[string]interface{} `json:"rows,omitempty"`
-	RowCount    int                      `json:"row_count"`
+	RowCount    int                      `json:"rowcount"`
 	Truncated   bool                     `json:"truncated"`
-	ExecutionMs int64                    `json:"execution_ms"`
-	GeneratedAt time.Time                `json:"generated_at"`
+	ExecutionMs int64                    `json:"executionms"`
+	GeneratedAt time.Time                `json:"generatedat"`
 }
 
 // ExecuteChCommand รัน SQL query/command บน ClickHouse (dev — ไม่จำกัด readonly)

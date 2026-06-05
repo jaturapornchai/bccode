@@ -14,20 +14,20 @@ type ReceivableOther struct {
 	models.PartitionIdentity `bson:"inline"`
 	DocNo                    string                    `json:"docno" bson:"docno"`
 	DocDatetime              time.Time                 `json:"docdatetime" bson:"docdatetime"`
-	DocType                  int8                      `json:"doc_type" bson:"doc_type"`
+	DocType                  int8                      `json:"doctype" bson:"doctype"`
 	TransFlag                int8                      `json:"transflag" bson:"transflag"`
 	CustCode                 string                    `json:"custcode" bson:"custcode"`
 	CustNames                *[]models.NameX           `json:"custnames" bson:"custnames"`
 	SaleCode                 string                    `json:"salecode" bson:"salecode"`
 	SaleName                 string                    `json:"salename" bson:"salename"`
 	TotalPaymentAmount       float64                   `json:"totalpaymentamount" bson:"totalpaymentamount"`
-	TotalAmount              float64                   `json:"total_amount" bson:"total_amount"`
+	TotalAmount              float64                   `json:"totalamount" bson:"totalamount"`
 	TotalBalance             float64                   `json:"totalbalance" bson:"totalbalance"`
 	TotalValue               float64                   `json:"totalvalue" bson:"totalvalue"`
 	Details                  *[]ReceivableOtherDetail  `json:"details" bson:"details"`
 	PaymentDetail            transmodels.PaymentDetail `json:"paymentdetail" bson:"paymentdetail"`
 	PaymentDetailRaw         string                    `json:"paymentdetailraw" bson:"paymentdetailraw"`
-	RefDocNo                 string                    `json:"ref_doc_no" bson:"ref_doc_no"` // เลขที่เอกสารอ้างอิง
+	RefDocNo                 string                    `json:"refdocno" bson:"refdocno"`     // เลขที่เอกสารอ้างอิง
 	RefDocDate               time.Time                 `json:"refdocdate" bson:"refdocdate"` // วันที่เอกสารอ้างอิง
 
 	PayCashAmount    float64 `json:"paycashamount" bson:"paycashamount"`
@@ -65,7 +65,7 @@ type ReceivableOtherData struct {
 }
 
 type ReceivableOtherDoc struct {
-	ID                  primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                  primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	ReceivableOtherData `bson:"inline"`
 	models.ActivityDoc  `bson:"inline"`
 }

@@ -15,7 +15,7 @@ type Shift struct {
 	Username                 string    `json:"username" bson:"username"`
 	PosId                    string    `json:"posid" bson:"posid"`
 	DocNo                    string    `json:"docno" bson:"docno"`
-	DocType                  int8      `json:"doc_type" bson:"doc_type"`
+	DocType                  int8      `json:"doctype" bson:"doctype"`
 	DocDate                  time.Time `json:"docdate" bson:"docdate"`
 	Remark                   string    `json:"remark" bson:"remark"`
 	Amount                   float64   `json:"amount" bson:"amount"`
@@ -41,7 +41,7 @@ type ShiftData struct {
 }
 
 type ShiftDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	ShiftData          `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

@@ -24,7 +24,7 @@ func TestCreate(t *testing.T) {
 
 	idx := models.MemberIndex{}
 	idx.ID = "134567"
-	idx.HoldingCode = "holding_codex001"
+	idx.HoldingCode = "holdingcodex001"
 	idx.GuidFixed = "fixguid"
 	err := repo.Create(idx)
 
@@ -40,7 +40,7 @@ func TestCount(t *testing.T) {
 	}
 	repo := newPgRepo()
 
-	count, err := repo.Count("holding_codex001", "fixguid")
+	count, err := repo.Count("holdingcodex001", "fixguid")
 
 	if err != nil {
 		t.Error(err)
@@ -55,7 +55,7 @@ func TestFindByGuid(t *testing.T) {
 		t.Skip()
 	}
 	repo := newPgRepo()
-	inv, err := repo.FindByGuid("holding_codex001", "fixguid")
+	inv, err := repo.FindByGuid("holdingcodex001", "fixguid")
 
 	if err != nil {
 		t.Error(err)
@@ -71,7 +71,7 @@ func TestDelete(t *testing.T) {
 	}
 	repo := newPgRepo()
 
-	err := repo.Delete("holding_codex001", "fixguid")
+	err := repo.Delete("holdingcodex001", "fixguid")
 
 	if err != nil {
 		t.Error(err)

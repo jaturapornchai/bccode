@@ -33,14 +33,14 @@ func NewJournalReportPgRepository(pst microservice.IPersister) JournalReportPgRe
 -- REPORT TRIAL BALANCE SHEET
 
 WITH journal_doc as (
-		select h.holding_code, h.docno, h.docdate, h.accountyear, h.accountperiod, h.accountgroup
+		select h.holdingcode, h.docno, h.docdate, h.accountyear, h.accountperiod, h.accountgroup
 			, d.accountcode
 			--, acc.accountname , acc.accountcategory, acc.accountbalancetype
 			, d.debitamount ,d.creditamount
 			from journals_detail as d
-			join journals as h on h.holding_code = d.holding_code and h.docno = d.docno
-			where h.holding_code= '27dcEdktOoaSBYFmnN6G6ett4Jb' and h.accountgroup = '01'
-			--left join chartofaccounts as acc on acc.holding_code = d.holding_code and acc.accountcode = d.accountcode
+			join journals as h on h.holdingcode = d.holdingcode and h.docno = d.docno
+			where h.holdingcode= '27dcEdktOoaSBYFmnN6G6ett4Jb' and h.accountgroup = '01'
+			--left join chartofaccounts as acc on acc.holdingcode = d.holdingcode and acc.accountcode = d.accountcode
 		)
 		, bal as (
 			select accountcode, sum(debitamount) as debitamount, sum(creditamount) as creditamount
@@ -58,7 +58,7 @@ WITH journal_doc as (
 			group by accountcode
 		)
 		, journal_sheet_sum as (
-			select chart.holding_code, chart.par_id
+			select chart.holdingcode, chart.par_id
             , chart.accountcode, chart.accountname
 			, chart.accountcategory, chart.accountbalancetype, chart.accountgroup, chart.accountlevel, chart.consolidateaccountcode
 			, coalesce(bal.debitamount, 0) as balancedebitamount, coalesce(bal.creditamount, 0) as balancecreditamount
@@ -77,9 +77,9 @@ WITH journal_doc as (
 			left join bal on bal.accountcode = chart.accountcode
 			left join prd on prd.accountcode = chart.accountcode
 			left join nex on nex.accountcode = chart.accountcode
-			where chart.holding_code= '27dcEdktOoaSBYFmnN6G6ett4Jb'
+			where chart.holdingcode= '27dcEdktOoaSBYFmnN6G6ett4Jb'
 		)
-		select holding_code, par_id
+		select holdingcode, par_id
         , accountcode, accountname, accountcategory, accountbalancetype
         , accountgroup, accountlevel, consolidateaccountcode
 		, balancedebitamount, balancecreditamount, debitamount, creditamount, nextbalancedebitamount, nextbalancecreditamount
@@ -103,27 +103,27 @@ func (repo JournalReportPgRepository) GetDataTrialBalance(holdingCode string, ac
 	if includeCloseAccountMode == true {
 		closeDocFilter = `
 		union all
-		select h.holding_code, h.docno, h.docdate, h.accountyear, h.accountperiod, h.accountgroup
+		select h.holdingcode, h.docno, h.docdate, h.accountyear, h.accountperiod, h.accountgroup
 			, d.accountcode
 			, d.debitamount ,d.creditamount
 			, acc.accountcategory
 			from journals_detail as d
-			join journals as h on h.holding_code = d.holding_code and h.docno = d.docno
-			left join chartofaccounts as acc on acc.holding_code = d.holding_code and acc.accountcode = d.accountcode
-            where h.holding_code= @holding_code and ( h.journaltype = 1 and h.docdate between @startdate and @enddate )
+			join journals as h on h.holdingcode = d.holdingcode and h.docno = d.docno
+			left join chartofaccounts as acc on acc.holdingcode = d.holdingcode and acc.accountcode = d.accountcode
+            where h.holdingcode= @holdingcode and ( h.journaltype = 1 and h.docdate between @startdate and @enddate )
 	`
 	}
 	query := `
 	WITH journal_doc as (
-		select h.holding_code, h.docno, h.docdate, h.accountyear, h.accountperiod, h.accountgroup
+		select h.holdingcode, h.docno, h.docdate, h.accountyear, h.accountperiod, h.accountgroup
 			, d.accountcode
 			--, acc.accountname , acc.accountbalancetype
 			, d.debitamount ,d.creditamount
 			, acc.accountcategory
 			from journals_detail as d
-			join journals as h on h.holding_code = d.holding_code and h.docno = d.docno
-			left join chartofaccounts as acc on acc.holding_code = d.holding_code and acc.accountcode = d.accountcode
-			where h.holding_code= @holding_code ` + accountGroupFilter + `  and h.docdate <= @enddate
+			join journals as h on h.holdingcode = d.holdingcode and h.docno = d.docno
+			left join chartofaccounts as acc on acc.holdingcode = d.holdingcode and acc.accountcode = d.accountcode
+			where h.holdingcode= @holdingcode ` + accountGroupFilter + `  and h.docdate <= @enddate
 			 and (( h.journaltype = 0) or (h.journaltype=1 and h.docdate < @startdate ))
 
 		` + closeDocFilter + `
@@ -148,7 +148,7 @@ func (repo JournalReportPgRepository) GetDataTrialBalance(holdingCode string, ac
 			group by accountcode
 		)
 		, journal_sheet_sum as (
-			select chart.holding_code, chart.parid
+			select chart.holdingcode, chart.parid
             , chart.accountcode, chart.accountname
 			, chart.accountcategory, chart.accountbalancetype, chart.accountgroup, chart.accountlevel, chart.consolidateaccountcode
 			, coalesce(bal.debitamount, 0) as balancedebitamount, coalesce(bal.creditamount, 0) as balancecreditamount
@@ -168,9 +168,9 @@ func (repo JournalReportPgRepository) GetDataTrialBalance(holdingCode string, ac
 			left join bal on bal.accountcode = chart.accountcode
 			left join prd on prd.accountcode = chart.accountcode
 			left join nex on nex.accountcode = chart.accountcode
-			where chart.holding_code= @holding_code
+			where chart.holdingcode= @holdingcode
 		)
-		select holding_code, parid
+		select holdingcode, parid
         , accountcode, accountname, accountcategory, accountbalancetype
         , accountgroup, accountlevel, consolidateaccountcode
 		, balancedebitamount, balancecreditamount, debitamount, creditamount, nextbalancedebitamount, nextbalancecreditamount
@@ -183,9 +183,9 @@ func (repo JournalReportPgRepository) GetDataTrialBalance(holdingCode string, ac
 	var details []models.TrialBalanceSheetAccountDetail
 
 	condition := map[string]interface{}{
-		"holding_code": holdingCode,
-		"start_date":   startDate,
-		"end_date":     endDate,
+		"holdingcode": holdingCode,
+		"start_date":  startDate,
+		"end_date":    endDate,
 	}
 
 	if len(accountGroup) > 0 {
@@ -212,29 +212,29 @@ func (repo JournalReportPgRepository) GetDataProfitAndLoss(holdingCode string, a
 	if includeCloseAccountMode == true {
 		closeDocFilter = `
 		union all
-		select h.holding_code, h.docno, h.docdate, h.accountyear, h.accountperiod, h.accountgroup
+		select h.holdingcode, h.docno, h.docdate, h.accountyear, h.accountperiod, h.accountgroup
 			, d.accountcode
 			, d.debitamount ,d.creditamount
 			, acc.accountcategory
 			from journals_detail as d
-			join journals as h on h.holding_code = d.holding_code and h.docno = d.docno
-			left join chartofaccounts as acc on acc.holding_code = d.holding_code and acc.accountcode = d.accountcode
+			join journals as h on h.holdingcode = d.holdingcode and h.docno = d.docno
+			left join chartofaccounts as acc on acc.holdingcode = d.holdingcode and acc.accountcode = d.accountcode
 
-            where h.holding_code= @holding_code and ( h.journaltype = 1 and h.docdate between @startdate and @enddate )
+            where h.holdingcode= @holdingcode and ( h.journaltype = 1 and h.docdate between @startdate and @enddate )
 	`
 	}
 
 	query := `
 	WITH journal_doc as (
-		select h.holding_code, h.docno, h.docdate, h.accountyear, h.accountperiod, h.accountgroup
+		select h.holdingcode, h.docno, h.docdate, h.accountyear, h.accountperiod, h.accountgroup
 			, d.accountcode
 			, d.debitamount ,d.creditamount
 			, acc.accountcategory
 			from journals_detail as d
-			join journals as h on h.holding_code = d.holding_code and h.docno = d.docno
-			left join chartofaccounts as acc on acc.holding_code = d.holding_code and acc.accountcode = d.accountcode
+			join journals as h on h.holdingcode = d.holdingcode and h.docno = d.docno
+			left join chartofaccounts as acc on acc.holdingcode = d.holdingcode and acc.accountcode = d.accountcode
 
-			where h.holding_code= @holding_code ` + accountGroupFilter + ` and h.docdate < @enddate
+			where h.holdingcode= @holdingcode ` + accountGroupFilter + ` and h.docdate < @enddate
 			and (( h.journaltype = 0) or (h.journaltype=1 and h.docdate < @startdate ))
 
 		` + closeDocFilter + `
@@ -245,7 +245,7 @@ func (repo JournalReportPgRepository) GetDataProfitAndLoss(holdingCode string, a
 			group by accountcode
 		)
 		, journal_sheet_sum as (
-			select chart.holding_code, chart.parid
+			select chart.holdingcode, chart.parid
             , chart.accountcode, chart.accountname
 			, chart.accountcategory, chart.accountbalancetype, chart.accountgroup, chart.accountlevel, chart.consolidateaccountcode
 			, coalesce(prd.debitamount, 0) as debitamount, coalesce(prd.creditamount, 0) as creditamount
@@ -254,9 +254,9 @@ func (repo JournalReportPgRepository) GetDataProfitAndLoss(holdingCode string, a
 				end as amount
 			from chartofaccounts as chart
 			left join prd on prd.accountcode = chart.accountcode
-			where chart.holding_code= @holding_code and chart.accountcategory in (4,5)
+			where chart.holdingcode= @holdingcode and chart.accountcategory in (4,5)
 		)
-		select holding_code, parid
+		select holdingcode, parid
         , accountcode, accountname, accountcategory, accountbalancetype
         , accountgroup, accountlevel, consolidateaccountcode
 		, debitamount, creditamount, amount
@@ -268,9 +268,9 @@ func (repo JournalReportPgRepository) GetDataProfitAndLoss(holdingCode string, a
 	var details []models.ProfitAndLossSheetAccountDetail
 
 	condition := map[string]interface{}{
-		"holding_code": holdingCode,
-		"start_date":   startDate,
-		"end_date":     endDate,
+		"holdingcode": holdingCode,
+		"start_date":  startDate,
+		"end_date":    endDate,
 	}
 
 	if len(accountGroup) > 0 {
@@ -298,15 +298,15 @@ func (repo JournalReportPgRepository) GetDataBalanceSheet(holdingCode string, ac
 	if includeCloseAccountMode == true {
 		closeDocFilter = `
 		union all
-		select h.holding_code, h.docno, h.docdate, h.accountyear, h.accountperiod, h.accountgroup
+		select h.holdingcode, h.docno, h.docdate, h.accountyear, h.accountperiod, h.accountgroup
 			, d.accountcode
 			, d.debitamount ,d.creditamount
 			, acc.accountcategory
 			from journals_detail as d
-			join journals as h on h.holding_code = d.holding_code and h.docno = d.docno
-			left join chartofaccounts as acc on acc.holding_code = d.holding_code and acc.accountcode = d.accountcode
+			join journals as h on h.holdingcode = d.holdingcode and h.docno = d.docno
+			left join chartofaccounts as acc on acc.holdingcode = d.holdingcode and acc.accountcode = d.accountcode
 
-            where h.holding_code= @holding_code and ( h.journaltype = 1 and (extract (year from h.docdate)) = @reportyear )
+            where h.holdingcode= @holdingcode and ( h.journaltype = 1 and (extract (year from h.docdate)) = @reportyear )
 		`
 	}
 
@@ -324,15 +324,15 @@ func (repo JournalReportPgRepository) GetDataBalanceSheet(holdingCode string, ac
 
 	query := `
 	WITH journal_doc as (
-		select h.holding_code, h.docno, h.docdate, h.accountyear, h.accountperiod, h.accountgroup
+		select h.holdingcode, h.docno, h.docdate, h.accountyear, h.accountperiod, h.accountgroup
 			, d.accountcode
 			, d.debitamount ,d.creditamount
 			, acc.accountcategory
 			from journals_detail as d
-			join journals as h on h.holding_code = d.holding_code and h.docno = d.docno
-			left join chartofaccounts as acc on acc.holding_code = d.holding_code and acc.accountcode = d.accountcode
+			join journals as h on h.holdingcode = d.holdingcode and h.docno = d.docno
+			left join chartofaccounts as acc on acc.holdingcode = d.holdingcode and acc.accountcode = d.accountcode
 
-			where h.holding_code= @holding_code ` + accountGroupFilter + `  and h.docdate < @enddate
+			where h.holdingcode= @holdingcode ` + accountGroupFilter + `  and h.docdate < @enddate
 			and (
 				acc.accountcategory in (1,2,3) or (acc.accountcategory in (4,5) and (extract (year from h.docdate)) = @reportyear)
 			)
@@ -348,7 +348,7 @@ func (repo JournalReportPgRepository) GetDataBalanceSheet(holdingCode string, ac
 			group by accountcode
 		)
 		, journal_sheet_sum as (
-			select chart.holding_code, chart.parid
+			select chart.holdingcode, chart.parid
             , chart.accountcode, chart.accountname
 			, chart.accountcategory, chart.accountbalancetype, chart.accountgroup, chart.accountlevel, chart.consolidateaccountcode
 			, case when(accountcategory = 1 or accountcategory = 5) then coalesce(nex.debitamount, 0)-coalesce(nex.creditamount, 0)
@@ -356,9 +356,9 @@ func (repo JournalReportPgRepository) GetDataBalanceSheet(holdingCode string, ac
 				end as amount
 			from chartofaccounts as chart
 			left join nex on nex.accountcode = chart.accountcode
-			where chart.holding_code= @holding_code
+			where chart.holdingcode= @holdingcode
 		)
-		select holding_code, parid
+		select holdingcode, parid
         , accountcode, accountname, accountcategory, accountbalancetype
         , accountgroup, accountlevel, consolidateaccountcode
 		, amount
@@ -370,9 +370,9 @@ func (repo JournalReportPgRepository) GetDataBalanceSheet(holdingCode string, ac
 	var details []models.BalanceSheetAccountDetail
 
 	condition := map[string]interface{}{
-		"holding_code": holdingCode,
-		"end_date":     endDate,
-		"reportyear":   reportYear,
+		"holdingcode": holdingCode,
+		"end_date":    endDate,
+		"reportyear":  reportYear,
 	}
 
 	if len(accountGroup) > 0 {
@@ -410,9 +410,9 @@ func (repo JournalReportPgRepository) GetDataLedgerAccount(
 	debtorQuery := ""
 
 	values := map[string]interface{}{
-		"holding_code": holdingCode,
-		"start_date":   startDate,
-		"end_date":     endDate,
+		"holdingcode": holdingCode,
+		"start_date":  startDate,
+		"end_date":    endDate,
 	}
 
 	if len(accountRanges) > 0 {
@@ -464,15 +464,15 @@ func (repo JournalReportPgRepository) GetDataLedgerAccount(
 		WITH
 			acc as (
 			SELECT  a.accountcode,a.accountname,a.accountgroup, a.consolidateaccountcode
-		from chartofaccounts a  WHERE holding_code = @holding_code ` + accountGroupQuery + consolidateAccountCodeQuery + accountCodeQuery + `
+		from chartofaccounts a  WHERE holdingcode = @holdingcode ` + accountGroupQuery + consolidateAccountCodeQuery + accountCodeQuery + `
 		)
 		,
 		acc_balance as (
 		select d.accountcode,  sum(d.debitamount -  d.creditamount) as amount
 		from  journals j
-                left join journals_detail d on j.holding_code = d.holding_code AND j.docno = d.docno
-                left join chartofaccounts a on j.holding_code = a.holding_code AND d.accountcode = a.accountcode
-		where j.docdate < @startdate and j.holding_code = @holding_code ` + accountGroupQuery + creditorQuery + debtorQuery + consolidateAccountCodeQuery + accountCodeQuery + `
+                left join journals_detail d on j.holdingcode = d.holdingcode AND j.docno = d.docno
+                left join chartofaccounts a on j.holdingcode = a.holdingcode AND d.accountcode = a.accountcode
+		where j.docdate < @startdate and j.holdingcode = @holdingcode ` + accountGroupQuery + creditorQuery + debtorQuery + consolidateAccountCodeQuery + accountCodeQuery + `
 		group by d.accountcode
 		)
 		SELECT -1 as rowmode, '1900-01-01'::date as docdate, '' as docno,acc.accountcode,acc.accountname, '' as accountdescription,
@@ -481,9 +481,9 @@ func (repo JournalReportPgRepository) GetDataLedgerAccount(
 		union all
 		select 0 as rowmode, j.docdate, j.docno, d.accountcode,d.accountname, j.accountdescription as accountdescription, d.debitamount, d.creditamount, 0 as amount,a.accountgroup, a.consolidateaccountcode
 		from journals j
-		join journals_detail d on j.holding_code = d.holding_code and j.docno = d.docno
-		join chartofaccounts a on a.holding_code = j.holding_code and a.accountcode = d.accountcode
-		where j.docdate between @startdate and @enddate and j.holding_code = @holding_code ` + accountGroupQuery + creditorQuery + debtorQuery + consolidateAccountCodeQuery + accountCodeQuery + `
+		join journals_detail d on j.holdingcode = d.holdingcode and j.docno = d.docno
+		join chartofaccounts a on a.holdingcode = j.holdingcode and a.accountcode = d.accountcode
+		where j.docdate between @startdate and @enddate and j.holdingcode = @holdingcode ` + accountGroupQuery + creditorQuery + debtorQuery + consolidateAccountCodeQuery + accountCodeQuery + `
 			) as final_data order by accountcode,rowmode,docdate`
 
 	rawDocList := []models.LedgerAccountRaw{}
@@ -506,7 +506,7 @@ func (repo JournalReportPgRepository) GetMultiShopRevenue(
 	query := `
 	WITH journal_doc AS (
 		SELECT
-			h.holding_code,
+			h.holdingcode,
 			h.docno,
 			h.docdate,
 			d.accountcode,
@@ -515,37 +515,37 @@ func (repo JournalReportPgRepository) GetMultiShopRevenue(
 			acc.accountcategory
 		FROM journals_detail AS d
 		JOIN journals AS h
-			ON h.holding_code = d.holding_code AND h.docno = d.docno
+			ON h.holdingcode = d.holdingcode AND h.docno = d.docno
 		LEFT JOIN chartofaccounts AS acc
-			ON acc.holding_code = d.holding_code AND acc.accountcode = d.accountcode
+			ON acc.holdingcode = d.holdingcode AND acc.accountcode = d.accountcode
 		WHERE
-			h.holding_code = ANY(@holding_codes)
+			h.holdingcode = ANY(@holdingcodes)
 			AND h.docdate BETWEEN @startdate AND @enddate
 			AND h.journaltype = 0
 			AND acc.accountcategory IN (4, 5)
 	),
 	aggregated AS (
 		SELECT
-			holding_code,
+			holdingcode,
 			accountcategory,
 			SUM(creditamount - debitamount) AS totalamount
 		FROM journal_doc
-		GROUP BY holding_code, accountcategory
+		GROUP BY holdingcode, accountcategory
 	)
 	SELECT
-		holding_code,
+		holdingcode,
 		accountcategory,
 		totalamount
 	FROM aggregated
-	ORDER BY holding_code, accountcategory
+	ORDER BY holdingcode, accountcategory
 	`
 
 	var results []models.MultiShopRevenueRaw
 
 	condition := map[string]interface{}{
-		"holding_codes": pq.Array(holdingCodes),
-		"start_date":    startDate,
-		"end_date":      endDate,
+		"holdingcodes": pq.Array(holdingCodes),
+		"start_date":   startDate,
+		"end_date":     endDate,
 	}
 
 	_, err := repo.pst.Raw(query, condition, &results)

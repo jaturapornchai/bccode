@@ -34,7 +34,7 @@ type StorefrontData struct {
 }
 
 type StorefrontDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
 	StorefrontData     `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

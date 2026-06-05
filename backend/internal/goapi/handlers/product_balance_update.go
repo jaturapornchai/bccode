@@ -11,7 +11,7 @@ import (
 
 // ProductBalanceUpdateRequest — request body
 type ProductBalanceUpdateRequest struct {
-	HoldingCode string `json:"holding_code"`
+	HoldingCode string `json:"holdingcode"`
 }
 
 // ProductBalanceUpdateHandler — POST /api/process/product-balance
@@ -27,12 +27,12 @@ func ProductBalanceUpdateHandler(c echo.Context) error {
 
 	holdingCode := req.HoldingCode
 	if holdingCode == "" {
-		holdingCode = c.QueryParam("holding_code")
+		holdingCode = c.QueryParam("holdingcode")
 	}
 	if holdingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"success": false,
-			"message": "Missing required parameter: holding_code",
+			"message": "Missing required parameter: holdingcode",
 		})
 	}
 

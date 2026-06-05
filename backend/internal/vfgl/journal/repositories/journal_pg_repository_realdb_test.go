@@ -16,8 +16,8 @@ import (
 
 var journal_json string = `{
 	"id": "000000000000000000000000",
-	"holding_code": "27dcEdktOoaSBYFmnN6G6ett4Jb",
-	"guid_fixed": "2ABh7CJyA7RbeZ1WmdwXWvs0GQa",
+	"holdingcode": "27dcEdktOoaSBYFmnN6G6ett4Jb",
+	"guidfixed": "2ABh7CJyA7RbeZ1WmdwXWvs0GQa",
 	"parid": "0000000",
 	"batchId": "",
 	"docno": "JO-202206067CFB22",
@@ -92,8 +92,8 @@ func TestCreateAndDeleteJournal(t *testing.T) {
 
 	json_str := `{
 		"id": "62cdc14ca3f6ef3ca30543e8",
-		"holding_code": "2BYWCndV194TYXVEO7NlRLuJYWY",
-		"guid_fixed": "2Br5noZ5LmgRuQLwYrpreUl2J9a",
+		"holdingcode": "2BYWCndV194TYXVEO7NlRLuJYWY",
+		"guidfixed": "2Br5noZ5LmgRuQLwYrpreUl2J9a",
 		"batchId": "",
 		"docno": "JO-20220713014532831-1",
 		"docdate": "2022-07-12T18:45:32.068Z",
@@ -144,8 +144,8 @@ func TestJournalRepositoryRealDBCreateWithTaxAndVat(t *testing.T) {
 
 	jsonStr := `{
 	"id": "694cb8ec3586a1b47bb12de9",
-	"holding_code": "2V5zu2gmRgd7sgWj3g6gu7mxYk0",
-	"guid_fixed": "37Jz2mblpBhQzJFfOMRrmjgaUPs",
+	"holdingcode": "2V5zu2gmRgd7sgWj3g6gu7mxYk0",
+	"guidfixed": "37Jz2mblpBhQzJFfOMRrmjgaUPs",
 	"batchid": "",
 	"docno": "JO-20251225CB8F0D",
 	"docdate": "2025-12-25T21:00:00Z",
@@ -213,7 +213,7 @@ func TestJournalRepositoryRealDBCreateWithTaxAndVat(t *testing.T) {
 	"appname": "",
 	"debtaccounttype": 0,
 	"creditor": {
-		"guid_fixed": "",
+		"guidfixed": "",
 		"code": "",
 		"personal_type": 0,
 		"customer_type": 0,
@@ -236,7 +236,7 @@ func TestJournalRepositoryRealDBCreateWithTaxAndVat(t *testing.T) {
 		}
 	},
 	"debtor": {
-		"guid_fixed": "",
+		"guidfixed": "",
 		"code": "",
 		"personal_type": 0,
 		"customer_type": 0,
@@ -274,7 +274,7 @@ func TestJournalRepositoryRealDBCreateWithTaxAndVat(t *testing.T) {
 		}
 	],
 	"createdby": "",
-	"created_at": "0001-01-01T00:00:00Z"
+	"createdat": "0001-01-01T00:00:00Z"
 }`
 
 	doc := models.JournalPg{}

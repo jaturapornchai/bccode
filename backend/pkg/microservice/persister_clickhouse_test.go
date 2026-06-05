@@ -40,7 +40,7 @@ func (m *TestClickHouseModel) TableName() string {
 }
 
 type StockBalanceImport struct {
-	HoldingCode string  `json:"holding_code" ch:"holding_code"`
+	HoldingCode string  `json:"holdingcode" ch:"holdingcode"`
 	TaskID      string  `json:"taskid" ch:"taskid"`
 	RowNumber   uint32  `json:"rownumber" ch:"rownumber"`
 	Barcode     string  `json:"barcode" ch:"barcode"`

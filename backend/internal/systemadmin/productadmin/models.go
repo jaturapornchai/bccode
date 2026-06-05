@@ -1,6 +1,6 @@
 package productadmin
 
 type RequestReSyncProductBarcode struct {
-	HoldingCode string `json:"holding_code"`
+	HoldingCode string `json:"holdingcode"`
 	Barcode     string `json:"barcode,omitempty"`
 }

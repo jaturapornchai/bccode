@@ -14,7 +14,7 @@ import (
 )
 
 type DocIdentity struct {
-	GuidFixed string `bson:"guid_fixed"`
+	GuidFixed string `bson:"guidfixed"`
 }
 
 type UnitInfo struct {
@@ -43,15 +43,15 @@ func main() {
 	holdingCode := "3EL6B3jlbAcZTxiMLkGMwGNzzUo"
 
 	filterQuery := bson.M{
-		"holding_code": holdingCode,
-		"deleted_at":   bson.M{"$exists": false},
+		"holdingcode": holdingCode,
+		"deletedat":   bson.M{"$exists": false},
 	}
 
 	tempOptions := options.Find()
 	tempOptions.SetProjection(bson.M{
-		"guid_fixed":    1,
+		"guidfixed":    1,
 		"unitcode":      1,
-		"company_guids": 1,
+		"companyguids": 1,
 		"names":         1,
 	})
 

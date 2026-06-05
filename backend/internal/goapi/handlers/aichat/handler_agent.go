@@ -25,7 +25,7 @@ func ChatAgent(c echo.Context) error {
 	if req.HoldingCode == "" {
 		return c.JSON(http.StatusBadRequest, AgentChatResponse{
 			Success:   false,
-			Message:   "holding_code is required",
+			Message:   "holdingcode is required",
 			Timestamp: time.Now(),
 		})
 	}
