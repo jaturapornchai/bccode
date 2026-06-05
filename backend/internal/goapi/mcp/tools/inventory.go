@@ -88,12 +88,12 @@ func GetInventoryValue(ctx context.Context, holdingCode, whcode string) (*Invent
 	query := fmt.Sprintf(`
 		SELECT
 			COUNT(DISTINCT itemcode) as sku_count,
-			COALESCE(SUM(ABS(balance_qty)), 0) as totalqty,
-			COALESCE(SUM(ABS(balance_qty) * COALESCE(avgcost, 0)), 0) as total_value
+			COALESCE(SUM(ABS(balanceqty)), 0) as totalqty,
+			COALESCE(SUM(ABS(balanceqty) * COALESCE(avgcost, 0)), 0) as totalvalue
 		FROM (
 			SELECT
 				itemcode,
-				SUM((totalqty * calcflag) * unitstand / NULLIF(unitdivide, 0)) as balance_qty,
+				SUM((totalqty * calcflag) * unitstand / NULLIF(unitdivide, 0)) as balanceqty,
 				(SELECT COALESCE(avgcost, 0) FROM productbarcode pb WHERE pb.itemcode = d.itemcode LIMIT 1) as avgcost
 			FROM docdetail d
 			WHERE transflag IN (1,3,5,7,9,11,13,16,18,20,30,31,32,33,34,35,36)
@@ -128,12 +128,12 @@ func GetInventoryValue(ctx context.Context, holdingCode, whcode string) (*Invent
 		SELECT
 			COALESCE(whcode, 'DEFAULT') as wh_code,
 			COALESCE(whcode, 'คลังหลัก') as wh_name,
-			COALESCE(SUM(ABS(balance_qty) * COALESCE(avgcost, 0)), 0) as value,
+			COALESCE(SUM(ABS(balanceqty) * COALESCE(avgcost, 0)), 0) as value,
 			COUNT(DISTINCT itemcode) as item_count
 		FROM (
 			SELECT
 				d.itemcode, d.whcode,
-				SUM((totalqty * calcflag) * unitstand / NULLIF(unitdivide, 0)) as balance_qty,
+				SUM((totalqty * calcflag) * unitstand / NULLIF(unitdivide, 0)) as balanceqty,
 				(SELECT COALESCE(avgcost, 0) FROM productbarcode pb WHERE pb.itemcode = d.itemcode LIMIT 1) as avgcost
 			FROM docdetail d
 			WHERE transflag IN (1,3,5,7,9,11,13,16,18,20,30,31,32,33,34,35,36)
@@ -166,12 +166,12 @@ func GetInventoryValue(ctx context.Context, holdingCode, whcode string) (*Invent
 		SELECT
 			COALESCE(categorycode, 'N/A') as cat_code,
 			COALESCE(categorycode, 'ไม่ระบุหมวด') as cat_name,
-			COALESCE(SUM(ABS(balance_qty) * COALESCE(avgcost, 0)), 0) as value,
+			COALESCE(SUM(ABS(balanceqty) * COALESCE(avgcost, 0)), 0) as value,
 			COUNT(DISTINCT itemcode) as item_count
 		FROM (
 			SELECT
 				d.itemcode, d.categorycode,
-				SUM((totalqty * calcflag) * unitstand / NULLIF(unitdivide, 0)) as balance_qty,
+				SUM((totalqty * calcflag) * unitstand / NULLIF(unitdivide, 0)) as balanceqty,
 				(SELECT COALESCE(avgcost, 0) FROM productbarcode pb WHERE pb.itemcode = d.itemcode LIMIT 1) as avgcost
 			FROM docdetail d
 			WHERE transflag IN (1,3,5,7,9,11,13,16,18,20,30,31,32,33,34,35,36)
@@ -205,13 +205,13 @@ func GetInventoryValue(ctx context.Context, holdingCode, whcode string) (*Invent
 		SELECT
 			inv.itemcode,
 			COALESCE(pb.name0, inv.itemcode) as name,
-			ABS(inv.balance_qty) as qty,
-			COALESCE(pb.avgcost, 0) as unit_cost,
-			ABS(inv.balance_qty) * COALESCE(pb.avgcost, 0) as total_value
+			ABS(inv.balanceqty) as qty,
+			COALESCE(pb.avgcost, 0) as unitcost,
+			ABS(inv.balanceqty) * COALESCE(pb.avgcost, 0) as totalvalue
 		FROM (
 			SELECT
 				itemcode,
-				SUM((totalqty * calcflag) * unitstand / NULLIF(unitdivide, 0)) as balance_qty
+				SUM((totalqty * calcflag) * unitstand / NULLIF(unitdivide, 0)) as balanceqty
 			FROM docdetail
 			WHERE transflag IN (1,3,5,7,9,11,13,16,18,20,30,31,32,33,34,35,36)
 				%s
@@ -219,7 +219,7 @@ func GetInventoryValue(ctx context.Context, holdingCode, whcode string) (*Invent
 			HAVING SUM((totalqty * calcflag) * unitstand / NULLIF(unitdivide, 0)) != 0
 		) inv
 		LEFT JOIN productbarcode pb ON pb.itemcode = inv.itemcode
-		ORDER BY total_value DESC
+		ORDER BY totalvalue DESC
 		LIMIT 20
 	`, whereWH)
 	topRows, topErr := db.Query(topQuery)
@@ -310,13 +310,13 @@ func GetLowStockAlerts(ctx context.Context, holdingCode string, threshold, limit
 		SELECT
 			inv.itemcode,
 			COALESCE(pb.name0, inv.itemcode) as name,
-			inv.balance_qty,
+			inv.balanceqty,
 			COALESCE(inv.whcode, '') as whcode
 		FROM (
 			SELECT
 				itemcode,
 				whcode,
-				SUM((totalqty * calcflag) * unitstand / NULLIF(unitdivide, 0)) as balance_qty
+				SUM((totalqty * calcflag) * unitstand / NULLIF(unitdivide, 0)) as balanceqty
 			FROM docdetail
 			WHERE transflag IN (1,3,5,7,9,11,13,16,18,20,30,31,32,33,34,35,36)
 			GROUP BY itemcode, whcode
@@ -324,7 +324,7 @@ func GetLowStockAlerts(ctx context.Context, holdingCode string, threshold, limit
 				AND SUM((totalqty * calcflag) * unitstand / NULLIF(unitdivide, 0)) <= %d
 		) inv
 		LEFT JOIN productbarcode pb ON pb.itemcode = inv.itemcode
-		ORDER BY inv.balance_qty ASC
+		ORDER BY inv.balanceqty ASC
 		LIMIT %d
 	`, threshold, limit)
 
@@ -441,10 +441,10 @@ func GetDeadStock(ctx context.Context, holdingCode string, days, limit int) (*De
 	cutoffDate := time.Now().AddDate(0, 0, -days).Format("2006-01-02")
 
 	query := fmt.Sprintf(`
-		WITH current_stock AS (
+		WITH currentstock AS (
 			SELECT
 				itemcode,
-				SUM((totalqty * calcflag) * unitstand / NULLIF(unitdivide, 0)) as balance_qty
+				SUM((totalqty * calcflag) * unitstand / NULLIF(unitdivide, 0)) as balanceqty
 			FROM docdetail
 			WHERE transflag IN (1,3,5,7,9,11,13,16,18,20,30,31,32,33,34,35,36)
 			GROUP BY itemcode
@@ -461,14 +461,14 @@ func GetDeadStock(ctx context.Context, holdingCode string, days, limit int) (*De
 		SELECT
 			cs.itemcode,
 			COALESCE(pb.name0, cs.itemcode) as name,
-			cs.balance_qty,
+			cs.balanceqty,
 			COALESCE(lm.last_move_date, '2000-01-01'::date) as last_move,
-			COALESCE(pb.avgcost, 0) * cs.balance_qty as stock_value
-		FROM current_stock cs
+			COALESCE(pb.avgcost, 0) * cs.balanceqty as stockvalue
+		FROM currentstock cs
 		LEFT JOIN last_movement lm ON lm.itemcode = cs.itemcode
 		LEFT JOIN productbarcode pb ON pb.itemcode = cs.itemcode
 		WHERE COALESCE(lm.last_move_date, '2000-01-01'::date) < '%s'
-		ORDER BY stock_value DESC
+		ORDER BY stockvalue DESC
 		LIMIT %d
 	`, cutoffDate, limit)
 
@@ -607,11 +607,11 @@ func GetInventoryTurnover(ctx context.Context, holdingCode, fromDate, toDate str
 	// Estimate average inventory (simplified)
 	var avgInventory float64
 	query = `
-		SELECT COALESCE(SUM(ABS(balance_qty) * avgcost), 0) / 2
+		SELECT COALESCE(SUM(ABS(balanceqty) * avgcost), 0) / 2
 		FROM (
 			SELECT
 				d.itemcode,
-				SUM((totalqty * calcflag) * unitstand / NULLIF(unitdivide, 0)) as balance_qty,
+				SUM((totalqty * calcflag) * unitstand / NULLIF(unitdivide, 0)) as balanceqty,
 				COALESCE((SELECT avgcost FROM productbarcode WHERE itemcode = d.itemcode LIMIT 1), 0) as avgcost
 			FROM docdetail d
 			WHERE transflag IN (1,3,5,7,9,11,13,16,18,20,30,31,32,33,34,35,36)
@@ -651,21 +651,21 @@ func GetInventoryTurnover(ctx context.Context, holdingCode, fromDate, toDate str
 		SELECT
 			d.itemcode,
 			COALESCE(pb.name0, d.itemcode) as name,
-			SUM((d.totalqty * d.calcflag * -1) * d.unitstand / NULLIF(d.unitdivide, 0)) as units_sold,
-			COALESCE(inv.balance_qty, 0) as current_stock
+			SUM((d.totalqty * d.calcflag * -1) * d.unitstand / NULLIF(d.unitdivide, 0)) as unitssold,
+			COALESCE(inv.balanceqty, 0) as currentstock
 		FROM docdetail d
 		LEFT JOIN (SELECT DISTINCT ON (itemcode) itemcode, name0 FROM productbarcode) pb ON pb.itemcode = d.itemcode
 		LEFT JOIN (
-			SELECT itemcode, SUM((totalqty * calcflag) * unitstand / NULLIF(unitdivide, 0)) as balance_qty
+			SELECT itemcode, SUM((totalqty * calcflag) * unitstand / NULLIF(unitdivide, 0)) as balanceqty
 			FROM docdetail
 			WHERE transflag IN (1,3,5,7,9,11,13,16,18,20,30,31,32,33,34,35,36)
 			GROUP BY itemcode
 		) inv ON inv.itemcode = d.itemcode
 		WHERE d.transflag IN (16, 18)
 			AND d.docdate >= $1 AND d.docdate <= $2
-		GROUP BY d.itemcode, pb.name0, inv.balance_qty
+		GROUP BY d.itemcode, pb.name0, inv.balanceqty
 		HAVING SUM((d.totalqty * d.calcflag * -1) * d.unitstand / NULLIF(d.unitdivide, 0)) > 0
-		ORDER BY units_sold DESC
+		ORDER BY unitssold DESC
 		LIMIT 10
 	`
 	fastRows, fastErr := db.Query(fastQuery, fromDate, toDate)
@@ -694,10 +694,10 @@ func GetInventoryTurnover(ctx context.Context, holdingCode, fromDate, toDate str
 		SELECT
 			inv.itemcode,
 			COALESCE(pb.name0, inv.itemcode) as name,
-			COALESCE(sold.units_sold, 0) as units_sold,
-			inv.balance_qty as current_stock
+			COALESCE(sold.unitssold, 0) as unitssold,
+			inv.balanceqty as currentstock
 		FROM (
-			SELECT itemcode, SUM((totalqty * calcflag) * unitstand / NULLIF(unitdivide, 0)) as balance_qty
+			SELECT itemcode, SUM((totalqty * calcflag) * unitstand / NULLIF(unitdivide, 0)) as balanceqty
 			FROM docdetail
 			WHERE transflag IN (1,3,5,7,9,11,13,16,18,20,30,31,32,33,34,35,36)
 			GROUP BY itemcode
@@ -705,12 +705,12 @@ func GetInventoryTurnover(ctx context.Context, holdingCode, fromDate, toDate str
 		) inv
 		LEFT JOIN (SELECT DISTINCT ON (itemcode) itemcode, name0 FROM productbarcode) pb ON pb.itemcode = inv.itemcode
 		LEFT JOIN (
-			SELECT itemcode, SUM((totalqty * calcflag * -1) * unitstand / NULLIF(unitdivide, 0)) as units_sold
+			SELECT itemcode, SUM((totalqty * calcflag * -1) * unitstand / NULLIF(unitdivide, 0)) as unitssold
 			FROM docdetail
 			WHERE transflag IN (16, 18) AND docdate >= $1 AND docdate <= $2
 			GROUP BY itemcode
 		) sold ON sold.itemcode = inv.itemcode
-		ORDER BY COALESCE(sold.units_sold, 0) / inv.balance_qty ASC, inv.balance_qty DESC
+		ORDER BY COALESCE(sold.unitssold, 0) / inv.balanceqty ASC, inv.balanceqty DESC
 		LIMIT 10
 	`
 	slowRows, slowErr := db.Query(slowQuery, fromDate, toDate)

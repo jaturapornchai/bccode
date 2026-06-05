@@ -145,13 +145,13 @@ func xxDocUpdate(docData models.MongoDocModel) error {
 		if err := json.Unmarshal([]byte(docData.PaymentDetailRaw), &payments); err == nil {
 			for _, payment := range payments {
 				amount, _ := payment["amount"].(float64)
-				providerName := payment["provider_name"].(string)
-				transFlag, _ := payment["trans_flag"].(float64)
+				providerName := payment["providername"].(string)
+				transFlag, _ := payment["transflag"].(float64)
 
 				insertPaymentQuery := `
 					INSERT INTO docpayment (
 						branchid, docno, docdatetime, perioddatetime,
-						description, amount, trans_flag, guidfixed, guidbranch
+						description, amount, transflag, guidfixed, guidbranch
 					) VALUES (
 						$1, $2, $3, $4, $5, $6, $7, $8, $9
 					)`

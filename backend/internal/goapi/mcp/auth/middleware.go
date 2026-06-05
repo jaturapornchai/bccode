@@ -16,7 +16,7 @@ import (
 
 const (
 	HeaderAPIKey = "X-API-Key"
-	ContextKey   = "mcp_apikey"
+	ContextKey   = "mcpapikey"
 )
 
 // AuthMiddleware handles API key validation
@@ -183,8 +183,8 @@ func ExtractBearerToken(c echo.Context) string {
 
 // GenerateAPIKey generates a new API key with prefix
 func GenerateAPIKey() string {
-	// Format: bc_live_{random}
-	prefix := "bc_live_"
+	// Format: bclive{random}
+	prefix := "bclive"
 	random := generateRandomString(32)
 	return prefix + random
 }

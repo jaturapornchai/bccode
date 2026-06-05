@@ -10,7 +10,7 @@ import (
 	"smlcloudplatform/internal/goapi/logger"
 )
 
-// QueryResult represents a row in query_results table
+// QueryResult represents a row in queryresults table
 type QueryResult struct {
 	ID          int64           `json:"id"`
 	GUID        string          `json:"guid"`
@@ -21,10 +21,10 @@ type QueryResult struct {
 	CreatedAt   time.Time       `json:"createdat"`
 }
 
-// CreateResultTableIfNotExists สร้าง query_results table ถ้ายังไม่มี
+// CreateResultTableIfNotExists สร้าง queryresults table ถ้ายังไม่มี
 func CreateResultTableIfNotExists(db *sql.DB) error {
 	createTableQuery := `
-		CREATE TABLE IF NOT EXISTS public.query_results (
+		CREATE TABLE IF NOT EXISTS public.queryresults (
 			id SERIAL PRIMARY KEY,
 			guid TEXT NOT NULL,
 			holdingcode TEXT NOT NULL,
@@ -34,11 +34,11 @@ func CreateResultTableIfNotExists(db *sql.DB) error {
 			createdat TIMESTAMPTZ DEFAULT NOW()
 		);
 
-		CREATE INDEX IF NOT EXISTS idx_query_results_guid
-		ON public.query_results(guid);
+		CREATE INDEX IF NOT EXISTS idxqueryresultsguid
+		ON public.queryresults(guid);
 
-		CREATE INDEX IF NOT EXISTS idx_query_results_holdingcode_guid
-		ON public.query_results(holdingcode, guid);
+		CREATE INDEX IF NOT EXISTS idxqueryresultsholdingcodeguid
+		ON public.queryresults(holdingcode, guid);
 	`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -46,10 +46,10 @@ func CreateResultTableIfNotExists(db *sql.DB) error {
 
 	_, err := db.ExecContext(ctx, createTableQuery)
 	if err != nil {
-		return fmt.Errorf("failed to create query_results table: %w", err)
+		return fmt.Errorf("failed to create queryresults table: %w", err)
 	}
 
-	logger.Info("query_results table created/verified successfully")
+	logger.Info("queryresults table created/verified successfully")
 	return nil
 }
 
@@ -61,7 +61,7 @@ func InsertQueryResult(db *sql.DB, guid, holdingCode string, lineNumber int, dat
 	}
 
 	query := `
-		INSERT INTO public.query_results (guid, holdingcode, linenumber, datajson)
+		INSERT INTO public.queryresults (guid, holdingcode, linenumber, datajson)
 		VALUES ($1, $2, $3, $4)
 	`
 
@@ -92,7 +92,7 @@ func InsertQueryResultsBatch(db *sql.DB, guid, holdingCode string, results []map
 	defer tx.Rollback()
 
 	stmt, err := tx.PrepareContext(ctx, `
-		INSERT INTO public.query_results (guid, holdingcode, linenumber, datajson)
+		INSERT INTO public.queryresults (guid, holdingcode, linenumber, datajson)
 		VALUES ($1, $2, $3, $4)
 	`)
 	if err != nil {
@@ -126,7 +126,7 @@ func GetQueryResults(db *sql.DB, holdingCode, guid string, limit, offset int) ([
 
 	// Get total count
 	var total int
-	countQuery := `SELECT COUNT(*) FROM public.query_results WHERE holdingcode = $1 AND guid = $2`
+	countQuery := `SELECT COUNT(*) FROM public.queryresults WHERE holdingcode = $1 AND guid = $2`
 	err := db.QueryRowContext(ctx, countQuery, holdingCode, guid).Scan(&total)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get count: %w", err)
@@ -134,7 +134,7 @@ func GetQueryResults(db *sql.DB, holdingCode, guid string, limit, offset int) ([
 
 	// Get data with pagination
 	query := `
-		SELECT datajson FROM public.query_results
+		SELECT datajson FROM public.queryresults
 		WHERE holdingcode = $1 AND guid = $2
 		ORDER BY linenumber
 		LIMIT $3 OFFSET $4
@@ -170,7 +170,7 @@ func GetQueryResults(db *sql.DB, holdingCode, guid string, limit, offset int) ([
 
 // DeleteQueryResults deletes query results by GUID
 func DeleteQueryResults(db *sql.DB, holdingCode, guid string) error {
-	query := `DELETE FROM public.query_results WHERE holdingcode = $1 AND guid = $2`
+	query := `DELETE FROM public.queryresults WHERE holdingcode = $1 AND guid = $2`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()

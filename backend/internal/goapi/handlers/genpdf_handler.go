@@ -375,7 +375,7 @@ func extractTotalAmount(doc map[string]interface{}) float64 {
 		return amt
 	}
 	// ลอง totalamount
-	if amt, ok := doc["total_amount"].(float64); ok {
+	if amt, ok := doc["totalamount"].(float64); ok {
 		return amt
 	}
 	// ลอง grandtotal

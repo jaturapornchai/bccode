@@ -15,7 +15,7 @@ func TestPurchaseReceiveTransactionPhaser(t *testing.T) {
 	"guidfixed": "32Y3x1r0sqYOww0mRXrh0ftiIxV",
 	"docno": "PP2025091100001",
 	"docdatetime": "2025-09-11T09:44:52.81Z",
-	"guid_ref": "5335d4d3-66ff-4b5d-a2c4-b9fb67e4db7c",
+	"guidref": "5335d4d3-66ff-4b5d-a2c4-b9fb67e4db7c",
 	"shiftdocno": "",
 	"devicename": "",
 	"guidpos": "",
@@ -32,10 +32,10 @@ func TestPurchaseReceiveTransactionPhaser(t *testing.T) {
 	"docrefdate": "2025-09-11T09:44:52.81Z",
 	"taxdocdate": "2025-09-11T09:44:52.81Z",
 	"taxdocno": "",
-	"doc_type": 0,
+	"doctype": 0,
 	"imageurl": "",
 	"inquirytype": 0,
-	"vat_type": 0,
+	"vattype": 0,
 	"vatrate": 7,
 	"custcode": "AP0004",
 	"custnames": [
@@ -57,8 +57,8 @@ func TestPurchaseReceiveTransactionPhaser(t *testing.T) {
 	"totalaftervat": 10.7,
 	"totalbeforevat": 10,
 	"totalvatvalue": 0.7,
-	"total_amount": 10.7,
-	"total_cost": 0,
+	"totalamount": 10.7,
+	"totalcost": 0,
 	"posid": "",
 	"cashiercode": "",
 	"salecode": "",
@@ -144,7 +144,7 @@ func TestPurchaseReceiveTransactionPhaser(t *testing.T) {
 	"details": [
 		{
 			"inquirytype": 0,
-			"line_number": 1,
+			"linenumber": 1,
 			"docdatetime": "2025-09-11T09:44:52.81Z",
 			"docref": "PO2025091100003",
 			"docrefdatetime": "2025-09-11T09:41:11.668Z",
@@ -174,7 +174,7 @@ func TestPurchaseReceiveTransactionPhaser(t *testing.T) {
 					"isdelete": false
 				}
 			],
-			"item_type": 0,
+			"itemtype": 0,
 			"item_guid": "30LblYDognbOaiUNd79MFGPdbI0",
 			"imageurl": "",
 			"description": "",
@@ -187,12 +187,12 @@ func TestPurchaseReceiveTransactionPhaser(t *testing.T) {
 			"discountamount": 0,
 			"totalvaluevat": 0.7,
 			"priceexcludevat": 10,
-			"sum_amount": 10,
+			"sumamount": 10,
 			"sumamountexcludevat": 10,
 			"refguid": "",
 			"dividevalue": 1,
 			"standvalue": 1,
-			"vat_type": 0,
+			"vattype": 0,
 			"remark": "",
 			"multiunit": true,
 			"issumpoint": false,
@@ -202,7 +202,7 @@ func TestPurchaseReceiveTransactionPhaser(t *testing.T) {
 			"laststatus": 0,
 			"ischoice": 0,
 			"ispos": 0,
-			"tax_type": 0,
+			"taxtype": 0,
 			"vatcal": 0,
 			"whcode": "00000",
 			"whnames": [
@@ -241,8 +241,8 @@ func TestPurchaseReceiveTransactionPhaser(t *testing.T) {
 			"tolocationnames": [],
 			"sku": "",
 			"extrajson": "",
-			"group_code": "",
-			"group_names": null,
+			"groupcode": "",
+			"groupnames": null,
 			"manufacturerguid": "",
 			"manufacturercode": "",
 			"manufacturernames": null,
@@ -380,7 +380,7 @@ func TestPurchaseReceiveTransactionPhaser_EmptyDetails(t *testing.T) {
 		"guidfixed": "32Y3x1r0sqYOww0mRXrh0ftiIxV",
 		"docno": "PP2025091100001",
 		"docdatetime": "2025-09-11T09:44:52.81Z",
-		"guid_ref": "5335d4d3-66ff-4b5d-a2c4-b9fb67e4db7c",
+		"guidref": "5335d4d3-66ff-4b5d-a2c4-b9fb67e4db7c",
 		"transflag": 310,
 		"docreftype": 0,
 		"docrefno": "",
@@ -388,7 +388,7 @@ func TestPurchaseReceiveTransactionPhaser_EmptyDetails(t *testing.T) {
 		"taxdocdate": "2025-09-11T09:44:52.81Z",
 		"taxdocno": "",
 		"inquirytype": 0,
-		"vat_type": 0,
+		"vattype": 0,
 		"vatrate": 7,
 		"custcode": "AP0004",
 		"custnames": [
@@ -407,7 +407,7 @@ func TestPurchaseReceiveTransactionPhaser_EmptyDetails(t *testing.T) {
 		"totalaftervat": 0,
 		"totalbeforevat": 0,
 		"totalvatvalue": 0,
-		"total_amount": 0,
+		"totalamount": 0,
 		"iscancel": false,
 		"ismanualamount": false,
 		"branch": {
@@ -443,7 +443,7 @@ func TestPurchaseReceiveTransactionPhaser_MultipleItems(t *testing.T) {
 		"guidfixed": "32Y3x1r0sqYOww0mRXrh0ftiIxV",
 		"docno": "PP2025091100001",
 		"docdatetime": "2025-09-11T09:44:52.81Z",
-		"guid_ref": "5335d4d3-66ff-4b5d-a2c4-b9fb67e4db7c",
+		"guidref": "5335d4d3-66ff-4b5d-a2c4-b9fb67e4db7c",
 		"transflag": 310,
 		"docreftype": 0,
 		"docrefno": "",
@@ -451,7 +451,7 @@ func TestPurchaseReceiveTransactionPhaser_MultipleItems(t *testing.T) {
 		"taxdocdate": "2025-09-11T09:44:52.81Z",
 		"taxdocno": "",
 		"inquirytype": 0,
-		"vat_type": 0,
+		"vattype": 0,
 		"vatrate": 7,
 		"custcode": "AP0004",
 		"custnames": [
@@ -470,7 +470,7 @@ func TestPurchaseReceiveTransactionPhaser_MultipleItems(t *testing.T) {
 		"totalaftervat": 26.75,
 		"totalbeforevat": 25,
 		"totalvatvalue": 1.75,
-		"total_amount": 26.75,
+		"totalamount": 26.75,
 		"iscancel": false,
 		"ismanualamount": false,
 		"branch": {
@@ -488,7 +488,7 @@ func TestPurchaseReceiveTransactionPhaser_MultipleItems(t *testing.T) {
 		"details": [
 			{
 				"inquirytype": 0,
-				"line_number": 1,
+				"linenumber": 1,
 				"docdatetime": "2025-09-11T09:44:52.81Z",
 				"docref": "PO2025091100003",
 				"docrefdatetime": "2025-09-11T09:41:11.668Z",
@@ -512,7 +512,7 @@ func TestPurchaseReceiveTransactionPhaser_MultipleItems(t *testing.T) {
 						"isdelete": false
 					}
 				],
-				"item_type": 0,
+				"itemtype": 0,
 				"item_guid": "30LblYDognbOaiUNd79MFGPdbI0",
 				"qty": 1,
 				"price": 10,
@@ -520,13 +520,13 @@ func TestPurchaseReceiveTransactionPhaser_MultipleItems(t *testing.T) {
 				"discountamount": 0,
 				"totalvaluevat": 0.7,
 				"priceexcludevat": 10,
-				"sum_amount": 10,
+				"sumamount": 10,
 				"sumamountexcludevat": 10,
 				"dividevalue": 1,
 				"standvalue": 1,
-				"vat_type": 0,
+				"vattype": 0,
 				"remark": "",
-				"tax_type": 0,
+				"taxtype": 0,
 				"whcode": "00000",
 				"whnames": [
 					{
@@ -538,13 +538,13 @@ func TestPurchaseReceiveTransactionPhaser_MultipleItems(t *testing.T) {
 				],
 				"locationcode": "",
 				"locationnames": [],
-				"group_code": "",
-				"group_names": null,
+				"groupcode": "",
+				"groupnames": null,
 				"sumamountchoice": 0
 			},
 			{
 				"inquirytype": 0,
-				"line_number": 2,
+				"linenumber": 2,
 				"docdatetime": "2025-09-11T09:44:52.81Z",
 				"docref": "PO2025091100003",
 				"docrefdatetime": "2025-09-11T09:41:11.668Z",
@@ -568,7 +568,7 @@ func TestPurchaseReceiveTransactionPhaser_MultipleItems(t *testing.T) {
 						"isdelete": false
 					}
 				],
-				"item_type": 0,
+				"itemtype": 0,
 				"item_guid": "30LblYDognbOaiUNd79MFGPdbI1",
 				"qty": 1,
 				"price": 15,
@@ -576,13 +576,13 @@ func TestPurchaseReceiveTransactionPhaser_MultipleItems(t *testing.T) {
 				"discountamount": 0,
 				"totalvaluevat": 1.05,
 				"priceexcludevat": 15,
-				"sum_amount": 15,
+				"sumamount": 15,
 				"sumamountexcludevat": 15,
 				"dividevalue": 1,
 				"standvalue": 1,
-				"vat_type": 0,
+				"vattype": 0,
 				"remark": "",
-				"tax_type": 0,
+				"taxtype": 0,
 				"whcode": "00000",
 				"whnames": [
 					{
@@ -594,8 +594,8 @@ func TestPurchaseReceiveTransactionPhaser_MultipleItems(t *testing.T) {
 				],
 				"locationcode": "",
 				"locationnames": [],
-				"group_code": "",
-				"group_names": null,
+				"groupcode": "",
+				"groupnames": null,
 				"sumamountchoice": 0
 			}
 		]
@@ -646,7 +646,7 @@ func TestPurchaseReceiveTransactionPhaser_DateTimeParsing(t *testing.T) {
 		"guidfixed": "32Y3x1r0sqYOww0mRXrh0ftiIxV",
 		"docno": "PP2025091100001",
 		"docdatetime": "2025-12-31T23:59:59.999Z",
-		"guid_ref": "5335d4d3-66ff-4b5d-a2c4-b9fb67e4db7c",
+		"guidref": "5335d4d3-66ff-4b5d-a2c4-b9fb67e4db7c",
 		"transflag": 310,
 		"docreftype": 0,
 		"docrefno": "",
@@ -654,7 +654,7 @@ func TestPurchaseReceiveTransactionPhaser_DateTimeParsing(t *testing.T) {
 		"taxdocdate": "2025-06-15T12:30:45.123Z",
 		"taxdocno": "TAX001",
 		"inquirytype": 0,
-		"vat_type": 0,
+		"vattype": 0,
 		"vatrate": 7,
 		"custcode": "AP0004",
 		"custnames": [
@@ -673,7 +673,7 @@ func TestPurchaseReceiveTransactionPhaser_DateTimeParsing(t *testing.T) {
 		"totalaftervat": 107,
 		"totalbeforevat": 100,
 		"totalvatvalue": 7,
-		"total_amount": 107,
+		"totalamount": 107,
 		"iscancel": false,
 		"ismanualamount": false,
 		"branch": {
@@ -691,7 +691,7 @@ func TestPurchaseReceiveTransactionPhaser_DateTimeParsing(t *testing.T) {
 		"details": [
 			{
 				"inquirytype": 0,
-				"line_number": 1,
+				"linenumber": 1,
 				"docdatetime": "2025-03-15T14:20:30.456Z",
 				"docref": "PO2025091100003",
 				"docrefdatetime": "2025-02-28T08:15:22.789Z",
@@ -715,7 +715,7 @@ func TestPurchaseReceiveTransactionPhaser_DateTimeParsing(t *testing.T) {
 						"isdelete": false
 					}
 				],
-				"item_type": 0,
+				"itemtype": 0,
 				"item_guid": "30LblYDognbOaiUNd79MFGPdbI0",
 				"qty": 1,
 				"price": 100,
@@ -723,13 +723,13 @@ func TestPurchaseReceiveTransactionPhaser_DateTimeParsing(t *testing.T) {
 				"discountamount": 0,
 				"totalvaluevat": 7,
 				"priceexcludevat": 100,
-				"sum_amount": 100,
+				"sumamount": 100,
 				"sumamountexcludevat": 100,
 				"dividevalue": 1,
 				"standvalue": 1,
-				"vat_type": 0,
+				"vattype": 0,
 				"remark": "DateTime test item",
-				"tax_type": 0,
+				"taxtype": 0,
 				"whcode": "00000",
 				"whnames": [
 					{
@@ -741,8 +741,8 @@ func TestPurchaseReceiveTransactionPhaser_DateTimeParsing(t *testing.T) {
 				],
 				"locationcode": "",
 				"locationnames": [],
-				"group_code": "",
-				"group_names": null,
+				"groupcode": "",
+				"groupnames": null,
 				"sumamountchoice": 0
 			}
 		]

@@ -160,7 +160,7 @@ type ProductBarcodeRecord = {
 };
 
 const PRODUCT_SPLIT_DEFAULT_LEFT = 30;
-const PRODUCT_SPLIT_STORAGE_KEY = "bc_product_barcode_split_left_v2";
+const PRODUCT_SPLIT_STORAGE_KEY = "bcproductbarcodesplitleftv2";
 const PRODUCT_SPLIT_MIN_LEFT = 5;
 const PRODUCT_SPLIT_MAX_LEFT = 95;
 
@@ -394,12 +394,12 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
         gradecode: debouncedFilters.gradeCode.trim(),
         modelcode: debouncedFilters.modelCode.trim(),
         patterncode: debouncedFilters.patternCode.trim(),
-        price_min: toNumberOrNull(debouncedFilters.priceMin),
-        price_max: toNumberOrNull(debouncedFilters.priceMax),
+        pricemin: toNumberOrNull(debouncedFilters.priceMin),
+        pricemax: toNumberOrNull(debouncedFilters.priceMax),
         limit: pageSize,
         offset: 0,
-        sort_field: search.trim() ? "relevance" : "barcode",
-        sort_order: search.trim() ? "desc" : "asc",
+        sortfield: search.trim() ? "relevance" : "barcode",
+        sortorder: search.trim() ? "desc" : "asc",
       });
       if (controller.signal.aborted) return;
       if (!data.success) {
@@ -1327,7 +1327,7 @@ function BarcodeQuickActions({
   return (
     <div className="fixed bottom-3 right-3 z-30 flex gap-2 rounded-full border border-border bg-card/95 p-1 shadow-lg backdrop-blur md:bottom-6 md:right-6">
       <Button asChild size="sm" variant="ghost" title={text.labelPrint}>
-        <a href={`/product_barcode_shelf?barcode=${encoded}`} target="_blank" rel="noreferrer">
+        <a href={`/productbarcodeshelf?barcode=${encoded}`} target="_blank" rel="noreferrer">
           <Printer size={16} />
           <span className="hidden md:inline">{text.labelPrint}</span>
         </a>
@@ -1414,18 +1414,18 @@ function normalizeBarcodeRecord(value: unknown): ProductBarcodeRecord {
     holdingCode: getFirstString(record, ["holdingcode", "holdingcode"]),
     barcode: getFirstString(record, ["barcode"]),
     barcodeRef: getFirstString(record, ["barcoderef", "barcode_ref", "refbarcode"]),
-    name: localizedNameFromKeys(record, ["names"], getFirstString(record, ["name0", "name", "item_name"])),
-    unitName: localizedNameFromKeys(record, ["itemunitnames", "unit_names"], getFirstString(record, ["unit_name", "unitname"])),
-    unitCode: getFirstString(record, ["item_unit_code", "itemunitcode", "unitcode"]),
-    itemCode: getFirstString(record, ["itemcode", "item_code"]),
-    itemGuid: getFirstString(record, ["itemguid", "item_guid"]),
-    itemGuidFixed: getFirstString(record, ["itemguidfixed", "item_guidfixed"]),
-    parentGuid: getFirstString(record, ["parentguid", "parent_guid"]),
-    groupName: localizedNameFromKeys(record, ["group_names", "groupnames"], getFirstString(record, ["group_name", "groupname"])),
-    groupCode: getFirstString(record, ["group_code", "groupcode"]),
+    name: localizedNameFromKeys(record, ["names"], getFirstString(record, ["name0", "name", "itemname"])),
+    unitName: localizedNameFromKeys(record, ["itemunitnames", "unitnames"], getFirstString(record, ["unitname", "unitname"])),
+    unitCode: getFirstString(record, ["itemunitcode", "itemunitcode", "unitcode"]),
+    itemCode: getFirstString(record, ["itemcode", "itemcode"]),
+    itemGuid: getFirstString(record, ["itemguid", "itemguid"]),
+    itemGuidFixed: getFirstString(record, ["itemguidfixed", "itemguidfixed"]),
+    parentGuid: getFirstString(record, ["parentguid"]),
+    groupName: localizedNameFromKeys(record, ["groupnames", "groupnames"], getFirstString(record, ["groupname", "groupname"])),
+    groupCode: getFirstString(record, ["groupcode", "groupcode"]),
     brandName: localizedNameFromKeys(record, ["brand_names", "brandnames"], getFirstString(record, ["brand_name", "brandname"])),
-    brandCode: getFirstString(record, ["brand_code", "brandcode"]),
-    categoryName: localizedNameFromKeys(record, ["category_names", "categorynames"], getFirstString(record, ["category_name", "categoryname"])),
+    brandCode: getFirstString(record, ["brandcode", "brandcode"]),
+    categoryName: localizedNameFromKeys(record, ["categorynames", "categorynames"], getFirstString(record, ["categoryname", "categoryname"])),
     categoryCode: getFirstString(record, ["category_code", "categorycode"]),
     className: localizedNameFromKeys(record, ["class_names", "classnames"], getFirstString(record, ["class_name", "classname"])),
     classCode: getFirstString(record, ["class_code", "classcode"]),
@@ -1451,20 +1451,20 @@ function normalizeBarcodeRecord(value: unknown): ProductBarcodeRecord {
     colorSelect: getFirstString(record, ["colorselect", "color_select"]),
     colorSelectHex: getFirstString(record, ["colorselecthex", "color_select_hex"]),
     unitCount: getFirstNumber(record, ["unit_count", "unitcount"]),
-    allUnitNames: getFirstString(record, ["all_unit_names", "allunitnames"]),
-    balanceQty: getFirstNumber(record, ["available_qty", "balance_qty", "balanceqty"]),
+    allUnitNames: getFirstString(record, ["all_unitnames", "allunitnames"]),
+    balanceQty: getFirstNumber(record, ["availableqty", "balanceqty", "balanceqty"]),
     balanceFormatted: getFirstString(record, ["balance_formatted", "balanceformatted"]),
     standValue: getFirstNumber(record, ["standvalue", "stand_value", "barcoderefunitstand", "barcode_ref_unit_stand"]),
     divideValue: getFirstNumber(record, ["dividevalue", "divide_value", "barcoderefunitdivide", "barcode_ref_unit_divide"]),
-    itemType: getFirstNumber(record, ["itemtype", "item_type"]),
+    itemType: getFirstNumber(record, ["itemtype", "itemtype"]),
     productType: getFirstNumber(record, ["producttype", "product_type"]),
     foodType: getFirstNumber(record, ["foodtype", "food_type"]),
     materialType: getFirstNumber(record, ["materialtype", "material_type"]),
-    taxType: getFirstNumber(record, ["taxtype", "tax_type"]),
-    vatType: getFirstNumber(record, ["vattype", "vat_type"]),
+    taxType: getFirstNumber(record, ["taxtype", "taxtype"]),
+    vatType: getFirstNumber(record, ["vattype", "vattype"]),
     vatCal: getFirstNumber(record, ["vatcal", "vat_cal"]),
     isStock: getFirstNumber(record, ["isstock", "is_stock"]),
-    isMainBarcode: getFirstBoolean(record, ["ismainbarcode", "is_main_barcode"]),
+    isMainBarcode: getFirstBoolean(record, ["ismainbarcode", "ismainbarcode"]),
     isMainItem: getFirstBoolean(record, ["ismainitem", "is_main_item"]),
     isUseSubBarcodes: getFirstBoolean(record, ["isusesubbarcodes", "is_use_sub_barcodes"]),
     useImageOrColor: getFirstBoolean(record, ["useimageorcolor", "use_image_or_color"]),
@@ -1507,7 +1507,7 @@ function getPrice(record: Record<string, unknown>): number {
   if (!Array.isArray(prices)) return 0;
   const retail = prices.find((price) => {
     if (!isRecord(price)) return false;
-    return getNumber(price, "key_number") === 1 || getNumber(price, "keynumber") === 1;
+    return getNumber(price, "keynumber") === 1 || getNumber(price, "keynumber") === 1;
   });
   return isRecord(retail) ? getNumber(retail, "price") : 0;
 }

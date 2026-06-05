@@ -15,7 +15,7 @@ Added 3 marketplace tabs (Shopee / Lazada / TikTok) to the barcode edit form, ea
 ## 2. Backend / model changes
 **DONE (this round):**
 - `backend/internal/product/product/models/product.go:295` — `MarketplaceProductMap` (4→26 fields), `MarketplaceSKUMap` (7→17 fields), unified, backward-compatible.
-- `backend/internal/product/productbarcode/models/product_barcode.go:379` — identical structs (duplicated by package).
+- Go productbarcode model — identical structs (duplicated by package).
 - `backend/internal/product/productbarcode/models/marketplace_map_test.go` — JSON round-trip + contract guard (2 tests PASS).
 - No migration needed: MongoDB is schemaless; new fields default to zero on old docs. CRUD save/load already carries `marketplace_products` via the existing barcode bson path.
 

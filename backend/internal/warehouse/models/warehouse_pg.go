@@ -9,7 +9,7 @@ import (
 type WarehousePg struct {
 	HoldingCode string          `json:"holdingcode" gorm:"column:holdingcode;index"`
 	GuidFixed   string          `json:"guidfixed" gorm:"column:guidfixed;primaryKey"`
-	Code        string          `json:"code" gorm:"column:code;index:idx_warehouse_code,unique"`
+	Code        string          `json:"code" gorm:"column:code;index:idxwarehousecode,unique"`
 	Names       pkgModels.JSONB `json:"names" gorm:"column:names;type:jsonb"`
 	Latitude    float64         `json:"latitude" gorm:"column:latitude"`
 	Longitude   float64         `json:"longitude" gorm:"column:longitude"`
@@ -37,7 +37,7 @@ type ZonePg struct {
 	HoldingCode          string          `json:"holdingcode" gorm:"column:holdingcode;index"`
 	GuidFixed            string          `json:"guidfixed" gorm:"column:guidfixed;primaryKey"`
 	WarehouseGuid        string          `json:"warehouseguid" gorm:"column:warehouseguid;index"`
-	Code                 string          `json:"code" gorm:"column:code;index:idx_zone_code,unique"`
+	Code                 string          `json:"code" gorm:"column:code;index:idxzonecode,unique"`
 	Names                pkgModels.JSONB `json:"names" gorm:"column:names;type:jsonb"`
 	SuitableProductTypes string          `json:"suitableproducttypes" gorm:"column:suitableproducttypes"`
 	IsActive             bool            `json:"isactive" gorm:"column:isactive;default:true"`
@@ -55,7 +55,7 @@ type ShelfPg struct {
 	HoldingCode string         `json:"holdingcode" gorm:"column:holdingcode;index"`
 	GuidFixed   string         `json:"guidfixed" gorm:"column:guidfixed;primaryKey"`
 	ZoneGuid    string         `json:"zoneguid" gorm:"column:zoneguid;index"`
-	Code        string         `json:"code" gorm:"column:code;index:idx_shelf_code,unique"`
+	Code        string         `json:"code" gorm:"column:code;index:idxshelfcode,unique"`
 	Name        string         `json:"name" gorm:"column:name"`
 	IsActive    bool           `json:"isactive" gorm:"column:isactive;default:true"`
 	CreatedAt   time.Time      `json:"createdat"`

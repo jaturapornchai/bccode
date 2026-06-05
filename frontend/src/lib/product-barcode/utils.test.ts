@@ -98,17 +98,17 @@ describe("utils — names", () => {
 });
 
 describe("utils — price/refbarcode/bom arrays", () => {
-  it("toPriceArray supports key_number and legacy keynumber", () => {
+  it("toPriceArray supports keynumber and legacy keynumber", () => {
     expect(
       toPriceArray([
-        { key_number: 1, price: 10 },
+        { keynumber: 1, price: 10 },
         { keynumber: 2, price: 20 },
         { price: 30 },
       ]),
     ).toEqual([
-      { key_number: 1, price: 10 },
-      { key_number: 2, price: 20 },
-      { key_number: 0, price: 30 },
+      { keynumber: 1, price: 10 },
+      { keynumber: 2, price: 20 },
+      { keynumber: 0, price: 30 },
     ]);
   });
 
@@ -118,7 +118,7 @@ describe("utils — price/refbarcode/bom arrays", () => {
       {
         guidfixed: "",
         names: [],
-        item_unit_code: "",
+        itemunitcode: "",
         itemunitnames: [],
         barcode: "X1",
         condition: false,
@@ -134,7 +134,7 @@ describe("utils — price/refbarcode/bom arrays", () => {
       {
         barcodeguidfixed: "G1",
         names: [],
-        item_unit_code: "",
+        itemunitcode: "",
         itemunitnames: [],
         barcode: "X1",
         qty: 2,
@@ -164,17 +164,17 @@ describe("utils — rawToProductBarcode", () => {
       {
         barcode: "ABC-1",
         names: [{ code: "th", name: "สินค้า" }],
-        item_unit_code: "PCS",
-        prices: [{ key_number: 1, price: 99 }],
-        item_type: 2,
+        itemunitcode: "PCS",
+        prices: [{ keynumber: 1, price: 99 }],
+        itemtype: 2,
       },
       base,
     );
     expect(merged.barcode).toBe("ABC-1");
     expect(merged.names).toEqual([{ code: "th", name: "สินค้า", description: undefined }]);
-    expect(merged.item_unit_code).toBe("PCS");
-    expect(merged.prices).toEqual([{ key_number: 1, price: 99 }]);
-    expect(merged.item_type).toBe(ITEM_TYPE.SET);
+    expect(merged.itemunitcode).toBe("PCS");
+    expect(merged.prices).toEqual([{ keynumber: 1, price: 99 }]);
+    expect(merged.itemtype).toBe(ITEM_TYPE.SET);
   });
 
   it("returns base unchanged for non-record input", () => {
@@ -195,22 +195,22 @@ describe("utils — toProductUnitOptions", () => {
         {
           guidfixed: "BARCODE-GUID-1",
           barcode: "885-PCS",
-          item_unit_code: "PCS",
+          itemunitcode: "PCS",
           itemunitnames: [{ code: "th", name: "ชิ้น" }],
         },
         {
           guidfixed: "BARCODE-GUID-2",
           barcode: "885-BOX",
-          item_unit_code: "BOX",
+          itemunitcode: "BOX",
           itemunitnames: [{ code: "th", name: "กล่อง" }],
         },
       ],
-      refbarcodes: [{ barcode: "WRONG", item_unit_code: "OLD" }],
+      refbarcodes: [{ barcode: "WRONG", itemunitcode: "OLD" }],
     });
 
     expect(options).toEqual([
-      expect.objectContaining({ guidfixed: "BARCODE-GUID-1", barcode: "885-PCS", item_unit_code: "PCS" }),
-      expect.objectContaining({ guidfixed: "BARCODE-GUID-2", barcode: "885-BOX", item_unit_code: "BOX" }),
+      expect.objectContaining({ guidfixed: "BARCODE-GUID-1", barcode: "885-PCS", itemunitcode: "PCS" }),
+      expect.objectContaining({ guidfixed: "BARCODE-GUID-2", barcode: "885-BOX", itemunitcode: "BOX" }),
     ]);
   });
 
@@ -224,7 +224,7 @@ describe("utils — toProductUnitOptions", () => {
         guidfixed: "PRODUCT-GUID",
         code: "P001",
         names: [],
-        refbarcodes: [{ barcode: "LEGACY", item_unit_code: "OLD" }],
+        refbarcodes: [{ barcode: "LEGACY", itemunitcode: "OLD" }],
       }),
     ).toEqual([]);
   });

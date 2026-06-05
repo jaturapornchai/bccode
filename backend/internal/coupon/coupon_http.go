@@ -543,7 +543,7 @@ func (h CouponHttp) DownloadImportTemplate(ctx microservice.IContext) error {
 		"maxusagecount",            // จำนวนครั้งสูงสุดรวม
 		"maxusagecountpercustomer", // จำนวนครั้งสูงสุดต่อลูกค้า
 		"product_codes",            // รายการ Code ของสินค้า (ถ้ามีหลายตัวใช้ ;)
-		"group_codes",              // รายการ GroupCode (ถ้ามีหลายตัวใช้ ;)
+		"groupcodes",               // รายการ GroupCode (ถ้ามีหลายตัวใช้ ;)
 		"group_subone_codes",       // รายการ GroupsuboneCode (ถ้ามีหลายตัวใช้ ;)
 		"group_subtwo_codes",       // รายการ GroupsubtwoCode (ถ้ามีหลายตัวใช้ ;)
 		"brand_codes",              // รายการ BrandCode (ถ้ามีหลายตัวใช้ ;)
@@ -579,7 +579,7 @@ func (h CouponHttp) DownloadImportTemplate(ctx microservice.IContext) error {
 			100,
 			1,
 			"PROD001;PROD002", // product_codes
-			"",                // group_codes
+			"",                // groupcodes
 			"",                // group_subone_codes
 			"",                // group_subtwo_codes
 			"BRAND001",        // brand_codes
@@ -606,7 +606,7 @@ func (h CouponHttp) DownloadImportTemplate(ctx microservice.IContext) error {
 			1,
 			1,
 			"",              // product_codes
-			"GRP001;GRP002", // group_codes
+			"GRP001;GRP002", // groupcodes
 			"SUB001",        // group_subone_codes
 			"SUB201;SUB202", // group_subtwo_codes
 			"",              // brand_codes
@@ -633,7 +633,7 @@ func (h CouponHttp) DownloadImportTemplate(ctx microservice.IContext) error {
 			50,
 			2,
 			"", // product_codes - ไม่มีเงื่อนไขสินค้า
-			"", // group_codes
+			"", // groupcodes
 			"", // group_subone_codes
 			"", // group_subtwo_codes
 			"", // brand_codes
@@ -688,7 +688,7 @@ func (h CouponHttp) DownloadImportTemplate(ctx microservice.IContext) error {
 			"",
 			"5. เงื่อนไขสินค้า (Product Condition):",
 			"   - product_codes: รายการรหัสสินค้า เช่น 'PROD001;PROD002'",
-			"   - group_codes: รายการรหัสกลุ่ม เช่น 'GRP001;GRP002'",
+			"   - groupcodes: รายการรหัสกลุ่ม เช่น 'GRP001;GRP002'",
 			"   - group_subone_codes: รายการรหัสกลุ่มย่อย 1 เช่น 'SUB001;SUB002'",
 			"   - group_subtwo_codes: รายการรหัสกลุ่มย่อย 2 เช่น 'SUB201;SUB202'",
 			"   - brand_codes: รายการรหัสแบรนด์ เช่น 'BRAND001;BRAND002'",
@@ -733,7 +733,7 @@ func (h CouponHttp) DownloadImportTemplate(ctx microservice.IContext) error {
 	_ = f.SetColWidth(sheetName, "J", "J", 15) // isonetimeuse
 	_ = f.SetColWidth(sheetName, "K", "L", 20) // usage counts
 	_ = f.SetColWidth(sheetName, "M", "M", 20) // product_codes
-	_ = f.SetColWidth(sheetName, "N", "N", 18) // group_codes
+	_ = f.SetColWidth(sheetName, "N", "N", 18) // groupcodes
 	_ = f.SetColWidth(sheetName, "O", "O", 22) // group_subone_codes
 	_ = f.SetColWidth(sheetName, "P", "P", 22) // group_subtwo_codes
 	_ = f.SetColWidth(sheetName, "Q", "Q", 18) // brand_codes

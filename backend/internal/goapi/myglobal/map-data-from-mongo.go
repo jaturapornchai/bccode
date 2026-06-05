@@ -179,8 +179,8 @@ func MapDocStructFromMongo(docData models.MongoDocModel, holdingCode string) (mo
 		} else {
 			for _, payment := range payments {
 				amount, _ := payment["amount"].(float64)
-				providerName, _ := payment["provider_name"].(string)
-				trans_flag, _ := payment["trans_flag"].(float64)
+				providerName, _ := payment["providername"].(string)
+				transflag, _ := payment["transflag"].(float64)
 				p = models.DocPaymentStruct{
 					HoldingCode:    holdingCode,
 					BranchID:       docData.Branch.GuidFixed,
@@ -190,7 +190,7 @@ func MapDocStructFromMongo(docData models.MongoDocModel, holdingCode string) (mo
 					Amount:         amount,
 					Description:    providerName,
 					DocNo:          docData.DocNo,
-					TransFlag:      int32(trans_flag),
+					TransFlag:      int32(transflag),
 					GuidFixed:      docData.GuidFixed,
 					GuidBranch:     docData.Branch.GuidFixed,
 				}

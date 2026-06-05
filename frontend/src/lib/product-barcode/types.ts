@@ -1,7 +1,7 @@
 /**
  * TypeScript types for Product Barcode feature.
  * Mirrors backend Go struct `ProductBarcodeBase` and friends in
- * `backend/internal/product/productbarcode/models/product_barcode.go`.
+ * the Go productbarcode model.
  *
  * Source of truth: backend Go. Add fields here only when backend has them.
  */
@@ -26,7 +26,7 @@ export interface MasterIdentity {
 
 /** Price entry — matches Go `ProductPrice`. */
 export interface ProductPrice {
-  key_number: number;
+  keynumber: number;
   price: number;
 }
 
@@ -39,50 +39,50 @@ export interface ProductImage {
 export interface MarketplaceMediaAsset {
   kind: string;
   uri: string;
-  external_id: string;
-  external_url: string;
-  option_code: string;
-  option_value: string;
-  sort_order: number;
-  alt_text: string;
-  use_case: string;
-  mime_type: string;
+  externalid: string;
+  externalurl: string;
+  optioncode: string;
+  optionvalue: string;
+  sortorder: number;
+  alttext: string;
+  usecase: string;
+  mimetype: string;
   width: number;
   height: number;
-  last_imported_at: string;
+  lastimportedat: string;
 }
 
 export interface MarketplaceAttributeValue {
-  value_id: string;
-  value_code: string;
-  value_text: string;
-  display_text: string;
-  unit_code: string;
-  sort_order: number;
-  is_custom_value: boolean;
+  valueid: string;
+  valuecode: string;
+  valuetext: string;
+  displaytext: string;
+  unitcode: string;
+  sortorder: number;
+  iscustomvalue: boolean;
 }
 
 export interface MarketplaceAttribute {
-  attribute_id: string;
-  attribute_code: string;
-  attribute_name: string;
-  input_type: string;
+  attributeid: string;
+  attributecode: string;
+  attributename: string;
+  inputtype: string;
   scope: string;
-  is_required: boolean;
-  is_sale_prop: boolean;
-  is_custom: boolean;
+  isrequired: boolean;
+  issaleprop: boolean;
+  iscustom: boolean;
   values: MarketplaceAttributeValue[];
 }
 
 export interface MarketplaceSpecificationGroup {
-  group_code: string;
-  group_name: string;
+  groupcode: string;
+  groupname: string;
   attributes: MarketplaceAttribute[];
 }
 
 export interface MarketplacePayloadExample {
   direction: string;
-  use_case: string;
+  usecase: string;
   payload: unknown;
 }
 
@@ -124,73 +124,73 @@ export type MarketplaceStatus = (typeof MARKETPLACE_STATUS)[number];
  */
 export interface MarketplaceProductMap {
   platform: string;
-  account_id: string;
+  accountid: string;
   holdingcode: string;
-  market_item_id: string;
-  market_model_id: string;
-  item_url: string;
-  seller_sku: string;
-  shop_sku: string;
+  marketitemid: string;
+  marketmodelid: string;
+  itemurl: string;
+  sellersku: string;
+  shopsku: string;
   gtin: string;
-  category_id: string;
-  category_name: string;
-  brand_id: string;
-  media_assets: MarketplaceMediaAsset[];
-  specification_groups: MarketplaceSpecificationGroup[];
-  raw_attributes: MarketplaceAttribute[];
-  payload_examples: MarketplacePayloadExample[];
+  categoryid: string;
+  categoryname: string;
+  brandid: string;
+  mediaassets: MarketplaceMediaAsset[];
+  specificationgroups: MarketplaceSpecificationGroup[];
+  rawattributes: MarketplaceAttribute[];
+  payloadexamples: MarketplacePayloadExample[];
   currency: string;
-  custom_price: number;
-  platform_price: number;
-  platform_stock: number;
-  sync_stock: boolean;
-  sync_price: boolean;
+  customprice: number;
+  platformprice: number;
+  platformstock: number;
+  syncstock: boolean;
+  syncprice: boolean;
   status: string;
-  reject_reason: string;
-  days_to_ship: number;
-  is_pre_order: boolean;
-  sync_enabled: boolean;
-  sync_status: string;
-  last_sync_at: string;
-  last_sync_error: string;
+  rejectreason: string;
+  daystoship: number;
+  ispreorder: boolean;
+  syncenabled: boolean;
+  syncstatus: string;
+  lastsyncat: string;
+  lastsyncerror: string;
 }
 
 /** Sub/variation barcode marketplace mapping — matches Go `MarketplaceSKUMap`. */
 export interface MarketplaceDimensionStock {
-  dimension_key: string;
-  dimension_name: string;
-  market_dimension_id: string;
-  available_qty: number;
-  reserved_qty: number;
-  inbound_qty: number;
-  oversell_buffer_qty: number;
-  last_platform_stock: number;
-  last_synced_at: string;
-  last_sync_status: string;
-  last_sync_error: string;
+  dimensionkey: string;
+  dimensionname: string;
+  marketdimensionid: string;
+  availableqty: number;
+  reservedqty: number;
+  inboundqty: number;
+  oversellbufferqty: number;
+  lastplatformstock: number;
+  lastsyncedat: string;
+  lastsyncstatus: string;
+  lastsyncerror: string;
 }
 
 export interface MarketplaceSKUMap {
   platform: string;
-  account_id: string;
+  accountid: string;
   holdingcode: string;
-  market_item_id: string;
-  market_model_id: string;
-  seller_sku: string;
-  shop_sku: string;
+  marketitemid: string;
+  marketmodelid: string;
+  sellersku: string;
+  shopsku: string;
   gtin: string;
-  media_assets?: MarketplaceMediaAsset[];
-  raw_attributes?: MarketplaceAttribute[];
+  mediaassets?: MarketplaceMediaAsset[];
+  rawattributes?: MarketplaceAttribute[];
   currency: string;
-  sync_stock: boolean;
-  sync_price: boolean;
-  custom_price: number;
-  platform_price: number;
-  platform_stock: number;
-  marketplace_dimension_stocks: MarketplaceDimensionStock[];
+  syncstock: boolean;
+  syncprice: boolean;
+  customprice: number;
+  platformprice: number;
+  platformstock: number;
+  marketplacedimensionstocks: MarketplaceDimensionStock[];
   status: string;
-  sync_enabled: boolean;
-  last_sync_at: string;
+  syncenabled: boolean;
+  lastsyncat: string;
 }
 
 export function emptyMarketplaceSKUMap(
@@ -200,23 +200,23 @@ export function emptyMarketplaceSKUMap(
 ): MarketplaceSKUMap {
   return {
     platform,
-    account_id: "",
+    accountid: "",
     holdingcode: holdingCode,
-    market_item_id: marketItemId,
-    market_model_id: "",
-    seller_sku: "",
-    shop_sku: "",
+    marketitemid: marketItemId,
+    marketmodelid: "",
+    sellersku: "",
+    shopsku: "",
     gtin: "",
     currency: "THB",
-    sync_stock: true,
-    sync_price: true,
-    custom_price: 0,
-    platform_price: 0,
-    platform_stock: 0,
-    marketplace_dimension_stocks: [],
+    syncstock: true,
+    syncprice: true,
+    customprice: 0,
+    platformprice: 0,
+    platformstock: 0,
+    marketplacedimensionstocks: [],
     status: "",
-    sync_enabled: true,
-    last_sync_at: "",
+    syncenabled: true,
+    lastsyncat: "",
   };
 }
 
@@ -224,35 +224,35 @@ export function emptyMarketplaceSKUMap(
 export function emptyMarketplaceProductMap(platform: MarketplacePlatform): MarketplaceProductMap {
   return {
     platform,
-    account_id: "",
+    accountid: "",
     holdingcode: "",
-    market_item_id: "",
-    market_model_id: "",
-    item_url: "",
-    seller_sku: "",
-    shop_sku: "",
+    marketitemid: "",
+    marketmodelid: "",
+    itemurl: "",
+    sellersku: "",
+    shopsku: "",
     gtin: "",
-    category_id: "",
-    category_name: "",
-    brand_id: "",
-    media_assets: [],
-    specification_groups: [],
-    raw_attributes: [],
-    payload_examples: [],
+    categoryid: "",
+    categoryname: "",
+    brandid: "",
+    mediaassets: [],
+    specificationgroups: [],
+    rawattributes: [],
+    payloadexamples: [],
     currency: "THB",
-    custom_price: 0,
-    platform_price: 0,
-    platform_stock: 0,
-    sync_stock: false,
-    sync_price: false,
+    customprice: 0,
+    platformprice: 0,
+    platformstock: 0,
+    syncstock: false,
+    syncprice: false,
     status: "",
-    reject_reason: "",
-    days_to_ship: 0,
-    is_pre_order: false,
-    sync_enabled: false,
-    sync_status: "",
-    last_sync_at: "",
-    last_sync_error: "",
+    rejectreason: "",
+    daystoship: 0,
+    ispreorder: false,
+    syncenabled: false,
+    syncstatus: "",
+    lastsyncat: "",
+    lastsyncerror: "",
   };
 }
 
@@ -260,7 +260,7 @@ export function emptyMarketplaceProductMap(platform: MarketplacePlatform): Marke
 export interface RefProductBarcode {
   guidfixed: string;
   names: NameX[];
-  item_unit_code: string;
+  itemunitcode: string;
   itemunitnames: NameX[];
   barcode: string;
   condition: boolean;
@@ -269,19 +269,19 @@ export interface RefProductBarcode {
   qty: number;
 
   // Marketplace & SKU Logistics
-  seller_sku?: string;
-  sku_package_weight?: number;
-  sku_package_length?: number;
-  sku_package_width?: number;
-  sku_package_height?: number;
-  marketplace_sku_mappings?: MarketplaceSKUMap[];
+  sellersku?: string;
+  skupackageweight?: number;
+  skupackagelength?: number;
+  skupackagewidth?: number;
+  skupackageheight?: number;
+  marketplaceskumappings?: MarketplaceSKUMap[];
 }
 
 /** BOM entry — matches Go `BOMProductBarcode`. */
 export interface BOMProductBarcode {
   barcodeguidfixed: string;
   names: NameX[];
-  item_unit_code: string;
+  itemunitcode: string;
   itemunitnames: NameX[];
   barcode: string;
   qty?: number;
@@ -302,10 +302,10 @@ export interface ProductDimension {
 }
 
 export interface ProductStockDimension {
-  dimension_guid?: string;
-  dimension_name?: string;
-  item_guid?: string;
-  item_name?: string;
+  dimensionguid?: string;
+  dimensionname?: string;
+  itemguid?: string;
+  itemname?: string;
 }
 
 /** Business type — matches Go `ProductBarcodeBusinessType`. */
@@ -406,18 +406,18 @@ export interface ProductBarcode {
   barcode: string;
   names: NameX[];
   xsorts: XSort[];
-  item_guid: string;
+  itemguid: string;
 
   // Unit
   itemunitguid: string;
-  item_unit_code: string;
+  itemunitcode: string;
   itemunitnames: NameX[];
   itemunitsize: number;
 
   // Classification — Group hierarchy
   groupguid: string;
-  group_code: string;
-  group_names: NameX[];
+  groupcode: string;
+  groupnames: NameX[];
   groupsubonecode: string;
   groupsubonenames: NameX[];
   groupsuboneguid: string;
@@ -427,7 +427,7 @@ export interface ProductBarcode {
 
   // Other masters
   brandguid: string;
-  brand_code: string;
+  brandcode: string;
   brandnames: NameX[];
   designguid: string;
   designcode: string;
@@ -441,9 +441,9 @@ export interface ProductBarcode {
   gradeguid: string;
   gradecode: string;
   gradenames: NameX[];
-  category_guid: string;
+  categoryguid: string;
   categorycode: string;
-  category_names: NameX[];
+  categorynames: NameX[];
   classguid: string;
   classcode: string;
   classnames: NameX[];
@@ -469,7 +469,7 @@ export interface ProductBarcode {
   dividevalue: number;
   standvalue: number;
   isusesubbarcodes: boolean;
-  is_main_barcode: boolean;
+  ismainbarcode: boolean;
 
   // Pricing
   prices: ProductPrice[];
@@ -487,10 +487,10 @@ export interface ProductBarcode {
   colorselecthex: string;
 
   // Type flags
-  item_type: ItemType;
+  itemtype: ItemType;
   materialtype: MaterialType;
-  tax_type: number;
-  vat_type: VatType;
+  taxtype: number;
+  vattype: VatType;
   vatcal: number;
   producttype: ProductType;
   foodtype: FoodType;
@@ -525,11 +525,11 @@ export interface ProductBarcode {
   description: string;
 
   // Marketplace & logistics (matches Go ProductBarcodeBase)
-  package_weight: number;
-  package_length: number;
-  package_width: number;
-  package_height: number;
-  marketplace_products: MarketplaceProductMap[];
+  packageweight: number;
+  packagelength: number;
+  packagewidth: number;
+  packageheight: number;
+  marketplaceproducts: MarketplaceProductMap[];
 }
 
 /** Request body for create. */
@@ -551,21 +551,19 @@ export interface ProductBarcodeListRow {
   itemcode: string;
   groupcode: string;
   groupnames: NameX[];
-  group_names?: NameX[];
-  brand_code?: string;
+  brandcode?: string;
   brandnames?: NameX[];
   categorycode?: string;
-  category_names?: NameX[];
+  categorynames?: NameX[];
   prices: ProductPrice[];
   price?: number;
   imageuri: string;
-  balance_qty?: number;
-  reserved_qty?: number;
-  available_qty?: number;
-  stock_dimension_key?: string;
-  stock_dimensions?: ProductStockDimension[];
+  balanceqty?: number;
+  reservedqty?: number;
+  availableqty?: number;
+  stockdimensionkey?: string;
+  stockdimensions?: ProductStockDimension[];
   balanceamount?: number;
-  balance_amount?: number;
   averagecost?: number;
   mainbarcoderef?: string;
   standvalue?: number;
@@ -596,12 +594,12 @@ export interface ProductBarcodeListFilters {
   gradecode?: string;
   modelcode?: string;
   patterncode?: string;
-  price_min?: number | null;
-  price_max?: number | null;
+  pricemin?: number | null;
+  pricemax?: number | null;
   limit?: number;
   offset?: number;
-  sort_field?: BarcodeListSortField;
-  sort_order?: SortOrder;
+  sortfield?: BarcodeListSortField;
+  sortorder?: SortOrder;
 }
 
 /** Request body for list endpoint. */
@@ -626,16 +624,16 @@ export function emptyProductBarcode(): ProductBarcode {
     barcode: "",
     names: [],
     xsorts: [],
-    item_guid: "",
+    itemguid: "",
 
     itemunitguid: "",
-    item_unit_code: "",
+    itemunitcode: "",
     itemunitnames: [],
     itemunitsize: 0,
 
     groupguid: "",
-    group_code: "",
-    group_names: [],
+    groupcode: "",
+    groupnames: [],
     groupsubonecode: "",
     groupsubonenames: [],
     groupsuboneguid: "",
@@ -644,7 +642,7 @@ export function emptyProductBarcode(): ProductBarcode {
     groupsubtwonames: [],
 
     brandguid: "",
-    brand_code: "",
+    brandcode: "",
     brandnames: [],
     designguid: "",
     designcode: "",
@@ -658,9 +656,9 @@ export function emptyProductBarcode(): ProductBarcode {
     gradeguid: "",
     gradecode: "",
     gradenames: [],
-    category_guid: "",
+    categoryguid: "",
     categorycode: "",
-    category_names: [],
+    categorynames: [],
     classguid: "",
     classcode: "",
     classnames: [],
@@ -682,9 +680,9 @@ export function emptyProductBarcode(): ProductBarcode {
     dividevalue: 1,
     standvalue: 1,
     isusesubbarcodes: false,
-    is_main_barcode: true,
+    ismainbarcode: true,
 
-    prices: [{ key_number: 1, price: 0 }],
+    prices: [{ keynumber: 1, price: 0 }],
     fixedcost: [],
     discount: "",
     maxdiscount: "",
@@ -697,10 +695,10 @@ export function emptyProductBarcode(): ProductBarcode {
     colorselect: "",
     colorselecthex: "",
 
-    item_type: ITEM_TYPE.STOCK,
+    itemtype: ITEM_TYPE.STOCK,
     materialtype: MATERIAL_TYPE.GENERAL,
-    tax_type: 0,
-    vat_type: VAT_TYPE.TAXABLE,
+    taxtype: 0,
+    vattype: VAT_TYPE.TAXABLE,
     vatcal: 0,
     producttype: 0,
     foodtype: FOOD_TYPE.FOOD,
@@ -734,11 +732,11 @@ export function emptyProductBarcode(): ProductBarcode {
     alertdescription: "",
     description: "",
 
-    package_weight: 0,
-    package_length: 0,
-    package_width: 0,
-    package_height: 0,
-    marketplace_products: [],
+    packageweight: 0,
+    packagelength: 0,
+    packagewidth: 0,
+    packageheight: 0,
+    marketplaceproducts: [],
   };
 }
 
@@ -759,14 +757,14 @@ export interface Product {
   holdingcode: string;
   code: string;
   names: NameX[];
-  group_code: string;
-  group_names: NameX[];
+  groupcode: string;
+  groupnames: NameX[];
   manufacturerguid?: string;
   manufacturercode?: string;
   manufacturernames?: NameX[];
   dimensions?: ProductDimension[];
-  vat_type?: number;
-  item_type?: number;
+  vattype?: number;
+  itemtype?: number;
   unitguid?: string;
 
   // Classifications
@@ -777,7 +775,7 @@ export interface Product {
   groupsubtwocode?: string;
   groupsubtwonames?: NameX[];
   brandguid?: string;
-  brand_code?: string;
+  brandcode?: string;
   brandnames?: NameX[];
   designguid?: string;
   designcode?: string;
@@ -791,14 +789,14 @@ export interface Product {
   gradeguid?: string;
   gradecode?: string;
   gradenames?: NameX[];
-  category_guid?: string;
+  categoryguid?: string;
   categorycode?: string;
-  category_names?: NameX[];
+  categorynames?: NameX[];
   classguid?: string;
   classcode?: string;
   classnames?: NameX[];
   materialtype?: number;
-  tax_type?: number;
+  taxtype?: number;
   manufacturers?: ProductManufacturer[];
   suppliers?: ProductSupplier[];
 
@@ -834,7 +832,7 @@ export interface Product {
   barcodes?: RefProductBarcode[];
   unitcode?: string;
   unitnames?: NameX[];
-  item_unit_code?: string;
+  itemunitcode?: string;
   itemunitnames?: NameX[];
 
   // Stock properties
@@ -847,9 +845,9 @@ export interface Product {
   _source?: string;
 
   // Marketplace & Logistics
-  package_weight?: number;
-  package_length?: number;
-  package_width?: number;
-  package_height?: number;
-  marketplace_products?: MarketplaceProductMap[];
+  packageweight?: number;
+  packagelength?: number;
+  packagewidth?: number;
+  packageheight?: number;
+  marketplaceproducts?: MarketplaceProductMap[];
 }

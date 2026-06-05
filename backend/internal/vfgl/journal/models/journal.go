@@ -44,7 +44,7 @@ type JournalDebtAccount struct {
 	PersonalType      int8                      `json:"personaltype" bson:"personaltype" gorm:"personal_type"`
 	CustomerType      int                       `json:"customertype" bson:"customertype" gorm:"customer_type"`
 	BranchNumber      string                    `json:"branchnumber" bson:"branchnumber" gorm:"branch_number"`
-	TaxId             string                    `json:"taxid" bson:"taxid" gorm:"tax_id"`
+	TaxId             string                    `json:"taxid" bson:"taxid" gorm:"taxid"`
 	Names             *[]models.NameX           `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive" gorm:"names"`
 	AddressForBilling JournalDebtAccountAddress `json:"addressforbilling" bson:"addressforbilling" gorm:"addressforbilling"`
 }
@@ -247,9 +247,9 @@ func (JournalVatPg) TableName() string {
 
 type JournalTaxPg struct {
 	ID                       uint   `gorm:"primarykey"`
-	HoldingCode              string `json:"holdingcode" gorm:"column:holdingcode;index:idx_shop_doc,unique"`
+	HoldingCode              string `json:"holdingcode" gorm:"column:holdingcode;index:idxshopdoc,unique"`
 	models.PartitionIdentity `gorm:"embedded;"`
-	Docno                    string     `json:"docno" gorm:"column:docno;index:idx_shop_doc,unique"`
+	Docno                    string     `json:"docno" gorm:"column:docno;index:idxshopdoc,unique"`
 	TaxDocNo                 string     `json:"taxdocno" gorm:"column:taxdocno"`
 	TaxDate                  time.Time  `json:"taxdate" gorm:"column:taxdate"`
 	TaxType                  int8       `json:"taxtype" gorm:"column:taxtype"`

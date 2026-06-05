@@ -151,7 +151,6 @@ type SettingRecord = Record<string, unknown>;
 type FormState = Record<string, unknown>;
 type Notice = { type: "error" | "info" | "success"; text: string } | null;
 type ProductUnitOption = {
-  unit_code?: string;
   unitcode?: string;
   names?: { code?: string; name?: string }[];
 };
@@ -307,16 +306,16 @@ const BRANCH_FIELD_TAB: Record<string, BranchTabId> = {
   code: "general",
   companynames: "general",
   names: "general",
-  base_currency: "general",
+  basecurrency: "general",
   language: "general",
   timezone: "general",
-  timezone_label: "general",
-  timezone_offset: "general",
-  date_format: "general",
-  year_type: "general",
-  decimal_quantity: "general",
-  decimal_price: "general",
-  decimal_document: "general",
+  timezonelabel: "general",
+  timezoneoffset: "general",
+  dateformat: "general",
+  yeartype: "general",
+  decimalquantity: "general",
+  decimalprice: "general",
+  decimaldocument: "general",
   imageuri: "general",
   imageuris: "general",
   logouri: "general",
@@ -330,9 +329,9 @@ const BRANCH_FIELD_TAB: Record<string, BranchTabId> = {
   "contact.longitude": "address",
   "contact.phone_number": "address",
   businesstype: "pos",
-  company_registration_no: "pos",
-  is_vat_registered: "pos",
-  "pos.tax_id": "pos",
+  companyregistrationno: "pos",
+  isvatregistered: "pos",
+  "pos.taxid": "pos",
   "pos.vatrate": "pos",
   "pos.isbom": "pos",
   "pos.vattypepurchase": "pos",
@@ -383,9 +382,9 @@ const POS_TAB_SECTIONS: ReadonlyArray<{
     },
     fieldKeys: [
       "businesstype",
-      "company_registration_no",
-      "is_vat_registered",
-      "pos.tax_id",
+      "companyregistrationno",
+      "isvatregistered",
+      "pos.taxid",
       "pos.vatrate",
     ],
   },
@@ -502,7 +501,7 @@ type LanguageConfigFormRow = {
   code: LanguageCode;
   codetranslator: string;
   name: string;
-  is_use: boolean;
+  isuse: boolean;
   isdefault: boolean;
 };
 type NormalizeLanguageOptions = {
@@ -531,7 +530,7 @@ type WorkDayTime = {
   startdayoffsetutc?: number;
   enddayoffsetutc?: number;
   timezone?: string;
-  timezone_offset?: string;
+  timezoneoffset?: string;
 };
 
 type WorkDay = {
@@ -547,8 +546,8 @@ type DateTimeScope = {
   branchcode: string;
   branchguid: string;
   timezone: string;
-  timezone_label: string;
-  timezone_offset: string;
+  timezonelabel: string;
+  timezoneoffset: string;
   calendarYearType: CalendarYearType;
 };
 
@@ -565,7 +564,7 @@ const emptyStandardUnitDialog: StandardUnitDialogState = {
 
 const companySetupDefaults: FormState = {
   "settings.language": "th",
-  "settings.language_configs": defaultLanguageConfigs("th"),
+  "settings.languageconfigs": defaultLanguageConfigs("th"),
 };
 
 const branchSetupDefaults: FormState = {
@@ -579,9 +578,9 @@ const branchSetupDefaults: FormState = {
   "contact.latitude": 0,
   "contact.longitude": 0,
   "contact.phone_number": "",
-  company_registration_no: "",
-  is_vat_registered: false,
-  "pos.tax_id": "",
+  companyregistrationno: "",
+  isvatregistered: false,
+  "pos.taxid": "",
   "pos.vatrate": 0,
   "pos.vattypesale": 0,
   "pos.vattypepurchase": 0,
@@ -590,13 +589,13 @@ const branchSetupDefaults: FormState = {
   "pos.headerreceiptpos": "",
   "pos.footerreceiptpos": "",
   "pos.isbom": false,
-  base_currency: "THB",
+  basecurrency: "THB",
   timezone: "Asia/Bangkok",
-  date_format: "dd/MM/yyyy",
-  year_type: "buddhist",
-  decimal_quantity: 2,
-  decimal_price: 2,
-  decimal_document: 2,
+  dateformat: "dd/MM/yyyy",
+  yeartype: "buddhist",
+  decimalquantity: 2,
+  decimalprice: 2,
+  decimaldocument: 2,
   machinetype: 0,
   couponusetype: 0,
   paymentrounding: defaultPaymentRoundingJson(),
@@ -787,7 +786,7 @@ const uiBackendKeys: Partial<Record<keyof typeof uiEn, string>> = {
   active: "active",
   add: "add",
   all: "all",
-  allBranches: "all_branches",
+  allBranches: "allbranches",
   branch: "branch",
   cancel: "cancel",
   close: "close",
@@ -832,139 +831,139 @@ const uiBackendKeys: Partial<Record<keyof typeof uiEn, string>> = {
 
 const systemSettingBackendKeys: Record<string, string> = {
   branch: "branch",
-  business_type_screen: "business_type",
+  businesstypescreen: "business_type",
   company: "company",
   department: "department",
   employee: "employee",
-  holiday_screen: "holiday",
-  permission_definition: "permission_definition",
-  permission_link: "permission_link",
-  approval_setting: "approval_setting",
+  holidayscreen: "holiday",
+  permissiondefinition: "permissiondefinition",
+  permissionlink: "permissionlink",
+  approvalsetting: "approvalsetting",
   user: "user",
-  work_day_screen: "work_day",
+  workdayscreen: "work_day",
 };
 
 const fieldBackendKeys: Record<string, string> = {
-  "branch.base_currency": "base_currency",
+  "branch.basecurrency": "basecurrency",
   "branch.code": "branchcode",
-  "branch.company_registration_no": "company_registration_no",
+  "branch.companyregistrationno": "companyregistrationno",
   "branch.contact.country_code": "country_code",
   "branch.contact.district_code": "district",
   "branch.contact.phone_number": "telephone",
   "branch.contact.province_code": "province",
   "branch.contact.sub_district_code": "subdistrict",
   "branch.contact.zip_code": "zip_code",
-  "branch.date_format": "date_format",
-  "branch.decimal_document": "decimal_document",
-  "branch.decimal_price": "decimal_price",
-  "branch.decimal_quantity": "decimal_quantity",
-  "branch.is_vat_registered": "vat_status",
+  "branch.dateformat": "dateformat",
+  "branch.decimaldocument": "decimaldocument",
+  "branch.decimalprice": "decimalprice",
+  "branch.decimalquantity": "decimalquantity",
+  "branch.isvatregistered": "vat_status",
   "branch.language": "default_language",
   "branch.machinetype": "machine_type",
   "branch.names": "branch_name",
   "branch.pointconfig": "point_config",
   "branch.timezone": "timezone",
-  "branch.year_type": "year_type",
+  "branch.yeartype": "yeartype",
   "branch.languages": "select_data_language",
   "branch.businesstype": "business_type",
-  "branch.pos.tax_id": "company_tax_id",
+  "branch.pos.taxid": "company_taxid",
   "branch.pos.vatrate": "vat_rate",
   "branch.pos.isbom": "cut_stock_by_bom",
   "branch.pos.vattypepurchase": "vattype_purchase",
   "branch.pos.inquirytypepurchase": "inquirytype_purchase",
   "branch.pos.vattypesale": "vattype_sale",
   "branch.pos.inquirytypesale": "inquirytype_sale",
-  "business_type_screen.code": "code",
-  "business_type_screen.names": "business_type",
+  "businesstypescreen.code": "code",
+  "businesstypescreen.names": "business_type",
   "company.address": "company_address",
   "company.logo": "company_logo",
   "company.names": "company_name",
-  "company.settings.base_currency": "base_currency",
-  "company.settings.company_registration_no": "company_registration_no",
+  "company.settings.basecurrency": "basecurrency",
+  "company.settings.companyregistrationno": "companyregistrationno",
   "company.settings.country_code": "country_code",
-  "company.settings.date_format": "date_format",
-  "company.settings.decimal_document": "decimal_document",
-  "company.settings.decimal_price": "decimal_price",
-  "company.settings.decimal_quantity": "decimal_quantity",
-  "company.settings.is_vat_registered": "vat_status",
+  "company.settings.dateformat": "dateformat",
+  "company.settings.decimaldocument": "decimaldocument",
+  "company.settings.decimalprice": "decimalprice",
+  "company.settings.decimalquantity": "decimalquantity",
+  "company.settings.isvatregistered": "vat_status",
   "company.settings.isusebranch": "use_branch_system",
   "company.settings.isusedepartment": "use_department_system",
   "company.settings.language": "default_language",
-  "company.settings.language_configs": "active_languages",
-  "company.settings.tax_id": "tax_id",
+  "company.settings.languageconfigs": "activelanguages",
+  "company.settings.taxid": "taxid",
   "company.settings.timezone": "timezone",
-  "company.settings.usebuddhistcalendar": "year_type",
+  "company.settings.usebuddhistcalendar": "yeartype",
   "company.settings.vatrate": "vat_rate",
   "company.telephone": "telephone",
   "department.code": "department_code",
   "department.names": "department_name",
-  "holiday_screen.date": "date",
-  "holiday_screen.desc": "description",
-  "user.is_access_disabled": "access_status",
+  "holidayscreen.date": "date",
+  "holidayscreen.desc": "description",
+  "user.isaccessdisabled": "access_status",
   "user.uid": "user_id_guid",
-  "user.user_profile_name": "user_name",
+  "user.userprofilename": "user_name",
   "user.email": "registered_email",
   "user.role": "user_role",
   "user.position": "user_position",
   "user.department": "department",
-  "user.access_scopes": "access_scopes",
+  "user.accessscopes": "accessscopes",
   "user.line_user_id": "line_user_id",
   "user.line_display_name": "line_display_name",
-  "permission_definition.permission_code": "permission_code",
-  "permission_definition.permission_name": "permission_name",
-  "permission_definition.scope_rules": "scope_rules",
-  "permission_definition.access_rules": "access_rules",
-  "approval_setting.approval_code": "approval_code",
-  "approval_setting.approval_name": "approval_name",
-  "approval_setting.approval_rules": "approval_rules",
-  "approval_setting.approvals": "approval_permission",
-  "permission_link.employee_code": "user_employee_code",
-  "permission_link.employee_name": "name",
-  "permission_link.scope_rules": "scope_rules",
-  "permission_link.permission_codes": "permission_codes",
-  "permission_link.approval_codes": "approval_codes",
+  "permissiondefinition.permissioncode": "permissioncode",
+  "permissiondefinition.permissionname": "permissionname",
+  "permissiondefinition.scoperules": "scoperules",
+  "permissiondefinition.accessrules": "accessrules",
+  "approvalsetting.approvalcode": "approvalcode",
+  "approvalsetting.approvalname": "approvalname",
+  "approvalsetting.approvalrules": "approvalrules",
+  "approvalsetting.approvals": "approval_permission",
+  "permissionlink.employeecode": "user_employeecode",
+  "permissionlink.employeename": "name",
+  "permissionlink.scoperules": "scoperules",
+  "permissionlink.permissioncodes": "permissioncodes",
+  "permissionlink.approvalcodes": "approvalcodes",
 };
 
 const fieldValueAliases: Record<string, string[]> = {
-  "company.settings.language_configs": ["settings.languageconfigs"],
-  "productunit.unit_code": ["unitcode"],
+  "company.settings.languageconfigs": ["settings.languageconfigs"],
+  "productunit.unitcode": ["unitcode"],
   "productunit.businesscodes": ["companyguids"],
   "employee.businesscodes": ["companyguids"],
   "user.businesscodes": ["companyguids"],
-  "user.access_scopes": ["scope_rules", "businesscodes", "companyguids"],
-  "approval_setting.approval_code": ["approvalCode"],
-  "approval_setting.approval_name": ["approvalName"],
-  "approval_setting.isactive": ["isActive"],
-  "approval_setting.approval_rules": ["scope_rules"],
-  "permission_definition.permission_code": ["permissionCode"],
-  "permission_definition.permission_name": ["permissionName"],
-  "permission_definition.isactive": ["isActive"],
-  "permission_definition.scope_rules": ["access_scopes"],
-  "permission_definition.access_rules": ["branches"],
-  "permission_group.group_code": ["groupCode"],
-  "permission_group.group_name": ["groupName"],
-  "permission_group.isactive": ["isActive"],
-  "permission_group.scope_rules": ["access_scopes"],
-  "permission_group.permission_codes": ["permissionCodes"],
-  "permission_link.employee_code": ["employeeCode"],
-  "permission_link.employee_name": ["employeeName"],
-  "permission_link.group_code": ["groupCode"],
-  "permission_link.scope_rules": ["access_scopes", "businesscodes", "companyguids"],
-  "permission_link.businesscodes": ["companyguids"],
-  "permission_link.permission_codes": ["permissionCodes"],
-  "permission_link.approval_codes": ["approvalCodes"],
+  "user.accessscopes": ["scoperules", "businesscodes", "companyguids"],
+  "approvalsetting.approvalcode": ["approvalCode"],
+  "approvalsetting.approvalname": ["approvalName"],
+  "approvalsetting.isactive": ["isActive"],
+  "approvalsetting.approvalrules": ["scoperules"],
+  "permissiondefinition.permissioncode": ["permissionCode"],
+  "permissiondefinition.permissionname": ["permissionName"],
+  "permissiondefinition.isactive": ["isActive"],
+  "permissiondefinition.scoperules": ["accessscopes"],
+  "permissiondefinition.accessrules": ["branches"],
+  "permissiongroup.groupcode": ["groupCode"],
+  "permissiongroup.groupname": ["groupName"],
+  "permissiongroup.isactive": ["isActive"],
+  "permissiongroup.scoperules": ["accessscopes"],
+  "permissiongroup.permissioncodes": ["permissionCodes"],
+  "permissionlink.employeecode": ["employeeCode"],
+  "permissionlink.employeename": ["employeeName"],
+  "permissionlink.groupcode": ["groupCode"],
+  "permissionlink.scoperules": ["accessscopes", "businesscodes", "companyguids"],
+  "permissionlink.businesscodes": ["companyguids"],
+  "permissionlink.permissioncodes": ["permissionCodes"],
+  "permissionlink.approvalcodes": ["approvalCodes"],
   "branch.contact.country_code": ["contact.countrycode"],
   "branch.contact.district_code": ["contact.districtcode"],
   "branch.contact.phone_number": ["contact.phonenumber"],
   "branch.contact.province_code": ["contact.provincecode"],
   "branch.contact.sub_district_code": ["contact.subdistrictcode"],
   "branch.contact.zip_code": ["contact.zipcode"],
-  "branch.pos.tax_id": ["pos.taxid"],
-  "branch.year_type": ["yeartype"],
-  "product_category_group_select_screen.group_number": ["groupnumber"],
-  "product_category_group_select_screen.parent_guid": ["parentguid"],
-  "productcategorylist.group_number": ["groupnumber"],
-  "productcategorylist.parent_guid": ["parentguid"],
+  "branch.pos.taxid": ["pos.taxid"],
+  "branch.yeartype": ["yeartype"],
+  "productcategorygroupselectscreen.groupnumber": ["groupnumber"],
+  "productcategorygroupselectscreen.parentguid": ["parentguid"],
+  "productcategorylist.groupnumber": ["groupnumber"],
+  "productcategorylist.parentguid": ["parentguid"],
 };
 
 const dayNames: Record<LanguageCode, string[]> = {
@@ -1264,7 +1263,7 @@ export function SystemSettingsScreen({
       else setLoading(true);
       setNotice(null);
       try {
-        const limitValue = (currentConfig.slug === "product_category_group_select_screen" || currentConfig.slug === "productcategorylist") ? "100000" : String(SETTINGS_LIST_PAGE_SIZE);
+        const limitValue = (currentConfig.slug === "productcategorygroupselectscreen" || currentConfig.slug === "productcategorylist") ? "100000" : String(SETTINGS_LIST_PAGE_SIZE);
         const searchParams = new URLSearchParams({
           limit: limitValue,
           offset: String(offset),
@@ -1273,10 +1272,10 @@ export function SystemSettingsScreen({
         });
         applyWorkspaceTenantParams(searchParams, currentWorkspace);
         const firstFieldKey = currentConfig.fields?.[0]?.key;
-        if (firstFieldKey && currentConfig.slug !== "permission_link") {
+        if (firstFieldKey && currentConfig.slug !== "permissionlink") {
           searchParams.set("sort", `${firstFieldKey}:1`);
         }
-        if ((currentConfig.slug === "product_category_group_select_screen" || currentConfig.slug === "productcategorylist") && groupNumberRef.current !== null) {
+        if ((currentConfig.slug === "productcategorygroupselectscreen" || currentConfig.slug === "productcategorylist") && groupNumberRef.current !== null) {
           searchParams.set("group-number", String(groupNumberRef.current));
         }
         const scope = resolveDateTimeScope(currentWorkspace);
@@ -1284,15 +1283,15 @@ export function SystemSettingsScreen({
           currentConfig.slug === "department" ||
           currentConfig.kind === "restaurant-setting"
         ) {
-          if (scope.key) searchParams.set("branch_key", scope.key);
+          if (scope.key) searchParams.set("branchkey", scope.key);
           if (scope.branchcode)
             searchParams.set("branchcode", scope.branchcode);
           if (scope.branchguid)
             searchParams.set("branchguid", scope.branchguid);
         }
         if (currentConfig.kind === "copy-uat")
-          searchParams.set("source_environment", copySourceEnvironment);
-        const fetchSlug = currentConfig.slug === "permission_link" ? "user" : currentConfig.slug;
+          searchParams.set("sourceenvironment", copySourceEnvironment);
+        const fetchSlug = currentConfig.slug === "permissionlink" ? "user" : currentConfig.slug;
         const response = await fetch(
           `/api/system-settings/${fetchSlug}?${searchParams.toString()}`,
           {
@@ -1306,17 +1305,17 @@ export function SystemSettingsScreen({
         const payload = (await response.json()) as unknown;
         if (!response.ok || isFailed(payload))
           throw new Error(extractMessage(payload) ?? text("requestFailed"));
-        let nextRecords = normalizeRecords(payload, currentConfig.slug === "permission_link" ? getSystemSettingConfig("user")! : currentConfig);
-        if (currentConfig.slug === "permission_link") {
+        let nextRecords = normalizeRecords(payload, currentConfig.slug === "permissionlink" ? getSystemSettingConfig("user")! : currentConfig);
+        if (currentConfig.slug === "permissionlink") {
           nextRecords = nextRecords.map((r: any) => ({
             ...r,
-            employee_code: r.user_name || r.username || r.employee_code || r.email || r.user_uid || r.uid,
-            employee_name: r.user_profile_name || r.name || r.username,
-            user_uid: r.user_uid || r.uid,
+            employeecode: r.user_name || r.username || r.employeecode || r.email || r.useruid || r.uid,
+            employeename: r.userprofilename || r.name || r.username,
+            useruid: r.useruid || r.uid,
           }));
         }
         const scopedRecords =
-          currentConfig.slug === "holiday_screen" ||
+          currentConfig.slug === "holidayscreen" ||
           currentConfig.slug === "department"
             ? filterRecordsByDateTimeScope(nextRecords, scope)
             : nextRecords;
@@ -1332,7 +1331,7 @@ export function SystemSettingsScreen({
             ? mergeRecords(currentRecords, scopedRecords, currentConfig)
             : scopedRecords,
         );
-        if (currentConfig.slug === "work_day_screen")
+        if (currentConfig.slug === "workdayscreen")
           setWorkDays(normalizeWorkDays(nextRecords, language, scope));
       } catch (error) {
         setNotice({ type: "error", text: errorText(error) });
@@ -1414,7 +1413,7 @@ export function SystemSettingsScreen({
   }, []);
 
   useEffect(() => {
-    if ((config?.slug === "product_category_group_select_screen" || config?.slug === "productcategorylist") && auth && workspace) {
+    if ((config?.slug === "productcategorygroupselectscreen" || config?.slug === "productcategorylist") && auth && workspace) {
       void loadRecords(auth, workspace, config);
     }
   }, [groupNumber, config, auth, workspace, loadRecords]);
@@ -1553,8 +1552,8 @@ export function SystemSettingsScreen({
   function handleOpenCategoryCreate(parentGuid?: string) {
     setEditing(null);
     const initialForm = defaultForm(currentConfig, language);
-    initialForm.group_number = groupNumber;
-    initialForm.parent_guid = parentGuid ?? "";
+    initialForm.groupnumber = groupNumber;
+    initialForm.parentguid = parentGuid ?? "";
     setForm(initialForm);
     setFormOpen(true);
     setSelectedRecordId("");
@@ -1586,13 +1585,13 @@ export function SystemSettingsScreen({
     setFormOpen(true);
     setNotice(null);
 
-    if (auth && workspace && currentConfig.slug === "permission_link") {
-      const lookupId = record.user_uid || record.uid || record.employee_code || record.employeeCode || recordId(record, currentConfig);
+    if (auth && workspace && currentConfig.slug === "permissionlink") {
+      const lookupId = record.useruid || record.uid || record.employeecode || record.employeeCode || recordId(record, currentConfig);
       if (lookupId) {
         try {
           const params = workspaceTenantSearchParams(workspace);
           const response = await fetch(
-            `/api/system-settings/permission_link/${encodeURIComponent(String(lookupId))}?${params.toString()}`,
+            `/api/system-settings/permissionlink/${encodeURIComponent(String(lookupId))}?${params.toString()}`,
             {
               headers: requestHeaders(auth),
               cache: "no-store",
@@ -1605,8 +1604,8 @@ export function SystemSettingsScreen({
               const mergedRecord = {
                 ...record,
                 ...detail,
-                employee_code: record.employee_code ?? record.employeeCode,
-                employee_name: record.employee_name ?? record.employeeName,
+                employeecode: record.employeecode ?? record.employeeCode,
+                employeename: record.employeename ?? record.employeeName,
               };
               setEditing(mergedRecord);
               setForm(formFromRecord(mergedRecord, currentConfig, language));
@@ -1664,9 +1663,9 @@ export function SystemSettingsScreen({
       return;
     }
 
-    if (currentConfig.slug === "product_category_group_select_screen" || currentConfig.slug === "productcategorylist") {
+    if (currentConfig.slug === "productcategorygroupselectscreen" || currentConfig.slug === "productcategorylist") {
       const parentGuid = stringValue(
-        payload.parent_guid ?? payload.parentguid ?? form.parent_guid,
+        payload.parentguid ?? payload.parentguid ?? form.parentguid,
       );
       const getParentGuidAll = (list: SettingRecord[], pGuid: string): string => {
         if (!pGuid) return "";
@@ -1676,9 +1675,9 @@ export function SystemSettingsScreen({
         const grandParents = getParentGuidAll(list, grandParentGuid);
         return grandParents ? `${grandParents},${pGuid}` : pGuid;
       };
-      payload.parent_guid = parentGuid;
-      payload.group_number = Number(
-        payload.group_number ?? form.group_number ?? groupNumber ?? 0,
+      payload.parentguid = parentGuid;
+      payload.groupnumber = Number(
+        payload.groupnumber ?? form.groupnumber ?? groupNumber ?? 0,
       );
       payload.parentguidall = getParentGuidAll(records, parentGuid);
       const existingXSorts = Array.isArray(payload.xsorts)
@@ -1689,7 +1688,7 @@ export function SystemSettingsScreen({
         const siblingOrders = records
           .filter(
             (record) =>
-              productCategoryGroupNumber(record) === Number(payload.group_number) &&
+              productCategoryGroupNumber(record) === Number(payload.groupnumber) &&
               productCategoryParentGuid(record) === parentGuid &&
               productCategoryGuid(record) !== currentGuid,
           )
@@ -1875,8 +1874,8 @@ export function SystemSettingsScreen({
           body: JSON.stringify({
             backendUrl: auth.backendUrl,
             ...workspaceTenantPayload(workspace),
-            ...(currentConfig.slug === "permission_link"
-              ? { user_uid: record.user_uid ?? record.uid }
+            ...(currentConfig.slug === "permissionlink"
+              ? { useruid: record.useruid ?? record.uid }
               : {}),
           }),
         },
@@ -1907,7 +1906,7 @@ export function SystemSettingsScreen({
 
     const id = recordId(record, currentConfig);
     const nextForm = formFromRecord(record, currentConfig, language);
-    nextForm.is_access_disabled = disabled;
+    nextForm.isaccessdisabled = disabled;
 
     let payload: SettingRecord;
     try {
@@ -2044,10 +2043,10 @@ export function SystemSettingsScreen({
           body: JSON.stringify({
             action,
             backendUrl: auth.backendUrl,
-            source_environment: copySourceEnvironment,
-            target_environment: "dev",
-            source_holdingcode: sourceHoldingCode,
-            target_holdingcode: workspace.shop.holdingcode,
+            sourceenvironment: copySourceEnvironment,
+            targetenvironment: "dev",
+            sourceholdingcode: sourceHoldingCode,
+            targetholdingcode: workspace.shop.holdingcode,
           }),
         },
       );
@@ -2181,7 +2180,7 @@ export function SystemSettingsScreen({
   }
 
   const showProductCategoryHeaderControls =
-    (config.slug === "product_category_group_select_screen" || config.slug === "productcategorylist") &&
+    (config.slug === "productcategorygroupselectscreen" || config.slug === "productcategorylist") &&
     !hideChrome &&
     groupNumber !== null;
 
@@ -2212,9 +2211,9 @@ export function SystemSettingsScreen({
                       className="h-auto min-h-5 max-w-full whitespace-normal break-words border-secondary/40 bg-secondary/5 px-1.5 py-0.5 text-[9px] font-medium leading-snug"
                     >
                       {text("timezone")}:{" "}
-                      {dateTimeScope.timezone_label ||
+                      {dateTimeScope.timezonelabel ||
                         dateTimeScope.timezone ||
-                        dateTimeScope.timezone_offset ||
+                        dateTimeScope.timezoneoffset ||
                         "-"}
                     </Badge>
                   </div>
@@ -2271,7 +2270,7 @@ export function SystemSettingsScreen({
                   value={categorySearchQuery}
                   onChange={(event) => setCategorySearchQuery(event.target.value)}
                 />
-                {config.slug === "product_category_group_select_screen" && (
+                {config.slug === "productcategorygroupselectscreen" && (
                   <>
                     <Button
                       type="button"
@@ -2326,7 +2325,7 @@ export function SystemSettingsScreen({
         </div>
       ) : null}
 
-      {config.kind === "report" && config.slug === "user_access_audit" ? (
+      {config.kind === "report" && config.slug === "useraccessaudit" ? (
         <UserAccessAuditReportPanel
           auth={auth}
           language={language}
@@ -2348,7 +2347,7 @@ export function SystemSettingsScreen({
           targetHoldingCode={workspace?.shop.holdingcode ?? ""}
           text={text}
         />
-      ) : config.slug === "work_day_screen" ? (
+      ) : config.slug === "workdayscreen" ? (
         <WorkDayPanel
           language={language}
           loading={loading}
@@ -2366,7 +2365,7 @@ export function SystemSettingsScreen({
           initialBackendUrl={initialBackendUrl}
           language={language}
         />
-      ) : config.slug === "product_warehouse_screen" && !hideChrome ? (
+      ) : config.slug === "productwarehousescreen" && !hideChrome ? (
         <WarehouseTreeView
           auth={auth}
           workspace={workspace}
@@ -2383,7 +2382,7 @@ export function SystemSettingsScreen({
           language={language}
           onRefresh={() => void loadRecords(auth, workspace, config)}
         />
-      ) : config.slug === "product_bom" && !hideChrome ? (
+      ) : config.slug === "productbom" && !hideChrome ? (
         <div
           ref={bomSplitContainerRef}
           className="grid min-h-0 min-w-0 gap-3 xl:grid-cols-[minmax(0,var(--bom-list-fr))_8px_minmax(0,var(--bom-detail-fr))] xl:gap-0 flex-1 xl:h-full flex-col xl:flex-row items-stretch w-full min-h-[calc(100dvh-12rem)]"
@@ -2415,11 +2414,11 @@ export function SystemSettingsScreen({
                       barcode: "",
                       itemcode: "",
                       names: [{ code: language, name: "" }],
-                      item_unit_code: "RECIPE",
+                      itemunitcode: "RECIPE",
                       itemunitnames: [{ code: language, name: language === "th" ? "สูตร" : "Recipe" }],
                       price: 0,
                       bom: [],
-                      boms: [{ guidfixed: "", start_date: today, end_date: null, bom: [] }],
+                      boms: [{ guidfixed: "", startdate: today, enddate: null, bom: [] }],
                     };
                     setRecords((prev) => {
                       const clean = prev.filter((r: any) => !r.guidfixed?.startsWith("virtual-"));
@@ -2480,7 +2479,7 @@ export function SystemSettingsScreen({
                         <div className="flex items-center justify-between text-xs text-muted-foreground font-medium">
                           <span className="font-mono">{record.barcode || (language === "th" ? "ยังไม่กำหนด" : "Not set")}</span>
                           <span className="bg-muted px-1.5 py-0.5 rounded font-semibold text-[10px]">
-                            {record.item_unit_code || "RECIPE"}
+                            {record.itemunitcode || "RECIPE"}
                           </span>
                         </div>
                       </button>
@@ -2549,7 +2548,7 @@ export function SystemSettingsScreen({
           </div>
 
         </div>
-      ) : (config.slug === "product_category_group_select_screen" || config.slug === "productcategorylist") && !hideChrome ? (
+      ) : (config.slug === "productcategorygroupselectscreen" || config.slug === "productcategorylist") && !hideChrome ? (
         <div
           className={cn(
             "grid w-full min-w-0 items-stretch gap-3",
@@ -2763,7 +2762,7 @@ export function SystemSettingsScreen({
                   )}
                   {text("refresh")}
                 </Button>
-                {canEdit && currentConfig.slug !== "permission_link" ? (
+                {canEdit && currentConfig.slug !== "permissionlink" ? (
                   <>
                     {selectedRecord ? (
                       <Button
@@ -2847,7 +2846,7 @@ export function SystemSettingsScreen({
                   <p className="text-sm text-muted-foreground">
                     {canEdit ? text("emptyHint") : text("readOnlyEmptyHint")}
                   </p>
-                  {canEdit && currentConfig.slug !== "permission_link" ? (
+                  {canEdit && currentConfig.slug !== "permissionlink" ? (
                     <Button type="button" onClick={openCreate} disabled={!auth}>
                       <Plus />
                       {text("addItem")}
@@ -3635,18 +3634,18 @@ function settingListColumns(
         ),
       },
       {
-        key: "user_profile_name",
+        key: "userprofilename",
         label: language === "th" ? "ชื่อผู้ใช้งาน" : "User name",
         className: "basis-24 grow min-w-[100px] shrink-0",
         render: (record) => (
           <span
             className="block truncate"
             title={stringValue(
-              record.user_profile_name ?? record.userprofilename ?? record.name,
+              record.userprofilename ?? record.userprofilename ?? record.name,
             )}
           >
             {stringValue(
-              record.user_profile_name ?? record.userprofilename ?? record.name,
+              record.userprofilename ?? record.userprofilename ?? record.name,
             ) || "-"}
           </span>
         ),
@@ -3720,9 +3719,9 @@ function settingListColumns(
         render: (record) => (
           <span
             className="block truncate"
-            title={stringValue(record.name ?? record.employee_name ?? record.employeeName)}
+            title={stringValue(record.name ?? record.employeename ?? record.employeeName)}
           >
-            {stringValue(record.name ?? record.employee_name ?? record.employeeName) || "-"}
+            {stringValue(record.name ?? record.employeename ?? record.employeeName) || "-"}
           </span>
         ),
       },
@@ -3860,7 +3859,7 @@ function SettingDetailPanel({
                 <UserRound className="size-5" />
               ) : config.slug === "employee" ? (
                 <UsersRound className="size-5" />
-              ) : config.slug === "active_languages" ? (
+              ) : config.slug === "activelanguages" ? (
                 <Globe className="size-5" />
               ) : config.kind === "company" ? (
                 <Building2 className="size-5" />
@@ -4111,7 +4110,7 @@ function SettingDetailPanel({
             );
           }
           if (
-            config.slug === "permission_definition" &&
+            config.slug === "permissiondefinition" &&
             isPermissionAccessRulesField(field)
           ) {
             const dateTimeScope = resolveDateTimeScope(workspace);
@@ -4128,7 +4127,7 @@ function SettingDetailPanel({
               </div>
             );
           }
-          if (config.slug === "approval_setting" && field.key === "approvals") {
+          if (config.slug === "approvalsetting" && field.key === "approvals") {
             return (
               <div className="md:col-span-2" key={field.key}>
                 <ApprovalSettingEditor
@@ -4140,8 +4139,8 @@ function SettingDetailPanel({
             );
           }
           if (
-            (config.slug === "permission_link" ||
-              config.slug === "permission_group") &&
+            (config.slug === "permissionlink" ||
+              config.slug === "permissiongroup") &&
             (isPermissionCodesField(field) || isApprovalCodesField(field))
           ) {
             return (
@@ -4374,12 +4373,12 @@ function UserFormSections({
       : "To let the user sign in with email, enter the email in User code or email. The registered email is only for sending email.";
   const sections = [
     {
-      keys: ["uid", "username", "user_profile_name", "email"],
+      keys: ["uid", "username", "userprofilename", "email"],
       title: language === "th" ? "บัญชีเข้าสู่ระบบ" : "Sign-in account",
       description: loginHint,
     },
     {
-      keys: ["role", "is_access_disabled"],
+      keys: ["role", "isaccessdisabled"],
       title: language === "th" ? "สิทธิ์และสถานะ" : "Permission and status",
       description:
         language === "th"
@@ -4387,7 +4386,7 @@ function UserFormSections({
           : "Set the user's Holding role and whether this user can access the system.",
     },
     {
-      keys: ["access_scopes"],
+      keys: ["accessscopes"],
       title:
         language === "th"
           ? "บริษัทและสาขาที่เข้าได้"
@@ -4479,9 +4478,9 @@ function fieldGridItemClass(
     return "min-w-0 md:col-span-2";
   }
   if (
-    (config.slug === "permission_definition" && isPermissionAccessRulesField(field)) ||
-    (config.slug === "approval_setting" && field.key === "approvals") ||
-    (config.slug === "permission_link" &&
+    (config.slug === "permissiondefinition" && isPermissionAccessRulesField(field)) ||
+    (config.slug === "approvalsetting" && field.key === "approvals") ||
+    (config.slug === "permissionlink" &&
       (isEmployeeCodeField(field) ||
         isPermissionCodesField(field) ||
         isApprovalCodesField(field)))
@@ -5518,14 +5517,14 @@ function permissionLinkOption(
 ): PermissionLinkOption {
   const code = stringValue(
     isApproval
-      ? record.approval_code ?? record.approvalCode
-      : record.permission_code ?? record.permissionCode,
+      ? record.approvalcode ?? record.approvalCode
+      : record.permissioncode ?? record.permissionCode,
   );
   const name =
     stringValue(
       isApproval
-        ? record.approval_name ?? record.approvalName
-        : record.permission_name ?? record.permissionName,
+        ? record.approvalname ?? record.approvalName
+        : record.permissionname ?? record.permissionName,
     ) ||
     code;
   const description = stringValue(record.description);
@@ -5583,23 +5582,23 @@ function uniqueStrings(values: string[]): string[] {
 }
 
 function isPermissionAccessRulesField(field: SystemSettingField): boolean {
-  return field.key === "access_rules" || field.key === "branches";
+  return field.key === "accessrules" || field.key === "branches";
 }
 
 function isPermissionCodesField(field: SystemSettingField): boolean {
-  return field.key === "permission_codes" || field.key === "permissionCodes";
+  return field.key === "permissioncodes" || field.key === "permissionCodes";
 }
 
 function isApprovalCodesField(field: SystemSettingField): boolean {
-  return field.key === "approval_codes" || field.key === "approvalCodes";
+  return field.key === "approvalcodes" || field.key === "approvalCodes";
 }
 
 function isEmployeeCodeField(field: SystemSettingField): boolean {
-  return field.key === "employee_code" || field.key === "employeeCode";
+  return field.key === "employeecode" || field.key === "employeeCode";
 }
 
 function isEmployeeNameField(field: SystemSettingField): boolean {
-  return field.key === "employee_name" || field.key === "employeeName";
+  return field.key === "employeename" || field.key === "employeeName";
 }
 
 type PermissionLinkUserOption = {
@@ -5613,10 +5612,10 @@ type PermissionLinkUserOption = {
 function permissionLinkUserOption(
   record: SettingRecord,
 ): PermissionLinkUserOption {
-  const userUid = stringValue(record.user_uid ?? record.uid);
-  const code = stringValue(record.user_name ?? record.username ?? record.employee_code ?? userUid);
+  const userUid = stringValue(record.useruid ?? record.uid);
+  const code = stringValue(record.user_name ?? record.username ?? record.employeecode ?? userUid);
   const name =
-    stringValue(record.user_profile_name ?? record.name ?? record.email ?? record.username) || code;
+    stringValue(record.userprofilename ?? record.name ?? record.email ?? record.username) || code;
   const subtitle = stringValue(record.email) || userUid;
   return {
     code,
@@ -5624,7 +5623,7 @@ function permissionLinkUserOption(
     name,
     subtitle,
     isDisabled: Boolean(
-      record.is_access_disabled ?? record.is_access_disabled ?? false,
+      record.isaccessdisabled ?? record.isaccessdisabled ?? false,
     ),
   };
 }
@@ -5652,12 +5651,12 @@ function PermissionLinkUserSelector({
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const selectedCode = stringValue(form.employee_code ?? form.employeeCode);
-  const selectedName = stringValue(form.employee_name ?? form.employeeName);
+  const selectedCode = stringValue(form.employeecode ?? form.employeeCode);
+  const selectedName = stringValue(form.employeename ?? form.employeeName);
   const fallbackLabel =
     field.label[language] ?? field.label.en ?? field.label.th;
   const labelKey =
-    fieldBackendKeys[`permission_link.${field.key}`] ?? field.key;
+    fieldBackendKeys[`permissionlink.${field.key}`] ?? field.key;
   const translatedLabel = backendText(dictionary, labelKey, fallbackLabel);
   const label =
     translatedLabel === labelKey || translatedLabel === field.key
@@ -5727,7 +5726,7 @@ function PermissionLinkUserSelector({
 
   function choose(user: PermissionLinkUserOption) {
     if (user.isDisabled) return;
-    setForm({ ...form, employee_code: user.code, employee_name: user.name, user_uid: user.userUid });
+    setForm({ ...form, employeecode: user.code, employeename: user.name, useruid: user.userUid });
     setQuery("");
     setUsers([]);
   }
@@ -5861,7 +5860,7 @@ function PermissionLinkMultiSelectEditor({
   const sourceConfig = useMemo(
     () =>
       getSystemSettingConfig(
-        isApproval ? "approval_setting" : "permission_definition",
+        isApproval ? "approvalsetting" : "permissiondefinition",
       ),
     [isApproval],
   );
@@ -5869,12 +5868,12 @@ function PermissionLinkMultiSelectEditor({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const selectedCodes = stringArrayFromForm(form[field.key]);
-  const isGroup = config?.slug === "permission_group";
-  const selectedUserCode = isGroup ? "group" : stringValue(form.employee_code ?? form.employeeCode);
+  const isGroup = config?.slug === "permissiongroup";
+  const selectedUserCode = isGroup ? "group" : stringValue(form.employeecode ?? form.employeeCode);
   const fallbackLabel =
     field.label[language] ?? field.label.en ?? field.label.th;
   const labelKey =
-    fieldBackendKeys[`permission_link.${field.key}`] ?? field.key;
+    fieldBackendKeys[`permissionlink.${field.key}`] ?? field.key;
   const translatedLabel = backendText(dictionary, labelKey, fallbackLabel);
   const label =
     translatedLabel === labelKey || translatedLabel === field.key
@@ -6034,7 +6033,7 @@ function PermissionMatrixEditor({
   text: (key: keyof typeof uiEn) => string;
 }) {
   const branchKey = dateTimeScope.key || "company";
-  const branches = permissionBranchesFromForm(form.access_rules ?? form.branches);
+  const branches = permissionBranchesFromForm(form.accessrules ?? form.branches);
   const branchPermission = permissionBranchValue(branches, branchKey);
   const menus = isRecord(branchPermission.menus) ? branchPermission.menus : {};
   const branchLabel = dateTimeScope.branchcode || dateTimeScope.branchguid || branchKey;
@@ -6045,7 +6044,7 @@ function PermissionMatrixEditor({
 
   function updateMenuRule(menuId: string, patch: SettingRecord) {
     if (readOnly || !setForm) return;
-    const nextBranches = permissionBranchesFromForm(form.access_rules ?? form.branches);
+    const nextBranches = permissionBranchesFromForm(form.accessrules ?? form.branches);
     const nextBranch = permissionBranchValue(nextBranches, branchKey);
     const nextMenus = isRecord(nextBranch.menus) ? { ...nextBranch.menus } : {};
     const currentMenu = isRecord(nextMenus[menuId])
@@ -6057,7 +6056,7 @@ function PermissionMatrixEditor({
       ...dateTimeScopePayload(dateTimeScope),
       menus: nextMenus,
     };
-    setForm({ ...form, access_rules: nextBranches });
+    setForm({ ...form, accessrules: nextBranches });
   }
 
   function updateMenuPermission(
@@ -6069,7 +6068,7 @@ function PermissionMatrixEditor({
   }
 
   function updateMenuAllBranches(menuId: string, checked: boolean) {
-    updateMenuRule(menuId, { all_branches: checked });
+    updateMenuRule(menuId, { allbranches: checked });
   }
 
   return (
@@ -6079,7 +6078,7 @@ function PermissionMatrixEditor({
           <h3 className="text-base font-semibold">
             {backendText(
               dictionary,
-              "permission_definition",
+              "permissiondefinition",
               "Permission Definition",
             )}
           </h3>
@@ -6120,9 +6119,9 @@ function PermissionMatrixEditor({
                     ? (menus[item.id] as SettingRecord)
                     : {};
                   const allBranches = Boolean(
-                    permission.all_branches ??
+                    permission.allbranches ??
                       permission.allBranches ??
-                      permission.use_all_branches,
+                      permission.useallbranches,
                   );
                   return (
                     <div
@@ -6228,10 +6227,10 @@ function permissionActionText(
 type HoldingScopeType = "holding" | "company" | "branch";
 
 type HoldingScopeRule = {
-  scope_type: HoldingScopeType;
+  scopetype: HoldingScopeType;
   businesscode?: string;
   branchcode?: string;
-  all_branches?: boolean;
+  allbranches?: boolean;
 };
 
 type CompanyScopeOption = {
@@ -6242,7 +6241,7 @@ type CompanyScopeOption = {
 
 type SelectedCompanyScope = {
   company: CompanyScopeOption;
-  all_branches: boolean;
+  allbranches: boolean;
   branches: BranchOption[];
 };
 
@@ -6300,7 +6299,7 @@ function selectedCompanyScopesFromRules(
       };
     const scope: SelectedCompanyScope = {
       company,
-      all_branches: false,
+      allbranches: false,
       branches: [],
     };
     scopes.set(normalizedBusinessCode, scope);
@@ -6308,12 +6307,12 @@ function selectedCompanyScopesFromRules(
   }
 
   for (const rule of rules) {
-    if (rule.scope_type === "holding") continue;
+    if (rule.scopetype === "holding") continue;
     const businessCode = normalizeBusinessCode(rule.businesscode);
     if (!businessCode) continue;
     const scope = ensureScope(businessCode);
-    if (rule.scope_type === "company" || rule.all_branches) {
-      scope.all_branches = true;
+    if (rule.scopetype === "company" || rule.allbranches) {
+      scope.allbranches = true;
       continue;
     }
     const branchCode = normalizeScopeBranchCode(rule.branchcode);
@@ -6750,10 +6749,10 @@ async function loadUserAccessAuditData(
 ): Promise<UserAccessAuditData> {
   const [users, permissionLinks, permissionDefinitions, permissionGroups, approvals, holdingData] = await Promise.all([
     loadAuditRecords(auth, workspace, "user", signal),
-    loadAuditRecords(auth, workspace, "permission_link", signal),
-    loadAuditRecords(auth, workspace, "permission_definition", signal),
-    loadAuditRecords(auth, workspace, "permission_group", signal),
-    loadAuditRecords(auth, workspace, "approval_setting", signal),
+    loadAuditRecords(auth, workspace, "permissionlink", signal),
+    loadAuditRecords(auth, workspace, "permissiondefinition", signal),
+    loadAuditRecords(auth, workspace, "permissiongroup", signal),
+    loadAuditRecords(auth, workspace, "approvalsetting", signal),
     loadAuditHoldingData(auth, workspace, language, signal),
   ]);
   return {
@@ -6802,7 +6801,7 @@ async function loadAuditHoldingData(
 ): Promise<{ branches: BranchOption[]; companies: CompanyScopeOption[] }> {
   const activeHoldingCode = workspaceHoldingCode(workspace);
   const params = new URLSearchParams();
-  if (activeHoldingCode) params.set("active_holdingcode", activeHoldingCode);
+  if (activeHoldingCode) params.set("activeholdingcode", activeHoldingCode);
   const response = await fetch(`/api/workspace/holdings${params.size ? `?${params.toString()}` : ""}`, {
     headers: requestHeaders(auth),
     cache: "no-store",
@@ -6847,43 +6846,43 @@ function buildUserAccessAuditSummary(
   const approvalCodes = new Set<string>();
   const groupCodes = new Set<string>();
   for (const link of links) {
-    auditCodeList(link.group_code ?? link.groupCode ?? link.group_codes ?? link.groupCodes).forEach((code) => groupCodes.add(code));
-    auditCodeList(link.permission_codes ?? link.permissionCodes).forEach((code) => permissionCodes.add(code));
-    auditCodeList(link.approval_codes ?? link.approvalCodes).forEach((code) => approvalCodes.add(code));
+    auditCodeList(link.groupcode ?? link.groupCode ?? link.groupcodes ?? link.groupCodes).forEach((code) => groupCodes.add(code));
+    auditCodeList(link.permissioncodes ?? link.permissionCodes).forEach((code) => permissionCodes.add(code));
+    auditCodeList(link.approvalcodes ?? link.approvalCodes).forEach((code) => approvalCodes.add(code));
   }
 
   const groupByCode = new Map(
-    data.permissionGroups.map((group) => [normalizeBusinessCode(group.group_code ?? group.groupCode ?? group.code), group]),
+    data.permissionGroups.map((group) => [normalizeBusinessCode(group.groupcode ?? group.groupCode ?? group.code), group]),
   );
   for (const groupCode of groupCodes) {
     const group = groupByCode.get(groupCode);
     if (!group) continue;
-    auditCodeList(group.permission_codes ?? group.permissionCodes).forEach((code) => permissionCodes.add(code));
+    auditCodeList(group.permissioncodes ?? group.permissionCodes).forEach((code) => permissionCodes.add(code));
   }
 
   const permissionByCode = new Map(
     data.permissionDefinitions.map((permission) => [
-      normalizeBusinessCode(permission.permission_code ?? permission.permissionCode ?? permission.code),
+      normalizeBusinessCode(permission.permissioncode ?? permission.permissionCode ?? permission.code),
       permission,
     ]),
   );
   const approvalByCode = new Map(
     data.approvals.map((approval) => [
-      normalizeBusinessCode(approval.approval_code ?? approval.approvalCode ?? approval.code),
+      normalizeBusinessCode(approval.approvalcode ?? approval.approvalCode ?? approval.code),
       approval,
     ]),
   );
   const userScopes = user
     ? auditScopeLines(
-        normalizeHoldingScopeRules(user.access_scopes ?? user.scope_rules, user.businesscodes ?? user.companyguids),
+        normalizeHoldingScopeRules(user.accessscopes ?? user.scoperules, user.businesscodes ?? user.companyguids),
         data,
         language,
       )
     : [];
   const linkLines = links.flatMap((link) => {
-    const linkCode = stringValue(link.group_code ?? link.groupCode) || auditCodeList(link.permission_codes ?? link.permissionCodes).join(", ") || "-";
+    const linkCode = stringValue(link.groupcode ?? link.groupCode) || auditCodeList(link.permissioncodes ?? link.permissionCodes).join(", ") || "-";
     const scopeLines = auditScopeLines(
-      normalizeHoldingScopeRules(link.scope_rules ?? link.access_scopes, link.businesscodes ?? link.companyguids),
+      normalizeHoldingScopeRules(link.scoperules ?? link.accessscopes, link.businesscodes ?? link.companyguids),
       data,
       language,
     );
@@ -6899,10 +6898,10 @@ function buildUserAccessAuditSummary(
       return {
         code,
         name:
-          stringValue(record?.permission_name ?? record?.permissionName ?? record?.name) ||
+          stringValue(record?.permissionname ?? record?.permissionName ?? record?.name) ||
           localizedValue(record?.names, language) ||
           (language === "th" ? "ไม่พบชื่อสิทธิ์" : "Permission name not found"),
-        scope: auditScopeLines(normalizeHoldingScopeRules(record?.scope_rules ?? record?.access_scopes), data, language).join("; ") || "-",
+        scope: auditScopeLines(normalizeHoldingScopeRules(record?.scoperules ?? record?.accessscopes), data, language).join("; ") || "-",
       };
     });
   const approvals = Array.from(approvalCodes)
@@ -6912,10 +6911,10 @@ function buildUserAccessAuditSummary(
       return {
         code,
         name:
-          stringValue(record?.approval_name ?? record?.approvalName ?? record?.name) ||
+          stringValue(record?.approvalname ?? record?.approvalName ?? record?.name) ||
           localizedValue(record?.names, language) ||
           (language === "th" ? "ไม่พบชื่อสิทธิ์อนุมัติ" : "Approval name not found"),
-        scope: auditScopeLines(normalizeHoldingScopeRules(record?.approval_rules ?? record?.scope_rules), data, language).join("; ") || "-",
+        scope: auditScopeLines(normalizeHoldingScopeRules(record?.approvalrules ?? record?.scoperules), data, language).join("; ") || "-",
       };
     });
 
@@ -6928,12 +6927,12 @@ function auditScopeLines(
   language: LanguageCode,
 ): string[] {
   if (rules.length === 0) return [];
-  if (rules.some((rule) => rule.scope_type === "holding")) {
+  if (rules.some((rule) => rule.scopetype === "holding")) {
     return [language === "th" ? "ทั้ง Holding" : "Whole Holding"];
   }
   return selectedCompanyScopesFromRules(rules, data.companies, data.branches).flatMap((scope) => {
     const companyLabel = `${scope.company.businesscode} - ${scope.company.name}`;
-    if (scope.all_branches) {
+    if (scope.allbranches) {
       return [language === "th" ? `${companyLabel} / ทุกสาขา` : `${companyLabel} / all branches`];
     }
     if (scope.branches.length === 0) {
@@ -6966,10 +6965,10 @@ function auditPermissionLinksForUser(user: SettingRecord, links: SettingRecord[]
   );
   return links.filter((link) =>
     [
-      link.user_uid,
+      link.useruid,
       link.userUid,
       link.uid,
-      link.employee_code,
+      link.employeecode,
       link.employeeCode,
       link.username,
       link.email,
@@ -6987,7 +6986,7 @@ function auditCodeList(value: unknown): string[] {
       .filter(Boolean);
   }
   if (isRecord(value)) {
-    return auditCodeList(value.code ?? value.permission_code ?? value.approval_code ?? value.group_code);
+    return auditCodeList(value.code ?? value.permissioncode ?? value.approvalcode ?? value.groupcode);
   }
   const text = stringValue(value);
   if (!text) return [];
@@ -7002,19 +7001,19 @@ function auditUserKey(user: SettingRecord | null | undefined): string {
 }
 
 function auditUserUid(user: SettingRecord): string {
-  return stringValue(user.user_uid ?? user.userUid ?? user.uid ?? user.guidfixed ?? user.guidfixed ?? user.guid);
+  return stringValue(user.useruid ?? user.userUid ?? user.uid ?? user.guidfixed ?? user.guidfixed ?? user.guid);
 }
 
 function auditUserCode(user: SettingRecord): string {
-  return stringValue(user.username ?? user.employee_code ?? user.employeeCode ?? user.email ?? user.code);
+  return stringValue(user.username ?? user.employeecode ?? user.employeeCode ?? user.email ?? user.code);
 }
 
 function auditUserName(user: SettingRecord): string {
-  return stringValue(user.user_profile_name ?? user.userProfileName ?? user.name ?? user.name1 ?? user.display_name);
+  return stringValue(user.userprofilename ?? user.userProfileName ?? user.name ?? user.name1 ?? user.display_name);
 }
 
 function auditUserStatusLabel(user: SettingRecord, language: LanguageCode): string {
-  const disabled = booleanLikeValue(user.is_access_disabled ?? user.isAccessDisabled ?? user.disabled);
+  const disabled = booleanLikeValue(user.isaccessdisabled ?? user.isAccessDisabled ?? user.disabled);
   if (disabled) return language === "th" ? "เข้าใช้งานไม่ได้ชั่วคราว" : "Temporarily disabled";
   return language === "th" ? "เข้าใช้งานได้" : "Can access";
 }
@@ -7056,7 +7055,7 @@ function HoldingScopeRulesEditor({
     () => normalizeHoldingScopeRules(form[field.key], form.businesscodes ?? form.companyguids),
     [field.key, form],
   );
-  const holdingSelected = rules.some((rule) => rule.scope_type === "holding");
+  const holdingSelected = rules.some((rule) => rule.scopetype === "holding");
   const selectedCompanyScopes = useMemo(
     () => selectedCompanyScopesFromRules(rules, companies, branches),
     [branches, companies, rules],
@@ -7075,7 +7074,7 @@ function HoldingScopeRulesEditor({
 
     const activeHoldingCode = workspaceHoldingCode(workspace);
     const params = new URLSearchParams();
-    if (activeHoldingCode) params.set("active_holdingcode", activeHoldingCode);
+    if (activeHoldingCode) params.set("activeholdingcode", activeHoldingCode);
 
     void fetch(`/api/workspace/holdings${params.size ? `?${params.toString()}` : ""}`, {
       headers: requestHeaders(auth),
@@ -7163,10 +7162,10 @@ function HoldingScopeRulesEditor({
 
   function setHoldingScope(enabled: boolean) {
     if (enabled) {
-      commit(holdingSelected ? rules : [{ scope_type: "holding", all_branches: false }, ...rules]);
+      commit(holdingSelected ? rules : [{ scopetype: "holding", allbranches: false }, ...rules]);
       return;
     }
-    commit(rules.filter((rule) => rule.scope_type !== "holding"));
+    commit(rules.filter((rule) => rule.scopetype !== "holding"));
   }
 
   function addCompanyScope(businessCode: string) {
@@ -7177,14 +7176,14 @@ function HoldingScopeRulesEditor({
       nextRules.some(
         (rule) =>
           rule.businesscode === normalizedBusinessCode &&
-          (rule.scope_type === "company" || rule.scope_type === "branch"),
+          (rule.scopetype === "company" || rule.scopetype === "branch"),
       );
     if (!hasCompany) {
       nextRules.push({
-        scope_type: "branch",
+        scopetype: "branch",
         businesscode: normalizedBusinessCode,
         branchcode: "",
-        all_branches: false,
+        allbranches: false,
       });
     }
     commit(nextRules);
@@ -7196,7 +7195,7 @@ function HoldingScopeRulesEditor({
     const normalizedBusinessCode = normalizeBusinessCode(businessCode);
     commit(
       rules.filter(
-        (rule) => rule.scope_type === "holding" || rule.businesscode !== normalizedBusinessCode,
+        (rule) => rule.scopetype === "holding" || rule.businesscode !== normalizedBusinessCode,
       ),
     );
     setBranchAddCodes((current) => {
@@ -7210,20 +7209,20 @@ function HoldingScopeRulesEditor({
     const normalizedBusinessCode = normalizeBusinessCode(businessCode);
     if (!normalizedBusinessCode) return;
     const nextRules = rules.filter(
-      (rule) => !(rule.scope_type === "company" && rule.businesscode === normalizedBusinessCode),
+      (rule) => !(rule.scopetype === "company" && rule.businesscode === normalizedBusinessCode),
     );
     if (enabled) {
       nextRules.push({
-        scope_type: "company",
+        scopetype: "company",
         businesscode: normalizedBusinessCode,
-        all_branches: true,
+        allbranches: true,
       });
-    } else if (!nextRules.some((rule) => rule.scope_type === "branch" && rule.businesscode === normalizedBusinessCode)) {
+    } else if (!nextRules.some((rule) => rule.scopetype === "branch" && rule.businesscode === normalizedBusinessCode)) {
       nextRules.push({
-        scope_type: "branch",
+        scopetype: "branch",
         businesscode: normalizedBusinessCode,
         branchcode: "",
-        all_branches: false,
+        allbranches: false,
       });
     }
     commit(nextRules);
@@ -7236,16 +7235,16 @@ function HoldingScopeRulesEditor({
     const nextRules = rules.filter(
       (rule) =>
         !(
-          rule.scope_type === "branch" &&
+          rule.scopetype === "branch" &&
           rule.businesscode === normalizedBusinessCode &&
           (!rule.branchcode || rule.branchcode === normalizedBranchCode)
         ),
     );
     nextRules.push({
-      scope_type: "branch",
+      scopetype: "branch",
       businesscode: normalizedBusinessCode,
       branchcode: normalizedBranchCode,
-      all_branches: false,
+      allbranches: false,
     });
     commit(nextRules);
     setBranchAddCodes((current) => ({ ...current, [normalizedBusinessCode]: "" }));
@@ -7257,17 +7256,17 @@ function HoldingScopeRulesEditor({
     const nextRules = rules.filter(
       (rule) =>
         !(
-          rule.scope_type === "branch" &&
+          rule.scopetype === "branch" &&
           rule.businesscode === normalizedBusinessCode &&
           rule.branchcode === normalizedBranchCode
         ),
     );
     if (!nextRules.some((rule) => rule.businesscode === normalizedBusinessCode)) {
       nextRules.push({
-        scope_type: "branch",
+        scopetype: "branch",
         businesscode: normalizedBusinessCode,
         branchcode: "",
-        all_branches: false,
+        allbranches: false,
       });
     }
     commit(nextRules);
@@ -7276,7 +7275,7 @@ function HoldingScopeRulesEditor({
   function selectedBranchCount() {
     if (holdingSelected) return branches.length;
     return selectedCompanyScopes.reduce((count, scope) => {
-      if (scope.all_branches) {
+      if (scope.allbranches) {
         return count + branches.filter((branch) => branch.businesscode === scope.company.businesscode).length;
       }
       return count + scope.branches.length;
@@ -7386,7 +7385,7 @@ function HoldingScopeRulesEditor({
                   {selectedCompanyScopes.map((scope) => {
                     const active = scope.company.businesscode === activeCompanyScope?.company.businesscode;
                     const branchLabel =
-                      scope.all_branches
+                      scope.allbranches
                         ? language === "th"
                           ? "ทุกสาขา"
                           : "All branches"
@@ -7450,8 +7449,8 @@ function HoldingScopeRulesEditor({
                           : "Select all branches, or search and add specific branches."}
                       </p>
                     </div>
-                    <Badge variant={activeCompanyScope.all_branches ? "success" : "outline"}>
-                      {activeCompanyScope.all_branches
+                    <Badge variant={activeCompanyScope.allbranches ? "success" : "outline"}>
+                      {activeCompanyScope.allbranches
                         ? language === "th"
                           ? "ทุกสาขา"
                           : "All branches"
@@ -7464,7 +7463,7 @@ function HoldingScopeRulesEditor({
                     <input
                       className="size-4 accent-primary"
                       type="checkbox"
-                      checked={activeCompanyScope.all_branches}
+                      checked={activeCompanyScope.allbranches}
                       disabled={readOnly}
                       onChange={(event) =>
                         setCompanyAllBranches(activeCompanyScope.company.businesscode, event.target.checked)
@@ -7473,7 +7472,7 @@ function HoldingScopeRulesEditor({
                     {language === "th" ? "ใช้กับทุกสาขาในบริษัทนี้" : "Apply to all branches in this company"}
                   </label>
                   <div className="grid gap-2">
-                    {activeCompanyScope.all_branches ? (
+                    {activeCompanyScope.allbranches ? (
                       <p className="rounded-xl border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
                         {language === "th"
                           ? "ตอนนี้ใช้ได้ทุกสาขา รายการสาขาด้านล่างจะยังเก็บไว้เมื่อปิดตัวเลือกนี้"
@@ -7727,12 +7726,12 @@ function BranchScopeSearchPicker({
 
 function normalizeHoldingScopeRules(value: unknown, fallbackCompanies?: unknown): HoldingScopeRule[] {
   const raw = holdingScopeRawArray(value);
-  const source = raw.length ? raw : holdingScopeRawArray(fallbackCompanies).map((item) => ({ scope_type: "company", businesscode: item }));
+  const source = raw.length ? raw : holdingScopeRawArray(fallbackCompanies).map((item) => ({ scopetype: "company", businesscode: item }));
   const seen = new Set<string>();
   const result: HoldingScopeRule[] = [];
   for (const item of source) {
     const normalized = normalizeHoldingScopeRule(item);
-    const key = `${normalized.scope_type}|${normalized.businesscode ?? ""}|${normalized.branchcode ?? ""}`;
+    const key = `${normalized.scopetype}|${normalized.businesscode ?? ""}|${normalized.branchcode ?? ""}`;
     if (seen.has(key)) continue;
     seen.add(key);
     result.push(normalized);
@@ -7754,28 +7753,28 @@ function normalizeHoldingScopeRule(value: unknown): HoldingScopeRule {
   if (typeof value === "string") {
     const businessCode = normalizeBusinessCode(value);
     return businessCode
-      ? { scope_type: "company", businesscode: businessCode, all_branches: true }
-      : { scope_type: "holding" };
+      ? { scopetype: "company", businesscode: businessCode, allbranches: true }
+      : { scopetype: "holding" };
   }
   const record = isRecord(value) ? value : {};
-  const scopeType = normalizeHoldingScopeType(record.scope_type ?? record.scopeType);
-  const businessCode = normalizeBusinessCode(record.businesscode ?? record.businessCode ?? record.company_code ?? record.companyCode);
+  const scopeType = normalizeHoldingScopeType(record.scopetype ?? record.scopeType);
+  const businessCode = normalizeBusinessCode(record.businesscode ?? record.businessCode ?? record.companycode ?? record.companyCode);
   const branchCode = normalizeScopeBranchCode(record.branchcode ?? record.branchCode ?? record.code);
-  if (scopeType === "holding" || !businessCode) return { scope_type: "holding", all_branches: false };
-  if (scopeType === "company" || booleanLikeValue(record.all_branches ?? record.allBranches)) {
-    return { scope_type: "company", businesscode: businessCode, all_branches: true };
+  if (scopeType === "holding" || !businessCode) return { scopetype: "holding", allbranches: false };
+  if (scopeType === "company" || booleanLikeValue(record.allbranches ?? record.allBranches)) {
+    return { scopetype: "company", businesscode: businessCode, allbranches: true };
   }
-  return { scope_type: "branch", businesscode: businessCode, branchcode: branchCode, all_branches: false };
+  return { scopetype: "branch", businesscode: businessCode, branchcode: branchCode, allbranches: false };
 }
 
 function hasInvalidHoldingScopeRules(value: unknown, required: boolean): boolean {
   const rules = normalizeHoldingScopeRules(value);
   if (required && rules.length === 0) return true;
-  if (rules.some((rule) => rule.scope_type === "holding")) return false;
+  if (rules.some((rule) => rule.scopetype === "holding")) return false;
   return rules.some((rule) => {
-    if (rule.scope_type === "holding") return false;
+    if (rule.scopetype === "holding") return false;
     if (!rule.businesscode) return true;
-    return rule.scope_type === "branch" && !rule.branchcode;
+    return rule.scopetype === "branch" && !rule.branchcode;
   });
 }
 
@@ -7806,13 +7805,13 @@ function workspaceBusinessCode(workspace: WorkspaceSession | null): string {
 }
 
 const productVariantStructuredFieldKeys = new Set([
-  "option_tiers",
-  "sku_combinations",
-  "media_assets",
-  "specification_groups",
-  "import_attribute_maps",
-  "integration_profiles",
-  "payload_examples",
+  "optiontiers",
+  "skucombinations",
+  "mediaassets",
+  "specificationgroups",
+  "importattributemaps",
+  "integrationprofiles",
+  "payloadexamples",
 ]);
 
 type VariantColumn = {
@@ -7824,45 +7823,45 @@ type VariantColumn = {
 };
 
 const variantFieldColumns: Record<string, VariantColumn[]> = {
-  option_tiers: [
-    { key: "tier_no", labelTh: "ลำดับ", labelEn: "Tier", kind: "number" },
-    { key: "option_code", labelTh: "รหัสแกน", labelEn: "Option code", placeholder: "COLOR" },
+  optiontiers: [
+    { key: "tierno", labelTh: "ลำดับ", labelEn: "Tier", kind: "number" },
+    { key: "optioncode", labelTh: "รหัสแกน", labelEn: "Option code", placeholder: "COLOR" },
     { key: "name", labelTh: "ชื่อแกน", labelEn: "Option name", placeholder: "สี/Color" },
   ],
-  sku_combinations: [
-    { key: "seller_sku", labelTh: "SKU", labelEn: "SKU" },
+  skucombinations: [
+    { key: "sellersku", labelTh: "SKU", labelEn: "SKU" },
     { key: "barcode", labelTh: "บาร์โค้ด", labelEn: "Barcode" },
     { key: "gtin", labelTh: "GTIN", labelEn: "GTIN" },
-    { key: "option_values", labelTh: "ค่าตัวเลือก", labelEn: "Options", kind: "csv", placeholder: "BLACK, 128GB" },
-    { key: "sale_price", labelTh: "ราคาขาย", labelEn: "Price", kind: "number" },
+    { key: "optionvalues", labelTh: "ค่าตัวเลือก", labelEn: "Options", kind: "csv", placeholder: "BLACK, 128GB" },
+    { key: "saleprice", labelTh: "ราคาขาย", labelEn: "Price", kind: "number" },
     { key: "cost", labelTh: "ต้นทุน", labelEn: "Cost", kind: "number" },
-    { key: "opening_stock", labelTh: "สต๊อกต้น", labelEn: "Opening stock", kind: "number" },
+    { key: "openingstock", labelTh: "สต๊อกต้น", labelEn: "Opening stock", kind: "number" },
   ],
-  media_assets: [
+  mediaassets: [
     { key: "kind", labelTh: "ชนิดสื่อ", labelEn: "Media type", placeholder: "main / gallery / sku / video" },
     { key: "uri", labelTh: "ที่อยู่ไฟล์", labelEn: "File path" },
-    { key: "option_code", labelTh: "รหัสแกน", labelEn: "Option code" },
-    { key: "option_value", labelTh: "ค่าตัวเลือก", labelEn: "Option value" },
-    { key: "sort_order", labelTh: "ลำดับ", labelEn: "Sort", kind: "number" },
+    { key: "optioncode", labelTh: "รหัสแกน", labelEn: "Option code" },
+    { key: "optionvalue", labelTh: "ค่าตัวเลือก", labelEn: "Option value" },
+    { key: "sortorder", labelTh: "ลำดับ", labelEn: "Sort", kind: "number" },
   ],
-  specification_groups: [
-    { key: "group_code", labelTh: "รหัสกลุ่ม", labelEn: "Group code" },
-    { key: "group_name", labelTh: "ชื่อกลุ่ม", labelEn: "Group name" },
+  specificationgroups: [
+    { key: "groupcode", labelTh: "รหัสกลุ่ม", labelEn: "Group code" },
+    { key: "groupname", labelTh: "ชื่อกลุ่ม", labelEn: "Group name" },
   ],
-  import_attribute_maps: [
-    { key: "source_name", labelTh: "ชื่อจากไฟล์นำเข้า", labelEn: "Imported name" },
-    { key: "target_option_code", labelTh: "รหัสแกนในระบบ", labelEn: "System option code" },
+  importattributemaps: [
+    { key: "sourcename", labelTh: "ชื่อจากไฟล์นำเข้า", labelEn: "Imported name" },
+    { key: "targetoptioncode", labelTh: "รหัสแกนในระบบ", labelEn: "System option code" },
   ],
-  integration_profiles: [
+  integrationprofiles: [
     { key: "channel", labelTh: "ช่องทาง", labelEn: "Channel", placeholder: "shopee / lazada / external" },
-    { key: "sku_fields", labelTh: "ช่อง SKU", labelEn: "SKU fields", kind: "csv", placeholder: "seller_sku, barcode, price, stock" },
+    { key: "skufields", labelTh: "ช่อง SKU", labelEn: "SKU fields", kind: "csv", placeholder: "sellersku, barcode, price, stock" },
     { key: "media_keys", labelTh: "ช่องรูป/วิดีโอ", labelEn: "Media keys", kind: "csv" },
     { key: "price_keys", labelTh: "ช่องราคา", labelEn: "Price keys", kind: "csv" },
     { key: "stock_keys", labelTh: "ช่องสต๊อก", labelEn: "Stock keys", kind: "csv" },
   ],
-  payload_examples: [
+  payloadexamples: [
     { key: "direction", labelTh: "ทิศทาง", labelEn: "Direction", placeholder: "import / export" },
-    { key: "use_case", labelTh: "กรณีใช้งาน", labelEn: "Use case" },
+    { key: "usecase", labelTh: "กรณีใช้งาน", labelEn: "Use case" },
     { key: "channel", labelTh: "ช่องทาง", labelEn: "Channel" },
     { key: "note", labelTh: "หมายเหตุ", labelEn: "Note" },
   ],
@@ -7873,7 +7872,7 @@ function isProductVariantStructuredField(
   field: SystemSettingField,
 ): boolean {
   return (
-    config.slug === "product_variant_matrix" &&
+    config.slug === "productvariantmatrix" &&
     productVariantStructuredFieldKeys.has(field.key)
   );
 }
@@ -7919,10 +7918,10 @@ function ProductVariantStructuredFieldEditor({
       nextItems[index],
     ];
     setItems(
-      field.key === "option_tiers"
+      field.key === "optiontiers"
         ? nextItems.map((item, itemIndex) => ({
             ...item,
-            tier_no: itemIndex + 1,
+            tierno: itemIndex + 1,
           }))
         : nextItems,
     );
@@ -7966,7 +7965,7 @@ function ProductVariantStructuredFieldEditor({
               <div className="flex items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="secondary" className="rounded-lg text-[11px]">
-                    {field.key === "option_tiers"
+                    {field.key === "optiontiers"
                       ? language === "th"
                         ? `ลำดับเลือก ${index + 1}`
                         : `Choice order ${index + 1}`
@@ -7974,7 +7973,7 @@ function ProductVariantStructuredFieldEditor({
                         ? `รายการ ${index + 1}`
                         : `Item ${index + 1}`}
                   </Badge>
-                  {field.key === "option_tiers" ? (
+                  {field.key === "optiontiers" ? (
                     <span className="text-[11px] font-medium text-muted-foreground">
                       {language === "th"
                         ? "ผู้ใช้เลือกตามลำดับนี้ เช่น สีก่อนไซซ์ หรือไซซ์ก่อนสี"
@@ -7983,7 +7982,7 @@ function ProductVariantStructuredFieldEditor({
                   ) : null}
                 </div>
                 <div className="flex items-center gap-1">
-                  {field.key === "option_tiers" ? (
+                  {field.key === "optiontiers" ? (
                     <>
                       <Button
                         aria-label={
@@ -8035,11 +8034,11 @@ function ProductVariantStructuredFieldEditor({
                   />
                 ))}
               </div>
-              {field.key === "option_tiers" ? (
+              {field.key === "optiontiers" ? (
                 <VariantNestedRowsEditor
                   columns={[
-                    { key: "value_code", labelTh: "รหัสค่า", labelEn: "Value code" },
-                    { key: "value_text", labelTh: "ชื่อค่า", labelEn: "Value name" },
+                    { key: "valuecode", labelTh: "รหัสค่า", labelEn: "Value code" },
+                    { key: "valuetext", labelTh: "ชื่อค่า", labelEn: "Value name" },
                   ]}
                   items={variantArrayValue(item.values)}
                   language={language}
@@ -8047,12 +8046,12 @@ function ProductVariantStructuredFieldEditor({
                   onChange={(nextRows) => updateItem(index, "values", nextRows)}
                 />
               ) : null}
-              {field.key === "specification_groups" ? (
+              {field.key === "specificationgroups" ? (
                 <VariantNestedRowsEditor
                   columns={[
-                    { key: "attribute_code", labelTh: "รหัสคุณสมบัติ", labelEn: "Attribute code" },
-                    { key: "attribute_name", labelTh: "ชื่อคุณสมบัติ", labelEn: "Attribute name" },
-                    { key: "input_type", labelTh: "ชนิดช่องกรอก", labelEn: "Input type" },
+                    { key: "attributecode", labelTh: "รหัสคุณสมบัติ", labelEn: "Attribute code" },
+                    { key: "attributename", labelTh: "ชื่อคุณสมบัติ", labelEn: "Attribute name" },
+                    { key: "inputtype", labelTh: "ชนิดช่องกรอก", labelEn: "Input type" },
                     { key: "scope", labelTh: "ระดับข้อมูล", labelEn: "Scope" },
                   ]}
                   items={variantArrayValue(item.attributes)}
@@ -8197,8 +8196,8 @@ function variantArrayValue(value: unknown): SettingRecord[] {
 }
 
 function defaultVariantItem(key: string, index: number): SettingRecord {
-  if (key === "option_tiers") return { tier_no: index + 1, values: [] };
-  if (key === "specification_groups") return { attributes: [] };
+  if (key === "optiontiers") return { tierno: index + 1, values: [] };
+  if (key === "specificationgroups") return { attributes: [] };
   return {};
 }
 
@@ -8236,7 +8235,7 @@ function ProductVariantStructuredReadOnlyDetail({
             >
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="secondary" className="rounded-lg text-[11px]">
-                  {field.key === "option_tiers"
+                  {field.key === "optiontiers"
                     ? language === "th"
                       ? `ลำดับเลือก ${index + 1}`
                       : `Choice order ${index + 1}`
@@ -8244,7 +8243,7 @@ function ProductVariantStructuredReadOnlyDetail({
                       ? `รายการ ${index + 1}`
                       : `Item ${index + 1}`}
                 </Badge>
-                {field.key === "option_tiers" ? (
+                {field.key === "optiontiers" ? (
                   <span className="text-[11px] text-muted-foreground">
                     {language === "th"
                       ? "ใช้กำหนดว่าผู้ใช้เลือกสี/ไซซ์/ตัวเลือกใดก่อนหลัง"
@@ -8262,23 +8261,23 @@ function ProductVariantStructuredReadOnlyDetail({
                   />
                 ))}
               </div>
-              {field.key === "option_tiers" ? (
+              {field.key === "optiontiers" ? (
                 <VariantReadOnlyNestedRows
                   columns={[
-                    { key: "value_code", labelTh: "รหัสค่า", labelEn: "Value code" },
-                    { key: "value_text", labelTh: "ชื่อค่า", labelEn: "Value name" },
+                    { key: "valuecode", labelTh: "รหัสค่า", labelEn: "Value code" },
+                    { key: "valuetext", labelTh: "ชื่อค่า", labelEn: "Value name" },
                   ]}
                   items={variantArrayValue(item.values)}
                   language={language}
                   title={language === "th" ? "ค่าของแกนนี้" : "Option values"}
                 />
               ) : null}
-              {field.key === "specification_groups" ? (
+              {field.key === "specificationgroups" ? (
                 <VariantReadOnlyNestedRows
                   columns={[
-                    { key: "attribute_code", labelTh: "รหัสคุณสมบัติ", labelEn: "Attribute code" },
-                    { key: "attribute_name", labelTh: "ชื่อคุณสมบัติ", labelEn: "Attribute name" },
-                    { key: "input_type", labelTh: "ชนิดช่องกรอก", labelEn: "Input type" },
+                    { key: "attributecode", labelTh: "รหัสคุณสมบัติ", labelEn: "Attribute code" },
+                    { key: "attributename", labelTh: "ชื่อคุณสมบัติ", labelEn: "Attribute name" },
+                    { key: "inputtype", labelTh: "ชนิดช่องกรอก", labelEn: "Input type" },
                     { key: "scope", labelTh: "ระดับข้อมูล", labelEn: "Scope" },
                   ]}
                   items={variantArrayValue(item.attributes)}
@@ -8400,7 +8399,7 @@ function FieldEditor({
     );
   }
 
-  if (config.slug === "permission_definition" && isPermissionAccessRulesField(field)) {
+  if (config.slug === "permissiondefinition" && isPermissionAccessRulesField(field)) {
     return (
       <PermissionMatrixEditor
         dateTimeScope={dateTimeScope}
@@ -8416,7 +8415,7 @@ function FieldEditor({
     );
   }
 
-  if (config.slug === "approval_setting" && field.key === "approvals") {
+  if (config.slug === "approvalsetting" && field.key === "approvals") {
     return (
       <ApprovalSettingEditor
         dictionary={dictionary}
@@ -8426,7 +8425,7 @@ function FieldEditor({
     );
   }
 
-  if (config.slug === "permission_link" && isEmployeeCodeField(field)) {
+  if (config.slug === "permissionlink" && isEmployeeCodeField(field)) {
     return (
       <label className="grid gap-1 text-sm font-semibold">
         <span>{label}</span>
@@ -8435,7 +8434,7 @@ function FieldEditor({
     );
   }
 
-  if (config.slug === "permission_link" && isEmployeeNameField(field)) {
+  if (config.slug === "permissionlink" && isEmployeeNameField(field)) {
     return (
       <label className="grid gap-1 text-sm font-semibold">
         <span>{label}</span>
@@ -8445,7 +8444,7 @@ function FieldEditor({
   }
 
   if (
-    (config.slug === "permission_link" || config.slug === "permission_group") &&
+    (config.slug === "permissionlink" || config.slug === "permissiongroup") &&
     (isPermissionCodesField(field) || isApprovalCodesField(field))
   ) {
     return (
@@ -8476,7 +8475,7 @@ function FieldEditor({
     );
   }
 
-  if (config.slug === "product_warehouse_screen" && field.key === "location") {
+  if (config.slug === "productwarehousescreen" && field.key === "location") {
     return (
       <div className="md:col-span-2">
         <label className="text-sm font-semibold mb-1 block">{label}</label>
@@ -8810,8 +8809,8 @@ function FieldEditor({
         [field.key]: optionValueToFormValue(nextValue, field),
       };
       if (config.kind === "company" && field.key === "settings.language") {
-        nextForm["settings.language_configs"] = setDefaultLanguageConfig(
-          nextForm["settings.language_configs"] ?? nextForm["settings.languageconfigs"],
+        nextForm["settings.languageconfigs"] = setDefaultLanguageConfig(
+          nextForm["settings.languageconfigs"] ?? nextForm["settings.languageconfigs"],
           nextValue,
         );
       }
@@ -8846,7 +8845,7 @@ function FieldEditor({
         yearType={dateTimeScope.calendarYearType}
         label={`${label}${field.required ? " *" : ""}`}
         timezoneLabel={
-          dateTimeScope.timezone_label || dateTimeScope.timezone_offset
+          dateTimeScope.timezonelabel || dateTimeScope.timezoneoffset
         }
         value={String(value ?? "")}
         onChange={(event) =>
@@ -9030,9 +9029,9 @@ function isColorHexField(
   field: SystemSettingField,
 ): boolean {
   return (
-    (config.slug === "product_category_group_select_screen" &&
+    (config.slug === "productcategorygroupselectscreen" &&
       field.key === "colorselecthex") ||
-    (config.slug === "product_color" && field.key === "hex_color")
+    (config.slug === "productcolor" && field.key === "hexcolor")
   );
 }
 
@@ -9764,8 +9763,8 @@ function PointGeneralRulesTable({
           <thead className="bg-muted/60 text-muted-foreground">
             <tr>
               <th className="px-2 py-2 font-semibold">#</th>
-              <th className="px-2 py-2 font-semibold">{text("start_date", "วันที่เริ่มต้น")}</th>
-              <th className="px-2 py-2 font-semibold">{text("end_date", "วันที่สิ้นสุด")}</th>
+              <th className="px-2 py-2 font-semibold">{text("startdate", "วันที่เริ่มต้น")}</th>
+              <th className="px-2 py-2 font-semibold">{text("enddate", "วันที่สิ้นสุด")}</th>
               <th className="px-2 py-2 font-semibold">{text("amount_per_point", "จำนวนเงินต่อ 1 แต้ม")}</th>
               <th className="px-2 py-2 font-semibold">{text("points_per_baht", "แต้มต่อบาท")}</th>
               {!readOnly ? (
@@ -9863,8 +9862,8 @@ function PointSpecialRulesTable({
           <thead className="bg-muted/60 text-muted-foreground">
             <tr>
               <th className="px-2 py-2 font-semibold">#</th>
-              <th className="px-2 py-2 font-semibold">{text("start_date", "วันที่เริ่มต้น")}</th>
-              <th className="px-2 py-2 font-semibold">{text("end_date", "วันที่สิ้นสุด")}</th>
+              <th className="px-2 py-2 font-semibold">{text("startdate", "วันที่เริ่มต้น")}</th>
+              <th className="px-2 py-2 font-semibold">{text("enddate", "วันที่สิ้นสุด")}</th>
               <th className="px-2 py-2 font-semibold">{text("point_multiplier", "ตัวคูณแต้ม")}</th>
               <th className="px-2 py-2 font-semibold">{text("max_points_per_bill", "แต้มสูงสุดต่อบิล")}</th>
               <th className="px-2 py-2 font-semibold">{text("days_of_week", "วันในสัปดาห์")}</th>
@@ -10289,7 +10288,7 @@ function LanguageConfigsEditor({
 }) {
   const defaultCode = supportedLanguageCode(form["settings.language"], "th");
   const rows = normalizeLanguageConfigs(
-    form["settings.language_configs"] ?? form["settings.languageconfigs"],
+    form["settings.languageconfigs"] ?? form["settings.languageconfigs"],
     defaultCode,
   );
   const usedCodes = new Set(rows.map((row) => row.code));
@@ -10311,7 +10310,7 @@ function LanguageConfigsEditor({
     setForm({
       ...form,
       "settings.language": primary,
-      "settings.language_configs": normalized,
+      "settings.languageconfigs": normalized,
     });
   }
 
@@ -10804,9 +10803,9 @@ export function normalizeLanguageConfigs(
     if (!code || seen.has(code)) continue;
     const isDefault = booleanLikeValue(item.isdefault);
     const isUse =
-      item.is_use === undefined && item.isuse === undefined
+      item.isuse === undefined && item.isuse === undefined
         ? true
-        : booleanLikeValue(item.is_use ?? item.isuse);
+        : booleanLikeValue(item.isuse ?? item.isuse);
     if (!isUse && !isDefault) continue;
     seen.add(code);
     rows.push({
@@ -10814,7 +10813,7 @@ export function normalizeLanguageConfigs(
       codetranslator:
         stringValue(item.codetranslator ?? item.codeTranslator) || code,
       name: stringValue(item.name) || languageName(code, "en"),
-      is_use: true,
+      isuse: true,
       isdefault: isDefault,
     });
   }
@@ -10848,7 +10847,7 @@ export function normalizeLanguageConfigs(
     ...row,
     codetranslator: row.codetranslator || row.code,
     isdefault: row.code === primaryCode,
-    is_use: true,
+    isuse: true,
     name: row.name || languageName(row.code, "en"),
   }));
 }
@@ -10861,7 +10860,7 @@ function languageConfigRow(
     code,
     codetranslator: code,
     name: languageName(code, "en"),
-    is_use: true,
+    isuse: true,
     isdefault: isDefault,
   };
 }
@@ -11038,7 +11037,7 @@ function nameEditorLanguageCodes(
 ): string[] {
   if (config.kind === "company") {
     return normalizeLanguageConfigs(
-      form["settings.language_configs"] ?? form["settings.languageconfigs"],
+      form["settings.languageconfigs"] ?? form["settings.languageconfigs"],
       form["settings.language"],
     ).map((row) => row.code);
   }
@@ -11049,14 +11048,14 @@ function nameEditorLanguageCodes(
     const shopInfo = isRecord(workspace.shopInfo) ? workspace.shopInfo : {};
     const settings = isRecord(shopInfo.settings) ? shopInfo.settings : {};
 
-    const rawConfigs = settings.language_configs ?? settings.languageconfigs ?? shopInfo["settings.language_configs"] ?? shopInfo["settings.languageconfigs"] ?? shopInfo.languageconfigs;
+    const rawConfigs = settings.languageconfigs ?? settings.languageconfigs ?? shopInfo["settings.languageconfigs"] ?? shopInfo["settings.languageconfigs"] ?? shopInfo.languageconfigs;
     const rawLang = settings.language ?? shopInfo["settings.language"] ?? shopInfo.language;
 
     if (Array.isArray(rawConfigs)) {
       const activeCodes = rawConfigs
         .filter(isRecord)
         .map((item) => {
-          const isUse = item.is_use === undefined && item.isuse === undefined ? true : (item.is_use === true || item.is_use === "true" || item.isuse === true || item.isuse === "true");
+          const isUse = item.isuse === undefined && item.isuse === undefined ? true : (item.isuse === true || item.isuse === "true" || item.isuse === true || item.isuse === "true");
           return {
             code: supportedLanguageCode(item.code, ""),
             isUse,
@@ -11915,7 +11914,7 @@ type BranchOption = {
   businesscode?: string;
   companyguid?: string;
   holdingcode?: string;
-  shop_name?: string;
+  shopname?: string;
 };
 
 function branchOptionDisplayName(
@@ -11930,8 +11929,8 @@ function branchOptionDisplayName(
       ?.name ??
     names.find((item) => item.name)?.name;
   const branchName = (localized ?? option.code ?? option.guidfixed).trim();
-  if (option.shop_name) {
-    return `${option.shop_name} - ${branchName}`;
+  if (option.shopname) {
+    return `${option.shopname} - ${branchName}`;
   }
   return branchName;
 }
@@ -12012,7 +12011,7 @@ function BranchMultiSelectFieldEditor({
         return {
           ...item,
           holdingcode: match.holdingcode,
-          shop_name: match.shop_name,
+          shopname: match.shopname,
           names: match.names,
         };
       }
@@ -12075,7 +12074,7 @@ function BranchMultiSelectFieldEditor({
             .map((opt) => ({
               ...opt,
               holdingcode: sid,
-              shop_name: shopNameMap.get(sid) || sid,
+              shopname: shopNameMap.get(sid) || sid,
             }));
         });
 
@@ -12512,7 +12511,7 @@ function CompanyMultiSelectFieldEditor({
 
     const params = new URLSearchParams();
     const activeHoldingCode = stringValue(workspace.shop.holdingcode);
-    if (activeHoldingCode) params.set("active_holdingcode", activeHoldingCode);
+    if (activeHoldingCode) params.set("activeholdingcode", activeHoldingCode);
 
     void fetch(`/api/workspace/holdings${params.size > 0 ? `?${params.toString()}` : ""}`, {
       headers: requestHeaders(auth),
@@ -12890,8 +12889,8 @@ function BranchUnifiedView({
     general: null,
     address: null,
     department: "/department",
-    workday: "/work_day_screen",
-    holiday: "/holiday_screen",
+    workday: "/workdayscreen",
+    holiday: "/holidayscreen",
     pos: null,
     business: null,
   };
@@ -13195,9 +13194,9 @@ function BranchEmbeddedSubScreen({
 
 type ProductGroupTabKey =
   | "productgroup"
-  | "master_group_screen"
-  | "master_group_sub1_screen"
-  | "master_group_sub2_screen";
+  | "mastergroupscreen"
+  | "mastergroupsub1screen"
+  | "mastergroupsub2screen";
 
 const PRODUCT_GROUP_TABS: ReadonlyArray<{
   id: ProductGroupTabKey;
@@ -13223,8 +13222,8 @@ const PRODUCT_GROUP_TABS: ReadonlyArray<{
     },
   },
   {
-    id: "master_group_screen",
-    route: "/master_group_screen",
+    id: "mastergroupscreen",
+    route: "/mastergroupscreen",
     labels: {
       th: "กลุ่มหลัก",
       en: "Main Group",
@@ -13241,8 +13240,8 @@ const PRODUCT_GROUP_TABS: ReadonlyArray<{
     },
   },
   {
-    id: "master_group_sub1_screen",
-    route: "/master_group_sub1_screen",
+    id: "mastergroupsub1screen",
+    route: "/mastergroupsub1screen",
     labels: {
       th: "กลุ่มย่อย 1",
       en: "Sub Group 1",
@@ -13259,8 +13258,8 @@ const PRODUCT_GROUP_TABS: ReadonlyArray<{
     },
   },
   {
-    id: "master_group_sub2_screen",
-    route: "/master_group_sub2_screen",
+    id: "mastergroupsub2screen",
+    route: "/mastergroupsub2screen",
     labels: {
       th: "กลุ่มย่อย 2",
       en: "Sub Group 2",
@@ -13348,12 +13347,12 @@ function branchRecordToListItem(record: SettingRecord): BranchListItem {
     companynames: Array.isArray(record.companynames)
       ? (record.companynames as BranchListItem["companynames"])
       : undefined,
-    base_currency: stringValue(record.base_currency) || undefined,
+    basecurrency: stringValue(record.basecurrency) || undefined,
     language: stringValue(record.language) || undefined,
     timezone: stringValue(record.timezone) || undefined,
-    timezone_offset: stringValue(record.timezone_offset) || undefined,
-    timezone_label: stringValue(record.timezone_label) || undefined,
-    year_type: stringValue(record.year_type) || undefined,
+    timezoneoffset: stringValue(record.timezoneoffset) || undefined,
+    timezonelabel: stringValue(record.timezonelabel) || undefined,
+    yeartype: stringValue(record.yeartype) || undefined,
   };
 }
 
@@ -13640,8 +13639,8 @@ function ComboFieldEditor({
       const prefix = field.key.includes(".")
         ? `${field.key.split(".").slice(0, -1).join(".")}.`
         : "";
-      nextForm[`${prefix}timezone_label`] = meta.label;
-      nextForm[`${prefix}timezone_offset`] = meta.offset;
+      nextForm[`${prefix}timezonelabel`] = meta.label;
+      nextForm[`${prefix}timezoneoffset`] = meta.offset;
     }
     if (field.optionSource === "countries")
       applyCountryDefaultsToForm(nextForm, field.key, option.value);
@@ -13987,7 +13986,7 @@ function WorkDayPanel({
                             <TimeField
                               aria-label={`${dayNames[language]?.[index] ?? day.name} ${text("range")} ${timeIndex + 1} ${text("workTime")} start`}
                               label={text("startTime")}
-                              timezoneLabel={dateTimeScope.timezone_offset}
+                              timezoneLabel={dateTimeScope.timezoneoffset}
                               utcPreview={formatUtcPreview(
                                 time.starttimeutc,
                                 time.startdayoffsetutc,
@@ -14005,7 +14004,7 @@ function WorkDayPanel({
                             <TimeField
                               aria-label={`${dayNames[language]?.[index] ?? day.name} ${text("range")} ${timeIndex + 1} ${text("workTime")} end`}
                               label={text("endTime")}
-                              timezoneLabel={dateTimeScope.timezone_offset}
+                              timezoneLabel={dateTimeScope.timezoneoffset}
                               utcPreview={formatUtcPreview(
                                 time.endtimeutc,
                                 time.enddayoffsetutc,
@@ -14462,13 +14461,13 @@ function applyUtcFields(time: WorkDayTime, scope?: DateTimeScope): WorkDayTime {
   next.end = toLegacyTime(endtime);
   if (scope) {
     next.timezone = scope.timezone;
-    next.timezone_offset = scope.timezone_offset;
+    next.timezoneoffset = scope.timezoneoffset;
   }
-  const startUtc = scope?.timezone_offset
-    ? localTimeToUtcTime(starttime, scope.timezone_offset)
+  const startUtc = scope?.timezoneoffset
+    ? localTimeToUtcTime(starttime, scope.timezoneoffset)
     : null;
-  const endUtc = scope?.timezone_offset
-    ? localTimeToUtcTime(endtime, scope.timezone_offset)
+  const endUtc = scope?.timezoneoffset
+    ? localTimeToUtcTime(endtime, scope.timezoneoffset)
     : null;
   if (startUtc) {
     next.starttimeutc = startUtc.time;
@@ -14600,7 +14599,7 @@ function filterRecordsByDateTimeScope(
   scope: DateTimeScope,
 ): SettingRecord[] {
   return records.filter((record) => {
-    const key = String(record.branch_key ?? "");
+    const key = String(record.branchkey ?? "");
     const branchguid = String(record.branchguid ?? "");
     const branchcode = String(record.branchcode ?? "");
     if (!key && !branchguid && !branchcode) return true;
@@ -14642,7 +14641,7 @@ function defaultForm(
             ? defaultPointConfigJson()
             : isPermissionCodesField(field) ||
                 isApprovalCodesField(field) ||
-                field.key === "allowed_tools"
+                field.key === "allowedtools"
               ? "[]"
               : "{}";
     else if (field.type === "number")
@@ -14654,28 +14653,28 @@ function defaultForm(
       );
     else form[field.key] = "";
   }
-  if (config.slug === "mcp_apikey") {
-    form.allowed_tools = JSON.stringify(["readonly"], null, 2);
-    form.rate_limit_per_minute = "600";
+  if (config.slug === "mcpapikey") {
+    form.allowedtools = JSON.stringify(["readonly"], null, 2);
+    form.ratelimitperminute = "600";
     form.isactive = true;
   }
-  if (config.slug === "ai_provider") {
-    form.provider_name = "ollama";
+  if (config.slug === "aiprovider") {
+    form.providername = "ollama";
     form.isactive = true;
     form.priority = "1";
   }
-  if (config.slug === "approval_setting") {
-    form.approval_code = "default";
-    form.approval_name = "Default";
+  if (config.slug === "approvalsetting") {
+    form.approvalcode = "default";
+    form.approvalname = "Default";
     form.isactive = true;
     form.approvals = {};
   }
-  if (config.slug === "permission_definition") {
-    form.access_rules = {};
+  if (config.slug === "permissiondefinition") {
+    form.accessrules = {};
   }
-  if (config.slug === "permission_link") {
-    form.permission_codes = [];
-    form.approval_codes = [];
+  if (config.slug === "permissionlink") {
+    form.permissioncodes = [];
+    form.approvalcodes = [];
   }
   applyCompanyDefaults(form, config);
   applyBranchDefaults(form, config);
@@ -14714,19 +14713,19 @@ function formFromRecord(
       form[field.key] = normalizeStringListValue(value);
     else if (
       field.type === "json" &&
-      config.slug === "permission_definition" &&
+      config.slug === "permissiondefinition" &&
       isPermissionAccessRulesField(field)
     )
       form[field.key] = isRecord(value) ? value : {};
     else if (
       field.type === "json" &&
-      config.slug === "approval_setting" &&
+      config.slug === "approvalsetting" &&
       field.key === "approvals"
     )
       form[field.key] = isRecord(value) ? value : {};
     else if (
       field.type === "json" &&
-      config.slug === "permission_link" &&
+      config.slug === "permissionlink" &&
       (isPermissionCodesField(field) || isApprovalCodesField(field))
     )
       form[field.key] = stringArrayFromForm(value);
@@ -14735,7 +14734,7 @@ function formFromRecord(
         value ??
           (isPermissionCodesField(field) ||
           isApprovalCodesField(field) ||
-          field.key === "allowed_tools"
+          field.key === "allowedtools"
             ? []
             : {}),
         null,
@@ -14746,7 +14745,7 @@ function formFromRecord(
         radioFormValue(value, field),
         field,
       );
-    else if (field.key === "api_key") form[field.key] = "";
+    else if (field.key === "apikey") form[field.key] = "";
     else if (field.type === "number" && isDecimalSettingField(field.key))
       form[field.key] = normalizeDecimalPlaces(value);
     else if (field.type === "image-gallery") {
@@ -14773,10 +14772,10 @@ function formFromRecord(
   }
   if (config.slug === "company") {
     const languageConfigs = normalizeLanguageConfigs(
-      getByPath(record, "settings.language_configs") ?? getByPath(record, "settings.languageconfigs"),
+      getByPath(record, "settings.languageconfigs") ?? getByPath(record, "settings.languageconfigs"),
       getByPath(record, "settings.language"),
     );
-    form["settings.language_configs"] = languageConfigs;
+    form["settings.languageconfigs"] = languageConfigs;
     form["settings.language"] = languageConfigs[0]?.code ?? "th";
   }
   applyCompanyDefaults(form, config);
@@ -14801,7 +14800,7 @@ function recordValueForField(
 }
 
 function applyCompanyDefaults(form: FormState, config: SystemSettingConfig) {
-  if (config.slug !== "company" && config.slug !== "active_languages") return;
+  if (config.slug !== "company" && config.slug !== "activelanguages") return;
   for (const [key, value] of Object.entries(companySetupDefaults)) {
     setFormValueIfEmpty(form, key, value);
   }
@@ -14830,13 +14829,13 @@ function applyCountryDefaultsToForm(
 ) {
   if (countryCode !== "TH") return;
   if (fieldKey.startsWith("contact.")) {
-    setFormValueIfEmpty(form, "base_currency", "THB");
+    setFormValueIfEmpty(form, "basecurrency", "THB");
     setFormValueIfEmpty(form, "timezone", "Asia/Bangkok");
-    setFormValueIfEmpty(form, "date_format", "dd/MM/yyyy");
-    setFormValueIfEmpty(form, "year_type", "buddhist");
-    setFormValueIfEmpty(form, "decimal_quantity", 2);
-    setFormValueIfEmpty(form, "decimal_price", 2);
-    setFormValueIfEmpty(form, "decimal_document", 2);
+    setFormValueIfEmpty(form, "dateformat", "dd/MM/yyyy");
+    setFormValueIfEmpty(form, "yeartype", "buddhist");
+    setFormValueIfEmpty(form, "decimalquantity", 2);
+    setFormValueIfEmpty(form, "decimalprice", 2);
+    setFormValueIfEmpty(form, "decimaldocument", 2);
     const timezone = stringValue(form.timezone);
     if (timezone) applyTimezoneMetaToForm(form, "timezone", timezone);
     return;
@@ -14852,11 +14851,11 @@ function applyCountryDefaultsToForm(
 function syncCompanyLanguageForm(form: FormState) {
   const defaultCode = supportedLanguageCode(form["settings.language"], "th");
   const configs = normalizeLanguageConfigs(
-    form["settings.language_configs"] ?? form["settings.languageconfigs"],
+    form["settings.languageconfigs"] ?? form["settings.languageconfigs"],
     defaultCode,
   );
   form["settings.language"] = configs[0]?.code ?? defaultCode;
-  form["settings.language_configs"] = configs;
+  form["settings.languageconfigs"] = configs;
   delete form["settings.languageconfigs"];
 }
 
@@ -14877,8 +14876,8 @@ function applyTimezoneMetaToForm(
   const prefix = key.includes(".")
     ? `${key.split(".").slice(0, -1).join(".")}.`
     : "";
-  setFormValueIfEmpty(form, `${prefix}timezone_label`, meta.label);
-  setFormValueIfEmpty(form, `${prefix}timezone_offset`, meta.offset);
+  setFormValueIfEmpty(form, `${prefix}timezonelabel`, meta.label);
+  setFormValueIfEmpty(form, `${prefix}timezoneoffset`, meta.offset);
 }
 
 function buildPayload(
@@ -14977,7 +14976,7 @@ function buildPayload(
             ? 0
             : Number(value),
       );
-    else if (field.key === "api_key" && !String(value ?? "").trim()) {
+    else if (field.key === "apikey" && !String(value ?? "").trim()) {
       deleteByPath(payload, field.key);
     } else {
       setByPath(payload, field.key, String(value ?? "").trim());
@@ -14998,23 +14997,23 @@ function buildPayload(
     else delete payload.holdingcode;
     payload.guidfixed = stringValue(payload.guidfixed) || newClientGuidFixed();
     payload.updatedat = now;
-    payload.updated_by = auth.username;
+    payload.updatedby = auth.username;
     if (!editing) {
       payload.createdat = now;
-      payload.created_by = auth.username;
+      payload.createdby = auth.username;
     }
   }
 
   if (config.kind === "goapi-crud") {
     payload.holdingcode = workspace.shop.holdingcode;
-    payload.created_by = payload.created_by ?? auth.username;
-    if (!editing && config.slug === "mcp_apikey")
+    payload.createdby = payload.createdby ?? auth.username;
+    if (!editing && config.slug === "mcpapikey")
       payload.createWithExport = true;
   }
 
   if (config.kind === "ai-provider") {
     payload.holdingcode = workspace.shop.holdingcode;
-    if (!payload.api_key && String(payload.provider_name) !== "ollama") {
+    if (!payload.apikey && String(payload.providername) !== "ollama") {
       throw new Error(
         language === "th"
           ? "กรุณากรอก API Key เมื่อบันทึก AI Provider"
@@ -15025,11 +15024,11 @@ function buildPayload(
 
   if (config.kind === "company") {
     const configs = normalizeLanguageConfigs(
-      getByPath(payload, "settings.language_configs") ?? getByPath(payload, "settings.languageconfigs"),
+      getByPath(payload, "settings.languageconfigs") ?? getByPath(payload, "settings.languageconfigs"),
       form["settings.language"] ?? getByPath(payload, "settings.language"),
       { forcePrimaryFirst: true },
     );
-    setByPath(payload, "settings.language_configs", configs);
+    setByPath(payload, "settings.languageconfigs", configs);
     deleteByPath(payload, "settings.languageconfigs");
     setByPath(payload, "settings.language", configs[0]?.code ?? "th");
     payload.holdingcode = workspace.shop.holdingcode;
@@ -15073,14 +15072,14 @@ function buildPayload(
       );
       setByPath(
         payload,
-        "timezone_label",
-        stringValue(getByPath(payload, "timezone_label")) || meta.label,
+        "timezonelabel",
+        stringValue(getByPath(payload, "timezonelabel")) || meta.label,
       );
       setByPath(
         payload,
-        "timezone_offset",
+        "timezoneoffset",
         normalizeUtcOffset(
-          stringValue(getByPath(payload, "timezone_offset")) || meta.offset,
+          stringValue(getByPath(payload, "timezoneoffset")) || meta.offset,
         ),
       );
     }
@@ -15092,7 +15091,7 @@ function buildPayload(
     if (isEmailLike(payload.username)) {
       payload.email = payload.username;
     }
-    if (isCreatorRecord(payload, workspace)) payload.is_access_disabled = false;
+    if (isCreatorRecord(payload, workspace)) payload.isaccessdisabled = false;
   }
 
   if (config.slug === "department") {
@@ -15105,10 +15104,10 @@ function buildPayload(
   if (config.kind === "restaurant-setting") {
     const scope = resolveDateTimeScope(workspace);
     Object.assign(payload, dateTimeScopePayload(scope));
-    if (config.slug === "holiday_screen") {
+    if (config.slug === "holidayscreen") {
       const localDate = String(payload.date ?? "").trim();
-      const utcDate = localDateToUtcIso(localDate, scope.timezone_offset);
-      if (utcDate) payload.date_utc = utcDate;
+      const utcDate = localDateToUtcIso(localDate, scope.timezoneoffset);
+      if (utcDate) payload.dateutc = utcDate;
     }
   }
 
@@ -15131,12 +15130,12 @@ function resolveDateTimeScope(
   const branchguid = stringValue(branch?.guidfixed);
   const shopTimezone = stringValue(getByPath(shopInfo, "settings.timezone"));
   const shopTimezoneLabel = stringValue(
-    getByPath(shopInfo, "settings.timezone_label"),
+    getByPath(shopInfo, "settings.timezonelabel"),
   );
   const shopTimezoneOffset = stringValue(
-    getByPath(shopInfo, "settings.timezone_offset"),
+    getByPath(shopInfo, "settings.timezoneoffset"),
   );
-  const branchYear = stringValue(branch?.year_type).toLowerCase();
+  const branchYear = stringValue(branch?.yeartype).toLowerCase();
   const useBuddhistCalendar = booleanLikeValue(
     getByPath(shopInfo, "settings.usebuddhistcalendar"),
   );
@@ -15155,13 +15154,13 @@ function resolveDateTimeScope(
     branchcode,
     branchguid,
     timezone: stringValue(branch?.timezone) || shopTimezone,
-    timezone_label:
-      stringValue(branch?.timezone_label) ||
+    timezonelabel:
+      stringValue(branch?.timezonelabel) ||
       shopTimezoneLabel ||
       stringValue(branch?.timezone) ||
       shopTimezone,
-    timezone_offset: normalizeUtcOffset(
-      stringValue(branch?.timezone_offset) || shopTimezoneOffset,
+    timezoneoffset: normalizeUtcOffset(
+      stringValue(branch?.timezoneoffset) || shopTimezoneOffset,
     ),
     calendarYearType,
   };
@@ -15169,13 +15168,13 @@ function resolveDateTimeScope(
 
 function dateTimeScopePayload(scope: DateTimeScope): SettingRecord {
   return {
-    branch_key: scope.key,
+    branchkey: scope.key,
     branchcode: scope.branchcode,
     branchguid: scope.branchguid,
     timezone: scope.timezone,
-    timezone_label: scope.timezone_label,
-    timezone_offset: scope.timezone_offset,
-    calendar_year_type: scope.calendarYearType,
+    timezonelabel: scope.timezonelabel,
+    timezoneoffset: scope.timezoneoffset,
+    calendaryeartype: scope.calendarYearType,
   };
 }
 
@@ -15214,14 +15213,14 @@ function productCategoryParentGuid(
   record: SettingRecord | null | undefined,
 ): string {
   if (!record) return "";
-  return stringValue(record.parent_guid ?? record.parentguid);
+  return stringValue(record.parentguid ?? record.parentguid);
 }
 
 function productCategoryGroupNumber(
   record: SettingRecord | null | undefined,
 ): number {
   if (!record) return 0;
-  const value = Number(record.group_number ?? record.groupnumber ?? 0);
+  const value = Number(record.groupnumber ?? record.groupnumber ?? 0);
   return Number.isFinite(value) ? value : 0;
 }
 
@@ -15271,17 +15270,17 @@ function recordId(
       record.guidfixed ??
       record.id ??
       record._id ??
-      record.approval_code ??
-      record.permission_code ??
-      record.group_code ??
-      record.employee_code ??
+      record.approvalcode ??
+      record.permissioncode ??
+      record.groupcode ??
+      record.employeecode ??
       record.approvalCode ??
       record.permissionCode ??
       record.groupCode ??
       record.employeeCode ??
       record.code ??
       record.holdingcode ??
-      record.provider_name ??
+      record.providername ??
       "",
   );
 }
@@ -15291,7 +15290,7 @@ function recordTitle(
   config: SystemSettingConfig | undefined,
   language: LanguageCode,
 ): string {
-  if (config?.slug === "active_languages")
+  if (config?.slug === "activelanguages")
     return systemSettingLabel(config, language);
   const names =
     getByPath(record, "names") ??
@@ -15302,14 +15301,14 @@ function recordTitle(
   return String(
       record.name ??
       record.name1 ??
-      record.permission_name ??
-      record.approval_name ??
-      record.employee_name ??
+      record.permissionname ??
+      record.approvalname ??
+      record.employeename ??
       record.permissionName ??
       record.approvalName ??
       record.employeeName ??
       record.username ??
-      record.provider_name ??
+      record.providername ??
       record.code ??
       record.guidfixed ??
       record.guidfixed ??
@@ -15322,7 +15321,7 @@ function recordBranchCaption(record: SettingRecord): string {
   return (
     stringValue(record.branchcode) ||
     stringValue(record.branchguid) ||
-    stringValue(record.branch_key)
+    stringValue(record.branchkey)
   );
 }
 
@@ -15330,7 +15329,7 @@ function recordBranchCaption(record: SettingRecord): string {
 
 function userAccessDisabled(record: SettingRecord): boolean {
   return Boolean(
-    record.is_access_disabled ?? record.is_access_disabled ?? false,
+    record.isaccessdisabled ?? record.isaccessdisabled ?? false,
   );
 }
 
@@ -15406,7 +15405,7 @@ function isProductUnitOption(value: unknown): value is ProductUnitOption {
 }
 
 function productUnitCode(unit: ProductUnitOption | SettingRecord): string {
-  return stringValue(unit.unit_code ?? unit.unitcode);
+  return stringValue(unit.unitcode ?? unit.unitcode);
 }
 
 function unitDisplayName(
@@ -15624,10 +15623,10 @@ function extractUploadUri(payload: unknown): string {
   const direct = stringValue(
     payload.uri ??
       payload.url ??
-      payload.file_url ??
+      payload.fileurl ??
       payload.fileUrl ??
       payload.imageurl ??
-      payload.image_uri,
+      payload.imageuri,
   );
   if (direct) return direct;
   const data = payload.data;
@@ -15635,10 +15634,10 @@ function extractUploadUri(payload: unknown): string {
   return stringValue(
     data.uri ??
       data.url ??
-      data.file_url ??
+      data.fileurl ??
       data.fileUrl ??
       data.imageurl ??
-      data.image_uri,
+      data.imageuri,
   );
 }
 
@@ -15953,12 +15952,12 @@ function booleanLikeValue(value: unknown): boolean {
 
 function isDecimalSettingField(key: string): boolean {
   return (
-    key === "decimal_quantity" ||
-    key === "decimal_price" ||
-    key === "decimal_document" ||
-    key === "settings.decimal_quantity" ||
-    key === "settings.decimal_price" ||
-    key === "settings.decimal_document"
+    key === "decimalquantity" ||
+    key === "decimalprice" ||
+    key === "decimaldocument" ||
+    key === "settings.decimalquantity" ||
+    key === "settings.decimalprice" ||
+    key === "settings.decimaldocument"
   );
 }
 
@@ -16028,8 +16027,8 @@ function setTimezoneDerivedPayload(
   const prefix = key.includes(".")
     ? `${key.split(".").slice(0, -1).join(".")}.`
     : "";
-  setByPath(payload, `${prefix}timezone_label`, meta.label);
-  setByPath(payload, `${prefix}timezone_offset`, meta.offset);
+  setByPath(payload, `${prefix}timezonelabel`, meta.label);
+  setByPath(payload, `${prefix}timezoneoffset`, meta.offset);
 }
 
 function timezoneUtcOffset(timeZone: string): string {
@@ -16092,11 +16091,11 @@ function parseJsonField(value: unknown, key: string): unknown {
   if (typeof value !== "string") return value;
   const trimmed = value.trim();
   if (!trimmed)
-    return key === "permission_codes" ||
+    return key === "permissioncodes" ||
       key === "permissionCodes" ||
-      key === "approval_codes" ||
+      key === "approvalcodes" ||
       key === "approvalCodes" ||
-      key === "allowed_tools"
+      key === "allowedtools"
       ? []
       : {};
   return JSON.parse(trimmed);
@@ -16104,36 +16103,36 @@ function parseJsonField(value: unknown, key: string): unknown {
 
 function normalizeVariantMasterPayload(payload: SettingRecord, slug: string) {
   if (
-    slug !== "product_color" &&
-    slug !== "product_size" &&
-    slug !== "product_variant_matrix"
+    slug !== "productcolor" &&
+    slug !== "productsize" &&
+    slug !== "productvariantmatrix"
   )
     return;
 
   uppercasePayloadField(payload, "code");
 
-  if (slug === "product_color") {
-    const rawHex = stringValue(payload.hex_color);
-    if (rawHex) payload.hex_color = normalizeHexColor(rawHex);
+  if (slug === "productcolor") {
+    const rawHex = stringValue(payload.hexcolor);
+    if (rawHex) payload.hexcolor = normalizeHexColor(rawHex);
     payload.aliases = normalizeStringArray(payload.aliases);
     return;
   }
 
-  if (slug === "product_size") {
+  if (slug === "productsize") {
     payload.aliases = normalizeStringArray(payload.aliases);
     return;
   }
 
-  if (Array.isArray(payload.option_tiers)) {
-    payload.option_tiers = payload.option_tiers.map((entry) => {
+  if (Array.isArray(payload.optiontiers)) {
+    payload.optiontiers = payload.optiontiers.map((entry) => {
       if (!isRecord(entry)) return entry;
       return {
         ...entry,
-        option_code: uppercaseString(entry.option_code),
+        optioncode: uppercaseString(entry.optioncode),
         values: Array.isArray(entry.values)
           ? entry.values.map((value) =>
               isRecord(value)
-                ? { ...value, value_code: uppercaseString(value.value_code) }
+                ? { ...value, valuecode: uppercaseString(value.valuecode) }
                 : uppercaseString(value),
             )
           : entry.values,
@@ -16141,55 +16140,55 @@ function normalizeVariantMasterPayload(payload: SettingRecord, slug: string) {
     });
   }
 
-  if (Array.isArray(payload.sku_combinations)) {
-    payload.sku_combinations = payload.sku_combinations.map((entry) => {
+  if (Array.isArray(payload.skucombinations)) {
+    payload.skucombinations = payload.skucombinations.map((entry) => {
       if (!isRecord(entry)) return entry;
       return {
         ...entry,
-        seller_sku: uppercaseString(entry.seller_sku),
+        sellersku: uppercaseString(entry.sellersku),
         barcode: uppercaseString(entry.barcode),
         gtin: uppercaseString(entry.gtin),
-        unit_code: uppercaseString(entry.unit_code),
-        option_values: Array.isArray(entry.option_values)
-          ? entry.option_values.map(uppercaseString)
-          : entry.option_values,
-        serial_identifiers: Array.isArray(entry.serial_identifiers)
-          ? entry.serial_identifiers.map(uppercaseString)
-          : entry.serial_identifiers,
+        unitcode: uppercaseString(entry.unitcode),
+        optionvalues: Array.isArray(entry.optionvalues)
+          ? entry.optionvalues.map(uppercaseString)
+          : entry.optionvalues,
+        serialidentifiers: Array.isArray(entry.serialidentifiers)
+          ? entry.serialidentifiers.map(uppercaseString)
+          : entry.serialidentifiers,
       };
     });
   }
 
-  if (Array.isArray(payload.media_assets)) {
-    payload.media_assets = payload.media_assets.map((entry) => {
+  if (Array.isArray(payload.mediaassets)) {
+    payload.mediaassets = payload.mediaassets.map((entry) => {
       if (!isRecord(entry)) return entry;
       return {
         ...entry,
-        option_code: uppercaseString(entry.option_code),
-        option_value: uppercaseString(entry.option_value),
+        optioncode: uppercaseString(entry.optioncode),
+        optionvalue: uppercaseString(entry.optionvalue),
       };
     });
   }
 
-  if (Array.isArray(payload.specification_groups)) {
-    payload.specification_groups = payload.specification_groups.map((group) => {
+  if (Array.isArray(payload.specificationgroups)) {
+    payload.specificationgroups = payload.specificationgroups.map((group) => {
       if (!isRecord(group)) return group;
       return {
         ...group,
-        group_code: uppercaseString(group.group_code),
+        groupcode: uppercaseString(group.groupcode),
         attributes: Array.isArray(group.attributes)
           ? group.attributes.map((attribute) => {
               if (!isRecord(attribute)) return attribute;
               return {
                 ...attribute,
-                attribute_code: uppercaseString(attribute.attribute_code),
+                attributecode: uppercaseString(attribute.attributecode),
                 values: Array.isArray(attribute.values)
                   ? attribute.values.map((value) =>
                       isRecord(value)
                         ? {
                             ...value,
-                            value_code: uppercaseString(value.value_code),
-                            unit_code: uppercaseString(value.unit_code),
+                            valuecode: uppercaseString(value.valuecode),
+                            unitcode: uppercaseString(value.unitcode),
                           }
                         : value,
                     )
@@ -16201,12 +16200,12 @@ function normalizeVariantMasterPayload(payload: SettingRecord, slug: string) {
     });
   }
 
-  if (Array.isArray(payload.import_attribute_maps)) {
-    payload.import_attribute_maps = payload.import_attribute_maps.map((entry) => {
+  if (Array.isArray(payload.importattributemaps)) {
+    payload.importattributemaps = payload.importattributemaps.map((entry) => {
       if (!isRecord(entry)) return entry;
       return {
         ...entry,
-        target_option_code: uppercaseString(entry.target_option_code),
+        targetoptioncode: uppercaseString(entry.targetoptioncode),
       };
     });
   }
@@ -16349,7 +16348,7 @@ function safeJsonParse(value: string, fallback: unknown): unknown {
 }
 
 function isActiveRecord(record: SettingRecord): boolean {
-  if ("is_access_disabled" in record || "is_access_disabled" in record)
+  if ("isaccessdisabled" in record || "isaccessdisabled" in record)
     return !userAccessDisabled(record);
   if ("isactive" in record) return Boolean(record.isactive);
   if ("isActive" in record) return Boolean(record.isActive);

@@ -73,19 +73,19 @@ func insertDocListWithTx(ctx context.Context, tx *sql.Tx, data []models.DocStruc
 			// เตรียม columns สำหรับ COPY doc
 			columns := []string{
 				"transflag", "docno", "custcode", "docdatetime", "perioddatetime", "taxdocno",
-				"total_amount", "roundamount", "paytype", "paycashamount", "paycashchange",
-				"paycashbalance", "deliverycode", "checksum", "branch_id", "slipurl",
+				"totalamount", "roundamount", "paytype", "paycashamount", "paycashchange",
+				"paycashbalance", "deliverycode", "checksum", "branchid", "slipurl",
 				"salechannelcode", "deliveryamount", "iscancel", "cancelreason",
 				"guidpos", "guidbranch", "guidfixed",
-				"creator_code", "creator_name", "createdat",
+				"creatorcode", "creatorname", "createdat",
 				// Multi-Currency Fields
-				"currency", "currency_symbol",
-				"doc_currency", "doc_currency_symbol",
-				"exchange_rate", "totalamount_doc",
+				"currency", "currencysymbol",
+				"doccurrency", "doccurrencysymbol",
+				"exchangerate", "totalamountdoc",
 				// Soft Delete
 				"isdelete",
 				// สถานะการอนุมัติ
-				"approval_status",
+				"approvalstatus",
 			}
 
 			// แปลง Doc เป็น [][]any สำหรับ COPY
@@ -224,7 +224,7 @@ func insertDocListWithTx(ctx context.Context, tx *sql.Tx, data []models.DocStruc
 		if len(validPaymentData) > 0 {
 			// เตรียม columns สำหรับ COPY doc payment
 			columns := []string{
-				"branch_id", "docdatetime", "perioddatetime", "provider_name", "amount",
+				"branchid", "docdatetime", "perioddatetime", "providername", "amount",
 				"description", "docno", "transflag", "guidfixed", "guidbranch",
 			}
 
@@ -305,12 +305,12 @@ func insertDocDetailListWithTx(ctx context.Context, tx *sql.Tx, holdingCode stri
 	}
 
 	columns := []string{
-		"docdatetime", "docno", "line_number", "transflag", "calcflag", "calcseq",
+		"docdatetime", "docno", "linenumber", "transflag", "calcflag", "calcseq",
 		"itemcode", "description", "barcodemain", "barcode", "unitcode",
 		"whcode", "locationcode", "totalqty", "price", "priceexcludevat",
-		"unitstand", "unitdivide", "docref", "sum_amount", "iscancel",
-		"price_doc", "sumamount_doc",
-		"discountamount_doc", "priceexcludevat_doc", "sumamountexcludevat_doc", "totalvaluevat_doc",
+		"unitstand", "unitdivide", "docref", "sumamount", "iscancel",
+		"pricedoc", "sumamountdoc",
+		"discountamountdoc", "priceexcludevatdoc", "sumamountexcludevatdoc", "totalvaluevatdoc",
 	}
 
 	// Pre-fetch product info to avoid post-insert UPDATE

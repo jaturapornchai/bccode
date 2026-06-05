@@ -1269,7 +1269,7 @@ function createHoldingPayload(holdingCode: string, name: string, ownerEmail: str
       languageconfigs: [{ code: "th", codetranslator: "th", name: "ภาษาไทย", is_use: true, isdefault: true }],
       latitude: 0,
       longitude: 0,
-      tax_id: "",
+      taxid: "",
       vatrate: 7,
       vattypesale: 0,
       vattypepurchase: 0,

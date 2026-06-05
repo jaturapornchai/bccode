@@ -88,9 +88,9 @@ func ReportProductBalanceByLocationAndItem(holdingCode string, guid string, fina
 		Columns: []models.ReportColumnModel{
 			{Name: GetColumnText("warehouse", languageCode), Width: 1, Align: 0},    // คลัง
 			{Name: GetColumnText("location", languageCode), Width: 1, Align: 0},     // ตำแหน่ง
-			{Name: GetColumnText("item_code", languageCode), Width: 1, Align: 0},    // รหัสสินค้า
+			{Name: GetColumnText("itemcode", languageCode), Width: 1, Align: 0},     // รหัสสินค้า
 			{Name: GetColumnText("product_name", languageCode), Width: 3, Align: 0}, // ชื่อสินค้า
-			{Name: GetColumnText("barcode_list", languageCode), Width: 2, Align: 0}, // รหัส/Barcode (หลายบาร์โค้ด)
+			{Name: GetColumnText("barcodelist", languageCode), Width: 2, Align: 0},  // รหัส/Barcode (หลายบาร์โค้ด)
 			{Name: GetColumnText("unit", languageCode), Width: 1, Align: 0},         // หน่วยนับ
 			{Name: GetColumnText("quantity", languageCode), Width: 1, Align: 2},     // จำนวน
 			{Name: GetColumnText("balance_word", languageCode), Width: 1, Align: 0}, // ยอดคงเหลือ (ตัวหนังสือ)

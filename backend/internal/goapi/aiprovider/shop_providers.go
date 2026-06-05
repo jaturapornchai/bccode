@@ -169,7 +169,7 @@ func updateShopProviderCooldownDB(holdingCode, providerName, errMsg string, cool
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	filter := bson.M{"holdingcode": holdingCode, "provider_name": providerName}
+	filter := bson.M{"holdingcode": holdingCode, "providername": providerName}
 	update := bson.M{
 		"$set": bson.M{
 			"lasterror":     errMsg,

@@ -35,12 +35,12 @@ import { cn } from "@/lib/utils";
 interface BOMItemInput {
   barcodeguidfixed?: string;
   barcode: string;
-  ref_type?: "product" | "recipe";
+  reftype?: "product" | "recipe";
   names: LocalizedName[];
-  item_unit_code: string;
+  itemunitcode: string;
   itemunitnames: LocalizedName[];
   qty: number;
-  yield_percent: number; // default 100
+  yieldpercent: number; // default 100
   averagecost: number;
   materialtype?: number;
   bom?: BOMItemInput[];
@@ -48,18 +48,18 @@ interface BOMItemInput {
 
 interface BOMVersion {
   guidfixed: string;
-  start_date: string;
-  end_date: string | null;
+  startdate: string;
+  enddate: string | null;
   bom: BOMItemInput[];
 }
 
 interface ProductBOMRecord {
   guidfixed: string;
-  barcode_guid?: string;
+  barcodeguid?: string;
   barcode: string;
   itemcode?: string;
   names: LocalizedName[];
-  item_unit_code: string;
+  itemunitcode: string;
   itemunitnames?: LocalizedName[];
   price?: number;
   prices?: { price: number }[];
@@ -132,7 +132,7 @@ export function ProductBomEditor({
     setUnsavedChanges(true);
   };
 
-  const updateVersionDate = (key: "start_date" | "end_date", value: string | null) => {
+  const updateVersionDate = (key: "startdate" | "enddate", value: string | null) => {
     setBomVersions((prev) => {
       const updated = [...prev];
       if (updated[selectedVersionIdx]) {
@@ -155,8 +155,8 @@ export function ProductBomEditor({
 
     const newVer: BOMVersion = {
       guidfixed: "",
-      start_date: new Date().toISOString().substring(0, 10),
-      end_date: null,
+      startdate: new Date().toISOString().substring(0, 10),
+      enddate: null,
       bom: copiedBOM,
     };
 
@@ -204,15 +204,15 @@ export function ProductBomEditor({
   useEffect(() => {
     const mapItems = (items: any[] = []): BOMItemInput[] =>
       items.map((item) => ({
-        barcodeguidfixed: item.guidfixed || item.barcodeguidfixed || item.barcode_guid || "",
+        barcodeguidfixed: item.guidfixed || item.barcodeguidfixed || item.barcodeguid || "",
         barcode: item.barcode || "",
-        ref_type: item.ref_type === "recipe" ? "recipe" : "product",
+        reftype: item.reftype === "recipe" ? "recipe" : "product",
         names: item.names || [],
-        item_unit_code: item.item_unit_code || "",
+        itemunitcode: item.itemunitcode || "",
         itemunitnames: item.itemunitnames || [],
         qty: item.qty ?? 1,
-        yield_percent: item.yield_percent ?? 100,
-        averagecost: item.averagecost ?? item.unit_cost ?? 0,
+        yieldpercent: item.yieldpercent ?? 100,
+        averagecost: item.averagecost ?? item.unitcost ?? 0,
         materialtype: item.materialtype ?? 0,
         bom: item.bom ? mapItems(item.bom) : [],
       }));
@@ -231,22 +231,22 @@ export function ProductBomEditor({
         record.boms && record.boms.length > 0
           ? record.boms.map((ver: any) => ({
               guidfixed: ver.guidfixed || "",
-              start_date: ver.start_date ? ver.start_date.substring(0, 10) : new Date().toISOString().substring(0, 10),
-              end_date: ver.end_date ? ver.end_date.substring(0, 10) : null,
+              startdate: ver.startdate ? ver.startdate.substring(0, 10) : new Date().toISOString().substring(0, 10),
+              enddate: ver.enddate ? ver.enddate.substring(0, 10) : null,
               bom: mapItems(ver.bom || []),
             }))
           : [
               {
                 guidfixed: "",
-                start_date: new Date().toISOString().substring(0, 10),
-                end_date: null,
+                startdate: new Date().toISOString().substring(0, 10),
+                enddate: null,
                 bom: defaultBom,
               },
             ];
 
       setParentItemCode(record.barcode || record.itemcode || "");
       setParentNames(record.names || []);
-      setParentUnitCode(record.item_unit_code || "RECIPE");
+      setParentUnitCode(record.itemunitcode || "RECIPE");
       setParentUnitNames(record.itemunitnames || [{ code: "th", name: "สูตร" }]);
       setParentPrice(record.price ?? record.prices?.[0]?.price ?? 0);
       setBomVersions(versions);
@@ -266,7 +266,7 @@ export function ProductBomEditor({
     }
 
     setLoading(true);
-    fetch(`/api/system-settings/product_bom/${encodeURIComponent(selectedRecord.guidfixed)}?holdingcode=${encodeURIComponent(workspace.shop.holdingcode)}`, {
+    fetch(`/api/system-settings/productbom/${encodeURIComponent(selectedRecord.guidfixed)}?holdingcode=${encodeURIComponent(workspace.shop.holdingcode)}`, {
       headers: {
         Authorization: `Bearer ${auth.token}`,
         "x-bc-backend-url": auth.backendUrl || "",
@@ -313,7 +313,7 @@ export function ProductBomEditor({
   const calculateTotalCost = (items: BOMItemInput[]): number => {
     return items.reduce((sum, item) => {
       const qty = item.qty || 0;
-      const yieldPct = item.yield_percent || 100;
+      const yieldPct = item.yieldpercent || 100;
       const unitCost =
         item.bom && item.bom.length > 0 ? calculateTotalCost(item.bom) : item.averagecost || 0;
       const divisor = yieldPct > 0 ? yieldPct / 100 : 1;
@@ -322,7 +322,7 @@ export function ProductBomEditor({
   };
 
   const hasNestedBOM = (item: BOMItemInput) => Boolean(item.bom && item.bom.length > 0);
-  const isRecipeComponent = (item: BOMItemInput) => item.ref_type === "recipe" || hasNestedBOM(item);
+  const isRecipeComponent = (item: BOMItemInput) => item.reftype === "recipe" || hasNestedBOM(item);
   const componentUnitCost = (item: BOMItemInput) =>
     hasNestedBOM(item) ? calculateTotalCost(item.bom || []) : item.averagecost || 0;
 
@@ -409,12 +409,12 @@ export function ProductBomEditor({
     const newItem: BOMItemInput = {
       barcodeguidfixed: unitOpt.guidfixed,
       barcode: unitOpt.barcode,
-      ref_type: "product",
+      reftype: "product",
       names: productData.names || [],
-      item_unit_code: unitOpt.item_unit_code || "",
+      itemunitcode: unitOpt.itemunitcode || "",
       itemunitnames: unitOpt.itemunitnames || [],
       qty: 1,
-      yield_percent: 100,
+      yieldpercent: 100,
       averagecost: unitOpt.averagecost || productData.averagecost || 0,
       materialtype: materialType,
       bom: productData.bom || [],
@@ -446,7 +446,7 @@ export function ProductBomEditor({
       });
       return;
     }
-    if (bomItems.some((item) => item.ref_type === "recipe" && item.barcode === recipeCode)) {
+    if (bomItems.some((item) => item.reftype === "recipe" && item.barcode === recipeCode)) {
       confirm({
         title: language === "th" ? "สูตรย่อยอยู่ในรายการแล้ว" : "Sub-recipe Already Added",
         description: language === "th" ? "สูตรนี้อยู่ในรายการส่วนประกอบแล้ว" : "This sub-recipe is already in the component list.",
@@ -459,12 +459,12 @@ export function ProductBomEditor({
     const newItem: BOMItemInput = {
       barcodeguidfixed: recipe.guidfixed,
       barcode: recipeCode,
-      ref_type: "recipe",
+      reftype: "recipe",
       names: recipe.names || [],
-      item_unit_code: recipe.item_unit_code || "RECIPE",
+      itemunitcode: recipe.itemunitcode || "RECIPE",
       itemunitnames: recipe.itemunitnames || [{ code: "th", name: "สูตร" }],
       qty: 1,
-      yield_percent: 100,
+      yieldpercent: 100,
       averagecost: calculateTotalCost(recipe.bom || []),
       materialtype: recipe.materialtype ?? 0,
       bom: recipe.bom || [],
@@ -551,36 +551,36 @@ export function ProductBomEditor({
       const serializeItem = (item: BOMItemInput): Record<string, unknown> => ({
         guidfixed: item.barcodeguidfixed,
         barcode: item.barcode,
-        ref_type: item.ref_type || "product",
+        reftype: item.reftype || "product",
         names: item.names || [],
-        item_unit_code: item.item_unit_code || "",
+        itemunitcode: item.itemunitcode || "",
         itemunitnames: item.itemunitnames || [],
         condition: true,
         dividevalue: 1,
         standvalue: 1,
         qty: item.qty,
-        yield_percent: item.yield_percent,
+        yieldpercent: item.yieldpercent,
         averagecost: item.averagecost || 0,
         materialtype: item.materialtype ?? 0,
         bom: (item.bom || []).map(serializeItem),
       });
 
-      const sortedVersions = [...bomVersions].sort((a, b) => a.start_date.localeCompare(b.start_date));
+      const sortedVersions = [...bomVersions].sort((a, b) => a.startdate.localeCompare(b.startdate));
       const payloadBOMs = sortedVersions.map((v, idx) => {
         const nextVersion = sortedVersions[idx + 1];
-        const calculatedEndDate = nextVersion ? new Date(nextVersion.start_date).toISOString() : null;
+        const calculatedEndDate = nextVersion ? new Date(nextVersion.startdate).toISOString() : null;
 
         return {
           guidfixed: v.guidfixed || undefined,
-          start_date: new Date(v.start_date).toISOString(),
-          end_date: calculatedEndDate,
+          startdate: new Date(v.startdate).toISOString(),
+          enddate: calculatedEndDate,
           bom: v.bom.map(serializeItem),
         };
       });
 
       const nowStr = new Date().toISOString().substring(0, 10);
       const activeVerIndex = sortedVersions.reduce((activeIndex, currentVer, currentIndex) => {
-        if (currentVer.start_date <= nowStr) {
+        if (currentVer.startdate <= nowStr) {
           return currentIndex;
         }
         return activeIndex;
@@ -593,7 +593,7 @@ export function ProductBomEditor({
         guidfixed: isCreate ? undefined : selectedRecord.guidfixed,
         barcode: recipeCode,
         names: parentNames,
-        item_unit_code: parentUnitCode.trim() || "RECIPE",
+        itemunitcode: parentUnitCode.trim() || "RECIPE",
         itemunitnames: parentUnitNames,
         price: parentPrice,
         bom: activeBOM,
@@ -603,8 +603,8 @@ export function ProductBomEditor({
 
       const saveResponse = await fetch(
         isCreate
-          ? `/api/system-settings/product_bom?holdingcode=${encodeURIComponent(workspace.shop.holdingcode)}`
-          : `/api/system-settings/product_bom/${encodeURIComponent(selectedRecord.guidfixed)}?holdingcode=${encodeURIComponent(workspace.shop.holdingcode)}`,
+          ? `/api/system-settings/productbom?holdingcode=${encodeURIComponent(workspace.shop.holdingcode)}`
+          : `/api/system-settings/productbom/${encodeURIComponent(selectedRecord.guidfixed)}?holdingcode=${encodeURIComponent(workspace.shop.holdingcode)}`,
         {
           method: isCreate ? "POST" : "PUT",
           headers: {
@@ -657,7 +657,7 @@ export function ProductBomEditor({
       const isSubRecipe = isRecipeComponent(subItem);
       const isExpanded = expandedItems[subItem.barcode];
       const name = pickName(subItem.names, language) || subItem.barcode;
-      const unit = pickName(subItem.itemunitnames, language) || subItem.item_unit_code;
+      const unit = pickName(subItem.itemunitnames, language) || subItem.itemunitcode;
       const cost = componentUnitCost(subItem);
 
       return (
@@ -711,11 +711,11 @@ export function ProductBomEditor({
     const hasChildren = hasNestedBOM(item);
     const isSub = isRecipeComponent(item);
     const itemCost = componentUnitCost(item);
-    const yieldPct = item.yield_percent || 100;
+    const yieldPct = item.yieldpercent || 100;
     const divisor = yieldPct > 0 ? yieldPct / 100 : 1;
     const rowCost = (item.qty / divisor) * itemCost;
     const name = pickName(item.names, language) || item.barcode;
-    const unit = pickName(item.itemunitnames, language) || item.item_unit_code;
+    const unit = pickName(item.itemunitnames, language) || item.itemunitcode;
     const share = rollupCost > 0 ? (rowCost / rollupCost) * 100 : 0;
 
     return (
@@ -925,12 +925,12 @@ export function ProductBomEditor({
 
             <div className="flex flex-wrap gap-2.5">
               {(() => {
-                const sorted = [...bomVersions].sort((a, b) => a.start_date.localeCompare(b.start_date));
+                const sorted = [...bomVersions].sort((a, b) => a.startdate.localeCompare(b.startdate));
                 return sorted.map((ver, idx) => {
-                  const originalIdx = bomVersions.findIndex((v) => v.start_date === ver.start_date);
+                  const originalIdx = bomVersions.findIndex((v) => v.startdate === ver.startdate);
                   const isActive = originalIdx === selectedVersionIdx;
                   const nextVer = sorted[idx + 1];
-                  const displayEndDate = nextVer ? nextVer.start_date : (language === "th" ? 'ปัจจุบัน' : 'Present');
+                  const displayEndDate = nextVer ? nextVer.startdate : (language === "th" ? 'ปัจจุบัน' : 'Present');
 
                   return (
                     <div key={idx} className="flex items-center gap-1 group/btn select-none">
@@ -951,7 +951,7 @@ export function ProductBomEditor({
                       >
                         {language === "th" ? `สูตรที่ ${idx + 1}` : `Recipe v${idx + 1}`}
                         <span className="ml-1.5 text-[9px] opacity-75 font-mono">
-                          ({ver.start_date} - {displayEndDate})
+                          ({ver.startdate} - {displayEndDate})
                         </span>
                       </Button>
                       {bomVersions.length > 1 && (
@@ -980,8 +980,8 @@ export function ProductBomEditor({
                   <Input
                     type="date"
                     className="h-8.5 text-xs font-mono rounded-lg bg-background border-border/80 focus-visible:ring-sky-500"
-                    value={bomVersions[selectedVersionIdx].start_date || ""}
-                    onChange={(e) => updateVersionDate('start_date', e.target.value)}
+                    value={bomVersions[selectedVersionIdx].startdate || ""}
+                    onChange={(e) => updateVersionDate('startdate', e.target.value)}
                   />
                 </div>
               </div>
@@ -1019,10 +1019,10 @@ export function ProductBomEditor({
                     const isSubRecipe = isRecipeComponent(item);
                     const isExpanded = expandedItems[item.barcode];
                     const name = pickName(item.names, language) || item.barcode;
-                    const unit = pickName(item.itemunitnames, language) || item.item_unit_code;
+                    const unit = pickName(item.itemunitnames, language) || item.itemunitcode;
 
                     const unitCost = componentUnitCost(item);
-                    const divisor = item.yield_percent > 0 ? item.yield_percent / 100 : 1;
+                    const divisor = item.yieldpercent > 0 ? item.yieldpercent / 100 : 1;
                     const rowTotalCost = (item.qty / divisor) * unitCost;
 
                     return (
@@ -1114,11 +1114,11 @@ export function ProductBomEditor({
                             <Input
                               type="number"
                               className="h-8 text-right w-18 rounded-lg font-mono focus-visible:ring-indigo-500 bg-background"
-                              value={item.yield_percent}
+                              value={item.yieldpercent}
                               onChange={(e) =>
                                 updateItemProperty(
                                   index,
-                                  "yield_percent",
+                                  "yieldpercent",
                                   Math.min(100, Math.max(1, parseFloat(e.target.value) || 100))
                                 )
                               }
@@ -1355,7 +1355,7 @@ export function ProductBomEditor({
                 {(() => {
                   const unitOptions = ingredientProduct.unitOptions || toProductUnitOptions(ingredientProduct);
                   return unitOptions.map((opt: ProductUnitOption) => {
-                    const unitName = pickName(opt.itemunitnames, language) || opt.item_unit_code || "PCS";
+                    const unitName = pickName(opt.itemunitnames, language) || opt.itemunitcode || "PCS";
                     return (
                       <button
                         key={opt.barcode}
@@ -1367,7 +1367,7 @@ export function ProductBomEditor({
                         }}
                         className="flex flex-col items-start gap-1 p-3 rounded-xl border border-border bg-background hover:bg-muted/40 text-left transition-all duration-200 shadow-sm"
                       >
-                        <span className="text-xs font-bold text-foreground">{unitName} ({opt.item_unit_code})</span>
+                        <span className="text-xs font-bold text-foreground">{unitName} ({opt.itemunitcode})</span>
                         <span className="text-[10px] font-mono text-muted-foreground">
                           {language === "th" ? "บาร์โค้ดหน่วย: " : "Barcode: "}{opt.barcode}
                         </span>

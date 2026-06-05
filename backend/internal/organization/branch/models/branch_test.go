@@ -8,8 +8,8 @@ import (
 func TestBranchAcceptsMovedCompanyAndBranchFields(t *testing.T) {
 	payload := []byte(`{
 		"code":"00000",
-		"company_registration_no":"0100000000000",
-		"is_vat_registered":true,
+		"companyregistrationno":"0100000000000",
+		"isvatregistered":true,
 		"contact":{
 			"country_code":"TH",
 			"province_code":"10",
@@ -18,8 +18,8 @@ func TestBranchAcceptsMovedCompanyAndBranchFields(t *testing.T) {
 			"zip_code":"10200",
 			"phone_number":"021234567"
 		},
-		"pos":{"tax_id":"0100000000000"},
-		"year_type":"buddhist",
+		"pos":{"taxid":"0100000000000"},
+		"yeartype":"buddhist",
 		"is_retail":true,
 		"is_service":true,
 		"is_mobile_shop":true

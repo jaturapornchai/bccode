@@ -96,21 +96,21 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 		"holdingcode": "2PrIIqTWxoBXv16K310sNwfHmfY",
 		"guidfixed": "2RFXUaW570MAWkgYgDduGM9WYIk",
 		"docno": "ST2023061500001",
-		"guid_ref": "e846ae42-f506-4ee1-b588-7d395de13e7e",
+		"guidref": "e846ae42-f506-4ee1-b588-7d395de13e7e",
 		"docdatetime": "2023-06-15T16:33:32.000Z",
 		"docrefno": "SALEINVOICE",
 		"docrefdate": "2023-06-15T16:33:32.000Z",
 		"taxdocno": "ST2023061500001",
 		"taxdocdate": "2023-06-15T16:33:32.000Z",
-		"doc_type": 0,
+		"doctype": 0,
 		"inquirytype": 22,
 		"discountword": "9",
-		"total_cost": 0,
+		"totalcost": 0,
 		"totaldiscount": 9,
 		"totalbeforevat": 261.68224299065423,
 		"totalvatvalue": 18.317757009345794,
 		"totalexceptvat": 2,
-		"total_amount": 280,
+		"totalamount": 280,
 		"salecode": "",
 		"posid": "",
 		"salename": "",
@@ -118,7 +118,7 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 		"vatrate": 7,
 		"totalvalue": 280,
 		"docreftype": 4,
-		"vat_type": 1,
+		"vattype": 1,
 		"totalaftervat": 280,
 		"transflag": 48,
 		"status": 0,
@@ -160,7 +160,7 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 		"cashiercode": "",
 		"details": [
 			{
-				"line_number": 1,
+				"linenumber": 1,
 				"docdatetime": "2023-06-15T16:33:35.735Z",
 				"item_guid": "2PrfeYHTr2Sbo1oRU9rgdm9H35r",
 				"barcode": "BARCODE003",
@@ -171,7 +171,7 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 				"discountamount": 7,
 				"price": 280,
 				"priceexcludevat": 261.68224299065423,
-				"sum_amount": 280,
+				"sumamount": 280,
 				"sumamountexcludevat": 261.68224299065423,
 				"totalvaluevat": 18.317757009345794,
 				"dividevalue": 1,
@@ -179,12 +179,12 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 				"inquirytype": 0,
 				"totalqty": 1,
 				"calcflag": 1,
-				"vat_type": 2,
+				"vattype": 2,
 				"averagecost": 0,
-				"tax_type": 0,
+				"taxtype": 0,
 				"ispos": 0,
 				"multiunit": true,
-				"item_type": 0,
+				"itemtype": 0,
 				"remark": "-",
 				"sumofcost": 0,
 				"docref": "ITEM001",
@@ -328,7 +328,7 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 	assert.Equal(t, get.TransFlag, want.TransFlag, "transflag")
 	assert.Equal(t, get.DocNo, want.DocNo, "docno")
 	assert.Equal(t, get.DocDate, want.DocDate, "docdate")
-	assert.Equal(t, get.GuidRef, want.GuidRef, "guid_ref")
+	assert.Equal(t, get.GuidRef, want.GuidRef, "guidref")
 	assert.Equal(t, get.DocRefType, want.DocRefType, "docreftype")
 	assert.Equal(t, get.DocRefNo, want.DocRefNo, "docrefno")
 	assert.Equal(t, get.DocRefDate, want.DocRefDate, "docrefdate")
@@ -337,7 +337,7 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 	assert.Equal(t, get.Description, want.Description, "description")
 	assert.Equal(t, get.InquiryType, want.InquiryType, "inquirytype")
 	assert.Equal(t, get.VatRate, want.VatRate, "vatrate")
-	assert.Equal(t, get.VatType, want.VatType, "vat_type")
+	assert.Equal(t, get.VatType, want.VatType, "vattype")
 	assert.Equal(t, get.DiscountWord, want.DiscountWord, "discountword")
 	assert.Equal(t, get.TotalDiscount, want.TotalDiscount, "totaldiscount")
 	assert.Equal(t, get.TotalValue, want.TotalValue, "totalvalue")
@@ -345,7 +345,7 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 	assert.Equal(t, get.TotalExceptVat, want.TotalExceptVat, "totalexceptvat")
 	assert.Equal(t, get.TotalVatValue, want.TotalVatValue, "totalvatvalue")
 	assert.Equal(t, get.TotalAfterVat, want.TotalAfterVat, "totalaftervat")
-	assert.Equal(t, get.TotalAmount, want.TotalAmount, "total_amount")
+	assert.Equal(t, get.TotalAmount, want.TotalAmount, "totalamount")
 
 	assert.Equal(t, get.DebtorCode, want.DebtorCode, "creditorcode")
 	assert.Equal(t, *get.DebtorNames[0].Name, *want.DebtorNames[0].Name, "creditorname")

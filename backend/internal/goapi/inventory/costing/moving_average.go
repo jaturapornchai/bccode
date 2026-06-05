@@ -11,7 +11,7 @@ import (
 
 // MovingAverageEngine — ต้นทุนเฉลี่ยเคลื่อนที่ (Moving Weighted Average)
 // คำนวณต้นทุนเฉลี่ยใหม่ทุกครั้งที่รับสินค้าเข้า
-// สูตร: new_avg = (old_qty × old_avg + received_qty × received_cost) / (old_qty + received_qty)
+// สูตร: new_avg = (old_qty × old_avg + receivedqty × received_cost) / (old_qty + receivedqty)
 type MovingAverageEngine struct{}
 
 func (e *MovingAverageEngine) Method() string { return inv.CostingMethodMovingAverage }
@@ -346,7 +346,7 @@ func (e *MovingAverageEngine) GetCurrentValuation(ctx context.Context, tx *sql.T
 			        COALESCE(SUM(currentqty), 0),
 			        CASE WHEN COALESCE(SUM(currentqty), 0) = 0 THEN 0 ELSE COALESCE(SUM(currenttotalvalue), 0) / SUM(currentqty) END,
 			        COALESCE(SUM(currenttotalvalue), 0)
-			 FROM inventory_stock_balances
+			 FROM inventorystockbalances
 			 WHERE holdingcode = $1 AND itemcode = $2
 			 GROUP BY itemcode`,
 			holdingCode, itemCode,
@@ -357,7 +357,7 @@ func (e *MovingAverageEngine) GetCurrentValuation(ctx context.Context, tx *sql.T
 			        COALESCE(SUM(currentqty), 0),
 			        CASE WHEN COALESCE(SUM(currentqty), 0) = 0 THEN 0 ELSE COALESCE(SUM(currenttotalvalue), 0) / SUM(currentqty) END,
 			        COALESCE(SUM(currenttotalvalue), 0)
-			 FROM inventory_stock_balances
+			 FROM inventorystockbalances
 			 WHERE holdingcode = $1 AND itemcode = $2 AND whcode = $3
 			 GROUP BY itemcode, whcode`,
 			holdingCode, itemCode, whCode,

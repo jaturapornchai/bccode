@@ -127,10 +127,10 @@ func CheckItemChanged(ctx context.Context, db *sql.DB, holdingCode, itemCode str
 		return count > 0, currentChecksum, nil
 	}
 
-	// Get last checksum from stock_calculation_state
+	// Get last checksum from stockcalculationstate
 	var lastChecksum sql.NullString
 	err = db.QueryRowContext(ctx,
-		"SELECT last_checksum FROM stock_calculation_state WHERE holdingcode = $1 AND item_code = $2",
+		"SELECT lastchecksum FROM stockcalculationstate WHERE holdingcode = $1 AND itemcode = $2",
 		holdingCode, itemCode,
 	).Scan(&lastChecksum)
 
@@ -140,7 +140,7 @@ func CheckItemChanged(ctx context.Context, db *sql.DB, holdingCode, itemCode str
 			return true, currentChecksum, nil
 		}
 		// Other error, assume changed for safety
-		return true, currentChecksum, fmt.Errorf("query stock_calculation_state: %w", err)
+		return true, currentChecksum, fmt.Errorf("query stockcalculationstate: %w", err)
 	}
 
 	// Compare checksums
@@ -155,18 +155,18 @@ func CheckItemChanged(ctx context.Context, db *sql.DB, holdingCode, itemCode str
 // UpdateItemChecksum - Update the checksum after successful calculation
 func UpdateItemChecksum(ctx context.Context, db *sql.DB, holdingCode, itemCode, checksum string) error {
 	query := `
-		INSERT INTO stock_calculation_state (holdingcode, item_code, last_checksum, last_calc_time, version, createdat, updatedat)
+		INSERT INTO stockcalculationstate (holdingcode, itemcode, lastchecksum, lastcalctime, version, createdat, updatedat)
 		VALUES ($1, $2, $3, NOW(), 1, NOW(), NOW())
-		ON CONFLICT (holdingcode, item_code) DO UPDATE
-		SET last_checksum = EXCLUDED.last_checksum,
-			last_calc_time = EXCLUDED.last_calc_time,
-			version = stock_calculation_state.version + 1,
+		ON CONFLICT (holdingcode, itemcode) DO UPDATE
+		SET lastchecksum = EXCLUDED.lastchecksum,
+			lastcalctime = EXCLUDED.lastcalctime,
+			version = stockcalculationstate.version + 1,
 			updatedat = NOW()
 	`
 
 	_, err := db.ExecContext(ctx, query, holdingCode, itemCode, checksum)
 	if err != nil {
-		return fmt.Errorf("upsert stock_calculation_state: %w", err)
+		return fmt.Errorf("upsert stockcalculationstate: %w", err)
 	}
 
 	return nil
@@ -175,11 +175,11 @@ func UpdateItemChecksum(ctx context.Context, db *sql.DB, holdingCode, itemCode, 
 // DeleteItemChecksum - Delete the checksum when item data is cleared
 func DeleteItemChecksum(ctx context.Context, db *sql.DB, holdingCode, itemCode string) error {
 	_, err := db.ExecContext(ctx,
-		"DELETE FROM stock_calculation_state WHERE holdingcode = $1 AND item_code = $2",
+		"DELETE FROM stockcalculationstate WHERE holdingcode = $1 AND itemcode = $2",
 		holdingCode, itemCode,
 	)
 	if err != nil {
-		return fmt.Errorf("delete stock_calculation_state: %w", err)
+		return fmt.Errorf("delete stockcalculationstate: %w", err)
 	}
 	return nil
 }
@@ -213,27 +213,27 @@ func LogIncrementalStats(holdingCode string, stats IncrementalStats) {
 // EnsureStockCalculationStateTable - Create table if not exists (for auto-migration)
 func EnsureStockCalculationStateTable(ctx context.Context, db *sql.DB) error {
 	query := `
-		CREATE TABLE IF NOT EXISTS stock_calculation_state (
+		CREATE TABLE IF NOT EXISTS stockcalculationstate (
 			holdingcode VARCHAR(100) NOT NULL,
-			item_code VARCHAR(100) NOT NULL,
-			last_checksum CHAR(32),
-			last_calc_time TIMESTAMPTZ DEFAULT NOW(),
+			itemcode VARCHAR(100) NOT NULL,
+			lastchecksum CHAR(32),
+			lastcalctime TIMESTAMPTZ DEFAULT NOW(),
 			version INTEGER DEFAULT 0,
 			createdat TIMESTAMPTZ DEFAULT NOW(),
 			updatedat TIMESTAMPTZ DEFAULT NOW(),
-			PRIMARY KEY (holdingcode, item_code)
+			PRIMARY KEY (holdingcode, itemcode)
 		)
 	`
 
 	_, err := db.ExecContext(ctx, query)
 	if err != nil {
-		return fmt.Errorf("create stock_calculation_state table: %w", err)
+		return fmt.Errorf("create stockcalculationstate table: %w", err)
 	}
 
 	// Create indexes
 	indexQueries := []string{
-		"CREATE INDEX IF NOT EXISTS idx_stock_calc_state_shop_item ON stock_calculation_state(holdingcode, item_code)",
-		"CREATE INDEX IF NOT EXISTS idx_stock_calc_state_last_calc_time ON stock_calculation_state(last_calc_time)",
+		"CREATE INDEX IF NOT EXISTS idxstockcalcstateshopitem ON stockcalculationstate(holdingcode, itemcode)",
+		"CREATE INDEX IF NOT EXISTS idxstockcalcstatelastcalctime ON stockcalculationstate(lastcalctime)",
 	}
 
 	for _, q := range indexQueries {

@@ -39,11 +39,11 @@ interface ProductCategoryTreeViewProps {
 
 interface CategoryNode {
   guidfixed: string;
-  parent_guid: string;
+  parentguid: string;
   parentguidall: string;
   names: CategoryName[];
   xsorts?: CategoryXSort[];
-  group_number: number;
+  groupnumber: number;
   productCount?: number;
 }
 
@@ -131,10 +131,10 @@ const recordGuid = (record: SettingRecord): string =>
   String(record.guidfixed || record.guidfixed || record.guid || "");
 
 const recordParentGuid = (record: SettingRecord): string =>
-  String(record.parent_guid || record.parentguid || "");
+  String(record.parentguid || record.parentguid || "");
 
 const recordGroupNumber = (record: SettingRecord): number =>
-  Number(record.group_number ?? record.groupnumber ?? 0);
+  Number(record.groupnumber ?? record.groupnumber ?? 0);
 
 const recordCodelistCount = (record: SettingRecord): number =>
   Array.isArray(record.codelist) ? record.codelist.length : 0;
@@ -440,11 +440,11 @@ export function ProductCategoryTreeView({
       const parentOverride = parentOverrides[guid];
       return {
         guidfixed: guid,
-        parent_guid: parentOverride?.parentGuid ?? recordParentGuid(r),
+        parentguid: parentOverride?.parentGuid ?? recordParentGuid(r),
         parentguidall: parentOverride?.parentGuidAll ?? String(r.parentguidall || ""),
         names: toCategoryNames(r.names),
         xsorts: orderOverride ? [{ code: "X", xorder: orderOverride }] : toCategoryXSorts(r.xsorts),
-        group_number: recordGroupNumber(r),
+        groupnumber: recordGroupNumber(r),
         productCount: Array.isArray(r.codelist) ? r.codelist.length : 0,
       };
     });
@@ -481,7 +481,7 @@ export function ProductCategoryTreeView({
 
     // Build parent-child relationships
     for (const node of nodeMap.values()) {
-      const parentGuid = node.detail.parent_guid;
+      const parentGuid = node.detail.parentguid;
       if (parentGuid && nodeMap.has(parentGuid)) {
         nodeMap.get(parentGuid)!.childCategories.push(node);
       } else {
@@ -686,7 +686,7 @@ export function ProductCategoryTreeView({
     if (!auth || !workspace || updateList.length === 0) return;
     const payload = validateXSortPayload(updateList);
     const response = await fetch(
-      `/api/system-settings/product_category_group_select_screen/xsort?holdingcode=${encodeURIComponent(workspace.shop.holdingcode)}`,
+      `/api/system-settings/productcategorygroupselectscreen/xsort?holdingcode=${encodeURIComponent(workspace.shop.holdingcode)}`,
       {
         method: "PUT",
         headers: {
@@ -706,7 +706,7 @@ export function ProductCategoryTreeView({
   const saveCategoryRecord = async (guid: string, payload: SettingRecord) => {
     if (!auth || !workspace) return;
     const response = await fetch(
-      `/api/system-settings/product_category_group_select_screen/${encodeURIComponent(guid)}?holdingcode=${encodeURIComponent(workspace.shop.holdingcode)}`,
+      `/api/system-settings/productcategorygroupselectscreen/${encodeURIComponent(guid)}?holdingcode=${encodeURIComponent(workspace.shop.holdingcode)}`,
       {
         method: "PUT",
         headers: {
@@ -732,7 +732,7 @@ export function ProductCategoryTreeView({
 
   const sortedChildrenOf = (parentGuid: string): CategoryNode[] =>
     typedCategories
-      .filter((item) => item.parent_guid === parentGuid)
+      .filter((item) => item.parentguid === parentGuid)
       .sort((a, b) => (a.xsorts?.[0]?.xorder ?? 0) - (b.xsorts?.[0]?.xorder ?? 0));
 
   const normalizeSiblingOrders = (items: Array<CategoryTreeNode | CategoryNode>): XSortPayload[] =>
@@ -805,7 +805,7 @@ export function ProductCategoryTreeView({
       ...record,
       ...(parentOverride
         ? {
-            parent_guid: parentOverride.parentGuid,
+            parentguid: parentOverride.parentGuid,
             parentguidall: parentOverride.parentGuidAll,
           }
         : {}),
@@ -829,9 +829,9 @@ export function ProductCategoryTreeView({
     const targetCategory = typedCategories.find((item) => item.guidfixed === targetGuid);
     if (!draggedRecord || !draggedCategory || !targetCategory) return;
 
-    const targetParentGuid = targetCategory.parent_guid || "";
+    const targetParentGuid = targetCategory.parentguid || "";
     const newParentGuidAll = buildParentGuidAll(targetParentGuid);
-    const oldParentGuid = draggedCategory.parent_guid || "";
+    const oldParentGuid = draggedCategory.parentguid || "";
     const movingAcrossParents = oldParentGuid !== targetParentGuid;
     const targetParentChain = targetCategory.parentguidall
       .split(",")
@@ -857,7 +857,7 @@ export function ProductCategoryTreeView({
     const reorderedSiblings = [...withoutDragged];
     const movedCategory: CategoryNode = {
       ...draggedCategory,
-      parent_guid: targetParentGuid,
+      parentguid: targetParentGuid,
       parentguidall: newParentGuidAll,
     };
     reorderedSiblings.splice(insertIndex, 0, movedCategory);
@@ -873,9 +873,9 @@ export function ProductCategoryTreeView({
     const draggedOrder = targetSiblingPayload.find((item) => item.guidfixed === draggedGuid)?.xorder ?? 1;
     const payload: SettingRecord = {
       ...draggedRecord,
-      parent_guid: targetParentGuid,
+      parentguid: targetParentGuid,
       parentguidall: newParentGuidAll,
-      group_number: groupNumber ?? recordGroupNumber(draggedRecord),
+      groupnumber: groupNumber ?? recordGroupNumber(draggedRecord),
       xsorts: [{ code: "X", xorder: draggedOrder }],
     };
 
@@ -932,13 +932,13 @@ export function ProductCategoryTreeView({
     const newParentGuidAll = buildParentGuidAll(targetGuid);
     const nextChildren = sortedChildrenOf(targetGuid).filter((item) => item.guidfixed !== draggedGuid);
     const nextOrder = nextChildren.length + 1;
-    const oldParentGuid = draggedCategory.parent_guid || "";
+    const oldParentGuid = draggedCategory.parentguid || "";
     const oldSiblings = sortedChildrenOf(oldParentGuid).filter((item) => item.guidfixed !== draggedGuid);
     const payload: SettingRecord = {
       ...draggedRecord,
-      parent_guid: targetGuid,
+      parentguid: targetGuid,
       parentguidall: newParentGuidAll,
-      group_number: groupNumber ?? recordGroupNumber(draggedRecord),
+      groupnumber: groupNumber ?? recordGroupNumber(draggedRecord),
       xsorts: [{ code: "X", xorder: nextOrder }],
     };
 
@@ -960,7 +960,7 @@ export function ProductCategoryTreeView({
       await saveCategoryRecord(draggedGuid, payload);
       await saveXSorts(uniqueXSortPayload([
         ...normalizeSiblingOrders(oldSiblings),
-        ...normalizeSiblingOrders([...nextChildren, { ...draggedCategory, parent_guid: targetGuid, parentguidall: newParentGuidAll }]),
+        ...normalizeSiblingOrders([...nextChildren, { ...draggedCategory, parentguid: targetGuid, parentguidall: newParentGuidAll }]),
       ]));
       markCategoryArrived(draggedGuid);
     } catch (err) {
@@ -976,21 +976,21 @@ export function ProductCategoryTreeView({
     const draggedCategory = typedCategories.find((item) => item.guidfixed === draggedGuid);
     if (!draggedRecord || !draggedCategory) return;
 
-    const oldParentGuid = draggedCategory.parent_guid || "";
+    const oldParentGuid = draggedCategory.parentguid || "";
     const oldSiblings = sortedChildrenOf(oldParentGuid).filter((item) => item.guidfixed !== draggedGuid);
     const rootSiblings = sortedChildrenOf("").filter((item) => item.guidfixed !== draggedGuid);
     const nextRootOrder = rootSiblings.length + 1;
     const nextRootItems: CategoryNode[] = [
       ...rootSiblings,
-      { ...draggedCategory, parent_guid: "", parentguidall: "", xsorts: [{ code: "X", xorder: nextRootOrder }] },
+      { ...draggedCategory, parentguid: "", parentguidall: "", xsorts: [{ code: "X", xorder: nextRootOrder }] },
     ];
     const rootOrderPayload = normalizeSiblingOrders(nextRootItems);
     const oldSiblingPayload = oldParentGuid ? normalizeSiblingOrders(oldSiblings) : [];
     const payload: SettingRecord = {
       ...draggedRecord,
-      parent_guid: "",
+      parentguid: "",
       parentguidall: "",
-      group_number: groupNumber ?? recordGroupNumber(draggedRecord),
+      groupnumber: groupNumber ?? recordGroupNumber(draggedRecord),
       xsorts: [{ code: "X", xorder: nextRootOrder }],
     };
 
@@ -1294,7 +1294,7 @@ export function ProductCategoryTreeView({
     event.currentTarget.setPointerCapture(event.pointerId);
     pointerDragRef.current = {
       guid: node.detail.guidfixed,
-      parentGuid: node.detail.parent_guid || "",
+      parentGuid: node.detail.parentguid || "",
       offsetX: 0,
       offsetY: 0,
       rect: {

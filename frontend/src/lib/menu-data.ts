@@ -179,7 +179,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           // Core product management (daily use)
           tx("product", "สินค้า", "Product", "/product", "master"),
-          { ...tx("barcode", "บาร์โค้ด", "Barcode", "/product_barcode", "master"), label: ml("barcode", "บาร์โค้ด", "Barcode") },
+          { ...tx("barcode", "บาร์โค้ด", "Barcode", "/productbarcode", "master"), label: ml("barcode", "บาร์โค้ด", "Barcode") },
           tx("productset", "สินค้าชุด", "Product Set", "/productset", "master"),
           tx("product-unit", "หน่วยนับสินค้า", "Product Unit", "/productunit", "master"),
         ],
@@ -189,18 +189,18 @@ export const MENU_SECTIONS: MenuSection[] = [
         title: ml("product_classification", "จัดกลุ่มสินค้า", "Product Grouping"),
         items: [
           tx("product-group", "กลุ่มสินค้า", "Product Group", "/productgroup", "master"),
-          tx("product-category", "จัดหมวดสินค้า", "Product Categories", "/product_category_group_select_screen", "master"),
+          tx("product-category", "จัดหมวดสินค้า", "Product Categories", "/productcategorygroupselectscreen", "master"),
           tx("product-category-list", "สินค้าในหมวด", "Products in Category", "/productcategorylist", "master"),
-          tx("product-type", "ประเภทสินค้า", "Product Type", "/product_type_screen", "master"),
+          tx("product-type", "ประเภทสินค้า", "Product Type", "/producttypescreen", "master"),
         ],
       },
       {
         id: "product-sku-options",
         title: ml("product_sku_options", "สี ไซซ์ และตัวเลือก", "Product Options"),
         items: [
-          tx("product-variant-matrix", "ชุดตัวเลือกสินค้า", "Product Option Sets", "/product_variant_matrix", "master"),
-          tx("product-color", "สีสินค้า", "Product Color", "/product_color", "master"),
-          tx("product-size", "ไซซ์/ขนาดสินค้า", "Product Size", "/product_size", "master"),
+          tx("product-variant-matrix", "ชุดตัวเลือกสินค้า", "Product Option Sets", "/productvariantmatrix", "master"),
+          tx("product-color", "สีสินค้า", "Product Color", "/productcolor", "master"),
+          tx("product-size", "ไซซ์/ขนาดสินค้า", "Product Size", "/productsize", "master"),
         ],
       },
       {
@@ -214,7 +214,7 @@ export const MENU_SECTIONS: MenuSection[] = [
             ...tx("category", "คุณลักษณะสินค้า", "Product Attributes", "/master_category_screen", "master"),
             label: ml("product_attribute_category", "คุณลักษณะสินค้า", "Product Attributes"),
           },
-          tx("dimension", "ขนาด/มิติสินค้า", "Product Dimensions", "/product_dimension", "master"),
+          tx("dimension", "ขนาด/มิติสินค้า", "Product Dimensions", "/productdimension", "master"),
           tx("class", "ระดับสินค้า", "Product Class", "/master_class_screen", "master"),
           tx("design", "รูปทรงสินค้า", "Product Shape", "/master_design_screen", "master"),
           tx("grade", "เกรดสินค้า", "Product Grade", "/master_grade_screen", "master"),
@@ -224,8 +224,8 @@ export const MENU_SECTIONS: MenuSection[] = [
         id: "product-stock-production",
         title: ml("product_stock_production", "คลังและการผลิต", "Stock and Production"),
         items: [
-          tx("warehouse", "คลัง", "Warehouse", "/product_warehouse_screen", "master"),
-          tx("bom", "สูตรผลิต", "Product BOM", "/product_bom", "master"),
+          tx("warehouse", "คลัง", "Warehouse", "/productwarehousescreen", "master"),
+          tx("bom", "สูตรผลิต", "Product BOM", "/productbom", "master"),
         ],
       },
       {
@@ -241,9 +241,9 @@ export const MENU_SECTIONS: MenuSection[] = [
         id: "product-tools",
         title: ml("product_tools", "เครื่องมือสินค้า", "Product Tools"),
         items: [
-          tx("product-serial-registry", "ทะเบียนเลขเครื่อง", "Serial Registry", "/product_serial_registry", "master"),
+          tx("product-serial-registry", "ทะเบียนเลขเครื่อง", "Serial Registry", "/productserialregistry", "master"),
           tx("price-history", "ประวัติแก้ไขราคา", "Price Edit History", "/price_history", "master"),
-          tx("label-print", "พิมพ์ป้ายสินค้า", "Print Product Label", "/product_barcode_shelf", "master"),
+          tx("label-print", "พิมพ์ป้ายสินค้า", "Print Product Label", "/productbarcodeshelf", "master"),
         ],
       },
       {
@@ -281,7 +281,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("point-setting", "ตั้งค่าคะแนนสะสม", "Point Setting", "/point_setting", "master"),
           tx("coupon-setting", "ตั้งค่าคูปอง", "Coupon Setting", "/coupon_setting", "master"),
           tx("promotion", "โปรโมชั่น", "Promotion", "/promotion_screen", "master"),
-          tx("channel-price", "ราคาตามช่องทางขาย", "Channel Prices", "/channel_price", "master"),
+          tx("channel-price", "ราคาตามช่องทางขาย", "Channel Prices", "/channelprice", "master"),
           tx("doc-format", "รูปแบบเอกสาร", "Document Format", "/docformat", "master"),
           tx("bill-design", "ออกแบบบิล", "Bill Design", "/billdesign", "master"),
         ],
@@ -291,11 +291,11 @@ export const MENU_SECTIONS: MenuSection[] = [
         title: ml("approval", "อนุมัติ", "Approval"),
         items: [
           tx("purchase-type", "ประเภทซื้อ", "Purchase Type", "/purchase_type_screen", "approval"),
-          tx("po-approval", "อนุมัติใบสั่งซื้อ", "PO Approval", "/po_approval_setting_screen", "approval"),
+          tx("po-approval", "อนุมัติใบสั่งซื้อ", "PO Approval", "/po_approvalsetting_screen", "approval"),
           tx("quotation-type", "ประเภทใบเสนอราคา", "Quotation Type", "/quotation_type_screen", "approval"),
-          tx("qt-approval", "อนุมัติใบเสนอราคา", "Quotation Approval", "/qt_approval_setting_screen", "approval"),
+          tx("qt-approval", "อนุมัติใบเสนอราคา", "Quotation Approval", "/qt_approvalsetting_screen", "approval"),
           tx("sale-order-type", "ประเภทใบสั่งขาย", "Sale Order Type", "/sale_order_type_screen", "approval"),
-          tx("so-approval", "อนุมัติใบสั่งขาย", "Sale Order Approval", "/so_approval_setting_screen", "approval"),
+          tx("so-approval", "อนุมัติใบสั่งขาย", "Sale Order Approval", "/so_approvalsetting_screen", "approval"),
         ],
       },
       {
@@ -333,17 +333,17 @@ export const MENU_SECTIONS: MenuSection[] = [
         id: "company-system",
         title: { key: "system_settings", th: "ตั้งค่าระบบ", en: "System Settings" },
         items: [
-          tx("active-languages", "ภาษาที่ใช้งาน", "Active Languages", "/active_languages", "settings"),
+          tx("active-languages", "ภาษาที่ใช้งาน", "Active Languages", "/activelanguages", "settings"),
 
           tx("currency", "สกุลเงิน", "Currency", "/currency", "settings"),
-          tx("company-type", "ประเภทธุรกิจ", "Business Type", "/business_type_screen", "settings"),
+          tx("company-type", "ประเภทธุรกิจ", "Business Type", "/businesstypescreen", "settings"),
           tx("employee", "พนักงาน", "Employee", "/employee", "settings"),
           tx("line-oa-user-link", "เชื่อม LINE OA", "Connect LINE OA", "/line-oa", "settings"),
           tx("form-design", "ออกแบบฟอร์ม", "Form Design", "/formdesign", "settings"),
-          tx("line-notify", "แจ้งเตือนผ่าน LINE", "LINE Notifications", "/line_notify", "settings"),
-          tx("mcp-token", "รหัสเชื่อมผู้ช่วย AI", "AI Assistant Access Key", "/mcp_apikey", "settings"),
-          tx("ai-provider", "ผู้ให้บริการ AI", "AI Service Provider", "/ai_provider", "settings"),
-          tx("copy-uat-dev", "คัดลอกข้อมูลทดสอบ", "Copy Test Data", "/copy_uat_to_dev", "settings"),
+          tx("line-notify", "แจ้งเตือนผ่าน LINE", "LINE Notifications", "/linenotify", "settings"),
+          tx("mcp-token", "รหัสเชื่อมผู้ช่วย AI", "AI Assistant Access Key", "/mcpapikey", "settings"),
+          tx("ai-provider", "ผู้ให้บริการ AI", "AI Service Provider", "/aiprovider", "settings"),
+          tx("copy-uat-dev", "คัดลอกข้อมูลทดสอบ", "Copy Test Data", "/copyuattodev", "settings"),
         ],
       },
     ],

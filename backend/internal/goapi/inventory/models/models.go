@@ -7,8 +7,8 @@ import (
 // === Costing Method Constants ===
 
 const (
-	CostingMethodMovingAverage   = "moving_average"
-	CostingMethodPeriodicAverage = "periodic_average"
+	CostingMethodMovingAverage   = "movingaverage"
+	CostingMethodPeriodicAverage = "periodicaverage"
 	CostingMethodFIFO            = "fifo"
 	CostingMethodLIFO            = "lifo"
 	CostingMethodFEFO            = "fefo"
@@ -20,9 +20,9 @@ const (
 
 const (
 	LayerTypePurchase    = "purchase"
-	LayerTypeTransferIn  = "transfer_in"
+	LayerTypeTransferIn  = "transferin"
 	LayerTypeAdjustment  = "adjustment"
-	LayerTypeSalesReturn = "sales_return"
+	LayerTypeSalesReturn = "salesreturn"
 	LayerTypeProduction  = "production"
 	LayerTypeOpening     = "opening"
 )
@@ -30,24 +30,24 @@ const (
 // === Transaction Type Constants ===
 
 const (
-	TxTypePurchaseReceipt = "purchase_receipt"
-	TxTypePurchaseReturn  = "purchase_return"
-	TxTypeSalesIssue      = "sales_issue"
-	TxTypeSalesReturn     = "sales_return"
-	TxTypeTransferOut     = "transfer_out"
-	TxTypeTransferIn      = "transfer_in"
-	TxTypeAdjustmentIn    = "adjustment_in"
-	TxTypeAdjustmentOut   = "adjustment_out"
-	TxTypeWriteOff        = "write_off"
-	TxTypeAssemblyIssue   = "assembly_issue"
-	TxTypeAssemblyReceipt = "assembly_receipt"
-	TxTypeCostAdjustment  = "cost_adjustment"
+	TxTypePurchaseReceipt = "purchasereceipt"
+	TxTypePurchaseReturn  = "purchasereturn"
+	TxTypeSalesIssue      = "salesissue"
+	TxTypeSalesReturn     = "salesreturn"
+	TxTypeTransferOut     = "transferout"
+	TxTypeTransferIn      = "transferin"
+	TxTypeAdjustmentIn    = "adjustmentin"
+	TxTypeAdjustmentOut   = "adjustmentout"
+	TxTypeWriteOff        = "writeoff"
+	TxTypeAssemblyIssue   = "assemblyissue"
+	TxTypeAssemblyReceipt = "assemblyreceipt"
+	TxTypeCostAdjustment  = "costadjustment"
 )
 
 // === Variance Type Constants ===
 
 const (
-	VariancePurchasePrice = "purchase_price"
+	VariancePurchasePrice = "purchaseprice"
 	VarianceRevaluation   = "revaluation"
 	VarianceProduction    = "production"
 	VarianceTransfer      = "transfer"
@@ -73,10 +73,10 @@ const (
 // === Allocation Method Constants ===
 
 const (
-	AllocByValue    = "by_value"
-	AllocByQuantity = "by_quantity"
-	AllocByWeight   = "by_weight"
-	AllocByVolume   = "by_volume"
+	AllocByValue    = "byvalue"
+	AllocByQuantity = "byquantity"
+	AllocByWeight   = "byweight"
+	AllocByVolume   = "byvolume"
 	AllocManual     = "manual"
 )
 
@@ -109,7 +109,7 @@ type InventoryCostLayer struct {
 	UpdatedAt         time.Time  `json:"updatedat" gorm:"column:updatedat"`
 }
 
-func (InventoryCostLayer) TableName() string { return "inventory_cost_layers" }
+func (InventoryCostLayer) TableName() string { return "inventorycostlayers" }
 
 // InventoryStockBalance — ยอดคงเหลือต่อสินค้า × คลัง (สรุป snapshot)
 type InventoryStockBalance struct {
@@ -128,7 +128,7 @@ type InventoryStockBalance struct {
 	UpdatedAt         time.Time  `json:"updatedat" gorm:"column:updatedat"`
 }
 
-func (InventoryStockBalance) TableName() string { return "inventory_stock_balances" }
+func (InventoryStockBalance) TableName() string { return "inventorystockbalances" }
 
 // MarketplaceStockBalance stores marketplace availability by product dimensions.
 // This projection is not an accounting cost source.
@@ -145,7 +145,7 @@ type MarketplaceStockBalance struct {
 	UpdatedAt       time.Time `json:"updatedat" gorm:"column:updatedat"`
 }
 
-func (MarketplaceStockBalance) TableName() string { return "marketplace_stock_balances" }
+func (MarketplaceStockBalance) TableName() string { return "marketplacestockbalances" }
 
 // MarketplaceDimensionPrice stores selling prices by product dimension and marketplace.
 type MarketplaceDimensionPrice struct {
@@ -167,7 +167,7 @@ type MarketplaceDimensionPrice struct {
 	UpdatedAt       time.Time  `json:"updatedat" gorm:"column:updatedat"`
 }
 
-func (MarketplaceDimensionPrice) TableName() string { return "marketplace_dimension_prices" }
+func (MarketplaceDimensionPrice) TableName() string { return "marketplacedimensionprices" }
 
 // InventoryCostTransaction — ประวัติทุก transaction ที่กระทบต้นทุน
 type InventoryCostTransaction struct {
@@ -200,7 +200,7 @@ type InventoryCostTransaction struct {
 	ReversedByID      *int64     `json:"reversedbyid" gorm:"column:reversedbyid"`
 }
 
-func (InventoryCostTransaction) TableName() string { return "inventory_cost_transactions" }
+func (InventoryCostTransaction) TableName() string { return "inventorycosttransactions" }
 
 // InventoryVariance — ผลต่างต้นทุน (Standard Cost)
 type InventoryVariance struct {
@@ -220,7 +220,7 @@ type InventoryVariance struct {
 	CreatedAt        time.Time `json:"createdat" gorm:"column:createdat"`
 }
 
-func (InventoryVariance) TableName() string { return "inventory_variances" }
+func (InventoryVariance) TableName() string { return "inventoryvariances" }
 
 // InventoryLandedCost — ค่าใช้จ่ายประกอบ (ค่าขนส่ง, ภาษี, ประกัน)
 type InventoryLandedCost struct {
@@ -240,7 +240,7 @@ type InventoryLandedCost struct {
 	CreatedAt        time.Time  `json:"createdat" gorm:"column:createdat"`
 }
 
-func (InventoryLandedCost) TableName() string { return "inventory_landed_costs" }
+func (InventoryLandedCost) TableName() string { return "inventorylandedcosts" }
 
 // InventoryLandedCostAllocation — การกระจาย landed cost ไปแต่ละสินค้า
 type InventoryLandedCostAllocation struct {
@@ -256,7 +256,7 @@ type InventoryLandedCostAllocation struct {
 	CreatedAt        time.Time `json:"createdat" gorm:"column:createdat"`
 }
 
-func (InventoryLandedCostAllocation) TableName() string { return "inventory_landed_cost_allocations" }
+func (InventoryLandedCostAllocation) TableName() string { return "inventorylandedcostallocations" }
 
 // InventoryAccountingPeriod — งวดบัญชี
 type InventoryAccountingPeriod struct {
@@ -272,7 +272,7 @@ type InventoryAccountingPeriod struct {
 	CreatedAt             time.Time  `json:"createdat" gorm:"column:createdat"`
 }
 
-func (InventoryAccountingPeriod) TableName() string { return "inventory_accounting_periods" }
+func (InventoryAccountingPeriod) TableName() string { return "inventoryaccountingperiods" }
 
 // === Request/Response Structs ===
 

@@ -107,7 +107,7 @@ func (svc CouponHttpService) checkProductCondition(ctx context.Context, holdingC
 	if len(condition.GroupCodes) > 0 {
 		for _, groupCode := range condition.GroupCodes {
 			if productInfo.ProductBarcode.GroupCode == groupCode {
-				return true, "group_code", nil
+				return true, "groupcode", nil
 			}
 		}
 	}

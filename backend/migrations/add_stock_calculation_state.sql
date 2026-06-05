@@ -1,34 +1,34 @@
--- Migration: Add stock_calculation_state table for incremental calculation
+-- Migration: Add stockcalculationstate table for incremental calculation
 -- Date: 2024
 -- Purpose: Track checksums for item codes to enable incremental stock calculation
 
 -- Create table for storing calculation state
-CREATE TABLE IF NOT EXISTS stock_calculation_state (
+CREATE TABLE IF NOT EXISTS stockcalculationstate (
     holdingcode VARCHAR(100) NOT NULL,
-    item_code VARCHAR(100) NOT NULL,
-    last_checksum CHAR(32),
-    last_calc_time TIMESTAMPTZ DEFAULT NOW(),
+    itemcode VARCHAR(100) NOT NULL,
+    lastchecksum CHAR(32),
+    lastcalctime TIMESTAMPTZ DEFAULT NOW(),
     version INTEGER DEFAULT 0,
     createdat TIMESTAMPTZ DEFAULT NOW(),
     updatedat TIMESTAMPTZ DEFAULT NOW(),
-    PRIMARY KEY (holdingcode, item_code)
+    PRIMARY KEY (holdingcode, itemcode)
 );
 
 -- Create index for faster lookups
-CREATE INDEX IF NOT EXISTS idx_stock_calc_state_shop_item
-ON stock_calculation_state(holdingcode, item_code);
+CREATE INDEX IF NOT EXISTS idxstockcalcstateshopitem
+ON stockcalculationstate(holdingcode, itemcode);
 
-CREATE INDEX IF NOT EXISTS idx_stock_calc_state_last_calc_time
-ON stock_calculation_state(last_calc_time);
+CREATE INDEX IF NOT EXISTS idxstockcalcstatelastcalctime
+ON stockcalculationstate(lastcalctime);
 
 -- Add input_checksum and version columns to processstockcost (optional, for future use)
 -- ALTER TABLE processstockcost ADD COLUMN IF NOT EXISTS input_checksum CHAR(32);
 -- ALTER TABLE processstockcost ADD COLUMN IF NOT EXISTS version INT DEFAULT 0;
 
 -- Comment
-COMMENT ON TABLE stock_calculation_state IS 'Tracks item checksums for incremental stock cost calculation';
-COMMENT ON COLUMN stock_calculation_state.holdingcode IS 'Holding codeentifier';
-COMMENT ON COLUMN stock_calculation_state.item_code IS 'Item code';
-COMMENT ON COLUMN stock_calculation_state.last_checksum IS 'MD5 checksum of item data at last calculation';
-COMMENT ON COLUMN stock_calculation_state.last_calc_time IS 'Timestamp of last calculation';
-COMMENT ON COLUMN stock_calculation_state.version IS 'Version counter for optimistic locking';
+COMMENT ON TABLE stockcalculationstate IS 'Tracks item checksums for incremental stock cost calculation';
+COMMENT ON COLUMN stockcalculationstate.holdingcode IS 'Holding codeentifier';
+COMMENT ON COLUMN stockcalculationstate.itemcode IS 'Item code';
+COMMENT ON COLUMN stockcalculationstate.lastchecksum IS 'MD5 checksum of item data at last calculation';
+COMMENT ON COLUMN stockcalculationstate.lastcalctime IS 'Timestamp of last calculation';
+COMMENT ON COLUMN stockcalculationstate.version IS 'Version counter for optimistic locking';

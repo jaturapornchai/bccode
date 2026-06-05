@@ -57,7 +57,7 @@ interface CompanyRecord {
   guidfixed?: string;
   code?: string;
   names?: LocalizedNames;
-  tax_id?: string;
+  taxid?: string;
   isactive?: boolean;
   deletedat?: string | null;
 }
@@ -73,7 +73,7 @@ interface BranchRecord {
 
 type NodeType = "company" | "branch";
 type ConfirmAction = "save" | "delete";
-type OrganizationFormType = "view_company" | "view_branch" | "edit_company" | "edit_branch" | "create_company" | "create_branch";
+type OrganizationFormType = "viewcompany" | "viewbranch" | "editcompany" | "editbranch" | "createcompany" | "createbranch";
 
 interface SelectedNode {
   type: NodeType;
@@ -265,7 +265,7 @@ export function CompanyBranchTreeView({
     setFormNames(list);
 
     if (selectedNode.type === "company") {
-      setFormTaxId((selectedNode.data as CompanyRecord).tax_id || "");
+      setFormTaxId((selectedNode.data as CompanyRecord).taxid || "");
     }
   }, [selectedNode, editorLanguages]);
 
@@ -286,25 +286,25 @@ export function CompanyBranchTreeView({
       let method = "POST";
       let body: Record<string, unknown> = {};
 
-      if (formType === "create_company") {
+      if (formType === "createcompany") {
         url = `${mainApiUrl}/organization/company`;
         method = "POST";
         body = {
           code: normalizedCompanyCode,
           names: namesList,
-          tax_id: formTaxId,
+          taxid: formTaxId,
           isactive: formIsActive,
         };
-      } else if (formType === "edit_company") {
+      } else if (formType === "editcompany") {
         url = `${mainApiUrl}/organization/company/${selectedNode.guidfixed}`;
         method = "PUT";
         body = {
           code: normalizedCompanyCode,
           names: namesList,
-          tax_id: formTaxId,
+          taxid: formTaxId,
           isactive: formIsActive,
         };
-      } else if (formType === "create_branch") {
+      } else if (formType === "createbranch") {
         url = `${mainApiUrl}/organization/branch`;
         method = "POST";
         body = {
@@ -313,7 +313,7 @@ export function CompanyBranchTreeView({
           names: namesList,
           isactive: formIsActive,
         };
-      } else if (formType === "edit_branch") {
+      } else if (formType === "editbranch") {
         url = `${mainApiUrl}/organization/branch/${selectedNode.guidfixed}`;
         method = "PUT";
         body = {
@@ -345,15 +345,15 @@ export function CompanyBranchTreeView({
         onRefresh?.();
         notifyWorkspaceChanged();
         if (formType.startsWith("create")) {
-          const createdCode = formType === "create_branch" ? normalizedBranchCode : normalizedCompanyCode;
+          const createdCode = formType === "createbranch" ? normalizedBranchCode : normalizedCompanyCode;
           const createdData = {
             guidfixed: json.id,
             code: createdCode,
             names: namesList,
             isactive: formIsActive,
-            ...(formType === "create_company" ? { tax_id: formTaxId } : {}),
+            ...(formType === "createcompany" ? { taxid: formTaxId } : {}),
           };
-          if (formType === "create_company") {
+          if (formType === "createcompany") {
             setCompanies((prev) => prev.some((row) => row.guidfixed === json.id) ? prev : [...prev, createdData]);
           } else {
             setBranches((prev) => prev.some((row) => row.guidfixed === json.id) ? prev : [
@@ -363,12 +363,12 @@ export function CompanyBranchTreeView({
           }
           // Select newly created node
           setSelectedNode({
-            type: formType === "create_company" ? "company" : "branch",
+            type: formType === "createcompany" ? "company" : "branch",
             guidfixed: json.id,
             companyguid: selectedNode.companyguid,
             data: createdData,
           });
-          setFormType(formType === "create_company" ? "edit_company" : "edit_branch");
+          setFormType(formType === "createcompany" ? "editcompany" : "editbranch");
         }
       }
     } catch (e) {
@@ -466,7 +466,7 @@ export function CompanyBranchTreeView({
               size="sm"
               className="gap-1 font-semibold"
               onClick={() => {
-                setFormType("create_company");
+                setFormType("createcompany");
                 setSelectedNode({
                   type: "company",
                   data: {},
@@ -503,7 +503,7 @@ export function CompanyBranchTreeView({
                 const companyCode = normalizeBusinessCode(comp.code);
                 const isCollapsed = collapsedCompanies[compGuid];
                 const isSelected = selectedNode?.type === "company" && selectedNode.guidfixed === compGuid;
-                const isEditingCompany = isSelected && formType === "edit_company";
+                const isEditingCompany = isSelected && formType === "editcompany";
                 const compBranches = sortedBranches.filter((b) => b.companyguid === compGuid);
 
                 return (
@@ -523,7 +523,7 @@ export function CompanyBranchTreeView({
                           guidfixed: compGuid,
                           data: comp,
                         });
-                        setFormType("view_company");
+                        setFormType("viewcompany");
                       }}
                     >
                       <div className="flex items-center gap-2 min-w-0">
@@ -561,7 +561,7 @@ export function CompanyBranchTreeView({
                               guidfixed: compGuid,
                               data: comp,
                             });
-                            setFormType("edit_company");
+                            setFormType("editcompany");
                           }}
                         >
                           <Edit3 className="w-3.5 h-3.5" />
@@ -578,7 +578,7 @@ export function CompanyBranchTreeView({
                               companyguid: compGuid,
                               data: {},
                             });
-                            setFormType("create_branch");
+                            setFormType("createbranch");
                           }}
                         >
                           <Plus className="w-3.5 h-3.5" />
@@ -607,7 +607,7 @@ export function CompanyBranchTreeView({
                         {compBranches.map((br) => {
                           const brGuid = br.guidfixed || "";
                           const isBrSelected = selectedNode?.type === "branch" && selectedNode.guidfixed === brGuid;
-                          const isEditingBranch = isBrSelected && formType === "edit_branch";
+                          const isEditingBranch = isBrSelected && formType === "editbranch";
                           const cannotDeleteBranch = isThaiHeadOfficeBranchCode(br.code) || compBranches.length <= 1;
 
                           return (
@@ -628,7 +628,7 @@ export function CompanyBranchTreeView({
                                   companyguid: compGuid,
                                   data: br,
                                 });
-                                setFormType("view_branch");
+                                setFormType("viewbranch");
                               }}
                             >
                               <div className="flex items-center gap-2 min-w-0">
@@ -651,7 +651,7 @@ export function CompanyBranchTreeView({
                                       companyguid: compGuid,
                                       data: br,
                                     });
-                                    setFormType("edit_branch");
+                                    setFormType("editbranch");
                                   }}
                                 >
                                   <Edit3 className="w-3.5 h-3.5" />
@@ -702,12 +702,12 @@ export function CompanyBranchTreeView({
                     ) : (
                       <GitBranch className="w-5.5 h-5.5 text-sky-500 shrink-0" />
                     )}
-                    {formType === "view_company" && "ข้อมูลบริษัท"}
-                    {formType === "view_branch" && "ข้อมูลสาขา"}
-                    {formType === "create_company" && "เพิ่มบริษัทใหม่"}
-                    {formType === "edit_company" && "แก้ไขข้อมูลบริษัท"}
-                    {formType === "create_branch" && "เพิ่มสาขาใหม่"}
-                    {formType === "edit_branch" && "แก้ไขข้อมูลสาขา"}
+                    {formType === "viewcompany" && "ข้อมูลบริษัท"}
+                    {formType === "viewbranch" && "ข้อมูลสาขา"}
+                    {formType === "createcompany" && "เพิ่มบริษัทใหม่"}
+                    {formType === "editcompany" && "แก้ไขข้อมูลบริษัท"}
+                    {formType === "createbranch" && "เพิ่มสาขาใหม่"}
+                    {formType === "editbranch" && "แก้ไขข้อมูลสาขา"}
                   </h3>
                   <p className="text-sm text-muted-foreground mt-1">
                     {formType.startsWith("create")
@@ -724,12 +724,12 @@ export function CompanyBranchTreeView({
                       variant="outline"
                       className="size-9 border-primary/30 text-primary hover:bg-primary/10"
                       title={selectedNode.type === "company" ? "แก้ไขบริษัท" : "แก้ไขสาขา"}
-                      onClick={() => setFormType(selectedNode.type === "company" ? "edit_company" : "edit_branch")}
+                      onClick={() => setFormType(selectedNode.type === "company" ? "editcompany" : "editbranch")}
                     >
                       <Edit3 className="w-4 h-4" />
                     </Button>
                   )}
-                  {(formType === "view_company" || formType === "edit_company") && selectedNode?.guidfixed && (
+                  {(formType === "viewcompany" || formType === "editcompany") && selectedNode?.guidfixed && (
                     <Button
                       size="sm"
                       variant="outline"
@@ -740,7 +740,7 @@ export function CompanyBranchTreeView({
                           companyguid: selectedNode.guidfixed,
                           data: {},
                         });
-                        setFormType("create_branch");
+                        setFormType("createbranch");
                       }}
                     >
                       <Plus className="w-3.5 h-3.5" />

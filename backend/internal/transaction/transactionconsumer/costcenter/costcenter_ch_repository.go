@@ -26,7 +26,7 @@ func NewCostCenterCHRepository(pst microservice.IPersisterClickHouse) *CostCente
 func (repo *CostCenterCHRepository) Upsert(doc models.CostCenterPg) error {
 	conn := repo.pst.Conn()
 	err := conn.Exec(context.Background(),
-		`INSERT INTO organization_cost_center (holdingcode, guidfixed, code, names) VALUES (?, ?, ?, ?)`,
+		`INSERT INTO organizationcostcenter (holdingcode, guidfixed, code, names) VALUES (?, ?, ?, ?)`,
 		doc.HoldingCode, doc.GuidFixed, doc.Code, doc.Names,
 	)
 	if err != nil {
@@ -38,7 +38,7 @@ func (repo *CostCenterCHRepository) Upsert(doc models.CostCenterPg) error {
 func (repo *CostCenterCHRepository) Delete(holdingCode string, guidFixed string) error {
 	conn := repo.pst.Conn()
 	err := conn.Exec(context.Background(),
-		`ALTER TABLE organization_cost_center DELETE WHERE holdingcode=? AND guidfixed=?`,
+		`ALTER TABLE organizationcostcenter DELETE WHERE holdingcode=? AND guidfixed=?`,
 		holdingCode, guidFixed,
 	)
 	if err != nil {

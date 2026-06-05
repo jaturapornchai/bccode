@@ -56,7 +56,7 @@ func TestCreditPaymentTransactionPhaser(t *testing.T) {
 		"guidfixed": "2UIT0vYecL1mMA8NvvAvjnVqqwR",
 		"docno": "DE2023080200001",
 		"docdatetime": "2023-08-02T08:38:59.000Z",
-		"doc_type": 0,
+		"doctype": 0,
 		"branch": {
 			"code": "branch01",
 			"names": [
@@ -93,7 +93,7 @@ func TestCreditPaymentTransactionPhaser(t *testing.T) {
 		"salecode": "",
 		"salename": "",
 		"totalpaymentamount": 14400,
-		"total_amount": 14400,
+		"totalamount": 14400,
 		"totalbalance": 14400,
 		"totalvalue": 14400,
 		"details": [
@@ -126,7 +126,7 @@ func TestCreditPaymentTransactionPhaser(t *testing.T) {
 	assert.Equal(t, want.DocNo, got.DocNo, "docno")
 	assert.Equal(t, want.DocDate, got.DocDate, "docdate")
 	assert.Equal(t, want.CreditorCode, got.CreditorCode, "creditorcode")
-	assert.Equal(t, want.TotalAmount, got.TotalAmount, "total_amount")
+	assert.Equal(t, want.TotalAmount, got.TotalAmount, "totalamount")
 	assert.Equal(t, want.TotalPayCash, got.TotalPayCash, "totalpaycash")
 	assert.Equal(t, want.TotalPayTransfer, got.TotalPayTransfer, "totalpaytransfer")
 	assert.Equal(t, want.TotalPayCredit, got.TotalPayCredit, "totalpaycredit")

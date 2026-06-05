@@ -171,7 +171,7 @@ func (e *FIFOEngine) ProcessIssue(ctx context.Context, tx *sql.Tx, params inv.Is
 func (e *FIFOEngine) consumeLayers(ctx context.Context, tx *sql.Tx, holdingCode, itemCode, whCode, locationCode string, qtyNeeded float64) (float64, error) {
 	rows, err := tx.QueryContext(ctx,
 		`SELECT id, remainingqty, totalunitcost
-		 FROM inventory_cost_layers
+		 FROM inventorycostlayers
 		 WHERE holdingcode = $1 AND itemcode = $2 AND whcode = $3 AND locationcode = $4 AND remainingqty > 0
 		 ORDER BY receiveddate ASC, id ASC
 		 FOR UPDATE`,
@@ -203,7 +203,7 @@ func (e *FIFOEngine) consumeLayers(ctx context.Context, tx *sql.Tx, holdingCode,
 
 		// อัพเดท layer
 		_, err := tx.ExecContext(ctx,
-			`UPDATE inventory_cost_layers SET remainingqty = $1, updatedat = NOW() WHERE id = $2`,
+			`UPDATE inventorycostlayers SET remainingqty = $1, updatedat = NOW() WHERE id = $2`,
 			newLayerQty, layerID,
 		)
 		if err != nil {
@@ -305,7 +305,7 @@ func (e *FIFOEngine) ProcessPurchaseReturn(ctx context.Context, tx *sql.Tx, para
 		return nil, err
 	}
 
-	// ถ้าระบุ layer_id → ตัด layer นั้นโดยเฉพาะ
+	// ถ้าระบุ layerid → ตัด layer นั้นโดยเฉพาะ
 	var unitCost, totalCost float64
 	if params.CostLayerID != nil {
 		unitCost, err = e.consumeSpecificLayer(ctx, tx, *params.CostLayerID, params.Qty)
@@ -375,7 +375,7 @@ func (e *FIFOEngine) ProcessPurchaseReturn(ctx context.Context, tx *sql.Tx, para
 func (e *FIFOEngine) consumeSpecificLayer(ctx context.Context, tx *sql.Tx, layerID int64, qty float64) (float64, error) {
 	var remainingQty, unitCost float64
 	err := tx.QueryRowContext(ctx,
-		`SELECT remainingqty, totalunitcost FROM inventory_cost_layers WHERE id = $1 FOR UPDATE`,
+		`SELECT remainingqty, totalunitcost FROM inventorycostlayers WHERE id = $1 FOR UPDATE`,
 		layerID,
 	).Scan(&remainingQty, &unitCost)
 	if err != nil {
@@ -387,7 +387,7 @@ func (e *FIFOEngine) consumeSpecificLayer(ctx context.Context, tx *sql.Tx, layer
 
 	newQty := remainingQty - qty
 	_, err = tx.ExecContext(ctx,
-		`UPDATE inventory_cost_layers SET remainingqty = $1, updatedat = NOW() WHERE id = $2`,
+		`UPDATE inventorycostlayers SET remainingqty = $1, updatedat = NOW() WHERE id = $2`,
 		newQty, layerID,
 	)
 	if err != nil {
@@ -508,7 +508,7 @@ func (e *FIFOEngine) GetCurrentValuation(ctx context.Context, tx *sql.Tx, holdin
 			        COALESCE(SUM(currentqty), 0),
 			        CASE WHEN COALESCE(SUM(currentqty), 0) = 0 THEN 0 ELSE COALESCE(SUM(currenttotalvalue), 0) / SUM(currentqty) END,
 			        COALESCE(SUM(currenttotalvalue), 0)
-			 FROM inventory_stock_balances
+			 FROM inventorystockbalances
 			 WHERE holdingcode = $1 AND itemcode = $2
 			 GROUP BY itemcode`,
 			holdingCode, itemCode,
@@ -519,7 +519,7 @@ func (e *FIFOEngine) GetCurrentValuation(ctx context.Context, tx *sql.Tx, holdin
 			        COALESCE(SUM(currentqty), 0),
 			        CASE WHEN COALESCE(SUM(currentqty), 0) = 0 THEN 0 ELSE COALESCE(SUM(currenttotalvalue), 0) / SUM(currentqty) END,
 			        COALESCE(SUM(currenttotalvalue), 0)
-			 FROM inventory_stock_balances
+			 FROM inventorystockbalances
 			 WHERE holdingcode = $1 AND itemcode = $2 AND whcode = $3
 			 GROUP BY itemcode, whcode`,
 			holdingCode, itemCode, whCode,

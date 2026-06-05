@@ -206,15 +206,15 @@ func PurchaseHistoryHandler(c echo.Context) error {
 		avgPrice := sumPrice / float64(len(items))
 
 		stats[barcode] = map[string]interface{}{
-			"count":        len(items),
-			"total_qty":    totalQty,
-			"total_amount": totalAmount,
-			"avg_price":    roundTo2Decimals(avgPrice),
-			"min_price":    minPrice,
-			"max_price":    maxPrice,
-			"last_price":   items[0].Price,
-			"last_date":    items[0].DocDate,
-			"last_vendor":  items[0].CustCode, // ใช้ custcode แทน (ไม่มี custname ใน schema)
+			"count":       len(items),
+			"total_qty":   totalQty,
+			"totalamount": totalAmount,
+			"avg_price":   roundTo2Decimals(avgPrice),
+			"min_price":   minPrice,
+			"max_price":   maxPrice,
+			"last_price":  items[0].Price,
+			"last_date":   items[0].DocDate,
+			"last_vendor": items[0].CustCode, // ใช้ custcode แทน (ไม่มี custname ใน schema)
 		}
 	}
 

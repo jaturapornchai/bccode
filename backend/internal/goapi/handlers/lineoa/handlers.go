@@ -651,7 +651,7 @@ func CallbackHandler(c echo.Context) error {
 	err := tokenCollection.FindOne(ctx, bson.M{
 		"token":       req.Token,
 		"holdingcode": req.HoldingCode,
-		"expires_at":  bson.M{"$gt": time.Now()},
+		"expiresat":   bson.M{"$gt": time.Now()},
 		"used_at":     nil,
 	}).Decode(&tokenDoc)
 

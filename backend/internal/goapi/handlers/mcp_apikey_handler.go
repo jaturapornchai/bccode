@@ -75,13 +75,13 @@ func (h *MCPAPIKeyHandler) CreateAPIKeyHandler(c echo.Context) error {
 	// Generate API key
 	apiKeyStr := auth.GenerateAPIKey()
 
-	// Parse expires_at if provided
+	// Parse expiresat if provided
 	var expiresAt *time.Time
 	if req.ExpiresAt != nil && *req.ExpiresAt != "" {
 		t, err := time.Parse("2006-01-02", *req.ExpiresAt)
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, map[string]string{
-				"error": "Invalid expires_at format, use YYYY-MM-DD",
+				"error": "Invalid expiresat format, use YYYY-MM-DD",
 				"code":  "INVALID_DATE_FORMAT",
 			})
 		}
@@ -123,7 +123,7 @@ func (h *MCPAPIKeyHandler) CreateAPIKeyHandler(c echo.Context) error {
 		})
 	}
 
-	// Format expires_at for response
+	// Format expiresat for response
 	var expiresAtStr *string
 	if createdKey.ExpiresAt != nil {
 		str := createdKey.ExpiresAt.Format("2006-01-02")
@@ -174,17 +174,17 @@ func (h *MCPAPIKeyHandler) ListAPIKeysHandler(c echo.Context) error {
 			"description":           key.Description,
 			"holdingcode":           key.HoldingCode,
 			"isactive":              key.IsActive,
-			"allowed_tools":         key.AllowedTools,
-			"rate_limit_per_minute": key.RateLimitPerMinute,
+			"allowedtools":          key.AllowedTools,
+			"ratelimitperminute":    key.RateLimitPerMinute,
 			"createdat":             key.CreatedAt,
-			"created_by":            key.CreatedBy,
+			"createdby":             key.CreatedBy,
 		}
 
 		if key.ExpiresAt != nil {
-			keyData["expires_at"] = key.ExpiresAt.Format("2006-01-02")
+			keyData["expiresat"] = key.ExpiresAt.Format("2006-01-02")
 		}
 		if key.LastUsedAt != nil {
-			keyData["last_used_at"] = key.LastUsedAt.Format("2006-01-02 15:04:05")
+			keyData["lastusedat"] = key.LastUsedAt.Format("2006-01-02 15:04:05")
 		}
 
 		response = append(response, keyData)
@@ -207,7 +207,7 @@ func (h *MCPAPIKeyHandler) DeleteAPIKeyHandler(c echo.Context) error {
 	keyID := c.Param("id")
 	if keyID == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "key_id is required",
+			"error": "keyid is required",
 			"code":  "MISSING_KEY_ID",
 		})
 	}
@@ -286,10 +286,10 @@ func (h *MCPAPIKeyHandler) UpdateAPIKeyHandler(c echo.Context) error {
 		updates["isactive"] = *req.IsActive
 	}
 	if req.AllowedTools != nil {
-		updates["allowed_tools"] = req.AllowedTools
+		updates["allowedtools"] = req.AllowedTools
 	}
 	if req.RateLimitPerMinute != nil {
-		updates["rate_limit_per_minute"] = *req.RateLimitPerMinute
+		updates["ratelimitperminute"] = *req.RateLimitPerMinute
 	}
 
 	if len(updates) == 0 {
@@ -339,7 +339,7 @@ func (h *MCPAPIKeyHandler) GetAPIKeyHandler(c echo.Context) error {
 	keyID := c.Param("id")
 	if keyID == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "key_id is required",
+			"error": "keyid is required",
 			"code":  "MISSING_KEY_ID",
 		})
 	}
@@ -369,17 +369,17 @@ func (h *MCPAPIKeyHandler) GetAPIKeyHandler(c echo.Context) error {
 		"description":           apiKey.Description,
 		"holdingcode":           apiKey.HoldingCode,
 		"isactive":              apiKey.IsActive,
-		"allowed_tools":         apiKey.AllowedTools,
-		"rate_limit_per_minute": apiKey.RateLimitPerMinute,
+		"allowedtools":          apiKey.AllowedTools,
+		"ratelimitperminute":    apiKey.RateLimitPerMinute,
 		"createdat":             apiKey.CreatedAt,
-		"created_by":            apiKey.CreatedBy,
+		"createdby":             apiKey.CreatedBy,
 	}
 
 	if apiKey.ExpiresAt != nil {
-		response["expires_at"] = apiKey.ExpiresAt.Format("2006-01-02")
+		response["expiresat"] = apiKey.ExpiresAt.Format("2006-01-02")
 	}
 	if apiKey.LastUsedAt != nil {
-		response["last_used_at"] = apiKey.LastUsedAt.Format("2006-01-02 15:04:05")
+		response["lastusedat"] = apiKey.LastUsedAt.Format("2006-01-02 15:04:05")
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
@@ -434,17 +434,17 @@ func (h *MCPAPIKeyHandler) GetAuditLogsHandler(c echo.Context) error {
 	for _, log := range logs {
 		logData := map[string]interface{}{
 			"id":                log.ID.Hex(),
-			"api_key_id":        log.APIKeyID.Hex(),
+			"apikeyid":         log.APIKeyID.Hex(),
 			"holdingcode":       log.HoldingCode,
-			"tool_name":         log.ToolName,
-			"request_params":    log.RequestParams,
-			"response_status":   log.ResponseStatus,
-			"execution_time_ms": log.ExecutionTimeMs,
+			"toolname":         log.ToolName,
+			"requestparams":    log.RequestParams,
+			"responsestatus":   log.ResponseStatus,
+			"executiontimems":  log.ExecutionTimeMs,
 			"createdat":         log.CreatedAt.Format("2006-01-02 15:04:05"),
 		}
 
 		if log.ErrorMessage != "" {
-			logData["error_message"] = log.ErrorMessage
+			logData["errormessage"] = log.ErrorMessage
 		}
 
 		response = append(response, logData)
@@ -543,13 +543,13 @@ func (h *MCPAPIKeyHandler) CreateAPIKeyWithExportHandler(c echo.Context) error {
 	// Generate API key
 	apiKeyStr := auth.GenerateAPIKey()
 
-	// Parse expires_at
+	// Parse expiresat
 	var expiresAt *time.Time
 	if req.ExpiresAt != nil && *req.ExpiresAt != "" {
 		t, err := time.Parse("2006-01-02", *req.ExpiresAt)
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, map[string]string{
-				"error": "Invalid expires_at format, use YYYY-MM-DD",
+				"error": "Invalid expiresat format, use YYYY-MM-DD",
 				"code":  "INVALID_DATE_FORMAT",
 			})
 		}
@@ -620,7 +620,7 @@ func (h *MCPAPIKeyHandler) CreateAPIKeyWithExportHandler(c echo.Context) error {
 			"name":        createdKey.Name,
 			"holdingcode": createdKey.HoldingCode,
 			"createdat":   createdKey.CreatedAt,
-			"expires_at": func() *string {
+			"expiresat": func() *string {
 				if createdKey.ExpiresAt != nil {
 					s := createdKey.ExpiresAt.Format("2006-01-02")
 					return &s
@@ -645,60 +645,60 @@ func (h *MCPAPIKeyHandler) GetAvailableToolsHandler(c echo.Context) error {
 	// Tool catalog — source of truth สำหรับ frontend
 	catalog := []ToolInfo{
 		// Products
-		{"search_products", "Products", false},
+		{"searchproducts", "Products", false},
 		// Sales
-		{"get_daily_sales", "Sales", false},
-		{"get_sales_by_date_range", "Sales", false},
-		{"get_top_selling_products", "Sales", false},
-		{"get_sales_by_seller", "Sales", false},
-		{"get_monthly_summary", "Sales", false},
+		{"getdailysales", "Sales", false},
+		{"getsalesbydaterange", "Sales", false},
+		{"gettopsellingproducts", "Sales", false},
+		{"getsalesbyseller", "Sales", false},
+		{"getmonthlysummary", "Sales", false},
 		// Dashboard
-		{"get_dashboard_kpis", "Dashboard", false},
-		{"get_business_health", "Dashboard", false},
+		{"getdashboardkpis", "Dashboard", false},
+		{"getbusinesshealth", "Dashboard", false},
 		// Financial
-		{"get_profit_analysis", "Financial", false},
-		{"get_accounts_receivable", "Financial", false},
-		{"get_accounts_payable", "Financial", false},
-		{"get_cash_flow", "Financial", false},
+		{"getprofitanalysis", "Financial", false},
+		{"getaccountsreceivable", "Financial", false},
+		{"getaccountspayable", "Financial", false},
+		{"getcashflow", "Financial", false},
 		// Inventory
-		{"get_inventory_value", "Inventory", false},
+		{"getinventoryvalue", "Inventory", false},
 		{"getlowstockalerts", "Inventory", false},
-		{"get_dead_stock", "Inventory", false},
-		{"get_inventory_turnover", "Inventory", false},
+		{"getdeadstock", "Inventory", false},
+		{"getinventoryturnover", "Inventory", false},
 		// Customers
 		{"gettopcustomers", "Customers", false},
-		{"get_customer_growth", "Customers", false},
-		{"get_customer_segments", "Customers", false},
+		{"getcustomergrowth", "Customers", false},
+		{"getcustomersegments", "Customers", false},
 		// Comparison
-		{"get_yoy_comparison", "Comparison", false},
-		{"get_mom_comparison", "Comparison", false},
+		{"getyoycomparison", "Comparison", false},
+		{"getmomcomparison", "Comparison", false},
 		// Database (PostgreSQL)
-		{"get_database_schema", "Database", false},
-		{"execute_query", "Database", false},
-		{"get_table_sample", "Database", false},
+		{"getdatabaseschema", "Database", false},
+		{"executequery", "Database", false},
+		{"gettablesample", "Database", false},
 		// Database (MongoDB)
 		{"querymongodb", "Database", false},
-		{"list_mongodb_collections", "Database", false},
-		{"aggregate_mongodb", "Database", false},
+		{"listmongodbcollections", "Database", false},
+		{"aggregatemongodb", "Database", false},
 		// Database (ClickHouse)
 		{"queryclickhouse", "Database", false},
-		{"list_clickhouse_tables", "Database", false},
+		{"listclickhousetables", "Database", false},
 		// API Development
-		{"list_api_endpoints", "API Development", false},
-		{"get_api_spec", "API Development", false},
-		{"get_api_example", "API Development", false},
+		{"listapiendpoints", "API Development", false},
+		{"getapispec", "API Development", false},
+		{"getapiexample", "API Development", false},
 		// Schema & Enums
-		{"list_enums", "Schema", false},
-		{"get_model_schema", "Schema", false},
+		{"listenums", "Schema", false},
+		{"getmodelschema", "Schema", false},
 		// Unit of Measure (readonly)
-		{"list_units", "Unit of Measure", false},
-		{"get_unit_schema", "Unit of Measure", false},
+		{"listunits", "Unit of Measure", false},
+		{"getunitschema", "Unit of Measure", false},
 		// Unit of Measure (write)
-		{"create_unit", "Unit of Measure", true},
-		{"create_units", "Unit of Measure", true},
-		{"update_unit", "Unit of Measure", true},
-		{"delete_unit", "Unit of Measure", true},
-		{"delete_units", "Unit of Measure", true},
+		{"createunit", "Unit of Measure", true},
+		{"createunits", "Unit of Measure", true},
+		{"updateunit", "Unit of Measure", true},
+		{"deleteunit", "Unit of Measure", true},
+		{"deleteunits", "Unit of Measure", true},
 	}
 
 	// Verify write flags match permissions.go
@@ -731,31 +731,31 @@ func (h *MCPAPIKeyHandler) GetAvailableToolsHandler(c echo.Context) error {
 	// Permission presets
 	presets := []map[string]interface{}{
 		{
-			"value":         "readonly",
-			"label":         "Readonly",
-			"description":   "ดูข้อมูลอย่างเดียว (เหมาะกับ Claude Desktop, frontend dev)",
-			"allowed_tools": []string{"readonly"},
+			"value":        "readonly",
+			"label":        "Readonly",
+			"description":  "ดูข้อมูลอย่างเดียว (เหมาะกับ Claude Desktop, frontend dev)",
+			"allowedtools": []string{"readonly"},
 		},
 		{
-			"value":         "developer",
-			"label":         "Developer",
-			"description":   "ทุก tool รวม create/update/delete (เหมาะกับ backend dev)",
-			"allowed_tools": []string{"*"},
+			"value":        "developer",
+			"label":        "Developer",
+			"description":  "ทุก tool รวม create/update/delete (เหมาะกับ backend dev)",
+			"allowedtools": []string{"*"},
 		},
 		{
-			"value":         "custom",
-			"label":         "Custom",
-			"description":   "เลือก tools เองทีละตัว",
-			"allowed_tools": nil,
+			"value":        "custom",
+			"label":        "Custom",
+			"description":  "เลือก tools เองทีละตัว",
+			"allowedtools": nil,
 		},
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"success":        true,
-		"categories":     groups,
-		"presets":        presets,
-		"total_tools":    len(catalog),
-		"write_tools":    len(tools.WriteTools),
-		"readonly_tools": len(catalog) - len(tools.WriteTools),
+		"success":       true,
+		"categories":    groups,
+		"presets":       presets,
+		"totaltools":    len(catalog),
+		"writetools":    len(tools.WriteTools),
+		"readonlytools": len(catalog) - len(tools.WriteTools),
 	})
 }

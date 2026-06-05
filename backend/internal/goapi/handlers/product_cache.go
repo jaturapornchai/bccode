@@ -326,7 +326,7 @@ SELECT
 	''::text as categorycode,
 	0::numeric as vattype,
 	0::numeric as costprice,
-	COALESCE(st.balance_qty, 0) as balance_qty,
+	COALESCE(st.balanceqty, 0) as balanceqty,
 	COALESCE(pb.unit_count, 0) as unit_count
 FROM public.product p
 LEFT JOIN (
@@ -344,8 +344,8 @@ LEFT JOIN (
 	GROUP BY itemcode
 ) pb ON pb.itemcode = p.itemcode
 LEFT JOIN (
-	SELECT itemcode, SUM(currentqty) as balance_qty
-	FROM public.inventory_stock_balances
+	SELECT itemcode, SUM(currentqty) as balanceqty
+	FROM public.inventorystockbalances
 	GROUP BY itemcode
 ) st ON st.itemcode = p.itemcode
 WHERE 1=1`
@@ -511,14 +511,14 @@ LIMIT 1`
 	data := map[string]any{
 		"itemcode":     result.ItemCode,
 		"barcode":      result.Barcode,
-		"item_name":    result.ItemName,
+		"itemname":     result.ItemName,
 		"unitcode":     result.UnitCode,
-		"unit_name":    result.UnitName,
+		"unitname":     result.UnitName,
 		"price":        result.Price,
 		"unitstand":    result.UnitStand,
 		"unitdivide":   result.UnitDivide,
 		"categorycode": result.CategoryCode,
-		"vat_type":     result.VatType,
+		"vattype":      result.VatType,
 		"costprice":    result.CostPrice,
 	}
 

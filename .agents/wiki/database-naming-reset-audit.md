@@ -73,7 +73,7 @@ Applied lowercase no-underscore migration across project-controlled database/API
 
 | Area | Result |
 |---|---|
-| Core tenant/identity keys | Renamed `holding_code`, `guid_fixed`, `business_code`, `business_codes`, `branch_code`, `created_at`, `updated_at`, `deleted_at`, and `deleted_by` to no-underscore forms such as `holdingcode`, `guidfixed`, `businesscode`, `businesscodes`, `branchcode`, `createdat`, `updatedat`, `deletedat`, and `deletedby`. |
+| Core tenant/identity keys | Renamed `holdingcode`, `guidfixed`, `businesscode`, `businesscodes`, `branchcode`, `createdat`, `updatedat`, `deletedat`, and `deletedby` to no-underscore forms such as `holdingcode`, `guidfixed`, `businesscode`, `businesscodes`, `branchcode`, `createdat`, `updatedat`, `deletedat`, and `deletedby`. |
 | MCP contracts | Renamed MCP tool names, sandbox helper names, parameters, JSON/BSON tags, and examples to no-underscore names such as `executepython`, `querymongo`, `querypg`, `querych`, `resultvalue`, `getlowstockalerts`, and `querypostgresql`. |
 | AI-chat internal contracts | Renamed internal request/response keys and SQL aliases, while keeping OpenAI-compatible fields inside OpenAI adapter files unchanged. |
 | Knowledge Base metadata | Renamed MongoDB/API metadata keys to `holdingcode`, `ragflowdocid`, `docid`, `docname`, `datasetid`, `topk`, `chunkcount`, and related no-underscore names. RAGFlow SDK payload names stay isolated in the adapter. |
@@ -83,7 +83,7 @@ Post-migration scan:
 
 | Scan | Result |
 |---|---|
-| Core legacy names (`holding_code`, `guid_fixed`, old MCP/query helper names) | 0 hits |
+| Core legacy names (`holdingcode`, `guidfixed`, old MCP/query helper names) | 0 hits |
 | Project-controlled struct tags, excluding external adapter boundaries | 0 hits |
 | Remaining underscore struct tags in whole repo | 53 hits, all in external adapter boundary files for OpenAI-compatible, RAGFlow, Gemini, or BCProxy payloads |
 
@@ -92,14 +92,14 @@ Verification run:
 | Command | Result |
 |---|---|
 | `go test ./internal/goapi/mcp/... ./internal/goapi/handlers/aichat ./internal/goapi/handlers/knowledgebase ./internal/goapi/ragflow` | Passed |
-| `go test ./internal/goapi/aiprovider ./cmd/branch_code_audit ./cmd/dbtest` | Passed |
+| `go test ./internal/goapi/aiprovider ./cmd/branchcode_audit ./cmd/dbtest` | Passed |
 | `npm run typecheck` in `frontend` | Passed |
 | `git diff --check` | Passed with line-ending warnings only |
 
 Known verification limits:
 
 - `go test ./internal/...` is still not a clean verifier for this repo because it pulls existing environment/dependency failures: Kafka symbols in `pkg/microservice`, Firebase/LINE network/config tests, and date-sensitive coupon tests.
-- Route/screen paths such as `/product_barcode` are not migrated in this change. They are UI route compatibility contracts and require a separate route migration plan with filesystem route/page moves and redirects.
+- Product route/screen paths that were touched in this change now use lowercase no-underscore names such as `/productbarcode`, `/productserialregistry`, and `/channelprice`. Other legacy UI route compatibility contracts need their own route migration plan before renaming.
 
 ## R0 Blocker
 

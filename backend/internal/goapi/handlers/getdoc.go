@@ -291,7 +291,7 @@ func PgGetDocHandler(c echo.Context) error {
 			"docno":                docno,
 			"custcode":             custcode,
 			"cust_name":            custname,
-			"total_amount":         totalamount,
+			"totalamount":          totalamount,
 			"detailcount":          detailcount,
 			"transflag":            transflag,
 			"isref":                isref,

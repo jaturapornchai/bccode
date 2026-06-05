@@ -304,7 +304,7 @@ func ResultFromQueryHandler(c echo.Context) error {
 		insertBatchSize = 500
 	)
 
-	columnsResult := []string{"guid", "docdatetime", "querynumber", "line_number", "level", "typejson", "datajson"}
+	columnsResult := []string{"guid", "docdatetime", "querynumber", "linenumber", "level", "typejson", "datajson"}
 	docDateTime := time.Now()
 	aliasSourceRows := make(map[string][]map[string]any)
 	aliasRowPayloads := make(map[string][]*resultRowPayload)
@@ -670,7 +670,7 @@ func ResultGetHandler(c echo.Context) error {
 			"typejson":    typeJSON,
 			"is_summary":  typeJSON != 0,
 			"querynumber": queryNumber,
-			"line_number": lineNumber,
+			"linenumber":  lineNumber,
 			"data":        jsonData,
 		}
 

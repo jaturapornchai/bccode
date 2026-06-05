@@ -95,9 +95,9 @@ func ReportProductBalanceByWareHouseAndItem(holdingCode string, guid string, fin
 		BottomLine:        true,
 		Columns: []models.ReportColumnModel{
 			{Name: GetColumnText("warehouse", languageCode), Width: 1, Align: 0}, // คลัง
-			{Name: GetColumnText("item_code", languageCode), Width: 1, Align: 0},
+			{Name: GetColumnText("itemcode", languageCode), Width: 1, Align: 0},
 			{Name: GetColumnText("product_name", languageCode), Width: 3, Align: 0},
-			{Name: GetColumnText("barcode_list", languageCode), Width: 2, Align: 0},
+			{Name: GetColumnText("barcodelist", languageCode), Width: 2, Align: 0},
 			{Name: GetColumnText("unit", languageCode), Width: 1, Align: 0},
 			{Name: GetColumnText("quantity", languageCode), Width: 1, Align: 2},
 			{Name: GetColumnText("balance_word", languageCode), Width: 1, Align: 0},

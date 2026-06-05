@@ -1487,10 +1487,10 @@ func (svc ProductBarcodeHttpService) SearchProductBarcode(holdingCode string, fi
 		"barcode",
 		"names.name",
 		"itemcode",
-		"group_code",
+		"groupcode",
 		"groupnames.name",
 		"itemunitnames.name",
-		"brand_code",
+		"brandcode",
 		"brandnames.name",
 		"designcode",
 		"designnames.name",
@@ -1585,7 +1585,7 @@ func (svc ProductBarcodeHttpService) SearchProductBarcodeStep(holdingCode string
 		"barcode",
 		"names.name",
 		"itemcode",
-		"group_code",
+		"groupcode",
 		"groupnames.name",
 		"itemunitnames.name",
 	}
@@ -1608,7 +1608,7 @@ func (svc ProductBarcodeHttpService) SearchProductBarcodeStepMultiShops(langCode
 		"barcode",
 		"names.name",
 		"itemcode",
-		"group_code",
+		"groupcode",
 		"groupnames.name",
 		"itemunitnames.name",
 	}
@@ -1968,12 +1968,12 @@ func (svc ProductBarcodeHttpService) Export(holdingCode string, languageCode str
 		"barcode",        //บาร์โค้ด",
 		"productname",    //"ชื่อสินค้า",
 		"unitcode",       //"หน่วยนับ",
-		"unit_name",      //"ชื่อหน่วยนับ",
+		"unitname",       //"ชื่อหน่วยนับ",
 		"price",          //ราคาขาย",
 		"price member",   //ราคาขาย",
 		"price delivery", //ราคาขาย",
-		"item_type",      //ประเภทสินค้า",
-		"group_code",     //กลุ่มสินค้า",
+		"itemtype",       //ประเภทสินค้า",
+		"groupcode",      //กลุ่มสินค้า",
 	}
 
 	headerRow := []string{}
@@ -2496,7 +2496,7 @@ func (s ProductBarcodeHttpService) processBatchRefBarcodeUpdate(holdingCode, aut
 		updateData := bson.M{
 			"$set": bson.M{
 				"refbarcodes":      []models.RefProductBarcode{refBarcode},
-				"is_main_barcode":  false,
+				"ismainbarcode":    false,
 				"updatedby":        authUsername,
 				"updatedat":        time.Now(),
 				"isusesubbarcodes": true,

@@ -817,11 +817,11 @@ export function SettingsScreen() {
 
 
   function renderIntegrationsSection(items: ConfigItem[]) {
-    const providerItem = items.find((item) => item.key === "ai_provider");
+    const providerItem = items.find((item) => item.key === "aiprovider");
     const providerIds = AI_PROVIDERS.map((provider) => provider.id);
     const otherItems = items.filter((item) => {
-      if (item.key === "ai_provider") return false;
-      return !providerIds.some((providerId) => item.key.startsWith(`${providerId}_`));
+      if (item.key === "aiprovider") return false;
+      return !providerIds.some((providerId) => item.key.startsWith(providerId));
     });
 
     return (
@@ -855,7 +855,7 @@ export function SettingsScreen() {
                     className={selected ? "provider-option selected" : "provider-option"}
                     key={providerId || "auto"}
                     type="button"
-                    onClick={() => updateItem("integrations", "ai_provider", providerId)}
+                    onClick={() => updateItem("integrations", "aiprovider", providerId)}
                   >
                     {selected ? <CheckCircle2 aria-hidden="true" size={15} /> : null}
                     <span>{label}</span>
@@ -868,8 +868,8 @@ export function SettingsScreen() {
 
         <div className="provider-card-grid">
           {AI_PROVIDERS.map((provider) => {
-            const providerItems = items.filter((item) => item.key.startsWith(`${provider.id}_`));
-            const modelItem = providerItems.find((item) => item.key.endsWith("_model"));
+            const providerItems = items.filter((item) => item.key.startsWith(provider.id));
+            const modelItem = providerItems.find((item) => item.key.endsWith("model"));
             const freeMode = !modelItem?.value || modelItem.value.endsWith(":free") || provider.freeModels.includes(modelItem.value);
 
             return (
@@ -932,9 +932,9 @@ export function SettingsScreen() {
       if (category === "clickhouse") return "9000";
       if (category === "mongodb") return "27017";
     }
-    if (key === "server_url" && category === "kafka") return "127.0.0.1:9092";
+    if (key === "serverurl" && category === "kafka") return "127.0.0.1:9092";
     if (key === "timezone" && category === "postgresql") return "Asia/Bangkok";
-    if (key === "service_port" && category === "service") return "8888";
+    if (key === "serviceport" && category === "service") return "8888";
     return null;
   }
 
@@ -946,16 +946,16 @@ export function SettingsScreen() {
     const defaultValue = getDefaultValue(item.category, item.key);
     const hasDefault = defaultValue !== null;
 
-    const isWideField = 
-      item.key === "uri" || 
-      item.key === "server_url" || 
-      item.key === "host_api" || 
-      item.key === "cors_allowed_origins" ||
-      item.key === "jwt_secret_key" ||
-      item.key.endsWith("_api_key") ||
-      item.key.endsWith("_secret_access_key") ||
-      item.key.endsWith("_access_key_id") ||
-      item.key === "azure_account_key";
+    const isWideField =
+      item.key === "uri" ||
+      item.key === "serverurl" ||
+      item.key === "hostapi" ||
+      item.key === "corsallowedorigins" ||
+      item.key === "jwtsecretkey" ||
+      item.key.endsWith("apikey") ||
+      item.key.endsWith("secretaccesskey") ||
+      item.key.endsWith("accesskeyid") ||
+      item.key === "azureaccountkey";
 
     const isMongoUriReadOnly = item.category === "mongodb" && item.key === "uri" && mongodbMode === "fields";
 

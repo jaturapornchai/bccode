@@ -67,7 +67,7 @@ func (qm *QueueManager) runWithReconnect(operation func(db *sql.DB) error) error
 // AddToQueue - เพิ่มงานเข้า queue (แทนที่ Redis LPUSH)
 func (qm *QueueManager) AddToQueue(ctx context.Context, item QueueItem) error {
 	query := `
-		INSERT INTO queues (holdingcode, doc_no, trans_flag, retry_count, createdat, status)
+		INSERT INTO queues (holdingcode, docno, transflag, retrycount, createdat, status)
 		VALUES ($1, $2, $3, $4, $5, 'pending')
 	`
 
@@ -101,7 +101,7 @@ func (qm *QueueManager) PopFromQueue(ctx context.Context, holdingCode string) (*
 	query := `
 		UPDATE queues
 		SET status = 'processing',
-			processed_at = NOW()
+			processedat = NOW()
 		WHERE id = (
 			SELECT id
 			FROM queues
@@ -111,7 +111,7 @@ func (qm *QueueManager) PopFromQueue(ctx context.Context, holdingCode string) (*
 			LIMIT 1
 			FOR UPDATE SKIP LOCKED
 		)
-		RETURNING id, holdingcode, doc_no, trans_flag, retry_count, createdat
+		RETURNING id, holdingcode, docno, transflag, retrycount, createdat
 	`
 
 	var item QueueItem
@@ -144,9 +144,9 @@ func (qm *QueueManager) RequeueItem(ctx context.Context, item QueueItem) error {
 	query := `
 		UPDATE queues
 		SET status = 'pending',
-			retry_count = $1,
+			retrycount = $1,
 			updatedat = NOW(),
-			processed_at = NULL
+			processedat = NULL
 		WHERE id = $2
 	`
 
@@ -163,17 +163,17 @@ func (qm *QueueManager) RequeueItem(ctx context.Context, item QueueItem) error {
 	return nil
 }
 
-// AddToDeadLetterQueue - ส่งงานล้มเหลวไปยัง DLQ (แทนที่ Redis LPUSH dead_letter_queue)
+// AddToDeadLetterQueue - ส่งงานล้มเหลวไปยัง DLQ (แทนที่ Redis LPUSH deadletterqueue)
 func (qm *QueueManager) AddToDeadLetterQueue(ctx context.Context, item QueueItem, errorMessage string) error {
 	insertQuery := `
-		INSERT INTO dead_letter_queue (holdingcode, doc_no, trans_flag, retry_count, createdat, error_message)
+		INSERT INTO deadletterqueue (holdingcode, docno, transflag, retrycount, createdat, errormessage)
 		VALUES ($1, $2, $3, $4, $5, $6)
 	`
 
 	updateQuery := `
 		UPDATE queues
 		SET status = 'failed',
-			error_message = $1,
+			errormessage = $1,
 			updatedat = NOW()
 		WHERE id = $2
 	`
@@ -293,11 +293,11 @@ func (qm *QueueManager) GetQueueStats(ctx context.Context, holdingCode string) (
 	query := `
 		SELECT
 			holdingcode,
-			COUNT(*) FILTER (WHERE status = 'pending') as pending_count,
-			COUNT(*) FILTER (WHERE status = 'processing') as processing_count,
-			COUNT(*) FILTER (WHERE status = 'completed') as completed_count,
-			COUNT(*) FILTER (WHERE status = 'failed') as failed_count,
-			MIN(createdat) FILTER (WHERE status = 'pending') as oldest_item
+			COUNT(*) FILTER (WHERE status = 'pending') as pendingcount,
+			COUNT(*) FILTER (WHERE status = 'processing') as processingcount,
+			COUNT(*) FILTER (WHERE status = 'completed') as completedcount,
+			COUNT(*) FILTER (WHERE status = 'failed') as failedcount,
+			MIN(createdat) FILTER (WHERE status = 'pending') as oldestitem
 		FROM queues
 		WHERE holdingcode = $1
 		GROUP BY holdingcode
@@ -347,13 +347,13 @@ func (qm *QueueManager) GetQueueSummary(ctx context.Context) (*QueueSummary, err
 	query := `
 		SELECT
 			holdingcode,
-			COUNT(*) FILTER (WHERE status = 'pending') as pending_count,
-			COUNT(*) FILTER (WHERE status = 'processing') as processing_count,
-			COUNT(*) FILTER (WHERE status = 'failed') as failed_count
+			COUNT(*) FILTER (WHERE status = 'pending') as pendingcount,
+			COUNT(*) FILTER (WHERE status = 'processing') as processingcount,
+			COUNT(*) FILTER (WHERE status = 'failed') as failedcount
 		FROM queues
 		WHERE status IN ('pending', 'processing', 'failed')
 		GROUP BY holdingcode
-		ORDER BY pending_count DESC
+		ORDER BY pendingcount DESC
 	`
 
 	var rows *sql.Rows
@@ -387,10 +387,10 @@ func (qm *QueueManager) GetQueueSummary(ctx context.Context) (*QueueSummary, err
 		summary.TotalFailed += failed
 
 		summary.ShopStats = append(summary.ShopStats, map[string]interface{}{
-			"holdingcode":      holdingCode,
-			"pending_count":    pending,
-			"processing_count": processing,
-			"failed_count":     failed,
+			"holdingcode":     holdingCode,
+			"pendingcount":    pending,
+			"processingcount": processing,
+			"failedcount":     failed,
 		})
 	}
 

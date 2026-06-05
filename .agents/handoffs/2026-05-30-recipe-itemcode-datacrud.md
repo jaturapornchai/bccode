@@ -34,7 +34,7 @@ Payload for `POST /api/product-barcode`:
   "barcode": "RECIPE-001",
   "itemcode": "RECIPE-001",
   "names": [{"code": "th", "name": "..."}],
-  "item_unit_code": "PCS",
+  "itemunitcode": "PCS",
   "itemunitnames": [{"code": "th", "name": "..."}],
   "price": 0,
   "bom": [...],

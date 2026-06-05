@@ -205,8 +205,8 @@ function buildGetPath(request: Request, config: SystemSettingConfig, id: string)
   }
 
   if (config.kind === "copy-uat") {
-    const sourceEnvironment = url.searchParams.get("source_environment") ?? url.searchParams.get("source_env") ?? "uat";
-    return `/listsourceshops?source_environment=${encodeURIComponent(sourceEnvironment)}`;
+    const sourceEnvironment = url.searchParams.get("sourceenvironment") ?? url.searchParams.get("sourceenv") ?? "uat";
+    return `/listsourceshops?sourceenvironment=${encodeURIComponent(sourceEnvironment)}`;
   }
 
   let basePath = id ? `${config.basePath}/${encodeProxyPathId(config, id)}` : (config.listPath ?? config.basePath ?? "");
@@ -236,7 +236,7 @@ function buildGetInit(request: Request, config: SystemSettingConfig, id = ""): R
       body.guidfixed = id;
       body.email = id;
       body.cartid = id;
-      if (config.collection === "employee_permissions") body.user_uid = id;
+      if (config.collection === "employeepermissions") body.useruid = id;
     }
     return {
       method: "POST",
@@ -338,7 +338,7 @@ function buildWritePayload(request: Request, config: SystemSettingConfig, id: st
       guidfixed: key,
       email: legacyKey,
       cartid: legacyKey,
-      user_uid: typeof payload.user_uid === "string" ? payload.user_uid : undefined,
+      useruid: typeof payload.useruid === "string" ? payload.useruid : undefined,
       data: { ...atlasData, ...(holdingCode ? { holdingcode: holdingCode } : {}), guidfixed: key },
       upsert: true,
     };
@@ -368,14 +368,14 @@ function buildWritePayload(request: Request, config: SystemSettingConfig, id: st
 function normalizeAccessScopePayload(slug: string, payload: Record<string, unknown>) {
   const field =
     slug === "user"
-      ? "access_scopes"
-      : slug === "approval_setting"
-        ? "approval_rules"
-        : slug === "permission_definition" || slug === "permission_group" || slug === "permission_link"
-          ? "scope_rules"
+      ? "accessscopes"
+      : slug === "approvalsetting"
+        ? "approvalrules"
+        : slug === "permissiondefinition" || slug === "permissiongroup" || slug === "permissionlink"
+          ? "scoperules"
           : "";
   if (!field) return;
-  const value = payload[field] ?? payload.access_scopes ?? payload.businesscodes ?? payload.companyguids;
+  const value = payload[field] ?? payload.accessscopes ?? payload.businesscodes ?? payload.companyguids;
   payload[field] = normalizeScopeRules(value);
 }
 
@@ -385,7 +385,7 @@ function normalizeScopeRules(value: unknown): Record<string, unknown>[] {
   const rules: Record<string, unknown>[] = [];
   for (const item of raw) {
     const rule = normalizeScopeRule(item);
-    const key = `${rule.scope_type}|${rule.businesscode ?? ""}|${rule.branchcode ?? ""}`;
+    const key = `${rule.scopetype}|${rule.businesscode ?? ""}|${rule.branchcode ?? ""}`;
     if (seen.has(key)) continue;
     seen.add(key);
     rules.push(rule);
@@ -411,20 +411,20 @@ function normalizeScopeRule(value: unknown): Record<string, unknown> {
   if (typeof value === "string") {
     const businessCode = normalizeBusinessCode(value);
     return businessCode
-      ? { scope_type: "company", businesscode: businessCode, all_branches: true }
-      : { scope_type: "holding" };
+      ? { scopetype: "company", businesscode: businessCode, allbranches: true }
+      : { scopetype: "holding" };
   }
   const record = isRecord(value) ? value : {};
-  const rawScope = String(record.scope_type ?? record.scopeType ?? "holding").trim().toLowerCase();
-  const businessCode = normalizeBusinessCode(record.businesscode ?? record.businessCode ?? record.company_code ?? record.companyCode);
-  if (rawScope === "holding" || !businessCode) return { scope_type: "holding", all_branches: false };
-  const allBranches = booleanValue(record.all_branches ?? record.allBranches ?? record.use_all_branches);
-  if (rawScope === "company" || allBranches) return { scope_type: "company", businesscode: businessCode, all_branches: true };
+  const rawScope = String(record.scopetype ?? record.scopeType ?? "holding").trim().toLowerCase();
+  const businessCode = normalizeBusinessCode(record.businesscode ?? record.businessCode ?? record.companycode ?? record.companyCode);
+  if (rawScope === "holding" || !businessCode) return { scopetype: "holding", allbranches: false };
+  const allBranches = booleanValue(record.allbranches ?? record.allBranches ?? record.useallbranches);
+  if (rawScope === "company" || allBranches) return { scopetype: "company", businesscode: businessCode, allbranches: true };
   return {
-    scope_type: "branch",
+    scopetype: "branch",
     businesscode: businessCode,
     branchcode: normalizeBranchCode(record.branchcode ?? record.branchCode ?? record.code),
-    all_branches: false,
+    allbranches: false,
   };
 }
 
@@ -464,7 +464,7 @@ function buildDeletePayload(
       guidfixed: id,
       email: id,
       cartid: id,
-      user_uid: typeof body.user_uid === "string" ? body.user_uid : undefined,
+      useruid: typeof body.useruid === "string" ? body.useruid : undefined,
       delete_many: false,
     };
   }
@@ -472,7 +472,7 @@ function buildDeletePayload(
   if (config.kind === "ai-provider") {
     return {
       holdingcode: holdingcode,
-      provider_name: id,
+      providername: id,
     };
   }
 
@@ -512,7 +512,7 @@ async function ensureUsernameLoginUser(request: Request, baseUrl: string, payloa
     body: JSON.stringify({
       username,
       password: randomBytes(12).toString("hex"),
-      name: String(payload.name ?? payload.user_profile_name ?? username),
+      name: String(payload.name ?? payload.userprofilename ?? username),
     }),
     cache: "no-store",
   });
@@ -579,7 +579,7 @@ function stripProxyKeys(body: Record<string, unknown>): Record<string, unknown> 
 }
 
 function forwardPagingParams(sourceUrl: URL, target: URLSearchParams) {
-  for (const key of ["offset", "limit", "q", "page", "branch_key", "branchcode", "branchguid", "group-number", "companyguid", "sort"]) {
+  for (const key of ["offset", "limit", "q", "page", "branchkey", "branchcode", "branchguid", "group-number", "companyguid", "sort"]) {
     const value = sourceUrl.searchParams.get(key);
     if (value) target.set(key, value);
   }

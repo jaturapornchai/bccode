@@ -704,10 +704,10 @@ func processProductRow(holdingCode string, rowNumber int, headers []string, row 
 	}
 
 	result.Name = getValueFromRow(rowData, []string{"Name", "name", "ชื่อสินค้า"})
-	result.UnitCode = getValueFromRow(rowData, []string{"Unit Code", "UnitCode", "unit_code", "รหัสหน่วย"})
+	result.UnitCode = getValueFromRow(rowData, []string{"Unit Code", "UnitCode", "unitcode", "รหัสหน่วย"})
 	result.ProductType = getValueFromRow(rowData, []string{"Product Type", "ProductType", "product_type", "ประเภทสินค้า"})
-	result.TaxType = getValueFromRow(rowData, []string{"Tax Type", "TaxType", "tax_type", "ภาษี"})
-	result.Code = getValueFromRow(rowData, []string{"itemcode", "item_code", "ItemCode", "Code", "code", "รหัสสินค้า"})
+	result.TaxType = getValueFromRow(rowData, []string{"Tax Type", "TaxType", "taxtype", "ภาษี"})
+	result.Code = getValueFromRow(rowData, []string{"itemcode", "itemcode", "ItemCode", "Code", "code", "รหัสสินค้า"})
 
 	// Prices
 	result.Price = parseFloat(getValueFromRow(rowData, []string{"Price", "price"}))
@@ -724,10 +724,10 @@ func processProductRow(holdingCode string, rowNumber int, headers []string, row 
 	result.PriceNine = parseFloat(getValueFromRow(rowData, []string{"PriceNine", "price_nine"}))
 
 	// Codes
-	result.GroupCode = getValueFromRow(rowData, []string{"GroupCode", "group_code"})
+	result.GroupCode = getValueFromRow(rowData, []string{"GroupCode", "groupcode"})
 	result.GroupsuboneCode = getValueFromRow(rowData, []string{"GroupsuboneCode", "groupsubone_code"})
 	result.GroupsubtwoCode = getValueFromRow(rowData, []string{"GroupsubtwoCode", "groupsubtwo_code"})
-	result.BrandCode = getValueFromRow(rowData, []string{"BrandCode", "brand_code"})
+	result.BrandCode = getValueFromRow(rowData, []string{"BrandCode", "brandcode"})
 	result.DesignCode = getValueFromRow(rowData, []string{"DesignCode", "design_code"})
 	result.ModelCode = getValueFromRow(rowData, []string{"ModelCode", "model_code"})
 	result.PatternCode = getValueFromRow(rowData, []string{"PatternCode", "pattern_code"})

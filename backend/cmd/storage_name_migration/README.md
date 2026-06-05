@@ -4,7 +4,7 @@ Migration history is recorded in `MIGRATION_HISTORY.md`.
 
 ## Objective
 
-Rename existing MongoDB collections, PostgreSQL tables, and ClickHouse tables to lowercase `snake_case` names.
+Rename existing MongoDB collections, PostgreSQL tables, and ClickHouse tables to lowercase `no-underscore` names.
 
 Example:
 
@@ -34,7 +34,7 @@ go run ./cmd/storage_name_migration `
   --postgres-dsn "postgres://user:password@localhost:5432/bc_account?sslmode=disable" `
   --postgres-schema "public" `
   --clickhouse-url "http://localhost:8123" `
-  --clickhouse-db "bc_account"
+  --clickhouse-db "bcaccount"
 ```
 
 Run only one database:
@@ -42,7 +42,7 @@ Run only one database:
 ```powershell
 go run ./cmd/storage_name_migration --target mongo --mongo-uri "$env:MONGODB_DEV_URI" --mongo-db "$env:MONGODB_DEV_DB"
 go run ./cmd/storage_name_migration --target postgres --postgres-dsn "postgres://user:password@localhost:5432/bc_account?sslmode=disable"
-go run ./cmd/storage_name_migration --target clickhouse --clickhouse-url "http://localhost:8123" --clickhouse-db "bc_account"
+go run ./cmd/storage_name_migration --target clickhouse --clickhouse-url "http://localhost:8123" --clickhouse-db "bcaccount"
 ```
 
 Apply changes:

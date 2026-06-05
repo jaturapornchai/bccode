@@ -10,19 +10,19 @@ import (
 )
 
 // FEFOEngine — First Expired, First Out
-// ตัดสินค้าที่หมดอายุเร็วที่สุดก่อน — เรียงตาม expiry_date
-// บังคับ: ต้องมี expiry_date + lot_number ทุก layer
+// ตัดสินค้าที่หมดอายุเร็วที่สุดก่อน — เรียงตาม expirydate
+// บังคับ: ต้องมี expirydate + lotnumber ทุก layer
 type FEFOEngine struct{}
 
 func (e *FEFOEngine) Method() string { return inv.CostingMethodFEFO }
 
 func (e *FEFOEngine) ProcessReceipt(ctx context.Context, tx *sql.Tx, params inv.ReceiptParams) (*inv.CostTransactionResult, error) {
-	// validate: FEFO ต้องมี expiry_date
+	// validate: FEFO ต้องมี expirydate
 	if params.ExpiryDate == nil {
-		return nil, fmt.Errorf("FEFO ต้องระบุ expiry_date ทุกครั้งที่รับสินค้าเข้า")
+		return nil, fmt.Errorf("FEFO ต้องระบุ expirydate ทุกครั้งที่รับสินค้าเข้า")
 	}
 	if params.LotNumber == "" {
-		return nil, fmt.Errorf("FEFO ต้องระบุ lot_number ทุกครั้งที่รับสินค้าเข้า")
+		return nil, fmt.Errorf("FEFO ต้องระบุ lotnumber ทุกครั้งที่รับสินค้าเข้า")
 	}
 
 	balance, err := getOrCreateBalance(ctx, tx, params.HoldingCode, params.ItemCode, params.Barcode, params.WhCode, params.LocationCode)
@@ -90,7 +90,7 @@ func (e *FEFOEngine) ProcessIssue(ctx context.Context, tx *sql.Tx, params inv.Is
 		return nil, fmt.Errorf("สต็อกไม่พอ: คงเหลือ %.4f ต้องการ %.4f", balance.CurrentQty, params.Qty)
 	}
 
-	// ตัด layers เรียงตาม expiry_date (หมดอายุเร็วสุดก่อน)
+	// ตัด layers เรียงตาม expirydate (หมดอายุเร็วสุดก่อน)
 	totalCost, err := e.consumeLayersFEFO(ctx, tx, params.HoldingCode, params.ItemCode, params.WhCode, params.LocationCode, params.Qty)
 	if err != nil {
 		return nil, err
@@ -132,11 +132,11 @@ func (e *FEFOEngine) ProcessIssue(ctx context.Context, tx *sql.Tx, params inv.Is
 	}, nil
 }
 
-// consumeLayersFEFO — ตัด layers เรียงตาม expiry_date ASC (หมดอายุเร็วสุดก่อน)
+// consumeLayersFEFO — ตัด layers เรียงตาม expirydate ASC (หมดอายุเร็วสุดก่อน)
 func (e *FEFOEngine) consumeLayersFEFO(ctx context.Context, tx *sql.Tx, holdingCode, itemCode, whCode, locationCode string, qtyNeeded float64) (float64, error) {
 	rows, err := tx.QueryContext(ctx,
 		`SELECT id, remainingqty, totalunitcost, expirydate
-		 FROM inventory_cost_layers
+		 FROM inventorycostlayers
 		 WHERE holdingcode = $1 AND itemcode = $2 AND whcode = $3 AND locationcode = $4 AND remainingqty > 0
 		 ORDER BY expirydate ASC, receiveddate ASC, id ASC
 		 FOR UPDATE`,
@@ -165,7 +165,7 @@ func (e *FEFOEngine) consumeLayersFEFO(ctx context.Context, tx *sql.Tx, holdingC
 		remaining -= consume
 
 		_, err := tx.ExecContext(ctx,
-			`UPDATE inventory_cost_layers SET remainingqty = $1, updatedat = NOW() WHERE id = $2`,
+			`UPDATE inventorycostlayers SET remainingqty = $1, updatedat = NOW() WHERE id = $2`,
 			layerQty-consume, layerID,
 		)
 		if err != nil {
@@ -200,7 +200,7 @@ func (e *FEFOEngine) ProcessPurchaseReturn(ctx context.Context, tx *sql.Tx, para
 
 func (e *FEFOEngine) ProcessAdjustment(ctx context.Context, tx *sql.Tx, params inv.AdjustmentParams) (*inv.CostTransactionResult, error) {
 	if params.IsIncrease && params.ExpiryDate == nil {
-		return nil, fmt.Errorf("FEFO ต้องระบุ expiry_date เมื่อเพิ่มสต็อก")
+		return nil, fmt.Errorf("FEFO ต้องระบุ expirydate เมื่อเพิ่มสต็อก")
 	}
 	fifo := &FIFOEngine{}
 	result, err := fifo.ProcessAdjustment(ctx, tx, params)

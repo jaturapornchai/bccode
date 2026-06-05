@@ -15,8 +15,8 @@ CREATE TABLE IF NOT EXISTS productbarcode (
     unitnames JSONB NOT NULL DEFAULT '[]'::jsonb,
     groupcode TEXT DEFAULT '',
     groupnames TEXT DEFAULT '',
-    group_code TEXT DEFAULT '',
-    group_names JSONB NOT NULL DEFAULT '[]'::jsonb,
+    groupcode TEXT DEFAULT '',
+    groupnames JSONB NOT NULL DEFAULT '[]'::jsonb,
     groupsubonecode TEXT DEFAULT '',
     groupsubonenames TEXT DEFAULT '',
     groupsubtwocode TEXT DEFAULT '',
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS productbarcode (
     barcoderefunitdivide NUMERIC NOT NULL DEFAULT 1,
     standvalue NUMERIC NOT NULL DEFAULT 1,
     dividevalue NUMERIC NOT NULL DEFAULT 1,
-    balance_qty NUMERIC NOT NULL DEFAULT 0,
+    balanceqty NUMERIC NOT NULL DEFAULT 0,
     balanceamount NUMERIC NOT NULL DEFAULT 0,
     averagecost NUMERIC NOT NULL DEFAULT 0,
     price1 NUMERIC NOT NULL DEFAULT 0,
@@ -72,33 +72,33 @@ BEGIN
         IF NOT EXISTS (
             SELECT 1
             FROM pg_constraint
-            WHERE conname = 'chk_productbarcode_itemtype'
+            WHERE conname = 'chkproductbarcodeitemtype'
               AND conrelid = 'public.productbarcode'::regclass
         ) THEN
             ALTER TABLE productbarcode
-                ADD CONSTRAINT chk_productbarcode_itemtype
+                ADD CONSTRAINT chkproductbarcodeitemtype
                 CHECK (itemtype IN (0, 1, 2, 3));
         END IF;
 
         IF NOT EXISTS (
             SELECT 1
             FROM pg_constraint
-            WHERE conname = 'chk_productbarcode_materialtype'
+            WHERE conname = 'chkproductbarcodematerialtype'
               AND conrelid = 'public.productbarcode'::regclass
         ) THEN
             ALTER TABLE productbarcode
-                ADD CONSTRAINT chk_productbarcode_materialtype
+                ADD CONSTRAINT chkproductbarcodematerialtype
                 CHECK (materialtype IN (0, 1, 2, 3, 4));
         END IF;
 
         IF NOT EXISTS (
             SELECT 1
             FROM pg_constraint
-            WHERE conname = 'chk_productbarcode_set_materialtype'
+            WHERE conname = 'chkproductbarcodesetmaterialtype'
               AND conrelid = 'public.productbarcode'::regclass
         ) THEN
             ALTER TABLE productbarcode
-                ADD CONSTRAINT chk_productbarcode_set_materialtype
+                ADD CONSTRAINT chkproductbarcodesetmaterialtype
                 CHECK (itemtype <> 2 OR materialtype = 3);
         END IF;
     END IF;
@@ -107,18 +107,18 @@ END $$;
 DO $$
 BEGIN
     IF to_regclass('public.productbarcode') IS NOT NULL THEN
-        CREATE INDEX IF NOT EXISTS idx_productbarcode_shop_barcode
+        CREATE INDEX IF NOT EXISTS idxproductbarcodeshopbarcode
             ON productbarcode(holdingcode, barcode);
 
-        CREATE INDEX IF NOT EXISTS idx_productbarcode_shop_item_material
+        CREATE INDEX IF NOT EXISTS idxproductbarcodeshopitemmaterial
             ON productbarcode(holdingcode, itemtype, materialtype);
     END IF;
 END $$;
 
 -- DOWN (manual rollback)
--- DROP INDEX IF EXISTS idx_productbarcode_shop_item_material;
--- DROP INDEX IF EXISTS idx_productbarcode_shop_barcode;
--- ALTER TABLE IF EXISTS productbarcode DROP CONSTRAINT IF EXISTS chk_productbarcode_set_materialtype;
--- ALTER TABLE IF EXISTS productbarcode DROP CONSTRAINT IF EXISTS chk_productbarcode_materialtype;
--- ALTER TABLE IF EXISTS productbarcode DROP CONSTRAINT IF EXISTS chk_productbarcode_itemtype;
+-- DROP INDEX IF EXISTS idxproductbarcodeshopitemmaterial;
+-- DROP INDEX IF EXISTS idxproductbarcodeshopbarcode;
+-- ALTER TABLE IF EXISTS productbarcode DROP CONSTRAINT IF EXISTS chkproductbarcodesetmaterialtype;
+-- ALTER TABLE IF EXISTS productbarcode DROP CONSTRAINT IF EXISTS chkproductbarcodematerialtype;
+-- ALTER TABLE IF EXISTS productbarcode DROP CONSTRAINT IF EXISTS chkproductbarcodeitemtype;
 -- ALTER TABLE IF EXISTS productbarcode DROP COLUMN IF EXISTS materialtype;

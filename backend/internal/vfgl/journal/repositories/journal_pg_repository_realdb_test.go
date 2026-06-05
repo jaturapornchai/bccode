@@ -160,7 +160,7 @@ func TestJournalRepositoryRealDBCreateWithTaxAndVat(t *testing.T) {
 		{
 			"vatdocno": "JO-20251225CB8F0D",
 			"vatdate": "2025-12-26T08:07:55.078Z",
-			"vat_type": 0,
+			"vattype": 0,
 			"vatmode": 1,
 			"vatperiod": 12,
 			"vatyear": 2568,
@@ -182,7 +182,7 @@ func TestJournalRepositoryRealDBCreateWithTaxAndVat(t *testing.T) {
 		{
 			"taxdocno": "TAX1111",
 			"taxdate": "2025-12-25T21:00:00Z",
-			"tax_type": 1,
+			"taxtype": 1,
 			"taxamount": 0,
 			"custtaxid": "032156498231231",
 			"cust_name": "โก้ๆ",
@@ -218,7 +218,7 @@ func TestJournalRepositoryRealDBCreateWithTaxAndVat(t *testing.T) {
 		"personal_type": 0,
 		"customer_type": 0,
 		"branch_number": "",
-		"tax_id": "",
+		"taxid": "",
 		"names": null,
 		"addressforbilling": {
 			"guid": "",
@@ -241,7 +241,7 @@ func TestJournalRepositoryRealDBCreateWithTaxAndVat(t *testing.T) {
 		"personal_type": 0,
 		"customer_type": 0,
 		"branch_number": "",
-		"tax_id": "",
+		"taxid": "",
 		"names": null,
 		"addressforbilling": {
 			"guid": "",

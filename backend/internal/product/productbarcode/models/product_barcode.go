@@ -247,7 +247,7 @@ type MarketplaceAttribute struct {
 	AttributeID   string                       `json:"attributeid" bson:"attributeid"`
 	AttributeCode string                       `json:"attributecode" bson:"attributecode"`
 	AttributeName string                       `json:"attributename" bson:"attributename"`
-	InputType     string                       `json:"inputtype" bson:"inputtype"` // text, single_select, multi_select, number, date, boolean
+	InputType     string                       `json:"inputtype" bson:"inputtype"` // text, single_select, multiselect, number, date, boolean
 	Scope         string                       `json:"scope" bson:"scope"`         // product, sku, package, compliance
 	IsRequired    bool                         `json:"isrequired" bson:"isrequired"`
 	IsSaleProp    bool                         `json:"issaleprop" bson:"issaleprop"`

@@ -336,11 +336,11 @@ function scopeRulesApply(value: unknown, context: WorkspaceAccessContext, defaul
   const rules = scopeRuleArray(value);
   if (!rules.length) return defaultAllow;
   return rules.some((rule) => {
-    const scopeType = stringValue(settingValue(rule, "scope_type", "scopeType")).toLowerCase();
+    const scopeType = stringValue(settingValue(rule, "scopetype", "scopeType")).toLowerCase();
     if (!scopeType || scopeType === "holding") return true;
-    const businessCode = normalizeBusinessCode(settingValue(rule, "businesscode", "businessCode", "company_code", "companyCode"));
+    const businessCode = normalizeBusinessCode(settingValue(rule, "businesscode", "businessCode", "companycode", "companyCode"));
     if (!businessCode || businessCode !== context.businesscode) return false;
-    if (scopeType === "company" || booleanSetting(settingValue(rule, "all_branches", "allBranches", "use_all_branches"))) return true;
+    if (scopeType === "company" || booleanSetting(settingValue(rule, "allbranches", "allBranches", "useallbranches"))) return true;
     if (scopeType === "branch") {
       const branchCode = normalizeBranchCode(settingValue(rule, "branchcode", "branchCode", "code"));
       return Boolean(branchCode && branchCode === context.branchcode);
@@ -352,7 +352,7 @@ function scopeRulesApply(value: unknown, context: WorkspaceAccessContext, defaul
 function scopeRuleArray(value: unknown): SettingRecord[] {
   if (Array.isArray(value)) {
     return value
-      .map((item) => (isRecord(item) ? item : typeof item === "string" ? { scope_type: "company", businesscode: item } : null))
+      .map((item) => (isRecord(item) ? item : typeof item === "string" ? { scopetype: "company", businesscode: item } : null))
       .filter((item): item is SettingRecord => item !== null);
   }
   if (typeof value === "string" && value.trim()) {
@@ -360,7 +360,7 @@ function scopeRuleArray(value: unknown): SettingRecord[] {
       const parsed = JSON.parse(value) as unknown;
       if (Array.isArray(parsed)) return scopeRuleArray(parsed);
     } catch {
-      return value.split(",").map((item) => ({ scope_type: "company", businesscode: item.trim() })).filter((item) => item.businesscode);
+      return value.split(",").map((item) => ({ scopetype: "company", businesscode: item.trim() })).filter((item) => item.businesscode);
     }
   }
   return [];
@@ -379,14 +379,14 @@ function permissionRuleAppliesToWorkspace(
   workspaceKeys: Set<string>,
 ): boolean {
   if (
-    booleanSetting(settingValue(menuRule, "all_branches", "allBranches", "use_all_branches")) ||
-    booleanSetting(settingValue(branchRule, "all_branches", "allBranches", "use_all_branches"))
+    booleanSetting(settingValue(menuRule, "allbranches", "allBranches", "useallbranches")) ||
+    booleanSetting(settingValue(branchRule, "allbranches", "allBranches", "useallbranches"))
   ) {
     return true;
   }
   return [
     scopeKey,
-    stringValue(branchRule.branch_key),
+    stringValue(branchRule.branchkey),
     stringValue(branchRule.branchguid),
     stringValue(branchRule.branchcode),
   ].some((key) => key && workspaceKeys.has(key));
@@ -401,9 +401,9 @@ async function fetchAllowedMenuIds(auth: AuthSession, workspace: WorkspaceSessio
   const holdingcode = encodeURIComponent(workspace.shop.holdingcode);
   try {
     const [linksResponse, definitionsResponse, groupsResponse] = await Promise.all([
-      fetch(`/api/system-settings/permission_link?limit=1000&offset=0&holdingcode=${holdingcode}`, { headers, cache: "no-store" }),
-      fetch(`/api/system-settings/permission_definition?limit=1000&offset=0&holdingcode=${holdingcode}`, { headers, cache: "no-store" }),
-      fetch(`/api/system-settings/permission_group?limit=1000&offset=0&holdingcode=${holdingcode}`, { headers, cache: "no-store" }).catch(() => null),
+      fetch(`/api/system-settings/permissionlink?limit=1000&offset=0&holdingcode=${holdingcode}`, { headers, cache: "no-store" }),
+      fetch(`/api/system-settings/permissiondefinition?limit=1000&offset=0&holdingcode=${holdingcode}`, { headers, cache: "no-store" }),
+      fetch(`/api/system-settings/permissiongroup?limit=1000&offset=0&holdingcode=${holdingcode}`, { headers, cache: "no-store" }).catch(() => null),
     ]);
     if (!linksResponse.ok || !definitionsResponse.ok) return new Set();
 
@@ -422,9 +422,9 @@ async function fetchAllowedMenuIds(auth: AuthSession, workspace: WorkspaceSessio
     const accessContext = workspaceAccessContext(workspace);
     const userKeys = new Set([auth.username, auth.profile?.email].map(stringValue).filter(Boolean).map((item) => item.toLowerCase()));
     const permissionLink = normalizeSettingRecords(linksPayload).find((record) =>
-      userKeys.has(stringValue(settingValue(record, "employee_code", "employeeCode")).toLowerCase()) &&
+      userKeys.has(stringValue(settingValue(record, "employeecode", "employeeCode")).toLowerCase()) &&
       scopeRulesApply(
-        settingValue(record, "scope_rules", "access_scopes", "businesscodes", "companyguids"),
+        settingValue(record, "scoperules", "accessscopes", "businesscodes", "companyguids"),
         accessContext,
         true,
       ),
@@ -432,15 +432,15 @@ async function fetchAllowedMenuIds(auth: AuthSession, workspace: WorkspaceSessio
 
     const finalPermissionCodes = new Set<string>();
     if (permissionLink) {
-      stringArray(settingValue(permissionLink, "permission_codes", "permissionCodes")).forEach((c) => finalPermissionCodes.add(c));
-      const empGroupCode = stringValue(settingValue(permissionLink, "group_code", "groupCode"));
+      stringArray(settingValue(permissionLink, "permissioncodes", "permissionCodes")).forEach((c) => finalPermissionCodes.add(c));
+      const empGroupCode = stringValue(settingValue(permissionLink, "groupcode", "groupCode"));
       if (empGroupCode) {
         const matchedGroup = groupsList.find((g) =>
-          stringValue(settingValue(g, "group_code", "groupCode")) === empGroupCode &&
-          scopeRulesApply(settingValue(g, "scope_rules", "access_scopes"), accessContext, true),
+          stringValue(settingValue(g, "groupcode", "groupCode")) === empGroupCode &&
+          scopeRulesApply(settingValue(g, "scoperules", "accessscopes"), accessContext, true),
         );
         if (matchedGroup) {
-          stringArray(settingValue(matchedGroup, "permission_codes", "permissionCodes")).forEach((c) => finalPermissionCodes.add(c));
+          stringArray(settingValue(matchedGroup, "permissioncodes", "permissionCodes")).forEach((c) => finalPermissionCodes.add(c));
         }
       }
     }
@@ -450,9 +450,9 @@ async function fetchAllowedMenuIds(auth: AuthSession, workspace: WorkspaceSessio
     const branchKeys = new Set(workspacePermissionKeys(workspace));
     const allowed = new Set<string>();
     for (const definition of normalizeSettingRecords(definitionsPayload)) {
-      if (!finalPermissionCodes.has(stringValue(settingValue(definition, "permission_code", "permissionCode")))) continue;
-      if (!scopeRulesApply(settingValue(definition, "scope_rules", "access_scopes"), accessContext, true)) continue;
-      const branches = toRecord(settingValue(definition, "access_rules", "branches"));
+      if (!finalPermissionCodes.has(stringValue(settingValue(definition, "permissioncode", "permissionCode")))) continue;
+      if (!scopeRulesApply(settingValue(definition, "scoperules", "accessscopes"), accessContext, true)) continue;
+      const branches = toRecord(settingValue(definition, "accessrules", "branches"));
       for (const [branchKey, branchValue] of Object.entries(branches)) {
         const branch = toRecord(branchValue);
         const menus = toRecord(branch.menus);
@@ -654,7 +654,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
   const rows = useMemo(() => menuQuery.data ?? [], [menuQuery.data]);
   const frequentMenuEntries = useMemo(() => getFrequentMenuEntries(allMenuItems, menuUsage, 20), [allMenuItems, menuUsage]);
   const activeWorkTab = useMemo(() => tabs.find((tab) => tab.id === activeTabId) ?? firstTab, [activeTabId, tabs]);
-  const activeTabNeedsFixedViewport = activeWorkTab.route === "/product_barcode" || activeWorkTab.route === "/product" || activeWorkTab.route === "/productset";
+  const activeTabNeedsFixedViewport = activeWorkTab.route === "/productbarcode" || activeWorkTab.route === "/product" || activeWorkTab.route === "/productset";
 
   function openMenuItem(item: MenuItem) {
     if (!canAccessMenuItem(item)) return;
@@ -1135,7 +1135,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                   {tabs.map((tab) => (
                     <section
                       aria-hidden={tab.id !== activeTabId}
-                      className={cn("min-w-0", (tab.route === "/product_barcode" || tab.route === "/product" || tab.route === "/productset") && "lg:h-full lg:min-h-0 lg:overflow-hidden")}
+                      className={cn("min-w-0", (tab.route === "/productbarcode" || tab.route === "/product" || tab.route === "/productset") && "lg:h-full lg:min-h-0 lg:overflow-hidden")}
                       hidden={tab.id !== activeTabId}
                       key={tab.id}
                       role="tabpanel"
@@ -2184,11 +2184,11 @@ function WorkTabPanel({ activeTab, backendLanguage, language, tabCount }: { acti
     return <ProductSetScreen embedded language={language} />;
   }
 
-  if (activeTab.route === "/product_barcode") {
+  if (activeTab.route === "/productbarcode") {
     return <ProductBarcodeScreen embedded language={language} />;
   }
 
-  if (activeTab.route === "/product_barcode_shelf") {
+  if (activeTab.route === "/productbarcodeshelf") {
     return <ProductBarcodeShelfScreen embedded language={language} />;
   }
 

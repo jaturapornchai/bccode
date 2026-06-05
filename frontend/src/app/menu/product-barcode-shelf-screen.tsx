@@ -104,8 +104,8 @@ export function ProductBarcodeShelfScreen({ embedded = false, language: external
           keyword: searchText.trim(),
           limit: 80,
           offset: 0,
-          sort_field: searchText.trim() ? "relevance" : "barcode",
-          sort_order: "asc",
+          sortfield: searchText.trim() ? "relevance" : "barcode",
+          sortorder: "asc",
         }),
       });
       const payload = await response.json() as unknown;
@@ -356,7 +356,7 @@ function normalizeProduct(value: unknown): ProductForLabel | null {
     guidFixed: getString(value, "guidfixed") || getString(value, "guidFixed"),
     barcode: getString(value, "barcode"),
     name: localizedName(getArray(value, "names") as LocalizedName[], "th") || getString(value, "name") || getString(value, "productname"),
-    itemCode: getString(value, "itemcode") || getString(value, "item_code"),
+    itemCode: getString(value, "itemcode") || getString(value, "itemcode"),
     unitName: localizedName(getArray(value, "itemunitnames") as LocalizedName[], "th") || getString(value, "unitname"),
     price: getNumber(value, "prices") || getNumber(value, "price"),
     shelfName: getString(value, "shelfname") || getString(value, "shelf_name"),

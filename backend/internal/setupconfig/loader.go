@@ -35,64 +35,64 @@ var configMapping = map[string]map[string][]string{
 		"password": {"MONGODB_PASSWORD", "MONGODB_DEV_PASSWORD", "MONGODB_UAT_PASSWORD", "MONGODB_PRO_PASSWORD"},
 	},
 	"postgresql": {
-		"host":         {"POSTGRES_HOST"},
-		"port":         {"POSTGRES_PORT"},
-		"user":         {"POSTGRES_USERNAME"}, // mainapi ใช้ POSTGRES_USERNAME (ไม่ใช่ POSTGRES_USER)
-		"password":     {"POSTGRES_PASSWORD"},
-		"ssl_mode":     {"POSTGRES_SSL_MODE"},
-		"db_name":      {"POSTGRES_DB_NAME"},
-		"timezone":     {"POSTGRES_TIMEZONE"},
-		"logger_level": {"POSTGRES_LOGGER_LEVEL"},
+		"host":        {"POSTGRES_HOST"},
+		"port":        {"POSTGRES_PORT"},
+		"user":        {"POSTGRES_USERNAME"}, // mainapi ใช้ POSTGRES_USERNAME (ไม่ใช่ POSTGRES_USER)
+		"password":    {"POSTGRES_PASSWORD"},
+		"sslmode":     {"POSTGRES_SSL_MODE"},
+		"dbname":      {"POSTGRES_DB_NAME"},
+		"timezone":    {"POSTGRES_TIMEZONE"},
+		"loggerlevel": {"POSTGRES_LOGGER_LEVEL"},
 	},
 	"clickhouse": {
-		"host":          {"CH_SERVER_ADDRESS"},
-		"port":          {"CLICKHOUSE_PORT"},
-		"user":          {"CH_USERNAME"},
-		"password":      {"CH_PASSWORD"},
-		"database_name": {"CH_DATABASE_NAME"},
+		"host":         {"CH_SERVER_ADDRESS"},
+		"port":         {"CLICKHOUSE_PORT"},
+		"user":         {"CH_USERNAME"},
+		"password":     {"CH_PASSWORD"},
+		"databasename": {"CH_DATABASE_NAME"},
 	},
 	"service": {
-		"enable_kafka":        {"ENABLE_KAFKA"},
-		"log_level":           {"LOG_LEVEL"},
-		"jwt_secret_key":      {"JWT_SECRET_KEY"},
-		"dev_api_mode":        {"DEV_API_MODE"},
-		"service_port":        {"SERVICE_PORT"},
-		"host_api":            {"HOST_API"},
-		"mode":                {"MODE"},
-		"http_cors":           {"HTTP_CORS"},
-		"firebase_project_id": {"FIREBASE_PROJECT_ID"},
+		"enablekafka":       {"ENABLE_KAFKA"},
+		"loglevel":          {"LOG_LEVEL"},
+		"jwtsecretkey":      {"JWT_SECRET_KEY"},
+		"devapimode":        {"DEV_API_MODE"},
+		"serviceport":       {"SERVICE_PORT"},
+		"hostapi":           {"HOST_API"},
+		"mode":              {"MODE"},
+		"httpcors":          {"HTTP_CORS"},
+		"firebaseprojectid": {"FIREBASE_PROJECT_ID"},
 	},
 	"integrations": {
-		"gemini_api_key": {"GEMINI_API_KEY"},
-		"gemini_model":   {"GEMINI_MODEL"},
+		"geminiapikey": {"GEMINI_API_KEY"},
+		"geminimodel":  {"GEMINI_MODEL"},
 	},
 	"storage": {
-		"data_path":            {"STORAGE_DATA_PATH"},
-		"data_uri":             {"STORAGE_DATA_URI"},
-		"azure_account_name":   {"AZURE_STORAGE_ACCOUNT_NAME"},
-		"azure_account_key":    {"AZURE_STORAGE_ACCOUNT_KEY"},
-		"azure_container_name": {"AZURE_STORAGE_CONTAINER_NAME"},
-		"azure_tenant_id":      {"AZURE_TENANT_ID"},
-		"s3_endpoint":          {"S3_ENDPOINT"},
-		"s3_public_endpoint":   {"S3_PUBLIC_ENDPOINT"},
-		"s3_access_key_id":     {"S3_ACCESS_KEY_ID"},
-		"s3_secret_access_key": {"S3_SECRET_ACCESS_KEY"},
-		"s3_bucket_name":       {"S3_BUCKET_NAME"},
+		"datapath":           {"STORAGE_DATA_PATH"},
+		"datauri":            {"STORAGE_DATA_URI"},
+		"azureaccountname":   {"AZURE_STORAGE_ACCOUNT_NAME"},
+		"azureaccountkey":    {"AZURE_STORAGE_ACCOUNT_KEY"},
+		"azurecontainername": {"AZURE_STORAGE_CONTAINER_NAME"},
+		"azuretenantid":      {"AZURE_TENANT_ID"},
+		"s3endpoint":         {"S3_ENDPOINT"},
+		"s3publicendpoint":   {"S3_PUBLIC_ENDPOINT"},
+		"s3accesskeyid":      {"S3_ACCESS_KEY_ID"},
+		"s3secretaccesskey":  {"S3_SECRET_ACCESS_KEY"},
+		"s3bucketname":       {"S3_BUCKET_NAME"},
 	},
 	"kafka": {
-		"server_url": {"KAFKA_SERVER_URL"},
+		"serverurl": {"KAFKA_SERVER_URL"},
 	},
 }
 
 // secretKeys รายชื่อ key ที่ต้อง mask ใน log
 var secretKeys = map[string]bool{
-	"password":             true,
-	"secret_access_key":    true,
-	"account_key":          true,
-	"azure_account_key":    true,
-	"jwt_secret_key":       true,
-	"gemini_api_key":       true,
-	"s3_secret_access_key": true,
+	"password":          true,
+	"secretaccesskey":   true,
+	"accountkey":        true,
+	"azureaccountkey":   true,
+	"jwtsecretkey":      true,
+	"geminiapikey":      true,
+	"s3secretaccesskey": true,
 }
 
 // bootstrapPaths ลำดับความสำคัญในการหา bootstrap.json
@@ -191,10 +191,10 @@ func LoadBootstrapConfig() {
 
 	// โหลดทุก section ที่มีใน bootstrap.json ตาม configMapping
 	overrideCount += applyBootstrapSection("mongodb", cfg.MongoDB)
-	overrideCount += applyBootstrapSection("mongodb_dev", cfg.MongoDBDev)
-	overrideCount += applyBootstrapSection("mongodb_uat", cfg.MongoDBUAT)
-	overrideCount += applyBootstrapSection("mongodb_pro", cfg.MongoDBPRO)
-	overrideCount += applyBootstrapSection("mongodb_production", cfg.MongoDBProduction)
+	overrideCount += applyBootstrapSection("mongodbdev", cfg.MongoDBDev)
+	overrideCount += applyBootstrapSection("mongodbuat", cfg.MongoDBUAT)
+	overrideCount += applyBootstrapSection("mongodbpro", cfg.MongoDBPRO)
+	overrideCount += applyBootstrapSection("mongodbproduction", cfg.MongoDBProduction)
 	overrideCount += applyBootstrapSection("postgresql", cfg.PostgreSQL)
 	overrideCount += applyBootstrapSection("clickhouse", cfg.ClickHouse)
 	overrideCount += applyBootstrapSection("service", cfg.Service)
@@ -306,7 +306,7 @@ func isSecretKey(key string) bool {
 	lowerKey := strings.ToLower(key)
 	return strings.Contains(lowerKey, "password") ||
 		strings.Contains(lowerKey, "secret") ||
-		strings.Contains(lowerKey, "api_key")
+		strings.Contains(lowerKey, "apikey")
 }
 
 // maskURI ซ่อน password ใน URI สำหรับ log

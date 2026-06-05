@@ -102,7 +102,7 @@ const emptyLineDialog: LineDialogState = {
 };
 const accessSettingNavItems = [
   {
-    route: "/active_languages",
+    route: "/activelanguages",
     label: { th: "ภาษาที่ใช้งาน", en: "Active Languages" },
     helper: { th: "กำหนดก่อนข้อมูลอื่น", en: "Set before other data" },
   },
@@ -117,27 +117,27 @@ const accessSettingNavItems = [
     helper: { th: "เพิ่มคนเข้าใช้งาน", en: "Add system users" },
   },
   {
-    route: "/permission_definition",
+    route: "/permissiondefinition",
     label: { th: "กำหนดสิทธิ์หน้าจอ", en: "Permission Definition" },
     helper: { th: "เลือกหน้าจอที่เข้าได้", en: "Choose accessible screens" },
   },
   {
-    route: "/permission_group",
+    route: "/permissiongroup",
     label: { th: "กำหนดสิทธิ์ตามกลุ่ม", en: "Permission Group" },
     helper: { th: "รวมสิทธิ์เป็นชุด", en: "Group permission sets" },
   },
   {
-    route: "/permission_link",
+    route: "/permissionlink",
     label: { th: "กำหนดสิทธิ์ผู้ใช้งาน", en: "User Permissions" },
     helper: { th: "ผูกกลุ่มกับผู้ใช้", en: "Assign groups to users" },
   },
   {
-    route: "/approval_setting",
+    route: "/approvalsetting",
     label: { th: "สิทธิ์การอนุมัติ", en: "Approval Permission" },
     helper: { th: "วงเงินและเอกสารอนุมัติ", en: "Approval limits and documents" },
   },
   {
-    route: "/user_access_audit",
+    route: "/useraccessaudit",
     label: { th: "ตรวจสอบสถานะผู้ใช้งาน", en: "User Access Audit" },
     helper: { th: "รายงานสิทธิ์และการเข้าถึง", en: "Access and permission report" },
   },
@@ -180,9 +180,9 @@ type WorkspaceTextKey = keyof typeof workspaceTextEn;
 const workspaceBackendKeys: Partial<Record<WorkspaceTextKey, string>> = {
   changeCompany: "change_company",
   companyName: "company_name",
-  createCompany: "create_company",
-  createCompanyNew: "create_company_new",
-  createCompanyRequiresGoogle: "create_company_requires_google",
+  createCompany: "createcompany",
+  createCompanyNew: "createcompany_new",
+  createCompanyRequiresGoogle: "createcompany_requires_google",
   logout: "logout",
   owner: "owner",
   searchBranch: "search_branch",
@@ -367,7 +367,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     try {
       const selectedHoldingCode = activeHoldingCodeFromAuth(currentAuth);
       const endpoint = selectedHoldingCode
-        ? `holdings?active_holdingcode=${encodeURIComponent(selectedHoldingCode)}`
+        ? `holdings?activeholdingcode=${encodeURIComponent(selectedHoldingCode)}`
         : "holdings";
       const payload = await callWorkspaceApi<{ data?: ShopListItem[] }>(currentAuth, endpoint);
       const allShops = Array.isArray(payload.data) ? payload.data : [];
@@ -1084,7 +1084,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
 
             {/* คอนเทนต์แสดงผลฝั่งขวา */}
             <div className="flex-1 min-h-0 overflow-y-auto p-4">
-              {activeAccessRoute !== "/active_languages" &&
+              {activeAccessRoute !== "/activelanguages" &&
               !hasExplicitLanguageSettings(selectedShopForAccess) ? (
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-primary/25 bg-primary/10 px-3 py-2 text-sm text-foreground">
                   <span className="min-w-0 text-xs font-semibold text-muted-foreground">
@@ -1095,7 +1095,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                   <button
                     className="secondary-button inline-flex items-center gap-1.5 px-2.5 py-1 text-xs"
                     type="button"
-                    onClick={() => setActiveAccessRoute("/active_languages")}
+                    onClick={() => setActiveAccessRoute("/activelanguages")}
                   >
                     <Languages size={14} />
                     <span>{language === "th" ? "ไปตั้งภาษา" : "Set languages"}</span>
@@ -1172,7 +1172,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
               <button
                 className="secondary-button workspace-head-action flex items-center gap-1.5"
                 type="button"
-                onClick={() => void openAccessSettings("/active_languages")}
+                onClick={() => void openAccessSettings("/activelanguages")}
                 disabled={busy}
               >
                 <KeyRound size={17} />
@@ -1228,7 +1228,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 <button
                   className="secondary-button mb-4 inline-flex items-center gap-1.5"
                   type="button"
-                  onClick={() => void openAccessSettings("/active_languages")}
+                  onClick={() => void openAccessSettings("/activelanguages")}
                   disabled={busy || accessShopOptions.length === 0}
                 >
                   <Languages size={16} />
@@ -1408,7 +1408,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                     <small>{branch.code || branch.guidfixed}</small>
                   </span>
                   <span className="shop-badges">
-                    {branch.base_currency ? <b>{branch.base_currency}</b> : null}
+                    {branch.basecurrency ? <b>{branch.basecurrency}</b> : null}
                     {branch.language ? <em>{branch.language.toUpperCase()}</em> : null}
                   </span>
                 </button>
@@ -1638,23 +1638,23 @@ function localeOf(language: LanguageCode): string {
 }
 
 function shopLanguageCodes(shop: ShopListItem): string[] {
-  return normalizedCodeList(shop.active_languages, ["th"]).map((code) => code.toUpperCase());
+  return normalizedCodeList(shop.activelanguages, ["th"]).map((code) => code.toUpperCase());
 }
 
 function shopCurrencyCodes(shop: ShopListItem): string[] {
-  return normalizedCodeList(shop.currencies, shop.base_currency ? [shop.base_currency] : ["THB"]).map((code) => code.toUpperCase());
+  return normalizedCodeList(shop.currencies, shop.basecurrency ? [shop.basecurrency] : ["THB"]).map((code) => code.toUpperCase());
 }
 
 function shopCurrencyLabel(shop: ShopListItem, language: LanguageCode): string {
   const currencies = shopCurrencyCodes(shop);
-  const hasConfiguredCurrency = (Array.isArray(shop.currencies) && shop.currencies.length > 0) || Boolean(stringValue(shop.base_currency));
+  const hasConfiguredCurrency = (Array.isArray(shop.currencies) && shop.currencies.length > 0) || Boolean(stringValue(shop.basecurrency));
   const defaultMarker = hasConfiguredCurrency ? "" : language === "th" ? " ค่าเริ่มต้น" : " default";
   return `${currencies.join(", ")}${defaultMarker}`;
 }
 
 function shopDateFormatLabel(shop: ShopListItem, language: LanguageCode): string {
-  const hasConfiguredDateFormat = Boolean(stringValue(shop.date_format));
-  const format = stringValue(shop.date_format) || "dd/MM/yyyy";
+  const hasConfiguredDateFormat = Boolean(stringValue(shop.dateformat));
+  const format = stringValue(shop.dateformat) || "dd/MM/yyyy";
   const yearType = hasConfiguredDateFormat ? normalizedYearType(shop) : "buddhist";
   const yearLabel = language === "th"
     ? yearType === "buddhist" ? "พ.ศ." : "ค.ศ."
@@ -1664,7 +1664,7 @@ function shopDateFormatLabel(shop: ShopListItem, language: LanguageCode): string
 }
 
 function normalizedYearType(shop: ShopListItem): "buddhist" | "christian" {
-  const yearType = stringValue(shop.year_type).toLowerCase();
+  const yearType = stringValue(shop.yeartype).toLowerCase();
   if (["buddhist", "be", "พ.ศ."].includes(yearType)) return "buddhist";
   if (["christian", "ce", "ค.ศ."].includes(yearType)) return "christian";
   if (typeof shop.usebuddhistcalendar === "boolean") return shop.usebuddhistcalendar ? "buddhist" : "christian";
@@ -1720,7 +1720,7 @@ function createDefaultBranch(shop?: ShopListItem, shopInfo?: Record<string, unkn
     imageuri: "",
     logouri: stringValue(shopInfo?.logo),
     pos: {
-      tax_id: stringValue(settings?.tax_id),
+      taxid: stringValue(settings?.taxid),
       isbom: false,
       vatrate: numberValue(settings?.vatrate),
       vattypesale: numberValue(settings?.vattypesale),
@@ -1735,18 +1735,18 @@ function createDefaultBranch(shop?: ShopListItem, shopInfo?: Record<string, unkn
     pointconfig: { generalrules: [], specialrules: [], pointusagetype: 1 },
     machinetype: 0,
     couponusetype: 0,
-    company_registration_no: stringValue(settings?.company_registration_no),
-    is_vat_registered: booleanValue(settings?.is_vat_registered),
-    base_currency: stringValue(settings?.base_currency) || "THB",
+    companyregistrationno: stringValue(settings?.companyregistrationno),
+    isvatregistered: booleanValue(settings?.isvatregistered),
+    basecurrency: stringValue(settings?.basecurrency) || "THB",
     language: languageCodes[0] ?? "th",
     timezone: stringValue(settings?.timezone) || "Asia/Bangkok",
-    timezone_offset: stringValue(settings?.timezone_offset) || "+07:00",
-    timezone_label: stringValue(settings?.timezone_label) || "(UTC+07:00) Bangkok",
-    date_format: stringValue(settings?.date_format) || "dd/MM/yyyy",
-    year_type: booleanValue(settings?.usebuddhistcalendar, true) ? "buddhist" : "christian",
-    decimal_quantity: numberValue(settings?.decimal_quantity, 2),
-    decimal_price: numberValue(settings?.decimal_price, 2),
-    decimal_document: numberValue(settings?.decimal_document, 2),
+    timezoneoffset: stringValue(settings?.timezoneoffset) || "+07:00",
+    timezonelabel: stringValue(settings?.timezonelabel) || "(UTC+07:00) Bangkok",
+    dateformat: stringValue(settings?.dateformat) || "dd/MM/yyyy",
+    yeartype: booleanValue(settings?.usebuddhistcalendar, true) ? "buddhist" : "christian",
+    decimalquantity: numberValue(settings?.decimalquantity, 2),
+    decimalprice: numberValue(settings?.decimalprice, 2),
+    decimaldocument: numberValue(settings?.decimaldocument, 2),
     is_restaurant: false,
     is_tire: false,
     is_agriculture: false,
@@ -1774,7 +1774,7 @@ function createDefaultBranch(shop?: ShopListItem, shopInfo?: Record<string, unkn
 function activeLanguageCodes(settings: Record<string, unknown> | null): string[] {
   const configs = Array.isArray(settings?.languageconfigs) ? settings.languageconfigs : [];
   const codes = configs
-    .filter((item) => !recordValue(item) || recordValue(item)?.is_use !== false)
+    .filter((item) => !recordValue(item) || recordValue(item)?.isuse !== false)
     .map((item) => stringValue(recordValue(item)?.code).toLowerCase())
     .filter(Boolean);
   return codes.length > 0 ? Array.from(new Set(codes)) : ["th"];
@@ -1842,12 +1842,12 @@ function createDefaultBranchListItem(guidFixed: unknown): BranchListItem {
     guidfixed: typeof guidFixed === "string" && guidFixed.trim() ? guidFixed.trim() : "00000",
     code: "00000",
     names: [{ code: "th", name: "สำนักงานใหญ่" }],
-    base_currency: "THB",
+    basecurrency: "THB",
     language: "th",
     timezone: "Asia/Bangkok",
-    timezone_offset: "+07:00",
-    timezone_label: "(UTC+07:00) Bangkok",
-    year_type: "buddhist",
+    timezoneoffset: "+07:00",
+    timezonelabel: "(UTC+07:00) Bangkok",
+    yeartype: "buddhist",
   };
 }
 
@@ -1886,10 +1886,10 @@ function createShopPayload(name: string): Record<string, unknown> {
       isusebranch: false,
       isusedepartment: false,
       language: "th",
-      languageconfigs: [{ code: "th", codetranslator: "th", name: "ภาษาไทย", is_use: true, isdefault: true }],
+      languageconfigs: [{ code: "th", codetranslator: "th", name: "ภาษาไทย", isuse: true, isdefault: true }],
       latitude: 0,
       longitude: 0,
-      tax_id: "",
+      taxid: "",
       vatrate: 7,
       vattypesale: 0,
       vattypepurchase: 0,

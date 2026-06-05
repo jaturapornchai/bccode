@@ -16,7 +16,7 @@ func ValidateStockBeforeSale(ctx context.Context, db *sql.DB, holdingCode int, i
 			WHEN calcflag = 1 THEN 1
 			WHEN calcflag = -1 THEN -1
 			ELSE 0
-		END), 0) as current_stock
+		END), 0) as currentstock
 		FROM docdetail
 		WHERE holdingcode = $1
 		  AND itemcode = $2
@@ -32,7 +32,7 @@ func ValidateStockBeforeSale(ctx context.Context, db *sql.DB, holdingCode int, i
 		return fmt.Errorf("ไม่พบข้อมูลสินค้า: %s", itemCode)
 	}
 
-	currentStock := mypg.GetFloat64Value(rows[0], "current_stock")
+	currentStock := mypg.GetFloat64Value(rows[0], "currentstock")
 
 	logger.Info("📦 Stock validation for %s: current=%f, requested=%f", itemCode, currentStock, qtyToSell)
 
@@ -89,7 +89,7 @@ func GetCurrentStock(ctx context.Context, db *sql.DB, holdingCode int, itemCode 
 			WHEN calcflag = 1 THEN 1
 			WHEN calcflag = -1 THEN -1
 			ELSE 0
-		END), 0) as current_stock
+		END), 0) as currentstock
 		FROM docdetail
 		WHERE holdingcode = $1
 		  AND itemcode = $2
@@ -105,7 +105,7 @@ func GetCurrentStock(ctx context.Context, db *sql.DB, holdingCode int, itemCode 
 		return 0, nil // ไม่มีสต็อก
 	}
 
-	currentStock := mypg.GetFloat64Value(rows[0], "current_stock")
+	currentStock := mypg.GetFloat64Value(rows[0], "currentstock")
 	return currentStock, nil
 }
 
@@ -118,7 +118,7 @@ func CheckNegativeStock(ctx context.Context, db *sql.DB, holdingCode int) ([]Neg
 				WHEN calcflag = 1 THEN 1
 				WHEN calcflag = -1 THEN -1
 				ELSE 0
-			END) as current_stock
+			END) as currentstock
 		FROM docdetail
 		WHERE holdingcode = $1
 		  AND iscalcstock = 1
@@ -128,7 +128,7 @@ func CheckNegativeStock(ctx context.Context, db *sql.DB, holdingCode int) ([]Neg
 			WHEN calcflag = -1 THEN -1
 			ELSE 0
 		END) < 0
-		ORDER BY current_stock ASC
+		ORDER BY currentstock ASC
 	`
 
 	rows, err := mypg.QuerySelectAll(db, query, holdingCode)
@@ -140,7 +140,7 @@ func CheckNegativeStock(ctx context.Context, db *sql.DB, holdingCode int) ([]Neg
 	for _, row := range rows {
 		negativeItems = append(negativeItems, NegativeStockItem{
 			ItemCode:     mypg.GetStringValue(row, "itemcode"),
-			CurrentStock: mypg.GetFloat64Value(row, "current_stock"),
+			CurrentStock: mypg.GetFloat64Value(row, "currentstock"),
 		})
 	}
 

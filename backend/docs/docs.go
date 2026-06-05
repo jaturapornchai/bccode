@@ -64195,7 +64195,7 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
-                "group_codes": {
+                "groupcodes": {
                     "description": "รายการ GroupCode",
                     "type": "array",
                     "items": {

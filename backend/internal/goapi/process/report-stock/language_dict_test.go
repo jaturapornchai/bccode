@@ -23,7 +23,7 @@ func TestReportLanguageDictionaryShape(t *testing.T) {
 	if !ok {
 		t.Fatalf("columns is %T", dict["columns"])
 	}
-	if got := columns["barcode_list"]; got != "바코드" {
-		t.Fatalf("barcode_list ko = %q", got)
+	if got := columns["barcodelist"]; got != "바코드" {
+		t.Fatalf("barcodelist ko = %q", got)
 	}
 }

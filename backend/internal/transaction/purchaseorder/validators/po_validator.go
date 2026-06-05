@@ -184,7 +184,7 @@ func validateHeader(trans *transmodels.Transaction, result *ValidationResult) {
 
 	// vattype — ประเภทภาษี (must be 0, 1, 2, or 3)
 	if !validVatTypes[trans.TransactionHeader.VatType] {
-		result.AddErrorf("vat_type", "INVALID_VALUE",
+		result.AddErrorf("vattype", "INVALID_VALUE",
 			"ประเภทภาษี (vattype) ไม่ถูกต้อง: %d — ค่าที่รองรับ: 0 (ไม่มีภาษี), 1 (รวมภาษี), 2 (แยกภาษี), 3 (ยกเว้นภาษี)",
 			"Invalid VAT type: %d — allowed values: 0 (no VAT), 1 (VAT included), 2 (VAT excluded), 3 (VAT exempt).",
 			trans.TransactionHeader.VatType, trans.TransactionHeader.VatType)
@@ -282,7 +282,7 @@ func checkDetailNaN(index int, itemLabel string, detail *transmodels.Detail, res
 	fields := []fieldCheck{
 		{"qty", detail.Qty},
 		{"price", detail.Price},
-		{"sum_amount", detail.SumAmount},
+		{"sumamount", detail.SumAmount},
 		{"discountamount", detail.DiscountAmount},
 		{"price_doc", detail.PriceDoc},
 		{"sumamount_doc", detail.SumAmountDoc},
@@ -337,7 +337,7 @@ func validateMultiCurrency(trans *transmodels.Transaction, result *ValidationRes
 		{"exchange_rate", header.ExchangeRate},
 		{"totalvalue", header.TotalValue},
 		{"totalaftervat", header.TotalAfterVat},
-		{"total_amount", header.TotalAmount},
+		{"totalamount", header.TotalAmount},
 		{"totalbeforevat", header.TotalBeforeVat},
 		{"totalvatvalue", header.TotalVatValue},
 		{"totaldiscount", header.TotalDiscount},

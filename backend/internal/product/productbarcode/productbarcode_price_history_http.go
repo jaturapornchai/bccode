@@ -88,8 +88,8 @@ func (h ProductBarcodeHttp) priceHistoryFilter(queryParam func(string) string) m
 			Type:  requestfilter.FieldTypeString,
 		},
 		{
-			Param: "key_number",
-			Field: "key_number",
+			Param: "keynumber",
+			Field: "keynumber",
 			Type:  requestfilter.FieldTypeString,
 		},
 		{

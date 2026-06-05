@@ -94,7 +94,7 @@ for ($i = 1; $i -le $CompanyCount; $i++) {
   $companyPayload = @{
     code = $code
     names = @(New-Names -Thai $companyThai -English $companyEn)
-    tax_id = ("0999999999{0:D3}" -f $i)
+    taxid = ("0999999999{0:D3}" -f $i)
     isactive = $true
   }
   $companyResult = Invoke-JsonApi -Method "POST" -Path "/organization/company" -Payload $companyPayload -Token $token

@@ -469,9 +469,9 @@ func processProductRow(holdingCode string, rowNumber int, headers []string, row 
 	// Map ข้อมูลตามโครงสร้างที่กำหนด
 	result.Barcode = getValueFromRow(rowData, []string{"Barcode", "barcode"})
 	result.Name = getValueFromRow(rowData, []string{"Name", "name"})
-	result.UnitCode = getValueFromRow(rowData, []string{"Unit Code", "UnitCode", "unit_code"})
+	result.UnitCode = getValueFromRow(rowData, []string{"Unit Code", "UnitCode", "unitcode"})
 	result.ProductType = getValueFromRow(rowData, []string{"Product Type", "ProductType", "product_type"})
-	result.TaxType = getValueFromRow(rowData, []string{"Tax Type", "TaxType", "tax_type"})
+	result.TaxType = getValueFromRow(rowData, []string{"Tax Type", "TaxType", "taxtype"})
 	result.Code = getValueFromRow(rowData, []string{"Code", "code"})
 
 	// Prices
@@ -489,10 +489,10 @@ func processProductRow(holdingCode string, rowNumber int, headers []string, row 
 	result.PriceNine = parseFloat(getValueFromRow(rowData, []string{"PriceNine", "price_nine"}))
 
 	// Codes
-	result.GroupCode = getValueFromRow(rowData, []string{"GroupCode", "group_code"})
+	result.GroupCode = getValueFromRow(rowData, []string{"GroupCode", "groupcode"})
 	result.GroupsuboneCode = getValueFromRow(rowData, []string{"GroupsuboneCode", "groupsubone_code"})
 	result.GroupsubtwoCode = getValueFromRow(rowData, []string{"GroupsubtwoCode", "groupsubtwo_code"})
-	result.BrandCode = getValueFromRow(rowData, []string{"BrandCode", "brand_code"})
+	result.BrandCode = getValueFromRow(rowData, []string{"BrandCode", "brandcode"})
 	result.DesignCode = getValueFromRow(rowData, []string{"DesignCode", "design_code"})
 	result.ModelCode = getValueFromRow(rowData, []string{"ModelCode", "model_code"})
 	result.PatternCode = getValueFromRow(rowData, []string{"PatternCode", "pattern_code"})

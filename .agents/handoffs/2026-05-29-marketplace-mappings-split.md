@@ -38,7 +38,7 @@ Currently, mappings are submitted via `updateBarcode` API. When Codex designs th
   "mappings": [
     {
       "barcode": "8850123456789",
-      "seller_sku": "sku-red-01",
+      "sellersku": "sku-red-01",
       "market_item_id": "123456789",
       "market_model_id": "98765432"
     }

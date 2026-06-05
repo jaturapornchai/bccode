@@ -58,86 +58,86 @@ var configMapping = map[string]map[string][]string{
 		"password": {"MONGODB_PASSWORD", "MONGODB_DEV_PASSWORD", "MONGODB_UAT_PASSWORD", "MONGODB_PRO_PASSWORD"},
 	},
 	"postgresql": {
-		"host":         {"POSTGRES_HOST"},
-		"port":         {"POSTGRES_PORT"},
-		"user":         {"POSTGRES_USER", "POSTGRES_USERNAME"}, // goapi ใช้ POSTGRES_USER, mainapi ใช้ POSTGRES_USERNAME
-		"password":     {"POSTGRES_PASSWORD"},
-		"ssl_mode":     {"POSTGRES_SSL_MODE"},
-		"db_name":      {"POSTGRES_DB_NAME"},
-		"timezone":     {"POSTGRES_TIMEZONE"},
-		"logger_level": {"POSTGRES_LOGGER_LEVEL"},
+		"host":        {"POSTGRES_HOST"},
+		"port":        {"POSTGRES_PORT"},
+		"user":        {"POSTGRES_USER", "POSTGRES_USERNAME"}, // goapi ใช้ POSTGRES_USER, mainapi ใช้ POSTGRES_USERNAME
+		"password":    {"POSTGRES_PASSWORD"},
+		"sslmode":     {"POSTGRES_SSL_MODE"},
+		"dbname":      {"POSTGRES_DB_NAME"},
+		"timezone":    {"POSTGRES_TIMEZONE"},
+		"loggerlevel": {"POSTGRES_LOGGER_LEVEL"},
 	},
 	"clickhouse": {
-		"host":          {"CLICKHOUSE_HOST", "CH_SERVER_ADDRESS"},
-		"port":          {"CLICKHOUSE_PORT"},
-		"user":          {"CLICKHOUSE_USER", "CH_USERNAME"},
-		"password":      {"CLICKHOUSE_PASSWORD", "CH_PASSWORD"},
-		"database_name": {"CH_DATABASE_NAME"},
+		"host":         {"CLICKHOUSE_HOST", "CH_SERVER_ADDRESS"},
+		"port":         {"CLICKHOUSE_PORT"},
+		"user":         {"CLICKHOUSE_USER", "CH_USERNAME"},
+		"password":     {"CLICKHOUSE_PASSWORD", "CH_PASSWORD"},
+		"databasename": {"CH_DATABASE_NAME"},
 	},
 	"service": {
-		"enable_kafka":                 {"ENABLE_KAFKA"},
-		"kafka_consumer_group_version": {"KAFKA_CONSUMER_GROUP_VERSION"},
-		"enable_clone_clickhouse":      {"ENABLE_CLONE_CLICKHOUSE"},
-		"log_level":                    {"LOG_LEVEL"},
-		"jwt_secret_key":               {"JWT_SECRET_KEY"},
-		"dev_api_mode":                 {"DEV_API_MODE"},
-		"service_port":                 {"SERVICE_PORT"},
-		"host_api":                     {"HOST_API"},
-		"mode":                         {"MODE"},
-		"http_cors":                    {"HTTP_CORS"},
-		"cors_allowed_origins":         {"CORS_ALLOWED_ORIGINS"},
-		"firebase_project_id":          {"FIREBASE_PROJECT_ID"},
+		"enablekafka":               {"ENABLE_KAFKA"},
+		"kafkaconsumergroupversion": {"KAFKA_CONSUMER_GROUP_VERSION"},
+		"enablecloneclickhouse":     {"ENABLE_CLONE_CLICKHOUSE"},
+		"loglevel":                  {"LOG_LEVEL"},
+		"jwtsecretkey":              {"JWT_SECRET_KEY"},
+		"devapimode":                {"DEV_API_MODE"},
+		"serviceport":               {"SERVICE_PORT"},
+		"hostapi":                   {"HOST_API"},
+		"mode":                      {"MODE"},
+		"httpcors":                  {"HTTP_CORS"},
+		"corsallowedorigins":        {"CORS_ALLOWED_ORIGINS"},
+		"firebaseprojectid":         {"FIREBASE_PROJECT_ID"},
 	},
 	"integrations": {
-		"ai_provider":          {"AI_PROVIDER"}, // "gemini" | "openrouter" | "groq" | "deepseek"
-		"gemini_api_key":       {"GEMINI_API_KEY"},
-		"gemini_model":         {"GEMINI_MODEL"},
-		"openrouter_api_key":   {"OPENROUTER_API_KEY"},
-		"openrouter_model":     {"OPENROUTER_MODEL"},
-		"groq_api_key":         {"GROQ_API_KEY"},
-		"groq_model":           {"GROQ_MODEL"},
-		"deepseek_api_key":     {"DEEPSEEK_API_KEY"},
-		"deepseek_model":       {"DEEPSEEK_MODEL"},
-		"r2_account_id":        {"R2_ACCOUNT_ID"},
-		"r2_access_key_id":     {"R2_ACCESS_KEY_ID"},
-		"r2_secret_access_key": {"R2_SECRET_ACCESS_KEY"},
-		"r2_bucket_name":       {"R2_BUCKET_NAME"},
-		"s3_endpoint":          {"S3_ENDPOINT"},
-		"s3_public_endpoint":   {"S3_PUBLIC_ENDPOINT"},
-		"s3_access_key_id":     {"S3_ACCESS_KEY_ID"},
-		"s3_secret_access_key": {"S3_SECRET_ACCESS_KEY"},
-		"s3_bucket_name":       {"S3_BUCKET_NAME"},
-		"thunder_api_key":      {"THUNDER_API_KEY"},
-		"brevo_api_key":        {"BREVO_API_KEY"},
-		"brevo_from_email":     {"BREVO_FROM_EMAIL"},
-		"brevo_from_name":      {"BREVO_FROM_NAME"},
-		"bcweaviate_url":       {"BCWEAVIATE_URL"},
+		"aiprovider":        {"AI_PROVIDER"}, // "gemini" | "openrouter" | "groq" | "deepseek"
+		"geminiapikey":      {"GEMINI_API_KEY"},
+		"geminimodel":       {"GEMINI_MODEL"},
+		"openrouterapikey":  {"OPENROUTER_API_KEY"},
+		"openroutermodel":   {"OPENROUTER_MODEL"},
+		"groqapikey":        {"GROQ_API_KEY"},
+		"groqmodel":         {"GROQ_MODEL"},
+		"deepseekapikey":    {"DEEPSEEK_API_KEY"},
+		"deepseekmodel":     {"DEEPSEEK_MODEL"},
+		"r2accountid":       {"R2_ACCOUNT_ID"},
+		"r2accesskeyid":     {"R2_ACCESS_KEY_ID"},
+		"r2secretaccesskey": {"R2_SECRET_ACCESS_KEY"},
+		"r2bucketname":      {"R2_BUCKET_NAME"},
+		"s3endpoint":        {"S3_ENDPOINT"},
+		"s3publicendpoint":  {"S3_PUBLIC_ENDPOINT"},
+		"s3accesskeyid":     {"S3_ACCESS_KEY_ID"},
+		"s3secretaccesskey": {"S3_SECRET_ACCESS_KEY"},
+		"s3bucketname":      {"S3_BUCKET_NAME"},
+		"thunderapikey":     {"THUNDER_API_KEY"},
+		"brevoapikey":       {"BREVO_API_KEY"},
+		"brevofromemail":    {"BREVO_FROM_EMAIL"},
+		"brevofromname":     {"BREVO_FROM_NAME"},
+		"bcweaviateurl":     {"BCWEAVIATE_URL"},
 	},
 	"kafka": {
-		"server_url": {"KAFKA_SERVER_URL"},
+		"serverurl": {"KAFKA_SERVER_URL"},
 	},
 	"storage": {
-		"data_path":            {"STORAGE_DATA_PATH"},
-		"data_uri":             {"STORAGE_DATA_URI"},
-		"azure_account_name":   {"AZURE_STORAGE_ACCOUNT_NAME"},
-		"azure_account_key":    {"AZURE_STORAGE_ACCOUNT_KEY"},
-		"azure_container_name": {"AZURE_STORAGE_CONTAINER_NAME"},
-		"azure_tenant_id":      {"AZURE_TENANT_ID"},
+		"datapath":           {"STORAGE_DATA_PATH"},
+		"datauri":            {"STORAGE_DATA_URI"},
+		"azureaccountname":   {"AZURE_STORAGE_ACCOUNT_NAME"},
+		"azureaccountkey":    {"AZURE_STORAGE_ACCOUNT_KEY"},
+		"azurecontainername": {"AZURE_STORAGE_CONTAINER_NAME"},
+		"azuretenantid":      {"AZURE_TENANT_ID"},
 	},
 }
 
 // secretKeys รายชื่อ key ที่ต้อง mask ใน log
 var secretKeys = map[string]bool{
-	"password":             true,
-	"secret_access_key":    true,
-	"account_key":          true,
-	"azure_account_key":    true,
-	"jwt_secret_key":       true,
-	"gemini_api_key":       true,
-	"thunder_api_key":      true,
-	"brevo_api_key":        true,
-	"r2_secret_access_key": true,
-	"s3_secret_access_key": true,
+	"password":          true,
+	"secretaccesskey":   true,
+	"accountkey":        true,
+	"azureaccountkey":   true,
+	"jwtsecretkey":      true,
+	"geminiapikey":      true,
+	"thunderapikey":     true,
+	"brevoapikey":       true,
+	"r2secretaccesskey": true,
+	"s3secretaccesskey": true,
 }
 
 // bootstrapPaths ลำดับความสำคัญในการหา bootstrap.json
@@ -237,15 +237,15 @@ func LoadBootstrapConfig() {
 
 	// โหลดทุก section ที่มีใน bootstrap.json ตาม configMapping
 	overrideCount += applyBootstrapSection("mongodb", cfg.MongoDB)
-	overrideCount += applyBootstrapSection("mongodb_dev", cfg.MongoDBDev)
-	overrideCount += applyBootstrapSection("mongodb_uat", cfg.MongoDBUAT)
-	overrideCount += applyBootstrapSection("mongodb_pro", cfg.MongoDBPRO)
+	overrideCount += applyBootstrapSection("mongodbdev", cfg.MongoDBDev)
+	overrideCount += applyBootstrapSection("mongodbuat", cfg.MongoDBUAT)
+	overrideCount += applyBootstrapSection("mongodbpro", cfg.MongoDBPRO)
 	overrideCount += applyBootstrapSection("postgresql", cfg.PostgreSQL)
 	overrideCount += applyBootstrapSection("clickhouse", cfg.ClickHouse)
 	overrideCount += applyBootstrapSection("service", cfg.Service)
 	overrideCount += applyBootstrapSection("integrations", cfg.Integrations)
 	overrideCount += applyBootstrapSection("storage", cfg.Storage)
-	overrideCount += applyBootstrapSection("mongodb_production", cfg.MongoDBProd)
+	overrideCount += applyBootstrapSection("mongodbproduction", cfg.MongoDBProd)
 	overrideCount += applyBootstrapSection("kafka", cfg.Kafka)
 
 	// ตั้งค่า default สำหรับ Redis และ Kafka (ถ้ายังไม่ได้ตั้งค่า)
@@ -346,7 +346,7 @@ func isSecretKey(key string) bool {
 	lowerKey := strings.ToLower(key)
 	return strings.Contains(lowerKey, "password") ||
 		strings.Contains(lowerKey, "secret") ||
-		strings.Contains(lowerKey, "api_key")
+		strings.Contains(lowerKey, "apikey")
 }
 
 // ReloadAndReconnect อ่าน bootstrap.json ใหม่แล้ว reconnect database connections

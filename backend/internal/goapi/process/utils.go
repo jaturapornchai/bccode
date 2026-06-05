@@ -72,20 +72,20 @@ func BulkInsertProcessStockCost(ctx context.Context, db *sql.DB, data any) error
 		}
 
 		columns := []string{
-			"docdatetime", "docno", "line_number", "transflag", "itemcode",
+			"docdatetime", "docno", "linenumber", "transflag", "itemcode",
 			"unitcode", "whcode", "locationcode", "totalqty", "price", "unitstand",
-			"unitdivide", "averagecost", "calcamount", "balanceamount", "balance_qty",
+			"unitdivide", "averagecost", "calcamount", "balanceamount", "balanceqty",
 			"guid", "unitcost", "docref",
 		}
 
 		rows := make([][]any, len(v))
 		for i, item := range v {
 			rows[i] = []any{
-				item["docdatetime"], item["docno"], item["line_number"], item["transflag"],
+				item["docdatetime"], item["docno"], item["linenumber"], item["transflag"],
 				item["itemcode"], item["unitcode"], item["whcode"], item["locationcode"],
 				item["totalqty"], item["price"], item["unitstand"], item["unitdivide"],
 				item["averagecost"], item["calcamount"], item["balanceamount"],
-				item["balance_qty"], item["guid"], item["unitcost"], item["docref"],
+				item["balanceqty"], item["guid"], item["unitcost"], item["docref"],
 			}
 		}
 
@@ -107,7 +107,7 @@ func BulkInsertProcessStockLot(ctx context.Context, db *sql.DB, data any) error 
 		columns := []string{
 			"docdatetime", "lot_number", "docno", "transflag", "itemcode",
 			"unitcode", "whcode", "locationcode", "qty", "price", "unitstand",
-			"unitdivide", "cost", "balanceamount", "balance_qty", "guid_ref",
+			"unitdivide", "cost", "balanceamount", "balanceqty", "guidref",
 		}
 
 		rows := make([][]any, len(v))
@@ -116,7 +116,7 @@ func BulkInsertProcessStockLot(ctx context.Context, db *sql.DB, data any) error 
 				item["docdatetime"], item["lot_number"], item["docno"], item["transflag"],
 				item["itemcode"], item["unitcode"], item["whcode"], item["locationcode"],
 				item["qty"], item["price"], item["unitstand"], item["unitdivide"],
-				item["cost"], item["balanceamount"], item["balance_qty"], item["guid_ref"],
+				item["cost"], item["balanceamount"], item["balanceqty"], item["guidref"],
 			}
 		}
 

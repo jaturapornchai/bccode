@@ -517,7 +517,7 @@ var AvailableTools = []map[string]interface{}{
 	// Reference Barcodes + Multi-Unit
 	{
 		"name":        "getrefbarcodes",
-		"description": "Get reference barcodes and unit chain for a product. Shows all units (e.g., ชิ้น→ลัง) and how they reference each other. Returns product_name and unit_name as formatted strings (auto from names[]).",
+		"description": "Get reference barcodes and unit chain for a product. Shows all units (e.g., ชิ้น→ลัง) and how they reference each other. Returns product_name and unitname as formatted strings (auto from names[]).",
 		"parameters": map[string]interface{}{
 			"holdingcode": "string (required) - Holding Code",
 			"itemcode":    "string (optional) - Item code to get all barcodes for (if not specified, use barcode to find)",

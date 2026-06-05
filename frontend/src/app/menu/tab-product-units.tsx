@@ -184,7 +184,7 @@ export function TabProductUnits({
                       {
                         guidfixed: "",
                         names: [],
-                        item_unit_code: "",
+                        itemunitcode: "",
                         itemunitnames: [],
                         barcode: "",
                         condition: false,
@@ -215,7 +215,7 @@ export function TabProductUnits({
                           <Input
                             readOnly
                             placeholder={textU.unitRefUnitPlaceholder}
-                            value={entry.item_unit_code ? `${entry.item_unit_code} — ${pickName(entry.itemunitnames, lang)}` : ""}
+                            value={entry.itemunitcode ? `${entry.itemunitcode} — ${pickName(entry.itemunitnames, lang)}` : ""}
                           />
                           <Button
                             type="button"

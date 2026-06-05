@@ -23,7 +23,7 @@ Please adapt the backend/models to match the newly added frontend UI parameters:
   - `choices` (ProductChoice[]): Each choice has `guid`, `names`, `refbarcode`, `refbarcodenames`, `isstock` (boolean), `isdefault` (boolean), `qty` (number), and `price` (string containing numeric delta price).
 - [ ] Ensure `isusesubbarcodes` (boolean, component-level inventory vs bundle-level inventory) is properly saved and respected when a sale transaction occurs (inventory deduct trace logic).
 - [ ] Ensure `condition` (boolean, fixed set price vs dynamic price) is saved and respected.
-- [ ] Ensure package dimensions (`package_weight`, `package_width`, `package_length`, `package_height`) are saved in MongoDB `Product` model.
+- [ ] Ensure package dimensions (`packageweight`, `packagewidth`, `packagelength`, `packageheight`) are saved in MongoDB `Product` model.
 - [ ] Implement backend automatic rebuild and deploy to local Docker Desktop:
   `cd backend; docker-compose up -d --no-deps --build mainapi`
 
@@ -39,16 +39,16 @@ The request payload shape is:
   holdingcode: string;
   code: string;
   names: NameX[];
-  group_code: string;
-  group_names: NameX[];
-  item_type: 2; // Always SET
+  groupcode: string;
+  groupnames: NameX[];
+  itemtype: 2; // Always SET
   condition: boolean;
   isusesubbarcodes: boolean;
   options: ProductOption[];
-  package_weight: number;
-  package_width: number;
-  package_length: number;
-  package_height: number;
+  packageweight: number;
+  packagewidth: number;
+  packagelength: number;
+  packageheight: number;
   description?: string;
   // Other standard product fields
 }

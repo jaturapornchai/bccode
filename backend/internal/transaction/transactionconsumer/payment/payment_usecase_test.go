@@ -33,7 +33,7 @@ func TestPaymentUpsert(t *testing.T) {
 	transMq.HoldingCode = "shop1"
 	transMq.DocNo = "doc1"
 	transMq.TransFlag = 50
-	transMq.PaymentDetailRaw = "[{\"doc_mode\":0,\"trans_flag\":1,\"bank_code\":\"ชำระด้วยบัตรเครดิต\",\"bank_name\":\"ชำระด้วยบัตรเครดิต\",\"book_bank_code\":\"ชำระด้วยบัตรเครดิต\",\"card_number\":\"ชำระด้วยบัตรเครดิต\",\"approved_code\":\"\",\"doc_date_time\":\"2024-02-05T13:26:56.358108\",\"branch_number\":\"\",\"bank_reference\":\"\",\"due_date\":\"2024-02-05T13:26:56.358107\",\"cheque_number\":\"\",\"code\":\"code1x\",\"description\":\"CreditCard\",\"number\":\"\",\"reference_one\":\"\",\"reference_two\":\"\",\"provider_code\":\"\",\"provider_name\":\"\",\"amount\":1570.0}]"
+	transMq.PaymentDetailRaw = "[{\"docmode\":0,\"transflag\":1,\"bankcode\":\"ชำระด้วยบัตรเครดิต\",\"bankname\":\"ชำระด้วยบัตรเครดิต\",\"bookbankcode\":\"ชำระด้วยบัตรเครดิต\",\"cardnumber\":\"ชำระด้วยบัตรเครดิต\",\"approvedcode\":\"\",\"docdatetime\":\"2024-02-05T13:26:56.358108\",\"branchnumber\":\"\",\"bankreference\":\"\",\"duedate\":\"2024-02-05T13:26:56.358107\",\"chequenumber\":\"\",\"code\":\"code1x\",\"description\":\"CreditCard\",\"number\":\"\",\"referenceone\":\"\",\"referencetwo\":\"\",\"providercode\":\"\",\"providername\":\"\",\"amount\":1570.0}]"
 	transMq.Branch.Code = "0001"
 
 	branchLangCode := "en"

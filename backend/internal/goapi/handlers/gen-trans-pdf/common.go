@@ -255,8 +255,8 @@ func GetLabels(language string) Labels {
 
 		// Table Headers
 		No:        getLangText(langMap, "no", getDefaultLabel(language, "No")),
-		ItemCode:  getLangText(langMap, "item_code", getDefaultLabel(language, "ItemCode")),
-		Item:      getLangText(langMap, "item_name", getDefaultLabel(language, "Item")),
+		ItemCode:  getLangText(langMap, "itemcode", getDefaultLabel(language, "ItemCode")),
+		Item:      getLangText(langMap, "itemname", getDefaultLabel(language, "Item")),
 		Unit:      getLangText(langMap, "unit", getDefaultLabel(language, "Unit")),
 		Qty:       getLangText(langMap, "qty", getDefaultLabel(language, "Qty")),
 		UnitPrice: getLangText(langMap, "unit_price", getDefaultLabel(language, "UnitPrice")),

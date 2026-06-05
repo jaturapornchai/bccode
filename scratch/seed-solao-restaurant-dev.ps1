@@ -217,8 +217,8 @@ function New-ProductPayload {
   return @{
     code = $Item.code
     names = @(New-Names $Item.th $Item.en)
-    group_code = "SOLAO_RESTAURANT"
-    group_names = @(New-Names "ร้านอาหารโซลาว" "Solao Restaurant")
+    groupcode = "SOLAO_RESTAURANT"
+    groupnames = @(New-Names "ร้านอาหารโซลาว" "Solao Restaurant")
     item_type = [int]$Item.item_type
     materialtype = [int]$Item.materialtype
     vat_type = 0
@@ -233,7 +233,7 @@ function New-ProductPayload {
     barcodes = @(
       @{
         barcode = $Item.barcode
-        item_unit_code = $Item.unit.code
+        itemunitcode = $Item.unit.code
         itemunitnames = @(New-Names $Item.unit.th $Item.unit.en)
         prices = @(@{ key_number = 1; price = [double]$Item.price })
         condition = $false
@@ -251,11 +251,11 @@ function New-BarcodePayload {
   return @{
     itemcode = $Item.code
     barcode = $Item.barcode
-    group_code = "SOLAO_RESTAURANT"
-    group_names = @(New-Names "ร้านอาหารโซลาว" "Solao Restaurant")
+    groupcode = "SOLAO_RESTAURANT"
+    groupnames = @(New-Names "ร้านอาหารโซลาว" "Solao Restaurant")
     names = @(New-Names $Item.th $Item.en)
     xsorts = @()
-    item_unit_code = $Item.unit.code
+    itemunitcode = $Item.unit.code
     itemunitnames = @(New-Names $Item.unit.th $Item.unit.en)
     prices = @(@{ key_number = 1; price = [double]$Item.price })
     useimageorcolor = $false

@@ -439,7 +439,7 @@ func getAllEnums() []EnumGroup {
 
 		// ===== Year Type =====
 		{
-			Name:        "year_type",
+			Name:        "yeartype",
 			Description: "Calendar year types — ประเภทปีปฏิทิน (MainAPI)",
 			Category:    "mainapi",
 			GoSource:    "pkg/models/shop.go",

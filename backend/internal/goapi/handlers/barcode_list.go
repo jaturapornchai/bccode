@@ -177,18 +177,18 @@ func barcodeStockDimensions(doc bson.M) []map[string]string {
 				item = itemMap
 			}
 		}
-		dimensionGuid := mapStringAny(dim, "guidfixed", "guidfixed", "guid", "dimension_guid", "dimension_code", "code")
-		itemGuid := mapStringAny(item, "guidfixed", "guidfixed", "guid", "item_guid", "option_guid", "value_code", "code")
+		dimensionGuid := mapStringAny(dim, "guidfixed", "guidfixed", "guid", "dimensionguid", "dimension_code", "code")
+		itemGuid := mapStringAny(item, "guidfixed", "guidfixed", "guid", "itemguid", "option_guid", "valuecode", "code")
 		dimensionName := firstMappedName(mapNames(dim, "names"))
 		itemName := firstMappedName(mapNames(item, "names"))
 		if dimensionGuid == "" && itemGuid == "" && dimensionName == "" && itemName == "" {
 			continue
 		}
 		dimensions = append(dimensions, map[string]string{
-			"dimension_guid": dimensionGuid,
-			"dimension_name": dimensionName,
-			"item_guid":      itemGuid,
-			"item_name":      itemName,
+			"dimensionguid": dimensionGuid,
+			"dimensionname": dimensionName,
+			"itemguid":      itemGuid,
+			"itemname":      itemName,
 		})
 	}
 	return dimensions
@@ -204,13 +204,13 @@ func stockDimensionKey(dimensions []map[string]string) string {
 	}
 	parts := make([]string, 0, len(dimensions))
 	for _, dim := range dimensions {
-		left := stockDimensionPart(dim["dimension_guid"])
+		left := stockDimensionPart(dim["dimensionguid"])
 		if left == "" {
-			left = stockDimensionPart(dim["dimension_name"])
+			left = stockDimensionPart(dim["dimensionname"])
 		}
-		right := stockDimensionPart(dim["item_guid"])
+		right := stockDimensionPart(dim["itemguid"])
 		if right == "" {
-			right = stockDimensionPart(dim["item_name"])
+			right = stockDimensionPart(dim["itemname"])
 		}
 		if left == "" && right == "" {
 			continue
@@ -341,10 +341,10 @@ func BarcodeListHandler(c echo.Context) error {
 
 	// Apply other filters
 	if req.GroupCode != "" {
-		filter["group_code"] = req.GroupCode
+		filter["groupcode"] = req.GroupCode
 	}
 	if req.BrandCode != "" {
-		filter["brand_code"] = req.BrandCode
+		filter["brandcode"] = req.BrandCode
 	}
 	if req.CategoryCode != "" {
 		filter["categorycode"] = req.CategoryCode
@@ -365,7 +365,7 @@ func BarcodeListHandler(c echo.Context) error {
 		filter["patterncode"] = req.PatternCode
 	}
 	if req.ItemType != nil {
-		filter["item_type"] = *req.ItemType
+		filter["itemtype"] = *req.ItemType
 	}
 	if req.MaterialType != nil {
 		filter["materialtype"] = *req.MaterialType
@@ -451,89 +451,89 @@ func BarcodeListHandler(c echo.Context) error {
 			if arr, ok := val.(primitive.A); ok {
 				for _, item := range arr {
 					if m, ok := item.(bson.M); ok {
-						keyNum := mapInt(m, "key_number")
+						keyNum := mapInt(m, "keynumber")
 						if keyNum == 0 {
 							keyNum = mapInt(m, "keynumber")
 						}
 						prices = append(prices, map[string]interface{}{
-							"key_number": keyNum,
-							"price":      mapFloat(m, "price"),
+							"keynumber": keyNum,
+							"price":     mapFloat(m, "price"),
 						})
 					}
 				}
 			}
 		}
 		if len(prices) == 0 {
-			prices = append(prices, map[string]interface{}{"key_number": 1, "price": 0.0})
+			prices = append(prices, map[string]interface{}{"keynumber": 1, "price": 0.0})
 		}
 
-		itemType := mapIntAny(doc, "item_type", "itemtype")
+		itemType := mapIntAny(doc, "itemtype", "itemtype")
 		materialType := mapIntAny(doc, "materialtype", "material_type")
 		stockDimensions := barcodeStockDimensions(doc)
 		dimensionKey := stockDimensionKey(stockDimensions)
 
 		resultList = append(resultList, map[string]interface{}{
-			"guidfixed":           mapString(doc, "guidfixed"),
-			"barcode":             mapString(doc, "barcode"),
-			"names":               mapNames(doc, "names"),
-			"item_unit_code":      mapString(doc, "itemunitcode"),
-			"itemunitnames":       mapNames(doc, "itemunitnames"),
-			"itemcode":            itemCode,
-			"barcoderef":          mapString(doc, "barcoderef"),
-			"group_code":          mapString(doc, "group_code"),
-			"groupcode":           mapString(doc, "group_code"),
-			"group_names":         mapNames(doc, "group_names"),
-			"groupnames":          "",
-			"brand_code":          mapString(doc, "brand_code"),
-			"brandcode":           mapString(doc, "brand_code"),
-			"brandnames":          mapNames(doc, "brandnames"),
-			"categorycode":        mapString(doc, "categorycode"),
-			"category_code":       mapString(doc, "categorycode"),
-			"category_names":      mapNames(doc, "category_names"),
-			"categorynames":       mapNames(doc, "category_names"),
-			"classcode":           mapString(doc, "classcode"),
-			"class_code":          mapString(doc, "classcode"),
-			"classnames":          mapNames(doc, "classnames"),
-			"designcode":          mapString(doc, "designcode"),
-			"design_code":         mapString(doc, "designcode"),
-			"designnames":         mapNames(doc, "designnames"),
-			"gradecode":           mapString(doc, "gradecode"),
-			"grade_code":          mapString(doc, "gradecode"),
-			"gradenames":          mapNames(doc, "gradenames"),
-			"modelcode":           mapString(doc, "modelcode"),
-			"model_code":          mapString(doc, "modelcode"),
-			"modelnames":          mapNames(doc, "modelnames"),
-			"patterncode":         mapString(doc, "patterncode"),
-			"pattern_code":        mapString(doc, "patterncode"),
-			"patternnames":        mapNames(doc, "patternnames"),
-			"groupsubonecode":     mapString(doc, "groupsubonecode"),
-			"groupsubonenames":    mapNames(doc, "groupsubonenames"),
-			"groupsubtwocode":     mapString(doc, "groupsubtwocode"),
-			"groupsubtwonames":    mapNames(doc, "groupsubtwonames"),
-			"prices":              prices,
-			"imageuri":            mapString(doc, "imageuri"),
-			"standvalue":          mapFloat(doc, "standvalue"),
-			"dividevalue":         mapFloat(doc, "dividevalue"),
-			"isstock":             mapInt(doc, "isstock"),
-			"itemtype":            itemType,
-			"item_type":           itemType,
-			"materialtype":        materialType,
-			"material_type":       materialType,
-			"isusesubbarcodes":    mapBool(doc, "isusesubbarcodes"),
-			"checksum":            mapString(doc, "checksum"),
-			"holdingcode":         mapString(doc, "holdingcode"),
-			"refbarcodes":         doc["refbarcodes"],
-			"bom":                 doc["bom"],
-			"businesstypes":       doc["businesstypes"],
-			"ignorebranches":      doc["ignorebranches"],
-			"unit_count":          1,
-			"all_unit_names":      "",
-			"stock_dimension_key": dimensionKey,
-			"stock_dimensions":    stockDimensions,
-			"balance_qty":         0.0,
-			"reserved_qty":        0.0,
-			"available_qty":       0.0,
-			"balance_formatted":   "",
+			"guidfixed":          mapString(doc, "guidfixed"),
+			"barcode":            mapString(doc, "barcode"),
+			"names":              mapNames(doc, "names"),
+			"itemunitcode":       mapString(doc, "itemunitcode"),
+			"itemunitnames":      mapNames(doc, "itemunitnames"),
+			"itemcode":           itemCode,
+			"barcoderef":         mapString(doc, "barcoderef"),
+			"groupcode":          mapString(doc, "groupcode"),
+			"groupcode":          mapString(doc, "groupcode"),
+			"groupnames":         mapNames(doc, "groupnames"),
+			"groupnames":         "",
+			"brandcode":          mapString(doc, "brandcode"),
+			"brandcode":          mapString(doc, "brandcode"),
+			"brandnames":         mapNames(doc, "brandnames"),
+			"categorycode":       mapString(doc, "categorycode"),
+			"category_code":      mapString(doc, "categorycode"),
+			"categorynames":      mapNames(doc, "categorynames"),
+			"categorynames":      mapNames(doc, "categorynames"),
+			"classcode":          mapString(doc, "classcode"),
+			"class_code":         mapString(doc, "classcode"),
+			"classnames":         mapNames(doc, "classnames"),
+			"designcode":         mapString(doc, "designcode"),
+			"design_code":        mapString(doc, "designcode"),
+			"designnames":        mapNames(doc, "designnames"),
+			"gradecode":          mapString(doc, "gradecode"),
+			"grade_code":         mapString(doc, "gradecode"),
+			"gradenames":         mapNames(doc, "gradenames"),
+			"modelcode":          mapString(doc, "modelcode"),
+			"model_code":         mapString(doc, "modelcode"),
+			"modelnames":         mapNames(doc, "modelnames"),
+			"patterncode":        mapString(doc, "patterncode"),
+			"pattern_code":       mapString(doc, "patterncode"),
+			"patternnames":       mapNames(doc, "patternnames"),
+			"groupsubonecode":    mapString(doc, "groupsubonecode"),
+			"groupsubonenames":   mapNames(doc, "groupsubonenames"),
+			"groupsubtwocode":    mapString(doc, "groupsubtwocode"),
+			"groupsubtwonames":   mapNames(doc, "groupsubtwonames"),
+			"prices":             prices,
+			"imageuri":           mapString(doc, "imageuri"),
+			"standvalue":         mapFloat(doc, "standvalue"),
+			"dividevalue":        mapFloat(doc, "dividevalue"),
+			"isstock":            mapInt(doc, "isstock"),
+			"itemtype":           itemType,
+			"itemtype":           itemType,
+			"materialtype":       materialType,
+			"material_type":      materialType,
+			"isusesubbarcodes":   mapBool(doc, "isusesubbarcodes"),
+			"checksum":           mapString(doc, "checksum"),
+			"holdingcode":        mapString(doc, "holdingcode"),
+			"refbarcodes":        doc["refbarcodes"],
+			"bom":                doc["bom"],
+			"businesstypes":      doc["businesstypes"],
+			"ignorebranches":     doc["ignorebranches"],
+			"unit_count":         1,
+			"all_unit_names":     "",
+			"stock_dimensionkey": dimensionKey,
+			"stockdimensions":    stockDimensions,
+			"balanceqty":         0.0,
+			"reservedqty":        0.0,
+			"availableqty":       0.0,
+			"balance_formatted":  "",
 		})
 	}
 
@@ -638,7 +638,7 @@ func BarcodeListHandler(c echo.Context) error {
 				args = append(args, code)
 			}
 
-			hasReservedQty := pgColumnExists(ctx, db, "inventory_stock_balances", "reservedqty")
+			hasReservedQty := pgColumnExists(ctx, db, "inventorystockbalances", "reservedqty")
 			reservedExpr := "0::numeric"
 			if hasReservedQty {
 				reservedExpr = "COALESCE(SUM(reservedqty), 0)"
@@ -648,7 +648,7 @@ func BarcodeListHandler(c echo.Context) error {
 				        COALESCE(SUM(currentqty), 0),
 				        %s,
 				        COALESCE(SUM(currenttotalvalue), 0)
-				   FROM inventory_stock_balances
+				   FROM inventorystockbalances
 				  WHERE holdingcode = $1 AND itemcode IN (%s)
 				  GROUP BY itemcode`,
 				reservedExpr,
@@ -673,20 +673,20 @@ func BarcodeListHandler(c echo.Context) error {
 				logger.Warn("BarcodeListHandler: inventory stock balance query failed: %v", err)
 			}
 
-			hasMarketplaceStock := pgTableExists(ctx, db, "marketplace_stock_balances") &&
-				pgColumnExists(ctx, db, "marketplace_stock_balances", "item_code") &&
-				pgColumnExists(ctx, db, "marketplace_stock_balances", "dimension_key") &&
-				pgColumnExists(ctx, db, "marketplace_stock_balances", "available_qty")
+			hasMarketplaceStock := pgTableExists(ctx, db, "marketplacestockbalances") &&
+				pgColumnExists(ctx, db, "marketplacestockbalances", "itemcode") &&
+				pgColumnExists(ctx, db, "marketplacestockbalances", "dimensionkey") &&
+				pgColumnExists(ctx, db, "marketplacestockbalances", "availableqty")
 			if hasMarketplaceStock {
 				marketplaceQuery := fmt.Sprintf(
-					`SELECT item_code,
-					        COALESCE(dimension_key, '') AS dimension_key,
+					`SELECT itemcode,
+					        COALESCE(dimensionkey, '') AS dimensionkey,
 					        COALESCE(SUM(current_qty), 0),
-					        COALESCE(SUM(reserved_qty), 0),
-					        COALESCE(SUM(available_qty), 0)
-					   FROM marketplace_stock_balances
-					  WHERE holdingcode = $1 AND item_code IN (%s)
-					  GROUP BY item_code, COALESCE(dimension_key, '')`,
+					        COALESCE(SUM(reservedqty), 0),
+					        COALESCE(SUM(availableqty), 0)
+					   FROM marketplacestockbalances
+					  WHERE holdingcode = $1 AND itemcode IN (%s)
+					  GROUP BY itemcode, COALESCE(dimensionkey, '')`,
 					strings.Join(placeholders, ","),
 				)
 				rows, err := db.QueryContext(ctx, marketplaceQuery, args...)
@@ -713,24 +713,24 @@ func BarcodeListHandler(c echo.Context) error {
 
 		for _, res := range resultList {
 			code, _ := res["itemcode"].(string)
-			dimensionKey, _ := res["stock_dimension_key"].(string)
+			dimensionKey, _ := res["stock_dimensionkey"].(string)
 			if accountingBalance, ok := accountingBalanceMap[code]; ok {
-				res["balance_qty"] = accountingBalance.currentQty
-				res["product_balance_qty"] = accountingBalance.currentQty
-				res["reserved_qty"] = accountingBalance.reservedQty
-				res["available_qty"] = accountingBalance.currentQty - accountingBalance.reservedQty
-				res["balance_amount"] = accountingBalance.totalValue
+				res["balanceqty"] = accountingBalance.currentQty
+				res["product_balanceqty"] = accountingBalance.currentQty
+				res["reservedqty"] = accountingBalance.reservedQty
+				res["availableqty"] = accountingBalance.currentQty - accountingBalance.reservedQty
+				res["balanceamount"] = accountingBalance.totalValue
 				res["balance_formatted"] = fmt.Sprintf("%.4f", accountingBalance.currentQty-accountingBalance.reservedQty)
 			}
 			if dimensionKey == "" {
 				continue
 			}
 			if marketplaceBalance, ok := marketplaceBalanceMap[stockBalanceMapKey(code, dimensionKey)]; ok {
-				res["reserved_qty"] = marketplaceBalance.reservedQty
-				res["available_qty"] = marketplaceBalance.availableQty
+				res["reservedqty"] = marketplaceBalance.reservedQty
+				res["availableqty"] = marketplaceBalance.availableQty
 				res["balance_formatted"] = fmt.Sprintf("%.4f", marketplaceBalance.availableQty)
 			} else {
-				res["available_qty"] = 0.0
+				res["availableqty"] = 0.0
 				res["balance_formatted"] = "0.0000"
 			}
 		}

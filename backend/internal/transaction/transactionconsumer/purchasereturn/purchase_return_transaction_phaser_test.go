@@ -107,7 +107,7 @@ func TestPurchaseReturnTransactionPhaser(t *testing.T) {
 		"transflag": 16,
 		"docno": "PO23050616392C90",
 		"docdatetime": "2023-05-06T09:41:21.000Z",
-		"guid_ref": "d4d2eddd-2f36-424f-92d2-3d0cb6c50b3f",
+		"guidref": "d4d2eddd-2f36-424f-92d2-3d0cb6c50b3f",
 		"docreftype": 3,
 		"docrefno": "PO2305051637AAD9",
 		"docrefdate": "2023-05-05T09:37:25.000Z",
@@ -125,10 +125,10 @@ func TestPurchaseReturnTransactionPhaser(t *testing.T) {
 		"taxdocno": "TAXXXXX",
 		"taxdocdate": "2023-05-18T09:37:21.000Z",
 		"description": "remark",
-		"doc_type": 1,
+		"doctype": 1,
 		"inquirytype": 1,
 		"vatrate": 7,
-		"vat_type": 2,
+		"vattype": 2,
 		"discountword": "3%",
 		"totaldiscount": 15,
 		"totalvalue": 20,
@@ -136,7 +136,7 @@ func TestPurchaseReturnTransactionPhaser(t *testing.T) {
 		"totalexceptvat": 0,
 		"totalvatvalue": 0,
 		"totalaftervat": 20,
-		"total_amount": 20,
+		"totalamount": 20,
 		"membercode": "",
 		"cashiercode": "",
 		"salecode": "",
@@ -171,7 +171,7 @@ func TestPurchaseReturnTransactionPhaser(t *testing.T) {
 				"price": 10,
 				"discount": "2%",
 				"discountamount": 5,
-				"sum_amount": 20,
+				"sumamount": 20,
 				"sumamountexcludevat": 20,
 				"standvalue": 1,
 				"dividevalue": 1,
@@ -201,7 +201,7 @@ func TestPurchaseReturnTransactionPhaser(t *testing.T) {
 				"shelfcode": "",
 				"totalqty": 2,
 				"calcflag": 1,
-				"vat_type": 2,
+				"vattype": 2,
 				"itemnames": [
 					{
 						"code": "th",
@@ -222,15 +222,15 @@ func TestPurchaseReturnTransactionPhaser(t *testing.T) {
 						"isdelete": false
 					}
 				],
-				"line_number": 0,
+				"linenumber": 0,
 				"averagecost": 0,
 				"laststatus": 0,
-				"tax_type": 0,
+				"taxtype": 0,
 				"itemcode": "",
 				"ispos": 0,
 				"multiunit": false,
 				"priceexcludevat": 10,
-				"item_type": 3,
+				"itemtype": 3,
 				"remark": "detail remark",
 				"qty": 2,
 
@@ -263,7 +263,7 @@ func TestPurchaseReturnTransactionPhaser(t *testing.T) {
 		],
 
 
-		"total_cost": 0,
+		"totalcost": 0,
 		"posid": "",
 		"status": 0,
 		"iscancel": false,
@@ -315,7 +315,7 @@ func TestPurchaseReturnTransactionPhaser(t *testing.T) {
 	assert.Equal(t, get.TransFlag, want.TransFlag, "transflag")
 	assert.Equal(t, get.DocNo, want.DocNo, "docno")
 	assert.Equal(t, get.DocDate, want.DocDate, "docdate")
-	assert.Equal(t, get.GuidRef, want.GuidRef, "guid_ref")
+	assert.Equal(t, get.GuidRef, want.GuidRef, "guidref")
 	assert.Equal(t, get.DocRefType, want.DocRefType, "docreftype")
 	assert.Equal(t, get.DocRefNo, want.DocRefNo, "docrefno")
 	assert.Equal(t, get.DocRefDate, want.DocRefDate, "docrefdate")
@@ -324,7 +324,7 @@ func TestPurchaseReturnTransactionPhaser(t *testing.T) {
 	assert.Equal(t, get.Description, want.Description, "description")
 	assert.Equal(t, get.InquiryType, want.InquiryType, "inquirytype")
 	assert.Equal(t, get.VatRate, want.VatRate, "vatrate")
-	assert.Equal(t, get.VatType, want.VatType, "vat_type")
+	assert.Equal(t, get.VatType, want.VatType, "vattype")
 	assert.Equal(t, get.DiscountWord, want.DiscountWord, "discountword")
 	assert.Equal(t, get.TotalDiscount, want.TotalDiscount, "totaldiscount")
 	assert.Equal(t, get.TotalValue, want.TotalValue, "totalvalue")
@@ -332,7 +332,7 @@ func TestPurchaseReturnTransactionPhaser(t *testing.T) {
 	assert.Equal(t, get.TotalExceptVat, want.TotalExceptVat, "totalexceptvat")
 	assert.Equal(t, get.TotalVatValue, want.TotalVatValue, "totalvatvalue")
 	assert.Equal(t, get.TotalAfterVat, want.TotalAfterVat, "totalaftervat")
-	assert.Equal(t, get.TotalAmount, want.TotalAmount, "total_amount")
+	assert.Equal(t, get.TotalAmount, want.TotalAmount, "totalamount")
 
 	assert.Equal(t, get.CreditorCode, want.CreditorCode, "creditorcode")
 	assert.Equal(t, *get.CreditorNames[0].Name, "เจ้าหนี้ทั่วไป", "creditorname")

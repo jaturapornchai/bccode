@@ -252,7 +252,7 @@ func (svc FormTemplateHttpService) SearchFormTemplate(holdingCode string, filter
 	searchInFields := []string{
 		"code",
 		"names.name",
-		"doc_type",
+		"doctype",
 	}
 
 	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
@@ -272,7 +272,7 @@ func (svc FormTemplateHttpService) SearchFormTemplateStep(holdingCode string, la
 	searchInFields := []string{
 		"code",
 		"names.name",
-		"doc_type",
+		"doctype",
 	}
 
 	selectFields := map[string]interface{}{}

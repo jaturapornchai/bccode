@@ -331,7 +331,7 @@ func getOrCreateSession(holdingCode, userID string) (*ConversationSession, error
 	var session ConversationSession
 	err := collection.FindOne(ctx, bson.M{
 		"session_id": sessionID,
-		"expires_at": bson.M{"$gt": time.Now()},
+		"expiresat":  bson.M{"$gt": time.Now()},
 	}).Decode(&session)
 
 	if err != nil {

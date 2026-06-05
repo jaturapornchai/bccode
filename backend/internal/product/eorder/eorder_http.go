@@ -196,7 +196,7 @@ func (h EOrderHttp) SearchProductCategoryPage(ctx microservice.IContext) error {
 	filters := requestfilter.GenerateFilters(ctx.QueryParam, []requestfilter.FilterRequest{
 		{
 			Param: "group-number",
-			Field: "group_number",
+			Field: "groupnumber",
 			Type:  requestfilter.FieldTypeInt,
 		},
 	})
@@ -464,7 +464,7 @@ func (h EOrderHttp) SearchZone(ctx microservice.IContext) error {
 	filters := requestfilter.GenerateFilters(ctx.QueryParam, []requestfilter.FilterRequest{
 		{
 			Param: "group-number",
-			Field: "group_number",
+			Field: "groupnumber",
 			Type:  requestfilter.FieldTypeInt,
 		},
 	})
@@ -508,7 +508,7 @@ func (h EOrderHttp) SearchKitchen(ctx microservice.IContext) error {
 	filters := requestfilter.GenerateFilters(ctx.QueryParam, []requestfilter.FilterRequest{
 		{
 			Param: "group-number",
-			Field: "group_number",
+			Field: "groupnumber",
 			Type:  requestfilter.FieldTypeInt,
 		},
 	})
@@ -552,7 +552,7 @@ func (h EOrderHttp) SearchTable(ctx microservice.IContext) error {
 	filters := requestfilter.GenerateFilters(ctx.QueryParam, []requestfilter.FilterRequest{
 		{
 			Param: "group-number",
-			Field: "group_number",
+			Field: "groupnumber",
 			Type:  requestfilter.FieldTypeInt,
 		},
 	})

@@ -14,17 +14,17 @@ describe("product barcode marketplace contracts", () => {
   it("builds the unified mapping payload for AliExpress", () => {
     expect(emptyMarketplaceProductMap("aliexpress")).toMatchObject({
       platform: "aliexpress",
-      seller_sku: "",
-      shop_sku: "",
+      sellersku: "",
+      shopsku: "",
       gtin: "",
-      platform_price: 0,
-      platform_stock: 0,
-      sync_stock: false,
-      sync_price: false,
-      media_assets: [],
-      specification_groups: [],
-      raw_attributes: [],
-      payload_examples: [],
+      platformprice: 0,
+      platformstock: 0,
+      syncstock: false,
+      syncprice: false,
+      mediaassets: [],
+      specificationgroups: [],
+      rawattributes: [],
+      payloadexamples: [],
     });
   });
 
@@ -32,9 +32,9 @@ describe("product barcode marketplace contracts", () => {
     expect(emptyMarketplaceSKUMap("shopee", "shop-a", "ITEM-1")).toMatchObject({
       platform: "shopee",
       holdingcode: "shop-a",
-      market_item_id: "ITEM-1",
-      platform_stock: 0,
-      marketplace_dimension_stocks: [],
+      marketitemid: "ITEM-1",
+      platformstock: 0,
+      marketplacedimensionstocks: [],
     });
   });
 });

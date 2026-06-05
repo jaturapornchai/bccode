@@ -97,7 +97,7 @@ func ProcessReceipt(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ข้อมูลไม่ถูกต้อง"})
 	}
 	if params.HoldingCode == "" || params.ItemCode == "" || params.Qty <= 0 {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ต้องระบุ holdingcode, item_code, qty > 0"})
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ต้องระบุ holdingcode, itemcode, qty > 0"})
 	}
 
 	svc, err := connectAndService(params.HoldingCode)

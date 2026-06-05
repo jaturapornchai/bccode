@@ -12,7 +12,7 @@ type DocStruct struct {
 	DocDateTime     time.Time `json:"docdatetime" db:"docdatetime"`
 	PeriodDateTime  time.Time `json:"perioddatetime" db:"perioddatetime"`
 	TaxDocNo        string    `json:"taxdocno" db:"taxdocno"`
-	TotalAmount     float64   `json:"totalamount" db:"total_amount"`
+	TotalAmount     float64   `json:"totalamount" db:"totalamount"`
 	RoundAmount     float64   `json:"roundamount" db:"roundamount"`
 	PayType         int       `json:"paytype" db:"paytype"`
 	PayCashAmount   float64   `json:"paycashamount" db:"paycashamount"`
@@ -20,7 +20,7 @@ type DocStruct struct {
 	PayCashBalance  float64   `json:"paycashbalance" db:"paycashbalance"`
 	DeliveryCode    string    `json:"deliverycode" db:"deliverycode"`
 	Checksum        string    `json:"checksum" db:"checksum"`
-	BranchID        string    `json:"branchid" db:"branch_id"`
+	BranchID        string    `json:"branchid" db:"branchid"`
 	SlipURL         string    `json:"slipurl" db:"slipurl"`
 	SaleChannelCode string    `json:"salechannelcode" db:"salechannelcode"`
 	DeliveryAmount  float64   `json:"deliveryamount" db:"deliveryamount"`
@@ -30,9 +30,9 @@ type DocStruct struct {
 	GuidBranch      string    `json:"guidbranch" db:"guidbranch"`
 	GuidFixed       string    `json:"guidfixed" db:"guidfixed"`
 	// ข้อมูลผู้สร้างเอกสาร
-	CreatorCode string    `json:"creatorcode" db:"creator_code"` // รหัสผู้สร้างเอกสาร
-	CreatorName string    `json:"creatorname" db:"creator_name"` // ชื่อผู้สร้างเอกสาร
-	CreatedAt   time.Time `json:"createdat" db:"createdat"`      // วันเวลาที่สร้างเอกสาร
+	CreatorCode string    `json:"creatorcode" db:"creatorcode"` // รหัสผู้สร้างเอกสาร
+	CreatorName string    `json:"creatorname" db:"creatorname"` // ชื่อผู้สร้างเอกสาร
+	CreatedAt   time.Time `json:"createdat" db:"createdat"`     // วันเวลาที่สร้างเอกสาร
 
 	// ============ Multi-Currency Fields ============
 	// สกุลเงินหลัก (Base Currency) - สำหรับลงบัญชี (field เดิม)
@@ -42,7 +42,7 @@ type DocStruct struct {
 	// สกุลเงินเอกสาร (Document Currency) - field ใหม่
 	DocCurrency       string  `json:"doccurrency" db:"doccurrency"`
 	DocCurrencySymbol string  `json:"doccurrencysymbol" db:"doccurrencysymbol"`
-	ExchangeRate      float64 `json:"exchangerate" db:"exchange_rate"`
+	ExchangeRate      float64 `json:"exchangerate" db:"exchangerate"`
 
 	// ยอดรวมในสกุลเงินเอกสาร
 	TotalAmountDoc float64 `json:"totalamountdoc" db:"totalamountdoc"`
@@ -50,14 +50,14 @@ type DocStruct struct {
 	// Soft Delete
 	IsDelete bool `json:"isdelete" db:"isdelete"`
 
-	// สถานะการอนุมัติ (จาก po_approval_status collection)
-	ApprovalStatus string `json:"approvalstatus" db:"approval_status"`
+	// สถานะการอนุมัติ (จาก po_approvalstatus collection)
+	ApprovalStatus string `json:"approvalstatus" db:"approvalstatus"`
 }
 
 type DocRefStruct struct {
 	DocNo             string `json:"docno" db:"docno"`
 	DocNoTransFlag    int    `json:"docnotransflag" db:"docnotransflag"`
-	DocRefNo          string `json:"refdocno" db:"ref_doc_no"`
+	DocRefNo          string `json:"refdocno" db:"refdocno"`
 	DocRefNoTransFlag int    `json:"refdocnotransflag" db:"refdocnotransflag"`
 }
 
@@ -99,14 +99,14 @@ type DocDetailStruct struct {
 
 type DocPaymentStruct struct {
 	HoldingCode    string    `json:"holdingcode" db:"holdingcode"`
-	BranchID       string    `json:"branchid" db:"branch_id"`
+	BranchID       string    `json:"branchid" db:"branchid"`
 	DocDateTime    time.Time `json:"docdatetime" db:"docdatetime"`
 	PeriodDateTime time.Time `json:"perioddatetime" db:"perioddatetime"`
-	ProviderName   string    `json:"providername" db:"provider_name"`
+	ProviderName   string    `json:"providername" db:"providername"`
 	Amount         float64   `json:"amount" db:"amount"`
 	Description    string    `json:"description" db:"description"`
 	DocNo          string    `json:"docno" db:"docno"`
-	TransFlag      int32     `json:"transflag" db:"trans_flag"`
+	TransFlag      int32     `json:"transflag" db:"transflag"`
 	GuidFixed      string    `json:"guidfixed" db:"guidfixed"`
 	GuidBranch     string    `json:"guidbranch" db:"guidbranch"`
 }

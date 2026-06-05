@@ -134,7 +134,7 @@ func (svc EOrderService) GetShopInfoOld(holdingCode string, orderStationCode str
 
 				// Kitchen
 				kitchens, err := svc.repoKitchen.Find(ctx, holdingCode, map[string]interface{}{
-					"group_number": order.KitchenGroupNumber,
+					"groupnumber": order.KitchenGroupNumber,
 				})
 
 				if err != nil {
@@ -244,7 +244,7 @@ func (svc EOrderService) GetShopInfo(holdingCode string, orderStationCode string
 
 				// Kitchen
 				kitchens, err := svc.repoKitchen.Find(ctx, holdingCode, map[string]interface{}{
-					"group_number": order.KitchenGroupNumber,
+					"groupnumber": order.KitchenGroupNumber,
 				})
 
 				if err != nil {

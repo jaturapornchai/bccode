@@ -127,9 +127,9 @@ func ProcessStockCostAllWithCallback(holdingCode string, callback StockProgressC
 
 			// Insert batch
 			columns := []string{
-				"docdatetime", "docno", "line_number", "transflag", "itemcode", "barcode",
+				"docdatetime", "docno", "linenumber", "transflag", "itemcode", "barcode",
 				"unitcode", "whcode", "locationcode", "totalqty", "price", "unitstand",
-				"unitdivide", "averagecost", "calcamount", "balanceamount", "balance_qty",
+				"unitdivide", "averagecost", "calcamount", "balanceamount", "balanceqty",
 				"guid", "unitcost", "docref",
 			}
 
@@ -184,9 +184,9 @@ func ProcessStockCostAllWithCallback(holdingCode string, callback StockProgressC
 			}
 
 			columns := []string{
-				"docdatetime", "lot_number", "docno", "transflag", "itemcode",
+				"docdatetime", "lotnumber", "docno", "transflag", "itemcode",
 				"unitcode", "whcode", "locationcode", "qty", "price", "unitstand",
-				"unitdivide", "cost", "balanceamount", "balance_qty", "guid_ref",
+				"unitdivide", "cost", "balanceamount", "balanceqty", "guidref",
 			}
 
 			var records [][]any

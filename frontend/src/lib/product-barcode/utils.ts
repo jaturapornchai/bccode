@@ -108,14 +108,14 @@ export function setNameXEntry(names: NameX[] | undefined, code: string, name: st
   return base;
 }
 
-/** Normalize price array — accept `{key_number,price}` or `{keynumber,price}`. */
+/** Normalize price array — accept `{keynumber,price}` or `{keynumber,price}`. */
 export function toPriceArray(value: unknown): ProductPrice[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((entry) => {
     if (!isRecord(entry)) return [];
-    const keyNumber = getNumber(entry, "key_number", getNumber(entry, "keynumber", 0));
+    const keyNumber = getNumber(entry, "keynumber", getNumber(entry, "keynumber", 0));
     const price = getNumber(entry, "price", 0);
-    return [{ key_number: keyNumber, price }];
+    return [{ keynumber: keyNumber, price }];
   });
 }
 
@@ -128,7 +128,7 @@ export function toRefBarcodeArray(value: unknown): RefProductBarcode[] {
       {
         guidfixed: getFirstString(entry, ["guidfixed", "guidfixed"]),
         names: toNameXArray(entry.names),
-        item_unit_code: getFirstString(entry, ["item_unit_code", "itemunitcode"]),
+        itemunitcode: getFirstString(entry, ["itemunitcode", "itemunitcode"]),
         itemunitnames: toNameXArray(entry.itemunitnames),
         barcode: getString(entry, "barcode"),
         condition: getBoolean(entry, "condition"),
@@ -143,9 +143,9 @@ export function toRefBarcodeArray(value: unknown): RefProductBarcode[] {
 export type ProductUnitOption = RefProductBarcode & {
   prices?: ProductPrice[];
   averagecost?: number;
-  is_main_barcode?: boolean;
-  product_guid?: string;
-  product_code?: string;
+  ismainbarcode?: boolean;
+  productguid?: string;
+  productcode?: string;
 };
 
 /** Normalize unit/barcode choices from product detail. */
@@ -164,7 +164,7 @@ export function toProductUnitOptions(product: unknown): ProductUnitOption[] {
       {
         guidfixed: getFirstString(entry, ["guidfixed", "guidfixed", "barcodeguidfixed"]),
         names: toNameXArray(entry.names).length ? toNameXArray(entry.names) : productNames,
-        item_unit_code: getFirstString(entry, ["item_unit_code", "itemunitcode", "unitcode"]),
+        itemunitcode: getFirstString(entry, ["itemunitcode", "itemunitcode", "unitcode"]),
         itemunitnames: toNameXArray(entry.itemunitnames).length
           ? toNameXArray(entry.itemunitnames)
           : toNameXArray(entry.unitnames),
@@ -174,10 +174,10 @@ export function toProductUnitOptions(product: unknown): ProductUnitOption[] {
         standvalue: getNumber(entry, "standvalue", 1),
         qty: getNumber(entry, "qty", 1),
         prices: toPriceArray(entry.prices),
-        averagecost: getNumber(entry, "averagecost", getNumber(entry, "unit_cost", 0)),
-        is_main_barcode: getBoolean(entry, "is_main_barcode", false),
-        product_guid: productGuid,
-        product_code: productCode,
+        averagecost: getNumber(entry, "averagecost", getNumber(entry, "unitcost", 0)),
+        ismainbarcode: getBoolean(entry, "ismainbarcode", false),
+        productguid: productGuid,
+        productcode: productCode,
       },
     ];
   });
@@ -192,7 +192,7 @@ export function toBomArray(value: unknown): BOMProductBarcode[] {
       {
         barcodeguidfixed: getFirstString(entry, ["barcodeguidfixed", "guidfixed", "guidfixed"]),
         names: toNameXArray(entry.names),
-        item_unit_code: getFirstString(entry, ["item_unit_code", "itemunitcode"]),
+        itemunitcode: getFirstString(entry, ["itemunitcode", "itemunitcode"]),
         itemunitnames: toNameXArray(entry.itemunitnames),
         barcode: getString(entry, "barcode"),
         qty: getNumber(entry, "qty", 1),
@@ -231,18 +231,18 @@ export function listRowToBarcode(row: ProductBarcodeListRow): Partial<ProductBar
     holdingcode: row.holdingcode,
     barcode: row.barcode,
     names: row.names ?? [],
-    item_unit_code: row.itemunitcode ?? "",
+    itemunitcode: row.itemunitcode ?? "",
     itemunitnames: row.itemunitnames ?? [],
     itemcode: row.itemcode ?? "",
-    group_code: row.groupcode ?? "",
-    group_names: row.group_names ?? row.groupnames ?? [],
-    brand_code: row.brand_code ?? "",
+    groupcode: row.groupcode ?? "",
+    groupnames: row.groupnames ?? row.groupnames ?? [],
+    brandcode: row.brandcode ?? "",
     brandnames: row.brandnames ?? [],
     categorycode: row.categorycode ?? "",
-    category_names: row.category_names ?? [],
+    categorynames: row.categorynames ?? [],
     prices: row.prices ?? [],
     imageuri: row.imageuri ?? "",
-    qty: row.available_qty ?? row.balance_qty ?? 0,
+    qty: row.availableqty ?? row.balanceqty ?? 0,
     standvalue: row.standvalue ?? 1,
     dividevalue: row.dividevalue ?? 1,
     bom: row.bom ?? [],
@@ -262,12 +262,12 @@ export function rawToProduct(raw: unknown): Product {
     holdingcode: getString(r, "holdingcode"),
     code: getString(r, "code"),
     names: toNameXArray(r.names),
-    group_code: getString(r, "group_code"),
-    group_names: toNameXArray(r.group_names),
-    vat_type: getNumber(r, "vat_type", 0),
-    item_type: getNumber(r, "item_type", 0),
+    groupcode: getString(r, "groupcode"),
+    groupnames: toNameXArray(r.groupnames),
+    vattype: getNumber(r, "vattype", 0),
+    itemtype: getNumber(r, "itemtype", 0),
     materialtype: getNumber(r, "materialtype", 0),
-    tax_type: getNumber(r, "tax_type", 0),
+    taxtype: getNumber(r, "taxtype", 0),
     groupsuboneguid: getString(r, "groupsuboneguid"),
     groupsubonecode: getString(r, "groupsubonecode"),
     groupsubonenames: toNameXArray(r.groupsubonenames),
@@ -275,7 +275,7 @@ export function rawToProduct(raw: unknown): Product {
     groupsubtwocode: getString(r, "groupsubtwocode"),
     groupsubtwonames: toNameXArray(r.groupsubtwonames),
     brandguid: getString(r, "brandguid"),
-    brand_code: getString(r, "brand_code"),
+    brandcode: getString(r, "brandcode"),
     brandnames: toNameXArray(r.brandnames),
     designguid: getString(r, "designguid"),
     designcode: getString(r, "designcode"),
@@ -289,9 +289,9 @@ export function rawToProduct(raw: unknown): Product {
     gradeguid: getString(r, "gradeguid"),
     gradecode: getString(r, "gradecode"),
     gradenames: toNameXArray(r.gradenames),
-    category_guid: getString(r, "category_guid"),
+    categoryguid: getString(r, "categoryguid"),
     categorycode: getString(r, "categorycode"),
-    category_names: toNameXArray(r.category_names),
+    categorynames: toNameXArray(r.categorynames),
     classguid: getString(r, "classguid"),
     classcode: getString(r, "classcode"),
     classnames: toNameXArray(r.classnames),
@@ -325,15 +325,15 @@ export function rawToProductBarcode(raw: unknown, base: ProductBarcode): Product
     barcode: getString(r, "barcode") || base.barcode,
     names: toNameXArray(r.names) || base.names,
     xsorts: Array.isArray(r.xsorts) ? (r.xsorts as ProductBarcode["xsorts"]) : base.xsorts,
-    item_guid: getString(r, "item_guid") || base.item_guid,
+    itemguid: getString(r, "itemguid") || base.itemguid,
     itemunitguid: getString(r, "itemunitguid") || base.itemunitguid,
-    item_unit_code: getFirstString(r, ["item_unit_code", "itemunitcode"]) || base.item_unit_code,
+    itemunitcode: getFirstString(r, ["itemunitcode", "itemunitcode"]) || base.itemunitcode,
     itemunitnames: toNameXArray(r.itemunitnames),
     itemunitsize: getNumber(r, "itemunitsize", base.itemunitsize),
 
     groupguid: getString(r, "groupguid") || base.groupguid,
-    group_code: getFirstString(r, ["group_code", "groupcode"]) || base.group_code,
-    group_names: toNameXArray(r.group_names ?? r.groupnames),
+    groupcode: getFirstString(r, ["groupcode", "groupcode"]) || base.groupcode,
+    groupnames: toNameXArray(r.groupnames ?? r.groupnames),
     groupsubonecode: getString(r, "groupsubonecode"),
     groupsubonenames: toNameXArray(r.groupsubonenames),
     groupsuboneguid: getString(r, "groupsuboneguid"),
@@ -342,7 +342,7 @@ export function rawToProductBarcode(raw: unknown, base: ProductBarcode): Product
     groupsubtwonames: toNameXArray(r.groupsubtwonames),
 
     brandguid: getString(r, "brandguid"),
-    brand_code: getFirstString(r, ["brand_code", "brandcode"]),
+    brandcode: getFirstString(r, ["brandcode", "brandcode"]),
     brandnames: toNameXArray(r.brandnames),
     designguid: getString(r, "designguid"),
     designcode: getString(r, "designcode"),
@@ -356,9 +356,9 @@ export function rawToProductBarcode(raw: unknown, base: ProductBarcode): Product
     gradeguid: getString(r, "gradeguid"),
     gradecode: getString(r, "gradecode"),
     gradenames: toNameXArray(r.gradenames),
-    category_guid: getFirstString(r, ["category_guid", "categoryguid"]),
+    categoryguid: getFirstString(r, ["categoryguid", "categoryguid"]),
     categorycode: getString(r, "categorycode"),
-    category_names: toNameXArray(r.category_names ?? r.categorynames),
+    categorynames: toNameXArray(r.categorynames ?? r.categorynames),
     classguid: getString(r, "classguid"),
     classcode: getString(r, "classcode"),
     classnames: toNameXArray(r.classnames),
@@ -380,7 +380,7 @@ export function rawToProductBarcode(raw: unknown, base: ProductBarcode): Product
     dividevalue: getNumber(r, "dividevalue", base.dividevalue),
     standvalue: getNumber(r, "standvalue", base.standvalue),
     isusesubbarcodes: getBoolean(r, "isusesubbarcodes", base.isusesubbarcodes),
-    is_main_barcode: getBoolean(r, "is_main_barcode", base.is_main_barcode),
+    ismainbarcode: getBoolean(r, "ismainbarcode", base.ismainbarcode),
 
     prices: toPriceArray(r.prices),
     fixedcost: Array.isArray(r.fixedcost) ? (r.fixedcost as ProductBarcode["fixedcost"]) : base.fixedcost,
@@ -395,10 +395,10 @@ export function rawToProductBarcode(raw: unknown, base: ProductBarcode): Product
     colorselect: getString(r, "colorselect"),
     colorselecthex: getString(r, "colorselecthex"),
 
-    item_type: getNumber(r, "item_type", base.item_type) as ProductBarcode["item_type"],
+    itemtype: getNumber(r, "itemtype", base.itemtype) as ProductBarcode["itemtype"],
     materialtype: getNumber(r, "materialtype", base.materialtype) as ProductBarcode["materialtype"],
-    tax_type: getNumber(r, "tax_type", base.tax_type),
-    vat_type: getNumber(r, "vat_type", base.vat_type) as ProductBarcode["vat_type"],
+    taxtype: getNumber(r, "taxtype", base.taxtype),
+    vattype: getNumber(r, "vattype", base.vattype) as ProductBarcode["vattype"],
     vatcal: getNumber(r, "vatcal", base.vatcal),
     producttype: getNumber(r, "producttype", base.producttype),
     foodtype: getNumber(r, "foodtype", base.foodtype) as ProductBarcode["foodtype"],

@@ -55,11 +55,11 @@ func TestMarketplaceProductMapJSONRoundTrip(t *testing.T) {
 
 	// Contract guard: these JSON keys must stay in sync with the frontend type.
 	wantKeys := []string{
-		"platform", "account_id", "holdingcode", "market_item_id", "market_model_id",
-		"item_url", "seller_sku", "shop_sku", "gtin", "category_id", "category_name",
-		"brand_id", "currency", "custom_price", "platform_price", "platform_stock",
-		"sync_stock", "sync_price", "status", "reject_reason", "days_to_ship",
-		"is_pre_order", "sync_enabled", "sync_status", "last_sync_at", "last_sync_error",
+		"platform", "accountid", "holdingcode", "marketitemid", "marketmodelid",
+		"itemurl", "sellersku", "shopsku", "gtin", "categoryid", "categoryname",
+		"brandid", "currency", "customprice", "platformprice", "platformstock",
+		"syncstock", "syncprice", "status", "rejectreason", "daystoship",
+		"ispreorder", "syncenabled", "syncstatus", "lastsyncat", "lastsyncerror",
 	}
 	var decoded map[string]any
 	if err := json.Unmarshal(raw, &decoded); err != nil {

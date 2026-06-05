@@ -58,7 +58,7 @@ export async function GET(request: Request, context: MasterContext) {
 
   const url = new URL(request.url);
   const qs = new URLSearchParams();
-  for (const key of ["q", "page", "limit", "lang", "companyguid", "item_type", "materialtype"] as const) {
+  for (const key of ["q", "page", "limit", "lang", "companyguid", "itemtype", "materialtype"] as const) {
     const value = url.searchParams.get(key);
     if (value) qs.set(key, value);
   }
@@ -76,7 +76,7 @@ export async function GET(request: Request, context: MasterContext) {
     const entries = rawData.flatMap((entry: unknown) => {
       if (!isRecord(entry)) return [];
       let guid = String(entry.guidfixed ?? entry.guidfixed ?? "");
-      let code = String(entry.code ?? entry.unitcode ?? entry.itemunitcode ?? entry.groupcode ?? entry.brand_code ?? entry.categorycode ?? "");
+      let code = String(entry.code ?? entry.unitcode ?? entry.itemunitcode ?? entry.groupcode ?? entry.brandcode ?? entry.categorycode ?? "");
       if (masterKey === "branch") {
         guid = String(entry.holdingcode ?? "");
         code = String(entry.branchcode && entry.branchcode !== "" ? entry.branchcode : (entry.holdingcode ?? ""));

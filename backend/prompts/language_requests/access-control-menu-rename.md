@@ -7,12 +7,12 @@ UX refactor for the "การเข้าถึง" sub-menu (system settings g
 | key | Thai | English | replaces (old key still in TSV for legacy callers) |
 |---|---|---|---|
 | `menu_users_permissions` | ผู้ใช้และสิทธิ์ | Users & Permissions | folder (was `access_control` "การเข้าถึง" / "Access") |
-| `menu_permission_define` | นิยามสิทธิ์ | Permission Definition | item (was `permission_definition` "กำหนดสิทธิ์") |
-| `menu_approval` | การอนุมัติ | Approvals | item (was `approval_setting` "สิทธิ์การอนุมัติ") |
+| `menu_permission_define` | นิยามสิทธิ์ | Permission Definition | item (was `permissiondefinition` "กำหนดสิทธิ์") |
+| `menu_approval` | การอนุมัติ | Approvals | item (was `approvalsetting` "สิทธิ์การอนุมัติ") |
 | `menu_user` | ผู้ใช้งาน | Users | item (was `user` "User" — switched to plural EN) |
 | `menu_assign_permission` | มอบหมายสิทธิ์ | Assign Permissions | item (was `permission_link` "ผูกสิทธิ์") |
 
-Note: An earlier draft used key `menu_role_permission` "บทบาทและสิทธิ์" — REVERTED because the backend has no Role entity. Replaced with `menu_permission_define` "นิยามสิทธิ์" to match the `permission_definitions` collection.
+Note: An earlier draft used key `menu_role_permission` "บทบาทและสิทธิ์" — REVERTED because the backend has no Role entity. Replaced with `menu_permission_define` "นิยามสิทธิ์" to match the `permissiondefinitions` collection.
 
 ## screen/module
 - folder `access-control` + items `permission-definition`, `approval-setting`, `user`, `permission-link` under section `settings` > group `company-system`.
@@ -25,7 +25,7 @@ Note: An earlier draft used key `menu_role_permission` "บทบาทและ
 
 ## Existing keys still in TSV (do NOT delete — may be reused elsewhere)
 - `access_control` — still used by other code paths; only frontend folder migrated away from it.
-- `permission_definition`, `approval_setting`, `permission_link`, `user`, `approval_permission` — still in TSV as business terms (permission API, audit log, etc.).
+- `permissiondefinition`, `approvalsetting`, `permission_link`, `user`, `approval_permission` — still in TSV as business terms (permission API, audit log, etc.).
 
 ## caller file path
 - `frontend/src/lib/menu-data.ts` lines 305-308 (item declarations)
@@ -34,4 +34,4 @@ Note: An earlier draft used key `menu_role_permission` "บทบาทและ
 ## verification
 1. UI loads with TH/EN fallback while keys are missing from backend.
 2. After batch translate, switching language reflects the new labels.
-3. Existing `permission_definition` / `approval_setting` / `permission_link` keys remain intact for other callers.
+3. Existing `permissiondefinition` / `approvalsetting` / `permission_link` keys remain intact for other callers.

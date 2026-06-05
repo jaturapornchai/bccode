@@ -95,7 +95,7 @@ func (svc ProductCategoryHttpService) buildDefaultAllProductsCategory(ctx contex
 		"barcode":          1,
 		"itemcode":         1,
 		"names":            1,
-		"item_unit_code":   1,
+		"itemunitcode":     1,
 		"itemunitnames":    1,
 		"manufacturerguid": 1,
 	})
@@ -273,7 +273,7 @@ func (svc ProductCategoryHttpService) SearchProductCategory(holdingCode string, 
 
 	// Extract groupNumber from filters (default to 0)
 	groupNumber := 0
-	if groupNumFilter, exists := filters["group_number"]; exists {
+	if groupNumFilter, exists := filters["groupnumber"]; exists {
 		if gn, ok := groupNumFilter.(int); ok {
 			groupNumber = gn
 		}

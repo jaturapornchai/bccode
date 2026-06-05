@@ -14,10 +14,10 @@ describe("system settings API route security", () => {
     process.env.JWT_SECRET_KEY = SECRET;
 
     const response = await GET(
-      new Request("http://localhost/api/system-settings/permission_definition?holdingcode=SHOP002", {
+      new Request("http://localhost/api/system-settings/permissiondefinition?holdingcode=SHOP002", {
         headers: { Authorization: `Bearer ${signJwt({ username: "user@example.com", holdingcode: "SHOP001" })}` },
       }),
-      { params: Promise.resolve({ settingPath: ["permission_definition"] }) },
+      { params: Promise.resolve({ settingPath: ["permissiondefinition"] }) },
     );
 
     expect(response.status).toBe(403);
@@ -122,13 +122,13 @@ describe("system settings API route security", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const response = await GET(
-      new Request("http://localhost/api/system-settings/permission_link/demo.admin01%40example.com?holdingcode=SHOP001", {
+      new Request("http://localhost/api/system-settings/permissionlink/demo.admin01%40example.com?holdingcode=SHOP001", {
         headers: {
           Authorization: `Bearer ${signJwt({ username: "owner@example.com", holdingcode: "SHOP001" })}`,
           "x-bc-backend-url": "http://localhost:8888/goapi",
         },
       }),
-      { params: Promise.resolve({ settingPath: ["permission_link", "demo.admin01%40example.com"] }) },
+      { params: Promise.resolve({ settingPath: ["permissionlink", "demo.admin01%40example.com"] }) },
     );
 
     expect(response.status).toBe(200);
@@ -153,13 +153,13 @@ describe("system settings API route security", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const response = await GET(
-      new Request("http://localhost/api/system-settings/permission_link?holdingcode=SHOP001", {
+      new Request("http://localhost/api/system-settings/permissionlink?holdingcode=SHOP001", {
         headers: {
           Authorization: `Bearer ${signJwt({ username: "owner@example.com", holdingcode: "SHOP001" })}`,
           "x-bc-backend-url": "http://localhost:8888/goapi",
         },
       }),
-      { params: Promise.resolve({ settingPath: ["permission_link"] }) },
+      { params: Promise.resolve({ settingPath: ["permissionlink"] }) },
     );
 
     expect(response.status).toBe(200);

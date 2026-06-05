@@ -30,19 +30,19 @@ import (
 // ==========================================
 // Setup Config Handler
 // จัดการ config ระบบ (API URLs, Database connections)
-// เก็บใน MongoDB collection: system_config
+// เก็บใน MongoDB collection: systemconfig
 // ==========================================
 
 const (
-	setupConfigCollection   = "system_config"
-	setupPasswordCollection = "system_setup_password"
+	setupConfigCollection   = "systemconfig"
+	setupPasswordCollection = "systemsetuppassword"
 	defaultSetupPassword    = "12345"
 )
 
 // SetupConfigEntry โครงสร้างข้อมูล config
 type SetupConfigEntry struct {
-	Category    string    `json:"category" bson:"category"`       // "service_urls", "mongodb", "postgresql", "clickhouse", "redis", "kafka", "integrations"
-	Key         string    `json:"key" bson:"key"`                 // เช่น "mainapi_url", "MONGODB_URI"
+	Category    string    `json:"category" bson:"category"`       // "serviceurls", "mongodb", "postgresql", "clickhouse", "redis", "kafka", "integrations"
+	Key         string    `json:"key" bson:"key"`                 // เช่น "mainapiurl", "MONGODB_URI"
 	Value       string    `json:"value" bson:"value"`             // ค่า config
 	IsSecret    bool      `json:"issecret" bson:"issecret"`       // true = แสดงเป็น *** ใน response
 	Description string    `json:"description" bson:"description"` // คำอธิบาย
@@ -409,10 +409,10 @@ func SetupClientConfigHandler(c echo.Context) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// ดึงเฉพาะ category = service_urls (ไม่เป็น secret)
+	// ดึงเฉพาะ category = serviceurls (ไม่เป็น secret)
 	filter := bson.M{
-		"category":  "service_urls",
-		"is_secret": bson.M{"$ne": true},
+		"category": "serviceurls",
+		"issecret": bson.M{"$ne": true},
 	}
 
 	cursor, err := db.Collection(setupConfigCollection).Find(ctx, filter)
@@ -524,18 +524,18 @@ func testMongoDBConnection(c echo.Context, uri string, database string, start ti
 	client, err := mongo.Connect(ctx, clientOpts)
 	if err != nil {
 		return c.JSON(http.StatusOK, map[string]interface{}{
-			"success":    false,
-			"message":    "เชื่อมต่อ MongoDB ล้มเหลว: " + err.Error(),
-			"latency_ms": time.Since(start).Milliseconds(),
+			"success":   false,
+			"message":   "เชื่อมต่อ MongoDB ล้มเหลว: " + err.Error(),
+			"latencyms": time.Since(start).Milliseconds(),
 		})
 	}
 	defer client.Disconnect(ctx)
 
 	if err := client.Ping(ctx, readpref.Primary()); err != nil {
 		return c.JSON(http.StatusOK, map[string]interface{}{
-			"success":    false,
-			"message":    "Ping MongoDB ล้มเหลว: " + err.Error(),
-			"latency_ms": time.Since(start).Milliseconds(),
+			"success":   false,
+			"message":   "Ping MongoDB ล้มเหลว: " + err.Error(),
+			"latencyms": time.Since(start).Milliseconds(),
 		})
 	}
 
@@ -543,9 +543,9 @@ func testMongoDBConnection(c echo.Context, uri string, database string, start ti
 	databases, err := client.ListDatabaseNames(ctx, bson.M{})
 	if err != nil {
 		return c.JSON(http.StatusOK, map[string]interface{}{
-			"success":    false,
-			"message":    "ดึงรายชื่อ database ล้มเหลว: " + err.Error(),
-			"latency_ms": time.Since(start).Milliseconds(),
+			"success":   false,
+			"message":   "ดึงรายชื่อ database ล้มเหลว: " + err.Error(),
+			"latencyms": time.Since(start).Milliseconds(),
 		})
 	}
 
@@ -560,34 +560,34 @@ func testMongoDBConnection(c echo.Context, uri string, database string, start ti
 		}
 
 		if !dbExists {
-			// database ไม่มี → สร้างอัตโนมัติโดย create collection system_config
+			// database ไม่มี → สร้างอัตโนมัติโดย create collection systemconfig
 			logger.Info("[MongoDB] database '%s' ไม่มี — กำลังสร้างอัตโนมัติ...", database)
 			db := client.Database(database)
-			createErr := db.CreateCollection(ctx, "system_config")
+			createErr := db.CreateCollection(ctx, "systemconfig")
 			if createErr != nil {
 				// ถ้า collection มีอยู่แล้ว ถือว่า database มีอยู่แล้ว → ไม่ใช่ error
 				errMsg := createErr.Error()
 				if !strings.Contains(errMsg, "already exists") && !strings.Contains(errMsg, "NamespaceExists") {
 					return c.JSON(http.StatusOK, map[string]interface{}{
-						"success":    false,
-						"message":    fmt.Sprintf("สร้าง database '%s' ล้มเหลว: %s", database, errMsg),
-						"latency_ms": time.Since(start).Milliseconds(),
+						"success":   false,
+						"message":   fmt.Sprintf("สร้าง database '%s' ล้มเหลว: %s", database, errMsg),
+						"latencyms": time.Since(start).Milliseconds(),
 					})
 				}
 			}
 			logger.Info("[MongoDB] สร้าง database '%s' สำเร็จ", database)
 			return c.JSON(http.StatusOK, map[string]interface{}{
-				"success":    true,
-				"message":    fmt.Sprintf("เชื่อมต่อ MongoDB สำเร็จ (สร้าง database '%s' ใหม่)", database),
-				"latency_ms": time.Since(start).Milliseconds(),
+				"success":   true,
+				"message":   fmt.Sprintf("เชื่อมต่อ MongoDB สำเร็จ (สร้าง database '%s' ใหม่)", database),
+				"latencyms": time.Since(start).Milliseconds(),
 			})
 		}
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"success":    true,
-		"message":    fmt.Sprintf("เชื่อมต่อ MongoDB สำเร็จ (พบ %d databases)", len(databases)),
-		"latency_ms": time.Since(start).Milliseconds(),
+		"success":   true,
+		"message":   fmt.Sprintf("เชื่อมต่อ MongoDB สำเร็จ (พบ %d databases)", len(databases)),
+		"latencyms": time.Since(start).Milliseconds(),
 	})
 }
 
@@ -611,9 +611,9 @@ func testPostgreSQLConnection(c echo.Context, host, port, user, password, databa
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return c.JSON(http.StatusOK, map[string]interface{}{
-			"success":    false,
-			"message":    "เปิดการเชื่อมต่อ PostgreSQL ล้มเหลว: " + err.Error(),
-			"latency_ms": time.Since(start).Milliseconds(),
+			"success":   false,
+			"message":   "เปิดการเชื่อมต่อ PostgreSQL ล้มเหลว: " + err.Error(),
+			"latencyms": time.Since(start).Milliseconds(),
 		})
 	}
 	defer db.Close()
@@ -623,9 +623,9 @@ func testPostgreSQLConnection(c echo.Context, host, port, user, password, databa
 
 	if err := db.PingContext(ctx); err != nil {
 		return c.JSON(http.StatusOK, map[string]interface{}{
-			"success":    false,
-			"message":    "Ping PostgreSQL ล้มเหลว: " + err.Error(),
-			"latency_ms": time.Since(start).Milliseconds(),
+			"success":   false,
+			"message":   "Ping PostgreSQL ล้มเหลว: " + err.Error(),
+			"latencyms": time.Since(start).Milliseconds(),
 		})
 	}
 
@@ -639,9 +639,9 @@ func testPostgreSQLConnection(c echo.Context, host, port, user, password, databa
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"success":    true,
-		"message":    "เชื่อมต่อ PostgreSQL สำเร็จ" + versionShort,
-		"latency_ms": time.Since(start).Milliseconds(),
+		"success":   true,
+		"message":   "เชื่อมต่อ PostgreSQL สำเร็จ" + versionShort,
+		"latencyms": time.Since(start).Milliseconds(),
 	})
 }
 
@@ -676,9 +676,9 @@ func testClickHouseConnection(c echo.Context, host, port, user, password, databa
 	})
 	if err != nil {
 		return c.JSON(http.StatusOK, map[string]interface{}{
-			"success":    false,
-			"message":    "เปิดการเชื่อมต่อ ClickHouse ล้มเหลว: " + err.Error(),
-			"latency_ms": time.Since(start).Milliseconds(),
+			"success":   false,
+			"message":   "เปิดการเชื่อมต่อ ClickHouse ล้มเหลว: " + err.Error(),
+			"latencyms": time.Since(start).Milliseconds(),
 		})
 	}
 	defer conn.Close()
@@ -691,24 +691,24 @@ func testClickHouseConnection(c echo.Context, host, port, user, password, databa
 		var chException *clickhouse.Exception
 		if errors.As(err, &chException) && chException.Code == 81 {
 			return c.JSON(http.StatusOK, map[string]interface{}{
-				"success":    false,
-				"message":    fmt.Sprintf("Ping ClickHouse ล้มเหลว: %s", err.Error()),
-				"error_code": "database_not_exist",
-				"database":   database,
-				"latency_ms": time.Since(start).Milliseconds(),
+				"success":   false,
+				"message":   fmt.Sprintf("Ping ClickHouse ล้มเหลว: %s", err.Error()),
+				"errorcode": "databasenotexist",
+				"database":  database,
+				"latencyms": time.Since(start).Milliseconds(),
 			})
 		}
 		return c.JSON(http.StatusOK, map[string]interface{}{
-			"success":    false,
-			"message":    "Ping ClickHouse ล้มเหลว: " + err.Error(),
-			"latency_ms": time.Since(start).Milliseconds(),
+			"success":   false,
+			"message":   "Ping ClickHouse ล้มเหลว: " + err.Error(),
+			"latencyms": time.Since(start).Milliseconds(),
 		})
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"success":    true,
-		"message":    fmt.Sprintf("เชื่อมต่อ ClickHouse สำเร็จ (database: %s)", database),
-		"latency_ms": time.Since(start).Milliseconds(),
+		"success":   true,
+		"message":   fmt.Sprintf("เชื่อมต่อ ClickHouse สำเร็จ (database: %s)", database),
+		"latencyms": time.Since(start).Milliseconds(),
 	})
 }
 
@@ -805,9 +805,9 @@ func testRedisConnection(c echo.Context, host, port string, start time.Time) err
 	conn, err := net.DialTimeout("tcp", addr, 10*time.Second)
 	if err != nil {
 		return c.JSON(http.StatusOK, map[string]interface{}{
-			"success":    false,
-			"message":    "เชื่อมต่อ Redis ล้มเหลว: " + err.Error(),
-			"latency_ms": time.Since(start).Milliseconds(),
+			"success":   false,
+			"message":   "เชื่อมต่อ Redis ล้มเหลว: " + err.Error(),
+			"latencyms": time.Since(start).Milliseconds(),
 		})
 	}
 	defer conn.Close()
@@ -816,9 +816,9 @@ func testRedisConnection(c echo.Context, host, port string, start time.Time) err
 	_, err = conn.Write([]byte("*1\r\n$4\r\nPING\r\n"))
 	if err != nil {
 		return c.JSON(http.StatusOK, map[string]interface{}{
-			"success":    false,
-			"message":    "ส่งคำสั่ง PING ไปยัง Redis ล้มเหลว: " + err.Error(),
-			"latency_ms": time.Since(start).Milliseconds(),
+			"success":   false,
+			"message":   "ส่งคำสั่ง PING ไปยัง Redis ล้มเหลว: " + err.Error(),
+			"latencyms": time.Since(start).Milliseconds(),
 		})
 	}
 
@@ -828,25 +828,25 @@ func testRedisConnection(c echo.Context, host, port string, start time.Time) err
 	n, err := conn.Read(buf)
 	if err != nil {
 		return c.JSON(http.StatusOK, map[string]interface{}{
-			"success":    false,
-			"message":    "อ่าน response จาก Redis ล้มเหลว: " + err.Error(),
-			"latency_ms": time.Since(start).Milliseconds(),
+			"success":   false,
+			"message":   "อ่าน response จาก Redis ล้มเหลว: " + err.Error(),
+			"latencyms": time.Since(start).Milliseconds(),
 		})
 	}
 
 	response := string(buf[:n])
 	if strings.Contains(response, "PONG") {
 		return c.JSON(http.StatusOK, map[string]interface{}{
-			"success":    true,
-			"message":    "เชื่อมต่อ Redis สำเร็จ (PONG)",
-			"latency_ms": time.Since(start).Milliseconds(),
+			"success":   true,
+			"message":   "เชื่อมต่อ Redis สำเร็จ (PONG)",
+			"latencyms": time.Since(start).Milliseconds(),
 		})
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"success":    false,
-		"message":    fmt.Sprintf("Redis response ไม่ถูกต้อง: %s", response),
-		"latency_ms": time.Since(start).Milliseconds(),
+		"success":   false,
+		"message":   fmt.Sprintf("Redis response ไม่ถูกต้อง: %s", response),
+		"latencyms": time.Since(start).Milliseconds(),
 	})
 }
 
@@ -869,9 +869,9 @@ func testKafkaConnection(c echo.Context, host, port string, start time.Time) err
 	conn, err := kafka.Dial("tcp", addr)
 	if err != nil {
 		return c.JSON(http.StatusOK, map[string]interface{}{
-			"success":    false,
-			"message":    "เชื่อมต่อ Kafka ล้มเหลว: " + err.Error(),
-			"latency_ms": time.Since(start).Milliseconds(),
+			"success":   false,
+			"message":   "เชื่อมต่อ Kafka ล้มเหลว: " + err.Error(),
+			"latencyms": time.Since(start).Milliseconds(),
 		})
 	}
 	defer conn.Close()
@@ -884,9 +884,9 @@ func testKafkaConnection(c echo.Context, host, port string, start time.Time) err
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"success":    true,
-		"message":    "เชื่อมต่อ Kafka สำเร็จ" + brokerInfo,
-		"latency_ms": time.Since(start).Milliseconds(),
+		"success":   true,
+		"message":   "เชื่อมต่อ Kafka สำเร็จ" + brokerInfo,
+		"latencyms": time.Since(start).Milliseconds(),
 	})
 }
 
@@ -910,18 +910,18 @@ func testHTTPConnection(c echo.Context, url string, start time.Time) error {
 	resp, err := client.Get(url)
 	if err != nil {
 		return c.JSON(http.StatusOK, map[string]interface{}{
-			"success":    false,
-			"message":    "เชื่อมต่อ URL ล้มเหลว: " + err.Error(),
-			"latency_ms": time.Since(start).Milliseconds(),
+			"success":   false,
+			"message":   "เชื่อมต่อ URL ล้มเหลว: " + err.Error(),
+			"latencyms": time.Since(start).Milliseconds(),
 		})
 	}
 	defer resp.Body.Close()
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"success":     true,
-		"message":     fmt.Sprintf("เชื่อมต่อ URL สำเร็จ (HTTP %d)", resp.StatusCode),
-		"latency_ms":  time.Since(start).Milliseconds(),
-		"status_code": resp.StatusCode,
+		"success":    true,
+		"message":    fmt.Sprintf("เชื่อมต่อ URL สำเร็จ (HTTP %d)", resp.StatusCode),
+		"latencyms":  time.Since(start).Milliseconds(),
+		"statuscode": resp.StatusCode,
 	})
 }
 
@@ -951,12 +951,12 @@ func SetupSeedConfigHandler(c echo.Context) error {
 	// ดึงค่าจาก environment variables ที่ใช้อยู่
 	envConfigs := []SetupConfigEntry{
 		// Service URLs
-		{Category: "service_urls", Key: "mainapi_url", Value: os.Getenv("MAINAPI_URL"), Description: "Main API URL (mainapi)", IsSecret: false},
-		{Category: "service_urls", Key: "goapi_url", Value: os.Getenv("GOAPI_URL"), Description: "Go API URL (goapi)", IsSecret: false},
+		{Category: "serviceurls", Key: "mainapiurl", Value: os.Getenv("MAINAPI_URL"), Description: "Main API URL (mainapi)", IsSecret: false},
+		{Category: "serviceurls", Key: "goapiurl", Value: os.Getenv("GOAPI_URL"), Description: "Go API URL (goapi)", IsSecret: false},
 
 		// MongoDB DEV ใช้สำหรับ run บน local เท่านั้น; UAT/PRO จะตั้งค่าตอน deploy บน internet ภายหลัง
-		{Category: "mongodb_dev", Key: "uri", Value: envFirst("MONGODB_DEV_URI", "MONGODB_URI"), Description: "MongoDB DEV Local Connection URI", IsSecret: true},
-		{Category: "mongodb_dev", Key: "database", Value: envFirst("MONGODB_DEV_DB", "MONGODB_DEV_DATABASE", "MONGO_DB_NAME", "MONGODB_DB", "MONGODB_DATABASE_NAME"), Description: "MongoDB DEV Local Database Name", IsSecret: false},
+		{Category: "mongodbdev", Key: "uri", Value: envFirst("MONGODB_DEV_URI", "MONGODB_URI"), Description: "MongoDB DEV Local Connection URI", IsSecret: true},
+		{Category: "mongodbdev", Key: "database", Value: envFirst("MONGODB_DEV_DB", "MONGODB_DEV_DATABASE", "MONGO_DB_NAME", "MONGODB_DB", "MONGODB_DATABASE_NAME"), Description: "MongoDB DEV Local Database Name", IsSecret: false},
 		{Category: "mongodb", Key: "uri", Value: os.Getenv("MONGODB_URI"), Description: "Legacy MongoDB URI (explicit compatibility only)", IsSecret: true},
 		{Category: "mongodb", Key: "database", Value: envFirst("MONGODB_DB", "MONGO_DB_NAME", "MONGODB_DATABASE_NAME"), Description: "Legacy MongoDB Database Name (explicit compatibility only)", IsSecret: false},
 
@@ -965,28 +965,28 @@ func SetupSeedConfigHandler(c echo.Context) error {
 		{Category: "postgresql", Key: "port", Value: os.Getenv("POSTGRES_PORT"), Description: "PostgreSQL Port", IsSecret: false},
 		{Category: "postgresql", Key: "user", Value: os.Getenv("POSTGRES_USER"), Description: "PostgreSQL User", IsSecret: false},
 		{Category: "postgresql", Key: "password", Value: os.Getenv("POSTGRES_PASSWORD"), Description: "PostgreSQL Password", IsSecret: true},
-		{Category: "postgresql", Key: "ssl_mode", Value: os.Getenv("POSTGRES_SSL_MODE"), Description: "PostgreSQL SSL Mode", IsSecret: false},
+		{Category: "postgresql", Key: "sslmode", Value: os.Getenv("POSTGRES_SSL_MODE"), Description: "PostgreSQL SSL Mode", IsSecret: false},
 
 		// ClickHouse
 		{Category: "clickhouse", Key: "host", Value: os.Getenv("CLICKHOUSE_HOST"), Description: "ClickHouse Host", IsSecret: false},
 		{Category: "clickhouse", Key: "port", Value: os.Getenv("CLICKHOUSE_PORT"), Description: "ClickHouse Port", IsSecret: false},
 		{Category: "clickhouse", Key: "user", Value: os.Getenv("CLICKHOUSE_USER"), Description: "ClickHouse User", IsSecret: false},
 		{Category: "clickhouse", Key: "password", Value: os.Getenv("CLICKHOUSE_PASSWORD"), Description: "ClickHouse Password", IsSecret: true},
-		{Category: "clickhouse", Key: "database_name", Value: os.Getenv("CH_DATABASE_NAME"), Description: "ClickHouse Database Name", IsSecret: false},
+		{Category: "clickhouse", Key: "databasename", Value: os.Getenv("CH_DATABASE_NAME"), Description: "ClickHouse Database Name", IsSecret: false},
 
 		// Redis
 		{Category: "redis", Key: "host", Value: os.Getenv("REDIS_HOST"), Description: "Redis Host", IsSecret: false},
 		{Category: "redis", Key: "port", Value: os.Getenv("REDIS_PORT"), Description: "Redis Port", IsSecret: false},
 
 		// Kafka
-		{Category: "kafka", Key: "server_url", Value: os.Getenv("KAFKA_SERVER_URL"), Description: "Kafka Broker URL", IsSecret: false},
+		{Category: "kafka", Key: "serverurl", Value: os.Getenv("KAFKA_SERVER_URL"), Description: "Kafka Broker URL", IsSecret: false},
 
 		// Integrations
-		{Category: "integrations", Key: "gemini_api_key", Value: os.Getenv("GEMINI_API_KEY"), Description: "Google Gemini API Key", IsSecret: true},
-		{Category: "integrations", Key: "r2_account_id", Value: os.Getenv("R2_ACCOUNT_ID"), Description: "Cloudflare R2 Account ID", IsSecret: false},
-		{Category: "integrations", Key: "r2_access_key_id", Value: os.Getenv("R2_ACCESS_KEY_ID"), Description: "Cloudflare R2 Access Key", IsSecret: true},
-		{Category: "integrations", Key: "r2_secret_access_key", Value: os.Getenv("R2_SECRET_ACCESS_KEY"), Description: "Cloudflare R2 Secret Key", IsSecret: true},
-		{Category: "integrations", Key: "r2_bucket_name", Value: os.Getenv("R2_BUCKET_NAME"), Description: "Cloudflare R2 Bucket Name", IsSecret: false},
+		{Category: "integrations", Key: "geminiapikey", Value: os.Getenv("GEMINI_API_KEY"), Description: "Google Gemini API Key", IsSecret: true},
+		{Category: "integrations", Key: "r2accountid", Value: os.Getenv("R2_ACCOUNT_ID"), Description: "Cloudflare R2 Account ID", IsSecret: false},
+		{Category: "integrations", Key: "r2accesskeyid", Value: os.Getenv("R2_ACCESS_KEY_ID"), Description: "Cloudflare R2 Access Key", IsSecret: true},
+		{Category: "integrations", Key: "r2secretaccesskey", Value: os.Getenv("R2_SECRET_ACCESS_KEY"), Description: "Cloudflare R2 Secret Key", IsSecret: true},
+		{Category: "integrations", Key: "r2bucketname", Value: os.Getenv("R2_BUCKET_NAME"), Description: "Cloudflare R2 Bucket Name", IsSecret: false},
 	}
 
 	db := getSetupDB()

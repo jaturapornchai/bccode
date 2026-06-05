@@ -66,10 +66,10 @@ func CreateCouponReservationIndexes(pst microservice.IPersisterMongo) error {
 		keys bson.D
 	}{
 		{
-			name: "idx_status_expires_at",
+			name: "idxstatusexpiresat",
 			keys: bson.D{
 				{Key: "status", Value: 1},
-				{Key: "expires_at", Value: 1},
+				{Key: "expiresat", Value: 1},
 			},
 		},
 		{
@@ -78,7 +78,7 @@ func CreateCouponReservationIndexes(pst microservice.IPersisterMongo) error {
 				{Key: "holdingcode", Value: 1},
 				{Key: "coupon_id", Value: 1},
 				{Key: "status", Value: 1},
-				{Key: "expires_at", Value: 1},
+				{Key: "expiresat", Value: 1},
 			},
 		},
 		{

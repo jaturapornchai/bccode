@@ -351,7 +351,7 @@ const currencyText: Partial<Record<LanguageCode, Partial<Record<CurrencyTextKey,
 const backendKeys: Partial<Record<CurrencyTextKey, string>> = {
   add: "add_currency",
   addSuccess: "add_currency_success",
-  baseCurrency: "base_currency",
+  baseCurrency: "basecurrency",
   code: "currency_code",
   codeLength: "currency_code_length_error",
   deleteConfirm: "confirm_delete_currency",
@@ -457,7 +457,7 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
     if (!externalLanguage) localStorage.setItem("user_language", language);
   }, [externalLanguage, language]);
 
-  const baseCurrency = (workspace?.branch?.base_currency || "").trim().toUpperCase();
+  const baseCurrency = (workspace?.branch?.basecurrency || "").trim().toUpperCase();
   const activeCount = currencies.filter((item) => !item.isdisabled).length;
   const disabledCount = currencies.length - activeCount;
   const visibleCurrencies = useMemo(() => {

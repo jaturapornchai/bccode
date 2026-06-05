@@ -85,7 +85,7 @@ func (ServiceConfig) PostgresDatabase() string {
 	if dbName != "" {
 		return dbName
 	}
-	return getEnv("POSTGRES_DATABASE", "postgres") // database_name
+	return getEnv("POSTGRES_DATABASE", "postgres") // databasename
 }
 
 func (ServiceConfig) PostgresSSLMode() string {

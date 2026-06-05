@@ -426,11 +426,11 @@ func getInventoryStats(db interface{}) (totalValue float64, lowStock, outOfStock
 
 	// มูลค่าสินค้าคงคลังรวม
 	query := `
-		SELECT COALESCE(SUM(ABS(balance_qty) * COALESCE(avgcost, 0)), 0) as total_value
+		SELECT COALESCE(SUM(ABS(balanceqty) * COALESCE(avgcost, 0)), 0) as totalvalue
 		FROM (
 			SELECT
 				d.itemcode,
-				SUM((totalqty * calcflag) * unitstand / NULLIF(unitdivide, 0)) as balance_qty,
+				SUM((totalqty * calcflag) * unitstand / NULLIF(unitdivide, 0)) as balanceqty,
 				(SELECT COALESCE(avgcost, 0) FROM productbarcode pb WHERE pb.itemcode = d.itemcode LIMIT 1) as avgcost
 			FROM docdetail d
 			WHERE transflag IN (1,3,5,7,9,11,13,16,18,20,30,31,32,33,34,35,36)
@@ -443,12 +443,12 @@ func getInventoryStats(db interface{}) (totalValue float64, lowStock, outOfStock
 	// นับสินค้า low stock (1-10) และ out of stock (<=0)
 	query = `
 		SELECT
-			COUNT(CASE WHEN balance_qty <= 0 THEN 1 END) as out_of_stock,
-			COUNT(CASE WHEN balance_qty > 0 AND balance_qty <= 10 THEN 1 END) as low_stock
+			COUNT(CASE WHEN balanceqty <= 0 THEN 1 END) as outofstock,
+			COUNT(CASE WHEN balanceqty > 0 AND balanceqty <= 10 THEN 1 END) as lowstock
 		FROM (
 			SELECT
 				itemcode,
-				SUM((totalqty * calcflag) * unitstand / NULLIF(unitdivide, 0)) as balance_qty
+				SUM((totalqty * calcflag) * unitstand / NULLIF(unitdivide, 0)) as balanceqty
 			FROM docdetail
 			WHERE transflag IN (1,3,5,7,9,11,13,16,18,20,30,31,32,33,34,35,36)
 			GROUP BY itemcode

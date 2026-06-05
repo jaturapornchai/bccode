@@ -62,7 +62,7 @@ func (svc TableService) CreateTable(holdingCode string, authUsername string, doc
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByTwoColumns(ctx, holdingCode, "number", doc.Number, "group_number", doc.GroupNumber)
+	findDoc, err := svc.repo.FindByTwoColumns(ctx, holdingCode, "number", doc.Number, "groupnumber", doc.GroupNumber)
 
 	if err != nil {
 		return "", err

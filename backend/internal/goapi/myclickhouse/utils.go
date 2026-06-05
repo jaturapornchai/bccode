@@ -574,7 +574,7 @@ func DocUpdate(docData models.MongoDocModel) {
 			insertCommands = append(insertCommands,
 				fmt.Sprintf(`INSERT INTO %s (
                 holdingcode, branchid, docno, docdatetime, perioddatetime,
-                line_number, barcode, qty, price, sumamount, discountamount,
+                linenumber, barcode, qty, price, sumamount, discountamount,
                 itemnames, refguid, sumamountchoice, ischoice, guidfixed, guidpos, guidbranch
             ) VALUES (
                 '%s', '%s', '%s', '%s', '%s', %d, '%s', %.2f, %.2f, %.2f, %.2f,
@@ -592,17 +592,17 @@ func DocUpdate(docData models.MongoDocModel) {
 		if err := json.Unmarshal([]byte(jsonPaymentRaw), &payments); err == nil {
 			for _, payment := range payments {
 				amount, _ := payment["amount"].(float64)
-				providerName := payment["provider_name"].(string)
-				trans_flag := payment["trans_flag"].(float64)
+				providerName := payment["providername"].(string)
+				transflag := payment["transflag"].(float64)
 				insertCommands = append(insertCommands,
 					fmt.Sprintf(`INSERT INTO %s (
                     holdingcode, branchid, docno, docdatetime, perioddatetime,
-                    description, amount, trans_flag, guidfixed, guidbranch
+                    description, amount, transflag, guidfixed, guidbranch
                 ) VALUES (
                     '%s', '%s', '%s', '%s', '%s', '%s', %f, %f, '%s', '%s'
                 )`, TableName("docpayment"),
 						docData.HoldingCode, docData.BranchId, docData.DocNo, docDateTimeStr, docDateTimeStr,
-						providerName, amount, trans_flag, docData.GuidFixed, docData.Branch.GuidFixed))
+						providerName, amount, transflag, docData.GuidFixed, docData.Branch.GuidFixed))
 			}
 		}
 

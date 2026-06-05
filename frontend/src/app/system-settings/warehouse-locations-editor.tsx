@@ -73,22 +73,22 @@ export function WarehouseLocationsEditor({
     index?: number;
     code: string;
     names: Record<string, string>;
-    max_weight: number | string;
+    maxweight: number | string;
     width: number | string;
     length: number | string;
     height: number | string;
-    suitable_product_types: string;
+    suitableproducttypes: string;
     error?: string;
   }>({
     open: false,
     mode: "create",
     code: "",
     names: {},
-    max_weight: "",
+    maxweight: "",
     width: "",
     length: "",
     height: "",
-    suitable_product_types: "",
+    suitableproducttypes: "",
   });
 
   // Dialog state for Shelf
@@ -99,22 +99,22 @@ export function WarehouseLocationsEditor({
     shelfIndex?: number;
     code: string;
     name: string;
-    max_weight: number | string;
+    maxweight: number | string;
     width: number | string;
     length: number | string;
     height: number | string;
-    suitable_product_types: string;
+    suitableproducttypes: string;
     error?: string;
   }>({
     open: false,
     mode: "create",
     code: "",
     name: "",
-    max_weight: "",
+    maxweight: "",
     width: "",
     length: "",
     height: "",
-    suitable_product_types: "",
+    suitableproducttypes: "",
   });
 
   // Dialog state for Bulk Shelf Addition
@@ -126,11 +126,11 @@ export function WarehouseLocationsEditor({
     endNum: number | string;
     padding: number | string;
     namePattern: string;
-    max_weight: number | string;
+    maxweight: number | string;
     width: number | string;
     length: number | string;
     height: number | string;
-    suitable_product_types: string;
+    suitableproducttypes: string;
     error?: string;
   }>({
     open: false,
@@ -139,11 +139,11 @@ export function WarehouseLocationsEditor({
     endNum: 10,
     padding: 2,
     namePattern: language === "th" ? "ชั้นวาง {number}" : "Shelf {number}",
-    max_weight: "",
+    maxweight: "",
     width: "",
     length: "",
     height: "",
-    suitable_product_types: "",
+    suitableproducttypes: "",
   });
 
   const getLanguageName = (code: string) => {
@@ -178,11 +178,11 @@ export function WarehouseLocationsEditor({
       mode: "create",
       code: "",
       names: initialNames,
-      max_weight: "",
+      maxweight: "",
       width: "",
       length: "",
       height: "",
-      suitable_product_types: "",
+      suitableproducttypes: "",
     });
   };
 
@@ -203,11 +203,11 @@ export function WarehouseLocationsEditor({
       index,
       code: loc.code || "",
       names: initialNames,
-      max_weight: loc.max_weight !== undefined && loc.max_weight !== 0 ? loc.max_weight : "",
+      maxweight: loc.maxweight !== undefined && loc.maxweight !== 0 ? loc.maxweight : "",
       width: loc.width !== undefined && loc.width !== 0 ? loc.width : "",
       length: loc.length !== undefined && loc.length !== 0 ? loc.length : "",
       height: loc.height !== undefined && loc.height !== 0 ? loc.height : "",
-      suitable_product_types: loc.suitable_product_types || "",
+      suitableproducttypes: loc.suitableproducttypes || "",
     });
   };
 
@@ -256,11 +256,11 @@ export function WarehouseLocationsEditor({
       isdelete: false,
     }));
 
-    const maxWeight = parseFloat(String(locDialog.max_weight)) || 0;
+    const maxWeight = parseFloat(String(locDialog.maxweight)) || 0;
     const w = parseFloat(String(locDialog.width)) || 0;
     const l = parseFloat(String(locDialog.length)) || 0;
     const h = parseFloat(String(locDialog.height)) || 0;
-    const suitable = locDialog.suitable_product_types?.trim() || "";
+    const suitable = locDialog.suitableproducttypes?.trim() || "";
 
     let updated = [...locationsList];
     if (locDialog.mode === "create") {
@@ -268,22 +268,22 @@ export function WarehouseLocationsEditor({
         code,
         names: namesArray,
         shelf: [],
-        max_weight: maxWeight,
+        maxweight: maxWeight,
         width: w,
         length: l,
         height: h,
-        suitable_product_types: suitable,
+        suitableproducttypes: suitable,
       });
     } else if (locDialog.mode === "edit" && locDialog.index !== undefined) {
       updated[locDialog.index] = {
         ...updated[locDialog.index],
         code,
         names: namesArray,
-        max_weight: maxWeight,
+        maxweight: maxWeight,
         width: w,
         length: l,
         height: h,
-        suitable_product_types: suitable,
+        suitableproducttypes: suitable,
         shelf: updated[locDialog.index].shelf || [],
       };
     }
@@ -300,11 +300,11 @@ export function WarehouseLocationsEditor({
       locIndex,
       code: "",
       name: "",
-      max_weight: "",
+      maxweight: "",
       width: "",
       length: "",
       height: "",
-      suitable_product_types: "",
+      suitableproducttypes: "",
     });
   };
 
@@ -316,11 +316,11 @@ export function WarehouseLocationsEditor({
       shelfIndex,
       code: shelf.code || "",
       name: shelf.name || "",
-      max_weight: shelf.max_weight !== undefined && shelf.max_weight !== 0 ? shelf.max_weight : "",
+      maxweight: shelf.maxweight !== undefined && shelf.maxweight !== 0 ? shelf.maxweight : "",
       width: shelf.width !== undefined && shelf.width !== 0 ? shelf.width : "",
       length: shelf.length !== undefined && shelf.length !== 0 ? shelf.length : "",
       height: shelf.height !== undefined && shelf.height !== 0 ? shelf.height : "",
-      suitable_product_types: shelf.suitable_product_types || "",
+      suitableproducttypes: shelf.suitableproducttypes || "",
     });
   };
 
@@ -372,11 +372,11 @@ export function WarehouseLocationsEditor({
       return;
     }
 
-    const maxWeight = parseFloat(String(shelfDialog.max_weight)) || 0;
+    const maxWeight = parseFloat(String(shelfDialog.maxweight)) || 0;
     const w = parseFloat(String(shelfDialog.width)) || 0;
     const l = parseFloat(String(shelfDialog.length)) || 0;
     const h = parseFloat(String(shelfDialog.height)) || 0;
-    const suitable = shelfDialog.suitable_product_types?.trim() || "";
+    const suitable = shelfDialog.suitableproducttypes?.trim() || "";
 
     let updatedShelves = [...shelves];
     if (shelfDialog.mode === "create") {
@@ -384,22 +384,22 @@ export function WarehouseLocationsEditor({
         code,
         name,
         productitems: [],
-        max_weight: maxWeight,
+        maxweight: maxWeight,
         width: w,
         length: l,
         height: h,
-        suitable_product_types: suitable,
+        suitableproducttypes: suitable,
       });
     } else if (shelfDialog.mode === "edit" && shelfDialog.shelfIndex !== undefined) {
       updatedShelves[shelfDialog.shelfIndex] = {
         ...updatedShelves[shelfDialog.shelfIndex],
         code,
         name,
-        max_weight: maxWeight,
+        maxweight: maxWeight,
         width: w,
         length: l,
         height: h,
-        suitable_product_types: suitable,
+        suitableproducttypes: suitable,
         productitems: updatedShelves[shelfDialog.shelfIndex].productitems || [],
       };
     }
@@ -424,11 +424,11 @@ export function WarehouseLocationsEditor({
       endNum: 10,
       padding: 2,
       namePattern: language === "th" ? "ชั้นวาง {number}" : "Shelf {number}",
-      max_weight: "",
+      maxweight: "",
       width: "",
       length: "",
       height: "",
-      suitable_product_types: "",
+      suitableproducttypes: "",
     });
   };
 
@@ -457,11 +457,11 @@ export function WarehouseLocationsEditor({
     const shelves = loc.shelf || [];
     const updatedShelves = [...shelves];
 
-    const maxWeight = parseFloat(String(bulkShelfDialog.max_weight)) || 0;
+    const maxWeight = parseFloat(String(bulkShelfDialog.maxweight)) || 0;
     const w = parseFloat(String(bulkShelfDialog.width)) || 0;
     const l = parseFloat(String(bulkShelfDialog.length)) || 0;
     const h = parseFloat(String(bulkShelfDialog.height)) || 0;
-    const suitable = bulkShelfDialog.suitable_product_types?.trim() || "";
+    const suitable = bulkShelfDialog.suitableproducttypes?.trim() || "";
 
     const duplicates: string[] = [];
 
@@ -484,11 +484,11 @@ export function WarehouseLocationsEditor({
         code,
         name,
         productitems: [],
-        max_weight: maxWeight,
+        maxweight: maxWeight,
         width: w,
         length: l,
         height: h,
-        suitable_product_types: suitable,
+        suitableproducttypes: suitable,
       });
     }
 
@@ -583,7 +583,7 @@ export function WarehouseLocationsEditor({
           {locationsList.map((loc, locIdx) => {
             const isCollapsed = collapsedLocs[loc.code] ?? false;
             const shelves = loc.shelf || [];
-            const hasAttributes = loc.max_weight > 0 || loc.width > 0 || loc.length > 0 || loc.height > 0 || loc.suitable_product_types;
+            const hasAttributes = loc.maxweight > 0 || loc.width > 0 || loc.length > 0 || loc.height > 0 || loc.suitableproducttypes;
 
             return (
               <div key={loc.code || locIdx} className="flex flex-col">
@@ -657,10 +657,10 @@ export function WarehouseLocationsEditor({
 
                   {/* Middle Physical Attributes Badges */}
                   <div className="flex flex-wrap items-center gap-1.5 flex-1 justify-start sm:justify-center px-2">
-                    {loc.max_weight > 0 && (
+                    {loc.maxweight > 0 && (
                       <span className="inline-flex items-center gap-1 bg-primary/5 text-primary border border-primary/10 px-2 py-0.5 rounded-md font-semibold text-[9px] shrink-0" title={language === "th" ? "น้ำหนักบรรทุกสูงสุด" : "Max Capacity"}>
                         <Scale className="size-2.5 shrink-0" />
-                        {loc.max_weight.toLocaleString()} {language === "th" ? "กก." : "kg"}
+                        {loc.maxweight.toLocaleString()} {language === "th" ? "กก." : "kg"}
                       </span>
                     )}
                     {(loc.width > 0 || loc.length > 0 || loc.height > 0) && (
@@ -669,13 +669,13 @@ export function WarehouseLocationsEditor({
                         {loc.width || "-"}x{loc.length || "-"}x{loc.height || "-"}
                       </span>
                     )}
-                    {loc.suitable_product_types && (
+                    {loc.suitableproducttypes && (
                       <span
                         className="inline-flex items-center gap-1 bg-teal-500/10 text-teal-600 dark:text-teal-500 border border-teal-500/15 px-2 py-0.5 rounded-md font-semibold text-[9px] truncate max-w-[150px] shrink-0"
-                        title={loc.suitable_product_types}
+                        title={loc.suitableproducttypes}
                       >
                         <Package className="size-2.5 shrink-0" />
-                        {loc.suitable_product_types}
+                        {loc.suitableproducttypes}
                       </span>
                     )}
                   </div>
@@ -738,7 +738,7 @@ export function WarehouseLocationsEditor({
                     ) : (
                       shelves.map((shelf: any, shelfIdx: number) => {
                         const pCount = shelf.productitems?.length || 0;
-                        const hasShelfAttributes = shelf.max_weight > 0 || shelf.width > 0 || shelf.length > 0 || shelf.height > 0 || shelf.suitable_product_types;
+                        const hasShelfAttributes = shelf.maxweight > 0 || shelf.width > 0 || shelf.length > 0 || shelf.height > 0 || shelf.suitableproducttypes;
 
                         return (
                           <div
@@ -795,10 +795,10 @@ export function WarehouseLocationsEditor({
 
                             {/* Middle Shelf Attributes */}
                             <div className="flex flex-wrap items-center gap-1.5 flex-1 justify-start sm:justify-center px-2">
-                              {shelf.max_weight > 0 && (
+                              {shelf.maxweight > 0 && (
                                 <span className="inline-flex items-center gap-0.5 bg-primary/5 text-primary/80 border border-primary/5 px-1.5 py-0.2 rounded text-[9px] font-medium shrink-0">
                                   <Scale className="size-2.5 shrink-0" />
-                                  {shelf.max_weight.toLocaleString()} {language === "th" ? "กก." : "kg"}
+                                  {shelf.maxweight.toLocaleString()} {language === "th" ? "กก." : "kg"}
                                 </span>
                               )}
                               {(shelf.width > 0 || shelf.length > 0 || shelf.height > 0) && (
@@ -807,13 +807,13 @@ export function WarehouseLocationsEditor({
                                   {shelf.width || "-"}x{shelf.length || "-"}x{shelf.height || "-"}
                                 </span>
                               )}
-                              {shelf.suitable_product_types && (
+                              {shelf.suitableproducttypes && (
                                 <span
                                   className="inline-flex items-center gap-0.5 bg-teal-500/10 text-teal-600 border border-teal-500/10 px-1.5 py-0.2 rounded text-[9px] font-medium truncate max-w-[120px] shrink-0"
-                                  title={shelf.suitable_product_types}
+                                  title={shelf.suitableproducttypes}
                                 >
                                   <Package className="size-2.5 shrink-0" />
-                                  {shelf.suitable_product_types}
+                                  {shelf.suitableproducttypes}
                                 </span>
                               )}
                             </div>
@@ -904,8 +904,8 @@ export function WarehouseLocationsEditor({
                     {language === "th" ? "ประเภทสินค้าที่เหมาะสม" : "Suitable Product Types"}
                   </label>
                   <Input
-                    value={locDialog.suitable_product_types}
-                    onChange={(e) => setLocDialog((prev) => ({ ...prev, suitable_product_types: e.target.value }))}
+                    value={locDialog.suitableproducttypes}
+                    onChange={(e) => setLocDialog((prev) => ({ ...prev, suitableproducttypes: e.target.value }))}
                     placeholder={language === "th" ? "เช่น สินค้าแช่แข็ง, ของเปราะบาง" : "e.g. Frozen, Fragile"}
                     className="h-9 text-xs"
                   />
@@ -1038,8 +1038,8 @@ export function WarehouseLocationsEditor({
                   </label>
                   <Input
                     type="number"
-                    value={shelfDialog.max_weight}
-                    onChange={(e) => setShelfDialog((prev) => ({ ...prev, max_weight: e.target.value }))}
+                    value={shelfDialog.maxweight}
+                    onChange={(e) => setShelfDialog((prev) => ({ ...prev, maxweight: e.target.value }))}
                     placeholder="e.g. 200"
                     className="h-9 text-xs"
                   />
@@ -1050,8 +1050,8 @@ export function WarehouseLocationsEditor({
                     {language === "th" ? "ประเภทสินค้าที่เหมาะสม" : "Suitable Product Types"}
                   </label>
                   <Input
-                    value={shelfDialog.suitable_product_types}
-                    onChange={(e) => setShelfDialog((prev) => ({ ...prev, suitable_product_types: e.target.value }))}
+                    value={shelfDialog.suitableproducttypes}
+                    onChange={(e) => setShelfDialog((prev) => ({ ...prev, suitableproducttypes: e.target.value }))}
                     placeholder={language === "th" ? "เช่น ของเหลว, ยา" : "e.g. Liquids, Medicine"}
                     className="h-9 text-xs"
                   />
@@ -1236,8 +1236,8 @@ export function WarehouseLocationsEditor({
                     </label>
                     <Input
                       type="number"
-                      value={bulkShelfDialog.max_weight}
-                      onChange={(e) => setBulkShelfDialog((prev) => ({ ...prev, max_weight: e.target.value }))}
+                      value={bulkShelfDialog.maxweight}
+                      onChange={(e) => setBulkShelfDialog((prev) => ({ ...prev, maxweight: e.target.value }))}
                       placeholder="e.g. 200"
                       className="h-9 text-xs"
                     />
@@ -1248,8 +1248,8 @@ export function WarehouseLocationsEditor({
                       {language === "th" ? "ประเภทสินค้าที่เหมาะสม" : "Suitable Product Types"}
                     </label>
                     <Input
-                      value={bulkShelfDialog.suitable_product_types}
-                      onChange={(e) => setBulkShelfDialog((prev) => ({ ...prev, suitable_product_types: e.target.value }))}
+                      value={bulkShelfDialog.suitableproducttypes}
+                      onChange={(e) => setBulkShelfDialog((prev) => ({ ...prev, suitableproducttypes: e.target.value }))}
                       placeholder={language === "th" ? "เช่น ยา, สินค้าทั่วไป" : "e.g. Medicine, General"}
                       className="h-9 text-xs"
                     />

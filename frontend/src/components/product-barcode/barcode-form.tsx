@@ -77,7 +77,7 @@ type TabKey =
   | "media"
   | "logistics"
   | "marketplace"
-  | "product_detail";
+  | "productdetail";
 
 interface TabDef {
   key: TabKey;
@@ -127,13 +127,13 @@ export function ProductBarcodeFormDialog(props: ProductBarcodeFormDialogProps) {
   const [loadingProductDetail, setLoadingProductDetail] = useState(false);
 
   useEffect(() => {
-    if (!auth || !value.item_guid) {
+    if (!auth || !value.itemguid) {
       setProductDetail(null);
       return;
     }
     let active = true;
     setLoadingProductDetail(true);
-    fetch(`/api/product/${encodeURIComponent(value.item_guid)}`, {
+    fetch(`/api/product/${encodeURIComponent(value.itemguid)}`, {
       headers: {
         Authorization: `Bearer ${auth.token}`,
         "x-bc-backend-url": auth.backendUrl,
@@ -155,25 +155,25 @@ export function ProductBarcodeFormDialog(props: ProductBarcodeFormDialogProps) {
     return () => {
       active = false;
     };
-  }, [auth, value.item_guid]);
+  }, [auth, value.itemguid]);
 
   useEffect(() => {
     if (productDetail) {
       onChange((current) => {
-        const nextItemType = typeof productDetail.item_type === "number" ? productDetail.item_type as ProductBarcode["item_type"] : current.item_type;
+        const nextItemType = typeof productDetail.itemtype === "number" ? productDetail.itemtype as ProductBarcode["itemtype"] : current.itemtype;
         const nextMaterialType = typeof productDetail.materialtype === "number" ? productDetail.materialtype as ProductBarcode["materialtype"] : current.materialtype;
-        const nextVatCal = typeof productDetail.vat_type === "number" ? productDetail.vat_type : current.vatcal;
+        const nextVatCal = typeof productDetail.vattype === "number" ? productDetail.vattype : current.vatcal;
         const nextSumPoint = typeof productDetail.issumpoint === "boolean" ? productDetail.issumpoint : current.issumpoint;
 
         if (
-          current.item_type !== nextItemType ||
+          current.itemtype !== nextItemType ||
           current.materialtype !== nextMaterialType ||
           current.vatcal !== nextVatCal ||
           current.issumpoint !== nextSumPoint
         ) {
           return {
             ...current,
-            item_type: nextItemType,
+            itemtype: nextItemType,
             materialtype: nextMaterialType,
             vatcal: nextVatCal,
             issumpoint: nextSumPoint,
@@ -185,17 +185,17 @@ export function ProductBarcodeFormDialog(props: ProductBarcodeFormDialogProps) {
   }, [productDetail, onChange]);
 
   const visibleTabs = useMemo<TabDef[]>(() => {
-    if (value.item_guid) {
+    if (value.itemguid) {
       return [
         { key: "basic", label: "tabBasic" },
         { key: "pricing", label: "tabPricing" },
         { key: "logistics", label: "tabDimensions" },
         { key: "marketplace", label: "tabMarketplace" },
-        { key: "product_detail", label: "tabProductDetail" },
+        { key: "productdetail", label: "tabProductDetail" },
       ];
     }
     return TABS;
-  }, [value.item_guid]);
+  }, [value.itemguid]);
 
   useEffect(() => {
     const isCurrentTabVisible = visibleTabs.some((t) => t.key === tab);
@@ -210,7 +210,7 @@ export function ProductBarcodeFormDialog(props: ProductBarcodeFormDialogProps) {
     else if (!isValidBarcode(value.barcode)) next.barcode = text.invalidBarcode;
     const firstName = value.names[0]?.name ?? "";
     if (!firstName.trim()) next.name0 = text.required_error;
-    if (!value.item_unit_code.trim()) next.item_unit_code = text.required_error;
+    if (!value.itemunitcode.trim()) next.itemunitcode = text.required_error;
     setErrors(next);
     return Object.keys(next).length === 0;
   }, [value, text.required_error, text.invalidBarcode]);
@@ -322,7 +322,7 @@ export function ProductBarcodeFormDialog(props: ProductBarcodeFormDialogProps) {
               ))}
             </div>
           )}
-          {tab === "product_detail" && (
+          {tab === "productdetail" && (
             <TabProductDetail productDetail={productDetail} loading={loadingProductDetail} text={text} language={language} />
           )}
 
@@ -612,17 +612,17 @@ function TabBasic({
     [onChange],
   );
   const setItemType = useCallback(
-    (nextType: ProductBarcode["item_type"]) =>
-      onChange((current) => ({ ...current, item_type: nextType })),
+    (nextType: ProductBarcode["itemtype"]) =>
+      onChange((current) => ({ ...current, itemtype: nextType })),
     [onChange],
   );
-  const hasProduct = !!value.item_guid;
+  const hasProduct = !!value.itemguid;
 
-  const itemTypeLabel = value.item_type === 0
+  const itemTypeLabel = value.itemtype === 0
     ? text.itemTypeStock
-    : value.item_type === 1
+    : value.itemtype === 1
     ? text.itemTypeService
-    : value.item_type === 2
+    : value.itemtype === 2
     ? text.itemTypeSet
     : "-";
 
@@ -719,7 +719,7 @@ function TabBasic({
               onPick={(entry) =>
                 onChange((current) => ({
                   ...current,
-                  item_guid: entry.guidfixed,
+                  itemguid: entry.guidfixed,
                   itemcode: entry.code,
                   names: entry.names && entry.names.length > 0 ? entry.names : current.names,
                 }))
@@ -727,26 +727,26 @@ function TabBasic({
               onClear={() =>
                 onChange((current) => ({
                   ...current,
-                  item_guid: "",
+                  itemguid: "",
                   itemcode: "",
                 }))
               }
             />
             <MasterField
               label={text.itemUnit}
-              code={value.item_unit_code}
+              code={value.itemunitcode}
               names={value.itemunitnames}
               master="unit"
               language={language}
               auth={auth}
               required
-              error={errors.item_unit_code}
+              error={errors.itemunitcode}
               companyGuid={companyGuid}
               onPick={(entry) =>
                 onChange((current) => ({
                   ...current,
                   itemunitguid: entry.guidfixed,
-                  item_unit_code: entry.code,
+                  itemunitcode: entry.code,
                   itemunitnames: entry.names,
                 }))
               }
@@ -754,7 +754,7 @@ function TabBasic({
                 onChange((current) => ({
                   ...current,
                   itemunitguid: "",
-                  item_unit_code: "",
+                  itemunitcode: "",
                   itemunitnames: [],
                 }))
               }
@@ -790,8 +790,8 @@ function TabBasic({
       <Section title={text.tabBasic + " — flags"}>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           <Toggle
-            checked={value.is_main_barcode}
-            onCheckedChange={(n) => upd("is_main_barcode", n)}
+            checked={value.ismainbarcode}
+            onCheckedChange={(n) => upd("ismainbarcode", n)}
             label={text.isMainBarcode}
           />
           <Toggle
@@ -870,11 +870,11 @@ function TabProductDetail({
         <div className="space-y-4">
           <Section title={text.classificationSectionTitle}>
             <div className="grid gap-2 grid-cols-2">
-              <ReadOnlyField label={text.group} value={productDetail.group_code ? `${productDetail.group_code} — ${pickName(productDetail.group_names, language)}` : "-"} />
+              <ReadOnlyField label={text.group} value={productDetail.groupcode ? `${productDetail.groupcode} — ${pickName(productDetail.groupnames, language)}` : "-"} />
               <ReadOnlyField label={text.groupSubOne} value={productDetail.groupsubonecode ? `${productDetail.groupsubonecode} — ${pickName(productDetail.groupsubonenames, language)}` : "-"} />
               <ReadOnlyField label={text.groupSubTwo} value={productDetail.groupsubtwocode ? `${productDetail.groupsubtwocode} — ${pickName(productDetail.groupsubtwonames, language)}` : "-"} />
-              <ReadOnlyField label={text.brand} value={productDetail.brand_code ? `${productDetail.brand_code} — ${pickName(productDetail.brandnames, language)}` : "-"} />
-              <ReadOnlyField label={text.category} value={productDetail.categorycode ? `${productDetail.categorycode} — ${pickName(productDetail.category_names, language)}` : "-"} />
+              <ReadOnlyField label={text.brand} value={productDetail.brandcode ? `${productDetail.brandcode} — ${pickName(productDetail.brandnames, language)}` : "-"} />
+              <ReadOnlyField label={text.category} value={productDetail.categorycode ? `${productDetail.categorycode} — ${pickName(productDetail.categorynames, language)}` : "-"} />
               <ReadOnlyField label={text.classification} value={productDetail.classcode ? `${productDetail.classcode} — ${pickName(productDetail.classnames, language)}` : "-"} />
               <ReadOnlyField label={text.design} value={productDetail.designcode ? `${productDetail.designcode} — ${pickName(productDetail.designnames, language)}` : "-"} />
               <ReadOnlyField label={text.grade} value={productDetail.gradecode ? `${productDetail.gradecode} — ${pickName(productDetail.gradenames, language)}` : "-"} />
@@ -1074,7 +1074,7 @@ function TabPricing({
             variant="outline"
             size="sm"
             onClick={() =>
-              setPrices((rows) => [...rows, { key_number: rows.length + 1, price: 0 }])
+              setPrices((rows) => [...rows, { keynumber: rows.length + 1, price: 0 }])
             }
           >
             <Plus className="mr-1 h-4 w-4" />
@@ -1090,13 +1090,13 @@ function TabPricing({
               <div key={idx} className="grid grid-cols-[80px_1fr_40px] items-center gap-2">
                 <Input
                   type="number"
-                  value={entry.key_number}
+                  value={entry.keynumber}
                   min={1}
                   step={1}
                   onChange={(event) =>
                     setPrices((rows) =>
                       rows.map((row, rowIdx) =>
-                        rowIdx === idx ? { ...row, key_number: Number(event.target.value) || 0 } : row,
+                        rowIdx === idx ? { ...row, keynumber: Number(event.target.value) || 0 } : row,
                       ),
                     )
                   }
@@ -1409,32 +1409,32 @@ function TabMarketplace({
           ? text.tabAliexpress
           : text.tabTiktok;
 
-  const entry = (value.marketplace_products ?? []).find((m) => m.platform === platform) ?? null;
+  const entry = (value.marketplaceproducts ?? []).find((m) => m.platform === platform) ?? null;
 
   const enable = useCallback(() => {
     onChange((current) => {
-      const cur = current.marketplace_products ?? [];
+      const cur = current.marketplaceproducts ?? [];
       if (cur.some((m) => m.platform === platform)) return current;
-      return { ...current, marketplace_products: [...cur, emptyMarketplaceProductMap(platform)] };
+      return { ...current, marketplaceproducts: [...cur, emptyMarketplaceProductMap(platform)] };
     });
   }, [onChange, platform]);
 
   const disable = useCallback(() => {
     onChange((current) => ({
       ...current,
-      marketplace_products: (current.marketplace_products ?? []).filter((m) => m.platform !== platform),
+      marketplaceproducts: (current.marketplaceproducts ?? []).filter((m) => m.platform !== platform),
     }));
   }, [onChange, platform]);
 
   const upd = useCallback(
     <K extends keyof MarketplaceProductMap>(key: K, val: MarketplaceProductMap[K]) => {
       onChange((current) => {
-        const cur = current.marketplace_products ?? [];
+        const cur = current.marketplaceproducts ?? [];
         const idx = cur.findIndex((m) => m.platform === platform);
         if (idx < 0) return current;
         const next = [...cur];
         next[idx] = { ...next[idx], [key]: val };
-        return { ...current, marketplace_products: next };
+        return { ...current, marketplaceproducts: next };
       });
     },
     [onChange, platform],
@@ -1459,34 +1459,34 @@ function TabMarketplace({
           <Section title={text.mkSectionListing}>
             <FieldGrid>
               <FieldRow label={text.mkAccountId}>
-                <Input value={entry.account_id} onChange={(e) => upd("account_id", e.target.value)} />
+                <Input value={entry.accountid} onChange={(e) => upd("accountid", e.target.value)} />
               </FieldRow>
               <FieldRow label={text.mkMarketItemId}>
-                <Input value={entry.market_item_id} onChange={(e) => upd("market_item_id", e.target.value)} />
+                <Input value={entry.marketitemid} onChange={(e) => upd("marketitemid", e.target.value)} />
               </FieldRow>
               <FieldRow label={text.mkMarketModelId}>
-                <Input value={entry.market_model_id} onChange={(e) => upd("market_model_id", e.target.value)} />
+                <Input value={entry.marketmodelid} onChange={(e) => upd("marketmodelid", e.target.value)} />
               </FieldRow>
               <FieldRow label={text.mkSellerSku}>
-                <Input value={entry.seller_sku} onChange={(e) => upd("seller_sku", e.target.value)} />
+                <Input value={entry.sellersku} onChange={(e) => upd("sellersku", e.target.value)} />
               </FieldRow>
               <FieldRow label={text.mkShopSku}>
-                <Input value={entry.shop_sku} onChange={(e) => upd("shop_sku", e.target.value)} />
+                <Input value={entry.shopsku} onChange={(e) => upd("shopsku", e.target.value)} />
               </FieldRow>
               <FieldRow label={text.mkGtin}>
                 <Input value={entry.gtin} onChange={(e) => upd("gtin", e.target.value)} />
               </FieldRow>
               <FieldRow label={text.mkCategoryId}>
-                <Input value={entry.category_id} onChange={(e) => upd("category_id", e.target.value)} />
+                <Input value={entry.categoryid} onChange={(e) => upd("categoryid", e.target.value)} />
               </FieldRow>
               <FieldRow label={text.mkCategoryName}>
-                <Input value={entry.category_name} onChange={(e) => upd("category_name", e.target.value)} />
+                <Input value={entry.categoryname} onChange={(e) => upd("categoryname", e.target.value)} />
               </FieldRow>
               <FieldRow label={text.mkBrandId}>
-                <Input value={entry.brand_id} onChange={(e) => upd("brand_id", e.target.value)} />
+                <Input value={entry.brandid} onChange={(e) => upd("brandid", e.target.value)} />
               </FieldRow>
               <FieldRow label={text.mkItemUrl}>
-                <Input value={entry.item_url} onChange={(e) => upd("item_url", e.target.value)} placeholder="https://…" />
+                <Input value={entry.itemurl} onChange={(e) => upd("itemurl", e.target.value)} placeholder="https://…" />
               </FieldRow>
             </FieldGrid>
             <div className="mt-3 space-y-3">
@@ -1505,15 +1505,15 @@ function TabMarketplace({
               />
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <FieldRow label={text.mkDaysToShip}>
-                  <NumberField value={entry.days_to_ship} min={0} step={1} onChange={(n) => upd("days_to_ship", n)} />
+                  <NumberField value={entry.daystoship} min={0} step={1} onChange={(n) => upd("daystoship", n)} />
                 </FieldRow>
                 <div className="flex items-end pb-1">
-                  <Toggle checked={entry.is_pre_order} onCheckedChange={(n) => upd("is_pre_order", n)} label={text.mkIsPreOrder} />
+                  <Toggle checked={entry.ispreorder} onCheckedChange={(n) => upd("ispreorder", n)} label={text.mkIsPreOrder} />
                 </div>
               </div>
               {entry.status === "REJECTED" && (
                 <FieldRow label={text.mkRejectReason}>
-                  <Input value={entry.reject_reason} onChange={(e) => upd("reject_reason", e.target.value)} />
+                  <Input value={entry.rejectreason} onChange={(e) => upd("rejectreason", e.target.value)} />
                 </FieldRow>
               )}
             </div>
@@ -1525,29 +1525,29 @@ function TabMarketplace({
                 label={text.mkMediaAssets}
                 helper={text.mkJsonArrayHelp}
                 invalidText={text.mkJsonInvalid}
-                value={entry.media_assets}
-                onCommit={(next) => upd("media_assets", next)}
+                value={entry.mediaassets}
+                onCommit={(next) => upd("mediaassets", next)}
               />
               <MarketplaceJsonField
                 label={text.mkSpecificationGroups}
                 helper={text.mkJsonArrayHelp}
                 invalidText={text.mkJsonInvalid}
-                value={entry.specification_groups}
-                onCommit={(next) => upd("specification_groups", next)}
+                value={entry.specificationgroups}
+                onCommit={(next) => upd("specificationgroups", next)}
               />
               <MarketplaceJsonField
                 label={text.mkRawAttributes}
                 helper={text.mkJsonArrayHelp}
                 invalidText={text.mkJsonInvalid}
-                value={entry.raw_attributes}
-                onCommit={(next) => upd("raw_attributes", next)}
+                value={entry.rawattributes}
+                onCommit={(next) => upd("rawattributes", next)}
               />
               <MarketplaceJsonField
                 label={text.mkPayloadExamples}
                 helper={text.mkJsonArrayHelp}
                 invalidText={text.mkJsonInvalid}
-                value={entry.payload_examples}
-                onCommit={(next) => upd("payload_examples", next)}
+                value={entry.payloadexamples}
+                onCommit={(next) => upd("payloadexamples", next)}
               />
             </div>
           </Section>
@@ -1558,27 +1558,27 @@ function TabMarketplace({
                 <Input value={entry.currency} onChange={(e) => upd("currency", e.target.value.toUpperCase())} />
               </FieldRow>
               <FieldRow label={text.mkCustomPrice}>
-                <NumberField value={entry.custom_price} min={0} onChange={(n) => upd("custom_price", n)} />
+                <NumberField value={entry.customprice} min={0} onChange={(n) => upd("customprice", n)} />
               </FieldRow>
               <FieldRow label={text.mkPlatformPrice}>
-                <NumberField value={entry.platform_price} min={0} onChange={(n) => upd("platform_price", n)} />
+                <NumberField value={entry.platformprice} min={0} onChange={(n) => upd("platformprice", n)} />
               </FieldRow>
               <FieldRow label={text.mkPlatformStock}>
-                <NumberField value={entry.platform_stock} min={0} step={1} onChange={(n) => upd("platform_stock", n)} />
+                <NumberField value={entry.platformstock} min={0} step={1} onChange={(n) => upd("platformstock", n)} />
               </FieldRow>
             </FieldGrid>
             <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              <Toggle checked={entry.sync_stock} onCheckedChange={(n) => upd("sync_stock", n)} label={text.mkSyncStock} />
-              <Toggle checked={entry.sync_price} onCheckedChange={(n) => upd("sync_price", n)} label={text.mkSyncPrice} />
+              <Toggle checked={entry.syncstock} onCheckedChange={(n) => upd("syncstock", n)} label={text.mkSyncStock} />
+              <Toggle checked={entry.syncprice} onCheckedChange={(n) => upd("syncprice", n)} label={text.mkSyncPrice} />
             </div>
           </Section>
 
           <Section title={text.mkSectionSync}>
             <div className="space-y-3">
-              <Toggle checked={entry.sync_enabled} onCheckedChange={(n) => upd("sync_enabled", n)} label={text.mkSyncEnabled} />
+              <Toggle checked={entry.syncenabled} onCheckedChange={(n) => upd("syncenabled", n)} label={text.mkSyncEnabled} />
               <FieldGrid>
-                <ReadOnlyField label={text.mkLastSyncAt} value={entry.last_sync_at || "—"} />
-                <ReadOnlyField label={text.mkLastSyncError} value={entry.last_sync_error || "—"} />
+                <ReadOnlyField label={text.mkLastSyncAt} value={entry.lastsyncat || "—"} />
+                <ReadOnlyField label={text.mkLastSyncError} value={entry.lastsyncerror || "—"} />
               </FieldGrid>
             </div>
           </Section>
@@ -1656,11 +1656,11 @@ function TabLogistics({
   );
 
   const volumetricWeight = useMemo(() => {
-    const w = value.package_width ?? 0;
-    const l = value.package_length ?? 0;
-    const h = value.package_height ?? 0;
+    const w = value.packagewidth ?? 0;
+    const l = value.packagelength ?? 0;
+    const h = value.packageheight ?? 0;
     return Number(((w * l * h) / 5000).toFixed(3));
-  }, [value.package_width, value.package_length, value.package_height]);
+  }, [value.packagewidth, value.packagelength, value.packageheight]);
 
   return (
     <div className="space-y-4">
@@ -1671,8 +1671,8 @@ function TabLogistics({
               type="number"
               min={0}
               step="any"
-              value={value.package_weight ?? 0}
-              onChange={(e) => upd("package_weight", Math.max(0, Number(e.target.value) || 0))}
+              value={value.packageweight ?? 0}
+              onChange={(e) => upd("packageweight", Math.max(0, Number(e.target.value) || 0))}
             />
           </FieldRow>
           <FieldRow label="น้ำหนักเชิงปริมาตรประเมิน (kg)">
@@ -1693,24 +1693,24 @@ function TabLogistics({
             <Input
               type="number"
               min={0}
-              value={value.package_width ?? 0}
-              onChange={(e) => upd("package_width", Math.max(0, Number(e.target.value) || 0))}
+              value={value.packagewidth ?? 0}
+              onChange={(e) => upd("packagewidth", Math.max(0, Number(e.target.value) || 0))}
             />
           </FieldRow>
           <FieldRow label="ความยาวกล่อง (cm)">
             <Input
               type="number"
               min={0}
-              value={value.package_length ?? 0}
-              onChange={(e) => upd("package_length", Math.max(0, Number(e.target.value) || 0))}
+              value={value.packagelength ?? 0}
+              onChange={(e) => upd("packagelength", Math.max(0, Number(e.target.value) || 0))}
             />
           </FieldRow>
           <FieldRow label="ความสูงกล่อง (cm)">
             <Input
               type="number"
               min={0}
-              value={value.package_height ?? 0}
-              onChange={(e) => upd("package_height", Math.max(0, Number(e.target.value) || 0))}
+              value={value.packageheight ?? 0}
+              onChange={(e) => upd("packageheight", Math.max(0, Number(e.target.value) || 0))}
             />
           </FieldRow>
         </div>

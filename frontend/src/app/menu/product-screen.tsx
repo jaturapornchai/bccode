@@ -371,7 +371,7 @@ const [pickerType, setPickerType] = useState<string>("");
 
   const visibleItems = useMemo(() => {
     if (listItemTypeFilter === "all") return items;
-    return items.filter((item) => String(item.item_type ?? 0) === listItemTypeFilter);
+    return items.filter((item) => String(item.itemtype ?? 0) === listItemTypeFilter);
   }, [items, listItemTypeFilter]);
 
   const isFormDirty = useMemo(() => {
@@ -432,7 +432,7 @@ const [pickerType, setPickerType] = useState<string>("");
         holdingcode: activeHoldingCode,
       });
       if (isSetOnly) {
-        params.set("item_type", "2");
+        params.set("itemtype", "2");
         params.set("materialtype", "3");
       }
       const response = await fetch(`/api/product?${params.toString()}`, {
@@ -448,8 +448,8 @@ const [pickerType, setPickerType] = useState<string>("");
       const rawData = Array.isArray(data.data) ? data.data : [];
       const normalized: Product[] = rawData.map(rawToProduct);
       const filtered = isSetOnly
-        ? normalized.filter((item) => item.item_type === 2)
-        : normalized.filter((item) => item.item_type !== 2);
+        ? normalized.filter((item) => item.itemtype === 2)
+        : normalized.filter((item) => item.itemtype !== 2);
 
       setItems(filtered);
       if (filtered.length > 0) {
@@ -478,10 +478,10 @@ const [pickerType, setPickerType] = useState<string>("");
     holdingcode: activeHoldingCode,
     code: "",
     names: [{ code: "th", name: "" }, { code: "en", name: "" }],
-    group_code: "",
-    group_names: [],
-    item_type: isSetOnly ? 2 : 0,
-    vat_type: 0,
+    groupcode: "",
+    groupnames: [],
+    itemtype: isSetOnly ? 2 : 0,
+    vattype: 0,
     materialtype: isSetOnly ? 3 : 0,
     issumpoint: false,
     manufacturers: [],
@@ -538,8 +538,8 @@ const [pickerType, setPickerType] = useState<string>("");
             ...current,
             names: b.names && b.names.length > 0 ? b.names : current.names,
             code: b.itemcode || b.barcode || current.code,
-            group_code: b.group_code || "",
-            group_names: b.group_names || [],
+            groupcode: b.groupcode || "",
+            groupnames: b.groupnames || [],
             groupsuboneguid: b.groupsuboneguid || "",
             groupsubonecode: b.groupsubonecode || "",
             groupsubonenames: b.groupsubonenames || [],
@@ -547,11 +547,11 @@ const [pickerType, setPickerType] = useState<string>("");
             groupsubtwocode: b.groupsubtwocode || "",
             groupsubtwonames: b.groupsubtwonames || [],
             brandguid: b.brandguid || "",
-            brand_code: b.brand_code || "",
+            brandcode: b.brandcode || "",
             brandnames: b.brandnames || [],
-            category_guid: b.category_guid || "",
+            categoryguid: b.categoryguid || "",
             categorycode: b.categorycode || "",
-            category_names: b.category_names || [],
+            categorynames: b.categorynames || [],
             classguid: b.classguid || "",
             classcode: b.classcode || "",
             classnames: b.classnames || [],
@@ -567,10 +567,10 @@ const [pickerType, setPickerType] = useState<string>("");
             gradeguid: b.gradeguid || "",
             gradecode: b.gradecode || "",
             gradenames: b.gradenames || [],
-            vat_type: b.vat_type ?? 0,
-            item_type: b.item_type ?? 0,
+            vattype: b.vattype ?? 0,
+            itemtype: b.itemtype ?? 0,
             materialtype: b.materialtype ?? 0,
-            tax_type: b.tax_type ?? 0,
+            taxtype: b.taxtype ?? 0,
             manufacturers: b.manufacturers || [],
             suppliers: b.suppliers || [],
             condition: b.condition ?? false,
@@ -738,7 +738,7 @@ const [pickerType, setPickerType] = useState<string>("");
         }
 
         const fullBarcode = bcJson.data;
-        fullBarcode.item_guid = createdGuid;
+        fullBarcode.itemguid = createdGuid;
         fullBarcode.itemcode = createdCode;
 
         const putRes = await fetch(`/api/product-barcode/${encodeURIComponent(bindBarcodeOnSave.guidfixed)}`, {
@@ -800,7 +800,7 @@ const [pickerType, setPickerType] = useState<string>("");
           rowIdx === idx
             ? {
                 ...row,
-                item_unit_code: entry.code,
+                itemunitcode: entry.code,
                 itemunitnames: entry.names,
               }
             : row
@@ -838,7 +838,7 @@ const [pickerType, setPickerType] = useState<string>("");
         unitguid: entry.guidfixed,
         unitcode: entry.code,
         unitnames: entry.names,
-        item_unit_code: entry.code,
+        itemunitcode: entry.code,
         itemunitnames: entry.names,
       });
       return;
@@ -846,11 +846,11 @@ const [pickerType, setPickerType] = useState<string>("");
 
     // Single select classification pickers — explicit field map to avoid unsafe keyof cast
     const classificationFields: Record<string, { guid: keyof Product; code: keyof Product; names: keyof Product }> = {
-      group:        { guid: "groupguid" as keyof Product,        code: "group_code",       names: "group_names" },
+      group:        { guid: "groupguid" as keyof Product,        code: "groupcode",       names: "groupnames" },
       groupsubone:  { guid: "groupsuboneguid" as keyof Product,  code: "groupsubonecode",  names: "groupsubonenames" },
       groupsubtwo:  { guid: "groupsubtwoguid" as keyof Product,  code: "groupsubtwocode",  names: "groupsubtwonames" },
-      brand:        { guid: "brandguid" as keyof Product,        code: "brand_code",       names: "brandnames" },
-      category:     { guid: "category_guid" as keyof Product,    code: "categorycode",     names: "category_names" },
+      brand:        { guid: "brandguid" as keyof Product,        code: "brandcode",       names: "brandnames" },
+      category:     { guid: "categoryguid" as keyof Product,    code: "categorycode",     names: "categorynames" },
       class:        { guid: "classguid" as keyof Product,        code: "classcode",        names: "classnames" },
       design:       { guid: "designguid" as keyof Product,       code: "designcode",       names: "designnames" },
       model:        { guid: "modelguid" as keyof Product,        code: "modelcode",        names: "modelnames" },
@@ -875,17 +875,17 @@ const [pickerType, setPickerType] = useState<string>("");
         unitguid: "",
         unitcode: "",
         unitnames: [],
-        item_unit_code: "",
+        itemunitcode: "",
         itemunitnames: [],
       });
       return;
     }
     const clearFields: Record<string, { guid: keyof Product; code: keyof Product; names: keyof Product }> = {
-      group:        { guid: "groupguid" as keyof Product,        code: "group_code",       names: "group_names" },
+      group:        { guid: "groupguid" as keyof Product,        code: "groupcode",       names: "groupnames" },
       groupsubone:  { guid: "groupsuboneguid" as keyof Product,  code: "groupsubonecode",  names: "groupsubonenames" },
       groupsubtwo:  { guid: "groupsubtwoguid" as keyof Product,  code: "groupsubtwocode",  names: "groupsubtwonames" },
-      brand:        { guid: "brandguid" as keyof Product,        code: "brand_code",       names: "brandnames" },
-      category:     { guid: "category_guid" as keyof Product,    code: "categorycode",     names: "category_names" },
+      brand:        { guid: "brandguid" as keyof Product,        code: "brandcode",       names: "brandnames" },
+      category:     { guid: "categoryguid" as keyof Product,    code: "categorycode",     names: "categorynames" },
       class:        { guid: "classguid" as keyof Product,        code: "classcode",        names: "classnames" },
       design:       { guid: "designguid" as keyof Product,       code: "designcode",       names: "designnames" },
       model:        { guid: "modelguid" as keyof Product,        code: "modelcode",        names: "modelnames" },
@@ -1060,9 +1060,9 @@ const [pickerType, setPickerType] = useState<string>("");
                 const active = item.code === selectedCode;
                 const rowKey = productRowKey(item, index);
                 const isEditing = active && editorOpen && editorMode === "edit";
-                const typeLabel = item.item_type === 2
+                const typeLabel = item.itemtype === 2
                   ? text.itemTypeSet
-                  : (itemTypes.find((t) => t.value === item.item_type)?.label ?? String(item.item_type));
+                  : (itemTypes.find((t) => t.value === item.itemtype)?.label ?? String(item.itemtype));
                 return (
                   <div
                     key={rowKey}
@@ -1285,8 +1285,8 @@ const [pickerType, setPickerType] = useState<string>("");
                       <div className="mt-3 grid items-start gap-3 md:grid-cols-2">
                         <RadioOptionGroup
                           label={text.itemTypeLabel}
-                          value={editProduct.item_type ?? 0}
-                          onChange={(n) => setEditProduct({ ...editProduct, item_type: n })}
+                          value={editProduct.itemtype ?? 0}
+                          onChange={(n) => setEditProduct({ ...editProduct, itemtype: n })}
                           options={itemTypes}
                         />
                         <RadioOptionGroup
@@ -1305,8 +1305,8 @@ const [pickerType, setPickerType] = useState<string>("");
                     <div className="mt-3 grid items-start gap-3">
                       <RadioOptionGroup
                         label="ประเภทภาษี"
-                        value={editProduct.vat_type ?? 0}
-                        onChange={(n) => setEditProduct({ ...editProduct, vat_type: n })}
+                        value={editProduct.vattype ?? 0}
+                        onChange={(n) => setEditProduct({ ...editProduct, vattype: n })}
                         options={vatTypes}
                       />
                     </div>
@@ -1373,11 +1373,11 @@ const [pickerType, setPickerType] = useState<string>("");
                   <h4 className="font-semibold text-sm border-b border-border pb-1">{text.groupsAndCategories}</h4>
                   <div className="grid gap-4 sm:grid-cols-2">
                     {[
-                      { key: "group", label: text.group, code: editProduct.group_code, names: editProduct.group_names },
+                      { key: "group", label: text.group, code: editProduct.groupcode, names: editProduct.groupnames },
                       { key: "groupsubone", label: text.groupsubone, code: editProduct.groupsubonecode, names: editProduct.groupsubonenames },
                       { key: "groupsubtwo", label: text.groupsubtwo, code: editProduct.groupsubtwocode, names: editProduct.groupsubtwonames },
-                      { key: "brand", label: text.brand, code: editProduct.brand_code, names: editProduct.brandnames },
-                      { key: "category", label: text.category, code: editProduct.categorycode, names: editProduct.category_names },
+                      { key: "brand", label: text.brand, code: editProduct.brandcode, names: editProduct.brandnames },
+                      { key: "category", label: text.category, code: editProduct.categorycode, names: editProduct.categorynames },
                       { key: "class", label: text.class, code: editProduct.classcode, names: editProduct.classnames },
                       { key: "design", label: text.design, code: editProduct.designcode, names: editProduct.designnames },
                       { key: "model", label: text.model, code: editProduct.modelcode, names: editProduct.modelnames },
@@ -1450,8 +1450,8 @@ const [pickerType, setPickerType] = useState<string>("");
                           type="number"
                           min={0}
                           step="any"
-                          value={editProduct.package_weight ?? 0}
-                          onChange={(e) => setEditProduct({ ...editProduct, package_weight: Math.max(0, Number(e.target.value) || 0) })}
+                          value={editProduct.packageweight ?? 0}
+                          onChange={(e) => setEditProduct({ ...editProduct, packageweight: Math.max(0, Number(e.target.value) || 0) })}
                         />
                       </div>
                       <div className="space-y-1">
@@ -1460,7 +1460,7 @@ const [pickerType, setPickerType] = useState<string>("");
                           type="text"
                           readOnly
                           className="bg-muted/40 font-mono"
-                          value={`${(((editProduct.package_width ?? 0) * (editProduct.package_length ?? 0) * (editProduct.package_height ?? 0)) / 5000).toFixed(3)} kg`}
+                          value={`${(((editProduct.packagewidth ?? 0) * (editProduct.packagelength ?? 0) * (editProduct.packageheight ?? 0)) / 5000).toFixed(3)} kg`}
                         />
                         <p className="text-[10px] text-muted-foreground mt-1">คำนวณจาก (กว้าง x ยาว x สูง) / 5000</p>
                       </div>
@@ -1472,8 +1472,8 @@ const [pickerType, setPickerType] = useState<string>("");
                         <Input
                           type="number"
                           min={0}
-                          value={editProduct.package_width ?? 0}
-                          onChange={(e) => setEditProduct({ ...editProduct, package_width: Math.max(0, Number(e.target.value) || 0) })}
+                          value={editProduct.packagewidth ?? 0}
+                          onChange={(e) => setEditProduct({ ...editProduct, packagewidth: Math.max(0, Number(e.target.value) || 0) })}
                         />
                       </div>
                       <div className="space-y-1">
@@ -1481,8 +1481,8 @@ const [pickerType, setPickerType] = useState<string>("");
                         <Input
                           type="number"
                           min={0}
-                          value={editProduct.package_length ?? 0}
-                          onChange={(e) => setEditProduct({ ...editProduct, package_length: Math.max(0, Number(e.target.value) || 0) })}
+                          value={editProduct.packagelength ?? 0}
+                          onChange={(e) => setEditProduct({ ...editProduct, packagelength: Math.max(0, Number(e.target.value) || 0) })}
                         />
                       </div>
                       <div className="space-y-1">
@@ -1490,8 +1490,8 @@ const [pickerType, setPickerType] = useState<string>("");
                         <Input
                           type="number"
                           min={0}
-                          value={editProduct.package_height ?? 0}
-                          onChange={(e) => setEditProduct({ ...editProduct, package_height: Math.max(0, Number(e.target.value) || 0) })}
+                          value={editProduct.packageheight ?? 0}
+                          onChange={(e) => setEditProduct({ ...editProduct, packageheight: Math.max(0, Number(e.target.value) || 0) })}
                         />
                       </div>
                     </div>
@@ -1564,23 +1564,23 @@ const [pickerType, setPickerType] = useState<string>("");
                   fields={[
                     ...(!isSetOnly ? [{
                       label: text.itemType,
-                      value: selectedProduct.item_type === 2
+                      value: selectedProduct.itemtype === 2
                         ? text.itemTypeSet
-                        : (itemTypes.find((t) => t.value === selectedProduct.item_type)?.label ?? String(selectedProduct.item_type ?? "-"))
+                        : (itemTypes.find((t) => t.value === selectedProduct.itemtype)?.label ?? String(selectedProduct.itemtype ?? "-"))
                     }] : []),
                     {
                       label: "สถานะภาษีมูลค่าเพิ่ม",
-                      value: vatTypes.find((t) => t.value === selectedProduct.vat_type)?.label ?? String(selectedProduct.vat_type ?? "-")
+                      value: vatTypes.find((t) => t.value === selectedProduct.vattype)?.label ?? String(selectedProduct.vattype ?? "-")
                     },
                     {
                       label: "รหัสประเภทภาษี",
-                      value: String(selectedProduct.tax_type ?? selectedProduct.vat_type ?? "-")
+                      value: String(selectedProduct.taxtype ?? selectedProduct.vattype ?? "-")
                     },
                     ...(!isSetOnly ? [{
                       label: text.materialType,
                       value: materialTypes.find((t) => t.value === selectedProduct.materialtype)?.label ?? String(selectedProduct.materialtype ?? "-")
                     }] : []),
-                    { label: "รหัสหน่วยหลัก", value: selectedProduct.unitcode || selectedProduct.item_unit_code || "-" },
+                    { label: "รหัสหน่วยหลัก", value: selectedProduct.unitcode || selectedProduct.itemunitcode || "-" },
                     { label: "ชื่อหน่วยหลัก", value: pickName(selectedProduct.unitnames || selectedProduct.itemunitnames, lang) || "-" },
                     { label: "มิติสินค้า", value: formatDimensionList(selectedProduct.dimensions, lang) }
                   ]}
@@ -1592,7 +1592,7 @@ const [pickerType, setPickerType] = useState<string>("");
                   fields={[
                     {
                       label: text.group,
-                      value: selectedProduct.group_code ? `${selectedProduct.group_code} — ${pickName(selectedProduct.group_names, lang)}` : "-"
+                      value: selectedProduct.groupcode ? `${selectedProduct.groupcode} — ${pickName(selectedProduct.groupnames, lang)}` : "-"
                     },
                     {
                       label: text.groupsubone,
@@ -1604,11 +1604,11 @@ const [pickerType, setPickerType] = useState<string>("");
                     },
                     {
                       label: text.brand,
-                      value: selectedProduct.brand_code ? `${selectedProduct.brand_code} — ${pickName(selectedProduct.brandnames, lang)}` : "-"
+                      value: selectedProduct.brandcode ? `${selectedProduct.brandcode} — ${pickName(selectedProduct.brandnames, lang)}` : "-"
                     },
                     {
                       label: text.category,
-                      value: selectedProduct.categorycode ? `${selectedProduct.categorycode} — ${pickName(selectedProduct.category_names, lang)}` : "-"
+                      value: selectedProduct.categorycode ? `${selectedProduct.categorycode} — ${pickName(selectedProduct.categorynames, lang)}` : "-"
                     },
                     {
                       label: text.class,
@@ -1662,14 +1662,14 @@ const [pickerType, setPickerType] = useState<string>("");
                 <DetailSection
                   title="ข้อมูลขนาดและน้ำหนักพัสดุ (Logistics & Dimensions)"
                   fields={[
-                    { label: "น้ำหนักรวมพัสดุ", value: `${selectedProduct.package_weight ?? 0} kg` },
+                    { label: "น้ำหนักรวมพัสดุ", value: `${selectedProduct.packageweight ?? 0} kg` },
                     {
                       label: "มิติตัวกล่อง (ก x ย x ส)",
-                      value: `${selectedProduct.package_width ?? 0} x ${selectedProduct.package_length ?? 0} x ${selectedProduct.package_height ?? 0} cm`
+                      value: `${selectedProduct.packagewidth ?? 0} x ${selectedProduct.packagelength ?? 0} x ${selectedProduct.packageheight ?? 0} cm`
                     },
                     {
                       label: "น้ำหนักปริมาตร (ประเมิน)",
-                      value: `${(((selectedProduct.package_width ?? 0) * (selectedProduct.package_length ?? 0) * (selectedProduct.package_height ?? 0)) / 5000).toFixed(3)} kg`
+                      value: `${(((selectedProduct.packagewidth ?? 0) * (selectedProduct.packagelength ?? 0) * (selectedProduct.packageheight ?? 0)) / 5000).toFixed(3)} kg`
                     },
                     { label: "คุณลักษณะพิเศษ", value: selectedProduct.isalert ? "ระวังแตก (Fragile)" : "-" }
                   ]}
@@ -1709,7 +1709,7 @@ const [pickerType, setPickerType] = useState<string>("");
                     { label: "สี", value: selectedProduct.colorselect || selectedProduct.colorselecthex || "-" },
                     { label: "รูปหลัก", value: selectedProduct.imageuri || "-" },
                     { label: "รูปทั้งหมด", value: formatImageList(selectedProduct.images) },
-                    { label: "Marketplace", value: formatMarketplaceProductList(selectedProduct.marketplace_products) },
+                    { label: "Marketplace", value: formatMarketplaceProductList(selectedProduct.marketplaceproducts) },
                     { label: "คำเตือน", value: selectedProduct.alertdescription || "-" },
                     { label: "รายละเอียด", value: selectedProduct.description || "-" }
                   ]}
@@ -2020,7 +2020,7 @@ function productRowKey(item: Product, index: number): string {
 
 function productUnitRows(item: Product): RefProductBarcode[] {
   const rows = item.barcodes && item.barcodes.length > 0 ? item.barcodes : item.refbarcodes || [];
-  return rows.filter((row) => row.item_unit_code || row.barcode || row.qty);
+  return rows.filter((row) => row.itemunitcode || row.barcode || row.qty);
 }
 
 function formatProductUnitType(item: Product): string {
@@ -2033,11 +2033,11 @@ function formatAutoPackingBalance(item: Product, language: string): string {
   const baseUnit =
     pickName(item.unitnames || item.itemunitnames, language) ||
     item.unitcode ||
-    item.item_unit_code ||
+    item.itemunitcode ||
     "หน่วย";
   const unitRows = productUnitRows(item)
     .map((row) => ({
-      name: pickName(row.itemunitnames, language) || row.item_unit_code || row.barcode,
+      name: pickName(row.itemunitnames, language) || row.itemunitcode || row.barcode,
       size: Math.max(1, Math.floor(Number(row.qty ?? 1))),
     }))
     .filter((row) => row.name)
@@ -3092,7 +3092,7 @@ function TabProductBom({
                 {
                   barcodeguidfixed: "",
                   names: [],
-                  item_unit_code: "",
+                  itemunitcode: "",
                   itemunitnames: [],
                   barcode: "",
                   qty: 1,
@@ -3127,11 +3127,11 @@ function TabProductBom({
                 <FieldRow label={textB.bomUnitLabel}>
                   <Input
                     placeholder={textB.bomUnitPlaceholder}
-                    value={entry.item_unit_code || ""}
+                    value={entry.itemunitcode || ""}
                     onChange={(event) =>
                       setBom((rows) =>
                         rows.map((row, rowIdx) =>
-                          rowIdx === idx ? { ...row, item_unit_code: event.target.value } : row,
+                          rowIdx === idx ? { ...row, itemunitcode: event.target.value } : row,
                         ),
                       )
                     }
@@ -3188,14 +3188,14 @@ function formatRefBarcodeList(items: RefProductBarcode[] | undefined, language: 
   if (!items || items.length === 0) return "-";
   return items
     .map((item) => {
-      const barcodeText = [item.barcode, pickName(item.names, language), item.item_unit_code].filter(Boolean).join(" / ");
-      const marketplaceText = (item.marketplace_sku_mappings || [])
+      const barcodeText = [item.barcode, pickName(item.names, language), item.itemunitcode].filter(Boolean).join(" / ");
+      const marketplaceText = (item.marketplaceskumappings || [])
         .map((mapping) => {
-          const stockText = (mapping.marketplace_dimension_stocks || [])
-            .map((stock) => `${stock.dimension_name || stock.dimension_key}: พร้อมขาย ${stock.available_qty}`)
+          const stockText = (mapping.marketplacedimensionstocks || [])
+            .map((stock) => `${stock.dimensionname || stock.dimensionkey}: พร้อมขาย ${stock.availableqty}`)
             .join("; ");
           return [
-            [mapping.platform, mapping.holdingcode, mapping.seller_sku].filter(Boolean).join(" / "),
+            [mapping.platform, mapping.holdingcode, mapping.sellersku].filter(Boolean).join(" / "),
             stockText,
           ].filter(Boolean).join(" => ");
         })
@@ -3212,7 +3212,7 @@ function formatBomList(items: BOMProductBarcode[] | undefined, language: string)
     .map((item) => {
       const name = pickName(item.names, language);
       const qty = item.qty == null ? "" : ` x ${item.qty}`;
-      return [item.barcode, name, item.item_unit_code].filter(Boolean).join(" / ") + qty;
+      return [item.barcode, name, item.itemunitcode].filter(Boolean).join(" / ") + qty;
     })
     .join(", ");
 }
@@ -3253,17 +3253,17 @@ function formatDimensionList(items: Product["dimensions"], language: string) {
     .join(", ");
 }
 
-function formatMarketplaceProductList(items: Product["marketplace_products"]) {
+function formatMarketplaceProductList(items: Product["marketplaceproducts"]) {
   if (!items || items.length === 0) return "-";
   return items
     .map((item) =>
       [
         item.platform,
-        item.account_id,
-        item.market_item_id,
-        item.seller_sku || item.shop_sku,
+        item.accountid,
+        item.marketitemid,
+        item.sellersku || item.shopsku,
         item.status,
-        item.sync_enabled ? "sync" : "ไม่ sync",
+        item.syncenabled ? "sync" : "ไม่ sync",
       ]
         .filter(Boolean)
         .join(" / "),

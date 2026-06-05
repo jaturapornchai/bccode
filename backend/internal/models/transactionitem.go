@@ -5,9 +5,9 @@ import "time"
 type Trans struct {
 	Id          uint      `json:"id" gorm:"primaryKey"`
 	ParId       string    `json:"parid" gorm:"column:parid"`
-	DBId        string    `json:"dbid" gorm:"column:dbid;uniqueIndex:trans_unique_dockey"`
+	DBId        string    `json:"dbid" gorm:"column:dbid;uniqueIndex:transuniquedockey"`
 	DocDate     time.Time `json:"docdate" gorm:"column:docdate"`
-	DocNumber   string    `json:"docnumber" gorm:"column:docnumber;uniqueIndex:trans_unique_dockey"`
+	DocNumber   string    `json:"docnumber" gorm:"column:docnumber;uniqueIndex:transuniquedockey"`
 	TotalAmount float64   `json:"totalamount" gorm:"column:totalamount"`
 	TotalQty    float64   `json:"totalqty" gorm:"column:totalqty"`
 }
@@ -19,12 +19,12 @@ func (Trans) TableName() string {
 type TransItemDetail struct {
 	Id              uint      `json:"id" gorm:"primaryKey;type:bigint"`
 	ParId           string    `json:"parid" gorm:"column:parid"`
-	DBId            string    `json:"dbid" gorm:"column:dbid;uniqueIndex:transitemdetail_unique_dockey"` //
+	DBId            string    `json:"dbid" gorm:"column:dbid;uniqueIndex:transitemdetailuniquedockey"` //
 	TransType       int16     `json:"transtype" gorm:"column:transtype;type:smallint;default:0"`
 	CalcType        int16     `json:"calctype" gorm:"column:calctype;type:smallint;default:0"`
 	DocDate         time.Time `json:"docdate" gorm:"column:docdate"`
-	DocNumber       string    `json:"docnumber" gorm:"column:docnumber;uniqueIndex:transitemdetail_unique_dockey"`                           //
-	LineNumber      int16     `json:"linenumber" gorm:"column:linenumber;uniqueIndex:transitemdetail_unique_dockey;type:smallint;default:0"` //
+	DocNumber       string    `json:"docnumber" gorm:"column:docnumber;uniqueIndex:transitemdetailuniquedockey"`                           //
+	LineNumber      int16     `json:"linenumber" gorm:"column:linenumber;uniqueIndex:transitemdetailuniquedockey;type:smallint;default:0"` //
 	Barcode         string    `json:"barcode" gorm:"column:barcode"`
 	ItemCode        string    `json:"itemcode" gorm:"column:itemcode"`
 	UnitCode        string    `json:"unitcode" gorm:"column:unitcode"`

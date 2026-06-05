@@ -44,7 +44,7 @@ export type FieldControl =
   | { type: "checkbox" }
   | { type: "radio"; options: FieldOption[] };
 
-const hiddenCategoryIds = new Set(["mongodb_dev", "mongodb_uat", "mongodb_pro", "mongodb_production", "mongodb_production_legacy"]);
+const hiddenCategoryIds = new Set(["mongodbdev", "mongodbuat", "mongodbpro", "mongodbproduction", "mongodbproductionlegacy"]);
 
 export const SETUP_CATEGORY_DEFS: CategoryDef[] = [
   {
@@ -71,10 +71,10 @@ export const SETUP_CATEGORY_DEFS: CategoryDef[] = [
       setupItem("postgresql", "port", false, "PostgreSQL Port"),
       setupItem("postgresql", "user", false, "PostgreSQL User"),
       setupItem("postgresql", "password", true, "PostgreSQL Password"),
-      setupItem("postgresql", "db_name", false, "PostgreSQL Database Name"),
-      setupItem("postgresql", "ssl_mode", false, "PostgreSQL SSL Mode"),
+      setupItem("postgresql", "dbname", false, "PostgreSQL Database Name"),
+      setupItem("postgresql", "sslmode", false, "PostgreSQL SSL Mode"),
       setupItem("postgresql", "timezone", false, "PostgreSQL Timezone"),
-      setupItem("postgresql", "logger_level", false, "PostgreSQL Logger Level"),
+      setupItem("postgresql", "loggerlevel", false, "PostgreSQL Logger Level"),
     ],
   },
   {
@@ -87,7 +87,7 @@ export const SETUP_CATEGORY_DEFS: CategoryDef[] = [
       setupItem("clickhouse", "port", false, "ClickHouse Port"),
       setupItem("clickhouse", "user", false, "ClickHouse User"),
       setupItem("clickhouse", "password", true, "ClickHouse Password"),
-      setupItem("clickhouse", "database_name", false, "ClickHouse Database Name"),
+      setupItem("clickhouse", "databasename", false, "ClickHouse Database Name"),
     ],
   },
   {
@@ -95,25 +95,25 @@ export const SETUP_CATEGORY_DEFS: CategoryDef[] = [
     title: "Kafka",
     description: "Message broker สำหรับ consumer",
     testType: "kafka",
-    items: [setupItem("kafka", "server_url", false, "Kafka broker host:port")],
+    items: [setupItem("kafka", "serverurl", false, "Kafka broker host:port")],
   },
   {
     id: "service",
     title: "Service",
     description: "ค่าระบบและ runtime service",
     items: [
-      setupItem("service", "enable_kafka", false, "เปิด/ปิด Kafka"),
-      setupItem("service", "kafka_consumer_group_version", false, "Kafka consumer group version"),
-      setupItem("service", "enable_clone_clickhouse", false, "เปิด/ปิด clone ClickHouse"),
-      setupItem("service", "log_level", false, "Log level"),
-      setupItem("service", "jwt_secret_key", true, "JWT Secret Key"),
-      setupItem("service", "dev_api_mode", false, "Development API mode"),
-      setupItem("service", "service_port", false, "Service port"),
-      setupItem("service", "host_api", false, "Host API"),
+      setupItem("service", "enablekafka", false, "เปิด/ปิด Kafka"),
+      setupItem("service", "kafkaconsumergroupversion", false, "Kafka consumer group version"),
+      setupItem("service", "enablecloneclickhouse", false, "เปิด/ปิด clone ClickHouse"),
+      setupItem("service", "loglevel", false, "Log level"),
+      setupItem("service", "jwtsecretkey", true, "JWT Secret Key"),
+      setupItem("service", "devapimode", false, "Development API mode"),
+      setupItem("service", "serviceport", false, "Service port"),
+      setupItem("service", "hostapi", false, "Host API"),
       setupItem("service", "mode", false, "Runtime mode"),
-      setupItem("service", "http_cors", false, "HTTP CORS"),
-      setupItem("service", "cors_allowed_origins", false, "CORS allowed origins"),
-      setupItem("service", "firebase_project_id", false, "Firebase project id"),
+      setupItem("service", "httpcors", false, "HTTP CORS"),
+      setupItem("service", "corsallowedorigins", false, "CORS allowed origins"),
+      setupItem("service", "firebaseprojectid", false, "Firebase project id"),
     ],
   },
   {
@@ -121,29 +121,29 @@ export const SETUP_CATEGORY_DEFS: CategoryDef[] = [
     title: "Integrations",
     description: "AI provider, object storage และ external services",
     items: [
-      setupItem("integrations", "ai_provider", false, "AI provider priority"),
-      setupItem("integrations", "openrouter_api_key", true, "OpenRouter API Key"),
-      setupItem("integrations", "openrouter_model", false, "OpenRouter model"),
-      setupItem("integrations", "groq_api_key", true, "Groq API Key"),
-      setupItem("integrations", "groq_model", false, "Groq model"),
-      setupItem("integrations", "deepseek_api_key", true, "DeepSeek API Key"),
-      setupItem("integrations", "deepseek_model", false, "DeepSeek model"),
-      setupItem("integrations", "gemini_api_key", true, "Google Gemini API Key"),
-      setupItem("integrations", "gemini_model", false, "Gemini model"),
-      setupItem("integrations", "r2_account_id", false, "Cloudflare R2 Account ID"),
-      setupItem("integrations", "r2_access_key_id", true, "Cloudflare R2 Access Key"),
-      setupItem("integrations", "r2_secret_access_key", true, "Cloudflare R2 Secret Key"),
-      setupItem("integrations", "r2_bucket_name", false, "Cloudflare R2 Bucket"),
-      setupItem("integrations", "s3_endpoint", false, "S3 endpoint"),
-      setupItem("integrations", "s3_public_endpoint", false, "S3 public endpoint"),
-      setupItem("integrations", "s3_access_key_id", true, "S3 access key"),
-      setupItem("integrations", "s3_secret_access_key", true, "S3 secret key"),
-      setupItem("integrations", "s3_bucket_name", false, "S3 bucket"),
-      setupItem("integrations", "thunder_api_key", true, "Thunder API Key"),
-      setupItem("integrations", "brevo_api_key", true, "Brevo API Key"),
-      setupItem("integrations", "brevo_from_email", false, "Brevo sender email"),
-      setupItem("integrations", "brevo_from_name", false, "Brevo sender name"),
-      setupItem("integrations", "bcweaviate_url", false, "BC Ai Account Weaviate URL"),
+      setupItem("integrations", "aiprovider", false, "AI provider priority"),
+      setupItem("integrations", "openrouterapikey", true, "OpenRouter API Key"),
+      setupItem("integrations", "openroutermodel", false, "OpenRouter model"),
+      setupItem("integrations", "groqapikey", true, "Groq API Key"),
+      setupItem("integrations", "groqmodel", false, "Groq model"),
+      setupItem("integrations", "deepseekapikey", true, "DeepSeek API Key"),
+      setupItem("integrations", "deepseekmodel", false, "DeepSeek model"),
+      setupItem("integrations", "geminiapikey", true, "Google Gemini API Key"),
+      setupItem("integrations", "geminimodel", false, "Gemini model"),
+      setupItem("integrations", "r2accountid", false, "Cloudflare R2 Account ID"),
+      setupItem("integrations", "r2accesskeyid", true, "Cloudflare R2 Access Key"),
+      setupItem("integrations", "r2secretaccesskey", true, "Cloudflare R2 Secret Key"),
+      setupItem("integrations", "r2bucketname", false, "Cloudflare R2 Bucket"),
+      setupItem("integrations", "s3endpoint", false, "S3 endpoint"),
+      setupItem("integrations", "s3publicendpoint", false, "S3 public endpoint"),
+      setupItem("integrations", "s3accesskeyid", true, "S3 access key"),
+      setupItem("integrations", "s3secretaccesskey", true, "S3 secret key"),
+      setupItem("integrations", "s3bucketname", false, "S3 bucket"),
+      setupItem("integrations", "thunderapikey", true, "Thunder API Key"),
+      setupItem("integrations", "brevoapikey", true, "Brevo API Key"),
+      setupItem("integrations", "brevofromemail", false, "Brevo sender email"),
+      setupItem("integrations", "brevofromname", false, "Brevo sender name"),
+      setupItem("integrations", "bcweaviateurl", false, "BC Ai Account Weaviate URL"),
     ],
   },
   {
@@ -151,12 +151,12 @@ export const SETUP_CATEGORY_DEFS: CategoryDef[] = [
     title: "Storage",
     description: "ไฟล์และ object storage",
     items: [
-      setupItem("storage", "data_path", false, "Local data path"),
-      setupItem("storage", "data_uri", false, "Data URI"),
-      setupItem("storage", "azure_account_name", false, "Azure account name"),
-      setupItem("storage", "azure_account_key", true, "Azure account key"),
-      setupItem("storage", "azure_container_name", false, "Azure container"),
-      setupItem("storage", "azure_tenant_id", false, "Azure tenant id"),
+      setupItem("storage", "datapath", false, "Local data path"),
+      setupItem("storage", "datauri", false, "Data URI"),
+      setupItem("storage", "azureaccountname", false, "Azure account name"),
+      setupItem("storage", "azureaccountkey", true, "Azure account key"),
+      setupItem("storage", "azurecontainername", false, "Azure container"),
+      setupItem("storage", "azuretenantid", false, "Azure tenant id"),
     ],
   },
 ];
@@ -195,7 +195,7 @@ export const AI_PROVIDERS: AIProvider[] = [
     id: "deepseek",
     name: "DeepSeek",
     badge: "ราคาถูก",
-    registerUrl: "https://platform.deepseek.com/api_keys",
+    registerUrl: "https://platform.deepseek.com/apikeys",
     description: "คุณภาพสูง ราคาประหยัด",
     freeModels: [],
     paidModels: ["deepseek-chat", "deepseek-reasoner"],
@@ -212,56 +212,56 @@ export const AI_PROVIDERS: AIProvider[] = [
 ];
 
 export const fieldLabels: Record<string, string> = {
-  ai_provider: "AI Provider",
-  azure_account_key: "Azure Account Key",
-  azure_account_name: "Azure Account Name",
-  azure_container_name: "Azure Container",
-  azure_tenant_id: "Azure Tenant ID",
-  bcweaviate_url: "BC Ai Account Weaviate URL",
-  brevo_api_key: "Brevo API Key",
-  brevo_from_email: "Brevo From Email",
-  brevo_from_name: "Brevo From Name",
-  cors_allowed_origins: "CORS Allowed Origins",
+  aiprovider: "AI Provider",
+  azureaccountkey: "Azure Account Key",
+  azureaccountname: "Azure Account Name",
+  azurecontainername: "Azure Container",
+  azuretenantid: "Azure Tenant ID",
+  bcweaviateurl: "BC Ai Account Weaviate URL",
+  brevoapikey: "Brevo API Key",
+  brevofromemail: "Brevo From Email",
+  brevofromname: "Brevo From Name",
+  corsallowedorigins: "CORS Allowed Origins",
   database: "Database",
-  database_name: "Database Name",
-  data_path: "Data Path",
-  data_uri: "Data URI",
-  db_name: "Database Name",
-  deepseek_api_key: "DeepSeek API Key",
-  deepseek_model: "DeepSeek Model",
-  dev_api_mode: "Dev API Mode",
-  enable_clone_clickhouse: "Enable Clone ClickHouse",
-  enable_kafka: "Enable Kafka",
-  firebase_project_id: "Firebase Project ID",
-  gemini_api_key: "Gemini API Key",
-  gemini_model: "Gemini Model",
-  groq_api_key: "Groq API Key",
-  groq_model: "Groq Model",
+  databasename: "Database Name",
+  datapath: "Data Path",
+  datauri: "Data URI",
+  dbname: "Database Name",
+  deepseekapikey: "DeepSeek API Key",
+  deepseekmodel: "DeepSeek Model",
+  devapimode: "Dev API Mode",
+  enablecloneclickhouse: "Enable Clone ClickHouse",
+  enablekafka: "Enable Kafka",
+  firebaseprojectid: "Firebase Project ID",
+  geminiapikey: "Gemini API Key",
+  geminimodel: "Gemini Model",
+  groqapikey: "Groq API Key",
+  groqmodel: "Groq Model",
   host: "Host",
-  host_api: "Host API",
-  http_cors: "HTTP CORS",
-  jwt_secret_key: "JWT Secret Key",
-  kafka_consumer_group_version: "Kafka Consumer Group Version",
-  logger_level: "Logger Level",
-  log_level: "Log Level",
+  hostapi: "Host API",
+  httpcors: "HTTP CORS",
+  jwtsecretkey: "JWT Secret Key",
+  kafkaconsumergroupversion: "Kafka Consumer Group Version",
+  loggerlevel: "Logger Level",
+  loglevel: "Log Level",
   mode: "Mode",
-  openrouter_api_key: "OpenRouter API Key",
-  openrouter_model: "OpenRouter Model",
+  openrouterapikey: "OpenRouter API Key",
+  openroutermodel: "OpenRouter Model",
   password: "Password",
   port: "Port",
-  r2_access_key_id: "R2 Access Key",
-  r2_account_id: "R2 Account ID",
-  r2_bucket_name: "R2 Bucket",
-  r2_secret_access_key: "R2 Secret Key",
-  s3_access_key_id: "S3 Access Key",
-  s3_bucket_name: "S3 Bucket",
-  s3_endpoint: "S3 Endpoint",
-  s3_public_endpoint: "S3 Public Endpoint",
-  s3_secret_access_key: "S3 Secret Key",
-  server_url: "Server URL",
-  service_port: "Service Port",
-  ssl_mode: "SSL Mode",
-  thunder_api_key: "Thunder API Key",
+  r2accesskeyid: "R2 Access Key",
+  r2accountid: "R2 Account ID",
+  r2bucketname: "R2 Bucket",
+  r2secretaccesskey: "R2 Secret Key",
+  s3accesskeyid: "S3 Access Key",
+  s3bucketname: "S3 Bucket",
+  s3endpoint: "S3 Endpoint",
+  s3publicendpoint: "S3 Public Endpoint",
+  s3secretaccesskey: "S3 Secret Key",
+  serverurl: "Server URL",
+  serviceport: "Service Port",
+  sslmode: "SSL Mode",
+  thunderapikey: "Thunder API Key",
   timezone: "Timezone",
   uri: "URI",
   user: "User",
@@ -269,20 +269,20 @@ export const fieldLabels: Record<string, string> = {
 };
 
 export const booleanFieldKeys = new Set([
-  "enable_kafka",
-  "enable_clone_clickhouse",
-  "dev_api_mode",
+  "enablekafka",
+  "enablecloneclickhouse",
+  "devapimode",
 ]);
 
 export const radioFieldOptions: Record<string, FieldOption[]> = {
-  logger_level: logLevelOptions(),
-  log_level: logLevelOptions(),
+  loggerlevel: logLevelOptions(),
+  loglevel: logLevelOptions(),
   mode: [
     { value: "development", label: "Development", description: "เปิด debug behavior ตาม backend ConfigMode" },
     { value: "test", label: "Test", description: "ใช้กับ test/runtime เฉพาะกิจ" },
     { value: "production", label: "Production", description: "โหมด production" },
   ],
-  ssl_mode: [
+  sslmode: [
     { value: "disable", label: "Disable", description: "ไม่ใช้ SSL" },
     { value: "require", label: "Require", description: "บังคับใช้ SSL" },
     { value: "verify-ca", label: "Verify CA", description: "ตรวจ CA certificate" },
@@ -294,7 +294,7 @@ type BackendConfigEntry = {
   category?: unknown;
   key?: unknown;
   value?: unknown;
-  is_secret?: unknown;
+  issecret?: unknown;
   description?: unknown;
 };
 
@@ -429,14 +429,14 @@ export function validateConfig(configMap: ConfigMap): string[] {
       const value = item.value.trim();
       if (!value || value === "***") continue;
 
-      if (item.key === "port" || item.key === "service_port") {
+      if (item.key === "port" || item.key === "serviceport") {
         const port = Number(value);
         if (!Number.isInteger(port) || port < 1 || port > 65535) {
           errors.push(`${category}.${item.key}: port ไม่ถูกต้อง (${value})`);
         }
       }
 
-      if ((item.key === "uri" || item.key === "server_url") && !looksLikeUriOrHostPort(value)) {
+      if ((item.key === "uri" || item.key === "serverurl") && !looksLikeUriOrHostPort(value)) {
         errors.push(`${category}.${item.key}: URL ไม่ถูกต้อง (${value})`);
       }
     }
@@ -487,11 +487,11 @@ export function buildConnectionPayload(category: string, items: ConfigItem[], se
         payload.password2 = value;
         break;
       case "database":
-      case "database_name":
-      case "db_name":
+      case "databasename":
+      case "dbname":
         payload.database = value;
         break;
-      case "server_url": {
+      case "serverurl": {
         const hostPort = splitHostPort(value);
         payload.host = hostPort.host;
         if (hostPort.port) payload.port = hostPort.port;
@@ -559,13 +559,13 @@ function parseBackendConfigEntry(rawItem: unknown): ConfigItem | null {
     category,
     key,
     value: typeof item.value === "string" ? item.value : String(item.value ?? ""),
-    isSecret: item.is_secret === true || isSecretKey(key),
+    isSecret: item.issecret === true || isSecretKey(key),
     description: typeof item.description === "string" ? item.description : "",
   };
 }
 
 function remapLegacyConfigItem(item: ConfigItem): ConfigItem {
-  if (item.category === "mongodb" && item.key === "database_name") {
+  if (item.category === "mongodb" && item.key === "databasename") {
     return { ...item, key: "database" };
   }
   return item;
@@ -575,7 +575,7 @@ function normalizeHostPort(configMap: ConfigMap) {
   for (const items of Object.values(configMap)) {
     const hostItem = items.find((item) => item.key === "host");
     const portItem = items.find((item) => item.key === "port");
-    const serverUrlItem = items.find((item) => item.key === "server_url");
+    const serverUrlItem = items.find((item) => item.key === "serverurl");
 
     if (serverUrlItem && hostItem && portItem && serverUrlItem.value && !hostItem.value) {
       const hostPort = splitHostPort(serverUrlItem.value);
@@ -624,9 +624,9 @@ function isSecretKey(key: string): boolean {
   return (
     normalized.includes("password") ||
     normalized.includes("secret") ||
-    normalized.includes("api_key") ||
-    normalized.includes("account_key") ||
-    normalized.includes("access_key")
+    normalized.includes("apikey") ||
+    normalized.includes("accountkey") ||
+    normalized.includes("accesskey")
   );
 }
 

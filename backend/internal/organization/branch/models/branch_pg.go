@@ -9,10 +9,10 @@ import (
 )
 
 type BranchPg struct {
-	HoldingCode string          `json:"holdingcode" gorm:"column:holdingcode;index;uniqueIndex:idx_branch_shop_company_code,where:deletedat IS NULL"`
+	HoldingCode string          `json:"holdingcode" gorm:"column:holdingcode;index;uniqueIndex:idxbranchshopcompanycode,where:deletedat IS NULL"`
 	GuidFixed   string          `json:"guidfixed" gorm:"column:guidfixed;primaryKey"`
-	CompanyGuid string          `json:"companyguid" gorm:"column:companyguid;index;uniqueIndex:idx_branch_shop_company_code,where:deletedat IS NULL"`
-	Code        string          `json:"code" gorm:"column:code;index;uniqueIndex:idx_branch_shop_company_code,where:deletedat IS NULL"`
+	CompanyGuid string          `json:"companyguid" gorm:"column:companyguid;index;uniqueIndex:idxbranchshopcompanycode,where:deletedat IS NULL"`
+	Code        string          `json:"code" gorm:"column:code;index;uniqueIndex:idxbranchshopcompanycode,where:deletedat IS NULL"`
 	Names       pkgModels.JSONB `json:"names" gorm:"column:names;type:jsonb"`
 	IsActive    bool            `json:"isactive" gorm:"column:isactive;default:true"`
 	CreatedAt   time.Time       `json:"createdat"`

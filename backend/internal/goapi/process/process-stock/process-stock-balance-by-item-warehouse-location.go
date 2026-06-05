@@ -53,7 +53,7 @@ func ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(holdingCode 
 		var args []any
 
 		query = `
-		WITH barcode_list AS (
+		WITH barcodelist AS (
 			SELECT
 				p.itemcode,
 				STRING_AGG(DISTINCT p.barcode, ', ') AS barcodelist
@@ -63,7 +63,7 @@ func ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(holdingCode 
 			{OTHER_CONDITION}
 			GROUP BY p.itemcode
 		),
-		item_names AS (
+		itemnames AS (
 			SELECT
 				p.itemcode,
 				STRING_AGG(DISTINCT p.name0, ', ') AS itemname
@@ -73,7 +73,7 @@ func ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(holdingCode 
 			{OTHER_CONDITION}
 			GROUP BY p.itemcode
 		),
-		auto_packing AS (
+		autopacking AS (
 			SELECT
 				p.itemcode,
 				COUNT(DISTINCT CASE
@@ -94,10 +94,10 @@ func ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(holdingCode 
 			MAX(p.unitcode) AS unitcode,
 			MAX(p.unitname) AS unitname,
 			COALESCE(MAX(ap.countpacking), 0) AS countpacking
-		FROM barcode_list b
-		JOIN item_names n ON b.itemcode = n.itemcode
+		FROM barcodelist b
+		JOIN itemnames n ON b.itemcode = n.itemcode
 		JOIN productbarcode p ON b.itemcode = p.itemcode
-		LEFT JOIN auto_packing ap ON b.itemcode = ap.itemcode
+		LEFT JOIN autopacking ap ON b.itemcode = ap.itemcode
 		WHERE p.barcoderefunitstand = 1
 		AND p.barcoderefunitdivide = 1
 		GROUP BY b.itemcode, b.barcodelist, n.itemname
@@ -142,10 +142,10 @@ func ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(holdingCode 
 
 			itemCodeMainList = append(itemCodeMainList, models.ProductBalanceByCodeStruct{
 				ItemCode:      mypg.GetStringValue(row, "itemcode"),
-				ItemName:      mypg.GetStringValue(row, "item_name"),
+				ItemName:      mypg.GetStringValue(row, "itemname"),
 				BarcodeList:   mypg.GetStringValue(row, "barcodelist"),
 				UnitCode:      mypg.GetStringValue(row, "unitcode"),
-				UnitName:      mypg.GetStringValue(row, "unit_name"),
+				UnitName:      mypg.GetStringValue(row, "unitname"),
 				BalanceQty:    0,
 				AverageCost:   0,
 				BalanceAmount: 0,
@@ -173,8 +173,8 @@ func ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(holdingCode 
 						lc.itemcode,
 						lc.whcode,
 						lc.averagecost,
-						sb.total_balance AS balanceqty,
-						sb.total_balance * lc.averagecost as balanceamount
+						sb.totalbalance AS balanceqty,
+						sb.totalbalance * lc.averagecost as balanceamount
 					FROM
 						(
 							SELECT
@@ -192,7 +192,7 @@ func ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(holdingCode 
 							SELECT
 								itemcode,
 								whcode,
-								SUM(totalqty * (unitstand / NULLIF(unitdivide, 0))) AS total_balance
+								SUM(totalqty * (unitstand / NULLIF(unitdivide, 0))) AS totalbalance
 							FROM docdetail
 							WHERE
 								` + dateCondition + `
@@ -216,7 +216,7 @@ func ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(holdingCode 
 				itemCode := mypg.GetStringValue(row, "itemcode")
 				whcode := mypg.GetStringValue(row, "whcode")
 				averagecost := mypg.GetFloat64Value(row, "averagecost")
-				balanceqty := mypg.GetFloat64Value(row, "balance_qty")
+				balanceqty := mypg.GetFloat64Value(row, "balanceqty")
 				balanceamount := mypg.GetFloat64Value(row, "balanceamount")
 
 				found := false
@@ -259,7 +259,7 @@ func ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(holdingCode 
 						lc.itemcode,
 						lc.whcode,
 						lc.locationcode,
-						sb.total_balance AS balanceqty
+						sb.totalbalance AS balanceqty
 					FROM
 						(
 							SELECT
@@ -277,7 +277,7 @@ func ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(holdingCode 
 								itemcode,
 								whcode,
 								locationcode,
-								SUM(totalqty * (unitstand / NULLIF(unitdivide, 0))) AS total_balance
+								SUM(totalqty * (unitstand / NULLIF(unitdivide, 0))) AS totalbalance
 							FROM docdetail
 							WHERE
 								` + dateCondition2 + `
@@ -301,7 +301,7 @@ func ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(holdingCode 
 				itemcode := mypg.GetStringValue(row, "itemcode")
 				whcode := mypg.GetStringValue(row, "whcode")
 				locationcode := mypg.GetStringValue(row, "locationcode")
-				balanceqty := mypg.GetFloat64Value(row, "balance_qty")
+				balanceqty := mypg.GetFloat64Value(row, "balanceqty")
 
 				// ค้นหาคลังสินค้า + location
 				found := false
@@ -378,7 +378,7 @@ func ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(holdingCode 
 		for _, row := range rows {
 			itemCode := mypg.GetStringValue(row, "itemcode")
 			averagecost := mypg.GetFloat64Value(row, "averagecost")
-			balanceqty := mypg.GetFloat64Value(row, "balance_qty")
+			balanceqty := mypg.GetFloat64Value(row, "balanceqty")
 			balanceamount := mypg.GetFloat64Value(row, "balanceamount")
 
 			index := -1
@@ -537,7 +537,7 @@ func ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(holdingCode 
 	logger.Info("Prepared %d rows for bulk insert (elapsed=%s)", totalLine, time.Since(overallStart))
 
 	// Use bulk insert for PostgreSQL
-	columns := []string{"guid", "docdatetime", "line_number", "datajson"}
+	columns := []string{"guid", "docdatetime", "linenumber", "datajson"}
 	var records [][]any
 
 	bulkStart := time.Now()

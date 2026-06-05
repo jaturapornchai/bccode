@@ -63,7 +63,7 @@ export function resolveWorkspaceDateTimeDisplayOptions(
 ): Required<Pick<DateTimeDisplayOptions, "language" | "yearType" | "timeZone">> {
   const branch = workspace?.branch ?? null;
   const shopInfo = isRecord(workspace?.shopInfo) ? workspace.shopInfo : {};
-  const branchYear = stringValue(branch?.year_type).toLowerCase();
+  const branchYear = stringValue(branch?.yeartype).toLowerCase();
   const useBuddhistCalendar = booleanLikeValue(getByPath(shopInfo, "settings.usebuddhistcalendar"));
   return {
     language,

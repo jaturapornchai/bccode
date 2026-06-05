@@ -51,7 +51,7 @@ func validateRFQHeader(rfq *models.RFQ, trans *transmodels.Transaction, result *
 
 	// vattype
 	if !validVatTypes[trans.TransactionHeader.VatType] {
-		result.AddErrorf("vat_type", "INVALID_VALUE",
+		result.AddErrorf("vattype", "INVALID_VALUE",
 			"ประเภทภาษี (vattype) ไม่ถูกต้อง: %d — ค่าที่รองรับ: 0, 1, 2, 3",
 			"Invalid VAT type: %d — allowed values: 0, 1, 2, 3.",
 			trans.TransactionHeader.VatType, trans.TransactionHeader.VatType)
@@ -95,7 +95,7 @@ func checkDetailNaN(index int, itemLabel string, detail *transmodels.Detail, res
 	fields := []fieldCheck{
 		{"qty", detail.Qty},
 		{"price", detail.Price},
-		{"sum_amount", detail.SumAmount},
+		{"sumamount", detail.SumAmount},
 	}
 	for _, f := range fields {
 		if math.IsNaN(f.value) || math.IsInf(f.value, 0) {
@@ -126,7 +126,7 @@ func validateMultiCurrency(trans *transmodels.Transaction, result *ValidationRes
 		{"exchange_rate", header.ExchangeRate},
 		{"totalvalue", header.TotalValue},
 		{"totalaftervat", header.TotalAfterVat},
-		{"total_amount", header.TotalAmount},
+		{"totalamount", header.TotalAmount},
 	}
 	for _, f := range headerFields {
 		if math.IsNaN(f.value) || math.IsInf(f.value, 0) {

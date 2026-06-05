@@ -17,17 +17,17 @@ export type ShopListItem = {
   last_accessed_at?: string;
   createdby?: string;
   is_creator?: boolean;
-  is_access_disabled?: boolean;
-  active_languages?: string[];
+  isaccessdisabled?: boolean;
+  activelanguages?: string[];
   language?: string;
-  languageconfigs?: Array<LocalizedName & { codetranslator?: string; is_use?: boolean; isdefault?: boolean }>;
-  base_currency?: string;
+  languageconfigs?: Array<LocalizedName & { codetranslator?: string; isuse?: boolean; isdefault?: boolean }>;
+  basecurrency?: string;
   currencies?: string[];
-  date_format?: string;
+  dateformat?: string;
   timezone?: string;
-  timezone_offset?: string;
-  timezone_label?: string;
-  year_type?: string;
+  timezoneoffset?: string;
+  timezonelabel?: string;
+  yeartype?: string;
   usebuddhistcalendar?: boolean;
 };
 
@@ -37,12 +37,12 @@ export type BranchListItem = {
   code?: string;
   names?: LocalizedName[];
   companynames?: LocalizedName[];
-  base_currency?: string;
+  basecurrency?: string;
   language?: string;
   timezone?: string;
-  timezone_offset?: string;
-  timezone_label?: string;
-  year_type?: string;
+  timezoneoffset?: string;
+  timezonelabel?: string;
+  yeartype?: string;
 };
 
 export type WorkspaceCompany = {

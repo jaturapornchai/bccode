@@ -31,10 +31,10 @@ func InsertDocListToClickHouse(ctx context.Context, holdingCode string, data []m
 				totalamount, paycashamount, paycashchange, paycashbalance,
 				roundamount, checksum, slipurl, salechannelcode, deliveryamount,
 				guidfixed, iscancel, cancelreason, guidpos, guidbranch, transflag,
-				currency, currency_symbol,
-				doc_currency, doc_currency_symbol,
-				exchange_rate, totalamount_doc,
-				isdelete, approval_status, custcode
+				currency, currencysymbol,
+				doccurrency, doccurrencysymbol,
+				exchangerate, totalamountdoc,
+				isdelete, approvalstatus, custcode
 			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`, TableName("doc")))
 		if err == nil {
@@ -81,7 +81,7 @@ func InsertDocListToClickHouse(ctx context.Context, holdingCode string, data []m
 		insertBatch, err := connClickHouse.PrepareBatch(ctx, fmt.Sprintf(`
 			INSERT INTO %s (
 				holdingcode, branchid, docdatetime, perioddatetime, amount,
-				description, docno, trans_flag, guidfixed, guidbranch
+				description, docno, transflag, guidfixed, guidbranch
 			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`, TableName("docpayment")))
 		if err == nil {
@@ -149,11 +149,11 @@ func InsertDocDetailListToClickHouse(ctx context.Context, holdingCode string, da
 	insertBatch, err := connClickHouse.PrepareBatch(ctx, fmt.Sprintf(`
 		INSERT INTO %s (
 			holdingcode, branchid, docno, docdatetime, perioddatetime,
-			line_number, barcode, barcodemain, qty, price, sumamount, discountamount,
+			linenumber, barcode, barcodemain, qty, price, sumamount, discountamount,
 			itemname, itemnames, refguid, sumamountchoice, ischoice, guidfixed, guidpos,
 			guidbranch, transflag, itemcode, unitcode, unitstand, unitdivide, calcflag, calcseq, iscalcstock,
-			price_doc, sumamount_doc,
-			discountamount_doc, priceexcludevat_doc, sumamountexcludevat_doc, totalvaluevat_doc
+			pricedoc, sumamountdoc,
+			discountamountdoc, priceexcludevatdoc, sumamountexcludevatdoc, totalvaluevatdoc
 		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, TableName("docdetail")))
 	if err != nil {

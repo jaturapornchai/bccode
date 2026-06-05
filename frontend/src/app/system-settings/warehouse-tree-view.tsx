@@ -90,11 +90,11 @@ interface WarehouseShelf {
   code?: string;
   name?: string;
   productitems?: unknown[];
-  max_weight?: number;
+  maxweight?: number;
   width?: number;
   length?: number;
   height?: number;
-  suitable_product_types?: string;
+  suitableproducttypes?: string;
   [key: string]: unknown;
 }
 
@@ -102,11 +102,11 @@ interface WarehouseLocation {
   code?: string;
   names?: LocalizedNames;
   shelf?: WarehouseShelf[];
-  max_weight?: number;
+  maxweight?: number;
   width?: number;
   length?: number;
   height?: number;
-  suitable_product_types?: string;
+  suitableproducttypes?: string;
   [key: string]: unknown;
 }
 
@@ -132,7 +132,7 @@ interface CompanyRecord {
   guidfixed?: string;
   code?: string;
   names?: LocalizedNames;
-  tax_id?: string;
+  taxid?: string;
   isactive?: boolean;
 }
 
@@ -215,7 +215,7 @@ export function WarehouseTreeView({
           names: first.names || [],
         },
       });
-      setFormType("edit_warehouse");
+      setFormType("editwarehouse");
     }
   }, [records, selectedNode]);
 
@@ -224,19 +224,19 @@ export function WarehouseTreeView({
 
   // Edit / Form state on the right pane
   const [formType, setFormType] = useState<
-    "create_warehouse" | "edit_warehouse" | "create_location" | "edit_location" | "create_shelf" | "edit_shelf" | "bulk_shelf" | null
-  >("edit_warehouse");
+    "createwarehouse" | "editwarehouse" | "createlocation" | "editlocation" | "createshelf" | "editshelf" | "bulkshelf" | null
+  >("editwarehouse");
 
   // Local state for the inline form fields
   const [formFields, setFormFields] = useState<{
     code: string;
     name: string;
     names: Record<string, string>; // Multilingual names
-    max_weight: string;
+    maxweight: string;
     width: string;
     length: string;
     height: string;
-    suitable_product_types: string;
+    suitableproducttypes: string;
     latitude: string;
     longitude: string;
     companyguids?: string[];
@@ -250,11 +250,11 @@ export function WarehouseTreeView({
     code: "",
     name: "",
     names: {},
-    max_weight: "",
+    maxweight: "",
     width: "",
     length: "",
     height: "",
-    suitable_product_types: "",
+    suitableproducttypes: "",
     latitude: "",
     longitude: "",
     companyguids: [],
@@ -266,7 +266,7 @@ export function WarehouseTreeView({
 
   // Helper to sync Form state when selectedNode or formType changes
   useEffect(() => {
-    if (formType === "create_warehouse") {
+    if (formType === "createwarehouse") {
       setFormError("");
       const namesMap: Record<string, string> = {};
       editorLanguages.forEach((lang) => {
@@ -276,11 +276,11 @@ export function WarehouseTreeView({
         code: "",
         name: "",
         names: namesMap,
-        max_weight: "",
+        maxweight: "",
         width: "",
         length: "",
         height: "",
-        suitable_product_types: "",
+        suitableproducttypes: "",
         latitude: "",
         longitude: "",
         companyguids: [],
@@ -294,7 +294,7 @@ export function WarehouseTreeView({
     const warehouseId = selectedNode.warehouseId;
     const warehouse = records.find((r) => r.guidfixed === warehouseId) || records[0];
 
-    if (formType === "edit_warehouse") {
+    if (formType === "editwarehouse") {
       const namesMap: Record<string, string> = {};
       editorLanguages.forEach((lang) => {
         let val = "";
@@ -311,16 +311,16 @@ export function WarehouseTreeView({
         code: warehouse?.code || "",
         name: "",
         names: namesMap,
-        max_weight: "",
+        maxweight: "",
         width: "",
         length: "",
         height: "",
-        suitable_product_types: "",
+        suitableproducttypes: "",
         latitude: warehouse?.latitude !== undefined && warehouse?.latitude !== 0 ? String(warehouse.latitude) : "",
         longitude: warehouse?.longitude !== undefined && warehouse?.longitude !== 0 ? String(warehouse.longitude) : "",
         companyguids: (warehouse as any)?.companyguids || [],
       });
-    } else if (formType === "edit_location" && selectedNode.type === "location") {
+    } else if (formType === "editlocation" && selectedNode.type === "location") {
       const loc = selectedNode.data as WarehouseLocation;
       const namesMap: Record<string, string> = {};
       editorLanguages.forEach((lang) => {
@@ -337,15 +337,15 @@ export function WarehouseTreeView({
         code: loc.code || "",
         name: "",
         names: namesMap,
-        max_weight: loc.max_weight !== undefined && loc.max_weight !== 0 ? String(loc.max_weight) : "",
+        maxweight: loc.maxweight !== undefined && loc.maxweight !== 0 ? String(loc.maxweight) : "",
         width: loc.width !== undefined && loc.width !== 0 ? String(loc.width) : "",
         length: loc.length !== undefined && loc.length !== 0 ? String(loc.length) : "",
         height: loc.height !== undefined && loc.height !== 0 ? String(loc.height) : "",
-        suitable_product_types: loc.suitable_product_types || "",
+        suitableproducttypes: loc.suitableproducttypes || "",
         latitude: "",
         longitude: "",
       });
-    } else if (formType === "create_location") {
+    } else if (formType === "createlocation") {
       const namesMap: Record<string, string> = {};
       editorLanguages.forEach((lang) => {
         namesMap[lang] = "";
@@ -354,51 +354,51 @@ export function WarehouseTreeView({
         code: "",
         name: "",
         names: namesMap,
-        max_weight: "",
+        maxweight: "",
         width: "",
         length: "",
         height: "",
-        suitable_product_types: "",
+        suitableproducttypes: "",
         latitude: "",
         longitude: "",
       });
-    } else if (formType === "edit_shelf" && selectedNode.type === "shelf") {
+    } else if (formType === "editshelf" && selectedNode.type === "shelf") {
       const shelf = selectedNode.data as WarehouseShelf;
       setFormFields({
         code: shelf.code || "",
         name: shelf.name || "",
         names: {},
-        max_weight: shelf.max_weight !== undefined && shelf.max_weight !== 0 ? String(shelf.max_weight) : "",
+        maxweight: shelf.maxweight !== undefined && shelf.maxweight !== 0 ? String(shelf.maxweight) : "",
         width: shelf.width !== undefined && shelf.width !== 0 ? String(shelf.width) : "",
         length: shelf.length !== undefined && shelf.length !== 0 ? String(shelf.length) : "",
         height: shelf.height !== undefined && shelf.height !== 0 ? String(shelf.height) : "",
-        suitable_product_types: shelf.suitable_product_types || "",
+        suitableproducttypes: shelf.suitableproducttypes || "",
         latitude: "",
         longitude: "",
       });
-    } else if (formType === "create_shelf") {
+    } else if (formType === "createshelf") {
       setFormFields({
         code: "",
         name: "",
         names: {},
-        max_weight: "",
+        maxweight: "",
         width: "",
         length: "",
         height: "",
-        suitable_product_types: "",
+        suitableproducttypes: "",
         latitude: "",
         longitude: "",
       });
-    } else if (formType === "bulk_shelf") {
+    } else if (formType === "bulkshelf") {
       setFormFields({
         code: "",
         name: "",
         names: {},
-        max_weight: "",
+        maxweight: "",
         width: "",
         length: "",
         height: "",
-        suitable_product_types: "",
+        suitableproducttypes: "",
         latitude: "",
         longitude: "",
         bulkPrefix: "SH-",
@@ -461,7 +461,7 @@ export function WarehouseTreeView({
       };
 
       const response = await fetch(
-        `/api/system-settings/product_warehouse_screen/${targetWarehouse.guidfixed}`,
+        `/api/system-settings/productwarehousescreen/${targetWarehouse.guidfixed}`,
         {
           method: "PUT",
           headers: {
@@ -492,15 +492,15 @@ export function WarehouseTreeView({
     if (!workspace) return;
     const warehouseId = selectedNode?.warehouseId;
     const warehouse = records.find((r) => r.guidfixed === warehouseId) || records[0];
-    if (!warehouse && formType !== "create_warehouse") return;
+    if (!warehouse && formType !== "createwarehouse") return;
 
     const code = formFields.code.trim();
-    if (formType !== "bulk_shelf" && !code) {
+    if (formType !== "bulkshelf" && !code) {
       setFormError(language === "th" ? "กรุณากรอกรหัส" : "Code is required");
       return;
     }
 
-    if (formType === "create_warehouse" || formType === "edit_warehouse") {
+    if (formType === "createwarehouse" || formType === "editwarehouse") {
       // Validate names
       const hasName = Object.values(formFields.names).some((n) => n.trim());
       if (!hasName) {
@@ -523,7 +523,7 @@ export function WarehouseTreeView({
         const latVal = parseFloat(formFields.latitude) || 0;
         const lngVal = parseFloat(formFields.longitude) || 0;
 
-        const isCreate = formType === "create_warehouse";
+        const isCreate = formType === "createwarehouse";
         const payload = {
           code,
           names: namesArray,
@@ -551,13 +551,13 @@ export function WarehouseTreeView({
         if (!response.ok) throw new Error(data.message || "Failed to save warehouse");
 
         if (onRefresh) onRefresh();
-        setFormType("edit_warehouse");
+        setFormType("editwarehouse");
       } catch (err: unknown) {
         setFormError(errorMessage(err, "Error saving warehouse"));
       } finally {
         setIsSavingLocal(false);
       }
-    } else if (formType === "create_location" || formType === "edit_location") {
+    } else if (formType === "createlocation" || formType === "editlocation") {
       // Validate names
       const hasName = Object.values(formFields.names).some((n) => n.trim());
       if (!hasName) {
@@ -569,7 +569,7 @@ export function WarehouseTreeView({
 
       // Check duplicates
       const isDuplicate = locationsList.some((loc, idx) => {
-        if (formType === "edit_location" && selectedNode?.locIndex === idx) return false;
+        if (formType === "editlocation" && selectedNode?.locIndex === idx) return false;
         return loc.code?.toLowerCase() === code.toLowerCase();
       });
 
@@ -587,41 +587,41 @@ export function WarehouseTreeView({
         }))
         .filter((item) => item.name !== "");
 
-      const maxWeight = parseFloat(formFields.max_weight) || 0;
+      const maxWeight = parseFloat(formFields.maxweight) || 0;
       const w = parseFloat(formFields.width) || 0;
       const l = parseFloat(formFields.length) || 0;
       const h = parseFloat(formFields.height) || 0;
-      const suitable = formFields.suitable_product_types.trim();
+      const suitable = formFields.suitableproducttypes.trim();
 
       const updated = [...locationsList];
-      if (formType === "create_location") {
+      if (formType === "createlocation") {
         updated.push({
           code,
           names: namesArray,
           shelf: [],
-          max_weight: maxWeight,
+          maxweight: maxWeight,
           width: w,
           length: l,
           height: h,
-          suitable_product_types: suitable,
+          suitableproducttypes: suitable,
         });
-      } else if (formType === "edit_location" && selectedNode?.locIndex !== undefined) {
+      } else if (formType === "editlocation" && selectedNode?.locIndex !== undefined) {
         updated[selectedNode.locIndex] = {
           ...updated[selectedNode.locIndex],
           code,
           names: namesArray,
-          max_weight: maxWeight,
+          maxweight: maxWeight,
           width: w,
           length: l,
           height: h,
-          suitable_product_types: suitable,
+          suitableproducttypes: suitable,
         };
       }
 
       await saveWarehousePayload(warehouse, updated);
       // Reset form to warehouse view
-      setFormType("edit_warehouse");
-    } else if (formType === "create_shelf" || formType === "edit_shelf") {
+      setFormType("editwarehouse");
+    } else if (formType === "createshelf" || formType === "editshelf") {
       const name = formFields.name.trim();
       if (!name) {
         setFormError(language === "th" ? "กรุณากรอกชื่อชั้นวาง" : "Shelf name is required");
@@ -637,7 +637,7 @@ export function WarehouseTreeView({
 
       // Check duplicate
       const isDuplicate = shelves.some((shelf: WarehouseShelf, idx: number) => {
-        if (formType === "edit_shelf" && selectedNode?.shelfIndex === idx) return false;
+        if (formType === "editshelf" && selectedNode?.shelfIndex === idx) return false;
         return shelf.code?.toLowerCase() === code.toLowerCase();
       });
 
@@ -646,34 +646,34 @@ export function WarehouseTreeView({
         return;
       }
 
-      const maxWeight = parseFloat(formFields.max_weight) || 0;
+      const maxWeight = parseFloat(formFields.maxweight) || 0;
       const w = parseFloat(formFields.width) || 0;
       const l = parseFloat(formFields.length) || 0;
       const h = parseFloat(formFields.height) || 0;
-      const suitable = formFields.suitable_product_types.trim();
+      const suitable = formFields.suitableproducttypes.trim();
 
       const updatedShelves = [...shelves];
-      if (formType === "create_shelf") {
+      if (formType === "createshelf") {
         updatedShelves.push({
           code,
           name,
           productitems: [],
-          max_weight: maxWeight,
+          maxweight: maxWeight,
           width: w,
           length: l,
           height: h,
-          suitable_product_types: suitable,
+          suitableproducttypes: suitable,
         });
-      } else if (formType === "edit_shelf" && selectedNode?.shelfIndex !== undefined) {
+      } else if (formType === "editshelf" && selectedNode?.shelfIndex !== undefined) {
         updatedShelves[selectedNode.shelfIndex] = {
           ...updatedShelves[selectedNode.shelfIndex],
           code,
           name,
-          max_weight: maxWeight,
+          maxweight: maxWeight,
           width: w,
           length: l,
           height: h,
-          suitable_product_types: suitable,
+          suitableproducttypes: suitable,
         };
       }
 
@@ -684,8 +684,8 @@ export function WarehouseTreeView({
       };
 
       await saveWarehousePayload(warehouse, updatedLocs);
-      setFormType("edit_warehouse");
-    } else if (formType === "bulk_shelf") {
+      setFormType("editwarehouse");
+    } else if (formType === "bulkshelf") {
       const prefix = formFields.bulkPrefix?.trim() || "";
       const startNum = parseInt(formFields.bulkStartNum || "1");
       const endNum = parseInt(formFields.bulkEndNum || "10");
@@ -713,11 +713,11 @@ export function WarehouseTreeView({
       const shelves = loc.shelf || [];
       const updatedShelves = [...shelves];
 
-      const maxWeight = parseFloat(formFields.max_weight) || 0;
+      const maxWeight = parseFloat(formFields.maxweight) || 0;
       const w = parseFloat(formFields.width) || 0;
       const l = parseFloat(formFields.length) || 0;
       const h = parseFloat(formFields.height) || 0;
-      const suitable = formFields.suitable_product_types.trim();
+      const suitable = formFields.suitableproducttypes.trim();
 
       const duplicates: string[] = [];
 
@@ -739,11 +739,11 @@ export function WarehouseTreeView({
           code: shelfCode,
           name: shelfName,
           productitems: [],
-          max_weight: maxWeight,
+          maxweight: maxWeight,
           width: w,
           length: l,
           height: h,
-          suitable_product_types: suitable,
+          suitableproducttypes: suitable,
         });
       }
 
@@ -759,7 +759,7 @@ export function WarehouseTreeView({
       };
 
       await saveWarehousePayload(warehouse, updatedLocs);
-      setFormType("edit_warehouse");
+      setFormType("editwarehouse");
       if (duplicates.length > 0) {
         alert(
           language === "th"
@@ -842,7 +842,7 @@ export function WarehouseTreeView({
             names: remaining[0].names || [],
           },
         });
-        setFormType("edit_warehouse");
+        setFormType("editwarehouse");
       } else {
         setSelectedNode(null);
         setFormType(null);
@@ -869,7 +869,7 @@ export function WarehouseTreeView({
     if (!confirmed) return;
     const updated = locationsList.filter((_, idx) => idx !== index);
     await saveWarehousePayload(warehouse, updated);
-    setFormType("edit_warehouse");
+    setFormType("editwarehouse");
   };
 
   const handleDeleteShelf = async (warehouseId: string, locIndex: number, shelfIndex: number, e: React.MouseEvent) => {
@@ -894,7 +894,7 @@ export function WarehouseTreeView({
       shelf: updatedShelves,
     };
     await saveWarehousePayload(warehouse, updatedLocs);
-    setFormType("edit_warehouse");
+    setFormType("editwarehouse");
   };
 
   // Filtered Warehouses based on search query
@@ -946,7 +946,7 @@ export function WarehouseTreeView({
             size="sm"
             className="h-8 shrink-0 rounded-lg gap-1.5 bg-primary text-primary-foreground hover:bg-primary/95"
             onClick={() => {
-              setFormType("create_warehouse");
+              setFormType("createwarehouse");
               setSelectedNode({
                 type: "warehouse",
                 warehouseId: "",
@@ -1000,7 +1000,7 @@ export function WarehouseTreeView({
                             names: w.names || [],
                           },
                         });
-                        setFormType("edit_warehouse");
+                        setFormType("editwarehouse");
                       }}
                     >
                       {isWarehouseSelected && (
@@ -1076,7 +1076,7 @@ export function WarehouseTreeView({
                                 names: w.names || [],
                               },
                             });
-                            setFormType("create_location");
+                            setFormType("createlocation");
                             setCollapsedWarehouses((prev) => ({ ...prev, [warehouseId]: false }));
                           }}
                         >
@@ -1098,7 +1098,7 @@ export function WarehouseTreeView({
                                 names: w.names || [],
                               },
                             });
-                            setFormType("edit_warehouse");
+                            setFormType("editwarehouse");
                           }}
                         >
                           <Edit3 className="size-3.5" />
@@ -1145,7 +1145,7 @@ export function WarehouseTreeView({
                                     locIndex: locIdx,
                                     data: loc,
                                   });
-                                  setFormType("edit_location");
+                                  setFormType("editlocation");
                                 }}
                               >
                                 {isLocSelected && (
@@ -1242,7 +1242,7 @@ export function WarehouseTreeView({
                                         locIndex: locIdx,
                                         data: loc,
                                       });
-                                      setFormType("create_shelf");
+                                      setFormType("createshelf");
                                       setCollapsedLocs((prev) => ({ ...prev, [locKey]: false }));
                                     }}
                                   >
@@ -1262,7 +1262,7 @@ export function WarehouseTreeView({
                                         locIndex: locIdx,
                                         data: loc,
                                       });
-                                      setFormType("bulk_shelf");
+                                      setFormType("bulkshelf");
                                       setCollapsedLocs((prev) => ({ ...prev, [locKey]: false }));
                                     }}
                                   >
@@ -1282,7 +1282,7 @@ export function WarehouseTreeView({
                                         locIndex: locIdx,
                                         data: loc,
                                       });
-                                      setFormType("edit_location");
+                                      setFormType("editlocation");
                                     }}
                                   >
                                     <Edit3 className="size-3.5" />
@@ -1327,7 +1327,7 @@ export function WarehouseTreeView({
                                             shelfIndex: shelfIdx,
                                             data: shelf,
                                           });
-                                          setFormType("edit_shelf");
+                                          setFormType("editshelf");
                                         }}
                                       >
                                         {isShelfSelected && (
@@ -1387,7 +1387,7 @@ export function WarehouseTreeView({
                                                 shelfIndex: shelfIdx,
                                                 data: shelf,
                                               });
-                                              setFormType("edit_shelf");
+                                              setFormType("editshelf");
                                             }}
                                           >
                                             <Edit3 className="size-3.5" />
@@ -1425,43 +1425,43 @@ export function WarehouseTreeView({
       <Card className="flex min-h-[360px] flex-col overflow-hidden border-border bg-card shadow-sm xl:h-full xl:min-h-0">
         <div className="flex min-h-10 items-center justify-between border-b border-border/40 bg-secondary/5 px-3 py-2">
           <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
-            {formType === "create_warehouse" && (
+            {formType === "createwarehouse" && (
               <>
                 <Plus className="size-4 text-emerald-600 shrink-0" />
                 {language === "th" ? "เพิ่มคลังสินค้า" : "Add Warehouse"}
               </>
             )}
-            {formType === "edit_warehouse" && (
+            {formType === "editwarehouse" && (
               <>
                 <Warehouse className="size-4 text-primary shrink-0" />
                 {language === "th" ? "แก้ไขคลังสินค้า" : "Edit Warehouse"}
               </>
             )}
-            {formType === "create_location" && (
+            {formType === "createlocation" && (
               <>
                 <Plus className="size-4 text-emerald-600 shrink-0" />
                 {language === "th" ? "เพิ่มโซนเก็บสินค้า" : "Add Location"}
               </>
             )}
-            {formType === "edit_location" && (
+            {formType === "editlocation" && (
               <>
                 <Edit3 className="size-4 text-blue-600 shrink-0" />
                 {language === "th" ? "แก้ไขโซนเก็บสินค้า" : "Edit Location"}
               </>
             )}
-            {formType === "create_shelf" && (
+            {formType === "createshelf" && (
               <>
                 <Plus className="size-4 text-emerald-600 shrink-0" />
                 {language === "th" ? "เพิ่มชั้นวางสินค้า" : "Add Shelf"}
               </>
             )}
-            {formType === "edit_shelf" && (
+            {formType === "editshelf" && (
               <>
                 <Edit3 className="size-4 text-blue-600 shrink-0" />
                 {language === "th" ? "แก้ไขชั้นวางสินค้า" : "Edit Shelf"}
               </>
             )}
-            {formType === "bulk_shelf" && (
+            {formType === "bulkshelf" && (
               <>
                 <Layers className="size-4 text-orange-600 shrink-0" />
                 {language === "th" ? "เพิ่มกลุ่มชั้นวางสินค้า" : "Bulk Add Shelves"}
@@ -1481,7 +1481,7 @@ export function WarehouseTreeView({
           ) : (
             <form onSubmit={handleSaveForm} className="flex flex-col gap-3">
               {/* Form fields for WAREHOUSE editing */}
-              {(formType === "create_warehouse" || formType === "edit_warehouse") && (
+              {(formType === "createwarehouse" || formType === "editwarehouse") && (
                 <div className="flex flex-col gap-3">
                   <div className="flex flex-col gap-1">
                     <label className="text-[11px] font-bold text-muted-foreground uppercase">
@@ -1565,7 +1565,7 @@ export function WarehouseTreeView({
               )}
 
               {/* Form fields for LOCATION creation/editing */}
-              {(formType === "create_location" || formType === "edit_location") && (
+              {(formType === "createlocation" || formType === "editlocation") && (
                 <div className="flex flex-col gap-3">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="flex flex-col gap-1">
@@ -1585,8 +1585,8 @@ export function WarehouseTreeView({
                         {language === "th" ? "ประเภทสินค้าที่เหมาะสม" : "Suitable Product Types"}
                       </label>
                       <Input
-                        value={formFields.suitable_product_types}
-                        onChange={(e) => setFormFields((prev) => ({ ...prev, suitable_product_types: e.target.value }))}
+                        value={formFields.suitableproducttypes}
+                        onChange={(e) => setFormFields((prev) => ({ ...prev, suitableproducttypes: e.target.value }))}
                         placeholder={language === "th" ? "เช่น ของแช่แข็ง, ของเหลว" : "e.g. Frozen, Liquids"}
                         className="h-9 text-xs"
                       />
@@ -1622,7 +1622,7 @@ export function WarehouseTreeView({
               )}
 
               {/* Form fields for SHELF creation/editing */}
-              {(formType === "create_shelf" || formType === "edit_shelf") && (
+              {(formType === "createshelf" || formType === "editshelf") && (
                   <div className="flex flex-col gap-3">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="flex flex-col gap-1">
@@ -1657,8 +1657,8 @@ export function WarehouseTreeView({
                       </label>
                       <Input
                         type="number"
-                        value={formFields.max_weight}
-                        onChange={(e) => setFormFields((prev) => ({ ...prev, max_weight: e.target.value }))}
+                        value={formFields.maxweight}
+                        onChange={(e) => setFormFields((prev) => ({ ...prev, maxweight: e.target.value }))}
                         placeholder="e.g. 200"
                         className="h-9 text-xs"
                       />
@@ -1669,8 +1669,8 @@ export function WarehouseTreeView({
                         {language === "th" ? "ประเภทสินค้าที่เหมาะสม" : "Suitable Product Types"}
                       </label>
                       <Input
-                        value={formFields.suitable_product_types}
-                        onChange={(e) => setFormFields((prev) => ({ ...prev, suitable_product_types: e.target.value }))}
+                        value={formFields.suitableproducttypes}
+                        onChange={(e) => setFormFields((prev) => ({ ...prev, suitableproducttypes: e.target.value }))}
                         placeholder="e.g. General"
                         className="h-9 text-xs"
                       />
@@ -1719,7 +1719,7 @@ export function WarehouseTreeView({
               )}
 
               {/* Form fields for BULK shelves generation */}
-              {formType === "bulk_shelf" && (
+              {formType === "bulkshelf" && (
                   <div className="flex flex-col gap-3">
                   <div className="bg-primary/5 border border-primary/10 rounded-xl p-3 text-[11px] text-foreground/80 leading-relaxed">
                     {language === "th"
@@ -1803,8 +1803,8 @@ export function WarehouseTreeView({
                         </label>
                         <Input
                           type="number"
-                          value={formFields.max_weight}
-                          onChange={(e) => setFormFields((prev) => ({ ...prev, max_weight: e.target.value }))}
+                          value={formFields.maxweight}
+                          onChange={(e) => setFormFields((prev) => ({ ...prev, maxweight: e.target.value }))}
                           placeholder="e.g. 200"
                           className="h-9 text-xs"
                         />
@@ -1815,8 +1815,8 @@ export function WarehouseTreeView({
                           {language === "th" ? "ประเภทสินค้าที่เหมาะสม" : "Suitable Product Types"}
                         </label>
                         <Input
-                          value={formFields.suitable_product_types}
-                          onChange={(e) => setFormFields((prev) => ({ ...prev, suitable_product_types: e.target.value }))}
+                          value={formFields.suitableproducttypes}
+                          onChange={(e) => setFormFields((prev) => ({ ...prev, suitableproducttypes: e.target.value }))}
                           placeholder="e.g. Medicine"
                           className="h-9 text-xs"
                         />
@@ -1878,7 +1878,7 @@ export function WarehouseTreeView({
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    setFormType("edit_warehouse");
+                    setFormType("editwarehouse");
                     const targetId = selectedNode?.warehouseId || records[0]?.guidfixed || "";
                     const w = records.find((r) => r.guidfixed === targetId);
                     if (w) {

@@ -322,7 +322,7 @@ func (st *SalesTool) GetTopSellingProducts(ctx context.Context, req TopSellingPr
 	for _, row := range results {
 		products = append(products, TopSellingProduct{
 			ItemCode:    parseString(row["itemcode"]),
-			ItemName:    parseString(row["item_name"]),
+			ItemName:    parseString(row["itemname"]),
 			Barcode:     parseString(row["barcode"]),
 			TotalQty:    parseFloat(row["totalqty"]),
 			TotalAmount: parseFloat(row["totalamount"]),

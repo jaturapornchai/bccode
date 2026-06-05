@@ -339,7 +339,7 @@ func getThaiNLPURL() string {
 
 // searchFields — columns to search (includes brand, category, group names)
 var searchFields = []string{
-	"itemcode", "barcode", "name0", "unitcode", "unit_name",
+	"itemcode", "barcode", "name0", "unitcode", "unitname",
 	"brandnames", "categorynames", "groupnames",
 }
 

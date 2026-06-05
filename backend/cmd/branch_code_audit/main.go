@@ -143,11 +143,11 @@ func discoverAndAudit(ctx context.Context, client *mongo.Client, fallbackDBName 
 func auditCollection(ctx context.Context, client *mongo.Client, dbName string, collectionName string) (auditSummary, error) {
 	collection := client.Database(dbName).Collection(collectionName)
 	cursor, err := collection.Find(ctx, bson.M{}, options.Find().SetProjection(bson.M{
-		"holdingcode":       1,
-		"guidfixed":         1,
-		"code":              1,
-		"is_vat_registered": 1,
-		"pos.tax_id":        1,
+		"holdingcode":     1,
+		"guidfixed":       1,
+		"code":            1,
+		"isvatregistered": 1,
+		"pos.taxid":       1,
 	}))
 	if err != nil {
 		return auditSummary{}, err
@@ -191,7 +191,7 @@ func auditCollection(ctx context.Context, client *mongo.Client, dbName string, c
 
 		if record.IsVatRegistered && strings.TrimSpace(record.POS.TaxID) == "" {
 			summary.VatMissingTaxIDCount++
-			addExample(&summary, auditIssue{HoldingCode: holdingCode, GuidFixed: record.GuidFixed, Code: code, NormalizedCode: normalizedCode, Reason: "VAT registered branch has empty pos.tax_id"})
+			addExample(&summary, auditIssue{HoldingCode: holdingCode, GuidFixed: record.GuidFixed, Code: code, NormalizedCode: normalizedCode, Reason: "VAT registered branch has empty pos.taxid"})
 		}
 	}
 	if err := cursor.Err(); err != nil {

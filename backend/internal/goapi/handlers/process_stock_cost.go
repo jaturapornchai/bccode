@@ -388,7 +388,7 @@ func buildProcessStockCostSummaryQuery(fromDate, toDate time.Time, branchCodes, 
 		SELECT
 			itemcode,
 			SUM(totalqty) as total_quantity,
-			SUM(calcamount) as total_amount,
+			SUM(calcamount) as totalamount,
 			AVG(averagecost) as avg_cost,
 			COUNT(*) as transaction_count
 		FROM public.processstockcost
@@ -410,7 +410,7 @@ func buildProcessStockCostSummaryQuery(fromDate, toDate time.Time, branchCodes, 
 		args = append(args, pq.Array(productCodes))
 	}
 
-	query += " GROUP BY itemcode ORDER BY total_amount DESC LIMIT 10000"
+	query += " GROUP BY itemcode ORDER BY totalamount DESC LIMIT 10000"
 
 	return query, args
 }

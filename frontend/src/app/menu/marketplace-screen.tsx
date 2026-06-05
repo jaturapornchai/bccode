@@ -56,11 +56,11 @@ type MarketplaceScreenProps = {
 type ShopConnection = {
   id: string;
   holdingcode: string;
-  shop_name: string;
+  shopname: string;
   platform: "shopee" | "lazada" | "tiktok";
   status: "connected" | "disconnected";
-  connected_at: string;
-  item_count: number;
+  connectedat: string;
+  itemcount: number;
 };
 
 export function MarketplaceMappingsScreen({ platform, embedded = false, language = "th" }: MarketplaceScreenProps) {
@@ -98,29 +98,29 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
     {
       id: "conn_1",
       holdingcode: "shop_shopee_th",
-      shop_name: "Ban Chiang Official Store (Shopee)",
+      shopname: "Ban Chiang Official Store (Shopee)",
       platform: "shopee",
       status: "connected",
-      connected_at: "2026-05-10T14:30:00Z",
-      item_count: 142
+      connectedat: "2026-05-10T14:30:00Z",
+      itemcount: 142
     },
     {
       id: "conn_2",
       holdingcode: "shop_laz_b2c",
-      shop_name: "Ban Chiang Outlet (Lazada)",
+      shopname: "Ban Chiang Outlet (Lazada)",
       platform: "lazada",
       status: "connected",
-      connected_at: "2026-05-12T09:15:00Z",
-      item_count: 88
+      connectedat: "2026-05-12T09:15:00Z",
+      itemcount: 88
     },
     {
       id: "conn_3",
       holdingcode: "shop_tiktok_mall",
-      shop_name: "Ban Chiang Store (TikTok Shop)",
+      shopname: "Ban Chiang Store (TikTok Shop)",
       platform: "tiktok",
       status: "disconnected",
-      connected_at: "-",
-      item_count: 0
+      connectedat: "-",
+      itemcount: 0
     }
   ]);
 
@@ -159,8 +159,8 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
         holdingcode: activeHoldingCode,
         limit: 100,
         offset: 0,
-        sort_field: "barcode",
-        sort_order: "asc"
+        sortfield: "barcode",
+        sortorder: "asc"
       });
       if (res.success && Array.isArray(res.data)) {
         setBarcodes(res.data);
@@ -188,10 +188,10 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
       prev.map(s => s.platform === platform ? {
         ...s,
         holdingcode: authDialog.holdingCode,
-        shop_name: authDialog.shopName || `ร้านค้า ${platform.toUpperCase()} (${authDialog.holdingCode})`,
+        shopname: authDialog.shopName || `ร้านค้า ${platform.toUpperCase()} (${authDialog.holdingCode})`,
         status: "connected",
-        connected_at: new Date().toISOString(),
-        item_count: 0
+        connectedat: new Date().toISOString(),
+        itemcount: 0
       } : s)
     );
 
@@ -204,8 +204,8 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
       prev.map(s => s.id === id ? {
         ...s,
         status: "disconnected",
-        connected_at: "-",
-        item_count: 0
+        connectedat: "-",
+        itemcount: 0
       } : s)
     );
     setNotice({ type: "info", text: `ยกเลิกการเชื่อมต่อร้านค้า ${platformName} แล้ว` });
@@ -231,7 +231,7 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
 
     const holdingCodeIdx = headers.findIndex(h => h.includes("shop") || h.includes("ร้านค้า") || h.includes("บัญชี"));
     const marketItemIdIdx = headers.findIndex(h => h.includes("product_id") || h.includes("item_id") || h.includes("สินค้าบนเว็บ") || h.includes("market_item_id"));
-    const sellerSkuIdx = headers.findIndex(h => h.includes("seller_sku") || h.includes("sku") || h.includes("รหัสคู่ค้า") || h.includes("sellersku"));
+    const sellerSkuIdx = headers.findIndex(h => h.includes("sellersku") || h.includes("sku") || h.includes("รหัสคู่ค้า") || h.includes("sellersku"));
     const barcodeIdx = headers.findIndex(h => h.includes("barcode") || h.includes("บาร์โค้ด") || h.includes("รหัสบาร์โค้ด") || h.includes("บาร์โค๊ด"));
     const marketModelIdIdx = headers.findIndex(h => h.includes("variant_id") || h.includes("model_id") || h.includes("รหัสตัวเลือกย่อย") || h.includes("market_model_id"));
 
@@ -266,7 +266,7 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
         matchedIdx = updatedBarcodes.findIndex(b => b.barcode === barcodeValue);
       }
       if (matchedIdx === -1 && sellerSku) {
-        matchedIdx = updatedBarcodes.findIndex(b => b.seller_sku === sellerSku);
+        matchedIdx = updatedBarcodes.findIndex(b => b.sellersku === sellerSku);
       }
 
       if (matchedIdx === -1) {
@@ -291,33 +291,33 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
 
         const fullProduct: ProductBarcode = rawToProductBarcode(productData.data, { holdingcode: activeHoldingCode } as any);
 
-        const mProducts = fullProduct.marketplace_products || [];
+        const mProducts = fullProduct.marketplaceproducts || [];
         const hasShopMap = mProducts.some(
-          m => m.platform === platform && m.holdingcode === holdingCode && m.market_item_id === marketItemId
+          m => m.platform === platform && m.holdingcode === holdingCode && m.marketitemid === marketItemId
         );
         if (!hasShopMap) {
           mProducts.push({
             ...emptyMarketplaceProductMap(platform),
             holdingcode: holdingCode,
-            market_item_id: marketItemId,
-            sync_status: "linked",
+            marketitemid: marketItemId,
+            syncstatus: "linked",
           });
         }
-        fullProduct.marketplace_products = mProducts;
+        fullProduct.marketplaceproducts = mProducts;
 
         const refBarcodes = fullProduct.refbarcodes || [];
         const subBarcodeIdx = refBarcodes.findIndex(b => b.barcode === (barcodeValue || item.barcode));
         if (subBarcodeIdx !== -1) {
           const subB = refBarcodes[subBarcodeIdx];
-          const mappings = subB.marketplace_sku_mappings || [];
+          const mappings = subB.marketplaceskumappings || [];
           const matchMapIdx = mappings.findIndex(m => m.platform === platform && m.holdingcode === holdingCode);
 
           const mappingData: MarketplaceSKUMap = {
             ...emptyMarketplaceSKUMap(platform, holdingCode, marketItemId),
-            market_model_id: marketModelId,
-            seller_sku: sellerSku || subB.seller_sku || "",
+            marketmodelid: marketModelId,
+            sellersku: sellerSku || subB.sellersku || "",
             status: "LIVE",
-            last_sync_at: new Date().toISOString(),
+            lastsyncat: new Date().toISOString(),
           };
 
           if (matchMapIdx >= 0) {
@@ -325,8 +325,8 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
           } else {
             mappings.push(mappingData);
           }
-          subB.marketplace_sku_mappings = mappings;
-          if (sellerSku) subB.seller_sku = sellerSku;
+          subB.marketplaceskumappings = mappings;
+          if (sellerSku) subB.sellersku = sellerSku;
           refBarcodes[subBarcodeIdx] = subB;
         }
         fullProduct.refbarcodes = refBarcodes;
@@ -508,7 +508,7 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
                 </div>
                 <CardTitle className="text-lg mt-2 flex items-center gap-2">
                   <Store className="h-5 w-5 text-muted-foreground" />
-                  {shop.status === "connected" ? shop.shop_name : `ผูกบัญชี ${platformName}`}
+                  {shop.status === "connected" ? shop.shopname : `ผูกบัญชี ${platformName}`}
                 </CardTitle>
                 <CardDescription className="font-mono text-xs">
                   Holding Code: {shop.status === "connected" ? shop.holdingcode : "-"}
@@ -519,13 +519,13 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
                   <div className="flex justify-between">
                     <span>วันที่เชื่อมต่อ:</span>
                     <span className="font-medium text-foreground">
-                      {shop.status === "connected" ? formatDefaultDate(shop.connected_at, dateDisplayOptions) : "-"}
+                      {shop.status === "connected" ? formatDefaultDate(shop.connectedat, dateDisplayOptions) : "-"}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span>สินค้าที่จับคู่สำเร็จ:</span>
                     <span className="font-medium text-foreground">
-                      {shop.status === "connected" ? `${shop.item_count} รายการ` : "-"}
+                      {shop.status === "connected" ? `${shop.itemcount} รายการ` : "-"}
                     </span>
                   </div>
                 </div>
@@ -734,7 +734,7 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
                             </div>
                           </td>
                           <td className="p-3 font-mono text-xs">
-                            {item.raw?.seller_sku || <span className="text-muted-foreground italic">—</span>}
+                            {item.raw?.sellersku || <span className="text-muted-foreground italic">—</span>}
                           </td>
                           <td className="p-3">
                             {platformMap ? (

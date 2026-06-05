@@ -91,7 +91,7 @@ func TestStockAdjustmentTransactionPhaser(t *testing.T) {
 		"guidfixed": "2PxeTSlssQvMZS8MViihtgYOC0w",
 		"docno": "PO2305111645E3FE",
 		"docdatetime": "2023-05-11T09:45:46.000Z",
-		"guid_ref": "1a14456e-c859-422e-8f3c-ca9787202f0c",
+		"guidref": "1a14456e-c859-422e-8f3c-ca9787202f0c",
 		"transflag": 66,
 		"docreftype": 0,
 		"docrefno": "",
@@ -109,9 +109,9 @@ func TestStockAdjustmentTransactionPhaser(t *testing.T) {
 		},
 		"taxdocdate": "2023-05-18T09:45:39.000Z",
 		"taxdocno": "",
-		"doc_type": 0,
+		"doctype": 0,
 		"inquirytype": 0,
-		"vat_type": 0,
+		"vattype": 0,
 		"vatrate": 0,
 		"custcode": "",
 		"custnames": [],
@@ -123,8 +123,8 @@ func TestStockAdjustmentTransactionPhaser(t *testing.T) {
 		"totalaftervat": 0,
 		"totalbeforevat": 0,
 		"totalvatvalue": 0,
-		"total_amount": 0,
-		"total_cost": 0,
+		"totalamount": 0,
+		"totalcost": 0,
 		"posid": "",
 		"cashiercode": "",
 		"salecode": "",
@@ -136,7 +136,7 @@ func TestStockAdjustmentTransactionPhaser(t *testing.T) {
 		"details": [
 			{
 				"inquirytype": 0,
-				"line_number": 0,
+				"linenumber": 0,
 				"docdatetime": "2023-05-18T09:45:58.652Z",
 				"docref": "",
 				"docrefdatetime": "0001-01-01T00:00:00Z",
@@ -144,7 +144,7 @@ func TestStockAdjustmentTransactionPhaser(t *testing.T) {
 				"barcode": "BARCODE015",
 				"itemcode": "",
 				"unitcode": "PCE",
-				"item_type": 0,
+				"itemtype": 0,
 				"item_guid": "2Pxcf33JyR8jRXiKpH2cNc9lH9v",
 				"qty": 5,
 				"totalqty": 5,
@@ -153,18 +153,18 @@ func TestStockAdjustmentTransactionPhaser(t *testing.T) {
 				"discountamount": 0,
 				"totalvaluevat": 0,
 				"priceexcludevat": 0,
-				"sum_amount": 0,
+				"sumamount": 0,
 				"sumamountexcludevat": 0,
 				"dividevalue": 1,
 				"standvalue": 1,
-				"vat_type": 0,
+				"vattype": 0,
 				"remark": "",
 				"multiunit": false,
 				"sumofcost": 0,
 				"averagecost": 0,
 				"laststatus": 0,
 				"ispos": 0,
-				"tax_type": 0,
+				"taxtype": 0,
 				"vatcal": 0,
 				"whcode": "00000",
 				"shelfcode": "",
@@ -251,7 +251,7 @@ func TestStockAdjustmentTransactionPhaser(t *testing.T) {
 	assert.Equal(t, get.TransFlag, want.TransFlag, "transflag")
 	assert.Equal(t, get.DocNo, want.DocNo, "docno")
 	assert.Equal(t, get.DocDate, want.DocDate, "docdate")
-	assert.Equal(t, get.GuidRef, want.GuidRef, "guid_ref")
+	assert.Equal(t, get.GuidRef, want.GuidRef, "guidref")
 	assert.Equal(t, get.DocRefType, want.DocRefType, "docreftype")
 	assert.Equal(t, get.DocRefNo, want.DocRefNo, "docrefno")
 	assert.Equal(t, get.DocRefDate, want.DocRefDate, "docrefdate")
@@ -260,7 +260,7 @@ func TestStockAdjustmentTransactionPhaser(t *testing.T) {
 	assert.Equal(t, get.Description, want.Description, "description")
 	assert.Equal(t, get.InquiryType, want.InquiryType, "inquirytype")
 	assert.Equal(t, get.VatRate, want.VatRate, "vatrate")
-	assert.Equal(t, get.VatType, want.VatType, "vat_type")
+	assert.Equal(t, get.VatType, want.VatType, "vattype")
 	assert.Equal(t, get.DiscountWord, want.DiscountWord, "discountword")
 	assert.Equal(t, get.TotalDiscount, want.TotalDiscount, "totaldiscount")
 	assert.Equal(t, get.TotalValue, want.TotalValue, "totalvalue")
@@ -268,7 +268,7 @@ func TestStockAdjustmentTransactionPhaser(t *testing.T) {
 	assert.Equal(t, get.TotalExceptVat, want.TotalExceptVat, "totalexceptvat")
 	assert.Equal(t, get.TotalVatValue, want.TotalVatValue, "totalvatvalue")
 	assert.Equal(t, get.TotalAfterVat, want.TotalAfterVat, "totalaftervat")
-	assert.Equal(t, get.TotalAmount, want.TotalAmount, "total_amount")
+	assert.Equal(t, get.TotalAmount, want.TotalAmount, "totalamount")
 
 	// detail
 	assert.Equal(t, (*get.Items)[0].GuidFixed, (*want.Items)[0].GuidFixed, "item.guidfixed")

@@ -22,46 +22,46 @@
 CREATE TABLE queues (
     id BIGSERIAL PRIMARY KEY,
     holdingcode VARCHAR(100) NOT NULL,
-    doc_no VARCHAR(100) NOT NULL,
-    trans_flag VARCHAR(10) NOT NULL,
-    retry_count INTEGER DEFAULT 0,
+    docno VARCHAR(100) NOT NULL,
+    transflag VARCHAR(10) NOT NULL,
+    retrycount INTEGER DEFAULT 0,
     createdat TIMESTAMP DEFAULT NOW(),
     updatedat TIMESTAMP DEFAULT NOW(),
     status VARCHAR(20) DEFAULT 'pending',
-    processed_at TIMESTAMP NULL,
-    error_message TEXT NULL,
+    processedat TIMESTAMP NULL,
+    errormessage TEXT NULL,
 
-    INDEX idx_queues_shop_status (holdingcode, status),
-    INDEX idx_queues_pop (holdingcode, createdat) WHERE status = 'pending'
+    INDEX idxqueuesshopstatus (holdingcode, status),
+    INDEX idxqueuespop (holdingcode, createdat) WHERE status = 'pending'
 );
 ```
 
-### Table: dead_letter_queue
+### Table: deadletterqueue
 ```sql
-CREATE TABLE dead_letter_queue (
+CREATE TABLE deadletterqueue (
     id BIGSERIAL PRIMARY KEY,
     holdingcode VARCHAR(100) NOT NULL,
-    doc_no VARCHAR(100) NOT NULL,
-    trans_flag VARCHAR(10) NOT NULL,
-    retry_count INTEGER DEFAULT 0,
+    docno VARCHAR(100) NOT NULL,
+    transflag VARCHAR(10) NOT NULL,
+    retrycount INTEGER DEFAULT 0,
     createdat TIMESTAMP NOT NULL,
-    failed_at TIMESTAMP DEFAULT NOW(),
-    error_message TEXT NOT NULL,
+    failedat TIMESTAMP DEFAULT NOW(),
+    errormessage TEXT NOT NULL,
 
-    INDEX idx_dlq_holdingcode (holdingcode),
-    INDEX idx_dlq_failed_at (failed_at)
+    INDEX idxdlqholdingcode (holdingcode),
+    INDEX idxdlqfailedat (failedat)
 );
 ```
 
-### Table: distributed_locks
+### Table: distributedlocks
 ```sql
-CREATE TABLE distributed_locks (
-    lock_key VARCHAR(500) PRIMARY KEY,
+CREATE TABLE distributedlocks (
+    lockkey VARCHAR(500) PRIMARY KEY,
     owner VARCHAR(100) NOT NULL,
-    acquired_at TIMESTAMP DEFAULT NOW(),
-    expires_at TIMESTAMP NOT NULL,
+    acquiredat TIMESTAMP DEFAULT NOW(),
+    expiresat TIMESTAMP NOT NULL,
 
-    INDEX idx_locks_expires_at (expires_at)
+    INDEX idxlocksexpiresat (expiresat)
 );
 ```
 
@@ -193,8 +193,8 @@ WHERE status = 'completed'
 
 - ทำความสะอาด expired locks:
 ```sql
-DELETE FROM distributed_locks
-WHERE expires_at < NOW();
+DELETE FROM distributedlocks
+WHERE expiresat < NOW();
 ```
 
 ## Migration จาก Redis
@@ -233,28 +233,28 @@ FROM queues
 GROUP BY status;
 
 -- Shop ที่มีงานรอมากที่สุด
-SELECT holdingcode, COUNT(*) as pending_count
+SELECT holdingcode, COUNT(*) as pendingcount
 FROM queues
 WHERE status = 'pending'
 GROUP BY holdingcode
-ORDER BY pending_count DESC
+ORDER BY pendingcount DESC
 LIMIT 10;
 
 -- งานที่ล้มเหลว
-SELECT holdingcode, doc_no, error_message, failed_at
-FROM dead_letter_queue
-ORDER BY failed_at DESC
+SELECT holdingcode, docno, errormessage, failedat
+FROM deadletterqueue
+ORDER BY failedat DESC
 LIMIT 20;
 ```
 
 ### Query Active Locks
 ```sql
 -- Locks ที่กำลัง active
-SELECT lock_key, owner, acquired_at, expires_at,
-       EXTRACT(EPOCH FROM (expires_at - NOW())) as ttl_seconds
-FROM distributed_locks
-WHERE expires_at > NOW()
-ORDER BY acquired_at DESC;
+SELECT lockkey, owner, acquiredat, expiresat,
+       EXTRACT(EPOCH FROM (expiresat - NOW())) as ttl_seconds
+FROM distributedlocks
+WHERE expiresat > NOW()
+ORDER BY acquiredat DESC;
 ```
 
 ## Troubleshooting
@@ -262,28 +262,28 @@ ORDER BY acquired_at DESC;
 ### ปัญหา: งาน stuck ใน processing
 ```sql
 -- หางานที่ processing นานเกินไป (เกิน 1 ชม.)
-SELECT id, holdingcode, doc_no, processed_at
+SELECT id, holdingcode, docno, processedat
 FROM queues
 WHERE status = 'processing'
-  AND processed_at < NOW() - INTERVAL '1 hour';
+  AND processedat < NOW() - INTERVAL '1 hour';
 
 -- Reset กลับเป็น pending
 UPDATE queues
 SET status = 'pending',
-    processed_at = NULL
+    processedat = NULL
 WHERE status = 'processing'
-  AND processed_at < NOW() - INTERVAL '1 hour';
+  AND processedat < NOW() - INTERVAL '1 hour';
 ```
 
 ### ปัญหา: Lock ไม่ถูกปล่อย
 ```sql
 -- ลบ locks ที่หมดอายุ
-DELETE FROM distributed_locks
-WHERE expires_at < NOW();
+DELETE FROM distributedlocks
+WHERE expiresat < NOW();
 
 -- Force release lock (ใช้เฉพาะกรณีฉุกเฉิน)
-DELETE FROM distributed_locks
-WHERE lock_key = 'stock:calc:SHOP001:ITEM001';
+DELETE FROM distributedlocks
+WHERE lockkey = 'stock:calc:SHOP001:ITEM001';
 ```
 
 ## API Reference

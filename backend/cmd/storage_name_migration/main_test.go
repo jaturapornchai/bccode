@@ -4,19 +4,19 @@ import "testing"
 
 func TestNormalizeStorageName(t *testing.T) {
 	cases := map[string]string{
-		"shopUsers":                       "shop_users",
-		"shopUserAccessLogs":              "shop_user_access_logs",
-		"productBarcodeBOMs":              "product_barcode_boms",
-		"kbDocumentMetadata":              "kb_document_metadata",
-		" mixed-Collection Name ":         "mixed_collection_name",
-		"productbarcode":                  "product_barcodes",
-		"productbarcode_dict":             "product_barcode_dict",
-		"productbarcodeimport":            "product_barcode_import",
-		"saleinvoice_transaction":         "sale_invoice_transaction",
-		"purchasereceive_transaction":     "purchase_receive_transaction",
-		"chartofaccounts":                 "chart_of_accounts",
-		"docdetail":                       "doc_detail",
-		"transactionSaleinvoiceBOMPrices": "transaction_saleinvoice_bom_prices",
+		"shopUsers":                       "shopusers",
+		"shopUserAccessLogs":              "shopuseraccesslogs",
+		"productBarcodeBOMs":              "productbarcodeboms",
+		"kbDocumentMetadata":              "kbdocumentmetadata",
+		" mixed-Collection Name ":         "mixedcollectionname",
+		"productbarcode":                  "productbarcodes",
+		"productbarcodedict":              "productbarcodedict",
+		"productbarcodeimport":            "productbarcodeimport",
+		"saleinvoicetransaction":          "saleinvoicetransaction",
+		"purchasereceivetransaction":      "purchasereceivetransaction",
+		"chartofaccounts":                 "chartofaccounts",
+		"docdetail":                       "docdetail",
+		"transactionSaleinvoiceBOMPrices": "transactionsaleinvoicebomprices",
 	}
 
 	for input, expected := range cases {
@@ -28,16 +28,16 @@ func TestNormalizeStorageName(t *testing.T) {
 
 func TestNormalizeStorageFieldName(t *testing.T) {
 	cases := map[string]string{
-		"docDate":       "doc_date",
-		"docdate":       "doc_date",
-		"custCode":      "cust_code",
-		"custcode":      "cust_code",
-		"holdingcode":   "holdingcode",
-		"holdingCode":   "holdingcode",
-		"transFlag":     "trans_flag",
-		"itemcode":      "item_code",
-		"unitCode":      "unit_code",
-		"already_snake": "already_snake",
+		"docDate":      "docdate",
+		"docdate":      "docdate",
+		"custCode":     "custcode",
+		"custcode":     "custcode",
+		"holdingcode":  "holdingcode",
+		"holdingCode":  "holdingcode",
+		"transFlag":    "transflag",
+		"itemcode":     "itemcode",
+		"unitCode":     "unitcode",
+		"alreadysnake": "alreadysnake",
 	}
 
 	for input, expected := range cases {

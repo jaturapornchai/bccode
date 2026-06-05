@@ -15,7 +15,7 @@ import (
 var CacheTTL = map[string]time.Duration{
 	"ai_chat":        15 * time.Minute,
 	"product_search": 30 * time.Minute,
-	"stock_realtime": 5 * time.Minute,
+	"stockrealtime":  5 * time.Minute,
 	"document":       60 * time.Minute,
 	"analytics":      24 * time.Hour,
 }
@@ -24,8 +24,8 @@ var CacheTTL = map[string]time.Duration{
 var CacheKeyPatterns = map[string]string{
 	"ai_chat":        "ai:chat:{holdingcode}:{hash}",
 	"product_search": "product:search:{holdingcode}:{hash}",
-	"stock_realtime": "stock:realtime:{holdingcode}:{item_code}:{warehouse}:{location}",
-	"document":       "doc:{holdingcode}:{doc_no}:{version}",
+	"stockrealtime":  "stock:realtime:{holdingcode}:{itemcode}:{warehouse}:{location}",
+	"document":       "doc:{holdingcode}:{docno}:{version}",
 	"analytics":      "analytics:{holdingcode}:{type}:{period}",
 }
 
@@ -365,15 +365,15 @@ func (c *UnifiedCacheManager) SetProductSearch(ctx context.Context, holdingCode,
 // Real-time Stock Cache Methods
 func (c *UnifiedCacheManager) GetStock(ctx context.Context, holdingCode, itemCode, warehouse, location string) (interface{}, bool) {
 	key := fmt.Sprintf("%s:%s:%s", itemCode, warehouse, location)
-	return c.Get(ctx, "stock_realtime", holdingCode, key)
+	return c.Get(ctx, "stockrealtime", holdingCode, key)
 }
 
 func (c *UnifiedCacheManager) SetStock(ctx context.Context, holdingCode, itemCode, warehouse, location string, balance interface{}) error {
 	key := fmt.Sprintf("%s:%s:%s", itemCode, warehouse, location)
-	return c.Set(ctx, "stock_realtime", holdingCode, key, balance, 0)
+	return c.Set(ctx, "stockrealtime", holdingCode, key, balance, 0)
 }
 
 func (c *UnifiedCacheManager) UpdateStock(ctx context.Context, holdingCode, itemCode, warehouse, location string, balance interface{}) error {
 	key := fmt.Sprintf("%s:%s:%s", itemCode, warehouse, location)
-	return c.Set(ctx, "stock_realtime", holdingCode, key, balance, 0)
+	return c.Set(ctx, "stockrealtime", holdingCode, key, balance, 0)
 }

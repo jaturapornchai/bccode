@@ -181,7 +181,7 @@ function BarcodePickerModal({
             <div className="grid gap-1">
               {items.map((row, index) => {
                 const price = row.price ?? (row.prices?.[0]?.price ?? 0);
-                const stock = row.available_qty ?? row.balance_qty ?? 0;
+                const stock = row.availableqty ?? row.balanceqty ?? 0;
                 const unit = pickName(row.itemunitnames, language) || "ชิ้น";
 
                 return (
@@ -291,7 +291,7 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
   const activeHoldingCode = workspace?.shop.holdingcode ?? "";
   const shopLanguages = useMemo(() => languageCodesFromWorkspace(workspace), [workspace]);
 
-  // Load products of type SET (item_type: 2)
+  // Load products of type SET (itemtype: 2)
   const loadProductSets = useCallback(async () => {
     if (!auth || !activeHoldingCode) return;
     setLoading(true);
@@ -305,7 +305,7 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
       const params = new URLSearchParams({
         q: search,
         limit: "120",
-        item_type: "2",
+        itemtype: "2",
         materialtype: "3",
       });
       const response = await fetch(`/api/product?${params.toString()}`, {
@@ -322,7 +322,7 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
       const normalized: Product[] = rawData.map(rawToProduct);
 
       // Filter only SET items
-      const setList = normalized.filter((item) => item.item_type === 2);
+      const setList = normalized.filter((item) => item.itemtype === 2);
       setItems(setList);
 
       if (setList.length > 0) {
@@ -378,7 +378,7 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
           return {
             code: row.barcode,
             price: row.price ?? (row.prices?.[0]?.price ?? 0),
-            stock: row.available_qty ?? row.balance_qty ?? 0,
+            stock: row.availableqty ?? row.balanceqty ?? 0,
             unit: pickName(row.itemunitnames, lang) || "ชิ้น",
             name: pickName(row.names, lang) || row.barcode
           };
@@ -443,7 +443,7 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
     if (!source) return null;
 
     let price = 0;
-    let weight = source.package_weight ?? 0;
+    let weight = source.packageweight ?? 0;
     let componentsList: Array<{
       barcode: string;
       name: string;
@@ -516,10 +516,10 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
     holdingcode: activeHoldingCode,
     code: "",
     names: [{ code: "th", name: "" }, { code: "en", name: "" }],
-    group_code: "",
-    group_names: [],
-    item_type: 2, // Set
-    vat_type: 0,
+    groupcode: "",
+    groupnames: [],
+    itemtype: 2, // Set
+    vattype: 0,
     materialtype: 3, // Set
     issumpoint: false,
     condition: false, // false = Fixed Price, true = Dynamic Price
@@ -529,10 +529,10 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
     refbarcodes: [],
     bom: [],
     options: [], // Options containing choices (set components)
-    package_weight: 0,
-    package_length: 0,
-    package_width: 0,
-    package_height: 0,
+    packageweight: 0,
+    packagelength: 0,
+    packagewidth: 0,
+    packageheight: 0,
   }), [activeHoldingCode]);
 
   const handleCreateOpen = () => {
@@ -549,7 +549,7 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
       ...selectedProduct,
       guidfixed: "",
       holdingcode: activeHoldingCode,
-      item_type: 2,
+      itemtype: 2,
       materialtype: 3,
     });
     setActiveTab("general");
@@ -658,7 +658,7 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
 
       const payload = {
         ...editProduct,
-        item_type: 2, // Always ensure Set type
+        itemtype: 2, // Always ensure Set type
         materialtype: 3, // Always ensure Set material type
         dividevalue: 1,
         standvalue: 1,
@@ -743,7 +743,7 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
 
     // Cache details immediately
     const price = entry.price ?? (entry.prices?.[0]?.price ?? 0);
-    const stock = entry.available_qty ?? entry.balance_qty ?? 0;
+    const stock = entry.availableqty ?? entry.balanceqty ?? 0;
     const unit = pickName(entry.itemunitnames, lang) || "ชิ้น";
 
     setBarcodeDetails(prev => ({
@@ -826,8 +826,8 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
     if (pickerTarget === "group") {
       setEditProduct({
         ...editProduct,
-        group_code: entry.code,
-        group_names: entry.names,
+        groupcode: entry.code,
+        groupnames: entry.names,
       });
     }
   };
@@ -1170,7 +1170,7 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
                             <div className="flex gap-2">
                               <Input
                                 placeholder="เลือกกลุ่มสินค้า"
-                                value={editProduct.group_code ? `${editProduct.group_code} - ${pickName(editProduct.group_names, lang)}` : ""}
+                                value={editProduct.groupcode ? `${editProduct.groupcode} - ${pickName(editProduct.groupnames, lang)}` : ""}
                                 readOnly
                                 className="bg-muted/40 cursor-default h-9"
                               />
@@ -1520,8 +1520,8 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
                           <Input
                             type="number"
                             min={0}
-                            value={editProduct.package_weight ?? 0}
-                            onChange={(e) => setEditProduct({ ...editProduct, package_weight: Math.max(0, Number(e.target.value) || 0) })}
+                            value={editProduct.packageweight ?? 0}
+                            onChange={(e) => setEditProduct({ ...editProduct, packageweight: Math.max(0, Number(e.target.value) || 0) })}
                             className="h-9"
                           />
                         </div>
@@ -1530,8 +1530,8 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
                           <Input
                             type="number"
                             min={0}
-                            value={editProduct.package_width ?? 0}
-                            onChange={(e) => setEditProduct({ ...editProduct, package_width: Math.max(0, Number(e.target.value) || 0) })}
+                            value={editProduct.packagewidth ?? 0}
+                            onChange={(e) => setEditProduct({ ...editProduct, packagewidth: Math.max(0, Number(e.target.value) || 0) })}
                             className="h-9"
                           />
                         </div>
@@ -1540,8 +1540,8 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
                           <Input
                             type="number"
                             min={0}
-                            value={editProduct.package_length ?? 0}
-                            onChange={(e) => setEditProduct({ ...editProduct, package_length: Math.max(0, Number(e.target.value) || 0) })}
+                            value={editProduct.packagelength ?? 0}
+                            onChange={(e) => setEditProduct({ ...editProduct, packagelength: Math.max(0, Number(e.target.value) || 0) })}
                             className="h-9"
                           />
                         </div>
@@ -1550,8 +1550,8 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
                           <Input
                             type="number"
                             min={0}
-                            value={editProduct.package_height ?? 0}
-                            onChange={(e) => setEditProduct({ ...editProduct, package_height: Math.max(0, Number(e.target.value) || 0) })}
+                            value={editProduct.packageheight ?? 0}
+                            onChange={(e) => setEditProduct({ ...editProduct, packageheight: Math.max(0, Number(e.target.value) || 0) })}
                             className="h-9"
                           />
                         </div>
@@ -1638,7 +1638,7 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
                         <div className="flex justify-between items-center py-2 border-b border-border/40">
                           <span className="text-muted-foreground">กลุ่มสินค้าหลัก:</span>
                           <strong className="text-foreground font-semibold">
-                            {selectedProduct.group_code ? `${selectedProduct.group_code} - ${pickName(selectedProduct.group_names, lang)}` : "ไม่ระบุ"}
+                            {selectedProduct.groupcode ? `${selectedProduct.groupcode} - ${pickName(selectedProduct.groupnames, lang)}` : "ไม่ระบุ"}
                           </strong>
                         </div>
                         <div className="flex justify-between items-center py-2 border-b border-border/40">
@@ -1671,12 +1671,12 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
                       <CardContent className="grid grid-cols-2 gap-3 text-xs p-4 bg-card/40">
                         <div className="bg-background p-3 rounded-xl border border-border/60 flex items-center justify-between">
                           <span className="text-muted-foreground text-[10px]">น้ำหนักรวม:</span>
-                          <strong className="text-xs font-extrabold text-foreground">{selectedProduct.package_weight ?? 0} kg</strong>
+                          <strong className="text-xs font-extrabold text-foreground">{selectedProduct.packageweight ?? 0} kg</strong>
                         </div>
                         <div className="bg-background p-3 rounded-xl border border-border/60 flex items-center justify-between">
                           <span className="text-muted-foreground text-[10px]">ขนาดกล่อง (กxยxส):</span>
                           <strong className="text-xs font-extrabold text-foreground">
-                            {selectedProduct.package_width ?? 0}x{selectedProduct.package_length ?? 0}x{selectedProduct.package_height ?? 0} cm
+                            {selectedProduct.packagewidth ?? 0}x{selectedProduct.packagelength ?? 0}x{selectedProduct.packageheight ?? 0} cm
                           </strong>
                         </div>
                       </CardContent>

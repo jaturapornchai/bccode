@@ -26,7 +26,7 @@ func NewJobProjectCHRepository(pst microservice.IPersisterClickHouse) *JobProjec
 func (repo *JobProjectCHRepository) Upsert(doc models.JobProjectPg) error {
 	conn := repo.pst.Conn()
 	err := conn.Exec(context.Background(),
-		`INSERT INTO organization_job_project (holdingcode, guidfixed, code, names, parentcode) VALUES (?, ?, ?, ?, ?)`,
+		`INSERT INTO organizationjobproject (holdingcode, guidfixed, code, names, parentcode) VALUES (?, ?, ?, ?, ?)`,
 		doc.HoldingCode, doc.GuidFixed, doc.Code, doc.Names, doc.ParentCode,
 	)
 	if err != nil {
@@ -38,7 +38,7 @@ func (repo *JobProjectCHRepository) Upsert(doc models.JobProjectPg) error {
 func (repo *JobProjectCHRepository) Delete(holdingCode string, guidFixed string) error {
 	conn := repo.pst.Conn()
 	err := conn.Exec(context.Background(),
-		`ALTER TABLE organization_job_project DELETE WHERE holdingcode=? AND guidfixed=?`,
+		`ALTER TABLE organizationjobproject DELETE WHERE holdingcode=? AND guidfixed=?`,
 		holdingCode, guidFixed,
 	)
 	if err != nil {

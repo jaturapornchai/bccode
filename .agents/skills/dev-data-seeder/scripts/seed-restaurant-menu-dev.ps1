@@ -94,12 +94,12 @@ function New-ProductPayload {
   return @{
     code = $Code
     names = @(New-Names $Thai $English)
-    group_code = "RESTAURANT"
-    group_names = @(New-Names "ร้านอาหาร" "Restaurant")
-    item_type = $ItemType
+    groupcode = "RESTAURANT"
+    groupnames = @(New-Names "ร้านอาหาร" "Restaurant")
+    itemtype = $ItemType
     materialtype = $MaterialType
-    vat_type = 0
-    tax_type = 0
+    vattype = 0
+    taxtype = 0
     useimageorcolor = $false
     restaurant = New-RestaurantFlags
     condition = $false
@@ -109,7 +109,7 @@ function New-ProductPayload {
     barcodes = @(
       @{
         barcode = ""
-        item_unit_code = $Unit.code
+        itemunitcode = $Unit.code
         itemunitnames = @(New-Names $Unit.th $Unit.en)
         prices = @(@{ key_number = 1; price = [double]$Price })
         condition = $false
@@ -137,11 +137,11 @@ function New-BarcodePayload {
   return @{
     itemcode = $Code
     barcode = $Barcode
-    group_code = "RESTAURANT"
-    group_names = @(New-Names "ร้านอาหาร" "Restaurant")
+    groupcode = "RESTAURANT"
+    groupnames = @(New-Names "ร้านอาหาร" "Restaurant")
     names = @(New-Names $Thai $English)
     xsorts = @()
-    item_unit_code = $Unit.code
+    itemunitcode = $Unit.code
     itemunitnames = @(New-Names $Unit.th $Unit.en)
     prices = @(@{ key_number = 1; price = [double]$Price })
     useimageorcolor = $false
@@ -150,10 +150,10 @@ function New-BarcodePayload {
     standvalue = 1
     isusesubbarcodes = $false
     is_main_barcode = $true
-    item_type = $ItemType
+    itemtype = $ItemType
     materialtype = $MaterialType
-    tax_type = 0
-    vat_type = 0
+    taxtype = 0
+    vattype = 0
     qty = 0
     restaurant = New-RestaurantFlags
     refbarcodes = @()
@@ -311,7 +311,7 @@ $setBarcodeCheck = Invoke-GetJson -Path "/product/barcode/pk/8852605299001" -Tok
   product_api_count = @($productCheck.data).Count
   set_api_count = @($setCheck.data).Count
   barcode_api_count = @($barcodeCheck.data).Count
-  set_barcode_item_type = $setBarcodeCheck.data.item_type
+  setbarcodeitemtype = $setBarcodeCheck.data.itemtype
   set_barcode_materialtype = $setBarcodeCheck.data.materialtype
   set_bom_count = @($setBarcodeCheck.data.bom).Count
 } | ConvertTo-Json -Depth 6

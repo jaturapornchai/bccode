@@ -406,16 +406,16 @@ async function enrichHoldingDisplayName(request: Request, mainApiUrl: string, au
     ...(realHoldingCodeFromPayload(holdingInfo) ? { holdingcode: realHoldingCodeFromPayload(holdingInfo) } : {}),
     ...(!hasHoldingDisplayName(holding) && name ? { name, name1: name } : {}),
     ...(!hasHoldingDisplayName(holding) && names.length > 0 ? { names } : {}),
-    active_languages: activeLanguages,
+    activelanguages: activeLanguages,
     language: getPayloadString(settings, "language") ?? activeLanguages[0],
     languageconfigs: getArray(settings, "languageconfigs"),
-    base_currency: getPayloadString(settings, "base_currency")?.trim().toUpperCase() ?? "",
+    basecurrency: getPayloadString(settings, "basecurrency")?.trim().toUpperCase() ?? "",
     currencies,
-    date_format: getPayloadString(settings, "date_format")?.trim() ?? "",
+    dateformat: getPayloadString(settings, "dateformat")?.trim() ?? "",
     timezone: getPayloadString(settings, "timezone")?.trim() ?? "",
-    timezone_label: getPayloadString(settings, "timezone_label")?.trim() ?? "",
-    timezone_offset: getPayloadString(settings, "timezone_offset")?.trim() ?? "",
-    year_type: yearTypeFromSettings(settings),
+    timezonelabel: getPayloadString(settings, "timezonelabel")?.trim() ?? "",
+    timezoneoffset: getPayloadString(settings, "timezoneoffset")?.trim() ?? "",
+    yeartype: yearTypeFromSettings(settings),
     usebuddhistcalendar: booleanPayloadValue(settings, "usebuddhistcalendar"),
   };
 }
@@ -475,7 +475,7 @@ async function loadExistingUnitCodes(
   const codes = new Set<string>();
   for (const item of getArrayFromPayload(result.payload, "data")) {
     if (!isRecord(item)) continue;
-    const unitcode = firstPayloadString(item, ["unitcode", "unit_code", "code"]);
+    const unitcode = firstPayloadString(item, ["unitcode", "unitcode", "code"]);
     if (unitcode) codes.add(normalizeUnitCode(unitcode));
   }
   return { ok: true, codes };
@@ -588,7 +588,7 @@ function normalizeUnitList(value: unknown[]): ProductUnit[] {
 
 function normalizeUnit(value: unknown): ProductUnit | null {
   if (!isRecord(value)) return null;
-  const unitcode = firstPayloadString(value, ["unitcode", "unit_code", "code"]);
+  const unitcode = firstPayloadString(value, ["unitcode", "unitcode", "code"]);
   const names = getArray(value, "names")
     .map((name) => normalizeUnitName(name))
     .filter((name): name is ProductUnitName => Boolean(name));
@@ -669,8 +669,8 @@ function hasWorkspaceMetadata(holding: Record<string, unknown>): boolean {
     payloadStringArray(settings, "currencies").length > 0 ||
     Boolean(
       getPayloadString(settings, "language") ||
-      getPayloadString(settings, "base_currency") ||
-      getPayloadString(settings, "date_format") ||
+      getPayloadString(settings, "basecurrency") ||
+      getPayloadString(settings, "dateformat") ||
       getPayloadString(settings, "timezone"),
     );
 }
@@ -680,17 +680,17 @@ function holdingSettings(holdingInfo: Record<string, unknown>): Record<string, u
   for (const key of [
     "language",
     "languageconfigs",
-    "base_currency",
+    "basecurrency",
     "currencies",
     "currency",
     "currency_codes",
     "currencylist",
     "currency_list",
-    "date_format",
+    "dateformat",
     "timezone",
-    "timezone_label",
-    "timezone_offset",
-    "year_type",
+    "timezonelabel",
+    "timezoneoffset",
+    "yeartype",
     "usebuddhistcalendar",
   ]) {
     if (settings[key] === undefined && holdingInfo[key] !== undefined) settings[key] = holdingInfo[key];
@@ -711,7 +711,7 @@ function activeLanguageCodes(settings: Record<string, unknown>): string[] {
 
 function currencyCodes(settings: Record<string, unknown>): string[] {
   const codes = [
-    getPayloadString(settings, "base_currency"),
+    getPayloadString(settings, "basecurrency"),
     getPayloadString(settings, "currency"),
     ...payloadStringArray(settings, "currencies"),
     ...payloadStringArray(settings, "currency_codes"),
@@ -724,7 +724,7 @@ function currencyCodes(settings: Record<string, unknown>): string[] {
 }
 
 function languageConfigEnabled(item: Record<string, unknown>): boolean {
-  const value = item.is_use ?? item.isuse ?? item.isUse;
+  const value = item.isuse ?? item.isuse ?? item.isUse;
   if (typeof value === "boolean") return value;
   if (typeof value === "number") return value !== 0;
   if (typeof value === "string") return !["false", "0", "no", "n"].includes(value.trim().toLowerCase());
@@ -732,7 +732,7 @@ function languageConfigEnabled(item: Record<string, unknown>): boolean {
 }
 
 function yearTypeFromSettings(settings: Record<string, unknown>): string {
-  const yearType = getPayloadString(settings, "year_type")?.trim().toLowerCase();
+  const yearType = getPayloadString(settings, "yeartype")?.trim().toLowerCase();
   if (yearType) return yearType;
   const useBuddhistCalendar = booleanPayloadValue(settings, "usebuddhistcalendar");
   if (useBuddhistCalendar === undefined) return "";
@@ -793,7 +793,7 @@ function realHoldingCodeFromPayload(payload: Record<string, unknown>): string {
 }
 
 function holdingCodeFromSearchParams(searchParams: URLSearchParams): string {
-  return searchParams.get("holdingcode")?.trim() || searchParams.get("active_holdingcode")?.trim() || "";
+  return searchParams.get("holdingcode")?.trim() || searchParams.get("activeholdingcode")?.trim() || "";
 }
 
 function getArrayFromPayload(payload: unknown, key: string): unknown[] {

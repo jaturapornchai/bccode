@@ -43,7 +43,7 @@ This is an audit/design task first. Do not implement production code unless Jead
     - Accounting stock is product-based and supports total balance, warehouse balance, and storage-location balance.
     - Costing uses accounting stock only.
     - Normal costing is product-level.
-    - If `cost_by_warehouse` is enabled, calculate cost per warehouse first, then aggregate to product cost.
+    - If `costbywarehouse` is enabled, calculate cost per warehouse first, then aggregate to product cost.
     - Do not calculate inventory cost by marketplace dimensions such as color, size, capacity, network, or SIM package.
     - Marketplace stock is a separate availability projection that can expose product-level and dimension-level available stock.
     - Selling price can be product, barcode/SKU, price level, marketplace, and detailed dimension level.
@@ -76,7 +76,7 @@ If a listed file is missing, note it and continue with `rg` evidence.
 Useful searches:
 ```powershell
 rg -n "marketplace|shopee|lazada|tiktok|aliexpress|sku|barcode|variant|dimension|media_assets|specification|payload|stock|price" frontend backend .agents scratch
-rg -n "balance_qty|available_qty|cost_by_warehouse|marketplace_stock_balances|marketplace_dimension_prices|inventory_stock_balances" backend frontend
+rg -n "balanceqty|availableqty|costbywarehouse|marketplacestockbalances|marketplacedimensionprices|inventorystockbalances" backend frontend
 rg -n "raw json|payload|schema|matrix|mapping|GUID|route|slug" frontend/src
 ```
 
@@ -254,7 +254,7 @@ Design:
 - sale price/compare-at price
 - promotion compatibility
 
-If existing price arrays are insufficient, propose a separate `marketplace_dimension_prices` or better model name.
+If existing price arrays are insufficient, propose a separate `marketplacedimensionprices` or better model name.
 
 ### 9. Raw Payload Archive
 Design a safe importer/debug-only model:
@@ -332,7 +332,7 @@ Rules for JSON examples:
 - Use lower `snake_case`.
 - Include `holdingcode`.
 - Include immutable `guidfixed` where it is a BC record.
-- Include user-facing codes such as `businesscode`, `item_code`, `barcode`, `sku_code`.
+- Include user-facing codes such as `businesscode`, `itemcode`, `barcode`, `sku_code`.
 - Do not include secrets or real customer data.
 - Keep examples readable; do not dump huge raw payloads.
 

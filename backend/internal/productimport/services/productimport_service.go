@@ -1243,17 +1243,17 @@ func (svc ProductImportService) applyMasterDataFromCache(productBase *product_mo
 func (svc ProductImportService) applyMasterDataUpdatesFromCache(updateData bson.M, importData models.ProductImportRaw, changes []models.FieldChange, cache *MasterDataCache) error {
 	for _, change := range changes {
 		switch change.Field {
-		case "group_code":
+		case "groupcode":
 			if importData.GroupCode != "" {
 				if group, ok := cache.Groups[importData.GroupCode]; ok {
 					updateData["groupguid"] = group.GuidFixed
-					updateData["group_names"] = group.Names
+					updateData["groupnames"] = group.Names
 				} else {
 					return fmt.Errorf("group code '%s' not found in master data", importData.GroupCode)
 				}
 			} else {
 				updateData["groupguid"] = ""
-				updateData["group_names"] = nil
+				updateData["groupnames"] = nil
 			}
 
 		case "groupsubonecode":
@@ -2391,7 +2391,7 @@ func (svc ProductImportService) getDetailedChanges(importData models.ProductImpo
 		{"priceseven", existingData.PriceSeven, importData.PriceSeven, "Price 7 update"},
 		{"priceeight", existingData.PriceEight, importData.PriceEight, "Price 8 update"},
 		{"pricenine", existingData.PriceNine, importData.PriceNine, "Price 9 update"},
-		{"group_code", existingData.GroupCode, importData.GroupCode, "Group code update"},
+		{"groupcode", existingData.GroupCode, importData.GroupCode, "Group code update"},
 		{"groupsubonecode", existingData.GroupsuboneCode, importData.GroupsuboneCode, "Group sub one code update"},
 		{"groupsubtwocode", existingData.GroupsubtwoCode, importData.GroupsubtwoCode, "Group sub two code update"},
 		{"brand_code", existingData.BrandCode, importData.BrandCode, "Brand code update"},
@@ -2435,7 +2435,7 @@ func (svc ProductImportService) createCompareSummary(items []models.ProductBarco
 				nameChanges++
 			case "unitcode":
 				unitChanges++
-			case "group_code", "groupsubonecode", "groupsubtwocode", "brand_code", "designcode", "modelcode", "patterncode", "gradecode", "categorycode", "classcode":
+			case "groupcode", "groupsubonecode", "groupsubtwocode", "brand_code", "designcode", "modelcode", "patterncode", "gradecode", "categorycode", "classcode":
 				masterDataChanges++
 			case "barcoderef":
 				refBarcodeChanges++
@@ -2974,7 +2974,7 @@ func (svc ProductImportService) updateExistingProduct(holdingCode string, authUs
 			updateData["itemcode"] = importData.Code
 
 		case "unitcode":
-			updateData["item_unit_code"] = importData.UnitCode
+			updateData["itemunitcode"] = importData.UnitCode
 			// อาจต้องอัปเดต unit names ด้วย
 			if importData.UnitCode != "" {
 				unitDocs, err := svc.productUnitRepo.FindByUnitCodes(context.Background(), holdingCode, []string{importData.UnitCode})
@@ -3055,8 +3055,8 @@ func (svc ProductImportService) updateExistingProduct(holdingCode string, authUs
 			updatePriceInArray(&newPrices, 17, importData.PriceNine)
 
 		// Master data codes
-		case "group_code":
-			updateData["group_code"] = importData.GroupCode
+		case "groupcode":
+			updateData["groupcode"] = importData.GroupCode
 		case "groupsubonecode":
 			updateData["groupsubonecode"] = importData.GroupsuboneCode
 		case "groupsubtwocode":
@@ -3114,15 +3114,15 @@ func (svc ProductImportService) updateExistingProduct(holdingCode string, authUs
 		ctx := context.Background()
 		for _, change := range compareItem.Changes {
 			switch change.Field {
-			case "group_code":
+			case "groupcode":
 				if importData.GroupCode != "" {
 					if groups, err := svc.groupProductRepo.FindByCodes(ctx, holdingCode, []string{importData.GroupCode}); err == nil && len(groups) > 0 {
 						updateData["groupguid"] = groups[0].GuidFixed
-						updateData["group_names"] = groups[0].Names
+						updateData["groupnames"] = groups[0].Names
 					}
 				} else {
 					updateData["groupguid"] = ""
-					updateData["group_names"] = nil
+					updateData["groupnames"] = nil
 				}
 			case "groupsubonecode":
 				if importData.GroupsuboneCode != "" {
@@ -3800,7 +3800,7 @@ func (svc ProductImportService) ApplyChangesWithProgress(holdingCode string, aut
 	}
 
 	// ✅ ไม่ return error เมื่อมี validation errors
-	// เพราะ status ถูกตั้งเป็น "COMPLETED_WITH_ERRORS" แล้ว และมี error details ใน error_message
+	// เพราะ status ถูกตั้งเป็น "COMPLETED_WITH_ERRORS" แล้ว และมี error details ใน errormessage
 	// Return error เฉพาะ critical errors (database, network, etc.) เท่านั้น
 	return nil
 }

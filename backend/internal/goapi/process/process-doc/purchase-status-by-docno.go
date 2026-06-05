@@ -239,15 +239,15 @@ func PurchaseStatusByDocNo(holdingCode string, docNos []string) []models.Purchas
 					productInfo["name"] = productName.String
 				}
 				if unitCode.Valid {
-					productInfo["unit_code"] = unitCode.String
+					productInfo["unitcode"] = unitCode.String
 				}
 				if unitName.Valid {
-					productInfo["unit_name"] = unitName.String
+					productInfo["unitname"] = unitName.String
 				}
 
 				productMap[itemCode] = productInfo
 				logger.Info("PRODUCT: %s name=%s unitcode=%s unitname=%s",
-					itemCode, productInfo["name"], productInfo["unit_code"], productInfo["unit_name"])
+					itemCode, productInfo["name"], productInfo["unitcode"], productInfo["unitname"])
 			}
 			logger.Info("Found %d products in product table", rowCount)
 
@@ -281,8 +281,8 @@ func PurchaseStatusByDocNo(holdingCode string, docNos []string) []models.Purchas
 		// หาข้อมูลสินค้าจาก productMap
 		if productInfo, exists := productMap[detail.ItemCode]; exists {
 			detail.ProductName = productInfo["name"]
-			detail.UnitCode = productInfo["unit_code"]
-			detail.UnitName = productInfo["unit_name"]
+			detail.UnitCode = productInfo["unitcode"]
+			detail.UnitName = productInfo["unitname"]
 		}
 
 		// สร้าง doc_refer จากข้อมูลรายละเอียด

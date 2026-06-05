@@ -118,7 +118,7 @@ func ProcessProductMovement(holdingCode string, fromDate string, endDate string,
 					if productIndex, exists := itemCodeMap[itemCode]; exists {
 						itemCodeDataList[productIndex].Name = mypg.GetStringValue(row, "name")
 						itemCodeDataList[productIndex].UnitCode = mypg.GetStringValue(row, "unitcode")
-						itemCodeDataList[productIndex].UnitName = mypg.GetStringValue(row, "unit_name")
+						itemCodeDataList[productIndex].UnitName = mypg.GetStringValue(row, "unitname")
 					}
 				}
 			}
@@ -208,7 +208,7 @@ func ProcessProductMovement(holdingCode string, fromDate string, endDate string,
 							UnitDivide:    unitDivide,
 							Price:         mypg.GetFloat64Value(row, "price"),
 							AverageCost:   mypg.GetFloat64Value(row, "averagecost"),
-							BalanceQty:    mypg.GetFloat64Value(row, "balance_qty"),
+							BalanceQty:    mypg.GetFloat64Value(row, "balanceqty"),
 							CalcAmount:    mypg.GetFloat64Value(row, "calcamount"),
 							BalanceAmount: mypg.GetFloat64Value(row, "balanceamount"),
 							UnitCost:      mypg.GetFloat64Value(row, "unitcost"),
@@ -254,7 +254,7 @@ func ProcessProductMovement(holdingCode string, fromDate string, endDate string,
 	totalLine := len(itemCodeDataList)
 
 	// Use bulk insert for PostgreSQL
-	columns := []string{"guid", "docdatetime", "line_number", "datajson"}
+	columns := []string{"guid", "docdatetime", "linenumber", "datajson"}
 	var records [][]any
 
 	for _, b := range itemCodeDataList {

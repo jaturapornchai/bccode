@@ -1101,11 +1101,11 @@ func (svc SaleInvoiceService) Export(holdingCode string, languageCode string, la
 		"barcode",        //บาร์โค้ด",
 		"productname",    //"ชื่อสินค้า",
 		"unitcode",       //"หน่วยนับ",
-		"unit_name",      //"ชื่อหน่วยนับ",
+		"unitname",       //"ชื่อหน่วยนับ",
 		"qty",            //"จำนวน",
 		"price",          //ราคา",
 		"discountamount", // "มูลค่าส่วนลด",
-		"sum_amount",     //"มูลค่าสินค้า",
+		"sumamount",      //"มูลค่าสินค้า",
 	}
 
 	headerRow := []string{}

@@ -127,8 +127,8 @@ export function ProductPriceHistoryScreen({ embedded = false, language: external
           keyword: searchText.trim(),
           limit: 80,
           offset: 0,
-          sort_field: searchText.trim() ? "relevance" : "barcode",
-          sort_order: "asc",
+          sortfield: searchText.trim() ? "relevance" : "barcode",
+          sortorder: "asc",
         }),
       });
       const payload = await response.json() as unknown;
@@ -337,7 +337,7 @@ function normalizeProduct(value: unknown): ProductSummary | null {
     guidFixed: getString(value, "guidfixed") || getString(value, "guidFixed"),
     barcode: getString(value, "barcode"),
     name: localizedName(getArray(value, "names") as LocalizedName[], "th") || getString(value, "name") || getString(value, "productname"),
-    itemCode: getString(value, "itemcode") || getString(value, "item_code"),
+    itemCode: getString(value, "itemcode") || getString(value, "itemcode"),
     unitName: localizedName(getArray(value, "itemunitnames") as LocalizedName[], "th") || getString(value, "unitname"),
     price: getNumber(value, "prices") || getNumber(value, "price"),
   };
@@ -355,7 +355,7 @@ function normalizeHistoryRecord(value: unknown): PriceHistoryRecord | null {
     barcode: getString(value, "barcode"),
     productName: getString(value, "productname") || getString(value, "productName"),
     priceType: getString(value, "pricetype") || getString(value, "priceType"),
-    keyNumber: getNumber(value, "key_number") || getNumber(value, "keyNumber"),
+    keyNumber: getNumber(value, "keynumber") || getNumber(value, "keyNumber"),
     oldPrice: getNumber(value, "oldprice") || getNumber(value, "oldPrice"),
     newPrice: getNumber(value, "newprice") || getNumber(value, "newPrice"),
     difference: getNumber(value, "pricedifference") || getNumber(value, "priceDifference"),

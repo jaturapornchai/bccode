@@ -360,7 +360,7 @@ func (s *UnifiedAPIServer) HealthCheck(c echo.Context) error {
 
 	// ตรวจสอบ AI provider
 	if s.aiProvider == nil {
-		healthData["components"].(map[string]interface{})["ai_provider"] = "error"
+		healthData["components"].(map[string]interface{})["aiprovider"] = "error"
 		healthData["status"] = "degraded"
 	}
 

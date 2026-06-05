@@ -79,7 +79,7 @@ func (svc ShopUserRepository) Update(ctx context.Context, id primitive.ObjectID,
 		userUID = svc.lookupUserUID(ctx, username)
 	}
 
-	err := svc.pst.Update(ctx, &models.ShopUser{}, bson.M{"_id": id, "holdingcode": holdingCode}, bson.M{"$set": bson.M{"username": username, "role": role, "user_uid": userUID}})
+	err := svc.pst.Update(ctx, &models.ShopUser{}, bson.M{"_id": id, "holdingcode": holdingCode}, bson.M{"$set": bson.M{"username": username, "role": role, "useruid": userUID}})
 
 	if err != nil {
 		return err
@@ -92,11 +92,11 @@ func (svc ShopUserRepository) Save(ctx context.Context, holdingCode string, user
 	userUID := svc.lookupUserUID(ctx, username)
 	filter := bson.M{"holdingcode": holdingCode, "username": username}
 	if userUID != "" {
-		filter = bson.M{"holdingcode": holdingCode, "user_uid": userUID}
+		filter = bson.M{"holdingcode": holdingCode, "useruid": userUID}
 	}
 
 	optUpdate := options.Update().SetUpsert(true)
-	err := svc.pst.Update(ctx, &models.ShopUser{}, filter, bson.M{"$set": bson.M{"username": username, "role": role, "user_uid": userUID}}, optUpdate)
+	err := svc.pst.Update(ctx, &models.ShopUser{}, filter, bson.M{"$set": bson.M{"username": username, "role": role, "useruid": userUID}}, optUpdate)
 
 	if err != nil {
 		return err
@@ -111,7 +111,7 @@ func (svc ShopUserRepository) SaveFullProfile(ctx context.Context, holdingCode s
 		userUID = svc.lookupUserUID(ctx, req.Username)
 	}
 	updateData := bson.M{
-		"user_uid":          userUID,
+		"useruid":           userUID,
 		"username":          req.Username,
 		"role":              req.Role,
 		"isaccessdisabled":  req.IsAccessDisabled,
@@ -124,7 +124,7 @@ func (svc ShopUserRepository) SaveFullProfile(ctx context.Context, holdingCode s
 		"line_user_id":      req.LineUserID,
 		"line_display_name": req.LineDisplayName,
 		"line_picture_url":  req.LinePictureURL,
-		"access_scopes":     req.AccessScopes,
+		"accessscopes":      req.AccessScopes,
 	}
 
 	// เพิ่มข้อมูลการอนุมัติแยกตามประเภทเอกสาร
@@ -137,7 +137,7 @@ func (svc ShopUserRepository) SaveFullProfile(ctx context.Context, holdingCode s
 
 	filter := bson.M{"holdingcode": holdingCode, "username": req.Username}
 	if userUID != "" {
-		filter = bson.M{"holdingcode": holdingCode, "user_uid": userUID}
+		filter = bson.M{"holdingcode": holdingCode, "useruid": userUID}
 	} else if strings.TrimSpace(req.EditUsername) != "" {
 		filter = bson.M{"holdingcode": holdingCode, "username": req.EditUsername}
 	}
@@ -241,7 +241,7 @@ func (svc ShopUserRepository) DeleteEmptyUsernames(ctx context.Context, holdingC
 
 func (svc ShopUserRepository) FindByHoldingCodeAndUserUIDInfo(ctx context.Context, holdingCode string, userUID string) (models.ShopUserInfo, error) {
 	shopUser := &models.ShopUserInfo{}
-	err := svc.pst.FindOne(ctx, &models.ShopUserInfo{}, bson.M{"holdingcode": holdingCode, "user_uid": userUID}, shopUser)
+	err := svc.pst.FindOne(ctx, &models.ShopUserInfo{}, bson.M{"holdingcode": holdingCode, "useruid": userUID}, shopUser)
 	if err != nil {
 		return models.ShopUserInfo{}, err
 	}
@@ -270,7 +270,7 @@ func (svc ShopUserRepository) ResolveHoldingCodeByHoldingCode(ctx context.Contex
 
 func (svc ShopUserRepository) FindByHoldingCodeAndUserUID(ctx context.Context, holdingCode string, userUID string) (models.ShopUser, error) {
 	shopUser := &models.ShopUser{}
-	err := svc.pst.FindOne(ctx, &models.ShopUser{}, bson.M{"holdingcode": holdingCode, "user_uid": userUID}, shopUser)
+	err := svc.pst.FindOne(ctx, &models.ShopUser{}, bson.M{"holdingcode": holdingCode, "useruid": userUID}, shopUser)
 	if err != nil {
 		return models.ShopUser{}, err
 	}
@@ -284,7 +284,7 @@ func (svc ShopUserRepository) FindByHoldingCodeAndUsernameInfo(ctx context.Conte
 
 	var err error
 	if userUID != "" {
-		err = svc.pst.FindOne(ctx, &models.ShopUserInfo{}, bson.M{"holdingcode": holdingCode, "user_uid": userUID}, shopUser)
+		err = svc.pst.FindOne(ctx, &models.ShopUserInfo{}, bson.M{"holdingcode": holdingCode, "useruid": userUID}, shopUser)
 	}
 
 	if err != nil || userUID == "" {
@@ -305,7 +305,7 @@ func (svc ShopUserRepository) FindByHoldingCodeAndUsername(ctx context.Context, 
 
 	var err error
 	if userUID != "" {
-		err = svc.pst.FindOne(ctx, &models.ShopUser{}, bson.M{"holdingcode": holdingCode, "user_uid": userUID}, shopUser)
+		err = svc.pst.FindOne(ctx, &models.ShopUser{}, bson.M{"holdingcode": holdingCode, "useruid": userUID}, shopUser)
 	}
 
 	if err != nil || userUID == "" {
@@ -395,7 +395,7 @@ func (repo ShopUserRepository) FindByUsernamePage(ctx context.Context, username 
 }
 
 func (repo ShopUserRepository) FindByUserUIDPage(ctx context.Context, userUID string, pageable micromodels.Pageable) ([]models.ShopUserInfo, mongopagination.PaginationData, error) {
-	return repo.findByUserPage(ctx, bson.M{"user_uid": userUID}, pageable)
+	return repo.findByUserPage(ctx, bson.M{"useruid": userUID}, pageable)
 }
 
 func (repo ShopUserRepository) findByUserPage(ctx context.Context, userMatch bson.M, pageable micromodels.Pageable) ([]models.ShopUserInfo, mongopagination.PaginationData, error) {
@@ -473,16 +473,16 @@ func (repo ShopUserRepository) findByUserPage(ctx context.Context, userMatch bso
 				"createdby":        bson.M{"$first": "$shopInfo.createdby"},
 				"language":         bson.M{"$first": "$shopInfo.settings.language"},
 				"languageconfigs":  bson.M{"$ifNull": []interface{}{bson.M{"$first": "$shopInfo.settings.languageconfigs"}, []interface{}{}}},
-				"base_currency":    bson.M{"$first": "$shopInfo.settings.base_currency"},
+				"basecurrency":     bson.M{"$first": "$shopInfo.settings.basecurrency"},
 				"currencies": bson.M{"$map": bson.M{
 					"input": "$currencyInfo",
 					"as":    "currency",
 					"in":    "$$currency.code",
 				}},
 				"timezone":            bson.M{"$first": "$shopInfo.settings.timezone"},
-				"timezone_label":      bson.M{"$first": "$shopInfo.settings.timezone_label"},
-				"timezone_offset":     bson.M{"$first": "$shopInfo.settings.timezone_offset"},
-				"date_format":         bson.M{"$first": "$shopInfo.settings.date_format"},
+				"timezonelabel":       bson.M{"$first": "$shopInfo.settings.timezonelabel"},
+				"timezoneoffset":      bson.M{"$first": "$shopInfo.settings.timezoneoffset"},
+				"dateformat":          bson.M{"$first": "$shopInfo.settings.dateformat"},
 				"usebuddhistcalendar": bson.M{"$first": "$shopInfo.settings.usebuddhistcalendar"},
 			},
 		},
@@ -653,7 +653,7 @@ func isEmailUsername(username string) bool {
 func (svc ShopUserRepository) shopUserIdentityFilter(ctx context.Context, holdingCode string, username string) bson.M {
 	filter := bson.M{"holdingcode": holdingCode, "username": username}
 	if userUID := svc.lookupUserUID(ctx, username); userUID != "" {
-		filter = bson.M{"holdingcode": holdingCode, "user_uid": userUID}
+		filter = bson.M{"holdingcode": holdingCode, "useruid": userUID}
 	}
 	return filter
 }

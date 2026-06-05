@@ -9,7 +9,7 @@ const loopContent = `              {/* Tab: classification */}
                   <h4 className="font-semibold text-sm border-b border-border pb-1">{lang === "th" ? "ประเภทกลุ่ม & หมวดหมู่หลัก" : "Groups & Categories"}</h4>
                   <div className="grid gap-4 sm:grid-cols-2">
                     {[
-                      { key: "group", label: text.group, code: editProduct.group_code, names: editProduct.group_names },
+                      { key: "group", label: text.group, code: editProduct.groupcode, names: editProduct.groupnames },
                       { key: "groupsubone", label: text.groupsubone, code: editProduct.groupsubonecode, names: editProduct.groupsubonenames },
                       { key: "groupsubtwo", label: text.groupsubtwo, code: editProduct.groupsubtwocode, names: editProduct.groupsubtwonames },
                       { key: "brand", label: text.brand, code: editProduct.brand_code, names: editProduct.brandnames },

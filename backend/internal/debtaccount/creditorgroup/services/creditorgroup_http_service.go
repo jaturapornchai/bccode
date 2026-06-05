@@ -61,7 +61,7 @@ func (svc CreditorGroupHttpService) CreateCreditorGroup(holdingCode string, auth
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "group_code", doc.GroupCode)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "groupcode", doc.GroupCode)
 
 	if err != nil {
 		return "", err
@@ -184,7 +184,7 @@ func (svc CreditorGroupHttpService) SearchCreditorGroup(holdingCode string, filt
 	defer ctxCancel()
 
 	searchInFields := []string{
-		"group_code",
+		"groupcode",
 		"names.name",
 	}
 
@@ -202,7 +202,7 @@ func (svc CreditorGroupHttpService) SearchCreditorGroupStep(holdingCode string, 
 	defer ctxCancel()
 
 	searchInFields := []string{
-		"group_code",
+		"groupcode",
 		"names.name",
 	}
 
@@ -228,7 +228,7 @@ func (svc CreditorGroupHttpService) SaveInBatch(holdingCode string, authUsername
 		itemCodeGuidList = append(itemCodeGuidList, doc.GroupCode)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "group_code", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "groupcode", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -267,7 +267,7 @@ func (svc CreditorGroupHttpService) SaveInBatch(holdingCode string, authUsername
 		duplicateDataList,
 		svc.getDocIDKey,
 		func(holdingCode string, guid string) (models.CreditorGroupDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "group_code", guid)
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "groupcode", guid)
 		},
 		func(doc models.CreditorGroupDoc) bool {
 			return doc.GroupCode != ""

@@ -1226,9 +1226,9 @@ func ApproveViaTokenHandler(c echo.Context) error {
 
 	var tokenDoc ApprovalToken
 	tokenFilter := bson.M{
-		"token":      req.Token,
-		"used":       false,
-		"expires_at": bson.M{"$gt": now}, // ยังไม่หมดอายุ
+		"token":     req.Token,
+		"used":      false,
+		"expiresat": bson.M{"$gt": now}, // ยังไม่หมดอายุ
 	}
 	tokenUpdate := bson.M{
 		"$set": bson.M{
@@ -1428,7 +1428,7 @@ func GetApprovalTokenInfoHandler(c echo.Context) error {
 			"token_expired":      time.Now().UTC().After(tokenDoc.ExpiresAt),
 			"holdingcode":        tokenDoc.HoldingCode,
 			"docno":              tokenDoc.DocNo,
-			"total_amount":       poStatus.TotalAmount,
+			"totalamount":        poStatus.TotalAmount,
 			"purchase_type_name": poStatus.PurchaseTypeName,
 			"created_by_name":    poStatus.CreatedByName,
 			"status":             poStatus.Status,
@@ -1998,7 +1998,7 @@ func GetPODetailsForLIFFHandler(c echo.Context) error {
 	cursor, err := detailCollection.Find(ctx, bson.M{
 		"holdingcode": tokenDoc.HoldingCode,
 		"docno":       tokenDoc.DocNo,
-	}, options.Find().SetSort(bson.M{"line_number": 1}))
+	}, options.Find().SetSort(bson.M{"linenumber": 1}))
 
 	if err == nil {
 		defer cursor.Close(ctx)
@@ -2029,13 +2029,13 @@ func GetPODetailsForLIFFHandler(c echo.Context) error {
 			}
 
 			item := PODetailItem{
-				LineNumber: getInt(doc["line_number"]),
+				LineNumber: getInt(doc["linenumber"]),
 				ItemCode:   getString(doc["itemcode"]),
 				ItemName:   itemName,
 				Qty:        getFloat(doc["qty"]),
 				UnitName:   unitName,
 				Price:      getFloat(doc["price"]),
-				SumAmount:  getFloat(doc["sum_amount"]),
+				SumAmount:  getFloat(doc["sumamount"]),
 			}
 			items = append(items, item)
 		}

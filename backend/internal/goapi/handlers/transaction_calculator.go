@@ -646,7 +646,7 @@ func QuickCalculatorHandler(c echo.Context) error {
 			"after_discount":  roundTo2Decimals(afterDiscount),
 			"before_vat":      roundTo2Decimals(beforeVat),
 			"vat_amount":      roundTo2Decimals(vat),
-			"total_amount":    roundTo2Decimals(total),
+			"totalamount":     roundTo2Decimals(total),
 		},
 	})
 }

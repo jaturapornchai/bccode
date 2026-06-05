@@ -215,9 +215,9 @@ describe("menu language labels", () => {
     const skuGroup = masterSection?.groups.find((group) => group.id === "product-sku-options");
     const routesById = new Map(skuGroup?.items.map((item) => [item.id, item.route]) ?? []);
 
-    expect(routesById.get("product-color")).toBe("/product_color");
-    expect(routesById.get("product-size")).toBe("/product_size");
-    expect(routesById.get("product-variant-matrix")).toBe("/product_variant_matrix");
+    expect(routesById.get("product-color")).toBe("/productcolor");
+    expect(routesById.get("product-size")).toBe("/productsize");
+    expect(routesById.get("product-variant-matrix")).toBe("/productvariantmatrix");
     expect(skuGroup?.items.find((item) => item.id === "product-variant-matrix")?.label.th).toBe("ชุดตัวเลือกสินค้า");
   });
 

@@ -28,7 +28,7 @@ func TestParseCSV(t *testing.T) {
 					"code": "en",
 					"name": "Item 1"
 				}],
-				"item_type": 1,
+				"itemtype": 1,
 				"unitcode": "U0001",
 				"unitnames": [
 					{
@@ -39,7 +39,7 @@ func TestParseCSV(t *testing.T) {
 				"qty": 10.00,
 				"price": 100.00,
 				"discountamount": 10.00,
-				"sum_amount": 900.00
+				"sumamount": 900.00
 			}
 		]
 	}`
@@ -109,7 +109,7 @@ func TestParseDetailString(t *testing.T) {
 			"code": "en",
 			"name": "Item 1"
 		}],
-		"item_type": 1,
+		"itemtype": 1,
 		"unitcode": "U0001",
 		"unitnames": [
 			{
@@ -120,7 +120,7 @@ func TestParseDetailString(t *testing.T) {
 		"qty": 10.00,
 		"price": 100.00,
 		"discountamount": 10.00,
-		"sum_amount": 900.00
+		"sumamount": 900.00
 	}`
 	detail := trans_models.Detail{}
 	err := json.Unmarshal([]byte(giveRaw), &detail)

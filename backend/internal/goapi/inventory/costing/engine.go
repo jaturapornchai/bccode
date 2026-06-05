@@ -60,7 +60,7 @@ func getOrCreateBalance(ctx context.Context, tx *sql.Tx, holdingCode, itemCode, 
 		`SELECT id, holdingcode, itemcode, barcode, whcode, locationcode,
 		        currentqty, currentavgcost, currenttotalvalue,
 		        lastpurchasecost, lastpurchasedate, updatedat
-		 FROM inventory_stock_balances
+		 FROM inventorystockbalances
 		 WHERE holdingcode = $1 AND itemcode = $2 AND whcode = $3 AND locationcode = $4
 		 FOR UPDATE`,
 		holdingCode, itemCode, whCode, locationCode,
@@ -80,7 +80,7 @@ func getOrCreateBalance(ctx context.Context, tx *sql.Tx, holdingCode, itemCode, 
 			LocationCode: locationCode,
 		}
 		err = tx.QueryRowContext(ctx,
-			`INSERT INTO inventory_stock_balances
+			`INSERT INTO inventorystockbalances
 			 (holdingcode, itemcode, barcode, whcode, locationcode, currentqty, currentavgcost, currenttotalvalue, updatedat)
 			 VALUES ($1, $2, $3, $4, $5, 0, 0, 0, NOW())
 			 RETURNING id`,
@@ -100,7 +100,7 @@ func getOrCreateBalance(ctx context.Context, tx *sql.Tx, holdingCode, itemCode, 
 // updateBalance — อัพเดท stock balance
 func updateBalance(ctx context.Context, tx *sql.Tx, balance *inv.InventoryStockBalance) error {
 	_, err := tx.ExecContext(ctx,
-		`UPDATE inventory_stock_balances
+		`UPDATE inventorystockbalances
 		 SET currentqty = $1, currentavgcost = $2, currenttotalvalue = $3,
 		     lastpurchasecost = $4, lastpurchasedate = $5, updatedat = NOW()
 		 WHERE id = $6`,
@@ -116,7 +116,7 @@ func updateBalance(ctx context.Context, tx *sql.Tx, balance *inv.InventoryStockB
 // insertCostTransaction — บันทึก cost transaction
 func insertCostTransaction(ctx context.Context, tx *sql.Tx, ct *inv.InventoryCostTransaction) error {
 	return tx.QueryRowContext(ctx,
-		`INSERT INTO inventory_cost_transactions
+		`INSERT INTO inventorycosttransactions
 		 (holdingcode, itemcode, barcode, whcode, locationcode, transactiontype, transflag,
 		  refdoctype, refdocno, qty, unitcost, totalcost, landedcost, lotnumber, expirydate,
 		  costlayerid, balanceqty, balanceavgcost, balancetotalvalue, costingmethodused,
@@ -135,7 +135,7 @@ func insertCostTransaction(ctx context.Context, tx *sql.Tx, ct *inv.InventoryCos
 // insertCostLayer — บันทึก cost layer ใหม่
 func insertCostLayer(ctx context.Context, tx *sql.Tx, layer *inv.InventoryCostLayer) error {
 	return tx.QueryRowContext(ctx,
-		`INSERT INTO inventory_cost_layers
+		`INSERT INTO inventorycostlayers
 		 (holdingcode, itemcode, barcode, whcode, locationcode, layertype, refdoctype, refdocno,
 		  originalqty, remainingqty, unitcost, landedcostperunit, totalunitcost,
 		  lotnumber, supplierlotnumber, manufacturingdate, expirydate, qualitystatus,

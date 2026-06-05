@@ -63,7 +63,7 @@ func (svc DebtorGroupHttpService) CreateDebtorGroup(holdingCode string, authUser
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "group_code", doc.GroupCode)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "groupcode", doc.GroupCode)
 
 	if err != nil {
 		return "", err
@@ -192,7 +192,7 @@ func (svc DebtorGroupHttpService) SearchDebtorGroup(holdingCode string, filters 
 	defer ctxCancel()
 
 	searchInFields := []string{
-		"group_code",
+		"groupcode",
 		"names.name",
 	}
 
@@ -211,7 +211,7 @@ func (svc DebtorGroupHttpService) SearchDebtorGroupStep(holdingCode string, lang
 	defer ctxCancel()
 
 	searchInFields := []string{
-		"group_code",
+		"groupcode",
 		"names.name",
 	}
 
@@ -238,7 +238,7 @@ func (svc DebtorGroupHttpService) SaveInBatch(holdingCode string, authUsername s
 		itemCodeGuidList = append(itemCodeGuidList, doc.GroupCode)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "group_code", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, holdingCode, "groupcode", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -277,7 +277,7 @@ func (svc DebtorGroupHttpService) SaveInBatch(holdingCode string, authUsername s
 		duplicateDataList,
 		svc.getDocIDKey,
 		func(holdingCode string, guid string) (models.DebtorGroupDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "group_code", guid)
+			return svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "groupcode", guid)
 		},
 		func(doc models.DebtorGroupDoc) bool {
 			return doc.GroupCode != ""

@@ -510,7 +510,7 @@ async def interactive_tool(resource_id: str, ctx: Context) -> str:
     # Request sensitive information when needed
     api_key = await ctx.elicit(
         prompt="Please provide your API key:",
-        input_type="password"
+        inputtype="password"
     )
 
     # Use the provided key
@@ -520,7 +520,7 @@ async def interactive_tool(resource_id: str, ctx: Context) -> str:
 **Context capabilities:**
 - `ctx.report_progress(progress, message)` - Report progress for long operations
 - `ctx.log_info(message, data)` / `ctx.log_error()` / `ctx.log_debug()` - Logging
-- `ctx.elicit(prompt, input_type)` - Request input from users
+- `ctx.elicit(prompt, inputtype)` - Request input from users
 - `ctx.fastmcp.name` - Access server configuration
 - `ctx.read_resource(uri)` - Read MCP resources
 

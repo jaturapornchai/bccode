@@ -287,7 +287,7 @@ func (h CompanyHttp) UpdateCompany(ctx microservice.IContext) error {
 
 	if err := pst.Update(mongoCtx, companyModels.CompanyDoc{}, bson.M{"holdingcode": holdingCode, "guidfixed": id, "deletedat": bson.M{"$exists": false}}, bson.M{"$set": bson.M{
 		"names":     existing.Names,
-		"tax_id":    existing.TaxID,
+		"taxid":     existing.TaxID,
 		"code":      existing.Code,
 		"isactive":  existing.IsActive,
 		"updatedat": existing.UpdatedAt,

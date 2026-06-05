@@ -198,7 +198,7 @@ func renderPODetailsTable(pdf *gofpdf.Fpdf, doc map[string]interface{}, payload 
 	sortedDetails := make([]detailItem, 0, len(details))
 	for _, d := range details {
 		if detailMap, ok := d.(map[string]interface{}); ok {
-			lineNum := GetIntValue(detailMap, "line_number")
+			lineNum := GetIntValue(detailMap, "linenumber")
 			sortedDetails = append(sortedDetails, detailItem{lineNumber: lineNum, data: detailMap})
 		}
 	}
@@ -233,7 +233,7 @@ func renderPODetailsTable(pdf *gofpdf.Fpdf, doc map[string]interface{}, payload 
 
 		// ถ้าไม่มี price_doc → คำนวณจาก price / exchangeRate
 		priceBase := GetFloatValue(detail, "price")
-		sumAmountBase := GetFloatValue(detail, "sum_amount")
+		sumAmountBase := GetFloatValue(detail, "sumamount")
 		if priceDoc == 0 && priceBase > 0 && exchangeRate > 0 {
 			priceDoc = priceBase / exchangeRate
 		}
@@ -374,7 +374,7 @@ func renderPOSummary(pdf *gofpdf.Fpdf, doc map[string]interface{}, payload GenPD
 	}
 
 	// ยอดรวม base currency (THB)
-	totalAmount := GetFloatValue(doc, "total_amount")
+	totalAmount := GetFloatValue(doc, "totalamount")
 	totalDiscount := GetFloatValue(doc, "totaldiscount")
 	totalVat := GetFloatValue(doc, "totalvatvalue")
 	totalAfterVat := GetFloatValue(doc, "totalaftervat")
@@ -404,7 +404,7 @@ func renderPOSummary(pdf *gofpdf.Fpdf, doc map[string]interface{}, payload GenPD
 		if details, ok := doc["details"].(primitive.A); ok {
 			for _, d := range details {
 				if detailMap, ok := d.(map[string]interface{}); ok {
-					totalAmount += GetFloatValue(detailMap, "sum_amount")
+					totalAmount += GetFloatValue(detailMap, "sumamount")
 				}
 			}
 		}

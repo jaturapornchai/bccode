@@ -363,8 +363,8 @@ func SalesReportSummaryHandler(c echo.Context) error {
 		"status": "success",
 		"data": map[string]any{
 			"total_documents": totalDocuments,
-			"total_amount":    totalAmount,
-			"total_cost":      totalCost,
+			"totalamount":     totalAmount,
+			"totalcost":       totalCost,
 			"total_profit":    totalProfit,
 			"profit_margin":   calculateMargin(totalAmount, totalProfit),
 		},
@@ -379,8 +379,8 @@ func buildSalesReportSummaryQuery(fromDate, toDate time.Time, branchCodes, produ
 	query := `
 SELECT
   COUNT(DISTINCT p.docno) as total_documents,
-  COALESCE(SUM(p.totalqty * p.price) * -1, 0) as total_amount,
-  COALESCE(SUM(p.calcamount) * -1, 0) as total_cost,
+  COALESCE(SUM(p.totalqty * p.price) * -1, 0) as totalamount,
+  COALESCE(SUM(p.calcamount) * -1, 0) as totalcost,
   COALESCE((SUM(p.totalqty * p.price) * -1) - (SUM(p.calcamount) * -1), 0) as total_profit
 FROM public.processstockcost p
 WHERE p.transflag = 44

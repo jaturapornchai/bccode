@@ -16,7 +16,7 @@ Import products from Excel/images, export reports as CSV/PDF, upload files.
 |-----------|------|---------|
 | Screen | `screens/import/import_product_screen.dart` | Main import screen |
 | From File | `screens/import/import_product_from_file_screen.dart` | Import from Excel/CSV |
-| Validation | `screens/import/import_product_detail_screen.dart` | Verify data before import |
+| Validation | `screens/import/import_productdetail_screen.dart` | Verify data before import |
 | From Image | `screens/import/import_product_image_screen.dart` | Import product images |
 | BLoC | `bloc/import_product/` | State management |
 | Backend | `backend/internal/productimport/` | Import processing |

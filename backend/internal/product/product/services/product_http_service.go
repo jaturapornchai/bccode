@@ -145,7 +145,7 @@ func (svc ProductHttpService) ProductList(holdingCode string, filters map[string
 	searchInFields := []string{
 		"names.name",
 		"code",
-		"group_code",
+		"groupcode",
 		"groupnames.name",
 	}
 

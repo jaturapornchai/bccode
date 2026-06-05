@@ -140,9 +140,9 @@ func ReportProductBalanceByItemAndWareHouseAndLocation(holdingCode string, guid 
 		TopLine:           true,
 		BottomLine:        bottomLine,
 		Columns: []models.ReportColumnModel{
-			{Name: GetColumnText("item_code", languageCode), Width: 1, Align: 0},    // รหัสสินค้า
+			{Name: GetColumnText("itemcode", languageCode), Width: 1, Align: 0},     // รหัสสินค้า
 			{Name: GetColumnText("product_name", languageCode), Width: 3, Align: 0}, // ชื่อสินค้า
-			{Name: GetColumnText("barcode_list", languageCode), Width: 2, Align: 0}, // รหัส/Barcode (หลายบาร์โค้ด)
+			{Name: GetColumnText("barcodelist", languageCode), Width: 2, Align: 0},  // รหัส/Barcode (หลายบาร์โค้ด)
 			{Name: GetColumnText("unit", languageCode), Width: 1, Align: 0},         // หน่วยนับ
 			{Name: GetColumnText("quantity", languageCode), Width: 1, Align: 2},     // จำนวน
 			{Name: GetColumnText("cost", languageCode), Width: 1, Align: 2},         // ต้นทุน

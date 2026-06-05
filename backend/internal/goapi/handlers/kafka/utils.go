@@ -98,10 +98,10 @@ func SafeConsumerWrapper(consumerName string, fn func(string) error) func(string
 
 			// ✅ ส่งไป Dead Letter Queue
 			dlqErr := mydlq.SendToDLQ(ctx, consumerName, "", msg, err, retryConfig.MaxRetries, map[string]interface{}{
-				"consumer":    consumerName,
-				"msg_length":  len(msg),
-				"failed_at":   time.Now(),
-				"retry_count": retryConfig.MaxRetries,
+				"consumer":   consumerName,
+				"msg_length": len(msg),
+				"failed_at":  time.Now(),
+				"retrycount": retryConfig.MaxRetries,
 			})
 
 			if dlqErr != nil {

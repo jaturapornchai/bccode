@@ -20,7 +20,7 @@ export async function POST() {
     const data = getRecord(payload, "data") ?? payload;
     const code = getString(data, "code");
     const loginUrl = getString(data, "loginUrl") ?? getString(data, "login_url");
-    const expiresAt = getString(data, "expiresAt") ?? getString(data, "expires_at");
+    const expiresAt = getString(data, "expiresAt") ?? getString(data, "expiresat");
 
     if (!code || !loginUrl) {
       return NextResponse.json({ success: false, message: "LINE login service ตอบกลับไม่ครบ" }, { status: 502 });

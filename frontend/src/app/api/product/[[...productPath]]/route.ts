@@ -31,7 +31,7 @@ export async function GET(request: Request, context: ProductProxyContext) {
       return proxyProductPgListJson(request, holdingCode, q, Number(limit) || 50, pageToOffset(page, limit));
     }
     const qs = new URLSearchParams({ q, page, limit });
-    for (const key of ["item_type", "materialtype"]) {
+    for (const key of ["itemtype", "materialtype"]) {
       const value = url.searchParams.get(key);
       if (value) qs.set(key, value);
     }
@@ -121,24 +121,24 @@ function productPgListRowToProduct(row: unknown): Record<string, unknown> {
   const unitCode = stringFromRecord(r, "unitcode");
   const unitName = stringFromRecord(r, "unitname");
   const unitCount = numberFromRecord(r, "unit_count");
-  const balanceQty = numberFromRecord(r, "balance_qty");
+  const balanceQty = numberFromRecord(r, "balanceqty");
   return {
     guidfixed: code,
     code,
     names: name ? [{ code: "th", name }] : [],
-    item_type: 0,
+    itemtype: 0,
     materialtype: 0,
     categorycode: stringFromRecord(r, "categorycode"),
-    vat_type: numberFromRecord(r, "vattype"),
+    vattype: numberFromRecord(r, "vattype"),
     unitcode: unitCode,
     unitnames: unitName ? [{ code: "th", name: unitName }] : [],
-    item_unit_code: unitCode,
+    itemunitcode: unitCode,
     itemunitnames: unitName ? [{ code: "th", name: unitName }] : [],
     qty: balanceQty,
     barcodes: [
       {
         barcode: stringFromRecord(r, "barcode"),
-        item_unit_code: unitCode,
+        itemunitcode: unitCode,
         itemunitnames: unitName ? [{ code: "th", name: unitName }] : [],
         qty: Math.max(1, numberFromRecord(r, "unitstand")),
         standvalue: Math.max(1, numberFromRecord(r, "unitstand")),

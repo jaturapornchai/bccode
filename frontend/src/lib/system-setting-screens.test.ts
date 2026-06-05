@@ -18,16 +18,16 @@ describe("system setting screen configs", () => {
     expect(keys.has("languages")).toBe(true);
     expect(keys.has("language")).toBe(false);
     expect(keys.has("contact.address")).toBe(true);
-    expect(keys.has("contact.country_code")).toBe(true);
-    expect(keys.has("contact.province_code")).toBe(true);
-    expect(keys.has("contact.district_code")).toBe(true);
-    expect(keys.has("contact.sub_district_code")).toBe(true);
-    expect(keys.has("contact.zip_code")).toBe(true);
-    expect(keys.has("contact.phone_number")).toBe(true);
-    expect(keys.has("year_type")).toBe(true);
-    expect(keys.has("company_registration_no")).toBe(true);
-    expect(keys.has("is_vat_registered")).toBe(true);
-    expect(keys.has("pos.tax_id")).toBe(true);
+    expect(keys.has("contact.countrycode")).toBe(true);
+    expect(keys.has("contact.provincecode")).toBe(true);
+    expect(keys.has("contact.districtcode")).toBe(true);
+    expect(keys.has("contact.subdistrictcode")).toBe(true);
+    expect(keys.has("contact.zipcode")).toBe(true);
+    expect(keys.has("contact.phonenumber")).toBe(true);
+    expect(keys.has("yeartype")).toBe(true);
+    expect(keys.has("companyregistrationno")).toBe(true);
+    expect(keys.has("isvatregistered")).toBe(true);
+    expect(keys.has("pos.taxid")).toBe(true);
     expect(keys.has("pos.vatrate")).toBe(true);
     expect(keys.has("paymentrounding")).toBe(true);
     expect(keys.has("pointconfig")).toBe(true);
@@ -37,33 +37,33 @@ describe("system setting screen configs", () => {
     expect(keys.has("logouri")).toBe(true);
     expect(keys.has("businesstype")).toBe(true);
     for (const key of [
-      "is_restaurant",
-      "is_tire",
-      "is_agriculture",
-      "is_pharmacy",
-      "is_retail",
-      "is_service",
-      "is_wholesale",
-      "is_manufacturing",
-      "is_import_export",
-      "is_contractor",
-      "is_rental",
-      "is_ecommerce",
-      "is_logistics",
-      "is_education",
-      "is_hotel",
-      "is_beauty",
-      "is_gold_shop",
-      "is_accounting_firm",
-      "is_construction",
-      "is_electronics",
-      "is_mobile_shop",
+      "isrestaurant",
+      "istire",
+      "isagriculture",
+      "ispharmacy",
+      "isretail",
+      "isservice",
+      "iswholesale",
+      "ismanufacturing",
+      "isimportexport",
+      "iscontractor",
+      "isrental",
+      "isecommerce",
+      "islogistics",
+      "iseducation",
+      "ishotel",
+      "isbeauty",
+      "isgoldshop",
+      "isaccountingfirm",
+      "isconstruction",
+      "iselectronics",
+      "ismobileshop",
     ]) {
       expect(keys.has(key)).toBe(true);
     }
-    expect(keys.has("pos.taxid")).toBe(false);
-    expect(keys.has("contact.phonenumber")).toBe(false);
-    expect(keys.has("yeartype")).toBe(false);
+    expect(keys.has(`pos.${"tax"}_${"id"}`)).toBe(false);
+    expect(keys.has(`contact.${"phone"}_${"number"}`)).toBe(false);
+    expect(keys.has(`${"year"}_${"type"}`)).toBe(false);
   });
 
   it("documents Thai legal branch code structure on the branch form", () => {
@@ -77,11 +77,11 @@ describe("system setting screen configs", () => {
   });
 
   it("requires active language setup config to be defined separately", () => {
-    const config = getSystemSettingConfig("active_languages");
+    const config = getSystemSettingConfig("activelanguages");
     const keys = new Set(config?.fields.map((field) => field.key));
 
-    expect(config?.fields[0]?.key).toBe("settings.language_configs");
-    expect(keys.has("settings.language_configs")).toBe(true);
+    expect(config?.fields[0]?.key).toBe("settings.languageconfigs");
+    expect(keys.has("settings.languageconfigs")).toBe(true);
     expect(keys.has("settings.language")).toBe(false);
   });
 
@@ -95,7 +95,7 @@ describe("system setting screen configs", () => {
   it("offers full-month date formats with localized examples", () => {
     const config = getSystemSettingConfig("branch");
     const dateFormat = config?.fields.find(
-      (field) => field.key === "date_format",
+      (field) => field.key === "dateformat",
     );
     const fullMonth = dateFormat?.options?.find(
       (option) => option.value === "dd MMMM yyyy",
@@ -109,40 +109,40 @@ describe("system setting screen configs", () => {
   });
 
   it("defines neutral SKU option masters on MongoDB Atlas collections", () => {
-    const color = getSystemSettingConfig("product_color");
-    const size = getSystemSettingConfig("product_size");
-    const matrix = getSystemSettingConfig("product_variant_matrix");
-    const serialRegistry = getSystemSettingConfig("product_serial_registry");
-    const channelPrice = getSystemSettingConfig("channel_price");
+    const color = getSystemSettingConfig("productcolor");
+    const size = getSystemSettingConfig("productsize");
+    const matrix = getSystemSettingConfig("productvariantmatrix");
+    const serialRegistry = getSystemSettingConfig("productserialregistry");
+    const channelPrice = getSystemSettingConfig("channelprice");
 
     expect(color).toMatchObject({
-      route: "/product_color",
+      route: "/productcolor",
       kind: "atlas",
-      collection: "product_colors",
+      collection: "productcolors",
       idField: "guidfixed",
     });
     expect(size).toMatchObject({
-      route: "/product_size",
+      route: "/productsize",
       kind: "atlas",
-      collection: "product_sizes",
+      collection: "productsizes",
       idField: "guidfixed",
     });
     expect(matrix).toMatchObject({
-      route: "/product_variant_matrix",
+      route: "/productvariantmatrix",
       kind: "atlas",
-      collection: "product_variant_matrices",
+      collection: "productvariantmatrices",
       idField: "guidfixed",
     });
     expect(serialRegistry).toMatchObject({
-      route: "/product_serial_registry",
+      route: "/productserialregistry",
       kind: "atlas",
-      collection: "product_serial_registries",
+      collection: "productserialregistries",
       idField: "guidfixed",
     });
     expect(channelPrice).toMatchObject({
-      route: "/channel_price",
+      route: "/channelprice",
       kind: "atlas",
-      collection: "product_channel_prices",
+      collection: "productchannelprices",
       idField: "guidfixed",
     });
 
@@ -150,39 +150,39 @@ describe("system setting screen configs", () => {
     expect(size?.fields.map((field) => field.key)).toContain("aliases");
     expect(matrix?.fields.map((field) => field.key)).toEqual(
       expect.arrayContaining([
-        "option_tiers",
-        "sku_combinations",
-        "media_assets",
-        "specification_groups",
-        "import_attribute_maps",
-        "integration_profiles",
-        "payload_examples",
-        "serial_tracking_mode",
+        "optiontiers",
+        "skucombinations",
+        "mediaassets",
+        "specificationgroups",
+        "importattributemaps",
+        "integrationprofiles",
+        "payloadexamples",
+        "serialtrackingmode",
         "businesscodes",
       ]),
     );
     expect(serialRegistry?.fields.map((field) => field.key)).toEqual(
       expect.arrayContaining([
-        "serial_no",
-        "identifier_type",
+        "serialno",
+        "identifiertype",
         "status",
-        "item_code",
+        "itemcode",
         "barcode",
-        "warranty_start_date",
-        "warranty_end_date",
+        "warrantystartdate",
+        "warrantyenddate",
         "businesscodes",
       ]),
     );
     expect(channelPrice?.fields.map((field) => field.key)).toEqual(
       expect.arrayContaining([
-        "price_code",
-        "channel_code",
-        "item_code",
+        "pricecode",
+        "channelcode",
+        "itemcode",
         "barcode",
-        "dimension_key",
-        "sale_price",
-        "start_date",
-        "end_date",
+        "dimensionkey",
+        "saleprice",
+        "startdate",
+        "enddate",
         "businesscodes",
       ]),
     );

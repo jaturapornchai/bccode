@@ -39,7 +39,7 @@ func usingMemoryFallback() bool {
 
 func switchToMemoryFallback(err error) {
 	if distributedLocksDisabled.CompareAndSwap(false, true) {
-		logger.Warn("distributed_locks table unavailable, switching to in-memory fallback: %v", err)
+		logger.Warn("distributedlocks table unavailable, switching to in-memory fallback: %v", err)
 	}
 }
 
@@ -48,7 +48,7 @@ func isMissingLockTable(err error) bool {
 		return false
 	}
 	msg := err.Error()
-	return strings.Contains(msg, "distributed_locks") && strings.Contains(msg, "does not exist")
+	return strings.Contains(msg, "distributedlocks") && strings.Contains(msg, "does not exist")
 }
 
 func cleanupExpiredMemoryLocks() int64 {
@@ -151,10 +151,10 @@ func (l *DistributedLock) Acquire(ctx context.Context) error {
 	l.cleanupExpiredLocks(ctx)
 
 	query := `
-		INSERT INTO distributed_locks (lock_key, owner, acquired_at, expires_at)
+		INSERT INTO distributedlocks (lockkey, owner, acquiredat, expiresat)
 		VALUES ($1, $2, NOW(), NOW() + $3::interval)
-		ON CONFLICT (lock_key) DO NOTHING
-		RETURNING lock_key
+		ON CONFLICT (lockkey) DO NOTHING
+		RETURNING lockkey
 	`
 
 	expiryInterval := fmt.Sprintf("%d seconds", int(l.expiry.Seconds()))
@@ -217,9 +217,9 @@ func (l *DistributedLock) Release(ctx context.Context) error {
 	}
 
 	query := `
-		DELETE FROM distributed_locks
-		WHERE lock_key = $1 AND owner = $2
-		RETURNING lock_key
+		DELETE FROM distributedlocks
+		WHERE lockkey = $1 AND owner = $2
+		RETURNING lockkey
 	`
 
 	var lockKey string
@@ -260,10 +260,10 @@ func (l *DistributedLock) Extend(ctx context.Context, additionalTime time.Durati
 	}
 
 	query := `
-		UPDATE distributed_locks
-		SET expires_at = NOW() + $1::interval
-		WHERE lock_key = $2 AND owner = $3
-		RETURNING lock_key
+		UPDATE distributedlocks
+		SET expiresat = NOW() + $1::interval
+		WHERE lockkey = $2 AND owner = $3
+		RETURNING lockkey
 	`
 
 	expiryInterval := fmt.Sprintf("%d seconds", int(additionalTime.Seconds()))
@@ -285,7 +285,7 @@ func (l *DistributedLock) Extend(ctx context.Context, additionalTime time.Durati
 		return fmt.Errorf("failed to extend lock: %w", err)
 	}
 
-	logger.Debug("Lock extended: key=%s, owner=%s, additional_time=%v", l.key, l.owner, additionalTime)
+	logger.Debug("Lock extended: key=%s, owner=%s, additionaltime=%v", l.key, l.owner, additionalTime)
 	return nil
 }
 
@@ -302,8 +302,8 @@ func (l *DistributedLock) cleanupExpiredLocks(ctx context.Context) {
 	}
 
 	query := `
-		DELETE FROM distributed_locks
-		WHERE expires_at < NOW()
+		DELETE FROM distributedlocks
+		WHERE expiresat < NOW()
 	`
 
 	result, err := l.db.ExecContext(ctx, query)
@@ -341,8 +341,8 @@ func (lm *LockManager) CleanupExpiredLocks(ctx context.Context) (int64, error) {
 	}
 
 	query := `
-		DELETE FROM distributed_locks
-		WHERE expires_at < NOW()
+		DELETE FROM distributedlocks
+		WHERE expiresat < NOW()
 	`
 
 	result, err := lm.db.ExecContext(ctx, query)
@@ -375,11 +375,11 @@ func (lm *LockManager) GetActiveLocks(ctx context.Context) ([]map[string]interfa
 		for key, entry := range memoryLocks {
 			if entry.expiresAt.After(now) {
 				locks = append(locks, map[string]interface{}{
-					"lock_key":    key,
-					"owner":       entry.owner,
-					"acquired_at": entry.acquiredAt,
-					"expires_at":  entry.expiresAt,
-					"ttl":         time.Until(entry.expiresAt).Seconds(),
+					"lockkey":    key,
+					"owner":      entry.owner,
+					"acquiredat": entry.acquiredAt,
+					"expiresat":  entry.expiresAt,
+					"ttl":        time.Until(entry.expiresAt).Seconds(),
 				})
 			}
 		}
@@ -387,10 +387,10 @@ func (lm *LockManager) GetActiveLocks(ctx context.Context) ([]map[string]interfa
 	}
 
 	query := `
-		SELECT lock_key, owner, acquired_at, expires_at
-		FROM distributed_locks
-		WHERE expires_at > NOW()
-		ORDER BY acquired_at DESC
+		SELECT lockkey, owner, acquiredat, expiresat
+		FROM distributedlocks
+		WHERE expiresat > NOW()
+		ORDER BY acquiredat DESC
 	`
 
 	rows, err := lm.db.QueryContext(ctx, query)
@@ -411,11 +411,11 @@ func (lm *LockManager) GetActiveLocks(ctx context.Context) ([]map[string]interfa
 		}
 
 		locks = append(locks, map[string]interface{}{
-			"lock_key":    lockKey,
-			"owner":       owner,
-			"acquired_at": acquiredAt,
-			"expires_at":  expiresAt,
-			"ttl":         time.Until(expiresAt).Seconds(),
+			"lockkey":    lockKey,
+			"owner":      owner,
+			"acquiredat": acquiredAt,
+			"expiresat":  expiresAt,
+			"ttl":        time.Until(expiresAt).Seconds(),
 		})
 	}
 
@@ -439,8 +439,8 @@ func (lm *LockManager) GetLockCount(ctx context.Context) (int64, error) {
 
 	query := `
 		SELECT COUNT(*)
-		FROM distributed_locks
-		WHERE expires_at > NOW()
+		FROM distributedlocks
+		WHERE expiresat > NOW()
 	`
 
 	var count int64
@@ -467,9 +467,9 @@ func (lm *LockManager) ForceReleaseLock(ctx context.Context, lockKey string) err
 	}
 
 	query := `
-		DELETE FROM distributed_locks
-		WHERE lock_key = $1
-		RETURNING lock_key
+		DELETE FROM distributedlocks
+		WHERE lockkey = $1
+		RETURNING lockkey
 	`
 
 	var deletedKey string
@@ -502,19 +502,19 @@ func (lm *LockManager) GetLockInfo(ctx context.Context, lockKey string) (map[str
 			return nil, fmt.Errorf("lock not found or expired: %s", lockKey)
 		}
 		return map[string]interface{}{
-			"lock_key":    lockKey,
-			"owner":       entry.owner,
-			"acquired_at": entry.acquiredAt,
-			"expires_at":  entry.expiresAt,
-			"ttl":         time.Until(entry.expiresAt).Seconds(),
-			"isactive":    entry.expiresAt.After(time.Now()),
+			"lockkey":    lockKey,
+			"owner":      entry.owner,
+			"acquiredat": entry.acquiredAt,
+			"expiresat":  entry.expiresAt,
+			"ttl":        time.Until(entry.expiresAt).Seconds(),
+			"isactive":   entry.expiresAt.After(time.Now()),
 		}, nil
 	}
 
 	query := `
-		SELECT lock_key, owner, acquired_at, expires_at
-		FROM distributed_locks
-		WHERE lock_key = $1 AND expires_at > NOW()
+		SELECT lockkey, owner, acquiredat, expiresat
+		FROM distributedlocks
+		WHERE lockkey = $1 AND expiresat > NOW()
 	`
 
 	var owner string
@@ -536,12 +536,12 @@ func (lm *LockManager) GetLockInfo(ctx context.Context, lockKey string) (map[str
 	}
 
 	return map[string]interface{}{
-		"lock_key":    lockKey,
-		"owner":       owner,
-		"acquired_at": acquiredAt,
-		"expires_at":  expiresAt,
-		"ttl":         time.Until(expiresAt).Seconds(),
-		"isactive":    expiresAt.After(time.Now()),
+		"lockkey":    lockKey,
+		"owner":      owner,
+		"acquiredat": acquiredAt,
+		"expiresat":  expiresAt,
+		"ttl":        time.Until(expiresAt).Seconds(),
+		"isactive":   expiresAt.After(time.Now()),
 	}, nil
 }
 

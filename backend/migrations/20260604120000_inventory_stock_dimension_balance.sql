@@ -1,132 +1,132 @@
 -- Accounting stock remains product/warehouse/location based.
 -- Marketplace availability and dimension-level selling prices are separate projections.
 
-ALTER TABLE inventory_stock_balances
+ALTER TABLE inventorystockbalances
     ADD COLUMN IF NOT EXISTS reservedqty NUMERIC(18,4) NOT NULL DEFAULT 0;
 
-ALTER TABLE product_costing_config
+ALTER TABLE productcostingconfig
     ADD COLUMN IF NOT EXISTS cost_by_warehouse BOOLEAN NOT NULL DEFAULT false;
 
-ALTER TABLE inventory_stock_balances
-    DROP CONSTRAINT IF EXISTS inventory_stock_balances_scope_dimension_unique,
-    DROP CONSTRAINT IF EXISTS inventory_stock_balances_holdingcode_itemcode_whcode_locationcode_key;
+ALTER TABLE inventorystockbalances
+    DROP CONSTRAINT IF EXISTS inventorystockbalances_scope_dimension_unique,
+    DROP CONSTRAINT IF EXISTS inventorystockbalancesholdingcodeitemcodewhcodelocationcodekey;
 
-ALTER TABLE inventory_stock_balances
-    ADD CONSTRAINT inventory_stock_balances_holdingcode_itemcode_whcode_locationcode_key
+ALTER TABLE inventorystockbalances
+    ADD CONSTRAINT inventorystockbalancesholdingcodeitemcodewhcodelocationcodekey
     UNIQUE (holdingcode, itemcode, whcode, locationcode);
 
-CREATE TABLE IF NOT EXISTS marketplace_stock_balances (
+CREATE TABLE IF NOT EXISTS marketplacestockbalances (
     id BIGSERIAL PRIMARY KEY,
     holdingcode TEXT NOT NULL,
-    item_code TEXT NOT NULL,
-    dimension_key TEXT NOT NULL DEFAULT '',
-    dimension_values JSONB NOT NULL DEFAULT '{}'::jsonb,
-    current_qty NUMERIC(18,4) NOT NULL DEFAULT 0,
-    reserved_qty NUMERIC(18,4) NOT NULL DEFAULT 0,
-    available_qty NUMERIC(18,4) NOT NULL DEFAULT 0,
+    itemcode TEXT NOT NULL,
+    dimensionkey TEXT NOT NULL DEFAULT '',
+    dimensionvalues JSONB NOT NULL DEFAULT '{}'::jsonb,
+    currentqty NUMERIC(18,4) NOT NULL DEFAULT 0,
+    reservedqty NUMERIC(18,4) NOT NULL DEFAULT 0,
+    availableqty NUMERIC(18,4) NOT NULL DEFAULT 0,
     source TEXT NOT NULL DEFAULT 'accounting',
     updatedat TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE (holdingcode, item_code, dimension_key)
+    UNIQUE (holdingcode, itemcode, dimensionkey)
 );
 
-CREATE TABLE IF NOT EXISTS marketplace_dimension_prices (
+CREATE TABLE IF NOT EXISTS marketplacedimensionprices (
     id BIGSERIAL PRIMARY KEY,
     holdingcode TEXT NOT NULL,
-    item_code TEXT NOT NULL,
+    itemcode TEXT NOT NULL,
     barcode TEXT NOT NULL DEFAULT '',
-    dimension_key TEXT NOT NULL DEFAULT '',
-    dimension_values JSONB NOT NULL DEFAULT '{}'::jsonb,
-    price_level TEXT NOT NULL DEFAULT '',
+    dimensionkey TEXT NOT NULL DEFAULT '',
+    dimensionvalues JSONB NOT NULL DEFAULT '{}'::jsonb,
+    pricelevel TEXT NOT NULL DEFAULT '',
     marketplace TEXT NOT NULL DEFAULT '',
     currency VARCHAR(3) NOT NULL DEFAULT 'THB',
     price NUMERIC(18,4) NOT NULL DEFAULT 0,
-    sale_price NUMERIC(18,4) NOT NULL DEFAULT 0,
-    compare_at_price NUMERIC(18,4) NOT NULL DEFAULT 0,
-    effective_from TIMESTAMPTZ,
-    effective_to TIMESTAMPTZ,
+    saleprice NUMERIC(18,4) NOT NULL DEFAULT 0,
+    compareatprice NUMERIC(18,4) NOT NULL DEFAULT 0,
+    effectivefrom TIMESTAMPTZ,
+    effectiveto TIMESTAMPTZ,
     isactive BOOLEAN NOT NULL DEFAULT true,
     updatedat TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE (holdingcode, item_code, barcode, dimension_key, price_level, marketplace, currency)
+    UNIQUE (holdingcode, itemcode, barcode, dimensionkey, pricelevel, marketplace, currency)
 );
 
 DO $$
 BEGIN
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_stock_balances' AND column_name = 'itemcode')
-       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_stock_balances' AND column_name = 'item_code') THEN
-        ALTER TABLE marketplace_stock_balances RENAME COLUMN itemcode TO item_code;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacestockbalances' AND column_name = 'itemcode')
+       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacestockbalances' AND column_name = 'itemcode') THEN
+        ALTER TABLE marketplacestockbalances RENAME COLUMN itemcode TO itemcode;
     END IF;
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_stock_balances' AND column_name = 'dimensionkey')
-       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_stock_balances' AND column_name = 'dimension_key') THEN
-        ALTER TABLE marketplace_stock_balances RENAME COLUMN dimensionkey TO dimension_key;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacestockbalances' AND column_name = 'dimensionkey')
+       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacestockbalances' AND column_name = 'dimensionkey') THEN
+        ALTER TABLE marketplacestockbalances RENAME COLUMN dimensionkey TO dimensionkey;
     END IF;
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_stock_balances' AND column_name = 'dimensionvalues')
-       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_stock_balances' AND column_name = 'dimension_values') THEN
-        ALTER TABLE marketplace_stock_balances RENAME COLUMN dimensionvalues TO dimension_values;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacestockbalances' AND column_name = 'dimensionvalues')
+       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacestockbalances' AND column_name = 'dimensionvalues') THEN
+        ALTER TABLE marketplacestockbalances RENAME COLUMN dimensionvalues TO dimensionvalues;
     END IF;
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_stock_balances' AND column_name = 'currentqty')
-       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_stock_balances' AND column_name = 'current_qty') THEN
-        ALTER TABLE marketplace_stock_balances RENAME COLUMN currentqty TO current_qty;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacestockbalances' AND column_name = 'currentqty')
+       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacestockbalances' AND column_name = 'currentqty') THEN
+        ALTER TABLE marketplacestockbalances RENAME COLUMN currentqty TO currentqty;
     END IF;
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_stock_balances' AND column_name = 'reservedqty')
-       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_stock_balances' AND column_name = 'reserved_qty') THEN
-        ALTER TABLE marketplace_stock_balances RENAME COLUMN reservedqty TO reserved_qty;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacestockbalances' AND column_name = 'reservedqty')
+       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacestockbalances' AND column_name = 'reservedqty') THEN
+        ALTER TABLE marketplacestockbalances RENAME COLUMN reservedqty TO reservedqty;
     END IF;
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_stock_balances' AND column_name = 'availableqty')
-       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_stock_balances' AND column_name = 'available_qty') THEN
-        ALTER TABLE marketplace_stock_balances RENAME COLUMN availableqty TO available_qty;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacestockbalances' AND column_name = 'availableqty')
+       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacestockbalances' AND column_name = 'availableqty') THEN
+        ALTER TABLE marketplacestockbalances RENAME COLUMN availableqty TO availableqty;
     END IF;
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_stock_balances' AND column_name = 'updatedat')
-       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_stock_balances' AND column_name = 'updatedat') THEN
-        ALTER TABLE marketplace_stock_balances RENAME COLUMN updatedat TO updatedat;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacestockbalances' AND column_name = 'updatedat')
+       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacestockbalances' AND column_name = 'updatedat') THEN
+        ALTER TABLE marketplacestockbalances RENAME COLUMN updatedat TO updatedat;
     END IF;
 END $$;
 
 DO $$
 BEGIN
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_dimension_prices' AND column_name = 'itemcode')
-       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_dimension_prices' AND column_name = 'item_code') THEN
-        ALTER TABLE marketplace_dimension_prices RENAME COLUMN itemcode TO item_code;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacedimensionprices' AND column_name = 'itemcode')
+       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacedimensionprices' AND column_name = 'itemcode') THEN
+        ALTER TABLE marketplacedimensionprices RENAME COLUMN itemcode TO itemcode;
     END IF;
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_dimension_prices' AND column_name = 'dimensionkey')
-       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_dimension_prices' AND column_name = 'dimension_key') THEN
-        ALTER TABLE marketplace_dimension_prices RENAME COLUMN dimensionkey TO dimension_key;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacedimensionprices' AND column_name = 'dimensionkey')
+       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacedimensionprices' AND column_name = 'dimensionkey') THEN
+        ALTER TABLE marketplacedimensionprices RENAME COLUMN dimensionkey TO dimensionkey;
     END IF;
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_dimension_prices' AND column_name = 'dimensionvalues')
-       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_dimension_prices' AND column_name = 'dimension_values') THEN
-        ALTER TABLE marketplace_dimension_prices RENAME COLUMN dimensionvalues TO dimension_values;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacedimensionprices' AND column_name = 'dimensionvalues')
+       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacedimensionprices' AND column_name = 'dimensionvalues') THEN
+        ALTER TABLE marketplacedimensionprices RENAME COLUMN dimensionvalues TO dimensionvalues;
     END IF;
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_dimension_prices' AND column_name = 'pricelevel')
-       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_dimension_prices' AND column_name = 'price_level') THEN
-        ALTER TABLE marketplace_dimension_prices RENAME COLUMN pricelevel TO price_level;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacedimensionprices' AND column_name = 'pricelevel')
+       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacedimensionprices' AND column_name = 'pricelevel') THEN
+        ALTER TABLE marketplacedimensionprices RENAME COLUMN pricelevel TO pricelevel;
     END IF;
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_dimension_prices' AND column_name = 'saleprice')
-       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_dimension_prices' AND column_name = 'sale_price') THEN
-        ALTER TABLE marketplace_dimension_prices RENAME COLUMN saleprice TO sale_price;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacedimensionprices' AND column_name = 'saleprice')
+       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacedimensionprices' AND column_name = 'saleprice') THEN
+        ALTER TABLE marketplacedimensionprices RENAME COLUMN saleprice TO saleprice;
     END IF;
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_dimension_prices' AND column_name = 'compareatprice')
-       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_dimension_prices' AND column_name = 'compare_at_price') THEN
-        ALTER TABLE marketplace_dimension_prices RENAME COLUMN compareatprice TO compare_at_price;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacedimensionprices' AND column_name = 'compareatprice')
+       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacedimensionprices' AND column_name = 'compareatprice') THEN
+        ALTER TABLE marketplacedimensionprices RENAME COLUMN compareatprice TO compareatprice;
     END IF;
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_dimension_prices' AND column_name = 'effectivefrom')
-       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_dimension_prices' AND column_name = 'effective_from') THEN
-        ALTER TABLE marketplace_dimension_prices RENAME COLUMN effectivefrom TO effective_from;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacedimensionprices' AND column_name = 'effectivefrom')
+       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacedimensionprices' AND column_name = 'effectivefrom') THEN
+        ALTER TABLE marketplacedimensionprices RENAME COLUMN effectivefrom TO effectivefrom;
     END IF;
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_dimension_prices' AND column_name = 'effectiveto')
-       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_dimension_prices' AND column_name = 'effective_to') THEN
-        ALTER TABLE marketplace_dimension_prices RENAME COLUMN effectiveto TO effective_to;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacedimensionprices' AND column_name = 'effectiveto')
+       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacedimensionprices' AND column_name = 'effectiveto') THEN
+        ALTER TABLE marketplacedimensionprices RENAME COLUMN effectiveto TO effectiveto;
     END IF;
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_dimension_prices' AND column_name = 'isactive')
-       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_dimension_prices' AND column_name = 'isactive') THEN
-        ALTER TABLE marketplace_dimension_prices RENAME COLUMN isactive TO isactive;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacedimensionprices' AND column_name = 'isactive')
+       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacedimensionprices' AND column_name = 'isactive') THEN
+        ALTER TABLE marketplacedimensionprices RENAME COLUMN isactive TO isactive;
     END IF;
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_dimension_prices' AND column_name = 'updatedat')
-       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplace_dimension_prices' AND column_name = 'updatedat') THEN
-        ALTER TABLE marketplace_dimension_prices RENAME COLUMN updatedat TO updatedat;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacedimensionprices' AND column_name = 'updatedat')
+       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'marketplacedimensionprices' AND column_name = 'updatedat') THEN
+        ALTER TABLE marketplacedimensionprices RENAME COLUMN updatedat TO updatedat;
     END IF;
 END $$;
 
-CREATE INDEX IF NOT EXISTS idx_marketplace_stock_dimension
-    ON marketplace_stock_balances (holdingcode, item_code, dimension_key);
+CREATE INDEX IF NOT EXISTS idxmarketplacestockdimension
+    ON marketplacestockbalances (holdingcode, itemcode, dimensionkey);
 
-CREATE INDEX IF NOT EXISTS idx_marketplace_price_dimension
-    ON marketplace_dimension_prices (holdingcode, item_code, dimension_key, marketplace, price_level);
+CREATE INDEX IF NOT EXISTS idxmarketplacepricedimension
+    ON marketplacedimensionprices (holdingcode, itemcode, dimensionkey, marketplace, pricelevel);

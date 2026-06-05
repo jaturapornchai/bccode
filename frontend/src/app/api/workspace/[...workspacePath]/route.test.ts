@@ -80,13 +80,13 @@ describe("workspace product unit setup route", () => {
             names: [{ code: "th", name: "บริษัท ทดสอบ จำกัด" }],
             language: "th",
             languageconfigs: [
-              { code: "th", name: "ภาษาไทย", is_use: true, isdefault: true },
-              { code: "en", name: "English", is_use: true, isdefault: false },
-              { code: "lo", name: "ພາສາລາວ", is_use: true, isdefault: false },
+              { code: "th", name: "ภาษาไทย", isuse: true, isdefault: true },
+              { code: "en", name: "English", isuse: true, isdefault: false },
+              { code: "lo", name: "ພາສາລາວ", isuse: true, isdefault: false },
             ],
-            base_currency: "THB",
+            basecurrency: "THB",
             currencies: ["THB", "USD"],
-            date_format: "dd/MM/yyyy",
+            dateformat: "dd/MM/yyyy",
             timezone: "Asia/Bangkok",
             usebuddhistcalendar: true,
           }],
@@ -122,12 +122,12 @@ describe("workspace product unit setup route", () => {
     expect(response.status).toBe(200);
     expect(json.data[0]).toMatchObject({
       holdingcode: "SHOP001",
-      active_languages: ["th", "en", "lo"],
-      base_currency: "THB",
+      activelanguages: ["th", "en", "lo"],
+      basecurrency: "THB",
       currencies: ["THB", "USD"],
-      date_format: "dd/MM/yyyy",
+      dateformat: "dd/MM/yyyy",
       timezone: "Asia/Bangkok",
-      year_type: "buddhist",
+      yeartype: "buddhist",
       companies: [],
       branches: [],
     });
@@ -147,12 +147,12 @@ describe("workspace product unit setup route", () => {
             {
               holdingcode: "SHOP_EMPTY",
               names: [{ code: "th", name: "กิจการว่าง" }],
-              languageconfigs: [{ code: "th", name: "ภาษาไทย", is_use: true, isdefault: true }],
+              languageconfigs: [{ code: "th", name: "ภาษาไทย", isuse: true, isdefault: true }],
             },
             {
               holdingcode: "SHOP_WITH_ORG",
               names: [{ code: "th", name: "กิจการมีบริษัท" }],
-              languageconfigs: [{ code: "th", name: "ภาษาไทย", is_use: true, isdefault: true }],
+              languageconfigs: [{ code: "th", name: "ภาษาไทย", isuse: true, isdefault: true }],
             },
           ],
           total: 2,
@@ -212,7 +212,7 @@ describe("workspace product unit setup route", () => {
           data: [{
             holdingcode: "SHOP_WITH_DELETED_ORG",
             names: [{ code: "th", name: "กิจการมีข้อมูลถูกลบ" }],
-            languageconfigs: [{ code: "th", name: "ภาษาไทย", is_use: true, isdefault: true }],
+            languageconfigs: [{ code: "th", name: "ภาษาไทย", isuse: true, isdefault: true }],
           }],
           total: 1,
         });
@@ -459,12 +459,12 @@ describe("workspace product unit setup route", () => {
     const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
       const requestUrl = String(url);
       if (requestUrl.endsWith("/unit/list?offset=0&limit=10000&q=&sort=unitcode:1")) {
-        return Response.json({ success: true, data: [{ unit_code: "PCE" }], total: 1 });
+        return Response.json({ success: true, data: [{ unitcode: "PCE" }], total: 1 });
       }
       if (requestUrl === "https://raw.githubusercontent.com/smlsoft/dedepos_template/main/unit.json") {
         return Response.json([
           { code: "pce", names: [{ code: "th", name: "ชิ้น" }] },
-          { unit_code: "kg", names: [{ code: "th", name: "กิโลกรัม" }] },
+          { unitcode: "kg", names: [{ code: "th", name: "กิโลกรัม" }] },
         ]);
       }
       if (requestUrl.endsWith("/unit/bulk")) {

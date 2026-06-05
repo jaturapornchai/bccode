@@ -100,11 +100,11 @@ function New-MediaAsset {
     uri = $Uri
     external_id = ""
     external_url = ""
-    option_code = $OptionCode
-    option_value = $OptionValue
-    sort_order = $SortOrder
+    optioncode = $OptionCode
+    optionvalue = $OptionValue
+    sortorder = $SortOrder
     alt_text = "$Kind $OptionValue".Trim()
-    use_case = $UseCase
+    usecase = $UseCase
     mime_type = "image/webp"
     width = 1200
     height = 1200
@@ -116,11 +116,11 @@ function New-AttributeValue {
   param([string]$Code, [string]$Text, [string]$UnitCode = "")
   return @{
     value_id = ""
-    value_code = $Code
-    value_text = $Text
+    valuecode = $Code
+    valuetext = $Text
     display_text = $Text
-    unit_code = $UnitCode
-    sort_order = 0
+    unitcode = $UnitCode
+    sortorder = 0
     is_custom_value = $false
   }
 }
@@ -137,9 +137,9 @@ function New-SpecAttribute {
   )
   return @{
     attribute_id = ""
-    attribute_code = $Code
-    attribute_name = $Name
-    input_type = $InputType
+    attributecode = $Code
+    attributename = $Name
+    inputtype = $InputType
     scope = $Scope
     is_required = $Required
     is_sale_prop = $SaleProp
@@ -151,8 +151,8 @@ function New-SpecAttribute {
 function New-SpecGroup {
   param([string]$Code, [string]$Name, [object[]]$Attributes)
   return @{
-    group_code = $Code
-    group_name = $Name
+    groupcode = $Code
+    groupname = $Name
     attributes = @($Attributes)
   }
 }
@@ -162,22 +162,22 @@ function New-PayloadExamples {
   return @(
     @{
       direction = "import"
-      use_case = "$Family product detail"
+      usecase = "$Family product detail"
       payload = @{
         title = "{{title}}"
         images = @("{{main_image_url}}", "{{gallery_image_url}}")
         attributes = @(@{ name = "Material"; value = "{{material}}" })
-        skus = @(@{ seller_sku = "{{seller_sku}}"; price = "{{sale_price}}"; stock = "{{stock}}"; images = @("{{sku_image_url}}") })
+        skus = @(@{ sellersku = "{{sellersku}}"; price = "{{saleprice}}"; stock = "{{stock}}"; images = @("{{sku_image_url}}") })
       }
     },
     @{
       direction = "export"
-      use_case = "$Family create/update"
+      usecase = "$Family create/update"
       payload = @{
         category_id = "{{external_category_id}}"
-        media_assets = @(@{ kind = "main"; uri = "{{main_image_uri}}" }, @{ kind = "sku"; option_code = "COLOR"; option_value = "{{color}}" })
-        specification_groups = @(@{ group_code = "GENERAL"; attributes = @(@{ attribute_code = "MATERIAL"; values = @("{{material}}") }) })
-        sku_combinations = @(@{ seller_sku = "{{seller_sku}}"; option_values = @("{{option_1}}", "{{option_2}}"); price = "{{sale_price}}"; stock = "{{stock}}" })
+        media_assets = @(@{ kind = "main"; uri = "{{main_image_uri}}" }, @{ kind = "sku"; optioncode = "COLOR"; optionvalue = "{{color}}" })
+        specification_groups = @(@{ groupcode = "GENERAL"; attributes = @(@{ attributecode = "MATERIAL"; values = @("{{material}}") }) })
+        sku_combinations = @(@{ sellersku = "{{sellersku}}"; optionvalues = @("{{option_1}}", "{{option_2}}"); price = "{{saleprice}}"; stock = "{{stock}}" })
       }
     }
   )
@@ -241,9 +241,9 @@ function New-ExternalIntegrationProfiles {
         sku_keys = @("model_id", "model_sku", "price", "stock", "tier_index", "gtin_code")
       }
       stock_price_fields = @{
-        seller_sku = "model_sku"
-        sale_price = "price"
-        opening_stock = "stock"
+        sellersku = "model_sku"
+        saleprice = "price"
+        openingstock = "stock"
       }
     },
     @{
@@ -252,12 +252,12 @@ function New-ExternalIntegrationProfiles {
         product_keys = @("PrimaryCategory", "Attributes", "Skus", "Images", "description", "short_description")
         media_keys = @("Images.Image", "Skus.Sku.Images.Image", "description", "video_url")
         specification_keys = @("Attributes", "SaleProp", "GetCategoryAttributes")
-        sku_keys = @("SellerSku", "ShopSku", "SaleProp", "price", "quantity", "package_weight", "package_length", "package_width", "package_height")
+        sku_keys = @("SellerSku", "ShopSku", "SaleProp", "price", "quantity", "packageweight", "packagelength", "packagewidth", "packageheight")
       }
       stock_price_fields = @{
-        seller_sku = "SellerSku"
-        sale_price = "price"
-        opening_stock = "quantity"
+        sellersku = "SellerSku"
+        saleprice = "price"
+        openingstock = "quantity"
       }
     },
     @{
@@ -266,12 +266,12 @@ function New-ExternalIntegrationProfiles {
         product_keys = @("category_id", "title", "description", "main_images", "product_attributes", "sales_attributes", "skus")
         media_keys = @("main_images", "skus.sales_attributes.sku_img", "size_chart.image", "certifications.files")
         specification_keys = @("product_attributes", "sales_attributes", "custom_attributes")
-        sku_keys = @("seller_sku", "price", "inventory", "sales_attributes", "identifier_code", "package_weight", "package_dimensions")
+        sku_keys = @("sellersku", "price", "inventory", "sales_attributes", "identifier_code", "packageweight", "package_dimensions")
       }
       stock_price_fields = @{
-        seller_sku = "seller_sku"
-        sale_price = "price"
-        opening_stock = "inventory"
+        sellersku = "sellersku"
+        saleprice = "price"
+        openingstock = "inventory"
       }
     },
     @{
@@ -281,23 +281,23 @@ function New-ExternalIntegrationProfiles {
           product_keys = @("subject_list", "category_id", "brand_name", "main_image_urls_list", "attribute_list", "sku_info_list", "product_unit", "currency_code", "product_price", "detail_source_list")
           media_keys = @("main_image_urls_list", "detail_source_list.mobile_detail", "sku_info_list.sku_attributes_list.sku_image_url")
           specification_keys = @("attribute_list", "supporting_common_attribute_list", "supporting_sku_attribute_list")
-          attribute_keys = @("aliexpress_attribute_name_id", "aliexpress_attribute_value_id", "attribute_name", "attribute_value")
-          sku_keys = @("sku_code", "sku_attributes_list", "inventory", "price", "discount_price", "ean_code", "bar_code", "inventory_deduction_strategy", "weight", "package_length", "package_height", "package_width", "multi_country_price_configuration")
-          sku_attribute_keys = @("sku_attribute_name_id", "sku_attribute_value_id", "sku_attribute_value", "sku_image_url")
+          attribute_keys = @("aliexpress_attributename_id", "aliexpress_attribute_value_id", "attributename", "attribute_value")
+          sku_keys = @("sku_code", "sku_attributes_list", "inventory", "price", "discount_price", "ean_code", "bar_code", "inventory_deduction_strategy", "weight", "packagelength", "packageheight", "packagewidth", "multi_country_price_configuration")
+          sku_attribute_keys = @("sku_attributename_id", "sku_attribute_value_id", "sku_attribute_value", "sku_image_url")
         }
         redefining_api = @{
           product_keys = @("subject_list", "category_id", "image_u_r_ls", "aeop_ae_product_propertys", "aeop_ae_product_s_k_us", "product_unit", "is_pack_sell", "product_price", "currency_code", "detail_source_list")
           media_keys = @("image_u_r_ls", "detail_source_list.mobile_detail", "aeop_s_k_u_property.sku_image", "image_url_list")
           specification_keys = @("aeop_ae_product_propertys", "aeop_s_k_u_property")
           property_keys = @("attr_name_id", "attr_value_id", "attr_name", "attr_value")
-          sku_keys = @("id", "aeop_s_k_u_property", "currency_code", "ipm_sku_stock", "sku_price", "sku_stock", "sku_code", "barcode", "gross_weight", "package_height", "package_width", "package_length", "ean_code", "aeop_s_k_u_national_discount_price_list")
+          sku_keys = @("id", "aeop_s_k_u_property", "currency_code", "ipm_sku_stock", "sku_price", "sku_stock", "sku_code", "barcode", "gross_weight", "packageheight", "packagewidth", "packagelength", "ean_code", "aeop_s_k_u_national_discount_price_list")
           sku_property_keys = @("sku_property_id", "property_value_id", "property_value_definition_name", "sku_image", "image_url_list")
         }
       }
       stock_price_fields = @{
-        seller_sku = "sku_code"
-        sale_price = "sku_price"
-        opening_stock = "ipm_sku_stock"
+        sellersku = "sku_code"
+        saleprice = "sku_price"
+        openingstock = "ipm_sku_stock"
         gtin = "ean_code"
         barcode = "bar_code"
       }
@@ -307,36 +307,36 @@ function New-ExternalIntegrationProfiles {
         brand_name = "{{brand_name}}"
         main_image_urls_list = @("{{main_image_url}}")
         attribute_list = @(
-          @{ aliexpress_attribute_name_id = 14; aliexpress_attribute_value_id = "{{attribute_value_id}}"; attribute_value = "{{attribute_value}}" }
+          @{ aliexpress_attributename_id = 14; aliexpress_attribute_value_id = "{{attribute_value_id}}"; attribute_value = "{{attribute_value}}" }
         )
         sku_info_list = @(
           @{
-            sku_code = "{{seller_sku}}"
+            sku_code = "{{sellersku}}"
             sku_attributes_list = @(
-              @{ sku_attribute_name_id = 14; sku_attribute_value_id = "{{color_value_id}}"; sku_attribute_value = "{{color}}"; sku_image_url = "{{sku_image_url}}" },
-              @{ sku_attribute_name_id = 5; sku_attribute_value_id = "{{size_value_id}}"; sku_attribute_value = "{{size}}" }
+              @{ sku_attributename_id = 14; sku_attribute_value_id = "{{color_value_id}}"; sku_attribute_value = "{{color}}"; sku_image_url = "{{sku_image_url}}" },
+              @{ sku_attributename_id = 5; sku_attribute_value_id = "{{size_value_id}}"; sku_attribute_value = "{{size}}" }
             )
-            inventory = "{{opening_stock}}"
-            price = "{{sale_price}}"
+            inventory = "{{openingstock}}"
+            price = "{{saleprice}}"
             discount_price = "{{discount_price}}"
             ean_code = "{{gtin}}"
             bar_code = "{{barcode}}"
             inventory_deduction_strategy = "payment_success_deduct"
-            weight = "{{package_weight}}"
-            package_length = "{{package_length}}"
-            package_height = "{{package_height}}"
-            package_width = "{{package_width}}"
+            weight = "{{packageweight}}"
+            packagelength = "{{packagelength}}"
+            packageheight = "{{packageheight}}"
+            packagewidth = "{{packagewidth}}"
             multi_country_price_configuration = @{
               price_type = "absolute"
               country_price_list = @(
-                @{ ship_to_country = "TH"; sku_price_by_country_list = @(@{ sku_code = "{{seller_sku}}"; price = "{{sale_price_th}}" }) }
+                @{ ship_to_country = "TH"; sku_price_by_country_list = @(@{ sku_code = "{{sellersku}}"; price = "{{saleprice_th}}" }) }
               )
             }
           }
         )
         product_unit = 100000015
         currency_code = "USD"
-        product_price = "{{min_sale_price}}"
+        product_price = "{{min_saleprice}}"
         detail_source_list = @(
           @{ locale = "en_US"; mobile_detail = '{"version":"2.0.0","moduleList":[]}' }
         )
@@ -361,13 +361,13 @@ $matrices = @(
     )
     specification_groups = @(
       New-SpecGroup -Code "GENERAL" -Name "ข้อมูลทั่วไป" -Attributes @(
-        New-SpecAttribute -Code "MATERIAL" -Name "วัสดุ" -InputType "multi_select" -Scope "product" -Required $true -Values @(
+        New-SpecAttribute -Code "MATERIAL" -Name "วัสดุ" -InputType "multiselect" -Scope "product" -Required $true -Values @(
           New-AttributeValue -Code "COTTON" -Text "Cotton 100%"
         )
         New-SpecAttribute -Code "GENDER" -Name "เพศ" -InputType "single_select" -Scope "product" -Values @(
           New-AttributeValue -Code "UNISEX" -Text "Unisex"
         )
-        New-SpecAttribute -Code "SEASON" -Name "ฤดูกาล" -InputType "multi_select" -Scope "product" -Values @(
+        New-SpecAttribute -Code "SEASON" -Name "ฤดูกาล" -InputType "multiselect" -Scope "product" -Values @(
           New-AttributeValue -Code "ALL_SEASON" -Text "All season"
         )
       )
@@ -385,17 +385,17 @@ $matrices = @(
       )
     )
     option_tiers = @(
-      @{ tier_no = 1; option_code = "COLOR"; name = "สี/Color"; values = @("BLACK", "NAVY", "KHAKI", "GREEN", "CREAM") },
-      @{ tier_no = 2; option_code = "SIZE"; name = "ขนาด/Size"; values = @("S", "M", "L", "XL", "2XL") }
+      @{ tierno = 1; optioncode = "COLOR"; name = "สี/Color"; values = @("BLACK", "NAVY", "KHAKI", "GREEN", "CREAM") },
+      @{ tierno = 2; optioncode = "SIZE"; name = "ขนาด/Size"; values = @("S", "M", "L", "XL", "2XL") }
     )
     sku_combinations = @(
-      @{ seller_sku = "APP-TSHIRT-BLACK-M"; barcode = "885100000001"; gtin = "885100000001"; option_values = @("BLACK", "M"); sale_price = 390; cost = 185; opening_stock = 24; unit_code = "PCS"; package_weight = 0.25; package_length = 24; package_width = 18; package_height = 3 },
-      @{ seller_sku = "APP-PANTS-KHAKI-L"; barcode = "885100000002"; gtin = "885100000002"; option_values = @("KHAKI", "L"); sale_price = 790; cost = 420; opening_stock = 12; unit_code = "PCS"; package_weight = 0.6; package_length = 30; package_width = 22; package_height = 5 },
-      @{ seller_sku = "APP-JACKET-NAVY-XL"; barcode = "885100000003"; gtin = "885100000003"; option_values = @("NAVY", "XL"); sale_price = 1290; cost = 680; opening_stock = 8; unit_code = "PCS"; package_weight = 0.9; package_length = 36; package_width = 28; package_height = 8 }
+      @{ sellersku = "APP-TSHIRT-BLACK-M"; barcode = "885100000001"; gtin = "885100000001"; optionvalues = @("BLACK", "M"); saleprice = 390; cost = 185; openingstock = 24; unitcode = "PCS"; packageweight = 0.25; packagelength = 24; packagewidth = 18; packageheight = 3 },
+      @{ sellersku = "APP-PANTS-KHAKI-L"; barcode = "885100000002"; gtin = "885100000002"; optionvalues = @("KHAKI", "L"); saleprice = 790; cost = 420; openingstock = 12; unitcode = "PCS"; packageweight = 0.6; packagelength = 30; packagewidth = 22; packageheight = 5 },
+      @{ sellersku = "APP-JACKET-NAVY-XL"; barcode = "885100000003"; gtin = "885100000003"; optionvalues = @("NAVY", "XL"); saleprice = 1290; cost = 680; openingstock = 8; unitcode = "PCS"; packageweight = 0.9; packagelength = 36; packagewidth = 28; packageheight = 8 }
     )
     import_attribute_maps = @(
-      @{ source_name = "สี/Color"; target_option_code = "COLOR" },
-      @{ source_name = "ขนาด/Size"; target_option_code = "SIZE" }
+      @{ sourcename = "สี/Color"; targetoptioncode = "COLOR" },
+      @{ sourcename = "ขนาด/Size"; targetoptioncode = "SIZE" }
     )
     integration_profiles = @(New-ExternalIntegrationProfiles)
     payload_examples = @(New-PayloadExamples -Family "apparel")
@@ -444,18 +444,18 @@ $matrices = @(
       )
     )
     option_tiers = @(
-      @{ tier_no = 1; option_code = "COLOR"; name = "สี/Color"; values = @("BLACK", "WHITE", "NAVY") },
-      @{ tier_no = 2; option_code = "STORAGE"; name = "ความจุ/Storage"; values = @("128GB", "256GB", "512GB") }
+      @{ tierno = 1; optioncode = "COLOR"; name = "สี/Color"; values = @("BLACK", "WHITE", "NAVY") },
+      @{ tierno = 2; optioncode = "STORAGE"; name = "ความจุ/Storage"; values = @("128GB", "256GB", "512GB") }
     )
     sku_combinations = @(
-      @{ seller_sku = "MB-PRO-BLACK-128"; barcode = "885200000001"; gtin = "885200000001"; option_values = @("BLACK", "128GB"); sale_price = 18900; cost = 16200; opening_stock = 6; unit_code = "PCS"; package_weight = 0.45; package_length = 18; package_width = 10; package_height = 6; serial_identifiers = @("IMEI") },
-      @{ seller_sku = "MB-PRO-WHITE-256"; barcode = "885200000002"; gtin = "885200000002"; option_values = @("WHITE", "256GB"); sale_price = 21900; cost = 18800; opening_stock = 4; unit_code = "PCS"; package_weight = 0.45; package_length = 18; package_width = 10; package_height = 6; serial_identifiers = @("IMEI") },
-      @{ seller_sku = "MB-MAX-NAVY-512"; barcode = "885200000003"; gtin = "885200000003"; option_values = @("NAVY", "512GB"); sale_price = 29900; cost = 25700; opening_stock = 3; unit_code = "PCS"; package_weight = 0.5; package_length = 18; package_width = 10; package_height = 6; serial_identifiers = @("IMEI") }
+      @{ sellersku = "MB-PRO-BLACK-128"; barcode = "885200000001"; gtin = "885200000001"; optionvalues = @("BLACK", "128GB"); saleprice = 18900; cost = 16200; openingstock = 6; unitcode = "PCS"; packageweight = 0.45; packagelength = 18; packagewidth = 10; packageheight = 6; serialidentifiers = @("IMEI") },
+      @{ sellersku = "MB-PRO-WHITE-256"; barcode = "885200000002"; gtin = "885200000002"; optionvalues = @("WHITE", "256GB"); saleprice = 21900; cost = 18800; openingstock = 4; unitcode = "PCS"; packageweight = 0.45; packagelength = 18; packagewidth = 10; packageheight = 6; serialidentifiers = @("IMEI") },
+      @{ sellersku = "MB-MAX-NAVY-512"; barcode = "885200000003"; gtin = "885200000003"; optionvalues = @("NAVY", "512GB"); saleprice = 29900; cost = 25700; openingstock = 3; unitcode = "PCS"; packageweight = 0.5; packagelength = 18; packagewidth = 10; packageheight = 6; serialidentifiers = @("IMEI") }
     )
     import_attribute_maps = @(
-      @{ source_name = "Color"; target_option_code = "COLOR" },
-      @{ source_name = "Storage"; target_option_code = "STORAGE" },
-      @{ source_name = "Memory"; target_option_code = "STORAGE" }
+      @{ sourcename = "Color"; targetoptioncode = "COLOR" },
+      @{ sourcename = "Storage"; targetoptioncode = "STORAGE" },
+      @{ sourcename = "Memory"; targetoptioncode = "STORAGE" }
     )
     integration_profiles = @(New-ExternalIntegrationProfiles)
     payload_examples = @(New-PayloadExamples -Family "mobile")
@@ -498,18 +498,18 @@ $matrices = @(
       )
     )
     option_tiers = @(
-      @{ tier_no = 1; option_code = "SIM_TYPE"; name = "ชนิดซิม/SIM type"; values = @("NANO_SIM", "ESIM") },
-      @{ tier_no = 2; option_code = "PLAN"; name = "แพ็กเกจ/Plan"; values = @("PREPAID", "DATA_10GB", "DATA_UNLIMITED") }
+      @{ tierno = 1; optioncode = "SIM_TYPE"; name = "ชนิดซิม/SIM type"; values = @("NANO_SIM", "ESIM") },
+      @{ tierno = 2; optioncode = "PLAN"; name = "แพ็กเกจ/Plan"; values = @("PREPAID", "DATA_10GB", "DATA_UNLIMITED") }
     )
     sku_combinations = @(
-      @{ seller_sku = "SIM-NANO-PREPAID"; barcode = "885300000001"; gtin = "885300000001"; option_values = @("NANO_SIM", "PREPAID"); sale_price = 49; cost = 18; opening_stock = 100; unit_code = "PCS"; serial_identifiers = @("ICCID") },
-      @{ seller_sku = "SIM-ESIM-10GB"; barcode = "885300000002"; gtin = "885300000002"; option_values = @("ESIM", "DATA_10GB"); sale_price = 199; cost = 88; opening_stock = 50; unit_code = "PCS"; serial_identifiers = @("ICCID") },
-      @{ seller_sku = "SIM-NANO-UNLIMITED"; barcode = "885300000003"; gtin = "885300000003"; option_values = @("NANO_SIM", "DATA_UNLIMITED"); sale_price = 399; cost = 210; opening_stock = 40; unit_code = "PCS"; serial_identifiers = @("ICCID") }
+      @{ sellersku = "SIM-NANO-PREPAID"; barcode = "885300000001"; gtin = "885300000001"; optionvalues = @("NANO_SIM", "PREPAID"); saleprice = 49; cost = 18; openingstock = 100; unitcode = "PCS"; serialidentifiers = @("ICCID") },
+      @{ sellersku = "SIM-ESIM-10GB"; barcode = "885300000002"; gtin = "885300000002"; optionvalues = @("ESIM", "DATA_10GB"); saleprice = 199; cost = 88; openingstock = 50; unitcode = "PCS"; serialidentifiers = @("ICCID") },
+      @{ sellersku = "SIM-NANO-UNLIMITED"; barcode = "885300000003"; gtin = "885300000003"; optionvalues = @("NANO_SIM", "DATA_UNLIMITED"); saleprice = 399; cost = 210; openingstock = 40; unitcode = "PCS"; serialidentifiers = @("ICCID") }
     )
     import_attribute_maps = @(
-      @{ source_name = "SIM Type"; target_option_code = "SIM_TYPE" },
-      @{ source_name = "Package"; target_option_code = "PLAN" },
-      @{ source_name = "Plan"; target_option_code = "PLAN" }
+      @{ sourcename = "SIM Type"; targetoptioncode = "SIM_TYPE" },
+      @{ sourcename = "Package"; targetoptioncode = "PLAN" },
+      @{ sourcename = "Plan"; targetoptioncode = "PLAN" }
     )
     integration_profiles = @(New-ExternalIntegrationProfiles)
     payload_examples = @(New-PayloadExamples -Family "sim")
@@ -553,20 +553,20 @@ $matrices = @(
       )
     )
     option_tiers = @(
-      @{ tier_no = 1; option_code = "CPU"; name = "CPU"; values = @("I5", "I7", "R5", "R7") },
-      @{ tier_no = 2; option_code = "RAM"; name = "RAM"; values = @("8GB", "16GB", "32GB") },
-      @{ tier_no = 3; option_code = "STORAGE"; name = "Storage"; values = @("512GB", "1TB") }
+      @{ tierno = 1; optioncode = "CPU"; name = "CPU"; values = @("I5", "I7", "R5", "R7") },
+      @{ tierno = 2; optioncode = "RAM"; name = "RAM"; values = @("8GB", "16GB", "32GB") },
+      @{ tierno = 3; optioncode = "STORAGE"; name = "Storage"; values = @("512GB", "1TB") }
     )
     sku_combinations = @(
-      @{ seller_sku = "NB-I5-16-512"; barcode = "885400000001"; gtin = "885400000001"; option_values = @("I5", "16GB", "512GB"); sale_price = 24900; cost = 21100; opening_stock = 5; unit_code = "PCS"; package_weight = 2.4; package_length = 42; package_width = 32; package_height = 8; serial_identifiers = @("SERIAL_NO", "MAC_ADDRESS") },
-      @{ seller_sku = "NB-I7-32-1TB"; barcode = "885400000002"; gtin = "885400000002"; option_values = @("I7", "32GB", "1TB"); sale_price = 45900; cost = 39800; opening_stock = 2; unit_code = "PCS"; package_weight = 2.6; package_length = 42; package_width = 32; package_height = 8; serial_identifiers = @("SERIAL_NO", "MAC_ADDRESS") },
-      @{ seller_sku = "PC-R7-32-1TB"; barcode = "885400000003"; gtin = "885400000003"; option_values = @("R7", "32GB", "1TB"); sale_price = 38900; cost = 33100; opening_stock = 3; unit_code = "PCS"; package_weight = 8.5; package_length = 55; package_width = 28; package_height = 50; serial_identifiers = @("SERIAL_NO") }
+      @{ sellersku = "NB-I5-16-512"; barcode = "885400000001"; gtin = "885400000001"; optionvalues = @("I5", "16GB", "512GB"); saleprice = 24900; cost = 21100; openingstock = 5; unitcode = "PCS"; packageweight = 2.4; packagelength = 42; packagewidth = 32; packageheight = 8; serialidentifiers = @("SERIAL_NO", "MAC_ADDRESS") },
+      @{ sellersku = "NB-I7-32-1TB"; barcode = "885400000002"; gtin = "885400000002"; optionvalues = @("I7", "32GB", "1TB"); saleprice = 45900; cost = 39800; openingstock = 2; unitcode = "PCS"; packageweight = 2.6; packagelength = 42; packagewidth = 32; packageheight = 8; serialidentifiers = @("SERIAL_NO", "MAC_ADDRESS") },
+      @{ sellersku = "PC-R7-32-1TB"; barcode = "885400000003"; gtin = "885400000003"; optionvalues = @("R7", "32GB", "1TB"); saleprice = 38900; cost = 33100; openingstock = 3; unitcode = "PCS"; packageweight = 8.5; packagelength = 55; packagewidth = 28; packageheight = 50; serialidentifiers = @("SERIAL_NO") }
     )
     import_attribute_maps = @(
-      @{ source_name = "Processor"; target_option_code = "CPU" },
-      @{ source_name = "CPU"; target_option_code = "CPU" },
-      @{ source_name = "RAM"; target_option_code = "RAM" },
-      @{ source_name = "Storage"; target_option_code = "STORAGE" }
+      @{ sourcename = "Processor"; targetoptioncode = "CPU" },
+      @{ sourcename = "CPU"; targetoptioncode = "CPU" },
+      @{ sourcename = "RAM"; targetoptioncode = "RAM" },
+      @{ sourcename = "Storage"; targetoptioncode = "STORAGE" }
     )
     integration_profiles = @(New-ExternalIntegrationProfiles)
     payload_examples = @(New-PayloadExamples -Family "computer")
@@ -606,7 +606,7 @@ foreach ($item in $sizes) {
     names = @(New-Names $item.th $item.en)
     size_system = $item.system
     size_type = $item.type
-    sort_order = $item.order
+    sortorder = $item.order
     aliases = @($item.aliases)
     businesscodes = @($item.businesscodes)
     isdisabled = $false

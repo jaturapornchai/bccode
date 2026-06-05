@@ -18,12 +18,12 @@ docdetail -> doc_detail
 
 ### Rule
 
-- ชื่อ MongoDB collection ต้องเป็น `lowercase_snake_case`
-- ชื่อ PostgreSQL table ต้องเป็น `lowercase_snake_case`
-- ชื่อ ClickHouse table/dictionary ต้องเป็น `lowercase_snake_case`
-- ชื่อ MongoDB field ต้องเป็น `lowercase_snake_case`
-- ชื่อ PostgreSQL column ต้องเป็น `lowercase_snake_case`
-- ชื่อ ClickHouse column ต้องเป็น `lowercase_snake_case`
+- ชื่อ MongoDB collection ต้องเป็น `lowercase_no-underscore`
+- ชื่อ PostgreSQL table ต้องเป็น `lowercase_no-underscore`
+- ชื่อ ClickHouse table/dictionary ต้องเป็น `lowercase_no-underscore`
+- ชื่อ MongoDB field ต้องเป็น `lowercase_no-underscore`
+- ชื่อ PostgreSQL column ต้องเป็น `lowercase_no-underscore`
+- ชื่อ ClickHouse column ต้องเป็น `lowercase_no-underscore`
 - ห้ามสร้างชื่อใหม่แบบ camelCase, PascalCase, mixedCase, kebab-case, compact legacy name หรือมีช่องว่าง
 - ตัวอย่าง field: `docDate` และ `docdate` ต้องเป็น `doc_date`
 - ตัวอย่าง field: `custCode` และ `custcode` ต้องเป็น `cust_code`
@@ -156,9 +156,9 @@ storage name migration: no rename needed
 | `custCode` | `cust_code` |
 | `custcode` | `cust_code` |
 | `holdingcode` | `holdingcode` |
-| `transflag` | `trans_flag` |
-| `itemcode` | `item_code` |
-| `unitcode` | `unit_code` |
+| `transflag` | `transflag` |
+| `itemcode` | `itemcode` |
+| `unitcode` | `unitcode` |
 | `whcode` | `wh_code` |
 | `warehousecode` | `warehouse_code` |
 | `branchcode` | `branchcode` |

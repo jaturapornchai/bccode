@@ -19,7 +19,7 @@ import (
 // Collections
 // NOTE: purchase_types ถูกย้ายไป mainapi แล้ว - ใช้ purchaseTypes collection ใน mainapi แทน
 const (
-	POApprovalSettingsCollection = "po_approval_settings"
+	POApprovalSettingsCollection = "po_approvalsettings"
 )
 
 var (
@@ -870,7 +870,7 @@ func SubmitPOApprovalHandler(c echo.Context) error {
 			"source_guidfixed":       req.SourceGuidFixed,
 			"purchase_type_code":     req.PurchaseTypeCode,
 			"purchase_type_name":     req.PurchaseTypeName,
-			"total_amount":           req.TotalAmount,
+			"totalamount":            req.TotalAmount,
 			"required_level":         requiredLevel,
 			"required_level_name":    requiredLevelName,
 			"current_approved_level": currentApprovedLevel,
@@ -2362,7 +2362,7 @@ func GetApprovalTimelineHandler(c echo.Context) error {
 			"docno":                  poStatus.DocNo,
 			"guidfixed":              poStatus.GuidFixed,
 			"status":                 poStatus.Status,
-			"total_amount":           poStatus.TotalAmount,
+			"totalamount":            poStatus.TotalAmount,
 			"purchase_type_name":     poStatus.PurchaseTypeName,
 			"required_level":         poStatus.RequiredLevel,
 			"required_level_name":    poStatus.RequiredLevelName,

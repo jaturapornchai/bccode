@@ -13,12 +13,12 @@ const packingQuerySingle = `SELECT DISTINCT
     unitname,
     barcoderefunitstand,
     barcoderefunitdivide,
-    barcoderefunitstand / NULLIF(barcoderefunitdivide, 1) AS unit_ratio
+    barcoderefunitstand / NULLIF(barcoderefunitdivide, 1) AS unitratio
 FROM productbarcode
 WHERE itemcode = $1
 AND barcoderefunitstand > 0
 AND barcoderefunitdivide > 0
-ORDER BY unit_ratio DESC`
+ORDER BY unitratio DESC`
 
 // BuildAutoPackingCache fetches packing info for a batch of item codes to minimize per-item queries.
 func BuildAutoPackingCache(db *sql.DB, itemCodes []string) map[string][]models.ProductBarcodePackingStruct {
@@ -39,12 +39,12 @@ func BuildAutoPackingCache(db *sql.DB, itemCodes []string) map[string][]models.P
         unitname,
         barcoderefunitstand,
         barcoderefunitdivide,
-        barcoderefunitstand / NULLIF(barcoderefunitdivide, 1) AS unit_ratio
+        barcoderefunitstand / NULLIF(barcoderefunitdivide, 1) AS unitratio
     FROM productbarcode
     WHERE itemcode IN (` + strings.Join(placeholders, ",") + `)
     AND barcoderefunitstand > 0
     AND barcoderefunitdivide > 0
-    ORDER BY itemcode, unit_ratio DESC`
+    ORDER BY itemcode, unitratio DESC`
 
 	rows, err := mypg.QuerySelectAll(db, batchQuery, args...)
 	if err != nil {
@@ -55,7 +55,7 @@ func BuildAutoPackingCache(db *sql.DB, itemCodes []string) map[string][]models.P
 	for _, row := range rows {
 		itemCode := mypg.GetStringValue(row, "itemcode")
 		cache[itemCode] = append(cache[itemCode], models.ProductBarcodePackingStruct{
-			UnitName:             mypg.GetStringValue(row, "unit_name"),
+			UnitName:             mypg.GetStringValue(row, "unitname"),
 			BarcodeRefUnitStand:  mypg.GetFloat64Value(row, "barcoderefunitstand"),
 			BarcodeRefUnitDivide: mypg.GetFloat64Value(row, "barcoderefunitdivide"),
 		})
@@ -83,7 +83,7 @@ func FetchPackingForItem(db *sql.DB, cache map[string][]models.ProductBarcodePac
 	packs := make([]models.ProductBarcodePackingStruct, 0, len(rows))
 	for _, row := range rows {
 		packs = append(packs, models.ProductBarcodePackingStruct{
-			UnitName:             mypg.GetStringValue(row, "unit_name"),
+			UnitName:             mypg.GetStringValue(row, "unitname"),
 			BarcodeRefUnitStand:  mypg.GetFloat64Value(row, "barcoderefunitstand"),
 			BarcodeRefUnitDivide: mypg.GetFloat64Value(row, "barcoderefunitdivide"),
 		})

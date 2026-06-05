@@ -93,7 +93,7 @@ func ProcessProductBalanceByLocationAndItemWithTimezone(holdingCode string, fina
 	transFlagList := myglobal.GetTransFlagsForQuery()
 
 	query := `
-WITH item_names AS (
+WITH itemnames AS (
 	SELECT
 		itemcode,
 		STRING_AGG(DISTINCT name0, ', ') AS itemname
@@ -102,7 +102,7 @@ WITH item_names AS (
 	AND itemcode <> ''
 	GROUP BY itemcode
 ),
-barcode_list AS (
+barcodelist AS (
 	SELECT
 		itemcode,
 		STRING_AGG(DISTINCT barcode, ', ') AS barcodelist
@@ -111,7 +111,7 @@ barcode_list AS (
 	AND itemcode <> ''
 	GROUP BY itemcode
 ),
-auto_packing AS (
+autopacking AS (
 	SELECT
 		itemcode,
 		COUNT(DISTINCT CASE
@@ -131,7 +131,7 @@ SELECT
     n.itemname AS itemname,
 	pb2.unitcode AS unitcode,
     pb2.unitname AS unitname,
-    sb.total_balance AS balanceqty,
+    sb.totalbalance AS balanceqty,
     COALESCE(ap.countpacking, 0) AS countpacking,
     b.barcodelist AS barcodelist
 FROM
@@ -149,7 +149,7 @@ JOIN (
         itemcode,
         whcode,
         locationcode,
-        SUM(totalqty * (unitstand / NULLIF(unitdivide, 0))) AS total_balance
+        SUM(totalqty * (unitstand / NULLIF(unitdivide, 0))) AS totalbalance
     FROM docdetail
     WHERE ` + dateCondition + `
 		AND transflag IN (` + transFlagList + `)
@@ -157,9 +157,9 @@ JOIN (
 ) AS sb ON lc.itemcode = sb.itemcode
        AND lc.whcode = sb.whcode
        AND lc.locationcode = sb.locationcode
-LEFT JOIN item_names n ON lc.itemcode = n.itemcode
-LEFT JOIN barcode_list b ON lc.itemcode = b.itemcode
-LEFT JOIN auto_packing ap ON lc.itemcode = ap.itemcode
+LEFT JOIN itemnames n ON lc.itemcode = n.itemcode
+LEFT JOIN barcodelist b ON lc.itemcode = b.itemcode
+LEFT JOIN autopacking ap ON lc.itemcode = ap.itemcode
 LEFT JOIN (
 	SELECT
 		itemcode,
@@ -192,11 +192,11 @@ ORDER BY lc.whcode, lc.locationcode, lc.itemcode
 		whCode := mypg.GetStringValue(row, "whcode")
 		locationCode := mypg.GetStringValue(row, "locationcode")
 		itemCode := mypg.GetStringValue(row, "itemcode")
-		itemName := mypg.GetStringValue(row, "item_name")
+		itemName := mypg.GetStringValue(row, "itemname")
 		unitCode := mypg.GetStringValue(row, "unitcode")
-		unitName := mypg.GetStringValue(row, "unit_name")
+		unitName := mypg.GetStringValue(row, "unitname")
 		barcodeList := mypg.GetStringValue(row, "barcodelist")
-		balanceQty := mypg.GetFloat64Value(row, "balance_qty")
+		balanceQty := mypg.GetFloat64Value(row, "balanceqty")
 
 		var countpacking int64
 		if row["countpacking"] != nil {
@@ -291,7 +291,7 @@ ORDER BY lc.whcode, lc.locationcode, lc.itemcode
 	logger.Info("Total records to insert: %d", totalLine)
 
 	// Use bulk insert for PostgreSQL
-	columns := []string{"guid", "docdatetime", "line_number", "datajson"}
+	columns := []string{"guid", "docdatetime", "linenumber", "datajson"}
 	var records [][]any
 
 	for _, b := range wareHouseDataList {

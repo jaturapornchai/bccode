@@ -29,10 +29,10 @@ This migration is additive and safe to rerun. It backfills stable identity field
 
 ## Task 3: PO approval user identity
 
-- Forward: backfill `po_approval_settings.rules[].approvers[].approver_user_uid` and `po_approval_status.history[].approver_user_uid` from username/user code to `users.uid`.
+- Forward: backfill `po_approvalsettings.rules[].approvers[].approver_user_uid` and `po_approval_status.history[].approver_user_uid` from username/user code to `users.uid`.
 - Rollback data only if a deployment must return to a schema that cannot tolerate extra fields:
   ```js
-  db.po_approval_settings.updateMany(
+  db.po_approvalsettings.updateMany(
     {},
     { $unset: { "rules.$[].approvers.$[].approver_user_uid": "" } }
   )

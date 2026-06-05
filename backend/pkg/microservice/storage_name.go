@@ -6,126 +6,126 @@ import (
 )
 
 var legacyStorageNameAliases = map[string]string{
-	"advancepayment":                              "advance_payment",
-	"advancepaymentrefund":                        "advance_payment_refund",
-	"ap_advancepayment_refund_transaction":        "ap_advance_payment_refund_transaction",
-	"ap_advancepayment_refund_transaction_detail": "ap_advance_payment_refund_transaction_detail",
-	"ap_advancepayment_transaction":               "ap_advance_payment_transaction",
-	"ap_advancepayment_transaction_detail":        "ap_advance_payment_transaction_detail",
-	"ap_depositpayment_refund_transaction":        "ap_deposit_payment_refund_transaction",
-	"ap_depositpayment_refund_transaction_detail": "ap_deposit_payment_refund_transaction_detail",
-	"ap_depositpayment_transaction":               "ap_deposit_payment_transaction",
-	"ap_depositpayment_transaction_detail":        "ap_deposit_payment_transaction_detail",
-	"ap_purchasereceive_transaction":              "ap_purchase_receive_transaction",
-	"ap_purchasereceive_transaction_detail":       "ap_purchase_receive_transaction_detail",
-	"ar_advancepayment_refund_transaction":        "ar_advance_payment_refund_transaction",
-	"ar_advancepayment_refund_transaction_detail": "ar_advance_payment_refund_transaction_detail",
-	"ar_advancepayment_transaction":               "ar_advance_payment_transaction",
-	"ar_advancepayment_transaction_detail":        "ar_advance_payment_transaction_detail",
-	"ar_depositpayment_refund_transaction":        "ar_deposit_payment_refund_transaction",
-	"ar_depositpayment_refund_transaction_detail": "ar_deposit_payment_refund_transaction_detail",
-	"ar_depositpayment_transaction":               "ar_deposit_payment_transaction",
-	"ar_depositpayment_transaction_detail":        "ar_deposit_payment_transaction_detail",
-	"bankmaster":                                  "bank_master",
-	"banktransferrecord":                          "bank_transfer_record",
-	"bookbank":                                    "book_bank",
-	"cartorder":                                   "cart_order",
-	"cartorderdetail":                             "cart_order_detail",
-	"chartofaccounts":                             "chart_of_accounts",
-	"chequechange":                                "cheque_change",
-	"chequedeposit":                               "cheque_deposit",
-	"chequedisqualified":                          "cheque_disqualified",
-	"chequepass":                                  "cheque_pass",
-	"chequepaymentchange":                         "cheque_payment_change",
-	"chequepaymentdeposit":                        "cheque_payment_deposit",
-	"chequepaymentdisqualified":                   "cheque_payment_disqualified",
-	"chequepaymentreturn":                         "cheque_payment_return",
-	"chequerenew":                                 "cheque_renew",
-	"chequereturn":                                "cheque_return",
-	"costcenter":                                  "cost_center",
-	"creditcardwithdrawal":                        "credit_card_withdrawal",
-	"depositrecord":                               "deposit_record",
-	"depositrefund":                               "deposit_refund",
-	"docdetail":                                   "doc_detail",
-	"docdetail_updated":                           "doc_detail_updated",
-	"docpayment":                                  "doc_payment",
-	"docref":                                      "doc_ref",
-	"docwaitprocess":                              "doc_wait_process",
-	"inventoryoptions":                            "inventory_options",
-	"jobproject":                                  "job_project",
-	"journalvats_details":                         "journal_vats_details",
-	"journaltaxes_details":                        "journal_taxes_details",
-	"ordertype":                                   "order_type",
-	"paymentmaster":                               "payment_master",
-	"paidadvance":                                 "paid_advance",
-	"paidadvancerefund":                           "paid_advance_refund",
-	"pickandpack":                                 "pick_and_pack",
-	"processstock":                                "process_stock",
-	"processstockcost":                            "process_stock_cost",
-	"processstockdetail":                          "process_stock_detail",
-	"processstocklot":                             "process_stock_lot",
-	"productbarcode":                              "product_barcodes",
-	"productbarcode_dict":                         "product_barcode_dict",
-	"productbarcodeboms":                          "product_barcode_boms",
-	"productbarcodeimport":                        "product_barcode_import",
-	"productbarcodeprocess":                       "product_barcode_process",
-	"productbarcoderef":                           "product_barcode_ref",
-	"productcategory":                             "product_category",
-	"producttype":                                 "product_type",
-	"productunit":                                 "product_unit",
-	"purchaseorder":                               "purchase_order",
-	"purchaseorder_transaction":                   "purchase_order_transaction",
-	"purchaseorder_transaction_detail":            "purchase_order_transaction_detail",
-	"purchasepartial":                             "purchase_partial",
-	"purchasereceive_transaction":                 "purchase_receive_transaction",
-	"purchasereceive_transaction_detail":          "purchase_receive_transaction_detail",
-	"purchaserequisition":                         "purchase_requisition",
-	"purchasedebitnote":                           "purchase_debit_note",
-	"receivedeposit":                              "receive_deposit",
-	"receivedepositrefund":                        "receive_deposit_refund",
-	"resultfordashboard":                          "result_for_dashboard",
-	"qrpayment":                                   "qr_payment",
-	"salechannel":                                 "sale_channel",
-	"saledebitnote":                               "sale_debit_note",
-	"saledebitnote_transaction":                   "sale_debit_note_transaction",
-	"saledebitnote_transaction_detail":            "sale_debit_note_transaction_detail",
-	"saleinvoice":                                 "sale_invoice",
-	"saleinvoice_return_transaction":              "sale_invoice_return_transaction",
-	"saleinvoice_return_transaction_detail":       "sale_invoice_return_transaction_detail",
-	"saleinvoice_transaction":                     "sale_invoice_transaction",
-	"saleinvoice_transaction_detail":              "sale_invoice_transaction_detail",
-	"saleorder":                                   "sale_order",
-	"saleorder_transaction":                       "sale_order_transaction",
-	"saleorder_transaction_detail":                "sale_order_transaction_detail",
-	"stockadjustment":                             "stock_adjustment",
-	"stockbalanceimport":                          "stock_balance_import",
-	"stockwaitprocess":                            "stock_wait_process",
-	"userlogin":                                   "user_login",
-	"withdrawalrecord":                            "withdrawal_record",
+	"advancepayment":                          "advancepayment",
+	"advancepaymentrefund":                    "advancepaymentrefund",
+	"apadvancepaymentrefundtransaction":       "apadvancepaymentrefundtransaction",
+	"apadvancepaymentrefundtransactiondetail": "apadvancepaymentrefundtransactiondetail",
+	"apadvancepaymenttransaction":             "apadvancepaymenttransaction",
+	"apadvancepaymenttransactiondetail":       "apadvancepaymenttransactiondetail",
+	"apdepositpaymentrefundtransaction":       "apdepositpaymentrefundtransaction",
+	"apdepositpaymentrefundtransactiondetail": "apdepositpaymentrefundtransactiondetail",
+	"apdepositpaymenttransaction":             "apdepositpaymenttransaction",
+	"apdepositpaymenttransactiondetail":       "apdepositpaymenttransactiondetail",
+	"appurchasereceivetransaction":            "appurchasereceivetransaction",
+	"appurchasereceivetransactiondetail":      "appurchasereceivetransactiondetail",
+	"aradvancepaymentrefundtransaction":       "aradvancepaymentrefundtransaction",
+	"aradvancepaymentrefundtransactiondetail": "aradvancepaymentrefundtransactiondetail",
+	"aradvancepaymenttransaction":             "aradvancepaymenttransaction",
+	"aradvancepaymenttransactiondetail":       "aradvancepaymenttransactiondetail",
+	"ardepositpaymentrefundtransaction":       "ardepositpaymentrefundtransaction",
+	"ardepositpaymentrefundtransactiondetail": "ardepositpaymentrefundtransactiondetail",
+	"ardepositpaymenttransaction":             "ardepositpaymenttransaction",
+	"ardepositpaymenttransactiondetail":       "ardepositpaymenttransactiondetail",
+	"bankmaster":                              "bankmaster",
+	"banktransferrecord":                      "banktransferrecord",
+	"bookbank":                                "bookbank",
+	"cartorder":                               "cartorder",
+	"cartorderdetail":                         "cartorderdetail",
+	"chartofaccounts":                         "chartofaccounts",
+	"chequechange":                            "chequechange",
+	"chequedeposit":                           "chequedeposit",
+	"chequedisqualified":                      "chequedisqualified",
+	"chequepass":                              "chequepass",
+	"chequepaymentchange":                     "chequepaymentchange",
+	"chequepaymentdeposit":                    "chequepaymentdeposit",
+	"chequepaymentdisqualified":               "chequepaymentdisqualified",
+	"chequepaymentreturn":                     "chequepaymentreturn",
+	"chequerenew":                             "chequerenew",
+	"chequereturn":                            "chequereturn",
+	"costcenter":                              "costcenter",
+	"creditcardwithdrawal":                    "creditcardwithdrawal",
+	"depositrecord":                           "depositrecord",
+	"depositrefund":                           "depositrefund",
+	"docdetail":                               "docdetail",
+	"docdetailupdated":                        "docdetailupdated",
+	"docpayment":                              "docpayment",
+	"docref":                                  "docref",
+	"docwaitprocess":                          "docwaitprocess",
+	"inventoryoptions":                        "inventoryoptions",
+	"jobproject":                              "jobproject",
+	"journalvatsdetails":                      "journalvatsdetails",
+	"journaltaxesdetails":                     "journaltaxesdetails",
+	"ordertype":                               "ordertype",
+	"paymentmaster":                           "paymentmaster",
+	"paidadvance":                             "paidadvance",
+	"paidadvancerefund":                       "paidadvancerefund",
+	"pickandpack":                             "pickandpack",
+	"processstock":                            "processstock",
+	"processstockcost":                        "processstockcost",
+	"processstockdetail":                      "processstockdetail",
+	"processstocklot":                         "processstocklot",
+	"productbarcode":                          "productbarcodes",
+	"productbarcodedict":                      "productbarcodedict",
+	"productbarcodeboms":                      "productbarcodeboms",
+	"productbarcodeimport":                    "productbarcodeimport",
+	"productbarcodeprocess":                   "productbarcodeprocess",
+	"productbarcoderef":                       "productbarcoderef",
+	"productcategory":                         "productcategory",
+	"producttype":                             "producttype",
+	"productunit":                             "productunit",
+	"purchaseorder":                           "purchaseorder",
+	"purchaseordertransaction":                "purchaseordertransaction",
+	"purchaseordertransactiondetail":          "purchaseordertransactiondetail",
+	"purchasepartial":                         "purchasepartial",
+	"purchasereceivetransaction":              "purchasereceivetransaction",
+	"purchasereceivetransactiondetail":        "purchasereceivetransactiondetail",
+	"purchaserequisition":                     "purchaserequisition",
+	"purchasedebitnote":                       "purchasedebitnote",
+	"receivedeposit":                          "receivedeposit",
+	"receivedepositrefund":                    "receivedepositrefund",
+	"resultfordashboard":                      "resultfordashboard",
+	"qrpayment":                               "qrpayment",
+	"salechannel":                             "salechannel",
+	"saledebitnote":                           "saledebitnote",
+	"saledebitnotetransaction":                "saledebitnotetransaction",
+	"saledebitnotetransactiondetail":          "saledebitnotetransactiondetail",
+	"saleinvoice":                             "saleinvoice",
+	"saleinvoicereturntransaction":            "saleinvoicereturntransaction",
+	"saleinvoicereturntransactiondetail":      "saleinvoicereturntransactiondetail",
+	"saleinvoicetransaction":                  "saleinvoicetransaction",
+	"saleinvoicetransactiondetail":            "saleinvoicetransactiondetail",
+	"saleorder":                               "saleorder",
+	"saleordertransaction":                    "saleordertransaction",
+	"saleordertransactiondetail":              "saleordertransactiondetail",
+	"stockadjustment":                         "stockadjustment",
+	"stockbalanceimport":                      "stockbalanceimport",
+	"stockwaitprocess":                        "stockwaitprocess",
+	"userlogin":                               "userlogin",
+	"withdrawalrecord":                        "withdrawalrecord",
 }
 
 var legacyStorageFieldNameAliases = map[string]string{
-	"custcode":       "cust_code",
-	"docdate":        "doc_date",
-	"docdatetime":    "doc_datetime",
-	"docno":          "doc_no",
-	"itemcode":       "item_code",
-	"locationcode":   "location_code",
+	"custcode":       "custcode",
+	"docdate":        "docdate",
+	"docdatetime":    "docdatetime",
+	"docno":          "docno",
+	"itemcode":       "itemcode",
+	"locationcode":   "locationcode",
 	"holdingcode":    "holdingcode",
-	"transflag":      "trans_flag",
-	"unitcode":       "unit_code",
-	"warehousecode":  "warehouse_code",
-	"whcode":         "wh_code",
+	"transflag":      "transflag",
+	"unitcode":       "unitcode",
+	"warehousecode":  "warehousecode",
+	"whcode":         "whcode",
 	"branchcode":     "branchcode",
-	"departmentcode": "department_code",
+	"departmentcode": "departmentcode",
 }
 
-// NormalizeStorageName keeps database object names in lower snake_case.
+// NormalizeStorageName keeps database object names in lowercase no-underscore.
 func NormalizeStorageName(name string) string {
 	return normalizeStorageIdentifier(name, legacyStorageNameAliases)
 }
 
-// NormalizeStorageFieldName keeps database field and column names in lower snake_case.
+// NormalizeStorageFieldName keeps database field and column names in lowercase no-underscore.
 func NormalizeStorageFieldName(name string) string {
 	return normalizeStorageIdentifier(name, legacyStorageFieldNameAliases)
 }
@@ -136,28 +136,13 @@ func normalizeStorageIdentifier(name string, aliases map[string]string) string {
 		return name
 	}
 
-	runes := []rune(name)
 	var builder strings.Builder
-	for index, current := range runes {
+	for _, current := range name {
 		if current == '_' || current == '-' || unicode.IsSpace(current) {
-			if builder.Len() > 0 && !strings.HasSuffix(builder.String(), "_") {
-				builder.WriteRune('_')
-			}
 			continue
 		}
 
 		if unicode.IsUpper(current) {
-			if index > 0 && builder.Len() > 0 && !strings.HasSuffix(builder.String(), "_") {
-				previous := runes[index-1]
-				var next rune
-				if index+1 < len(runes) {
-					next = runes[index+1]
-				}
-				isLastSingleLowerAfterAcronym := unicode.IsUpper(previous) && next != 0 && unicode.IsLower(next) && index+1 == len(runes)-1
-				if unicode.IsLower(previous) || unicode.IsDigit(previous) || (unicode.IsUpper(previous) && next != 0 && unicode.IsLower(next) && !isLastSingleLowerAfterAcronym) {
-					builder.WriteRune('_')
-				}
-			}
 			builder.WriteRune(unicode.ToLower(current))
 			continue
 		}
@@ -165,7 +150,7 @@ func normalizeStorageIdentifier(name string, aliases map[string]string) string {
 		builder.WriteRune(unicode.ToLower(current))
 	}
 
-	normalized := strings.Trim(builder.String(), "_")
+	normalized := builder.String()
 	if alias, ok := aliases[normalized]; ok {
 		return alias
 	}

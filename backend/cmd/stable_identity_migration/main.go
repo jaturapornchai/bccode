@@ -60,7 +60,7 @@ func main() {
 	// Step 2: Backfill shopUsers.user_uid and create index
 	backfillShopUsersUID(ctx, db, apply)
 
-	// Step 3: Backfill po_approval_settings approvers
+	// Step 3: Backfill po_approvalsettings approvers
 	backfillPOApprovalSettings(ctx, db, apply)
 
 	// Step 4: Backfill po_approval_status history
@@ -259,13 +259,13 @@ func backfillShopUsersUID(ctx context.Context, db *mongo.Database, apply bool) {
 }
 
 func backfillPOApprovalSettings(ctx context.Context, db *mongo.Database, apply bool) {
-	fmt.Println("--- 3. Processing 'po_approval_settings' collection ---")
-	col := db.Collection("po_approval_settings")
+	fmt.Println("--- 3. Processing 'po_approvalsettings' collection ---")
+	col := db.Collection("po_approvalsettings")
 	usersCol := db.Collection("users")
 
 	cursor, err := col.Find(ctx, bson.M{"rules.approvers.user_code": bson.M{"$exists": true}})
 	if err != nil {
-		log.Printf("Failed to query po_approval_settings: %v\n", err)
+		log.Printf("Failed to query po_approvalsettings: %v\n", err)
 		return
 	}
 	defer cursor.Close(ctx)
@@ -276,7 +276,7 @@ func backfillPOApprovalSettings(ctx context.Context, db *mongo.Database, apply b
 	for cursor.Next(ctx) {
 		var doc bson.M
 		if err := cursor.Decode(&doc); err != nil {
-			log.Printf("Failed to decode po_approval_settings: %v\n", err)
+			log.Printf("Failed to decode po_approvalsettings: %v\n", err)
 			continue
 		}
 
@@ -455,7 +455,7 @@ func printAuditCounts(ctx context.Context, db *mongo.Database) {
 
 	printCount("users missing uid", "users", missingUIDFilter)
 	printCount("shopUsers missing user_uid", "shopUsers", missingUserUIDFilter)
-	printCount("po_approval_settings approvers missing approver_user_uid", "po_approval_settings", missingApproverUIDFilter)
+	printCount("po_approvalsettings approvers missing approver_user_uid", "po_approvalsettings", missingApproverUIDFilter)
 	printCount("po_approval_status history missing approver_user_uid", "po_approval_status", missingHistoryUIDFilter)
 }
 

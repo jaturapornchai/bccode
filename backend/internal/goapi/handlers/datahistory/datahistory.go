@@ -162,8 +162,8 @@ func GetLastPOSnapshot(holdingCode, guidFixed string) map[string]interface{} {
 // poKeyFields - fields สำคัญที่ใช้เปรียบเทียบว่ามีการแก้ไขจริงหรือไม่
 var poKeyFields = []string{
 	"docno", "docdatetime", "custcode", "description", "discountword",
-	"totaldiscount", "totalvalue", "total_amount", "totalvatvalue",
-	"totalbeforevat", "totalaftervat", "vatrate", "vat_type",
+	"totaldiscount", "totalvalue", "totalamount", "totalvatvalue",
+	"totalbeforevat", "totalaftervat", "vatrate", "vattype",
 	"iscancel", "cancelreason",
 	"doc_currency", "exchange_rate", "totalamount_doc",
 	"purchasetypecode",
@@ -200,7 +200,7 @@ func HasMeaningfulChanges(oldData, newData map[string]interface{}) bool {
 			return true
 		}
 		// เปรียบเทียบ fields สำคัญของรายการสินค้า
-		detailFields := []string{"itemcode", "qty", "price", "sum_amount", "unitcode", "whcode", "locationcode", "discount", "discountamount"}
+		detailFields := []string{"itemcode", "qty", "price", "sumamount", "unitcode", "whcode", "locationcode", "discount", "discountamount"}
 		for _, f := range detailFields {
 			if !compareValues(oldItem[f], newItem[f]) {
 				logger.Debug("[DataHistory] Detail[%d].%s changed", i, f)

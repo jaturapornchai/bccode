@@ -83,7 +83,7 @@ func (e *LIFOEngine) ProcessIssue(ctx context.Context, tx *sql.Tx, params inv.Is
 func (e *LIFOEngine) consumeLayersLIFO(ctx context.Context, tx *sql.Tx, holdingCode, itemCode, whCode, locationCode string, qtyNeeded float64) (float64, error) {
 	rows, err := tx.QueryContext(ctx,
 		`SELECT id, remainingqty, totalunitcost
-		 FROM inventory_cost_layers
+		 FROM inventorycostlayers
 		 WHERE holdingcode = $1 AND itemcode = $2 AND whcode = $3 AND locationcode = $4 AND remainingqty > 0
 		 ORDER BY receiveddate DESC, id DESC
 		 FOR UPDATE`,
@@ -111,7 +111,7 @@ func (e *LIFOEngine) consumeLayersLIFO(ctx context.Context, tx *sql.Tx, holdingC
 		remaining -= consume
 
 		_, err := tx.ExecContext(ctx,
-			`UPDATE inventory_cost_layers SET remainingqty = $1, updatedat = NOW() WHERE id = $2`,
+			`UPDATE inventorycostlayers SET remainingqty = $1, updatedat = NOW() WHERE id = $2`,
 			layerQty-consume, layerID,
 		)
 		if err != nil {

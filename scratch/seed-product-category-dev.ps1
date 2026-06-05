@@ -83,7 +83,7 @@ function New-CodeListItem {
     code = $code
     xorder = $Order
     barcode = $barcode
-    unitcode = [string]($BarcodeRow.item_unit_code ?? $BarcodeRow.itemunitcode ?? "")
+    unitcode = [string]($BarcodeRow.itemunitcode ?? $BarcodeRow.itemunitcode ?? "")
     unitnames = @($BarcodeRow.itemunitnames ?? $BarcodeRow.item_unit_names ?? @())
     names = @($BarcodeRow.names ?? @())
     manufacturerguid = [string]($BarcodeRow.manufacturerguid ?? $BarcodeRow.manufacturer_guid ?? "")

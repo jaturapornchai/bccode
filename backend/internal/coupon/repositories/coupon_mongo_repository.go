@@ -179,7 +179,7 @@ func (repo CouponReservationRepository) FindActiveReservationsByCoupon(ctx conte
 		"holdingcode": holdingCode,
 		"coupon_id":   couponID,
 		"status":      models.ReservationStatusActive,
-		"expires_at":  bson.M{"$gt": time.Now().UTC()}, // Use UTC time for MongoDB queries
+		"expiresat":   bson.M{"$gt": time.Now().UTC()}, // Use UTC time for MongoDB queries
 	}
 
 	err := repo.pst.Find(ctx, &models.CouponReservationDoc{}, filter, &reservations)
@@ -195,7 +195,7 @@ func (repo CouponReservationRepository) FindActiveReservationsByCustomerAndCoupo
 		"customer_id": customerID,
 		"coupon_id":   couponID,
 		"status":      models.ReservationStatusActive,
-		"expires_at":  bson.M{"$gt": time.Now().UTC()}, // Use UTC time for MongoDB queries
+		"expiresat":   bson.M{"$gt": time.Now().UTC()}, // Use UTC time for MongoDB queries
 	}
 
 	err := repo.pst.Find(ctx, &models.CouponReservationDoc{}, filter, &reservations)
@@ -208,7 +208,7 @@ func (repo CouponReservationRepository) CountActiveReservations(ctx context.Cont
 		"holdingcode": holdingCode,
 		"coupon_id":   couponID,
 		"status":      models.ReservationStatusActive,
-		"expires_at":  bson.M{"$gt": time.Now().UTC()}, // Use UTC time for MongoDB queries
+		"expiresat":   bson.M{"$gt": time.Now().UTC()}, // Use UTC time for MongoDB queries
 	}
 
 	return repo.pst.Count(ctx, &models.CouponReservationDoc{}, filter)
@@ -221,7 +221,7 @@ func (repo CouponReservationRepository) CountActiveReservationsByCustomer(ctx co
 		"customer_id": customerID,
 		"coupon_id":   couponID,
 		"status":      models.ReservationStatusActive,
-		"expires_at":  bson.M{"$gt": time.Now().UTC()}, // Use UTC time for MongoDB queries
+		"expiresat":   bson.M{"$gt": time.Now().UTC()}, // Use UTC time for MongoDB queries
 	}
 
 	return repo.pst.Count(ctx, &models.CouponReservationDoc{}, filter)
@@ -290,8 +290,8 @@ func (repo CouponReservationRepository) FindExpiredReservations(ctx context.Cont
 	var reservations []models.CouponReservationDoc
 
 	filter := bson.M{
-		"status":     models.ReservationStatusActive,
-		"expires_at": bson.M{"$lt": time.Now().UTC()}, // Use UTC time for MongoDB queries
+		"status":    models.ReservationStatusActive,
+		"expiresat": bson.M{"$lt": time.Now().UTC()}, // Use UTC time for MongoDB queries
 	}
 
 	// ถ้า holdingCode ไม่ใช่ empty string ให้เพิ่มเงื่อนไข holdingcode
@@ -306,8 +306,8 @@ func (repo CouponReservationRepository) FindExpiredReservations(ctx context.Cont
 // CleanupExpiredReservations ล้างการจองที่หมดอายุ
 func (repo CouponReservationRepository) CleanupExpiredReservations(ctx context.Context, holdingCode string) error {
 	filter := bson.M{
-		"status":     models.ReservationStatusActive,
-		"expires_at": bson.M{"$lt": time.Now().UTC()}, // Use UTC time for MongoDB queries
+		"status":    models.ReservationStatusActive,
+		"expiresat": bson.M{"$lt": time.Now().UTC()}, // Use UTC time for MongoDB queries
 	}
 
 	// ถ้า holdingCode ไม่ใช่ empty string ให้เพิ่มเงื่อนไข holdingcode

@@ -15,7 +15,7 @@ import (
 var coreTableNames = []string{
 	"doc",
 	"docdetail",
-	"docdetail_updated",
+	"docdetailupdated",
 	"docpayment",
 	"docref",
 	"productbarcode",
@@ -37,11 +37,11 @@ var coreTableNames = []string{
 	"shop",
 	"token",
 	"userlogin",
-	"ic_inventory",
+	"icinventory",
 	"result",
 	"resultfordashboard",
-	"task_status",
-	"temp_barcode_map",
+	"taskstatus",
+	"tempbarcodemap",
 }
 
 // getCreateTableDDLs คืน DDL statements สำหรับสร้าง tables ทั้งหมด
@@ -124,22 +124,22 @@ func getCreateTableDDLs() []string {
 			` + "`transflag`" + ` Int16 DEFAULT 0,
 			` + "`isdelete`" + ` Bool DEFAULT 0,
 			` + "`currency`" + ` String DEFAULT '',
-			` + "`currency_symbol`" + ` String DEFAULT '',
-			` + "`doc_currency`" + ` String DEFAULT '',
-			` + "`doc_currency_symbol`" + ` String DEFAULT '',
-			` + "`exchange_rate`" + ` Float64 DEFAULT 1,
-			` + "`totalamount_doc`" + ` Float64 DEFAULT 0,
-			` + "`approval_status`" + ` String DEFAULT '',
+			` + "`currencysymbol`" + ` String DEFAULT '',
+			` + "`doccurrency`" + ` String DEFAULT '',
+			` + "`doccurrencysymbol`" + ` String DEFAULT '',
+			` + "`exchangerate`" + ` Float64 DEFAULT 1,
+			` + "`totalamountdoc`" + ` Float64 DEFAULT 0,
+			` + "`approvalstatus`" + ` String DEFAULT '',
 			` + "`custcode`" + ` String DEFAULT '',
 			` + "`isclosedmanual`" + ` Bool DEFAULT false,
-			` + "`closedmanual_by_code`" + ` String DEFAULT '',
-			` + "`closedmanual_by_name`" + ` String DEFAULT '',
-			` + "`closedmanual_at`" + ` DateTime DEFAULT '1970-01-01 00:00:00',
-			` + "`closedmanual_reason`" + ` String DEFAULT '',
-			INDEX idx_holdingcode holdingcode TYPE minmax GRANULARITY 4,
-			INDEX idx_branchid branchid TYPE minmax GRANULARITY 4,
-			INDEX idx_perioddatetime perioddatetime TYPE minmax GRANULARITY 4,
-			INDEX idx_holdingcode_transflag (holdingcode, transflag) TYPE minmax GRANULARITY 4
+			` + "`closedmanualbycode`" + ` String DEFAULT '',
+			` + "`closedmanualbyname`" + ` String DEFAULT '',
+			` + "`closedmanualat`" + ` DateTime DEFAULT '1970-01-01 00:00:00',
+			` + "`closedmanualreason`" + ` String DEFAULT '',
+			INDEX idxholdingcode holdingcode TYPE minmax GRANULARITY 4,
+			INDEX idxbranchid branchid TYPE minmax GRANULARITY 4,
+			INDEX idxperioddatetime perioddatetime TYPE minmax GRANULARITY 4,
+			INDEX idxholdingcodetransflag (holdingcode, transflag) TYPE minmax GRANULARITY 4
 		) ENGINE = ReplacingMergeTree PARTITION BY holdingcode ORDER BY (guidfixed, holdingcode, docno) SETTINGS index_granularity = 8192`,
 
 		// docdetail
@@ -148,7 +148,7 @@ func getCreateTableDDLs() []string {
 			` + "`docno`" + ` String,
 			` + "`docdatetime`" + ` DateTime,
 			` + "`perioddatetime`" + ` DateTime,
-			` + "`line_number`" + ` UInt32,
+			` + "`linenumber`" + ` UInt32,
 			` + "`barcode`" + ` String,
 			` + "`unitcode`" + ` String,
 			` + "`qty`" + ` Float64,
@@ -177,28 +177,28 @@ func getCreateTableDDLs() []string {
 			` + "`calcseq`" + ` Int32,
 			` + "`barcodemain`" + ` String,
 			` + "`iscalcstock`" + ` Int8 DEFAULT 0,
-			` + "`price_doc`" + ` Float64 DEFAULT 0,
-			` + "`sumamount_doc`" + ` Float64 DEFAULT 0,
-			` + "`discountamount_doc`" + ` Float64 DEFAULT 0,
-			` + "`priceexcludevat_doc`" + ` Float64 DEFAULT 0,
-			` + "`sumamountexcludevat_doc`" + ` Float64 DEFAULT 0,
-			` + "`totalvaluevat_doc`" + ` Float64 DEFAULT 0,
-			INDEX idx_barcode barcode TYPE bloom_filter(0.01) GRANULARITY 8192,
-			INDEX idx_holdingcode holdingcode TYPE minmax GRANULARITY 4,
-			INDEX idx_branchid branchid TYPE minmax GRANULARITY 4,
-			INDEX idx_perioddatetime perioddatetime TYPE minmax GRANULARITY 4,
-			INDEX idx_holdingcode_transflag (holdingcode, transflag) TYPE minmax GRANULARITY 4,
-			INDEX idx_holdingcode_isupdated (holdingcode, isupdated) TYPE set(100) GRANULARITY 1,
-			INDEX idx_shop_item (holdingcode, itemcode) TYPE minmax GRANULARITY 1
-		) ENGINE = MergeTree PARTITION BY holdingcode ORDER BY (holdingcode, docno, line_number) SETTINGS index_granularity = 8192`,
+			` + "`pricedoc`" + ` Float64 DEFAULT 0,
+			` + "`sumamountdoc`" + ` Float64 DEFAULT 0,
+			` + "`discountamountdoc`" + ` Float64 DEFAULT 0,
+			` + "`priceexcludevatdoc`" + ` Float64 DEFAULT 0,
+			` + "`sumamountexcludevatdoc`" + ` Float64 DEFAULT 0,
+			` + "`totalvaluevatdoc`" + ` Float64 DEFAULT 0,
+			INDEX idxbarcode barcode TYPE bloom_filter(0.01) GRANULARITY 8192,
+			INDEX idxholdingcode holdingcode TYPE minmax GRANULARITY 4,
+			INDEX idxbranchid branchid TYPE minmax GRANULARITY 4,
+			INDEX idxperioddatetime perioddatetime TYPE minmax GRANULARITY 4,
+			INDEX idxholdingcodetransflag (holdingcode, transflag) TYPE minmax GRANULARITY 4,
+			INDEX idxholdingcodeisupdated (holdingcode, isupdated) TYPE set(100) GRANULARITY 1,
+			INDEX idxshopitem (holdingcode, itemcode) TYPE minmax GRANULARITY 1
+		) ENGINE = MergeTree PARTITION BY holdingcode ORDER BY (holdingcode, docno, linenumber) SETTINGS index_granularity = 8192`,
 
-		// docdetail_updated
-		`CREATE TABLE IF NOT EXISTS {DB}.docdetail_updated (
+		// docdetailupdated
+		`CREATE TABLE IF NOT EXISTS {DB}.docdetailupdated (
 			` + "`holdingcode`" + ` String,
 			` + "`docno`" + ` String,
 			` + "`docdatetime`" + ` DateTime,
 			` + "`perioddatetime`" + ` DateTime,
-			` + "`line_number`" + ` UInt32,
+			` + "`linenumber`" + ` UInt32,
 			` + "`barcode`" + ` String,
 			` + "`unitcode`" + ` String,
 			` + "`qty`" + ` Float64,
@@ -222,14 +222,14 @@ func getCreateTableDDLs() []string {
 			` + "`itemcode`" + ` Nullable(String) DEFAULT NULL,
 			` + "`unitstand`" + ` Float64 DEFAULT 1.,
 			` + "`unitdivide`" + ` Float64 DEFAULT 1.,
-			INDEX idx_barcode barcode TYPE bloom_filter(0.01) GRANULARITY 8192,
-			INDEX idx_holdingcode holdingcode TYPE minmax GRANULARITY 4,
-			INDEX idx_branchid branchid TYPE minmax GRANULARITY 4,
-			INDEX idx_perioddatetime perioddatetime TYPE minmax GRANULARITY 4,
-			INDEX idx_holdingcode_transflag (holdingcode, transflag) TYPE minmax GRANULARITY 4,
-			INDEX idx_holdingcode_isupdated (holdingcode, isupdated) TYPE set(100) GRANULARITY 1,
-			INDEX idx_shop_item (holdingcode, itemcode) TYPE minmax GRANULARITY 1
-		) ENGINE = ReplacingMergeTree(line_number) PARTITION BY holdingcode ORDER BY (guidfixed, holdingcode, docno, line_number) SETTINGS index_granularity = 8192`,
+			INDEX idxbarcode barcode TYPE bloom_filter(0.01) GRANULARITY 8192,
+			INDEX idxholdingcode holdingcode TYPE minmax GRANULARITY 4,
+			INDEX idxbranchid branchid TYPE minmax GRANULARITY 4,
+			INDEX idxperioddatetime perioddatetime TYPE minmax GRANULARITY 4,
+			INDEX idxholdingcodetransflag (holdingcode, transflag) TYPE minmax GRANULARITY 4,
+			INDEX idxholdingcodeisupdated (holdingcode, isupdated) TYPE set(100) GRANULARITY 1,
+			INDEX idxshopitem (holdingcode, itemcode) TYPE minmax GRANULARITY 1
+		) ENGINE = ReplacingMergeTree(linenumber) PARTITION BY holdingcode ORDER BY (guidfixed, holdingcode, docno, linenumber) SETTINGS index_granularity = 8192`,
 
 		// docpayment
 		`CREATE TABLE IF NOT EXISTS {DB}.docpayment (
@@ -240,7 +240,7 @@ func getCreateTableDDLs() []string {
 			` + "`amount`" + ` Decimal(18, 6),
 			` + "`description`" + ` String,
 			` + "`docno`" + ` String,
-			` + "`trans_flag`" + ` Int32,
+			` + "`transflag`" + ` Int32,
 			` + "`guidfixed`" + ` String DEFAULT '',
 			` + "`guidbranch`" + ` String DEFAULT ''
 		) ENGINE = ReplacingMergeTree PARTITION BY holdingcode ORDER BY (guidfixed, holdingcode, docno) SETTINGS index_granularity = 8192`,
@@ -254,13 +254,13 @@ func getCreateTableDDLs() []string {
 			` + "`docnoreftransflag`" + ` Int32
 		) ENGINE = MergeTree ORDER BY (holdingcode, docno, docnotransflag) SETTINGS index_granularity = 8192`,
 
-		// ic_inventory
-		`CREATE TABLE IF NOT EXISTS {DB}.ic_inventory (
+		// icinventory
+		`CREATE TABLE IF NOT EXISTS {DB}.icinventory (
 			` + "`code`" + ` String,
-			` + "`name_1`" + ` String,
-			` + "`unit_cost`" + ` String,
-			` + "`unit_standard`" + ` String,
-			` + "`item_type`" + ` Int32,
+			` + "`name1`" + ` String,
+			` + "`unitcost`" + ` String,
+			` + "`unitstandard`" + ` String,
+			` + "`itemtype`" + ` Int32,
 			` + "`holdingcode`" + ` String
 		) ENGINE = MergeTree ORDER BY code SETTINGS index_granularity = 8192`,
 
@@ -299,9 +299,9 @@ func getCreateTableDDLs() []string {
 			` + "`guidbranch`" + ` String DEFAULT '',
 			` + "`guidfixed`" + ` String DEFAULT '',
 			` + "`transflag`" + ` UInt16,
-			INDEX idx_holdingcode holdingcode TYPE minmax GRANULARITY 4,
-			INDEX idx_branchid branchid TYPE minmax GRANULARITY 4,
-			INDEX idx_perioddatetime perioddatetime TYPE minmax GRANULARITY 4
+			INDEX idxholdingcode holdingcode TYPE minmax GRANULARITY 4,
+			INDEX idxbranchid branchid TYPE minmax GRANULARITY 4,
+			INDEX idxperioddatetime perioddatetime TYPE minmax GRANULARITY 4
 		) ENGINE = ReplacingMergeTree PARTITION BY holdingcode ORDER BY (guidfixed, holdingcode, docno) SETTINGS index_granularity = 8192`,
 
 		// processstockcost
@@ -330,9 +330,9 @@ func getCreateTableDDLs() []string {
 			` + "`docref`" + ` String CODEC(ZSTD(1)),
 			` + "`originalqty`" + ` Int32,
 			` + "`qty`" + ` Int32,
-			INDEX idx_docno docno TYPE bloom_filter(0.001) GRANULARITY 4,
-			INDEX idx_barcode barcode TYPE bloom_filter(0.001) GRANULARITY 4,
-			INDEX idx_docdatetime docdatetime TYPE minmax GRANULARITY 4
+			INDEX idxdocno docno TYPE bloom_filter(0.001) GRANULARITY 4,
+			INDEX idxbarcode barcode TYPE bloom_filter(0.001) GRANULARITY 4,
+			INDEX idxdocdatetime docdatetime TYPE minmax GRANULARITY 4
 		) ENGINE = MergeTree PARTITION BY (holdingcode, itemcode) ORDER BY (holdingcode, itemcode, docdatetime, whcode, locationcode) SETTINGS index_granularity = 16384, parts_to_throw_insert = 1000, parts_to_delay_insert = 500`,
 
 		// processstockdetail
@@ -355,7 +355,7 @@ func getCreateTableDDLs() []string {
 			` + "`price`" + ` Float64,
 			` + "`priceexcludevat`" + ` Float64,
 			` + "`docref`" + ` String,
-			INDEX idx_barcodemain (holdingcode, barcodemain) TYPE minmax GRANULARITY 1
+			INDEX idxbarcodemain (holdingcode, barcodemain) TYPE minmax GRANULARITY 1
 		) ENGINE = MergeTree PARTITION BY holdingcode ORDER BY (holdingcode, barcode) SETTINGS index_granularity = 8192, index_granularity_bytes = 20971520, min_bytes_for_wide_part = 10485760, write_final_mark = 1`,
 
 		// processstocklot
@@ -377,8 +377,8 @@ func getCreateTableDDLs() []string {
 			` + "`balanceqty`" + ` Float64,
 			` + "`balanceamount`" + ` Float64,
 			` + "`guidref`" + ` String CODEC(ZSTD(1)),
-			INDEX idx_barcodemain (holdingcode, barcodemain) TYPE minmax GRANULARITY 1,
-			INDEX idx_barcodemain_guid (holdingcode, barcodemain, guidref) TYPE minmax GRANULARITY 1
+			INDEX idxbarcodemain (holdingcode, barcodemain) TYPE minmax GRANULARITY 1,
+			INDEX idxbarcodemainguid (holdingcode, barcodemain, guidref) TYPE minmax GRANULARITY 1
 		) ENGINE = MergeTree PARTITION BY holdingcode ORDER BY (holdingcode, barcodemain) SETTINGS index_granularity = 8192, index_granularity_bytes = 20971520, min_bytes_for_wide_part = 10485760, write_final_mark = 1`,
 
 		// productbarcode
@@ -404,9 +404,9 @@ func getCreateTableDDLs() []string {
 			` + "`isupdated`" + ` Bool DEFAULT false,
 			` + "`barcoderef`" + ` String DEFAULT '',
 			` + "`imageuri`" + ` String,
-			` + "`price_retail`" + ` Float64 DEFAULT 0,
-			INDEX idx_barcode barcode TYPE bloom_filter(0.01) GRANULARITY 8192,
-			INDEX idx_holdingcode holdingcode TYPE minmax GRANULARITY 4
+			` + "`priceretail`" + ` Float64 DEFAULT 0,
+			INDEX idxbarcode barcode TYPE bloom_filter(0.01) GRANULARITY 8192,
+			INDEX idxholdingcode holdingcode TYPE minmax GRANULARITY 4
 		) ENGINE = ReplacingMergeTree PARTITION BY holdingcode ORDER BY (holdingcode, barcode) SETTINGS index_granularity = 8192, parts_to_throw_insert = 3000, parts_to_delay_insert = 1500`,
 
 		// productbarcodeimport
@@ -465,8 +465,8 @@ func getCreateTableDDLs() []string {
 			` + "`barcoderefunitdivide`" + ` Float64 CODEC(Delta(8), ZSTD(1)),
 			` + "`isstock`" + ` UInt8,
 			` + "`itemcode`" + ` String CODEC(ZSTD(1)),
-			INDEX idx_itemcode (holdingcode, itemcode) TYPE minmax GRANULARITY 1,
-			INDEX idx_barcode_ref (holdingcode, barcoderef) TYPE minmax GRANULARITY 1
+			INDEX idxitemcode (holdingcode, itemcode) TYPE minmax GRANULARITY 1,
+			INDEX idxbarcoderef (holdingcode, barcoderef) TYPE minmax GRANULARITY 1
 		) ENGINE = MergeTree ORDER BY (holdingcode, barcode) SETTINGS index_granularity = 8192, index_granularity_bytes = 20971520, min_bytes_for_wide_part = 10485760, write_final_mark = 1`,
 
 		// productbarcoderef
@@ -479,9 +479,9 @@ func getCreateTableDDLs() []string {
 			` + "`unitcode`" + ` String DEFAULT '',
 			` + "`standvalue`" + ` Float64 DEFAULT 1,
 			` + "`dividevalue`" + ` Float64 DEFAULT 1,
-			INDEX idx_barcode barcode TYPE bloom_filter GRANULARITY 1,
-			INDEX idx_barcoderef barcoderef TYPE bloom_filter GRANULARITY 1,
-			INDEX idx_itemcode itemcode TYPE bloom_filter GRANULARITY 1
+			INDEX idxbarcode barcode TYPE bloom_filter GRANULARITY 1,
+			INDEX idxbarcoderef barcoderef TYPE bloom_filter GRANULARITY 1,
+			INDEX idxitemcode itemcode TYPE bloom_filter GRANULARITY 1
 		) ENGINE = MergeTree PARTITION BY holdingcode ORDER BY (holdingcode, barcode, id) SETTINGS index_granularity = 8192`,
 
 		// result
@@ -517,8 +517,8 @@ func getCreateTableDDLs() []string {
 			` + "`name`" + ` String,
 			` + "`checksum`" + ` String,
 			` + "`mongodbname`" + ` String,
-			INDEX idx_holdingcode holdingcode TYPE minmax GRANULARITY 4,
-			INDEX idx_mongodbname mongodbname TYPE minmax GRANULARITY 4
+			INDEX idxholdingcode holdingcode TYPE minmax GRANULARITY 4,
+			INDEX idxmongodbname mongodbname TYPE minmax GRANULARITY 4
 		) ENGINE = ReplacingMergeTree PARTITION BY mongodbname ORDER BY (mongodbname, holdingcode) SETTINGS index_granularity = 8192`,
 
 		// stockwaitprocess
@@ -528,20 +528,20 @@ func getCreateTableDDLs() []string {
 			` + "`barcodemain`" + ` String CODEC(ZSTD(1))
 		) ENGINE = MergeTree PARTITION BY holdingcode ORDER BY (holdingcode, docdatetime) SETTINGS index_granularity = 8192, index_granularity_bytes = 20971520, min_bytes_for_wide_part = 10485760, write_final_mark = 1`,
 
-		// task_status
-		`CREATE TABLE IF NOT EXISTS {DB}.task_status (
-			` + "`task_id`" + ` String,
+		// taskstatus
+		`CREATE TABLE IF NOT EXISTS {DB}.taskstatus (
+			` + "`taskid`" + ` String,
 			` + "`holdingcode`" + ` String,
 			` + "`status`" + ` String,
-			` + "`error_message`" + ` String,
+			` + "`errormessage`" + ` String,
 			` + "`progress`" + ` Int32,
 			` + "`createdat`" + ` DateTime('UTC'),
 			` + "`updatedat`" + ` DateTime('UTC'),
-			` + "`completed_at`" + ` DateTime('UTC')
-		) ENGINE = MergeTree ORDER BY (holdingcode, task_id, updatedat) SETTINGS index_granularity = 8192`,
+			` + "`completedat`" + ` DateTime('UTC')
+		) ENGINE = MergeTree ORDER BY (holdingcode, taskid, updatedat) SETTINGS index_granularity = 8192`,
 
-		// temp_barcode_map
-		`CREATE TABLE IF NOT EXISTS {DB}.temp_barcode_map (
+		// tempbarcodemap
+		`CREATE TABLE IF NOT EXISTS {DB}.tempbarcodemap (
 			` + "`barcode`" + ` String,
 			` + "`itemcode`" + ` String,
 			` + "`unitstand`" + ` Float64,
@@ -576,7 +576,7 @@ func getCreateTableDDLs() []string {
 // getDictionaryDDL คืน DDL สำหรับสร้าง dictionary
 // แยกออกมาเพราะ dictionary ต้องสร้างหลัง table productbarcode
 func getDictionaryDDL() string {
-	return `CREATE DICTIONARY IF NOT EXISTS {DB}.productbarcode_dict (
+	return `CREATE DICTIONARY IF NOT EXISTS {DB}.productbarcodedict (
 		` + "`barcode`" + ` String,
 		` + "`itemcode`" + ` String,
 		` + "`unitstand`" + ` Float64,

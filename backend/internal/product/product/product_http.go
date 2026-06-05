@@ -290,8 +290,8 @@ func (h ProductHttp) searchFilter(queryParam func(string) string) map[string]int
 			Type:  requestfilter.FieldTypeString,
 		},
 		{
-			Param: "item_type",
-			Field: "item_type",
+			Param: "itemtype",
+			Field: "itemtype",
 			Type:  requestfilter.FieldTypeInt,
 		},
 		{

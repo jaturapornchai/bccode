@@ -152,10 +152,10 @@ export function TabProductMarketplace({
     const headers = firstLine.split(delimiter).map(h => h.trim().toLowerCase());
 
     const holdingCodeIdx = headers.findIndex(h => h.includes("shop") || h.includes("ร้านค้า") || h.includes("บัญชี"));
-    const marketItemIdIdx = headers.findIndex(h => h.includes("product_id") || h.includes("item_id") || h.includes("สินค้าบนเว็บ") || h.includes("market_item_id"));
-    const sellerSkuIdx = headers.findIndex(h => h.includes("seller_sku") || h.includes("sku") || h.includes("รหัสคู่ค้า") || h.includes("sellersku"));
+    const marketItemIdIdx = headers.findIndex(h => h.includes("product_id") || h.includes("item_id") || h.includes("สินค้าบนเว็บ") || h.includes("marketitemid"));
+    const sellerSkuIdx = headers.findIndex(h => h.includes("sellersku") || h.includes("sku") || h.includes("รหัสคู่ค้า") || h.includes("sellersku"));
     const barcodeIdx = headers.findIndex(h => h.includes("barcode") || h.includes("บาร์โค้ด") || h.includes("รหัสบาร์โค้ด") || h.includes("บาร์โค๊ด"));
-    const marketModelIdIdx = headers.findIndex(h => h.includes("variant_id") || h.includes("model_id") || h.includes("รหัสตัวเลือกย่อย") || h.includes("market_model_id"));
+    const marketModelIdIdx = headers.findIndex(h => h.includes("variant_id") || h.includes("model_id") || h.includes("รหัสตัวเลือกย่อย") || h.includes("marketmodelid"));
 
     if (sellerSkuIdx === -1 && barcodeIdx === -1) {
       setImportStatus({
@@ -170,7 +170,7 @@ export function TabProductMarketplace({
     let failedCount = 0;
     const logs: string[] = [];
 
-    let nextProductMaps = [...(value.marketplace_products || [])];
+    let nextProductMaps = [...(value.marketplaceproducts || [])];
     let nextRefBarcodes = [...(value.refbarcodes || [])];
 
     for (let i = 1; i < lines.length; i++) {
@@ -188,7 +188,7 @@ export function TabProductMarketplace({
         matchedBarcodeIdx = nextRefBarcodes.findIndex(b => b.barcode === barcodeValue);
       }
       if (matchedBarcodeIdx === -1 && sellerSku) {
-        matchedBarcodeIdx = nextRefBarcodes.findIndex(b => b.seller_sku === sellerSku);
+        matchedBarcodeIdx = nextRefBarcodes.findIndex(b => b.sellersku === sellerSku);
       }
 
       if (matchedBarcodeIdx === -1) {
@@ -201,28 +201,28 @@ export function TabProductMarketplace({
 
       if (holdingCode && marketItemId) {
         const hasShopMap = nextProductMaps.some(
-          m => m.platform === platform && m.holdingcode === holdingCode && m.market_item_id === marketItemId
+          m => m.platform === platform && m.holdingcode === holdingCode && m.marketitemid === marketItemId
         );
         if (!hasShopMap) {
           nextProductMaps.push({
             ...emptyMarketplaceProductMap(platform),
             holdingcode: holdingCode,
-            market_item_id: marketItemId,
-            sync_status: "linked",
+            marketitemid: marketItemId,
+            syncstatus: "linked",
           });
         }
       }
 
-      const mappings = entry.marketplace_sku_mappings || [];
+      const mappings = entry.marketplaceskumappings || [];
       const matchMapIdx = mappings.findIndex(m => m.platform === platform && m.holdingcode === holdingCode);
       let nextMappings = [...mappings];
 
       const mappingData: MarketplaceSKUMap = {
         ...emptyMarketplaceSKUMap(platform, holdingCode, marketItemId),
         status: "LIVE",
-        market_model_id: marketModelId,
-        seller_sku: sellerSku || entry.seller_sku || "",
-        last_sync_at: new Date().toISOString(),
+        marketmodelid: marketModelId,
+        sellersku: sellerSku || entry.sellersku || "",
+        lastsyncat: new Date().toISOString(),
       };
 
       if (matchMapIdx >= 0) {
@@ -233,8 +233,8 @@ export function TabProductMarketplace({
 
       nextRefBarcodes[matchedBarcodeIdx] = {
         ...entry,
-        seller_sku: sellerSku || entry.seller_sku,
-        marketplace_sku_mappings: nextMappings,
+        sellersku: sellerSku || entry.sellersku,
+        marketplaceskumappings: nextMappings,
       };
 
       successCount++;
@@ -245,7 +245,7 @@ export function TabProductMarketplace({
       if (!c) return null;
       return {
         ...c,
-        marketplace_products: nextProductMaps,
+        marketplaceproducts: nextProductMaps,
         refbarcodes: nextRefBarcodes,
       } as Product;
     });
@@ -255,7 +255,7 @@ export function TabProductMarketplace({
       failed: failedCount,
       logs,
     });
-  }, [platform, value.marketplace_products, value.refbarcodes, onChange]);
+  }, [platform, value.marketplaceproducts, value.refbarcodes, onChange]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -272,8 +272,8 @@ export function TabProductMarketplace({
 
   // Filter mappings for this platform
   const productMaps = useMemo(() => {
-    return value.marketplace_products || [];
-  }, [value.marketplace_products]);
+    return value.marketplaceproducts || [];
+  }, [value.marketplaceproducts]);
 
   const platformProductMaps = useMemo(() => {
     return productMaps.map((item, idx) => ({ item, originalIdx: idx })).filter(x => x.item.platform === platform);
@@ -281,7 +281,7 @@ export function TabProductMarketplace({
 
   const setProductMaps = useCallback(
     (mutator: (rows: MarketplaceProductMap[]) => MarketplaceProductMap[]) =>
-      onChange((c) => c ? ({ ...c, marketplace_products: mutator(c.marketplace_products || []) } as Product) : null),
+      onChange((c) => c ? ({ ...c, marketplaceproducts: mutator(c.marketplaceproducts || []) } as Product) : null),
     [onChange],
   );
 
@@ -318,52 +318,52 @@ export function TabProductMarketplace({
   // Update seller sku for a variation
   const handleSellerSkuChange = useCallback((barcodeIdx: number, sku: string) => {
     setRefBarcodes((rows) =>
-      rows.map((row, idx) => (idx === barcodeIdx ? { ...row, seller_sku: sku } : row)),
+      rows.map((row, idx) => (idx === barcodeIdx ? { ...row, sellersku: sku } : row)),
     );
   }, [setRefBarcodes]);
 
   // Update specific SKU mapping
   const handleSkuMapChange = useCallback((barcodeIdx: number, holdingCode: string, fields: Partial<MarketplaceSKUMap>) => {
-    const market_item_id = value.marketplace_products?.find(
+    const marketitemid = value.marketplaceproducts?.find(
       (m) => m.platform === platform && m.holdingcode === holdingCode
-    )?.market_item_id || "";
+    )?.marketitemid || "";
 
     setRefBarcodes((rows) =>
       rows.map((row, idx) => {
         if (idx !== barcodeIdx) return row;
-        const mappings = row.marketplace_sku_mappings || [];
+        const mappings = row.marketplaceskumappings || [];
         const matchIdx = mappings.findIndex(m => m.platform === platform && m.holdingcode === holdingCode);
         let nextMappings = [...mappings];
         if (matchIdx >= 0) {
           nextMappings[matchIdx] = { ...nextMappings[matchIdx], ...fields };
         } else {
           nextMappings.push({
-            ...emptyMarketplaceSKUMap(platform, holdingCode, market_item_id),
-            seller_sku: row.seller_sku || "",
+            ...emptyMarketplaceSKUMap(platform, holdingCode, marketitemid),
+            sellersku: row.sellersku || "",
             ...fields,
           });
         }
-        return { ...row, marketplace_sku_mappings: nextMappings };
+        return { ...row, marketplaceskumappings: nextMappings };
       }),
     );
   }, [platform, setRefBarcodes]);
 
   const updateDimensionStocks = useCallback(
     (barcodeIdx: number, holdingCode: string, mutator: (rows: MarketplaceDimensionStock[]) => MarketplaceDimensionStock[]) => {
-      const marketItemId = value.marketplace_products?.find(
+      const marketItemId = value.marketplaceproducts?.find(
         (m) => m.platform === platform && m.holdingcode === holdingCode,
-      )?.market_item_id || "";
+      )?.marketitemid || "";
 
       handleSkuMapChange(barcodeIdx, holdingCode, {
-        marketplace_dimension_stocks: mutator(
-          value.refbarcodes?.[barcodeIdx]?.marketplace_sku_mappings?.find(
+        marketplacedimensionstocks: mutator(
+          value.refbarcodes?.[barcodeIdx]?.marketplaceskumappings?.find(
             (m) => m.platform === platform && m.holdingcode === holdingCode,
-          )?.marketplace_dimension_stocks || [],
+          )?.marketplacedimensionstocks || [],
         ),
-        market_item_id: marketItemId,
+        marketitemid: marketItemId,
       });
     },
-    [handleSkuMapChange, platform, value.marketplace_products, value.refbarcodes],
+    [handleSkuMapChange, platform, value.marketplaceproducts, value.refbarcodes],
   );
 
   const addDimensionStock = useCallback(
@@ -371,17 +371,17 @@ export function TabProductMarketplace({
       updateDimensionStocks(barcodeIdx, holdingCode, (rows) => [
         ...rows,
         {
-          dimension_key: "",
-          dimension_name: "",
-          market_dimension_id: "",
-          available_qty: 0,
-          reserved_qty: 0,
-          inbound_qty: 0,
-          oversell_buffer_qty: 0,
-          last_platform_stock: 0,
-          last_synced_at: "",
-          last_sync_status: "",
-          last_sync_error: "",
+          dimensionkey: "",
+          dimensionname: "",
+          marketdimensionid: "",
+          availableqty: 0,
+          reservedqty: 0,
+          inboundqty: 0,
+          oversellbufferqty: 0,
+          lastplatformstock: 0,
+          lastsyncedat: "",
+          lastsyncstatus: "",
+          lastsyncerror: "",
         },
       ]);
     },
@@ -422,29 +422,29 @@ export function TabProductMarketplace({
         <FieldGrid>
           <FieldRow label="น้ำหนักรวมกล่อง (kg)">
             <NumberField
-              value={value.package_weight ?? 0}
-              onChange={(n) => onChange((c) => c ? ({ ...c, package_weight: n } as Product) : null)}
+              value={value.packageweight ?? 0}
+              onChange={(n) => onChange((c) => c ? ({ ...c, packageweight: n } as Product) : null)}
               min={0}
             />
           </FieldRow>
           <FieldRow label="ความยาวกล่อง (cm)">
             <NumberField
-              value={value.package_length ?? 0}
-              onChange={(n) => onChange((c) => c ? ({ ...c, package_length: n } as Product) : null)}
+              value={value.packagelength ?? 0}
+              onChange={(n) => onChange((c) => c ? ({ ...c, packagelength: n } as Product) : null)}
               min={0}
             />
           </FieldRow>
           <FieldRow label="ความกว้างกล่อง (cm)">
             <NumberField
-              value={value.package_width ?? 0}
-              onChange={(n) => onChange((c) => c ? ({ ...c, package_width: n } as Product) : null)}
+              value={value.packagewidth ?? 0}
+              onChange={(n) => onChange((c) => c ? ({ ...c, packagewidth: n } as Product) : null)}
               min={0}
             />
           </FieldRow>
           <FieldRow label="ความสูงกล่อง (cm)">
             <NumberField
-              value={value.package_height ?? 0}
-              onChange={(n) => onChange((c) => c ? ({ ...c, package_height: n } as Product) : null)}
+              value={value.packageheight ?? 0}
+              onChange={(n) => onChange((c) => c ? ({ ...c, packageheight: n } as Product) : null)}
               min={0}
             />
           </FieldRow>
@@ -603,12 +603,12 @@ export function TabProductMarketplace({
                 <FieldRow label={`รหัสสินค้าบนเว็บ (Marketplace Product ID)`} required>
                   <Input
                     placeholder="เช่น 2348910283"
-                    value={item.market_item_id || ""}
-                    onChange={(e) => updateShopMapping(originalIdx, { market_item_id: e.target.value })}
+                    value={item.marketitemid || ""}
+                    onChange={(e) => updateShopMapping(originalIdx, { marketitemid: e.target.value })}
                   />
                 </FieldRow>
                 <FieldRow label="สถานะการซิงค์">
-                  <Input value={item.sync_status || "unlinked"} readOnly className="bg-muted/50 text-xs font-semibold capitalize" />
+                  <Input value={item.syncstatus || "unlinked"} readOnly className="bg-muted/50 text-xs font-semibold capitalize" />
                 </FieldRow>
                 <div className="flex justify-end pb-1">
                   <Button
@@ -643,9 +643,9 @@ export function TabProductMarketplace({
                 <div className="space-y-3">
                   {(value.refbarcodes || []).map((entry, barcodeIdx) => {
                     // Find mapping for this platform and holdingcode
-                    const mapping = entry.marketplace_sku_mappings?.find(
+                    const mapping = entry.marketplaceskumappings?.find(
                       (m) => m.platform === platform && m.holdingcode === holdingCode
-                    ) || emptyMarketplaceSKUMap(platform, holdingCode, item.market_item_id);
+                    ) || emptyMarketplaceSKUMap(platform, holdingCode, item.marketitemid);
 
                     return (
                       <div
@@ -657,7 +657,7 @@ export function TabProductMarketplace({
                           <span className="text-sm font-medium text-primary">
                             {pickName(entry.itemunitnames, language)} ({entry.barcode || "ไม่มีบาร์โค้ด"})
                           </span>
-                          <span className="text-xs text-muted-foreground">หน่วยนับ: {entry.item_unit_code || "—"}</span>
+                          <span className="text-xs text-muted-foreground">หน่วยนับ: {entry.itemunitcode || "—"}</span>
                         </div>
 
                         {/* Mappings Form */}
@@ -665,40 +665,40 @@ export function TabProductMarketplace({
                           <FieldRow label="รหัสคู่ค้า/SKU (Seller SKU)" required>
                             <Input
                               placeholder="ระบุรหัส SKU ตัวเลือก"
-                              value={entry.seller_sku || ""}
+                              value={entry.sellersku || ""}
                               onChange={(e) => handleSellerSkuChange(barcodeIdx, e.target.value)}
                             />
                           </FieldRow>
                           <FieldRow label="รหัสตัวเลือกย่อยเว็บ (Market Variant ID)">
                             <Input
                               placeholder="เช่น 55678912"
-                              value={mapping.market_model_id || ""}
-                              onChange={(e) => handleSkuMapChange(barcodeIdx, holdingCode, { market_model_id: e.target.value })}
+                              value={mapping.marketmodelid || ""}
+                              onChange={(e) => handleSkuMapChange(barcodeIdx, holdingCode, { marketmodelid: e.target.value })}
                             />
                           </FieldRow>
                           <FieldRow label="ราคาขายเฉพาะช่องทาง">
                             <NumberField
-                              value={mapping.custom_price ?? 0}
-                              onChange={(n) => handleSkuMapChange(barcodeIdx, holdingCode, { custom_price: n })}
+                              value={mapping.customprice ?? 0}
+                              onChange={(n) => handleSkuMapChange(barcodeIdx, holdingCode, { customprice: n })}
                               min={0}
                             />
                           </FieldRow>
                           <FieldRow label="ยอดคงเหลือรวมบน Marketplace">
                             <NumberField
-                              value={mapping.platform_stock ?? 0}
-                              onChange={(n) => handleSkuMapChange(barcodeIdx, holdingCode, { platform_stock: n })}
+                              value={mapping.platformstock ?? 0}
+                              onChange={(n) => handleSkuMapChange(barcodeIdx, holdingCode, { platformstock: n })}
                               min={0}
                             />
                           </FieldRow>
                           <div className="flex flex-col justify-end gap-2 pb-2">
                             <Toggle
-                              checked={mapping.sync_stock ?? true}
-                              onCheckedChange={(n) => handleSkuMapChange(barcodeIdx, holdingCode, { sync_stock: n })}
+                              checked={mapping.syncstock ?? true}
+                              onCheckedChange={(n) => handleSkuMapChange(barcodeIdx, holdingCode, { syncstock: n })}
                               label="ซิงค์จำนวนสต๊อกสินค้าหลัก"
                             />
                             <Toggle
-                              checked={mapping.sync_price ?? true}
-                              onCheckedChange={(n) => handleSkuMapChange(barcodeIdx, holdingCode, { sync_price: n })}
+                              checked={mapping.syncprice ?? true}
+                              onCheckedChange={(n) => handleSkuMapChange(barcodeIdx, holdingCode, { syncprice: n })}
                               label="ซิงค์ราคาขายบนเว็บบอร์ด"
                             />
                           </div>
@@ -724,63 +724,63 @@ export function TabProductMarketplace({
                             </Button>
                           </div>
 
-                          {(!mapping.marketplace_dimension_stocks || mapping.marketplace_dimension_stocks.length === 0) ? (
+                          {(!mapping.marketplacedimensionstocks || mapping.marketplacedimensionstocks.length === 0) ? (
                             <p className="rounded border border-dashed border-border px-2 py-2 text-center text-xs text-muted-foreground">
                               ยังไม่มียอดคงเหลือตามมิติ
                             </p>
                           ) : (
                             <div className="space-y-2">
-                              {mapping.marketplace_dimension_stocks.map((dimensionStock, rowIdx) => (
+                              {mapping.marketplacedimensionstocks.map((dimensionStock, rowIdx) => (
                                 <div
-                                  key={`${dimensionStock.dimension_key || "dimension"}-${rowIdx}`}
+                                  key={`${dimensionStock.dimensionkey || "dimension"}-${rowIdx}`}
                                   className="grid gap-2 rounded-md border border-border/60 bg-muted/10 p-2 lg:grid-cols-[minmax(110px,1fr)_minmax(120px,1fr)_minmax(120px,1fr)_repeat(4,minmax(86px,0.75fr))_36px]"
                                 >
                                   <FieldRow label="รหัสมิติ">
                                     <Input
-                                      value={dimensionStock.dimension_key}
+                                      value={dimensionStock.dimensionkey}
                                       placeholder="color:red|size:m"
-                                      onChange={(e) => updateDimensionStock(barcodeIdx, holdingCode, rowIdx, { dimension_key: e.target.value })}
+                                      onChange={(e) => updateDimensionStock(barcodeIdx, holdingCode, rowIdx, { dimensionkey: e.target.value })}
                                     />
                                   </FieldRow>
                                   <FieldRow label="ชื่อมิติ">
                                     <Input
-                                      value={dimensionStock.dimension_name}
+                                      value={dimensionStock.dimensionname}
                                       placeholder="แดง / M"
-                                      onChange={(e) => updateDimensionStock(barcodeIdx, holdingCode, rowIdx, { dimension_name: e.target.value })}
+                                      onChange={(e) => updateDimensionStock(barcodeIdx, holdingCode, rowIdx, { dimensionname: e.target.value })}
                                     />
                                   </FieldRow>
                                   <FieldRow label="รหัสมิติบนเว็บ">
                                     <Input
-                                      value={dimensionStock.market_dimension_id}
+                                      value={dimensionStock.marketdimensionid}
                                       placeholder="model id"
-                                      onChange={(e) => updateDimensionStock(barcodeIdx, holdingCode, rowIdx, { market_dimension_id: e.target.value })}
+                                      onChange={(e) => updateDimensionStock(barcodeIdx, holdingCode, rowIdx, { marketdimensionid: e.target.value })}
                                     />
                                   </FieldRow>
                                   <FieldRow label="พร้อมขาย">
                                     <NumberField
-                                      value={dimensionStock.available_qty}
-                                      onChange={(n) => updateDimensionStock(barcodeIdx, holdingCode, rowIdx, { available_qty: n })}
+                                      value={dimensionStock.availableqty}
+                                      onChange={(n) => updateDimensionStock(barcodeIdx, holdingCode, rowIdx, { availableqty: n })}
                                       min={0}
                                     />
                                   </FieldRow>
                                   <FieldRow label="จอง">
                                     <NumberField
-                                      value={dimensionStock.reserved_qty}
-                                      onChange={(n) => updateDimensionStock(barcodeIdx, holdingCode, rowIdx, { reserved_qty: n })}
+                                      value={dimensionStock.reservedqty}
+                                      onChange={(n) => updateDimensionStock(barcodeIdx, holdingCode, rowIdx, { reservedqty: n })}
                                       min={0}
                                     />
                                   </FieldRow>
                                   <FieldRow label="รับเข้า">
                                     <NumberField
-                                      value={dimensionStock.inbound_qty}
-                                      onChange={(n) => updateDimensionStock(barcodeIdx, holdingCode, rowIdx, { inbound_qty: n })}
+                                      value={dimensionStock.inboundqty}
+                                      onChange={(n) => updateDimensionStock(barcodeIdx, holdingCode, rowIdx, { inboundqty: n })}
                                       min={0}
                                     />
                                   </FieldRow>
                                   <FieldRow label="กัน oversell">
                                     <NumberField
-                                      value={dimensionStock.oversell_buffer_qty}
-                                      onChange={(n) => updateDimensionStock(barcodeIdx, holdingCode, rowIdx, { oversell_buffer_qty: n })}
+                                      value={dimensionStock.oversellbufferqty}
+                                      onChange={(n) => updateDimensionStock(barcodeIdx, holdingCode, rowIdx, { oversellbufferqty: n })}
                                       min={0}
                                     />
                                   </FieldRow>
@@ -808,29 +808,29 @@ export function TabProductMarketplace({
                             <div className="grid gap-2 grid-cols-2 lg:grid-cols-4">
                               <FieldRow label="น้ำหนัก SKU (kg)">
                                 <NumberField
-                                  value={entry.sku_package_weight ?? 0}
-                                  onChange={(n) => handleSkuDimensionsChange(barcodeIdx, { sku_package_weight: n })}
+                                  value={entry.skupackageweight ?? 0}
+                                  onChange={(n) => handleSkuDimensionsChange(barcodeIdx, { skupackageweight: n })}
                                   min={0}
                                 />
                               </FieldRow>
                               <FieldRow label="ยาว SKU (cm)">
                                 <NumberField
-                                  value={entry.sku_package_length ?? 0}
-                                  onChange={(n) => handleSkuDimensionsChange(barcodeIdx, { sku_package_length: n })}
+                                  value={entry.skupackagelength ?? 0}
+                                  onChange={(n) => handleSkuDimensionsChange(barcodeIdx, { skupackagelength: n })}
                                   min={0}
                                 />
                               </FieldRow>
                               <FieldRow label="กว้าง SKU (cm)">
                                 <NumberField
-                                  value={entry.sku_package_width ?? 0}
-                                  onChange={(n) => handleSkuDimensionsChange(barcodeIdx, { sku_package_width: n })}
+                                  value={entry.skupackagewidth ?? 0}
+                                  onChange={(n) => handleSkuDimensionsChange(barcodeIdx, { skupackagewidth: n })}
                                   min={0}
                                 />
                               </FieldRow>
                               <FieldRow label="สูง SKU (cm)">
                                 <NumberField
-                                  value={entry.sku_package_height ?? 0}
-                                  onChange={(n) => handleSkuDimensionsChange(barcodeIdx, { sku_package_height: n })}
+                                  value={entry.skupackageheight ?? 0}
+                                  onChange={(n) => handleSkuDimensionsChange(barcodeIdx, { skupackageheight: n })}
                                   min={0}
                                 />
                               </FieldRow>
