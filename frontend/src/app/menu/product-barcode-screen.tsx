@@ -849,18 +849,18 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
               <div className="relative min-w-[240px] flex-1">
                 <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  className="!pl-10"
+                  className="h-9 !pl-10"
                   value={searchInput}
                   onChange={(event) => setSearchInput(event.target.value)}
                   placeholder={text.search}
                 />
               </div>
-              <Button variant={filterOpen ? "secondary" : "outline"} type="button" onClick={() => setFilterOpen((current) => !current)}>
+              <Button variant={filterOpen ? "secondary" : "outline"} size="sm" type="button" onClick={() => setFilterOpen((current) => !current)}>
                 <Filter size={16} />
                 {text.filter}
                 {activeFilterCount > 0 ? <Badge variant="warning">{activeFilterCount}</Badge> : null}
               </Button>
-              <Button variant="outline" type="button" onClick={() => setShowImage((current) => !current)}>
+              <Button variant="outline" size="sm" type="button" onClick={() => setShowImage((current) => !current)}>
                 {showImage ? <ImageOff size={16} /> : <ImageIcon size={16} />}
                 {text.image}
               </Button>
@@ -912,12 +912,11 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
             ) : null}
           </CardHeader>
           <CardContent className="grid min-h-[420px] p-0 xl:min-h-0 xl:flex-1 xl:grid-rows-[auto_minmax(0,1fr)]">
-            <div className="bc-list-header hidden lg:grid grid-cols-[1.35fr_2fr_0.8fr_1.1fr_0.8fr_0.9fr] gap-x-2">
+            <div className="bc-list-header hidden lg:grid grid-cols-[1.35fr_2.2fr_0.8fr_1.1fr_0.9fr] gap-x-2">
               <span>{text.barcode}</span>
               <span>{text.productName}</span>
               <span>{text.unit}</span>
               <span>{text.itemCode}</span>
-              <span>{text.balance}</span>
               <span className="text-right">{text.retailPrice}</span>
             </div>
             <div className="relative min-h-[360px] xl:min-h-0">
@@ -1074,7 +1073,7 @@ function BarcodeRow({
       aria-label={`${text.barcode}: ${item.barcode || item.itemCode || "-"}`}
       aria-pressed={selected}
       className={cn(
-        "bc-list-row grid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 lg:grid-cols-[1.35fr_2fr_0.8fr_1.1fr_0.8fr_0.9fr] gap-x-2",
+        "bc-list-row grid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 lg:grid-cols-[1.35fr_2.2fr_0.8fr_1.1fr_0.9fr] gap-x-2",
         editing
           ? "bg-amber-100/70 hover:bg-amber-100/90 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100 border-amber-200/50"
           : selected
@@ -1124,10 +1123,6 @@ function BarcodeRow({
       <div className="min-w-0">
         <span className="lg:hidden text-xs font-semibold text-muted-foreground">{text.itemCode}</span>
         <div className="truncate">{item.itemCode || "-"}</div>
-      </div>
-      <div>
-        <span className="lg:hidden text-xs font-semibold text-muted-foreground">{text.balance}</span>
-        <div className={cn(item.balanceQty <= 0 && "text-destructive")}>{item.balanceFormatted || formatNumber(item.balanceQty)}</div>
       </div>
       <div className="lg:text-right">
         <span className="lg:hidden text-xs font-semibold text-muted-foreground">{text.retailPrice}</span>
