@@ -2211,15 +2211,6 @@ export function SystemSettingsScreen({
                       variant="outline"
                       className="h-auto min-h-5 max-w-full whitespace-normal break-words border-secondary/40 bg-secondary/5 px-1.5 py-0.5 text-[9px] font-medium leading-snug"
                     >
-                      {text("branch")}:{" "}
-                      {workspace.branch
-                        ? branchDisplayName(workspace.branch)
-                        : "-"}
-                    </Badge>
-                    <Badge
-                      variant="outline"
-                      className="h-auto min-h-5 max-w-full whitespace-normal break-words border-secondary/40 bg-secondary/5 px-1.5 py-0.5 text-[9px] font-medium leading-snug"
-                    >
                       {text("timezone")}:{" "}
                       {dateTimeScope.timezone_label ||
                         dateTimeScope.timezone ||

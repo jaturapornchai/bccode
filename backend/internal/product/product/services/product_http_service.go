@@ -64,6 +64,15 @@ func (svc ProductHttpService) GetProduct(holdingCode string, code string) (*mode
 	if err != nil {
 		return nil, err
 	}
+	if product.ID == primitive.NilObjectID {
+		product, err = svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", code)
+		if err != nil {
+			return nil, err
+		}
+		if product.ID == primitive.NilObjectID {
+			return nil, errors.New("document not found")
+		}
+	}
 
 	// ✅ ดึงข้อมูล Manufacturer ถ้ามีค่า `ManufacturerGUID`
 	if product.ManufacturerGUID != "" {
@@ -254,7 +263,23 @@ func (svc ProductHttpService) Delete(holdingCode string, guid string, user strin
 		return errors.New("HoldingCode and Code are required")
 	}
 
-	err := svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, user)
+	deleteGuid := guid
+	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
+	if err != nil {
+		return err
+	}
+	if findDoc.ID == primitive.NilObjectID {
+		findDoc, err = svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", guid)
+		if err != nil {
+			return err
+		}
+		if findDoc.ID == primitive.NilObjectID {
+			return errors.New("document not found")
+		}
+		deleteGuid = findDoc.GuidFixed
+	}
+
+	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, deleteGuid, user)
 	if err != nil {
 		return err
 	}

@@ -308,6 +308,8 @@ export function rawToProduct(raw: unknown): Product {
     maxpoint: getNumber(r, "maxpoint", 0),
     qty: getNumber(r, "qty", 0),
     stockbarcode: getString(r, "stockbarcode"),
+    _unit_count: getNumber(r, "_unit_count", 0),
+    _source: getString(r, "_source"),
   };
 }
 

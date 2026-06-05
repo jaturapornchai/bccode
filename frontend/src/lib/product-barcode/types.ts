@@ -843,6 +843,8 @@ export interface Product {
   maxpoint?: number;
   qty?: number;
   stockbarcode?: string;
+  _unit_count?: number;
+  _source?: string;
 
   // Marketplace & Logistics
   package_weight?: number;

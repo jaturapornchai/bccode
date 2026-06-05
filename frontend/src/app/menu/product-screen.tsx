@@ -429,6 +429,7 @@ const [pickerType, setPickerType] = useState<string>("");
       const params = new URLSearchParams({
         q: search,
         limit: isSetOnly ? "120" : "80",
+        holding_code: activeHoldingCode,
       });
       if (isSetOnly) {
         params.set("item_type", "2");
@@ -1038,10 +1039,12 @@ const [pickerType, setPickerType] = useState<string>("");
           </div>
 
           {/* Table Header inside list on Desktop */}
-          <div className="bc-list-header hidden lg:grid grid-cols-[minmax(90px,1.2fr)_minmax(150px,2.8fr)_minmax(80px,1fr)] gap-x-3 shrink-0">
+          <div className="bc-list-header hidden lg:grid grid-cols-[minmax(90px,1.1fr)_minmax(150px,2.4fr)_minmax(80px,1fr)_minmax(95px,1fr)_minmax(120px,1.2fr)] gap-x-3 shrink-0">
             <span>{text.itemCode ?? "รหัสสินค้า"}</span>
             <span>{text.productName ?? "ชื่อสินค้า"}</span>
             <span>{text.itemType ?? "ประเภท"}</span>
+            <span>ประเภทหน่วยนับ</span>
+            <span>ยอดคงเหลือ</span>
           </div>
 
           <div className="flex-1 overflow-y-auto min-h-[360px] xl:h-full xl:min-h-0">
@@ -1064,7 +1067,7 @@ const [pickerType, setPickerType] = useState<string>("");
                   <div
                     key={item.guidfixed || item.code}
                     className={cn(
-                      "bc-list-row grid lg:grid-cols-[minmax(90px,1.2fr)_minmax(150px,2.8fr)_minmax(80px,1fr)] gap-x-3",
+                      "bc-list-row grid lg:grid-cols-[minmax(90px,1.1fr)_minmax(150px,2.4fr)_minmax(80px,1fr)_minmax(95px,1fr)_minmax(120px,1.2fr)] gap-x-3",
                       isEditing
                         ? "bg-amber-100/70 hover:bg-amber-100/90 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100 border-amber-200/50"
                         : active
@@ -1103,6 +1106,14 @@ const [pickerType, setPickerType] = useState<string>("");
                     <div className="min-w-0">
                       <span className="lg:hidden text-[10px] font-semibold text-muted-foreground block">{text.itemType ?? "ประเภท"}</span>
                       <div className={cn("truncate text-muted-foreground", isEditing && "text-amber-900/60 dark:text-amber-200/60")}>{typeLabel}</div>
+                    </div>
+                    <div className="min-w-0">
+                      <span className="lg:hidden text-[10px] font-semibold text-muted-foreground block">ประเภทหน่วยนับ</span>
+                      <div className={cn("truncate text-muted-foreground", isEditing && "text-amber-900/60 dark:text-amber-200/60")}>{formatProductUnitType(item)}</div>
+                    </div>
+                    <div className="min-w-0">
+                      <span className="lg:hidden text-[10px] font-semibold text-muted-foreground block">ยอดคงเหลือ</span>
+                      <div className={cn("truncate font-medium", (item.qty ?? 0) <= 0 && "text-destructive")}>{formatAutoPackingBalance(item, lang)}</div>
                     </div>
                   </div>
                 );
@@ -2005,6 +2016,47 @@ function setNameXEntry(list: NameX[] | undefined, code: string, name: string): N
 
 function productRowKey(item: Product, index: number): string {
   return item.guidfixed || `${item.code || "product"}-${index}`;
+}
+
+function productUnitRows(item: Product): RefProductBarcode[] {
+  const rows = item.barcodes && item.barcodes.length > 0 ? item.barcodes : item.refbarcodes || [];
+  return rows.filter((row) => row.item_unit_code || row.barcode || row.qty);
+}
+
+function formatProductUnitType(item: Product): string {
+  const projectedUnitCount = Number(item._unit_count ?? 0);
+  return projectedUnitCount > 1 || productUnitRows(item).length > 1 || item.isusesubbarcodes ? "หลายหน่วยนับ" : "หน่วยนับเดียว";
+}
+
+function formatAutoPackingBalance(item: Product, language: string): string {
+  const total = Math.max(0, Math.floor(Number(item.qty ?? 0)));
+  const baseUnit =
+    pickName(item.unitnames || item.itemunitnames, language) ||
+    item.unitcode ||
+    item.item_unit_code ||
+    "หน่วย";
+  const unitRows = productUnitRows(item)
+    .map((row) => ({
+      name: pickName(row.itemunitnames, language) || row.item_unit_code || row.barcode,
+      size: Math.max(1, Math.floor(Number(row.qty ?? 1))),
+    }))
+    .filter((row) => row.name)
+    .sort((a, b) => b.size - a.size);
+
+  const hasBase = unitRows.some((row) => row.size === 1 || row.name === baseUnit);
+  const units = hasBase ? unitRows : [...unitRows, { name: baseUnit, size: 1 }];
+  if (total === 0) return `0 ${baseUnit}`;
+
+  let remaining = total;
+  const parts: string[] = [];
+  for (const unit of units) {
+    const count = Math.floor(remaining / unit.size);
+    if (count <= 0) continue;
+    parts.push(`${count.toLocaleString("th-TH")} ${unit.name}`);
+    remaining -= count * unit.size;
+  }
+  if (remaining > 0) parts.push(`${remaining.toLocaleString("th-TH")} ${baseUnit}`);
+  return parts.length > 0 ? parts.join(" x ") : `${total.toLocaleString("th-TH")} ${baseUnit}`;
 }
 
 // ─── Tab Components ───────────────────────────────────────────────────────

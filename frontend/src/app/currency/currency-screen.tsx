@@ -24,8 +24,6 @@ import { backendText, useBackendLanguage, type BackendLanguageDictionary } from 
 import { applyCurrencySymbolPreset, currencyPresetSource, filterCurrencySymbolPresets, findCurrencySymbolPreset } from "@/lib/currency-presets";
 import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
 import {
-  branchDisplayName,
-  shopDisplayName,
   type AuthSession,
   type WorkspaceSession,
   workspaceStorageKeys,
@@ -605,11 +603,9 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
             {embedded ? null : <ThemeToggle language={language} />}
           </div>
         </div>
-        {workspace ? (
+        {baseCurrency ? (
           <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
-            <Badge variant="outline">{text("tenant")}: {shopDisplayName(workspace.shop)}</Badge>
-            <Badge variant="outline">{text("branch")}: {workspace.branch ? branchDisplayName(workspace.branch) : text("none")}</Badge>
-            {baseCurrency ? <Badge variant="success">{text("baseCurrency")}: {baseCurrency}</Badge> : null}
+            <Badge variant="success">{text("baseCurrency")}: {baseCurrency}</Badge>
           </div>
         ) : null}
       </header>

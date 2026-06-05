@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { validateBackendUrl } from "@/lib/backend-url";
 import {
   getBackendUrlFromRequest,
   getMainApiUrl,
@@ -25,6 +26,10 @@ export async function GET(request: Request, context: ProductProxyContext) {
     const q = url.searchParams.get("q") ?? "";
     const page = url.searchParams.get("page") ?? "1";
     const limit = url.searchParams.get("limit") ?? "50";
+    const holdingCode = url.searchParams.get("holding_code") ?? "";
+    if (holdingCode) {
+      return proxyProductPgListJson(request, holdingCode, q, Number(limit) || 50, pageToOffset(page, limit));
+    }
     const qs = new URLSearchParams({ q, page, limit });
     for (const key of ["item_type", "materialtype"]) {
       const value = url.searchParams.get(key);
@@ -34,6 +39,130 @@ export async function GET(request: Request, context: ProductProxyContext) {
   }
 
   return proxyProductJson(request, base, `/product/${encodeURIComponent(id)}`, { method: "GET" });
+}
+
+async function proxyProductPgListJson(
+  request: Request,
+  holdingCode: string,
+  search: string,
+  limit: number,
+  offset: number,
+): Promise<NextResponse> {
+  const authorization = requireBearerToken(request);
+  if (typeof authorization !== "string") return authorization;
+
+  let goApiUrl: string;
+  try {
+    goApiUrl = validateBackendUrl(getBackendUrlFromRequest(request)).normalizedGoApiUrl;
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, message: error instanceof Error ? error.message : "Backend URL ไม่ถูกต้อง" },
+      { status: 400 },
+    );
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000);
+  try {
+    const response = await fetch(`${goApiUrl}/api/product/search`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept-Language": request.headers.get("accept-language") ?? "th",
+        Authorization: authorization,
+      },
+      body: JSON.stringify({
+        holding_code: holdingCode,
+        search,
+        limit,
+        offset,
+        use_cache: false,
+      }),
+      signal: controller.signal,
+      cache: "no-store",
+    });
+    const payload = await readJsonOrText(response);
+    if (!isRecord(payload)) {
+      return NextResponse.json({ success: response.ok, message: String(payload ?? "") }, { status: response.status });
+    }
+    const rawRows = Array.isArray(payload.data) ? payload.data : [];
+    const rows = rawRows.map(productPgListRowToProduct);
+    return NextResponse.json(
+      {
+        success: response.ok && payload.status !== "error",
+        data: rows,
+        total: typeof payload.count === "number" ? payload.count : rows.length,
+        source: "pgsql",
+        message: payload.message,
+      },
+      { status: response.status },
+    );
+  } catch (error) {
+    const message =
+      error instanceof Error && error.name === "AbortError"
+        ? "Server ไม่ตอบกลับทันเวลา"
+        : "ไม่สามารถเชื่อมต่อ Server ได้";
+    return NextResponse.json({ success: false, message }, { status: 504 });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function pageToOffset(page: string, limit: string): number {
+  const pageNumber = Math.max(1, Number(page) || 1);
+  const limitNumber = Math.max(1, Number(limit) || 50);
+  return (pageNumber - 1) * limitNumber;
+}
+
+function productPgListRowToProduct(row: unknown): Record<string, unknown> {
+  const r = isRecord(row) ? row : {};
+  const code = stringFromRecord(r, "itemcode");
+  const name = stringFromRecord(r, "itemname");
+  const unitCode = stringFromRecord(r, "unitcode");
+  const unitName = stringFromRecord(r, "unitname");
+  const unitCount = numberFromRecord(r, "unit_count");
+  const balanceQty = numberFromRecord(r, "balance_qty");
+  return {
+    guidfixed: code,
+    code,
+    names: name ? [{ code: "th", name }] : [],
+    item_type: 0,
+    materialtype: 0,
+    categorycode: stringFromRecord(r, "categorycode"),
+    vat_type: numberFromRecord(r, "vattype"),
+    unitcode: unitCode,
+    unitnames: unitName ? [{ code: "th", name: unitName }] : [],
+    item_unit_code: unitCode,
+    itemunitnames: unitName ? [{ code: "th", name: unitName }] : [],
+    qty: balanceQty,
+    barcodes: [
+      {
+        barcode: stringFromRecord(r, "barcode"),
+        item_unit_code: unitCode,
+        itemunitnames: unitName ? [{ code: "th", name: unitName }] : [],
+        qty: Math.max(1, numberFromRecord(r, "unitstand")),
+        standvalue: Math.max(1, numberFromRecord(r, "unitstand")),
+        dividevalue: Math.max(1, numberFromRecord(r, "unitdivide")),
+      },
+    ].filter((item) => item.barcode),
+    _unit_count: unitCount,
+    _source: "pgsql",
+  };
+}
+
+function stringFromRecord(record: Record<string, unknown>, key: string): string {
+  const value = record[key];
+  return typeof value === "string" ? value : value == null ? "" : String(value);
+}
+
+function numberFromRecord(record: Record<string, unknown>, key: string): number {
+  const value = record[key];
+  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
 }
 
 export async function POST(request: Request) {

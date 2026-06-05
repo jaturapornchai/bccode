@@ -315,28 +315,48 @@ func buildProductSearchQuery(req ProductSearchRequest) (string, []any) {
 
 	query := `
 SELECT
-	pb.itemcode,
-	pb.barcode,
-	pb.name0 as itemname,
-	pb.unitcode,
-	pb.unitname,
-	pb.price,
-	pb.barcoderefunitstand as unitstand,
-	pb.barcoderefunitdivide as unitdivide,
+	p.itemcode as itemcode,
+	COALESCE(pb.barcode, '') as barcode,
+	COALESCE(p.name0, pb.itemname, '') as itemname,
+	COALESCE(pb.unitcode, p.unitcode, '') as unitcode,
+	COALESCE(pb.unitname, p.unitname, '') as unitname,
+	COALESCE(pb.price, 0) as price,
+	COALESCE(pb.unitstand, 1) as unitstand,
+	COALESCE(pb.unitdivide, 1) as unitdivide,
 	p.categorycode,
 	p.vattype,
-	p.costprice
-FROM public.productbarcode pb
-LEFT JOIN public.product p ON pb.itemcode = p.code
+	p.costprice,
+	COALESCE(st.balance_qty, 0) as balance_qty,
+	COALESCE(pb.unit_count, 0) as unit_count
+FROM public.product p
+LEFT JOIN (
+	SELECT
+		itemcode,
+		MIN(barcode) as barcode,
+		MIN(name0) as itemname,
+		MIN(unitcode) as unitcode,
+		MIN(unitname) as unitname,
+		MIN(price1) as price,
+		MIN(barcoderefunitstand) as unitstand,
+		MIN(barcoderefunitdivide) as unitdivide,
+		COUNT(*) as unit_count
+	FROM public.productbarcode
+	GROUP BY itemcode
+) pb ON pb.itemcode = p.itemcode
+LEFT JOIN (
+	SELECT itemcode, SUM(currentqty) as balance_qty
+	FROM public.inventory_stock_balances
+	GROUP BY itemcode
+) st ON st.itemcode = p.itemcode
 WHERE 1=1`
 
 	// Add search filter (parameterized)
 	if req.Search != "" {
 		query += fmt.Sprintf(`
   AND (
-    pb.itemcode ILIKE $%d
+    p.itemcode ILIKE $%d
     OR pb.barcode ILIKE $%d
-    OR pb.name0 ILIKE $%d
+    OR COALESCE(p.name0, pb.itemname, '') ILIKE $%d
   )`, argIndex, argIndex+1, argIndex+2)
 		searchPattern := "%" + req.Search + "%"
 		args = append(args, searchPattern, searchPattern, searchPattern)
@@ -355,7 +375,7 @@ WHERE 1=1`
 		// For now, just add as a placeholder for future implementation
 	}
 
-	query += "\nORDER BY pb.name0"
+	query += "\nORDER BY COALESCE(p.name0, pb.itemname, ''), p.itemcode"
 	query += fmt.Sprintf("\nLIMIT $%d OFFSET $%d", argIndex, argIndex+1)
 	args = append(args, req.Limit, req.Offset)
 
