@@ -42,11 +42,11 @@ type SaleInvoiceReturnTransactionDetailPG struct {
 // table name
 
 func (t *SaleInvoiceReturnTransactionPG) TableName() string {
-	return "saleinvoice_return_transaction"
+	return "saleinvoicereturntransaction"
 }
 
 func (t *SaleInvoiceReturnTransactionDetailPG) TableName() string {
-	return "saleinvoice_return_transaction_detail"
+	return "saleinvoicereturntransactiondetail"
 }
 
 func (t SaleInvoiceReturnTransactionPG) HasDebtorEffectDoc() bool {

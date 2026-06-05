@@ -6,7 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const deviceCollectionName = "pickandpackDevices"
+const deviceCollectionName = "pickandpackdevices"
 
 type PickandpackDevice struct {
 	Code          string       `json:"code" bson:"code"`

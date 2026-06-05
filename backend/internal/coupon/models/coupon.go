@@ -84,7 +84,7 @@ func (CouponDoc) CollectionName() string {
 }
 
 type CouponItemGuid struct {
-	CouponCode string `json:"couponcode" bson:"couponcode" gorm:"coupon_code"`
+	CouponCode string `json:"couponcode" bson:"couponcode" gorm:"couponcode"`
 }
 
 func (CouponItemGuid) CollectionName() string {
@@ -121,7 +121,7 @@ type CouponPageResponse struct {
 }
 
 // Coupon Reservation Models
-const couponReservationCollectionName = "coupon_reservations"
+const couponReservationCollectionName = "couponreservations"
 
 type ReservationStatus int8
 
@@ -164,7 +164,7 @@ func (CouponReservationDoc) CollectionName() string {
 }
 
 // Coupon Usage History Models
-const couponUsageHistoryCollectionName = "coupon_usage_history"
+const couponUsageHistoryCollectionName = "couponusagehistory"
 
 type CouponUsageHistory struct {
 	models.Identity   `bson:"inline"`

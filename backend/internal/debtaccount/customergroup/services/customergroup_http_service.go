@@ -346,5 +346,5 @@ func (svc CustomerGroupHttpService) saveMasterSync(holdingCode string) {
 }
 
 func (svc CustomerGroupHttpService) GetModuleName() string {
-	return "customerGroup"
+	return "customergroup"
 }

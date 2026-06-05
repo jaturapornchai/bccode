@@ -63,7 +63,7 @@ func ProcessStockCalcCostHandler(c echo.Context) error {
 		payload.CommandID = processStockCalcCostCommandID
 	} else if strings.ToLower(payload.CommandID) != processStockCalcCostCommandID {
 		return c.JSON(http.StatusBadRequest, map[string]any{
-			"error": "Unsupported command_id",
+			"error": "Unsupported commandid",
 			"code":  "INVALID_COMMAND",
 		})
 	}
@@ -77,7 +77,7 @@ func ProcessStockCalcCostHandler(c echo.Context) error {
 	}
 	if len(itemCodes) == 0 {
 		return c.JSON(http.StatusBadRequest, map[string]any{
-			"error": "item_code_list must contain at least one item",
+			"error": "itemcodelist must contain at least one item",
 			"code":  "EMPTY_ITEM_LIST",
 		})
 	}
@@ -115,19 +115,19 @@ func ProcessStockCalcCostHandler(c echo.Context) error {
 	logger.Success("ProcessStockCalcCostHandler completed | shop=%s items=%d duration=%v", payload.HoldingCode, len(results), time.Since(start))
 
 	return c.JSON(http.StatusOK, map[string]any{
-		"status":          "success",
-		"code":            200,
-		"holdingcode":     payload.HoldingCode,
-		"command_id":      payload.CommandID,
-		"processed_items": len(results),
-		"duration_ms":     time.Since(start).Milliseconds(),
-		"delete_first":    deleteFirst,
-		"incremental":     incremental,
-		"minimal_log":     minimalLog,
-		"point_qty":       pointQty,
-		"point_amount":    pointAmount,
-		"point_cost":      pointCost,
-		"items":           results,
+		"status":         "success",
+		"code":           200,
+		"holdingcode":    payload.HoldingCode,
+		"commandid":      payload.CommandID,
+		"processeditems": len(results),
+		"durationms":     time.Since(start).Milliseconds(),
+		"deletefirst":    deleteFirst,
+		"incremental":    incremental,
+		"minimallog":     minimalLog,
+		"pointqty":       pointQty,
+		"pointamount":    pointAmount,
+		"pointcost":      pointCost,
+		"items":          results,
 	})
 }
 
@@ -189,7 +189,7 @@ func parseItemCodesFromJSON(raw json.RawMessage) ([]string, error) {
 
 func runProcessStockCalcCost(holdingCode string, itemCodes []string, pointQty, pointAmount, pointCost int, deleteFirst, incremental, minimalLog bool) ([]processStockCalcCostItemResult, error) {
 	if len(itemCodes) == 0 {
-		return nil, errors.New("item_code_list must contain at least one item")
+		return nil, errors.New("itemcodelist must contain at least one item")
 	}
 
 	db, err := mypg.PgSqlFastConnect(holdingCode)

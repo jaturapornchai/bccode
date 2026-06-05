@@ -6,7 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const sectionbranchCollectionName = "productSectionBranch"
+const sectionbranchCollectionName = "productsectionbranch"
 
 type SectionBranch struct {
 	models.PartitionIdentity `bson:"inline"`

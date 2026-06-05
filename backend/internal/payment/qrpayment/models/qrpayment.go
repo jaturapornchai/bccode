@@ -6,7 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const qrpaymentCollectionName = "qrPayment"
+const qrpaymentCollectionName = "qrpayment"
 
 type QrPayment struct {
 	models.PartitionIdentity `bson:"inline"`

@@ -1000,7 +1000,7 @@ func MockLineAdapter() line.ILineAdapter {
 }
 
 func MockGUID() string {
-	return "mock_guid"
+	return "mockguid"
 }
 
 func MockRandomString(n int) string {

@@ -24,7 +24,7 @@ type RebuildProductsResponse struct {
 }
 
 // RebuildProducts ทำ full rebuild สินค้าจาก MongoDB ลง PostgreSQL + ClickHouse
-// flow เหมือน frontend: POST /api/report { command_id: "rebuild-products" }
+// flow เหมือน frontend: POST /api/report { commandid: "rebuildproducts" }
 func RebuildProducts(ctx context.Context, holdingCode string) (*RebuildProductsResponse, error) {
 	if holdingCode == "" {
 		return nil, fmt.Errorf("holdingcode is required")

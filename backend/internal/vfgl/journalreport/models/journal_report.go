@@ -166,7 +166,7 @@ type JournalImageSummary struct {
 }
 
 func (JournalImageSummary) CollectionName() string {
-	return "document_image_groups"
+	return "documentimagegroups"
 }
 
 type JournalDocNoByShop struct {
@@ -218,5 +218,5 @@ type ShopImageCount struct {
 }
 
 func (ShopImageCount) CollectionName() string {
-	return "document_image_groups"
+	return "documentimagegroups"
 }

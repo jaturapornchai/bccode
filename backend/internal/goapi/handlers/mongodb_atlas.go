@@ -125,7 +125,7 @@ func atlasIdentityFilter(guidFixed string, email string, cartID string, userUID 
 		identityFilters = append(identityFilters, bson.M{"email": email, "cartid": cartID})
 	}
 	if userUID != "" {
-		identityFilters = append(identityFilters, bson.M{"user_uid": userUID})
+		identityFilters = append(identityFilters, bson.M{"useruid": userUID})
 	}
 	if len(identityFilters) == 0 {
 		return bson.M{}

@@ -1350,13 +1350,13 @@ func (svc ProductImportService) applyMasterDataUpdatesFromCache(updateData bson.
 		case "categorycode":
 			if importData.CategoryCode != "" {
 				if category, ok := cache.Categories[importData.CategoryCode]; ok {
-					updateData["category_guid"] = category.GuidFixed
+					updateData["categoryguid"] = category.GuidFixed
 					updateData["category_names"] = category.Names
 				} else {
 					return fmt.Errorf("category code '%s' not found in master data", importData.CategoryCode)
 				}
 			} else {
-				updateData["category_guid"] = ""
+				updateData["categoryguid"] = ""
 				updateData["category_names"] = nil
 			}
 
@@ -3197,11 +3197,11 @@ func (svc ProductImportService) updateExistingProduct(holdingCode string, authUs
 			case "categorycode":
 				if importData.CategoryCode != "" {
 					if categories, err := svc.categoryProductRepo.FindByCodes(ctx, holdingCode, []string{importData.CategoryCode}); err == nil && len(categories) > 0 {
-						updateData["category_guid"] = categories[0].GuidFixed
+						updateData["categoryguid"] = categories[0].GuidFixed
 						updateData["category_names"] = categories[0].Names
 					}
 				} else {
-					updateData["category_guid"] = ""
+					updateData["categoryguid"] = ""
 					updateData["category_names"] = nil
 				}
 			case "classcode":

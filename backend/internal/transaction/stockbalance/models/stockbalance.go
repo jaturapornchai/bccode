@@ -7,7 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const stockbalanceCollectionName = "transactionStockBalance"
+const stockbalanceCollectionName = "transactionstockbalance"
 
 type StockBalanceHeader struct {
 	trans_models.TransactionHeader `bson:"inline"`

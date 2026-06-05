@@ -7,7 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const saleinvoicereturnCollectionName = "transactionSaleInvoiceReturn"
+const saleinvoicereturnCollectionName = "transactionsaleinvoicereturn"
 
 type SaleInvoiceReturn struct {
 	models.PartitionIdentity `bson:"inline"`

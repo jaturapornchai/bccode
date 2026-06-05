@@ -4,10 +4,10 @@ import "time"
 
 // MongoDB Collections for Line OA
 const (
-	ConfigCollection      = "lineoa_configs"
-	EmployeeCollection    = "lineoa_employees"
-	LinkTokenCollection   = "lineoa_link_tokens"
-	UserProfileCollection = "user_line_profiles"
+	ConfigCollection      = "lineoaconfigs"
+	EmployeeCollection    = "lineoaemployees"
+	LinkTokenCollection   = "lineoalinktokens"
+	UserProfileCollection = "userlineprofiles"
 )
 
 // ConfigDoc - MongoDB document for Line OA config

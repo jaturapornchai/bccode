@@ -1,9 +1,9 @@
 -- สร้าง Index เพื่อเพิ่มความเร็วในการ query
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_docdetail_itemcode_transflag_docdatetime 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idxdocdetailitemcodetransflagdocdatetime
 ON docdetail(itemcode, transflag, docdatetime, linenumber);
 
 -- เพิ่ม partial index สำหรับ transflag ที่ใช้บ่อย
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_docdetail_transflag_active 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idxdocdetailtransflagactive
 ON docdetail(transflag, itemcode) 
 WHERE transflag IN (44, 56, 72, 20, 21, 62, 12, 310, 60, 61, 54, 66, 48, 16, 866, 868);
 

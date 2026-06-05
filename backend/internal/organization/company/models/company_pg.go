@@ -19,5 +19,5 @@ type CompanyPg struct {
 }
 
 func (CompanyPg) TableName() string {
-	return "organization_companies"
+	return "organizationcompanies"
 }

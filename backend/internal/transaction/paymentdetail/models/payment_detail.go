@@ -33,7 +33,7 @@ type TransactionPaymentDetail struct {
 }
 
 func (TransactionPaymentDetail) TableName() string {
-	return "payment_transaction_detail"
+	return "paymenttransactiondetail"
 }
 
 func (m *TransactionPaymentDetail) CompareTo(other *TransactionPaymentDetail) bool {

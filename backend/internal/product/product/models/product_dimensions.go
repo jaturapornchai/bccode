@@ -7,5 +7,5 @@ type ProductDimensionPg struct {
 }
 
 func (ProductDimensionPg) TableName() string {
-	return "product_dimensions"
+	return "productdimensions"
 }

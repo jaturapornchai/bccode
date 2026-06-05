@@ -11,18 +11,18 @@ func TestBranchAcceptsMovedCompanyAndBranchFields(t *testing.T) {
 		"companyregistrationno":"0100000000000",
 		"isvatregistered":true,
 		"contact":{
-			"country_code":"TH",
-			"province_code":"10",
-			"district_code":"1001",
-			"sub_district_code":"100101",
-			"zip_code":"10200",
-			"phone_number":"021234567"
+			"countrycode":"TH",
+			"provincecode":"10",
+			"districtcode":"1001",
+			"subdistrictcode":"100101",
+			"zipcode":"10200",
+			"phonenumber":"021234567"
 		},
 		"pos":{"taxid":"0100000000000"},
 		"yeartype":"buddhist",
-		"is_retail":true,
-		"is_service":true,
-		"is_mobile_shop":true
+		"isretail":true,
+		"isservice":true,
+		"ismobileshop":true
 	}`)
 
 	var branch Branch

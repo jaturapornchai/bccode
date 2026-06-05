@@ -7,7 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const purchaserequisitionCollectionName = "transactionPurchaseRequisition"
+const purchaserequisitionCollectionName = "transactionpurchaserequisition"
 
 // PurchaseRequisition — ใบขอซื้อ (PR)
 // embed Transaction base + PR-specific fields

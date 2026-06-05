@@ -53,7 +53,7 @@ func TestAtlasIdentityFilterUsesGuidFixedWithLegacyReadFallback(t *testing.T) {
 			{"guidfixed": "GUID001"},
 			{"email": "GUID001", "cartid": "GUID001"},
 			{"email": "user@example.com", "cartid": "CART001"},
-			{"user_uid": "UID001"},
+			{"useruid": "UID001"},
 		},
 	}
 

@@ -506,5 +506,5 @@ func (svc StockReturnProductService) saveMasterSync(holdingCode string) {
 }
 
 func (svc StockReturnProductService) GetModuleName() string {
-	return "stockReturnProduct"
+	return "stockreturnproduct"
 }

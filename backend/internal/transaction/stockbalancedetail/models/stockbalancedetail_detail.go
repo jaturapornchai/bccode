@@ -7,7 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const stockbalanceDetailCollectionName = "transactionStockBalanceDetails"
+const stockbalanceDetailCollectionName = "transactionstockbalancedetails"
 
 type StockBalanceDetail struct {
 	DocNo               string `json:"docno" bson:"docno" validate:"required"`

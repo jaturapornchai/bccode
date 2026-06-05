@@ -29,7 +29,7 @@ description: Use when creating, reviewing, or modifying the Next.js frontend in 
 - **Editor**: Compact fields (no stretching gaps). Recursive "all child categories" list under fields.
 - **Product Assignment**: Integrated as "Products in category" tab using barcodes API. Explicit segmented tabs with icons.
 
-## 4. Warehouse Location Shelf (`/product_warehouse_screen`)
+## 4. Warehouse Location Shelf (`/productwarehousescreen`)
 - **UX Pattern**: Follow the Product Category workbench pattern: compact toolbar, left warehouse/location/shelf tree, right inline editor.
 - **Split Pane**: Left tree and right editor must fill the available viewport height and scroll independently with `h-full min-h-0 overflow-y-auto`.
 - **Density**: Keep warehouse selection, search, record count, tree rows, and editor fields compact. Do not stack a large tree card above a separate form card.

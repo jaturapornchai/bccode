@@ -27,11 +27,11 @@ type PurchaseReturnTransactionDetailPG struct {
 }
 
 func (PurchaseReturnTransactionPG) TableName() string {
-	return "purchase_return_transaction"
+	return "purchasereturntransaction"
 }
 
 func (PurchaseReturnTransactionDetailPG) TableName() string {
-	return "purchase_return_transaction_detail"
+	return "purchasereturntransactiondetail"
 }
 
 func (t PurchaseReturnTransactionPG) HasCreditorEffectDoc() bool {

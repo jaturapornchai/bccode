@@ -389,21 +389,21 @@ func AddEmployeeHandler(c echo.Context) error {
 	newGUID := uuid.New().String()
 
 	filter := bson.M{
-		"lineoa_config_guid": req.LineOAConfigGUID,
-		"employee_code":      req.EmployeeCode,
+		"lineoaconfigguid": req.LineOAConfigGUID,
+		"employeecode":     req.EmployeeCode,
 	}
 	update := bson.M{
 		"$set": bson.M{
-			"guid":               newGUID,
-			"lineoa_config_guid": req.LineOAConfigGUID,
-			"holdingcode":        req.HoldingCode,
-			"employee_code":      req.EmployeeCode,
-			"employee_name":      req.EmployeeName,
-			"isactive":           true,
+			"guid":             newGUID,
+			"lineoaconfigguid": req.LineOAConfigGUID,
+			"holdingcode":      req.HoldingCode,
+			"employeecode":     req.EmployeeCode,
+			"employeename":     req.EmployeeName,
+			"isactive":         true,
 		},
 		"$setOnInsert": bson.M{
-			"line_user_id": "",
-			"createdat":    time.Now(),
+			"lineuserid": "",
+			"createdat":  time.Now(),
 		},
 	}
 
@@ -489,7 +489,7 @@ func GenerateLinkHandler(c echo.Context) error {
 
 	if req.HoldingCode == "" || req.LineOAConfigGUID == "" || req.EmployeeCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "holdingcode, lineoa_config_guid, and employee_code are required",
+			"error": "holdingcode, lineoaconfigguid, and employeecode are required",
 			"code":  "MISSING_REQUIRED_FIELDS",
 		})
 	}
@@ -571,7 +571,7 @@ func UserLinkHandler(c echo.Context) error {
 	// Try manager type first
 	err := configCollection.FindOne(ctx, bson.M{
 		"holdingcode": req.HoldingCode,
-		"lineoa_type": "manager",
+		"lineoatype":  "manager",
 		"isactive":    true,
 	}).Decode(&config)
 
@@ -580,7 +580,7 @@ func UserLinkHandler(c echo.Context) error {
 		err = configCollection.FindOne(ctx, bson.M{
 			"holdingcode": req.HoldingCode,
 			"isactive":    true,
-			"liff_id":     bson.M{"$ne": ""},
+			"liffid":      bson.M{"$ne": ""},
 		}).Decode(&config)
 		if err != nil || config.LiffID == "" {
 			return c.JSON(http.StatusOK, map[string]any{
@@ -637,7 +637,7 @@ func CallbackHandler(c echo.Context) error {
 
 	if req.HoldingCode == "" || req.Token == "" || req.LineUserID == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "holdingcode, token and line_user_id are required",
+			"error": "holdingcode, token and lineuserid are required",
 			"code":  "MISSING_REQUIRED_FIELDS",
 		})
 	}
@@ -652,7 +652,7 @@ func CallbackHandler(c echo.Context) error {
 		"token":       req.Token,
 		"holdingcode": req.HoldingCode,
 		"expiresat":   bson.M{"$gt": time.Now()},
-		"used_at":     nil,
+		"usedat":      nil,
 	}).Decode(&tokenDoc)
 
 	if err != nil {
@@ -671,13 +671,13 @@ func CallbackHandler(c echo.Context) error {
 		filter := bson.M{"holdingcode": req.HoldingCode, "username": tokenDoc.Username}
 		update := bson.M{
 			"$set": bson.M{
-				"holdingcode":       req.HoldingCode,
-				"username":          tokenDoc.Username,
-				"line_user_id":      req.LineUserID,
-				"line_display_name": req.DisplayName,
-				"line_picture_url":  req.PictureURL,
-				"line_linked_at":    now,
-				"updatedat":         now,
+				"holdingcode":     req.HoldingCode,
+				"username":        tokenDoc.Username,
+				"lineuserid":      req.LineUserID,
+				"linedisplayname": req.DisplayName,
+				"linepictureurl":  req.PictureURL,
+				"linelinkedat":    now,
+				"updatedat":       now,
 			},
 			"$setOnInsert": bson.M{
 				"createdat": now,
@@ -695,15 +695,15 @@ func CallbackHandler(c echo.Context) error {
 		// Update employee Line info
 		empCollection := getCollection(EmployeeCollection)
 		filter := bson.M{
-			"lineoa_config_guid": tokenDoc.LineOAConfigGUID,
-			"employee_code":      tokenDoc.EmployeeCode,
+			"lineoaconfigguid": tokenDoc.LineOAConfigGUID,
+			"employeecode":     tokenDoc.EmployeeCode,
 		}
 		update := bson.M{
 			"$set": bson.M{
-				"line_user_id": req.LineUserID,
-				"display_name": req.DisplayName,
-				"picture_url":  req.PictureURL,
-				"linked_at":    now,
+				"lineuserid":  req.LineUserID,
+				"displayname": req.DisplayName,
+				"pictureurl":  req.PictureURL,
+				"linkedat":    now,
 			},
 		}
 		_, err = empCollection.UpdateOne(ctx, filter, update)
@@ -716,7 +716,7 @@ func CallbackHandler(c echo.Context) error {
 	}
 
 	// Mark token as used
-	tokenCollection.UpdateOne(ctx, bson.M{"token": req.Token}, bson.M{"$set": bson.M{"used_at": now}})
+	tokenCollection.UpdateOne(ctx, bson.M{"token": req.Token}, bson.M{"$set": bson.M{"usedat": now}})
 
 	return c.JSON(http.StatusOK, map[string]any{
 		"status":  "success",

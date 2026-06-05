@@ -87,7 +87,7 @@ describe("system settings API route security", () => {
     expect(proxiedInit?.body).toBeUndefined();
   });
 
-  it("keeps email user ids readable by the legacy shop permission endpoint", async () => {
+  it("keeps email user ids readable by the holding permission endpoint", async () => {
     const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
       void url;
       void init;
@@ -108,7 +108,7 @@ describe("system settings API route security", () => {
     expect(response.status).toBe(200);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [proxiedUrl, proxiedInit] = fetchMock.mock.calls[0] as [string | URL | Request, RequestInit | undefined];
-    expect(String(proxiedUrl)).toBe("http://localhost:8888/shop/permission/demo.admin01@example.com?offset=0&limit=1000");
+    expect(String(proxiedUrl)).toBe("http://localhost:8888/holding/permission/demo.admin01@example.com?offset=0&limit=1000");
     expect(proxiedInit?.method).toBe("GET");
   });
 
@@ -136,7 +136,7 @@ describe("system settings API route security", () => {
     const [, proxiedInit] = fetchMock.mock.calls[0] as [string | URL | Request, RequestInit | undefined];
     const body = JSON.parse(String(proxiedInit?.body));
     expect(body).toMatchObject({
-      collection: "employee_permissions",
+      collection: "employeepermissions",
       holdingcode: "SHOP001",
       email: "demo.admin01@example.com",
       cartid: "demo.admin01@example.com",
@@ -167,7 +167,7 @@ describe("system settings API route security", () => {
     const [, proxiedInit] = fetchMock.mock.calls[0] as [string | URL | Request, RequestInit | undefined];
     const body = JSON.parse(String(proxiedInit?.body));
     expect(body).toMatchObject({
-      collection: "employee_permissions",
+      collection: "employeepermissions",
       holdingcode: "SHOP001",
     });
   });

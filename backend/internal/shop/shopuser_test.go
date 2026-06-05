@@ -16,7 +16,7 @@ func (TestPersisterMongoConfig) MongodbURI() string {
 }
 
 func (TestPersisterMongoConfig) DB() string {
-	return "micro_test"
+	return "microtest"
 }
 
 func (TestPersisterMongoConfig) Debug() bool {

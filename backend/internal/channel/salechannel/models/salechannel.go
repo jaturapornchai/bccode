@@ -6,7 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const salechannelCollectionName = "saleChannel"
+const salechannelCollectionName = "salechannel"
 
 type SaleChannel struct {
 	Code        string  `json:"code" bson:"code" validate:"required,min=1"`

@@ -101,10 +101,10 @@ ALTER TABLE doc ADD COLUMN IF NOT EXISTS isdelete BOOLEAN DEFAULT FALSE;
 
 	// Create indexes
 	indexSQL := `
-CREATE INDEX IF NOT EXISTS idx_doc_currency ON doc(currency);
-CREATE INDEX IF NOT EXISTS idx_doc_currency_shop ON doc(currency, holdingcode);
-CREATE INDEX IF NOT EXISTS idx_doc_isdelete ON doc(isdelete);
-CREATE INDEX IF NOT EXISTS idx_doc_docno_transflag_isdelete ON doc(docno, transflag, isdelete);
+CREATE INDEX IF NOT EXISTS idxdoccurrency ON doc(currency);
+CREATE INDEX IF NOT EXISTS idxdoccurrencyshop ON doc(currency, holdingcode);
+CREATE INDEX IF NOT EXISTS idxdocisdelete ON doc(isdelete);
+CREATE INDEX IF NOT EXISTS idxdocdocnotransflagisdelete ON doc(docno, transflag, isdelete);
 `
 
 	logger.Info("[MIGRATE-CURRENCY] Creating indexes...")

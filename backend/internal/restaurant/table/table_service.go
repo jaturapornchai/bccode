@@ -332,7 +332,7 @@ func (svc TableService) saveMasterSync(holdingCode string) {
 }
 
 func (svc TableService) GetModuleName() string {
-	return "restaurant-table"
+	return "restauranttable"
 }
 
 func (svc TableService) SaveXOrder(holdingCode string, authUsername string, xOrders []models.XOrderRequest) error {

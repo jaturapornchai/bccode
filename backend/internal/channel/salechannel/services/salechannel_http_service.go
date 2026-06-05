@@ -333,5 +333,5 @@ func (svc SaleChannelHttpService) saveMasterSync(holdingCode string) {
 }
 
 func (svc SaleChannelHttpService) GetModuleName() string {
-	return "saleChannel"
+	return "salechannel"
 }

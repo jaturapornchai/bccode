@@ -514,5 +514,5 @@ func (svc StockTransferService) saveMasterSync(holdingCode string) {
 }
 
 func (svc StockTransferService) GetModuleName() string {
-	return "stockTransfer"
+	return "stocktransfer"
 }

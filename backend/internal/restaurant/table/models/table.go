@@ -6,7 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const tableCollectionName = "restaurantTables"
+const tableCollectionName = "restauranttables"
 
 type Table struct {
 	GroupNumber int             `json:"groupnumber" bson:"groupnumber"`

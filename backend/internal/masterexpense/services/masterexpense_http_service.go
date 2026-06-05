@@ -414,5 +414,5 @@ func (svc MasterExpenseHttpService) saveMasterSync(holdingCode string) {
 }
 
 func (svc MasterExpenseHttpService) GetModuleName() string {
-	return "masterExpense"
+	return "masterexpense"
 }

@@ -259,5 +259,5 @@ func (svc PurchaseTypeHttpService) saveMasterSync(holdingCode string) {
 }
 
 func (svc PurchaseTypeHttpService) GetModuleName() string {
-	return "purchaseType"
+	return "purchasetype"
 }

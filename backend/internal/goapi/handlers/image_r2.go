@@ -297,7 +297,7 @@ func ImageUploadHandler(c echo.Context) error {
 
 	// Get optional fields (category ถูกดึงไว้แล้วด้านบน)
 	description := c.FormValue("description")
-	uploadedBy := c.FormValue("uploaded_by")
+	uploadedBy := c.FormValue("uploadedby")
 	tagsStr := c.FormValue("tags")
 	var tags []string
 	if tagsStr != "" {

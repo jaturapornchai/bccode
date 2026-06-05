@@ -27,11 +27,11 @@ type PurchaseTransactionDetailPG struct {
 }
 
 func (PurchaseTransactionPG) TableName() string {
-	return "purchase_transaction"
+	return "purchasetransaction"
 }
 
 func (PurchaseTransactionDetailPG) TableName() string {
-	return "purchase_transaction_detail"
+	return "purchasetransactiondetail"
 }
 
 func (t PurchaseTransactionPG) HasCreditorEffectDoc() bool {

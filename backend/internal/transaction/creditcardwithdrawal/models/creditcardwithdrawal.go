@@ -7,7 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const creditcardwithdrawalCollectionName = "transactionCreditCardWithdrawal"
+const creditcardwithdrawalCollectionName = "transactioncreditcardwithdrawal"
 
 type CreditCardWithdrawal struct {
 	models.PartitionIdentity     `bson:"inline"`

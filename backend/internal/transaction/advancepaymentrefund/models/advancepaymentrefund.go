@@ -7,7 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const advancepaymentrefundCollectionName = "transactionAdvancePaymentRefund"
+const advancepaymentrefundCollectionName = "transactionadvancepaymentrefund"
 
 type AdvancePaymentRefund struct {
 	models.PartitionIdentity `bson:"inline"`

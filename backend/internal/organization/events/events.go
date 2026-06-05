@@ -9,7 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const OutboxCollectionName = "organizationCrudOutbox"
+const OutboxCollectionName = "organizationcrudoutbox"
 
 type OutboxEventDoc struct {
 	ID          primitive.ObjectID `json:"id" bson:"id,omitempty"`

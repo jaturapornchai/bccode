@@ -37,9 +37,9 @@ describe("LINE link status route", () => {
         expect(init?.method).toBe("PUT");
         expect((init?.headers as Record<string, string>).Authorization).toBe("Bearer token");
         expect(JSON.parse(String(init?.body))).toEqual({
-          line_user_id: "U123",
-          line_display_name: "Jead",
-          line_picture_url: "https://line.example/picture.png",
+          lineuserid: "U123",
+          linedisplayname: "Jead",
+          linepictureurl: "https://line.example/picture.png",
         });
         return Response.json({ success: true });
       }

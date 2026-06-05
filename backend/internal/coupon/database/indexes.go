@@ -48,7 +48,7 @@ func CreateCouponReservationIndexes(pst microservice.IPersisterMongo) error {
 
 	// ลบ index เก่าที่ผิดพลาด (unique index)
 	problemIndexes := []string{
-		"idx_shop_customer_status", // index เก่าที่ทำให้เกิด duplicate key error
+		"idxshopcustomerstatus",
 	}
 
 	for _, indexName := range problemIndexes {
@@ -73,18 +73,18 @@ func CreateCouponReservationIndexes(pst microservice.IPersisterMongo) error {
 			},
 		},
 		{
-			name: "idx_shop_coupon_status_expires",
+			name: "idxshopcouponstatusexpires",
 			keys: bson.D{
 				{Key: "holdingcode", Value: 1},
-				{Key: "coupon_id", Value: 1},
+				{Key: "couponid", Value: 1},
 				{Key: "status", Value: 1},
 				{Key: "expiresat", Value: 1},
 			},
 		},
 		{
-			name: "idx_transaction_id",
+			name: "idxtransactionid",
 			keys: bson.D{
-				{Key: "transaction_id", Value: 1},
+				{Key: "transactionid", Value: 1},
 			},
 		},
 	}
@@ -105,17 +105,17 @@ func CreateCouponReservationIndexes(pst microservice.IPersisterMongo) error {
 		keys bson.D
 	}{
 		{
-			name: "idx_shop_customer_nonunique",
+			name: "idxshopcustomernonunique",
 			keys: bson.D{
 				{Key: "holdingcode", Value: 1},
-				{Key: "customer_id", Value: 1},
+				{Key: "customerid", Value: 1},
 			},
 		},
 		{
-			name: "idx_shop_customer_status_nonunique",
+			name: "idxshopcustomerstatusnonunique",
 			keys: bson.D{
 				{Key: "holdingcode", Value: 1},
-				{Key: "customer_id", Value: 1},
+				{Key: "customerid", Value: 1},
 				{Key: "status", Value: 1},
 			},
 		},

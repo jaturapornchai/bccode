@@ -11,9 +11,9 @@
 ตัวอย่าง:
 
 ```text
-shopUserAccessLogs -> shop_user_access_logs
-productbarcode -> product_barcodes
-docdetail -> doc_detail
+shopUserAccessLogs -> shopuseraccesslogs
+productbarcode -> productbarcodes
+docdetail -> docdetail
 ```
 
 ### Rule
@@ -25,8 +25,8 @@ docdetail -> doc_detail
 - ชื่อ PostgreSQL column ต้องเป็น `lowercase_no-underscore`
 - ชื่อ ClickHouse column ต้องเป็น `lowercase_no-underscore`
 - ห้ามสร้างชื่อใหม่แบบ camelCase, PascalCase, mixedCase, kebab-case, compact legacy name หรือมีช่องว่าง
-- ตัวอย่าง field: `docDate` และ `docdate` ต้องเป็น `doc_date`
-- ตัวอย่าง field: `custCode` และ `custcode` ต้องเป็น `cust_code`
+- ตัวอย่าง field: `docDate` และ `docdate` ต้องเป็น `docdate`
+- ตัวอย่าง field: `custCode` และ `custcode` ต้องเป็น `custcode`
 - ถ้าเปลี่ยนชื่อใน code ต้องตรวจ data เดิมด้วย migration หรือ rename step เสมอ
 
 ### Code Changes
@@ -39,7 +39,7 @@ docdetail -> doc_detail
 - เพิ่ม command migration ที่ `backend/cmd/storage_name_migration`
 - เพิ่มเอกสารใช้งาน command ที่ `backend/cmd/storage_name_migration/README.md`
 - ปรับ SQL/table/collection reference ใน backend ให้ใช้ชื่อใหม่
-- ปรับ prompt ของ AI query generator ให้แนะนำ table ใหม่ เช่น `product_barcodes`, `doc_detail`
+- ปรับ prompt ของ AI query generator ให้แนะนำ table ใหม่ เช่น `productbarcodes`, `docdetail`
 - เพิ่ม test สำหรับชื่อ legacy ที่ต้อง map เป็นชื่อใหม่
 
 ### Migration Tool Behavior
@@ -71,20 +71,20 @@ go run ./cmd/storage_name_migration --target all --apply
 
 | Old Name | New Name |
 | --- | --- |
-| `aiProviderConfigs` | `ai_provider_configs` |
-| `chatSessions` | `chat_sessions` |
-| `kbDocumentMetadata` | `kb_document_metadata` |
-| `organizationBranches` | `organization_branches` |
-| `organizationBusinessTypes` | `organization_business_types` |
-| `organizationCostCenters` | `organization_cost_centers` |
-| `organizationJobProjects` | `organization_job_projects` |
-| `productBarcodes` | `product_barcodes` |
-| `productBarcodesPriceHistory` | `product_barcodes_price_history` |
-| `productCategories` | `product_categories` |
-| `productGroups` | `product_groups` |
-| `shopUserAccessLogs` | `shop_user_access_logs` |
-| `shopUsers` | `shop_users` |
-| `transactionPurchaseRequisition` | `transaction_purchase_requisition` |
+| `aiProviderConfigs` | `aiproviderconfigs` |
+| `chatSessions` | `chatsessions` |
+| `kbDocumentMetadata` | `kbdocumentmetadata` |
+| `organizationBranches` | `organizationbranches` |
+| `organizationBusinessTypes` | `organizationbusinesstypes` |
+| `organizationCostCenters` | `organizationcostcenters` |
+| `organizationJobProjects` | `organizationjobprojects` |
+| `productBarcodes` | `productbarcodes` |
+| `productBarcodesPriceHistory` | `productbarcodespricehistory` |
+| `productCategories` | `productcategories` |
+| `productGroups` | `productgroups` |
+| `shopUserAccessLogs` | `shopuseraccesslogs` |
+| `shopusers` | `shopusers` |
+| `transactionPurchaseRequisition` | `transactionpurchaserequisition` |
 
 ผลตรวจหลัง apply:
 
@@ -111,13 +111,13 @@ storage name migration: no rename needed
 
 | Old Name | New Name | Note |
 | --- | --- | --- |
-| `productbarcode` | `product_barcodes` | table |
-| `productbarcode_dict` | `product_barcode_dict` | dictionary |
+| `productbarcode` | `productbarcodes` | table |
+| `productbarcode_dict` | `productbarcodedict` | dictionary |
 
 หมายเหตุ:
 
 - ต้อง drop/recreate dictionary เพราะ `productbarcode_dict` อ้าง query ไปที่ table เดิม
-- dictionary ใหม่ชี้ไปที่ `bcbidev.product_barcodes`
+- dictionary ใหม่ชี้ไปที่ `bcbidev.productbarcodes`
 
 ผลตรวจหลัง apply:
 
@@ -131,18 +131,18 @@ storage name migration: no rename needed
 
 | Legacy Name | Normalized Name |
 | --- | --- |
-| `productbarcode` | `product_barcodes` |
-| `productbarcode_dict` | `product_barcode_dict` |
-| `productbarcodeboms` | `product_barcode_boms` |
-| `productbarcodeimport` | `product_barcode_import` |
-| `docdetail` | `doc_detail` |
-| `productunit` | `product_unit` |
-| `chartofaccounts` | `chart_of_accounts` |
-| `purchaserequisition` | `purchase_requisition` |
-| `saleinvoice` | `sale_invoice` |
-| `purchaseorder` | `purchase_order` |
-| `shopUsers` | `shop_users` |
-| `shopUserAccessLogs` | `shop_user_access_logs` |
+| `productbarcode` | `productbarcodes` |
+| `productbarcode_dict` | `productbarcodedict` |
+| `productbarcodeboms` | `productbarcodeboms` |
+| `productbarcodeimport` | `productbarcodeimport` |
+| `docdetail` | `docdetail` |
+| `productunit` | `productunit` |
+| `chartofaccounts` | `chartofaccounts` |
+| `purchaserequisition` | `purchaserequisition` |
+| `saleinvoice` | `saleinvoice` |
+| `purchaseorder` | `purchaseorder` |
+| `shopusers` | `shopusers` |
+| `shopUserAccessLogs` | `shopuseraccesslogs` |
 
 ### Important Field Alias Examples
 
@@ -150,17 +150,17 @@ storage name migration: no rename needed
 
 | Legacy Field | Normalized Field |
 | --- | --- |
-| `docDate` | `doc_date` |
-| `docdate` | `doc_date` |
-| `docdatetime` | `doc_datetime` |
-| `custCode` | `cust_code` |
-| `custcode` | `cust_code` |
+| `docDate` | `docdate` |
+| `docdate` | `docdate` |
+| `docdatetime` | `docdatetime` |
+| `custCode` | `custcode` |
+| `custcode` | `custcode` |
 | `holdingcode` | `holdingcode` |
 | `transflag` | `transflag` |
 | `itemcode` | `itemcode` |
 | `unitcode` | `unitcode` |
-| `whcode` | `wh_code` |
-| `warehousecode` | `warehouse_code` |
+| `whcode` | `whcode` |
+| `warehousecode` | `warehousecode` |
 | `branchcode` | `branchcode` |
 
 หมายเหตุ: รอบ 2026-05-20/2026-05-21 ยังไม่ apply rename field จริงใน database เพราะ field migration ต้องตรวจ query/API/report ทุกจุดและต้องมี backup ก่อนเสมอ
@@ -193,9 +193,9 @@ Browser smoke:
 
 Static scan:
 
-- ไม่พบ `Collection("CamelCase")` ใน path ที่ตรวจ
+- ไม่พบ MongoDB collection calls with mixed-case names ใน path ที่ตรวจ
 - เหลือชื่อ legacy เฉพาะ test alias และ alias map ที่ตั้งใจเก็บไว้เพื่อรองรับ migration
-- เพิ่ม test สำหรับ field normalizer เช่น `docDate/docdate -> doc_date` และ `custCode/custcode -> cust_code`
+- เพิ่ม test สำหรับ field normalizer เช่น `docDate/docdate -> docdate` และ `custCode/custcode -> custcode`
 
 ### Known Risks
 

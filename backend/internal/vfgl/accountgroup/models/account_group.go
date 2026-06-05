@@ -6,7 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const accountGroupCollectionName = "accountGroups"
+const accountGroupCollectionName = "accountgroups"
 const accountGroupTableName = "account_group"
 
 type AccountGroup struct {

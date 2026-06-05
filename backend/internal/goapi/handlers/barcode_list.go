@@ -308,7 +308,7 @@ func BarcodeListHandler(c echo.Context) error {
 		})
 	}
 
-	collection := atlasDB.Collection("productBarcodes")
+	collection := atlasDB.Collection("productbarcodes")
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 

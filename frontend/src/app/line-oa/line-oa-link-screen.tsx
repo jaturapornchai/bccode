@@ -105,8 +105,8 @@ const lineOaBackendKeys: Record<LineOaTextKey, string> = {
   status: "status",
   linked: "linked",
   notLinked: "not_linked",
-  lineUserId: "line_user_id",
-  lineDisplayName: "line_display_name",
+  lineUserId: "lineuserid",
+  lineDisplayName: "linedisplayname",
   linkedAt: "linked_at",
   noLineProfile: "lineoa_no_user_profile",
   createLink: "lineoa_create_link",
@@ -473,13 +473,13 @@ async function callLineOaUserApi(
 
 function normalizeLineOaProfile(payload: LineOaApiResponse): LineOaUserProfile {
   const data = isRecord(payload.data) ? payload.data : {};
-  const lineUserId = getString(data, "line_user_id");
+  const lineUserId = getString(data, "lineuserid");
   return {
     linked: payload.linked === true || Boolean(lineUserId),
     lineUserId,
-    displayName: getString(data, "line_display_name"),
-    pictureUrl: getString(data, "line_picture_url"),
-    linkedAt: getString(data, "line_linked_at"),
+    displayName: getString(data, "linedisplayname"),
+    pictureUrl: getString(data, "linepictureurl"),
+    linkedAt: getString(data, "linelinkedat"),
   };
 }
 

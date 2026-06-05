@@ -46,7 +46,7 @@ type ImageUploadRequest struct {
 	Category    string   `form:"category" json:"category"`
 	Description string   `form:"description" json:"description"`
 	Tags        []string `form:"tags" json:"tags"`
-	UploadedBy  string   `form:"uploaded_by" json:"uploadedby"`
+	UploadedBy  string   `form:"uploadedby" json:"uploadedby"`
 }
 
 // ImageListRequest - request body สำหรับ list รูปภาพ

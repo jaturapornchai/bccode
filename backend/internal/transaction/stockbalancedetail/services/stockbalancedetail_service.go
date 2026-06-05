@@ -348,5 +348,5 @@ func (svc StockBalanceDetailService) saveMasterSync(holdingCode string) {
 }
 
 func (svc StockBalanceDetailService) GetModuleName() string {
-	return "stockBalanceDetail"
+	return "stockbalancedetail"
 }

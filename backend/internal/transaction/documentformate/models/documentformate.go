@@ -7,7 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const documentformateCollectionName = "documentFormate"
+const documentformateCollectionName = "documentformate"
 
 type DocumentFormate struct {
 	models.PartitionIdentity `bson:"inline"`

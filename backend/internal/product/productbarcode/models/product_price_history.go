@@ -7,7 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const productPriceHistoryCollectionName = "productBarcodesPriceHistory"
+const productPriceHistoryCollectionName = "productbarcodespricehistory"
 
 // ประวัติการแก้ไขราคาสินค้า
 type ProductPriceHistory struct {

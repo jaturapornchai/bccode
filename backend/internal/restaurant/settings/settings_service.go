@@ -329,5 +329,5 @@ func (svc RestaurantSettingsService) saveMasterSync(holdingCode string) {
 }
 
 func (svc RestaurantSettingsService) GetModuleName() string {
-	return "restaurant-settings"
+	return "restaurantsettings"
 }

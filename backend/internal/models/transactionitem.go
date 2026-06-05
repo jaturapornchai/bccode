@@ -51,5 +51,5 @@ type TransItemDetail struct {
 }
 
 func (TransItemDetail) TableName() string {
-	return "item_trans"
+	return "itemtrans"
 }

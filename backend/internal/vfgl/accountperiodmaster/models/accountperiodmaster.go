@@ -8,7 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const accountperiodmasterCollectionName = "accountPeriodMaster"
+const accountperiodmasterCollectionName = "accountperiodmaster"
 
 // Request
 type AccountPeriodMasterRequest struct {

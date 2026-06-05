@@ -6,7 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const journalBookCollectionName = "journalBooks"
+const journalBookCollectionName = "journalbooks"
 const journalBookTableName = "journal_book"
 
 type JournalBook struct {

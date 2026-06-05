@@ -20,7 +20,7 @@ type LineLoginRequest struct {
 }
 
 // LineUserLoginRequest — สำหรับ QR code / LIFF login flow
-// Flutter ส่ง line_user_id ตรงจาก LIFF server (ไม่มี LINE access token)
+// Flutter sends lineuserid from LIFF server without LINE access token.
 type LineUserLoginRequest struct {
 	LineUserID  string `json:"lineuserid" validate:"required"`
 	DisplayName string `json:"displayname"`

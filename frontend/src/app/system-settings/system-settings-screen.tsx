@@ -907,8 +907,8 @@ const fieldBackendKeys: Record<string, string> = {
   "user.position": "user_position",
   "user.department": "department",
   "user.accessscopes": "accessscopes",
-  "user.line_user_id": "line_user_id",
-  "user.line_display_name": "line_display_name",
+  "user.lineuserid": "lineuserid",
+  "user.linedisplayname": "linedisplayname",
   "permissiondefinition.permissioncode": "permissioncode",
   "permissiondefinition.permissionname": "permissionname",
   "permissiondefinition.scoperules": "scoperules",
@@ -4397,7 +4397,7 @@ function UserFormSections({
           : "Select the company first, then choose all branches or specific branches.",
     },
     {
-      keys: ["position", "department", "line_user_id", "line_display_name"],
+      keys: ["position", "department", "lineuserid", "linedisplayname"],
       title:
         language === "th" ? "ข้อมูลองค์กรและ LINE" : "Organization and LINE",
       description:
@@ -10213,7 +10213,7 @@ function paymentMethodLabel(
     cash: ["cash", "เงินสด"],
     cheque: ["cheque", "เช็ค"],
     coupon: ["coupon", "คูปอง"],
-    creditcard: ["credit_card", "บัตรเครดิต"],
+    creditcard: ["creditcard", "บัตรเครดิต"],
     delivery: ["delivery", "เดลิเวอรี่"],
     qrcode: ["qrcode", "คิวอาร์โค้ด"],
   };

@@ -179,7 +179,7 @@ func (repo SMLTransactionRepository) Transaction(fnc func(ctx context.Context) e
 }
 
 func (repo SMLTransactionRepository) CreateIndex(collectionName string, keyID string) (string, error) {
-	indexName := "idx_smlx_" + keyID
+	indexName := "idxsmlx" + keyID
 	keys := bson.D{
 		{Key: "holdingcode", Value: 1},
 		{Key: keyID, Value: 1},

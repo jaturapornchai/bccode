@@ -8,7 +8,7 @@
 
 ## 1. Frontend change (done by Gemini)
 The frontend `WarehouseTreeView` component (in `frontend/src/app/system-settings/warehouse-tree-view.tsx`) manages the entire warehouse structure (Warehouse -> Location/Zone -> Shelf) as a single tree-structured state.
-When creating, editing, reordering, or deleting locations/shelves, it sends a single `PUT` request to `/api/system-settings/product_warehouse_screen/{warehouse_guid}` containing the full nested payload:
+When creating, editing, reordering, or deleting locations/shelves, it sends a single `PUT` request to `/api/system-settings/productwarehousescreen/{warehouseguid}` containing the full nested payload:
 ```json
 {
   "guidfixed": "warehouse-guid",
@@ -38,12 +38,12 @@ Source-link: [warehouse_http.go:L185-L250](file:///d:/bccode/backend/internal/wa
 Codex must modify the `UpdateWarehouse` handler:
 - [ ] Parse incoming nested `Zones` (which is tag-named `location`) and `Shelves` (tag-named `shelf`) from `UpdateWarehouseRequest`.
 - [ ] Inside the GORM transaction, delete old nested relations:
-  - Delete all shelves (`warehouse_shelves`) that belong to zones of this warehouse.
-  - Delete all zones (`warehouse_zones`) that belong to this warehouse.
+  - Delete all shelves (`warehouseshelves`) that belong to zones of this warehouse.
+  - Delete all zones (`warehousezones`) that belong to this warehouse.
 - [ ] Insert the new zones and shelves from the request:
   - Set `WarehouseGuid` to the current warehouse ID.
   - Generates new GUID for Zone/Shelf if empty, and link `ZoneGuid` in shelf records.
-  - Insert them into `warehouse_zones` and `warehouse_shelves` tables.
+  - Insert them into `warehousezones` and `warehouseshelves` tables.
 
 ## 3. API contract expected by the frontend
 The request payload is structured as `WarehousePg` with pre-loaded `Zones` (as `location` array) and `Shelves` (as `shelf` array inside each location):

@@ -27,11 +27,11 @@ type RFQDetailTransactionPG struct {
 }
 
 func (RFQTransactionPG) TableName() string {
-	return "rfq_transaction"
+	return "rfqtransaction"
 }
 
 func (RFQDetailTransactionPG) TableName() string {
-	return "rfq_transaction_detail"
+	return "rfqtransactiondetail"
 }
 
 func (s *RFQTransactionPG) BeforeUpdate(tx *gorm.DB) (err error) {

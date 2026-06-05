@@ -29,7 +29,7 @@ type DebtorPaymentTransactionPG struct {
 }
 
 func (DebtorPaymentTransactionPG) TableName() string {
-	return "debtor_payment_transaction"
+	return "debtorpaymenttransaction"
 }
 
 type DebtorPaymentTransactionDetailPG struct {
@@ -46,7 +46,7 @@ type DebtorPaymentTransactionDetailPG struct {
 }
 
 func (DebtorPaymentTransactionDetailPG) TableName() string {
-	return "debtor_payment_transaction_detail"
+	return "debtorpaymenttransactiondetail"
 }
 
 func (j *DebtorPaymentTransactionPG) BeforeUpdate(tx *gorm.DB) (err error) {

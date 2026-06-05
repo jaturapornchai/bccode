@@ -88,7 +88,7 @@ func (h CompanyHttp) CreateCompany(ctx microservice.IContext) error {
 		return err
 	}
 
-	kafkaSync, err := orgEvents.PublishOrOutbox(mongoCtx, pst, h.ms.Producer(h.cfg.MQConfig()), holdingCode, "organization_company", "created", companyTopicCreated, req.GuidFixed, req)
+	kafkaSync, err := orgEvents.PublishOrOutbox(mongoCtx, pst, h.ms.Producer(h.cfg.MQConfig()), holdingCode, "organizationcompany", "created", companyTopicCreated, req.GuidFixed, req)
 	if err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
@@ -104,7 +104,7 @@ func (h CompanyHttp) CreateCompany(ctx microservice.IContext) error {
 		ID:      req.GuidFixed,
 		Data: map[string]string{
 			"kafka_sync":        kafkaSync,
-			"default_branch_id": branchID,
+			"defaultbranchid":   branchID,
 			"branch_kafka_sync": branchKafkaSync,
 		},
 	})
@@ -144,7 +144,7 @@ func (h CompanyHttp) ensureDefaultHeadOfficeBranch(
 		return "", "", err
 	}
 
-	kafkaSync, err := orgEvents.PublishOrOutbox(ctx, pst, h.ms.Producer(h.cfg.MQConfig()), holdingCode, "organization_branch", "created", companyDefaultBranchTopicCreated, branch.GuidFixed, branch)
+	kafkaSync, err := orgEvents.PublishOrOutbox(ctx, pst, h.ms.Producer(h.cfg.MQConfig()), holdingCode, "organizationbranch", "created", companyDefaultBranchTopicCreated, branch.GuidFixed, branch)
 	if err != nil {
 		return "", "", err
 	}
@@ -297,7 +297,7 @@ func (h CompanyHttp) UpdateCompany(ctx microservice.IContext) error {
 		return err
 	}
 
-	kafkaSync, err := orgEvents.PublishOrOutbox(mongoCtx, pst, h.ms.Producer(h.cfg.MQConfig()), holdingCode, "organization_company", "updated", companyTopicUpdated, id, existing)
+	kafkaSync, err := orgEvents.PublishOrOutbox(mongoCtx, pst, h.ms.Producer(h.cfg.MQConfig()), holdingCode, "organizationcompany", "updated", companyTopicUpdated, id, existing)
 	if err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
@@ -347,7 +347,7 @@ func (h CompanyHttp) DeleteCompany(ctx microservice.IContext) error {
 
 	lastBranchKafkaSync := ""
 	for _, branch := range branches {
-		branchKafkaSync, err := orgEvents.PublishOrOutbox(mongoCtx, pst, h.ms.Producer(h.cfg.MQConfig()), holdingCode, "organization_branch", "deleted", companyBranchTopicDeleted, branch.GuidFixed, branch)
+		branchKafkaSync, err := orgEvents.PublishOrOutbox(mongoCtx, pst, h.ms.Producer(h.cfg.MQConfig()), holdingCode, "organizationbranch", "deleted", companyBranchTopicDeleted, branch.GuidFixed, branch)
 		if err != nil {
 			ctx.ResponseError(http.StatusInternalServerError, err.Error())
 			return err
@@ -355,7 +355,7 @@ func (h CompanyHttp) DeleteCompany(ctx microservice.IContext) error {
 		lastBranchKafkaSync = branchKafkaSync
 	}
 
-	kafkaSync, err := orgEvents.PublishOrOutbox(mongoCtx, pst, h.ms.Producer(h.cfg.MQConfig()), holdingCode, "organization_company", "deleted", companyTopicDeleted, id, data)
+	kafkaSync, err := orgEvents.PublishOrOutbox(mongoCtx, pst, h.ms.Producer(h.cfg.MQConfig()), holdingCode, "organizationcompany", "deleted", companyTopicDeleted, id, data)
 	if err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err

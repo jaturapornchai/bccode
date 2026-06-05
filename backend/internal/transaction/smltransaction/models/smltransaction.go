@@ -18,7 +18,7 @@ func (d *DynamicCollection) CollectionName() string {
 	return d.Collection
 }
 
-const smltransactionCollectionName = "smlTransactions"
+const smltransactionCollectionName = "smltransactions"
 
 type SMLTransaction struct {
 	models.PartitionIdentity `bson:"inline"`

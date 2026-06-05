@@ -7,23 +7,21 @@ import (
 
 // TestIsExpiredUTCHandling tests that the IsExpired method correctly handles UTC timezone comparison
 func TestIsExpiredUTCHandling(t *testing.T) {
-	// Test case 1: Coupon that should not be expired (expires Dec 31, 2025)
-	// This matches the actual coupon data mentioned in the issue
-	expiryDate := time.Date(2025, 12, 31, 23, 59, 59, 0, time.UTC)
+	// Test case 1: Coupon that should not be expired.
+	expiryDate := time.Now().UTC().Add(24 * time.Hour)
 
 	coupon := &Coupon{
 		ExpiryDate: expiryDate,
 		Status:     CouponStatusActive,
 	}
 
-	// Test with current date (June 19, 2025) - should not be expired
 	if coupon.IsExpired() {
 		t.Errorf("Coupon should not be expired. Expiry date: %v, Current time: %v",
 			expiryDate.UTC(), time.Now().UTC())
 	}
 
 	// Test case 2: Coupon that should be expired
-	expiredDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	expiredDate := time.Now().UTC().Add(-24 * time.Hour)
 	expiredCoupon := &Coupon{
 		ExpiryDate: expiredDate,
 		Status:     CouponStatusActive,
@@ -49,7 +47,7 @@ func TestIsExpiredUTCHandling(t *testing.T) {
 
 	t.Logf("UTC Date Handling Test completed successfully")
 	t.Logf("Current UTC time: %v", time.Now().UTC())
-	t.Logf("Test coupon expiry (Dec 31, 2025): %v", expiryDate)
+	t.Logf("Test coupon expiry: %v", expiryDate)
 	t.Logf("Coupon is expired: %v", coupon.IsExpired())
 }
 

@@ -7,7 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const promotionCollectionName = "productPromotions"
+const promotionCollectionName = "productpromotions"
 
 type Promotion struct {
 	models.PartitionIdentity `bson:"inline"`

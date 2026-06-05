@@ -112,7 +112,7 @@ func getAllEnums() []EnumGroup {
 
 		// ===== Payment Types =====
 		{
-			Name:        "payment_type",
+			Name:        "paymenttype",
 			Description: "Payment method codes — รหัสช่องทางชำระเงิน",
 			Category:    "payment",
 			GoSource:    "internal/goapi/handlers/transaction_calculator.go",
@@ -142,7 +142,7 @@ func getAllEnums() []EnumGroup {
 
 		// ===== VAT Calculation =====
 		{
-			Name:        "vat_cal",
+			Name:        "vatcal",
 			Description: "VAT calculation flag — สถานะการคิดภาษี",
 			Category:    "transaction",
 			GoSource:    "internal/goapi/handlers/transaction_calculator.go",
@@ -154,7 +154,7 @@ func getAllEnums() []EnumGroup {
 
 		// ===== Approval Status =====
 		{
-			Name:        "approval_status",
+			Name:        "approvalstatus",
 			Description: "PO approval status — สถานะการอนุมัติใบสั่งซื้อ",
 			Category:    "approval",
 			GoSource:    "internal/goapi/handlers/approval/handlers.go",
@@ -169,7 +169,7 @@ func getAllEnums() []EnumGroup {
 
 		// ===== Approval Actions =====
 		{
-			Name:        "approval_action",
+			Name:        "approvalaction",
 			Description: "Approval action types — ประเภทการดำเนินการอนุมัติ",
 			Category:    "approval",
 			GoSource:    "internal/goapi/handlers/approval/handlers.go",
@@ -183,7 +183,7 @@ func getAllEnums() []EnumGroup {
 
 		// ===== Approval Source =====
 		{
-			Name:        "approval_source",
+			Name:        "approvalsource",
 			Description: "Notification/approval source channel — ช่องทางการแจ้งเตือนและอนุมัติ",
 			Category:    "approval",
 			GoSource:    "internal/goapi/handlers/approval/notification.go",
@@ -196,7 +196,7 @@ func getAllEnums() []EnumGroup {
 
 		// ===== Data History Actions =====
 		{
-			Name:        "action_type",
+			Name:        "actiontype",
 			Description: "Data change action types — ประเภทการเปลี่ยนแปลงข้อมูล",
 			Category:    "datahistory",
 			GoSource:    "internal/goapi/handlers/datahistory/datahistory.go",
@@ -224,7 +224,7 @@ func getAllEnums() []EnumGroup {
 
 		// ===== Import Status =====
 		{
-			Name:        "import_status",
+			Name:        "importstatus",
 			Description: "Excel import processing status — สถานะการนำเข้าข้อมูล",
 			Category:    "import",
 			GoSource:    "internal/goapi/dataimport/xlsx_product.go",
@@ -250,7 +250,7 @@ func getAllEnums() []EnumGroup {
 
 		// ===== PDF Orientation =====
 		{
-			Name:        "pdf_orientation",
+			Name:        "pdforientation",
 			Description: "PDF page orientation — แนวกระดาษ PDF",
 			Category:    "pdf",
 			GoSource:    "internal/goapi/config/query_config.go",
@@ -262,7 +262,7 @@ func getAllEnums() []EnumGroup {
 
 		// ===== PDF Page Size =====
 		{
-			Name:        "pdf_pagesize",
+			Name:        "pdfpagesize",
 			Description: "PDF page sizes — ขนาดกระดาษ PDF",
 			Category:    "pdf",
 			GoSource:    "internal/goapi/config/query_config.go",
@@ -275,7 +275,7 @@ func getAllEnums() []EnumGroup {
 
 		// ===== Kafka Event Actions =====
 		{
-			Name:        "kafka_event_action",
+			Name:        "kafkaeventaction",
 			Description: "Kafka event actions — ประเภท event จาก Kafka (topic pattern: when-{entity}-{action})",
 			Category:    "kafka",
 			GoSource:    "internal/goapi/handlers/kafka/constants.go",
@@ -288,7 +288,7 @@ func getAllEnums() []EnumGroup {
 
 		// ===== Kafka Entities =====
 		{
-			Name:        "kafka_entity",
+			Name:        "kafkaentity",
 			Description: "Kafka entity names — ชื่อ entity ที่มี Kafka events (topic: when-{entity}-created/updated/deleted)",
 			Category:    "kafka",
 			GoSource:    "internal/goapi/handlers/kafka/constants.go",
@@ -316,7 +316,7 @@ func getAllEnums() []EnumGroup {
 
 		// ===== Circuit Breaker States =====
 		{
-			Name:        "circuit_breaker_state",
+			Name:        "circuitbreakerstate",
 			Description: "Circuit breaker states — สถานะ circuit breaker (database connection)",
 			Category:    "system",
 			GoSource:    "internal/goapi/mydb/circuit_breaker.go",
@@ -329,7 +329,7 @@ func getAllEnums() []EnumGroup {
 
 		// ===== LINE OA Token Type =====
 		{
-			Name:        "lineoa_token_type",
+			Name:        "lineoatokentype",
 			Description: "LINE OA link token types — ประเภท token สำหรับเชื่อม LINE",
 			Category:    "lineoa",
 			GoSource:    "internal/goapi/handlers/lineoa/models.go",
@@ -341,7 +341,7 @@ func getAllEnums() []EnumGroup {
 
 		// ===== Stock Adjustment Type =====
 		{
-			Name:        "stock_adjustment_type",
+			Name:        "stockadjustmenttype",
 			Description: "Stock adjustment types — ประเภทการปรับสต็อก",
 			Category:    "stock",
 			GoSource:    "internal/goapi/models/mongo-trans-model.go",
@@ -353,7 +353,7 @@ func getAllEnums() []EnumGroup {
 
 		// ===== Purchase Status =====
 		{
-			Name:        "purchase_compare_status",
+			Name:        "purchasecomparestatus",
 			Description: "Purchase order compare status — สถานะเทียบรับสินค้า PO",
 			Category:    "purchase",
 			GoSource:    "internal/goapi/models/process-doc-purchase-model.go",
@@ -367,7 +367,7 @@ func getAllEnums() []EnumGroup {
 
 		// ===== Setup Config Categories =====
 		{
-			Name:        "config_category",
+			Name:        "configcategory",
 			Description: "Bootstrap config categories — หมวดหมู่การตั้งค่าระบบ",
 			Category:    "setup",
 			GoSource:    "internal/goapi/handlers/setup_config_handler.go",
@@ -384,7 +384,7 @@ func getAllEnums() []EnumGroup {
 
 		// ===== Chatbot Message Role =====
 		{
-			Name:        "chatbot_message_role",
+			Name:        "chatbotmessagerole",
 			Description: "Chatbot conversation message roles — บทบาทในการสนทนา",
 			Category:    "chatbot",
 			GoSource:    "internal/goapi/handlers/lineoa/chatbot_models.go",
@@ -400,7 +400,7 @@ func getAllEnums() []EnumGroup {
 
 		// ===== User Role =====
 		{
-			Name:        "user_role",
+			Name:        "userrole",
 			Description: "Shop user roles — บทบาทผู้ใช้ในร้านค้า (MainAPI)",
 			Category:    "mainapi",
 			GoSource:    "pkg/models/shopuser.go",
@@ -414,7 +414,7 @@ func getAllEnums() []EnumGroup {
 
 		// ===== Product Type =====
 		{
-			Name:        "product_type",
+			Name:        "producttype",
 			Description: "Product item types — ประเภทสินค้า (MainAPI)",
 			Category:    "mainapi",
 			GoSource:    "internal/microservice/product/models.go",
@@ -427,7 +427,7 @@ func getAllEnums() []EnumGroup {
 
 		// ===== Point Type =====
 		{
-			Name:        "point_type",
+			Name:        "pointtype",
 			Description: "Point/loyalty types — ประเภทแต้มสะสม (MainAPI)",
 			Category:    "mainapi",
 			GoSource:    "pkg/models/point.go",
@@ -451,7 +451,7 @@ func getAllEnums() []EnumGroup {
 
 		// ===== Document Status (general) =====
 		{
-			Name:        "doc_status",
+			Name:        "docstatus",
 			Description: "General document status — สถานะเอกสารทั่วไป",
 			Category:    "mainapi",
 			GoSource:    "pkg/models/common.go",
@@ -464,7 +464,7 @@ func getAllEnums() []EnumGroup {
 
 		// ===== Branch Status =====
 		{
-			Name:        "branch_status",
+			Name:        "branchstatus",
 			Description: "Branch active status — สถานะสาขา (MainAPI)",
 			Category:    "mainapi",
 			GoSource:    "internal/microservice/branch/models.go",
@@ -476,7 +476,7 @@ func getAllEnums() []EnumGroup {
 
 		// ===== Shop Status =====
 		{
-			Name:        "shop_status",
+			Name:        "shopstatus",
 			Description: "Shop status — สถานะร้านค้า (MainAPI)",
 			Category:    "mainapi",
 			GoSource:    "pkg/models/shop.go",
@@ -490,7 +490,7 @@ func getAllEnums() []EnumGroup {
 
 		// ===== Currency Code =====
 		{
-			Name:        "currency_code",
+			Name:        "currencycode",
 			Description: "Common currency codes — รหัสสกุลเงินที่ใช้บ่อย",
 			Category:    "mainapi",
 			GoSource:    "internal/microservice/currency/models.go",
@@ -509,7 +509,7 @@ func getAllEnums() []EnumGroup {
 
 		// ===== Language Code =====
 		{
-			Name:        "language_code",
+			Name:        "languagecode",
 			Description: "Supported language codes — รหัสภาษาที่รองรับ (ใช้ใน NameX)",
 			Category:    "mainapi",
 			GoSource:    "pkg/models/common.go",

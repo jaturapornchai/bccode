@@ -23,11 +23,11 @@ type ARAdvancePaymentRefundTransactionDetailPG struct {
 }
 
 func (ARAdvancePaymentRefundTransactionPG) TableName() string {
-	return "ar_advancepayment_refund_transaction"
+	return "aradvancepaymentrefundtransaction"
 }
 
 func (ARAdvancePaymentRefundTransactionDetailPG) TableName() string {
-	return "ar_advancepayment_refund_transaction_detail"
+	return "aradvancepaymentrefundtransactiondetail"
 }
 
 func (m *ARAdvancePaymentRefundTransactionPG) BeforeUpdate(tx *gorm.DB) (err error) {

@@ -1081,7 +1081,7 @@ func (svc SaleInvoiceService) saveMasterSync(holdingCode string) {
 }
 
 func (svc SaleInvoiceService) GetModuleName() string {
-	return "saleInvoice"
+	return "saleinvoice"
 }
 
 func (svc SaleInvoiceService) Export(holdingCode string, languageCode string, languageHeader map[string]string) ([][]string, error) {

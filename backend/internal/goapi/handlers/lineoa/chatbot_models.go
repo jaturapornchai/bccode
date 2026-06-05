@@ -4,7 +4,7 @@ import "time"
 
 // MongoDB Collections for Chatbot
 const (
-	ConversationCollection = "lineoa_conversations"
+	ConversationCollection = "lineoaconversations"
 )
 
 // ConversationMessage represents a single message in conversation

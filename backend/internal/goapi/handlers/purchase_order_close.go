@@ -67,7 +67,7 @@ func ManualClosePOHandler(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"status":  "error",
 			"code":    400,
-			"message": "กรุณาระบุรหัสผู้กระทำ (action_by_code)",
+			"message": "กรุณาระบุรหัสผู้กระทำ (actionbycode)",
 		})
 	}
 

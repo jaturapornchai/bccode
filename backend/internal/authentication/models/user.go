@@ -229,7 +229,7 @@ type ShopUser struct {
 }
 
 func (*ShopUser) CollectionName() string {
-	return "shopUsers"
+	return "shopusers"
 }
 
 type ShopUserInfo struct {
@@ -269,7 +269,7 @@ type LanguageConfig struct {
 }
 
 func (*ShopUserInfo) CollectionName() string {
-	return "shopUsers"
+	return "shopusers"
 }
 
 type UserRoleRequest struct {
@@ -310,7 +310,7 @@ type ShopUserAccessLog struct {
 }
 
 func (*ShopUserAccessLog) CollectionName() string {
-	return "shop_user_access_logs"
+	return "shopuseraccesslogs"
 }
 
 type ShopUserProfile struct {

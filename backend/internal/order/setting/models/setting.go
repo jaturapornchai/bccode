@@ -7,7 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const settingCollectionName = "orderSettings"
+const settingCollectionName = "ordersettings"
 
 type OrderSetting struct {
 	models.PartitionIdentity `bson:"inline"`

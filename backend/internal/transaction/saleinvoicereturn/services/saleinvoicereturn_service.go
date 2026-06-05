@@ -636,5 +636,5 @@ func (svc SaleInvoiceReturnService) saveMasterSync(holdingCode string) {
 }
 
 func (svc SaleInvoiceReturnService) GetModuleName() string {
-	return "saleInvoiceReturn"
+	return "saleinvoicereturn"
 }

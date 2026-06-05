@@ -26,11 +26,11 @@ type PayTransactionDetailPG struct {
 }
 
 func (PayTransactionPG) TableName() string {
-	return "pay_transaction"
+	return "paytransaction"
 }
 
 func (PayTransactionDetailPG) TableName() string {
-	return "pay_transaction_detail"
+	return "paytransactiondetail"
 }
 
 func (t PayTransactionPG) HasStockEffectDoc() bool {

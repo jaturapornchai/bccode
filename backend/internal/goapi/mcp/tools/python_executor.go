@@ -8,7 +8,7 @@ package tools
 //   - Syntax ตรงกับวิธีคิดของ model → script ถูกครั้งแรกบ่อยขึ้น → iteration น้อย → เร็วขึ้น
 //
 // Architecture — JSON-RPC over stdin/stdout:
-//   1. Go spawn python3 -I -S -c "<prelude + user_code>"
+//   1. Go spawn python3 -I -S -c "<prelude + usercode>"
 //   2. Prelude กำหนด querypg/querymongo/querych/log เป็น Python function
 //      ที่เขียน JSON line ไปยัง stdout (RPC:), flush, แล้วอ่าน stdin (RES:) กลับมา
 //   3. Main loop ฝั่ง Go อ่าน stdout ทีละบรรทัด:

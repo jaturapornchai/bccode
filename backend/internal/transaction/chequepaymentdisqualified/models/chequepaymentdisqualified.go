@@ -7,7 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const chequepaymentdisqualifiedCollectionName = "transactionChequePaymentDisqualified"
+const chequepaymentdisqualifiedCollectionName = "transactionchequepaymentdisqualified"
 
 type ChequePaymentDisqualified struct {
 	models.PartitionIdentity     `bson:"inline"`

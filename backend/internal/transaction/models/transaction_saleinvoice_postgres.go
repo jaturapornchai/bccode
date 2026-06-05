@@ -57,11 +57,11 @@ type SaleInvoiceTransactionDetailPG struct {
 
 // tableName
 func (SaleInvoiceTransactionPG) TableName() string {
-	return "saleinvoice_transaction"
+	return "saleinvoicetransaction"
 }
 
 func (SaleInvoiceTransactionDetailPG) TableName() string {
-	return "saleinvoice_transaction_detail"
+	return "saleinvoicetransactiondetail"
 }
 
 func (t SaleInvoiceTransactionPG) HasCreditorEffectDoc() bool {

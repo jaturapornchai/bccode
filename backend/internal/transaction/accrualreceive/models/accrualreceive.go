@@ -7,7 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const saleorderCollectionName = "transactionAccrualreceive"
+const saleorderCollectionName = "transactionaccrualreceive"
 
 type Accrualreceive struct {
 	models.PartitionIdentity `bson:"inline"`

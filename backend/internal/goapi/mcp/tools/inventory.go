@@ -87,7 +87,7 @@ func GetInventoryValue(ctx context.Context, holdingCode, whcode string) (*Invent
 
 	query := fmt.Sprintf(`
 		SELECT
-			COUNT(DISTINCT itemcode) as sku_count,
+			COUNT(DISTINCT itemcode) as skucount,
 			COALESCE(SUM(ABS(balanceqty)), 0) as totalqty,
 			COALESCE(SUM(ABS(balanceqty) * COALESCE(avgcost, 0)), 0) as totalvalue
 		FROM (
@@ -126,10 +126,10 @@ func GetInventoryValue(ctx context.Context, holdingCode, whcode string) (*Invent
 	// ByWarehouse — มูลค่าแยกตามคลัง
 	whQuery := `
 		SELECT
-			COALESCE(whcode, 'DEFAULT') as wh_code,
-			COALESCE(whcode, 'คลังหลัก') as wh_name,
+			COALESCE(whcode, 'DEFAULT') as whcode,
+			COALESCE(whcode, 'คลังหลัก') as whname,
 			COALESCE(SUM(ABS(balanceqty) * COALESCE(avgcost, 0)), 0) as value,
-			COUNT(DISTINCT itemcode) as item_count
+			COUNT(DISTINCT itemcode) as itemcount
 		FROM (
 			SELECT
 				d.itemcode, d.whcode,
@@ -164,10 +164,10 @@ func GetInventoryValue(ctx context.Context, holdingCode, whcode string) (*Invent
 	// ByCategory — มูลค่าแยกตามหมวด
 	catQuery := `
 		SELECT
-			COALESCE(categorycode, 'N/A') as cat_code,
-			COALESCE(categorycode, 'ไม่ระบุหมวด') as cat_name,
+			COALESCE(categorycode, 'N/A') as catcode,
+			COALESCE(categorycode, 'ไม่ระบุหมวด') as catname,
 			COALESCE(SUM(ABS(balanceqty) * COALESCE(avgcost, 0)), 0) as value,
-			COUNT(DISTINCT itemcode) as item_count
+			COUNT(DISTINCT itemcode) as itemcount
 		FROM (
 			SELECT
 				d.itemcode, d.categorycode,

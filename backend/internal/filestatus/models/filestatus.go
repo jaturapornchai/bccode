@@ -6,7 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const filestatusCollectionName = "fileStatus"
+const filestatusCollectionName = "filestatus"
 
 type FileStatus struct {
 	models.PartitionIdentity `bson:"inline"`

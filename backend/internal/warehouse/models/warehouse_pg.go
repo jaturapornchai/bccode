@@ -30,7 +30,7 @@ type CompanyWarehousePg struct {
 }
 
 func (CompanyWarehousePg) TableName() string {
-	return "company_warehouses"
+	return "companywarehouses"
 }
 
 type ZonePg struct {
@@ -48,7 +48,7 @@ type ZonePg struct {
 }
 
 func (ZonePg) TableName() string {
-	return "warehouse_zones"
+	return "warehousezones"
 }
 
 type ShelfPg struct {
@@ -64,5 +64,5 @@ type ShelfPg struct {
 }
 
 func (ShelfPg) TableName() string {
-	return "warehouse_shelves"
+	return "warehouseshelves"
 }

@@ -405,5 +405,5 @@ func (svc FormTemplateHttpService) saveMasterSync(holdingCode string) {
 }
 
 func (svc FormTemplateHttpService) GetModuleName() string {
-	return "formTemplate"
+	return "formtemplate"
 }

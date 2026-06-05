@@ -353,5 +353,5 @@ func (svc StaffHttpService) saveMasterSync(holdingCode string) {
 }
 
 func (svc StaffHttpService) GetModuleName() string {
-	return "restaurant-staff"
+	return "restaurantstaff"
 }

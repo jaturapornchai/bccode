@@ -7,7 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const productBarcodeBOMCollectionName = "productBarcodeBOMs"
+const productBarcodeBOMCollectionName = "productbarcodeboms"
 
 type BOMProductBarcode struct {
 	BarcodeGuidFixed string          `json:"guidfixed" bson:"guidfixed"`

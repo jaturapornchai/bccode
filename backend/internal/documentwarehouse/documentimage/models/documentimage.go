@@ -7,7 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const documentImageCollectionName = "documentImages"
+const documentImageCollectionName = "documentimages"
 
 type DocumentImage struct {
 	ImageURI string `json:"imageuri" bson:"imageuri"`
@@ -96,7 +96,7 @@ func (DocumentImageDoc) CollectionName() string {
 }
 
 type DocumentImageItemGuid struct {
-	DocumentImageGuid string `json:"categoryguid" bson:"categoryguid" gorm:"category_guid"`
+	DocumentImageGuid string `json:"categoryguid" bson:"categoryguid" gorm:"categoryguid"`
 }
 
 func (DocumentImageItemGuid) CollectionName() string {

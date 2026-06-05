@@ -428,7 +428,7 @@ func (svc GroupsuboneProductHttpService) saveMasterSync(holdingCode string) {
 }
 
 func (svc GroupsuboneProductHttpService) GetModuleName() string {
-	return "productType"
+	return "producttype"
 }
 
 func (svc GroupsuboneProductHttpService) existsOrderTypeRefInProduct(holdingCode string, GUIDs []string) (bool, error) {

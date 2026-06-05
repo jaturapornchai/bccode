@@ -8,7 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const slipimageCollectionName = "slipImages"
+const slipimageCollectionName = "slipimages"
 
 type SlipImageRequest struct {
 	Mode            uint8                 `json:"mode" bson:"mode"` // 0 = slip, 1 = qr

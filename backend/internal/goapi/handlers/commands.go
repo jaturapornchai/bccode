@@ -195,13 +195,13 @@ func ReportPostHandler(c echo.Context) error {
 	logger.Info("Using Timezone Code: %s, Language Code: %s", timezoneCode, languageCode)
 
 	if payLoad.CommandID == "rebuild" {
-		// Default: create_database = true (drop + create ใหม่)
+		// Default: createdatabase = true (drop + create ใหม่)
 		createDatabase := true
 		if payLoad.CreateDatabase != nil {
 			createDatabase = *payLoad.CreateDatabase
 		}
 
-		// Parse item_code_list (optional - ใช้เฉพาะเมื่อ create_database = false)
+		// Parse itemcodelist (optional - ใช้เฉพาะเมื่อ createdatabase = false)
 		itemCodes, _ := parseItemCodesFromJSON(payLoad.ItemCodeList)
 
 		// สร้าง rebuild job สำหรับ progress tracking
@@ -229,18 +229,18 @@ func ReportPostHandler(c echo.Context) error {
 		}()
 
 		return c.JSON(http.StatusOK, map[string]any{
-			"message":         "rebuild started",
-			"status":          "success",
-			"code":            200,
-			"job_id":          job.ID,
-			"holdingcode":     payLoad.HoldingCode,
-			"command_id":      payLoad.CommandID,
-			"create_database": createDatabase,
-			"item_count":      len(itemCodes),
+			"message":        "rebuild started",
+			"status":         "success",
+			"code":           200,
+			"job_id":         job.ID,
+			"holdingcode":    payLoad.HoldingCode,
+			"commandid":      payLoad.CommandID,
+			"createdatabase": createDatabase,
+			"itemcount":      len(itemCodes),
 		})
 	}
 
-	if payLoad.CommandID == "rebuild_document_flow" {
+	if payLoad.CommandID == "rebuilddocumentflow" {
 		// คำนวณ flow เอกสาร (isref, iscomparedsuccess, isclosed)
 		// สำหรับคำนวณสถานะเอกสารใบสั่งซื้อว่ามีการอ้างอิง (รับสินค้า) หรือยัง
 		job := build.CreateJob(payLoad.HoldingCode)
@@ -259,13 +259,13 @@ func ReportPostHandler(c echo.Context) error {
 			"code":        200,
 			"job_id":      job.ID,
 			"holdingcode": payLoad.HoldingCode,
-			"command_id":  payLoad.CommandID,
+			"commandid":   payLoad.CommandID,
 		})
 	}
 
-	if payLoad.CommandID == "rebuild_products_only" || payLoad.CommandID == "rebuild-products" {
+	if payLoad.CommandID == "rebuildproductsonly" || payLoad.CommandID == "rebuildproducts" {
 		// Rebuild เฉพาะสินค้า (PostgreSQL, ClickHouse)
-		// รองรับทั้ง "rebuild_products_only" และ "rebuild-products"
+		// รองรับทั้ง "rebuildproductsonly" และ "rebuildproducts"
 		go func() {
 			err := build.RebuildProductsOnly(payLoad.HoldingCode)
 			if err != nil {
@@ -277,7 +277,7 @@ func ReportPostHandler(c echo.Context) error {
 			"status":      "success",
 			"code":        200,
 			"holdingcode": payLoad.HoldingCode,
-			"command_id":  payLoad.CommandID,
+			"commandid":   payLoad.CommandID,
 		})
 	}
 
@@ -307,21 +307,21 @@ func ReportPostHandler(c echo.Context) error {
 		}
 
 		return c.JSON(http.StatusOK, map[string]any{
-			"message":         "process stock cost",
-			"status":          "success",
-			"code":            200,
-			"holdingcode":     payLoad.HoldingCode,
-			"command_id":      payLoad.CommandID,
-			"processed_items": len(results),
-			"point_qty":       pointQty,
-			"point_amount":    pointAmount,
-			"point_cost":      pointCost,
-			"delete_first":    deleteFirst,
-			"items":           results,
+			"message":        "process stock cost",
+			"status":         "success",
+			"code":           200,
+			"holdingcode":    payLoad.HoldingCode,
+			"commandid":      payLoad.CommandID,
+			"processeditems": len(results),
+			"pointqty":       pointQty,
+			"pointamount":    pointAmount,
+			"pointcost":      pointCost,
+			"deletefirst":    deleteFirst,
+			"items":          results,
 		})
 	}
 
-	if payLoad.CommandID == "report_product_balance_by_whcode_barcode" {
+	if payLoad.CommandID == "reportproductbalancebywhcodebarcode" {
 		logger.Info("Command: %s, HoldingCode: %s, GUID: %s", payLoad.CommandID, payLoad.HoldingCode, payLoad.Guid)
 
 		ReportProductBalanceByWareHouseBarcode(payLoad.HoldingCode, payLoad.Guid, payLoad.FinalDate, timezoneCode, languageCode)
@@ -331,12 +331,12 @@ func ReportPostHandler(c echo.Context) error {
 			"status":      "success",
 			"code":        200,
 			"holdingcode": payLoad.HoldingCode,
-			"command_id":  payLoad.CommandID,
+			"commandid":   payLoad.CommandID,
 			"guid":        payLoad.Guid,
 		})
 	}
 
-	if payLoad.CommandID == "report_product_balance_by_location_barcode" {
+	if payLoad.CommandID == "reportproductbalancebylocationbarcode" {
 		logger.Info("Command: %s, HoldingCode: %s, GUID: %s", payLoad.CommandID, payLoad.HoldingCode, payLoad.Guid)
 
 		ReportProductBalanceByLocationBarcode(payLoad.HoldingCode, payLoad.Guid, payLoad.FinalDate, timezoneCode, languageCode)
@@ -346,12 +346,12 @@ func ReportPostHandler(c echo.Context) error {
 			"status":      "success",
 			"code":        200,
 			"holdingcode": payLoad.HoldingCode,
-			"command_id":  payLoad.CommandID,
+			"commandid":   payLoad.CommandID,
 			"guid":        payLoad.Guid,
 		})
 	}
 
-	if payLoad.CommandID == "report_product_balance_by_barcode_whcode_location" {
+	if payLoad.CommandID == "reportproductbalancebybarcodewhcodelocation" {
 		// Convert condition string to int
 		conditionInt := 0
 		if payLoad.Condition != "" {
@@ -367,12 +367,12 @@ func ReportPostHandler(c echo.Context) error {
 			"status":      "success",
 			"code":        200,
 			"holdingcode": payLoad.HoldingCode,
-			"command_id":  payLoad.CommandID,
+			"commandid":   payLoad.CommandID,
 			"guid":        payLoad.Guid,
 		})
 	}
 
-	if payLoad.CommandID == "report_product_stock_movement" {
+	if payLoad.CommandID == "reportproductstockmovement" {
 		logger.Info("Command: %s, HoldingCode: %s, GUID: %s", payLoad.CommandID, payLoad.HoldingCode, payLoad.Guid)
 
 		ReportProductStockMovement(payLoad.HoldingCode, payLoad.Guid, timezoneCode, languageCode)
@@ -382,12 +382,12 @@ func ReportPostHandler(c echo.Context) error {
 			"status":      "success",
 			"code":        200,
 			"holdingcode": payLoad.HoldingCode,
-			"command_id":  payLoad.CommandID,
+			"commandid":   payLoad.CommandID,
 			"guid":        payLoad.Guid,
 		})
 	}
 
-	if payLoad.CommandID == "stock_balance_by_product_and_warehouse_and_location_create_pdf" {
+	if payLoad.CommandID == "stockbalancebyproductandwarehouseandlocationcreatepdf" {
 		// สร้าง Report PDF
 		// รายงานสินค้าคงเหลือ ตามบาร์โค้ด คลังสินค้า ที่เก็บสินค้า
 		condition, _ := strconv.Atoi(payLoad.Condition)
@@ -410,7 +410,7 @@ func ReportPostHandler(c echo.Context) error {
 		})
 	}
 
-	if payLoad.CommandID == "stock_balance_by_warehouse_and_product_create_pdf" {
+	if payLoad.CommandID == "stockbalancebywarehouseandproductcreatepdf" {
 		// สร้าง Report PDF
 		// รายงานสินค้าคงเหลือ คลังสินค้า ตามบาร์โค้ด
 		condition, _ := strconv.Atoi(payLoad.Condition)
@@ -431,7 +431,7 @@ func ReportPostHandler(c echo.Context) error {
 		})
 	}
 
-	if payLoad.CommandID == "stock_balance_by_location_and_product_create_pdf" {
+	if payLoad.CommandID == "stockbalancebylocationandproductcreatepdf" {
 		// สร้าง Report PDF
 		// รายงานสินค้าคงเหลือ ที่เก็บสินค้า ตามบาร์โค้ด
 		balanceOnly, _ := strconv.ParseBool(payLoad.BalanceOnly)
@@ -449,7 +449,7 @@ func ReportPostHandler(c echo.Context) error {
 		})
 	}
 
-	if payLoad.CommandID == "report_product_stock_movement_create_pdf" {
+	if payLoad.CommandID == "reportproductstockmovementcreatepdf" {
 		localBin := reportstock.ReportProductStockMovement(payLoad.HoldingCode, payLoad.Guid, timezoneCode, languageCode)
 		reportPath := uploadReportBinToS3(localBin)
 		return c.JSON(http.StatusOK, map[string]any{
@@ -461,7 +461,7 @@ func ReportPostHandler(c echo.Context) error {
 		})
 	}
 
-	if payLoad.CommandID == "stock_balance_by_product_and_warehouse_and_location_process" {
+	if payLoad.CommandID == "stockbalancebyproductandwarehouseandlocationprocess" {
 		// ประมวลผล รายงานสินค้าคงเหลือ ตามบาร์โค้ด คลังสินค้า ที่เก็บสินค้า
 		condition, _ := strconv.Atoi(fmt.Sprintf("%v", payLoad.Condition))
 		balanceOnly, _ := strconv.ParseBool(fmt.Sprintf("%v", payLoad.BalanceOnly))
@@ -505,7 +505,7 @@ func ReportPostHandler(c echo.Context) error {
 		})
 	}
 
-	if payLoad.CommandID == "stock_balance_by_warehouse_and_product_process" {
+	if payLoad.CommandID == "stockbalancebywarehouseandproductprocess" {
 		// ประมวลผล รายงานสินค้าคงเหลือ ตามบาร์โค้ด คลังสินค้า ที่เก็บสินค้า
 		balanceOnly, _ := strconv.ParseBool(fmt.Sprintf("%v", payLoad.BalanceOnly))
 		barcodeListArray := strings.Split(fmt.Sprintf("%v", payLoad.BarcodeList), ",")
@@ -530,7 +530,7 @@ func ReportPostHandler(c echo.Context) error {
 		})
 	}
 
-	if payLoad.CommandID == "stock_balance_by_location_and_product_process" {
+	if payLoad.CommandID == "stockbalancebylocationandproductprocess" {
 		// ดำเนินการตามคำสั่งที่ต้องการ
 		condition, _ := strconv.Atoi(fmt.Sprintf("%v", payLoad.Condition))
 		balanceOnly, _ := strconv.ParseBool(fmt.Sprintf("%v", payLoad.BalanceOnly))
@@ -588,7 +588,7 @@ func ReportPostHandler(c echo.Context) error {
 		})
 	}
 	logger.Info("payLoad.CommandID: %v", payLoad.CommandID)
-	if payLoad.CommandID == "purchase_order_info_by_docno" {
+	if payLoad.CommandID == "purchaseorderinfobydocno" {
 		// สถานะเอกสารใบสั่งซื้อ (PO Status)
 
 		// แปลง DocNoList จาก []string โดยตรง

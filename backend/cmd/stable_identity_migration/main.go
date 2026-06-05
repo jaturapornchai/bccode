@@ -57,13 +57,13 @@ func main() {
 	// Step 1: Backfill users.uid and create unique index
 	backfillUsersUID(ctx, db, apply)
 
-	// Step 2: Backfill shopUsers.user_uid and create index
+	// Step 2: Backfill shopusers.useruid and create index
 	backfillShopUsersUID(ctx, db, apply)
 
-	// Step 3: Backfill po_approvalsettings approvers
+	// Step 3: Backfill poapprovalsettings approvers
 	backfillPOApprovalSettings(ctx, db, apply)
 
-	// Step 4: Backfill po_approval_status history
+	// Step 4: Backfill poapprovalstatus history
 	backfillPOApprovalHistory(ctx, db, apply)
 
 	printAuditCounts(ctx, db)
@@ -152,10 +152,10 @@ func backfillUsersUID(ctx context.Context, db *mongo.Database, apply bool) {
 	fmt.Printf("  Total users updated/needed backfill: %d\n", count)
 
 	if apply {
-		fmt.Println("  Creating unique index 'ux_users_uid' on users(uid)...")
+		fmt.Println("  Creating unique index 'uxusersuid' on users(uid)...")
 		indexModel := mongo.IndexModel{
 			Keys:    bson.D{{Key: "uid", Value: 1}},
-			Options: options.Index().SetUnique(true).SetName("ux_users_uid"),
+			Options: options.Index().SetUnique(true).SetName("uxusersuid"),
 		}
 		name, err := col.Indexes().CreateOne(ctx, indexModel)
 		if err != nil {
@@ -167,13 +167,13 @@ func backfillUsersUID(ctx context.Context, db *mongo.Database, apply bool) {
 }
 
 func backfillShopUsersUID(ctx context.Context, db *mongo.Database, apply bool) {
-	fmt.Println("--- 2. Processing 'shopUsers' collection ---")
-	col := db.Collection("shopUsers")
+	fmt.Println("--- 2. Processing 'shopusers' collection ---")
+	col := db.Collection("shopusers")
 	usersCol := db.Collection("users")
 
 	cursor, err := col.Find(ctx, bson.M{})
 	if err != nil {
-		log.Printf("Failed to query shopUsers: %v\n", err)
+		log.Printf("Failed to query shopusers: %v\n", err)
 		return
 	}
 	defer cursor.Close(ctx)
@@ -192,7 +192,7 @@ func backfillShopUsersUID(ctx context.Context, db *mongo.Database, apply bool) {
 		id := doc["_id"]
 		username, _ := doc["username"].(string)
 		holdingcode, _ := doc["holdingcode"].(string)
-		existingUID, _ := doc["user_uid"].(string)
+		existingUID, _ := doc["useruid"].(string)
 
 		if existingUID != "" {
 			continue // Already backfilled
@@ -219,9 +219,9 @@ func backfillShopUsersUID(ctx context.Context, db *mongo.Database, apply bool) {
 			continue
 		}
 
-		fmt.Printf("  [ShopUser] Mapping username: %s in shop: %s -> user_uid: %s\n", username, holdingcode, uid)
+		fmt.Printf("  [ShopUser] Mapping username: %s in shop: %s -> useruid: %s\n", username, holdingcode, uid)
 		if apply {
-			_, err := col.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"user_uid": uid}})
+			_, err := col.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"useruid": uid}})
 			if err != nil {
 				log.Printf("    Error updating shopUser %v: %v\n", id, err)
 			}
@@ -229,28 +229,28 @@ func backfillShopUsersUID(ctx context.Context, db *mongo.Database, apply bool) {
 		count++
 	}
 
-	fmt.Printf("  Total shopUsers mapped/needed backfill: %d\n", count)
+	fmt.Printf("  Total shopusers mapped/needed backfill: %d\n", count)
 
 	if apply {
-		fmt.Println("  Creating index 'ix_shopUsers_holdingcode_user_uid' on shopUsers(holdingcode, user_uid)...")
+		fmt.Println("  Creating index 'ix_shopusers_holdingcode_useruid' on shopusers(holdingcode, useruid)...")
 		indexModel := mongo.IndexModel{
-			Keys:    bson.D{{Key: "holdingcode", Value: 1}, {Key: "user_uid", Value: 1}},
-			Options: options.Index().SetName("ix_shopUsers_holdingcode_user_uid"),
+			Keys:    bson.D{{Key: "holdingcode", Value: 1}, {Key: "useruid", Value: 1}},
+			Options: options.Index().SetName("ix_shopusers_holdingcode_useruid"),
 		}
 		name, err := col.Indexes().CreateOne(ctx, indexModel)
 		if err != nil {
 			if strings.Contains(err.Error(), "IndexOptionsConflict") {
-				legacyName := "ix_shop_users_holdingcode_user_uid"
+				legacyName := "ix_shopusers_holdingcode_useruid"
 				fmt.Printf("    Found same-key legacy index conflict. Dropping '%s' before recreating canonical name...\n", legacyName)
 				if _, dropErr := col.Indexes().DropOne(ctx, legacyName); dropErr != nil {
-					log.Printf("    Failed to drop legacy index on shopUsers: %v\n", dropErr)
+					log.Printf("    Failed to drop legacy index on shopusers: %v\n", dropErr)
 				} else if name, err = col.Indexes().CreateOne(ctx, indexModel); err != nil {
-					log.Printf("    Failed to create canonical index on shopUsers: %v\n", err)
+					log.Printf("    Failed to create canonical index on shopusers: %v\n", err)
 				} else {
 					fmt.Printf("    Index created successfully: %s\n", name)
 				}
 			} else {
-				log.Printf("    Failed to create index on shopUsers: %v\n", err)
+				log.Printf("    Failed to create index on shopusers: %v\n", err)
 			}
 		} else {
 			fmt.Printf("    Index created successfully: %s\n", name)
@@ -259,13 +259,13 @@ func backfillShopUsersUID(ctx context.Context, db *mongo.Database, apply bool) {
 }
 
 func backfillPOApprovalSettings(ctx context.Context, db *mongo.Database, apply bool) {
-	fmt.Println("--- 3. Processing 'po_approvalsettings' collection ---")
-	col := db.Collection("po_approvalsettings")
+	fmt.Println("--- 3. Processing 'poapprovalsettings' collection ---")
+	col := db.Collection("poapprovalsettings")
 	usersCol := db.Collection("users")
 
-	cursor, err := col.Find(ctx, bson.M{"rules.approvers.user_code": bson.M{"$exists": true}})
+	cursor, err := col.Find(ctx, bson.M{"rules.approvers.usercode": bson.M{"$exists": true}})
 	if err != nil {
-		log.Printf("Failed to query po_approvalsettings: %v\n", err)
+		log.Printf("Failed to query poapprovalsettings: %v\n", err)
 		return
 	}
 	defer cursor.Close(ctx)
@@ -276,12 +276,12 @@ func backfillPOApprovalSettings(ctx context.Context, db *mongo.Database, apply b
 	for cursor.Next(ctx) {
 		var doc bson.M
 		if err := cursor.Decode(&doc); err != nil {
-			log.Printf("Failed to decode po_approvalsettings: %v\n", err)
+			log.Printf("Failed to decode poapprovalsettings: %v\n", err)
 			continue
 		}
 
 		id := doc["_id"]
-		purchaseTypeCode, _ := doc["purchase_type_code"].(string)
+		purchaseTypeCode, _ := doc["purchasetypecode"].(string)
 		var rules []bson.M
 		bytes, err := json.Marshal(doc["rules"])
 		if err == nil {
@@ -303,8 +303,8 @@ func backfillPOApprovalSettings(ctx context.Context, db *mongo.Database, apply b
 			}
 
 			for approverIdx := range approvers {
-				userCode, _ := approvers[approverIdx]["user_code"].(string)
-				existingUID, _ := approvers[approverIdx]["approver_user_uid"].(string)
+				userCode, _ := approvers[approverIdx]["usercode"].(string)
+				existingUID, _ := approvers[approverIdx]["approver_useruid"].(string)
 				userCode = strings.TrimSpace(userCode)
 				if existingUID != "" || userCode == "" {
 					continue
@@ -319,13 +319,13 @@ func backfillPOApprovalSettings(ctx context.Context, db *mongo.Database, apply b
 					}
 				}
 				if uid == "" {
-					log.Printf("  [Warning] UID not found in users collection for approval user_code: %s\n", userCode)
+					log.Printf("  [Warning] UID not found in users collection for approval usercode: %s\n", userCode)
 					continue
 				}
 
-				approvers[approverIdx]["approver_user_uid"] = uid
+				approvers[approverIdx]["approver_useruid"] = uid
 				modified = true
-				fmt.Printf("  [PO Settings] PurchaseType: %s -> Mapping UserCode: %s -> approver_user_uid: %s\n", purchaseTypeCode, userCode, uid)
+				fmt.Printf("  [PO Settings] PurchaseType: %s -> Mapping UserCode: %s -> approver_useruid: %s\n", purchaseTypeCode, userCode, uid)
 			}
 			rules[ruleIdx]["approvers"] = approvers
 		}
@@ -344,13 +344,13 @@ func backfillPOApprovalSettings(ctx context.Context, db *mongo.Database, apply b
 }
 
 func backfillPOApprovalHistory(ctx context.Context, db *mongo.Database, apply bool) {
-	fmt.Println("--- 4. Processing 'po_approval_status' collection ---")
-	col := db.Collection("po_approval_status")
+	fmt.Println("--- 4. Processing 'poapprovalstatus' collection ---")
+	col := db.Collection("poapprovalstatus")
 	usersCol := db.Collection("users")
 
 	cursor, err := col.Find(ctx, bson.M{"history": bson.M{"$exists": true}})
 	if err != nil {
-		log.Printf("Failed to query po_approval_status: %v\n", err)
+		log.Printf("Failed to query poapprovalstatus: %v\n", err)
 		return
 	}
 	defer cursor.Close(ctx)
@@ -361,7 +361,7 @@ func backfillPOApprovalHistory(ctx context.Context, db *mongo.Database, apply bo
 	for cursor.Next(ctx) {
 		var doc bson.M
 		if err := cursor.Decode(&doc); err != nil {
-			log.Printf("Failed to decode po_approval_status: %v\n", err)
+			log.Printf("Failed to decode poapprovalstatus: %v\n", err)
 			continue
 		}
 
@@ -381,8 +381,8 @@ func backfillPOApprovalHistory(ctx context.Context, db *mongo.Database, apply bo
 
 		modified := false
 		for i, h := range history {
-			actionBy, _ := h["action_by"].(string)
-			existingUID, _ := h["approver_user_uid"].(string)
+			actionBy, _ := h["actionby"].(string)
+			existingUID, _ := h["approver_useruid"].(string)
 
 			if existingUID != "" || actionBy == "" {
 				continue
@@ -399,9 +399,9 @@ func backfillPOApprovalHistory(ctx context.Context, db *mongo.Database, apply bo
 			}
 
 			if uid != "" {
-				history[i]["approver_user_uid"] = uid
+				history[i]["approver_useruid"] = uid
 				modified = true
-				fmt.Printf("  [PO History] Document: %s -> Mapping ActionBy: %s -> approver_user_uid: %s\n", docno, actionBy, uid)
+				fmt.Printf("  [PO History] Document: %s -> Mapping ActionBy: %s -> approver_useruid: %s\n", docno, actionBy, uid)
 			}
 		}
 
@@ -431,32 +431,32 @@ func printAuditCounts(ctx context.Context, db *mongo.Database) {
 	}
 
 	missingUIDFilter := bson.M{"$or": []bson.M{{"uid": bson.M{"$exists": false}}, {"uid": nil}, {"uid": ""}}}
-	missingUserUIDFilter := bson.M{"$or": []bson.M{{"user_uid": bson.M{"$exists": false}}, {"user_uid": nil}, {"user_uid": ""}}}
+	missingUserUIDFilter := bson.M{"$or": []bson.M{{"useruid": bson.M{"$exists": false}}, {"useruid": nil}, {"useruid": ""}}}
 	missingApproverUIDFilter := bson.M{
 		"rules.approvers": bson.M{"$elemMatch": bson.M{
-			"user_code": bson.M{"$exists": true, "$ne": ""},
+			"usercode": bson.M{"$exists": true, "$ne": ""},
 			"$or": []bson.M{
-				{"approver_user_uid": bson.M{"$exists": false}},
-				{"approver_user_uid": nil},
-				{"approver_user_uid": ""},
+				{"approver_useruid": bson.M{"$exists": false}},
+				{"approver_useruid": nil},
+				{"approver_useruid": ""},
 			},
 		}},
 	}
 	missingHistoryUIDFilter := bson.M{
 		"history": bson.M{"$elemMatch": bson.M{
-			"action_by": bson.M{"$exists": true, "$ne": ""},
+			"actionby": bson.M{"$exists": true, "$ne": ""},
 			"$or": []bson.M{
-				{"approver_user_uid": bson.M{"$exists": false}},
-				{"approver_user_uid": nil},
-				{"approver_user_uid": ""},
+				{"approver_useruid": bson.M{"$exists": false}},
+				{"approver_useruid": nil},
+				{"approver_useruid": ""},
 			},
 		}},
 	}
 
 	printCount("users missing uid", "users", missingUIDFilter)
-	printCount("shopUsers missing user_uid", "shopUsers", missingUserUIDFilter)
-	printCount("po_approvalsettings approvers missing approver_user_uid", "po_approvalsettings", missingApproverUIDFilter)
-	printCount("po_approval_status history missing approver_user_uid", "po_approval_status", missingHistoryUIDFilter)
+	printCount("shopusers missing useruid", "shopusers", missingUserUIDFilter)
+	printCount("poapprovalsettings approvers missing approver_useruid", "poapprovalsettings", missingApproverUIDFilter)
+	printCount("poapprovalstatus history missing approver_useruid", "poapprovalstatus", missingHistoryUIDFilter)
 }
 
 func printIndexStatus(ctx context.Context, db *mongo.Database) {
@@ -483,6 +483,6 @@ func printIndexStatus(ctx context.Context, db *mongo.Database) {
 		fmt.Printf("  %s.%s exists: %t\n", collection, indexName, found)
 	}
 
-	printIndexExists("users", "ux_users_uid")
-	printIndexExists("shopUsers", "ix_shopUsers_holdingcode_user_uid")
+	printIndexExists("users", "uxusersuid")
+	printIndexExists("shopusers", "ix_shopusers_holdingcode_useruid")
 }

@@ -823,7 +823,7 @@ func loadMongoProducts(holdingCode string) ([]models.MongoProductBarcodeModel, e
 	databaseName := svcConfig.MongodbDatabaseName()
 
 	// ใช้ database และ collection
-	collection := mongoClient.Database(databaseName).Collection("productBarcodes")
+	collection := mongoClient.Database(databaseName).Collection("productbarcodes")
 
 	// Query โดยใช้ holdingCode
 	filter := bson.M{"holdingcode": holdingCode}

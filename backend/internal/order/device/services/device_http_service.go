@@ -390,5 +390,5 @@ func (svc DeviceHttpService) saveMasterSync(holdingCode string) {
 }
 
 func (svc DeviceHttpService) GetModuleName() string {
-	return "order_device"
+	return "orderdevice"
 }

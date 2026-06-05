@@ -9,7 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const companyCollectionName = "organizationCompanies"
+const companyCollectionName = "organizationcompanies"
 
 type Company struct {
 	Code     string       `json:"code" bson:"code"`

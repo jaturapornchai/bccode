@@ -13,5 +13,5 @@ type JobProjectPg struct {
 }
 
 func (JobProjectPg) TableName() string {
-	return "organization_job_project"
+	return "organizationjobproject"
 }

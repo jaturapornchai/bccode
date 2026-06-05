@@ -378,7 +378,7 @@ func (svc DocumentFormateHttpService) saveMasterSync(holdingCode string) {
 }
 
 func (svc DocumentFormateHttpService) GetModuleName() string {
-	return "documentFormate"
+	return "documentformate"
 }
 
 func (svc DocumentFormateHttpService) GetModuleDefault() ([]map[string]interface{}, error) {

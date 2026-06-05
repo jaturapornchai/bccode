@@ -375,5 +375,5 @@ func (svc SettingHttpService) saveMasterSync(holdingCode string) {
 }
 
 func (svc SettingHttpService) GetModuleName() string {
-	return "pos-setting"
+	return "possetting"
 }

@@ -1378,7 +1378,7 @@ function productMasterConfigs(): SystemSettingConfig[] {
     },
     codeNameConfig(
       "promotion_screen",
-      "/promotion_screen",
+      "/promotionscreen",
       "gift",
       "/product/promotion",
       "/product/promotion/list",
@@ -1391,7 +1391,7 @@ function productMasterConfigs(): SystemSettingConfig[] {
     ),
     aicloudConfig(
       "master_brand_screen",
-      "/master_brand_screen",
+      "/masterbrandscreen",
       "settings",
       "brand",
       "ยี่ห้อ",
@@ -1399,7 +1399,7 @@ function productMasterConfigs(): SystemSettingConfig[] {
     ),
     aicloudConfig(
       "master_category_screen",
-      "/master_category_screen",
+      "/mastercategoryscreen",
       "category",
       "category",
       "หมวดคุณลักษณะสินค้า",
@@ -1407,7 +1407,7 @@ function productMasterConfigs(): SystemSettingConfig[] {
     ),
     aicloudConfig(
       "master_class_screen",
-      "/master_class_screen",
+      "/masterclassscreen",
       "category",
       "class",
       "Class",
@@ -1415,7 +1415,7 @@ function productMasterConfigs(): SystemSettingConfig[] {
     ),
     aicloudConfig(
       "master_design_screen",
-      "/master_design_screen",
+      "/masterdesignscreen",
       "design",
       "design",
       "Design",
@@ -1423,7 +1423,7 @@ function productMasterConfigs(): SystemSettingConfig[] {
     ),
     aicloudConfig(
       "master_grade_screen",
-      "/master_grade_screen",
+      "/mastergradescreen",
       "badge",
       "grade",
       "Grade",
@@ -1431,7 +1431,7 @@ function productMasterConfigs(): SystemSettingConfig[] {
     ),
     aicloudConfig(
       "master_model_screen",
-      "/master_model_screen",
+      "/mastermodelscreen",
       "activity",
       "model",
       "Model",
@@ -1439,7 +1439,7 @@ function productMasterConfigs(): SystemSettingConfig[] {
     ),
     aicloudConfig(
       "master_pattern_screen",
-      "/master_pattern_screen",
+      "/masterpatternscreen",
       "grid",
       "pattern",
       "Pattern",

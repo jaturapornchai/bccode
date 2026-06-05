@@ -6,7 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const reportqueryCollectionName = "reportQueryMongo"
+const reportqueryCollectionName = "reportquerymongo"
 
 type ReportQuery struct {
 	models.PartitionIdentity `bson:"inline"`

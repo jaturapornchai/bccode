@@ -34,13 +34,13 @@ Purpose: keep Codex, Claude Code, and other agents fast. Read this file first, t
 - Model-sensitive system settings/access work: read active `D:\bccode` source, `.agents/rules/bc-account-core-rules.md`, and the relevant runtime/API code before changing API fields, CRUD identity, tenant scope, or cross-record references. Do not depend on external model-document folders.
 - Shared frontend widgets: when the same UX appears in multiple menus/screens, reuse or create a central component/field renderer first so labels, validation, search, save/load mapping, and empty states stay consistent.
 - Holding access scopes: users, screen permissions, permission groups, user permission assignments, and approval rights are Holding-owned under `holdingcode`; configure applicability with `scopetype`, `businesscode`, `branchcode`, and `allbranches`.
-- User access audit: route `/user_access_audit` is a read-only report in the access setup flow; it summarizes user access, screen permissions, groups, approvals, and can export to PDF through print.
+- User access audit: route `/useraccessaudit` is a read-only report in the access setup flow; it summarizes user access, screen permissions, groups, approvals, and can export to PDF through print.
 - Company access selectors: general master-data `businesscodes` is company-level only. Do not render or save branch selections in normal CRUD/master-data company access fields. Read legacy `companyguids` only as a compatibility alias.
 - Backend local Docker Desktop deploy (auto after backend edits): for Go-code-only changes use `cd backend; .\scripts\deploy-mainapi-fast.ps1`; for image/runtime changes use `docker-compose up -d --no-deps --build mainapi`; always verify `/healthz`. DEV server deploy still needs `deploy dev`.
 - Backend health: `curl.exe --max-time 10 -s -i http://localhost:8888/healthz`
 - Real data check: use the selected DEV database/API path; do not rely on mock business data for completion claims.
 - DEV seed data: use `.agents/skills/dev-data-seeder/SKILL.md`; resolve the active `holdingcode` first, then seed through real DEV APIs and verify via the same screen API path.
-- Product category groups: `groupnumber` is a usage/device/channel group. For `/product_category_group_select_screen` and `/productcategorylist`, build/verify a complete tree with `parentguid` and `parentguidall`; attach `codelist` to sellable leaf categories, not one flat root per menu type.
+- Product category groups: `groupnumber` is a usage/device/channel group. For `/productcategorygroupselectscreen` and `/productcategorylist`, build/verify a complete tree with `parentguid` and `parentguidall`; attach `codelist` to sellable leaf categories, not one flat root per menu type.
 - Narrow search: `rg -n "term" <path>`
 - Focused git status: `git status --short -- <exact-path-or-module>`
 - Changed-file count only: `git diff --name-only -- <exact-path-or-module> | Measure-Object -Line`

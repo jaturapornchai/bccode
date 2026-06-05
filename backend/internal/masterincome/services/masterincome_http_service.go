@@ -411,5 +411,5 @@ func (svc MasterIncomeHttpService) saveMasterSync(holdingCode string) {
 }
 
 func (svc MasterIncomeHttpService) GetModuleName() string {
-	return "masterIncome"
+	return "masterincome"
 }

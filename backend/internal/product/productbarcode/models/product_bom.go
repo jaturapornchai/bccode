@@ -7,7 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const productBarcodeBOMCollectionName = "productBarcodeBOMs"
+const productBarcodeBOMCollectionName = "productbarcodeboms"
 
 // type ProductBarcodeBOM struct {
 // 	Level         int             `json:"level" gorm:"column:level"`

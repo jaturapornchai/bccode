@@ -6,7 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const patternproductCollectionName = "patternProductMaster"
+const patternproductCollectionName = "patternproductmaster"
 
 type PatternProduct struct {
 	models.PartitionIdentity `bson:"inline"`

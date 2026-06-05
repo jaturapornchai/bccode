@@ -8,7 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const saleorderCollectionName = "transactionPickandpack"
+const saleorderCollectionName = "transactionpickandpack"
 
 type Pickandpack struct {
 	models.PartitionIdentity `bson:"inline"`

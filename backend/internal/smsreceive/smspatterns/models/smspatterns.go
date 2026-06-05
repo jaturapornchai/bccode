@@ -6,7 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const smspatternsCollectionName = "smsPatterns"
+const smspatternsCollectionName = "smspatterns"
 
 type SmsPatterns struct {
 	models.PartitionIdentity `bson:"inline"`

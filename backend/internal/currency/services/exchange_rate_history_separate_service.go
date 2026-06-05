@@ -226,5 +226,5 @@ func (svc ExchangeRateHistorySeparateService) saveMasterSync(holdingCode string)
 }
 
 func (svc ExchangeRateHistorySeparateService) GetModuleName() string {
-	return "exchange_rate_history"
+	return "exchangeratehistory"
 }

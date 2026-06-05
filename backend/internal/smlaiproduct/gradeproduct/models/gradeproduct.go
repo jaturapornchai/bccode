@@ -6,7 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const gradeproductCollectionName = "gradeProductMaster"
+const gradeproductCollectionName = "gradeproductmaster"
 
 type GradeProduct struct {
 	models.PartitionIdentity `bson:"inline"`

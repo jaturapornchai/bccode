@@ -257,7 +257,7 @@ func (svc ExchangeRateHistoryHttpService) SearchExchangeRateHistory(holdingCode 
 	// Flatten all exchange rates from all currencies
 	allRates := []models.ExchangeRateEntry{}
 	for _, currency := range currencies {
-		// Get full currency doc to access exchange_rates
+		// Get full currency doc to access exchangerates
 		currencyDoc, err := svc.currencyRepo.FindByGuid(ctx, holdingCode, currency.GuidFixed)
 		if err != nil {
 			continue
@@ -313,7 +313,7 @@ func (svc ExchangeRateHistoryHttpService) SearchExchangeRateHistoryStep(holdingC
 	// Flatten all exchange rates from all currencies
 	allRates := []models.ExchangeRateEntry{}
 	for _, currency := range currencies {
-		// Get full currency doc to access exchange_rates
+		// Get full currency doc to access exchangerates
 		currencyDoc, err := svc.currencyRepo.FindByGuid(ctx, holdingCode, currency.GuidFixed)
 		if err != nil {
 			continue
@@ -381,5 +381,5 @@ func (svc ExchangeRateHistoryHttpService) saveMasterSync(holdingCode string) {
 }
 
 func (svc ExchangeRateHistoryHttpService) GetModuleName() string {
-	return "exchange_rate_history"
+	return "exchangeratehistory"
 }

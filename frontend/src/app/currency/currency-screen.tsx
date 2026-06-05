@@ -47,7 +47,7 @@ type CurrencyRecord = {
   name: string;
   symbol: string;
   isdisabled: boolean;
-  exchange_rates?: ExchangeRateEntry[];
+  exchangerates?: ExchangeRateEntry[];
 };
 
 type ExchangeRateEntry = {
@@ -771,7 +771,7 @@ function CurrencyCard({
           </span>
           <span className="flex items-center justify-between gap-2 rounded-xl border border-border bg-background px-2 py-1.5">
             <span>{text("exchangeRates")}</span>
-            <b className="text-foreground">{(currency.exchange_rates?.length ?? 0).toLocaleString()}</b>
+            <b className="text-foreground">{(currency.exchangerates?.length ?? 0).toLocaleString()}</b>
           </span>
         </div>
       </CardContent>
@@ -946,7 +946,7 @@ function normalizeCurrency(value: unknown): CurrencyRecord | null {
     name: toStringValue(item.name),
     symbol: toStringValue(item.symbol),
     isdisabled: Boolean(item.isdisabled),
-    exchange_rates: Array.isArray(item.exchange_rates) ? item.exchange_rates as ExchangeRateEntry[] : [],
+    exchangerates: Array.isArray(item.exchangerates) ? item.exchangerates as ExchangeRateEntry[] : [],
   };
 }
 

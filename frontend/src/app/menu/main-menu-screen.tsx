@@ -2192,7 +2192,7 @@ function WorkTabPanel({ activeTab, backendLanguage, language, tabCount }: { acti
     return <ProductBarcodeShelfScreen embedded language={language} />;
   }
 
-  if (activeTab.route === "/price_history") {
+  if (activeTab.route === "/pricehistory") {
     return <ProductPriceHistoryScreen embedded language={language} />;
   }
 

@@ -41,9 +41,9 @@ type JournalBody struct {
 type JournalDebtAccount struct {
 	GuidFixed         string                    `json:"guidfixed" bson:"guidfixed" gorm:"guidfixed"`
 	Code              string                    `json:"code" bson:"code" gorm:"code"`
-	PersonalType      int8                      `json:"personaltype" bson:"personaltype" gorm:"personal_type"`
-	CustomerType      int                       `json:"customertype" bson:"customertype" gorm:"customer_type"`
-	BranchNumber      string                    `json:"branchnumber" bson:"branchnumber" gorm:"branch_number"`
+	PersonalType      int8                      `json:"personaltype" bson:"personaltype" gorm:"personaltype"`
+	CustomerType      int                       `json:"customertype" bson:"customertype" gorm:"customertype"`
+	BranchNumber      string                    `json:"branchnumber" bson:"branchnumber" gorm:"branchnumber"`
 	TaxId             string                    `json:"taxid" bson:"taxid" gorm:"taxid"`
 	Names             *[]models.NameX           `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive" gorm:"names"`
 	AddressForBilling JournalDebtAccountAddress `json:"addressforbilling" bson:"addressforbilling" gorm:"addressforbilling"`
@@ -68,14 +68,14 @@ func (a JournalDebtAccountPg) Scan(value interface{}) error {
 type JournalDebtAccountAddress struct {
 	GUID            string          `json:"guid" bson:"guid" gorm:"guid"`
 	Address         *[]string       `json:"address" bson:"address" gorm:"address"`
-	CountryCode     string          `json:"countrycode" bson:"countrycode" gorm:"country_code"`
-	ProvinceCode    string          `json:"provincecode" bson:"provincecode" gorm:"province_code"`
-	DistrictCode    string          `json:"districtcode" bson:"districtcode" gorm:"district_code"`
-	SubDistrictCode string          `json:"subdistrictcode" bson:"subdistrictcode" gorm:"sub_district_code"`
-	ZipCode         string          `json:"zipcode" bson:"zipcode" gorm:"zip_code"`
+	CountryCode     string          `json:"countrycode" bson:"countrycode" gorm:"countrycode"`
+	ProvinceCode    string          `json:"provincecode" bson:"provincecode" gorm:"provincecode"`
+	DistrictCode    string          `json:"districtcode" bson:"districtcode" gorm:"districtcode"`
+	SubDistrictCode string          `json:"subdistrictcode" bson:"subdistrictcode" gorm:"subdistrictcode"`
+	ZipCode         string          `json:"zipcode" bson:"zipcode" gorm:"zipcode"`
 	ContactNames    *[]models.NameX `json:"contactnames" bson:"contactnames" gorm:"contactnames"`
-	PhonePrimary    string          `json:"phoneprimary" bson:"phoneprimary" gorm:"phone_primary"`
-	PhoneSecondary  string          `json:"phonesecondary" bson:"phonesecondary" gorm:"phone_secondary"`
+	PhonePrimary    string          `json:"phoneprimary" bson:"phoneprimary" gorm:"phoneprimary"`
+	PhoneSecondary  string          `json:"phonesecondary" bson:"phonesecondary" gorm:"phonesecondary"`
 	Latitude        float64         `json:"latitude" bson:"latitude" gorm:"latitude"`
 	Longitude       float64         `json:"longitude" bson:"longitude" gorm:"longitude"`
 }
@@ -207,9 +207,9 @@ type JournalPg struct {
 	models.PartitionIdentity `gorm:"embedded;"`
 	JournalBody              `gorm:"embedded;"`
 
-	Vats        *[]JournalVatPg    `json:"vats" gorm:"journalvats_details;foreignKey:holdingcode,docno"`
-	Taxes       *[]JournalTaxPg    `json:"taxes" gorm:"journaltaxes_details;foreignKey:holdingcode,docno"`
-	AccountBook *[]JournalDetailPg `json:"journaldetail" gorm:"journals_detail;foreignKey:holdingcode,docno"`
+	Vats        *[]JournalVatPg    `json:"vats" gorm:"journalvatsdetails;foreignKey:holdingcode,docno"`
+	Taxes       *[]JournalTaxPg    `json:"taxes" gorm:"journaltaxesdetails;foreignKey:holdingcode,docno"`
+	AccountBook *[]JournalDetailPg `json:"journaldetail" gorm:"journalsdetail;foreignKey:holdingcode,docno"`
 }
 
 func (JournalPg) TableName() string {
@@ -242,7 +242,7 @@ type JournalVatPg struct {
 }
 
 func (JournalVatPg) TableName() string {
-	return "journalvats_details"
+	return "journalvatsdetails"
 }
 
 type JournalTaxPg struct {
@@ -264,7 +264,7 @@ type JournalTaxPg struct {
 }
 
 func (JournalTaxPg) TableName() string {
-	return "journaltaxes_details"
+	return "journaltaxesdetails"
 }
 
 type TaxDetails []TaxDetail
@@ -304,7 +304,7 @@ type JournalDetailPg struct {
 }
 
 func (JournalDetailPg) TableName() string {
-	return "journals_detail"
+	return "journalsdetail"
 }
 
 type JournalInfoResponse struct {

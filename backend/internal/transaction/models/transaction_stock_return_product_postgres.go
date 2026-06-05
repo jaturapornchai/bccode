@@ -17,11 +17,11 @@ type StockReturnProductTransactionDetailPG struct {
 }
 
 func (t *StockReturnProductTransactionPG) TableName() string {
-	return "stock_return_product_transaction"
+	return "stockreturnproducttransaction"
 }
 
 func (t *StockReturnProductTransactionDetailPG) TableName() string {
-	return "stock_return_product_transaction_detail"
+	return "stockreturnproducttransactiondetail"
 }
 
 func (j *StockReturnProductTransactionPG) BeforeUpdate(tx *gorm.DB) (err error) {

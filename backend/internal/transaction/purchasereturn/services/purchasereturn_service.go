@@ -504,5 +504,5 @@ func (svc PurchaseReturnService) saveMasterSync(holdingCode string) {
 }
 
 func (svc PurchaseReturnService) GetModuleName() string {
-	return "purchaseReturn"
+	return "purchasereturn"
 }

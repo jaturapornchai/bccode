@@ -2,7 +2,7 @@ package ragflow
 
 // Dataset operations — multi-tenant per shop.
 //
-// Each shop gets a deterministic dataset name: bcacct_shop_<holdingCode>
+// Each shop gets a deterministic dataset name: bcacctshop<holdingCode>
 // EnsureDataset is the main entry point — looks up by name, creates if missing,
 // caches the dataset_id in-memory for fast subsequent calls.
 
@@ -101,7 +101,7 @@ func DatasetNameFromShop(holdingCode string) string {
 	cleaned := strings.ToLower(strings.TrimSpace(holdingCode))
 	cleaned = strings.ReplaceAll(cleaned, " ", "_")
 	cleaned = strings.ReplaceAll(cleaned, "-", "_")
-	return "bcacct_shop_" + cleaned
+	return "bcacctshop" + cleaned
 }
 
 // EnsureDataset returns the dataset ID for a shop, creating one if it doesn't exist.

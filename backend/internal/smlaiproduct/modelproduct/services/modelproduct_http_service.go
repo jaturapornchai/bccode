@@ -392,7 +392,7 @@ func (svc ModelProductHttpService) saveMasterSync(holdingCode string) {
 }
 
 func (svc ModelProductHttpService) GetModuleName() string {
-	return "productType"
+	return "producttype"
 }
 
 func (svc ModelProductHttpService) existsOrderTypeRefInProduct(holdingCode string, GUIDs []string) (bool, error) {

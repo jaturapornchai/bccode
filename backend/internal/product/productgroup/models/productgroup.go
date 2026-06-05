@@ -6,7 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const productgroupCollectionName = "productGroups"
+const productgroupCollectionName = "productgroups"
 
 type ProductGroup struct {
 	models.PartitionIdentity `bson:"inline"`

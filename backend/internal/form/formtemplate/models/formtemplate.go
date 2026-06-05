@@ -6,7 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const formTemplateCollectionName = "formTemplates"
+const formTemplateCollectionName = "formtemplates"
 
 type FormTemplate struct {
 	models.PartitionIdentity `bson:"inline"`

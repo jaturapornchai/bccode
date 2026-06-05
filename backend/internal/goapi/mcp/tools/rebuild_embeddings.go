@@ -238,7 +238,7 @@ func ensureEmbeddingColumn(db *sql.DB, tableName string) {
 	db.QueryRow(`SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE tablename = $1 AND column_name = 'nameembedding')`, tableName).Scan(&colExists)
 	if !colExists {
 		db.Exec(fmt.Sprintf(`ALTER TABLE %s ADD COLUMN IF NOT EXISTS nameembedding vector(768)`, tableName))
-		db.Exec(fmt.Sprintf(`CREATE INDEX IF NOT EXISTS idx_%s_embedding_hnsw ON %s USING hnsw (nameembedding vectorcosineops) WITH (m = 16, ef_construction = 64)`, tableName, tableName))
+		db.Exec(fmt.Sprintf(`CREATE INDEX IF NOT EXISTS idx%sembeddinghnsw ON %s USING hnsw (nameembedding vectorcosineops) WITH (m = 16, ef_construction = 64)`, tableName, tableName))
 	}
 }
 

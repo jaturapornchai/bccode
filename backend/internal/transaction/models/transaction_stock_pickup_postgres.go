@@ -42,11 +42,11 @@ type StockPickUpTransactionDetailPG struct {
 }
 
 func (StockPickUpTransactionPG) TableName() string {
-	return "stock_pickup_transaction"
+	return "stockpickuptransaction"
 }
 
 func (StockPickUpTransactionDetailPG) TableName() string {
-	return "stock_pickup_transaction_detail"
+	return "stockpickuptransactiondetail"
 }
 
 func (j *StockPickUpTransactionPG) BeforeUpdate(tx *gorm.DB) (err error) {

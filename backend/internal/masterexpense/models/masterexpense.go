@@ -6,7 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const masterexpenseCollectionName = "masterExpenses"
+const masterexpenseCollectionName = "masterexpenses"
 
 type MasterExpense struct {
 	models.PartitionIdentity `bson:"inline"`

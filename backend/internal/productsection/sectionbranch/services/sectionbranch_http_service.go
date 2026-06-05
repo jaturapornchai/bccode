@@ -384,5 +384,5 @@ func (svc SectionBranchHttpService) saveMasterSync(holdingCode string) {
 }
 
 func (svc SectionBranchHttpService) GetModuleName() string {
-	return "productSectionBranch"
+	return "productsectionbranch"
 }

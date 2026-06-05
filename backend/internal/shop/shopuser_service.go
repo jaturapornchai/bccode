@@ -188,7 +188,7 @@ func (svc ShopUserService) ListUserInShop(holdingCode string, pageable micromode
 		}
 	}
 
-	shopUsers, pagination, err := svc.repo.FindByUserInShopPageWithProfileMatches(context.Background(), holdingCode, pageable, profileMatchedUsernames)
+	shopusers, pagination, err := svc.repo.FindByUserInShopPageWithProfileMatches(context.Background(), holdingCode, pageable, profileMatchedUsernames)
 
 	if err != nil {
 		return shopUserProfiles, pagination, err
@@ -196,7 +196,7 @@ func (svc ShopUserService) ListUserInShop(holdingCode string, pageable micromode
 
 	usernames := []string{}
 
-	for _, doc := range shopUsers {
+	for _, doc := range shopusers {
 		usernames = append(usernames, doc.Username)
 	}
 
@@ -216,7 +216,7 @@ func (svc ShopUserService) ListUserInShop(holdingCode string, pageable micromode
 		dictUserProfiles[doc.Username] = doc
 	}
 
-	for _, doc := range shopUsers {
+	for _, doc := range shopusers {
 		shopUserProfile := models.ShopUserProfile{}
 
 		shopUserProfile.HoldingCode = doc.HoldingCode

@@ -8,7 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const payCollectionName = "transactionPay"
+const payCollectionName = "transactionpay"
 
 type Pay struct {
 	models.PartitionIdentity `bson:"inline"`

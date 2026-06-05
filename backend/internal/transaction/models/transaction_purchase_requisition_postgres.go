@@ -30,11 +30,11 @@ type PurchaseRequisitionDetailTransactionPG struct {
 }
 
 func (PurchaseRequisitionTransactionPG) TableName() string {
-	return "purchase_requisition_transaction"
+	return "purchaserequisitiontransaction"
 }
 
 func (PurchaseRequisitionDetailTransactionPG) TableName() string {
-	return "purchase_requisition_transaction_detail"
+	return "purchaserequisitiontransactiondetail"
 }
 
 func (s *PurchaseRequisitionTransactionPG) BeforeUpdate(tx *gorm.DB) (err error) {

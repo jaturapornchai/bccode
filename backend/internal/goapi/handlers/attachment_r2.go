@@ -25,7 +25,7 @@ import (
 
 // AttachmentUploadHandler - อัปโหลดไฟล์แนบเอกสารไปยัง R2 และบันทึก metadata ใน MongoDB
 // POST /api/attachment/upload
-// Form data: file, holdingcode, screen_type, docno, guidfixed, description, uploaded_by, uploaded_name
+// Form data: file, holdingcode, screentype, docno, guidfixed, description, uploadedby, uploadedname
 func AttachmentUploadHandler(c echo.Context) error {
 	holdingCode, authStatus := storageAuthorizedHoldingCode(c, c.FormValue("holdingcode"))
 	if authStatus != http.StatusOK {
@@ -61,17 +61,17 @@ func AttachmentUploadHandler(c echo.Context) error {
 	}
 
 	// Get required fields from form
-	screenType := c.FormValue("screen_type")
+	screenType := c.FormValue("screentype")
 	docNo := c.FormValue("docno")
 	guidFixed := c.FormValue("guidfixed")
-	uploadedBy := c.FormValue("uploaded_by")
-	uploadedName := c.FormValue("uploaded_name")
+	uploadedBy := c.FormValue("uploadedby")
+	uploadedName := c.FormValue("uploadedname")
 
 	if holdingCode == "" || screenType == "" || docNo == "" || guidFixed == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  "error",
 			"code":    400,
-			"message": "holdingcode, screen_type, docno, and guidfixed are required",
+			"message": "holdingcode, screentype, docno, and guidfixed are required",
 		})
 	}
 
@@ -79,7 +79,7 @@ func AttachmentUploadHandler(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  "error",
 			"code":    400,
-			"message": "uploaded_by is required",
+			"message": "uploadedby is required",
 		})
 	}
 
@@ -238,7 +238,7 @@ func AttachmentUploadHandler(c echo.Context) error {
 
 // AttachmentListHandler - ดึงรายการไฟล์แนบตามเงื่อนไข
 // POST /api/attachment/list
-// Body: { holdingcode, screen_type, docno, guidfixed, limit, skip }
+// Body: { holdingcode, screentype, docno, guidfixed, limit, skip }
 func AttachmentListHandler(c echo.Context) error {
 	if atlasClient == nil {
 		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
@@ -273,7 +273,7 @@ func AttachmentListHandler(c echo.Context) error {
 	// Build filter
 	filter := bson.M{"holdingcode": holdingCode}
 	if req.ScreenType != "" {
-		filter["screen_type"] = req.ScreenType
+		filter["screentype"] = req.ScreenType
 	}
 	if req.DocNo != "" {
 		filter["docno"] = req.DocNo

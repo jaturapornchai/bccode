@@ -27,7 +27,7 @@ import (
 // }
 
 // func (c *ConfigDBTest) DB() string {
-// 	return "micro_test"
+// 	return "microtest"
 // }
 
 type Product struct {

@@ -12,5 +12,5 @@ type CostCenterPg struct {
 }
 
 func (CostCenterPg) TableName() string {
-	return "organization_cost_center"
+	return "organizationcostcenter"
 }

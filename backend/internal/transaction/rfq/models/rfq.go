@@ -7,7 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const rfqCollectionName = "transactionRequestForQuotation"
+const rfqCollectionName = "transactionrequestforquotation"
 
 // VendorItem — รายการสินค้าของ vendor แต่ละราย
 type VendorItem struct {

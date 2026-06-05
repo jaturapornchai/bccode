@@ -511,13 +511,13 @@ func categorizePaymentType(payCode string) string {
 	case strings.Contains(payCodeLower, "transfer") || payCodeLower == "02":
 		return "transfer"
 	case strings.Contains(payCodeLower, "credit") || payCodeLower == "03":
-		return "credit_card"
+		return "creditcard"
 	case strings.Contains(payCodeLower, "cheque") || strings.Contains(payCodeLower, "check") || payCodeLower == "04":
 		return "cheque"
 	case strings.Contains(payCodeLower, "coupon") || payCodeLower == "05":
 		return "coupon"
 	case strings.Contains(payCodeLower, "qr") || payCodeLower == "06":
-		return "qr_payment"
+		return "qrpayment"
 	case strings.Contains(payCodeLower, "deposit") || payCodeLower == "07":
 		return "deposit"
 	default:

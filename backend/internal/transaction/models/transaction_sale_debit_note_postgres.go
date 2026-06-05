@@ -21,11 +21,11 @@ type SaleDebitNoteTransactionDetailPG struct {
 }
 
 func (SaleDebitNoteTransactionPG) TableName() string {
-	return "saledebitnote_transaction"
+	return "saledebitnotetransaction"
 }
 
 func (SaleDebitNoteTransactionDetailPG) TableName() string {
-	return "saledebitnote_transaction_detail"
+	return "saledebitnotetransactiondetail"
 }
 
 func (m *SaleDebitNoteTransactionPG) BeforeUpdate(tx *gorm.DB) (err error) {

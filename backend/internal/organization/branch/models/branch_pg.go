@@ -21,5 +21,5 @@ type BranchPg struct {
 }
 
 func (BranchPg) TableName() string {
-	return "organization_branches"
+	return "organizationbranches"
 }

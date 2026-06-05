@@ -6,7 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const purchaseTypeCollectionName = "purchaseTypes"
+const purchaseTypeCollectionName = "purchasetypes"
 
 // PurchaseType - ประเภทการจัดซื้อ (รองรับหลายภาษา)
 type PurchaseType struct {

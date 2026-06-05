@@ -314,5 +314,5 @@ func (svc ReportQueryHttpService) ExecuteReportQuery(holdingCode string, reportC
 }
 
 func (svc ReportQueryHttpService) GetModuleName() string {
-	return "reportQuery"
+	return "reportquery"
 }

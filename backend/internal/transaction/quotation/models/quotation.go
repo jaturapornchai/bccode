@@ -7,7 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const saleorderCollectionName = "transactionQuotation"
+const saleorderCollectionName = "transactionquotation"
 
 type Quotation struct {
 	models.PartitionIdentity `bson:"inline"`

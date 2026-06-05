@@ -15,7 +15,7 @@ type ImageUploadProxyOptions = {
 
 type ImageUploadPayload = Record<string, unknown>;
 
-const forwardedTextFields = ["description", "tags", "uploaded_by"] as const;
+const forwardedTextFields = ["description", "tags", "uploadedby"] as const;
 
 export async function proxyImageUploadToGoApi(
   request: Request,

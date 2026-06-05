@@ -7,7 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const smstransactionCollectionName = "smsTransactions"
+const smstransactionCollectionName = "smstransactions"
 
 type SmsTransaction struct {
 	models.PartitionIdentity `bson:"inline"`

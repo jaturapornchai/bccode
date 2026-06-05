@@ -30,5 +30,5 @@ type ShopUserDoc struct {
 }
 
 func (ShopUserDoc) CollectionName() string {
-	return "shop_users"
+	return "shopusers"
 }

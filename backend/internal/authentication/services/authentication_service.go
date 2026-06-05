@@ -1072,13 +1072,13 @@ func (svc AuthenticationService) LoginWithLineToken(token string) (string, error
 func (svc AuthenticationService) LoginWithLineUserID(lineUserID string, displayName string, pictureUrl string, email string) (string, string, error) {
 
 	if lineUserID == "" {
-		return "", "", errors.New("line_user_id is required")
+		return "", "", errors.New("lineuserid is required")
 	}
 
 	// ค้นหา user ที่เชื่อมต่อ LINE นี้ไว้ (จาก users collection)
 	userFind, err := svc.authRepo.FindByLineUserID(context.Background(), lineUserID)
 	if err != nil {
-		// fallback: ค้นจาก shopUsers (สำหรับ backward compatibility กับข้อมูลเก่า)
+		// fallback: ค้นจาก shopusers (สำหรับ backward compatibility กับข้อมูลเก่า)
 		shopUser, shopErr := svc.shopUserRepo.FindByLineUserID(context.Background(), lineUserID)
 		if shopErr != nil || shopUser.Username == "" {
 			return "", "", errors.New("ไม่พบบัญชีที่เชื่อมต่อ LINE นี้ กรุณาเชื่อมต่อ LINE กับบัญชีก่อน")

@@ -8,7 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const optionpatternCollectionName = "optionPattern"
+const optionpatternCollectionName = "optionpattern"
 
 type OptionPattern struct {
 	models.PartitionIdentity `bson:"inline"`

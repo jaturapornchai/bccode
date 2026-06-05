@@ -20,23 +20,23 @@ type AttachmentMetadata struct {
 	Size         int64              `bson:"size" json:"size"`                                   // ขนาดไฟล์ (bytes)
 	R2Key        string             `bson:"r2key" json:"-"`                                     // key ใน R2 bucket (ไม่ส่งออก)
 	Description  string             `bson:"description,omitempty" json:"description,omitempty"` // คำอธิบาย
-	UploadedBy   string             `bson:"uploadedby" json:"uploadedby"`                       // user_code
+	UploadedBy   string             `bson:"uploadedby" json:"uploadedby"`                       // usercode
 	UploadedName string             `bson:"uploadedname" json:"uploadedname"`                   // user_name
 	CreatedAt    time.Time          `bson:"createdat" json:"createdat"`
 	UpdatedAt    time.Time          `bson:"updatedat" json:"updatedat"`
 }
 
 // AttachmentUploadRequest - request สำหรับ upload attachment
-// Form data: file, holdingcode, screen_type, docno, guidfixed, description, uploaded_by, uploaded_name
+// Form data: file, holdingcode, screentype, docno, guidfixed, description, uploadedby, uploadedname
 type AttachmentUploadRequest struct {
 	File         string `form:"file"` // multipart file
 	HoldingCode  string `form:"holdingcode"`
-	ScreenType   string `form:"screen_type"`
+	ScreenType   string `form:"screentype"`
 	DocNo        string `form:"docno"`
 	GuidFixed    string `form:"guidfixed"`
 	Description  string `form:"description"`
-	UploadedBy   string `form:"uploaded_by"`
-	UploadedName string `form:"uploaded_name"`
+	UploadedBy   string `form:"uploadedby"`
+	UploadedName string `form:"uploadedname"`
 }
 
 // AttachmentListRequest - request สำหรับ list attachments

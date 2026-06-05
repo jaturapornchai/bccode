@@ -50,7 +50,7 @@ type DocStruct struct {
 	// Soft Delete
 	IsDelete bool `json:"isdelete" db:"isdelete"`
 
-	// สถานะการอนุมัติ (จาก po_approvalstatus collection)
+	// Approval status from poapprovalstatus collection.
 	ApprovalStatus string `json:"approvalstatus" db:"approvalstatus"`
 }
 

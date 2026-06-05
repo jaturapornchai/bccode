@@ -4,7 +4,7 @@ import "testing"
 
 func TestNormalizeStorageName(t *testing.T) {
 	cases := map[string]string{
-		"shopUsers":                       "shopusers",
+		"shopusers":                       "shopusers",
 		"shopUserAccessLogs":              "shopuseraccesslogs",
 		"productBarcodeBOMs":              "productbarcodeboms",
 		"kbDocumentMetadata":              "kbdocumentmetadata",

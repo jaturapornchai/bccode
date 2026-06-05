@@ -26,7 +26,7 @@ import (
 // =====================================================
 
 // Collection สำหรับเก็บ approval tokens
-const ApprovalTokensCollection = "po_approval_tokens"
+const ApprovalTokensCollection = "poapprovaltokens"
 
 // ApprovalToken เก็บ token สำหรับอนุมัติผ่าน email/LINE
 type ApprovalToken struct {
@@ -668,7 +668,7 @@ type OpenedNotificationParams struct {
 }
 
 // SendLineNotifyCreatorOpened ส่ง LINE push message แจ้งผู้สร้างเอกสารว่ามีคนเปิดอ่าน PO แล้ว
-// ฟังก์ชันนี้จะค้นหา LINE User ID ของผู้สร้างจาก lineoa_linked_accounts
+// ฟังก์ชันนี้จะค้นหา LINE User ID ของผู้สร้างจาก lineoalinkedaccounts
 func SendLineNotifyCreatorOpened(params OpenedNotificationParams) error {
 	logger.Info("[LINE Push] SendLineNotifyCreatorOpened called - docNo: %s, creatorCode: %s, openerName: %s, totalAmount: %.2f", params.DocNo, params.CreatorCode, params.OpenerName, params.TotalAmount)
 
@@ -681,9 +681,9 @@ func SendLineNotifyCreatorOpened(params OpenedNotificationParams) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// ค้นหา LINE User ID ของผู้สร้างจาก lineoa_linked_accounts (ใน lineoa database)
+	// ค้นหา LINE User ID ของผู้สร้างจาก lineoalinkedaccounts (ใน lineoa database)
 	lineoaDB := atlasClient.Database("lineoa")
-	linkedAccountsCollection := lineoaDB.Collection("lineoa_linked_accounts")
+	linkedAccountsCollection := lineoaDB.Collection("lineoalinkedaccounts")
 
 	var creatorAccount struct {
 		LineUserID string `bson:"lineuserid"`
@@ -987,8 +987,8 @@ func SendRealApprovalNotificationHandler(c echo.Context) error {
 	settingsCollection := getCollection(POApprovalSettingsCollection)
 	var setting POApprovalSetting
 	err = settingsCollection.FindOne(ctx, bson.M{
-		"holdingcode":        req.HoldingCode,
-		"purchase_type_code": poStatus.PurchaseTypeCode,
+		"holdingcode":      req.HoldingCode,
+		"purchasetypecode": poStatus.PurchaseTypeCode,
 	}).Decode(&setting)
 
 	if err == mongo.ErrNoDocuments {
@@ -1036,10 +1036,10 @@ func SendRealApprovalNotificationHandler(c echo.Context) error {
 	for _, approver := range approvers {
 		// ตรวจสอบว่าเคยส่งสำเร็จแล้วหรือยัง
 		existingFilter := bson.M{
-			"holdingcode":   req.HoldingCode,
-			"docno":         req.DocNo,
-			"approver_code": approver.UserCode,
-			"status":        "sent",
+			"holdingcode":  req.HoldingCode,
+			"docno":        req.DocNo,
+			"approvercode": approver.UserCode,
+			"status":       "sent",
 		}
 		existingCount, _ := notificationCollection.CountDocuments(ctx, existingFilter)
 		if existingCount > 0 {
@@ -1430,7 +1430,7 @@ func GetApprovalTokenInfoHandler(c echo.Context) error {
 			"docno":              tokenDoc.DocNo,
 			"totalamount":        poStatus.TotalAmount,
 			"purchase_type_name": poStatus.PurchaseTypeName,
-			"created_by_name":    poStatus.CreatedByName,
+			"createdbyname":      poStatus.CreatedByName,
 			"status":             poStatus.Status,
 			"required_level":     poStatus.RequiredLevel,
 			"approver_name":      tokenDoc.ApproverName,
@@ -1579,8 +1579,8 @@ func GetLineOAConfigStatusHandler(c echo.Context) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// ค้นหา config จาก lineoa_configs collection
-	collection := atlasDB.Collection("lineoa_configs")
+	// ค้นหา config จาก lineoaconfigs collection
+	collection := atlasDB.Collection("lineoaconfigs")
 
 	var config struct {
 		HoldingCode   string `bson:"holdingcode"`
@@ -1602,7 +1602,7 @@ func GetLineOAConfigStatusHandler(c echo.Context) error {
 			"found":       false,
 			"message":     "ไม่พบ LINE OA config สำหรับ shop นี้",
 			"holdingcode": holdingCode,
-			"diagnosis":   "ต้องสร้าง lineoa_configs document ใน MongoDB",
+			"diagnosis":   "ต้องสร้าง lineoaconfigs document ใน MongoDB",
 		})
 	}
 	if err != nil {
@@ -1660,7 +1660,7 @@ func ListAllLineOAConfigsHandler(c echo.Context) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	collection := atlasDB.Collection("lineoa_configs")
+	collection := atlasDB.Collection("lineoaconfigs")
 
 	cursor, err := collection.Find(ctx, bson.M{})
 	if err != nil {
@@ -1732,7 +1732,7 @@ func TestLinePushHandler(c echo.Context) error {
 	if req.LineUserID == "" {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
-			"message": "line_user_id is required",
+			"message": "lineuserid is required",
 		})
 	}
 
@@ -1939,7 +1939,7 @@ func GetPODetailsForLIFFHandler(c echo.Context) error {
 		})
 	}
 
-	// 3. ดึงข้อมูล PO จาก po_approval_status
+	// 3. ดึงข้อมูล PO จาก poapprovalstatus
 	statusCollection := getTokenCollection(POApprovalStatusCollection)
 	var poStatus POApprovalStatus
 	err = statusCollection.FindOne(ctx, bson.M{
@@ -1964,7 +1964,7 @@ func GetPODetailsForLIFFHandler(c echo.Context) error {
 	transactionDB := atlasClient.Database("transactiondb")
 
 	// ดึง header เพื่อเอา custcode, custname, docdatetime
-	headerCollection := transactionDB.Collection("transaction_header")
+	headerCollection := transactionDB.Collection("transactionheader")
 	var transDoc bson.M
 	err = headerCollection.FindOne(ctx, bson.M{
 		"holdingcode": tokenDoc.HoldingCode,
@@ -1993,7 +1993,7 @@ func GetPODetailsForLIFFHandler(c echo.Context) error {
 
 	// ดึงรายการสินค้า
 	items := []PODetailItem{}
-	detailCollection := transactionDB.Collection("transaction_detail")
+	detailCollection := transactionDB.Collection("transactiondetail")
 
 	cursor, err := detailCollection.Find(ctx, bson.M{
 		"holdingcode": tokenDoc.HoldingCode,
@@ -2378,8 +2378,8 @@ func ResendApprovalNotificationHandler(c echo.Context) error {
 	settingsCollection := getCollection(POApprovalSettingsCollection)
 	var setting POApprovalSetting
 	err = settingsCollection.FindOne(ctx, bson.M{
-		"holdingcode":        req.HoldingCode,
-		"purchase_type_code": poStatus.PurchaseTypeCode,
+		"holdingcode":      req.HoldingCode,
+		"purchasetypecode": poStatus.PurchaseTypeCode,
 	}).Decode(&setting)
 
 	if err == mongo.ErrNoDocuments {
@@ -2456,7 +2456,7 @@ func ResendApprovalNotificationHandler(c echo.Context) error {
 					"holdingcode":       req.HoldingCode,
 					"docno":             req.DocNo,
 					"guidfixed":         req.GuidFixed,
-					"approver_code":     approver.UserCode,
+					"approvercode":      approver.UserCode,
 					"approver_name":     approver.UserName,
 					"notification_type": "email_reminder",
 					"recipient_email":   approver.Email,
@@ -2509,7 +2509,7 @@ func ResendApprovalNotificationHandler(c echo.Context) error {
 					"holdingcode":       req.HoldingCode,
 					"docno":             req.DocNo,
 					"guidfixed":         req.GuidFixed,
-					"approver_code":     approver.UserCode,
+					"approvercode":      approver.UserCode,
 					"approver_name":     approver.UserName,
 					"notification_type": "line_reminder",
 					"recipient_line_id": approver.LineUserID,

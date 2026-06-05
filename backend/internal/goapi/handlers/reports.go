@@ -22,7 +22,7 @@ import (
 
 // Report Get Handler - handles report generation and file serving
 func ReportGetHandler(c echo.Context) error {
-	commandId := c.QueryParam("command_id")
+	commandId := c.QueryParam("commandid")
 	holdingCode := c.QueryParam("holdingcode")
 	guid := c.QueryParam("guid")
 
@@ -36,7 +36,7 @@ func ReportGetHandler(c echo.Context) error {
 		})
 	}
 
-	if commandId == "data_bin" {
+	if commandId == "databin" {
 		filePath := c.QueryParam("path")
 
 		var fileContent []byte
@@ -137,7 +137,7 @@ func ReportGetHandler(c echo.Context) error {
 		return nil
 	}
 
-	if commandId == "data_json" {
+	if commandId == "datajson" {
 		// offset string to int
 		offset, err := strconv.Atoi(c.QueryParam("offset"))
 		if err != nil {
@@ -227,7 +227,7 @@ func ReportGetHandler(c echo.Context) error {
 
 	// เพิ่มคำสั่ง return สำหรับกรณีที่ไม่เข้าเงื่อนไขใดๆ
 	return c.JSON(http.StatusOK, map[string]any{
-		"message": "Invalid command_id",
+		"message": "Invalid commandid",
 		"status":  "error",
 		"code":    400,
 	})

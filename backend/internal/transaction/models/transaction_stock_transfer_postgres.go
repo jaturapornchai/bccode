@@ -20,11 +20,11 @@ type StockTransferTransactionDetailPG struct {
 }
 
 func (StockTransferTransactionPG) TableName() string {
-	return "stock_transfer_transaction"
+	return "stocktransfertransaction"
 }
 
 func (StockTransferTransactionDetailPG) TableName() string {
-	return "stock_transfer_transaction_detail"
+	return "stocktransfertransactiondetail"
 }
 
 func (j *StockTransferTransactionPG) BeforeUpdate(tx *gorm.DB) (err error) {

@@ -284,7 +284,7 @@ func uploadPDFToR2AndSaveHistory(ctx context.Context, filePath string, payload g
 		TotalAmount:  totalAmount,
 	}
 
-	historyCollection := atlasDB.Collection("pdfHistory")
+	historyCollection := atlasDB.Collection("pdfhistory")
 	_, err = historyCollection.InsertOne(ctx, historyDoc)
 	if err != nil {
 		logger.Error("Failed to save PDF history: %v", err)
@@ -549,7 +549,7 @@ func PdfHistoryGetHandler(c echo.Context) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	collection := atlasDB.Collection("pdfHistory")
+	collection := atlasDB.Collection("pdfhistory")
 
 	cursor, err := collection.Find(ctx, filter, opts)
 	if err != nil {
@@ -643,7 +643,7 @@ func PdfHistoryListHandler(c echo.Context) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	collection := atlasDB.Collection("pdfHistory")
+	collection := atlasDB.Collection("pdfhistory")
 
 	// Count total
 	total, err := collection.CountDocuments(ctx, filter)
@@ -760,7 +760,7 @@ func PdfReprintHandler(c echo.Context) error {
 	defer cancel()
 
 	// Find history record
-	collection := atlasDB.Collection("pdfHistory")
+	collection := atlasDB.Collection("pdfhistory")
 	var historyDoc models.PdfHistory
 	err = collection.FindOne(ctx, bson.M{"_id": oid}).Decode(&historyDoc)
 	if err != nil {

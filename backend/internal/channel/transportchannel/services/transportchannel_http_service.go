@@ -366,5 +366,5 @@ func (svc TransportChannelHttpService) saveMasterSync(holdingCode string) {
 }
 
 func (svc TransportChannelHttpService) GetModuleName() string {
-	return "transportChannel"
+	return "transportchannel"
 }

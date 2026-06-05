@@ -46,7 +46,7 @@ type StockTransaction struct {
 }
 
 func (StockTransaction) TableName() string {
-	return "stock_transaction"
+	return "stocktransaction"
 }
 
 type StockTransactionDetail struct {
@@ -86,7 +86,7 @@ type StockTransactionDetail struct {
 }
 
 func (StockTransactionDetail) TableName() string {
-	return "stock_transaction_detail"
+	return "stocktransactiondetail"
 }
 
 func (j *StockTransaction) BeforeUpdate(tx *gorm.DB) (err error) {

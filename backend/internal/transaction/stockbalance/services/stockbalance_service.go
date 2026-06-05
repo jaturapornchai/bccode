@@ -500,7 +500,7 @@ func (svc StockBalanceHttpService) saveMasterSync(holdingCode string) {
 }
 
 func (svc StockBalanceHttpService) GetModuleName() string {
-	return "stockBalance"
+	return "stockbalance"
 }
 
 func (svc StockBalanceHttpService) ProduceCreateStockBalance(holdingCode string, doc models.StockBalanceMessage) error {

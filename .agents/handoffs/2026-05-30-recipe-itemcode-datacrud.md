@@ -19,7 +19,7 @@
 ## 2. Backend / model changes required (for Codex)
 Codex needs to verify that the Go API backend handles `itemcode` cleanly for all BOM operations:
 - Check MongoDB schema mapping for `productBarcodes`. Ensure `itemcode` is fully mapped and saved correctly on `POST /api/product-barcode` and `PUT /api/product-barcode/:guid`.
-- Verify the Go API endpoint `/api/system-settings/product_bom` that triggers BOM rebuilds and calculates rollup costs, ensuring it doesn't break if `barcode` is identical to `itemcode` (for new products created without barcodes).
+- Verify the Go API endpoint `/api/system-settings/productbom` that triggers BOM rebuilds and calculates rollup costs, ensuring it doesn't break if `barcode` is identical to `itemcode` (for new products created without barcodes).
 - Check standard database model sync scripts or projections (PostgreSQL / ClickHouse) if they reference `itemcode` or `barcode` for BOM listings.
 
 Source locations to check:
@@ -56,4 +56,4 @@ Payload for `POST /api/product-barcode`:
 
 ## 6. Notes for Claude (review + plan)
 - The layout split values are saved and restored using local storage. Double check if we should add responsive fallback values for smaller desktop viewports.
-- The Go backend triggers BOM rollup updates automatically using `/api/system-settings/product_bom?barcode=...`. Double-check the transaction isolation and database consistency.
+- The Go backend triggers BOM rollup updates automatically using `/api/system-settings/productbom?barcode=...`. Double-check the transaction isolation and database consistency.

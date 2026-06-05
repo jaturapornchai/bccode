@@ -476,7 +476,7 @@ func (h AuthenticationHttp) LoginWithLine(ctx microservice.IContext) error {
 }
 
 // Login with LINE User ID (QR code / LIFF flow)
-// สำหรับ QR code login — Flutter ส่ง line_user_id ตรงจาก LIFF server
+// QR code login: Flutter sends lineuserid from LIFF server.
 func (h AuthenticationHttp) LoginWithLineUserID(ctx microservice.IContext) error {
 
 	input := ctx.ReadInput()

@@ -111,28 +111,28 @@ func (svc ShopUserRepository) SaveFullProfile(ctx context.Context, holdingCode s
 		userUID = svc.lookupUserUID(ctx, req.Username)
 	}
 	updateData := bson.M{
-		"useruid":           userUID,
-		"username":          req.Username,
-		"role":              req.Role,
-		"isaccessdisabled":  req.IsAccessDisabled,
-		"accessdisabledat":  req.AccessDisabledAt,
-		"accessdisabledby":  req.AccessDisabledBy,
-		"accessenabledat":   req.AccessEnabledAt,
-		"accessenabledby":   req.AccessEnabledBy,
-		"position":          req.Position,
-		"department":        req.Department,
-		"line_user_id":      req.LineUserID,
-		"line_display_name": req.LineDisplayName,
-		"line_picture_url":  req.LinePictureURL,
-		"accessscopes":      req.AccessScopes,
+		"useruid":          userUID,
+		"username":         req.Username,
+		"role":             req.Role,
+		"isaccessdisabled": req.IsAccessDisabled,
+		"accessdisabledat": req.AccessDisabledAt,
+		"accessdisabledby": req.AccessDisabledBy,
+		"accessenabledat":  req.AccessEnabledAt,
+		"accessenabledby":  req.AccessEnabledBy,
+		"position":         req.Position,
+		"department":       req.Department,
+		"lineuserid":       req.LineUserID,
+		"linedisplayname":  req.LineDisplayName,
+		"linepictureurl":   req.LinePictureURL,
+		"accessscopes":     req.AccessScopes,
 	}
 
 	// เพิ่มข้อมูลการอนุมัติแยกตามประเภทเอกสาร
 	if req.POApproval != nil {
-		updateData["po_approval"] = req.POApproval
+		updateData["poapproval"] = req.POApproval
 	}
 	if req.QuotationApproval != nil {
-		updateData["quotation_approval"] = req.QuotationApproval
+		updateData["quotationapproval"] = req.QuotationApproval
 	}
 
 	filter := bson.M{"holdingcode": holdingCode, "username": req.Username}
@@ -334,7 +334,7 @@ func (svc ShopUserRepository) FindShopCreatedBy(ctx context.Context, holdingCode
 func (svc ShopUserRepository) FindByHoldingCodeAndLineUserID(ctx context.Context, holdingCode string, lineUserID string) (models.ShopUser, error) {
 	shopUser := &models.ShopUser{}
 
-	err := svc.pst.FindOne(ctx, &models.ShopUser{}, bson.M{"holdingcode": holdingCode, "line_user_id": lineUserID}, shopUser)
+	err := svc.pst.FindOne(ctx, &models.ShopUser{}, bson.M{"holdingcode": holdingCode, "lineuserid": lineUserID}, shopUser)
 	if err != nil {
 		return models.ShopUser{}, err
 	}
@@ -347,7 +347,7 @@ func (svc ShopUserRepository) FindByHoldingCodeAndLineUserID(ctx context.Context
 func (svc ShopUserRepository) FindByLineUserID(ctx context.Context, lineUserID string) (models.ShopUser, error) {
 	shopUser := &models.ShopUser{}
 
-	err := svc.pst.FindOne(ctx, &models.ShopUser{}, bson.M{"line_user_id": lineUserID}, shopUser)
+	err := svc.pst.FindOne(ctx, &models.ShopUser{}, bson.M{"lineuserid": lineUserID}, shopUser)
 	if err != nil {
 		return models.ShopUser{}, err
 	}
@@ -367,27 +367,27 @@ func (svc ShopUserRepository) FindRole(ctx context.Context, holdingCode string, 
 }
 
 func (svc ShopUserRepository) FindByHoldingCode(ctx context.Context, holdingCode string) (*[]models.ShopUser, error) {
-	shopUsers := &[]models.ShopUser{}
+	shopusers := &[]models.ShopUser{}
 
-	err := svc.pst.Find(ctx, &models.ShopUser{}, bson.M{"holdingcode": holdingCode}, shopUsers)
+	err := svc.pst.Find(ctx, &models.ShopUser{}, bson.M{"holdingcode": holdingCode}, shopusers)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return shopUsers, nil
+	return shopusers, nil
 }
 
 func (svc ShopUserRepository) FindByUsername(ctx context.Context, username string) (*[]models.ShopUser, error) {
-	shopUsers := &[]models.ShopUser{}
+	shopusers := &[]models.ShopUser{}
 
-	err := svc.pst.Find(ctx, &models.ShopUser{}, bson.M{"username": username}, shopUsers)
+	err := svc.pst.Find(ctx, &models.ShopUser{}, bson.M{"username": username}, shopusers)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return shopUsers, nil
+	return shopusers, nil
 }
 
 func (repo ShopUserRepository) FindByUsernamePage(ctx context.Context, username string, pageable micromodels.Pageable) ([]models.ShopUserInfo, mongopagination.PaginationData, error) {
@@ -525,7 +525,7 @@ func (repo ShopUserRepository) FindByUserInShopPageWithProfileMatches(ctx contex
 		"username",
 		"position",
 		"department",
-		"line_display_name",
+		"linedisplayname",
 	}
 
 	searchFilterList := search.CreateTextFilter(searchInFields, pageable.Query)
@@ -562,8 +562,8 @@ func (repo ShopUserRepository) FindUsernamesByProfileQuery(ctx context.Context, 
 		"uid",
 		"name",
 		"email",
-		"line_user_id",
-		"line_display_name",
+		"lineuserid",
+		"linedisplayname",
 	}, query)
 	if len(searchFilterList) > 0 {
 		filters["$or"] = searchFilterList

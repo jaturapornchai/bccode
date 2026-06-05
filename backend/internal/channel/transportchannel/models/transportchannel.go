@@ -6,7 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const transportchannelCollectionName = "transportChannel"
+const transportchannelCollectionName = "transportchannel"
 
 type TransportChannel struct {
 	models.PartitionIdentity `bson:"inline"`

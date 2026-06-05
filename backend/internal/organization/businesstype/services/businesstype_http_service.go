@@ -428,5 +428,5 @@ func (svc BusinessTypeHttpService) saveMasterSync(holdingCode string) {
 }
 
 func (svc BusinessTypeHttpService) GetModuleName() string {
-	return "businessType"
+	return "businesstype"
 }

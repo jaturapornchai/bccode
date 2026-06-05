@@ -6,7 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const mediaCollectionName = "posMedia"
+const mediaCollectionName = "posmedia"
 
 type Media struct {
 	models.PartitionIdentity `bson:"inline"`

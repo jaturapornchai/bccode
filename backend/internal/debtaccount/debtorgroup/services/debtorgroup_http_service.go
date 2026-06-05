@@ -352,5 +352,5 @@ func (svc DebtorGroupHttpService) saveMasterSync(holdingCode string) {
 }
 
 func (svc DebtorGroupHttpService) GetModuleName() string {
-	return "debtorGroup"
+	return "debtorgroup"
 }

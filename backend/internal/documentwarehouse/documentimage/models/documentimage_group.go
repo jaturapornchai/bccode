@@ -7,7 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const documentImageGroupCollectionName = "documentImageGroups"
+const documentImageGroupCollectionName = "documentimagegroups"
 
 const (
 	IMAGE_PENDING = iota

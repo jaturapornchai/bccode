@@ -8,13 +8,13 @@ DROP INDEX IF EXISTS idxbranchcode;
 
 DO $$
 BEGIN
-    IF to_regclass('public.organization_branches') IS NOT NULL THEN
+    IF to_regclass('public.organizationbranches') IS NOT NULL THEN
         CREATE UNIQUE INDEX IF NOT EXISTS idxbranchshopcompanycode
-            ON organization_branches(holdingcode, companyguid, code)
+            ON organizationbranches(holdingcode, companyguid, code)
             WHERE deletedat IS NULL;
 
         CREATE INDEX IF NOT EXISTS idxbranchshopcompany
-            ON organization_branches(holdingcode, companyguid)
+            ON organizationbranches(holdingcode, companyguid)
             WHERE deletedat IS NULL;
     END IF;
 END $$;
@@ -26,5 +26,5 @@ COMMIT;
 -- DROP INDEX IF EXISTS idxbranchshopcompany;
 -- DROP INDEX IF EXISTS idxbranchshopcompanycode;
 -- CREATE UNIQUE INDEX IF NOT EXISTS idxbranchcode
---     ON organization_branches(code);
+--     ON organizationbranches(code);
 -- COMMIT;

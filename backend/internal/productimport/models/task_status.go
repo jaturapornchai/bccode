@@ -14,7 +14,7 @@ type TaskStatusModel struct {
 }
 
 func (TaskStatusModel) TableName() string {
-	return "task_status"
+	return "taskstatus"
 }
 
 const (

@@ -33,7 +33,7 @@ type CreditorTransactionPG struct {
 }
 
 func (CreditorTransactionPG) TableName() string {
-	return "creditor_transaction"
+	return "creditortransaction"
 }
 
 func (m *CreditorTransactionPG) CompareTo(other *CreditorTransactionPG) bool {

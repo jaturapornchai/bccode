@@ -503,5 +503,5 @@ func (svc StockPickupProductService) saveMasterSync(holdingCode string) {
 }
 
 func (svc StockPickupProductService) GetModuleName() string {
-	return "stockPickupProduct"
+	return "stockpickupproduct"
 }

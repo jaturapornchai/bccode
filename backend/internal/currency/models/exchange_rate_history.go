@@ -6,7 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const exchangeRateHistoryCollectionName = "exchangeRateHistory"
+const exchangeRateHistoryCollectionName = "exchangeratehistory"
 
 // ExchangeRateHistory - ประวัติอัตราแลกเปลี่ยน (แยก document ต่าง date)
 type ExchangeRateHistory struct {

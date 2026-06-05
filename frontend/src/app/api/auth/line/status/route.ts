@@ -62,18 +62,18 @@ export async function POST(request: Request) {
     }
 
     const data = getRecord(payload, "data") ?? {};
-    const lineUserId = getString(data, "userId") ?? getString(data, "line_user_id") ?? getString(data, "lineUserId");
+    const lineUserId = getString(data, "userId") ?? getString(data, "lineuserid") ?? getString(data, "lineUserId");
     if (!lineUserId) {
       return NextResponse.json({ success: false, status: "failed", message: "LINE login ไม่มี user id" }, { status: 502 });
     }
 
-    const displayName = getString(data, "displayName") ?? getString(data, "display_name") ?? "";
-    const pictureUrl = getString(data, "pictureUrl") ?? getString(data, "picture_url") ?? "";
+    const displayName = getString(data, "displayName") ?? getString(data, "displayname") ?? "";
+    const pictureUrl = getString(data, "pictureUrl") ?? getString(data, "pictureurl") ?? "";
     const email = getString(data, "email") ?? "";
     const login = await postMainApiAuth(mainApiUrl, "/linelogin", {
-      line_user_id: lineUserId,
-      display_name: displayName,
-      picture_url: pictureUrl,
+      lineuserid: lineUserId,
+      displayname: displayName,
+      pictureurl: pictureUrl,
       email,
     });
 

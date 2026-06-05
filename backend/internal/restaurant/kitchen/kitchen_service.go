@@ -321,7 +321,7 @@ func (svc KitchenService) saveMasterSync(holdingCode string) {
 }
 
 func (svc KitchenService) GetModuleName() string {
-	return "restaurant-kitchen"
+	return "restaurantkitchen"
 }
 
 func (svc KitchenService) GetProductBarcodeKitchen(holdingCode string) ([]models.KitchenProductBarcode, error) {

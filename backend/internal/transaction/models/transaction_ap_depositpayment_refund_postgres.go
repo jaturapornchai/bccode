@@ -23,11 +23,11 @@ type APDepositPaymentRefundTransactionDetailPG struct {
 }
 
 func (APDepositPaymentRefundTransactionPG) TableName() string {
-	return "ap_depositpayment_refund_transaction"
+	return "apdepositpaymentrefundtransaction"
 }
 
 func (APDepositPaymentRefundTransactionDetailPG) TableName() string {
-	return "ap_depositpayment_refund_transaction_detail"
+	return "apdepositpaymentrefundtransactiondetail"
 }
 
 func (m *APDepositPaymentRefundTransactionPG) BeforeUpdate(tx *gorm.DB) (err error) {

@@ -2,7 +2,7 @@ package models
 
 import trans_models "smlcloudplatform/internal/transaction/models"
 
-const stockbalanceDetailCollectionName = "transactionStockBalanceDetails"
+const stockbalanceDetailCollectionName = "transactionstockbalancedetails"
 
 type StockBalanceDetail struct {
 	DocNo string `json:"docno" bson:"docno" validate:"required"`

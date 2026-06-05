@@ -96,7 +96,7 @@ func main() {
 
 	collectionName := strings.TrimSpace(firstEnv("BRANCH_AUDIT_COLLECTION"))
 	if collectionName == "" {
-		collectionName = "organizationBranches"
+		collectionName = "organizationbranches"
 	}
 	summary, err := auditCollection(ctx, client, dbName, collectionName)
 	if err != nil {

@@ -6,7 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const smspaymentsettingsCollectionName = "smsPaymentSettings"
+const smspaymentsettingsCollectionName = "smspaymentsettings"
 
 type SmsPaymentSettings struct {
 	StorefrontGUID   string `json:"storefrontguid" bson:"storefrontguid" validate:"required,max=233"`

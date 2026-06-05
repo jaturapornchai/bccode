@@ -6,7 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const collectionName = "notifierDevices"
+const collectionName = "notifierdevices"
 
 type NotifierDevice struct {
 	models.PartitionIdentity `bson:"inline"`

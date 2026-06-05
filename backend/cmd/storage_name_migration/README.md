@@ -9,9 +9,9 @@ Rename existing MongoDB collections, PostgreSQL tables, and ClickHouse tables to
 Example:
 
 ```text
-shopUserAccessLogs -> shop_user_access_logs
-productbarcode -> product_barcodes
-docdetail -> doc_detail
+shopUserAccessLogs -> shopuseraccesslogs
+productbarcode -> productbarcodes
+docdetail -> docdetail
 ```
 
 ## Workflow
@@ -63,9 +63,9 @@ go run ./cmd/storage_name_migration --target all --apply ...
 Dry-run output:
 
 ```text
-[mongo] dry-run shopUserAccessLogs -> shop_user_access_logs
-[postgres] dry-run productbarcode -> product_barcodes
-[clickhouse] conflict docdetail -> doc_detail (target table already exists)
+[mongo] dry-run shopUserAccessLogs -> shopuseraccesslogs
+[postgres] dry-run productbarcode -> productbarcodes
+[clickhouse] conflict docdetail -> docdetail (target table already exists)
 ```
 
 ## Limitation

@@ -444,5 +444,5 @@ func (svc StockReceiveProductHttpService) saveMasterSync(holdingCode string) {
 }
 
 func (svc StockReceiveProductHttpService) GetModuleName() string {
-	return "stockReceiveProduct"
+	return "stockreceiveproduct"
 }

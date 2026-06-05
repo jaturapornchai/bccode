@@ -142,7 +142,7 @@ type ShopUser struct {
 }
 
 func (*ShopUser) CollectionName() string {
-	return "shop_users"
+	return "shopusers"
 }
 
 type ShopUserInfo struct {
@@ -157,7 +157,7 @@ type ShopUserInfo struct {
 }
 
 func (*ShopUserInfo) CollectionName() string {
-	return "shop_users"
+	return "shopusers"
 }
 
 type UserRoleRequest struct {
@@ -191,7 +191,7 @@ type ShopUserAccessLog struct {
 }
 
 func (*ShopUserAccessLog) CollectionName() string {
-	return "shop_user_access_logs"
+	return "shopuseraccesslogs"
 }
 
 type ShopUserProfile struct {

@@ -359,7 +359,7 @@ func getBearerToken(authorization string) (string, error) {
 }
 
 func goAPIRequestHoldingCode(c echo.Context) (string, error) {
-	for _, key := range []string{"holdingcode", "holdingcode", "tenant_id"} {
+	for _, key := range []string{"holdingcode", "holdingcode", "tenantid"} {
 		if value := strings.TrimSpace(c.QueryParam(key)); value != "" {
 			return value, nil
 		}
@@ -390,7 +390,7 @@ func goAPIRequestHoldingCode(c echo.Context) (string, error) {
 }
 
 func holdingCodeFromPayload(payload map[string]interface{}) (string, error) {
-	for _, key := range []string{"holdingcode", "holdingcode", "tenant_id"} {
+	for _, key := range []string{"holdingcode", "holdingcode", "tenantid"} {
 		if value := payloadString(payload[key]); value != "" {
 			return value, nil
 		}
@@ -565,7 +565,7 @@ func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string) {
 	authGroup.POST("/api/approval/liff-approve", approval.LiffApproveHandler)
 
 	// PR Approval System (ใบขอซื้อ) — ใช้ approval engine เดียวกับ PO
-	// Frontend ส่ง purchase_type_code = "PR" เพื่อแยกจาก PO
+	// Frontend ส่ง purchasetypecode = "PR" เพื่อแยกจาก PO
 	authGroup.POST("/api/approval/pr-settings", approval.GetPOApprovalSettingsHandler)
 	authGroup.POST("/api/approval/pr-setting", approval.GetPOApprovalSettingHandler)
 	authGroup.POST("/api/approval/pr-setting/save", approval.SavePOApprovalSettingHandler)
@@ -580,7 +580,7 @@ func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string) {
 	authGroup.POST("/api/approval/pr-status/rejected", approval.GetRejectedPOListHandler)
 
 	// RFQ Approval System (สืบราคา) — ใช้ approval engine เดียวกับ PO
-	// Frontend ส่ง purchase_type_code = "RFQ" เพื่อแยกจาก PO
+	// Frontend ส่ง purchasetypecode = "RFQ" เพื่อแยกจาก PO
 	authGroup.POST("/api/approval/rfq-settings", approval.GetPOApprovalSettingsHandler)
 	authGroup.POST("/api/approval/rfq-setting", approval.GetPOApprovalSettingHandler)
 	authGroup.POST("/api/approval/rfq-setting/save", approval.SavePOApprovalSettingHandler)
