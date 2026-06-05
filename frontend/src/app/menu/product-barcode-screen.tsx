@@ -5,7 +5,6 @@ import {
   Barcode,
   CheckSquare,
   Copy,
-  Download,
   Filter,
   GitFork,
   History,
@@ -737,71 +736,6 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
     }
   }
 
-  function exportCsv() {
-    if (items.length === 0) return;
-    const rows = [
-      [
-        text.barcode,
-        text.productName,
-        text.unit,
-        text.itemCode,
-        text.groupCode,
-        text.brandCode,
-        text.categoryCode,
-        text.classCode,
-        text.designCode,
-        text.gradeCode,
-        text.modelCode,
-        text.patternCode,
-        text.subGroup1,
-        text.subGroup2,
-        text.shelf,
-        text.productType,
-        text.foodType,
-        text.balance,
-        text.retailPrice,
-        text.standValue,
-        text.divideValue,
-        text.itemType,
-        text.isUseSubBarcodes,
-      ],
-      ...items.map((item) => [
-        item.barcode,
-        item.name,
-        item.unitName,
-        item.itemCode,
-        item.groupCode,
-        item.brandCode,
-        item.categoryCode,
-        item.classCode,
-        item.designCode,
-        item.gradeCode,
-        item.modelCode,
-        item.patternCode,
-        item.groupSubOneCode,
-        item.groupSubTwoCode,
-        formatCodeName(item.shelfCode, item.shelfName),
-        String(item.productType || ""),
-        String(item.foodType || ""),
-        item.balanceFormatted || String(item.balanceQty),
-        formatMoney(item.price),
-        formatNumber(item.standValue),
-        formatNumber(item.divideValue),
-        String(item.itemType || ""),
-        formatBoolean(item.isUseSubBarcodes, text),
-      ]),
-    ];
-    const csv = rows.map((row) => row.map(csvCell).join(",")).join("\n");
-    const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "product-barcodes.csv";
-    link.click();
-    URL.revokeObjectURL(url);
-    setNotice({ type: "success", text: text.exportSuccess });
-  }
-
   const content = (
     <div
       className={cn(
@@ -825,10 +759,6 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
             <Button variant="outline" size="sm" onClick={() => void loadBarcodes()} disabled={loading}>
               <RefreshCcw size={16} />
               {text.refresh}
-            </Button>
-            <Button variant="outline" size="sm" onClick={exportCsv} disabled={items.length === 0}>
-              <Download size={16} />
-              {text.export}
             </Button>
             <Button
               variant={selectMode ? "secondary" : "outline"}
@@ -942,10 +872,6 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
               </Button>
               {embedded ? (
                 <>
-                  <Button variant="outline" size="sm" type="button" onClick={exportCsv} disabled={items.length === 0}>
-                    <Download size={16} />
-                    {text.export}
-                  </Button>
                   <Button
                     variant={selectMode ? "secondary" : "outline"}
                     size="sm"
@@ -1738,10 +1664,6 @@ function formatBoolean(value: boolean, text: BarcodeText): string {
 function formatCodeName(code: string, name: string): string {
   if (code && name) return `${code} - ${name}`;
   return code || name;
-}
-
-function csvCell(value: string): string {
-  return `"${String(value ?? "").replace(/"/g, '""')}"`;
 }
 
 function resolveImageUrl(imageUri: string, backendUrl: string | undefined): string {
