@@ -93,7 +93,7 @@ async function proxyProductPgListJson(
         data: rows,
         total: typeof payload.count === "number" ? payload.count : rows.length,
         source: "pgsql",
-        message: payload.message,
+        message: typeof payload.message === "string" ? payload.message : typeof payload.error === "string" ? payload.error : undefined,
       },
       { status: response.status },
     );

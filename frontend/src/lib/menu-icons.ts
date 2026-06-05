@@ -140,6 +140,8 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/productunit": "ruler",
   "/product_barcode_shelf": "print",
   "/promotion_screen": "gift",
+  "/product_serial_registry": "qr",
+  "/channel_price": "money",
   "/price_history": "money",
   "/product_category_group_select_screen": "folder",
   "/productcategorylist": "list",

@@ -135,7 +135,7 @@ describe("menu language labels", () => {
     expect(productIds).not.toContain("add-product-branch");
     expect(productIds).not.toContain("add-product-department");
     expect(productToolsGroup?.title.th).toBe("เครื่องมือสินค้า");
-    expect(toolIds).toEqual(["price-history", "label-print"]);
+    expect(toolIds).toEqual(["product-serial-registry", "price-history", "label-print"]);
   });
 
   it("splits product setup into user-focused groups instead of one long technical list", () => {
@@ -148,8 +148,10 @@ describe("menu language labels", () => {
       "barcode",
       "productset",
       "product-unit",
-      "promotion",
     ]);
+    const salesSettingIds = groupsById.get("sales-settings")?.items.map((item) => item.id) ?? [];
+    expect(salesSettingIds).toContain("promotion");
+    expect(salesSettingIds).toContain("channel-price");
     expect(groupsById.get("product-classification")?.title.th).toBe("จัดกลุ่มสินค้า");
     expect(groupsById.get("product-classification")?.items.map((item) => item.id)).toEqual([
       "product-group",

@@ -2840,6 +2840,7 @@ price_channel_4	ราคาตามช่องทาง 4	Price Channel 4	Pri
 price_channel_5	ราคาตามช่องทาง 5	Price Channel 5	Price Channel 5	Price Channel 5	Price Channel 5	Price Channel 5	Price Channel 5	Price Channel 5	Price Channel 5	Price Channel 5	Price Channel 5	Price Channel 5
 price_child	ราคา (เด็ก)	Price (Child)	价格 (儿童)	価格 (子供)	តម្លៃ (កុមារ)	가격 (어린이)	ລາຄາ (ເດັກນ້ອຍ)	စျေးနှုန်း (ကလေး)	Giá (Trẻ em)	Price (Child)	Price (Child)	Price (Child)
 price_colon	ราคา	Price	价格	価格	តម្លៃ	가격	ລາຄາ	စျေး	Giá	Price	Price	Price
+channel_price	ราคาตามช่องทางขาย	Channel Prices	Channel Prices	Channel Prices	Channel Prices	Channel Prices	Channel Prices	Channel Prices	Channel Prices	Channel Prices	Channel Prices	Channel Prices
 price_history	ประวัติราคา	Price History	Price History	Price History	Price History	Price History	Price History	Price History	Price History	Price History	Price History	Price History
 price_max	ราคาสูงสุด	Max Price	最高价	最高価格	តម្លៃអតិបរមា	최고가	ລາຄາສູງສຸດ	အမြင့်ဆုံးစျေး	Giá tối đa	Max Price	Max Price	Max Price
 price_member	ราคาสมาชิก	Member price	会员价格	会員価格	តម្លៃសមាជិក	회원 가격	ລາຄາສະມາຊິກ	အဖွဲ့ဝင်စျေးနှုန်း	Giá thành viên	Member price	Member price	Member price
@@ -4522,6 +4523,7 @@ vat_buy	รายงานภาษีซื้อ	VAT Purchase	进项税报告	
 reprocess	คำนวณข้อมูลใหม่	Recalculate Data	重新计算数据	データ再計算	គណនាទិន្នន័យឡើងវិញ	데이터 재계산	ຄຳນວນຂໍ້ມູນໃໝ່	ဒေတာပြန်တွက်ချက်	Tính lại dữ liệu	Recalculate Data	Recalculate Data	Recalculate Data
 label_print	พิมพ์ป้ายสินค้า	Print Product Label	打印商品标签	商品ラベル印刷	បោះពុម្ពស្លាកផលិតផល	상품 라벨 인쇄	ພິມປ້າຍສິນຄ້າ	ကုန်ပစ္စည်းတံဆိပ်ပုံနှိပ်	In nhãn hàng hóa	Cetak label produk	Cetak label produk	I-print ang product label
 product_tools	เครื่องมือสินค้า	Product Tools	Product Tools	Product Tools	Product Tools	Product Tools	Product Tools	Product Tools	Product Tools	Product Tools	Product Tools	Product Tools
+product_serial_registry	ทะเบียนเลขเครื่อง	Serial Registry	Serial Registry	Serial Registry	Serial Registry	Serial Registry	Serial Registry	Serial Registry	Serial Registry	Serial Registry	Serial Registry	Serial Registry
 productset	สินค้าชุด	Product Set	Product Set	Product Set	Product Set	Product Set	Product Set	Product Set	Product Set	Product Set	Product Set	Product Set
 shopee_mappings	เชื่อม Shopee	Shopee Connection	Shopee 连接	Shopee連携	ភ្ជាប់ Shopee	Shopee 연결	ເຊື່ອມ Shopee	Shopee ချိတ်ဆက်	Kết nối Shopee	Shopee Connection	Shopee Connection	Shopee Connection
 lazada_mappings	เชื่อม Lazada	Lazada Connection	Lazada 连接	Lazada連携	ភ្ជាប់ Lazada	Lazada 연결	ເຊື່ອມ Lazada	Lazada ချိတ်ဆက်	Kết nối Lazada	Lazada Connection	Lazada Connection	Lazada Connection

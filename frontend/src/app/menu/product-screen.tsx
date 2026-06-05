@@ -1054,7 +1054,7 @@ const [pickerType, setPickerType] = useState<string>("");
                 {text.loading}
               </div>
             ) : visibleItems.length === 0 ? (
-              <div className="p-8 text-center text-sm text-muted-foreground">{text.noData}</div>
+              <div className="p-8 text-center text-sm text-muted-foreground">{isSetOnly ? "ไม่พบข้อมูลสินค้าชุด" : "ไม่พบข้อมูลสินค้า"}</div>
             ) : (
               visibleItems.map((item, index) => {
                 const active = item.code === selectedCode;
@@ -1065,7 +1065,7 @@ const [pickerType, setPickerType] = useState<string>("");
                   : (itemTypes.find((t) => t.value === item.item_type)?.label ?? String(item.item_type));
                 return (
                   <div
-                    key={item.guidfixed || item.code}
+                    key={rowKey}
                     className={cn(
                       "bc-list-row grid lg:grid-cols-[minmax(90px,1.1fr)_minmax(150px,2.4fr)_minmax(80px,1fr)_minmax(95px,1fr)_minmax(120px,1.2fr)] gap-x-3",
                       isEditing

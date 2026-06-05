@@ -315,17 +315,17 @@ func buildProductSearchQuery(req ProductSearchRequest) (string, []any) {
 
 	query := `
 SELECT
-	p.itemcode as itemcode,
+	p.itemcode,
 	COALESCE(pb.barcode, '') as barcode,
-	COALESCE(p.name0, pb.itemname, '') as itemname,
-	COALESCE(pb.unitcode, p.unitcode, '') as unitcode,
-	COALESCE(pb.unitname, p.unitname, '') as unitname,
+	COALESCE(p.name0, pb.itemname, p.itemcode) as itemname,
+	COALESCE(pb.unitcode, '') as unitcode,
+	COALESCE(pb.unitname, '') as unitname,
 	COALESCE(pb.price, 0) as price,
 	COALESCE(pb.unitstand, 1) as unitstand,
 	COALESCE(pb.unitdivide, 1) as unitdivide,
-	p.categorycode,
-	p.vattype,
-	p.costprice,
+	''::text as categorycode,
+	0::numeric as vattype,
+	0::numeric as costprice,
 	COALESCE(st.balance_qty, 0) as balance_qty,
 	COALESCE(pb.unit_count, 0) as unit_count
 FROM public.product p
@@ -356,7 +356,7 @@ WHERE 1=1`
   AND (
     p.itemcode ILIKE $%d
     OR pb.barcode ILIKE $%d
-    OR COALESCE(p.name0, pb.itemname, '') ILIKE $%d
+    OR COALESCE(p.name0, pb.itemname, p.itemcode) ILIKE $%d
   )`, argIndex, argIndex+1, argIndex+2)
 		searchPattern := "%" + req.Search + "%"
 		args = append(args, searchPattern, searchPattern, searchPattern)
@@ -375,7 +375,7 @@ WHERE 1=1`
 		// For now, just add as a placeholder for future implementation
 	}
 
-	query += "\nORDER BY COALESCE(p.name0, pb.itemname, ''), p.itemcode"
+	query += "\nORDER BY COALESCE(p.name0, pb.itemname, p.itemcode), p.itemcode"
 	query += fmt.Sprintf("\nLIMIT $%d OFFSET $%d", argIndex, argIndex+1)
 	args = append(args, req.Limit, req.Offset)
 

@@ -112,6 +112,8 @@ describe("system setting screen configs", () => {
     const color = getSystemSettingConfig("product_color");
     const size = getSystemSettingConfig("product_size");
     const matrix = getSystemSettingConfig("product_variant_matrix");
+    const serialRegistry = getSystemSettingConfig("product_serial_registry");
+    const channelPrice = getSystemSettingConfig("channel_price");
 
     expect(color).toMatchObject({
       route: "/product_color",
@@ -131,6 +133,18 @@ describe("system setting screen configs", () => {
       collection: "product_variant_matrices",
       idField: "guid_fixed",
     });
+    expect(serialRegistry).toMatchObject({
+      route: "/product_serial_registry",
+      kind: "atlas",
+      collection: "product_serial_registries",
+      idField: "guid_fixed",
+    });
+    expect(channelPrice).toMatchObject({
+      route: "/channel_price",
+      kind: "atlas",
+      collection: "product_channel_prices",
+      idField: "guid_fixed",
+    });
 
     expect(color?.fields.map((field) => field.key)).toContain("aliases");
     expect(size?.fields.map((field) => field.key)).toContain("aliases");
@@ -144,6 +158,31 @@ describe("system setting screen configs", () => {
         "integration_profiles",
         "payload_examples",
         "serial_tracking_mode",
+        "business_codes",
+      ]),
+    );
+    expect(serialRegistry?.fields.map((field) => field.key)).toEqual(
+      expect.arrayContaining([
+        "serial_no",
+        "identifier_type",
+        "status",
+        "item_code",
+        "barcode",
+        "warranty_start_date",
+        "warranty_end_date",
+        "business_codes",
+      ]),
+    );
+    expect(channelPrice?.fields.map((field) => field.key)).toEqual(
+      expect.arrayContaining([
+        "price_code",
+        "channel_code",
+        "item_code",
+        "barcode",
+        "dimension_key",
+        "sale_price",
+        "start_date",
+        "end_date",
         "business_codes",
       ]),
     );

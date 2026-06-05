@@ -182,7 +182,6 @@ export const MENU_SECTIONS: MenuSection[] = [
           { ...tx("barcode", "บาร์โค้ด", "Barcode", "/product_barcode", "master"), label: ml("barcode", "บาร์โค้ด", "Barcode") },
           tx("productset", "สินค้าชุด", "Product Set", "/productset", "master"),
           tx("product-unit", "หน่วยนับสินค้า", "Product Unit", "/productunit", "master"),
-          tx("promotion", "โปรโมชั่น", "Promotion", "/promotion_screen", "master"),
         ],
       },
       {
@@ -242,6 +241,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         id: "product-tools",
         title: ml("product_tools", "เครื่องมือสินค้า", "Product Tools"),
         items: [
+          tx("product-serial-registry", "ทะเบียนเลขเครื่อง", "Serial Registry", "/product_serial_registry", "master"),
           tx("price-history", "ประวัติแก้ไขราคา", "Price Edit History", "/price_history", "master"),
           tx("label-print", "พิมพ์ป้ายสินค้า", "Print Product Label", "/product_barcode_shelf", "master"),
         ],
@@ -280,6 +280,8 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("pos-media", "รูป/สื่อหน้าจอขาย", "Point of Sale Media", "/posmedia", "master"),
           tx("point-setting", "ตั้งค่าคะแนนสะสม", "Point Setting", "/point_setting", "master"),
           tx("coupon-setting", "ตั้งค่าคูปอง", "Coupon Setting", "/coupon_setting", "master"),
+          tx("promotion", "โปรโมชั่น", "Promotion", "/promotion_screen", "master"),
+          tx("channel-price", "ราคาตามช่องทางขาย", "Channel Prices", "/channel_price", "master"),
           tx("doc-format", "รูปแบบเอกสาร", "Document Format", "/docformat", "master"),
           tx("bill-design", "ออกแบบบิล", "Bill Design", "/billdesign", "master"),
         ],
