@@ -15,8 +15,8 @@ export type BarcodeText = typeof barcodeTextTh;
 
 const barcodeTextTh = {
   // Page
-  title: "สินค้า",
-  subtitle: "จัดการสินค้าและข้อมูลที่เกี่ยวข้องทั้งหมด",
+  title: "บาร์โค้ด",
+  subtitle: "จัดการบาร์โค้ด SKU หน่วยขาย ราคา และข้อมูลอ้างอิงสินค้า",
   tenant: "บริษัท",
   branch: "สาขา",
 
@@ -552,8 +552,8 @@ const barcodeTextTh = {
 };
 
 const barcodeTextEn: BarcodeText = {
-  title: "Product",
-  subtitle: "Manage products and related data",
+  title: "Barcode",
+  subtitle: "Manage barcodes, SKUs, selling units, prices, and product references",
   tenant: "Company",
   branch: "Branch",
 

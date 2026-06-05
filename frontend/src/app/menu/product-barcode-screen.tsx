@@ -53,9 +53,7 @@ import {
 import { rawToProductBarcode, toNumberOrNull } from "@/lib/product-barcode/utils";
 import { cn } from "@/lib/utils";
 import {
-  branchDisplayName,
   localizedName,
-  shopDisplayName,
   type AuthSession,
   type LocalizedName,
   type WorkspaceSession,
@@ -268,8 +266,6 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
   }, []);
 
   const activeHoldingCode = workspace?.shop.holding_code ?? "";
-  const activeBranch = workspace?.branch ? branchDisplayName(workspace.branch) : "-";
-  const activeTenant = workspace?.shop ? shopDisplayName(workspace.shop) : "-";
   const shopLanguages = useMemo(() => languageCodesFromWorkspace(workspace), [workspace]);
 
   const selectedBase = useMemo(
@@ -788,8 +784,6 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
           </div>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
-          <Badge variant="secondary">{text.tenant}: {activeTenant}</Badge>
-          <Badge variant="secondary">{text.branch}: {activeBranch}</Badge>
           <Badge variant="outline">{text.total}: {total.toLocaleString("th-TH")}</Badge>
           {selectMode ? <Badge variant="warning">{text.selected}: {checkedBarcodes.length.toLocaleString("th-TH")}</Badge> : null}
         </div>
@@ -893,8 +887,6 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
             </form>
             {embedded ? (
               <div className="mt-2 flex flex-wrap gap-2">
-                <Badge variant="secondary">{text.tenant}: {activeTenant}</Badge>
-                <Badge variant="secondary">{text.branch}: {activeBranch}</Badge>
                 <Badge variant="outline">{text.total}: {total.toLocaleString("th-TH")}</Badge>
                 {selectMode ? <Badge variant="warning">{text.selected}: {checkedBarcodes.length.toLocaleString("th-TH")}</Badge> : null}
               </div>
