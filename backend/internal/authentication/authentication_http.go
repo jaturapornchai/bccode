@@ -1080,9 +1080,15 @@ func (h AuthenticationHttp) SelectShop(ctx microservice.IContext) error {
 		})
 		return err
 	}
-	if strings.TrimSpace(shopSelectReq.HoldingCode) == "" {
-		shopSelectReq.HoldingCode = strings.TrimSpace(shopSelectReq.HoldingCode)
+	holdingCode, normalizeErr := utils.NormalizeHoldingCode(shopSelectReq.HoldingCode)
+	if normalizeErr != nil || holdingCode == "" {
+		ctx.Response(http.StatusBadRequest, common.ApiResponse{
+			Success: false,
+			Message: "holdingcode invalid",
+		})
+		return normalizeErr
 	}
+	shopSelectReq.HoldingCode = holdingCode
 
 	authContext := models.AuthenticationContext{
 		Ip: ctx.RealIp(),

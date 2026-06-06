@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { isValidHoldingCode, normalizeHoldingCode } from "@/lib/holding-code";
 import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
 import {
   notifyWorkspaceChanged,
@@ -93,7 +94,6 @@ const emptyCreateHoldingForm: CreateHoldingForm = {
   confirm_code: "",
   challenge_code: "",
 };
-const holdingCodePattern = /^[a-z][a-z0-9_]{2,29}$/;
 
 const holdingTextEn: Record<HoldingTextKey, string> = {
   addHolding: "Add Holding",
@@ -117,8 +117,8 @@ const holdingTextEn: Record<HoldingTextKey, string> = {
   emptyTitle: "No Holding found",
   eyebrow: "Step 2",
   holdingCode: "holdingcode",
-  holdingCodeInvalid: "holdingcode must use a-z, 0-9, _, be 3-30 characters, and start with a-z.",
-  holdingCodePlaceholder: "bc_demo",
+  holdingCodeInvalid: "holdingcode must use a-z and 0-9 only, be 3-30 characters, and start with a-z. Do not use _ or symbols.",
+  holdingCodePlaceholder: "bcdemo01",
   holdingName: "Holding name",
   holdingNamePlaceholder: "Example Holding",
   holdingNameRequired: "Please enter a Holding name.",
@@ -159,8 +159,8 @@ const holdingText: Record<LanguageCode, Record<HoldingTextKey, string>> = {
     emptyTitle: "ยังไม่มี Holding",
     eyebrow: "ขั้นตอนที่ 2",
     holdingCode: "holdingcode",
-    holdingCodeInvalid: "holdingcode ต้องเป็น a-z, 0-9, _ ยาว 3-30 ตัว และขึ้นต้นด้วย a-z",
-    holdingCodePlaceholder: "bc_demo",
+    holdingCodeInvalid: "holdingcode ต้องใช้ a-z และ 0-9 เท่านั้น ยาว 3-30 ตัว และขึ้นต้นด้วย a-z ห้ามใช้ _ หรือสัญลักษณ์",
+    holdingCodePlaceholder: "bcdemo01",
     holdingName: "ชื่อ Holding",
     holdingNamePlaceholder: "เช่น Holding ตัวอย่าง",
     holdingNameRequired: "กรุณากรอกชื่อ Holding",
@@ -200,8 +200,8 @@ const holdingText: Record<LanguageCode, Record<HoldingTextKey, string>> = {
     emptyTitle: "未找到 Holding",
     eyebrow: "第 2 步",
     holdingCode: "holdingcode",
-    holdingCodeInvalid: "holdingcode 只能使用 a-z、0-9、_，长度 3-30，并以 a-z 开头。",
-    holdingCodePlaceholder: "bc_demo",
+    holdingCodeInvalid: "holdingcode 只能使用 a-z 和 0-9，长度 3-30，并以 a-z 开头。请勿使用 _ 或符号。",
+    holdingCodePlaceholder: "bcdemo01",
     holdingName: "Holding 名称",
     holdingNamePlaceholder: "示例 Holding",
     holdingNameRequired: "请输入 Holding 名称。",
@@ -240,8 +240,8 @@ const holdingText: Record<LanguageCode, Record<HoldingTextKey, string>> = {
     emptyTitle: "Holding がありません",
     eyebrow: "ステップ 2",
     holdingCode: "holdingcode",
-    holdingCodeInvalid: "holdingcode は a-z、0-9、_ のみ、3-30文字、先頭は a-z です。",
-    holdingCodePlaceholder: "bc_demo",
+    holdingCodeInvalid: "holdingcode は a-z と 0-9 のみ、3-30文字、先頭は a-z です。_ や記号は使えません。",
+    holdingCodePlaceholder: "bcdemo01",
     holdingName: "Holding 名",
     holdingNamePlaceholder: "サンプル Holding",
     holdingNameRequired: "Holding 名を入力してください。",
@@ -280,8 +280,8 @@ const holdingText: Record<LanguageCode, Record<HoldingTextKey, string>> = {
     emptyTitle: "Holding 없음",
     eyebrow: "2단계",
     holdingCode: "holdingcode",
-    holdingCodeInvalid: "holdingcode는 a-z, 0-9, _ 만 사용하고 3-30자이며 a-z로 시작해야 합니다.",
-    holdingCodePlaceholder: "bc_demo",
+    holdingCodeInvalid: "holdingcode는 a-z와 0-9만 사용하고 3-30자이며 a-z로 시작해야 합니다. _ 또는 기호는 사용할 수 없습니다.",
+    holdingCodePlaceholder: "bcdemo01",
     holdingName: "Holding 이름",
     holdingNamePlaceholder: "예시 Holding",
     holdingNameRequired: "Holding 이름을 입력하세요.",
@@ -320,8 +320,8 @@ const holdingText: Record<LanguageCode, Record<HoldingTextKey, string>> = {
     emptyTitle: "ບໍ່ພົບ Holding",
     eyebrow: "ຂັ້ນຕອນ 2",
     holdingCode: "holdingcode",
-    holdingCodeInvalid: "holdingcode ໃຊ້ໄດ້ a-z, 0-9, _ ຍາວ 3-30 ຕົວ ແລະຂຶ້ນຕົ້ນດ້ວຍ a-z.",
-    holdingCodePlaceholder: "bc_demo",
+    holdingCodeInvalid: "holdingcode ໃຊ້ໄດ້ a-z ແລະ 0-9 ເທົ່ານັ້ນ ຍາວ 3-30 ຕົວ ແລະຂຶ້ນຕົ້ນດ້ວຍ a-z. ຫ້າມໃຊ້ _ ຫຼືສັນຍາລັກ.",
+    holdingCodePlaceholder: "bcdemo01",
     holdingName: "ຊື່ Holding",
     holdingNamePlaceholder: "Holding ຕົວຢ່າງ",
     holdingNameRequired: "ກະລຸນາໃສ່ຊື່ Holding.",
@@ -360,8 +360,8 @@ const holdingText: Record<LanguageCode, Record<HoldingTextKey, string>> = {
     emptyTitle: "Holding မတွေ့ပါ",
     eyebrow: "အဆင့် 2",
     holdingCode: "holdingcode",
-    holdingCodeInvalid: "holdingcode သည် a-z, 0-9, _ ကိုသာသုံးပြီး 3-30 လုံးရှိရမည်၊ a-z ဖြင့်စတင်ရမည်။",
-    holdingCodePlaceholder: "bc_demo",
+    holdingCodeInvalid: "holdingcode သည် a-z နှင့် 0-9 ကိုသာသုံးပြီး 3-30 လုံးရှိရမည်၊ a-z ဖြင့်စတင်ရမည်။ _ သို့မဟုတ် သင်္ကေတ မသုံးရပါ။",
+    holdingCodePlaceholder: "bcdemo01",
     holdingName: "Holding အမည်",
     holdingNamePlaceholder: "ဥပမာ Holding",
     holdingNameRequired: "Holding အမည် ထည့်ပါ။",
@@ -400,8 +400,8 @@ const holdingText: Record<LanguageCode, Record<HoldingTextKey, string>> = {
     emptyTitle: "រកមិនឃើញ Holding",
     eyebrow: "ជំហាន 2",
     holdingCode: "holdingcode",
-    holdingCodeInvalid: "holdingcode ត្រូវប្រើ a-z, 0-9, _ ប្រវែង 3-30 តួ និងចាប់ផ្តើមដោយ a-z។",
-    holdingCodePlaceholder: "bc_demo",
+    holdingCodeInvalid: "holdingcode ត្រូវប្រើតែ a-z និង 0-9 ប្រវែង 3-30 តួ និងចាប់ផ្តើមដោយ a-z។ ហាមប្រើ _ ឬនិមិត្តសញ្ញា។",
+    holdingCodePlaceholder: "bcdemo01",
     holdingName: "ឈ្មោះ Holding",
     holdingNamePlaceholder: "Holding គំរូ",
     holdingNameRequired: "សូមបញ្ចូលឈ្មោះ Holding។",
@@ -440,8 +440,8 @@ const holdingText: Record<LanguageCode, Record<HoldingTextKey, string>> = {
     emptyTitle: "Không có Holding",
     eyebrow: "Bước 2",
     holdingCode: "holdingcode",
-    holdingCodeInvalid: "holdingcode chỉ dùng a-z, 0-9, _, dài 3-30 ký tự và bắt đầu bằng a-z.",
-    holdingCodePlaceholder: "bc_demo",
+    holdingCodeInvalid: "holdingcode chỉ dùng a-z và 0-9, dài 3-30 ký tự và bắt đầu bằng a-z. Không dùng _ hoặc ký hiệu.",
+    holdingCodePlaceholder: "bcdemo01",
     holdingName: "Tên Holding",
     holdingNamePlaceholder: "Holding mẫu",
     holdingNameRequired: "Vui lòng nhập tên Holding.",
@@ -480,8 +480,8 @@ const holdingText: Record<LanguageCode, Record<HoldingTextKey, string>> = {
     emptyTitle: "Tiada Holding",
     eyebrow: "Langkah 2",
     holdingCode: "holdingcode",
-    holdingCodeInvalid: "holdingcode mesti menggunakan a-z, 0-9, _, 3-30 aksara dan bermula dengan a-z.",
-    holdingCodePlaceholder: "bc_demo",
+    holdingCodeInvalid: "holdingcode mesti menggunakan a-z dan 0-9 sahaja, 3-30 aksara dan bermula dengan a-z. Jangan guna _ atau simbol.",
+    holdingCodePlaceholder: "bcdemo01",
     holdingName: "Nama Holding",
     holdingNamePlaceholder: "Holding contoh",
     holdingNameRequired: "Sila masukkan nama Holding.",
@@ -520,8 +520,8 @@ const holdingText: Record<LanguageCode, Record<HoldingTextKey, string>> = {
     emptyTitle: "Holding tidak ditemukan",
     eyebrow: "Langkah 2",
     holdingCode: "holdingcode",
-    holdingCodeInvalid: "holdingcode harus memakai a-z, 0-9, _, 3-30 karakter dan diawali a-z.",
-    holdingCodePlaceholder: "bc_demo",
+    holdingCodeInvalid: "holdingcode harus memakai a-z dan 0-9 saja, 3-30 karakter dan diawali a-z. Jangan memakai _ atau simbol.",
+    holdingCodePlaceholder: "bcdemo01",
     holdingName: "Nama Holding",
     holdingNamePlaceholder: "Holding contoh",
     holdingNameRequired: "Masukkan nama Holding.",
@@ -560,8 +560,8 @@ const holdingText: Record<LanguageCode, Record<HoldingTextKey, string>> = {
     emptyTitle: "Walang Holding",
     eyebrow: "Hakbang 2",
     holdingCode: "holdingcode",
-    holdingCodeInvalid: "Ang holdingcode ay dapat gumamit ng a-z, 0-9, _, 3-30 character, at magsimula sa a-z.",
-    holdingCodePlaceholder: "bc_demo",
+    holdingCodeInvalid: "Ang holdingcode ay dapat gumamit lang ng a-z at 0-9, 3-30 character, at magsimula sa a-z. Huwag gumamit ng _ o simbolo.",
+    holdingCodePlaceholder: "bcdemo01",
     holdingName: "Pangalan ng Holding",
     holdingNamePlaceholder: "Halimbawang Holding",
     holdingNameRequired: "Ilagay ang pangalan ng Holding.",
@@ -691,7 +691,7 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
 
     const holdingCode = normalizeHoldingCode(createForm.holdingcode);
     const name = normalizeDisplayName(createForm.name);
-    if (!holdingCode || !holdingCodePattern.test(holdingCode)) {
+    if (!holdingCode || !isValidHoldingCode(holdingCode)) {
       setNotice({ type: "error", text: ht(language, "holdingCodeInvalid") });
       return;
     }
@@ -751,7 +751,7 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
 
     const holdingCode = normalizeHoldingCode(editForm.holdingcode);
     const name = normalizeDisplayName(editForm.name);
-    if (!holdingCode || !holdingCodePattern.test(holdingCode)) {
+    if (!holdingCode || !isValidHoldingCode(holdingCode)) {
       setNotice({ type: "error", text: ht(language, "holdingCodeInvalid") });
       return;
     }
@@ -1159,10 +1159,6 @@ function ht(language: LanguageCode, key: HoldingTextKey): string {
   return holdingText[language]?.[key] ?? holdingTextEn[key];
 }
 
-function normalizeHoldingCode(value: string): string {
-  return value.trim().toLowerCase();
-}
-
 function normalizeDisplayName(value: string): string {
   return value
     .replace(/[\u0000-\u001F\u007F]/g, " ")
@@ -1266,7 +1262,7 @@ function createHoldingPayload(holdingCode: string, name: string, ownerEmail: str
       isusebranch: false,
       isusedepartment: false,
       language: "th",
-      languageconfigs: [{ code: "th", codetranslator: "th", name: "ภาษาไทย", is_use: true, isdefault: true }],
+      languageconfigs: [{ code: "th", codetranslator: "th", name: "ภาษาไทย", isuse: true, isdefault: true }],
       latitude: 0,
       longitude: 0,
       taxid: "",

@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-var holdingCodePattern = regexp.MustCompile(`^[a-z][a-z0-9_]{2,29}$`)
+var holdingCodePattern = regexp.MustCompile(`^[a-z][a-z0-9]{2,29}$`)
 
 func NormalizeHoldingCode(value string) (string, error) {
 	holdingCode := strings.ToLower(strings.TrimSpace(value))

@@ -288,10 +288,10 @@ describe("workspace product unit setup route", () => {
       expect(String(url)).toBe("http://localhost:8888/create-holding");
       expect(init?.method).toBe("POST");
       expect(JSON.parse(String(init?.body))).toMatchObject({
-        holdingcode: "bc_new1",
+        holdingcode: "bcnew1",
         name1: "New Holding",
       });
-      return Response.json({ success: true, ID: "bc_new1" });
+      return Response.json({ success: true, ID: "bcnew1" });
     });
     vi.stubGlobal("fetch", fetchMock);
 
@@ -301,7 +301,7 @@ describe("workspace product unit setup route", () => {
         headers: { "Content-Type": "application/json", Authorization: "Bearer test-token" },
         body: JSON.stringify({
           backendUrl: "http://localhost:8888/goapi",
-          holdingcode: "BC_New1",
+          holdingcode: "BCNew1",
           name1: "New Holding",
           names: [{ code: "th", name: "New Holding" }],
         }),
@@ -311,7 +311,7 @@ describe("workspace product unit setup route", () => {
     const json = await response.json();
 
     expect(response.status).toBe(200);
-    expect(json).toMatchObject({ success: true, ID: "bc_new1" });
+    expect(json).toMatchObject({ success: true, ID: "bcnew1" });
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
@@ -334,7 +334,10 @@ describe("workspace product unit setup route", () => {
     const json = await response.json();
 
     expect(response.status).toBe(400);
-    expect(json).toMatchObject({ success: false, message: "holdingcode ต้องเป็น a-z, 0-9, _ ยาว 3-30 ตัว และขึ้นต้นด้วย a-z" });
+    expect(json).toMatchObject({
+      success: false,
+      message: "holdingcode ต้องใช้ a-z และ 0-9 เท่านั้น ยาว 3-30 ตัว และขึ้นต้นด้วย a-z ห้ามใช้ _ หรือสัญลักษณ์",
+    });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -348,7 +351,7 @@ describe("workspace product unit setup route", () => {
         headers: { "Content-Type": "application/json", Authorization: "Bearer test-token" },
         body: JSON.stringify({
           backendUrl: "http://localhost:8888/goapi",
-          holdingcode: "bc_new1",
+          holdingcode: "bcnew1",
           name1: "   ",
         }),
       }),
@@ -367,18 +370,18 @@ describe("workspace product unit setup route", () => {
       const requestUrl = String(url);
       if (requestUrl === "http://localhost:8888/select-holding") {
         expect(init?.method).toBe("POST");
-        expect(JSON.parse(String(init?.body))).toEqual({ holdingcode: "bc_new1" });
+        expect(JSON.parse(String(init?.body))).toEqual({ holdingcode: "bcnew1" });
         selected = true;
         return Response.json({ success: true });
       }
-      if (requestUrl === "http://localhost:8888/holding/bc_new1" && init?.method === "GET") {
+      if (requestUrl === "http://localhost:8888/holding/bcnew1" && init?.method === "GET") {
         if (!selected) {
           return Response.json({ success: false, message: "Holding not selected." }, { status: 401 });
         }
         return Response.json({
           success: true,
           data: {
-            holdingcode: "bc_new1",
+            holdingcode: "bcnew1",
             name1: "Old Holding Name",
             names: [
               { code: "th", name: "Old Holding Name" },
@@ -389,9 +392,9 @@ describe("workspace product unit setup route", () => {
           },
         });
       }
-      if (requestUrl === "http://localhost:8888/holding/bc_new1" && init?.method === "PUT") {
+      if (requestUrl === "http://localhost:8888/holding/bcnew1" && init?.method === "PUT") {
         expect(JSON.parse(String(init?.body))).toMatchObject({
-          holdingcode: "bc_new1",
+          holdingcode: "bcnew1",
           name1: "New Holding Name",
           names: [
             { code: "th", name: "New Holding Name" },
@@ -400,7 +403,7 @@ describe("workspace product unit setup route", () => {
           settings: { language: "th", emailowners: ["owner@example.com"] },
           telephone: "020000000",
         });
-        return Response.json({ success: true, ID: "bc_new1" });
+        return Response.json({ success: true, ID: "bcnew1" });
       }
       throw new Error(`Unexpected URL ${requestUrl}`);
     });
@@ -412,7 +415,7 @@ describe("workspace product unit setup route", () => {
         headers: { "Content-Type": "application/json", Authorization: "Bearer owner-token" },
         body: JSON.stringify({
           backendUrl: "http://localhost:8888/goapi",
-          holdingcode: "bc_new1",
+          holdingcode: "bcnew1",
           name1: "New Holding Name",
         }),
       }),
@@ -421,7 +424,7 @@ describe("workspace product unit setup route", () => {
     const json = await response.json();
 
     expect(response.status).toBe(200);
-    expect(json).toMatchObject({ success: true, ID: "bc_new1" });
+    expect(json).toMatchObject({ success: true, ID: "bcnew1" });
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 

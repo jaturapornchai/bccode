@@ -10,6 +10,7 @@ import {
   requireBearerToken,
   type ApiProxyBody,
 } from "@/lib/workspace-api";
+import { holdingCodeValidationMessageTh, isValidHoldingCode, normalizeHoldingCode } from "@/lib/holding-code";
 
 type WorkspaceProxyContext = {
   params: Promise<{ workspacePath: string[] }>;
@@ -42,7 +43,6 @@ type MainApiResult = {
 
 const UNIT_TEMPLATE_URL = "https://raw.githubusercontent.com/smlsoft/dedepos_template/main/unit.json";
 const API_TIMEOUT_MS = 20000;
-const holdingCodePattern = /^[a-z][a-z0-9_]{2,29}$/;
 
 export async function GET(request: Request, context: WorkspaceProxyContext) {
   const { workspacePath } = await context.params;
@@ -143,19 +143,17 @@ export async function POST(request: Request, context: WorkspaceProxyContext) {
       });
     }
     case "create-holding": {
-      if (Object.prototype.hasOwnProperty.call(payload, "holdingcode")) {
-        const holdingCode = holdingCodeFromPayload(payload).toLowerCase();
-        if (!holdingCode) {
-          return NextResponse.json({ success: false, message: "กรุณากรอกรหัส Holding" }, { status: 400 });
-        }
-        if (!holdingCodePattern.test(holdingCode)) {
-          return NextResponse.json(
-            { success: false, message: "holdingcode ต้องเป็น a-z, 0-9, _ ยาว 3-30 ตัว และขึ้นต้นด้วย a-z" },
-            { status: 400 },
-          );
-        }
-        payload.holdingcode = holdingCode;
+      const holdingCode = normalizeHoldingCode(holdingCodeFromPayload(payload));
+      if (!holdingCode) {
+        return NextResponse.json({ success: false, message: "กรุณากรอกรหัส Holding" }, { status: 400 });
       }
+      if (!isValidHoldingCode(holdingCode)) {
+        return NextResponse.json(
+          { success: false, message: holdingCodeValidationMessageTh },
+          { status: 400 },
+        );
+      }
+      payload.holdingcode = holdingCode;
       const holdingName = holdingNameFromPayload(payload);
       if (!holdingName) {
         return NextResponse.json({ success: false, message: "กรุณากรอกชื่อ Holding" }, { status: 400 });
@@ -318,11 +316,11 @@ async function updateHoldingDisplayName(
   const authorization = requireBearerToken(request);
   if (typeof authorization !== "string") return authorization;
 
-  const holdingCode = holdingCodeFromPayload(payload).toLowerCase();
+  const holdingCode = normalizeHoldingCode(holdingCodeFromPayload(payload));
   if (!holdingCode) return NextResponse.json({ success: false, message: "กรุณากรอกรหัส Holding" }, { status: 400 });
-  if (!holdingCodePattern.test(holdingCode)) {
+  if (!isValidHoldingCode(holdingCode)) {
     return NextResponse.json(
-      { success: false, message: "holdingcode ต้องเป็น a-z, 0-9, _ ยาว 3-30 ตัว และขึ้นต้นด้วย a-z" },
+      { success: false, message: holdingCodeValidationMessageTh },
       { status: 400 },
     );
   }

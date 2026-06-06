@@ -2,10 +2,10 @@ package shop_test
 
 import (
 	"context"
+	"errors"
 	auth_model "smlcloudplatform/internal/authentication/models"
 	"smlcloudplatform/internal/shop"
 	"smlcloudplatform/internal/shop/models"
-	utilmock "smlcloudplatform/mock"
 	micromodels "smlcloudplatform/pkg/microservice/models"
 	"testing"
 	"time"
@@ -20,8 +20,11 @@ func TestShop_Create(t *testing.T) {
 	shopRepo := new(ShopRepositoryMock)
 	shopUserRepo := new(ShopUserRepositoryMock)
 
-	shopRepo.On("Create", mock.Anything, mock.Anything).Return("", nil)
-	shopUserRepo.On("Save", mock.Anything, utilmock.MockGUID(), "user_create", auth_model.ROLE_OWNER).Return(nil)
+	shopRepo.On("FindByHoldingCode", mock.Anything, "shoptest").Return(models.ShopDoc{}, errors.New("not found"))
+	shopRepo.On("Create", mock.Anything, mock.MatchedBy(func(doc models.ShopDoc) bool {
+		return doc.HoldingCode == "shoptest" && doc.GuidFixed == "shoptest"
+	})).Return("", nil)
+	shopUserRepo.On("Save", mock.Anything, "shoptest", "user_create", auth_model.ROLE_OWNER).Return(nil)
 
 	type args struct {
 		username string
@@ -39,12 +42,36 @@ func TestShop_Create(t *testing.T) {
 			args: args{
 				username: "user_create",
 				shop: models.Shop{
+					HoldingCode: "shoptest",
+					Name1:       "shop_name",
+					Telephone:   "0000000000",
+				},
+			},
+			wantErr:  false,
+			wantData: "shoptest",
+		},
+		{
+			name: "reject missing holdingcode",
+			args: args{
+				username: "user_create",
+				shop: models.Shop{
 					Name1:     "shop_name",
 					Telephone: "0000000000",
 				},
 			},
-			wantErr:  false,
-			wantData: utilmock.MockGUID(),
+			wantErr: true,
+		},
+		{
+			name: "reject underscore holdingcode",
+			args: args{
+				username: "user_create",
+				shop: models.Shop{
+					HoldingCode: "shop_test",
+					Name1:       "shop_name",
+					Telephone:   "0000000000",
+				},
+			},
+			wantErr: true,
 		},
 	}
 

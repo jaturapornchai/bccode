@@ -42,15 +42,15 @@ func NewShopService(shopRepo IShopRepository, shopUserRepo IShopUserRepository, 
 func (svc ShopService) CreateShop(username string, doc models.Shop) (string, error) {
 
 	dataDoc := models.ShopDoc{}
-	holdingCode := svc.newGUID()
 	holdingCode, err := utils.NormalizeHoldingCode(doc.HoldingCode)
 	if err != nil {
 		return "", err
 	}
-	if holdingCode != "" {
-		if existing, findErr := svc.shopRepo.FindByHoldingCode(context.Background(), holdingCode); findErr == nil && existing.GuidFixed != "" {
-			return "", errors.New("holdingcode is exists")
-		}
+	if holdingCode == "" {
+		return "", errors.New("holdingcode invalid")
+	}
+	if existing, findErr := svc.shopRepo.FindByHoldingCode(context.Background(), holdingCode); findErr == nil && existing.GuidFixed != "" {
+		return "", errors.New("holdingcode is exists")
 	}
 	dataDoc.GuidFixed = holdingCode
 	dataDoc.CreatedBy = username

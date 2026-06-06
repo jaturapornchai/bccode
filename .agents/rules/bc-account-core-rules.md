@@ -185,6 +185,18 @@ Related central entrypoints:
 - Do not guess tax, accounting, legal, or statutory-report behavior. If local evidence and cache are insufficient, mark the point as unverified and ask Jead before using external sources or changing business logic.
 - If Jead explicitly requests external verification for tax/legal facts, use authoritative sources such as `rd.go.th`, Thai tax law, official specifications, or known Thai accounting/ERP references, then cite the source and date in the task summary.
 
+## ERP Accounting Decimal Iron Rule
+- Applies to ERP Core, Accounting, Finance, Stock, Sales, Purchase, AR, AP, GL, VAT, Tax, Payment, Cost, Report, and Analytics. Accounting correctness takes priority over speed; a 0.01 THB mismatch is a failure.
+- Do not use floating point for accounting or stock-valued fields. Forbidden for money/quantity-with-decimals fields: JavaScript/TypeScript `number`, Go `float32`/`float64`, MongoDB double/float64, PostgreSQL `real`, `double precision`, `float`, `money`, and ClickHouse `Float32`/`Float64`.
+- Protected semantic fields include amount, price, cost, discount, vat/tax, debit, credit, balance, total/subtotal, paid/remaining amount, qty/quantity when decimals are possible, unit price, average cost, exchange rate, rounding amount, stock value, invoice amount, and payment amount.
+- API contracts may receive and return decimal strings, but database storage must be queryable native decimal: MongoDB `Decimal128` or smallest-unit `Long`; PostgreSQL `numeric(P,S)` or smallest-unit `bigint`; ClickHouse `Decimal(P,S)` or smallest-unit `Int64`.
+- Default precision: money `18,2`; unit price `20,4`; quantity `18,4`; exchange rate `28,8`. Use higher internal precision and round only at document/accounting/display boundaries; never feed rounded display values back into calculations.
+- Frontend/TypeScript code must use decimal strings plus a decimal library such as `decimal.js`; never use `parseFloat`, `Number(amount)`, unary `+amount`, JS-number arithmetic, or JS-number reductions for accounting fields.
+- Database queries and reports must sum/filter/sort/group directly on decimal fields. Do not cast decimal values to float and do not create shadow fields such as `amountfloat`, `totalfloat`, or `balancefloat`.
+- Project naming still obeys the no-underscore naming rule. Use field names such as `amount`, `vatamount`, `netamount`, `grossamount`, `unitprice`, `qty`, `exchangerate`, `roundingamount`, `stockvalue`, `amountsatang`, and `vatamountsatang`.
+- Legacy float/double/number accounting data must not be silently converted. Any migration requires backup, dry run, record counts before/after, sum totals before/after, conversion logs, rollback notes, and `NEED_REVIEW_FLOAT_MONEY` markers for suspicious binary-float residue such as `1234.5600000000002`.
+- Tests for accounting changes must cover decimal addition such as `0.1 + 0.2 = 0.30`, VAT, discount, subtotal/net total, debit equals credit, rounding, decimal quantity, decimal unit price, exchange rate, API rejection of numeric amount payloads, and database decimal aggregation where applicable.
+
 ## API Version Compatibility
 - Backend API contracts must be versioned. The current baseline is `v1`; future breaking changes must use `v2`, `v3`, and so on without silently breaking `v1`.
 - Supported backend API versions must run side-by-side in the same deployed backend. When `v2` is introduced, `v1` and `v2` must both remain callable at the same time to support older frontend web, iOS, and Android clients.

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { validateBackendUrl } from "@/lib/backend-url";
+import { holdingCodeValidationMessageTh, isValidHoldingCode, normalizeHoldingCode } from "@/lib/holding-code";
 
 type LoginBody = {
   backendUrl?: string;
@@ -7,8 +8,6 @@ type LoginBody = {
   password?: string;
   holdingcode?: string;
 };
-
-const holdingCodePattern = /^[a-z][a-z0-9_]{2,29}$/;
 
 export async function POST(request: Request) {
   let body: LoginBody;
@@ -20,7 +19,7 @@ export async function POST(request: Request) {
 
   const username = body.username?.trim() ?? "";
   const password = body.password ?? "";
-  const holdingCode = body.holdingcode?.trim().toLowerCase() ?? "";
+  const holdingCode = normalizeHoldingCode(body.holdingcode ?? "");
 
   if (!username) {
     return NextResponse.json({ success: false, message: "กรุณากรอกชื่อผู้ใช้" }, { status: 400 });
@@ -34,9 +33,9 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  if (!holdingCodePattern.test(holdingCode)) {
+  if (!isValidHoldingCode(holdingCode)) {
     return NextResponse.json(
-      { success: false, message: "holdingcode ต้องเป็น a-z, 0-9, _ ยาว 3-30 ตัว และขึ้นต้นด้วย a-z" },
+      { success: false, message: holdingCodeValidationMessageTh },
       { status: 400 },
     );
   }

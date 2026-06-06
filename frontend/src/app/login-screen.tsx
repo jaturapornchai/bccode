@@ -19,6 +19,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { runtimeGoApiUrlForOrigin } from "@/lib/backend-url";
 import { persistLanguagePreferenceCookies } from "@/lib/backend-language-preload";
+import { isValidHoldingCode, normalizeHoldingCode } from "@/lib/holding-code";
 import { normalizeLanguage, t, type LanguageCode } from "@/lib/i18n";
 import { isLocalLoginHost, LOCAL_GOOGLE_TEST_EMAIL } from "@/lib/local-dev-auth";
 import { LanguageDialog } from "./language-dialog";
@@ -59,16 +60,6 @@ const storageKeys = {
   holdingCode: "saved_holdingcode",
   auth: "bc_auth",
 };
-
-const holdingCodePattern = /^[a-z][a-z0-9_]{2,29}$/;
-
-function normalizeHoldingCode(value: string): string {
-  return value.trim().toLowerCase();
-}
-
-function isValidHoldingCode(value: string): boolean {
-  return holdingCodePattern.test(value);
-}
 
 export function LoginScreen() {
   const router = useRouter();
@@ -573,8 +564,8 @@ export function LoginScreen() {
                     aria-labelledby="holding-code-label"
                     autoComplete="organization"
                     value={holdingCode}
-                    onChange={(event) => setHoldingCode(event.target.value.toLowerCase())}
-                    placeholder="bc_demo"
+                    onChange={(event) => setHoldingCode(normalizeHoldingCode(event.target.value))}
+                    placeholder="bcdemo01"
                   />
                 </div>
               </div>

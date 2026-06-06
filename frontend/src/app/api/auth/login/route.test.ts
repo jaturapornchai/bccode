@@ -36,7 +36,7 @@ describe("password login route", () => {
       expect(JSON.parse(String(init?.body))).toEqual({
         username: "demo",
         password: "secret",
-        holdingcode: "bc_demo",
+        holdingcode: "bcdemo",
       });
       return Response.json({ success: true, token: "token-1", refresh: "refresh-1" });
     });
@@ -49,7 +49,7 @@ describe("password login route", () => {
         backendUrl: "http://localhost:8888/goapi",
         username: "demo",
         password: "secret",
-        holdingcode: "BC_Demo",
+        holdingcode: "BCDemo",
       }),
     }));
     const json = await response.json();
@@ -62,5 +62,29 @@ describe("password login route", () => {
       backendUrl: "http://localhost:8888/goapi",
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects holdingcode with underscore", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await POST(new Request("http://localhost/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        backendUrl: "http://localhost:8888/goapi",
+        username: "demo",
+        password: "secret",
+        holdingcode: "bc_demo",
+      }),
+    }));
+    const json = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(json).toMatchObject({
+      success: false,
+      message: "holdingcode ต้องใช้ a-z และ 0-9 เท่านั้น ยาว 3-30 ตัว และขึ้นต้นด้วย a-z ห้ามใช้ _ หรือสัญลักษณ์",
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

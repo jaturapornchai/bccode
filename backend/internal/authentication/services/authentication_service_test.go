@@ -492,12 +492,12 @@ func TestAuthService_ResetPasswordToDefault(t *testing.T) {
 	microAuthServiceMock := &AuthServiceMock{}
 
 	owner := models.ShopUser{}
-	owner.HoldingCode = "shop_test"
+	owner.HoldingCode = "shoptest"
 	owner.Username = "owner_user"
 	owner.Role = models.ROLE_OWNER
 
 	targetShopUser := models.ShopUser{}
-	targetShopUser.HoldingCode = "shop_test"
+	targetShopUser.HoldingCode = "shoptest"
 	targetShopUser.Username = "target_user"
 	targetShopUser.Role = models.ROLE_USER
 
@@ -510,8 +510,8 @@ func TestAuthService_ResetPasswordToDefault(t *testing.T) {
 	expectedUser.Password = models.DefaultUserPassword
 	expectedUser.UpdatedAt = MockTime()
 
-	shopUserRepo.On("FindByHoldingCodeAndUsername", "shop_test", "owner_user").Return(owner, nil)
-	shopUserRepo.On("FindByHoldingCodeAndUsername", "shop_test", "target_user").Return(targetShopUser, nil)
+	shopUserRepo.On("FindByHoldingCodeAndUsername", "shoptest", "owner_user").Return(owner, nil)
+	shopUserRepo.On("FindByHoldingCodeAndUsername", "shoptest", "target_user").Return(targetShopUser, nil)
 	authRepo.On("FindUser", "target_user").Return(targetUser, nil)
 	authRepo.On("UpdateUser", "target_user", expectedUser).Return(nil)
 
@@ -530,7 +530,7 @@ func TestAuthService_ResetPasswordToDefault(t *testing.T) {
 		MockFirebaseAdapter(),
 		MockLineAdapter())
 
-	err := authService.ResetPasswordToDefault("shop_test", "owner_user", "target_user")
+	err := authService.ResetPasswordToDefault("shoptest", "owner_user", "target_user")
 
 	assert.Nil(t, err)
 }
@@ -548,45 +548,45 @@ func TestAuthService_AccessShop(t *testing.T) {
 	shopUser := models.ShopUser{}
 	shopUser.ID = MockObjectID()
 	shopUser.Username = "user_access_shop"
-	shopUser.HoldingCode = "shop_test"
+	shopUser.HoldingCode = "shoptest"
 	shopUser.Role = uint8(0)
 
-	shopUserRepo.On("FindByHoldingCodeAndUsername", "shop_test", "user_access_shop").Return(shopUser, nil)
+	shopUserRepo.On("FindByHoldingCodeAndUsername", "shoptest", "user_access_shop").Return(shopUser, nil)
 
-	shopUserRepo.On("FindByHoldingCodeAndUsername", "shop_test_invalid", "user_access_shop").Return(models.ShopUser{}, nil)
+	shopUserRepo.On("FindByHoldingCodeAndUsername", "shoptestinvalid", "user_access_shop").Return(models.ShopUser{}, nil)
 
 	disabledShopUser := shopUser
 	disabledShopUser.Username = "disabled_user"
-	disabledShopUser.HoldingCode = "shop_disabled"
+	disabledShopUser.HoldingCode = "shopdisabled"
 	disabledShopUser.IsAccessDisabled = true
 
 	disabledCreator := shopUser
 	disabledCreator.Username = "creator_user"
-	disabledCreator.HoldingCode = "shop_disabled_creator"
+	disabledCreator.HoldingCode = "shopdisabledcreator"
 	disabledCreator.IsAccessDisabled = true
 
-	shopUserRepo.On("FindByHoldingCodeAndUsername", "shop_disabled", "disabled_user").Return(disabledShopUser, nil)
-	shopUserRepo.On("FindShopCreatedBy", "shop_disabled").Return("creator_user", nil)
-	shopUserRepo.On("FindByHoldingCodeAndUsername", "shop_disabled_creator", "creator_user").Return(disabledCreator, nil)
-	shopUserRepo.On("FindShopCreatedBy", "shop_disabled_creator").Return("creator_user", nil)
-	shopUserRepo.On("UpdateLastAccess", "shop_test", "user_access_shop", MockTime()).Return(nil)
-	shopUserRepo.On("UpdateLastAccess", "shop_disabled_creator", "creator_user", MockTime()).Return(nil)
+	shopUserRepo.On("FindByHoldingCodeAndUsername", "shopdisabled", "disabled_user").Return(disabledShopUser, nil)
+	shopUserRepo.On("FindShopCreatedBy", "shopdisabled").Return("creator_user", nil)
+	shopUserRepo.On("FindByHoldingCodeAndUsername", "shopdisabledcreator", "creator_user").Return(disabledCreator, nil)
+	shopUserRepo.On("FindShopCreatedBy", "shopdisabledcreator").Return("creator_user", nil)
+	shopUserRepo.On("UpdateLastAccess", "shoptest", "user_access_shop", MockTime()).Return(nil)
+	shopUserRepo.On("UpdateLastAccess", "shopdisabledcreator", "creator_user", MockTime()).Return(nil)
 	shopUserAccessLogRepo.On("Create", mock.MatchedBy(func(log models.ShopUserAccessLog) bool {
-		return log.HoldingCode == "shop_test" &&
+		return log.HoldingCode == "shoptest" &&
 			log.Username == "user_access_shop" &&
 			log.Ip == "localhost" &&
 			log.LastAccessedAt.Equal(MockTime())
 	})).Return(nil)
 	shopUserAccessLogRepo.On("Create", mock.MatchedBy(func(log models.ShopUserAccessLog) bool {
-		return log.HoldingCode == "shop_disabled_creator" &&
+		return log.HoldingCode == "shopdisabledcreator" &&
 			log.Username == "creator_user" &&
 			log.Ip == "localhost" &&
 			log.LastAccessedAt.Equal(MockTime())
 	})).Return(nil)
 
-	microAuthServiceMock.On("SelectShop", microservice.AUTHTYPE_BEARER, "valid_token", "shop_test", uint8(0)).Return(nil)
-	microAuthServiceMock.On("SelectShop", microservice.AUTHTYPE_BEARER, "valid_token", "shop_disabled_creator", uint8(0)).Return(nil)
-	microAuthServiceMock.On("SelectShop", microservice.AUTHTYPE_BEARER, "valid_token_invalid", "shop_test_invalid", uint8(0)).Return(errors.New("select shop failed"))
+	microAuthServiceMock.On("SelectShop", microservice.AUTHTYPE_BEARER, "valid_token", "shoptest", uint8(0)).Return(nil)
+	microAuthServiceMock.On("SelectShop", microservice.AUTHTYPE_BEARER, "valid_token", "shopdisabledcreator", uint8(0)).Return(nil)
+	microAuthServiceMock.On("SelectShop", microservice.AUTHTYPE_BEARER, "valid_token_invalid", "shoptestinvalid", uint8(0)).Return(errors.New("select shop failed"))
 
 	type args struct {
 		holdingCode         string
@@ -602,7 +602,7 @@ func TestAuthService_AccessShop(t *testing.T) {
 		{
 			name: "success access shop ",
 			args: args{
-				holdingCode:         "shop_test",
+				holdingCode:         "shoptest",
 				username:            "user_access_shop",
 				authorizationHeader: "authorization_header_valid",
 			},
@@ -611,7 +611,7 @@ func TestAuthService_AccessShop(t *testing.T) {
 		{
 			name: "failure authorization empty",
 			args: args{
-				holdingCode:         "shop_test",
+				holdingCode:         "shoptest",
 				username:            "user_access_shop",
 				authorizationHeader: "",
 			},
@@ -620,7 +620,7 @@ func TestAuthService_AccessShop(t *testing.T) {
 		{
 			name: "failure shop invalid",
 			args: args{
-				holdingCode:         "shop_test_invalid",
+				holdingCode:         "shoptestinvalid",
 				username:            "user_access_shop",
 				authorizationHeader: "authorization_header_valid",
 			},
@@ -629,7 +629,7 @@ func TestAuthService_AccessShop(t *testing.T) {
 		{
 			name: "failure access shop failed",
 			args: args{
-				holdingCode:         "shop_test_invalid",
+				holdingCode:         "shoptestinvalid",
 				username:            "user_access_shop",
 				authorizationHeader: "authorization_header_valid",
 			},
@@ -638,7 +638,7 @@ func TestAuthService_AccessShop(t *testing.T) {
 		{
 			name: "failure access disabled user",
 			args: args{
-				holdingCode:         "shop_disabled",
+				holdingCode:         "shopdisabled",
 				username:            "disabled_user",
 				authorizationHeader: "authorization_header_valid",
 			},
@@ -647,7 +647,7 @@ func TestAuthService_AccessShop(t *testing.T) {
 		{
 			name: "success disabled creator still access",
 			args: args{
-				holdingCode:         "shop_disabled_creator",
+				holdingCode:         "shopdisabledcreator",
 				username:            "creator_user",
 				authorizationHeader: "authorization_header_valid",
 			},
