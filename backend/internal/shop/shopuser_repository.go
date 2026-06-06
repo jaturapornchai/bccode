@@ -441,7 +441,6 @@ func (repo ShopUserRepository) findByUserPage(ctx context.Context, userMatch bso
 						bson.M{"$ne": []interface{}{"$isdisabled", true}},
 					}},
 					"deletedat": bson.M{"$exists": false},
-					"deletedat": bson.M{"$exists": false},
 				}},
 				{"$project": bson.M{"code": 1}},
 			},
@@ -452,7 +451,6 @@ func (repo ShopUserRepository) findByUserPage(ctx context.Context, userMatch bso
 				"shopInfo.0":         bson.M{"$exists": true},
 				"shopInfo.deletedat": bson.M{"$exists": false},
 				"shopInfo.deletedAt": bson.M{"$exists": false},
-				"shopInfo.deletedat": bson.M{"$exists": false},
 			},
 		},
 		bson.M{
