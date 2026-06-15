@@ -1045,7 +1045,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
           </div>
           <div className="flex-1 min-h-0 flex flex-col md:flex-row bg-card overflow-hidden">
             {/* Sidebar: vertical rail on desktop, horizontal scroll tabs on mobile */}
-            <aside className="w-full md:w-60 shrink-0 border-b md:border-b-0 md:border-r border-border bg-muted/20 p-2 md:p-4 flex flex-row md:flex-col gap-1.5 md:gap-1 overflow-x-auto md:overflow-y-auto">
+            <aside className="w-full md:w-60 shrink-0 border-b md:border-b-0 md:border-r border-border bg-muted/20 p-2 md:p-4 grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-col gap-1.5 md:gap-1 md:overflow-y-auto">
               <p className="hidden md:block px-2 mb-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">
                 {language === "th" ? "ตั้งค่าระบบและการเข้าถึง" : "Settings & Access"}
               </p>
@@ -1054,7 +1054,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 return (
                   <button
                     key={item.route}
-                    className={`w-auto md:w-full shrink-0 md:shrink text-left px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center md:items-start gap-2 ${
+                    className={`w-full text-left px-2.5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center md:items-start gap-2 ${
                       isActive
                         ? "bg-primary text-primary-foreground shadow-md ring-1 ring-primary/40"
                         : "text-foreground hover:bg-muted md:hover:translate-x-0.5"
@@ -1072,7 +1072,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                       {index + 1}
                     </span>
                     <span className="min-w-0">
-                      <span className="block whitespace-nowrap md:truncate">
+                      <span className="block leading-tight md:truncate">
                         {language === "th" ? item.label.th : item.label.en}
                       </span>
                       <span
