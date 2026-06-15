@@ -648,7 +648,7 @@ h2:not([class]) {
 .brand-feature-grid {
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
   gap: var(--density-gap);
 }
 
@@ -812,6 +812,24 @@ h2:not([class]) {
 
   .social-login-grid {
     gap: 8px;
+  }
+}
+
+/* Login: stack to a single centered column on narrow desktops/tablets
+   so the brand panel never squishes feature cards into vertical text. */
+@media (min-width: 901px) and (max-width: 1180px) {
+  .login-shell {
+    grid-template-columns: minmax(0, 620px);
+    justify-content: center;
+  }
+
+  .brand-panel {
+    display: none;
+  }
+
+  .form-panel {
+    width: 100%;
+    min-height: calc(100vh - clamp(20px, 4.8vw, 48px));
   }
 }
 
