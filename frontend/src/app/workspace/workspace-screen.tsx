@@ -991,29 +991,29 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     return (
       <main className="w-screen h-screen bg-background flex flex-col overflow-hidden">
         <section className="w-full h-full flex flex-col bg-card" role="dialog" aria-modal="true">
-          <div className="dialog-header shrink-0 flex items-center justify-between gap-3 px-6">
-            <div className="flex items-center gap-6 min-w-0">
+          <div className="dialog-header shrink-0 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-3 py-2 sm:px-6">
+            <div className="flex items-center gap-2 sm:gap-6 min-w-0">
               <button
                 className="secondary-button flex items-center gap-2 px-3 py-1.5 text-sm font-bold text-foreground hover:bg-muted hover:text-primary border border-border rounded-xl transition-all shadow-sm shrink-0"
                 type="button"
                 onClick={() => void returnToShopSelection()}
               >
                 <ArrowLeft size={16} className="text-muted-foreground" />
-                <span>{language === "th" ? "ย้อนกลับ" : "Back"}</span>
+                <span className="hidden sm:inline">{language === "th" ? "ย้อนกลับ" : "Back"}</span>
               </button>
-              <div>
+              <div className="hidden sm:block min-w-0">
                 <p className="eyebrow">{language === "th" ? "การตั้งค่าระบบ" : "SYSTEM CONFIGURATION"}</p>
-                <h2 className="text-xl font-bold">
+                <h2 className="text-base font-bold leading-tight sm:text-xl">
                   {language === "th" ? "ตั้งค่าระบบและการเข้าถึง" : "Settings & Access Control"}
                 </h2>
               </div>
 
             </div>
-            <div className="flex min-w-0 items-center gap-2">
+            <div className="flex min-w-0 shrink-0 items-center gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
-                    className="secondary-button flex min-w-0 max-w-[42vw] items-center gap-2 px-3 py-1.5 text-sm font-bold text-foreground hover:bg-muted hover:text-primary border border-border rounded-xl transition-all shadow-sm"
+                    className="secondary-button flex min-w-0 max-w-[70vw] sm:max-w-[42vw] items-center gap-2 px-3 py-1.5 text-sm font-bold text-foreground hover:bg-muted hover:text-primary border border-border rounded-xl transition-all shadow-sm"
                     type="button"
                     disabled={busy || accessShopOptions.length <= 1}
                   >
@@ -1043,10 +1043,10 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
               </DropdownMenu>
             </div>
           </div>
-          <div className="flex-1 min-h-0 flex bg-card overflow-hidden">
-            {/* Sidebar ภายใน Modal */}
-            <aside className="w-60 shrink-0 border-r border-border bg-muted/20 p-4 flex flex-col gap-1 overflow-y-auto">
-              <p className="px-2 mb-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+          <div className="flex-1 min-h-0 flex flex-col md:flex-row bg-card overflow-hidden">
+            {/* Sidebar: vertical rail on desktop, horizontal scroll tabs on mobile */}
+            <aside className="w-full md:w-60 shrink-0 border-b md:border-b-0 md:border-r border-border bg-muted/20 p-2 md:p-4 flex flex-row md:flex-col gap-1.5 md:gap-1 overflow-x-auto md:overflow-y-auto">
+              <p className="hidden md:block px-2 mb-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">
                 {language === "th" ? "ตั้งค่าระบบและการเข้าถึง" : "Settings & Access"}
               </p>
               {accessSettingNavItems.map((item, index) => {
@@ -1054,16 +1054,16 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 return (
                   <button
                     key={item.route}
-                    className={`w-full text-left px-2.5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 flex items-start gap-2 ${
+                    className={`w-auto md:w-full shrink-0 md:shrink text-left px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center md:items-start gap-2 ${
                       isActive
                         ? "bg-primary text-primary-foreground shadow-md ring-1 ring-primary/40"
-                        : "text-foreground hover:bg-muted hover:translate-x-0.5"
+                        : "text-foreground hover:bg-muted md:hover:translate-x-0.5"
                     }`}
                     type="button"
                     onClick={() => setActiveAccessRoute(item.route)}
                   >
                     <span
-                      className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+                      className={`mt-0 md:mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
                         isActive
                           ? "bg-primary-foreground/20 text-primary-foreground"
                           : "bg-primary/10 text-primary"
@@ -1072,11 +1072,11 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                       {index + 1}
                     </span>
                     <span className="min-w-0">
-                      <span className="block truncate">
+                      <span className="block whitespace-nowrap md:truncate">
                         {language === "th" ? item.label.th : item.label.en}
                       </span>
                       <span
-                        className={`block truncate text-[10px] font-medium ${
+                        className={`hidden md:block truncate text-[10px] font-medium ${
                           isActive
                             ? "text-primary-foreground/80"
                             : "text-muted-foreground"
@@ -1098,10 +1098,10 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 if (!bItem?.banner) return null;
                 return (
                   <div
-                    className="relative mb-4 h-36 w-full overflow-hidden rounded-2xl border border-border/60 shadow-sm sm:h-44"
+                    className="relative mb-4 h-24 w-full overflow-hidden rounded-2xl border border-border/60 shadow-sm sm:h-36 md:h-44"
                     style={{ backgroundColor: "#812920", backgroundImage: `url(${bItem.banner})`, backgroundSize: "auto 100%", backgroundPosition: "right center", backgroundRepeat: "no-repeat" }}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#812920] from-15% via-[#812920]/60 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#812920] from-38% via-[#812920]/40 via-68% to-transparent to-94%" />
                     <div className="relative z-10 flex h-full items-center gap-3 px-5">
                       <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/25 text-lg font-black text-white ring-1 ring-white/50 backdrop-blur-sm [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]">
                         {bIdx + 1}
