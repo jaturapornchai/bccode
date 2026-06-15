@@ -1098,10 +1098,10 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 if (!bItem?.banner) return null;
                 return (
                   <div
-                    className="relative mb-4 h-36 w-full overflow-hidden rounded-2xl border border-border/60 bg-muted shadow-sm sm:h-44"
-                    style={{ backgroundImage: `url(${bItem.banner})`, backgroundSize: "cover", backgroundPosition: "center", backgroundRepeat: "no-repeat" }}
+                    className="relative mb-4 h-36 w-full overflow-hidden rounded-2xl border border-border/60 shadow-sm sm:h-44"
+                    style={{ backgroundColor: "#812920", backgroundImage: `url(${bItem.banner})`, backgroundSize: "auto 100%", backgroundPosition: "right center", backgroundRepeat: "no-repeat" }}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#812920]/92 via-[#812920]/55 to-[#812920]/10" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#812920] from-15% via-[#812920]/60 to-transparent" />
                     <div className="relative z-10 flex h-full items-center gap-3 px-5">
                       <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/25 text-lg font-black text-white ring-1 ring-white/50 backdrop-blur-sm [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]">
                         {bIdx + 1}
