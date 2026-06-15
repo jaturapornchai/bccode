@@ -105,41 +105,49 @@ const accessSettingNavItems = [
     route: "/activelanguages",
     label: { th: "ภาษาที่ใช้งาน", en: "Active Languages" },
     helper: { th: "กำหนดก่อนข้อมูลอื่น", en: "Set before other data" },
+    banner: "/settings/banner-language.webp",
   },
   {
     route: "/company",
     label: { th: "ข้อมูลบริษัทและสาขา", en: "Company & Branch" },
     helper: { th: "สร้างบริษัทและสำนักงานใหญ่", en: "Create companies and branches" },
+    banner: "/settings/banner-company.webp",
   },
   {
     route: "/user",
     label: { th: "ผู้ใช้งาน", en: "Users" },
     helper: { th: "เพิ่มคนเข้าใช้งาน", en: "Add system users" },
+    banner: "/settings/banner-users.webp",
   },
   {
     route: "/permissiondefinition",
     label: { th: "กำหนดสิทธิ์หน้าจอ", en: "Permission Definition" },
     helper: { th: "เลือกหน้าจอที่เข้าได้", en: "Choose accessible screens" },
+    banner: "/settings/banner-permission-screen.webp",
   },
   {
     route: "/permissiongroup",
     label: { th: "กำหนดสิทธิ์ตามกลุ่ม", en: "Permission Group" },
     helper: { th: "รวมสิทธิ์เป็นชุด", en: "Group permission sets" },
+    banner: "/settings/banner-permission-group.webp",
   },
   {
     route: "/permissionlink",
     label: { th: "กำหนดสิทธิ์ผู้ใช้งาน", en: "User Permissions" },
     helper: { th: "ผูกกลุ่มกับผู้ใช้", en: "Assign groups to users" },
+    banner: "/settings/banner-permission-user.webp",
   },
   {
     route: "/approvalsetting",
     label: { th: "สิทธิ์การอนุมัติ", en: "Approval Permission" },
     helper: { th: "วงเงินและเอกสารอนุมัติ", en: "Approval limits and documents" },
+    banner: "/settings/banner-approval.webp",
   },
   {
     route: "/useraccessaudit",
     label: { th: "ตรวจสอบสถานะผู้ใช้งาน", en: "User Access Audit" },
     helper: { th: "รายงานสิทธิ์และการเข้าถึง", en: "Access and permission report" },
+    banner: "/settings/banner-audit.webp",
   },
 ] as const;
 
@@ -1046,10 +1054,10 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 return (
                   <button
                     key={item.route}
-                    className={`w-full text-left px-2.5 py-2 rounded-lg text-sm font-semibold transition-colors flex items-start gap-2 ${
+                    className={`w-full text-left px-2.5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 flex items-start gap-2 ${
                       isActive
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "text-foreground hover:bg-muted"
+                        ? "bg-primary text-primary-foreground shadow-md ring-1 ring-primary/40"
+                        : "text-foreground hover:bg-muted hover:translate-x-0.5"
                     }`}
                     type="button"
                     onClick={() => setActiveAccessRoute(item.route)}
@@ -1084,6 +1092,32 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
 
             {/* คอนเทนต์แสดงผลฝั่งขวา */}
             <div className="flex-1 min-h-0 overflow-y-auto p-4">
+              {(() => {
+                const bIdx = accessSettingNavItems.findIndex((i) => i.route === activeAccessRoute);
+                const bItem = bIdx >= 0 ? accessSettingNavItems[bIdx] : null;
+                if (!bItem?.banner) return null;
+                return (
+                  <div
+                    className="relative mb-4 h-28 w-full overflow-hidden rounded-2xl border border-border/60 bg-muted shadow-sm sm:h-32"
+                    style={{ backgroundImage: `url(${bItem.banner})`, backgroundSize: "cover", backgroundPosition: "center right" }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#812920]/92 via-[#812920]/50 to-transparent" />
+                    <div className="relative z-10 flex h-full items-center gap-3 px-5">
+                      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/25 text-base font-black text-white ring-1 ring-white/40 backdrop-blur-sm">
+                        {bIdx + 1}
+                      </span>
+                      <div className="min-w-0">
+                        <h3 className="text-lg font-black leading-tight text-white drop-shadow-sm sm:text-xl">
+                          {language === "th" ? bItem.label.th : bItem.label.en}
+                        </h3>
+                        <p className="text-xs font-semibold text-white/90 drop-shadow-sm">
+                          {language === "th" ? bItem.helper.th : bItem.helper.en}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
               {activeAccessRoute !== "/activelanguages" &&
               !hasExplicitLanguageSettings(selectedShopForAccess) ? (
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-primary/25 bg-primary/10 px-3 py-2 text-sm text-foreground">
