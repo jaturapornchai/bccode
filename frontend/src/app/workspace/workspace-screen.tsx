@@ -11,7 +11,6 @@ import {
   Copy,
   Crown,
   ExternalLink,
-  GitBranch,
   HelpCircle,
   KeyRound,
   Languages,
@@ -800,6 +799,36 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     }
   }
 
+  // Manually create the headquarter branch (00000) for the empty-branch state,
+  // reusing the same default-branch payload as the auto-create in selectCompany.
+  async function createHeadquarterBranch() {
+    if (!auth || !selectedShop) return;
+    setBusy(true);
+    setNotice(null);
+    try {
+      let shopInfo: Record<string, unknown> | null = null;
+      try {
+        shopInfo = JSON.parse(localStorage.getItem(workspaceStorageKeys.shopInfo) ?? "null");
+      } catch {
+        shopInfo = null;
+      }
+      await callWorkspaceApi(auth, "branch", {
+        method: "POST",
+        body: { branch: createDefaultBranch(selectedShop, shopInfo, selectedCompany?.guidfixed) },
+      });
+      const reloaded = await callWorkspaceApi<{ data?: BranchListItem[] }>(auth, "branches?offset=0&limit=100&q=");
+      setBranches(Array.isArray(reloaded.data) ? reloaded.data : []);
+    } catch (error) {
+      setNotice(
+        error instanceof Error && error.message
+          ? { type: "error", text: error.message }
+          : { type: "error", textKey: "requestFailed" },
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function openAccessSettings(route: string) {
     if (!auth) return;
     const representativeShop = accessShopOptions[0]?.shop;
@@ -1168,9 +1197,6 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
               >
                 <span>{language === "th" ? "Holding ที่ใช้งาน" : "Active Holding"}</span>
                 <strong>{activeHoldingContext.name}</strong>
-                {activeHoldingContext.name !== activeHoldingContext.code ? (
-                  <code>holdingcode: {activeHoldingContext.code}</code>
-                ) : null}
               </div>
             ) : null}
           </div>
@@ -1204,24 +1230,34 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
           <div className="flex items-center gap-2">
             {step === "shops" ? (
               <button
-                className="secondary-button workspace-head-action flex items-center gap-1.5"
+                className="primary-button workspace-head-action flex items-center gap-2 shadow-md"
                 type="button"
                 onClick={() => void openAccessSettings("/activelanguages")}
                 disabled={busy}
               >
-                <KeyRound size={17} />
+                <KeyRound size={18} />
                 <span>{language === "th" ? "ตั้งค่าระบบ" : "Settings"}</span>
+                {flatCompanies.length === 0 ? (
+                  <span className="ml-0.5 rounded-full bg-amber-400 px-1.5 py-0.5 text-[9px] font-black text-amber-950 animate-pulse">
+                    {language === "th" ? "เริ่มที่นี่" : "Start here"}
+                  </span>
+                ) : null}
               </button>
             ) : null}
           </div>
         </div>
 
         <div className="step-strip">
-          <span className="active">{text("stepLogin")}</span>
-          <span className={step === "shops" ? "active" : ""}>
-            {language === "th" ? "2 เลือกบริษัทและสาขา" : "2 Select Company & Branch"}
+          <span className="done"><CheckCircle2 size={13} />{text("stepLogin")}</span>
+          <span className={step === "shops" ? "active" : step === "branches" || step === "access" ? "done" : "pending"}>
+            {step === "branches" || step === "access" ? <CheckCircle2 size={13} /> : null}
+            {text("stepCompany")}
           </span>
-          <span>{text("stepMenu")}</span>
+          <span className={step === "branches" ? "active" : step === "access" ? "done" : "pending"}>
+            {step === "access" ? <CheckCircle2 size={13} /> : null}
+            {text("stepBranch")}
+          </span>
+          <span className="pending">{text("stepMenu")}</span>
         </div>
 
         {notice ? (
@@ -1260,13 +1296,13 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 </p>
 
                 <button
-                  className="secondary-button mb-4 inline-flex items-center gap-1.5"
+                  className="primary-button mb-4 inline-flex items-center gap-2 shadow-md"
                   type="button"
                   onClick={() => void openAccessSettings("/activelanguages")}
                   disabled={busy || accessShopOptions.length === 0}
                 >
-                  <Languages size={16} />
-                  <span>{language === "th" ? "ตั้งค่าภาษาก่อน" : "Set languages first"}</span>
+                  <KeyRound size={18} />
+                  <span>{language === "th" ? "เริ่มตั้งค่าระบบ" : "Start system setup"}</span>
                 </button>
 
                 <div className="w-full text-left bg-accent/35 border border-border/60 rounded-xl p-4 space-y-3.5">
@@ -1352,16 +1388,13 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
               </div>
             ) : (
               <div className="flex flex-wrap gap-6 justify-center w-full py-2">
-                {flatCompanies.map((item, index) => {
+                {flatCompanies.map((item) => {
                   const { shop, company } = item;
                   const isCreator = shop.is_creator === true
                     || Boolean(auth?.username && shop.createdby && shop.createdby.trim().toLowerCase() === auth.username.trim().toLowerCase());
                   const languageCodes = shopLanguageCodes(shop);
                   const currencyLabel = shopCurrencyLabel(shop, language);
                   const compName = localizedName(company.names, company.code || "");
-                  const holdingLabel = shop.holdingcode?.trim()
-                    ? `holdingcode: ${shop.holdingcode.trim()}`
-                    : `legacy_holdingcode: ${shop.holdingcode}`;
 
                   return (
                     <button
@@ -1370,20 +1403,22 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                       onClick={() => void selectCompany(shop, company)}
                       className="group/company text-left relative w-full md:w-[calc(50%-12px)] lg:w-[350px] shrink-0 border border-border/80 rounded-2xl bg-card/85 backdrop-blur-md overflow-hidden shadow-md hover:shadow-xl hover:border-primary/40 hover:scale-[1.01] transition-all duration-300"
                     >
-                      {/* Left color bar accent */}
-                      <div className={`absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b ${index % 2 === 0 ? "from-indigo-500 to-indigo-600" : "from-teal-500 to-emerald-500"}`} />
+                      {/* Left color bar accent — amber for OWNER, primary for USER */}
+                      <div className={`absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b ${isCreator ? "from-amber-500 to-amber-600" : "from-primary to-primary/80"}`} />
 
                       {/* Company Header */}
                       <div className="flex flex-col p-4 pl-6">
                         <div className="flex items-center gap-3">
-                          <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${index % 2 === 0 ? "bg-indigo-500/10 text-indigo-500" : "bg-teal-500/10 text-teal-500"}`}>
+                          <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isCreator ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-primary/10 text-primary"}`}>
                             <Building2 size={20} />
                           </span>
                           <div className="min-w-0">
-                            <h3 className="font-bold text-foreground text-sm sm:text-base tracking-tight truncate" title={compName}>
+                            <h3
+                              className="font-bold text-foreground text-sm sm:text-base tracking-tight break-words"
+                              title={`${compName} · ${language === "th" ? "รหัสกลุ่มธุรกิจ" : "Holding code"} ${shop.holdingcode}`}
+                            >
                               [{company.code}] {compName}
                             </h3>
-                            <p className="text-[10px] text-muted-foreground/80 mt-0.5 font-mono truncate">{holdingLabel}</p>
                           </div>
                         </div>
 
@@ -1428,15 +1463,51 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
               </label>
             </div>
             {filteredBranches.length === 0 ? (
-              <div className="workspace-empty-state">
-                <GitBranch size={24} />
-                <strong>{text("searchBranch")}</strong>
+              <div className="workspace-empty-state flex flex-col items-center justify-center p-6 text-center max-w-md mx-auto">
+                <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-3">
+                  <Building2 size={28} />
+                </div>
+                {branches.length === 0 ? (
+                  <>
+                    <strong className="text-base text-foreground font-bold mb-1.5">
+                      {language === "th" ? "ยังไม่มีสาขา" : "No branches yet"}
+                    </strong>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      {language === "th"
+                        ? "ระบบจะสร้างสาขาสำนักงานใหญ่ (รหัส 00000) ให้อัตโนมัติเพื่อเริ่มใช้งาน"
+                        : "The system will auto-create the headquarter branch (code 00000) to get started."}
+                    </p>
+                    <button
+                      className="primary-button inline-flex items-center gap-1.5"
+                      type="button"
+                      onClick={() => void createHeadquarterBranch()}
+                      disabled={busy}
+                    >
+                      {busy ? <Loader2 className="spin" size={16} /> : <Building2 size={16} />}
+                      <span>{language === "th" ? "สร้างสาขาสำนักงานใหญ่" : "Create headquarter branch"}</span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <strong className="text-base text-foreground font-bold mb-1.5">
+                      {language === "th" ? "ไม่พบสาขาที่ค้นหา" : "No branches match your search"}
+                    </strong>
+                    <button
+                      className="secondary-button inline-flex items-center gap-1.5"
+                      type="button"
+                      onClick={() => setBranchQuery("")}
+                    >
+                      <Search size={16} />
+                      <span>{language === "th" ? "ล้างคำค้นหา" : "Clear search"}</span>
+                    </button>
+                  </>
+                )}
               </div>
             ) : (
               <div className="workspace-card-grid">
                 {filteredBranches.map((branch, index) => (
                 <button className="shop-card branch-card" disabled={busy} key={branch.guidfixed || branch.code} type="button" onClick={() => void selectBranch(branch)}>
-                  <span className={`shop-avatar tone-${index % 6}`}><GitBranch size={20} /></span>
+                  <span className={`shop-avatar tone-${index % 6}`}><Building2 size={20} /></span>
                   <span className="shop-main">
                     <strong>{branchDisplayName(branch)}</strong>
                     <small>{branch.code || branch.guidfixed}</small>

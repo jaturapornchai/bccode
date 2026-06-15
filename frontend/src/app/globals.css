@@ -3106,6 +3106,7 @@ h2:not([class]) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 5px;
   padding: 0 16px;
   border: 1.5px solid var(--line);
   border-radius: 999px;
@@ -3119,10 +3120,20 @@ h2:not([class]) {
 }
 
 .step-strip span.active {
-  border-color: var(--indigo);
-  background: var(--indigo);
-  color: #ffffff;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--primary) 32%, transparent);
+}
+
+.step-strip span.done {
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--line));
+  background: color-mix(in srgb, var(--primary) 10%, var(--panel-soft));
+  color: var(--primary);
+}
+
+.step-strip span.pending {
+  opacity: 0.55;
 }
 
 .message.info {
