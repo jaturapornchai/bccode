@@ -2185,7 +2185,7 @@ export function SystemSettingsScreen({
     groupNumber !== null;
 
   const content = (
-    <div className="grid w-full min-w-0 gap-2">
+    <div className="grid w-full max-w-none min-w-0 gap-2">
       {hideChrome ? null : (
       <header className="rounded-xl border border-border/80 bg-gradient-to-r from-secondary/15 via-secondary/5 to-transparent px-2.5 py-1.5 shadow-[0_1px_2px_rgba(0,0,0,0.015)]">
         <div className="flex w-full flex-wrap items-center justify-between gap-2">
@@ -2886,9 +2886,9 @@ export function SystemSettingsScreen({
   );
 
   if (embedded)
-    return <section className="grid w-full min-w-0 gap-3">{content}</section>;
+    return <section className="grid w-full max-w-none min-w-0 gap-3">{content}</section>;
   return (
-    <main className="min-h-dvh w-full overflow-x-hidden bg-background p-2 text-foreground sm:p-3">
+    <main className="min-h-dvh w-full max-w-none bg-background p-2 text-foreground sm:p-3">
       {content}
     </main>
   );
@@ -10893,7 +10893,7 @@ function LanguageFlag({ code }: { code: string }) {
   const normalized = supportedLanguageCode(code, "th");
   return (
     <span className="grid size-7 shrink-0 place-items-center overflow-hidden rounded border border-border bg-card">
-      <Image alt="" height={18} src={`/flags/${normalized}.png`} width={27} />
+      <Image alt="" className="h-full w-full object-contain" height={18} src={`/flags/${normalized}.png`} width={27} />
     </span>
   );
 }

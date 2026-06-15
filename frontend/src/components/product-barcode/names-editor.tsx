@@ -65,7 +65,7 @@ export function LanguageFlag({ code }: { code: string }) {
   const normalized = supportedLanguageCode(code, "th");
   return (
     <span className="grid size-7 shrink-0 place-items-center overflow-hidden rounded border border-border bg-card">
-      <Image alt="" height={18} src={`/flags/${normalized}.png`} width={27} />
+      <Image alt="" className="h-full w-full object-contain" height={18} src={`/flags/${normalized}.png`} width={27} />
     </span>
   );
 }
