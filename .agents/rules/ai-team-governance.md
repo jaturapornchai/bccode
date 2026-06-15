@@ -66,6 +66,7 @@ GEMINI_CLI_TRUST_WORKSPACE=true gemini -p "<brief>" --approval-mode plan -o text
 - [ ] อ่านง่าย/ไม่ over-engineer (YAGNI)
 - [ ] (งาน UI) สวย + ใช้ง่าย + เข้าใจง่าย ตามโจทย์
 ไม่ผ่าน → เขียน feedback ชัด ส่งกลับ agent เดิมแก้ (อย่าแก้เอง).
+งานสำคัญ/ใหญ่/เสี่ยง → เสริมด้วย **Cross-AI Review** (Codex หา bug/security, Gemini ดู UX/UI) ตาม §10 แล้ว Claude สังเคราะห์.
 
 ## 6. Workflow มาตรฐาน
 `PLAN` (Claude แตกงาน เลือก agent) → `DELEGATE` (ส่ง 5-section spec, ขนานได้ผ่าน worktree) → `AUDIT` (ตรวจ + รัน test จริง) → `FIX` (ส่ง feedback กลับ) → `INTEGRATE` (merge → สรุปไทยให้ลุงจืด).
@@ -89,3 +90,14 @@ GEMINI_CLI_TRUST_WORKSPACE=true gemini -p "<brief>" --approval-mode plan -o text
 2. **Claude เปรียบเทียบ 2 ผล แล้วตัดสินใจ**: เลือกอันที่ดีกว่า / รวมจุดเด่นทั้งคู่ / สังเคราะห์เป็นอันใหม่. **Claude เป็นผู้ตัดสินสุดท้าย + รับผิดชอบผลลัพธ์** (รัน VERIFICATION จริงก่อนเสร็จเสมอ ตาม §5).
 3. **บอกลุงจืดสั้นๆ** ว่าเลือก/รวมยังไง + เพราะอะไร (แก้ของ Codex ตรงไหน, Codex เก่งกว่าตรงไหน) — ไม่ทิ้ง 2 ผลดิบให้เทียบเอง.
 4. **cost-aware (Pareto)**: งานเล็ก / ตรงไปตรงมา / 1 วิธีชัดเจน → **ไม่ต้อง dual** (Claude ทำเอง หรือ Codex เดี่ยวตาม §1). dual เปลือง ~2 เท่า ใช้เฉพาะงานที่คุ้มได้ 2 มุมมอง.
+
+## 10. Cross-AI Review — Codex + Gemini ช่วยตรวจ (set 2026-06-16)
+นอกจาก Claude audit (§5), งาน **สำคัญ / ใหญ่ / เสี่ยง / ก่อน commit-push ใหญ่** ให้ขอ review หลายมุมจาก AI อื่นด้วย แล้ว Claude สังเคราะห์ + ตัดสิน:
+1. **Codex review** = หา bug / security / logic / edge case / correctness:
+   - diff ล่าสุด: `codex exec review` หรือ `codex review`
+   - งานใหญ่/เจาะจง: `bash .agents/orchestration/dispatch-codex.sh --deep "review <scope>: หา bug, security, edge case, logic ผิด — ตอบเป็น list พร้อม file:line"`
+2. **Gemini review** = UX/UI / อ่านง่าย / เข้าใจง่าย / consistency / accessibility (read-only):
+   - `bash .agents/orchestration/dispatch-design.sh "review <ไฟล์/จอ>: ชี้จุด UX/UI ที่ควรปรับให้ใช้ง่าย+เข้าใจง่าย+สวยขึ้น เป็น list"`
+3. **Claude สังเคราะห์ + ตัดสิน (รับผิดชอบสุดท้าย)** — รวมผล review ทั้ง 3 ฝั่ง (Claude+Codex+Gemini), คัดอันจริง / ตัด false positive, **รัน VERIFICATION จริงเองเสมอ** (Codex/Gemini review = ความเห็นเพิ่ม ไม่แทน Claude verify ตาม IRON RULE 2), แก้เท่าที่ควร แล้วกลั่นเป็นสรุปไทยให้ลุงจืด (ไม่ทิ้ง raw log)
+4. **cost-aware (Pareto)**: งานเล็ก / 1-2 บรรทัด / trivial → **Claude ตรวจพอ ไม่ต้อง cross-review**. ใช้ cross-review เฉพาะงานที่คุ้ม (เปลือง token+latency เพิ่ม) — เกณฑ์เดียวกับ §9
+5. **R rules**: การ review เป็น read-only (R2) เรียกได้เลย; ถ้า "แก้ตาม review" แตะ R0/R1 ยัง flag ลุงจืดก่อนตามปกติ (IRON RULE 5)

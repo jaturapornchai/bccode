@@ -9,6 +9,7 @@
 - **AI Capability & Team Roles** (set 2026-06-04): ทุก AI Agent ยังเป็น full-stack ทำแทนกันได้ทุก layer **เมื่อจำเป็น** แต่มี **default routing** (soft, ไม่ใช่ role-lock) ตาม `.agents/rules/ai-team-governance.md`: **Claude** = หัวหน้า+ผู้ตรวจ (orchestrate/audit/merge, ไม่เขียน prod code ยกเว้น glue), **Codex** = เขียนโค้ด backend+frontend (`gpt-5.5` งานยาก / `gpt-5.4-mini` งานเร็ว), **Gemini/Antigravity(agy)** = ออกแบบ UX/UI. หัวหน้ามอบงานผ่าน `.agents/orchestration/` แล้วตรวจรับด้วย VERIFICATION จริงเสมอ. เหมาจ่าย/subscription เท่านั้น — ห้าม per-token API key
 - **การปรับปรุงกฎและทักษะทันที**: หากมีการอัปเดตโค้ด ปรับปรุงตรรกะ หรือระบบใด ๆ ตามคำสั่งของลุงจืด ให้ผู้พัฒนา/AI ทำการปรับปรุงกฎ (Rules), ทักษะ (Skills) หรือองค์ความรู้ (KM) ของระบบให้สอดคล้องเสมอทันที เพื่อให้ระบบความรู้ของ AI ทันสมัยและไม่กลับไปเขียนหรือแก้เป็นแบบเดิม
 - **Dual-track Codex+Claude (งานสำคัญ/ยาก/หลายวิธีทำ)**: Claude เขียน solution เอง พร้อมมอบ Codex ทำโจทย์เดียวกันขนาน แล้ว Claude เปรียบเทียบ → เลือก/รวม/สังเคราะห์ + VERIFY จริงก่อนเสร็จ (Claude รับผิดชอบผล). งานเล็ก/1 วิธีชัดเจน = ไม่ต้อง dual. รายละเอียด: `.agents/rules/ai-team-governance.md` §9.
+- **Cross-AI Review (งานสำคัญ/ใหญ่/เสี่ยง/ก่อน commit ใหญ่)**: นอกจาก Claude ตรวจเอง ให้ **Codex review** (`codex review` — หา bug/security/edge case) + **Gemini review** (`dispatch-design.sh` — UX/UI/อ่านง่าย) ช่วยตรวจ แล้ว Claude สังเคราะห์ผล + คัด false positive + VERIFY จริงเอง + สรุปไทย. งานเล็ก = Claude ตรวจพอ. รายละเอียด: `.agents/rules/ai-team-governance.md` §10.
 
 
 ## 🧠 REASONING DEPTH (all models — map to your own knob)
