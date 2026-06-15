@@ -99,7 +99,7 @@ type SettingData struct {
 }
 
 type SettingDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	SettingData        `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

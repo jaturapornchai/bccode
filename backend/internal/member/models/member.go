@@ -73,7 +73,7 @@ type MemberData struct {
 	MemberInfo `bson:"inline"`
 }
 type MemberDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	MemberData         `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 	models.LastUpdate  `bson:"inline"`

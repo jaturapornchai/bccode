@@ -34,7 +34,7 @@ type FileStatusData struct {
 }
 
 type FileStatusDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	FileStatusData     `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

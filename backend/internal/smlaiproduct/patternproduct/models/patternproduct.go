@@ -29,7 +29,7 @@ type PatternProductData struct {
 }
 
 type PatternProductDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	PatternProductData `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

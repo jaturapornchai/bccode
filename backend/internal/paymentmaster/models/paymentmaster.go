@@ -34,7 +34,7 @@ type PaymentMasterData struct {
 }
 
 type PaymentMasterDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	PaymentMasterData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

@@ -190,7 +190,7 @@ type ProductData struct {
 }
 
 type ProductDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	ProductData        `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

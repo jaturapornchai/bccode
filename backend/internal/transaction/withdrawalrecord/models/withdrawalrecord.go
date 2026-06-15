@@ -28,7 +28,7 @@ type WithdrawalRecordData struct {
 }
 
 type WithdrawalRecordDoc struct {
-	ID                   primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                   primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	WithdrawalRecordData `bson:"inline"`
 	models.ActivityDoc   `bson:"inline"`
 }

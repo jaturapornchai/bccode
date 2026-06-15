@@ -50,7 +50,7 @@ type PickandpackData struct {
 }
 
 type PickandpackDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	PickandpackData    `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
@@ -97,7 +97,7 @@ type WarehouseStatusCount struct {
 
 type PickandpackWarehouseDashboard struct {
 	models.PartitionIdentity `bson:"inline"`
-	ID                       WarehouseLocationGroup `json:"id" bson:"id"`
+	ID                       WarehouseLocationGroup `json:"id" bson:"_id"`
 	WhNames                  *[]models.NameX        `json:"whnames" bson:"whnames"`
 	LocationNames            *[]models.NameX        `json:"locationnames" bson:"locationnames"`
 	StatusCounts             []WarehouseStatusCount `json:"statuscounts" bson:"statuscounts"`

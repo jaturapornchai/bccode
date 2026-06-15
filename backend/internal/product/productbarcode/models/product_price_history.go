@@ -11,7 +11,7 @@ const productPriceHistoryCollectionName = "productbarcodespricehistory"
 
 // ประวัติการแก้ไขราคาสินค้า
 type ProductPriceHistory struct {
-	ID                       primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                       primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	models.HoldingCodeentity `bson:"inline"`
 	models.DocIdentity       `bson:"inline"`
 

@@ -30,7 +30,7 @@ type PrinterData struct {
 }
 
 type PrinterDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	PrinterData        `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 	models.LastUpdate  `bson:"inline"`

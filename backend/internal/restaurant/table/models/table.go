@@ -33,7 +33,7 @@ type TableData struct {
 }
 
 type TableDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	TableData          `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 	models.LastUpdate  `bson:"inline"`

@@ -29,7 +29,7 @@ type ProductGroupData struct {
 }
 
 type ProductGroupDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	ProductGroupData   `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

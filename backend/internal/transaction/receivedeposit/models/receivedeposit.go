@@ -28,7 +28,7 @@ type ReceiveDepositData struct {
 }
 
 type ReceiveDepositDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	ReceiveDepositData `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

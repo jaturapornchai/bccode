@@ -85,7 +85,7 @@ type SaleInvoiceData struct {
 }
 
 type SaleInvoiceDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	SaleInvoiceData    `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

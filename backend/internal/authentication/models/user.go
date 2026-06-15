@@ -45,7 +45,7 @@ type UserPassword struct {
 }
 
 type UserDoc struct {
-	ID               primitive.ObjectID `json:"-" bson:"id,omitempty"`
+	ID               primitive.ObjectID `json:"-" bson:"_id,omitempty"`
 	UsernameField    `bson:"inline"`
 	EmailField       `bson:"inline"`
 	PhoneNumberField `bson:"inline"`
@@ -202,7 +202,7 @@ type AccessScope struct {
 }
 
 type ShopUser struct {
-	ID               primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID               primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	ShopUserBase     `bson:"inline"`
 	IsFavorite       bool      `json:"isfavorite" bson:"isfavorite"`
 	LastAccessedAt   time.Time `json:"lastaccessedat" bson:"lastaccessedat"`
@@ -302,7 +302,7 @@ type UserRoleRequest struct {
 }
 
 type ShopUserAccessLog struct {
-	ID             primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID             primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	HoldingCode    string             `json:"holdingcode" bson:"holdingcode"`
 	Username       string             `json:"username" bson:"username"`
 	Ip             string             `json:"ip" bson:"ip"`

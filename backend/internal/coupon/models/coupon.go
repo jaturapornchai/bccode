@@ -74,7 +74,7 @@ type CouponData struct {
 }
 
 type CouponDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	CouponData         `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
@@ -154,7 +154,7 @@ type CouponReservationData struct {
 }
 
 type CouponReservationDoc struct {
-	ID                    primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                    primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	CouponReservationData `bson:"inline"`
 	models.ActivityDoc    `bson:"inline"`
 }
@@ -198,7 +198,7 @@ type CouponUsageHistoryData struct {
 }
 
 type CouponUsageHistoryDoc struct {
-	ID                     primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                     primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	CouponUsageHistoryData `bson:"inline"`
 	models.ActivityDoc     `bson:"inline"`
 }

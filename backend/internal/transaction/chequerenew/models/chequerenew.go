@@ -28,7 +28,7 @@ type ChequeRenewData struct {
 }
 
 type ChequeRenewDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	ChequeRenewData    `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

@@ -78,7 +78,7 @@ type ProductCategoryData struct {
 }
 
 type ProductCategoryDoc struct {
-	ID                  primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                  primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	ProductCategoryData `bson:"inline"`
 	models.ActivityDoc  `bson:"inline"`
 }

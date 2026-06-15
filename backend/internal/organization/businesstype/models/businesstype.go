@@ -30,7 +30,7 @@ type BusinessTypeData struct {
 }
 
 type BusinessTypeDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	BusinessTypeData   `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

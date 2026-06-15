@@ -36,7 +36,7 @@ type DimensionData struct {
 }
 
 type DimensionDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	DimensionData      `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

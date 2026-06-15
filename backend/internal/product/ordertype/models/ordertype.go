@@ -36,7 +36,7 @@ type OrderTypeData struct {
 }
 
 type OrderTypeDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	OrderTypeData      `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

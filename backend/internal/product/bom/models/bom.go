@@ -87,7 +87,7 @@ type ProductBarcodeBOMViewData struct {
 }
 
 type ProductBarcodeBOMViewDoc struct {
-	ID                        primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                        primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	ProductBarcodeBOMViewData `bson:"inline"`
 	models.ActivityDoc        `bson:"inline"`
 }

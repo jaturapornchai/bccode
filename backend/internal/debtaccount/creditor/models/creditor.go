@@ -75,7 +75,7 @@ type CreditorData struct {
 }
 
 type CreditorDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	CreditorData       `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

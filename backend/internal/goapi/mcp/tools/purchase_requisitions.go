@@ -75,7 +75,7 @@ type PRBranch struct {
 
 // PurchaseRequisitionDocument เอกสารใบขอซื้อใน MongoDB
 type PurchaseRequisitionDocument struct {
-	ID          primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID          primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	HoldingCode string             `json:"holdingcode" bson:"holdingcode"`
 	GuidFixed   string             `json:"guidfixed" bson:"guidfixed"`
 	// Header

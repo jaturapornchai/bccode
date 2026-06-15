@@ -36,7 +36,7 @@ type NotifierData struct {
 }
 
 type NotifierDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	NotifierData       `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

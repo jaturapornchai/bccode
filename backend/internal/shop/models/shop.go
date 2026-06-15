@@ -92,7 +92,7 @@ func (ShopInfo) CollectionName() string {
 }
 
 type ShopDoc struct {
-	ID                 primitive.ObjectID `json:"-" bson:"id,omitempty"`
+	ID                 primitive.ObjectID `json:"-" bson:"_id,omitempty"`
 	ShopInfo           `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

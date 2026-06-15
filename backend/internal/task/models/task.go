@@ -64,7 +64,7 @@ type TaskData struct {
 }
 
 type TaskDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	TaskData           `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

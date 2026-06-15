@@ -39,7 +39,7 @@ type CurrencyData struct {
 }
 
 type CurrencyDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	CurrencyData       `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

@@ -28,7 +28,7 @@ type RestaurantSettingsData struct {
 }
 
 type RestaurantSettingsDoc struct {
-	ID                     primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                     primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	RestaurantSettingsData `bson:"inline"`
 	models.ActivityDoc     `bson:"inline"`
 	models.LastUpdate      `bson:"inline"`

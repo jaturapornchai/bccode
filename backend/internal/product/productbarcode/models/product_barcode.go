@@ -288,7 +288,7 @@ type ProductBarcodeData struct {
 }
 
 type ProductBarcodeDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	ProductBarcodeData `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

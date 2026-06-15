@@ -51,7 +51,7 @@ type DocumentFormateData struct {
 }
 
 type DocumentFormateDoc struct {
-	ID                  primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                  primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	DocumentFormateData `bson:"inline"`
 	models.ActivityDoc  `bson:"inline"`
 }

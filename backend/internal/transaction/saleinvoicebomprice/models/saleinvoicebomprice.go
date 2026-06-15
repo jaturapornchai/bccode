@@ -40,7 +40,7 @@ type SaleInvoiceBomPriceData struct {
 }
 
 type SaleInvoiceBomPriceDoc struct {
-	ID                      primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                      primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	SaleInvoiceBomPriceData `bson:"inline"`
 	models.ActivityDoc      `bson:"inline"`
 }

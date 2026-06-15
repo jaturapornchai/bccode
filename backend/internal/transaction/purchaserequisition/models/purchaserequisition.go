@@ -66,7 +66,7 @@ type PurchaseRequisitionData struct {
 }
 
 type PurchaseRequisitionDoc struct {
-	ID                      primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                      primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	PurchaseRequisitionData `bson:"inline"`
 	models.ActivityDoc      `bson:"inline"`
 }

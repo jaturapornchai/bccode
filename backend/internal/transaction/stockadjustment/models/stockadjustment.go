@@ -28,7 +28,7 @@ type StockAdjustmentData struct {
 }
 
 type StockAdjustmentDoc struct {
-	ID                  primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                  primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	StockAdjustmentData `bson:"inline"`
 	models.ActivityDoc  `bson:"inline"`
 }

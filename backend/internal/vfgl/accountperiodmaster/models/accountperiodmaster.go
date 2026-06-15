@@ -67,7 +67,7 @@ type AccountPeriodMasterData struct {
 }
 
 type AccountPeriodMasterDoc struct {
-	ID                      primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                      primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	AccountPeriodMasterData `bson:"inline"`
 	models.ActivityDoc      `bson:"inline"`
 }

@@ -37,7 +37,7 @@ type EmployeeData struct {
 }
 
 type EmployeeDoc struct {
-	ID               primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID               primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	EmployeeData     `bson:"inline"`
 	ActivityDoc      `bson:"inline"`
 	EmployeePassword `bson:"inline" gorm:"embedded;"`

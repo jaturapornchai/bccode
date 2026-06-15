@@ -41,7 +41,7 @@ type OptionPatternData struct {
 }
 
 type OptionPatternDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	OptionPatternData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

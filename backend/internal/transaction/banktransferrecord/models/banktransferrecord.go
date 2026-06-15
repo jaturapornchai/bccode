@@ -28,7 +28,7 @@ type BankTransferRecordData struct {
 }
 
 type BankTransferRecordDoc struct {
-	ID                     primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                     primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	BankTransferRecordData `bson:"inline"`
 	models.ActivityDoc     `bson:"inline"`
 }

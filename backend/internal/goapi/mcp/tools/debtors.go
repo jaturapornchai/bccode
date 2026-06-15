@@ -46,7 +46,7 @@ type DebtorAddress struct {
 
 // DebtorDocument เอกสารลูกหนี้ใน MongoDB
 type DebtorDocument struct {
-	ID                primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	HoldingCode       string             `json:"holdingcode" bson:"holdingcode"`
 	GuidFixed         string             `json:"guidfixed" bson:"guidfixed"`
 	Code              string             `json:"code" bson:"code"`

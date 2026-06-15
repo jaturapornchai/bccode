@@ -12,7 +12,7 @@ import (
 const OutboxCollectionName = "organizationcrudoutbox"
 
 type OutboxEventDoc struct {
-	ID          primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID          primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	HoldingCode string             `json:"holdingcode" bson:"holdingcode"`
 	GuidFixed   string             `json:"guidfixed" bson:"guidfixed"`
 	Module      string             `json:"module" bson:"module"`

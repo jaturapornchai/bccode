@@ -89,7 +89,7 @@ type DocumentImageGroupData struct {
 }
 
 type DocumentImageGroupDoc struct {
-	ID                     primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                     primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	DocumentImageGroupData `bson:"inline"`
 	models.ActivityDoc     `bson:"inline"`
 	models.LastUpdate      `bson:"inline"`

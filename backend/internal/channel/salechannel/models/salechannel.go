@@ -33,7 +33,7 @@ type SaleChannelData struct {
 }
 
 type SaleChannelDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	SaleChannelData    `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

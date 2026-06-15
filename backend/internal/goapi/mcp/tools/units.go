@@ -30,7 +30,7 @@ type UnitNameEntry struct {
 
 // UnitDocument เอกสารหน่วยนับใน MongoDB
 type UnitDocument struct {
-	ID          primitive.ObjectID `json:"id" bson:"id,omitempty"`
+	ID          primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	HoldingCode string             `json:"holdingcode" bson:"holdingcode"`
 	GuidFixed   string             `json:"guidfixed" bson:"guidfixed"`
 	UnitCode    string             `json:"unitcode" bson:"unitcode"`
