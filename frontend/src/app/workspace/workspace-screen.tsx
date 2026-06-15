@@ -1098,19 +1098,19 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 if (!bItem?.banner) return null;
                 return (
                   <div
-                    className="relative mb-4 h-28 w-full overflow-hidden rounded-2xl border border-border/60 bg-muted shadow-sm sm:h-32"
-                    style={{ backgroundImage: `url(${bItem.banner})`, backgroundSize: "cover", backgroundPosition: "center right" }}
+                    className="relative mb-4 h-36 w-full overflow-hidden rounded-2xl border border-border/60 bg-muted shadow-sm sm:h-44"
+                    style={{ backgroundImage: `url(${bItem.banner})`, backgroundSize: "cover", backgroundPosition: "center", backgroundRepeat: "no-repeat" }}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#812920]/92 via-[#812920]/50 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#812920]/92 via-[#812920]/55 to-[#812920]/10" />
                     <div className="relative z-10 flex h-full items-center gap-3 px-5">
-                      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/25 text-base font-black text-white ring-1 ring-white/40 backdrop-blur-sm">
+                      <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/25 text-lg font-black text-white ring-1 ring-white/50 backdrop-blur-sm [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]">
                         {bIdx + 1}
                       </span>
                       <div className="min-w-0">
-                        <h3 className="text-lg font-black leading-tight text-white drop-shadow-sm sm:text-xl">
+                        <h3 className="text-xl font-black leading-tight text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.75),0_0_6px_rgba(0,0,0,0.55)] sm:text-2xl">
                           {language === "th" ? bItem.label.th : bItem.label.en}
                         </h3>
-                        <p className="text-xs font-semibold text-white/90 drop-shadow-sm">
+                        <p className="text-xs font-semibold text-white/95 [text-shadow:0_1px_2px_rgba(0,0,0,0.75),0_0_5px_rgba(0,0,0,0.5)] sm:text-sm">
                           {language === "th" ? bItem.helper.th : bItem.helper.en}
                         </p>
                       </div>
