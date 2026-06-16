@@ -18,12 +18,12 @@ describe("i18n helpers", () => {
 
   it("states that Google login acts as first-time signup", () => {
     expect(t("th", "firstUseDescription")).toContain("Google");
-    expect(t("th", "firstUseDescription")).toContain("สมัครสมาชิก");
+    expect(t("th", "firstUseDescription")).toContain("สมัคร");
     expect(t("th", "createHoldingDescription")).toContain("หลัง login");
-    expect(t("th", "firstUseStepGoogle")).toContain("ผูกบัญชี");
-    expect(t("th", "holdingCodeHint")).toContain("ต้องมีรหัส Holding");
-    expect(t("th", "holdingCodeHint")).not.toContain("กดสร้าง Holding");
-    expect(t("th", "passwordLoginSectionTitle")).toContain("User , Password");
+    expect(t("th", "firstUseStepGoogle")).toContain("Google");
+    expect(t("th", "holdingCodeHint")).toContain("รหัสผ่าน");
+    expect(t("th", "holdingCodeHint")).not.toContain("Holding");
+    expect(t("th", "passwordLoginSectionTitle")).toContain("รหัสผ่าน");
     expect(t("th", "authLoginSectionTitle")).toContain("ยืนยันตัวตน");
   });
 

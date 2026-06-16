@@ -477,13 +477,13 @@ export function LoginScreen() {
             </div>
           </div>
         </div>
-        <div className="status-strip" aria-label="System status">
-          <div>
-            <span>{t(language, "api")}</span>
-            <strong>{backendUrl || "-"}</strong>
+          <div className="status-strip" aria-label="System status" title={backendUrl ? `${t(language, "api")}: ${backendUrl}` : undefined}>
+            <div>
+              <span>{t(language, "api")}</span>
+              <strong>{backendUrl ? t(language, "connectionSuccess") : "-"}</strong>
+            </div>
+            <ShieldCheck aria-hidden="true" size={22} />
           </div>
-          <ShieldCheck aria-hidden="true" size={22} />
-        </div>
       </section>
 
       <section className="form-panel" aria-label="Login form">
@@ -562,6 +562,7 @@ export function LoginScreen() {
                   <Building2 aria-hidden="true" size={18} />
                   <input
                     aria-labelledby="holding-code-label"
+                    aria-describedby="holding-code-help"
                     autoComplete="organization"
                     value={holdingCode}
                     onChange={(event) => setHoldingCode(normalizeHoldingCode(event.target.value))}
@@ -569,7 +570,7 @@ export function LoginScreen() {
                   />
                 </div>
               </div>
-              <small className="field-help">{t(language, "holdingCodeHint")}</small>
+              <small id="holding-code-help" className="field-help">{t(language, "holdingCodeHint")}</small>
             </div>
 
             <label className="field-group">
@@ -657,30 +658,32 @@ export function LoginScreen() {
                   type="button"
                   onClick={handleLocalGoogleTestLogin}
                   disabled={providerLoginState !== "idle" || loginState === "loading"}
+                  title={t(language, "localGoogleTestLogin")}
                 >
                   {providerLoginState === "local-google" ? (
                     <Loader2 className="spin" aria-hidden="true" size={20} />
                   ) : (
                     <Image alt="" height={20} src="/google_logo.png" width={20} />
                   )}
-                  <span>{t(language, "localGoogleTestLogin")}</span>
+                  <span>
+                    <span className="dev-test-badge" aria-hidden="true">DEV</span>
+                    {language === "th" ? "ทดสอบเข้าระบบ Google" : "Test Google login"}
+                  </span>
                 </button>
               ) : null}
             </div>
           </section>
 
-          <div className="first-use-note">
+          <div className="first-use-note" aria-label={t(language, "firstUseTitle")}>
             <Building2 aria-hidden="true" size={20} />
             <div>
               <strong>{t(language, "firstUseTitle")}</strong>
               <span>{t(language, "firstUseDescription")}</span>
               <ol className="first-use-steps">
-                <li>{t(language, "firstUseStepGoogle")}</li>
                 <li>{t(language, "firstUseStepHolding")}</li>
+                <li>{t(language, "firstUseStepGoogle")}</li>
                 <li>{t(language, "firstUseStepWorkspace")}</li>
               </ol>
-              <small>{t(language, "createHoldingDescription")}</small>
-              <small>{t(language, "multiCompanyDescription")}</small>
             </div>
           </div>
 

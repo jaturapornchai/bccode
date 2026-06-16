@@ -14,7 +14,7 @@ param(
     [switch]$Raw
 )
 
-# Codex Advisor helper — wraps `codex exec` (gpt-5.5 think) so GLM 5.2 / Claude
+# Codex Advisor helper - wraps `codex exec` (gpt-5.5 think) so GLM 5.2 / Claude
 # can ask Codex a focused advisory question and feed Codex's answer back into
 # GLM's synthesis step. Mirrors glm52-think-planner.ps1 (reverse direction).
 #
@@ -81,13 +81,13 @@ Cover all helper roles:
     }
 }
 
-# Subscription-only guard — same policy as dispatch-codex.sh.
+# Subscription-only guard - same policy as dispatch-codex.sh.
 $openaiKey = [Environment]::GetEnvironmentVariable("OPENAI_API_KEY", "Process")
 if ([string]::IsNullOrWhiteSpace($openaiKey)) {
     $openaiKey = [Environment]::GetEnvironmentVariable("OPENAI_API_KEY", "User")
 }
 if (-not [string]::IsNullOrWhiteSpace($openaiKey)) {
-    throw "OPENAI_API_KEY is set — policy is subscription-only (codex login). Unset it before running this helper."
+    throw "OPENAI_API_KEY is set - policy is subscription-only (codex login). Unset it before running this helper."
 }
 
 # Resolve prompt text.
@@ -109,7 +109,7 @@ $systemPrompt = @"
 You are Codex (gpt-5.5) acting as an ADVISORY helper for another AI (GLM 5.2 Think or Claude) in the BC Ai Account project (D:\bccode).
 
 CRITICAL RULES:
-- You are an ADVISOR in this call. Answer in Markdown. DO NOT edit files in this turn even though the sandbox allows it — the caller will synthesize your advice and apply patches itself.
+- You are an ADVISOR in this call. Answer in Markdown. DO NOT edit files in this turn even though the sandbox allows it - the caller will synthesize your advice and apply patches itself.
 - Read the active project source, docs, tests, runtime output, and database/API evidence first. Local evidence always wins.
 - Do not invent APIs, schemas, paths, business rules, or runtime facts.
 - Return concise, actionable advice.

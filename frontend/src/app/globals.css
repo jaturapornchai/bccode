@@ -942,7 +942,7 @@ h2:not([class]) {
 
 .flag-icon {
   width: 24px;
-  height: auto;
+  height: 16px;
   aspect-ratio: 3 / 2;
   flex: 0 0 24px;
   border: 1px solid var(--line);
@@ -1832,6 +1832,35 @@ h2:not([class]) {
   display: flex;
   flex-wrap: wrap;
   gap: var(--density-gap);
+}
+
+/* DEV-only Google test login button — clearly different from the real button */
+.social-login-button.local-google-test-login {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--muted) 55%, transparent);
+  background: color-mix(in srgb, var(--muted) 8%, var(--login-input-bg));
+  color: var(--text-soft);
+  box-shadow: none;
+  font-weight: 700;
+}
+
+.social-login-button.local-google-test-login:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--teal) 50%, transparent);
+}
+
+.dev-test-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 6px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--teal) 50%, transparent);
+  background: color-mix(in srgb, var(--teal) 14%, transparent);
+  color: color-mix(in srgb, var(--teal) 80%, var(--text));
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .social-login-button {
@@ -2982,7 +3011,7 @@ h2:not([class]) {
   max-width: 100%;
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: baseline;
   gap: 4px 8px;
   margin-top: 6px;
   padding: 4px 8px;
@@ -2998,6 +3027,7 @@ h2:not([class]) {
 .workspace-holding-context code {
   min-width: 0;
   overflow-wrap: anywhere;
+  line-height: 1.15;
 }
 
 .workspace-holding-context span {
@@ -3090,6 +3120,73 @@ h2:not([class]) {
   flex: 0 1 220px;
   padding: 0 12px;
   border-radius: 10px;
+}
+
+.workspace-setup-button {
+  min-height: 48px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0 18px;
+  border-radius: 8px;
+  flex-wrap: nowrap;
+  white-space: normal;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.workspace-setup-empty-button {
+  display: grid;
+  place-items: center;
+  width: auto;
+  min-width: min(100%, 196px);
+  padding-inline: 22px;
+}
+
+.workspace-setup-empty-button .workspace-setup-button-icon {
+  display: none;
+}
+
+.workspace-setup-empty-button .workspace-setup-button-label {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  line-height: 1;
+}
+
+.workspace-setup-button-icon {
+  flex: 0 0 auto;
+}
+
+.workspace-setup-button-label {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.workspace-setup-badge {
+  flex: 0 0 auto;
+  margin-left: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--amber) 78%, var(--panel-strong));
+  color: color-mix(in srgb, var(--amber) 18%, var(--text));
+  padding: 2px 7px;
+  font-size: 9px;
+  font-weight: 950;
+  line-height: 1;
+  animation: workspace-badge-pulse 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes workspace-badge-pulse {
+  50% {
+    opacity: 0.72;
+  }
 }
 
 .step-strip {
