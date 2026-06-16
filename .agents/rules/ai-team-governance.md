@@ -101,3 +101,39 @@ GEMINI_CLI_TRUST_WORKSPACE=true gemini -p "<brief>" --approval-mode plan -o text
 3. **Claude สังเคราะห์ + ตัดสิน (รับผิดชอบสุดท้าย)** — รวมผล review ทั้ง 3 ฝั่ง (Claude+Codex+Gemini), คัดอันจริง / ตัด false positive, **รัน VERIFICATION จริงเองเสมอ** (Codex/Gemini review = ความเห็นเพิ่ม ไม่แทน Claude verify ตาม IRON RULE 2), แก้เท่าที่ควร แล้วกลั่นเป็นสรุปไทยให้ลุงจืด (ไม่ทิ้ง raw log)
 4. **cost-aware (Pareto)**: งานเล็ก / 1-2 บรรทัด / trivial → **Claude ตรวจพอ ไม่ต้อง cross-review**. ใช้ cross-review เฉพาะงานที่คุ้ม (เปลือง token+latency เพิ่ม) — เกณฑ์เดียวกับ §9
 5. **R rules**: การ review เป็น read-only (R2) เรียกได้เลย; ถ้า "แก้ตาม review" แตะ R0/R1 ยัง flag ลุงจืดก่อนตามปกติ (IRON RULE 5)
+
+## 11. GLM ↔ Codex Bidirectional Advisory — เอาความรู้ 2 model มารวมกัน (set 2026-06-17)
+งาน BC Account ที่ **สำคัญ / ยาก / มีหลายวิธีทำ / เสี่ยง** (planning, implementation, code review, debug, UX/UI, weakness check) ต้องเอาความรู้ของ **2 model** มารวมกัน แล้วเลือก/รวมเอาที่ดีที่สุด:
+
+**สองทิศทาง (bidirectional) — เลือกตามว่าใครเป็น active agent ตอนนั้น:**
+
+| Active agent (ถาม) | Advisor (ถูกถาม) | Helper |
+|---|---|---|
+| **Codex** | GLM 5.2 Think | `tools/ai/glm52-think-planner.ps1` (skill `glm52-planner`) |
+| **GLM 5.2 / Claude** | Codex (gpt-5.5 think) | `tools/ai/codex-advisor.ps1` (skill `codex-advisor`) |
+
+**ลูป 2-model synthesis (core idea):**
+1. **Active agent อ่าน source/runtime evidence ก่อน** (no-guess evidence rule) แล้วคิด preliminary answer ของตัวเอง
+2. **ถาม advisor** ผ่าน helper script (พร้อม context/evidence ที่อ่านแล้ว)
+3. **เปรียบเทียบ 2 คำตอบ**: จุดเด่น/จุดอ่อนของแต่ละ model
+4. **Synthesize ที่ดีที่สุด**: เลือก / รวมจุดเด่น / สังเคราะห์เป็นคำตอบใหม่
+5. **Active agent ยังเป็น source of truth + รับผิดชอบ**: แก้ไฟล์เอง และรัน VERIFICATION จริงเองเสมอ (advisor = ความเห็นเพิ่ม ไม่แทน verify)
+
+**กฎสำคัญ:**
+- ❌ Advisor ห้ามแก้ไฟล์ตรง (helper บังคับ via system prompt) — active agent แก้เองหลังตรวจ evidence
+- ❌ ห้ามถือ output advisor เป็น source of truth — source/runtime evidence ชนะเสมอ
+- ❌ ห้ามบันทึก `reasoning_content` ดิบ / API key / raw chain-of-thought ลงไฟล์
+- ✅ ถ้า advisor unavailable (key หาย / quota หมด / CLI พัง) → แจ้ง แล้วทำต่อด้วย active agent เดี่ยว (single-model) อย่าบล็อก
+- ✅ ถ้า 2 model ขัดแย้งกันทาง fact → active agent กลับไปอ่าน source/runtime evidence อีกรอบ เชื่อ evidence ไม่เชื่อ model เสียงดังกว่า
+
+**Cost-aware (Pareto) — เหมือน §9/§10:**
+- งานเล็ก / trivial / 1 วิธีชัด → **ไม่ต้อง dual** ใช้ active agent เดี่ยวพอ (dual เปลือง ~2 เท่า token + latency)
+- ใช้ dual synthesis เฉพาะงานที่ "2 มุมมองคุ้ม" (architecture, hard bug, multi-file, accounting/decimal, tenant scope, security, migration)
+- เกณฑ์เดียวกับ §9 (dual-track) และ §10 (cross-AI review)
+
+**ความสัมพันธ์กับ §9/§10 (ไม่ทับซ้อน):**
+- **§9 Dual-track** = Claude เขียนเอง + Codex เขียนเอง ขนาน → เปรียบเทียบ 2 **solution code**
+- **§10 Cross-AI Review** = Claude ตรวจ + Codex review + Gemini review → รวม 3 **มุมมอง review**
+- **§11 Bidirectional Advisory (นี่)** = active agent (GLM หรือ Claude) ถาม advisor เดี่ยว (1-on-1) เพื่อเสริมคำตอบของตัวเอง **ก่อน** finalize → เอาดีของ 2 model มารวม
+
+ทั้ง 3 อันใช้ได้ร่วมกัน: §11 (synthesis ก่อนเขียน) → §9 (ถ้าทั้งคู่จะเขียนเองขนาน) → §10 (review ก่อน commit).
