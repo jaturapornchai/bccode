@@ -1,7 +1,7 @@
 import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 import { validateBackendUrl } from "@/lib/backend-url";
-import { getJwtClaimHoldingCode, verifyHs256Jwt } from "@/lib/server-jwt";
+import { verifyHs256Jwt } from "@/lib/server-jwt";
 import { getSystemSettingConfig, type SystemSettingConfig } from "@/lib/system-setting-screens";
 import {
   getBackendUrlFromRequest,
@@ -25,8 +25,10 @@ type ResolvedProxy = {
 export async function GET(request: Request, context: SystemSettingsProxyContext) {
   const resolved = await resolveProxy(context);
   if (resolved instanceof NextResponse) return resolved;
+  const unsupportedResponse = rejectUnsupportedProxy(resolved.config);
+  if (unsupportedResponse) return unsupportedResponse;
 
-  const tenantResponse = validateTenantAccess(request);
+  const tenantResponse = await validateTenantAccess(request, resolved.config);
   if (tenantResponse) return tenantResponse;
 
   const base = resolveBaseUrl(request, resolved.config);
@@ -41,8 +43,10 @@ export async function POST(request: Request, context: SystemSettingsProxyContext
 
   const resolved = await resolveProxy(context);
   if (resolved instanceof NextResponse) return resolved;
+  const unsupportedResponse = rejectUnsupportedProxy(resolved.config);
+  if (unsupportedResponse) return unsupportedResponse;
 
-  const tenantResponse = validateTenantAccess(request, Array.isArray(body) ? undefined : body);
+  const tenantResponse = await validateTenantAccess(request, resolved.config, Array.isArray(body) ? undefined : body);
   if (tenantResponse) return tenantResponse;
 
   const base = resolveBaseUrl(request, resolved.config, Array.isArray(body) ? undefined : body);
@@ -68,8 +72,10 @@ export async function PUT(request: Request, context: SystemSettingsProxyContext)
 
   const resolved = await resolveProxy(context);
   if (resolved instanceof NextResponse) return resolved;
+  const unsupportedResponse = rejectUnsupportedProxy(resolved.config);
+  if (unsupportedResponse) return unsupportedResponse;
 
-  const tenantResponse = validateTenantAccess(request, Array.isArray(body) ? undefined : body);
+  const tenantResponse = await validateTenantAccess(request, resolved.config, Array.isArray(body) ? undefined : body);
   if (tenantResponse) return tenantResponse;
 
   const base = resolveBaseUrl(request, resolved.config, Array.isArray(body) ? undefined : body);
@@ -89,8 +95,10 @@ export async function DELETE(request: Request, context: SystemSettingsProxyConte
   const body = await readBody(request);
   const resolved = await resolveProxy(context);
   if (resolved instanceof NextResponse) return resolved;
+  const unsupportedResponse = rejectUnsupportedProxy(resolved.config);
+  if (unsupportedResponse) return unsupportedResponse;
 
-  const tenantResponse = validateTenantAccess(request, isRecord(body) ? body : undefined);
+  const tenantResponse = await validateTenantAccess(request, resolved.config, isRecord(body) ? body : undefined);
   if (tenantResponse) return tenantResponse;
 
   const base = resolveBaseUrl(request, resolved.config, isRecord(body) ? body : undefined);
@@ -137,27 +145,84 @@ function resolveBaseUrl(request: Request, config: SystemSettingConfig, body?: Ap
   }
 }
 
+function rejectUnsupportedProxy(config: SystemSettingConfig): NextResponse | null {
+  if (config.kind !== "report") return null;
+  return NextResponse.json({ success: false, message: "รายงานนี้ไม่มี CRUD API" }, { status: 405 });
+}
+
 function usesGoApi(config: SystemSettingConfig): boolean {
   return config.kind === "ai-provider" || config.kind === "atlas" || config.kind === "copy-uat" || config.kind === "goapi-crud";
 }
 
-function validateTenantAccess(request: Request, body?: Record<string, unknown>): NextResponse | null {
+async function validateTenantAccess(
+  request: Request,
+  config: SystemSettingConfig,
+  body?: Record<string, unknown>,
+): Promise<NextResponse | null> {
   const requestedHoldingCode = getRequestedHoldingCode(request, body);
   if (!requestedHoldingCode) return null;
-  if (!process.env.JWT_SECRET_KEY?.trim()) return null;
 
   const authorization = requireBearerToken(request);
   if (typeof authorization !== "string") return authorization;
 
-  const jwt = verifyHs256Jwt(authorization);
-  if (!jwt.ok) return NextResponse.json({ success: false, message: jwt.message }, { status: jwt.status });
-
-  const claimHoldingCode = getJwtClaimHoldingCode(jwt.claims);
-  if (!claimHoldingCode) return NextResponse.json({ success: false, message: "token ไม่มีรหัส holding" }, { status: 401 });
-  if (claimHoldingCode !== requestedHoldingCode) {
-    return NextResponse.json({ success: false, message: "ไม่มีสิทธิ์เข้าถึงข้อมูลบริษัทนี้" }, { status: 403 });
+  if (process.env.JWT_SECRET_KEY?.trim()) {
+    const jwt = verifyHs256Jwt(authorization);
+    if (!jwt.ok) return NextResponse.json({ success: false, message: jwt.message }, { status: jwt.status });
   }
-  return null;
+
+  if (config.kind !== "atlas") return null;
+  return ensureBackendHoldingAccess(request, body, authorization, requestedHoldingCode);
+}
+
+async function ensureBackendHoldingAccess(
+  request: Request,
+  body: Record<string, unknown> | undefined,
+  authorization: string,
+  requestedHoldingCode: string,
+): Promise<NextResponse | null> {
+  let mainApiUrl = "";
+  try {
+    mainApiUrl = getMainApiUrl(getBackendUrlFromRequest(request, body));
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, message: error instanceof Error ? error.message : "Backend URL ไม่ถูกต้อง" },
+      { status: 400 },
+    );
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+
+  try {
+    const response = await fetch(`${mainApiUrl}/select-holding`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept-Language": request.headers.get("accept-language") ?? "th",
+        Authorization: authorization,
+      },
+      body: JSON.stringify({ holdingcode: requestedHoldingCode }),
+      signal: controller.signal,
+      cache: "no-store",
+    });
+    const payload = await readJsonOrText(response);
+    if (response.ok && (!isRecord(payload) || payload.success !== false)) return null;
+    return NextResponse.json(
+      {
+        success: false,
+        message: extractMessage(payload) ?? "ไม่มีสิทธิ์เข้าถึงข้อมูลกลุ่มกิจการนี้ กรุณาเลือกกลุ่มกิจการใหม่หรือเข้าสู่ระบบใหม่",
+      },
+      { status: response.status === 401 ? 401 : 403 },
+    );
+  } catch (error) {
+    const message =
+      error instanceof Error && error.name === "AbortError"
+        ? "Server ไม่ตอบกลับทันเวลา"
+        : "ไม่สามารถเชื่อมต่อ Server ได้";
+    return NextResponse.json({ success: false, message }, { status: 504 });
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 function getRequestedHoldingCode(request: Request, body?: Record<string, unknown>): string {

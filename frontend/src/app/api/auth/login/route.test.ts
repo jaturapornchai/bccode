@@ -24,7 +24,7 @@ describe("password login route", () => {
     expect(response.status).toBe(400);
     expect(json).toMatchObject({
       success: false,
-      message: "กรุณากรอกรหัส Holding ก่อนเข้าสู่ระบบด้วย User , Password",
+      message: "กรุณากรอกรหัสกลุ่มกิจการก่อนเข้าสู่ระบบด้วย User , Password",
     });
     expect(fetchMock).not.toHaveBeenCalled();
   });

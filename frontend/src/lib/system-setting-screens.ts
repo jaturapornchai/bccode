@@ -705,8 +705,8 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     deleteKey: "guidfixed",
     title: { th: "สิทธิ์การอนุมัติ", en: "Approval Permission" },
     subtitle: {
-      th: "กำหนดสิทธิ์และวงเงินอนุมัติภายใต้ Holding และกำหนดขอบเขตบริษัท/สาขา",
-      en: "Configure Holding approval roles, limits, and company/branch scope.",
+      th: "กำหนดสิทธิ์และวงเงินอนุมัติภายใต้กลุ่มกิจการ และกำหนดขอบเขตบริษัท/สาขา",
+      en: "Configure business group approval roles, limits, and company/branch scope.",
     },
     fields: [
       textField("approvalcode", "รหัส", "Code", true),
@@ -742,8 +742,8 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     deleteKey: "guidfixed",
     title: { th: "กำหนดสิทธิ์หน้าจอ", en: "Permission Definition" },
     subtitle: {
-      th: "สร้างรหัสสิทธิ์หน้าจอภายใต้ Holding และกำหนดขอบเขตบริษัท/สาขา",
-      en: "Create Holding screen permission codes and company/branch scope.",
+      th: "สร้างรหัสสิทธิ์หน้าจอภายใต้กลุ่มกิจการ และกำหนดขอบเขตบริษัท/สาขา",
+      en: "Create business group screen permission codes and company/branch scope.",
     },
     fields: [
       textField("permissioncode", "รหัสสิทธิ์", "Permission code", true),
@@ -788,8 +788,8 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     deleteKey: "guidfixed",
     title: { th: "กำหนดสิทธิ์ผู้ใช้งาน", en: "User Permission" },
     subtitle: {
-      th: "ผูกผู้ใช้กับกลุ่มสิทธิ์/สิทธิ์หน้าจอภายใต้ Holding และกำหนดขอบเขตบริษัท/สาขา",
-      en: "Link users to Holding permissions and company/branch scope.",
+      th: "ผูกผู้ใช้กับกลุ่มสิทธิ์/สิทธิ์หน้าจอภายใต้กลุ่มกิจการ และกำหนดขอบเขตบริษัท/สาขา",
+      en: "Link users to business group permissions and company/branch scope.",
     },
     fields: [
       textField(

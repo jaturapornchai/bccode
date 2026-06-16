@@ -28,6 +28,7 @@ import { backendText, useBackendLanguage, type BackendLanguageDictionary } from 
 import { normalizeLanguage, t, type LanguageCode } from "@/lib/i18n";
 import {
   branchDisplayName,
+  companyDisplayName,
   localizedName,
   shopDisplayName,
   type AuthSession,
@@ -386,8 +387,8 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
         setNotice({
           type: "error",
           text: language === "th"
-            ? `ไม่พบ Holding ${selectedHoldingCode} สำหรับบัญชีนี้`
-            : `Holding ${selectedHoldingCode} is not available for this account.`,
+            ? `ไม่พบกลุ่มกิจการ ${selectedHoldingCode} สำหรับบัญชีนี้`
+            : `Business group ${selectedHoldingCode} is not available for this account.`,
         });
       } else if (nextShops.length === 0 && !canAuthCreateCompany(currentAuth)) {
         setNotice({ type: "info", textKey: "createCompanyRequiresGoogle" });
@@ -541,7 +542,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
   }, [language, shops]);
 
   const selectedAccessShopLabel = useMemo(() => {
-    if (!selectedShopForAccess) return language === "th" ? "เลือก Holding" : "Select Holding";
+    if (!selectedShopForAccess) return language === "th" ? "เลือกกลุ่มกิจการ" : "Select business group";
     return accessShopOptions.find((option) => tenantCodeForShop(option.shop) === tenantCodeForShop(selectedShopForAccess))?.label
       ?? holdingAccessDisplayName(selectedShopForAccess, language);
   }, [accessShopOptions, language, selectedShopForAccess]);
@@ -832,7 +833,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     if (!auth) return;
     const representativeShop = accessShopOptions[0]?.shop;
     if (!representativeShop) {
-      setNotice({ type: "error", text: language === "th" ? "ไม่พบ Holding สำหรับกำหนดสิทธิ์" : "No Holding found for access control." });
+      setNotice({ type: "error", text: language === "th" ? "ไม่พบกลุ่มกิจการสำหรับกำหนดสิทธิ์" : "No business group found for access control." });
       return;
     }
     setBusy(true);
@@ -1194,7 +1195,8 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 className="workspace-holding-context"
                 title={`${activeHoldingContext.name} (${activeHoldingContext.code})`}
               >
-                <span>{language === "th" ? "Holding ที่ใช้งาน" : "Active Holding"}</span>
+                <span>{language === "th" ? "กลุ่มกิจการที่ใช้งาน" : "Active business group"}</span>
+                <code>{activeHoldingContext.code}</code>
                 <strong>{activeHoldingContext.name}</strong>
               </div>
             ) : null}
@@ -1229,15 +1231,15 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
           <div className="flex items-center gap-2">
             {step === "shops" ? (
               <button
-                className="primary-button workspace-head-action flex items-center gap-2 shadow-md"
+                className="primary-button workspace-head-action workspace-setup-button flex items-center gap-2 shadow-md"
                 type="button"
                 onClick={() => void openAccessSettings("/activelanguages")}
                 disabled={busy}
               >
-                <KeyRound size={18} />
-                <span>{language === "th" ? "ตั้งค่าระบบ" : "Settings"}</span>
+                <KeyRound className="workspace-setup-button-icon" size={18} />
+                <span className="workspace-setup-button-label">{language === "th" ? "ตั้งค่าระบบ" : "Settings"}</span>
                 {flatCompanies.length === 0 ? (
-                  <span className="ml-0.5 rounded-full bg-amber-400 px-1.5 py-0.5 text-[9px] font-black text-amber-950 animate-pulse">
+                  <span className="workspace-setup-badge">
                     {language === "th" ? "เริ่มที่นี่" : "Start here"}
                   </span>
                 ) : null}
@@ -1295,13 +1297,13 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 </p>
 
                 <button
-                  className="primary-button mb-8 inline-flex w-full sm:w-auto items-center justify-center gap-2 shadow-md"
+                  className="primary-button workspace-setup-button workspace-setup-empty-button mb-8 inline-flex w-full items-center justify-center gap-2 shadow-md sm:w-auto"
                   type="button"
                   onClick={() => void openAccessSettings("/activelanguages")}
                   disabled={busy || accessShopOptions.length === 0}
                 >
-                  <KeyRound size={18} />
-                  <span>{language === "th" ? "เริ่มตั้งค่าระบบ" : "Start system setup"}</span>
+                  <KeyRound className="workspace-setup-button-icon" size={18} />
+                  <span className="workspace-setup-button-label">{language === "th" ? "เริ่มตั้งค่าระบบ" : "Start system setup"}</span>
                 </button>
 
                 <div className="w-full rounded-xl border border-border/70 bg-card/70 p-5">
@@ -1346,7 +1348,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                     || Boolean(auth?.username && shop.createdby && shop.createdby.trim().toLowerCase() === auth.username.trim().toLowerCase());
                   const languageCodes = shopLanguageCodes(shop);
                   const currencyLabel = shopCurrencyLabel(shop, language);
-                  const compName = localizedName(company.names, company.code || "");
+                  const companyLabel = companyDisplayName(company);
 
                   return (
                     <button
@@ -1367,9 +1369,9 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                           <div className="min-w-0">
                             <h3
                               className="font-bold text-foreground text-sm sm:text-base tracking-tight break-words"
-                              title={`${compName} · ${language === "th" ? "รหัสกลุ่มธุรกิจ" : "Holding code"} ${shop.holdingcode}`}
+                              title={`${companyLabel} · ${language === "th" ? "รหัสกลุ่มกิจการ" : "Business group code"} ${shop.holdingcode}`}
                             >
-                              [{company.code}] {compName}
+                              {companyLabel}
                             </h3>
                           </div>
                         </div>
@@ -1457,19 +1459,28 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
               </div>
             ) : (
               <div className="workspace-card-grid">
-                {filteredBranches.map((branch, index) => (
-                <button className="shop-card branch-card" disabled={busy} key={branch.guidfixed || branch.code} type="button" onClick={() => void selectBranch(branch)}>
-                  <span className={`shop-avatar tone-${index % 6}`}><Building2 size={20} /></span>
-                  <span className="shop-main">
-                    <strong>{branchDisplayName(branch)}</strong>
-                    <small>{branch.code || branch.guidfixed}</small>
-                  </span>
-                  <span className="shop-badges">
-                    {branch.basecurrency ? <b>{branch.basecurrency}</b> : null}
-                    {branch.language ? <em>{branch.language.toUpperCase()}</em> : null}
-                  </span>
-                </button>
-                ))}
+                {filteredBranches.map((branch, index) => {
+                  const branchName = branchDisplayName(branch);
+                  const branchCode = branch.code?.trim() || "";
+                  const branchLabel = branchCode && branchName !== branchCode
+                    ? `[${branchCode}] ${branchName}`
+                    : branchName;
+                  const branchMeta = branchCode || branch.guidfixed;
+
+                  return (
+                    <button className="shop-card branch-card" disabled={busy} key={branch.guidfixed || branch.code} type="button" onClick={() => void selectBranch(branch)}>
+                      <span className={`shop-avatar tone-${index % 6}`}><Building2 size={20} /></span>
+                      <span className="shop-main">
+                        <strong>{branchLabel}</strong>
+                        {branchMeta ? <small>{branchMeta}</small> : null}
+                      </span>
+                      <span className="shop-badges">
+                        {branch.basecurrency ? <b>{branch.basecurrency}</b> : null}
+                        {branch.language ? <em>{branch.language.toUpperCase()}</em> : null}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             )}
           </>
@@ -1861,7 +1872,7 @@ function recordValue(value: unknown): Record<string, unknown> | null {
 function holdingAccessDisplayName(shop: ShopListItem, language: LanguageCode): string {
   const holdingCode = tenantCodeForShop(shop);
   const holdingName = shopDisplayName(shop) || holdingCode;
-  const prefix = language === "th" ? "Holding" : "Holding";
+  const prefix = language === "th" ? "กลุ่มกิจการ" : "Business group";
   if (!holdingCode || holdingName === holdingCode) return `${prefix}: ${holdingName}`;
   return `${prefix}: ${holdingName} (${holdingCode})`;
 }
@@ -1957,4 +1968,3 @@ function createShopPayload(name: string): Record<string, unknown> {
     businesstype: {},
   };
 }
-

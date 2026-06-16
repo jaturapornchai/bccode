@@ -360,7 +360,7 @@ describe("workspace product unit setup route", () => {
     const json = await response.json();
 
     expect(response.status).toBe(400);
-    expect(json).toMatchObject({ success: false, message: "กรุณากรอกชื่อ Holding" });
+    expect(json).toMatchObject({ success: false, message: "กรุณากรอกชื่อกลุ่มกิจการ" });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

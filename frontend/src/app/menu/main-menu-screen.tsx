@@ -252,7 +252,7 @@ function WorkspaceContextPanel({
   const companyLabel = language === "th" ? "บริษัท" : "Company";
   const branchLabel = language === "th" ? "สาขา" : "Branch";
   const rows = [
-    { icon: Crown, label: "Holding", value: holdingDisplayName(workspace) },
+    { icon: Crown, label: "กลุ่มกิจการ", value: holdingDisplayName(workspace) },
     { icon: Building2, label: companyLabel, value: workspaceCompanyDisplayName(workspace) },
     { icon: GitBranch, label: branchLabel, value: workspaceBranchDisplayName(workspace) },
   ];

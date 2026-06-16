@@ -29,7 +29,7 @@ export async function POST(request: Request) {
   }
   if (!holdingCode) {
     return NextResponse.json(
-      { success: false, message: "กรุณากรอกรหัส Holding ก่อนเข้าสู่ระบบด้วย User , Password" },
+      { success: false, message: "กรุณากรอกรหัสกลุ่มกิจการก่อนเข้าสู่ระบบด้วย User , Password" },
       { status: 400 },
     );
   }

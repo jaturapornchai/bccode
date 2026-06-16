@@ -511,7 +511,7 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
                   {shop.status === "connected" ? shop.shopname : `ผูกบัญชี ${platformName}`}
                 </CardTitle>
                 <CardDescription className="font-mono text-xs">
-                  Holding Code: {shop.status === "connected" ? shop.holdingcode : "-"}
+                  กลุ่มกิจการ: {shop.status === "connected" ? shop.holdingcode : "-"}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4 pt-0">
@@ -619,7 +619,7 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
 
                 <div className="space-y-1">
                   <textarea
-                    placeholder={`วางข้อมูลแถวที่มีหัวตารางที่นี่ (เช่น:&#10;Holding Code&#9;Barcode&#9;Seller SKU&#9;Market Product ID&#9;Market Variant ID&#10;shop_${platform}_01&#9;8850123456789&#9;sku-red-01&#9;123456789&#9;98765432)`}
+                    placeholder={`วางข้อมูลแถวที่มีหัวตารางที่นี่ (เช่น:&#10;รหัสกลุ่มกิจการ&#9;Barcode&#9;Seller SKU&#9;Market Product ID&#9;Market Variant ID&#10;shop_${platform}_01&#9;8850123456789&#9;sku-red-01&#9;123456789&#9;98765432)`}
                     value={importText}
                     onChange={(e) => setImportText(e.target.value)}
                     className="h-28 w-full rounded border border-input bg-background p-2 font-mono text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
@@ -829,7 +829,7 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
               <div className="space-y-1">
-                <span className="font-semibold text-xs text-muted-foreground">รหัสร้านค้า (Holding Code) *</span>
+                <span className="font-semibold text-xs text-muted-foreground">รหัสร้านค้า (รหัสกลุ่มกิจการ) *</span>
                 <Input
                   placeholder={`เช่น shop_${platform}_01`}
                   value={authDialog.holdingCode}

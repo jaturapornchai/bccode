@@ -1719,7 +1719,7 @@ const [pickerType, setPickerType] = useState<string>("");
                   title={text.tabMisc ?? "อื่น ๆ"}
                   fields={[
                     { label: "รหัสภายในสินค้า", value: selectedProduct.guidfixed || "-" },
-                    { label: "รหัส Holding", value: selectedProduct.holdingcode || "-" },
+                    { label: "รหัสกลุ่มกิจการ", value: selectedProduct.holdingcode || "-" },
                     { label: "GUID หน่วยนับ", value: selectedProduct.unitguid || "-" },
                     { label: "เปิดคำเตือน", value: formatYesNo(selectedProduct.isalert) },
                     { label: "ข้อความคำเตือน", value: selectedProduct.alertdescription || "-" },

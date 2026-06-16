@@ -145,7 +145,7 @@ export async function POST(request: Request, context: WorkspaceProxyContext) {
     case "create-holding": {
       const holdingCode = normalizeHoldingCode(holdingCodeFromPayload(payload));
       if (!holdingCode) {
-        return NextResponse.json({ success: false, message: "กรุณากรอกรหัส Holding" }, { status: 400 });
+        return NextResponse.json({ success: false, message: "กรุณากรอกรหัสกลุ่มกิจการ" }, { status: 400 });
       }
       if (!isValidHoldingCode(holdingCode)) {
         return NextResponse.json(
@@ -156,7 +156,7 @@ export async function POST(request: Request, context: WorkspaceProxyContext) {
       payload.holdingcode = holdingCode;
       const holdingName = holdingNameFromPayload(payload);
       if (!holdingName) {
-        return NextResponse.json({ success: false, message: "กรุณากรอกชื่อ Holding" }, { status: 400 });
+        return NextResponse.json({ success: false, message: "กรุณากรอกชื่อกลุ่มกิจการ" }, { status: 400 });
       }
       applyHoldingDisplayName(payload, holdingName);
       return proxyMainApiJson(request, mainApiUrl, "/create-holding", {
@@ -209,8 +209,10 @@ async function listHoldingsWithDisplayNames(request: Request, mainApiUrl: string
 
     const holdings = getArrayFromPayload(result.payload, "data");
     const enriched = await Promise.all(holdings.map((holding) => enrichHoldingDisplayName(request, mainApiUrl, authorization, holding)));
+    const activeHoldingCodeKey = activeHoldingCode.toLowerCase();
 
-    // Fetch companies and branches sequentially for each holding using session select-holding.
+    // Fetch companies and branches sequentially because select-holding mutates the bearer-token session.
+    // When the caller passes activeholdingcode, only enrich the active Holding to avoid racing screen data loads.
     const enrichedWithBranches = [];
     for (const holding of enriched) {
       if (!isRecord(holding)) {
@@ -220,6 +222,11 @@ async function listHoldingsWithDisplayNames(request: Request, mainApiUrl: string
 
       const holdingCode = holdingCodeFromPayload(holding);
       if (!holdingCode) {
+        enrichedWithBranches.push({ ...holding, companies: [], branches: [] });
+        continue;
+      }
+
+      if (activeHoldingCodeKey && holdingCode.toLowerCase() !== activeHoldingCodeKey) {
         enrichedWithBranches.push({ ...holding, companies: [], branches: [] });
         continue;
       }
@@ -317,7 +324,7 @@ async function updateHoldingDisplayName(
   if (typeof authorization !== "string") return authorization;
 
   const holdingCode = normalizeHoldingCode(holdingCodeFromPayload(payload));
-  if (!holdingCode) return NextResponse.json({ success: false, message: "กรุณากรอกรหัส Holding" }, { status: 400 });
+  if (!holdingCode) return NextResponse.json({ success: false, message: "กรุณากรอกรหัสกลุ่มกิจการ" }, { status: 400 });
   if (!isValidHoldingCode(holdingCode)) {
     return NextResponse.json(
       { success: false, message: holdingCodeValidationMessageTh },
@@ -326,7 +333,7 @@ async function updateHoldingDisplayName(
   }
 
   const holdingName = holdingNameFromPayload(payload);
-  if (!holdingName) return NextResponse.json({ success: false, message: "กรุณากรอกชื่อ Holding" }, { status: 400 });
+  if (!holdingName) return NextResponse.json({ success: false, message: "กรุณากรอกชื่อกลุ่มกิจการ" }, { status: 400 });
 
   try {
     const selected = await callMainApiJson(
@@ -348,10 +355,10 @@ async function updateHoldingDisplayName(
       { method: "GET" },
       authorization,
     );
-    if (!current.ok || isApiFailure(current.payload)) return mainApiError(current, "โหลดข้อมูล Holding ไม่สำเร็จ");
+    if (!current.ok || isApiFailure(current.payload)) return mainApiError(current, "โหลดข้อมูลกลุ่มกิจการไม่สำเร็จ");
 
     const currentHolding = payloadDataRecord(current.payload);
-    if (!currentHolding) return NextResponse.json({ success: false, message: "ข้อมูล Holding ไม่ถูกต้อง" }, { status: 502 });
+    if (!currentHolding) return NextResponse.json({ success: false, message: "ข้อมูลกลุ่มกิจการไม่ถูกต้อง" }, { status: 502 });
 
     const updatedHolding: Record<string, unknown> = {
       ...currentHolding,
@@ -369,11 +376,11 @@ async function updateHoldingDisplayName(
       },
       authorization,
     );
-    if (!saved.ok || isApiFailure(saved.payload)) return mainApiError(saved, "บันทึกชื่อ Holding ไม่สำเร็จ");
+    if (!saved.ok || isApiFailure(saved.payload)) return mainApiError(saved, "บันทึกชื่อกลุ่มกิจการไม่สำเร็จ");
 
     return NextResponse.json(saved.payload, { status: saved.status });
   } catch (error) {
-    return NextResponse.json({ success: false, message: workspaceErrorMessage(error, "บันทึกชื่อ Holding ไม่สำเร็จ") }, { status: 504 });
+    return NextResponse.json({ success: false, message: workspaceErrorMessage(error, "บันทึกชื่อกลุ่มกิจการไม่สำเร็จ") }, { status: 504 });
   }
 }
 

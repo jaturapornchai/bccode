@@ -1088,6 +1088,7 @@ export function SystemSettingsScreen({
   const [categoryUnsavedChanges, setCategoryUnsavedChanges] = useState(false);
   const groupNumberRef = useRef<number | null>(null);
   groupNumberRef.current = groupNumber;
+  const forbiddenListRequestKeysRef = useRef<Set<string>>(new Set());
   const [copySourceEnvironment, setCopySourceEnvironment] = useState<
     "uat" | "pro"
   >("uat");
@@ -1292,6 +1293,17 @@ export function SystemSettingsScreen({
         if (currentConfig.kind === "copy-uat")
           searchParams.set("sourceenvironment", copySourceEnvironment);
         const fetchSlug = currentConfig.slug === "permissionlink" ? "user" : currentConfig.slug;
+        const forbiddenKey = `${fetchSlug}|${searchParams.get("holdingcode") ?? ""}`;
+        if (forbiddenListRequestKeysRef.current.has(forbiddenKey)) {
+          setNotice({
+            type: "error",
+            text:
+              language === "th"
+                ? "ไม่มีสิทธิ์เข้าถึงข้อมูลกลุ่มกิจการนี้ กรุณาเลือกกลุ่มกิจการใหม่หรือเข้าสู่ระบบใหม่"
+                : "You do not have access to this business group. Select the business group again or sign in again.",
+          });
+          return;
+        }
         const response = await fetch(
           `/api/system-settings/${fetchSlug}?${searchParams.toString()}`,
           {
@@ -1303,6 +1315,9 @@ export function SystemSettingsScreen({
           },
         );
         const payload = (await response.json()) as unknown;
+        if (response.status === 403) {
+          forbiddenListRequestKeysRef.current.add(forbiddenKey);
+        }
         if (!response.ok || isFailed(payload))
           throw new Error(extractMessage(payload) ?? text("requestFailed"));
         let nextRecords = normalizeRecords(payload, currentConfig.slug === "permissionlink" ? getSystemSettingConfig("user")! : currentConfig);
@@ -1356,6 +1371,10 @@ export function SystemSettingsScreen({
   useEffect(() => {
     if (externalLanguage) setLanguage(externalLanguage);
   }, [externalLanguage]);
+
+  useEffect(() => {
+    forbiddenListRequestKeysRef.current.clear();
+  }, [auth?.token, route, workspace?.shop.holdingcode]);
 
   useEffect(() => {
     if (config?.kind !== "copy-uat" || !auth || !workspace) return;
@@ -2204,7 +2223,7 @@ export function SystemSettingsScreen({
                       variant="outline"
                       className="h-auto min-h-5 max-w-full whitespace-normal break-words border-secondary/40 bg-secondary/5 px-1.5 py-0.5 text-[9px] font-medium leading-snug"
                     >
-                      Holding: {holdingDisplayName(workspace)}
+                      กลุ่มกิจการ: {holdingDisplayName(workspace)}
                     </Badge>
                     <Badge
                       variant="outline"
@@ -4382,8 +4401,8 @@ function UserFormSections({
       title: language === "th" ? "สิทธิ์และสถานะ" : "Permission and status",
       description:
         language === "th"
-          ? "กำหนดระดับสิทธิ์ใน Holding และเปิดหรือปิดการเข้าใช้งานของผู้ใช้นี้"
-          : "Set the user's Holding role and whether this user can access the system.",
+          ? "กำหนดระดับสิทธิ์ในกลุ่มกิจการ และเปิดหรือปิดการเข้าใช้งานของผู้ใช้นี้"
+          : "Set the user's business group role and whether this user can access the system.",
     },
     {
       keys: ["accessscopes"],
@@ -6443,8 +6462,8 @@ function UserAccessAuditReportPanel({
   const title = language === "th" ? "ตรวจสอบสถานะผู้ใช้งาน" : "User Access Audit";
   const subtitle =
     language === "th"
-      ? "เลือกผู้ใช้งานเพื่อดูว่าเข้า Holding/บริษัท/สาขาไหนได้ และมีสิทธิ์ทำอะไรได้บ้าง"
-      : "Select a user to review accessible Holding/company/branch scope and allowed actions.";
+      ? "เลือกผู้ใช้งานเพื่อดูว่าเข้ากลุ่มกิจการ/บริษัท/สาขาไหนได้ และมีสิทธิ์ทำอะไรได้บ้าง"
+      : "Select a user to review accessible business group/company/branch scope and allowed actions.";
 
   return (
     <section className="grid gap-3">
@@ -6635,7 +6654,7 @@ function UserAccessAuditReportPage({
           </div>
         </div>
         <div className="audit-report-meta grid gap-0 border border-slate-300 text-xs md:grid-cols-3">
-          <AuditLine label={language === "th" ? "Holding" : "Holding"} value={holdingLabel} />
+          <AuditLine label={language === "th" ? "กลุ่มกิจการ" : "Business group"} value={holdingLabel} />
           <AuditLine label={language === "th" ? "ผู้ใช้งาน" : "User"} value={auditUserCode(user)} />
           <AuditLine label={language === "th" ? "จำนวนรายการผูกสิทธิ์" : "Assignments"} value={String(links.length)} />
         </div>
@@ -6928,7 +6947,7 @@ function auditScopeLines(
 ): string[] {
   if (rules.length === 0) return [];
   if (rules.some((rule) => rule.scopetype === "holding")) {
-    return [language === "th" ? "ทั้ง Holding" : "Whole Holding"];
+    return [language === "th" ? "ทั้งกลุ่มกิจการ" : "Whole business group"];
   }
   return selectedCompanyScopesFromRules(rules, data.companies, data.branches).flatMap((scope) => {
     const companyLabel = `${scope.company.businesscode} - ${scope.company.name}`;
@@ -7293,13 +7312,13 @@ function HoldingScopeRulesEditor({
 
   const hint =
     language === "th"
-      ? "ติ๊กทั้ง Holding หรือค้นหาบริษัทเพื่อเพิ่มเข้า list แล้วเลือกบริษัทเพื่อกำหนดสาขา"
-      : "Select the whole Holding, or search and add companies, then pick a company to configure branches.";
+      ? "ติ๊กทั้งกลุ่มกิจการ หรือค้นหาบริษัทเพื่อเพิ่มเข้า list แล้วเลือกบริษัทเพื่อกำหนดสาขา"
+      : "Select the whole business group, or search and add companies, then pick a company to configure branches.";
   const summary =
     holdingSelected
       ? language === "th"
-        ? "ทั้ง Holding"
-        : "Whole Holding"
+        ? "ทั้งกลุ่มกิจการ"
+        : "Whole business group"
       : language === "th"
         ? `เลือก ${selectedCompanyCount()} บริษัท / ${selectedBranchCount()} สาขา`
         : `${selectedCompanyCount()} companies / ${selectedBranchCount()} branches selected`;
@@ -7335,7 +7354,7 @@ function HoldingScopeRulesEditor({
             onChange={(event) => setHoldingScope(event.target.checked)}
           />
           <span className="grid gap-1">
-            <span>{language === "th" ? "ใช้ได้ทั้ง Holding" : "Apply to whole Holding"}</span>
+            <span>{language === "th" ? "ใช้ได้ทั้งกลุ่มกิจการ" : "Apply to whole business group"}</span>
             <span className="text-xs font-normal text-muted-foreground">
               {language === "th"
                 ? "ถ้าเลือกข้อนี้ ผู้ใช้งานหรือสิทธิ์นี้ใช้ได้ทุกบริษัทและทุกสาขา"
@@ -14856,7 +14875,6 @@ function syncCompanyLanguageForm(form: FormState) {
   );
   form["settings.language"] = configs[0]?.code ?? defaultCode;
   form["settings.languageconfigs"] = configs;
-  delete form["settings.languageconfigs"];
 }
 
 function setFormValueIfEmpty(form: FormState, key: string, value: unknown) {
@@ -15029,7 +15047,6 @@ function buildPayload(
       { forcePrimaryFirst: true },
     );
     setByPath(payload, "settings.languageconfigs", configs);
-    deleteByPath(payload, "settings.languageconfigs");
     setByPath(payload, "settings.language", configs[0]?.code ?? "th");
     payload.holdingcode = workspace.shop.holdingcode;
   }

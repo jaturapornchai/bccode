@@ -498,7 +498,7 @@ export function TabProductMarketplace({
               <p className="font-semibold text-foreground">💡 วิธีการใช้งาน:</p>
               <ul className="list-disc pl-4 space-y-0.5">
                 <li>เตรียมคอลัมน์ใน Excel/CSV อย่างน้อย: <code className="bg-muted px-1 py-0.5 rounded font-mono">Barcode</code> หรือ <code className="bg-muted px-1 py-0.5 rounded font-mono">Seller SKU</code> เพื่อใช้ระบุสินค้า</li>
-                <li>สามารถระบุข้อมูลที่จะจับคู่ด้วย: <code className="bg-muted px-1 py-0.5 rounded font-mono">Holding Code</code> (รหัสร้านค้า), <code className="bg-muted px-1 py-0.5 rounded font-mono">Market Product ID</code> (รหัสสินค้าบนเว็บ), และ <code className="bg-muted px-1 py-0.5 rounded font-mono">Market Variant ID</code> (รหัสย่อย)</li>
+                <li>สามารถระบุข้อมูลที่จะจับคู่ด้วย: <code className="bg-muted px-1 py-0.5 rounded font-mono">รหัสกลุ่มกิจการ</code> (รหัสร้านค้า), <code className="bg-muted px-1 py-0.5 rounded font-mono">Market Product ID</code> (รหัสสินค้าบนเว็บ), และ <code className="bg-muted px-1 py-0.5 rounded font-mono">Market Variant ID</code> (รหัสย่อย)</li>
                 <li>บันทึกเป็นไฟล์ CSV หรือคัดลอก (Copy) ตารางจาก Excel แล้ววางในช่องข้อความด้านล่างได้ทันที</li>
               </ul>
             </div>
@@ -526,7 +526,7 @@ export function TabProductMarketplace({
               </div>
 
               <textarea
-                placeholder="วางข้อมูลแถวที่นี่ (เช่น:&#10;Holding Code&#9;Barcode&#9;Seller SKU&#9;Market Product ID&#9;Market Variant ID&#10;shop_01&#9;8850123456789&#9;sku-red-01&#9;12345678&#9;98765432)"
+                placeholder="วางข้อมูลแถวที่นี่ (เช่น:&#10;รหัสกลุ่มกิจการ&#9;Barcode&#9;Seller SKU&#9;Market Product ID&#9;Market Variant ID&#10;shop_01&#9;8850123456789&#9;sku-red-01&#9;12345678&#9;98765432)"
                 value={importText}
                 onChange={(e) => setImportText(e.target.value)}
                 className="h-24 w-full rounded border border-input bg-background p-2 font-mono text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
@@ -593,7 +593,7 @@ export function TabProductMarketplace({
                 key={originalIdx}
                 className="grid grid-cols-1 items-end gap-3 rounded-md border border-border p-3 md:grid-cols-[1.5fr_1.5fr_1fr_40px]"
               >
-                <FieldRow label={`รหัสร้านค้า (Holding Code) #${mapIdx + 1}`} required>
+                <FieldRow label={`รหัสร้านค้า (รหัสกลุ่มกิจการ) #${mapIdx + 1}`} required>
                   <Input
                     placeholder="เช่น shop_shopee_01"
                     value={item.holdingcode || ""}
