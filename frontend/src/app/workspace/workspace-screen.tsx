@@ -11,7 +11,6 @@ import {
   Copy,
   Crown,
   ExternalLink,
-  HelpCircle,
   KeyRound,
   Languages,
   Loader2,
@@ -1280,23 +1279,23 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
               </label>
             </div>
             {flatCompanies.length === 0 ? (
-              <div className="workspace-empty-state flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto">
-                <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-4">
-                  <Building2 size={32} />
+              <div className="workspace-empty-state flex flex-col items-center justify-center px-6 py-12 text-center max-w-2xl mx-auto">
+                <div className="w-20 h-20 rounded-2xl bg-primary/5 ring-1 ring-primary/10 text-primary flex items-center justify-center mb-5 shadow-sm">
+                  <Building2 size={40} />
                 </div>
-                <strong className="text-base text-foreground font-bold mb-2">
+                <strong className="text-xl sm:text-2xl text-foreground font-bold mb-2.5 tracking-tight">
                   {language === "th"
                     ? "ยังไม่มีบริษัทเปิดใช้งานในระบบของคุณ"
                     : "No active companies found in your system"}
                 </strong>
-                <p className="text-xs text-muted-foreground mb-6">
+                <p className="text-sm text-muted-foreground mb-7 max-w-sm leading-relaxed">
                   {language === "th"
                     ? "เริ่มจากกำหนดภาษาที่ใช้งานก่อน แล้วค่อยสร้างบริษัทและสาขา"
                     : "Start with active languages, then create the company and branches."}
                 </p>
 
                 <button
-                  className="primary-button mb-4 inline-flex items-center gap-2 shadow-md"
+                  className="primary-button mb-8 inline-flex w-full sm:w-auto items-center justify-center gap-2 shadow-md"
                   type="button"
                   onClick={() => void openAccessSettings("/activelanguages")}
                   disabled={busy || accessShopOptions.length === 0}
@@ -1305,85 +1304,38 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                   <span>{language === "th" ? "เริ่มตั้งค่าระบบ" : "Start system setup"}</span>
                 </button>
 
-                <div className="w-full text-left bg-accent/35 border border-border/60 rounded-xl p-4 space-y-3.5">
-                  <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5 border-b pb-2">
-                    <HelpCircle size={14} className="text-primary" />
-                    <span>
-                      {language === "th" ? "ขั้นตอนเริ่มต้นใช้งาน" : "Getting Started"}
-                    </span>
+                <div className="w-full rounded-xl border border-border/70 bg-card/70 p-5">
+                  <h4 className="mb-4 text-left text-sm font-bold text-foreground">
+                    {language === "th" ? "เริ่มใช้งานใน 3 ขั้นตอน" : "Get started in 3 steps"}
                   </h4>
-
-                  <ul className="space-y-3 text-[11px] text-muted-foreground">
-                    <li className="flex items-start gap-2.5">
-                      <span className="w-4 h-4 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[9px] shrink-0 mt-0.5">1</span>
-                      <div>
-                        <strong className="text-foreground block">
-                          {language === "th" ? "เข้าเมนูตั้งค่าระบบ" : "Go to Settings"}
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    {[
+                      {
+                        th: ["ตั้งค่าภาษา", "เลือกภาษาไทยและภาษาอื่นที่ต้องใช้"],
+                        en: ["Set languages", "Pick Thai and any other languages you need"],
+                      },
+                      {
+                        th: ["เพิ่มบริษัทและสาขา", "สร้างบริษัทและสำนักงานใหญ่"],
+                        en: ["Add company & branch", "Create the company and head office"],
+                      },
+                      {
+                        th: ["เพิ่มผู้ใช้และสิทธิ์", "เพิ่มผู้ใช้งานและกำหนดสิทธิ์หน้าจอ"],
+                        en: ["Add users & permissions", "Add users and assign screen access"],
+                      },
+                    ].map((stepItem, stepIndex) => (
+                      <div key={stepIndex} className="rounded-lg border border-border/60 bg-card p-3.5 text-left">
+                        <span className="mb-2 flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-black text-primary">
+                          {stepIndex + 1}
+                        </span>
+                        <strong className="block text-sm font-bold text-foreground">
+                          {language === "th" ? stepItem.th[0] : stepItem.en[0]}
                         </strong>
-                        <span>
-                          {language === "th"
-                            ? "คลิกปุ่ม 'ตั้งค่าระบบ' 🔑 สีน้ำเงินที่มุมขวาบนของหน้านี้"
-                            : "Click the 'Settings' 🔑 button at the top-right of this panel."}
+                        <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
+                          {language === "th" ? stepItem.th[1] : stepItem.en[1]}
                         </span>
                       </div>
-                    </li>
-
-                    <li className="flex items-start gap-2.5">
-                      <span className="w-4 h-4 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[9px] shrink-0 mt-0.5">2</span>
-                      <div>
-                        <strong className="text-foreground block">
-                          {language === "th" ? "เลือกหัวข้อภาษาที่ใช้งาน" : "Select Active Languages"}
-                        </strong>
-                        <span>
-                          {language === "th"
-                            ? "ตรวจภาษาไทยที่เป็นค่าเริ่มต้น เพิ่มภาษาอื่นที่ต้องใช้ และลากภาษาแรกไว้บนสุด"
-                            : "Review Thai as the default, add any other active languages, and keep the primary language first."}
-                        </span>
-                      </div>
-                    </li>
-
-                    <li className="flex items-start gap-2.5">
-                      <span className="w-4 h-4 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[9px] shrink-0 mt-0.5">3</span>
-                      <div>
-                        <strong className="text-foreground block">
-                          {language === "th" ? "เลือกข้อมูลบริษัทและสาขา" : "Select Company & Branch Info"}
-                        </strong>
-                        <span>
-                          {language === "th"
-                            ? "หลังตั้งภาษาแล้ว ให้เลือกหัวข้อ 'ข้อมูลบริษัทและสาขา'"
-                            : "After setting languages, select 'Company & Branch Info'."}
-                        </span>
-                      </div>
-                    </li>
-
-                    <li className="flex items-start gap-2.5">
-                      <span className="w-4 h-4 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[9px] shrink-0 mt-0.5">4</span>
-                      <div>
-                        <strong className="text-foreground block">
-                          {language === "th" ? "เพิ่มบริษัทใหม่และบันทึก" : "Add Company & Save"}
-                        </strong>
-                        <span>
-                          {language === "th"
-                            ? "คลิก '+ เพิ่มบริษัท' กรอกรหัสและชื่อบริษัทตามภาษาที่ตั้งไว้ แล้วบันทึก"
-                            : "Click '+ Add Company', fill in the code and localized company names, then save."}
-                        </span>
-                      </div>
-                    </li>
-
-                    <li className="flex items-start gap-2.5">
-                      <span className="w-4 h-4 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[9px] shrink-0 mt-0.5">5</span>
-                      <div>
-                        <strong className="text-foreground block">
-                          {language === "th" ? "สร้างผู้ใช้และสิทธิ์" : "Create Users & Permissions"}
-                        </strong>
-                        <span>
-                          {language === "th"
-                            ? "เพิ่มผู้ใช้งาน กำหนดสิทธิ์หน้าจอ รวมเป็นกลุ่ม แล้วผูกกลุ่มให้ผู้ใช้"
-                            : "Add users, define screen permissions, group them, then assign groups to users."}
-                        </span>
-                      </div>
-                    </li>
-                  </ul>
+                    ))}
+                  </div>
                 </div>
               </div>
             ) : (

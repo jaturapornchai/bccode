@@ -1726,7 +1726,7 @@ h2:not([class]) {
   min-height: calc(var(--density-control-h) + 4px);
   gap: var(--density-gap);
   border-radius: 10px;
-  background: linear-gradient(135deg, var(--primary) 0%, color-mix(in srgb, var(--primary) 82%, var(--teal)) 54%, var(--teal) 100%);
+  background: var(--primary);
   color: var(--primary-foreground);
   font-size: 1rem;
   font-weight: 900;
