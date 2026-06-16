@@ -5,6 +5,7 @@ description: Use when working on rules, skills, workflow, deployment, database, 
 
 ## Rules Portability & Priorities
 - **Canonical Files**: [AGENTS.md](file:///D:/bccode/AGENTS.md) and [bc-account-core-rules.md](file:///D:/bccode/.agents/rules/bc-account-core-rules.md).
-- **Rule Changes**: Read canonical files first. Keep changes portable across Claude Code, Codex, and Gemini.
+- **Rule Changes**: Read canonical files first. Keep changes portable across ZCode, Codex, and Gemini.
+- **Wrong Screen / Width Fixes**: If Jead says `ผิดจอ`, re-confirm `D:\bccode` route/source evidence before edits. Full-width ERP screens should use the central rule contract `w-full max-w-none min-w-0` and avoid hiding work-surface overflow.
 - **Tokens Budget**: Link to central rules. Do not copy long technical details to downstream skills.
 - **No Secrets**: Never write credentials or tokens into Git, wiki, or prompt assets.

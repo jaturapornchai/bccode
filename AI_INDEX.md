@@ -1,20 +1,21 @@
 # BC Ai Account AI Routing Index
 
-Purpose: keep Codex, Claude Code, and other agents fast. Read this file first, then open only the relevant source files.
+Purpose: keep Codex, ZCode, and other agents fast. Read this file first, then open only the relevant source files.
 
 ## Default Workflow
 - Start every task with a concise plan before running command sequences, debugging, editing, deploying, committing, or pushing. Scale the plan to the task; even simple fixes need a short plan.
 - After Jead gives a command, keep working toward an end-to-end result in the same turn: implement, adjust related datamodel/UX/UI/rules/models when appropriate, verify with real evidence, and report blockers only when the task is R0, missing required information that cannot be discovered locally, or blocked by runtime/tool limits. Test like a non-technical user would use the screen and go as deep as the current scope, time, and tools allow. If the change is risky or rollback safety matters, auto-push to GitHub after targeted verification plus secret/diff checks, unless remote divergence, secret risk, or an R0 blocker is found.
-- For project-wide rules, local runtime, storage, secrets, DEV deployment, wiki/LLM knowledge, or reusable agent context, read `.agents/rules/bc-account-core-rules.md` and `.agents/wiki/llm-index.md` first; keep agent assets portable across Claude Code, Codex/GPT-5.5, and Google Antigravity/Gemini.
+- For project-wide rules, local runtime, storage, secrets, DEV deployment, wiki/LLM knowledge, or reusable agent context, read `.agents/rules/bc-account-core-rules.md` and `.agents/wiki/llm-index.md` first; keep agent assets portable across ZCode (GLM-5.2), Codex/GPT-5.5, and Google Antigravity/Gemini.
 - Identify the task area below.
 - Use `rg -n "symbol|label|route"` before opening large files.
 - For files over 50 KB, read line ranges or exact functions only.
 - Automatically use suitable available plugins/tools/skills for the task, such as Browser/Playwright for UI checks and GitHub/Drive plugins for those domains. Do not install new plugins without Jead's approval, and keep source/runtime evidence as the source of truth.
+- For every BC Account task involving planning, implementation, code review, debugging, UX/UI review, recommendations, or weakness checks, ZCode (GLM-5.2) must attempt to ask Codex (gpt-5.5 think) for secondary advisory through `.agents/skills/codex-advisor/SKILL.md` and `tools/ai/codex-advisor.ps1` after reading local evidence. Prefer `-Mode all` unless a narrower mode is clearly sufficient. Subscription-only via `codex login`; if Codex is unavailable (rate-limit, not authenticated, CLI missing), report that and continue with ZCode-only work when safe. Never let Codex edit files directly, or treat Codex output as source of truth.
 - Patch the smallest safe scope.
 - Verify with focused commands, not whole-repo checks.
 
 ## Agent Fast Execution Contract
-- Applies to Codex, Claude Code, Gemini/Antigravity, and any agent working in this repo.
+- Applies to Codex, ZCode, Gemini/Antigravity, and any agent working in this repo.
 - Default to targeted checks. Do not run expensive whole-repo commands such as `go test ./...`, broad browser automation, or full-repo scans unless Jead explicitly asks, the touched scope genuinely requires it, or targeted checks cannot provide useful evidence.
 - Docs/rules-only changes: use `git diff --check` plus staged secret scanning. Do not run frontend/backend build or test commands.
 - Frontend code changes: fast-iteration dev mode — rely on `next dev` HMR; run `cd frontend; npm run typecheck` only before commit/summary, not every edit. Use browser verification only when UI behavior, layout, routing, or visual output changed.
@@ -39,6 +40,7 @@ Purpose: keep Codex, Claude Code, and other agents fast. Read this file first, t
 - Company access selectors: general master-data `businesscodes` is company-level only. Do not render or save branch selections in normal CRUD/master-data company access fields. Read legacy `companyguids` only as a compatibility alias.
 - Backend local Docker Desktop deploy (auto after backend edits): for Go-code-only changes use `cd backend; .\scripts\deploy-mainapi-fast.ps1`; for image/runtime changes use `docker-compose up -d --no-deps --build mainapi`; always verify `/healthz`. DEV server deploy still needs `deploy dev`.
 - Backend health: `curl.exe --max-time 10 -s -i http://localhost:8888/healthz`
+- GLM 5.2 helper: `powershell -NoProfile -ExecutionPolicy Bypass -File D:\bccode\tools\ai\glm52-think-planner.ps1 -Mode all -Prompt "task prompt"`
 - Real data check: use the selected DEV database/API path; do not rely on mock business data for completion claims.
 - DEV seed data: use `.agents/skills/dev-data-seeder/SKILL.md`; resolve the active `holdingcode` first, then seed through real DEV APIs and verify via the same screen API path.
 - Product category groups: `groupnumber` is a usage/device/channel group. For `/productcategorygroupselectscreen` and `/productcategorylist`, build/verify a complete tree with `parentguid` and `parentguidall`; attach `codelist` to sellable leaf categories, not one flat root per menu type.

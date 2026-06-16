@@ -1,6 +1,6 @@
 ---
 name: thinking-router
-description: Auto-select reasoning depth based on task complexity. Trigger on every new task to set the right reasoning depth before execution. Model-agnostic — each model maps depth to its own knob (Claude effort / Codex model_reasoning_effort / Gemini thinking_level).
+description: Auto-select reasoning depth based on task complexity. Trigger on every new task to set the right reasoning depth before execution. Model-agnostic — each model maps depth to its own knob (ZCode native reasoning / Codex model_reasoning_effort / Gemini thinking_level).
 ---
 
 # Reasoning Depth Router
@@ -38,7 +38,7 @@ description: Auto-select reasoning depth based on task complexity. Trigger on ev
 ## Output before executing
 🧠 reasoning depth: <minimal|low|medium|high>
 reason: <1 line>
-(map to your model: Claude effort / Codex model_reasoning_effort / Gemini thinking_level)
+(map to your model: ZCode native reasoning / Codex model_reasoning_effort / Gemini thinking_level)
 
 ## Override rules
 - User says "think harder" → bump up one level

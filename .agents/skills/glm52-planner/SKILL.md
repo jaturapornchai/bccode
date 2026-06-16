@@ -63,7 +63,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File D:\bccode\tools\ai\glm52-thi
 ## Reverse direction — codex-advisor
 
 This skill is one half of the GLM ↔ Codex bidirectional advisory loop (see
-`ai-team-governance.md` §11). The reverse direction — when GLM 5.2 (or Claude)
+`ai-team-governance.md` §11). The reverse direction — when ZCode (GLM-5.2)
 is the active agent and wants Codex's perspective — uses the sibling skill
 `codex-advisor` and helper `tools/ai/codex-advisor.ps1`. The synthesis loop is
 identical in both directions: active agent reads evidence first, asks the
