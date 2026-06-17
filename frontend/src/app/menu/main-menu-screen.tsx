@@ -1036,9 +1036,17 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                 <ThemeToggle language={language} />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-8 min-w-0 gap-1 px-2">
-                      <UserRound className="h-4 w-4" />
-                      <span className="hidden max-w-28 truncate sm:inline">{loginIdentity}</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-auto min-h-8 max-w-[min(18rem,34vw)] shrink-0 items-center gap-1.5 px-2 py-1 text-left"
+                      aria-label={loginIdentity}
+                      title={loginIdentity}
+                    >
+                      <UserRound className="h-4 w-4 shrink-0" />
+                      <span className="hidden min-w-0 max-w-56 whitespace-normal break-all text-xs font-medium leading-tight sm:inline">
+                        {loginIdentity}
+                      </span>
                       <ChevronsUpDown className="h-3.5 w-3.5 opacity-60" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -1047,7 +1055,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                       <UserRound className="h-4 w-4 shrink-0 text-muted-foreground" />
                       <div className="min-w-0">
                         <p className="text-xs font-semibold text-muted-foreground">{loginText}</p>
-                        <p className="truncate font-semibold text-foreground">{loginIdentity}</p>
+                        <p className="break-all font-semibold leading-snug text-foreground">{loginIdentity}</p>
                       </div>
                     </div>
                     <DropdownMenuItem onClick={() => setPasswordDialogOpen(true)}>
