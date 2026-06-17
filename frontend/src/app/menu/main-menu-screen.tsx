@@ -1151,7 +1151,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                       {tab.id === "home" ? (
                         <DashboardHome />
                       ) : (
-                        <WorkTabPanel activeTab={tab} backendLanguage={backendLanguage} language={language} tabCount={tabs.length} />
+                        <WorkTabPanel active={tab.id === activeTabId} activeTab={tab} backendLanguage={backendLanguage} language={language} tabCount={tabs.length} />
                       )}
                     </section>
                   ))}
@@ -2175,7 +2175,7 @@ function DashboardHome() {
   return <div className="min-h-[320px] min-w-0" aria-label="overview" />;
 }
 
-function WorkTabPanel({ activeTab, backendLanguage, language, tabCount }: { activeTab: WorkTab; backendLanguage: BackendLanguageDictionary; language: LanguageCode; tabCount: number }) {
+function WorkTabPanel({ active, activeTab, backendLanguage, language, tabCount }: { active: boolean; activeTab: WorkTab; backendLanguage: BackendLanguageDictionary; language: LanguageCode; tabCount: number }) {
   if (activeTab.route === "/currency") {
     return <CurrencyScreen embedded language={language} />;
   }
@@ -2185,11 +2185,11 @@ function WorkTabPanel({ activeTab, backendLanguage, language, tabCount }: { acti
   }
 
   if (activeTab.route === "/product") {
-    return <ProductScreen embedded language={language} />;
+    return <ProductScreen active={active} embedded language={language} />;
   }
 
   if (activeTab.route === "/productset") {
-    return <ProductSetScreen embedded language={language} />;
+    return <ProductSetScreen active={active} embedded language={language} />;
   }
 
   if (activeTab.route === "/productbarcode") {

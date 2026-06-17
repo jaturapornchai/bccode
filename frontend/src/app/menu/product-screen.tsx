@@ -125,10 +125,12 @@ function clampProductSplitLeft(value: number) {
 }
 
 export function ProductScreen({
+  active = true,
   embedded = false,
   language = "th",
   isSetOnly = false,
 }: {
+  active?: boolean;
   embedded?: boolean;
   language?: LanguageCode;
   isSetOnly?: boolean;
@@ -468,10 +470,10 @@ const [pickerType, setPickerType] = useState<string>("");
   }, [auth, activeHoldingCode, search, text.requestFailed, isSetOnly]);
 
   useEffect(() => {
-    if (auth && activeHoldingCode) {
+    if (active && auth && activeHoldingCode) {
       void loadProducts();
     }
-  }, [auth, activeHoldingCode, loadProducts]);
+  }, [active, auth, activeHoldingCode, loadProducts]);
 
   const makeBlankProduct = useCallback((): Product => ({
     guidfixed: "",

@@ -69,6 +69,7 @@ import {
 import { cn } from "@/lib/utils";
 
 type ProductSetScreenProps = {
+  active?: boolean;
   embedded?: boolean;
   language?: LanguageCode;
 };
@@ -232,7 +233,7 @@ function BarcodePickerModal({
   );
 }
 
-export function ProductSetScreen({ embedded = false, language = "th" }: ProductSetScreenProps) {
+export function ProductSetScreen({ active = true, embedded = false, language = "th" }: ProductSetScreenProps) {
   const lang = normalizeLanguage(language);
   const text = getBarcodeText(lang);
   const { confirm } = useConfirmDialog();
@@ -340,10 +341,10 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
   }, [auth, activeHoldingCode, search]);
 
   useEffect(() => {
-    if (auth && activeHoldingCode) {
+    if (active && auth && activeHoldingCode) {
       void loadProductSets();
     }
-  }, [auth, activeHoldingCode, loadProductSets]);
+  }, [active, auth, activeHoldingCode, loadProductSets]);
 
   const selectedProduct = useMemo(() => {
     return items.find((item) => item.guidfixed === selectedGuid) ?? items[0] ?? null;
