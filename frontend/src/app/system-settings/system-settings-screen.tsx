@@ -15280,26 +15280,34 @@ function recordId(
   config: SystemSettingConfig,
 ): string {
   if (!record) return "";
-  const value = config.idField ? getByPath(record, config.idField) : undefined;
-  return String(
-    value ??
-      record.guidfixed ??
-      record.guidfixed ??
-      record.id ??
-      record._id ??
-      record.approvalcode ??
-      record.permissioncode ??
-      record.groupcode ??
-      record.employeecode ??
-      record.approvalCode ??
-      record.permissionCode ??
-      record.groupCode ??
-      record.employeeCode ??
-      record.code ??
-      record.holdingcode ??
-      record.providername ??
-      "",
+  return firstRecordValue(
+    config.idField ? getByPath(record, config.idField) : undefined,
+    record.guidfixed,
+    record.guid,
+    record.id,
+    record._id,
+    record.unitcode,
+    record.unitCode,
+    record.approvalcode,
+    record.permissioncode,
+    record.groupcode,
+    record.employeecode,
+    record.approvalCode,
+    record.permissionCode,
+    record.groupCode,
+    record.employeeCode,
+    record.code,
+    record.holdingcode,
+    record.providername,
   );
+}
+
+function firstRecordValue(...values: unknown[]): string {
+  for (const value of values) {
+    const text = stringValue(value);
+    if (text) return text;
+  }
+  return "";
 }
 
 function recordTitle(
