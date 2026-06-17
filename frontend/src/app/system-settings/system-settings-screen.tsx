@@ -1079,6 +1079,10 @@ export function SystemSettingsScreen({
   const [form, setForm] = useState<FormState>({});
   const [formOpen, setFormOpen] = useState(false);
   const [selectedRecordId, setSelectedRecordId] = useState("");
+  const [detailRecord, setDetailRecord] = useState<SettingRecord | null>(null);
+  const [detailRecordId, setDetailRecordId] = useState("");
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState("");
   const [autoOpenedCompanyId, setAutoOpenedCompanyId] = useState("");
   const [workDays, setWorkDays] = useState<WorkDay[]>([]);
   const [sourceHoldingCode, setSourceHoldingCode] = useState("");
@@ -1089,6 +1093,7 @@ export function SystemSettingsScreen({
   const groupNumberRef = useRef<number | null>(null);
   groupNumberRef.current = groupNumber;
   const forbiddenListRequestKeysRef = useRef<Set<string>>(new Set());
+  const listContextKeyRef = useRef("");
   const [copySourceEnvironment, setCopySourceEnvironment] = useState<
     "uat" | "pro"
   >("uat");
@@ -1368,6 +1373,89 @@ export function SystemSettingsScreen({
     ],
   );
 
+  const loadRecordDetail = useCallback(
+    async (
+      currentAuth: AuthSession | null,
+      currentWorkspace: WorkspaceSession | null,
+      currentConfig: SystemSettingConfig,
+      id: string,
+    ): Promise<SettingRecord> => {
+      if (!currentAuth || !currentWorkspace)
+        throw new Error(text("requestFailed"));
+      if (!id)
+        throw new Error(
+          language === "th"
+            ? "ไม่พบรหัสข้อมูลสำหรับโหลดรายละเอียดจาก MongoDB"
+            : "Missing record ID for MongoDB detail loading.",
+        );
+      const params = workspaceTenantSearchParams(currentWorkspace);
+      const response = await fetch(
+        `/api/system-settings/${currentConfig.slug}/${encodeURIComponent(id)}?${params.toString()}`,
+        {
+          headers: requestHeaders(currentAuth),
+          cache: "no-store",
+        },
+      );
+      const payload = (await response.json()) as unknown;
+      if (!response.ok || isFailed(payload))
+        throw new Error(extractMessage(payload) ?? text("requestFailed"));
+      const detail = normalizeRecords(payload, currentConfig)[0];
+      if (!detail)
+        throw new Error(
+          language === "th"
+            ? "ไม่พบรายละเอียดจาก MongoDB"
+            : "MongoDB detail was not found.",
+        );
+      return detail;
+    },
+    [language, text],
+  );
+
+  const resolveDetailIdFromList = useCallback(
+    async (
+      currentAuth: AuthSession,
+      currentWorkspace: WorkspaceSession,
+      currentConfig: SystemSettingConfig,
+      lookup: string,
+    ): Promise<string> => {
+      if (!lookup) return "";
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        const searchParams = new URLSearchParams({
+          limit: "20",
+          offset: "0",
+          page: "1",
+          q: lookup,
+        });
+        applyWorkspaceTenantParams(searchParams, currentWorkspace);
+        const firstFieldKey = currentConfig.fields?.[0]?.key;
+        if (firstFieldKey && currentConfig.slug !== "permissionlink") {
+          searchParams.set("sort", `${firstFieldKey}:1`);
+        }
+        const response = await fetch(
+          `/api/system-settings/${currentConfig.slug}?${searchParams.toString()}`,
+          {
+            headers: requestHeaders(currentAuth),
+            cache: "no-store",
+          },
+        );
+        const payload = (await response.json()) as unknown;
+        if (!response.ok || isFailed(payload))
+          throw new Error(extractMessage(payload) ?? text("requestFailed"));
+        const records = normalizeRecords(payload, currentConfig);
+        const match =
+          records.find((record) =>
+            recordMatchesBusinessLookup(record, currentConfig, lookup),
+          ) ??
+          records.find((record) => recordId(record, currentConfig) === lookup);
+        const detailId = match ? recordDetailId(match, currentConfig) : "";
+        if (detailId) return detailId;
+        if (attempt < 4) await wait(250);
+      }
+      return "";
+    },
+    [text],
+  );
+
   useEffect(() => {
     if (externalLanguage) setLanguage(externalLanguage);
   }, [externalLanguage]);
@@ -1415,6 +1503,18 @@ export function SystemSettingsScreen({
     loadRecords,
     router,
   ]);
+
+  useEffect(() => {
+    if (!config) return;
+    const nextKey = `${config.slug}\n${query}`;
+    if (listContextKeyRef.current === nextKey) return;
+    listContextKeyRef.current = nextKey;
+    setSelectedRecordId("");
+    setDetailRecord(null);
+    setDetailRecordId("");
+    setDetailError("");
+    setDetailLoading(false);
+  }, [config, query]);
 
   useEffect(() => {
     const handleWorkspaceChange = () => {
@@ -1488,17 +1588,22 @@ export function SystemSettingsScreen({
   ]);
   const selectedRecord = useMemo(() => {
     if (!config || !visibleRecords.length) return null;
+    if (!selectedRecordId) return visibleRecords[0] ?? null;
     return (
       visibleRecords.find(
         (record) => recordId(record, config) === selectedRecordId,
-      ) ??
-      visibleRecords[0] ??
-      null
+      ) ?? null
     );
   }, [config, selectedRecordId, visibleRecords]);
 
   useEffect(() => {
-    if (!config || !visibleRecords.length) {
+    if (loading) return;
+    if (!config) {
+      setSelectedRecordId("");
+      return;
+    }
+    if (selectedRecordId && shouldHydrateRecordDetail(config)) return;
+    if (!visibleRecords.length) {
       setSelectedRecordId("");
       return;
     }
@@ -1510,7 +1615,59 @@ export function SystemSettingsScreen({
     )
       return;
     setSelectedRecordId(recordId(visibleRecords[0], config));
-  }, [config, selectedRecordId, visibleRecords]);
+  }, [config, loading, selectedRecordId, visibleRecords]);
+
+  useEffect(() => {
+    if (
+      !config ||
+      !shouldHydrateRecordDetail(config) ||
+      !auth ||
+      !workspace ||
+      !selectedRecordId ||
+      formOpen ||
+      loading
+    ) {
+      setDetailRecord(null);
+      setDetailRecordId("");
+      setDetailError("");
+      setDetailLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setDetailRecord(null);
+    setDetailRecordId("");
+    setDetailError("");
+    setDetailLoading(true);
+    void loadRecordDetail(auth, workspace, config, selectedRecordId)
+      .then((detail) => {
+        if (cancelled) return;
+        setDetailRecord(detail);
+        setDetailRecordId(selectedRecordId);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        setDetailRecord(null);
+        setDetailRecordId("");
+        setDetailError(errorText(error));
+      })
+      .finally(() => {
+        if (!cancelled) setDetailLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    auth,
+    config,
+    errorText,
+    formOpen,
+    loadRecordDetail,
+    loading,
+    selectedRecordId,
+    workspace,
+  ]);
 
   useEffect(() => {
     if (!config || config.kind !== "company" || formOpen || editing) return;
@@ -1550,6 +1707,11 @@ export function SystemSettingsScreen({
   const isOwnerOrAdmin = isCreator || workspace?.shop?.role === 1 || workspace?.shop?.role === 2;
   const isProductUnit = currentConfig.slug === "productunit";
   const canEdit = currentConfig.editable !== false && (!isProductUnit || isOwnerOrAdmin);
+  const selectedDetailRecord =
+    detailRecordId && detailRecordId === selectedRecordId ? detailRecord : null;
+  const selectedActionRecord = shouldHydrateRecordDetail(currentConfig)
+    ? selectedDetailRecord
+    : selectedRecord;
 
   function openCreate() {
     setEditing(null);
@@ -1560,11 +1722,11 @@ export function SystemSettingsScreen({
   }
 
   function openCreateCopy() {
-    if (!selectedRecord) return;
+    if (!selectedActionRecord) return;
     setEditing(null);
-    setForm(formFromRecord(selectedRecord, currentConfig, language));
+    setForm(formFromRecord(selectedActionRecord, currentConfig, language));
     setFormOpen(true);
-    setSelectedRecordId(recordId(selectedRecord, currentConfig));
+    setSelectedRecordId(recordId(selectedActionRecord, currentConfig));
     setNotice(null);
   }
 
@@ -1598,65 +1760,72 @@ export function SystemSettingsScreen({
       }
       setCategoryUnsavedChanges(false);
     }
-    setSelectedRecordId(recordId(record, currentConfig));
-    setEditing(record);
-    setForm(formFromRecord(record, currentConfig, language));
-    setFormOpen(true);
+    setSelectedRecordId(newId);
+    setEditing(null);
+    setFormOpen(false);
     setNotice(null);
 
-    if (auth && workspace && currentConfig.slug === "permissionlink") {
-      const lookupId = record.useruid || record.uid || record.employeecode || record.employeeCode || recordId(record, currentConfig);
-      if (lookupId) {
-        try {
-          const params = workspaceTenantSearchParams(workspace);
-          const response = await fetch(
-            `/api/system-settings/permissionlink/${encodeURIComponent(String(lookupId))}?${params.toString()}`,
-            {
-              headers: requestHeaders(auth),
-              cache: "no-store",
-            },
-          );
-          const payload = (await response.json()) as unknown;
-          if (response.ok && !isFailed(payload)) {
-            const detail = normalizeRecords(payload, currentConfig)[0];
-            if (detail) {
-              const mergedRecord = {
-                ...record,
-                ...detail,
-                employeecode: record.employeecode ?? record.employeeCode,
-                employeename: record.employeename ?? record.employeeName,
-              };
-              setEditing(mergedRecord);
-              setForm(formFromRecord(mergedRecord, currentConfig, language));
-            }
-          }
-        } catch {
-          // Keep base form if fetch fails or no existing permission config exists
-        }
-      }
+    if (!shouldHydrateRecordDetail(currentConfig)) {
+      setEditing(record);
+      setForm(formFromRecord(record, currentConfig, language));
+      setFormOpen(true);
       return;
     }
 
-    if (!auth || !workspace || currentConfig.kind !== "main-crud") return;
-    const id = recordId(record, currentConfig);
-    if (!id) return;
+    if (!auth || !workspace) return;
+    const lookupId =
+      currentConfig.slug === "permissionlink"
+        ? stringValue(
+            record.useruid ??
+              record.uid ??
+              record.employeecode ??
+              record.employeeCode ??
+              newId,
+          )
+        : newId;
+    const detailRecordKey = newId || lookupId;
+    setDetailRecord(null);
+    setDetailRecordId("");
+    setDetailError("");
+    setDetailLoading(true);
     try {
-      const params = workspaceTenantSearchParams(workspace);
-      const response = await fetch(
-        `/api/system-settings/${currentConfig.slug}/${encodeURIComponent(id)}?${params.toString()}`,
-        {
-          headers: requestHeaders(auth),
-          cache: "no-store",
-        },
+      const detail = await loadRecordDetail(
+        auth,
+        workspace,
+        currentConfig,
+        lookupId,
       );
-      const payload = (await response.json()) as unknown;
-      if (!response.ok || isFailed(payload)) return;
-      const detail = normalizeRecords(payload, currentConfig)[0];
-      if (!detail) return;
-      setEditing(detail);
-      setForm(formFromRecord(detail, currentConfig, language));
-    } catch {
-      // Keep the list-row data visible if detail fetch is unavailable.
+      const hydratedRecord =
+        currentConfig.slug === "permissionlink"
+          ? {
+              ...record,
+              ...detail,
+              employeecode: firstRecordValue(
+                detail.employeecode,
+                detail.employeeCode,
+                record.employeecode,
+                record.employeeCode,
+                lookupId,
+              ),
+              employeename: firstRecordValue(
+                detail.employeename,
+                detail.employeeName,
+                record.employeename,
+                record.employeeName,
+              ),
+            }
+          : detail;
+      setDetailRecord(hydratedRecord);
+      setDetailRecordId(detailRecordKey);
+      setEditing(hydratedRecord);
+      setForm(formFromRecord(hydratedRecord, currentConfig, language));
+      setFormOpen(true);
+    } catch (error) {
+      const message = errorText(error);
+      setDetailError(message);
+      setNotice({ type: "error", text: message });
+    } finally {
+      setDetailLoading(false);
     }
   }
 
@@ -1790,6 +1959,32 @@ export function SystemSettingsScreen({
       if (!response.ok || isFailed(data))
         throw new Error(extractMessage(data) ?? text("requestFailed"));
       const saveMessage = extractMessage(data);
+      const savedRecord = normalizeRecords(data, currentConfig)[0] ?? null;
+      const savedBusinessLookup = firstRecordValue(
+        recordBusinessLookup(payload, currentConfig),
+        recordBusinessLookup(savedRecord, currentConfig),
+        editing ? id : "",
+      );
+      let savedDetailId = editing
+        ? firstRecordValue(
+            recordDetailId(savedRecord, currentConfig),
+            recordDetailId(payload, currentConfig),
+            id,
+          )
+        : "";
+      if (
+        !savedDetailId &&
+        savedBusinessLookup &&
+        shouldHydrateRecordDetail(currentConfig) &&
+        currentConfig.kind === "main-crud"
+      ) {
+        savedDetailId = await resolveDetailIdFromList(
+          auth,
+          workspace,
+          currentConfig,
+          savedBusinessLookup,
+        );
+      }
       if (currentConfig.kind === "company") {
         const existingShopInfo = workspace.shopInfo ?? {};
         const mergedShopInfo = { ...existingShopInfo, ...payload };
@@ -1851,7 +2046,31 @@ export function SystemSettingsScreen({
         setEditing(null);
         notifyWorkspaceChanged();
       }
+      if (savedDetailId) setSelectedRecordId(savedDetailId);
       await loadRecords(auth, workspace, currentConfig);
+      if (savedDetailId && shouldHydrateRecordDetail(currentConfig)) {
+        setDetailRecord(null);
+        setDetailRecordId("");
+        setDetailError("");
+        setDetailLoading(true);
+        try {
+          const detail = await loadRecordDetail(
+            auth,
+            workspace,
+            currentConfig,
+            savedDetailId,
+          );
+          setSelectedRecordId(savedDetailId);
+          setDetailRecord(detail);
+          setDetailRecordId(savedDetailId);
+        } catch (detailErrorValue) {
+          setDetailRecord(null);
+          setDetailRecordId("");
+          setDetailError(errorText(detailErrorValue));
+        } finally {
+          setDetailLoading(false);
+        }
+      }
       setNotice({ type: "success", text: saveSuccessText(saveMessage) });
     } catch (error) {
       setNotice({ type: "error", text: saveErrorText(error) });
@@ -1882,6 +2101,14 @@ export function SystemSettingsScreen({
       tone: "danger",
     });
     if (!confirmed) return;
+    const wasSelected = id === selectedRecordId;
+    if (wasSelected) {
+      setSelectedRecordId("");
+      setDetailRecord(null);
+      setDetailRecordId("");
+      setDetailError("");
+      setDetailLoading(false);
+    }
     setLoading(true);
     setNotice(null);
     try {
@@ -1904,6 +2131,7 @@ export function SystemSettingsScreen({
         throw new Error(extractMessage(data) ?? text("requestFailed"));
       setNotice({ type: "success", text: text("saved") });
       notifyWorkspaceChanged();
+      if (wasSelected) setAllRecordTotal((current) => Math.max(0, current - 1));
       await loadRecords(auth, workspace, currentConfig);
     } catch (error) {
       setNotice({ type: "error", text: errorText(error) });
@@ -1966,6 +2194,21 @@ export function SystemSettingsScreen({
       setNotice({ type: "success", text: text("saved") });
       notifyWorkspaceChanged();
       await loadRecords(auth, workspace, currentConfig);
+      if (id && shouldHydrateRecordDetail(currentConfig)) {
+        setDetailLoading(true);
+        setDetailError("");
+        try {
+          const detail = await loadRecordDetail(auth, workspace, currentConfig, id);
+          setDetailRecord(detail);
+          setDetailRecordId(id);
+        } catch (detailErrorValue) {
+          setDetailRecord(null);
+          setDetailRecordId("");
+          setDetailError(errorText(detailErrorValue));
+        } finally {
+          setDetailLoading(false);
+        }
+      }
     } catch (error) {
       setNotice({ type: "error", text: errorText(error) });
     } finally {
@@ -2783,12 +3026,12 @@ export function SystemSettingsScreen({
                 </Button>
                 {canEdit && currentConfig.slug !== "permissionlink" ? (
                   <>
-                    {selectedRecord ? (
+                    {selectedActionRecord ? (
                       <Button
                         type="button"
                         size="sm"
                         onClick={openCreateCopy}
-                        disabled={!auth || !selectedRecord}
+                        disabled={!auth || !selectedActionRecord}
                         title={
                           language === "th"
                             ? "คัดลอกจากรายการที่เลือก"
@@ -2852,6 +3095,9 @@ export function SystemSettingsScreen({
               totalRecords={displayTotal}
               saving={saving}
               selectedRecord={selectedRecord}
+              detailRecord={selectedDetailRecord}
+              detailLoading={detailLoading}
+              detailError={detailError}
               setForm={setForm}
               text={text}
               workspace={workspace}
@@ -3130,6 +3376,9 @@ function SettingDataList({
   totalRecords,
   saving,
   selectedRecord,
+  detailRecord,
+  detailLoading,
+  detailError,
   setForm,
   text,
   workspace,
@@ -3157,12 +3406,17 @@ function SettingDataList({
   totalRecords: number;
   saving: boolean;
   selectedRecord: SettingRecord | null;
+  detailRecord: SettingRecord | null;
+  detailLoading: boolean;
+  detailError: string;
   setForm: (form: FormState) => void;
   text: (key: keyof typeof uiEn) => string;
   workspace: WorkspaceSession | null;
 }) {
   const selectedId = selectedRecord ? recordId(selectedRecord, config) : "";
   const editingId = editing ? recordId(editing, config) : "";
+  const shouldUseHydratedDetail = shouldHydrateRecordDetail(config);
+  const panelRecord = shouldUseHydratedDetail ? detailRecord : selectedRecord;
   const listScrollRef = useRef<HTMLDivElement | null>(null);
   const detailScrollRef = useRef<HTMLDivElement | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
@@ -3486,7 +3740,21 @@ function SettingDataList({
               text={text}
               workspace={workspace}
             />
-          ) : selectedRecord ? (
+          ) : detailLoading ? (
+            <div className="grid min-h-44 place-items-center rounded-2xl border border-border bg-muted/20 p-4 text-center text-sm text-muted-foreground">
+              <div className="inline-flex items-center gap-2">
+                <Loader2 className="size-4 animate-spin" />
+                {text("loading")}
+              </div>
+            </div>
+          ) : detailError ? (
+            <div className="grid min-h-44 place-items-center rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-center text-sm text-destructive">
+              <div className="grid gap-2">
+                <AlertCircle className="mx-auto size-6" />
+                <span>{detailError}</span>
+              </div>
+            </div>
+          ) : panelRecord ? (
             <SettingDetailPanel
               auth={auth}
               config={config}
@@ -3496,7 +3764,7 @@ function SettingDataList({
               onEdit={onEdit}
               onResetPassword={onResetPassword}
               onToggleAccess={onToggleAccess}
-              record={selectedRecord}
+              record={panelRecord}
               saving={saving}
               text={text}
               workspace={workspace}
@@ -15308,6 +15576,73 @@ function recordId(
     record.holdingcode,
     record.providername,
   );
+}
+
+function recordDetailId(
+  record: SettingRecord | null | undefined,
+  config: SystemSettingConfig,
+): string {
+  if (!record) return "";
+  return firstRecordValue(
+    config.idField ? getByPath(record, config.idField) : undefined,
+    record.guidfixed,
+    record.guid,
+    record.id,
+    record._id,
+  );
+}
+
+function recordBusinessLookup(
+  record: SettingRecord | null | undefined,
+  config: SystemSettingConfig,
+): string {
+  if (!record) return "";
+  return firstRecordValue(
+    config.fields?.[0]?.key ? getByPath(record, config.fields[0].key) : undefined,
+    record.unitcode,
+    record.unitCode,
+    record.code,
+    record.approvalcode,
+    record.permissioncode,
+    record.groupcode,
+    record.employeecode,
+    record.approvalCode,
+    record.permissionCode,
+    record.groupCode,
+    record.employeeCode,
+  );
+}
+
+function recordMatchesBusinessLookup(
+  record: SettingRecord,
+  config: SystemSettingConfig,
+  lookup: string,
+): boolean {
+  const target = lookup.trim().toUpperCase();
+  if (!target) return false;
+  const candidates = [
+    config.fields?.[0]?.key ? getByPath(record, config.fields[0].key) : undefined,
+    record.unitcode,
+    record.unitCode,
+    record.code,
+    record.approvalcode,
+    record.permissioncode,
+    record.groupcode,
+    record.employeecode,
+    record.approvalCode,
+    record.permissionCode,
+    record.groupCode,
+    record.employeeCode,
+  ];
+  return candidates.some((value) => stringValue(value).toUpperCase() === target);
+}
+
+function shouldHydrateRecordDetail(config: SystemSettingConfig): boolean {
+  return config.kind === "main-crud" || config.kind === "atlas";
+}
+
+function wait(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
 function firstRecordValue(...values: unknown[]): string {
