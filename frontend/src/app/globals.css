@@ -2087,8 +2087,6 @@ h2:not([class]) {
 .font-popover-list {
   display: grid;
   gap: 4px;
-  max-height: min(56vh, 420px);
-  overflow-y: auto;
   padding: 2px;
 }
 .font-choice {
