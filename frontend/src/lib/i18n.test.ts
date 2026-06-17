@@ -1,5 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { LANGUAGES, normalizeLanguage, t } from "./i18n";
+import type { TranslationKey } from "./i18n";
+import th from "@/locales/th.json";
+import en from "@/locales/en.json";
+import cn from "@/locales/cn.json";
+import ja from "@/locales/ja.json";
+import ko from "@/locales/ko.json";
+import lo from "@/locales/lo.json";
+import my from "@/locales/my.json";
+import km from "@/locales/km.json";
+import vi from "@/locales/vi.json";
+import ms from "@/locales/ms.json";
+import id from "@/locales/id.json";
+import fil from "@/locales/fil.json";
 
 describe("i18n helpers", () => {
   it("normalizes browser language aliases", () => {
@@ -74,6 +87,36 @@ describe("i18n helpers", () => {
   });
 
   it("falls back to the key id when a selected-language value is missing", () => {
-    expect(t("lo", "missingKey" as unknown as Parameters<typeof t>[1])).toBe("missingKey");
+    expect(t("lo", "missingKey" as unknown as TranslationKey)).toBe("missingKey");
+  });
+
+  it("keeps every locale in sync with the Thai source of truth (no drift)", () => {
+    // Every key present in th.json must also exist (non-empty) in every other locale file.
+    // Catches the "added a key to th.json but forgot the other languages" mistake.
+    const thKeys = Object.keys(th).sort();
+    expect(thKeys.length).toBeGreaterThan(0);
+
+    const locales: Record<string, Record<string, string>> = {
+      en, cn, ja, ko, lo, my, km, vi, ms, id, fil,
+    };
+
+    for (const [lang, dict] of Object.entries(locales)) {
+      const langKeys = Object.keys(dict).sort();
+      const missing = thKeys.filter((key) => !langKeys.includes(key));
+      expect(missing, `${lang}.json is missing keys present in th.json: ${missing.join(", ")}`).toEqual([]);
+    }
+  });
+
+  it("ensures all locale files use the same key set as th.json", () => {
+    // No locale may introduce keys that th.json does not have (prevents typos / extra keys).
+    const thKeySet = new Set(Object.keys(th));
+    const locales: Record<string, Record<string, string>> = {
+      en, cn, ja, ko, lo, my, km, vi, ms, id, fil,
+    };
+
+    for (const [lang, dict] of Object.entries(locales)) {
+      const extras = Object.keys(dict).filter((key) => !thKeySet.has(key));
+      expect(extras, `${lang}.json has keys not in th.json: ${extras.join(", ")}`).toEqual([]);
+    }
   });
 });
