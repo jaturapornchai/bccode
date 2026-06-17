@@ -8,22 +8,59 @@ import {
   EyeOff,
   Loader2,
   LockKeyhole,
-  Server,
+  LogIn,
   Settings as SettingsIcon,
   ShieldCheck,
+  Sparkles,
   UserRound,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { motion, AnimatePresence, type Variants } from "motion/react";
 import { runtimeGoApiUrlForOrigin } from "@/lib/backend-url";
 import { persistLanguagePreferenceCookies } from "@/lib/backend-language-preload";
 import { isValidHoldingCode, normalizeHoldingCode } from "@/lib/holding-code";
 import { normalizeLanguage, t, type LanguageCode } from "@/lib/i18n";
 import { isLocalLoginHost, LOCAL_GOOGLE_TEST_EMAIL } from "@/lib/local-dev-auth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { LanguageDialog } from "./language-dialog";
 import { ThemeToggle } from "./theme-toggle";
+import { FontPicker } from "./font-picker";
+
+const prefersReducedMotion =
+  typeof window !== "undefined" &&
+  window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+// Shared motion variants — subtle, premium, never cluttered.
+const EASE_OUT = [0.22, 1, 0.36, 1] as const;
+
+const panelEnter = prefersReducedMotion
+  ? ({ initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: 0.2 } } as const)
+  : ({
+      initial: { opacity: 0, y: 16 },
+      animate: { opacity: 1, y: 0 },
+      transition: { duration: 0.5, ease: EASE_OUT },
+    } as const);
+
+const staggerParent: Variants = prefersReducedMotion
+  ? {}
+  : {
+      animate: { transition: { staggerChildren: 0.08, delayChildren: 0.15 } },
+    };
+
+const staggerChild: Variants = prefersReducedMotion
+  ? { initial: { opacity: 0 }, animate: { opacity: 1 } }
+  : {
+      initial: { opacity: 0, y: 12 },
+      animate: {
+        opacity: 1,
+        y: 0,
+        transition: { duration: 0.45, ease: EASE_OUT },
+      },
+    };
 
 type LoginState = "idle" | "loading" | "success" | "error";
 type ConnectionState = "idle" | "testing" | "success" | "error";
@@ -440,165 +477,213 @@ export function LoginScreen() {
 
   return (
     <main className="login-shell">
-      <section className="brand-panel" aria-label="BC Ai Account">
-        <div className="brand-badge-row">
-          <div className="brand-mark">AI</div>
+      <motion.section
+        className="brand-panel"
+        aria-label="BC Ai Account"
+        initial={panelEnter.initial}
+        animate={panelEnter.animate}
+        transition={panelEnter.transition}
+      >
+        <motion.div className="brand-badge-row" variants={staggerChild} {...staggerParent}>
+          <div className="brand-mark" aria-hidden="true">
+            <Sparkles size={22} strokeWidth={2.2} />
+          </div>
           <div>
             <p className="eyebrow">{t(language, "brandEyebrow")}</p>
             <strong>{t(language, "secureWorkspace")}</strong>
           </div>
-        </div>
+        </motion.div>
         <div className="brand-hero">
-          <div className="brand-copy">
-            <h1>{t(language, "loginTitle")}</h1>
-            <p>{t(language, "brandDescription")}</p>
-          </div>
+          <motion.div className="brand-copy" variants={staggerParent}>
+            <motion.p
+              className="brand-eyebrow-line"
+              variants={staggerChild}
+            >
+              {t(language, "brandEyebrow")}
+            </motion.p>
+            <motion.h1 variants={staggerChild}>
+              {t(language, "loginTitle")}
+            </motion.h1>
+            <motion.p className="brand-tagline" variants={staggerChild}>
+              {t(language, "brandDescription")}
+            </motion.p>
+          </motion.div>
         </div>
-        <div className="brand-feature-grid" aria-label={t(language, "firstUseTitle")}>
-          <div className="brand-feature-card">
+        <motion.div
+          className="brand-feature-grid"
+          aria-label={t(language, "firstUseTitle")}
+          variants={staggerParent}
+        >
+          <motion.div className="brand-feature-card" variants={staggerChild}>
             <Building2 aria-hidden="true" size={20} />
             <div>
               <strong>{t(language, "firstUseTitle")}</strong>
               <span>{t(language, "firstUseDescription")}</span>
             </div>
-          </div>
-          <div className="brand-feature-card">
+          </motion.div>
+          <motion.div className="brand-feature-card" variants={staggerChild}>
             <ShieldCheck aria-hidden="true" size={20} />
             <div>
               <strong>{t(language, "secureWorkspace")}</strong>
               <span>{t(language, "multiCompanyDescription")}</span>
             </div>
-          </div>
-          <div className="brand-feature-card">
-            <LockKeyhole aria-hidden="true" size={20} />
-            <div>
-              <strong>{t(language, "passwordLoginSectionTitle")}</strong>
-              <span>{t(language, "passwordLoginSectionDescription")}</span>
-            </div>
-          </div>
-        </div>
-          <div className="status-strip" aria-label="System status" title={backendUrl ? `${t(language, "api")}: ${backendUrl}` : undefined}>
-            <div>
-              <span>{t(language, "api")}</span>
-              <strong>{backendUrl ? t(language, "connectionSuccess") : "-"}</strong>
-            </div>
-            <ShieldCheck aria-hidden="true" size={22} />
-          </div>
-      </section>
+          </motion.div>
+        </motion.div>
+        <motion.div
+          className="brand-status-strip"
+          variants={staggerChild}
+          aria-label="System status"
+          title={backendUrl ? `${t(language, "api")}: ${backendUrl}` : undefined}
+        >
+          <span className="brand-status-dot" data-state={connectionState} aria-hidden="true" />
+          <span>{backendUrl ? t(language, "connectionSuccess") : "-"}</span>
+        </motion.div>
+      </motion.section>
 
-      <section className="form-panel" aria-label="Login form">
+      <motion.section
+        className="form-panel"
+        aria-label="Login form"
+        initial={panelEnter.initial}
+        animate={panelEnter.animate}
+        transition={{ ...panelEnter.transition, delay: 0.1 }}
+      >
         <form className="login-card" onSubmit={handleLogin}>
-          <div className="card-header">
-            <div>
+          <motion.div className="card-header" variants={staggerParent}>
+            <motion.div variants={staggerChild}>
               <p className="eyebrow">{t(language, "secureWorkspace")}</p>
               <h2>{t(language, "signInTitle")}</h2>
-            </div>
-            <div className="header-actions">
+            </motion.div>
+            <motion.div className="header-actions" variants={staggerChild}>
+              <FontPicker language={language} />
               <ThemeToggle language={language} />
               <LanguageDialog language={language} onLanguageChange={setLanguage} />
-              <Link className="icon-button settings-link" href="/settings" title={t(language, "settings")} aria-label={t(language, "settings")}>
-                <SettingsIcon aria-hidden="true" size={18} />
-              </Link>
+              <Button asChild variant="ghost" size="icon" className="rounded-full">
+                <Link href="/settings" title={t(language, "settings")} aria-label={t(language, "settings")}>
+                  <SettingsIcon aria-hidden="true" size={18} />
+                </Link>
+              </Button>
+            </motion.div>
+          </motion.div>
+
+          <motion.section
+            className="auth-login-section"
+            aria-label={t(language, "authLoginSectionTitle")}
+            variants={staggerChild}
+          >
+            <div className="auth-login-heading">
+              <ShieldCheck aria-hidden="true" size={18} />
+              <strong>{t(language, "authLoginSectionTitle")}</strong>
             </div>
-          </div>
 
-          {runtimeMode.ready && !runtimeMode.sameServerBackend ? (
-            <label className="field-group">
-              <span>{t(language, "backendUrl")}</span>
-              <div className="input-shell">
-                <Server aria-hidden="true" size={18} />
-                <input
-                  value={backendUrl}
-                  readOnly
-                  aria-readonly="true"
-                  placeholder="/backend/goapi"
-                />
-                <button
-                  className="text-action"
+            <div className="social-login-grid">
+              <Button
+                className="social-login-button google-login"
+                type="button"
+                variant="outline"
+                size="lg"
+                onClick={handleGoogleLogin}
+                disabled={providerLoginState !== "idle" || loginState === "loading"}
+              >
+                {providerLoginState === "google" ? (
+                  <Loader2 className="spin" aria-hidden="true" size={20} />
+                ) : (
+                  <Image alt="" height={20} src="/google_logo.png" width={20} />
+                )}
+                <span>{t(language, "loginWithGoogle")}</span>
+              </Button>
+              {isLocalTestHost ? (
+                <Button
+                  className="social-login-button local-google-test-login"
                   type="button"
-                  onClick={handleConnectionTest}
-                  disabled={connectionState === "testing"}
+                  variant="outline"
+                  size="lg"
+                  onClick={handleLocalGoogleTestLogin}
+                  disabled={providerLoginState !== "idle" || loginState === "loading"}
+                  title={t(language, "localGoogleTestLogin")}
                 >
-                  {connectionState === "testing" ? <Loader2 className="spin" size={16} /> : t(language, "testConnection")}
-                </button>
-              </div>
-              {connectionMessage && (
-                <div
-                  className={`connection-status-msg ${connectionState === "success" ? "success" : "error"}`}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    fontSize: "0.82rem",
-                    fontWeight: "bold",
-                    marginTop: "2px",
-                    color: connectionState === "success" ? "var(--success)" : "var(--danger)",
-                  }}
-                >
-                  {connectionState === "success" ? (
-                    <CheckCircle2 size={14} />
+                  {providerLoginState === "local-google" ? (
+                    <Loader2 className="spin" aria-hidden="true" size={20} />
                   ) : (
-                    <AlertCircle size={14} />
+                    <Image alt="" height={20} src="/google_logo.png" width={20} />
                   )}
-                  <span>{connectionMessage}</span>
-                </div>
-              )}
-            </label>
-          ) : null}
+                  <span>
+                    <span className="dev-test-badge" aria-hidden="true">DEV</span>
+                    {language === "th" ? "ทดสอบเข้าระบบ Google" : "Test Google login"}
+                  </span>
+                </Button>
+              ) : null}
+            </div>
+          </motion.section>
 
-          <section className="password-login-section" aria-label={t(language, "passwordLoginSectionTitle")}>
+          <motion.div
+            className="login-divider"
+            role="separator"
+            aria-label={t(language, "socialLoginSeparator")}
+            variants={staggerChild}
+          >
+            <span>{t(language, "socialLoginSeparator")}</span>
+          </motion.div>
+
+          <motion.section
+            className="password-login-section"
+            aria-label={t(language, "passwordLoginSectionTitle")}
+            variants={staggerChild}
+          >
             <div className="password-login-heading">
               <LockKeyhole aria-hidden="true" size={18} />
               <div>
-                <strong>{t(language, "passwordLoginSectionTitle")}</strong>
-                <span>{t(language, "passwordLoginSectionDescription")}</span>
+                <span>{t(language, "passwordLoginSectionTitle")}</span>
+                <small>{t(language, "passwordLoginSectionDescription")}</small>
               </div>
             </div>
 
             <div className="field-group holding-code-field">
               <span id="holding-code-label">{t(language, "holdingCode")}</span>
-              <div className="holding-code-control-row">
-                <div className="input-shell">
-                  <Building2 aria-hidden="true" size={18} />
-                  <input
-                    aria-labelledby="holding-code-label"
-                    aria-describedby="holding-code-help"
-                    autoComplete="organization"
-                    value={holdingCode}
-                    onChange={(event) => setHoldingCode(normalizeHoldingCode(event.target.value))}
-                    placeholder="bcdemo01"
-                  />
-                </div>
+              <div className="input-with-icon">
+                <Building2 aria-hidden="true" size={18} className="input-leading-icon" />
+                <Input
+                  aria-labelledby="holding-code-label"
+                  aria-describedby="holding-code-help"
+                  autoComplete="organization"
+                  value={holdingCode}
+                  onChange={(event) => setHoldingCode(normalizeHoldingCode(event.target.value))}
+                  placeholder="bcdemo01"
+                  className="!pl-10 h-11"
+                />
               </div>
               <small id="holding-code-help" className="field-help">{t(language, "holdingCodeHint")}</small>
             </div>
 
-            <label className="field-group">
+            <label className="field-group" htmlFor="login-username">
               <span>{t(language, "username")}</span>
-              <div className="input-shell">
-                <UserRound aria-hidden="true" size={18} />
-                <input
+              <div className="input-with-icon">
+                <UserRound aria-hidden="true" size={18} className="input-leading-icon" />
+                <Input
+                  id="login-username"
                   autoComplete="username"
                   value={username}
                   onChange={(event) => setUsername(event.target.value)}
                   placeholder={t(language, "usernamePlaceholder")}
+                  className="!pl-10 h-11"
                 />
               </div>
             </label>
 
-            <label className="field-group">
+            <label className="field-group" htmlFor="login-password">
               <span>{t(language, "password")}</span>
-              <div className="input-shell">
-                <LockKeyhole aria-hidden="true" size={18} />
-                <input
+              <div className="input-with-icon">
+                <LockKeyhole aria-hidden="true" size={18} className="input-leading-icon" />
+                <Input
+                  id="login-password"
                   autoComplete="current-password"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   placeholder={t(language, "password")}
                   type={showPassword ? "text" : "password"}
+                  className="!pl-10 !pr-10 h-11"
                 />
                 <button
-                  className="icon-button"
+                  className="input-trailing-icon"
                   type="button"
                   onClick={() => setShowPassword((current) => !current)}
                   aria-label={showPassword ? t(language, "hidePassword") : t(language, "showPassword")}
@@ -619,62 +704,50 @@ export function LoginScreen() {
               </label>
             </div>
 
-            {message ? (
-              <div className={`message ${loginState === "success" || connectionState === "success" ? "success" : "error"}`}>
-                {loginState === "success" || connectionState === "success" ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
-                <span>{message}</span>
-              </div>
-            ) : null}
+            <AnimatePresence mode="wait">
+              {message ? (
+                <motion.div
+                  key={message + loginState}
+                  className={`message ${loginState === "success" || connectionState === "success" ? "success" : "error"}`}
+                  initial={{ opacity: 0, y: -6, height: 0 }}
+                  animate={{ opacity: 1, y: 0, height: "auto" }}
+                  exit={{ opacity: 0, y: -6, height: 0 }}
+                  transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  {loginState === "success" || connectionState === "success" ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+                  <span>{message}</span>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
 
-            <button className="primary-button" type="submit" disabled={!mounted || !canSubmit}>
-              {loginState === "loading" ? <Loader2 className="spin" size={18} /> : <LockKeyhole size={18} />}
+            <Button
+              className="primary-button w-full h-12 text-base font-semibold"
+              type="submit"
+              size="lg"
+              disabled={!mounted || !canSubmit}
+            >
+              {loginState === "loading" ? <Loader2 className="spin" size={18} /> : <LogIn size={18} />}
               <span>{loginState === "loading" ? t(language, "loggingIn") : t(language, "login")}</span>
-            </button>
-          </section>
+            </Button>
 
-          <section className="auth-login-section" aria-label={t(language, "authLoginSectionTitle")}>
-            <div className="auth-login-heading">
-              <ShieldCheck aria-hidden="true" size={18} />
-              <strong>{t(language, "authLoginSectionTitle")}</strong>
-            </div>
-
-            <div className="social-login-grid">
+            <p className="sign-up-hint">
+              {t(language, "noAccountPrompt")}{" "}
               <button
-                className="social-login-button google-login"
                 type="button"
+                className="sign-up-link"
                 onClick={handleGoogleLogin}
                 disabled={providerLoginState !== "idle" || loginState === "loading"}
               >
-                {providerLoginState === "google" ? (
-                  <Loader2 className="spin" aria-hidden="true" size={20} />
-                ) : (
-                  <Image alt="" height={20} src="/google_logo.png" width={20} />
-                )}
-                <span>{t(language, "loginWithGoogle")}</span>
+                {t(language, "loginWithGoogle")} →
               </button>
-              {isLocalTestHost ? (
-                <button
-                  className="social-login-button local-google-test-login"
-                  type="button"
-                  onClick={handleLocalGoogleTestLogin}
-                  disabled={providerLoginState !== "idle" || loginState === "loading"}
-                  title={t(language, "localGoogleTestLogin")}
-                >
-                  {providerLoginState === "local-google" ? (
-                    <Loader2 className="spin" aria-hidden="true" size={20} />
-                  ) : (
-                    <Image alt="" height={20} src="/google_logo.png" width={20} />
-                  )}
-                  <span>
-                    <span className="dev-test-badge" aria-hidden="true">DEV</span>
-                    {language === "th" ? "ทดสอบเข้าระบบ Google" : "Test Google login"}
-                  </span>
-                </button>
-              ) : null}
-            </div>
-          </section>
+            </p>
+          </motion.section>
 
-          <div className="first-use-note" aria-label={t(language, "firstUseTitle")}>
+          <motion.div
+            className="first-use-note"
+            aria-label={t(language, "firstUseTitle")}
+            variants={staggerChild}
+          >
             <Building2 aria-hidden="true" size={20} />
             <div>
               <strong>{t(language, "firstUseTitle")}</strong>
@@ -685,10 +758,10 @@ export function LoginScreen() {
                 <li>{t(language, "firstUseStepWorkspace")}</li>
               </ol>
             </div>
-          </div>
+          </motion.div>
 
         </form>
-      </section>
+      </motion.section>
     </main>
   );
 }
