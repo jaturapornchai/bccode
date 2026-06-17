@@ -27,13 +27,13 @@ export async function GET(request: Request, context: ProductProxyContext) {
     const page = url.searchParams.get("page") ?? "1";
     const limit = url.searchParams.get("limit") ?? "50";
     const holdingCode = url.searchParams.get("holdingcode") ?? "";
-    if (holdingCode) {
-      return proxyProductPgListJson(request, holdingCode, q, Number(limit) || 50, pageToOffset(page, limit));
-    }
     const qs = new URLSearchParams({ q, page, limit });
     for (const key of ["itemtype", "materialtype"]) {
       const value = url.searchParams.get(key);
       if (value) qs.set(key, value);
+    }
+    if (holdingCode) {
+      return proxyProductPgListJson(request, holdingCode, q, Number(limit) || 50, pageToOffset(page, limit));
     }
     return proxyProductJson(request, base, `/product?${qs.toString()}`, { method: "GET" });
   }
@@ -83,7 +83,11 @@ async function proxyProductPgListJson(
     });
     const payload = await readJsonOrText(response);
     if (!isRecord(payload)) {
-      return NextResponse.json({ success: response.ok, message: String(payload ?? "") }, { status: response.status });
+      const message = String(payload ?? "");
+      return NextResponse.json({ success: response.ok, message, source: "pgsql" }, { status: response.status });
+    }
+    if (!response.ok || payload.status === "error") {
+      return NextResponse.json(productPgErrorPayload(payload), { status: response.status });
     }
     const rawRows = Array.isArray(payload.data) ? payload.data : [];
     const rows = rawRows.map(productPgListRowToProduct);
@@ -102,10 +106,24 @@ async function proxyProductPgListJson(
       error instanceof Error && error.name === "AbortError"
         ? "Server ไม่ตอบกลับทันเวลา"
         : "ไม่สามารถเชื่อมต่อ Server ได้";
-    return NextResponse.json({ success: false, message }, { status: 504 });
+    return NextResponse.json({ success: false, message, source: "pgsql" }, { status: 504 });
   } finally {
     clearTimeout(timeout);
   }
+}
+
+function productPgErrorPayload(payload: Record<string, unknown>): Record<string, unknown> {
+  const message =
+    stringFromRecord(payload, "message") ||
+    stringFromRecord(payload, "error") ||
+    "โหลดรายการสินค้าจากฐานข้อมูลไม่สำเร็จ";
+  const code = stringFromRecord(payload, "code");
+  return {
+    success: false,
+    message,
+    ...(code ? { code } : {}),
+    source: "pgsql",
+  };
 }
 
 function pageToOffset(page: string, limit: string): number {

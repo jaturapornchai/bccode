@@ -109,6 +109,7 @@ Related central entrypoints:
 
 ## No Fallback Enforcement
 - Runtime code, tools, screens, reports, uploads, language rendering, and agent workflows must not silently substitute missing config, missing data, unavailable APIs, old endpoints, mock data, derived credentials, or legacy storage.
+- Database, projection, cache, report, API query, and datalist flows must not silently fallback across MongoDB, PostgreSQL, ClickHouse, Redis, Kafka, read models, legacy endpoints, mock data, or old cache. If a required data source fails, has schema/query mismatch, is unauthorized, is stale, or is unreachable, return a visible safe error with source, operation, status, and code when available. Fix the root cause or run an explicit retry/rebuild/sync path; do not replace the result with another store automatically.
 - If a required source is missing, invalid, unauthorized, unreachable, or unverified, fail that operation and return a visible error that includes the safe real reason, such as the missing env var, missing language key, missing route, missing tenant/branch context, or rejected permission.
 - Compatibility paths are allowed only when they are explicit, versioned, documented, and tested. They must not run as hidden automatic fallback.
 - Cloudflare image/file upload must error when the Cloudflare/R2 runtime config is incomplete. Do not reroute to Azure Blob, SeaweedFS, local disk, derived token credentials, standalone Cloudflare API tokens, or mock storage.

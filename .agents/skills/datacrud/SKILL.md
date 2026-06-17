@@ -15,6 +15,7 @@ description: Use when creating, reviewing, or modifying Next.js data CRUD screen
 - After every create, update, or delete, refresh the affected list/detail/cache/workspace state immediately from the MongoDB-backed API. Do not leave stale selected rows, stale search results, stale workspace metadata, or stale permission/company/branch state after mutation.
 - During the current DEV/ERP ideation phase, it is acceptable to change the model, database model/schema, backend, frontend, UX, and UI when that improves Thai business fit. Keep the change source-backed, testable, and MongoDB-first.
 - Verify CRUD changes with real UI/API behavior using DEV data. Do not claim completion from assumptions or mock-only checks.
+- Data/database load failures must show a clear error from the failing source. Do not silently fallback from the intended database/projection/API query to mock data, old cache, a legacy endpoint, or another database; use explicit retry/rebuild/sync actions only.
 - Screen-specific components are appropriate only when the business workflow genuinely differs from normal CRUD, such as tree drag/drop, BOM/recipe composition, or document lifecycle posting.
 
 ## 3. Layout & Scrolling Contract
