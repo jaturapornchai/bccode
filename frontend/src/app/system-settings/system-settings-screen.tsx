@@ -3372,7 +3372,6 @@ function SettingDataList({
                   ))}
                   <span
                     className="flex min-w-0 basis-24 grow flex-wrap justify-end gap-1"
-                    onClick={(event) => event.stopPropagation()}
                   >
                     {config.editable !== false ? (
                       <Button
@@ -3380,7 +3379,10 @@ function SettingDataList({
                         size="icon"
                         variant="outline"
                         className="size-7 rounded-lg bg-background text-sky-600 border-sky-200 hover:bg-sky-50 dark:text-sky-400 dark:border-sky-900/50 dark:hover:bg-sky-950/30"
-                        onClick={() => onEdit(record)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onEdit(record);
+                        }}
                         disabled={
                           config.slug === "user" &&
                           isSelfUserRecord(record, auth)
@@ -3399,7 +3401,10 @@ function SettingDataList({
                         size="icon"
                         variant="outline"
                         className="size-7 rounded-lg bg-background text-primary hover:bg-primary/10 border-border"
-                        onClick={() => onResetPassword(record)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onResetPassword(record);
+                        }}
                         disabled={saving}
                         aria-label={text("resetPassword")}
                         title={text("resetPassword")}
@@ -3414,7 +3419,10 @@ function SettingDataList({
                         size="icon"
                         variant="outline"
                         className="size-7 rounded-lg bg-background text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-900/50 dark:hover:bg-red-950/30"
-                        onClick={() => onDelete(record)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onDelete(record);
+                        }}
                         disabled={isCreator || isSelfUserRecord(record, auth)}
                         aria-label={text("delete")}
                         title={text("delete")}
