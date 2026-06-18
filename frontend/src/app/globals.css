@@ -2056,8 +2056,50 @@ h2:not([class]) {
 .font-control-group {
   position: relative;
 }
-.font-toggle {
-  /* Uses .icon-button base; no extra override needed, kept for symmetry with theme-toggle. */
+.font-trigger-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-xs);
+  transition: background var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+.font-trigger-button:hover {
+  background: var(--muted-bg, color-mix(in srgb, var(--text) 6%, transparent));
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
+  box-shadow: var(--shadow-sm);
+}
+.font-trigger-button:active {
+  transform: scale(0.98);
+}
+.font-trigger-button[aria-expanded="true"] {
+  border-color: color-mix(in srgb, var(--primary) 45%, transparent);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+.font-trigger-label {
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: nowrap;
+  line-height: 1;
+}
+.font-trigger-chev {
+  color: var(--muted-foreground);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+.font-trigger-chev.open {
+  transform: rotate(180deg);
 }
 .font-popover {
   position: absolute;

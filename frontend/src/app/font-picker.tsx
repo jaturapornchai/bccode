@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Type } from "lucide-react";
+import { Check, ChevronDown, Type } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { t, type LanguageCode } from "@/lib/i18n";
 import {
@@ -64,12 +64,16 @@ export function FontPicker({ language }: { language: LanguageCode }) {
         aria-expanded={open}
         aria-haspopup="dialog"
         aria-label={label}
-        className="icon-button font-toggle"
+        className="font-trigger-button"
         onClick={() => setOpen((value) => !value)}
         title={`${label}: ${current.short}`}
         type="button"
       >
-        <Type aria-hidden="true" size={18} />
+        <Type aria-hidden="true" size={16} />
+        <span className="font-trigger-label" style={{ fontFamily: current.family }}>
+          {current.short}
+        </span>
+        <ChevronDown aria-hidden="true" size={14} className={open ? "font-trigger-chev open" : "font-trigger-chev"} />
       </button>
 
       {open ? (
