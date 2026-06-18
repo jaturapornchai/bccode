@@ -24,6 +24,9 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import QRCode from "qrcode";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { motion, AnimatePresence, MotionConfig } from "motion/react";
+import { cardStaggerParent, cardStaggerChild, noticeSlide } from "../shared/motion-variants";
+import { SkeletonCardList } from "../shared/skeleton-card";
 import { backendText, useBackendLanguage, type BackendLanguageDictionary } from "@/lib/backend-language";
 import { normalizeLanguage, t, type LanguageCode } from "@/lib/i18n";
 import {
@@ -1181,6 +1184,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
   }
 
   return (
+    <MotionConfig reducedMotion="user">
     <main className="workspace-page">
       <header className="workspace-topbar">
         <div className="workspace-title">
@@ -1246,7 +1250,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
           </div>
         </div>
 
-        <div className="step-strip">
+        <div className="step-strip" aria-label="Progress">
           <span className="done"><CheckCircle2 size={13} />{text("stepLogin")}</span>
           <span className={step === "shops" ? "active" : step === "branches" || step === "access" ? "done" : "pending"}>
             {step === "branches" || step === "access" ? <CheckCircle2 size={13} /> : null}
@@ -1257,18 +1261,32 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
             {text("stepBranch")}
           </span>
           <span className="pending">{text("stepMenu")}</span>
+          <p className="step-strip-description">
+            {step === "shops"
+              ? language === "th" ? "กดเลือกบริษัทที่ต้องการทำงานด้านล่าง" : "Pick the company you want to work in below"
+              : step === "branches"
+              ? language === "th" ? "เลือกสาขาของบริษัทที่จะเข้าทำงาน" : "Choose the branch of this company to enter"
+              : language === "th" ? "กำลังตั้งค่าระบบ..." : "Loading system settings..."}
+          </p>
         </div>
 
+        <AnimatePresence initial={false}>
         {notice ? (
-          <div className={`message ${notice.type === "success" ? "success" : notice.type === "error" ? "error" : "info"}`}>
+          <motion.div
+            key={`${notice.type}-${notice.text ?? notice.textKey ?? "notice"}`}
+            className={`message ${notice.type === "success" ? "success" : notice.type === "error" ? "error" : "info"}`}
+            variants={noticeSlide}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+          >
             {notice.type === "success" ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
             <span>{notice.text ?? (notice.textKey ? text(notice.textKey) : "")}</span>
-          </div>
+          </motion.div>
         ) : null}
+        </AnimatePresence>
 
-        {step === "loading" ? (
-          <div className="loading-state"><Loader2 className="spin" size={24} /> {text("loadingCompanies")}</div>
-        ) : null}
+        {step === "loading" ? <SkeletonCardList count={4} /> : null}
 
         {step === "shops" ? (
           <>
@@ -1339,7 +1357,12 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 </div>
               </div>
             ) : (
-              <div className="flex flex-wrap gap-6 justify-center w-full py-2">
+              <motion.div
+                className="flex flex-wrap gap-6 justify-center w-full py-2"
+                variants={cardStaggerParent}
+                initial="initial"
+                animate="animate"
+              >
                 {flatCompanies.map((item) => {
                   const { shop, company } = item;
                   const isCreator = shop.is_creator === true
@@ -1347,13 +1370,15 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                   const languageCodes = shopLanguageCodes(shop);
                   const currencyLabel = shopCurrencyLabel(shop, language);
                   const companyLabel = companyDisplayName(company);
+                  const companyCode = (company.code ?? "").trim();
 
                   return (
-                    <button
+                    <motion.button
                       key={`${shop.holdingcode}-${company.guidfixed || company.code}`}
                       disabled={busy}
                       onClick={() => void selectCompany(shop, company)}
-                      className="group/company text-left relative w-full md:w-[calc(50%-12px)] lg:w-[350px] shrink-0 border border-border/80 rounded-2xl bg-card/85 backdrop-blur-md overflow-hidden shadow-md hover:shadow-xl hover:border-primary/40 hover:scale-[1.01] transition-all duration-300"
+                      variants={cardStaggerChild}
+                      className="group/company text-left relative w-full md:w-[calc(50%-12px)] lg:w-[350px] shrink-0 border border-border/80 rounded-2xl bg-card/85 backdrop-blur-md overflow-hidden shadow-md hover:shadow-xl hover:border-primary/40 hover:scale-[1.01] transition-all duration-300 cursor-pointer"
                     >
                       {/* Left color bar accent — amber for OWNER, primary for USER */}
                       <div className={`absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b ${isCreator ? "from-amber-500 to-amber-600" : "from-primary to-primary/80"}`} />
@@ -1361,20 +1386,21 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                       {/* Company Header */}
                       <div className="flex flex-col p-4 pl-6">
                         <div className="flex items-center gap-3">
-                          <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isCreator ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-primary/10 text-primary"}`}>
+                          <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-300 group-hover/company:scale-110 group-hover/company:rotate-3 ${isCreator ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-primary/10 text-primary"}`}>
                             <Building2 size={20} />
                           </span>
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1">
                             <h3
-                              className="font-bold text-foreground text-sm sm:text-base tracking-tight break-words"
-                              title={`${companyLabel} · ${language === "th" ? "รหัสกลุ่มกิจการ" : "Business group code"} ${shop.holdingcode}`}
+                              className="font-bold text-foreground text-sm sm:text-base tracking-tight break-words leading-snug group-hover/company:text-primary transition-colors duration-200"
+                              title={`${companyLabel}${companyCode ? ` · ${language === "th" ? "รหัส" : "Code"} ${companyCode}` : ""}`}
                             >
                               {companyLabel}
                             </h3>
                           </div>
+                          {companyCode ? <span className="code-badge">{companyCode}</span> : null}
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-1.5 mt-3 mb-4">
+                        <div className="flex flex-wrap items-center gap-1.5 mt-3 mb-1">
                           <span className={`px-2 py-0.5 text-[9px] font-bold rounded border uppercase shrink-0 ${
                             isCreator
                               ? "bg-amber-500/10 text-amber-600 dark:text-amber-500 border-amber-500/20"
@@ -1394,10 +1420,10 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                           )}
                         </div>
                       </div>
-                    </button>
+                    </motion.button>
                   );
                 })}
-              </div>
+              </motion.div>
             )}
           </>
         ) : null}
@@ -1456,30 +1482,58 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 )}
               </div>
             ) : (
-              <div className="workspace-card-grid">
-                {filteredBranches.map((branch, index) => {
+              <motion.div
+                className="workspace-card-grid"
+                variants={cardStaggerParent}
+                initial="initial"
+                animate="animate"
+              >
+                {filteredBranches.map((branch) => {
                   const branchName = branchDisplayName(branch);
                   const branchCode = branch.code?.trim() || "";
-                  const branchLabel = branchCode && branchName !== branchCode
-                    ? `[${branchCode}] ${branchName}`
-                    : branchName;
-                  const branchMeta = branchCode || branch.guidfixed;
+                  const isHQ = branchCode === "00000";
 
                   return (
-                    <button className="shop-card branch-card" disabled={busy} key={branch.guidfixed || branch.code} type="button" onClick={() => void selectBranch(branch)}>
-                      <span className={`shop-avatar tone-${index % 6}`}><Building2 size={20} /></span>
-                      <span className="shop-main">
-                        <strong>{branchLabel}</strong>
-                        {branchMeta ? <small>{branchMeta}</small> : null}
+                    <motion.button
+                      className="group/branch relative flex items-center gap-3 p-4 rounded-2xl border bg-card/85 backdrop-blur-md overflow-hidden shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-300 text-left disabled:opacity-60 disabled:cursor-wait"
+                      style={{ borderColor: isHQ ? "color-mix(in srgb, var(--amber, #b7791f) 35%, var(--border))" : "var(--border)" }}
+                      disabled={busy}
+                      key={branch.guidfixed || branch.code}
+                      type="button"
+                      onClick={() => void selectBranch(branch)}
+                      variants={cardStaggerChild}
+                    >
+                      <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${isHQ ? "bg-amber-500" : "bg-primary"}`} />
+                      <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-300 group-hover/branch:scale-110 group-hover/branch:rotate-3 ${isHQ ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-primary/10 text-primary"}`}>
+                        <Building2 size={20} />
                       </span>
-                      <span className="shop-badges">
-                        {branch.basecurrency ? <b>{branch.basecurrency}</b> : null}
-                        {branch.language ? <em>{branch.language.toUpperCase()}</em> : null}
-                      </span>
-                    </button>
+                      <div className="min-w-0 flex-1">
+                        <strong className="block font-bold text-foreground text-sm sm:text-base tracking-tight break-words leading-snug group-hover/branch:text-primary transition-colors">
+                          {branchName}
+                        </strong>
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                          {isHQ ? (
+                            <span className="px-2 py-0.5 text-[9px] font-bold rounded border uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">
+                              {language === "th" ? "สำนักงานใหญ่" : "Headquarters"}
+                            </span>
+                          ) : null}
+                          {branch.basecurrency ? (
+                            <span className="px-1.5 py-0.5 text-[9px] bg-muted border border-border/50 text-muted-foreground rounded font-semibold uppercase">
+                              {branch.basecurrency}
+                            </span>
+                          ) : null}
+                          {branch.language ? (
+                            <span className="px-1.5 py-0.5 text-[9px] bg-muted border border-border/50 text-muted-foreground rounded font-semibold uppercase">
+                              {branch.language.toUpperCase()}
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+                      {branchCode ? <span className="code-badge">{branchCode}</span> : null}
+                    </motion.button>
                   );
                 })}
-              </div>
+              </motion.div>
             )}
           </>
         ) : null}
@@ -1615,6 +1669,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
       ) : null}
 
     </main>
+    </MotionConfig>
   );
 }
 
