@@ -71,11 +71,10 @@ import {
   workspaceStorageKeys,
 } from "@/lib/workspace-models";
 import { CurrencyScreen } from "../currency/currency-screen";
-import { LanguageDialog } from "../language-dialog";
+import { AppHeaderControls } from "../app-header-controls";
 import { LineOaLinkScreen } from "../line-oa/line-oa-link-screen";
 import { ManualLink } from "../manual-link";
 import { SystemSettingsScreen } from "../system-settings/system-settings-screen";
-import { ThemeToggle } from "../theme-toggle";
 import { ZoomControl } from "../zoom-control";
 import { HomeMenuIcon, MenuRouteIcon } from "./menu-icon";
 import { MenuDataTable } from "./menu-data-table";
@@ -1028,12 +1027,9 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                     )}
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <div className="w-24">
-                  <LanguageDialog language={language} onLanguageChange={setLanguage} />
-                </div>
+                <AppHeaderControls language={language} onLanguageChange={setLanguage} showSettings={false} />
                 <ManualLink compact language={language} screen="menu" />
                 <ZoomControl dictionary={backendLanguage} language={language} />
-                <ThemeToggle language={language} />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button

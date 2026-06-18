@@ -55,9 +55,8 @@ import {
   type FieldOption,
   type TestResult,
 } from "@/lib/setup-config";
-import { LanguageDialog } from "../language-dialog";
+import { AppHeaderControls } from "../app-header-controls";
 import { ManualLink } from "../manual-link";
-import { ThemeToggle } from "../theme-toggle";
 
 type ConnectionState = "idle" | "testing" | "success" | "error";
 type MessageState = "idle" | "success" | "error";
@@ -503,8 +502,7 @@ export function SettingsScreen() {
 
           <div className="header-actions settings-header-actions">
             <ManualLink compact language={language} screen="settings" />
-            <ThemeToggle language={language} />
-            <LanguageDialog language={language} onLanguageChange={setLanguage} />
+            <AppHeaderControls language={language} onLanguageChange={setLanguage} showSettings={false} />
           </div>
         </header>
 
@@ -629,7 +627,7 @@ export function SettingsScreen() {
                 </div>
               </div>
               <div className="settings-control-stack">
-                <LanguageDialog language={language} onLanguageChange={setLanguage} />
+                <AppHeaderControls language={language} onLanguageChange={setLanguage} showSettings={false} />
               </div>
             </section>
 

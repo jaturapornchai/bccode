@@ -132,9 +132,8 @@ import {
   notifyWorkspaceChanged,
 } from "@/lib/workspace-models";
 import { cn } from "@/lib/utils";
-import { LanguageDialog } from "../language-dialog";
+import { AppHeaderControls } from "../app-header-controls";
 import { ManualLink } from "../manual-link";
-import { ThemeToggle } from "../theme-toggle";
 
 type SystemSettingsScreenProps = {
   embedded?: boolean;
@@ -2560,13 +2559,13 @@ export function SystemSettingsScreen({
               </div>
             ) : null}
             {embedded ? null : (
-              <LanguageDialog
+              <AppHeaderControls
                 language={language}
                 onLanguageChange={setLanguage}
+                showSettings={false}
               />
             )}
             <ManualLink compact language={language} screen={config.manual} />
-            {embedded ? null : <ThemeToggle language={language} />}
           </div>
         </div>
       </header>

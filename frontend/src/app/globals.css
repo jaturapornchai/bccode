@@ -920,12 +920,52 @@ h2:not([class]) {
   margin-left: auto;
 }
 
-/* In the login header-actions group, the language trigger becomes a compact
-   square icon button that shows only the flag, matching the palette/font/settings
-   siblings. The Languages lucide icon (<svg>) and language name (<span>) are
-   hidden here; the flag <img> stays and is enlarged. !important is needed to
-   win against the base .language-dialog-trigger width:100% and min-width. */
-.header-actions .language-dialog-trigger {
+/* Header controls — global standard for Font / Theme / Language / Settings.
+   Used by <AppHeaderControls>. Every button is a 42x42 square icon button.
+   Language shows only the flag (no globe icon, no language name). */
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex: 0 0 auto;
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
+/* Square 42x42 icon button used by every control in the group.
+   Matches the look of .theme-palette-toggle for visual consistency. */
+.header-controls .icon-button,
+.header-controls .header-control-button,
+.header-controls .font-toggle {
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+  max-width: 42px !important;
+  flex: 0 0 42px !important;
+  padding: 0 !important;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-md);
+}
+.header-controls .header-control-button {
+  border: 1px solid var(--line);
+  background: var(--panel-soft);
+  color: var(--text);
+  transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease;
+}
+.header-controls .header-control-button:hover {
+  border-color: var(--indigo);
+  background: var(--input-focus-bg);
+  color: var(--indigo);
+}
+.header-controls .header-control-button:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 4px var(--focus-ring);
+}
+
+/* Language trigger: collapse to flag-only square (hide globe icon + name). */
+.header-controls .language-dialog-trigger {
   width: 42px !important;
   height: 42px !important;
   min-width: 42px !important;
@@ -937,12 +977,12 @@ h2:not([class]) {
   border-radius: var(--radius-md);
   overflow: hidden;
 }
-.header-actions .language-dialog-trigger > svg,
-.header-actions .language-dialog-trigger > span {
+.header-controls .language-dialog-trigger > svg,
+.header-controls .language-dialog-trigger > span {
   display: none !important;
 }
-.header-actions .language-dialog-trigger > img,
-.header-actions .language-dialog-trigger .flag-icon {
+.header-controls .language-dialog-trigger > img,
+.header-controls .language-dialog-trigger .flag-icon {
   width: 28px !important;
   height: 20px !important;
   flex: 0 0 28px !important;

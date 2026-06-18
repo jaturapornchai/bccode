@@ -45,9 +45,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LanguageDialog } from "../language-dialog";
+import { AppHeaderControls } from "../app-header-controls";
 import { ManualLink } from "../manual-link";
-import { ThemeToggle } from "../theme-toggle";
 import { SystemSettingsScreen } from "../system-settings/system-settings-screen";
 
 type Step = "loading" | "shops" | "create" | "branches" | "access";
@@ -1214,8 +1213,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
           >
             {lineDialog.loading ? <Loader2 className="spin" size={18} /> : <MessageCircle size={18} />}
           </button>
-          <ThemeToggle language={language} />
-          <LanguageDialog language={language} onLanguageChange={setLanguage} />
+          <AppHeaderControls language={language} onLanguageChange={setLanguage} />
           <button className="icon-button" type="button" onClick={logout} aria-label={text("logout")} title={text("logout")}>
             <LogOut size={18} />
           </button>

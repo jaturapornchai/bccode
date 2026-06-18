@@ -9,13 +9,11 @@ import {
   Loader2,
   LockKeyhole,
   LogIn,
-  Settings as SettingsIcon,
   ShieldCheck,
   Sparkles,
   UserRound,
 } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence, type Variants } from "motion/react";
@@ -26,9 +24,7 @@ import { normalizeLanguage, t, type LanguageCode } from "@/lib/i18n";
 import { isLocalLoginHost, LOCAL_GOOGLE_TEST_EMAIL } from "@/lib/local-dev-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LanguageDialog } from "./language-dialog";
-import { ThemeToggle } from "./theme-toggle";
-import { FontPicker } from "./font-picker";
+import { AppHeaderControls } from "./app-header-controls";
 
 // Shared motion variants — subtle, premium, never cluttered.
 // Reduced-motion is handled by the client-only <MotionConfig> in LoginWrapper.
@@ -546,15 +542,8 @@ export function LoginScreen() {
               <p className="eyebrow">{t(language, "secureWorkspace")}</p>
               <h2>{t(language, "signInTitle")}</h2>
             </motion.div>
-            <motion.div className="header-actions" variants={staggerChild}>
-              <FontPicker language={language} />
-              <ThemeToggle language={language} />
-              <LanguageDialog language={language} onLanguageChange={setLanguage} />
-              <Button asChild variant="ghost" size="icon" className="rounded-full">
-                <Link href="/settings" title={t(language, "settings")} aria-label={t(language, "settings")}>
-                  <SettingsIcon aria-hidden="true" size={18} />
-                </Link>
-              </Button>
+            <motion.div variants={staggerChild}>
+              <AppHeaderControls language={language} onLanguageChange={setLanguage} />
             </motion.div>
           </motion.div>
 

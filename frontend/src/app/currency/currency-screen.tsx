@@ -28,9 +28,8 @@ import {
   type WorkspaceSession,
   workspaceStorageKeys,
 } from "@/lib/workspace-models";
-import { LanguageDialog } from "../language-dialog";
+import { AppHeaderControls } from "../app-header-controls";
 import { ManualLink } from "../manual-link";
-import { ThemeToggle } from "../theme-toggle";
 
 type CurrencyScreenProps = {
   embedded?: boolean;
@@ -598,9 +597,8 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
             </div>
           </div>
           <div className="flex min-w-0 flex-wrap justify-end gap-2">
-            {embedded ? null : <LanguageDialog language={language} onLanguageChange={setLanguage} />}
+            {embedded ? null : <AppHeaderControls language={language} onLanguageChange={setLanguage} showSettings={false} />}
             <ManualLink compact language={language} screen="currency" />
-            {embedded ? null : <ThemeToggle language={language} />}
           </div>
         </div>
         {baseCurrency ? (

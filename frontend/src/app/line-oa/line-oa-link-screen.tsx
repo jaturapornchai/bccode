@@ -30,8 +30,7 @@ import {
   type WorkspaceSession,
   workspaceStorageKeys,
 } from "@/lib/workspace-models";
-import { LanguageDialog } from "../language-dialog";
-import { ThemeToggle } from "../theme-toggle";
+import { AppHeaderControls } from "../app-header-controls";
 
 type LineOaLinkScreenProps = {
   embedded?: boolean;
@@ -328,8 +327,7 @@ export function LineOaLinkScreen({
           </div>
           {embedded ? null : (
             <div className="flex min-w-0 flex-wrap justify-end gap-2">
-              <LanguageDialog language={language} onLanguageChange={setLanguage} />
-              <ThemeToggle language={language} />
+              <AppHeaderControls language={language} onLanguageChange={setLanguage} showSettings={false} />
             </div>
           )}
         </div>
