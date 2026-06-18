@@ -2,7 +2,7 @@
 
 import { Check, ChevronDown, Type } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { t, type LanguageCode } from "@/lib/i18n";
+import { type LanguageCode } from "@/lib/i18n";
 import {
   appFonts,
   applyAppFont,
@@ -64,16 +64,13 @@ export function FontPicker({ language }: { language: LanguageCode }) {
         aria-expanded={open}
         aria-haspopup="dialog"
         aria-label={label}
-        className="font-trigger-button"
+        className="icon-button font-toggle"
         onClick={() => setOpen((value) => !value)}
         title={`${label}: ${current.short}`}
         type="button"
       >
-        <Type aria-hidden="true" size={16} />
-        <span className="font-trigger-label" style={{ fontFamily: current.family }}>
-          {current.short}
-        </span>
-        <ChevronDown aria-hidden="true" size={14} className={open ? "font-trigger-chev open" : "font-trigger-chev"} />
+        <Type aria-hidden="true" size={18} />
+        <ChevronDown aria-hidden="true" size={11} className={open ? "font-toggle-chev open" : "font-toggle-chev"} />
       </button>
 
       {open ? (
