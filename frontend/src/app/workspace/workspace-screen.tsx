@@ -1371,6 +1371,11 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                   const currencyLabel = shopCurrencyLabel(shop, language);
                   const companyLabel = companyDisplayName(company);
                   const companyCode = (company.code ?? "").trim();
+                  // If the display name is just the code (no real name in data),
+                  // show a friendly placeholder so the name row is not empty/duplicate.
+                  const companyName = companyLabel && companyLabel !== companyCode
+                    ? companyLabel
+                    : (language === "th" ? "บริษัท" : "Company");
 
                   return (
                     <motion.button
@@ -1392,9 +1397,9 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                           <div className="min-w-0 flex-1">
                             <h3
                               className="font-bold text-foreground text-sm sm:text-base tracking-tight break-words leading-snug group-hover/company:text-primary transition-colors duration-200"
-                              title={`${companyLabel}${companyCode ? ` · ${language === "th" ? "รหัส" : "Code"} ${companyCode}` : ""}`}
+                              title={`${companyName}${companyCode ? ` · ${language === "th" ? "รหัส" : "Code"} ${companyCode}` : ""}`}
                             >
-                              {companyLabel}
+                              {companyName}
                             </h3>
                           </div>
                         </div>
