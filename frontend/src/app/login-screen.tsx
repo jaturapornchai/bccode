@@ -30,37 +30,31 @@ import { LanguageDialog } from "./language-dialog";
 import { ThemeToggle } from "./theme-toggle";
 import { FontPicker } from "./font-picker";
 
-const prefersReducedMotion =
-  typeof window !== "undefined" &&
-  window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-
 // Shared motion variants — subtle, premium, never cluttered.
+// Reduced-motion is handled globally by <MotionConfig reducedMotion="user"> in
+// the layout, so variants here always describe the full animation and motion
+// itself strips transforms when the user prefers reduced motion. This avoids
+// reading window.matchMedia at module load (which causes hydration mismatch).
 const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 
-const panelEnter = prefersReducedMotion
-  ? ({ initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: 0.2 } } as const)
-  : ({
-      initial: { opacity: 0, y: 16 },
-      animate: { opacity: 1, y: 0 },
-      transition: { duration: 0.5, ease: EASE_OUT },
-    } as const);
+const panelEnter = {
+  initial: { opacity: 0, y: 16 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.5, ease: EASE_OUT },
+} as const;
 
-const staggerParent: Variants = prefersReducedMotion
-  ? {}
-  : {
-      animate: { transition: { staggerChildren: 0.08, delayChildren: 0.15 } },
-    };
+const staggerParent: Variants = {
+  animate: { transition: { staggerChildren: 0.08, delayChildren: 0.15 } },
+};
 
-const staggerChild: Variants = prefersReducedMotion
-  ? { initial: { opacity: 0 }, animate: { opacity: 1 } }
-  : {
-      initial: { opacity: 0, y: 12 },
-      animate: {
-        opacity: 1,
-        y: 0,
-        transition: { duration: 0.45, ease: EASE_OUT },
-      },
-    };
+const staggerChild: Variants = {
+  initial: { opacity: 0, y: 12 },
+  animate: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.45, ease: EASE_OUT },
+  },
+};
 
 type LoginState = "idle" | "loading" | "success" | "error";
 type ConnectionState = "idle" | "testing" | "success" | "error";

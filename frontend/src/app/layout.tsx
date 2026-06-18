@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import { Inter, Outfit, Noto_Sans_Thai } from "next/font/google";
 import "./globals.css";
+import { MotionConfigProvider } from "./motion-config";
 import { colorThemeStorageKey, getThemesMap, normalizeColorTheme, themeStorageKey, type ThemeMode } from "@/lib/theme-data";
 import { fontStorageKey, getAppFont, normalizeAppFont } from "@/lib/font-data";
 
@@ -82,7 +83,9 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           <link key={href} rel="stylesheet" href={href} />
         ))}
       </head>
-      <body>{children}</body>
+      <body>
+        <MotionConfigProvider>{children}</MotionConfigProvider>
+      </body>
     </html>
   );
 }
