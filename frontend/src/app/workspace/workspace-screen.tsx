@@ -1397,7 +1397,6 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                               {companyLabel}
                             </h3>
                           </div>
-                          {companyCode ? <span className="code-badge">{companyCode}</span> : null}
                         </div>
 
                         <div className="flex flex-wrap items-center gap-1.5 mt-3 mb-1">
@@ -1419,6 +1418,11 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                             </span>
                           )}
                         </div>
+                        {companyCode ? (
+                          <div className="flex justify-end mt-2 pt-2 border-t border-border/40">
+                            <span className="code-badge">{companyCode}</span>
+                          </div>
+                        ) : null}
                       </div>
                     </motion.button>
                   );
