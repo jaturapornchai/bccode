@@ -878,7 +878,7 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
                   <span>{ht(language, "addHolding")}</span>
                 </button>
               ) : null}
-              <AppHeaderControls language={language} onLanguageChange={setLanguage} />
+              <AppHeaderControls language={language} onLanguageChange={setLanguage} showSettings={false} />
               <button className="icon-button" type="button" onClick={logout} aria-label={ht(language, "logout")} title={ht(language, "logout")}>
                 <LogOut aria-hidden="true" size={18} />
               </button>

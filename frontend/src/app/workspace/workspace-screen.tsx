@@ -1213,7 +1213,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
           >
             {lineDialog.loading ? <Loader2 className="spin" size={18} /> : <MessageCircle size={18} />}
           </button>
-          <AppHeaderControls language={language} onLanguageChange={setLanguage} />
+          <AppHeaderControls language={language} onLanguageChange={setLanguage} showSettings={false} />
           <button className="icon-button" type="button" onClick={logout} aria-label={text("logout")} title={text("logout")}>
             <LogOut size={18} />
           </button>
