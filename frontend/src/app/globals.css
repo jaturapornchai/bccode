@@ -528,10 +528,10 @@ main.min-h-screen input.bg-background {
 .login-shell {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: minmax(0, 720px) minmax(380px, 560px);
+  grid-template-columns: minmax(0, 620px) minmax(360px, 460px);
   justify-content: center;
   align-items: stretch;
-  gap: clamp(14px, 2.2vw, 28px);
+  gap: clamp(12px, 2vw, 24px);
   padding: clamp(10px, 2.4vw, 24px);
   overflow-x: hidden;
   background: var(--login-shell-bg);
@@ -795,7 +795,7 @@ h2:not([class]) {
 
 .login-card {
   width: 100%;
-  max-width: 560px;
+  max-width: 460px;
   display: grid;
   gap: 16px;
   padding: clamp(18px, 3vw, 32px);
@@ -811,11 +811,11 @@ h2:not([class]) {
 
 @media (min-width: 1600px) {
   .login-shell {
-    grid-template-columns: minmax(0, 760px) minmax(420px, 580px);
+    grid-template-columns: minmax(0, 680px) minmax(400px, 480px);
   }
 
   .login-card {
-    max-width: 580px;
+    max-width: 480px;
   }
 }
 
