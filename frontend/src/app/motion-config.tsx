@@ -1,9 +1,8 @@
 "use client";
 
-// Wraps the app so motion respects the user's prefers-reduced-motion setting
-// automatically, without each motion.div needing to read window.matchMedia.
-// This is SSR-safe: motion renders the final state on the server and only
-// applies transforms on the client after mount.
+// Use this inside client-only mounted subtrees so Motion can respect the user's
+// prefers-reduced-motion setting without changing server-rendered styles during
+// hydration. Do not wrap the root layout with this for entry animations.
 
 import { MotionConfig } from "motion/react";
 

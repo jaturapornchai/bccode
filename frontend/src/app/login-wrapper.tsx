@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "motion/react";
 import { LoginScreen } from "./login-screen";
+import { MotionConfigProvider } from "./motion-config";
 
 export function LoginWrapper() {
   const [mounted, setMounted] = useState(false);
@@ -12,7 +12,7 @@ export function LoginWrapper() {
   }, []);
 
   if (!mounted) {
-    // Premium loading skeleton — brand mark pulse + shimmer bar instead of bare "Loading...".
+    // Keep the pre-hydration tree static so React hydrates identical HTML.
     return (
       <main
         style={{
@@ -27,11 +27,8 @@ export function LoginWrapper() {
             "radial-gradient(circle at 30% 20%, color-mix(in srgb, var(--primary, #812920) 14%, transparent) 0, transparent 42%), radial-gradient(circle at 75% 80%, color-mix(in srgb, var(--primary, #812920) 10%, transparent) 0, transparent 40%), var(--background, #fbf9f8)",
         }}
       >
-        <motion.div
+        <div
           aria-hidden="true"
-          initial={{ opacity: 0.5, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           style={{
             width: 56,
             height: 56,
@@ -46,11 +43,9 @@ export function LoginWrapper() {
           }}
         >
           BC
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0.3 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, repeat: Infinity, repeatType: "reverse" }}
+        </div>
+        <div
+          aria-hidden="true"
           style={{
             width: 140,
             height: 8,
@@ -63,5 +58,9 @@ export function LoginWrapper() {
     );
   }
 
-  return <LoginScreen />;
+  return (
+    <MotionConfigProvider>
+      <LoginScreen />
+    </MotionConfigProvider>
+  );
 }

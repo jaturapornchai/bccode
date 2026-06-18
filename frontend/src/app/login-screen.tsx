@@ -31,10 +31,9 @@ import { ThemeToggle } from "./theme-toggle";
 import { FontPicker } from "./font-picker";
 
 // Shared motion variants — subtle, premium, never cluttered.
-// Reduced-motion is handled globally by <MotionConfig reducedMotion="user"> in
-// the layout, so variants here always describe the full animation and motion
-// itself strips transforms when the user prefers reduced motion. This avoids
-// reading window.matchMedia at module load (which causes hydration mismatch).
+// Reduced-motion is handled by the client-only <MotionConfig> in LoginWrapper.
+// The login screen is mounted after hydration, so Motion can read the user's
+// preference without creating a server/client style mismatch.
 const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 
 const panelEnter = {
