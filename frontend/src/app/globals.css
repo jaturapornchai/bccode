@@ -2092,6 +2092,13 @@ h2:not([class]) {
 .primary-button.primary-button,
 .primary-button {
   position: relative;
+  min-height: 44px;
+  min-width: 96px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
   background: linear-gradient(
     135deg,
     var(--primary) 0%,
@@ -2100,6 +2107,11 @@ h2:not([class]) {
   color: var(--primary-foreground);
   box-shadow: var(--login-primary-glow, 0 10px 28px rgba(160, 64, 53, 0.22));
   border: 1px solid color-mix(in srgb, var(--primary) 60%, transparent);
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  letter-spacing: 0.01em;
+  cursor: pointer;
   transition: transform var(--duration-normal) var(--ease-out),
     box-shadow var(--duration-normal) var(--ease-out),
     filter var(--duration-normal) var(--ease-out);
@@ -2112,6 +2124,10 @@ h2:not([class]) {
 .primary-button:active:not(:disabled) {
   transform: translateY(0);
   box-shadow: var(--login-primary-glow, 0 10px 28px rgba(160, 64, 53, 0.22));
+}
+.primary-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .social-login-grid {
@@ -2535,18 +2551,33 @@ h2:not([class]) {
 }
 
 .secondary-button {
-  min-height: var(--density-control-h);
+  min-height: 44px;
+  min-width: 96px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--density-gap);
-  padding: 0 calc(var(--density-control-pad-x) + 2px);
+  gap: 8px;
+  padding: 10px 18px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--panel-soft);
   color: var(--text);
   cursor: pointer;
-  font-weight: 850;
+  font-weight: 700;
+  font-size: var(--text-sm);
+  letter-spacing: 0.01em;
+  transition: background var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+.secondary-button:hover:not(:disabled) {
+  background: var(--input-focus-bg);
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--line));
+  color: var(--primary);
+}
+.secondary-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 /* Button label: tighter line-height centers Thai glyphs in the flex box,
