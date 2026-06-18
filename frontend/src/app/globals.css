@@ -920,6 +920,32 @@ h2:not([class]) {
   margin-left: auto;
 }
 
+/* In the login header-actions group, the language trigger becomes a compact
+   square icon button that shows only the flag, matching the palette/font/settings
+   siblings. The Languages lucide icon and language name are hidden here. */
+.header-actions .language-dialog-trigger {
+  width: 42px;
+  height: 42px;
+  min-width: 0;
+  flex: 0 0 42px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-md);
+}
+.header-actions .language-dialog-trigger > svg:first-child {
+  display: none;
+}
+.header-actions .language-dialog-trigger > span {
+  display: none;
+}
+.header-actions .language-dialog-trigger .flag-icon {
+  width: 28px;
+  height: 20px;
+  flex: 0 0 28px;
+  border-radius: var(--radius-xs);
+}
+
 .card-header .language-dialog-trigger {
   width: auto;
   min-width: 168px;
@@ -2058,6 +2084,32 @@ h2:not([class]) {
 }
 .font-toggle {
   position: relative;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  border: 1px solid var(--line);
+  background: var(--panel-soft);
+  color: var(--text);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease, color 160ms ease;
+}
+.font-toggle:hover {
+  border-color: var(--indigo);
+  background: var(--input-focus-bg);
+  color: var(--indigo);
+}
+.font-toggle:focus-visible {
+  border-color: var(--indigo);
+  outline: 0;
+  box-shadow: 0 0 0 4px var(--focus-ring);
+}
+.font-toggle[aria-expanded="true"] {
+  border-color: var(--indigo);
+  color: var(--indigo);
+  box-shadow: 0 0 0 3px var(--focus-ring);
 }
 .font-toggle-chev {
   position: absolute;
@@ -2072,7 +2124,7 @@ h2:not([class]) {
 .font-toggle-chev.open {
   transform: rotate(180deg);
   opacity: 1;
-  color: var(--primary);
+  color: var(--indigo);
 }
 .font-popover {
   position: absolute;
