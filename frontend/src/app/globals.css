@@ -2121,6 +2121,106 @@ h2:not([class]) {
   gap: var(--density-gap);
 }
 
+/* Holding screen UX improvements: summary chips, search+add row, modal panel,
+   skeleton loading, empty CTA (set 2026-06-18). */
+.holding-summary-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.holding-summary-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--muted-foreground);
+  background: var(--muted-bg, color-mix(in srgb, var(--text) 6%, transparent));
+}
+
+.holding-search-add-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+.holding-search-add-row .holding-search {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.holding-add-button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* Holding create/edit modal — centered dialog with backdrop, not inline. */
+.holding-modal-panel {
+  width: min(92vw, 480px);
+  max-height: 88vh;
+  overflow-y: auto;
+  display: grid;
+  gap: 16px;
+  padding: clamp(20px, 3vw, 32px);
+  border: 1px solid var(--login-form-border);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(180deg, var(--login-form-surface) 0%, color-mix(in srgb, var(--login-form-surface) 88%, var(--login-form-surface-subtle)) 100%),
+    var(--panel);
+  box-shadow: var(--shadow-xl);
+  backdrop-filter: blur(18px) saturate(1.04);
+}
+
+/* Holding skeleton cards for loading state. */
+.holding-skeleton-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--card);
+  opacity: 0.6;
+}
+.holding-skeleton-avatar,
+.holding-skeleton-line {
+  display: block;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--text) 6%, transparent),
+    color-mix(in srgb, var(--text) 12%, transparent),
+    color-mix(in srgb, var(--text) 6%, transparent)
+  );
+  background-size: 200% 100%;
+  animation: holding-skeleton-shimmer 1.6s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+.holding-skeleton-avatar {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  border-radius: var(--radius-md);
+}
+.holding-skeleton-lines {
+  flex: 1;
+  display: grid;
+  gap: 6px;
+}
+.holding-skeleton-line {
+  height: 10px;
+}
+@keyframes holding-skeleton-shimmer {
+  0%, 100% { background-position: 200% 0; }
+  50% { background-position: -200% 0; }
+}
+
+.holding-empty-cta {
+  margin-top: 12px;
+}
+
 /* Font picker — mirrors the theme palette popover look so the two controls feel unified. */
 .font-control-group {
   position: relative;

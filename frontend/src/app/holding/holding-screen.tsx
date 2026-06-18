@@ -2,7 +2,6 @@
 
 import {
   AlertCircle,
-  ArrowRight,
   Building2,
   CheckCircle2,
   GitBranch,
@@ -19,6 +18,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence, MotionConfig, useReducedMotion } from "motion/react";
 import { isValidHoldingCode, normalizeHoldingCode } from "@/lib/holding-code";
 import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
 import {
@@ -830,6 +830,7 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
   }
 
   return (
+    <MotionConfig reducedMotion="user">
     <main className="login-shell">
       <section className="brand-panel" aria-label="BC Ai Account">
         <div className="brand-badge-row">
@@ -842,24 +843,8 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
         <div className="brand-hero">
           <div className="brand-copy">
             <p className="eyebrow">{ht(language, "eyebrow")}</p>
-            <h1>{ht(language, "holdingName")}</h1>
+            <h1>{ht(language, "title")}</h1>
             <p>{ht(language, "description")}</p>
-          </div>
-        </div>
-        <div className="brand-feature-grid">
-          <div className="brand-feature-card">
-            <ShieldCheck aria-hidden="true" size={18} />
-            <div>
-              <strong>{ht(language, "signedInAs")}</strong>
-              <span>{signedInAs || "-"}</span>
-            </div>
-          </div>
-          <div className="brand-feature-card">
-            <Building2 aria-hidden="true" size={18} />
-            <div>
-              <strong>{ht(language, "available")}</strong>
-              <span>{holdings.length}</span>
-            </div>
           </div>
         </div>
       </section>
@@ -870,14 +855,18 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
             <div>
               <p className="eyebrow">{ht(language, "eyebrow")}</p>
               <h2>{ht(language, "title")}</h2>
+              <div className="holding-summary-row">
+                <span className="holding-summary-chip">
+                  <ShieldCheck aria-hidden="true" size={12} />
+                  {signedInAs || "-"}
+                </span>
+                <span className="holding-summary-chip">
+                  <Building2 aria-hidden="true" size={12} />
+                  {holdings.length} {ht(language, "available")}
+                </span>
+              </div>
             </div>
             <div className="header-actions">
-              {canCreateHolding ? (
-                <button className="secondary-button holding-create-toggle" type="button" onClick={openCreateHolding}>
-                  <Plus aria-hidden="true" size={16} />
-                  <span>{ht(language, "addHolding")}</span>
-                </button>
-              ) : null}
               <AppHeaderControls language={language} onLanguageChange={setLanguage} showSettings={false} />
               <button className="icon-button" type="button" onClick={logout} aria-label={ht(language, "logout")} title={ht(language, "logout")}>
                 <LogOut aria-hidden="true" size={18} />
@@ -885,17 +874,26 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
             </div>
           </div>
 
-          <label className="search-shell">
-            <Search aria-hidden="true" size={17} />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder={ht(language, "searchPlaceholder")}
-            />
-          </label>
+          <div className="holding-search-add-row">
+            <label className="search-shell holding-search">
+              <Search aria-hidden="true" size={17} />
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={ht(language, "searchPlaceholder")}
+              />
+            </label>
+            {canCreateHolding ? (
+              <button className="primary-button holding-add-button" type="button" onClick={openCreateHolding}>
+                <Plus aria-hidden="true" size={18} />
+                <span>{ht(language, "addHolding")}</span>
+              </button>
+            ) : null}
+          </div>
 
           {createOpen ? (
-            <form className="holding-create-panel" onSubmit={createHolding}>
+            <div className="dialog-backdrop" role="presentation" onClick={closeCreateHolding}>
+            <form className="holding-modal-panel" onSubmit={createHolding} onClick={(e) => e.stopPropagation()}>
               <div className="holding-create-head">
                 <div>
                   <strong>{ht(language, "createHoldingTitle")}</strong>
@@ -976,6 +974,9 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
                     placeholder="0000"
                   />
                 </div>
+                <small className="field-help">
+                  {language === "th" ? "พิมพ์เลข 4 หลักด้านบนเพื่อยืนยันว่าต้องการสร้างจริง" : "Type the 4-digit code above to confirm creation."}
+                </small>
               </label>
 
               <div className="holding-create-actions">
@@ -992,10 +993,12 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
                 </button>
               </div>
             </form>
+            </div>
           ) : null}
 
           {editForm ? (
-            <form className="holding-create-panel holding-edit-panel" onSubmit={updateHolding}>
+            <div className="dialog-backdrop" role="presentation" onClick={closeEditHolding}>
+            <form className="holding-modal-panel" onSubmit={updateHolding} onClick={(e) => e.stopPropagation()}>
               <div className="holding-create-head">
                 <div>
                   <strong>{ht(language, "edit")}: {editForm.holdingcode}</strong>
@@ -1029,25 +1032,48 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
                 </button>
               </div>
             </form>
-          ) : null}
-
-          {notice ? (
-            <div className={`message ${notice.type === "success" ? "success" : notice.type === "error" ? "error" : "info"}`}>
-              {notice.type === "success" ? <CheckCircle2 aria-hidden="true" size={18} /> : <AlertCircle aria-hidden="true" size={18} />}
-              <span>{notice.text}</span>
             </div>
           ) : null}
 
+          <AnimatePresence>
+          {notice ? (
+            <motion.div
+              key={notice.text + notice.type}
+              className={`message ${notice.type === "success" ? "success" : notice.type === "error" ? "error" : "info"}`}
+              initial={{ opacity: 0, y: -6, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: "auto" }}
+              exit={{ opacity: 0, y: -6, height: 0 }}
+              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {notice.type === "success" ? <CheckCircle2 aria-hidden="true" size={18} /> : <AlertCircle aria-hidden="true" size={18} />}
+              <span>{notice.text}</span>
+            </motion.div>
+          ) : null}
+          </AnimatePresence>
+
           {loading || !mounted ? (
-            <div className="loading-state">
-              <Loader2 className="spin" aria-hidden="true" size={24} />
-              <span>{ht(language, "loading")}</span>
+            <div className="workspace-card-grid">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="holding-skeleton-card" aria-hidden="true">
+                  <span className="holding-skeleton-avatar" />
+                  <div className="holding-skeleton-lines">
+                    <span className="holding-skeleton-line w-3/4" />
+                    <span className="holding-skeleton-line w-1/2" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : filteredHoldings.length === 0 ? (
             <div className="workspace-empty-state">
-              <Building2 aria-hidden="true" size={24} />
+              <Building2 aria-hidden="true" size={32} />
               <strong>{ht(language, "emptyTitle")}</strong>
               <span>{ht(language, "emptyDescription")}</span>
+              {canCreateHolding ? (
+                <button className="primary-button holding-empty-cta" type="button" onClick={openCreateHolding}>
+                  <Plus aria-hidden="true" size={18} />
+                  <span>{ht(language, "create")}</span>
+                </button>
+              ) : null}
             </div>
           ) : (
             <div className="workspace-card-grid">
@@ -1057,18 +1083,22 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
                 const branchCount = Array.isArray(shop.branches) ? shop.branches.length : 0;
                 const busy = busyHoldingCode === holdingCode;
                 const canEdit = canEditHolding(shop, auth);
+                const isOwner = Boolean(shop.is_creator);
 
                 return (
-                  <div
+                  <motion.div
                     className="group/card relative flex items-center justify-between p-4 rounded-xl border border-border/60 bg-card/75 backdrop-blur-md overflow-hidden shadow-sm hover:shadow-md hover:border-primary/30 hover:scale-[1.01] transition-all duration-300 gap-3"
                     key={holdingCode || index}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1], delay: Math.min(index * 0.05, 0.4) }}
                   >
-                    {/* Left color ribbon indicator */}
-                    <div className={`absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${
-                      index % 2 === 0 ? "from-primary to-primary/60" : "from-teal-600 to-teal-500/60"
+                    {/* Left accent ribbon — single brand color, amber for owners */}
+                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${
+                      isOwner ? "bg-amber-500" : "bg-primary"
                     }`} />
 
-                    {/* Left side: Avatar + Holding details */}
+                    {/* Card body: click to select directly */}
                     <button
                       className="flex-1 flex items-center gap-3 text-left border-0 bg-transparent p-0 cursor-pointer disabled:cursor-wait"
                       disabled={Boolean(busyHoldingCode)}
@@ -1076,10 +1106,8 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
                       type="button"
                     >
                       {/* Avatar */}
-                      <span className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-300 group-hover/card:scale-105 group-hover/card:rotate-2 ${
-                        index % 2 === 0
-                          ? "bg-primary/10 text-primary"
-                          : "bg-teal-500/10 text-teal-600 dark:text-teal-400"
+                      <span className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-300 group-hover/card:scale-105 ${
+                        isOwner ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-primary/10 text-primary"
                       }`}>
                         {busy ? (
                           <Loader2 className="spin" aria-hidden="true" size={18} />
@@ -1099,8 +1127,14 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
                           </span>
                         </div>
 
-                        {/* Horizontal stats */}
+                        {/* Stats badges */}
                         <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                          {isOwner ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
+                              <ShieldCheck size={10} />
+                              <span>{language === "th" ? "เจ้าของ" : "Owner"}</span>
+                            </span>
+                          ) : null}
                           {companyCount > 0 ? (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary/5 text-primary border border-primary/10">
                               <Building2 size={10} />
@@ -1108,7 +1142,7 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
                             </span>
                           ) : null}
                           {branchCount > 0 ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-teal-500/5 text-teal-600 dark:text-teal-400 border border-teal-500/10">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary/5 text-primary border border-primary/10">
                               <GitBranch size={10} />
                               <span>{branchCount} {language === "th" ? "สาขา" : "Branches"}</span>
                             </span>
@@ -1117,9 +1151,9 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
                       </div>
                     </button>
 
-                    {/* Right side: Edit & Choose actions */}
-                    <div className="flex items-center gap-1.5 shrink-0 z-10">
-                      {canEdit ? (
+                    {/* Edit button only — selection is via card click */}
+                    {canEdit ? (
+                      <div className="flex items-center shrink-0 z-10">
                         <button
                           className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/5 border border-transparent hover:border-primary/10 transition-all cursor-pointer"
                           disabled={Boolean(busyHoldingCode || savingHoldingCode)}
@@ -1130,19 +1164,9 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
                         >
                           <Pencil aria-hidden="true" size={14} />
                         </button>
-                      ) : null}
-
-                      <button
-                        className="h-8 px-3.5 rounded-lg flex items-center gap-1 text-[11px] font-bold bg-primary text-primary-foreground hover:brightness-110 shadow-sm transition-all cursor-pointer"
-                        disabled={Boolean(busyHoldingCode)}
-                        onClick={() => void selectHolding(shop)}
-                        type="button"
-                      >
-                        <span>{ht(language, "choose")}</span>
-                        <ArrowRight aria-hidden="true" size={12} className="transition-transform group-hover/card:translate-x-0.5" />
-                      </button>
-                    </div>
-                  </div>
+                      </div>
+                    ) : null}
+                  </motion.div>
                 );
               })}
             </div>
@@ -1150,6 +1174,7 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
         </section>
       </section>
     </main>
+    </MotionConfig>
   );
 }
 
