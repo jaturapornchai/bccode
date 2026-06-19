@@ -1,6 +1,6 @@
 # BC Ai Account LLM Wiki Index
 
-This is the shared LLM-readable wiki entrypoint for ZCode (GLM-5.2), Codex/GPT-5.5, and Google Antigravity/Gemini.
+This is the shared LLM-readable wiki entrypoint for Claude (Claude Code, lead), GLM 5.2 Think (primary advisor), and Codex/GPT-5.5 (secondary advisor + image gen).
 
 ## Read Order
 1. `D:\bccode\AI_INDEX.md` for task routing.
@@ -11,7 +11,7 @@ This is the shared LLM-readable wiki entrypoint for ZCode (GLM-5.2), Codex/GPT-5
 ## Purpose
 - Route agents to the right source files without loading the whole repo.
 - Keep durable LLM context short, source-first, and reusable across agent systems.
-- Prevent separate ZCode/Codex/Gemini rule variants from drifting.
+- Prevent separate Claude/GLM/Codex rule variants from drifting.
 
 ## Knowledge Rules
 - Do not guess project facts. Verify with active repo files, local docs, tests, command output, logs, browser checks, or runtime evidence.
@@ -41,7 +41,7 @@ This is the shared LLM-readable wiki entrypoint for ZCode (GLM-5.2), Codex/GPT-5
 - Thai company/branch tax structure and head-office branch numbering: `D:\bccode\.agents\rules\bc-account-core-rules.md`, then `D:\bccode\AI_INDEX.md` for exact backend/frontend source paths.
 - Thai tax / VAT / WHT / e-Tax / GL correctness (research-first + cache): `D:\bccode\.agents\rules\bc-account-core-rules.md` "Tax & Accounting Correctness", then read `D:\bccode\.agents\skills\bc-account-expert\tax-legal-cache.md` (verified findings) BEFORE re-searching; for anything uncached, research `rd.go.th` + Thai tax law + competitor ERP and append a dated entry to the cache.
 - Cross-agent rule editing: `D:\bccode\.agents\skills\bc-central-rules\SKILL.md`.
-- All models are full-stack and interchangeable (NO Gemini=frontend / Codex=backend / ZCode=review split): `D:\bccode\.agents\rules\bc-account-core-rules.md` "AI Capability & Instant Upgrades". Handoff files (`D:\bccode\.agents\handoffs\README.md`) are optional coordination notes for parallel work, not role locks.
+- Claude (lead) is full-stack and owns implementation; GLM/Codex are advisory only (NO fixed per-model frontend/backend/review split): `D:\bccode\.agents\rules\bc-account-core-rules.md` "AI Capability & Instant Upgrades". Handoff files (`D:\bccode\.agents\handoffs\README.md`) are optional coordination notes for parallel work, not role locks.
 - Legacy Flutter reference only when needed for migrated screens: `D:\bcdev\frontend\bcaiaccount`.
 
 ## Runtime Map
@@ -58,6 +58,6 @@ This is the shared LLM-readable wiki entrypoint for ZCode (GLM-5.2), Codex/GPT-5
 ## Update Rule
 When creating or updating any rule, skill, wiki page, LLM prompt, handoff, checklist, workflow document, or reusable agent instruction:
 1. Keep it in English unless Jead explicitly asks for Thai end-user output.
-2. Keep it plain Markdown and portable across ZCode (GLM-5.2), Codex/GPT-5.5, and Google Antigravity/Gemini.
+2. Keep it plain Markdown and portable across Claude (Claude Code), GLM 5.2, and Codex/GPT-5.5.
 3. Link back to this index or the central rule file.
 4. Verify with a targeted `rg` sweep before completion.

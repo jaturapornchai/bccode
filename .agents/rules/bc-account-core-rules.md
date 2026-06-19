@@ -1,6 +1,6 @@
 # BC Ai Account Core Rules
 
-This is the central cross-agent rule file for ZCode (GLM-5.2), Codex/GPT-5.5, and Google Antigravity/Gemini.
+This is the central cross-agent rule file for Claude (Claude Code, lead), GLM 5.2 Think (primary advisor), and Codex/GPT-5.5 (secondary advisor + image generation). Gemini/Antigravity is no longer part of the team (removed 2026-06-19).
 
 Related central entrypoints:
 - Central skill: `D:\bccode\.agents\skills\bc-central-rules\SKILL.md`
@@ -51,7 +51,7 @@ Related central entrypoints:
 - Do not start replacement local database containers unless Jead explicitly requests isolated local testing.
 
 ## Dev Workflow Mode (Frontend Fast / Backend Batch)
-- **Current phase**: the frontend is under active design/development; the backend is stable and changed only as needed. This mode is binding on all agents (ZCode, Codex, Gemini/Antigravity) and overrides any older "do not rebuild backend until Jead says so" or "typecheck after every frontend edit" instruction anywhere in the repo.
+- **Current phase**: the frontend is under active design/development; the backend is stable and changed only as needed. This mode is binding on all agents (Claude, GLM, Codex) and overrides any older "do not rebuild backend until Jead says so" or "typecheck after every frontend edit" instruction anywhere in the repo.
 - **Frontend = fast iteration**: move quickly, brainstorm and propose alternative design/UX ideas, and rely on `next dev` HMR to preview changes in the browser. Run `npm run typecheck` only before a commit or when summarizing a chunk of work — not after every edit. Do not block idea iteration on full verification.
 - **Backend = minimal + auto deploy local Docker Desktop**: change backend only when necessary and keep edits small. After a backend Go-code change batch is complete, deploy local Docker Desktop with `cd backend; .\scripts\deploy-mainapi-fast.ps1` and verify `/healthz` — do not wait for a separate `rebuild` command. Use full image rebuild only when Dockerfile, dependencies, runtime assets, compose, config, or image contents changed. Deploying to the DEV server still requires an explicit `deploy dev`.
 
@@ -252,7 +252,7 @@ When adding or changing any user-facing string (i18n key value, hardcoded label,
 This rule overrides any "translate all 12 languages" instruction in skills, older rules, or sub-agent prompts. It applies to single-key edits, multi-key batches, dictionary rewrites, and any screen-wide rename (for example, the Holding -> กลุ่มกิจการ work). Rationale: auto-translated strings drift from Jead's intended business tone and waste rework.
 
 ## Agent Fast Execution Contract
-- Applies to Codex, ZCode, Gemini/Antigravity, and any other agent working in `D:\bccode`.
+- Applies to Claude (lead), GLM/Codex advisors, and any other agent working in `D:\bccode`.
 - Prefer targeted evidence over broad slow checks. Avoid full-repo scans, broad browser automation, and `go test ./...` unless Jead explicitly asks, the touched scope genuinely requires it, or narrower checks cannot provide useful evidence.
 - Docs/rules-only changes: run `git diff --check` and staged secret scanning only. Do not spend time on frontend/backend build or test commands for documentation-only changes.
 - Frontend changes: frontend is in fast-iteration dev mode — rely on `next dev` HMR to preview in the browser. Run `cd frontend; npm run typecheck` only before commit or when summarizing, NOT after every edit. Use browser verification only for UI behavior, layout, routing, or visual changes.
@@ -282,6 +282,6 @@ This rule overrides any "translate all 12 languages" instruction in skills, olde
 - Backgrounds must support both light and dark themes. Use separate theme assets or theme-safe overlays when needed, while preserving text contrast, dense business layout usability, and compact work-surface spacing.
 - The background must be relevant to the screen's domain, for example Thai SMEs, Thai factories, Thai shops, accounting, inventory, purchasing, sales, production, or settings depending on the page.
 - Do not set protected authenticated R2/GoAPI image paths directly as CSS backgrounds. Project-local public backgrounds are allowed; private images must follow the authenticated object-URL preview rule.
-- Only Codex may generate new page background images for this project. ZCode, Gemini, Antigravity, or any non-Codex agent must not generate image assets themselves; they may request/assign Codex to create the WebP backgrounds, then wire already-approved assets into the UI.
+- Only Codex may generate new page background images for this project. Claude, GLM, or any non-Codex agent must not generate image assets themselves; they may request/assign Codex to create the WebP backgrounds, then wire already-approved assets into the UI.
 
 - **Mandatory Plan Before Work Rule**: Before any task, command sequence, debugging, implementation, edit, deploy, commit, or push, the agent MUST output a concise plan first. This applies to every task, including single-file changes and simple fixes; for trivial read-only Q&A, the plan may be one short sentence. The plan should state objective, scope/files when known, risk level, steps, and verification path scaled to task size. หลังจากวางแผนเสร็จแล้ว ให้ดำเนินการแก้ไขและพัฒนาต่อให้เสร็จสิ้นทันทีโดยไม่ต้องหยุดรอคำอนุมัติ เว้นแต่งานเป็น R0 หรือมีคำถามที่จำเป็นต้องหยุดถามก่อน (After planning, proceed immediately without waiting for user approval unless the action is R0 or a blocking clarification is required). Verify with source, diff, command output, logs, tests, or browser evidence before claiming completion.

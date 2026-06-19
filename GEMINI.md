@@ -1,5 +1,10 @@
 # BC Ai Account Gemini / Antigravity Entry
 
+> ⚠️ **DEPRECATED (2026-06-19): Gemini / Antigravity (agy) ถอดออกจากทีม AI แล้ว.**
+> ทีมปัจจุบัน = **Claude (Claude Code, หัวหน้า/คนคุม) + GLM 5.2 Think (ที่ปรึกษาหลัก, ไทย/เอเซีย) + Codex (สร้างรูป webp + code advisor รอง)**.
+> งาน UX/UI ตอนนี้ Claude implement เอง โดยปรึกษา GLM สำหรับมุมคนไทย/เอเซีย. ดู [`.agents/rules/ai-team-governance.md`](.agents/rules/ai-team-governance.md).
+> ไฟล์นี้คงไว้เป็น entry-routing เผื่อ Gemini ถูกนำกลับเข้าทีมในอนาคต — ปัจจุบันไม่ใช้ใน automated workflow.
+
 Read in this order:
 1. `AGENTS.md`
 2. `.agents/rules/bc-account-core-rules.md`

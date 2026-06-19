@@ -14,7 +14,7 @@ Examples:
 - `/qui form multi-step onboarding 4 steps`
 
 ## Process
-1. Load `ui-beautiful` skill
+1. Load `formdesign` skill (BC visual treatment) + apply AGENTS.md "Premium UX/UI Standard" (anti-slop, mobile-first, premium feel)
 2. Read brand from project-context.md
 3. If image → extract palette/spacing/type as primary spec
 4. Detect stack (shadcn/Tailwind/raw)

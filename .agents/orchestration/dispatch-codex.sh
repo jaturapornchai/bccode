@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# AI-team dispatch: Claude (leader) -> Codex (code worker).
-# Codex writes backend + frontend IMPLEMENTATION code from a 5-section handoff spec.
+# AI-team dispatch: Claude (leader) -> Codex (secondary advisor + image gen).
+# Codex returns advisory analysis/plan/review from a 5-section handoff spec; Claude applies patches itself.
 #
 # Usage:
 #   dispatch-codex.sh "<spec>"          # default: gpt-5.5  + reasoning medium (complex)

@@ -1,13 +1,14 @@
 ---
 name: codex-advisor
-description: Use when ZCode (GLM-5.2) needs Codex (gpt-5.5 think) advisory input for BC Account work — planning, code ideas, bug review, or weakness/blind-spot checks. ZCode asks Codex, takes Codex's answer, and synthesizes the best of both models. Helper only; ZCode remains the source of truth and applies patches itself.
+description: Use when Claude (Claude Code) needs Codex (gpt-5.5 think) as the SECONDARY advisor for BC Account work — engineering bug/security/edge-case review, code ideas, or blind-spot checks. Claude asks Codex, takes Codex's answer, and synthesizes the best of all models. Helper only; Claude remains the source of truth and applies patches itself. (GLM 5.2 via `glm52-planner` is the primary advisor.)
 ---
 
-# Codex Advisor (ZCode → ask Codex → synthesize)
+# Codex Advisor (Claude → ask Codex → synthesize)
 
-This is the **reverse direction** of `glm52-planner`. Use it when the active agent
-is **ZCode (GLM-5.2 powered)** and wants a second model's perspective from
-**Codex (gpt-5.5 think)** before finalizing its own answer.
+Codex is the **secondary** advisor (GLM 5.2 via `glm52-planner` is primary). Use it
+when the active agent is **Claude (Claude Code)** and wants a second model's
+engineering perspective from **Codex (gpt-5.5 think)** — bug/security/edge-case,
+correctness — before finalizing its own answer.
 
 ## When to use
 
@@ -26,22 +27,22 @@ token + latency for little gain (same Pareto rule as `ai-team-governance.md` §9
 ## Two-model synthesis loop (the core idea)
 
 ```
-active agent (ZCode, GLM-5.2)
+active agent (Claude / Claude Code)
         │
         │  1. read source/runtime evidence first (no guess)
         │  2. form own preliminary answer
         ▼
    codex-advisor.ps1  ──►  Codex (gpt-5.5 think) advisory answer
         │
-        │  3. compare: Codex-strong points vs ZCode-strong points
+        │  3. compare: Codex-strong points vs Claude-strong points
         │  4. synthesize the best of both into the final answer
-        │  5. ZCode remains source of truth + applies patches + verifies
+        │  5. Claude remains source of truth + applies patches + verifies
         ▼
    final answer / patch + real VERIFICATION
 ```
 
-ZCode **never** delegates final responsibility to Codex. Codex is an
-advisory input; ZCode synthesizes, decides, edits, and verifies.
+Claude **never** delegates final responsibility to Codex. Codex is an
+advisory input; Claude synthesizes, decides, edits, and verifies.
 
 ## Supported helper roles (Mode)
 
@@ -53,7 +54,7 @@ advisory input; ZCode synthesizes, decides, edits, and verifies.
 
 ## Source of truth
 
-- ZCode must read the active project source, local docs, tests, and runtime
+- Claude must read the active project source, local docs, tests, and runtime
   output first.
 - Codex output is **advisory only**. It cannot establish APIs, schemas, business
   rules, or completion status.
