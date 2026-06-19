@@ -112,8 +112,8 @@ export function branchDisplayName(branch: BranchListItem): string {
   return localizedName(branch.names, branch.code || branch.guidfixed);
 }
 
-export function companyDisplayName(company: WorkspaceCompany): string {
-  const name =
+export function companyBaseName(company: WorkspaceCompany): string {
+  return (
     localizedName(company.names, "") ||
     company.name1?.trim() ||
     company.companyname?.trim() ||
@@ -121,7 +121,12 @@ export function companyDisplayName(company: WorkspaceCompany): string {
     company.name?.trim() ||
     company.code?.trim() ||
     company.guidfixed?.trim() ||
-    "-";
+    "-"
+  );
+}
+
+export function companyDisplayName(company: WorkspaceCompany): string {
+  const name = companyBaseName(company);
   return company.code?.trim() && name !== company.code.trim()
     ? `[${company.code.trim()}] ${name}`
     : name;

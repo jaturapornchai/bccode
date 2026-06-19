@@ -31,7 +31,7 @@ import { backendText, useBackendLanguage, type BackendLanguageDictionary } from 
 import { normalizeLanguage, t, type LanguageCode } from "@/lib/i18n";
 import {
   branchDisplayName,
-  companyDisplayName,
+  companyBaseName,
   localizedName,
   shopDisplayName,
   type AuthSession,
@@ -1369,7 +1369,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                     || Boolean(auth?.username && shop.createdby && shop.createdby.trim().toLowerCase() === auth.username.trim().toLowerCase());
                   const languageCodes = shopLanguageCodes(shop);
                   const currencyLabel = shopCurrencyLabel(shop, language);
-                  const companyLabel = companyDisplayName(company);
+                  const companyLabel = companyBaseName(company);
                   const companyCode = (company.code ?? "").trim();
                   // If the display name is just the code (no real name in data),
                   // show a friendly placeholder so the name row is not empty/duplicate.
