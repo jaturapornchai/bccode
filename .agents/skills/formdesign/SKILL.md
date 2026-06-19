@@ -35,6 +35,7 @@ Map colors to existing CSS variables/tokens. Avoid raw hex values in components.
   - Hover/popover: `0 8px 24px rgba(160, 64, 53, 0.12)`
 - **Glassmorphism**: Use frosted glass, radial gradients, scale transitions, and monospace terminal chips for workspace/login screen portals to WOW users.
 - **Display Integrity**: No truncation of text using `...` (such as codes, IDs, usernames, or emails). Enable wrapping: `word-break: break-word` and `white-space: normal`.
+- **Baseline Alignment**: Inline text-only metadata groups such as chips, badges, labels plus code/name, and compact context rows should align text by baseline (`align-items: baseline`) with normalized line-height. Use vertical centering only for icon/control groups where the icon is the primary alignment target.
 - **Card Grids**: Minimum column width of 480px for company/branch/shop cards to prevent layout squishing. Use horizontal sub-details layouts.
 
 ## 3. Spacing & Density Contract
