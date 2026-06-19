@@ -1,6 +1,6 @@
 # Agent Handoffs
 
-Optional coordination notes for parallel / cross-session work. Claude (Claude Code) is the lead/full-stack worker and may pick up any layer; GLM 5.2 (primary advisor) and Codex (secondary advisor + image gen) contribute advice — see core-rules "AI Capability & Instant Upgrades". Handoffs are NOT role locks; they only carry context so the next agent doesn't re-derive intent.
+Optional coordination notes for cross-session work. Every agent (Claude Code / ZCode / Codex / any) is a full-stack worker that may pick up any layer — see core-rules "AI Capability & Instant Upgrades". Handoffs are NOT role locks and NOT cross-model advisor routing; they only carry context so the next session doesn't re-derive intent.
 
 ## Why
 When work spans sessions/agents, or one chunk is done and another remains (e.g. frontend done, backend pending), drop a handoff so any agent can continue without re-reading the whole history. The handoff is the contract; it keeps work parallel and fast.

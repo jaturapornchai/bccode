@@ -1,6 +1,6 @@
 # gen-code-map.ps1 - auto-generate CODE-MAP.md index of large source files.
 # Indexes function, component, type, const-export, and section-comment names so
-# ZCode/GLM can jump straight to the right line range instead of grep+re-read.
+# any agent can jump straight to the right line range instead of grep+re-read.
 #
 # Usage: powershell -NoProfile -ExecutionPolicy Bypass -File D:\bccode\tools\gen-code-map.ps1
 # Output: D:\bccode\CODE-MAP.md

@@ -161,7 +161,7 @@ import "smlcloudplatform/internal/goapi/myglobal"
 ### MCP Server — ตัวเชื่อมข้าม Project
 MCP เป็น bridge ให้ AI tools ฝั่ง frontend เข้าถึง backend ได้โดยไม่ต้องอ่าน code โดยตรง
 
-- SSE endpoint: `GET /goapi/mcp/sse` (for Claude Desktop / Claude Code)
+- SSE endpoint: `GET /goapi/mcp/sse` (for MCP-compatible AI clients)
 - Health: `GET /goapi/mcp/health`
 - Tools: `GET /goapi/mcp/tools`
 - API keys: `POST/GET/PUT/DELETE /api/mcp/keys`

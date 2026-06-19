@@ -1,10 +1,10 @@
 ---
-description: Single-file Claude Code prompt for auditing BC Account marketplace readiness and deriving a canonical marketplace JSON/model foundation.
+description: Single-file agent prompt for auditing BC Account marketplace readiness and deriving a canonical marketplace JSON/model foundation.
 ---
 
-# Claude Code Prompt: Marketplace Foundation Audit For BC Account
+# Agent Prompt: Marketplace Foundation Audit For BC Account
 
-You are Claude Code working in `D:\bccode`.
+You are the agent working in `D:\bccode`.
 
 ## Communication
 - Reply to Jead in Thai.

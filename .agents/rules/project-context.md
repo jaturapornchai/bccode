@@ -27,7 +27,7 @@ BC Ai Account is a modern multilingual multi-tenant ERP and accounting platform 
 - Radius: 12px (rounded-xl) and 16px (rounded-2xl)
 - Tone: premium, modern, clean dark/light mode
 
-## MCP Tools Available (Claude orchestrates these)
+## MCP Tools Available (any agent may use these)
 - `<db-mcp>` — query MongoDB, PostgreSQL processing projections, and ClickHouse BI stores
 - `<github-mcp>` — manage PRs and issues
 

@@ -1,9 +1,6 @@
-# BC Ai Account Gemini / Antigravity Entry
+# BC Ai Account — Agent Entry
 
-> ⚠️ **DEPRECATED (2026-06-19): Gemini / Antigravity (agy) ถอดออกจากทีม AI แล้ว.**
-> ทีมปัจจุบัน = **Claude (Claude Code, หัวหน้า/คนคุม) + GLM 5.2 Think (ที่ปรึกษาหลัก, ไทย/เอเซีย) + Codex (สร้างรูป webp + code advisor รอง)**.
-> งาน UX/UI ตอนนี้ Claude implement เอง โดยปรึกษา GLM สำหรับมุมคนไทย/เอเซีย. ดู [`.agents/rules/ai-team-governance.md`](.agents/rules/ai-team-governance.md).
-> ไฟล์นี้คงไว้เป็น entry-routing เผื่อ Gemini ถูกนำกลับเข้าทีมในอนาคต — ปัจจุบันไม่ใช้ใน automated workflow.
+> Identical entry for every agent (Claude Code / ZCode / Codex / any). `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md` all point to the SAME model-agnostic rule set — whichever agent you are, you read and follow the same rules and do the whole task yourself (no lead/advisor/helper, no model-specific role, no asking another AI model).
 
 Read in this order:
 1. `AGENTS.md`
@@ -13,8 +10,6 @@ Read in this order:
 5. `AI_INDEX.md`
 6. Only the files routed by the current task
 
-`AGENTS.md` is the source of truth for project rules, development environment, DEV deployment, database location, cross-agent compatibility, security, frontend, backend, and verification requirements.
+Keep context small. Do not open generated docs, lockfiles, screenshots, manuals, or full large files unless explicitly required.
 
-Keep context small. Do not open generated docs, lockfiles, screenshots, manuals, build outputs, runtime logs, or full large files unless explicitly required.
-
-For normal coding work, prefer focused inspection, the smallest safe patch, and focused verification. Keep any reusable rules, skills, prompts, handoffs, checklists, or workflows portable across Claude Code, Codex/GPT-5.5, and Google Antigravity/Gemini.
+For coding work, prefer focused inspection, the smallest safe patch, and focused verification.
