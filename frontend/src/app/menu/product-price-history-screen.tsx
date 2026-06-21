@@ -1,11 +1,12 @@
 "use client";
 
-import { AlertCircle, Barcode, History, Loader2, RefreshCcw, Search } from "lucide-react";
+import { AlertCircle, Barcode, History, Loader2, RefreshCcw, Search, UserRound } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { LogoAvatar } from "@/components/logo-avatar";
 import { formatDefaultDateTime, resolveWorkspaceDateTimeDisplayOptions } from "@/lib/date-time";
 import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -42,6 +43,7 @@ type PriceHistoryRecord = {
   difference: number;
   action: string;
   createdBy: string;
+  createdByAvatarThumb: string;
   createdAt: string;
   remark: string;
 };
@@ -285,7 +287,19 @@ export function ProductPriceHistoryScreen({ embedded = false, language: external
                 <div className="grid gap-1 text-xs text-muted-foreground sm:grid-cols-2 lg:grid-cols-3">
                   <span>{dictionary.oldPrice}: <b className="text-foreground">{formatNumber(item.oldPrice)}</b></span>
                   <span>{dictionary.newPrice}: <b className="text-foreground">{formatNumber(item.newPrice)}</b></span>
-                  <span>{dictionary.createdBy}: <b className="text-foreground">{item.createdBy || "-"}</b></span>
+                  <span className="inline-flex min-w-0 items-center gap-1.5">
+                    {dictionary.createdBy}:{" "}
+                    <LogoAvatar
+                      uri={item.createdByAvatarThumb}
+                      auth={auth}
+                      alt={item.createdBy || "-"}
+                      sizeClass="size-5 rounded-full shrink-0"
+                      iconSize={11}
+                      width={48}
+                      fallbackIcon={UserRound}
+                    />
+                    <b className="truncate text-foreground">{item.createdBy || "-"}</b>
+                  </span>
                   <span>{dictionary.action}: <b className="text-foreground">{item.action || "-"}</b></span>
                   <span className="sm:col-span-2">{dictionary.createdAt}: <b className="text-foreground">{formatDefaultDateTime(item.createdAt, dateTimeDisplayOptions)}</b></span>
                 </div>
@@ -361,6 +375,8 @@ function normalizeHistoryRecord(value: unknown): PriceHistoryRecord | null {
     difference: getNumber(value, "pricedifference") || getNumber(value, "priceDifference"),
     action: getString(value, "action"),
     createdBy: getString(value, "createdby") || getString(value, "createdBy"),
+    createdByAvatarThumb:
+      getString(value, "createdbyavatarthumb") || getString(value, "createdByAvatarThumb"),
     createdAt: getString(value, "createdat") || getString(value, "createdAt"),
     remark: getString(value, "remark"),
   };

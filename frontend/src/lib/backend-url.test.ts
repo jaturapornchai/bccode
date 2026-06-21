@@ -35,7 +35,7 @@ describe("backend URL helpers", () => {
   it("uses the local backend that matches the local frontend URL", () => {
     expect(localGoApiUrlForOrigin("http://localhost:3000")).toBe("http://localhost:3000/backend/goapi");
     expect(runtimeGoApiUrlForOrigin("http://127.0.0.1:3000")).toBe("http://127.0.0.1:3000/backend/goapi");
-    expect(migrateRuntimeBackendUrl("http://45.144.166.112:8888/goapi", "http://localhost:3000")).toBe(
+    expect(migrateRuntimeBackendUrl("http://192.168.2.202:8888/goapi", "http://localhost:3000")).toBe(
       "http://localhost:3000/backend/goapi",
     );
     expect(migrateRuntimeBackendUrl("https://dev.bcaicloud.com/backend/goapi", "http://localhost:3000")).toBe(
@@ -45,7 +45,7 @@ describe("backend URL helpers", () => {
     expect(migrateRuntimeBackendUrl("http://localhost:8888/goapi", "https://dev.bcaicloud.com")).toBe(
       "https://dev.bcaicloud.com/backend/goapi",
     );
-    expect(migrateRuntimeBackendUrl("http://45.144.166.112:8888/goapi", "https://dev.bcaicloud.com")).toBe(
+    expect(migrateRuntimeBackendUrl("http://192.168.2.202:8888/goapi", "https://dev.bcaicloud.com")).toBe(
       "https://dev.bcaicloud.com/backend/goapi",
     );
   });

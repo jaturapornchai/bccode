@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Building2 } from "lucide-react";
+import { Building2, type LucideIcon } from "lucide-react";
 import { logoThumbUri } from "@/lib/logo-thumb";
 import { imageNeedsAuthenticatedFetch } from "@/lib/image-upload-proxy";
 
@@ -209,6 +209,8 @@ export type LogoAvatarProps = {
   width?: number;
   /** Extra Tailwind classes for the avatar box. */
   className?: string;
+  /** Lucide icon shown when there is no image. Defaults to Building2 (use UserRound for people). */
+  fallbackIcon?: LucideIcon;
 };
 
 export function LogoAvatar({
@@ -219,6 +221,7 @@ export function LogoAvatar({
   iconSize = 20,
   width = 160,
   className = "",
+  fallbackIcon: FallbackIcon = Building2,
 }: LogoAvatarProps) {
   const uriValue = (uri ?? "").trim();
   const { displayUrl, failed, loading } = useLogoImage(uriValue, auth, width);
@@ -243,8 +246,52 @@ export function LogoAvatar({
       ) : loading ? (
         <span className="size-1/2 animate-pulse rounded-full bg-primary/30" />
       ) : (
-        <Building2 size={iconSize} aria-hidden="true" />
+        <FallbackIcon size={iconSize} aria-hidden="true" />
       )}
     </span>
   );
+}
+
+/**
+ * useProfileAvatar — fetches the logged-in user's avatar thumbnail from
+ * GET /api/auth/profile (best-effort). Returns "" when unavailable so the
+ * caller can fall back to an icon. Never throws; failures are swallowed.
+ */
+export function useProfileAvatar(auth: AuthLike): string {
+  const [avatar, setAvatar] = useState("");
+  const token = auth?.token;
+  const backendUrl = auth?.backendUrl;
+  useEffect(() => {
+    if (!token || !backendUrl) {
+      setAvatar("");
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const response = await fetch(
+          `/api/auth/profile?backendUrl=${encodeURIComponent(backendUrl)}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "x-bc-backend-url": backendUrl,
+            },
+            cache: "no-store",
+          },
+        );
+        if (!response.ok) return;
+        const payload = (await response.json()) as {
+          data?: { avatar?: string; avatarthumb?: string };
+        };
+        if (cancelled) return;
+        setAvatar(payload.data?.avatarthumb || payload.data?.avatar || "");
+      } catch {
+        if (!cancelled) setAvatar("");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [token, backendUrl]);
+  return avatar;
 }

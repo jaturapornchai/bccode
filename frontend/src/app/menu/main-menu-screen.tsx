@@ -37,6 +37,7 @@ import QRCode from "qrcode";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type FormEvent, type ReactNode, type UIEvent } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { LogoAvatar } from "@/components/logo-avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DropdownMenu,
@@ -123,6 +124,8 @@ type ProfileResponse = {
     isdefaultpassword?: boolean;
     name?: string;
     username?: string;
+    avatar?: string;
+    avatarthumb?: string;
   };
   message?: string;
 };
@@ -518,6 +521,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [passwordNotice, setPasswordNotice] = useState<PasswordNotice>(null);
   const [isDefaultPassword, setIsDefaultPassword] = useState(false);
+  const [profileAvatar, setProfileAvatar] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -609,6 +613,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
         const payload = await response.json() as ProfileResponse;
         if (cancelled || !response.ok || payload.success === false) return;
         setIsDefaultPassword(Boolean(payload.data?.isdefaultpassword));
+        setProfileAvatar(payload.data?.avatarthumb || payload.data?.avatar || "");
       } catch {
         if (!cancelled) setIsDefaultPassword(false);
       }
@@ -1039,7 +1044,15 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                       aria-label={loginIdentity}
                       title={loginIdentity}
                     >
-                      <UserRound className="h-4 w-4 shrink-0" />
+                      <LogoAvatar
+                        uri={profileAvatar}
+                        auth={auth}
+                        alt={loginIdentity}
+                        sizeClass="size-6 rounded-full shrink-0"
+                        iconSize={14}
+                        width={48}
+                        fallbackIcon={UserRound}
+                      />
                       <span className="hidden min-w-0 max-w-56 whitespace-normal break-all text-xs font-medium leading-tight sm:inline">
                         {loginIdentity}
                       </span>
@@ -1048,7 +1061,15 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-72">
                     <div className="flex min-w-0 items-center gap-2 rounded-lg px-2 py-2 text-sm">
-                      <UserRound className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <LogoAvatar
+                        uri={profileAvatar}
+                        auth={auth}
+                        alt={loginIdentity}
+                        sizeClass="size-9 rounded-full shrink-0"
+                        iconSize={18}
+                        width={64}
+                        fallbackIcon={UserRound}
+                      />
                       <div className="min-w-0">
                         <p className="text-xs font-semibold text-muted-foreground">{loginText}</p>
                         <p className="break-all font-semibold leading-snug text-foreground">{loginIdentity}</p>

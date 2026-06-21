@@ -3878,14 +3878,29 @@ function settingListColumns(
         key: "code",
         label: language === "th" ? "รหัสพนักงาน" : "Employee code",
         className: "basis-36 grow-[2] min-w-[120px] shrink-0",
-        render: (record, meta) => (
-          <b
-            className="min-w-0 truncate"
-            title={stringValue(record.code ?? meta.id)}
-          >
-            {stringValue(record.code ?? meta.id) || "-"}
-          </b>
-        ),
+        render: (record, meta) => {
+          const code = stringValue(record.code ?? meta.id);
+          const avatarUri =
+            stringValue(record.avatarthumb) ||
+            stringValue(record.avatar) ||
+            stringValue(record.profilepicture);
+          return (
+            <span className="flex min-w-0 items-center gap-2 w-full">
+              <LogoAvatar
+                uri={avatarUri}
+                auth={auth}
+                alt={code}
+                sizeClass="size-8 rounded-full shrink-0"
+                iconSize={16}
+                width={64}
+                fallbackIcon={UsersRound}
+              />
+              <b className="min-w-0 truncate" title={code}>
+                {code || "-"}
+              </b>
+            </span>
+          );
+        },
       },
       {
         key: "name",
@@ -3925,6 +3940,63 @@ function settingListColumns(
                 ? "ปิดใช้งาน"
                 : "Inactive"}
           </Badge>
+        ),
+      },
+    ];
+  }
+
+  if (config.slug === "permissionlink") {
+    return [
+      {
+        key: "employeename",
+        label: language === "th" ? "ผู้ใช้งาน" : "User",
+        className: "basis-40 grow-[2] min-w-[140px] shrink-0",
+        render: (record, meta) => {
+          const code = stringValue(
+            record.employeecode ?? record.username ?? meta.id,
+          );
+          const name =
+            stringValue(
+              record.employeename ?? record.userprofilename ?? record.name,
+            ) || code;
+          const avatarUri =
+            stringValue(record.avatarthumb) || stringValue(record.avatar);
+          return (
+            <span className="flex min-w-0 items-center gap-2 w-full">
+              <LogoAvatar
+                uri={avatarUri}
+                auth={auth}
+                alt={name}
+                sizeClass="size-8 rounded-full shrink-0"
+                iconSize={16}
+                width={64}
+                fallbackIcon={UserRound}
+              />
+              <span className="flex min-w-0 flex-col gap-0.5">
+                <b className="min-w-0 break-words" title={name}>
+                  {name || "-"}
+                </b>
+                {code ? (
+                  <span className="font-mono text-[9px] px-1.5 py-0.2 bg-muted border border-border/50 text-muted-foreground rounded uppercase font-bold w-fit max-w-full break-all">
+                    {code}
+                  </span>
+                ) : null}
+              </span>
+            </span>
+          );
+        },
+      },
+      {
+        key: "groupcode",
+        label: language === "th" ? "กลุ่มสิทธิ์" : "Permission group",
+        className: "basis-28 grow min-w-[100px] shrink-0 hidden sm:inline-flex",
+        render: (record) => (
+          <span
+            className="block break-words"
+            title={stringValue(record.groupcode)}
+          >
+            {stringValue(record.groupcode) || "-"}
+          </span>
         ),
       },
     ];
@@ -4030,19 +4102,41 @@ function SettingDetailPanel({
       <div className="flex flex-col gap-3 rounded-2xl border border-border/80 bg-gradient-to-r from-secondary/15 via-secondary/5 to-transparent p-4 shadow-sm">
         <header className="flex min-w-0 flex-wrap items-start justify-between gap-3">
           <div className="flex min-w-0 items-start gap-2.5">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary mt-0.5 shadow-sm">
-              {config.slug === "user" ? (
-                <UserRound className="size-5" />
-              ) : config.slug === "employee" ? (
-                <UsersRound className="size-5" />
-              ) : config.slug === "activelanguages" ? (
-                <Globe className="size-5" />
-              ) : config.kind === "company" ? (
-                <Building2 className="size-5" />
-              ) : (
-                <FileCog className="size-5" />
-              )}
-            </div>
+            {config.slug === "user" ? (
+              <LogoAvatar
+                uri={stringValue(record.avatarthumb) || stringValue(record.avatar)}
+                auth={auth}
+                alt={title || displayCode || "user"}
+                sizeClass="size-10 rounded-xl shrink-0 mt-0.5 shadow-sm"
+                iconSize={20}
+                width={96}
+                fallbackIcon={UserRound}
+              />
+            ) : config.slug === "employee" ? (
+              <LogoAvatar
+                uri={
+                  stringValue(record.avatarthumb) ||
+                  stringValue(record.avatar) ||
+                  stringValue(record.profilepicture)
+                }
+                auth={auth}
+                alt={title || displayCode || "employee"}
+                sizeClass="size-10 rounded-xl shrink-0 mt-0.5 shadow-sm"
+                iconSize={20}
+                width={96}
+                fallbackIcon={UsersRound}
+              />
+            ) : (
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary mt-0.5 shadow-sm">
+                {config.slug === "activelanguages" ? (
+                  <Globe className="size-5" />
+                ) : config.kind === "company" ? (
+                  <Building2 className="size-5" />
+                ) : (
+                  <FileCog className="size-5" />
+                )}
+              </div>
+            )}
             <div className="min-w-0">
               <h2 className="break-words text-lg font-bold text-foreground leading-snug">
                 {title || displayCode || "-"}
@@ -5792,6 +5886,7 @@ type PermissionLinkUserOption = {
   userUid: string;
   name: string;
   subtitle: string;
+  avatar: string;
   isDisabled: boolean;
 };
 
@@ -5803,11 +5898,13 @@ function permissionLinkUserOption(
   const name =
     stringValue(record.userprofilename ?? record.name ?? record.email ?? record.username) || code;
   const subtitle = stringValue(record.email) || userUid;
+  const avatar = stringValue(record.avatarthumb) || stringValue(record.avatar);
   return {
     code,
     userUid,
     name,
     subtitle,
+    avatar,
     isDisabled: Boolean(
       record.isaccessdisabled ?? record.isaccessdisabled ?? false,
     ),
@@ -5837,6 +5934,7 @@ function PermissionLinkUserSelector({
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [selectedAvatar, setSelectedAvatar] = useState("");
   const selectedCode = stringValue(form.employeecode ?? form.employeeCode);
   const selectedName = stringValue(form.employeename ?? form.employeeName);
   const fallbackLabel =
@@ -5913,6 +6011,7 @@ function PermissionLinkUserSelector({
   function choose(user: PermissionLinkUserOption) {
     if (user.isDisabled) return;
     setForm({ ...form, employeecode: user.code, employeename: user.name, useruid: user.userUid });
+    setSelectedAvatar(user.avatar);
     setQuery("");
     setUsers([]);
   }
@@ -5938,12 +6037,23 @@ function PermissionLinkUserSelector({
         placeholder={backendText(dictionary, "search", "Search")}
       />
       {selectedCode ? (
-        <div className="grid gap-1 rounded-xl border border-primary/40 bg-primary/10 p-2 text-primary">
-          <span className="break-words font-semibold">
-            {selectedName || selectedCode}
-          </span>
-          <span className="break-words text-xs">
-            {language === "th" ? "รหัสผู้ใช้" : "User code"}: {selectedCode}
+        <div className="flex items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 p-2 text-primary">
+          <LogoAvatar
+            uri={selectedAvatar}
+            auth={auth}
+            alt={selectedName || selectedCode}
+            sizeClass="size-9 rounded-full shrink-0"
+            iconSize={18}
+            width={64}
+            fallbackIcon={UserRound}
+          />
+          <span className="grid min-w-0 gap-1">
+            <span className="break-words font-semibold">
+              {selectedName || selectedCode}
+            </span>
+            <span className="break-words text-xs">
+              {language === "th" ? "รหัสผู้ใช้" : "User code"}: {selectedCode}
+            </span>
           </span>
         </div>
       ) : null}
@@ -5987,7 +6097,15 @@ function PermissionLinkUserSelector({
                   {checked ? (
                     <Check className="size-4 shrink-0" />
                   ) : (
-                    <UserRound className="size-4 shrink-0 text-muted-foreground" />
+                    <LogoAvatar
+                      uri={user.avatar}
+                      auth={auth}
+                      alt={user.name}
+                      sizeClass="size-7 rounded-full shrink-0"
+                      iconSize={14}
+                      width={48}
+                      fallbackIcon={UserRound}
+                    />
                   )}
                   <span className="min-w-0 break-words font-semibold">
                     {user.name}
@@ -6728,6 +6846,15 @@ function UserAccessAuditReportPanel({
                         checked={checked}
                         onChange={(event) => toggleReportUser(user, event.target.checked)}
                         onClick={(event) => event.stopPropagation()}
+                      />
+                      <LogoAvatar
+                        uri={stringValue(user.avatarthumb) || stringValue(user.avatar)}
+                        auth={auth}
+                        alt={auditUserName(user) || auditUserCode(user)}
+                        sizeClass="size-8 rounded-full shrink-0"
+                        iconSize={16}
+                        width={64}
+                        fallbackIcon={UserRound}
                       />
                       <span className="grid min-w-0 flex-1 gap-0.5">
                         <span className="break-words text-sm font-bold">{auditUserCode(user)}</span>

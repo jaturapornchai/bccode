@@ -1,11 +1,18 @@
 package productbarcode
 
 import (
+	"context"
 	"net/http"
+	authmodels "smlcloudplatform/internal/authentication/models"
 	common "smlcloudplatform/internal/models"
+	phmodels "smlcloudplatform/internal/product/productbarcode/models"
 	"smlcloudplatform/internal/utils"
 	"smlcloudplatform/internal/utils/requestfilter"
 	"smlcloudplatform/pkg/microservice"
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // Get ProductBarcode Price History godoc
@@ -39,6 +46,8 @@ func (h ProductBarcodeHttp) GetPriceHistory(ctx microservice.IContext) error {
 		return err
 	}
 
+	docs = h.enrichPriceHistoryAvatars(docs)
+
 	ctx.Response(http.StatusOK, common.ApiResponse{
 		Success:    true,
 		Data:       docs,
@@ -71,6 +80,8 @@ func (h ProductBarcodeHttp) GetPriceHistoryByBarcode(ctx microservice.IContext) 
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
+
+	docs = h.enrichPriceHistoryAvatars(docs)
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
 		Success:    true,
@@ -123,4 +134,57 @@ func (h ProductBarcodeHttp) priceHistoryFilter(queryParam func(string) string) m
 	}
 
 	return filters
+}
+
+// enrichPriceHistoryAvatars เติม CreatedByAvatarThumb ให้แต่ละ record
+// จาก users collection (lookup ครั้งเดียวแบบ batch ด้วย $in). best-effort:
+// ถ้า lookup ล้มเหลวจะคืน docs เดิมโดยไม่มี avatar (ไม่ทำให้ request พัง).
+func (h ProductBarcodeHttp) enrichPriceHistoryAvatars(docs []phmodels.ProductPriceHistoryInfo) []phmodels.ProductPriceHistoryInfo {
+	if len(docs) == 0 {
+		return docs
+	}
+
+	usernameSet := map[string]struct{}{}
+	for _, d := range docs {
+		if d.CreatedBy != "" {
+			usernameSet[d.CreatedBy] = struct{}{}
+		}
+	}
+	if len(usernameSet) == 0 {
+		return docs
+	}
+
+	usernames := make([]string, 0, len(usernameSet))
+	for u := range usernameSet {
+		usernames = append(usernames, u)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
+	var users []struct {
+		Username    string `bson:"username"`
+		Avatar      string `bson:"avatar"`
+		AvatarThumb string `bson:"avatarthumb"`
+	}
+	projection := options.Find().SetProjection(bson.M{"username": 1, "avatar": 1, "avatarthumb": 1})
+	if err := pst.Find(ctx, &authmodels.UserDoc{}, bson.M{"username": bson.M{"$in": usernames}}, &users, projection); err != nil {
+		return docs
+	}
+
+	avatarByUsername := make(map[string]string, len(users))
+	for _, u := range users {
+		thumb := u.AvatarThumb
+		if thumb == "" {
+			thumb = u.Avatar
+		}
+		avatarByUsername[u.Username] = thumb
+	}
+
+	for i := range docs {
+		docs[i].CreatedByAvatarThumb = avatarByUsername[docs[i].CreatedBy]
+	}
+
+	return docs
 }

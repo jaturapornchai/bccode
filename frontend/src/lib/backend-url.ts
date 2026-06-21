@@ -122,5 +122,5 @@ function isDevServerBackend(parsed: URL, current: URL): boolean {
     return parsed.origin !== current.origin || path === "/goapi";
   }
 
-  return hostname === "45.144.166.112" || hostname === "dev.bcaicloud.com" || hostname === "api.bcaicloud.com";
+  return hostname === "192.168.2.202" || hostname === "dev.bcaicloud.com" || hostname === "api.bcaicloud.com";
 }

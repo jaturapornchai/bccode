@@ -45,6 +45,9 @@ type ProductPriceHistoryInfo struct {
 	models.DocIdentity       `bson:"inline"`
 	models.HoldingCodeentity `bson:"inline"`
 	ProductPriceHistory      `bson:"inline"`
+
+	// CreatedByAvatarThumb เติมจาก users collection ตอนอ่าน (ไม่เก็บใน DB)
+	CreatedByAvatarThumb string `json:"createdbyavatarthumb" bson:"-"`
 }
 
 func (ProductPriceHistoryInfo) CollectionName() string {

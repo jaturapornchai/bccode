@@ -14,6 +14,7 @@ import {
   Save,
   Search,
   ShieldCheck,
+  UserRound,
   X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -28,6 +29,7 @@ import {
   type ShopListItem,
   workspaceStorageKeys,
 } from "@/lib/workspace-models";
+import { LogoAvatar, useProfileAvatar } from "@/components/logo-avatar";
 import { AppHeaderControls } from "../app-header-controls";
 
 type HoldingListItem = ShopListItem & {
@@ -635,6 +637,7 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
   }, [holdings, query]);
 
   const signedInAs = auth?.profile?.email || auth?.username || "";
+  const profileAvatar = useProfileAvatar(auth);
   const canCreateHolding = Boolean(
     auth && auth.method !== "password" && (auth.profile?.email || auth.username.includes("@")),
   );
@@ -857,7 +860,15 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
               <h2>{ht(language, "title")}</h2>
               <div className="holding-summary-row">
                 <span className="holding-summary-chip">
-                  <ShieldCheck aria-hidden="true" size={12} />
+                  <LogoAvatar
+                    uri={profileAvatar}
+                    auth={auth}
+                    alt={signedInAs || "-"}
+                    sizeClass="size-4 rounded-full shrink-0"
+                    iconSize={10}
+                    width={48}
+                    fallbackIcon={UserRound}
+                  />
                   {signedInAs || "-"}
                 </span>
                 <span className="holding-summary-chip">

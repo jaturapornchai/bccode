@@ -42,7 +42,7 @@ import {
   workspaceStorageKeys,
   notifyWorkspaceChanged,
 } from "@/lib/workspace-models";
-import { LogoAvatar } from "@/components/logo-avatar";
+import { LogoAvatar, useProfileAvatar } from "@/components/logo-avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -565,6 +565,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
   }, [auth, selectedShop, selectedShopForAccess, shops]);
 
   const signedInAs = auth?.profile?.email || auth?.username || "";
+  const profileAvatar = useProfileAvatar(auth);
   const currentTitle = step === "branches" ? text("selectBranchTitle") : text("selectCompanyTitle");
   const currentSummary =
     step === "branches"
@@ -1214,7 +1215,20 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
           <div>
             <p>BC Ai Account</p>
             <h1>{currentTitle}</h1>
-            {signedInAs ? <small>{text("signedInAs")}: {signedInAs}</small> : null}
+            {signedInAs ? (
+              <small className="inline-flex items-center gap-1.5">
+                <LogoAvatar
+                  uri={profileAvatar}
+                  auth={auth}
+                  alt={signedInAs}
+                  sizeClass="size-5 rounded-full shrink-0"
+                  iconSize={11}
+                  width={48}
+                  fallbackIcon={UserRound}
+                />
+                <span>{text("signedInAs")}: {signedInAs}</span>
+              </small>
+            ) : null}
             {activeHoldingContext ? (
               <div
                 className="workspace-holding-context"

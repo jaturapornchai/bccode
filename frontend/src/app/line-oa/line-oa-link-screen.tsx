@@ -20,6 +20,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { LogoAvatar, useProfileAvatar } from "@/components/logo-avatar";
 import { backendText, useBackendLanguage, type BackendLanguageDictionary } from "@/lib/backend-language";
 import { formatDefaultDateTime, resolveWorkspaceDateTimeDisplayOptions } from "@/lib/date-time";
 import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
@@ -184,6 +185,7 @@ export function LineOaLinkScreen({
   const router = useRouter();
   const [language, setLanguage] = useState<LanguageCode>(externalLanguage ?? initialLanguage);
   const [auth, setAuth] = useState<AuthSession | null>(null);
+  const profileAvatar = useProfileAvatar(auth);
   const [workspace, setWorkspace] = useState<WorkspaceSession | null>(null);
   const [profile, setProfile] = useState<LineOaUserProfile>(emptyProfile);
   const [notice, setNotice] = useState<Notice>(null);
@@ -362,7 +364,15 @@ export function LineOaLinkScreen({
         <Card>
           <CardHeader className="p-3 pb-1">
             <CardTitle className="flex items-center gap-2 text-base">
-              <UserRound className="size-4" />
+              <LogoAvatar
+                uri={profileAvatar}
+                auth={auth}
+                alt={auth?.username ?? text("currentUser")}
+                sizeClass="size-6 rounded-full shrink-0"
+                iconSize={14}
+                width={48}
+                fallbackIcon={UserRound}
+              />
               {text("currentUser")}
             </CardTitle>
             <CardDescription>{text("secureNote")}</CardDescription>

@@ -104,16 +104,16 @@ Kafka and Redis are mandatory runtime services for MainAPI. Local Docker Desktop
 |---------|-----------|------|------|
 | **MainAPI** (gateway) | **8888** | `0.0.0.0` | จุดเข้าเดียว (GoAPI embedded) |
 | MongoDB | Atlas | external | DEV uses MongoDB Atlas via `MONGODB_DEV_URI` from local env/secret files |
-| PostgreSQL | 5432 | server | DEV PostgreSQL runs on `45.144.166.112` |
+| PostgreSQL | 5432 | server | DEV PostgreSQL runs on `192.168.2.202` |
 | Redis | 6379 | `0.0.0.0` | redis:6379 |
-| ClickHouse HTTP | 8123 | server | DEV ClickHouse runs on `45.144.166.112` |
-| ClickHouse Native | 9000 | server | DEV ClickHouse runs on `45.144.166.112` |
+| ClickHouse HTTP | 8123 | server | DEV ClickHouse runs on `192.168.2.202` |
+| ClickHouse Native | 9000 | server | DEV ClickHouse runs on `192.168.2.202` |
 | Kafka | 9092 | `0.0.0.0` | kafka:29092 |
 | Zookeeper | — | docker only | zookeeper:2181 |
 
 **DEV data services:**
 - MongoDB uses MongoDB Atlas. Supply `MONGODB_DEV_URI` and `MONGODB_DEV_DB` from local env/secret files only.
-- PostgreSQL and ClickHouse run on `45.144.166.112`. Supply credentials from local env/secret files only.
+- PostgreSQL and ClickHouse run on `192.168.2.202`. Supply credentials from local env/secret files only.
 - System images/files are stored on Cloudflare storage. Supply Cloudflare credentials from local env/secret files only.
 - Do not commit server passwords, MongoDB Atlas connection strings with credentials, Cloudflare tokens, or storage access keys.
 
@@ -123,11 +123,11 @@ Kafka and Redis are mandatory runtime services for MainAPI. Local Docker Desktop
 - **Port เดียวกันทุก environment** ไม่ว่า Docker Desktop, VPS, หรือ server ตัวไหน
 - ห้ามเปลี่ยน port mapping — ถ้าต้องการเปลี่ยนต้องแก้ทั้ง compose + CLAUDE.md + Memory
 
-**DEV domain/routing rule:**
-- Frontend: `https://dev.bcaicloud.com`
-- Backend: `https://dev.bcaicloud.com/backend`
-- DEV server: `45.144.166.112` (SSH only)
-- Public routing goes through Caddy; internal service ports must not become public workflow requirements.
+**DEV server (on-prem) rule:**
+- DEV server: `192.168.2.202`, SSH user `smlsoft` (key-based / passwordless), on-prem Docker stack.
+- Backend entrypoint: `http://192.168.2.202:8888` (mainapi, GoAPI embedded).
+- Frontend runs on the dev machine pointing at `http://192.168.2.202:8888` (build + start, never `npm run dev`/`output:"standalone"`).
+- A public domain/Caddy is optional and only applies if Jead exposes one; agents must not require it.
 
 ### Build Commands
 ```bash
