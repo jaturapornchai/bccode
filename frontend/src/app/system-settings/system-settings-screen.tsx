@@ -1385,8 +1385,8 @@ export function SystemSettingsScreen({
       if (!id)
         throw new Error(
           language === "th"
-            ? "ไม่พบรหัสข้อมูลสำหรับโหลดรายละเอียดจาก MongoDB"
-            : "Missing record ID for MongoDB detail loading.",
+            ? "ไม่พบรหัสข้อมูลสำหรับโหลดรายละเอียด"
+            : "Missing record ID for detail loading.",
         );
       const params = workspaceTenantSearchParams(currentWorkspace);
       const response = await fetch(
@@ -1403,8 +1403,8 @@ export function SystemSettingsScreen({
       if (!detail)
         throw new Error(
           language === "th"
-            ? "ไม่พบรายละเอียดจาก MongoDB"
-            : "MongoDB detail was not found.",
+            ? "ไม่พบรายละเอียดของรายการนี้"
+            : "Record detail was not found.",
         );
       return detail;
     },
