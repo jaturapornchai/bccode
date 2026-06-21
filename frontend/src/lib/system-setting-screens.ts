@@ -502,7 +502,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
       jsonField("pointconfig", "ตั้งค่าแต้ม", "Point config"),
       numberField("machinetype", "ประเภทเครื่อง", "Machine type"),
       imageGalleryField("imageuris", "รูปภาพ", "Images"),
-      imageUploadField("logouri", "โลโก้ร้าน", "Logo"),
+      imageUploadField("logouri", "โลโก้ร้าน", "Logo", "image/png"),
       checkboxField("isrestaurant", "ร้านอาหาร", "Restaurant"),
       checkboxField("istire", "ยางรถ", "Tire"),
       checkboxField("isagriculture", "เกษตร", "Agriculture"),
@@ -1349,7 +1349,7 @@ function productMasterConfigs(): SystemSettingConfig[] {
       "จัดการ Serial No., IMEI, ICCID, MAC address และสถานะเครื่องต่อสินค้า",
       "Manage Serial No., IMEI, ICCID, MAC address, and item status per product.",
       [
-        textField("serialno", "เลขเครื่อง", "Serial / identifier", true),
+        businessCodeField("serialno", "เลขเครื่อง", "Serial / identifier", true),
         selectField("identifiertype", "ประเภทเลขเครื่อง", "Identifier type", serialTrackingModeOptions),
         selectField("status", "สถานะเลขเครื่อง", "Serial status", serialRegistryStatusOptions),
         textField("itemcode", "รหัสสินค้า", "Product code", true),
@@ -1379,7 +1379,7 @@ function productMasterConfigs(): SystemSettingConfig[] {
       "กำหนดราคาขายตามช่องทาง เช่น หน้าร้าน Shopee Lazada TikTok และ Marketplace อื่น",
       "Set selling prices by channel such as POS, Shopee, Lazada, TikTok, and other marketplaces.",
       [
-        textField("pricecode", "รหัสราคา", "Price code", true),
+        businessCodeField("pricecode", "รหัสราคา", "Price code", true),
         namesField("names", "ชื่อราคา", "Price names"),
         textField("channelcode", "ช่องทางขาย", "Sales channel", true),
         textField("itemcode", "รหัสสินค้า", "Product code", true),

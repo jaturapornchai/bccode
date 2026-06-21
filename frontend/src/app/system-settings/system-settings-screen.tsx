@@ -3227,212 +3227,6 @@ export function SystemSettingsScreen({
   );
 }
 
-function SettingCard({
-  auth,
-  config,
-  dictionary,
-  language,
-  onDelete,
-  onEdit,
-  onResetPassword,
-  onToggleAccess,
-  record,
-  saving,
-  text,
-  workspace,
-}: {
-  auth: AuthSession | null;
-  config: SystemSettingConfig;
-  dictionary: BackendLanguageDictionary;
-  language: LanguageCode;
-  onDelete: (record: SettingRecord) => void;
-  onEdit: (record: SettingRecord) => void;
-  onResetPassword: (record: SettingRecord) => void;
-  onToggleAccess: (record: SettingRecord, disabled: boolean) => void;
-  record: SettingRecord;
-  saving: boolean;
-  text: (key: keyof typeof uiEn) => string;
-  workspace: WorkspaceSession | null;
-}) {
-  const id = recordId(record, config);
-  const displayCode = recordDisplayCode(record, config);
-  const title = recordTitle(record, config, language);
-  const branchCaption =
-    config.slug === "department" || config.kind === "restaurant-setting"
-      ? recordBranchCaption(record)
-      : "";
-  const isUser = config.slug === "user";
-  const isCreator = isUser && isCreatorRecord(record, workspace);
-  const isSelf = isUser && isSelfUserRecord(record, auth);
-  const accessDisabled = isUser && userAccessDisabled(record);
-  const isOwnerCreator = workspace?.shop?.is_creator === true ||
-    Boolean(auth?.username && workspace?.shop?.createdby && workspace?.shop?.createdby.trim().toLowerCase() === auth.username.trim().toLowerCase());
-  const isOwnerOrAdmin = isOwnerCreator || workspace?.shop?.role === 1 || workspace?.shop?.role === 2;
-  const isProductUnit = config.slug === "productunit";
-  const canEdit = config.editable !== false && (!isProductUnit || isOwnerOrAdmin);
-  return (
-    <Card
-      className={cn(
-        "min-w-0 shadow-sm",
-        isCreator &&
-          "border-amber-200 bg-amber-50/40 dark:border-amber-900 dark:bg-amber-950/15",
-        !isCreator &&
-          accessDisabled &&
-          "border-amber-200 bg-amber-50/30 dark:border-amber-900 dark:bg-amber-950/10",
-      )}
-    >
-      <CardContent className="grid gap-2 p-3">
-        <div className="flex min-w-0 items-start justify-between gap-2">
-          <div className="flex min-w-0 items-start gap-3">
-            {isUser ? (
-              <LogoAvatar
-                uri={stringValue(record.avatarthumb) || stringValue(record.avatar)}
-                auth={auth}
-                alt={title}
-                sizeClass="size-12 rounded-xl shrink-0"
-                iconSize={24}
-                width={96}
-              />
-            ) : null}
-            <div className="min-w-0">
-              <h2 className="truncate text-base font-semibold">
-                {title || displayCode || "-"}
-              </h2>
-              <p className="truncate text-xs text-muted-foreground">
-                {text("id")}: {displayCode || "-"}
-              </p>
-            <div className="mt-1 flex flex-wrap gap-1">
-              {branchCaption ? (
-                <Badge variant="outline" className="max-w-full truncate">
-                  {text("branch")}: {branchCaption}
-                </Badge>
-              ) : null}
-              {isCreator ? (
-                <Badge variant="warning" className="gap-1">
-                  <Crown className="size-3" />
-                  {text("creator")}
-                </Badge>
-              ) : null}
-              {isUser ? (
-                <Badge
-                  variant={accessDisabled ? "warning" : "success"}
-                  className="gap-1"
-                >
-                  {accessDisabled ? (
-                    <UserX className="size-3" />
-                  ) : (
-                    <UserCheck className="size-3" />
-                  )}
-                  {accessDisabled
-                    ? text("accessTemporarilyDisabled")
-                    : text("accessEnabled")}
-                </Badge>
-              ) : null}
-            </div>
-            </div>
-          </div>
-          <div className="flex shrink-0 flex-wrap justify-end gap-1">
-            {canEdit ? (
-              <Button
-                type="button"
-                size="icon"
-                variant="outline"
-                onClick={() => onEdit(record)}
-                disabled={isSelf}
-                aria-label={
-                  isSelf ? text("selfPermissionCannotEdit") : text("edit")
-                }
-                title={isSelf ? text("selfPermissionCannotEdit") : text("edit")}
-              >
-                <Edit3 />
-              </Button>
-            ) : null}
-            {isUser && !isCreator && !isSelf ? (
-              <Button
-                type="button"
-                size="icon"
-                variant="outline"
-                onClick={() => onResetPassword(record)}
-                disabled={saving}
-                aria-label={text("resetPassword")}
-                title={text("resetPassword")}
-              >
-                <KeyRound />
-              </Button>
-            ) : null}
-            {isUser && !isCreator && !isSelf ? (
-              <Button
-                type="button"
-                size="sm"
-                variant={accessDisabled ? "outline" : "destructive"}
-                onClick={() => onToggleAccess(record, !accessDisabled)}
-                disabled={saving}
-                aria-label={
-                  accessDisabled
-                    ? text("enableAccess")
-                    : text("temporarilyDisableAccess")
-                }
-                title={
-                  accessDisabled
-                    ? text("enableAccess")
-                    : text("temporarilyDisableAccess")
-                }
-              >
-                {accessDisabled ? <UserCheck /> : <UserX />}
-                <span className="hidden sm:inline">
-                  {accessDisabled
-                    ? text("enableAccess")
-                    : text("temporarilyDisableAccess")}
-                </span>
-              </Button>
-            ) : null}
-            {config.kind === "company" || !canEdit ? null : (
-              <Button
-                type="button"
-                size="icon"
-                variant="outline"
-                onClick={() => onDelete(record)}
-                disabled={isCreator || isSelf}
-                aria-label={
-                  isCreator
-                    ? text("creatorCannotDelete")
-                    : isSelf
-                      ? text("selfPermissionCannotEdit")
-                      : text("delete")
-                }
-                title={
-                  isCreator
-                    ? text("creatorCannotDelete")
-                    : isSelf
-                      ? text("selfPermissionCannotEdit")
-                      : text("delete")
-                }
-              >
-                <Trash2 />
-              </Button>
-            )}
-          </div>
-        </div>
-        <div className="grid gap-1 text-xs text-muted-foreground">
-          {config.fields.slice(0, 4).map((field) => (
-            <span
-              className="flex min-w-0 items-center justify-between gap-2 rounded-xl border border-border bg-background px-2 py-1.5"
-              key={field.key}
-            >
-              <span className="truncate">
-                {fieldLabel(field, language, config, dictionary)}
-              </span>
-              <b className="min-w-0 max-w-[60%] truncate text-right text-foreground">
-                {shortValue(recordValueForField(record, config, field), language)}
-              </b>
-            </span>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
 function SettingDataList({
   auth,
   config,
@@ -11895,6 +11689,7 @@ function ImageUploadFieldEditor({
         <ImageCropDialog
           imageUrl={cropSource}
           language={language}
+          outputType={field.acceptTypes === "image/png" ? "image/png" : "image/webp"}
           onCancel={() => setCropSource("")}
           onApply={(file) => void applyCroppedFile(file)}
         />
@@ -12039,7 +11834,7 @@ function ImageGalleryFieldEditor({
     setUploading(true);
     setError("");
     try {
-      const resizedFile = await resizeLogoFile(file);
+      const resizedFile = await resizeImageFile(file);
       const uploadForm = new FormData();
       uploadForm.append("file", resizedFile, resizedFile.name);
       uploadForm.append("category", `system-settings/${field.key}`);
@@ -15971,11 +15766,13 @@ function ImageCropDialog({
   language,
   onApply,
   onCancel,
+  outputType = "image/webp",
 }: {
   imageUrl: string;
   language: LanguageCode;
   onApply: (file: File) => void;
   onCancel: () => void;
+  outputType?: string;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
@@ -16021,11 +15818,12 @@ function ImageCropDialog({
   async function apply() {
     if (!canvasRef.current) return;
     try {
-      const blob = await canvasToBlob(canvasRef.current, "image/webp", 0.86);
+      const blob = await canvasToBlob(canvasRef.current, outputType, 0.86);
       if (!blob) throw new Error(uploadUiText(language, "imageUploadFailed"));
+      const ext = outputType === "image/png" ? "png" : "webp";
       onApply(
-        new File([blob], "cropped-image.webp", {
-          type: "image/webp",
+        new File([blob], `cropped-image.${ext}`, {
+          type: outputType,
           lastModified: Date.now(),
         }),
       );
@@ -16409,6 +16207,37 @@ async function resizeLogoFile(file: File): Promise<File> {
     const baseName = file.name.replace(/\.[^.]+$/, "") || "company-logo";
     return new File([blob], `${baseName}.png`, {
       type: "image/png",
+      lastModified: Date.now(),
+    });
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+// resizeImageFile — generic resize for non-logo images (gallery / product media). Accepts
+// ANY image format (no PNG-only guard, unlike resizeLogoFile) and re-encodes to WebP at a
+// max side. Used by image galleries and by cropped non-PNG output so JPG/WebP/GIF work.
+async function resizeImageFile(file: File, maxSide = 1280): Promise<File> {
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const image = await loadImageElement(objectUrl);
+    const largest = Math.max(image.naturalWidth, image.naturalHeight);
+    if (!largest) return file;
+    const scale = Math.min(1, maxSide / largest);
+    if (scale === 1 && file.size <= 400 * 1024) return file;
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const context = canvas.getContext("2d");
+    if (!context) return file;
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = "high";
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const blob = await canvasToBlob(canvas, "image/webp", 0.85);
+    if (!blob) return file;
+    const baseName = file.name.replace(/\.[^.]+$/, "") || "image";
+    return new File([blob], `${baseName}.webp`, {
+      type: "image/webp",
       lastModified: Date.now(),
     });
   } finally {

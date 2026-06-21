@@ -189,9 +189,11 @@ var atlasBusinessCodeFields = map[string]string{
 	"permissiondefinitions":  "permissioncode",
 	"permissiongroups":       "groupcode",
 	"approvalsettings":       "approvalcode",
-	"productcolors":          "code",
-	"productsizes":           "code",
-	"productvariantmatrices": "code",
+	"productcolors":           "code",
+	"productsizes":            "code",
+	"productvariantmatrices":  "code",
+	"productchannelprices":    "pricecode",
+	"productserialregistries": "serialno",
 }
 
 func atlasBusinessCodeField(collection string) string {
