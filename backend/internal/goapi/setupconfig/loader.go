@@ -107,6 +107,8 @@ var configMapping = map[string]map[string][]string{
 		"s3accesskeyid":     {"S3_ACCESS_KEY_ID"},
 		"s3secretaccesskey": {"S3_SECRET_ACCESS_KEY"},
 		"s3bucketname":      {"S3_BUCKET_NAME"},
+		"s3accountid":       {"S3_ACCOUNT_ID"},
+		"s3forcepathstyle":  {"S3_FORCE_PATH_STYLE"},
 		"thunderapikey":     {"THUNDER_API_KEY"},
 		"brevoapikey":       {"BREVO_API_KEY"},
 		"brevofromemail":    {"BREVO_FROM_EMAIL"},

@@ -169,6 +169,15 @@ func (svc ShopUserRepository) saveUserLoginProfile(ctx context.Context, req *mod
 	if !isEmailUsername(username) {
 		updateData["email"] = strings.TrimSpace(req.Email)
 	}
+	// Avatar is set only when the caller provided it (nil = leave avatar untouched,
+	// "" = explicit clear). This lets the user screen save/clear the avatar while
+	// LINE-sync/auto-unlink flows that omit Avatar never wipe a stored avatar.
+	if req.Avatar != nil {
+		updateData["avatar"] = strings.TrimSpace(*req.Avatar)
+	}
+	if req.AvatarThumb != nil {
+		updateData["avatarthumb"] = strings.TrimSpace(*req.AvatarThumb)
+	}
 	if len(updateData) == 0 {
 		return nil
 	}

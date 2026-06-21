@@ -15,6 +15,7 @@ type BranchOrgDoc struct {
 	CompanyGuid string             `json:"companyguid" bson:"companyguid"`
 	Code        string             `json:"code" bson:"code"`
 	Names       common.JSONB       `json:"names" bson:"names"`
+	LogoURI     string             `json:"logouri" bson:"logouri"`
 	IsActive    bool               `json:"isactive" bson:"isactive"`
 	CreatedAt   time.Time          `json:"createdat" bson:"createdat"`
 	UpdatedAt   time.Time          `json:"updatedat" bson:"updatedat"`

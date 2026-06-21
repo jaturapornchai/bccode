@@ -14,10 +14,14 @@ import {
   Check,
   ArrowRight,
   KeyRound,
+  UploadCloud,
+  ImageIcon,
+  X,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { LogoAvatar } from "@/components/logo-avatar";
 import type { LanguageCode } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { normalizeLanguageConfigs } from "./system-settings-screen";
@@ -56,6 +60,7 @@ type LocalizedNames = LocalizedNameEntry[] | Record<string, unknown> | null | un
 interface CompanyRecord {
   guidfixed?: string;
   code?: string;
+  logouri?: string;
   names?: LocalizedNames;
   taxid?: string;
   isactive?: boolean;
@@ -66,6 +71,7 @@ interface BranchRecord {
   guidfixed?: string;
   companyguid?: string;
   code?: string;
+  logouri?: string;
   names?: LocalizedNames;
   isactive?: boolean;
   deletedat?: string | null;
@@ -246,6 +252,10 @@ export function CompanyBranchTreeView({
   const [formTaxId, setFormTaxId] = useState("");
   const [formIsActive, setFormIsActive] = useState(true);
   const [formNames, setFormNames] = useState<LocalizedNameEntry[]>([]);
+  const [formLogoUri, setFormLogoUri] = useState("");
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoError, setLogoError] = useState("");
+  const logoInputRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!selectedNode) return;
@@ -263,11 +273,71 @@ export function CompanyBranchTreeView({
     setFormCode(selectedNode.type === "company" ? normalizeBusinessCode(selectedNode.data.code) : selectedNode.data.code || "");
     setFormIsActive(selectedNode.data.isactive !== false);
     setFormNames(list);
+    setFormLogoUri(String(selectedNode.data.logouri ?? ""));
+    setLogoError("");
 
     if (selectedNode.type === "company") {
       setFormTaxId((selectedNode.data as CompanyRecord).taxid || "");
     }
   }, [selectedNode, editorLanguages]);
+
+  const handleLogoUpload = async (file: File | undefined) => {
+    if (!file || !auth || logoUploading) return;
+    // PNG-only for logos.
+    const isPng = /\.png$/i.test(file.name) || file.type === "image/png";
+    if (!isPng) {
+      setLogoError("โลโก้ต้องเป็นไฟล์ PNG เท่านั้น");
+      return;
+    }
+    setLogoUploading(true);
+    setLogoError("");
+    try {
+      const uploadForm = new FormData();
+      uploadForm.append("file", file, file.name);
+      uploadForm.append("category", `system-settings/logouri`);
+      const response = await fetch("/api/upload/image", {
+        method: "POST",
+        headers: {
+          "x-bc-backend-url": auth.backendUrl,
+          Authorization: `Bearer ${auth.token}`,
+        },
+        body: uploadForm,
+      });
+      const payload = (await response.json()) as {
+        success?: boolean;
+        message?: string;
+        data?: {
+          holdingcode?: string;
+          filename?: string;
+          category?: string;
+        };
+      };
+      if (!response.ok || payload.success === false) {
+        throw new Error(
+          typeof payload.message === "string" ? payload.message : "อัปโหลดโลโก้ไม่สำเร็จ",
+        );
+      }
+      // Backend (image_r2.go) stores images as private R2 objects and only returns
+      // holdingcode/filename/category — no URL. We construct the proxy URI
+      // `/s3/file/{holdingcode}/{category}/{filename}` which the backend serves
+      // through the authenticated S3FileProxyHandler.
+      const meta = payload.data ?? {};
+      const holding = (meta.holdingcode ?? "").trim();
+      const category = (meta.category ?? "").trim();
+      const filename = (meta.filename ?? "").trim();
+      if (!filename) throw new Error("อัปโหลดโลโก้ไม่สำเร็จ");
+      const pathSegments = [holding, category, filename]
+        .filter((segment) => segment.length > 0)
+        .map((segment) => segment.replace(/^\/+|\/+$/g, ""));
+      const proxyUri = `/goapi/s3/file/${pathSegments.join("/")}`;
+      setFormLogoUri(proxyUri);
+    } catch (error) {
+      setLogoError(error instanceof Error && error.message ? error.message : "อัปโหลดโลโก้ไม่สำเร็จ");
+    } finally {
+      setLogoUploading(false);
+      if (logoInputRef.current) logoInputRef.current.value = "";
+    }
+  };
 
   // Handle Save
   const handleSave = async () => {
@@ -293,6 +363,7 @@ export function CompanyBranchTreeView({
           code: normalizedCompanyCode,
           names: namesList,
           taxid: formTaxId,
+          logouri: formLogoUri,
           isactive: formIsActive,
         };
       } else if (formType === "editcompany") {
@@ -302,6 +373,7 @@ export function CompanyBranchTreeView({
           code: normalizedCompanyCode,
           names: namesList,
           taxid: formTaxId,
+          logouri: formLogoUri,
           isactive: formIsActive,
         };
       } else if (formType === "createbranch") {
@@ -311,6 +383,7 @@ export function CompanyBranchTreeView({
           companyguid: selectedNode.companyguid,
           code: normalizedBranchCode,
           names: namesList,
+          logouri: formLogoUri,
           isactive: formIsActive,
         };
       } else if (formType === "editbranch") {
@@ -320,6 +393,7 @@ export function CompanyBranchTreeView({
           companyguid: selectedNode.companyguid,
           code: normalizedBranchCode,
           names: namesList,
+          logouri: formLogoUri,
           isactive: formIsActive,
         };
       }
@@ -344,12 +418,16 @@ export function CompanyBranchTreeView({
         await loadData();
         onRefresh?.();
         notifyWorkspaceChanged();
+        // Switch back to view mode and refresh the selected node data so the
+        // logo (and any other changed fields) show immediately without a manual
+        // close/reopen of the form.
         if (formType.startsWith("create")) {
           const createdCode = formType === "createbranch" ? normalizedBranchCode : normalizedCompanyCode;
           const createdData = {
             guidfixed: json.id,
             code: createdCode,
             names: namesList,
+            logouri: formLogoUri,
             isactive: formIsActive,
             ...(formType === "createcompany" ? { taxid: formTaxId } : {}),
           };
@@ -369,6 +447,23 @@ export function CompanyBranchTreeView({
             data: createdData,
           });
           setFormType(formType === "createcompany" ? "editcompany" : "editbranch");
+        } else {
+          // Edit mode: switch back to view mode and refresh selectedNode data so
+          // the logo and other changed fields display immediately without a
+          // manual close/reopen of the form.
+          const updatedData = {
+            ...selectedNode.data,
+            code: selectedNode.type === "company" ? normalizedCompanyCode : normalizedBranchCode,
+            names: namesList,
+            logouri: formLogoUri,
+            isactive: formIsActive,
+            ...(selectedNode.type === "company" ? { taxid: formTaxId } : {}),
+          };
+          setSelectedNode({
+            ...selectedNode,
+            data: updatedData,
+          });
+          setFormType(selectedNode.type === "company" ? "viewcompany" : "viewbranch");
         }
       }
     } catch (e) {
@@ -528,6 +623,8 @@ export function CompanyBranchTreeView({
                     >
                       <div className="flex items-center gap-2 min-w-0">
                         <button
+                          type="button"
+                          aria-label={language === "th" ? "ย่อ/ขยายสาขา" : "Toggle branches"}
                           onClick={(e) => {
                             e.stopPropagation();
                             setCollapsedCompanies((prev) => ({
@@ -543,10 +640,23 @@ export function CompanyBranchTreeView({
                             <ChevronDown className="w-4 h-4 text-muted-foreground" />
                           )}
                         </button>
-                        <Building2 className="w-4 h-4 text-primary shrink-0" />
-                        <span className="truncate">
-                          [{companyCode}] {getNameFromObject(comp.names, language) || companyCode}
+                        <LogoAvatar
+                          uri={comp.logouri}
+                          auth={auth}
+                          alt={getNameFromObject(comp.names, language) || companyCode}
+                          sizeClass="size-5 rounded-md shrink-0"
+                          iconSize={14}
+                          width={64}
+                          className="text-primary"
+                        />
+                        <span className="min-w-0 break-words">
+                          {getNameFromObject(comp.names, language) || companyCode}
                         </span>
+                        {companyCode ? (
+                          <span className="font-mono text-[9px] px-1.5 py-0.2 bg-muted border border-border/50 text-muted-foreground rounded uppercase font-bold shrink-0">
+                            {companyCode}
+                          </span>
+                        ) : null}
                       </div>
                       <div className="flex items-center gap-1">
                         <Button
@@ -632,10 +742,23 @@ export function CompanyBranchTreeView({
                               }}
                             >
                               <div className="flex items-center gap-2 min-w-0">
-                                <GitBranch className="w-3.5 h-3.5 text-sky-500 shrink-0" />
-                                <span className="text-sm truncate">
-                                  [{br.code}] {getNameFromObject(br.names, language) || br.code}
+                                <LogoAvatar
+                                  uri={br.logouri}
+                                  auth={auth}
+                                  alt={getNameFromObject(br.names, language) || br.code || ""}
+                                  sizeClass="size-5 rounded-md shrink-0"
+                                  iconSize={14}
+                                  width={64}
+                                  className="text-sky-500"
+                                />
+                                <span className="min-w-0 text-sm break-words">
+                                  {getNameFromObject(br.names, language) || br.code}
                                 </span>
+                                {br.code ? (
+                                  <span className="font-mono text-[9px] px-1.5 py-0.2 bg-muted border border-border/50 text-muted-foreground rounded uppercase font-bold shrink-0">
+                                    {br.code}
+                                  </span>
+                                ) : null}
                               </div>
                               <div className="flex items-center gap-1">
                                 <Button
@@ -751,6 +874,68 @@ export function CompanyBranchTreeView({
               </div>
 
               <div className="space-y-4">
+                {/* Logo */}
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-foreground">
+                    {formType.includes("company") ? "โลโก้บริษัท" : "โลโก้สาขา"}
+                  </label>
+                  <div className="flex items-start gap-3">
+                    <LogoAvatar
+                      uri={formLogoUri}
+                      auth={auth}
+                      alt={formType.includes("company") ? "โลโก้บริษัท" : "โลโก้สาขา"}
+                      sizeClass="size-20 rounded-2xl"
+                      iconSize={32}
+                      width={256}
+                      className="border border-input"
+                    />
+                    {!isReadOnlyMode && (
+                      <div className="flex flex-col gap-1.5 min-w-48 flex-1">
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={logoUploading}
+                            onClick={() => logoInputRef.current?.click()}
+                          >
+                            {logoUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UploadCloud className="w-4 h-4" />}
+                            {logoUploading ? "กำลังอัปโหลด..." : formLogoUri ? "เปลี่ยนโลโก้" : "เลือกไฟล์ PNG"}
+                          </Button>
+                          {formLogoUri && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="text-destructive hover:bg-destructive/5"
+                              disabled={logoUploading}
+                              onClick={() => {
+                                setFormLogoUri("");
+                                setLogoError("");
+                              }}
+                            >
+                              <X className="w-4 h-4" /> ลบ
+                            </Button>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          รองรับเฉพาะไฟล์ PNG พื้นหลังโปร่งใสได้ ใช้สำหรับออกแบบฟอร์มและพิมพ์เอกสาร
+                        </p>
+                        {logoError && (
+                          <p className="text-xs font-semibold text-destructive">{logoError}</p>
+                        )}
+                        <input
+                          ref={logoInputRef}
+                          className="sr-only"
+                          type="file"
+                          accept="image/png"
+                          onChange={(e) => void handleLogoUpload(e.target.files?.[0])}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-semibold text-foreground">
@@ -844,7 +1029,12 @@ export function CompanyBranchTreeView({
       </Card>
       {confirmOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-card border rounded-2xl w-full max-w-sm p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in duration-200">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={confirmAction === "delete" ? "ยืนยันการลบข้อมูล" : "ยืนยันการบันทึกข้อมูล"}
+            className="bg-card border rounded-2xl w-full max-w-sm p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in duration-200"
+          >
             <div className="text-center space-y-2">
               <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto">
                 <KeyRound size={22} className="animate-pulse" />

@@ -281,6 +281,7 @@ func (h CompanyHttp) UpdateCompany(ctx microservice.IContext) error {
 	existing.Names = req.Names
 	existing.TaxID = req.TaxID
 	existing.Code = req.Code
+	existing.LogoURI = req.LogoURI
 	existing.IsActive = req.IsActive
 	existing.UpdatedAt = time.Now()
 	existing.UpdatedBy = authUsername
@@ -289,6 +290,7 @@ func (h CompanyHttp) UpdateCompany(ctx microservice.IContext) error {
 		"names":     existing.Names,
 		"taxid":     existing.TaxID,
 		"code":      existing.Code,
+		"logouri":   existing.LogoURI,
 		"isactive":  existing.IsActive,
 		"updatedat": existing.UpdatedAt,
 		"updatedby": existing.UpdatedBy,

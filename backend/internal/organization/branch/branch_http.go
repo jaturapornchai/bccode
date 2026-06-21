@@ -189,6 +189,7 @@ func (h BranchHttp) UpdateBranch(ctx microservice.IContext) error {
 	existing.Names = req.Names
 	existing.Code = req.Code
 	existing.CompanyGuid = req.CompanyGuid
+	existing.LogoURI = req.LogoURI
 	existing.IsActive = req.IsActive
 	existing.UpdatedAt = time.Now()
 	existing.UpdatedBy = authUsername
@@ -197,6 +198,7 @@ func (h BranchHttp) UpdateBranch(ctx microservice.IContext) error {
 		"names":       existing.Names,
 		"code":        existing.Code,
 		"companyguid": existing.CompanyGuid,
+		"logouri":     existing.LogoURI,
 		"isactive":    existing.IsActive,
 		"updatedat":   existing.UpdatedAt,
 		"updatedby":   existing.UpdatedBy,

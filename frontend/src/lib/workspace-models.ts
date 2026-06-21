@@ -35,6 +35,7 @@ export type BranchListItem = {
   guidfixed: string;
   companyguid?: string;
   code?: string;
+  logouri?: string;
   names?: LocalizedName[];
   companynames?: LocalizedName[];
   basecurrency?: string;
@@ -48,6 +49,7 @@ export type BranchListItem = {
 export type WorkspaceCompany = {
   guidfixed?: string;
   code?: string;
+  logouri?: string;
   names?: LocalizedName[];
   name?: string;
   name1?: string;

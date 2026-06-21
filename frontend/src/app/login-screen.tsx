@@ -2,6 +2,7 @@
 
 import {
   AlertCircle,
+  Beaker,
   Building2,
   CheckCircle2,
   Eye,
@@ -53,7 +54,7 @@ const staggerChild: Variants = {
 
 type LoginState = "idle" | "loading" | "success" | "error";
 type ConnectionState = "idle" | "testing" | "success" | "error";
-type ProviderLoginState = "idle" | "google" | "local-google";
+type ProviderLoginState = "idle" | "google" | "local-google" | "local-dev-system";
 type AuthMethod = "password" | "google";
 type RuntimeMode = {
   ready: boolean;
@@ -104,6 +105,7 @@ export function LoginScreen() {
   const [runtimeMode, setRuntimeMode] = useState<RuntimeMode>({ ready: false, sameServerBackend: false });
   const [devGoogleLoginEnabled, setDevGoogleLoginEnabled] = useState(false);
   const [isLocalTestHost, setIsLocalTestHost] = useState(false);
+  const [isLocalHost, setIsLocalHost] = useState(false);
   const [message, setMessage] = useState("");
   const googlePollTimer = useRef<number | null>(null);
   const autoConnectionTested = useRef(false);
@@ -184,8 +186,12 @@ export function LoginScreen() {
   }, [backendUrl, language]);
 
   async function loadLocalTestLoginAvailability() {
-    const isLocalHost = isLocalLoginHost(window.location.hostname);
-    if (!isLocalHost && !isPublicRuntimeHost()) {
+    const localHost = isLocalLoginHost(window.location.hostname);
+    // Track localhost status independently so the DEV system-test button (which
+    // uses user/password and does NOT require Google OAuth) can show even when
+    // the Google dev-login endpoint is disabled.
+    setIsLocalHost(localHost);
+    if (!localHost && !isPublicRuntimeHost()) {
       setDevGoogleLoginEnabled(false);
       setIsLocalTestHost(false);
       return;
@@ -196,7 +202,7 @@ export function LoginScreen() {
       const data = (await response.json()) as { enabled?: boolean };
       const enabled = response.ok && data.enabled === true;
       setDevGoogleLoginEnabled(enabled);
-      setIsLocalTestHost(isLocalHost && enabled);
+      setIsLocalTestHost(localHost && enabled);
     } catch {
       setDevGoogleLoginEnabled(false);
       setIsLocalTestHost(false);
@@ -356,12 +362,56 @@ export function LoginScreen() {
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    await performLogin({
+      username,
+      password,
+      holdingCode,
+    });
+  }
+
+  // Dev-only: auto login with the seeded owner account so localhost users can
+  // smoke-test the system without typing credentials every time. We deliberately
+  // skip the holding code so the user lands on the holding-selection screen and
+  // can pick the business group manually (matches normal production flow).
+  async function handleDevSystemTestLogin() {
+    if (providerLoginState !== "idle" || loginState === "loading") return;
+    const devUsername = "jaturapornchai@gmail.com";
+    const devPassword = "smlsoft";
+    setProviderLoginState("local-dev-system");
+    setLoginState("loading");
+    setMessage("");
+    await performLogin({
+      username: devUsername,
+      password: devPassword,
+      holdingCode: "",
+      isDev: true,
+    });
+  }
+
+  async function performLogin(input: {
+    username: string;
+    password: string;
+    holdingCode: string;
+    isDev?: boolean;
+  }) {
     if (!backendUrl.trim()) return setMessage(t(language, "enterBackendUrl"));
-    const normalizedHoldingCode = normalizeHoldingCode(holdingCode);
-    if (!normalizedHoldingCode) return setMessage(t(language, "enterHoldingCode"));
-    if (!isValidHoldingCode(normalizedHoldingCode)) return setMessage(t(language, "holdingCodeInvalid"));
-    if (!username.trim()) return setMessage(t(language, "enterUsername"));
-    if (!password) return setMessage(t(language, "enterPassword"));
+    // holdingCode is optional in DEV mode (user picks holding on the next screen).
+    // For the regular login form we still require it before submit.
+    const normalizedHoldingCode = input.holdingCode ? normalizeHoldingCode(input.holdingCode) : "";
+    if (input.holdingCode && !normalizedHoldingCode) {
+      return setMessage(t(language, "enterHoldingCode"));
+    }
+    if (normalizedHoldingCode && !isValidHoldingCode(normalizedHoldingCode)) {
+      return setMessage(t(language, "holdingCodeInvalid"));
+    }
+    if (!input.username.trim()) return setMessage(t(language, "enterUsername"));
+    if (!input.password) return setMessage(t(language, "enterPassword"));
+
+    if (input.isDev) {
+      setUsername(input.username);
+      setPassword(input.password);
+      if (normalizedHoldingCode) setHoldingCode(normalizedHoldingCode);
+    }
 
     setLoginState("loading");
     setMessage("");
@@ -370,7 +420,12 @@ export function LoginScreen() {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ backendUrl, username, password, holdingcode: normalizedHoldingCode }),
+        body: JSON.stringify({
+          backendUrl,
+          username: input.username,
+          password: input.password,
+          ...(normalizedHoldingCode ? { holdingcode: normalizedHoldingCode } : {}),
+        }),
       });
       const data = (await response.json()) as {
         success?: boolean;
@@ -385,13 +440,25 @@ export function LoginScreen() {
         throw new Error(data.message ?? t(language, "loginFailed"));
       }
 
-      persistLogin(data.backendUrl ?? backendUrl, username.trim(), data.token, data.refresh ?? "", "password", undefined, normalizedHoldingCode);
+      persistLogin(
+        data.backendUrl ?? backendUrl,
+        input.username.trim(),
+        data.token,
+        data.refresh ?? "",
+        "password",
+        undefined,
+        normalizedHoldingCode,
+      );
       setLoginState("success");
       setMessage(t(language, "loginSuccess"));
-      router.push("/workspace");
+      // When no holding was chosen yet, go to the holding selection screen so the
+      // user can pick one. Otherwise proceed straight into the workspace.
+      router.push(normalizedHoldingCode ? "/workspace" : "/holding");
     } catch (error) {
       setLoginState("error");
       setMessage(error instanceof Error ? error.message : t(language, "loginFailed"));
+    } finally {
+      if (input.isDev) setProviderLoginState("idle");
     }
   }
 
@@ -536,6 +603,48 @@ export function LoginScreen() {
         animate={panelEnter.animate}
         transition={{ ...panelEnter.transition, delay: 0.1 }}
       >
+        <AnimatePresence>
+          {connectionState === "error" ? (
+            <motion.div
+              className="connection-error-banner"
+              role="alert"
+              aria-live="assertive"
+              initial={{ opacity: 0, y: -8, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: "auto" }}
+              exit={{ opacity: 0, y: -8, height: 0 }}
+              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <AlertCircle aria-hidden="true" size={20} />
+              <div className="connection-error-content">
+                <strong>
+                  {language === "th"
+                    ? "เชื่อมต่อ Backend ไม่ได้"
+                    : "Cannot connect to Backend"}
+                </strong>
+                <span className="connection-error-detail">
+                  {connectionMessage || t(language, "connectionFailed")}
+                </span>
+                <span className="connection-error-hint">
+                  {language === "th"
+                    ? "ตรวจสอบให้แน่ใจว่า Backend URL ถูกต้อง และ server กำลังทำงานอยู่"
+                    : "Make sure the Backend URL is correct and the server is running."}
+                </span>
+                <div className="connection-error-actions">
+                  <code className="connection-error-url" title={backendUrl}>
+                    {backendUrl || t(language, "api")}
+                  </code>
+                  <a
+                    href="/settings"
+                    className="connection-error-link"
+                    aria-label={language === "th" ? "ไปตั้งค่า Backend URL" : "Open settings to change Backend URL"}
+                  >
+                    {language === "th" ? "ไปตั้งค่า →" : "Open Settings →"}
+                  </a>
+                </div>
+              </div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
         <form className="login-card" onSubmit={handleLogin}>
           <motion.div className="card-header" variants={staggerParent}>
             <motion.div variants={staggerChild}>
@@ -591,6 +700,27 @@ export function LoginScreen() {
                   <span>
                     <span className="dev-test-badge" aria-hidden="true">DEV</span>
                     {language === "th" ? "ทดสอบเข้าระบบ Google" : "Test Google login"}
+                  </span>
+                </Button>
+              ) : null}
+              {isLocalHost ? (
+                <Button
+                  className="social-login-button local-dev-system-test-login"
+                  type="button"
+                  variant="outline"
+                  size="lg"
+                  onClick={handleDevSystemTestLogin}
+                  disabled={providerLoginState !== "idle" || loginState === "loading"}
+                  title={language === "th" ? "เข้าระบบด้วยบัญชีทดสอบเพื่อตรวจสอบระบบ" : "Sign in with the dev owner account to smoke-test the system"}
+                >
+                  {providerLoginState === "local-dev-system" ? (
+                    <Loader2 className="spin" aria-hidden="true" size={20} />
+                  ) : (
+                    <Beaker aria-hidden="true" size={20} />
+                  )}
+                  <span>
+                    <span className="dev-test-badge" aria-hidden="true">DEV</span>
+                    {language === "th" ? "ทดสอบระบบ (jaturapornchai)" : "System test (jaturapornchai)"}
                   </span>
                 </Button>
               ) : null}

@@ -59,6 +59,7 @@ import {
 } from "react";
 import { MasterPicker } from "@/components/product-barcode/master-picker";
 import { Badge } from "@/components/ui/badge";
+import { LogoAvatar } from "@/components/logo-avatar";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -1759,6 +1760,19 @@ export function SystemSettingsScreen({
       }
       setCategoryUnsavedChanges(false);
     }
+    // Warn when leaving an open form (add or edit) for another record's edit mode
+    if (formOpen && newId !== oldId) {
+      const confirmLeave = await confirm({
+        title: language === "th" ? "ยังไม่ได้บันทึก" : "Unsaved changes",
+        description: language === "th"
+          ? "กำลังแก้ไขหรือเพิ่มข้อมูลอยู่ ถ้าเปลี่ยนรายการตอนนี้ ข้อมูลที่แก้ครึ่งทางจะหายไป ต้องการเปลี่ยนเลยไหม?"
+          : "You are editing or adding data. Switching now will discard your changes. Continue?",
+        confirmLabel: language === "th" ? "เปลี่ยนเลย" : "Switch anyway",
+        cancelLabel: language === "th" ? "อยู่ต่อแก้ไข" : "Keep editing",
+        tone: "warning",
+      });
+      if (!confirmLeave) return;
+    }
     setSelectedRecordId(newId);
     setEditing(null);
     setFormOpen(false);
@@ -1935,6 +1949,45 @@ export function SystemSettingsScreen({
               : "User code already exists.",
         });
         return;
+      }
+    }
+
+    // Generic business-code duplicate guard (permissioncode, groupcode, approvalcode, ...).
+    if (!editing && currentConfig.slug !== "user") {
+      const codeField = currentConfig.fields.find((field) => field.businessCode);
+      if (codeField) {
+        const lookup = normalizeBusinessCode(getByPath(payload, codeField.key));
+        if (
+          lookup &&
+          records.some((record) =>
+            recordMatchesBusinessLookup(record, currentConfig, lookup),
+          )
+        ) {
+          setNotice({
+            type: "error",
+            text: language === "th" ? "รหัสนี้มีอยู่แล้ว" : "This code already exists.",
+          });
+          return;
+        }
+      }
+      // Identity-code duplicate guard (e.g. permissionlink employeecode) — case-insensitive,
+      // not uppercased (emails are exempt).
+      const idField = currentConfig.fields.find((field) => field.uniqueCode);
+      if (idField) {
+        const value = stringValue(getByPath(payload, idField.key)).trim().toLowerCase();
+        if (
+          value &&
+          records.some(
+            (record) =>
+              stringValue(getByPath(record, idField.key)).trim().toLowerCase() === value,
+          )
+        ) {
+          setNotice({
+            type: "error",
+            text: language === "th" ? "รหัสนี้มีอยู่แล้ว" : "This code already exists.",
+          });
+          return;
+        }
       }
     }
 
@@ -2497,6 +2550,8 @@ export function SystemSettingsScreen({
                   type="button"
                   variant="outline"
                   size="icon"
+                  aria-label={language === "th" ? "ย้อนกลับ" : "Back"}
+                  title={language === "th" ? "ย้อนกลับ" : "Back"}
                   className="size-8 shrink-0 rounded-lg"
                   onClick={async () => {
                     if (categoryUnsavedChanges) {
@@ -3080,8 +3135,22 @@ export function SystemSettingsScreen({
               onDelete={deleteRecord}
               onEdit={openEdit}
               onResetPassword={resetUserPassword}
-              onSelect={(record) => {
-                setSelectedRecordId(recordId(record, config));
+              onSelect={async (record) => {
+                const targetId = recordId(record, config);
+                // Warn when leaving an open/edited form (add or edit) for another record
+                if (formOpen && targetId !== selectedRecordId) {
+                  const confirmLeave = await confirm({
+                    title: language === "th" ? "ยังไม่ได้บันทึก" : "Unsaved changes",
+                    description: language === "th"
+                      ? "กำลังแก้ไขหรือเพิ่มข้อมูลอยู่ ถ้าเปลี่ยนรายการตอนนี้ ข้อมูลที่แก้ครึ่งทางจะหายไป ต้องการเปลี่ยนเลยไหม?"
+                      : "You are editing or adding data. Switching now will discard your changes. Continue?",
+                    confirmLabel: language === "th" ? "เปลี่ยนเลย" : "Switch anyway",
+                    cancelLabel: language === "th" ? "อยู่ต่อแก้ไข" : "Keep editing",
+                    tone: "warning",
+                  });
+                  if (!confirmLeave) return;
+                }
+                setSelectedRecordId(targetId);
                 setFormOpen(false);
                 setEditing(null);
               }}
@@ -3186,6 +3255,7 @@ function SettingCard({
   workspace: WorkspaceSession | null;
 }) {
   const id = recordId(record, config);
+  const displayCode = recordDisplayCode(record, config);
   const title = recordTitle(record, config, language);
   const branchCaption =
     config.slug === "department" || config.kind === "restaurant-setting"
@@ -3213,13 +3283,24 @@ function SettingCard({
     >
       <CardContent className="grid gap-2 p-3">
         <div className="flex min-w-0 items-start justify-between gap-2">
-          <div className="min-w-0">
-            <h2 className="truncate text-base font-semibold">
-              {title || id || "-"}
-            </h2>
-            <p className="truncate text-xs text-muted-foreground">
-              {text("id")}: {id || "-"}
-            </p>
+          <div className="flex min-w-0 items-start gap-3">
+            {isUser ? (
+              <LogoAvatar
+                uri={stringValue(record.avatarthumb) || stringValue(record.avatar)}
+                auth={auth}
+                alt={title}
+                sizeClass="size-12 rounded-xl shrink-0"
+                iconSize={24}
+                width={96}
+              />
+            ) : null}
+            <div className="min-w-0">
+              <h2 className="truncate text-base font-semibold">
+                {title || displayCode || "-"}
+              </h2>
+              <p className="truncate text-xs text-muted-foreground">
+                {text("id")}: {displayCode || "-"}
+              </p>
             <div className="mt-1 flex flex-wrap gap-1">
               {branchCaption ? (
                 <Badge variant="outline" className="max-w-full truncate">
@@ -3247,6 +3328,7 @@ function SettingCard({
                     : text("accessEnabled")}
                 </Badge>
               ) : null}
+            </div>
             </div>
           </div>
           <div className="flex shrink-0 flex-wrap justify-end gap-1">
@@ -3904,55 +3986,60 @@ function settingListColumns(
     return [
       {
         key: "username",
-        label:
-          language === "th" ? "รหัสผู้ใช้ หรือ email" : "User code or email",
-        className: "basis-36 grow-[2] min-w-[120px] shrink-0",
-        render: (record, meta) => (
-          <span className="flex min-w-0 items-center gap-1.5 w-full">
-            <b
-              className="min-w-0 truncate"
-              title={stringValue(record.username ?? record.email ?? meta.id)}
-            >
-              {stringValue(record.username ?? record.email ?? meta.id) || "-"}
-            </b>
-            {meta.isCreator ? (
-              <Badge
-                variant="warning"
-                className="shrink-0 gap-1 px-1.5 py-0 text-[10px]"
-              >
-                <Crown className="size-2.5" />
-                {text("creator")}
-              </Badge>
-            ) : null}
-          </span>
-        ),
-      },
-      {
-        key: "userprofilename",
-        label: language === "th" ? "ชื่อผู้ใช้งาน" : "User name",
-        className: "basis-24 grow min-w-[100px] shrink-0",
-        render: (record) => (
-          <span
-            className="block truncate"
-            title={stringValue(
-              record.userprofilename ?? record.userprofilename ?? record.name,
-            )}
-          >
-            {stringValue(
-              record.userprofilename ?? record.userprofilename ?? record.name,
-            ) || "-"}
-          </span>
-        ),
-      },
-      {
-        key: "email",
-        label: language === "th" ? "อีเมล" : "Email",
-        className: "basis-32 grow min-w-[130px] shrink-0 hidden xl:inline-flex",
-        render: (record) => (
-          <span className="block truncate" title={stringValue(record.email)}>
-            {stringValue(record.email) || "-"}
-          </span>
-        ),
+        label: language === "th" ? "ชื่อ-นามสกุล" : "Full name",
+        className: "basis-40 grow-[2] min-w-[140px] shrink-0",
+        render: (record, meta) => {
+          const loginCode = stringValue(record.username ?? record.email ?? meta.id);
+          const emailValue = stringValue(record.email);
+          const displayName = stringValue(record.userprofilename ?? record.name) || loginCode;
+          const sameIdentifier =
+            !loginCode ||
+            !emailValue ||
+            loginCode.trim().toLowerCase() === emailValue.trim().toLowerCase();
+          const avatarUri = stringValue(record.avatarthumb) || stringValue(record.avatar);
+          return (
+            <span className="flex min-w-0 items-center gap-2 w-full">
+              <LogoAvatar
+                uri={avatarUri}
+                auth={auth}
+                alt={displayName}
+                sizeClass="size-8 rounded-full shrink-0"
+                iconSize={16}
+                width={64}
+              />
+              <span className="flex min-w-0 flex-col gap-0.5">
+                <b
+                  className="min-w-0 break-words"
+                  title={displayName}
+                >
+                  {displayName || "-"}
+                </b>
+                {loginCode ? (
+                  <span className="font-mono text-[9px] px-1.5 py-0.2 bg-muted border border-border/50 text-muted-foreground rounded uppercase font-bold w-fit max-w-full break-all">
+                    {loginCode}
+                  </span>
+                ) : null}
+                {!sameIdentifier ? (
+                  <span
+                    className="font-mono text-[9px] px-1.5 py-0.2 bg-muted/60 border border-border/40 text-muted-foreground/90 rounded normal-case font-medium w-fit max-w-full break-all lowercase"
+                    title={emailValue}
+                  >
+                    {emailValue}
+                  </span>
+                ) : null}
+                {meta.isCreator ? (
+                  <Badge
+                    variant="warning"
+                    className="w-fit shrink-0 gap-1 px-1.5 py-0 text-[10px]"
+                  >
+                    <Crown className="size-2.5" />
+                    {text("creator")}
+                  </Badge>
+                ) : null}
+              </span>
+            </span>
+          );
+        },
       },
       {
         key: "role",
@@ -4096,7 +4183,7 @@ function settingListColumns(
         }
         const displayVal = fieldDisplayValue(field, val, language);
         return (
-          <span className="block truncate" title={String(displayVal)}>
+          <span className="block break-words" title={String(displayVal)}>
             {displayVal}
           </span>
         );
@@ -4133,6 +4220,7 @@ function SettingDetailPanel({
   workspace: WorkspaceSession | null;
 }) {
   const id = recordId(record, config);
+  const displayCode = recordDisplayCode(record, config);
   const title = recordTitle(record, config, language);
   const isUser = config.slug === "user";
   const isCreator = isUser && isCreatorRecord(record, workspace);
@@ -4162,13 +4250,13 @@ function SettingDetailPanel({
               )}
             </div>
             <div className="min-w-0">
-              <h2 className="truncate text-lg font-bold text-foreground leading-snug">
-                {title || id || "-"}
+              <h2 className="break-words text-lg font-bold text-foreground leading-snug">
+                {title || displayCode || "-"}
               </h2>
-              <p className="truncate text-xs text-muted-foreground mt-0.5">
+              <p className="break-words text-xs text-muted-foreground mt-0.5">
                 {text("id")}:{" "}
                 <code className="rounded bg-secondary/30 px-1.5 py-0.5 font-mono text-[10px] text-primary">
-                  {id || "-"}
+                  {displayCode || "-"}
                 </code>
               </p>
               <div className="mt-2 flex flex-wrap gap-1.5">
@@ -4667,17 +4755,25 @@ function UserFormSections({
       : "To let the user sign in with email, enter the email in User code or email. The registered email is only for sending email.";
   const sections = [
     {
-      keys: ["uid", "username", "userprofilename", "email"],
+      keys: ["avatar", "uid", "username", "userprofilename", "email"],
       title: language === "th" ? "บัญชีเข้าสู่ระบบ" : "Sign-in account",
       description: loginHint,
     },
     {
-      keys: ["role", "isaccessdisabled"],
-      title: language === "th" ? "สิทธิ์และสถานะ" : "Permission and status",
+      keys: ["role"],
+      title: language === "th" ? "สิทธิ์ผู้ใช้งาน" : "User role",
       description:
         language === "th"
-          ? "กำหนดระดับสิทธิ์ในกลุ่มกิจการ และเปิดหรือปิดการเข้าใช้งานของผู้ใช้นี้"
-          : "Set the user's business group role and whether this user can access the system.",
+          ? "กำหนดว่าผู้ใช้คนนี้ทำอะไรได้บ้างในกลุ่มกิจการนี้"
+          : "Set what this user can do in this business group.",
+    },
+    {
+      keys: ["isaccessdisabled"],
+      title: language === "th" ? "สถานะเข้าใช้งาน" : "Access status",
+      description:
+        language === "th"
+          ? "เปิดหรือปิดการเข้าใช้งานของผู้ใช้นี้ ปิดชั่วคราวได้โดยไม่ต้องลบ"
+          : "Enable or temporarily disable this user's access without deleting.",
     },
     {
       keys: ["accessscopes"],
@@ -4710,11 +4806,12 @@ function UserFormSections({
         if (fields.length === 0) return null;
         return (
           <section
-            className="grid gap-2 rounded-2xl border border-border bg-background/70 p-2"
+            className="grid gap-2 rounded-2xl border border-border bg-background/70 p-2 relative overflow-hidden"
             key={section.title}
           >
-            <header className="grid gap-0.5">
-              <h3 className="text-sm font-semibold">{section.title}</h3>
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary/40" />
+            <header className="grid gap-0.5 pl-2">
+              <h3 className="text-sm font-bold text-foreground">{section.title}</h3>
               <p className="text-xs leading-snug text-muted-foreground">
                 {section.description}
               </p>
@@ -4765,6 +4862,7 @@ function fieldGridItemClass(
     field.type === "language-list" ||
     field.type === "master-picker" ||
     field.type === "names" ||
+    field.type === "radio" ||
     field.type === "string-list" ||
     field.type === "time-sale-list" ||
     field.type === "textarea"
@@ -6047,10 +6145,10 @@ function PermissionLinkUserSelector({
       />
       {selectedCode ? (
         <div className="grid gap-1 rounded-xl border border-primary/40 bg-primary/10 p-2 text-primary">
-          <span className="truncate font-semibold">
+          <span className="break-words font-semibold">
             {selectedName || selectedCode}
           </span>
-          <span className="truncate text-xs">
+          <span className="break-words text-xs">
             {language === "th" ? "รหัสผู้ใช้" : "User code"}: {selectedCode}
           </span>
         </div>
@@ -6097,11 +6195,11 @@ function PermissionLinkUserSelector({
                   ) : (
                     <UserRound className="size-4 shrink-0 text-muted-foreground" />
                   )}
-                  <span className="min-w-0 truncate font-semibold">
+                  <span className="min-w-0 break-words font-semibold">
                     {user.name}
                   </span>
                 </span>
-                <span className="truncate text-xs text-muted-foreground">
+                <span className="break-words text-xs text-muted-foreground">
                   {language === "th" ? "รหัสผู้ใช้" : "User code"}: {user.code}
                 </span>
                 {user.subtitle ? (
@@ -6423,10 +6521,10 @@ function PermissionMatrixEditor({
                       key={item.id}
                     >
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-bold text-foreground">
+                        <p className="break-words text-sm font-bold text-foreground">
                           {menuText(item.label, language, dictionary)}
                         </p>
-                        <p className="truncate text-[10px] text-muted-foreground mt-0.5">
+                        <p className="break-words text-[10px] text-muted-foreground mt-0.5">
                           <span className="font-mono bg-secondary/35 px-1 py-0.5 rounded text-primary">
                             {language === "th" ? "รหัสเมนู" : "Menu code"}: {item.id}
                           </span>
@@ -6838,8 +6936,8 @@ function UserAccessAuditReportPanel({
                         onClick={(event) => event.stopPropagation()}
                       />
                       <span className="grid min-w-0 flex-1 gap-0.5">
-                        <span className="truncate text-sm font-bold">{auditUserCode(user)}</span>
-                        <span className="truncate text-muted-foreground">{auditUserName(user) || stringValue(user.email) || "-"}</span>
+                        <span className="break-words text-sm font-bold">{auditUserCode(user)}</span>
+                        <span className="break-words text-muted-foreground">{auditUserName(user) || stringValue(user.email) || "-"}</span>
                       </span>
                     </div>
                   );
@@ -7637,7 +7735,7 @@ function HoldingScopeRulesEditor({
             </span>
           </span>
         </label>
-        <div className="grid gap-3 lg:grid-cols-[minmax(280px,0.9fr)_minmax(360px,1.2fr)]">
+        <div className="grid gap-3">
             <div className="grid gap-3 rounded-xl border border-border bg-background p-3">
               <div className="grid gap-2">
                 <div className="flex items-start justify-between gap-2">
@@ -7767,74 +7865,79 @@ function HoldingScopeRulesEditor({
                   </label>
                   <div className="grid gap-2">
                     {activeCompanyScope.allbranches ? (
-                      <p className="rounded-xl border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+                      <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300">
                         {language === "th"
-                          ? "ตอนนี้ใช้ได้ทุกสาขา รายการสาขาด้านล่างจะยังเก็บไว้เมื่อปิดตัวเลือกนี้"
-                          : "All branches are currently active. The branch list below is kept for when this option is turned off."}
+                          ? "เลือกใช้ได้ทุกสาขาในบริษัทนี้แล้ว ไม่ต้องเลือกสาขาทีละสาขา"
+                          : "All branches in this company are enabled. No need to pick branches one by one."}
                       </p>
-                    ) : null}
-                      {!readOnly ? (
-                        <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-                          <BranchScopeSearchPicker
-                            branches={branches.filter(
-                              (branch) => branch.businesscode === activeCompanyScope.company.businesscode,
-                            )}
-                            disabled={readOnly || loading}
-                            language={language}
-                            value={branchAddCodes[activeCompanyScope.company.businesscode] ?? ""}
-                            onChange={(branchCode) =>
-                              setBranchAddCodes((current) => ({
-                                ...current,
-                                [activeCompanyScope.company.businesscode]: branchCode,
-                              }))
-                            }
-                          />
-                          <Button
-                            type="button"
-                            size="sm"
-                            onClick={() =>
-                              addBranchScope(
-                                activeCompanyScope.company.businesscode,
-                                branchAddCodes[activeCompanyScope.company.businesscode] ?? "",
-                              )
-                            }
-                            disabled={!branchAddCodes[activeCompanyScope.company.businesscode]}
-                          >
-                            <Plus className="size-3.5" />
-                            {language === "th" ? "เพิ่มสาขา" : "Add branch"}
-                          </Button>
-                        </div>
-                      ) : null}
-                      {activeCompanyScope.branches.length === 0 ? (
-                        <p className="rounded-xl border border-dashed border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-                          {language === "th" ? "ยังไม่ได้เลือกสาขา" : "No branches selected."}
-                        </p>
-                      ) : (
-                        <div className="grid gap-2">
-                          {activeCompanyScope.branches.map((branch) => (
-                            <div
-                              className="flex min-w-0 items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold"
-                              key={branchKeyOf(branch)}
+                    ) : (
+                      <>
+                        {!readOnly ? (
+                          <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                            <BranchScopeSearchPicker
+                              branches={branches.filter(
+                                (branch) => branch.businesscode === activeCompanyScope.company.businesscode,
+                              )}
+                              disabled={readOnly || loading}
+                              language={language}
+                              value={branchAddCodes[activeCompanyScope.company.businesscode] ?? ""}
+                              onChange={(branchCode) =>
+                                setBranchAddCodes((current) => ({
+                                  ...current,
+                                  [activeCompanyScope.company.businesscode]: branchCode,
+                                }))
+                              }
+                            />
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() =>
+                                addBranchScope(
+                                  activeCompanyScope.company.businesscode,
+                                  branchAddCodes[activeCompanyScope.company.businesscode] ?? "",
+                                )
+                              }
+                              disabled={!branchAddCodes[activeCompanyScope.company.businesscode]}
                             >
-                              <GitBranch className="size-4 shrink-0 text-primary" />
-                              <span className="min-w-0 flex-1 truncate">
-                                {branch.code} - {branchOptionDisplayName(branch, language)}
-                              </span>
-                              {!readOnly ? (
-                                <Button
-                                  type="button"
-                                  size="icon"
-                                  variant="outline"
-                                  className="size-8 shrink-0 text-destructive"
-                                  onClick={() => removeBranchScope(activeCompanyScope.company.businesscode, branch.code)}
-                                >
-                                  <Trash2 className="size-4" />
-                                </Button>
-                              ) : null}
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                              <Plus className="size-3.5" />
+                              {language === "th" ? "เพิ่มสาขา" : "Add branch"}
+                            </Button>
+                          </div>
+                        ) : null}
+                        {activeCompanyScope.branches.length === 0 ? (
+                          <p className="rounded-xl border border-dashed border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+                            {language === "th" ? "ยังไม่ได้เลือกสาขา" : "No branches selected."}
+                          </p>
+                        ) : (
+                          <div className="grid gap-2">
+                            {activeCompanyScope.branches.map((branch) => (
+                              <div
+                                className="flex min-w-0 items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold"
+                                key={branchKeyOf(branch)}
+                              >
+                                <GitBranch className="size-4 shrink-0 text-primary" />
+                                <span className="min-w-0 flex-1 break-words">
+                                  {branch.code} - {branchOptionDisplayName(branch, language)}
+                                </span>
+                                {!readOnly ? (
+                                  <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="outline"
+                                    aria-label={language === "th" ? "เอาสาขาออก" : "Remove branch"}
+                                    title={language === "th" ? "เอาสาขาออก" : "Remove branch"}
+                                    className="size-8 shrink-0 text-destructive"
+                                    onClick={() => removeBranchScope(activeCompanyScope.company.businesscode, branch.code)}
+                                  >
+                                    <Trash2 className="size-4" />
+                                  </Button>
+                                ) : null}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
                 </>
               ) : (
@@ -8828,7 +8931,8 @@ function FieldEditor({
           {field.required ? " *" : ""}
         </span>
         <div
-          className="flex w-full flex-wrap gap-2"
+          className="grid w-full auto-rows-fr gap-2"
+          style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 8rem), 1fr))" }}
           role="radiogroup"
           aria-label={label}
         >
@@ -8837,7 +8941,7 @@ function FieldEditor({
             return (
               <label
                 className={cn(
-                  "flex min-h-10 flex-1 basis-24 cursor-pointer items-center gap-2 rounded-2xl border px-3 py-2 transition-colors",
+                  "flex h-10 cursor-pointer items-center justify-center gap-2 rounded-2xl border px-3 transition-colors",
                   checked
                     ? "border-primary bg-primary/10 text-primary"
                     : "border-border bg-background text-foreground hover:bg-muted/60",
@@ -8857,7 +8961,7 @@ function FieldEditor({
                     })
                   }
                 />
-                <span>{optionLabel(option, language)}</span>
+                <span className="min-w-0 text-center leading-tight">{optionLabel(option, language)}</span>
               </label>
             );
           })}
@@ -11615,7 +11719,9 @@ function ImageUploadFieldEditor({
   function clearImage() {
     setLocalPreview("");
     setCropSource("");
-    setForm({ ...form, [field.key]: "" });
+    const next: FormState = { ...form, [field.key]: "" };
+    if (field.thumbnailKey) next[field.thumbnailKey] = "";
+    setForm(next);
   }
 
   async function uploadImageFile(file: File) {
@@ -11623,19 +11729,17 @@ function ImageUploadFieldEditor({
       setError(uploadUiText(language, "imageUploadFailed"));
       return;
     }
+    const session = auth;
 
-    setUploading(true);
-    setError("");
-    try {
-      const resizedFile = await resizeLogoFile(file);
+    const uploadOne = async (toUpload: File): Promise<string> => {
       const uploadForm = new FormData();
-      uploadForm.append("file", resizedFile, resizedFile.name);
+      uploadForm.append("file", toUpload, toUpload.name);
       uploadForm.append("category", `system-settings/${field.key}`);
       const response = await fetch("/api/upload/image", {
         method: "POST",
         headers: {
-          "x-bc-backend-url": auth.backendUrl,
-          Authorization: `Bearer ${auth.token}`,
+          "x-bc-backend-url": session.backendUrl,
+          Authorization: `Bearer ${session.token}`,
         },
         body: uploadForm,
       });
@@ -11647,7 +11751,26 @@ function ImageUploadFieldEditor({
         );
       const uri = extractUploadUri(payload);
       if (!uri) throw new Error(uploadUiText(language, "imageUploadFailed"));
-      setForm({ ...form, [field.key]: uri });
+      return uri;
+    };
+
+    setUploading(true);
+    setError("");
+    try {
+      if (field.thumbnailKey) {
+        // Keep the original image untouched (full resolution, no downscale) and
+        // generate a small WebP thumbnail for fast list/preview rendering.
+        const originalUri = await uploadOne(file);
+        const thumbUri = await uploadOne(await makeThumbnailFile(file));
+        setForm({
+          ...form,
+          [field.key]: originalUri,
+          [field.thumbnailKey]: thumbUri,
+        });
+      } else {
+        const uri = await uploadOne(await resizeLogoFile(file));
+        setForm({ ...form, [field.key]: uri });
+      }
     } catch (uploadError) {
       setError(
         uploadError instanceof Error && uploadError.message
@@ -11716,7 +11839,10 @@ function ImageUploadFieldEditor({
                 ? uploadUiText(language, "uploading")
                 : uploadUiText(language, "chooseImage")}
             </Button>
-            {previewValue ? (
+            {previewValue && !field.thumbnailKey ? (
+              // Cropping re-encodes to a downscaled lossy WebP. For thumbnail fields
+              // (avatar) the original must stay untouched at full resolution, so crop
+              // is disabled — the small thumbnail is generated automatically on upload.
               <Button
                 type="button"
                 variant="outline"
@@ -11740,7 +11866,11 @@ function ImageUploadFieldEditor({
             ) : null}
           </div>
           <p className="text-xs font-normal text-muted-foreground">
-            {uploadUiText(language, "imageUploadHint")}
+            {field.acceptTypes === "image/png"
+              ? language === "th"
+                ? "รองรับเฉพาะไฟล์ PNG พื้นหลังโปร่งใสได้ ใช้สำหรับออกแบบฟอร์มและพิมพ์เอกสาร"
+                : "PNG only. Transparent background supported. Used for form design and document printing."
+              : uploadUiText(language, "imageUploadHint")}
           </p>
           {error ? (
             <p className="text-xs font-semibold text-destructive">{error}</p>
@@ -11758,7 +11888,7 @@ function ImageUploadFieldEditor({
         ref={inputRef}
         className="sr-only"
         type="file"
-        accept="image/png,image/jpeg,image/webp,image/gif"
+        accept={field.acceptTypes ?? "image/png,image/jpeg,image/webp,image/gif"}
         onChange={(event) => void handleFile(event.target.files?.[0])}
       />
       {cropSource ? (
@@ -12018,7 +12148,7 @@ function ImageGalleryFieldEditor({
         ref={inputRef}
         className="sr-only"
         type="file"
-        accept="image/png,image/jpeg,image/webp,image/gif"
+        accept={field.acceptTypes ?? "image/png,image/jpeg,image/webp,image/gif"}
         onChange={(event) => void handleFile(event.target.files?.[0])}
       />
       {cropTarget ? (
@@ -13253,7 +13383,7 @@ function BranchUnifiedView({
                   )}
                   onClick={() => onSelect(record)}
                 >
-                  <span className="truncate font-semibold">{displayName}</span>
+                  <span className="break-words font-semibold">{displayName}</span>
                   {code ? (
                     <span className="text-[11px] text-muted-foreground">
                       {language === "th" ? "รหัส" : "Code"}: {code}
@@ -15271,8 +15401,20 @@ function buildPayload(
       );
     else if (field.key === "apikey" && !String(value ?? "").trim()) {
       deleteByPath(payload, field.key);
+    } else if (field.businessCode) {
+      // Business/reference codes: uppercase + strip all whitespace (no spaces inside).
+      setByPath(payload, field.key, normalizeBusinessCode(value));
     } else {
       setByPath(payload, field.key, String(value ?? "").trim());
+    }
+  }
+
+  // Carry hidden thumbnail values (e.g. avatarthumb) paired with an image-upload field.
+  // Only when present in the form (uploaded/cleared this session) so untouched edits keep
+  // the existing stored thumbnail instead of wiping it.
+  for (const field of config.fields) {
+    if (field.type === "image-upload" && field.thumbnailKey && field.thumbnailKey in form) {
+      setByPath(payload, field.thumbnailKey, String(form[field.thumbnailKey] ?? "").trim());
     }
   }
 
@@ -15577,6 +15719,28 @@ function recordId(
   );
 }
 
+// recordDisplayCode — the human-facing code shown as "รหัส:" in headers. Prefers the
+// screen's business-code field (permissioncode/groupcode/approvalcode/...) over the
+// internal guidfixed, so users never see a GUID. Falls back to recordId when none.
+function recordDisplayCode(
+  record: SettingRecord | null | undefined,
+  config: SystemSettingConfig,
+): string {
+  if (!record) return "";
+  const codeField = config.fields.find((field) => field.businessCode);
+  if (codeField) {
+    const code = stringValue(getByPath(record, codeField.key));
+    if (code) return code;
+  }
+  // idField that is itself a business identifier (e.g. username) is safe to show as-is.
+  const idKey = (config.idField ?? "").toLowerCase();
+  if (idKey && idKey !== "guidfixed" && idKey !== "guid") {
+    return recordId(record, config);
+  }
+  // idField is an opaque GUID (atlas screens) — prefer any business code over it.
+  return recordBusinessLookup(record, config) || recordId(record, config);
+}
+
 function recordDetailId(
   record: SettingRecord | null | undefined,
   config: SystemSettingConfig,
@@ -15666,6 +15830,7 @@ function recordTitle(
   const localized = localizedValue(names, language);
   if (localized) return localized;
   return String(
+      record.userprofilename ??
       record.name ??
       record.name1 ??
       record.permissionname ??
@@ -15677,7 +15842,10 @@ function recordTitle(
       record.username ??
       record.providername ??
       record.code ??
-      record.guidfixed ??
+      record.employeecode ??
+      record.approvalcode ??
+      record.permissioncode ??
+      record.groupcode ??
       record.guidfixed ??
       config?.slug ??
       "",
@@ -16210,11 +16378,19 @@ function mainApiDisplayBase(rawBackendUrl: unknown): string {
 }
 
 async function resizeLogoFile(file: File): Promise<File> {
+  // PNG-only: reject other formats with a clear error before processing.
+  const isPngByName = /\.png$/i.test(file.name);
+  const isPngByType = file.type === "image/png";
+  if (!isPngByName && !isPngByType) {
+    throw new Error("โลโก้ต้องเป็นไฟล์ PNG เท่านั้น");
+  }
+
   const objectUrl = URL.createObjectURL(file);
   try {
     const image = await loadImageElement(objectUrl);
     const maxSide = Math.max(image.naturalWidth, image.naturalHeight);
     if (!maxSide) return file;
+    // Normalize large source PNGs down to a 512px max side; keep smaller originals untouched.
     const scale = Math.min(1, 512 / maxSide);
     if (scale === 1 && file.size <= 300 * 1024) return file;
 
@@ -16227,10 +16403,40 @@ async function resizeLogoFile(file: File): Promise<File> {
     context.imageSmoothingQuality = "high";
     context.drawImage(image, 0, 0, canvas.width, canvas.height);
 
-    const blob = await canvasToBlob(canvas, "image/webp", 0.82);
+    // Keep PNG format for logos so transparency and sharp edges are preserved for form/print design.
+    const blob = await canvasToBlob(canvas, "image/png");
     if (!blob) return file;
     const baseName = file.name.replace(/\.[^.]+$/, "") || "company-logo";
-    return new File([blob], `${baseName}.webp`, {
+    return new File([blob], `${baseName}.png`, {
+      type: "image/png",
+      lastModified: Date.now(),
+    });
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+// makeThumbnailFile builds a small lossy WebP thumbnail (default 256px max side) from
+// any image. Unlike resizeLogoFile it never rejects non-PNG input and keeps the original
+// file untouched — the caller uploads the original separately for full-quality storage.
+async function makeThumbnailFile(file: File, maxSide = 256): Promise<File> {
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const image = await loadImageElement(objectUrl);
+    const largest = Math.max(image.naturalWidth, image.naturalHeight);
+    const scale = largest > 0 ? Math.min(1, maxSide / largest) : 1;
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const context = canvas.getContext("2d");
+    if (!context) return file;
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = "high";
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const blob = await canvasToBlob(canvas, "image/webp", 0.82);
+    if (!blob) return file;
+    const baseName = file.name.replace(/\.[^.]+$/, "") || "image";
+    return new File([blob], `${baseName}_thumb.webp`, {
       type: "image/webp",
       lastModified: Date.now(),
     });
@@ -16251,7 +16457,7 @@ function loadImageElement(src: string): Promise<HTMLImageElement> {
 function canvasToBlob(
   canvas: HTMLCanvasElement,
   type: string,
-  quality: number,
+  quality?: number,
 ): Promise<Blob | null> {
   return new Promise((resolve) => canvas.toBlob(resolve, type, quality));
 }

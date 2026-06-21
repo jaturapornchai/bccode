@@ -15,6 +15,7 @@ type Company struct {
 	Code     string       `json:"code" bson:"code"`
 	Names    common.JSONB `json:"names" bson:"names"`
 	TaxID    string       `json:"taxid" bson:"taxid"`
+	LogoURI  string       `json:"logouri" bson:"logouri"`
 	IsActive bool         `json:"isactive" bson:"isactive"`
 }
 

@@ -80,4 +80,4 @@ description: Use when creating, reviewing, or modifying the Next.js frontend in 
 
 ## 7. Pre-Commit Verification
 - Fast-iteration dev mode: rely on `next dev` HMR while iterating. Run `npm run typecheck` in `frontend/` only before commit or when summarizing — not after every edit.
-- Verify in both Light/Dark themes and check responsiveness in notebook/mobile.
+- Verify in both Light/Dark themes and check responsiveness in this priority order: **iPad/tablet (`md:768px`+) first → notebook (`lg/xl`) → desktop (`2xl`) → mobile (`<768px`) last**. Most verification time should go to iPad/notebook where BC Account's Thai SME users actually work. Mobile only needs a quick "does not break" check.

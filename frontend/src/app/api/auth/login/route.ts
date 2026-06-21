@@ -19,7 +19,9 @@ export async function POST(request: Request) {
 
   const username = body.username?.trim() ?? "";
   const password = body.password ?? "";
-  const holdingCode = normalizeHoldingCode(body.holdingcode ?? "");
+  // holdingcode is optional — backend /login accepts it but does not require it.
+  // When omitted, the user will pick a holding on the holding selection screen.
+  const holdingCode = body.holdingcode ? normalizeHoldingCode(body.holdingcode ?? "") : "";
 
   if (!username) {
     return NextResponse.json({ success: false, message: "กรุณากรอกชื่อผู้ใช้" }, { status: 400 });
@@ -27,13 +29,13 @@ export async function POST(request: Request) {
   if (!password) {
     return NextResponse.json({ success: false, message: "กรุณากรอกรหัสผ่าน" }, { status: 400 });
   }
-  if (!holdingCode) {
+  if (body.holdingcode && !holdingCode) {
     return NextResponse.json(
-      { success: false, message: "กรุณากรอกรหัสกลุ่มกิจการก่อนเข้าสู่ระบบด้วย User , Password" },
+      { success: false, message: "รูปแบบรหัสกลุ่มกิจการไม่ถูกต้อง" },
       { status: 400 },
     );
   }
-  if (!isValidHoldingCode(holdingCode)) {
+  if (holdingCode && !isValidHoldingCode(holdingCode)) {
     return NextResponse.json(
       { success: false, message: holdingCodeValidationMessageTh },
       { status: 400 },

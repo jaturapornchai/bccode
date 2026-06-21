@@ -47,12 +47,31 @@ func GetR2Client() (*s3.Client, error) {
 	return r2Client, r2InitErr
 }
 
-// initR2 สร้าง S3 client สำหรับ Cloudflare R2
+// firstNonEmpty returns the first trimmed non-empty string from the given values.
+// Used to let initR2 prefer config-driven S3_* env (set by settings screen) over legacy R2_* env.
+func firstNonEmpty(values ...string) string {
+	for _, v := range values {
+		s := strings.TrimSpace(v)
+		if s != "" {
+			return s
+		}
+	}
+	return ""
+}
+
+// initR2 สร้าง S3 client สำหรับ Cloudflare R2 หรือ S3-compatible storage เช่น MinIO
+// อ่านค่าจาก config ที่ settings screen ส่งมา (ผ่าน setup config/save → env) เป็นหลัก
+// fallback ไป R2_* env ถ้า config ไม่มี
 func initR2() {
-	accountID := strings.TrimSpace(os.Getenv("R2_ACCOUNT_ID"))
-	accessKeyID := strings.TrimSpace(os.Getenv("R2_ACCESS_KEY_ID"))
-	secretAccessKey := strings.TrimSpace(os.Getenv("R2_SECRET_ACCESS_KEY"))
-	r2BucketName = strings.TrimSpace(os.Getenv("R2_BUCKET_NAME"))
+	accountID := firstNonEmpty(os.Getenv("S3_ACCOUNT_ID"), os.Getenv("R2_ACCOUNT_ID"))
+	accessKeyID := firstNonEmpty(os.Getenv("S3_ACCESS_KEY_ID"), os.Getenv("R2_ACCESS_KEY_ID"))
+	secretAccessKey := firstNonEmpty(os.Getenv("S3_SECRET_ACCESS_KEY"), os.Getenv("R2_SECRET_ACCESS_KEY"))
+	// Assign to the package-level r2BucketName (NOT a new local). Using `:=` here
+	// would shadow the global, leaving PutObject with an empty bucket name → NoSuchBucket.
+	r2BucketName = firstNonEmpty(os.Getenv("S3_BUCKET_NAME"), os.Getenv("R2_BUCKET_NAME"))
+	// Endpoint: อ่านจาก S3_ENDPOINT (ที่ settings screen ส่ง) ก่อน, fallback R2_ENDPOINT
+	r2Endpoint := firstNonEmpty(os.Getenv("S3_ENDPOINT"), os.Getenv("R2_ENDPOINT"))
+	usePathStyle := strings.EqualFold(strings.TrimSpace(firstNonEmpty(os.Getenv("S3_FORCE_PATH_STYLE"), os.Getenv("R2_FORCE_PATH_STYLE"))), "true") || r2Endpoint != ""
 
 	if accountID == "" || accessKeyID == "" || secretAccessKey == "" || r2BucketName == "" {
 		missing := []string{}
@@ -73,25 +92,50 @@ func initR2() {
 		return
 	}
 
-	r2Resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
-		return aws.Endpoint{
-			URL: fmt.Sprintf("https://%s.r2.cloudflarestorage.com", accountID),
-		}, nil
-	})
-
-	cfg, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithEndpointResolverWithOptions(r2Resolver),
-		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKeyID, secretAccessKey, "")),
-		config.WithRegion("auto"),
-	)
-	if err != nil {
-		r2InitErr = fmt.Errorf("unable to load R2 SDK config: %w", err)
-		logger.Error("❌ R2 Config Error: %v", r2InitErr)
-		return
+	// Resolve S3 endpoint: explicit override (MinIO/on-prem) wins, otherwise Cloudflare R2.
+	endpointURL := r2Endpoint
+	if endpointURL == "" {
+		endpointURL = fmt.Sprintf("https://%s.r2.cloudflarestorage.com", accountID)
 	}
 
-	r2Client = s3.NewFromConfig(cfg)
-	logger.Info("✅ R2 client initialized successfully (bucket: %s)", r2BucketName)
+	var cfg aws.Config
+	if r2Endpoint != "" {
+		// S3-compatible storage (MinIO, Wasabi, etc.) — use path-style addressing.
+		customCfg, customErr := config.LoadDefaultConfig(context.TODO(),
+			config.WithRegion("auto"),
+			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKeyID, secretAccessKey, "")),
+		)
+		if customErr != nil {
+			r2InitErr = fmt.Errorf("unable to load R2 SDK config: %w", customErr)
+			logger.Error("❌ R2 Config Error: %v", r2InitErr)
+			return
+		}
+		cfg = customCfg
+		r2Client = s3.NewFromConfig(cfg, func(o *s3.Options) {
+			o.BaseEndpoint = &endpointURL
+			o.UsePathStyle = usePathStyle
+			o.Credentials = credentials.NewStaticCredentialsProvider(accessKeyID, secretAccessKey, "")
+			o.Region = "auto"
+		})
+	} else {
+		// Cloudflare R2 — keep the original resolver-based config for backwards compatibility.
+		r2Resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+			return aws.Endpoint{
+				URL: fmt.Sprintf("https://%s.r2.cloudflarestorage.com", accountID),
+			}, nil
+		})
+		cfg, r2InitErr = config.LoadDefaultConfig(context.TODO(),
+			config.WithEndpointResolverWithOptions(r2Resolver),
+			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKeyID, secretAccessKey, "")),
+			config.WithRegion("auto"),
+		)
+		if r2InitErr != nil {
+			logger.Error("❌ R2 Config Error: %v", r2InitErr)
+			return
+		}
+		r2Client = s3.NewFromConfig(cfg)
+	}
+	logger.Info("✅ R2 client initialized successfully (bucket: %s, endpoint: %s, pathStyle: %v)", r2BucketName, endpointURL, usePathStyle)
 }
 
 // getPresignedURL - สร้าง URL สำหรับดูไฟล์

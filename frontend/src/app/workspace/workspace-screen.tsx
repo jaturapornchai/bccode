@@ -42,6 +42,7 @@ import {
   workspaceStorageKeys,
   notifyWorkspaceChanged,
 } from "@/lib/workspace-models";
+import { LogoAvatar } from "@/components/logo-avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1130,9 +1131,30 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 return (
                   <div
                     className="relative mb-4 h-24 w-full overflow-hidden rounded-2xl border border-border/60 shadow-sm sm:h-36 md:h-44"
-                    style={{ backgroundColor: "#812920", backgroundImage: `url(${bItem.banner})`, backgroundSize: "auto 100%", backgroundPosition: "right center", backgroundRepeat: "no-repeat" }}
+                    style={{
+                      backgroundColor: "#812920",
+                      backgroundImage: `url(${bItem.banner})`,
+                      backgroundSize: "auto 100%",
+                      backgroundPosition: "right center",
+                      backgroundRepeat: "no-repeat",
+                    }}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#812920] from-38% via-[#812920]/40 via-68% to-transparent to-94%" />
+                    {/* Smooth left-to-right scrim: dense on the left (text area) -> soft on the right (image) */}
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        background:
+                          "linear-gradient(to right, rgba(129,41,32,0.96) 0%, rgba(129,41,32,0.92) 28%, rgba(129,41,32,0.72) 52%, rgba(129,41,32,0.36) 76%, rgba(129,41,32,0.08) 92%, rgba(129,41,32,0) 100%)",
+                      }}
+                    />
+                    {/* Subtle vignette so the image edges blend instead of hard-fading */}
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        background:
+                          "radial-gradient(120% 100% at 0% 50%, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0) 60%)",
+                      }}
+                    />
                     <div className="relative z-10 flex h-full items-center gap-3 px-5">
                       <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/25 text-lg font-black text-white ring-1 ring-white/50 backdrop-blur-sm [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]">
                         {bIdx + 1}
@@ -1391,9 +1413,13 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                       {/* Company Header */}
                       <div className="flex flex-col p-4 pl-6">
                         <div className="flex items-center gap-3">
-                          <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-300 group-hover/company:scale-110 group-hover/company:rotate-3 ${isCreator ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-primary/10 text-primary"}`}>
-                            <Building2 size={20} />
-                          </span>
+                          <LogoAvatar
+                            uri={company.logouri}
+                            auth={auth}
+                            alt={companyName}
+                            sizeClass="w-10 h-10 rounded-xl transition-transform duration-300 group-hover/company:scale-110 group-hover/company:rotate-3"
+                            className={isCreator ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-primary/10 text-primary"}
+                          />
                           <div className="min-w-0 flex-1">
                             <h3
                               className="font-bold text-foreground text-sm sm:text-base tracking-tight break-words leading-snug group-hover/company:text-primary transition-colors duration-200"
@@ -1513,9 +1539,13 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                       variants={cardStaggerChild}
                     >
                       <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${isHQ ? "bg-amber-500" : "bg-primary"}`} />
-                      <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-300 group-hover/branch:scale-110 group-hover/branch:rotate-3 ${isHQ ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-primary/10 text-primary"}`}>
-                        <Building2 size={20} />
-                      </span>
+                      <LogoAvatar
+                        uri={branch.logouri}
+                        auth={auth}
+                        alt={branchName}
+                        sizeClass="w-10 h-10 rounded-xl shrink-0 transition-transform duration-300 group-hover/branch:scale-110 group-hover/branch:rotate-3"
+                        className={isHQ ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-primary/10 text-primary"}
+                      />
                       <div className="min-w-0 flex-1">
                         <strong className="block font-bold text-foreground text-sm sm:text-base tracking-tight break-words leading-snug group-hover/branch:text-primary transition-colors">
                           {branchName}

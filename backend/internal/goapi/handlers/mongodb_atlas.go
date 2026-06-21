@@ -3,7 +3,9 @@ package handlers
 import (
 	"context"
 	"net/http"
+	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"smlcloudplatform/internal/goapi/config"
@@ -177,6 +179,66 @@ func validateAtlasTenant(c echo.Context, requestHoldingCode string) error {
 	return nil
 }
 
+// atlasBusinessCodeFields maps an atlas collection to its user-facing business code field.
+// On save the value is normalized to uppercase + no whitespace, duplicate-guarded within the
+// holding, and backed by a partial-unique index. This mirrors the frontend `businessCode`
+// flag so the rule holds even when a client (MCP/AI/mobile) calls /atlas/update directly,
+// bypassing the Next proxy. Email/username code fields (e.g. employeepermissions.employeecode)
+// are intentionally excluded — emails are exempt from uppercasing.
+var atlasBusinessCodeFields = map[string]string{
+	"permissiondefinitions":  "permissioncode",
+	"permissiongroups":       "groupcode",
+	"approvalsettings":       "approvalcode",
+	"productcolors":          "code",
+	"productsizes":           "code",
+	"productvariantmatrices": "code",
+}
+
+func atlasBusinessCodeField(collection string) string {
+	return atlasBusinessCodeFields[strings.TrimSpace(collection)]
+}
+
+// atlasIdentityCodeFields maps a collection to an identity code that must be unique per
+// holding but is NOT a business code (e.g. employeepermissions.employeecode = email/username).
+// It is trimmed only (NOT uppercased — emails are exempt) and case-insensitive duplicate-guarded.
+var atlasIdentityCodeFields = map[string]string{
+	"employeepermissions": "employeecode",
+}
+
+func atlasIdentityCodeField(collection string) string {
+	return atlasIdentityCodeFields[strings.TrimSpace(collection)]
+}
+
+// normalizeAtlasBusinessCode uppercases and removes ALL whitespace (no spaces inside a code),
+// e.g. "qa test 99" -> "QATEST99".
+func normalizeAtlasBusinessCode(value interface{}) string {
+	s, _ := value.(string)
+	return strings.ToUpper(strings.Join(strings.Fields(s), ""))
+}
+
+var atlasCodeIndexEnsured sync.Map
+
+// ensureAtlasCodeIndex creates a partial-unique index on (holdingcode, codeField) once per
+// collection. Best-effort: if it fails (legacy duplicates or perms), log and continue — the
+// in-handler duplicate check still guards new writes.
+func ensureAtlasCodeIndex(ctx context.Context, db *mongo.Database, collection, codeField string) {
+	key := db.Name() + "." + collection + "." + codeField
+	if _, done := atlasCodeIndexEnsured.LoadOrStore(key, true); done {
+		return
+	}
+	_, err := db.Collection(collection).Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{{Key: "holdingcode", Value: 1}, {Key: codeField, Value: 1}},
+		Options: options.Index().
+			SetUnique(true).
+			SetName("uniq_holdingcode_" + codeField).
+			SetPartialFilterExpression(bson.M{codeField: bson.M{"$gt": ""}}),
+	})
+	if err != nil {
+		atlasCodeIndexEnsured.Delete(key) // allow a retry on a later request
+		logger.Warn("atlas unique index for %s.%s not created: %v", collection, codeField, err)
+	}
+}
+
 // MongoAtlasUpdateHandler - Update/Insert (Upsert) document
 func MongoAtlasUpdateHandler(c echo.Context) error {
 	// Check if MongoDB is connected
@@ -271,6 +333,21 @@ func MongoAtlasUpdateHandler(c echo.Context) error {
 		reqBody.Data["cartid"] = reqBody.CartId
 	}
 
+	// Business-code enforcement (uppercase + no whitespace) for code-bearing collections.
+	codeField := atlasBusinessCodeField(reqBody.Collection)
+	if codeField != "" {
+		if _, ok := reqBody.Data[codeField]; ok {
+			reqBody.Data[codeField] = normalizeAtlasBusinessCode(reqBody.Data[codeField])
+		}
+	}
+	// Identity-code: trim only (NOT uppercased — e.g. employeecode = email/username).
+	idCodeField := atlasIdentityCodeField(reqBody.Collection)
+	if idCodeField != "" {
+		if v, ok := reqBody.Data[idCodeField].(string); ok {
+			reqBody.Data[idCodeField] = strings.TrimSpace(v)
+		}
+	}
+
 	// เพิ่ม timestamp
 	reqBody.Data["updatedat"] = time.Now()
 
@@ -286,6 +363,46 @@ func MongoAtlasUpdateHandler(c echo.Context) error {
 	db := getDatabase(reqBody.Database)
 	collection := db.Collection(reqBody.Collection)
 	opts := options.Update().SetUpsert(reqBody.Upsert)
+
+	// Duplicate-code guard + unique index (defense for direct/MCP/mobile callers that bypass
+	// the Next proxy). Rejects a code already used by a different record in the same holding.
+	if codeField != "" {
+		ensureAtlasCodeIndex(ctx, db, reqBody.Collection, codeField)
+		if codeValue, _ := reqBody.Data[codeField].(string); codeValue != "" {
+			dupFilter := andAtlasFilters(
+				atlasTenantFilterAny(tenantIDs.filterIDs...),
+				bson.M{codeField: codeValue, "guidfixed": bson.M{"$ne": reqBody.GuidFixed}},
+			)
+			if cnt, dupErr := collection.CountDocuments(ctx, dupFilter); dupErr == nil && cnt > 0 {
+				return c.JSON(http.StatusConflict, map[string]interface{}{
+					"status":  "error",
+					"code":    409,
+					"message": "duplicate code: " + codeValue,
+				})
+			}
+		}
+	}
+
+	// Identity-code duplicate guard (case-insensitive, not uppercased — e.g. employeecode).
+	if idCodeField != "" {
+		ensureAtlasCodeIndex(ctx, db, reqBody.Collection, idCodeField)
+		if idValue, _ := reqBody.Data[idCodeField].(string); idValue != "" {
+			dupFilter := andAtlasFilters(
+				atlasTenantFilterAny(tenantIDs.filterIDs...),
+				bson.M{
+					idCodeField: bson.M{"$regex": "^" + regexp.QuoteMeta(idValue) + "$", "$options": "i"},
+					"guidfixed":  bson.M{"$ne": reqBody.GuidFixed},
+				},
+			)
+			if cnt, dupErr := collection.CountDocuments(ctx, dupFilter); dupErr == nil && cnt > 0 {
+				return c.JSON(http.StatusConflict, map[string]interface{}{
+					"status":  "error",
+					"code":    409,
+					"message": "duplicate code: " + idValue,
+				})
+			}
+		}
+	}
 
 	result, err := collection.UpdateOne(ctx, filter, update, opts)
 	if err != nil {

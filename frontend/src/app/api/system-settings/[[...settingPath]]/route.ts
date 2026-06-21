@@ -362,6 +362,7 @@ function buildDeletePath(request: Request, config: SystemSettingConfig, id: stri
 function buildWritePayload(request: Request, config: SystemSettingConfig, id: string, body: Record<string, unknown>): Record<string, unknown> {
   const payload = stripProxyKeys(body);
   normalizeAccessScopePayload(config.slug, payload);
+  normalizeBusinessCodeFields(config, payload);
   const url = new URL(request.url);
   const holdingcode = String(payload.holdingcode ?? payload.holdingcode ?? url.searchParams.get("holdingcode") ?? url.searchParams.get("holdingcode") ?? payload.holdingcode ?? url.searchParams.get("holdingcode") ?? "");
   const holdingCode = String(payload.holdingcode ?? url.searchParams.get("holdingcode") ?? "").trim();
@@ -494,7 +495,19 @@ function normalizeScopeRule(value: unknown): Record<string, unknown> {
 }
 
 function normalizeBusinessCode(value: unknown): string {
-  return String(value ?? "").trim().toUpperCase();
+  // Uppercase + strip ALL whitespace (no spaces inside a business code).
+  return String(value ?? "").toUpperCase().replace(/\s+/g, "");
+}
+
+// Server-side enforcement: re-normalize every business-code field for this screen
+// (uppercase + no whitespace) so a code never persists with spaces even if the client
+// is bypassed. Mirrors the frontend buildPayload normalization.
+function normalizeBusinessCodeFields(config: SystemSettingConfig, payload: Record<string, unknown>) {
+  for (const field of config.fields ?? []) {
+    if (field.businessCode && typeof payload[field.key] === "string") {
+      payload[field.key] = normalizeBusinessCode(payload[field.key]);
+    }
+  }
 }
 
 function normalizeBranchCode(value: unknown): string {

@@ -72,7 +72,8 @@ type SetupResponse = {
   database?: unknown;
 };
 
-const DEFAULT_BACKEND_URL = "http://localhost:8888/goapi";
+const DEFAULT_BACKEND_URL =
+  process.env.NEXT_PUBLIC_DEFAULT_BACKEND_URL ?? "http://192.168.2.202:8888/goapi";
 const storageKeys = {
   backendUrl: "backend_url",
   backendUrlHistory: "backend_url_history",
@@ -98,7 +99,109 @@ export function SettingsScreen() {
   const [currentSetupPassword, setCurrentSetupPassword] = useState("");
   const [newSetupPassword, setNewSetupPassword] = useState("");
   const [mongodbMode, setMongodbMode] = useState<"uri" | "fields">("uri");
+  const [serverHost, setServerHost] = useState("");
   const { confirm, confirmationDialog } = useConfirmDialog();
+
+  // Section groups for the redesigned layout. Each group renders its own heading
+  // and contains a list of config categories. R2/S3 storage items are split out
+  // of the integrations category and shown under "ที่เก็บรูปและไฟล์".
+  // S3-compatible storage items (MinIO, Wasabi, etc.) — Cloudflare R2 has been removed;
+  // the system now uses S3-compatible storage exclusively.
+  const storageIntegrationKeys = new Set([
+    "s3endpoint",
+    "s3publicendpoint",
+    "s3accesskeyid",
+    "s3secretaccesskey",
+    "s3bucketname",
+  ]);
+
+  const sectionGroups: { id: string; titleTh: string; titleEn: string; categories: string[] }[] = [
+    { id: "databases", titleTh: "ฐานข้อมูล", titleEn: "Databases", categories: ["mongodb", "postgresql", "clickhouse"] },
+    { id: "storage", titleTh: "ที่เก็บรูปและไฟล์", titleEn: "Image & File Storage", categories: [] },
+    { id: "kafka", titleTh: "Kafka", titleEn: "Kafka", categories: ["kafka"] },
+  ];
+
+  // Parse host from a backend URL like http://192.168.2.202:8888/goapi -> 192.168.2.202
+  function parseHostFromUrl(url: string): string {
+    try {
+      const withProtocol = /^https?:\/\//i.test(url) ? url : `http://${url}`;
+      return new URL(withProtocol).hostname || "";
+    } catch {
+      return "";
+    }
+  }
+
+  // Default Docker on-prem values — since backend runs in Docker, these are
+  // fixed container names + ports + credentials. The user only needs to enter
+  // the external Server Host once (for client access); everything else is
+  // derived from the Docker setup.
+  const DOCKER_DEFAULTS: Record<string, Record<string, string>> = {
+    mongodb: {
+      uri: "mongodb://smlsoft:smlsoft@mongodb:27017/appdb?authSource=admin",
+      database: "appdb",
+      host: "mongodb",
+      port: "27017",
+      username: "smlsoft",
+      password: "smlsoft",
+    },
+    postgresql: {
+      host: "postgres",
+      port: "5432",
+      user: "smlsoft",
+      password: "smlsoft",
+      dbname: "postgres",
+      sslmode: "disable",
+      timezone: "Asia/Bangkok",
+      loggerlevel: "Info",
+    },
+    clickhouse: {
+      host: "clickhouse",
+      port: "9000",
+      user: "default",
+      password: "smlsoft",
+      databasename: "appdb",
+    },
+    kafka: {
+      serverurl: "kafka:29092",
+    },
+    integrations: {
+      s3endpoint: "http://minio:9000",
+      s3publicendpoint: "http://192.168.2.202:9100",
+      s3accesskeyid: "smlsoft",
+      s3secretaccesskey: "smlsoft123",
+      s3bucketname: "app-images",
+    },
+  };
+
+  // Auto-fill: populate every DB/storage field with Docker defaults.
+  // The Server Host input is for external client access (e.g. 192.168.2.202);
+  // the actual DB hosts use fixed Docker container names.
+  function handleAutoFillHost() {
+    if (!serverHost.trim()) return;
+    const publicHost = serverHost.trim();
+    setConfigMap((current) => {
+      const next: ConfigMap = {};
+      for (const [category, items] of Object.entries(current)) {
+        const defaults = DOCKER_DEFAULTS[category] ?? {};
+        next[category] = items.map((item) => {
+          // Host fields: use Docker container name (fixed), not the public host.
+          if (item.key === "host" && defaults.host) {
+            return { ...item, value: defaults.host };
+          }
+          // S3 public endpoint: use the public host (client-facing).
+          if (item.key === "s3publicendpoint") {
+            return { ...item, value: `http://${publicHost}:9100` };
+          }
+          // All other fields: use Docker default if available.
+          if (defaults[item.key] !== undefined) {
+            return { ...item, value: defaults[item.key] };
+          }
+          return item;
+        });
+      }
+      return next;
+    });
+  }
 
   const handleSetMongodbMode = (mode: "uri" | "fields") => {
     setMongodbMode(mode);
@@ -123,7 +226,16 @@ export function SettingsScreen() {
   };
 
 
-  const canSaveBackend = useMemo(() => backendUrl.trim().length > 0, [backendUrl]);
+  // null = empty (no indicator yet), true/false = valid/invalid backend URL.
+  // normalizeSetupBackendUrl is lenient (coerces almost anything into a URL), so
+  // also reject input that contains whitespace to catch obvious typos.
+  const backendUrlValid = useMemo(() => {
+    const value = backendUrl.trim();
+    if (value.length === 0) return null;
+    if (/\s/.test(value)) return false;
+    return Boolean(normalizeSetupBackendUrl(value));
+  }, [backendUrl]);
+  const canSaveBackend = backendUrlValid === true;
   const isBusy = loadingAction !== "idle";
   const orderedCategories = useMemo(() => {
     const known = SETUP_CATEGORY_DEFS.map((item) => item.id).filter((category) => configMap[category]?.length);
@@ -140,6 +252,7 @@ export function SettingsScreen() {
     setUrlHistory(history);
     if (savedBackendUrl) {
       setBackendUrl(savedBackendUrl);
+      setServerHost(parseHostFromUrl(savedBackendUrl));
     } else {
       void loadConfigUrl();
     }
@@ -349,9 +462,44 @@ export function SettingsScreen() {
     if (categories.length === 0) return;
 
     setLoadingAction("test-all");
-    const results = await Promise.all(categories.map((category) => handleTestConnection(category)));
-    const successCount = results.filter(Boolean).length;
-    setStatus(`ทดสอบ connection แล้ว ${successCount}/${categories.length} สำเร็จ`, successCount === categories.length ? "success" : "error");
+    // Run DB category tests in parallel, then run storage test, then summarize.
+    const dbResults = await Promise.all(categories.map((category) => handleTestConnection(category)));
+    // Run storage test (S3/MinIO) separately since it uses a different probe path.
+    const storageResult = await handleTestStorageConnection();
+
+    // Build detailed summary line: "MongoDB 50ms ✓, PostgreSQL 12ms ✓, ..."
+    const summaryParts: string[] = [];
+    const labelMap: Record<string, string> = {
+      mongodb: "MongoDB",
+      postgresql: "PostgreSQL",
+      clickhouse: "ClickHouse",
+      kafka: "Kafka",
+    };
+    for (let i = 0; i < categories.length; i++) {
+      const category = categories[i];
+      const passed = dbResults[i];
+      const tr = testResults[category];
+      const latency = tr?.latencyMs != null ? ` ${tr.latencyMs}ms` : "";
+      const mark = passed ? "✓" : "✗";
+      summaryParts.push(`${labelMap[category] ?? category}${latency} ${mark}`);
+    }
+    if (storageResult) {
+      const sLatency = storageResult.latencyMs != null ? ` ${storageResult.latencyMs}ms` : "";
+      const sMark = storageResult.status === "success" ? "✓" : "✗";
+      summaryParts.push(`${language === "th" ? "ที่เก็บรูป" : "Storage"}${sLatency} ${sMark}`);
+    }
+
+    const dbSuccess = dbResults.filter(Boolean).length;
+    const storageSuccess = storageResult?.status === "success" ? 1 : 0;
+    const totalSuccess = dbSuccess + storageSuccess;
+    const total = categories.length + (storageResult ? 1 : 0);
+    const headline =
+      language === "th"
+        ? `ทดสอบแล้ว ${totalSuccess}/${total} สำเร็จ`
+        : `Tested ${totalSuccess}/${total} passed`;
+    const detailLine = summaryParts.join(" · ");
+
+    setStatus(`${headline} — ${detailLine}`, totalSuccess === total ? "success" : "error");
     setLoadingAction("idle");
   }
 
@@ -441,6 +589,11 @@ export function SettingsScreen() {
     const nextHistory = urlHistory.filter((item) => item !== url);
     localStorage.setItem(storageKeys.backendUrlHistory, JSON.stringify(nextHistory));
     setUrlHistory(nextHistory);
+  }
+
+  function handleClearHistory() {
+    localStorage.removeItem(storageKeys.backendUrlHistory);
+    setUrlHistory([]);
   }
 
   function updateItem(category: string, key: string, value: string) {
@@ -548,6 +701,11 @@ export function SettingsScreen() {
                     placeholder="http://localhost:8888/goapi"
                     inputMode="url"
                   />
+                  {backendUrlValid === true ? (
+                    <CheckCircle2 aria-label="URL ถูกต้อง" size={18} style={{ color: "var(--success, #16a34a)" }} />
+                  ) : backendUrlValid === false ? (
+                    <AlertCircle aria-label="รูปแบบ URL ไม่ถูกต้อง" size={18} style={{ color: "var(--destructive, #dc2626)" }} />
+                  ) : null}
                 </div>
               </label>
 
@@ -559,7 +717,7 @@ export function SettingsScreen() {
                     value={setupPassword}
                     disabled={authenticated}
                     onChange={(event) => setSetupPassword(event.target.value)}
-                    placeholder="default: 12345"
+                    placeholder="กรอกรหัสตั้งค่า"
                     type={showSetupPassword ? "text" : "password"}
                   />
                   <button
@@ -575,7 +733,7 @@ export function SettingsScreen() {
             </div>
 
             <div className="settings-button-row connection-actions">
-              <button className="secondary-button" type="button" onClick={handleBackendConnectionTest} disabled={connectionState === "testing"}>
+              <button className="secondary-button" type="button" onClick={handleBackendConnectionTest} disabled={connectionState === "testing" || !backendUrlValid}>
                 {connectionState === "testing" ? <Loader2 className="spin" size={17} /> : <CheckCircle2 aria-hidden="true" size={17} />}
                 <span>{t(language, "testConnection")}</span>
               </button>
@@ -588,7 +746,7 @@ export function SettingsScreen() {
                 <span>{t(language, "save")}</span>
               </button>
               {!authenticated ? (
-                <button className="primary-button settings-primary" type="button" onClick={handleVerifySetup} disabled={isBusy}>
+                <button className="primary-button settings-primary" type="button" onClick={handleVerifySetup} disabled={isBusy || !backendUrlValid}>
                   {loadingAction === "verify" ? <Loader2 className="spin" size={17} /> : <LogIn aria-hidden="true" size={17} />}
                   <span>เข้าสู่ระบบ Setup</span>
                 </button>
@@ -640,18 +798,24 @@ export function SettingsScreen() {
               </div>
 
               {urlHistory.length > 0 ? (
-                <div className="history-list">
-                  {urlHistory.map((url) => (
-                    <div className="history-row" key={url}>
-                      <button className="history-value" type="button" onClick={() => setBackendUrl(url)}>
-                        {url}
-                      </button>
-                      <button className="icon-button danger-icon" type="button" onClick={() => handleRemoveHistory(url)} aria-label={t(language, "remove")}>
-                        <Trash2 aria-hidden="true" size={17} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
+                <>
+                  <div className="history-list">
+                    {urlHistory.map((url) => (
+                      <div className="history-row" key={url}>
+                        <button className="history-value" type="button" onClick={() => setBackendUrl(url)}>
+                          {url}
+                        </button>
+                        <button className="icon-button danger-icon" type="button" onClick={() => handleRemoveHistory(url)} aria-label={t(language, "remove")}>
+                          <Trash2 aria-hidden="true" size={17} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <button className="secondary-button" type="button" onClick={handleClearHistory}>
+                    <Trash2 aria-hidden="true" size={16} />
+                    <span>ล้างประวัติทั้งหมด</span>
+                  </button>
+                </>
               ) : (
                 <p className="settings-empty">{t(language, "noBackendHistory")}</p>
               )}
@@ -713,17 +877,97 @@ export function SettingsScreen() {
                 </div>
               </section>
 
-              <div className="setup-config-sections">
-                {orderedCategories
-                  .filter((cat) => cat !== "integrations")
-                  .map((category) => renderConfigSection(category, configMap[category] ?? []))}
-              </div>
+              {/* Server host + Auto-fill card — quick setup for single-server on-prem */}
+              <section className="settings-section-group" aria-label={language === "th" ? "การเชื่อมต่อเซิร์ฟเวอร์" : "Server connection"}>
+                <header className="settings-section-heading">
+                  <h2>{language === "th" ? "การเชื่อมต่อเซิร์ฟเวอร์" : "Server Connection"}</h2>
+                  <p>
+                    {language === "th"
+                      ? "ใส่ host เดียวแล้วกด Auto-fill เพื่อกรอก host ให้ทุกฐานข้อมูลและที่เก็บรูปอัตโนมัติ"
+                      : "Enter a single host and click Auto-fill to populate every database and storage endpoint automatically."}
+                  </p>
+                </header>
+                <section className="settings-card server-host-card">
+                  <div className="server-host-row">
+                    <label className="field-group">
+                      <span>Server Host</span>
+                      <div className="input-shell">
+                        <Server aria-hidden="true" size={18} />
+                        <input
+                          type="text"
+                          value={serverHost}
+                          onChange={(event) => setServerHost(event.target.value)}
+                          placeholder="เช่น 192.168.2.202 หรือ localhost"
+                          spellCheck={false}
+                          autoComplete="off"
+                        />
+                      </div>
+                    </label>
+                    <button
+                      className="primary-button auto-fill-button"
+                      type="button"
+                      onClick={handleAutoFillHost}
+                      disabled={isBusy || !serverHost.trim()}
+                      title={language === "th" ? "กรอก host นี้ให้ทุกฐานข้อมูลและที่เก็บรูป" : "Fill this host into every database and storage endpoint"}
+                    >
+                      <Zap aria-hidden="true" size={17} />
+                      <span>{language === "th" ? "Auto-fill ทุกฐานข้อมูล" : "Auto-fill all"}</span>
+                    </button>
+                  </div>
+                </section>
+              </section>
 
-              {orderedCategories.includes("integrations") && (
-                <div className="integrations-wrapper">
-                  {renderConfigSection("integrations", configMap["integrations"] ?? [])}
-                </div>
-              )}
+              {/* Render each section group with its heading */}
+              {sectionGroups.map((group) => {
+                if (group.id === "storage") {
+                  // Storage: extract R2/S3 items from integrations, render as dedicated card.
+                  const storageItems = (configMap["integrations"] ?? []).filter((item) =>
+                    storageIntegrationKeys.has(item.key),
+                  );
+                  if (storageItems.length === 0) return null;
+                  return (
+                    <section className="settings-section-group" key={group.id} aria-label={group.titleTh}>
+                      <header className="settings-section-heading">
+                        <h2>{language === "th" ? group.titleTh : group.titleEn}</h2>
+                        <p>
+                          {language === "th"
+                            ? "ตั้งค่าที่เก็บไฟล์แบบ S3 (เช่น MinIO) สำหรับเก็บรูปและไฟล์"
+                            : "Configure S3-compatible storage (e.g. MinIO) for images and files."}
+                        </p>
+                      </header>
+                      <div className="setup-config-sections">
+                        {renderStorageCard(storageItems)}
+                      </div>
+                    </section>
+                  );
+                }
+
+                const categoriesInGroup = group.categories.filter(
+                  (cat) => cat === "integrations" || (configMap[cat]?.length ?? 0) > 0,
+                );
+                if (categoriesInGroup.length === 0) return null;
+
+                return (
+                  <section className="settings-section-group" key={group.id} aria-label={group.titleTh}>
+                    <header className="settings-section-heading">
+                      <h2>{language === "th" ? group.titleTh : group.titleEn}</h2>
+                    </header>
+                    {group.id === "ai" ? (
+                      <div className="integrations-wrapper">
+                        {categoriesInGroup.map((category) =>
+                          renderConfigSection(category, splitAiOnlyItems(configMap[category] ?? [])),
+                        )}
+                      </div>
+                    ) : (
+                      <div className="setup-config-sections">
+                        {categoriesInGroup.map((category) =>
+                          renderConfigSection(category, configMap[category] ?? []),
+                        )}
+                      </div>
+                    )}
+                  </section>
+                );
+              })}
             </div>
           </>
         ) : null}
@@ -809,6 +1053,138 @@ export function SettingsScreen() {
             ) : null}
           </div>
         ) : null}
+      </section>
+    );
+  }
+
+  // Split out AI-provider items only (R2/S3 storage items render in the Storage section).
+  function splitAiOnlyItems(items: ConfigItem[]): ConfigItem[] {
+    return items.filter((item) => !storageIntegrationKeys.has(item.key));
+  }
+
+  // Dedicated storage card — R2/S3 settings grouped together under "ที่เก็บรูปและไฟล์".
+  // Test storage connection: simple direct HTTP probe to the S3/MinIO endpoint.
+  // No backend setup password needed — just check the endpoint is reachable.
+  // Returns the result so callers (e.g. test-all) can read it synchronously.
+  async function handleTestStorageConnection(): Promise<TestResult | null> {
+    if (isBusy) return null;
+    const items = (configMap["integrations"] ?? []).filter((item) =>
+      storageIntegrationKeys.has(item.key),
+    );
+    // S3-compatible endpoint probe (MinIO / Wasabi / etc.).
+    // Use s3publicendpoint (client-facing, reachable from browser/Next.js server)
+    // instead of s3endpoint (Docker-internal, only reachable from backend container).
+    const endpoint =
+      items.find((item) => item.key === "s3publicendpoint")?.value?.trim() ||
+      items.find((item) => item.key === "s3endpoint")?.value?.trim() ||
+      "";
+    if (!endpoint) {
+      const failed: TestResult = {
+        status: "failed",
+        message: language === "th" ? "กรุณากรอก S3 Endpoint ก่อน" : "Please fill S3 Endpoint first",
+      };
+      setTestResults((current) => ({ ...current, storage: failed }));
+      return failed;
+    }
+    setTestingCategory("storage");
+    setTestResults((current) => ({
+      ...current,
+      storage: { status: "testing", message: language === "th" ? "กำลังทดสอบ..." : "Testing..." },
+    }));
+    const start = Date.now();
+    try {
+      // Server-side probe via /api/storage/health — avoids browser CORS blocks
+      // that occur when fetching a cross-origin S3/MinIO endpoint directly.
+      const probeResponse = await fetch("/api/storage/health", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ endpoint }),
+        signal: AbortSignal.timeout(12000),
+      });
+      const data = (await probeResponse.json()) as {
+        success?: boolean;
+        message?: string;
+        latencyMs?: number;
+        httpStatus?: number;
+      };
+      const latencyMs = data.latencyMs ?? Date.now() - start;
+      if (data.success) {
+        const success: TestResult = {
+          status: "success",
+          message:
+            language === "th"
+              ? `เชื่อมต่อได้ (${latencyMs}ms${data.httpStatus ? `, HTTP ${data.httpStatus}` : ""})`
+              : `Reachable (${latencyMs}ms${data.httpStatus ? `, HTTP ${data.httpStatus}` : ""})`,
+          latencyMs,
+        };
+        setTestResults((current) => ({ ...current, storage: success }));
+        return success;
+      }
+      const failed: TestResult = {
+        status: "failed",
+        message: data.message ?? (language === "th" ? "เชื่อมต่อไม่ได้" : "Unreachable"),
+        latencyMs,
+      };
+      setTestResults((current) => ({ ...current, storage: failed }));
+      return failed;
+    } catch (error) {
+      const failed: TestResult = {
+        status: "failed",
+        message: error instanceof Error && error.message
+          ? error.message
+          : (language === "th" ? "เชื่อมต่อไม่ได้" : "Unreachable"),
+      };
+      setTestResults((current) => ({ ...current, storage: failed }));
+      return failed;
+    } finally {
+      setTestingCategory("");
+    }
+  }
+
+  function renderStorageCard(items: ConfigItem[]) {
+    // Show only S3-compatible fields (R2 has been removed).
+    const displayItems = items.filter((item) => storageIntegrationKeys.has(item.key));
+    const testResult = testResults["storage"];
+    const isTesting = testingCategory === "storage";
+    return (
+      <section className="settings-card config-card storage-card" key="storage" aria-label="Storage">
+        <div className="config-card-header">
+          <div className="settings-card-title">
+            <span className="settings-card-icon">
+              <Cloud aria-hidden="true" size={19} />
+            </span>
+            <div>
+              <p className="eyebrow">storage</p>
+              <h2>{language === "th" ? "ที่เก็บรูปและไฟล์" : "Image & File Storage"}</h2>
+              <p className="config-description">
+                {language === "th"
+                  ? "S3-compatible (เช่น MinIO) — เก็บรูปและไฟล์ในเซิร์ฟเวอร์ของเรา (on-prem)"
+                  : "S3-compatible (e.g. MinIO) — store images and files on our own server (on-prem)"}
+              </p>
+            </div>
+          </div>
+          <div className="config-card-meta">
+            <span className="field-count-pill">{displayItems.length} {language === "th" ? "ฟิลด์" : "fields"}</span>
+            {testResult ? <TestBadge result={testResult} /> : null}
+          </div>
+        </div>
+        <div className="config-field-grid">
+          {displayItems.map((item) => renderConfigField(item))}
+        </div>
+        <div className="config-test-row">
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => void handleTestStorageConnection()}
+            disabled={isBusy || isTesting}
+          >
+            {isTesting ? <Loader2 className="spin" size={17} /> : <Wifi aria-hidden="true" size={17} />}
+            <span>{language === "th" ? "ทดสอบที่เก็บรูป" : "Test storage"}</span>
+          </button>
+          {testResult?.message ? (
+            <span className={`test-message ${testResult.status}`}>{formatTestMessage(testResult)}</span>
+          ) : null}
+        </div>
       </section>
     );
   }

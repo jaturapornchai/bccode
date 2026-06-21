@@ -132,6 +132,8 @@ func (svc ShopUserService) InfoShopByUser(holdingCode string, username string) (
 		shopUserProfile.UID = userProfiles[0].UID
 		shopUserProfile.Email = userProfiles[0].Email
 		shopUserProfile.UserProfileName = userProfiles[0].Name
+		shopUserProfile.Avatar = userProfiles[0].Avatar
+		shopUserProfile.AvatarThumb = userProfiles[0].AvatarThumb
 	}
 
 	// === ข้อมูลพนักงาน ===
@@ -247,6 +249,8 @@ func (svc ShopUserService) ListUserInShop(holdingCode string, pageable micromode
 			shopUserProfile.UID = tempUserProfile.UID
 			shopUserProfile.Email = tempUserProfile.Email
 			shopUserProfile.UserProfileName = tempUserProfile.Name
+			shopUserProfile.Avatar = tempUserProfile.Avatar
+			shopUserProfile.AvatarThumb = tempUserProfile.AvatarThumb
 		}
 
 		shopUserProfiles = append(shopUserProfiles, shopUserProfile)

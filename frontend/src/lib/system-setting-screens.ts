@@ -44,6 +44,26 @@ export type SystemSettingField = {
   helper?: SystemSettingText;
   multiline?: boolean;
   valueType?: "boolean" | "number" | "string";
+  /** Override the file input `accept` attribute. Defaults to common image types. Use "image/png" for logos. */
+  acceptTypes?: string;
+  /**
+   * Marks a user-facing business/reference code field (e.g. permissioncode, groupcode,
+   * approvalcode). On save it is normalized to uppercase + no whitespace, gets a duplicate
+   * guard, and is shown as the record's code in the detail header. See business-code rules.
+   */
+  businessCode?: boolean;
+  /**
+   * Marks an identity code field that must be unique per holding but is NOT a business code
+   * (e.g. permissionlink `employeecode` = email/username). It is NOT uppercased (emails are
+   * exempt) — only trimmed — but still gets a case-insensitive duplicate guard.
+   */
+  uniqueCode?: boolean;
+  /**
+   * When set, the image upload keeps the original file untouched in `key` and also
+   * generates a small WebP thumbnail stored under this field key (e.g. "avatarthumb").
+   * Lists/previews read the thumbnail; detail/download read the full original.
+   */
+  thumbnailKey?: string;
 };
 
 export type SystemSettingKind =
@@ -309,6 +329,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
       en: "Edit the selected company profile that already exists.",
     },
     fields: [
+      imageUploadField("logouri", "โลโก้บริษัท", "Company logo", "image/png"),
       namesField("names", "ชื่อบริษัท", "Company names"),
       namesField("address", "ที่อยู่", "Address", true),
     ],
@@ -337,6 +358,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
         },
         placeholder: "00000",
       },
+      imageUploadField("logouri", "โลโก้สาขา", "Branch logo", "image/png"),
       namesField(
         "companynames",
         "ชื่อบริษัทบนเอกสาร",
@@ -595,58 +617,106 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
       en: "Manage users, role, department, LINE profile, and approval permissions.",
     },
     fields: [
-      textField(
-        "username",
-        "รหัสผู้ใช้ หรือ email",
-        "User code or email",
-        true,
-      ),
-      textField("userprofilename", "ชื่อผู้ใช้งาน", "User name"),
+      {
+        ...imageUploadField("avatar", "รูปผู้ใช้งาน", "User avatar", undefined, "avatarthumb"),
+        helper: {
+          th: "รองรับไฟล์ PNG พื้นหลังโปร่งใสได้ แสดงในระบบและเอกสาร",
+          en: "PNG supported. Transparent background OK. Shown across the app and documents.",
+        },
+      },
+      {
+        ...textField("username", "ชื่อเข้าสู่ระบบ", "Login username", true),
+        placeholder: "เช่น somchai หรือ somchai@email.com",
+        helper: {
+          th: "ใช้ภาษาอังกฤษหรือตัวเลข ใช้สำหรับเข้าสู่ระบบ ตั้งครั้งเดียวแล้วไม่ควรเปลี่ยนบ่อย",
+          en: "Letters or numbers. Used to sign in. Set once and avoid changing.",
+        },
+      },
+      {
+        ...textField("userprofilename", "ชื่อ-นามสกุล", "Full name"),
+        placeholder: "เช่น สมชาย ใจดี",
+        helper: {
+          th: "ชื่อที่แสดงในระบบและเอกสาร ใช้ภาษาไทยได้",
+          en: "Display name shown across the app and documents. Thai is allowed.",
+        },
+      },
       {
         ...textField("email", registeredEmailLabel.th, registeredEmailLabel.en),
         label: registeredEmailLabel,
+        type: "text",
+        placeholder: "เช่น somchai@email.com",
+        helper: {
+          th: "อีเมลสำหรับรับการแจ้งเตือนและกู้คืนรหัสผ่าน ถ้าเหมือนชื่อเข้าสู่ระบบก็กรอกซ้ำได้",
+          en: "Email for notifications and password recovery. May match the login username.",
+        },
       },
-      radioField(
-        "role",
-        "สิทธิ์ผู้ใช้งาน",
-        "User Role",
-        [
-          { value: "0", label: roleUserLabel.en, labels: roleUserLabel },
-          { value: "2", label: roleOwnerLabel.en, labels: roleOwnerLabel },
-          { value: "1", label: roleAdminLabel.en, labels: roleAdminLabel },
-        ],
-        true,
-        "number",
-      ),
-      radioField(
-        "isaccessdisabled",
-        accessStatusLabel.th,
-        accessStatusLabel.en,
-        [
-          {
-            value: "false",
-            label: accessEnabledLabel.en,
-            labels: accessEnabledLabel,
-          },
-          {
-            value: "true",
-            label: accessTemporarilyDisabledLabel.en,
-            labels: accessTemporarilyDisabledLabel,
-          },
-        ],
-        true,
-        "boolean",
-      ),
+      {
+        ...radioField(
+          "role",
+          "ระดับสิทธิ์",
+          "Access level",
+          [
+            { value: "0", label: roleUserLabel.en, labels: roleUserLabel },
+            { value: "2", label: roleOwnerLabel.en, labels: roleOwnerLabel },
+            { value: "1", label: roleAdminLabel.en, labels: roleAdminLabel },
+          ],
+          true,
+          "number",
+        ),
+        helper: {
+          th: "ผู้ใช้งาน = ใช้งานได้ตามที่กำหนดให้ · แอดมิน = จัดการผู้ใช้และตั้งค่าทั้งหมด · เจ้าของร้าน = สิทธิสูงสุด เป็นผู้สร้างกลุ่มกิจการ",
+          en: "User = access as granted · Admin = manage users and all settings · Owner = highest rights, the business group creator.",
+        },
+      },
+      {
+        ...radioField(
+          "isaccessdisabled",
+          accessStatusLabel.th,
+          accessStatusLabel.en,
+          [
+            {
+              value: "false",
+              label: accessEnabledLabel.en,
+              labels: accessEnabledLabel,
+            },
+            {
+              value: "true",
+              label: accessTemporarilyDisabledLabel.en,
+              labels: accessTemporarilyDisabledLabel,
+            },
+          ],
+          true,
+          "boolean",
+        ),
+        helper: {
+          th: "พักการเข้าใช้งานชั่วคราวได้โดยไม่ต้องลบผู้ใช้ เปลี่ยนกลับได้ตลอด",
+          en: "Temporarily suspend access without deleting the user. Can be turned back on anytime.",
+        },
+      },
       textField("position", "ตำแหน่ง", "Position"),
       textField("department", "แผนก", "Department"),
-      holdingScopeRulesField("accessscopes", "บริษัท/สาขาที่เข้าใช้งานได้", "Company and branch access", true),
+      {
+        ...holdingScopeRulesField("accessscopes", "บริษัทและสาขาที่เข้าถึงได้", "Companies and branches this user can enter", true),
+        helper: {
+          th: "เลือกบริษัทและสาขาที่ผู้ใช้คนนี้เข้าใช้งานได้ เลือกทั้งกลุ่มกิจการได้ถ้าต้องการเข้าถึงทุกบริษัท",
+          en: "Pick the companies and branches this user may enter. Choose the whole business group to allow all.",
+        },
+      },
       {
         ...textField("lineuserid", "LINE User ID", "LINE User ID"),
         readOnly: true,
+        helper: {
+          th: "ผูกกับบัญชี LINE อัตโนมัติเมื่อเชื่อมจากหน้าเข้าสู่ระบบด้วย LINE",
+          en: "Auto-filled from LINE after linking via the LINE sign-in page.",
+        },
       },
       {
         ...textField("linedisplayname", "ชื่อ LINE", "LINE display name"),
         readOnly: true,
+        helper: {
+          th: "ชื่อบน LINE ของผู้ใช้คนนี้ แสดงหลังเชื่อมบัญชี LINE เรียบร้อย",
+          en: "This user's LINE display name, shown after LINE is linked.",
+        },
       },
     ],
   },
@@ -709,7 +779,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
       en: "Configure business group approval roles, limits, and company/branch scope.",
     },
     fields: [
-      textField("approvalcode", "รหัส", "Code", true),
+      businessCodeField("approvalcode", "รหัส", "Code", true),
       textField("approvalname", "ชื่อ", "Name", true),
       textareaField("description", "คำอธิบาย", "Description"),
       checkboxField("isactive", "เปิดใช้งาน", "Active"),
@@ -746,7 +816,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
       en: "Create business group screen permission codes and company/branch scope.",
     },
     fields: [
-      textField("permissioncode", "รหัสสิทธิ์", "Permission code", true),
+      businessCodeField("permissioncode", "รหัสสิทธิ์", "Permission code", true),
       textField("permissionname", "ชื่อสิทธิ์", "Permission name", true),
       textareaField("description", "คำอธิบาย", "Description"),
       checkboxField("isactive", "เปิดใช้งาน", "Active"),
@@ -769,7 +839,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
       en: "Create permission groups for job roles.",
     },
     fields: [
-      textField("groupcode", "รหัสกลุ่มสิทธิ์", "Group code", true),
+      businessCodeField("groupcode", "รหัสกลุ่มสิทธิ์", "Group code", true),
       textField("groupname", "ชื่อกลุ่มสิทธิ์", "Group name", true),
       textareaField("description", "คำอธิบาย", "Description"),
       checkboxField("isactive", "เปิดใช้งาน", "Active"),
@@ -792,7 +862,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
       en: "Link users to business group permissions and company/branch scope.",
     },
     fields: [
-      textField(
+      uniqueCodeField(
         "employeecode",
         "รหัสผู้ใช้/พนักงาน",
         "User/employee code",
@@ -1152,7 +1222,7 @@ function productMasterConfigs(): SystemSettingConfig[] {
       "กำหนดรหัสสี ชื่อสี และชื่อเรียกอื่นสำหรับใช้สร้าง SKU",
       "Define color codes, names, and aliases for SKU generation.",
       [
-        textField("code", "รหัสสี", "Color code", true),
+        businessCodeField("code", "รหัสสี", "Color code", true),
         namesField("names", "ชื่อสี", "Color names"),
         textField("hexcolor", "ค่าสี (HEX)", "Color HEX"),
         textField("colorfamily", "กลุ่มสี", "Color family"),
@@ -1178,7 +1248,7 @@ function productMasterConfigs(): SystemSettingConfig[] {
       "กำหนดรหัสไซซ์ ระบบไซซ์ และชื่อเรียกอื่น",
       "Define size codes, size systems, and aliases.",
       [
-        textField("code", "รหัสไซซ์", "Size code", true),
+        businessCodeField("code", "รหัสไซซ์", "Size code", true),
         namesField("names", "ชื่อไซซ์", "Size names"),
         selectField("sizesystem", "ระบบไซซ์", "Size system", sizeSystemOptions),
         selectField("sizetype", "ประเภทไซซ์", "Size type", sizeTypeOptions),
@@ -1205,7 +1275,7 @@ function productMasterConfigs(): SystemSettingConfig[] {
       "ออกแบบแกนตัวเลือกและชุด SKU สำหรับราคา สต๊อก ต้นทุน และการนำเข้าข้อมูล",
       "Design option tiers and SKU combinations for price, stock, cost, and imports.",
       [
-        textField("code", "รหัสชุดตัวเลือก", "Matrix code", true),
+        businessCodeField("code", "รหัสชุดตัวเลือก", "Matrix code", true),
         namesField("names", "ชื่อชุดตัวเลือก", "Matrix names"),
         selectField("matrixtype", "ประเภทธุรกิจสินค้า", "Product business type", variantMatrixTypeOptions),
         selectField("serialtrackingmode", "การคุมเลขเครื่อง", "Serial tracking mode", serialTrackingModeOptions),
@@ -1503,6 +1573,29 @@ function textField(
   return { key, label: { th, en }, type: "text", required };
 }
 
+// businessCodeField — a text field that holds a user-facing business/reference code.
+// Normalized to uppercase + no whitespace on save, duplicate-guarded, and shown as the
+// record code in the detail header.
+function businessCodeField(
+  key: string,
+  th: string,
+  en: string,
+  required = false,
+): SystemSettingField {
+  return { key, label: { th, en }, type: "text", required, businessCode: true };
+}
+
+// uniqueCodeField — an identity code that must be unique per holding but is NOT uppercased
+// (e.g. employeecode = email/username). Trimmed + case-insensitive duplicate-guarded.
+function uniqueCodeField(
+  key: string,
+  th: string,
+  en: string,
+  required = false,
+): SystemSettingField {
+  return { key, label: { th, en }, type: "text", required, uniqueCode: true };
+}
+
 function textareaField(
   key: string,
   th: string,
@@ -1528,8 +1621,13 @@ function imageUploadField(
   key: string,
   th: string,
   en: string,
+  acceptTypes?: string,
+  thumbnailKey?: string,
 ): SystemSettingField {
-  return { key, label: { th, en }, type: "image-upload" };
+  const field: SystemSettingField = { key, label: { th, en }, type: "image-upload" };
+  if (acceptTypes) field.acceptTypes = acceptTypes;
+  if (thumbnailKey) field.thumbnailKey = thumbnailKey;
+  return field;
 }
 
 function imageGalleryField(

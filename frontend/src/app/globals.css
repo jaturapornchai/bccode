@@ -339,10 +339,10 @@ body {
 @media (min-width: 1024px) {
   html,
   body {
-    height: 100dvh;
     min-height: 100dvh;
-    max-height: 100dvh;
-    overflow: hidden;
+    /* Allow natural scrolling on desktop/notebook so long forms (login card, settings)
+       remain fully readable instead of being clipped by overflow: hidden. */
+    overflow-y: auto;
   }
 }
 
@@ -790,7 +790,80 @@ h2:not([class]) {
   min-height: calc(100vh - clamp(20px, 4.8vw, 48px));
   display: grid;
   place-items: center;
-  padding: 0;
+  padding: clamp(16px, 3vw, 32px) 0;
+  align-content: start;
+}
+
+.connection-error-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  max-width: 460px;
+  margin: 0 auto 16px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--message-error-bg, #ffdad6);
+  background: var(--message-error-bg, #ffdad6);
+  color: var(--danger, #ba1a1a);
+  box-shadow: var(--shadow-card, 0 4px 12px rgba(129, 41, 32, 0.08));
+}
+
+.connection-error-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.connection-error-content > strong {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.connection-error-detail {
+  font-size: 13px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.connection-error-hint {
+  font-size: 12px;
+  opacity: 0.85;
+  line-height: 1.4;
+}
+
+.connection-error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.connection-error-url {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.55);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.connection-error-link {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--danger, #ba1a1a);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.connection-error-link:hover {
+  opacity: 0.8;
 }
 
 .login-card {
@@ -2755,7 +2828,7 @@ h2:not([class]) {
 }
 
 .settings-hero {
-  overflow: hidden;
+  overflow: visible;
   border-color: color-mix(in srgb, var(--indigo) 22%, var(--line));
   background:
     linear-gradient(135deg, var(--panel-strong), color-mix(in srgb, var(--panel-strong) 82%, var(--action-bg))),
@@ -3081,12 +3154,128 @@ h2:not([class]) {
   gap: var(--density-gap-lg);
 }
 
+/* Redesigned settings: section groups with headings */
+.settings-section-group {
+  width: 100%;
+  display: grid;
+  gap: var(--density-gap-md, 12px);
+}
+
+.settings-section-heading {
+  display: grid;
+  gap: 4px;
+  padding: 4px 4px 0;
+}
+
+.settings-section-heading > h2 {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--foreground);
+  letter-spacing: -0.01em;
+  margin: 0;
+  position: relative;
+  padding-left: 12px;
+}
+
+.settings-section-heading > h2::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 4px;
+  border-radius: 999px;
+  background: var(--primary);
+}
+
+.settings-section-heading > p {
+  font-size: 0.82rem;
+  color: var(--muted-foreground);
+  margin: 0;
+  padding-left: 12px;
+  line-height: 1.4;
+}
+
+/* Server host + Auto-fill card */
+.server-host-card {
+  display: grid;
+  gap: 8px;
+  padding: 16px 18px;
+}
+
+.server-host-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px;
+}
+
+.server-host-row .field-group {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+.server-host-row .input-shell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+}
+
+.server-host-row .input-shell > svg {
+  color: var(--muted-foreground);
+  flex-shrink: 0;
+}
+
+.server-host-row .input-shell > input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  padding: 0;
+  height: 36px;
+  font-size: 14px;
+  color: var(--foreground);
+}
+
+.server-host-row .input-shell > input:focus {
+  outline: none;
+}
+
+.auto-fill-button {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 18px;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--primary), color-mix(in srgb, var(--primary) 75%, #000));
+  color: var(--primary-foreground);
+  border: none;
+  box-shadow: 0 6px 16px var(--primary-shadow);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.auto-fill-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px var(--primary-shadow-strong);
+}
+
+.auto-fill-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .setup-config-sections {
   width: 100%;
   max-width: 100%;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
-  gap: var(--density-gap-lg);
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--density-gap-md, 12px);
   align-items: start;
 }
 
@@ -4615,6 +4804,15 @@ h2:not([class]) {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .animate-in,
+  .animate-pulse,
+  .animate-spin,
+  [class*="fade-in"],
+  [class*="zoom-in"],
+  [class*="slide-in"] {
+    animation: none !important;
+  }
+
   .brand-feature-card,
   .primary-button,
   .social-login-button,
@@ -5201,6 +5399,12 @@ h2:not([class]) {
 
 .bc-list-row:last-child {
   border-bottom: 0;
+}
+
+.bc-list-row:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+  border-radius: 6px;
 }
 
 .bc-list-header.grid,

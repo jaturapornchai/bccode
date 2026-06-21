@@ -1,13 +1,3 @@
-const DEFAULT_ALLOWED_HOSTS = new Set([
-  "localhost",
-  "127.0.0.1",
-  "::1",
-  "host.docker.internal",
-  "api.bcaicloud.com",
-  "dev-api.bcaicloud.com",
-  "bcaicloud.com",
-]);
-
 export type BackendUrlCheck = {
   normalizedGoApiUrl: string;
   mainApiUrl: string;
@@ -106,13 +96,7 @@ export function deriveMainApiUrl(goApiUrl: string): string {
   return parsed.toString().replace(/\/$/, "");
 }
 
-type BackendEnv = {
-  [key: string]: string | undefined;
-  BC_ALLOWED_BACKEND_HOSTS?: string;
-  BC_ALLOW_PRIVATE_BACKENDS?: string;
-};
-
-export function validateBackendUrl(rawUrl: string, env: BackendEnv = process.env): BackendUrlCheck {
+export function validateBackendUrl(rawUrl: string): BackendUrlCheck {
   const normalizedGoApiUrl = normalizeBackendUrl(rawUrl);
   const mainApiUrl = deriveMainApiUrl(normalizedGoApiUrl);
   const parsed = new URL(mainApiUrl);
@@ -121,40 +105,7 @@ export function validateBackendUrl(rawUrl: string, env: BackendEnv = process.env
     throw new Error("Backend URL ห้ามมี username หรือ password");
   }
 
-  if (!isAllowedHost(parsed.hostname, env)) {
-    throw new Error("Backend host นี้ยังไม่อยู่ใน allowlist");
-  }
-
   return { normalizedGoApiUrl, mainApiUrl };
-}
-
-function isAllowedHost(hostname: string, env: BackendEnv): boolean {
-  const normalizedHost = hostname.toLowerCase();
-  const extraHosts = (env.BC_ALLOWED_BACKEND_HOSTS ?? "")
-    .split(",")
-    .map((host) => host.trim().toLowerCase())
-    .filter(Boolean);
-
-  if (DEFAULT_ALLOWED_HOSTS.has(normalizedHost) || extraHosts.includes(normalizedHost)) {
-    return true;
-  }
-
-  if (normalizedHost.endsWith(".bcaicloud.com")) {
-    return true;
-  }
-
-  if (env.BC_ALLOW_PRIVATE_BACKENDS === "true" && isPrivateNetworkHost(normalizedHost)) {
-    return true;
-  }
-
-  return false;
-}
-
-function isPrivateNetworkHost(hostname: string): boolean {
-  if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname)) return true;
-  if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname)) return true;
-  if (/^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname)) return true;
-  return false;
 }
 
 function isLocalWebHost(hostname: string): boolean {

@@ -15,6 +15,7 @@ type UserDetail struct {
 	UID               string `json:"uid" bson:"uid"`
 	Name              string `json:"name,omitempty"`
 	Avatar            string `json:"avatar"`
+	AvatarThumb       string `json:"avatarthumb"`
 	timezone.Timezone `bson:"inline"`
 	YearType          string   `json:"yeartype" bson:"yeartype" validate:"max=21"`
 	DedeZoom          DedeZoom `json:"dedezoom" bson:"dedezoom"`
@@ -279,6 +280,9 @@ type UserRoleRequest struct {
 	UserUID          string        `json:"useruid,omitempty" bson:"useruid,omitempty"`
 	UserProfileName  string        `json:"userprofilename" bson:"userprofilename"`
 	Email            string        `json:"email,omitempty" bson:"email,omitempty"`
+	// Avatar/AvatarThumb are pointers so LINE-sync/auto-unlink callers that omit them do not wipe stored values.
+	Avatar           *string       `json:"avatar,omitempty" bson:"-"`
+	AvatarThumb      *string       `json:"avatarthumb,omitempty" bson:"-"`
 	Role             UserRole      `json:"role" bson:"role"`
 	IsAccessDisabled bool          `json:"isaccessdisabled" bson:"isaccessdisabled"`
 	AccessDisabledAt time.Time     `json:"accessdisabledat,omitempty" bson:"accessdisabledat,omitempty"`
@@ -318,6 +322,8 @@ type ShopUserProfile struct {
 	UID              string        `json:"uid,omitempty" bson:"uid,omitempty"`
 	Email            string        `json:"email,omitempty" bson:"email,omitempty"`
 	UserProfileName  string        `json:"userprofilename" bson:"userprofilename"`
+	Avatar           string        `json:"avatar" bson:"avatar"`
+	AvatarThumb      string        `json:"avatarthumb" bson:"avatarthumb"`
 	IsCreator        bool          `json:"iscreator,omitempty" bson:"-"`
 	IsAccessDisabled bool          `json:"isaccessdisabled" bson:"isaccessdisabled"`
 	AccessDisabledAt time.Time     `json:"accessdisabledat,omitempty" bson:"accessdisabledat,omitempty"`
