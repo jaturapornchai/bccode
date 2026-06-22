@@ -9,7 +9,7 @@ import (
 // ImageMetadata - ข้อมูล metadata ของรูปภาพที่เก็บใน MongoDB
 // Note: R2Key เก็บไว้ใน DB แต่ไม่ส่งออกไป frontend (json:"-")
 type ImageMetadata struct {
-	ID           primitive.ObjectID `bson:"id,omitempty" json:"id"`
+	ID           primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 	HoldingCode  string             `bson:"holdingcode" json:"holdingcode"`
 	FileName     string             `bson:"filename" json:"filename"`         // ชื่อไฟล์ใน R2 (hash + extension)
 	OriginalName string             `bson:"originalname" json:"originalname"` // ชื่อไฟล์เดิม

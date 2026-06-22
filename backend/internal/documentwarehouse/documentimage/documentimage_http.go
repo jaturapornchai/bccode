@@ -182,7 +182,7 @@ func (h DocumentImageHttp) SearchDocumentImage(ctx microservice.IContext) error 
 	docGuidRef := strings.TrimSpace(ctx.QueryParam("doc_guid_ref"))
 
 	if len(docGuidRef) > 0 {
-		matchFilters["doc_guid_ref"] = docGuidRef
+		matchFilters["docguidref"] = docGuidRef
 	}
 
 	documentRef := strings.TrimSpace(ctx.QueryParam("documentref"))
@@ -642,7 +642,7 @@ func (h DocumentImageHttp) ListDocumentImageGroup(ctx microservice.IContext) err
 		toDate, err2 := time.Parse("2006-01-02", toDateStr)
 
 		if err1 == nil && err2 == nil {
-			matchFilters["uploaded_at"] = bson.M{
+			matchFilters["uploadedat"] = bson.M{
 				"$gte": fromDate,
 				"$lt":  toDate.AddDate(0, 0, 1),
 			}
@@ -654,7 +654,7 @@ func (h DocumentImageHttp) ListDocumentImageGroup(ctx microservice.IContext) err
 	}
 
 	if len(folder) > 0 {
-		matchFilters["task_guid"] = folder
+		matchFilters["taskguid"] = folder
 	}
 
 	docList, pagination, err := h.service.ListDocumentImageGroup(holdingCode, matchFilters, pageable)

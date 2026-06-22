@@ -265,16 +265,16 @@ func ImageUploadHandler(c echo.Context) error {
 		})
 	}
 
-	// Validate file type (images only)
+	// Validate file type — only PNG and JPG may be stored.
 	ext := strings.ToLower(filepath.Ext(file.Filename))
 	allowedExts := map[string]bool{
-		".jpg": true, ".jpeg": true, ".png": true, ".gif": true, ".webp": true, ".bmp": true,
+		".jpg": true, ".jpeg": true, ".png": true,
 	}
 	if !allowedExts[ext] {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  "error",
 			"code":    400,
-			"message": "Invalid file type. Allowed: jpg, jpeg, png, gif, webp, bmp",
+			"message": "Invalid file type. Allowed: jpg, jpeg, png",
 		})
 	}
 
@@ -317,8 +317,16 @@ func ImageUploadHandler(c echo.Context) error {
 		r2Key = fmt.Sprintf("%s/%s", holdingCode, fileName)
 	}
 
-	// Detect content type
+	// Detect content type and enforce PNG/JPG-only storage (guards against a renamed
+	// non-image or webp/gif/bmp file that slipped past the extension check).
 	contentType := http.DetectContentType(buf.Bytes())
+	if contentType != "image/jpeg" && contentType != "image/png" {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"status":  "error",
+			"code":    400,
+			"message": "Invalid image content. Only PNG and JPG are allowed.",
+		})
+	}
 
 	// Upload to R2
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -605,7 +613,7 @@ func ImageGetHandler(c echo.Context) error {
 	collection := atlasDB.Collection("images")
 	filter := bson.M{
 		"holdingcode": holdingCode,
-		"file_name":   req.FileName,
+		"filename":    req.FileName,
 	}
 
 	var imageDoc models.ImageMetadata
@@ -717,7 +725,7 @@ func ImageDeleteHandler(c echo.Context) error {
 		}
 		filter["_id"] = oid
 	} else {
-		filter["file_name"] = req.FileName
+		filter["filename"] = req.FileName
 	}
 
 	// Find the image first to get R2 key
@@ -817,7 +825,7 @@ func ImageInfoHandler(c echo.Context) error {
 	collection := atlasDB.Collection("images")
 	filter := bson.M{
 		"holdingcode": holdingCode,
-		"file_name":   req.FileName,
+		"filename":    req.FileName,
 	}
 
 	var imageDoc models.ImageMetadata
@@ -923,7 +931,7 @@ func ImageVerifyHandler(c echo.Context) error {
 		}
 		filter["_id"] = oid
 	} else {
-		filter["file_name"] = req.FileName
+		filter["filename"] = req.FileName
 	}
 
 	// Find the image
@@ -988,42 +996,42 @@ func ImageVerifyHandler(c echo.Context) error {
 	// Prepare update data
 	update := bson.M{
 		"$set": bson.M{
-			"verified":    verifyResult.Success,
-			"verified_at": now,
-			"updatedat":   now,
-			"slip_type":   detectedType, // bank หรือ truewallet
+			"verified":   verifyResult.Success,
+			"verifiedat": now,
+			"updatedat":  now,
+			"sliptype":   detectedType, // bank หรือ truewallet
 		},
 	}
 
 	if verifyResult.Success {
-		update["$set"].(bson.M)["verify_status"] = "success"
-		update["$set"].(bson.M)["slip_data"] = verifyResult.Data
-		update["$set"].(bson.M)["trans_ref"] = verifyResult.TransRef
-		update["$set"].(bson.M)["trans_amount"] = verifyResult.Amount
-		update["$set"].(bson.M)["trans_date"] = verifyResult.Date
-		update["$set"].(bson.M)["sender_name"] = verifyResult.SenderName
-		update["$set"].(bson.M)["sender_bank"] = verifyResult.SenderBank
-		update["$set"].(bson.M)["receiver_name"] = verifyResult.ReceiverName
-		update["$set"].(bson.M)["receiver_bank"] = verifyResult.ReceiverBank
-		update["$set"].(bson.M)["is_duplicate"] = verifyResult.IsDuplicate
+		update["$set"].(bson.M)["verifystatus"] = "success"
+		update["$set"].(bson.M)["slipdata"] = verifyResult.Data
+		update["$set"].(bson.M)["transref"] = verifyResult.TransRef
+		update["$set"].(bson.M)["transamount"] = verifyResult.Amount
+		update["$set"].(bson.M)["transdate"] = verifyResult.Date
+		update["$set"].(bson.M)["sendername"] = verifyResult.SenderName
+		update["$set"].(bson.M)["senderbank"] = verifyResult.SenderBank
+		update["$set"].(bson.M)["receivername"] = verifyResult.ReceiverName
+		update["$set"].(bson.M)["receiverbank"] = verifyResult.ReceiverBank
+		update["$set"].(bson.M)["isduplicate"] = verifyResult.IsDuplicate
 	} else if verifyResult.IsDuplicate {
 		// กรณี duplicate - ยังคงมีข้อมูล slip ครบ
-		update["$set"].(bson.M)["verify_status"] = "duplicate"
-		update["$set"].(bson.M)["verify_error"] = verifyResult.Error
-		update["$set"].(bson.M)["is_duplicate"] = true
-		update["$set"].(bson.M)["slip_data"] = verifyResult.Data
-		update["$set"].(bson.M)["trans_ref"] = verifyResult.TransRef
-		update["$set"].(bson.M)["trans_amount"] = verifyResult.Amount
-		update["$set"].(bson.M)["trans_date"] = verifyResult.Date
-		update["$set"].(bson.M)["sender_name"] = verifyResult.SenderName
-		update["$set"].(bson.M)["sender_bank"] = verifyResult.SenderBank
-		update["$set"].(bson.M)["receiver_name"] = verifyResult.ReceiverName
-		update["$set"].(bson.M)["receiver_bank"] = verifyResult.ReceiverBank
+		update["$set"].(bson.M)["verifystatus"] = "duplicate"
+		update["$set"].(bson.M)["verifyerror"] = verifyResult.Error
+		update["$set"].(bson.M)["isduplicate"] = true
+		update["$set"].(bson.M)["slipdata"] = verifyResult.Data
+		update["$set"].(bson.M)["transref"] = verifyResult.TransRef
+		update["$set"].(bson.M)["transamount"] = verifyResult.Amount
+		update["$set"].(bson.M)["transdate"] = verifyResult.Date
+		update["$set"].(bson.M)["sendername"] = verifyResult.SenderName
+		update["$set"].(bson.M)["senderbank"] = verifyResult.SenderBank
+		update["$set"].(bson.M)["receivername"] = verifyResult.ReceiverName
+		update["$set"].(bson.M)["receiverbank"] = verifyResult.ReceiverBank
 	} else {
 		// กรณี error หรือ not_found
-		update["$set"].(bson.M)["verify_status"] = verifyResult.Status
-		update["$set"].(bson.M)["verify_error"] = verifyResult.Error
-		update["$set"].(bson.M)["is_duplicate"] = false
+		update["$set"].(bson.M)["verifystatus"] = verifyResult.Status
+		update["$set"].(bson.M)["verifyerror"] = verifyResult.Error
+		update["$set"].(bson.M)["isduplicate"] = false
 	}
 
 	// Update MongoDB

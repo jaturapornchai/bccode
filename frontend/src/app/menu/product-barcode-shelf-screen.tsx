@@ -1,12 +1,13 @@
 "use client";
 
-import { AlertCircle, Barcode, Loader2, Minus, Plus, Printer, RefreshCcw, Search, Trash2 } from "lucide-react";
+import { Barcode, Loader2, Minus, Plus, Printer, RefreshCcw, Search, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
+import { pushNotice } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import {
   localizedName,
@@ -35,8 +36,6 @@ type SelectedLabel = {
   product: ProductForLabel;
   copies: number;
 };
-
-type Notice = { type: "error" | "info" | "success"; text: string } | null;
 
 const text = {
   th: {
@@ -84,7 +83,7 @@ export function ProductBarcodeShelfScreen({ embedded = false, language: external
   const [selected, setSelected] = useState<Record<string, SelectedLabel>>({});
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
-  const [notice, setNotice] = useState<Notice>(null);
+  const setNotice = pushNotice;
 
   const loadProducts = useCallback(async (currentAuth: AuthSession | null, currentWorkspace: WorkspaceSession | null, searchText: string) => {
     if (!currentAuth || !currentWorkspace) return;
@@ -189,13 +188,6 @@ export function ProductBarcodeShelfScreen({ embedded = false, language: external
           </div>
         </div>
       </header>
-
-      {notice ? (
-        <div className={`message ${notice.type === "error" ? "error" : notice.type === "success" ? "success" : "info"}`}>
-          <AlertCircle size={18} />
-          <span>{notice.text}</span>
-        </div>
-      ) : null}
 
       <Card>
         <CardContent className="grid gap-2 p-3">

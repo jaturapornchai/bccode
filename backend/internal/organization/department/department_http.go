@@ -345,7 +345,7 @@ func departmentBranchFilters(ctx microservice.IContext) map[string]interface{} {
 		filters["branchguid"] = branchGuid
 	}
 	if branchKey := ctx.QueryParam("branch_key"); branchKey != "" {
-		filters["branch_key"] = branchKey
+		filters["branchkey"] = branchKey
 	}
 	return filters
 }

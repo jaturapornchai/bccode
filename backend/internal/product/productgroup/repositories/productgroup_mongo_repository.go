@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	common "smlcloudplatform/internal/models"
 	"smlcloudplatform/internal/product/productgroup/models"
 	"smlcloudplatform/internal/repositories"
 	"smlcloudplatform/pkg/microservice"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/smlsoft/mongopagination"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 type IProductGroupRepository interface {
@@ -31,6 +33,8 @@ type IProductGroupRepository interface {
 	FindCreatedOrUpdatedPage(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageable micromodels.Pageable) ([]models.ProductGroupActivity, mongopagination.PaginationData, error)
 	FindDeletedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ProductGroupDeleteActivity, error)
 	FindCreatedOrUpdatedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ProductGroupActivity, error)
+
+	UpdateXSorts(ctx context.Context, holdingCode string, guid string, xsorts []common.XSort, username string, updatedAt time.Time) error
 }
 
 type ProductGroupRepository struct {
@@ -53,4 +57,28 @@ func NewProductGroupRepository(pst microservice.IPersisterMongo) *ProductGroupRe
 	insRepo.ActivityRepository = repositories.NewActivityRepository[models.ProductGroupActivity, models.ProductGroupDeleteActivity](pst)
 
 	return insRepo
+}
+
+// UpdateXSorts persists the merged sibling-ordering list (xsorts) of a node.
+func (repo ProductGroupRepository) UpdateXSorts(ctx context.Context, holdingCode string, guid string, xsorts []common.XSort, username string, updatedAt time.Time) error {
+	filters := bson.M{
+		"holdingcode": holdingCode,
+		"guidfixed":   guid,
+		"deletedat":   bson.M{"$exists": false},
+	}
+
+	doc := bson.M{
+		"$set": bson.M{
+			"xsorts":    xsorts,
+			"updatedby": username,
+			"updatedat": updatedAt,
+		},
+	}
+
+	return repo.pst.Update(
+		ctx,
+		models.ProductGroupDoc{},
+		filters,
+		doc,
+	)
 }

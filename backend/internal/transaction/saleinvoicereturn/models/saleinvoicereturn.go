@@ -26,7 +26,7 @@ type SaleInvoiceReturn struct {
 	ChequeBookCode    string  `json:"chequebookcode" bson:"chequebookcode"`
 	ChequeDueDate     string  `json:"chequeduedate" bson:"chequeduedate"`
 	ChequeAmount      float64 `json:"chequeamount" bson:"chequeamount"`
-	SaleChannelCode   string  `json:"salechannelcode" bson:"csalechannelode"`
+	SaleChannelCode   string  `json:"salechannelcode" bson:"salechannelcode"`
 	SaleChannelGP     float64 `json:"salechannelgp" bson:"salechannelgp"`
 	SaleChannelGPType int8    `json:"salechannelgptype" bson:"salechannelgptype"`
 	PointsCode        string  `json:"pointscode" bson:"pointscode"`

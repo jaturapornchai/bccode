@@ -1351,13 +1351,13 @@ func (svc ProductImportService) applyMasterDataUpdatesFromCache(updateData bson.
 			if importData.CategoryCode != "" {
 				if category, ok := cache.Categories[importData.CategoryCode]; ok {
 					updateData["categoryguid"] = category.GuidFixed
-					updateData["category_names"] = category.Names
+					updateData["categorynames"] = category.Names
 				} else {
 					return fmt.Errorf("category code '%s' not found in master data", importData.CategoryCode)
 				}
 			} else {
 				updateData["categoryguid"] = ""
-				updateData["category_names"] = nil
+				updateData["categorynames"] = nil
 			}
 
 		case "classcode":
@@ -1947,7 +1947,7 @@ func (svc *ProductImportService) processRefBarcodeUpdates(ctx context.Context, h
 		updateData := bson.M{
 			"$set": bson.M{
 				"refbarcodes":      []product_models.RefProductBarcode{refBarcode},
-				"is_main_barcode":  false,
+				"ismainbarcode":    false,
 				"isusesubbarcodes": true,
 				"updatedby":        authUsername,
 				"updatedat":        time.Now(),
@@ -3062,7 +3062,7 @@ func (svc ProductImportService) updateExistingProduct(holdingCode string, authUs
 		case "groupsubtwocode":
 			updateData["groupsubtwocode"] = importData.GroupsubtwoCode
 		case "brand_code":
-			updateData["brand_code"] = importData.BrandCode
+			updateData["brandcode"] = importData.BrandCode
 		case "designcode":
 			updateData["designcode"] = importData.DesignCode
 		case "modelcode":
@@ -3092,12 +3092,12 @@ func (svc ProductImportService) updateExistingProduct(holdingCode string, authUs
 				}
 				updateData["refbarcodes"] = refBarcodes
 				updateData["isusesubbarcodes"] = true
-				updateData["is_main_barcode"] = false
+				updateData["ismainbarcode"] = false
 			} else {
 				// Clear RefBarcodes if no reference data
 				updateData["refbarcodes"] = []product_models.RefProductBarcode{}
 				updateData["isusesubbarcodes"] = false
-				updateData["is_main_barcode"] = true
+				updateData["ismainbarcode"] = true
 			}
 		}
 	}
@@ -3198,11 +3198,11 @@ func (svc ProductImportService) updateExistingProduct(holdingCode string, authUs
 				if importData.CategoryCode != "" {
 					if categories, err := svc.categoryProductRepo.FindByCodes(ctx, holdingCode, []string{importData.CategoryCode}); err == nil && len(categories) > 0 {
 						updateData["categoryguid"] = categories[0].GuidFixed
-						updateData["category_names"] = categories[0].Names
+						updateData["categorynames"] = categories[0].Names
 					}
 				} else {
 					updateData["categoryguid"] = ""
-					updateData["category_names"] = nil
+					updateData["categorynames"] = nil
 				}
 			case "classcode":
 				if importData.ClassCode != "" {

@@ -24,9 +24,19 @@ export function ZoomControl({ dictionary, language }: ZoomControlProps) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const savedZoom = normalizeZoom(localStorage.getItem(zoomStorageKey));
-    applyUiZoom(savedZoom);
-    setZoom(savedZoom);
+    // On the first entry per browser session, open at 100% (default) instead of restoring the
+    // last saved zoom — the menu should start clean at 100%. Within the same session the user's
+    // zoom choice is still remembered.
+    const sessionKey = "bc_ui_zoom_session";
+    const firstThisSession = sessionStorage.getItem(sessionKey) !== "1";
+    let initialZoom = normalizeZoom(localStorage.getItem(zoomStorageKey));
+    if (firstThisSession) {
+      sessionStorage.setItem(sessionKey, "1");
+      initialZoom = defaultZoom;
+      localStorage.setItem(zoomStorageKey, String(defaultZoom));
+    }
+    applyUiZoom(initialZoom);
+    setZoom(initialZoom);
     setReady(true);
   }, []);
 

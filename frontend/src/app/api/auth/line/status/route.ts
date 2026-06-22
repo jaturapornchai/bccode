@@ -8,7 +8,7 @@ import {
   postMainApiAuth,
   readJsonOrText,
 } from "@/lib/auth-bridge";
-import { validateBackendUrl } from "@/lib/backend-url";
+import { serverMainApiBase, validateBackendUrl } from "@/lib/backend-url";
 
 type LineStatusBody = {
   backendUrl?: string;
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
     const displayName = getString(data, "displayName") ?? getString(data, "displayname") ?? "";
     const pictureUrl = getString(data, "pictureUrl") ?? getString(data, "pictureurl") ?? "";
     const email = getString(data, "email") ?? "";
-    const login = await postMainApiAuth(mainApiUrl, "/linelogin", {
+    const login = await postMainApiAuth(serverMainApiBase(), "/linelogin", {
       lineuserid: lineUserId,
       displayname: displayName,
       pictureurl: pictureUrl,

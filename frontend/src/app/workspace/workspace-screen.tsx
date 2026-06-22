@@ -24,8 +24,9 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import QRCode from "qrcode";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { motion, AnimatePresence, MotionConfig } from "motion/react";
-import { cardStaggerParent, cardStaggerChild, noticeSlide } from "../shared/motion-variants";
+import { motion, MotionConfig } from "motion/react";
+import { cardStaggerParent, cardStaggerChild } from "../shared/motion-variants";
+import { pushNotice } from "@/lib/toast";
 import { SkeletonCardList } from "../shared/skeleton-card";
 import { backendText, useBackendLanguage, type BackendLanguageDictionary } from "@/lib/backend-language";
 import { normalizeLanguage, t, type LanguageCode } from "@/lib/i18n";
@@ -326,7 +327,6 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
   const [branchQuery, setBranchQuery] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<Notice>(null);
   const [lineDialog, setLineDialog] = useState<LineDialogState>(emptyLineDialog);
   const [pendingUnitSetup, setPendingUnitSetup] = useState<PendingUnitSetup | null>(null);
   const [unitSetupSaving, setUnitSetupSaving] = useState(false);
@@ -334,10 +334,10 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
   const [selectedShopForAccess, setSelectedShopForAccess] = useState<ShopListItem | null>(null);
   const isSelectedShopOwner = useMemo(() => {
     if (!selectedShop || !auth) return false;
-    const isCreator = selectedShop.is_creator === true
+    const isCreator = selectedShop.iscreator === true
       || Boolean(auth.username && selectedShop.createdby && selectedShop.createdby.trim().toLowerCase() === auth.username.trim().toLowerCase())
       || Boolean(auth.profile?.email && selectedShop.createdby && selectedShop.createdby.trim().toLowerCase() === auth.profile.email.trim().toLowerCase());
-    return isCreator || Number(selectedShop.role) === 2;
+    return isCreator || Number(selectedShop.role) === 2 || Number(selectedShop.role) === 1;
   }, [selectedShop, auth]);
   const linePollTimer = useRef<number | null>(null);
   const activeBackendUrl = auth?.backendUrl ?? initialBackendUrl;
@@ -350,6 +350,14 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
       return resolved === backendKey ? fallback : resolved;
     },
     [backendLanguage, language],
+  );
+  // Route the legacy { type, text/textKey } notice shape into the global bottom-right toast.
+  const setNotice = useCallback(
+    (next: Notice) => {
+      if (!next) return;
+      pushNotice({ type: next.type, text: next.text ?? (next.textKey ? text(next.textKey) : "") });
+    },
+    [text],
   );
   const connectLineText = backendText(backendLanguage, "connect_line", t(language, "loginWithLine"));
   const lineLinkDescription = backendText(backendLanguage, "scan_qr_with_line", t(language, "lineLoginDescription"));
@@ -370,9 +378,12 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
   const unitSetupClearText = backendText(backendLanguage, "clear_selection", language === "th" ? "ล้างการเลือก" : "Clear");
   const canCreateCompany = canAuthCreateCompany(auth);
 
+  const hasLoadedShopsRef = useRef(false);
   const loadShops = useCallback(async (currentAuth: AuthSession | null) => {
     if (!currentAuth) return;
-    setStep("loading");
+    // Show the loading skeleton only on the first load. Later reloads (workspace-changed / storage
+    // events / after actions) keep the current company list on screen so it never flickers blank.
+    if (!hasLoadedShopsRef.current) setStep("loading");
     setNotice(null);
     try {
       const selectedHoldingCode = activeHoldingCodeFromAuth(currentAuth);
@@ -385,6 +396,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
         ? allShops.filter((shop) => tenantCodeForShop(shop) === selectedHoldingCode)
         : allShops;
       setShops(nextShops);
+      hasLoadedShopsRef.current = true;
       setStep("shops");
       if (selectedHoldingCode && nextShops.length === 0) {
         setNotice({
@@ -397,6 +409,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
         setNotice({ type: "info", textKey: "createCompanyRequiresGoogle" });
       }
     } catch (error) {
+      hasLoadedShopsRef.current = true;
       setStep("shops");
       setNotice(error instanceof Error && error.message ? { type: "error", text: error.message } : { type: "error", textKey: "loadShopsFailed" });
     }
@@ -865,6 +878,17 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     }
   }
 
+  // Primary bootstrap action for the empty state. With NO accessible business group the
+  // openAccessSettings flow cannot run (it needs an existing holding to select), so route the
+  // user to /holding to create or pick one. With a holding present, open the access/setup flow.
+  function handlePrimarySetup() {
+    if (accessShopOptions.length === 0) {
+      router.push("/holding");
+      return;
+    }
+    void openAccessSettings("/activelanguages");
+  }
+
   async function handleAccessShopChange(shop: ShopListItem) {
     if (!auth) return;
     setBusy(true);
@@ -1271,11 +1295,19 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
               <button
                 className="primary-button workspace-head-action workspace-setup-button flex items-center gap-2 shadow-md"
                 type="button"
-                onClick={() => void openAccessSettings("/activelanguages")}
+                onClick={handlePrimarySetup}
                 disabled={busy}
               >
-                <KeyRound className="workspace-setup-button-icon" size={18} />
-                <span className="workspace-setup-button-label">{language === "th" ? "ตั้งค่าระบบ" : "Settings"}</span>
+                {accessShopOptions.length === 0 ? (
+                  <Building2 className="workspace-setup-button-icon" size={18} />
+                ) : (
+                  <KeyRound className="workspace-setup-button-icon" size={18} />
+                )}
+                <span className="workspace-setup-button-label">
+                  {accessShopOptions.length === 0
+                    ? language === "th" ? "เลือกกลุ่มกิจการ" : "Business group"
+                    : language === "th" ? "ตั้งค่าระบบ" : "Settings"}
+                </span>
                 {flatCompanies.length === 0 ? (
                   <span className="workspace-setup-badge">
                     {language === "th" ? "เริ่มที่นี่" : "Start here"}
@@ -1306,21 +1338,6 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
           </p>
         </div>
 
-        <AnimatePresence initial={false}>
-        {notice ? (
-          <motion.div
-            key={`${notice.type}-${notice.text ?? notice.textKey ?? "notice"}`}
-            className={`message ${notice.type === "success" ? "success" : notice.type === "error" ? "error" : "info"}`}
-            variants={noticeSlide}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-          >
-            {notice.type === "success" ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
-            <span>{notice.text ?? (notice.textKey ? text(notice.textKey) : "")}</span>
-          </motion.div>
-        ) : null}
-        </AnimatePresence>
 
         {step === "loading" ? <SkeletonCardList count={4} /> : null}
 
@@ -1338,24 +1355,40 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                   <Building2 size={40} />
                 </div>
                 <strong className="text-xl sm:text-2xl text-foreground font-bold mb-2.5 tracking-tight">
-                  {language === "th"
-                    ? "ยังไม่มีบริษัทเปิดใช้งานในระบบของคุณ"
-                    : "No active companies found in your system"}
+                  {accessShopOptions.length === 0
+                    ? language === "th"
+                      ? "ยังไม่มีกลุ่มกิจการสำหรับบัญชีนี้"
+                      : "No business group for this account yet"
+                    : language === "th"
+                      ? "ยังไม่มีบริษัทเปิดใช้งานในระบบของคุณ"
+                      : "No active companies found in your system"}
                 </strong>
                 <p className="text-sm text-muted-foreground mb-7 max-w-sm leading-relaxed">
-                  {language === "th"
-                    ? "เริ่มจากกำหนดภาษาที่ใช้งานก่อน แล้วค่อยสร้างบริษัทและสาขา"
-                    : "Start with active languages, then create the company and branches."}
+                  {accessShopOptions.length === 0
+                    ? language === "th"
+                      ? "เริ่มจากสร้างหรือเลือกกลุ่มกิจการก่อน แล้วจึงตั้งค่าภาษา บริษัท และสาขา"
+                      : "Create or pick a business group first, then set up languages, company, and branches."
+                    : language === "th"
+                      ? "เริ่มจากกำหนดภาษาที่ใช้งานก่อน แล้วค่อยสร้างบริษัทและสาขา"
+                      : "Start with active languages, then create the company and branches."}
                 </p>
 
                 <button
                   className="primary-button workspace-setup-button workspace-setup-empty-button mb-8 inline-flex w-full items-center justify-center gap-2 shadow-md sm:w-auto"
                   type="button"
-                  onClick={() => void openAccessSettings("/activelanguages")}
-                  disabled={busy || accessShopOptions.length === 0}
+                  onClick={handlePrimarySetup}
+                  disabled={busy}
                 >
-                  <KeyRound className="workspace-setup-button-icon" size={18} />
-                  <span className="workspace-setup-button-label">{language === "th" ? "เริ่มตั้งค่าระบบ" : "Start system setup"}</span>
+                  {accessShopOptions.length === 0 ? (
+                    <Building2 className="workspace-setup-button-icon" size={18} />
+                  ) : (
+                    <KeyRound className="workspace-setup-button-icon" size={18} />
+                  )}
+                  <span className="workspace-setup-button-label">
+                    {accessShopOptions.length === 0
+                      ? language === "th" ? "เลือกหรือสร้างกลุ่มกิจการ" : "Pick or create a business group"
+                      : language === "th" ? "เริ่มตั้งค่าระบบ" : "Start system setup"}
+                  </span>
                 </button>
 
                 <div className="w-full rounded-xl border border-border/70 bg-card/70 p-5">
@@ -1401,7 +1434,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
               >
                 {flatCompanies.map((item) => {
                   const { shop, company } = item;
-                  const isCreator = shop.is_creator === true
+                  const isCreator = shop.iscreator === true
                     || Boolean(auth?.username && shop.createdby && shop.createdby.trim().toLowerCase() === auth.username.trim().toLowerCase());
                   const languageCodes = shopLanguageCodes(shop);
                   const currencyLabel = shopCurrencyLabel(shop, language);
@@ -1882,12 +1915,12 @@ function createDefaultBranch(shop?: ShopListItem, shopInfo?: Record<string, unkn
     languages: languageCodes,
     contact: {
       address: companyAddress,
-      country_code: stringValue(settings?.country_code) || "TH",
-      province_code: "",
-      district_code: "",
-      sub_district_code: "",
-      zip_code: "",
-      phone_number: stringValue(shopInfo?.telephone),
+      countrycode: stringValue(settings?.country_code) || "TH",
+      provincecode: "",
+      districtcode: "",
+      subdistrictcode: "",
+      zipcode: "",
+      phonenumber: stringValue(shopInfo?.telephone),
       latitude: numberValue(settings?.latitude),
       longitude: numberValue(settings?.longitude),
     },
@@ -1921,27 +1954,27 @@ function createDefaultBranch(shop?: ShopListItem, shopInfo?: Record<string, unkn
     decimalquantity: numberValue(settings?.decimalquantity, 2),
     decimalprice: numberValue(settings?.decimalprice, 2),
     decimaldocument: numberValue(settings?.decimaldocument, 2),
-    is_restaurant: false,
-    is_tire: false,
-    is_agriculture: false,
-    is_pharmacy: false,
-    is_retail: false,
-    is_service: false,
-    is_wholesale: false,
-    is_manufacturing: false,
-    is_import_export: false,
-    is_contractor: false,
-    is_rental: false,
-    is_ecommerce: false,
-    is_logistics: false,
-    is_education: false,
-    is_hotel: false,
-    is_beauty: false,
-    is_gold_shop: false,
-    is_accounting_firm: false,
-    is_construction: false,
-    is_electronics: false,
-    is_mobile_shop: false,
+    isrestaurant: false,
+    istire: false,
+    isagriculture: false,
+    ispharmacy: false,
+    isretail: false,
+    isservice: false,
+    iswholesale: false,
+    ismanufacturing: false,
+    isimportexport: false,
+    iscontractor: false,
+    isrental: false,
+    isecommerce: false,
+    islogistics: false,
+    iseducation: false,
+    ishotel: false,
+    isbeauty: false,
+    isgoldshop: false,
+    isaccountingfirm: false,
+    isconstruction: false,
+    iselectronics: false,
+    ismobileshop: false,
   };
 }
 

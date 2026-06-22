@@ -18,6 +18,12 @@ type IShopUserService interface {
 	DeleteUserPermissionShop(holdingCode string, authUsername string, username string) error
 	CleanupEmptyUsers(holdingCode string) (int64, error)
 
+	// Holding admin management by email (holdingCode comes from the request, role of the
+	// caller is resolved per-holding so it works from the holding-selection screen).
+	AddHoldingAdminByEmail(holdingCode string, authUsername string, targetEmail string) error
+	RemoveHoldingMember(holdingCode string, authUsername string, targetEmail string) error
+	ListHoldingMembersByAdmin(holdingCode string, authUsername string, pageable micromodels.Pageable) ([]models.ShopUserProfile, mongopagination.PaginationData, error)
+
 	InfoShopByUser(holdingCode string, username string) (models.ShopUserProfile, error)
 	ListShopByUser(authUsername string, authUserUID string, pageable micromodels.Pageable) ([]models.ShopUserInfo, mongopagination.PaginationData, error)
 	ListUserInShop(holdingCode string, pageable micromodels.Pageable) ([]models.ShopUserProfile, mongopagination.PaginationData, error)
@@ -273,7 +279,7 @@ func (svc ShopUserService) SaveUserPermissionShop(holdingCode string, authUserna
 		return err
 	}
 
-	if authUser.Role != models.ROLE_OWNER {
+	if authUser.Role != models.ROLE_OWNER && authUser.Role != models.ROLE_ADMIN {
 		return errors.New("permission denied")
 	}
 
@@ -342,7 +348,7 @@ func (svc ShopUserService) SaveUserFullProfile(holdingCode string, authUsername 
 		return err
 	}
 
-	if authUser.Role != models.ROLE_OWNER {
+	if authUser.Role != models.ROLE_OWNER && authUser.Role != models.ROLE_ADMIN {
 		return errors.New("permission denied")
 	}
 
@@ -361,6 +367,11 @@ func (svc ShopUserService) SaveUserFullProfile(holdingCode string, authUsername 
 	}
 	if existingTarget.UserUID != "" {
 		req.UserUID = existingTarget.UserUID
+	}
+
+	// Admins have full access but must not be able to modify an owner or promote anyone to owner.
+	if authUser.Role == models.ROLE_ADMIN && (existingTarget.Role == models.ROLE_OWNER || req.Role == models.ROLE_OWNER) {
+		return errors.New("permission denied")
 	}
 
 	if err = applyAccessStatus(req, existingTarget, authUsername, time.Now().UTC(), sameUsername(username, createdBy)); err != nil {
@@ -448,6 +459,93 @@ func (svc ShopUserService) DeleteUserPermissionShop(holdingCode string, authUser
 		return err
 	}
 	return nil
+}
+
+// requireHoldingManager resolves the caller's role IN THE GIVEN holding (not the JWT-selected
+// one) and requires OWNER or ADMIN. This lets admins be managed from the holding-selection
+// screen for any holding the caller owns/administers.
+func (svc ShopUserService) requireHoldingManager(holdingCode string, authUsername string) (models.ShopUser, error) {
+	authUser, err := svc.repo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, utils.NormalizeUsername(authUsername))
+	if err != nil {
+		return models.ShopUser{}, err
+	}
+	if authUser.Role != models.ROLE_OWNER && authUser.Role != models.ROLE_ADMIN {
+		return models.ShopUser{}, errors.New("permission denied")
+	}
+	return authUser, nil
+}
+
+// AddHoldingAdminByEmail grants ADMIN access to a holding by email. The email is stored as the
+// shopuser username (normalized lowercase) so it binds when that person later logs in by the
+// same email (Google/password) — no prior login required. Idempotent (safe to call repeatedly).
+func (svc ShopUserService) AddHoldingAdminByEmail(holdingCode string, authUsername string, targetEmail string) error {
+	if _, err := svc.requireHoldingManager(holdingCode, authUsername); err != nil {
+		return err
+	}
+
+	target := utils.NormalizeUsername(targetEmail)
+	if target == "" {
+		return errors.New("email is required")
+	}
+
+	existing, existingErr := svc.repo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, target)
+	if existingErr == nil && existing.Role == models.ROLE_OWNER {
+		// Never downgrade or re-grant an owner through the admin tool.
+		return errors.New("cannot change owner")
+	}
+
+	req := &models.UserRoleRequest{
+		Username: target,
+		Email:    target,
+		Role:     models.ROLE_ADMIN,
+	}
+	if existingErr == nil && existing.UserUID != "" {
+		req.UserUID = existing.UserUID
+	}
+
+	return svc.repo.SaveFullProfile(context.Background(), holdingCode, req)
+}
+
+// RemoveHoldingMember removes a member from a holding. Owners (and the shop creator) are
+// protected and cannot be removed; callers cannot remove themselves.
+func (svc ShopUserService) RemoveHoldingMember(holdingCode string, authUsername string, targetEmail string) error {
+	if _, err := svc.requireHoldingManager(holdingCode, authUsername); err != nil {
+		return err
+	}
+
+	target := utils.NormalizeUsername(targetEmail)
+	if target == "" {
+		return errors.New("email is required")
+	}
+	if sameUsername(target, authUsername) {
+		return errors.New("can't remove yourself")
+	}
+
+	findUser, err := svc.repo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, target)
+	if err != nil {
+		return err
+	}
+	if findUser.Username == "" {
+		return errors.New("user not found")
+	}
+	if findUser.Role == models.ROLE_OWNER {
+		return errors.New("cannot remove owner")
+	}
+
+	createdBy, createdByErr := svc.repo.FindShopCreatedBy(context.Background(), holdingCode)
+	if createdByErr == nil && sameUsername(findUser.Username, createdBy) {
+		return errors.New("cannot remove creator")
+	}
+
+	return svc.repo.Delete(context.Background(), holdingCode, target)
+}
+
+// ListHoldingMembersByAdmin lists members of a holding for an owner/admin of that holding.
+func (svc ShopUserService) ListHoldingMembersByAdmin(holdingCode string, authUsername string, pageable micromodels.Pageable) ([]models.ShopUserProfile, mongopagination.PaginationData, error) {
+	if _, err := svc.requireHoldingManager(holdingCode, authUsername); err != nil {
+		return nil, mongopagination.PaginationData{}, err
+	}
+	return svc.ListUserInShop(holdingCode, pageable)
 }
 
 // CleanupEmptyUsers - ลบ users ที่ username ว่างออกจาก shop

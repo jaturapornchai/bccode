@@ -168,7 +168,7 @@ type ApprovalRule struct {
 
 // POApprovalSetting represents a PO approval setting document
 type POApprovalSetting struct {
-	ID               primitive.ObjectID `bson:"id,omitempty" json:"guid,omitempty"`
+	ID               primitive.ObjectID `bson:"_id,omitempty" json:"guid,omitempty"`
 	HoldingCode      string             `bson:"holdingcode" json:"holdingcode"`
 	PurchaseTypeCode string             `bson:"purchasetypecode" json:"purchasetypecode"`
 	PurchaseTypeName string             `bson:"purchasetypename" json:"purchasetypename"`
@@ -352,10 +352,10 @@ func SavePOApprovalSettingHandler(c echo.Context) error {
 	filter := bson.M{"holdingcode": req.HoldingCode, "purchasetypecode": req.PurchaseTypeCode}
 	update := bson.M{
 		"$set": bson.M{
-			"purchase_type_name": req.PurchaseTypeName,
-			"rules":              rules,
-			"isactive":           isActive,
-			"updatedat":          now,
+			"purchasetypename": req.PurchaseTypeName,
+			"rules":            rules,
+			"isactive":         isActive,
+			"updatedat":        now,
 		},
 		"$setOnInsert": bson.M{
 			"holdingcode":      req.HoldingCode,
@@ -466,7 +466,7 @@ type POApprovalStatusItem struct {
 
 // POApprovalStatus สถานะการอนุมัติ PO
 type POApprovalStatus struct {
-	ID                   primitive.ObjectID `bson:"id,omitempty" json:"guid,omitempty"`
+	ID                   primitive.ObjectID `bson:"_id,omitempty" json:"guid,omitempty"`
 	HoldingCode          string             `bson:"holdingcode" json:"holdingcode"`
 	DocNo                string             `bson:"docno" json:"docno"`
 	GuidFixed            string             `bson:"guidfixed" json:"guidfixed"`
@@ -678,7 +678,7 @@ func GetBatchPOApprovalStatusHandler(c echo.Context) error {
 			"holdingcode": req.HoldingCode,
 			"docno":       bson.M{"$in": docNoList},
 		}
-		notificationCursor, err := notificationCollection.Find(ctx, notificationFilter, options.Find().SetSort(bson.D{{Key: "sent_at", Value: -1}}))
+		notificationCursor, err := notificationCollection.Find(ctx, notificationFilter, options.Find().SetSort(bson.D{{Key: "sentat", Value: -1}}))
 		if err == nil {
 			defer notificationCursor.Close(ctx)
 			// เก็บ notification ล่าสุดสำหรับแต่ละ docno
@@ -865,25 +865,25 @@ func SubmitPOApprovalHandler(c echo.Context) error {
 	filter := bson.M{"holdingcode": req.HoldingCode, "docno": req.DocNo}
 	update := bson.M{
 		"$set": bson.M{
-			"guidfixed":              req.GuidFixed,
-			"source_docno":           req.SourceDocNo,
-			"source_guidfixed":       req.SourceGuidFixed,
-			"purchasetypecode":       req.PurchaseTypeCode,
-			"purchase_type_name":     req.PurchaseTypeName,
-			"totalamount":            req.TotalAmount,
-			"required_level":         requiredLevel,
-			"required_level_name":    requiredLevelName,
-			"current_approved_level": currentApprovedLevel,
-			"status":                 status,
-			"createdby":              req.ActionBy,
-			"createdbyname":          req.ActionByName,
-			"history":                history,
-			"last_comment":           req.Comment, // หมายเหตุจากใบสั่งซื้อ
-			"updatedat":              now,
+			"guidfixed":            req.GuidFixed,
+			"sourcedocno":          req.SourceDocNo,
+			"sourceguidfixed":      req.SourceGuidFixed,
+			"purchasetypecode":     req.PurchaseTypeCode,
+			"purchasetypename":     req.PurchaseTypeName,
+			"totalamount":          req.TotalAmount,
+			"requiredlevel":        requiredLevel,
+			"requiredlevelname":    requiredLevelName,
+			"currentapprovedlevel": currentApprovedLevel,
+			"status":               status,
+			"createdby":            req.ActionBy,
+			"createdbyname":        req.ActionByName,
+			"history":              history,
+			"lastcomment":          req.Comment, // หมายเหตุจากใบสั่งซื้อ
+			"updatedat":            now,
 			// Transaction details for LIFF display
 			"docdatetime": req.DocDatetime,
 			"custcode":    req.CustCode,
-			"cust_name":   req.CustName,
+			"custname":    req.CustName,
 			"items":       items,
 		},
 		"$setOnInsert": bson.M{
@@ -1177,9 +1177,9 @@ func ApprovePOHandler(c echo.Context) error {
 	}
 	update := bson.M{
 		"$set": bson.M{
-			"status":                 "approved",
-			"current_approved_level": req.ApprovalLevel,
-			"updatedat":              now,
+			"status":               "approved",
+			"currentapprovedlevel": req.ApprovalLevel,
+			"updatedat":            now,
 		},
 		"$push": bson.M{
 			"history": newHistory,
@@ -1277,9 +1277,9 @@ func RejectPOHandler(c echo.Context) error {
 	}
 	update := bson.M{
 		"$set": bson.M{
-			"status":       "rejected",
-			"last_comment": req.Comment,
-			"updatedat":    now,
+			"status":      "rejected",
+			"lastcomment": req.Comment,
+			"updatedat":   now,
 		},
 		"$push": bson.M{
 			"history": newHistory,
@@ -1438,9 +1438,9 @@ func WithdrawPOHandler(c echo.Context) error {
 	}
 	update := bson.M{
 		"$set": bson.M{
-			"status":       "rejected",
-			"last_comment": comment,
-			"updatedat":    now,
+			"status":      "rejected",
+			"lastcomment": comment,
+			"updatedat":   now,
 		},
 		"$push": bson.M{
 			"history": newHistory,
@@ -1509,7 +1509,7 @@ func GetPendingApprovalsHandler(c echo.Context) error {
 
 	// ถ้าระบุระดับสิทธิ์ ให้กรองเฉพาะที่ผู้ใช้อนุมัติได้
 	if req.ApprovalLevel > 0 {
-		filter["required_level"] = bson.M{"$lte": req.ApprovalLevel}
+		filter["requiredlevel"] = bson.M{"$lte": req.ApprovalLevel}
 	}
 
 	cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.M{"createdat": -1}))
@@ -1609,7 +1609,7 @@ const POApprovalNotificationLogCollection = "poapprovalnotificationlog"
 
 // NotificationLog บันทึกการส่งการแจ้งเตือน
 type NotificationLog struct {
-	ID               primitive.ObjectID `bson:"id,omitempty" json:"guid,omitempty"`
+	ID               primitive.ObjectID `bson:"_id,omitempty" json:"guid,omitempty"`
 	HoldingCode      string             `bson:"holdingcode" json:"holdingcode"`
 	DocNo            string             `bson:"docno" json:"docno"`
 	GuidFixed        string             `bson:"guidfixed" json:"guidfixed"`
@@ -2113,13 +2113,13 @@ func MarkNotificationOpenedHandler(c echo.Context) error {
 		"holdingcode":  req.HoldingCode,
 		"docno":        req.DocNo,
 		"approvercode": req.ApproverCode,
-		"opened_at":    bson.M{"$exists": false}, // ยังไม่เคยเปิด
+		"openedat":     bson.M{"$exists": false}, // ยังไม่เคยเปิด
 	}
 
 	update := bson.M{
 		"$set": bson.M{
-			"opened_at":   now,
-			"opened_from": req.OpenedFrom,
+			"openedat":   now,
+			"openedfrom": req.OpenedFrom,
 		},
 	}
 
@@ -2440,7 +2440,7 @@ func UpdatePOApprovalStatusToCancelled(holdingCode, docNo, cancelReason, cancelU
 		"$set": bson.M{
 			"status":        "cancelled",
 			"history":       history,
-			"last_comment":  cancelReason,
+			"lastcomment":   cancelReason,
 			"cancelled_at":  time.Now(),
 			"cancelledby":   cancelUserCode,
 			"cancel_reason": cancelReason,

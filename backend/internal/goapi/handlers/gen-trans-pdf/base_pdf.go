@@ -215,7 +215,7 @@ func renderHeaderStandard(pdf *gofpdf.Fpdf, doc map[string]interface{}, payload 
 
 	// Document number and date on same line
 	docNo := GetStringValue(doc, "docno")
-	docDate := FormatDateWithFormat(doc["docdatetime"], payload.DateFormat)
+	docDate := FormatDateWithFormat(doc["docdatetime"], payload.DateFormat, payload.Timezone)
 	pdf.SetFont(fontFamily, "", headerFontSize)
 	r, g, b = HexToRGB(theme.Header.SubtitleColor)
 	pdf.SetTextColor(r, g, b)
@@ -239,7 +239,7 @@ func renderHeaderCentered(pdf *gofpdf.Fpdf, doc map[string]interface{}, payload 
 
 	// Document number and date (center)
 	docNo := GetStringValue(doc, "docno")
-	docDate := FormatDateWithFormat(doc["docdatetime"], payload.DateFormat)
+	docDate := FormatDateWithFormat(doc["docdatetime"], payload.DateFormat, payload.Timezone)
 	pdf.SetFont(fontFamily, "", headerFontSize)
 	r, g, b = HexToRGB(theme.Header.SubtitleColor)
 	pdf.SetTextColor(r, g, b)
@@ -256,7 +256,7 @@ func renderHeaderMinimal(pdf *gofpdf.Fpdf, doc map[string]interface{}, payload G
 	labels := GetLabels(payload.Language)
 
 	docNo := GetStringValue(doc, "docno")
-	docDate := FormatDateWithFormat(doc["docdatetime"], payload.DateFormat)
+	docDate := FormatDateWithFormat(doc["docdatetime"], payload.DateFormat, payload.Timezone)
 
 	// Single line: Title | DocNo | Date
 	pdf.SetFont(fontFamily, "B", headerFontSize+1)
@@ -285,7 +285,7 @@ func renderHeaderSplit(pdf *gofpdf.Fpdf, doc map[string]interface{}, payload Gen
 
 	// Right side: DocNo and Date
 	docNo := GetStringValue(doc, "docno")
-	docDate := FormatDateWithFormat(doc["docdatetime"], payload.DateFormat)
+	docDate := FormatDateWithFormat(doc["docdatetime"], payload.DateFormat, payload.Timezone)
 	pdf.SetFont(fontFamily, "", headerFontSize)
 	r, g, b = HexToRGB(theme.Header.SubtitleColor)
 	pdf.SetTextColor(r, g, b)
@@ -319,7 +319,7 @@ func renderHeaderBanner(pdf *gofpdf.Fpdf, doc map[string]interface{}, payload Ge
 
 	// Document number and date below banner
 	docNo := GetStringValue(doc, "docno")
-	docDate := FormatDateWithFormat(doc["docdatetime"], payload.DateFormat)
+	docDate := FormatDateWithFormat(doc["docdatetime"], payload.DateFormat, payload.Timezone)
 	pdf.SetFont(fontFamily, "", headerFontSize)
 	r, g, b = HexToRGB(theme.Header.SubtitleColor)
 	pdf.SetTextColor(r, g, b)
@@ -341,7 +341,7 @@ func renderHeaderLeftAligned(pdf *gofpdf.Fpdf, doc map[string]interface{}, paylo
 
 	// Document number and date
 	docNo := GetStringValue(doc, "docno")
-	docDate := FormatDateWithFormat(doc["docdatetime"], payload.DateFormat)
+	docDate := FormatDateWithFormat(doc["docdatetime"], payload.DateFormat, payload.Timezone)
 	pdf.SetFont(fontFamily, "", headerFontSize)
 	r, g, b = HexToRGB(theme.Header.SubtitleColor)
 	pdf.SetTextColor(r, g, b)

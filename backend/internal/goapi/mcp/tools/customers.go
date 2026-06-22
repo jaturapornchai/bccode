@@ -3,6 +3,7 @@ package tools
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"time"
 
 	serviceConfig "smlcloudplatform/internal/goapi/config"
@@ -655,12 +656,18 @@ func SearchCustomers(ctx context.Context, holdingCode, keyword string, limit int
 			{"deletedat": time.Time{}},
 		},
 	}
+	// SECURITY (2026-06-21): escape regex metacharacters + cap length to prevent ReDoS /
+	// index-bypassing collection scans. (Dropped the dead `name0` clause — see decode note.)
+	kw := keyword
+	if len(kw) > 100 {
+		kw = kw[:100]
+	}
+	safeKeyword := regexp.QuoteMeta(kw)
 	keyFilter := bson.M{
 		"$or": []bson.M{
-			{"code": bson.M{"$regex": keyword, "$options": "i"}},
-			{"name0": bson.M{"$regex": keyword, "$options": "i"}},
-			{"names.name": bson.M{"$regex": keyword, "$options": "i"}},
-			{"taxid": bson.M{"$regex": keyword, "$options": "i"}},
+			{"code": bson.M{"$regex": safeKeyword, "$options": "i"}},
+			{"names.name": bson.M{"$regex": safeKeyword, "$options": "i"}},
+			{"taxid": bson.M{"$regex": safeKeyword, "$options": "i"}},
 		},
 	}
 	filter = bson.M{"$and": []bson.M{filter, keyFilter}}
@@ -674,9 +681,14 @@ func SearchCustomers(ctx context.Context, holdingCode, keyword string, limit int
 	defer cursor.Close(ctx)
 
 	type mongoCustomer struct {
-		GuidFixed   string `bson:"guidfixed"`
-		Code        string `bson:"code"`
-		Name0       string `bson:"name0"`
+		GuidFixed string `bson:"guidfixed"`
+		Code      string `bson:"code"`
+		// DATA-FIX (2026-06-21): the customers collection stores names in the `names` array
+		// (NameX), not a phantom `name0` field — so name0 always decoded empty (blank names
+		// in AI answers). Decode the names array and use the first entry.
+		Names []struct {
+			Name string `bson:"name"`
+		} `bson:"names"`
 		TaxId       string `bson:"taxid"`
 		Email       string `bson:"email"`
 		HoldingCode string `bson:"holdingcode"`
@@ -688,10 +700,14 @@ func SearchCustomers(ctx context.Context, holdingCode, keyword string, limit int
 
 	customers := make([]CustomerSearchResult, 0, len(raw))
 	for _, r := range raw {
+		name0 := ""
+		if len(r.Names) > 0 {
+			name0 = r.Names[0].Name
+		}
 		customers = append(customers, CustomerSearchResult{
 			GuidFixed:   r.GuidFixed,
 			Code:        r.Code,
-			Name0:       r.Name0,
+			Name0:       name0,
 			TaxId:       r.TaxId,
 			Email:       r.Email,
 			HoldingCode: r.HoldingCode,

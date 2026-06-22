@@ -144,7 +144,7 @@ type BarcodePriceEntry struct {
 
 // BarcodeDocument เอกสาร barcode ใน MongoDB (fields หลักที่ MCP ใช้)
 type BarcodeDocument struct {
-	ID               primitive.ObjectID  `json:"id" bson:"id,omitempty"`
+	ID               primitive.ObjectID  `json:"id" bson:"_id,omitempty"`
 	HoldingCode      string              `json:"holdingcode" bson:"holdingcode"`
 	GuidFixed        string              `json:"guidfixed" bson:"guidfixed"`
 	Barcode          string              `json:"barcode" bson:"barcode"`

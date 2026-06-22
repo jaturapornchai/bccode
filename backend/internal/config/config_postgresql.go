@@ -53,7 +53,12 @@ func (cfg *PersisterConfig) SSLMode() string {
 }
 
 func (cfg *PersisterConfig) TimeZone() string {
-	return getEnv("POSTGRES_TIMEZONE", "Asia/Bangkok")
+	// Timezone Iron Rule (2026-06-22): DB stores UTC+0; branch-tz conversion is the
+	// frontend's job. Keep the PG session in UTC so now()/CURRENT_TIMESTAMP and any
+	// ::timestamp cast persist UTC wall-clock, not Asia/Bangkok local time.
+	// Explicit AT TIME ZONE filters (mypg/timezone_utils.go) name their zone and are
+	// unaffected. Override per-deploy via bootstrap.json postgres.timezone if needed.
+	return getEnv("POSTGRES_TIMEZONE", "UTC")
 }
 
 func (cfg *PersisterConfig) LoggerLevel() string {

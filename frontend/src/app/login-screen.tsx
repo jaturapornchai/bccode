@@ -2,7 +2,6 @@
 
 import {
   AlertCircle,
-  Beaker,
   Building2,
   CheckCircle2,
   Eye,
@@ -22,7 +21,6 @@ import { runtimeGoApiUrlForOrigin } from "@/lib/backend-url";
 import { persistLanguagePreferenceCookies } from "@/lib/backend-language-preload";
 import { isValidHoldingCode, normalizeHoldingCode } from "@/lib/holding-code";
 import { normalizeLanguage, t, type LanguageCode } from "@/lib/i18n";
-import { isLocalLoginHost, LOCAL_GOOGLE_TEST_EMAIL } from "@/lib/local-dev-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AppHeaderControls } from "./app-header-controls";
@@ -54,7 +52,7 @@ const staggerChild: Variants = {
 
 type LoginState = "idle" | "loading" | "success" | "error";
 type ConnectionState = "idle" | "testing" | "success" | "error";
-type ProviderLoginState = "idle" | "google" | "local-google" | "local-dev-system";
+type ProviderLoginState = "idle" | "google";
 type AuthMethod = "password" | "google";
 type RuntimeMode = {
   ready: boolean;
@@ -74,8 +72,29 @@ type SocialLoginResponse = {
     pictureUrl?: string;
   };
 };
-const SOCIAL_POLL_TIMEOUT_MS = 5 * 60 * 1000;
-const DEFAULT_SOCIAL_POLL_INTERVAL_MS = 2000;
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
+
+type GoogleCredentialResponse = { credential?: string };
+
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: {
+            client_id: string;
+            callback: (response: GoogleCredentialResponse) => void;
+            ux_mode?: string;
+            auto_select?: boolean;
+          }) => void;
+          renderButton: (parent: HTMLElement, options: Record<string, unknown>) => void;
+          prompt: () => void;
+        };
+      };
+    };
+  }
+}
+
 const storageKeys = {
   backendUrl: "backend_url",
   backendUrlHistory: "backend_url_history",
@@ -102,13 +121,19 @@ export function LoginScreen() {
   const [connectionState, setConnectionState] = useState<ConnectionState>("idle");
   const [connectionMessage, setConnectionMessage] = useState("");
   const [providerLoginState, setProviderLoginState] = useState<ProviderLoginState>("idle");
+  // DEV bypass shortcut: rendered only when the page is served from localhost (set after mount
+  // to avoid SSR hydration mismatch). Never shows on the deployed/public frontend.
+  const [isLocalhost, setIsLocalhost] = useState(false);
   const [runtimeMode, setRuntimeMode] = useState<RuntimeMode>({ ready: false, sameServerBackend: false });
-  const [devGoogleLoginEnabled, setDevGoogleLoginEnabled] = useState(false);
-  const [isLocalTestHost, setIsLocalTestHost] = useState(false);
-  const [isLocalHost, setIsLocalHost] = useState(false);
   const [message, setMessage] = useState("");
-  const googlePollTimer = useRef<number | null>(null);
+  const googleButtonRef = useRef<HTMLDivElement | null>(null);
+  const googleCredentialRef = useRef<(credential: string) => void>(() => {});
   const autoConnectionTested = useRef(false);
+
+  useEffect(() => {
+    const host = window.location.hostname;
+    setIsLocalhost(host === "localhost" || host === "127.0.0.1");
+  }, []);
 
   const canSubmit = useMemo(() => {
     return backendUrl.trim().length > 0 &&
@@ -128,7 +153,6 @@ export function LoginScreen() {
       localStorage.getItem(storageKeys.rememberUsername) === "true" ||
       localStorage.getItem(storageKeys.legacyRememberPassword) === "true";
 
-    void loadLocalTestLoginAvailability();
     setBackendUrl(runtimeBackendUrlForCurrentPage());
 
     setLanguage(savedLanguage);
@@ -139,10 +163,6 @@ export function LoginScreen() {
     localStorage.removeItem(storageKeys.backendUrlHistory);
     localStorage.removeItem(storageKeys.legacyPassword);
     localStorage.removeItem(storageKeys.legacyRememberPassword);
-
-    return () => {
-      stopGooglePolling();
-    };
   }, []);
 
   useEffect(() => {
@@ -185,161 +205,70 @@ export function LoginScreen() {
     return () => window.clearTimeout(timer);
   }, [backendUrl, language]);
 
-  async function loadLocalTestLoginAvailability() {
-    const localHost = isLocalLoginHost(window.location.hostname);
-    // Track localhost status independently so the DEV system-test button (which
-    // uses user/password and does NOT require Google OAuth) can show even when
-    // the Google dev-login endpoint is disabled.
-    setIsLocalHost(localHost);
-    if (!localHost && !isPublicRuntimeHost()) {
-      setDevGoogleLoginEnabled(false);
-      setIsLocalTestHost(false);
+  // Keep the Google Identity Services callback pointing at the latest handler.
+  useEffect(() => {
+    googleCredentialRef.current = (credential: string) => {
+      void handleGoogleCredential(credential);
+    };
+  });
+
+  // Load Google Identity Services and render the official "Sign in with Google" button.
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID || typeof window === "undefined") return;
+    const SCRIPT_SRC = "https://accounts.google.com/gsi/client";
+
+    function renderGoogle() {
+      const container = googleButtonRef.current;
+      if (!window.google || !container) return;
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: (response: GoogleCredentialResponse) => {
+          if (response.credential) googleCredentialRef.current(response.credential);
+        },
+        ux_mode: "popup",
+      });
+      container.innerHTML = "";
+      // Render the Google button at the host's full width (GIS caps width at 400) with a
+      // centered logo so it reads as one clean full-width button, not a button-in-a-button.
+      const hostWidth = Math.round(container.getBoundingClientRect().width);
+      const width = Math.min(400, Math.max(240, hostWidth || 320));
+      window.google.accounts.id.renderButton(container, {
+        type: "standard",
+        theme: "outline",
+        size: "large",
+        text: "continue_with",
+        shape: "pill",
+        logo_alignment: "center",
+        width,
+      });
+    }
+
+    if (window.google) {
+      renderGoogle();
       return;
     }
 
-    try {
-      const response = await fetch("/api/auth/google/dev-login", { cache: "no-store" });
-      const data = (await response.json()) as { enabled?: boolean };
-      const enabled = response.ok && data.enabled === true;
-      setDevGoogleLoginEnabled(enabled);
-      setIsLocalTestHost(localHost && enabled);
-    } catch {
-      setDevGoogleLoginEnabled(false);
-      setIsLocalTestHost(false);
+    let script = document.querySelector<HTMLScriptElement>(`script[src="${SCRIPT_SRC}"]`);
+    if (!script) {
+      script = document.createElement("script");
+      script.src = SCRIPT_SRC;
+      script.async = true;
+      document.head.appendChild(script);
     }
-  }
+    script.addEventListener("load", renderGoogle);
+    return () => script?.removeEventListener("load", renderGoogle);
+  }, []);
 
-  function stopGooglePolling() {
-    if (googlePollTimer.current !== null) {
-      window.clearInterval(googlePollTimer.current);
-      googlePollTimer.current = null;
-    }
-  }
-
-  async function handleGoogleLogin() {
-    if (!backendUrl.trim()) return setMessage(t(language, "enterBackendUrl"));
-
-    stopGooglePolling();
+  async function handleGoogleCredential(credential: string) {
     setProviderLoginState("google");
-    setLoginState("loading");
-    setMessage(t(language, "googleLoginOpening"));
-
-    try {
-      if (devGoogleLoginEnabled && (await tryDevGoogleLoginFallback("", true))) return;
-
-      const response = await fetch("/api/auth/google/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ deviceInfo: navigator.userAgent }),
-      });
-      const data = (await response.json()) as {
-        success?: boolean;
-        message?: string;
-        sessionId?: string;
-        loginUrl?: string;
-        pollInterval?: number;
-      };
-
-      if (!response.ok || !data.success || !data.sessionId || !data.loginUrl) {
-        const errorMessage = data.message ?? t(language, "loginFailed");
-        if (await tryDevGoogleLoginFallback(errorMessage)) return;
-        throw new Error(errorMessage);
-      }
-
-      const popup = window.open(data.loginUrl, "bc-google-login", "popup=yes,width=480,height=720");
-      if (!popup) {
-        throw new Error(t(language, "popupBlocked"));
-      }
-
-      const startedAt = Date.now();
-      googlePollTimer.current = window.setInterval(() => {
-        if (Date.now() - startedAt > SOCIAL_POLL_TIMEOUT_MS) {
-          stopGooglePolling();
-          setProviderLoginState("idle");
-          setLoginState("error");
-          setMessage(t(language, "googleLoginTimeout"));
-          return;
-        }
-        void pollGoogleLogin(data.sessionId!);
-      }, Math.max(data.pollInterval ?? DEFAULT_SOCIAL_POLL_INTERVAL_MS, 1000));
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : t(language, "loginFailed");
-      if (await tryDevGoogleLoginFallback(errorMessage)) return;
-      stopGooglePolling();
-      setProviderLoginState("idle");
-      setLoginState("error");
-      setMessage(errorMessage);
-    }
-  }
-
-  async function tryDevGoogleLoginFallback(reason: string, force = false): Promise<boolean> {
-    if (!force && !reason.includes("Google login service")) return false;
-
-    try {
-      const targetBackendUrl = runtimeBackendUrlForCurrentPage();
-      if (targetBackendUrl !== backendUrl) {
-        setBackendUrl(targetBackendUrl);
-      }
-
-      const response = await fetch("/api/auth/google/dev-login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ backendUrl: targetBackendUrl }),
-      });
-      const data = (await response.json()) as SocialLoginResponse;
-      if (!response.ok || !data.success || !data.token) return false;
-
-      const nextUsername = data.user?.username || data.user?.email || data.user?.name || LOCAL_GOOGLE_TEST_EMAIL;
-      persistLogin(data.backendUrl ?? targetBackendUrl, nextUsername, data.token, data.refresh ?? "", "google", data.user);
-      setLoginState("success");
-      setProviderLoginState("idle");
-      setMessage(t(language, "loginSuccess"));
-      router.push("/holding");
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  async function pollGoogleLogin(sessionId: string) {
-    const response = await fetch("/api/auth/google/status", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ backendUrl, sessionId }),
-    });
-    const data = (await response.json()) as SocialLoginResponse;
-
-    if (!response.ok || data.success === false || data.status === "failed" || data.status === "expired") {
-      stopGooglePolling();
-      setProviderLoginState("idle");
-      setLoginState("error");
-      setMessage(data.message ?? t(language, "loginFailed"));
-      return;
-    }
-
-    if (data.status !== "success" || !data.token) return;
-
-    const nextUsername = data.user?.username || data.user?.email || data.user?.name || "google";
-    persistLogin(data.backendUrl ?? backendUrl, nextUsername, data.token, data.refresh ?? "", "google", data.user);
-    stopGooglePolling();
-    setProviderLoginState("idle");
-    setLoginState("success");
-    setMessage(t(language, "loginSuccess"));
-    router.push("/holding");
-  }
-
-  async function handleLocalGoogleTestLogin() {
-    if (!backendUrl.trim()) return setMessage(t(language, "enterBackendUrl"));
-
-    setProviderLoginState("local-google");
     setLoginState("loading");
     setMessage("");
 
     try {
-      const response = await fetch("/api/auth/google/dev-login", {
+      const response = await fetch("/api/auth/google/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ backendUrl }),
+        body: JSON.stringify({ credential }),
       });
       const data = (await response.json()) as SocialLoginResponse;
 
@@ -347,8 +276,8 @@ export function LoginScreen() {
         throw new Error(data.message ?? t(language, "loginFailed"));
       }
 
-      const nextUsername = data.user?.username || data.user?.email || data.user?.name || LOCAL_GOOGLE_TEST_EMAIL;
-      persistLogin(data.backendUrl ?? backendUrl, nextUsername, data.token, data.refresh ?? "", "google", data.user);
+      const nextUsername = data.user?.email || data.user?.username || data.user?.name || "google";
+      persistLogin(runtimeBackendUrlForCurrentPage(), nextUsername, data.token, data.refresh ?? "", "google", data.user);
       setProviderLoginState("idle");
       setLoginState("success");
       setMessage(t(language, "loginSuccess"));
@@ -360,6 +289,10 @@ export function LoginScreen() {
     }
   }
 
+  function handleGooglePrompt() {
+    if (typeof window !== "undefined") window.google?.accounts.id.prompt();
+  }
+
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     await performLogin({
@@ -369,30 +302,10 @@ export function LoginScreen() {
     });
   }
 
-  // Dev-only: auto login with the seeded owner account so localhost users can
-  // smoke-test the system without typing credentials every time. We deliberately
-  // skip the holding code so the user lands on the holding-selection screen and
-  // can pick the business group manually (matches normal production flow).
-  async function handleDevSystemTestLogin() {
-    if (providerLoginState !== "idle" || loginState === "loading") return;
-    const devUsername = "jaturapornchai@gmail.com";
-    const devPassword = "smlsoft";
-    setProviderLoginState("local-dev-system");
-    setLoginState("loading");
-    setMessage("");
-    await performLogin({
-      username: devUsername,
-      password: devPassword,
-      holdingCode: "",
-      isDev: true,
-    });
-  }
-
   async function performLogin(input: {
     username: string;
     password: string;
     holdingCode: string;
-    isDev?: boolean;
   }) {
     if (!backendUrl.trim()) return setMessage(t(language, "enterBackendUrl"));
     // holdingCode is optional in DEV mode (user picks holding on the next screen).
@@ -406,12 +319,6 @@ export function LoginScreen() {
     }
     if (!input.username.trim()) return setMessage(t(language, "enterUsername"));
     if (!input.password) return setMessage(t(language, "enterPassword"));
-
-    if (input.isDev) {
-      setUsername(input.username);
-      setPassword(input.password);
-      if (normalizedHoldingCode) setHoldingCode(normalizedHoldingCode);
-    }
 
     setLoginState("loading");
     setMessage("");
@@ -458,7 +365,7 @@ export function LoginScreen() {
       setLoginState("error");
       setMessage(error instanceof Error ? error.message : t(language, "loginFailed"));
     } finally {
-      if (input.isDev) setProviderLoginState("idle");
+      // no-op: performLogin relies on the caller's loading-state lifecycle.
     }
   }
 
@@ -667,64 +574,33 @@ export function LoginScreen() {
             </div>
 
             <div className="social-login-grid">
-              <Button
-                className="social-login-button google-login"
-                type="button"
-                variant="outline"
-                size="lg"
-                onClick={handleGoogleLogin}
-                disabled={providerLoginState !== "idle" || loginState === "loading"}
-              >
-                {providerLoginState === "google" ? (
-                  <Loader2 className="spin" aria-hidden="true" size={20} />
-                ) : (
-                  <Image alt="" height={20} src="/google_logo.png" width={20} />
-                )}
-                <span>{t(language, "loginWithGoogle")}</span>
-              </Button>
-              {isLocalTestHost ? (
-                <Button
-                  className="social-login-button local-google-test-login"
-                  type="button"
-                  variant="outline"
-                  size="lg"
-                  onClick={handleLocalGoogleTestLogin}
-                  disabled={providerLoginState !== "idle" || loginState === "loading"}
-                  title={t(language, "localGoogleTestLogin")}
-                >
-                  {providerLoginState === "local-google" ? (
-                    <Loader2 className="spin" aria-hidden="true" size={20} />
-                  ) : (
-                    <Image alt="" height={20} src="/google_logo.png" width={20} />
-                  )}
-                  <span>
-                    <span className="dev-test-badge" aria-hidden="true">DEV</span>
-                    {language === "th" ? "ทดสอบเข้าระบบ Google" : "Test Google login"}
-                  </span>
-                </Button>
-              ) : null}
-              {isLocalHost ? (
-                <Button
-                  className="social-login-button local-dev-system-test-login"
-                  type="button"
-                  variant="outline"
-                  size="lg"
-                  onClick={handleDevSystemTestLogin}
-                  disabled={providerLoginState !== "idle" || loginState === "loading"}
-                  title={language === "th" ? "เข้าระบบด้วยบัญชีทดสอบเพื่อตรวจสอบระบบ" : "Sign in with the dev owner account to smoke-test the system"}
-                >
-                  {providerLoginState === "local-dev-system" ? (
-                    <Loader2 className="spin" aria-hidden="true" size={20} />
-                  ) : (
-                    <Beaker aria-hidden="true" size={20} />
-                  )}
-                  <span>
-                    <span className="dev-test-badge" aria-hidden="true">DEV</span>
-                    {language === "th" ? "ทดสอบระบบ (jaturapornchai)" : "System test (jaturapornchai)"}
-                  </span>
-                </Button>
+              <div
+                className="social-login-button google-login gis-button-host"
+                ref={googleButtonRef}
+                aria-label={t(language, "loginWithGoogle")}
+              />
+              {providerLoginState === "google" && loginState === "loading" ? (
+                <span className="gis-login-progress" aria-live="polite">
+                  <Loader2 className="spin" aria-hidden="true" size={18} />
+                  <span>{t(language, "loggingIn")}</span>
+                </span>
               ) : null}
             </div>
+            {isLocalhost ? (
+              <button
+                type="button"
+                className="social-login-button dev-bypass-login"
+                style={{ marginTop: "var(--density-gap)", borderStyle: "dashed", fontWeight: 700 }}
+                onClick={() =>
+                  void performLogin({ username: "jaturapornchai@gmail.com", password: "smlsoft", holdingCode: "" })
+                }
+                disabled={loginState === "loading"}
+                aria-label="เข้าทดสอบระบบ (dev — localhost เท่านั้น)"
+                title="เฉพาะ localhost: เข้าทดสอบระบบด้วย jaturapornchai@gmail.com"
+              >
+                <span>🧪 เข้าทดสอบระบบ (dev)</span>
+              </button>
+            ) : null}
           </motion.section>
 
           <motion.div
@@ -847,7 +723,7 @@ export function LoginScreen() {
               <button
                 type="button"
                 className="sign-up-link"
-                onClick={handleGoogleLogin}
+                onClick={handleGooglePrompt}
                 disabled={providerLoginState !== "idle" || loginState === "loading"}
               >
                 {t(language, "loginWithGoogle")} →

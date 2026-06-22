@@ -99,7 +99,7 @@ func createPostgreSQLDatabase(config DatabaseConfig, dbName string) error {
 	}
 
 	connStr := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=postgres sslmode=%s connect_timeout=10",
+		"host=%s port=%s user=%s password=%s dbname=postgres sslmode=%s connect_timeout=10 TimeZone=UTC",
 		config.PostgreSQLHost,
 		config.PostgreSQLPort,
 		config.PostgreSQLUser,
@@ -144,6 +144,7 @@ func (dm *DatabaseManager) connectPostgreSQL(config DatabaseConfig) error {
 	// สร้าง connection string
 	connStr := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s "+
+			"TimeZone=UTC "+ // Timezone Iron Rule: DB stores UTC+0
 			"connect_timeout=10 "+
 			"statement_timeout=300000 "+
 			"idle_in_transaction_session_timeout=60000",

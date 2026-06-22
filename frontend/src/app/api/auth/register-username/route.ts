@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { validateBackendUrl } from "@/lib/backend-url";
+import { serverMainApiBase, validateBackendUrl } from "@/lib/backend-url";
 
 type RegisterUsernameBody = {
   backendUrl?: string;
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
   const timeout = setTimeout(() => controller.abort(), 15000);
 
   try {
-    const response = await fetch(`${mainApiUrl}/register-username`, {
+    const response = await fetch(`${serverMainApiBase()}/register-username`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password, name }),

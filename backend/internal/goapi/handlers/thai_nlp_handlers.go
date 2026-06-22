@@ -1,18 +1,12 @@
 package handlers
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"sync"
 	"time"
 
 	"smlcloudplatform/internal/goapi/logger"
-
-	"github.com/labstack/echo/v4"
 )
 
 // ThaiNLPClient - HTTP client for Thai NLP service (ลด timeout เหลือ 500ms)
@@ -75,56 +69,4 @@ type TokenizeRequest struct {
 type TokenizeResponse struct {
 	Status string   `json:"status"`
 	Tokens []string `json:"tokens"`
-}
-
-// ThaiTokenizeHandler - Thai word tokenization endpoint
-// Forwards request to PyThaiNLP service
-func ThaiTokenizeHandler(c echo.Context) error {
-	// Parse request body
-	var req TokenizeRequest
-	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"status":  "error",
-			"error":   "Invalid request body",
-			"message": err.Error(),
-		})
-	}
-
-	// Forward to Python service
-	thaiNLPURL := getThaiNLPURL()
-	requestBody, err := json.Marshal(req)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-			"status":  "error",
-			"error":   "Failed to marshal request",
-			"message": err.Error(),
-		})
-	}
-
-	resp, err := thaiNLPClient.Post(
-		fmt.Sprintf("%s/tokenize", thaiNLPURL),
-		"application/json",
-		bytes.NewBuffer(requestBody),
-	)
-	if err != nil {
-		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
-			"status":  "error",
-			"error":   "Thai NLP service unavailable",
-			"message": fmt.Sprintf("Failed to connect to Thai NLP service: %v", err),
-		})
-	}
-	defer resp.Body.Close()
-
-	// Read response
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-			"status":  "error",
-			"error":   "Failed to read response",
-			"message": err.Error(),
-		})
-	}
-
-	// Return response from Python service
-	return c.JSONBlob(resp.StatusCode, body)
 }

@@ -70,6 +70,7 @@ func (pm *ConnectionPoolManager) createPool(databaseName string) (*sql.DB, error
 	// สร้าง connection string
 	connStr := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s "+
+			"TimeZone=UTC "+ // Timezone Iron Rule: DB stores UTC+0
 			"connect_timeout=5 "+
 			"statement_timeout=300000 "+
 			"idle_in_transaction_session_timeout=60000",

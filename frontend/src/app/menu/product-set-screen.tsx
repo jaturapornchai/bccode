@@ -67,6 +67,7 @@ import {
   type ProductBarcodeListRow
 } from "@/lib/product-barcode/types";
 import { cn } from "@/lib/utils";
+import { pushNotice } from "@/lib/toast";
 
 type ProductSetScreenProps = {
   active?: boolean;
@@ -245,7 +246,7 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
   const [selectedGuid, setSelectedGuid] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [notice, setNotice] = useState<{ type: "success" | "error" | "info"; text: string } | null>(null);
+  const setNotice = pushNotice;
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -874,43 +875,16 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             โหลดใหม่
           </Button>
-          {selectedProduct ? (
-            <Button variant="default" size="sm" onClick={handleCreateCopyOpen} className="h-9 bg-primary hover:bg-primary/95 text-primary-foreground font-bold shadow-md shadow-primary/20">
-              <Copy className="h-4 w-4 mr-1" />
-              คัดลอก
-            </Button>
-          ) : null}
+          <Button variant="default" size="sm" onClick={handleCreateCopyOpen} disabled={!selectedProduct} className="h-9 bg-primary hover:bg-primary/95 text-primary-foreground font-bold shadow-md shadow-primary/20">
+            <Copy className="h-4 w-4 mr-1" />
+            คัดลอก
+          </Button>
           <Button variant="default" size="sm" onClick={handleCreateOpen} className="h-9 bg-primary hover:bg-primary/95 text-primary-foreground font-bold shadow-md shadow-primary/20">
             <Plus className="h-4 w-4 mr-1" />
             สร้างสินค้าชุดใหม่
           </Button>
         </div>
       </div>
-
-      {notice && (
-        <div
-          className={cn(
-            "relative p-3 rounded-lg border text-xs flex gap-2 items-start mx-6 mt-4 shrink-0",
-            notice.type === "error" && "bg-destructive/5 text-destructive border-destructive/20",
-            notice.type === "success" && "bg-green-500/5 text-green-700 border-green-500/20 dark:text-green-400",
-            notice.type === "info" && "bg-blue-500/5 text-blue-700 border-blue-500/20 dark:text-blue-400"
-          )}
-        >
-          <Info className="h-4 w-4 shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <span className="font-semibold block capitalize mb-0.5">{notice.type === "success" ? "สำเร็จ" : notice.type}</span>
-            <span>{notice.text}</span>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-5 w-5 hover:bg-transparent -mt-1 -mr-1"
-            onClick={() => setNotice(null)}
-          >
-            <X className="h-3 w-3" />
-          </Button>
-        </div>
-      )}
 
       {/* Main Split Layout */}
       <div className="flex flex-col md:flex-row flex-1 min-h-0">

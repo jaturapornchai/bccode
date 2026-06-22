@@ -332,7 +332,7 @@ type Detail struct {
 	IssumPoint          bool            `json:"issumpoint" bson:"issumpoint"`
 	SumOfCost           float64         `json:"sumofcost" bson:"sumofcost"`
 	AverageCost         float64         `json:"averagecost" bson:"averagecost"`
-	FoodType            int8            `json:"foodtype" bson:"column:foodtype"`
+	FoodType            int8            `json:"foodtype" bson:"foodtype"`
 	LastStatus          int8            `json:"laststatus" bson:"laststatus"`
 	IsChoice            int8            `json:"ischoice" bson:"ischoice"`
 	IsPos               int8            `json:"ispos" bson:"ispos"`

@@ -73,14 +73,14 @@ func (repo DocumentImageGroupRepository) Transaction(ctx context.Context, fnc fu
 }
 
 func (repo DocumentImageGroupRepository) UpdateStatusByTask(ctx context.Context, holdingCode string, taskGUID string, status int8) error {
-	return repo.pst.Update(ctx, models.DocumentImageGroupDoc{}, bson.M{"holdingcode": holdingCode, "task_guid": taskGUID}, bson.M{"$set": bson.M{"status": status}})
+	return repo.pst.Update(ctx, models.DocumentImageGroupDoc{}, bson.M{"holdingcode": holdingCode, "taskguid": taskGUID}, bson.M{"$set": bson.M{"status": status}})
 }
 
 func (repo DocumentImageGroupRepository) FindStatusByDocumentImageGroupTask(ctx context.Context, holdingCode string, taskGUID string) ([]models.DocumentImageGroupStatus, error) {
 
 	filters := bson.M{
 		"holdingcode": holdingCode,
-		"task_guid":   taskGUID,
+		"taskguid":    taskGUID,
 		"deletedat":   bson.M{"$exists": false},
 	}
 	docList := []models.DocumentImageGroupStatus{}
@@ -97,7 +97,7 @@ func (repo DocumentImageGroupRepository) CountByTask(ctx context.Context, holdin
 
 	filters := bson.M{
 		"holdingcode": holdingCode,
-		"task_guid":   taskGUID,
+		"taskguid":    taskGUID,
 		"deletedat":   bson.M{"$exists": false},
 	}
 
@@ -108,7 +108,7 @@ func (repo DocumentImageGroupRepository) CountRejectByTask(ctx context.Context, 
 
 	filters := bson.M{
 		"holdingcode": holdingCode,
-		"task_guid":   taskGUID,
+		"taskguid":    taskGUID,
 		"$or": []interface{}{
 			bson.M{"status": models.IMAGE_REJECT},
 			bson.M{"status": models.IMAGE_REJECT_KEYING},
@@ -123,7 +123,7 @@ func (repo DocumentImageGroupRepository) UpdateTaskIsCompletedByTaskGUID(ctx con
 
 	filters := bson.M{
 		"holdingcode": holdingCode,
-		"task_guid":   taskGUID,
+		"taskguid":    taskGUID,
 		"deletedat":   bson.M{"$exists": false},
 	}
 
@@ -140,7 +140,7 @@ func (repo DocumentImageGroupRepository) UpdateXOrder(ctx context.Context, holdi
 
 	filters := bson.M{
 		"holdingcode": holdingCode,
-		"task_guid":   taskGUID,
+		"taskguid":    taskGUID,
 		"guidfixed":   GUID,
 		"deletedat":   bson.M{"$exists": false},
 	}
@@ -160,7 +160,7 @@ func (repo DocumentImageGroupRepository) FindLastOneByTask(ctx context.Context, 
 	err := repo.pst.Aggregate(ctx, models.DocumentImageGroupDoc{}, []interface{}{
 		bson.M{"$match": bson.M{
 			"holdingcode": holdingCode,
-			"task_guid":   taskGUID,
+			"taskguid":    taskGUID,
 			"deletedat":   bson.M{"$exists": false},
 		}},
 		bson.M{"$sort": bson.M{"xorder": -1}},
@@ -313,7 +313,7 @@ func (repo DocumentImageGroupRepository) FindByReferenceDocNo(ctx context.Contex
 func (repo DocumentImageGroupRepository) FindByTaskGUID(ctx context.Context, holdingCode string, taskGUID string) ([]models.DocumentImageGroupDoc, error) {
 	docList := []models.DocumentImageGroupDoc{}
 	err := repo.pst.Find(ctx, models.DocumentImageGroupDoc{}, bson.M{
-		"task_guid": taskGUID,
+		"taskguid":  taskGUID,
 		"deletedat": bson.M{"$exists": false},
 	}, &docList)
 
@@ -384,7 +384,7 @@ func (repo DocumentImageGroupRepository) RemoveDocumentImageByDocumentImageGUIDs
 	}
 
 	removeQuery := bson.M{
-		"$pull": bson.M{"imagereferences": bson.M{"document_image_guid": bson.M{"$in": imageGUIDs}}},
+		"$pull": bson.M{"imagereferences": bson.M{"documentimageguid": bson.M{"$in": imageGUIDs}}},
 	}
 
 	return repo.pst.Update(ctx, models.DocumentImageGroupDoc{}, filterQuery, removeQuery)
@@ -454,7 +454,7 @@ func (repo DocumentImageGroupRepository) RemoveDocumentImageByDocumentImageGUIDs
 	}
 
 	removeQuery := bson.M{
-		"$pull": bson.M{"imagereferences": bson.M{"document_image_guid": bson.M{"$in": imageGUIDs}}},
+		"$pull": bson.M{"imagereferences": bson.M{"documentimageguid": bson.M{"$in": imageGUIDs}}},
 	}
 
 	return repo.pst.Update(ctx, models.DocumentImageGroupDoc{}, filterQuery, removeQuery)

@@ -346,9 +346,19 @@ func isSecretKey(key string) bool {
 		return true
 	}
 	lowerKey := strings.ToLower(key)
+	// SECURITY (2026-06-21): broadened so ALL secret-bearing keys are masked in logs and in
+	// the config/get listing — previously API tokens (cloudflare_api_token), api_key (with
+	// underscore), and connection URIs (with embedded creds) slipped through and leaked.
 	return strings.Contains(lowerKey, "password") ||
 		strings.Contains(lowerKey, "secret") ||
-		strings.Contains(lowerKey, "apikey")
+		strings.Contains(lowerKey, "apikey") ||
+		strings.Contains(lowerKey, "api_key") ||
+		strings.Contains(lowerKey, "token") ||
+		strings.Contains(lowerKey, "credential") ||
+		strings.Contains(lowerKey, "accesskey") ||
+		strings.Contains(lowerKey, "access_key") ||
+		strings.Contains(lowerKey, "uri") ||
+		strings.HasSuffix(lowerKey, "key")
 }
 
 // ReloadAndReconnect อ่าน bootstrap.json ใหม่แล้ว reconnect database connections

@@ -7,7 +7,7 @@ import {
   isRecord as isBridgeRecord,
   readJsonOrText as readBridgeJsonOrText,
 } from "@/lib/auth-bridge";
-import { validateBackendUrl } from "@/lib/backend-url";
+import { serverMainApiBase, validateBackendUrl } from "@/lib/backend-url";
 import {
   extractMessage,
   isRecord,
@@ -76,7 +76,7 @@ export async function POST(request: Request) {
 
     const displayName = getString(data, "displayName") ?? getString(data, "displayname") ?? "";
     const pictureUrl = getString(data, "pictureUrl") ?? getString(data, "pictureurl") ?? "";
-    const linkResponse = await putLineProfile(request, mainApiUrl, authorization, {
+    const linkResponse = await putLineProfile(request, serverMainApiBase(), authorization, {
       lineuserid: lineUserId,
       linedisplayname: displayName,
       linepictureurl: pictureUrl,

@@ -191,7 +191,6 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("product-group", "กลุ่มสินค้า", "Product Group", "/productgroup", "master"),
           tx("product-category", "จัดหมวดสินค้า", "Product Categories", "/productcategorygroupselectscreen", "master"),
           tx("product-category-list", "สินค้าในหมวด", "Products in Category", "/productcategorylist", "master"),
-          tx("product-type", "ประเภทสินค้า", "Product Type", "/producttypescreen", "master"),
         ],
       },
       {

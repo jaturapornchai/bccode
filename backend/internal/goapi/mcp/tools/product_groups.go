@@ -16,7 +16,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const productGroupCollection = "productGroups"
+const productGroupCollection = "productgroups"
 
 // ==================== Product Group Types ====================
 
@@ -30,7 +30,7 @@ type ProductGroupNameEntry struct {
 
 // ProductGroupDocument เอกสารกลุ่มสินค้าใน MongoDB
 type ProductGroupDocument struct {
-	ID          primitive.ObjectID      `json:"id" bson:"id,omitempty"`
+	ID          primitive.ObjectID      `json:"id" bson:"_id,omitempty"`
 	HoldingCode string                  `json:"holdingcode" bson:"holdingcode"`
 	GuidFixed   string                  `json:"guidfixed" bson:"guidfixed"`
 	Code        string                  `json:"code" bson:"code"`

@@ -15,7 +15,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const shopAIProviderCollection = "aiProviderConfigs"
+const shopAIProviderCollection = "aiproviderconfigs"
 
 // shopProviderDoc — document ใน MongoDB collection aiProviderConfigs
 type shopProviderDoc struct {
@@ -173,7 +173,7 @@ func updateShopProviderCooldownDB(holdingCode, providerName, errMsg string, cool
 	update := bson.M{
 		"$set": bson.M{
 			"lasterror":     errMsg,
-			"last_error_at": time.Now(),
+			"lasterrorat":   time.Now(),
 			"cooldownuntil": cooldownUntil,
 			"updatedat":     time.Now(),
 		},

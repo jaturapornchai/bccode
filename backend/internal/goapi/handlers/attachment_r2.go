@@ -437,7 +437,7 @@ func AttachmentDeleteHandler(c echo.Context) error {
 		}
 		filter["_id"] = oid
 	} else {
-		filter["file_name"] = req.FileName
+		filter["filename"] = req.FileName
 	}
 
 	// Find the attachment first to get R2 key

@@ -30,8 +30,8 @@ type IServiceConfig interface {
 type ServiceConfig struct{}
 
 func LoadEnv() {
-	// ไม่โหลด .env อีกต่อไป — config ทั้งหมดมาจาก bootstrap.json + MongoDB system_config
-	logger.Info("[Config] config มาจาก bootstrap.json + MongoDB system_config (ไม่ใช้ .env)")
+	// ไม่โหลด .env อีกต่อไป — config ทั้งหมดมาจาก bootstrap.json + custom_config.json
+	logger.Info("[Config] config มาจาก bootstrap.json + custom_config.json (ไม่ใช้ .env)")
 }
 
 func getEnv(key string, fallback string) string {
@@ -48,11 +48,11 @@ func NewServiceConfig() IServiceConfig {
 
 // ValidateRequiredEnvVars checks that critical environment variables are set.
 // Database connection vars (PostgreSQL, ClickHouse, Redis, Kafka) ไม่ต้อง validate ที่นี่
-// เพราะจะถูก override จาก Setup Config (MongoDB system_config) ภายหลัง
+// เพราะจะถูก override จาก Setup Config (custom_config.json) ภายหลัง
 func ValidateRequiredEnvVars() {
 	// Database connection vars มาจาก Setup Config ไม่ต้อง validate ใน .env
 	// Bootstrap: MONGODB_URI มาจาก bootstrap.json
-	// ที่เหลือ: มาจาก MongoDB system_config collection
+	// ที่เหลือ: มาจาก custom_config.json collection
 }
 
 func (ServiceConfig) MongodbURI() string {

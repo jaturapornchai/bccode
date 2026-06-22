@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  AlertCircle,
   Barcode,
   CheckSquare,
   Copy,
@@ -62,6 +61,7 @@ import {
 } from "@/lib/workspace-models";
 import { languageCodesFromWorkspace } from "@/components/product-barcode/names-editor";
 import { getBarcodeText, type BarcodeText } from "@/lib/product-barcode/language";
+import { pushNotice } from "@/lib/toast";
 
 type ProductBarcodeScreenProps = {
   embedded?: boolean;
@@ -176,8 +176,6 @@ type BarcodeApiResponse = {
   total?: number;
 };
 
-type Notice = { type: "success" | "error" | "info"; text: string } | null;
-
 const pageSize = 80;
 
 export function ProductBarcodeScreen({ embedded = false, language = "th" }: ProductBarcodeScreenProps) {
@@ -191,7 +189,7 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
   const [detailItems, setDetailItems] = useState<Record<string, ProductBarcodeRecord>>({});
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [notice, setNotice] = useState<Notice>(null);
+  const setNotice = pushNotice;
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
 
@@ -771,12 +769,10 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
               <Trash2 size={16} />
               {checkedBarcodes.length || ""}
             </Button>
-            {selected ? (
-              <Button size="sm" onClick={() => void openCopyEditor()}>
-                <Copy size={16} />
-                คัดลอก
-              </Button>
-            ) : null}
+            <Button size="sm" onClick={() => void openCopyEditor()} disabled={!selected}>
+              <Copy size={16} />
+              คัดลอก
+            </Button>
             <Button size="sm" onClick={() => void openCreateEditor()}>
               <Plus size={16} />
               {text.add}
@@ -801,31 +797,15 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
               {loading ? <Loader2 size={16} className="animate-spin" /> : <RefreshCcw size={16} />}
               {text.refresh}
             </Button>
-            {selected ? (
-              <Button size="sm" type="button" onClick={() => void openCopyEditor()}>
-                <Copy size={16} />
-                คัดลอก
-              </Button>
-            ) : null}
+            <Button size="sm" type="button" onClick={() => void openCopyEditor()} disabled={!selected}>
+              <Copy size={16} />
+              คัดลอก
+            </Button>
             <Button size="sm" type="button" onClick={() => void openCreateEditor()}>
               <Plus size={16} />
               {text.add}
             </Button>
           </div>
-        </div>
-      ) : null}
-
-      {notice ? (
-        <div
-          className={cn(
-            "flex items-center gap-2 rounded-2xl border p-3 text-sm font-medium",
-            notice.type === "error" && "border-destructive/30 bg-destructive/10 text-destructive",
-            notice.type === "success" && "border-emerald-400/30 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300",
-            notice.type === "info" && "border-primary/25 bg-primary/10 text-primary",
-          )}
-        >
-          <AlertCircle size={18} />
-          {notice.text}
         </div>
       ) : null}
 

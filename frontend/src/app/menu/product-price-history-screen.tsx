@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, Barcode, History, Loader2, RefreshCcw, Search, UserRound } from "lucide-react";
+import { Barcode, History, Loader2, RefreshCcw, Search, UserRound } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { LogoAvatar } from "@/components/logo-avatar";
 import { formatDefaultDateTime, resolveWorkspaceDateTimeDisplayOptions } from "@/lib/date-time";
 import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
+import { pushNotice } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import {
   localizedName,
@@ -47,8 +48,6 @@ type PriceHistoryRecord = {
   createdAt: string;
   remark: string;
 };
-
-type Notice = { type: "error" | "info" | "success"; text: string } | null;
 
 const text = {
   th: {
@@ -100,7 +99,7 @@ export function ProductPriceHistoryScreen({ embedded = false, language: external
   const [query, setQuery] = useState("");
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
-  const [notice, setNotice] = useState<Notice>(null);
+  const setNotice = pushNotice;
 
   const selectedProduct = useMemo(
     () => products.find((product) => product.barcode === selectedBarcode) ?? products[0] ?? null,
@@ -202,13 +201,6 @@ export function ProductPriceHistoryScreen({ embedded = false, language: external
           <Badge variant="outline">{products.length.toLocaleString()} {dictionary.products}</Badge>
         </div>
       </header>
-
-      {notice ? (
-        <div className={`message ${notice.type === "error" ? "error" : notice.type === "success" ? "success" : "info"}`}>
-          <AlertCircle size={18} />
-          <span>{notice.text}</span>
-        </div>
-      ) : null}
 
       <Card>
         <CardContent className="grid gap-2 p-3">

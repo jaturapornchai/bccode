@@ -8,7 +8,7 @@ import {
   postMainApiAuth,
   readJsonOrText,
 } from "@/lib/auth-bridge";
-import { validateBackendUrl } from "@/lib/backend-url";
+import { serverMainApiBase, validateBackendUrl } from "@/lib/backend-url";
 
 type GoogleStatusBody = {
   backendUrl?: string;
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, status: "failed", message: "Google login ไม่มี email" }, { status: 502 });
     }
 
-    const login = await postMainApiAuth(mainApiUrl, "/googlelogin", {
+    const login = await postMainApiAuth(serverMainApiBase(), "/googlelogin", {
       google_user_id: getString(user, "google_user_id") ?? getString(user, "googleUserId") ?? "",
       display_name: getString(user, "display_name") ?? getString(user, "displayName") ?? "",
       picture_url: getString(user, "picture_url") ?? getString(user, "pictureUrl") ?? "",

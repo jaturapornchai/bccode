@@ -22,6 +22,7 @@ import { pickName } from "@/lib/product-barcode/utils";
 import { type AuthSession } from "@/lib/workspace-models";
 import { type LanguageCode } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { pushNotice } from "@/lib/toast";
 
 type SettingRecord = Record<string, unknown>;
 
@@ -70,7 +71,7 @@ export function ProductCategoryItemsEditor({
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
-  const [notice, setNotice] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const setNotice = pushNotice;
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
@@ -463,19 +464,6 @@ export function ProductCategoryItemsEditor({
       </CardHeader>
 
       <CardContent className="flex min-h-0 flex-1 flex-col p-0">
-        {notice && (
-          <div
-            className={cn(
-              "px-4 py-2 text-xs font-semibold border-b shrink-0",
-              notice.type === "success"
-                ? "bg-emerald-50 text-emerald-800 border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/40"
-                : "bg-destructive/10 text-destructive border-destructive/20"
-            )}
-          >
-            {notice.text}
-          </div>
-        )}
-
         <div className="flex-1 overflow-y-auto">
           {localCodelist.length === 0 ? (
             <div className="flex h-60 flex-col items-center justify-center gap-1.5 p-4 text-center text-sm text-muted-foreground">

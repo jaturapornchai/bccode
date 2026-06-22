@@ -304,7 +304,7 @@ export function ProductBarcodeFormDialog(props: ProductBarcodeFormDialogProps) {
           )}
           {tab === "pricing" && <TabPricing value={value} onChange={onChange} text={text} />}
           {tab === "media" && (
-            <TabMedia value={value} onChange={onChange} text={text} auth={auth} />
+            <TabMedia value={value} onChange={onChange} text={text} auth={auth} language={language} />
           )}
           {tab === "logistics" && (
             <TabLogistics value={value} onChange={onChange} text={text} />
@@ -1205,11 +1205,13 @@ function TabMedia({
   onChange,
   text,
   auth,
+  language,
 }: {
   value: ProductBarcode;
   onChange: Dispatch<SetStateAction<ProductBarcode>>;
   text: Text;
   auth: AuthSession | null;
+  language: LanguageCode | string;
 }) {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string>("");
@@ -1217,6 +1219,14 @@ function TabMedia({
   const handleUpload = useCallback(
     async (file: File | null, target: "main" | "gallery") => {
       if (!file) return;
+      if (file.type !== "image/png" && file.type !== "image/jpeg") {
+        setUploadError(
+          language === "th"
+            ? "รองรับเฉพาะไฟล์ PNG และ JPG"
+            : "Only PNG and JPG files are supported.",
+        );
+        return;
+      }
       setUploading(true);
       setUploadError("");
       const result = await uploadProductImage(auth, file);
@@ -1232,7 +1242,7 @@ function TabMedia({
       }
       setUploading(false);
     },
-    [auth, onChange],
+    [auth, onChange, language],
   );
 
   return (
@@ -1290,7 +1300,7 @@ function TabMedia({
                     {uploading ? text.pickerLoading : text.imageUpload}
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/png,image/jpeg"
                       className="hidden"
                       onChange={(event) => handleUpload(event.target.files?.[0] ?? null, "main")}
                       disabled={uploading}
@@ -1320,7 +1330,7 @@ function TabMedia({
                 {text.imageGallery}
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/png,image/jpeg"
                   className="hidden"
                   onChange={(event) => handleUpload(event.target.files?.[0] ?? null, "gallery")}
                   disabled={uploading}

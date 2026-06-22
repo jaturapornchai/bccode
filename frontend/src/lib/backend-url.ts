@@ -108,6 +108,21 @@ export function validateBackendUrl(rawUrl: string): BackendUrlCheck {
   return { normalizedGoApiUrl, mainApiUrl };
 }
 
+// Server-side only: the backend address this process can actually reach.
+// Next.js API routes run server-side (in the container / on the dev machine) and MUST
+// fetch the backend at this local address. They cannot resolve the public same-origin
+// host (e.g. app.bcaicloud.com), and the public /backend proxy intentionally exposes only
+// goapi + assets. The browser keeps using the public same-origin URL for its own calls;
+// only server-side fetches use these. Matches the next.config.ts rewrite target.
+export function serverMainApiBase(): string {
+  const raw = process.env.BCAI_LOCAL_BACKEND_URL ?? "http://192.168.2.202:8888";
+  return raw.replace(/\/+$/, "");
+}
+
+export function serverGoApiBase(): string {
+  return `${serverMainApiBase()}/goapi`;
+}
+
 function isLocalWebHost(hostname: string): boolean {
   const normalized = hostname.toLowerCase();
   return normalized === "localhost" || normalized === "127.0.0.1" || normalized === "::1";

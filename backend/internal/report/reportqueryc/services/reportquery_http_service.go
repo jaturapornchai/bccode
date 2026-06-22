@@ -266,6 +266,13 @@ func (svc ReportQueryHttpService) ExecuteReportQuery(holdingCode string, reportC
 		return nil, common.Pagination{}, err
 	}
 
+	// FindOneByCode wraps PersisterMongo.FindOne, which swallows "no documents" and returns a
+	// zero struct + nil error. Without this guard an unknown/unapproved code runs with empty SQL
+	// and surfaces a confusing ClickHouse syntax error instead of a clean not-found.
+	if findDoc.Code == "" {
+		return nil, common.Pagination{}, fmt.Errorf("report code %s not found", reportCode)
+	}
+
 	query := models.Query{
 		SQL: findDoc.ReportQuery.SQL,
 	}

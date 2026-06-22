@@ -16,7 +16,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const purchaseRequisitionCollection = "transactionPurchaseRequisition"
+const purchaseRequisitionCollection = "transactionpurchaserequisition"
 
 // ==================== Kafka Topics ====================
 

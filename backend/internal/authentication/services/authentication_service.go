@@ -118,7 +118,7 @@ func (svc AuthenticationService) LoginWithPhoneNumberOTP(userLoginReq *auth_mode
 		return models.TokenLoginResponse{}, errors.New("OTP invalid")
 	}
 
-	findUser, err := svc.authRepo.FindByIdentity(context.Background(), "phone_number", userLoginReq.PhoneNumber)
+	findUser, err := svc.authRepo.FindByIdentity(context.Background(), "phonenumber", userLoginReq.PhoneNumber)
 
 	if err != nil && err.Error() != "mongo: no documents in result" {
 		return models.TokenLoginResponse{}, errors.New("auth: database connect error")
@@ -193,6 +193,18 @@ func (svc AuthenticationService) Login(userLoginReq *auth_models.UserLoginReques
 	if err != nil && err.Error() != "mongo: no documents in result" {
 		// svc.ms.Log("Authentication service", err.Error())
 		return models.TokenLoginResponse{}, errors.New("auth: database connect error")
+	}
+
+	// Email-as-login fallback: if the username lookup did not match, retry by email.
+	// The input may be an email address (e.g. owner logging in with jaturapornchai@gmail.com).
+	// FindUser is built on PersisterMongo.FindOne which swallows "no documents" and returns
+	// a zero struct + nil err (see go-expert "Mongo not-found semantics"), so the empty
+	// result test below is the real "not found" signal — same pattern as the select-holding fix.
+	if len(findUser.Username) < 1 && strings.Contains(userLoginReq.Username, "@") {
+		findUserByEmail, emailErr := svc.authRepo.FindByIdentity(context.Background(), "email", userLoginReq.Username)
+		if emailErr == nil && findUserByEmail != nil && len(findUserByEmail.Username) > 0 {
+			findUser = findUserByEmail
+		}
 	}
 
 	if len(findUser.Username) < 1 {
@@ -323,7 +335,10 @@ func (svc *AuthenticationService) processUserLogin(findUser auth_models.UserDoc,
 		if strings.TrimSpace(findUser.UID) != "" {
 			shopUser, err = svc.shopUserRepo.FindByHoldingCodeAndUserUID(context.Background(), holdingCode, findUser.UID)
 		}
-		if strings.TrimSpace(findUser.UID) == "" || err != nil {
+		// Also fall back when the uid query matched nothing (FindOne returns a zero struct + nil
+		// error on no-match). A by-email membership created before first login keeps an empty/old
+		// useruid, so the uid lookup misses and we must match by the stable username.
+		if strings.TrimSpace(findUser.UID) == "" || err != nil || shopUser.ID == primitive.NilObjectID {
 			shopUser, err = svc.shopUserRepo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, findUser.Username)
 		}
 
@@ -394,7 +409,13 @@ func (svc AuthenticationService) findShopUser(ctx context.Context, holdingCode s
 	if strings.TrimSpace(userUID) != "" {
 		shopUser, err = svc.shopUserRepo.FindByHoldingCodeAndUserUID(ctx, holdingCode, userUID)
 	}
-	if strings.TrimSpace(userUID) == "" || err != nil {
+	// Fall back to a username lookup when there is no userUID, the userUID query errored,
+	// OR it matched nothing (PersisterMongo.FindOne swallows "no documents" and returns a
+	// zero-valued struct with nil error). The token's uid can drift from the useruid stored
+	// on the membership — e.g. a membership created by email before that person logged in,
+	// or a token minted with an older uid — so the uid query misses and we must match by the
+	// stable email username instead. Without this, AccessShop wrongly reports "holdingcode invalid".
+	if strings.TrimSpace(userUID) == "" || err != nil || shopUser.ID == primitive.NilObjectID {
 		shopUser, err = svc.shopUserRepo.FindByHoldingCodeAndUsername(ctx, holdingCode, username)
 	}
 	return shopUser, err
@@ -523,7 +544,7 @@ func (svc AuthenticationService) CheckExistsPhonenumber(phoneNumber string) (boo
 
 	phoneNumber = utils.NormalizePhonenumber(phoneNumber)
 
-	userPhonenumberFind, err := svc.authRepo.FindByIdentity(context.Background(), "phone_number", phoneNumber)
+	userPhonenumberFind, err := svc.authRepo.FindByIdentity(context.Background(), "phonenumber", phoneNumber)
 	if err != nil && err.Error() != "mongo: no documents in result" {
 		return true, err
 	}
@@ -907,7 +928,9 @@ func (svc AuthenticationService) UpdateFavoriteShop(holdingCode string, username
 	if strings.TrimSpace(userUID) != "" {
 		shopUser, err = svc.shopUserRepo.FindByHoldingCodeAndUserUID(context.Background(), holdingCode, userUID)
 	}
-	if strings.TrimSpace(userUID) == "" || err != nil {
+	// Fall back to username when the uid query matched nothing (FindOne returns a zero struct +
+	// nil error on no-match) so uid drift / by-email memberships still resolve.
+	if strings.TrimSpace(userUID) == "" || err != nil || shopUser.ID == primitive.NilObjectID {
 		shopUser, err = svc.shopUserRepo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, username)
 	}
 

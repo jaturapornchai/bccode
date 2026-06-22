@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { validateBackendUrl } from "@/lib/backend-url";
+import { serverGoApiBase, validateBackendUrl } from "@/lib/backend-url";
 import type { ThailandAddressData } from "@/lib/thailand-addresses";
 
 const addressCacheSeconds = 60 * 60 * 24;
@@ -8,9 +8,8 @@ const addressCacheSeconds = 60 * 60 * 24;
 export async function GET(request: Request) {
   const url = new URL(request.url);
 
-  let normalizedGoApiUrl: string;
   try {
-    normalizedGoApiUrl = validateBackendUrl(url.searchParams.get("backendUrl") ?? "").normalizedGoApiUrl;
+    validateBackendUrl(url.searchParams.get("backendUrl") ?? "");
   } catch (error) {
     return NextResponse.json(
       { success: false, message: error instanceof Error ? error.message : "Backend URL ไม่ถูกต้อง" },
@@ -22,7 +21,7 @@ export async function GET(request: Request) {
   const timeout = setTimeout(() => controller.abort(), 8000);
 
   try {
-    const response = await fetch(`${normalizedGoApiUrl}/api/address/thailand`, {
+    const response = await fetch(`${serverGoApiBase()}/api/address/thailand`, {
       cache: "force-cache",
       next: { revalidate: addressCacheSeconds },
       signal: controller.signal,

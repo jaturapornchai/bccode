@@ -163,8 +163,8 @@ func (repo CouponReservationRepository) FindReservationByTransactionID(ctx conte
 	var reservation models.CouponReservationDoc
 
 	filter := bson.M{
-		"transaction_id": transactionID,
-		"holdingcode":    holdingCode,
+		"transactionid": transactionID,
+		"holdingcode":   holdingCode,
 	}
 
 	err := repo.pst.FindOne(ctx, &models.CouponReservationDoc{}, filter, &reservation)
@@ -177,7 +177,7 @@ func (repo CouponReservationRepository) FindActiveReservationsByCoupon(ctx conte
 
 	filter := bson.M{
 		"holdingcode": holdingCode,
-		"coupon_id":   couponID,
+		"couponid":    couponID,
 		"status":      models.ReservationStatusActive,
 		"expiresat":   bson.M{"$gt": time.Now().UTC()}, // Use UTC time for MongoDB queries
 	}
@@ -192,8 +192,8 @@ func (repo CouponReservationRepository) FindActiveReservationsByCustomerAndCoupo
 
 	filter := bson.M{
 		"holdingcode": holdingCode,
-		"customer_id": customerID,
-		"coupon_id":   couponID,
+		"customerid":  customerID,
+		"couponid":    couponID,
 		"status":      models.ReservationStatusActive,
 		"expiresat":   bson.M{"$gt": time.Now().UTC()}, // Use UTC time for MongoDB queries
 	}
@@ -206,7 +206,7 @@ func (repo CouponReservationRepository) FindActiveReservationsByCustomerAndCoupo
 func (repo CouponReservationRepository) CountActiveReservations(ctx context.Context, holdingCode string, couponID string) (int, error) {
 	filter := bson.M{
 		"holdingcode": holdingCode,
-		"coupon_id":   couponID,
+		"couponid":    couponID,
 		"status":      models.ReservationStatusActive,
 		"expiresat":   bson.M{"$gt": time.Now().UTC()}, // Use UTC time for MongoDB queries
 	}
@@ -218,8 +218,8 @@ func (repo CouponReservationRepository) CountActiveReservations(ctx context.Cont
 func (repo CouponReservationRepository) CountActiveReservationsByCustomer(ctx context.Context, holdingCode string, couponID string, customerID string) (int, error) {
 	filter := bson.M{
 		"holdingcode": holdingCode,
-		"customer_id": customerID,
-		"coupon_id":   couponID,
+		"customerid":  customerID,
+		"couponid":    couponID,
 		"status":      models.ReservationStatusActive,
 		"expiresat":   bson.M{"$gt": time.Now().UTC()}, // Use UTC time for MongoDB queries
 	}
@@ -246,9 +246,9 @@ func (repo CouponReservationRepository) UpdateReservationStatus(ctx context.Cont
 
 	// เพิ่มเวลาที่ใช้งานหรือยกเลิก
 	if status == models.ReservationStatusUsed {
-		updateFields["used_at"] = time.Now().UTC() // Use UTC time consistently
+		updateFields["usedat"] = time.Now().UTC() // Use UTC time consistently
 	} else if status == models.ReservationStatusCanceled {
-		updateFields["canceled_at"] = time.Now().UTC() // Use UTC time consistently
+		updateFields["canceledat"] = time.Now().UTC() // Use UTC time consistently
 	}
 
 	update := bson.M{
@@ -268,14 +268,14 @@ func (repo CouponReservationRepository) CancelReservation(ctx context.Context, h
 	filter := bson.M{
 		"_id":         objID,
 		"holdingcode": holdingCode,
-		"customer_id": customerID,
+		"customerid":  customerID,
 		"status":      models.ReservationStatusActive,
 	}
 
 	updateFields := bson.M{
-		"status":      models.ReservationStatusCanceled,
-		"canceled_at": time.Now().UTC(), // Use UTC time consistently
-		"updatedat":   time.Now().UTC(), // Use UTC time consistently
+		"status":     models.ReservationStatusCanceled,
+		"canceledat": time.Now().UTC(), // Use UTC time consistently
+		"updatedat":  time.Now().UTC(), // Use UTC time consistently
 	}
 
 	update := bson.M{
@@ -363,12 +363,12 @@ func (repo CouponUsageHistoryRepository) FindUsageHistoryByCoupon(ctx context.Co
 	var histories []models.CouponUsageHistoryDoc
 
 	filter := bson.M{
-		"coupon_id":   couponID,
+		"couponid":    couponID,
 		"holdingcode": holdingCode,
 	}
 
 	skip := (page - 1) * pageSize
-	opts := options.Find().SetSkip(int64(skip)).SetLimit(int64(pageSize)).SetSort(bson.M{"used_at": -1})
+	opts := options.Find().SetSkip(int64(skip)).SetLimit(int64(pageSize)).SetSort(bson.M{"usedat": -1})
 
 	err := repo.pst.Find(ctx, &models.CouponUsageHistoryDoc{}, filter, &histories, opts)
 	if err != nil {
@@ -388,12 +388,12 @@ func (repo CouponUsageHistoryRepository) FindUsageHistoryByCustomer(ctx context.
 	var histories []models.CouponUsageHistoryDoc
 
 	filter := bson.M{
-		"customer_id": customerID,
+		"customerid":  customerID,
 		"holdingcode": holdingCode,
 	}
 
 	skip := (page - 1) * pageSize
-	opts := options.Find().SetSkip(int64(skip)).SetLimit(int64(pageSize)).SetSort(bson.M{"used_at": -1})
+	opts := options.Find().SetSkip(int64(skip)).SetLimit(int64(pageSize)).SetSort(bson.M{"usedat": -1})
 
 	err := repo.pst.Find(ctx, &models.CouponUsageHistoryDoc{}, filter, &histories, opts)
 	if err != nil {
@@ -417,7 +417,7 @@ func (repo CouponUsageHistoryRepository) FindUsageHistoryBySaleInvoice(ctx conte
 		"holdingcode":     holdingCode,
 	}
 
-	opts := options.Find().SetSort(bson.M{"used_at": -1})
+	opts := options.Find().SetSort(bson.M{"usedat": -1})
 	err := repo.pst.Find(ctx, &models.CouponUsageHistoryDoc{}, filter, &histories, opts)
 
 	return histories, err
@@ -427,11 +427,11 @@ func (repo CouponUsageHistoryRepository) FindUsageHistoryByTransactionID(ctx con
 	var histories []models.CouponUsageHistoryDoc
 
 	filter := bson.M{
-		"transaction_id": transactionID,
-		"holdingcode":    holdingCode,
+		"transactionid": transactionID,
+		"holdingcode":   holdingCode,
 	}
 
-	opts := options.Find().SetSort(bson.M{"used_at": -1})
+	opts := options.Find().SetSort(bson.M{"usedat": -1})
 	err := repo.pst.Find(ctx, &models.CouponUsageHistoryDoc{}, filter, &histories, opts)
 
 	return histories, err
@@ -444,22 +444,22 @@ func (repo CouponUsageHistoryRepository) SearchUsageHistory(ctx context.Context,
 	filter := bson.M{"holdingcode": holdingCode}
 
 	if req.CouponID != "" {
-		filter["coupon_id"] = req.CouponID
+		filter["couponid"] = req.CouponID
 	}
 	if req.CouponCode != "" {
-		filter["coupon_code"] = bson.M{"$regex": req.CouponCode, "$options": "i"}
+		filter["couponcode"] = bson.M{"$regex": req.CouponCode, "$options": "i"}
 	}
 	if req.CustomerID != "" {
-		filter["customer_id"] = req.CustomerID
+		filter["customerid"] = req.CustomerID
 	}
 	if req.SaleInvoiceID != "" {
-		filter["sale_invoice_id"] = req.SaleInvoiceID
+		filter["saleinvoiceid"] = req.SaleInvoiceID
 	}
 	if req.SaleInvoiceNumber != "" {
-		filter["sale_invoice_number"] = bson.M{"$regex": req.SaleInvoiceNumber, "$options": "i"}
+		filter["saleinvoicenumber"] = bson.M{"$regex": req.SaleInvoiceNumber, "$options": "i"}
 	}
 	if req.TransactionID != "" {
-		filter["transaction_id"] = req.TransactionID
+		filter["transactionid"] = req.TransactionID
 	}
 
 	// Date range filter
@@ -471,7 +471,7 @@ func (repo CouponUsageHistoryRepository) SearchUsageHistory(ctx context.Context,
 		if req.EndDate != nil {
 			dateFilter["$lte"] = req.EndDate.UTC()
 		}
-		filter["used_at"] = dateFilter
+		filter["usedat"] = dateFilter
 	}
 
 	// Pagination
@@ -485,7 +485,7 @@ func (repo CouponUsageHistoryRepository) SearchUsageHistory(ctx context.Context,
 	}
 
 	skip := (page - 1) * pageSize
-	opts := options.Find().SetSkip(int64(skip)).SetLimit(int64(pageSize)).SetSort(bson.M{"used_at": -1})
+	opts := options.Find().SetSkip(int64(skip)).SetLimit(int64(pageSize)).SetSort(bson.M{"usedat": -1})
 
 	err := repo.pst.Find(ctx, &models.CouponUsageHistoryDoc{}, filter, &histories, opts)
 	if err != nil {

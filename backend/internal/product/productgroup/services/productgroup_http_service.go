@@ -34,6 +34,7 @@ type IProductGroupHttpService interface {
 	SearchProductGroup(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ProductGroupInfo, mongopagination.PaginationData, error)
 	SearchProductGroupStep(holdingCode string, langCode string, pageableStep micromodels.PageableStep) ([]models.ProductGroupInfo, int, error)
 	SaveInBatch(holdingCode string, authUsername string, dataList []models.ProductGroup) (common.BulkImport, error)
+	XSortsSave(holdingCode string, authUsername string, xsorts []common.XSortModifyReqesut) error
 
 	GetModuleName() string
 }
@@ -146,6 +147,8 @@ func (svc ProductGroupHttpService) create(holdingCode string, authUsername strin
 	docData.GuidFixed = newGuidFixed
 	docData.ProductGroup = doc
 
+	docData.EmptyOnNil()
+
 	docData.CreatedBy = authUsername
 	docData.CreatedAt = time.Now()
 
@@ -239,6 +242,16 @@ func (svc ProductGroupHttpService) DeleteProductGroup(holdingCode, guid, authUse
 		return fmt.Errorf("group code \"%s\" is referenced in product barcode", findDoc.Code)
 	}
 
+	// Block deletion of a group that still has sub-groups so children are not
+	// silently orphaned (their parentguid would dangle and re-root in the tree).
+	childDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "parentguid", guid)
+	if err != nil {
+		return err
+	}
+	if childDoc.GuidFixed != "" {
+		return errors.New("ไม่สามารถลบกลุ่มสินค้าที่มีกลุ่มย่อยได้ กรุณาย้ายหรือลบกลุ่มย่อยก่อน")
+	}
+
 	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
@@ -281,6 +294,18 @@ func (svc ProductGroupHttpService) DeleteProductGroupByGUIDs(holdingCode, authUs
 
 	if existsInProduct {
 		return fmt.Errorf("referenced in product")
+	}
+
+	// Block batch deletion when any selected group still has sub-groups, so
+	// children are not silently orphaned. Caller must handle sub-groups first.
+	for _, v := range findDocs {
+		childDoc, errChild := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "parentguid", v.GuidFixed)
+		if errChild != nil {
+			return errChild
+		}
+		if childDoc.GuidFixed != "" {
+			return errors.New("ไม่สามารถลบกลุ่มสินค้าที่มีกลุ่มย่อยได้ กรุณาย้ายหรือลบกลุ่มย่อยก่อน")
+		}
 	}
 
 	deleteFilterQuery := map[string]interface{}{
@@ -493,6 +518,62 @@ func (svc ProductGroupHttpService) SaveInBatch(holdingCode string, authUsername 
 		UpdateFailed:     updateFailDataKey,
 		PayloadDuplicate: payloadDuplicateDataKey,
 	}, nil
+}
+
+// XSortsSave applies batch sibling-reorder requests: for each request it merges the
+// new xorder into the target document's xsorts list (keyed by code) and persists it.
+func (svc ProductGroupHttpService) XSortsSave(holdingCode string, authUsername string, xsorts []common.XSortModifyReqesut) error {
+
+	ctx, ctxCancel := svc.getContextTimeout()
+	defer ctxCancel()
+
+	for _, xsort := range xsorts {
+		if len(xsort.GUIDFixed) < 1 {
+			continue
+		}
+		findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, xsort.GUIDFixed)
+
+		if err != nil {
+			return err
+		}
+
+		if len(findDoc.GuidFixed) < 1 {
+			continue
+		}
+
+		if findDoc.XSorts == nil {
+			findDoc.XSorts = &[]common.XSort{}
+		}
+
+		dictXSorts := map[string]common.XSort{}
+
+		for _, tempXSort := range *findDoc.XSorts {
+			dictXSorts[tempXSort.Code] = tempXSort
+		}
+
+		dictXSorts[xsort.Code] = common.XSort{
+			Code:   xsort.Code,
+			XOrder: xsort.XOrder,
+		}
+
+		tempXSorts := []common.XSort{}
+
+		for _, tempXSort := range dictXSorts {
+			tempXSorts = append(tempXSorts, tempXSort)
+		}
+
+		findDoc.XSorts = &tempXSorts
+
+		err = svc.repo.UpdateXSorts(ctx, holdingCode, findDoc.GuidFixed, tempXSorts, authUsername, time.Now())
+
+		if err != nil {
+			return err
+		}
+	}
+
+	svc.saveMasterSync(holdingCode)
+
+	return nil
 }
 
 func (svc ProductGroupHttpService) getDocIDKey(doc models.ProductGroup) string {

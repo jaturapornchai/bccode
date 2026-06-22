@@ -1,8 +1,6 @@
 "use client";
 
 import {
-  AlertCircle,
-  BadgeCheck,
   CircleDollarSign,
   Edit3,
   Loader2,
@@ -23,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { backendText, useBackendLanguage, type BackendLanguageDictionary } from "@/lib/backend-language";
 import { applyCurrencySymbolPreset, currencyPresetSource, filterCurrencySymbolPresets, findCurrencySymbolPreset } from "@/lib/currency-presets";
 import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
+import { pushNotice } from "@/lib/toast";
 import {
   type AuthSession,
   type WorkspaceSession,
@@ -74,11 +73,6 @@ type ApiResponse<T> = {
     totalItem?: number;
   };
 };
-
-type Notice = {
-  type: "success" | "error" | "info";
-  text: string;
-} | null;
 
 const currencyTextEn = {
   title: "Currency",
@@ -390,7 +384,7 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [notice, setNotice] = useState<Notice>(null);
+  const setNotice = pushNotice;
   const [editing, setEditing] = useState<CurrencyRecord | null>(null);
   const [form, setForm] = useState<CurrencyForm>(emptyForm);
   const [formOpen, setFormOpen] = useState(false);
@@ -607,13 +601,6 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
           </div>
         ) : null}
       </header>
-
-      {notice ? (
-        <div className={`message ${notice.type === "success" ? "success" : notice.type === "error" ? "error" : "info"}`}>
-          {notice.type === "success" ? <BadgeCheck size={18} /> : <AlertCircle size={18} />}
-          <span>{notice.text}</span>
-        </div>
-      ) : null}
 
       <section className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label={text("total")} value={formatCount(currencies.length, language)} />

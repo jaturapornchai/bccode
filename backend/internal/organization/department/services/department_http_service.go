@@ -384,7 +384,7 @@ func departmentBranchCodeFilter(doc models.Department) map[string]interface{} {
 		return filter
 	}
 	if doc.BranchKey != "" {
-		filter["branch_key"] = doc.BranchKey
+		filter["branchkey"] = doc.BranchKey
 	}
 	return filter
 }

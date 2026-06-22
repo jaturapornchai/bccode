@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { validateBackendUrl } from "@/lib/backend-url";
+import { serverMainApiBase, validateBackendUrl } from "@/lib/backend-url";
 import { holdingCodeValidationMessageTh, isValidHoldingCode, normalizeHoldingCode } from "@/lib/holding-code";
 
 type LoginBody = {
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
   const timeout = setTimeout(() => controller.abort(), 15000);
 
   try {
-    const response = await fetch(`${mainApiUrl}/login`, {
+    const response = await fetch(`${serverMainApiBase()}/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password, holdingcode: holdingCode }),

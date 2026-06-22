@@ -171,7 +171,7 @@ func ProcessBarcodeRebuildAll(holdingCode string) {
 	svcConfig := config.NewServiceConfig()
 	MongodbDatabaseName := svcConfig.MongodbDatabaseName()
 	collection := mongoClient.Database(MongodbDatabaseName).Collection("productbarcodes")
-	cur, err := collection.Find(context.Background(), bson.M{"holding_code": holdingCode, "deleted_by": bson.M{"$exists": false}})
+	cur, err := collection.Find(context.Background(), bson.M{"holdingcode": holdingCode, "deletedby": bson.M{"$exists": false}})
 	logger.Info("Finding documents in MongoDB collection %s", MongodbDatabaseName)
 	if err != nil {
 		logger.Error("finding documents: %v", err)

@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"regexp"
 	"smlcloudplatform/internal/config"
 	creditorRepo "smlcloudplatform/internal/debtaccount/creditor/repositories"
 	mastersync "smlcloudplatform/internal/mastersync/repositories"
@@ -1379,6 +1380,14 @@ func (h ProductBarcodeHttp) searchFilter(queryParam func(string) string) map[str
 	// Handle general search parameter 'q' for codes and names
 	qParam := queryParam("q")
 	if qParam != "" {
+		// SECURITY (2026-06-21): cap length + escape regex metacharacters before building
+		// the $regex clauses, to prevent ReDoS (catastrophic backtracking) and
+		// index-bypassing full-collection scans from a crafted q. Tenant scope is still
+		// enforced downstream (holdingcode filter), so this is availability-only hardening.
+		if len(qParam) > 100 {
+			qParam = qParam[:100]
+		}
+		qParam = regexp.QuoteMeta(qParam)
 		// Create comprehensive OR search for codes and names
 		filters["$or"] = []bson.M{
 			// Product codes

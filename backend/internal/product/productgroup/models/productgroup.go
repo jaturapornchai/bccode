@@ -12,6 +12,18 @@ type ProductGroup struct {
 	models.PartitionIdentity `bson:"inline"`
 	Code                     string          `json:"code" bson:"code"`
 	Names                    *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
+	ParentGUID               string          `json:"parentguid" bson:"parentguid"`
+	ParentGUIDAll            string          `json:"parentguidall" bson:"parentguidall"`
+	XSorts                   *[]models.XSort `json:"xsorts" bson:"xsorts" validate:"unique=Code,dive"`
+	ChildCount               int             `json:"childcount" bson:"childcount"`
+	IsDisabled               bool            `json:"isdisabled" bson:"isdisabled"`
+}
+
+func (p *ProductGroup) EmptyOnNil() {
+
+	if p.XSorts == nil {
+		p.XSorts = &[]models.XSort{}
+	}
 }
 
 type ProductGroupInfo struct {

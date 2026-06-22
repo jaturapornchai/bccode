@@ -613,6 +613,7 @@ type GenPDFPayload struct {
 	LineSpacing float64    `json:"linespacing"` // ระยะห่างระหว่างบรรทัด (1.0 = ปกติ, 1.5 = 1.5 เท่า, 2.0 = 2 เท่า) - default: 1.0
 	ColorMode   *bool      `json:"colormode"`   // true = สี, false = ขาวดำ (default: true)
 	DateFormat  string     `json:"dateformat"`  // รูปแบบวันที่: DD/MM/YYYY, DD/MM/BBBB, DD MMM YY, DD MMMM BBBB, etc.
+	Timezone    string     `json:"timezone"`    // IANA timezone ของสาขา (เช่น Asia/Bangkok) — ใช้แปลง UTC ที่เก็บใน DB เป็นเวลาสาขาก่อนแสดงวันที่ใน PDF; ว่าง = Asia/Bangkok (Timezone Iron Rule)
 	Language    string     `json:"language"`    // ภาษา: th, en, ai:cn, ai:ja, ai:ko, ai:lo, ai:km, ai:my, ai:vi
 	ThemeName   string     `json:"themename"`   // ชื่อ preset theme (modern-blue, professional, etc.)
 	TemplateID  string     `json:"templateid"`  // รหัส preset template (standard, modern, etc.)
@@ -1245,13 +1246,28 @@ func GetIntValue(doc map[string]interface{}, key string) int {
 }
 
 func FormatDateValue(val interface{}) string {
-	return FormatDateWithFormat(val, "DD/MM/YYYY")
+	return FormatDateWithFormat(val, "DD/MM/YYYY", "")
+}
+
+// loadPDFLocation - โหลด timezone ของสาขาสำหรับแสดงวันที่ใน PDF
+// ค่าว่าง = "Asia/Bangkok" (ค่าเริ่มต้นของสาขาไทย); ถ้า tzdata ไม่พร้อมให้ fallback เป็น UTC+7 แบบ fixed
+// เพื่อให้วันที่ไม่เพี้ยนข้ามวัน (กัน off-by-one ของเอกสารที่ทำรายการช่วง 00:00–06:59 เวลาไทย)
+func loadPDFLocation(timezone string) *time.Location {
+	if timezone == "" {
+		timezone = "Asia/Bangkok"
+	}
+	if loc, err := time.LoadLocation(timezone); err == nil {
+		return loc
+	}
+	return time.FixedZone("UTC+7", 7*60*60)
 }
 
 // FormatDateWithFormat - แปลงวันที่ตามรูปแบบที่กำหนด
 // ค.ศ. (YY/YYYY) = English month names (Jan, January)
 // พ.ศ. (BB/BBBB) = Thai month names (ม.ค., มกราคม)
-func FormatDateWithFormat(val interface{}, format string) string {
+// timezone = IANA timezone ของสาขา (เช่น Asia/Bangkok); ค่าว่าง = Asia/Bangkok
+// DB เก็บเป็น UTC+0 เสมอ จึงต้องแปลงเป็นเวลาสาขาก่อนดึง Year/Month/Day (Timezone Iron Rule)
+func FormatDateWithFormat(val interface{}, format string, timezone string) string {
 	if val == nil {
 		return ""
 	}
@@ -1268,13 +1284,16 @@ func FormatDateWithFormat(val interface{}, format string) string {
 		valid = v.Year() > 1970
 	case map[string]interface{}:
 		if dateVal, ok := v["$date"]; ok {
-			return FormatDateWithFormat(dateVal, format)
+			return FormatDateWithFormat(dateVal, format, timezone)
 		}
 	}
 
 	if !valid {
 		return ""
 	}
+
+	// แปลง UTC ที่เก็บใน DB -> เวลาสาขา ก่อนดึง Year/Month/Day ทุก format branch (Timezone Iron Rule)
+	t = t.In(loadPDFLocation(timezone))
 
 	// แปลงตามรูปแบบ
 	buddhist2 := (t.Year() + 543) % 100 // พ.ศ. 2 หลัก
@@ -1378,8 +1397,8 @@ func GetCurrentDateTime() string {
 
 // GetCurrentDateTimeWithFormat - ดึงวันที่เวลาปัจจุบันตามรูปแบบที่กำหนด
 func GetCurrentDateTimeWithFormat(format string) string {
-	now := time.Now()
-	dateStr := FormatDateWithFormat(now, format)
+	now := time.Now().In(loadPDFLocation(""))
+	dateStr := FormatDateWithFormat(now, format, "")
 	return fmt.Sprintf("%s %s", dateStr, now.Format("15:04"))
 }
 

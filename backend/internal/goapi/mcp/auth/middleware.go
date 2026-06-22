@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"net/http"
 	"strings"
@@ -189,13 +190,19 @@ func GenerateAPIKey() string {
 	return prefix + random
 }
 
-// generateRandomString generates a random string of specified length
+// generateRandomString generates a cryptographically-secure random string.
+// SECURITY (2026-06-21): was time.Now().UnixNano()%62 in a tight loop — every char
+// collapsed to ~1 value (effective keyspace ~62, brute-forceable). Now uses crypto/rand.
 func generateRandomString(length int) string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	buf := make([]byte, length)
+	if _, err := rand.Read(buf); err != nil {
+		// crypto/rand must not fail; fail closed rather than emit a weak key.
+		panic("crypto/rand failed: " + err.Error())
+	}
 	result := make([]byte, length)
 	for i := range result {
-		// Simple random generation - in production use crypto/rand
-		result[i] = charset[time.Now().UnixNano()%int64(len(charset))]
+		result[i] = charset[int(buf[i])%len(charset)]
 	}
 	return string(result)
 }

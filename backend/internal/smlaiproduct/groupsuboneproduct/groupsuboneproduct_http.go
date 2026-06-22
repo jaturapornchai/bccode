@@ -273,7 +273,7 @@ func (h GroupsuboneProductHttp) SearchGroupsuboneProductPage(ctx microservice.IC
 
 	// เพิ่ม filter สำหรับ GroupMainGuid
 	if groupMainGuid := ctx.QueryParam("GroupMainGuid"); groupMainGuid != "" {
-		filter["groupMainGuid"] = groupMainGuid
+		filter["groupmainguid"] = groupMainGuid
 	}
 
 	pageable := utils.GetPageable(ctx.QueryParam)

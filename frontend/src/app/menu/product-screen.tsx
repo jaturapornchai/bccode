@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  AlertCircle,
   CheckSquare,
   FolderOpen,
   Filter,
@@ -45,6 +44,7 @@ import { Input } from "@/components/ui/input";
 import { MasterPicker } from "@/components/product-barcode/master-picker";
 import { listBarcodes, uploadProductImage, type MasterEntry, type MasterName } from "@/lib/product-barcode/api";
 import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
+import { pushNotice } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import {
   localizedName,
@@ -144,7 +144,7 @@ export function ProductScreen({
   const [items, setItems] = useState<Product[]>([]);
   const [selectedCode, setSelectedCode] = useState("");
   const [loading, setLoading] = useState(false);
-  const [notice, setNotice] = useState<{ type: "success" | "error" | "info"; text: string } | null>(null);
+  const setNotice = pushNotice;
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -941,32 +941,16 @@ const [pickerType, setPickerType] = useState<string>("");
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
             {text.refresh}
           </Button>
-          {selectedProduct ? (
-            <Button variant="default" size="sm" onClick={handleCreateCopyOpen}>
-              <Copy className="h-4 w-4" />
-              คัดลอก
-            </Button>
-          ) : null}
+          <Button variant="default" size="sm" onClick={handleCreateCopyOpen} disabled={!selectedProduct}>
+            <Copy className="h-4 w-4" />
+            คัดลอก
+          </Button>
           <Button variant="default" size="sm" onClick={handleCreateOpen}>
             <Plus className="h-4 w-4" />
             {text.add}
           </Button>
         </div>
       </div>
-
-      {notice && (
-        <div className={cn(
-          "px-4 py-2 text-sm flex items-center gap-2 rounded-md border",
-          notice.type === "success"
-            ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-            : notice.type === "info"
-              ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
-              : "bg-destructive/10 text-destructive border-destructive/20"
-        )}>
-          <AlertCircle className="h-4 w-4" />
-          <span>{notice.text}</span>
-        </div>
-      )}
 
       {/* Main split layout */}
       <div
@@ -2083,6 +2067,14 @@ function TabProductMedia({
   const handleUpload = useCallback(
     async (file: File | null, target: "main" | "gallery") => {
       if (!file) return;
+      if (file.type !== "image/png" && file.type !== "image/jpeg") {
+        setUploadError(
+          language === "th"
+            ? "รองรับเฉพาะไฟล์ PNG และ JPG"
+            : "Only PNG and JPG files are supported.",
+        );
+        return;
+      }
       setUploading(true);
       setUploadError("");
       const result = await uploadProductImage(auth, file);
@@ -2098,7 +2090,7 @@ function TabProductMedia({
       }
       setUploading(false);
     },
-    [auth, onChange],
+    [auth, onChange, language],
   );
 
   return (
@@ -2156,7 +2148,7 @@ function TabProductMedia({
                     {uploading ? textM.mediaUploading : textM.mediaUploadBtn}
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/png,image/jpeg"
                       className="hidden"
                       onChange={(event) => handleUpload(event.target.files?.[0] ?? null, "main")}
                       disabled={uploading}
@@ -2186,7 +2178,7 @@ function TabProductMedia({
                 {textM.mediaAddGallery}
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/png,image/jpeg"
                   className="hidden"
                   onChange={(event) => handleUpload(event.target.files?.[0] ?? null, "gallery")}
                   disabled={uploading}

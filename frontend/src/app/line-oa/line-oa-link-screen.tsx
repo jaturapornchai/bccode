@@ -1,8 +1,6 @@
 "use client";
 
 import {
-  AlertCircle,
-  BadgeCheck,
   CheckCircle2,
   Copy,
   ExternalLink,
@@ -24,6 +22,7 @@ import { LogoAvatar, useProfileAvatar } from "@/components/logo-avatar";
 import { backendText, useBackendLanguage, type BackendLanguageDictionary } from "@/lib/backend-language";
 import { formatDefaultDateTime, resolveWorkspaceDateTimeDisplayOptions } from "@/lib/date-time";
 import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
+import { pushNotice } from "@/lib/toast";
 import {
   branchDisplayName,
   shopDisplayName,
@@ -43,7 +42,6 @@ type LineOaLinkScreenProps = {
 
 type LineOaTextKey = keyof typeof lineOaTextEn;
 type LinkState = "idle" | "loading" | "ready" | "success" | "error";
-type Notice = { type: "success" | "error" | "info"; text: string } | null;
 
 type LineOaUserProfile = {
   linked: boolean;
@@ -188,7 +186,7 @@ export function LineOaLinkScreen({
   const profileAvatar = useProfileAvatar(auth);
   const [workspace, setWorkspace] = useState<WorkspaceSession | null>(null);
   const [profile, setProfile] = useState<LineOaUserProfile>(emptyProfile);
-  const [notice, setNotice] = useState<Notice>(null);
+  const setNotice = pushNotice;
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [linkState, setLinkState] = useState<LinkState>("idle");
   const [linkUrl, setLinkUrl] = useState("");
@@ -339,13 +337,6 @@ export function LineOaLinkScreen({
           <Badge variant={profile.linked ? "success" : "secondary"}>{text("status")}: {profile.linked ? text("linked") : text("notLinked")}</Badge>
         </div>
       </header>
-
-      {notice ? (
-        <div className={`message ${notice.type === "success" ? "success" : notice.type === "error" ? "error" : "info"}`}>
-          {notice.type === "success" ? <BadgeCheck size={18} /> : <AlertCircle size={18} />}
-          <span>{notice.text}</span>
-        </div>
-      ) : null}
 
       <section className="grid gap-2 md:grid-cols-3">
         {stepItems.map((item) => (

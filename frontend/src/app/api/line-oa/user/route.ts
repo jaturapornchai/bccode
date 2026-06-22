@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { validateBackendUrl } from "@/lib/backend-url";
+import { serverGoApiBase, validateBackendUrl } from "@/lib/backend-url";
 import { getJwtClaimHoldingCode, verifyHs256Jwt } from "@/lib/server-jwt";
 import {
   extractMessage,
@@ -47,9 +47,8 @@ export async function POST(request: Request) {
   const tenantResponse = validateTenantAccess(authorization, holdingCode);
   if (tenantResponse) return tenantResponse;
 
-  let goApiUrl: string;
   try {
-    goApiUrl = validateBackendUrl(body.backendUrl ?? "").normalizedGoApiUrl;
+    validateBackendUrl(body.backendUrl ?? "");
   } catch (error) {
     return NextResponse.json(
       { success: false, message: error instanceof Error ? error.message : "Backend URL ไม่ถูกต้อง" },
@@ -61,7 +60,7 @@ export async function POST(request: Request) {
   const timeout = setTimeout(() => controller.abort(), 20000);
 
   try {
-    const response = await fetch(`${goApiUrl}${path}`, {
+    const response = await fetch(`${serverGoApiBase()}${path}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

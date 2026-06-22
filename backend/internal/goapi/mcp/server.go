@@ -1134,13 +1134,13 @@ func (s *MCPServer) InvokeTool(c echo.Context) error {
 		})
 	}
 
-	// Add holdingcode from API key if not provided or empty
+	// SECURITY (2026-06-21): the tenant is ALWAYS the API key's tenant. Never honor a
+	// caller-supplied holdingcode — it allowed cross-tenant access (and raw-SQL via the
+	// dev tools). Force it unconditionally, matching the SSE handler (sse_handler.go).
 	if req.Params == nil {
 		req.Params = make(map[string]interface{})
 	}
-	if holdingCode, exists := req.Params["holdingcode"]; !exists || holdingCode == nil || holdingCode == "" {
-		req.Params["holdingcode"] = apiKey.HoldingCode
-	}
+	req.Params["holdingcode"] = apiKey.HoldingCode
 
 	// Execute tool
 	ctx := c.Request().Context()
@@ -2472,13 +2472,14 @@ func (s *MCPServer) RegisterRoutesOnGroup(g *echo.Group) {
 	mcpGroup.POST("/tools/sales-by-seller", s.GetSalesBySeller)
 	mcpGroup.POST("/tools/monthly-summary", s.GetMonthlySummary)
 
-	// General endpoints (ซ่อน dev tools)
-	g.GET("/mcp/tools", s.ListTools)
+	// SECURITY (2026-06-21): tool catalogs require an API key (they advertise the tool
+	// surface incl. the raw-SQL dev tools). Only the liveness probe /mcp/health stays public.
+	mcpGroup.GET("/tools", s.ListTools)
 	g.GET("/mcp/health", s.HealthCheck)
 
-	// Dev endpoints (เห็นทุก tools)
-	g.GET("/mcp/dev/tools", s.ListToolsDev)
-	g.GET("/mcp/dev/health", s.HealthCheck)
+	// Dev endpoints (เห็นทุก tools) — auth required
+	mcpGroup.GET("/dev/tools", s.ListToolsDev)
+	mcpGroup.GET("/dev/health", s.HealthCheck)
 }
 
 // RegisterSSERoutesOnGroup registers SSE routes on an Echo Group with prefix awareness

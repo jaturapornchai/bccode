@@ -55,7 +55,7 @@ type FieldChange struct {
 
 // DataHistory - โครงสร้างข้อมูล history
 type DataHistory struct {
-	ID          primitive.ObjectID     `json:"id,omitempty" bson:"id,omitempty"`
+	ID          primitive.ObjectID     `json:"id,omitempty" bson:"_id,omitempty"`
 	HoldingCode string                 `json:"holdingcode" bson:"holdingcode"`
 	ScreenType  ScreenType             `json:"screentype" bson:"screentype"`
 	Action      ActionType             `json:"action" bson:"action"`
@@ -119,7 +119,7 @@ func HasPOHistory(holdingCode, guidFixed string) bool {
 	// ค้นหาจาก guidfixed เพราะ docno อาจเปลี่ยนได้
 	filter := bson.M{
 		"holdingcode": holdingCode,
-		"screen_type": ScreenPurchaseOrder,
+		"screentype":  ScreenPurchaseOrder,
 		"guidfixed":   guidFixed,
 	}
 
@@ -144,7 +144,7 @@ func GetLastPOSnapshot(holdingCode, guidFixed string) map[string]interface{} {
 
 	filter := bson.M{
 		"holdingcode": holdingCode,
-		"screen_type": ScreenPurchaseOrder,
+		"screentype":  ScreenPurchaseOrder,
 		"guidfixed":   guidFixed,
 	}
 
@@ -342,7 +342,7 @@ func GetHistoryHandler(c echo.Context) error {
 	// สร้าง filter
 	filter := bson.M{"holdingcode": holdingCode}
 	if screenType != "" {
-		filter["screen_type"] = screenType
+		filter["screentype"] = screenType
 	}
 	if docNo != "" {
 		filter["docno"] = docNo
@@ -407,7 +407,7 @@ func GetPOHistoryHandler(c echo.Context) error {
 	// Filter สำหรับ PO เฉพาะ docno
 	filter := bson.M{
 		"holdingcode": holdingCode,
-		"screen_type": ScreenPurchaseOrder,
+		"screentype":  ScreenPurchaseOrder,
 		"docno":       docNo,
 	}
 

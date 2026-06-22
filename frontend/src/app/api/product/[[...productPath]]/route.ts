@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { validateBackendUrl } from "@/lib/backend-url";
+import { serverGoApiBase, validateBackendUrl } from "@/lib/backend-url";
 import {
   getBackendUrlFromRequest,
   getMainApiUrl,
@@ -51,9 +51,8 @@ async function proxyProductPgListJson(
   const authorization = requireBearerToken(request);
   if (typeof authorization !== "string") return authorization;
 
-  let goApiUrl: string;
   try {
-    goApiUrl = validateBackendUrl(getBackendUrlFromRequest(request)).normalizedGoApiUrl;
+    validateBackendUrl(getBackendUrlFromRequest(request));
   } catch (error) {
     return NextResponse.json(
       { success: false, message: error instanceof Error ? error.message : "Backend URL ไม่ถูกต้อง" },
@@ -64,7 +63,7 @@ async function proxyProductPgListJson(
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 30000);
   try {
-    const response = await fetch(`${goApiUrl}/api/product/search`, {
+    const response = await fetch(`${serverGoApiBase()}/api/product/search`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

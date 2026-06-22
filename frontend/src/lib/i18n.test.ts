@@ -57,7 +57,6 @@ describe("i18n helpers", () => {
       "multiCompanyDescription",
       "authLoginSectionTitle",
       "loginWithGoogle",
-      "localGoogleTestLogin",
       "socialLoginSeparator",
       "popupBlocked",
       "googleLoginTimeout",

@@ -359,7 +359,7 @@ func getBearerToken(authorization string) (string, error) {
 }
 
 func goAPIRequestHoldingCode(c echo.Context) (string, error) {
-	for _, key := range []string{"holdingcode", "holdingcode", "tenantid"} {
+	for _, key := range []string{"holdingcode", "tenantid", "database", "dbname"} {
 		if value := strings.TrimSpace(c.QueryParam(key)); value != "" {
 			return value, nil
 		}
@@ -390,7 +390,7 @@ func goAPIRequestHoldingCode(c echo.Context) (string, error) {
 }
 
 func holdingCodeFromPayload(payload map[string]interface{}) (string, error) {
-	for _, key := range []string{"holdingcode", "holdingcode", "tenantid"} {
+	for _, key := range []string{"holdingcode", "tenantid", "database", "dbname"} {
 		if value := payloadString(payload[key]); value != "" {
 			return value, nil
 		}
@@ -721,10 +721,8 @@ func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string) {
 	g.POST("/api/setup/config/get", handlers.SetupGetConfigHandler)
 	g.POST("/api/setup/config/get-raw", handlers.SetupGetConfigRawHandler)
 	g.POST("/api/setup/config/save", handlers.SetupSaveConfigHandler)
-	g.POST("/api/setup/config/seed", handlers.SetupSeedConfigHandler)
 	g.POST("/api/setup/test-connection", handlers.SetupTestConnectionHandler)
 	g.POST("/api/setup/create-clickhouse-database", handlers.SetupCreateClickHouseDatabaseHandler)
-	g.GET("/api/setup/client-config", handlers.SetupClientConfigHandler)
 
 	// Deploy Webhook Routes
 	g.POST("/api/deploy/backend", handlers.DeployBackendHandler)

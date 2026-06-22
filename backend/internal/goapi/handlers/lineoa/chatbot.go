@@ -3,6 +3,9 @@ package lineoa
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -40,6 +43,24 @@ func WebhookHandler(c echo.Context) error {
 	body, err := io.ReadAll(c.Request().Body)
 	if err != nil {
 		logger.Error("[LINE Webhook] Failed to read body: %v", err)
+		return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
+	}
+
+	// SECURITY (2026-06-21): verify the LINE webhook signature against the tenant's
+	// ChannelSecret BEFORE doing any work. This is an unauthenticated public endpoint, so
+	// without HMAC verification anyone could spoof events, inject an arbitrary holdingcode,
+	// and amplify goroutine/Mongo/AI cost. Only a request actually signed by LINE with this
+	// tenant's secret is processed.
+	channelSecret, secErr := getShopChannelSecret(holdingCode)
+	if secErr != nil || channelSecret == "" {
+		logger.Warn("[LINE Webhook] no channel secret for holding=%s — rejecting", holdingCode)
+		return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
+	}
+	mac := hmac.New(sha256.New, []byte(channelSecret))
+	mac.Write(body)
+	expectedSig := base64.StdEncoding.EncodeToString(mac.Sum(nil))
+	if !hmac.Equal([]byte(expectedSig), []byte(c.Request().Header.Get("X-Line-Signature"))) {
+		logger.Warn("[LINE Webhook] signature mismatch for holding=%s — rejecting", holdingCode)
 		return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 	}
 
@@ -330,8 +351,8 @@ func getOrCreateSession(holdingCode, userID string) (*ConversationSession, error
 
 	var session ConversationSession
 	err := collection.FindOne(ctx, bson.M{
-		"session_id": sessionID,
-		"expiresat":  bson.M{"$gt": time.Now()},
+		"sessionid": sessionID,
+		"expiresat": bson.M{"$gt": time.Now()},
 	}).Decode(&session)
 
 	if err != nil {
@@ -372,7 +393,7 @@ func saveSession(session *ConversationSession) error {
 
 	opts := options.Update().SetUpsert(true)
 	_, err := collection.UpdateOne(ctx,
-		bson.M{"session_id": session.SessionID},
+		bson.M{"sessionid": session.SessionID},
 		bson.M{"$set": session},
 		opts,
 	)
@@ -392,7 +413,7 @@ func clearSession(holdingCode, userID string) error {
 	collection := getCollection(ConversationCollection)
 	sessionID := fmt.Sprintf("%s_%s", holdingCode, userID)
 
-	_, err := collection.DeleteOne(ctx, bson.M{"session_id": sessionID})
+	_, err := collection.DeleteOne(ctx, bson.M{"sessionid": sessionID})
 	return err
 }
 
@@ -521,6 +542,26 @@ func getShopAccessToken(holdingCode string) (string, error) {
 	}
 
 	return config.AccessToken, nil
+}
+
+// getShopChannelSecret returns the LINE ChannelSecret for a holding, used to verify the
+// inbound webhook X-Line-Signature. SECURITY (2026-06-21).
+func getShopChannelSecret(holdingCode string) (string, error) {
+	if !IsConnected() {
+		return "", fmt.Errorf("MongoDB not connected")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	collection := getCollection(ConfigCollection)
+	var config ConfigDoc
+	err := collection.FindOne(ctx, bson.M{
+		"holdingcode": holdingCode,
+		"isactive":    true,
+	}).Decode(&config)
+	if err != nil {
+		return "", fmt.Errorf("config not found: %v", err)
+	}
+	return config.ChannelSecret, nil
 }
 
 // sendLineReply sends reply to LINE API

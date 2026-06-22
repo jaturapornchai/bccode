@@ -30,11 +30,11 @@ import (
 // ==========================================
 // Setup Config Handler
 // จัดการ config ระบบ (API URLs, Database connections)
-// เก็บใน MongoDB collection: systemconfig
+// Config อ่าน/เขียนเป็นไฟล์ bootstrap.json + custom_config.json (ไม่ใช้ MongoDB)
+// MongoDB ใช้เฉพาะเก็บ setup password (systemsetuppassword)
 // ==========================================
 
 const (
-	setupConfigCollection   = "systemconfig"
 	setupPasswordCollection = "systemsetuppassword"
 	defaultSetupPassword    = "12345"
 )
@@ -252,6 +252,15 @@ func SetupGetConfigHandler(c echo.Context) error {
 		configs = filtered
 	}
 
+	// SECURITY (2026-06-21): mask secret values in the bulk listing so a single request
+	// cannot dump all secrets (DB creds, API keys, tokens). Use /config/get-raw with a
+	// specific key to read one secret value for editing.
+	for i := range configs {
+		if configs[i].IsSecret {
+			configs[i].Value = "***"
+		}
+	}
+
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"success": true,
 		"data":    configs,
@@ -287,6 +296,15 @@ func SetupGetConfigRawHandler(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, map[string]interface{}{
 			"success": false,
 			"message": "รหัสผ่านไม่ถูกต้อง",
+		})
+	}
+
+	// SECURITY (2026-06-21): raw secrets are returned ONE key at a time, never in bulk —
+	// reject a keyless request so this endpoint cannot dump every secret at once.
+	if req.Key == "" {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"success": false,
+			"message": "กรุณาระบุ key (ขอค่า secret ได้ทีละค่า)",
 		})
 	}
 
@@ -392,59 +410,6 @@ func SetupSaveConfigHandler(c echo.Context) error {
 }
 
 // ==========================================
-// Client Config Handler (PUBLIC — ไม่ต้อง password)
-// GET /api/setup/client-config
-// Flutter apps เรียกตอน startup เพื่อรับ API URLs
-// ==========================================
-
-func SetupClientConfigHandler(c echo.Context) error {
-	db := getSetupDB()
-	if db == nil {
-		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-			"success": false,
-			"message": "ไม่สามารถเชื่อมต่อ MongoDB ได้",
-		})
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	// ดึงเฉพาะ category = serviceurls (ไม่เป็น secret)
-	filter := bson.M{
-		"category": "serviceurls",
-		"issecret": bson.M{"$ne": true},
-	}
-
-	cursor, err := db.Collection(setupConfigCollection).Find(ctx, filter)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-			"success": false,
-			"message": "ดึง config ล้มเหลว",
-		})
-	}
-	defer cursor.Close(ctx)
-
-	var configs []SetupConfigEntry
-	if err := cursor.All(ctx, &configs); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-			"success": false,
-			"message": "อ่าน config ล้มเหลว",
-		})
-	}
-
-	// สร้าง key-value map สำหรับ client
-	data := make(map[string]string)
-	for _, cfg := range configs {
-		data[cfg.Key] = cfg.Value
-	}
-
-	return c.JSON(http.StatusOK, map[string]interface{}{
-		"success": true,
-		"data":    data,
-	})
-}
-
-// ==========================================
 // Test Connection Handler
 // POST /api/setup/test-connection
 // ==========================================
@@ -484,13 +449,43 @@ func SetupTestConnectionHandler(c echo.Context) error {
 
 	start := time.Now()
 
+	// config/get masks secrets as "***", so an UNCHANGED secret arrives here as "***" (or empty).
+	// Substitute the real stored value (merged bootstrap.json + custom_config.json, unmasked
+	// server-side) so the test validates the ACTUAL config instead of failing on the placeholder.
+	// A genuinely edited secret (not "***") is used as-is.
+	isMaskedSecret := func(v string) bool { return strings.TrimSpace(v) == "" || strings.TrimSpace(v) == "***" }
+	storedSecret := func(category, key string) string {
+		entries, err := setupconfig.ReadBootstrapAsConfigEntries()
+		if err != nil {
+			return ""
+		}
+		for _, e := range entries {
+			if e.Category == category && e.Key == key {
+				return e.Value
+			}
+		}
+		return ""
+	}
+
 	switch req.Type {
 	case "mongodb":
-		return testMongoDBConnection(c, req.URI, req.Database, start)
+		uri := req.URI
+		if isMaskedSecret(uri) {
+			uri = storedSecret("mongodb", "uri")
+		}
+		return testMongoDBConnection(c, uri, req.Database, start)
 	case "postgresql":
-		return testPostgreSQLConnection(c, req.Host, req.Port, req.User, req.Password2, req.Database, start)
+		pw := req.Password2
+		if isMaskedSecret(pw) {
+			pw = storedSecret("postgresql", "password")
+		}
+		return testPostgreSQLConnection(c, req.Host, req.Port, req.User, pw, req.Database, start)
 	case "clickhouse":
-		return testClickHouseConnection(c, req.Host, req.Port, req.User, req.Password2, req.Database, start)
+		pw := req.Password2
+		if isMaskedSecret(pw) {
+			pw = storedSecret("clickhouse", "password")
+		}
+		return testClickHouseConnection(c, req.Host, req.Port, req.User, pw, req.Database, start)
 	case "redis":
 		return testRedisConnection(c, req.Host, req.Port, start)
 	case "kafka":
@@ -925,126 +920,8 @@ func testHTTPConnection(c echo.Context, url string, start time.Time) error {
 	})
 }
 
-// ==========================================
-// Seed Default Config (เรียกจาก environment variables)
-// POST /api/setup/config/seed
-// ==========================================
-
-func SetupSeedConfigHandler(c echo.Context) error {
-	var req struct {
-		Password string `json:"password"`
-	}
-	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": "ข้อมูลไม่ถูกต้อง",
-		})
-	}
-
-	if !verifySetupPassword(req.Password) {
-		return c.JSON(http.StatusUnauthorized, map[string]interface{}{
-			"success": false,
-			"message": "รหัสผ่านไม่ถูกต้อง",
-		})
-	}
-
-	// ดึงค่าจาก environment variables ที่ใช้อยู่
-	envConfigs := []SetupConfigEntry{
-		// Service URLs
-		{Category: "serviceurls", Key: "mainapiurl", Value: os.Getenv("MAINAPI_URL"), Description: "Main API URL (mainapi)", IsSecret: false},
-		{Category: "serviceurls", Key: "goapiurl", Value: os.Getenv("GOAPI_URL"), Description: "Go API URL (goapi)", IsSecret: false},
-
-		// MongoDB DEV ใช้สำหรับ run บน local เท่านั้น; UAT/PRO จะตั้งค่าตอน deploy บน internet ภายหลัง
-		{Category: "mongodbdev", Key: "uri", Value: envFirst("MONGODB_DEV_URI", "MONGODB_URI"), Description: "MongoDB DEV Local Connection URI", IsSecret: true},
-		{Category: "mongodbdev", Key: "database", Value: envFirst("MONGODB_DEV_DB", "MONGODB_DEV_DATABASE", "MONGO_DB_NAME", "MONGODB_DB", "MONGODB_DATABASE_NAME"), Description: "MongoDB DEV Local Database Name", IsSecret: false},
-		{Category: "mongodb", Key: "uri", Value: os.Getenv("MONGODB_URI"), Description: "Legacy MongoDB URI (explicit compatibility only)", IsSecret: true},
-		{Category: "mongodb", Key: "database", Value: envFirst("MONGODB_DB", "MONGO_DB_NAME", "MONGODB_DATABASE_NAME"), Description: "Legacy MongoDB Database Name (explicit compatibility only)", IsSecret: false},
-
-		// PostgreSQL
-		{Category: "postgresql", Key: "host", Value: os.Getenv("POSTGRES_HOST"), Description: "PostgreSQL Host", IsSecret: false},
-		{Category: "postgresql", Key: "port", Value: os.Getenv("POSTGRES_PORT"), Description: "PostgreSQL Port", IsSecret: false},
-		{Category: "postgresql", Key: "user", Value: os.Getenv("POSTGRES_USER"), Description: "PostgreSQL User", IsSecret: false},
-		{Category: "postgresql", Key: "password", Value: os.Getenv("POSTGRES_PASSWORD"), Description: "PostgreSQL Password", IsSecret: true},
-		{Category: "postgresql", Key: "sslmode", Value: os.Getenv("POSTGRES_SSL_MODE"), Description: "PostgreSQL SSL Mode", IsSecret: false},
-
-		// ClickHouse
-		{Category: "clickhouse", Key: "host", Value: os.Getenv("CLICKHOUSE_HOST"), Description: "ClickHouse Host", IsSecret: false},
-		{Category: "clickhouse", Key: "port", Value: os.Getenv("CLICKHOUSE_PORT"), Description: "ClickHouse Port", IsSecret: false},
-		{Category: "clickhouse", Key: "user", Value: os.Getenv("CLICKHOUSE_USER"), Description: "ClickHouse User", IsSecret: false},
-		{Category: "clickhouse", Key: "password", Value: os.Getenv("CLICKHOUSE_PASSWORD"), Description: "ClickHouse Password", IsSecret: true},
-		{Category: "clickhouse", Key: "databasename", Value: os.Getenv("CH_DATABASE_NAME"), Description: "ClickHouse Database Name", IsSecret: false},
-
-		// Redis
-		{Category: "redis", Key: "host", Value: os.Getenv("REDIS_HOST"), Description: "Redis Host", IsSecret: false},
-		{Category: "redis", Key: "port", Value: os.Getenv("REDIS_PORT"), Description: "Redis Port", IsSecret: false},
-
-		// Kafka
-		{Category: "kafka", Key: "serverurl", Value: os.Getenv("KAFKA_SERVER_URL"), Description: "Kafka Broker URL", IsSecret: false},
-
-		// Integrations
-		{Category: "integrations", Key: "geminiapikey", Value: os.Getenv("GEMINI_API_KEY"), Description: "Google Gemini API Key", IsSecret: true},
-		{Category: "integrations", Key: "r2accountid", Value: os.Getenv("R2_ACCOUNT_ID"), Description: "Cloudflare R2 Account ID", IsSecret: false},
-		{Category: "integrations", Key: "r2accesskeyid", Value: os.Getenv("R2_ACCESS_KEY_ID"), Description: "Cloudflare R2 Access Key", IsSecret: true},
-		{Category: "integrations", Key: "r2secretaccesskey", Value: os.Getenv("R2_SECRET_ACCESS_KEY"), Description: "Cloudflare R2 Secret Key", IsSecret: true},
-		{Category: "integrations", Key: "r2bucketname", Value: os.Getenv("R2_BUCKET_NAME"), Description: "Cloudflare R2 Bucket Name", IsSecret: false},
-	}
-
-	db := getSetupDB()
-	if db == nil {
-		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-			"success": false,
-			"message": "ไม่สามารถเชื่อมต่อ MongoDB ได้",
-		})
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-
-	collection := db.Collection(setupConfigCollection)
-
-	// สร้าง unique index
-	indexModel := mongo.IndexModel{
-		Keys:    bson.D{{Key: "category", Value: 1}, {Key: "key", Value: 1}},
-		Options: options.Index().SetUnique(true),
-	}
-	_, _ = collection.Indexes().CreateOne(ctx, indexModel)
-
-	seededCount := 0
-	for _, cfg := range envConfigs {
-		if cfg.Value == "" {
-			continue // ข้ามถ้า env var ไม่ได้ตั้งค่า
-		}
-
-		cfg.UpdatedAt = time.Now()
-		cfg.UpdatedBy = "seed"
-
-		// ใช้ upsert — ถ้ามีค่าอยู่แล้วจะไม่เขียนทับ
-		filter := bson.M{
-			"category": cfg.Category,
-			"key":      cfg.Key,
-		}
-
-		// ตรวจสอบว่ามีอยู่แล้วหรือไม่
-		count, _ := collection.CountDocuments(ctx, filter)
-		if count > 0 {
-			continue // ข้ามถ้ามีอยู่แล้ว
-		}
-
-		_, err := collection.InsertOne(ctx, cfg)
-		if err != nil {
-			logger.Warn("[SetupConfig] Seed config [%s/%s] ล้มเหลว: %v", cfg.Category, cfg.Key, err)
-			continue
-		}
-		seededCount++
-	}
-
-	logger.Info("[SetupConfig] Seed config สำเร็จ %d รายการ", seededCount)
-	return c.JSON(http.StatusOK, map[string]interface{}{
-		"success": true,
-		"message": fmt.Sprintf("Seed config จาก environment variables สำเร็จ %d รายการ", seededCount),
-	})
-}
-
+// envFirst returns the first non-empty environment variable among keys.
+// Shared helper used by setup + mongo copy handlers.
 func envFirst(keys ...string) string {
 	for _, key := range keys {
 		if value := strings.TrimSpace(os.Getenv(key)); value != "" {

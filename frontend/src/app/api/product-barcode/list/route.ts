@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { validateBackendUrl } from "@/lib/backend-url";
+import { serverGoApiBase, validateBackendUrl } from "@/lib/backend-url";
 import { getBackendUrlFromRequest, isRecord, readJsonOrText, requireBearerToken } from "@/lib/workspace-api";
 
 type ProductBarcodeListBody = Record<string, unknown> & {
@@ -19,9 +19,8 @@ export async function POST(request: Request) {
   const holdingCode = String(body.holdingcode ?? "").trim();
   if (!holdingCode) return NextResponse.json({ success: false, message: "กรุณาเลือก holding ก่อน" }, { status: 400 });
 
-  let goApiUrl: string;
   try {
-    goApiUrl = validateBackendUrl(getBackendUrlFromRequest(request, body as ProductBarcodeListBody)).normalizedGoApiUrl;
+    validateBackendUrl(getBackendUrlFromRequest(request, body as ProductBarcodeListBody));
   } catch (error) {
     return NextResponse.json(
       { success: false, message: error instanceof Error ? error.message : "Backend URL ไม่ถูกต้อง" },
@@ -37,7 +36,7 @@ export async function POST(request: Request) {
   const timeout = setTimeout(() => controller.abort(), 20000);
 
   try {
-    const response = await fetch(`${goApiUrl}/api/product/barcode/list`, {
+    const response = await fetch(`${serverGoApiBase()}/api/product/barcode/list`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

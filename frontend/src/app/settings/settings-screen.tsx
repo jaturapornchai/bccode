@@ -30,6 +30,7 @@ import {
   Zap,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { persistLanguagePreferenceCookies } from "@/lib/backend-language-preload";
@@ -60,15 +61,15 @@ import { ManualLink } from "../manual-link";
 
 type ConnectionState = "idle" | "testing" | "success" | "error";
 type MessageState = "idle" | "success" | "error";
-type LoadingAction = "idle" | "verify" | "load" | "save" | "seed" | "test-all" | "change-password";
+type LoadingAction = "idle" | "verify" | "load" | "save" | "test-all" | "change-password";
 type DialogMode = "import" | "change-password" | null;
 
 type SetupResponse = {
   success?: boolean;
   message?: string;
   data?: unknown;
-  latency_ms?: unknown;
-  error_code?: unknown;
+  latencyms?: unknown;
+  errorcode?: unknown;
   database?: unknown;
 };
 
@@ -101,6 +102,10 @@ export function SettingsScreen() {
   const [mongodbMode, setMongodbMode] = useState<"uri" | "fields">("uri");
   const [serverHost, setServerHost] = useState("");
   const { confirm, confirmationDialog } = useConfirmDialog();
+  const router = useRouter();
+  // After "บันทึก Config" the backend reloads/reconnects with the new config; show a popup
+  // while that happens, then return to the login screen so the user re-enters with fresh config.
+  const [reloadingConfig, setReloadingConfig] = useState(false);
 
   // Section groups for the redesigned layout. Each group renders its own heading
   // and contains a list of config categories. R2/S3 storage items are split out
@@ -137,7 +142,11 @@ export function SettingsScreen() {
   // derived from the Docker setup.
   const DOCKER_DEFAULTS: Record<string, Record<string, string>> = {
     mongodb: {
-      uri: "mongodb://smlsoft:smlsoft@mongodb:27017/appdb?authSource=admin",
+      // replicaSet=rs0 is REQUIRED — the backend uses MongoDB transactions (create-holding,
+      // persister_mongo), which only work against a replica set. Dropping it makes the server
+      // connect standalone and every transaction fails with IllegalOperation. Keep it in the
+      // default + Auto-fill so saving config never clobbers the replica-set URI in bootstrap.json.
+      uri: "mongodb://smlsoft:smlsoft@mongodb:27017/appdb?authSource=admin&replicaSet=rs0",
       database: "appdb",
       host: "mongodb",
       port: "27017",
@@ -409,21 +418,14 @@ export function SettingsScreen() {
         configs: serializeConfig(configMap),
       });
       setStatus(data.message ?? "บันทึก config สำเร็จ", "success");
+      // Backend reloads + reconnects with the new config (async). Show a popup while it
+      // settles, then send the user back to the login screen to re-enter with fresh config.
+      setReloadingConfig(true);
+      await new Promise((resolve) => setTimeout(resolve, 2200));
+      router.push("/");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "บันทึก config ล้มเหลว", "error");
-    } finally {
-      setLoadingAction("idle");
-    }
-  }
-
-  async function handleSeedConfig() {
-    setLoadingAction("seed");
-    try {
-      const data = await callSetup("config/seed", { password: setupPassword });
-      setStatus(data.message ?? "Seed config สำเร็จ", "success");
-      await loadSetupConfig();
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Seed config ล้มเหลว", "error");
+      setReloadingConfig(false);
     } finally {
       setLoadingAction("idle");
     }
@@ -556,8 +558,8 @@ export function SettingsScreen() {
     setLoadingAction("change-password");
     try {
       const data = await callSetup("change-password", {
-        current_password: currentSetupPassword,
-        new_password: newSetupPassword,
+        currentpassword: currentSetupPassword,
+        newpassword: newSetupPassword,
       });
       setSetupPassword(newSetupPassword);
       setDialogMode(null);
@@ -866,10 +868,6 @@ export function SettingsScreen() {
                     <KeyRound aria-hidden="true" size={17} />
                     <span>เปลี่ยนรหัส</span>
                   </button>
-                  <button className="secondary-button" type="button" onClick={handleSeedConfig} disabled={isBusy}>
-                    {loadingAction === "seed" ? <Loader2 className="spin" size={17} /> : <Cloud aria-hidden="true" size={17} />}
-                    <span>Seed Env</span>
-                  </button>
                   <button className="primary-button settings-primary" type="button" onClick={handleSaveConfig} disabled={isBusy}>
                     {loadingAction === "save" ? <Loader2 className="spin" size={17} /> : <Save aria-hidden="true" size={17} />}
                     <span>บันทึก Config</span>
@@ -976,6 +974,21 @@ export function SettingsScreen() {
       {dialogMode === "import" ? renderImportDialog() : null}
       {dialogMode === "change-password" ? renderChangePasswordDialog() : null}
       {confirmationDialog}
+      {reloadingConfig ? (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed inset-0 z-[3000] grid place-items-center bg-background/70 px-4 backdrop-blur-sm"
+        >
+          <div className="grid max-w-sm justify-items-center gap-3 rounded-2xl border border-border bg-card px-8 py-7 text-center shadow-2xl">
+            <Loader2 className="spin" size={34} aria-hidden="true" />
+            <strong className="text-base text-foreground">กำลังโหลด config ใหม่…</strong>
+            <span className="text-sm text-muted-foreground">
+              บันทึกแล้ว — ระบบกำลัง reconnect ฐานข้อมูล แล้วจะกลับไปหน้าเข้าสู่ระบบ
+            </span>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 
@@ -1045,7 +1058,7 @@ export function SettingsScreen() {
               <span>ทดสอบ {categoryDef.title}</span>
             </button>
             {testResult?.message ? <p className={testResult.status === "success" ? "test-message success" : "test-message error"}>{formatTestMessage(testResult)}</p> : null}
-            {category === "clickhouse" && testResult?.errorCode === "database_not_exist" && testResult.database ? (
+            {category === "clickhouse" && testResult?.errorCode === "databasenotexist" && testResult.database ? (
               <button className="secondary-button warning-button" type="button" onClick={() => void handleCreateClickHouseDatabase(testResult.database!)}>
                 <Database aria-hidden="true" size={17} />
                 <span>สร้าง database &quot;{testResult.database}&quot;</span>
@@ -1514,8 +1527,8 @@ function responseToTestResult(data: SetupResponse): TestResult {
   return {
     status: success ? "success" : "failed",
     message: data.message ?? (success ? "สำเร็จ" : "ไม่สำเร็จ"),
-    latencyMs: typeof data.latency_ms === "number" ? data.latency_ms : undefined,
-    errorCode: typeof data.error_code === "string" ? data.error_code : undefined,
+    latencyMs: typeof data.latencyms === "number" ? data.latencyms : undefined,
+    errorCode: typeof data.errorcode === "string" ? data.errorcode : undefined,
     database: typeof data.database === "string" ? data.database : undefined,
   };
 }

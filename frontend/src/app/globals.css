@@ -2543,35 +2543,6 @@ h2:not([class]) {
   color: var(--primary);
 }
 
-/* DEV-only Google test login button — clearly different from the real button */
-.social-login-button.local-google-test-login {
-  border-style: dashed;
-  border-color: color-mix(in srgb, var(--muted) 55%, transparent);
-  background: color-mix(in srgb, var(--muted) 8%, var(--login-input-bg));
-  color: var(--text-soft);
-  box-shadow: none;
-  font-weight: 700;
-}
-
-.social-login-button.local-google-test-login:hover:not(:disabled) {
-  border-color: color-mix(in srgb, var(--teal) 50%, transparent);
-}
-
-.dev-test-badge {
-  display: inline-flex;
-  align-items: center;
-  margin-right: 6px;
-  padding: 1px 6px;
-  border-radius: 6px;
-  border: 1px solid color-mix(in srgb, var(--teal) 50%, transparent);
-  background: color-mix(in srgb, var(--teal) 14%, transparent);
-  color: color-mix(in srgb, var(--teal) 80%, var(--text));
-  font-size: 0.62rem;
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
 .social-login-button {
   min-width: min(100%, 220px);
   min-height: var(--density-control-h);
@@ -2615,10 +2586,25 @@ h2:not([class]) {
   opacity: 0.68;
 }
 
-.local-google-test-login {
-  border-style: dashed;
-  border-color: color-mix(in srgb, var(--amber) 44%, var(--line));
-  background: color-mix(in srgb, var(--amber) 10%, var(--panel-soft));
+.social-login-button.gis-button-host {
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  cursor: default;
+  border-radius: 0;
+  overflow: visible;
+}
+
+.social-login-button.gis-button-host:hover:not(:disabled) {
+  transform: none;
+  box-shadow: none;
+  border: none;
+  background: transparent;
+  color: inherit;
 }
 
 .line-link-action {

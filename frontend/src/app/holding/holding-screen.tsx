@@ -1,26 +1,29 @@
 "use client";
 
 import {
-  AlertCircle,
   Building2,
-  CheckCircle2,
   GitBranch,
   KeyRound,
   Loader2,
   LogOut,
+  Mail,
   Pencil,
   Plus,
   RefreshCcw,
   Save,
   Search,
   ShieldCheck,
+  Trash2,
+  UserPlus,
   UserRound,
+  Users,
   X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence, MotionConfig, useReducedMotion } from "motion/react";
+import { motion, MotionConfig, useReducedMotion } from "motion/react";
 import { isValidHoldingCode, normalizeHoldingCode } from "@/lib/holding-code";
+import { pushNotice } from "@/lib/toast";
 import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
 import {
   notifyWorkspaceChanged,
@@ -48,7 +51,6 @@ type EditHoldingForm = {
   name: string;
 };
 
-type Notice = { type: "success" | "error" | "info"; text: string } | null;
 type HoldingTextKey =
   | "addHolding"
   | "available"
@@ -590,12 +592,17 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
   const [query, setQuery] = useState("");
   const [busyHoldingCode, setBusyHoldingCode] = useState("");
   const [loading, setLoading] = useState(true);
-  const [notice, setNotice] = useState<Notice>(null);
+  const setNotice = pushNotice;
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState<CreateHoldingForm>(emptyCreateHoldingForm);
   const [creating, setCreating] = useState(false);
   const [editForm, setEditForm] = useState<EditHoldingForm | null>(null);
   const [savingHoldingCode, setSavingHoldingCode] = useState("");
+  const [adminHolding, setAdminHolding] = useState<{ holdingcode: string; name: string } | null>(null);
+  const [members, setMembers] = useState<HoldingMember[]>([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [adminEmail, setAdminEmail] = useState("");
+  const [adminBusy, setAdminBusy] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -779,6 +786,82 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
       });
     } finally {
       setSavingHoldingCode("");
+    }
+  }
+
+  function openAdminHolding(shop: HoldingListItem) {
+    if (!canManageAdmins(shop)) return;
+    const holdingCode = tenantCodeForShop(shop);
+    if (!holdingCode) return;
+    setCreateOpen(false);
+    setEditForm(null);
+    setAdminEmail("");
+    setAdminHolding({ holdingcode: holdingCode, name: displayNameForEdit(shop) || holdingCode });
+    setNotice(null);
+    if (auth) void loadMembers(auth, holdingCode);
+  }
+
+  function closeAdminHolding() {
+    setAdminHolding(null);
+    setMembers([]);
+    setAdminEmail("");
+    setAdminBusy(false);
+  }
+
+  async function loadMembers(currentAuth: AuthSession, holdingCode: string) {
+    setMembersLoading(true);
+    try {
+      const payload = await callHoldingMemberApi(currentAuth, "GET", { holdingcode: holdingCode });
+      const list = Array.isArray(payload.data) ? (payload.data as HoldingMember[]) : [];
+      setMembers(sortMembers(list));
+    } catch (error) {
+      setNotice({ type: "error", text: error instanceof Error && error.message ? error.message : ht(language, "requestFailed") });
+      setMembers([]);
+    } finally {
+      setMembersLoading(false);
+    }
+  }
+
+  async function addAdmin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!auth || !adminHolding) return;
+    const email = adminEmail.trim().toLowerCase();
+    if (!email || !email.includes("@")) {
+      setNotice({ type: "error", text: language === "th" ? "กรุณากรอกอีเมลให้ถูกต้อง" : "Please enter a valid email." });
+      return;
+    }
+    setAdminBusy(true);
+    setNotice(null);
+    try {
+      await callHoldingMemberApi(auth, "POST", { holdingcode: adminHolding.holdingcode, email });
+      setAdminEmail("");
+      await loadMembers(auth, adminHolding.holdingcode);
+      setNotice({ type: "success", text: language === "th" ? "เพิ่มผู้ดูแลแล้ว" : "Admin added." });
+    } catch (error) {
+      setNotice({
+        type: "error",
+        text: error instanceof Error && error.message ? error.message : (language === "th" ? "เพิ่มผู้ดูแลไม่สำเร็จ" : "Could not add admin."),
+      });
+    } finally {
+      setAdminBusy(false);
+    }
+  }
+
+  async function removeMember(email: string) {
+    if (!auth || !adminHolding) return;
+    setAdminBusy(true);
+    setNotice(null);
+    try {
+      await callHoldingMemberApi(auth, "DELETE", { holdingcode: adminHolding.holdingcode, email });
+      await loadMembers(auth, adminHolding.holdingcode);
+      setNotice({ type: "success", text: language === "th" ? "ถอดผู้ดูแลแล้ว" : "Member removed." });
+    } catch (error) {
+      setNotice({
+        type: "error",
+        text: error instanceof Error && error.message ? error.message : (language === "th" ? "ถอดผู้ดูแลไม่สำเร็จ" : "Could not remove member."),
+      });
+    } finally {
+      setAdminBusy(false);
     }
   }
 
@@ -1046,21 +1129,93 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
             </div>
           ) : null}
 
-          <AnimatePresence>
-          {notice ? (
-            <motion.div
-              key={notice.text + notice.type}
-              className={`message ${notice.type === "success" ? "success" : notice.type === "error" ? "error" : "info"}`}
-              initial={{ opacity: 0, y: -6, height: 0 }}
-              animate={{ opacity: 1, y: 0, height: "auto" }}
-              exit={{ opacity: 0, y: -6, height: 0 }}
-              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-            >
-              {notice.type === "success" ? <CheckCircle2 aria-hidden="true" size={18} /> : <AlertCircle aria-hidden="true" size={18} />}
-              <span>{notice.text}</span>
-            </motion.div>
+          {adminHolding ? (
+            <div className="dialog-backdrop" role="presentation" onClick={closeAdminHolding}>
+            <div className="holding-modal-panel" onClick={(e) => e.stopPropagation()}>
+              <div className="holding-create-head">
+                <div>
+                  <strong>{language === "th" ? "ผู้ดูแล" : "Admins"}: {adminHolding.name}</strong>
+                  <span>
+                    {language === "th"
+                      ? "เพิ่มผู้ดูแลด้วยอีเมล (เพิ่มได้ไม่จำกัด) — เจ้าของถอดไม่ได้"
+                      : "Add admins by email (unlimited). The owner cannot be removed."}
+                  </span>
+                </div>
+                <button className="icon-button" type="button" onClick={closeAdminHolding} aria-label={ht(language, "cancel")} title={ht(language, "cancel")}>
+                  <X aria-hidden="true" size={18} />
+                </button>
+              </div>
+
+              <form onSubmit={addAdmin} style={{ display: "flex", gap: "0.5rem", alignItems: "stretch" }}>
+                <div className="input-shell" style={{ flex: 1 }}>
+                  <Mail aria-hidden="true" size={18} />
+                  <input
+                    type="email"
+                    autoComplete="off"
+                    value={adminEmail}
+                    onChange={(event) => setAdminEmail(event.target.value)}
+                    placeholder={language === "th" ? "อีเมลผู้ดูแล เช่น name@gmail.com" : "Admin email e.g. name@gmail.com"}
+                    disabled={adminBusy}
+                  />
+                </div>
+                <button className="primary-button" type="submit" disabled={adminBusy || !adminEmail.trim()}>
+                  {adminBusy ? <Loader2 className="spin" aria-hidden="true" size={18} /> : <UserPlus aria-hidden="true" size={18} />}
+                  <span>{language === "th" ? "เพิ่ม" : "Add"}</span>
+                </button>
+              </form>
+
+              <div style={{ marginTop: "0.75rem", display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "min(50vh, 360px)", overflowY: "auto" }}>
+                {membersLoading ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground p-2">
+                    <Loader2 className="spin" aria-hidden="true" size={16} />
+                    <span>{ht(language, "loading")}</span>
+                  </div>
+                ) : members.length === 0 ? (
+                  <div className="text-sm text-muted-foreground p-2">{language === "th" ? "ยังไม่มีผู้ดูแล" : "No members yet."}</div>
+                ) : (
+                  members.map((member) => {
+                    const email = memberEmail(member);
+                    const role = Number(member.role ?? 0);
+                    const owner = role === 2 || member.iscreator === true;
+                    const isSelf = Boolean(signedInAs && email.toLowerCase() === signedInAs.toLowerCase());
+                    return (
+                      <div key={email} className="flex items-center justify-between gap-3 p-2 rounded-lg border border-border/60 bg-card/60">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${owner ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-primary/10 text-primary"}`}>
+                            <UserRound aria-hidden="true" size={16} />
+                          </span>
+                          <div className="min-w-0">
+                            <div className="text-sm font-medium text-foreground truncate">{email || "-"}</div>
+                            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${owner ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20" : "bg-primary/5 text-primary border border-primary/10"}`}>
+                              <ShieldCheck size={10} />
+                              {owner
+                                ? (language === "th" ? "เจ้าของ" : "Owner")
+                                : role === 1
+                                  ? (language === "th" ? "ผู้ดูแล" : "Admin")
+                                  : (language === "th" ? "ผู้ใช้" : "User")}
+                            </span>
+                          </div>
+                        </div>
+                        {owner || isSelf ? null : (
+                          <button
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-red-600 hover:bg-red-500/5 border border-transparent hover:border-red-500/20 transition-all cursor-pointer shrink-0"
+                            type="button"
+                            disabled={adminBusy}
+                            onClick={() => void removeMember(email)}
+                            aria-label={`${language === "th" ? "ถอด" : "Remove"} ${email}`}
+                            title={language === "th" ? "ถอดผู้ดูแล" : "Remove"}
+                          >
+                            <Trash2 aria-hidden="true" size={15} />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+            </div>
           ) : null}
-          </AnimatePresence>
 
           {loading || !mounted ? (
             <div className="workspace-card-grid">
@@ -1094,7 +1249,8 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
                 const branchCount = Array.isArray(shop.branches) ? shop.branches.length : 0;
                 const busy = busyHoldingCode === holdingCode;
                 const canEdit = canEditHolding(shop, auth);
-                const isOwner = Boolean(shop.is_creator);
+                const canManage = canManageAdmins(shop);
+                const isOwner = Boolean(shop.iscreator);
 
                 return (
                   <motion.div
@@ -1162,19 +1318,33 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
                       </div>
                     </button>
 
-                    {/* Edit button only — selection is via card click */}
-                    {canEdit ? (
-                      <div className="flex items-center shrink-0 z-10">
-                        <button
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/5 border border-transparent hover:border-primary/10 transition-all cursor-pointer"
-                          disabled={Boolean(busyHoldingCode || savingHoldingCode)}
-                          onClick={() => startEditHolding(shop)}
-                          type="button"
-                          aria-label={`${ht(language, "edit")} ${shopDisplayName(shop)}`}
-                          title={ht(language, "edit")}
-                        >
-                          <Pencil aria-hidden="true" size={14} />
-                        </button>
+                    {/* Manage admins + edit — selection is via card click */}
+                    {canEdit || canManage ? (
+                      <div className="flex items-center gap-1 shrink-0 z-10">
+                        {canManage ? (
+                          <button
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/5 border border-transparent hover:border-primary/10 transition-all cursor-pointer"
+                            disabled={Boolean(busyHoldingCode || savingHoldingCode)}
+                            onClick={() => openAdminHolding(shop)}
+                            type="button"
+                            aria-label={`${language === "th" ? "จัดการผู้ดูแล" : "Manage admins"} ${shopDisplayName(shop)}`}
+                            title={language === "th" ? "จัดการผู้ดูแล" : "Manage admins"}
+                          >
+                            <Users aria-hidden="true" size={14} />
+                          </button>
+                        ) : null}
+                        {canEdit ? (
+                          <button
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/5 border border-transparent hover:border-primary/10 transition-all cursor-pointer"
+                            disabled={Boolean(busyHoldingCode || savingHoldingCode)}
+                            onClick={() => startEditHolding(shop)}
+                            type="button"
+                            aria-label={`${ht(language, "edit")} ${shopDisplayName(shop)}`}
+                            title={ht(language, "edit")}
+                          >
+                            <Pencil aria-hidden="true" size={14} />
+                          </button>
+                        ) : null}
                       </div>
                     ) : null}
                   </motion.div>
@@ -1271,13 +1441,68 @@ function displayNameForEdit(shop: HoldingListItem): string {
 
 function canEditHolding(shop: HoldingListItem, auth: AuthSession | null): boolean {
   if (!auth) return false;
-  if (Number(shop.role) === 2 || shop.is_creator === true) return true;
+  // Owners (role 2) and admins (role 1) have full access.
+  if (Number(shop.role) === 2 || Number(shop.role) === 1 || shop.iscreator === true) return true;
   const createdBy = shop.createdby?.trim().toLowerCase();
   if (!createdBy) return false;
   return [auth.username, auth.profile?.email]
     .map((item) => item?.trim().toLowerCase() ?? "")
     .filter(Boolean)
     .includes(createdBy);
+}
+
+type HoldingMember = {
+  username?: string;
+  email?: string;
+  userprofilename?: string;
+  name?: string;
+  role?: number;
+  iscreator?: boolean;
+};
+
+function canManageAdmins(shop: HoldingListItem): boolean {
+  const role = Number(shop.role);
+  return role === 1 || role === 2 || shop.iscreator === true;
+}
+
+function memberEmail(member: HoldingMember): string {
+  return (member.username || member.email || "").trim();
+}
+
+function sortMembers(list: HoldingMember[]): HoldingMember[] {
+  // Show only owners (role 2) and admins (role 1) — regular users are hidden.
+  return list
+    .filter((member) => {
+      const role = Number(member.role ?? 0);
+      return role === 1 || role === 2 || member.iscreator === true;
+    })
+    .sort((a, b) => Number(b.role ?? 0) - Number(a.role ?? 0) || memberEmail(a).localeCompare(memberEmail(b)));
+}
+
+async function callHoldingMemberApi(
+  auth: AuthSession,
+  method: "GET" | "POST" | "DELETE",
+  params: { holdingcode: string; email?: string },
+): Promise<{ success?: boolean; message?: string; data?: unknown[] }> {
+  const url =
+    method === "GET"
+      ? `/api/holding-member?holdingcode=${encodeURIComponent(params.holdingcode)}`
+      : "/api/holding-member";
+  const response = await fetch(url, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      "x-bc-backend-url": auth.backendUrl,
+      Authorization: `Bearer ${auth.token}`,
+    },
+    body: method === "GET" ? undefined : JSON.stringify({ holdingcode: params.holdingcode, email: params.email ?? "" }),
+    cache: "no-store",
+  });
+  const data = (await response.json()) as { success?: boolean; message?: string; data?: unknown[] };
+  if (!response.ok || data.success === false) {
+    throw new Error(data.message ?? "");
+  }
+  return data;
 }
 
 function createHoldingPayload(holdingCode: string, name: string, ownerEmail: string): Record<string, unknown> {

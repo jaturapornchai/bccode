@@ -46,6 +46,12 @@ func (h *ShopMemberHttp) RegisterHttp() {
 	h.ms.DELETE("/holding/permission/:username", h.DeleteUserPermissionShop)
 	h.ms.DELETE("/shop/permission/:username", h.DeleteUserPermissionShop)
 
+	// Holding admin management by email (holdingcode comes from the request; the caller's role
+	// is resolved per-holding so it works from the holding-selection screen, no select required).
+	h.ms.GET("/holding-member/list", h.ListHoldingMembers)
+	h.ms.POST("/holding-member/add", h.AddHoldingMemberAdmin)
+	h.ms.POST("/holding-member/remove", h.RemoveHoldingMemberAdmin)
+
 	// Cleanup endpoint สำหรับลบ users ที่ username ว่าง
 	h.ms.DELETE("/holding/users/cleanup", h.CleanupEmptyUsers)
 	h.ms.DELETE("/shop/users/cleanup", h.CleanupEmptyUsers)
@@ -72,7 +78,7 @@ func (h ShopMemberHttp) ListUserInShop(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	holdingCode := userInfo.HoldingCode
 
-	if userInfo.Role != models.ROLE_OWNER {
+	if userInfo.Role != models.ROLE_OWNER && userInfo.Role != models.ROLE_ADMIN {
 		ctx.Response(http.StatusOK, &common.ApiResponse{
 			Success: false,
 			Message: "permission denied",
@@ -112,7 +118,7 @@ func (h ShopMemberHttp) InfoShopUser(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	holdingCode := userInfo.HoldingCode
 
-	// if userInfo.Role != models.ROLE_OWNER {
+	// if userInfo.Role != models.ROLE_OWNER && userInfo.Role != models.ROLE_ADMIN {
 	// 	ctx.Response(http.StatusOK, &common.ApiResponse{
 	// 		Success: false,
 	// 		Message: "permission denied",
@@ -163,7 +169,7 @@ func (h ShopMemberHttp) ListShopUser(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
 
-	if userInfo.Role != models.ROLE_OWNER {
+	if userInfo.Role != models.ROLE_OWNER && userInfo.Role != models.ROLE_ADMIN {
 		ctx.Response(http.StatusOK, &common.ApiResponse{
 			Success: false,
 			Message: "permission denied",
@@ -191,6 +197,92 @@ func (h ShopMemberHttp) ListShopUser(ctx microservice.IContext) error {
 	return nil
 }
 
+type holdingMemberRequest struct {
+	HoldingCode string `json:"holdingcode"`
+	Email       string `json:"email"`
+}
+
+// ListHoldingMembers godoc — list members of a holding for its owner/admin (holdingcode via query).
+// @Tags ShopUser
+// @Security AccessToken
+// @Router /holding-member/list [get]
+func (h ShopMemberHttp) ListHoldingMembers(ctx microservice.IContext) error {
+	authUsername := ctx.UserInfo().Username
+
+	holdingCode, err := utils.NormalizeHoldingCode(ctx.QueryParam("holdingcode"))
+	if err != nil || holdingCode == "" {
+		ctx.ResponseError(400, "holdingcode invalid")
+		return nil
+	}
+
+	pageable := utils.GetPageable(ctx.QueryParam)
+
+	docList, pagination, err := h.svc.ListHoldingMembersByAdmin(holdingCode, authUsername, pageable)
+	if err != nil {
+		ctx.Response(http.StatusOK, &common.ApiResponse{Success: false, Message: err.Error()})
+		return err
+	}
+
+	ctx.Response(http.StatusOK, common.ApiResponse{Success: true, Pagination: pagination, Data: docList})
+	return nil
+}
+
+// AddHoldingMemberAdmin godoc — grant ADMIN to a holding by email (owner/admin only, idempotent).
+// @Tags ShopUser
+// @Security AccessToken
+// @Router /holding-member/add [post]
+func (h ShopMemberHttp) AddHoldingMemberAdmin(ctx microservice.IContext) error {
+	authUsername := ctx.UserInfo().Username
+
+	req := &holdingMemberRequest{}
+	if err := json.Unmarshal([]byte(ctx.ReadInput()), req); err != nil {
+		ctx.ResponseError(400, err.Error())
+		return err
+	}
+
+	holdingCode, err := utils.NormalizeHoldingCode(req.HoldingCode)
+	if err != nil || holdingCode == "" {
+		ctx.ResponseError(400, "holdingcode invalid")
+		return nil
+	}
+
+	if err := h.svc.AddHoldingAdminByEmail(holdingCode, authUsername, req.Email); err != nil {
+		ctx.Response(http.StatusOK, &common.ApiResponse{Success: false, Message: err.Error()})
+		return err
+	}
+
+	ctx.Response(http.StatusOK, common.ApiResponse{Success: true})
+	return nil
+}
+
+// RemoveHoldingMemberAdmin godoc — remove a member by email (owner protected, owner/admin only).
+// @Tags ShopUser
+// @Security AccessToken
+// @Router /holding-member/remove [post]
+func (h ShopMemberHttp) RemoveHoldingMemberAdmin(ctx microservice.IContext) error {
+	authUsername := ctx.UserInfo().Username
+
+	req := &holdingMemberRequest{}
+	if err := json.Unmarshal([]byte(ctx.ReadInput()), req); err != nil {
+		ctx.ResponseError(400, err.Error())
+		return err
+	}
+
+	holdingCode, err := utils.NormalizeHoldingCode(req.HoldingCode)
+	if err != nil || holdingCode == "" {
+		ctx.ResponseError(400, "holdingcode invalid")
+		return nil
+	}
+
+	if err := h.svc.RemoveHoldingMember(holdingCode, authUsername, req.Email); err != nil {
+		ctx.Response(http.StatusOK, &common.ApiResponse{Success: false, Message: err.Error()})
+		return err
+	}
+
+	ctx.Response(http.StatusOK, common.ApiResponse{Success: true})
+	return nil
+}
+
 // Save Permission Shop User godoc
 // @Description save shopuser permission and profile (position, department, LINE, approval)
 // @Tags		ShopUser
@@ -205,7 +297,7 @@ func (h ShopMemberHttp) SaveUserPermissionShop(ctx microservice.IContext) error 
 	authUsername := userInfo.Username
 	holdingCode := userInfo.HoldingCode
 
-	if userInfo.Role != models.ROLE_OWNER {
+	if userInfo.Role != models.ROLE_OWNER && userInfo.Role != models.ROLE_ADMIN {
 		ctx.Response(http.StatusOK, &common.ApiResponse{
 			Success: false,
 			Message: "permission denied",
@@ -261,7 +353,7 @@ func (h ShopMemberHttp) DeleteUserPermissionShop(ctx microservice.IContext) erro
 	h.ms.Logger.Debug("DeleteUserPermissionShop - authUsername: " + authUsername)
 	h.ms.Logger.Debug("DeleteUserPermissionShop - holdingCode: " + holdingCode)
 
-	if userInfo.Role != models.ROLE_OWNER {
+	if userInfo.Role != models.ROLE_OWNER && userInfo.Role != models.ROLE_ADMIN {
 		ctx.Response(http.StatusOK, &common.ApiResponse{
 			Success: false,
 			Message: "permission denied",
@@ -319,7 +411,7 @@ func (h ShopMemberHttp) CleanupEmptyUsers(ctx microservice.IContext) error {
 	holdingCode := userInfo.HoldingCode
 
 	// ต้องเป็น Owner เท่านั้น
-	if userInfo.Role != models.ROLE_OWNER {
+	if userInfo.Role != models.ROLE_OWNER && userInfo.Role != models.ROLE_ADMIN {
 		ctx.Response(http.StatusOK, &common.ApiResponse{
 			Success: false,
 			Message: "permission denied",

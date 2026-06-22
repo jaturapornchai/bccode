@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { validateBackendUrl } from "@/lib/backend-url";
+import { serverGoApiBase, validateBackendUrl } from "@/lib/backend-url";
 
 const allowedSetupPaths = new Set([
   "verify-password",
@@ -7,7 +7,6 @@ const allowedSetupPaths = new Set([
   "config/get",
   "config/get-raw",
   "config/save",
-  "config/seed",
   "test-connection",
   "create-clickhouse-database",
 ]);
@@ -34,9 +33,8 @@ export async function POST(request: Request, context: SetupProxyContext) {
     return NextResponse.json({ success: false, message: "รูปแบบข้อมูลไม่ถูกต้อง" }, { status: 400 });
   }
 
-  let normalizedGoApiUrl: string;
   try {
-    normalizedGoApiUrl = validateBackendUrl(String(body.backendUrl ?? "")).normalizedGoApiUrl;
+    validateBackendUrl(String(body.backendUrl ?? ""));
   } catch (error) {
     return NextResponse.json(
       { success: false, message: error instanceof Error ? error.message : "Backend URL ไม่ถูกต้อง" },
@@ -51,7 +49,7 @@ export async function POST(request: Request, context: SetupProxyContext) {
   const timeout = setTimeout(() => controller.abort(), 20000);
 
   try {
-    const response = await fetch(`${normalizedGoApiUrl}/api/setup/${path}`, {
+    const response = await fetch(`${serverGoApiBase()}/api/setup/${path}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),

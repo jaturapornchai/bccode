@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "mongodb": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mongodb-mcp-server"
+      ],
+      "env": {}
+    },
+    "docker": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-server-docker"
+      ],
+      "env": {}
+    },
+    "codebase-memory-mcp": {
+      "command": "C:/Users/jatur/AppData/Local/Programs/codebase-memory-mcp/codebase-memory-mcp.exe"
+    }
+  }
+}

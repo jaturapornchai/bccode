@@ -366,9 +366,11 @@ export function updateConfigItem(configMap: ConfigMap, category: string, key: st
         // สำหรับ MongoDB Atlas (Cloud)
         generatedUri = `mongodb+srv://${authStr}${host}${dbStr}?retryWrites=true&w=majority`;
       } else {
-        // สำหรับ Local / Server ทั่วไป
+        // สำหรับ Local / Server ทั่วไป — ใส่ authSource=admin + replicaSet=rs0 เสมอ
+        // (backend ใช้ transaction ต้องการ replica set; ถ้าขาด rs0 mongo จะต่อแบบ standalone แล้ว
+        // transaction พังด้วย IllegalOperation — ตรงกับ bootstrap.json ของ DEV/UAT/PRO)
         const portStr = port ? `:${port}` : "";
-        generatedUri = `mongodb://${authStr}${host}${portStr}${dbStr}`;
+        generatedUri = `mongodb://${authStr}${host}${portStr}${dbStr}?authSource=admin&replicaSet=rs0`;
       }
 
       return Object.fromEntries(

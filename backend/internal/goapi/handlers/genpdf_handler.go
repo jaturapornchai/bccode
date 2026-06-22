@@ -109,6 +109,11 @@ func GenPDFHandler(c echo.Context) error {
 		payload.DateFormat = "DD/MM/YYYY"
 	}
 
+	// Set default timezone if not specified (สาขาไทยใช้ Asia/Bangkok แปลง UTC->เวลาสาขา ตอนแสดงวันที่ใน PDF)
+	if payload.Timezone == "" {
+		payload.Timezone = "Asia/Bangkok"
+	}
+
 	// Set default language if not specified
 	if payload.Language == "" {
 		payload.Language = "th"

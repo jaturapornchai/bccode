@@ -5,6 +5,7 @@ import { Inter, Outfit, Noto_Sans_Thai } from "next/font/google";
 import "./globals.css";
 import { colorThemeStorageKey, getThemesMap, normalizeColorTheme, themeStorageKey, type ThemeMode } from "@/lib/theme-data";
 import { fontStorageKey, getAppFont, normalizeAppFont } from "@/lib/font-data";
+import { ToastViewport } from "@/components/toast-viewport";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -82,7 +83,10 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           <link key={href} rel="stylesheet" href={href} />
         ))}
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <ToastViewport />
+      </body>
     </html>
   );
 }

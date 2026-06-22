@@ -76,7 +76,7 @@ func GetConfigsHandler(c echo.Context) error {
 	collection := getCollection(ConfigCollection)
 	filter := bson.M{"holdingcode": req.HoldingCode}
 
-	cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.M{"lineoa_type": 1}))
+	cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.M{"lineoatype": 1}))
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "Query execution failed",
@@ -128,7 +128,7 @@ func GetConfigHandler(c echo.Context) error {
 	defer cancel()
 
 	collection := getCollection(ConfigCollection)
-	filter := bson.M{"holdingcode": req.HoldingCode, "lineoa_type": req.LineOAType}
+	filter := bson.M{"holdingcode": req.HoldingCode, "lineoatype": req.LineOAType}
 
 	var config ConfigDoc
 	err := collection.FindOne(ctx, filter).Decode(&config)
@@ -183,18 +183,18 @@ func SaveConfigHandler(c echo.Context) error {
 	if req.GUID == "" {
 		// Insert new or upsert
 		resultGUID = uuid.New().String()
-		filter := bson.M{"holdingcode": req.HoldingCode, "lineoa_type": req.LineOAType}
+		filter := bson.M{"holdingcode": req.HoldingCode, "lineoatype": req.LineOAType}
 		update := bson.M{
 			"$set": bson.M{
-				"guid":           resultGUID,
-				"holdingcode":    req.HoldingCode,
-				"lineoa_type":    req.LineOAType,
-				"channel_id":     req.ChannelID,
-				"channel_secret": req.ChannelSecret,
-				"access_token":   req.AccessToken,
-				"liff_id":        req.LiffID,
-				"isactive":       req.IsActive,
-				"updatedat":      now,
+				"guid":          resultGUID,
+				"holdingcode":   req.HoldingCode,
+				"lineoatype":    req.LineOAType,
+				"channelid":     req.ChannelID,
+				"channelsecret": req.ChannelSecret,
+				"accesstoken":   req.AccessToken,
+				"liffid":        req.LiffID,
+				"isactive":      req.IsActive,
+				"updatedat":     now,
 			},
 			"$setOnInsert": bson.M{
 				"createdat": now,
@@ -221,12 +221,12 @@ func SaveConfigHandler(c echo.Context) error {
 		filter := bson.M{"guid": req.GUID, "holdingcode": req.HoldingCode}
 		update := bson.M{
 			"$set": bson.M{
-				"channel_id":     req.ChannelID,
-				"channel_secret": req.ChannelSecret,
-				"access_token":   req.AccessToken,
-				"liff_id":        req.LiffID,
-				"isactive":       req.IsActive,
-				"updatedat":      now,
+				"channelid":     req.ChannelID,
+				"channelsecret": req.ChannelSecret,
+				"accesstoken":   req.AccessToken,
+				"liffid":        req.LiffID,
+				"isactive":      req.IsActive,
+				"updatedat":     now,
 			},
 		}
 		_, err := collection.UpdateOne(ctx, filter, update)
@@ -330,11 +330,11 @@ func GetEmployeesHandler(c echo.Context) error {
 
 	collection := getCollection(EmployeeCollection)
 	filter := bson.M{
-		"lineoa_config_guid": req.LineOAConfigGUID,
-		"isactive":           true,
+		"lineoaconfigguid": req.LineOAConfigGUID,
+		"isactive":         true,
 	}
 
-	cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.M{"employee_name": 1}))
+	cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.M{"employeename": 1}))
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "Query execution failed",

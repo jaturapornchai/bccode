@@ -61,6 +61,7 @@ import {
 } from "@/lib/menu-data";
 import { getFrequentMenuEntries, menuUsageStorageKey, readMenuUsage, recordMenuUsage, type MenuUsageMap } from "@/lib/menu-usage";
 import { getSystemSettingConfig } from "@/lib/system-setting-screens";
+import { pushNotice } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import {
   holdingDisplayName,
@@ -99,8 +100,6 @@ type WorkTab = {
 
 type TabInsertSide = "before" | "after";
 type MenuLayoutMode = "left" | "top";
-type LineNotice = { type: "success" | "error" | "info"; text: string } | null;
-type PasswordNotice = { type: "success" | "error" | "info"; text: string } | null;
 type LineDialogState = {
   open: boolean;
   loading: boolean;
@@ -214,8 +213,9 @@ function normalizeSettingRecords(payload: unknown): SettingRecord[] {
 
 function isWorkspaceOwner(workspace: WorkspaceSession | null, auth: AuthSession | null): boolean {
   if (!workspace) return false;
-  if (workspace.shop.is_creator) return true;
-  if (Number(workspace.shop.role) === 2) return true;
+  if (workspace.shop.iscreator) return true;
+  // Owners (role 2) and admins (role 1) get full access to every menu.
+  if (Number(workspace.shop.role) === 2 || Number(workspace.shop.role) === 1) return true;
   const creator = stringValue(workspace.shop.createdby ?? workspace.shopInfo?.createdby).toLowerCase();
   const identities = [auth?.username, auth?.profile?.email].map((item) => stringValue(item).toLowerCase()).filter(Boolean);
   return Boolean(creator && identities.includes(creator));
@@ -517,9 +517,9 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
   const [sidebarHidden, setSidebarHidden] = useState(false);
   const [topChromeHidden, setTopChromeHidden] = useState(false);
   const [lineDialog, setLineDialog] = useState<LineDialogState>(emptyLineDialog);
-  const [lineNotice, setLineNotice] = useState<LineNotice>(null);
+  const setLineNotice = pushNotice;
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
-  const [passwordNotice, setPasswordNotice] = useState<PasswordNotice>(null);
+  const setPasswordNotice = pushNotice;
   const [isDefaultPassword, setIsDefaultPassword] = useState(false);
   const [profileAvatar, setProfileAvatar] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
@@ -1197,12 +1197,6 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                 <span>{defaultPasswordWarningText}</span>
               </div>
             ) : null}
-            {passwordNotice ? (
-              <div className={`message ${passwordNotice.type === "success" ? "success" : passwordNotice.type === "error" ? "error" : "info"}`}>
-                {passwordNotice.type === "success" ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
-                <span>{passwordNotice.text}</span>
-              </div>
-            ) : null}
             <label className="grid gap-1 text-sm font-medium">
               <span>{backendText(backendLanguage, "current_password", language === "th" ? "รหัสผ่านปัจจุบัน" : "Current password")}</span>
               <Input value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} type="password" autoComplete="current-password" />
@@ -1249,7 +1243,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
             ) : lineDialog.success ? (
               <div className="message success">
                 <CheckCircle2 size={18} />
-                <span>{lineNotice?.text ?? lineLinkSuccessText}</span>
+                <span>{lineLinkSuccessText}</span>
               </div>
             ) : lineDialog.error ? (
               <div className="message error">
@@ -1259,7 +1253,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
             ) : lineDialog.expired ? (
               <div className="message error">
                 <AlertCircle size={18} />
-                <span>{lineNotice?.text ?? t(language, "lineLoginExpired")}</span>
+                <span>{t(language, "lineLoginExpired")}</span>
               </div>
             ) : (
               <>
@@ -1287,13 +1281,6 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                 </div>
               </>
             )}
-
-            {lineNotice && !lineDialog.success && !lineDialog.expired && !lineDialog.error ? (
-              <div className={`message ${lineNotice.type === "success" ? "success" : lineNotice.type === "error" ? "error" : "info"}`}>
-                {lineNotice.type === "success" ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
-                <span>{lineNotice.text}</span>
-              </div>
-            ) : null}
 
             <div className="line-dialog-actions">
               <button className="secondary-button" type="button" onClick={() => void handleLineLink()}>

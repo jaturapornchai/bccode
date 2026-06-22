@@ -50,8 +50,9 @@ func (h ProductGroupHttp) RegisterHttp() {
 	h.ms.GET("/product/group/list", h.SearchProductGroupStep)
 	h.ms.POST("/product/group", h.CreateProductGroup)
 	h.ms.POST("/product/group/save", h.SaveProductGroup)
-	h.ms.GET("/product/group/:id", h.InfoProductGroup)
 	h.ms.GET("/product/group/by-code", h.InfoArray)
+	h.ms.GET("/product/group/:id", h.InfoProductGroup)
+	h.ms.PUT("/product/group/xsort", h.UpdateProductGroupXSort)
 	h.ms.PUT("/product/group/:id", h.UpdateProductGroup)
 	h.ms.DELETE("/product/group/:id", h.DeleteProductGroup)
 	h.ms.DELETE("/product/group", h.DeleteProductGroupByGUIDs)
@@ -77,6 +78,13 @@ func (h ProductGroupHttp) CreateProductGroup(ctx microservice.IContext) error {
 	if err != nil {
 		ctx.ResponseError(400, err.Error())
 		return err
+	}
+
+	// Tree-managed field: the create/edit form does not send xsorts (drag-drop owns ordering),
+	// so nil-init to an empty slice before validate — mirrors productcategory, else the
+	// `unique=Code,dive` validator rejects a nil xsorts with "xsorts must contain unique values".
+	if docReq.XSorts == nil {
+		docReq.XSorts = &[]common.XSort{}
 	}
 
 	if err = ctx.Validate(docReq); err != nil {
@@ -118,6 +126,13 @@ func (h ProductGroupHttp) SaveProductGroup(ctx microservice.IContext) error {
 	if err != nil {
 		ctx.ResponseError(400, err.Error())
 		return err
+	}
+
+	// Tree-managed field: the create/edit form does not send xsorts (drag-drop owns ordering),
+	// so nil-init to an empty slice before validate — mirrors productcategory, else the
+	// `unique=Code,dive` validator rejects a nil xsorts with "xsorts must contain unique values".
+	if docReq.XSorts == nil {
+		docReq.XSorts = &[]common.XSort{}
 	}
 
 	if err = ctx.Validate(docReq); err != nil {
@@ -165,6 +180,13 @@ func (h ProductGroupHttp) UpdateProductGroup(ctx microservice.IContext) error {
 		return err
 	}
 
+	// Tree-managed field: the create/edit form does not send xsorts (drag-drop owns ordering),
+	// so nil-init to an empty slice before validate — mirrors productcategory, else the
+	// `unique=Code,dive` validator rejects a nil xsorts with "xsorts must contain unique values".
+	if docReq.XSorts == nil {
+		docReq.XSorts = &[]common.XSort{}
+	}
+
 	if err = ctx.Validate(docReq); err != nil {
 		ctx.ResponseError(400, err.Error())
 		return err
@@ -180,6 +202,49 @@ func (h ProductGroupHttp) UpdateProductGroup(ctx microservice.IContext) error {
 	ctx.Response(http.StatusCreated, common.ApiResponse{
 		Success: true,
 		ID:      id,
+	})
+
+	return nil
+}
+
+// Update XSort	 Group godoc
+// @Description Update XSort Group
+// @Tags		ProductGroup
+// @Param		XSort  body      []common.XSortModifyReqesut  true  "XSort"
+// @Accept 		json
+// @Success		201	{object}	common.ResponseSuccessWithID
+// @Failure		401 {object}	common.AuthResponseFailed
+// @Security     AccessToken
+// @Router /product/group/xsort [put]
+func (h ProductGroupHttp) UpdateProductGroupXSort(ctx microservice.IContext) error {
+	userInfo := ctx.UserInfo()
+	authUsername := userInfo.Username
+	holdingCode := userInfo.HoldingCode
+
+	input := ctx.ReadInput()
+
+	req := &[]common.XSortModifyReqesut{}
+	err := json.Unmarshal([]byte(input), &req)
+
+	if err != nil {
+		ctx.ResponseError(400, err.Error())
+		return err
+	}
+
+	if err = ctx.Validate(req); err != nil {
+		ctx.ResponseError(400, err.Error())
+		return err
+	}
+
+	err = h.svc.XSortsSave(holdingCode, authUsername, *req)
+
+	if err != nil {
+		ctx.ResponseError(http.StatusBadRequest, err.Error())
+		return err
+	}
+
+	ctx.Response(http.StatusCreated, common.ApiResponse{
+		Success: true,
 	})
 
 	return nil

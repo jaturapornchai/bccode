@@ -23,7 +23,7 @@ func GetBrandDB() (*sql.DB, error) {
 
 		// Build connection string for brand_mappings_db
 		connStr := fmt.Sprintf(
-			"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+			"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s TimeZone=UTC",
 			cfg.PostgresHost(),
 			cfg.PostgresPort(),
 			cfg.PostgresUser(),

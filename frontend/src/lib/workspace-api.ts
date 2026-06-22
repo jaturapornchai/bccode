@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { validateBackendUrl } from "./backend-url";
+import { serverMainApiBase, validateBackendUrl } from "./backend-url";
 
 export type ApiProxyBody = Record<string, unknown> & {
   backendUrl?: unknown;
@@ -22,7 +22,12 @@ export function getBackendUrlFromRequest(request: Request, body?: ApiProxyBody):
 }
 
 export function getMainApiUrl(rawBackendUrl: string): string {
-  return validateBackendUrl(rawBackendUrl).mainApiUrl;
+  // Validate the caller-provided URL (throws on garbage -> 400 upstream), but always
+  // fetch the backend at the server-reachable local address. The client URL is the public
+  // same-origin proxy form, which is unreachable from this server-side process. See
+  // serverMainApiBase. The result is only used for server-side fetches, never echoed.
+  validateBackendUrl(rawBackendUrl);
+  return serverMainApiBase();
 }
 
 export async function readJsonOrText(response: Response): Promise<unknown> {

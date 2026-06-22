@@ -4,7 +4,9 @@ Date: 2026-06-06
 
 ## Rule
 
-New or changed MongoDB, PostgreSQL, and ClickHouse contracts must use lowercase names with no underscore.
+> **UPDATED 2026-06-21 by Jead:** the rule now allows underscore. New or changed MongoDB, PostgreSQL, and ClickHouse contracts must use **lowercase** names — digits and underscore `_` are allowed (snake_case OK); only uppercase/camelCase/PascalCase is a violation. The historical entries below describe the earlier "no underscore" reset and are kept for record. See `.agents/rules/bc-account-core-rules.md` "Lowercase Database Naming Iron Rule (underscore allowed)".
+
+New or changed MongoDB, PostgreSQL, and ClickHouse contracts must use lowercase names (underscore allowed).
 
 This includes database-facing function names, MCP tool/action names, API route/query/body keys tied to database fields, variables/constants that represent database identifiers, table names, collection names, column names, field names, index names, SQL aliases, Kafka event keys, and persisted/API contract strings.
 
@@ -63,7 +65,7 @@ Reset result:
 | PostgreSQL | Reset non-system schemas in 28 application databases | 0 tables |
 | ClickHouse | Dropped all objects in configured DEV database, including dictionary dependencies | 0 tables |
 
-Next rebuild work must create only lowercase no-underscore database contracts.
+Next rebuild work must create only lowercase database contracts (underscore allowed, per the 2026-06-21 rule update above).
 
 ## Code Migration Executed
 

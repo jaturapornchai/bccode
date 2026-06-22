@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -165,65 +164,5 @@ func StockReportWarehousesHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]any{
 		"status":     "success",
 		"warehouses": warehouses,
-	})
-}
-
-// StockReportItemBarcodesHandler - ดึง item codes + barcodes ทั้งหมด สำหรับ filter dropdown
-// POST /api/stock-report/item-barcodes
-func StockReportItemBarcodesHandler(c echo.Context) error {
-	var req struct {
-		HoldingCode string `json:"holdingcode"`
-	}
-	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Invalid request payload",
-			"code":  "INVALID_PAYLOAD",
-		})
-	}
-
-	if req.HoldingCode == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "holdingcode is required",
-			"code":  "MISSING_HOLDING_CODE",
-		})
-	}
-
-	db, err := mypg.PgSqlFastConnect(req.HoldingCode)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": "Database connection failed",
-			"code":  "DB_CONNECTION_ERROR",
-		})
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	query := fmt.Sprintf(`SELECT DISTINCT barcode, barcoderef FROM productbarcodeprocess WHERE holdingcode = $1 ORDER BY barcode LIMIT 10000`)
-	rows, err := db.QueryContext(ctx, query, req.HoldingCode)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": "Query execution failed",
-			"code":  "QUERY_ERROR",
-		})
-	}
-	defer rows.Close()
-
-	type itemBarcode struct {
-		Barcode    string `json:"barcode"`
-		BarcodeRef string `json:"barcoderef"`
-	}
-	items := make([]itemBarcode, 0)
-	for rows.Next() {
-		var ib itemBarcode
-		if err := rows.Scan(&ib.Barcode, &ib.BarcodeRef); err != nil {
-			continue
-		}
-		items = append(items, ib)
-	}
-
-	return c.JSON(http.StatusOK, map[string]any{
-		"status": "success",
-		"items":  items,
 	})
 }

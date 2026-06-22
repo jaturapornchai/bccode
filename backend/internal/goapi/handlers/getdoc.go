@@ -173,20 +173,31 @@ func PgGetDocHandler(c echo.Context) error {
 		})
 	}
 
-	// query based on transflag (แสดงรายการทั้งหมดรวมที่ลบแล้ว)
+	// SECURITY (2026-06-21): parameterize all user-supplied string filters ($N placeholders
+	// + args) to prevent SQL injection. transflagList comes from a fixed switch (safe);
+	// numeric MinAmount/MaxAmount/OffSet/Limit stay inline (%f/%d, not injectable).
+	// The same whereClause+args are reused by BOTH the count and the main query below.
 	whereClause := fmt.Sprintf("transflag in (%s)", transflagList)
+	args := []interface{}{}
+	argn := 1
 	// เพิ่มเงื่อนไขค้นหา (ถ้ามี)
 	if payLoad.Search != "" {
-		whereClause += fmt.Sprintf(" AND (docno ILIKE '%%%s%%' OR custcode ILIKE '%%%s%%')", payLoad.Search, payLoad.Search)
+		whereClause += fmt.Sprintf(" AND (docno ILIKE $%d OR custcode ILIKE $%d)", argn, argn)
+		args = append(args, "%"+payLoad.Search+"%")
+		argn++
 	}
 	// กรองตามช่วงวันที่
 	if payLoad.FromDate != "" {
 		logger.Info("[PgGetDoc] Filtering fromDate: %s", payLoad.FromDate)
-		whereClause += fmt.Sprintf(" AND docdatetime >= '%s'", payLoad.FromDate)
+		whereClause += fmt.Sprintf(" AND docdatetime >= $%d", argn)
+		args = append(args, payLoad.FromDate)
+		argn++
 	}
 	if payLoad.ToDate != "" {
 		// เพิ่ม 1 วันเพื่อให้รวมวันสุดท้ายด้วย
-		whereClause += fmt.Sprintf(" AND docdatetime < '%s'::date + interval '1 day'", payLoad.ToDate)
+		whereClause += fmt.Sprintf(" AND docdatetime < $%d::date + interval '1 day'", argn)
+		args = append(args, payLoad.ToDate)
+		argn++
 	}
 	// กรองตามช่วงจำนวนเงิน
 	if payLoad.MinAmount != nil {
@@ -197,11 +208,13 @@ func PgGetDocHandler(c echo.Context) error {
 	}
 	// กรองตามเจ้าหนี้ (multi-select)
 	if len(payLoad.CustCodes) > 0 {
-		quotedCodes := make([]string, len(payLoad.CustCodes))
+		ph := make([]string, len(payLoad.CustCodes))
 		for i, code := range payLoad.CustCodes {
-			quotedCodes[i] = fmt.Sprintf("'%s'", code)
+			ph[i] = fmt.Sprintf("$%d", argn)
+			args = append(args, code)
+			argn++
 		}
-		whereClause += fmt.Sprintf(" AND custcode IN (%s)", strings.Join(quotedCodes, ","))
+		whereClause += fmt.Sprintf(" AND custcode IN (%s)", strings.Join(ph, ","))
 	}
 
 	// Debug: Log the where clause to verify filtering
@@ -209,7 +222,7 @@ func PgGetDocHandler(c echo.Context) error {
 
 	queryCount := fmt.Sprintf("SELECT count(*) FROM doc WHERE %s", whereClause)
 	var totalCount int
-	err = db.QueryRow(queryCount).Scan(&totalCount)
+	err = db.QueryRow(queryCount, args...).Scan(&totalCount)
 	if err != nil {
 		logger.Error("Query %s", queryCount)
 		logger.Error("executing count query: %v", err)
@@ -248,7 +261,7 @@ func PgGetDocHandler(c echo.Context) error {
 		query += fmt.Sprintf(" LIMIT %d", payLoad.Limit)
 	}
 
-	rows, err := db.Query(query)
+	rows, err := db.Query(query, args...)
 	if err != nil {
 		logger.Error("executing query: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{

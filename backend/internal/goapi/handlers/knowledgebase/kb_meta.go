@@ -22,7 +22,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const kbMetaCollection = "kbDocumentMetadata"
+const kbMetaCollection = "kbdocumentmetadata"
 
 // KBDocMeta — bccaccount-specific metadata that lives outside RAGFlow
 type KBDocMeta struct {

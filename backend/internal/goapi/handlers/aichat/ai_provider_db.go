@@ -16,7 +16,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const aiProviderCollection = "aiProviderConfigs"
+const aiProviderCollection = "aiproviderconfigs"
 
 // AIProviderConfig — config ของ AI provider ต่อ shop
 type AIProviderConfig struct {

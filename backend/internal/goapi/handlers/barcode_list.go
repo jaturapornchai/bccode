@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"smlcloudplatform/internal/goapi/logger"
@@ -231,7 +232,29 @@ func stockBalanceMapKey(itemCode, dimensionKey string) string {
 	return itemCode + "\x00" + dimensionKey
 }
 
-func pgColumnExists(ctx context.Context, db *sql.DB, tableName, columnName string) bool {
+// pgSchemaCap caches information_schema capability probes (does table/column
+// exist) per holding+table+column. The PG schema only changes on migration —
+// which redeploys (restarts) the backend — so a process-lifetime cache is safe
+// and removes a catalog round-trip from every barcode-list request.
+var (
+	pgSchemaCapMu sync.RWMutex
+	pgSchemaCap   = map[string]bool{}
+)
+
+func pgSchemaCapGet(key string) (bool, bool) {
+	pgSchemaCapMu.RLock()
+	v, ok := pgSchemaCap[key]
+	pgSchemaCapMu.RUnlock()
+	return v, ok
+}
+
+func pgSchemaCapSet(key string, val bool) {
+	pgSchemaCapMu.Lock()
+	pgSchemaCap[key] = val
+	pgSchemaCapMu.Unlock()
+}
+
+func pgColumnExistsProbe(ctx context.Context, db *sql.DB, tableName, columnName string) (bool, error) {
 	var exists bool
 	err := db.QueryRowContext(ctx,
 		`SELECT EXISTS (
@@ -241,10 +264,10 @@ func pgColumnExists(ctx context.Context, db *sql.DB, tableName, columnName strin
 		)`,
 		tableName, columnName,
 	).Scan(&exists)
-	return err == nil && exists
+	return exists, err
 }
 
-func pgTableExists(ctx context.Context, db *sql.DB, tableName string) bool {
+func pgTableExistsProbe(ctx context.Context, db *sql.DB, tableName string) (bool, error) {
 	var exists bool
 	err := db.QueryRowContext(ctx,
 		`SELECT EXISTS (
@@ -254,7 +277,36 @@ func pgTableExists(ctx context.Context, db *sql.DB, tableName string) bool {
 		)`,
 		tableName,
 	).Scan(&exists)
-	return err == nil && exists
+	return exists, err
+}
+
+// pgColumnExistsCached returns whether a column exists, caching the result.
+// A transient probe error is not cached (returns false for this request only).
+func pgColumnExistsCached(ctx context.Context, db *sql.DB, holdingCode, tableName, columnName string) bool {
+	key := "c|" + holdingCode + "|" + tableName + "|" + columnName
+	if v, ok := pgSchemaCapGet(key); ok {
+		return v
+	}
+	exists, err := pgColumnExistsProbe(ctx, db, tableName, columnName)
+	if err != nil {
+		return false
+	}
+	pgSchemaCapSet(key, exists)
+	return exists
+}
+
+// pgTableExistsCached returns whether a table exists, caching the result.
+func pgTableExistsCached(ctx context.Context, db *sql.DB, holdingCode, tableName string) bool {
+	key := "t|" + holdingCode + "|" + tableName
+	if v, ok := pgSchemaCapGet(key); ok {
+		return v
+	}
+	exists, err := pgTableExistsProbe(ctx, db, tableName)
+	if err != nil {
+		return false
+	}
+	pgSchemaCapSet(key, exists)
+	return exists
 }
 
 // BarcodeListHandler — Handler สำหรับดึงรายการบาร์โค้ดจาก MongoDB Atlas
@@ -633,7 +685,7 @@ func BarcodeListHandler(c echo.Context) error {
 				args = append(args, code)
 			}
 
-			hasReservedQty := pgColumnExists(ctx, db, "inventorystockbalances", "reservedqty")
+			hasReservedQty := pgColumnExistsCached(ctx, db, req.HoldingCode, "inventorystockbalances", "reservedqty")
 			reservedExpr := "0::numeric"
 			if hasReservedQty {
 				reservedExpr = "COALESCE(SUM(reservedqty), 0)"
@@ -668,10 +720,10 @@ func BarcodeListHandler(c echo.Context) error {
 				logger.Warn("BarcodeListHandler: inventory stock balance query failed: %v", err)
 			}
 
-			hasMarketplaceStock := pgTableExists(ctx, db, "marketplacestockbalances") &&
-				pgColumnExists(ctx, db, "marketplacestockbalances", "itemcode") &&
-				pgColumnExists(ctx, db, "marketplacestockbalances", "dimensionkey") &&
-				pgColumnExists(ctx, db, "marketplacestockbalances", "availableqty")
+			hasMarketplaceStock := pgTableExistsCached(ctx, db, req.HoldingCode, "marketplacestockbalances") &&
+				pgColumnExistsCached(ctx, db, req.HoldingCode, "marketplacestockbalances", "itemcode") &&
+				pgColumnExistsCached(ctx, db, req.HoldingCode, "marketplacestockbalances", "dimensionkey") &&
+				pgColumnExistsCached(ctx, db, req.HoldingCode, "marketplacestockbalances", "availableqty")
 			if hasMarketplaceStock {
 				marketplaceQuery := fmt.Sprintf(
 					`SELECT itemcode,

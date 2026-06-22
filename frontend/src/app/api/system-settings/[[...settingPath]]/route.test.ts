@@ -350,7 +350,7 @@ describe("system settings API route security", () => {
     expect(readBody).toMatchObject({ collection, holdingcode: "SHOP001" });
     expect(createBody).toMatchObject({ collection, holdingcode: "SHOP001", guidfixed: "GUID001" });
     expect(updateBody).toMatchObject({ collection, holdingcode: "SHOP001", guidfixed: "GUID001" });
-    expect(deleteBody).toMatchObject({ collection, holdingcode: "SHOP001", guidfixed: "GUID001", delete_many: false });
+    expect(deleteBody).toMatchObject({ collection, holdingcode: "SHOP001", guidfixed: "GUID001", deletemany: false });
   });
 
   it("keeps user access audit read-only at the API proxy layer", async () => {

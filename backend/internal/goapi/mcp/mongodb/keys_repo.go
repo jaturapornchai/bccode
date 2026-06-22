@@ -22,7 +22,7 @@ const (
 
 // APIKey represents an MCP API Key
 type APIKey struct {
-	ID                 primitive.ObjectID `bson:"id,omitempty" json:"id"`
+	ID                 primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 	APIKey             string             `bson:"apikey" json:"apikey"`
 	HoldingCode        string             `bson:"holdingcode" json:"holdingcode"`
 	Name               string             `bson:"name" json:"name"`
@@ -38,7 +38,7 @@ type APIKey struct {
 
 // AuditLog represents an MCP audit log entry
 type AuditLog struct {
-	ID              primitive.ObjectID `bson:"id,omitempty" json:"id"`
+	ID              primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 	APIKeyID        primitive.ObjectID `bson:"apikeyid" json:"apikeyid"`
 	HoldingCode     string             `bson:"holdingcode" json:"holdingcode"`
 	ToolName        string             `bson:"toolname" json:"toolname"`

@@ -290,7 +290,7 @@ func (h FileStatusHttp) SearchFileStatusPage(ctx microservice.IContext) error {
 		},
 		{
 			Param: "job_id",
-			Field: "job_id",
+			Field: "jobid",
 			Type:  requestfilter.FieldTypeString,
 		},
 	})
@@ -341,7 +341,7 @@ func (h FileStatusHttp) SearchFileStatusStep(ctx microservice.IContext) error {
 		},
 		{
 			Param: "job_id",
-			Field: "job_id",
+			Field: "jobid",
 			Type:  requestfilter.FieldTypeString,
 		},
 	})

@@ -55,7 +55,7 @@ export async function proxyImageUploadToGoApi(
   }
 
   const uploadForm = new FormData();
-  uploadForm.append("file", file, file.name || "image.webp");
+  uploadForm.append("file", file, file.name || "image.jpg");
   uploadForm.append("category", category);
 
   for (const field of forwardedTextFields) {

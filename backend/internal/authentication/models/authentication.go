@@ -34,7 +34,11 @@ type GoogleLoginRequest struct {
 	GoogleUserID string `json:"googleuserid"`
 	DisplayName  string `json:"displayname"`
 	PictureUrl   string `json:"pictureurl"`
-	Email        string `json:"email" validate:"required"`
+	Email        string `json:"email"`
+	// Credential is the Google ID token (JWT) from Google Identity Services. It is
+	// REQUIRED and verified server-side; the trusted email is derived from its claims,
+	// not from the Email field above.
+	Credential string `json:"credential"`
 }
 
 type TokenLoginResponse struct {

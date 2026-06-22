@@ -78,8 +78,10 @@ import {
 } from "@/lib/backend-language";
 import { normalizeBusinessCode } from "@/lib/business-code";
 import {
+  formatDefaultDateTime,
   localTimeToUtcTime,
   normalizeTimeInput,
+  resolveWorkspaceDateTimeDisplayOptions,
   timeToMinutes,
   type CalendarYearType,
 } from "@/lib/date-time";
@@ -93,6 +95,7 @@ import {
 import { MapPickerDialog } from "@/components/map-picker-dialog";
 import { ProductCategoryTreeView } from "./product-category-tree-view";
 import { ProductCategoryItemsEditor } from "./product-category-items-editor";
+import { ProductGroupTreeView } from "./product-group-tree-view";
 import { WarehouseTreeView } from "./warehouse-tree-view";
 import { CompanyBranchTreeView } from "./company-branch-tree-view";
 import { WarehouseLocationsEditor } from "./warehouse-locations-editor";
@@ -135,6 +138,7 @@ import {
 import { cn } from "@/lib/utils";
 import { AppHeaderControls } from "../app-header-controls";
 import { ManualLink } from "../manual-link";
+import { pushNotice } from "@/lib/toast";
 
 type SystemSettingsScreenProps = {
   embedded?: boolean;
@@ -149,7 +153,6 @@ type SystemSettingsScreenProps = {
 
 type SettingRecord = Record<string, unknown>;
 type FormState = Record<string, unknown>;
-type Notice = { type: "error" | "info" | "success"; text: string } | null;
 type ProductUnitOption = {
   unitcode?: string;
   names?: { code?: string; name?: string }[];
@@ -1017,7 +1020,7 @@ function isCreatorRecord(
   record: SettingRecord,
   workspace: WorkspaceSession | null,
 ): boolean {
-  if (Boolean(record.is_creator)) return true;
+  if (Boolean(record.iscreator)) return true;
   const creator = stringValue(
     record.createdby ??
       workspace?.shop.createdby ??
@@ -1074,7 +1077,7 @@ export function SystemSettingsScreen({
   const [allRecordTotal, setAllRecordTotal] = useState(0);
   const [allRecordsLoaded, setAllRecordsLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [notice, setNotice] = useState<Notice>(null);
+  const setNotice = pushNotice;
   const [editing, setEditing] = useState<SettingRecord | null>(null);
   const [form, setForm] = useState<FormState>({});
   const [formOpen, setFormOpen] = useState(false);
@@ -1702,7 +1705,26 @@ export function SystemSettingsScreen({
     );
   }
   const currentConfig = config;
-  const isCreator = workspace?.shop?.is_creator === true ||
+  // True only when the open form actually differs from its loaded baseline, so the
+  // "unsaved changes" guard fires on real edits — not merely because a form is open
+  // (e.g. opening a record then clicking another without changing anything).
+  const isFormDirty = useMemo(() => {
+    if (!formOpen) return false;
+    const baseline = editing
+      ? formFromRecord(editing, currentConfig, language)
+      : { ...defaultForm(currentConfig, language), parentguid: form.parentguid };
+    if (workspace && auth) {
+      try {
+        const current = buildPayload(form, editing, currentConfig, workspace, auth, language);
+        const pristine = buildPayload(baseline, editing, currentConfig, workspace, auth, language);
+        return JSON.stringify(current) !== JSON.stringify(pristine);
+      } catch {
+        // fall through to raw form comparison
+      }
+    }
+    return JSON.stringify(form) !== JSON.stringify(baseline);
+  }, [formOpen, editing, form, currentConfig, language, workspace, auth]);
+  const isCreator = workspace?.shop?.iscreator === true ||
     Boolean(auth?.username && workspace?.shop?.createdby && workspace?.shop?.createdby.trim().toLowerCase() === auth.username.trim().toLowerCase());
   const isOwnerOrAdmin = isCreator || workspace?.shop?.role === 1 || workspace?.shop?.role === 2;
   const isProductUnit = currentConfig.slug === "productunit";
@@ -1741,6 +1763,16 @@ export function SystemSettingsScreen({
     setNotice(null);
   }
 
+  function handleOpenGroupCreate(parentGuid?: string) {
+    setEditing(null);
+    const initialForm = defaultForm(currentConfig, language);
+    initialForm.parentguid = parentGuid ?? "";
+    setForm(initialForm);
+    setFormOpen(true);
+    setSelectedRecordId("");
+    setNotice(null);
+  }
+
   async function openEdit(record: SettingRecord) {
     const newId = recordId(record, currentConfig);
     const oldId = editing ? recordId(editing, currentConfig) : "";
@@ -1761,7 +1793,7 @@ export function SystemSettingsScreen({
       setCategoryUnsavedChanges(false);
     }
     // Warn when leaving an open form (add or edit) for another record's edit mode
-    if (formOpen && newId !== oldId) {
+    if (formOpen && isFormDirty && newId !== oldId) {
       const confirmLeave = await confirm({
         title: language === "th" ? "ยังไม่ได้บันทึก" : "Unsaved changes",
         description: language === "th"
@@ -2498,6 +2530,9 @@ export function SystemSettingsScreen({
     !hideChrome &&
     groupNumber !== null;
 
+  const showProductGroupHeaderControls =
+    config.slug === "productgroup" && !hideChrome;
+
   const content = (
     <div className="grid w-full max-w-none min-w-0 gap-2">
       {hideChrome ? null : (
@@ -2541,9 +2576,40 @@ export function SystemSettingsScreen({
           <div
             className={cn(
               "flex min-w-0 flex-wrap items-center justify-end gap-1.5",
-              showProductCategoryHeaderControls ? "flex-[1_1_34rem]" : "shrink-0",
+              showProductCategoryHeaderControls || showProductGroupHeaderControls ? "flex-[1_1_34rem]" : "shrink-0",
             )}
           >
+            {showProductGroupHeaderControls ? (
+              <div className="flex min-w-0 flex-[1_1_28rem] flex-wrap items-center justify-end gap-1.5">
+                <Input
+                  className="h-8 min-w-40 flex-[1_1_14rem] rounded-lg text-sm md:max-w-72"
+                  placeholder={language === "th" ? "ค้นหา..." : "Search..."}
+                  value={categorySearchQuery}
+                  onChange={(event) => setCategorySearchQuery(event.target.value)}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-8 shrink-0 rounded-lg gap-1.5"
+                  onClick={() => handleOpenGroupCreate()}
+                  disabled={loading || saving}
+                >
+                  <Plus className="size-4" />
+                  {language === "th" ? "เพิ่มกลุ่มหลัก" : "Add Root"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 shrink-0 rounded-lg gap-1.5"
+                  onClick={() => categorySelectedGuid && handleOpenGroupCreate(categorySelectedGuid)}
+                  disabled={loading || saving || !categorySelectedGuid}
+                >
+                  <FolderPlus className="size-4 text-emerald-600 dark:text-emerald-400" />
+                  {language === "th" ? "เพิ่มกลุ่มย่อย" : "Add Subgroup"}
+                </Button>
+              </div>
+            ) : null}
             {showProductCategoryHeaderControls ? (
               <div className="flex min-w-0 flex-[1_1_28rem] flex-wrap items-center justify-end gap-1.5">
                 <Button
@@ -2626,21 +2692,6 @@ export function SystemSettingsScreen({
       </header>
       )}
 
-      {notice ? (
-        <div
-          className={`message ${notice.type === "success" ? "success" : notice.type === "error" ? "error" : "info"}`}
-          role={notice.type === "error" ? "alert" : "status"}
-          aria-live={notice.type === "error" ? "assertive" : "polite"}
-        >
-          {notice.type === "success" ? (
-            <BadgeCheck size={18} />
-          ) : (
-            <AlertCircle size={18} />
-          )}
-          <span>{notice.text}</span>
-        </div>
-      ) : null}
-
       {config.kind === "report" && config.slug === "useraccessaudit" ? (
         <UserAccessAuditReportPanel
           auth={auth}
@@ -2676,11 +2727,61 @@ export function SystemSettingsScreen({
           workDays={workDays}
         />
       ) : config.slug === "productgroup" && !hideChrome ? (
-        <ProductGroupUnifiedView
-          initialBackendLanguage={initialBackendLanguage}
-          initialBackendUrl={initialBackendUrl}
-          language={language}
-        />
+        <div className="grid w-full min-w-0 items-stretch gap-3 min-h-[calc(100dvh-12rem)] xl:grid-cols-[minmax(320px,0.95fr)_minmax(420px,1.05fr)]">
+          <ProductGroupTreeView
+            auth={auth}
+            workspace={workspace}
+            language={language}
+            records={records}
+            selectedGuid={categorySelectedGuid}
+            setSelectedGuid={setCategorySelectedGuid}
+            searchQuery={categorySearchQuery}
+            onOpenCreate={handleOpenGroupCreate}
+            onOpenEdit={openEdit}
+            onDeleteRecord={deleteRecord}
+            onRefresh={() => void loadRecords(auth, workspace, config)}
+            saving={saving}
+            loading={loading}
+          />
+          <div className="min-h-0 h-full">
+            {formOpen ? (
+              <SettingFormDialog
+                inline
+                auth={auth}
+                config={config}
+                dictionary={backendLanguage}
+                editing={editing}
+                form={form}
+                dateTimeScope={dateTimeScope}
+                language={language}
+                onClose={() => {
+                  if (!saving) setFormOpen(false);
+                }}
+                onSubmit={saveRecord}
+                saving={saving}
+                setForm={setForm}
+                text={text}
+                workspace={workspace}
+              />
+            ) : (
+              <Card className="h-full border-border bg-card shadow-sm">
+                <CardContent className="grid h-full min-h-60 place-items-center p-4 text-center text-sm text-muted-foreground">
+                  <div className="grid gap-2">
+                    <FolderOpen className="mx-auto size-8 text-primary/70" />
+                    <b className="text-foreground">
+                      {language === "th" ? "เลือกหรือเพิ่มกลุ่มสินค้า" : "Select or add a product group"}
+                    </b>
+                    <span>
+                      {language === "th"
+                        ? "เลือกแถวด้านซ้ายเพื่อแก้ไข หรือกดเพิ่มกลุ่มหลัก/กลุ่มย่อย"
+                        : "Select a row on the left to edit, or add a root/subgroup."}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
       ) : config.slug === "productwarehousescreen" && !hideChrome ? (
         <WarehouseTreeView
           auth={auth}
@@ -2916,7 +3017,6 @@ export function SystemSettingsScreen({
                   form={form}
                   dateTimeScope={dateTimeScope}
                   language={language}
-                  notice={notice}
                   onClose={() => {
                     if (!saving) setFormOpen(false);
                   }}
@@ -2958,7 +3058,6 @@ export function SystemSettingsScreen({
           initialBackendUrl={initialBackendUrl}
           language={language}
           loading={loading}
-          notice={notice}
           onCloseForm={() => {
             if (!saving) setFormOpen(false);
           }}
@@ -2998,7 +3097,6 @@ export function SystemSettingsScreen({
             form={form}
             dateTimeScope={dateTimeScope}
             language={language}
-            notice={notice}
             saving={saving}
             setForm={setForm}
             workspace={workspace}
@@ -3025,8 +3123,8 @@ export function SystemSettingsScreen({
         <>
           <Card>
             <CardContent className="grid gap-1.5 p-2">
-              <div className="grid gap-1.5 lg:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto]">
-                <label className="relative block min-w-0">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <label className="relative block min-w-0 flex-1">
                   <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     className="h-8 !pl-10"
@@ -3035,18 +3133,18 @@ export function SystemSettingsScreen({
                     onChange={(event) => setQuery(event.target.value)}
                   />
                 </label>
-                <div className="flex min-h-8 items-center gap-1.5 rounded-lg border border-border bg-background px-2 text-xs shadow-sm">
+                <div className="flex min-h-8 shrink-0 items-center gap-1.5 rounded-lg border border-border bg-background px-2 text-xs tabular-nums shadow-sm">
                   <span className="font-medium text-muted-foreground">
                     {language === "th" ? "ทั้งหมด" : "Total"}
                   </span>
-                  <b className="text-foreground">
+                  <b className="inline-block min-w-[2.5ch] text-right text-foreground">
                     {totalAllRecords.toLocaleString(localeOf(language))}
                   </b>
                   <span className="h-4 w-px bg-border" aria-hidden="true" />
                   <span className="font-medium text-muted-foreground">
                     {text("active")}
                   </span>
-                  <b className="text-foreground">
+                  <b className="inline-block min-w-[2.5ch] text-right text-foreground">
                     {visibleRecords
                       .filter(isActiveRecord)
                       .length.toLocaleString(localeOf(language))}
@@ -3057,6 +3155,7 @@ export function SystemSettingsScreen({
                     type="button"
                     variant="outline"
                     size="sm"
+                    className="shrink-0"
                     onClick={() => void openStandardUnitDialog()}
                     disabled={loading || saving || !auth}
                   >
@@ -3068,6 +3167,7 @@ export function SystemSettingsScreen({
                   type="button"
                   variant="outline"
                   size="sm"
+                  className="shrink-0"
                   onClick={() => void loadRecords(auth, workspace, config)}
                   disabled={loading || !auth}
                 >
@@ -3080,25 +3180,27 @@ export function SystemSettingsScreen({
                 </Button>
                 {canEdit && currentConfig.slug !== "permissionlink" ? (
                   <>
-                    {selectedActionRecord ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={openCreateCopy}
-                        disabled={!auth || !selectedActionRecord}
-                        title={
-                          language === "th"
-                            ? "คัดลอกจากรายการที่เลือก"
-                            : "Copy selected row"
-                        }
-                      >
-                        <Copy />
-                        {language === "th" ? "คัดลอก" : "Copy"}
-                      </Button>
-                    ) : null}
+                    {/* Always render Copy (disabled when no row is selected) so the toolbar
+                        buttons never shift position when a row is picked. */}
                     <Button
                       type="button"
                       size="sm"
+                      className="shrink-0"
+                      onClick={openCreateCopy}
+                      disabled={!auth || !selectedActionRecord}
+                      title={
+                        language === "th"
+                          ? "คัดลอกจากรายการที่เลือก"
+                          : "Copy selected row"
+                      }
+                    >
+                      <Copy />
+                      {language === "th" ? "คัดลอก" : "Copy"}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="shrink-0"
                       onClick={openCreate}
                       disabled={!auth}
                     >
@@ -3128,7 +3230,6 @@ export function SystemSettingsScreen({
               form={form}
               formOpen={formOpen}
               language={language}
-              notice={notice}
               onCloseForm={() => {
                 if (!saving) setFormOpen(false);
               }}
@@ -3138,7 +3239,7 @@ export function SystemSettingsScreen({
               onSelect={async (record) => {
                 const targetId = recordId(record, config);
                 // Warn when leaving an open/edited form (add or edit) for another record
-                if (formOpen && targetId !== selectedRecordId) {
+                if (formOpen && isFormDirty && targetId !== selectedRecordId) {
                   const confirmLeave = await confirm({
                     title: language === "th" ? "ยังไม่ได้บันทึก" : "Unsaved changes",
                     description: language === "th"
@@ -3236,7 +3337,6 @@ function SettingDataList({
   form,
   formOpen,
   language,
-  notice,
   onCloseForm,
   onDelete,
   onEdit,
@@ -3266,7 +3366,6 @@ function SettingDataList({
   form: FormState;
   formOpen: boolean;
   language: LanguageCode;
-  notice: Notice;
   onCloseForm: () => void;
   onDelete: (record: SettingRecord) => void;
   onEdit: (record: SettingRecord) => void;
@@ -3291,7 +3390,10 @@ function SettingDataList({
   const selectedId = selectedRecord ? recordId(selectedRecord, config) : "";
   const editingId = editing ? recordId(editing, config) : "";
   const shouldUseHydratedDetail = shouldHydrateRecordDetail(config);
-  const panelRecord = shouldUseHydratedDetail ? detailRecord : selectedRecord;
+  // Fall back to the already-loaded list row while the hydrated detail is fetching, so the
+  // right pane never blanks to a loading skeleton on every selection (no flicker). The full
+  // detail swaps in seamlessly when it arrives.
+  const panelRecord = shouldUseHydratedDetail ? (detailRecord ?? selectedRecord) : selectedRecord;
   const listScrollRef = useRef<HTMLDivElement | null>(null);
   const detailScrollRef = useRef<HTMLDivElement | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
@@ -3607,11 +3709,25 @@ function SettingDataList({
               editing={editing}
               form={form}
               language={language}
-              notice={notice}
               onClose={onCloseForm}
               onSubmit={onSubmit}
               saving={saving}
               setForm={setForm}
+              text={text}
+              workspace={workspace}
+            />
+          ) : panelRecord ? (
+            <SettingDetailPanel
+              auth={auth}
+              config={config}
+              dictionary={dictionary}
+              language={language}
+              onDelete={onDelete}
+              onEdit={onEdit}
+              onResetPassword={onResetPassword}
+              onToggleAccess={onToggleAccess}
+              record={panelRecord}
+              saving={saving}
               text={text}
               workspace={workspace}
             />
@@ -3629,21 +3745,6 @@ function SettingDataList({
                 <span>{detailError}</span>
               </div>
             </div>
-          ) : panelRecord ? (
-            <SettingDetailPanel
-              auth={auth}
-              config={config}
-              dictionary={dictionary}
-              language={language}
-              onDelete={onDelete}
-              onEdit={onEdit}
-              onResetPassword={onResetPassword}
-              onToggleAccess={onToggleAccess}
-              record={panelRecord}
-              saving={saving}
-              text={text}
-              workspace={workspace}
-            />
           ) : (
             <div className="grid min-h-44 place-items-center rounded-2xl border border-dashed border-border bg-muted/20 p-4 text-center text-sm text-muted-foreground">
               {text("empty")}
@@ -3751,7 +3852,8 @@ function CompanyMultiSelectCell({
     return () => controller.abort();
   }, [auth, selectedGuids.length]);
 
-  if (selectedGuids.length === 0) return <span>-</span>;
+  if (selectedGuids.length === 0)
+    return <span className="italic text-muted-foreground">{language === "th" ? "ทุกบริษัท" : "All companies"}</span>;
 
   const names = selectedGuids.map((guid) => {
     const match = options.find((opt) => opt.guidfixed === guid);
@@ -4092,7 +4194,7 @@ function SettingDetailPanel({
   const isCreator = isUser && isCreatorRecord(record, workspace);
   const isSelf = isUser && isSelfUserRecord(record, auth);
   const accessDisabled = isUser && userAccessDisabled(record);
-  const isOwnerCreator = workspace?.shop?.is_creator === true ||
+  const isOwnerCreator = workspace?.shop?.iscreator === true ||
     Boolean(auth?.username && workspace?.shop?.createdby && workspace?.shop?.createdby.trim().toLowerCase() === auth.username.trim().toLowerCase());
   const isOwnerOrAdmin = isOwnerCreator || workspace?.shop?.role === 1 || workspace?.shop?.role === 2;
   const isProductUnit = config.slug === "productunit";
@@ -4460,7 +4562,6 @@ function SettingFormDialog({
   form,
   inline = false,
   language,
-  notice,
   onClose,
   onSubmit,
   saving,
@@ -4476,7 +4577,6 @@ function SettingFormDialog({
   form: FormState;
   inline?: boolean;
   language: LanguageCode;
-  notice?: Notice;
   onClose: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   saving: boolean;
@@ -4575,20 +4675,6 @@ function SettingFormDialog({
       </div>
 
       <footer className="flex flex-wrap items-center justify-end gap-2">
-        {inline && notice ? (
-          <div
-            className={`message ${notice.type === "success" ? "success" : notice.type === "error" ? "error" : "info"} min-w-0 flex-1`}
-            role={notice.type === "error" ? "alert" : "status"}
-            aria-live={notice.type === "error" ? "assertive" : "polite"}
-          >
-            {notice.type === "success" ? (
-              <BadgeCheck size={18} />
-            ) : (
-              <AlertCircle size={18} />
-            )}
-            <span>{notice.text}</span>
-          </div>
-        ) : null}
         {inline ? null : (
           <Button
             type="button"
@@ -6875,7 +6961,7 @@ function UserAccessAuditReportPanel({
             </div>
             <p className="text-muted-foreground">
               {language === "th" ? "เวลาสร้างรายงาน" : "Report generated"}:{" "}
-              {data.loadedAt ? new Date(data.loadedAt).toLocaleString(language === "th" ? "th-TH" : "en-US") : "-"}
+              {data.loadedAt ? formatDefaultDateTime(data.loadedAt, resolveWorkspaceDateTimeDisplayOptions(workspace, language)) : "-"}
             </p>
           </div>
         </div>
@@ -6925,7 +7011,7 @@ function UserAccessAuditReportPage({
   const links = auditPermissionLinksForUser(user, data.permissionLinks);
   const summary = buildUserAccessAuditSummary(user, links, data, language);
   const generatedLabel = generatedAt
-    ? new Date(generatedAt).toLocaleString(language === "th" ? "th-TH" : "en-US")
+    ? formatDefaultDateTime(generatedAt, resolveWorkspaceDateTimeDisplayOptions(workspace, language))
     : "-";
   const holdingLabel = workspace
     ? `${shopDisplayName(workspace.shop)} (${workspaceHoldingCode(workspace) || "-"})`
@@ -11537,18 +11623,18 @@ const uploadText: Record<
     fil: "Nabigo ang pag-upload ng larawan",
   },
   imageUploadHint: {
-    th: "รองรับ JPG, PNG, WebP และย่อรูปก่อนอัปโหลด",
-    en: "JPG, PNG, WebP. The image is resized before upload.",
-    cn: "支持 JPG、PNG、WebP，上传前会缩小图片",
-    ja: "JPG、PNG、WebP 対応。アップロード前にリサイズします。",
-    ko: "JPG, PNG, WebP 지원. 업로드 전에 크기를 줄입니다.",
-    lo: "ຮອງຮັບ JPG, PNG, WebP ແລະຫຍໍ້ຮູບກ່ອນອັບໂຫຼດ",
-    my: "JPG, PNG, WebP. မတင်မီ အရွယ်အစားလျှော့ပါမည်",
-    km: "គាំទ្រ JPG, PNG, WebP ហើយបង្រួមរូបភាពមុនអាប់ឡូត",
-    vi: "Hỗ trợ JPG, PNG, WebP và tự thu nhỏ trước khi tải lên",
-    ms: "Sokong JPG, PNG, WebP dan saiz imej dikecilkan sebelum muat naik",
-    id: "Mendukung JPG, PNG, WebP dan gambar diperkecil sebelum diunggah",
-    fil: "Suportado ang JPG, PNG, WebP at nire-resize bago i-upload",
+    th: "รองรับ JPG, PNG และย่อรูปก่อนอัปโหลด",
+    en: "JPG, PNG. The image is resized before upload.",
+    cn: "支持 JPG、PNG，上传前会缩小图片",
+    ja: "JPG、PNG 対応。アップロード前にリサイズします。",
+    ko: "JPG, PNG 지원. 업로드 전에 크기를 줄입니다.",
+    lo: "ຮອງຮັບ JPG, PNG ແລະຫຍໍ້ຮູບກ່ອນອັບໂຫຼດ",
+    my: "JPG, PNG. မတင်မီ အရွယ်အစားလျှော့ပါမည်",
+    km: "គាំទ្រ JPG, PNG ហើយបង្រួមរូបភាពមុនអាប់ឡូត",
+    vi: "Hỗ trợ JPG, PNG và tự thu nhỏ trước khi tải lên",
+    ms: "Sokong JPG, PNG dan saiz imej dikecilkan sebelum muat naik",
+    id: "Mendukung JPG, PNG dan gambar diperkecil sebelum diunggah",
+    fil: "Suportado ang JPG, PNG at nire-resize bago i-upload",
   },
   imageDisplayFailed: {
     th: "ไม่สามารถแสดงรูปได้",
@@ -11713,7 +11799,24 @@ function ImageUploadFieldEditor({
 
   async function handleFile(file: File | undefined) {
     if (!file || uploading) return;
-    if (!file.type.startsWith("image/") || file.size > 12 * 1024 * 1024) {
+    const allowedTypes = (field.acceptTypes ?? "image/png,image/jpeg")
+      .split(",")
+      .map((type) => type.trim())
+      .filter(Boolean);
+    if (!allowedTypes.includes(file.type)) {
+      const onlyPng = allowedTypes.length === 1 && allowedTypes[0] === "image/png";
+      setError(
+        language === "th"
+          ? onlyPng
+            ? "รองรับเฉพาะไฟล์ PNG"
+            : "รองรับเฉพาะไฟล์ PNG และ JPG"
+          : onlyPng
+            ? "Only PNG files are supported."
+            : "Only PNG and JPG files are supported.",
+      );
+      return;
+    }
+    if (file.size > 12 * 1024 * 1024) {
       setError(uploadUiText(language, "imageTooLarge"));
       return;
     }
@@ -11809,14 +11912,14 @@ function ImageUploadFieldEditor({
         ref={inputRef}
         className="sr-only"
         type="file"
-        accept={field.acceptTypes ?? "image/png,image/jpeg,image/webp,image/gif"}
+        accept={field.acceptTypes ?? "image/png,image/jpeg"}
         onChange={(event) => void handleFile(event.target.files?.[0])}
       />
       {cropSource ? (
         <ImageCropDialog
           imageUrl={cropSource}
           language={language}
-          outputType={field.acceptTypes === "image/png" ? "image/png" : "image/webp"}
+          outputType={field.acceptTypes === "image/png" ? "image/png" : "image/jpeg"}
           onCancel={() => setCropSource("")}
           onApply={(file) => void applyCroppedFile(file)}
         />
@@ -12000,7 +12103,24 @@ function ImageGalleryFieldEditor({
 
   async function handleFile(file: File | undefined) {
     if (!file || uploading) return;
-    if (!file.type.startsWith("image/") || file.size > 12 * 1024 * 1024) {
+    const allowedTypes = (field.acceptTypes ?? "image/png,image/jpeg")
+      .split(",")
+      .map((type) => type.trim())
+      .filter(Boolean);
+    if (!allowedTypes.includes(file.type)) {
+      const onlyPng = allowedTypes.length === 1 && allowedTypes[0] === "image/png";
+      setError(
+        language === "th"
+          ? onlyPng
+            ? "รองรับเฉพาะไฟล์ PNG"
+            : "รองรับเฉพาะไฟล์ PNG และ JPG"
+          : onlyPng
+            ? "Only PNG files are supported."
+            : "Only PNG and JPG files are supported.",
+      );
+      return;
+    }
+    if (file.size > 12 * 1024 * 1024) {
       setError(uploadUiText(language, "imageTooLarge"));
       return;
     }
@@ -12070,7 +12190,7 @@ function ImageGalleryFieldEditor({
         ref={inputRef}
         className="sr-only"
         type="file"
-        accept={field.acceptTypes ?? "image/png,image/jpeg,image/webp,image/gif"}
+        accept={field.acceptTypes ?? "image/png,image/jpeg"}
         onChange={(event) => void handleFile(event.target.files?.[0])}
       />
       {cropTarget ? (
@@ -12542,10 +12662,10 @@ function BranchMultiSelectFieldEditor({
           })}
         </ul>
       ) : !loading && !error && options.length > 0 ? (
-        <p className="text-xs font-normal text-muted-foreground">
+        <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
           {language === "th"
-            ? "ยังไม่มีสาขาที่เลือก — กด \"เลือกสาขา\" เพื่อเลือก"
-            : 'No branches selected yet — click "Pick branches" to choose.'}
+            ? `ไม่ได้เลือก = ใช้ได้ทุกบริษัท (กด "${pickLabel}" เพื่อจำกัดเฉพาะที่เลือก)`
+            : `None selected = all companies (click "${pickLabel}" to limit).`}
         </p>
       ) : null}
       {dialogOpen ? (
@@ -13016,7 +13136,9 @@ function CompanyMultiSelectReadOnlyDetail({
         {label}
       </span>
       {selectedGuids.length === 0 ? (
-        <b className="text-foreground font-medium">-</b>
+        <b className="font-medium text-emerald-600 dark:text-emerald-400">
+          {language === "th" ? "ใช้ได้ทุกบริษัท" : "All companies"}
+        </b>
       ) : (
         <ul className="flex flex-wrap gap-1">
           {selectedOptions.map((option) => {
@@ -13146,7 +13268,6 @@ type BranchUnifiedViewProps = {
   initialBackendUrl?: string;
   language: LanguageCode;
   loading: boolean;
-  notice: Notice;
   onCloseForm: () => void;
   onDelete: (record: SettingRecord) => void;
   onOpenCreate: () => void;
@@ -13175,7 +13296,6 @@ function BranchUnifiedView({
   initialBackendUrl,
   language,
   loading,
-  notice,
   onCloseForm,
   onDelete,
   onOpenCreate,
@@ -13319,20 +13439,6 @@ function BranchUnifiedView({
       </aside>
 
       <main className="grid min-w-0 gap-2">
-        {notice ? (
-          <div
-            className={`message ${notice.type === "success" ? "success" : notice.type === "error" ? "error" : "info"}`}
-            role={notice.type === "error" ? "alert" : "status"}
-          >
-            {notice.type === "success" ? (
-              <BadgeCheck size={18} />
-            ) : (
-              <AlertCircle size={18} />
-            )}
-            <span>{notice.text}</span>
-          </div>
-        ) : null}
-
         {!editorEnabled ? (
           <Card>
             <CardContent className="grid min-h-40 place-items-center p-4 text-center">
@@ -13499,7 +13605,6 @@ function BranchUnifiedView({
           form={form}
           dateTimeScope={dateTimeScope}
           language={language}
-          notice={notice}
           saving={saving}
           setForm={setForm}
           workspace={workspace}
@@ -13535,151 +13640,6 @@ function BranchEmbeddedSubScreen({
       language={language}
       route={route}
     />
-  );
-}
-
-type ProductGroupTabKey =
-  | "productgroup"
-  | "mastergroupscreen"
-  | "mastergroupsub1screen"
-  | "mastergroupsub2screen";
-
-const PRODUCT_GROUP_TABS: ReadonlyArray<{
-  id: ProductGroupTabKey;
-  route: string;
-  labels: Record<LanguageCode, string>;
-}> = [
-  {
-    id: "productgroup",
-    route: "/productgroup",
-    labels: {
-      th: "กลุ่มสินค้า",
-      en: "Product Group",
-      cn: "产品组",
-      ja: "商品グループ",
-      ko: "상품 그룹",
-      lo: "ກຸ່ມສິນຄ້າ",
-      my: "ကုန်ပစ္စည်းအုပ်စု",
-      km: "ក្រុមផលិតផល",
-      vi: "Nhóm sản phẩm",
-      ms: "Kumpulan Produk",
-      id: "Grup Produk",
-      fil: "Grupo ng Produkto",
-    },
-  },
-  {
-    id: "mastergroupscreen",
-    route: "/mastergroupscreen",
-    labels: {
-      th: "กลุ่มหลัก",
-      en: "Main Group",
-      cn: "主组",
-      ja: "メイングループ",
-      ko: "메인 그룹",
-      lo: "ກຸ່ມຫຼັກ",
-      my: "ပင်မ အုပ်စု",
-      km: "ក្រុមមេ",
-      vi: "Nhóm chính",
-      ms: "Kumpulan Utama",
-      id: "Grup Utama",
-      fil: "Pangunahing Grupo",
-    },
-  },
-  {
-    id: "mastergroupsub1screen",
-    route: "/mastergroupsub1screen",
-    labels: {
-      th: "กลุ่มย่อย 1",
-      en: "Sub Group 1",
-      cn: "子组 1",
-      ja: "サブグループ 1",
-      ko: "하위 그룹 1",
-      lo: "ກຸ່ມຍ່ອຍ 1",
-      my: "အောက်အုပ်စု ၁",
-      km: "ក្រុមរង ១",
-      vi: "Nhóm phụ 1",
-      ms: "Kumpulan Kecil 1",
-      id: "Sub Grup 1",
-      fil: "Sub Grupo 1",
-    },
-  },
-  {
-    id: "mastergroupsub2screen",
-    route: "/mastergroupsub2screen",
-    labels: {
-      th: "กลุ่มย่อย 2",
-      en: "Sub Group 2",
-      cn: "子组 2",
-      ja: "サブグループ 2",
-      ko: "하위 그룹 2",
-      lo: "ກຸ່ມຍ່ອຍ 2",
-      my: "အောက်အုပ်စု ၂",
-      km: "ក្រុមរង ២",
-      vi: "Nhóm phụ 2",
-      ms: "Kumpulan Kecil 2",
-      id: "Sub Grup 2",
-      fil: "Sub Grupo 2",
-    },
-  },
-];
-
-function productGroupTabLabel(
-  tab: (typeof PRODUCT_GROUP_TABS)[number],
-  language: LanguageCode,
-): string {
-  return tab.labels[language] ?? tab.labels.en ?? tab.id;
-}
-
-function ProductGroupUnifiedView({
-  initialBackendLanguage,
-  initialBackendUrl,
-  language,
-}: {
-  initialBackendLanguage?: BackendLanguageDictionary;
-  initialBackendUrl?: string;
-  language: LanguageCode;
-}) {
-  const [activeTab, setActiveTab] = useState<ProductGroupTabKey>(
-    "productgroup",
-  );
-  const activeTabEntry =
-    PRODUCT_GROUP_TABS.find((tab) => tab.id === activeTab) ??
-    PRODUCT_GROUP_TABS[0];
-  return (
-    <div className="grid w-full min-w-0 gap-2">
-      <Card className="overflow-hidden">
-        <div className="flex flex-wrap items-center gap-1 border-b border-border bg-muted/40 px-2 py-1.5">
-          {PRODUCT_GROUP_TABS.map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                className={cn(
-                  "rounded-md px-2.5 py-1 text-xs font-semibold transition-colors",
-                  isActive
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-foreground hover:bg-background",
-                )}
-                onClick={() => setActiveTab(tab.id)}
-              >
-                {productGroupTabLabel(tab, language)}
-              </button>
-            );
-          })}
-        </div>
-        <div className="p-2">
-          <SystemSettingsScreen
-            embedded
-            hideChrome
-            initialBackendLanguage={initialBackendLanguage}
-            initialBackendUrl={initialBackendUrl}
-            language={language}
-            route={activeTabEntry.route}
-          />
-        </div>
-      </Card>
-    </div>
   );
 }
 
@@ -15276,20 +15236,24 @@ function buildPayload(
       setByPath(payload, field.key, normalizeStringListValue(value));
     else if (field.type === "branch-multi-select")
       setByPath(payload, field.key, selectedBranchesFromValue(value));
-    else if (field.type === "company-multi-select")
-      setByPath(
-        payload,
-        field.key,
-        Array.isArray(value)
-          ? value.map((v) =>
-              typeof v === "string"
-                ? v.trim()
-                : isRecord(v)
-                  ? String(v.businesscode ?? v.code ?? v.guidfixed ?? v.guidfixed ?? "")
-                  : "",
-            ).filter(Boolean)
-          : [],
-      );
+    else if (field.type === "company-multi-select") {
+      const companyList = Array.isArray(value)
+        ? value.map((v) =>
+            typeof v === "string"
+              ? v.trim()
+              : isRecord(v)
+                ? String(v.businesscode ?? v.code ?? v.guidfixed ?? v.guidfixed ?? "")
+                : "",
+          ).filter(Boolean)
+        : [];
+      setByPath(payload, field.key, companyList);
+      // Mirror to the backend's alias keys. The backend stores this selection under a different
+      // field than the form key (e.g. productunit/unit persists `companyguids`, not `businesscodes`),
+      // so without this the saved selection is dropped. fieldValueAliases is the same map used on read.
+      for (const alias of fieldValueAliases[`${config.slug}.${field.key}`] ?? []) {
+        setByPath(payload, alias, companyList);
+      }
+    }
     else if (field.type === "json")
       setByPath(payload, field.key, parseJsonField(value, field.key));
     else if (field.type === "checkbox")
@@ -15893,7 +15857,7 @@ function ImageCropDialog({
   language,
   onApply,
   onCancel,
-  outputType = "image/webp",
+  outputType = "image/jpeg",
 }: {
   imageUrl: string;
   language: LanguageCode;
@@ -15947,7 +15911,7 @@ function ImageCropDialog({
     try {
       const blob = await canvasToBlob(canvasRef.current, outputType, 0.86);
       if (!blob) throw new Error(uploadUiText(language, "imageUploadFailed"));
-      const ext = outputType === "image/png" ? "png" : "webp";
+      const ext = outputType === "image/png" ? "png" : "jpg";
       onApply(
         new File([blob], `cropped-image.${ext}`, {
           type: outputType,
@@ -16342,8 +16306,8 @@ async function resizeLogoFile(file: File): Promise<File> {
 }
 
 // resizeImageFile — generic resize for non-logo images (gallery / product media). Accepts
-// ANY image format (no PNG-only guard, unlike resizeLogoFile) and re-encodes to WebP at a
-// max side. Used by image galleries and by cropped non-PNG output so JPG/WebP/GIF work.
+// PNG/JPG and re-encodes at a max side to PNG (if source is PNG) or JPG otherwise — never WebP,
+// since stored S3 objects must be PNG/JPG only. Used by image galleries.
 async function resizeImageFile(file: File, maxSide = 1280): Promise<File> {
   const objectUrl = URL.createObjectURL(file);
   try {
@@ -16360,11 +16324,15 @@ async function resizeImageFile(file: File, maxSide = 1280): Promise<File> {
     context.imageSmoothingEnabled = true;
     context.imageSmoothingQuality = "high";
     context.drawImage(image, 0, 0, canvas.width, canvas.height);
-    const blob = await canvasToBlob(canvas, "image/webp", 0.85);
+    // Keep PNG (transparency) for PNG sources; everything else re-encodes to JPG. Never WebP —
+    // stored S3 objects must be PNG or JPG only.
+    const outputType = file.type === "image/png" ? "image/png" : "image/jpeg";
+    const blob = await canvasToBlob(canvas, outputType, 0.85);
     if (!blob) return file;
     const baseName = file.name.replace(/\.[^.]+$/, "") || "image";
-    return new File([blob], `${baseName}.webp`, {
-      type: "image/webp",
+    const ext = outputType === "image/png" ? "png" : "jpg";
+    return new File([blob], `${baseName}.${ext}`, {
+      type: outputType,
       lastModified: Date.now(),
     });
   } finally {
@@ -16372,9 +16340,9 @@ async function resizeImageFile(file: File, maxSide = 1280): Promise<File> {
   }
 }
 
-// makeThumbnailFile builds a small lossy WebP thumbnail (default 256px max side) from
-// any image. Unlike resizeLogoFile it never rejects non-PNG input and keeps the original
-// file untouched — the caller uploads the original separately for full-quality storage.
+// makeThumbnailFile builds a small thumbnail (default 256px max side) from any PNG/JPG image —
+// PNG source stays PNG, otherwise JPG (never WebP). Keeps the original file untouched; the
+// caller uploads the original separately for full-quality storage.
 async function makeThumbnailFile(file: File, maxSide = 256): Promise<File> {
   const objectUrl = URL.createObjectURL(file);
   try {
@@ -16389,11 +16357,14 @@ async function makeThumbnailFile(file: File, maxSide = 256): Promise<File> {
     context.imageSmoothingEnabled = true;
     context.imageSmoothingQuality = "high";
     context.drawImage(image, 0, 0, canvas.width, canvas.height);
-    const blob = await canvasToBlob(canvas, "image/webp", 0.82);
+    // PNG source keeps PNG (transparency); everything else becomes a small JPG. Never WebP.
+    const outputType = file.type === "image/png" ? "image/png" : "image/jpeg";
+    const blob = await canvasToBlob(canvas, outputType, 0.82);
     if (!blob) return file;
     const baseName = file.name.replace(/\.[^.]+$/, "") || "image";
-    return new File([blob], `${baseName}_thumb.webp`, {
-      type: "image/webp",
+    const ext = outputType === "image/png" ? "png" : "jpg";
+    return new File([blob], `${baseName}_thumb.${ext}`, {
+      type: outputType,
       lastModified: Date.now(),
     });
   } finally {

@@ -67,7 +67,7 @@ func (repo MemberRepository) FindByGuid(ctx context.Context, holdingCode string,
 
 func (repo MemberRepository) FindByLineUID(ctx context.Context, lineUID string) (models.MemberDoc, error) {
 	doc := &models.MemberDoc{}
-	err := repo.pst.FindOne(ctx, &models.MemberDoc{}, bson.M{"line_uid": lineUID, "deletedat": bson.M{"$exists": false}}, doc)
+	err := repo.pst.FindOne(ctx, &models.MemberDoc{}, bson.M{"lineuid": lineUID, "deletedat": bson.M{"$exists": false}}, doc)
 	if err != nil {
 		return *doc, err
 	}

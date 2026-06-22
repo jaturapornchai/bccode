@@ -31,7 +31,7 @@ Default precision:
 - Exchange rate: `28,8`
 
 ## Project Naming
-This project also enforces lowercase no-underscore persisted/API/database names. Use project names such as:
+This project also enforces lowercase persisted/API/database names (underscore allowed; snake_case OK — only uppercase/camelCase is a violation). Use project names such as:
 - `vatamount`, not `vat_amount`
 - `netamount`, not `net_amount`
 - `grossamount`, not `gross_amount`

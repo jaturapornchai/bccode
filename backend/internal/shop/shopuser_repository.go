@@ -135,10 +135,12 @@ func (svc ShopUserRepository) SaveFullProfile(ctx context.Context, holdingCode s
 		updateData["quotationapproval"] = req.QuotationApproval
 	}
 
+	// Upsert keyed by the stable email username (one membership per user per holding).
+	// useruid is stored in updateData but NOT used as the match key: email-created memberships
+	// have an empty useruid until first login, and keying on useruid would create a duplicate
+	// row once login assigns a fresh uid.
 	filter := bson.M{"holdingcode": holdingCode, "username": req.Username}
-	if userUID != "" {
-		filter = bson.M{"holdingcode": holdingCode, "useruid": userUID}
-	} else if strings.TrimSpace(req.EditUsername) != "" {
+	if strings.TrimSpace(req.EditUsername) != "" {
 		filter = bson.M{"holdingcode": holdingCode, "username": req.EditUsername}
 	}
 
@@ -317,7 +319,11 @@ func (svc ShopUserRepository) FindByHoldingCodeAndUsername(ctx context.Context, 
 		err = svc.pst.FindOne(ctx, &models.ShopUser{}, bson.M{"holdingcode": holdingCode, "useruid": userUID}, shopUser)
 	}
 
-	if err != nil || userUID == "" {
+	// Fall back to a username lookup when there is no userUID, the userUID query errored,
+	// OR it matched nothing. A membership created by email (before that person ever logged in)
+	// keeps an empty/old useruid, while login later assigns a fresh uid — so the useruid query
+	// misses and we must match by the stable email username instead.
+	if userUID == "" || err != nil || shopUser.Username == "" {
 		err = svc.pst.FindOne(ctx, &models.ShopUser{}, bson.M{"holdingcode": holdingCode, "username": username}, shopUser)
 	}
 
@@ -473,7 +479,7 @@ func (repo ShopUserRepository) findByUserPage(ctx context.Context, userMatch bso
 				"accessdisabledby": 1,
 				"accessenabledat":  1,
 				"accessenabledby":  1,
-				"main_holdingcode": bson.M{"$first": "$shopInfo.main_holdingcode"},
+				"main_holdingcode": bson.M{"$first": "$shopInfo.mainholdingcode"},
 				"holdingcode":      bson.M{"$first": "$shopInfo.holdingcode"},
 				"names":            bson.M{"$first": "$shopInfo.names"},
 				"branchcode":       bson.M{"$first": "$shopInfo.branchcode"},

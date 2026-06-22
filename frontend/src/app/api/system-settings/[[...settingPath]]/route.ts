@@ -1,6 +1,6 @@
 import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
-import { validateBackendUrl } from "@/lib/backend-url";
+import { serverGoApiBase, validateBackendUrl } from "@/lib/backend-url";
 import { verifyHs256Jwt } from "@/lib/server-jwt";
 import { getSystemSettingConfig, type SystemSettingConfig } from "@/lib/system-setting-screens";
 import {
@@ -135,7 +135,10 @@ function decodePathSegment(value: string): string {
 function resolveBaseUrl(request: Request, config: SystemSettingConfig, body?: ApiProxyBody): string | NextResponse {
   try {
     const backendUrl = getBackendUrlFromRequest(request, body);
-    if (usesGoApi(config)) return validateBackendUrl(backendUrl).normalizedGoApiUrl;
+    if (usesGoApi(config)) {
+      validateBackendUrl(backendUrl);
+      return serverGoApiBase();
+    }
     return getMainApiUrl(backendUrl);
   } catch (error) {
     return NextResponse.json(
@@ -225,23 +228,19 @@ async function ensureBackendHoldingAccess(
   }
 }
 
+// Resolve the holdingcode from a record (body/payload) first, then the query string.
+function holdingCodeFrom(record: Record<string, unknown> | undefined, url: URL): string {
+  return String(record?.holdingcode ?? url.searchParams.get("holdingcode") ?? "");
+}
+
 function getRequestedHoldingCode(request: Request, body?: Record<string, unknown>): string {
-  const url = new URL(request.url);
-  const value =
-    body?.holdingcode ??
-    body?.holdingcode ??
-    url.searchParams.get("holdingcode") ??
-    url.searchParams.get("holdingcode") ??
-    body?.holdingcode ??
-    url.searchParams.get("holdingcode") ??
-    "";
-  return String(value).trim();
+  return holdingCodeFrom(body, new URL(request.url)).trim();
 }
 
 function buildGetPath(request: Request, config: SystemSettingConfig, id: string): string {
   const url = new URL(request.url);
   const query = new URLSearchParams();
-  const holdingcode = url.searchParams.get("holdingcode") ?? url.searchParams.get("holdingcode") ?? "";
+  const holdingcode = holdingCodeFrom(undefined, url);
 
   if (config.kind === "company") {
     const targetShop = id || holdingcode;
@@ -286,7 +285,7 @@ function buildGetPath(request: Request, config: SystemSettingConfig, id: string)
 
 function buildGetInit(request: Request, config: SystemSettingConfig, id = ""): RequestInit {
   const url = new URL(request.url);
-  const holdingcode = url.searchParams.get("holdingcode") ?? url.searchParams.get("holdingcode") ?? "";
+  const holdingcode = holdingCodeFrom(undefined, url);
   const holdingCode = url.searchParams.get("holdingcode")?.trim() ?? "";
 
   if (config.kind === "atlas") {
@@ -364,8 +363,8 @@ function buildWritePayload(request: Request, config: SystemSettingConfig, id: st
   normalizeAccessScopePayload(config.slug, payload);
   normalizeBusinessCodeFields(config, payload);
   const url = new URL(request.url);
-  const holdingcode = String(payload.holdingcode ?? payload.holdingcode ?? url.searchParams.get("holdingcode") ?? url.searchParams.get("holdingcode") ?? payload.holdingcode ?? url.searchParams.get("holdingcode") ?? "");
-  const holdingCode = String(payload.holdingcode ?? url.searchParams.get("holdingcode") ?? "").trim();
+  const holdingcode = holdingCodeFrom(payload, url);
+  const holdingCode = holdingcode.trim();
 
   if (config.kind === "restaurant-setting") {
     const { guidfixed: _guidfixed, ...rest } = payload;
@@ -531,8 +530,8 @@ function buildDeletePayload(
   body: Record<string, unknown>,
 ): Record<string, unknown> | undefined {
   const url = new URL(request.url);
-  const holdingcode = String(body.holdingcode ?? body.holdingcode ?? url.searchParams.get("holdingcode") ?? url.searchParams.get("holdingcode") ?? body.holdingcode ?? url.searchParams.get("holdingcode") ?? "");
-  const holdingCode = String(body.holdingcode ?? url.searchParams.get("holdingcode") ?? "").trim();
+  const holdingcode = holdingCodeFrom(body, url);
+  const holdingCode = holdingcode.trim();
 
   if (config.kind === "atlas") {
     return {
@@ -543,7 +542,7 @@ function buildDeletePayload(
       email: id,
       cartid: id,
       useruid: typeof body.useruid === "string" ? body.useruid : undefined,
-      delete_many: false,
+      deletemany: false,
     };
   }
 

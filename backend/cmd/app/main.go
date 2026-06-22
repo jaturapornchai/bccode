@@ -45,7 +45,6 @@ import (
 	"smlcloudplatform/internal/product/productbarcode"
 	"smlcloudplatform/internal/product/productcategory"
 	"smlcloudplatform/internal/product/productgroup"
-	"smlcloudplatform/internal/product/producttype"
 	"smlcloudplatform/internal/product/promotion"
 	"smlcloudplatform/internal/product/unit"
 	"smlcloudplatform/internal/productimport"
@@ -318,7 +317,6 @@ func main() {
 
 		//reportquery.NewReportQueryHttp(ms, cfg),
 		reportquerym.NewReportQueryHttp(ms, cfg),
-		producttype.NewProductTypeHttp(ms, cfg),
 
 		media.NewMediaHttp(ms, cfg),
 

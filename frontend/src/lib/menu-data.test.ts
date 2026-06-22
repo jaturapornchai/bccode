@@ -157,7 +157,6 @@ describe("menu language labels", () => {
       "product-group",
       "product-category",
       "product-category-list",
-      "product-type",
     ]);
     expect(groupsById.get("product-sku-options")?.title.th).toBe("สี ไซซ์ และตัวเลือก");
     expect(groupsById.get("product-sku-options")?.items.map((item) => item.id)).toEqual([

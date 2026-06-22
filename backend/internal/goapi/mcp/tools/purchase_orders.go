@@ -16,7 +16,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const purchaseOrderCollection = "transactionPurchaseOrder"
+const purchaseOrderCollection = "transactionpurchaseorder"
 
 // ==================== Kafka Topics ====================
 

@@ -8,7 +8,7 @@ import (
 
 // AttachmentMetadata - ข้อมูลไฟล์แนบเอกสาร (PO, Sale, Purchase, etc.)
 type AttachmentMetadata struct {
-	ID           primitive.ObjectID `bson:"id,omitempty" json:"id"`
+	ID           primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 	HoldingCode  string             `bson:"holdingcode" json:"holdingcode"`
 	ScreenType   string             `bson:"screentype" json:"screentype"`                       // purchaseorder, sale, purchase, etc.
 	DocNo        string             `bson:"docno" json:"docno"`                                 // เลขที่เอกสาร

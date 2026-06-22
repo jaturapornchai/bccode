@@ -15,7 +15,6 @@ import {
   ChevronRight,
   Database,
   ArrowRightLeft,
-  Info,
   X,
   CloudLightning,
   CheckCircle2,
@@ -46,6 +45,7 @@ import {
   emptyMarketplaceSKUMap,
 } from "@/lib/product-barcode/types";
 import { cn } from "@/lib/utils";
+import { pushNotice } from "@/lib/toast";
 
 type MarketplaceScreenProps = {
   platform: "shopee" | "lazada" | "tiktok";
@@ -72,7 +72,7 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
   const [workspace, setWorkspace] = useState<WorkspaceSession | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [notice, setNotice] = useState<{ type: "success" | "error" | "info"; text: string } | null>(null);
+  const setNotice = pushNotice;
 
   // Mappings page states
   const [barcodes, setBarcodes] = useState<any[]>([]);
@@ -459,32 +459,6 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
           ประวัติการอัปเดตล่าสุด / Logs
         </button>
       </div>
-
-      {/* Toast Notice */}
-      {notice && (
-        <div
-          className={cn(
-            "relative p-3 rounded-lg border text-xs flex gap-2 items-start",
-            notice.type === "error" && "bg-destructive/5 text-destructive border-destructive/20",
-            notice.type === "success" && "bg-green-500/5 text-green-700 border-green-500/20 dark:text-green-400",
-            notice.type === "info" && "bg-blue-500/5 text-blue-700 border-blue-500/20 dark:text-blue-400"
-          )}
-        >
-          <Info className="h-4 w-4 shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <span className="font-semibold block capitalize mb-0.5">{notice.type === "success" ? "สำเร็จ" : notice.type}</span>
-            <span>{notice.text}</span>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-5 w-5 hover:bg-transparent -mt-1 -mr-1"
-            onClick={() => setNotice(null)}
-          >
-            <X className="h-3 w-3" />
-          </Button>
-        </div>
-      )}
 
       {/* 1. Connections Tab */}
       {activeTab === "connections" && (

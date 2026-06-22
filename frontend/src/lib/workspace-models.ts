@@ -10,13 +10,12 @@ export type ShopListItem = {
   name1?: string;
   names?: LocalizedName[];
   companyname?: string;
-  company_name?: string;
   branchcode?: string;
   role?: number;
-  is_favorite?: boolean;
-  last_accessed_at?: string;
+  isfavorite?: boolean;
+  lastaccessedat?: string;
   createdby?: string;
-  is_creator?: boolean;
+  iscreator?: boolean;
   isaccessdisabled?: boolean;
   activelanguages?: string[];
   language?: string;
@@ -54,7 +53,6 @@ export type WorkspaceCompany = {
   name?: string;
   name1?: string;
   companyname?: string;
-  company_name?: string;
 };
 
 export type AuthSession = {
@@ -105,7 +103,6 @@ export function shopDisplayName(shop: ShopListItem): string {
   return localizedName(shop.names, "") ||
     shop.name1?.trim() ||
     shop.companyname?.trim() ||
-    shop.company_name?.trim() ||
     shop.name?.trim() ||
     shop.holdingcode;
 }
@@ -119,7 +116,6 @@ export function companyBaseName(company: WorkspaceCompany): string {
     localizedName(company.names, "") ||
     company.name1?.trim() ||
     company.companyname?.trim() ||
-    company.company_name?.trim() ||
     company.name?.trim() ||
     company.code?.trim() ||
     company.guidfixed?.trim() ||
@@ -158,7 +154,6 @@ export function holdingDisplayName(workspace: WorkspaceSession): string {
     localizedNameFromUnknown(workspace.shopInfo?.names) ||
     stringRecordValue(workspace.shopInfo, "name1") ||
     stringRecordValue(workspace.shopInfo, "companyname") ||
-    stringRecordValue(workspace.shopInfo, "company_name") ||
     stringRecordValue(workspace.shopInfo, "name") ||
     shopDisplayName(workspace.shop) ||
     holdingCode;

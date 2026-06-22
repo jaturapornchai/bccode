@@ -30,7 +30,7 @@ const ApprovalTokensCollection = "poapprovaltokens"
 
 // ApprovalToken เก็บ token สำหรับอนุมัติผ่าน email/LINE
 type ApprovalToken struct {
-	ID           primitive.ObjectID `bson:"id,omitempty" json:"guid,omitempty"`
+	ID           primitive.ObjectID `bson:"_id,omitempty" json:"guid,omitempty"`
 	Token        string             `bson:"token" json:"token"`
 	HoldingCode  string             `bson:"holdingcode" json:"holdingcode"`
 	DocNo        string             `bson:"docno" json:"docno"`
@@ -691,9 +691,9 @@ func SendLineNotifyCreatorOpened(params OpenedNotificationParams) error {
 	}
 
 	err := linkedAccountsCollection.FindOne(ctx, bson.M{
-		"holdingcode":   params.HoldingCode,
-		"employee_code": params.CreatorCode,
-		"status":        "linked",
+		"holdingcode":  params.HoldingCode,
+		"employeecode": params.CreatorCode,
+		"status":       "linked",
 	}).Decode(&creatorAccount)
 
 	if err != nil {
@@ -1232,8 +1232,8 @@ func ApproveViaTokenHandler(c echo.Context) error {
 	}
 	tokenUpdate := bson.M{
 		"$set": bson.M{
-			"used":    true,
-			"used_at": now,
+			"used":   true,
+			"usedat": now,
 		},
 	}
 	// FindOneAndUpdate atomic — ป้องกัน 2 คนใช้ token เดียวกัน
@@ -1298,9 +1298,9 @@ func ApproveViaTokenHandler(c echo.Context) error {
 	}
 	poUpdate := bson.M{
 		"$set": bson.M{
-			"status":       newStatus,
-			"last_comment": req.Comment,
-			"updatedat":    now,
+			"status":      newStatus,
+			"lastcomment": req.Comment,
+			"updatedat":   now,
 		},
 		"$push": bson.M{
 			"history": newHistory,
@@ -1308,7 +1308,7 @@ func ApproveViaTokenHandler(c echo.Context) error {
 	}
 	// ถ้า approve → อัปเดต current_approved_level ด้วย
 	if req.Action == "approve" {
-		poUpdate["$set"].(bson.M)["current_approved_level"] = tokenDoc.ApproverCode
+		poUpdate["$set"].(bson.M)["currentapprovedlevel"] = tokenDoc.ApproverCode
 	}
 
 	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
@@ -1354,7 +1354,7 @@ func ApproveViaTokenHandler(c echo.Context) error {
 			"docno":       tokenDoc.DocNo,
 		}, bson.M{
 			"$set": bson.M{
-				"current_approved_level": updatedStatus.RequiredLevel,
+				"currentapprovedlevel": updatedStatus.RequiredLevel,
 			},
 		})
 	}
@@ -2158,7 +2158,7 @@ func LiffApproveHandler(c echo.Context) error {
 		if req.LineUserID != "" {
 			err = usersCollection.FindOne(ctx, bson.M{
 				"holdingcode": tokenDoc.HoldingCode,
-				"line_userid": req.LineUserID,
+				"lineuserid":  req.LineUserID,
 			}).Decode(&userDoc)
 		}
 	}
@@ -2239,11 +2239,11 @@ func LiffApproveHandler(c echo.Context) error {
 	// อัปเดตสถานะ PO
 	update := bson.M{
 		"$set": bson.M{
-			"status":                 newStatus,
-			"current_approved_level": poStatus.RequiredLevel,
-			"history":                history,
-			"last_comment":           req.Comment,
-			"updatedat":              now,
+			"status":               newStatus,
+			"currentapprovedlevel": poStatus.RequiredLevel,
+			"history":              history,
+			"lastcomment":          req.Comment,
+			"updatedat":            now,
 		},
 	}
 
@@ -2263,8 +2263,8 @@ func LiffApproveHandler(c echo.Context) error {
 	usedAt := time.Now().UTC() // เก็บเวลาเป็น UTC+0
 	tokenCollection.UpdateOne(ctx, bson.M{"token": req.Token}, bson.M{
 		"$set": bson.M{
-			"used":    true,
-			"used_at": &usedAt,
+			"used":   true,
+			"usedat": &usedAt,
 		},
 	})
 
@@ -2453,16 +2453,16 @@ func ResendApprovalNotificationHandler(c echo.Context) error {
 			} else {
 				// บันทึก log การส่ง (type = reminder)
 				_, _ = notificationCollection.InsertOne(ctx, bson.M{
-					"holdingcode":       req.HoldingCode,
-					"docno":             req.DocNo,
-					"guidfixed":         req.GuidFixed,
-					"approvercode":      approver.UserCode,
-					"approver_name":     approver.UserName,
-					"notification_type": "email_reminder",
-					"recipient_email":   approver.Email,
-					"status":            "sent",
-					"sent_at":           now,
-					"createdat":         now,
+					"holdingcode":      req.HoldingCode,
+					"docno":            req.DocNo,
+					"guidfixed":        req.GuidFixed,
+					"approvercode":     approver.UserCode,
+					"approvername":     approver.UserName,
+					"notificationtype": "email_reminder",
+					"recipientemail":   approver.Email,
+					"status":           "sent",
+					"sentat":           now,
+					"createdat":        now,
 				})
 				emailSent++
 				results = append(results, map[string]any{
@@ -2506,16 +2506,16 @@ func ResendApprovalNotificationHandler(c echo.Context) error {
 			} else {
 				// บันทึก log การส่ง (type = reminder)
 				_, _ = notificationCollection.InsertOne(ctx, bson.M{
-					"holdingcode":       req.HoldingCode,
-					"docno":             req.DocNo,
-					"guidfixed":         req.GuidFixed,
-					"approvercode":      approver.UserCode,
-					"approver_name":     approver.UserName,
-					"notification_type": "line_reminder",
-					"recipient_line_id": approver.LineUserID,
-					"status":            "sent",
-					"sent_at":           now,
-					"createdat":         now,
+					"holdingcode":      req.HoldingCode,
+					"docno":            req.DocNo,
+					"guidfixed":        req.GuidFixed,
+					"approvercode":     approver.UserCode,
+					"approvername":     approver.UserName,
+					"notificationtype": "line_reminder",
+					"recipientlineid":  approver.LineUserID,
+					"status":           "sent",
+					"sentat":           now,
+					"createdat":        now,
 				})
 				lineSent++
 				results = append(results, map[string]any{

@@ -56,7 +56,7 @@ func (svc FileStatusHttpService) CreateFileStatus(holdingCode string, authUserna
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindOne(ctx, holdingCode, bson.M{"menu": doc.Menu, "username": authUsername, "job_id": doc.JobID})
+	findDoc, err := svc.repo.FindOne(ctx, holdingCode, bson.M{"menu": doc.Menu, "username": authUsername, "jobid": doc.JobID})
 
 	if err != nil {
 		return "", err

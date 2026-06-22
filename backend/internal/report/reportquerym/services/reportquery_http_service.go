@@ -275,12 +275,18 @@ func (svc ReportQueryHttpService) PlaygroundReportQuery(holdingCode string, quer
 	}
 
 	filters, err := ReplacePlaceholdersInMap(filterRaw, &params)
-
-	filters["deletedat"] = bson.M{"$exists": false}
-
 	if err != nil {
 		return []map[string]interface{}{}, err
 	}
+
+	// SECURITY (2026-06-21): tenant-scope the playground query. Reject if the tenant is
+	// unknown, and set holdingcode LAST so a user-supplied filter can never override or
+	// widen it (top-level keys are AND-ed by MongoDB).
+	if holdingCode == "" {
+		return []map[string]interface{}{}, fmt.Errorf("holdingcode is required")
+	}
+	filters["deletedat"] = bson.M{"$exists": false}
+	filters["holdingcode"] = holdingCode
 
 	result, err := svc.repo.Playground(ctx, query.Collection, selectFields, filters)
 	if err != nil {
@@ -299,6 +305,17 @@ func (svc ReportQueryHttpService) ExecuteReportQuery(holdingCode string, reportC
 
 	if err != nil {
 		return nil, common.Pagination{}, err
+	}
+
+	// FindOneByCode wraps PersisterMongo.FindOne, which swallows "no documents" and returns a
+	// zero struct + nil error. Without this guard an unknown/unapproved code falls through to
+	// `*findDoc.Fields` below — a nil-pointer deref (Fields is *[]string) → panic.
+	if findDoc.Code == "" {
+		return nil, common.Pagination{}, fmt.Errorf("report code %s not found", reportCode)
+	}
+
+	if findDoc.Fields == nil {
+		findDoc.Fields = &[]string{}
 	}
 
 	query := models.Query{

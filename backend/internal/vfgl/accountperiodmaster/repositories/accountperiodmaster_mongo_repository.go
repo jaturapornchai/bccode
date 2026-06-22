@@ -56,12 +56,12 @@ func (repo AccountPeriodMasterRepository) FindByDateRange(ctx context.Context, h
 
 	filterQuery := bson.D{
 		bson.E{Key: "$or", Value: bson.A{
-			bson.D{{"start_date", bson.D{{"$gte", startDate}}}},
-			bson.D{{"end_date", bson.D{{"$gte", startDate}}}},
+			bson.D{{"startdate", bson.D{{"$gte", startDate}}}},
+			bson.D{{"enddate", bson.D{{"$gte", startDate}}}},
 		}},
 		bson.E{Key: "$or", Value: bson.A{
-			bson.D{{"start_date", bson.D{{"$lt", endDate}}}},
-			bson.D{{"end_date", bson.D{{"$lt", endDate}}}},
+			bson.D{{"startdate", bson.D{{"$lt", endDate}}}},
+			bson.D{{"enddate", bson.D{{"$lt", endDate}}}},
 		}},
 	}
 

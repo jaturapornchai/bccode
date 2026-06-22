@@ -276,12 +276,12 @@ func (h GroupsubtwoProductHttp) SearchGroupsubtwoProductPage(ctx microservice.IC
 
 	// เพิ่ม filter สำหรับ GroupMainGuid
 	if groupMainGuid := ctx.QueryParam("GroupMainGuid"); groupMainGuid != "" {
-		filter["groupMainGuid"] = groupMainGuid
+		filter["groupmainguid"] = groupMainGuid
 	}
 
 	// เพิ่ม filter สำหรับ GroupSubGuid
 	if groupSubGuid := ctx.QueryParam("GroupSubGuid"); groupSubGuid != "" {
-		filter["groupSubGuid"] = groupSubGuid
+		filter["groupsubguid"] = groupSubGuid
 	}
 
 	pageable := utils.GetPageable(ctx.QueryParam)

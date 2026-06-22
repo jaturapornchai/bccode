@@ -65,7 +65,6 @@ import (
 	"smlcloudplatform/internal/product/productbarcode"
 	"smlcloudplatform/internal/product/productcategory"
 	"smlcloudplatform/internal/product/productgroup"
-	"smlcloudplatform/internal/product/producttype"
 	"smlcloudplatform/internal/product/promotion"
 	"smlcloudplatform/internal/product/unit"
 	"smlcloudplatform/internal/productimport"
@@ -316,6 +315,11 @@ func main() {
 			"/create-shop",
 			"/favorite-holding",
 			"/favorite-shop",
+			// Holding admin management — works from the holding-selection screen (no shop selected yet);
+			// the handlers resolve the caller's role per-holding from the request holdingcode.
+			"/holding-member/list",
+			"/holding-member/add",
+			"/holding-member/remove",
 		}
 
 		// Reload config endpoint — goapi เรียกหลัง save config เพื่อให้ mainapi ใช้ config ใหม่
@@ -375,7 +379,6 @@ func main() {
 			// product.NewProductHttp(ms, cfg),
 			formtemplate.NewFormTemplateHttp(ms, cfg),
 			productgroup.NewProductGroupHttp(ms, cfg),
-			producttype.NewProductTypeHttp(ms, cfg),
 
 			images.NewImagesHttp(ms, cfg, imagePersister),
 

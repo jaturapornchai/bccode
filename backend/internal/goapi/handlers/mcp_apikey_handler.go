@@ -11,6 +11,7 @@ import (
 	"smlcloudplatform/internal/goapi/mcp/auth"
 	"smlcloudplatform/internal/goapi/mcp/mongodb"
 	"smlcloudplatform/internal/goapi/mcp/tools"
+	msmodels "smlcloudplatform/pkg/microservice/models"
 
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson"
@@ -50,6 +51,11 @@ type CreateAPIKeyResponse struct {
 
 // CreateAPIKeyHandler creates a new MCP API key
 func (h *MCPAPIKeyHandler) CreateAPIKeyHandler(c echo.Context) error {
+	// SECURITY (2026-06-21): only OWNER(2)/ADMIN(1)/SYSTEM(255) may mint MCP keys. Without
+	// this a plain member could self-issue a '*'-scoped key and reach the raw-SQL dev tools.
+	if ui, _ := c.Get("UserInfo").(msmodels.UserInfo); ui.Role != 1 && ui.Role != 2 && ui.Role != 255 {
+		return c.JSON(http.StatusForbidden, map[string]string{"error": "owner or admin role required", "code": "FORBIDDEN"})
+	}
 	var req CreateAPIKeyRequest
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
@@ -169,15 +175,15 @@ func (h *MCPAPIKeyHandler) ListAPIKeysHandler(c echo.Context) error {
 	var response []map[string]interface{}
 	for _, key := range apiKeys {
 		keyData := map[string]interface{}{
-			"id":                    key.ID.Hex(),
-			"name":                  key.Name,
-			"description":           key.Description,
-			"holdingcode":           key.HoldingCode,
-			"isactive":              key.IsActive,
-			"allowedtools":          key.AllowedTools,
-			"ratelimitperminute":    key.RateLimitPerMinute,
-			"createdat":             key.CreatedAt,
-			"createdby":             key.CreatedBy,
+			"id":                 key.ID.Hex(),
+			"name":               key.Name,
+			"description":        key.Description,
+			"holdingcode":        key.HoldingCode,
+			"isactive":           key.IsActive,
+			"allowedtools":       key.AllowedTools,
+			"ratelimitperminute": key.RateLimitPerMinute,
+			"createdat":          key.CreatedAt,
+			"createdby":          key.CreatedBy,
 		}
 
 		if key.ExpiresAt != nil {
@@ -225,7 +231,9 @@ func (h *MCPAPIKeyHandler) DeleteAPIKeyHandler(c echo.Context) error {
 		})
 	}
 
-	if existingKey == nil {
+	// SECURITY (2026-06-21): enforce tenant ownership (cross-tenant IDOR). 404 not 403.
+	userInfo, _ := c.Get("UserInfo").(msmodels.UserInfo)
+	if existingKey == nil || existingKey.HoldingCode != userInfo.HoldingCode {
 		return c.JSON(http.StatusNotFound, map[string]string{
 			"error": "API key not found",
 			"code":  "KEY_NOT_FOUND",
@@ -312,7 +320,9 @@ func (h *MCPAPIKeyHandler) UpdateAPIKeyHandler(c echo.Context) error {
 		})
 	}
 
-	if existingKey == nil {
+	// SECURITY (2026-06-21): enforce tenant ownership (cross-tenant IDOR). 404 not 403.
+	userInfo, _ := c.Get("UserInfo").(msmodels.UserInfo)
+	if existingKey == nil || existingKey.HoldingCode != userInfo.HoldingCode {
 		return c.JSON(http.StatusNotFound, map[string]string{
 			"error": "API key not found",
 			"code":  "KEY_NOT_FOUND",
@@ -356,7 +366,9 @@ func (h *MCPAPIKeyHandler) GetAPIKeyHandler(c echo.Context) error {
 		})
 	}
 
-	if apiKey == nil {
+	// SECURITY (2026-06-21): enforce tenant ownership (cross-tenant IDOR). 404 not 403.
+	userInfo, _ := c.Get("UserInfo").(msmodels.UserInfo)
+	if apiKey == nil || apiKey.HoldingCode != userInfo.HoldingCode {
 		return c.JSON(http.StatusNotFound, map[string]string{
 			"error": "API key not found",
 			"code":  "KEY_NOT_FOUND",
@@ -364,15 +376,15 @@ func (h *MCPAPIKeyHandler) GetAPIKeyHandler(c echo.Context) error {
 	}
 
 	response := map[string]interface{}{
-		"id":                    apiKey.ID.Hex(),
-		"name":                  apiKey.Name,
-		"description":           apiKey.Description,
-		"holdingcode":           apiKey.HoldingCode,
-		"isactive":              apiKey.IsActive,
-		"allowedtools":          apiKey.AllowedTools,
-		"ratelimitperminute":    apiKey.RateLimitPerMinute,
-		"createdat":             apiKey.CreatedAt,
-		"createdby":             apiKey.CreatedBy,
+		"id":                 apiKey.ID.Hex(),
+		"name":               apiKey.Name,
+		"description":        apiKey.Description,
+		"holdingcode":        apiKey.HoldingCode,
+		"isactive":           apiKey.IsActive,
+		"allowedtools":       apiKey.AllowedTools,
+		"ratelimitperminute": apiKey.RateLimitPerMinute,
+		"createdat":          apiKey.CreatedAt,
+		"createdby":          apiKey.CreatedBy,
 	}
 
 	if apiKey.ExpiresAt != nil {
@@ -433,14 +445,14 @@ func (h *MCPAPIKeyHandler) GetAuditLogsHandler(c echo.Context) error {
 	var response []map[string]interface{}
 	for _, log := range logs {
 		logData := map[string]interface{}{
-			"id":                log.ID.Hex(),
-			"apikeyid":         log.APIKeyID.Hex(),
-			"holdingcode":       log.HoldingCode,
-			"toolname":         log.ToolName,
-			"requestparams":    log.RequestParams,
-			"responsestatus":   log.ResponseStatus,
-			"executiontimems":  log.ExecutionTimeMs,
-			"createdat":         log.CreatedAt.Format("2006-01-02 15:04:05"),
+			"id":              log.ID.Hex(),
+			"apikeyid":        log.APIKeyID.Hex(),
+			"holdingcode":     log.HoldingCode,
+			"toolname":        log.ToolName,
+			"requestparams":   log.RequestParams,
+			"responsestatus":  log.ResponseStatus,
+			"executiontimems": log.ExecutionTimeMs,
+			"createdat":       log.CreatedAt.Format("2006-01-02 15:04:05"),
 		}
 
 		if log.ErrorMessage != "" {
@@ -481,7 +493,11 @@ func (h *MCPAPIKeyHandler) ExportAPIKeyHandler(c echo.Context) error {
 		})
 	}
 
-	if apiKey == nil {
+	// SECURITY (2026-06-21): enforce tenant ownership — an API key belongs to one holding.
+	// Without this, any tenant could export (= read the plaintext key of) another tenant's
+	// key by its id. Return 404 (not 403) to avoid an id-existence oracle.
+	userInfo, _ := c.Get("UserInfo").(msmodels.UserInfo)
+	if apiKey == nil || apiKey.HoldingCode != userInfo.HoldingCode {
 		return c.JSON(http.StatusNotFound, map[string]string{
 			"error": "API key not found",
 			"code":  "KEY_NOT_FOUND",
@@ -519,6 +535,10 @@ func (h *MCPAPIKeyHandler) ExportAPIKeyHandler(c echo.Context) error {
 
 // CreateAPIKeyWithExportHandler สร้าง API key แล้ว export config กลับมาด้วย (สำหรับ Flutter)
 func (h *MCPAPIKeyHandler) CreateAPIKeyWithExportHandler(c echo.Context) error {
+	// SECURITY (2026-06-21): only OWNER(2)/ADMIN(1)/SYSTEM(255) may mint MCP keys.
+	if ui, _ := c.Get("UserInfo").(msmodels.UserInfo); ui.Role != 1 && ui.Role != 2 && ui.Role != 255 {
+		return c.JSON(http.StatusForbidden, map[string]string{"error": "owner or admin role required", "code": "FORBIDDEN"})
+	}
 	var req CreateAPIKeyRequest
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{

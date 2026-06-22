@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
-import { validateBackendUrl } from "@/lib/backend-url";
+import { serverGoApiBase, validateBackendUrl } from "@/lib/backend-url";
 
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as { backendUrl?: string };
 
-  let normalizedGoApiUrl: string;
   try {
-    normalizedGoApiUrl = validateBackendUrl(body.backendUrl ?? "").normalizedGoApiUrl;
+    validateBackendUrl(body.backendUrl ?? "");
   } catch (error) {
     return NextResponse.json(
       { success: false, message: error instanceof Error ? error.message : "Backend URL ไม่ถูกต้อง" },
@@ -18,7 +17,7 @@ export async function POST(request: Request) {
   const timeout = setTimeout(() => controller.abort(), 8000);
 
   try {
-    const result = await probeBackend(normalizedGoApiUrl, controller.signal);
+    const result = await probeBackend(controller.signal);
     return NextResponse.json({ success: true, endpoint: result });
   } catch {
     return NextResponse.json(
@@ -30,8 +29,11 @@ export async function POST(request: Request) {
   }
 }
 
-async function probeBackend(goApiUrl: string, signal: AbortSignal): Promise<string> {
-  const candidates = [`${goApiUrl}/api/health`, `${goApiUrl}/version`];
+async function probeBackend(signal: AbortSignal): Promise<string> {
+  // Probe the backend the app actually proxies to (the next.config rewrite target),
+  // not the public same-origin URL — this server-side process cannot resolve the public host.
+  const base = serverGoApiBase();
+  const candidates = [`${base}/api/health`, `${base}/version`];
 
   for (const url of candidates) {
     const response = await fetch(url, { signal, cache: "no-store" }).catch(() => null);

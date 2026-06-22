@@ -31,6 +31,7 @@ func ConnectLegacy(databaseName string) (*sql.DB, error) {
 
 	connStr := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s "+
+			"TimeZone=UTC "+ // Timezone Iron Rule: DB stores UTC+0
 			"connect_timeout=10 "+
 			"statement_timeout=300000 "+
 			"idle_in_transaction_session_timeout=60000",

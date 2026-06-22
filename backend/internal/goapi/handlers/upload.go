@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"smlcloudplatform/internal/goapi/logger"
@@ -141,38 +140,4 @@ func FileUploadHandler(c echo.Context) error {
 		FileSize:  int64(len(fileBytes)),
 		Message:   "File uploaded successfully",
 	})
-}
-
-// FileDownloadHandler - download file from Cloudflare R2 via presigned URL
-// GET /upload/download/:key
-func FileDownloadHandler(c echo.Context) error {
-	objectKey := c.Param("key")
-	if objectKey == "" {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"error": "file key is required",
-		})
-	}
-
-	// URL decode (key อาจมี / encoded)
-	objectKey = storageNormalizeObjectKey(strings.ReplaceAll(objectKey, "%2F", "/"))
-	holdingCode := storageContextHoldingCode(c)
-	if holdingCode == "" {
-		return c.JSON(http.StatusUnauthorized, map[string]interface{}{
-			"error": "shop not selected",
-		})
-	}
-	if !storageObjectBelongsToShop(objectKey, holdingCode) {
-		return c.JSON(http.StatusForbidden, map[string]interface{}{
-			"error": "forbidden",
-		})
-	}
-
-	client, err := GetR2Client()
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-			"error": "Storage service not available",
-		})
-	}
-
-	return streamStorageObject(c, client, objectKey, "")
 }

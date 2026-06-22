@@ -8,7 +8,7 @@ import (
 
 // PdfHistory - เก็บประวัติการพิมพ์ PDF
 type PdfHistory struct {
-	ID           primitive.ObjectID `bson:"id,omitempty" json:"id,omitempty"`
+	ID           primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 	HoldingCode  string             `bson:"holdingcode" json:"holdingcode"`
 	Collection   string             `bson:"collection" json:"collection"`     // collection ที่ดึงข้อมูล
 	DocNo        string             `bson:"docno" json:"docno"`               // เลขที่เอกสาร

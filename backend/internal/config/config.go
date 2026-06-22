@@ -28,6 +28,7 @@ type IConfig interface {
 	LoggerConfig() ILoggerConfig
 	ProductGroupServiceConfig() IProductGroupServiceConfig
 	LineClientId() string
+	GoogleClientId() string
 }
 
 func GetEnv(key string, fallback string) string {
@@ -54,8 +55,8 @@ func NewConfig() IConfig {
 
 func (cfg *Config) LoadConfig() {
 	cfg.Mode = cfg.ConfigMode()
-	// ไม่โหลด .env อีกต่อไป — config ทั้งหมดมาจาก bootstrap.json + MongoDB system_config
-	log.Println("[Config] config มาจาก bootstrap.json + MongoDB system_config (ไม่ใช้ .env)")
+	// ไม่โหลด .env อีกต่อไป — config ทั้งหมดมาจาก bootstrap.json + custom_config.json
+	log.Println("[Config] config มาจาก bootstrap.json + custom_config.json (ไม่ใช้ .env)")
 }
 
 func (c *Config) ConfigMode() string {
@@ -144,4 +145,11 @@ func (*Config) ProductGroupServiceConfig() IProductGroupServiceConfig {
 
 func (*Config) LineClientId() string {
 	return getEnv("LINE_CLIENT_ID", "1657004770")
+}
+
+// GoogleClientId is the public Google OAuth client ID used to verify the audience (aud)
+// of Google ID tokens at /googlelogin. A client ID is public (it ships in the web bundle),
+// not a secret. Override via bootstrap.json -> GOOGLE_CLIENT_ID when needed.
+func (*Config) GoogleClientId() string {
+	return getEnv("GOOGLE_CLIENT_ID", "501250317679-05usebjtla636rm1an1dcdv3d0aeb4v1.apps.googleusercontent.com")
 }

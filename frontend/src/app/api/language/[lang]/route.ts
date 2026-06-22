@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { sanitizeBackendLanguageDictionary } from "@/lib/backend-language-sanitize";
-import { validateBackendUrl } from "@/lib/backend-url";
+import { serverGoApiBase, validateBackendUrl } from "@/lib/backend-url";
 
 type LanguageProxyContext = {
   params: Promise<{ lang: string }>;
@@ -15,9 +15,8 @@ export async function GET(request: Request, context: LanguageProxyContext) {
     return NextResponse.json({ success: false, message: "กรุณาระบุภาษา" }, { status: 400 });
   }
 
-  let normalizedGoApiUrl: string;
   try {
-    normalizedGoApiUrl = validateBackendUrl(url.searchParams.get("backendUrl") ?? "").normalizedGoApiUrl;
+    validateBackendUrl(url.searchParams.get("backendUrl") ?? "");
   } catch (error) {
     return NextResponse.json(
       { success: false, message: error instanceof Error ? error.message : "Backend URL ไม่ถูกต้อง" },
@@ -29,7 +28,7 @@ export async function GET(request: Request, context: LanguageProxyContext) {
   const timeout = setTimeout(() => controller.abort(), 8000);
 
   try {
-    const response = await fetch(`${normalizedGoApiUrl}/api/language/${encodeURIComponent(language)}`, {
+    const response = await fetch(`${serverGoApiBase()}/api/language/${encodeURIComponent(language)}`, {
       cache: "no-store",
       signal: controller.signal,
     });

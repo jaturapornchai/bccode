@@ -1027,7 +1027,6 @@ func getGoAPIEndpoints() []APIEndpoint {
 		{Method: "POST", Path: "/goapi/api/setup/config/get", Description: "Get bootstrap config (masked secrets)", Category: "setup", Source: "goapi", AuthRequired: false},
 		{Method: "POST", Path: "/goapi/api/setup/config/get-raw", Description: "Get raw bootstrap config", Category: "setup", Source: "goapi", AuthRequired: false},
 		{Method: "POST", Path: "/goapi/api/setup/config/save", Description: "Save bootstrap config", Category: "setup", Source: "goapi", AuthRequired: false},
-		{Method: "POST", Path: "/goapi/api/setup/config/seed", Description: "Seed initial config", Category: "setup", Source: "goapi", AuthRequired: false},
 		{Method: "POST", Path: "/goapi/api/setup/test-connection", Description: "Test database connection", Category: "setup", Source: "goapi", AuthRequired: false},
 		{Method: "POST", Path: "/goapi/api/setup/create-clickhouse-database", Description: "Create ClickHouse database for shop", Category: "setup", Source: "goapi", AuthRequired: false},
 		{Method: "GET", Path: "/goapi/api/setup/client-config", Description: "Get client-side config (public settings)", Category: "setup", Source: "goapi", AuthRequired: false},

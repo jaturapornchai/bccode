@@ -3,7 +3,9 @@ package authentication
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
+	"net/url"
 	"smlcloudplatform/internal/authentication/models"
 	"smlcloudplatform/internal/authentication/repositories"
 	"smlcloudplatform/internal/authentication/services"
@@ -14,6 +16,7 @@ import (
 	"smlcloudplatform/internal/shop"
 	"smlcloudplatform/internal/utils"
 	"smlcloudplatform/pkg/microservice"
+	"strconv"
 	"time"
 )
 
@@ -407,12 +410,20 @@ func (h AuthenticationHttp) GoogleLogin(ctx microservice.IContext) error {
 		return err
 	}
 
-	if req.Email == "" {
-		ctx.ResponseError(400, "email is required")
+	// SECURITY (2026-06-21): require + verify a real Google ID token. Never trust a
+	// caller-supplied email — derive the trusted email from the verified token claims.
+	// This closes the account-takeover hole where posting any email minted a token.
+	if req.Credential == "" {
+		ctx.ResponseError(401, "google credential required")
 		return nil
 	}
+	claims, err := verifyGoogleIDToken(req.Credential, h.cfg.GoogleClientId())
+	if err != nil {
+		ctx.ResponseError(401, "google token verification failed")
+		return err
+	}
 
-	tokenString, err := h.authenticationService.LoginWithGoogleEmail(req.Email, req.DisplayName)
+	tokenString, err := h.authenticationService.LoginWithGoogleEmail(claims.Email, claims.Name)
 	if err != nil {
 		if errors.Is(err, &models.UserDisableLoginError{}) {
 			ctx.ResponseError(400, "user is disabled")
@@ -428,6 +439,54 @@ func (h AuthenticationHttp) GoogleLogin(ctx microservice.IContext) error {
 	})
 
 	return nil
+}
+
+// googleTokenInfo holds the verified claims returned by Google's tokeninfo endpoint.
+type googleTokenInfo struct {
+	Aud           string `json:"aud"`
+	Iss           string `json:"iss"`
+	Exp           string `json:"exp"`
+	Email         string `json:"email"`
+	EmailVerified string `json:"email_verified"`
+	Name          string `json:"name"`
+	Picture       string `json:"picture"`
+	Sub           string `json:"sub"`
+}
+
+// verifyGoogleIDToken validates a Google ID token (JWT) via Google's tokeninfo endpoint
+// (which verifies the signature), then enforces audience, issuer, expiry and a verified
+// email. Returns the verified claims, or an error if the token is not trustworthy.
+func verifyGoogleIDToken(credential string, clientID string) (*googleTokenInfo, error) {
+	if clientID == "" {
+		return nil, errors.New("google client id not configured")
+	}
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Get("https://oauth2.googleapis.com/tokeninfo?id_token=" + url.QueryEscape(credential))
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("tokeninfo status %d", resp.StatusCode)
+	}
+	var info googleTokenInfo
+	if err := json.NewDecoder(resp.Body).Decode(&info); err != nil {
+		return nil, err
+	}
+	if info.Aud != clientID {
+		return nil, errors.New("google token audience mismatch")
+	}
+	if info.Iss != "accounts.google.com" && info.Iss != "https://accounts.google.com" {
+		return nil, errors.New("invalid google token issuer")
+	}
+	expUnix, err := strconv.ParseInt(info.Exp, 10, 64)
+	if err != nil || time.Now().Unix() >= expUnix {
+		return nil, errors.New("google token expired")
+	}
+	if info.Email == "" || (info.EmailVerified != "true" && info.EmailVerified != "1") {
+		return nil, errors.New("google email not verified")
+	}
+	return &info, nil
 }
 
 // Login with LINE
