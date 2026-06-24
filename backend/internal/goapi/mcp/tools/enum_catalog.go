@@ -412,16 +412,17 @@ func getAllEnums() []EnumGroup {
 			},
 		},
 
-		// ===== Product Type =====
+		// ===== Item Type =====
 		{
-			Name:        "producttype",
-			Description: "Product item types — ประเภทสินค้า (MainAPI)",
+			Name:        "itemtype",
+			Description: "Product item types — ประเภทไอเทมสินค้า (MainAPI)",
 			Category:    "mainapi",
-			GoSource:    "internal/microservice/product/models.go",
+			GoSource:    "internal/product/product/models/product.go",
 			Values: []EnumValue{
-				{Key: 0, Label: "Normal", Description: "สินค้าปกติ (มีสต็อก)"},
+				{Key: 0, Label: "Stock", Description: "สินค้าคงคลัง (มีสต็อก)"},
 				{Key: 1, Label: "Service", Description: "บริการ (ไม่มีสต็อก)"},
-				{Key: 2, Label: "Set/Combo", Description: "ชุดสินค้า/เซ็ต"},
+				{Key: 2, Label: "Set", Description: "ชุดสินค้า/เซ็ต"},
+				{Key: 3, Label: "Not Stock", Description: "สินค้าไม่นับสต็อก"},
 			},
 		},
 
