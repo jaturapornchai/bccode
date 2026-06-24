@@ -23,7 +23,6 @@ import (
 	"smlcloudplatform/internal/goapi/handlers/unified"
 	"smlcloudplatform/internal/goapi/inventory"
 	"smlcloudplatform/internal/goapi/logger"
-	"smlcloudplatform/internal/goapi/mcp"
 	"smlcloudplatform/internal/goapi/myclickhouse"
 	"smlcloudplatform/internal/goapi/mydb"
 	"smlcloudplatform/internal/goapi/myglobal"
@@ -213,8 +212,6 @@ func (s *GoAPIServer) RegisterMiddleware(g *echo.Group) {
 				strings.HasSuffix(path, "/previewcopymongo") ||
 				strings.HasSuffix(path, "/listsourceshops") ||
 				strings.Contains(path, "/rebuild/progress/") ||
-				strings.HasSuffix(path, "/mcp/sse") ||
-				strings.HasSuffix(path, "/mcp/message") ||
 				strings.Contains(path, "/chatbot/chat-agent") ||
 				strings.Contains(path, "/aichat/v1/chat/completions") ||
 				strings.Contains(path, "/ai-provider/test")
@@ -697,23 +694,6 @@ func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string) {
 	unifiedV1.POST("/query", unifiedServer.ProcessUnifiedQuery)
 	unifiedV1.GET("/health", unifiedServer.HealthCheck)
 	unifiedV1.GET("/cache/stats", unifiedServer.GetCacheStats)
-
-	// MCP Server Routes (prefix-aware)
-	mcpServer := mcp.NewMCPServer()
-	mcpServer.RegisterRoutesOnGroup(g)
-	mcpServer.RegisterSSERoutesOnGroup(g, prefix)
-
-	// MCP API Key Management
-	mcpAPIKeyHandler := handlers.NewMCPAPIKeyHandler()
-	authGroup.POST("/api/mcp/keys", mcpAPIKeyHandler.CreateAPIKeyHandler)
-	authGroup.GET("/api/mcp/keys", mcpAPIKeyHandler.ListAPIKeysHandler)
-	authGroup.GET("/api/mcp/keys/:id", mcpAPIKeyHandler.GetAPIKeyHandler)
-	authGroup.PUT("/api/mcp/keys/:id", mcpAPIKeyHandler.UpdateAPIKeyHandler)
-	authGroup.DELETE("/api/mcp/keys/:id", mcpAPIKeyHandler.DeleteAPIKeyHandler)
-	authGroup.GET("/api/mcp/keys/:id/export", mcpAPIKeyHandler.ExportAPIKeyHandler)
-	authGroup.POST("/api/mcp/keys/create-with-export", mcpAPIKeyHandler.CreateAPIKeyWithExportHandler)
-	authGroup.GET("/api/mcp/audit-logs", mcpAPIKeyHandler.GetAuditLogsHandler)
-	authGroup.GET("/api/mcp/available-tools", mcpAPIKeyHandler.GetAvailableToolsHandler)
 
 	// Setup Config Routes
 	g.POST("/api/setup/verify-password", handlers.SetupVerifyPasswordHandler)

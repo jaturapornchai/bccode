@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"smlcloudplatform/internal/goapi/aiprovider"
 	"smlcloudplatform/internal/goapi/logger"
-	"smlcloudplatform/internal/goapi/mcp"
 	"strings"
 	"time"
 )
@@ -275,10 +274,7 @@ func RunAgentReAct(ctx context.Context, req AgentV2Request, emitSSE func(SSEEven
 		return nil, fmt.Errorf("ไม่มี AI Provider — กรุณาตั้งค่าในหน้า AI Provider Settings")
 	}
 
-	mcpServer := mcp.GetDefaultServer()
-	if mcpServer == nil {
-		return nil, fmt.Errorf("MCP server ยังไม่พร้อม")
-	}
+	mcpServer := getAgentToolServer()
 
 	// 3. Build initial messages — ReAct system prompt มี tools list แล้ว
 	reactPrompt := buildReActSystemPrompt(req.OutputFormat, req)

@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"smlcloudplatform/internal/goapi/aiprovider"
 	"smlcloudplatform/internal/goapi/logger"
-	"smlcloudplatform/internal/goapi/mcp"
 	"strings"
 	"time"
 )
@@ -176,10 +175,7 @@ func RunAgentLoop(ctx context.Context, holdingCode string, question string) (*Ag
 		return nil, fmt.Errorf("ไม่มี AI Provider ที่รองรับ tool calling")
 	}
 
-	mcpServer := mcp.GetDefaultServer()
-	if mcpServer == nil {
-		return nil, fmt.Errorf("MCP server ยังไม่พร้อม")
-	}
+	mcpServer := getAgentToolServer()
 
 	tools := AgentToolDefs()
 

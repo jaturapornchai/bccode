@@ -30,7 +30,6 @@ import (
 	"regexp"
 	"smlcloudplatform/internal/goapi/aiprovider"
 	"smlcloudplatform/internal/goapi/logger"
-	"smlcloudplatform/internal/goapi/mcp"
 	"strings"
 	"sync"
 	"time"
@@ -87,10 +86,7 @@ func RunAgentLoopPlanner(ctx context.Context, req AgentV2Request, emitSSE func(S
 		return nil, fmt.Errorf("ไม่มี AI Provider สำหรับ shop=%s", holdingCode)
 	}
 
-	mcpServer := mcp.GetDefaultServer()
-	if mcpServer == nil {
-		return nil, fmt.Errorf("MCP server ยังไม่พร้อม")
-	}
+	mcpServer := getAgentToolServer()
 
 	started := time.Now()
 
@@ -270,7 +266,7 @@ func sanitizeQueries(queries []QueryPlanItem) []QueryPlanItem {
 
 func runExecutor(
 	parentCtx context.Context,
-	mcpServer *mcp.MCPServer,
+	mcpServer *agentToolServer,
 	holdingCode, sessionKey string,
 	queries []QueryPlanItem,
 	emitSSE func(SSEEvent),

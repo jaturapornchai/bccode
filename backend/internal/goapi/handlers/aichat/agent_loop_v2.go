@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"smlcloudplatform/internal/goapi/aiprovider"
 	"smlcloudplatform/internal/goapi/logger"
-	"smlcloudplatform/internal/goapi/mcp"
 	"strings"
 	"sync"
 	"time"
@@ -597,10 +596,7 @@ func RunAgentLoopV2(ctx context.Context, req AgentV2Request, emitSSE func(SSEEve
 		return nil, fmt.Errorf("ไม่มี AI Provider — กรุณาตั้งค่าในหน้า AI Provider Settings")
 	}
 
-	mcpServer := mcp.GetDefaultServer()
-	if mcpServer == nil {
-		return nil, fmt.Errorf("MCP server ยังไม่พร้อม")
-	}
+	mcpServer := getAgentToolServer()
 
 	tools := filterAgentTools(AgentToolDefs(), req)
 
