@@ -6,7 +6,6 @@ require (
 	firebase.google.com/go/v4 v4.11.0
 	github.com/3dsinteractive/wrkgo v0.0.0-20210911134244-26f18db8d978
 	github.com/confluentinc/confluent-kafka-go v1.9.2
-	github.com/dop251/goja v0.0.0-20260311135729-065cd970411c
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.1
 	github.com/go-playground/validator/v10 v10.12.0
@@ -23,7 +22,6 @@ require (
 	github.com/swaggo/swag v1.16.1
 	github.com/tj/assert v0.0.3
 	github.com/xuri/excelize/v2 v2.9.1
-	github.com/yuin/goldmark v1.8.2
 	go.uber.org/zap v1.27.0
 	google.golang.org/api v0.120.0
 	gopkg.in/DATA-DOG/go-sqlmock.v1 v1.3.0
@@ -64,7 +62,6 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
-	github.com/dlclark/regexp2 v1.11.4 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/elastic/elastic-transport-go/v8 v8.2.0 // indirect
 	github.com/fatih/color v1.15.0 // indirect
@@ -74,11 +71,9 @@ require (
 	github.com/go-openapi/jsonreference v0.20.2 // indirect
 	github.com/go-openapi/spec v0.20.9 // indirect
 	github.com/go-openapi/swag v0.22.3 // indirect
-	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/pprof v0.0.0-20230207041349-798e818bf904 // indirect
 	github.com/google/s2a-go v0.1.2 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
 	github.com/googleapis/gax-go/v2 v2.8.0 // indirect

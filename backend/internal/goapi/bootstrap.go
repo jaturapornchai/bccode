@@ -212,8 +212,6 @@ func (s *GoAPIServer) RegisterMiddleware(g *echo.Group) {
 				strings.HasSuffix(path, "/previewcopymongo") ||
 				strings.HasSuffix(path, "/listsourceshops") ||
 				strings.Contains(path, "/rebuild/progress/") ||
-				strings.Contains(path, "/chatbot/chat-agent") ||
-				strings.Contains(path, "/aichat/v1/chat/completions") ||
 				strings.Contains(path, "/ai-provider/test")
 		},
 		ErrorMessage: "Request timeout",
@@ -660,10 +658,6 @@ func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string) {
 	// Chatbot API (Gemini)
 	chatbotV1 := authGroup.Group("/api/v1/chatbot")
 	chatbotV1.POST("/chat-gemini", aichat.ChatGemini)
-	chatbotV1.POST("/chat-agent", aichat.ChatAgent)
-	chatbotV1.POST("/chat-agent-v2", aichat.ChatAgentV2)          // น้องกุ้ง SSE streaming
-	chatbotV1.POST("/chat-agent-v2-sync", aichat.ChatAgentV2Sync) // น้องกุ้ง non-streaming fallback
-	chatbotV1.POST("/clear-session", aichat.ClearChatSession)     // ล้างประวัติสนทนา
 	chatbotV1.POST("/analyze-document", aichat.AnalyzeDocument)
 
 	// Knowledge Base (RAGFlow-backed)
@@ -671,7 +665,6 @@ func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string) {
 
 	// OpenAI-compatible gateway (สำหรับ OpenClaw / client ที่พูด OpenAI protocol)
 	openaiGW := authGroup.Group("/api/aichat/v1")
-	openaiGW.POST("/chat/completions", aichat.OpenAIGatewayChatCompletions)
 	openaiGW.GET("/models", aichat.OpenAIGatewayListModels)
 
 	// Result store (frontend ดึง full tool result ที่ truncate ใน chat ออกไป)
