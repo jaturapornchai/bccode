@@ -17,13 +17,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// Global ClickHouse connection pool
-var (
-	clickhouseConn  clickhouse.Conn
-	clickhouseOnce  sync.Once
-	clickhouseMutex sync.RWMutex
-)
-
 // GetDatabaseName คืนชื่อ database ClickHouse จาก env variable CH_DATABASE_NAME
 // ถ้าไม่มีจะ default เป็น "bcbidev"
 func GetDatabaseName() string {
@@ -242,47 +235,6 @@ func ClickHouseFastConnect() (clickhouse.Conn, error) {
 	return nil, fmt.Errorf("clickhouse is disabled")
 }
 
-// getClickHouseOptions คืน Options สำหรับเชื่อมต่อ ClickHouse
-func getClickHouseOptions(database string) *clickhouse.Options {
-	return &clickhouse.Options{
-		Addr: []string{os.Getenv("CH_SERVER_ADDRESS")},
-		Auth: clickhouse.Auth{
-			Database: database,
-			Username: os.Getenv("CH_USERNAME"),
-			Password: os.Getenv("CH_PASSWORD"),
-		},
-		Settings: clickhouse.Settings{
-			"max_execution_time":            600,
-			"max_block_size":                100000,
-			"max_insert_block_size":         1048576,
-			"max_memory_usage":              10000000000,
-			"insert_quorum":                 0,
-			"insert_quorum_timeout":         600000,
-			"select_sequential_consistency": 0,
-			"max_threads":                   16,
-			"receive_timeout":               600,
-			"send_timeout":                  600,
-			"enable_http_compression":       1,
-			"distributed_product_mode":      "global",
-		},
-		DialTimeout:          30 * time.Second,
-		MaxOpenConns:         25,
-		MaxIdleConns:         10,
-		ConnMaxLifetime:      2 * time.Hour,
-		ConnOpenStrategy:     clickhouse.ConnOpenInOrder,
-		BlockBufferSize:      10,
-		MaxCompressionBuffer: 10240,
-		Compression: &clickhouse.Compression{
-			Method: clickhouse.CompressionLZ4,
-		},
-	}
-}
-
-// ensureDatabase สร้าง database ใน ClickHouse ถ้ายังไม่มี
-func ensureDatabase(dbName string) error {
-	return fmt.Errorf("clickhouse is disabled")
-}
-
 // สร้าง ClickHouse connection ใหม่ — ถ้า database ยังไม่มีจะสร้าง database + tables อัตโนมัติ
 func CreateClickHouseConnection() (clickhouse.Conn, error) {
 	return nil, fmt.Errorf("clickhouse is disabled")
@@ -310,30 +262,20 @@ type AsyncBatchItem struct {
 }
 
 var (
-	asyncBatchQueue   = make(chan AsyncBatchItem, 1000) // Queue สำหรับรวบรวม batch
-	asyncWorkerOnce   sync.Once
-	asyncWorkerCancel context.CancelFunc
-	asyncWorkerWg     sync.WaitGroup
+	asyncBatchQueue = make(chan AsyncBatchItem, 1000) // Queue สำหรับรวบรวม batch
+	asyncWorkerOnce sync.Once
+	asyncWorkerWg   sync.WaitGroup
 )
 
 // initAsyncWorkerPool เริ่มต้น worker pool สำหรับ async insert
 func initAsyncWorkerPool() {
 	asyncWorkerOnce.Do(func() {
-		ctx, cancel := context.WithCancel(context.Background())
-		asyncWorkerCancel = cancel
+		ctx := context.Background()
 		for i := 0; i < 2; i++ {
 			asyncWorkerWg.Add(1)
 			go asyncBatchWorker(ctx, i+1)
 		}
 	})
-}
-
-// closeAsyncWorkerPool ปิด worker pool
-func closeAsyncWorkerPool() {
-	if asyncWorkerCancel != nil {
-		asyncWorkerCancel()
-		asyncWorkerWg.Wait()
-	}
 }
 
 // asyncBatchWorker worker สำหรับประมวลผล batch insert แบบ async

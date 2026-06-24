@@ -52,16 +52,6 @@ var sqlInjectionPatterns = []*regexp.Regexp{
 	regexp.MustCompile(`(?i)'\s*;\s*--`),
 }
 
-// Allowed tables for SELECT queries (whitelist approach)
-var allowedSelectTables = map[string]bool{
-	"doc": true, "docdetail": true, "docref": true, "docpayment": true,
-	"product": true, "productbarcode": true, "productunit": true,
-	"customer": true, "supplier": true, "branch": true,
-	"warehouse": true, "location": true, "category": true,
-	"stockcard": true, "stockbalance": true,
-	"employee": true, "salechannel": true,
-}
-
 // validateSelectQuery checks if a query is a valid SELECT query
 func validateSelectQuery(query string) (bool, string) {
 	queryLower := strings.ToLower(strings.TrimSpace(query))

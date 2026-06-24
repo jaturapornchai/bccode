@@ -26,8 +26,7 @@ var (
 	atlasClient *mongo.Client
 	atlasDB     *mongo.Database
 	// MongoDB สำหรับ approval tokens (ใช้ร่วมกับ lineoa-liff)
-	tokenAtlasClient *mongo.Client
-	tokenAtlasDB     *mongo.Database
+	tokenAtlasDB *mongo.Database
 )
 
 // Init initializes the approval handlers with MongoDB connection
@@ -44,7 +43,6 @@ func initTokenAtlas() {
 	tokenURI := firstNonEmptyEnv("MONGODB_TOKEN_URI", "MONGODB_TOKEN_ATLAS_URI")
 	if tokenURI == "" {
 		logger.Warn("[TokenAtlas] MONGODB_TOKEN_URI not set, tokens will use main MongoDB connection")
-		tokenAtlasClient = atlasClient
 		tokenAtlasDB = atlasDB
 		return
 	}
@@ -57,7 +55,6 @@ func initTokenAtlas() {
 	if err != nil {
 		logger.Error("[TokenAtlas] Failed to connect: %v", err)
 		// Fallback to main MongoDB connection.
-		tokenAtlasClient = atlasClient
 		tokenAtlasDB = atlasDB
 		return
 	}
@@ -65,12 +62,9 @@ func initTokenAtlas() {
 	// Ping to verify connection
 	if err := client.Ping(ctx, nil); err != nil {
 		logger.Error("[TokenAtlas] Failed to ping: %v", err)
-		tokenAtlasClient = atlasClient
 		tokenAtlasDB = atlasDB
 		return
 	}
-
-	tokenAtlasClient = client
 
 	// Database name from env or default
 	dbName := firstNonEmptyEnv("MONGODB_TOKEN_DB", "MONGODB_TOKEN_DBNAME", "MONGODB_TOKEN_ATLAS_DBNAME")

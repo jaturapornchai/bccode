@@ -67,46 +67,6 @@ func MongoConnect() (*mongo.Client, error) {
 	return mongoClient, err
 }
 
-func createMongoProductionClient() (*mongo.Client, error) {
-	config := config.NewServiceConfig()
-	uri := config.MongodbURI()
-	if uri == "" {
-		return nil, fmt.Errorf("MongoDB URI not found for %s environment", coreconfig.CurrentDataEnvironment())
-	}
-
-	// Optimized connection options for balanced performance
-	clientOptions := options.Client().
-		ApplyURI(uri).
-		SetConnectTimeout(5 * time.Second).              // Faster connection timeout
-		SetSocketTimeout(30 * time.Second).              // Socket timeout for operations
-		SetServerSelectionTimeout(5 * time.Second).      // Fast server selection
-		SetHeartbeatInterval(10 * time.Second).          // Connection health check
-		SetMaxPoolSize(75).                              // OPTIMIZED: reduced from 100 to 75 for better resource balance
-		SetMinPoolSize(10).                              // Keep minimum connections ready
-		SetMaxConnIdleTime(20 * time.Minute).            // Extended from 15 to 20 minutes
-		SetRetryWrites(true).                            // Auto retry failed writes
-		SetRetryReads(true).                             // Auto retry failed reads
-		SetCompressors([]string{"zstd", "snappy"}).      // Enable compression for faster data transfer
-		SetReadPreference(readpref.SecondaryPreferred()) // Use secondary for reads when possible
-
-	mongoClient, err := mongo.Connect(context.TODO(), clientOptions)
-	if err != nil {
-		return nil, fmt.Errorf("error connecting to MongoDB: %v", err)
-	}
-
-	// Quick ping test with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	err = mongoClient.Ping(ctx, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error ping to MongoDB: %v", err)
-	}
-
-	logger.Success("เชื่อมต่อ MongoDB สำเร็จ (pool: max=%d, min=%d, idle_time=20m)", 75, 10)
-	return mongoClient, nil
-}
-
 func createMongoClient() (*mongo.Client, error) {
 	config := config.NewServiceConfig()
 	dataEnv := coreconfig.CurrentDataEnvironment()

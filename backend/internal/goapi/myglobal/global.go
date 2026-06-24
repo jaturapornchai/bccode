@@ -34,7 +34,6 @@ var TransFlagsToProcess = []int{54, 12, 310, 48, 60, 58, 66, 44, 16, 56, 68, 72}
 // Global Database Manager (สำหรับ unified database management)
 var (
 	globalDBManager      *sql.DB
-	globalDBManagerOnce  sync.Once
 	globalDBManagerMu    sync.RWMutex
 	globalDBProviderFunc func() (*sql.DB, error)
 )

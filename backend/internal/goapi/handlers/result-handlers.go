@@ -1988,11 +1988,6 @@ func applyBuddhistYear(formatted string, layout string, date time.Time) string {
 	return formatted[:yearIdx] + buddhistYear + formatted[yearIdx+4:]
 }
 
-func formatNumericValue(value any) string {
-	f := toFloat64Value(value)
-	return formatNumberWithPrecision(f, 2)
-}
-
 func formatNumberWithPrecision(value float64, decimals int) string {
 	if decimals < 0 {
 		decimals = 0
@@ -2632,19 +2627,6 @@ func normalizeColumnValue(value any, columnType *sql.ColumnType) any {
 	default:
 		return value
 	}
-}
-
-func mergeGrandTotals(current map[string]any, incoming map[string]any) map[string]any {
-	if incoming == nil {
-		return current
-	}
-	if current == nil {
-		return cloneMap(incoming)
-	}
-	for key, val := range incoming {
-		current[key] = toFloat64Value(current[key]) + toFloat64Value(val)
-	}
-	return current
 }
 
 func toFloat64Value(value any) float64 {

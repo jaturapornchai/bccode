@@ -598,27 +598,6 @@ func sendLineReply(accessToken string, req LineReplyRequest) error {
 
 // ========== LIFF Button Support ==========
 
-// buildLiffQuickReplyItem creates a quick reply button that opens LIFF
-func buildLiffQuickReplyItem(label, liffURL string) LineQuickReplyItem {
-	return LineQuickReplyItem{
-		Type: "action",
-		Action: LineQuickAction{
-			Type:  "uri",
-			Label: label,
-			URI:   liffURL,
-		},
-	}
-}
-
-// getLiffURL generates LIFF URL with parameters
-func getLiffURL(holdingCode, liffID string, params map[string]string) string {
-	url := fmt.Sprintf("https://liff.line.me/%s?holdingcode=%s", liffID, holdingCode)
-	for key, value := range params {
-		url += fmt.Sprintf("&%s=%s", key, value)
-	}
-	return url
-}
-
 // sendFlexMessageWithLiffButton sends a Flex message with LIFF button
 func sendFlexMessageWithLiffButton(holdingCode, replyToken, title, description, buttonLabel, liffURL string) error {
 	accessToken, err := getShopAccessToken(holdingCode)
@@ -679,36 +658,6 @@ func sendFlexMessageWithLiffButton(holdingCode, replyToken, title, description, 
 	replyReq := LineReplyRequest{
 		ReplyToken: replyToken,
 		Messages:   []interface{}{flexMessage},
-	}
-
-	return sendLineReply(accessToken, replyReq)
-}
-
-// sendTextWithLiffButton sends text message with LIFF quick reply button
-func sendTextWithLiffButton(holdingCode, replyToken, text, buttonLabel, liffURL string, additionalReplies []LineQuickReplyItem) error {
-	accessToken, err := getShopAccessToken(holdingCode)
-	if err != nil {
-		logger.Error("[LINE Reply] Failed to get access token: %v", err)
-		return err
-	}
-
-	// Build quick replies with LIFF button
-	items := []LineQuickReplyItem{
-		buildLiffQuickReplyItem(buttonLabel, liffURL),
-	}
-	items = append(items, additionalReplies...)
-
-	message := LineTextMessage{
-		Type: "text",
-		Text: text,
-		QuickReply: &LineQuickReply{
-			Items: items,
-		},
-	}
-
-	replyReq := LineReplyRequest{
-		ReplyToken: replyToken,
-		Messages:   []interface{}{message},
 	}
 
 	return sendLineReply(accessToken, replyReq)

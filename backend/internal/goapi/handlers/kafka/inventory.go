@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/models"
@@ -495,10 +494,6 @@ func productBarcodeBulkDeleteInternalWithLogging(ctx context.Context, db *sql.DB
 }
 
 // ==================== ClickHouse Helper Functions (disabled) ====================
-
-func chEsc(s string) string {
-	return strings.ReplaceAll(s, "'", "\\'")
-}
 
 func clickHouseInsertOrUpdate(holdingCode, barcode, itemcode, name0, unitcode, unitname, groupcode, groupnames string,
 	price, standValue, divideValue float64, checksum string) {

@@ -842,18 +842,6 @@ func createRateLimitDenyHandler(limit int) func(echo.Context, string, error) err
 	}
 }
 
-func splitAndTrim(s string, sep string) []string {
-	parts := strings.Split(s, sep)
-	result := make([]string, 0, len(parts))
-	for _, p := range parts {
-		trimmed := strings.TrimSpace(p)
-		if trimmed != "" {
-			result = append(result, trimmed)
-		}
-	}
-	return result
-}
-
 func formatInt(n int) string {
 	if n < 10 {
 		return string(rune(n + '0'))

@@ -432,11 +432,6 @@ func calculateItemEnhanced(item TransactionItem, docVatType int, defaultVatRate 
 	return result
 }
 
-// calculateItem - คำนวณรายการสินค้า (legacy wrapper)
-func calculateItem(item TransactionItem, defaultVatRate float64) TransactionItem {
-	return calculateItemEnhanced(item, item.VatType, defaultVatRate, 0)
-}
-
 // sanitizeAmount - ตรวจสอบและแก้ไขค่า NaN/Inf/negative
 func sanitizeAmount(val float64) float64 {
 	if math.IsNaN(val) || math.IsInf(val, 0) {

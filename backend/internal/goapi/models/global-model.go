@@ -1,12 +1,5 @@
 package models
 
-import (
-	"encoding/json"
-	"fmt"
-	"net/http"
-	"smlcloudplatform/internal/goapi/logger"
-)
-
 type languageNameModel struct {
 	Code string `json:"code"`
 	Name string `json:"name"`
@@ -82,28 +75,6 @@ type productOrderUnitUseModel struct {
 
 type productOrderImageModel struct {
 	Uri string `json:"uri"`
-}
-
-type productOrderBalanceModel struct {
-	Itemcode string                           `json:"itemcode"`
-	Qty      float64                          `json:"qty"`
-	Units    []productOrderBalanceUnitModel   `json:"units"`
-	Options  []productOrderBalanceOptionModel `json:"options"`
-}
-
-type productOrderBalanceUnitModel struct {
-	Unitcode string  `json:"unitcode"`
-	Qty      float64 `json:"qty"`
-}
-
-type productOrderBalanceOptionModel struct {
-	Optionguid string                                 `json:"optionguid"`
-	Details    []productOrderBalanceOptionDetailModel `json:"details"`
-}
-
-type productOrderBalanceOptionDetailModel struct {
-	Optionguid string  `json:"optionguid"`
-	Qty        float64 `json:"qty"`
 }
 
 func DataProductForTest() productOrderModel {
@@ -202,25 +173,6 @@ func DataProductForTest() productOrderModel {
 			},
 		},
 	}
-}
-
-func handler(w http.ResponseWriter, r *http.Request) {
-	var product = DataProductForTest()
-
-	switch r.Method {
-	case "GET":
-		j, _ := json.Marshal(product)
-		w.Write(j)
-	default:
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		fmt.Fprintf(w, "I can't do that.")
-	}
-}
-func main() {
-	http.HandleFunc("/product", handler)
-
-	logger.Info("Go!")
-	http.ListenAndServe(":8086", nil)
 }
 
 // Warehouse models for Kafka messages
