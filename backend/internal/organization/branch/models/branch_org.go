@@ -16,13 +16,38 @@ type BranchOrgDoc struct {
 	Code        string             `json:"code" bson:"code"`
 	Names       common.JSONB       `json:"names" bson:"names"`
 	LogoURI     string             `json:"logouri" bson:"logouri"`
-	IsActive    bool               `json:"isactive" bson:"isactive"`
-	CreatedAt   time.Time          `json:"createdat" bson:"createdat"`
-	UpdatedAt   time.Time          `json:"updatedat" bson:"updatedat"`
-	DeletedAt   *time.Time         `json:"deletedat,omitempty" bson:"deletedat,omitempty"`
-	CreatedBy   string             `json:"createdby,omitempty" bson:"createdby,omitempty"`
-	UpdatedBy   string             `json:"updatedby,omitempty" bson:"updatedby,omitempty"`
-	DeletedBy   string             `json:"deletedby,omitempty" bson:"deletedby,omitempty"`
+	// Default locale/date-time settings carried on the branch so workspace
+	// headers and date rendering have a value before the user edits the branch.
+	// These mirror BranchData fields; kept here so the minimal head-office doc
+	// created at company-create time already has sensible defaults.
+	Timezone       string `json:"timezone" bson:"timezone"`
+	TimezoneLabel  string `json:"timezonelabel" bson:"timezonelabel"`
+	TimezoneOffset string `json:"timezoneoffset" bson:"timezoneoffset"`
+	DateFormat     string `json:"dateformat" bson:"dateformat"`
+	YearType       string `json:"yeartype" bson:"yeartype"`
+	BaseCurrency   string `json:"basecurrency" bson:"basecurrency"`
+	Language       string `json:"language" bson:"language"`
+	// Tax / registration fields (ภ.พ.20). BranchType is one of
+	// "head" | "permanent" | "temporary" (สำนักงานใหญ่ / สาขาถาวร / สาขาชั่วคราว).
+	// IsVatRegistered + CompanyRegistrationNo mirror the flat fields on the full Branch struct.
+	BranchType            string `json:"branchtype" bson:"branchtype"`
+	IsVatRegistered       bool   `json:"isvatregistered" bson:"isvatregistered"`
+	CompanyRegistrationNo string `json:"companyregistrationno" bson:"companyregistrationno"`
+	Email                 string `json:"email" bson:"email"`
+	ManagerName           string `json:"managername" bson:"managername"`
+	// Document / accounting config — value-only. The running-number generator and
+	// e-Tax submission engines are separate subsystems and are NOT implemented here;
+	// these just store the per-branch settings they will read.
+	FiscalStartMonth int8       `json:"fiscalstartmonth" bson:"fiscalstartmonth"`
+	DocumentPrefix   string     `json:"documentprefix" bson:"documentprefix"`
+	ETaxEnabled      bool       `json:"etaxenabled" bson:"etaxenabled"`
+	IsActive         bool       `json:"isactive" bson:"isactive"`
+	CreatedAt        time.Time  `json:"createdat" bson:"createdat"`
+	UpdatedAt        time.Time  `json:"updatedat" bson:"updatedat"`
+	DeletedAt        *time.Time `json:"deletedat,omitempty" bson:"deletedat,omitempty"`
+	CreatedBy        string     `json:"createdby,omitempty" bson:"createdby,omitempty"`
+	UpdatedBy        string     `json:"updatedby,omitempty" bson:"updatedby,omitempty"`
+	DeletedBy        string     `json:"deletedby,omitempty" bson:"deletedby,omitempty"`
 }
 
 func (BranchOrgDoc) CollectionName() string {

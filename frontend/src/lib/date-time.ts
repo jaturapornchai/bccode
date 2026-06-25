@@ -77,6 +77,60 @@ export function resolveWorkspaceDateTimeDisplayOptions(
   };
 }
 
+export type TimezoneOption = { value: string; label: string };
+
+function normalizeUtcOffset(raw: string): string {
+  const match = raw.match(/^([+-])(\d{1,2})(?::?(\d{2}))?$/);
+  if (!match) return "";
+  return `${match[1]}${match[2].padStart(2, "0")}:${(match[3] ?? "00").padStart(2, "0")}`;
+}
+
+export function supportedTimeZones(): string[] {
+  const intl = Intl as typeof Intl & {
+    supportedValuesOf?: (key: "timeZone") => string[];
+  };
+  if (typeof intl.supportedValuesOf !== "function") return [];
+  try {
+    return intl.supportedValuesOf("timeZone");
+  } catch {
+    return [];
+  }
+}
+
+export function timezoneUtcOffset(timeZone: string): string {
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone,
+      timeZoneName: "longOffset",
+    }).formatToParts(new Date());
+    const zone = parts.find((part) => part.type === "timeZoneName")?.value ?? "";
+    const rawOffset = zone.replace(/^GMT/i, "").trim();
+    return rawOffset ? normalizeUtcOffset(rawOffset) : "+00:00";
+  } catch {
+    return "";
+  }
+}
+
+// label + offset for a branch timezone, e.g. "(UTC+07:00) Asia/Bangkok" / "+07:00".
+// Shared by the branch editor and the generic settings screen so the stored
+// timezone/timezonelabel/timezoneoffset triple is always consistent.
+export function timezoneMeta(timeZone: string): { label: string; offset: string } {
+  const offset = timezoneUtcOffset(timeZone);
+  return {
+    label: offset ? `(UTC${offset}) ${timeZone}` : timeZone,
+    offset,
+  };
+}
+
+export function timezoneSelectOptions(language: LanguageCode): TimezoneOption[] {
+  const locale = languageLocales[language] ?? languageLocales.en;
+  return supportedTimeZones()
+    .map((timeZone) => ({ value: timeZone, label: timezoneMeta(timeZone).label }))
+    .sort((first, second) => first.label.localeCompare(second.label, locale));
+}
+
 export function normalizeTimeInput(value: unknown, fallback = ""): string {
   const raw = String(value ?? "").trim();
   if (!raw) return fallback;

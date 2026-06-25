@@ -22,7 +22,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LogoAvatar } from "@/components/logo-avatar";
-import type { LanguageCode } from "@/lib/i18n";
+import { type LanguageCode, LANGUAGES } from "@/lib/i18n";
+import { DEFAULT_TIME_ZONE, timezoneMeta, timezoneSelectOptions } from "@/lib/date-time";
 import { cn } from "@/lib/utils";
 import { normalizeLanguageConfigs } from "./system-settings-screen";
 import { deriveMainApiUrl } from "@/lib/backend-url";
@@ -73,9 +74,74 @@ interface BranchRecord {
   code?: string;
   logouri?: string;
   names?: LocalizedNames;
+  timezone?: string;
+  timezonelabel?: string;
+  timezoneoffset?: string;
+  language?: string;
+  dateformat?: string;
+  yeartype?: string;
+  basecurrency?: string;
+  branchtype?: string;
+  isvatregistered?: boolean;
+  companyregistrationno?: string;
+  email?: string;
+  managername?: string;
+  fiscalstartmonth?: number;
+  documentprefix?: string;
+  etaxenabled?: boolean;
   isactive?: boolean;
   deletedat?: string | null;
 }
+
+const MONTH_OPTIONS = [
+  { value: 1, label: "มกราคม" },
+  { value: 2, label: "กุมภาพันธ์" },
+  { value: 3, label: "มีนาคม" },
+  { value: 4, label: "เมษายน" },
+  { value: 5, label: "พฤษภาคม" },
+  { value: 6, label: "มิถุนายน" },
+  { value: 7, label: "กรกฎาคม" },
+  { value: 8, label: "สิงหาคม" },
+  { value: 9, label: "กันยายน" },
+  { value: 10, label: "ตุลาคม" },
+  { value: 11, label: "พฤศจิกายน" },
+  { value: 12, label: "ธันวาคม" },
+];
+
+// ภ.พ.20 branch registration type.
+const BRANCH_TYPE_OPTIONS = [
+  { value: "head", label: "สำนักงานใหญ่" },
+  { value: "permanent", label: "สาขาถาวร" },
+  { value: "temporary", label: "สาขาชั่วคราว" },
+];
+
+const YEAR_TYPE_OPTIONS = [
+  { value: "buddhist", label: "พ.ศ. (Buddhist Era)" },
+  { value: "christian", label: "ค.ศ. (Christian Era)" },
+];
+
+const DATE_FORMAT_OPTIONS = [
+  { value: "dd/MM/yyyy", label: "dd/MM/yyyy (31/12/2025)" },
+  { value: "dd-MM-yyyy", label: "dd-MM-yyyy (31-12-2025)" },
+  { value: "yyyy-MM-dd", label: "yyyy-MM-dd (2025-12-31)" },
+  { value: "MM/dd/yyyy", label: "MM/dd/yyyy (12/31/2025)" },
+];
+
+// Common currencies for Thai/ASEAN businesses (default THB).
+const CURRENCY_OPTIONS = [
+  { value: "THB", label: "THB — บาท" },
+  { value: "USD", label: "USD — US Dollar" },
+  { value: "EUR", label: "EUR — Euro" },
+  { value: "GBP", label: "GBP — Pound" },
+  { value: "JPY", label: "JPY — Yen" },
+  { value: "CNY", label: "CNY — Renminbi" },
+  { value: "LAK", label: "LAK — Lao Kip" },
+  { value: "MMK", label: "MMK — Myanmar Kyat" },
+  { value: "KHR", label: "KHR — Cambodian Riel" },
+  { value: "VND", label: "VND — Vietnamese Dong" },
+  { value: "SGD", label: "SGD — Singapore Dollar" },
+  { value: "MYR", label: "MYR — Malaysian Ringgit" },
+];
 
 type NodeType = "company" | "branch";
 type ConfirmAction = "save" | "delete";
@@ -153,6 +219,12 @@ export function CompanyBranchTreeView({
     const defaultCode = workspace.shopInfo?.settings?.language || "th";
     return normalizeLanguageConfigs(configs, defaultCode).map((row) => row.code);
   }, [workspace]);
+
+  const timezoneChoices = useMemo(() => timezoneSelectOptions(language), [language]);
+  const workspaceDefaultLanguage = useMemo(
+    () => workspace?.shopInfo?.settings?.language || "th",
+    [workspace],
+  );
 
   // Collapsed states
   const [collapsedCompanies, setCollapsedCompanies] = useState<Record<string, boolean>>({});
@@ -253,6 +325,19 @@ export function CompanyBranchTreeView({
   const [formIsActive, setFormIsActive] = useState(true);
   const [formNames, setFormNames] = useState<LocalizedNameEntry[]>([]);
   const [formLogoUri, setFormLogoUri] = useState("");
+  const [formTimezone, setFormTimezone] = useState(DEFAULT_TIME_ZONE);
+  const [formLanguage, setFormLanguage] = useState("th");
+  const [formDateFormat, setFormDateFormat] = useState("dd/MM/yyyy");
+  const [formYearType, setFormYearType] = useState("buddhist");
+  const [formCurrency, setFormCurrency] = useState("THB");
+  const [formBranchType, setFormBranchType] = useState("permanent");
+  const [formIsVatRegistered, setFormIsVatRegistered] = useState(false);
+  const [formCompanyRegNo, setFormCompanyRegNo] = useState("");
+  const [formEmail, setFormEmail] = useState("");
+  const [formManagerName, setFormManagerName] = useState("");
+  const [formFiscalStartMonth, setFormFiscalStartMonth] = useState(1);
+  const [formDocumentPrefix, setFormDocumentPrefix] = useState("");
+  const [formETaxEnabled, setFormETaxEnabled] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoError, setLogoError] = useState("");
   const logoInputRef = React.useRef<HTMLInputElement>(null);
@@ -278,8 +363,25 @@ export function CompanyBranchTreeView({
 
     if (selectedNode.type === "company") {
       setFormTaxId((selectedNode.data as CompanyRecord).taxid || "");
+    } else {
+      const branchData = selectedNode.data as BranchRecord;
+      setFormTimezone(branchData.timezone || DEFAULT_TIME_ZONE);
+      setFormLanguage(branchData.language || workspaceDefaultLanguage);
+      setFormDateFormat(branchData.dateformat || "dd/MM/yyyy");
+      setFormYearType(branchData.yeartype || "buddhist");
+      setFormCurrency(branchData.basecurrency || "THB");
+      setFormBranchType(
+        branchData.branchtype || (isThaiHeadOfficeBranchCode(branchData.code) ? "head" : "permanent"),
+      );
+      setFormIsVatRegistered(branchData.isvatregistered === true);
+      setFormCompanyRegNo(branchData.companyregistrationno || "");
+      setFormEmail(branchData.email || "");
+      setFormManagerName(branchData.managername || "");
+      setFormFiscalStartMonth(branchData.fiscalstartmonth || 1);
+      setFormDocumentPrefix(branchData.documentprefix || "");
+      setFormETaxEnabled(branchData.etaxenabled === true);
     }
-  }, [selectedNode, editorLanguages]);
+  }, [selectedNode, editorLanguages, workspaceDefaultLanguage]);
 
   const handleLogoUpload = async (file: File | undefined) => {
     if (!file || !auth || logoUploading) return;
@@ -352,6 +454,14 @@ export function CompanyBranchTreeView({
       const normalizedCompanyCode = formType.includes("company") ? normalizeBusinessCode(formCode) : "";
       const normalizedBranchCode = formType.includes("branch") ? normalizeThaiTaxBranchCode(formCode) : "";
 
+      const isBranchForm = formType.includes("branch");
+      if (isBranchForm && (!formTimezone.trim() || !formLanguage.trim())) {
+        setSaveError("กรุณาเลือกเขตเวลาและภาษาของสาขา");
+        setSaving(false);
+        return;
+      }
+      const branchTzMeta = timezoneMeta(formTimezone);
+
       let url = "";
       let method = "POST";
       let body: Record<string, unknown> = {};
@@ -384,6 +494,21 @@ export function CompanyBranchTreeView({
           code: normalizedBranchCode,
           names: namesList,
           logouri: formLogoUri,
+          timezone: formTimezone,
+          timezonelabel: branchTzMeta.label,
+          timezoneoffset: branchTzMeta.offset,
+          language: formLanguage,
+          dateformat: formDateFormat,
+          yeartype: formYearType,
+          basecurrency: formCurrency,
+          branchtype: formBranchType,
+          isvatregistered: formIsVatRegistered,
+          companyregistrationno: formCompanyRegNo,
+          email: formEmail,
+          managername: formManagerName,
+          fiscalstartmonth: formFiscalStartMonth,
+          documentprefix: formDocumentPrefix,
+          etaxenabled: formETaxEnabled,
           isactive: formIsActive,
         };
       } else if (formType === "editbranch") {
@@ -394,6 +519,21 @@ export function CompanyBranchTreeView({
           code: normalizedBranchCode,
           names: namesList,
           logouri: formLogoUri,
+          timezone: formTimezone,
+          timezonelabel: branchTzMeta.label,
+          timezoneoffset: branchTzMeta.offset,
+          language: formLanguage,
+          dateformat: formDateFormat,
+          yeartype: formYearType,
+          basecurrency: formCurrency,
+          branchtype: formBranchType,
+          isvatregistered: formIsVatRegistered,
+          companyregistrationno: formCompanyRegNo,
+          email: formEmail,
+          managername: formManagerName,
+          fiscalstartmonth: formFiscalStartMonth,
+          documentprefix: formDocumentPrefix,
+          etaxenabled: formETaxEnabled,
           isactive: formIsActive,
         };
       }
@@ -429,7 +569,25 @@ export function CompanyBranchTreeView({
             names: namesList,
             logouri: formLogoUri,
             isactive: formIsActive,
-            ...(formType === "createcompany" ? { taxid: formTaxId } : {}),
+            ...(formType === "createcompany"
+              ? { taxid: formTaxId }
+              : {
+                  timezone: formTimezone,
+                  timezonelabel: branchTzMeta.label,
+                  timezoneoffset: branchTzMeta.offset,
+                  language: formLanguage,
+                  dateformat: formDateFormat,
+                  yeartype: formYearType,
+                  basecurrency: formCurrency,
+                  branchtype: formBranchType,
+                  isvatregistered: formIsVatRegistered,
+                  companyregistrationno: formCompanyRegNo,
+                  email: formEmail,
+                  managername: formManagerName,
+                  fiscalstartmonth: formFiscalStartMonth,
+                  documentprefix: formDocumentPrefix,
+                  etaxenabled: formETaxEnabled,
+                }),
           };
           if (formType === "createcompany") {
             setCompanies((prev) => prev.some((row) => row.guidfixed === json.id) ? prev : [...prev, createdData]);
@@ -457,7 +615,25 @@ export function CompanyBranchTreeView({
             names: namesList,
             logouri: formLogoUri,
             isactive: formIsActive,
-            ...(selectedNode.type === "company" ? { taxid: formTaxId } : {}),
+            ...(selectedNode.type === "company"
+              ? { taxid: formTaxId }
+              : {
+                  timezone: formTimezone,
+                  timezonelabel: branchTzMeta.label,
+                  timezoneoffset: branchTzMeta.offset,
+                  language: formLanguage,
+                  dateformat: formDateFormat,
+                  yeartype: formYearType,
+                  basecurrency: formCurrency,
+                  branchtype: formBranchType,
+                  isvatregistered: formIsVatRegistered,
+                  companyregistrationno: formCompanyRegNo,
+                  email: formEmail,
+                  managername: formManagerName,
+                  fiscalstartmonth: formFiscalStartMonth,
+                  documentprefix: formDocumentPrefix,
+                  etaxenabled: formETaxEnabled,
+                }),
           };
           setSelectedNode({
             ...selectedNode,
@@ -965,6 +1141,213 @@ export function CompanyBranchTreeView({
                   )}
                 </div>
 
+                {/* Branch locale: timezone + language (both required — branches may differ) */}
+                {formType.includes("branch") && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-foreground">เขตเวลา (Timezone) *</label>
+                      <select
+                        value={formTimezone}
+                        onChange={(e) => setFormTimezone(e.target.value)}
+                        disabled={isReadOnlyMode}
+                        className="flex h-10 w-full rounded-md border border-input bg-accent/20 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {timezoneChoices.map((tz) => (
+                          <option key={tz.value} value={tz.value}>
+                            {tz.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-foreground">ภาษาของสาขา *</label>
+                      <select
+                        value={formLanguage}
+                        onChange={(e) => setFormLanguage(e.target.value)}
+                        disabled={isReadOnlyMode}
+                        className="flex h-10 w-full rounded-md border border-input bg-accent/20 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {LANGUAGES.map((lang) => (
+                          <option key={lang.code} value={lang.code}>
+                            {lang.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {/* Branch date/currency settings (backend already carries these) */}
+                {formType.includes("branch") && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-foreground">รูปแบบวันที่</label>
+                      <select
+                        value={formDateFormat}
+                        onChange={(e) => setFormDateFormat(e.target.value)}
+                        disabled={isReadOnlyMode}
+                        className="flex h-10 w-full rounded-md border border-input bg-accent/20 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {DATE_FORMAT_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-foreground">ประเภทปี</label>
+                      <select
+                        value={formYearType}
+                        onChange={(e) => setFormYearType(e.target.value)}
+                        disabled={isReadOnlyMode}
+                        className="flex h-10 w-full rounded-md border border-input bg-accent/20 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {YEAR_TYPE_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-foreground">สกุลเงินหลัก</label>
+                      <select
+                        value={formCurrency}
+                        onChange={(e) => setFormCurrency(e.target.value)}
+                        disabled={isReadOnlyMode}
+                        className="flex h-10 w-full rounded-md border border-input bg-accent/20 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {CURRENCY_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {/* Branch tax / registration (ภ.พ.20) */}
+                {formType.includes("branch") && (
+                  <div className="space-y-4 rounded-lg border border-border/60 bg-muted/20 p-4">
+                    <p className="text-sm font-bold text-foreground">ข้อมูลภาษี / ทะเบียน (ภ.พ.20)</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-semibold text-foreground">ประเภทสาขา (ภ.พ.20)</label>
+                        <select
+                          value={formBranchType}
+                          onChange={(e) => setFormBranchType(e.target.value)}
+                          disabled={isReadOnlyMode}
+                          className="flex h-10 w-full rounded-md border border-input bg-accent/20 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {BRANCH_TYPE_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-semibold text-foreground">เลขทะเบียนนิติบุคคล</label>
+                        <Input
+                          value={formCompanyRegNo}
+                          onChange={(e) => setFormCompanyRegNo(e.target.value)}
+                          placeholder="เลขทะเบียนนิติบุคคล 13 หลัก"
+                          className="bg-accent/20"
+                          disabled={isReadOnlyMode}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-semibold text-foreground">ผู้จัดการสาขา</label>
+                        <Input
+                          value={formManagerName}
+                          onChange={(e) => setFormManagerName(e.target.value)}
+                          placeholder="ชื่อผู้จัดการสาขา"
+                          className="bg-accent/20"
+                          disabled={isReadOnlyMode}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-semibold text-foreground">อีเมลสาขา</label>
+                        <Input
+                          type="email"
+                          value={formEmail}
+                          onChange={(e) => setFormEmail(e.target.value)}
+                          placeholder="อีเมลสำหรับส่งเอกสาร"
+                          className="bg-accent/20"
+                          disabled={isReadOnlyMode}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="isvatregistered"
+                        checked={formIsVatRegistered}
+                        onChange={(e) => setFormIsVatRegistered(e.target.checked)}
+                        disabled={isReadOnlyMode}
+                        className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+                      />
+                      <label htmlFor="isvatregistered" className="text-sm font-semibold text-foreground cursor-pointer select-none">
+                        จดทะเบียนภาษีมูลค่าเพิ่ม (VAT)
+                      </label>
+                    </div>
+                  </div>
+                )}
+
+                {/* Document / fiscal config — value-only (generator + e-Tax engine are separate, not active) */}
+                {formType.includes("branch") && (
+                  <div className="space-y-4 rounded-lg border border-border/60 bg-muted/20 p-4">
+                    <p className="text-sm font-bold text-foreground">รอบบัญชี / เอกสาร</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-semibold text-foreground">เดือนเริ่มรอบบัญชี</label>
+                        <select
+                          value={formFiscalStartMonth}
+                          onChange={(e) => setFormFiscalStartMonth(Number(e.target.value))}
+                          disabled={isReadOnlyMode}
+                          className="flex h-10 w-full rounded-md border border-input bg-accent/20 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {MONTH_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-semibold text-foreground">คำนำหน้าเลขที่เอกสาร</label>
+                        <Input
+                          value={formDocumentPrefix}
+                          onChange={(e) => setFormDocumentPrefix(e.target.value)}
+                          placeholder="เช่น BR001-"
+                          className="bg-accent/20"
+                          disabled={isReadOnlyMode}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="etaxenabled"
+                        checked={formETaxEnabled}
+                        onChange={(e) => setFormETaxEnabled(e.target.checked)}
+                        disabled={isReadOnlyMode}
+                        className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+                      />
+                      <label htmlFor="etaxenabled" className="text-sm font-semibold text-foreground cursor-pointer select-none">
+                        เปิดใช้ใบกำกับภาษีอิเล็กทรอนิกส์ (e-Tax)
+                      </label>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      * การออกเลขที่เอกสารอัตโนมัติและการส่ง e-Tax เป็นระบบแยก ยังไม่เปิดใช้งาน — ค่านี้เก็บไว้ตั้งค่าล่วงหน้า
+                    </p>
+                  </div>
+                )}
+
                 {/* Multilingual names */}
                 <div className="space-y-3">
                   <NamesEditor
@@ -1000,7 +1383,12 @@ export function CompanyBranchTreeView({
                 <div className="pt-6 border-t mt-4">
                   <Button
                     onClick={() => showConfirmCodeDialog("save")}
-                    disabled={!formCode.trim() || saving || saveSuccess}
+                    disabled={
+                      !formCode.trim() ||
+                      saving ||
+                      saveSuccess ||
+                      (formType.includes("branch") && (!formTimezone.trim() || !formLanguage.trim()))
+                    }
                     className="w-full font-bold bg-primary text-primary-foreground hover:bg-primary/90 rounded-full h-11"
                   >
                     {saving ? (

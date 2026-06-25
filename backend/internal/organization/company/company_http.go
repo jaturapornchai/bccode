@@ -136,9 +136,18 @@ func (h CompanyHttp) ensureDefaultHeadOfficeBranch(
 		Code:        branchModels.ThaiHeadOfficeBranchCode,
 		Names:       defaultHeadOfficeNames(companyNames),
 		IsActive:    true,
-		CreatedAt:   now,
-		UpdatedAt:   now,
-		CreatedBy:   authUsername,
+		// Default locale for Thai SMEs: Bangkok timezone, Buddhist calendar,
+		// ISO date format. The branch owner can change these on the branch screen.
+		Timezone:       "Asia/Bangkok",
+		TimezoneLabel:  "(GMT+07:00) กรุงเทพฯ",
+		TimezoneOffset: "+07:00",
+		DateFormat:     "dd/MM/yyyy",
+		YearType:       "buddhist",
+		Language:       "th",
+		BranchType:     "head",
+		CreatedAt:      now,
+		UpdatedAt:      now,
+		CreatedBy:      authUsername,
 	}
 	if _, err := pst.Create(ctx, branchModels.BranchOrgDoc{}, branch); err != nil {
 		return "", "", err

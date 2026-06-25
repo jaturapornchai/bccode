@@ -190,18 +190,48 @@ func (h BranchHttp) UpdateBranch(ctx microservice.IContext) error {
 	existing.Code = req.Code
 	existing.CompanyGuid = req.CompanyGuid
 	existing.LogoURI = req.LogoURI
+	existing.Timezone = req.Timezone
+	existing.TimezoneLabel = req.TimezoneLabel
+	existing.TimezoneOffset = req.TimezoneOffset
+	existing.DateFormat = req.DateFormat
+	existing.YearType = req.YearType
+	existing.BaseCurrency = req.BaseCurrency
+	existing.Language = req.Language
+	existing.BranchType = req.BranchType
+	existing.IsVatRegistered = req.IsVatRegistered
+	existing.CompanyRegistrationNo = req.CompanyRegistrationNo
+	existing.Email = req.Email
+	existing.ManagerName = req.ManagerName
+	existing.FiscalStartMonth = req.FiscalStartMonth
+	existing.DocumentPrefix = req.DocumentPrefix
+	existing.ETaxEnabled = req.ETaxEnabled
 	existing.IsActive = req.IsActive
 	existing.UpdatedAt = time.Now()
 	existing.UpdatedBy = authUsername
 
 	if err := pst.Update(mongoCtx, branchModels.BranchOrgDoc{}, bson.M{"holdingcode": holdingCode, "guidfixed": id, "deletedat": bson.M{"$exists": false}}, bson.M{"$set": bson.M{
-		"names":       existing.Names,
-		"code":        existing.Code,
-		"companyguid": existing.CompanyGuid,
-		"logouri":     existing.LogoURI,
-		"isactive":    existing.IsActive,
-		"updatedat":   existing.UpdatedAt,
-		"updatedby":   existing.UpdatedBy,
+		"names":                 existing.Names,
+		"code":                  existing.Code,
+		"companyguid":           existing.CompanyGuid,
+		"logouri":               existing.LogoURI,
+		"timezone":              existing.Timezone,
+		"timezonelabel":         existing.TimezoneLabel,
+		"timezoneoffset":        existing.TimezoneOffset,
+		"dateformat":            existing.DateFormat,
+		"yeartype":              existing.YearType,
+		"basecurrency":          existing.BaseCurrency,
+		"language":              existing.Language,
+		"branchtype":            existing.BranchType,
+		"isvatregistered":       existing.IsVatRegistered,
+		"companyregistrationno": existing.CompanyRegistrationNo,
+		"email":                 existing.Email,
+		"managername":           existing.ManagerName,
+		"fiscalstartmonth":      existing.FiscalStartMonth,
+		"documentprefix":        existing.DocumentPrefix,
+		"etaxenabled":           existing.ETaxEnabled,
+		"isactive":              existing.IsActive,
+		"updatedat":             existing.UpdatedAt,
+		"updatedby":             existing.UpdatedBy,
 	}}); err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
