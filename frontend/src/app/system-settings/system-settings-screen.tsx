@@ -14959,11 +14959,6 @@ function defaultForm(
       );
     else form[field.key] = "";
   }
-  if (config.slug === "mcpapikey") {
-    form.allowedtools = JSON.stringify(["readonly"], null, 2);
-    form.ratelimitperminute = "600";
-    form.isactive = true;
-  }
   if (config.slug === "aiprovider") {
     form.providername = "ollama";
     form.isactive = true;
@@ -15328,8 +15323,6 @@ function buildPayload(
   if (config.kind === "goapi-crud") {
     payload.holdingcode = workspace.shop.holdingcode;
     payload.createdby = payload.createdby ?? auth.username;
-    if (!editing && config.slug === "mcpapikey")
-      payload.createWithExport = true;
   }
 
   if (config.kind === "ai-provider") {

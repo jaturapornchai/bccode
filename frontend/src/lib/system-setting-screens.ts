@@ -876,28 +876,6 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     ],
   },
   {
-    slug: "mcpapikey",
-    route: "/mcpapikey",
-    manual: "mcpapikey",
-    kind: "goapi-crud",
-    icon: "key",
-    basePath: "/api/mcp/keys",
-    idField: "id",
-    title: { th: "MCP Token", en: "MCP Token" },
-    subtitle: {
-      th: "จัดการ API key สำหรับ MCP และ export config",
-      en: "Manage MCP API keys and export client configuration.",
-    },
-    fields: [
-      textField("name", "ชื่อ Token", "Token name", true),
-      textareaField("description", "คำอธิบาย", "Description"),
-      jsonField("allowedtools", "Allowed Tools", "Allowed tools JSON"),
-      numberField("ratelimitperminute", "Rate/min", "Rate/min"),
-      dateField("expiresat", "วันหมดอายุ", "Expires at"),
-      checkboxField("isactive", "เปิดใช้งาน", "Active"),
-    ],
-  },
-  {
     slug: "aiprovider",
     route: "/aiprovider",
     manual: "aiprovider",

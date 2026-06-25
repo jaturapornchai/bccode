@@ -153,7 +153,6 @@ const generalMenuIds = new Set([
   "line-oa-user-link",
   "form-design",
   "line-notify",
-  "mcp-token",
   "ai-provider",
   "copy-uat-dev"
 ]);
