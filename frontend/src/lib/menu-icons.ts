@@ -220,7 +220,6 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/marketplace/shopee": "shoppingBasket",
   "/marketplace/lazada": "shoppingBasket",
   "/marketplace/tiktok": "shoppingBasket",
-  "/mcpapikey": "key",
   "/aiprovider": "bot",
   "/copyuattodev": "cloudDownload",
 };

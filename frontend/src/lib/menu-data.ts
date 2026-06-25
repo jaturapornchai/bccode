@@ -340,7 +340,6 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("line-oa-user-link", "เชื่อม LINE OA", "Connect LINE OA", "/line-oa", "settings"),
           tx("form-design", "ออกแบบฟอร์ม", "Form Design", "/formdesign", "settings"),
           tx("line-notify", "แจ้งเตือนผ่าน LINE", "LINE Notifications", "/linenotify", "settings"),
-          tx("mcp-token", "รหัสเชื่อมผู้ช่วย AI", "AI Assistant Access Key", "/mcpapikey", "settings"),
           tx("ai-provider", "ผู้ให้บริการ AI", "AI Service Provider", "/aiprovider", "settings"),
           tx("copy-uat-dev", "คัดลอกข้อมูลทดสอบ", "Copy Test Data", "/copyuattodev", "settings"),
         ],

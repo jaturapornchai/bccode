@@ -328,9 +328,7 @@ function buildWritePath(request: Request, config: SystemSettingConfig, id: strin
   } else if (config.kind === "atlas") {
     path = "/atlas/update";
   } else if (config.kind === "goapi-crud") {
-    const createWithExport = Boolean(body.createWithExport);
-    if (method === "POST" && createWithExport) path = "/api/mcp/keys/create-with-export";
-    else path = id ? `${config.basePath}/${encodeProxyPathId(config, id)}` : (config.basePath ?? "");
+    path = id ? `${config.basePath}/${encodeProxyPathId(config, id)}` : (config.basePath ?? "");
   } else if (config.kind === "ai-provider") {
     path = "/api/v1/ai-provider/save";
   } else if (config.kind === "copy-uat") {
@@ -646,12 +644,10 @@ function stripProxyKeys(body: Record<string, unknown>): Record<string, unknown> 
   const {
     action: _action,
     backendUrl: _backendUrl,
-    createWithExport: _createWithExport,
     ...payload
   } = body;
   void _action;
   void _backendUrl;
-  void _createWithExport;
   return payload;
 }
 

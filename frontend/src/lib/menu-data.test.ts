@@ -194,7 +194,6 @@ describe("menu language labels", () => {
       "Mappings",
       "Template",
       "route",
-      "MCP Token",
       "AI Provider",
       "Matrix",
       "Schema",
