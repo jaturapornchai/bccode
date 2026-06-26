@@ -32,7 +32,7 @@ Rules:
 
 - `tenant_id` is the canonical tenant boundary.
 - For existing production data, `tenant_id` must use the same value as the existing core `holdingcode`.
-- Existing core storage uses `holdingcode` as the physical storage field. Some newer GoAPI/MCP modules expose `holdingcode` at the API/DTO layer, so treat `tenant_id` as the logical/API name and map to the module's real field instead of renaming old data.
+- Existing core storage uses `holdingcode` as the physical storage field. Some newer GoAPI modules expose `holdingcode` at the API/DTO layer, so treat `tenant_id` as the logical/API name and map to the module's real field instead of renaming old data.
 - `tenant_id` must represent the selected company/business, not the owner user.
 - One `user_id` can access many `tenant_id` values through membership and roles.
 - One `company_group_id` can contain many `tenant_id` values for owner-level overview.

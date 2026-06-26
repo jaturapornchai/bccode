@@ -85,6 +85,6 @@ Targeted scan on 2026-06-06 found existing legacy violations that must be migrat
 - `D:\bccode\backend\internal\goapi\myclickhouse\ensure_tables.go` defines many accounting/stock/report fields as `Float64`, including `totalamount`, `price`, `qty`, `discountamount`, `exchangerate`, `averagecost`, `balanceqty`, and `balanceamount`.
 - `D:\bccode\frontend\src\lib\product-barcode\types.ts` still models several accounting/stock fields as TypeScript `number`, including `price`, `amount`, `qty`, `averagecost`, and `total`.
 - `D:\bccode\frontend\src\app\menu\product-set-screen.tsx` and related product barcode components use `Number(choice.price)` for UI price calculations/display.
-- `D:\bccode\backend\internal\goapi\dataimport\xlsx_product.go`, `D:\bccode\backend\internal\goapi\handlers\dataimport\xlsx_product.go`, `D:\bccode\backend\internal\goapi\handlers\transaction_calculator.go`, and `D:\bccode\backend\internal\goapi\mcp\tools\sales.go` contain `parseFloat` paths for price/amount/qty/report totals.
+- `D:\bccode\backend\internal\goapi\dataimport\xlsx_product.go`, `D:\bccode\backend\internal\goapi\handlers\dataimport\xlsx_product.go`, and `D:\bccode\backend\internal\goapi\handlers\transaction_calculator.go` contain `parseFloat` paths for price/amount/qty/report totals.
 
 Use `NEED_REVIEW_FLOAT_MONEY` when touching these areas until a real migration plan converts storage and calculations to Decimal/native numeric types.

@@ -8,7 +8,7 @@ Design access control for BC Ai Account so:
 - The first admin can assign which email addresses are platform admins.
 - Admin can assign which email addresses are owners for all companies in a company group.
 - Admin/owner can assign which email addresses can access which company/business and which branches.
-- Existing core `holdingcode` data remains unchanged. Logical `tenant_id` uses the same value as existing `holdingcode`. Some newer GoAPI/MCP modules use `holdingcode` as an API/DTO field and must map it explicitly.
+- Existing core `holdingcode` data remains unchanged. Logical `tenant_id` uses the same value as existing `holdingcode`. Some newer GoAPI modules use `holdingcode` as an API/DTO field and must map it explicitly.
 
 ## Scope Model
 

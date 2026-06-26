@@ -25,6 +25,6 @@ Example: `/qcrud Product name:string price:int stock:int category_id:uuid`
 1. Diff for review (NOT applied)
 2. Wait "ok"
 3. Apply + run test + paste output
-4. If MCP db-mcp available → run migration auto
+4. Run migration if applicable (skip with `--no-db`)
 
 ## Token budget: ~3-5k output (low reasoning depth)

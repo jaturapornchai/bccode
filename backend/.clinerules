@@ -9,7 +9,7 @@
 ## Structure
 - `cmd/goapi/` → goapi entry point (port 8888)
 - `cmd/app/` → mainapi entry point (port 8080)
-- `internal/goapi/` → all goapi packages (handlers, mydb, mypg, myclickhouse, myglobal, models, mcp, etc.)
+- `internal/goapi/` → all goapi packages (handlers, mydb, mypg, myclickhouse, myglobal, models, etc.)
 - `pkg/` → mainapi shared packages
 - Import path: `smlcloudplatform/internal/goapi/...`
 
@@ -24,4 +24,3 @@
 3. Thai language in logs/comments is normal
 4. Logger: `logger.Info()`, `logger.Error()`, `logger.Success()`, `logger.Warn()`
 5. Database: `mydb.DatabaseManager` with circuit breaker + retry
-6. MCP SSE endpoint: `GET /mcp/sse`

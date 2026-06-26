@@ -129,5 +129,5 @@ if (Test-Path $dllFile) {
 Write-Host "`n=== Done ===" -ForegroundColor Cyan
 Write-Host "Now run in psql:" -ForegroundColor Yellow
 Write-Host "  CREATE EXTENSION vector;" -ForegroundColor White
-Write-Host "`nThen rebuild embeddings via MCP tool:" -ForegroundColor Yellow
+Write-Host "`nThen rebuild embeddings:" -ForegroundColor Yellow
 Write-Host "  rebuild_embeddings { holdingcode: 'YOUR_HOLDING_CODE', force_all: true }" -ForegroundColor White

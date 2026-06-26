@@ -43,13 +43,6 @@ Read `D:\bccode\.agents\rules\bc-account-core-rules.md` and `D:\bccode\.agents\w
 │   │   ├── config/           # goapi config
 │   │   ├── setupconfig/      # bootstrap.json loader
 │   │   ├── logger/           # goapi logger
-│   │   ├── mcp/              # MCP server (AI tools bridge)
-│   │   │   ├── server.go     # SSE server
-│   │   │   ├── sse_handler.go
-│   │   │   ├── auth/         # API key auth
-│   │   │   ├── mongodb/      # MongoDB tools
-│   │   │   ├── redis/        # Redis tools
-│   │   │   └── tools/        # Tool implementations (15 files)
 │   │   ├── dataimport/       # Data import pipeline
 │   │   ├── datainfo/         # Data info
 │   │   ├── process/          # Stock/document processing
@@ -158,21 +151,14 @@ import "smlcloudplatform/internal/goapi/mydb"
 import "smlcloudplatform/internal/goapi/myglobal"
 ```
 
-### MCP Server — ตัวเชื่อมข้าม Project
-MCP เป็น bridge ให้ AI tools ฝั่ง frontend เข้าถึง backend ได้โดยไม่ต้องอ่าน code โดยตรง
-
-- SSE endpoint: `GET /goapi/mcp/sse` (for MCP-compatible AI clients)
-- Health: `GET /goapi/mcp/health`
-- Tools: `GET /goapi/mcp/tools`
-- API keys: `POST/GET/PUT/DELETE /api/mcp/keys`
-- **Tools (15 files):** sales, dashboard, financial, inventory, customers, products, comparison, database, model_schema, enum_catalog, clickhouse_query, mongodb_query, api_catalog, api_spec, token_export
+### Frontend ↔ Backend Contract
 
 **กฏสำคัญ:**
 - Frontend target ใหม่คือ Next.js ที่ `D:\bccode\frontend` จาก `https://github.com/jaturapornchai/bccode`
 - Flutter ที่ `D:\bcdev\frontend` จาก `https://github.com/jaturapornchai/bcdev` โดยเฉพาะ `bcaiaccount` เป็น reference/template สำหรับ migration เท่านั้น
-- AI ฝั่ง frontend ห้ามเดา backend behavior/schema — ต้องใช้ MCP, API docs, หรือ API Specification Prompt
+- AI ฝั่ง frontend ห้ามเดา backend behavior/schema — ต้องใช้ API docs หรือ API Specification Prompt
 - ถ้า frontend ต้องการ API ใหม่ ให้ส่ง API Specification Prompt มาในไฟล์ `prompts/api_requests/{feature}.md`
-- เมื่อได้รับ prompt จาก frontend → สร้าง API ตาม spec + เพิ่ม MCP tool ถ้าจำเป็น
+- เมื่อได้รับ prompt จาก frontend → สร้าง API ตาม spec
 
 ### Language Source Of Truth
 - `assets/language/languages.tsv` is the single source of truth for UI labels, field labels, report names, report headers, report columns, status text, and repeated business terms.
@@ -188,7 +174,7 @@ MCP เป็น bridge ให้ AI tools ฝั่ง frontend เข้าถ
 - For existing production data, `tenant_id` is a logical alias whose value is the existing core `holdingcode`. Do not create a second tenant id for old records.
 - User/company access must be modeled through membership/role data: `user_id` -> many `tenant_id`; each `tenant_id` -> many `branch_id`.
 - Owner-level overview across many companies uses `company_group_id` above many `tenant_id` values. Keep authorization tenant-scoped and pass only authorized tenant lists to ClickHouse.
-- Existing core storage uses `holdingcode` as the physical tenant identity in many current tables, collections, ClickHouse rows, and Kafka payloads. Some GoAPI/MCP/AI/approval DTOs use `holdingcode`; inspect the module before choosing the physical key. Keep existing field names as-is unless a later migration has a functional reason beyond naming consistency.
+- Existing core storage uses `holdingcode` as the physical tenant identity in many current tables, collections, ClickHouse rows, and Kafka payloads. Some GoAPI/AI/approval DTOs use `holdingcode`; inspect the module before choosing the physical key. Keep existing field names as-is unless a later migration has a functional reason beyond naming consistency.
 - Every handler must derive `tenant_id` from authenticated user/workspace membership, validate access, and pass it through repository/service/report/job layers.
 - Every customer-data query must filter by the logical `tenant_id`. In legacy repositories, map that value to physical `holdingcode` or module-specific `holdingcode` and keep the filter in the same query.
 - New standalone schema should include `tenant_id` and composite indexes such as `(tenant_id, id)`, `(tenant_id, branch_id, doc_no)`, or the best key for the access pattern. Legacy schema may keep its real physical tenant key, usually `holdingcode`.
@@ -224,6 +210,6 @@ MCP เป็น bridge ให้ AI tools ฝั่ง frontend เข้าถ
 - mainapi Dockerfile requires CGO + librdkafka (confluent-kafka-go)
 
 ## Project Rules Source
-- Use this `CLAUDE.md`, backend source code, `prompts/`, `assets/language/`, and MCP docs as the source of truth.
+- Use this `CLAUDE.md`, backend source code, `prompts/`, and `assets/language/` as the source of truth.
 - Do not rely on deleted shared skill folders.
 - When Jead asks to keep a new backend rule, update the relevant project-local docs or prompts.

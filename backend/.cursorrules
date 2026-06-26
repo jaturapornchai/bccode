@@ -36,8 +36,3 @@
 - Logger: `logger.Info()`, `logger.Error()`, `logger.Success()`
 - Database via `mydb.DatabaseManager` with circuit breaker
 - Echo responses: `c.JSON(status, data)`
-
-## MCP Server
-- SSE: `GET /mcp/sse` (Claude Desktop)
-- Tools: `GET /mcp/tools`
-- Health: `GET /mcp/health`

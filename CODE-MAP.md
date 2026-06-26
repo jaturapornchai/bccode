@@ -4,431 +4,432 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 
-Files indexed: 38
+Files indexed: 37
 
-## frontend/src/app/system-settings/system-settings-screen.tsx (16039 lines)
+## frontend/src/app/system-settings/system-settings-screen.tsx (16161 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 349 | function | `branchTabForField` |
-| 353 | function | `branchTabLabel` |
-| 488 | function | `posSectionTitle` |
-| 1016 | function | `isCreatorRecord` |
-| 1032 | function | `isSelfUserRecord` |
-| 1045 | function | `SystemSettingsScreen` |
-| 1149 | const-arrow | `onPointerMove` |
-| 1152 | const-arrow | `onPointerUp` |
-| 1520 | const-arrow | `handleWorkspaceChange` |
-| 1716 | function | `openCreate` |
-| 1724 | function | `openCreateCopy` |
-| 1733 | function | `handleOpenCategoryCreate` |
-| 1744 | function | `openEdit` |
-| 1832 | function | `saveRecord` |
-| 2082 | function | `deleteRecord` |
-| 2143 | function | `toggleUserAccess` |
-| 2219 | function | `resetUserPassword` |
-| 2262 | function | `saveWorkDays` |
-| 2295 | function | `runCopy` |
-| 2330 | function | `openStandardUnitDialog` |
-| 2340 | function | `loadStandardUnitOptions` |
-| 2386 | function | `saveStandardUnits` |
-| 2424 | function | `toggleStandardUnit` |
-| 2433 | function | `selectAllStandardUnits` |
-| 2440 | function | `clearStandardUnits` |
-| 3162 | function | `SettingCard` |
-| 3355 | function | `SettingDataList` |
-| 3453 | const-arrow | `updateHeight` |
-| 3496 | const-arrow | `update` |
-| 3501 | const-arrow | `onMove` |
-| 3502 | const-arrow | `onUp` |
-| 3798 | function | `settingListRowStyle` |
-| 3833 | function | `CompanyMultiSelectCell` |
-| 3896 | function | `settingListColumns` |
-| 4109 | function | `SettingDetailPanel` |
-| 4479 | function | `SettingFormDialog` |
-| 4642 | function | `UserFormSections` |
-| 4750 | function | `fieldGridItemClass` |
-| 4788 | function | `isThailandAddressPrimaryField` |
-| 4797 | function | `isThailandAddressSecondaryField` |
-| 4806 | function | `isBranchLatitudeField` |
-| 4813 | function | `isBranchLongitudeField` |
-| 4820 | function | `parseCoordinateValue` |
-| 4831 | function | `LocalizedNamesReadOnlyDetail` |
-| 4891 | function | `ThailandAddressReadOnlyDetail` |
-| 4995 | function | `ReadOnlyDetailValue` |
-| 5010 | function | `thailandAddressReadOnlyValue` |
-| 5015 | function | `ThailandAddressFieldEditor` |
-| 5090 | function | `setAddress` |
-| 5094 | function | `chooseProvince` |
-| 5125 | function | `chooseDistrict` |
-| 5156 | function | `chooseSubdistrict` |
-| 5174 | function | `applyPostalCode` |
-| 5294 | function | `ThailandAddressFreeTextEditor` |
-| 5329 | function | `ThailandAddressSelect` |
-| 5364 | function | `thailandAddressUi` |
-| 5395 | function | `filterThailandProvinces` |
-| 5404 | function | `filterThailandDistricts` |
-| 5418 | function | `filterThailandSubdistricts` |
-| 5437 | function | `singleThailandAddressCode` |
-| 5445 | function | `thailandAddressOptionLabel` |
-| 5452 | function | `postalAddressHint` |
-| 5478 | function | `StandardUnitDialog` |
-| 5686 | function | `ApprovalSettingEditor` |
-| 5699 | function | `updateApproval` |
-| 5793 | function | `approvalsFromForm` |
-| 5800 | function | `approvalLabelText` |
-| 5809 | function | `permissionLinkOption` |
-| 5834 | function | `stringArrayFromForm` |
-| 5855 | function | `normalizeStringListValue` |
-| 5875 | function | `uniqueStrings` |
-| 5879 | function | `isPermissionAccessRulesField` |
-| 5883 | function | `isPermissionCodesField` |
-| 5887 | function | `isApprovalCodesField` |
-| 5891 | function | `isEmployeeCodeField` |
-| 5895 | function | `isEmployeeNameField` |
-| 5907 | function | `permissionLinkUserOption` |
-| 5926 | function | `PermissionLinkUserSelector` |
-| 5970 | function | `loadUsers` |
-| 6022 | function | `choose` |
-| 6133 | function | `PermissionLinkMultiSelectEditor` |
-| 6180 | function | `loadOptions` |
-| 6229 | function | `toggle` |
-| 6313 | function | `PermissionMatrixEditor` |
-| 6340 | function | `updateMenuRule` |
-| 6357 | function | `updateMenuPermission` |
-| 6365 | function | `updateMenuAllBranches` |
-| 6496 | function | `permissionBranchesFromForm` |
-| 6503 | function | `permissionBranchValue` |
-| 6511 | function | `permissionActionText` |
-| 6554 | function | `recordToCompanyScopeOption` |
-| 6571 | function | `selectedCompanyScopesFromRules` |
-| 6585 | function | `ensureScope` |
-| 6629 | function | `UserAccessAuditReportPanel` |
-| 6720 | function | `toggleReportUser` |
-| 6729 | function | `selectAllReportUsers` |
-| 6734 | function | `clearReportUsers` |
-| 6890 | function | `UserAccessAuditReportPage` |
-| 7004 | function | `AuditMetric` |
-| 7013 | function | `AuditSection` |
-| 7022 | function | `AuditLine` |
-| 7031 | function | `AuditBullet` |
-| 7039 | function | `loadUserAccessAuditData` |
-| 7065 | function | `loadAuditRecords` |
-| 7091 | function | `loadAuditHoldingData` |
-| 7134 | function | `buildUserAccessAuditSummary` |
-| 7219 | function | `auditScopeLines` |
-| 7250 | function | `auditPermissionLinksForUser` |
-| 7276 | function | `auditCodeList` |
-| 7293 | function | `auditUserKey` |
-| 7298 | function | `auditUserUid` |
-| 7302 | function | `auditUserCode` |
-| 7306 | function | `auditUserName` |
-| 7310 | function | `auditUserStatusLabel` |
-| 7316 | function | `auditRoleLabel` |
-| 7323 | function | `HoldingScopeRulesEditor` |
-| 7453 | function | `commit` |
-| 7458 | function | `setHoldingScope` |
-| 7466 | function | `addCompanyScope` |
-| 7489 | function | `removeCompanyScope` |
-| 7503 | function | `setCompanyAllBranches` |
-| 7526 | function | `addBranchScope` |
-| 7548 | function | `removeBranchScope` |
-| 7570 | function | `selectedBranchCount` |
-| 7580 | function | `selectedCompanyCount` |
-| 7855 | function | `CompanyScopeSearchPicker` |
-| 7938 | function | `BranchScopeSearchPicker` |
-| 8022 | function | `normalizeHoldingScopeRules` |
-| 8037 | function | `holdingScopeRawArray` |
-| 8047 | function | `normalizeHoldingScopeRule` |
-| 8065 | function | `hasInvalidHoldingScopeRules` |
-| 8076 | function | `normalizeHoldingScopeType` |
-| 8083 | function | `normalizeScopeBranchCode` |
-| 8093 | function | `workspaceBusinessCode` |
-| 8165 | function | `isProductVariantStructuredField` |
-| 8175 | function | `ProductVariantStructuredFieldEditor` |
-| 8200 | const-arrow | `updateItem` |
-| 8366 | function | `VariantNestedRowsEditor` |
-| 8379 | const-arrow | `updateRow` |
-| 8439 | function | `VariantInput` |
-| 8486 | function | `variantArrayValue` |
-| 8493 | function | `defaultVariantItem` |
-| 8499 | function | `ProductVariantStructuredReadOnlyDetail` |
-| 8591 | function | `VariantReadOnlyNestedRows` |
-| 8629 | function | `VariantReadOnlyCell` |
-| 8651 | function | `variantDisplayValue` |
-| 8659 | function | `FieldEditor` |
-| 9101 | const-arrow | `onSelectChange` |
-| 9213 | function | `StringListFieldEditor` |
-| 9322 | function | `isColorHexField` |
-| 9333 | function | `isBranchStructuredSettingField` |
-| 9352 | function | `TimeSaleListEditor` |
-| 9370 | function | `commit` |
-| 9374 | function | `updateRow` |
-| 9378 | function | `toggleEnabled` |
-| 9382 | function | `toggleDay` |
-| 9493 | function | `TimeSaleListReadOnlyDetail` |
-| 9534 | function | `emptyTimeSaleRow` |
-| 9544 | function | `normalizeTimeSaleFormList` |
-| 9555 | function | `normalizeTimeSalePayload` |
-| 9565 | function | `normalizeTimeSaleDays` |
-| 9573 | function | `timeSaleDateInputValue` |
-| 9580 | function | `timeSaleDateInputToIso` |
-| 9586 | function | `normalizeHexColor` |
-| 9655 | function | `BranchStructuredSettingEditor` |
-| 9706 | function | `PaymentRoundingTableEditor` |
-| 9726 | function | `updateMethod` |
-| 9742 | function | `updateRule` |
-| 9756 | function | `addRule` |
-| 9764 | function | `removeRule` |
-| 9903 | function | `PointConfigTableEditor` |
-| 9923 | function | `updateGeneralRule` |
-| 9933 | function | `updateSpecialRule` |
-| 10026 | function | `PointGeneralRulesTable` |
-| 10127 | function | `PointSpecialRulesTable` |
-| 10249 | function | `PaymentMethodToggle` |
-| 10285 | function | `CompactNumberInput` |
-| 10307 | function | `CompactDateInput` |
-| 10329 | function | `FragmentLikeRows` |
-| 10333 | function | `normalizePaymentRoundingConfig` |
-| 10361 | function | `normalizePointConfig` |
-| 10381 | function | `parseBranchSettingRecord` |
-| 10398 | function | `normalizeRoundingRule` |
-| 10407 | function | `normalizeGeneralPointRule` |
-| 10418 | function | `normalizeSpecialPointRule` |
-| 10436 | function | `defaultRoundingRules` |
-| 10446 | function | `defaultRoundingRule` |
-| 10450 | function | `defaultGeneralPointRule` |
-| 10462 | function | `defaultSpecialPointRule` |
-| 10481 | function | `paymentRoundingSummary` |
-| 10496 | function | `pointConfigSummary` |
-| 10502 | function | `paymentMethodLabel` |
-| 10519 | function | `shortDayLabel` |
-| 10535 | function | `invalidConfigText` |
-| 10541 | function | `normalizeConfigNumber` |
-| 10546 | function | `numberFromInput` |
-| 10551 | function | `formatConfigNumber` |
-| 10555 | function | `normalizeIsoDate` |
-| 10561 | function | `isoDateToInput` |
-| 10567 | function | `dateInputToIso` |
-| 10573 | function | `LanguageConfigsEditor` |
-| 10596 | function | `commit` |
-| 10612 | function | `reorderByCode` |
-| 10621 | function | `handleDragStart` |
-| 10628 | function | `handleDragOver` |
-| 10639 | function | `handleDrop` |
-| 10769 | function | `LanguageListEditor` |
-| 10801 | function | `commit` |
-| 10815 | function | `reorderByCode` |
-| 10825 | function | `handleDragStart` |
-| 10833 | function | `handleDragOver` |
-| 10845 | function | `handleDrop` |
-| 10968 | function | `MasterPickerFieldEditor` |
-| 10993 | function | `select` |
-| 11059 | function | `defaultLanguageConfigs` |
-| 11063 | function | `moveArrayItem` |
-| 11075 | function | `setDefaultLanguageConfig` |
-| 11084 | function | `normalizeLanguageConfigs` |
-| 11150 | function | `languageConfigRow` |
-| 11163 | function | `supportedLanguageCode` |
-| 11167 | function | `supportedLanguageCode` |
-| 11168 | function | `supportedLanguageCode` |
-| 11180 | function | `languageName` |
-| 11187 | function | `LanguageFlag` |
-| 11196 | function | `LanguageAddDialog` |
-| 11212 | const-arrow | `onKeyDown` |
-| 11295 | function | `normalizeLanguageList` |
-| 11327 | function | `nameEditorLanguageCodes` |
-| 11370 | function | `getLocalizedNameArray` |
-| 11380 | function | `localizedNameForLanguage` |
-| 11392 | function | `defaultPaymentRoundingJson` |
-| 11416 | function | `defaultPointConfigJson` |
-| 11573 | function | `ImageUploadFieldEditor` |
-| 11616 | function | `clearImage` |
-| 11622 | function | `uploadImageFile` |
-| 11664 | function | `applyCroppedFile` |
-| 11671 | function | `handleFile` |
-| 11777 | function | `ImageUploadReadOnlyDetail` |
-| 11839 | function | `toUriArray` |
-| 11859 | function | `ImageGalleryFieldEditor` |
-| 11891 | function | `updateValues` |
-| 11895 | function | `removeAt` |
-| 11899 | function | `replaceAt` |
-| 11905 | function | `uploadFile` |
-| 11950 | function | `handleFile` |
-| 11959 | function | `applyCroppedFile` |
-| 12037 | function | `GalleryItemCard` |
-| 12113 | function | `ImageGalleryReadOnlyDetail` |
-| 12155 | function | `GalleryReadOnlyItem` |
-| 12215 | function | `branchOptionDisplayName` |
-| 12233 | function | `recordToBranchOption` |
-| 12249 | function | `selectedBranchesFromValue` |
-| 12274 | function | `branchKeyOf` |
-| 12280 | function | `BranchMultiSelectFieldEditor` |
-| 12407 | function | `commitSelection` |
-| 12411 | function | `removeBranch` |
-| 12516 | function | `BranchPickerDialog` |
-| 12546 | const-arrow | `handler` |
-| 12553 | function | `toggleDraft` |
-| 12559 | function | `selectAllVisible` |
-| 12566 | function | `clearVisible` |
-| 12714 | function | `BranchMultiSelectReadOnlyDetail` |
-| 12755 | function | `companyOptionDisplayName` |
-| 12769 | function | `CompanyMultiSelectFieldEditor` |
-| 12844 | function | `handleToggleShop` |
-| 12906 | function | `CompanyMultiSelectReadOnlyDetail` |
-| 12992 | function | `extractListRecords` |
-| 13000 | function | `BranchCoordinatePairEditor` |
-| 13115 | function | `BranchUnifiedView` |
-| 13464 | function | `BranchEmbeddedSubScreen` |
-| 13575 | function | `productGroupTabLabel` |
-| 13582 | function | `ProductGroupUnifiedView` |
-| 13635 | function | `branchRecordToListItem` |
-| 13654 | function | `branchDisplayLabel` |
-| 13670 | function | `BranchPosSections` |
-| 13762 | function | `BranchBusinessFlags` |
-| 13794 | function | `ComboFieldEditor` |
-| 13910 | const-arrow | `handler` |
-| 13919 | const-arrow | `handler` |
-| 13930 | function | `choose` |
-| 14020 | function | `WorkDayPanel` |
-| 14061 | function | `updateDay` |
-| 14069 | function | `updateTime` |
-| 14090 | function | `addTimeRange` |
-| 14102 | function | `removeTimeRange` |
-| 14112 | function | `copyMondaySchedule` |
-| 14128 | function | `toggleFullDay` |
-| 14355 | function | `CopyUatPanel` |
-| 14466 | function | `StatCard` |
-| 14477 | function | `readAuth` |
-| 14488 | function | `readWorkspace` |
-| 14499 | function | `companyRecordForEdit` |
-| 14506 | function | `companyRecordFromWorkspace` |
-| 14528 | function | `getMainHoldingCodeFromWorkspace` |
-| 14539 | function | `requestHeaders` |
-| 14547 | function | `workspaceHoldingCode` |
-| 14551 | function | `workspaceTenantPayload` |
-| 14559 | function | `applyWorkspaceTenantParams` |
-| 14567 | function | `workspaceTenantSearchParams` |
-| 14571 | function | `normalizeRecords` |
-| 14591 | function | `extractRecordTotal` |
-| 14613 | function | `mergeRecords` |
-| 14630 | function | `extractCompanyRecord` |
-| 14643 | function | `normalizeRestaurantRecord` |
-| 14657 | function | `normalizeWorkDays` |
-| 14691 | function | `normalizeWorkTimeRecord` |
-| 14709 | function | `createWorkTime` |
-| 14727 | function | `withWorkTimePatch` |
-| 14749 | function | `applyUtcFields` |
-| 14784 | function | `cloneWorkTimes` |
-| 14788 | function | `workTimeStart` |
-| 14792 | function | `workTimeEnd` |
-| 14796 | function | `toLegacyTime` |
-| 14801 | function | `getWorkTimeIssue` |
-| 14826 | function | `formatUtcPreview` |
-| 14835 | function | `buildBranchScopedWorkDayBody` |
-| 14863 | function | `scopedRestaurantBody` |
-| 14882 | function | `restaurantBody` |
-| 14892 | function | `filterRecordsByDateTimeScope` |
-| 14909 | function | `defaultForm` |
-| 14979 | function | `formFromRecord` |
-| 15082 | function | `recordValueForField` |
-| 15097 | function | `applyCompanyDefaults` |
-| 15107 | function | `applyBranchDefaults` |
-| 15120 | function | `applyCountryDefaultsToForm` |
-| 15146 | function | `syncCompanyLanguageForm` |
-| 15156 | function | `setFormValueIfEmpty` |
-| 15160 | function | `isEmptyFormValue` |
-| 15164 | function | `applyTimezoneMetaToForm` |
-| 15177 | function | `buildPayload` |
-| 15410 | function | `newClientGuidFixed` |
-| 15417 | function | `resolveDateTimeScope` |
-| 15462 | function | `dateTimeScopePayload` |
-| 15474 | function | `localDateToUtcIso` |
-| 15485 | function | `normalizeUtcOffset` |
-| 15492 | function | `stringValue` |
-| 15500 | function | `productCategoryGuid` |
-| 15505 | function | `productCategoryParentGuid` |
-| 15512 | function | `productCategoryGroupNumber` |
-| 15520 | function | `productCategoryXOrder` |
-| 15527 | function | `productCategoryDisplayName` |
-| 15535 | function | `productCategoryGroupLabel` |
-| 15550 | function | `isEmailLike` |
-| 15554 | function | `recordId` |
-| 15581 | function | `recordDetailId` |
-| 15595 | function | `recordBusinessLookup` |
-| 15616 | function | `recordMatchesBusinessLookup` |
-| 15640 | function | `shouldHydrateRecordDetail` |
-| 15644 | function | `wait` |
-| 15648 | function | `firstRecordValue` |
-| 15656 | function | `recordTitle` |
-| 15688 | function | `recordBranchCaption` |
-| 15698 | function | `userAccessDisabled` |
-| 15704 | function | `localizedValue` |
-| 15724 | function | `uiBackendKey` |
-| 15728 | function | `systemSettingTitle` |
-| 15739 | function | `fieldLabel` |
-| 15755 | function | `optionLabel` |
-| 15767 | function | `isProductUnitOption` |
-| 15775 | function | `productUnitCode` |
-| 15779 | function | `unitDisplayName` |
-| 15798 | function | `uploadUiText` |
-| 15802 | function | `ImageCropDialog` |
-| 15847 | const-arrow | `handler` |
-| 15854 | function | `apply` |
-| 15948 | function | `drawCroppedImage` |
-| 15985 | function | `clampNumber` |
-| 15989 | function | `extractUploadUri` |
-| 16012 | function | `useAuthenticatedImageDisplaySource` |
-| 16106 | function | `authenticatedImageCacheKey` |
-| 16120 | function | `syncAuthenticatedImageCacheOwner` |
-| 16133 | function | `getCachedAuthenticatedImageObjectUrl` |
-| 16140 | function | `cacheAuthenticatedImageObjectUrl` |
-| 16169 | function | `clearAuthenticatedImageObjectUrlCache` |
-| 16177 | function | `imageDisplayUrl` |
-| 16195 | function | `mainApiDisplayBase` |
-| 16213 | function | `resizeLogoFile` |
-| 16243 | function | `loadImageElement` |
-| 16252 | function | `canvasToBlob` |
-| 16260 | function | `radioFormValue` |
-| 16287 | function | `radioValueToFormValue` |
-| 16296 | function | `optionValueToFormValue` |
-| 16307 | function | `booleanLikeValue` |
-| 16321 | function | `isDecimalSettingField` |
-| 16332 | function | `normalizeDecimalPlaces` |
-| 16338 | function | `comboOptionsForField` |
-| 16355 | function | `timezoneOptions` |
-| 16369 | function | `supportedTimeZones` |
-| 16381 | function | `timezoneMeta` |
-| 16389 | function | `setTimezoneDerivedPayload` |
-| 16402 | function | `timezoneUtcOffset` |
-| 16419 | function | `namesToObject` |
-| 16432 | function | `objectToNames` |
-| 16458 | function | `parseJsonField` |
-| 16472 | function | `normalizeVariantMasterPayload` |
-| 16582 | function | `uppercasePayloadField` |
-| 16588 | function | `uppercaseString` |
-| 16592 | function | `normalizeStringArray` |
-| 16599 | function | `getByPath` |
-| 16609 | function | `getPathOrFlatValue` |
-| 16614 | function | `setByPath` |
-| 16624 | function | `deleteByPath` |
-| 16633 | function | `shortValue` |
-| 16643 | function | `fieldDisplayValue` |
-| 16678 | function | `masterPickerDisplayValue` |
-| 16691 | function | `isRecord` |
-| 16695 | function | `isFailed` |
-| 16700 | function | `extractMessage` |
-| 16710 | function | `safeJsonParse` |
-| 16718 | function | `isActiveRecord` |
-| 16728 | function | `localeOf` |
-| 16746 | function | `settingIcon` |
+| 352 | function | `branchTabForField` |
+| 356 | function | `branchTabLabel` |
+| 491 | function | `posSectionTitle` |
+| 1019 | function | `isCreatorRecord` |
+| 1035 | function | `isSelfUserRecord` |
+| 1048 | function | `SystemSettingsScreen` |
+| 1152 | const-arrow | `onPointerMove` |
+| 1155 | const-arrow | `onPointerUp` |
+| 1523 | const-arrow | `handleWorkspaceChange` |
+| 1738 | function | `openCreate` |
+| 1746 | function | `openCreateCopy` |
+| 1755 | function | `handleOpenCategoryCreate` |
+| 1766 | function | `handleOpenGroupCreate` |
+| 1776 | function | `openEdit` |
+| 1877 | function | `saveRecord` |
+| 2166 | function | `deleteRecord` |
+| 2227 | function | `toggleUserAccess` |
+| 2303 | function | `resetUserPassword` |
+| 2346 | function | `saveWorkDays` |
+| 2379 | function | `runCopy` |
+| 2414 | function | `openStandardUnitDialog` |
+| 2424 | function | `loadStandardUnitOptions` |
+| 2470 | function | `saveStandardUnits` |
+| 2508 | function | `toggleStandardUnit` |
+| 2517 | function | `selectAllStandardUnits` |
+| 2524 | function | `clearStandardUnits` |
+| 3331 | function | `SettingDataList` |
+| 3430 | const-arrow | `updateHeight` |
+| 3473 | const-arrow | `update` |
+| 3478 | const-arrow | `onMove` |
+| 3479 | const-arrow | `onUp` |
+| 3774 | function | `settingListRowStyle` |
+| 3809 | function | `CompanyMultiSelectCell` |
+| 3873 | function | `settingListColumns` |
+| 4163 | function | `SettingDetailPanel` |
+| 4556 | function | `SettingFormDialog` |
+| 4703 | function | `UserFormSections` |
+| 4820 | function | `fieldGridItemClass` |
+| 4859 | function | `isThailandAddressPrimaryField` |
+| 4868 | function | `isThailandAddressSecondaryField` |
+| 4877 | function | `isBranchLatitudeField` |
+| 4884 | function | `isBranchLongitudeField` |
+| 4891 | function | `parseCoordinateValue` |
+| 4902 | function | `LocalizedNamesReadOnlyDetail` |
+| 4962 | function | `ThailandAddressReadOnlyDetail` |
+| 5066 | function | `ReadOnlyDetailValue` |
+| 5081 | function | `thailandAddressReadOnlyValue` |
+| 5086 | function | `ThailandAddressFieldEditor` |
+| 5161 | function | `setAddress` |
+| 5165 | function | `chooseProvince` |
+| 5196 | function | `chooseDistrict` |
+| 5227 | function | `chooseSubdistrict` |
+| 5245 | function | `applyPostalCode` |
+| 5365 | function | `ThailandAddressFreeTextEditor` |
+| 5400 | function | `ThailandAddressSelect` |
+| 5435 | function | `thailandAddressUi` |
+| 5466 | function | `filterThailandProvinces` |
+| 5475 | function | `filterThailandDistricts` |
+| 5489 | function | `filterThailandSubdistricts` |
+| 5508 | function | `singleThailandAddressCode` |
+| 5516 | function | `thailandAddressOptionLabel` |
+| 5523 | function | `postalAddressHint` |
+| 5549 | function | `StandardUnitDialog` |
+| 5757 | function | `ApprovalSettingEditor` |
+| 5770 | function | `updateApproval` |
+| 5864 | function | `approvalsFromForm` |
+| 5871 | function | `approvalLabelText` |
+| 5880 | function | `permissionLinkOption` |
+| 5905 | function | `stringArrayFromForm` |
+| 5926 | function | `normalizeStringListValue` |
+| 5946 | function | `uniqueStrings` |
+| 5950 | function | `isPermissionAccessRulesField` |
+| 5954 | function | `isPermissionCodesField` |
+| 5958 | function | `isApprovalCodesField` |
+| 5962 | function | `isEmployeeCodeField` |
+| 5966 | function | `isEmployeeNameField` |
+| 5979 | function | `permissionLinkUserOption` |
+| 6000 | function | `PermissionLinkUserSelector` |
+| 6045 | function | `loadUsers` |
+| 6097 | function | `choose` |
+| 6228 | function | `PermissionLinkMultiSelectEditor` |
+| 6275 | function | `loadOptions` |
+| 6324 | function | `toggle` |
+| 6408 | function | `PermissionMatrixEditor` |
+| 6435 | function | `updateMenuRule` |
+| 6452 | function | `updateMenuPermission` |
+| 6460 | function | `updateMenuAllBranches` |
+| 6591 | function | `permissionBranchesFromForm` |
+| 6598 | function | `permissionBranchValue` |
+| 6606 | function | `permissionActionText` |
+| 6649 | function | `recordToCompanyScopeOption` |
+| 6666 | function | `selectedCompanyScopesFromRules` |
+| 6680 | function | `ensureScope` |
+| 6724 | function | `UserAccessAuditReportPanel` |
+| 6815 | function | `toggleReportUser` |
+| 6824 | function | `selectAllReportUsers` |
+| 6829 | function | `clearReportUsers` |
+| 6994 | function | `UserAccessAuditReportPage` |
+| 7108 | function | `AuditMetric` |
+| 7117 | function | `AuditSection` |
+| 7126 | function | `AuditLine` |
+| 7135 | function | `AuditBullet` |
+| 7143 | function | `loadUserAccessAuditData` |
+| 7169 | function | `loadAuditRecords` |
+| 7195 | function | `loadAuditHoldingData` |
+| 7238 | function | `buildUserAccessAuditSummary` |
+| 7323 | function | `auditScopeLines` |
+| 7354 | function | `auditPermissionLinksForUser` |
+| 7380 | function | `auditCodeList` |
+| 7397 | function | `auditUserKey` |
+| 7402 | function | `auditUserUid` |
+| 7406 | function | `auditUserCode` |
+| 7410 | function | `auditUserName` |
+| 7414 | function | `auditUserStatusLabel` |
+| 7420 | function | `auditRoleLabel` |
+| 7427 | function | `HoldingScopeRulesEditor` |
+| 7557 | function | `commit` |
+| 7562 | function | `setHoldingScope` |
+| 7570 | function | `addCompanyScope` |
+| 7593 | function | `removeCompanyScope` |
+| 7607 | function | `setCompanyAllBranches` |
+| 7630 | function | `addBranchScope` |
+| 7652 | function | `removeBranchScope` |
+| 7674 | function | `selectedBranchCount` |
+| 7684 | function | `selectedCompanyCount` |
+| 7964 | function | `CompanyScopeSearchPicker` |
+| 8047 | function | `BranchScopeSearchPicker` |
+| 8131 | function | `normalizeHoldingScopeRules` |
+| 8146 | function | `holdingScopeRawArray` |
+| 8156 | function | `normalizeHoldingScopeRule` |
+| 8174 | function | `hasInvalidHoldingScopeRules` |
+| 8185 | function | `normalizeHoldingScopeType` |
+| 8192 | function | `normalizeScopeBranchCode` |
+| 8202 | function | `workspaceBusinessCode` |
+| 8274 | function | `isProductVariantStructuredField` |
+| 8284 | function | `ProductVariantStructuredFieldEditor` |
+| 8309 | const-arrow | `updateItem` |
+| 8475 | function | `VariantNestedRowsEditor` |
+| 8488 | const-arrow | `updateRow` |
+| 8548 | function | `VariantInput` |
+| 8595 | function | `variantArrayValue` |
+| 8602 | function | `defaultVariantItem` |
+| 8608 | function | `ProductVariantStructuredReadOnlyDetail` |
+| 8700 | function | `VariantReadOnlyNestedRows` |
+| 8738 | function | `VariantReadOnlyCell` |
+| 8760 | function | `variantDisplayValue` |
+| 8768 | function | `FieldEditor` |
+| 9211 | const-arrow | `onSelectChange` |
+| 9323 | function | `StringListFieldEditor` |
+| 9432 | function | `isColorHexField` |
+| 9443 | function | `isBranchStructuredSettingField` |
+| 9462 | function | `TimeSaleListEditor` |
+| 9480 | function | `commit` |
+| 9484 | function | `updateRow` |
+| 9488 | function | `toggleEnabled` |
+| 9492 | function | `toggleDay` |
+| 9603 | function | `TimeSaleListReadOnlyDetail` |
+| 9644 | function | `emptyTimeSaleRow` |
+| 9654 | function | `normalizeTimeSaleFormList` |
+| 9665 | function | `normalizeTimeSalePayload` |
+| 9675 | function | `normalizeTimeSaleDays` |
+| 9683 | function | `timeSaleDateInputValue` |
+| 9690 | function | `timeSaleDateInputToIso` |
+| 9696 | function | `normalizeHexColor` |
+| 9765 | function | `BranchStructuredSettingEditor` |
+| 9816 | function | `PaymentRoundingTableEditor` |
+| 9836 | function | `updateMethod` |
+| 9852 | function | `updateRule` |
+| 9866 | function | `addRule` |
+| 9874 | function | `removeRule` |
+| 10013 | function | `PointConfigTableEditor` |
+| 10033 | function | `updateGeneralRule` |
+| 10043 | function | `updateSpecialRule` |
+| 10136 | function | `PointGeneralRulesTable` |
+| 10237 | function | `PointSpecialRulesTable` |
+| 10359 | function | `PaymentMethodToggle` |
+| 10395 | function | `CompactNumberInput` |
+| 10417 | function | `CompactDateInput` |
+| 10439 | function | `FragmentLikeRows` |
+| 10443 | function | `normalizePaymentRoundingConfig` |
+| 10471 | function | `normalizePointConfig` |
+| 10491 | function | `parseBranchSettingRecord` |
+| 10508 | function | `normalizeRoundingRule` |
+| 10517 | function | `normalizeGeneralPointRule` |
+| 10528 | function | `normalizeSpecialPointRule` |
+| 10546 | function | `defaultRoundingRules` |
+| 10556 | function | `defaultRoundingRule` |
+| 10560 | function | `defaultGeneralPointRule` |
+| 10572 | function | `defaultSpecialPointRule` |
+| 10591 | function | `paymentRoundingSummary` |
+| 10606 | function | `pointConfigSummary` |
+| 10612 | function | `paymentMethodLabel` |
+| 10629 | function | `shortDayLabel` |
+| 10645 | function | `invalidConfigText` |
+| 10651 | function | `normalizeConfigNumber` |
+| 10656 | function | `numberFromInput` |
+| 10661 | function | `formatConfigNumber` |
+| 10665 | function | `normalizeIsoDate` |
+| 10671 | function | `isoDateToInput` |
+| 10677 | function | `dateInputToIso` |
+| 10683 | function | `LanguageConfigsEditor` |
+| 10706 | function | `commit` |
+| 10722 | function | `reorderByCode` |
+| 10731 | function | `handleDragStart` |
+| 10738 | function | `handleDragOver` |
+| 10749 | function | `handleDrop` |
+| 10879 | function | `LanguageListEditor` |
+| 10911 | function | `commit` |
+| 10925 | function | `reorderByCode` |
+| 10935 | function | `handleDragStart` |
+| 10943 | function | `handleDragOver` |
+| 10955 | function | `handleDrop` |
+| 11078 | function | `MasterPickerFieldEditor` |
+| 11103 | function | `select` |
+| 11169 | function | `defaultLanguageConfigs` |
+| 11173 | function | `moveArrayItem` |
+| 11185 | function | `setDefaultLanguageConfig` |
+| 11194 | function | `normalizeLanguageConfigs` |
+| 11260 | function | `languageConfigRow` |
+| 11273 | function | `supportedLanguageCode` |
+| 11277 | function | `supportedLanguageCode` |
+| 11278 | function | `supportedLanguageCode` |
+| 11290 | function | `languageName` |
+| 11297 | function | `LanguageFlag` |
+| 11306 | function | `LanguageAddDialog` |
+| 11322 | const-arrow | `onKeyDown` |
+| 11405 | function | `normalizeLanguageList` |
+| 11437 | function | `nameEditorLanguageCodes` |
+| 11480 | function | `getLocalizedNameArray` |
+| 11490 | function | `localizedNameForLanguage` |
+| 11502 | function | `defaultPaymentRoundingJson` |
+| 11526 | function | `defaultPointConfigJson` |
+| 11683 | function | `ImageUploadFieldEditor` |
+| 11726 | function | `clearImage` |
+| 11734 | function | `uploadImageFile` |
+| 11793 | function | `applyCroppedFile` |
+| 11800 | function | `handleFile` |
+| 11931 | function | `ImageUploadReadOnlyDetail` |
+| 11993 | function | `toUriArray` |
+| 12013 | function | `ImageGalleryFieldEditor` |
+| 12045 | function | `updateValues` |
+| 12049 | function | `removeAt` |
+| 12053 | function | `replaceAt` |
+| 12059 | function | `uploadFile` |
+| 12104 | function | `handleFile` |
+| 12130 | function | `applyCroppedFile` |
+| 12208 | function | `GalleryItemCard` |
+| 12284 | function | `ImageGalleryReadOnlyDetail` |
+| 12326 | function | `GalleryReadOnlyItem` |
+| 12386 | function | `branchOptionDisplayName` |
+| 12404 | function | `recordToBranchOption` |
+| 12420 | function | `selectedBranchesFromValue` |
+| 12445 | function | `branchKeyOf` |
+| 12451 | function | `BranchMultiSelectFieldEditor` |
+| 12578 | function | `commitSelection` |
+| 12582 | function | `removeBranch` |
+| 12687 | function | `BranchPickerDialog` |
+| 12717 | const-arrow | `handler` |
+| 12724 | function | `toggleDraft` |
+| 12730 | function | `selectAllVisible` |
+| 12737 | function | `clearVisible` |
+| 12885 | function | `BranchMultiSelectReadOnlyDetail` |
+| 12926 | function | `companyOptionDisplayName` |
+| 12940 | function | `CompanyMultiSelectFieldEditor` |
+| 13015 | function | `handleToggleShop` |
+| 13077 | function | `CompanyMultiSelectReadOnlyDetail` |
+| 13165 | function | `extractListRecords` |
+| 13173 | function | `BranchCoordinatePairEditor` |
+| 13287 | function | `BranchUnifiedView` |
+| 13620 | function | `BranchEmbeddedSubScreen` |
+| 13646 | function | `branchRecordToListItem` |
+| 13665 | function | `branchDisplayLabel` |
+| 13681 | function | `BranchPosSections` |
+| 13773 | function | `BranchBusinessFlags` |
+| 13805 | function | `ComboFieldEditor` |
+| 13921 | const-arrow | `handler` |
+| 13930 | const-arrow | `handler` |
+| 13941 | function | `choose` |
+| 14031 | function | `WorkDayPanel` |
+| 14072 | function | `updateDay` |
+| 14080 | function | `updateTime` |
+| 14101 | function | `addTimeRange` |
+| 14113 | function | `removeTimeRange` |
+| 14123 | function | `copyMondaySchedule` |
+| 14139 | function | `toggleFullDay` |
+| 14366 | function | `CopyUatPanel` |
+| 14477 | function | `StatCard` |
+| 14488 | function | `readAuth` |
+| 14499 | function | `readWorkspace` |
+| 14510 | function | `companyRecordForEdit` |
+| 14517 | function | `companyRecordFromWorkspace` |
+| 14539 | function | `getMainHoldingCodeFromWorkspace` |
+| 14550 | function | `requestHeaders` |
+| 14558 | function | `workspaceHoldingCode` |
+| 14562 | function | `workspaceTenantPayload` |
+| 14570 | function | `applyWorkspaceTenantParams` |
+| 14578 | function | `workspaceTenantSearchParams` |
+| 14582 | function | `normalizeRecords` |
+| 14602 | function | `extractRecordTotal` |
+| 14624 | function | `mergeRecords` |
+| 14641 | function | `extractCompanyRecord` |
+| 14654 | function | `normalizeRestaurantRecord` |
+| 14668 | function | `normalizeWorkDays` |
+| 14702 | function | `normalizeWorkTimeRecord` |
+| 14720 | function | `createWorkTime` |
+| 14738 | function | `withWorkTimePatch` |
+| 14760 | function | `applyUtcFields` |
+| 14795 | function | `cloneWorkTimes` |
+| 14799 | function | `workTimeStart` |
+| 14803 | function | `workTimeEnd` |
+| 14807 | function | `toLegacyTime` |
+| 14812 | function | `getWorkTimeIssue` |
+| 14837 | function | `formatUtcPreview` |
+| 14846 | function | `buildBranchScopedWorkDayBody` |
+| 14874 | function | `scopedRestaurantBody` |
+| 14893 | function | `restaurantBody` |
+| 14903 | function | `filterRecordsByDateTimeScope` |
+| 14920 | function | `defaultForm` |
+| 14985 | function | `formFromRecord` |
+| 15088 | function | `recordValueForField` |
+| 15103 | function | `applyCompanyDefaults` |
+| 15113 | function | `applyBranchDefaults` |
+| 15126 | function | `applyCountryDefaultsToForm` |
+| 15152 | function | `syncCompanyLanguageForm` |
+| 15162 | function | `setFormValueIfEmpty` |
+| 15166 | function | `isEmptyFormValue` |
+| 15170 | function | `applyTimezoneMetaToForm` |
+| 15183 | function | `buildPayload` |
+| 15430 | function | `newClientGuidFixed` |
+| 15437 | function | `resolveDateTimeScope` |
+| 15482 | function | `dateTimeScopePayload` |
+| 15494 | function | `localDateToUtcIso` |
+| 15505 | function | `normalizeUtcOffset` |
+| 15512 | function | `stringValue` |
+| 15520 | function | `productCategoryGuid` |
+| 15525 | function | `productCategoryParentGuid` |
+| 15532 | function | `productCategoryGroupNumber` |
+| 15540 | function | `productCategoryXOrder` |
+| 15547 | function | `productCategoryDisplayName` |
+| 15555 | function | `productCategoryGroupLabel` |
+| 15570 | function | `isEmailLike` |
+| 15574 | function | `recordId` |
+| 15604 | function | `recordDisplayCode` |
+| 15623 | function | `recordDetailId` |
+| 15637 | function | `recordBusinessLookup` |
+| 15658 | function | `recordMatchesBusinessLookup` |
+| 15682 | function | `shouldHydrateRecordDetail` |
+| 15686 | function | `wait` |
+| 15690 | function | `firstRecordValue` |
+| 15698 | function | `recordTitle` |
+| 15734 | function | `recordBranchCaption` |
+| 15744 | function | `userAccessDisabled` |
+| 15750 | function | `localizedValue` |
+| 15770 | function | `uiBackendKey` |
+| 15774 | function | `systemSettingTitle` |
+| 15785 | function | `fieldLabel` |
+| 15801 | function | `optionLabel` |
+| 15813 | function | `isProductUnitOption` |
+| 15821 | function | `productUnitCode` |
+| 15825 | function | `unitDisplayName` |
+| 15844 | function | `uploadUiText` |
+| 15848 | function | `ImageCropDialog` |
+| 15895 | const-arrow | `handler` |
+| 15902 | function | `apply` |
+| 15997 | function | `drawCroppedImage` |
+| 16034 | function | `clampNumber` |
+| 16038 | function | `extractUploadUri` |
+| 16061 | function | `useAuthenticatedImageDisplaySource` |
+| 16155 | function | `authenticatedImageCacheKey` |
+| 16169 | function | `syncAuthenticatedImageCacheOwner` |
+| 16182 | function | `getCachedAuthenticatedImageObjectUrl` |
+| 16189 | function | `cacheAuthenticatedImageObjectUrl` |
+| 16218 | function | `clearAuthenticatedImageObjectUrlCache` |
+| 16226 | function | `imageDisplayUrl` |
+| 16244 | function | `mainApiDisplayBase` |
+| 16262 | function | `resizeLogoFile` |
+| 16304 | function | `resizeImageFile` |
+| 16339 | function | `makeThumbnailFile` |
+| 16368 | function | `loadImageElement` |
+| 16377 | function | `canvasToBlob` |
+| 16385 | function | `radioFormValue` |
+| 16412 | function | `radioValueToFormValue` |
+| 16421 | function | `optionValueToFormValue` |
+| 16432 | function | `booleanLikeValue` |
+| 16446 | function | `isDecimalSettingField` |
+| 16457 | function | `normalizeDecimalPlaces` |
+| 16463 | function | `comboOptionsForField` |
+| 16480 | function | `timezoneOptions` |
+| 16494 | function | `supportedTimeZones` |
+| 16506 | function | `timezoneMeta` |
+| 16514 | function | `setTimezoneDerivedPayload` |
+| 16527 | function | `timezoneUtcOffset` |
+| 16544 | function | `namesToObject` |
+| 16557 | function | `objectToNames` |
+| 16583 | function | `parseJsonField` |
+| 16597 | function | `normalizeVariantMasterPayload` |
+| 16707 | function | `normalizePayloadCodeField` |
+| 16713 | function | `normalizeVariantCode` |
+| 16717 | function | `normalizeStringArray` |
+| 16724 | function | `getByPath` |
+| 16734 | function | `getPathOrFlatValue` |
+| 16739 | function | `setByPath` |
+| 16749 | function | `deleteByPath` |
+| 16758 | function | `shortValue` |
+| 16768 | function | `fieldDisplayValue` |
+| 16803 | function | `masterPickerDisplayValue` |
+| 16816 | function | `isRecord` |
+| 16820 | function | `isFailed` |
+| 16825 | function | `extractMessage` |
+| 16835 | function | `safeJsonParse` |
+| 16843 | function | `isActiveRecord` |
+| 16853 | function | `localeOf` |
+| 16871 | function | `settingIcon` |
 
 ## backend/internal/productimport/services/productimport_service.go (3335 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
 
-## frontend/src/app/menu/product-screen.tsx (3124 lines)
+## frontend/src/app/menu/product-screen.tsx (3117 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
@@ -450,65 +451,43 @@ Files indexed: 38
 | 683 | const-arrow | `handleSave` |
 | 785 | const-arrow | `openPicker` |
 | 792 | const-arrow | `handlePickerSelect` |
-| 1879 | function | `FieldRow` |
-| 1892 | function | `FieldGrid` |
-| 1896 | function | `Section` |
-| 1908 | function | `Toggle` |
-| 1935 | function | `RadioOptionGroup` |
-| 1973 | function | `NumberField` |
-| 2001 | function | `cryptoRandomId` |
-| 2008 | function | `setNameXEntry` |
-| 2019 | function | `productRowKey` |
-| 2023 | function | `productUnitRows` |
-| 2028 | function | `formatProductUnitType` |
-| 2033 | function | `formatAutoPackingBalance` |
-| 2068 | function | `TabProductMedia` |
-| 2254 | function | `TabProductRestaurant` |
-| 2333 | function | `ProductOrderTypesEditor` |
-| 2423 | function | `ProductOptionsEditor` |
-| 2710 | function | `TabProductTimeForSale` |
-| 2852 | function | `TabProductBusinessBranch` |
-| 2970 | function | `TabProductMisc` |
-| 3028 | function | `TabProductStock` |
-| 3066 | function | `TabProductBom` |
-| 3177 | function | `formatYesNo` |
-| 3181 | function | `formatNamedList` |
-| 3189 | function | `formatRefBarcodeList` |
-| 3211 | function | `formatBomList` |
-| 3222 | function | `formatOptionList` |
-| 3240 | function | `formatImageList` |
-| 3247 | function | `formatDimensionList` |
-| 3258 | function | `formatMarketplaceProductList` |
-| 3276 | function | `formatTimeForSaleList` |
-| 3288 | function | `DetailSection` |
-| 3301 | function | `DetailField` |
+| 1863 | function | `FieldRow` |
+| 1876 | function | `FieldGrid` |
+| 1880 | function | `Section` |
+| 1892 | function | `Toggle` |
+| 1919 | function | `RadioOptionGroup` |
+| 1957 | function | `NumberField` |
+| 1985 | function | `cryptoRandomId` |
+| 1992 | function | `setNameXEntry` |
+| 2003 | function | `productRowKey` |
+| 2007 | function | `productUnitRows` |
+| 2012 | function | `formatProductUnitType` |
+| 2017 | function | `formatAutoPackingBalance` |
+| 2052 | function | `TabProductMedia` |
+| 2246 | function | `TabProductRestaurant` |
+| 2325 | function | `ProductOrderTypesEditor` |
+| 2415 | function | `ProductOptionsEditor` |
+| 2702 | function | `TabProductTimeForSale` |
+| 2844 | function | `TabProductBusinessBranch` |
+| 2962 | function | `TabProductMisc` |
+| 3020 | function | `TabProductStock` |
+| 3058 | function | `TabProductBom` |
+| 3169 | function | `formatYesNo` |
+| 3173 | function | `formatNamedList` |
+| 3181 | function | `formatRefBarcodeList` |
+| 3203 | function | `formatBomList` |
+| 3214 | function | `formatOptionList` |
+| 3232 | function | `formatImageList` |
+| 3239 | function | `formatDimensionList` |
+| 3250 | function | `formatMarketplaceProductList` |
+| 3268 | function | `formatTimeForSaleList` |
+| 3280 | function | `DetailSection` |
+| 3293 | function | `DetailField` |
 
-## backend/internal/goapi/handlers/result-handlers.go (2465 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-
-## backend/internal/goapi/mcp/server.go (2308 lines)
+## backend/internal/goapi/handlers/result-handlers.go (2449 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 1575 | section | `Dashboard Tool Invocations` |
-| 1593 | section | `Financial Tool Invocations` |
-| 1623 | section | `Inventory Tool Invocations` |
-| 1668 | section | `Customer Tool Invocations` |
-| 1709 | section | `Comparison Tool Invocations` |
-| 1727 | section | `Database Tool Invocations` |
-| 1758 | section | `MongoDB Tool Invocations` |
-| 1786 | section | `ClickHouse Tool Invocations` |
-| 1972 | section | `Unit of Measure Tool Invocations` |
-| 2024 | section | `Web Search Tool Invocation` |
-| 2033 | section | `Product Barcode Tool Invocations` |
-| 2147 | section | `Product Group Tool Invocations` |
-| 2192 | section | `Product Category Tool Invocations` |
-| 2240 | section | `Creditor Invokers` |
-| 2301 | section | `Debtor Invokers` |
-| 2362 | section | `Purchase Order Invokers` |
-| 2406 | section | `Purchase Requisition Invokers` |
 
 ## backend/internal/goapi/handlers/approval/notification.go (2303 lines)
 
@@ -526,165 +505,204 @@ Files indexed: 38
 | Line | Kind | Name |
 |---:|---|---|
 
-## backend/internal/goapi/handlers/approval/handlers.go (2192 lines)
+## backend/internal/goapi/handlers/approval/handlers.go (2187 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
 
-## frontend/src/app/menu/main-menu-screen.tsx (2129 lines)
+## frontend/src/app/menu/main-menu-screen.tsx (2184 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 180 | function | `mt` |
-| 185 | function | `isRecord` |
-| 189 | function | `stringValue` |
-| 193 | function | `stringArray` |
-| 206 | function | `normalizeSettingRecords` |
-| 213 | function | `isWorkspaceOwner` |
-| 222 | function | `workspacePermissionKeys` |
-| 231 | function | `WorkspaceContextPanel` |
-| 305 | function | `workspaceAccessContext` |
-| 317 | function | `settingValue` |
-| 325 | function | `booleanSetting` |
-| 335 | function | `scopeRulesApply` |
-| 352 | function | `scopeRuleArray` |
-| 369 | function | `normalizeBranchCode` |
-| 375 | function | `permissionRuleAppliesToWorkspace` |
-| 395 | function | `fetchAllowedMenuIds` |
-| 476 | function | `toRecord` |
-| 493 | function | `MainMenuScreen` |
-| 501 | function | `MainMenuDashboard` |
-| 601 | function | `loadProfile` |
-| 634 | function | `loadMenuPermissions` |
-| 659 | function | `openMenuItem` |
-| 672 | function | `openOverview` |
-| 680 | function | `toggleSection` |
-| 687 | function | `toggleGroup` |
-| 693 | function | `closeTab` |
-| 701 | function | `reorderTabs` |
-| 717 | function | `stopLinePolling` |
-| 724 | function | `handleLineLink` |
-| 772 | function | `startLinePolling` |
-| 786 | function | `pollLineLink` |
-| 820 | function | `closeLineDialog` |
-| 826 | function | `copyLineLoginUrl` |
-| 836 | function | `handleChangePassword` |
-| 880 | function | `logout` |
-| 888 | function | `handleContentScroll` |
-| 1296 | function | `TopMenuChrome` |
-| 1336 | function | `closeOnOutsidePointer` |
-| 1345 | function | `closeOnEscape` |
-| 1361 | function | `positionOpenSection` |
-| 1644 | function | `SidebarButton` |
-| 1677 | function | `MenuSectionAccordion` |
-| 1787 | function | `MenuTreeGroup` |
-| 1838 | function | `MenuTreeFolder` |
-| 1882 | function | `MenuTreeItemButton` |
-| 1921 | function | `countSectionItems` |
-| 1925 | function | `getVisibleGroups` |
-| 1934 | function | `getVisibleItems` |
-| 1940 | function | `getMenuTreeNodes` |
-| 1987 | function | `SectionIcon` |
-| 1994 | function | `OpenTabs` |
-| 2048 | function | `captureTabRects` |
-| 2059 | function | `getInsertSide` |
-| 2064 | function | `clearDragState` |
-| 2071 | function | `reorderFromPointer` |
-| 2174 | function | `DashboardHome` |
-| 2178 | function | `WorkTabPanel` |
-| 2255 | function | `Metric` |
-| 2264 | function | `DashboardLoading` |
-
-## backend/internal/goapi/mcp/sse_handler.go (2068 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
+| 181 | function | `mt` |
+| 186 | function | `isRecord` |
+| 190 | function | `stringValue` |
+| 194 | function | `stringArray` |
+| 207 | function | `normalizeSettingRecords` |
+| 214 | function | `isWorkspaceOwner` |
+| 224 | function | `workspacePermissionKeys` |
+| 233 | function | `WorkspaceContextPanel` |
+| 307 | function | `workspaceAccessContext` |
+| 319 | function | `settingValue` |
+| 327 | function | `booleanSetting` |
+| 337 | function | `scopeRulesApply` |
+| 354 | function | `scopeRuleArray` |
+| 371 | function | `normalizeBranchCode` |
+| 377 | function | `permissionRuleAppliesToWorkspace` |
+| 397 | function | `fetchAllowedMenuIds` |
+| 478 | function | `toRecord` |
+| 495 | function | `MainMenuScreen` |
+| 503 | function | `MainMenuDashboard` |
+| 604 | function | `loadProfile` |
+| 638 | function | `loadMenuPermissions` |
+| 663 | function | `openMenuItem` |
+| 685 | function | `openMenuItemInNewTab` |
+| 689 | function | `openOverview` |
+| 697 | function | `toggleSection` |
+| 704 | function | `toggleGroup` |
+| 710 | function | `closeTab` |
+| 718 | function | `reorderTabs` |
+| 734 | function | `stopLinePolling` |
+| 741 | function | `handleLineLink` |
+| 789 | function | `startLinePolling` |
+| 803 | function | `pollLineLink` |
+| 837 | function | `closeLineDialog` |
+| 843 | function | `copyLineLoginUrl` |
+| 853 | function | `handleChangePassword` |
+| 897 | function | `logout` |
+| 905 | function | `handleContentScroll` |
+| 1315 | function | `TopMenuChrome` |
+| 1357 | function | `closeOnOutsidePointer` |
+| 1366 | function | `closeOnEscape` |
+| 1382 | function | `positionOpenSection` |
+| 1396 | function | `closeTopMenu` |
+| 1403 | function | `topMenuItemRow` |
+| 1663 | function | `SidebarButton` |
+| 1696 | function | `MenuSectionAccordion` |
+| 1811 | function | `MenuTreeGroup` |
+| 1864 | function | `MenuTreeFolder` |
+| 1910 | function | `MenuTreeItemButton` |
+| 1973 | function | `countSectionItems` |
+| 1977 | function | `getVisibleGroups` |
+| 1986 | function | `getVisibleItems` |
+| 1992 | function | `getMenuTreeNodes` |
+| 2039 | function | `SectionIcon` |
+| 2046 | function | `OpenTabs` |
+| 2100 | function | `captureTabRects` |
+| 2111 | function | `getInsertSide` |
+| 2116 | function | `clearDragState` |
+| 2123 | function | `reorderFromPointer` |
+| 2235 | function | `DashboardHome` |
+| 2239 | function | `WorkTabPanel` |
+| 2316 | function | `Metric` |
+| 2325 | function | `DashboardLoading` |
 
 ## backend/internal/product/productbarcode/services/productbarcode_http_service.go (2067 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
 
-## frontend/src/app/menu/product-set-screen.tsx (1889 lines)
+## frontend/src/app/workspace/workspace-screen.tsx (1974 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 77 | function | `productSetRowKey` |
-| 81 | function | `ensureActiveProductSetHolding` |
-| 99 | function | `BarcodePickerModal` |
-| 121 | const-arrow | `fetchBarcodes` |
-| 236 | function | `ProductSetScreen` |
-| 539 | const-arrow | `handleCreateOpen` |
-| 546 | const-arrow | `handleCreateCopyOpen` |
-| 560 | const-arrow | `handleEditOpen` |
-| 567 | const-arrow | `handleDelete` |
-| 598 | const-arrow | `toggleCheckedSet` |
-| 604 | const-arrow | `handleDeleteSelectedSets` |
-| 641 | const-arrow | `handleSave` |
-| 723 | const-arrow | `updateOptionGroupFields` |
-| 796 | const-arrow | `updateChoiceFields` |
-| 819 | const-arrow | `openPickerForChoice` |
-| 824 | const-arrow | `handlePickerSelect` |
-| 837 | const-arrow | `handleSimulatorToggle` |
+| 307 | function | `wt` |
+| 317 | function | `WorkspaceScreen` |
+| 604 | function | `stopLinePolling` |
+| 611 | function | `handleLineLink` |
+| 658 | function | `startLinePolling` |
+| 672 | function | `pollLineLink` |
+| 700 | function | `closeLineDialog` |
+| 705 | function | `copyLineLoginUrl` |
+| 711 | function | `selectShopAndBranch` |
+| 736 | function | `selectShop` |
+| 777 | function | `selectCompany` |
+| 821 | function | `createHeadquarterBranch` |
+| 849 | function | `openAccessSettings` |
+| 884 | function | `handlePrimarySetup` |
+| 892 | function | `handleAccessShopChange` |
+| 918 | function | `createShop` |
+| 949 | function | `selectBranch` |
+| 964 | function | `enterWorkspaceWithUnitCheck` |
+| 996 | function | `confirmUnitSetup` |
+| 1016 | function | `skipUnitSetup` |
+| 1021 | function | `togglePendingUnit` |
+| 1031 | function | `selectAllPendingUnits` |
+| 1035 | function | `clearPendingUnits` |
+| 1039 | function | `logout` |
+| 1762 | function | `readAuth` |
+| 1773 | function | `canAuthCreateCompany` |
+| 1777 | function | `activeHoldingCodeFromAuth` |
+| 1784 | function | `callWorkspaceApi` |
+| 1806 | function | `persistWorkspace` |
+| 1816 | function | `tenantCodeForShop` |
+| 1820 | function | `hasExplicitLanguageSettings` |
+| 1824 | function | `getApiTotal` |
+| 1829 | function | `getMainHoldingCode` |
+| 1835 | function | `unitDisplayName` |
+| 1843 | function | `localeOf` |
+| 1847 | function | `shopLanguageCodes` |
+| 1851 | function | `shopCurrencyCodes` |
+| 1855 | function | `shopCurrencyLabel` |
+| 1862 | function | `shopDateFormatLabel` |
+| 1873 | function | `normalizedYearType` |
+| 1881 | function | `normalizedCodeList` |
+| 1893 | function | `parseShopInfo` |
+| 1903 | function | `createDefaultBranch` |
+| 1981 | function | `activeLanguageCodes` |
+| 1990 | function | `defaultBranchNames` |
+| 1994 | function | `normalizedNames` |
+| 2007 | function | `recordValue` |
+| 2011 | function | `holdingAccessDisplayName` |
+| 2019 | function | `isVisibleOrganizationRecord` |
+| 2027 | function | `stringValue` |
+| 2031 | function | `numberValue` |
+| 2040 | function | `booleanValue` |
+| 2047 | function | `createDefaultBranchListItem` |
+| 2061 | function | `createDefaultPaymentRounding` |
+| 2081 | function | `createShopPayload` |
 
-## frontend/src/app/workspace/workspace-screen.tsx (1836 lines)
+## frontend/src/app/menu/product-set-screen.tsx (1864 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 303 | function | `wt` |
-| 313 | function | `WorkspaceScreen` |
-| 587 | function | `stopLinePolling` |
-| 594 | function | `handleLineLink` |
-| 641 | function | `startLinePolling` |
-| 655 | function | `pollLineLink` |
-| 683 | function | `closeLineDialog` |
-| 688 | function | `copyLineLoginUrl` |
-| 694 | function | `selectShopAndBranch` |
-| 719 | function | `selectShop` |
-| 760 | function | `selectCompany` |
-| 804 | function | `createHeadquarterBranch` |
-| 832 | function | `openAccessSettings` |
-| 864 | function | `handleAccessShopChange` |
-| 890 | function | `createShop` |
-| 921 | function | `selectBranch` |
-| 936 | function | `enterWorkspaceWithUnitCheck` |
-| 968 | function | `confirmUnitSetup` |
-| 988 | function | `skipUnitSetup` |
-| 993 | function | `togglePendingUnit` |
-| 1003 | function | `selectAllPendingUnits` |
-| 1007 | function | `clearPendingUnits` |
-| 1011 | function | `logout` |
-| 1623 | function | `readAuth` |
-| 1634 | function | `canAuthCreateCompany` |
-| 1638 | function | `activeHoldingCodeFromAuth` |
-| 1645 | function | `callWorkspaceApi` |
-| 1667 | function | `persistWorkspace` |
-| 1677 | function | `tenantCodeForShop` |
-| 1681 | function | `hasExplicitLanguageSettings` |
-| 1685 | function | `getApiTotal` |
-| 1690 | function | `getMainHoldingCode` |
-| 1696 | function | `unitDisplayName` |
-| 1704 | function | `localeOf` |
-| 1708 | function | `shopLanguageCodes` |
-| 1712 | function | `shopCurrencyCodes` |
-| 1716 | function | `shopCurrencyLabel` |
-| 1723 | function | `shopDateFormatLabel` |
-| 1734 | function | `normalizedYearType` |
-| 1742 | function | `normalizedCodeList` |
-| 1754 | function | `parseShopInfo` |
-| 1764 | function | `createDefaultBranch` |
-| 1842 | function | `activeLanguageCodes` |
-| 1851 | function | `defaultBranchNames` |
-| 1855 | function | `normalizedNames` |
-| 1868 | function | `recordValue` |
-| 1872 | function | `holdingAccessDisplayName` |
-| 1880 | function | `isVisibleOrganizationRecord` |
-| 1888 | function | `stringValue` |
-| 1892 | function | `numberValue` |
-| 1901 | function | `booleanValue` |
-| 1908 | function | `createDefaultBranchListItem` |
-| 1922 | function | `createDefaultPaymentRounding` |
-| 1942 | function | `createShopPayload` |
+| 78 | function | `productSetRowKey` |
+| 82 | function | `ensureActiveProductSetHolding` |
+| 100 | function | `BarcodePickerModal` |
+| 122 | const-arrow | `fetchBarcodes` |
+| 237 | function | `ProductSetScreen` |
+| 540 | const-arrow | `handleCreateOpen` |
+| 547 | const-arrow | `handleCreateCopyOpen` |
+| 561 | const-arrow | `handleEditOpen` |
+| 568 | const-arrow | `handleDelete` |
+| 599 | const-arrow | `toggleCheckedSet` |
+| 605 | const-arrow | `handleDeleteSelectedSets` |
+| 642 | const-arrow | `handleSave` |
+| 724 | const-arrow | `updateOptionGroupFields` |
+| 797 | const-arrow | `updateChoiceFields` |
+| 820 | const-arrow | `openPickerForChoice` |
+| 825 | const-arrow | `handlePickerSelect` |
+| 838 | const-arrow | `handleSimulatorToggle` |
+
+## frontend/src/lib/system-setting-screens.ts (1828 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 928 | function | `productMasterConfigs` |
+| 1498 | function | `getSystemSettingConfig` |
+| 1509 | function | `systemSettingLabel` |
+| 1516 | function | `textField` |
+| 1528 | function | `businessCodeField` |
+| 1539 | function | `uniqueCodeField` |
+| 1548 | function | `textareaField` |
+| 1556 | function | `numberField` |
+| 1560 | function | `dateField` |
+| 1569 | function | `imageUploadField` |
+| 1582 | function | `imageGalleryField` |
+| 1590 | function | `timeSaleListField` |
+| 1598 | function | `branchMultiSelectField` |
+| 1606 | function | `companyMultiSelectField` |
+| 1614 | function | `checkboxField` |
+| 1622 | function | `namesField` |
+| 1631 | function | `jsonField` |
+| 1635 | function | `stringListField` |
+| 1639 | function | `holdingScopeRulesField` |
+| 1648 | function | `languageListField` |
+| 1656 | function | `masterPickerField` |
+| 1665 | function | `comboField` |
+| 1683 | function | `radioField` |
+| 1701 | function | `selectField` |
+| 1719 | function | `languageConfigsField` |
+| 1727 | function | `vatTypeOptions` |
+| 1752 | function | `inquiryTypeOptions` |
+| 1759 | function | `couponUseTypeOptions` |
+| 1774 | function | `currencyOptions` |
+| 1781 | function | `countryOptions` |
+| 1806 | function | `dateFormatOptions` |
+| 1834 | function | `formatDatePatternExample` |
+| 1849 | function | `datePartsForLanguage` |
+| 1862 | function | `datePart` |
+| 1875 | function | `localeOf` |
 
 ## backend/internal/coupon/services/coupon_http_service.go (1817 lines)
 
@@ -703,50 +721,12 @@ Files indexed: 38
 | 875 | const-arrow | `handleDeleteShelf` |
 | 890 | const-arrow | `updatedShelves` |
 
-## frontend/src/lib/system-setting-screens.ts (1783 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 880 | function | `productMasterConfigs` |
-| 1479 | function | `getSystemSettingConfig` |
-| 1490 | function | `systemSettingLabel` |
-| 1497 | function | `textField` |
-| 1506 | function | `textareaField` |
-| 1514 | function | `numberField` |
-| 1518 | function | `dateField` |
-| 1527 | function | `imageUploadField` |
-| 1535 | function | `imageGalleryField` |
-| 1543 | function | `timeSaleListField` |
-| 1551 | function | `branchMultiSelectField` |
-| 1559 | function | `companyMultiSelectField` |
-| 1567 | function | `checkboxField` |
-| 1575 | function | `namesField` |
-| 1584 | function | `jsonField` |
-| 1588 | function | `stringListField` |
-| 1592 | function | `holdingScopeRulesField` |
-| 1601 | function | `languageListField` |
-| 1609 | function | `masterPickerField` |
-| 1618 | function | `comboField` |
-| 1636 | function | `radioField` |
-| 1654 | function | `selectField` |
-| 1672 | function | `languageConfigsField` |
-| 1680 | function | `vatTypeOptions` |
-| 1705 | function | `inquiryTypeOptions` |
-| 1712 | function | `couponUseTypeOptions` |
-| 1727 | function | `currencyOptions` |
-| 1734 | function | `countryOptions` |
-| 1759 | function | `dateFormatOptions` |
-| 1787 | function | `formatDatePatternExample` |
-| 1802 | function | `datePartsForLanguage` |
-| 1815 | function | `datePart` |
-| 1828 | function | `localeOf` |
-
 ## backend/internal/transaction/pickandpack/pickandpack_http.go (1736 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
 
-## frontend/src/components/product-barcode/barcode-form.tsx (1658 lines)
+## frontend/src/components/product-barcode/barcode-form.tsx (1668 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
@@ -763,9 +743,9 @@ Files indexed: 38
 | 824 | function | `TabProductDetail` |
 | 1047 | function | `TabPricing` |
 | 1203 | function | `TabMedia` |
-| 1392 | function | `TabMarketplace` |
-| 1591 | function | `MarketplaceJsonField` |
-| 1643 | function | `TabLogistics` |
+| 1402 | function | `TabMarketplace` |
+| 1601 | function | `MarketplaceJsonField` |
+| 1653 | function | `TabLogistics` |
 
 ## backend/internal/transaction/transactionconsumer/appurchasereceive/appurchasereceive_transaction_phaser_test.go (1589 lines)
 
@@ -776,61 +756,6 @@ Files indexed: 38
 
 | Line | Kind | Name |
 |---:|---|---|
-
-## frontend/src/app/menu/product-barcode-screen.tsx (1533 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 167 | function | `clampProductSplitLeft` |
-| 183 | function | `ProductBarcodeScreen` |
-| 246 | const-arrow | `handleWorkspaceChange` |
-| 305 | function | `moveWithMouse` |
-| 309 | function | `stopMouseResize` |
-| 477 | function | `toggleChecked` |
-| 483 | function | `submitSearch` |
-| 488 | function | `canDiscardEditor` |
-| 500 | function | `closeEditor` |
-| 507 | function | `handleEditorChange` |
-| 512 | function | `selectListItem` |
-| 519 | function | `selectRowByIndex` |
-| 525 | function | `handleListKeyDown` |
-| 537 | function | `clearFilters` |
-| 552 | function | `openCreateEditor` |
-| 563 | function | `openEditEditor` |
-| 577 | function | `openCopyEditor` |
-| 592 | function | `copyCurrentEditorValue` |
-| 602 | function | `saveEditor` |
-| 646 | function | `deleteSelected` |
-| 688 | function | `deleteCurrentItem` |
-| 1039 | function | `BarcodeRow` |
-| 1064 | function | `handleRowKeyDown` |
-| 1135 | function | `barcodeRowKey` |
-| 1139 | function | `ProductBarcodeDetail` |
-| 1316 | function | `BarcodeQuickActions` |
-| 1358 | function | `DetailSection` |
-| 1371 | function | `DetailField` |
-| 1380 | function | `readAuthSession` |
-| 1391 | function | `readWorkspaceSession` |
-| 1404 | function | `normalizeBarcodeList` |
-| 1409 | function | `normalizeBarcodeRecord` |
-| 1503 | function | `getPrice` |
-| 1515 | function | `extractBarcodeRecordPayload` |
-| 1525 | function | `detailKey` |
-| 1529 | function | `getFirstString` |
-| 1537 | function | `getFirstNumber` |
-| 1545 | function | `getFirstBoolean` |
-| 1560 | function | `localizedNameFromKeys` |
-| 1571 | function | `getArrayCount` |
-| 1579 | function | `getNames` |
-| 1586 | function | `getString` |
-| 1591 | function | `getNumber` |
-| 1601 | function | `isRecord` |
-| 1608 | function | `formatMoney` |
-| 1612 | function | `formatNumber` |
-| 1616 | function | `formatCount` |
-| 1620 | function | `formatBoolean` |
-| 1624 | function | `formatCodeName` |
-| 1629 | function | `resolveImageUrl` |
 
 ## frontend/src/app/system-settings/product-category-tree-view.tsx (1517 lines)
 
@@ -848,15 +773,184 @@ Files indexed: 38
 | 1333 | const-arrow | `renderDragOverlay` |
 | 1388 | const-arrow | `renderTreeNodes` |
 
-## backend/internal/goapi/handlers/gen-trans-pdf/common.go (1454 lines)
+## frontend/src/app/menu/product-barcode-screen.tsx (1515 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 167 | function | `clampProductSplitLeft` |
+| 181 | function | `ProductBarcodeScreen` |
+| 244 | const-arrow | `handleWorkspaceChange` |
+| 303 | function | `moveWithMouse` |
+| 307 | function | `stopMouseResize` |
+| 475 | function | `toggleChecked` |
+| 481 | function | `submitSearch` |
+| 486 | function | `canDiscardEditor` |
+| 498 | function | `closeEditor` |
+| 505 | function | `handleEditorChange` |
+| 510 | function | `selectListItem` |
+| 517 | function | `selectRowByIndex` |
+| 523 | function | `handleListKeyDown` |
+| 535 | function | `clearFilters` |
+| 550 | function | `openCreateEditor` |
+| 561 | function | `openEditEditor` |
+| 575 | function | `openCopyEditor` |
+| 590 | function | `copyCurrentEditorValue` |
+| 600 | function | `saveEditor` |
+| 644 | function | `deleteSelected` |
+| 686 | function | `deleteCurrentItem` |
+| 1019 | function | `BarcodeRow` |
+| 1044 | function | `handleRowKeyDown` |
+| 1115 | function | `barcodeRowKey` |
+| 1119 | function | `ProductBarcodeDetail` |
+| 1296 | function | `BarcodeQuickActions` |
+| 1338 | function | `DetailSection` |
+| 1351 | function | `DetailField` |
+| 1360 | function | `readAuthSession` |
+| 1371 | function | `readWorkspaceSession` |
+| 1384 | function | `normalizeBarcodeList` |
+| 1389 | function | `normalizeBarcodeRecord` |
+| 1483 | function | `getPrice` |
+| 1495 | function | `extractBarcodeRecordPayload` |
+| 1505 | function | `detailKey` |
+| 1509 | function | `getFirstString` |
+| 1517 | function | `getFirstNumber` |
+| 1525 | function | `getFirstBoolean` |
+| 1540 | function | `localizedNameFromKeys` |
+| 1551 | function | `getArrayCount` |
+| 1559 | function | `getNames` |
+| 1566 | function | `getString` |
+| 1571 | function | `getNumber` |
+| 1581 | function | `isRecord` |
+| 1588 | function | `formatMoney` |
+| 1592 | function | `formatNumber` |
+| 1596 | function | `formatCount` |
+| 1600 | function | `formatBoolean` |
+| 1604 | function | `formatCodeName` |
+| 1609 | function | `resolveImageUrl` |
+
+## frontend/src/app/system-settings/company-branch-tree-view.tsx (1487 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 124 | function | `dateFormatOptionsFor` |
+| 194 | function | `CompanyBranchTreeView` |
+| 276 | const-arrow | `closeConfirmCodeDialog` |
+| 281 | const-arrow | `handleConfirmCodeSubmit` |
+| 414 | const-arrow | `handleLogoUpload` |
+| 473 | const-arrow | `handleSave` |
+| 685 | const-arrow | `handleDelete` |
+| 1531 | function | `deleteErrorMessage` |
+| 1546 | function | `saveErrorMessage` |
+
+## backend/internal/goapi/handlers/gen-trans-pdf/common.go (1471 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
 
-## backend/internal/product/productbarcode/productbarcode_http.go (1414 lines)
+## frontend/src/app/holding/holding-screen.tsx (1464 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
+| 43 | type | `CreateHoldingForm` |
+| 586 | function | `HoldingScreen` |
+| 657 | function | `loadHoldings` |
+| 677 | function | `openCreateHolding` |
+| 688 | function | `closeCreateHolding` |
+| 693 | function | `createHolding` |
+| 740 | function | `startEditHolding` |
+| 752 | function | `closeEditHolding` |
+| 757 | function | `updateHolding` |
+| 792 | function | `openAdminHolding` |
+| 804 | function | `closeAdminHolding` |
+| 811 | function | `loadMembers` |
+| 825 | function | `addAdmin` |
+| 850 | function | `removeMember` |
+| 868 | function | `selectHolding` |
+| 890 | function | `activateHolding` |
+| 908 | function | `logout` |
+| 1362 | function | `ht` |
+| 1366 | function | `normalizeDisplayName` |
+| 1374 | function | `generateConfirmationCode` |
+| 1383 | function | `readAuth` |
+| 1394 | function | `activeHoldingCode` |
+| 1398 | function | `callWorkspaceApi` |
+| 1420 | function | `dedupeHoldings` |
+| 1432 | function | `tenantCodeForShop` |
+| 1436 | function | `displayNameForEdit` |
+| 1442 | function | `canEditHolding` |
+| 1463 | function | `canManageAdmins` |
+| 1468 | function | `memberEmail` |
+| 1472 | function | `sortMembers` |
+| 1482 | function | `callHoldingMemberApi` |
+| 1508 | function | `createHoldingPayload` |
+
+## frontend/src/app/settings/settings-screen.tsx (1457 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 64 | type | `LoadingAction` |
+| 84 | function | `SettingsScreen` |
+| 130 | function | `parseHostFromUrl` |
+| 188 | function | `handleAutoFillHost` |
+| 215 | const-arrow | `handleSetMongodbMode` |
+| 276 | function | `loadConfigUrl` |
+| 299 | function | `handleSaveBackendUrl` |
+| 312 | function | `handleBackendConnectionTest` |
+| 341 | function | `handleVerifySetup` |
+| 368 | function | `loadSetupConfig` |
+| 395 | function | `handleSaveConfig` |
+| 434 | function | `handleTestConnection` |
+| 462 | function | `handleTestAllConnections` |
+| 508 | function | `handleCreateClickHouseDatabase` |
+| 530 | function | `handleExportConfig` |
+| 539 | function | `handleImportConfig` |
+| 551 | function | `handleChangePassword` |
+| 576 | function | `handleCopyBackendUrl` |
+| 590 | function | `handleRemoveHistory` |
+| 596 | function | `handleClearHistory` |
+| 601 | function | `updateItem` |
+| 605 | function | `persistBackendUrl` |
+| 612 | function | `logoutSetup` |
+| 621 | function | `setStatus` |
+| 626 | function | `callSetup` |
+| 995 | function | `renderConfigSection` |
+| 1074 | function | `splitAiOnlyItems` |
+| 1082 | function | `handleTestStorageConnection` |
+| 1157 | function | `renderStorageCard` |
+| 1206 | function | `renderIntegrationsSection` |
+| 1316 | function | `getDefaultValue` |
+| 1328 | function | `renderConfigField` |
+| 1387 | function | `renderCheckboxField` |
+| 1407 | function | `renderRadioField` |
+| 1437 | function | `renderImportDialog` |
+| 1470 | function | `renderChangePasswordDialog` |
+| 1512 | function | `readUrlHistory` |
+| 1525 | function | `responseToTestResult` |
+| 1536 | function | `formatTestMessage` |
+| 1540 | function | `categoryIcon` |
+| 1557 | function | `TestBadge` |
+| 1561 | function | `ModelChips` |
+
+## backend/internal/product/productbarcode/productbarcode_http.go (1423 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+
+## frontend/src/app/system-settings/product-group-tree-view.tsx (1380 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 145 | function | `ProductGroupTreeView` |
+| 505 | const-arrow | `toggleExpand` |
+| 563 | const-arrow | `saveXSorts` |
+| 584 | const-arrow | `saveGroupRecord` |
+| 1012 | const-arrow | `updatePointerDrag` |
+| 1154 | const-arrow | `handlePointerDown` |
+| 1182 | const-arrow | `handlePointerMove` |
+| 1186 | const-arrow | `handlePointerUp` |
+| 1193 | const-arrow | `handlePointerCancel` |
+| 1200 | const-arrow | `renderDragOverlay` |
+| 1250 | const-arrow | `renderTreeNodes` |
 
 ## backend/pkg/microservice/cacher.go (1311 lines)
 
@@ -905,93 +999,17 @@ Files indexed: 38
 | 418 | const-arrow | `openBulkAddShelf` |
 | 435 | const-arrow | `saveBulkShelves` |
 
-## frontend/src/app/holding/holding-screen.tsx (1216 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 39 | type | `CreateHoldingForm` |
-| 583 | function | `HoldingScreen` |
-| 648 | function | `loadHoldings` |
-| 668 | function | `openCreateHolding` |
-| 679 | function | `closeCreateHolding` |
-| 684 | function | `createHolding` |
-| 731 | function | `startEditHolding` |
-| 743 | function | `closeEditHolding` |
-| 748 | function | `updateHolding` |
-| 783 | function | `selectHolding` |
-| 805 | function | `activateHolding` |
-| 823 | function | `logout` |
-| 1158 | function | `ht` |
-| 1162 | function | `normalizeDisplayName` |
-| 1170 | function | `generateConfirmationCode` |
-| 1179 | function | `readAuth` |
-| 1190 | function | `activeHoldingCode` |
-| 1194 | function | `callWorkspaceApi` |
-| 1216 | function | `dedupeHoldings` |
-| 1228 | function | `tenantCodeForShop` |
-| 1232 | function | `displayNameForEdit` |
-| 1238 | function | `canEditHolding` |
-| 1249 | function | `createHoldingPayload` |
-
-## backend/internal/goapi/handlers/aichat/agent_loop_v2.go (1186 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 792 | section | `Lazy-answer detection` |
-
 ## backend/internal/goapi/handlers/kafka.go (1163 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
 
-## frontend/src/app/settings/settings-screen.tsx (1083 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 64 | type | `LoadingAction` |
-| 83 | function | `SettingsScreen` |
-| 104 | const-arrow | `handleSetMongodbMode` |
-| 155 | function | `loadConfigUrl` |
-| 178 | function | `handleSaveBackendUrl` |
-| 191 | function | `handleBackendConnectionTest` |
-| 220 | function | `handleVerifySetup` |
-| 247 | function | `loadSetupConfig` |
-| 274 | function | `handleSaveConfig` |
-| 307 | function | `handleSeedConfig` |
-| 320 | function | `handleTestConnection` |
-| 348 | function | `handleTestAllConnections` |
-| 359 | function | `handleCreateClickHouseDatabase` |
-| 381 | function | `handleExportConfig` |
-| 390 | function | `handleImportConfig` |
-| 402 | function | `handleChangePassword` |
-| 427 | function | `handleCopyBackendUrl` |
-| 441 | function | `handleRemoveHistory` |
-| 447 | function | `updateItem` |
-| 451 | function | `persistBackendUrl` |
-| 458 | function | `logoutSetup` |
-| 467 | function | `setStatus` |
-| 472 | function | `callSetup` |
-| 740 | function | `renderConfigSection` |
-| 819 | function | `renderIntegrationsSection` |
-| 929 | function | `getDefaultValue` |
-| 941 | function | `renderConfigField` |
-| 1000 | function | `renderCheckboxField` |
-| 1020 | function | `renderRadioField` |
-| 1050 | function | `renderImportDialog` |
-| 1083 | function | `renderChangePasswordDialog` |
-| 1125 | function | `readUrlHistory` |
-| 1138 | function | `responseToTestResult` |
-| 1149 | function | `formatTestMessage` |
-| 1153 | function | `categoryIcon` |
-| 1170 | function | `TestBadge` |
-| 1174 | function | `ModelChips` |
-
-## backend/internal/goapi/handlers/image_r2.go (1073 lines)
+## backend/internal/goapi/handlers/image_r2.go (1125 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
 
-## backend/internal/authentication/authentication_http.go (1066 lines)
+## backend/internal/authentication/authentication_http.go (1123 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
