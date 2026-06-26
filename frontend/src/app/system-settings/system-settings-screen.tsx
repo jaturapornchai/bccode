@@ -98,6 +98,7 @@ import { ProductCategoryItemsEditor } from "./product-category-items-editor";
 import { ProductGroupTreeView } from "./product-group-tree-view";
 import { WarehouseTreeView } from "./warehouse-tree-view";
 import { CompanyBranchTreeView } from "./company-branch-tree-view";
+import { BulkUserImport } from "./bulk-user-import";
 import { WarehouseLocationsEditor } from "./warehouse-locations-editor";
 import { ProductBomEditor } from "./product-bom-editor";
 import { imageNeedsAuthenticatedFetch } from "@/lib/image-upload-proxy";
@@ -1070,6 +1071,7 @@ export function SystemSettingsScreen({
     return { ...workspaceState, branch: branchOverride };
   }, [branchOverride, workspaceState]);
   const [records, setRecords] = useState<SettingRecord[]>([]);
+  const [bulkImportOpen, setBulkImportOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -3207,6 +3209,20 @@ export function SystemSettingsScreen({
                       <Plus />
                       {text("add")}
                     </Button>
+                    {currentConfig.slug === "user" ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="shrink-0"
+                        onClick={() => setBulkImportOpen(true)}
+                        disabled={!auth}
+                        title={language === "th" ? "นำเข้าผู้ใช้จาก Excel/CSV" : "Import users from Excel/CSV"}
+                      >
+                        <UploadCloud />
+                        {language === "th" ? "นำเข้า" : "Import"}
+                      </Button>
+                    ) : null}
                   </>
                 ) : null}
               </div>
@@ -3290,6 +3306,16 @@ export function SystemSettingsScreen({
               </CardContent>
             </Card>
           )}
+
+          {bulkImportOpen && auth && workspace ? (
+            <BulkUserImport
+              open={bulkImportOpen}
+              onClose={() => setBulkImportOpen(false)}
+              holdingcode={workspace.shop.holdingcode}
+              authToken={auth.token}
+              onImported={() => void loadRecords(auth, workspace, config)}
+            />
+          ) : null}
 
           {standardUnitDialog.open ? (
             <StandardUnitDialog
@@ -11298,7 +11324,7 @@ function LanguageFlag({ code }: { code: string }) {
   const normalized = supportedLanguageCode(code, "th");
   return (
     <span className="grid size-7 shrink-0 place-items-center overflow-hidden rounded border border-border bg-card">
-      <Image alt="" className="h-full w-full object-contain" height={18} src={`/flags/${normalized}.png`} width={27} />
+      <Image alt="" className="h-auto w-full object-contain" height={18} src={`/flags/${normalized}.png`} width={27} />
     </span>
   );
 }
@@ -16602,7 +16628,7 @@ function normalizeVariantMasterPayload(payload: SettingRecord, slug: string) {
   )
     return;
 
-  uppercasePayloadField(payload, "code");
+  normalizePayloadCodeField(payload, "code");
 
   if (slug === "productcolor") {
     const rawHex = stringValue(payload.hexcolor);
@@ -16621,12 +16647,12 @@ function normalizeVariantMasterPayload(payload: SettingRecord, slug: string) {
       if (!isRecord(entry)) return entry;
       return {
         ...entry,
-        optioncode: uppercaseString(entry.optioncode),
+        optioncode: normalizeVariantCode(entry.optioncode),
         values: Array.isArray(entry.values)
           ? entry.values.map((value) =>
               isRecord(value)
-                ? { ...value, valuecode: uppercaseString(value.valuecode) }
-                : uppercaseString(value),
+                ? { ...value, valuecode: normalizeVariantCode(value.valuecode) }
+                : normalizeVariantCode(value),
             )
           : entry.values,
       };
@@ -16638,15 +16664,15 @@ function normalizeVariantMasterPayload(payload: SettingRecord, slug: string) {
       if (!isRecord(entry)) return entry;
       return {
         ...entry,
-        sellersku: uppercaseString(entry.sellersku),
-        barcode: uppercaseString(entry.barcode),
-        gtin: uppercaseString(entry.gtin),
-        unitcode: uppercaseString(entry.unitcode),
+        sellersku: normalizeVariantCode(entry.sellersku),
+        barcode: normalizeVariantCode(entry.barcode),
+        gtin: normalizeVariantCode(entry.gtin),
+        unitcode: normalizeVariantCode(entry.unitcode),
         optionvalues: Array.isArray(entry.optionvalues)
-          ? entry.optionvalues.map(uppercaseString)
+          ? entry.optionvalues.map(normalizeVariantCode)
           : entry.optionvalues,
         serialidentifiers: Array.isArray(entry.serialidentifiers)
-          ? entry.serialidentifiers.map(uppercaseString)
+          ? entry.serialidentifiers.map(normalizeVariantCode)
           : entry.serialidentifiers,
       };
     });
@@ -16657,8 +16683,8 @@ function normalizeVariantMasterPayload(payload: SettingRecord, slug: string) {
       if (!isRecord(entry)) return entry;
       return {
         ...entry,
-        optioncode: uppercaseString(entry.optioncode),
-        optionvalue: uppercaseString(entry.optionvalue),
+        optioncode: normalizeVariantCode(entry.optioncode),
+        optionvalue: normalizeVariantCode(entry.optionvalue),
       };
     });
   }
@@ -16668,20 +16694,20 @@ function normalizeVariantMasterPayload(payload: SettingRecord, slug: string) {
       if (!isRecord(group)) return group;
       return {
         ...group,
-        groupcode: uppercaseString(group.groupcode),
+        groupcode: normalizeVariantCode(group.groupcode),
         attributes: Array.isArray(group.attributes)
           ? group.attributes.map((attribute) => {
               if (!isRecord(attribute)) return attribute;
               return {
                 ...attribute,
-                attributecode: uppercaseString(attribute.attributecode),
+                attributecode: normalizeVariantCode(attribute.attributecode),
                 values: Array.isArray(attribute.values)
                   ? attribute.values.map((value) =>
                       isRecord(value)
                         ? {
                             ...value,
-                            valuecode: uppercaseString(value.valuecode),
-                            unitcode: uppercaseString(value.unitcode),
+                            valuecode: normalizeVariantCode(value.valuecode),
+                            unitcode: normalizeVariantCode(value.unitcode),
                           }
                         : value,
                     )
@@ -16698,20 +16724,20 @@ function normalizeVariantMasterPayload(payload: SettingRecord, slug: string) {
       if (!isRecord(entry)) return entry;
       return {
         ...entry,
-        targetoptioncode: uppercaseString(entry.targetoptioncode),
+        targetoptioncode: normalizeVariantCode(entry.targetoptioncode),
       };
     });
   }
 }
 
-function uppercasePayloadField(payload: SettingRecord, key: string) {
+function normalizePayloadCodeField(payload: SettingRecord, key: string) {
   const value = payload[key];
   if (typeof value !== "string") return;
-  payload[key] = uppercaseString(value);
+  payload[key] = normalizeVariantCode(value);
 }
 
-function uppercaseString(value: unknown): string {
-  return stringValue(value).trim().toUpperCase();
+function normalizeVariantCode(value: unknown): string {
+  return normalizeBusinessCode(value);
 }
 
 function normalizeStringArray(value: unknown): string[] {

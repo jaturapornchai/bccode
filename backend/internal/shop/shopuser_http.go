@@ -43,6 +43,9 @@ func (h *ShopMemberHttp) RegisterHttp() {
 	h.ms.PUT("/shop/permission", h.SaveUserPermissionShop)
 	h.ms.GET("/holding/permission/:username", h.InfoShopUser)
 	h.ms.GET("/shop/permission/:username", h.InfoShopUser)
+
+	// Bulk import users into the holding from an uploaded .csv/.xlsx (base64 in JSON body).
+	h.ms.POST("/holding/users/import", h.ImportHoldingUsers)
 	h.ms.DELETE("/holding/permission/:username", h.DeleteUserPermissionShop)
 	h.ms.DELETE("/shop/permission/:username", h.DeleteUserPermissionShop)
 

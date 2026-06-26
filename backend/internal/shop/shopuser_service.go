@@ -23,6 +23,7 @@ type IShopUserService interface {
 	AddHoldingAdminByEmail(holdingCode string, authUsername string, targetEmail string) error
 	RemoveHoldingMember(holdingCode string, authUsername string, targetEmail string) error
 	ListHoldingMembersByAdmin(holdingCode string, authUsername string, pageable micromodels.Pageable) ([]models.ShopUserProfile, mongopagination.PaginationData, error)
+	EnsureHoldingManager(holdingCode string, authUsername string) error
 
 	InfoShopByUser(holdingCode string, username string) (models.ShopUserProfile, error)
 	ListShopByUser(authUsername string, authUserUID string, pageable micromodels.Pageable) ([]models.ShopUserInfo, mongopagination.PaginationData, error)
@@ -479,6 +480,13 @@ func (svc ShopUserService) requireHoldingManager(holdingCode string, authUsernam
 		return models.ShopUser{}, errors.New("permission denied")
 	}
 	return authUser, nil
+}
+
+// EnsureHoldingManager exposes the per-holding OWNER/ADMIN check to handlers (e.g. bulk import)
+// that need to gate an operation once before running a batch.
+func (svc ShopUserService) EnsureHoldingManager(holdingCode string, authUsername string) error {
+	_, err := svc.requireHoldingManager(holdingCode, authUsername)
+	return err
 }
 
 // AddHoldingAdminByEmail grants ADMIN access to a holding by email. The email is stored as the
