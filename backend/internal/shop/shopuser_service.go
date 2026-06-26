@@ -26,7 +26,7 @@ type IShopUserService interface {
 
 	InfoShopByUser(holdingCode string, username string) (models.ShopUserProfile, error)
 	ListShopByUser(authUsername string, authUserUID string, pageable micromodels.Pageable) ([]models.ShopUserInfo, mongopagination.PaginationData, error)
-	ListUserInShop(holdingCode string, pageable micromodels.Pageable) ([]models.ShopUserProfile, mongopagination.PaginationData, error)
+	ListUserInShop(holdingCode string, authUsername string, pageable micromodels.Pageable) ([]models.ShopUserProfile, mongopagination.PaginationData, error)
 
 	// SyncLineData - sync LINE data จาก LIFF (ใช้สำหรับ callback จาก lineoa-liff)
 	SyncLineData(holdingCode string, username string, lineUserID string, lineDisplayName string, linePictureURL string) error
@@ -184,8 +184,14 @@ func (svc ShopUserService) ListShopByUser(authUsername string, authUserUID strin
 	return docList, pagination, err
 }
 
-func (svc ShopUserService) ListUserInShop(holdingCode string, pageable micromodels.Pageable) ([]models.ShopUserProfile, mongopagination.PaginationData, error) {
+func (svc ShopUserService) ListUserInShop(holdingCode string, authUsername string, pageable micromodels.Pageable) ([]models.ShopUserProfile, mongopagination.PaginationData, error) {
 	shopUserProfiles := []models.ShopUserProfile{}
+
+	// Authorize by the caller's role IN THIS holding (shopusers), not the JWT-selected role,
+	// so an owner/admin of this holding can always list its users (same pattern as holding-member).
+	if _, err := svc.requireHoldingManager(holdingCode, authUsername); err != nil {
+		return shopUserProfiles, mongopagination.PaginationData{}, err
+	}
 
 	profileMatchedUsernames := []string{}
 	if strings.TrimSpace(pageable.Query) != "" {
@@ -542,10 +548,8 @@ func (svc ShopUserService) RemoveHoldingMember(holdingCode string, authUsername 
 
 // ListHoldingMembersByAdmin lists members of a holding for an owner/admin of that holding.
 func (svc ShopUserService) ListHoldingMembersByAdmin(holdingCode string, authUsername string, pageable micromodels.Pageable) ([]models.ShopUserProfile, mongopagination.PaginationData, error) {
-	if _, err := svc.requireHoldingManager(holdingCode, authUsername); err != nil {
-		return nil, mongopagination.PaginationData{}, err
-	}
-	return svc.ListUserInShop(holdingCode, pageable)
+	// ListUserInShop now enforces requireHoldingManager itself (per-holding role).
+	return svc.ListUserInShop(holdingCode, authUsername, pageable)
 }
 
 // CleanupEmptyUsers - ลบ users ที่ username ว่างออกจาก shop

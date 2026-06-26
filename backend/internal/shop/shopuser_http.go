@@ -77,21 +77,19 @@ func (h *ShopMemberHttp) RegisterHttp() {
 func (h ShopMemberHttp) ListUserInShop(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	holdingCode := userInfo.HoldingCode
-
-	if userInfo.Role != models.ROLE_OWNER && userInfo.Role != models.ROLE_ADMIN {
-		ctx.Response(http.StatusOK, &common.ApiResponse{
-			Success: false,
-			Message: "permission denied",
-		})
-
-		return errors.New("permission denied")
-	}
+	authUsername := userInfo.Username
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.ListUserInShop(holdingCode, pageable)
+	// Role is resolved per-holding inside the service (requireHoldingManager); do NOT gate on
+	// the JWT-selected userInfo.Role here — an owner/admin of this holding must always pass.
+	docList, pagination, err := h.svc.ListUserInShop(holdingCode, authUsername, pageable)
 
 	if err != nil {
+		if err.Error() == "permission denied" {
+			ctx.Response(http.StatusOK, &common.ApiResponse{Success: false, Message: "permission denied"})
+			return err
+		}
 		ctx.ResponseError(400, "find failed")
 		h.ms.Logger.Error("HTTP:: SearchShopUser " + err.Error())
 		return err
