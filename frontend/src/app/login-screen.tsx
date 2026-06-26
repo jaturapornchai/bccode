@@ -121,8 +121,8 @@ export function LoginScreen() {
   const [connectionState, setConnectionState] = useState<ConnectionState>("idle");
   const [connectionMessage, setConnectionMessage] = useState("");
   const [providerLoginState, setProviderLoginState] = useState<ProviderLoginState>("idle");
-  // DEV bypass shortcut: rendered only when the page is served from localhost (set after mount
-  // to avoid SSR hydration mismatch). Never shows on the deployed/public frontend.
+  // DEV bypass shortcut: rendered on localhost / dev LAN host (192.168.2.202) — set after mount
+  // to avoid SSR hydration mismatch. Never shows on the deployed/public production frontend.
   const [isLocalhost, setIsLocalhost] = useState(false);
   const [runtimeMode, setRuntimeMode] = useState<RuntimeMode>({ ready: false, sameServerBackend: false });
   const [message, setMessage] = useState("");
@@ -132,7 +132,7 @@ export function LoginScreen() {
 
   useEffect(() => {
     const host = window.location.hostname;
-    setIsLocalhost(host === "localhost" || host === "127.0.0.1");
+    setIsLocalhost(host === "localhost" || host === "127.0.0.1" || host === "192.168.2.202");
   }, []);
 
   const canSubmit = useMemo(() => {
@@ -595,8 +595,8 @@ export function LoginScreen() {
                   void performLogin({ username: "jaturapornchai@gmail.com", password: "smlsoft", holdingCode: "" })
                 }
                 disabled={loginState === "loading"}
-                aria-label="เข้าทดสอบระบบ (dev — localhost เท่านั้น)"
-                title="เฉพาะ localhost: เข้าทดสอบระบบด้วย jaturapornchai@gmail.com"
+                aria-label="เข้าทดสอบระบบ (dev — localhost/LAN เท่านั้น)"
+                title="เฉพาะ dev (localhost / 192.168.2.202): เข้าทดสอบระบบด้วย jaturapornchai@gmail.com"
               >
                 <span>🧪 เข้าทดสอบระบบ (dev)</span>
               </button>
