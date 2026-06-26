@@ -32,7 +32,7 @@ export function LoginWrapper() {
           style={{
             width: 56,
             height: 56,
-            borderRadius: 16,
+            borderRadius: 8,
             display: "grid",
             placeItems: "center",
             fontWeight: 900,

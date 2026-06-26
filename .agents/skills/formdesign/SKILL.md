@@ -33,6 +33,9 @@ Map colors to existing CSS variables/tokens. Avoid raw hex values in components.
 - **Borders & Shadows**: Use subtle 1px borders. Use soft terracotta-tinted shadows:
   - Rest: `0 4px 12px rgba(160, 64, 53, 0.08)`
   - Hover/popover: `0 8px 24px rgba(160, 64, 53, 0.12)`
+- **Corner Radius (tight — half scale, set 2026-06-26)**: Keep corners crisp, not pill-soft. Use only the radius tokens in `globals.css` — `--radius-xs:2 / sm:3 / md:5 / lg:7 / xl:10 / 2xl:14`px and `--radius-full:9999` (circular avatars / pills ONLY). Inputs, buttons, selects, cards, dialogs → `rounded-*` utilities (which map to these tokens); default small: inputs/buttons/selects `rounded-md` (5px), cards/dialogs `rounded-lg`/`rounded-xl`.
+  - **Never hardcode** `border-radius:Npx` in CSS or `rounded-[Npx]` / inline `borderRadius:N` in TSX — it bypasses the scale (this was the bug: 113 hardcoded px in globals.css didn't shrink when only the vars were halved). Always go through the token/utility.
+  - To change global roundness, edit the 6 `--radius-xs..2xl` tokens once (keep `full` as the pill). Use a byte-preserving Node patch on `globals.css` (mixed EOL — never the Edit tool).
 - **Glassmorphism**: Use frosted glass, radial gradients, scale transitions, and monospace terminal chips for workspace/login screen portals to WOW users.
 - **Display Integrity**: No truncation of text using `...` (such as codes, IDs, usernames, or emails). Enable wrapping: `word-break: break-word` and `white-space: normal`.
 - **Baseline Alignment**: Inline text-only metadata groups such as chips, badges, labels plus code/name, and compact context rows should align text by baseline (`align-items: baseline`) with normalized line-height. Use vertical centering only for icon/control groups where the icon is the primary alignment target.

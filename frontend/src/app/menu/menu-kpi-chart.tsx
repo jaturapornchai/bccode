@@ -39,7 +39,7 @@ export function MenuKpiChart({ data, dictionary }: { data: ChartDatum[]; diction
               <Tooltip
                 cursor={{ fill: "rgba(148, 163, 184, 0.12)" }}
                 contentStyle={{
-                  borderRadius: 16,
+                  borderRadius: 8,
                   border: "1px solid var(--border)",
                   background: "var(--popover)",
                   color: "var(--popover-foreground)",
