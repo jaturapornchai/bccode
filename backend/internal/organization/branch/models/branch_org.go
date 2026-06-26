@@ -35,6 +35,9 @@ type BranchOrgDoc struct {
 	CompanyRegistrationNo string `json:"companyregistrationno" bson:"companyregistrationno"`
 	Email                 string `json:"email" bson:"email"`
 	ManagerName           string `json:"managername" bson:"managername"`
+	// Legal/document address per language (used when printing documents). Each
+	// entry is one language; the Address text itself may be multi-line (\n).
+	Addresses []BranchAddress `json:"addresses" bson:"addresses"`
 	// Document / accounting config — value-only. The running-number generator and
 	// e-Tax submission engines are separate subsystems and are NOT implemented here;
 	// these just store the per-branch settings they will read.
@@ -60,4 +63,11 @@ func (BranchOrgDoc) CollectionName() string {
 type BranchDocPrefix struct {
 	DocType string `json:"doctype" bson:"doctype"`
 	Prefix  string `json:"prefix" bson:"prefix"`
+}
+
+// BranchAddress = ที่อยู่สาขาแยกตามภาษา ใช้สำหรับออกเอกสาร. Code = language code
+// (เช่น th, en) ; Address = ข้อความที่อยู่ ป้อนได้หลายบรรทัด (เก็บ \n ตามที่ผู้ใช้ป้อน).
+type BranchAddress struct {
+	Code    string `json:"code" bson:"code"`
+	Address string `json:"address" bson:"address"`
 }

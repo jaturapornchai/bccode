@@ -202,6 +202,7 @@ func (h BranchHttp) UpdateBranch(ctx microservice.IContext) error {
 	existing.CompanyRegistrationNo = req.CompanyRegistrationNo
 	existing.Email = req.Email
 	existing.ManagerName = req.ManagerName
+	existing.Addresses = req.Addresses
 	existing.FiscalStartMonth = req.FiscalStartMonth
 	existing.DocumentPrefixes = req.DocumentPrefixes
 	existing.ETaxEnabled = req.ETaxEnabled
@@ -226,6 +227,7 @@ func (h BranchHttp) UpdateBranch(ctx microservice.IContext) error {
 		"companyregistrationno": existing.CompanyRegistrationNo,
 		"email":                 existing.Email,
 		"managername":           existing.ManagerName,
+		"addresses":             existing.Addresses,
 		"fiscalstartmonth":      existing.FiscalStartMonth,
 		"documentprefixes":      existing.DocumentPrefixes,
 		"etaxenabled":           existing.ETaxEnabled,
@@ -394,7 +396,30 @@ func prepareBranchUpdate(req *branchModels.BranchOrgDoc) error {
 		return err
 	}
 	req.Code = normalizedCode
+	req.Addresses = sanitizeBranchAddresses(req.Addresses)
 	return nil
+}
+
+// sanitizeBranchAddresses trims each per-language address, caps its length, and
+// drops entries with an empty code or address. Branch handlers don't run
+// ctx.Validate, so this is the defense-in-depth guard against oversized/garbage
+// direct-API payloads. Length is capped by rune count to avoid splitting a
+// multibyte (Thai) character mid-address.
+func sanitizeBranchAddresses(in []branchModels.BranchAddress) []branchModels.BranchAddress {
+	const maxAddressRunes = 1000
+	out := make([]branchModels.BranchAddress, 0, len(in))
+	for _, a := range in {
+		code := strings.TrimSpace(a.Code)
+		addr := strings.TrimSpace(a.Address)
+		if code == "" || addr == "" {
+			continue
+		}
+		if r := []rune(addr); len(r) > maxAddressRunes {
+			addr = string(r[:maxAddressRunes])
+		}
+		out = append(out, branchModels.BranchAddress{Code: code, Address: addr})
+	}
+	return out
 }
 
 func visibleBranchFilter(holdingCode string) bson.M {

@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 import { normalizeLanguageConfigs } from "./system-settings-screen";
 import { deriveMainApiUrl } from "@/lib/backend-url";
 import { NamesEditor } from "@/components/product-barcode/names-editor";
+import { AddressesEditor } from "@/components/product-barcode/addresses-editor";
 import { isThaiHeadOfficeBranchCode, normalizeThaiTaxBranchCode } from "@/lib/thai-branch-code";
 import { notifyWorkspaceChanged } from "@/lib/workspace-models";
 import { normalizeBusinessCode } from "@/lib/business-code";
@@ -88,6 +89,7 @@ interface BranchRecord {
   managername?: string;
   fiscalstartmonth?: number;
   documentprefixes?: { doctype?: string; prefix?: string }[];
+  addresses?: { code?: string; address?: string }[];
   etaxenabled?: boolean;
   isactive?: boolean;
   deletedat?: string | null;
@@ -184,6 +186,15 @@ const getNameFromObject = (names: LocalizedNames, code: string): string => {
   }
   const value = names[code];
   return typeof value === "string" ? value : "";
+};
+
+const getAddressFromList = (
+  list: { code?: string; address?: string }[] | null | undefined,
+  code: string,
+): string => {
+  if (!Array.isArray(list)) return "";
+  const entry = list.find((item) => item?.code === code);
+  return entry?.address || "";
 };
 
 const isVisibleOrganizationRecord = <T extends { isactive?: boolean; deletedat?: string | null }>(record: T): boolean => {
@@ -359,6 +370,7 @@ export function CompanyBranchTreeView({
   const [formManagerName, setFormManagerName] = useState("");
   const [formFiscalStartMonth, setFormFiscalStartMonth] = useState(1);
   const [formDocPrefixes, setFormDocPrefixes] = useState<Record<string, string>>({});
+  const [formAddresses, setFormAddresses] = useState<Record<string, string>>({});
   const [formETaxEnabled, setFormETaxEnabled] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoError, setLogoError] = useState("");
@@ -385,6 +397,7 @@ export function CompanyBranchTreeView({
 
     if (selectedNode.type === "company") {
       setFormTaxId((selectedNode.data as CompanyRecord).taxid || "");
+      setFormAddresses({});
     } else {
       const branchData = selectedNode.data as BranchRecord;
       setFormTimezone(branchData.timezone || DEFAULT_TIME_ZONE);
@@ -408,6 +421,11 @@ export function CompanyBranchTreeView({
         ),
       );
       setFormETaxEnabled(branchData.etaxenabled === true);
+      const addrMap: Record<string, string> = {};
+      editorLanguages.forEach((lang) => {
+        addrMap[lang] = getAddressFromList(branchData.addresses, lang);
+      });
+      setFormAddresses(addrMap);
     }
   }, [selectedNode, editorLanguages, workspaceDefaultLanguage]);
 
@@ -492,6 +510,9 @@ export function CompanyBranchTreeView({
       const docPrefixesPayload = Object.entries(formDocPrefixes)
         .filter(([, prefix]) => prefix.trim())
         .map(([doctype, prefix]) => ({ doctype, prefix: prefix.trim() }));
+      const addressesPayload = editorLanguages
+        .map((lang) => ({ code: lang, address: (formAddresses[lang] || "").trim() }))
+        .filter((item) => item.address);
 
       let url = "";
       let method = "POST";
@@ -539,6 +560,7 @@ export function CompanyBranchTreeView({
           managername: formManagerName,
           fiscalstartmonth: formFiscalStartMonth,
           documentprefixes: docPrefixesPayload,
+          addresses: addressesPayload,
           etaxenabled: formETaxEnabled,
           isactive: formIsActive,
         };
@@ -564,6 +586,7 @@ export function CompanyBranchTreeView({
           managername: formManagerName,
           fiscalstartmonth: formFiscalStartMonth,
           documentprefixes: docPrefixesPayload,
+          addresses: addressesPayload,
           etaxenabled: formETaxEnabled,
           isactive: formIsActive,
         };
@@ -617,6 +640,7 @@ export function CompanyBranchTreeView({
                   managername: formManagerName,
                   fiscalstartmonth: formFiscalStartMonth,
                   documentprefixes: docPrefixesPayload,
+                  addresses: addressesPayload,
                   etaxenabled: formETaxEnabled,
                 }),
           };
@@ -663,6 +687,7 @@ export function CompanyBranchTreeView({
                   managername: formManagerName,
                   fiscalstartmonth: formFiscalStartMonth,
                   documentprefixes: docPrefixesPayload,
+                  addresses: addressesPayload,
                   etaxenabled: formETaxEnabled,
                 }),
           };
@@ -1402,6 +1427,16 @@ export function CompanyBranchTreeView({
                     language={language}
                     disabled={isReadOnlyMode}
                   />
+                  {formType.includes("branch") && (
+                    <AddressesEditor
+                      addresses={formAddresses}
+                      onChange={setFormAddresses}
+                      languages={editorLanguages}
+                      label={language === "th" ? "ที่อยู่สาขา (สำหรับออกเอกสาร)" : "Branch address (for documents)"}
+                      language={language}
+                      disabled={isReadOnlyMode}
+                    />
+                  )}
                 </div>
                 {saveError && (
                   <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive">
