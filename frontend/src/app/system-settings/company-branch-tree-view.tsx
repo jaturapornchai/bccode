@@ -120,12 +120,16 @@ const YEAR_TYPE_OPTIONS = [
   { value: "christian", label: "ค.ศ. (Christian Era)" },
 ];
 
-const DATE_FORMAT_OPTIONS = [
-  { value: "dd/MM/yyyy", label: "dd/MM/yyyy (31/12/2025)" },
-  { value: "dd-MM-yyyy", label: "dd-MM-yyyy (31-12-2025)" },
-  { value: "yyyy-MM-dd", label: "yyyy-MM-dd (2025-12-31)" },
-  { value: "MM/dd/yyyy", label: "MM/dd/yyyy (12/31/2025)" },
-];
+// ตัวอย่างปีในรูปแบบวันที่เปลี่ยนตามประเภทปี: พ.ศ. -> 2568, ค.ศ. -> 2025
+function dateFormatOptionsFor(yearType: string) {
+  const y = yearType === "buddhist" ? 2568 : 2025;
+  return [
+    { value: "dd/MM/yyyy", label: `dd/MM/yyyy (31/12/${y})` },
+    { value: "dd-MM-yyyy", label: `dd-MM-yyyy (31-12-${y})` },
+    { value: "yyyy-MM-dd", label: `yyyy-MM-dd (${y}-12-31)` },
+    { value: "MM/dd/yyyy", label: `MM/dd/yyyy (12/31/${y})` },
+  ];
+}
 
 // Common currencies for Thai/ASEAN businesses (default THB).
 const CURRENCY_OPTIONS = [
@@ -1181,21 +1185,6 @@ export function CompanyBranchTreeView({
                 {formType.includes("branch") && (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-foreground">รูปแบบวันที่</label>
-                      <select
-                        value={formDateFormat}
-                        onChange={(e) => setFormDateFormat(e.target.value)}
-                        disabled={isReadOnlyMode}
-                        className="flex h-10 w-full rounded-md border border-input bg-accent/20 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {DATE_FORMAT_OPTIONS.map((opt) => (
-                          <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="space-y-2">
                       <label className="text-sm font-semibold text-foreground">ประเภทปี</label>
                       <select
                         value={formYearType}
@@ -1204,6 +1193,21 @@ export function CompanyBranchTreeView({
                         className="flex h-10 w-full rounded-md border border-input bg-accent/20 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {YEAR_TYPE_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-foreground">รูปแบบวันที่</label>
+                      <select
+                        value={formDateFormat}
+                        onChange={(e) => setFormDateFormat(e.target.value)}
+                        disabled={isReadOnlyMode}
+                        className="flex h-10 w-full rounded-md border border-input bg-accent/20 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {dateFormatOptionsFor(formYearType).map((opt) => (
                           <option key={opt.value} value={opt.value}>
                             {opt.label}
                           </option>
