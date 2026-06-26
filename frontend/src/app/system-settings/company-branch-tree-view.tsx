@@ -87,7 +87,7 @@ interface BranchRecord {
   email?: string;
   managername?: string;
   fiscalstartmonth?: number;
-  documentprefix?: string;
+  documentprefixes?: { doctype?: string; prefix?: string }[];
   etaxenabled?: boolean;
   isactive?: boolean;
   deletedat?: string | null;
@@ -145,6 +145,24 @@ const CURRENCY_OPTIONS = [
   { value: "VND", label: "VND — Vietnamese Dong" },
   { value: "SGD", label: "SGD — Singapore Dollar" },
   { value: "MYR", label: "MYR — Malaysian Ringgit" },
+];
+
+// ประเภทเอกสารหลักที่สาขากำหนดคำนำหน้าเลขที่เอกสารแยกได้ (subset จาก ~46 types ในระบบ).
+// code ตรงกับ MODULE_NAME ของ transaction module ใน backend (เก็บค่าอย่างเดียว — generator ยังไม่ใช้).
+const DOC_PREFIX_TYPES = [
+  { code: "SI", label: "ใบกำกับภาษี / ใบเสร็จ" },
+  { code: "ST", label: "ใบลดหนี้ (ขาย)" },
+  { code: "SA", label: "ใบเพิ่มหนี้ (ขาย)" },
+  { code: "SO", label: "ใบสั่งขาย" },
+  { code: "QT", label: "ใบเสนอราคา" },
+  { code: "PU", label: "ใบรับสินค้า (ซื้อ)" },
+  { code: "PO", label: "ใบสั่งซื้อ" },
+  { code: "PT", label: "ใบรับคืน (ซื้อ)" },
+  { code: "TF", label: "ใบโอนสินค้าระหว่างสาขา" },
+  { code: "AJ", label: "ใบปรับปรุงสต็อก" },
+  { code: "EE", label: "ใบสำคัญรับเงิน" },
+  { code: "DE", label: "ใบสำคัญจ่าย" },
+  { code: "PC", label: "เงินสดย่อย / มัดจำ" },
 ];
 
 type NodeType = "company" | "branch";
@@ -340,7 +358,7 @@ export function CompanyBranchTreeView({
   const [formEmail, setFormEmail] = useState("");
   const [formManagerName, setFormManagerName] = useState("");
   const [formFiscalStartMonth, setFormFiscalStartMonth] = useState(1);
-  const [formDocumentPrefix, setFormDocumentPrefix] = useState("");
+  const [formDocPrefixes, setFormDocPrefixes] = useState<Record<string, string>>({});
   const [formETaxEnabled, setFormETaxEnabled] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoError, setLogoError] = useState("");
@@ -382,7 +400,13 @@ export function CompanyBranchTreeView({
       setFormEmail(branchData.email || "");
       setFormManagerName(branchData.managername || "");
       setFormFiscalStartMonth(branchData.fiscalstartmonth || 1);
-      setFormDocumentPrefix(branchData.documentprefix || "");
+      setFormDocPrefixes(
+        Object.fromEntries(
+          (branchData.documentprefixes || [])
+            .filter((e) => e.doctype)
+            .map((e) => [e.doctype as string, e.prefix || ""]),
+        ),
+      );
       setFormETaxEnabled(branchData.etaxenabled === true);
     }
   }, [selectedNode, editorLanguages, workspaceDefaultLanguage]);
@@ -465,6 +489,9 @@ export function CompanyBranchTreeView({
         return;
       }
       const branchTzMeta = timezoneMeta(formTimezone);
+      const docPrefixesPayload = Object.entries(formDocPrefixes)
+        .filter(([, prefix]) => prefix.trim())
+        .map(([doctype, prefix]) => ({ doctype, prefix: prefix.trim() }));
 
       let url = "";
       let method = "POST";
@@ -511,7 +538,7 @@ export function CompanyBranchTreeView({
           email: formEmail,
           managername: formManagerName,
           fiscalstartmonth: formFiscalStartMonth,
-          documentprefix: formDocumentPrefix,
+          documentprefixes: docPrefixesPayload,
           etaxenabled: formETaxEnabled,
           isactive: formIsActive,
         };
@@ -536,7 +563,7 @@ export function CompanyBranchTreeView({
           email: formEmail,
           managername: formManagerName,
           fiscalstartmonth: formFiscalStartMonth,
-          documentprefix: formDocumentPrefix,
+          documentprefixes: docPrefixesPayload,
           etaxenabled: formETaxEnabled,
           isactive: formIsActive,
         };
@@ -589,7 +616,7 @@ export function CompanyBranchTreeView({
                   email: formEmail,
                   managername: formManagerName,
                   fiscalstartmonth: formFiscalStartMonth,
-                  documentprefix: formDocumentPrefix,
+                  documentprefixes: docPrefixesPayload,
                   etaxenabled: formETaxEnabled,
                 }),
           };
@@ -635,7 +662,7 @@ export function CompanyBranchTreeView({
                   email: formEmail,
                   managername: formManagerName,
                   fiscalstartmonth: formFiscalStartMonth,
-                  documentprefix: formDocumentPrefix,
+                  documentprefixes: docPrefixesPayload,
                   etaxenabled: formETaxEnabled,
                 }),
           };
@@ -1322,15 +1349,28 @@ export function CompanyBranchTreeView({
                           ))}
                         </select>
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-semibold text-foreground">คำนำหน้าเลขที่เอกสาร</label>
-                        <Input
-                          value={formDocumentPrefix}
-                          onChange={(e) => setFormDocumentPrefix(e.target.value)}
-                          placeholder="เช่น BR001-"
-                          className="bg-accent/20"
-                          disabled={isReadOnlyMode}
-                        />
+                    </div>
+
+                    {/* คำนำหน้าเลขที่เอกสาร แยกตามประเภท (เก็บค่า config — generator ยังไม่ใช้) */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-foreground">คำนำหน้าเลขที่เอกสาร (แยกตามประเภท)</label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
+                        {DOC_PREFIX_TYPES.map((dt) => (
+                          <div key={dt.code} className="flex items-center gap-2">
+                            <span className="w-36 shrink-0 text-xs text-muted-foreground">
+                              {dt.label} <span className="font-mono">({dt.code})</span>
+                            </span>
+                            <Input
+                              value={formDocPrefixes[dt.code] || ""}
+                              onChange={(e) =>
+                                setFormDocPrefixes((prev) => ({ ...prev, [dt.code]: e.target.value }))
+                              }
+                              placeholder={`เช่น BR01${dt.code}`}
+                              className="bg-accent/20 h-8 text-sm"
+                              disabled={isReadOnlyMode}
+                            />
+                          </div>
+                        ))}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">

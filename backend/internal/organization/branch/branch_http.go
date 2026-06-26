@@ -203,7 +203,7 @@ func (h BranchHttp) UpdateBranch(ctx microservice.IContext) error {
 	existing.Email = req.Email
 	existing.ManagerName = req.ManagerName
 	existing.FiscalStartMonth = req.FiscalStartMonth
-	existing.DocumentPrefix = req.DocumentPrefix
+	existing.DocumentPrefixes = req.DocumentPrefixes
 	existing.ETaxEnabled = req.ETaxEnabled
 	existing.IsActive = req.IsActive
 	existing.UpdatedAt = time.Now()
@@ -227,7 +227,7 @@ func (h BranchHttp) UpdateBranch(ctx microservice.IContext) error {
 		"email":                 existing.Email,
 		"managername":           existing.ManagerName,
 		"fiscalstartmonth":      existing.FiscalStartMonth,
-		"documentprefix":        existing.DocumentPrefix,
+		"documentprefixes":      existing.DocumentPrefixes,
 		"etaxenabled":           existing.ETaxEnabled,
 		"isactive":              existing.IsActive,
 		"updatedat":             existing.UpdatedAt,

@@ -38,18 +38,26 @@ type BranchOrgDoc struct {
 	// Document / accounting config — value-only. The running-number generator and
 	// e-Tax submission engines are separate subsystems and are NOT implemented here;
 	// these just store the per-branch settings they will read.
-	FiscalStartMonth int8       `json:"fiscalstartmonth" bson:"fiscalstartmonth"`
-	DocumentPrefix   string     `json:"documentprefix" bson:"documentprefix"`
-	ETaxEnabled      bool       `json:"etaxenabled" bson:"etaxenabled"`
-	IsActive         bool       `json:"isactive" bson:"isactive"`
-	CreatedAt        time.Time  `json:"createdat" bson:"createdat"`
-	UpdatedAt        time.Time  `json:"updatedat" bson:"updatedat"`
-	DeletedAt        *time.Time `json:"deletedat,omitempty" bson:"deletedat,omitempty"`
-	CreatedBy        string     `json:"createdby,omitempty" bson:"createdby,omitempty"`
-	UpdatedBy        string     `json:"updatedby,omitempty" bson:"updatedby,omitempty"`
-	DeletedBy        string     `json:"deletedby,omitempty" bson:"deletedby,omitempty"`
+	FiscalStartMonth int8              `json:"fiscalstartmonth" bson:"fiscalstartmonth"`
+	DocumentPrefixes []BranchDocPrefix `json:"documentprefixes" bson:"documentprefixes"`
+	ETaxEnabled      bool              `json:"etaxenabled" bson:"etaxenabled"`
+	IsActive         bool              `json:"isactive" bson:"isactive"`
+	CreatedAt        time.Time         `json:"createdat" bson:"createdat"`
+	UpdatedAt        time.Time         `json:"updatedat" bson:"updatedat"`
+	DeletedAt        *time.Time        `json:"deletedat,omitempty" bson:"deletedat,omitempty"`
+	CreatedBy        string            `json:"createdby,omitempty" bson:"createdby,omitempty"`
+	UpdatedBy        string            `json:"updatedby,omitempty" bson:"updatedby,omitempty"`
+	DeletedBy        string            `json:"deletedby,omitempty" bson:"deletedby,omitempty"`
 }
 
 func (BranchOrgDoc) CollectionName() string {
 	return branchCollectionName
+}
+
+// BranchDocPrefix = คำนำหน้าเลขที่เอกสารต่อประเภทเอกสาร (config-only; running-number
+// generator ยังไม่ใช้ค่านี้). DocType = code ของประเภทเอกสาร เช่น SI, PO, SO, TF
+// (ตรงกับ MODULE_NAME ของ transaction module).
+type BranchDocPrefix struct {
+	DocType string `json:"doctype" bson:"doctype"`
+	Prefix  string `json:"prefix" bson:"prefix"`
 }
