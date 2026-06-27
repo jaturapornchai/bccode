@@ -1,6 +1,7 @@
 package models
 
 import (
+	"strings"
 	"time"
 
 	"smlcloudplatform/internal/models"
@@ -200,6 +201,37 @@ type AccessScope struct {
 	BusinessCode string `json:"businesscode,omitempty" bson:"businesscode,omitempty"` // company code
 	BranchCode   string `json:"branchcode,omitempty" bson:"branchcode,omitempty"`     // Thai tax branch code
 	AllBranches  bool   `json:"allbranches,omitempty" bson:"allbranches,omitempty"`
+}
+
+// ScopesAllow reports whether the given access scopes permit access to a company (businessCode)
+// and optionally a branch (branchCode, empty to check company-level only). EMPTY scopes mean
+// FULL access (no restriction configured — per the "empty = all companies" policy). This mirrors
+// the frontend scopeRulesApply logic so backend enforcement and UI visibility stay consistent.
+func ScopesAllow(scopes []AccessScope, businessCode string, branchCode string) bool {
+	if len(scopes) == 0 {
+		return true
+	}
+	bc := strings.ToUpper(strings.TrimSpace(businessCode))
+	brc := strings.ToUpper(strings.TrimSpace(branchCode))
+	for _, s := range scopes {
+		st := strings.ToLower(strings.TrimSpace(s.ScopeType))
+		if st == "" || st == "holding" {
+			return true
+		}
+		sbc := strings.ToUpper(strings.TrimSpace(s.BusinessCode))
+		if sbc == "" || sbc != bc {
+			continue
+		}
+		// Company-level (or "all branches") grants the whole company. A bare company check
+		// (branchCode == "") also passes here.
+		if st == "company" || s.AllBranches || brc == "" {
+			return true
+		}
+		if st == "branch" && strings.ToUpper(strings.TrimSpace(s.BranchCode)) == brc {
+			return true
+		}
+	}
+	return false
 }
 
 type ShopUser struct {

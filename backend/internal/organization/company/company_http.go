@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"smlcloudplatform/internal/config"
+	authModels "smlcloudplatform/internal/authentication/models"
 	common "smlcloudplatform/internal/models"
 	branchModels "smlcloudplatform/internal/organization/branch/models"
 	companyModels "smlcloudplatform/internal/organization/company/models"
@@ -219,6 +220,18 @@ func (h CompanyHttp) SearchCompany(ctx microservice.IContext) error {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
 	}
+
+	// Access-scope enforcement: a user only sees companies their accessscopes allow.
+	// Empty scopes = full access (per the "empty = all companies" policy).
+	var shopUser authModels.ShopUser
+	_ = pst.FindOne(mongoCtx, &authModels.ShopUser{}, bson.M{"holdingcode": holdingCode, "username": utils.NormalizeUsername(ctx.UserInfo().Username)}, &shopUser)
+	scoped := make([]companyModels.CompanyDoc, 0, len(list))
+	for _, c := range list {
+		if authModels.ScopesAllow(shopUser.AccessScopes, c.Code, "") {
+			scoped = append(scoped, c)
+		}
+	}
+	list = scoped
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
 		Success: true,

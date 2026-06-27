@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"regexp"
 	"smlcloudplatform/internal/config"
+	authModels "smlcloudplatform/internal/authentication/models"
 	common "smlcloudplatform/internal/models"
 	branchModels "smlcloudplatform/internal/organization/branch/models"
 	companyModels "smlcloudplatform/internal/organization/company/models"
@@ -114,6 +115,27 @@ func (h BranchHttp) SearchBranch(ctx microservice.IContext) error {
 	if err := pst.Find(mongoCtx, branchModels.BranchOrgDoc{}, filter, &list, opts); err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
+	}
+
+	// Access-scope enforcement: a user only sees branches their accessscopes allow. Empty scopes
+	// = full access. A branch scope matches by the branch's company code (businesscode) + branch
+	// code, so map companyguid -> company code first.
+	var shopUser authModels.ShopUser
+	_ = pst.FindOne(mongoCtx, &authModels.ShopUser{}, bson.M{"holdingcode": holdingCode, "username": utils.NormalizeUsername(ctx.UserInfo().Username)}, &shopUser)
+	if len(shopUser.AccessScopes) > 0 {
+		codeByGuid := map[string]string{}
+		var companies []companyModels.CompanyDoc
+		_ = pst.Find(mongoCtx, companyModels.CompanyDoc{}, bson.M{"holdingcode": holdingCode, "deletedat": bson.M{"$exists": false}}, &companies, options.Find())
+		for _, c := range companies {
+			codeByGuid[c.GuidFixed] = c.Code
+		}
+		scoped := make([]branchModels.BranchOrgDoc, 0, len(list))
+		for _, b := range list {
+			if authModels.ScopesAllow(shopUser.AccessScopes, codeByGuid[b.CompanyGuid], b.Code) {
+				scoped = append(scoped, b)
+			}
+		}
+		list = scoped
 	}
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
