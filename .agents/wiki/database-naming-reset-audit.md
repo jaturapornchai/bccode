@@ -50,6 +50,7 @@ Most affected areas:
 - For project database contracts, update database-facing functions, MCP tool/action names, API route/query/body keys, variables/constants, MongoDB `bson` tags, PostgreSQL/ClickHouse table and column names, indexes, Kafka event keys, frontend API payload mapping, and query/filter keys together.
 - If Jead approves destructive reset, old data can be dropped and rebuilt instead of dual-read migration, but the exact environment and stores must be explicit before running any destructive command.
 - If data must be preserved, use a staged rename with backfill, projection rebuild, index rebuild, dual-read/dual-write during migration, and rollback notes.
+- **Update 2026-06-28:** per the *No-Migration / Disposable Database Rule* (`bc-account-core-rules.md`), while PRE-LAUNCH every store (Mongo/PG/ClickHouse/Kafka) in ALL environments incl. production is disposable — drop+rebuild from code, no preserve/backfill/dual-read. The "preserve data → staged migration" path above applies only once real production data exists at go-live.
 
 ## DEV Reset Executed
 

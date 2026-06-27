@@ -119,3 +119,9 @@ Rules for this file:
   2. Cycle prevention: new `isWithinSubtreeOf(nodeGuid, ancestorGuid)` walks the LIVE override-aware parentguid graph (not the stale parentguidall string). moveGroupAsChild blocks when target is inside the dragged subtree; reorderGroup blocks when the new parent is the dragged node or inside its subtree.
 - Verified: tsc EXIT 0; production next build EXIT 0; live Claude Preview (fresh build → .202) with a deliberately seeded cycle (A→C→B→A) → /productgroup renders all 3 cyclic groups flat as roots (5 rows incl. 2 pre-existing) with แก้ไข/ลบ — NOT empty. Pre-fix the same data rendered 0 rows. Cyclic test data cleaned up (break-cycle then delete; note the #2 child-guard blocks deleting cyclic nodes until parent is cleared).
 - Recommend (optional, deferred earlier as #6): add a backend cycle guard in UpdateProductGroup so non-UI clients/API can't store a cycle. FE is now safe both ways (prevents + tolerates).
+
+## 2026-06-28 — Rule expanded: No-Migration / Disposable Database now covers Kafka + ALL environments
+- Jead set rule: "ไม่ต้องสนใจข้อมูลเก่า (mongodb, pgsql, clickhouse, kafka) เปลี่ยนได้เลย เดินหน้าอย่างเดียว". Confirmed scope = ALL environments incl. production.
+- Updated `.agents/rules/bc-account-core-rules.md` line 69: renamed "Disposable DEV Database Rule" → "Disposable Database Rule"; added Kafka (topics/events/consumer-offsets) to disposable stores; scope expanded DEV-ONLY → ALL env incl. prod (rationale: pre-launch, no real customer data).
+- Safety kept (DISSENT/R0): added a **go-live trigger** — the instant real customer/prod data exists, the disposable rule STOPS for prod data and real migration + R0 stop resume. Unsure if real prod data exists → ask Jead, do not assume disposable.
+- Net effect: schema/contract/topic changes go straight to the correct shape in code; no migration/backfill/dual-read/compat-shim scaffolding for old data anywhere, until go-live.

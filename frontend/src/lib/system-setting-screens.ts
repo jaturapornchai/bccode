@@ -502,7 +502,6 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
       jsonField("pointconfig", "ตั้งค่าแต้ม", "Point config"),
       numberField("machinetype", "ประเภทเครื่อง", "Machine type"),
       imageGalleryField("imageuris", "รูปภาพ", "Images"),
-      imageUploadField("logouri", "โลโก้ร้าน", "Logo", "image/png"),
       checkboxField("isrestaurant", "ร้านอาหาร", "Restaurant"),
       checkboxField("istire", "ยางรถ", "Tire"),
       checkboxField("isagriculture", "เกษตร", "Agriculture"),

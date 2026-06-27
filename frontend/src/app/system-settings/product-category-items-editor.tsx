@@ -191,12 +191,12 @@ export function ProductCategoryItemsEditor({
           <div className="grid gap-2">
             <ShoppingBag className="mx-auto size-8 text-primary/70" />
             <b className="text-foreground">
-              {language === "th" ? "เลือกหมวดหมู่สินค้า" : "Select a category"}
+              {language === "th" ? "เลือกหมวดสินค้า" : "Select a category"}
             </b>
             <span>
               {language === "th"
-                ? "กรุณาเลือกหมวดสินค้าจากโครงสร้างต้นไม้ด้านซ้ายเพื่อจัดการสินค้าในหมวด"
-                : "Select a category from the tree on the left to manage its product items."}
+                ? "เลือกหมวดสินค้าจากรายการด้านซ้ายเพื่อจัดสินค้าในหมวด"
+                : "Pick a category from the list on the left to manage its products."}
             </span>
           </div>
         </CardContent>

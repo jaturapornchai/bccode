@@ -24,6 +24,7 @@ import {
   MessageCircle,
   PanelLeftClose,
   PanelLeftOpen,
+  Plus,
   RefreshCcw,
   Search,
   Settings,
@@ -659,17 +660,30 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
   const activeWorkTab = useMemo(() => tabs.find((tab) => tab.id === activeTabId) ?? firstTab, [activeTabId, tabs]);
   const activeTabNeedsFixedViewport = activeWorkTab.route === "/productbarcode" || activeWorkTab.route === "/product" || activeWorkTab.route === "/productset";
 
-  function openMenuItem(item: MenuItem) {
+  function openMenuItem(item: MenuItem, options: { forceNew?: boolean } = {}) {
     if (!canAccessMenuItem(item)) return;
     const title = menuText(item.label, language, backendLanguage);
-    const tabId = `${item.route}::${crypto.randomUUID()}`;
     if (menuUsageKey) {
       setMenuUsage(recordMenuUsage(localStorage, menuUsageKey, item.id));
     }
+
+    if (!options.forceNew) {
+      const existingTab = tabs.find((tab) => tab.route === item.route);
+      if (existingTab) {
+        setActiveTabId(existingTab.id);
+        return;
+      }
+    }
+
+    const tabId = `${item.route}::${crypto.randomUUID()}`;
     setTabs((current) => {
       return [...current, { id: tabId, title, route: item.route, item, closable: true }];
     });
     setActiveTabId(tabId);
+  }
+
+  function openMenuItemInNewTab(item: MenuItem) {
+    openMenuItem(item, { forceNew: true });
   }
 
   function openOverview() {
@@ -927,6 +941,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                   key={section.id}
                   language={language}
                   label={label}
+                  onOpenNewItem={openMenuItemInNewTab}
                   onOpenItem={openMenuItem}
                   onToggleGroup={toggleGroup}
                   onToggle={() => toggleSection(section.id)}
@@ -1103,6 +1118,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
               backendLanguage={backendLanguage}
               canAccessMenuItem={canAccessMenuItem}
               language={language}
+              onOpenNewItem={openMenuItemInNewTab}
               onOpenItem={openMenuItem}
               onOpenOverview={openOverview}
               onSelectSection={setActiveSection}
@@ -1301,6 +1317,7 @@ function TopMenuChrome({
   backendLanguage,
   canAccessMenuItem,
   language,
+  onOpenNewItem,
   onOpenItem,
   onOpenOverview,
   onSelectSection,
@@ -1309,6 +1326,7 @@ function TopMenuChrome({
   backendLanguage: BackendLanguageDictionary;
   canAccessMenuItem: (item: MenuItem) => boolean;
   language: LanguageCode;
+  onOpenNewItem: (item: MenuItem) => void;
   onOpenItem: (item: MenuItem) => void;
   onOpenOverview: () => void;
   onSelectSection: (sectionId: string) => void;
@@ -1373,6 +1391,59 @@ function TopMenuChrome({
     setActiveGroupId(getVisibleGroups(section, language, "", backendLanguage)[0]?.id ?? null);
     setActiveFolderId(null);
     setActiveFolderIndex(0);
+  }
+
+  function closeTopMenu() {
+    setOpenSectionId(null);
+    setActiveGroupId(null);
+    setActiveFolderId(null);
+    setActiveFolderIndex(0);
+  }
+
+  function topMenuItemRow(item: MenuItem, key: string, onMouseEnter?: () => void) {
+    const locked = !canAccessMenuItem(item);
+    const label = menuText(item.label, language, backendLanguage);
+    const newTabLabel = language === "th" ? `เปิดแท็บใหม่ ${label}` : `Open new tab ${label}`;
+
+    return (
+      <div
+        key={key}
+        className={cn(
+          "flex h-9 w-full min-w-0 items-center gap-1 rounded-md px-1 text-sm hover:bg-muted",
+          locked && "cursor-not-allowed opacity-55",
+        )}
+        onMouseEnter={onMouseEnter}
+      >
+        <button
+          type="button"
+          disabled={locked}
+          className="flex h-full min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 text-left disabled:cursor-not-allowed"
+          onClick={() => {
+            closeTopMenu();
+            onOpenItem(item);
+          }}
+        >
+          <MenuRouteIcon item={item} size={15} />
+          <span className="min-w-0 flex-1 truncate">{label}</span>
+          {locked ? <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : null}
+        </button>
+        {locked ? null : (
+          <button
+            type="button"
+            className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-background hover:text-foreground"
+            aria-label={newTabLabel}
+            title={newTabLabel}
+            onClick={(event) => {
+              event.stopPropagation();
+              closeTopMenu();
+              onOpenNewItem(item);
+            }}
+          >
+            <Plus className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
+    );
   }
 
   const hasSingleGroup = openSection ? openSection.groups.length === 1 : false;
@@ -1492,29 +1563,10 @@ function TopMenuChrome({
                       );
                     }
 
-                    const locked = !canAccessMenuItem(node.item);
-                    return (
-                      <button
-                        key={node.id}
-                        type="button"
-                        disabled={locked}
-                        className="flex h-9 w-full min-w-0 items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-muted disabled:cursor-not-allowed disabled:opacity-55"
-                        onMouseEnter={() => {
-                          setActiveFolderId(null);
-                          setActiveFolderIndex(0);
-                        }}
-                        onClick={() => {
-                          setOpenSectionId(null);
-                          setActiveGroupId(null);
-                          setActiveFolderId(null);
-                          onOpenItem(node.item);
-                        }}
-                      >
-                        <MenuRouteIcon item={node.item} size={15} />
-                        <span className="min-w-0 flex-1 truncate">{menuText(node.item.label, language, backendLanguage)}</span>
-                        {locked ? <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : null}
-                      </button>
-                    );
+                    return topMenuItemRow(node.item, node.id, () => {
+                      setActiveFolderId(null);
+                      setActiveFolderIndex(0);
+                    });
                   })}
                 </div>
               </div>
@@ -1534,25 +1586,7 @@ function TopMenuChrome({
                   </div>
                   <div className="grid gap-1">
                     {activeFolderNode.children.map((item) => {
-                      const locked = !canAccessMenuItem(item);
-                      return (
-                        <button
-                          key={item.id}
-                          type="button"
-                          disabled={locked}
-                          className="flex h-9 w-full min-w-0 items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-muted disabled:cursor-not-allowed disabled:opacity-55"
-                          onClick={() => {
-                            setOpenSectionId(null);
-                            setActiveGroupId(null);
-                            setActiveFolderId(null);
-                            onOpenItem(item);
-                          }}
-                        >
-                          <MenuRouteIcon item={item} size={15} />
-                          <span className="min-w-0 flex-1 truncate">{menuText(item.label, language, backendLanguage)}</span>
-                          {locked ? <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : null}
-                        </button>
-                      );
+                      return topMenuItemRow(item, item.id);
                     })}
                   </div>
                 </div>
@@ -1612,25 +1646,7 @@ function TopMenuChrome({
                   </div>
                   <div className="grid gap-1">
                     {activeGroupEntry.items.map((item) => {
-                      const locked = !canAccessMenuItem(item);
-                      return (
-                        <button
-                          key={item.id}
-                          type="button"
-                          disabled={locked}
-                          className="flex h-9 w-full min-w-0 items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-muted disabled:cursor-not-allowed disabled:opacity-55"
-                          onClick={() => {
-                            setOpenSectionId(null);
-                            setActiveGroupId(null);
-                            setActiveFolderId(null);
-                            onOpenItem(item);
-                          }}
-                        >
-                          <MenuRouteIcon item={item} size={15} />
-                          <span className="min-w-0 flex-1 truncate">{menuText(item.label, language, backendLanguage)}</span>
-                          {locked ? <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : null}
-                        </button>
-                      );
+                      return topMenuItemRow(item, item.id);
                     })}
                   </div>
                 </div>
@@ -1686,6 +1702,7 @@ function MenuSectionAccordion({
   expandedGroups,
   label,
   language,
+  onOpenNewItem,
   onOpenItem,
   onToggleGroup,
   onToggle,
@@ -1700,6 +1717,7 @@ function MenuSectionAccordion({
   expandedGroups: string[];
   label: string;
   language: LanguageCode;
+  onOpenNewItem: (item: MenuItem) => void;
   onOpenItem: (item: MenuItem) => void;
   onToggleGroup: (groupKey: string) => void;
   onToggle: () => void;
@@ -1744,6 +1762,7 @@ function MenuSectionAccordion({
                     folder={node}
                     key={node.id}
                     language={language}
+                    onOpenNewItem={onOpenNewItem}
                     onOpenItem={onOpenItem}
                     search={search}
                   />
@@ -1754,6 +1773,7 @@ function MenuSectionAccordion({
                     item={node.item}
                     key={node.id}
                     language={language}
+                    onOpenNewItem={onOpenNewItem}
                     onOpenItem={onOpenItem}
                   />
                 ));
@@ -1770,6 +1790,7 @@ function MenuSectionAccordion({
                     groupKey={groupKey}
                     key={group.id}
                     language={language}
+                    onOpenNewItem={onOpenNewItem}
                     onOpenItem={onOpenItem}
                     onToggle={() => onToggleGroup(groupKey)}
                     search={search}
@@ -1794,6 +1815,7 @@ function MenuTreeGroup({
   group,
   groupKey,
   language,
+  onOpenNewItem,
   onOpenItem,
   onToggle,
   search,
@@ -1804,6 +1826,7 @@ function MenuTreeGroup({
   group: MenuGroup;
   groupKey: string;
   language: LanguageCode;
+  onOpenNewItem: (item: MenuItem) => void;
   onOpenItem: (item: MenuItem) => void;
   onToggle: () => void;
   search: string;
@@ -1828,9 +1851,9 @@ function MenuTreeGroup({
       {expanded ? (
       <div id={`menu-tree-${groupKey}`} className="ml-4 grid gap-1 border-l border-border/80 pb-1 pl-2" role="group">
         {nodes.map((node) => node.type === "folder" ? (
-          <MenuTreeFolder backendLanguage={backendLanguage} canAccessMenuItem={canAccessMenuItem} folder={node} key={node.id} language={language} onOpenItem={onOpenItem} search={search} />
+          <MenuTreeFolder backendLanguage={backendLanguage} canAccessMenuItem={canAccessMenuItem} folder={node} key={node.id} language={language} onOpenNewItem={onOpenNewItem} onOpenItem={onOpenItem} search={search} />
         ) : (
-          <MenuTreeItemButton backendLanguage={backendLanguage} isLocked={!canAccessMenuItem(node.item)} item={node.item} key={node.id} language={language} onOpenItem={onOpenItem} />
+          <MenuTreeItemButton backendLanguage={backendLanguage} isLocked={!canAccessMenuItem(node.item)} item={node.item} key={node.id} language={language} onOpenNewItem={onOpenNewItem} onOpenItem={onOpenItem} />
         ))}
       </div>
       ) : null}
@@ -1843,6 +1866,7 @@ function MenuTreeFolder({
   canAccessMenuItem,
   folder,
   language,
+  onOpenNewItem,
   onOpenItem,
   search,
 }: {
@@ -1850,6 +1874,7 @@ function MenuTreeFolder({
   canAccessMenuItem: (item: MenuItem) => boolean;
   folder: Extract<MenuTreeNode, { type: "folder" }>;
   language: LanguageCode;
+  onOpenNewItem: (item: MenuItem) => void;
   onOpenItem: (item: MenuItem) => void;
   search: string;
 }) {
@@ -1874,7 +1899,7 @@ function MenuTreeFolder({
       {expanded ? (
         <div className="ml-5 grid gap-1 border-l border-border/80 pl-2" role="group">
           {folder.children.map((item) => (
-            <MenuTreeItemButton backendLanguage={backendLanguage} isLocked={!canAccessMenuItem(item)} item={item} key={item.id} language={language} onOpenItem={onOpenItem} nested />
+            <MenuTreeItemButton backendLanguage={backendLanguage} isLocked={!canAccessMenuItem(item)} item={item} key={item.id} language={language} onOpenNewItem={onOpenNewItem} onOpenItem={onOpenItem} nested />
           ))}
         </div>
       ) : null}
@@ -1888,6 +1913,7 @@ function MenuTreeItemButton({
   item,
   language,
   nested = false,
+  onOpenNewItem,
   onOpenItem,
 }: {
   backendLanguage: BackendLanguageDictionary;
@@ -1895,29 +1921,52 @@ function MenuTreeItemButton({
   item: MenuItem;
   language: LanguageCode;
   nested?: boolean;
+  onOpenNewItem: (item: MenuItem) => void;
   onOpenItem: (item: MenuItem) => void;
 }) {
   const noPermissionText = backendText(backendLanguage, "no_permission", "No permission");
+  const label = menuText(item.label, language, backendLanguage);
+  const newTabLabel = language === "th" ? `เปิดแท็บใหม่ ${label}` : `Open new tab ${label}`;
+
   return (
-    <button
+    <div
       className={cn(
-        "relative grid min-h-9 w-full min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm text-muted-foreground hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-70",
+        "relative flex min-h-9 w-full min-w-0 items-center gap-1 rounded-lg px-1.5 py-1 text-sm text-muted-foreground hover:bg-accent hover:text-foreground",
+        isLocked && "cursor-not-allowed opacity-70",
         nested && "text-[13px]",
       )}
-      disabled={isLocked}
       key={item.id}
-      onClick={() => onOpenItem(item)}
       role="treeitem"
       aria-selected={false}
       aria-disabled={isLocked}
       title={isLocked ? noPermissionText : undefined}
-      type="button"
     >
       <span className="absolute -left-2 top-1/2 h-px w-2 bg-border/80" aria-hidden="true" />
-      <MenuRouteIcon item={item} size={15} />
-      <span className="min-w-0 truncate">{menuText(item.label, language, backendLanguage)}</span>
-      {isLocked ? <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-label={noPermissionText} /> : null}
-    </button>
+      <button
+        type="button"
+        className="flex h-full min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 text-left disabled:cursor-not-allowed"
+        disabled={isLocked}
+        onClick={() => onOpenItem(item)}
+      >
+        <MenuRouteIcon item={item} size={15} />
+        <span className="min-w-0 flex-1 truncate">{label}</span>
+        {isLocked ? <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-label={noPermissionText} /> : null}
+      </button>
+      {isLocked ? null : (
+        <button
+          type="button"
+          className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-background hover:text-foreground"
+          aria-label={newTabLabel}
+          title={newTabLabel}
+          onClick={(event) => {
+            event.stopPropagation();
+            onOpenNewItem(item);
+          }}
+        >
+          <Plus className="h-3.5 w-3.5" />
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -2125,7 +2174,7 @@ function OpenTabs({
           className={cn(
             "group relative flex w-full min-w-0 cursor-grab items-center overflow-hidden rounded-t-md border border-b-0 transition-[background-color,border-color,box-shadow,opacity,transform] duration-200 ease-out active:cursor-grabbing sm:w-auto sm:min-w-28 sm:max-w-44",
             tab.id === activeTabId
-              ? "border-border border-t-2 border-t-primary bg-background text-primary shadow-sm font-semibold"
+              ? "border-primary border-t-2 border-t-primary bg-primary text-primary-foreground shadow-md ring-1 ring-primary/30 font-semibold"
               : "border-border bg-muted/65 text-muted-foreground hover:bg-background/80 hover:text-foreground",
             draggingTabId === tab.id && "scale-[0.98] opacity-60 ring-2 ring-ring/30 shadow-lg",
             insertMarker?.tabId === tab.id && draggingTabId !== tab.id && "translate-y-[-2px] border-primary/40 bg-primary/5 shadow-md",
@@ -2147,20 +2196,29 @@ function OpenTabs({
             title={`${tab.item ? menuText(tab.item.label, language, backendLanguage) : mt(backendLanguage, "overviewErp")} ${tab.id === "home" ? mt(backendLanguage, "dashboardRoute") : tab.route}`}
             className="grid min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-1.5 px-2 py-1 text-left"
           >
-            <span className="row-span-2 grid h-5 w-5 place-items-center rounded-md bg-background">
+            <span
+              className={cn(
+                "row-span-2 grid h-5 w-5 place-items-center rounded-md",
+                tab.id === activeTabId ? "bg-primary-foreground/20 text-primary-foreground" : "bg-background",
+              )}
+            >
               {tab.item ? <MenuRouteIcon item={tab.item} size={13} /> : <HomeMenuIcon size={13} />}
             </span>
             <b className="flex min-w-0 items-center gap-1 text-[12px] leading-[14px]">
               <span className="truncate">{tab.item ? menuText(tab.item.label, language, backendLanguage) : mt(backendLanguage, "overviewErp")}</span>
             </b>
-            <small className="truncate text-[10px] leading-3 text-muted-foreground">{tab.id === "home" ? mt(backendLanguage, "dashboardRoute") : tab.route}</small>
+            <small className={cn("truncate text-[10px] leading-3", tab.id === activeTabId ? "text-primary-foreground/80" : "text-muted-foreground")}>
+              {tab.id === "home" ? mt(backendLanguage, "dashboardRoute") : tab.route}
+            </small>
           </button>
           {tab.closable ? (
             <button
               type="button"
               className={cn(
-                "mr-1 grid h-5 w-5 place-items-center rounded-md opacity-70 transition-opacity hover:bg-background hover:opacity-100",
-                tab.id !== activeTabId && "opacity-0 focus-visible:opacity-100 group-hover:opacity-70",
+                "mr-1 grid h-5 w-5 place-items-center rounded-md opacity-75 transition-[background-color,color,opacity] hover:opacity-100",
+                tab.id === activeTabId
+                  ? "text-primary-foreground/85 hover:bg-primary-foreground/15 hover:text-primary-foreground"
+                  : "hover:bg-background opacity-0 focus-visible:opacity-100 group-hover:opacity-70",
               )}
               onClick={() => onClose(tab.id)}
               aria-label={`${mt(backendLanguage, "closeTab")} ${tab.item ? menuText(tab.item.label, language, backendLanguage) : mt(backendLanguage, "overviewErp")}`}

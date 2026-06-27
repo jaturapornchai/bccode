@@ -85,11 +85,11 @@ describe("system setting screen configs", () => {
     expect(keys.has("settings.language")).toBe(false);
   });
 
-  it("keeps company single-record fields limited to name and address", () => {
+  it("keeps company single-record fields limited to logo, name and address", () => {
     const config = getSystemSettingConfig("company");
     const keys = config?.fields.map((field) => field.key) ?? [];
 
-    expect(keys).toEqual(["names", "address"]);
+    expect(keys).toEqual(["logouri", "names", "address"]);
   });
 
   it("offers full-month date formats with localized examples", () => {
@@ -157,6 +157,7 @@ describe("system setting screen configs", () => {
         "importattributemaps",
         "integrationprofiles",
         "payloadexamples",
+        "description",
         "serialtrackingmode",
         "businesscodes",
       ]),
