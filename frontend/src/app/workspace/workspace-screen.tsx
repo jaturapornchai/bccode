@@ -117,12 +117,6 @@ const accessSettingNavItems = [
     banner: "/settings/banner-company.webp",
   },
   {
-    route: "/user",
-    label: { th: "ผู้ใช้งาน", en: "Users" },
-    helper: { th: "เพิ่มคนเข้าใช้งาน", en: "Add system users" },
-    banner: "/settings/banner-users.webp",
-  },
-  {
     route: "/permissiondefinition",
     label: { th: "กำหนดสิทธิ์หน้าจอ", en: "Permission Definition" },
     helper: { th: "เลือกหน้าจอที่เข้าได้", en: "Choose accessible screens" },
@@ -133,6 +127,12 @@ const accessSettingNavItems = [
     label: { th: "กำหนดสิทธิ์ตามกลุ่ม", en: "Permission Group" },
     helper: { th: "รวมสิทธิ์เป็นชุด", en: "Group permission sets" },
     banner: "/settings/banner-permission-group.webp",
+  },
+  {
+    route: "/user",
+    label: { th: "ผู้ใช้งาน", en: "Users" },
+    helper: { th: "เพิ่มผู้ใช้แล้วผูกสิทธิ์", en: "Add users, then assign permissions" },
+    banner: "/settings/banner-users.webp",
   },
   {
     route: "/permissionlink",

@@ -213,6 +213,9 @@ type ShopUser struct {
 	AccessDisabledBy string    `json:"accessdisabledby,omitempty" bson:"accessdisabledby,omitempty"`
 	AccessEnabledAt  time.Time `json:"accessenabledat,omitempty" bson:"accessenabledat,omitempty"`
 	AccessEnabledBy  string    `json:"accessenabledby,omitempty" bson:"accessenabledby,omitempty"`
+	// AccessExpiryDate auto-blocks access once the date is reached (offboarding /
+	// last working day). Zero = no expiry. The shop creator is always exempt.
+	AccessExpiryDate time.Time `json:"accessexpirydate,omitempty" bson:"accessexpirydate,omitempty"`
 
 	// === ข้อมูลพนักงาน ===
 	Position   string `json:"position" bson:"position"`     // ตำแหน่งงาน
@@ -289,6 +292,7 @@ type UserRoleRequest struct {
 	AccessDisabledBy string        `json:"accessdisabledby,omitempty" bson:"accessdisabledby,omitempty"`
 	AccessEnabledAt  time.Time     `json:"accessenabledat,omitempty" bson:"accessenabledat,omitempty"`
 	AccessEnabledBy  string        `json:"accessenabledby,omitempty" bson:"accessenabledby,omitempty"`
+	AccessExpiryDate time.Time     `json:"accessexpirydate,omitempty" bson:"accessexpirydate,omitempty"`
 	AccessScopes     []AccessScope `json:"accessscopes,omitempty" bson:"accessscopes,omitempty"`
 
 	// === ข้อมูลพนักงาน ===

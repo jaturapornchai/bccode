@@ -56,6 +56,7 @@ func copyAccessStatusToRequest(req *models.UserRoleRequest, user models.ShopUser
 	req.AccessDisabledBy = user.AccessDisabledBy
 	req.AccessEnabledAt = user.AccessEnabledAt
 	req.AccessEnabledBy = user.AccessEnabledBy
+	req.AccessExpiryDate = user.AccessExpiryDate
 }
 
 func applyAccessStatus(req *models.UserRoleRequest, existing models.ShopUser, authUsername string, now time.Time, isCreator bool) error {

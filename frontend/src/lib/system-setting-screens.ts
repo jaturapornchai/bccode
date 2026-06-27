@@ -693,6 +693,13 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
           en: "Temporarily suspend access without deleting the user. Can be turned back on anytime.",
         },
       },
+      {
+        ...dateField("accessexpirydate", "วันหมดอายุการเข้าใช้งาน", "Access expiry date"),
+        helper: {
+          th: "ตั้งวันที่ปิดการเข้าใช้งานอัตโนมัติ (เช่น วันสุดท้ายของพนักงาน) เว้นว่างถ้าไม่มีกำหนด",
+          en: "Auto-disable access on this date (e.g. employee's last working day). Leave empty for no expiry.",
+        },
+      },
       textField("position", "ตำแหน่ง", "Position"),
       textField("department", "แผนก", "Department"),
       {
@@ -1089,11 +1096,11 @@ function productMasterConfigs(): SystemSettingConfig[] {
       idField: "guidfixed",
       title: { th: "กลุ่มสินค้า", en: "Product Group" },
       subtitle: {
-        th: "จัดการโครงสร้างกลุ่มสินค้าแบบลำดับชั้น (กลุ่มหลัก / กลุ่มย่อย) ด้วยการลากวาง",
-        en: "Manage the product group hierarchy (main group / subgroup) with drag and drop.",
+        th: "จัดกลุ่มสินค้าแบบลำดับชั้น กลุ่มหลักและกลุ่มย่อย ลากวางจัดลำดับได้",
+        en: "Organize product groups into main groups and subgroups. Drag to reorder.",
       },
       fields: [
-        { ...textField("parentguid", "กลุ่มแม่", "Parent group GUID"), readOnly: true },
+        { ...textField("parentguid", "กลุ่มแม่", "Parent group"), readOnly: true },
         namesField("names", "ชื่อกลุ่มสินค้า", "Product group names"),
         checkboxField("isdisabled", "ปิดใช้งาน", "Disabled"),
       ],
@@ -1107,14 +1114,14 @@ function productMasterConfigs(): SystemSettingConfig[] {
       basePath: "/product/category",
       listPath: "/product/category/list",
       idField: "guidfixed",
-      title: { th: "โครงสร้างหมวดสินค้า", en: "Product Category Structure" },
+      title: { th: "จัดหมวดสินค้า", en: "Product Categories" },
       subtitle: {
-        th: "จัดการโครงสร้างหมวดสินค้า กลุ่มหมวด และสินค้าในหมวด",
-        en: "Manage product category structure, category groups, and products in categories.",
+        th: "จัดการหมวดสินค้าและหมวดย่อย แบบลำดับชั้น",
+        en: "Manage product categories and subcategories in a hierarchy.",
       },
       fields: [
         { ...numberField("groupnumber", "ลำดับกลุ่ม", "Group number"), readOnly: true },
-        { ...textField("parentguid", "หมวดแม่", "Parent category GUID"), readOnly: true },
+        { ...textField("parentguid", "หมวดแม่", "Parent category"), readOnly: true },
         namesField("names", "ชื่อหมวดสินค้า", "Product category names"),
         checkboxField("isdisabled", "ปิดใช้งาน", "Disabled"),
         timeSaleListField("timeforsales", "เวลาการขาย", "Time for sale"),
@@ -1153,12 +1160,12 @@ function productMasterConfigs(): SystemSettingConfig[] {
       idField: "guidfixed",
       title: { th: "สินค้าในหมวด", en: "Products in Category" },
       subtitle: {
-        th: "จัดการรายการสินค้าที่ผูกกับหมวดสินค้า",
-        en: "Manage product items linked to product categories.",
+        th: "เลือกสินค้าที่จะแสดงในแต่ละหมวด",
+        en: "Choose products to show in each category.",
       },
       fields: [
         namesField("names", "ชื่อหมวดสินค้า", "Product category names"),
-        jsonField("codelist", "รายการสินค้า", "Product list JSON"),
+        jsonField("codelist", "รายการสินค้า", "Product list"),
       ],
     },
     {
@@ -1242,13 +1249,14 @@ function productMasterConfigs(): SystemSettingConfig[] {
       "/productvariantmatrix",
       "grid",
       "productvariantmatrices",
-      "ตารางตัวเลือก SKU",
-      "Variant / SKU Matrix",
-      "ออกแบบแกนตัวเลือกและชุด SKU สำหรับราคา สต๊อก ต้นทุน และการนำเข้าข้อมูล",
-      "Design option tiers and SKU combinations for price, stock, cost, and imports.",
+      "ชุดตัวเลือกสินค้า",
+      "Product Option Sets",
+      "กำหนดชุดสี ไซซ์ หรือคุณสมบัติที่ใช้สร้างตัวเลือกสินค้าและรหัสขาย",
+      "Define color, size, or attribute option sets used to create sellable product choices.",
       [
-        businessCodeField("code", "รหัสชุดตัวเลือก", "Matrix code", true),
-        namesField("names", "ชื่อชุดตัวเลือก", "Matrix names"),
+        businessCodeField("code", "รหัสชุดตัวเลือก", "Option set code", true),
+        namesField("names", "ชื่อชุดตัวเลือก", "Option set names"),
+        textareaField("description", "คำอธิบายเบื้องต้น", "Basic description"),
         selectField("matrixtype", "ประเภทธุรกิจสินค้า", "Product business type", variantMatrixTypeOptions),
         selectField("serialtrackingmode", "การคุมเลขเครื่อง", "Serial tracking mode", serialTrackingModeOptions),
         {

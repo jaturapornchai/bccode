@@ -119,6 +119,7 @@ func (svc ShopUserRepository) SaveFullProfile(ctx context.Context, holdingCode s
 		"accessdisabledby": req.AccessDisabledBy,
 		"accessenabledat":  req.AccessEnabledAt,
 		"accessenabledby":  req.AccessEnabledBy,
+		"accessexpirydate": req.AccessExpiryDate,
 		"position":         req.Position,
 		"department":       req.Department,
 		"lineuserid":       req.LineUserID,

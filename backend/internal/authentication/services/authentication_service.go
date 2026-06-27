@@ -422,10 +422,12 @@ func (svc AuthenticationService) findShopUser(ctx context.Context, holdingCode s
 }
 
 func (svc *AuthenticationService) ensureShopAccessAllowed(ctx context.Context, holdingCode string, shopUser auth_models.ShopUser) error {
-	if !shopUser.IsAccessDisabled {
+	expired := !shopUser.AccessExpiryDate.IsZero() && time.Now().After(shopUser.AccessExpiryDate)
+	if !shopUser.IsAccessDisabled && !expired {
 		return nil
 	}
 
+	// Access is disabled (manual) or expired (offboarding) — the shop creator is always exempt.
 	createdBy, err := svc.shopUserRepo.FindShopCreatedBy(ctx, holdingCode)
 	if err != nil {
 		return err
@@ -435,6 +437,9 @@ func (svc *AuthenticationService) ensureShopAccessAllowed(ctx context.Context, h
 		return nil
 	}
 
+	if expired {
+		return errors.New("user_access_expired")
+	}
 	return errors.New("user_access_disabled")
 }
 
