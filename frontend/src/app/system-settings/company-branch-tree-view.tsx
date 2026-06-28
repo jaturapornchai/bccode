@@ -167,6 +167,11 @@ const DOC_PREFIX_TYPES = [
   { code: "PC", label: "เงินสดย่อย / มัดจำ" },
 ];
 
+// คำนำหน้าเลขที่เอกสาร = 2 ตัวอักษร (uppercase, ไม่มีช่องว่าง) ต่อด้วย YYMMDD + running เช่น PO -> PO26062800001.
+const normalizeDocPrefix = (v: string) => v.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 2);
+// คืนค่า prefix ที่ผู้ใช้ตั้งไว้ (1-2 ตัวอักษร/ตัวเลขล้วน) หรือ "" ถ้าเป็น legacy/ยาว (เช่น "HQ-SI") เพื่อให้ default = รหัสประเภท
+const cleanDocPrefixOrEmpty = (v: string) => (/^[A-Za-z0-9]{1,2}$/.test(v.trim()) ? v.trim().toUpperCase() : "");
+
 type NodeType = "company" | "branch";
 type ConfirmAction = "save" | "delete";
 type OrganizationFormType = "viewcompany" | "viewbranch" | "editcompany" | "editbranch" | "createcompany" | "createbranch";
@@ -417,7 +422,8 @@ export function CompanyBranchTreeView({
         Object.fromEntries(
           (branchData.documentprefixes || [])
             .filter((e) => e.doctype)
-            .map((e) => [e.doctype as string, e.prefix || ""]),
+            // legacy/long values (e.g. "HQ-SI", "BR01PO") are reset to empty so the doctype-code default shows
+            .map((e) => [e.doctype as string, cleanDocPrefixOrEmpty(e.prefix || "")]),
         ),
       );
       setFormETaxEnabled(branchData.etaxenabled === true);
@@ -507,9 +513,11 @@ export function CompanyBranchTreeView({
         return;
       }
       const branchTzMeta = timezoneMeta(formTimezone);
-      const docPrefixesPayload = Object.entries(formDocPrefixes)
-        .filter(([, prefix]) => prefix.trim())
-        .map(([doctype, prefix]) => ({ doctype, prefix: prefix.trim() }));
+      // ทุกประเภทมีคำนำหน้า default = รหัสประเภท (เช่น PO) เมื่อผู้ใช้ไม่ได้ override
+      const docPrefixesPayload = DOC_PREFIX_TYPES.map((dt) => ({
+        doctype: dt.code,
+        prefix: formDocPrefixes[dt.code] || dt.code,
+      }));
       const addressesPayload = editorLanguages
         .map((lang) => ({ code: lang, address: (formAddresses[lang] || "").trim() }))
         .filter((item) => item.address);
@@ -1378,7 +1386,10 @@ export function CompanyBranchTreeView({
 
                     {/* คำนำหน้าเลขที่เอกสาร แยกตามประเภท (เก็บค่า config — generator ยังไม่ใช้) */}
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-foreground">คำนำหน้าเลขที่เอกสาร (แยกตามประเภท)</label>
+                      <label className="text-sm font-semibold text-foreground">
+                        คำนำหน้าเลขที่เอกสาร (แยกตามประเภท)
+                        <span className="ml-1 font-normal text-xs text-muted-foreground">— 2 ตัวอักษร + ปีเดือนวัน + running เช่น PO → PO26062800001</span>
+                      </label>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
                         {DOC_PREFIX_TYPES.map((dt) => (
                           <div key={dt.code} className="flex items-center gap-2">
@@ -1386,11 +1397,12 @@ export function CompanyBranchTreeView({
                               {dt.label} <span className="font-mono">({dt.code})</span>
                             </span>
                             <Input
-                              value={formDocPrefixes[dt.code] || ""}
+                              value={formDocPrefixes[dt.code] || dt.code}
                               onChange={(e) =>
-                                setFormDocPrefixes((prev) => ({ ...prev, [dt.code]: e.target.value }))
+                                setFormDocPrefixes((prev) => ({ ...prev, [dt.code]: normalizeDocPrefix(e.target.value) }))
                               }
-                              placeholder={`เช่น BR01${dt.code}`}
+                              maxLength={2}
+                              placeholder={dt.code}
                               className="bg-accent/20 h-8 text-sm"
                               disabled={isReadOnlyMode}
                             />
