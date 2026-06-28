@@ -9,6 +9,7 @@ import {
   ChevronDown,
   Edit3,
   Trash2,
+  Star,
   Save,
   Loader2,
   Check,
@@ -88,7 +89,7 @@ interface BranchRecord {
   email?: string;
   managername?: string;
   fiscalstartmonth?: number;
-  documentprefixes?: { doctype?: string; prefix?: string }[];
+  documentformats?: Partial<DocFormat>[];
   addresses?: { code?: string; address?: string }[];
   etaxenabled?: boolean;
   isactive?: boolean;
@@ -167,10 +168,200 @@ const DOC_PREFIX_TYPES = [
   { code: "PC", label: "เงินสดย่อย / มัดจำ" },
 ];
 
-// คำนำหน้าเลขที่เอกสาร = 2 ตัวอักษร (uppercase, ไม่มีช่องว่าง) ต่อด้วย YYMMDD + running เช่น PO -> PO26062800001.
-const normalizeDocPrefix = (v: string) => v.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 2);
-// คืนค่า prefix ที่ผู้ใช้ตั้งไว้ (1-2 ตัวอักษร/ตัวเลขล้วน) หรือ "" ถ้าเป็น legacy/ยาว (เช่น "HQ-SI") เพื่อให้ default = รหัสประเภท
-const cleanDocPrefixOrEmpty = (v: string) => (/^[A-Za-z0-9]{1,2}$/.test(v.trim()) ? v.trim().toUpperCase() : "");
+// รูปแบบเลขที่เอกสาร 1 รูปแบบ (แต่ละประเภทมีได้หลายรูปแบบ; generator จริงยังไม่ใช้ค่านี้).
+type DocFormat = {
+  doctype: string;
+  name: string;
+  prefix: string;
+  usebranch: boolean;
+  yearmode: string; // none | be2 | be4 | ce2 | ce4
+  usemonth: boolean;
+  useday: boolean;
+  separator: boolean;
+  runlength: number; // 4-6
+  resetmode: string; // never | yearly | monthly | daily
+  startnumber: number;
+  enabled: boolean;
+  isdefault: boolean;
+};
+
+const DOC_YEAR_MODES = [
+  { value: "none", label: "ไม่ใช้" },
+  { value: "be2", label: "พ.ศ. 2 หลัก" },
+  { value: "be4", label: "พ.ศ. 4 หลัก" },
+  { value: "ce2", label: "ค.ศ. 2 หลัก" },
+  { value: "ce4", label: "ค.ศ. 4 หลัก" },
+];
+const DOC_RESET_MODES = [
+  { value: "never", label: "ไม่รีเซ็ต" },
+  { value: "yearly", label: "รายปี" },
+  { value: "monthly", label: "รายเดือน" },
+  { value: "daily", label: "รายวัน" },
+];
+const TAX_DOC_TYPES = ["SI", "ST", "SA"]; // เอกสารภาษี — default รีเซ็ตรายปี (ตามแนวสรรพากร)
+
+const normalizeDocPrefix = (v: string) => v.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10);
+
+function defaultDocFormat(doctype: string): DocFormat {
+  return {
+    doctype,
+    name: "",
+    prefix: doctype,
+    usebranch: false,
+    yearmode: "ce2",
+    usemonth: true,
+    useday: true,
+    separator: false,
+    runlength: 5,
+    resetmode: TAX_DOC_TYPES.includes(doctype) ? "yearly" : "never",
+    startnumber: 1,
+    enabled: true,
+    isdefault: false,
+  };
+}
+
+// สร้างตัวอย่างเลขที่เอกสารจากรูปแบบ (ใช้วันที่ปัจจุบันสำหรับ preview)
+function buildDocExample(f: DocFormat, branchCode: string): string {
+  const p = normalizeDocPrefix(f.prefix) || f.doctype || "XX";
+  const now = new Date();
+  const ce = now.getFullYear();
+  const be = ce + 543;
+  const year =
+    f.yearmode === "be2" ? String(be % 100).padStart(2, "0")
+    : f.yearmode === "be4" ? String(be)
+    : f.yearmode === "ce2" ? String(ce % 100).padStart(2, "0")
+    : f.yearmode === "ce4" ? String(ce)
+    : "";
+  const br = f.usebranch ? (branchCode || "00000") : "";
+  const mm = f.usemonth ? String(now.getMonth() + 1).padStart(2, "0") : "";
+  const dd = f.useday ? String(now.getDate()).padStart(2, "0") : "";
+  const date = year + mm + dd;
+  const num = String(Math.max(1, f.startnumber || 1)).padStart(Math.max(1, f.runlength || 5), "0");
+  return [p, br, date, num].filter(Boolean).join(f.separator ? "-" : "");
+}
+
+// คำนำหน้าที่ซ้ำกันทั้งสาขา (ข้ามทุกประเภท) — คืน set ของ prefix ที่ซ้ำ
+function duplicateDocPrefixes(formats: DocFormat[]): Set<string> {
+  const counts = new Map<string, number>();
+  for (const f of formats) {
+    const p = normalizeDocPrefix(f.prefix);
+    if (p) counts.set(p, (counts.get(p) ?? 0) + 1);
+  }
+  return new Set([...counts.entries()].filter(([, n]) => n > 1).map(([p]) => p));
+}
+
+function DocSelect({ label, value, onChange, options, disabled }: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: [string, string][];
+  disabled: boolean;
+}) {
+  return (
+    <label className="flex flex-col gap-0.5 text-[11px] text-muted-foreground">
+      {label}
+      <select
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-8 rounded-md border border-border bg-background px-2 text-sm"
+      >
+        {options.map(([v, t]) => <option key={v} value={v}>{t}</option>)}
+      </select>
+    </label>
+  );
+}
+
+function DocFormatBuilder({ formats, onChange, branchCode, disabled }: {
+  formats: DocFormat[];
+  onChange: (next: DocFormat[]) => void;
+  branchCode: string;
+  disabled: boolean;
+}) {
+  const dups = duplicateDocPrefixes(formats);
+  const update = (i: number, patch: Partial<DocFormat>) =>
+    onChange(formats.map((f, idx) => (idx === i ? { ...f, ...patch } : f)));
+  const addFormat = (doctype: string) =>
+    onChange([...formats, { ...defaultDocFormat(doctype), prefix: "", isdefault: !formats.some((f) => f.doctype === doctype) }]);
+  const removeFormat = (i: number) => onChange(formats.filter((_, idx) => idx !== i));
+  const setDefault = (i: number, doctype: string) =>
+    onChange(formats.map((f, idx) => (f.doctype === doctype ? { ...f, isdefault: idx === i } : f)));
+
+  return (
+    <div className="space-y-2">
+      <label className="text-sm font-semibold text-foreground">
+        รูปแบบเลขที่เอกสาร (แต่ละประเภทมีได้หลายรูปแบบ)
+        <span className="ml-1 font-normal text-xs text-muted-foreground">— ปรับคำนำหน้า/ปี/เดือน/วัน/รันนิ่ง เห็นตัวอย่างทันที</span>
+      </label>
+      {dups.size > 0 ? (
+        <div className="rounded-md bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
+          คำนำหน้าซ้ำ: {[...dups].join(", ")} — ต้องแก้ให้ไม่ซ้ำก่อนบันทึก
+        </div>
+      ) : null}
+      <div className="space-y-3">
+        {DOC_PREFIX_TYPES.map((dt) => {
+          const rows = formats.map((f, i) => ({ f, i })).filter((r) => r.f.doctype === dt.code);
+          return (
+            <div key={dt.code} className="rounded-xl border border-border bg-card p-3">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-sm font-medium">
+                  {dt.label} <span className="font-mono text-xs text-muted-foreground">({dt.code})</span>
+                </span>
+                <Button type="button" variant="outline" size="sm" disabled={disabled} onClick={() => addFormat(dt.code)}>
+                  <Plus className="h-3.5 w-3.5" /> เพิ่มรูปแบบ
+                </Button>
+              </div>
+              {rows.length === 0 ? (
+                <p className="text-xs text-muted-foreground">ยังไม่มีรูปแบบ — กด &ldquo;เพิ่มรูปแบบ&rdquo;</p>
+              ) : (
+                <div className="space-y-2">
+                  {rows.map(({ f, i }) => {
+                    const pfx = normalizeDocPrefix(f.prefix);
+                    const dup = !!pfx && dups.has(pfx);
+                    return (
+                      <div key={i} className={cn("rounded-lg border p-2.5", f.isdefault ? "border-primary ring-1 ring-primary/30" : "border-border", !f.enabled && "opacity-60")}>
+                        <div className="flex items-center gap-2">
+                          <input type="checkbox" checked={f.enabled} disabled={disabled} aria-label="เปิดใช้งานรูปแบบ" onChange={(e) => update(i, { enabled: e.target.checked })} className="h-4 w-4 shrink-0" />
+                          <Input value={f.name} placeholder="ชื่อรูปแบบ" disabled={disabled} onChange={(e) => update(i, { name: e.target.value })} className="h-8 flex-1 text-sm" />
+                          <Input value={f.prefix} placeholder={f.doctype} maxLength={10} disabled={disabled} onChange={(e) => update(i, { prefix: normalizeDocPrefix(e.target.value) })} className={cn("h-8 w-24 text-center text-sm uppercase", dup && "border-destructive text-destructive")} />
+                          <button type="button" aria-label="ตั้งเป็นค่าเริ่มต้น" title="ตั้งเป็นค่าเริ่มต้น" disabled={disabled} onClick={() => setDefault(i, f.doctype)} className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-md", f.isdefault ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted")}>
+                            <Star className={cn("h-4 w-4", f.isdefault && "fill-primary")} />
+                          </button>
+                          <span className="rounded-md bg-primary/10 px-2.5 py-1 font-mono text-sm font-medium text-primary whitespace-nowrap">{buildDocExample(f, branchCode)}</span>
+                          <button type="button" aria-label="ลบรูปแบบ" disabled={disabled} onClick={() => removeFormat(i)} className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-destructive">
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                        {f.isdefault ? (
+                          <span className="mt-1.5 inline-flex items-center gap-1 rounded bg-primary/15 px-2 py-0.5 text-[11px] font-medium text-primary">
+                            <Star className="h-3 w-3 fill-primary" /> ค่าเริ่มต้น
+                          </span>
+                        ) : null}
+                        <div className="mt-2 flex flex-wrap items-end gap-2">
+                          <DocSelect label="รหัสสาขา" value={f.usebranch ? "1" : "0"} disabled={disabled} onChange={(v) => update(i, { usebranch: v === "1" })} options={[["0", "ไม่ใส่"], ["1", `ใส่ ${branchCode || "00000"}`]]} />
+                          <DocSelect label="ปี" value={f.yearmode} disabled={disabled} onChange={(v) => update(i, { yearmode: v })} options={DOC_YEAR_MODES.map((y) => [y.value, y.label])} />
+                          <DocSelect label="เดือน" value={f.usemonth ? "1" : "0"} disabled={disabled} onChange={(v) => update(i, { usemonth: v === "1" })} options={[["1", "ใช้"], ["0", "ไม่ใช้"]]} />
+                          <DocSelect label="วัน" value={f.useday ? "1" : "0"} disabled={disabled} onChange={(v) => update(i, { useday: v === "1" })} options={[["1", "ใช้"], ["0", "ไม่ใช้"]]} />
+                          <DocSelect label="ตัวคั่น" value={f.separator ? "1" : "0"} disabled={disabled} onChange={(v) => update(i, { separator: v === "1" })} options={[["0", "ไม่มี"], ["1", "ขีดกลาง"]]} />
+                          <DocSelect label="รันนิ่ง" value={String(f.runlength)} disabled={disabled} onChange={(v) => update(i, { runlength: +v })} options={[["4", "4 หลัก"], ["5", "5 หลัก"], ["6", "6 หลัก"]]} />
+                          <DocSelect label="รีเซ็ต" value={f.resetmode} disabled={disabled} onChange={(v) => update(i, { resetmode: v })} options={DOC_RESET_MODES.map((r) => [r.value, r.label])} />
+                          <label className="flex flex-col gap-0.5 text-[11px] text-muted-foreground">
+                            เริ่มที่
+                            <Input type="number" min={1} value={f.startnumber} disabled={disabled} onChange={(e) => update(i, { startnumber: Math.max(1, Number(e.target.value) || 1) })} className="h-8 w-20 text-sm" />
+                          </label>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 type NodeType = "company" | "branch";
 type ConfirmAction = "save" | "delete";
@@ -374,7 +565,7 @@ export function CompanyBranchTreeView({
   const [formEmail, setFormEmail] = useState("");
   const [formManagerName, setFormManagerName] = useState("");
   const [formFiscalStartMonth, setFormFiscalStartMonth] = useState(1);
-  const [formDocPrefixes, setFormDocPrefixes] = useState<Record<string, string>>({});
+  const [formDocFormats, setFormDocFormats] = useState<DocFormat[]>([]);
   const [formAddresses, setFormAddresses] = useState<Record<string, string>>({});
   const [formETaxEnabled, setFormETaxEnabled] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
@@ -418,13 +609,10 @@ export function CompanyBranchTreeView({
       setFormEmail(branchData.email || "");
       setFormManagerName(branchData.managername || "");
       setFormFiscalStartMonth(branchData.fiscalstartmonth || 1);
-      setFormDocPrefixes(
-        Object.fromEntries(
-          (branchData.documentprefixes || [])
-            .filter((e) => e.doctype)
-            // legacy/long values (e.g. "HQ-SI", "BR01PO") are reset to empty so the doctype-code default shows
-            .map((e) => [e.doctype as string, cleanDocPrefixOrEmpty(e.prefix || "")]),
-        ),
+      setFormDocFormats(
+        (branchData.documentformats || [])
+          .filter((e) => e.doctype)
+          .map((e) => ({ ...defaultDocFormat(e.doctype as string), ...e, prefix: normalizeDocPrefix(e.prefix ?? (e.doctype as string)) })),
       );
       setFormETaxEnabled(branchData.etaxenabled === true);
       const addrMap: Record<string, string> = {};
@@ -513,11 +701,14 @@ export function CompanyBranchTreeView({
         return;
       }
       const branchTzMeta = timezoneMeta(formTimezone);
-      // ทุกประเภทมีคำนำหน้า default = รหัสประเภท (เช่น PO) เมื่อผู้ใช้ไม่ได้ override
-      const docPrefixesPayload = DOC_PREFIX_TYPES.map((dt) => ({
-        doctype: dt.code,
-        prefix: formDocPrefixes[dt.code] || dt.code,
-      }));
+      // คำนำหน้าห้ามซ้ำกันทั้งสาขา (ข้ามทุกประเภท) — กันบันทึกถ้าซ้ำ
+      const dupPrefixes = duplicateDocPrefixes(formDocFormats);
+      if (dupPrefixes.size > 0) {
+        setSaveError(`คำนำหน้าเลขที่เอกสารซ้ำ: ${[...dupPrefixes].join(", ")} — ต้องแก้ให้ไม่ซ้ำก่อนบันทึก`);
+        setSaving(false);
+        return;
+      }
+      const docFormatsPayload = formDocFormats.map((f) => ({ ...f, prefix: normalizeDocPrefix(f.prefix), doctype: f.doctype.toUpperCase() }));
       const addressesPayload = editorLanguages
         .map((lang) => ({ code: lang, address: (formAddresses[lang] || "").trim() }))
         .filter((item) => item.address);
@@ -567,7 +758,7 @@ export function CompanyBranchTreeView({
           email: formEmail,
           managername: formManagerName,
           fiscalstartmonth: formFiscalStartMonth,
-          documentprefixes: docPrefixesPayload,
+          documentformats: docFormatsPayload,
           addresses: addressesPayload,
           etaxenabled: formETaxEnabled,
           isactive: formIsActive,
@@ -593,7 +784,7 @@ export function CompanyBranchTreeView({
           email: formEmail,
           managername: formManagerName,
           fiscalstartmonth: formFiscalStartMonth,
-          documentprefixes: docPrefixesPayload,
+          documentformats: docFormatsPayload,
           addresses: addressesPayload,
           etaxenabled: formETaxEnabled,
           isactive: formIsActive,
@@ -647,7 +838,7 @@ export function CompanyBranchTreeView({
                   email: formEmail,
                   managername: formManagerName,
                   fiscalstartmonth: formFiscalStartMonth,
-                  documentprefixes: docPrefixesPayload,
+                  documentformats: docFormatsPayload,
                   addresses: addressesPayload,
                   etaxenabled: formETaxEnabled,
                 }),
@@ -694,7 +885,7 @@ export function CompanyBranchTreeView({
                   email: formEmail,
                   managername: formManagerName,
                   fiscalstartmonth: formFiscalStartMonth,
-                  documentprefixes: docPrefixesPayload,
+                  documentformats: docFormatsPayload,
                   addresses: addressesPayload,
                   etaxenabled: formETaxEnabled,
                 }),
@@ -1384,32 +1575,13 @@ export function CompanyBranchTreeView({
                       </div>
                     </div>
 
-                    {/* คำนำหน้าเลขที่เอกสาร แยกตามประเภท (เก็บค่า config — generator ยังไม่ใช้) */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold text-foreground">
-                        คำนำหน้าเลขที่เอกสาร (แยกตามประเภท)
-                        <span className="ml-1 font-normal text-xs text-muted-foreground">— 2 ตัวอักษร + ปีเดือนวัน + running เช่น PO → PO26062800001</span>
-                      </label>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
-                        {DOC_PREFIX_TYPES.map((dt) => (
-                          <div key={dt.code} className="flex items-center gap-2">
-                            <span className="w-36 shrink-0 text-xs text-muted-foreground">
-                              {dt.label} <span className="font-mono">({dt.code})</span>
-                            </span>
-                            <Input
-                              value={formDocPrefixes[dt.code] || dt.code}
-                              onChange={(e) =>
-                                setFormDocPrefixes((prev) => ({ ...prev, [dt.code]: normalizeDocPrefix(e.target.value) }))
-                              }
-                              maxLength={2}
-                              placeholder={dt.code}
-                              className="bg-accent/20 h-8 text-sm"
-                              disabled={isReadOnlyMode}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                    {/* รูปแบบเลขที่เอกสาร — หลายรูปแบบต่อประเภท (config — generator ยังไม่ใช้) */}
+                    <DocFormatBuilder
+                      formats={formDocFormats}
+                      onChange={setFormDocFormats}
+                      branchCode={formCode || "00000"}
+                      disabled={isReadOnlyMode}
+                    />
                     <div className="flex items-center gap-2">
                       <input
                         type="checkbox"

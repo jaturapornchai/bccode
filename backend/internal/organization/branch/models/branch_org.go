@@ -42,7 +42,7 @@ type BranchOrgDoc struct {
 	// e-Tax submission engines are separate subsystems and are NOT implemented here;
 	// these just store the per-branch settings they will read.
 	FiscalStartMonth int8              `json:"fiscalstartmonth" bson:"fiscalstartmonth"`
-	DocumentPrefixes []BranchDocPrefix `json:"documentprefixes" bson:"documentprefixes"`
+	DocumentFormats  []BranchDocFormat `json:"documentformats" bson:"documentformats"`
 	ETaxEnabled      bool              `json:"etaxenabled" bson:"etaxenabled"`
 	IsActive         bool              `json:"isactive" bson:"isactive"`
 	CreatedAt        time.Time         `json:"createdat" bson:"createdat"`
@@ -57,12 +57,25 @@ func (BranchOrgDoc) CollectionName() string {
 	return branchCollectionName
 }
 
-// BranchDocPrefix = คำนำหน้าเลขที่เอกสารต่อประเภทเอกสาร (config-only; running-number
-// generator ยังไม่ใช้ค่านี้). DocType = code ของประเภทเอกสาร เช่น SI, PO, SO, TF
-// (ตรงกับ MODULE_NAME ของ transaction module).
-type BranchDocPrefix struct {
-	DocType string `json:"doctype" bson:"doctype"`
-	Prefix  string `json:"prefix" bson:"prefix"`
+// BranchDocFormat = หนึ่งรูปแบบเลขที่เอกสาร โดยแต่ละประเภทเอกสาร (DocType) มีได้
+// หลายรูปแบบ (multi-format ต่อประเภท). config-only เท่านั้น — running-number generator
+// ยังไม่ใช้ค่าเหล่านี้. DocType = code ของประเภทเอกสาร เช่น SI, PO, SO, TF
+// (ตรงกับ MODULE_NAME ของ transaction module). YearMode: none|be2|be4|ce2|ce4 ;
+// ResetMode: none/never|yearly|monthly|daily.
+type BranchDocFormat struct {
+	DocType     string `json:"doctype" bson:"doctype"`
+	Name        string `json:"name" bson:"name"`
+	Prefix      string `json:"prefix" bson:"prefix"`
+	UseBranch   bool   `json:"usebranch" bson:"usebranch"`
+	YearMode    string `json:"yearmode" bson:"yearmode"`
+	UseMonth    bool   `json:"usemonth" bson:"usemonth"`
+	UseDay      bool   `json:"useday" bson:"useday"`
+	Separator   bool   `json:"separator" bson:"separator"`
+	RunLength   int    `json:"runlength" bson:"runlength"`
+	ResetMode   string `json:"resetmode" bson:"resetmode"`
+	StartNumber int    `json:"startnumber" bson:"startnumber"`
+	Enabled     bool   `json:"enabled" bson:"enabled"`
+	IsDefault   bool   `json:"isdefault" bson:"isdefault"`
 }
 
 // BranchAddress = ที่อยู่สาขาแยกตามภาษา ใช้สำหรับออกเอกสาร. Code = language code

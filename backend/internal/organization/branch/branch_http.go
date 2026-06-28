@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"regexp"
-	"smlcloudplatform/internal/config"
 	authModels "smlcloudplatform/internal/authentication/models"
+	"smlcloudplatform/internal/config"
 	common "smlcloudplatform/internal/models"
 	branchModels "smlcloudplatform/internal/organization/branch/models"
 	companyModels "smlcloudplatform/internal/organization/company/models"
@@ -226,7 +227,7 @@ func (h BranchHttp) UpdateBranch(ctx microservice.IContext) error {
 	existing.ManagerName = req.ManagerName
 	existing.Addresses = req.Addresses
 	existing.FiscalStartMonth = req.FiscalStartMonth
-	existing.DocumentPrefixes = req.DocumentPrefixes
+	existing.DocumentFormats = req.DocumentFormats
 	existing.ETaxEnabled = req.ETaxEnabled
 	existing.IsActive = req.IsActive
 	existing.UpdatedAt = time.Now()
@@ -251,7 +252,7 @@ func (h BranchHttp) UpdateBranch(ctx microservice.IContext) error {
 		"managername":           existing.ManagerName,
 		"addresses":             existing.Addresses,
 		"fiscalstartmonth":      existing.FiscalStartMonth,
-		"documentprefixes":      existing.DocumentPrefixes,
+		"documentformats":       existing.DocumentFormats,
 		"etaxenabled":           existing.ETaxEnabled,
 		"isactive":              existing.IsActive,
 		"updatedat":             existing.UpdatedAt,
@@ -419,6 +420,36 @@ func prepareBranchUpdate(req *branchModels.BranchOrgDoc) error {
 	}
 	req.Code = normalizedCode
 	req.Addresses = sanitizeBranchAddresses(req.Addresses)
+	if err := normalizeAndValidateDocFormats(req); err != nil {
+		return err
+	}
+	return nil
+}
+
+var docFormatPrefixAllowed = regexp.MustCompile(`[^A-Z0-9]+`)
+
+// normalizeAndValidateDocFormats uppercases/trims each document-number format's
+// DocType and Prefix (Prefix keeps only A-Z0-9), then validates that every
+// entry has a non-empty DocType and Prefix and that no Prefix repeats anywhere
+// in the branch (across all doctypes/formats). Validation runs on every entry
+// sent, regardless of Enabled.
+func normalizeAndValidateDocFormats(req *branchModels.BranchOrgDoc) error {
+	seen := make(map[string]struct{}, len(req.DocumentFormats))
+	for i := range req.DocumentFormats {
+		f := &req.DocumentFormats[i]
+		f.DocType = strings.ToUpper(strings.TrimSpace(f.DocType))
+		f.Prefix = strings.TrimSpace(docFormatPrefixAllowed.ReplaceAllString(strings.ToUpper(f.Prefix), ""))
+		if f.DocType == "" {
+			return fmt.Errorf("ประเภทเอกสาร (doctype) ของรูปแบบเลขที่เอกสารห้ามว่าง")
+		}
+		if f.Prefix == "" {
+			return fmt.Errorf("คำนำหน้าเลขที่เอกสารห้ามว่าง (doctype: %s)", f.DocType)
+		}
+		if _, dup := seen[f.Prefix]; dup {
+			return fmt.Errorf("คำนำหน้าเลขที่เอกสารซ้ำ: %s", f.Prefix)
+		}
+		seen[f.Prefix] = struct{}{}
+	}
 	return nil
 }
 
