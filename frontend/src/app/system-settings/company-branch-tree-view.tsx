@@ -979,7 +979,7 @@ export function CompanyBranchTreeView({
   const isReadOnlyMode = formType?.startsWith("view") ?? false;
 
   return (
-    <div className="grid w-full grid-cols-1 gap-4 xl:grid-cols-[minmax(320px,0.85fr)_minmax(420px,1.15fr)]">
+    <div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-[clamp(300px,26vw,380px)_minmax(0,1fr)]">
       {/* Left panel: Company -> Branch list */}
       <Card className="min-h-[calc(100vh-12rem)] shadow-lg border-primary/10">
         <CardContent className="p-4">
