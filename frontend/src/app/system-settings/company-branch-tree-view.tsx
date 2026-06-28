@@ -264,7 +264,7 @@ function DocSelect({ label, value, onChange, options, disabled }: {
         value={value}
         disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
-        className="h-8 rounded-md border border-border bg-background px-2 text-sm"
+        className="h-8 w-full rounded-md border border-border bg-background px-2 text-sm"
       >
         {options.map(([v, t]) => <option key={v} value={v}>{t}</option>)}
       </select>
@@ -337,7 +337,7 @@ function DocFormatBuilder({ formats, onChange, branchCode, disabled }: {
                             <Star className="h-3 w-3 fill-primary" /> ค่าเริ่มต้น
                           </span>
                         ) : null}
-                        <div className="mt-2 flex flex-wrap items-end gap-2">
+                        <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-3 md:grid-cols-4">
                           <DocSelect label="รหัสสาขา" value={f.usebranch ? "1" : "0"} disabled={disabled} onChange={(v) => update(i, { usebranch: v === "1" })} options={[["0", "ไม่ใส่"], ["1", `ใส่ ${branchCode || "00000"}`]]} />
                           <DocSelect label="ปี" value={f.yearmode} disabled={disabled} onChange={(v) => update(i, { yearmode: v })} options={DOC_YEAR_MODES.map((y) => [y.value, y.label])} />
                           <DocSelect label="เดือน" value={f.usemonth ? "1" : "0"} disabled={disabled} onChange={(v) => update(i, { usemonth: v === "1" })} options={[["1", "ใช้"], ["0", "ไม่ใช้"]]} />
@@ -347,7 +347,7 @@ function DocFormatBuilder({ formats, onChange, branchCode, disabled }: {
                           <DocSelect label="รีเซ็ต" value={f.resetmode} disabled={disabled} onChange={(v) => update(i, { resetmode: v })} options={DOC_RESET_MODES.map((r) => [r.value, r.label])} />
                           <label className="flex flex-col gap-0.5 text-[11px] text-muted-foreground">
                             เริ่มที่
-                            <Input type="number" min={1} value={f.startnumber} disabled={disabled} onChange={(e) => update(i, { startnumber: Math.max(1, Number(e.target.value) || 1) })} className="h-8 w-20 text-sm" />
+                            <Input type="number" min={1} value={f.startnumber} disabled={disabled} onChange={(e) => update(i, { startnumber: Math.max(1, Number(e.target.value) || 1) })} className="h-8 w-full text-sm" />
                           </label>
                         </div>
                       </div>
