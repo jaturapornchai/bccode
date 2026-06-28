@@ -1,0 +1,94 @@
+# ========================================
+# FULLY-LOCAL dev stack overlay (Docker Desktop)
+# Use with:
+#   docker-compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+# Adds mongo/postgres/clickhouse/minio as local containers and points
+# mainapi at bootstrap.local.json. Reuses redis + kafka from base compose.
+# Local-only, no auth/simple-auth — NO real secrets. Do NOT use on .202.
+# ========================================
+services:
+  mongodb:
+    image: mongo:7
+    container_name: mongodb
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  postgres:
+    image: postgres:18-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_DB: appdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      # postgres:18 stores data in a version subdir; mount the parent (pg18 convention)
+      - postgres-data:/var/lib/postgresql
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: clickhouse
+    environment:
+      CLICKHOUSE_DB: appdb
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+    ports:
+      - "127.0.0.1:8123:8123"
+      - "127.0.0.1:9000:9000"
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  minio:
+    image: minio/minio
+    container_name: minio
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "127.0.0.1:9100:9000"
+      - "127.0.0.1:9001:9001"
+    volumes:
+      - minio-data:/data
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  mainapi:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    depends_on:
+      - redis
+      - kafka
+      - mongodb
+      - postgres
+      - clickhouse
+      - minio
+    volumes:
+      # Override the base bootstrap mount with the LOCAL bootstrap (all stores → local containers)
+      - ./bootstrap.local.json:/app/bootstrap.json:ro
+      # Override custom_config so it doesn't pull in real R2/Cloudflare creds (keep local isolated)
+      - ./custom_config.local.json:/app/custom_config.json:ro
+
+volumes:
+  mongo-data:
+  postgres-data:
+  clickhouse-data:
+  minio-data:

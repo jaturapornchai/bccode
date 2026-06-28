@@ -61,3 +61,6 @@ app.log
 # Config (contains credentials — DO NOT commit)
 bootstrap.json
 custom_config.json
+bootstrap.local.json
+Dockerfile.local
+custom_config.local.json
