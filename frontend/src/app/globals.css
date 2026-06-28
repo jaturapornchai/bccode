@@ -794,6 +794,44 @@ h2:not([class]) {
   align-content: start;
 }
 
+/* Compact brand header shown ONLY in portrait tablet mode (901-1023px) where the
+   full brand panel is hidden — gives vertical balance (logo + tagline above the card).
+   Hidden everywhere else by default; media query above flips it to display:flex. */
+.login-portrait-header {
+  display: none;
+  width: 100%;
+  max-width: 540px;
+  margin: 0 auto clamp(14px, 2.5vw, 22px);
+  padding: 0 clamp(8px, 2vw, 16px);
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.login-portrait-header .brand-mark {
+  width: 56px;
+  height: 56px;
+  flex-basis: 56px;
+}
+
+.login-portrait-header h1 {
+  margin: 0;
+  font-size: clamp(1.5rem, 3vw, 1.9rem);
+  font-weight: 900;
+  color: var(--text);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.login-portrait-header p {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--muted);
+  line-height: 1.45;
+  max-width: 460px;
+}
+
 .connection-error-banner {
   display: flex;
   align-items: flex-start;
@@ -941,21 +979,51 @@ h2:not([class]) {
   }
 }
 
-/* Login: stack to a single centered column on narrow desktops/tablets
-   so the brand panel never squishes feature cards into vertical text. */
-@media (min-width: 901px) and (max-width: 1180px) {
+/* Login: stack to a single centered column on portrait tablets (iPad mini 768, iPad Air 820
+   portrait) so the brand panel never squishes feature cards into vertical text.
+   NOTE: hero+form 2-panel stays visible at >=1024px (iPad mini/Air landscape + desktop). */
+@media (min-width: 768px) and (max-width: 1023px) {
   .login-shell {
-    grid-template-columns: minmax(0, 620px);
+    grid-template-columns: 1fr;
     justify-content: center;
+    align-content: center;
+    gap: 0;
   }
 
   .brand-panel {
     display: none;
   }
 
+  /* Portrait tablet: show the compact brand header above the card for vertical balance. */
+  .login-portrait-header {
+    display: flex;
+  }
+
   .form-panel {
     width: 100%;
     min-height: calc(100vh - clamp(20px, 4.8vw, 48px));
+    align-content: center;
+  }
+
+  .login-card {
+    max-width: 540px;
+  }
+
+  .connection-error-banner {
+    max-width: 540px;
+  }
+}
+
+/* Login 2-panel optimization for landscape tablets + small laptops (>=1024px):
+   balance the hero and form so neither squishes. iPad-first horizontal space use. */
+@media (min-width: 1024px) {
+  .login-shell {
+    grid-template-columns: minmax(0, 1fr) minmax(420px, 460px);
+    gap: clamp(16px, 2.5vw, 28px);
+  }
+
+  .login-portrait-header {
+    display: none;
   }
 }
 
@@ -4893,6 +4961,23 @@ h2:not([class]) {
   .menu-section-tabs {
     position: static;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Login — phone (<768px): not a priority target, just keep it usable.
+   Single column, compact card with side padding so nothing overflows. */
+@media (max-width: 767px) {
+  .login-card {
+    max-width: min(460px, calc(100vw - 32px));
+  }
+
+  .connection-error-banner {
+    max-width: min(460px, calc(100vw - 32px));
+  }
+
+  /* Portrait brand header hidden on phones (too tall for a small screen). */
+  .login-portrait-header {
+    display: none;
   }
 }
 
