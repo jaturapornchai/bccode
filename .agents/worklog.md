@@ -132,3 +132,10 @@ Rules for this file:
 - Frontend (`company-branch-tree-view.tsx`): `DocFormatBuilder` component — cards ต่อประเภท, เพิ่ม/ลบรูปแบบ, ดาว=ค่าเริ่มต้น+badge, ตัวอย่างเลขสด (buildDocExample), กัน prefix ซ้ำ real-time (แดง)+กัน save. ลบ helper เก่า normalizeDocPrefix(2-char)/cleanDocPrefixOrEmpty. tsc 0, UI verified (add SO → SO26062800001).
 - **DEFERRED (config-only ตอนนี้):** generator เลขจริง, counter table + period_key + row-lock, gap/void no-reuse, ปีภาษี vs ปฏิทิน reset, book/series counter. ก่อน lock กฎภาษี (รัน per ปีภาษี) ต้อง verify rd.go.th.
 - **NOT deployed:** commit b36b4127 บน working tree เท่านั้น. ต้อง `deploy dev` (.202) เพื่อให้ backend ใหม่เก็บ documentformats — backend .202 ปัจจุบันยัง schema เก่า (frontend save documentformats จะถูก ignore จนกว่า deploy).
+
+## 2026-06-28 — Deploy dev (.202): documentformats backend + UI (drawer/sidebar/wide layout)
+- Deployed BOTH to on-prem .202 per Jead "deploy dev".
+- **Backend mainapi:** tar (exclude bootstrap.json/custom_config.json) → scp → extract → `docker compose up -d --build --no-deps --force-recreate mainapi`. Verified: healthz 200, **bootstrap.json md5 unchanged 7dbfef35 (not clobbered)**, login regression OK, branch API now returns `documentformats` (new struct live). mainapi healthy.
+- **Frontend bc-frontend:** tar (exclude node_modules/.next) → scp → `docker build -f Dockerfile.onprem --build-arg NEXT_PUBLIC_GOOGLE_CLIENT_ID=...` → `docker rm -f` + `docker run` recreate with same config (port 3000, network bc-backend_app-network, env BCAI_LOCAL_BACKEND_URL/GOOGLE_CLIENT_ID/NODE_ENV, restart unless-stopped). Verified .202:3000 = 200 serving new UI (drawer + collapsible sidebar + wide form).
+- **ISSUE (separate from deploy, FLAGGED):** public `https://app.bcaicloud.com` unreachable — `nslookup` = **Non-existent domain** (DNS record gone at Cloudflare). cloudflared service is `active` on .202, container serves locally fine. So the Cloudflare DNS/tunnel record for app.bcaicloud.com needs re-checking — NOT caused by this deploy. Jead to verify Cloudflare DNS if public access is wanted.
+- Pushed 8 commits to GitHub origin/dev (1014ce93).
