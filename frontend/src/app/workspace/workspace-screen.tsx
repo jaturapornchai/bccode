@@ -16,6 +16,8 @@ import {
   Loader2,
   LogOut,
   MessageCircle,
+  PanelLeftClose,
+  PanelLeftOpen,
   Plus,
   Search,
   UserRound,
@@ -331,6 +333,20 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
   const [pendingUnitSetup, setPendingUnitSetup] = useState<PendingUnitSetup | null>(null);
   const [unitSetupSaving, setUnitSetupSaving] = useState(false);
   const [activeAccessRoute, setActiveAccessRoute] = useState<string | null>(null);
+  const [accessSidebarCollapsed, setAccessSidebarCollapsed] = useState(false);
+  useEffect(() => {
+    setAccessSidebarCollapsed(localStorage.getItem("bc-access-sidebar-collapsed") === "1");
+  }, []);
+  const toggleAccessSidebar = () =>
+    setAccessSidebarCollapsed((v) => {
+      const next = !v;
+      try {
+        localStorage.setItem("bc-access-sidebar-collapsed", next ? "1" : "0");
+      } catch {
+        // ignore storage errors
+      }
+      return next;
+    });
   const [selectedShopForAccess, setSelectedShopForAccess] = useState<ShopListItem | null>(null);
   const isSelectedShopOwner = useMemo(() => {
     if (!selectedShop || !auth) return false;
@@ -1102,16 +1118,32 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
           </div>
           <div className="flex-1 min-h-0 flex flex-col md:flex-row bg-card overflow-hidden">
             {/* Sidebar: vertical rail on desktop, horizontal scroll tabs on mobile */}
-            <aside className="w-full md:w-60 shrink-0 border-b md:border-b-0 md:border-r border-border bg-muted/20 p-2 md:p-4 grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-col gap-1.5 md:gap-1 md:overflow-y-auto">
-              <p className="hidden md:block px-2 mb-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                {language === "th" ? "ตั้งค่าระบบและการเข้าถึง" : "Settings & Access"}
-              </p>
+            <aside className={`w-full shrink-0 border-b md:border-b-0 md:border-r border-border bg-muted/20 p-2 md:p-3 grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-col gap-1.5 md:gap-1 md:overflow-y-auto transition-[width] duration-200 ${accessSidebarCollapsed ? "md:w-16" : "md:w-60"}`}>
+              <div className="col-span-2 sm:col-span-3 hidden md:flex items-center justify-between mb-2 min-w-0">
+                {!accessSidebarCollapsed ? (
+                  <p className="px-2 truncate text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                    {language === "th" ? "ตั้งค่าระบบและการเข้าถึง" : "Settings & Access"}
+                  </p>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={toggleAccessSidebar}
+                  title={accessSidebarCollapsed ? (language === "th" ? "ขยายเมนู" : "Expand menu") : (language === "th" ? "ย่อเมนู" : "Collapse menu")}
+                  aria-label={accessSidebarCollapsed ? "Expand menu" : "Collapse menu"}
+                  className={`grid size-8 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground ${accessSidebarCollapsed ? "mx-auto" : ""}`}
+                >
+                  {accessSidebarCollapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
+                </button>
+              </div>
               {accessSettingNavItems.map((item, index) => {
                 const isActive = activeAccessRoute === item.route;
                 return (
                   <button
                     key={item.route}
+                    title={accessSidebarCollapsed ? `${index + 1}. ${language === "th" ? item.label.th : item.label.en}` : undefined}
                     className={`w-full text-left px-2.5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center md:items-start gap-2 ${
+                      accessSidebarCollapsed ? "md:justify-center md:px-1" : ""
+                    } ${
                       isActive
                         ? "bg-primary text-primary-foreground shadow-md ring-1 ring-primary/40"
                         : "text-foreground hover:bg-muted md:hover:translate-x-0.5"
@@ -1128,7 +1160,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                     >
                       {index + 1}
                     </span>
-                    <span className="min-w-0">
+                    <span className={`min-w-0 ${accessSidebarCollapsed ? "md:hidden" : ""}`}>
                       <span className="block leading-tight md:truncate">
                         {language === "th" ? item.label.th : item.label.en}
                       </span>
