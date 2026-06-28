@@ -17,6 +17,7 @@ import {
   KeyRound,
   UploadCloud,
   ImageIcon,
+  FileText,
   X,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -566,6 +567,7 @@ export function CompanyBranchTreeView({
   const [formManagerName, setFormManagerName] = useState("");
   const [formFiscalStartMonth, setFormFiscalStartMonth] = useState(1);
   const [formDocFormats, setFormDocFormats] = useState<DocFormat[]>([]);
+  const [docDrawerOpen, setDocDrawerOpen] = useState(false);
   const [formAddresses, setFormAddresses] = useState<Record<string, string>>({});
   const [formETaxEnabled, setFormETaxEnabled] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
@@ -1575,13 +1577,47 @@ export function CompanyBranchTreeView({
                       </div>
                     </div>
 
-                    {/* รูปแบบเลขที่เอกสาร — หลายรูปแบบต่อประเภท (config — generator ยังไม่ใช้) */}
-                    <DocFormatBuilder
-                      formats={formDocFormats}
-                      onChange={setFormDocFormats}
-                      branchCode={formCode || "00000"}
-                      disabled={isReadOnlyMode}
-                    />
+                    {/* รูปแบบเลขที่เอกสาร — สรุปย่อ + ปุ่มเปิด drawer จัดการ (builder เต็มอยู่ใน drawer) */}
+                    {(() => {
+                      const dups = duplicateDocPrefixes(formDocFormats);
+                      const summaries = DOC_PREFIX_TYPES
+                        .map((dt) => {
+                          const f = formDocFormats.find((x) => x.doctype === dt.code && x.isdefault)
+                            ?? formDocFormats.find((x) => x.doctype === dt.code);
+                          return f ? { dt, ex: buildDocExample(f, formCode || "00000") } : null;
+                        })
+                        .filter((x): x is { dt: { code: string; label: string }; ex: string } => x !== null);
+                      return (
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <label className="text-sm font-semibold text-foreground">
+                              รูปแบบเลขที่เอกสาร
+                              <span className="ml-1 font-normal text-xs text-muted-foreground">— {formDocFormats.length} รูปแบบ ใน {new Set(formDocFormats.map((f) => f.doctype)).size} ประเภท</span>
+                            </label>
+                            <Button type="button" variant="outline" size="sm" onClick={() => setDocDrawerOpen(true)} disabled={isReadOnlyMode}>
+                              <FileText className="h-3.5 w-3.5" /> จัดการรูปแบบเลขที่เอกสาร
+                            </Button>
+                          </div>
+                          {dups.size > 0 ? (
+                            <div className="rounded-md bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
+                              คำนำหน้าซ้ำ: {[...dups].join(", ")} — กดจัดการเพื่อแก้ก่อนบันทึก
+                            </div>
+                          ) : null}
+                          {summaries.length > 0 ? (
+                            <div className="flex flex-wrap gap-1.5">
+                              {summaries.map(({ dt, ex }) => (
+                                <span key={dt.code} className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/40 px-2 py-1 text-xs">
+                                  <span className="text-muted-foreground">{dt.label}</span>
+                                  <span className="font-mono font-medium text-primary">{ex}</span>
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">ยังไม่มีรูปแบบ — กด &ldquo;จัดการรูปแบบเลขที่เอกสาร&rdquo; เพื่อเพิ่ม</p>
+                          )}
+                        </div>
+                      );
+                    })()}
                     <div className="flex items-center gap-2">
                       <input
                         type="checkbox"
@@ -1678,6 +1714,41 @@ export function CompanyBranchTreeView({
           )}
         </CardContent>
       </Card>
+      {docDrawerOpen && (
+        <div className="fixed inset-0 z-50 flex bg-black/40" onClick={() => setDocDrawerOpen(false)}>
+          <div
+            className="ml-auto flex h-full w-full max-w-4xl flex-col bg-card shadow-2xl animate-in slide-in-from-right duration-200"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-label="จัดการรูปแบบเลขที่เอกสาร"
+          >
+            <div className="flex shrink-0 items-center justify-between border-b px-5 py-3">
+              <h3 className="flex items-center gap-2 text-base font-bold text-foreground">
+                <FileText className="h-4 w-4 text-primary" /> จัดการรูปแบบเลขที่เอกสาร
+              </h3>
+              <button
+                type="button"
+                onClick={() => setDocDrawerOpen(false)}
+                aria-label="ปิด"
+                className="grid size-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto p-5">
+              <DocFormatBuilder
+                formats={formDocFormats}
+                onChange={setFormDocFormats}
+                branchCode={formCode || "00000"}
+                disabled={isReadOnlyMode}
+              />
+            </div>
+            <div className="flex shrink-0 justify-end border-t px-5 py-3">
+              <Button type="button" onClick={() => setDocDrawerOpen(false)}>เสร็จ</Button>
+            </div>
+          </div>
+        </div>
+      )}
       {confirmOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div
