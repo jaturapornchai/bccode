@@ -552,13 +552,6 @@ export function LoginScreen() {
             </motion.div>
           ) : null}
         </AnimatePresence>
-        <div className="login-portrait-header" aria-hidden="true">
-          <div className="brand-mark" aria-hidden="true">
-            <Sparkles size={24} strokeWidth={2.2} />
-          </div>
-          <h1>{t(language, "loginTitle")}</h1>
-          <p>{t(language, "brandDescription")}</p>
-        </div>
         <form className="login-card" onSubmit={handleLogin}>
           <motion.div className="card-header" variants={staggerParent}>
             <motion.div variants={staggerChild}>
