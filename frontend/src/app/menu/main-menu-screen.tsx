@@ -1680,7 +1680,7 @@ function SidebarButton({
       aria-selected={active}
       onClick={onClick}
       className={cn(
-        "flex w-full min-w-0 items-center justify-between gap-3 rounded-2xl border border-transparent px-3 py-2 text-left text-sm font-medium transition-colors",
+        "flex w-full min-w-0 items-center justify-between gap-3 rounded-2xl border border-transparent px-3 py-2 text-left text-xs! font-medium transition-colors",
         active ? "border-border bg-primary text-primary-foreground shadow-sm" : "bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground",
       )}
     >
@@ -1734,7 +1734,7 @@ function MenuSectionAccordion({
         onClick={onToggle}
         aria-expanded={expanded}
         className={cn(
-          "flex w-full min-w-0 items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-left text-sm font-medium transition-colors",
+          "flex w-full min-w-0 items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-left text-xs! font-medium transition-colors",
           active ? "border-border bg-primary text-primary-foreground shadow-sm" : "border-transparent bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground",
         )}
       >

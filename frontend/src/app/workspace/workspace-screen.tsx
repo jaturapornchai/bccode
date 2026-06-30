@@ -454,7 +454,10 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
 
     setAuth(savedAuth);
     void loadShops(savedAuth);
-  }, [initialLanguage, loadShops, router]);
+    // Mount-only bootstrap. Must NOT depend on `loadShops` — it is recreated on every
+    // `language` change, which would re-run this effect and re-fire setLanguage(localStorage),
+    // ping-ponging against the effect below that writes localStorage → infinite render loop.
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     document.documentElement.lang = language;
@@ -480,6 +483,32 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
   useEffect(() => {
     return () => stopLinePolling();
   }, []);
+
+  // The embedded active-languages screen saves straight to the backend without telling the
+  // parent, so selectedShopForAccess.languageconfigs goes stale and the "languages not
+  // confirmed" banner sticks even after the user sets them. When the user lands on any
+  // non-language access screen while we still think languages are unset, re-fetch the holding
+  // so the banner reflects what was actually saved. The guard stops it once languages are known.
+  useEffect(() => {
+    if (step !== "access" || !auth || !selectedShopForAccess) return;
+    if (activeAccessRoute === "/activelanguages") return;
+    if (hasExplicitLanguageSettings(selectedShopForAccess)) return;
+    const code = tenantCodeForShop(selectedShopForAccess);
+    if (!code) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const payload = await callWorkspaceApi<{ data?: ShopListItem[] }>(auth, `holdings?activeholdingcode=${encodeURIComponent(code)}`);
+        const fresh = (Array.isArray(payload.data) ? payload.data : []).find((s) => tenantCodeForShop(s) === code);
+        if (!cancelled && fresh && hasExplicitLanguageSettings(fresh)) setSelectedShopForAccess(fresh);
+      } catch {
+        // ignore — banner just stays until the next reload
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeAccessRoute, step, auth, selectedShopForAccess]);
 
   const flatCompanies = useMemo(() => {
     const list: Array<{
@@ -1061,6 +1090,8 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
   }
 
   if (step === "access" && activeAccessRoute) {
+    const activeNavIndex = accessSettingNavItems.findIndex((i) => i.route === activeAccessRoute);
+    const activeNav = activeNavIndex >= 0 ? accessSettingNavItems[activeNavIndex] : null;
     return (
       <main className="w-screen h-screen bg-background flex flex-col overflow-hidden">
         <section className="w-full h-full flex flex-col bg-card" role="dialog" aria-modal="true">
@@ -1119,6 +1150,28 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
           <div className="flex-1 min-h-0 flex flex-col md:flex-row bg-card overflow-hidden">
             {/* Sidebar: vertical rail on desktop, horizontal scroll tabs on mobile */}
             <aside className={`w-full shrink-0 border-b md:border-b-0 md:border-r border-border bg-muted/20 p-2 md:p-3 grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-col gap-1.5 md:gap-1 md:overflow-y-auto transition-[width] duration-200 ${accessSidebarCollapsed ? "md:w-16" : "md:w-60"}`}>
+              {/* Mobile: collapsible menu header — desktop uses the rail toggle below.
+                  Collapsed shows just the active item so the content gets the screen. */}
+              <button
+                type="button"
+                onClick={toggleAccessSidebar}
+                aria-expanded={!accessSidebarCollapsed}
+                className="col-span-2 sm:col-span-3 md:hidden flex items-center justify-between gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-bold text-foreground"
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="grid size-5 shrink-0 place-items-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
+                    {activeNavIndex >= 0 ? activeNavIndex + 1 : ""}
+                  </span>
+                  <span className="truncate">
+                    {accessSidebarCollapsed
+                      ? activeNav
+                        ? language === "th" ? activeNav.label.th : activeNav.label.en
+                        : language === "th" ? "เมนูตั้งค่า" : "Settings menu"
+                      : language === "th" ? "ปิดเมนู" : "Hide menu"}
+                  </span>
+                </span>
+                {accessSidebarCollapsed ? <PanelLeftOpen className="size-4 shrink-0" /> : <PanelLeftClose className="size-4 shrink-0" />}
+              </button>
               <div className="col-span-2 sm:col-span-3 hidden md:flex items-center justify-between mb-2 min-w-0">
                 {!accessSidebarCollapsed ? (
                   <p className="px-2 truncate text-xs font-bold text-muted-foreground uppercase tracking-wider">
@@ -1141,7 +1194,9 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                   <button
                     key={item.route}
                     title={accessSidebarCollapsed ? `${index + 1}. ${language === "th" ? item.label.th : item.label.en}` : undefined}
-                    className={`w-full text-left px-2.5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center md:items-start gap-2 ${
+                    className={`w-full text-left px-2.5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                      accessSidebarCollapsed ? "hidden md:flex" : "flex"
+                    } items-center md:items-start gap-2 ${
                       accessSidebarCollapsed ? "md:justify-center md:px-1" : ""
                     } ${
                       isActive
@@ -1149,7 +1204,13 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                         : "text-foreground hover:bg-muted md:hover:translate-x-0.5"
                     }`}
                     type="button"
-                    onClick={() => setActiveAccessRoute(item.route)}
+                    onClick={() => {
+                      setActiveAccessRoute(item.route);
+                      // On mobile, collapse the menu after picking so the content gets the screen.
+                      if (typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches) {
+                        setAccessSidebarCollapsed(true);
+                      }
+                    }}
                   >
                     <span
                       className={`mt-0 md:mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${

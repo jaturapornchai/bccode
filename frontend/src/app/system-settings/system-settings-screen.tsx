@@ -14973,7 +14973,9 @@ function defaultForm(
             ? defaultPointConfigJson()
             : isPermissionCodesField(field) ||
                 isApprovalCodesField(field) ||
-                field.key === "allowedtools"
+                field.key === "allowedtools" ||
+                field.key === "items" ||
+                field.placeholder?.trimStart().startsWith("[")
               ? "[]"
               : "{}";
     else if (field.type === "number")
@@ -16614,7 +16616,8 @@ function parseJsonField(value: unknown, key: string): unknown {
       key === "permissionCodes" ||
       key === "approvalcodes" ||
       key === "approvalCodes" ||
-      key === "allowedtools"
+      key === "allowedtools" ||
+      key === "items"
       ? []
       : {};
   return JSON.parse(trimmed);

@@ -8,6 +8,7 @@ import (
 	"smlcloudplatform/internal/utils"
 	warehouseModels "smlcloudplatform/internal/warehouse/models"
 	"smlcloudplatform/pkg/microservice"
+	"sync"
 	"time"
 
 	"gorm.io/gorm"
@@ -22,6 +23,42 @@ func NewWarehouseHttp(ms *microservice.Microservice, cfg config.IConfig) Warehou
 	return WarehouseHttp{
 		ms:  ms,
 		cfg: cfg,
+	}
+}
+
+// warehouseTenantMigrated guards the per-tenant AutoMigrate so it runs once per holdingcode.
+var warehouseTenantMigrated sync.Map
+
+// ensureTenantSchema guarantees the warehouse PG tables exist in this tenant's database.
+// The framework's tenantModels auto-migration is supposed to create them, but make the handler
+// self-sufficient (Backend-Owned Schema Rule): create the correct structure on first access per
+// tenant so a fresh/empty tenant DB never 500s with `relation "warehouse" does not exist`.
+func (h WarehouseHttp) ensureTenantSchema(holdingCode string) {
+	if holdingCode == "" {
+		return
+	}
+	if _, done := warehouseTenantMigrated.Load(holdingCode); done {
+		return
+	}
+	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
+	// Migrate in dependency order (referenced tables first) — AutoMigrate(WarehousePg) alone fails
+	// when its Zones/Shelves relation tries to FK to tables that don't exist yet. Per-model so a
+	// single failure does not abort the rest.
+	models := []interface{}{
+		warehouseModels.ShelfPg{},
+		warehouseModels.ZonePg{},
+		warehouseModels.WarehousePg{},
+		warehouseModels.CompanyWarehousePg{},
+	}
+	ok := true
+	for _, m := range models {
+		if err := pst.AutoMigrate(m); err != nil {
+			h.ms.Logger.Errorf("warehouse tenant AutoMigrate failed for %s: %v", holdingCode, err)
+			ok = false
+		}
+	}
+	if ok {
+		warehouseTenantMigrated.Store(holdingCode, true)
 	}
 }
 
@@ -54,6 +91,7 @@ func (h WarehouseHttp) RegisterHttp() {
 
 func (h WarehouseHttp) CreateWarehouse(ctx microservice.IContext) error {
 	holdingCode := ctx.UserInfo().HoldingCode
+	h.ensureTenantSchema(holdingCode)
 	input := ctx.ReadInput()
 
 	type CreateWarehouseRequest struct {
@@ -111,6 +149,7 @@ func (h WarehouseHttp) SearchWarehouse(ctx microservice.IContext) error {
 	holdingCode := ctx.UserInfo().HoldingCode
 	companyGuid := ctx.QueryParam("companyguid")
 
+	h.ensureTenantSchema(holdingCode)
 	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
 	db := pst.DBClient()
 

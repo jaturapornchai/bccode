@@ -117,7 +117,7 @@ type ProductBarcodeRecord = {
   standValue: number;
   divideValue: number;
   itemType: number;
-  productType: number;
+  productType: string;
   foodType: number;
   materialType: number;
   taxType: number;
@@ -1437,7 +1437,7 @@ function normalizeBarcodeRecord(value: unknown): ProductBarcodeRecord {
     standValue: getFirstNumber(record, ["standvalue", "stand_value", "barcoderefunitstand", "barcode_ref_unit_stand"]),
     divideValue: getFirstNumber(record, ["dividevalue", "divide_value", "barcoderefunitdivide", "barcode_ref_unit_divide"]),
     itemType: getFirstNumber(record, ["itemtype", "itemtype"]),
-    productType: getFirstNumber(record, ["producttype", "product_type"]),
+    productType: isRecord(record["producttype"]) ? String((record["producttype"] as Record<string, unknown>).code ?? "") : "",
     foodType: getFirstNumber(record, ["foodtype", "food_type"]),
     materialType: getFirstNumber(record, ["materialtype", "material_type"]),
     taxType: getFirstNumber(record, ["taxtype", "taxtype"]),

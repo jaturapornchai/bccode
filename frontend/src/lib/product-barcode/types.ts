@@ -391,8 +391,13 @@ export const VAT_TYPE = {
 } as const;
 export type VatType = (typeof VAT_TYPE)[keyof typeof VAT_TYPE];
 
-/** Enum: product type (POS classifier). */
-export type ProductType = number;
+/** Product type master reference — matches Go struct `models.ProductType` ({guidfixed, code, names}).
+ * NOTE: this is a struct, NOT the numeric POS classifier (that is `itemtype: ItemType`). */
+export interface ProductType {
+  guidfixed?: string;
+  code: string;
+  names: NameX[];
+}
 
 /**
  * Full ProductBarcode — matches Go `ProductBarcode` + `ProductBarcodeBase`.
@@ -700,7 +705,7 @@ export function emptyProductBarcode(): ProductBarcode {
     taxtype: 0,
     vattype: VAT_TYPE.TAXABLE,
     vatcal: 0,
-    producttype: 0,
+    producttype: { guidfixed: "", code: "", names: [] },
     foodtype: FOOD_TYPE.FOOD,
     issumpoint: false,
     isalacarte: false,

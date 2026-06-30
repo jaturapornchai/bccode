@@ -400,7 +400,7 @@ export function rawToProductBarcode(raw: unknown, base: ProductBarcode): Product
     taxtype: getNumber(r, "taxtype", base.taxtype),
     vattype: getNumber(r, "vattype", base.vattype) as ProductBarcode["vattype"],
     vatcal: getNumber(r, "vatcal", base.vatcal),
-    producttype: getNumber(r, "producttype", base.producttype),
+    producttype: (isRecord(r.producttype) ? r.producttype : base.producttype) as ProductBarcode["producttype"],
     foodtype: getNumber(r, "foodtype", base.foodtype) as ProductBarcode["foodtype"],
     issumpoint: getBoolean(r, "issumpoint", base.issumpoint),
     isalacarte: getBoolean(r, "isalacarte", base.isalacarte),

@@ -21,6 +21,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LANGUAGES, type LanguageCode } from "@/lib/i18n";
+import { deriveMainApiUrl } from "@/lib/backend-url";
 import { cn } from "@/lib/utils";
 import { normalizeLanguageConfigs } from "./system-settings-screen";
 import { MapPickerDialog } from "@/components/map-picker-dialog";
@@ -174,7 +175,11 @@ export function WarehouseTreeView({
 
   useEffect(() => {
     if (!auth) return;
-    fetch(`${auth.backendUrl}/organization/company`, {
+    // organization/company is a MainAPI route, not GoAPI — derive the MainAPI base from the
+    // goapi backendUrl (otherwise /backend/goapi/organization/company → 404).
+    let mainApiUrl = auth.backendUrl;
+    try { mainApiUrl = deriveMainApiUrl(auth.backendUrl); } catch {}
+    fetch(`${mainApiUrl}/organization/company`, {
       headers: { Authorization: `Bearer ${auth.token}` },
     })
       .then((res) => res.json())

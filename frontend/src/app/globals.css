@@ -1002,9 +1002,10 @@ h2:not([class]) {
   }
 
   /* Hide the redundant first-use note + the password-section subtitle on portrait —
-     the brand panel already explains first-use; here vertical space wins. */
-  .first-use-note,
-  .password-login-heading small {
+     here vertical space wins. Scoped under .login-card so these beat the later base
+     `.first-use-note { display: flex }` (~line 2065) on source order. */
+  .login-card .first-use-note,
+  .login-card .password-login-heading small {
     display: none;
   }
 
@@ -1024,6 +1025,76 @@ h2:not([class]) {
   .login-shell {
     grid-template-columns: minmax(0, 1fr) minmax(420px, 460px);
     gap: clamp(16px, 2.5vw, 28px);
+  }
+
+  /* Hero is visible at >=1024 and already carries the first-use guidance, so the form's
+     first-use note is pure duplication here — drop it at every height. This alone lets the
+     full-size form fit 1920x1080 (the single most common desktop) without scrolling. Scoped
+     under .login-card to beat the later base `.first-use-note { display: flex }` (~line 2065). */
+  .login-card .first-use-note {
+    display: none;
+  }
+}
+
+/* Login: wide + short viewports — ANY tablet in landscape (iPad, Galaxy Tab, Surface,
+   Fire, etc.) plus small laptops. Brand-agnostic: keyed on size, not device. Keeps the
+   2-panel hero but compacts the form so it fits without scrolling. max-height covers the
+   tallest mainstream tablet landscape (iPad Pro 12.9 = 1024). Borrow the portrait
+   compaction — tighter padding, holding+username side-by-side, drop the redundant
+   first-use note (the brand panel already explains it) and field help text. */
+@media (min-width: 1024px) and (max-height: 1024px) {
+  .form-panel {
+    padding: 10px 0;
+  }
+
+  .login-card {
+    gap: 8px;
+    padding: 16px 20px;
+  }
+
+  /* Cap the title so it stays on one row beside the header controls across the whole
+     short-landscape width range (1024–1440). The base h2 uses 3.2vw, which grows wide
+     enough on >=1280 screens to wrap and steal ~67px of vertical space. */
+  .login-card .card-header h2 {
+    font-size: 1.75rem;
+  }
+
+  .password-login-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 14px;
+  }
+
+  .password-login-heading,
+  .field-group[for="login-password"],
+  .form-row,
+  .primary-button,
+  .sign-up-hint {
+    grid-column: 1 / -1;
+  }
+
+  .holding-code-field {
+    grid-column: 1;
+  }
+
+  .password-login-section > label.field-group[for="login-username"] {
+    grid-column: 2;
+  }
+
+  /* first-use note is already hidden by the >=1024 rule above. Scoped under .login-card so
+     these beat the later base definitions (~line 2065) on source order. */
+  .login-card .password-login-heading small,
+  .login-card .holding-code-field .field-help {
+    display: none;
+  }
+
+  .password-login-heading {
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+
+  .auth-login-section {
+    padding-top: 0;
   }
 }
 
@@ -4911,7 +4982,10 @@ h2:not([class]) {
   }
 
   .form-panel {
-    min-height: calc(100dvh - clamp(16px, 4vw, 32px));
+    /* Subtract the full shell padding (2 × clamp(10px,2.4vw,24px) = clamp(20px,4.8vw,48px))
+       so form min-height + shell padding == 100vh exactly. The old 4vw under-subtracted and
+       left a ~6px scroll on portrait tablets (e.g. 768×1024, the most common tablet size). */
+    min-height: calc(100dvh - clamp(20px, 4.8vw, 48px));
     padding: 0;
     place-items: center;
   }
@@ -4964,15 +5038,37 @@ h2:not([class]) {
   }
 }
 
-/* Login — phone (<768px): not a priority target, just keep it usable.
-   Single column, compact card with side padding so nothing overflows. */
+/* Login — phone (<768px): single column, compacted so the form fits common phone
+   heights (e.g. 390×844, 360×800) without scrolling. No hero panel here, so — like the
+   tablet/desktop rules — drop the first-use note and helper text to win back vertical
+   space. Hides are scoped under .login-card to beat the later base definitions (~line 2065). */
 @media (max-width: 767px) {
   .login-card {
     max-width: min(460px, calc(100vw - 32px));
+    gap: 10px;
   }
 
   .connection-error-banner {
     max-width: min(460px, calc(100vw - 32px));
+  }
+
+  .login-card .first-use-note,
+  .login-card .password-login-heading small,
+  .login-card .holding-code-field .field-help {
+    display: none;
+  }
+
+  .auth-login-section {
+    padding-top: 0;
+  }
+
+  .password-login-section {
+    padding-top: 10px;
+  }
+
+  .password-login-heading {
+    padding-bottom: 0;
+    border-bottom: 0;
   }
 }
 
@@ -5103,6 +5199,28 @@ h2:not([class]) {
   .workspace-card-grid,
   .menu-card-grid {
     grid-template-columns: 1fr;
+  }
+
+  /* Progress stepper: 4 equal pills don't fit one line on phones — the labels wrap to
+     2–3 lines and the pills grow uneven. Lay them out 2×2 (each label on one line) and
+     drop the horizontal connector line that only makes sense in a single row. */
+  .step-strip {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .step-strip::before {
+    display: none;
+  }
+
+  .step-strip > span {
+    flex: none;
+    padding: 0 10px;
+  }
+
+  .step-strip-description {
+    grid-column: 1 / -1;
   }
 
   .shop-card {

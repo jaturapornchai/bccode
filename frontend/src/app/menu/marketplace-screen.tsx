@@ -36,7 +36,7 @@ import {
   workspaceStorageKeys,
   WORKSPACE_CHANGED_EVENT
 } from "@/lib/workspace-models";
-import { pickName, rawToProductBarcode } from "@/lib/product-barcode/utils";
+import { pickName } from "@/lib/product-barcode/utils";
 import {
   type ProductBarcode,
   type MarketplaceProductMap,
@@ -289,9 +289,12 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
           throw new Error("Failed to load details");
         }
 
-        const fullProduct: ProductBarcode = rawToProductBarcode(productData.data, { holdingcode: activeHoldingCode } as any);
+        // Modify the RAW product doc from the GET response directly (preserve every backend field —
+        // names, producttype, units, etc.). Re-saving through the display-oriented rawToProductBarcode
+        // transform was lossy and failed backend validation ("names must contain", producttype struct).
+        const raw = (productData.data ?? {}) as Record<string, unknown>;
 
-        const mProducts = fullProduct.marketplaceproducts || [];
+        const mProducts = Array.isArray(raw.marketplaceproducts) ? (raw.marketplaceproducts as MarketplaceProductMap[]) : [];
         const hasShopMap = mProducts.some(
           m => m.platform === platform && m.holdingcode === holdingCode && m.marketitemid === marketItemId
         );
@@ -303,19 +306,19 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
             syncstatus: "linked",
           });
         }
-        fullProduct.marketplaceproducts = mProducts;
+        raw.marketplaceproducts = mProducts;
 
-        const refBarcodes = fullProduct.refbarcodes || [];
+        const refBarcodes = Array.isArray(raw.refbarcodes) ? (raw.refbarcodes as Record<string, unknown>[]) : [];
         const subBarcodeIdx = refBarcodes.findIndex(b => b.barcode === (barcodeValue || item.barcode));
         if (subBarcodeIdx !== -1) {
           const subB = refBarcodes[subBarcodeIdx];
-          const mappings = subB.marketplaceskumappings || [];
+          const mappings = Array.isArray(subB.marketplaceskumappings) ? (subB.marketplaceskumappings as MarketplaceSKUMap[]) : [];
           const matchMapIdx = mappings.findIndex(m => m.platform === platform && m.holdingcode === holdingCode);
 
           const mappingData: MarketplaceSKUMap = {
             ...emptyMarketplaceSKUMap(platform, holdingCode, marketItemId),
             marketmodelid: marketModelId,
-            sellersku: sellerSku || subB.sellersku || "",
+            sellersku: sellerSku || (typeof subB.sellersku === "string" ? subB.sellersku : "") || "",
             status: "LIVE",
             lastsyncat: new Date().toISOString(),
           };
@@ -329,9 +332,10 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
           if (sellerSku) subB.sellersku = sellerSku;
           refBarcodes[subBarcodeIdx] = subB;
         }
-        fullProduct.refbarcodes = refBarcodes;
+        raw.refbarcodes = refBarcodes;
 
-        const saveRes = await updateBarcode(auth, fullProduct.guidfixed, fullProduct);
+        const guid = typeof raw.guidfixed === "string" ? raw.guidfixed : item.guidfixed;
+        const saveRes = await updateBarcode(auth, guid, raw as unknown as ProductBarcode);
         if (!saveRes.success) {
           throw new Error(saveRes.message || "Save error");
         }

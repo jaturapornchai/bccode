@@ -364,8 +364,12 @@ func BarcodeListHandler(c echo.Context) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	// Build MongoDB filter
-	filter := bson.M{"holdingcode": req.HoldingCode}
+	// Build MongoDB filter. Exclude soft-deleted docs (deletedat set) — otherwise deleted barcodes
+	// linger as ghosts and look like duplicates, since uniqueness only blocks LIVE barcodes.
+	filter := bson.M{
+		"holdingcode": req.HoldingCode,
+		"deletedat":   bson.M{"$exists": false},
+	}
 
 	if req.Keyword != "" {
 		keyword := strings.TrimSpace(req.Keyword)
