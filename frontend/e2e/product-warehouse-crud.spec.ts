@@ -200,9 +200,19 @@ test("warehouse — create/edit/delete for warehouse, location, and bin", async 
 
   await loginAndOpenWarehouseScreen(page);
 
-  // WAREHOUSE create (the Add form is open by default when no row is selected)
+  // WAREHOUSE create (the Add form is open by default when no row is selected) — also select 2
+  // business types (scopeofwork/warehouse.md "คุณสมบัติ") to cover the businesstypes multi-select,
+  // which has no other regression coverage.
   await fillFieldByPlaceholder(page, "e.g. 00000", whCode);
   await fillFirstNameByLabel(page, "ชื่อคลังสินค้าหลายภาษา", whName);
+  await page.evaluate(() => {
+    const check = (text: string) => {
+      const label = [...document.querySelectorAll("label")].find((l) => l.textContent?.trim() === text);
+      (label?.querySelector("input[type=checkbox]") as HTMLInputElement | null)?.click();
+    };
+    check("ฝากขาย");
+    check("Drop Ship");
+  });
   await clickButtonByText(page, /^บันทึก$/);
   await page.waitForTimeout(2500);
   expect(await bodyHasText(page, whName)).toBe(true);
@@ -255,13 +265,27 @@ test("warehouse — create/edit/delete for warehouse, location, and bin", async 
   await page.waitForTimeout(1500);
   expect(await bodyHasText(page, `${locName}X`)).toBe(false);
 
-  // WAREHOUSE edit
+  // WAREHOUSE edit — only changes the name, so this also proves businesstypes survives an edit
+  // cycle (the fetch-then-merge partial-update fix; see .agents/worklog.md 2026-07-03 for the bug
+  // this class of full-document-overwrite would otherwise cause).
   await clickTightestRowAction(page, "แก้ไขคลังสินค้า", whName);
   await page.waitForTimeout(1500);
+  const checkedBusinessTypesBeforeEdit = await page.evaluate(() =>
+    [...document.querySelectorAll("label")]
+      .filter((l) => (l.querySelector("input[type=checkbox]") as HTMLInputElement | null)?.checked)
+      .map((l) => l.textContent?.trim()),
+  );
+  expect(checkedBusinessTypesBeforeEdit.sort()).toEqual(["Drop Ship", "ฝากขาย"].sort());
   await fillFirstNameByLabel(page, "ชื่อคลังสินค้าหลายภาษา", `${whName}X`);
   await clickButtonByText(page, /^บันทึก$/);
   await page.waitForTimeout(2500);
   expect(await bodyHasText(page, `${whName}X`)).toBe(true);
+  const checkedBusinessTypesAfterEdit = await page.evaluate(() =>
+    [...document.querySelectorAll("label")]
+      .filter((l) => (l.querySelector("input[type=checkbox]") as HTMLInputElement | null)?.checked)
+      .map((l) => l.textContent?.trim()),
+  );
+  expect(checkedBusinessTypesAfterEdit.sort()).toEqual(["Drop Ship", "ฝากขาย"].sort());
 
   // WAREHOUSE delete
   await clickTightestRowAction(page, "ลบคลังสินค้า", `${whName}X`);
