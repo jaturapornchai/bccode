@@ -149,9 +149,10 @@ describe("menu language labels", () => {
       "productset",
       "product-unit",
     ]);
-    const salesSettingIds = groupsById.get("sales-settings")?.items.map((item) => item.id) ?? [];
-    expect(salesSettingIds).toContain("promotion");
-    expect(salesSettingIds).toContain("channel-price");
+    // "ตั้งค่าการขาย" was itself a 15-item flat list — split 2026-07-03 into 5 focused groups so a
+    // real "sales-settings" group id no longer exists; assert the split landed each item somewhere.
+    expect(groupsById.get("sales-loyalty")?.items.map((item) => item.id)).toContain("promotion");
+    expect(groupsById.get("sales-channel-pricing")?.items.map((item) => item.id)).toContain("channel-price");
     expect(groupsById.get("product-classification")?.title.th).toBe("จัดกลุ่มสินค้า");
     expect(groupsById.get("product-classification")?.items.map((item) => item.id)).toEqual([
       "product-group",

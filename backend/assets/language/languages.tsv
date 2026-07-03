@@ -4548,7 +4548,7 @@ audit_reprocess	ตรวจและซ่อมข้อมูล	Data Check a
 close_tab	ปิดแท็บ	Close tab	关闭标签	タブを閉じる	បិទថេប	탭 닫기	ປິດແທັບ	တက်ဘ်ပိတ်	Đóng tab	Tutup tab	Tutup tab	Isara ang tab
 columns	คอลัมน์	Columns	列	列	ជួរឈរ	열	ຄໍລຳ	ကော်လံများ	Cột	Lajur	Kolom	Mga column
 commands	คำสั่ง	Commands	命令	コマンド	ពាក្យបញ្ជា	명령	ຄຳສັ່ງ	အမိန့်များ	Lệnh	Arahan	Perintah	Mga utos
-creditor_debtor	เจ้าหนี้/ลูกหนี้	Creditor / Debtor	债权人/债务人	債権者/債務者	ម្ចាស់បំណុល/កូនបំណុល	채권자/채무자	ເຈົ້າໜີ້/ລູກໜີ້	ကြွေးရှင်/ကြွေးမြီရှင်	Chủ nợ / khách nợ	Pemiutang / penghutang	Kreditor / debitor	Creditor / debtor
+creditor_debtor	คู่ค้า (ลูกค้า/ผู้ขาย)	Trade Partners	债权人/债务人	債権者/債務者	ម្ចាស់បំណុល/កូនបំណុល	채권자/채무자	ເຈົ້າໜີ້/ລູກໜີ້	ကြွေးရှင်/ကြွေးမြီရှင်	Chủ nợ / khách nợ	Pemiutang / penghutang	Kreditor / debitor	Creditor / debtor
 displaying	แสดง	Displaying	显示中	表示中	កំពុងបង្ហាញ	표시 중	ສະແດງ	ပြသနေသည်	Hiển thị	Memaparkan	Menampilkan	Ipinapakita
 erp_database	ฐานข้อมูล	Database	数据库	データベース	មូលដ្ឋានទិន្នន័យ	데이터베이스	ຖານຂໍ້ມູນ	ဒေတာဘေ့စ်	Cơ sở dữ liệu	Pangkalan data	Basis data	Database
 erp_data_table	ตารางข้อมูล	Data Table	数据表	データテーブル	តារាងទិន្នន័យ	데이터 테이블	ຕາຕະລາງຂໍ້ມູນ	ဒေတာဇယား	Bảng dữ liệu	Jadual data	Tabel data	Talahanayan ng data
@@ -4575,7 +4575,7 @@ no_menu_found	ไม่พบเมนู	No menu found	未找到菜单	メニ�
 old_flutter_route	Flutter route เดิม	Legacy Flutter route	旧版 Flutter 路由	旧Flutterルート	Flutter route ចាស់	기존 Flutter 라우트	Flutter route ເດີມ	ယခင် Flutter route	Route Flutter cũ	Route Flutter lama	Route Flutter lama	Lumang Flutter route
 open_as_tab	เปิดเป็นแท็บ	Open as tab	打开为标签	タブで開く	បើកជាថេប	탭으로 열기	ເປີດເປັນແທັບ	တက်ဘ်အဖြစ်ဖွင့်	Mở thành tab	Buka sebagai tab	Buka sebagai tab	Buksan bilang tab
 open_tabs	แท็บที่เปิดอยู่	Open tabs	已打开标签	開いているタブ	ថេបដែលបានបើក	열린 탭	ແທັບທີ່ເປີດຢູ່	ဖွင့်ထားသော တက်ဘ်များ	Tab đang mở	Tab terbuka	Tab terbuka	Mga bukas na tab
-organization_master	ข้อมูลหลักองค์กร	Organization Master	组织主数据	組織マスター	ទិន្នន័យមេអង្គការ	조직 기본 데이터	ຂໍ້ມູນຫຼັກອົງກອນ	အဖွဲ့အစည်းအခြေခံဒေတာ	Dữ liệu chính tổ chức	Induk organisasi	Master organisasi	Organization master
+organization_master	งาน โครงการ และศูนย์ต้นทุน	Jobs, Projects & Cost Centers	组织主数据	組織マスター	ទិន្នន័យមេអង្គការ	조직 기본 데이터	ຂໍ້ມູນຫຼັກອົງກອນ	အဖွဲ့အစည်းအခြေခံဒေတာ	Dữ liệu chính tổ chức	Induk organisasi	Master organisasi	Organization master
 placeholder	ตัวอย่าง	Placeholder	占位	プレースホルダー	កន្លែងដាក់	플레이스홀더	ຕົວຢ່າງ	နေရာယူစာသား	Giữ chỗ	Placeholder	Placeholder	Placeholder
 previous	ก่อนหน้า	Previous	上一页	前へ	មុន	이전	ກ່ອນໜ້າ	ယခင်	Trước	Sebelumnya	Sebelumnya	Nakaraan
 procurement	จัดซื้อจัดหา	Procurement	采购	調達	លទ្ធកម្ម	조달	ຈັດຊື້ຈັດຫາ	ဝယ်ယူရေး	Mua sắm	Perolehan	Pengadaan	Procurement
@@ -4587,6 +4587,12 @@ product_management	จัดการสินค้า	Products	商品管理	�
 product_sku_options	สี ไซซ์ และตัวเลือก	Product Options	颜色、尺码和选项	色・サイズ・オプション	ពណ៌ ទំហំ និងជម្រើស	색상, 사이즈 및 옵션	ສີ ໄຊຊ໌ ແລະ ຕົວເລືອກ	အရောင်၊ ဆိုဒ် နှင့် ရွေးချယ်မှု	Màu, kích cỡ và tùy chọn	Product Options	Product Options	Product Options
 product_stock_production	คลังและการผลิต	Stock and Production	库存和生产	在庫と製造	ស្តុក និងការផលិត	재고 및 생산	ຄັງ ແລະ ການຜະລິດ	ကုန်လက်ကျန်နှင့် ထုတ်လုပ်မှု	Kho và sản xuất	Stock and Production	Stock and Production	Stock and Production
 marketplace_connectors	เชื่อมข้อมูลตลาดออนไลน์	Marketplace Connections	电商平台连接	オンライン市場連携	ភ្ជាប់ទីផ្សារអនឡាញ	온라인 마켓 연결	ເຊື່ອມຂໍ້ມູນຕະຫຼາດອອນລາຍ	အွန်လိုင်းဈေးကွက်ချိတ်ဆက်	Kết nối sàn bán hàng	Marketplace Connections	Marketplace Connections	Marketplace Connections
+sales_channel_pricing	ช่องทางขาย ราคา และขนส่ง	Sales Channels, Pricing & Shipping	Sales Channels, Pricing & Shipping	Sales Channels, Pricing & Shipping	Sales Channels, Pricing & Shipping	Sales Channels, Pricing & Shipping	Sales Channels, Pricing & Shipping	Sales Channels, Pricing & Shipping	Sales Channels, Pricing & Shipping	Sales Channels, Pricing & Shipping	Sales Channels, Pricing & Shipping	Sales Channels, Pricing & Shipping
+sales_payment_banking	การรับเงินและบัญชีธนาคาร	Payment & Banking	Payment & Banking	Payment & Banking	Payment & Banking	Payment & Banking	Payment & Banking	Payment & Banking	Payment & Banking	Payment & Banking	Payment & Banking	Payment & Banking
+sales_pos	หน้าร้าน POS	Point of Sale	Point of Sale	Point of Sale	Point of Sale	Point of Sale	Point of Sale	Point of Sale	Point of Sale	Point of Sale	Point of Sale	Point of Sale
+sales_loyalty	สมาชิก คูปอง และโปรโมชัน	Loyalty, Coupons & Promotions	Loyalty, Coupons & Promotions	Loyalty, Coupons & Promotions	Loyalty, Coupons & Promotions	Loyalty, Coupons & Promotions	Loyalty, Coupons & Promotions	Loyalty, Coupons & Promotions	Loyalty, Coupons & Promotions	Loyalty, Coupons & Promotions	Loyalty, Coupons & Promotions	Loyalty, Coupons & Promotions
+sales_documents	เอกสารและบิล	Documents & Billing	Documents & Billing	Documents & Billing	Documents & Billing	Documents & Billing	Documents & Billing	Documents & Billing	Documents & Billing	Documents & Billing	Documents & Billing	Documents & Billing
+product_assistant	ผู้ช่วย AI และคลังความรู้	AI Assistant & Knowledge Base	AI Assistant & Knowledge Base	AI Assistant & Knowledge Base	AI Assistant & Knowledge Base	AI Assistant & Knowledge Base	AI Assistant & Knowledge Base	AI Assistant & Knowledge Base	AI Assistant & Knowledge Base	AI Assistant & Knowledge Base	AI Assistant & Knowledge Base	AI Assistant & Knowledge Base
 purchase_advance_deposit	เงินล่วงหน้า/เงินมัดจำฝั่งซื้อ	Purchase Advance / Deposit	采购预付款/押金	購買前払い/保証金	ប្រាក់បង់មុន/ប្រាក់កក់ផ្នែកទិញ	구매 선급금/보증금	ເງິນລ່ວງໜ້າ/ເງິນມັດຈຳຝັ່ງຊື້	ဝယ်ယူပိုင်း ကြိုတင်ငွေ/အပ်ငွေ	Tạm ứng / đặt cọc mua hàng	Pendahuluan / deposit belian	Uang muka / deposit pembelian	Advance / deposito sa pagbili
 purchase_group	ซื้อ	Purchase	采购	購買	ទិញ	구매	ຊື້	ဝယ်ယူ	Mua hàng	Belian	Pembelian	Pagbili
 ready_as_tab	พร้อมเปิดเป็นแท็บ	Ready as tabs	可作为标签打开	タブで開く準備済み	រួចរាល់បើកជាថេប	탭으로 열 준비됨	ພ້ອມເປີດເປັນແທັບ	တက်ဘ်အဖြစ်ဖွင့်ရန် အသင့်	Sẵn sàng mở dạng tab	Sedia dibuka sebagai tab	Siap dibuka sebagai tab	Handang buksan bilang tab

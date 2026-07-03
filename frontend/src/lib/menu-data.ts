@@ -173,6 +173,15 @@ export const MENU_SECTIONS: MenuSection[] = [
     id: "master",
     title: { key: "master_data", th: "ข้อมูลหลัก", en: "Master Data" },
     groups: [
+      // Reorganized 2026-07-03 as a natural first-time-setup workflow (scopeofwork feedback +
+      // GPT UX review + Fable chief-architect review): products first (everything references a
+      // product), then classify/variants/details, warehouse, trade partners, org basics, sales
+      // settings split into 5 focused groups instead of one 15-item wall, approval, marketplace,
+      // tools, a new small group for the 2 items that were miscategorized under import/export
+      // (knowledge-base and alert-agent are not import/export tools), then import/export itself,
+      // then restaurant/cafe last since it's business-type-specific, not core to every business.
+      // Every item id/route is unchanged from before — only grouping, group order, and 2 group
+      // titles (partners, organization) changed.
       {
         id: "products",
         title: ml("product_catalog", "สินค้าและบาร์โค้ด", "Product Catalog"),
@@ -228,6 +237,82 @@ export const MENU_SECTIONS: MenuSection[] = [
         ],
       },
       {
+        id: "partners",
+        title: ml("creditor_debtor", "คู่ค้า (ลูกค้า/ผู้ขาย)", "Trade Partners"),
+        items: [
+          tx("creditor", "เจ้าหนี้", "Creditor", "/creditor", "master"),
+          tx("creditor-group", "กลุ่มเจ้าหนี้", "Creditor Group", "/creditorgroup", "master"),
+          tx("debtor", "ลูกหนี้", "Debtor", "/debtor", "master"),
+          tx("debtor-group", "กลุ่มลูกหนี้", "Debtor Group", "/debtorgroup", "master"),
+        ],
+      },
+      {
+        id: "organization",
+        title: ml("organization_master", "งาน โครงการ และศูนย์ต้นทุน", "Jobs, Projects & Cost Centers"),
+        items: [
+          tx("cost-center", "ศูนย์ต้นทุน", "Cost Center", "/costcenter", "master"),
+          tx("project", "โครงการ", "Project", "/project", "master"),
+          tx("job", "งาน", "Job", "/job", "master"),
+        ],
+      },
+      {
+        id: "sales-channel-pricing",
+        title: ml("sales_channel_pricing", "ช่องทางขาย ราคา และขนส่ง", "Sales Channels, Pricing & Shipping"),
+        items: [
+          tx("sale-channel", "ช่องทางขาย", "Sale Channel", "/salechannelscreen", "master"),
+          tx("transport-channel", "ช่องทางขนส่ง", "Transport Channel", "/transportchannelscreen", "master"),
+          tx("channel-price", "ราคาตามช่องทางขาย", "Channel Prices", "/channelprice", "master"),
+        ],
+      },
+      {
+        id: "sales-payment-banking",
+        title: ml("sales_payment_banking", "การรับเงินและบัญชีธนาคาร", "Payment & Banking"),
+        items: [
+          tx("qr-provider", "ผู้ให้บริการรับเงิน QR", "QR Payment Provider", "/qrprovider", "master"),
+          tx("bank", "ธนาคาร", "Bank", "/bank", "master"),
+          tx("book-bank", "สมุดบัญชีธนาคาร", "Bank Book", "/bookbankscreen", "master"),
+          tx("exchange-rate", "อัตราแลกเปลี่ยน", "Exchange Rate", "/exchangerate", "finance"),
+        ],
+      },
+      {
+        id: "sales-pos",
+        title: ml("sales_pos", "หน้าร้าน POS", "Point of Sale"),
+        items: [
+          tx("pos-setting", "ตั้งค่าเครื่องขายหน้าร้าน (POS)", "Point of Sale Settings", "/possetting", "master"),
+          tx("pos-media", "รูป/สื่อหน้าจอขาย", "Point of Sale Media", "/posmedia", "master"),
+          { ...tx("color", "สีสำหรับงานขาย", "Sales Colors", "/colorscreen", "master"), label: ml("sales_color", "สีสำหรับงานขาย", "Sales Colors") },
+        ],
+      },
+      {
+        id: "sales-loyalty",
+        title: ml("sales_loyalty", "สมาชิก คูปอง และโปรโมชัน", "Loyalty, Coupons & Promotions"),
+        items: [
+          tx("point-setting", "ตั้งค่าคะแนนสะสม", "Point Setting", "/pointsetting", "master"),
+          tx("coupon-setting", "ตั้งค่าคูปอง", "Coupon Setting", "/couponsetting", "master"),
+          tx("promotion", "โปรโมชั่น", "Promotion", "/promotionscreen", "master"),
+        ],
+      },
+      {
+        id: "sales-documents",
+        title: ml("sales_documents", "เอกสารและบิล", "Documents & Billing"),
+        items: [
+          tx("doc-format", "รูปแบบเอกสาร", "Document Format", "/docformat", "master"),
+          tx("bill-design", "ออกแบบบิล", "Bill Design", "/billdesign", "master"),
+        ],
+      },
+      {
+        id: "approval",
+        title: ml("approval", "อนุมัติ", "Approval"),
+        items: [
+          tx("purchase-type", "ประเภทซื้อ", "Purchase Type", "/purchasetypescreen", "approval"),
+          tx("po-approval", "อนุมัติใบสั่งซื้อ", "PO Approval", "/poapprovalsettingscreen", "approval"),
+          tx("quotation-type", "ประเภทใบเสนอราคา", "Quotation Type", "/quotationtypescreen", "approval"),
+          tx("qt-approval", "อนุมัติใบเสนอราคา", "Quotation Approval", "/qtapprovalsettingscreen", "approval"),
+          tx("sale-order-type", "ประเภทใบสั่งขาย", "Sale Order Type", "/saleordertypescreen", "approval"),
+          tx("so-approval", "อนุมัติใบสั่งขาย", "Sale Order Approval", "/soapprovalsettingscreen", "approval"),
+        ],
+      },
+      {
         id: "marketplace-connectors",
         title: ml("marketplace_connectors", "เชื่อมข้อมูลตลาดออนไลน์", "Marketplace Connections"),
         items: [
@@ -246,55 +331,11 @@ export const MENU_SECTIONS: MenuSection[] = [
         ],
       },
       {
-        id: "partners",
-        title: ml("creditor_debtor", "เจ้าหนี้/ลูกหนี้", "Partners"),
+        id: "product-assistant",
+        title: ml("product_assistant", "ผู้ช่วย AI และคลังความรู้", "AI Assistant & Knowledge Base"),
         items: [
-          tx("creditor", "เจ้าหนี้", "Creditor", "/creditor", "master"),
-          tx("creditor-group", "กลุ่มเจ้าหนี้", "Creditor Group", "/creditorgroup", "master"),
-          tx("debtor", "ลูกหนี้", "Debtor", "/debtor", "master"),
-          tx("debtor-group", "กลุ่มลูกหนี้", "Debtor Group", "/debtorgroup", "master"),
-        ],
-      },
-      {
-        id: "organization",
-        title: ml("organization_master", "ข้อมูลหลักองค์กร", "Organization"),
-        items: [
-          tx("cost-center", "ศูนย์ต้นทุน", "Cost Center", "/costcenter", "master"),
-          tx("project", "โครงการ", "Project", "/project", "master"),
-          tx("job", "งาน", "Job", "/job", "master"),
-        ],
-      },
-      {
-        id: "sales-settings",
-        title: ml("sales_settings", "ตั้งค่าการขาย", "Sales Settings"),
-        items: [
-          { ...tx("color", "สีสำหรับงานขาย", "Sales Colors", "/colorscreen", "master"), label: ml("sales_color", "สีสำหรับงานขาย", "Sales Colors") },
-          tx("qr-provider", "ผู้ให้บริการรับเงิน QR", "QR Payment Provider", "/qrprovider", "master"),
-          tx("bank", "ธนาคาร", "Bank", "/bank", "master"),
-          tx("book-bank", "สมุดบัญชีธนาคาร", "Bank Book", "/bookbankscreen", "master"),
-          tx("sale-channel", "ช่องทางขาย", "Sale Channel", "/salechannelscreen", "master"),
-          tx("transport-channel", "ช่องทางขนส่ง", "Transport Channel", "/transportchannelscreen", "master"),
-          tx("pos-setting", "ตั้งค่าเครื่องขายหน้าร้าน (POS)", "Point of Sale Settings", "/possetting", "master"),
-          tx("exchange-rate", "อัตราแลกเปลี่ยน", "Exchange Rate", "/exchangerate", "finance"),
-          tx("pos-media", "รูป/สื่อหน้าจอขาย", "Point of Sale Media", "/posmedia", "master"),
-          tx("point-setting", "ตั้งค่าคะแนนสะสม", "Point Setting", "/pointsetting", "master"),
-          tx("coupon-setting", "ตั้งค่าคูปอง", "Coupon Setting", "/couponsetting", "master"),
-          tx("promotion", "โปรโมชั่น", "Promotion", "/promotionscreen", "master"),
-          tx("channel-price", "ราคาตามช่องทางขาย", "Channel Prices", "/channelprice", "master"),
-          tx("doc-format", "รูปแบบเอกสาร", "Document Format", "/docformat", "master"),
-          tx("bill-design", "ออกแบบบิล", "Bill Design", "/billdesign", "master"),
-        ],
-      },
-      {
-        id: "approval",
-        title: ml("approval", "อนุมัติ", "Approval"),
-        items: [
-          tx("purchase-type", "ประเภทซื้อ", "Purchase Type", "/purchasetypescreen", "approval"),
-          tx("po-approval", "อนุมัติใบสั่งซื้อ", "PO Approval", "/poapprovalsettingscreen", "approval"),
-          tx("quotation-type", "ประเภทใบเสนอราคา", "Quotation Type", "/quotationtypescreen", "approval"),
-          tx("qt-approval", "อนุมัติใบเสนอราคา", "Quotation Approval", "/qtapprovalsettingscreen", "approval"),
-          tx("sale-order-type", "ประเภทใบสั่งขาย", "Sale Order Type", "/saleordertypescreen", "approval"),
-          tx("so-approval", "อนุมัติใบสั่งขาย", "Sale Order Approval", "/soapprovalsettingscreen", "approval"),
+          tx("knowledge-base", "คลังความรู้", "Knowledge Base", "/knowledgebasescreen", "master"),
+          tx("alert-agent", "ผู้ช่วยแจ้งเตือน", "Alert Assistant", "/alertagentscreen", "master"),
         ],
       },
       {
@@ -303,8 +344,6 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("import-product", "นำเข้ารายการสินค้า", "Import Product List", "/importproduct", "master"),
           tx("import-product-file", "นำเข้าสินค้าจากไฟล์", "Import Product File", "/importproductfromfile", "master"),
-          tx("knowledge-base", "คลังความรู้", "Knowledge Base", "/knowledgebasescreen", "master"),
-          tx("alert-agent", "ผู้ช่วยแจ้งเตือน", "Alert Assistant", "/alertagentscreen", "master"),
           tx("import-product-image", "นำเข้ารูปสินค้า", "Import Product Image", "/importproductimage", "master"),
         ],
       },
