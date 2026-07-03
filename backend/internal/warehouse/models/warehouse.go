@@ -25,6 +25,13 @@ type Warehouse struct {
 	// company in the holding (existing convention, unchanged).
 	CompanyGuids []string `json:"companyguids" bson:"companyguids"`
 	Status       string   `json:"status" bson:"status"`
+	// BusinessTypes marks which business models this warehouse operates under — general, consignment
+	// (ฝากขาย), dropship, storage (โกดังสินค้า/3PL-style storage-for-hire), trading (ซื้อมาขายไป),
+	// logistics (ขนส่ง) — see scopeofwork/warehouse.md "คุณสมบัติ". A warehouse can serve more than one
+	// (e.g. a general warehouse that also handles dropship), so this is a multi-select list, not a
+	// single enum. Empty = not yet classified; purely descriptive/classification, not an access
+	// restriction (unlike CompanyGuids) — no downstream behavior branches on it yet.
+	BusinessTypes []string `json:"businesstypes" bson:"businesstypes"`
 }
 
 type WarehouseInfo struct {

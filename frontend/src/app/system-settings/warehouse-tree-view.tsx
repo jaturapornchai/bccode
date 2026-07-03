@@ -147,6 +147,7 @@ interface WarehouseRecord {
   latitude?: number;
   longitude?: number;
   companyguids?: string[];
+  businesstypes?: string[];
   status?: string;
   locations?: WarehouseLocationRecord[];
 }
@@ -354,6 +355,67 @@ function CompanyScopePicker({
   );
 }
 
+/**
+ * Compact chip multi-select for which business models (scopeofwork/warehouse.md "คุณสมบัติ") this
+ * warehouse operates under — same visual pattern as CompanyScopePicker, but over a fixed 6-item list
+ * instead of fetched company records.
+ */
+function BusinessTypeScopePicker({
+  selected,
+  onChange,
+  language,
+}: {
+  selected: string[];
+  onChange: (next: string[]) => void;
+  language: LanguageCode;
+}) {
+  const toggle = (value: string) => {
+    if (selected.includes(value)) {
+      onChange(selected.filter((v) => v !== value));
+    } else {
+      onChange([...selected, value]);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <p className="text-[11px] text-muted-foreground leading-relaxed">
+        {selected.length === 0
+          ? language === "th"
+            ? "ยังไม่ระบุประเภทธุรกิจ"
+            : "No business type set yet"
+          : language === "th"
+            ? `เลือกแล้ว ${selected.length} ประเภท`
+            : `${selected.length} types selected`}
+      </p>
+      <div className="flex flex-wrap gap-1.5">
+        {WAREHOUSE_BUSINESS_TYPES.map((type) => {
+          const checked = selected.includes(type.value);
+          return (
+            <label
+              key={type.value}
+              className={cn(
+                "flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+                checked
+                  ? "border-primary/40 bg-primary/10 text-primary"
+                  : "border-border/50 bg-secondary/10 text-foreground/80 hover:border-primary/30"
+              )}
+            >
+              <input
+                type="checkbox"
+                checked={checked}
+                onChange={() => toggle(type.value)}
+                className="size-3.5 shrink-0 accent-primary"
+              />
+              {language === "th" ? type.th : type.en}
+            </label>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // Number <-> string helpers for the physical-spec integer fields (widthmm, maxweightgram, ...).
 const numStr = (v: number | undefined): string => (v !== undefined && v !== 0 ? String(v) : "");
 const toInt = (v: string): number => {
@@ -375,6 +437,7 @@ interface WarehouseFormFields {
   latitude: string;
   longitude: string;
   companyguids: string[];
+  businesstypes: string[];
 }
 
 interface LocationFormFields {
@@ -419,8 +482,20 @@ interface BinFormFields {
 const emptyWarehouseForm = (languages: string[]): WarehouseFormFields => {
   const names: Record<string, string> = {};
   languages.forEach((l) => (names[l] = ""));
-  return { code: "", names, latitude: "", longitude: "", companyguids: [] };
+  return { code: "", names, latitude: "", longitude: "", companyguids: [], businesstypes: [] };
 };
+
+// The 6 business models this system supports (scopeofwork/warehouse.md "คุณสมบัติ"). A warehouse can
+// serve more than one (e.g. general + dropship), so this is a multi-select chip group, not a single
+// radio choice, even though the option count (6) is within the Radio Buttons rule's usual threshold.
+const WAREHOUSE_BUSINESS_TYPES: { value: string; th: string; en: string }[] = [
+  { value: "general", th: "ทั่วไป", en: "General" },
+  { value: "consignment", th: "ฝากขาย", en: "Consignment" },
+  { value: "dropship", th: "Drop Ship", en: "Drop Ship" },
+  { value: "storage", th: "โกดังสินค้า", en: "Storage" },
+  { value: "trading", th: "ซื้อมาขายไป", en: "Trading" },
+  { value: "logistics", th: "ขนส่ง", en: "Logistics" },
+];
 
 const emptyLocationForm = (languages: string[]): LocationFormFields => {
   const names: Record<string, string> = {};
@@ -610,6 +685,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
         latitude: w?.latitude ? String(w.latitude) : "",
         longitude: w?.longitude ? String(w.longitude) : "",
         companyguids: w?.companyguids || [],
+        businesstypes: w?.businesstypes || [],
       });
     } else if (formType === "editlocation" && selectedNode.locationId) {
       const loc = findLocation(selectedNode.warehouseId, selectedNode.locationId);
@@ -698,6 +774,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
           latitude: parseFloat(warehouseForm.latitude) || 0,
           longitude: parseFloat(warehouseForm.longitude) || 0,
           companyguids: warehouseForm.companyguids,
+          businesstypes: warehouseForm.businesstypes,
           status: "active",
         };
         const url = isCreate ? `${mainApiUrl}/warehouse` : `${mainApiUrl}/warehouse/${warehouseId}`;
@@ -1444,6 +1521,17 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
                       options={companiesList}
                       selected={warehouseForm.companyguids}
                       onChange={(next) => setWarehouseForm((prev) => ({ ...prev, companyguids: next }))}
+                      language={language}
+                    />
+                  </div>
+
+                  <div className="border-t border-border/30 pt-3 flex flex-col gap-1.5">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+                      {language === "th" ? "ประเภทธุรกิจที่ใช้คลังนี้" : "Business types using this warehouse"}
+                    </span>
+                    <BusinessTypeScopePicker
+                      selected={warehouseForm.businesstypes}
+                      onChange={(next) => setWarehouseForm((prev) => ({ ...prev, businesstypes: next }))}
                       language={language}
                     />
                   </div>
