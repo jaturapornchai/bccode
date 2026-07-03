@@ -99,7 +99,6 @@ import { ProductGroupTreeView } from "./product-group-tree-view";
 import { WarehouseTreeView } from "./warehouse-tree-view";
 import { CompanyBranchTreeView } from "./company-branch-tree-view";
 import { BulkUserImport } from "./bulk-user-import";
-import { WarehouseLocationsEditor } from "./warehouse-locations-editor";
 import { ProductBomEditor } from "./product-bom-editor";
 import { imageNeedsAuthenticatedFetch } from "@/lib/image-upload-proxy";
 import { normalizeThaiTaxBranchCode } from "@/lib/thai-branch-code";
@@ -2789,10 +2788,7 @@ export function SystemSettingsScreen({
           auth={auth}
           workspace={workspace}
           language={language}
-          records={records}
           onRefresh={() => void loadRecords(auth, workspace, config)}
-          saving={saving}
-          loading={loading}
         />
       ) : (config.slug === "company" || config.slug === "branch") ? (
         <CompanyBranchTreeView
@@ -8902,20 +8898,6 @@ function FieldEditor({
         setForm={setForm}
         workspace={workspace}
       />
-    );
-  }
-
-  if (config.slug === "productwarehousescreen" && field.key === "location") {
-    return (
-      <div className="md:col-span-2">
-        <label className="text-sm font-semibold mb-1 block">{label}</label>
-        <WarehouseLocationsEditor
-          form={form}
-          setForm={setForm}
-          language={language}
-          workspace={workspace}
-        />
-      </div>
     );
   }
 

@@ -1,9 +1,8 @@
 package warehouse
 
 import (
+	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"net/http"
 	mastersync "smlcloudplatform/internal/mastersync/repositories"
 	common "smlcloudplatform/internal/models"
@@ -17,9 +16,14 @@ import (
 )
 
 type WarehouseHttp struct {
-	ms  *microservice.Microservice
-	cfg config.IConfig
-	svc services.IWarehouseHttpService
+	ms           *microservice.Microservice
+	cfg          config.IConfig
+	svc          services.IWarehouseHttpService
+	svcLocation  services.IWarehouseLocationHttpService
+	svcBin       services.IWarehouseBinHttpService
+	repo         repositories.IWarehouseRepository
+	repoLocation repositories.IWarehouseLocationRepository
+	repoBin      repositories.IWarehouseBinRepository
 }
 
 func NewWarehouseHttp(ms *microservice.Microservice, cfg config.IConfig) WarehouseHttp {
@@ -28,92 +32,57 @@ func NewWarehouseHttp(ms *microservice.Microservice, cfg config.IConfig) Warehou
 	cache := ms.Cacher(cfg.CacherConfig())
 
 	repo := repositories.NewWarehouseRepository(pst)
+	repoLocation := repositories.NewWarehouseLocationRepository(pst)
+	repoBin := repositories.NewWarehouseBinRepository(pst)
 	repoMq := repositories.NewWarehouseMessageQueueRepository(producer)
 	masterSyncCacheRepo := mastersync.NewMasterSyncCacheRepository(cache)
 
-	svc := services.NewWarehouseHttpService(repo, repoMq, masterSyncCacheRepo)
+	svc := services.NewWarehouseHttpService(repo, repoMq, repoLocation, masterSyncCacheRepo)
+	svcLocation := services.NewWarehouseLocationHttpService(repoLocation, repo, masterSyncCacheRepo)
+	svcBin := services.NewWarehouseBinHttpService(repoBin, repoLocation, masterSyncCacheRepo)
+
+	// Backend-Owned Schema Rule: indexes are created here, on service construction (effectively
+	// "first use" at process start), never by hand-run createIndex/mongosh.
+	go func() {
+		bgCtx := context.Background()
+		_ = repo.EnsureIndexes(bgCtx)
+		_ = repoLocation.EnsureIndexes(bgCtx)
+		_ = repoBin.EnsureIndexes(bgCtx)
+	}()
 
 	return WarehouseHttp{
-		ms:  ms,
-		cfg: cfg,
-		svc: svc,
+		ms:           ms,
+		cfg:          cfg,
+		svc:          svc,
+		svcLocation:  svcLocation,
+		svcBin:       svcBin,
+		repo:         repo,
+		repoLocation: repoLocation,
+		repoBin:      repoBin,
 	}
 }
 
 func (h WarehouseHttp) RegisterHttp() {
 	h.ms.POST("/warehouse", h.CreateWarehouse)
 	h.ms.GET("/warehouse", h.SearchWarehouse)
+	h.ms.GET("/warehouse/tree", h.WarehouseTree)
 	h.ms.GET("/warehouse/:id", h.InfoWarehouse)
 	h.ms.PUT("/warehouse/:id", h.UpdateWarehouse)
 	h.ms.DELETE("/warehouse/:id", h.DeleteWarehouse)
 
-	// Zone endpoints
-	h.ms.POST("/warehouse/:warehouseGuid/zone", h.CreateZone)
-	h.ms.GET("/warehouse/:warehouseGuid/zone", h.SearchZone)
-	h.ms.GET("/warehouse/:warehouseGuid/zone/:id", h.InfoZone)
-	h.ms.PUT("/warehouse/:warehouseGuid/zone/:id", h.UpdateZone)
-	h.ms.DELETE("/warehouse/:warehouseGuid/zone/:id", h.DeleteZone)
+	// Location ("ที่เก็บสินค้า") endpoints — master data, own collection, references warehouse by guid.
+	h.ms.POST("/warehouse/:warehouseguid/location", h.CreateLocation)
+	h.ms.GET("/warehouse/:warehouseguid/location", h.SearchLocation)
+	h.ms.GET("/warehouse/:warehouseguid/location/:locationguid", h.InfoLocation)
+	h.ms.PUT("/warehouse/:warehouseguid/location/:locationguid", h.UpdateLocation)
+	h.ms.DELETE("/warehouse/:warehouseguid/location/:locationguid", h.DeleteLocation)
 
-	// Shelf endpoints
-	h.ms.POST("/warehouse/:warehouseGuid/zone/:zoneGuid/shelf", h.CreateShelf)
-	h.ms.GET("/warehouse/:warehouseGuid/zone/:zoneGuid/shelf", h.SearchShelf)
-	h.ms.GET("/warehouse/:warehouseGuid/zone/:zoneGuid/shelf/:id", h.InfoShelf)
-	h.ms.PUT("/warehouse/:warehouseGuid/zone/:zoneGuid/shelf/:id", h.UpdateShelf)
-	h.ms.DELETE("/warehouse/:warehouseGuid/zone/:zoneGuid/shelf/:id", h.DeleteShelf)
-}
-
-// warehouseUpsertRequest is the wire shape for POST/PUT /warehouse. Location and CompanyGuids are
-// pointers so we can tell "field absent" (nil, keep existing) apart from "field present, even empty"
-// (non-nil, replace). This is the load-bearing property for partial updates from the frontend: a
-// name-only edit omits "location" entirely and must not wipe existing zones/shelves.
-type warehouseUpsertRequest struct {
-	Code         string                      `json:"code"`
-	Names        *[]common.NameX             `json:"names"`
-	Location     *[]warehouseModels.Location `json:"location"`
-	Latitude     float64                     `json:"latitude"`
-	Longitude    float64                     `json:"longitude"`
-	CompanyGuids *[]string                   `json:"companyguids"`
-}
-
-// validateLocationCompanyScope enforces that every restricted Location's CompanyGuids is a subset
-// of the warehouse-level CompanyGuids. An empty warehouseCompanyGuids means "all companies" — any
-// location list is a valid subset of that, so no check is needed. A location with its own empty
-// CompanyGuids means "inherit all the warehouse allows" — also always valid.
-func validateLocationCompanyScope(locations []warehouseModels.Location, warehouseCompanyGuids []string) error {
-	if len(warehouseCompanyGuids) == 0 {
-		return nil
-	}
-	allowed := make(map[string]bool, len(warehouseCompanyGuids))
-	for _, g := range warehouseCompanyGuids {
-		allowed[g] = true
-	}
-	for _, loc := range locations {
-		for _, g := range loc.CompanyGuids {
-			if !allowed[g] {
-				return fmt.Errorf("โซน %s ใช้ได้เฉพาะบริษัทที่คลังอนุญาตเท่านั้น (บริษัท %s ไม่อยู่ในสิทธิ์ของคลัง)", loc.Code, g)
-			}
-		}
-	}
-	return nil
-}
-
-// assignGuids fills in a GuidFixed for any location/shelf that arrives without one, leaving
-// existing GuidFixed values untouched.
-func assignGuids(locations *[]warehouseModels.Location) {
-	if locations == nil {
-		return
-	}
-	for i := range *locations {
-		if (*locations)[i].GuidFixed == "" {
-			(*locations)[i].GuidFixed = utils.NewGUID()
-		}
-		shelves := (*locations)[i].Shelf
-		for j := range shelves {
-			if shelves[j].GuidFixed == "" {
-				shelves[j].GuidFixed = utils.NewGUID()
-			}
-		}
-	}
+	// Bin ("ที่วางสินค้า") endpoints — master data, own collection, references location by guid.
+	h.ms.POST("/warehouse/:warehouseguid/location/:locationguid/bin", h.CreateBin)
+	h.ms.GET("/warehouse/:warehouseguid/location/:locationguid/bin", h.SearchBin)
+	h.ms.GET("/warehouse/:warehouseguid/location/:locationguid/bin/:binguid", h.InfoBin)
+	h.ms.PUT("/warehouse/:warehouseguid/location/:locationguid/bin/:binguid", h.UpdateBin)
+	h.ms.DELETE("/warehouse/:warehouseguid/location/:locationguid/bin/:binguid", h.DeleteBin)
 }
 
 func (h WarehouseHttp) CreateWarehouse(ctx microservice.IContext) error {
@@ -122,29 +91,10 @@ func (h WarehouseHttp) CreateWarehouse(ctx microservice.IContext) error {
 	authUsername := userInfo.Username
 	input := ctx.ReadInput()
 
-	var req warehouseUpsertRequest
-	if err := json.Unmarshal([]byte(input), &req); err != nil {
+	var doc warehouseModels.Warehouse
+	if err := json.Unmarshal([]byte(input), &doc); err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
-	}
-
-	assignGuids(req.Location)
-
-	doc := warehouseModels.Warehouse{
-		Code:      req.Code,
-		Names:     req.Names,
-		Location:  req.Location,
-		Latitude:  req.Latitude,
-		Longitude: req.Longitude,
-	}
-	if req.CompanyGuids != nil {
-		doc.CompanyGuids = *req.CompanyGuids
-	}
-	if req.Location != nil {
-		if err := validateLocationCompanyScope(*req.Location, doc.CompanyGuids); err != nil {
-			ctx.ResponseError(http.StatusBadRequest, err.Error())
-			return err
-		}
 	}
 
 	idx, err := h.svc.CreateWarehouse(holdingCode, authUsername, doc)
@@ -214,37 +164,17 @@ func (h WarehouseHttp) UpdateWarehouse(ctx microservice.IContext) error {
 		return err
 	}
 
-	var req warehouseUpsertRequest
-	if err := json.Unmarshal([]byte(input), &req); err != nil {
+	// Unmarshal onto the existing values (not a zero-valued struct) so a field omitted from the
+	// request JSON keeps its current value instead of being wiped to Go's zero value —
+	// encoding/json only overwrites fields actually present in the JSON body.
+	doc := existing.Warehouse
+	if err := json.Unmarshal([]byte(input), &doc); err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
 
-	doc := existing.Warehouse
-	doc.Code = req.Code
-	doc.Names = req.Names
-	doc.Latitude = req.Latitude
-	doc.Longitude = req.Longitude
-
-	// CRITICAL: only overwrite Location/CompanyGuids when the request actually sent them. A
-	// name/lat/long-only edit (no "location" key at all) must leave existing zones/shelves intact.
-	if req.CompanyGuids != nil {
-		doc.CompanyGuids = *req.CompanyGuids
-	}
-	if req.Location != nil {
-		assignGuids(req.Location)
-		// Effective warehouse-level scope for this call: the request's CompanyGuids if it sent
-		// one, otherwise whatever was already stored — validate BEFORE saving so a rejected
-		// request never touches the document.
-		if err := validateLocationCompanyScope(*req.Location, doc.CompanyGuids); err != nil {
-			ctx.ResponseError(http.StatusBadRequest, err.Error())
-			return err
-		}
-		doc.Location = req.Location
-	}
-
 	if err := h.svc.UpdateWarehouse(holdingCode, id, authUsername, doc); err != nil {
-		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
 
@@ -273,320 +203,330 @@ func (h WarehouseHttp) DeleteWarehouse(ctx microservice.IContext) error {
 	return nil
 }
 
-// Zone (aka Location) CRUD — Code-scoped sub-resource endpoints. Not currently called by the
-// frontend (which does whole-warehouse replace via PUT /warehouse/:id), kept for API-surface parity.
-func (h WarehouseHttp) CreateZone(ctx microservice.IContext) error {
+// CreateLocation — POST /warehouse/:warehouseguid/location
+func (h WarehouseHttp) CreateLocation(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
-	warehouseGuid := ctx.Param("warehouseGuid")
+	warehouseGuid := ctx.Param("warehouseguid")
 	input := ctx.ReadInput()
 
-	warehouseInfo, err := h.svc.InfoWarehouse(holdingCode, warehouseGuid)
-	if err != nil {
-		ctx.ResponseError(http.StatusNotFound, "Warehouse not found")
-		return err
-	}
-
-	var req warehouseModels.LocationRequest
-	if err := json.Unmarshal([]byte(input), &req); err != nil {
+	var doc warehouseModels.WarehouseLocation
+	if err := json.Unmarshal([]byte(input), &doc); err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
-	req.WarehouseCode = warehouseInfo.Code
+	doc.WarehouseGuid = warehouseGuid
 
-	if err := h.svc.CreateLocation(holdingCode, authUsername, warehouseInfo.Code, req); err != nil {
-		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+	idx, err := h.svcLocation.CreateLocation(holdingCode, authUsername, doc)
+	if err != nil {
+		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
 
 	ctx.Response(http.StatusCreated, common.ApiResponse{
 		Success: true,
-		ID:      req.Code,
+		ID:      idx,
 	})
 	return nil
 }
 
-func (h WarehouseHttp) SearchZone(ctx microservice.IContext) error {
+// SearchLocation — GET /warehouse/:warehouseguid/location
+func (h WarehouseHttp) SearchLocation(ctx microservice.IContext) error {
 	holdingCode := ctx.UserInfo().HoldingCode
-	warehouseGuid := ctx.Param("warehouseGuid")
+	warehouseGuid := ctx.Param("warehouseguid")
+	pageable := utils.GetPageable(ctx.QueryParam)
 
-	warehouseInfo, err := h.svc.InfoWarehouse(holdingCode, warehouseGuid)
+	docList, pagination, err := h.svcLocation.SearchLocation(holdingCode, warehouseGuid, pageable)
 	if err != nil {
-		ctx.ResponseError(http.StatusNotFound, "Warehouse not found")
-		return err
-	}
-
-	list := []warehouseModels.Location{}
-	if warehouseInfo.Location != nil {
-		list = *warehouseInfo.Location
-	}
-
-	ctx.Response(http.StatusOK, common.ApiResponse{
-		Success: true,
-		Data:    list,
-	})
-	return nil
-}
-
-func (h WarehouseHttp) InfoZone(ctx microservice.IContext) error {
-	holdingCode := ctx.UserInfo().HoldingCode
-	warehouseGuid := ctx.Param("warehouseGuid")
-	id := ctx.Param("id")
-
-	warehouseInfo, err := h.svc.InfoWarehouse(holdingCode, warehouseGuid)
-	if err != nil {
-		ctx.ResponseError(http.StatusNotFound, "Warehouse not found")
-		return err
-	}
-
-	if warehouseInfo.Location != nil {
-		for _, location := range *warehouseInfo.Location {
-			if location.Code == id || location.GuidFixed == id {
-				ctx.Response(http.StatusOK, common.ApiResponse{
-					Success: true,
-					Data:    location,
-				})
-				return nil
-			}
-		}
-	}
-
-	ctx.ResponseError(http.StatusNotFound, "Zone not found")
-	return nil
-}
-
-func (h WarehouseHttp) UpdateZone(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	holdingCode := userInfo.HoldingCode
-	authUsername := userInfo.Username
-	warehouseGuid := ctx.Param("warehouseGuid")
-	id := ctx.Param("id")
-	input := ctx.ReadInput()
-
-	warehouseInfo, err := h.svc.InfoWarehouse(holdingCode, warehouseGuid)
-	if err != nil {
-		ctx.ResponseError(http.StatusNotFound, "Warehouse not found")
-		return err
-	}
-
-	var req warehouseModels.LocationRequest
-	if err := json.Unmarshal([]byte(input), &req); err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
-	// Default only when absent — a request body carrying a DIFFERENT warehousecode means
-	// "move this zone to that warehouse"; overwriting it forced every move into the
-	// same-warehouse branch (200 but nothing moved).
-	if req.WarehouseCode == "" {
-		req.WarehouseCode = warehouseInfo.Code
-	}
-
-	if err := h.svc.UpdateLocation(holdingCode, authUsername, warehouseInfo.Code, id, req); err != nil {
-		ctx.ResponseError(http.StatusInternalServerError, err.Error())
-		return err
-	}
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
-		Success: true,
-		ID:      id,
+		Success:    true,
+		Data:       docList,
+		Pagination: pagination,
 	})
 	return nil
 }
 
-func (h WarehouseHttp) DeleteZone(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	holdingCode := userInfo.HoldingCode
-	authUsername := userInfo.Username
-	warehouseGuid := ctx.Param("warehouseGuid")
-	id := ctx.Param("id")
+// InfoLocation — GET /warehouse/:warehouseguid/location/:locationguid
+func (h WarehouseHttp) InfoLocation(ctx microservice.IContext) error {
+	holdingCode := ctx.UserInfo().HoldingCode
+	locationGuid := ctx.Param("locationguid")
 
-	warehouseInfo, err := h.svc.InfoWarehouse(holdingCode, warehouseGuid)
+	data, err := h.svcLocation.InfoLocation(holdingCode, locationGuid)
 	if err != nil {
-		ctx.ResponseError(http.StatusNotFound, "Warehouse not found")
-		return err
-	}
-
-	if err := h.svc.DeleteLocationByCodes(holdingCode, authUsername, warehouseInfo.Code, []string{id}); err != nil {
-		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		ctx.ResponseError(http.StatusNotFound, "Location not found")
 		return err
 	}
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
 		Success: true,
-		ID:      id,
+		Data:    data,
 	})
 	return nil
 }
 
-// Shelf CRUD — Code-scoped sub-resource endpoints, same API-surface-parity rationale as Zone above.
-func (h WarehouseHttp) CreateShelf(ctx microservice.IContext) error {
+// UpdateLocation — PUT /warehouse/:warehouseguid/location/:locationguid
+func (h WarehouseHttp) UpdateLocation(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
-	warehouseGuid := ctx.Param("warehouseGuid")
-	zoneGuid := ctx.Param("zoneGuid")
+	warehouseGuid := ctx.Param("warehouseguid")
+	locationGuid := ctx.Param("locationguid")
 	input := ctx.ReadInput()
 
-	warehouseInfo, locationCode, err := h.findWarehouseAndLocationCode(holdingCode, warehouseGuid, zoneGuid)
+	existing, err := h.svcLocation.InfoLocation(holdingCode, locationGuid)
 	if err != nil {
+		ctx.ResponseError(http.StatusNotFound, "Location not found")
+		return err
+	}
+
+	// Same fetch-then-unmarshal-onto-existing preservation as UpdateWarehouse (see that handler's
+	// comment) — a field omitted from the request JSON keeps its current value.
+	doc := existing.WarehouseLocation
+	if err := json.Unmarshal([]byte(input), &doc); err != nil {
+		ctx.ResponseError(http.StatusBadRequest, err.Error())
+		return err
+	}
+	doc.WarehouseGuid = warehouseGuid
+
+	if err := h.svcLocation.UpdateLocation(holdingCode, locationGuid, authUsername, doc); err != nil {
+		ctx.ResponseError(http.StatusBadRequest, err.Error())
+		return err
+	}
+
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success: true,
+		ID:      locationGuid,
+	})
+	return nil
+}
+
+// DeleteLocation — DELETE /warehouse/:warehouseguid/location/:locationguid
+func (h WarehouseHttp) DeleteLocation(ctx microservice.IContext) error {
+	userInfo := ctx.UserInfo()
+	holdingCode := userInfo.HoldingCode
+	authUsername := userInfo.Username
+	locationGuid := ctx.Param("locationguid")
+
+	if err := h.svcLocation.DeleteLocation(holdingCode, locationGuid, authUsername); err != nil {
 		ctx.ResponseError(http.StatusNotFound, err.Error())
 		return err
 	}
 
-	var req warehouseModels.ShelfRequest
-	if err := json.Unmarshal([]byte(input), &req); err != nil {
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success: true,
+		ID:      locationGuid,
+	})
+	return nil
+}
+
+// CreateBin — POST /warehouse/:warehouseguid/location/:locationguid/bin
+func (h WarehouseHttp) CreateBin(ctx microservice.IContext) error {
+	userInfo := ctx.UserInfo()
+	holdingCode := userInfo.HoldingCode
+	authUsername := userInfo.Username
+	warehouseGuid := ctx.Param("warehouseguid")
+	locationGuid := ctx.Param("locationguid")
+	input := ctx.ReadInput()
+
+	var doc warehouseModels.WarehouseBin
+	if err := json.Unmarshal([]byte(input), &doc); err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
-	req.WarehouseCode = warehouseInfo.Code
-	req.LocationCode = locationCode
+	doc.WarehouseGuid = warehouseGuid
+	doc.LocationGuid = locationGuid
 
-	if err := h.svc.CreateShelf(holdingCode, authUsername, warehouseInfo.Code, locationCode, req); err != nil {
-		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+	idx, err := h.svcBin.CreateBin(holdingCode, authUsername, doc)
+	if err != nil {
+		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
 
 	ctx.Response(http.StatusCreated, common.ApiResponse{
 		Success: true,
-		ID:      req.Code,
+		ID:      idx,
 	})
 	return nil
 }
 
-func (h WarehouseHttp) SearchShelf(ctx microservice.IContext) error {
+// SearchBin — GET /warehouse/:warehouseguid/location/:locationguid/bin
+func (h WarehouseHttp) SearchBin(ctx microservice.IContext) error {
 	holdingCode := ctx.UserInfo().HoldingCode
-	warehouseGuid := ctx.Param("warehouseGuid")
-	zoneGuid := ctx.Param("zoneGuid")
+	locationGuid := ctx.Param("locationguid")
+	pageable := utils.GetPageable(ctx.QueryParam)
 
-	_, locationCode, location, err := h.findLocation(holdingCode, warehouseGuid, zoneGuid)
+	docList, pagination, err := h.svcBin.SearchBin(holdingCode, locationGuid, pageable)
 	if err != nil {
-		ctx.ResponseError(http.StatusNotFound, err.Error())
-		return err
-	}
-	_ = locationCode
-
-	ctx.Response(http.StatusOK, common.ApiResponse{
-		Success: true,
-		Data:    location.Shelf,
-	})
-	return nil
-}
-
-func (h WarehouseHttp) InfoShelf(ctx microservice.IContext) error {
-	holdingCode := ctx.UserInfo().HoldingCode
-	warehouseGuid := ctx.Param("warehouseGuid")
-	zoneGuid := ctx.Param("zoneGuid")
-	id := ctx.Param("id")
-
-	_, _, location, err := h.findLocation(holdingCode, warehouseGuid, zoneGuid)
-	if err != nil {
-		ctx.ResponseError(http.StatusNotFound, err.Error())
-		return err
-	}
-
-	for _, shelf := range location.Shelf {
-		if shelf.Code == id || shelf.GuidFixed == id {
-			ctx.Response(http.StatusOK, common.ApiResponse{
-				Success: true,
-				Data:    shelf,
-			})
-			return nil
-		}
-	}
-
-	ctx.ResponseError(http.StatusNotFound, "Shelf not found")
-	return nil
-}
-
-func (h WarehouseHttp) UpdateShelf(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	holdingCode := userInfo.HoldingCode
-	authUsername := userInfo.Username
-	warehouseGuid := ctx.Param("warehouseGuid")
-	zoneGuid := ctx.Param("zoneGuid")
-	id := ctx.Param("id")
-	input := ctx.ReadInput()
-
-	warehouseInfo, locationCode, err := h.findWarehouseAndLocationCode(holdingCode, warehouseGuid, zoneGuid)
-	if err != nil {
-		ctx.ResponseError(http.StatusNotFound, err.Error())
-		return err
-	}
-
-	var req warehouseModels.ShelfRequest
-	if err := json.Unmarshal([]byte(input), &req); err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
-	// Same default-only-when-absent rule as UpdateZone: a different warehousecode/locationcode
-	// in the body means "move this shelf there" — do not clobber the move target.
-	if req.WarehouseCode == "" {
-		req.WarehouseCode = warehouseInfo.Code
-	}
-	if req.LocationCode == "" {
-		req.LocationCode = locationCode
-	}
 
-	if err := h.svc.UpdateShelf(holdingCode, authUsername, warehouseInfo.Code, locationCode, id, req); err != nil {
-		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success:    true,
+		Data:       docList,
+		Pagination: pagination,
+	})
+	return nil
+}
+
+// InfoBin — GET /warehouse/:warehouseguid/location/:locationguid/bin/:binguid
+func (h WarehouseHttp) InfoBin(ctx microservice.IContext) error {
+	holdingCode := ctx.UserInfo().HoldingCode
+	binGuid := ctx.Param("binguid")
+
+	data, err := h.svcBin.InfoBin(holdingCode, binGuid)
+	if err != nil {
+		ctx.ResponseError(http.StatusNotFound, "Bin not found")
 		return err
 	}
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
 		Success: true,
-		ID:      id,
+		Data:    data,
 	})
 	return nil
 }
 
-func (h WarehouseHttp) DeleteShelf(ctx microservice.IContext) error {
+// UpdateBin — PUT /warehouse/:warehouseguid/location/:locationguid/bin/:binguid
+func (h WarehouseHttp) UpdateBin(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
-	warehouseGuid := ctx.Param("warehouseGuid")
-	zoneGuid := ctx.Param("zoneGuid")
-	id := ctx.Param("id")
+	warehouseGuid := ctx.Param("warehouseguid")
+	locationGuid := ctx.Param("locationguid")
+	binGuid := ctx.Param("binguid")
+	input := ctx.ReadInput()
 
-	warehouseInfo, locationCode, err := h.findWarehouseAndLocationCode(holdingCode, warehouseGuid, zoneGuid)
+	existing, err := h.svcBin.InfoBin(holdingCode, binGuid)
 	if err != nil {
+		ctx.ResponseError(http.StatusNotFound, "Bin not found")
+		return err
+	}
+
+	// Same fetch-then-unmarshal-onto-existing preservation as UpdateWarehouse (see that handler's
+	// comment) — a field omitted from the request JSON keeps its current value. This is what closes
+	// the maxvolumecm3-gets-zeroed-on-every-edit bug found in review: any bin field the frontend
+	// form doesn't send now survives instead of being wiped.
+	doc := existing.WarehouseBin
+	if err := json.Unmarshal([]byte(input), &doc); err != nil {
+		ctx.ResponseError(http.StatusBadRequest, err.Error())
+		return err
+	}
+	doc.WarehouseGuid = warehouseGuid
+	doc.LocationGuid = locationGuid
+
+	if err := h.svcBin.UpdateBin(holdingCode, binGuid, authUsername, doc); err != nil {
+		ctx.ResponseError(http.StatusBadRequest, err.Error())
+		return err
+	}
+
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success: true,
+		ID:      binGuid,
+	})
+	return nil
+}
+
+// DeleteBin — DELETE /warehouse/:warehouseguid/location/:locationguid/bin/:binguid
+func (h WarehouseHttp) DeleteBin(ctx microservice.IContext) error {
+	userInfo := ctx.UserInfo()
+	holdingCode := userInfo.HoldingCode
+	authUsername := userInfo.Username
+	binGuid := ctx.Param("binguid")
+
+	if err := h.svcBin.DeleteBin(holdingCode, binGuid, authUsername); err != nil {
 		ctx.ResponseError(http.StatusNotFound, err.Error())
 		return err
 	}
 
-	if err := h.svc.DeleteShelfByCodes(holdingCode, authUsername, warehouseInfo.Code, locationCode, []string{id}); err != nil {
-		ctx.ResponseError(http.StatusInternalServerError, err.Error())
-		return err
-	}
-
 	ctx.Response(http.StatusOK, common.ApiResponse{
 		Success: true,
-		ID:      id,
+		ID:      binGuid,
 	})
 	return nil
 }
 
-// findLocation resolves a zone (location) by GuidFixed-or-Code under a warehouse GuidFixed-or-Code,
-// since the sub-routes are keyed by :warehouseGuid/:zoneGuid but the underlying models still key
-// locations by Code (the Code-scoped service methods predate the GuidFixed addition).
-func (h WarehouseHttp) findLocation(holdingCode, warehouseGuid, zoneGuid string) (warehouseModels.WarehouseInfo, string, warehouseModels.Location, error) {
-	warehouseInfo, err := h.svc.InfoWarehouse(holdingCode, warehouseGuid)
+// warehouseTreeNode is the GET /warehouse/tree response shape: every warehouse in the holding,
+// each with its locations, each location with its bins — assembled from 3 flat queries in Go
+// (not a Mongo aggregation pipeline), per the task spec.
+type warehouseTreeLocationNode struct {
+	warehouseModels.WarehouseLocationInfo
+	Bins []warehouseModels.WarehouseBinInfo `json:"bins"`
+}
+
+type warehouseTreeNode struct {
+	warehouseModels.WarehouseInfo
+	Locations []warehouseTreeLocationNode `json:"locations"`
+}
+
+// WarehouseTree — GET /warehouse/tree
+func (h WarehouseHttp) WarehouseTree(ctx microservice.IContext) error {
+	holdingCode := ctx.UserInfo().HoldingCode
+	bgCtx := context.Background()
+
+	warehouseList, err := h.repo.Find(bgCtx, holdingCode, []string{"code"}, "")
 	if err != nil {
-		return warehouseModels.WarehouseInfo{}, "", warehouseModels.Location{}, err
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
-	if warehouseInfo.Location != nil {
-		for _, location := range *warehouseInfo.Location {
-			if location.Code == zoneGuid || location.GuidFixed == zoneGuid {
-				return warehouseInfo, location.Code, location, nil
-			}
+	warehouseGuids := make([]string, 0, len(warehouseList))
+	for _, wh := range warehouseList {
+		warehouseGuids = append(warehouseGuids, wh.GuidFixed)
+	}
+
+	locationList := []warehouseModels.WarehouseLocationInfo{}
+	if len(warehouseGuids) > 0 {
+		locationList, err = h.repoLocation.FindByWarehouseGuids(bgCtx, holdingCode, warehouseGuids)
+		if err != nil {
+			ctx.ResponseError(http.StatusInternalServerError, err.Error())
+			return err
 		}
 	}
 
-	return warehouseModels.WarehouseInfo{}, "", warehouseModels.Location{}, errors.New("zone not found")
-}
+	locationGuids := make([]string, 0, len(locationList))
+	for _, loc := range locationList {
+		locationGuids = append(locationGuids, loc.GuidFixed)
+	}
 
-func (h WarehouseHttp) findWarehouseAndLocationCode(holdingCode, warehouseGuid, zoneGuid string) (warehouseModels.WarehouseInfo, string, error) {
-	warehouseInfo, locationCode, _, err := h.findLocation(holdingCode, warehouseGuid, zoneGuid)
-	return warehouseInfo, locationCode, err
+	binList := []warehouseModels.WarehouseBinInfo{}
+	if len(locationGuids) > 0 {
+		binList, err = h.repoBin.FindByLocationGuids(bgCtx, holdingCode, locationGuids)
+		if err != nil {
+			ctx.ResponseError(http.StatusInternalServerError, err.Error())
+			return err
+		}
+	}
+
+	binsByLocation := map[string][]warehouseModels.WarehouseBinInfo{}
+	for _, bin := range binList {
+		binsByLocation[bin.LocationGuid] = append(binsByLocation[bin.LocationGuid], bin)
+	}
+
+	locationsByWarehouse := map[string][]warehouseTreeLocationNode{}
+	for _, loc := range locationList {
+		locationsByWarehouse[loc.WarehouseGuid] = append(locationsByWarehouse[loc.WarehouseGuid], warehouseTreeLocationNode{
+			WarehouseLocationInfo: loc,
+			Bins:                  binsByLocation[loc.GuidFixed],
+		})
+	}
+
+	tree := make([]warehouseTreeNode, 0, len(warehouseList))
+	for _, wh := range warehouseList {
+		tree = append(tree, warehouseTreeNode{
+			WarehouseInfo: wh,
+			Locations:     locationsByWarehouse[wh.GuidFixed],
+		})
+	}
+
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success: true,
+		Data:    tree,
+	})
+	return nil
 }

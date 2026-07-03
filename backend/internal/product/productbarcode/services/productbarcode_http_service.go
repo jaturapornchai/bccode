@@ -2311,87 +2311,19 @@ func (svc ProductBarcodeHttpService) GetPriceHistoryByBarcode(holdingCode string
 	return svc.priceHistorySvc.GetPriceHistoryByBarcode(holdingCode, barcode, pageable)
 }
 
-// getProductBarcodesFromShelves queries warehouse system to find product barcodes in specified shelves
+// getProductBarcodesFromShelves queried the OLD embedded warehouse.location[].shelf[].productitems[]
+// structure, which the warehouse master-data redesign removed (see scopeofwork/warehouse.md —
+// warehouse/location/bin are now separate collections, and bin.fixeditems[] is a product-reference
+// hint, not a queryable-here index yet). The current frontend never sends the warehousecode/
+// locationcode/shelfcode query params that trigger this path, but they are still live and
+// Swagger-documented on the public GET /productbarcode endpoint — an external caller (mobile app,
+// integration, API consumer) using this filter must get an explicit "no longer supported" error,
+// not a silent empty-but-200 result that looks like "zero products found" (Database No Silent
+// Fallback Rule). A real replacement needs a new IWarehouseBinRepository dependency threaded
+// through this service's 4 constructor call sites — a productbarcode-module change, out of scope
+// for the warehouse backend redesign that removed the old structure this relied on.
 func (svc ProductBarcodeHttpService) getProductBarcodesFromShelves(ctx context.Context, holdingCode string, shelfFilters map[string]interface{}) ([]string, error) {
-	// Build filters to query warehouse collection
-	filters := make(map[string]interface{})
-
-	// Add warehouse code filter if provided
-	if warehouseCode, ok := shelfFilters["warehouse.code"].(string); ok && warehouseCode != "" {
-		filters["code"] = warehouseCode
-	}
-
-	// Build location and shelf filters based on nested structure
-	locationMatch := bson.M{}
-	shelfMatch := bson.M{}
-
-	if locationCode, ok := shelfFilters["location.code"].(string); ok && locationCode != "" {
-		locationMatch["locations.code"] = locationCode
-	}
-
-	if shelfCode, ok := shelfFilters["shelf.code"].(string); ok && shelfCode != "" {
-		shelfMatch["locations.shelves.code"] = shelfCode
-	}
-
-	// Merge location and shelf filters
-	for k, v := range locationMatch {
-		filters[k] = v
-	}
-	for k, v := range shelfMatch {
-		filters[k] = v
-	}
-
-	// Search for matching warehouses
-	searchInFields := []string{"code", "names.name", "location.code", "location.names.name", "location.shelf.code"}
-	pageable := micromodels.Pageable{
-		Page:  0,
-		Limit: 1000, // Limit to reasonable number
-	}
-
-	warehouseList, _, err := svc.warehouseRepo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
-	if err != nil {
-		return []string{}, err
-	}
-
-	// Extract all barcodes from matching shelves
-	barcodeSet := make(map[string]bool)
-	for _, warehouse := range warehouseList {
-		if warehouse.Location == nil {
-			continue
-		}
-		for _, location := range *warehouse.Location {
-			// Check if location matches filter (if specified)
-			if locationCode, ok := shelfFilters["location.code"].(string); ok && locationCode != "" {
-				if location.Code != locationCode {
-					continue
-				}
-			}
-
-			for _, shelf := range location.Shelf {
-				// Check if shelf matches filter (if specified)
-				if shelfCode, ok := shelfFilters["shelf.code"].(string); ok && shelfCode != "" {
-					if shelf.Code != shelfCode {
-						continue
-					}
-				}
-
-				// Extract barcodes from shelf products
-				for _, productItem := range shelf.ProductItems {
-					if productItem.Barcode != "" {
-						barcodeSet[productItem.Barcode] = true
-					}
-				}
-			}
-		}
-	}
-
-	// Convert set to slice
-	barcodes := make([]string, 0, len(barcodeSet))
-	for barcode := range barcodeSet {
-		barcodes = append(barcodes, barcode)
-	}
-
-	return barcodes, nil
+	return nil, errors.New("การกรองสินค้าตามคลัง/ที่เก็บสินค้า/ชั้นวางเดิมไม่รองรับแล้วหลังปรับโครงสร้างคลังสินค้าใหม่ (warehousecode/locationcode/shelfcode filter no longer supported after the warehouse master-data redesign)")
 }
 
 func (s ProductBarcodeHttpService) ImportRefBarcodeUpdate(holdingCode, authUsername string, requests []models.RefBarcodeImportRequest) (*models.RefBarcodeImportResponse, error) {

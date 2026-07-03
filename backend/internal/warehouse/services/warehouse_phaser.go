@@ -52,7 +52,8 @@ func (c *WarehousePhaser) PhaseWarehouseDoc(doc models.WarehouseDoc) (*models.Wa
 	dataDoc.GuidFixed = doc.GuidFixed
 	dataDoc.Code = doc.Code
 	dataDoc.Names = *doc.Names
-	dataDoc.Location = *doc.Location
+	dataDoc.Latitude = doc.Latitude
+	dataDoc.Longitude = doc.Longitude
 
 	return &dataDoc, nil
 }

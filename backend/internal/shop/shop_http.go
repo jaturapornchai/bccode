@@ -70,7 +70,8 @@ func NewShopHttp(ms *microservice.Microservice, cfg config.IConfig) ShopHttp {
 
 	repoWarehouse := warehouse_repositories.NewWarehouseRepository(pst)
 	repoWarehouseMq := warehouse_repositories.NewWarehouseMessageQueueRepository(producer)
-	svcWarehouse := warehouse_services.NewWarehouseHttpService(repoWarehouse, repoWarehouseMq, masterSyncCacheRepo)
+	repoWarehouseLocation := warehouse_repositories.NewWarehouseLocationRepository(pst)
+	svcWarehouse := warehouse_services.NewWarehouseHttpService(repoWarehouse, repoWarehouseMq, repoWarehouseLocation, masterSyncCacheRepo)
 
 	return ShopHttp{
 		ms:                  ms,

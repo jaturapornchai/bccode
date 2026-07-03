@@ -19,23 +19,8 @@ func TestCreditPaymentTransactionPhaser(t *testing.T) {
 				"name": "warehouse name 001"
 			}
 		],
-		"location": [
-			{
-				"code": "loc001",
-				"names": [
-					{
-						"code": "en",
-						"name": "loc name 001"
-					}
-				],
-				"shelf": [
-					{
-						"code": "shelf001",
-						"name": "shelf name 001"
-					}
-				]
-			}
-		]
+		"latitude": 13.75,
+		"longitude": 100.5
 		}`
 
 	phaser := services.WarehousePhaser{}
@@ -46,9 +31,7 @@ func TestCreditPaymentTransactionPhaser(t *testing.T) {
 	assert.Equal(t, "shop001", got.HoldingCode)
 	assert.Equal(t, "code001", got.Code)
 	assert.Equal(t, "warehouse name 001", *(got.Names)[0].Name)
-	assert.Equal(t, "loc001", got.Location[0].Code)
-	assert.Equal(t, "loc name 001", *(*got.Location[0].Names)[0].Name)
-	assert.Equal(t, "shelf001", got.Location[0].Shelf[0].Code)
-	assert.Equal(t, "shelf name 001", got.Location[0].Shelf[0].Name)
+	assert.Equal(t, 13.75, got.Latitude)
+	assert.Equal(t, 100.5, got.Longitude)
 
 }
