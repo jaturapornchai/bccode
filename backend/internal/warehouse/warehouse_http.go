@@ -2,69 +2,42 @@ package warehouse
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
-	"smlcloudplatform/internal/config"
+	mastersync "smlcloudplatform/internal/mastersync/repositories"
 	common "smlcloudplatform/internal/models"
 	"smlcloudplatform/internal/utils"
 	warehouseModels "smlcloudplatform/internal/warehouse/models"
-	"smlcloudplatform/pkg/microservice"
-	"sync"
-	"time"
+	"smlcloudplatform/internal/warehouse/repositories"
+	"smlcloudplatform/internal/warehouse/services"
 
-	"gorm.io/gorm"
+	"smlcloudplatform/internal/config"
+	"smlcloudplatform/pkg/microservice"
 )
 
 type WarehouseHttp struct {
 	ms  *microservice.Microservice
 	cfg config.IConfig
+	svc services.IWarehouseHttpService
 }
 
 func NewWarehouseHttp(ms *microservice.Microservice, cfg config.IConfig) WarehouseHttp {
+	pst := ms.MongoPersister(cfg.MongoPersisterConfig())
+	producer := ms.Producer(cfg.MQConfig())
+	cache := ms.Cacher(cfg.CacherConfig())
+
+	repo := repositories.NewWarehouseRepository(pst)
+	repoMq := repositories.NewWarehouseMessageQueueRepository(producer)
+	masterSyncCacheRepo := mastersync.NewMasterSyncCacheRepository(cache)
+
+	svc := services.NewWarehouseHttpService(repo, repoMq, masterSyncCacheRepo)
+
 	return WarehouseHttp{
 		ms:  ms,
 		cfg: cfg,
+		svc: svc,
 	}
-}
-
-// warehouseTenantMigrated guards the per-tenant AutoMigrate so it runs once per holdingcode.
-var warehouseTenantMigrated sync.Map
-
-// ensureTenantSchema guarantees the warehouse PG tables exist in this tenant's database.
-// The framework's tenantModels auto-migration is supposed to create them, but make the handler
-// self-sufficient (Backend-Owned Schema Rule): create the correct structure on first access per
-// tenant so a fresh/empty tenant DB never 500s with `relation "warehouse" does not exist`.
-func (h WarehouseHttp) ensureTenantSchema(holdingCode string) {
-	if holdingCode == "" {
-		return
-	}
-	if _, done := warehouseTenantMigrated.Load(holdingCode); done {
-		return
-	}
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
-	// Migrate in dependency order (referenced tables first) — AutoMigrate(WarehousePg) alone fails
-	// when its Zones/Shelves relation tries to FK to tables that don't exist yet. Per-model so a
-	// single failure does not abort the rest.
-	models := []interface{}{
-		warehouseModels.ShelfPg{},
-		warehouseModels.ZonePg{},
-		warehouseModels.WarehousePg{},
-		warehouseModels.CompanyWarehousePg{},
-	}
-	ok := true
-	for _, m := range models {
-		if err := pst.AutoMigrate(m); err != nil {
-			h.ms.Logger.Errorf("warehouse tenant AutoMigrate failed for %s: %v", holdingCode, err)
-			ok = false
-		}
-	}
-	if ok {
-		warehouseTenantMigrated.Store(holdingCode, true)
-	}
-}
-
-type WarehouseResponse struct {
-	warehouseModels.WarehousePg
-	Companies []string `json:"companyguids"`
 }
 
 func (h WarehouseHttp) RegisterHttp() {
@@ -89,109 +62,124 @@ func (h WarehouseHttp) RegisterHttp() {
 	h.ms.DELETE("/warehouse/:warehouseGuid/zone/:zoneGuid/shelf/:id", h.DeleteShelf)
 }
 
+// warehouseUpsertRequest is the wire shape for POST/PUT /warehouse. Location and CompanyGuids are
+// pointers so we can tell "field absent" (nil, keep existing) apart from "field present, even empty"
+// (non-nil, replace). This is the load-bearing property for partial updates from the frontend: a
+// name-only edit omits "location" entirely and must not wipe existing zones/shelves.
+type warehouseUpsertRequest struct {
+	Code         string                      `json:"code"`
+	Names        *[]common.NameX             `json:"names"`
+	Location     *[]warehouseModels.Location `json:"location"`
+	Latitude     float64                     `json:"latitude"`
+	Longitude    float64                     `json:"longitude"`
+	CompanyGuids *[]string                   `json:"companyguids"`
+}
+
+// validateLocationCompanyScope enforces that every restricted Location's CompanyGuids is a subset
+// of the warehouse-level CompanyGuids. An empty warehouseCompanyGuids means "all companies" — any
+// location list is a valid subset of that, so no check is needed. A location with its own empty
+// CompanyGuids means "inherit all the warehouse allows" — also always valid.
+func validateLocationCompanyScope(locations []warehouseModels.Location, warehouseCompanyGuids []string) error {
+	if len(warehouseCompanyGuids) == 0 {
+		return nil
+	}
+	allowed := make(map[string]bool, len(warehouseCompanyGuids))
+	for _, g := range warehouseCompanyGuids {
+		allowed[g] = true
+	}
+	for _, loc := range locations {
+		for _, g := range loc.CompanyGuids {
+			if !allowed[g] {
+				return fmt.Errorf("โซน %s ใช้ได้เฉพาะบริษัทที่คลังอนุญาตเท่านั้น (บริษัท %s ไม่อยู่ในสิทธิ์ของคลัง)", loc.Code, g)
+			}
+		}
+	}
+	return nil
+}
+
+// assignGuids fills in a GuidFixed for any location/shelf that arrives without one, leaving
+// existing GuidFixed values untouched.
+func assignGuids(locations *[]warehouseModels.Location) {
+	if locations == nil {
+		return
+	}
+	for i := range *locations {
+		if (*locations)[i].GuidFixed == "" {
+			(*locations)[i].GuidFixed = utils.NewGUID()
+		}
+		shelves := (*locations)[i].Shelf
+		for j := range shelves {
+			if shelves[j].GuidFixed == "" {
+				shelves[j].GuidFixed = utils.NewGUID()
+			}
+		}
+	}
+}
+
 func (h WarehouseHttp) CreateWarehouse(ctx microservice.IContext) error {
-	holdingCode := ctx.UserInfo().HoldingCode
-	h.ensureTenantSchema(holdingCode)
+	userInfo := ctx.UserInfo()
+	holdingCode := userInfo.HoldingCode
+	authUsername := userInfo.Username
 	input := ctx.ReadInput()
 
-	type CreateWarehouseRequest struct {
-		warehouseModels.WarehousePg
-		CompanyGuids []string `json:"companyguids"`
-	}
-
-	var req CreateWarehouseRequest
+	var req warehouseUpsertRequest
 	if err := json.Unmarshal([]byte(input), &req); err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
 
-	req.HoldingCode = holdingCode
-	if req.GuidFixed == "" {
-		req.GuidFixed = utils.NewGUID()
+	assignGuids(req.Location)
+
+	doc := warehouseModels.Warehouse{
+		Code:      req.Code,
+		Names:     req.Names,
+		Location:  req.Location,
+		Latitude:  req.Latitude,
+		Longitude: req.Longitude,
 	}
-	req.CreatedAt = time.Now()
-	req.UpdatedAt = time.Now()
-	req.IsActive = true
-
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
-	db := pst.DBClient()
-
-	err := db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(&req.WarehousePg).Error; err != nil {
+	if req.CompanyGuids != nil {
+		doc.CompanyGuids = *req.CompanyGuids
+	}
+	if req.Location != nil {
+		if err := validateLocationCompanyScope(*req.Location, doc.CompanyGuids); err != nil {
+			ctx.ResponseError(http.StatusBadRequest, err.Error())
 			return err
 		}
+	}
 
-		for _, compGuid := range req.CompanyGuids {
-			cw := warehouseModels.CompanyWarehousePg{
-				CompanyGuid:   compGuid,
-				WarehouseGuid: req.GuidFixed,
-			}
-			if err := tx.Create(&cw).Error; err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-
+	idx, err := h.svc.CreateWarehouse(holdingCode, authUsername, doc)
 	if err != nil {
-		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
 
 	ctx.Response(http.StatusCreated, common.ApiResponse{
 		Success: true,
-		ID:      req.GuidFixed,
+		ID:      idx,
 	})
 	return nil
 }
 
 func (h WarehouseHttp) SearchWarehouse(ctx microservice.IContext) error {
 	holdingCode := ctx.UserInfo().HoldingCode
-	companyGuid := ctx.QueryParam("companyguid")
 
-	h.ensureTenantSchema(holdingCode)
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
-	db := pst.DBClient()
+	pageable := utils.GetPageable(ctx.QueryParam)
 
-	var list []warehouseModels.WarehousePg
-	if companyGuid != "" {
-		// Get warehouses shared with this company
-		var whGuids []string
-		if err := db.Table("company_warehouses").Where("companyguid = ?", companyGuid).Pluck("warehouse_guid", &whGuids).Error; err != nil {
-			ctx.ResponseError(http.StatusInternalServerError, err.Error())
-			return err
-		}
-		if len(whGuids) == 0 {
-			ctx.Response(http.StatusOK, common.ApiResponse{
-				Success: true,
-				Data:    []WarehouseResponse{},
-			})
-			return nil
-		}
-		if err := db.Where("holdingcode = ? AND guidfixed IN ?", holdingCode, whGuids).Preload("Zones.Shelves").Find(&list).Error; err != nil {
-			ctx.ResponseError(http.StatusInternalServerError, err.Error())
-			return err
-		}
-	} else {
-		if err := db.Where("holdingcode = ?", holdingCode).Preload("Zones.Shelves").Find(&list).Error; err != nil {
-			ctx.ResponseError(http.StatusInternalServerError, err.Error())
-			return err
-		}
+	filters := map[string]interface{}{}
+	if companyGuid := ctx.QueryParam("companyguid"); companyGuid != "" {
+		filters["companyguids"] = companyGuid
 	}
 
-	var responseList []WarehouseResponse
-	for _, wh := range list {
-		var compGuids []string
-		db.Table("company_warehouses").Where("warehouse_guid = ?", wh.GuidFixed).Pluck("companyguid", &compGuids)
-		responseList = append(responseList, WarehouseResponse{
-			WarehousePg: wh,
-			Companies:   compGuids,
-		})
+	docList, pagination, err := h.svc.SearchWarehouse(holdingCode, filters, pageable)
+	if err != nil {
+		ctx.ResponseError(http.StatusBadRequest, err.Error())
+		return err
 	}
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
-		Success: true,
-		Data:    responseList,
+		Success:    true,
+		Data:       docList,
+		Pagination: pagination,
 	})
 	return nil
 }
@@ -200,134 +188,62 @@ func (h WarehouseHttp) InfoWarehouse(ctx microservice.IContext) error {
 	holdingCode := ctx.UserInfo().HoldingCode
 	id := ctx.Param("id")
 
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
-	db := pst.DBClient()
-	var data warehouseModels.WarehousePg
-	if err := db.Where("holdingcode = ? AND guidfixed = ?", holdingCode, id).Preload("Zones.Shelves").First(&data).Error; err != nil {
+	data, err := h.svc.InfoWarehouse(holdingCode, id)
+	if err != nil {
 		ctx.ResponseError(http.StatusNotFound, "Warehouse not found")
 		return err
 	}
 
-	var compGuids []string
-	db.Table("company_warehouses").Where("warehouse_guid = ?", data.GuidFixed).Pluck("companyguid", &compGuids)
-
 	ctx.Response(http.StatusOK, common.ApiResponse{
 		Success: true,
-		Data: WarehouseResponse{
-			WarehousePg: data,
-			Companies:   compGuids,
-		},
+		Data:    data,
 	})
 	return nil
 }
 
 func (h WarehouseHttp) UpdateWarehouse(ctx microservice.IContext) error {
-	holdingCode := ctx.UserInfo().HoldingCode
+	userInfo := ctx.UserInfo()
+	holdingCode := userInfo.HoldingCode
+	authUsername := userInfo.Username
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
 
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
-	db := pst.DBClient()
-	var existing warehouseModels.WarehousePg
-	if err := db.Where("holdingcode = ? AND guidfixed = ?", holdingCode, id).First(&existing).Error; err != nil {
+	existing, err := h.svc.InfoWarehouse(holdingCode, id)
+	if err != nil {
 		ctx.ResponseError(http.StatusNotFound, "Warehouse not found")
 		return err
 	}
 
-	type UpdateWarehouseRequest struct {
-		warehouseModels.WarehousePg
-		CompanyGuids []string `json:"companyguids"`
-	}
-
-	var req UpdateWarehouseRequest
+	var req warehouseUpsertRequest
 	if err := json.Unmarshal([]byte(input), &req); err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
 
-	existing.Names = req.Names
-	existing.Code = req.Code
-	existing.Latitude = req.Latitude
-	existing.Longitude = req.Longitude
-	existing.IsActive = req.IsActive
-	existing.UpdatedAt = time.Now()
+	doc := existing.Warehouse
+	doc.Code = req.Code
+	doc.Names = req.Names
+	doc.Latitude = req.Latitude
+	doc.Longitude = req.Longitude
 
-	err := db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Save(&existing).Error; err != nil {
+	// CRITICAL: only overwrite Location/CompanyGuids when the request actually sent them. A
+	// name/lat/long-only edit (no "location" key at all) must leave existing zones/shelves intact.
+	if req.CompanyGuids != nil {
+		doc.CompanyGuids = *req.CompanyGuids
+	}
+	if req.Location != nil {
+		assignGuids(req.Location)
+		// Effective warehouse-level scope for this call: the request's CompanyGuids if it sent
+		// one, otherwise whatever was already stored — validate BEFORE saving so a rejected
+		// request never touches the document.
+		if err := validateLocationCompanyScope(*req.Location, doc.CompanyGuids); err != nil {
+			ctx.ResponseError(http.StatusBadRequest, err.Error())
 			return err
 		}
+		doc.Location = req.Location
+	}
 
-		// Delete existing junction rows
-		if err := tx.Table("company_warehouses").Where("warehouse_guid = ?", id).Delete(nil).Error; err != nil {
-			return err
-		}
-
-		// Insert new junction rows
-		for _, compGuid := range req.CompanyGuids {
-			cw := warehouseModels.CompanyWarehousePg{
-				CompanyGuid:   compGuid,
-				WarehouseGuid: id,
-			}
-			if err := tx.Create(&cw).Error; err != nil {
-				return err
-			}
-		}
-
-		// Delete existing shelves of zones belonging to this warehouse
-		var zoneGuids []string
-		if err := tx.Table("warehouse_zones").Where("warehouse_guid = ?", id).Pluck("guidfixed", &zoneGuids).Error; err != nil {
-			return err
-		}
-		if len(zoneGuids) > 0 {
-			if err := tx.Unscoped().Where("zone_guid IN ?", zoneGuids).Delete(&warehouseModels.ShelfPg{}).Error; err != nil {
-				return err
-			}
-		}
-
-		// Delete existing zones
-		if err := tx.Unscoped().Where("warehouse_guid = ?", id).Delete(&warehouseModels.ZonePg{}).Error; err != nil {
-			return err
-		}
-
-		// Insert new zones and shelves
-		for _, zone := range req.Zones {
-			zone.WarehouseGuid = id
-			zone.HoldingCode = holdingCode
-			if zone.GuidFixed == "" {
-				zone.GuidFixed = utils.NewGUID()
-			}
-			zone.CreatedAt = time.Now()
-			zone.UpdatedAt = time.Now()
-			zone.IsActive = true
-
-			// Prevent GORM from auto-saving association with incomplete fields (e.g. empty GUID)
-			shelvesToCreate := zone.Shelves
-			zone.Shelves = nil
-
-			if err := tx.Create(&zone).Error; err != nil {
-				return err
-			}
-
-			for _, shelf := range shelvesToCreate {
-				shelf.ZoneGuid = zone.GuidFixed
-				shelf.HoldingCode = holdingCode
-				if shelf.GuidFixed == "" {
-					shelf.GuidFixed = utils.NewGUID()
-				}
-				shelf.CreatedAt = time.Now()
-				shelf.UpdatedAt = time.Now()
-				shelf.IsActive = true
-
-				if err := tx.Create(&shelf).Error; err != nil {
-					return err
-				}
-			}
-		}
-
-		return nil
-	})
-
-	if err != nil {
+	if err := h.svc.UpdateWarehouse(holdingCode, id, authUsername, doc); err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
 	}
@@ -340,20 +256,13 @@ func (h WarehouseHttp) UpdateWarehouse(ctx microservice.IContext) error {
 }
 
 func (h WarehouseHttp) DeleteWarehouse(ctx microservice.IContext) error {
-	holdingCode := ctx.UserInfo().HoldingCode
+	userInfo := ctx.UserInfo()
+	holdingCode := userInfo.HoldingCode
+	authUsername := userInfo.Username
 	id := ctx.Param("id")
 
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
-	db := pst.DBClient()
-	var data warehouseModels.WarehousePg
-	if err := db.Where("holdingcode = ? AND guidfixed = ?", holdingCode, id).First(&data).Error; err != nil {
-		ctx.ResponseError(http.StatusNotFound, "Warehouse not found")
-		return err
-	}
-
-	// Soft delete
-	if err := db.Delete(&data).Error; err != nil {
-		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+	if err := h.svc.DeleteWarehouse(holdingCode, id, authUsername); err != nil {
+		ctx.ResponseError(http.StatusNotFound, err.Error())
 		return err
 	}
 
@@ -364,37 +273,36 @@ func (h WarehouseHttp) DeleteWarehouse(ctx microservice.IContext) error {
 	return nil
 }
 
-// Zone CRUD
+// Zone (aka Location) CRUD — Code-scoped sub-resource endpoints. Not currently called by the
+// frontend (which does whole-warehouse replace via PUT /warehouse/:id), kept for API-surface parity.
 func (h WarehouseHttp) CreateZone(ctx microservice.IContext) error {
-	holdingCode := ctx.UserInfo().HoldingCode
+	userInfo := ctx.UserInfo()
+	holdingCode := userInfo.HoldingCode
+	authUsername := userInfo.Username
 	warehouseGuid := ctx.Param("warehouseGuid")
 	input := ctx.ReadInput()
 
-	var req warehouseModels.ZonePg
+	warehouseInfo, err := h.svc.InfoWarehouse(holdingCode, warehouseGuid)
+	if err != nil {
+		ctx.ResponseError(http.StatusNotFound, "Warehouse not found")
+		return err
+	}
+
+	var req warehouseModels.LocationRequest
 	if err := json.Unmarshal([]byte(input), &req); err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
+	req.WarehouseCode = warehouseInfo.Code
 
-	req.HoldingCode = holdingCode
-	req.WarehouseGuid = warehouseGuid
-	if req.GuidFixed == "" {
-		req.GuidFixed = utils.NewGUID()
-	}
-	req.CreatedAt = time.Now()
-	req.UpdatedAt = time.Now()
-	req.IsActive = true
-
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
-	db := pst.DBClient()
-	if err := db.Create(&req).Error; err != nil {
+	if err := h.svc.CreateLocation(holdingCode, authUsername, warehouseInfo.Code, req); err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
 	}
 
 	ctx.Response(http.StatusCreated, common.ApiResponse{
 		Success: true,
-		ID:      req.GuidFixed,
+		ID:      req.Code,
 	})
 	return nil
 }
@@ -403,12 +311,15 @@ func (h WarehouseHttp) SearchZone(ctx microservice.IContext) error {
 	holdingCode := ctx.UserInfo().HoldingCode
 	warehouseGuid := ctx.Param("warehouseGuid")
 
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
-	db := pst.DBClient()
-	var list []warehouseModels.ZonePg
-	if err := db.Where("holdingcode = ? AND warehouse_guid = ?", holdingCode, warehouseGuid).Find(&list).Error; err != nil {
-		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+	warehouseInfo, err := h.svc.InfoWarehouse(holdingCode, warehouseGuid)
+	if err != nil {
+		ctx.ResponseError(http.StatusNotFound, "Warehouse not found")
 		return err
+	}
+
+	list := []warehouseModels.Location{}
+	if warehouseInfo.Location != nil {
+		list = *warehouseInfo.Location
 	}
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
@@ -420,49 +331,58 @@ func (h WarehouseHttp) SearchZone(ctx microservice.IContext) error {
 
 func (h WarehouseHttp) InfoZone(ctx microservice.IContext) error {
 	holdingCode := ctx.UserInfo().HoldingCode
+	warehouseGuid := ctx.Param("warehouseGuid")
 	id := ctx.Param("id")
 
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
-	db := pst.DBClient()
-	var data warehouseModels.ZonePg
-	if err := db.Where("holdingcode = ? AND guidfixed = ?", holdingCode, id).First(&data).Error; err != nil {
-		ctx.ResponseError(http.StatusNotFound, "Zone not found")
+	warehouseInfo, err := h.svc.InfoWarehouse(holdingCode, warehouseGuid)
+	if err != nil {
+		ctx.ResponseError(http.StatusNotFound, "Warehouse not found")
 		return err
 	}
 
-	ctx.Response(http.StatusOK, common.ApiResponse{
-		Success: true,
-		Data:    data,
-	})
+	if warehouseInfo.Location != nil {
+		for _, location := range *warehouseInfo.Location {
+			if location.Code == id || location.GuidFixed == id {
+				ctx.Response(http.StatusOK, common.ApiResponse{
+					Success: true,
+					Data:    location,
+				})
+				return nil
+			}
+		}
+	}
+
+	ctx.ResponseError(http.StatusNotFound, "Zone not found")
 	return nil
 }
 
 func (h WarehouseHttp) UpdateZone(ctx microservice.IContext) error {
-	holdingCode := ctx.UserInfo().HoldingCode
+	userInfo := ctx.UserInfo()
+	holdingCode := userInfo.HoldingCode
+	authUsername := userInfo.Username
+	warehouseGuid := ctx.Param("warehouseGuid")
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
 
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
-	db := pst.DBClient()
-	var existing warehouseModels.ZonePg
-	if err := db.Where("holdingcode = ? AND guidfixed = ?", holdingCode, id).First(&existing).Error; err != nil {
-		ctx.ResponseError(http.StatusNotFound, "Zone not found")
+	warehouseInfo, err := h.svc.InfoWarehouse(holdingCode, warehouseGuid)
+	if err != nil {
+		ctx.ResponseError(http.StatusNotFound, "Warehouse not found")
 		return err
 	}
 
-	var req warehouseModels.ZonePg
+	var req warehouseModels.LocationRequest
 	if err := json.Unmarshal([]byte(input), &req); err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
+	// Default only when absent — a request body carrying a DIFFERENT warehousecode means
+	// "move this zone to that warehouse"; overwriting it forced every move into the
+	// same-warehouse branch (200 but nothing moved).
+	if req.WarehouseCode == "" {
+		req.WarehouseCode = warehouseInfo.Code
+	}
 
-	existing.Names = req.Names
-	existing.Code = req.Code
-	existing.SuitableProductTypes = req.SuitableProductTypes
-	existing.IsActive = req.IsActive
-	existing.UpdatedAt = time.Now()
-
-	if err := db.Save(&existing).Error; err != nil {
+	if err := h.svc.UpdateLocation(holdingCode, authUsername, warehouseInfo.Code, id, req); err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
 	}
@@ -475,19 +395,19 @@ func (h WarehouseHttp) UpdateZone(ctx microservice.IContext) error {
 }
 
 func (h WarehouseHttp) DeleteZone(ctx microservice.IContext) error {
-	holdingCode := ctx.UserInfo().HoldingCode
+	userInfo := ctx.UserInfo()
+	holdingCode := userInfo.HoldingCode
+	authUsername := userInfo.Username
+	warehouseGuid := ctx.Param("warehouseGuid")
 	id := ctx.Param("id")
 
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
-	db := pst.DBClient()
-	var data warehouseModels.ZonePg
-	if err := db.Where("holdingcode = ? AND guidfixed = ?", holdingCode, id).First(&data).Error; err != nil {
-		ctx.ResponseError(http.StatusNotFound, "Zone not found")
+	warehouseInfo, err := h.svc.InfoWarehouse(holdingCode, warehouseGuid)
+	if err != nil {
+		ctx.ResponseError(http.StatusNotFound, "Warehouse not found")
 		return err
 	}
 
-	// Soft delete
-	if err := db.Delete(&data).Error; err != nil {
+	if err := h.svc.DeleteLocationByCodes(holdingCode, authUsername, warehouseInfo.Code, []string{id}); err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
 	}
@@ -499,104 +419,116 @@ func (h WarehouseHttp) DeleteZone(ctx microservice.IContext) error {
 	return nil
 }
 
-// Shelf CRUD
+// Shelf CRUD — Code-scoped sub-resource endpoints, same API-surface-parity rationale as Zone above.
 func (h WarehouseHttp) CreateShelf(ctx microservice.IContext) error {
-	holdingCode := ctx.UserInfo().HoldingCode
+	userInfo := ctx.UserInfo()
+	holdingCode := userInfo.HoldingCode
+	authUsername := userInfo.Username
+	warehouseGuid := ctx.Param("warehouseGuid")
 	zoneGuid := ctx.Param("zoneGuid")
 	input := ctx.ReadInput()
 
-	var req warehouseModels.ShelfPg
+	warehouseInfo, locationCode, err := h.findWarehouseAndLocationCode(holdingCode, warehouseGuid, zoneGuid)
+	if err != nil {
+		ctx.ResponseError(http.StatusNotFound, err.Error())
+		return err
+	}
+
+	var req warehouseModels.ShelfRequest
 	if err := json.Unmarshal([]byte(input), &req); err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
+	req.WarehouseCode = warehouseInfo.Code
+	req.LocationCode = locationCode
 
-	req.HoldingCode = holdingCode
-	req.ZoneGuid = zoneGuid
-	if req.GuidFixed == "" {
-		req.GuidFixed = utils.NewGUID()
-	}
-	req.CreatedAt = time.Now()
-	req.UpdatedAt = time.Now()
-	req.IsActive = true
-
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
-	db := pst.DBClient()
-	if err := db.Create(&req).Error; err != nil {
+	if err := h.svc.CreateShelf(holdingCode, authUsername, warehouseInfo.Code, locationCode, req); err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
 	}
 
 	ctx.Response(http.StatusCreated, common.ApiResponse{
 		Success: true,
-		ID:      req.GuidFixed,
+		ID:      req.Code,
 	})
 	return nil
 }
 
 func (h WarehouseHttp) SearchShelf(ctx microservice.IContext) error {
 	holdingCode := ctx.UserInfo().HoldingCode
+	warehouseGuid := ctx.Param("warehouseGuid")
 	zoneGuid := ctx.Param("zoneGuid")
 
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
-	db := pst.DBClient()
-	var list []warehouseModels.ShelfPg
-	if err := db.Where("holdingcode = ? AND zone_guid = ?", holdingCode, zoneGuid).Find(&list).Error; err != nil {
-		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+	_, locationCode, location, err := h.findLocation(holdingCode, warehouseGuid, zoneGuid)
+	if err != nil {
+		ctx.ResponseError(http.StatusNotFound, err.Error())
 		return err
 	}
+	_ = locationCode
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
 		Success: true,
-		Data:    list,
+		Data:    location.Shelf,
 	})
 	return nil
 }
 
 func (h WarehouseHttp) InfoShelf(ctx microservice.IContext) error {
 	holdingCode := ctx.UserInfo().HoldingCode
+	warehouseGuid := ctx.Param("warehouseGuid")
+	zoneGuid := ctx.Param("zoneGuid")
 	id := ctx.Param("id")
 
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
-	db := pst.DBClient()
-	var data warehouseModels.ShelfPg
-	if err := db.Where("holdingcode = ? AND guidfixed = ?", holdingCode, id).First(&data).Error; err != nil {
-		ctx.ResponseError(http.StatusNotFound, "Shelf not found")
+	_, _, location, err := h.findLocation(holdingCode, warehouseGuid, zoneGuid)
+	if err != nil {
+		ctx.ResponseError(http.StatusNotFound, err.Error())
 		return err
 	}
 
-	ctx.Response(http.StatusOK, common.ApiResponse{
-		Success: true,
-		Data:    data,
-	})
+	for _, shelf := range location.Shelf {
+		if shelf.Code == id || shelf.GuidFixed == id {
+			ctx.Response(http.StatusOK, common.ApiResponse{
+				Success: true,
+				Data:    shelf,
+			})
+			return nil
+		}
+	}
+
+	ctx.ResponseError(http.StatusNotFound, "Shelf not found")
 	return nil
 }
 
 func (h WarehouseHttp) UpdateShelf(ctx microservice.IContext) error {
-	holdingCode := ctx.UserInfo().HoldingCode
+	userInfo := ctx.UserInfo()
+	holdingCode := userInfo.HoldingCode
+	authUsername := userInfo.Username
+	warehouseGuid := ctx.Param("warehouseGuid")
+	zoneGuid := ctx.Param("zoneGuid")
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
 
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
-	db := pst.DBClient()
-	var existing warehouseModels.ShelfPg
-	if err := db.Where("holdingcode = ? AND guidfixed = ?", holdingCode, id).First(&existing).Error; err != nil {
-		ctx.ResponseError(http.StatusNotFound, "Shelf not found")
+	warehouseInfo, locationCode, err := h.findWarehouseAndLocationCode(holdingCode, warehouseGuid, zoneGuid)
+	if err != nil {
+		ctx.ResponseError(http.StatusNotFound, err.Error())
 		return err
 	}
 
-	var req warehouseModels.ShelfPg
+	var req warehouseModels.ShelfRequest
 	if err := json.Unmarshal([]byte(input), &req); err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
+	// Same default-only-when-absent rule as UpdateZone: a different warehousecode/locationcode
+	// in the body means "move this shelf there" — do not clobber the move target.
+	if req.WarehouseCode == "" {
+		req.WarehouseCode = warehouseInfo.Code
+	}
+	if req.LocationCode == "" {
+		req.LocationCode = locationCode
+	}
 
-	existing.Name = req.Name
-	existing.Code = req.Code
-	existing.IsActive = req.IsActive
-	existing.UpdatedAt = time.Now()
-
-	if err := db.Save(&existing).Error; err != nil {
+	if err := h.svc.UpdateShelf(holdingCode, authUsername, warehouseInfo.Code, locationCode, id, req); err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
 	}
@@ -609,19 +541,20 @@ func (h WarehouseHttp) UpdateShelf(ctx microservice.IContext) error {
 }
 
 func (h WarehouseHttp) DeleteShelf(ctx microservice.IContext) error {
-	holdingCode := ctx.UserInfo().HoldingCode
+	userInfo := ctx.UserInfo()
+	holdingCode := userInfo.HoldingCode
+	authUsername := userInfo.Username
+	warehouseGuid := ctx.Param("warehouseGuid")
+	zoneGuid := ctx.Param("zoneGuid")
 	id := ctx.Param("id")
 
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), holdingCode)
-	db := pst.DBClient()
-	var data warehouseModels.ShelfPg
-	if err := db.Where("holdingcode = ? AND guidfixed = ?", holdingCode, id).First(&data).Error; err != nil {
-		ctx.ResponseError(http.StatusNotFound, "Shelf not found")
+	warehouseInfo, locationCode, err := h.findWarehouseAndLocationCode(holdingCode, warehouseGuid, zoneGuid)
+	if err != nil {
+		ctx.ResponseError(http.StatusNotFound, err.Error())
 		return err
 	}
 
-	// Soft delete
-	if err := db.Delete(&data).Error; err != nil {
+	if err := h.svc.DeleteShelfByCodes(holdingCode, authUsername, warehouseInfo.Code, locationCode, []string{id}); err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
 	}
@@ -631,4 +564,29 @@ func (h WarehouseHttp) DeleteShelf(ctx microservice.IContext) error {
 		ID:      id,
 	})
 	return nil
+}
+
+// findLocation resolves a zone (location) by GuidFixed-or-Code under a warehouse GuidFixed-or-Code,
+// since the sub-routes are keyed by :warehouseGuid/:zoneGuid but the underlying models still key
+// locations by Code (the Code-scoped service methods predate the GuidFixed addition).
+func (h WarehouseHttp) findLocation(holdingCode, warehouseGuid, zoneGuid string) (warehouseModels.WarehouseInfo, string, warehouseModels.Location, error) {
+	warehouseInfo, err := h.svc.InfoWarehouse(holdingCode, warehouseGuid)
+	if err != nil {
+		return warehouseModels.WarehouseInfo{}, "", warehouseModels.Location{}, err
+	}
+
+	if warehouseInfo.Location != nil {
+		for _, location := range *warehouseInfo.Location {
+			if location.Code == zoneGuid || location.GuidFixed == zoneGuid {
+				return warehouseInfo, location.Code, location, nil
+			}
+		}
+	}
+
+	return warehouseModels.WarehouseInfo{}, "", warehouseModels.Location{}, errors.New("zone not found")
+}
+
+func (h WarehouseHttp) findWarehouseAndLocationCode(holdingCode, warehouseGuid, zoneGuid string) (warehouseModels.WarehouseInfo, string, error) {
+	warehouseInfo, locationCode, _, err := h.findLocation(holdingCode, warehouseGuid, zoneGuid)
+	return warehouseInfo, locationCode, err
 }

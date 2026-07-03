@@ -125,6 +125,24 @@ func (m *MockWarehouseRepository) Transaction(ctx context.Context, queryFunc fun
 	return args.Error(0)
 }
 
+// noopWarehouseMessageQueueRepository satisfies IWarehouseMessageQueueRepository so the service's
+// fire-and-forget `go func() { ... svc.repoMq.Update(...) }()` post-save calls have a real (non-nil
+// interface) receiver instead of panicking on a nil interface method call.
+type noopWarehouseMessageQueueRepository struct{}
+
+func (noopWarehouseMessageQueueRepository) Create(doc models.WarehouseDoc) error         { return nil }
+func (noopWarehouseMessageQueueRepository) Update(doc models.WarehouseDoc) error         { return nil }
+func (noopWarehouseMessageQueueRepository) Delete(doc models.WarehouseDoc) error         { return nil }
+func (noopWarehouseMessageQueueRepository) CreateInBatch(docList []models.WarehouseDoc) error {
+	return nil
+}
+func (noopWarehouseMessageQueueRepository) UpdateInBatch(docList []models.WarehouseDoc) error {
+	return nil
+}
+func (noopWarehouseMessageQueueRepository) DeleteInBatch(docList []models.WarehouseDoc) error {
+	return nil
+}
+
 func TestUpdateLocation(t *testing.T) {
 	holdingCode := "testHoldingCode"
 	authUsername := "testUser"
@@ -145,14 +163,15 @@ func TestUpdateLocation(t *testing.T) {
 
 	t.Run("successfully update location within the same warehouse", func(t *testing.T) {
 		mockRepo := new(MockWarehouseRepository)
-		svc := services.NewWarehouseHttpService(mockRepo, nil, nil)
+		svc := services.NewWarehouseHttpService(mockRepo, noopWarehouseMessageQueueRepository{}, nil)
 
-		mockRepo.On("FindWarehouseByLocation", holdingCode, warehouseCode, locationCode).Return(warehouseDoc, nil)
-		mockRepo.On("Update", holdingCode, warehouseDoc.GuidFixed, mock.Anything).Return(nil)
-		mockRepo.On("Transaction", mock.Anything).Return(nil)
+		mockRepo.On("FindWarehouseByLocation", mock.Anything, holdingCode, warehouseCode, locationCode).Return(warehouseDoc, nil)
+		mockRepo.On("Update", mock.Anything, holdingCode, warehouseDoc.GuidFixed, mock.Anything).Return(nil)
+		mockRepo.On("Transaction", mock.Anything, mock.Anything).Return(nil)
 
 		doc := models.LocationRequest{
-			Code: "L01",
+			WarehouseCode: warehouseCode,
+			Code:          "L01",
 			Names: &[]common.NameX{
 				*common.NewNameXWithCodeName("en", "location 1"),
 			},
@@ -164,7 +183,7 @@ func TestUpdateLocation(t *testing.T) {
 
 	t.Run("successfully move location to a different warehouse", func(t *testing.T) {
 		mockRepo := new(MockWarehouseRepository)
-		svc := services.NewWarehouseHttpService(mockRepo, nil, nil)
+		svc := services.NewWarehouseHttpService(mockRepo, noopWarehouseMessageQueueRepository{}, nil)
 
 		targetWarehouseDoc := models.WarehouseDoc{}
 
@@ -172,11 +191,11 @@ func TestUpdateLocation(t *testing.T) {
 		targetWarehouseDoc.Code = "WH01"
 		targetWarehouseDoc.Location = &[]models.Location{}
 
-		mockRepo.On("FindWarehouseByLocation", holdingCode, warehouseCode, locationCode).Return(warehouseDoc, nil)
-		mockRepo.On("FindByDocIndentityGuid", holdingCode, "code", "WH01").Return(targetWarehouseDoc, nil)
-		mockRepo.On("Update", holdingCode, warehouseDoc.GuidFixed, mock.Anything).Return(nil)
-		mockRepo.On("Update", holdingCode, targetWarehouseDoc.GuidFixed, mock.Anything).Return(nil)
-		mockRepo.On("Transaction", mock.Anything).Return(nil)
+		mockRepo.On("FindWarehouseByLocation", mock.Anything, holdingCode, warehouseCode, locationCode).Return(warehouseDoc, nil)
+		mockRepo.On("FindByDocIndentityGuid", mock.Anything, holdingCode, "code", "WH01").Return(targetWarehouseDoc, nil)
+		mockRepo.On("Update", mock.Anything, holdingCode, warehouseDoc.GuidFixed, mock.Anything).Return(nil)
+		mockRepo.On("Update", mock.Anything, holdingCode, targetWarehouseDoc.GuidFixed, mock.Anything).Return(nil)
+		mockRepo.On("Transaction", mock.Anything, mock.Anything).Return(nil)
 
 		doc := models.LocationRequest{}
 
@@ -192,9 +211,9 @@ func TestUpdateLocation(t *testing.T) {
 
 	t.Run("error when location not found", func(t *testing.T) {
 		mockRepo := new(MockWarehouseRepository)
-		svc := services.NewWarehouseHttpService(mockRepo, nil, nil)
+		svc := services.NewWarehouseHttpService(mockRepo, noopWarehouseMessageQueueRepository{}, nil)
 
-		mockRepo.On("FindWarehouseByLocation", holdingCode, warehouseCode, locationCode).Return(models.WarehouseDoc{}, nil)
+		mockRepo.On("FindWarehouseByLocation", mock.Anything, holdingCode, warehouseCode, locationCode).Return(models.WarehouseDoc{}, nil)
 
 		doc := models.LocationRequest{
 			WarehouseCode: "WH02",

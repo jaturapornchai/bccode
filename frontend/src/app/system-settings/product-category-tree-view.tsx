@@ -1625,9 +1625,13 @@ export function ProductCategoryTreeView({
                 {language === "th" ? "ไม่พบข้อมูลหมวดสินค้า" : "No categories found"}
               </span>
               <span className="text-xs text-muted-foreground max-w-xs">
-                {language === "th"
-                  ? "คุณสามารถกดปุ่ม 'เพิ่มหมวดหลัก' ด้านบนเพื่อสร้างข้อมูลใหม่ได้"
-                  : "You can click 'Add Root' above to start adding categories."}
+                {readOnly
+                  ? language === "th"
+                    ? "กลุ่มนี้ยังไม่มีหมวดสินค้า กรุณาไปสร้างหมวดสินค้าที่หน้าจอ 'จัดหมวดสินค้า' ก่อน"
+                    : "This group has no categories yet. Please create categories on the 'Product Categories' screen first."
+                  : language === "th"
+                    ? "คุณสามารถกดปุ่ม 'เพิ่มหมวดหลัก' ด้านบนเพื่อสร้างข้อมูลใหม่ได้"
+                    : "You can click 'Add Root' above to start adding categories."}
               </span>
             </div>
           ) : (

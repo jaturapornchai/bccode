@@ -22,16 +22,23 @@ type Warehouse struct {
 	Location                 *[]Location     `json:"location" bson:"location" validate:"omitempty,unique=Code,dive"`
 	Latitude                 float64         `json:"latitude" bson:"latitude"`
 	Longitude                float64         `json:"longitude" bson:"longitude"`
+	CompanyGuids             []string        `json:"companyguids" bson:"companyguids"`
 }
 
 type Location struct {
+	GuidFixed            string          `json:"guidfixed" bson:"guidfixed"`
 	Code                 string          `json:"code" bson:"code"`
 	Names                *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
 	Shelf                []Shelf         `json:"shelf" bson:"shelf" validate:"omitempty,unique=Code,dive"`
 	SuitableProductTypes string          `json:"suitableproducttypes" bson:"suitableproducttypes"`
+	// CompanyGuids restricts which companies may use this zone. Empty = inherit all companies the
+	// parent Warehouse allows. Must always be a subset of the parent Warehouse's CompanyGuids when
+	// the warehouse itself is restricted — enforced by validateLocationCompanyScope in warehouse_http.go.
+	CompanyGuids []string `json:"companyguids" bson:"companyguids,omitempty"`
 }
 
 type Shelf struct {
+	GuidFixed            string                `json:"guidfixed" bson:"guidfixed"`
 	Code                 string                `json:"code" bson:"code"`
 	Name                 string                `json:"name" bson:"name" validate:"required,min=1"`
 	Min                  int                   `json:"min" bson:"min" validate:"omitempty,gte=0"`

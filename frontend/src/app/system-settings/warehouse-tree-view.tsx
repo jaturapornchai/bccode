@@ -108,6 +108,7 @@ interface WarehouseLocation {
   length?: number;
   height?: number;
   suitableproducttypes?: string;
+  companyguids?: string[];
   [key: string]: unknown;
 }
 
@@ -149,6 +150,95 @@ const getNameFromObject = (names: LocalizedNames, code: string): string => {
 
 const errorMessage = (err: unknown, fallback: string): string =>
   err instanceof Error && err.message ? err.message : fallback;
+
+const companyDisplayName = (company: CompanyRecord, language: LanguageCode): string => {
+  const names = company.names;
+  if (Array.isArray(names)) {
+    const found = names.find((item) => item.code === language) || names.find((item) => item.code === "th");
+    if (found?.name) return found.name;
+    if (names.length > 0 && names[0]?.name) return names[0].name;
+  } else if (names && typeof names === "object") {
+    const val = getNameFromObject(names, language) || getNameFromObject(names, "th");
+    if (val) return val;
+  }
+  return company.code || company.guidfixed || "";
+};
+
+/**
+ * Compact wrap-first checkbox chip group for picking which companies may use a warehouse/location
+ * (Radio/Checkbox Compact Wrap Rule). `options` may be pre-filtered by the caller (e.g. the location
+ * picker only offers companies the parent warehouse itself allows).
+ */
+function CompanyScopePicker({
+  options,
+  selected,
+  onChange,
+  language,
+  helperText,
+  emptyText,
+}: {
+  options: CompanyRecord[];
+  selected: string[];
+  onChange: (next: string[]) => void;
+  language: LanguageCode;
+  helperText?: string;
+  emptyText?: string;
+}) {
+  const toggle = (guid: string) => {
+    if (selected.includes(guid)) {
+      onChange(selected.filter((g) => g !== guid));
+    } else {
+      onChange([...selected, guid]);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <p className="text-[11px] text-muted-foreground leading-relaxed">
+        {selected.length === 0
+          ? language === "th"
+            ? "ว่าง = ใช้ได้ทุกบริษัท"
+            : "Empty = usable by every company"
+          : language === "th"
+            ? `เลือกแล้ว ${selected.length} บริษัท`
+            : `${selected.length} companies selected`}
+      </p>
+      {helperText && <p className="text-[10px] text-muted-foreground/80 italic">{helperText}</p>}
+      {options.length === 0 ? (
+        <p className="text-[11px] text-muted-foreground italic">
+          {emptyText || (language === "th" ? "ไม่มีบริษัทให้เลือก" : "No companies available")}
+        </p>
+      ) : (
+        <div className="flex flex-wrap gap-1.5">
+          {options.map((company) => {
+            const guid = company.guidfixed || "";
+            if (!guid) return null;
+            const checked = selected.includes(guid);
+            return (
+              <label
+                key={guid}
+                className={cn(
+                  "flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+                  checked
+                    ? "border-primary/40 bg-primary/10 text-primary"
+                    : "border-border/50 bg-secondary/10 text-foreground/80 hover:border-primary/30"
+                )}
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => toggle(guid)}
+                  className="size-3.5 shrink-0 accent-primary"
+                />
+                {companyDisplayName(company, language)}
+              </label>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function WarehouseTreeView({
   auth,
@@ -227,10 +317,12 @@ export function WarehouseTreeView({
   // Search filter
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Edit / Form state on the right pane
+  // Edit / Form state on the right pane. Default to "createwarehouse" (not "editwarehouse") so a
+  // fresh tenant with zero warehouses shows a working Add form; the useEffect above switches this
+  // to "editwarehouse" once a warehouse record actually exists to select.
   const [formType, setFormType] = useState<
     "createwarehouse" | "editwarehouse" | "createlocation" | "editlocation" | "createshelf" | "editshelf" | "bulkshelf" | null
-  >("editwarehouse");
+  >("createwarehouse");
 
   // Local state for the inline form fields
   const [formFields, setFormFields] = useState<{
@@ -245,6 +337,7 @@ export function WarehouseTreeView({
     latitude: string;
     longitude: string;
     companyguids?: string[];
+    locationCompanyGuids?: string[];
     // Bulk parameters
     bulkPrefix?: string;
     bulkStartNum?: string;
@@ -263,6 +356,14 @@ export function WarehouseTreeView({
     latitude: "",
     longitude: "",
     companyguids: [],
+    // Bulk-shelf fields default to strings (not undefined) from mount, matching what the
+    // bulkshelf useEffect below sets — an Input with value={undefined} on first render then a
+    // defined string later trips React's uncontrolled-to-controlled-input warning.
+    bulkPrefix: "",
+    bulkStartNum: "",
+    bulkEndNum: "",
+    bulkPadding: "",
+    bulkNamePattern: "",
   });
 
   const [formError, setFormError] = useState("");
@@ -289,6 +390,12 @@ export function WarehouseTreeView({
         latitude: "",
         longitude: "",
         companyguids: [],
+        locationCompanyGuids: [],
+        bulkPrefix: "",
+        bulkStartNum: "",
+        bulkEndNum: "",
+        bulkPadding: "",
+        bulkNamePattern: "",
       });
       return;
     }
@@ -324,6 +431,12 @@ export function WarehouseTreeView({
         latitude: warehouse?.latitude !== undefined && warehouse?.latitude !== 0 ? String(warehouse.latitude) : "",
         longitude: warehouse?.longitude !== undefined && warehouse?.longitude !== 0 ? String(warehouse.longitude) : "",
         companyguids: (warehouse as any)?.companyguids || [],
+        locationCompanyGuids: [],
+        bulkPrefix: "",
+        bulkStartNum: "",
+        bulkEndNum: "",
+        bulkPadding: "",
+        bulkNamePattern: "",
       });
     } else if (formType === "editlocation" && selectedNode.type === "location") {
       const loc = selectedNode.data as WarehouseLocation;
@@ -349,6 +462,12 @@ export function WarehouseTreeView({
         suitableproducttypes: loc.suitableproducttypes || "",
         latitude: "",
         longitude: "",
+        locationCompanyGuids: loc.companyguids || [],
+        bulkPrefix: "",
+        bulkStartNum: "",
+        bulkEndNum: "",
+        bulkPadding: "",
+        bulkNamePattern: "",
       });
     } else if (formType === "createlocation") {
       const namesMap: Record<string, string> = {};
@@ -366,6 +485,12 @@ export function WarehouseTreeView({
         suitableproducttypes: "",
         latitude: "",
         longitude: "",
+        locationCompanyGuids: [],
+        bulkPrefix: "",
+        bulkStartNum: "",
+        bulkEndNum: "",
+        bulkPadding: "",
+        bulkNamePattern: "",
       });
     } else if (formType === "editshelf" && selectedNode.type === "shelf") {
       const shelf = selectedNode.data as WarehouseShelf;
@@ -380,6 +505,11 @@ export function WarehouseTreeView({
         suitableproducttypes: shelf.suitableproducttypes || "",
         latitude: "",
         longitude: "",
+        bulkPrefix: "",
+        bulkStartNum: "",
+        bulkEndNum: "",
+        bulkPadding: "",
+        bulkNamePattern: "",
       });
     } else if (formType === "createshelf") {
       setFormFields({
@@ -393,6 +523,11 @@ export function WarehouseTreeView({
         suitableproducttypes: "",
         latitude: "",
         longitude: "",
+        bulkPrefix: "",
+        bulkStartNum: "",
+        bulkEndNum: "",
+        bulkPadding: "",
+        bulkNamePattern: "",
       });
     } else if (formType === "bulkshelf") {
       setFormFields({
@@ -537,9 +672,12 @@ export function WarehouseTreeView({
           companyguids: formFields.companyguids || [],
         };
 
+        // /warehouse lives on mainapi, not the goapi base in auth.backendUrl (same class of bug
+        // fixed earlier for organization/company).
+        const warehouseMainApiUrl = deriveMainApiUrl(auth?.backendUrl ?? "");
         const url = isCreate
-          ? `${auth?.backendUrl}/warehouse`
-          : `${auth?.backendUrl}/warehouse/${warehouse.guidfixed || ""}`;
+          ? `${warehouseMainApiUrl}/warehouse`
+          : `${warehouseMainApiUrl}/warehouse/${warehouse.guidfixed || ""}`;
 
         const response = await fetch(
           url,
@@ -598,6 +736,8 @@ export function WarehouseTreeView({
       const h = parseFloat(formFields.height) || 0;
       const suitable = formFields.suitableproducttypes.trim();
 
+      const locationCompanyGuids = formFields.locationCompanyGuids || [];
+
       const updated = [...locationsList];
       if (formType === "createlocation") {
         updated.push({
@@ -609,6 +749,7 @@ export function WarehouseTreeView({
           length: l,
           height: h,
           suitableproducttypes: suitable,
+          companyguids: locationCompanyGuids,
         });
       } else if (formType === "editlocation" && selectedNode?.locIndex !== undefined) {
         updated[selectedNode.locIndex] = {
@@ -620,6 +761,7 @@ export function WarehouseTreeView({
           length: l,
           height: h,
           suitableproducttypes: suitable,
+          companyguids: locationCompanyGuids,
         };
       }
 
@@ -822,7 +964,7 @@ export function WarehouseTreeView({
     setFormError("");
     try {
       const response = await fetch(
-        `${auth?.backendUrl}/warehouse/${encodeURIComponent(warehouseId)}`,
+        `${deriveMainApiUrl(auth?.backendUrl ?? "")}/warehouse/${encodeURIComponent(warehouseId)}`,
         {
           method: "DELETE",
           headers: {
@@ -1566,6 +1708,18 @@ export function WarehouseTreeView({
                       ))}
                     </div>
                   </div>
+
+                  <div className="border-t border-border/30 pt-3 flex flex-col gap-1.5">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+                      {language === "th" ? "บริษัทที่ใช้คลังนี้ได้" : "Companies allowed to use this warehouse"}
+                    </span>
+                    <CompanyScopePicker
+                      options={companiesList}
+                      selected={formFields.companyguids || []}
+                      onChange={(next) => setFormFields((prev) => ({ ...prev, companyguids: next }))}
+                      language={language}
+                    />
+                  </div>
                 </div>
               )}
 
@@ -1622,6 +1776,42 @@ export function WarehouseTreeView({
                         </div>
                       ))}
                     </div>
+                  </div>
+
+                  <div className="border-t border-border/30 pt-3 flex flex-col gap-1.5">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+                      {language === "th" ? "บริษัทที่ใช้โซนนี้ได้" : "Companies allowed to use this zone"}
+                    </span>
+                    {(() => {
+                      const parentWarehouse = records.find((r) => r.guidfixed === selectedNode?.warehouseId) || records[0];
+                      const warehouseGuids: string[] = (parentWarehouse as any)?.companyguids || [];
+                      const restricted = warehouseGuids.length > 0;
+                      const pickerOptions = restricted
+                        ? companiesList.filter((c) => c.guidfixed && warehouseGuids.includes(c.guidfixed))
+                        : companiesList;
+                      return (
+                        <CompanyScopePicker
+                          options={pickerOptions}
+                          selected={formFields.locationCompanyGuids || []}
+                          onChange={(next) => setFormFields((prev) => ({ ...prev, locationCompanyGuids: next }))}
+                          language={language}
+                          helperText={
+                            restricted
+                              ? language === "th"
+                                ? "แสดงเฉพาะบริษัทที่คลังนี้อนุญาต"
+                                : "Showing only companies this warehouse allows"
+                              : undefined
+                          }
+                          emptyText={
+                            restricted
+                              ? language === "th"
+                                ? "คลังนี้ยังไม่ได้อนุญาตบริษัทใด"
+                                : "This warehouse has no allowed companies"
+                              : undefined
+                          }
+                        />
+                      );
+                    })()}
                   </div>
                 </div>
               )}

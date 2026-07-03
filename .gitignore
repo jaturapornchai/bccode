@@ -54,3 +54,6 @@ backend/internal/**/logs/
 *.log
 /page-*.png
 /*-check.png
+
+# Throwaway local test scratch (may contain live bearer/refresh tokens — never commit)
+/scratch/

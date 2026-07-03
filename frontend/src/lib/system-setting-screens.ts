@@ -1164,7 +1164,14 @@ function productMasterConfigs(): SystemSettingConfig[] {
       },
       fields: [
         namesField("names", "ชื่อหมวดสินค้า", "Product category names"),
-        jsonField("codelist", "รายการสินค้า", "Product list"),
+        {
+          ...stringListField("codelist", "รายการสินค้า", "Product list"),
+          placeholder: "รหัสสินค้า1, รหัสสินค้า2",
+          helper: {
+            th: "พิมพ์รหัสสินค้าที่จะแสดงในหมวดนี้ คั่นด้วยลูกน้ำ",
+            en: "Type the product codes to show in this category, separated by commas.",
+          },
+        },
       ],
     },
     {

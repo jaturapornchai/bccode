@@ -238,6 +238,12 @@ func (svc ProductHttpService) Update(holdingCode string, code string, authUserna
 	docData := findDoc
 	docData.ProductData = doc.ProductData
 	docData.Code = doc.Code
+	// ProductData embeds HoldingCodeentity + DocIdentity, so the assignment above replaces
+	// holdingcode/guidfixed with whatever the request body carried (often empty) — which detaches
+	// the product from its tenant and breaks every holdingcode-scoped read. Identity always comes
+	// from the stored doc, never the request.
+	docData.HoldingCode = findDoc.HoldingCode
+	docData.GuidFixed = findDoc.GuidFixed
 	if err := barcodeModel.ValidateProductClassification(docData.ItemType, docData.MaterialType); err != nil {
 		return models.ProductDoc{}, err
 	}

@@ -229,6 +229,23 @@ func (svc BOMHttpService) SaveRecipeBOM(holdingCode string, authUsername string,
 		return "", err
 	}
 
+	outputQty := req.OutputQty
+	if outputQty <= 0 {
+		outputQty = 1
+	}
+
+	costMode := strings.ToLower(strings.TrimSpace(req.CostMode))
+	if costMode != "standard" {
+		costMode = "current"
+	}
+	scrapPercent := req.ScrapPercent
+	if scrapPercent < 0 {
+		scrapPercent = 0
+	}
+	if scrapPercent > 99 {
+		return "", fmt.Errorf("scrap percent must be less than 100 (got %v)", scrapPercent)
+	}
+
 	root := models.ProductBarcodeBOMView{}
 	root.BarcodeGuidFixed = guid
 	root.Barcode = recipeCode
@@ -239,9 +256,15 @@ func (svc BOMHttpService) SaveRecipeBOM(holdingCode string, authUsername string,
 	root.Condition = true
 	root.DivideValue = 1
 	root.StandValue = 1
-	root.Qty = 1
+	root.Qty = outputQty
 	root.Price = req.Price
 	root.BOM = &activeBOM
+	root.CostMode = costMode
+	root.StandardCost = req.StandardCost
+	root.LaborCost = req.LaborCost
+	root.OverheadCost = req.OverheadCost
+	root.ScrapPercent = scrapPercent
+	root.FinishedGoodBarcode = strings.TrimSpace(req.FinishedGoodBarcode)
 	root.EmptyOnNil()
 
 	now := time.Now()
@@ -406,6 +429,11 @@ func (svc BOMHttpService) prepareRecipeBOMItems(
 		if refType == "recipe" && barcode == recipeCode {
 			return nil, fmt.Errorf("recipe %s cannot reference itself", recipeCode)
 		}
+		if refType == "recipe" {
+			if err := svc.checkNoCycle(ctx, holdingCode, barcode, recipeCode, map[string]bool{recipeCode: true}, 0); err != nil {
+				return nil, err
+			}
+		}
 
 		normalized := normalizeRecipeBOMRequestItem(reqItem)
 		var item models.ProductBarcodeBOMView
@@ -419,14 +447,17 @@ func (svc BOMHttpService) prepareRecipeBOMItems(
 			if recipeDoc.GuidFixed == "" {
 				return nil, fmt.Errorf("recipe %s not found", barcode)
 			}
-			item = recipeDoc.ProductBarcodeBOMView
+			// Lean reference only — the sub-recipe's own ingredient list is resolved LIVE on
+			// every read (see resolveRecipeTree/InfoBOM), never copied/snapshotted here.
+			item = models.ProductBarcodeBOMView{}
 			item.BarcodeGuidFixed = recipeDoc.GuidFixed
 			item.RefType = "recipe"
 			item.Barcode = barcode
-			if item.BOM == nil {
-				empty := []models.ProductBarcodeBOMView{}
-				item.BOM = &empty
-			}
+			item.Names = recipeDoc.Names
+			item.ItemUnitCode = recipeDoc.ItemUnitCode
+			item.ItemUnitNames = recipeDoc.ItemUnitNames
+			empty := []models.ProductBarcodeBOMView{}
+			item.BOM = &empty
 		case "product":
 			productDoc, err := svc.productRepo.FindByBarcode(ctx, holdingCode, barcode)
 			if err != nil {
@@ -464,6 +495,104 @@ func (svc BOMHttpService) prepareRecipeBOMItems(
 		items = append(items, item)
 	}
 	return items, nil
+}
+
+const maxRecipeResolveDepth = 15
+
+// checkNoCycle verifies childBarcode's own recipe chain does not loop back to rootBarcode
+// (the recipe currently being saved) or to anything already in ancestors — walking through
+// ITS current live bom recursively. Call with ancestors={rootBarcode: true}, depth=0.
+func (svc BOMHttpService) checkNoCycle(ctx context.Context, holdingCode, childBarcode, rootBarcode string, ancestors map[string]bool, depth int) error {
+	if depth > maxRecipeResolveDepth {
+		return fmt.Errorf("recipe nesting exceeds max depth (%d) while checking %s — likely a circular reference", maxRecipeResolveDepth, rootBarcode)
+	}
+	if ancestors[childBarcode] {
+		return fmt.Errorf("recipe %s cannot be added: it would create a circular reference back to %s", childBarcode, rootBarcode)
+	}
+	childDoc, err := svc.repo.FindUseBOMByBarcode(ctx, holdingCode, childBarcode)
+	if err != nil || childDoc.GuidFixed == "" || childDoc.BOM == nil {
+		return nil
+	}
+	nextAncestors := make(map[string]bool, len(ancestors)+1)
+	for k, v := range ancestors {
+		nextAncestors[k] = v
+	}
+	nextAncestors[childBarcode] = true
+	for _, grandchild := range *childDoc.BOM {
+		if grandchild.RefType != "recipe" {
+			continue
+		}
+		if err := svc.checkNoCycle(ctx, holdingCode, grandchild.Barcode, rootBarcode, nextAncestors, depth+1); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// resolveRecipeTree replaces any reftype=="recipe" item's BOM with the LIVE current content of
+// that sub-recipe (resolved recursively), so editing a shared sub-recipe is reflected in every
+// parent without resaving them. visitedPath tracks barcodes on the CURRENT resolution path only
+// (not global) — diamond dependencies (A->B, A->C, B->D, C->D) are fine, only A->B->A loops.
+// A missing/deleted sub-recipe does not fail the whole read — it just resolves to an empty BOM.
+func (svc BOMHttpService) resolveRecipeTree(ctx context.Context, holdingCode string, items []models.ProductBarcodeBOMView, visitedPath map[string]bool, depth int) ([]models.ProductBarcodeBOMView, error) {
+	if depth > maxRecipeResolveDepth {
+		return nil, fmt.Errorf("recipe nesting exceeds max depth (%d) — likely a circular reference", maxRecipeResolveDepth)
+	}
+	resolved := make([]models.ProductBarcodeBOMView, 0, len(items))
+	for _, item := range items {
+		if item.RefType != "recipe" {
+			resolved = append(resolved, item)
+			continue
+		}
+		if visitedPath[item.Barcode] {
+			return nil, fmt.Errorf("circular recipe reference detected at %s", item.Barcode)
+		}
+		subDoc, err := svc.repo.FindUseBOMByBarcode(ctx, holdingCode, item.Barcode)
+		if err != nil || subDoc.GuidFixed == "" {
+			empty := []models.ProductBarcodeBOMView{}
+			item.BOM = &empty
+			item.SubRecipeOutputQty = 0
+			resolved = append(resolved, item)
+			continue
+		}
+		childItems := []models.ProductBarcodeBOMView{}
+		if subDoc.BOM != nil {
+			childItems = *subDoc.BOM
+		}
+		nextVisited := make(map[string]bool, len(visitedPath)+1)
+		for k, v := range visitedPath {
+			nextVisited[k] = v
+		}
+		nextVisited[item.Barcode] = true
+		resolvedChildren, err := svc.resolveRecipeTree(ctx, holdingCode, childItems, nextVisited, depth+1)
+		if err != nil {
+			return nil, err
+		}
+		item.Names = subDoc.Names
+		item.ItemUnitCode = subDoc.ItemUnitCode
+		item.ItemUnitNames = subDoc.ItemUnitNames
+		item.BOM = &resolvedChildren
+		// SubRecipeOutputQty = the sub-recipe's OWN batch yield (its root Qty, e.g. "10" for a
+		// recipe that produces 10 units per batch) — needed by the frontend to normalize cost
+		// per unit instead of attributing the WHOLE batch's cost to one usage. Defaults to 1.
+		if subDoc.Qty > 0 {
+			item.SubRecipeOutputQty = subDoc.Qty
+		} else {
+			item.SubRecipeOutputQty = 1
+		}
+		// Propagate the sub-recipe's OWN costing fields so a parent that includes it as an
+		// ingredient can compute its effective unit cost the same way the sub-recipe's own screen
+		// would (labor/overhead/scrap folded in, or its frozen standard cost used directly) —
+		// without this, a sub-recipe's labor/overhead/scrap/standard-cost silently vanished when
+		// resolved as a parent's ingredient (found in adversarial review).
+		item.CostMode = subDoc.CostMode
+		item.StandardCost = subDoc.StandardCost
+		item.LaborCost = subDoc.LaborCost
+		item.OverheadCost = subDoc.OverheadCost
+		item.ScrapPercent = subDoc.ScrapPercent
+		resolved = append(resolved, item)
+	}
+	return resolved, nil
 }
 
 func isAllowedRecipeComponentMaterialType(materialType int8) bool {
@@ -626,7 +755,33 @@ func (svc BOMHttpService) InfoBOM(holdingCode string, guid string) (models.Produ
 		return models.ProductBarcodeBOMViewInfo{}, errors.New("document not found")
 	}
 
-	return findDoc.ProductBarcodeBOMViewInfo, nil
+	info := findDoc.ProductBarcodeBOMViewInfo
+	if info.BOM != nil {
+		resolved, err := svc.resolveRecipeTree(ctx, holdingCode, *info.BOM, map[string]bool{info.Barcode: true}, 0)
+		if err != nil {
+			return models.ProductBarcodeBOMViewInfo{}, err
+		}
+		info.BOM = &resolved
+	}
+	// Also resolve every historical version in BOMs[] the same way, so switching versions in the
+	// UI shows live sub-recipe content too, not stale saved snapshots.
+	if info.BOMs != nil {
+		resolvedVersions := make([]models.ProductBarcodeBOMVersion, len(*info.BOMs))
+		for i, ver := range *info.BOMs {
+			resolvedVersions[i] = ver
+			if ver.BOM == nil {
+				continue
+			}
+			resolvedBOM, err := svc.resolveRecipeTree(ctx, holdingCode, *ver.BOM, map[string]bool{info.Barcode: true}, 0)
+			if err != nil {
+				return models.ProductBarcodeBOMViewInfo{}, err
+			}
+			resolvedVersions[i].BOM = &resolvedBOM
+		}
+		info.BOMs = &resolvedVersions
+	}
+
+	return info, nil
 
 }
 

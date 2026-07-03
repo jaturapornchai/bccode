@@ -44,6 +44,17 @@ interface BOMItemInput {
   averagecost: number;
   materialtype?: number;
   bom?: BOMItemInput[];
+  // Only meaningful when reftype=="recipe" (a sub-recipe used as an ingredient): its OWN costing
+  // fields, propagated live from the backend's resolveRecipeTree so a sub-recipe's labor/overhead/
+  // scrap/standard-cost composes correctly into whatever parent recipe references it, instead of
+  // silently vanishing (the parent must cost the sub-recipe the same way the sub-recipe's own
+  // screen would).
+  subrecipeoutputqty?: number;
+  costmode?: "current" | "standard";
+  standardcost?: number;
+  laborcost?: number;
+  overheadcost?: number;
+  scrappercent?: number;
 }
 
 interface BOMVersion {
@@ -64,9 +75,38 @@ interface ProductBOMRecord {
   price?: number;
   prices?: { price: number }[];
   materialtype?: number;
+  qty?: number;
   bom?: BOMItemInput[];
   boms?: BOMVersion[];
   unitOptions?: ProductUnitOption[];
+  // Root-level costing fields (only meaningful on the recipe root, not ingredient lines).
+  costmode?: "current" | "standard";
+  standardcost?: number;
+  laborcost?: number;
+  overheadcost?: number;
+  scrappercent?: number;
+  finishedgoodbarcode?: string;
+}
+
+// Shared CostMode-aware unit-cost formula: a frozen standard cost when configured, otherwise the
+// live rollup + labor + overhead, divided by output qty, divided by (1 - scrap%). Used for BOTH the
+// recipe root (costPerOutputUnitEffective) and any nested sub-recipe ingredient (componentUnitCost)
+// so a sub-recipe's own labor/overhead/scrap/standard-cost composes correctly into whatever parent
+// recipe references it, instead of only the raw ingredient rollup being visible one level up.
+function effectiveUnitCost(params: {
+  costMode?: string;
+  standardCost?: number;
+  rollupCost: number;
+  laborCost?: number;
+  overheadCost?: number;
+  outputQty?: number;
+  scrapPercent?: number;
+}): number {
+  const { costMode, standardCost = 0, rollupCost, laborCost = 0, overheadCost = 0, outputQty, scrapPercent = 0 } = params;
+  if (costMode === "standard" && standardCost > 0) return standardCost;
+  const batchQty = outputQty && outputQty > 0 ? outputQty : 1;
+  const scrapDivisor = scrapPercent > 0 && scrapPercent < 100 ? 1 - scrapPercent / 100 : 1;
+  return (rollupCost + laborCost + overheadCost) / batchQty / scrapDivisor;
 }
 
 interface ProductBomEditorProps {
@@ -112,6 +152,20 @@ export function ProductBomEditor({
   const [parentUnitCode, setParentUnitCode] = useState("RECIPE");
   const [parentUnitNames, setParentUnitNames] = useState<LocalizedName[]>([{ code: "th", name: "สูตร" }]);
   const [parentPrice, setParentPrice] = useState(0);
+  const [outputQty, setOutputQty] = useState(1);
+  const [deleting, setDeleting] = useState(false);
+
+  // Costing fields — see BOMProductBarcode (backend) for semantics.
+  const [costMode, setCostMode] = useState<"current" | "standard">("current");
+  const [standardCost, setStandardCost] = useState(0);
+  const [laborCost, setLaborCost] = useState(0);
+  const [overheadCost, setOverheadCost] = useState(0);
+  const [scrapPercent, setScrapPercent] = useState(0);
+  const [finishedGoodBarcode, setFinishedGoodBarcode] = useState("");
+  const [finishedGoodName, setFinishedGoodName] = useState("");
+  const [finishedGoodPickerOpen, setFinishedGoodPickerOpen] = useState(false);
+  // Sale-quantity calculator (inside the Exploded BOM modal), default = outputqty.
+  const [saleQty, setSaleQty] = useState(1);
   const [ingredientProduct, setIngredientProduct] = useState<any | null>(null);
   const [ingredientUnitOpen, setIngredientUnitOpen] = useState(false);
   const [recipePickerOpen, setRecipePickerOpen] = useState(false);
@@ -215,6 +269,12 @@ export function ProductBomEditor({
         averagecost: item.averagecost ?? item.unitcost ?? 0,
         materialtype: item.materialtype ?? 0,
         bom: item.bom ? mapItems(item.bom) : [],
+        subrecipeoutputqty: typeof item.subrecipeoutputqty === "number" ? item.subrecipeoutputqty : undefined,
+        costmode: item.costmode === "standard" ? "standard" : "current",
+        standardcost: typeof item.standardcost === "number" ? item.standardcost : undefined,
+        laborcost: typeof item.laborcost === "number" ? item.laborcost : undefined,
+        overheadcost: typeof item.overheadcost === "number" ? item.overheadcost : undefined,
+        scrappercent: typeof item.scrappercent === "number" ? item.scrappercent : undefined,
       }));
 
     if (!selectedRecord) {
@@ -249,6 +309,17 @@ export function ProductBomEditor({
       setParentUnitCode(record.itemunitcode || "RECIPE");
       setParentUnitNames(record.itemunitnames || [{ code: "th", name: "สูตร" }]);
       setParentPrice(record.price ?? record.prices?.[0]?.price ?? 0);
+      // Recipe root's qty carries the batch output quantity (how many units one batch produces).
+      const recordOutputQty = record.qty && record.qty > 0 ? record.qty : 1;
+      setOutputQty(recordOutputQty);
+      setCostMode(record.costmode === "standard" ? "standard" : "current");
+      setStandardCost(record.standardcost ?? 0);
+      setLaborCost(record.laborcost ?? 0);
+      setOverheadCost(record.overheadcost ?? 0);
+      setScrapPercent(record.scrappercent ?? 0);
+      setFinishedGoodBarcode(record.finishedgoodbarcode ?? "");
+      setFinishedGoodName("");
+      setSaleQty(recordOutputQty);
       setBomVersions(versions);
       setSelectedVersionIdx(0);
       setBomItems(versions[0]?.bom || []);
@@ -309,22 +380,36 @@ export function ProductBomEditor({
     setDraggedIndex(null);
   };
 
+  const hasNestedBOM = (item: BOMItemInput) => Boolean(item.bom && item.bom.length > 0);
+  const isRecipeComponent = (item: BOMItemInput) => item.reftype === "recipe" || hasNestedBOM(item);
+
+  // A nested sub-recipe's per-unit cost uses the SAME costmode-aware formula as the recipe root
+  // (effectiveUnitCost) — its own labor/overhead/scrap/standard-cost, propagated live from the
+  // backend, must compose into the parent's rollup the same way they'd show on the sub-recipe's
+  // own screen, not just the raw ingredient sum spread over output qty.
+  const componentUnitCost = (item: BOMItemInput): number => {
+    if (!hasNestedBOM(item)) return item.averagecost || 0;
+    return effectiveUnitCost({
+      costMode: item.costmode,
+      standardCost: item.standardcost,
+      rollupCost: calculateTotalCost(item.bom || []),
+      laborCost: item.laborcost,
+      overheadCost: item.overheadcost,
+      outputQty: item.subrecipeoutputqty,
+      scrapPercent: item.scrappercent,
+    });
+  };
+
   // Calculate costs recursively
   const calculateTotalCost = (items: BOMItemInput[]): number => {
     return items.reduce((sum, item) => {
       const qty = item.qty || 0;
       const yieldPct = item.yieldpercent || 100;
-      const unitCost =
-        item.bom && item.bom.length > 0 ? calculateTotalCost(item.bom) : item.averagecost || 0;
+      const unitCost = componentUnitCost(item);
       const divisor = yieldPct > 0 ? yieldPct / 100 : 1;
       return sum + (qty / divisor) * unitCost;
     }, 0);
   };
-
-  const hasNestedBOM = (item: BOMItemInput) => Boolean(item.bom && item.bom.length > 0);
-  const isRecipeComponent = (item: BOMItemInput) => item.reftype === "recipe" || hasNestedBOM(item);
-  const componentUnitCost = (item: BOMItemInput) =>
-    hasNestedBOM(item) ? calculateTotalCost(item.bom || []) : item.averagecost || 0;
 
   const rollupCost = useMemo(() => calculateTotalCost(bomItems), [bomItems]);
 
@@ -333,10 +418,35 @@ export function ProductBomEditor({
     return parentPrice;
   }, [selectedRecord, parentPrice]);
 
+  // Scrap % inflates cost per GOOD unit: producing N good units after S% scrap loss requires
+  // N/(1-S/100) worth of gross production. Clamped to <100 by the input/backend (never divide by 0).
+  const scrapDivisor = scrapPercent > 0 && scrapPercent < 100 ? 1 - scrapPercent / 100 : 1;
+
+  // CostMode-aware total cost per output unit (section 2 of the spec) — same formula as
+  // componentUnitCost uses for a nested sub-recipe, via the shared effectiveUnitCost helper:
+  // - "standard" with a configured StandardCost -> use it directly, no ingredient rollup.
+  // - otherwise ("current", or "standard" with StandardCost not yet set) -> live rollup +
+  //   labor + overhead, divided by outputqty, divided by (1 - scrap%).
+  const costPerOutputUnitEffective = useMemo(
+    () => effectiveUnitCost({ costMode, standardCost, rollupCost, laborCost, overheadCost, outputQty, scrapPercent }),
+    [costMode, standardCost, rollupCost, laborCost, overheadCost, outputQty, scrapPercent],
+  );
+
+  const isStandardCostActive = costMode === "standard" && standardCost > 0;
+
+  // Scale factor for the sale-quantity calculator: scaleFactor = enteredQty / (outputqty / (1 -
+  // scrap%)) — i.e. scale relative to how many GOOD units one GROSS batch actually yields after
+  // scrap, not just the nominal outputqty.
+  const saleScaleFactor = useMemo(() => {
+    const batchQty = outputQty > 0 ? outputQty : 1;
+    const grossBatchQty = batchQty / scrapDivisor;
+    return grossBatchQty > 0 ? saleQty / grossBatchQty : 0;
+  }, [saleQty, outputQty, scrapDivisor]);
+
   const profitMarginPercent = useMemo(() => {
     if (salePrice <= 0) return 0;
-    return ((salePrice - rollupCost) / salePrice) * 100;
-  }, [salePrice, rollupCost]);
+    return ((salePrice - costPerOutputUnitEffective) / salePrice) * 100;
+  }, [salePrice, costPerOutputUnitEffective]);
 
   // Safe names selection helper
   const productName = useMemo(() => {
@@ -456,6 +566,7 @@ export function ProductBomEditor({
       return;
     }
 
+    const subRecipeOutputQty = recipe.qty && recipe.qty > 0 ? recipe.qty : 1;
     const newItem: BOMItemInput = {
       barcodeguidfixed: recipe.guidfixed,
       barcode: recipeCode,
@@ -465,9 +576,10 @@ export function ProductBomEditor({
       itemunitnames: recipe.itemunitnames || [{ code: "th", name: "สูตร" }],
       qty: 1,
       yieldpercent: 100,
-      averagecost: calculateTotalCost(recipe.bom || []),
+      averagecost: calculateTotalCost(recipe.bom || []) / subRecipeOutputQty,
       materialtype: recipe.materialtype ?? 0,
       bom: recipe.bom || [],
+      subrecipeoutputqty: subRecipeOutputQty,
     };
     updateCurrentVersionBOM([...bomItems, newItem]);
     setRecipePickerOpen(false);
@@ -596,9 +708,16 @@ export function ProductBomEditor({
         itemunitcode: parentUnitCode.trim() || "RECIPE",
         itemunitnames: parentUnitNames,
         price: parentPrice,
+        outputqty: outputQty > 0 ? outputQty : 1,
         bom: activeBOM,
         boms: payloadBOMs,
         holdingcode: workspace.shop.holdingcode,
+        costmode: costMode,
+        standardcost: standardCost,
+        laborcost: laborCost,
+        overheadcost: overheadCost,
+        scrappercent: scrapPercent,
+        finishedgoodbarcode: finishedGoodBarcode,
       };
 
       const saveResponse = await fetch(
@@ -647,6 +766,64 @@ export function ProductBomEditor({
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Delete the whole recipe (backend DELETE /product/bom/:id was live but had no UI entry point).
+  const handleDeleteRecipe = async () => {
+    if (!selectedRecord) return;
+
+    const isVirtual = selectedRecord.guidfixed.startsWith("virtual-");
+    const confirmed = await confirm({
+      title: language === "th" ? "ยืนยันการลบสูตรผลิต" : "Confirm Delete Recipe",
+      description:
+        language === "th"
+          ? `ต้องการลบสูตร "${productName}" ทั้งสูตรใช่หรือไม่? สูตรอื่นที่อ้างสูตรนี้เป็นสูตรย่อยจะไม่ถูกแก้ให้อัตโนมัติ`
+          : `Delete the entire recipe "${productName}"? Other recipes referencing it as a sub-recipe are not updated automatically.`,
+      confirmLabel: language === "th" ? "ลบสูตร" : "Delete",
+      cancelLabel: language === "th" ? "ยกเลิก" : "Cancel",
+    });
+    if (!confirmed) return;
+
+    // A virtual (not-yet-saved) recipe only exists in local state.
+    if (isVirtual) {
+      setRecords?.((prev) => prev.filter((r) => r.guidfixed !== selectedRecord.guidfixed));
+      onClose();
+      return;
+    }
+
+    if (!auth || !workspace) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(
+        `/api/system-settings/productbom/${encodeURIComponent(selectedRecord.guidfixed)}?holdingcode=${encodeURIComponent(workspace.shop.holdingcode)}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${auth.token}`,
+            "x-bc-backend-url": auth.backendUrl || "",
+          },
+          body: JSON.stringify({
+            guidfixed: selectedRecord.guidfixed,
+            holdingcode: workspace.shop.holdingcode,
+            backendUrl: auth.backendUrl,
+          }),
+        },
+      );
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.message || "Failed to delete recipe");
+      onRefresh();
+      onClose();
+    } catch (error: unknown) {
+      confirm({
+        title: language === "th" ? "เกิดข้อผิดพลาด" : "Error Occurred",
+        description: error instanceof Error ? error.message : "Request failed",
+        confirmLabel: language === "th" ? "ปิด" : "Close",
+        cancelLabel: "",
+      });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -707,16 +884,20 @@ export function ProductBomEditor({
   };
 
   // Render tree node inside dialog recursively (exploded structure view)
-  const renderExplodedTreeNode = (item: BOMItemInput, path: string, level = 0) => {
+  const renderExplodedTreeNode = (item: BOMItemInput, path: string, level = 0, scale = 1) => {
     const hasChildren = hasNestedBOM(item);
     const isSub = isRecipeComponent(item);
     const itemCost = componentUnitCost(item);
     const yieldPct = item.yieldpercent || 100;
     const divisor = yieldPct > 0 ? yieldPct / 100 : 1;
-    const rowCost = (item.qty / divisor) * itemCost;
+    const scaledQty = item.qty * scale;
+    const rowCost = (scaledQty / divisor) * itemCost;
     const name = pickName(item.names, language) || item.barcode;
     const unit = pickName(item.itemunitnames, language) || item.itemunitcode;
-    const share = rollupCost > 0 ? (rowCost / rollupCost) * 100 : 0;
+    // Share of rollup stays scale-invariant (both num/denom scale by the same factor), so compare
+    // against the unscaled per-batch rowCost for the % column.
+    const unscaledRowCost = (item.qty / divisor) * itemCost;
+    const share = rollupCost > 0 ? (unscaledRowCost / rollupCost) * 100 : 0;
 
     return (
       <div key={path} className="flex flex-col">
@@ -747,7 +928,7 @@ export function ProductBomEditor({
 
           <div className="flex items-center gap-6 shrink-0 font-semibold font-mono text-right">
             <span className="text-muted-foreground w-28">
-              {item.qty} {unit}
+              {scaledQty.toFixed(4).replace(/\.?0+$/, "") || "0"} {unit}
               {yieldPct < 100 && ` (${language === "th" ? "สูญเสีย" : "Yield"} ${yieldPct}%)`}
             </span>
             <span className="text-foreground w-24">฿{itemCost.toFixed(2)}</span>
@@ -756,7 +937,7 @@ export function ProductBomEditor({
           </div>
         </div>
 
-        {hasChildren && item.bom?.map((child, i) => renderExplodedTreeNode(child, `${path}-${i}`, level + 1))}
+        {hasChildren && item.bom?.map((child, i) => renderExplodedTreeNode(child, `${path}-${i}`, level + 1, scale))}
       </div>
     );
   };
@@ -809,6 +990,17 @@ export function ProductBomEditor({
               type="button"
               variant="outline"
               size="sm"
+              onClick={handleDeleteRecipe}
+              disabled={saving || deleting}
+              className="h-8.5 rounded-lg border-destructive/30 text-destructive bg-destructive/5 hover:bg-destructive/10 text-xs transition-all"
+            >
+              {deleting ? <Loader2 className="size-3.5 animate-spin mr-1.5" /> : <Trash2 className="size-3.5 mr-1.5" />}
+              {language === "th" ? "ลบสูตร" : "Delete Recipe"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
               onClick={() => setDetailModalOpen(true)}
               disabled={bomItems.length === 0}
               className="h-8.5 rounded-lg border-indigo-200 text-indigo-700 bg-indigo-50/10 hover:bg-indigo-50 dark:border-indigo-900/50 dark:text-indigo-400 dark:hover:bg-indigo-950/30 text-xs transition-all"
@@ -840,7 +1032,7 @@ export function ProductBomEditor({
               {language === "th" ? "ข้อมูลสูตรผลิต" : "Recipe Master"}
             </h4>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border border-sky-100 dark:border-sky-950/40 rounded-xl bg-sky-500/5 shadow-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 p-4 border border-sky-100 dark:border-sky-950/40 rounded-xl bg-sky-500/5 shadow-sm">
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold text-sky-800 dark:text-sky-400 uppercase">
                   {language === "th" ? "รหัสสูตรผลิต *" : "Recipe Code *"}
@@ -889,7 +1081,184 @@ export function ProductBomEditor({
                 />
               </div>
 
-              <div className="md:col-span-3 border-t border-dashed border-sky-200/50 pt-3">
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-sky-800 dark:text-sky-400 uppercase">
+                  {language === "th" ? "ผลิตได้ต่อสูตร (หน่วย)" : "Output per Batch"}
+                </label>
+                <Input
+                  type="number"
+                  className="h-8.5 text-xs font-mono rounded-lg focus-visible:ring-sky-500 bg-background"
+                  placeholder="1"
+                  min="0.0001"
+                  step="any"
+                  value={outputQty || ""}
+                  onChange={(e) => {
+                    setOutputQty(Math.max(0, parseFloat(e.target.value) || 0));
+                    setUnsavedChanges(true);
+                  }}
+                />
+                <p className="text-[10px] text-muted-foreground leading-tight">
+                  {language === "th"
+                    ? "เช่น เค้ก 1 สูตรอบได้ 10 ชิ้น, น้ำซุป 1 หม้อตักได้ 50 ถ้วย"
+                    : "e.g. one cake batch yields 10 pieces, one pot yields 50 bowls"}
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-sky-800 dark:text-sky-400 uppercase">
+                  {language === "th" ? "สินค้าสำเร็จรูปที่เกี่ยวข้อง" : "Finished Good"}
+                </label>
+                {finishedGoodBarcode ? (
+                  <div className="flex items-center gap-1.5">
+                    <div className="h-8.5 flex-1 flex items-center px-2.5 rounded-lg border border-border bg-background text-xs font-mono truncate">
+                      {finishedGoodName || finishedGoodBarcode}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8.5 w-8.5 text-destructive/60 hover:text-destructive shrink-0"
+                      onClick={() => {
+                        setFinishedGoodBarcode("");
+                        setFinishedGoodName("");
+                        setUnsavedChanges(true);
+                      }}
+                    >
+                      <X className="size-3.5" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8.5 w-full text-xs rounded-lg justify-start font-normal text-muted-foreground"
+                    onClick={() => setFinishedGoodPickerOpen(true)}
+                  >
+                    {language === "th" ? "เลือกสินค้า…" : "Select product…"}
+                  </Button>
+                )}
+                <p className="text-[10px] text-muted-foreground leading-tight">
+                  {language === "th" ? "ไม่บังคับ — เชื่อมสูตรกับสินค้าที่ขายจริง" : "Optional — links this recipe to the actual sellable product"}
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-sky-800 dark:text-sky-400 uppercase">
+                  {language === "th" ? "ค่าแรงงาน (ต่อสูตร)" : "Labor Cost (per batch)"}
+                </label>
+                <Input
+                  type="number"
+                  className="h-8.5 text-xs font-mono rounded-lg focus-visible:ring-sky-500 bg-background"
+                  placeholder="0.00"
+                  min="0"
+                  step="any"
+                  value={laborCost || ""}
+                  onChange={(e) => {
+                    setLaborCost(Math.max(0, parseFloat(e.target.value) || 0));
+                    setUnsavedChanges(true);
+                  }}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-sky-800 dark:text-sky-400 uppercase">
+                  {language === "th" ? "ค่าโสหุ้ย (ต่อสูตร)" : "Overhead Cost (per batch)"}
+                </label>
+                <Input
+                  type="number"
+                  className="h-8.5 text-xs font-mono rounded-lg focus-visible:ring-sky-500 bg-background"
+                  placeholder="0.00"
+                  min="0"
+                  step="any"
+                  value={overheadCost || ""}
+                  onChange={(e) => {
+                    setOverheadCost(Math.max(0, parseFloat(e.target.value) || 0));
+                    setUnsavedChanges(true);
+                  }}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-sky-800 dark:text-sky-400 uppercase">
+                  {language === "th" ? "% ของเสีย (Scrap)" : "Scrap %"}
+                </label>
+                <Input
+                  type="number"
+                  className="h-8.5 text-xs font-mono rounded-lg focus-visible:ring-sky-500 bg-background"
+                  placeholder="0"
+                  min="0"
+                  max="99"
+                  step="any"
+                  value={scrapPercent || ""}
+                  onChange={(e) => {
+                    setScrapPercent(Math.min(99, Math.max(0, parseFloat(e.target.value) || 0)));
+                    setUnsavedChanges(true);
+                  }}
+                />
+                <p className="text-[10px] text-muted-foreground leading-tight">
+                  {language === "th" ? "ยิ่งของเสียมาก ต้นทุนต่อหน่วยดียิ่งสูงขึ้น" : "Higher scrap increases cost per good unit"}
+                </p>
+              </div>
+
+              <div className="md:col-span-2 xl:col-span-4 border-t border-dashed border-sky-200/50 pt-3 space-y-2">
+                <label className="text-[11px] font-bold text-sky-800 dark:text-sky-400 uppercase block">
+                  {language === "th" ? "โหมดต้นทุน" : "Cost Mode"}
+                </label>
+                <div className="flex flex-wrap items-start gap-3">
+                  <label className="flex items-start gap-2 p-2.5 rounded-lg border border-border bg-background cursor-pointer hover:bg-muted/30 transition-colors">
+                    <input
+                      type="radio"
+                      name="costmode"
+                      checked={costMode === "current"}
+                      onChange={() => {
+                        setCostMode("current");
+                        setUnsavedChanges(true);
+                      }}
+                      className="size-3.5 mt-0.5 accent-primary"
+                    />
+                    <span className="text-xs font-semibold">
+                      {language === "th" ? "ต้นทุนปัจจุบัน (คำนวณสด)" : "Current cost (live-calculated)"}
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-2 p-2.5 rounded-lg border border-border bg-background cursor-pointer hover:bg-muted/30 transition-colors">
+                    <input
+                      type="radio"
+                      name="costmode"
+                      checked={costMode === "standard"}
+                      onChange={() => {
+                        setCostMode("standard");
+                        setUnsavedChanges(true);
+                      }}
+                      className="size-3.5 mt-0.5 accent-primary"
+                    />
+                    <span className="text-xs font-semibold">
+                      {language === "th" ? "ต้นทุนมาตรฐาน (Standard Cost)" : "Standard Cost"}
+                    </span>
+                  </label>
+                  {costMode === "standard" && (
+                    <div className="space-y-1">
+                      <Input
+                        type="number"
+                        className="h-8.5 text-xs font-mono rounded-lg w-40 focus-visible:ring-sky-500 bg-background"
+                        placeholder="0.00"
+                        min="0"
+                        step="any"
+                        value={standardCost || ""}
+                        onChange={(e) => {
+                          setStandardCost(Math.max(0, parseFloat(e.target.value) || 0));
+                          setUnsavedChanges(true);
+                        }}
+                      />
+                      <p className="text-[10px] text-muted-foreground leading-tight max-w-[10rem]">
+                        {language === "th" ? "ราคาต้นทุนต่อหน่วยที่ตรึงไว้" : "Frozen cost per unit"}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="md:col-span-2 xl:col-span-4 border-t border-dashed border-sky-200/50 pt-3">
                 <NamesEditor
                   names={parentNames}
                   onChange={(next) => {
@@ -1129,8 +1498,29 @@ export function ProductBomEditor({
                           </div>
                         </td>
 
-                        {/* Unit Cost */}
-                        <td className="py-3 px-2 text-right font-mono align-middle select-text text-muted-foreground font-medium">฿{unitCost.toFixed(2)}</td>
+                        {/* Unit Cost — editable for material rows; sub-recipes roll up from children */}
+                        <td className="py-3 px-2 text-right font-mono align-middle select-text text-muted-foreground font-medium">
+                          {hasChildren ? (
+                            <span title={language === "th" ? "คำนวณจากส่วนประกอบของสูตรย่อย" : "Computed from sub-recipe components"}>
+                              ฿{unitCost.toFixed(2)}
+                            </span>
+                          ) : (
+                            <div className="flex items-center gap-1 justify-end">
+                              <span className="text-xs text-muted-foreground/70">฿</span>
+                              <Input
+                                type="number"
+                                className="h-8 text-right w-20 rounded-lg font-mono focus-visible:ring-indigo-500 bg-background"
+                                value={item.averagecost || ""}
+                                placeholder="0.00"
+                                onChange={(e) =>
+                                  updateItemProperty(index, "averagecost", Math.max(0, parseFloat(e.target.value) || 0))
+                                }
+                                min="0"
+                                step="any"
+                              />
+                            </div>
+                          )}
+                        </td>
 
                         {/* Total Cost */}
                         <td className="py-3 px-2 text-right font-bold font-mono align-middle select-text text-foreground">
@@ -1195,6 +1585,24 @@ export function ProductBomEditor({
           title={language === "th" ? "ค้นหาวัตถุดิบ / กึ่งสำเร็จรูป / สินค้าเกษตร" : "Search Materials / Semi-Finished / Agricultural"}
           filters={{ materialtype: RECIPE_COMPONENT_MATERIALTYPE_QUERY }}
           onSelect={handleAddIngredient}
+        />
+      )}
+
+      {/* FINISHED GOOD PICKER */}
+      {finishedGoodPickerOpen && (
+        <MasterPicker
+          open={finishedGoodPickerOpen}
+          onClose={() => setFinishedGoodPickerOpen(false)}
+          auth={auth}
+          language={language}
+          master="product"
+          title={language === "th" ? "เลือกสินค้าสำเร็จรูป" : "Select Finished Good"}
+          onSelect={(entry) => {
+            setFinishedGoodBarcode(entry.code || "");
+            setFinishedGoodName(pickName(entry.names, language) || entry.code || "");
+            setUnsavedChanges(true);
+            setFinishedGoodPickerOpen(false);
+          }}
         />
       )}
 
@@ -1281,6 +1689,27 @@ export function ProductBomEditor({
             </CardHeader>
 
             <CardContent className="p-0 flex-1 overflow-y-auto scrollbar-thin flex flex-col">
+              {/* Sale-quantity calculator: "ขายส้มตำ 10 จาน ต้องใช้วัตถุดิบอะไรบ้าง" */}
+              <div className="p-4 border-b border-border bg-emerald-500/5 flex flex-wrap items-end gap-4 shrink-0">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-emerald-800 dark:text-emerald-400 uppercase">
+                    {language === "th" ? "จำนวนที่ต้องการขาย/ผลิต" : "Quantity to sell/produce"}
+                  </label>
+                  <Input
+                    type="number"
+                    className="h-8.5 text-xs font-mono rounded-lg w-32 focus-visible:ring-emerald-500 bg-background"
+                    value={saleQty || ""}
+                    min="0"
+                    step="any"
+                    onChange={(e) => setSaleQty(Math.max(0, parseFloat(e.target.value) || 0))}
+                  />
+                </div>
+                <div className="flex items-center gap-2 p-2 rounded-lg bg-card border border-border/40 text-sm">
+                  <span className="text-muted-foreground">{language === "th" ? "ต้นทุนรวมสำหรับจำนวนนี้" : "Total cost for this quantity"}</span>
+                  <span className="font-bold text-emerald-600 font-mono">฿{(costPerOutputUnitEffective * saleQty).toFixed(2)}</span>
+                </div>
+              </div>
+
               {/* Tree Table Header */}
               <div className="sticky top-0 z-10 flex items-center justify-between gap-4 py-2.5 px-4 bg-muted/80 backdrop-blur border-b border-border text-[11px] font-bold text-muted-foreground uppercase shrink-0">
                 <span>{language === "th" ? "โครงสร้างและรหัสอ้างอิง" : "Component Hierarchy & Reference"}</span>
@@ -1292,20 +1721,36 @@ export function ProductBomEditor({
                 </div>
               </div>
 
-              {/* Tree Content */}
+              {/* Tree Content — scaled by saleQty relative to how many GOOD units one gross batch
+                  yields after scrap (outputqty / (1 - scrap%)), not just the nominal outputqty. */}
               <div className="p-4 flex-1 divide-y divide-border/20">
-                {bomItems.map((item, idx) => renderExplodedTreeNode(item, `root-${idx}`, 0))}
+                {bomItems.map((item, idx) => renderExplodedTreeNode(item, `root-${idx}`, 0, saleScaleFactor))}
               </div>
 
               {/* Summary Footer */}
-              <div className="border-t border-border/60 bg-muted/15 p-4 grid grid-cols-1 md:grid-cols-3 gap-4 shrink-0 text-sm">
+              <div className="border-t border-border/60 bg-muted/15 p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 shrink-0 text-sm">
                 <div className="flex items-center justify-between p-2 rounded-lg bg-card border border-border/40">
                   <span className="text-muted-foreground">{language === "th" ? "ราคาขายของสูตร" : "Selling Price"}</span>
                   <span className="font-bold text-foreground font-mono">฿{salePrice.toFixed(2)}</span>
                 </div>
                 <div className="flex items-center justify-between p-2 rounded-lg bg-card border border-border/40">
-                  <span className="text-muted-foreground">{language === "th" ? "ต้นทุน Rollup รวม" : "Total Rollup Cost"}</span>
+                  <span className="text-muted-foreground">
+                    {language === "th" ? "ต้นทุน Rollup รวม" : "Total Rollup Cost"}
+                    {isStandardCostActive && (
+                      <span className="block text-[9px] text-amber-600 font-semibold">
+                        {language === "th" ? "ราคาปัจจุบัน (อ้างอิง)" : "reference, not used for the total"}
+                      </span>
+                    )}
+                  </span>
                   <span className="font-bold text-sky-600 font-mono">฿{rollupCost.toFixed(2)}</span>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded-lg bg-card border border-border/40">
+                  <span className="text-muted-foreground">
+                    {isStandardCostActive
+                      ? (language === "th" ? "ต้นทุนมาตรฐาน/หน่วย" : "Standard Cost/Unit")
+                      : (language === "th" ? `ต้นทุน/หน่วยผลิต (÷${outputQty || 1})` : `Cost per Unit (÷${outputQty || 1})`)}
+                  </span>
+                  <span className="font-bold text-indigo-600 font-mono">฿{costPerOutputUnitEffective.toFixed(2)}</span>
                 </div>
                 <div className="flex items-center justify-between p-2 rounded-lg bg-card border border-border/40">
                   <span className="text-muted-foreground">{language === "th" ? "อัตรากำไรขั้นต้น" : "Profit Margin"}</span>

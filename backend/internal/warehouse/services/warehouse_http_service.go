@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"smlcloudplatform/internal/logger"
 	mastersync "smlcloudplatform/internal/mastersync/repositories"
 	common "smlcloudplatform/internal/models"
@@ -87,6 +86,26 @@ func (svc WarehouseHttpService) getContextTimeout() (context.Context, context.Ca
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
+// normalizeWarehouse keeps Location non-nil on every write path. A doc stored with
+// location:null panics the zone/shelf service methods that range over *doc.Location
+// (verified: nil-deref panic in CreateLocation via POST /warehouse/:guid/zone on a
+// warehouse created without a location key).
+func normalizeWarehouse(doc *models.Warehouse) {
+	if doc.Location == nil {
+		doc.Location = &[]models.Location{}
+	}
+}
+
+// ensureShelfGuids fills GuidFixed on shelves that arrive without one (Immutable GUID
+// Identity Rule); existing values are kept.
+func ensureShelfGuids(shelves []models.Shelf) {
+	for i := range shelves {
+		if shelves[i].GuidFixed == "" {
+			shelves[i].GuidFixed = utils.NewGUID()
+		}
+	}
+}
+
 func (svc WarehouseHttpService) CreateWarehouse(holdingCode string, authUsername string, doc models.Warehouse) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
@@ -103,6 +122,8 @@ func (svc WarehouseHttpService) CreateWarehouse(holdingCode string, authUsername
 	}
 
 	newGuidFixed := utils.NewGUID()
+
+	normalizeWarehouse(&doc)
 
 	docData := models.WarehouseDoc{}
 	docData.HoldingCode = holdingCode
@@ -147,6 +168,7 @@ func (svc WarehouseHttpService) UpdateWarehouse(holdingCode string, guid string,
 
 	dataDoc := findDoc
 
+	normalizeWarehouse(&doc)
 	dataDoc.Warehouse = doc
 
 	dataDoc.UpdatedBy = authUsername
@@ -191,10 +213,12 @@ func (svc WarehouseHttpService) CreateLocation(holdingCode, authUsername, wareho
 
 	dataDoc := findDoc
 
+	ensureShelfGuids(doc.Shelf)
 	*dataDoc.Location = append(*dataDoc.Location, models.Location{
-		Code:  doc.Code,
-		Names: doc.Names,
-		Shelf: doc.Shelf,
+		GuidFixed: utils.NewGUID(),
+		Code:      doc.Code,
+		Names:     doc.Names,
+		Shelf:     doc.Shelf,
 	})
 
 	dataDoc.UpdatedBy = authUsername
@@ -232,8 +256,33 @@ func (svc WarehouseHttpService) UpdateLocation(holdingCode, authUsername, wareho
 		return errors.New("document not found")
 	}
 
-	if warehouseCode != doc.WarehouseCode {
+	ensureShelfGuids(doc.Shelf)
 
+	if warehouseCode == doc.WarehouseCode {
+		updateDoc = findDoc
+
+		// Renaming must not collide with another zone's code. (The old code here looked the
+		// UPDATED entry up by the NEW code — which this duplicate check just proved absent — so a
+		// rename always appended a second zone and left the old-code entry behind as an orphan.)
+		if locationCode != doc.Code {
+			for _, location := range *updateDoc.Location {
+				if location.Code == doc.Code {
+					return errors.New("location code is exists")
+				}
+			}
+		}
+
+		for i, location := range *updateDoc.Location {
+			if location.Code == locationCode {
+				location.Code = doc.Code
+				location.Names = doc.Names
+				location.Shelf = doc.Shelf
+				(*updateDoc.Location)[i] = location
+				break
+			}
+		}
+	} else {
+		// Move to another warehouse: keep the moved zone's GuidFixed and detach it from the source.
 		findDocWarehouse, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", doc.WarehouseCode)
 
 		if err != nil {
@@ -246,71 +295,34 @@ func (svc WarehouseHttpService) UpdateLocation(holdingCode, authUsername, wareho
 
 		updateDoc = findDocWarehouse
 
-		// clear doc
 		removeDoc = findDoc
+		movedLocation := models.Location{}
 		tempLocation := []models.Location{}
 
 		for _, location := range *removeDoc.Location {
 			if location.Code != locationCode {
 				tempLocation = append(tempLocation, location)
+			} else {
+				movedLocation = location
 			}
 		}
 
 		removeDoc.Location = &tempLocation
-	} else {
-		updateDoc = findDoc
-	}
 
-	if warehouseCode == doc.WarehouseCode {
-		if locationCode != doc.Code {
-			locations := updateDoc.Warehouse.Location
-
-			for _, location := range *locations {
-				if location.Code == doc.Code {
-					return errors.New("location code is exists")
-				}
-			}
-
-			isLocationExists := false
-			for i, location := range *updateDoc.Location {
-				if location.Code == doc.Code {
-					isLocationExists = true
-					location.Code = doc.Code
-					location.Names = doc.Names
-					location.Shelf = doc.Shelf
-					(*updateDoc.Location)[i] = location
-				}
-			}
-
-			if !isLocationExists {
-				*updateDoc.Location = append(*updateDoc.Location, models.Location{
-					Code:  doc.Code,
-					Names: doc.Names,
-					Shelf: doc.Shelf,
-				})
-			}
-
-		} else {
-			for i, location := range *updateDoc.Location {
-				if location.Code == doc.Code {
-					location.Names = doc.Names
-					location.Shelf = doc.Shelf
-					(*updateDoc.Location)[i] = location
-				}
-			}
-		}
-	} else {
 		for _, location := range *updateDoc.Location {
 			if location.Code == doc.Code {
 				return errors.New("location code is exists")
 			}
 		}
 
-		*updateDoc.Location = append(*updateDoc.Location, models.Location{
-			Code:  doc.Code,
-			Names: doc.Names,
-			Shelf: doc.Shelf,
-		})
+		movedLocation.Code = doc.Code
+		movedLocation.Names = doc.Names
+		movedLocation.Shelf = doc.Shelf
+		if movedLocation.GuidFixed == "" {
+			movedLocation.GuidFixed = utils.NewGUID()
+		}
+
+		*updateDoc.Location = append(*updateDoc.Location, movedLocation)
 	}
 
 	err = svc.repo.Transaction(ctx, func(ctx context.Context) error {
@@ -401,7 +413,10 @@ func (svc WarehouseHttpService) CreateShelf(holdingCode, authUsername, warehouse
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindWarehouseByShelf(ctx, holdingCode, warehouseCode, locationCode, doc.Code)
+	// Find by warehouse+location only — FindWarehouseByShelf also filters on the shelf code,
+	// which can never match a shelf that is being CREATED (it matched only pre-existing shelves,
+	// so create always returned "document not found").
+	findDoc, err := svc.repo.FindWarehouseByLocation(ctx, holdingCode, warehouseCode, locationCode)
 
 	if err != nil {
 		return err
@@ -414,6 +429,7 @@ func (svc WarehouseHttpService) CreateShelf(holdingCode, authUsername, warehouse
 	dataDoc := findDoc
 	locations := findDoc.Location
 
+	found := false
 	for indexLocation, location := range *locations {
 
 		if location.Code == locationCode {
@@ -429,17 +445,26 @@ func (svc WarehouseHttpService) CreateShelf(holdingCode, authUsername, warehouse
 			tempShelf := tempLocation.Shelf
 
 			tempShelf = append(tempShelf, models.Shelf{
-				Code: doc.Code,
-				Name: doc.Name,
+				GuidFixed: utils.NewGUID(),
+				Code:      doc.Code,
+				Name:      doc.Name,
 			})
 
 			(*dataDoc.Location)[indexLocation].Shelf = tempShelf
+			found = true
 
 			break
 		}
 	}
 
-	return nil
+	if !found {
+		return errors.New("location not found")
+	}
+
+	dataDoc.UpdatedBy = authUsername
+	dataDoc.UpdatedAt = time.Now()
+
+	return svc.repo.Update(ctx, holdingCode, dataDoc.GuidFixed, dataDoc)
 }
 
 func (svc WarehouseHttpService) UpdateShelf(holdingCode, authUsername, warehouseCode, locationCode, shelfCode string, doc models.ShelfRequest) error {
@@ -484,8 +509,11 @@ func (svc WarehouseHttpService) UpdateShelf(holdingCode, authUsername, warehouse
 		return errors.New("document not found")
 	}
 
-	// remove previous data
+	// remove previous data — keep the removed shelf so the re-insert below preserves its
+	// GuidFixed (Immutable GUID Identity Rule) and every field the ShelfRequest doesn't carry
+	// (min/max, productitems, dimensions); rebuilding from Code+Name alone silently zeroed them.
 	isFoundShelf := false
+	movedShelf := models.Shelf{}
 	for locationIndex, location := range *removeDoc.Location {
 		if location.Code == locationCode {
 			locationTemp := (*removeDoc.Location)[locationIndex]
@@ -498,17 +526,25 @@ func (svc WarehouseHttpService) UpdateShelf(holdingCode, authUsername, warehouse
 			for _, shelf := range locationTemp.Shelf {
 				if shelf.Code != shelfCode {
 					shelfTemp = append(shelfTemp, shelf)
+				} else {
+					movedShelf = shelf
+					isFoundShelf = true
 				}
 			}
 			(*removeDoc.Location)[locationIndex].Shelf = shelfTemp
 
-			isFoundShelf = true
 			break
 		}
 	}
 
 	if !isFoundShelf {
 		return errors.New("document not found")
+	}
+
+	movedShelf.Code = doc.Code
+	movedShelf.Name = doc.Name
+	if movedShelf.GuidFixed == "" {
+		movedShelf.GuidFixed = utils.NewGUID()
 	}
 
 	// update new data
@@ -524,15 +560,7 @@ func (svc WarehouseHttpService) UpdateShelf(holdingCode, authUsername, warehouse
 				return shelf.Code != doc.Code
 			})
 
-			shelfTemp = append(shelfTemp, models.Shelf{
-				Code: doc.Code,
-				Name: doc.Name,
-			})
-
-			shelfTemp = append(shelfTemp, models.Shelf{
-				Code: doc.Code,
-				Name: doc.Name,
-			})
+			shelfTemp = append(shelfTemp, movedShelf)
 
 			(*updateDoc.Location)[locationIndex].Shelf = shelfTemp
 			break
@@ -693,22 +721,10 @@ func (svc WarehouseHttpService) InfoWarehouse(holdingCode string, guid string) (
 
 	warehouseInfo := findDoc.WarehouseInfo
 
-	// Debug: แสดงข้อมูลที่ได้จาก MongoDB
-	log.Printf("DEBUG: WarehouseInfo from MongoDB: %+v", warehouseInfo)
-	if warehouseInfo.Location != nil {
-		log.Printf("DEBUG: Found %d locations", len(*warehouseInfo.Location))
-	}
-
 	// กรองข้อมูล location ที่ไม่สมบูรณ์ออก
 	if warehouseInfo.Location != nil {
 		filteredLocations := []models.Location{}
-		for i, location := range *warehouseInfo.Location {
-			// Debug: แสดงข้อมูล shelf ที่ได้จาก MongoDB
-			log.Printf("DEBUG: Location[%d] Code=%s, Shelf count=%d", i, location.Code, len(location.Shelf))
-			for j, shelf := range location.Shelf {
-				log.Printf("DEBUG: Shelf[%d] Code=%s Name=%s", j, shelf.Code, shelf.Name)
-			}
-
+		for _, location := range *warehouseInfo.Location {
 			// เก็บเฉพาะ location ที่มี code ไม่ว่างและมี names
 			if location.Code != "" && location.Names != nil && len(*location.Names) > 0 {
 				filteredLocations = append(filteredLocations, location)
@@ -939,6 +955,7 @@ func (svc WarehouseHttpService) SaveInBatch(holdingCode string, authUsername str
 
 			dataDoc.GuidFixed = newGuid
 			dataDoc.HoldingCode = holdingCode
+			normalizeWarehouse(&doc)
 			dataDoc.Warehouse = doc
 
 			currentTime := time.Now()
@@ -961,6 +978,7 @@ func (svc WarehouseHttpService) SaveInBatch(holdingCode string, authUsername str
 		},
 		func(holdingCode string, authUsername string, data models.Warehouse, doc models.WarehouseDoc) error {
 
+			normalizeWarehouse(&data)
 			doc.Warehouse = data
 			doc.UpdatedBy = authUsername
 			doc.UpdatedAt = time.Now()
