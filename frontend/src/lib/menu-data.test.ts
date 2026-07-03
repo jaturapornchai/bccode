@@ -123,6 +123,18 @@ describe("menu language labels", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
+  it("orders procurement as overview, request, price inquiry, then purchase order", () => {
+    const procurementGroup = MENU_SECTIONS.find((section) => section.id === "transactions")?.groups.find((group) => group.id === "procurement");
+
+    expect(procurementGroup?.items.map((item) => item.id)).toEqual([
+      "procurement-dashboard",
+      "purchase-requisition",
+      "rfq",
+      "purchase-order",
+    ]);
+    expect(procurementGroup?.items.find((item) => item.id === "rfq")?.label.th).toBe("สืบราคาและเจรจา");
+  });
+
   it("keeps product operations in product tools instead of the core product group", () => {
     const masterSection = MENU_SECTIONS.find((section) => section.id === "master");
     const productGroup = masterSection?.groups.find((group) => group.id === "products");

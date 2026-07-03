@@ -47,10 +47,10 @@ export const MENU_SECTIONS: MenuSection[] = [
         id: "procurement",
         title: ml("procurement", "จัดซื้อจัดหา", "Procurement"),
         items: [
-          tx("purchase-requisition", "ใบขอซื้อ", "Purchase Requisition", "/transaction/purchaserequisition"),
-          tx("rfq", "ขอใบเสนอราคา", "Request for Quotation", "/transaction/rfq"),
-          tx("purchase-order", "ใบสั่งซื้อ", "Purchase Order", "/transaction/purchaseorder"),
           tx("procurement-dashboard", "ภาพรวมจัดซื้อ", "Purchase Overview", "/procurement/dashboard"),
+          tx("purchase-requisition", "ใบขอซื้อ", "Purchase Requisition", "/transaction/purchaserequisition"),
+          tx("rfq", "สืบราคาและเจรจา", "Price Inquiry & Negotiation", "/transaction/rfq"),
+          tx("purchase-order", "ใบสั่งซื้อ", "Purchase Order", "/transaction/purchaseorder"),
         ],
       },
       {
