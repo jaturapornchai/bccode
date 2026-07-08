@@ -27,7 +27,6 @@ coverage/
 vendor/
 
 # Flutter
-**/build/
 **/.dart_tool/
 **/.flutter-plugins
 **/.flutter-plugins-dependencies
@@ -57,3 +56,8 @@ backend/internal/**/logs/
 
 # Throwaway local test scratch (may contain live bearer/refresh tokens — never commit)
 /scratch/
+
+# Local Go build/module cache from the docker buildx workaround (docker compose build cannot find
+# BuildKit on this machine; see worklog 2026-07-05) — multi-GB, never commit
+/.gocache-build/
+/.gocache-mod/
