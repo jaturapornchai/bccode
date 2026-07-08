@@ -163,5 +163,5 @@ Default is **medium**. If quality feels low, escalate one level explicitly. Do N
 - ❌ Hardcoded secrets
 - ❌ `git pull` / `fetch`+`reset --hard` / `checkout origin/…` that overwrites newer local code (local = source of truth; remote may be older → R0, ask first)
 - ❌ Reading *.gen.*, /vendor, /dist, /node_modules
-- ❌ Creating/editing/deleting anything in `scopeofwork/` (Jead-authored only, read-only for every agent — always read it, never write to it)
+- ❌ Creating/editing/deleting anything in `s/` (formerly `scopeofwork/`, renamed 2026-07-08; Jead-authored only, read-only for every agent — always read it, never write to it)
 - ❌ Generic AI UI: stock card grid + serif heading + accent bar

@@ -13,23 +13,26 @@ Related central entrypoints:
 - Keep reusable agent assets short, English, plain Markdown, and progressive-disclosure based. Load only the task-specific source paths or reference pages needed for the current request.
 - K3s/Kubernetes is not part of the active local or DEV workflow. Do not load or maintain cluster instructions unless Jead explicitly asks for production scaling or Kubernetes work.
 
-## Scope Of Work Folder — always read, never write (set 2026-07-03 by Jead)
-`D:\bccode\scopeofwork\` holds Jead's own scope-of-work / framework documents — the durable brief for
+## Scope Of Work Folder — always read, never write (set 2026-07-03 by Jead; folder renamed `scopeofwork/` -> `s/` 2026-07-08 by Jead)
+`D:\bccode\s\` (formerly `D:\bccode\scopeofwork\`) holds Jead's own scope-of-work / framework documents — the durable brief for
 how a piece of work (a feature, a module, an initiative) is meant to be scoped and run. It is
 authored by Jead only (drafted elsewhere, e.g. Google Docs, then placed here as the synced,
 model-agnostic copy every agent can read — see the "read scopeofwork instead of live-querying an
 external doc" pattern discussed with Jead).
-- **Every agent MUST read every file in `scopeofwork/` at the start of a session/task**, the same
+- **Every agent MUST read every file in `s/` at the start of a session/task**, the same
   way `AGENTS.md` and this file are always read — see the "Read in this order" list in
   `D:\bccode\CLAUDE.md` / `GEMINI.md` (step 3). Treat its contents as binding scope/framework
   guidance for whatever it covers, same weight as a rule in this file.
-- **No agent may create, edit, delete, or rename anything inside `scopeofwork/`, ever** — not as
+- **No agent may create, edit, delete, or rename anything inside `s/`, ever** — not as
   part of the No-Ask Schema + Screen + Code Change Rule below (that grant explicitly does NOT cover
   this folder), not as a "helpful" reformat/cleanup/typo-fix, and not even on a loose in-chat
   mention. This folder is Jead's own authored record; only Jead edits it (e.g. by re-syncing from
-  the source Google Doc). If a task seems to require a change inside `scopeofwork/`, stop and ask
-  Jead directly rather than writing there — this is R0, not "no-ask."
-- If `scopeofwork/` doesn't exist yet or is empty, that's fine — nothing to read; do not create
+  the source Google Doc). If a task seems to require a change inside `s/`, stop and ask
+  Jead directly rather than writing there — this is R0, not "no-ask." The folder itself was renamed
+  from `scopeofwork/` to `s/` on 2026-07-08 at Jead's explicit request (confirmed before acting,
+  since renaming it would otherwise fall under this same "never rename" rule) — every doc/comment
+  that used to cite `scopeofwork/<file>.md` was updated to `s/<file>.md` in the same pass.
+- If `s/` doesn't exist yet or is empty, that's fine — nothing to read; do not create
   placeholder files in it either.
 
 ## System Scope & Marketplace Support (set 2026-06-30 by Jead)
@@ -63,11 +66,15 @@ Screens were showing the SAME barcode "duplicated" after delete. Root cause: a r
 - **Skill, Rule & Database Model Upgrade Rule**: If a code change, system behavior, database model, schema change, or debug findings modify a reusable system pattern, layout contract, business rule, or database mapping covered by the rules or skills, the agent MUST immediately update the matching rule, skill, or database model in the same task. This ensures the rules/skills/models remain accurate, up-to-date, and get smarter over time. Keep them as short rule pointers, not duplicated manuals.
 - **Cross-Model Work Journal Rule** (set 2026-06-21 by Jead): Jead runs multiple AI models (Claude Code / Codex / GLM / any) that do NOT share memory. Every agent MUST (1) read `.agents/worklog.md` before starting non-trivial work to see what was already done, the key decisions, and known-pending items — so no model repeats or contradicts prior work; and (2) append a short entry (date + what changed/decided + any pending follow-up) after finishing meaningful work, or when a bug is found or a decision is made. Detailed cross-layer pending work goes in `.agents/handoffs/`; `worklog.md` is the shared short history plus open-decision list. This complements the Skill/Rule Upgrade rule: the journal captures recent done/found items that have not yet crystallized into a durable rule.
 - **Auto Plugin Selection Rule**: Every agent must automatically choose and use the most appropriate available plugin, connector, or project-local skill for the task when it improves evidence or execution speed. Examples: Browser/Playwright for localhost UI verification, GitHub for repository/PR work, Google Drive/Docs/Sheets/Slides for those assets, and BC Account skills for project-specific implementation. Do not install new plugins/connectors without Jead's approval, do not use plugins as a substitute for reading active source/runtime evidence, and stop for R0/risky tool actions.
-- **Multi-Model Role Division Rule** (set 2026-07-03 by Jead) — SUPERSEDES the old "Single-Agent, No-Advisor Rule". See the full "Multi-Model Role Division — Executor + Advisors" section below.
+- **Multi-Model Role Division Rule** (set 2026-07-03 by Jead, adaptive scoring added 2026-07-05) — SUPERSEDES the old "Single-Agent, No-Advisor Rule". Claude Code is the sole controller: it decides which advisor works on which task, tracks each advisor's real performance per domain in `.agents/advisor-scorecard.md`, and expands an advisor's role into new domains once it proves strong there — the domain table below is a starting point, not a permanent fixed assignment. See the full "Multi-Model Role Division — Executor + Advisors" section below.
 - **Wrong Screen + Full Width Rule**: When Jead says `ผิดจอ` or gives a concrete screen/path, immediately stop the previous project/screen assumption and verify the active repo, route, and source file from local evidence before editing. When Jead requests full-width ERP/workbench UI, apply the contract at the screen shell (`w-full max-w-none min-w-0`) and fix real child overflow/wrap behavior; do not mask the issue with `overflow-x-hidden` on the main work surface.
 
-## Multi-Model Role Division — Executor + Advisors (set 2026-07-03 by Jead, supersedes Single-Agent No-Advisor Rule)
-Jead explicitly replaced the 2026-06-19 "Single-Agent, No-Advisor Rule" with a role-based structure. The coding agent (Claude Code, whatever model is actually running the session) is always the one and only executor — it reads code, edits files, runs commands, and owns final correctness. The 4 named models below are consulted as domain advisors/reviewers through the existing chat-only CLI wrappers; none of them ever touches a file directly.
+## Multi-Model Role Division — Executor + Advisors (set 2026-07-03 by Jead, supersedes Single-Agent No-Advisor Rule; adaptive control + scoring added 2026-07-05 by Jead)
+Jead explicitly replaced the 2026-06-19 "Single-Agent, No-Advisor Rule" with a role-based structure. The coding agent (Claude Code, whatever model is actually running the session) is always the one and only executor and controller — it reads code, edits files, runs commands, owns final correctness, and decides which advisor works on which task. The 3 external models below are consulted as domain advisors/reviewers through the existing chat-only CLI wrappers; none of them ever touches a file directly. Fable is a native Claude model used as chief architect/final judge, not an external advisor.
+
+**Adaptive routing (set 2026-07-05 by Jead):** the domain table below is a starting assignment, not a permanent fixed one. Claude Code tracks each advisor's actual observed performance per task domain in `.agents/advisor-scorecard.md` and, as an advisor proves strong in a domain outside its original assignment, Claude Code should route more of that kind of work to it going forward, to keep improving overall efficiency. Read the scorecard's summary table before picking an advisor for a task type that already has a track record; fall back to the default domain table for anything not yet scored.
+
+**Mandatory scoring (set 2026-07-05 by Jead):** every time GPT, GLM, or DeepSeek is consulted, Claude Code must (1) score that answer 1-10 using the rubric in `.agents/advisor-scorecard.md` (accuracy verified against real source/runtime, usefulness/how much was adopted, reliability of the call itself), (2) append a row to that file's log, and (3) show the score inline to Jead in the task report (for example "GLM: 8/10 — เหตุผลสั้นๆ"), so Jead always sees how each advisor actually performed, not just their raw answer.
 
 | Role | Who | Scope |
 |---|---|---|
@@ -75,6 +82,7 @@ Jead explicitly replaced the 2026-06-19 "Single-Agent, No-Advisor Rule" with a r
 | Frontend/fullstack advisor | GLM (`glm-5.2` via `~/.claude/tools/glm-ask.py`) | React/Next.js component/state/flow review, large-context reads (big diffs, many files at once). |
 | Backend advisor | DeepSeek (`deepseek-v4-pro` think via `~/.claude/tools/deepseek-ask.py`) | API/handler/service logic, MongoDB schema/query/index/performance/algorithm review. |
 | Requirement/UX advisor | GPT (GPT 5.5 think via `~/.claude/tools/gpt-ask.py`, Codex CLI) | Requirement correctness, UX, Thai-language wording, business/owner-logic ("would ลุงจืด actually want this"). |
+| Wildcard/model-picker advisor | OpenRouter (via `~/.claude/tools/openrouter-ask.py`, CLI wrapper added 2026-07-05 by Jead, same pattern as gpt/glm/deepseek-ask.py) | Gateway to 100+ models across providers (`openai/*`, `anthropic/*`, `google/*`, `meta-llama/*`, `deepseek/*`, etc). `--list-models --filter <text>` hits OpenRouter's public `/models` endpoint (no key needed) to compare live pricing/options before picking one; `--model <provider/model-id>` then actually consults it. Key stored at `~/.claude/.openrouter-key` (outside repo, same convention as the other 3). Use for a one-off question that needs a specific model outside GLM/DeepSeek/GPT's coverage, or to A/B a question across models. Always log which underlying model was used, both in the report to Jead and in `.agents/advisor-scorecard.md`. The official `mcp.openrouter.ai` MCP server was also registered project-scoped in `.mcp.json` for live benchmark/ranking browsing, but requires Jead's own `claude mcp login openrouter` OAuth step (Claude Code must never do this step) and is optional — the CLI wrapper alone already covers the "pick and consult a model" need. |
 | Chief Architect / final judge | Fable (`claude-fable-5`, via `Agent({model:"fable", ...})` or a Workflow `agent()` call with `opts.model:"fable"`) | Reviews the plan/diff for big refactors, hard bugs, or anything Claude Code is unsure about, before it is called done. Its verdict on that specific question is authoritative. |
 
 **When to consult whom:**
@@ -82,9 +90,11 @@ Jead explicitly replaced the 2026-06-19 "Single-Agent, No-Advisor Rule" with a r
 - Frontend/UI/React/Next.js question with a real design choice — ask GLM.
 - Backend/API/MongoDB/performance/algorithm question with a real design choice — ask DeepSeek.
 - Ambiguous requirement, UX call, Thai copy, or "what would the business owner want" — ask GPT.
+- Need a model outside GLM/DeepSeek/GPT's coverage, or want to compare live pricing/options before picking one — `python ~/.claude/tools/openrouter-ask.py --list-models --filter <text>` then `--model <provider/model-id>`.
 - Big refactor, hard bug, multi-layer architecture decision, or before marking a significant task done — ask Fable as final judge.
 - Cross-cutting/uncertain which domain — it's fine to ask more than one (matches `[[consult-advisors-proactively]]`: lean toward asking when borderline).
-- Advisors are chat-only: they give an opinion/diff suggestion back as text. Claude Code reads it, verifies it against real source/runtime evidence (advisors can hallucinate too), decides what to apply, and does the actual edit/test/verify itself. Advisor input is never treated as done/verified on its own.
+- Before picking an advisor for a task type, check `.agents/advisor-scorecard.md`'s summary table; if one advisor has a proven track record in that domain (even outside its original default), prefer it over the default assignment.
+- Advisors are chat-only: they give an opinion/diff suggestion back as text. Claude Code reads it, verifies it against real source/runtime evidence (advisors can hallucinate too), decides what to apply, and does the actual edit/test/verify itself. Advisor input is never treated as done/verified on its own. Every consult gets scored 1-10 into `.agents/advisor-scorecard.md` and the score is shown to Jead (see "Mandatory scoring" above).
 - This rule is project-scoped to `D:\bccode` only. It does not change the global `~/.claude/CLAUDE.md` "AI Advisors" default (Claude decides solo, advisors optional) for other projects — this file's rule wins here per the Precedence order at the top of this file.
 
 ## Task Protocol — Frontend / Backend / MongoDB (set 2026-07-03 by Jead)
@@ -114,9 +124,9 @@ This system has 3 layers: **Frontend** (Next.js), **Backend/API** (Go), **MongoD
 **End-of-task summary format** — every non-trivial task ends with these 7 lines (skip/shorten for trivial fixes):
 แก้อะไรไปบ้าง / ไฟล์ที่แก้ / ทดสอบอะไรแล้ว / ผล test-lint-build / MongoDB ตรวจอะไรแล้ว / ความเสี่ยงที่เหลือ / ขั้นตอนให้ user ทดสอบเอง.
 
-**PostgreSQL/ClickHouse current status** (from `scopeofwork/aimodel.md`): PostgreSQL exists for relational-calculation storage (see Data Store Roles above) and ClickHouse exists for dimensional/BI-style storage — **neither is in active use yet**. Don't build features that depend on them being populated; MongoDB is the only live operational store right now.
+**PostgreSQL/ClickHouse current status** (from `s/aimodel.md`): PostgreSQL exists for relational-calculation storage (see Data Store Roles above) and ClickHouse exists for dimensional/BI-style storage — **neither is in active use yet**. Don't build features that depend on them being populated; MongoDB is the only live operational store right now.
 
-## Frontend Testing Methodology (set 2026-07-03 by Jead, source `scopeofwork/aimodel.md`)
+## Frontend Testing Methodology (set 2026-07-03 by Jead, source `s/aimodel.md`)
 - **Playwright/Stagehand-style browser automation first**, for every FE verification. Reach for Computer Use only when automation genuinely can't reach a part of the UI (e.g. a native browser dialog, an iframe automation can't drive) — automation is faster and more repeatable, Computer Use is the fallback, not the default.
 - **No guessing.** Every claim about UI/API/DB behavior must come from something actually observed this run: a log line, a live browser snapshot/screenshot, a real MongoDB query result. This is the same evidence bar as global Iron Rule 2, restated for the FE testing loop specifically.
 - **Test CRUD on every main screen**: create, read, update, delete — and after every single action, check MongoDB directly to confirm the document was actually created/changed/removed (not just that the UI looked right).
