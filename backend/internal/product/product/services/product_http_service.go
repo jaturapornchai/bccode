@@ -24,6 +24,7 @@ type IProductHttpService interface {
 	Create(doc *models.ProductDoc) error
 	Update(holdingCode string, code string, authUsername string, doc *models.ProductDoc) (models.ProductDoc, error)
 	Delete(holdingCode string, guid string, authUsername string) error
+	Resync(holdingCode string) (int, error)
 }
 
 type ProductHttpService struct {
@@ -31,16 +32,18 @@ type ProductHttpService struct {
 	repoUnit             unitRepo.IUnitRepository
 	repomgCreditror      creditorRepo.CreditorRepository
 	repomgProductBarcode productBarcodeRepo.ProductBarcodeRepository
+	mqRepo               repositories.IProductMessageQueueRepository
 	contextTimeout       time.Duration
 }
 
 // ✅ **สร้าง Service**
-func NewProductHttpService(repo repositories.IProductRepository, repoUnit unitRepo.IUnitRepository, repomgCreditror creditorRepo.CreditorRepository, repomgProductBarcode productBarcodeRepo.ProductBarcodeRepository) *ProductHttpService {
+func NewProductHttpService(repo repositories.IProductRepository, repoUnit unitRepo.IUnitRepository, repomgCreditror creditorRepo.CreditorRepository, repomgProductBarcode productBarcodeRepo.ProductBarcodeRepository, mqRepo repositories.IProductMessageQueueRepository) *ProductHttpService {
 	return &ProductHttpService{
 		repo:                 repo,
 		repoUnit:             repoUnit,
 		repomgCreditror:      repomgCreditror,
 		repomgProductBarcode: repomgProductBarcode,
+		mqRepo:               mqRepo,
 		contextTimeout:       15 * time.Second,
 	}
 }
@@ -207,6 +210,10 @@ func (svc ProductHttpService) Create(doc *models.ProductDoc) error {
 		return err
 	}
 
+	if err := svc.mqRepo.Create(*doc); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -257,6 +264,10 @@ func (svc ProductHttpService) Update(holdingCode string, code string, authUserna
 		return models.ProductDoc{}, errx
 	}
 
+	if err := svc.mqRepo.Update(docData); err != nil {
+		return models.ProductDoc{}, err
+	}
+
 	return docData, nil
 }
 
@@ -290,5 +301,30 @@ func (svc ProductHttpService) Delete(holdingCode string, guid string, user strin
 		return err
 	}
 
+	if err := svc.mqRepo.Delete(findDoc); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+// ✅ Resync — republish ทุก product ของ tenant เข้า Kafka เพื่อ rebuild PG projection
+func (svc ProductHttpService) Resync(holdingCode string) (int, error) {
+	ctx, cancel := svc.getContextTimeout()
+	defer cancel()
+
+	docs, err := svc.repo.FindFilter(ctx, holdingCode, map[string]interface{}{})
+	if err != nil {
+		return 0, err
+	}
+
+	published := 0
+	for _, doc := range docs {
+		if err := svc.mqRepo.Create(doc); err != nil {
+			return published, err
+		}
+		published++
+	}
+
+	return published, nil
 }

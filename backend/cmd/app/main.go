@@ -30,9 +30,7 @@ import (
 	"smlcloudplatform/internal/organization/branch"
 	"smlcloudplatform/internal/organization/businesstype"
 	"smlcloudplatform/internal/organization/company"
-	"smlcloudplatform/internal/organization/costcenter"
 	"smlcloudplatform/internal/organization/department"
-	"smlcloudplatform/internal/organization/jobproject"
 	"smlcloudplatform/internal/payment/bankmaster"
 	"smlcloudplatform/internal/payment/bookbank"
 	"smlcloudplatform/internal/payment/qrpayment"
@@ -267,8 +265,6 @@ func main() {
 		customergroup.NewCustomerGroupHttp(ms, cfg),
 
 		department.NewDepartmentHttp(ms, cfg),
-		costcenter.NewCostCenterHttp(ms, cfg),
-		jobproject.NewJobProjectHttp(ms, cfg),
 		businesstype.NewBusinessTypeHttp(ms, cfg),
 		company.NewCompanyHttp(ms, cfg),
 		branch.NewBranchHttp(ms, cfg),

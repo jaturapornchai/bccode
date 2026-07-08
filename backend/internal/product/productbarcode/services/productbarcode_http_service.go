@@ -2312,7 +2312,7 @@ func (svc ProductBarcodeHttpService) GetPriceHistoryByBarcode(holdingCode string
 }
 
 // getProductBarcodesFromShelves queried the OLD embedded warehouse.location[].shelf[].productitems[]
-// structure, which the warehouse master-data redesign removed (see scopeofwork/warehouse.md —
+// structure, which the warehouse master-data redesign removed (see s/warehouse.md —
 // warehouse/location/bin are now separate collections, and bin.fixeditems[] is a product-reference
 // hint, not a queryable-here index yet). The current frontend never sends the warehousecode/
 // locationcode/shelfcode query params that trigger this path, but they are still live and

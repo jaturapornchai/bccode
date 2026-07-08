@@ -545,6 +545,7 @@ func (svc UnitHttpService) SearchUnit(holdingCode string, companyGuid string, co
 	if len(companyGuid) > 0 {
 		filters["$or"] = []interface{}{
 			bson.M{"companyguids": bson.M{"$exists": false}},
+			bson.M{"companyguids": nil},
 			bson.M{"companyguids": bson.M{"$size": 0}},
 			bson.M{"companyguids": companyGuid},
 		}
@@ -619,6 +620,7 @@ func (svc UnitHttpService) SearchUnitLimit(holdingCode string, companyGuid strin
 	if len(companyGuid) > 0 {
 		filters["$or"] = []interface{}{
 			bson.M{"companyguids": bson.M{"$exists": false}},
+			bson.M{"companyguids": nil},
 			bson.M{"companyguids": bson.M{"$size": 0}},
 			bson.M{"companyguids": companyGuid},
 		}

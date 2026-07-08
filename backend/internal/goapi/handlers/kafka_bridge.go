@@ -243,28 +243,61 @@ func CallSaleOrderDeleteConsumer(msg string) error {
 // รับ JSON message จาก Kafka topic: when-product-barcode-created, when-product-barcode-updated
 // ส่งต่อไปยัง handlers/kafka/inventory.go
 func CallInventoryConsumer(msg string) error {
-	return kafka.OnConsumeMessageInventoryCreateOrUpdate(msg)
+	err := kafka.OnConsumeMessageInventoryCreateOrUpdate(msg)
+	// Same stale-cache gap as CallProductConsumer above - the /product list query joins
+	// product+productbarcode+inventorystockbalances into one cached result, so a barcode
+	// write must invalidate it too, not just a product write.
+	productCache.Clear()
+	return err
 }
 
 // CallInventoryDeleteConsumer - ประมวลผลการลบบาร์โค้ดสินค้า
 // รับ JSON message จาก Kafka topic: when-product-barcode-deleted
 // ส่งต่อไปยัง handlers/kafka/inventory.go
 func CallInventoryDeleteConsumer(msg string) error {
-	return kafka.OnConsumeMessageInventoryDelete(msg)
+	err := kafka.OnConsumeMessageInventoryDelete(msg)
+	productCache.Clear()
+	return err
 }
 
 // CallInventoryBulkConsumer - ประมวลผลบาร์โค้ดสินค้าแบบ bulk (สร้าง/แก้ไขหลายรายการ)
 // รับ JSON message จาก Kafka topic: when-product-barcode-bulk-created, when-product-barcode-bulk-updated
 // ส่งต่อไปยัง handlers/kafka/inventory.go
 func CallInventoryBulkConsumer(msg string) error {
-	return kafka.OnConsumeMessageInventoryBulkCreateOrUpdate(msg)
+	err := kafka.OnConsumeMessageInventoryBulkCreateOrUpdate(msg)
+	productCache.Clear()
+	return err
 }
 
 // CallInventoryBulkDeleteConsumer - ประมวลผลการลบบาร์โค้ดสินค้าแบบ bulk
 // รับ JSON message จาก Kafka topic: when-product-barcode-bulk-deleted
 // ส่งต่อไปยัง handlers/kafka/inventory.go
 func CallInventoryBulkDeleteConsumer(msg string) error {
-	return kafka.OnConsumeMessageInventoryBulkDelete(msg)
+	err := kafka.OnConsumeMessageInventoryBulkDelete(msg)
+	productCache.Clear()
+	return err
+}
+
+// CallProductConsumer - ประมวลผล Product (สร้าง/แก้ไข) เข้า PostgreSQL projection
+// รับ JSON message จาก Kafka topic: when-product-created, when-product-updated
+// ส่งต่อไปยัง handlers/kafka/product.go
+func CallProductConsumer(msg string) error {
+	err := kafka.OnConsumeMessageProductCreateOrUpdate(msg)
+	// productCache (5-min TTL) is never invalidated on write, so a user who edits a
+	// product would otherwise see stale /product list results for up to 5 minutes.
+	// productCache lives in this package (handlers), kafka/product.go cannot call it
+	// directly without an import cycle - clear it here instead, right after the write.
+	productCache.Clear()
+	return err
+}
+
+// CallProductDeleteConsumer - ประมวลผลการลบ Product ออกจาก PostgreSQL projection
+// รับ JSON message จาก Kafka topic: when-product-deleted
+// ส่งต่อไปยัง handlers/kafka/product.go
+func CallProductDeleteConsumer(msg string) error {
+	err := kafka.OnConsumeMessageProductDelete(msg)
+	productCache.Clear()
+	return err
 }
 
 // CallWarehouseConsumer - ประมวลผลคลังสินค้า/สาขา (สร้าง/แก้ไข)

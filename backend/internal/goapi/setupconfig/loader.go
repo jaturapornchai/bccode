@@ -275,10 +275,14 @@ func applyBootstrapSection(category string, values map[string]string) int {
 	}
 
 	count := 0
-	for key, value := range values {
+	for rawKey, value := range values {
 		if value == "" {
 			continue
 		}
+
+		// bootstrap.json/custom_config.json ใช้ snake_case (เช่น "enable_kafka")
+		// แต่ configMapping ใช้ key ไม่มีตัวคั่น (เช่น "enablekafka") — ตัด "_" ออกก่อน lookup
+		key := strings.ReplaceAll(rawKey, "_", "")
 
 		envVarNames, keyExists := categoryMapping[key]
 		if !keyExists {

@@ -148,6 +148,38 @@ func StartConsumers() {
 		})
 	}()
 
+	// Start Product consumers
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Info("Panic in Product consumer: %v", r)
+			}
+		}()
+		consumers.ConsumeMessage(kafkaServer, "when-product-created", getVersionedGroupID("biapi-product-consumer"), 0, func(msg string) error {
+			return CallProductConsumer(msg)
+		})
+	}()
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Info("Panic in Product consumer: %v", r)
+			}
+		}()
+		consumers.ConsumeMessage(kafkaServer, "when-product-updated", getVersionedGroupID("biapi-product-consumer"), 0, func(msg string) error {
+			return CallProductConsumer(msg)
+		})
+	}()
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Info("Panic in Product consumer: %v", r)
+			}
+		}()
+		consumers.ConsumeMessage(kafkaServer, "when-product-deleted", getVersionedGroupID("biapi-product-consumer"), 0, func(msg string) error {
+			return CallProductDeleteConsumer(msg)
+		})
+	}()
+
 	// Start Inventory Bulk consumers
 	go func() {
 		defer func() {

@@ -8,8 +8,6 @@ import (
 
 	"smlcloudplatform/pkg/microservice"
 
-	costcenter_consumer "smlcloudplatform/internal/transaction/transactionconsumer/costcenter"
-	jobproject_consumer "smlcloudplatform/internal/transaction/transactionconsumer/jobproject"
 	purchaseorder_consumer "smlcloudplatform/internal/transaction/transactionconsumer/purchaseorder"
 	purchasereceive_consumer "smlcloudplatform/internal/transaction/transactionconsumer/purchasereceive"
 	purchaserequisition_consumer "smlcloudplatform/internal/transaction/transactionconsumer/purchaserequisition"
@@ -70,10 +68,6 @@ func main() {
 	if devApiMode == "1" || devApiMode == "2" {
 
 		ms.RegisterLivenessProbeEndpoint("/healthz")
-
-		// organization master data
-		ms.RegisterConsumer(costcenter_consumer.InitCostCenterConsumer(ms, cfg))
-		ms.RegisterConsumer(jobproject_consumer.InitJobProjectConsumer(ms, cfg))
 
 		// purchase
 		ms.RegisterConsumer(purchaseorder_consumer.InitPurchaseOrderTransactionConsumer(ms, cfg))

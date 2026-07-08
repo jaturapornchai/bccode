@@ -37,7 +37,9 @@ func NewProductHttp(ms *microservice.Microservice, cfg config.IConfig) ProductHt
 	repoUnit := unitRepo.NewUnitRepository(pstmg)
 	repomgCreditor := creditorepo.NewCreditorRepository(pstmg)
 	repomgProductBarcode := productBarcodeRepo.NewProductBarcodeRepository(pstmg, cache)
-	svc := services.NewProductHttpService(repo, repoUnit, *repomgCreditor, *repomgProductBarcode)
+	prod := ms.Producer(cfg.MQConfig())
+	mqRepo := repositories.NewProductMessageQueueRepository(prod)
+	svc := services.NewProductHttpService(repo, repoUnit, *repomgCreditor, *repomgProductBarcode, mqRepo)
 
 	return ProductHttp{
 		ms:  ms,
@@ -50,6 +52,7 @@ func NewProductHttp(ms *microservice.Microservice, cfg config.IConfig) ProductHt
 func (h ProductHttp) RegisterHttp() {
 	h.ms.GET("/product", h.SearchProduct)
 	h.ms.POST("/product", h.CreateProduct)
+	h.ms.POST("/product/resync", h.ResyncProduct)
 	h.ms.GET("/product/:guid", h.InfoProduct)
 	h.ms.PUT("/product/:guid", h.UpdateProduct)
 	h.ms.DELETE("/product/:guid", h.DeleteProduct)
@@ -140,7 +143,7 @@ func (h ProductHttp) CreateProduct(ctx microservice.IContext) error {
 	// ✅ เรียก Service เพื่อสร้าง Product
 	err = h.svc.Create(newProduct)
 	if err != nil {
-		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
 
@@ -231,7 +234,7 @@ func (h ProductHttp) UpdateProduct(ctx microservice.IContext) error {
 	// ✅ อัปเดต Product
 	docData, err := h.svc.Update(holdingCode, code, userInfo.Username, updateData)
 	if err != nil {
-		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
 
@@ -273,6 +276,32 @@ func (h ProductHttp) DeleteProduct(ctx microservice.IContext) error {
 	ctx.Response(http.StatusOK, common.ApiResponse{
 		Success: true,
 		Message: "Product deleted successfully",
+	})
+	return nil
+}
+
+// @Summary		Resync products into PostgreSQL projection
+// @Description Republish every product of the tenant to Kafka to rebuild the PostgreSQL projection
+// @Tags		Product
+// @Produce 	json
+// @Success		200 {object} common.ApiResponse
+// @Failure		400 {object} common.ApiResponse
+// @Security	AccessToken
+// @Router		/product/resync [post]
+func (h ProductHttp) ResyncProduct(ctx microservice.IContext) error {
+	userInfo := ctx.UserInfo()
+	holdingCode := userInfo.HoldingCode
+
+	count, err := h.svc.Resync(holdingCode)
+	if err != nil {
+		ctx.ResponseError(http.StatusBadRequest, err.Error())
+		return err
+	}
+
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success: true,
+		Message: fmt.Sprintf("published %d products", count),
+		Data:    map[string]int{"published": count},
 	})
 	return nil
 }

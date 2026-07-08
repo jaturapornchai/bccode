@@ -33,6 +33,7 @@ type IProductRepository interface {
 	FindCreatedOrUpdatedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ProductActivity, error)
 
 	FindOneByCode(ctx context.Context, holdingCode, code string) (models.ProductDoc, error)
+	FindFilter(ctx context.Context, holdingCode string, filters map[string]interface{}) ([]models.ProductDoc, error)
 }
 
 type ProductRepository struct {
