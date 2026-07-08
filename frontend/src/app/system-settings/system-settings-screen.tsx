@@ -100,7 +100,7 @@ import { WarehouseTreeView } from "./warehouse-tree-view";
 import { CompanyBranchTreeView } from "./company-branch-tree-view";
 import { BulkUserImport } from "./bulk-user-import";
 import { ProductBomEditor } from "./product-bom-editor";
-import { imageNeedsAuthenticatedFetch } from "@/lib/image-upload-proxy";
+import { useAuthenticatedImageDisplaySource } from "@/components/authenticated-image";
 import { normalizeThaiTaxBranchCode } from "@/lib/thai-branch-code";
 import {
   findThailandAddressMatchesByPostalCode,
@@ -157,18 +157,15 @@ type ProductUnitOption = {
   unitcode?: string;
   names?: { code?: string; name?: string }[];
 };
-type AuthenticatedImageCacheEntry = {
-  objectUrl: string;
-  lastAccessAt: number;
-};
-
-const THAILAND_ADDRESS_PRIMARY_FIELD = "contact.province_code";
-const THAILAND_ADDRESS_SECONDARY_FIELDS = new Set([
-  "contact.district_code",
-  "contact.sub_district_code",
-  "contact.zip_code",
-]);
-const AUTHENTICATED_IMAGE_CACHE_MAX_ENTRIES = 80;
+// Subkeys copied between a `thai-address` field's flat form state (`${prefix}.${sub}`) and the
+// nested record path (`field.key` = the Address object prefix, e.g. "addressforbilling").
+const THAI_ADDRESS_SUBKEYS = [
+  "countrycode",
+  "provincecode",
+  "districtcode",
+  "subdistrictcode",
+  "zipcode",
+] as const;
 
 type BranchTabId =
   | "general"
@@ -323,14 +320,10 @@ const BRANCH_FIELD_TAB: Record<string, BranchTabId> = {
   imageuris: "general",
   logouri: "general",
   "contact.address": "address",
-  "contact.country_code": "address",
-  "contact.province_code": "address",
-  "contact.district_code": "address",
-  "contact.sub_district_code": "address",
-  "contact.zip_code": "address",
+  "contact": "address",
   "contact.latitude": "address",
   "contact.longitude": "address",
-  "contact.phone_number": "address",
+  "contact.phonenumber": "address",
   businesstype: "pos",
   companyregistrationno: "pos",
   isvatregistered: "pos",
@@ -494,11 +487,6 @@ function posSectionTitle(
 ): string {
   return section.title[language] ?? section.title.en ?? section.id;
 }
-const authenticatedImageObjectUrlCache = new Map<
-  string,
-  AuthenticatedImageCacheEntry
->();
-let authenticatedImageCacheOwner = "";
 
 type LanguageConfigFormRow = {
   code: LanguageCode;
@@ -573,14 +561,14 @@ const companySetupDefaults: FormState = {
 const branchSetupDefaults: FormState = {
   languages: ["th"],
   language: "th",
-  "contact.country_code": "TH",
-  "contact.province_code": "",
-  "contact.district_code": "",
-  "contact.sub_district_code": "",
-  "contact.zip_code": "",
+  "contact.countrycode": "TH",
+  "contact.provincecode": "",
+  "contact.districtcode": "",
+  "contact.subdistrictcode": "",
+  "contact.zipcode": "",
   "contact.latitude": 0,
   "contact.longitude": 0,
-  "contact.phone_number": "",
+  "contact.phonenumber": "",
   companyregistrationno: "",
   isvatregistered: false,
   "pos.taxid": "",
@@ -850,12 +838,6 @@ const fieldBackendKeys: Record<string, string> = {
   "branch.basecurrency": "basecurrency",
   "branch.code": "branchcode",
   "branch.companyregistrationno": "companyregistrationno",
-  "branch.contact.country_code": "country_code",
-  "branch.contact.district_code": "district",
-  "branch.contact.phone_number": "telephone",
-  "branch.contact.province_code": "province",
-  "branch.contact.sub_district_code": "subdistrict",
-  "branch.contact.zip_code": "zip_code",
   "branch.dateformat": "dateformat",
   "branch.decimaldocument": "decimaldocument",
   "branch.decimalprice": "decimalprice",
@@ -955,12 +937,6 @@ const fieldValueAliases: Record<string, string[]> = {
   "permissionlink.businesscodes": ["companyguids"],
   "permissionlink.permissioncodes": ["permissionCodes"],
   "permissionlink.approvalcodes": ["approvalCodes"],
-  "branch.contact.country_code": ["contact.countrycode"],
-  "branch.contact.district_code": ["contact.districtcode"],
-  "branch.contact.phone_number": ["contact.phonenumber"],
-  "branch.contact.province_code": ["contact.provincecode"],
-  "branch.contact.sub_district_code": ["contact.subdistrictcode"],
-  "branch.contact.zip_code": ["contact.zipcode"],
   "branch.pos.taxid": ["pos.taxid"],
   "branch.yeartype": ["yeartype"],
   "productcategorygroupselectscreen.groupnumber": ["groupnumber"],
@@ -4388,7 +4364,6 @@ function SettingDetailPanel({
               </div>
             );
           }
-          if (isThailandAddressSecondaryField(config, field)) return null;
           if (field.type === "image-upload") {
             const label = fieldLabel(field, language, config, dictionary);
             return (
@@ -4440,13 +4415,14 @@ function SettingDetailPanel({
               </div>
             );
           }
-          if (isThailandAddressPrimaryField(config, field)) {
+          if (field.type === "thai-address") {
             return (
               <div className={fieldGridItemClass(field, config)} key={field.key}>
                 <ThailandAddressReadOnlyDetail
                   backendUrl={auth?.backendUrl}
                   form={record}
                   language={language}
+                  prefix={field.key}
                 />
               </div>
             );
@@ -4467,6 +4443,17 @@ function SettingDetailPanel({
             return (
               <div className={fieldGridItemClass(field, config)} key={field.key}>
                 <TimeSaleListReadOnlyDetail
+                  label={fieldLabel(field, language, config, dictionary)}
+                  language={language}
+                  value={recordValueForField(record, config, field)}
+                />
+              </div>
+            );
+          }
+          if (field.type === "bank-accounts") {
+            return (
+              <div className={fieldGridItemClass(field, config)} key={field.key}>
+                <BankAccountsReadOnlyDetail
                   label={fieldLabel(field, language, config, dictionary)}
                   language={language}
                   value={recordValueForField(record, config, field)}
@@ -4671,7 +4658,6 @@ function SettingFormDialog({
         ) : (
           <div className="grid gap-2 md:grid-cols-2">
             {config.fields.map((field) => {
-              if (isThailandAddressSecondaryField(config, field)) return null;
               if (isBranchLongitudeField(config, field)) return null;
               return (
                 <div
@@ -4844,10 +4830,9 @@ function fieldGridItemClass(
   config: SystemSettingConfig,
 ): string {
   if (config.kind === "company") return "min-w-0 md:col-span-2";
-  if (isThailandAddressPrimaryField(config, field))
-    return "min-w-0 md:col-span-2";
   if (isBranchLatitudeField(config, field)) return "min-w-0 md:col-span-2";
   if (
+    field.type === "bank-accounts" ||
     field.type === "branch-multi-select" ||
     field.type === "company-multi-select" ||
     field.type === "holding-scope-rules" ||
@@ -4857,9 +4842,11 @@ function fieldGridItemClass(
     field.type === "language-configs" ||
     field.type === "language-list" ||
     field.type === "master-picker" ||
+    field.type === "master-multi-picker" ||
     field.type === "names" ||
     field.type === "radio" ||
     field.type === "string-list" ||
+    field.type === "thai-address" ||
     field.type === "time-sale-list" ||
     field.type === "textarea"
   ) {
@@ -4876,24 +4863,6 @@ function fieldGridItemClass(
     return "min-w-0 md:col-span-2";
   }
   return "min-w-0";
-}
-
-function isThailandAddressPrimaryField(
-  config: SystemSettingConfig,
-  field: SystemSettingField,
-): boolean {
-  return (
-    config.slug === "branch" && field.key === THAILAND_ADDRESS_PRIMARY_FIELD
-  );
-}
-
-function isThailandAddressSecondaryField(
-  config: SystemSettingConfig,
-  field: SystemSettingField,
-): boolean {
-  return (
-    config.slug === "branch" && THAILAND_ADDRESS_SECONDARY_FIELDS.has(field.key)
-  );
 }
 
 function isBranchLatitudeField(
@@ -4985,21 +4954,23 @@ function ThailandAddressReadOnlyDetail({
   backendUrl,
   form,
   language,
+  prefix,
 }: {
   backendUrl?: string;
   form: SettingRecord;
   language: LanguageCode;
+  prefix: string;
 }) {
   const [data, setData] = useState<ThailandAddressData | null>(null);
   const [loadError, setLoadError] = useState("");
-  const countryCode = stringValue(getPathOrFlatValue(form, "contact.country_code")) || "TH";
-  const provinceCode = stringValue(getPathOrFlatValue(form, "contact.province_code"));
-  const districtCode = stringValue(getPathOrFlatValue(form, "contact.district_code"));
+  const countryCode = stringValue(getPathOrFlatValue(form, `${prefix}.countrycode`)) || "TH";
+  const provinceCode = stringValue(getPathOrFlatValue(form, `${prefix}.provincecode`));
+  const districtCode = stringValue(getPathOrFlatValue(form, `${prefix}.districtcode`));
   const subdistrictCode = stringValue(
-    getPathOrFlatValue(form, "contact.sub_district_code"),
+    getPathOrFlatValue(form, `${prefix}.subdistrictcode`),
   );
   const postalCode = normalizeThaiPostalCode(
-    getPathOrFlatValue(form, "contact.zip_code"),
+    getPathOrFlatValue(form, `${prefix}.zipcode`),
   );
   const labels = thailandAddressUi(language);
 
@@ -5107,22 +5078,31 @@ function thailandAddressReadOnlyValue(code: string, label: string): string {
 
 function ThailandAddressFieldEditor({
   backendUrl,
+  copyFromPrefix,
   form,
   language,
+  prefix,
   setForm,
 }: {
   backendUrl?: string;
+  copyFromPrefix?: string;
   form: FormState;
   language: LanguageCode;
+  prefix: string;
   setForm: (form: FormState) => void;
 }) {
+  const countryKey = `${prefix}.countrycode`;
+  const provinceKey = `${prefix}.provincecode`;
+  const districtKey = `${prefix}.districtcode`;
+  const subdistrictKey = `${prefix}.subdistrictcode`;
+  const zipKey = `${prefix}.zipcode`;
   const [data, setData] = useState<ThailandAddressData | null>(null);
   const [loadError, setLoadError] = useState("");
-  const countryCode = stringValue(form["contact.country_code"]) || "TH";
-  const provinceCode = stringValue(form["contact.province_code"]);
-  const districtCode = stringValue(form["contact.district_code"]);
-  const subdistrictCode = stringValue(form["contact.sub_district_code"]);
-  const postalCode = normalizeThaiPostalCode(form["contact.zip_code"]);
+  const countryCode = stringValue(form[countryKey]) || "TH";
+  const provinceCode = stringValue(form[provinceKey]);
+  const districtCode = stringValue(form[districtKey]);
+  const subdistrictCode = stringValue(form[subdistrictKey]);
+  const postalCode = normalizeThaiPostalCode(form[zipKey]);
 
   useEffect(() => {
     if (countryCode !== "TH") return;
@@ -5184,31 +5164,42 @@ function ThailandAddressFieldEditor({
     setForm({ ...form, ...nextValues });
   }
 
+  function copyFromBilling() {
+    if (!copyFromPrefix) return;
+    const nextValues: Partial<FormState> = {
+      [`${prefix}.address`]: form[`${copyFromPrefix}.address`],
+    };
+    for (const sub of THAI_ADDRESS_SUBKEYS) {
+      nextValues[`${prefix}.${sub}`] = form[`${copyFromPrefix}.${sub}`];
+    }
+    setAddress(nextValues);
+  }
+
   function chooseProvince(nextProvinceCode: string) {
     const nextValues: Partial<FormState> = {
-      "contact.province_code": nextProvinceCode,
-      "contact.district_code": "",
-      "contact.sub_district_code": "",
-      "contact.zip_code": "",
+      [provinceKey]: nextProvinceCode,
+      [districtKey]: "",
+      [subdistrictKey]: "",
+      [zipKey]: "",
     };
     if (data && postalCode.length === 5 && nextProvinceCode) {
       const matches = postalMatches.filter(
         (item) => item.provinceCode === nextProvinceCode,
       );
       if (matches.length > 0) {
-        nextValues["contact.zip_code"] = postalCode;
+        nextValues[zipKey] = postalCode;
         const nextDistrictCode = singleThailandAddressCode(
           matches,
           (item) => item.districtCode,
         );
         if (nextDistrictCode) {
-          nextValues["contact.district_code"] = nextDistrictCode;
+          nextValues[districtKey] = nextDistrictCode;
           const nextSubdistrictCode = singleThailandAddressCode(
             matches.filter((item) => item.districtCode === nextDistrictCode),
             (item) => item.subdistrictCode,
           );
           if (nextSubdistrictCode)
-            nextValues["contact.sub_district_code"] = nextSubdistrictCode;
+            nextValues[subdistrictKey] = nextSubdistrictCode;
         }
       }
     }
@@ -5217,9 +5208,9 @@ function ThailandAddressFieldEditor({
 
   function chooseDistrict(nextDistrictCode: string) {
     const nextValues: Partial<FormState> = {
-      "contact.district_code": nextDistrictCode,
-      "contact.sub_district_code": "",
-      "contact.zip_code": "",
+      [districtKey]: nextDistrictCode,
+      [subdistrictKey]: "",
+      [zipKey]: "",
     };
     if (data && provinceCode && nextDistrictCode) {
       const matches =
@@ -5230,7 +5221,7 @@ function ThailandAddressFieldEditor({
                 item.districtCode === nextDistrictCode,
             )
           : [];
-      nextValues["contact.zip_code"] =
+      nextValues[zipKey] =
         matches.length > 0
           ? postalCode
           : getThailandDistrictPostalCode(data, provinceCode, nextDistrictCode);
@@ -5240,7 +5231,7 @@ function ThailandAddressFieldEditor({
           (item) => item.subdistrictCode,
         );
         if (nextSubdistrictCode)
-          nextValues["contact.sub_district_code"] = nextSubdistrictCode;
+          nextValues[subdistrictKey] = nextSubdistrictCode;
       }
     }
     setAddress(nextValues);
@@ -5248,11 +5239,11 @@ function ThailandAddressFieldEditor({
 
   function chooseSubdistrict(nextSubdistrictCode: string) {
     const nextValues: Partial<FormState> = {
-      "contact.sub_district_code": nextSubdistrictCode,
-      "contact.zip_code": "",
+      [subdistrictKey]: nextSubdistrictCode,
+      [zipKey]: "",
     };
     if (data && provinceCode && districtCode) {
-      nextValues["contact.zip_code"] = nextSubdistrictCode
+      nextValues[zipKey] = nextSubdistrictCode
         ? getThailandSubdistrictPostalCode(
             data,
             provinceCode,
@@ -5266,7 +5257,7 @@ function ThailandAddressFieldEditor({
 
   function applyPostalCode(rawValue: string) {
     const normalized = normalizeThaiPostalCode(rawValue);
-    const nextValues: Partial<FormState> = { "contact.zip_code": normalized };
+    const nextValues: Partial<FormState> = { [zipKey]: normalized };
     if (data && normalized.length === 5) {
       const matches = findThailandAddressMatchesByPostalCode(data, normalized);
       const nextProvinceCode = singleThailandAddressCode(
@@ -5274,7 +5265,7 @@ function ThailandAddressFieldEditor({
         (item) => item.provinceCode,
       );
       if (nextProvinceCode) {
-        nextValues["contact.province_code"] = nextProvinceCode;
+        nextValues[provinceKey] = nextProvinceCode;
         const provinceMatches = matches.filter(
           (item) => item.provinceCode === nextProvinceCode,
         );
@@ -5282,21 +5273,21 @@ function ThailandAddressFieldEditor({
           provinceMatches,
           (item) => item.districtCode,
         );
-        nextValues["contact.district_code"] = nextDistrictCode;
+        nextValues[districtKey] = nextDistrictCode;
         if (nextDistrictCode) {
-          nextValues["contact.sub_district_code"] = singleThailandAddressCode(
+          nextValues[subdistrictKey] = singleThailandAddressCode(
             provinceMatches.filter(
               (item) => item.districtCode === nextDistrictCode,
             ),
             (item) => item.subdistrictCode,
           );
         } else {
-          nextValues["contact.sub_district_code"] = "";
+          nextValues[subdistrictKey] = "";
         }
       } else {
-        nextValues["contact.province_code"] = "";
-        nextValues["contact.district_code"] = "";
-        nextValues["contact.sub_district_code"] = "";
+        nextValues[provinceKey] = "";
+        nextValues[districtKey] = "";
+        nextValues[subdistrictKey] = "";
       }
     }
     setAddress(nextValues);
@@ -5307,6 +5298,7 @@ function ThailandAddressFieldEditor({
       <ThailandAddressFreeTextEditor
         form={form}
         language={language}
+        prefix={prefix}
         setForm={setForm}
       />
     );
@@ -5319,13 +5311,26 @@ function ThailandAddressFieldEditor({
     <section className="grid gap-2 rounded-2xl border border-border bg-background p-2 text-sm font-semibold md:col-span-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span>{labels.title}</span>
-        <span className="text-xs font-medium text-muted-foreground">
-          {loading
-            ? labels.loading
-            : loadError
-              ? labels.loadError
-              : `${country?.provinces.length ?? 0} ${labels.provinces}`}
-        </span>
+        <div className="flex items-center gap-2">
+          {copyFromPrefix ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={copyFromBilling}
+            >
+              {language === "th" ? "คัดลอกจากที่อยู่ออกใบกำกับภาษี" : "Copy from billing address"}
+            </Button>
+          ) : null}
+          <span className="text-xs font-medium text-muted-foreground">
+            {loading
+              ? labels.loading
+              : loadError
+                ? labels.loadError
+                : `${country?.provinces.length ?? 0} ${labels.provinces}`}
+          </span>
+        </div>
       </div>
       <div className="grid gap-2 md:grid-cols-2">
         <ThailandAddressSelect
@@ -5387,18 +5392,20 @@ function ThailandAddressFieldEditor({
 function ThailandAddressFreeTextEditor({
   form,
   language,
+  prefix,
   setForm,
 }: {
   form: FormState;
   language: LanguageCode;
+  prefix: string;
   setForm: (form: FormState) => void;
 }) {
   const labels = thailandAddressUi(language);
   const fields = [
-    ["contact.province_code", labels.province],
-    ["contact.district_code", labels.district],
-    ["contact.sub_district_code", labels.subdistrict],
-    ["contact.zip_code", labels.postalCode],
+    [`${prefix}.provincecode`, labels.province],
+    [`${prefix}.districtcode`, labels.district],
+    [`${prefix}.subdistrictcode`, labels.subdistrict],
+    [`${prefix}.zipcode`, labels.postalCode],
   ] as const;
   return (
     <section className="grid gap-2 rounded-2xl border border-border bg-background p-2 text-sm font-semibold md:col-span-2">
@@ -5419,7 +5426,7 @@ function ThailandAddressFreeTextEditor({
   );
 }
 
-function ThailandAddressSelect({
+export function ThailandAddressSelect({
   disabled,
   label,
   onChange,
@@ -5454,7 +5461,7 @@ function ThailandAddressSelect({
   );
 }
 
-function thailandAddressUi(language: LanguageCode) {
+export function thailandAddressUi(language: LanguageCode) {
   if (language === "th") {
     return {
       title: "ที่อยู่ประเทศไทย",
@@ -5485,7 +5492,7 @@ function thailandAddressUi(language: LanguageCode) {
   };
 }
 
-function filterThailandProvinces(
+export function filterThailandProvinces(
   provinces: ThailandProvince[],
   matches: ThailandAddressMatch[],
 ): ThailandProvince[] {
@@ -5494,7 +5501,7 @@ function filterThailandProvinces(
   return provinces.filter((province) => allowed.has(province.code));
 }
 
-function filterThailandDistricts(
+export function filterThailandDistricts(
   districts: ThailandDistrict[],
   matches: ThailandAddressMatch[],
   provinceCode: string,
@@ -5508,7 +5515,7 @@ function filterThailandDistricts(
   return districts.filter((district) => allowed.has(district.code));
 }
 
-function filterThailandSubdistricts(
+export function filterThailandSubdistricts(
   subdistricts: ThailandSubdistrict[],
   matches: ThailandAddressMatch[],
   provinceCode: string,
@@ -5527,7 +5534,7 @@ function filterThailandSubdistricts(
   return subdistricts.filter((subdistrict) => allowed.has(subdistrict.code));
 }
 
-function singleThailandAddressCode<T>(
+export function singleThailandAddressCode<T>(
   rows: T[],
   getCode: (row: T) => string,
 ): string {
@@ -5535,14 +5542,14 @@ function singleThailandAddressCode<T>(
   return codes.length === 1 ? codes[0] : "";
 }
 
-function thailandAddressOptionLabel(
+export function thailandAddressOptionLabel(
   item: ThailandProvince | ThailandDistrict | ThailandSubdistrict,
   language: LanguageCode,
 ): string {
   return `${thailandAddressLabel(item.name, language)} (${item.code})`;
 }
 
-function postalAddressHint(
+export function postalAddressHint(
   postalCode: string,
   matches: ThailandAddressMatch[],
   selectedSubdistrict: ThailandSubdistrict | undefined,
@@ -8901,12 +8908,14 @@ function FieldEditor({
     );
   }
 
-  if (isThailandAddressPrimaryField(config, field)) {
+  if (field.type === "thai-address") {
     return (
       <ThailandAddressFieldEditor
         backendUrl={auth?.backendUrl}
+        copyFromPrefix={field.copyFromPrefix}
         form={form}
         language={language}
+        prefix={field.key}
         setForm={setForm}
       />
     );
@@ -9100,6 +9109,18 @@ function FieldEditor({
     );
   }
 
+  if (field.type === "bank-accounts") {
+    return (
+      <BankAccountsEditor
+        field={field}
+        form={form}
+        label={label}
+        language={language}
+        setForm={setForm}
+      />
+    );
+  }
+
   if (field.type === "string-list") {
     return (
       <StringListFieldEditor
@@ -9146,6 +9167,19 @@ function FieldEditor({
   if (field.type === "master-picker") {
     return (
       <MasterPickerFieldEditor
+        auth={auth}
+        field={field}
+        form={form}
+        label={label}
+        language={language}
+        setForm={setForm}
+      />
+    );
+  }
+
+  if (field.type === "master-multi-picker") {
+    return (
+      <MasterMultiPickerFieldEditor
         auth={auth}
         field={field}
         form={form}
@@ -9301,6 +9335,9 @@ function FieldEditor({
     field.key === "email" &&
     isEmailLike(form.username);
 
+  const isTaxIdLookupField =
+    (config.slug === "creditor" || config.slug === "debtor") && field.key === "taxid";
+
   return (
     <label className="grid gap-1 text-sm font-semibold">
       <span>
@@ -9324,8 +9361,147 @@ function FieldEditor({
           {helper}
         </span>
       ) : null}
+      {isTaxIdLookupField ? (
+        <TaxIdLinkBadge
+          auth={auth}
+          config={config}
+          form={form}
+          language={language}
+          workspace={workspace}
+        />
+      ) : null}
     </label>
   );
+}
+
+// Cross-lookup for the "same real business" case (spec section 1.2): when taxid is a real
+// 13-digit value, query both the creditor and debtor lists and exact-match on taxid.
+// - Match in the OTHER collection -> informational link badge + combined credit limit.
+// - Match in the SAME collection with the same branchnumber (different record) -> duplicate
+//   warning. Both are non-blocking / read-only; never prevents saving.
+function TaxIdLinkBadge({
+  auth,
+  config,
+  form,
+  language,
+  workspace,
+}: {
+  auth: AuthSession | null;
+  config: SystemSettingConfig;
+  form: FormState;
+  language: LanguageCode;
+  workspace: WorkspaceSession | null;
+}) {
+  const taxid = String(form.taxid ?? "").trim();
+  // Normalize the same way buildPayload does on save (see normalizeThaiTaxBranchCode call
+  // site above), so a raw in-progress value like "1" matches an already-saved "00001" —
+  // otherwise the duplicate check never fires until after the user has saved once.
+  const branchnumber = (() => {
+    try {
+      return normalizeThaiTaxBranchCode(form.branchnumber);
+    } catch {
+      return String(form.branchnumber ?? "").trim();
+    }
+  })();
+  const guidfixed = String(form.guidfixed ?? "").trim();
+  const [result, setResult] = useState<TaxIdLookupResult | null>(null);
+
+  useEffect(() => {
+    setResult(null);
+    if (!auth || !workspace || !/^\d{13}$/.test(taxid)) return;
+    let active = true;
+    lookupTaxIdMatches(auth, workspace, config.slug, taxid).then((next) => {
+      if (active) setResult(next);
+    });
+    return () => {
+      active = false;
+    };
+  }, [auth, workspace, config.slug, taxid]);
+
+  if (!result) return null;
+
+  const otherMatch = result.otherCollection.find((r) => stringValue(r.taxid) === taxid);
+  const duplicateMatch = result.sameCollection.find(
+    (r) =>
+      stringValue(r.taxid) === taxid &&
+      stringValue(r.branchnumber) === branchnumber &&
+      stringValue(r.guidfixed) !== guidfixed,
+  );
+
+  if (!otherMatch && !duplicateMatch) return null;
+
+  const otherLabel = config.slug === "creditor" ? (language === "th" ? "ลูกหนี้" : "debtor") : (language === "th" ? "เจ้าหนี้" : "creditor");
+  const combinedSatang =
+    (otherMatch ? Number(otherMatch.creditlimitsatang ?? 0) : 0) +
+    Number(form.creditlimitbaht ? Number(form.creditlimitbaht) * 100 : 0);
+
+  return (
+    <span className="grid gap-1">
+      {otherMatch ? (
+        <span className="rounded-lg border border-primary/30 bg-primary/5 px-2 py-1 text-xs font-medium text-primary">
+          {language === "th"
+            ? `คู่ค้ารายเดียวกัน: มีข้อมูล${otherLabel} รหัส ${stringValue(otherMatch.code)} ใช้เลขผู้เสียภาษีนี้อยู่`
+            : `Same business partner: ${otherLabel} code ${stringValue(otherMatch.code)} uses this tax ID`}
+          {" · "}
+          {language === "th" ? "วงเงินรวม" : "Combined credit"}{" "}
+          {(combinedSatang / 100).toLocaleString("th-TH")} {language === "th" ? "บาท" : "THB"}
+        </span>
+      ) : null}
+      {duplicateMatch ? (
+        <span className="rounded-lg border border-amber-400/40 bg-amber-400/10 px-2 py-1 text-xs font-medium text-amber-700">
+          {language === "th"
+            ? `เลขผู้เสียภาษี + รหัสสาขานี้ซ้ำกับรหัส ${stringValue(duplicateMatch.code)} ที่มีอยู่แล้ว`
+            : `This tax ID + branch number duplicates existing code ${stringValue(duplicateMatch.code)}`}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+type TaxIdLookupResult = {
+  otherCollection: SettingRecord[];
+  sameCollection: SettingRecord[];
+};
+
+async function lookupTaxIdMatches(
+  auth: AuthSession,
+  workspace: WorkspaceSession,
+  slug: string,
+  taxid: string,
+): Promise<TaxIdLookupResult> {
+  const otherSlug = slug === "creditor" ? "debtor" : "creditor";
+  const [otherCollection, sameCollection] = await Promise.all([
+    fetchSettingRecordsByTaxId(auth, workspace, otherSlug, taxid),
+    fetchSettingRecordsByTaxId(auth, workspace, slug, taxid),
+  ]);
+  return { otherCollection, sameCollection };
+}
+
+async function fetchSettingRecordsByTaxId(
+  auth: AuthSession,
+  workspace: WorkspaceSession,
+  slug: string,
+  taxid: string,
+): Promise<SettingRecord[]> {
+  try {
+    const config = getSystemSettingConfig(slug);
+    if (!config) return [];
+    const params = applyWorkspaceTenantParams(new URLSearchParams(), workspace);
+    params.set("q", taxid);
+    const response = await fetch(`/api/system-settings/${slug}?${params.toString()}`, {
+      headers: {
+        "x-bc-backend-url": auth.backendUrl,
+        Authorization: `Bearer ${auth.token}`,
+      },
+      cache: "no-store",
+    });
+    if (!response.ok) return [];
+    const payload = (await response.json()) as unknown;
+    if (isFailed(payload)) return [];
+    return normalizeRecords(payload, config);
+  } catch {
+    return [];
+  }
 }
 
 function StringListFieldEditor({
@@ -9678,6 +9854,152 @@ function normalizeTimeSalePayload(value: unknown): TimeSaleRow[] {
     fromtime: item.fromtime,
     totime: item.totime,
   }));
+}
+
+type BankAccountRow = { bankcode: string; accountnumber: string; accountname: string };
+
+function emptyBankAccountRow(): BankAccountRow {
+  return { bankcode: "", accountnumber: "", accountname: "" };
+}
+
+function normalizeBankAccountFormList(value: unknown): BankAccountRow[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isRecord).map((item) => ({
+    bankcode: stringValue(item.bankcode),
+    accountnumber: stringValue(item.accountnumber),
+    accountname: stringValue(item.accountname),
+  }));
+}
+
+// Rows where all three cells are empty are dropped on save (per spec section 3).
+function normalizeBankAccountPayload(value: unknown): BankAccountRow[] {
+  return normalizeBankAccountFormList(value).filter(
+    (row) => row.bankcode || row.accountnumber || row.accountname,
+  );
+}
+
+function BankAccountsEditor({
+  field,
+  form,
+  language,
+  label,
+  setForm,
+}: {
+  field: SystemSettingField;
+  form: FormState;
+  language: LanguageCode;
+  label: string;
+  setForm: (form: FormState) => void;
+}) {
+  const rows = normalizeBankAccountFormList(form[field.key]);
+
+  function commit(nextRows: BankAccountRow[]) {
+    setForm({ ...form, [field.key]: nextRows });
+  }
+
+  function updateRow(index: number, patch: Partial<BankAccountRow>) {
+    commit(rows.map((row, rowIndex) => (rowIndex === index ? { ...row, ...patch } : row)));
+  }
+
+  return (
+    <section className="grid gap-2 rounded-2xl border border-border bg-background p-2 text-sm font-semibold md:col-span-2">
+      <span>
+        {label}
+        {rows.length ? ` (${rows.length})` : ""}
+      </span>
+      <div className="grid gap-2">
+        {rows.map((row, index) => (
+          <div
+            className="grid gap-2 rounded-xl border border-border bg-card p-2 md:grid-cols-[repeat(3,1fr)_auto]"
+            key={index}
+          >
+            <label className="grid gap-1">
+              <span className="text-xs font-medium text-muted-foreground">
+                {language === "th" ? "ธนาคาร" : "Bank"}
+              </span>
+              <Input
+                value={row.bankcode}
+                onChange={(event) => updateRow(index, { bankcode: event.target.value })}
+              />
+            </label>
+            <label className="grid gap-1">
+              <span className="text-xs font-medium text-muted-foreground">
+                {language === "th" ? "เลขที่บัญชี" : "Account number"}
+              </span>
+              <Input
+                value={row.accountnumber}
+                onChange={(event) => updateRow(index, { accountnumber: event.target.value })}
+              />
+            </label>
+            <label className="grid gap-1">
+              <span className="text-xs font-medium text-muted-foreground">
+                {language === "th" ? "ชื่อบัญชี" : "Account name"}
+              </span>
+              <Input
+                value={row.accountname}
+                onChange={(event) => updateRow(index, { accountname: event.target.value })}
+              />
+            </label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-9 self-end"
+              onClick={() => commit(rows.filter((_, rowIndex) => rowIndex !== index))}
+            >
+              <Trash2 className="size-3.5" />
+              {language === "th" ? "ลบ" : "Delete"}
+            </Button>
+          </div>
+        ))}
+        <Button
+          type="button"
+          variant="outline"
+          className="h-9 justify-center"
+          onClick={() => commit([...rows, emptyBankAccountRow()])}
+        >
+          <Plus className="size-4" />
+          {language === "th" ? "เพิ่มบัญชีธนาคาร" : "Add bank account"}
+        </Button>
+      </div>
+    </section>
+  );
+}
+
+function BankAccountsReadOnlyDetail({
+  label,
+  language,
+  value,
+}: {
+  label: string;
+  language: LanguageCode;
+  value: unknown;
+}) {
+  const rows = normalizeBankAccountFormList(value);
+  return (
+    <div className="grid gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+      <span className="text-xs font-semibold text-muted-foreground">{label}</span>
+      {rows.length === 0 ? (
+        <b className="text-foreground">-</b>
+      ) : (
+        <div className="grid gap-1">
+          {rows.map((row, index) => (
+            <div className="rounded-lg border border-border bg-background p-2" key={index}>
+              <b>{row.bankcode || "-"}</b>{" "}
+              <span className="text-xs font-medium text-muted-foreground">
+                {row.accountnumber || "-"} · {row.accountname || "-"}
+              </span>
+              {index === 0 ? (
+                <span className="ml-1 text-xs font-medium text-muted-foreground">
+                  ({language === "th" ? "บัญชีหลัก" : "default"})
+                </span>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function normalizeTimeSaleDays(value: unknown): number[] {
@@ -11169,6 +11491,134 @@ function MasterPickerFieldEditor({
         anchorRef={anchorRef}
         title={label}
         onSelect={select}
+      />
+    </section>
+  );
+}
+
+// Chip multi-select over a master-data list (e.g. creditorgroup, debtorgroup groups picker).
+// Reuses the same MasterPicker modal as the single-select variant; stores an array of
+// { guidfixed, code, names } entries in the form.
+function masterMultiPickerEntries(value: unknown): SettingRecord[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isRecord);
+}
+
+// Normalizes a stored/response array of group-like records (e.g. CreditorGroupInfo /
+// DebtorGroupInfo, which use `groupcode` not `code`) into the picker's { guidfixed, code, names }
+// shape used by the form and MasterMultiPickerFieldEditor.
+function normalizeMasterMultiPickerValue(value: unknown): SettingRecord[] {
+  return masterMultiPickerEntries(value).map((item) => ({
+    guidfixed: stringValue(item.guidfixed),
+    code: stringValue(item.code ?? item.groupcode),
+    names: item.names,
+  }));
+}
+
+function MasterMultiPickerFieldEditor({
+  auth,
+  field,
+  form,
+  label,
+  language,
+  setForm,
+}: {
+  auth: AuthSession | null;
+  field: SystemSettingField;
+  form: FormState;
+  label: string;
+  language: LanguageCode;
+  setForm: (form: FormState) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const anchorRef = useRef<HTMLButtonElement | null>(null);
+  const entries = masterMultiPickerEntries(form[field.key]);
+  const master = (field.master ?? "businesstype") as MasterName;
+
+  function addEntry(entry: MasterEntry) {
+    if (entries.some((item) => stringValue(item.guidfixed) === entry.guidfixed)) {
+      setOpen(false);
+      return;
+    }
+    setForm({
+      ...form,
+      [field.key]: [
+        ...entries,
+        { guidfixed: entry.guidfixed, code: entry.code, names: entry.names },
+      ],
+    });
+    setOpen(false);
+  }
+
+  function removeEntry(guidfixed: string) {
+    setForm({
+      ...form,
+      [field.key]: entries.filter((item) => stringValue(item.guidfixed) !== guidfixed),
+    });
+  }
+
+  return (
+    <section className="grid gap-2 rounded-2xl border border-border bg-background p-3 md:col-span-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="text-sm font-semibold">
+          {label}
+          {field.required ? " *" : ""}
+        </span>
+        <Button
+          ref={anchorRef}
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setOpen(true)}
+        >
+          <Plus className="size-4" />
+          {language === "th" ? "เพิ่ม" : "Add"}
+        </Button>
+      </div>
+      {entries.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-border bg-muted/30 px-3 py-2 text-xs font-medium text-muted-foreground">
+          {language === "th" ? "ยังไม่ได้เลือกกลุ่ม" : "No groups selected"}
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {entries.map((item) => {
+            const guid = stringValue(item.guidfixed);
+            const names = getLocalizedNameArray(item.names);
+            const displayName =
+              localizedNameForLanguage(names, language) || stringValue(item.code);
+            return (
+              <span
+                key={guid}
+                className="inline-flex max-w-full items-center gap-1 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-semibold"
+              >
+                <span className="break-words">
+                  {stringValue(item.code)}
+                  {stringValue(item.code) && displayName ? " - " : ""}
+                  {displayName}
+                </span>
+                <button
+                  type="button"
+                  className="rounded-full p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                  aria-label={language === "th" ? "ลบ" : "Remove"}
+                  onClick={() => removeEntry(guid)}
+                >
+                  <X className="size-3.5" />
+                </button>
+              </span>
+            );
+          })}
+        </div>
+      )}
+      <MasterPicker
+        open={open}
+        onClose={() => setOpen(false)}
+        auth={auth}
+        language={language}
+        master={master}
+        placement="field"
+        anchorRef={anchorRef}
+        title={label}
+        onSelect={addEntry}
       />
     </section>
   );
@@ -13345,7 +13795,6 @@ function BranchUnifiedView({
       business: [],
     };
     for (const field of config.fields) {
-      if (isThailandAddressSecondaryField(config, field)) continue;
       if (isBranchLongitudeField(config, field)) continue;
       buckets[branchTabForField(field.key)].push(field);
     }
@@ -14944,10 +15393,14 @@ function defaultForm(
       form[field.key] = defaultLanguageConfigs("th");
     else if (field.type === "language-list") form[field.key] = ["th"];
     else if (field.type === "master-picker") form[field.key] = {};
+    else if (field.type === "master-multi-picker") form[field.key] = [];
     else if (field.type === "time-sale-list") form[field.key] = [];
+    else if (field.type === "bank-accounts") form[field.key] = [];
     else if (field.type === "holding-scope-rules") form[field.key] = [];
     else if (field.type === "string-list") form[field.key] = [];
-    else if (field.type === "json")
+    else if (field.type === "thai-address") {
+      for (const sub of THAI_ADDRESS_SUBKEYS) form[`${field.key}.${sub}`] = "";
+    } else if (field.type === "json")
       form[field.key] =
         field.key === "paymentrounding"
           ? defaultPaymentRoundingJson()
@@ -15013,8 +15466,12 @@ function formFromRecord(
       );
     else if (field.type === "master-picker")
       form[field.key] = isRecord(value) ? value : {};
+    else if (field.type === "master-multi-picker")
+      form[field.key] = normalizeMasterMultiPickerValue(value);
     else if (field.type === "time-sale-list")
       form[field.key] = normalizeTimeSaleFormList(value);
+    else if (field.type === "bank-accounts")
+      form[field.key] = normalizeBankAccountFormList(value);
     else if (field.type === "holding-scope-rules")
       form[field.key] = normalizeHoldingScopeRules(
         value,
@@ -15022,7 +15479,13 @@ function formFromRecord(
       );
     else if (field.type === "string-list")
       form[field.key] = normalizeStringListValue(value);
-    else if (
+    else if (field.type === "thai-address") {
+      for (const sub of THAI_ADDRESS_SUBKEYS) {
+        form[`${field.key}.${sub}`] = stringValue(
+          getByPath(record, `${field.key}.${sub}`),
+        );
+      }
+    } else if (
       field.type === "json" &&
       config.slug === "permissiondefinition" &&
       isPermissionAccessRulesField(field)
@@ -15089,6 +15552,10 @@ function formFromRecord(
     form["settings.languageconfigs"] = languageConfigs;
     form["settings.language"] = languageConfigs[0]?.code ?? "th";
   }
+  if (config.slug === "creditor" || config.slug === "debtor") {
+    const satang = Number(getByPath(record, "creditlimitsatang") ?? 0);
+    form.creditlimitbaht = Number.isFinite(satang) && satang !== 0 ? satang / 100 : "";
+  }
   applyCompanyDefaults(form, config);
   applyBranchDefaults(form, config);
   form.guidfixed = record.guidfixed || record.guidfixed || record.guid || "";
@@ -15100,6 +15567,13 @@ function recordValueForField(
   config: SystemSettingConfig,
   field: SystemSettingField,
 ): unknown {
+  if (
+    (config.slug === "creditor" || config.slug === "debtor") &&
+    field.key === "creditlimitbaht"
+  ) {
+    const satang = Number(getByPath(record, "creditlimitsatang") ?? 0);
+    return Number.isFinite(satang) && satang !== 0 ? satang / 100 : undefined;
+  }
   const value = getByPath(record, field.key);
   if (value !== undefined) return value;
   const aliases = fieldValueAliases[`${config.slug}.${field.key}`] ?? [];
@@ -15231,15 +15705,33 @@ function buildPayload(
       );
     else if (field.type === "master-picker")
       setByPath(payload, field.key, isRecord(value) ? value : {});
+    else if (field.type === "master-multi-picker")
+      setByPath(
+        payload,
+        field.key,
+        masterMultiPickerEntries(value)
+          .map((item) => stringValue(item.guidfixed))
+          .filter(Boolean),
+      );
     else if (field.type === "image-gallery")
       setByPath(payload, field.key, toUriArray(value));
     else if (field.type === "time-sale-list")
       setByPath(payload, field.key, normalizeTimeSalePayload(value));
+    else if (field.type === "bank-accounts")
+      setByPath(payload, field.key, normalizeBankAccountPayload(value));
     else if (field.type === "holding-scope-rules")
       setByPath(payload, field.key, normalizeHoldingScopeRules(value));
     else if (field.type === "string-list")
       setByPath(payload, field.key, normalizeStringListValue(value));
-    else if (field.type === "branch-multi-select")
+    else if (field.type === "thai-address") {
+      for (const sub of THAI_ADDRESS_SUBKEYS) {
+        setByPath(
+          payload,
+          `${field.key}.${sub}`,
+          String(form[`${field.key}.${sub}`] ?? "").trim(),
+        );
+      }
+    } else if (field.type === "branch-multi-select")
       setByPath(payload, field.key, selectedBranchesFromValue(value));
     else if (field.type === "company-multi-select") {
       const companyList = Array.isArray(value)
@@ -15314,6 +15806,32 @@ function buildPayload(
     !config.fields.some((field) => field.type === "branch-multi-select")
   ) {
     delete payload.branches;
+  }
+
+  // Creditor/Debtor: the credit limit is stored in satang (int64, per the money-field decimal
+  // rule) but shown to the user in baht. Integer math only — never parseFloat on money.
+  if (config.slug === "creditor" || config.slug === "debtor") {
+    const baht = String(form.creditlimitbaht ?? "").trim();
+    payload.creditlimitsatang = baht ? Math.round(Number(baht) * 100) : 0;
+    delete payload.creditlimitbaht;
+  }
+
+  // Creditor/Debtor: normalize the counterparty's Thai VAT branch code the same way branch
+  // codes are normalized on save (reuses normalizeThaiTaxBranchCode). Empty stays empty —
+  // branchnumber is only required when the partner is VAT-registered (see helper text).
+  if (config.slug === "creditor" || config.slug === "debtor") {
+    const rawBranchNumber = String(getByPath(payload, "branchnumber") ?? "").trim();
+    if (rawBranchNumber) {
+      try {
+        setByPath(payload, "branchnumber", normalizeThaiTaxBranchCode(rawBranchNumber));
+      } catch {
+        throw new Error(
+          language === "th"
+            ? "รหัสสาขาภาษีไทยต้องเป็นเลขไม่เกิน 5 หลัก เช่น สำนักงานใหญ่ = 00000 และสาขาที่ 1 = 00001"
+            : "Thai tax branch code must be numeric and no more than 5 digits. Head office = 00000; branch 1 = 00001.",
+        );
+      }
+    }
   }
 
   if (config.kind === "atlas") {
@@ -16068,207 +16586,6 @@ function extractUploadUri(payload: unknown): string {
   );
 }
 
-function useAuthenticatedImageDisplaySource(
-  value: unknown,
-  auth: AuthSession | null,
-): {
-  displayUrl: string;
-  failed: boolean;
-  loading: boolean;
-  requestedUrl: string;
-} {
-  const authBackendUrl = auth?.backendUrl ?? "";
-  const authToken = auth?.token ?? "";
-  const authUsername = auth?.username ?? "";
-  const requestedUrl = useMemo(
-    () => imageDisplayUrl(value, authBackendUrl),
-    [authBackendUrl, value],
-  );
-  const [state, setState] = useState({
-    displayUrl: "",
-    failed: false,
-    loading: false,
-  });
-
-  useEffect(() => {
-    if (!requestedUrl) {
-      setState({ displayUrl: "", failed: false, loading: false });
-      return;
-    }
-
-    if (!imageNeedsAuthenticatedFetch(requestedUrl)) {
-      setState({ displayUrl: requestedUrl, failed: false, loading: false });
-      return;
-    }
-
-    if (!authToken) {
-      clearAuthenticatedImageObjectUrlCache();
-      setState({ displayUrl: "", failed: true, loading: false });
-      return;
-    }
-
-    syncAuthenticatedImageCacheOwner(authBackendUrl, authUsername, authToken);
-    const cacheKey = authenticatedImageCacheKey(
-      requestedUrl,
-      authBackendUrl,
-      authUsername,
-      authToken,
-    );
-    const cachedObjectUrl = getCachedAuthenticatedImageObjectUrl(cacheKey);
-    if (cachedObjectUrl) {
-      setState({ displayUrl: cachedObjectUrl, failed: false, loading: false });
-      return;
-    }
-
-    const controller = new AbortController();
-    let cancelled = false;
-
-    setState({ displayUrl: "", failed: false, loading: true });
-    void fetch(requestedUrl, {
-      cache: "no-store",
-      headers: { Authorization: `Bearer ${authToken}` },
-      signal: controller.signal,
-    })
-      .then(async (response) => {
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return response.blob();
-      })
-      .then((blob) => {
-        const nextObjectUrl = URL.createObjectURL(blob);
-        if (cancelled) {
-          URL.revokeObjectURL(nextObjectUrl);
-          return;
-        }
-        cacheAuthenticatedImageObjectUrl(cacheKey, nextObjectUrl);
-        setState({
-          displayUrl: nextObjectUrl,
-          failed: false,
-          loading: false,
-        });
-      })
-      .catch((error: unknown) => {
-        if (cancelled) return;
-        if (error instanceof DOMException && error.name === "AbortError")
-          return;
-        setState({ displayUrl: "", failed: true, loading: false });
-      });
-
-    return () => {
-      cancelled = true;
-      controller.abort();
-    };
-  }, [authBackendUrl, authToken, authUsername, requestedUrl]);
-
-  return { ...state, requestedUrl };
-}
-
-function authenticatedImageCacheKey(
-  imageUrl: string,
-  backendUrl: string,
-  username: string,
-  token: string,
-): string {
-  return [
-    backendUrl.trim(),
-    username.trim().toLowerCase(),
-    token,
-    imageUrl,
-  ].join("\u0000");
-}
-
-function syncAuthenticatedImageCacheOwner(
-  backendUrl: string,
-  username: string,
-  token: string,
-) {
-  const owner = [backendUrl.trim(), username.trim().toLowerCase(), token].join(
-    "\u0000",
-  );
-  if (authenticatedImageCacheOwner && authenticatedImageCacheOwner !== owner)
-    clearAuthenticatedImageObjectUrlCache();
-  authenticatedImageCacheOwner = owner;
-}
-
-function getCachedAuthenticatedImageObjectUrl(cacheKey: string): string {
-  const cached = authenticatedImageObjectUrlCache.get(cacheKey);
-  if (!cached) return "";
-  cached.lastAccessAt = Date.now();
-  return cached.objectUrl;
-}
-
-function cacheAuthenticatedImageObjectUrl(cacheKey: string, objectUrl: string) {
-  const existing = authenticatedImageObjectUrlCache.get(cacheKey);
-  if (existing?.objectUrl && existing.objectUrl !== objectUrl)
-    URL.revokeObjectURL(existing.objectUrl);
-
-  authenticatedImageObjectUrlCache.set(cacheKey, {
-    objectUrl,
-    lastAccessAt: Date.now(),
-  });
-
-  if (
-    authenticatedImageObjectUrlCache.size <=
-    AUTHENTICATED_IMAGE_CACHE_MAX_ENTRIES
-  )
-    return;
-
-  const entries = [...authenticatedImageObjectUrlCache.entries()].sort(
-    (first, second) => first[1].lastAccessAt - second[1].lastAccessAt,
-  );
-  for (const [key, entry] of entries.slice(
-    0,
-    authenticatedImageObjectUrlCache.size -
-      AUTHENTICATED_IMAGE_CACHE_MAX_ENTRIES,
-  )) {
-    URL.revokeObjectURL(entry.objectUrl);
-    authenticatedImageObjectUrlCache.delete(key);
-  }
-}
-
-function clearAuthenticatedImageObjectUrlCache() {
-  for (const entry of authenticatedImageObjectUrlCache.values()) {
-    URL.revokeObjectURL(entry.objectUrl);
-  }
-  authenticatedImageObjectUrlCache.clear();
-  authenticatedImageCacheOwner = "";
-}
-
-function imageDisplayUrl(value: unknown, backendUrl: unknown): string {
-  const raw = stringValue(value).trim();
-  if (!raw) return "";
-  if (/^(blob:|data:|https?:\/\/)/i.test(raw)) return raw;
-  if (raw.startsWith("//"))
-    return typeof window === "undefined"
-      ? raw
-      : `${window.location.protocol}${raw}`;
-  if (raw.startsWith("/api/")) return raw;
-
-  const base = mainApiDisplayBase(backendUrl);
-  if (!base) return raw;
-  if (raw.startsWith("/")) return `${base}${raw}`;
-  if (raw.toLowerCase().startsWith("images/"))
-    return `${base}/${raw.replace(/^\/+/, "")}`;
-  return `${base}/images/${raw.replace(/^\/+/, "")}`;
-}
-
-function mainApiDisplayBase(rawBackendUrl: unknown): string {
-  const raw = stringValue(rawBackendUrl).trim();
-  if (!raw) return "";
-  try {
-    const withProtocol = /^https?:\/\//i.test(raw) ? raw : `http://${raw}`;
-    const parsed = new URL(withProtocol);
-    const path = parsed.pathname.replace(/\/+$/, "");
-    parsed.pathname = path.toLowerCase().endsWith("/goapi")
-      ? path.slice(0, -"/goapi".length) || "/"
-      : "/";
-    parsed.search = "";
-    parsed.hash = "";
-    return parsed.toString().replace(/\/$/, "");
-  } catch {
-    return "";
-  }
-}
-
 async function resizeLogoFile(file: File): Promise<File> {
   // PNG-only: reject other formats with a clear error before processing.
   const isPngByName = /\.png$/i.test(file.name);
@@ -16784,12 +17101,31 @@ function fieldDisplayValue(
   if (field.type === "master-picker") {
     return masterPickerDisplayValue(value, language);
   }
+  if (field.type === "master-multi-picker") {
+    const entries = masterMultiPickerEntries(value);
+    if (entries.length === 0) return "-";
+    return entries
+      .map((item) => {
+        const names = getLocalizedNameArray(item.names);
+        return localizedNameForLanguage(names, language) || stringValue(item.code);
+      })
+      .filter(Boolean)
+      .join(", ");
+  }
   if (field.type === "time-sale-list") {
     const count = normalizeTimeSaleFormList(value).length;
     return count > 0
       ? language === "th"
         ? `${count} ช่วงเวลา`
         : `${count} time windows`
+      : "-";
+  }
+  if (field.type === "bank-accounts") {
+    const count = normalizeBankAccountFormList(value).length;
+    return count > 0
+      ? language === "th"
+        ? `${count} บัญชี`
+        : `${count} accounts`
       : "-";
   }
   if (field.type === "string-list") {

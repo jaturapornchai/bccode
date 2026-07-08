@@ -237,7 +237,7 @@ function BarcodePickerModal({
 export function ProductSetScreen({ active = true, embedded = false, language = "th" }: ProductSetScreenProps) {
   const lang = normalizeLanguage(language);
   const text = getBarcodeText(lang);
-  const { confirm } = useConfirmDialog();
+  const { confirm, confirmationDialog } = useConfirmDialog();
 
   const [auth, setAuth] = useState<AuthSession | null>(null);
   const [workspace, setWorkspace] = useState<WorkspaceSession | null>(null);
@@ -740,6 +740,13 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
     if (!group) return;
 
     const choices = group.choices || [];
+
+    // Prevent a set from containing itself as a component (infinite expansion risk).
+    if (entry.itemcode && editProduct?.code && entry.itemcode === editProduct.code) {
+      pushNotice({ type: "error", text: "ไม่สามารถเพิ่มสินค้าชุดนี้เป็นส่วนประกอบของตัวเองได้" });
+      return;
+    }
+
     // Avoid duplicates
     if (choices.some(c => c.refbarcode === entry.barcode)) return;
 
@@ -869,6 +876,7 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
             จัดการระบบสินค้าชุด (Product Bundles)
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">จัดกลุ่มคอมโบเซ็ต คอนฟิกตัวเลือกรวม และกติกาการตัดสต๊อกสินค้าหลัก</p>
+          <p className="text-xs text-muted-foreground mt-0.5">สินค้าชุด = จับสินค้าหลายตัวขายรวมกันเป็นเซ็ต · ต่างจาก "สูตรผลิต (BOM)" ซึ่งใช้ผลิต/แปรรูปเป็นสินค้าใหม่</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => void loadProductSets()} disabled={loading} className="h-9 hover:bg-muted">
@@ -1989,6 +1997,8 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
           }}
         />
       )}
+
+      {confirmationDialog}
     </div>
   );
 }

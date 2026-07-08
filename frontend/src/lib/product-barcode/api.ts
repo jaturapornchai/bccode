@@ -157,6 +157,8 @@ export type MasterName =
   | "businesstype"
   | "branch"
   | "creditor"
+  | "creditorgroup"
+  | "debtorgroup"
   | "product";
 
 export interface MasterListRequest {

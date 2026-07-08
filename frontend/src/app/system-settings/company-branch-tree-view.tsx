@@ -27,7 +27,29 @@ import { LogoAvatar } from "@/components/logo-avatar";
 import { type LanguageCode, LANGUAGES } from "@/lib/i18n";
 import { DEFAULT_TIME_ZONE, timezoneMeta, timezoneSelectOptions } from "@/lib/date-time";
 import { cn } from "@/lib/utils";
-import { normalizeLanguageConfigs } from "./system-settings-screen";
+import {
+  normalizeLanguageConfigs,
+  ThailandAddressSelect,
+  filterThailandProvinces,
+  filterThailandDistricts,
+  filterThailandSubdistricts,
+  singleThailandAddressCode,
+  thailandAddressOptionLabel,
+  postalAddressHint,
+  thailandAddressUi,
+} from "./system-settings-screen";
+import {
+  loadThailandAddressData,
+  getThailandCountry,
+  findThailandProvince,
+  findThailandDistrict,
+  findThailandSubdistrict,
+  findThailandAddressMatchesByPostalCode,
+  getThailandDistrictPostalCode,
+  getThailandSubdistrictPostalCode,
+  normalizeThaiPostalCode,
+  type ThailandAddressData,
+} from "@/lib/thailand-addresses";
 import { deriveMainApiUrl } from "@/lib/backend-url";
 import { NamesEditor } from "@/components/product-barcode/names-editor";
 import { AddressesEditor } from "@/components/product-barcode/addresses-editor";
@@ -92,6 +114,11 @@ interface BranchRecord {
   fiscalstartmonth?: number;
   documentformats?: Partial<DocFormat>[];
   addresses?: { code?: string; address?: string }[];
+  countrycode?: string;
+  provincecode?: string;
+  districtcode?: string;
+  subdistrictcode?: string;
+  zipcode?: string;
   etaxenabled?: boolean;
   isactive?: boolean;
   deletedat?: string | null;
@@ -394,6 +421,239 @@ const getAddressFromList = (
   return entry?.address || "";
 };
 
+// Cascade province -> district -> subdistrict -> auto zipcode picker (+ reverse
+// zipcode lookup), matching ThailandAddressFieldEditor's UX in system-settings-screen.tsx.
+// Plain-useState here since branch-tree-view doesn't use the generic FormState machinery.
+function BranchGeoAddressPicker({
+  backendUrl,
+  countryCode,
+  provinceCode,
+  districtCode,
+  subdistrictCode,
+  zipCode,
+  language,
+  disabled,
+  onChange,
+}: {
+  backendUrl?: string;
+  countryCode: string;
+  provinceCode: string;
+  districtCode: string;
+  subdistrictCode: string;
+  zipCode: string;
+  language: LanguageCode;
+  disabled?: boolean;
+  onChange: (next: {
+    countrycode?: string;
+    provincecode?: string;
+    districtcode?: string;
+    subdistrictcode?: string;
+    zipcode?: string;
+  }) => void;
+}) {
+  const [data, setData] = useState<ThailandAddressData | null>(null);
+  const [loadError, setLoadError] = useState("");
+  const postalCode = normalizeThaiPostalCode(zipCode);
+
+  useEffect(() => {
+    if (countryCode !== "TH") return;
+    let active = true;
+    setLoadError("");
+    loadThailandAddressData(backendUrl)
+      .then((nextData) => {
+        if (active) setData(nextData);
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        setLoadError(error instanceof Error ? error.message : "load failed");
+      });
+    return () => {
+      active = false;
+    };
+  }, [backendUrl, countryCode]);
+
+  const country = data ? getThailandCountry(data) : undefined;
+  const postalMatches = useMemo(
+    () =>
+      data && postalCode.length === 5
+        ? findThailandAddressMatchesByPostalCode(data, postalCode)
+        : [],
+    [data, postalCode],
+  );
+  const selectedProvince = data ? findThailandProvince(data, provinceCode) : undefined;
+  const selectedDistrict = data
+    ? findThailandDistrict(data, provinceCode, districtCode)
+    : undefined;
+  const selectedSubdistrict = data
+    ? findThailandSubdistrict(data, provinceCode, districtCode, subdistrictCode)
+    : undefined;
+
+  const provinces = filterThailandProvinces(country?.provinces ?? [], postalMatches);
+  const districts = filterThailandDistricts(
+    selectedProvince?.districts ?? [],
+    postalMatches,
+    provinceCode,
+  );
+  const subdistricts = filterThailandSubdistricts(
+    selectedDistrict?.subdistricts ?? [],
+    postalMatches,
+    provinceCode,
+    districtCode,
+  );
+
+  function chooseProvince(nextProvinceCode: string) {
+    const next: Parameters<typeof onChange>[0] = {
+      provincecode: nextProvinceCode,
+      districtcode: "",
+      subdistrictcode: "",
+      zipcode: "",
+    };
+    if (data && postalCode.length === 5 && nextProvinceCode) {
+      const matches = postalMatches.filter((item) => item.provinceCode === nextProvinceCode);
+      if (matches.length > 0) {
+        next.zipcode = postalCode;
+        const nextDistrictCode = singleThailandAddressCode(matches, (item) => item.districtCode);
+        if (nextDistrictCode) {
+          next.districtcode = nextDistrictCode;
+          const nextSubdistrictCode = singleThailandAddressCode(
+            matches.filter((item) => item.districtCode === nextDistrictCode),
+            (item) => item.subdistrictCode,
+          );
+          if (nextSubdistrictCode) next.subdistrictcode = nextSubdistrictCode;
+        }
+      }
+    }
+    onChange(next);
+  }
+
+  function chooseDistrict(nextDistrictCode: string) {
+    const next: Parameters<typeof onChange>[0] = {
+      districtcode: nextDistrictCode,
+      subdistrictcode: "",
+      zipcode: "",
+    };
+    if (data && provinceCode && nextDistrictCode) {
+      const matches =
+        postalCode.length === 5
+          ? postalMatches.filter(
+              (item) => item.provinceCode === provinceCode && item.districtCode === nextDistrictCode,
+            )
+          : [];
+      next.zipcode =
+        matches.length > 0 ? postalCode : getThailandDistrictPostalCode(data, provinceCode, nextDistrictCode);
+      if (postalCode.length === 5) {
+        const nextSubdistrictCode = singleThailandAddressCode(matches, (item) => item.subdistrictCode);
+        if (nextSubdistrictCode) next.subdistrictcode = nextSubdistrictCode;
+      }
+    }
+    onChange(next);
+  }
+
+  function chooseSubdistrict(nextSubdistrictCode: string) {
+    const next: Parameters<typeof onChange>[0] = {
+      subdistrictcode: nextSubdistrictCode,
+      zipcode: "",
+    };
+    if (data && provinceCode && districtCode) {
+      next.zipcode = nextSubdistrictCode
+        ? getThailandSubdistrictPostalCode(data, provinceCode, districtCode, nextSubdistrictCode)
+        : getThailandDistrictPostalCode(data, provinceCode, districtCode);
+    }
+    onChange(next);
+  }
+
+  function applyPostalCode(rawValue: string) {
+    const normalized = normalizeThaiPostalCode(rawValue);
+    const next: Parameters<typeof onChange>[0] = { zipcode: normalized };
+    if (data && normalized.length === 5) {
+      const matches = findThailandAddressMatchesByPostalCode(data, normalized);
+      const nextProvinceCode = singleThailandAddressCode(matches, (item) => item.provinceCode);
+      if (nextProvinceCode) {
+        next.provincecode = nextProvinceCode;
+        const provinceMatches = matches.filter((item) => item.provinceCode === nextProvinceCode);
+        const nextDistrictCode = singleThailandAddressCode(provinceMatches, (item) => item.districtCode);
+        next.districtcode = nextDistrictCode;
+        if (nextDistrictCode) {
+          next.subdistrictcode = singleThailandAddressCode(
+            provinceMatches.filter((item) => item.districtCode === nextDistrictCode),
+            (item) => item.subdistrictCode,
+          );
+        } else {
+          next.subdistrictcode = "";
+        }
+      } else {
+        next.provincecode = "";
+        next.districtcode = "";
+        next.subdistrictcode = "";
+      }
+    }
+    onChange(next);
+  }
+
+  const labels = thailandAddressUi(language);
+  const loading = !country && !loadError;
+
+  return (
+    <section className="grid gap-2 rounded-2xl border border-border bg-background p-2 text-sm font-semibold">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span>{labels.title}</span>
+        <span className="text-xs font-medium text-muted-foreground">
+          {loading ? labels.loading : loadError ? labels.loadError : `${country?.provinces.length ?? 0} ${labels.provinces}`}
+        </span>
+      </div>
+      <div className="grid gap-2 md:grid-cols-2">
+        <ThailandAddressSelect
+          label={labels.province}
+          value={provinceCode}
+          disabled={disabled || loading || Boolean(loadError)}
+          placeholder={labels.selectProvince}
+          onChange={chooseProvince}
+          options={provinces.map((province) => ({
+            code: province.code,
+            label: thailandAddressOptionLabel(province, language),
+          }))}
+        />
+        <ThailandAddressSelect
+          label={labels.district}
+          value={districtCode}
+          disabled={disabled || !selectedProvince || loading || Boolean(loadError)}
+          placeholder={labels.selectDistrict}
+          onChange={chooseDistrict}
+          options={districts.map((district) => ({
+            code: district.code,
+            label: thailandAddressOptionLabel(district, language),
+          }))}
+        />
+        <ThailandAddressSelect
+          label={labels.subdistrict}
+          value={subdistrictCode}
+          disabled={disabled || !selectedDistrict || loading || Boolean(loadError)}
+          placeholder={labels.selectSubdistrict}
+          onChange={chooseSubdistrict}
+          options={subdistricts.map((subdistrict) => ({
+            code: subdistrict.code,
+            label: thailandAddressOptionLabel(subdistrict, language),
+          }))}
+        />
+        <label className="grid gap-1">
+          <span>{labels.postalCode}</span>
+          <Input
+            inputMode="numeric"
+            maxLength={5}
+            value={postalCode}
+            disabled={disabled}
+            onChange={(event) => applyPostalCode(event.target.value)}
+            placeholder="10200"
+          />
+        </label>
+      </div>
+      <p className="text-xs font-medium text-muted-foreground">
+        {postalAddressHint(postalCode, postalMatches, selectedSubdistrict, language)}
+      </p>
+    </section>
+  );
+}
+
 const isVisibleOrganizationRecord = <T extends { isactive?: boolean; deletedat?: string | null }>(record: T): boolean => {
   if (record.isactive === false) return false;
   return !record.deletedat || String(record.deletedat).trim().length === 0;
@@ -569,6 +829,11 @@ export function CompanyBranchTreeView({
   const [formDocFormats, setFormDocFormats] = useState<DocFormat[]>([]);
   const [docDrawerOpen, setDocDrawerOpen] = useState(false);
   const [formAddresses, setFormAddresses] = useState<Record<string, string>>({});
+  const [formCountryCode, setFormCountryCode] = useState("TH");
+  const [formProvinceCode, setFormProvinceCode] = useState("");
+  const [formDistrictCode, setFormDistrictCode] = useState("");
+  const [formSubdistrictCode, setFormSubdistrictCode] = useState("");
+  const [formZipCode, setFormZipCode] = useState("");
   const [formETaxEnabled, setFormETaxEnabled] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoError, setLogoError] = useState("");
@@ -596,6 +861,11 @@ export function CompanyBranchTreeView({
     if (selectedNode.type === "company") {
       setFormTaxId((selectedNode.data as CompanyRecord).taxid || "");
       setFormAddresses({});
+      setFormCountryCode("TH");
+      setFormProvinceCode("");
+      setFormDistrictCode("");
+      setFormSubdistrictCode("");
+      setFormZipCode("");
     } else {
       const branchData = selectedNode.data as BranchRecord;
       setFormTimezone(branchData.timezone || DEFAULT_TIME_ZONE);
@@ -622,6 +892,11 @@ export function CompanyBranchTreeView({
         addrMap[lang] = getAddressFromList(branchData.addresses, lang);
       });
       setFormAddresses(addrMap);
+      setFormCountryCode(branchData.countrycode || "TH");
+      setFormProvinceCode(branchData.provincecode || "");
+      setFormDistrictCode(branchData.districtcode || "");
+      setFormSubdistrictCode(branchData.subdistrictcode || "");
+      setFormZipCode(branchData.zipcode || "");
     }
   }, [selectedNode, editorLanguages, workspaceDefaultLanguage]);
 
@@ -762,6 +1037,11 @@ export function CompanyBranchTreeView({
           fiscalstartmonth: formFiscalStartMonth,
           documentformats: docFormatsPayload,
           addresses: addressesPayload,
+          countrycode: formCountryCode,
+          provincecode: formProvinceCode,
+          districtcode: formDistrictCode,
+          subdistrictcode: formSubdistrictCode,
+          zipcode: formZipCode,
           etaxenabled: formETaxEnabled,
           isactive: formIsActive,
         };
@@ -788,6 +1068,11 @@ export function CompanyBranchTreeView({
           fiscalstartmonth: formFiscalStartMonth,
           documentformats: docFormatsPayload,
           addresses: addressesPayload,
+          countrycode: formCountryCode,
+          provincecode: formProvinceCode,
+          districtcode: formDistrictCode,
+          subdistrictcode: formSubdistrictCode,
+          zipcode: formZipCode,
           etaxenabled: formETaxEnabled,
           isactive: formIsActive,
         };
@@ -842,6 +1127,11 @@ export function CompanyBranchTreeView({
                   fiscalstartmonth: formFiscalStartMonth,
                   documentformats: docFormatsPayload,
                   addresses: addressesPayload,
+                  countrycode: formCountryCode,
+                  provincecode: formProvinceCode,
+                  districtcode: formDistrictCode,
+                  subdistrictcode: formSubdistrictCode,
+                  zipcode: formZipCode,
                   etaxenabled: formETaxEnabled,
                 }),
           };
@@ -889,6 +1179,11 @@ export function CompanyBranchTreeView({
                   fiscalstartmonth: formFiscalStartMonth,
                   documentformats: docFormatsPayload,
                   addresses: addressesPayload,
+                  countrycode: formCountryCode,
+                  provincecode: formProvinceCode,
+                  districtcode: formDistrictCode,
+                  subdistrictcode: formSubdistrictCode,
+                  zipcode: formZipCode,
                   etaxenabled: formETaxEnabled,
                 }),
           };
@@ -1655,6 +1950,25 @@ export function CompanyBranchTreeView({
                       label={language === "th" ? "ที่อยู่สาขา (สำหรับออกเอกสาร)" : "Branch address (for documents)"}
                       language={language}
                       disabled={isReadOnlyMode}
+                    />
+                  )}
+                  {formType.includes("branch") && (
+                    <BranchGeoAddressPicker
+                      backendUrl={auth?.backendUrl}
+                      countryCode={formCountryCode}
+                      provinceCode={formProvinceCode}
+                      districtCode={formDistrictCode}
+                      subdistrictCode={formSubdistrictCode}
+                      zipCode={formZipCode}
+                      language={language}
+                      disabled={isReadOnlyMode}
+                      onChange={(next) => {
+                        if (next.countrycode !== undefined) setFormCountryCode(next.countrycode);
+                        if (next.provincecode !== undefined) setFormProvinceCode(next.provincecode);
+                        if (next.districtcode !== undefined) setFormDistrictCode(next.districtcode);
+                        if (next.subdistrictcode !== undefined) setFormSubdistrictCode(next.subdistrictcode);
+                        if (next.zipcode !== undefined) setFormZipCode(next.zipcode);
+                      }}
                     />
                   )}
                 </div>

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  ean13CheckDigit,
   getBoolean,
   getFirstString,
   getNumber,
@@ -154,6 +155,16 @@ describe("utils — barcode validation", () => {
     expect(isValidBarcode("AB C")).toBe(false);
     expect(isValidBarcode("AB#1")).toBe(false);
     expect(isValidBarcode("")).toBe(false);
+  });
+});
+
+describe("utils — ean13CheckDigit", () => {
+  it("computes the correct check digit for a known-good EAN-13", () => {
+    // 4006381333931 is a real, valid EAN-13 (Ferrero Kinder base example).
+    expect(ean13CheckDigit("400638133393")).toBe("1");
+  });
+  it("computes the correct check digit for a zero-padded base", () => {
+    expect(ean13CheckDigit("000000000000")).toBe("0");
   });
 });
 

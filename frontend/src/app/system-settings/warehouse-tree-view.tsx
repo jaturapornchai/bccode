@@ -281,7 +281,7 @@ function BooleanChip({
  * Compact wrap-first checkbox chip group for picking which companies may use a warehouse/location
  * (Radio/Checkbox Compact Wrap Rule). `options` may be pre-filtered by the caller (e.g. the location
  * picker only offers companies the parent warehouse itself allows). Bins have no company scope
- * per scopeofwork/warehouse.md — this picker is only used for warehouse and location forms.
+ * per s/warehouse.md — this picker is only used for warehouse and location forms.
  */
 function CompanyScopePicker({
   options,

@@ -15,6 +15,7 @@ export type SystemSettingField = {
   key: string;
   label: SystemSettingText;
   type:
+    | "bank-accounts"
     | "branch-multi-select"
     | "company-multi-select"
     | "checkbox"
@@ -27,19 +28,21 @@ export type SystemSettingField = {
     | "language-configs"
     | "language-list"
     | "master-picker"
+    | "master-multi-picker"
     | "names"
     | "number"
     | "radio"
     | "select"
     | "string-list"
     | "text"
+    | "thai-address"
     | "time-sale-list"
     | "textarea";
   required?: boolean;
   readOnly?: boolean;
   options?: SystemSettingOption[];
   optionSource?: "countries" | "currency" | "timezones";
-  master?: "businesstype";
+  master?: "businesstype" | "creditorgroup" | "debtorgroup";
   placeholder?: string;
   helper?: SystemSettingText;
   multiline?: boolean;
@@ -64,6 +67,12 @@ export type SystemSettingField = {
    * Lists/previews read the thumbnail; detail/download read the full original.
    */
   thumbnailKey?: string;
+  /**
+   * thai-address fields only: renders a "copy from billing address" button that copies the
+   * 5 cascade subkeys plus the `.address` string list from this other thai-address field's
+   * prefix into this one (live form state only, not a save).
+   */
+  copyFromPrefix?: string;
 };
 
 export type SystemSettingKind =
@@ -374,10 +383,11 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
         false,
         "countries",
       ),
-      textField("contact.provincecode", "จังหวัด", "Province"),
-      textField("contact.districtcode", "อำเภอ/เขต", "District"),
-      textField("contact.subdistrictcode", "ตำบล/แขวง", "Subdistrict"),
-      textField("contact.zipcode", "รหัสไปรษณีย์", "Zip code"),
+      thaiAddressField(
+        "contact",
+        "ที่อยู่สาขา (จังหวัด/อำเภอ/ตำบล/รหัสไปรษณีย์)",
+        "Branch address (province/district/subdistrict/zipcode)",
+      ),
       numberField("contact.latitude", "ละติจูด", "Latitude"),
       numberField("contact.longitude", "ลองจิจูด", "Longitude"),
       textField("contact.phonenumber", "เบอร์โทรสาขา", "Branch phone"),
@@ -928,6 +938,232 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
       en: "Select a source shop, preview counts, then copy MongoDB data into the current shop.",
     },
     fields: [],
+  },
+  {
+    slug: "creditorgroup",
+    route: "/creditorgroup",
+    manual: "creditorgroup",
+    kind: "main-crud",
+    icon: "users",
+    basePath: "/debtaccount/creditor-group",
+    listPath: "/debtaccount/creditor-group/list",
+    idField: "guidfixed",
+    title: { th: "กลุ่มผู้จำหน่าย", en: "Vendor Group" },
+    subtitle: {
+      th: "จัดการรหัสกลุ่มผู้จำหน่ายและชื่อตามภาษาที่เลือก",
+      en: "Manage vendor group codes and names for the selected language.",
+    },
+    fields: [
+      businessCodeField("groupcode", "รหัสกลุ่มผู้จำหน่าย", "Vendor group code", true),
+      namesField("names", "ชื่อกลุ่มผู้จำหน่าย", "Vendor group names"),
+    ],
+  },
+  {
+    slug: "debtorgroup",
+    route: "/debtorgroup",
+    manual: "debtorgroup",
+    kind: "main-crud",
+    icon: "users",
+    basePath: "/debtaccount/debtor-group",
+    listPath: "/debtaccount/debtor-group/list",
+    idField: "guidfixed",
+    title: { th: "กลุ่มลูกค้า", en: "Customer Group" },
+    subtitle: {
+      th: "จัดการรหัสกลุ่มลูกค้าและชื่อตามภาษาที่เลือก",
+      en: "Manage customer group codes and names for the selected language.",
+    },
+    fields: [
+      businessCodeField("groupcode", "รหัสกลุ่มลูกค้า", "Customer group code", true),
+      namesField("names", "ชื่อกลุ่มลูกค้า", "Customer group names"),
+    ],
+  },
+  {
+    slug: "creditor",
+    route: "/creditor",
+    manual: "creditor",
+    kind: "main-crud",
+    icon: "user",
+    basePath: "/debtaccount/creditor",
+    listPath: "/debtaccount/creditor/list",
+    idField: "guidfixed",
+    title: { th: "ผู้จำหน่าย (เจ้าหนี้)", en: "Vendor (Creditor)" },
+    subtitle: {
+      th: "จัดการข้อมูลผู้จำหน่าย ภาษี เงื่อนไขการค้า และที่อยู่",
+      en: "Manage vendor master data, tax, trade terms, and addresses.",
+    },
+    fields: [
+      businessCodeField("code", "รหัสผู้จำหน่าย", "Vendor code", true),
+      namesField("names", "ชื่อผู้จำหน่าย", "Vendor name"),
+      radioField(
+        "personaltype",
+        "ประเภทบุคคล",
+        "Contact type",
+        [
+          { value: "1", label: "บุคคลธรรมดา", labels: { th: "บุคคลธรรมดา", en: "Individual" } },
+          { value: "2", label: "นิติบุคคล", labels: { th: "นิติบุคคล", en: "Company" } },
+        ],
+        false,
+        "number",
+      ),
+      masterMultiPickerField("groups", "กลุ่มผู้จำหน่าย", "Vendor groups", "creditorgroup"),
+      checkboxField("isdisabled", "ปิดใช้งาน", "Disabled"),
+      {
+        ...textField("taxid", "เลขผู้เสียภาษี", "Tax ID"),
+        placeholder: "1234567890123",
+      },
+      {
+        ...textField("branchnumber", "รหัสสาขาภาษี", "Tax branch number"),
+        placeholder: "00000",
+        helper: {
+          th: "ต้องระบุเมื่อคู่ค้าจด VAT: สำนักงานใหญ่ = 00000, สาขาที่ 1 = 00001 (ตาม ภ.พ.20 ของคู่ค้า)",
+          en: "Required when the partner is VAT-registered: head office = 00000, branch 1 = 00001 (per the partner's Por Por 20).",
+        },
+      },
+      checkboxField("whtenabled", "หักภาษี ณ ที่จ่าย", "Withholding tax"),
+      numberField("whtrate", "อัตราภาษีหัก ณ ที่จ่าย (%)", "Withholding tax rate (%)"),
+      numberField("creditday", "เครดิต (วัน)", "Credit term (days)"),
+      numberField("creditlimitbaht", "วงเงินเครดิต (บาท)", "Credit limit (THB)"),
+      textField("email", "อีเมล", "Email"),
+      textField("addressforbilling.phoneprimary", "เบอร์โทรหลัก", "Primary phone"),
+      textField("addressforbilling.phonesecondary", "เบอร์โทรสำรอง", "Secondary phone"),
+      stringListField("addressforbilling.address", "ที่อยู่ออกใบกำกับภาษี", "Tax invoice address lines"),
+      thaiAddressField(
+        "addressforbilling",
+        "ที่อยู่ออกใบกำกับภาษี (จังหวัด/อำเภอ/ตำบล/รหัสไปรษณีย์)",
+        "Tax invoice address (province/district/subdistrict/zipcode)",
+      ),
+      stringListField("addressforactual.address", "ที่อยู่จริงที่ดำเนินกิจการ", "Actual/operating address lines"),
+      {
+        ...thaiAddressField(
+          "addressforactual",
+          "ที่อยู่จริงที่ดำเนินกิจการ (จังหวัด/อำเภอ/ตำบล/รหัสไปรษณีย์)",
+          "Actual address (province/district/subdistrict/zipcode)",
+        ),
+        copyFromPrefix: "addressforbilling",
+      },
+      bankAccountsField("bankaccounts", "บัญชีธนาคาร", "Bank accounts"),
+      imageGalleryField("images", "รูปภาพ", "Images"),
+    ],
+  },
+  {
+    slug: "debtor",
+    route: "/debtor",
+    manual: "debtor",
+    kind: "main-crud",
+    icon: "user",
+    basePath: "/debtaccount/debtor",
+    listPath: "/debtaccount/debtor/list",
+    idField: "guidfixed",
+    title: { th: "ลูกค้า (ลูกหนี้)", en: "Customer (Debtor)" },
+    subtitle: {
+      th: "จัดการข้อมูลลูกค้า ระดับราคา เครดิต และสมาชิก",
+      en: "Manage customer master data, price level, credit, and membership.",
+    },
+    fields: [
+      businessCodeField("code", "รหัสลูกค้า", "Customer code", true),
+      namesField("names", "ชื่อลูกค้า", "Customer name"),
+      radioField(
+        "personaltype",
+        "ประเภทบุคคล",
+        "Contact type",
+        [
+          { value: "1", label: "บุคคลธรรมดา", labels: { th: "บุคคลธรรมดา", en: "Individual" } },
+          { value: "2", label: "นิติบุคคล", labels: { th: "นิติบุคคล", en: "Company" } },
+        ],
+        false,
+        "number",
+      ),
+      masterMultiPickerField("groups", "กลุ่มลูกค้า", "Customer groups", "debtorgroup"),
+      checkboxField("isdisabled", "ปิดใช้งาน", "Disabled"),
+      textField("taxid", "เลขผู้เสียภาษี", "Tax ID"),
+      {
+        ...textField("branchnumber", "รหัสสาขาภาษี", "Tax branch number"),
+        placeholder: "00000",
+        helper: {
+          th: "ต้องระบุเมื่อคู่ค้าจด VAT: สำนักงานใหญ่ = 00000, สาขาที่ 1 = 00001 (ตาม ภ.พ.20 ของคู่ค้า)",
+          en: "Required when the partner is VAT-registered: head office = 00000, branch 1 = 00001 (per the partner's Por Por 20).",
+        },
+      },
+      numberField("creditday", "เครดิต (วัน)", "Credit term (days)"),
+      numberField("creditlimitbaht", "วงเงินเครดิต (บาท)", "Credit limit (THB)"),
+      textField("pricelevel", "ระดับราคา", "Price level"),
+      textField("email", "อีเมล", "Email"),
+      textField("addressforbilling.phoneprimary", "เบอร์โทรหลัก", "Primary phone"),
+      textField("addressforbilling.phonesecondary", "เบอร์โทรสำรอง", "Secondary phone"),
+      stringListField("addressforbilling.address", "ที่อยู่ออกใบกำกับภาษี", "Tax invoice address lines"),
+      thaiAddressField(
+        "addressforbilling",
+        "ที่อยู่ออกใบกำกับภาษี (จังหวัด/อำเภอ/ตำบล/รหัสไปรษณีย์)",
+        "Tax invoice address (province/district/subdistrict/zipcode)",
+      ),
+      stringListField("addressforactual.address", "ที่อยู่จริงที่ดำเนินกิจการ", "Actual/operating address lines"),
+      {
+        ...thaiAddressField(
+          "addressforactual",
+          "ที่อยู่จริงที่ดำเนินกิจการ (จังหวัด/อำเภอ/ตำบล/รหัสไปรษณีย์)",
+          "Actual address (province/district/subdistrict/zipcode)",
+        ),
+        copyFromPrefix: "addressforbilling",
+      },
+      checkboxField("ismember", "เป็นสมาชิก", "Member"),
+      textField("pointscode", "รหัสสะสมแต้ม", "Points code"),
+      { ...numberField("pointbalance", "แต้มคงเหลือ", "Point balance"), readOnly: true },
+      bankAccountsField("bankaccounts", "บัญชีธนาคารลูกค้า (สำหรับโอนเงินคืน/คืนมัดจำ)", "Customer bank accounts (for refunds/deposit returns)"),
+      imageGalleryField("images", "รูปภาพ", "Images"),
+    ],
+  },
+  {
+    slug: "salechannelscreen",
+    route: "/salechannelscreen",
+    manual: "salechannelscreen",
+    kind: "main-crud",
+    icon: "network",
+    basePath: "/sale-channel",
+    listPath: "/sale-channel/list",
+    idField: "guidfixed",
+    title: { th: "ช่องทางขาย", en: "Sale Channel" },
+    subtitle: {
+      th: "จัดการช่องทางขาย เช่น หน้าร้าน Shopee Lazada TikTok พร้อม GP และระดับราคา",
+      en: "Manage sales channels such as POS, Shopee, Lazada, TikTok with GP and price level.",
+    },
+    fields: [
+      businessCodeField("code", "รหัสช่องทางขาย", "Sale channel code", true),
+      textField("name", "ชื่อช่องทางขาย", "Sale channel name", true),
+      numberField("gp", "GP (ค่าธรรมเนียมช่องทาง)", "GP (channel fee)"),
+      radioField(
+        "gptype",
+        "ประเภท GP",
+        "GP type",
+        [
+          { value: "0", label: "%", labels: { th: "%", en: "%" } },
+          { value: "1", label: "บาท", labels: { th: "บาท", en: "THB" } },
+        ],
+        false,
+        "number",
+      ),
+      numberField("price", "ระดับราคาที่ใช้", "Price level number"),
+      textField("imageuri", "ลิงก์รูปภาพ", "Image URL"),
+    ],
+  },
+  {
+    slug: "transportchannelscreen",
+    route: "/transportchannelscreen",
+    manual: "transportchannelscreen",
+    kind: "main-crud",
+    icon: "activity",
+    basePath: "/transport-channel",
+    listPath: "/transport-channel/list",
+    idField: "guidfixed",
+    title: { th: "ช่องทางขนส่ง", en: "Transport Channel" },
+    subtitle: {
+      th: "จัดการช่องทางขนส่ง เช่น Kerry, Flash, ไปรษณีย์ไทย, EMS",
+      en: "Manage transport channels such as Kerry, Flash, Thai Post, EMS.",
+    },
+    fields: [
+      businessCodeField("code", "รหัสช่องทางขนส่ง", "Transport channel code", true),
+      textField("name", "ชื่อช่องทางขนส่ง", "Transport channel name", true),
+      textField("imageuri", "ลิงก์รูปภาพ", "Image URL"),
+    ],
   },
 ];
 
@@ -1501,6 +1737,22 @@ function productMasterConfigs(): SystemSettingConfig[] {
       "Pattern",
       "Pattern",
     ),
+    aicloudConfig(
+      "master_groupsubone_screen",
+      "/mastergroupsubonescreen",
+      "group",
+      "groupsubone",
+      "กลุ่มย่อยระดับ 1",
+      "Subgroup Level 1",
+    ),
+    aicloudConfig(
+      "master_groupsubtwo_screen",
+      "/mastergroupsubtwoscreen",
+      "group",
+      "groupsubtwo",
+      "กลุ่มย่อยระดับ 2",
+      "Subgroup Level 2",
+    ),
   ];
 }
 
@@ -1649,6 +1901,19 @@ function stringListField(key: string, th: string, en: string): SystemSettingFiel
   return { key, label: { th, en }, type: "string-list" };
 }
 
+// thaiAddressField — key is the address object prefix (e.g. "addressforbilling", "contact"),
+// not a leaf path. Renders the province/district/subdistrict/zipcode cascade editor scoped to
+// that prefix's subkeys (see ThailandAddressFieldEditor's `prefix` prop).
+function thaiAddressField(key: string, th: string, en: string): SystemSettingField {
+  return { key, label: { th, en }, type: "thai-address" };
+}
+
+// bankAccountsField — repeatable bankcode/accountnumber/accountname rows (see BankAccountsEditor).
+// key is the array field on the backend record (e.g. "bankaccounts").
+function bankAccountsField(key: string, th: string, en: string): SystemSettingField {
+  return { key, label: { th, en }, type: "bank-accounts" };
+}
+
 function holdingScopeRulesField(
   key: string,
   th: string,
@@ -1673,6 +1938,18 @@ function masterPickerField(
   master: "businesstype",
 ): SystemSettingField {
   return { key, label: { th, en }, type: "master-picker", master };
+}
+
+// masterMultiPickerField — chip multi-select over a master-data list (e.g. creditorgroup,
+// debtorgroup). Stores an array of { guidfixed, code, names } in the form; buildPayload maps it
+// to an array of guids for the backend's top-level `groups` request key.
+function masterMultiPickerField(
+  key: string,
+  th: string,
+  en: string,
+  master: "creditorgroup" | "debtorgroup",
+): SystemSettingField {
+  return { key, label: { th, en }, type: "master-multi-picker", master };
 }
 
 function comboField(

@@ -173,7 +173,7 @@ export const MENU_SECTIONS: MenuSection[] = [
     id: "master",
     title: { key: "master_data", th: "ข้อมูลหลัก", en: "Master Data" },
     groups: [
-      // Reorganized 2026-07-03 as a natural first-time-setup workflow (scopeofwork feedback +
+      // Reorganized 2026-07-03 as a natural first-time-setup workflow (s/ (formerly scopeofwork/) feedback +
       // GPT UX review + Fable chief-architect review): products first (everything references a
       // product), then classify/variants/details, warehouse, trade partners, org basics, sales
       // settings split into 5 focused groups instead of one 15-item wall, approval, marketplace,
@@ -226,6 +226,8 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("class", "ระดับสินค้า", "Product Class", "/masterclassscreen", "master"),
           tx("design", "รูปทรงสินค้า", "Product Shape", "/masterdesignscreen", "master"),
           tx("grade", "เกรดสินค้า", "Product Grade", "/mastergradescreen", "master"),
+          tx("groupsubone", "กลุ่มย่อยระดับ 1", "Subgroup Level 1", "/mastergroupsubonescreen", "master"),
+          tx("groupsubtwo", "กลุ่มย่อยระดับ 2", "Subgroup Level 2", "/mastergroupsubtwoscreen", "master"),
         ],
       },
       {
@@ -244,15 +246,6 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("creditor-group", "กลุ่มเจ้าหนี้", "Creditor Group", "/creditorgroup", "master"),
           tx("debtor", "ลูกหนี้", "Debtor", "/debtor", "master"),
           tx("debtor-group", "กลุ่มลูกหนี้", "Debtor Group", "/debtorgroup", "master"),
-        ],
-      },
-      {
-        id: "organization",
-        title: ml("organization_master", "งาน โครงการ และศูนย์ต้นทุน", "Jobs, Projects & Cost Centers"),
-        items: [
-          tx("cost-center", "ศูนย์ต้นทุน", "Cost Center", "/costcenter", "master"),
-          tx("project", "โครงการ", "Project", "/project", "master"),
-          tx("job", "งาน", "Job", "/job", "master"),
         ],
       },
       {

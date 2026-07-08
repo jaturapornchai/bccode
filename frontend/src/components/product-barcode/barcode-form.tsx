@@ -40,6 +40,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { AuthenticatedImg } from "@/components/authenticated-image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,7 +64,7 @@ import {
   type ProductPrice,
   type ProductSupplier,
 } from "@/lib/product-barcode/types";
-import { isValidBarcode, pickName, setNameXEntry } from "@/lib/product-barcode/utils";
+import { ean13CheckDigit, isValidBarcode, pickName, setNameXEntry } from "@/lib/product-barcode/utils";
 import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import type { AuthSession } from "@/lib/workspace-models";
@@ -206,14 +207,16 @@ export function ProductBarcodeFormDialog(props: ProductBarcodeFormDialogProps) {
 
   const validate = useCallback((): boolean => {
     const next: Record<string, string> = {};
-    if (!value.barcode.trim()) next.barcode = text.required_error;
-    else if (!isValidBarcode(value.barcode)) next.barcode = text.invalidBarcode;
+    if (mode !== "edit") {
+      if (!value.barcode.trim()) next.barcode = text.required_error;
+      else if (!isValidBarcode(value.barcode)) next.barcode = text.invalidBarcode;
+    }
     const firstName = value.names[0]?.name ?? "";
     if (!firstName.trim()) next.name0 = text.required_error;
     if (!value.itemunitcode.trim()) next.itemunitcode = text.required_error;
     setErrors(next);
     return Object.keys(next).length === 0;
-  }, [value, text.required_error, text.invalidBarcode]);
+  }, [value, text.required_error, text.invalidBarcode, mode]);
 
   const saveIfValid = useCallback(() => {
       if (validate()) onSave(value);
@@ -300,7 +303,7 @@ export function ProductBarcodeFormDialog(props: ProductBarcodeFormDialogProps) {
         {/* Body */}
         <div className="min-h-0 flex-1 overflow-y-auto bg-background px-4 py-4">
           {tab === "basic" && (
-            <TabBasic value={value} onChange={onChange} text={text} errors={errors} shopLanguages={shopLanguages} auth={auth} language={language} companyGuid={companyGuid} />
+            <TabBasic value={value} onChange={onChange} text={text} errors={errors} shopLanguages={shopLanguages} auth={auth} language={language} companyGuid={companyGuid} mode={mode} />
           )}
           {tab === "pricing" && <TabPricing value={value} onChange={onChange} text={text} />}
           {tab === "media" && (
@@ -323,7 +326,7 @@ export function ProductBarcodeFormDialog(props: ProductBarcodeFormDialogProps) {
             </div>
           )}
           {tab === "productdetail" && (
-            <TabProductDetail productDetail={productDetail} loading={loadingProductDetail} text={text} language={language} />
+            <TabProductDetail productDetail={productDetail} loading={loadingProductDetail} text={text} auth={auth} language={language} />
           )}
 
         </div>
@@ -596,6 +599,7 @@ function TabBasic({
   errors,
   shopLanguages,
   companyGuid,
+  mode,
 }: {
   auth: AuthSession | null;
   language: LanguageCode | string;
@@ -605,6 +609,7 @@ function TabBasic({
   errors: Record<string, string>;
   shopLanguages: string[];
   companyGuid?: string;
+  mode: "create" | "edit";
 }) {
   const upd = useCallback(
     <K extends keyof ProductBarcode>(key: K, val: ProductBarcode[K]) =>
@@ -679,6 +684,7 @@ function TabBasic({
               <div className="flex gap-2">
                 <Input
                   value={value.barcode}
+                  disabled={mode === "edit"}
                   onChange={(event) =>
                     upd(
                        "barcode",
@@ -688,24 +694,27 @@ function TabBasic({
                     )
                   }
                   aria-invalid={Boolean(errors.barcode) || undefined}
-                  className="flex-1"
+                  className={cn("flex-1", mode === "edit" && "bg-muted/40")}
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  aria-label={text.generateBarcode}
-                  title={text.generateBarcode}
-                  onClick={() => {
-                    const ts = String(Date.now());
-                    // Produce a 13-digit numeric string (EAN-like)
-                    const candidate = ts.slice(-13).padStart(13, "0");
-                    upd("barcode", candidate);
-                  }}
-                >
-                  <Wand2 className="h-4 w-4" />
-                </Button>
+                {mode === "create" && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    aria-label={text.generateBarcode}
+                    title={text.generateBarcode}
+                    onClick={() => {
+                      const base = String(Date.now()).slice(-12).padStart(12, "0");
+                      upd("barcode", base + ean13CheckDigit(base));
+                    }}
+                  >
+                    <Wand2 className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
+              {mode === "edit" ? (
+                <p className="text-xs text-muted-foreground">{text.barcodeLockedHint}</p>
+              ) : null}
               {errors.barcode ? <p className="text-xs text-destructive">{errors.barcode}</p> : null}
             </FieldRow>
             <MasterField
@@ -825,11 +834,13 @@ function TabProductDetail({
   productDetail,
   loading,
   text,
+  auth,
   language,
 }: {
   productDetail: Product | null;
   loading: boolean;
   text: Text;
+  auth: AuthSession | null;
   language: string;
 }) {
   if (loading) {
@@ -921,7 +932,13 @@ function TabProductDetail({
               <div className="flex items-center gap-3">
                 <div className="size-16 overflow-hidden rounded-md border bg-muted flex items-center justify-center">
                   {productDetail.imageuri ? (
-                    <img src={productDetail.imageuri} alt="Main" className="size-full object-cover" />
+                    <AuthenticatedImg
+                      src={productDetail.imageuri}
+                      auth={auth}
+                      alt="Main"
+                      className="size-full object-cover"
+                      fallback={<span className="text-[10px] text-muted-foreground">{text.noImage}</span>}
+                    />
                   ) : (
                     <span className="text-[10px] text-muted-foreground">{text.noImage}</span>
                   )}
@@ -943,7 +960,13 @@ function TabProductDetail({
                   <span className="text-[11px] font-semibold text-muted-foreground block mb-1">{text.galleryLabel}</span>
                   <div className="flex flex-wrap gap-1.5">
                     {productDetail.images.map((img: ProductImage, idx: number) => (
-                      <img key={idx} src={img.uri} alt="Gallery" className="size-10 rounded border object-cover" />
+                      <AuthenticatedImg
+                        key={idx}
+                        src={img.uri}
+                        auth={auth}
+                        alt="Gallery"
+                        className="size-10 rounded border object-cover"
+                      />
                     ))}
                   </div>
                 </div>
@@ -1276,11 +1299,16 @@ function TabMedia({
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <div className="size-32 overflow-hidden rounded-lg border border-border bg-muted">
                 {value.imageuri ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                  <AuthenticatedImg
                     src={value.imageuri}
+                    auth={auth}
                     alt={text.imageMain}
                     className="size-full object-cover"
+                    fallback={
+                      <div className="flex size-full items-center justify-center text-xs text-muted-foreground">
+                        {text.noData}
+                      </div>
+                    }
                   />
                 ) : (
                   <div className="flex size-full items-center justify-center text-xs text-muted-foreground">
@@ -1344,8 +1372,12 @@ function TabMedia({
               <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6">
                 {value.images.map((img, idx) => (
                   <li key={idx} className="relative overflow-hidden rounded-md border border-border">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={img.uri} alt={`#${img.xorder}`} className="aspect-square w-full object-cover" />
+                    <AuthenticatedImg
+                      src={img.uri}
+                      auth={auth}
+                      alt={`#${img.xorder}`}
+                      className="aspect-square w-full object-cover"
+                    />
                     <Button
                       type="button"
                       variant="ghost"

@@ -254,6 +254,13 @@ export function isValidBarcode(value: string): boolean {
   return /^[A-Za-z0-9-]+$/.test(value.trim());
 }
 
+/** Compute the standard EAN-13 check digit for a 12-digit base string. */
+export function ean13CheckDigit(base12: string): string {
+  const digits = base12.split("").map(Number);
+  const sum = digits.reduce((acc, d, idx) => acc + d * (idx % 2 === 0 ? 1 : 3), 0);
+  return String((10 - (sum % 10)) % 10);
+}
+
 /** Normalize raw API JSON from `/api/product` list into a `Product` shape. */
 export function rawToProduct(raw: unknown): Product {
   const r: Record<string, unknown> = isRecord(raw) ? raw : {};

@@ -33,6 +33,8 @@ const MASTER_PATHS: Record<string, string> = {
   branch: "/list-holding",
   company: "/organization/company",
   creditor: "/debtaccount/creditor",
+  creditorgroup: "/debtaccount/creditor-group",
+  debtorgroup: "/debtaccount/debtor-group",
   product: "/product",
 };
 

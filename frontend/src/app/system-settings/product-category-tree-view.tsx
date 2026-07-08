@@ -1050,86 +1050,64 @@ export function ProductCategoryTreeView({
     return canReorderSibling || canMoveAsChild;
   };
 
-  const getPointerDropCandidate = (clientX: number, clientY: number, activeDrag: DragState) => {
-    const element = document.elementFromPoint(clientX, clientY);
-    if (!element) return null;
+  // Resolves the drop target from live row geometry only -- never from
+  // document.elementFromPoint()/closest(). Hit-testing the rendered DOM is
+  // unreliable while dragging: the dragged row itself is pointer-events-none
+  // (so elementFromPoint sees through it to a non-data-bearing ancestor) and
+  // the inline "drop as child" chip can overlap a neighboring row's
+  // before/after zone. Resolving purely by rect containment against
+  // getRowDropPosition's 28/44/28 bands sidesteps both.
+  const getPointerDropCandidate = (_clientX: number, clientY: number, activeDrag: DragState) => {
+    const root = treeListRef.current;
+    if (!root) return null;
     const lookups = categoryTreeLookupsRef.current;
 
-    const childDropZone = element.closest<HTMLElement>("[data-category-child-drop-guid]");
-    const childTargetGuid = childDropZone?.dataset.categoryChildDropGuid || "";
-    if (childTargetGuid) {
-      const node = lookups.nodeByGuid.get(childTargetGuid);
-      if (node && canDropOnTarget(activeDrag, node, [], "inside")) {
-        return { type: "row" as const, guid: childTargetGuid, position: "inside" as const, siblings: [] };
+    const rootZoneElement = root.querySelector<HTMLElement>("[data-category-root-drop='true']");
+    if (rootZoneElement) {
+      const rect = rootZoneElement.getBoundingClientRect();
+      if (clientY >= rect.top && clientY <= rect.bottom) return { type: "root" as const };
+    }
+
+    const resolveRow = (rowElement: HTMLElement, guid: string) => {
+      const node = lookups.nodeByGuid.get(guid);
+      const siblings = lookups.siblingsByGuid.get(guid) || [];
+      if (!node) return null;
+      const position = getRowDropPosition(clientY, rowElement);
+      if (!canDropOnTarget(activeDrag, node, siblings, position)) return null;
+      return { type: "row" as const, guid, position, siblings };
+    };
+
+    let containingRow: { element: HTMLElement; guid: string } | null = null;
+    let nearestRow: { element: HTMLElement; guid: string; distance: number } | null = null;
+
+    for (const candidateElement of root.querySelectorAll<HTMLElement>("[data-category-row-guid]")) {
+      const candidateGuid = candidateElement.dataset.categoryRowGuid || "";
+      if (!candidateGuid) continue;
+      const rect = candidateElement.getBoundingClientRect();
+      if (clientY >= rect.top && clientY <= rect.bottom) {
+        containingRow = { element: candidateElement, guid: candidateGuid };
+        break;
+      }
+      const distance = clientY < rect.top ? rect.top - clientY : clientY - rect.bottom;
+      if (!nearestRow || distance < nearestRow.distance) {
+        nearestRow = { element: candidateElement, guid: candidateGuid, distance };
       }
     }
 
-    const rootZone = element.closest("[data-category-root-drop='true']");
-    if (rootZone) return { type: "root" as const };
+    // Pointer is still squarely over the dragged row's own (faded,
+    // still-rendered) footprint -- it hasn't crossed into another row, so
+    // there is no valid target yet. Don't fall through to the nearest-row
+    // scan below, or a tiny in-place drag would silently reparent to
+    // whichever row happens to be closest anywhere in the tree.
+    if (containingRow && containingRow.guid === activeDrag.guid) return null;
 
-    const findNearestRowCandidate = () => {
-      const root = treeListRef.current;
-      if (!root) return null;
+    if (containingRow) return resolveRow(containingRow.element, containingRow.guid);
 
-      let best:
-        | {
-            distance: number;
-            guid: string;
-            position: DropPosition;
-            siblings: CategoryTreeNode[];
-          }
-        | null = null;
+    // Genuine gap (above the first row / below the last row) -- fall back to
+    // the nearest row edge.
+    if (nearestRow) return resolveRow(nearestRow.element, nearestRow.guid);
 
-      const rowElements = Array.from(root.querySelectorAll<HTMLElement>("[data-category-row-guid]"));
-      for (const candidateElement of rowElements) {
-        const candidateGuid = candidateElement.dataset.categoryRowGuid || "";
-        const candidateNode = lookups.nodeByGuid.get(candidateGuid);
-        const candidateSiblings = lookups.siblingsByGuid.get(candidateGuid) || [];
-        if (!candidateNode) continue;
-
-        const candidatePosition = getRowDropPosition(clientY, candidateElement);
-        if (!canDropOnTarget(activeDrag, candidateNode, candidateSiblings, candidatePosition)) continue;
-
-        const rect = candidateElement.getBoundingClientRect();
-        const distance =
-          clientY < rect.top
-            ? rect.top - clientY
-            : clientY > rect.bottom
-              ? clientY - rect.bottom
-              : 0;
-
-        if (!best || distance < best.distance) {
-          best = {
-            distance,
-            guid: candidateGuid,
-            position: candidatePosition,
-            siblings: candidateSiblings,
-          };
-        }
-      }
-
-      return best
-        ? {
-            type: "row" as const,
-            guid: best.guid,
-            position: best.position,
-            siblings: best.siblings,
-          }
-        : null;
-    };
-
-    const rowElement = element.closest<HTMLElement>("[data-category-row-guid]");
-    const targetGuid = rowElement?.dataset.categoryRowGuid || "";
-    if (!rowElement || !targetGuid) return findNearestRowCandidate();
-
-    const node = lookups.nodeByGuid.get(targetGuid);
-    const siblings = lookups.siblingsByGuid.get(targetGuid) || [];
-    if (!node) return findNearestRowCandidate();
-
-    const position = getRowDropPosition(clientY, rowElement);
-    if (!canDropOnTarget(activeDrag, node, siblings, position)) return findNearestRowCandidate();
-
-    return { type: "row" as const, guid: targetGuid, position, siblings };
+    return null;
   };
 
   const cleanupWindowDragListeners = () => {
@@ -1534,7 +1512,6 @@ export function ProductCategoryTreeView({
                         activeDropTarget === "inside" &&
                           "scale-110 border-emerald-700 bg-emerald-600 text-white shadow-md dark:bg-emerald-500 dark:text-white"
                       )}
-                      data-category-child-drop-guid={node.detail.guidfixed}
                       aria-label={language === "th" ? "วางเป็นหมวดย่อย" : "Drop as child category"}
                     >
                       {language === "th" ? "วางเป็นลูก" : "Drop child"}

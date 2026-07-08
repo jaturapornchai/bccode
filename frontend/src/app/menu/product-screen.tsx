@@ -7,7 +7,6 @@ import {
   ImageIcon,
   ImageOff,
   Loader2,
-  Package,
   Pencil,
   Plus,
   Copy,
@@ -16,13 +15,8 @@ import {
   Trash2,
   X,
   Save,
-  PlusCircle,
   Link,
-  Upload,
-  ImagePlus,
-  Minus,
   ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 import {
   useCallback,
@@ -31,18 +25,15 @@ import {
   useRef,
   useState,
   type FormEvent,
-  type Dispatch,
-  type SetStateAction,
-  type ChangeEvent,
-  type ReactNode,
 } from "react";
+import { AuthenticatedImg } from "@/components/authenticated-image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { MasterPicker } from "@/components/product-barcode/master-picker";
-import { listBarcodes, uploadProductImage, type MasterEntry, type MasterName } from "@/lib/product-barcode/api";
+import { listBarcodes, type MasterEntry } from "@/lib/product-barcode/api";
 import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
 import { pushNotice } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -58,25 +49,29 @@ import {
   type Product,
   type ProductBarcode,
   type ProductBarcodeListRow,
-  type ProductManufacturer,
-  type ProductSupplier,
   type NameX,
   type ProductImage,
   type ProductOption,
-  type ProductChoice,
-  type ProductRestaurant,
-  type ProductOrderType,
   type ProductTimeForSale,
-  type ProductBarcodeBusinessType,
-  type ProductBarcodeBranch,
   type RefProductBarcode,
   type BOMProductBarcode,
 } from "@/lib/product-barcode/types";
 import { pickName, rawToProduct } from "@/lib/product-barcode/utils";
-import { NamesEditor, languageCodesFromWorkspace } from "@/components/product-barcode/names-editor";
+import { languageCodesFromWorkspace } from "@/components/product-barcode/names-editor";
 import { getBarcodeText } from "@/lib/product-barcode/language";
 
 import { TabProductUnits } from "./tab-product-units";
+import { TabProductMedia } from "./tab-product-media";
+import { TabProductRestaurant } from "./tab-product-restaurant";
+import { TabProductTimeForSale } from "./tab-product-timeforsale";
+import { TabProductBusinessBranch } from "./tab-product-business-branch";
+import { TabProductMisc } from "./tab-product-misc";
+import { TabProductStock } from "./tab-product-stock";
+import { TabProductBom } from "./tab-product-bom";
+import { TabProductBasic } from "./tab-product-basic";
+import { TabProductClassification } from "./tab-product-classification";
+import { TabProductLogistics } from "./tab-product-logistics";
+import { FieldRow, FieldGrid, Section, Toggle, RadioOptionGroup, NumberField, type ProductStateAction } from "./product-tab-shared";
 function readAuthSession(): AuthSession | null {
   if (typeof window === "undefined") return null;
   try {
@@ -114,6 +109,25 @@ async function ensureActiveProductHolding(auth: AuthSession, holdingcode: string
   }
 }
 
+const ADVANCED_PRODUCT_TAB_KEYS = ["logistics", "restaurant", "timeforsales", "business", "misc"] as const;
+
+const PRIMARY_PRODUCT_TABS = (text: ReturnType<typeof getBarcodeText>) => ({
+  basic: text.tabBasic,
+  classification: text.tabClassification,
+  units: text.tabUnitsBarcode,
+  bom: text.tabBomShort,
+  stock: text.tabStock,
+  media: text.tabMedia,
+});
+
+const ADVANCED_PRODUCT_TABS = (text: ReturnType<typeof getBarcodeText>) => ({
+  logistics: "การจัดส่ง / โลจิสติกส์",
+  restaurant: text.tabRestaurant,
+  timeforsales: text.tabTimeForSales,
+  business: text.tabBusinessBranchShort,
+  misc: text.tabMisc,
+});
+
 const PRODUCT_SPLIT_DEFAULT_LEFT = 30;
 const PRODUCT_SPLIT_STORAGE_KEY = "bc_product_split_left_v3";
 const PRODUCT_SPLIT_MIN_LEFT = 5;
@@ -128,12 +142,10 @@ export function ProductScreen({
   active = true,
   embedded = false,
   language = "th",
-  isSetOnly = false,
 }: {
   active?: boolean;
   embedded?: boolean;
   language?: LanguageCode;
-  isSetOnly?: boolean;
 }) {
   const lang = normalizeLanguage(language);
   const text = getBarcodeText(lang);
@@ -266,6 +278,11 @@ export function ProductScreen({
   const productFormRef = useRef<HTMLFormElement>(null);
   const pickerAnchorRef = useRef<HTMLElement | null>(null);
   const [productTab, setProductTab] = useState<"basic" | "classification" | "units" | "bom" | "stock" | "media" | "logistics" | "restaurant" | "timeforsales" | "business" | "misc">("basic");
+  const [advancedTabsOpen, setAdvancedTabsOpen] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setAdvancedTabsOpen(window.localStorage.getItem("bcproductadvancedtabsopen") === "1");
+  }, []);
 
 
   const itemTypes = useMemo(() => [
@@ -430,13 +447,9 @@ const [pickerType, setPickerType] = useState<string>("");
       }
       const params = new URLSearchParams({
         q: search,
-        limit: isSetOnly ? "120" : "80",
+        limit: "80",
         holdingcode: activeHoldingCode,
       });
-      if (isSetOnly) {
-        params.set("itemtype", "2");
-        params.set("materialtype", "3");
-      }
       const response = await fetch(`/api/product?${params.toString()}`, {
         headers: {
           Authorization: `Bearer ${auth.token}`,
@@ -449,9 +462,7 @@ const [pickerType, setPickerType] = useState<string>("");
       }
       const rawData = Array.isArray(data.data) ? data.data : [];
       const normalized: Product[] = rawData.map(rawToProduct);
-      const filtered = isSetOnly
-        ? normalized.filter((item) => item.itemtype === 2)
-        : normalized.filter((item) => item.itemtype !== 2);
+      const filtered = normalized.filter((item) => item.itemtype !== 2);
 
       setItems(filtered);
       if (filtered.length > 0) {
@@ -467,7 +478,7 @@ const [pickerType, setPickerType] = useState<string>("");
     } finally {
       setLoading(false);
     }
-  }, [auth, activeHoldingCode, search, text.requestFailed, isSetOnly]);
+  }, [auth, activeHoldingCode, search, text.requestFailed]);
 
   useEffect(() => {
     if (active && auth && activeHoldingCode) {
@@ -482,9 +493,9 @@ const [pickerType, setPickerType] = useState<string>("");
     names: [{ code: "th", name: "" }, { code: "en", name: "" }],
     groupcode: "",
     groupnames: [],
-    itemtype: isSetOnly ? 2 : 0,
+    itemtype: 0,
     vattype: 0,
-    materialtype: isSetOnly ? 3 : 0,
+    materialtype: 0,
     issumpoint: false,
     manufacturers: [],
     suppliers: [],
@@ -499,7 +510,7 @@ const [pickerType, setPickerType] = useState<string>("");
     maxpoint: 0,
     qty: 0,
     stockbarcode: "",
-  }), [activeHoldingCode, isSetOnly]);
+  }), [activeHoldingCode]);
 
   const handleCreateOpen = () => {
     setEditorMode("create");
@@ -927,13 +938,11 @@ const [pickerType, setPickerType] = useState<string>("");
       {/* Header Toolbar */}
       <div className="flex shrink-0 items-center justify-between border-b border-border bg-card px-4 py-3">
         <div>
-          <h2 className="text-lg font-bold">{isSetOnly ? "สินค้าชุด" : text.productMenuName}</h2>
+          <h2 className="text-lg font-bold">{text.productMenuName}</h2>
           <p className="text-xs text-muted-foreground">
-            {isSetOnly
-              ? "จัดการข้อมูลสินค้าชุดและส่วนประกอบทั้งหมด"
-              : lang === "th"
-                ? "จัดการสินค้าและข้อมูลที่เกี่ยวข้องทั้งหมด"
-                : "Manage products and related data"}
+            {lang === "th"
+              ? "จัดการสินค้าและข้อมูลที่เกี่ยวข้องทั้งหมด"
+              : "Manage products and related data"}
           </p>
         </div>
         <div className="flex gap-2">
@@ -1020,7 +1029,7 @@ const [pickerType, setPickerType] = useState<string>("");
             ) : null}
           </div>
           <div className="bc-list-toolbar shrink-0">
-            <span>{isSetOnly ? "สินค้าชุดทั้งหมด" : "สินค้าทั้งหมด"}</span>
+            <span>สินค้าทั้งหมด</span>
             <span>{visibleItems.length} / {items.length} รายการ</span>
           </div>
 
@@ -1040,7 +1049,7 @@ const [pickerType, setPickerType] = useState<string>("");
                 {text.loading}
               </div>
             ) : visibleItems.length === 0 ? (
-              <div className="p-8 text-center text-sm text-muted-foreground">{isSetOnly ? "ไม่พบข้อมูลสินค้าชุด" : "ไม่พบข้อมูลสินค้า"}</div>
+              <div className="p-8 text-center text-sm text-muted-foreground">ไม่พบข้อมูลสินค้า</div>
             ) : (
               visibleItems.map((item, index) => {
                 const active = item.code === selectedCode;
@@ -1074,8 +1083,17 @@ const [pickerType, setPickerType] = useState<string>("");
                         ) : null}
                         {showListImage ? (
                           item.imageuri ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img alt="" className="size-8 shrink-0 rounded-lg border border-border object-cover" src={item.imageuri} />
+                            <AuthenticatedImg
+                              alt=""
+                              className="size-8 shrink-0 rounded-lg border border-border object-cover"
+                              src={item.imageuri}
+                              auth={auth}
+                              fallback={
+                                <span className="grid size-8 shrink-0 place-items-center rounded-lg border border-border text-muted-foreground">
+                                  <ImageOff className="h-3.5 w-3.5" />
+                                </span>
+                              }
+                            />
                           ) : (
                             <span className="grid size-8 shrink-0 place-items-center rounded-lg border border-border text-muted-foreground">
                               <ImageOff className="h-3.5 w-3.5" />
@@ -1110,7 +1128,7 @@ const [pickerType, setPickerType] = useState<string>("");
 
         {/* Resizable split separator bar */}
         <div
-          aria-label={isSetOnly ? "ปรับขนาดรายการสินค้าชุดและรายละเอียดสินค้าชุด" : "ปรับขนาดรายการสินค้าและรายละเอียดสินค้า"}
+          aria-label="ปรับขนาดรายการสินค้าและรายละเอียดสินค้า"
           aria-orientation="vertical"
           aria-valuemax={PRODUCT_SPLIT_MAX_LEFT}
           aria-valuemin={PRODUCT_SPLIT_MIN_LEFT}
@@ -1156,8 +1174,8 @@ const [pickerType, setPickerType] = useState<string>("");
                 <div className="flex items-center gap-3">
                   <h3 className="text-xl font-bold">
                     {editorMode === "create"
-                      ? (isSetOnly ? "เพิ่มสินค้าชุดใหม่" : text.productMasterCreateTitle)
-                      : (isSetOnly ? "แก้ไขสินค้าชุด" : text.productMasterEditTitle)}
+                      ? text.productMasterCreateTitle
+                      : text.productMasterEditTitle}
                   </h3>
                   {editorMode === "create" && (
                     <Button
@@ -1205,19 +1223,7 @@ const [pickerType, setPickerType] = useState<string>("");
 
               {/* Product Form Tab bar */}
               <div className="border-b border-border bg-muted/30 -mx-4 px-4 py-1.5 flex flex-wrap gap-1">
-                {(Object.entries({
-                  basic: text.tabBasic,
-                  classification: text.tabClassification,
-                  units: text.tabUnitsBarcode,
-                  bom: text.tabBomShort,
-                  stock: text.tabStock,
-                  media: text.tabMedia,
-                  logistics: "การจัดส่ง / โลจิสติกส์",
-                  restaurant: isSetOnly ? "ตัวเลือกสินค้าชุด" : text.tabRestaurant,
-                  timeforsales: text.tabTimeForSales,
-                  business: text.tabBusinessBranchShort,
-                  misc: text.tabMisc,
-                }) as ["basic" | "classification" | "units" | "bom" | "stock" | "media" | "logistics" | "restaurant" | "timeforsales" | "business" | "misc", string][]).map(([k, label]) => {
+                {(Object.entries(PRIMARY_PRODUCT_TABS(text)) as ["basic" | "classification" | "units" | "bom" | "stock" | "media", string][]).map(([k, label]) => {
                   const isActive = productTab === k;
                   return (
                     <button
@@ -1235,156 +1241,67 @@ const [pickerType, setPickerType] = useState<string>("");
                     </button>
                   );
                 })}
+                {(advancedTabsOpen || ADVANCED_PRODUCT_TAB_KEYS.includes(productTab as typeof ADVANCED_PRODUCT_TAB_KEYS[number])) &&
+                  (Object.entries(ADVANCED_PRODUCT_TABS(text)) as ["logistics" | "restaurant" | "timeforsales" | "business" | "misc", string][]).map(([k, label]) => {
+                    const isActive = productTab === k;
+                    return (
+                      <button
+                        key={k}
+                        type="button"
+                        onClick={() => setProductTab(k)}
+                        className={cn(
+                          "rounded-md px-3 py-1.5 text-xs font-medium transition",
+                          isActive
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        )}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                <button
+                  type="button"
+                  onClick={() => setAdvancedTabsOpen((prev) => {
+                    const next = !prev;
+                    if (typeof window !== "undefined") {
+                      window.localStorage.setItem("bcproductadvancedtabsopen", next ? "1" : "0");
+                    }
+                    return next;
+                  })}
+                  className="rounded-md border border-dashed border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                >
+                  {advancedTabsOpen ? "ขั้นสูง ▾" : "ขั้นสูง ▸"}
+                </button>
               </div>
 
               {/* Tab: basic */}
               {productTab === "basic" && (
-                <div className="space-y-4">
-                  <div className="grid gap-4 md:grid-cols-1">
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold">{text.itemCode} *</label>
-                      <Input
-                        required
-                        disabled={editorMode === "edit"}
-                        value={editProduct.code}
-                        onChange={(e) => setEditProduct({ ...editProduct, code: e.target.value.toUpperCase() })}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Localized Names */}
-                  <div className="border border-border rounded-lg p-4">
-                    <NamesEditor
-                      names={editProduct.names || []}
-                      onChange={(nextNames) => setEditProduct({ ...editProduct, names: nextNames })}
-                      languages={activeLanguages}
-                      label={text.productName}
-                      firstRequired
-                      language={lang}
-                    />
-                  </div>
-
-                  {/* ประเภทสินค้าหลัก (Radio Groups) */}
-                  {!isSetOnly && (
-                    <div className="rounded-lg border border-border bg-card p-3 shadow-sm">
-                      <h4 className="border-b border-border pb-1.5 text-sm font-bold text-foreground">ประเภทสินค้าหลัก</h4>
-                      <div className="mt-3 grid items-start gap-3 md:grid-cols-2">
-                        <RadioOptionGroup
-                          label={text.itemTypeLabel}
-                          value={editProduct.itemtype ?? 0}
-                          onChange={(n) => setEditProduct({ ...editProduct, itemtype: n })}
-                          options={itemTypes}
-                        />
-                        <RadioOptionGroup
-                          label={text.materialTypeLabel}
-                          value={editProduct.materialtype ?? 0}
-                          onChange={(n) => setEditProduct({ ...editProduct, materialtype: n })}
-                          options={materialTypes}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* การตั้งค่าภาษี (Radio Groups) */}
-                  <div className="rounded-lg border border-border bg-card p-3 shadow-sm">
-                    <h4 className="border-b border-border pb-1.5 text-sm font-bold text-foreground">การตั้งค่าภาษี</h4>
-                    <div className="mt-3 grid items-start gap-3">
-                      <RadioOptionGroup
-                        label="ประเภทภาษี"
-                        value={editProduct.vattype ?? 0}
-                        onChange={(n) => setEditProduct({ ...editProduct, vattype: n })}
-                        options={vatTypes}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Manufacturers & Suppliers section */}
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {/* Manufacturers List (Multi Select) */}
-                    <div className="border border-border rounded-lg p-4 space-y-3">
-                      <div className="flex items-center justify-between border-b border-border pb-1">
-                        <h4 className="font-semibold text-sm">{text.manufacturers}</h4>
-                        <Button type="button" size="sm" variant="outline" onClick={(e) => openPicker("creditor", "manufacturers", e.currentTarget)}>
-                          <PlusCircle className="mr-1 h-3.5 w-3.5" />
-                          {text.addManufacturer}
-                        </Button>
-                      </div>
-                      <div className="space-y-2">
-                        {(!editProduct.manufacturers || editProduct.manufacturers.length === 0) ? (
-                          <p className="text-xs text-muted-foreground text-center py-2">{text.noManufacturerData}</p>
-                        ) : (
-                          editProduct.manufacturers.map((m) => (
-                            <div key={m.guidfixed} className="flex items-center justify-between bg-muted/40 p-2 rounded text-sm border border-border/40">
-                              <span className="truncate font-medium">{m.code} — {pickName(m.names, lang)}</span>
-                              <Button type="button" size="sm" variant="ghost" className="text-destructive hover:bg-destructive/10" onClick={() => removeManufacturer(m.guidfixed)}>
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Suppliers List (Multi Select) */}
-                    <div className="border border-border rounded-lg p-4 space-y-3">
-                      <div className="flex items-center justify-between border-b border-border pb-1">
-                        <h4 className="font-semibold text-sm">{text.suppliers}</h4>
-                        <Button type="button" size="sm" variant="outline" onClick={(e) => openPicker("creditor", "suppliers", e.currentTarget)}>
-                          <PlusCircle className="mr-1 h-3.5 w-3.5" />
-                          {text.addSupplier}
-                        </Button>
-                      </div>
-                      <div className="space-y-2">
-                        {(!editProduct.suppliers || editProduct.suppliers.length === 0) ? (
-                          <p className="text-xs text-muted-foreground text-center py-2">{text.noSupplierData}</p>
-                        ) : (
-                          editProduct.suppliers.map((s) => (
-                            <div key={s.guidfixed} className="flex items-center justify-between bg-muted/40 p-2 rounded text-sm border border-border/40">
-                              <span className="truncate font-medium">{s.code} — {pickName(s.names, lang)}</span>
-                              <Button type="button" size="sm" variant="ghost" className="text-destructive hover:bg-destructive/10" onClick={() => removeSupplier(s.guidfixed)}>
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <TabProductBasic
+                  value={editProduct}
+                  onChange={setEditProduct}
+                  text={text}
+                  lang={lang}
+                  activeLanguages={activeLanguages}
+                  editorMode={editorMode}
+                  itemTypes={itemTypes}
+                  materialTypes={materialTypes}
+                  vatTypes={vatTypes}
+                  openPicker={openPicker}
+                  removeManufacturer={removeManufacturer}
+                  removeSupplier={removeSupplier}
+                />
               )}
 
-                            {/* Tab: classification */}
+              {/* Tab: classification */}
               {productTab === "classification" && (
-                <div className="border border-border rounded-lg p-4 space-y-4">
-                  <h4 className="font-semibold text-sm border-b border-border pb-1">{text.groupsAndCategories}</h4>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    {[
-                      { key: "group", label: text.group, code: editProduct.groupcode, names: editProduct.groupnames },
-                      { key: "groupsubone", label: text.groupsubone, code: editProduct.groupsubonecode, names: editProduct.groupsubonenames },
-                      { key: "groupsubtwo", label: text.groupsubtwo, code: editProduct.groupsubtwocode, names: editProduct.groupsubtwonames },
-                      { key: "brand", label: text.brand, code: editProduct.brandcode, names: editProduct.brandnames },
-                      { key: "category", label: text.category, code: editProduct.categorycode, names: editProduct.categorynames },
-                      { key: "class", label: text.class, code: editProduct.classcode, names: editProduct.classnames },
-                      { key: "design", label: text.design, code: editProduct.designcode, names: editProduct.designnames },
-                      { key: "model", label: text.model, code: editProduct.modelcode, names: editProduct.modelnames },
-                      { key: "pattern", label: text.pattern, code: editProduct.patterncode, names: editProduct.patternnames },
-                      { key: "grade", label: text.grade, code: editProduct.gradecode, names: editProduct.gradenames },
-                    ].map((field) => (
-                      <div key={field.key} className="space-y-1">
-                        <label className="text-xs text-muted-foreground">{field.label}</label>
-                        <div className="flex gap-1.5">
-                          <Input readOnly value={field.code ? `${field.code} — ${pickName(field.names, lang)}` : ""} />
-                          <Button type="button" variant="outline" aria-label={`Select ${field.label}`} onClick={(e) => openPicker(field.key, field.key, e.currentTarget.parentElement)}>...</Button>
-                          {field.code && (
-                            <Button type="button" variant="ghost" aria-label={`Clear ${field.label}`} onClick={() => clearPickerField(field.key)}>
-                              <X className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <TabProductClassification
+                  value={editProduct}
+                  text={text}
+                  lang={lang}
+                  openPicker={openPicker}
+                  clearPickerField={clearPickerField}
+                />
               )}
 
 {/* Tab: units */}
@@ -1409,7 +1326,7 @@ const [pickerType, setPickerType] = useState<string>("");
 
               {/* Tab: restaurant */}
               {productTab === "restaurant" && (
-                <TabProductRestaurant value={editProduct} onChange={setEditProduct} auth={auth} language={lang} shopLanguages={activeLanguages} isSetOnly={isSetOnly} />
+                <TabProductRestaurant value={editProduct} onChange={setEditProduct} auth={auth} language={lang} shopLanguages={activeLanguages} />
               )}
 
               {/* Tab: timeforsales */}
@@ -1426,91 +1343,7 @@ const [pickerType, setPickerType] = useState<string>("");
 
               {/* Tab: logistics */}
               {productTab === "logistics" && (
-                <div className="space-y-4">
-                  <div className="border border-border bg-card rounded-lg p-4 space-y-4">
-                    <h4 className="font-bold text-base text-foreground border-b border-border pb-2">ข้อมูลขนส่งและขนาดพัสดุ (Logistics & Shipping)</h4>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div className="space-y-1">
-                        <label className="text-xs text-muted-foreground">น้ำหนักพัสดุรวมกล่อง (kg)</label>
-                        <Input
-                          type="number"
-                          min={0}
-                          step="any"
-                          value={editProduct.packageweight ?? 0}
-                          onChange={(e) => setEditProduct({ ...editProduct, packageweight: Math.max(0, Number(e.target.value) || 0) })}
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-xs text-muted-foreground">น้ำหนักเชิงปริมาตรประเมิน (kg)</label>
-                        <Input
-                          type="text"
-                          readOnly
-                          className="bg-muted/40 font-mono"
-                          value={`${(((editProduct.packagewidth ?? 0) * (editProduct.packagelength ?? 0) * (editProduct.packageheight ?? 0)) / 5000).toFixed(3)} kg`}
-                        />
-                        <p className="text-[10px] text-muted-foreground mt-1">คำนวณจาก (กว้าง x ยาว x สูง) / 5000</p>
-                      </div>
-                    </div>
-
-                    <div className="grid gap-4 sm:grid-cols-3">
-                      <div className="space-y-1">
-                        <label className="text-xs text-muted-foreground">ความกว้างกล่อง (cm)</label>
-                        <Input
-                          type="number"
-                          min={0}
-                          value={editProduct.packagewidth ?? 0}
-                          onChange={(e) => setEditProduct({ ...editProduct, packagewidth: Math.max(0, Number(e.target.value) || 0) })}
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-xs text-muted-foreground">ความยาวกล่อง (cm)</label>
-                        <Input
-                          type="number"
-                          min={0}
-                          value={editProduct.packagelength ?? 0}
-                          onChange={(e) => setEditProduct({ ...editProduct, packagelength: Math.max(0, Number(e.target.value) || 0) })}
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-xs text-muted-foreground">ความสูงกล่อง (cm)</label>
-                        <Input
-                          type="number"
-                          min={0}
-                          value={editProduct.packageheight ?? 0}
-                          onChange={(e) => setEditProduct({ ...editProduct, packageheight: Math.max(0, Number(e.target.value) || 0) })}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="p-3 bg-muted/20 border border-border rounded-lg space-y-3">
-                      <p className="text-xs font-semibold text-muted-foreground">คุณลักษณะการจัดส่งและพิมพ์ฉลาก (Shipping Badges):</p>
-                      <div className="grid grid-cols-2 gap-3 text-xs">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={editProduct.isalert ?? false}
-                            onChange={(e) => setEditProduct({ ...editProduct, isalert: e.target.checked })}
-                            className="rounded accent-primary size-4"
-                          />
-                          <div>
-                            <span className="font-semibold block">สินค้าแตกหักง่าย / ระวังแตก (Fragile)</span>
-                            <span className="text-[10px] text-muted-foreground">ติดป้ายเตือนและพิมพ์สติ๊กเกอร์เตือนพิเศษ</span>
-                          </div>
-                        </label>
-                      </div>
-                      {editProduct.isalert && (
-                        <div className="space-y-1">
-                          <label className="text-xs text-muted-foreground">คำเตือนสำหรับสติ๊กเกอร์จัดส่ง</label>
-                          <Input
-                            placeholder="ระบุข้อความ เช่น ห้ามโยน ระวังของแตกหักง่าย"
-                            value={editProduct.alertdescription || ""}
-                            onChange={(e) => setEditProduct({ ...editProduct, alertdescription: e.target.value })}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                <TabProductLogistics value={editProduct} onChange={setEditProduct} />
               )}
 
               {/* Tab: misc */}
@@ -1527,7 +1360,7 @@ const [pickerType, setPickerType] = useState<string>("");
               <CardHeader className="shrink-0 border-b border-border bg-muted/5 p-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <span className="block text-[10px] font-bold text-primary">{isSetOnly ? "รายละเอียดสินค้าชุด" : text.productMasterDetailTitle}</span>
+                    <span className="block text-[10px] font-bold text-primary">{text.productMasterDetailTitle}</span>
                     <h3 className="break-words text-xl font-extrabold leading-tight text-foreground">{selectedProduct.code}</h3>
                     <p className="mt-0.5 break-words text-xs font-semibold leading-snug text-muted-foreground">{pickName(selectedProduct.names, lang)}</p>
                   </div>
@@ -1548,12 +1381,12 @@ const [pickerType, setPickerType] = useState<string>("");
                 <DetailSection
                   title={text.basicInfoCard ?? "ข้อมูลพื้นฐานสินค้า"}
                   fields={[
-                    ...(!isSetOnly ? [{
+                    {
                       label: text.itemType,
                       value: selectedProduct.itemtype === 2
                         ? text.itemTypeSet
                         : (itemTypes.find((t) => t.value === selectedProduct.itemtype)?.label ?? String(selectedProduct.itemtype ?? "-"))
-                    }] : []),
+                    },
                     {
                       label: "สถานะภาษีมูลค่าเพิ่ม",
                       value: vatTypes.find((t) => t.value === selectedProduct.vattype)?.label ?? String(selectedProduct.vattype ?? "-")
@@ -1562,10 +1395,10 @@ const [pickerType, setPickerType] = useState<string>("");
                       label: "รหัสประเภทภาษี",
                       value: String(selectedProduct.taxtype ?? selectedProduct.vattype ?? "-")
                     },
-                    ...(!isSetOnly ? [{
+                    {
                       label: text.materialType,
                       value: materialTypes.find((t) => t.value === selectedProduct.materialtype)?.label ?? String(selectedProduct.materialtype ?? "-")
-                    }] : []),
+                    },
                     { label: "รหัสหน่วยหลัก", value: selectedProduct.unitcode || selectedProduct.itemunitcode || "-" },
                     { label: "ชื่อหน่วยหลัก", value: pickName(selectedProduct.unitnames || selectedProduct.itemunitnames, lang) || "-" },
                     { label: "มิติสินค้า", value: formatDimensionList(selectedProduct.dimensions, lang) }
@@ -1858,137 +1691,6 @@ const [pickerType, setPickerType] = useState<string>("");
   );
 }
 
-// ─── Helpers for Product Form Tabs ────────────────────────────────────────
-
-function FieldRow({ label, hint, children, required }: { label: string; hint?: string; children: ReactNode; required?: boolean }) {
-  return (
-    <label className="flex flex-col gap-1 text-sm">
-      <span className="font-medium text-foreground">
-        {label}
-        {required ? <span className="ml-1 text-destructive">*</span> : null}
-      </span>
-      {children}
-      {hint ? <span className="text-xs text-muted-foreground">{hint}</span> : null}
-    </label>
-  );
-}
-
-function FieldGrid({ children }: { children: ReactNode }) {
-  return <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{children}</div>;
-}
-
-function Section({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) {
-  return (
-    <section className="mb-4 overflow-hidden rounded-lg border border-border bg-card">
-      <header className="flex items-center justify-between border-b border-border px-3 py-2 bg-muted/20">
-        <h3 className="text-sm font-semibold">{title}</h3>
-        {action}
-      </header>
-      <div className="p-3">{children}</div>
-    </section>
-  );
-}
-
-function Toggle({
-  checked,
-  onCheckedChange,
-  label,
-  disabled,
-}: {
-  checked: boolean;
-  onCheckedChange: (next: boolean) => void;
-  label: string;
-  disabled?: boolean;
-}) {
-  return (
-    <label className={cn("flex w-auto cursor-pointer items-center gap-2 text-sm", disabled && "cursor-not-allowed opacity-60")}>
-      <input
-        type="checkbox"
-        checked={checked}
-        disabled={disabled}
-        onChange={(event) => onCheckedChange(event.target.checked)}
-        className="size-4 rounded border-input"
-      />
-      <span>{label}</span>
-    </label>
-  );
-}
-
-type RadioOptionValue = string | number | boolean;
-
-function RadioOptionGroup<T extends RadioOptionValue>({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: T;
-  options: Array<{ value: T; label: string; disabled?: boolean }>;
-  onChange: (next: T) => void;
-}) {
-  return (
-    <fieldset className="rounded-md border border-border bg-background px-2.5 py-2">
-      <legend className="px-1 text-xs font-semibold text-muted-foreground">{label}</legend>
-      <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
-        {options.map((option) => (
-          <label
-            key={String(option.value)}
-            className={cn(
-              "flex min-h-7 w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-xs font-medium hover:bg-muted/60",
-              option.disabled && "cursor-not-allowed opacity-60",
-            )}
-          >
-            <input
-              type="radio"
-              checked={Object.is(value, option.value)}
-              disabled={option.disabled}
-              onChange={() => onChange(option.value)}
-              className="size-4"
-            />
-            <span className="whitespace-normal break-words">{option.label}</span>
-          </label>
-        ))}
-      </div>
-    </fieldset>
-  );
-}
-
-function NumberField({
-  value,
-  onChange,
-  min,
-  step = "any",
-  className,
-}: {
-  value: number;
-  onChange: (next: number) => void;
-  min?: number;
-  step?: string | number;
-  className?: string;
-}) {
-  return (
-    <Input
-      type="number"
-      value={Number.isFinite(value) ? value : 0}
-      step={step}
-      min={min}
-      onChange={(event: ChangeEvent<HTMLInputElement>) => {
-        const n = Number(event.target.value);
-        onChange(Number.isFinite(n) ? n : 0);
-      }}
-      className={className}
-    />
-  );
-}
-
-function cryptoRandomId(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return (crypto as Crypto).randomUUID();
-  }
-  return Math.random().toString(36).slice(2);
-}
-
 function setNameXEntry(list: NameX[] | undefined, code: string, name: string): NameX[] {
   const arr = list ? [...list] : [];
   const idx = arr.findIndex((x) => x.code === code);
@@ -2046,1120 +1748,6 @@ function formatAutoPackingBalance(item: Product, language: string): string {
 }
 
 // ─── Tab Components ───────────────────────────────────────────────────────
-
-type ProductStateAction = Dispatch<SetStateAction<Product | null>>;
-
-function TabProductMedia({
-  value,
-  onChange,
-  auth,
-  language = "th",
-}: {
-  value: Product;
-  onChange: ProductStateAction;
-  auth: AuthSession | null;
-  language?: string;
-}) {
-  const textM = getBarcodeText(language);
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string>("");
-
-  const handleUpload = useCallback(
-    async (file: File | null, target: "main" | "gallery") => {
-      if (!file) return;
-      if (file.type !== "image/png" && file.type !== "image/jpeg") {
-        setUploadError(
-          language === "th"
-            ? "รองรับเฉพาะไฟล์ PNG และ JPG"
-            : "Only PNG and JPG files are supported.",
-        );
-        return;
-      }
-      setUploading(true);
-      setUploadError("");
-      const result = await uploadProductImage(auth, file);
-      if (!result.success || !result.data?.url) {
-        setUploadError(result.message ?? "Upload failed");
-      } else if (target === "main") {
-        onChange((c) => c ? ({ ...c, imageuri: result.data!.url }) : null);
-      } else {
-        onChange((c) => c ? ({
-          ...c,
-          images: [...(c.images || []), { xorder: (c.images || []).length + 1, uri: result.data!.url }],
-        }) : null);
-      }
-      setUploading(false);
-    },
-    [auth, onChange, language],
-  );
-
-  return (
-    <div className="space-y-4">
-      <Section title={textM.mediaUseSection}>
-        <div className="flex gap-4">
-          <label className="flex items-center gap-2">
-            <input
-              type="radio"
-              checked={value.useimageorcolor ?? true}
-              onChange={() => onChange((c) => c ? ({ ...c, useimageorcolor: true } as Product) : null)}
-            />
-            <ImagePlus className="h-4 w-4" />
-            <span>แสดงรูปภาพหลัก</span>
-          </label>
-          <label className="flex items-center gap-2">
-            <input
-              type="radio"
-              checked={!(value.useimageorcolor ?? true)}
-              onChange={() => onChange((c) => c ? ({ ...c, useimageorcolor: false } as Product) : null)}
-            />
-            <span className="inline-block size-4 rounded border" style={{ background: value.colorselecthex || "#888" }} />
-            <span>แสดงสีป้ายสินค้า</span>
-          </label>
-        </div>
-      </Section>
-
-      {value.useimageorcolor ?? true ? (
-        <>
-          <Section title={textM.mediaMainSection}>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <div className="size-32 overflow-hidden rounded-lg border border-border bg-muted">
-                {value.imageuri ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={value.imageuri}
-                    alt="Main Product"
-                    className="size-full object-cover"
-                  />
-                ) : (
-                  <div className="flex size-full items-center justify-center text-xs text-muted-foreground">
-                    {textM.mediaNoImage}
-                  </div>
-                )}
-              </div>
-              <div className="space-y-2 flex-1 max-w-md">
-                <Input
-                  placeholder="https://… หรือ อัปโหลดไฟล์"
-                  value={value.imageuri || ""}
-                  onChange={(event) => onChange((c) => c ? ({ ...c, imageuri: event.target.value } as Product) : null)}
-                />
-                <div className="flex flex-wrap items-center gap-2">
-                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-input px-3 py-1.5 text-xs hover:bg-muted bg-background">
-                    <Upload className="h-3.5 w-3.5" />
-                    {uploading ? textM.mediaUploading : textM.mediaUploadBtn}
-                    <input
-                      type="file"
-                      accept="image/png,image/jpeg"
-                      className="hidden"
-                      onChange={(event) => handleUpload(event.target.files?.[0] ?? null, "main")}
-                      disabled={uploading}
-                    />
-                  </label>
-                  {value.imageuri ? (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onChange((c) => c ? ({ ...c, imageuri: "" } as Product) : null)}
-                    >
-                      <Trash2 className="mr-1 h-3.5 w-3.5" />
-                      {textM.mediaDeleteBtn}
-                    </Button>
-                  ) : null}
-                </div>
-                {uploadError ? <p className="text-xs text-destructive">{uploadError}</p> : null}
-              </div>
-            </div>
-          </Section>
-          <Section
-            title={textM.mediaGallerySection}
-            action={
-              <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-input px-3 py-1.5 text-xs hover:bg-muted bg-background">
-                <Plus className="h-3.5 w-3.5" />
-                {textM.mediaAddGallery}
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg"
-                  className="hidden"
-                  onChange={(event) => handleUpload(event.target.files?.[0] ?? null, "gallery")}
-                  disabled={uploading}
-                />
-              </label>
-            }
-          >
-            {(!value.images || value.images.length === 0) ? (
-              <p className="text-sm text-muted-foreground">{textM.mediaNoGallery}</p>
-            ) : (
-              <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6">
-                {value.images.map((img, idx) => (
-                  <li key={img.xorder} className="relative overflow-hidden rounded-md border border-border">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={img.uri} alt={`#${img.xorder}`} className="aspect-square w-full object-cover" />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-1 top-1 size-6 bg-background/80"
-                      onClick={() =>
-                        onChange((c) => c ? ({ ...c, images: (c.images || []).filter((_, imgIdx) => imgIdx !== idx) } as Product) : null)
-                      }
-                      aria-label="Delete Image"
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Section>
-        </>
-      ) : (
-        <Section title={textM.mediaColorSection}>
-          <FieldGrid>
-            <FieldRow label={textM.mediaColorName}>
-              <Input
-                value={value.colorselect || ""}
-                onChange={(event) => onChange((c) => c ? ({ ...c, colorselect: event.target.value } as Product) : null)}
-              />
-            </FieldRow>
-            <FieldRow label={textM.mediaColorHex}>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="color"
-                  value={value.colorselecthex || "#888888"}
-                  onChange={(event) => onChange((c) => c ? ({ ...c, colorselecthex: event.target.value } as Product) : null)}
-                  className="h-10 w-16 p-1 cursor-pointer"
-                />
-                <Input
-                  value={value.colorselecthex || ""}
-                  onChange={(event) => onChange((c) => c ? ({ ...c, colorselecthex: event.target.value } as Product) : null)}
-                  placeholder="#RRGGBB"
-                />
-              </div>
-            </FieldRow>
-          </FieldGrid>
-        </Section>
-      )}
-    </div>
-  );
-}
-
-function TabProductRestaurant({
-  value,
-  onChange,
-  auth,
-  language,
-  shopLanguages,
-  isSetOnly = false,
-}: {
-  value: Product;
-  onChange: ProductStateAction;
-  auth: AuthSession | null;
-  language: string;
-  shopLanguages: string[];
-  isSetOnly?: boolean;
-}) {
-  const text = getBarcodeText(language);
-  const foodTypes = useMemo(() => [
-    { value: 0, label: text.foodTypeFood },
-    { value: 1, label: text.foodTypeDrink },
-    { value: 2, label: text.foodTypeAlcohol },
-    { value: 3, label: text.foodTypeOther },
-  ], [text]);
-
-  const updR = useCallback(
-    (key: keyof ProductRestaurant, val: boolean) =>
-      onChange((c) => {
-        if (!c) return null;
-        return {
-          ...c,
-          restaurant: {
-            ...(c.restaurant || {
-              isforrestaurant: false,
-              isfortakeaway: false,
-              isfordelivery: false,
-              isforcustomer: false,
-              isforcustomerpreorder: false,
-            }),
-            [key]: val,
-          },
-        } as Product;
-      }),
-    [onChange],
-  );
-
-  return (
-    <div className="space-y-4">
-      {!isSetOnly && (
-        <>
-          <Section title={text.tabRestaurant}>
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              <Toggle checked={value.restaurant?.isforrestaurant ?? false} onCheckedChange={(n) => updR("isforrestaurant", n)} label={text.isForRestaurant} />
-              <Toggle checked={value.restaurant?.isfortakeaway ?? false} onCheckedChange={(n) => updR("isfortakeaway", n)} label={text.isForTakeaway} />
-              <Toggle checked={value.restaurant?.isfordelivery ?? false} onCheckedChange={(n) => updR("isfordelivery", n)} label={text.isForDelivery} />
-              <Toggle checked={value.restaurant?.isforcustomer ?? false} onCheckedChange={(n) => updR("isforcustomer", n)} label={text.isForCustomer} />
-              <Toggle checked={value.restaurant?.isforcustomerpreorder ?? false} onCheckedChange={(n) => updR("isforcustomerpreorder", n)} label={text.isForCustomerPreOrder} />
-              <Toggle checked={value.isalacarte ?? false} onCheckedChange={(n) => onChange((c) => c ? ({ ...c, isalacarte: n } as Product) : null)} label={text.isALaCarte} />
-              <Toggle checked={value.isstockforrestaurant ?? false} onCheckedChange={(n) => onChange((c) => c ? ({ ...c, isstockforrestaurant: n } as Product) : null)} label={text.isStockForRestaurant} />
-              <Toggle checked={value.issplitunitprint ?? false} onCheckedChange={(n) => onChange((c) => c ? ({ ...c, issplitunitprint: n } as Product) : null)} label={text.isSplitUnitPrint} />
-              <Toggle checked={value.isonlystaff ?? false} onCheckedChange={(n) => onChange((c) => c ? ({ ...c, isonlystaff: n } as Product) : null)} label={text.isOnlyStaff} />
-            </div>
-            <div className="mt-3">
-              <RadioOptionGroup
-                label={text.foodType}
-                value={value.foodtype ?? 0}
-                onChange={(val) => onChange((c) => c ? ({ ...c, foodtype: val } as Product) : null)}
-                options={foodTypes}
-              />
-            </div>
-          </Section>
-
-          <ProductOrderTypesEditor value={value} onChange={onChange} language={language} auth={auth} />
-        </>
-      )}
-
-      <ProductOptionsEditor value={value} onChange={onChange} shopLanguages={shopLanguages} language={language} isSetOnly={isSetOnly} />
-    </div>
-  );
-}
-
-function ProductOrderTypesEditor({
-  value,
-  onChange,
-  language,
-  auth,
-}: {
-  value: Product;
-  onChange: ProductStateAction;
-  language: string;
-  auth: AuthSession | null;
-}) {
-  const [picker, setPicker] = useState({ open: false, idx: undefined as number | undefined });
-  const setRows = useCallback(
-    (mutator: (rows: ProductOrderType[]) => ProductOrderType[]) =>
-      onChange((c) => c ? ({ ...c, ordertypes: mutator(c.ordertypes || []) } as Product) : null),
-    [onChange],
-  );
-
-  const textOT = getBarcodeText(language);
-  return (
-    <Section
-      title={textOT.orderTypes}
-      action={
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() =>
-            setRows((rows) => [...rows, { guidfixed: "", code: "", names: [], chargeprice: 0, isdisabled: false } as any])
-          }
-        >
-          <Plus className="mr-1 h-4 w-4" />
-          {textOT.orderTypeAdd}
-        </Button>
-      }
-    >
-      {(!value.ordertypes || value.ordertypes.length === 0) ? (
-        <p className="text-sm text-muted-foreground">—</p>
-      ) : (
-        <div className="space-y-2">
-          {value.ordertypes.map((entry, idx) => (
-            <div key={idx} className="grid grid-cols-1 items-center gap-2 md:grid-cols-[2fr_1fr_40px]">
-              <button
-                type="button"
-                onClick={() => setPicker({ open: true, idx })}
-                className="flex h-10 w-full items-center justify-between rounded-lg border border-input bg-background px-3 text-left text-sm hover:bg-muted/40"
-              >
-                <span className="truncate">{pickName(entry.names, language) || entry.code || "— เลือกบริการสั่งอาหาร —"}</span>
-                <span className="text-xs text-muted-foreground">{entry.code}</span>
-              </button>
-              <NumberField
-                value={entry.chargeprice ?? 0}
-                onChange={(n) =>
-                  setRows((rows) => rows.map((row, rowIdx) => (rowIdx === idx ? { ...row, chargeprice: n } : row)))
-                }
-                step="any"
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => setRows((rows) => rows.filter((_, rowIdx) => rowIdx !== idx))}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
-      <MasterPicker
-        open={picker.open}
-        onClose={() => setPicker({ open: false, idx: undefined })}
-        auth={auth}
-        language={language}
-        master="ordertype"
-        title={textOT.orderTypes}
-        onSelect={(entry) =>
-          setRows((rows) =>
-            rows.map((row, rowIdx) =>
-              rowIdx === picker.idx
-                ? ({ ...row, guidfixed: entry.guidfixed, code: entry.code, names: entry.names } as any)
-                : row,
-            ),
-          )
-        }
-      />
-    </Section>
-  );
-}
-
-function ProductOptionsEditor({
-  value,
-  onChange,
-  shopLanguages,
-  language,
-  isSetOnly = false,
-}: {
-  value: Product;
-  onChange: ProductStateAction;
-  shopLanguages: string[];
-  language: string;
-  isSetOnly?: boolean;
-}) {
-  const textOpt = getBarcodeText(language);
-  const setOptions = useCallback(
-    (mutator: (rows: ProductOption[]) => ProductOption[]) =>
-      onChange((c) => c ? ({ ...c, options: mutator(c.options || []) } as Product) : null),
-    [onChange],
-  );
-
-  return (
-    <Section
-      title={isSetOnly ? "จัดการตัวเลือกสินค้าในชุด (เช่น เลือก Case, RAM, CPU, สี)" : textOpt.options}
-      action={
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() =>
-            setOptions((rows) => [
-              ...rows,
-              { guid: cryptoRandomId(), names: [], choicetype: 0, choices: [] },
-            ])
-          }
-        >
-          <Plus className="mr-1 h-4 w-4" />
-          {textOpt.optionAdd}
-        </Button>
-      }
-    >
-      {(!value.options || value.options.length === 0) ? (
-        <p className="text-sm text-muted-foreground">—</p>
-      ) : (
-        <div className="space-y-4">
-          {value.options.map((opt, optIdx) => (
-            <div key={opt.guid} className="space-y-2 rounded-md border border-border p-3">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs text-muted-foreground font-semibold">กลุ่มตัวเลือกที่ #{optIdx + 1}</span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="text-destructive hover:bg-destructive/10"
-                  onClick={() => setOptions((rows) => rows.filter((_, idx) => idx !== optIdx))}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-
-              <NamesEditor
-                names={opt.names || []}
-                onChange={(nextNames) =>
-                  setOptions((rows) => rows.map((row, idx) => (idx === optIdx ? { ...row, names: nextNames } : row)))
-                }
-                languages={shopLanguages}
-                label={textOpt.optionGroupName}
-                language={language}
-              />
-
-              <div className="grid gap-3 sm:grid-cols-3">
-                <RadioOptionGroup
-                  label={textOpt.optionChoiceType}
-                  value={opt.choicetype}
-                  onChange={(n) =>
-                    setOptions((rows) => rows.map((row, idx) => (idx === optIdx ? { ...row, choicetype: n } : row)))
-                  }
-                  options={[
-                    { value: 0, label: textOpt.optionChoiceTypeMulti },
-                    { value: 1, label: textOpt.optionChoiceTypeSingle },
-                  ]}
-                />
-                <FieldRow label={textOpt.optionMinSelectLabel}>
-                  <NumberField
-                    value={opt.minselect ?? 0}
-                    onChange={(n) =>
-                      setOptions((rows) => rows.map((row, idx) => (idx === optIdx ? { ...row, minselect: n } : row)))
-                    }
-                    min={0}
-                    step={1}
-                  />
-                </FieldRow>
-                <FieldRow label={textOpt.optionMaxSelectLabel}>
-                  <NumberField
-                    value={opt.maxselect ?? 0}
-                    onChange={(n) =>
-                      setOptions((rows) => rows.map((row, idx) => (idx === optIdx ? { ...row, maxselect: n } : row)))
-                    }
-                    min={0}
-                    step={1}
-                  />
-                </FieldRow>
-              </div>
-
-              {/* Choices inside Option */}
-              <div className="mt-3 border-t border-border pt-3">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-semibold text-muted-foreground">{textOpt.optionChoiceList}</span>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setOptions((rows) =>
-                        rows.map((row, idx) =>
-                          idx === optIdx
-                            ? {
-                                ...row,
-                                choices: [
-                                  ...(row.choices || []),
-                                  {
-                                    guid: cryptoRandomId(),
-                                    names: [],
-                                    imageuri: "",
-                                    refbarcode: "",
-                                    refbarcodenames: [],
-                                    refproductcode: "",
-                                    refunitcode: "",
-                                    isstock: false,
-                                    isdefault: false,
-                                    qty: 1,
-                                    price: "",
-                                    vatcal: 0,
-                                  },
-                                ],
-                              }
-                            : row,
-                        ),
-                      )
-                    }
-                  >
-                    <Plus className="mr-1 h-3.5 w-3.5" />
-                    {textOpt.optionAddChoice}
-                  </Button>
-                </div>
-
-                {(!opt.choices || opt.choices.length === 0) ? (
-                  <p className="text-xs text-muted-foreground text-center py-2">—</p>
-                ) : (
-                  <div className="space-y-3">
-                    {opt.choices.map((choice, choiceIdx) => (
-                      <div key={choice.guid} className="p-3 border border-border/60 rounded bg-muted/20 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-muted-foreground font-semibold">ตัวเลือกย่อย #{choiceIdx + 1}</span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="size-6 text-destructive hover:bg-destructive/10"
-                            onClick={() =>
-                              setOptions((rows) =>
-                                rows.map((row, idx) =>
-                                  idx === optIdx
-                                    ? { ...row, choices: (row.choices || []).filter((_, cIdx) => cIdx !== choiceIdx) }
-                                    : row,
-                                ),
-                              )
-                            }
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-
-                        <NamesEditor
-                          names={choice.names || []}
-                          onChange={(nextNames) =>
-                            setOptions((rows) =>
-                              rows.map((row, idx) =>
-                                idx === optIdx
-                                  ? {
-                                      ...row,
-                                      choices: (row.choices || []).map((c, cIdx) =>
-                                        cIdx === choiceIdx ? { ...c, names: nextNames } : c,
-                                      ),
-                                    }
-                                  : row,
-                              ),
-                            )
-                          }
-                          languages={shopLanguages}
-                          label={textOpt.optionChoiceName}
-                          language={language}
-                        />
-
-                        <div className="grid gap-3 sm:grid-cols-4">
-                          <FieldRow label={textOpt.optionChoicePriceLabel}>
-                            <Input
-                              value={choice.price || ""}
-                              onChange={(e) =>
-                                setOptions((rows) =>
-                                  rows.map((row, idx) =>
-                                    idx === optIdx
-                                      ? {
-                                          ...row,
-                                          choices: (row.choices || []).map((c, cIdx) =>
-                                            cIdx === choiceIdx ? { ...c, price: e.target.value } : c,
-                                          ),
-                                        }
-                                      : row,
-                                  ),
-                                )
-                              }
-                              placeholder="0.00"
-                            />
-                          </FieldRow>
-                          <FieldRow label={textOpt.optionChoiceQtyLabel}>
-                            <NumberField
-                              value={choice.qty ?? 0}
-                              onChange={(n) =>
-                                setOptions((rows) =>
-                                  rows.map((row, idx) =>
-                                    idx === optIdx
-                                      ? {
-                                          ...row,
-                                          choices: (row.choices || []).map((c, cIdx) =>
-                                            cIdx === choiceIdx ? { ...c, qty: n } : c,
-                                          ),
-                                        }
-                                      : row,
-                                  ),
-                                )
-                              }
-                            />
-                          </FieldRow>
-                          <div className="flex items-center pt-5">
-                            <Toggle
-                              checked={choice.isdefault}
-                              onCheckedChange={(n) =>
-                                setOptions((rows) =>
-                                  rows.map((row, idx) =>
-                                    idx === optIdx
-                                      ? {
-                                          ...row,
-                                          choices: (row.choices || []).map((c, cIdx) =>
-                                            cIdx === choiceIdx ? { ...c, isdefault: n } : c,
-                                          ),
-                                        }
-                                      : row,
-                                  ),
-                                )
-                              }
-                              label={textOpt.optionChoiceDefaultLabel}
-                            />
-                          </div>
-                          <div className="flex items-center pt-5">
-                            <Toggle
-                              checked={choice.isstock}
-                              onCheckedChange={(n) =>
-                                setOptions((rows) =>
-                                  rows.map((row, idx) =>
-                                    idx === optIdx
-                                      ? {
-                                          ...row,
-                                          choices: (row.choices || []).map((c, cIdx) =>
-                                            cIdx === choiceIdx ? { ...c, isstock: n } : c,
-                                          ),
-                                        }
-                                      : row,
-                                  ),
-                                )
-                              }
-                              label={textOpt.optionChoiceStockLabel}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </Section>
-  );
-}
-
-function TabProductTimeForSale({
-  value,
-  onChange,
-  language = "th",
-}: {
-  value: Product;
-  onChange: ProductStateAction;
-  language?: string;
-}) {
-  const textT = getBarcodeText(language);
-  const setRows = useCallback(
-    (mutator: (rows: ProductTimeForSale[]) => ProductTimeForSale[]) =>
-      onChange((c) => c ? ({ ...c, timeforsales: mutator(c.timeforsales || []) } as Product) : null),
-    [onChange],
-  );
-
-  const DAYS = [textT.sun, textT.mon, textT.tue, textT.wed, textT.thu, textT.fri, textT.sat];
-
-  return (
-    <Section
-      title={textT.timeSection}
-      action={
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() =>
-            setRows((rows) => [
-              ...rows,
-              { daysofweek: [1, 2, 3, 4, 5], fromdate: "", todate: "", fromtime: "00:00", totime: "23:59" },
-            ])
-          }
-        >
-          <Plus className="mr-1 h-4 w-4" />
-          {textT.timeAddBtn}
-        </Button>
-      }
-    >
-      {(!value.timeforsales || value.timeforsales.length === 0) ? (
-        <p className="text-sm text-muted-foreground">{textT.timeNoLimit}</p>
-      ) : (
-        <div className="space-y-4">
-          {value.timeforsales.map((entry, idx) => (
-            <div key={idx} className="p-3 border border-border rounded bg-muted/10 space-y-3">
-              <div className="flex items-center justify-between border-b border-border/60 pb-1">
-                <span className="text-xs font-semibold text-muted-foreground">ข้อกำหนดเวลาขายที่ #{idx + 1}</span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-6 text-destructive hover:bg-destructive/10"
-                  onClick={() => setRows((rows) => rows.filter((_, rowIdx) => rowIdx !== idx))}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-
-              {/* Days of week checklist */}
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground font-semibold">{textT.timeDaysLabel}</label>
-                <div className="flex flex-wrap gap-2">
-                  {DAYS.map((dayLabel, dayIdx) => {
-                    const checked = (entry.daysofweek || []).includes(dayIdx as any);
-                    return (
-                      <label key={dayIdx} className="flex items-center gap-1 text-xs cursor-pointer bg-background p-1.5 rounded border border-border hover:bg-muted/40">
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={(e) => {
-                            const activeDays = entry.daysofweek || [];
-                            const nextDays = e.target.checked
-                              ? [...activeDays, dayIdx as any]
-                              : activeDays.filter((d) => d !== dayIdx);
-                            setRows((rows) =>
-                              rows.map((row, rowIdx) =>
-                                rowIdx === idx ? { ...row, daysofweek: nextDays } : row,
-                              ),
-                            );
-                          }}
-                          className="size-3"
-                        />
-                        <span>{dayLabel}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-4">
-                <FieldRow label={textT.timeFromDate}>
-                  <Input
-                    type="date"
-                    value={entry.fromdate || ""}
-                    onChange={(e) =>
-                      setRows((rows) =>
-                        rows.map((row, rowIdx) => (rowIdx === idx ? { ...row, fromdate: e.target.value } : row)),
-                      )
-                    }
-                  />
-                </FieldRow>
-                <FieldRow label={textT.timeToDate}>
-                  <Input
-                    type="date"
-                    value={entry.todate || ""}
-                    onChange={(e) =>
-                      setRows((rows) =>
-                        rows.map((row, rowIdx) => (rowIdx === idx ? { ...row, todate: e.target.value } : row)),
-                      )
-                    }
-                  />
-                </FieldRow>
-                <FieldRow label={textT.timeFromTime}>
-                  <Input
-                    type="time"
-                    value={entry.fromtime || "00:00"}
-                    onChange={(e) =>
-                      setRows((rows) =>
-                        rows.map((row, rowIdx) => (rowIdx === idx ? { ...row, fromtime: e.target.value } : row)),
-                      )
-                    }
-                  />
-                </FieldRow>
-                <FieldRow label={textT.timeToTime}>
-                  <Input
-                    type="time"
-                    value={entry.totime || "23:59"}
-                    onChange={(e) =>
-                      setRows((rows) =>
-                        rows.map((row, rowIdx) => (rowIdx === idx ? { ...row, totime: e.target.value } : row)),
-                      )
-                    }
-                  />
-                </FieldRow>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </Section>
-  );
-}
-
-function TabProductBusinessBranch({
-  value,
-  onChange,
-  auth,
-  language,
-}: {
-  value: Product;
-  onChange: ProductStateAction;
-  auth: AuthSession | null;
-  language: string;
-}) {
-  const textBB = getBarcodeText(language);
-  const [pickerType, setPickerType] = useState<"branch" | "businesstype" | null>(null);
-
-  const setBusinessRows = useCallback(
-    (mutator: (rows: ProductBarcodeBusinessType[]) => ProductBarcodeBusinessType[]) =>
-      onChange((c) => c ? ({ ...c, businesstypes: mutator(c.businesstypes || []) } as Product) : null),
-    [onChange],
-  );
-
-  const setBranchRows = useCallback(
-    (mutator: (rows: ProductBarcodeBranch[]) => ProductBarcodeBranch[]) =>
-      onChange((c) => c ? ({ ...c, ignorebranches: mutator(c.ignorebranches || []) } as Product) : null),
-    [onChange],
-  );
-
-  return (
-    <div className="space-y-4">
-      {/* Business Types (Ignore) */}
-      <Section
-        title={textBB.businessTypeSection}
-        action={
-          <Button type="button" variant="outline" size="sm" onClick={() => setPickerType("businesstype")}>
-            <Plus className="mr-1 h-4 w-4" />
-            {textBB.businessTypeAddBtn}
-          </Button>
-        }
-      >
-        {(!value.businesstypes || value.businesstypes.length === 0) ? (
-          <p className="text-sm text-muted-foreground">{textBB.businessTypeNoData}</p>
-        ) : (
-          <ul className="space-y-1">
-            {value.businesstypes.map((entry, idx) => (
-              <li key={entry.guidfixed || idx} className="flex items-center justify-between gap-2 rounded border border-border px-2 py-1.5 bg-muted/10 text-sm">
-                <span>{pickName(entry.names, language) || entry.code}</span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-6 text-destructive hover:bg-destructive/10"
-                  onClick={() => setBusinessRows((rows) => rows.filter((_, rowIdx) => rowIdx !== idx))}
-                >
-                  <Minus className="h-4 w-4" />
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Section>
-
-      {/* Ignore Branches */}
-      <Section
-        title={textBB.branchSection}
-        action={
-          <Button type="button" variant="outline" size="sm" onClick={() => setPickerType("branch")}>
-            <Plus className="mr-1 h-4 w-4" />
-            {textBB.branchAddBtn}
-          </Button>
-        }
-      >
-        <p className="mb-2 text-xs text-muted-foreground">{textBB.branchHintDetail}</p>
-        {(!value.ignorebranches || value.ignorebranches.length === 0) ? (
-          <p className="text-sm text-muted-foreground">{textBB.branchNoData}</p>
-        ) : (
-          <ul className="space-y-1">
-            {value.ignorebranches.map((entry, idx) => (
-              <li key={entry.guidfixed || idx} className="flex items-center justify-between gap-2 rounded border border-border px-2 py-1.5 bg-muted/10 text-sm">
-                <span>{pickName(entry.names, language) || entry.code}</span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-6 text-destructive hover:bg-destructive/10"
-                  onClick={() => setBranchRows((rows) => rows.filter((_, rowIdx) => rowIdx !== idx))}
-                >
-                  <Minus className="h-4 w-4" />
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Section>
-
-      <MasterPicker
-        open={pickerType !== null}
-        onClose={() => setPickerType(null)}
-        auth={auth}
-        language={language}
-        master={pickerType === "branch" ? "branch" : "businesstype"}
-        title={pickerType === "branch" ? textBB.pickerBranch : textBB.pickerBusinessType}
-        onSelect={(entry) => {
-          if (pickerType === "branch") {
-            setBranchRows((rows) => [
-              ...rows,
-              { guidfixed: entry.guidfixed, code: entry.code, names: entry.names, isignore: true },
-            ]);
-          } else {
-            setBusinessRows((rows) => [
-              ...rows,
-              { guidfixed: entry.guidfixed, code: entry.code, names: entry.names, isignore: false },
-            ]);
-          }
-        }}
-      />
-    </div>
-  );
-}
-
-function TabProductMisc({
-  value,
-  onChange,
-  language = "th",
-}: {
-  value: Product;
-  onChange: ProductStateAction;
-  language?: string;
-}) {
-  const textMisc = getBarcodeText(language);
-  return (
-    <div className="space-y-4">
-      <Section title={textMisc.miscAlertSection}>
-        <div className="space-y-3">
-          <Toggle
-            checked={value.isalert ?? false}
-            onCheckedChange={(n) => onChange((c) => c ? ({ ...c, isalert: n } as Product) : null)}
-            label={textMisc.miscAlertToggle}
-          />
-          {value.isalert ? (
-            <FieldRow label={textMisc.miscAlertDetail}>
-              <textarea
-                className="min-h-[80px] w-full rounded-lg border border-input bg-background p-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                value={value.alertdescription || ""}
-                onChange={(event) => onChange((c) => c ? ({ ...c, alertdescription: event.target.value } as Product) : null)}
-                placeholder={textMisc.miscAlertPlaceholder}
-              />
-            </FieldRow>
-          ) : null}
-        </div>
-      </Section>
-
-      <Section title={textMisc.miscDescSection}>
-        <textarea
-          className="min-h-[120px] w-full rounded-lg border border-input bg-background p-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          value={value.description || ""}
-          onChange={(event) => onChange((c) => c ? ({ ...c, description: event.target.value } as Product) : null)}
-          placeholder={textMisc.miscDescPlaceholder}
-        />
-      </Section>
-
-      <Section title={textMisc.miscGuidSection}>
-        <FieldGrid>
-          <FieldRow label={textMisc.miscGuidFixed}>
-            <Input value={value.guidfixed || ""} readOnly className="bg-muted/50" />
-          </FieldRow>
-          <FieldRow label={textMisc.miscHoldingCode}>
-            <Input value={value.holdingcode || ""} readOnly className="bg-muted/50" />
-          </FieldRow>
-          <FieldRow label={textMisc.miscUnitGuid}>
-            <Input value={value.unitguid || ""} readOnly className="bg-muted/50" />
-          </FieldRow>
-        </FieldGrid>
-      </Section>
-    </div>
-  );
-}
-
-function TabProductStock({
-  value,
-  onChange,
-  text,
-}: {
-  value: Product;
-  onChange: ProductStateAction;
-  text: ReturnType<typeof getBarcodeText>;
-}) {
-  const upd = useCallback(
-    <K extends keyof Product>(key: K, val: Product[K]) =>
-      onChange((c) => c ? ({ ...c, [key]: val } as Product) : null),
-    [onChange],
-  );
-  return (
-    <Section title={text.tabStock}>
-      <FieldGrid>
-        <FieldRow label={text.orderPoint}>
-          <NumberField value={value.orderpoint ?? 0} onChange={(n) => upd("orderpoint", n)} min={0} />
-        </FieldRow>
-        <FieldRow label={text.minPoint}>
-          <NumberField value={value.minpoint ?? 0} onChange={(n) => upd("minpoint", n)} min={0} />
-        </FieldRow>
-        <FieldRow label={text.maxPoint}>
-          <NumberField value={value.maxpoint ?? 0} onChange={(n) => upd("maxpoint", n)} min={0} />
-        </FieldRow>
-        <FieldRow label={text.qty}>
-          <NumberField value={value.qty ?? 0} onChange={(n) => upd("qty", n)} />
-        </FieldRow>
-        <FieldRow label={text.stockBarcode}>
-          <Input value={value.stockbarcode || ""} onChange={(event) => upd("stockbarcode", event.target.value)} />
-        </FieldRow>
-      </FieldGrid>
-    </Section>
-  );
-}
-
-
-function TabProductBom({
-  value,
-  onChange,
-  lang,
-}: {
-  value: Product;
-  onChange: ProductStateAction;
-  lang: string;
-}) {
-  const textB = getBarcodeText(lang);
-  const setBom = useCallback(
-    (mutator: (rows: BOMProductBarcode[]) => BOMProductBarcode[]) =>
-      onChange((c) => c ? ({ ...c, bom: mutator(c.bom ?? []) } as Product) : null),
-    [onChange],
-  );
-
-  return (
-    <div className="space-y-4">
-      <Section
-        title={textB.bomSection}
-        action={
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              setBom((rows) => [
-                ...rows,
-                {
-                  barcodeguidfixed: "",
-                  names: [],
-                  itemunitcode: "",
-                  itemunitnames: [],
-                  barcode: "",
-                  qty: 1,
-                },
-              ])
-            }
-          >
-            <Plus className="mr-1 h-4 w-4" />
-            {textB.bomAddBtn}
-          </Button>
-        }
-      >
-        {(!value.bom || value.bom.length === 0) ? (
-          <p className="text-sm text-muted-foreground text-center py-8">{textB.bomNoData}</p>
-        ) : (
-          <div className="space-y-2">
-            {value.bom.map((entry, idx) => (
-              <div key={idx} className="grid grid-cols-1 items-center gap-2 md:grid-cols-[1.5fr_1fr_1fr_40px] rounded-md border border-border p-2">
-                <FieldRow label={textB.bomBarcodeLabel}>
-                  <Input
-                    placeholder={textB.bomBarcodePlaceholder}
-                    value={entry.barcode || ""}
-                    onChange={(event) =>
-                      setBom((rows) =>
-                        rows.map((row, rowIdx) =>
-                          rowIdx === idx ? { ...row, barcode: event.target.value } : row,
-                        ),
-                      )
-                    }
-                  />
-                </FieldRow>
-                <FieldRow label={textB.bomUnitLabel}>
-                  <Input
-                    placeholder={textB.bomUnitPlaceholder}
-                    value={entry.itemunitcode || ""}
-                    onChange={(event) =>
-                      setBom((rows) =>
-                        rows.map((row, rowIdx) =>
-                          rowIdx === idx ? { ...row, itemunitcode: event.target.value } : row,
-                        ),
-                      )
-                    }
-                  />
-                </FieldRow>
-                <FieldRow label={textB.bomQtyLabel}>
-                  <NumberField
-                    value={entry.qty ?? 1}
-                    onChange={(n) =>
-                      setBom((rows) =>
-                        rows.map((row, rowIdx) => (rowIdx === idx ? { ...row, qty: n } : row)),
-                      )
-                    }
-                    min={0}
-                  />
-                </FieldRow>
-                <div className="flex justify-end pt-5">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setBom((rows) => rows.filter((_, rowIdx) => rowIdx !== idx))}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Section>
-    </div>
-  );
-}
 
 type DetailFieldItem = {
   label: string;

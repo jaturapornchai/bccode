@@ -31,13 +31,13 @@ import {
   type MouseEvent as ReactMouseEvent,
   type PointerEvent,
 } from "react";
+import { AuthenticatedImg } from "@/components/authenticated-image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { ProductBarcodeFormDialog } from "@/components/product-barcode/barcode-form";
-import { deriveMainApiUrl } from "@/lib/backend-url";
 import { LANGUAGES, normalizeLanguage, type LanguageCode } from "@/lib/i18n";
 import {
   emptyProductBarcode,
@@ -921,8 +921,9 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
                     const rowKey = barcodeRowKey(item, index);
                     return (
                     <BarcodeRow
+                      auth={auth}
                       checked={checkedBarcodes.includes(rowKey)}
-                      imageUrl={resolveImageUrl(item.imageUri, auth?.backendUrl)}
+                      imageUrl={item.imageUri}
                       index={index}
                       item={item}
                       key={rowKey}
@@ -1017,6 +1018,7 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
 }
 
 function BarcodeRow({
+  auth,
   checked,
   imageUrl,
   index,
@@ -1029,6 +1031,7 @@ function BarcodeRow({
   showImage,
   text,
 }: {
+  auth: AuthSession | null;
   checked: boolean;
   imageUrl: string;
   index: number;
@@ -1077,8 +1080,17 @@ function BarcodeRow({
           ) : null}
           {showImage ? (
             imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img alt="" className="size-8 shrink-0 rounded-lg border border-border object-cover" src={imageUrl} />
+              <AuthenticatedImg
+                alt=""
+                className="size-8 shrink-0 rounded-lg border border-border object-cover"
+                src={imageUrl}
+                auth={auth}
+                fallback={
+                  <span className="grid size-8 shrink-0 place-items-center rounded-lg border border-border text-muted-foreground">
+                    <ImageOff size={14} />
+                  </span>
+                }
+              />
             ) : (
               <span className="grid size-8 shrink-0 place-items-center rounded-lg border border-border text-muted-foreground">
                 <ImageOff size={14} />
@@ -1604,15 +1616,4 @@ function formatBoolean(value: boolean, text: BarcodeText): string {
 function formatCodeName(code: string, name: string): string {
   if (code && name) return `${code} - ${name}`;
   return code || name;
-}
-
-function resolveImageUrl(imageUri: string, backendUrl: string | undefined): string {
-  if (!imageUri) return "";
-  if (/^https?:\/\//i.test(imageUri)) return imageUri;
-  if (!backendUrl) return imageUri;
-  try {
-    return new URL(imageUri.replace(/^\/+/, ""), `${deriveMainApiUrl(backendUrl)}/`).toString();
-  } catch {
-    return imageUri;
-  }
 }
