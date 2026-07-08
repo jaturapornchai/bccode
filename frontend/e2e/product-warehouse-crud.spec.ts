@@ -272,7 +272,7 @@ test("warehouse — create/edit/delete for warehouse, location, and bin", async 
 });
 
 /**
- * Regression for the warehouse -> location company-scope feature (scopeofwork/warehouse.md):
+ * Regression for the warehouse -> location company-scope feature (s/warehouse.md):
  * a Warehouse's `companyguids` restricts which companies may use it (empty = all); a Location's
  * own `companyguids` must always be a SUBSET of its parent warehouse's list, enforced server-side
  * by `validateLocationCompanyScope` in `warehouse_location_http_service.go`. Covers:
