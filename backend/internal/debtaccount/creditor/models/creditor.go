@@ -16,22 +16,31 @@ type Creditor struct {
 	Images                   *[]Image        `json:"images" bson:"images"`
 	Names                    *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
 
-	AddressForBilling  Address      `json:"addressforbilling" bson:"addressforbilling"`
-	AddressForShipping *[]Address   `json:"addressforshipping" bson:"addressforshipping"`
-	TaxId              string       `json:"taxid" bson:"taxid"`
-	Email              string       `json:"email" bson:"email"`
-	CustomerType       int          `json:"customertype" bson:"customertype"`
-	BranchNumber       string       `json:"branchnumber" bson:"branchnumber"`
-	FundCode           string       `json:"fundcode" bson:"fundcode"`
-	CreditDay          int          `json:"creditday" bson:"creditday"`
-	IsMember           bool         `json:"ismember" bson:"ismember"`
-	GroupGUIDs         *[]string    `json:"-" bson:"groups"`
-	Auth               CreditorAuth `json:"auth" bson:"auth"`
+	AddressForBilling  Address        `json:"addressforbilling" bson:"addressforbilling"`
+	AddressForActual   Address        `json:"addressforactual" bson:"addressforactual"` // actual/operating address, may differ from addressforbilling
+	AddressForShipping *[]Address     `json:"addressforshipping" bson:"addressforshipping"`
+	TaxId              string         `json:"taxid" bson:"taxid"`
+	Email              string         `json:"email" bson:"email"`
+	CustomerType       int            `json:"customertype" bson:"customertype"`
+	BranchNumber       string         `json:"branchnumber" bson:"branchnumber"`
+	FundCode           string         `json:"fundcode" bson:"fundcode"`
+	CreditDay          int            `json:"creditday" bson:"creditday"`
+	IsMember           bool           `json:"ismember" bson:"ismember"`
+	GroupGUIDs         *[]string      `json:"-" bson:"groups"`
+	IsDisabled         bool           `json:"isdisabled" bson:"isdisabled"`
+	CreditLimitSatang  int64          `json:"creditlimitsatang" bson:"creditlimitsatang"`
+	WhtEnabled         bool           `json:"whtenabled" bson:"whtenabled"`
+	WhtRate            float64        `json:"whtrate" bson:"whtrate"`
+	BankAccounts       *[]BankAccount `json:"bankaccounts" bson:"bankaccounts"`
 }
 
-type CreditorAuth struct {
-	Username string `json:"username" bson:"username"`
-	Password string `json:"password" bson:"password"`
+// BankAccount is a payment-side bank account on the creditor (supplier) master record, used for
+// AP payment processing. Research finding: SAP B1 + Xero both keep this on the party record
+// itself, not only on transactions — see s/ (formerly scopeofwork/) research notes for this task.
+type BankAccount struct {
+	BankCode      string `json:"bankcode" bson:"bankcode"`
+	AccountNumber string `json:"accountnumber" bson:"accountnumber"`
+	AccountName   string `json:"accountname" bson:"accountname"`
 }
 
 type Address struct {

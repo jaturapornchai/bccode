@@ -19,7 +19,7 @@ const (
 	LocationTypeTransit   = "transit"
 )
 
-// WarehouseLocation is master data (no stock/qty) — see scopeofwork/warehouse.md ("ที่เก็บสินค้า").
+// WarehouseLocation is master data (no stock/qty) — see s/warehouse.md ("ที่เก็บสินค้า").
 // It lives in its own collection, referencing the parent Warehouse by WarehouseGuid.
 type WarehouseLocation struct {
 	WarehouseGuid         string          `json:"warehouseguid" bson:"warehouseguid" validate:"required"`

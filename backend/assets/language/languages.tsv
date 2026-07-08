@@ -891,9 +891,6 @@ creator_always_enabled	ผู้สร้างเข้าใช้งานไ
 creator_cannot_delete	ผู้สร้างไม่สามารถลบได้	Creator cannot be deleted	创建者不能被删除	作成者は削除できません	មិនអាចលុបអ្នកបង្កើតបានទេ	작성자는 삭제할 수 없습니다	ບໍ່ສາມາດລົບຜູ້ສ້າງໄດ້	ဖန်တီးသူကို ဖျက်၍မရပါ	Không thể xóa người tạo	Pencipta tidak boleh dipadam	Pembuat tidak dapat dihapus	Hindi maaaring burahin ang gumawa
 cost	ต้นทุน	Cost	Cost	Cost	Cost	Cost	Cost	Cost	Cost	Cost	Cost	Cost
 cost_calculation_test_result	ผลการทดสอบคำนวณต้นทุน
-cost_center	ศูนย์ต้นทุน	Cost Center	成本中心	コストセンター	មជ្ឈមណ្ឌលថ្លៃដើម	비용 센터	ສູນຕົ້ນທຶນ	ကုန်ကျစရိတ်ဌာန	Trung tâm chi phí	Cost Calculation Test Result	Cost Calculation Test Result	Cost Calculation Test Result	Cost Calculation Test Result	Cost Calculation Test Result	Cost Calculation Test Result	Cost Calculation Test Result	Cost Calculation Test Result	Cost Center	Cost Center	Cost Center
-cost_center_code	รหัสศูนย์ต้นทุน	Cost Center Code	成本中心代码	コストセンターコード	លេខកូដមជ្ឈមណ្ឌលដើមទុន	비용센터 코드	ລະຫັດສູນຕົ້ນທຶນ	ကုန်ကျစရိတ်ဌာနကုဒ်	Mã trung tâm chi phí	Cost Center Code	Cost Center Code	Cost Center Code
-cost_center_name	ชื่อศูนย์ต้นทุน	Cost Center Name	成本中心名称	コストセンター名	ឈ្មោះមជ្ឈមណ្ឌលដើមទុន	비용센터 이름	ຊື່ສູນຕົ້ນທຶນ	ကုန်ကျစရိတ်ဌာနအမည်	Tên trung tâm chi phí	Cost Center Name	Cost Center Name	Cost Center Name
 cost_of_sales	ต้นทุนขาย	Cost of Sales	Cost of Sales	Cost of Sales	Cost of Sales	Cost of Sales	Cost of Sales	Cost of Sales	Cost of Sales	Cost of Sales	Cost of Sales	Cost of Sales
 cost_standard	ต้นทุนมาตรฐาน	Standard Cost	标准成本	標準原価	ថ្លៃដើមស្តង់ដារ	표준원가	ຕົ້ນທຶນມາດຕະຖານ	စံနှုန်းကုန်ကျစရိတ်	Giá vốn chuẩn	Standard Cost	Standard Cost	Standard Cost
 costing_method	วิธีคิดต้นทุน	Costing Method	成本核算方法	原価計算方法	វិធីគណនាថ្លៃដើម	원가 계산 방법	ວິທີຄິດຕົ້ນທຶນ	ကုန်ကျစရိတ်တွက်ချက်နည်း	Phương pháp tính giá thành	Costing Method	Costing Method	Costing Method
@@ -2205,7 +2202,6 @@ manage	จัดการ	Manage	管理	管理	គ្រប់គ្រង	관�
 manual_closed	ปิดเอกสารด้วยตนเอง	Manual Closed	手动关闭	手動終了	បិទដោយដៃ	수동 마감	ປິດດ້ວຍຕົນເອງ	ကိုယ်တိုင်ပိတ်ပြီး	Đóng thủ công	Manual Closed	Manual Closed	Manual Closed
 mapping_prices	จับคู่ราคา	Mapping Prices	映射价格	価格マッピング	ផ្គូផ្គងតម្លៃ	가격 매핑	ຈັບຄູ່ລາຄາ	စျေးနှုန်းတွဲချိတ်	Ánh xạ giá	Mapping Prices	Mapping Prices	Mapping Prices
 manage_cart	จัดการตะกร้า	Manage Cart	管理购物车	カートを管理	គ្រប់គ្រងកន្ត្រក	장바구니 관리	ຈັດການກະຕ່າ	ဈေးခြင်း စီမံပါ	Quản lý giỏ hàng	Manage Cart	Manage Cart	Manage Cart
-manage_cost_centers	จัดการศูนย์ต้นทุน	Manage Cost Centers	管理成本中心	コストセンター管理	គ្រប់គ្រងមជ្ឈមណ្ឌលដើមទុន	비용센터 관리	ຈັດການສູນຕົ້ນທຶນ	ကုန်ကျစရိတ်ဌာနစီမံ	Quản lý trung tâm chi phí	Manage Cost Centers	Manage Cost Centers	Manage Cost Centers
 manage_creditors	จัดการเจ้าหนี้	Manage Creditors	管理债权人	債権者管理	គ្រប់គ្រងម្ចាស់បំណុល	채권자 관리	ຈັດການເຈົ້າໜີ້	ကြွေးရှင်စီမံရန်	Quản lý chủ nợ	Manage Creditors	Manage Creditors	Manage Creditors
 manage_customers_creditors	จัดการลูกค้า/เจ้าหนี้	Manage Customers/Creditors	管理客户/债权人	顧客/債権者管理	គ្រប់គ្រងអតិថិជន/ម្ចាស់បំណុល	고객/채권자 관리	ຈັດການລູກຄ້າ/ເຈົ້າໜີ້	ဖောက်သည်/ကြွေးရှင်စီမံရန်	Quản lý khách hàng/chủ nợ	Manage Customers/Creditors	Manage Customers/Creditors	Manage Customers/Creditors
 manage_debtors	จัดการลูกหนี้	Manage Debtors	管理债务人	債務者管理	គ្រប់គ្រងកូនបំណុល	채무자 관리	ຈັດການລູກໜີ້	မြီစားစီမံရန်	Quản lý con nợ	Manage Debtors	Manage Debtors	Manage Debtors
@@ -4575,7 +4571,6 @@ no_menu_found	ไม่พบเมนู	No menu found	未找到菜单	メニ�
 old_flutter_route	Flutter route เดิม	Legacy Flutter route	旧版 Flutter 路由	旧Flutterルート	Flutter route ចាស់	기존 Flutter 라우트	Flutter route ເດີມ	ယခင် Flutter route	Route Flutter cũ	Route Flutter lama	Route Flutter lama	Lumang Flutter route
 open_as_tab	เปิดเป็นแท็บ	Open as tab	打开为标签	タブで開く	បើកជាថេប	탭으로 열기	ເປີດເປັນແທັບ	တက်ဘ်အဖြစ်ဖွင့်	Mở thành tab	Buka sebagai tab	Buka sebagai tab	Buksan bilang tab
 open_tabs	แท็บที่เปิดอยู่	Open tabs	已打开标签	開いているタブ	ថេបដែលបានបើក	열린 탭	ແທັບທີ່ເປີດຢູ່	ဖွင့်ထားသော တက်ဘ်များ	Tab đang mở	Tab terbuka	Tab terbuka	Mga bukas na tab
-organization_master	งาน โครงการ และศูนย์ต้นทุน	Jobs, Projects & Cost Centers	组织主数据	組織マスター	ទិន្នន័យមេអង្គការ	조직 기본 데이터	ຂໍ້ມູນຫຼັກອົງກອນ	အဖွဲ့အစည်းအခြေခံဒေတာ	Dữ liệu chính tổ chức	Induk organisasi	Master organisasi	Organization master
 placeholder	ตัวอย่าง	Placeholder	占位	プレースホルダー	កន្លែងដាក់	플레이스홀더	ຕົວຢ່າງ	နေရာယူစာသား	Giữ chỗ	Placeholder	Placeholder	Placeholder
 previous	ก่อนหน้า	Previous	上一页	前へ	មុន	이전	ກ່ອນໜ້າ	ယခင်	Trước	Sebelumnya	Sebelumnya	Nakaraan
 procurement	จัดซื้อจัดหา	Procurement	采购	調達	លទ្ធកម្ម	조달	ຈັດຊື້ຈັດຫາ	ဝယ်ယူရေး	Mua sắm	Perolehan	Pengadaan	Procurement

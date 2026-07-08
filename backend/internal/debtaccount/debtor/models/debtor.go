@@ -19,6 +19,7 @@ type Debtor struct {
 	PointBalance       float64         `json:"pointbalance" bson:"pointbalance"`
 	PointsCode         string          `json:"pointscode" bson:"pointscode"`
 	AddressForBilling  Address         `json:"addressforbilling" bson:"addressforbilling"`
+	AddressForActual   Address         `json:"addressforactual" bson:"addressforactual"` // actual/operating address, may differ from addressforbilling
 	AddressForShipping *[]Address      `json:"addressforshipping" bson:"addressforshipping"`
 	TaxId              string          `json:"taxid" bson:"taxid"`
 	Email              string          `json:"email" bson:"email"`
@@ -31,6 +32,18 @@ type Debtor struct {
 	Auth               DebtorAuth      `json:"auth" bson:"auth"`
 	DebtorLine         DebtorLine      `json:"line" bson:"line"`
 	PriceLevel         string          `json:"pricelevel" bson:"pricelevel"`
+	IsDisabled         bool            `json:"isdisabled" bson:"isdisabled"`
+	CreditLimitSatang  int64           `json:"creditlimitsatang" bson:"creditlimitsatang"`
+	BankAccounts       *[]BankAccount  `json:"bankaccounts" bson:"bankaccounts"`
+}
+
+// BankAccount is a payment-side bank account on the debtor (customer) master record, used for
+// AR refund/deposit-return processing. Package-local duplicate of the creditor BankAccount shape
+// (matches the existing per-package Address/Image duplication convention).
+type BankAccount struct {
+	BankCode      string `json:"bankcode" bson:"bankcode"`
+	AccountNumber string `json:"accountnumber" bson:"accountnumber"`
+	AccountName   string `json:"accountname" bson:"accountname"`
 }
 
 type DebtorLine struct {

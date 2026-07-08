@@ -226,6 +226,11 @@ func (h BranchHttp) UpdateBranch(ctx microservice.IContext) error {
 	existing.Email = req.Email
 	existing.ManagerName = req.ManagerName
 	existing.Addresses = req.Addresses
+	existing.CountryCode = req.CountryCode
+	existing.ProvinceCode = req.ProvinceCode
+	existing.DistrictCode = req.DistrictCode
+	existing.SubDistrictCode = req.SubDistrictCode
+	existing.ZipCode = req.ZipCode
 	existing.FiscalStartMonth = req.FiscalStartMonth
 	existing.DocumentFormats = req.DocumentFormats
 	existing.ETaxEnabled = req.ETaxEnabled
@@ -251,6 +256,11 @@ func (h BranchHttp) UpdateBranch(ctx microservice.IContext) error {
 		"email":                 existing.Email,
 		"managername":           existing.ManagerName,
 		"addresses":             existing.Addresses,
+		"countrycode":           existing.CountryCode,
+		"provincecode":          existing.ProvinceCode,
+		"districtcode":          existing.DistrictCode,
+		"subdistrictcode":       existing.SubDistrictCode,
+		"zipcode":               existing.ZipCode,
 		"fiscalstartmonth":      existing.FiscalStartMonth,
 		"documentformats":       existing.DocumentFormats,
 		"etaxenabled":           existing.ETaxEnabled,
@@ -420,6 +430,11 @@ func prepareBranchUpdate(req *branchModels.BranchOrgDoc) error {
 	}
 	req.Code = normalizedCode
 	req.Addresses = sanitizeBranchAddresses(req.Addresses)
+	req.CountryCode = strings.TrimSpace(req.CountryCode)
+	req.ProvinceCode = strings.TrimSpace(req.ProvinceCode)
+	req.DistrictCode = strings.TrimSpace(req.DistrictCode)
+	req.SubDistrictCode = strings.TrimSpace(req.SubDistrictCode)
+	req.ZipCode = strings.TrimSpace(req.ZipCode)
 	if err := normalizeAndValidateDocFormats(req); err != nil {
 		return err
 	}

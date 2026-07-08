@@ -38,6 +38,14 @@ type BranchOrgDoc struct {
 	// Legal/document address per language (used when printing documents). Each
 	// entry is one language; the Address text itself may be multi-line (\n).
 	Addresses []BranchAddress `json:"addresses" bson:"addresses"`
+	// Structured geo-address (province/district/subdistrict/zipcode codes),
+	// language-independent — display names come from the Thailand address
+	// dataset lookup, not stored here. Separate from Addresses above.
+	CountryCode     string `json:"countrycode" bson:"countrycode"`
+	ProvinceCode    string `json:"provincecode" bson:"provincecode"`
+	DistrictCode    string `json:"districtcode" bson:"districtcode"`
+	SubDistrictCode string `json:"subdistrictcode" bson:"subdistrictcode"`
+	ZipCode         string `json:"zipcode" bson:"zipcode"`
 	// Document / accounting config — value-only. The running-number generator and
 	// e-Tax submission engines are separate subsystems and are NOT implemented here;
 	// these just store the per-branch settings they will read.

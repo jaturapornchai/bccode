@@ -12,7 +12,7 @@ import (
 
 const warehouseCollectionName = "warehouse"
 
-// Warehouse is master data only (per scopeofwork/warehouse.md — no embedded location/shelf/stock).
+// Warehouse is master data only (per s/warehouse.md — no embedded location/shelf/stock).
 // Locations live in the separate "warehouselocation" collection (see location.go), each referencing
 // this warehouse by WarehouseGuid.
 type Warehouse struct {

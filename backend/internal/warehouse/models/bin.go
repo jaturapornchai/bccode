@@ -19,7 +19,7 @@ const (
 )
 
 // BinFixedItem is a product reference hint for putaway suggestions only — never a balance/qty.
-// See scopeofwork/warehouse.md ("ที่วางสินค้า") and the Product Stock/Cost rule: bins must never
+// See s/warehouse.md ("ที่วางสินค้า") and the Product Stock/Cost rule: bins must never
 // carry accounting qty.
 type BinFixedItem struct {
 	GuidFixed string          `json:"guidfixed" bson:"guidfixed" validate:"required"`
