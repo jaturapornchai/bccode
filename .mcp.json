@@ -17,7 +17,12 @@
       "env": {}
     },
     "codebase-memory-mcp": {
-      "command": "C:/Users/jatur/AppData/Local/Programs/codebase-memory-mcp/codebase-memory-mcp.exe"
+      "command": "C:/Users/jatur/AppData/Local/Programs/codebase-memory-mcp/codebase-memory-mcp.exe",
+      "args": []
+    },
+    "openrouter": {
+      "type": "http",
+      "url": "https://mcp.openrouter.ai/mcp"
     }
   }
 }
