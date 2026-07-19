@@ -46,6 +46,7 @@ type IPersisterMongo interface {
 	TestConnect(ctx context.Context) error
 	Healthcheck(ctx context.Context) error
 	CreateIndex(ctx context.Context, model interface{}, indexName string, keys interface{}) (string, error)
+	CreatePartialUniqueIndex(ctx context.Context, model interface{}, indexName string, keys interface{}, filter interface{}) (string, error)
 }
 
 type MongoModel interface {
@@ -760,4 +761,30 @@ func (pst *PersisterMongo) CreateIndex(ctx context.Context, model interface{}, i
 	}
 
 	return resultIndexName, nil
+}
+
+func (pst *PersisterMongo) CreatePartialUniqueIndex(
+	ctx context.Context,
+	model interface{},
+	indexName string,
+	keys interface{},
+	filter interface{},
+) (string, error) {
+	db, err := pst.getClient(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	collectionName, err := pst.getCollectionName(model)
+	if err != nil {
+		return "", err
+	}
+
+	return db.Collection(collectionName).Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: keys,
+		Options: options.Index().
+			SetUnique(true).
+			SetName(indexName).
+			SetPartialFilterExpression(filter),
+	})
 }

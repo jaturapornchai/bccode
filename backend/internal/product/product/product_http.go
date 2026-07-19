@@ -1,12 +1,15 @@
 package products
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"smlcloudplatform/internal/config"
 	creditorepo "smlcloudplatform/internal/debtaccount/creditor/repositories"
+	build "smlcloudplatform/internal/goapi/process/build"
+	"smlcloudplatform/internal/logger"
 	common "smlcloudplatform/internal/models"
 	"smlcloudplatform/internal/product/product/models"
 	"smlcloudplatform/internal/product/product/repositories"
@@ -34,6 +37,11 @@ func NewProductHttp(ms *microservice.Microservice, cfg config.IConfig) ProductHt
 	pstmg := ms.MongoPersister(cfg.MongoPersisterConfig())
 	cache := ms.Cacher(cfg.CacherConfig())
 	repo := repositories.NewProductRepository(pstmg)
+	indexContext, cancelIndexes := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancelIndexes()
+	if err := repo.EnsureIndexes(indexContext); err != nil {
+		logger.GetLogger().Errorf("ensure product indexes: %v", err)
+	}
 	repoUnit := unitRepo.NewUnitRepository(pstmg)
 	repomgCreditor := creditorepo.NewCreditorRepository(pstmg)
 	repomgProductBarcode := productBarcodeRepo.NewProductBarcodeRepository(pstmg, cache)
@@ -281,7 +289,7 @@ func (h ProductHttp) DeleteProduct(ctx microservice.IContext) error {
 }
 
 // @Summary		Resync products into PostgreSQL projection
-// @Description Republish every product of the tenant to Kafka to rebuild the PostgreSQL projection
+// @Description Replace the PostgreSQL product projection from active MongoDB products, then republish Kafka events
 // @Tags		Product
 // @Produce 	json
 // @Success		200 {object} common.ApiResponse
@@ -292,7 +300,12 @@ func (h ProductHttp) ResyncProduct(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	holdingCode := userInfo.HoldingCode
 
-	count, err := h.svc.Resync(holdingCode)
+	rebuilt, err := build.ProcessProductRebuildAll(holdingCode)
+	if err != nil {
+		ctx.ResponseError(http.StatusBadRequest, err.Error())
+		return err
+	}
+	published, err := h.svc.Resync(holdingCode)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -300,8 +313,8 @@ func (h ProductHttp) ResyncProduct(ctx microservice.IContext) error {
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
 		Success: true,
-		Message: fmt.Sprintf("published %d products", count),
-		Data:    map[string]int{"published": count},
+		Message: fmt.Sprintf("rebuilt %d products and published %d events", rebuilt, published),
+		Data:    map[string]int{"rebuilt": rebuilt, "published": published},
 	})
 	return nil
 }

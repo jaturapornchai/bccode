@@ -86,7 +86,7 @@ func NewMasterSyncHttp(ms *microservice.Microservice, cfg config.IConfig) Master
 	// pdt2.InitialActivityService(pst, &productRepo.ProductRepository{})
 
 	// Product Category
-	svcProductCategory := productcategoryService.NewProductCategoryHttpService(productcategoryRepo.NewProductCategoryRepository(pst), masterSyncCacheRepo, repoProductBarcode)
+	svcProductCategory := productcategoryService.NewProductCategoryHttpService(productcategoryRepo.NewProductCategoryRepository(pst), masterSyncCacheRepo, repoMaster)
 	activityModuleManager.Add(svcProductCategory)
 
 	// Product Unit - create first as it's needed by ProductBarcode
@@ -101,7 +101,7 @@ func NewMasterSyncHttp(ms *microservice.Microservice, cfg config.IConfig) Master
 	priceHistoryRepo := productbarcodeRepo.NewProductPriceHistoryRepository(pst)
 	priceHistorySvc := productbarcodeService.NewProductPriceHistoryService(priceHistoryRepo, utils.NewGUID, time.Now)
 
-	svcProductBarcode := productbarcodeService.NewProductBarcodeHttpService(repoProductBarcode, repoMaster, unitmaster, svcProductUnit, *creditorRepo, nil, nil, svcProductCategory, masterSyncCacheRepo, priceHistorySvc, warehouseRepo)
+	svcProductBarcode := productbarcodeService.NewProductBarcodeHttpService(repoProductBarcode, repoMaster, unitmaster, svcProductUnit, *creditorRepo, nil, nil, masterSyncCacheRepo, priceHistorySvc, warehouseRepo)
 	activityModuleManager.Add(svcProductBarcode)
 
 	// Kitchen

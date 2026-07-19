@@ -1545,7 +1545,7 @@ export function CompanyBranchTreeView({
         <CardContent className="p-6">
           {formType ? (
             <div className="space-y-6">
-              <div className="flex items-center justify-between border-b pb-4 gap-4">
+              <div className="flex flex-wrap items-start justify-between border-b pb-4 gap-4">
                 <div>
                   <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
                     {formType.includes("company") ? (
@@ -1568,7 +1568,7 @@ export function CompanyBranchTreeView({
                         : "แก้ไขรายละเอียดข้อมูลและบันทึกประวัติ"}
                   </p>
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="flex w-full shrink-0 flex-wrap items-center justify-end gap-2 sm:w-auto">
                   {isReadOnlyMode && selectedNode?.guidfixed && (
                     <Button
                       size="icon"
@@ -1598,6 +1598,30 @@ export function CompanyBranchTreeView({
                       เพิ่มสาขาในบริษัทนี้
                     </Button>
                   )}
+                  {!isReadOnlyMode ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => showConfirmCodeDialog("save")}
+                      disabled={
+                        !formCode.trim() ||
+                        saving ||
+                        saveSuccess ||
+                        (formType.includes("branch") && (!formTimezone.trim() || !formLanguage.trim()))
+                      }
+                      className="gap-1.5 text-xs font-bold"
+                      data-testid="company-branch-save-action"
+                    >
+                      {saving ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : saveSuccess ? (
+                        <Check className="size-4" />
+                      ) : (
+                        <Save className="size-4" />
+                      )}
+                      {saving ? "กำลังบันทึก..." : saveSuccess ? "บันทึกแล้ว" : "บันทึก"}
+                    </Button>
+                  ) : null}
                 </div>
               </div>
 
@@ -1992,31 +2016,6 @@ export function CompanyBranchTreeView({
                   </label>
                 </div>
 
-                {!isReadOnlyMode && (
-                <div className="pt-6 border-t mt-4">
-                  <Button
-                    onClick={() => showConfirmCodeDialog("save")}
-                    disabled={
-                      !formCode.trim() ||
-                      saving ||
-                      saveSuccess ||
-                      (formType.includes("branch") && (!formTimezone.trim() || !formLanguage.trim()))
-                    }
-                    className="w-full font-bold bg-primary text-primary-foreground hover:bg-primary/90 rounded-full h-11"
-                  >
-                    {saving ? (
-                      <span className="flex items-center gap-2">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        กำลังบันทึกข้อมูล...
-                      </span>
-                    ) : saveSuccess ? (
-                      "บันทึกข้อมูลสำเร็จ"
-                    ) : (
-                      "บันทึกข้อมูล"
-                    )}
-                  </Button>
-                </div>
-                )}
               </div>
             </div>
           ) : (

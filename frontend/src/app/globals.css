@@ -2260,7 +2260,7 @@ h2:not([class]) {
 }
 
 /* Icon-input wrapper for shadcn Input with leading/trailing lucide icons.
-   Per BC Account Leading Icon Input Rule: icon is pointer-events-none and Input
+   Per BC Ai Account Leading Icon Input Rule: icon is pointer-events-none and Input
    uses !pl-10 / !pr-10 important padding so the shared Input base (px-1) cannot
    override it and cause text/icon overlap. */
 .input-with-icon {

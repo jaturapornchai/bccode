@@ -1,6 +1,7 @@
 package productbarcode
 
 import (
+	"context"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
@@ -10,14 +11,13 @@ import (
 	"regexp"
 	"smlcloudplatform/internal/config"
 	creditorRepo "smlcloudplatform/internal/debtaccount/creditor/repositories"
+	"smlcloudplatform/internal/logger"
 	mastersync "smlcloudplatform/internal/mastersync/repositories"
 	common "smlcloudplatform/internal/models"
 	productmaster "smlcloudplatform/internal/product/product/repositories"
 	"smlcloudplatform/internal/product/productbarcode/models"
 	"smlcloudplatform/internal/product/productbarcode/repositories"
 	"smlcloudplatform/internal/product/productbarcode/services"
-	productcategory_repositories "smlcloudplatform/internal/product/productcategory/repositories"
-	productcategory_services "smlcloudplatform/internal/product/productcategory/services"
 	unit_repositories "smlcloudplatform/internal/product/unit/repositories"
 	unitmaster "smlcloudplatform/internal/product/unit/repositories"
 	unit_services "smlcloudplatform/internal/product/unit/services"
@@ -51,12 +51,14 @@ func NewProductBarcodeHttp(ms *microservice.Microservice, cfg config.IConfig) Pr
 	unitmaster := unitmaster.NewUnitRepository(pst)
 	creditorRepo := creditorRepo.NewCreditorRepository(pst)
 	repo := repositories.NewProductBarcodeRepository(pst, cache)
+	indexContext, cancelIndexes := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancelIndexes()
+	if err := repo.EnsureIndexes(indexContext); err != nil {
+		logger.GetLogger().Errorf("ensure product barcode indexes: %v", err)
+	}
 	clickHouseRepo := repositories.NewProductBarcodeClickhouseRepository(pstClickHouse)
 	mqRepo := repositories.NewProductBarcodeMessageQueueRepository(prod)
 	masterSyncCacheRepo := mastersync.NewMasterSyncCacheRepository(cache)
-
-	productcategoryRepo := productcategory_repositories.NewProductCategoryRepository(pst)
-	productcategorySvc := productcategory_services.NewProductCategoryHttpService(productcategoryRepo, masterSyncCacheRepo, repo)
 
 	// Warehouse Repository for shelf search
 	warehouseRepo := warehouse_repositories.NewWarehouseRepository(pst)
@@ -69,7 +71,7 @@ func NewProductBarcodeHttp(ms *microservice.Microservice, cfg config.IConfig) Pr
 	unitMqRepo := unit_repositories.NewUnitMessageQueueRepository(prod)
 	unitSvc := unit_services.NewUnitHttpService(unitmaster, repo, unitMqRepo, masterSyncCacheRepo)
 
-	svc := services.NewProductBarcodeHttpService(repo, repoMaster, unitmaster, unitSvc, *creditorRepo, mqRepo, clickHouseRepo, productcategorySvc, masterSyncCacheRepo, priceHistorySvc, warehouseRepo)
+	svc := services.NewProductBarcodeHttpService(repo, repoMaster, unitmaster, unitSvc, *creditorRepo, mqRepo, clickHouseRepo, masterSyncCacheRepo, priceHistorySvc, warehouseRepo)
 
 	return ProductBarcodeHttp{
 		ms:  ms,
@@ -466,6 +468,7 @@ func (h ProductBarcodeHttp) InfoProductBarcodeByBarcode(ctx microservice.IContex
 	holdingCode := userInfo.HoldingCode
 
 	barcode := ctx.Param("barcode")
+	itemCode := ctx.QueryParam("itemcode")
 	shopsidParam := strings.Trim(ctx.QueryParam("shopsid"), " ")
 
 	// If shopsid parameter is provided, use it instead of user's holdingCode
@@ -480,7 +483,7 @@ func (h ProductBarcodeHttp) InfoProductBarcodeByBarcode(ctx microservice.IContex
 		}
 	}
 
-	doc, err := h.svc.InfoProductBarcodeByBarcode(holdingCode, barcode)
+	doc, err := h.svc.InfoProductBarcodeByBarcode(holdingCode, itemCode, barcode)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -971,8 +974,9 @@ func (h ProductBarcodeHttp) InfoBOMView(ctx microservice.IContext) error {
 	holdingCode := userInfo.HoldingCode
 
 	barcode := ctx.Param("barcode")
+	itemCode := ctx.QueryParam("itemcode")
 
-	doc, err := h.svc.InfoBomView(holdingCode, barcode)
+	doc, err := h.svc.InfoBomView(holdingCode, itemCode, barcode)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", barcode, err)

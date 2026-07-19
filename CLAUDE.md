@@ -1,6 +1,6 @@
 # BC Ai Account — Agent Entry
 
-> Identical entry for every agent (Claude Code / ZCode / Codex / any). `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md` all point to the SAME model-agnostic rule set — whichever agent you are, you read and follow the same rules and do the whole task yourself (no lead/advisor/helper, no model-specific role, no asking another AI model).
+> Identical entry for every agent (Claude Code / ZCode / Codex / any). `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md` point to the same rule set. **Opus 4.8 is the orchestrator/lead** (set 2026-07-17 by Jead): it splits the task, dispatches to the advisor/subagent pool (GLM 5.2, Kimi K3 Max, DeepSeek, ChatGPT 5.6, Claude Fable, Claude Sonnet), evaluates the returned work, and re-assigns — while grounding decisions in real source/runtime evidence, applying, verifying, and owning the result. See AGENTS.md / core-rules "Multi-Model Orchestration".
 
 Read in this order:
 1. `AGENTS.md`

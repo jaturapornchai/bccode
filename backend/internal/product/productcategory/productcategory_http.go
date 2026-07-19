@@ -6,7 +6,7 @@ import (
 	"smlcloudplatform/internal/config"
 	mastersync "smlcloudplatform/internal/mastersync/repositories"
 	common "smlcloudplatform/internal/models"
-	productbarcodeRepo "smlcloudplatform/internal/product/productbarcode/repositories"
+	productRepo "smlcloudplatform/internal/product/product/repositories"
 	"smlcloudplatform/internal/product/productcategory/models"
 	"smlcloudplatform/internal/product/productcategory/repositories"
 	"smlcloudplatform/internal/product/productcategory/services"
@@ -28,10 +28,10 @@ func NewProductCategoryHttp(ms *microservice.Microservice, cfg config.IConfig) P
 	cache := ms.Cacher(cfg.CacherConfig())
 
 	repo := repositories.NewProductCategoryRepository(pst)
-	productBarcodeRepository := productbarcodeRepo.NewProductBarcodeRepository(pst, cache)
+	productRepository := productRepo.NewProductRepository(pst)
 
 	masterSyncCacheRepo := mastersync.NewMasterSyncCacheRepository(cache)
-	svc := services.NewProductCategoryHttpService(repo, masterSyncCacheRepo, productBarcodeRepository)
+	svc := services.NewProductCategoryHttpService(repo, masterSyncCacheRepo, productRepository)
 
 	return ProductCategoryHttp{
 		ms:  ms,
@@ -49,7 +49,6 @@ func (h ProductCategoryHttp) RegisterHttp() {
 	h.ms.POST("/product/category", h.CreateProductCategory)
 	h.ms.GET("/product/category/:id", h.InfoProductCategory)
 	h.ms.PUT("/product/category/xsort", h.UpdateProductCategoryXSort)
-	h.ms.PUT("/product/category/barcodes", h.UpdateProductCategoryBarcodes)
 	h.ms.PUT("/product/category/:id", h.UpdateProductCategory)
 	h.ms.DELETE("/product/category/:id", h.DeleteProductCategory)
 	h.ms.DELETE("/product/category", h.DeleteProductCategoryByGUIDs)
@@ -188,49 +187,6 @@ func (h ProductCategoryHttp) UpdateProductCategoryXSort(ctx microservice.IContex
 	}
 
 	err = h.svc.XSortsSave(holdingCode, authUsername, *req)
-
-	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
-	}
-
-	ctx.Response(http.StatusCreated, common.ApiResponse{
-		Success: true,
-	})
-
-	return nil
-}
-
-// Update Barcodes	 Category godoc
-// @Description Update Barcodes Category
-// @Tags		ProductCategory
-// @Param		Barcodes  body      []models.BarcodesModifyReqesut  true  "Barcodes"
-// @Accept 		json
-// @Success		201	{object}	common.ResponseSuccessWithID
-// @Failure		401 {object}	common.AuthResponseFailed
-// @Security     AccessToken
-// @Router /product/category/barcodes [put]
-func (h ProductCategoryHttp) UpdateProductCategoryBarcodes(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	authUsername := userInfo.Username
-	holdingCode := userInfo.HoldingCode
-
-	input := ctx.ReadInput()
-
-	req := &[]common.XSortModifyReqesut{}
-	err := json.Unmarshal([]byte(input), &req)
-
-	if err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
-	}
-
-	if err = ctx.Validate(req); err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
-	}
-
-	err = h.svc.XBarcodesSave(holdingCode, authUsername, *req)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

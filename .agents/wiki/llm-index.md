@@ -1,6 +1,6 @@
 # BC Ai Account LLM Wiki Index
 
-This is the shared LLM-readable wiki entrypoint, identical for every agent that opens this repo (Claude Code / ZCode / Codex / any). No lead/advisor roles — whichever agent is running uses these same routes.
+This is the shared LLM-readable wiki entrypoint, identical for every agent that opens this repo (Claude Code / ZCode / Codex / any). **Opus 4.8 leads** the advisor/subagent pool (GLM 5.2, Kimi K3 Max, DeepSeek, ChatGPT 5.6, Claude Fable, Claude Sonnet) — see core-rules "Multi-Model Orchestration". Whichever CLI is running uses these same routes.
 
 ## Read Order
 1. `D:\bccode\AI_INDEX.md` for task routing.
@@ -48,7 +48,7 @@ This is the shared LLM-readable wiki entrypoint, identical for every agent that 
 - Plan-first routing (set 2026-06-22): after any task/command, state a brief plan (goal/steps/blast-radius/smallest-safe approach) BEFORE editing; confirm first for ambiguous scope or R0/R1. See `D:\bccode\.agents\rules\bc-account-core-rules.md` "Plan-First Rule" + `D:\bccode\AGENTS.md` Quality.
 - Thai tax / VAT / WHT / e-Tax / GL correctness (research-first + cache): `D:\bccode\.agents\rules\bc-account-core-rules.md` "Tax & Accounting Correctness", then read `D:\bccode\.agents\skills\bc-account-expert\tax-legal-cache.md` (verified findings) BEFORE re-searching; for anything uncached, research `rd.go.th` + Thai tax law + competitor ERP and append a dated entry to the cache.
 - Cross-agent rule editing: `D:\bccode\.agents\skills\bc-central-rules\SKILL.md`.
-- Every agent is full-stack and owns the whole task itself (NO advisor/dual-track, NO per-model frontend/backend/review split): `D:\bccode\.agents\rules\bc-account-core-rules.md` "AI Capability & Instant Upgrades". Handoff files (`D:\bccode\.agents\handoffs\README.md`) are optional cross-session coordination notes, not role locks.
+- Opus 4.8 orchestrates and owns the whole task, dispatching subtasks to the advisor/subagent pool and verifying every result itself: `D:\bccode\.agents\rules\bc-account-core-rules.md` "Multi-Model Orchestration" + "AI Capability & Instant Upgrades". Handoff files (`D:\bccode\.agents\handoffs\README.md`) are optional cross-session coordination notes, not role locks.
 - Legacy Flutter reference only when needed for migrated screens: `D:\bcdev\frontend\bcaiaccount`.
 
 ## Runtime Map

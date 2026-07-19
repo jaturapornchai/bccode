@@ -4,6 +4,7 @@ import (
 	"context"
 	"smlcloudplatform/internal/product/productbarcode/models"
 	"smlcloudplatform/internal/product/productbarcode/repositories"
+	"smlcloudplatform/internal/utils"
 	micromodels "smlcloudplatform/pkg/microservice/models"
 	"time"
 
@@ -11,9 +12,9 @@ import (
 )
 
 type IProductPriceHistoryService interface {
-	RecordPriceChange(ctx context.Context, holdingCode string, productBarcodeGUID string, barcode string, productName string, oldPrices, newPrices []models.ProductPrice, action string, username string, remark string) error
+	RecordPriceChange(ctx context.Context, holdingCode string, productBarcodeGUID string, itemCode string, barcode string, productName string, oldPrices, newPrices []models.ProductPrice, action string, username string, remark string) error
 	GetPriceHistory(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error)
-	GetPriceHistoryByBarcode(holdingCode string, barcode string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error)
+	GetPriceHistoryByBarcode(holdingCode string, itemCode string, barcode string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error)
 	GetPriceHistoryByProductGUID(holdingCode string, productBarcodeGUID string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error)
 }
 
@@ -39,6 +40,7 @@ func (svc *ProductPriceHistoryService) RecordPriceChange(
 	ctx context.Context,
 	holdingCode string,
 	productBarcodeGUID string,
+	itemCode string,
 	barcode string,
 	productName string,
 	oldPrices, newPrices []models.ProductPrice,
@@ -68,6 +70,7 @@ func (svc *ProductPriceHistoryService) RecordPriceChange(
 			history.HoldingCodeentity.HoldingCode = holdingCode
 			history.DocIdentity.GuidFixed = svc.generateGUID()
 			history.ProductBarcodeGUID = productBarcodeGUID
+			history.ItemCode = itemCode
 			history.Barcode = barcode
 			history.ProductName = productName
 			history.PriceType = priceType
@@ -100,11 +103,17 @@ func (svc *ProductPriceHistoryService) GetPriceHistory(holdingCode string, filte
 	return svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 }
 
-func (svc *ProductPriceHistoryService) GetPriceHistoryByBarcode(holdingCode string, barcode string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error) {
+func (svc *ProductPriceHistoryService) GetPriceHistoryByBarcode(holdingCode string, itemCode string, barcode string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	return svc.repo.FindByBarcode(ctx, holdingCode, barcode, pageable)
+	return svc.repo.FindByBusinessKey(
+		ctx,
+		holdingCode,
+		utils.NormalizeBusinessCode(itemCode),
+		utils.NormalizeBusinessCode(barcode),
+		pageable,
+	)
 }
 
 func (svc *ProductPriceHistoryService) GetPriceHistoryByProductGUID(holdingCode string, productBarcodeGUID string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error) {

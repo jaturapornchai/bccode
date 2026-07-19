@@ -90,12 +90,12 @@ const CONTEXT = [
   'root (a prior task left 3.3GB of .gocache-build/.gocache-mod there by mistake; use Docker named volumes or',
   'a location outside the repo). Do not commit or push anything.',
   '',
-  'This project follows a Multi-Model Role Division Rule: Claude Sonnet is the only agent that edits files;',
-  'Fable acts as chief architect and final design judge; GPT 5.5, GLM, and DeepSeek are external advisors',
-  'consulted through real CLI wrapper calls (never role-played by an agent persona pretending to be them).',
-  'There is a mandatory scoring rule: every real consult of GPT/GLM/DeepSeek must be scored 1-10 afterward',
-  '(accuracy verified against real source, usefulness/how much was adopted, reliability of the call) and',
-  'appended as a row to .agents/advisor-scorecard.md, with the score shown in the final report.',
+  'This project follows the Multi-Model Orchestration Rule (see D:\\bccode\\AGENTS.md): Opus 4.8 is the',
+  'orchestrator/lead that splits work, dispatches to the pool, evaluates results, and applies+verifies+owns',
+  'the outcome. Pool: external chat advisors (opinion-only, never edit files) GLM 5.2, DeepSeek V4 Pro,',
+  'ChatGPT 5.6, Kimi K3 Max via ~/.claude/tools/*-ask.py; Claude subagents Fable (hard/architecture/final',
+  'review) and Sonnet (general implementation/verification) via the Agent tool. Verify every advisor claim',
+  'against real source before use; advisors never own an R0/R1 decision.',
 ].join('\n')
 
 function externalConsultInstructions(toolName, wrapperPath, question) {
@@ -299,7 +299,7 @@ const fableJudge = await agent(
   [
     CONTEXT,
     '',
-    'You are the chief architect and final design judge for this task (Multi-Model Role Division Rule). You',
+    'You are the chief architect and final design judge for this task (Multi-Model Orchestration Rule; Opus routes architecture/review to Fable). You',
     'must read real source files yourself before writing the final spec. At minimum, read:',
     '- frontend/src/app/menu/product-screen.tsx, frontend/src/app/menu/product-barcode-screen.tsx,',
     '  frontend/src/app/menu/product-set-screen.tsx (at least skim the overall structure of each, you do not',

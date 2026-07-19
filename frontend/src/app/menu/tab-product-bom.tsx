@@ -5,8 +5,16 @@ import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getBarcodeText } from "@/lib/product-barcode/language";
-import { type BOMProductBarcode, type Product } from "@/lib/product-barcode/types";
-import { FieldRow, NumberField, Section, type ProductStateAction } from "./product-tab-shared";
+import {
+  type BOMProductBarcode,
+  type Product,
+} from "@/lib/product-barcode/types";
+import {
+  FieldRow,
+  NumberField,
+  Section,
+  type ProductStateAction,
+} from "./product-tab-shared";
 
 export function TabProductBom({
   value,
@@ -20,7 +28,9 @@ export function TabProductBom({
   const textB = getBarcodeText(lang);
   const setBom = useCallback(
     (mutator: (rows: BOMProductBarcode[]) => BOMProductBarcode[]) =>
-      onChange((c) => c ? ({ ...c, bom: mutator(c.bom ?? []) } as Product) : null),
+      onChange((c) =>
+        c ? ({ ...c, bom: mutator(c.bom ?? []) } as Product) : null,
+      ),
     [onChange],
   );
 
@@ -38,6 +48,7 @@ export function TabProductBom({
                 ...rows,
                 {
                   barcodeguidfixed: "",
+                  itemcode: "",
                   names: [],
                   itemunitcode: "",
                   itemunitnames: [],
@@ -52,12 +63,34 @@ export function TabProductBom({
           </Button>
         }
       >
-        {(!value.bom || value.bom.length === 0) ? (
-          <p className="text-sm text-muted-foreground text-center py-8">{textB.bomNoData}</p>
+        {!value.bom || value.bom.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8">
+            {textB.bomNoData}
+          </p>
         ) : (
           <div className="space-y-2">
             {value.bom.map((entry, idx) => (
-              <div key={idx} className="grid grid-cols-1 items-center gap-2 md:grid-cols-[1.5fr_1fr_1fr_40px] rounded-md border border-border p-2">
+              <div
+                key={idx}
+                className="grid grid-cols-1 items-center gap-2 rounded-md border border-border p-2 md:grid-cols-[1fr_1.5fr_1fr_1fr_40px]"
+              >
+                <FieldRow label={textB.itemCode}>
+                  <Input
+                    value={entry.itemcode || ""}
+                    onChange={(event) =>
+                      setBom((rows) =>
+                        rows.map((row, rowIdx) =>
+                          rowIdx === idx
+                            ? {
+                                ...row,
+                                itemcode: event.target.value.toUpperCase(),
+                              }
+                            : row,
+                        ),
+                      )
+                    }
+                  />
+                </FieldRow>
                 <FieldRow label={textB.bomBarcodeLabel}>
                   <Input
                     placeholder={textB.bomBarcodePlaceholder}
@@ -65,7 +98,9 @@ export function TabProductBom({
                     onChange={(event) =>
                       setBom((rows) =>
                         rows.map((row, rowIdx) =>
-                          rowIdx === idx ? { ...row, barcode: event.target.value } : row,
+                          rowIdx === idx
+                            ? { ...row, barcode: event.target.value }
+                            : row,
                         ),
                       )
                     }
@@ -78,7 +113,9 @@ export function TabProductBom({
                     onChange={(event) =>
                       setBom((rows) =>
                         rows.map((row, rowIdx) =>
-                          rowIdx === idx ? { ...row, itemunitcode: event.target.value } : row,
+                          rowIdx === idx
+                            ? { ...row, itemunitcode: event.target.value }
+                            : row,
                         ),
                       )
                     }
@@ -89,7 +126,9 @@ export function TabProductBom({
                     value={entry.qty ?? 1}
                     onChange={(n) =>
                       setBom((rows) =>
-                        rows.map((row, rowIdx) => (rowIdx === idx ? { ...row, qty: n } : row)),
+                        rows.map((row, rowIdx) =>
+                          rowIdx === idx ? { ...row, qty: n } : row,
+                        ),
                       )
                     }
                     min={0}
@@ -100,7 +139,11 @@ export function TabProductBom({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    onClick={() => setBom((rows) => rows.filter((_, rowIdx) => rowIdx !== idx))}
+                    onClick={() =>
+                      setBom((rows) =>
+                        rows.filter((_, rowIdx) => rowIdx !== idx),
+                      )
+                    }
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

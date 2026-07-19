@@ -22,10 +22,11 @@ type SaleInvoiceBomPricePg struct {
 }
 
 type SaleInvoicePricePg struct {
-	Barcode string  `json:"barcode" bson:"barcode"`
-	Qty     float64 `json:"qty" bson:"qty"`
-	Price   float64 `json:"price" bson:"price"`
-	Ratio   float64 `json:"ratio" bson:"ratio"`
+	ItemCode string  `json:"itemcode" bson:"itemcode"`
+	Barcode  string  `json:"barcode" bson:"barcode"`
+	Qty      float64 `json:"qty" bson:"qty"`
+	Price    float64 `json:"price" bson:"price"`
+	Ratio    float64 `json:"ratio" bson:"ratio"`
 }
 
 func (s *SaleInvoiceBomPricePg) CompareTo(other *SaleInvoiceBomPricePg) bool {

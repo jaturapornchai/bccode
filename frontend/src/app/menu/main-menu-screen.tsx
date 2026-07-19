@@ -90,6 +90,7 @@ import { ProductSetScreen } from "./product-set-screen";
 import { ProductBarcodeShelfScreen } from "./product-barcode-shelf-screen";
 import { ProductPriceHistoryScreen } from "./product-price-history-screen";
 import { MarketplaceMappingsScreen } from "./marketplace-screen";
+import { DataModelGraphScreen } from "./datamodel-graph-screen";
 
 type WorkTab = {
   id: string;
@@ -658,7 +659,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
   const rows = useMemo(() => menuQuery.data ?? [], [menuQuery.data]);
   const frequentMenuEntries = useMemo(() => getFrequentMenuEntries(allMenuItems, menuUsage, 20), [allMenuItems, menuUsage]);
   const activeWorkTab = useMemo(() => tabs.find((tab) => tab.id === activeTabId) ?? firstTab, [activeTabId, tabs]);
-  const activeTabNeedsFixedViewport = activeWorkTab.route === "/productbarcode" || activeWorkTab.route === "/product" || activeWorkTab.route === "/productset";
+  const activeTabNeedsFixedViewport = activeWorkTab.route === "/productbarcode" || activeWorkTab.route === "/product" || activeWorkTab.route === "/productset" || activeWorkTab.route === "/datamodelgraph";
 
   function openMenuItem(item: MenuItem, options: { forceNew?: boolean } = {}) {
     if (!canAccessMenuItem(item)) return;
@@ -1175,7 +1176,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                   {tabs.map((tab) => (
                     <section
                       aria-hidden={tab.id !== activeTabId}
-                      className={cn("min-w-0", (tab.route === "/productbarcode" || tab.route === "/product" || tab.route === "/productset") && "lg:h-full lg:min-h-0 lg:overflow-hidden")}
+                      className={cn("min-w-0", (tab.route === "/productbarcode" || tab.route === "/product" || tab.route === "/productset" || tab.route === "/datamodelgraph") && "lg:h-full lg:min-h-0 lg:overflow-hidden")}
                       hidden={tab.id !== activeTabId}
                       key={tab.id}
                       role="tabpanel"
@@ -1409,7 +1410,7 @@ function TopMenuChrome({
       <div
         key={key}
         className={cn(
-          "flex h-9 w-full min-w-0 items-center gap-1 rounded-md px-1 text-sm hover:bg-muted",
+          "group/top-item flex min-h-10 w-full min-w-0 items-center gap-1 rounded-lg border border-transparent px-1.5 py-1 text-sm text-muted-foreground transition-colors hover:border-border/70 hover:bg-accent hover:text-foreground",
           locked && "cursor-not-allowed opacity-55",
         )}
         onMouseEnter={onMouseEnter}
@@ -1417,20 +1418,22 @@ function TopMenuChrome({
         <button
           type="button"
           disabled={locked}
-          className="flex h-full min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 text-left disabled:cursor-not-allowed"
+          className="flex min-h-8 min-w-0 flex-1 items-center gap-2 rounded-md px-1 text-left disabled:cursor-not-allowed"
           onClick={() => {
             closeTopMenu();
             onOpenItem(item);
           }}
         >
-          <MenuRouteIcon item={item} size={15} />
-          <span className="min-w-0 flex-1 truncate">{label}</span>
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground transition-colors group-hover/top-item:bg-background group-hover/top-item:text-primary">
+            <MenuRouteIcon item={item} size={15} />
+          </span>
+          <span className="line-clamp-2 min-w-0 flex-1 break-words font-medium leading-5">{label}</span>
           {locked ? <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : null}
         </button>
         {locked ? null : (
           <button
             type="button"
-            className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-background hover:text-foreground"
+            className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-transparent text-muted-foreground transition-colors hover:border-border hover:bg-background hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             aria-label={newTabLabel}
             title={newTabLabel}
             onClick={(event) => {
@@ -2275,6 +2278,10 @@ function WorkTabPanel({ active, activeTab, backendLanguage, language, tabCount }
 
   if (activeTab.route === "/marketplace/tiktok") {
     return <MarketplaceMappingsScreen platform="tiktok" embedded language={language} />;
+  }
+
+  if (activeTab.route === "/datamodelgraph") {
+    return <DataModelGraphScreen embedded language={language} />;
   }
 
   const systemSettingConfig = getSystemSettingConfig(activeTab.route);

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"smlcloudplatform/internal/product/productcategory/models"
 	"smlcloudplatform/internal/product/productcategory/repositories"
 	"smlcloudplatform/internal/services"
@@ -13,13 +12,12 @@ import (
 
 	mastersync "smlcloudplatform/internal/mastersync/repositories"
 	common "smlcloudplatform/internal/models"
-	productbarcodeRepo "smlcloudplatform/internal/product/productbarcode/repositories"
+	productRepo "smlcloudplatform/internal/product/product/repositories"
 	micromodels "smlcloudplatform/pkg/microservice/models"
 
 	"github.com/smlsoft/mongopagination"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type IProductCategoryHttpService interface {
@@ -32,30 +30,28 @@ type IProductCategoryHttpService interface {
 	SearchProductCategoryStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ProductCategoryInfo, int, error)
 	SaveInBatch(holdingCode string, authUsername string, dataList []models.ProductCategory) error
 	XSortsSave(holdingCode string, authUsername string, xsorts []common.XSortModifyReqesut) error
-	XBarcodesSave(holdingCode string, authUsername string, xsorts []common.XSortModifyReqesut) error
-	UpdateBarcode(holdingCode string, codeXSort models.CodeXSort) error
 
 	GetModuleName() string
 }
 
 type ProductCategoryHttpService struct {
-	repo               repositories.IProductCategoryRepository
-	syncCacheRepo      mastersync.IMasterSyncCacheRepository
-	productBarcodeRepo productbarcodeRepo.IProductBarcodeRepository
+	repo          repositories.IProductCategoryRepository
+	syncCacheRepo mastersync.IMasterSyncCacheRepository
+	productRepo   productRepo.IProductRepository
 
 	services.ActivityService[models.ProductCategoryActivity, models.ProductCategoryDeleteActivity]
 	contextTimeout time.Duration
 }
 
-func NewProductCategoryHttpService(repo repositories.IProductCategoryRepository, syncCacheRepo mastersync.IMasterSyncCacheRepository, productBarcodeRepo productbarcodeRepo.IProductBarcodeRepository) *ProductCategoryHttpService {
+func NewProductCategoryHttpService(repo repositories.IProductCategoryRepository, syncCacheRepo mastersync.IMasterSyncCacheRepository, productRepo productRepo.IProductRepository) *ProductCategoryHttpService {
 
 	contextTimeout := time.Duration(15) * time.Second
 
 	insSvc := &ProductCategoryHttpService{
-		repo:               repo,
-		syncCacheRepo:      syncCacheRepo,
-		productBarcodeRepo: productBarcodeRepo,
-		contextTimeout:     contextTimeout,
+		repo:           repo,
+		syncCacheRepo:  syncCacheRepo,
+		productRepo:    productRepo,
+		contextTimeout: contextTimeout,
 	}
 
 	insSvc.ActivityService = services.NewActivityService[models.ProductCategoryActivity, models.ProductCategoryDeleteActivity](repo)
@@ -65,6 +61,53 @@ func NewProductCategoryHttpService(repo repositories.IProductCategoryRepository,
 
 func (svc ProductCategoryHttpService) getContextTimeout() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
+}
+
+func (svc ProductCategoryHttpService) normalizeProductCodeList(ctx context.Context, holdingCode string, codeList *[]models.CodeXSort) (*[]models.CodeXSort, error) {
+	if codeList == nil || len(*codeList) == 0 {
+		empty := []models.CodeXSort{}
+		return &empty, nil
+	}
+
+	codes := make([]string, 0, len(*codeList))
+	seen := make(map[string]struct{}, len(*codeList))
+	for _, item := range *codeList {
+		code := utils.NormalizeBusinessCode(item.Code)
+		if code == "" {
+			return nil, errors.New("รหัสสินค้าในหมวดห้ามว่าง")
+		}
+		if _, exists := seen[code]; exists {
+			return nil, fmt.Errorf("รหัสสินค้า %s ซ้ำในหมวด", code)
+		}
+		seen[code] = struct{}{}
+		codes = append(codes, code)
+	}
+
+	products, err := svc.productRepo.FindFilter(ctx, holdingCode, map[string]interface{}{
+		"code": bson.M{"$in": codes},
+	})
+	if err != nil {
+		return nil, err
+	}
+	productsByCode := make(map[string]models.CodeXSort, len(products))
+	for _, product := range products {
+		productsByCode[product.Code] = models.CodeXSort{
+			Code:  product.Code,
+			Names: product.Names,
+		}
+	}
+
+	normalized := make([]models.CodeXSort, 0, len(codes))
+	for index, code := range codes {
+		item, exists := productsByCode[code]
+		if !exists {
+			return nil, fmt.Errorf("ไม่พบสินค้า %s ใน Product master", code)
+		}
+		item.XOrder = uint(index)
+		normalized = append(normalized, item)
+	}
+
+	return &normalized, nil
 }
 
 func (svc ProductCategoryHttpService) buildDefaultAllProductsCategory(ctx context.Context, holdingCode string, groupNumber int) (models.ProductCategoryInfo, error) {
@@ -83,25 +126,17 @@ func (svc ProductCategoryHttpService) buildDefaultAllProductsCategory(ctx contex
 		{Code: &[]string{"jp"}[0], Name: &jpName, IsAuto: false, IsDelete: false},
 	}
 
-	// Fetch all products where materialtype != 1
-	filters := bson.M{
-		"holdingcode":  holdingCode,
-		"deletedat":    bson.M{"$exists": false},
-		"materialtype": bson.M{"$ne": 1},
-	}
-
-	findOpts := options.Find()
-	findOpts.SetProjection(bson.M{
-		"barcode":          1,
-		"itemcode":         1,
-		"names":            1,
-		"itemunitcode":     1,
-		"itemunitnames":    1,
-		"manufacturerguid": 1,
-	})
-	findOpts.SetSort(bson.M{"barcode": 1})
-
-	products, err := svc.productBarcodeRepo.Find(ctx, holdingCode, filters, findOpts)
+	products, _, err := svc.productRepo.FindStep(
+		ctx,
+		holdingCode,
+		map[string]interface{}{"materialtype": bson.M{"$ne": 1}},
+		[]string{},
+		map[string]interface{}{"code": 1, "names": 1},
+		micromodels.PageableStep{
+			Limit: 0,
+			Sorts: []micromodels.KeyInt{{Key: "code", Value: 1}},
+		},
+	)
 	if err != nil {
 		return models.ProductCategoryInfo{}, err
 	}
@@ -110,13 +145,9 @@ func (svc ProductCategoryHttpService) buildDefaultAllProductsCategory(ctx contex
 	codeList := []models.CodeXSort{}
 	for i, product := range products {
 		codeList = append(codeList, models.CodeXSort{
-			Code:             product.ItemCode,
-			XOrder:           uint(i),
-			Barcode:          product.Barcode,
-			UnitCode:         product.ItemUnitCode,
-			UnitNames:        product.ItemUnitNames,
-			Names:            product.Names,
-			ManufacturerGUID: product.ManufacturerGUID,
+			Code:   product.Code,
+			XOrder: uint(i),
+			Names:  product.Names,
 		})
 	}
 
@@ -160,6 +191,12 @@ func (svc ProductCategoryHttpService) CreateProductCategory(holdingCode string, 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
+	codeList, err := svc.normalizeProductCodeList(ctx, holdingCode, doc.CodeList)
+	if err != nil {
+		return "", err
+	}
+	doc.CodeList = codeList
+
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.ProductCategoryDoc{}
@@ -172,7 +209,7 @@ func (svc ProductCategoryHttpService) CreateProductCategory(holdingCode string, 
 	docData.CreatedBy = authUsername
 	docData.CreatedAt = time.Now()
 
-	_, err := svc.repo.Create(ctx, docData)
+	_, err = svc.repo.Create(ctx, docData)
 
 	if err != nil {
 		return "", err
@@ -187,6 +224,12 @@ func (svc ProductCategoryHttpService) UpdateProductCategory(holdingCode string, 
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
+
+	codeList, err := svc.normalizeProductCodeList(ctx, holdingCode, doc.CodeList)
+	if err != nil {
+		return err
+	}
+	doc.CodeList = codeList
 
 	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
 
@@ -212,14 +255,6 @@ func (svc ProductCategoryHttpService) UpdateProductCategory(holdingCode string, 
 	svc.saveMasterSync(holdingCode)
 
 	return nil
-}
-
-func (svc ProductCategoryHttpService) UpdateBarcode(holdingCode string, codeXSort models.CodeXSort) error {
-
-	ctx, ctxCancel := svc.getContextTimeout()
-	defer ctxCancel()
-
-	return svc.repo.UpdateCodeList(ctx, holdingCode, codeXSort)
 }
 
 func (svc ProductCategoryHttpService) DeleteProductCategory(holdingCode string, guid string, authUsername string) error {
@@ -282,8 +317,7 @@ func (svc ProductCategoryHttpService) SearchProductCategory(holdingCode string, 
 	// Build default "All Products" category
 	defaultCategory, err := svc.buildDefaultAllProductsCategory(ctx, holdingCode, groupNumber)
 	if err != nil {
-		// Log error but continue without default category
-		log.Printf("Failed to build default category: %v", err)
+		return []models.ProductCategoryInfo{}, mongopagination.PaginationData{}, fmt.Errorf("build all-products category: %w", err)
 	}
 
 	searchInFields := []string{
@@ -366,6 +400,11 @@ func (svc ProductCategoryHttpService) SaveInBatch(holdingCode string, authUserna
 
 	createdAt := time.Now()
 	for _, doc := range dataList {
+		codeList, err := svc.normalizeProductCodeList(ctx, holdingCode, doc.CodeList)
+		if err != nil {
+			return err
+		}
+		doc.CodeList = codeList
 
 		newGuidFixed := utils.NewGUID()
 
@@ -443,65 +482,6 @@ func (svc ProductCategoryHttpService) XSortsSave(holdingCode string, authUsernam
 		if err != nil {
 			return err
 		}
-	}
-
-	svc.saveMasterSync(holdingCode)
-
-	return nil
-
-}
-
-func (svc ProductCategoryHttpService) XBarcodesSave(holdingCode string, authUsername string, xsorts []common.XSortModifyReqesut) error {
-
-	ctx, ctxCancel := svc.getContextTimeout()
-	defer ctxCancel()
-
-	for _, xsort := range xsorts {
-		if len(xsort.GUIDFixed) < 1 {
-			continue
-		}
-		findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, xsort.GUIDFixed)
-
-		if err != nil {
-			return err
-		}
-
-		if len(findDoc.GuidFixed) < 1 {
-			continue
-		}
-
-		if findDoc.CodeList == nil {
-			findDoc.CodeList = &[]models.CodeXSort{}
-		}
-
-		dictXSorts := map[string]models.CodeXSort{}
-
-		for _, tempXSort := range *findDoc.CodeList {
-			dictXSorts[tempXSort.Code] = tempXSort
-		}
-
-		dictXSorts[xsort.Code] = models.CodeXSort{
-			Code:   xsort.Code,
-			XOrder: xsort.XOrder,
-		}
-
-		tempXSorts := []models.CodeXSort{}
-
-		for _, tempXSort := range dictXSorts {
-			tempXSorts = append(tempXSorts, tempXSort)
-		}
-
-		findDoc.CodeList = &tempXSorts
-
-		findDoc.UpdatedBy = authUsername
-		findDoc.UpdatedAt = time.Now()
-
-		err = svc.repo.Update(ctx, holdingCode, findDoc.GuidFixed, findDoc)
-
-		if err != nil {
-			return err
-		}
-
 	}
 
 	svc.saveMasterSync(holdingCode)

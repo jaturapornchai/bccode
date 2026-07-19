@@ -20,14 +20,21 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /** Read string at `key`, else "" — null/undefined safe. */
-export function getString(record: Record<string, unknown> | undefined, key: string): string {
+export function getString(
+  record: Record<string, unknown> | undefined,
+  key: string,
+): string {
   if (!record) return "";
   const value = record[key];
   return typeof value === "string" ? value : "";
 }
 
 /** Read number at `key`, else default. */
-export function getNumber(record: Record<string, unknown> | undefined, key: string, fallback = 0): number {
+export function getNumber(
+  record: Record<string, unknown> | undefined,
+  key: string,
+  fallback = 0,
+): number {
   if (!record) return fallback;
   const value = record[key];
   if (typeof value === "number" && Number.isFinite(value)) return value;
@@ -39,7 +46,11 @@ export function getNumber(record: Record<string, unknown> | undefined, key: stri
 }
 
 /** Read boolean at `key`, accepts true/false, "true"/"false", 1/0. Empty/missing → fallback. */
-export function getBoolean(record: Record<string, unknown> | undefined, key: string, fallback = false): boolean {
+export function getBoolean(
+  record: Record<string, unknown> | undefined,
+  key: string,
+  fallback = false,
+): boolean {
   if (!record) return fallback;
   const value = record[key];
   if (typeof value === "boolean") return value;
@@ -54,7 +65,10 @@ export function getBoolean(record: Record<string, unknown> | undefined, key: str
 }
 
 /** Read first non-empty string from a list of keys (handles legacy aliases). */
-export function getFirstString(record: Record<string, unknown> | undefined, keys: readonly string[]): string {
+export function getFirstString(
+  record: Record<string, unknown> | undefined,
+  keys: readonly string[],
+): string {
   if (!record) return "";
   for (const key of keys) {
     const value = record[key];
@@ -79,12 +93,17 @@ export function toNameXArray(value: unknown): NameX[] {
     const code = getString(entry, "code") || getString(entry, "lang");
     const name = getString(entry, "name") || getString(entry, "value");
     if (!code) return [];
-    return [{ code, name, description: getString(entry, "description") || undefined }];
+    return [
+      { code, name, description: getString(entry, "description") || undefined },
+    ];
   });
 }
 
 /** Pick localized name for given language with TH/EN fallback. */
-export function pickName(names: NameX[] | undefined, language: LanguageCode | string | undefined): string {
+export function pickName(
+  names: NameX[] | undefined,
+  language: LanguageCode | string | undefined,
+): string {
   if (!names || names.length === 0) return "";
   const lang = String(language ?? "th").toLowerCase();
   const exact = names.find((n) => n.code?.toLowerCase() === lang);
@@ -97,7 +116,11 @@ export function pickName(names: NameX[] | undefined, language: LanguageCode | st
 }
 
 /** Set or replace a NameX entry by code. */
-export function setNameXEntry(names: NameX[] | undefined, code: string, name: string): NameX[] {
+export function setNameXEntry(
+  names: NameX[] | undefined,
+  code: string,
+  name: string,
+): NameX[] {
   const base = Array.isArray(names) ? [...names] : [];
   const idx = base.findIndex((entry) => entry.code === code);
   if (idx >= 0) {
@@ -113,7 +136,11 @@ export function toPriceArray(value: unknown): ProductPrice[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((entry) => {
     if (!isRecord(entry)) return [];
-    const keyNumber = getNumber(entry, "keynumber", getNumber(entry, "keynumber", 0));
+    const keyNumber = getNumber(
+      entry,
+      "keynumber",
+      getNumber(entry, "keynumber", 0),
+    );
     const price = getNumber(entry, "price", 0);
     return [{ keynumber: keyNumber, price }];
   });
@@ -127,6 +154,7 @@ export function toRefBarcodeArray(value: unknown): RefProductBarcode[] {
     return [
       {
         guidfixed: getFirstString(entry, ["guidfixed", "guidfixed"]),
+        itemcode: getString(entry, "itemcode"),
         names: toNameXArray(entry.names),
         itemunitcode: getFirstString(entry, ["itemunitcode", "itemunitcode"]),
         itemunitnames: toNameXArray(entry.itemunitnames),
@@ -162,9 +190,20 @@ export function toProductUnitOptions(product: unknown): ProductUnitOption[] {
     if (!barcode) return [];
     return [
       {
-        guidfixed: getFirstString(entry, ["guidfixed", "guidfixed", "barcodeguidfixed"]),
-        names: toNameXArray(entry.names).length ? toNameXArray(entry.names) : productNames,
-        itemunitcode: getFirstString(entry, ["itemunitcode", "itemunitcode", "unitcode"]),
+        guidfixed: getFirstString(entry, [
+          "guidfixed",
+          "guidfixed",
+          "barcodeguidfixed",
+        ]),
+        itemcode: productCode,
+        names: toNameXArray(entry.names).length
+          ? toNameXArray(entry.names)
+          : productNames,
+        itemunitcode: getFirstString(entry, [
+          "itemunitcode",
+          "itemunitcode",
+          "unitcode",
+        ]),
         itemunitnames: toNameXArray(entry.itemunitnames).length
           ? toNameXArray(entry.itemunitnames)
           : toNameXArray(entry.unitnames),
@@ -174,7 +213,11 @@ export function toProductUnitOptions(product: unknown): ProductUnitOption[] {
         standvalue: getNumber(entry, "standvalue", 1),
         qty: getNumber(entry, "qty", 1),
         prices: toPriceArray(entry.prices),
-        averagecost: getNumber(entry, "averagecost", getNumber(entry, "unitcost", 0)),
+        averagecost: getNumber(
+          entry,
+          "averagecost",
+          getNumber(entry, "unitcost", 0),
+        ),
         ismainbarcode: getBoolean(entry, "ismainbarcode", false),
         productguid: productGuid,
         productcode: productCode,
@@ -190,7 +233,12 @@ export function toBomArray(value: unknown): BOMProductBarcode[] {
     if (!isRecord(entry)) return [];
     return [
       {
-        barcodeguidfixed: getFirstString(entry, ["barcodeguidfixed", "guidfixed", "guidfixed"]),
+        barcodeguidfixed: getFirstString(entry, [
+          "barcodeguidfixed",
+          "guidfixed",
+          "guidfixed",
+        ]),
+        itemcode: getString(entry, "itemcode"),
         names: toNameXArray(entry.names),
         itemunitcode: getFirstString(entry, ["itemunitcode", "itemunitcode"]),
         itemunitnames: toNameXArray(entry.itemunitnames),
@@ -225,7 +273,9 @@ export function toMasterArray(
 }
 
 /** Convert a "list endpoint" row to the structured `ProductBarcode` shape (best-effort, partial). */
-export function listRowToBarcode(row: ProductBarcodeListRow): Partial<ProductBarcode> {
+export function listRowToBarcode(
+  row: ProductBarcodeListRow,
+): Partial<ProductBarcode> {
   return {
     guidfixed: row.guidfixed,
     holdingcode: row.holdingcode,
@@ -257,7 +307,10 @@ export function isValidBarcode(value: string): boolean {
 /** Compute the standard EAN-13 check digit for a 12-digit base string. */
 export function ean13CheckDigit(base12: string): string {
   const digits = base12.split("").map(Number);
-  const sum = digits.reduce((acc, d, idx) => acc + d * (idx % 2 === 0 ? 1 : 3), 0);
+  const sum = digits.reduce(
+    (acc, d, idx) => acc + d * (idx % 2 === 0 ? 1 : 3),
+    0,
+  );
   return String((10 - (sum % 10)) % 10);
 }
 
@@ -302,8 +355,12 @@ export function rawToProduct(raw: unknown): Product {
     classguid: getString(r, "classguid"),
     classcode: getString(r, "classcode"),
     classnames: toNameXArray(r.classnames),
-    manufacturers: Array.isArray(r.manufacturers) ? (r.manufacturers as Product["manufacturers"]) : [],
-    suppliers: Array.isArray(r.suppliers) ? (r.suppliers as Product["suppliers"]) : [],
+    manufacturers: Array.isArray(r.manufacturers)
+      ? (r.manufacturers as Product["manufacturers"])
+      : [],
+    suppliers: Array.isArray(r.suppliers)
+      ? (r.suppliers as Product["suppliers"])
+      : [],
     condition: getBoolean(r, "condition", false),
     dividevalue: getNumber(r, "dividevalue", 1),
     standvalue: getNumber(r, "standvalue", 1),
@@ -321,20 +378,27 @@ export function rawToProduct(raw: unknown): Product {
 }
 
 /** Normalize raw API JSON into a full `ProductBarcode`, merging with defaults. */
-export function rawToProductBarcode(raw: unknown, base: ProductBarcode): ProductBarcode {
+export function rawToProductBarcode(
+  raw: unknown,
+  base: ProductBarcode,
+): ProductBarcode {
   if (!isRecord(raw)) return base;
   const r = raw;
   return {
     ...base,
     guidfixed: getFirstString(r, ["guidfixed", "guidfixed"]) || base.guidfixed,
-    holdingcode: getFirstString(r, ["holdingcode", "holdingcode"]) || base.holdingcode,
+    holdingcode:
+      getFirstString(r, ["holdingcode", "holdingcode"]) || base.holdingcode,
     itemcode: getString(r, "itemcode") || base.itemcode,
     barcode: getString(r, "barcode") || base.barcode,
     names: toNameXArray(r.names) || base.names,
-    xsorts: Array.isArray(r.xsorts) ? (r.xsorts as ProductBarcode["xsorts"]) : base.xsorts,
+    xsorts: Array.isArray(r.xsorts)
+      ? (r.xsorts as ProductBarcode["xsorts"])
+      : base.xsorts,
     itemguid: getString(r, "itemguid") || base.itemguid,
     itemunitguid: getString(r, "itemunitguid") || base.itemunitguid,
-    itemunitcode: getFirstString(r, ["itemunitcode", "itemunitcode"]) || base.itemunitcode,
+    itemunitcode:
+      getFirstString(r, ["itemunitcode", "itemunitcode"]) || base.itemunitcode,
     itemunitnames: toNameXArray(r.itemunitnames),
     itemunitsize: getNumber(r, "itemunitsize", base.itemunitsize),
 
@@ -390,28 +454,54 @@ export function rawToProductBarcode(raw: unknown, base: ProductBarcode): Product
     ismainbarcode: getBoolean(r, "ismainbarcode", base.ismainbarcode),
 
     prices: toPriceArray(r.prices),
-    fixedcost: Array.isArray(r.fixedcost) ? (r.fixedcost as ProductBarcode["fixedcost"]) : base.fixedcost,
+    fixedcost: Array.isArray(r.fixedcost)
+      ? (r.fixedcost as ProductBarcode["fixedcost"])
+      : base.fixedcost,
     discount: getString(r, "discount") || base.discount,
     maxdiscount: getString(r, "maxdiscount") || base.maxdiscount,
     isdividend: getBoolean(r, "isdividend", base.isdividend),
-    isdiscountpointofpurchase: getBoolean(r, "isdiscountpointofpurchase", base.isdiscountpointofpurchase),
+    isdiscountpointofpurchase: getBoolean(
+      r,
+      "isdiscountpointofpurchase",
+      base.isdiscountpointofpurchase,
+    ),
 
     imageuri: getString(r, "imageuri") || base.imageuri,
-    images: Array.isArray(r.images) ? (r.images as ProductBarcode["images"]) : base.images,
+    images: Array.isArray(r.images)
+      ? (r.images as ProductBarcode["images"])
+      : base.images,
     useimageorcolor: getBoolean(r, "useimageorcolor", base.useimageorcolor),
     colorselect: getString(r, "colorselect"),
     colorselecthex: getString(r, "colorselecthex"),
 
-    itemtype: getNumber(r, "itemtype", base.itemtype) as ProductBarcode["itemtype"],
-    materialtype: getNumber(r, "materialtype", base.materialtype) as ProductBarcode["materialtype"],
+    itemtype: getNumber(
+      r,
+      "itemtype",
+      base.itemtype,
+    ) as ProductBarcode["itemtype"],
+    materialtype: getNumber(
+      r,
+      "materialtype",
+      base.materialtype,
+    ) as ProductBarcode["materialtype"],
     taxtype: getNumber(r, "taxtype", base.taxtype),
     vattype: getNumber(r, "vattype", base.vattype) as ProductBarcode["vattype"],
     vatcal: getNumber(r, "vatcal", base.vatcal),
-    producttype: (isRecord(r.producttype) ? r.producttype : base.producttype) as ProductBarcode["producttype"],
-    foodtype: getNumber(r, "foodtype", base.foodtype) as ProductBarcode["foodtype"],
+    producttype: (isRecord(r.producttype)
+      ? r.producttype
+      : base.producttype) as ProductBarcode["producttype"],
+    foodtype: getNumber(
+      r,
+      "foodtype",
+      base.foodtype,
+    ) as ProductBarcode["foodtype"],
     issumpoint: getBoolean(r, "issumpoint", base.issumpoint),
     isalacarte: getBoolean(r, "isalacarte", base.isalacarte),
-    isstockforrestaurant: getBoolean(r, "isstockforrestaurant", base.isstockforrestaurant),
+    isstockforrestaurant: getBoolean(
+      r,
+      "isstockforrestaurant",
+      base.isstockforrestaurant,
+    ),
     issplitunitprint: getBoolean(r, "issplitunitprint", base.issplitunitprint),
     isonlystaff: getBoolean(r, "isonlystaff", base.isonlystaff),
 
@@ -421,11 +511,18 @@ export function rawToProductBarcode(raw: unknown, base: ProductBarcode): Product
           isfortakeaway: getBoolean(r.restaurant, "isfortakeaway"),
           isfordelivery: getBoolean(r.restaurant, "isfordelivery"),
           isforcustomer: getBoolean(r.restaurant, "isforcustomer"),
-          isforcustomerpreorder: getBoolean(r.restaurant, "isforcustomerpreorder"),
+          isforcustomerpreorder: getBoolean(
+            r.restaurant,
+            "isforcustomerpreorder",
+          ),
         }
       : base.restaurant,
-    ordertypes: Array.isArray(r.ordertypes) ? (r.ordertypes as ProductBarcode["ordertypes"]) : base.ordertypes,
-    options: Array.isArray(r.options) ? (r.options as ProductBarcode["options"]) : base.options,
+    ordertypes: Array.isArray(r.ordertypes)
+      ? (r.ordertypes as ProductBarcode["ordertypes"])
+      : base.ordertypes,
+    options: Array.isArray(r.options)
+      ? (r.options as ProductBarcode["options"])
+      : base.options,
 
     refbarcodes: toRefBarcodeArray(r.refbarcodes),
     bom: toBomArray(r.bom),
@@ -439,7 +536,9 @@ export function rawToProductBarcode(raw: unknown, base: ProductBarcode): Product
     timeforsales: Array.isArray(r.timeforsales)
       ? (r.timeforsales as ProductBarcode["timeforsales"])
       : base.timeforsales,
-    dimensions: Array.isArray(r.dimensions) ? (r.dimensions as ProductBarcode["dimensions"]) : base.dimensions,
+    dimensions: Array.isArray(r.dimensions)
+      ? (r.dimensions as ProductBarcode["dimensions"])
+      : base.dimensions,
 
     isalert: getBoolean(r, "isalert", base.isalert),
     alertdescription: getString(r, "alertdescription"),

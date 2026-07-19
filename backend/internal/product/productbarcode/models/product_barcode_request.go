@@ -35,6 +35,7 @@ func (p ProductBarcodeRequest) ToProductBarcode() ProductBarcode {
 }
 
 type BarcodeRequest struct {
+	ItemCode    string  `json:"itemcode" bson:"itemcode"`
 	Barcode     string  `json:"barcode" bson:"barcode" validate:"required,min=1"`
 	Condition   bool    `json:"condition" bson:"condition"`
 	DivideValue float64 `json:"dividevalue" bson:"dividevalue"`
@@ -43,6 +44,7 @@ type BarcodeRequest struct {
 }
 
 type BOMRequest struct {
+	ItemCode    string  `json:"itemcode" bson:"itemcode"`
 	Barcode     string  `json:"barcode" bson:"barcode" validate:"required,min=1"`
 	Condition   bool    `json:"condition" bson:"condition"`
 	DivideValue float64 `json:"dividevalue" bson:"dividevalue"`

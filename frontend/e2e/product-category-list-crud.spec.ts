@@ -90,7 +90,7 @@ test("productcategorylist — readOnly empty-state text no longer references a n
   await loginAndSearchMenu(page, "สินค้าในหมวด");
   await clickButtonByText(page, /^สินค้าในหมวด$/);
   await page.waitForTimeout(2000);
-  await clickContainingText(page, "20ยังไม่กำหนดชื่อกลุ่ม");
+  await clickContainingText(page, "20ยังไม่มีหมวดสินค้า");
   await page.waitForTimeout(1500);
 
   expect(await bodyHasText(page, "กรุณาไปสร้างหมวดสินค้าที่หน้าจอ")).toBe(true);
@@ -112,7 +112,7 @@ test("productcategorygroupselectscreen — its OWN empty-state still references 
   await loginAndSearchMenu(page, "จัดหมวดสินค้า");
   await clickButtonByText(page, /^จัดหมวดสินค้า$/);
   await page.waitForTimeout(2000);
-  await clickContainingText(page, "20ยังไม่กำหนดชื่อกลุ่ม");
+  await clickContainingText(page, "20ยังไม่มีหมวดสินค้า");
   await page.waitForTimeout(1500);
 
   expect(await bodyHasText(page, "กดปุ่ม 'เพิ่มหมวดหลัก' ด้านบน")).toBe(true);
@@ -148,14 +148,17 @@ async function clickTreeRowByText(page: Page, text: string) {
   }
 }
 
-/** Clicks the group-number card on the "เลือกกลุ่มหมวดสินค้า" grid whose text starts with `num`
- *  (the card's leading number badge). Matches on the number prefix, not the "ยังไม่กำหนดชื่อกลุ่ม"
+/** Clicks the group-number card on the "เลือกชุดหมวดสินค้า" grid whose text starts with `num`
+ *  (the card's leading number badge). Matches on the number prefix, not the "ยังไม่มีหมวดสินค้า"
  *  empty-state label, so the test stays idempotent across reruns that leave real data in the group. */
 async function clickGroupNumber(page: Page, num: number) {
   const deadline = Date.now() + 8000;
   for (;;) {
     const clicked = await page.evaluate((n) => {
-      const el = [...document.querySelectorAll<HTMLElement>("button")].find(
+      const selector = document.querySelector<HTMLElement>(
+        '[data-testid="product-category-group-selector"]',
+      );
+      const el = [...(selector?.querySelectorAll<HTMLElement>("button") ?? [])].find(
         (b) => b.offsetParent !== null && (b.textContent ?? "").trim().startsWith(String(n)),
       );
       if (el) {
@@ -169,6 +172,162 @@ async function clickGroupNumber(page: Page, num: number) {
     await page.waitForTimeout(300);
   }
 }
+
+test("productcategorygroupselectscreen — tablet workbench selects read-only detail before edit", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await loginAndSearchMenu(page, "จัดหมวดสินค้า");
+  await clickButtonByText(page, /^จัดหมวดสินค้า$/);
+  await page.waitForTimeout(1500);
+  await clickGroupNumber(page, 1);
+
+  const treePane = page.getByTestId("product-category-tree-pane");
+  const detailPane = page.getByTestId("product-category-detail-pane");
+  const firstRow = treePane.locator("[data-category-row-guid]").first();
+  await expect(firstRow).toBeVisible();
+  await firstRow.click();
+
+  await expect(detailPane.getByRole("button", { name: "แก้ไข" })).toBeVisible();
+  await expect(detailPane.getByText("ลำดับกลุ่ม", { exact: true })).toHaveCount(0);
+  await expect(detailPane.getByText("หมวดแม่", { exact: true })).toHaveCount(0);
+  await expect(treePane.getByRole("button", { name: "แก้ไข" })).toHaveCount(0);
+  await expect(treePane.getByRole("button", { name: "ลบ" })).toHaveCount(0);
+
+  const [treeBox, detailBox] = await Promise.all([
+    treePane.boundingBox(),
+    detailPane.boundingBox(),
+  ]);
+  expect(treeBox).not.toBeNull();
+  expect(detailBox).not.toBeNull();
+  expect(Math.abs(treeBox!.y - detailBox!.y)).toBeLessThan(12);
+  expect(treeBox!.x + treeBox!.width).toBeLessThanOrEqual(detailBox!.x);
+  expect(detailBox!.width).toBeGreaterThan(treeBox!.width);
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth),
+  ).toBe(true);
+
+  const secondRow = treePane.locator("[data-category-row-guid]").nth(1);
+  await expect(secondRow).toBeVisible();
+  let delayNextDetail = true;
+  await page.route("**/api/system-settings/productcategorygroupselectscreen/**", async (route) => {
+    if (delayNextDetail && route.request().method() === "GET") {
+      delayNextDetail = false;
+      await new Promise((resolve) => setTimeout(resolve, 350));
+    }
+    await route.continue();
+  });
+  const transitionProbe = page.evaluate(async () => {
+    const pane = document.querySelector<HTMLElement>("[data-testid='product-category-detail-pane']")!;
+    let sawEmptyFrame = false;
+    let sawLoadingChrome = false;
+    const deadline = performance.now() + 450;
+    while (performance.now() < deadline) {
+      const text = pane.innerText.trim();
+      sawEmptyFrame ||= text.length === 0;
+      sawLoadingChrome ||= text.includes("กำลังโหลด");
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    }
+    return { sawEmptyFrame, sawLoadingChrome };
+  });
+  await secondRow.click();
+  expect(await transitionProbe).toEqual({
+    sawEmptyFrame: false,
+    sawLoadingChrome: false,
+  });
+  await expect(detailPane.getByRole("button", { name: "แก้ไข" })).toBeVisible();
+
+  const secondName = (await secondRow.locator("span.basis-40").innerText()).trim();
+  delayNextDetail = true;
+  await firstRow.click();
+  await page.waitForTimeout(25);
+  await secondRow.click();
+  await page.waitForTimeout(450);
+  await expect(secondRow).toHaveAttribute("aria-selected", "true");
+  await expect(detailPane.getByText(secondName, { exact: true }).first()).toBeVisible();
+
+  await detailPane.getByRole("button", { name: "แก้ไข" }).click();
+  const editForm = detailPane.getByRole("form", { name: "แก้ไข" });
+  await expect(editForm).toBeVisible();
+  await expect(editForm.getByText("ลำดับกลุ่ม", { exact: true })).toHaveCount(0);
+  await expect(editForm.getByText("หมวดแม่", { exact: true })).toHaveCount(0);
+  await expect(editForm.getByRole("button", { name: "ยกเลิก" })).toBeVisible();
+  await expect(editForm.getByRole("button", { name: "บันทึก" })).toBeVisible();
+  await editForm.getByRole("button", { name: "ยกเลิก" }).click();
+  await expect(detailPane.getByRole("button", { name: "แก้ไข" })).toBeVisible();
+});
+
+test("productcategorylist — category editor stays mounted while Mongo detail switches", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await loginAndSearchMenu(page, "สินค้าในหมวด");
+  await clickButtonByText(page, /^สินค้าในหมวด$/);
+  await page.waitForTimeout(1500);
+  await clickGroupNumber(page, 1);
+
+  const treePane = page.getByTestId("product-category-tree-pane");
+  const detailPane = page.getByTestId("product-category-detail-pane");
+  const firstRow = treePane.locator("[data-category-row-guid]").first();
+  const secondRow = treePane.locator("[data-category-row-guid]").nth(1);
+  await expect(firstRow).toBeVisible();
+  await expect(secondRow).toBeVisible();
+  await firstRow.click();
+  await expect(detailPane.getByText("สินค้าในหมวด", { exact: true })).toBeVisible();
+  const categoryActions = detailPane.getByTestId("product-category-item-actions");
+  const categoryHeading = detailPane.getByRole("heading", { name: "สินค้าในหมวด", exact: true });
+  const categoryCount = detailPane.getByText(/^ทั้งหมด \d+ รายการ$/);
+  await expect(categoryActions).toBeInViewport();
+  await expect(categoryCount).toBeInViewport();
+  const [categoryActionsBox, categoryHeadingBox, categoryCountBox] = await Promise.all([
+    categoryActions.boundingBox(),
+    categoryHeading.boundingBox(),
+    categoryCount.boundingBox(),
+  ]);
+  expect(categoryActionsBox).not.toBeNull();
+  expect(categoryHeadingBox).not.toBeNull();
+  expect(categoryCountBox).not.toBeNull();
+  expect(categoryActionsBox!.y).toBeLessThan(categoryHeadingBox!.y + 72);
+  expect(categoryCountBox!.y).toBeLessThan(categoryHeadingBox!.y + 60);
+
+  let delayNextDetail = true;
+  await page.route("**/api/system-settings/productcategorylist/**", async (route) => {
+    if (delayNextDetail && route.request().method() === "GET") {
+      delayNextDetail = false;
+      await new Promise((resolve) => setTimeout(resolve, 350));
+    }
+    await route.continue();
+  });
+  const transitionProbe = page.evaluate(async () => {
+    const pane = document.querySelector<HTMLElement>("[data-testid='product-category-detail-pane']")!;
+    let sawEmptyFrame = false;
+    let sawLoadingOrEmptyChrome = false;
+    const deadline = performance.now() + 450;
+    while (performance.now() < deadline) {
+      const text = pane.innerText.trim();
+      sawEmptyFrame ||= text.length === 0;
+      sawLoadingOrEmptyChrome ||=
+        text.includes("กำลังโหลดข้อมูลสินค้า") || text.includes("เลือกหมวดสินค้า");
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    }
+    return { sawEmptyFrame, sawLoadingOrEmptyChrome };
+  });
+  await secondRow.click();
+  expect(await transitionProbe).toEqual({
+    sawEmptyFrame: false,
+    sawLoadingOrEmptyChrome: false,
+  });
+
+  const secondName = (await secondRow.locator("span.basis-40").innerText()).trim();
+  await expect(detailPane.getByText(secondName, { exact: true })).toBeVisible();
+  delayNextDetail = true;
+  await firstRow.click();
+  await page.waitForTimeout(25);
+  await secondRow.click();
+  await page.waitForTimeout(450);
+  await expect(secondRow).toHaveAttribute("aria-selected", "true");
+  await expect(detailPane.getByText(secondName, { exact: true })).toBeVisible();
+});
 
 function getAuthHeaders(page: Page) {
   return page.evaluate(() => {
@@ -198,7 +357,7 @@ async function fillPrimaryNameInput(page: Page, value: string) {
   }, value);
 }
 
-test("productcategorygroupselectscreen -> productcategorylist — create a 2-level category branch via UI and bind a real product barcode into the leaf, verified via API", async ({
+test("productcategorygroupselectscreen -> productcategorylist — create a 2-level category branch and bind a Product master by code only", async ({
   page,
 }) => {
   // Group 19: still-unused slot (1/2 hold real seeded sample data; 20 is reserved for the two
@@ -206,9 +365,43 @@ test("productcategorygroupselectscreen -> productcategorylist — create a 2-lev
   const uid = Date.now().toString().slice(-6);
   const rootName = `E2Eหมวดหลัก${uid}`;
   const childName = `E2Eหมวดย่อย${uid}`;
-  const barcode = "BMATLIME197609"; // real seeded barcode (มะนาว), confirmed to exist in this DEV tenant
 
   await loginAndSearchMenu(page, "จัดหมวดสินค้า");
+  const H = await getAuthHeaders(page);
+  const productResponse = await page.request.get(`${MAINAPI}/product?limit=1`, { headers: H });
+  expect(productResponse.ok(), "load a real Product master").toBe(true);
+  const productPayload = (await productResponse.json()) as {
+    data?: { code: string; names?: { code: string; name: string }[] }[];
+  };
+  const product = (productPayload.data ?? []).find((item) => item.code);
+  expect(product, "at least one Product master exists").toBeTruthy();
+  const productCode = product!.code;
+
+  const invalidBase = {
+    names: [{ code: "th", name: `E2EตรวจProduct${uid}` }],
+    xsorts: [],
+    groupnumber: 19,
+  };
+  const missingProduct = await page.request.post(`${MAINAPI}/product/category`, {
+    headers: H,
+    data: { ...invalidBase, codelist: [{ code: `NOTEXIST${uid}`, xorder: 0 }] },
+  });
+  expect(missingProduct.status(), "reject a code absent from Product master").toBe(400);
+  expect(JSON.stringify(await missingProduct.json())).toContain("ไม่พบสินค้า");
+
+  const logicallySameCode = `${productCode.slice(0, 1)} ${productCode.slice(1)}`.toLowerCase();
+  const duplicateProduct = await page.request.post(`${MAINAPI}/product/category`, {
+    headers: H,
+    data: {
+      ...invalidBase,
+      codelist: [
+        { code: productCode, xorder: 0 },
+        { code: logicallySameCode, xorder: 1 },
+      ],
+    },
+  });
+  expect(duplicateProduct.status(), "reject logical duplicate Product codes after normalization").toBe(400);
+  expect(JSON.stringify(await duplicateProduct.json())).toContain("ซ้ำในหมวด");
   await clickButtonByText(page, /^จัดหมวดสินค้า$/);
   await page.waitForTimeout(2000);
   await clickGroupNumber(page, 19);
@@ -250,7 +443,7 @@ test("productcategorygroupselectscreen -> productcategorylist — create a 2-lev
   expect(childGuid).toBeTruthy();
   await page.waitForTimeout(1000);
 
-  // Switch to productcategorylist (same group) and bind a real product barcode into the leaf.
+  // Switch to productcategorylist (same group) and bind the Product master into the leaf.
   await page.goto("/productcategorylist", { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(2000);
   await clickGroupNumber(page, 19);
@@ -265,12 +458,21 @@ test("productcategorygroupselectscreen -> productcategorylist — create a 2-lev
   await clickTreeRowByText(page, childName);
   await page.waitForTimeout(800);
 
+  const pickerRequestUrls: string[] = [];
+  page.on("request", (request) => {
+    if (request.url().includes("/api/product")) pickerRequestUrls.push(request.url());
+  });
   await clickButtonByText(page, /เพิ่มสินค้า/);
   await page.waitForTimeout(800);
-  await page.fill('input[placeholder*="ค้นหาด้วยรหัสสินค้า"]', barcode);
+  const productDialog = page.getByRole("dialog", { name: "ค้นหาและเพิ่มสินค้า" });
+  await expect(productDialog).toBeVisible();
+  await expect(productDialog).not.toContainText("บาร์โค้ด");
+  await page.fill('input[placeholder*="ค้นหาด้วยรหัสสินค้า"]', productCode);
   await page.waitForTimeout(800);
   await clickButtonByText(page, /^เพิ่ม$/);
   await page.waitForTimeout(400);
+  expect(pickerRequestUrls.some((url) => url.includes("/api/product?")), "picker reads Product master API").toBe(true);
+  expect(pickerRequestUrls.some((url) => url.includes("/api/product-barcode")), "picker never reads ProductBarcode API").toBe(false);
   await clickButtonByText(page, /^ปิด$/);
   await page.waitForTimeout(400);
   await clickButtonByText(page, /^บันทึก$/);
@@ -278,22 +480,33 @@ test("productcategorygroupselectscreen -> productcategorylist — create a 2-lev
   expect(await bodyHasText(page, "บันทึกข้อมูลเรียบร้อยแล้ว")).toBe(true);
 
   // Verify via fresh API read: the tree really nests (child.parentguid === root.guidfixed) and the
-  // leaf's codelist really contains the bound barcode -- not just that the UI didn't error. Explicit
+  // leaf's codelist contains only the bound Product code -- not a barcode relation. Explicit
   // `limit` because group 19 also holds unrelated leftover data seeded in earlier sessions and the
   // backend's default page size is small enough to push this test's own just-created records off
   // the first page once enough other data accumulates.
-  const H = await getAuthHeaders(page);
   const catRes = await (
     await page.request.get(`${MAINAPI}/product/category/list?group-number=19&limit=100000`, { headers: H })
   ).json();
-  const records = catRes.data as { guidfixed: string; parentguid?: string; names: { code: string; name: string }[]; codelist?: { barcode: string }[] }[];
+  const records = catRes.data as {
+    guidfixed: string;
+    parentguid?: string;
+    names: { code: string; name: string }[];
+    codelist?: { code: string; barcode?: unknown }[];
+  }[];
   const root = records.find((r) => r.guidfixed === rootGuid);
   const child = records.find((r) => r.guidfixed === childGuid);
   expect(root, "root category present via API").toBeTruthy();
   expect(child, "subcategory present via API").toBeTruthy();
   expect(child!.parentguid, "subcategory nests under root").toBe(rootGuid);
-  const codelistBarcodes = (child!.codelist ?? []).map((c) => c.barcode);
-  expect(codelistBarcodes, "leaf codelist contains bound barcode").toContain(barcode);
+  const categoryProducts = child!.codelist ?? [];
+  expect(categoryProducts.map((item) => item.code), "leaf codelist contains Product code").toContain(productCode);
+  expect(categoryProducts.every((item) => !("barcode" in item)), "codelist is Product-only").toBe(true);
+
+  // Remove only the records created by this test; never touch pre-existing debug/orphan data.
+  const childDelete = await page.request.delete(`${MAINAPI}/product/category/${childGuid}`, { headers: H });
+  expect(childDelete.ok(), "cleanup test subcategory").toBe(true);
+  const rootDelete = await page.request.delete(`${MAINAPI}/product/category/${rootGuid}`, { headers: H });
+  expect(rootDelete.ok(), "cleanup test root category").toBe(true);
 });
 
 /**
@@ -547,4 +760,285 @@ test("productcategorygroupselectscreen — reparent via the real record+xsort AP
   expect(child2After!.parentguidall, "child2's ancestor chain includes root then child1").toBe(newParentGuidAll);
   expect(child1After!.parentguid, "child1 stays under root (untouched by the reparent)").toBe(rootGuid);
   expect(child1After!.xsorts?.[0]?.xorder, "child1 keeps xorder 1 under root").toBe(1);
+});
+
+/**
+ * Regression coverage for the 2026-07-09 port of `product-group-tree-view.tsx`'s per-row up/down
+ * move buttons + session-local Undo/Redo stack onto this screen's `product-category-tree-view.tsx`
+ * (up/down call the same `reorderCategory()` the drag handler uses; Undo/Redo replay moves through
+ * the real `saveCategoryRecord`/`saveXSorts` calls, not a local-only revert). Independently
+ * re-verified live this session via a fresh browser session (cleared localStorage/sessionStorage,
+ * redone dev-test-login) driving real button clicks and a real scripted pointer-drag reparent on
+ * group 1's seeded เครื่องดื่ม/ของใช้ในบ้าน/เครื่องเขียน tree, each step checked against a fresh API
+ * read — see `.agents/worklog.md` 2026-07-09. Mirrors `product-group-tree-crud.spec.ts`'s
+ * "up/down move buttons + undo/redo" test for the sibling screen.
+ */
+test("productcategorygroupselectscreen — up/down move buttons + undo/redo reorder and revert via the real xsort API", async ({
+  page,
+}) => {
+  const uid = Date.now().toString().slice(-6);
+  const rootName = `E2Eหมวดปุ่ม${uid}`;
+  const childNames = [`E2Eปุ่มลูก1_${uid}`, `E2Eปุ่มลูก2_${uid}`];
+
+  await loginAndSearchMenu(page, "จัดหมวดสินค้า");
+  await clickButtonByText(page, /^จัดหมวดสินค้า$/);
+  await page.waitForTimeout(2000);
+  await clickGroupNumber(page, 19);
+  await page.waitForTimeout(1200);
+
+  await clickButtonByText(page, /^เพิ่มหมวดหลัก$/);
+  await page.waitForTimeout(500);
+  await fillPrimaryNameInput(page, rootName);
+  const [rootRes] = await Promise.all([
+    page.waitForResponse(
+      (res) => res.url().includes("/api/system-settings/productcategorygroupselectscreen") && res.request().method() === "POST",
+    ),
+    clickButtonByText(page, /^บันทึก$/),
+  ]);
+  expect(rootRes.ok(), "create root category").toBe(true);
+  const rootGuid = ((await rootRes.json()) as { id: string }).id;
+  expect(rootGuid).toBeTruthy();
+  await page.waitForTimeout(1000);
+
+  const childGuids: string[] = [];
+  for (const childName of childNames) {
+    await clickTreeRowByText(page, rootName);
+    await page.waitForTimeout(500);
+    await clickButtonByText(page, /^เพิ่มหมวดย่อย$/);
+    await page.waitForTimeout(500);
+    await fillPrimaryNameInput(page, childName);
+    const [childRes] = await Promise.all([
+      page.waitForResponse(
+        (res) => res.url().includes("/api/system-settings/productcategorygroupselectscreen") && res.request().method() === "POST",
+      ),
+      clickButtonByText(page, /^บันทึก$/),
+    ]);
+    expect(childRes.ok(), `create subcategory ${childName}`).toBe(true);
+    const childGuid = ((await childRes.json()) as { id: string }).id;
+    expect(childGuid).toBeTruthy();
+    childGuids.push(childGuid);
+    await page.waitForTimeout(800);
+  }
+  const [child1Guid, child2Guid] = childGuids;
+
+  const H = await getAuthHeaders(page);
+  const listUrl = `${MAINAPI}/product/category/list?group-number=19&limit=100000`;
+
+  // Reload so the tree view picks up the freshly-created children (fresh JS memory, no stale
+  // in-memory overrides), then expand the root to reveal the up/down buttons on its children.
+  await page.goto("/productcategorygroupselectscreen", { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(2000);
+  await clickGroupNumber(page, 19);
+  await page.waitForTimeout(1200);
+  await page.evaluate((guid) => {
+    const row = document.querySelector<HTMLElement>(`[data-category-row-guid="${guid}"]`);
+    const toggle = row?.querySelector<HTMLButtonElement>('button[aria-label^="แสดงหมวดย่อย"]');
+    if (!toggle) throw new Error("No expand toggle found on root row");
+    toggle.click();
+  }, rootGuid);
+  await page.waitForTimeout(600);
+
+  const orderOf = async () => {
+    const data = ((await (await page.request.get(listUrl, { headers: H })).json()).data as {
+      guidfixed: string;
+      xsorts?: { xorder: number }[];
+    }[]);
+    return {
+      child1: data.find((r) => r.guidfixed === child1Guid)?.xsorts?.[0]?.xorder,
+      child2: data.find((r) => r.guidfixed === child2Guid)?.xsorts?.[0]?.xorder,
+    };
+  };
+
+  // Boundary check: the first sibling's up button and the last sibling's down button must be
+  // disabled (can't move a first child further up, or a last child further down).
+  const boundaryDisabled = await page.evaluate(({ c1, c2 }) => {
+    const row1 = document.querySelector<HTMLElement>(`[data-category-row-guid="${c1}"]`);
+    const row2 = document.querySelector<HTMLElement>(`[data-category-row-guid="${c2}"]`);
+    const up1 = row1?.querySelector<HTMLButtonElement>('button[aria-label="ย้ายขึ้น"]');
+    const down2 = row2?.querySelector<HTMLButtonElement>('button[aria-label="ย้ายลง"]');
+    return { firstUpDisabled: up1?.disabled, lastDownDisabled: down2?.disabled };
+  }, { c1: child1Guid, c2: child2Guid });
+  expect(boundaryDisabled.firstUpDisabled, "first sibling's up button is disabled").toBe(true);
+  expect(boundaryDisabled.lastDownDisabled, "last sibling's down button is disabled").toBe(true);
+
+  expect(await orderOf(), "children start in creation order").toEqual({ child1: 1, child2: 2 });
+
+  // Click the "ย้ายลง" (move down) button on child1's row -- calls the exact same `reorderCategory()`
+  // the drag handler uses, just with a fixed "before"/"after" target instead of a pointer position.
+  const [downRes] = await Promise.all([
+    page.waitForResponse((res) => res.url().includes("/xsort") && res.request().method() === "PUT"),
+    page.evaluate((guid) => {
+      const row = document.querySelector<HTMLElement>(`[data-category-row-guid="${guid}"]`);
+      const btn = row?.querySelector<HTMLButtonElement>('button[aria-label="ย้ายลง"]');
+      if (!btn) throw new Error("No move-down button found on child1's row");
+      btn.click();
+    }, child1Guid),
+  ]);
+  expect(downRes.ok(), "move-down xsort PUT").toBe(true);
+  expect(await orderOf(), "down button swapped child1/child2 via the real API").toEqual({ child1: 2, child2: 1 });
+
+  // Undo -- must revert through the real record/xsort API (`applyMoveSnapshot`), not just local state.
+  const [undoRes] = await Promise.all([
+    page.waitForResponse((res) => res.url().includes("/xsort") && res.request().method() === "PUT"),
+    clickButtonByText(page, /^เลิกทำ$/),
+  ]);
+  expect(undoRes.ok(), "undo xsort PUT").toBe(true);
+  expect(await orderOf(), "undo restored creation order via the real API").toEqual({ child1: 1, child2: 2 });
+
+  // Redo -- must reapply the exact same move via the real API.
+  const [redoRes] = await Promise.all([
+    page.waitForResponse((res) => res.url().includes("/xsort") && res.request().method() === "PUT"),
+    clickButtonByText(page, /^ทำซ้ำ$/),
+  ]);
+  expect(redoRes.ok(), "redo xsort PUT").toBe(true);
+  expect(await orderOf(), "redo re-applied the swap via the real API").toEqual({ child1: 2, child2: 1 });
+});
+
+/**
+ * Companion to the up/down + undo/redo test above -- the existing test only exercises a single
+ * linear undo-then-redo sequence, which does not catch a redo tail that fails to clear after a
+ * genuinely NEW move is made post-undo (i.e. a stale/leftover "future" branch of history incorrectly
+ * staying replayable after being superseded). Standard undo/redo semantics require a new action taken
+ * after an undo to discard that redo tail -- confirmed still correct here via live re-verification
+ * this session, mirroring `product-group-tree-crud.spec.ts`'s equivalent test for the sibling screen.
+ * Uses 3 siblings so "move A" and "move B" are unambiguously different operations (not just the same
+ * swap re-applied).
+ */
+test("productcategorygroupselectscreen — a new move after Undo clears the Redo tail (does not replay the undone move)", async ({
+  page,
+}) => {
+  const uid = Date.now().toString().slice(-6);
+  const rootName = `E2Eหมวดล้าง${uid}`;
+  const childNames = [`E2Eล้าง1_${uid}`, `E2Eล้าง2_${uid}`, `E2Eล้าง3_${uid}`];
+
+  await loginAndSearchMenu(page, "จัดหมวดสินค้า");
+  await clickButtonByText(page, /^จัดหมวดสินค้า$/);
+  await page.waitForTimeout(2000);
+  await clickGroupNumber(page, 19);
+  await page.waitForTimeout(1200);
+
+  await clickButtonByText(page, /^เพิ่มหมวดหลัก$/);
+  await page.waitForTimeout(500);
+  await fillPrimaryNameInput(page, rootName);
+  const [rootRes] = await Promise.all([
+    page.waitForResponse(
+      (res) => res.url().includes("/api/system-settings/productcategorygroupselectscreen") && res.request().method() === "POST",
+    ),
+    clickButtonByText(page, /^บันทึก$/),
+  ]);
+  expect(rootRes.ok(), "create root category").toBe(true);
+  const rootGuid = ((await rootRes.json()) as { id: string }).id;
+  expect(rootGuid).toBeTruthy();
+  await page.waitForTimeout(1000);
+
+  const childGuids: string[] = [];
+  for (const childName of childNames) {
+    await clickTreeRowByText(page, rootName);
+    await page.waitForTimeout(500);
+    await clickButtonByText(page, /^เพิ่มหมวดย่อย$/);
+    await page.waitForTimeout(500);
+    await fillPrimaryNameInput(page, childName);
+    const [childRes] = await Promise.all([
+      page.waitForResponse(
+        (res) => res.url().includes("/api/system-settings/productcategorygroupselectscreen") && res.request().method() === "POST",
+      ),
+      clickButtonByText(page, /^บันทึก$/),
+    ]);
+    expect(childRes.ok(), `create subcategory ${childName}`).toBe(true);
+    const childGuid = ((await childRes.json()) as { id: string }).id;
+    expect(childGuid).toBeTruthy();
+    childGuids.push(childGuid);
+    await page.waitForTimeout(800);
+  }
+  const [child1Guid, child2Guid, child3Guid] = childGuids;
+
+  const H = await getAuthHeaders(page);
+  const listUrl = `${MAINAPI}/product/category/list?group-number=19&limit=100000`;
+
+  await page.goto("/productcategorygroupselectscreen", { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(2000);
+  await clickGroupNumber(page, 19);
+  await page.waitForTimeout(1200);
+  await page.evaluate((guid) => {
+    const row = document.querySelector<HTMLElement>(`[data-category-row-guid="${guid}"]`);
+    const toggle = row?.querySelector<HTMLButtonElement>('button[aria-label^="แสดงหมวดย่อย"]');
+    if (!toggle) throw new Error("No expand toggle found on root row");
+    toggle.click();
+  }, rootGuid);
+  await page.waitForTimeout(600);
+
+  const orderOf = async () => {
+    const data = ((await (await page.request.get(listUrl, { headers: H })).json()).data as {
+      guidfixed: string;
+      xsorts?: { xorder: number }[];
+    }[]);
+    return {
+      child1: data.find((r) => r.guidfixed === child1Guid)?.xsorts?.[0]?.xorder,
+      child2: data.find((r) => r.guidfixed === child2Guid)?.xsorts?.[0]?.xorder,
+      child3: data.find((r) => r.guidfixed === child3Guid)?.xsorts?.[0]?.xorder,
+    };
+  };
+  const clickMoveDown = async (guid: string) => {
+    const [res] = await Promise.all([
+      page.waitForResponse((r) => r.url().includes("/xsort") && r.request().method() === "PUT"),
+      page.evaluate((g) => {
+        const row = document.querySelector<HTMLElement>(`[data-category-row-guid="${g}"]`);
+        const btn = row?.querySelector<HTMLButtonElement>('button[aria-label="ย้ายลง"]');
+        if (!btn) throw new Error("No move-down button found");
+        btn.click();
+      }, guid),
+    ]);
+    expect(res.ok(), "move-down xsort PUT").toBe(true);
+  };
+
+  expect(await orderOf(), "children start in creation order").toEqual({ child1: 1, child2: 2, child3: 3 });
+
+  // Move A: swap child1/child2 (down-button on child1) -> child2, child1, child3.
+  await clickMoveDown(child1Guid);
+  expect(await orderOf(), "move A applied").toEqual({ child1: 2, child2: 1, child3: 3 });
+
+  // Undo move A -> back to creation order.
+  const [undoRes] = await Promise.all([
+    page.waitForResponse((res) => res.url().includes("/xsort") && res.request().method() === "PUT"),
+    clickButtonByText(page, /^เลิกทำ$/),
+  ]);
+  expect(undoRes.ok(), "undo xsort PUT").toBe(true);
+  expect(await orderOf(), "undo reverted move A").toEqual({ child1: 1, child2: 2, child3: 3 });
+
+  // Redo button must be enabled here (move A is replayable) before we supersede it.
+  const redoEnabledBeforeMoveB = await page.evaluate(() => {
+    const btn = [...document.querySelectorAll<HTMLButtonElement>("button")].find(
+      (b) => (b.textContent ?? "").trim() === "ทำซ้ำ",
+    );
+    return btn ? !btn.disabled : null;
+  });
+  expect(redoEnabledBeforeMoveB, "redo is enabled right after undo, before move B").toBe(true);
+
+  // Move B: a DIFFERENT move (swap child2/child3 via down-button on child2) -> child1, child3, child2.
+  await clickMoveDown(child2Guid);
+  expect(await orderOf(), "move B applied").toEqual({ child1: 1, child2: 3, child3: 2 });
+
+  // The redo tail (move A) must now be cleared -- the button must be disabled, not just unclicked.
+  const redoDisabledAfterMoveB = await page.evaluate(() => {
+    const btn = [...document.querySelectorAll<HTMLButtonElement>("button")].find(
+      (b) => (b.textContent ?? "").trim() === "ทำซ้ำ",
+    );
+    return btn ? btn.disabled : null;
+  });
+  expect(redoDisabledAfterMoveB, "redo is disabled after a new move supersedes the undone one").toBe(true);
+
+  // Order must still reflect move B (not move A) -- fresh API read, not optimistic state.
+  expect(await orderOf(), "order reflects move B, unaffected by the cleared redo tail").toEqual({
+    child1: 1,
+    child2: 3,
+    child3: 2,
+  });
+
+  // Undo move B, back to creation order, for a clean final state.
+  const [undoBRes] = await Promise.all([
+    page.waitForResponse((res) => res.url().includes("/xsort") && res.request().method() === "PUT"),
+    clickButtonByText(page, /^เลิกทำ$/),
+  ]);
+  expect(undoBRes.ok(), "undo move B xsort PUT").toBe(true);
+  expect(await orderOf(), "undo move B restored creation order").toEqual({ child1: 1, child2: 2, child3: 3 });
 });

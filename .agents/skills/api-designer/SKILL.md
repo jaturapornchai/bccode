@@ -1,6 +1,6 @@
 ---
 name: api-designer
-description: Use when designing or reviewing REST APIs for BC Account.
+description: Use when designing or reviewing REST APIs for BC Ai Account.
 ---
 
 ## 1. REST Standards & Versioning

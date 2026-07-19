@@ -18,7 +18,7 @@ type IProductBarcodeConsumeService interface {
 	UpdateProductUnit(holdingCode string, doc models.ProductUnit) error
 	UpdateProductOrderType(holdingCode string, doc models.ProductOrderType) error
 	UpSert(holdingCode string, barcode string, doc models.ProductBarcodeDoc) (*models.ProductBarcodePg, error)
-	Delete(ctx context.Context, holdingCode string, barcode string) error
+	Delete(ctx context.Context, holdingCode string, itemCode string, barcode string) error
 	ReSync(holdingCode string) error
 }
 
@@ -52,7 +52,13 @@ func (svc ProductBarcodeConsumeService) UpdateRefBarcode(holdingCode string, doc
 
 	refProductBarcode := doc.ToRefBarcode()
 
-	err := svc.productMongoRepo.UpdateRefBarcodeByGUID(context.Background(), holdingCode, doc.GuidFixed, refProductBarcode)
+	err := svc.productMongoRepo.UpdateRefBarcodeByKey(
+		context.Background(),
+		holdingCode,
+		doc.ItemCode,
+		doc.Barcode,
+		refProductBarcode,
+	)
 
 	if err != nil {
 		return err
@@ -72,7 +78,7 @@ func (svc ProductBarcodeConsumeService) UpdateProductType(holdingCode string, do
 }
 
 func (svc ProductBarcodeConsumeService) UpdateProductGroup(holdingCode string, doc models.ProductGroup) error {
-	err := svc.productMongoRepo.UpdateAllProductGroupByCode(context.Background(), holdingCode, doc)
+	err := svc.productMongoRepo.UpdateAllProductGroup(context.Background(), holdingCode, doc)
 
 	if err != nil {
 		return err
@@ -108,13 +114,13 @@ func (svc ProductBarcodeConsumeService) UpSert(holdingCode string, barcode strin
 		return nil, err
 	}
 
-	findbarcodePG, err := svc.productPgRepo.Get(holdingCode, pgDoc.Barcode)
+	findbarcodePG, err := svc.productPgRepo.GetByKey(holdingCode, pgDoc.ItemCode, pgDoc.Barcode)
 	if err != nil {
 		return nil, err
 	}
 
 	if findbarcodePG != nil {
-		err = svc.productPgRepo.Update(holdingCode, pgDoc.Barcode, pgDoc)
+		err = svc.productPgRepo.Update(holdingCode, pgDoc.ItemCode, pgDoc.Barcode, pgDoc)
 	} else {
 		err = svc.productPgRepo.Create(pgDoc)
 	}
@@ -126,9 +132,9 @@ func (svc ProductBarcodeConsumeService) UpSert(holdingCode string, barcode strin
 	return pgDoc, nil
 }
 
-func (svc ProductBarcodeConsumeService) Delete(ctx context.Context, holdingCode string, barcode string) error {
+func (svc ProductBarcodeConsumeService) Delete(ctx context.Context, holdingCode string, itemCode string, barcode string) error {
 
-	err := svc.productPgRepo.Delete(holdingCode, barcode)
+	err := svc.productPgRepo.Delete(holdingCode, itemCode, barcode)
 	if err != nil {
 		return err
 	}

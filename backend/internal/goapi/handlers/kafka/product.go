@@ -9,6 +9,7 @@ import (
 	"smlcloudplatform/internal/goapi/mypg"
 	build "smlcloudplatform/internal/goapi/process/build"
 	processstock "smlcloudplatform/internal/goapi/process/process-stock"
+	"smlcloudplatform/internal/utils"
 )
 
 // MongoProductModel — minimal projection of the mainapi ProductDoc payload
@@ -27,6 +28,7 @@ func OnConsumeMessageProductCreateOrUpdate(msg string) error {
 		logger.Error("unmarshaling product: %v", err)
 		return err
 	}
+	p.Code = utils.NormalizeBusinessCode(p.Code)
 	if p.HoldingCode == "" || p.Code == "" {
 		logger.Warn("Product message missing HoldingCode or Code")
 		return fmt.Errorf("missing HoldingCode or Code for product upsert")
@@ -70,6 +72,7 @@ func OnConsumeMessageProductDelete(msg string) error {
 		logger.Error("unmarshaling product for deletion: %v", err)
 		return err
 	}
+	p.Code = utils.NormalizeBusinessCode(p.Code)
 	if p.HoldingCode == "" || p.Code == "" {
 		return fmt.Errorf("missing HoldingCode or Code for product deletion")
 	}

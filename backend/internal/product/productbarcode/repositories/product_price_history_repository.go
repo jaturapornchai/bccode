@@ -17,7 +17,7 @@ type IProductPriceHistoryRepository interface {
 	FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error)
 	FindPageFilter(ctx context.Context, holdingCode string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error)
 	FindByProductBarcode(ctx context.Context, holdingCode string, productBarcodeGUID string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error)
-	FindByBarcode(ctx context.Context, holdingCode string, barcode string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error)
+	FindByBusinessKey(ctx context.Context, holdingCode string, itemCode string, barcode string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error)
 	CountByDateRange(ctx context.Context, holdingCode string, fromDate, toDate time.Time) (int, error)
 }
 
@@ -43,17 +43,18 @@ func (repo ProductPriceHistoryRepository) FindByProductBarcode(ctx context.Conte
 		"productbarcodeguid": productBarcodeGUID,
 	}
 
-	searchInFields := []string{"barcode", "productname", "createdby"}
+	searchInFields := []string{"itemcode", "barcode", "productname", "createdby"}
 
 	return repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 }
 
-func (repo ProductPriceHistoryRepository) FindByBarcode(ctx context.Context, holdingCode string, barcode string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error) {
+func (repo ProductPriceHistoryRepository) FindByBusinessKey(ctx context.Context, holdingCode string, itemCode string, barcode string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error) {
 	filters := map[string]interface{}{
-		"barcode": barcode,
+		"itemcode": itemCode,
+		"barcode":  barcode,
 	}
 
-	searchInFields := []string{"barcode", "productname", "createdby"}
+	searchInFields := []string{"itemcode", "barcode", "productname", "createdby"}
 
 	return repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
 }

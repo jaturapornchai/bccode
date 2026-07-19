@@ -58,7 +58,7 @@ func run() error {
 		return err
 	}
 	objectKey := fmt.Sprintf("%s/__r2_private_smoke__/%s.txt", cfg.HoldingCode, suffix)
-	body := []byte("bc account r2 private smoke " + time.Now().UTC().Format(time.RFC3339Nano))
+	body := []byte("bc ai account r2 private smoke " + time.Now().UTC().Format(time.RFC3339Nano))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()

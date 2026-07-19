@@ -14,7 +14,7 @@ import (
 )
 
 type ISaleInvoiceBomPriceService interface {
-	CreateSaleInvoiceBomPrice(holdingCode string, authUsername string, docNo string, bomGUID string, bomBarcodes []string) (string, error)
+	CreateSaleInvoiceBomPrice(holdingCode string, authUsername string, docNo string, bomGUID string, bomBarcodes []models.SaleInvoiceBarcodeKey) (string, error)
 	DeleteSaleInvoiceBomPrice(holdingCode string, guid string, authUsername string) error
 	InfoSaleInvoiceBomPrice(holdingCode string, guid string) (models.SaleInvoiceBomPriceInfo, error)
 	InfoSaleInvoiceBomPriceByCode(holdingCode string, code string) (models.SaleInvoiceBomPriceInfo, error)
@@ -51,7 +51,7 @@ func (svc SaleInvoiceBomPriceService) getContextTimeout() (context.Context, cont
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc SaleInvoiceBomPriceService) CreateSaleInvoiceBomPrice(holdingCode string, authUsername string, docNo string, bomGUID string, bomBarcodes []string) (string, error) {
+func (svc SaleInvoiceBomPriceService) CreateSaleInvoiceBomPrice(holdingCode string, authUsername string, docNo string, bomGUID string, bomBarcodes []models.SaleInvoiceBarcodeKey) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -69,12 +69,13 @@ func (svc SaleInvoiceBomPriceService) CreateSaleInvoiceBomPrice(holdingCode stri
 	dataDoc.Prices = []models.SaleInvoicePrice{}
 	for _, barcode := range bomBarcodes {
 		price := models.SaleInvoicePrice{}
-		price.Barcode = barcode
+		price.ItemCode = barcode.ItemCode
+		price.Barcode = barcode.Barcode
 		dataDoc.Prices = append(dataDoc.Prices, price)
 	}
 
 	dataDoc.CreatedBy = authUsername
-	dataDoc.CreatedAt = time.Now()
+	dataDoc.CreatedAt = time.Now().UTC()
 
 	_, err := svc.repo.Create(ctx, dataDoc)
 

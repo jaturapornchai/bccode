@@ -61,3 +61,9 @@ backend/internal/**/logs/
 # BuildKit on this machine; see worklog 2026-07-05) — multi-GB, never commit
 /.gocache-build/
 /.gocache-mod/
+
+# junction -> backend/internal/goapi/models (avoid duplicate tracking)
+/datamodel/
+
+# third-party 3D graph viewer app (cloned, not ours)
+/jarvisui/

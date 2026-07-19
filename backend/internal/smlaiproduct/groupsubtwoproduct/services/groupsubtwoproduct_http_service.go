@@ -75,6 +75,14 @@ func (svc GroupsubtwoProductHttpService) getContextTimeout() (context.Context, c
 
 func (svc GroupsubtwoProductHttpService) CreateGroupsubtwoProduct(holdingCode string, authUsername string, doc models.GroupsubtwoProduct) (string, error) {
 
+	// Business Code Uppercase + No-Space rules: the backend normalizes codes
+	// itself (never trust the client) so "test br7854" persists as "TESTBR7854"
+	// and duplicate checks compare the same normalized form.
+	doc.Code = utils.NormalizeBusinessCode(doc.Code)
+	if doc.Code == "" {
+		return "", errors.New("code is required")
+	}
+
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
@@ -108,6 +116,12 @@ func (svc GroupsubtwoProductHttpService) CreateGroupsubtwoProduct(holdingCode st
 }
 
 func (svc GroupsubtwoProductHttpService) UpdateGroupsubtwoProduct(holdingCode string, guid string, authUsername string, doc models.GroupsubtwoProduct) error {
+
+	// Same business-code normalization as Create (uppercase, no whitespace).
+	doc.Code = utils.NormalizeBusinessCode(doc.Code)
+	if doc.Code == "" {
+		return errors.New("code is required")
+	}
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()

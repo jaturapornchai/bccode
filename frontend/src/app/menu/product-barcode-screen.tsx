@@ -49,7 +49,10 @@ import {
   listBarcodes,
   updateBarcode,
 } from "@/lib/product-barcode/api";
-import { rawToProductBarcode, toNumberOrNull } from "@/lib/product-barcode/utils";
+import {
+  rawToProductBarcode,
+  toNumberOrNull,
+} from "@/lib/product-barcode/utils";
 import { cn } from "@/lib/utils";
 import {
   localizedName,
@@ -60,7 +63,10 @@ import {
   WORKSPACE_CHANGED_EVENT,
 } from "@/lib/workspace-models";
 import { languageCodesFromWorkspace } from "@/components/product-barcode/names-editor";
-import { getBarcodeText, type BarcodeText } from "@/lib/product-barcode/language";
+import {
+  getBarcodeText,
+  type BarcodeText,
+} from "@/lib/product-barcode/language";
 import { pushNotice } from "@/lib/toast";
 
 type ProductBarcodeScreenProps = {
@@ -166,7 +172,10 @@ const PRODUCT_SPLIT_MAX_LEFT = 95;
 
 function clampProductSplitLeft(value: number) {
   if (!Number.isFinite(value)) return PRODUCT_SPLIT_DEFAULT_LEFT;
-  return Math.min(PRODUCT_SPLIT_MAX_LEFT, Math.max(PRODUCT_SPLIT_MIN_LEFT, value));
+  return Math.min(
+    PRODUCT_SPLIT_MAX_LEFT,
+    Math.max(PRODUCT_SPLIT_MIN_LEFT, value),
+  );
 }
 
 type BarcodeApiResponse = {
@@ -178,7 +187,10 @@ type BarcodeApiResponse = {
 
 const pageSize = 80;
 
-export function ProductBarcodeScreen({ embedded = false, language = "th" }: ProductBarcodeScreenProps) {
+export function ProductBarcodeScreen({
+  embedded = false,
+  language = "th",
+}: ProductBarcodeScreenProps) {
   const lang = normalizeLanguage(language);
   const text = getBarcodeText(lang);
   const { confirm, confirmationDialog } = useConfirmDialog();
@@ -186,7 +198,9 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
   const [auth, setAuth] = useState<AuthSession | null>(null);
   const [workspace, setWorkspace] = useState<WorkspaceSession | null>(null);
   const [items, setItems] = useState<ProductBarcodeRecord[]>([]);
-  const [detailItems, setDetailItems] = useState<Record<string, ProductBarcodeRecord>>({});
+  const [detailItems, setDetailItems] = useState<
+    Record<string, ProductBarcodeRecord>
+  >({});
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const setNotice = pushNotice;
@@ -202,15 +216,19 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
   const [filterOpen, setFilterOpen] = useState(false);
   const [showImage, setShowImage] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
-  const [selectedBarcode, setSelectedBarcode] = useState("");
+  const [selectedKey, setSelectedKey] = useState("");
   const [checkedBarcodes, setCheckedBarcodes] = useState<string[]>([]);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorMode, setEditorMode] = useState<"create" | "edit">("create");
   const [editorGuid, setEditorGuid] = useState("");
-  const [editorBarcode, setEditorBarcode] = useState<ProductBarcodeObject>(() => emptyProductBarcode());
+  const [editorBarcode, setEditorBarcode] = useState<ProductBarcodeObject>(() =>
+    emptyProductBarcode(),
+  );
   const [editorDirty, setEditorDirty] = useState(false);
   const [editorSaving, setEditorSaving] = useState(false);
-  const [splitLeftPercent, setSplitLeftPercent] = useState(PRODUCT_SPLIT_DEFAULT_LEFT);
+  const [splitLeftPercent, setSplitLeftPercent] = useState(
+    PRODUCT_SPLIT_DEFAULT_LEFT,
+  );
   const [resizingSplit, setResizingSplit] = useState(false);
   const splitContainerRef = useRef<HTMLDivElement | null>(null);
   const loadBarcodesAbortRef = useRef<AbortController | undefined>(undefined);
@@ -250,7 +268,10 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
     window.addEventListener(WORKSPACE_CHANGED_EVENT, handleWorkspaceChange);
     window.addEventListener("storage", handleWorkspaceChange);
     return () => {
-      window.removeEventListener(WORKSPACE_CHANGED_EVENT, handleWorkspaceChange);
+      window.removeEventListener(
+        WORKSPACE_CHANGED_EVENT,
+        handleWorkspaceChange,
+      );
       window.removeEventListener("storage", handleWorkspaceChange);
     };
   }, []);
@@ -264,19 +285,25 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
   }, []);
 
   const activeHoldingCode = workspace?.shop.holdingcode ?? "";
-  const shopLanguages = useMemo(() => languageCodesFromWorkspace(workspace), [workspace]);
+  const shopLanguages = useMemo(
+    () => languageCodesFromWorkspace(workspace),
+    [workspace],
+  );
 
   const selectedBase = useMemo(
-    () => items.find((item) => item.barcode === selectedBarcode) ?? items[0] ?? null,
-    [items, selectedBarcode],
+    () =>
+      items.find((item) => barcodeIdentity(item) === selectedKey) ??
+      items[0] ??
+      null,
+    [items, selectedKey],
   );
   const selected = useMemo(() => {
     if (!selectedBase) return null;
     return detailItems[detailKey(selectedBase)] ?? selectedBase;
   }, [detailItems, selectedBase]);
   const selectedIndex = useMemo(
-    () => items.findIndex((item) => item.barcode === selectedBarcode),
-    [items, selectedBarcode],
+    () => items.findIndex((item) => barcodeIdentity(item) === selectedKey),
+    [items, selectedKey],
   );
 
   const productSplitStyle = useMemo(
@@ -350,18 +377,26 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
     setResizingSplit(false);
     setSplitLeftPercent((current) => {
       if (typeof window !== "undefined") {
-        window.localStorage.setItem(PRODUCT_SPLIT_STORAGE_KEY, String(Math.round(current)));
+        window.localStorage.setItem(
+          PRODUCT_SPLIT_STORAGE_KEY,
+          String(Math.round(current)),
+        );
       }
       return current;
     });
   }, []);
 
-  const adjustSplitWithKeyboard = useCallback((event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
-    event.preventDefault();
-    const direction = event.key === "ArrowLeft" ? -2 : 2;
-    setSplitLeftPercent((current) => clampProductSplitLeft(current + direction));
-  }, []);
+  const adjustSplitWithKeyboard = useCallback(
+    (event: KeyboardEvent<HTMLDivElement>) => {
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      event.preventDefault();
+      const direction = event.key === "ArrowLeft" ? -2 : 2;
+      setSplitLeftPercent((current) =>
+        clampProductSplitLeft(current + direction),
+      );
+    },
+    [],
+  );
 
   const activeFilterCount = useMemo(
     () => Object.values(filters).filter((value) => value.trim() !== "").length,
@@ -408,21 +443,38 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
       setItems(nextItems);
       setTotal(Number(data.total ?? nextItems.length));
       setDetailItems({});
-      setSelectedBarcode((current) => {
-        if (current && nextItems.some((item) => item.barcode === current)) return current;
-        return nextItems[0]?.barcode ?? "";
+      setSelectedKey((current) => {
+        if (
+          current &&
+          nextItems.some((item) => barcodeIdentity(item) === current)
+        )
+          return current;
+        return nextItems[0] ? barcodeIdentity(nextItems[0]) : "";
       });
       setCheckedBarcodes([]);
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") return;
       setItems([]);
       setTotal(0);
-      setSelectedBarcode("");
-      setNotice({ type: "error", text: error instanceof Error && error.message ? error.message : text.requestFailed });
+      setSelectedKey("");
+      setNotice({
+        type: "error",
+        text:
+          error instanceof Error && error.message
+            ? error.message
+            : text.requestFailed,
+      });
     } finally {
       if (!controller.signal.aborted) setLoading(false);
     }
-  }, [activeHoldingCode, auth, debouncedFilters, search, text.apiRequired, text.requestFailed]);
+  }, [
+    activeHoldingCode,
+    auth,
+    debouncedFilters,
+    search,
+    text.apiRequired,
+    text.requestFailed,
+  ]);
 
   const loadBarcodeDetail = useCallback(
     async (item: ProductBarcodeRecord) => {
@@ -435,20 +487,25 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
       loadDetailAbortRef.current = controller;
 
       try {
-        const response = await fetch(`/api/product-barcode/${encodeURIComponent(item.guidFixed)}`, {
-          method: "GET",
-          headers: {
-            "x-bc-backend-url": auth.backendUrl,
-            Authorization: `Bearer ${auth.token}`,
+        const response = await fetch(
+          `/api/product-barcode/${encodeURIComponent(item.guidFixed)}`,
+          {
+            method: "GET",
+            headers: {
+              "x-bc-backend-url": auth.backendUrl,
+              Authorization: `Bearer ${auth.token}`,
+            },
+            signal: controller.signal,
           },
-          signal: controller.signal,
-        });
+        );
         const data = (await response.json()) as BarcodeApiResponse;
         if (!response.ok || data.success === false) return;
 
         const detail = extractBarcodeRecordPayload(data.data);
         if (!detail) return;
-        const mergedDetail = isRecord(detail) ? { ...item.raw, ...detail } : detail;
+        const mergedDetail = isRecord(detail)
+          ? { ...item.raw, ...detail }
+          : detail;
         const normalized = normalizeBarcodeRecord(mergedDetail);
         setDetailItems((current) => ({ ...current, [key]: normalized }));
       } catch (error) {
@@ -474,7 +531,9 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
 
   function toggleChecked(barcode: string) {
     setCheckedBarcodes((current) =>
-      current.includes(barcode) ? current.filter((item) => item !== barcode) : [...current, barcode],
+      current.includes(barcode)
+        ? current.filter((item) => item !== barcode)
+        : [...current, barcode],
     );
   }
 
@@ -487,7 +546,9 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
     if (!editorOpen || !editorDirty) return true;
     return confirm({
       title: text.unsavedConfirm,
-      description: editorBarcode.barcode ? `${text.barcode}: ${editorBarcode.barcode}` : undefined,
+      description: editorBarcode.barcode
+        ? `${text.barcode}: ${editorBarcode.barcode}`
+        : undefined,
       details: text.unsavedDetail,
       confirmLabel: text.discardLabel,
       cancelLabel: text.close,
@@ -502,7 +563,11 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
     setEditorDirty(false);
   }
 
-  function handleEditorChange(next: ProductBarcodeObject | ((current: ProductBarcodeObject) => ProductBarcodeObject)) {
+  function handleEditorChange(
+    next:
+      | ProductBarcodeObject
+      | ((current: ProductBarcodeObject) => ProductBarcodeObject),
+  ) {
     setEditorDirty(true);
     setEditorBarcode(next);
   }
@@ -511,7 +576,7 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
     if (!(await canDiscardEditor())) return;
     setEditorOpen(false);
     setEditorDirty(false);
-    setSelectedBarcode(item.barcode);
+    setSelectedKey(barcodeIdentity(item));
   }
 
   function selectRowByIndex(nextIndex: number) {
@@ -563,7 +628,7 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
     const target = itemOverride ?? selected;
     if (!target) return;
     setEditorMode("edit");
-    setSelectedBarcode(target.barcode);
+    setSelectedKey(barcodeIdentity(target));
     setEditorGuid(target.guidFixed);
     setEditorDirty(false);
     const base = emptyProductBarcode();
@@ -588,7 +653,9 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
   }
 
   function copyCurrentEditorValue() {
-    const next = JSON.parse(JSON.stringify(editorBarcode)) as ProductBarcodeObject;
+    const next = JSON.parse(
+      JSON.stringify(editorBarcode),
+    ) as ProductBarcodeObject;
     next.guidfixed = "";
     next.holdingcode = activeHoldingCode;
     setEditorMode("create");
@@ -635,7 +702,13 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
       await loadBarcodes();
       setNotice({ type: "success", text: text.saveSuccess });
     } catch (error) {
-      setNotice({ type: "error", text: error instanceof Error && error.message ? error.message : text.requestFailed });
+      setNotice({
+        type: "error",
+        text:
+          error instanceof Error && error.message
+            ? error.message
+            : text.requestFailed,
+      });
     } finally {
       setEditorSaving(false);
     }
@@ -647,8 +720,12 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
       return;
     }
 
-    const selectedItems = items.filter((item, index) => checkedBarcodes.includes(barcodeRowKey(item, index)));
-    const guids = selectedItems.map((item) => item.guidFixed.trim()).filter(Boolean);
+    const selectedItems = items.filter((item) =>
+      checkedBarcodes.includes(barcodeRowKey(item)),
+    );
+    const guids = selectedItems
+      .map((item) => item.guidFixed.trim())
+      .filter(Boolean);
     if (guids.length === 0) {
       setNotice({ type: "error", text: text.missingGuid });
       return;
@@ -657,7 +734,11 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
     const confirmed = await confirm({
       title: text.deleteConfirm,
       description: `${text.selected}: ${guids.length.toLocaleString(lang === "th" ? "th-TH" : "en-US")}`,
-      details: selectedItems.slice(0, 8).map((item) => item.barcode).filter(Boolean).join(", "),
+      details: selectedItems
+        .slice(0, 8)
+        .map((item) => item.barcode)
+        .filter(Boolean)
+        .join(", "),
       confirmLabel: text.delete,
       cancelLabel: text.close,
       tone: "danger",
@@ -677,7 +758,13 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
       await loadBarcodes();
       setNotice({ type: "success", text: text.deleteSuccess });
     } catch (error) {
-      setNotice({ type: "error", text: error instanceof Error && error.message ? error.message : text.requestFailed });
+      setNotice({
+        type: "error",
+        text:
+          error instanceof Error && error.message
+            ? error.message
+            : text.requestFailed,
+      });
     } finally {
       setLoading(false);
     }
@@ -690,7 +777,11 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
     }
 
     const target = itemOverride ?? selected;
-    const guid = (target?.guidFixed || editorGuid || String(editorBarcode.guidfixed ?? "")).trim();
+    const guid = (
+      target?.guidFixed ||
+      editorGuid ||
+      String(editorBarcode.guidfixed ?? "")
+    ).trim();
     if (!guid) {
       setNotice({ type: "error", text: text.missingGuid });
       return;
@@ -724,7 +815,13 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
       await loadBarcodes();
       setNotice({ type: "success", text: text.deleteSuccess });
     } catch (error) {
-      setNotice({ type: "error", text: error instanceof Error && error.message ? error.message : text.requestFailed });
+      setNotice({
+        type: "error",
+        text:
+          error instanceof Error && error.message
+            ? error.message
+            : text.requestFailed,
+      });
     } finally {
       setLoading(false);
     }
@@ -733,57 +830,84 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
   const content = (
     <div
       className={cn(
-        embedded ? "flex h-full min-h-0 w-full min-w-0 flex-col gap-3 overflow-hidden" : "grid w-full min-w-0 gap-3",
+        embedded
+          ? "flex h-full min-h-0 w-full min-w-0 flex-col gap-3 overflow-hidden"
+          : "grid w-full min-w-0 gap-3",
       )}
     >
       {!embedded ? (
-      <header className="rounded-2xl border border-border bg-card p-3 shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="flex min-w-0 items-start gap-3">
-            <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
-              <Barcode size={22} />
-            </span>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase text-muted-foreground">BC AI ACCOUNT</p>
-              <h1 className="truncate text-3xl font-semibold leading-tight">{text.title}</h1>
-              <p className="text-sm text-muted-foreground">{text.subtitle}</p>
+        <header className="rounded-2xl border border-border bg-card p-3 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex min-w-0 items-start gap-3">
+              <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
+                <Barcode size={22} />
+              </span>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">
+                  BC Ai Account
+                </p>
+                <h1 className="truncate text-3xl font-semibold leading-tight">
+                  {text.title}
+                </h1>
+                <p className="text-sm text-muted-foreground">{text.subtitle}</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void loadBarcodes()}
+                disabled={loading}
+              >
+                <RefreshCcw size={16} />
+                {text.refresh}
+              </Button>
+              <Button
+                variant={selectMode ? "secondary" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setSelectMode((current) => !current);
+                  setCheckedBarcodes([]);
+                }}
+              >
+                {selectMode ? <X size={16} /> : <CheckSquare size={16} />}
+                {selectMode ? text.cancelSelect : text.selectDelete}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void deleteSelected()}
+                disabled={!selectMode || checkedBarcodes.length === 0}
+              >
+                <Trash2 size={16} />
+                {checkedBarcodes.length || ""}
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => void openCopyEditor()}
+                disabled={!selected}
+              >
+                <Copy size={16} />
+                คัดลอก
+              </Button>
+              <Button size="sm" onClick={() => void openCreateEditor()}>
+                <Plus size={16} />
+                {text.add}
+              </Button>
             </div>
           </div>
-          <div className="flex flex-wrap justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => void loadBarcodes()} disabled={loading}>
-              <RefreshCcw size={16} />
-              {text.refresh}
-            </Button>
-            <Button
-              variant={selectMode ? "secondary" : "outline"}
-              size="sm"
-              onClick={() => {
-                setSelectMode((current) => !current);
-                setCheckedBarcodes([]);
-              }}
-            >
-              {selectMode ? <X size={16} /> : <CheckSquare size={16} />}
-              {selectMode ? text.cancelSelect : text.selectDelete}
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => void deleteSelected()} disabled={!selectMode || checkedBarcodes.length === 0}>
-              <Trash2 size={16} />
-              {checkedBarcodes.length || ""}
-            </Button>
-            <Button size="sm" onClick={() => void openCopyEditor()} disabled={!selected}>
-              <Copy size={16} />
-              คัดลอก
-            </Button>
-            <Button size="sm" onClick={() => void openCreateEditor()}>
-              <Plus size={16} />
-              {text.add}
-            </Button>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Badge variant="outline">
+              {text.total}: {total.toLocaleString("th-TH")}
+            </Badge>
+            {selectMode ? (
+              <Badge variant="warning">
+                {text.selected}:{" "}
+                {checkedBarcodes.length.toLocaleString("th-TH")}
+              </Badge>
+            ) : null}
           </div>
-        </div>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Badge variant="outline">{text.total}: {total.toLocaleString("th-TH")}</Badge>
-          {selectMode ? <Badge variant="warning">{text.selected}: {checkedBarcodes.length.toLocaleString("th-TH")}</Badge> : null}
-        </div>
-      </header>
+        </header>
       ) : null}
 
       {embedded ? (
@@ -793,15 +917,34 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
             <p className="text-xs text-muted-foreground">{text.subtitle}</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" type="button" onClick={() => void loadBarcodes()} disabled={loading}>
-              {loading ? <Loader2 size={16} className="animate-spin" /> : <RefreshCcw size={16} />}
+            <Button
+              variant="outline"
+              size="sm"
+              type="button"
+              onClick={() => void loadBarcodes()}
+              disabled={loading}
+            >
+              {loading ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <RefreshCcw size={16} />
+              )}
               {text.refresh}
             </Button>
-            <Button size="sm" type="button" onClick={() => void openCopyEditor()} disabled={!selected}>
+            <Button
+              size="sm"
+              type="button"
+              onClick={() => void openCopyEditor()}
+              disabled={!selected}
+            >
               <Copy size={16} />
               คัดลอก
             </Button>
-            <Button size="sm" type="button" onClick={() => void openCreateEditor()}>
+            <Button
+              size="sm"
+              type="button"
+              onClick={() => void openCreateEditor()}
+            >
               <Plus size={16} />
               {text.add}
             </Button>
@@ -835,12 +978,24 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
                   placeholder={text.search}
                 />
               </div>
-              <Button variant={filterOpen ? "secondary" : "outline"} size="sm" type="button" onClick={() => setFilterOpen((current) => !current)}>
+              <Button
+                variant={filterOpen ? "secondary" : "outline"}
+                size="sm"
+                type="button"
+                onClick={() => setFilterOpen((current) => !current)}
+              >
                 <Filter size={16} />
                 {text.filter}
-                {activeFilterCount > 0 ? <Badge variant="warning">{activeFilterCount}</Badge> : null}
+                {activeFilterCount > 0 ? (
+                  <Badge variant="warning">{activeFilterCount}</Badge>
+                ) : null}
               </Button>
-              <Button variant="outline" size="sm" type="button" onClick={() => setShowImage((current) => !current)}>
+              <Button
+                variant="outline"
+                size="sm"
+                type="button"
+                onClick={() => setShowImage((current) => !current)}
+              >
                 {showImage ? <ImageOff size={16} /> : <ImageIcon size={16} />}
                 {text.image}
               </Button>
@@ -858,7 +1013,13 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
                     {selectMode ? <X size={16} /> : <CheckSquare size={16} />}
                     {selectMode ? text.cancelSelect : text.selectDelete}
                   </Button>
-                  <Button variant="outline" size="sm" type="button" onClick={() => void deleteSelected()} disabled={!selectMode || checkedBarcodes.length === 0}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    type="button"
+                    onClick={() => void deleteSelected()}
+                    disabled={!selectMode || checkedBarcodes.length === 0}
+                  >
                     <Trash2 size={16} />
                     {checkedBarcodes.length || ""}
                   </Button>
@@ -867,24 +1028,128 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
             </form>
             {embedded ? (
               <div className="mt-2 flex flex-wrap gap-2">
-                <Badge variant="outline">{text.total}: {total.toLocaleString("th-TH")}</Badge>
-                {selectMode ? <Badge variant="warning">{text.selected}: {checkedBarcodes.length.toLocaleString("th-TH")}</Badge> : null}
+                <Badge variant="outline">
+                  {text.total}: {total.toLocaleString("th-TH")}
+                </Badge>
+                {selectMode ? (
+                  <Badge variant="warning">
+                    {text.selected}:{" "}
+                    {checkedBarcodes.length.toLocaleString("th-TH")}
+                  </Badge>
+                ) : null}
               </div>
             ) : null}
             {filterOpen ? (
               <div className="mt-3 grid gap-2 rounded-2xl border border-border bg-muted/30 p-3 md:grid-cols-4 xl:grid-cols-5">
-                <Input value={filters.groupCode} onChange={(event) => setFilters((current) => ({ ...current, groupCode: event.target.value }))} placeholder={text.groupCode} />
-                <Input value={filters.brandCode} onChange={(event) => setFilters((current) => ({ ...current, brandCode: event.target.value }))} placeholder={text.brandCode} />
-                <Input value={filters.categoryCode} onChange={(event) => setFilters((current) => ({ ...current, categoryCode: event.target.value }))} placeholder={text.categoryCode} />
-                <Input value={filters.classCode} onChange={(event) => setFilters((current) => ({ ...current, classCode: event.target.value }))} placeholder={text.classCode} />
-                <Input value={filters.designCode} onChange={(event) => setFilters((current) => ({ ...current, designCode: event.target.value }))} placeholder={text.designCode} />
-                <Input value={filters.gradeCode} onChange={(event) => setFilters((current) => ({ ...current, gradeCode: event.target.value }))} placeholder={text.gradeCode} />
-                <Input value={filters.modelCode} onChange={(event) => setFilters((current) => ({ ...current, modelCode: event.target.value }))} placeholder={text.modelCode} />
-                <Input value={filters.patternCode} onChange={(event) => setFilters((current) => ({ ...current, patternCode: event.target.value }))} placeholder={text.patternCode} />
-                <Input value={filters.priceMin} onChange={(event) => setFilters((current) => ({ ...current, priceMin: event.target.value }))} placeholder={text.priceMin} inputMode="decimal" />
+                <Input
+                  value={filters.groupCode}
+                  onChange={(event) =>
+                    setFilters((current) => ({
+                      ...current,
+                      groupCode: event.target.value,
+                    }))
+                  }
+                  placeholder={text.groupCode}
+                />
+                <Input
+                  value={filters.brandCode}
+                  onChange={(event) =>
+                    setFilters((current) => ({
+                      ...current,
+                      brandCode: event.target.value,
+                    }))
+                  }
+                  placeholder={text.brandCode}
+                />
+                <Input
+                  value={filters.categoryCode}
+                  onChange={(event) =>
+                    setFilters((current) => ({
+                      ...current,
+                      categoryCode: event.target.value,
+                    }))
+                  }
+                  placeholder={text.categoryCode}
+                />
+                <Input
+                  value={filters.classCode}
+                  onChange={(event) =>
+                    setFilters((current) => ({
+                      ...current,
+                      classCode: event.target.value,
+                    }))
+                  }
+                  placeholder={text.classCode}
+                />
+                <Input
+                  value={filters.designCode}
+                  onChange={(event) =>
+                    setFilters((current) => ({
+                      ...current,
+                      designCode: event.target.value,
+                    }))
+                  }
+                  placeholder={text.designCode}
+                />
+                <Input
+                  value={filters.gradeCode}
+                  onChange={(event) =>
+                    setFilters((current) => ({
+                      ...current,
+                      gradeCode: event.target.value,
+                    }))
+                  }
+                  placeholder={text.gradeCode}
+                />
+                <Input
+                  value={filters.modelCode}
+                  onChange={(event) =>
+                    setFilters((current) => ({
+                      ...current,
+                      modelCode: event.target.value,
+                    }))
+                  }
+                  placeholder={text.modelCode}
+                />
+                <Input
+                  value={filters.patternCode}
+                  onChange={(event) =>
+                    setFilters((current) => ({
+                      ...current,
+                      patternCode: event.target.value,
+                    }))
+                  }
+                  placeholder={text.patternCode}
+                />
+                <Input
+                  value={filters.priceMin}
+                  onChange={(event) =>
+                    setFilters((current) => ({
+                      ...current,
+                      priceMin: event.target.value,
+                    }))
+                  }
+                  placeholder={text.priceMin}
+                  inputMode="decimal"
+                />
                 <div className="flex gap-2">
-                  <Input value={filters.priceMax} onChange={(event) => setFilters((current) => ({ ...current, priceMax: event.target.value }))} placeholder={text.priceMax} inputMode="decimal" />
-                  <Button variant="outline" type="button" onClick={clearFilters} aria-label={text.clearFilter}>
+                  <Input
+                    value={filters.priceMax}
+                    onChange={(event) =>
+                      setFilters((current) => ({
+                        ...current,
+                        priceMax: event.target.value,
+                      }))
+                    }
+                    placeholder={text.priceMax}
+                    inputMode="decimal"
+                  />
+                  <Button
+                    variant="outline"
+                    type="button"
+                    onClick={clearFilters}
+                    aria-label={text.clearFilter}
+                  >
                     <X size={16} />
                   </Button>
                 </div>
@@ -918,24 +1183,36 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
               ) : (
                 <div className="min-h-[360px] overflow-auto xl:h-full xl:min-h-0">
                   {items.map((item, index) => {
-                    const rowKey = barcodeRowKey(item, index);
+                    const rowKey = barcodeRowKey(item);
                     return (
-                    <BarcodeRow
-                      auth={auth}
-                      checked={checkedBarcodes.includes(rowKey)}
-                      imageUrl={item.imageUri}
-                      index={index}
-                      item={item}
-                      key={rowKey}
-                      onSelect={() => void selectListItem(item)}
-                      onToggleChecked={() => toggleChecked(rowKey)}
-                      selected={selected?.barcode === item.barcode}
-                      editing={selected?.barcode === item.barcode && editorOpen && editorMode === "edit"}
-                      selectMode={selectMode}
-                      showImage={showImage}
-                      text={text}
-                    />
-                  );
+                      <BarcodeRow
+                        auth={auth}
+                        checked={checkedBarcodes.includes(rowKey)}
+                        imageUrl={item.imageUri}
+                        index={index}
+                        item={item}
+                        key={rowKey}
+                        onSelect={() => void selectListItem(item)}
+                        onToggleChecked={() => toggleChecked(rowKey)}
+                        selected={
+                          selected
+                            ? barcodeIdentity(selected) ===
+                              barcodeIdentity(item)
+                            : false
+                        }
+                        editing={
+                          selected
+                            ? barcodeIdentity(selected) ===
+                                barcodeIdentity(item) &&
+                              editorOpen &&
+                              editorMode === "edit"
+                            : false
+                        }
+                        selectMode={selectMode}
+                        showImage={showImage}
+                        text={text}
+                      />
+                    );
                   })}
                 </div>
               )}
@@ -987,10 +1264,22 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
             extraActions={
               editorMode === "edit" ? (
                 <>
-                  <Button type="button" variant="ghost" size="sm" onClick={copyCurrentEditorValue} aria-label={text.copy}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={copyCurrentEditorValue}
+                    aria-label={text.copy}
+                  >
                     <Copy className="h-4 w-4" />
                   </Button>
-                  <Button type="button" variant="ghost" size="sm" onClick={() => void deleteCurrentItem()} aria-label={text.deleteConfirm}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => void deleteCurrentItem()}
+                    aria-label={text.deleteConfirm}
+                  >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </>
@@ -999,13 +1288,19 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
             embedded
           />
         ) : (
-          <ProductBarcodeDetail item={selected} onDelete={() => void deleteCurrentItem()} onEdit={() => void openEditEditor()} text={text} />
+          <ProductBarcodeDetail
+            item={selected}
+            onDelete={() => void deleteCurrentItem()}
+            onEdit={() => void openEditEditor()}
+            text={text}
+          />
         )}
       </div>
       {selected && !editorOpen ? (
         <BarcodeQuickActions
           barcode={selected.barcode}
           guid={selected.guidFixed}
+          itemCode={selected.itemCode}
           text={text}
         />
       ) : null}
@@ -1071,10 +1366,17 @@ function BarcodeRow({
       tabIndex={0}
     >
       <div className="min-w-0">
-        <span className="lg:hidden text-xs font-semibold text-muted-foreground">{text.barcode}</span>
+        <span className="lg:hidden text-xs font-semibold text-muted-foreground">
+          {text.barcode}
+        </span>
         <div className="flex min-w-0 items-center gap-2">
           {selectMode ? (
-            <span className={cn("grid size-6 shrink-0 place-items-center rounded-md border", checked && "border-primary bg-primary text-primary-foreground")}>
+            <span
+              className={cn(
+                "grid size-6 shrink-0 place-items-center rounded-md border",
+                checked && "border-primary bg-primary text-primary-foreground",
+              )}
+            >
               {checked ? <CheckSquare size={14} /> : null}
             </span>
           ) : null}
@@ -1101,31 +1403,51 @@ function BarcodeRow({
         </div>
       </div>
       <div className="min-w-0">
-        <span className="lg:hidden text-xs font-semibold text-muted-foreground">{text.productName}</span>
+        <span className="lg:hidden text-xs font-semibold text-muted-foreground">
+          {text.productName}
+        </span>
         <div className="line-clamp-2">{item.name || "-"}</div>
-        {item.groupName ? <div className="truncate text-xs text-muted-foreground">{item.groupName}</div> : null}
+        {item.groupName ? (
+          <div className="truncate text-xs text-muted-foreground">
+            {item.groupName}
+          </div>
+        ) : null}
       </div>
       <div className="min-w-0">
-        <span className="lg:hidden text-xs font-semibold text-muted-foreground">{text.unit}</span>
+        <span className="lg:hidden text-xs font-semibold text-muted-foreground">
+          {text.unit}
+        </span>
         <div className={cn("truncate", item.unitCount > 1 && "text-primary")}>
           {item.unitName || item.unitCode || "-"}
         </div>
-        {item.unitCount > 1 ? <div className="truncate text-xs text-muted-foreground">{item.allUnitNames}</div> : null}
+        {item.unitCount > 1 ? (
+          <div className="truncate text-xs text-muted-foreground">
+            {item.allUnitNames}
+          </div>
+        ) : null}
       </div>
       <div className="min-w-0">
-        <span className="lg:hidden text-xs font-semibold text-muted-foreground">{text.itemCode}</span>
+        <span className="lg:hidden text-xs font-semibold text-muted-foreground">
+          {text.itemCode}
+        </span>
         <div className="truncate">{item.itemCode || "-"}</div>
       </div>
       <div className="lg:text-right">
-        <span className="lg:hidden text-xs font-semibold text-muted-foreground">{text.retailPrice}</span>
+        <span className="lg:hidden text-xs font-semibold text-muted-foreground">
+          {text.retailPrice}
+        </span>
         <div>{formatMoney(item.price)}</div>
       </div>
     </div>
   );
 }
 
-function barcodeRowKey(item: ProductBarcodeRecord, index: number): string {
-  return item.guidFixed || `${item.barcode || "barcode"}-${item.itemCode || "item"}-${index}`;
+function barcodeIdentity(item: ProductBarcodeRecord): string {
+  return item.guidFixed || `${item.itemCode}\u0000${item.barcode}`;
+}
+
+function barcodeRowKey(item: ProductBarcodeRecord): string {
+  return barcodeIdentity(item);
 }
 
 function ProductBarcodeDetail({
@@ -1155,25 +1477,67 @@ function ProductBarcodeDetail({
     : [];
   const classificationFields = item
     ? [
-        { label: text.groupCode, value: formatCodeName(item.groupCode, item.groupName) },
-        { label: text.brandCode, value: formatCodeName(item.brandCode, item.brandName) },
-        { label: text.categoryCode, value: formatCodeName(item.categoryCode, item.categoryName) },
-        { label: text.classCode, value: formatCodeName(item.classCode, item.className) },
-        { label: text.designCode, value: formatCodeName(item.designCode, item.designName) },
-        { label: text.gradeCode, value: formatCodeName(item.gradeCode, item.gradeName) },
-        { label: text.modelCode, value: formatCodeName(item.modelCode, item.modelName) },
-        { label: text.patternCode, value: formatCodeName(item.patternCode, item.patternName) },
-        { label: text.subGroup1, value: formatCodeName(item.groupSubOneCode, item.groupSubOneName) },
-        { label: text.subGroup2, value: formatCodeName(item.groupSubTwoCode, item.groupSubTwoName) },
-        { label: text.manufacturer, value: formatCodeName(item.manufacturerCode, item.manufacturerName) },
-        { label: text.shelf, value: formatCodeName(item.shelfCode, item.shelfName) },
+        {
+          label: text.groupCode,
+          value: formatCodeName(item.groupCode, item.groupName),
+        },
+        {
+          label: text.brandCode,
+          value: formatCodeName(item.brandCode, item.brandName),
+        },
+        {
+          label: text.categoryCode,
+          value: formatCodeName(item.categoryCode, item.categoryName),
+        },
+        {
+          label: text.classCode,
+          value: formatCodeName(item.classCode, item.className),
+        },
+        {
+          label: text.designCode,
+          value: formatCodeName(item.designCode, item.designName),
+        },
+        {
+          label: text.gradeCode,
+          value: formatCodeName(item.gradeCode, item.gradeName),
+        },
+        {
+          label: text.modelCode,
+          value: formatCodeName(item.modelCode, item.modelName),
+        },
+        {
+          label: text.patternCode,
+          value: formatCodeName(item.patternCode, item.patternName),
+        },
+        {
+          label: text.subGroup1,
+          value: formatCodeName(item.groupSubOneCode, item.groupSubOneName),
+        },
+        {
+          label: text.subGroup2,
+          value: formatCodeName(item.groupSubTwoCode, item.groupSubTwoName),
+        },
+        {
+          label: text.manufacturer,
+          value: formatCodeName(item.manufacturerCode, item.manufacturerName),
+        },
+        {
+          label: text.shelf,
+          value: formatCodeName(item.shelfCode, item.shelfName),
+        },
       ]
     : [];
   const stockFields = item
     ? [
-        { label: text.unit, value: formatCodeName(item.unitCode, item.unitName) },
+        {
+          label: text.unit,
+          value: formatCodeName(item.unitCode, item.unitName),
+        },
         { label: text.multiUnit, value: item.allUnitNames },
-        { label: text.balance, value: item.balanceFormatted || formatNumber(item.balanceQty) },
+        {
+          label: text.balance,
+          value: item.balanceFormatted || formatNumber(item.balanceQty),
+        },
         { label: text.retailPrice, value: formatMoney(item.price) },
         { label: text.standValue, value: formatNumber(item.standValue) },
         { label: text.divideValue, value: formatNumber(item.divideValue) },
@@ -1185,47 +1549,87 @@ function ProductBarcodeDetail({
     ? [
         {
           label: text.itemType,
-          value: item.itemType === 0 ? text.itemTypeStock
-            : item.itemType === 1 ? text.itemTypeService
-            : item.itemType === 2 ? text.itemTypeSet
-            : item.itemType === 3 ? text.itemTypeNotStock
-            : String(item.itemType || ""),
+          value:
+            item.itemType === 0
+              ? text.itemTypeStock
+              : item.itemType === 1
+                ? text.itemTypeService
+                : item.itemType === 2
+                  ? text.itemTypeSet
+                  : item.itemType === 3
+                    ? text.itemTypeNotStock
+                    : String(item.itemType || ""),
         },
         { label: text.productType, value: String(item.productType || "") },
         {
           label: text.foodType,
-          value: item.foodType === 0 ? text.foodTypeFood
-            : item.foodType === 1 ? text.foodTypeDrink
-            : item.foodType === 2 ? text.foodTypeAlcohol
-            : item.foodType === 3 ? text.foodTypeOther
-            : String(item.foodType || ""),
+          value:
+            item.foodType === 0
+              ? text.foodTypeFood
+              : item.foodType === 1
+                ? text.foodTypeDrink
+                : item.foodType === 2
+                  ? text.foodTypeAlcohol
+                  : item.foodType === 3
+                    ? text.foodTypeOther
+                    : String(item.foodType || ""),
         },
         {
           label: text.materialType,
-          value: item.materialType === 0 ? text.materialGeneral
-            : item.materialType === 1 ? text.materialMaterial
-            : item.materialType === 2 ? text.materialSemiFinished
-            : item.materialType === 3 ? text.materialSet
-            : item.materialType === 4 ? text.materialAgricultural
-            : String(item.materialType || ""),
+          value:
+            item.materialType === 0
+              ? text.materialGeneral
+              : item.materialType === 1
+                ? text.materialMaterial
+                : item.materialType === 2
+                  ? text.materialSemiFinished
+                  : item.materialType === 3
+                    ? text.materialSet
+                    : item.materialType === 4
+                      ? text.materialAgricultural
+                      : String(item.materialType || ""),
         },
         { label: text.isStock, value: formatBoolean(item.isStock === 1, text) },
-        { label: text.isMainBarcode, value: formatBoolean(item.isMainBarcode, text) },
+        {
+          label: text.isMainBarcode,
+          value: formatBoolean(item.isMainBarcode, text),
+        },
         { label: text.isMainItem, value: formatBoolean(item.isMainItem, text) },
-        { label: text.isUseSubBarcodes, value: formatBoolean(item.isUseSubBarcodes, text) },
-        { label: text.useImageOrColor, value: formatBoolean(item.useImageOrColor, text) },
+        {
+          label: text.isUseSubBarcodes,
+          value: formatBoolean(item.isUseSubBarcodes, text),
+        },
+        {
+          label: text.useImageOrColor,
+          value: formatBoolean(item.useImageOrColor, text),
+        },
         { label: text.condition, value: formatBoolean(item.condition, text) },
         { label: text.isSumPoint, value: formatBoolean(item.isSumPoint, text) },
         { label: text.isDividend, value: formatBoolean(item.isDividend, text) },
         { label: text.isALaCarte, value: formatBoolean(item.isALaCarte, text) },
-        { label: text.isSplitUnitPrint, value: formatBoolean(item.isSplitUnitPrint, text) },
-        { label: text.isOnlyStaff, value: formatBoolean(item.isOnlyStaff, text) },
-        { label: text.isStockForRestaurant, value: formatBoolean(item.isStockForRestaurant, text) },
-        { label: text.isDiscountPointOfPurchase, value: formatBoolean(item.isDiscountPointOfPurchase, text) },
+        {
+          label: text.isSplitUnitPrint,
+          value: formatBoolean(item.isSplitUnitPrint, text),
+        },
+        {
+          label: text.isOnlyStaff,
+          value: formatBoolean(item.isOnlyStaff, text),
+        },
+        {
+          label: text.isStockForRestaurant,
+          value: formatBoolean(item.isStockForRestaurant, text),
+        },
+        {
+          label: text.isDiscountPointOfPurchase,
+          value: formatBoolean(item.isDiscountPointOfPurchase, text),
+        },
         { label: text.isAlert, value: formatBoolean(item.isAlert, text) },
         { label: text.isDisable, value: formatBoolean(item.isDisable, text) },
         { label: text.showIsDividend, value: item.showIsDividend },
-        { label: text.rowNumber, value: item.rowNumber ? String(item.rowNumber) : "" },
+        {
+          label: text.rowNumber,
+          value: item.rowNumber ? String(item.rowNumber) : "",
+        },
       ]
     : [];
   const relationFields = item
@@ -1237,8 +1641,14 @@ function ProductBarcodeDetail({
         { label: text.options, value: formatCount(item.optionCount) },
         { label: text.orderTypes, value: formatCount(item.orderTypeCount) },
         { label: text.dimensions, value: formatCount(item.dimensionCount) },
-        { label: text.businessTypes, value: formatCount(item.businessTypeCount) },
-        { label: text.ignoreBranches, value: formatCount(item.ignoreBranchCount) },
+        {
+          label: text.businessTypes,
+          value: formatCount(item.businessTypeCount),
+        },
+        {
+          label: text.ignoreBranches,
+          value: formatCount(item.ignoreBranchCount),
+        },
         { label: text.branches, value: formatCount(item.branchCount) },
         { label: text.categories, value: formatCount(item.categoryCount) },
         { label: text.timeForSales, value: formatCount(item.timeForSaleCount) },
@@ -1259,11 +1669,21 @@ function ProductBarcodeDetail({
             {text.detailTitle}
           </CardTitle>
           <div className="flex flex-wrap justify-end gap-2">
-            <Button disabled={!item} onClick={onDelete} size="sm" variant="outline">
+            <Button
+              disabled={!item}
+              onClick={onDelete}
+              size="sm"
+              variant="outline"
+            >
               <Trash2 size={16} />
               {text.delete}
             </Button>
-            <Button disabled={!item} onClick={onEdit} size="sm" variant="outline">
+            <Button
+              disabled={!item}
+              onClick={onEdit}
+              size="sm"
+              variant="outline"
+            >
               <Pencil size={16} />
               {text.edit}
             </Button>
@@ -1272,21 +1692,30 @@ function ProductBarcodeDetail({
       </CardHeader>
       <CardContent className="grid gap-3 overflow-auto p-3 xl:min-h-0 xl:flex-1">
         {!item ? (
-          <div className="rounded-2xl border border-dashed border-border p-4 text-sm text-muted-foreground">{text.noSelection}</div>
+          <div className="rounded-2xl border border-dashed border-border p-4 text-sm text-muted-foreground">
+            {text.noSelection}
+          </div>
         ) : (
           <>
             <div className="rounded-2xl border border-border bg-muted/30 p-3">
-              <p className="text-xs font-semibold text-muted-foreground">{text.barcode}</p>
+              <p className="text-xs font-semibold text-muted-foreground">
+                {text.barcode}
+              </p>
               <p className="break-all text-2xl font-semibold">{item.barcode}</p>
               <p className="mt-1 text-sm text-muted-foreground">{item.name}</p>
             </div>
             <DetailSection fields={basicFields} title={text.basicInfo} />
-            <DetailSection fields={classificationFields} title={text.classificationSection} />
+            <DetailSection
+              fields={classificationFields}
+              title={text.classificationSection}
+            />
             <DetailSection fields={stockFields} title={text.stockAndUnit} />
             <DetailSection fields={statusFields} title={text.taxAndFlags} />
             <DetailSection fields={relationFields} title={text.relations} />
             <details className="rounded-2xl border border-border p-3">
-              <summary className="cursor-pointer text-sm font-semibold">{text.rawFields}</summary>
+              <summary className="cursor-pointer text-sm font-semibold">
+                {text.rawFields}
+              </summary>
               <pre className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-xl bg-muted p-3 text-xs">
                 {JSON.stringify(item.raw, null, 2)}
               </pre>
@@ -1308,31 +1737,55 @@ function ProductBarcodeDetail({
 function BarcodeQuickActions({
   barcode,
   guid,
+  itemCode,
   text,
 }: {
   barcode: string;
   guid: string;
+  itemCode: string;
   text: BarcodeText;
 }) {
   if (!barcode) return null;
   const encoded = encodeURIComponent(barcode);
+  const query = new URLSearchParams({ barcode });
+  if (itemCode) query.set("itemcode", itemCode);
+  const queryString = query.toString();
   return (
     <div className="fixed bottom-3 right-3 z-30 flex gap-2 rounded-full border border-border bg-card/95 p-1 shadow-lg backdrop-blur md:bottom-6 md:right-6">
       <Button asChild size="sm" variant="ghost" title={text.labelPrint}>
-        <a href={`/productbarcodeshelf?barcode=${encoded}`} target="_blank" rel="noreferrer">
+        <a
+          href={`/product_barcode_shelf?${queryString}`}
+          target="_blank"
+          rel="noreferrer"
+        >
           <Printer size={16} />
           <span className="hidden md:inline">{text.labelPrint}</span>
         </a>
       </Button>
-      <Button asChild size="sm" variant="ghost" title={text.priceHistory ?? "Price history"}>
-        <a href={`/product-price-history?barcode=${encoded}`} target="_blank" rel="noreferrer">
+      <Button
+        asChild
+        size="sm"
+        variant="ghost"
+        title={text.priceHistory ?? "Price history"}
+      >
+        <a
+          href={`/price_history?${queryString}`}
+          target="_blank"
+          rel="noreferrer"
+        >
           <History size={16} />
-          <span className="hidden md:inline">{text.priceHistory ?? "Price history"}</span>
+          <span className="hidden md:inline">
+            {text.priceHistory ?? "Price history"}
+          </span>
         </a>
       </Button>
       {guid ? (
         <Button asChild size="sm" variant="ghost" title={text.bomView ?? "BOM"}>
-          <a href={`/api/product-barcode/bom/${encoded}`} target="_blank" rel="noreferrer">
+          <a
+            href={`/api/product-barcode/bom/${encoded}${itemCode ? `?itemcode=${encodeURIComponent(itemCode)}` : ""}`}
+            target="_blank"
+            rel="noreferrer"
+          >
             <GitFork size={16} />
             <span className="hidden md:inline">{text.bomView ?? "BOM"}</span>
           </a>
@@ -1347,13 +1800,23 @@ type DetailFieldItem = {
   value: string;
 };
 
-function DetailSection({ fields, title }: { fields: DetailFieldItem[]; title: string }) {
+function DetailSection({
+  fields,
+  title,
+}: {
+  fields: DetailFieldItem[];
+  title: string;
+}) {
   return (
     <section className="rounded-2xl border border-border p-3">
       <h3 className="mb-2 text-sm font-semibold">{title}</h3>
       <div className="grid gap-2 sm:grid-cols-2">
         {fields.map((field) => (
-          <DetailField key={`${title}-${field.label}`} label={field.label} value={field.value} />
+          <DetailField
+            key={`${title}-${field.label}`}
+            label={field.label}
+            value={field.value}
+          />
         ))}
       </div>
     </section>
@@ -1395,7 +1858,9 @@ function readWorkspaceSession(): WorkspaceSession | null {
 
 function normalizeBarcodeList(value: unknown): ProductBarcodeRecord[] {
   if (!Array.isArray(value)) return [];
-  return value.map(normalizeBarcodeRecord).filter((item) => item.barcode || item.itemCode);
+  return value
+    .map(normalizeBarcodeRecord)
+    .filter((item) => item.barcode || item.itemCode);
 }
 
 function normalizeBarcodeRecord(value: unknown): ProductBarcodeRecord {
@@ -1405,51 +1870,142 @@ function normalizeBarcodeRecord(value: unknown): ProductBarcodeRecord {
     guidFixed: getFirstString(record, ["guidfixed", "guidfixed"]),
     holdingCode: getFirstString(record, ["holdingcode", "holdingcode"]),
     barcode: getFirstString(record, ["barcode"]),
-    barcodeRef: getFirstString(record, ["barcoderef", "barcode_ref", "refbarcode"]),
-    name: localizedNameFromKeys(record, ["names"], getFirstString(record, ["name0", "name", "itemname"])),
-    unitName: localizedNameFromKeys(record, ["itemunitnames", "unitnames"], getFirstString(record, ["unitname", "unitname"])),
-    unitCode: getFirstString(record, ["itemunitcode", "itemunitcode", "unitcode"]),
+    barcodeRef: getFirstString(record, [
+      "barcoderef",
+      "barcode_ref",
+      "refbarcode",
+    ]),
+    name: localizedNameFromKeys(
+      record,
+      ["names"],
+      getFirstString(record, ["name0", "name", "itemname"]),
+    ),
+    unitName: localizedNameFromKeys(
+      record,
+      ["itemunitnames", "unitnames"],
+      getFirstString(record, ["unitname", "unitname"]),
+    ),
+    unitCode: getFirstString(record, [
+      "itemunitcode",
+      "itemunitcode",
+      "unitcode",
+    ]),
     itemCode: getFirstString(record, ["itemcode", "itemcode"]),
     itemGuid: getFirstString(record, ["itemguid", "itemguid"]),
     itemGuidFixed: getFirstString(record, ["itemguidfixed", "itemguidfixed"]),
     parentGuid: getFirstString(record, ["parentguid"]),
-    groupName: localizedNameFromKeys(record, ["groupnames", "groupnames"], getFirstString(record, ["groupname", "groupname"])),
+    groupName: localizedNameFromKeys(
+      record,
+      ["groupnames", "groupnames"],
+      getFirstString(record, ["groupname", "groupname"]),
+    ),
     groupCode: getFirstString(record, ["groupcode", "groupcode"]),
-    brandName: localizedNameFromKeys(record, ["brand_names", "brandnames"], getFirstString(record, ["brand_name", "brandname"])),
+    brandName: localizedNameFromKeys(
+      record,
+      ["brand_names", "brandnames"],
+      getFirstString(record, ["brand_name", "brandname"]),
+    ),
     brandCode: getFirstString(record, ["brandcode", "brandcode"]),
-    categoryName: localizedNameFromKeys(record, ["categorynames", "categorynames"], getFirstString(record, ["categoryname", "categoryname"])),
+    categoryName: localizedNameFromKeys(
+      record,
+      ["categorynames", "categorynames"],
+      getFirstString(record, ["categoryname", "categoryname"]),
+    ),
     categoryCode: getFirstString(record, ["category_code", "categorycode"]),
-    className: localizedNameFromKeys(record, ["class_names", "classnames"], getFirstString(record, ["class_name", "classname"])),
+    className: localizedNameFromKeys(
+      record,
+      ["class_names", "classnames"],
+      getFirstString(record, ["class_name", "classname"]),
+    ),
     classCode: getFirstString(record, ["class_code", "classcode"]),
-    designName: localizedNameFromKeys(record, ["design_names", "designnames"], getFirstString(record, ["design_name", "designname"])),
+    designName: localizedNameFromKeys(
+      record,
+      ["design_names", "designnames"],
+      getFirstString(record, ["design_name", "designname"]),
+    ),
     designCode: getFirstString(record, ["design_code", "designcode"]),
-    gradeName: localizedNameFromKeys(record, ["grade_names", "gradenames"], getFirstString(record, ["grade_name", "gradename"])),
+    gradeName: localizedNameFromKeys(
+      record,
+      ["grade_names", "gradenames"],
+      getFirstString(record, ["grade_name", "gradename"]),
+    ),
     gradeCode: getFirstString(record, ["grade_code", "gradecode"]),
-    modelName: localizedNameFromKeys(record, ["model_names", "modelnames"], getFirstString(record, ["model_name", "modelname"])),
+    modelName: localizedNameFromKeys(
+      record,
+      ["model_names", "modelnames"],
+      getFirstString(record, ["model_name", "modelname"]),
+    ),
     modelCode: getFirstString(record, ["model_code", "modelcode"]),
-    patternName: localizedNameFromKeys(record, ["pattern_names", "patternnames"], getFirstString(record, ["pattern_name", "patternname"])),
+    patternName: localizedNameFromKeys(
+      record,
+      ["pattern_names", "patternnames"],
+      getFirstString(record, ["pattern_name", "patternname"]),
+    ),
     patternCode: getFirstString(record, ["pattern_code", "patterncode"]),
-    groupSubOneName: localizedNameFromKeys(record, ["groupsubonenames", "group_sub_one_names"], getFirstString(record, ["groupsubonename", "group_sub_one_name"])),
-    groupSubOneCode: getFirstString(record, ["groupsubonecode", "group_sub_one_code"]),
-    groupSubTwoName: localizedNameFromKeys(record, ["groupsubtwonames", "group_sub_two_names"], getFirstString(record, ["groupsubtwoname", "group_sub_two_name"])),
-    groupSubTwoCode: getFirstString(record, ["groupsubtwocode", "group_sub_two_code"]),
-    manufacturerName: localizedNameFromKeys(record, ["manufacturernames", "manufacturer_names"], getFirstString(record, ["manufacturername", "manufacturer_name"])),
-    manufacturerCode: getFirstString(record, ["manufacturercode", "manufacturer_code"]),
+    groupSubOneName: localizedNameFromKeys(
+      record,
+      ["groupsubonenames", "group_sub_one_names"],
+      getFirstString(record, ["groupsubonename", "group_sub_one_name"]),
+    ),
+    groupSubOneCode: getFirstString(record, [
+      "groupsubonecode",
+      "group_sub_one_code",
+    ]),
+    groupSubTwoName: localizedNameFromKeys(
+      record,
+      ["groupsubtwonames", "group_sub_two_names"],
+      getFirstString(record, ["groupsubtwoname", "group_sub_two_name"]),
+    ),
+    groupSubTwoCode: getFirstString(record, [
+      "groupsubtwocode",
+      "group_sub_two_code",
+    ]),
+    manufacturerName: localizedNameFromKeys(
+      record,
+      ["manufacturernames", "manufacturer_names"],
+      getFirstString(record, ["manufacturername", "manufacturer_name"]),
+    ),
+    manufacturerCode: getFirstString(record, [
+      "manufacturercode",
+      "manufacturer_code",
+    ]),
     shelfCode: getFirstString(record, ["shelfcode", "shelf_code", "shelfCode"]),
     shelfName: getFirstString(record, ["shelfname", "shelf_name", "shelfName"]),
     checksum: getFirstString(record, ["checksum"]),
     price: getPrice(record),
     imageUri: getFirstString(record, ["imageuri", "image_uri"]),
     colorSelect: getFirstString(record, ["colorselect", "color_select"]),
-    colorSelectHex: getFirstString(record, ["colorselecthex", "color_select_hex"]),
+    colorSelectHex: getFirstString(record, [
+      "colorselecthex",
+      "color_select_hex",
+    ]),
     unitCount: getFirstNumber(record, ["unit_count", "unitcount"]),
     allUnitNames: getFirstString(record, ["all_unitnames", "allunitnames"]),
-    balanceQty: getFirstNumber(record, ["availableqty", "balanceqty", "balanceqty"]),
-    balanceFormatted: getFirstString(record, ["balance_formatted", "balanceformatted"]),
-    standValue: getFirstNumber(record, ["standvalue", "stand_value", "barcoderefunitstand", "barcode_ref_unit_stand"]),
-    divideValue: getFirstNumber(record, ["dividevalue", "divide_value", "barcoderefunitdivide", "barcode_ref_unit_divide"]),
+    balanceQty: getFirstNumber(record, [
+      "availableqty",
+      "balanceqty",
+      "balanceqty",
+    ]),
+    balanceFormatted: getFirstString(record, [
+      "balance_formatted",
+      "balanceformatted",
+    ]),
+    standValue: getFirstNumber(record, [
+      "standvalue",
+      "stand_value",
+      "barcoderefunitstand",
+      "barcode_ref_unit_stand",
+    ]),
+    divideValue: getFirstNumber(record, [
+      "dividevalue",
+      "divide_value",
+      "barcoderefunitdivide",
+      "barcode_ref_unit_divide",
+    ]),
     itemType: getFirstNumber(record, ["itemtype", "itemtype"]),
-    productType: isRecord(record["producttype"]) ? String((record["producttype"] as Record<string, unknown>).code ?? "") : "",
+    productType: isRecord(record["producttype"])
+      ? String((record["producttype"] as Record<string, unknown>).code ?? "")
+      : "",
     foodType: getFirstNumber(record, ["foodtype", "food_type"]),
     materialType: getFirstNumber(record, ["materialtype", "material_type"]),
     taxType: getFirstNumber(record, ["taxtype", "taxtype"]),
@@ -1458,33 +2014,64 @@ function normalizeBarcodeRecord(value: unknown): ProductBarcodeRecord {
     isStock: getFirstNumber(record, ["isstock", "is_stock"]),
     isMainBarcode: getFirstBoolean(record, ["ismainbarcode", "ismainbarcode"]),
     isMainItem: getFirstBoolean(record, ["ismainitem", "is_main_item"]),
-    isUseSubBarcodes: getFirstBoolean(record, ["isusesubbarcodes", "is_use_sub_barcodes"]),
-    useImageOrColor: getFirstBoolean(record, ["useimageorcolor", "use_image_or_color"]),
+    isUseSubBarcodes: getFirstBoolean(record, [
+      "isusesubbarcodes",
+      "is_use_sub_barcodes",
+    ]),
+    useImageOrColor: getFirstBoolean(record, [
+      "useimageorcolor",
+      "use_image_or_color",
+    ]),
     condition: getFirstBoolean(record, ["condition"]),
     isSumPoint: getFirstBoolean(record, ["issumpoint", "is_sum_point"]),
     isDividend: getFirstBoolean(record, ["isdividend", "is_dividend"]),
     isALaCarte: getFirstBoolean(record, ["isalacarte", "is_a_la_carte"]),
-    isSplitUnitPrint: getFirstBoolean(record, ["issplitunitprint", "is_split_unit_print"]),
+    isSplitUnitPrint: getFirstBoolean(record, [
+      "issplitunitprint",
+      "is_split_unit_print",
+    ]),
     isOnlyStaff: getFirstBoolean(record, ["isonlystaff", "is_only_staff"]),
-    isStockForRestaurant: getFirstBoolean(record, ["isstockforrestaurant", "is_stock_for_restaurant"]),
-    isDiscountPointOfPurchase: getFirstBoolean(record, ["isdiscountpointofpurchase", "is_discount_point_of_purchase"]),
+    isStockForRestaurant: getFirstBoolean(record, [
+      "isstockforrestaurant",
+      "is_stock_for_restaurant",
+    ]),
+    isDiscountPointOfPurchase: getFirstBoolean(record, [
+      "isdiscountpointofpurchase",
+      "is_discount_point_of_purchase",
+    ]),
     isAlert: getFirstBoolean(record, ["isalert", "is_alert"]),
     isDisable: getFirstBoolean(record, ["isdisable", "is_disable"]),
-    showIsDividend: getFirstString(record, ["showisdividend", "show_is_dividend"]),
+    showIsDividend: getFirstString(record, [
+      "showisdividend",
+      "show_is_dividend",
+    ]),
     rowNumber: getFirstNumber(record, ["rownumber", "row_number"]),
     maxDiscount: getFirstString(record, ["maxdiscount", "max_discount"]),
     discount: getFirstString(record, ["discount"]),
     description: getFirstString(record, ["description"]),
-    alertDescription: getFirstString(record, ["alertdescription", "alert_description"]),
+    alertDescription: getFirstString(record, [
+      "alertdescription",
+      "alert_description",
+    ]),
     priceCount: getArrayCount(record, ["prices"]),
     refBarcodeCount: getArrayCount(record, ["refbarcodes", "ref_barcodes"]),
-    subBarcodeCount: getArrayCount(record, ["barcodes", "subbarcodes", "sub_barcodes"]),
+    subBarcodeCount: getArrayCount(record, [
+      "barcodes",
+      "subbarcodes",
+      "sub_barcodes",
+    ]),
     bomCount: getArrayCount(record, ["bom"]),
     optionCount: getArrayCount(record, ["options"]),
     orderTypeCount: getArrayCount(record, ["ordertypes", "order_types"]),
     dimensionCount: getArrayCount(record, ["dimensions"]),
-    businessTypeCount: getArrayCount(record, ["businesstypes", "business_types"]),
-    ignoreBranchCount: getArrayCount(record, ["ignorebranches", "ignore_branches"]),
+    businessTypeCount: getArrayCount(record, [
+      "businesstypes",
+      "business_types",
+    ]),
+    ignoreBranchCount: getArrayCount(record, [
+      "ignorebranches",
+      "ignore_branches",
+    ]),
     branchCount: getArrayCount(record, ["branches"]),
     categoryCount: getArrayCount(record, ["categorys", "categories"]),
     timeForSaleCount: getArrayCount(record, ["timeforsales", "time_for_sales"]),
@@ -1499,7 +2086,9 @@ function getPrice(record: Record<string, unknown>): number {
   if (!Array.isArray(prices)) return 0;
   const retail = prices.find((price) => {
     if (!isRecord(price)) return false;
-    return getNumber(price, "keynumber") === 1 || getNumber(price, "keynumber") === 1;
+    return (
+      getNumber(price, "keynumber") === 1 || getNumber(price, "keynumber") === 1
+    );
   });
   return isRecord(retail) ? getNumber(retail, "price") : 0;
 }
@@ -1515,10 +2104,13 @@ function extractBarcodeRecordPayload(value: unknown): unknown {
 }
 
 function detailKey(item: ProductBarcodeRecord): string {
-  return item.guidFixed || item.barcode || item.itemCode;
+  return barcodeIdentity(item);
 }
 
-function getFirstString(record: Record<string, unknown>, keys: string[]): string {
+function getFirstString(
+  record: Record<string, unknown>,
+  keys: string[],
+): string {
   for (const key of keys) {
     const value = getString(record, key);
     if (value) return value;
@@ -1526,7 +2118,10 @@ function getFirstString(record: Record<string, unknown>, keys: string[]): string
   return "";
 }
 
-function getFirstNumber(record: Record<string, unknown>, keys: string[]): number {
+function getFirstNumber(
+  record: Record<string, unknown>,
+  keys: string[],
+): number {
   for (const key of keys) {
     if (!Object.prototype.hasOwnProperty.call(record, key)) continue;
     return getNumber(record, key);
@@ -1534,7 +2129,10 @@ function getFirstNumber(record: Record<string, unknown>, keys: string[]): number
   return 0;
 }
 
-function getFirstBoolean(record: Record<string, unknown>, keys: string[]): boolean {
+function getFirstBoolean(
+  record: Record<string, unknown>,
+  keys: string[],
+): boolean {
   for (const key of keys) {
     if (!Object.prototype.hasOwnProperty.call(record, key)) continue;
     const value = record[key];
@@ -1543,13 +2141,22 @@ function getFirstBoolean(record: Record<string, unknown>, keys: string[]): boole
     if (typeof value === "string") {
       const normalized = value.trim().toLowerCase();
       if (!normalized) return false;
-      return normalized === "true" || normalized === "1" || normalized === "yes" || normalized === "y";
+      return (
+        normalized === "true" ||
+        normalized === "1" ||
+        normalized === "yes" ||
+        normalized === "y"
+      );
     }
   }
   return false;
 }
 
-function localizedNameFromKeys(record: Record<string, unknown>, keys: string[], fallback = ""): string {
+function localizedNameFromKeys(
+  record: Record<string, unknown>,
+  keys: string[],
+  fallback = "",
+): string {
   for (const key of keys) {
     const names = getNames(record, key);
     const name = localizedName(names, "");
@@ -1560,7 +2167,10 @@ function localizedNameFromKeys(record: Record<string, unknown>, keys: string[], 
   return fallback;
 }
 
-function getArrayCount(record: Record<string, unknown>, keys: string[]): number {
+function getArrayCount(
+  record: Record<string, unknown>,
+  keys: string[],
+): number {
   for (const key of keys) {
     const value = record[key];
     if (Array.isArray(value)) return value.length;
@@ -1568,10 +2178,16 @@ function getArrayCount(record: Record<string, unknown>, keys: string[]): number 
   return 0;
 }
 
-function getNames(record: Record<string, unknown>, key: string): LocalizedName[] | undefined {
+function getNames(
+  record: Record<string, unknown>,
+  key: string,
+): LocalizedName[] | undefined {
   const value = record[key];
   return Array.isArray(value)
-    ? value.filter(isRecord).map((item) => ({ code: getString(item, "code"), name: getString(item, "name") }))
+    ? value.filter(isRecord).map((item) => ({
+        code: getString(item, "code"),
+        name: getString(item, "name"),
+      }))
     : undefined;
 }
 
@@ -1594,8 +2210,13 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-const moneyFormatter = new Intl.NumberFormat("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const numberFormatter = new Intl.NumberFormat("th-TH", { maximumFractionDigits: 4 });
+const moneyFormatter = new Intl.NumberFormat("th-TH", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+const numberFormatter = new Intl.NumberFormat("th-TH", {
+  maximumFractionDigits: 4,
+});
 
 function formatMoney(value: number): string {
   return moneyFormatter.format(value || 0);

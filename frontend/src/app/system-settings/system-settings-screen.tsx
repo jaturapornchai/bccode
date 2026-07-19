@@ -1071,6 +1071,7 @@ export function SystemSettingsScreen({
   const [categorySearchQuery, setCategorySearchQuery] = useState("");
   const [categoryUnsavedChanges, setCategoryUnsavedChanges] = useState(false);
   const groupNumberRef = useRef<number | null>(null);
+  const editorHydrationRef = useRef(0);
   groupNumberRef.current = groupNumber;
   const forbiddenListRequestKeysRef = useRef<Set<string>>(new Set());
   const listContextKeyRef = useRef("");
@@ -1249,7 +1250,13 @@ export function SystemSettingsScreen({
       else setLoading(true);
       setNotice(null);
       try {
-        const limitValue = (currentConfig.slug === "productcategorygroupselectscreen" || currentConfig.slug === "productcategorylist") ? "100000" : String(SETTINGS_LIST_PAGE_SIZE);
+        // Tree-view screens must load every record (not just the first page) -- a partial fetch
+        // silently truncates the tree, since a child row's parent may live past the page cutoff.
+        const isTreeViewSlug =
+          currentConfig.slug === "productcategorygroupselectscreen" ||
+          currentConfig.slug === "productcategorylist" ||
+          currentConfig.slug === "productgroup";
+        const limitValue = isTreeViewSlug ? "100000" : String(SETTINGS_LIST_PAGE_SIZE);
         const searchParams = new URLSearchParams({
           limit: limitValue,
           offset: String(offset),
@@ -1520,6 +1527,11 @@ export function SystemSettingsScreen({
   useEffect(() => {
     setCategorySelectedGuid("");
     setCategorySearchQuery("");
+    setSelectedRecordId("");
+    setDetailRecord(null);
+    setDetailError("");
+    setFormOpen(false);
+    setEditing(null);
   }, [groupNumber]);
 
   useEffect(() => {
@@ -1582,6 +1594,11 @@ export function SystemSettingsScreen({
       setSelectedRecordId("");
       return;
     }
+    if (
+      !selectedRecordId &&
+      (config.slug === "productcategorygroupselectscreen" ||
+        config.slug === "productcategorylist")
+    ) return;
     if (selectedRecordId && shouldHydrateRecordDetail(config)) return;
     if (!visibleRecords.length) {
       setSelectedRecordId("");
@@ -1615,8 +1632,12 @@ export function SystemSettingsScreen({
     }
 
     let cancelled = false;
-    setDetailRecord(null);
-    setDetailRecordId("");
+    const preserveCategoryDetail =
+      config.slug === "productcategorygroupselectscreen";
+    if (!preserveCategoryDetail) {
+      setDetailRecord(null);
+      setDetailRecordId("");
+    }
     setDetailError("");
     setDetailLoading(true);
     void loadRecordDetail(auth, workspace, config, selectedRecordId)
@@ -1708,11 +1729,37 @@ export function SystemSettingsScreen({
   const canEdit = currentConfig.editable !== false && (!isProductUnit || isOwnerOrAdmin);
   const selectedDetailRecord =
     detailRecordId && detailRecordId === selectedRecordId ? detailRecord : null;
+  const categoryDetailRecord =
+    selectedDetailRecord ??
+    (currentConfig.slug === "productcategorygroupselectscreen"
+      ? detailRecord
+      : null);
+  const categoryDetailPending = Boolean(
+    categoryDetailRecord && detailRecordId !== selectedRecordId,
+  );
   const selectedActionRecord = shouldHydrateRecordDetail(currentConfig)
     ? selectedDetailRecord
     : selectedRecord;
 
-  function openCreate() {
+  // Dirty-form guard shared by every "leave the current form" action that is
+  // not a row switch (row switching has its own guarded paths). Without this,
+  // clicking เพิ่ม/คัดลอก while editing silently discarded unsaved changes
+  // (found by /masterbrandscreen UAT 2026-07-19).
+  async function confirmDiscardIfDirty(): Promise<boolean> {
+    if (!formOpen || !isFormDirty) return true;
+    return confirm({
+      title: language === "th" ? "ยังไม่ได้บันทึก" : "Unsaved changes",
+      description: language === "th"
+        ? "กำลังแก้ไขหรือเพิ่มข้อมูลอยู่ ถ้าเปลี่ยนรายการตอนนี้ ข้อมูลที่แก้ครึ่งทางจะหายไป ต้องการเปลี่ยนเลยไหม?"
+        : "You are editing or adding data. Switching now will discard your changes. Continue?",
+      confirmLabel: language === "th" ? "เปลี่ยนเลย" : "Switch anyway",
+      cancelLabel: language === "th" ? "อยู่ต่อแก้ไข" : "Keep editing",
+      tone: "warning",
+    });
+  }
+
+  async function openCreate() {
+    if (!(await confirmDiscardIfDirty())) return;
     setEditing(null);
     setForm(defaultForm(currentConfig, language));
     setFormOpen(true);
@@ -1720,8 +1767,9 @@ export function SystemSettingsScreen({
     setNotice(null);
   }
 
-  function openCreateCopy() {
+  async function openCreateCopy() {
     if (!selectedActionRecord) return;
+    if (!(await confirmDiscardIfDirty())) return;
     setEditing(null);
     setForm(formFromRecord(selectedActionRecord, currentConfig, language));
     setFormOpen(true);
@@ -1750,7 +1798,38 @@ export function SystemSettingsScreen({
     setNotice(null);
   }
 
+  async function handleSelectCategoryRecord(record: SettingRecord) {
+    if (currentConfig.slug === "productcategorylist") {
+      setCategorySelectedGuid(recordId(record, currentConfig));
+      await openEdit(record);
+      return;
+    }
+
+    const nextId = recordId(record, currentConfig);
+    const currentId = editing ? recordId(editing, currentConfig) : "";
+    if (formOpen && nextId === currentId) return;
+    if (formOpen && isFormDirty) {
+      const confirmLeave = await confirm({
+        title: language === "th" ? "ยังไม่ได้บันทึก" : "Unsaved changes",
+        description: language === "th"
+          ? "กำลังแก้ไขหรือเพิ่มหมวดสินค้าอยู่ หากเปลี่ยนรายการตอนนี้ ข้อมูลที่ยังไม่ได้บันทึกจะหายไป"
+          : "Switching categories now will discard your unsaved changes.",
+        confirmLabel: language === "th" ? "เปลี่ยนรายการ" : "Switch category",
+        cancelLabel: language === "th" ? "แก้ไขต่อ" : "Keep editing",
+        tone: "warning",
+      });
+      if (!confirmLeave) return;
+    }
+
+    setCategorySelectedGuid(nextId);
+    setSelectedRecordId(nextId);
+    setFormOpen(false);
+    setEditing(null);
+    setNotice(null);
+  }
+
   async function openEdit(record: SettingRecord) {
+    const hydrationRequest = ++editorHydrationRef.current;
     const newId = recordId(record, currentConfig);
     const oldId = editing ? recordId(editing, currentConfig) : "";
     if (categoryUnsavedChanges && newId !== oldId) {
@@ -1783,8 +1862,6 @@ export function SystemSettingsScreen({
       if (!confirmLeave) return;
     }
     setSelectedRecordId(newId);
-    setEditing(null);
-    setFormOpen(false);
     setNotice(null);
 
     if (!shouldHydrateRecordDetail(currentConfig)) {
@@ -1794,6 +1871,12 @@ export function SystemSettingsScreen({
       return;
     }
 
+    // Keep an open editor mounted while its next Mongo detail loads. This avoids
+    // a blank pane during record switches across every hydrated CRUD screen.
+    if (!formOpen) {
+      setEditing(null);
+      setFormOpen(false);
+    }
     if (!auth || !workspace) return;
     const lookupId =
       currentConfig.slug === "permissionlink"
@@ -1817,6 +1900,7 @@ export function SystemSettingsScreen({
         currentConfig,
         lookupId,
       );
+      if (hydrationRequest !== editorHydrationRef.current) return;
       const hydratedRecord =
         currentConfig.slug === "permissionlink"
           ? {
@@ -1843,11 +1927,16 @@ export function SystemSettingsScreen({
       setForm(formFromRecord(hydratedRecord, currentConfig, language));
       setFormOpen(true);
     } catch (error) {
+      if (hydrationRequest !== editorHydrationRef.current) return;
       const message = errorText(error);
+      if (currentConfig.slug === "productcategorylist" && oldId) {
+        setCategorySelectedGuid(oldId);
+        setSelectedRecordId(oldId);
+      }
       setDetailError(message);
       setNotice({ type: "error", text: message });
     } finally {
-      setDetailLoading(false);
+      if (hydrationRequest === editorHydrationRef.current) setDetailLoading(false);
     }
   }
 
@@ -1871,6 +1960,41 @@ export function SystemSettingsScreen({
         text: error instanceof Error ? error.message : text("jsonInvalid"),
       });
       return;
+    }
+
+    if (currentConfig.slug === "productgroup") {
+      const parentGuid = stringValue(form.parentguid ?? payload.parentguid);
+      const getParentGuidAll = (list: SettingRecord[], pGuid: string): string => {
+        if (!pGuid) return "";
+        const parent = list.find((record) => productCategoryGuid(record) === pGuid);
+        if (!parent) return pGuid;
+        const grandParentGuid = productCategoryParentGuid(parent);
+        const grandParents = getParentGuidAll(list, grandParentGuid);
+        return grandParents ? `${grandParents},${pGuid}` : pGuid;
+      };
+      payload.parentguid = parentGuid;
+      payload.parentguidall = getParentGuidAll(records, parentGuid);
+      const existingXSorts = Array.isArray(payload.xsorts)
+        ? (payload.xsorts as unknown[])
+        : [];
+      if (existingXSorts.length === 0) {
+        const currentGuid = productCategoryGuid(editing ?? payload);
+        const siblingOrders = records
+          .filter(
+            (record) =>
+              productCategoryParentGuid(record) === parentGuid &&
+              productCategoryGuid(record) !== currentGuid,
+          )
+          .map(productCategoryXOrder)
+          .filter((order) => Number.isFinite(order));
+        payload.xsorts = [
+          {
+            code: "X",
+            xorder:
+              siblingOrders.length > 0 ? Math.max(...siblingOrders) + 1 : 1,
+          },
+        ];
+      }
     }
 
     if (currentConfig.slug === "productcategorygroupselectscreen" || currentConfig.slug === "productcategorylist") {
@@ -1922,10 +2046,33 @@ export function SystemSettingsScreen({
 
     normalizeVariantMasterPayload(payload, currentConfig.slug);
 
-    const missingRequired = currentConfig.fields.some(
-      (field) =>
-        field.required && !String(getByPath(payload, field.key) ?? "").trim(),
-    );
+    // Business Code Uppercase + No-Space rules: normalize every businessCode
+    // field (uppercase, strip all whitespace) before required/duplicate checks
+    // and before the payload is sent — mirrors backend utils.NormalizeBusinessCode.
+    for (const field of currentConfig.fields) {
+      if (!field.businessCode) continue;
+      const normalized = normalizeBusinessCode(getByPath(payload, field.key));
+      setByPath(payload, field.key, normalized);
+    }
+
+    const primaryNameLang = (
+      nameEditorLanguageCodes(form, currentConfig, language, workspace)[0] ?? language
+    ).toLowerCase();
+    const missingRequired = currentConfig.fields.some((field) => {
+      if (!field.required) return false;
+      const value = getByPath(payload, field.key);
+      if (field.type === "names") {
+        // String([{...}]) is "[object Object]" — always truthy — so an array of
+        // empty names used to pass this check and saved nameless records.
+        // Require the primary active language to carry a real name.
+        const entries = Array.isArray(value) ? value : [];
+        const primary = entries.find(
+          (item) => isRecord(item) && stringValue(item.code).toLowerCase() === primaryNameLang,
+        );
+        return !stringValue(isRecord(primary) ? primary.name : "").trim();
+      }
+      return !String(value ?? "").trim();
+    });
     if (missingRequired) {
       setNotice({ type: "error", text: text("errorRequired") });
       return;
@@ -2593,15 +2740,15 @@ export function SystemSettingsScreen({
                   type="button"
                   variant="outline"
                   size="icon"
-                  aria-label={language === "th" ? "ย้อนกลับ" : "Back"}
-                  title={language === "th" ? "ย้อนกลับ" : "Back"}
+                  aria-label={language === "th" ? "กลับไปเลือกชุดหมวด" : "Back to category sets"}
+                  title={language === "th" ? "กลับไปเลือกชุดหมวด" : "Back to category sets"}
                   className="size-8 shrink-0 rounded-lg"
                   onClick={async () => {
-                    if (categoryUnsavedChanges) {
+                    if (categoryUnsavedChanges || (formOpen && isFormDirty)) {
                       const confirmLeave = await confirm({
                         title: language === "th" ? "คุณมีข้อมูลที่ยังไม่ได้บันทึก" : "You have unsaved changes",
                         description: language === "th"
-                          ? "คุณมีข้อมูลสินค้าที่ผูกในหมวดหมู่ที่ยังไม่ได้บันทึก ต้องการกลับโดยไม่บันทึกหรือไม่?"
+                          ? "หากกลับไปเลือกชุดหมวดตอนนี้ ข้อมูลที่ยังไม่ได้บันทึกจะหายไป"
                           : "You have unsaved changes. Do you want to leave without saving?",
                         confirmLabel: language === "th" ? "กลับโดยไม่บันทึก" : "Leave without saving",
                         cancelLabel: language === "th" ? "กลับไปแก้ไข" : "Cancel",
@@ -2613,13 +2760,18 @@ export function SystemSettingsScreen({
                     setGroupNumber(null);
                     setCategorySelectedGuid("");
                     setCategorySearchQuery("");
+                    setSelectedRecordId("");
+                    setDetailRecord(null);
+                    setDetailRecordId("");
+                    setFormOpen(false);
+                    setEditing(null);
                   }}
                 >
                   <ArrowLeft className="size-4" />
                 </Button>
                 <Badge
                   variant="outline"
-                  className="h-auto min-h-8 max-w-full whitespace-normal break-words px-2 py-1 text-xs font-semibold leading-snug"
+                  className="h-8 shrink-0 whitespace-nowrap px-2 text-xs font-semibold"
                 >
                   {productCategoryGroupLabel(records, groupNumber, language)}
                 </Badge>
@@ -2649,7 +2801,7 @@ export function SystemSettingsScreen({
                       onClick={() => categorySelectedGuid && handleOpenCategoryCreate(categorySelectedGuid)}
                       disabled={loading || saving || !categorySelectedGuid}
                     >
-                      <FolderPlus className="size-4 text-emerald-600 dark:text-emerald-400" />
+                      <FolderPlus className="size-4 text-primary" />
                       {language === "th" ? "เพิ่มหมวดย่อย" : "Add Subcategory"}
                     </Button>
                   </>
@@ -2663,7 +2815,18 @@ export function SystemSettingsScreen({
                 showSettings={false}
               />
             )}
-            <ManualLink compact language={language} screen={config.manual} />
+            <ManualLink
+              compact={!(showProductGroupHeaderControls || showProductCategoryHeaderControls)}
+              label={
+                showProductGroupHeaderControls || showProductCategoryHeaderControls
+                  ? language === "th"
+                    ? "วิธีใช้"
+                    : "How to use"
+                  : undefined
+              }
+              language={language}
+              screen={config.manual}
+            />
           </div>
         </div>
       </header>
@@ -2740,23 +2903,7 @@ export function SystemSettingsScreen({
                 text={text}
                 workspace={workspace}
               />
-            ) : (
-              <Card className="h-full border-border bg-card shadow-sm">
-                <CardContent className="grid h-full min-h-60 place-items-center p-4 text-center text-sm text-muted-foreground">
-                  <div className="grid gap-2">
-                    <FolderOpen className="mx-auto size-8 text-primary/70" />
-                    <b className="text-foreground">
-                      {language === "th" ? "เลือกหรือเพิ่มกลุ่มสินค้า" : "Select or add a product group"}
-                    </b>
-                    <span>
-                      {language === "th"
-                        ? "เลือกแถวด้านซ้ายเพื่อแก้ไข หรือกดเพิ่มกลุ่มหลัก/กลุ่มย่อย"
-                        : "Select a row on the left to edit, or add a root/subgroup."}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+            ) : null}
           </div>
         </div>
       ) : config.slug === "productwarehousescreen" && !hideChrome ? (
@@ -2945,7 +3092,7 @@ export function SystemSettingsScreen({
             "grid w-full min-w-0 items-stretch gap-3",
             groupNumber === null
               ? "grid-cols-1"
-              : "min-h-[calc(100dvh-12rem)] xl:grid-cols-[minmax(320px,0.95fr)_minmax(420px,1.05fr)]",
+              : "min-h-[36rem] md:h-[calc(100dvh-10rem)] md:grid-cols-[minmax(280px,0.42fr)_minmax(0,1fr)]",
           )}
         >
           <ProductCategoryTreeView
@@ -2956,18 +3103,15 @@ export function SystemSettingsScreen({
             groupNumber={groupNumber}
             setGroupNumber={setGroupNumber}
             selectedGuid={categorySelectedGuid}
-            setSelectedGuid={setCategorySelectedGuid}
             searchQuery={categorySearchQuery}
-            onOpenCreate={handleOpenCategoryCreate}
-            onOpenEdit={openEdit}
-            onDeleteRecord={deleteRecord}
+            onSelectRecord={handleSelectCategoryRecord}
             onRefresh={() => void loadRecords(auth, workspace, config)}
             saving={saving}
             loading={loading}
             readOnly={config.slug === "productcategorylist"}
           />
           {groupNumber === null ? null : (
-            <div className="min-h-0 h-full">
+            <div className="h-full min-h-0 overflow-hidden" data-testid="product-category-detail-pane">
               {config.slug === "productcategorylist" ? (
                 <ProductCategoryItemsEditor
                   auth={auth}
@@ -2992,7 +3136,10 @@ export function SystemSettingsScreen({
                   dateTimeScope={dateTimeScope}
                   language={language}
                   onClose={() => {
-                    if (!saving) setFormOpen(false);
+                    if (!saving) {
+                      setFormOpen(false);
+                      setEditing(null);
+                    }
                   }}
                   onSubmit={saveRecord}
                   saving={saving}
@@ -3000,23 +3147,41 @@ export function SystemSettingsScreen({
                   text={text}
                   workspace={workspace}
                 />
-              ) : (
-                <Card className="h-full border-border bg-card shadow-sm">
-                  <CardContent className="grid h-full min-h-60 place-items-center p-4 text-center text-sm text-muted-foreground">
+              ) : categoryDetailRecord ? (
+                <Card className="flex h-full min-h-0 flex-col overflow-hidden border-border bg-card shadow-sm">
+                  <CardContent className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3" aria-busy={categoryDetailPending}>
+                    <SettingDetailPanel
+                      auth={auth}
+                      categoryHasChildren={records.some(
+                        (record) =>
+                          productCategoryParentGuid(record) ===
+                          recordId(categoryDetailRecord, currentConfig),
+                      )}
+                      config={config}
+                      dictionary={backendLanguage}
+                      language={language}
+                      onDelete={categoryDetailPending ? () => undefined : deleteRecord}
+                      onEdit={categoryDetailPending ? () => undefined : openEdit}
+                      onResetPassword={resetUserPassword}
+                      onToggleAccess={toggleUserAccess}
+                      record={categoryDetailRecord}
+                      saving={saving}
+                      text={text}
+                      workspace={workspace}
+                    />
+                  </CardContent>
+                </Card>
+              ) : detailError ? (
+                <Card className="h-full border-destructive/30 bg-card shadow-sm">
+                  <CardContent className="grid h-full min-h-60 place-items-center p-4 text-center text-sm text-destructive">
                     <div className="grid gap-2">
-                      <FolderOpen className="mx-auto size-8 text-primary/70" />
-                      <b className="text-foreground">
-                        {language === "th" ? "เลือกหรือเพิ่มหมวดสินค้า" : "Select or add a category"}
-                      </b>
-                      <span>
-                        {language === "th"
-                          ? "เลือกแถวด้านซ้ายเพื่อแก้ไข หรือกดเพิ่มหมวดหลัก/หมวดย่อย"
-                          : "Select a row on the left to edit, or add a root/subcategory."}
-                      </span>
+                      <AlertCircle className="mx-auto size-8" />
+                      <b>{language === "th" ? "โหลดรายละเอียดไม่สำเร็จ" : "Could not load details"}</b>
+                      <span className="break-words text-xs">{detailError}</span>
                     </div>
                   </CardContent>
                 </Card>
-              )}
+              ) : null}
             </div>
           )}
         </div>
@@ -4160,6 +4325,7 @@ function settingListColumns(
 
 function SettingDetailPanel({
   auth,
+  categoryHasChildren = false,
   config,
   dictionary,
   language,
@@ -4173,6 +4339,7 @@ function SettingDetailPanel({
   workspace,
 }: {
   auth: AuthSession | null;
+  categoryHasChildren?: boolean;
   config: SystemSettingConfig;
   dictionary: BackendLanguageDictionary;
   language: LanguageCode;
@@ -4185,7 +4352,6 @@ function SettingDetailPanel({
   text: (key: keyof typeof uiEn) => string;
   workspace: WorkspaceSession | null;
 }) {
-  const id = recordId(record, config);
   const displayCode = recordDisplayCode(record, config);
   const title = recordTitle(record, config, language);
   const isUser = config.slug === "user";
@@ -4196,7 +4362,22 @@ function SettingDetailPanel({
     Boolean(auth?.username && workspace?.shop?.createdby && workspace?.shop?.createdby.trim().toLowerCase() === auth.username.trim().toLowerCase());
   const isOwnerOrAdmin = isOwnerCreator || workspace?.shop?.role === 1 || workspace?.shop?.role === 2;
   const isProductUnit = config.slug === "productunit";
+  const isProductCategory = config.slug === "productcategorygroupselectscreen";
+  const hasCategoryChildren = isProductCategory && (
+    categoryHasChildren || Number(record.childcount ?? 0) > 0
+  );
+  const categoryUsesColor = record.useimageorcolor === true ||
+    String(record.useimageorcolor).toLowerCase() === "true";
   const canEdit = config.editable !== false && (!isProductUnit || isOwnerOrAdmin);
+  const visibleFields = config.fields.filter(
+    (field) => {
+      if (!isProductCategory) return true;
+      if (field.key === "groupnumber" || field.key === "parentguid") return false;
+      if (field.key === "colorselecthex") return categoryUsesColor;
+      if (field.key === "imageuri" || field.key === "coveruri") return !categoryUsesColor;
+      return true;
+    },
+  );
   return (
     <section className="grid gap-4">
       <div className="flex flex-col gap-3 rounded-2xl border border-border/80 bg-gradient-to-r from-secondary/15 via-secondary/5 to-transparent p-4 shadow-sm">
@@ -4241,13 +4422,28 @@ function SettingDetailPanel({
               <h2 className="break-words text-lg font-bold text-foreground leading-snug">
                 {title || displayCode || "-"}
               </h2>
-              <p className="break-words text-xs text-muted-foreground mt-0.5">
-                {text("id")}:{" "}
-                <code className="rounded bg-secondary/30 px-1.5 py-0.5 font-mono text-[10px] text-primary">
-                  {displayCode || "-"}
-                </code>
-              </p>
+              {!isProductCategory ? (
+                <p className="mt-0.5 break-words text-xs text-muted-foreground">
+                  {text("id")}:{" "}
+                  <code className="rounded bg-secondary/30 px-1.5 py-0.5 font-mono text-[10px] text-primary">
+                    {displayCode || "-"}
+                  </code>
+                </p>
+              ) : null}
               <div className="mt-2 flex flex-wrap gap-1.5">
+                {isProductCategory ? (
+                  <>
+                    <Badge variant="outline">
+                      {language === "th" ? "ชุด " : "Set "}
+                      {Number(record.groupnumber ?? 0) || "-"}
+                    </Badge>
+                    <Badge variant="secondary">
+                      {productCategoryParentGuid(record)
+                        ? language === "th" ? "หมวดย่อย" : "Subcategory"
+                        : language === "th" ? "หมวดหลัก" : "Root category"}
+                    </Badge>
+                  </>
+                ) : null}
                 {isCreator ? (
                   <Badge variant="warning" className="gap-1 shadow-sm">
                     <Crown className="size-3" />
@@ -4324,7 +4520,14 @@ function SettingDetailPanel({
                 size="sm"
                 variant="outline"
                 onClick={() => onDelete(record)}
-                disabled={isCreator || isSelf}
+                disabled={isCreator || isSelf || hasCategoryChildren}
+                title={
+                  hasCategoryChildren
+                    ? language === "th"
+                      ? "ย้ายหรือลบหมวดย่อยก่อน"
+                      : "Move or delete subcategories first"
+                    : undefined
+                }
                 className="h-8 hover:bg-destructive/5 hover:text-destructive hover:border-destructive/30 transition-colors text-xs font-semibold"
               >
                 <Trash2 className="size-3.5" />
@@ -4336,7 +4539,7 @@ function SettingDetailPanel({
       </div>
 
       <div className="grid gap-2 md:grid-cols-2">
-        {config.fields.map((field) => {
+        {visibleFields.map((field) => {
           if (field.type === "language-list") {
             return (
               <div className={fieldGridItemClass(field, config)} key={field.key}>
@@ -4593,12 +4796,21 @@ function SettingFormDialog({
   text: (key: keyof typeof uiEn) => string;
   workspace: WorkspaceSession | null;
 }) {
+  const isProductCategoryForm = config.slug === "productcategorygroupselectscreen";
+  const categoryUsesColor = form.useimageorcolor === true || String(form.useimageorcolor).toLowerCase() === "true";
+  const shouldRenderField = (field: SystemSettingField) => {
+    if (!isProductCategoryForm) return true;
+    if (field.key === "groupnumber" || field.key === "parentguid") return false;
+    if (field.key === "colorselecthex") return categoryUsesColor;
+    if (field.key === "imageuri" || field.key === "coveruri") return !categoryUsesColor;
+    return true;
+  };
   const formElement = (
     <form
       className={cn(
         "grid gap-3 rounded-2xl border border-border bg-card p-3 text-foreground shadow-sm",
         inline
-          ? "w-full"
+          ? "h-full min-h-0 w-full grid-rows-[auto_minmax(0,1fr)] overflow-hidden"
           : "max-h-[calc(100dvh-24px)] w-[min(860px,calc(100vw-24px))] overflow-hidden shadow-xl",
       )}
       onSubmit={onSubmit}
@@ -4606,13 +4818,22 @@ function SettingFormDialog({
       aria-modal={inline ? undefined : true}
       aria-label={editing ? text("edit") : text("newItem")}
     >
-      <header className="flex min-w-0 items-center justify-between gap-2">
+      <header className="flex min-w-0 flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
-          <h2 className="truncate text-lg font-semibold">
+          <h2 className="break-words text-lg font-semibold leading-snug">
             {editing ? text("edit") : text("newItem")}:{" "}
             {systemSettingTitle(config, language, dictionary)}
           </h2>
           <div className="flex flex-wrap gap-1 text-xs text-muted-foreground">
+            {isProductCategoryForm ? (
+              <Badge variant="outline" className="text-[11px]">
+                {language === "th" ? "ชุด " : "Set "}
+                {Number(form.groupnumber ?? 0) || "-"}
+                {form.parentguid
+                  ? language === "th" ? " · หมวดย่อย" : " · Subcategory"
+                  : language === "th" ? " · หมวดหลัก" : " · Root category"}
+              </Badge>
+            ) : null}
             {config.slug === "department" ||
             config.kind === "restaurant-setting" ? (
               <Badge variant="outline" className="text-[11px]">
@@ -4624,7 +4845,23 @@ function SettingFormDialog({
             ) : null}
           </div>
         </div>
-        {inline ? null : (
+        {inline ? (
+          <div className="flex w-full shrink-0 flex-wrap items-center justify-end gap-2 sm:w-auto" data-testid="inline-form-actions">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onClose}
+              disabled={saving}
+            >
+              {text("cancel")}
+            </Button>
+            <Button type="submit" size="sm" disabled={saving}>
+              {saving ? <Loader2 className="animate-spin" /> : <Save />}
+              {text("save")}
+            </Button>
+          </div>
+        ) : (
           <Button
             type="button"
             variant="outline"
@@ -4639,10 +4876,7 @@ function SettingFormDialog({
       </header>
 
       <div
-        className={cn(
-          "grid min-h-0 gap-2 pr-1",
-          inline ? "" : "overflow-y-auto",
-        )}
+        className="grid min-h-0 gap-2 overflow-y-auto overscroll-contain pr-1"
       >
         {config.slug === "user" ? (
           <UserFormSections
@@ -4656,8 +4890,8 @@ function SettingFormDialog({
             workspace={workspace}
           />
         ) : (
-          <div className="grid gap-2 md:grid-cols-2">
-            {config.fields.map((field) => {
+          <div className="grid content-start gap-2 md:grid-cols-2">
+            {config.fields.filter(shouldRenderField).map((field) => {
               if (isBranchLongitudeField(config, field)) return null;
               return (
                 <div
@@ -4682,8 +4916,8 @@ function SettingFormDialog({
         )}
       </div>
 
-      <footer className="flex flex-wrap items-center justify-end gap-2">
-        {inline ? null : (
+      {inline ? null : (
+        <footer className="flex flex-wrap items-center justify-end gap-2">
           <Button
             type="button"
             variant="outline"
@@ -4692,12 +4926,12 @@ function SettingFormDialog({
           >
             {text("cancel")}
           </Button>
-        )}
-        <Button type="submit" disabled={saving}>
-          {saving ? <Loader2 className="animate-spin" /> : <Save />}
-          {text("save")}
-        </Button>
-      </footer>
+          <Button type="submit" disabled={saving}>
+            {saving ? <Loader2 className="animate-spin" /> : <Save />}
+            {text("save")}
+          </Button>
+        </footer>
+      )}
     </form>
   );
   if (inline) return formElement;
@@ -16080,19 +16314,31 @@ function productCategoryDisplayName(
   return localizedValue(record.names, language) || localizedValue(record.name, language) || stringValue(record.code);
 }
 
+function productCategoryCodelistCount(record: SettingRecord): number {
+  return new Set(
+    (Array.isArray(record.codelist) ? record.codelist : [])
+      .filter(isRecord)
+      .map((item) => stringValue(item.code).trim().toUpperCase())
+      .filter(Boolean),
+  ).size;
+}
+
 function productCategoryGroupLabel(
   records: SettingRecord[],
   groupNumber: number | null,
   language: LanguageCode,
 ): string {
   if (groupNumber === null) return "";
-  const rootNames = records
-    .filter((record) => productCategoryGroupNumber(record) === groupNumber && !productCategoryParentGuid(record))
-    .sort((a, b) => productCategoryXOrder(a) - productCategoryXOrder(b))
-    .map((record) => productCategoryDisplayName(record, language))
-    .filter(Boolean);
-  const prefix = language === "th" ? `กลุ่ม ${groupNumber}` : `Group ${groupNumber}`;
-  return rootNames.length ? `${prefix}: ${rootNames.join(" / ")}` : prefix;
+  const groupRecords = records.filter(
+    (record) => productCategoryGroupNumber(record) === groupNumber,
+  );
+  const productCount = groupRecords.reduce(
+    (total, record) => total + productCategoryCodelistCount(record),
+    0,
+  );
+  return language === "th"
+    ? `ชุด ${groupNumber} · ${groupRecords.length} หมวด · ${productCount} สินค้า`
+    : `Set ${groupNumber} · ${groupRecords.length} categories · ${productCount} products`;
 }
 
 function isEmailLike(value: unknown): boolean {

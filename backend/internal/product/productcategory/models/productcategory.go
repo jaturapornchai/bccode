@@ -16,7 +16,7 @@ type ProductCategory struct {
 	ImageUri                 string                        `json:"imageuri" bson:"imageuri"`
 	Names                    *[]models.NameX               `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
 	XSorts                   *[]models.XSort               `json:"xsorts" bson:"xsorts" validate:"unique=Code,dive"`
-	CodeList                 *[]CodeXSort                  `json:"codelist" bson:"codelist" validate:"unique=Barcode,dive"`
+	CodeList                 *[]CodeXSort                  `json:"codelist" bson:"codelist" validate:"unique=Code,dive"`
 	UseImageOrColor          bool                          `json:"useimageorcolor" bson:"useimageorcolor"`
 	ColorSelect              string                        `json:"colorselect" bson:"colorselect"`
 	ColorSelectHex           string                        `json:"colorselecthex" bson:"colorselecthex"`
@@ -54,13 +54,9 @@ type ProductCategoryTimeForSale struct {
 }
 
 type CodeXSort struct {
-	Code             string          `json:"code" bson:"code"`
-	XOrder           uint            `json:"xorder" bson:"xorder" validate:"min=0,max=4294967295"`
-	Barcode          string          `json:"barcode" bson:"barcode"`
-	UnitCode         string          `json:"unitcode" bson:"unitcode"`
-	UnitNames        *[]models.NameX `json:"unitnames" bson:"unitnames"`
-	Names            *[]models.NameX `json:"names" bson:"names" `
-	ManufacturerGUID string          `json:"manufacturerguid" bson:"manufacturerguid"`
+	Code   string          `json:"code" bson:"code" validate:"required"`
+	XOrder uint            `json:"xorder" bson:"xorder" validate:"min=0,max=4294967295"`
+	Names  *[]models.NameX `json:"names" bson:"names"`
 }
 
 type ProductCategoryInfo struct {
@@ -111,7 +107,4 @@ type ProductCategoryDeleteActivity struct {
 
 func (ProductCategoryDeleteActivity) CollectionName() string {
 	return productcategoryCollectionName
-}
-
-type BarcodesModifyReqesut struct {
 }

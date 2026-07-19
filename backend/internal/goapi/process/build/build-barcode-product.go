@@ -3,6 +3,7 @@ package build
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/models"
 	"time"
@@ -17,10 +18,10 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2"
 )
 
-func ProcessInsertBarCodeListForPostgres(db *sql.DB, barcodes *[]models.BarcodeModel) error {
+func ProcessInsertBarCodeListForPostgres(conn interface{}, barcodes *[]models.BarcodeModel) error {
 	// เตรียม columns สำหรับ COPY FROM
 	columns := []string{
-		"barcode", "barcoderef", "itemcode", "name0", "unitcode", "unitname",
+		"holding_code", "barcode", "barcoderef", "itemcode", "name0", "unitcode", "unitname",
 		"groupcode", "groupnames", "price1", "price_retail", "barcoderefunitstand", "barcoderefunitdivide",
 		"isstock", "itemtype", "checksum", "imageuri",
 	}
@@ -30,6 +31,7 @@ func ProcessInsertBarCodeListForPostgres(db *sql.DB, barcodes *[]models.BarcodeM
 
 	for i, barcode := range *barcodes {
 		rows[i] = []any{
+			barcode.HoldingCode,
 			barcode.Barcode,
 			barcode.BarcodeRef,
 			barcode.ItemCode,
@@ -53,7 +55,7 @@ func ProcessInsertBarCodeListForPostgres(db *sql.DB, barcodes *[]models.BarcodeM
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	err := mypg.BulkInsertWithCopy(ctx, db, "productbarcode", columns, rows)
+	err := mypg.BulkInsertWithCopy(ctx, conn, "productbarcode", columns, rows)
 	if err != nil {
 		return err
 	}
@@ -128,74 +130,93 @@ func ProcessInsertBarCodeList(dbPg *sql.DB, chClient clickhouse.Conn, barcodes *
 }
 
 func ProcessBarcodeRebuildAll(holdingCode string) {
-	mongoClient := myglobal.SafeMongoConnectFast() // Use optimized connection
-	if mongoClient == nil {
-		logger.Error("MongoConnect failed")
-		return
-	}
-
 	logger.Info("Starting BarcodeRebuildAll for shop %s", holdingCode)
-
-	pgDb, err := mypg.PgSqlFastConnect(holdingCode)
+	productBarcodes, err := loadProductBarcodesFromMongo(holdingCode)
 	if err != nil {
-		logger.Info("Failed to connect to Postgres: %v", err)
+		logger.Error("loading product barcodes from MongoDB: %v", err)
+		return
+	}
+	if err := rebuildProductBarcodePostgres(holdingCode, &productBarcodes); err != nil {
+		logger.Error("rebuilding PostgreSQL productbarcode: %v", err)
 		return
 	}
 
-	// postgresql delete existing rows for this shop (แยก database แล้ว ไม่ต้อง where holding_code)
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	_, err = pgDb.ExecContext(ctx, "TRUNCATE TABLE productbarcode")
-	if err != nil {
-		logger.Error("truncating productbarcode: %v", err)
-		return
-	}
-	logger.Info("Cleared productbarcode rows for holdingCode %s", holdingCode)
-
-	// clickhouse delete existing rows for this shop
 	chClient, err := myclickhouse.ClickHouseFastConnect()
 	if err != nil || chClient == nil {
-		logger.Info("Failed to connect to ClickHouse: %v", err)
+		logger.Error("PostgreSQL productbarcode rebuilt, but ClickHouse connection failed: %v", err)
 		return
 	}
-	// ใช้ connection pool ไม่ต้อง close
+	if err := chClient.Exec(context.Background(), "ALTER TABLE productbarcode DELETE WHERE holding_code = ?", holdingCode); err != nil {
+		logger.Error("PostgreSQL productbarcode rebuilt, but ClickHouse cleanup failed: %v", err)
+		return
+	}
+	ProcessInsertBarCodeListForClickHouse(chClient, &productBarcodes)
+	logger.Info("Rebuilt %d product barcodes for shop %s", len(productBarcodes), holdingCode)
+}
 
-	err = chClient.Exec(context.Background(), "ALTER TABLE productbarcode DELETE WHERE holding_code = ?", holdingCode)
+func ProcessBarcodePostgresRebuildAll(holdingCode string) (int, error) {
+	productBarcodes, err := loadProductBarcodesFromMongo(holdingCode)
 	if err != nil {
-		logger.Error("deleting existing ClickHouse productbarcode rows: %v", err)
-		return
+		return 0, err
 	}
+	if err := rebuildProductBarcodePostgres(holdingCode, &productBarcodes); err != nil {
+		return 0, err
+	}
+	logger.Info("Rebuilt %d PostgreSQL product barcodes for shop %s", len(productBarcodes), holdingCode)
+	return len(productBarcodes), nil
+}
 
-	// read from MongoDB
-	svcConfig := config.NewServiceConfig()
-	MongodbDatabaseName := svcConfig.MongodbDatabaseName()
-	collection := mongoClient.Database(MongodbDatabaseName).Collection("productbarcodes")
-	cur, err := collection.Find(context.Background(), bson.M{"holdingcode": holdingCode, "deletedby": bson.M{"$exists": false}})
-	logger.Info("Finding documents in MongoDB collection %s", MongodbDatabaseName)
+func loadProductBarcodesFromMongo(holdingCode string) ([]models.BarcodeModel, error) {
+	mongoClient := myglobal.SafeMongoConnectFast()
+	if mongoClient == nil {
+		return nil, fmt.Errorf("connect MongoDB for product barcode projection")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	databaseName := config.NewServiceConfig().MongodbDatabaseName()
+	cur, err := mongoClient.Database(databaseName).Collection("productbarcodes").Find(
+		ctx,
+		bson.M{"holdingcode": holdingCode, "deletedat": nil},
+	)
 	if err != nil {
-		logger.Error("finding documents: %v", err)
-		return
+		return nil, fmt.Errorf("find MongoDB product barcodes: %w", err)
 	}
-	defer cur.Close(context.Background())
+	defer cur.Close(ctx)
 
-	var productBarcodes []models.BarcodeModel
-
-	for cur.Next(context.Background()) {
+	productBarcodes := make([]models.BarcodeModel, 0)
+	for cur.Next(ctx) {
 		barcodeModel, _ := myglobal.MapBarcodeFromMongoToStruct(myglobal.ProcessProductBarcodeDecode(cur.Current.String()))
 		productBarcodes = append(productBarcodes, barcodeModel)
-		// ไม่ต้องเก็บ barcodeRefModel อีกแล้ว
 	}
 	if err := cur.Err(); err != nil {
-		logger.Info("Cursor error: %v", err)
-		return
+		return nil, fmt.Errorf("iterate MongoDB product barcodes: %w", err)
 	}
-	logger.Info("Fetched %d product barcodes from MongoDB for shop %s", len(productBarcodes), holdingCode)
+	return productBarcodes, nil
+}
 
-	// insert into Postgres and ClickHouse
-	if err := ProcessInsertBarCodeList(pgDb, chClient, &productBarcodes); err != nil {
-		logger.Error("BulkInsertWithCopy productbarcode error: %v", err)
-		return
+func rebuildProductBarcodePostgres(holdingCode string, productBarcodes *[]models.BarcodeModel) error {
+	pgDB, err := mypg.PgSqlFastConnect(holdingCode)
+	if err != nil {
+		return fmt.Errorf("connect PostgreSQL product barcode projection: %w", err)
 	}
-	logger.Info("Inserted %d product barcodes for shop %s", len(productBarcodes), holdingCode)
+	if err := TableProductBarcodeCreate(pgDB); err != nil {
+		return err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	tx, err := pgDB.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin PostgreSQL product barcode rebuild: %w", err)
+	}
+	defer tx.Rollback()
+	if _, err := tx.ExecContext(ctx, "TRUNCATE TABLE productbarcode"); err != nil {
+		return fmt.Errorf("clear PostgreSQL product barcode projection: %w", err)
+	}
+	if err := ProcessInsertBarCodeListForPostgres(tx, productBarcodes); err != nil {
+		return fmt.Errorf("insert PostgreSQL product barcode projection: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit PostgreSQL product barcode projection: %w", err)
+	}
+	return nil
 }

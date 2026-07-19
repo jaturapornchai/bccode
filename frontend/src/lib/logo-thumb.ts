@@ -6,7 +6,7 @@
 const CF_IMAGE_PREFIX = "/cdn-cgi/image";
 
 /**
- * Default thumbnail width (in pixels) used across BC Account forms, list rows,
+ * Default thumbnail width (in pixels) used across BC Ai Account forms, list rows,
  * and previews. Logos are square-ish brand marks, so we keep a single size and
  * let CSS handle the visible box.
  */

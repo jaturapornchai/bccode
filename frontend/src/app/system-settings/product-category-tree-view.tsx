@@ -4,12 +4,12 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import {
   ChevronDown,
   ChevronRight,
-  Edit3,
+  ChevronUp,
   GripVertical,
   Home,
   Loader2,
-  FolderPlus,
-  Trash2,
+  Redo2,
+  Undo2,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,11 +26,8 @@ interface ProductCategoryTreeViewProps {
   groupNumber: number | null;
   setGroupNumber: (num: number | null) => void;
   selectedGuid: string;
-  setSelectedGuid: (guid: string) => void;
   searchQuery: string;
-  onOpenCreate: (parentGuid?: string) => void;
-  onOpenEdit: (record: SettingRecord) => void;
-  onDeleteRecord: (record: SettingRecord) => void;
+  onSelectRecord: (record: SettingRecord) => void | Promise<void>;
   onRefresh?: () => void;
   saving: boolean;
   loading: boolean;
@@ -50,6 +47,12 @@ interface CategoryNode {
 type CategoryName = { code: string; name: string };
 type CategoryXSort = { code: string; xorder: number };
 type XSortPayload = { guidfixed: string; code: string; xorder: number };
+
+// Undo/redo: one snapshot = everything needed to replay a move back to a
+// prior state via the real backend calls (not a visual-only revert).
+type MoveSnapshot = { parentGuid: string; parentGuidAll: string; xsorts: XSortPayload[] };
+type MoveRecord = { guid: string; before: MoveSnapshot; after: MoveSnapshot };
+
 type GroupSummary = {
   count: number;
   itemCount: number;
@@ -57,38 +60,21 @@ type GroupSummary = {
 };
 
 const GROUP_CARD_GAP_PX = 8;
-const GROUP_CARD_MIN_WIDTH_PX = 230;
+const GROUP_CARD_MIN_WIDTH_PX = 280;
+const GROUP_PREVIEW_LIMIT = 3;
 const TREE_LAYOUT_ANIMATION_MS = 220;
 const CATEGORY_LEVEL_STYLES = [
   {
     caret: "text-primary",
     grip: "text-primary/45 group-hover/row:text-primary",
-    name: "text-[15px] font-bold text-foreground",
+    name: "font-bold text-foreground",
     order: "text-primary",
   },
   {
-    caret: "text-sky-600 dark:text-sky-300",
-    grip: "text-sky-500/55 group-hover/row:text-sky-600 dark:group-hover/row:text-sky-300",
-    name: "font-semibold text-sky-900 dark:text-sky-100",
-    order: "text-sky-600 dark:text-sky-300",
-  },
-  {
-    caret: "text-emerald-600 dark:text-emerald-300",
-    grip: "text-emerald-500/55 group-hover/row:text-emerald-600 dark:group-hover/row:text-emerald-300",
-    name: "font-semibold text-emerald-900 dark:text-emerald-100",
-    order: "text-emerald-600 dark:text-emerald-300",
-  },
-  {
-    caret: "text-amber-600 dark:text-amber-300",
-    grip: "text-amber-500/60 group-hover/row:text-amber-600 dark:group-hover/row:text-amber-300",
-    name: "font-medium text-amber-900 dark:text-amber-100",
-    order: "text-amber-600 dark:text-amber-300",
-  },
-  {
-    caret: "text-violet-600 dark:text-violet-300",
-    grip: "text-violet-500/55 group-hover/row:text-violet-600 dark:group-hover/row:text-violet-300",
-    name: "font-medium text-violet-900 dark:text-violet-100",
-    order: "text-violet-600 dark:text-violet-300",
+    caret: "text-muted-foreground",
+    grip: "text-muted-foreground/45 group-hover/row:text-primary",
+    name: "font-medium text-foreground",
+    order: "text-muted-foreground",
   },
 ] as const;
 
@@ -102,8 +88,6 @@ type DropPosition = "before" | "after" | "inside";
 interface DragState {
   guid: string;
   parentGuid: string;
-  offsetX: number;
-  offsetY: number;
   rect: {
     left: number;
     top: number;
@@ -117,6 +101,23 @@ interface PointerDragState extends DragState {
   startX: number;
   startY: number;
   started: boolean;
+}
+
+// One-shot geometry cache captured at drag-start (and on scroll) -- see
+// captureDragGeometry. Mid-drag hit-testing reads only this, never the DOM.
+interface DragGeometryRow {
+  guid: string;
+  isSelf: boolean;
+  top: number;
+  bottom: number;
+  mid: number;
+  reorderAllowed: boolean;
+  insideRect: { top: number; bottom: number; left: number; right: number } | null;
+}
+
+interface DragGeometry {
+  rows: DragGeometryRow[];
+  root: { top: number; bottom: number } | null;
 }
 
 type ParentOverride = {
@@ -137,7 +138,14 @@ const recordGroupNumber = (record: SettingRecord): number =>
   Number(record.groupnumber ?? record.groupnumber ?? 0);
 
 const recordCodelistCount = (record: SettingRecord): number =>
-  Array.isArray(record.codelist) ? record.codelist.length : 0;
+  new Set(
+    (Array.isArray(record.codelist) ? record.codelist : [])
+      .filter((item): item is SettingRecord =>
+        typeof item === "object" && item !== null && !Array.isArray(item)
+      )
+      .map((item) => String(item.code ?? "").trim().toUpperCase())
+      .filter(Boolean),
+  ).size;
 
 const toCategoryNames = (value: unknown): CategoryName[] =>
   Array.isArray(value)
@@ -167,11 +175,8 @@ export function ProductCategoryTreeView({
   groupNumber,
   setGroupNumber,
   selectedGuid,
-  setSelectedGuid,
   searchQuery,
-  onOpenCreate,
-  onOpenEdit,
-  onDeleteRecord,
+  onSelectRecord,
   onRefresh,
   saving,
   loading,
@@ -181,10 +186,17 @@ export function ProductCategoryTreeView({
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [dropTarget, setDropTarget] = useState<{ guid: string; position: DropPosition } | null>(null);
   const [orderOverrides, setOrderOverrides] = useState<Record<string, number>>({});
-  const [previewOrderOverrides, setPreviewOrderOverrides] = useState<Record<string, number>>({});
   const [parentOverrides, setParentOverrides] = useState<Record<string, ParentOverride>>({});
   const [reorderError, setReorderError] = useState<string>("");
   const [rootDropActive, setRootDropActive] = useState(false);
+  // Undo/redo stack for sibling-reorder and reparent moves (drag or button).
+  // index === -1 means "nothing to undo". Session-local, reset on reload or
+  // whenever `records`/`groupNumber` changes (same effect that already clears
+  // the other optimistic override state below).
+  const [moveHistory, setMoveHistory] = useState<{ stack: MoveRecord[]; index: number }>({ stack: [], index: -1 });
+  // One shared in-flight flag for every move-persisting call (button/drag
+  // move AND undo/redo apply) so they can't race each other.
+  const [isMoveInFlight, setIsMoveInFlight] = useState(false);
   const [arrivalHighlight, setArrivalHighlight] = useState<{ guid: string; nonce: number } | null>(null);
   const groupSelectorRef = useRef<HTMLElement | null>(null);
   const treeListRef = useRef<HTMLDivElement | null>(null);
@@ -197,11 +209,15 @@ export function ProductCategoryTreeView({
     cancel: (event: PointerEvent) => void;
   } | null>(null);
   const ignoreNextClickRef = useRef(false);
-  const previewOrderOverridesRef = useRef<Record<string, number>>({});
-  const previewDropKeyRef = useRef("");
   const pendingLayoutRectsRef = useRef<Map<string, DOMRect> | null>(null);
   const layoutAnimationFrameRef = useRef<number | null>(null);
   const arrivalTimerRef = useRef<number | null>(null);
+  // rAF-coalesced pointer tracking: only the ghost transform + drop-target
+  // hit test run per animation frame, never per raw pointermove.
+  const latestPointerRef = useRef<{ clientX: number; clientY: number } | null>(null);
+  const dragRafRef = useRef<number | null>(null);
+  const dragGhostRef = useRef<HTMLDivElement | null>(null);
+  const dragGeometryRef = useRef<DragGeometry | null>(null);
   const [groupCardWidth, setGroupCardWidth] = useState<number | null>(null);
 
   const setDropTargetState = (next: { guid: string; position: DropPosition } | null) => {
@@ -213,11 +229,6 @@ export function ProductCategoryTreeView({
     rootDropActiveRef.current = next;
     setRootDropActive(next);
   };
-
-  const setPreviewOrderOverridesState = useCallback((next: Record<string, number>) => {
-    previewOrderOverridesRef.current = next;
-    setPreviewOrderOverrides(next);
-  }, []);
 
   const captureTreeLayout = useCallback(() => {
     const root = treeListRef.current;
@@ -297,8 +308,6 @@ export function ProductCategoryTreeView({
 
   useEffect(() => {
     setOrderOverrides({});
-    setPreviewOrderOverridesState({});
-    previewDropKeyRef.current = "";
     setParentOverrides({});
     setArrivalHighlight(null);
     setDragState(null);
@@ -307,8 +316,16 @@ export function ProductCategoryTreeView({
     setDropTarget(null);
     setRootDropActive(false);
     pointerDragRef.current = null;
+    dragGeometryRef.current = null;
+    latestPointerRef.current = null;
+    if (dragRafRef.current !== null) {
+      window.cancelAnimationFrame(dragRafRef.current);
+      dragRafRef.current = null;
+    }
     ignoreNextClickRef.current = false;
-  }, [records, groupNumber, setPreviewOrderOverridesState]);
+    setMoveHistory({ stack: [], index: -1 });
+    setIsMoveInFlight(false);
+  }, [records, groupNumber]);
 
   useEffect(() => {
     return () => {
@@ -317,6 +334,9 @@ export function ProductCategoryTreeView({
       }
       if (arrivalTimerRef.current !== null) {
         window.clearTimeout(arrivalTimerRef.current);
+      }
+      if (dragRafRef.current !== null) {
+        window.cancelAnimationFrame(dragRafRef.current);
       }
       if (dragWindowListenersRef.current) {
         window.removeEventListener("pointermove", dragWindowListenersRef.current.move);
@@ -436,7 +456,7 @@ export function ProductCategoryTreeView({
   const typedCategories = useMemo<CategoryNode[]>(() => {
     return records.map((r) => {
       const guid = recordGuid(r);
-      const orderOverride = previewOrderOverrides[guid] ?? orderOverrides[guid];
+      const orderOverride = orderOverrides[guid];
       const parentOverride = parentOverrides[guid];
       return {
         guidfixed: guid,
@@ -445,24 +465,15 @@ export function ProductCategoryTreeView({
         names: toCategoryNames(r.names),
         xsorts: orderOverride ? [{ code: "X", xorder: orderOverride }] : toCategoryXSorts(r.xsorts),
         groupnumber: recordGroupNumber(r),
-        productCount: Array.isArray(r.codelist) ? r.codelist.length : 0,
+        productCount: recordCodelistCount(r),
       };
     });
-  }, [records, orderOverrides, previewOrderOverrides, parentOverrides]);
+  }, [records, orderOverrides, parentOverrides]);
 
   // Build tree from flat categories
   const treeRoots = useMemo<CategoryTreeNode[]>(() => {
-    // Filter by search query if present
-    let filteredList = typedCategories;
-    if (searchQuery.trim()) {
-      const needle = searchQuery.toLowerCase();
-      filteredList = typedCategories.filter((item) =>
-        getDisplayName(item.names).toLowerCase().includes(needle)
-      );
-    }
-
     // Sort items by xorder first
-    const sorted = [...filteredList].sort((a, b) => {
+    const sorted = [...typedCategories].sort((a, b) => {
       const orderA = a.xsorts?.[0]?.xorder ?? 0;
       const orderB = b.xsorts?.[0]?.xorder ?? 0;
       return orderA - orderB;
@@ -489,7 +500,19 @@ export function ProductCategoryTreeView({
       }
     }
 
-    return roots;
+    const needle = searchQuery.trim().toLowerCase();
+    if (!needle) return roots;
+
+    const keepMatchesWithAncestors = (nodes: CategoryTreeNode[]): CategoryTreeNode[] =>
+      nodes.flatMap((node) => {
+        const childCategories = keepMatchesWithAncestors(node.childCategories);
+        const matches = getDisplayName(node.detail.names).toLowerCase().includes(needle);
+        return matches || childCategories.length > 0
+          ? [{ ...node, childCategories }]
+          : [];
+      });
+
+    return keepMatchesWithAncestors(roots);
   }, [typedCategories, searchQuery, getDisplayName]);
 
   useLayoutEffect(() => {
@@ -517,6 +540,84 @@ export function ProductCategoryTreeView({
     categoryTreeLookupsRef.current = categoryTreeLookups;
   }, [categoryTreeLookups]);
 
+  const canDropOnTarget = (
+    activeDrag: DragState,
+    node: CategoryTreeNode,
+    _siblings: CategoryTreeNode[],
+    position: DropPosition
+  ) => {
+    if (activeDrag.guid === node.detail.guidfixed) return false;
+    const targetParentChain = node.detail.parentguidall
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+    const canMoveAsChild =
+      position === "inside" &&
+      !targetParentChain.includes(activeDrag.guid);
+    const canReorderSibling =
+      position !== "inside" && !targetParentChain.includes(activeDrag.guid);
+    return canReorderSibling || canMoveAsChild;
+  };
+
+  // One-shot geometry snapshot for the whole drag -- captured once when the
+  // drag starts and again on scroll (see the effect below), never per
+  // pointermove. Everything mid-drag hit-tests against this cache only, so
+  // dragging never triggers a DOM read. The dragged row's own rect is kept
+  // (isSelf) purely to detect "pointer hasn't left its own footprint yet"
+  // without falling through to a false nearest-row match.
+  const captureDragGeometry = (activeDrag: DragState): DragGeometry => {
+    const root = treeListRef.current;
+    if (!root) return { rows: [], root: null };
+
+    const rows: DragGeometryRow[] = [];
+    root.querySelectorAll<HTMLElement>("[data-category-row-guid]").forEach((element) => {
+      const guid = element.dataset.categoryRowGuid;
+      if (!guid) return;
+      const isSelf = guid === activeDrag.guid;
+      const node = categoryTreeLookups.nodeByGuid.get(guid);
+      const rect = element.getBoundingClientRect();
+      const reorderAllowed = !isSelf && !!node && canDropOnTarget(activeDrag, node, [], "before");
+      const insideEl = isSelf ? null : element.querySelector<HTMLElement>("[data-category-inside-drop-guid]");
+      let insideRect: DragGeometryRow["insideRect"] = null;
+      if (insideEl) {
+        const r = insideEl.getBoundingClientRect();
+        insideRect = { top: r.top - 3, bottom: r.bottom + 3, left: r.left - 3, right: r.right + 3 };
+      }
+      rows.push({ guid, isSelf, top: rect.top, bottom: rect.bottom, mid: rect.top + rect.height / 2, reorderAllowed, insideRect });
+    });
+
+    const rootEl = root.querySelector<HTMLElement>("[data-category-root-drop='true']");
+    const rootRect = rootEl ? rootEl.getBoundingClientRect() : null;
+    return { rows, root: rootRect ? { top: rootRect.top, bottom: rootRect.bottom } : null };
+  };
+
+  // Snapshot geometry exactly once when a drag starts (dragState guid
+  // none -> set), and re-snapshot on scroll so a mid-drag scroll can't stale
+  // the cache. Runs as a layout effect so it reads the DOM after the row
+  // re-render that shows the "Drop child" chips, but before paint.
+  //
+  // This hook (and canDropOnTarget/captureDragGeometry above) MUST stay
+  // before the `groupNumber === null` early return below -- moving it into
+  // the tree-view portion of the render (like the rest of the drag/move
+  // logic) would make its hook call conditional on groupNumber, which
+  // violates the Rules of Hooks (React error #310) the moment a user picks
+  // a group for the first time in a session.
+  useLayoutEffect(() => {
+    if (!dragState) {
+      dragGeometryRef.current = null;
+      return;
+    }
+    const activeDrag = dragState;
+    dragGeometryRef.current = captureDragGeometry(activeDrag);
+    const root = treeListRef.current;
+    if (!root) return;
+    const onScroll = () => {
+      dragGeometryRef.current = captureDragGeometry(activeDrag);
+    };
+    root.addEventListener("scroll", onScroll, { passive: true });
+    return () => root.removeEventListener("scroll", onScroll);
+  }, [dragState?.guid]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const groupSummaries = useMemo<Record<number, GroupSummary>>(() => {
     const summaries: Record<number, GroupSummary> = {};
     for (const r of records) {
@@ -539,28 +640,40 @@ export function ProductCategoryTreeView({
         })
         .map((record) => getDisplayName(toCategoryNames(record.names)))
         .filter(Boolean);
-      summaries[gn].label = rootNames.join(" / ");
+      const preview = rootNames.slice(0, GROUP_PREVIEW_LIMIT).join(" / ");
+      const remaining = Math.max(0, rootNames.length - GROUP_PREVIEW_LIMIT);
+      summaries[gn].label = remaining > 0
+        ? language === "th"
+          ? `${preview} และอีก ${remaining} หมวดหลัก`
+          : `${preview} and ${remaining} more root categories`
+        : preview;
     }
     return summaries;
-  }, [records, getDisplayName]);
+  }, [records, getDisplayName, language]);
+
+  const configuredGroupCount = Object.values(groupSummaries).filter(
+    (summary) => summary.count > 0,
+  ).length;
 
   // Group selector: compact 20 group buttons
   if (groupNumber === null) {
     return (
-      <div className="grid w-full gap-3 p-2 sm:p-3">
+      <div className="grid w-full gap-3 p-2 sm:p-3" data-testid="product-category-group-selector">
         <header className="flex flex-wrap items-end justify-between gap-2 border-b border-border pb-2">
           <div className="grid gap-0.5">
             <h1 className="text-base font-bold tracking-tight text-foreground">
-              {language === "th" ? "เลือกกลุ่มหมวดสินค้า" : "Select Category Group"}
+              {language === "th" ? "เลือกชุดหมวดสินค้า" : "Select Category Set"}
             </h1>
             <p className="text-xs text-muted-foreground">
               {language === "th"
-                ? "กดเลือกกลุ่มเพื่อจัดการหมวดสินค้า"
-                : "Select a group to manage product categories."}
+                ? "แต่ละชุดใช้จัดหมวดให้เหมาะกับหน้าจอขายหรือช่องทางใช้งาน"
+                : "Each set organizes categories for a sales screen or usage channel."}
             </p>
           </div>
-          <span className="rounded-full border border-border bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
-            {language === "th" ? "20 กลุ่ม" : "20 groups"}
+          <span className="rounded-full border border-primary/20 bg-primary/5 px-2.5 py-1 text-xs font-semibold text-primary">
+            {language === "th"
+              ? `${configuredGroupCount} ชุดมีข้อมูล · ${20 - configuredGroupCount} ชุดว่าง`
+              : `${configuredGroupCount} configured · ${20 - configuredGroupCount} empty`}
           </span>
         </header>
 
@@ -574,7 +687,7 @@ export function ProductCategoryTreeView({
             {Array.from({ length: 20 }, (_, i) => i + 1).map((num) => {
               const summary = groupSummaries[num] ?? { count: 0, itemCount: 0, label: "" };
               const hasData = summary.count > 0;
-              const groupLabel = summary.label || (language === "th" ? "ยังไม่กำหนดชื่อกลุ่ม" : "No group name");
+              const groupLabel = summary.label || (language === "th" ? "ยังไม่มีหมวดสินค้า" : "No categories yet");
               const countLabel = language === "th"
                 ? `${summary.count} หมวด / ${summary.itemCount} สินค้า`
                 : `${summary.count} categories / ${summary.itemCount} items`;
@@ -588,27 +701,30 @@ export function ProductCategoryTreeView({
                       : undefined
                   }
                   className={cn(
-                    "group flex min-h-12 flex-none items-center gap-2 rounded-xl border border-border bg-card px-2.5 py-2 text-left shadow-sm transition-[background-color,border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:bg-primary/5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-                    hasData && "border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/60 dark:bg-emerald-950/20",
+                    "group flex min-h-14 flex-none items-center gap-2 rounded-xl border border-border bg-card px-2.5 py-2 text-left shadow-sm transition-[background-color,border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:bg-primary/5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                    hasData && "border-primary/25 bg-primary/[0.04]",
                   )}
                   onClick={() => setGroupNumber(num)}
                 >
                   <span className={cn(
                     "grid size-9 shrink-0 place-items-center rounded-lg text-lg font-black transition-colors",
                     hasData
-                      ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300"
+                      ? "bg-primary/10 text-primary"
                       : "bg-muted text-foreground group-hover:bg-primary/10 group-hover:text-primary",
                   )}>
                     {num}
                   </span>
                   <span className="grid min-w-0 flex-1 gap-0.5">
-                    <span className="whitespace-normal break-words text-xs font-semibold leading-snug text-foreground">
+                    <span
+                      className="line-clamp-2 break-words text-xs font-semibold leading-snug text-foreground"
+                      title={groupLabel}
+                    >
                       {groupLabel}
                     </span>
                     <span className={cn(
                       "w-fit rounded-full px-2 py-0.5 text-xs font-bold leading-none",
                       hasData
-                        ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300"
+                        ? "bg-primary/10 text-primary"
                         : "bg-muted text-muted-foreground",
                     )}>
                       {countLabel}
@@ -748,46 +864,12 @@ export function ProductCategoryTreeView({
   const uniqueXSortPayload = (items: XSortPayload[]): XSortPayload[] =>
     Array.from(new Map(items.map((item) => [item.guidfixed, item])).values());
 
-  const hasPreviewOrder = () => Object.keys(previewOrderOverridesRef.current).length > 0;
-
-  const clearDragPreview = (animate = true) => {
-    if (!hasPreviewOrder()) {
-      previewDropKeyRef.current = "";
-      return;
-    }
-    if (animate) captureTreeLayout();
-    previewDropKeyRef.current = "";
-    setPreviewOrderOverridesState({});
-  };
-
-  const previewSiblingReorder = (
-    activeDrag: DragState,
-    targetGuid: string,
-    position: Exclude<DropPosition, "inside">,
-    siblings: CategoryTreeNode[]
-  ): boolean => {
-    const previewKey = `${activeDrag.guid}:${targetGuid}:${position}`;
-    if (previewDropKeyRef.current === previewKey) return true;
-
-    const draggedNode = siblings.find((item) => item.detail.guidfixed === activeDrag.guid);
-    const targetIndex = siblings.findIndex((item) => item.detail.guidfixed === targetGuid);
-    if (!draggedNode || targetIndex === -1) return false;
-
-    const withoutDragged = siblings.filter((item) => item.detail.guidfixed !== activeDrag.guid);
-    const targetIndexAfterRemoval = withoutDragged.findIndex((item) => item.detail.guidfixed === targetGuid);
-    const insertIndex = targetIndexAfterRemoval + (position === "after" ? 1 : 0);
-    const reorderedSiblings = [...withoutDragged];
-    reorderedSiblings.splice(insertIndex, 0, draggedNode);
-
-    const sameOrder = siblings.every((item, index) => item.detail.guidfixed === reorderedSiblings[index]?.detail.guidfixed);
-    if (sameOrder) return false;
-
-    captureTreeLayout();
-    previewDropKeyRef.current = previewKey;
-    setPreviewOrderOverridesState(
-      Object.fromEntries(normalizeSiblingOrders(reorderedSiblings).map((item) => [item.guidfixed, item.xorder]))
-    );
-    return true;
+  // New move after an undo clears the redo tail (standard undo/redo semantics).
+  const pushMoveRecord = (record: MoveRecord) => {
+    setMoveHistory((prev) => ({
+      stack: [...prev.stack.slice(0, prev.index + 1), record],
+      index: prev.index + 1,
+    }));
   };
 
   const categoryErrorText = (prefixTh: string, prefixEn: string, err: unknown): string =>
@@ -822,7 +904,7 @@ export function ProductCategoryTreeView({
     if (!auth || !workspace) return;
     if (position === "inside") return;
     if (draggedGuid === targetGuid) return;
-    const previewActive = hasPreviewOrder();
+    if (isMoveInFlight) return;
 
     const draggedRecord = records.find((record) => recordGuid(record) === draggedGuid);
     const draggedCategory = typedCategories.find((item) => item.guidfixed === draggedGuid);
@@ -843,7 +925,6 @@ export function ProductCategoryTreeView({
           ? "ย้ายไม่ได้: ไม่สามารถย้ายหมวดไปไว้ใต้หมวดย่อยของตัวเอง"
           : "Move failed: category cannot be moved inside its own child branch."
       );
-      clearDragPreview();
       return;
     }
 
@@ -863,7 +944,7 @@ export function ProductCategoryTreeView({
     reorderedSiblings.splice(insertIndex, 0, movedCategory);
 
     const sameOrder = currentTargetSiblings.every((item, index) => item.guidfixed === reorderedSiblings[index]?.guidfixed);
-    if (!previewActive && !movingAcrossParents && sameOrder) return;
+    if (!movingAcrossParents && sameOrder) return;
 
     const targetSiblingPayload = normalizeSiblingOrders(reorderedSiblings);
     const oldSiblingPayload = movingAcrossParents
@@ -879,10 +960,18 @@ export function ProductCategoryTreeView({
       xsorts: [{ code: "X", xorder: draggedOrder }],
     };
 
+    const beforeXSorts = uniqueXSortPayload([
+      ...(movingAcrossParents ? normalizeSiblingOrders(sortedChildrenOf(oldParentGuid)) : []),
+      ...normalizeSiblingOrders(currentTargetSiblings),
+    ]);
+    const moveRecord: MoveRecord = {
+      guid: draggedGuid,
+      before: { parentGuid: oldParentGuid, parentGuidAll: draggedCategory.parentguidall, xsorts: beforeXSorts },
+      after: { parentGuid: targetParentGuid, parentGuidAll: newParentGuidAll, xsorts: updateList },
+    };
+
     captureTreeLayout();
-    previewDropKeyRef.current = "";
     setReorderError("");
-    setPreviewOrderOverridesState({});
     if (targetParentGuid) {
       setExpandedNodes((prev) => ({ ...prev, [targetParentGuid]: true }));
     }
@@ -895,21 +984,26 @@ export function ProductCategoryTreeView({
       ...Object.fromEntries(updateList.map((item) => [item.guidfixed, item.xorder])),
     }));
 
+    setIsMoveInFlight(true);
     try {
       if (movingAcrossParents) {
         await saveCategoryRecord(draggedGuid, payload);
       }
       await saveXSorts(updateList);
       markCategoryArrived(draggedGuid);
+      pushMoveRecord(moveRecord);
     } catch (err) {
       setReorderError(categoryErrorText("ย้ายหรือบันทึกลำดับไม่สำเร็จ", "Move or reorder failed", err));
       onRefresh?.();
+    } finally {
+      setIsMoveInFlight(false);
     }
   };
 
   const moveCategoryAsChild = async (draggedGuid: string, targetGuid: string) => {
     if (!auth || !workspace) return;
     if (draggedGuid === targetGuid) return;
+    if (isMoveInFlight) return;
 
     const draggedRecord = records.find((record) => recordGuid(record) === draggedGuid);
     const draggedCategory = typedCategories.find((item) => item.guidfixed === draggedGuid);
@@ -942,8 +1036,21 @@ export function ProductCategoryTreeView({
       xsorts: [{ code: "X", xorder: nextOrder }],
     };
 
+    const beforeXSorts = uniqueXSortPayload([
+      ...normalizeSiblingOrders(sortedChildrenOf(oldParentGuid)),
+      ...normalizeSiblingOrders(sortedChildrenOf(targetGuid)),
+    ]);
+    const afterXSorts = uniqueXSortPayload([
+      ...normalizeSiblingOrders(oldSiblings),
+      ...normalizeSiblingOrders([...nextChildren, { ...draggedCategory, parentguid: targetGuid, parentguidall: newParentGuidAll }]),
+    ]);
+    const moveRecord: MoveRecord = {
+      guid: draggedGuid,
+      before: { parentGuid: oldParentGuid, parentGuidAll: draggedCategory.parentguidall, xsorts: beforeXSorts },
+      after: { parentGuid: targetGuid, parentGuidAll: newParentGuidAll, xsorts: afterXSorts },
+    };
+
     captureTreeLayout();
-    clearDragPreview(false);
     setReorderError("");
     setExpandedNodes((prev) => ({ ...prev, [targetGuid]: true }));
     setParentOverrides((prev) => ({
@@ -956,21 +1063,23 @@ export function ProductCategoryTreeView({
       ...Object.fromEntries(normalizeSiblingOrders(oldSiblings).map((item) => [item.guidfixed, item.xorder])),
     }));
 
+    setIsMoveInFlight(true);
     try {
       await saveCategoryRecord(draggedGuid, payload);
-      await saveXSorts(uniqueXSortPayload([
-        ...normalizeSiblingOrders(oldSiblings),
-        ...normalizeSiblingOrders([...nextChildren, { ...draggedCategory, parentguid: targetGuid, parentguidall: newParentGuidAll }]),
-      ]));
+      await saveXSorts(afterXSorts);
       markCategoryArrived(draggedGuid);
+      pushMoveRecord(moveRecord);
     } catch (err) {
       setReorderError(categoryErrorText("ย้ายหมวดสินค้าไม่สำเร็จ", "Move category failed", err));
       onRefresh?.();
+    } finally {
+      setIsMoveInFlight(false);
     }
   };
 
   const moveCategoryToRoot = async (draggedGuid: string) => {
     if (!auth || !workspace) return;
+    if (isMoveInFlight) return;
 
     const draggedRecord = records.find((record) => recordGuid(record) === draggedGuid);
     const draggedCategory = typedCategories.find((item) => item.guidfixed === draggedGuid);
@@ -994,8 +1103,18 @@ export function ProductCategoryTreeView({
       xsorts: [{ code: "X", xorder: nextRootOrder }],
     };
 
+    const afterXSorts = uniqueXSortPayload([...oldSiblingPayload, ...rootOrderPayload]);
+    const beforeXSorts = uniqueXSortPayload([
+      ...normalizeSiblingOrders(sortedChildrenOf(oldParentGuid)),
+      ...normalizeSiblingOrders(sortedChildrenOf("")),
+    ]);
+    const moveRecord: MoveRecord = {
+      guid: draggedGuid,
+      before: { parentGuid: oldParentGuid, parentGuidAll: draggedCategory.parentguidall, xsorts: beforeXSorts },
+      after: { parentGuid: "", parentGuidAll: "", xsorts: afterXSorts },
+    };
+
     captureTreeLayout();
-    clearDragPreview(false);
     setReorderError("");
     setParentOverrides((prev) => ({
       ...prev,
@@ -1003,17 +1122,87 @@ export function ProductCategoryTreeView({
     }));
     setOrderOverrides((prev) => ({
       ...prev,
-      ...Object.fromEntries(uniqueXSortPayload([...oldSiblingPayload, ...rootOrderPayload]).map((item) => [item.guidfixed, item.xorder])),
+      ...Object.fromEntries(afterXSorts.map((item) => [item.guidfixed, item.xorder])),
     }));
 
+    setIsMoveInFlight(true);
     try {
       await saveCategoryRecord(draggedGuid, payload);
-      await saveXSorts(uniqueXSortPayload([...oldSiblingPayload, ...rootOrderPayload]));
+      await saveXSorts(afterXSorts);
       markCategoryArrived(draggedGuid);
+      pushMoveRecord(moveRecord);
     } catch (err) {
       setReorderError(categoryErrorText("ย้ายหมวดสินค้าเป็นหมวดหลักไม่สำเร็จ", "Move category to root failed", err));
       onRefresh?.();
+    } finally {
+      setIsMoveInFlight(false);
     }
+  };
+
+  // Shared undo/redo apply: re-runs the real persistence calls (same shape
+  // as the move functions above) against a captured snapshot, so undo/redo
+  // genuinely restores server state instead of only the local UI.
+  const applyMoveSnapshot = async (guid: string, snapshot: MoveSnapshot): Promise<boolean> => {
+    if (!auth || !workspace || isMoveInFlight) return false;
+    const draggedRecord = records.find((record) => recordGuid(record) === guid);
+    const draggedCategory = typedCategories.find((item) => item.guidfixed === guid);
+    if (!draggedRecord || !draggedCategory) return false;
+
+    const parentChanged = draggedCategory.parentguid !== snapshot.parentGuid;
+    const ownOrder = snapshot.xsorts.find((item) => item.guidfixed === guid)?.xorder ?? 1;
+    const payload: SettingRecord = {
+      ...draggedRecord,
+      parentguid: snapshot.parentGuid,
+      parentguidall: snapshot.parentGuidAll,
+      groupnumber: groupNumber ?? recordGroupNumber(draggedRecord),
+      xsorts: [{ code: "X", xorder: ownOrder }],
+    };
+
+    captureTreeLayout();
+    setReorderError("");
+    if (snapshot.parentGuid) {
+      setExpandedNodes((prev) => ({ ...prev, [snapshot.parentGuid]: true }));
+    }
+    setParentOverrides((prev) => ({
+      ...prev,
+      [guid]: { parentGuid: snapshot.parentGuid, parentGuidAll: snapshot.parentGuidAll },
+    }));
+    setOrderOverrides((prev) => ({
+      ...prev,
+      ...Object.fromEntries(snapshot.xsorts.map((item) => [item.guidfixed, item.xorder])),
+    }));
+
+    setIsMoveInFlight(true);
+    try {
+      if (parentChanged) {
+        await saveCategoryRecord(guid, payload);
+      }
+      await saveXSorts(snapshot.xsorts);
+      markCategoryArrived(guid);
+      return true;
+    } catch (err) {
+      setReorderError(categoryErrorText("เลิกทำ/ทำซ้ำไม่สำเร็จ", "Undo/redo failed", err));
+      onRefresh?.();
+      return false;
+    } finally {
+      setIsMoveInFlight(false);
+    }
+  };
+
+  const canUseHistoryControls = !readOnly && !saving && !loading && !isMoveInFlight;
+
+  const undoMove = async () => {
+    if (!canUseHistoryControls || moveHistory.index < 0) return;
+    const record = moveHistory.stack[moveHistory.index];
+    const ok = await applyMoveSnapshot(record.guid, record.before);
+    if (ok) setMoveHistory((prev) => ({ ...prev, index: prev.index - 1 }));
+  };
+
+  const redoMove = async () => {
+    if (!canUseHistoryControls || moveHistory.index >= moveHistory.stack.length - 1) return;
+    const record = moveHistory.stack[moveHistory.index + 1];
+    const ok = await applyMoveSnapshot(record.guid, record.after);
+    if (ok) setMoveHistory((prev) => ({ ...prev, index: prev.index + 1 }));
   };
 
   const canDragRows = !readOnly && !saving && !loading && !searchQuery.trim();
@@ -1022,92 +1211,48 @@ export function ProductCategoryTreeView({
     target instanceof Element &&
     Boolean(target.closest("button,a,input,textarea,select,[role='button']"));
 
-  const getRowDropPosition = (clientY: number, element: HTMLElement): DropPosition => {
-    const rect = element.getBoundingClientRect();
-    const topZone = rect.top + rect.height * 0.28;
-    const bottomZone = rect.bottom - rect.height * 0.28;
-    if (clientY < topZone) return "before";
-    if (clientY > bottomZone) return "after";
-    return "inside";
-  };
+  // Resolves the drop target from the cached geometry only (see above) --
+  // pure number comparisons, zero DOM reads. The "Drop child" chip's cached
+  // rect (+-3px forgiveness) is the dedicated reparent target; everywhere
+  // else on a row is a plain top/bottom-half reorder split (half-open
+  // interval so a boundary Y never double-matches two rows).
+  const resolveDragPointerTarget = (clientX: number, clientY: number) => {
+    const geometry = dragGeometryRef.current;
+    if (!geometry) return null;
 
-  const canDropOnTarget = (
-    activeDrag: DragState,
-    node: CategoryTreeNode,
-    _siblings: CategoryTreeNode[],
-    position: DropPosition
-  ) => {
-    if (activeDrag.guid === node.detail.guidfixed) return false;
-    const targetParentChain = node.detail.parentguidall
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean);
-    const canMoveAsChild =
-      position === "inside" &&
-      !targetParentChain.includes(activeDrag.guid);
-    const canReorderSibling =
-      position !== "inside" && !targetParentChain.includes(activeDrag.guid);
-    return canReorderSibling || canMoveAsChild;
-  };
-
-  // Resolves the drop target from live row geometry only -- never from
-  // document.elementFromPoint()/closest(). Hit-testing the rendered DOM is
-  // unreliable while dragging: the dragged row itself is pointer-events-none
-  // (so elementFromPoint sees through it to a non-data-bearing ancestor) and
-  // the inline "drop as child" chip can overlap a neighboring row's
-  // before/after zone. Resolving purely by rect containment against
-  // getRowDropPosition's 28/44/28 bands sidesteps both.
-  const getPointerDropCandidate = (_clientX: number, clientY: number, activeDrag: DragState) => {
-    const root = treeListRef.current;
-    if (!root) return null;
-    const lookups = categoryTreeLookupsRef.current;
-
-    const rootZoneElement = root.querySelector<HTMLElement>("[data-category-root-drop='true']");
-    if (rootZoneElement) {
-      const rect = rootZoneElement.getBoundingClientRect();
-      if (clientY >= rect.top && clientY <= rect.bottom) return { type: "root" as const };
+    if (geometry.root && clientY >= geometry.root.top && clientY <= geometry.root.bottom) {
+      return { type: "root" as const };
     }
 
-    const resolveRow = (rowElement: HTMLElement, guid: string) => {
-      const node = lookups.nodeByGuid.get(guid);
-      const siblings = lookups.siblingsByGuid.get(guid) || [];
-      if (!node) return null;
-      const position = getRowDropPosition(clientY, rowElement);
-      if (!canDropOnTarget(activeDrag, node, siblings, position)) return null;
-      return { type: "row" as const, guid, position, siblings };
-    };
+    for (const row of geometry.rows) {
+      if (
+        row.insideRect &&
+        clientX >= row.insideRect.left && clientX <= row.insideRect.right &&
+        clientY >= row.insideRect.top && clientY <= row.insideRect.bottom
+      ) {
+        return { type: "row" as const, guid: row.guid, position: "inside" as DropPosition };
+      }
+    }
 
-    let containingRow: { element: HTMLElement; guid: string } | null = null;
-    let nearestRow: { element: HTMLElement; guid: string; distance: number } | null = null;
-
-    for (const candidateElement of root.querySelectorAll<HTMLElement>("[data-category-row-guid]")) {
-      const candidateGuid = candidateElement.dataset.categoryRowGuid || "";
-      if (!candidateGuid) continue;
-      const rect = candidateElement.getBoundingClientRect();
-      if (clientY >= rect.top && clientY <= rect.bottom) {
-        containingRow = { element: candidateElement, guid: candidateGuid };
+    let containing: DragGeometryRow | null = null;
+    let nearest: { row: DragGeometryRow; distance: number } | null = null;
+    for (const row of geometry.rows) {
+      if (clientY >= row.top && clientY < row.bottom) {
+        containing = row;
         break;
       }
-      const distance = clientY < rect.top ? rect.top - clientY : clientY - rect.bottom;
-      if (!nearestRow || distance < nearestRow.distance) {
-        nearestRow = { element: candidateElement, guid: candidateGuid, distance };
-      }
+      const distance = clientY < row.top ? row.top - clientY : clientY - row.bottom;
+      if (!nearest || distance < nearest.distance) nearest = { row, distance };
     }
 
-    // Pointer is still squarely over the dragged row's own (faded,
-    // still-rendered) footprint -- it hasn't crossed into another row, so
-    // there is no valid target yet. Don't fall through to the nearest-row
-    // scan below, or a tiny in-place drag would silently reparent to
+    // Pointer still squarely over the dragged row's own footprint (or a row
+    // that can't legally accept this drop) -- no candidate, and no falling
+    // through to nearest, or a tiny in-place drag would silently reparent to
     // whichever row happens to be closest anywhere in the tree.
-    if (containingRow && containingRow.guid === activeDrag.guid) return null;
-
-    if (containingRow) return resolveRow(containingRow.element, containingRow.guid);
-
-    // Genuine gap (above the first row / below the last row) -- fall back to
-    // the nearest row edge.
-    if (nearestRow) return resolveRow(nearestRow.element, nearestRow.guid);
-
-    return null;
+    const hit = containing ?? nearest?.row ?? null;
+    if (!hit || hit.isSelf || !hit.reorderAllowed) return null;
+    const position: DropPosition = clientY < hit.mid ? "before" : "after";
+    return { type: "row" as const, guid: hit.guid, position };
   };
 
   const cleanupWindowDragListeners = () => {
@@ -1120,7 +1265,49 @@ export function ProductCategoryTreeView({
     dragWindowListenersRef.current = null;
   };
 
-  const updatePointerDrag = (
+  const cancelPendingDragFrame = () => {
+    if (dragRafRef.current !== null) {
+      window.cancelAnimationFrame(dragRafRef.current);
+      dragRafRef.current = null;
+    }
+  };
+
+  // rAF-coalesced per-frame work: at most one drop-target hit test and one
+  // ghost transform write per animation frame, no matter how many raw
+  // pointermove events arrived. The ghost follows the cursor by writing
+  // directly to its DOM node (see dragGhostRef) -- never through React
+  // state, so following the cursor never triggers a re-render.
+  const processPendingDragMove = () => {
+    dragRafRef.current = null;
+    const activeDrag = pointerDragRef.current;
+    const pointer = latestPointerRef.current;
+    if (!activeDrag || !pointer) return;
+
+    if (dragGhostRef.current) {
+      const offsetY = pointer.clientY - activeDrag.startY;
+      dragGhostRef.current.style.transform = `translateY(${offsetY}px) scale(1.006)`;
+    }
+
+    const candidate = resolveDragPointerTarget(pointer.clientX, pointer.clientY);
+    if (candidate?.type === "root") {
+      setRootDropActiveState(true);
+      setDropTargetState(null);
+      return;
+    }
+    setRootDropActiveState(false);
+    if (candidate?.type === "row") {
+      setDropTargetState({ guid: candidate.guid, position: candidate.position });
+      return;
+    }
+    setDropTargetState(null);
+  };
+
+  const queueDragFrame = () => {
+    if (dragRafRef.current !== null) return;
+    dragRafRef.current = window.requestAnimationFrame(processPendingDragMove);
+  };
+
+  const handleRawPointerMove = (
     pointerId: number,
     clientX: number,
     clientY: number,
@@ -1129,48 +1316,31 @@ export function ProductCategoryTreeView({
     const activeDrag = pointerDragRef.current;
     if (!activeDrag || activeDrag.pointerId !== pointerId) return;
 
-    const distance = Math.hypot(clientX - activeDrag.startX, clientY - activeDrag.startY);
-    const nextDrag = {
-      ...activeDrag,
-      offsetX: clientX - activeDrag.startX,
-      offsetY: clientY - activeDrag.startY,
-      started: activeDrag.started || distance > 5,
-    };
-    pointerDragRef.current = nextDrag;
+    latestPointerRef.current = { clientX, clientY };
 
-    if (!nextDrag.started) return;
+    if (!activeDrag.started) {
+      const distance = Math.hypot(clientX - activeDrag.startX, clientY - activeDrag.startY);
+      if (distance <= 5) return;
+      const startedDrag: PointerDragState = { ...activeDrag, started: true };
+      pointerDragRef.current = startedDrag;
+      preventDefault?.();
+      // Synchronous baseline snapshot *before* the dragState commit: rows
+      // always exist in the DOM, so reorder hit-testing is correct from the
+      // very first frame. The "Drop child" chips and root-drop zone only
+      // render once dragState goes truthy, so this pass can't see them yet
+      // -- the layout effect below re-snapshots right after that commit to
+      // add them. Without this synchronous pass, a drop that lands before
+      // React has re-rendered (state updates from a raw window listener
+      // aren't flushed synchronously) would hit-test against a still-null
+      // geometry cache and silently no-op the whole drag.
+      dragGeometryRef.current = captureDragGeometry(startedDrag);
+      setDragState({ guid: startedDrag.guid, parentGuid: startedDrag.parentGuid, rect: startedDrag.rect });
+      queueDragFrame();
+      return;
+    }
 
     preventDefault?.();
-    setDragState({
-      guid: nextDrag.guid,
-      parentGuid: nextDrag.parentGuid,
-      offsetX: nextDrag.offsetX,
-      offsetY: nextDrag.offsetY,
-      rect: nextDrag.rect,
-    });
-
-    const candidate = getPointerDropCandidate(clientX, clientY, nextDrag);
-    if (candidate?.type === "root") {
-      setRootDropActiveState(true);
-      setDropTargetState(null);
-      clearDragPreview();
-      return;
-    }
-
-    setRootDropActiveState(false);
-    if (candidate?.type === "row") {
-      setDropTargetState({ guid: candidate.guid, position: candidate.position });
-      if (candidate.position === "inside") {
-        clearDragPreview();
-      } else {
-        const didPreview = previewSiblingReorder(nextDrag, candidate.guid, candidate.position, candidate.siblings);
-        if (!didPreview) clearDragPreview();
-      }
-      return;
-    }
-
-    setDropTargetState(null);
-    clearDragPreview();
+    queueDragFrame();
   };
 
   const finishPointerDrag = (
@@ -1185,6 +1355,7 @@ export function ProductCategoryTreeView({
 
     pointerDragRef.current = null;
     cleanupWindowDragListeners();
+    cancelPendingDragFrame();
     if (!activeDrag.started) return;
 
     preventDefault?.();
@@ -1194,32 +1365,25 @@ export function ProductCategoryTreeView({
       ignoreNextClickRef.current = false;
     }, 250);
 
-    const finalCandidate = getPointerDropCandidate(clientX, clientY, activeDrag);
+    const finalCandidate = resolveDragPointerTarget(clientX, clientY);
     const lookups = categoryTreeLookupsRef.current;
     const rootActive = rootDropActiveRef.current || finalCandidate?.type === "root";
     const target =
       finalCandidate?.type === "row"
         ? { guid: finalCandidate.guid, position: finalCandidate.position }
         : dropTargetRef.current;
-    const finalSiblings =
-      finalCandidate?.type === "row"
-        ? finalCandidate.siblings
-        : target
-          ? lookups.siblingsByGuid.get(target.guid) || []
-          : [];
+    const finalSiblings = target ? lookups.siblingsByGuid.get(target.guid) || [] : [];
     setDragState(null);
     setDropTargetState(null);
     setRootDropActiveState(false);
+    dragGeometryRef.current = null;
 
     if (rootActive) {
       void moveCategoryToRoot(activeDrag.guid);
       return;
     }
 
-    if (!target) {
-      clearDragPreview();
-      return;
-    }
+    if (!target) return;
     const targetNode = lookups.nodeByGuid.get(target.guid);
     if (!targetNode) return;
 
@@ -1232,11 +1396,12 @@ export function ProductCategoryTreeView({
 
   const cancelPointerDrag = () => {
     cleanupWindowDragListeners();
+    cancelPendingDragFrame();
     pointerDragRef.current = null;
     setDragState(null);
     setDropTargetState(null);
     setRootDropActiveState(false);
-    clearDragPreview();
+    dragGeometryRef.current = null;
   };
 
   const attachWindowDragListeners = (pointerId: number) => {
@@ -1245,7 +1410,7 @@ export function ProductCategoryTreeView({
 
     const move = (event: PointerEvent) => {
       if (event.pointerId !== pointerId) return;
-      updatePointerDrag(event.pointerId, event.clientX, event.clientY, () => event.preventDefault());
+      handleRawPointerMove(event.pointerId, event.clientX, event.clientY, () => event.preventDefault());
     };
     const up = (event: PointerEvent) => {
       if (event.pointerId !== pointerId) return;
@@ -1266,15 +1431,20 @@ export function ProductCategoryTreeView({
     event: React.PointerEvent<HTMLDivElement>,
     node: CategoryTreeNode
   ) => {
-    if (!canDragRows || event.button !== 0 || isInteractiveDragTarget(event.target)) return;
+    const touchStartedOnGrip = event.target instanceof Element &&
+      Boolean(event.target.closest("[data-category-drag-handle]"));
+    if (
+      !canDragRows ||
+      event.button !== 0 ||
+      isInteractiveDragTarget(event.target) ||
+      (event.pointerType === "touch" && !touchStartedOnGrip)
+    ) return;
 
     const rect = event.currentTarget.getBoundingClientRect();
     event.currentTarget.setPointerCapture(event.pointerId);
     pointerDragRef.current = {
       guid: node.detail.guidfixed,
       parentGuid: node.detail.parentguid || "",
-      offsetX: 0,
-      offsetY: 0,
       rect: {
         left: rect.left,
         top: rect.top,
@@ -1290,23 +1460,12 @@ export function ProductCategoryTreeView({
     attachWindowDragListeners(event.pointerId);
   };
 
-  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    updatePointerDrag(event.pointerId, event.clientX, event.clientY, () => event.preventDefault());
-  };
-
-  const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-    finishPointerDrag(event.pointerId, event.clientX, event.clientY, () => event.preventDefault(), () => event.stopPropagation());
-  };
-
-  const handlePointerCancel = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-    cancelPointerDrag();
-  };
+  // Deliberately no row-level onPointerMove/onPointerUp/onPointerCancel:
+  // setPointerCapture (above) retargets delivery, but the event still bubbles
+  // through the normal DOM tree up to window -- so a row-level handler here
+  // would double-fire alongside the window listeners in
+  // attachWindowDragListeners for every physical pointer move. The window
+  // listeners alone are sufficient and are the single source of truth.
 
   const renderDragOverlay = () => {
     if (!dragState) return null;
@@ -1321,10 +1480,11 @@ export function ProductCategoryTreeView({
 
     return (
       <div
+        ref={dragGhostRef}
         className="pointer-events-none fixed z-[9999] flex items-center rounded-xl border border-dashed border-primary/55 bg-transparent px-2 py-1.5 text-foreground shadow-[0_0_0_1px_rgba(8,145,178,0.08),0_8px_20px_rgba(8,145,178,0.08)] ring-1 ring-primary/10"
         style={{
           left: dragState.rect.left,
-          top: dragState.rect.top + dragState.offsetY,
+          top: dragState.rect.top,
           width: dragState.rect.width,
           minHeight: dragState.rect.height,
           transform: "scale(1.006)",
@@ -1369,7 +1529,7 @@ export function ProductCategoryTreeView({
         {nodes.map((node, index) => {
           const childCount = node.childCategories.length;
           const hasChildren = childCount > 0;
-          const isExpanded = expandedNodes[node.detail.guidfixed] ?? false;
+          const isExpanded = Boolean(searchQuery.trim()) || (expandedNodes[node.detail.guidfixed] ?? false);
           const isSelected = selectedGuid === node.detail.guidfixed;
           const isDragging = dragState?.guid === node.detail.guidfixed;
           const isArrivalHighlighted = arrivalHighlight?.guid === node.detail.guidfixed;
@@ -1385,8 +1545,8 @@ export function ProductCategoryTreeView({
             <div key={node.detail.guidfixed} className="grid w-full">
               <div
                 className={cn(
-                  "group/row relative flex items-center justify-between border-b border-border/40 py-2 px-3 transition-[background-color,border-color,box-shadow,opacity,transform] duration-200 ease-out",
-                  canDragRows ? "cursor-grab select-none active:cursor-grabbing" : "cursor-pointer",
+                  "group/row relative flex items-center justify-between border-b border-border/40 px-2 py-1.5 transition-[background-color,border-color,box-shadow,opacity,transform] duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40",
+                  canDragRows ? "cursor-grab select-none touch-pan-y active:cursor-grabbing" : "cursor-pointer",
                   isSelected
                     ? "bg-primary/5 text-primary"
                     : "hover:bg-muted/40",
@@ -1398,13 +1558,15 @@ export function ProductCategoryTreeView({
                   activeDropTarget === "inside" && "ring-2 ring-primary/30"
                 )}
                 data-category-row-guid={node.detail.guidfixed}
+                aria-expanded={hasChildren ? isExpanded : undefined}
+                aria-level={level + 1}
+                aria-selected={isSelected}
+                role="treeitem"
+                tabIndex={0}
                 style={{
-                  paddingLeft: `${level * 24 + 12}px`,
+                  paddingLeft: `${Math.min(level, 5) * 16 + 10}px`,
                 }}
-                onPointerCancel={handlePointerCancel}
                 onPointerDown={(event) => handlePointerDown(event, node)}
-                onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerUp}
                 onClick={(event) => {
                   if (ignoreNextClickRef.current) {
                     ignoreNextClickRef.current = false;
@@ -1412,12 +1574,21 @@ export function ProductCategoryTreeView({
                     event.stopPropagation();
                     return;
                   }
-                  setSelectedGuid(node.detail.guidfixed);
-                  // Find original SettingRecord and open it for edit
                   const orig = records.find(
                     (r) => recordGuid(r) === node.detail.guidfixed
                   );
-                  if (orig) onOpenEdit(recordWithOptimisticOverrides(orig));
+                  if (orig) void onSelectRecord(recordWithOptimisticOverrides(orig));
+                }}
+                onKeyDown={(event) => {
+                  if (
+                    event.currentTarget !== event.target ||
+                    (event.key !== "Enter" && event.key !== " ")
+                  ) return;
+                  event.preventDefault();
+                  const orig = records.find(
+                    (record) => recordGuid(record) === node.detail.guidfixed,
+                  );
+                  if (orig) void onSelectRecord(recordWithOptimisticOverrides(orig));
                 }}
               >
                 {isSelected ? (
@@ -1447,7 +1618,10 @@ export function ProductCategoryTreeView({
                   </span>
                 ) : null}
                 <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1 pr-2">
-                  <GripVertical className={cn("size-4 shrink-0 transition-colors", levelStyle.grip)} />
+                  <GripVertical
+                    className={cn("size-4 shrink-0 touch-none transition-colors", levelStyle.grip)}
+                    data-category-drag-handle
+                  />
                   {/* Caret Toggle */}
                   <button
                     type="button"
@@ -1488,11 +1662,11 @@ export function ProductCategoryTreeView({
                       onClick={(e) => toggleExpand(node.detail.guidfixed, e)}
                     >
                       {language === "th"
-                        ? `ลูก ${childCount}`
+                        ? `หมวดย่อย ${childCount}`
                         : `${childCount} ${childCount === 1 ? "child" : "children"}`}
                     </button>
                   ) : null}
-                  <span className="shrink-0 rounded-full border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/40 px-2 py-0.5 text-[11px] font-semibold leading-5 text-sky-700 dark:text-sky-300">
+                  <span className="shrink-0 rounded-full border border-border bg-muted/60 px-2 py-0.5 text-[11px] font-semibold leading-5 text-muted-foreground">
                     {language === "th"
                       ? `สินค้า ${node.detail.productCount ?? 0}`
                       : `${node.detail.productCount ?? 0} ${node.detail.productCount === 1 ? "product" : "products"}`}
@@ -1513,6 +1687,7 @@ export function ProductCategoryTreeView({
                           "scale-110 border-emerald-700 bg-emerald-600 text-white shadow-md dark:bg-emerald-500 dark:text-white"
                       )}
                       aria-label={language === "th" ? "วางเป็นหมวดย่อย" : "Drop as child category"}
+                      data-category-inside-drop-guid={node.detail.guidfixed}
                     >
                       {language === "th" ? "วางเป็นลูก" : "Drop child"}
                     </span>
@@ -1521,53 +1696,41 @@ export function ProductCategoryTreeView({
 
                 {/* Row actions */}
                 {!readOnly && (
-                  <div className="flex shrink-0 items-center gap-1 opacity-60 transition-opacity group-hover/row:opacity-100">
+                  <div
+                    className={cn(
+                      "flex shrink-0 items-center gap-0.5 transition-opacity group-hover/row:opacity-100 group-focus-within/row:opacity-100",
+                      isSelected ? "opacity-100" : "opacity-45",
+                    )}
+                  >
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="size-7 rounded-full text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
-                      aria-label={language === "th" ? "เพิ่มหมวดย่อย" : "Add subcategory"}
+                      className="size-7 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30"
+                      aria-label={language === "th" ? "ย้ายขึ้น" : "Move up"}
+                      disabled={index === 0 || !canDragRows || isMoveInFlight}
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedGuid(node.detail.guidfixed);
-                        onOpenCreate(node.detail.guidfixed);
+                        if (index === 0) return;
+                        void reorderCategory(node.detail.guidfixed, nodes[index - 1].detail.guidfixed, "before", nodes);
                       }}
                     >
-                      <FolderPlus className="size-3.5" />
+                      <ChevronUp className="size-3.5" />
                     </Button>
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="size-7 rounded-full text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/40"
-                      aria-label={language === "th" ? "แก้ไข" : "Edit"}
+                      className="size-7 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30"
+                      aria-label={language === "th" ? "ย้ายลง" : "Move down"}
+                      disabled={index === nodes.length - 1 || !canDragRows || isMoveInFlight}
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedGuid(node.detail.guidfixed);
-                        const orig = records.find(
-                          (r) => recordGuid(r) === node.detail.guidfixed
-                        );
-                        if (orig) onOpenEdit(recordWithOptimisticOverrides(orig));
+                        if (index === nodes.length - 1) return;
+                        void reorderCategory(node.detail.guidfixed, nodes[index + 1].detail.guidfixed, "after", nodes);
                       }}
                     >
-                      <Edit3 className="size-3.5" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="size-7 rounded-full text-destructive hover:bg-destructive/10"
-                      aria-label={language === "th" ? "ลบ" : "Delete"}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const orig = records.find(
-                          (r) => recordGuid(r) === node.detail.guidfixed
-                        );
-                        if (orig) onDeleteRecord(orig);
-                      }}
-                    >
-                      <Trash2 className="size-3.5" />
+                      <ChevronDown className="size-3.5" />
                     </Button>
                   </div>
                 )}
@@ -1587,10 +1750,46 @@ export function ProductCategoryTreeView({
   };
 
   return (
-    <div className="grid h-full min-h-0 w-full gap-2">
+    <div className="grid h-full min-h-0 w-full gap-2" data-testid="product-category-tree-pane">
       {/* Categories Tree list */}
       <Card className="flex h-full min-h-0 flex-col overflow-hidden border-border bg-card shadow-sm">
         <CardContent className="flex min-h-0 flex-1 flex-col p-0">
+          {!readOnly ? (
+            <div className="flex min-w-0 items-center justify-between gap-2 border-b border-border/40 bg-muted/20 px-2.5 py-1.5">
+              <div className="flex min-w-0 items-baseline gap-2">
+                <span className="text-xs font-bold text-foreground">
+                  {language === "th" ? "โครงสร้างหมวด" : "Category tree"}
+                </span>
+                <span className="shrink-0 text-[11px] text-muted-foreground">
+                  {language === "th" ? `${records.length} หมวด` : `${records.length} categories`}
+                </span>
+              </div>
+              <div className="flex shrink-0 items-center gap-0.5">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1 px-2 text-xs disabled:opacity-40"
+                  disabled={!canUseHistoryControls || moveHistory.index < 0}
+                  onClick={() => void undoMove()}
+                >
+                  <Undo2 className="size-3.5" />
+                  {language === "th" ? "เลิกทำ" : "Undo"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1 px-2 text-xs disabled:opacity-40"
+                  disabled={!canUseHistoryControls || moveHistory.index >= moveHistory.stack.length - 1}
+                  onClick={() => void redoMove()}
+                >
+                  <Redo2 className="size-3.5" />
+                  {language === "th" ? "ทำซ้ำ" : "Redo"}
+                </Button>
+              </div>
+            </div>
+          ) : null}
           {loading ? (
             <div className="flex h-full min-h-24 items-center justify-center gap-2 p-6 text-sm text-muted-foreground">
               <Loader2 className="animate-spin size-5" />
@@ -1599,10 +1798,20 @@ export function ProductCategoryTreeView({
           ) : treeRoots.length === 0 ? (
             <div className="flex h-full min-h-24 flex-col items-center justify-center gap-1.5 p-4 text-center text-sm text-muted-foreground">
               <span className="font-medium">
-                {language === "th" ? "ไม่พบข้อมูลหมวดสินค้า" : "No categories found"}
+                {searchQuery.trim()
+                  ? language === "th"
+                    ? "ไม่พบหมวดที่ค้นหา"
+                    : "No matching categories"
+                  : language === "th"
+                    ? "ยังไม่มีหมวดสินค้า"
+                    : "No categories yet"}
               </span>
               <span className="text-xs text-muted-foreground max-w-xs">
-                {readOnly
+                {searchQuery.trim()
+                  ? language === "th"
+                    ? "ลองใช้คำค้นที่สั้นลง หรือตรวจสอบการสะกดอีกครั้ง"
+                    : "Try a shorter search or check the spelling."
+                  : readOnly
                   ? language === "th"
                     ? "กลุ่มนี้ยังไม่มีหมวดสินค้า กรุณาไปสร้างหมวดสินค้าที่หน้าจอ 'จัดหมวดสินค้า' ก่อน"
                     : "This group has no categories yet. Please create categories on the 'Product Categories' screen first."
@@ -1612,7 +1821,11 @@ export function ProductCategoryTreeView({
               </span>
             </div>
           ) : (
-            <div ref={treeListRef} className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
+            <div
+              ref={treeListRef}
+              className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain"
+              role="tree"
+            >
               {reorderError ? (
                 <div className="border-b border-destructive/30 bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">
                   {reorderError}
@@ -1621,8 +1834,8 @@ export function ProductCategoryTreeView({
               {searchQuery.trim() ? (
                 <div className="border-b border-border/40 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
                   {language === "th"
-                    ? "ปิดการลากวางระหว่างค้นหา เพื่อป้องกันการจัดลำดับผิดชุดข้อมูล"
-                    : "Drag sorting is disabled while searching to avoid reordering a filtered list."}
+                    ? "ระหว่างค้นหา ระบบจะปิดการจัดลำดับชั่วคราว"
+                    : "Reordering is temporarily disabled while searching."}
                 </div>
               ) : null}
               {renderTreeNodes(treeRoots)}
@@ -1630,7 +1843,7 @@ export function ProductCategoryTreeView({
                 <div
                   aria-label={language === "th" ? "ย้ายเป็นหมวดหลัก" : "Move to root category"}
                   className={cn(
-                    "mt-auto flex h-10 w-full items-center justify-center gap-2 border-t border-emerald-600 bg-emerald-500 text-sm font-semibold text-white transition-[background-color,box-shadow,transform] duration-150",
+                    "sticky bottom-0 z-20 mt-auto flex h-10 w-full items-center justify-center gap-2 border-t border-emerald-600 bg-emerald-500 text-sm font-semibold text-white transition-[background-color,box-shadow,transform] duration-150",
                     rootDropActive && "scale-[0.995] bg-emerald-600 shadow-inner",
                   )}
                   data-category-root-drop="true"

@@ -8,20 +8,23 @@ type ManualLinkProps = {
   screen: string;
   language: LanguageCode;
   compact?: boolean;
+  label?: string;
 };
 
-export function ManualLink({ compact = false, language, screen }: ManualLinkProps) {
+export function ManualLink({ compact = false, label, language, screen }: ManualLinkProps) {
+  const text = label ?? t(language, "manual");
+
   return (
     <Link
-      aria-label={t(language, "manual")}
+      aria-label={text}
       className={compact ? "icon-button manual-link compact" : "manual-link"}
       href={`/manual/${screen}?lang=${language}`}
       rel="noreferrer"
       target="_blank"
-      title={t(language, "manual")}
+      title={text}
     >
       <BookOpen aria-hidden="true" size={18} />
-      {compact ? null : <span>{t(language, "manual")}</span>}
+      {compact ? null : <span>{text}</span>}
     </Link>
   );
 }

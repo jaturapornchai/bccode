@@ -52,18 +52,23 @@ func (m *MockProductBarcodePGRepository) Get(holdingCode string, barcode string)
 	return ret.Get(0).(*productBarcodeModel.ProductBarcodePg), ret.Error(1)
 }
 
+func (m *MockProductBarcodePGRepository) GetByKey(holdingCode string, itemCode string, barcode string) (*productBarcodeModel.ProductBarcodePg, error) {
+	ret := m.Called(holdingCode, itemCode, barcode)
+	return ret.Get(0).(*productBarcodeModel.ProductBarcodePg), ret.Error(1)
+}
+
 func (m *MockProductBarcodePGRepository) Create(doc *productBarcodeModel.ProductBarcodePg) error {
 	ret := m.Called(doc)
 	return ret.Error(0)
 }
 
-func (m *MockProductBarcodePGRepository) Update(holdingCode string, barcode string, doc *productBarcodeModel.ProductBarcodePg) error {
-	ret := m.Called(holdingCode, barcode, doc)
+func (m *MockProductBarcodePGRepository) Update(holdingCode string, itemCode string, barcode string, doc *productBarcodeModel.ProductBarcodePg) error {
+	ret := m.Called(holdingCode, itemCode, barcode, doc)
 	return ret.Error(0)
 }
 
-func (m *MockProductBarcodePGRepository) Delete(holdingCode string, barcode string) error {
-	ret := m.Called(holdingCode, barcode)
+func (m *MockProductBarcodePGRepository) Delete(holdingCode string, itemCode string, barcode string) error {
+	ret := m.Called(holdingCode, itemCode, barcode)
 	return ret.Error(0)
 }
 
@@ -534,7 +539,7 @@ func TestStockProcess(t *testing.T) {
 
 	barcodeRepo := new(MockProductBarcodePGRepository)
 	barcodeRepo.On("Get", FIX_HOLDING_CODE, FIX_BARCODE).Return(giveBarcode, nil)
-	barcodeRepo.On("Update", FIX_HOLDING_CODE, FIX_BARCODE, giveBarcode).Return(nil)
+	barcodeRepo.On("Update", FIX_HOLDING_CODE, giveBarcode.ItemCode, FIX_BARCODE, giveBarcode).Return(nil)
 
 	process := stockprocess.NewStockCalculator(repo, barcodeRepo)
 	process.CalculatorStock(FIX_HOLDING_CODE, FIX_BARCODE)
@@ -758,7 +763,7 @@ func TestProcessStockResultNAN(t *testing.T) {
 
 	barcodeRepo := new(MockProductBarcodePGRepository)
 	barcodeRepo.On("Get", FIX_HOLDING_CODE, FIX_BARCODE).Return(giveBarcode, nil)
-	barcodeRepo.On("Update", FIX_HOLDING_CODE, FIX_BARCODE, giveBarcode).Return(nil)
+	barcodeRepo.On("Update", FIX_HOLDING_CODE, giveBarcode.ItemCode, FIX_BARCODE, giveBarcode).Return(nil)
 
 	process := stockprocess.NewStockCalculator(repo, barcodeRepo)
 	process.CalculatorStock(FIX_HOLDING_CODE, FIX_BARCODE)
@@ -970,7 +975,7 @@ func TestProcessStockBalanceAmountInfinity(t *testing.T) {
 
 	barcodeRepo := new(MockProductBarcodePGRepository)
 	barcodeRepo.On("Get", FIX_HOLDING_CODE, FIX_BARCODE).Return(giveBarcode, nil)
-	barcodeRepo.On("Update", FIX_HOLDING_CODE, FIX_BARCODE, giveBarcode).Return(nil)
+	barcodeRepo.On("Update", FIX_HOLDING_CODE, giveBarcode.ItemCode, FIX_BARCODE, giveBarcode).Return(nil)
 
 	process := stockprocess.NewStockCalculator(repo, barcodeRepo)
 	process.CalculatorStock(FIX_HOLDING_CODE, FIX_BARCODE)
@@ -1133,7 +1138,7 @@ func TestCalcStockSaleAndReturnMustBeNotNAN(t *testing.T) {
 
 	barcodeRepo := new(MockProductBarcodePGRepository)
 	barcodeRepo.On("Get", FIX_HOLDING_CODE, FIX_BARCODE).Return(giveBarcode, nil)
-	barcodeRepo.On("Update", FIX_HOLDING_CODE, FIX_BARCODE, giveBarcode).Return(nil)
+	barcodeRepo.On("Update", FIX_HOLDING_CODE, giveBarcode.ItemCode, FIX_BARCODE, giveBarcode).Return(nil)
 
 	process := stockprocess.NewStockCalculator(repo, barcodeRepo)
 	process.CalculatorStock(FIX_HOLDING_CODE, FIX_BARCODE)
@@ -1217,7 +1222,7 @@ func TestDebugStockNotCalc(t *testing.T) {
 
 	barcodeRepo := new(MockProductBarcodePGRepository)
 	barcodeRepo.On("Get", FIX_HOLDING_CODE, FIX_BARCODE).Return(giveBarcode, nil)
-	barcodeRepo.On("Update", FIX_HOLDING_CODE, FIX_BARCODE, giveBarcode).Return(nil)
+	barcodeRepo.On("Update", FIX_HOLDING_CODE, giveBarcode.ItemCode, FIX_BARCODE, giveBarcode).Return(nil)
 
 	process := stockprocess.NewStockCalculator(repo, barcodeRepo)
 	process.CalculatorStock(FIX_HOLDING_CODE, FIX_BARCODE)

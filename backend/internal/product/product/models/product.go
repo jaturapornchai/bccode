@@ -101,6 +101,7 @@ type Product struct {
 
 type RefProductBarcode struct {
 	GuidFixed     string          `json:"guidfixed" bson:"guidfixed"`
+	ItemCode      string          `json:"itemcode" bson:"itemcode"`
 	Names         *[]models.NameX `json:"names" bson:"names"`
 	ItemUnitCode  string          `json:"itemunitcode" bson:"itemunitcode"`
 	ItemUnitNames *[]models.NameX `json:"itemunitnames" bson:"itemunitnames"`
@@ -121,6 +122,7 @@ type RefProductBarcode struct {
 
 type BOMProductBarcode struct {
 	BarcodeGuidFixed string          `json:"guidfixed" bson:"guidfixed"`
+	ItemCode         string          `json:"itemcode" bson:"itemcode"`
 	Level            int             `json:"level" bson:"level"`
 	Names            *[]models.NameX `json:"names" bson:"names"`
 	ItemUnitCode     string          `json:"itemunitcode" bson:"itemunitcode"`

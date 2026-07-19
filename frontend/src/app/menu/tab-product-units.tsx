@@ -6,14 +6,27 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getBarcodeText } from "@/lib/product-barcode/language";
 import { pickName } from "@/lib/product-barcode/utils";
-import { type Product, type RefProductBarcode } from "@/lib/product-barcode/types";
+import {
+  type Product,
+  type RefProductBarcode,
+} from "@/lib/product-barcode/types";
 import { cn } from "@/lib/utils";
 
 type ProductStateAction = (
   value: Product | null | ((current: Product | null) => Product | null),
 ) => void;
 
-function FieldRow({ label, hint, children, required }: { label: string; hint?: string; children: React.ReactNode; required?: boolean }) {
+function FieldRow({
+  label,
+  hint,
+  children,
+  required,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+  required?: boolean;
+}) {
   return (
     <div className="flex flex-col gap-1 text-sm">
       <span className="font-medium text-foreground">
@@ -21,16 +34,28 @@ function FieldRow({ label, hint, children, required }: { label: string; hint?: s
         {required ? <span className="ml-1 text-destructive">*</span> : null}
       </span>
       {children}
-      {hint ? <span className="text-xs text-muted-foreground">{hint}</span> : null}
+      {hint ? (
+        <span className="text-xs text-muted-foreground">{hint}</span>
+      ) : null}
     </div>
   );
 }
 
 function FieldGrid({ children }: { children: React.ReactNode }) {
-  return <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{children}</div>;
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{children}</div>
+  );
 }
 
-function Section({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
+function Section({
+  title,
+  action,
+  children,
+}: {
+  title: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <section className="mb-4 overflow-hidden rounded-lg border border-border bg-card">
       <header className="flex items-center justify-between border-b border-border px-3 py-2">
@@ -54,7 +79,12 @@ function Toggle({
   disabled?: boolean;
 }) {
   return (
-    <label className={cn("flex cursor-pointer items-center gap-2 text-sm", disabled && "cursor-not-allowed opacity-60")}>
+    <label
+      className={cn(
+        "flex cursor-pointer items-center gap-2 text-sm",
+        disabled && "cursor-not-allowed opacity-60",
+      )}
+    >
       <input
         type="checkbox"
         checked={checked}
@@ -108,13 +138,21 @@ export function TabProductUnits({
   value: Product;
   onChange: ProductStateAction;
   lang: string;
-  openPicker: (target: string, master: string, anchorEl?: HTMLElement | null) => void;
+  openPicker: (
+    target: string,
+    master: string,
+    anchorEl?: HTMLElement | null,
+  ) => void;
   clearPickerField: (field: string) => void;
 }) {
   const textU = getBarcodeText(lang);
   const setRef = useCallback(
     (mutator: (rows: RefProductBarcode[]) => RefProductBarcode[]) =>
-      onChange((c) => c ? ({ ...c, refbarcodes: mutator(c.refbarcodes ?? []) } as Product) : null),
+      onChange((c) =>
+        c
+          ? ({ ...c, refbarcodes: mutator(c.refbarcodes ?? []) } as Product)
+          : null,
+      ),
     [onChange],
   );
 
@@ -133,11 +171,21 @@ export function TabProductUnits({
                 }
                 placeholder={textU.unitBasePlaceholder}
               />
-              <Button type="button" variant="outline" onClick={(e) => openPicker("unit", "unit", e.currentTarget.parentElement)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={(e) =>
+                  openPicker("unit", "unit", e.currentTarget.parentElement)
+                }
+              >
                 ...
               </Button>
               {value.unitcode && (
-                <Button type="button" variant="ghost" onClick={() => clearPickerField("unit")}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => clearPickerField("unit")}
+                >
                   <X className="h-4 w-4" />
                 </Button>
               )}
@@ -166,14 +214,20 @@ export function TabProductUnits({
         <div className="space-y-3">
           <Toggle
             checked={value.isusesubbarcodes ?? false}
-            onCheckedChange={(n) => onChange((c) => c ? ({ ...c, isusesubbarcodes: n } as Product) : null)}
+            onCheckedChange={(n) =>
+              onChange((c) =>
+                c ? ({ ...c, isusesubbarcodes: n } as Product) : null,
+              )
+            }
             label={textU.unitMultiToggle}
           />
 
           {value.isusesubbarcodes ? (
             <div className="border border-border/50 rounded-lg p-4 space-y-4">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium">{textU.unitRefListTitle}</h4>
+                <h4 className="text-sm font-medium">
+                  {textU.unitRefListTitle}
+                </h4>
                 <Button
                   type="button"
                   variant="outline"
@@ -183,6 +237,7 @@ export function TabProductUnits({
                       ...rows,
                       {
                         guidfixed: "",
+                        itemcode: value.code,
                         names: [],
                         itemunitcode: "",
                         itemunitnames: [],
@@ -200,8 +255,10 @@ export function TabProductUnits({
                 </Button>
               </div>
 
-              {(!value.refbarcodes || value.refbarcodes.length === 0) ? (
-                <p className="text-sm text-muted-foreground text-center py-6">{textU.unitRefNoData}</p>
+              {!value.refbarcodes || value.refbarcodes.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">
+                  {textU.unitRefNoData}
+                </p>
               ) : (
                 <div className="space-y-2">
                   {value.refbarcodes.map((entry, idx) => (
@@ -215,12 +272,22 @@ export function TabProductUnits({
                           <Input
                             readOnly
                             placeholder={textU.unitRefUnitPlaceholder}
-                            value={entry.itemunitcode ? `${entry.itemunitcode} — ${pickName(entry.itemunitnames, lang)}` : ""}
+                            value={
+                              entry.itemunitcode
+                                ? `${entry.itemunitcode} — ${pickName(entry.itemunitnames, lang)}`
+                                : ""
+                            }
                           />
                           <Button
                             type="button"
                             variant="outline"
-                            onClick={(e) => openPicker("unit", "unit-ref-" + idx, e.currentTarget.parentElement)}
+                            onClick={(e) =>
+                              openPicker(
+                                "unit",
+                                "unit-ref-" + idx,
+                                e.currentTarget.parentElement,
+                              )
+                            }
                           >
                             ...
                           </Button>
@@ -235,13 +302,14 @@ export function TabProductUnits({
                           onChange={(event) =>
                             setRef((rows) =>
                               rows.map((row, rowIdx) =>
-                                rowIdx === idx ? { ...row, barcode: event.target.value } : row,
+                                rowIdx === idx
+                                  ? { ...row, barcode: event.target.value }
+                                  : row,
                               ),
                             )
                           }
                         />
                       </FieldRow>
-
 
                       <FieldRow label={textU.unitRefDivide}>
                         <NumberField
@@ -249,7 +317,9 @@ export function TabProductUnits({
                           onChange={(n) =>
                             setRef((rows) =>
                               rows.map((row, rowIdx) =>
-                                rowIdx === idx ? { ...row, dividevalue: n } : row,
+                                rowIdx === idx
+                                  ? { ...row, dividevalue: n }
+                                  : row,
                               ),
                             )
                           }
@@ -262,7 +332,9 @@ export function TabProductUnits({
                           onChange={(n) =>
                             setRef((rows) =>
                               rows.map((row, rowIdx) =>
-                                rowIdx === idx ? { ...row, standvalue: n } : row,
+                                rowIdx === idx
+                                  ? { ...row, standvalue: n }
+                                  : row,
                               ),
                             )
                           }
@@ -274,7 +346,11 @@ export function TabProductUnits({
                           type="button"
                           variant="ghost"
                           size="icon"
-                          onClick={() => setRef((rows) => rows.filter((_, rowIdx) => rowIdx !== idx))}
+                          onClick={() =>
+                            setRef((rows) =>
+                              rows.filter((_, rowIdx) => rowIdx !== idx),
+                            )
+                          }
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

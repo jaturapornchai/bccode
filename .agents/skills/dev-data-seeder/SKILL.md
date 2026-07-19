@@ -1,6 +1,6 @@
 ---
 name: dev-data-seeder
-description: Use when creating or verifying real DEV seed data for BC Account screens, especially tenant-scoped product, product set, barcode, menu, unit, or category data that must appear in the active UI.
+description: Use when creating or verifying real DEV seed data for BC Ai Account screens, especially tenant-scoped product, product set, barcode, menu, unit, or category data that must appear in the active UI.
 ---
 
 # DEV Data Seeder
@@ -25,7 +25,7 @@ description: Use when creating or verifying real DEV seed data for BC Account sc
 - `productCategories.groupnumber` is a usage/device/channel group, not a flat product-menu category. Examples: group 1 ordering/tablet, group 2 cashier/POS, group 3 kitchen/KDS, group 4 delivery.
 - Each seeded group must be a complete category tree. Create root usage/category nodes first through `POST /product/category`, capture the returned GUID, then create child/subchild nodes with `parentguid` and `parentguidall`.
 - Attach `codelist` only to sellable leaf categories, or to an explicitly sellable node. Do not seed one flat root per menu type across groups.
-- Verify `/product/category/list?group-number=<n>` returns multiple hierarchical nodes for a populated group, and verify at least one leaf category contains `codelist` records with real product/barcode references.
+- Verify `/product/category/list?group-number=<n>` returns multiple hierarchical nodes for a populated group, and verify at least one leaf category contains Product-master-only `codelist` entries shaped `{code,xorder,names}`. Every `code` must resolve to an active Mongo `products` record in the same Holding; never seed Barcode/unit fields as category membership.
 
 ## Bundled Script
 - `scripts/seed-companies-branches-dev.ps1`

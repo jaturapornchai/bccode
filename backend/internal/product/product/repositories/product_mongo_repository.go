@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"fmt"
 	"smlcloudplatform/internal/product/product/models"
 	"smlcloudplatform/internal/repositories"
 	"smlcloudplatform/pkg/microservice"
@@ -34,6 +35,7 @@ type IProductRepository interface {
 
 	FindOneByCode(ctx context.Context, holdingCode, code string) (models.ProductDoc, error)
 	FindFilter(ctx context.Context, holdingCode string, filters map[string]interface{}) ([]models.ProductDoc, error)
+	EnsureIndexes(ctx context.Context) error
 }
 
 type ProductRepository struct {
@@ -56,6 +58,35 @@ func NewProductRepository(pst microservice.IPersisterMongo) *ProductRepository {
 	insRepo.ActivityRepository = repositories.NewActivityRepository[models.ProductActivity, models.ProductDeleteActivity](pst)
 
 	return insRepo
+}
+
+func (repo ProductRepository) EnsureIndexes(ctx context.Context) error {
+	if _, err := repo.pst.CreateIndex(
+		ctx,
+		models.ProductDoc{},
+		"uniq_products_holdingcode_guidfixed",
+		bson.D{{Key: "holdingcode", Value: 1}, {Key: "guidfixed", Value: 1}},
+	); err != nil {
+		return fmt.Errorf("ensure product guidfixed index: %w", err)
+	}
+
+	_, err := repo.pst.CreatePartialUniqueIndex(
+		ctx,
+		models.ProductDoc{},
+		"uniq_products_active_holdingcode_code",
+		bson.D{
+			{Key: "holdingcode", Value: 1},
+			{Key: "code", Value: 1},
+		},
+		bson.M{
+			"deletedat": nil,
+			"code":      bson.M{"$type": "string", "$gt": ""},
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("ensure active product code index: %w", err)
+	}
+	return nil
 }
 
 func (repo ProductRepository) FindOneByCode(ctx context.Context, holdingCode string, code string) (models.ProductDoc, error) {

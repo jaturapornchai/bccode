@@ -180,7 +180,7 @@ type ProductSearchRequest struct {
 	BusinessTypeCode string `json:"businesstypecode"`
 	Limit            int    `json:"limit"`
 	Offset           int    `json:"offset"`
-	UseCache         bool   `json:"usecache"`
+	UseCache         *bool  `json:"usecache"`
 }
 
 // generateCacheKey - Generate cache key from request
@@ -217,15 +217,11 @@ func ProductSearchHandler(c echo.Context) error {
 		req.Offset = 0
 	}
 
-	// Default to use cache
-	if !req.UseCache {
-		req.UseCache = true
-	}
-
 	cacheKey := generateCacheKey(req)
+	useCache := req.UseCache == nil || *req.UseCache
 
 	// Check cache first
-	if req.UseCache {
+	if useCache {
 		if cachedData, found := productCache.Get(cacheKey); found {
 			return c.JSON(http.StatusOK, map[string]any{
 				"status": "success",
@@ -421,6 +417,7 @@ func ProductCacheClearHandler(c echo.Context) error {
 func ProductBarcodeSearchHandler(c echo.Context) error {
 	var req struct {
 		HoldingCode string `json:"holdingcode"`
+		ItemCode    string `json:"itemcode"`
 		Barcode     string `json:"barcode"`
 	}
 
@@ -439,7 +436,7 @@ func ProductBarcodeSearchHandler(c echo.Context) error {
 	}
 
 	// Check cache first
-	cacheKey := fmt.Sprintf("barcode_%s_%s", req.HoldingCode, req.Barcode)
+	cacheKey := fmt.Sprintf("barcode_%s_%s_%s", req.HoldingCode, req.ItemCode, req.Barcode)
 	if cachedData, found := productCache.Get(cacheKey); found && len(cachedData) > 0 {
 		return c.JSON(http.StatusOK, map[string]any{
 			"status": "success",
@@ -459,6 +456,24 @@ func ProductBarcodeSearchHandler(c echo.Context) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+	if req.ItemCode == "" {
+		var itemCount int
+		if err := db.QueryRowContext(ctx,
+			"SELECT COUNT(DISTINCT itemcode) FROM public.productbarcode WHERE barcode = $1",
+			req.Barcode,
+		).Scan(&itemCount); err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{
+				"error": "Barcode lookup failed",
+				"code":  "BARCODE_LOOKUP_FAILED",
+			})
+		}
+		if itemCount > 1 {
+			return c.JSON(http.StatusConflict, map[string]string{
+				"error": "Barcode matches multiple products; itemcode is required",
+				"code":  "BARCODE_AMBIGUOUS",
+			})
+		}
+	}
 
 	query := `
 SELECT
@@ -467,18 +482,17 @@ SELECT
 	pb.name0 as itemname,
 	pb.unitcode,
 	pb.unitname,
-	pb.price,
+	pb.price1,
 	pb.barcoderefunitstand as unitstand,
 	pb.barcoderefunitdivide as unitdivide,
-	p.categorycode,
-	p.vattype,
-	p.costprice
+	pb.categorycode,
+	NULL::integer AS vattype,
+	NULL::numeric AS costprice
 FROM public.productbarcode pb
-LEFT JOIN public.product p ON pb.itemcode = p.code
-WHERE pb.barcode = $1
+WHERE pb.barcode = $1 AND ($2 = '' OR pb.itemcode = $2)
 LIMIT 1`
 
-	row := db.QueryRowContext(ctx, query, req.Barcode)
+	row := db.QueryRowContext(ctx, query, req.Barcode, req.ItemCode)
 
 	var result struct {
 		ItemCode     string

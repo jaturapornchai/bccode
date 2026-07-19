@@ -840,6 +840,17 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
     }
   };
 
+  const handleCancelForm = () => {
+    const targetId = selectedNode?.warehouseId || tree[0]?.guidfixed || "";
+    if (targetId) {
+      setSelectedNode({ type: "warehouse", warehouseId: targetId });
+      setFormType("editwarehouse");
+    } else {
+      setSelectedNode(null);
+      setFormType("createwarehouse");
+    }
+  };
+
   // ---- Delete handlers (custom confirm dialog — never window.confirm) ----
 
   const handleDeleteWarehouse = async (warehouseId: string, e: React.MouseEvent) => {
@@ -1352,6 +1363,30 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
             {formType === "createbin" && (<><Plus className="size-4 text-emerald-600 shrink-0" />{language === "th" ? "เพิ่มที่วางสินค้า" : "Add Bin"}</>)}
             {formType === "editbin" && (<><PackageSearch className="size-4 text-blue-600 shrink-0" />{language === "th" ? "แก้ไขที่วางสินค้า" : "Edit Bin"}</>)}
           </h3>
+          {formType ? (
+            <div className="flex w-full shrink-0 flex-wrap items-center justify-end gap-2 sm:w-auto" data-testid="warehouse-form-actions">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleCancelForm}
+                disabled={isSavingLocal}
+                className="h-8 text-xs font-semibold"
+              >
+                {language === "th" ? "ยกเลิก" : "Cancel"}
+              </Button>
+              <Button
+                type="submit"
+                form="warehouse-node-form"
+                size="sm"
+                disabled={isSavingLocal}
+                className="h-8 gap-1 bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/95"
+              >
+                {isSavingLocal ? <Loader2 className="size-3 animate-spin" /> : <Save className="size-3.5" />}
+                {language === "th" ? "บันทึก" : "Save"}
+              </Button>
+            </div>
+          ) : null}
         </div>
 
         <CardContent className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">
@@ -1363,7 +1398,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
                 : "Select warehouse, location, or bin on the left to edit."}
             </div>
           ) : (
-            <form onSubmit={handleSaveForm} className="flex flex-col gap-3">
+            <form id="warehouse-node-form" onSubmit={handleSaveForm} className="flex flex-col gap-3">
               {/* WAREHOUSE form */}
               {(formType === "createwarehouse" || formType === "editwarehouse") && (
                 <div className="flex flex-col gap-3">
@@ -1830,35 +1865,6 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
                 <div className="text-xs font-semibold text-destructive mt-1">{formError}</div>
               )}
 
-              <div className="flex justify-end gap-2 border-t border-border/30 pt-4 mt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const targetId = selectedNode?.warehouseId || tree[0]?.guidfixed || "";
-                    if (targetId) {
-                      setSelectedNode({ type: "warehouse", warehouseId: targetId });
-                      setFormType("editwarehouse");
-                    } else {
-                      setSelectedNode(null);
-                      setFormType("createwarehouse");
-                    }
-                  }}
-                  className="h-8 text-xs font-semibold"
-                >
-                  {language === "th" ? "ยกเลิก" : "Cancel"}
-                </Button>
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={isSavingLocal}
-                  className="h-8 text-xs font-semibold gap-1 bg-primary text-primary-foreground hover:bg-primary/95"
-                >
-                  {isSavingLocal ? <Loader2 className="animate-spin size-3" /> : <Save className="size-3.5" />}
-                  {language === "th" ? "บันทึก" : "Save"}
-                </Button>
-              </div>
             </form>
           )}
         </CardContent>

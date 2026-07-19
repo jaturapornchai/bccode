@@ -118,6 +118,7 @@ describe("utils — price/refbarcode/bom arrays", () => {
     expect(result).toEqual([
       {
         guidfixed: "",
+        itemcode: "",
         names: [],
         itemunitcode: "",
         itemunitnames: [],
@@ -134,6 +135,7 @@ describe("utils — price/refbarcode/bom arrays", () => {
     expect(toBomArray([{ barcode: "X1", barcodeguidfixed: "G1", qty: 2 }])).toEqual([
       {
         barcodeguidfixed: "G1",
+        itemcode: "",
         names: [],
         itemunitcode: "",
         itemunitnames: [],

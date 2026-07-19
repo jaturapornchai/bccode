@@ -12,6 +12,7 @@ import (
 	"smlcloudplatform/internal/services"
 	"smlcloudplatform/internal/utils"
 	"smlcloudplatform/internal/utils/checksum"
+	"sort"
 	"strings"
 	"time"
 
@@ -20,6 +21,7 @@ import (
 	product_models "smlcloudplatform/internal/product/productbarcode/models"
 	product_repositories "smlcloudplatform/internal/product/productbarcode/repositories"
 	product_services "smlcloudplatform/internal/product/productbarcode/services"
+	saleinvoicebom_models "smlcloudplatform/internal/transaction/saleinvoicebomprice/models"
 	saleinvoicebom_services "smlcloudplatform/internal/transaction/saleinvoicebomprice/services"
 
 	"github.com/smlsoft/mongopagination"
@@ -104,7 +106,7 @@ func (svc BOMHttpService) UpsertBOM(holdingCode string, authUsername string, doc
 
 			productBarcodeDict := map[string]product_models.ProductBarcodeDoc{}
 			if ver.BOM != nil && len(*ver.BOM) > 0 {
-				err = product_services.BuildBOMView(ctx, svc.productRepo.FindByBarcode, bomView.Level, &productBarcodeDict, &bomViewDict, holdingCode, ver.BOM, &bomView.BOM)
+				err = product_services.BuildBOMView(ctx, svc.productRepo.FindByBusinessKey, bomView.Level, &productBarcodeDict, &bomViewDict, holdingCode, ver.BOM, &bomView.BOM)
 				if err != nil {
 					return "", err
 				}
@@ -140,10 +142,7 @@ func (svc BOMHttpService) UpsertBOM(holdingCode string, authUsername string, doc
 			}
 
 			// Sync sale invoice BOM price for intermediate components
-			bomBarcodes := []string{}
-			for tempBarcode := range productBarcodeDict {
-				bomBarcodes = append(bomBarcodes, tempBarcode)
-			}
+			bomBarcodes := saleInvoiceBarcodeKeys(productBarcodeDict)
 			_, err = svc.saleInvoiceBomSvc.CreateSaleInvoiceBomPrice(holdingCode, authUsername, docNo, guidFixed, bomBarcodes)
 			if err != nil {
 				return lastGUID, err
@@ -164,7 +163,7 @@ func (svc BOMHttpService) UpsertBOM(holdingCode string, authUsername string, doc
 
 	productBarcodeDict := map[string]product_models.ProductBarcodeDoc{}
 	if doc.BOM != nil && len(*doc.BOM) > 0 {
-		err = product_services.BuildBOMView(ctx, svc.productRepo.FindByBarcode, bomView.Level, &productBarcodeDict, &bomViewDict, holdingCode, doc.BOM, &bomView.BOM)
+		err = product_services.BuildBOMView(ctx, svc.productRepo.FindByBusinessKey, bomView.Level, &productBarcodeDict, &bomViewDict, holdingCode, doc.BOM, &bomView.BOM)
 		if err != nil {
 			return "", err
 		}
@@ -191,16 +190,30 @@ func (svc BOMHttpService) UpsertBOM(holdingCode string, authUsername string, doc
 		return newGUID, err
 	}
 
-	bomBarcodes := []string{}
-	for tempBarcode := range productBarcodeDict {
-		bomBarcodes = append(bomBarcodes, tempBarcode)
-	}
+	bomBarcodes := saleInvoiceBarcodeKeys(productBarcodeDict)
 	_, err = svc.saleInvoiceBomSvc.CreateSaleInvoiceBomPrice(holdingCode, authUsername, docNo, newGUID, bomBarcodes)
 	if err != nil {
 		return newGUID, err
 	}
 
 	return newGUID, nil
+}
+
+func saleInvoiceBarcodeKeys(productBarcodes map[string]product_models.ProductBarcodeDoc) []saleinvoicebom_models.SaleInvoiceBarcodeKey {
+	keys := make([]saleinvoicebom_models.SaleInvoiceBarcodeKey, 0, len(productBarcodes))
+	for _, productBarcode := range productBarcodes {
+		keys = append(keys, saleinvoicebom_models.SaleInvoiceBarcodeKey{
+			ItemCode: productBarcode.ItemCode,
+			Barcode:  productBarcode.Barcode,
+		})
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		if keys[i].ItemCode == keys[j].ItemCode {
+			return keys[i].Barcode < keys[j].Barcode
+		}
+		return keys[i].ItemCode < keys[j].ItemCode
+	})
+	return keys
 }
 
 func (svc BOMHttpService) SaveRecipeBOM(holdingCode string, authUsername string, guid string, req models.ProductBarcodeBOMSaveRequest) (string, error) {

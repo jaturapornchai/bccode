@@ -1,6 +1,6 @@
 ---
 name: bc-deploy
-description: Prepare to deploy BC Account.
+description: Prepare to deploy BC Ai Account.
 disable-model-invocation: true
 ---
 

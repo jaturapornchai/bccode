@@ -151,6 +151,7 @@ type ProductDimensionItem struct {
 
 type RefProductBarcode struct {
 	GuidFixed     string          `json:"guidfixed" bson:"guidfixed"`
+	ItemCode      string          `json:"itemcode" bson:"itemcode"`
 	Names         *[]models.NameX `json:"names" bson:"names"`
 	ItemUnitCode  string          `json:"itemunitcode" bson:"itemunitcode"`
 	ItemUnitNames *[]models.NameX `json:"itemunitnames" bson:"itemunitnames"`
@@ -300,6 +301,7 @@ func (ProductBarcodeDoc) CollectionName() string {
 func (doc ProductBarcodeDoc) ToRefBarcode() RefProductBarcode {
 	return RefProductBarcode{
 		GuidFixed:     doc.GuidFixed,
+		ItemCode:      doc.ItemCode,
 		Names:         doc.Names,
 		ItemUnitCode:  doc.ItemUnitCode,
 		ItemUnitNames: doc.ItemUnitNames,
@@ -311,6 +313,7 @@ func (doc ProductBarcodeDoc) ToBOM() BOMProductBarcode {
 
 	return BOMProductBarcode{
 		BarcodeGuidFixed: doc.GuidFixed,
+		ItemCode:         doc.ItemCode,
 		Names:            doc.Names,
 		ItemUnitCode:     doc.ItemUnitCode,
 		ItemUnitNames:    doc.ItemUnitNames,
@@ -372,7 +375,7 @@ type ProductBarcodePg struct {
 	DivideValue              float64             `json:"dividevalue" gorm:"column:dividevalue"`
 	BalanceAmount            float64             `json:"balanceamount" gorm:"column:balanceamount"`
 	AverageCost              float64             `json:"averagecost" gorm:"column:averagecost"`
-	ItemCode                 string              `json:"itemcode" gorm:"column:itemcode"`
+	ItemCode                 string              `json:"itemcode" gorm:"column:itemcode;primaryKey"`
 	ItemType                 int8                `json:"itemtype" gorm:"column:itemtype"`
 	MaterialType             int8                `json:"materialtype" gorm:"column:materialtype"`
 	BrandCode                string              `json:"brandcode" gorm:"column:brandcode"`

@@ -10,6 +10,9 @@ import {
   Pencil,
   Plus,
   Copy,
+  AlertCircle,
+  Eye,
+  EyeOff,
   RefreshCcw,
   Search,
   Trash2,
@@ -29,7 +32,7 @@ import {
 import { AuthenticatedImg } from "@/components/authenticated-image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { MasterPicker } from "@/components/product-barcode/master-picker";
@@ -50,7 +53,6 @@ import {
   type ProductBarcode,
   type ProductBarcodeListRow,
   type NameX,
-  type ProductImage,
   type ProductOption,
   type ProductTimeForSale,
   type RefProductBarcode,
@@ -71,7 +73,15 @@ import { TabProductBom } from "./tab-product-bom";
 import { TabProductBasic } from "./tab-product-basic";
 import { TabProductClassification } from "./tab-product-classification";
 import { TabProductLogistics } from "./tab-product-logistics";
-import { FieldRow, FieldGrid, Section, Toggle, RadioOptionGroup, NumberField, type ProductStateAction } from "./product-tab-shared";
+import {
+  FieldRow,
+  FieldGrid,
+  Section,
+  Toggle,
+  RadioOptionGroup,
+  NumberField,
+  type ProductStateAction,
+} from "./product-tab-shared";
 function readAuthSession(): AuthSession | null {
   if (typeof window === "undefined") return null;
   try {
@@ -92,7 +102,10 @@ function readWorkspaceSession(): WorkspaceSession | null {
   }
 }
 
-async function ensureActiveProductHolding(auth: AuthSession, holdingcode: string): Promise<void> {
+async function ensureActiveProductHolding(
+  auth: AuthSession,
+  holdingcode: string,
+): Promise<void> {
   const response = await fetch("/api/workspace/select-holding", {
     method: "POST",
     headers: {
@@ -103,13 +116,22 @@ async function ensureActiveProductHolding(auth: AuthSession, holdingcode: string
     body: JSON.stringify({ backendUrl: auth.backendUrl, holdingcode }),
     cache: "no-store",
   });
-  const data = await response.json().catch(() => null) as { success?: boolean; message?: string } | null;
+  const data = (await response.json().catch(() => null)) as {
+    success?: boolean;
+    message?: string;
+  } | null;
   if (!response.ok || data?.success === false) {
     throw new Error(data?.message || "ไม่สามารถเลือกบริษัทใน token ได้");
   }
 }
 
-const ADVANCED_PRODUCT_TAB_KEYS = ["logistics", "restaurant", "timeforsales", "business", "misc"] as const;
+const ADVANCED_PRODUCT_TAB_KEYS = [
+  "logistics",
+  "restaurant",
+  "timeforsales",
+  "business",
+  "misc",
+] as const;
 
 const PRIMARY_PRODUCT_TABS = (text: ReturnType<typeof getBarcodeText>) => ({
   basic: text.tabBasic,
@@ -128,14 +150,27 @@ const ADVANCED_PRODUCT_TABS = (text: ReturnType<typeof getBarcodeText>) => ({
   misc: text.tabMisc,
 });
 
+const PRODUCT_DETAIL_TABS = [
+  { key: "overview", label: "ภาพรวม" },
+  { key: "classification", label: "การจัดหมวด" },
+  { key: "inventory", label: "หน่วยและคงคลัง" },
+  { key: "sales", label: "การขาย / POS" },
+  { key: "more", label: "ข้อมูลเพิ่มเติม" },
+] as const;
+
+type ProductDetailTab = (typeof PRODUCT_DETAIL_TABS)[number]["key"];
+
 const PRODUCT_SPLIT_DEFAULT_LEFT = 30;
 const PRODUCT_SPLIT_STORAGE_KEY = "bc_product_split_left_v3";
-const PRODUCT_SPLIT_MIN_LEFT = 5;
-const PRODUCT_SPLIT_MAX_LEFT = 95;
+const PRODUCT_SPLIT_MIN_LEFT = 24;
+const PRODUCT_SPLIT_MAX_LEFT = 50;
 
 function clampProductSplitLeft(value: number) {
   if (!Number.isFinite(value)) return PRODUCT_SPLIT_DEFAULT_LEFT;
-  return Math.min(PRODUCT_SPLIT_MAX_LEFT, Math.max(PRODUCT_SPLIT_MIN_LEFT, value));
+  return Math.min(
+    PRODUCT_SPLIT_MAX_LEFT,
+    Math.max(PRODUCT_SPLIT_MIN_LEFT, value),
+  );
 }
 
 export function ProductScreen({
@@ -166,10 +201,13 @@ export function ProductScreen({
   const [checkedProductKeys, setCheckedProductKeys] = useState<string[]>([]);
 
   // Resizable split states
-  const [splitLeftPercent, setSplitLeftPercent] = useState(PRODUCT_SPLIT_DEFAULT_LEFT);
+  const [splitLeftPercent, setSplitLeftPercent] = useState(
+    PRODUCT_SPLIT_DEFAULT_LEFT,
+  );
   const [resizingSplit, setResizingSplit] = useState(false);
   const splitContainerRef = useRef<HTMLDivElement | null>(null);
   const selectedShopTokenRef = useRef("");
+  const productListRequestRef = useRef(0);
 
   // Restore split settings
   useEffect(() => {
@@ -186,7 +224,7 @@ export function ProductScreen({
       ({
         "--product-list-fr": `${splitLeftPercent}fr`,
         "--product-detail-fr": `${100 - splitLeftPercent}fr`,
-      } as React.CSSProperties),
+      }) as React.CSSProperties,
     [splitLeftPercent],
   );
 
@@ -240,26 +278,37 @@ export function ProductScreen({
     [resizingSplit, updateSplitFromClientX],
   );
 
-  const stopSplitResize = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    event.currentTarget.releasePointerCapture(event.pointerId);
-    setResizingSplit(false);
-    setSplitLeftPercent((current) => {
-      const next = clampProductSplitLeft(current);
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(PRODUCT_SPLIT_STORAGE_KEY, String(Math.round(next)));
-      }
-      return next;
-    });
-  }, []);
+  const stopSplitResize = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+      setResizingSplit(false);
+      setSplitLeftPercent((current) => {
+        const next = clampProductSplitLeft(current);
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(
+            PRODUCT_SPLIT_STORAGE_KEY,
+            String(Math.round(next)),
+          );
+        }
+        return next;
+      });
+    },
+    [],
+  );
 
-  const adjustSplitWithKeyboard = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
-    let direction = 0;
-    if (event.key === "ArrowLeft") direction = -2;
-    else if (event.key === "ArrowRight") direction = 2;
-    if (direction === 0) return;
-    event.preventDefault();
-    setSplitLeftPercent((current) => clampProductSplitLeft(current + direction));
-  }, []);
+  const adjustSplitWithKeyboard = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      let direction = 0;
+      if (event.key === "ArrowLeft") direction = -2;
+      else if (event.key === "ArrowRight") direction = 2;
+      if (direction === 0) return;
+      event.preventDefault();
+      setSplitLeftPercent((current) =>
+        clampProductSplitLeft(current + direction),
+      );
+    },
+    [],
+  );
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -277,52 +326,90 @@ export function ProductScreen({
   /** Ref to the product editor form element for programmatic submission. */
   const productFormRef = useRef<HTMLFormElement>(null);
   const pickerAnchorRef = useRef<HTMLElement | null>(null);
-  const [productTab, setProductTab] = useState<"basic" | "classification" | "units" | "bom" | "stock" | "media" | "logistics" | "restaurant" | "timeforsales" | "business" | "misc">("basic");
+  const [productTab, setProductTab] = useState<
+    | "basic"
+    | "classification"
+    | "units"
+    | "bom"
+    | "stock"
+    | "media"
+    | "logistics"
+    | "restaurant"
+    | "timeforsales"
+    | "business"
+    | "misc"
+  >("basic");
   const [advancedTabsOpen, setAdvancedTabsOpen] = useState(false);
+  const [detailTab, setDetailTab] = useState<ProductDetailTab>("overview");
+  const [showEmptyDetails, setShowEmptyDetails] = useState(false);
+  const [selectedProductDetail, setSelectedProductDetail] =
+    useState<Product | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState("");
+  const [detailReloadKey, setDetailReloadKey] = useState(0);
   useEffect(() => {
     if (typeof window === "undefined") return;
-    setAdvancedTabsOpen(window.localStorage.getItem("bcproductadvancedtabsopen") === "1");
+    setAdvancedTabsOpen(
+      window.localStorage.getItem("bcproductadvancedtabsopen") === "1",
+    );
   }, []);
 
+  const itemTypes = useMemo(
+    () => [
+      { value: 0, label: text.itemTypeStock },
+      { value: 1, label: text.itemTypeService },
+    ],
+    [text],
+  );
 
-  const itemTypes = useMemo(() => [
-    { value: 0, label: text.itemTypeStock },
-    { value: 1, label: text.itemTypeService },
-  ], [text]);
+  const vatTypes = useMemo(
+    () => [
+      { value: 0, label: text.vatIncluded },
+      { value: 1, label: text.vatExcluded },
+    ],
+    [text],
+  );
 
-  const vatTypes = useMemo(() => [
-    { value: 0, label: text.vatIncluded },
-    { value: 1, label: text.vatExcluded },
-  ], [text]);
+  const materialTypes = useMemo(
+    () => [
+      { value: 0, label: text.materialGeneral },
+      { value: 1, label: text.materialMaterial },
+      { value: 2, label: text.materialSemiFinished },
+      { value: 3, label: text.materialSet },
+      { value: 4, label: text.materialAgricultural },
+    ],
+    [text],
+  );
 
-  const materialTypes = useMemo(() => [
-    { value: 0, label: text.materialGeneral },
-    { value: 1, label: text.materialMaterial },
-    { value: 2, label: text.materialSemiFinished },
-    { value: 3, label: text.materialSet },
-    { value: 4, label: text.materialAgricultural },
-  ], [text]);
+  const sumPointTypes = useMemo(
+    () => [
+      { value: "true", label: text.isSumPointYes },
+      { value: "false", label: text.isSumPointNo },
+    ],
+    [text],
+  );
 
-  const sumPointTypes = useMemo(() => [
-    { value: "true", label: text.isSumPointYes },
-    { value: "false", label: text.isSumPointNo },
-  ], [text]);
+  const sumPointOptions = useMemo(
+    () => [
+      { value: true, label: text.isSumPointYes },
+      { value: false, label: text.isSumPointNo },
+    ],
+    [text],
+  );
 
-  const sumPointOptions = useMemo(() => [
-    { value: true, label: text.isSumPointYes },
-    { value: false, label: text.isSumPointNo },
-  ], [text]);
-
-  const foodTypes = useMemo(() => [
-    { value: 0, label: text.foodTypeFood },
-    { value: 1, label: text.foodTypeDrink },
-    { value: 2, label: text.foodTypeAlcohol },
-    { value: 3, label: text.foodTypeOther },
-  ], [text]);
+  const foodTypes = useMemo(
+    () => [
+      { value: 0, label: text.foodTypeFood },
+      { value: 1, label: text.foodTypeDrink },
+      { value: 2, label: text.foodTypeAlcohol },
+      { value: 3, label: text.foodTypeOther },
+    ],
+    [text],
+  );
 
   const [pickerOpen, setPickerOpen] = useState(false);
 
-const [pickerType, setPickerType] = useState<string>("");
+  const [pickerType, setPickerType] = useState<string>("");
   const [pickerTarget, setPickerTarget] = useState<string>("");
 
   // Unlinked Barcode Picker states
@@ -338,7 +425,9 @@ const [pickerType, setPickerType] = useState<string>("");
   }, [barcodeSearchInput]);
   const [barcodeList, setBarcodeList] = useState<ProductBarcodeListRow[]>([]);
   const [loadingBarcodes, setLoadingBarcodes] = useState(false);
-  const [bindBarcodeOnSave, setBindBarcodeOnSave] = useState<ProductBarcode | null>(null);
+  const [bindBarcodeOnSave, setBindBarcodeOnSave] =
+    useState<ProductBarcode | null>(null);
+  const activeHoldingCode = workspace?.shop.holdingcode ?? "";
 
   useEffect(() => {
     setAuth(readAuthSession());
@@ -348,23 +437,43 @@ const [pickerType, setPickerType] = useState<string>("");
   useEffect(() => {
     const handleWorkspaceChange = () => {
       const nextWorkspace = readWorkspaceSession();
-      if (nextWorkspace) setWorkspace(nextWorkspace);
+      const nextHoldingCode = nextWorkspace?.shop.holdingcode ?? "";
+      if (nextHoldingCode !== activeHoldingCode) {
+        productListRequestRef.current += 1;
+        selectedShopTokenRef.current = "";
+        setItems([]);
+        setSelectedCode("");
+        setSelectedProductDetail(null);
+        setDetailLoading(false);
+        setDetailError("");
+        setCheckedProductKeys([]);
+        setSelectMode(false);
+        setEditorOpen(false);
+        setEditProduct(null);
+        setBindBarcodeOnSave(null);
+      }
+      setWorkspace(nextWorkspace);
     };
     window.addEventListener(WORKSPACE_CHANGED_EVENT, handleWorkspaceChange);
     window.addEventListener("storage", handleWorkspaceChange);
     return () => {
-      window.removeEventListener(WORKSPACE_CHANGED_EVENT, handleWorkspaceChange);
+      window.removeEventListener(
+        WORKSPACE_CHANGED_EVENT,
+        handleWorkspaceChange,
+      );
       window.removeEventListener("storage", handleWorkspaceChange);
     };
-  }, []);
-
-  const activeHoldingCode = workspace?.shop.holdingcode ?? "";
+  }, [activeHoldingCode]);
 
   useEffect(() => {
     if (!showBarcodePicker || !auth) return;
     let active = true;
     setLoadingBarcodes(true);
-    listBarcodes(auth, { holdingcode: activeHoldingCode, keyword: barcodeSearch, limit: 100 })
+    listBarcodes(auth, {
+      holdingcode: activeHoldingCode,
+      keyword: barcodeSearch,
+      limit: 100,
+    })
       .then((resData) => {
         if (active && resData.success && resData.data) {
           // Filter unlinked barcodes (itemcode is empty — no product linked yet)
@@ -382,15 +491,100 @@ const [pickerType, setPickerType] = useState<string>("");
     };
   }, [showBarcodePicker, auth, activeHoldingCode, barcodeSearch]);
 
-  const activeLanguages = useMemo(() => languageCodesFromWorkspace(workspace), [workspace]);
+  const activeLanguages = useMemo(
+    () => languageCodesFromWorkspace(workspace),
+    [workspace],
+  );
 
-  const selectedProduct = useMemo(() => {
+  const selectedListProduct = useMemo(() => {
     return items.find((item) => item.code === selectedCode) ?? items[0] ?? null;
   }, [items, selectedCode]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const listProduct = selectedListProduct;
+
+    setSelectedProductDetail(null);
+    setDetailError("");
+    setDetailTab("overview");
+    setShowEmptyDetails(false);
+
+    if (!auth || !listProduct?.code) {
+      setDetailLoading(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setDetailLoading(true);
+    void fetch(`/api/product/${encodeURIComponent(listProduct.code)}`, {
+      headers: {
+        Authorization: `Bearer ${auth.token}`,
+        "x-bc-backend-url": auth.backendUrl,
+      },
+      cache: "no-store",
+    })
+      .then(async (response) => {
+        const data = (await response.json().catch(() => null)) as {
+          success?: boolean;
+          data?: unknown;
+          message?: string;
+        } | null;
+        if (!response.ok || data?.success === false || !data?.data) {
+          throw new Error(data?.message || text.requestFailed);
+        }
+        return data.data;
+      })
+      .then((rawDetail) => {
+        if (cancelled) return;
+        const normalized = rawToProduct(rawDetail);
+        if (
+          normalized.holdingcode &&
+          normalized.holdingcode !== activeHoldingCode
+        ) {
+          throw new Error("ข้อมูลสินค้าไม่ตรงกับกลุ่มกิจการที่เลือก");
+        }
+        setSelectedProductDetail({
+          ...listProduct,
+          ...(rawDetail as Product),
+          ...normalized,
+          qty: listProduct.qty,
+          _unit_count: listProduct._unit_count,
+        });
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setDetailError(
+          error instanceof Error ? error.message : text.requestFailed,
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setDetailLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    activeHoldingCode,
+    auth,
+    detailReloadKey,
+    selectedListProduct,
+    text.requestFailed,
+  ]);
+
+  const selectedProduct = useMemo(() => {
+    if (selectedProductDetail?.code === selectedListProduct?.code) {
+      return selectedProductDetail;
+    }
+    return selectedListProduct;
+  }, [selectedListProduct, selectedProductDetail]);
+
   const visibleItems = useMemo(() => {
     if (listItemTypeFilter === "all") return items;
-    return items.filter((item) => String(item.itemtype ?? 0) === listItemTypeFilter);
+    return items.filter(
+      (item) => String(item.itemtype ?? 0) === listItemTypeFilter,
+    );
   }, [items, listItemTypeFilter]);
 
   const isFormDirty = useMemo(() => {
@@ -399,30 +593,35 @@ const [pickerType, setPickerType] = useState<string>("");
     return JSON.stringify(editProduct) !== JSON.stringify(selectedProduct);
   }, [editorOpen, editProduct, selectedProduct]);
 
-  const handleSelectProduct = useCallback((code: string) => {
-    if (isFormDirty) {
-      void confirm({
-        title: "ข้อมูลมีการเปลี่ยนแปลง",
-        description: "คุณมีข้อมูลที่ยังไม่ได้บันทึก ต้องการละทิ้งการเปลี่ยนแปลงแล้วเปลี่ยนสินค้าหรือไม่?",
-        confirmLabel: "เปลี่ยนสินค้า",
-        cancelLabel: "ยกเลิก",
-      }).then((ok) => {
-        if (ok) {
-          setSelectedCode(code);
-          setEditorOpen(false);
-        }
-      });
-    } else {
-      setSelectedCode(code);
-      setEditorOpen(false);
-    }
-  }, [isFormDirty, confirm]);
+  const handleSelectProduct = useCallback(
+    (code: string) => {
+      if (isFormDirty) {
+        void confirm({
+          title: "ข้อมูลมีการเปลี่ยนแปลง",
+          description:
+            "คุณมีข้อมูลที่ยังไม่ได้บันทึก ต้องการละทิ้งการเปลี่ยนแปลงแล้วเปลี่ยนสินค้าหรือไม่?",
+          confirmLabel: "เปลี่ยนสินค้า",
+          cancelLabel: "ยกเลิก",
+        }).then((ok) => {
+          if (ok) {
+            setSelectedCode(code);
+            setEditorOpen(false);
+          }
+        });
+      } else {
+        setSelectedCode(code);
+        setEditorOpen(false);
+      }
+    },
+    [isFormDirty, confirm],
+  );
 
   const handleCancelEdit = useCallback(() => {
     if (isFormDirty) {
       void confirm({
         title: "ข้อมูลมีการเปลี่ยนแปลง",
-        description: "คุณมีข้อมูลที่ยังไม่ได้บันทึก ต้องการยกเลิกการแก้ไขใช่หรือไม่?",
+        description:
+          "คุณมีข้อมูลที่ยังไม่ได้บันทึก ต้องการยกเลิกการแก้ไขใช่หรือไม่?",
         confirmLabel: "ใช่, ยกเลิก",
         cancelLabel: "กลับไปแก้ไข",
       }).then((ok) => {
@@ -437,6 +636,7 @@ const [pickerType, setPickerType] = useState<string>("");
 
   const loadProducts = useCallback(async () => {
     if (!auth || !activeHoldingCode) return;
+    const requestId = ++productListRequestRef.current;
     setLoading(true);
     setNotice(null);
     try {
@@ -463,20 +663,27 @@ const [pickerType, setPickerType] = useState<string>("");
       const rawData = Array.isArray(data.data) ? data.data : [];
       const normalized: Product[] = rawData.map(rawToProduct);
       const filtered = normalized.filter((item) => item.itemtype !== 2);
+      if (requestId !== productListRequestRef.current) return;
 
       setItems(filtered);
       if (filtered.length > 0) {
         // Only auto-select first item on md+ screens; on mobile the list stays visible
-        const isDesktop = typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches;
+        const isDesktop =
+          typeof window !== "undefined" &&
+          window.matchMedia("(min-width: 768px)").matches;
         if (isDesktop) {
           setSelectedCode((prev) => prev || filtered[0].code);
         }
       }
     } catch (err) {
+      if (requestId !== productListRequestRef.current) return;
       setItems([]);
-      setNotice({ type: "error", text: err instanceof Error ? err.message : text.requestFailed });
+      setNotice({
+        type: "error",
+        text: err instanceof Error ? err.message : text.requestFailed,
+      });
     } finally {
-      setLoading(false);
+      if (requestId === productListRequestRef.current) setLoading(false);
     }
   }, [auth, activeHoldingCode, search, text.requestFailed]);
 
@@ -486,31 +693,37 @@ const [pickerType, setPickerType] = useState<string>("");
     }
   }, [active, auth, activeHoldingCode, loadProducts]);
 
-  const makeBlankProduct = useCallback((): Product => ({
-    guidfixed: "",
-    holdingcode: activeHoldingCode,
-    code: "",
-    names: [{ code: "th", name: "" }, { code: "en", name: "" }],
-    groupcode: "",
-    groupnames: [],
-    itemtype: 0,
-    vattype: 0,
-    materialtype: 0,
-    issumpoint: false,
-    manufacturers: [],
-    suppliers: [],
-    condition: false,
-    dividevalue: 1,
-    standvalue: 1,
-    isusesubbarcodes: false,
-    refbarcodes: [],
-    bom: [],
-    orderpoint: 0,
-    minpoint: 0,
-    maxpoint: 0,
-    qty: 0,
-    stockbarcode: "",
-  }), [activeHoldingCode]);
+  const makeBlankProduct = useCallback(
+    (): Product => ({
+      guidfixed: "",
+      holdingcode: activeHoldingCode,
+      code: "",
+      names: [
+        { code: "th", name: "" },
+        { code: "en", name: "" },
+      ],
+      groupcode: "",
+      groupnames: [],
+      itemtype: 0,
+      vattype: 0,
+      materialtype: 0,
+      issumpoint: false,
+      manufacturers: [],
+      suppliers: [],
+      condition: false,
+      dividevalue: 1,
+      standvalue: 1,
+      isusesubbarcodes: false,
+      refbarcodes: [],
+      bom: [],
+      orderpoint: 0,
+      minpoint: 0,
+      maxpoint: 0,
+      qty: 0,
+      stockbarcode: "",
+    }),
+    [activeHoldingCode],
+  );
 
   const handleCreateOpen = () => {
     setEditorMode("create");
@@ -536,12 +749,15 @@ const [pickerType, setPickerType] = useState<string>("");
     if (!auth) return;
     try {
       setLoading(true);
-      const res = await fetch(`/api/product-barcode/${encodeURIComponent(barcodeRow.guidfixed)}`, {
-        headers: {
-          Authorization: `Bearer ${auth.token}`,
-          "x-bc-backend-url": auth.backendUrl,
+      const res = await fetch(
+        `/api/product-barcode/${encodeURIComponent(barcodeRow.guidfixed)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${auth.token}`,
+            "x-bc-backend-url": auth.backendUrl,
+          },
         },
-      });
+      );
       const resData = await res.json();
       if (resData.success && resData.data) {
         const b = resData.data as ProductBarcode;
@@ -600,7 +816,10 @@ const [pickerType, setPickerType] = useState<string>("");
           };
         });
         setBindBarcodeOnSave(b);
-        setNotice({ type: "info", text: text.barcodeFetchSuccess.replace("%s", b.barcode) });
+        setNotice({
+          type: "info",
+          text: text.barcodeFetchSuccess.replace("%s", b.barcode),
+        });
       }
     } catch (err) {
       console.error(err);
@@ -629,13 +848,16 @@ const [pickerType, setPickerType] = useState<string>("");
     if (!ok) return;
 
     try {
-      const res = await fetch(`/api/product/${encodeURIComponent(p.guidfixed)}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${auth.token}`,
-          "x-bc-backend-url": auth.backendUrl,
+      const res = await fetch(
+        `/api/product/${encodeURIComponent(p.guidfixed)}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${auth.token}`,
+            "x-bc-backend-url": auth.backendUrl,
+          },
         },
-      });
+      );
       const data = await res.json();
       if (!res.ok || data.success === false) {
         throw new Error(data.message || "Delete failed");
@@ -644,32 +866,39 @@ const [pickerType, setPickerType] = useState<string>("");
       void loadProducts();
       setSelectedCode("");
     } catch (err) {
-      setNotice({ type: "error", text: err instanceof Error ? err.message : "Delete failed" });
+      setNotice({
+        type: "error",
+        text: err instanceof Error ? err.message : "Delete failed",
+      });
     }
   };
 
   const toggleCheckedProduct = (key: string) => {
     setCheckedProductKeys((current) =>
-      current.includes(key) ? current.filter((item) => item !== key) : [...current, key],
+      current.includes(key)
+        ? current.filter((item) => item !== key)
+        : [...current, key],
     );
   };
 
   const handleDeleteSelectedProducts = async () => {
     if (!auth || checkedProductKeys.length === 0) return;
-    const selectedItems = visibleItems.filter((item, index) => checkedProductKeys.includes(productRowKey(item, index)));
-    const guids = selectedItems.map((item) => item.guidfixed).filter(Boolean);
-    if (guids.length === 0) return;
+    const selectedItems = visibleItems.filter((item) =>
+      checkedProductKeys.includes(productRowKey(item)),
+    );
+    const codes = selectedItems.map((item) => item.code).filter(Boolean);
+    if (codes.length === 0) return;
     const ok = await confirm({
       title: text.deleteConfirm,
-      description: `เลือกไว้ ${guids.length.toLocaleString("th-TH")} รายการ`,
+      description: `เลือกไว้ ${codes.length.toLocaleString("th-TH")} รายการ`,
       tone: "danger",
       confirmLabel: text.delete,
       cancelLabel: text.cancel,
     });
     if (!ok) return;
     try {
-      for (const guid of guids) {
-        const res = await fetch(`/api/product/${encodeURIComponent(guid)}`, {
+      for (const code of codes) {
+        const res = await fetch(`/api/product/${encodeURIComponent(code)}`, {
           method: "DELETE",
           headers: {
             Authorization: `Bearer ${auth.token}`,
@@ -687,7 +916,10 @@ const [pickerType, setPickerType] = useState<string>("");
       setNotice({ type: "success", text: text.deleteSuccess });
       void loadProducts();
     } catch (err) {
-      setNotice({ type: "error", text: err instanceof Error ? err.message : "Delete failed" });
+      setNotice({
+        type: "error",
+        text: err instanceof Error ? err.message : "Delete failed",
+      });
     }
   };
 
@@ -701,7 +933,9 @@ const [pickerType, setPickerType] = useState<string>("");
       setNotice({ type: "error", text: text.codeRequired });
       return;
     }
-    const hasName = editProduct.names.some((n) => n.name && n.name.trim() !== "");
+    const hasName = editProduct.names.some(
+      (n) => n.name && n.name.trim() !== "",
+    );
     if (!hasName) {
       setNotice({ type: "error", text: text.nameRequired });
       return;
@@ -711,7 +945,10 @@ const [pickerType, setPickerType] = useState<string>("");
     setNotice(null);
     try {
       const method = editorMode === "create" ? "POST" : "PUT";
-      const url = editorMode === "create" ? "/api/product" : `/api/product/${encodeURIComponent(editProduct.guidfixed)}`;
+      const url =
+        editorMode === "create"
+          ? "/api/product"
+          : `/api/product/${encodeURIComponent(editProduct.guidfixed)}`;
 
       const payload = {
         ...editProduct,
@@ -735,37 +972,49 @@ const [pickerType, setPickerType] = useState<string>("");
       }
 
       // Link Barcode if selected
-      if (editorMode === "create" && bindBarcodeOnSave && data.data?.guidfixed) {
+      if (
+        editorMode === "create" &&
+        bindBarcodeOnSave &&
+        data.data?.guidfixed
+      ) {
         const createdGuid = data.data.guidfixed;
         const createdCode = editProduct.code;
 
-        const bcRes = await fetch(`/api/product-barcode/${encodeURIComponent(bindBarcodeOnSave.guidfixed)}`, {
-          headers: {
-            Authorization: `Bearer ${auth.token}`,
-            "x-bc-backend-url": auth.backendUrl,
+        const bcRes = await fetch(
+          `/api/product-barcode/${encodeURIComponent(bindBarcodeOnSave.guidfixed)}`,
+          {
+            headers: {
+              Authorization: `Bearer ${auth.token}`,
+              "x-bc-backend-url": auth.backendUrl,
+            },
           },
-        });
+        );
         const bcJson = await bcRes.json();
         if (!bcRes.ok || !bcJson.success || !bcJson.data) {
-          throw new Error(bcJson.message || "Failed to fetch barcode details for linking");
+          throw new Error(
+            bcJson.message || "Failed to fetch barcode details for linking",
+          );
         }
 
         const fullBarcode = bcJson.data;
         fullBarcode.itemguid = createdGuid;
         fullBarcode.itemcode = createdCode;
 
-        const putRes = await fetch(`/api/product-barcode/${encodeURIComponent(bindBarcodeOnSave.guidfixed)}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${auth.token}`,
-            "x-bc-backend-url": auth.backendUrl,
+        const putRes = await fetch(
+          `/api/product-barcode/${encodeURIComponent(bindBarcodeOnSave.guidfixed)}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${auth.token}`,
+              "x-bc-backend-url": auth.backendUrl,
+            },
+            body: JSON.stringify({
+              backendUrl: auth.backendUrl,
+              data: fullBarcode,
+            }),
           },
-          body: JSON.stringify({
-            backendUrl: auth.backendUrl,
-            data: fullBarcode,
-          }),
-        });
+        );
         const putJson = await putRes.json();
         if (!putRes.ok || !putJson.success) {
           throw new Error(putJson.message || "Failed to save barcode link");
@@ -787,13 +1036,20 @@ const [pickerType, setPickerType] = useState<string>("");
         }
       }
     } catch (err) {
-      setNotice({ type: "error", text: err instanceof Error ? err.message : "Save failed" });
+      setNotice({
+        type: "error",
+        text: err instanceof Error ? err.message : "Save failed",
+      });
     } finally {
       setSaving(false);
     }
   };
 
-  const openPicker = (type: string, targetField: string, anchorEl: HTMLElement | null = null) => {
+  const openPicker = (
+    type: string,
+    targetField: string,
+    anchorEl: HTMLElement | null = null,
+  ) => {
     pickerAnchorRef.current = anchorEl;
     setPickerType(type);
     setPickerTarget(targetField);
@@ -816,7 +1072,7 @@ const [pickerType, setPickerType] = useState<string>("");
                 itemunitcode: entry.code,
                 itemunitnames: entry.names,
               }
-            : row
+            : row,
         ),
       });
       return;
@@ -829,7 +1085,14 @@ const [pickerType, setPickerType] = useState<string>("");
         if (!current.some((m) => m.guidfixed === entry.guidfixed)) {
           setEditProduct({
             ...editProduct,
-            manufacturers: [...current, { guidfixed: entry.guidfixed, code: entry.code, names: entry.names }],
+            manufacturers: [
+              ...current,
+              {
+                guidfixed: entry.guidfixed,
+                code: entry.code,
+                names: entry.names,
+              },
+            ],
           });
         }
       } else if (pickerTarget === "suppliers") {
@@ -837,7 +1100,14 @@ const [pickerType, setPickerType] = useState<string>("");
         if (!current.some((s) => s.guidfixed === entry.guidfixed)) {
           setEditProduct({
             ...editProduct,
-            suppliers: [...current, { guidfixed: entry.guidfixed, code: entry.code, names: entry.names }],
+            suppliers: [
+              ...current,
+              {
+                guidfixed: entry.guidfixed,
+                code: entry.code,
+                names: entry.names,
+              },
+            ],
           });
         }
       }
@@ -858,17 +1128,60 @@ const [pickerType, setPickerType] = useState<string>("");
     }
 
     // Single select classification pickers — explicit field map to avoid unsafe keyof cast
-    const classificationFields: Record<string, { guid: keyof Product; code: keyof Product; names: keyof Product }> = {
-      group:        { guid: "groupguid" as keyof Product,        code: "groupcode",       names: "groupnames" },
-      groupsubone:  { guid: "groupsuboneguid" as keyof Product,  code: "groupsubonecode",  names: "groupsubonenames" },
-      groupsubtwo:  { guid: "groupsubtwoguid" as keyof Product,  code: "groupsubtwocode",  names: "groupsubtwonames" },
-      brand:        { guid: "brandguid" as keyof Product,        code: "brandcode",       names: "brandnames" },
-      category:     { guid: "categoryguid" as keyof Product,    code: "categorycode",     names: "categorynames" },
-      class:        { guid: "classguid" as keyof Product,        code: "classcode",        names: "classnames" },
-      design:       { guid: "designguid" as keyof Product,       code: "designcode",       names: "designnames" },
-      model:        { guid: "modelguid" as keyof Product,        code: "modelcode",        names: "modelnames" },
-      pattern:      { guid: "patternguid" as keyof Product,      code: "patterncode",      names: "patternnames" },
-      grade:        { guid: "gradeguid" as keyof Product,        code: "gradecode",        names: "gradenames" },
+    const classificationFields: Record<
+      string,
+      { guid: keyof Product; code: keyof Product; names: keyof Product }
+    > = {
+      group: {
+        guid: "groupguid" as keyof Product,
+        code: "groupcode",
+        names: "groupnames",
+      },
+      groupsubone: {
+        guid: "groupsuboneguid" as keyof Product,
+        code: "groupsubonecode",
+        names: "groupsubonenames",
+      },
+      groupsubtwo: {
+        guid: "groupsubtwoguid" as keyof Product,
+        code: "groupsubtwocode",
+        names: "groupsubtwonames",
+      },
+      brand: {
+        guid: "brandguid" as keyof Product,
+        code: "brandcode",
+        names: "brandnames",
+      },
+      category: {
+        guid: "categoryguid" as keyof Product,
+        code: "categorycode",
+        names: "categorynames",
+      },
+      class: {
+        guid: "classguid" as keyof Product,
+        code: "classcode",
+        names: "classnames",
+      },
+      design: {
+        guid: "designguid" as keyof Product,
+        code: "designcode",
+        names: "designnames",
+      },
+      model: {
+        guid: "modelguid" as keyof Product,
+        code: "modelcode",
+        names: "modelnames",
+      },
+      pattern: {
+        guid: "patternguid" as keyof Product,
+        code: "patterncode",
+        names: "patternnames",
+      },
+      grade: {
+        guid: "gradeguid" as keyof Product,
+        code: "gradecode",
+        names: "gradenames",
+      },
     };
     const cf = classificationFields[pickerTarget];
     if (!cf) return;
@@ -893,17 +1206,60 @@ const [pickerType, setPickerType] = useState<string>("");
       });
       return;
     }
-    const clearFields: Record<string, { guid: keyof Product; code: keyof Product; names: keyof Product }> = {
-      group:        { guid: "groupguid" as keyof Product,        code: "groupcode",       names: "groupnames" },
-      groupsubone:  { guid: "groupsuboneguid" as keyof Product,  code: "groupsubonecode",  names: "groupsubonenames" },
-      groupsubtwo:  { guid: "groupsubtwoguid" as keyof Product,  code: "groupsubtwocode",  names: "groupsubtwonames" },
-      brand:        { guid: "brandguid" as keyof Product,        code: "brandcode",       names: "brandnames" },
-      category:     { guid: "categoryguid" as keyof Product,    code: "categorycode",     names: "categorynames" },
-      class:        { guid: "classguid" as keyof Product,        code: "classcode",        names: "classnames" },
-      design:       { guid: "designguid" as keyof Product,       code: "designcode",       names: "designnames" },
-      model:        { guid: "modelguid" as keyof Product,        code: "modelcode",        names: "modelnames" },
-      pattern:      { guid: "patternguid" as keyof Product,      code: "patterncode",      names: "patternnames" },
-      grade:        { guid: "gradeguid" as keyof Product,        code: "gradecode",        names: "gradenames" },
+    const clearFields: Record<
+      string,
+      { guid: keyof Product; code: keyof Product; names: keyof Product }
+    > = {
+      group: {
+        guid: "groupguid" as keyof Product,
+        code: "groupcode",
+        names: "groupnames",
+      },
+      groupsubone: {
+        guid: "groupsuboneguid" as keyof Product,
+        code: "groupsubonecode",
+        names: "groupsubonenames",
+      },
+      groupsubtwo: {
+        guid: "groupsubtwoguid" as keyof Product,
+        code: "groupsubtwocode",
+        names: "groupsubtwonames",
+      },
+      brand: {
+        guid: "brandguid" as keyof Product,
+        code: "brandcode",
+        names: "brandnames",
+      },
+      category: {
+        guid: "categoryguid" as keyof Product,
+        code: "categorycode",
+        names: "categorynames",
+      },
+      class: {
+        guid: "classguid" as keyof Product,
+        code: "classcode",
+        names: "classnames",
+      },
+      design: {
+        guid: "designguid" as keyof Product,
+        code: "designcode",
+        names: "designnames",
+      },
+      model: {
+        guid: "modelguid" as keyof Product,
+        code: "modelcode",
+        names: "modelnames",
+      },
+      pattern: {
+        guid: "patternguid" as keyof Product,
+        code: "patterncode",
+        names: "patternnames",
+      },
+      grade: {
+        guid: "gradeguid" as keyof Product,
+        code: "gradecode",
+        names: "gradenames",
+      },
     };
     const cf = clearFields[field];
     if (!cf) return;
@@ -933,6 +1289,33 @@ const [pickerType, setPickerType] = useState<string>("");
     });
   };
 
+  const selectedTypeLabel = selectedProduct
+    ? selectedProduct.itemtype === 2
+      ? text.itemTypeSet
+      : (itemTypes.find((item) => item.value === selectedProduct.itemtype)
+          ?.label ?? String(selectedProduct.itemtype ?? "-"))
+    : "-";
+  const selectedMaterialLabel = selectedProduct
+    ? (materialTypes.find((item) => item.value === selectedProduct.materialtype)
+        ?.label ?? String(selectedProduct.materialtype ?? "-"))
+    : "-";
+  const selectedVatLabel = selectedProduct
+    ? (vatTypes.find((item) => item.value === selectedProduct.vattype)?.label ??
+      String(selectedProduct.vattype ?? "-"))
+    : "-";
+  const selectedUnitLabel = selectedProduct
+    ? pickName(
+        selectedProduct.unitnames || selectedProduct.itemunitnames,
+        lang,
+      ) ||
+      selectedProduct.unitcode ||
+      selectedProduct.itemunitcode ||
+      "ยังไม่กำหนด"
+    : "-";
+  const selectedGroupLabel = selectedProduct?.groupcode
+    ? `${selectedProduct.groupcode} — ${pickName(selectedProduct.groupnames, lang)}`
+    : "ยังไม่จัดกลุ่ม";
+
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
       {/* Header Toolbar */}
@@ -946,15 +1329,39 @@ const [pickerType, setPickerType] = useState<string>("");
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => void loadProducts()} disabled={loading}>
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void loadProducts()}
+            disabled={loading}
+          >
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCcw className="h-4 w-4" />
+            )}
             {text.refresh}
           </Button>
-          <Button variant="default" size="sm" onClick={handleCreateCopyOpen} disabled={!selectedProduct}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleCreateCopyOpen}
+            disabled={
+              loading ||
+              !selectedProduct?.guidfixed ||
+              detailLoading ||
+              Boolean(detailError)
+            }
+          >
             <Copy className="h-4 w-4" />
             คัดลอก
           </Button>
-          <Button variant="default" size="sm" onClick={handleCreateOpen}>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleCreateOpen}
+            disabled={loading || !activeHoldingCode}
+          >
             <Plus className="h-4 w-4" />
             {text.add}
           </Button>
@@ -964,16 +1371,20 @@ const [pickerType, setPickerType] = useState<string>("");
       {/* Main split layout */}
       <div
         ref={splitContainerRef}
+        data-testid="product-workbench"
         className={cn(
           "grid min-h-0 min-w-0 gap-3 xl:grid-cols-[minmax(0,var(--product-list-fr))_8px_minmax(0,var(--product-detail-fr))] xl:gap-0 flex-1 xl:h-full flex-col xl:flex-row",
         )}
         style={productSplitStyle}
       >
         {/* Left Side: Product List */}
-        <Card className={cn(
-          "min-w-0 overflow-hidden xl:flex xl:h-full xl:min-h-0 xl:flex-col border-b xl:border-b-0 xl:border-r border-border bg-muted/10 rounded-none border-y-0 border-l-0 shadow-none bg-card",
-          selectedCode && !editorOpen ? "hidden xl:flex" : "flex"
-        )}>
+        <Card
+          data-testid="product-list-pane"
+          className={cn(
+            "min-w-0 overflow-hidden xl:flex xl:h-full xl:min-h-0 xl:flex-col border-b xl:border-b-0 xl:border-r border-border bg-muted/10 rounded-none border-y-0 border-l-0 shadow-none bg-card",
+            selectedCode || editorOpen ? "hidden xl:flex" : "flex",
+          )}
+        >
           <div className="p-3 border-b border-border">
             <div className="flex flex-wrap gap-2">
               <div className="relative min-w-[240px] flex-1">
@@ -986,12 +1397,26 @@ const [pickerType, setPickerType] = useState<string>("");
                   onChange={(e) => setSearchInput(e.target.value)}
                 />
               </div>
-              <Button variant={filterOpen ? "secondary" : "outline"} size="sm" type="button" onClick={() => setFilterOpen((current) => !current)}>
+              <Button
+                variant={filterOpen ? "secondary" : "outline"}
+                size="sm"
+                type="button"
+                onClick={() => setFilterOpen((current) => !current)}
+              >
                 <Filter className="h-4 w-4" />
                 ตัวกรอง
               </Button>
-              <Button variant="outline" size="sm" type="button" onClick={() => setShowListImage((current) => !current)}>
-                {showListImage ? <ImageOff className="h-4 w-4" /> : <ImageIcon className="h-4 w-4" />}
+              <Button
+                variant="outline"
+                size="sm"
+                type="button"
+                onClick={() => setShowListImage((current) => !current)}
+              >
+                {showListImage ? (
+                  <ImageOff className="h-4 w-4" />
+                ) : (
+                  <ImageIcon className="h-4 w-4" />
+                )}
                 รูป
               </Button>
               <Button
@@ -1003,24 +1428,51 @@ const [pickerType, setPickerType] = useState<string>("");
                   setCheckedProductKeys([]);
                 }}
               >
-                {selectMode ? <X className="h-4 w-4" /> : <CheckSquare className="h-4 w-4" />}
+                {selectMode ? (
+                  <X className="h-4 w-4" />
+                ) : (
+                  <CheckSquare className="h-4 w-4" />
+                )}
                 {selectMode ? "ยกเลิกเลือก" : "เลือกเพื่อลบ"}
               </Button>
-              <Button variant="outline" size="sm" type="button" onClick={() => void handleDeleteSelectedProducts()} disabled={!selectMode || checkedProductKeys.length === 0}>
-                <Trash2 className="h-4 w-4" />
-                {checkedProductKeys.length || ""}
-              </Button>
+              {selectMode ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  onClick={() => void handleDeleteSelectedProducts()}
+                  disabled={checkedProductKeys.length === 0}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  ลบ {checkedProductKeys.length} รายการ
+                </Button>
+              ) : null}
             </div>
             {filterOpen ? (
               <div className="mt-3 flex flex-wrap gap-2 rounded-lg border border-border bg-muted/20 p-2">
-                <Button variant={listItemTypeFilter === "all" ? "secondary" : "outline"} size="sm" type="button" onClick={() => setListItemTypeFilter("all")}>ทั้งหมด</Button>
+                <Button
+                  variant={
+                    listItemTypeFilter === "all" ? "secondary" : "outline"
+                  }
+                  size="sm"
+                  type="button"
+                  onClick={() => setListItemTypeFilter("all")}
+                >
+                  ทั้งหมด
+                </Button>
                 {itemTypes.map((itemType) => (
                   <Button
                     key={itemType.value}
-                    variant={listItemTypeFilter === String(itemType.value) ? "secondary" : "outline"}
+                    variant={
+                      listItemTypeFilter === String(itemType.value)
+                        ? "secondary"
+                        : "outline"
+                    }
                     size="sm"
                     type="button"
-                    onClick={() => setListItemTypeFilter(String(itemType.value))}
+                    onClick={() =>
+                      setListItemTypeFilter(String(itemType.value))
+                    }
                   >
                     {itemType.label}
                   </Button>
@@ -1030,39 +1482,53 @@ const [pickerType, setPickerType] = useState<string>("");
           </div>
           <div className="bc-list-toolbar shrink-0">
             <span>สินค้าทั้งหมด</span>
-            <span>{visibleItems.length} / {items.length} รายการ</span>
+            <span>
+              {visibleItems.length} / {items.length} รายการ
+            </span>
           </div>
 
           {/* Table Header inside list on Desktop */}
-          <div className="bc-list-header hidden lg:grid grid-cols-[minmax(90px,1.1fr)_minmax(150px,2.4fr)_minmax(80px,1fr)_minmax(95px,1fr)_minmax(120px,1.2fr)] gap-x-3 shrink-0">
+          <div className="bc-list-header grid grid-cols-[minmax(76px,0.9fr)_minmax(0,1.7fr)_minmax(72px,0.8fr)] gap-x-2 shrink-0">
             <span>{text.itemCode ?? "รหัสสินค้า"}</span>
             <span>{text.productName ?? "ชื่อสินค้า"}</span>
-            <span>{text.itemType ?? "ประเภท"}</span>
-            <span>ประเภทหน่วยนับ</span>
-            <span>ยอดคงเหลือ</span>
+            <span className="text-right">ยอดคงเหลือ</span>
           </div>
 
-          <div className="flex-1 overflow-y-auto min-h-[360px] xl:h-full xl:min-h-0">
+          <div
+            data-testid="product-list-scroll"
+            className="flex-1 overflow-y-auto min-h-[360px] xl:h-full xl:min-h-0"
+          >
             {loading ? (
               <div className="p-8 text-center text-sm text-muted-foreground flex justify-center items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 {text.loading}
               </div>
             ) : visibleItems.length === 0 ? (
-              <div className="p-8 text-center text-sm text-muted-foreground">ไม่พบข้อมูลสินค้า</div>
+              <div className="p-8 text-center text-sm text-muted-foreground">
+                ไม่พบข้อมูลสินค้า
+              </div>
             ) : (
               visibleItems.map((item, index) => {
                 const active = item.code === selectedCode;
-                const rowKey = productRowKey(item, index);
+                const rowKey = productRowKey(item);
                 const isEditing = active && editorOpen && editorMode === "edit";
-                const typeLabel = item.itemtype === 2
-                  ? text.itemTypeSet
-                  : (itemTypes.find((t) => t.value === item.itemtype)?.label ?? String(item.itemtype));
+                const typeLabel =
+                  item.itemtype === 2
+                    ? text.itemTypeSet
+                    : (itemTypes.find((t) => t.value === item.itemtype)
+                        ?.label ?? String(item.itemtype));
                 return (
                   <div
                     key={rowKey}
+                    data-testid="product-row"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`${item.code || text.itemCode} ${pickName(item.names, lang)}`}
+                    aria-pressed={
+                      selectMode ? checkedProductKeys.includes(rowKey) : active
+                    }
                     className={cn(
-                      "bc-list-row grid lg:grid-cols-[minmax(90px,1.1fr)_minmax(150px,2.4fr)_minmax(80px,1fr)_minmax(95px,1fr)_minmax(120px,1.2fr)] gap-x-3",
+                      "bc-list-row grid grid-cols-[minmax(76px,0.9fr)_minmax(0,1.7fr)_minmax(72px,0.8fr)] gap-x-2 py-2",
                       isEditing
                         ? "bg-amber-100/70 hover:bg-amber-100/90 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100 border-amber-200/50"
                         : active
@@ -1071,53 +1537,85 @@ const [pickerType, setPickerType] = useState<string>("");
                             ? "bg-background hover:bg-primary/5"
                             : "bg-muted/10 hover:bg-primary/5",
                     )}
-                    onClick={() => selectMode ? toggleCheckedProduct(rowKey) : handleSelectProduct(item.code)}
+                    onClick={() =>
+                      selectMode
+                        ? toggleCheckedProduct(rowKey)
+                        : handleSelectProduct(item.code)
+                    }
+                    onKeyDown={(event) => {
+                      if (event.key !== "Enter" && event.key !== " ") return;
+                      event.preventDefault();
+                      if (selectMode) toggleCheckedProduct(rowKey);
+                      else handleSelectProduct(item.code);
+                    }}
                   >
-                    <div className="min-w-0">
-                      <span className="lg:hidden text-[10px] font-semibold text-muted-foreground block">{text.itemCode ?? "รหัสสินค้า"}</span>
-                      <div className="flex min-w-0 items-center gap-2">
-                        {selectMode ? (
-                          <span className={cn("grid size-6 shrink-0 place-items-center rounded-md border", checkedProductKeys.includes(rowKey) && "border-primary bg-primary text-primary-foreground")}>
-                            {checkedProductKeys.includes(rowKey) ? <CheckSquare className="h-3.5 w-3.5" /> : null}
+                    <div className="flex min-w-0 items-start gap-1.5">
+                      {selectMode ? (
+                        <span
+                          className={cn(
+                            "mt-0.5 grid size-5 shrink-0 place-items-center rounded-md border",
+                            checkedProductKeys.includes(rowKey) &&
+                              "border-primary bg-primary text-primary-foreground",
+                          )}
+                        >
+                          {checkedProductKeys.includes(rowKey) ? (
+                            <CheckSquare className="h-3 w-3" />
+                          ) : null}
+                        </span>
+                      ) : null}
+                      <span
+                        className={cn(
+                          "min-w-0 break-all font-semibold text-foreground",
+                          isEditing && "text-amber-950 dark:text-amber-100",
+                        )}
+                      >
+                        {item.code || "-"}
+                      </span>
+                    </div>
+                    <div className="flex min-w-0 items-start gap-2">
+                      {showListImage ? (
+                        item.imageuri ? (
+                          <AuthenticatedImg
+                            alt=""
+                            className="size-9 shrink-0 rounded-lg border border-border object-cover"
+                            src={item.imageuri}
+                            auth={auth}
+                            fallback={
+                              <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-border text-muted-foreground">
+                                <ImageOff className="h-3.5 w-3.5" />
+                              </span>
+                            }
+                          />
+                        ) : (
+                          <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-border text-muted-foreground">
+                            <ImageOff className="h-3.5 w-3.5" />
                           </span>
-                        ) : null}
-                        {showListImage ? (
-                          item.imageuri ? (
-                            <AuthenticatedImg
-                              alt=""
-                              className="size-8 shrink-0 rounded-lg border border-border object-cover"
-                              src={item.imageuri}
-                              auth={auth}
-                              fallback={
-                                <span className="grid size-8 shrink-0 place-items-center rounded-lg border border-border text-muted-foreground">
-                                  <ImageOff className="h-3.5 w-3.5" />
-                                </span>
-                              }
-                            />
-                          ) : (
-                            <span className="grid size-8 shrink-0 place-items-center rounded-lg border border-border text-muted-foreground">
-                              <ImageOff className="h-3.5 w-3.5" />
-                            </span>
-                          )
-                        ) : null}
-                        <span className={cn("truncate font-medium text-foreground", isEditing && "text-amber-950 dark:text-amber-100")}>{item.code || "-"}</span>
+                        )
+                      ) : null}
+                      <div className="min-w-0">
+                        <div className="break-words font-medium leading-snug">
+                          {pickName(item.names, lang) || "-"}
+                        </div>
+                        <div
+                          className={cn(
+                            "mt-0.5 break-words text-[10px] leading-tight text-muted-foreground",
+                            isEditing &&
+                              "text-amber-900/60 dark:text-amber-200/60",
+                          )}
+                        >
+                          {typeLabel} · {formatProductUnitType(item)}
+                        </div>
                       </div>
                     </div>
-                    <div className="min-w-0">
-                      <span className="lg:hidden text-[10px] font-semibold text-muted-foreground block">{text.productName ?? "ชื่อสินค้า"}</span>
-                      <div className="line-clamp-2 font-medium">{pickName(item.names, lang) || "-"}</div>
-                    </div>
-                    <div className="min-w-0">
-                      <span className="lg:hidden text-[10px] font-semibold text-muted-foreground block">{text.itemType ?? "ประเภท"}</span>
-                      <div className={cn("truncate text-muted-foreground", isEditing && "text-amber-900/60 dark:text-amber-200/60")}>{typeLabel}</div>
-                    </div>
-                    <div className="min-w-0">
-                      <span className="lg:hidden text-[10px] font-semibold text-muted-foreground block">ประเภทหน่วยนับ</span>
-                      <div className={cn("truncate text-muted-foreground", isEditing && "text-amber-900/60 dark:text-amber-200/60")}>{formatProductUnitType(item)}</div>
-                    </div>
-                    <div className="min-w-0">
-                      <span className="lg:hidden text-[10px] font-semibold text-muted-foreground block">ยอดคงเหลือ</span>
-                      <div className={cn("truncate font-medium", (item.qty ?? 0) <= 0 && "text-destructive")}>{formatAutoPackingBalance(item, lang)}</div>
+                    <div className="min-w-0 text-right">
+                      <div
+                        className={cn(
+                          "break-words font-semibold",
+                          (item.qty ?? 0) <= 0 && "text-destructive",
+                        )}
+                      >
+                        {formatAutoPackingBalance(item, lang)}
+                      </div>
                     </div>
                   </div>
                 );
@@ -1155,12 +1653,18 @@ const [pickerType, setPickerType] = useState<string>("");
         </div>
 
         {/* Right Side: Detail or Editor */}
-        <div className="flex-1 overflow-y-auto bg-background min-h-0 p-4 xl:h-full xl:min-h-0">
+        <div
+          data-testid="product-detail-pane"
+          className={cn(
+            "min-h-0 flex-1 flex-col overflow-hidden bg-background p-3 xl:h-full xl:min-h-0",
+            selectedCode || editorOpen ? "flex" : "hidden xl:flex",
+          )}
+        >
           {selectedCode && !editorOpen && (
             <Button
               variant="ghost"
               size="sm"
-              className="mb-4 xl:hidden flex items-center gap-2"
+              className="mb-2 shrink-0 self-start xl:hidden flex items-center gap-2"
               onClick={() => setSelectedCode("")}
             >
               <ChevronLeft className="h-4 w-4" />
@@ -1169,9 +1673,13 @@ const [pickerType, setPickerType] = useState<string>("");
           )}
           {editorOpen && editProduct ? (
             /* Product Edit Form */
-            <form ref={productFormRef} onSubmit={handleSave} className="max-w-4xl mx-auto space-y-6">
-              <div className="flex items-center justify-between border-b border-border pb-3">
-                <div className="flex items-center gap-3">
+            <form
+              ref={productFormRef}
+              onSubmit={handleSave}
+              className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col"
+            >
+              <div className="flex shrink-0 flex-col gap-3 border-b border-border pb-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 flex-wrap items-center gap-3">
                   <h3 className="text-xl font-bold">
                     {editorMode === "create"
                       ? text.productMasterCreateTitle
@@ -1195,8 +1703,14 @@ const [pickerType, setPickerType] = useState<string>("");
                     </Button>
                   )}
                 </div>
-                <div className="flex gap-2">
-                  <Button type="button" variant="outline" size="sm" onClick={handleCancelEdit} disabled={saving}>
+                <div className="flex shrink-0 flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCancelEdit}
+                    disabled={saving}
+                  >
                     {text.cancel}
                   </Button>
                   {editorMode === "create" && (
@@ -1210,20 +1724,40 @@ const [pickerType, setPickerType] = useState<string>("");
                         productFormRef.current?.requestSubmit();
                       }}
                     >
-                      {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                      {saving ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Plus className="h-4 w-4" />
+                      )}
                       {text.saveAndNew}
                     </Button>
                   )}
                   <Button type="submit" size="sm" disabled={saving}>
-                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    {saving ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
                     {text.save}
                   </Button>
                 </div>
               </div>
 
               {/* Product Form Tab bar */}
-              <div className="border-b border-border bg-muted/30 -mx-4 px-4 py-1.5 flex flex-wrap gap-1">
-                {(Object.entries(PRIMARY_PRODUCT_TABS(text)) as ["basic" | "classification" | "units" | "bom" | "stock" | "media", string][]).map(([k, label]) => {
+              <div className="mt-2 flex shrink-0 gap-1 overflow-x-auto border-b border-border bg-muted/30 px-1 py-1.5">
+                {(
+                  Object.entries(PRIMARY_PRODUCT_TABS(text)) as [
+                    (
+                      | "basic"
+                      | "classification"
+                      | "units"
+                      | "bom"
+                      | "stock"
+                      | "media"
+                    ),
+                    string,
+                  ][]
+                ).map(([k, label]) => {
                   const isActive = productTab === k;
                   return (
                     <button
@@ -1231,18 +1765,32 @@ const [pickerType, setPickerType] = useState<string>("");
                       type="button"
                       onClick={() => setProductTab(k)}
                       className={cn(
-                        "rounded-md px-3 py-1.5 text-xs font-medium transition",
+                        "shrink-0 rounded-md px-3 py-1.5 text-xs font-medium transition",
                         isActive
                           ? "bg-primary text-primary-foreground shadow-sm"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
                       )}
                     >
                       {label}
                     </button>
                   );
                 })}
-                {(advancedTabsOpen || ADVANCED_PRODUCT_TAB_KEYS.includes(productTab as typeof ADVANCED_PRODUCT_TAB_KEYS[number])) &&
-                  (Object.entries(ADVANCED_PRODUCT_TABS(text)) as ["logistics" | "restaurant" | "timeforsales" | "business" | "misc", string][]).map(([k, label]) => {
+                {(advancedTabsOpen ||
+                  ADVANCED_PRODUCT_TAB_KEYS.includes(
+                    productTab as (typeof ADVANCED_PRODUCT_TAB_KEYS)[number],
+                  )) &&
+                  (
+                    Object.entries(ADVANCED_PRODUCT_TABS(text)) as [
+                      (
+                        | "logistics"
+                        | "restaurant"
+                        | "timeforsales"
+                        | "business"
+                        | "misc"
+                      ),
+                      string,
+                    ][]
+                  ).map(([k, label]) => {
                     const isActive = productTab === k;
                     return (
                       <button
@@ -1250,10 +1798,10 @@ const [pickerType, setPickerType] = useState<string>("");
                         type="button"
                         onClick={() => setProductTab(k)}
                         className={cn(
-                          "rounded-md px-3 py-1.5 text-xs font-medium transition",
+                          "shrink-0 rounded-md px-3 py-1.5 text-xs font-medium transition",
                           isActive
                             ? "bg-primary text-primary-foreground shadow-sm"
-                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground",
                         )}
                       >
                         {label}
@@ -1262,323 +1810,753 @@ const [pickerType, setPickerType] = useState<string>("");
                   })}
                 <button
                   type="button"
-                  onClick={() => setAdvancedTabsOpen((prev) => {
-                    const next = !prev;
-                    if (typeof window !== "undefined") {
-                      window.localStorage.setItem("bcproductadvancedtabsopen", next ? "1" : "0");
-                    }
-                    return next;
-                  })}
-                  className="rounded-md border border-dashed border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                  onClick={() =>
+                    setAdvancedTabsOpen((prev) => {
+                      const next = !prev;
+                      if (typeof window !== "undefined") {
+                        window.localStorage.setItem(
+                          "bcproductadvancedtabsopen",
+                          next ? "1" : "0",
+                        );
+                      }
+                      return next;
+                    })
+                  }
+                  className="shrink-0 rounded-md border border-dashed border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
                 >
                   {advancedTabsOpen ? "ขั้นสูง ▾" : "ขั้นสูง ▸"}
                 </button>
               </div>
 
-              {/* Tab: basic */}
-              {productTab === "basic" && (
-                <TabProductBasic
-                  value={editProduct}
-                  onChange={setEditProduct}
-                  text={text}
-                  lang={lang}
-                  activeLanguages={activeLanguages}
-                  editorMode={editorMode}
-                  itemTypes={itemTypes}
-                  materialTypes={materialTypes}
-                  vatTypes={vatTypes}
-                  openPicker={openPicker}
-                  removeManufacturer={removeManufacturer}
-                  removeSupplier={removeSupplier}
-                />
-              )}
+              <div className="min-h-0 flex-1 overflow-y-auto py-3 pr-1">
+                {/* Tab: basic */}
+                {productTab === "basic" && (
+                  <TabProductBasic
+                    value={editProduct}
+                    onChange={setEditProduct}
+                    text={text}
+                    lang={lang}
+                    activeLanguages={activeLanguages}
+                    editorMode={editorMode}
+                    itemTypes={itemTypes}
+                    materialTypes={materialTypes}
+                    vatTypes={vatTypes}
+                    openPicker={openPicker}
+                    removeManufacturer={removeManufacturer}
+                    removeSupplier={removeSupplier}
+                  />
+                )}
 
-              {/* Tab: classification */}
-              {productTab === "classification" && (
-                <TabProductClassification
-                  value={editProduct}
-                  text={text}
-                  lang={lang}
-                  openPicker={openPicker}
-                  clearPickerField={clearPickerField}
-                />
-              )}
+                {/* Tab: classification */}
+                {productTab === "classification" && (
+                  <TabProductClassification
+                    value={editProduct}
+                    text={text}
+                    lang={lang}
+                    openPicker={openPicker}
+                    clearPickerField={clearPickerField}
+                  />
+                )}
 
-{/* Tab: units */}
-              {productTab === "units" && (
-                <TabProductUnits value={editProduct} onChange={setEditProduct} lang={lang} openPicker={openPicker} clearPickerField={clearPickerField} />
-              )}
+                {/* Tab: units */}
+                {productTab === "units" && (
+                  <TabProductUnits
+                    value={editProduct}
+                    onChange={setEditProduct}
+                    lang={lang}
+                    openPicker={openPicker}
+                    clearPickerField={clearPickerField}
+                  />
+                )}
 
-              {/* Tab: bom */}
-              {productTab === "bom" && (
-                <TabProductBom value={editProduct} onChange={setEditProduct} lang={lang} />
-              )}
+                {/* Tab: bom */}
+                {productTab === "bom" && (
+                  <TabProductBom
+                    value={editProduct}
+                    onChange={setEditProduct}
+                    lang={lang}
+                  />
+                )}
 
-              {/* Tab: stock */}
-              {productTab === "stock" && (
-                <TabProductStock value={editProduct} onChange={setEditProduct} text={text} />
-              )}
+                {/* Tab: stock */}
+                {productTab === "stock" && (
+                  <TabProductStock
+                    value={editProduct}
+                    onChange={setEditProduct}
+                    text={text}
+                  />
+                )}
 
-              {/* Tab: media */}
-              {productTab === "media" && (
-                <TabProductMedia value={editProduct} onChange={setEditProduct} auth={auth} language={lang} />
-              )}
+                {/* Tab: media */}
+                {productTab === "media" && (
+                  <TabProductMedia
+                    value={editProduct}
+                    onChange={setEditProduct}
+                    auth={auth}
+                    language={lang}
+                  />
+                )}
 
-              {/* Tab: restaurant */}
-              {productTab === "restaurant" && (
-                <TabProductRestaurant value={editProduct} onChange={setEditProduct} auth={auth} language={lang} shopLanguages={activeLanguages} />
-              )}
+                {/* Tab: restaurant */}
+                {productTab === "restaurant" && (
+                  <TabProductRestaurant
+                    value={editProduct}
+                    onChange={setEditProduct}
+                    auth={auth}
+                    language={lang}
+                    shopLanguages={activeLanguages}
+                  />
+                )}
 
-              {/* Tab: timeforsales */}
-              {productTab === "timeforsales" && (
-                <TabProductTimeForSale value={editProduct} onChange={setEditProduct} language={lang} />
-              )}
+                {/* Tab: timeforsales */}
+                {productTab === "timeforsales" && (
+                  <TabProductTimeForSale
+                    value={editProduct}
+                    onChange={setEditProduct}
+                    language={lang}
+                  />
+                )}
 
-              {/* Tab: business */}
-              {productTab === "business" && (
-                <TabProductBusinessBranch value={editProduct} onChange={setEditProduct} auth={auth} language={lang} />
-              )}
+                {/* Tab: business */}
+                {productTab === "business" && (
+                  <TabProductBusinessBranch
+                    value={editProduct}
+                    onChange={setEditProduct}
+                    auth={auth}
+                    language={lang}
+                  />
+                )}
 
+                {/* Tab: logistics */}
+                {productTab === "logistics" && (
+                  <TabProductLogistics
+                    value={editProduct}
+                    onChange={setEditProduct}
+                  />
+                )}
 
-
-              {/* Tab: logistics */}
-              {productTab === "logistics" && (
-                <TabProductLogistics value={editProduct} onChange={setEditProduct} />
-              )}
-
-              {/* Tab: misc */}
-              {productTab === "misc" && (
-                <TabProductMisc value={editProduct} onChange={setEditProduct} language={lang} />
-              )}
+                {/* Tab: misc */}
+                {productTab === "misc" && (
+                  <TabProductMisc
+                    value={editProduct}
+                    onChange={setEditProduct}
+                    language={lang}
+                  />
+                )}
+              </div>
             </form>
           ) : selectedProduct ? (
-            /* Product View Details Mode (Aligned with ProductBarcodeDetail layout) */
-            <Card className="relative min-w-0 overflow-hidden rounded-lg border border-border bg-card shadow-sm xl:flex xl:h-full xl:min-h-0 xl:flex-col">
-              {/* Top Accent line */}
+            <Card
+              data-testid="product-detail-card"
+              className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm"
+            >
               <div className="absolute left-0 right-0 top-0 h-1 bg-primary" />
 
-              <CardHeader className="shrink-0 border-b border-border bg-muted/5 p-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <span className="block text-[10px] font-bold text-primary">{text.productMasterDetailTitle}</span>
-                    <h3 className="break-words text-xl font-extrabold leading-tight text-foreground">{selectedProduct.code}</h3>
-                    <p className="mt-0.5 break-words text-xs font-semibold leading-snug text-muted-foreground">{pickName(selectedProduct.names, lang)}</p>
+              <CardHeader className="shrink-0 border-b border-border bg-muted/5 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex min-w-0 items-start gap-3">
+                    {selectedProduct.imageuri ? (
+                      <AuthenticatedImg
+                        alt={
+                          pickName(selectedProduct.names, lang) ||
+                          selectedProduct.code
+                        }
+                        className="size-16 shrink-0 rounded-xl border border-border bg-background object-cover shadow-sm"
+                        src={selectedProduct.imageuri}
+                        auth={auth}
+                        fallback={
+                          <span className="grid size-16 shrink-0 place-items-center rounded-xl border border-border bg-muted text-muted-foreground">
+                            <ImageIcon className="h-6 w-6" />
+                          </span>
+                        }
+                      />
+                    ) : (
+                      <span className="grid size-16 shrink-0 place-items-center rounded-xl border border-border bg-muted text-muted-foreground">
+                        <ImageIcon className="h-6 w-6" />
+                      </span>
+                    )}
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <Badge variant="secondary">{selectedTypeLabel}</Badge>
+                        <Badge variant="outline">{selectedMaterialLabel}</Badge>
+                      </div>
+                      <h3 className="mt-2 break-all text-sm font-extrabold tracking-wide text-primary">
+                        {selectedProduct.code}
+                      </h3>
+                      <p className="mt-0.5 break-words text-xl font-bold leading-tight text-foreground">
+                        {pickName(selectedProduct.names, lang) ||
+                          "ยังไม่ได้ระบุชื่อสินค้า"}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex shrink-0 flex-wrap justify-end gap-2">
-                    <Button variant="outline" size="sm" className="h-8 rounded-lg text-xs font-bold" onClick={() => handleEditOpen(selectedProduct)}>
-                      <Pencil className="mr-1 h-3.5 w-3.5 text-primary" />
+                  <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEditOpen(selectedProduct)}
+                      disabled={
+                        loading ||
+                        detailLoading ||
+                        Boolean(detailError) ||
+                        !selectedProduct.guidfixed
+                      }
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
                       {text.edit}
                     </Button>
-                    <Button variant="destructive" size="sm" className="h-8 rounded-lg text-xs font-bold" onClick={() => void handleDelete(selectedProduct)}>
-                      <Trash2 className="mr-1 h-3.5 w-3.5" />
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => void handleDelete(selectedProduct)}
+                      disabled={
+                        loading ||
+                        detailLoading ||
+                        Boolean(detailError) ||
+                        !selectedProduct.guidfixed
+                      }
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
                       {text.delete}
                     </Button>
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent className="grid gap-2 overflow-y-auto p-3 xl:min-h-0 xl:flex-1 xl:grid-cols-2">
-                {/* 1. Basic Info */}
-                <DetailSection
-                  title={text.basicInfoCard ?? "ข้อมูลพื้นฐานสินค้า"}
-                  fields={[
-                    {
-                      label: text.itemType,
-                      value: selectedProduct.itemtype === 2
-                        ? text.itemTypeSet
-                        : (itemTypes.find((t) => t.value === selectedProduct.itemtype)?.label ?? String(selectedProduct.itemtype ?? "-"))
-                    },
-                    {
-                      label: "สถานะภาษีมูลค่าเพิ่ม",
-                      value: vatTypes.find((t) => t.value === selectedProduct.vattype)?.label ?? String(selectedProduct.vattype ?? "-")
-                    },
-                    {
-                      label: "รหัสประเภทภาษี",
-                      value: String(selectedProduct.taxtype ?? selectedProduct.vattype ?? "-")
-                    },
-                    {
-                      label: text.materialType,
-                      value: materialTypes.find((t) => t.value === selectedProduct.materialtype)?.label ?? String(selectedProduct.materialtype ?? "-")
-                    },
-                    { label: "รหัสหน่วยหลัก", value: selectedProduct.unitcode || selectedProduct.itemunitcode || "-" },
-                    { label: "ชื่อหน่วยหลัก", value: pickName(selectedProduct.unitnames || selectedProduct.itemunitnames, lang) || "-" },
-                    { label: "มิติสินค้า", value: formatDimensionList(selectedProduct.dimensions, lang) }
-                  ]}
-                />
 
-                {/* 2. Grouping */}
-                <DetailSection
-                  title={text.groupingCard ?? "ข้อมูลการจัดกลุ่ม"}
-                  fields={[
-                    {
-                      label: text.group,
-                      value: selectedProduct.groupcode ? `${selectedProduct.groupcode} — ${pickName(selectedProduct.groupnames, lang)}` : "-"
-                    },
-                    {
-                      label: text.groupsubone,
-                      value: selectedProduct.groupsubonecode ? `${selectedProduct.groupsubonecode} — ${pickName(selectedProduct.groupsubonenames, lang)}` : "-"
-                    },
-                    {
-                      label: text.groupsubtwo,
-                      value: selectedProduct.groupsubtwocode ? `${selectedProduct.groupsubtwocode} — ${pickName(selectedProduct.groupsubtwonames, lang)}` : "-"
-                    },
-                    {
-                      label: text.brand,
-                      value: selectedProduct.brandcode ? `${selectedProduct.brandcode} — ${pickName(selectedProduct.brandnames, lang)}` : "-"
-                    },
-                    {
-                      label: text.category,
-                      value: selectedProduct.categorycode ? `${selectedProduct.categorycode} — ${pickName(selectedProduct.categorynames, lang)}` : "-"
-                    },
-                    {
-                      label: text.class,
-                      value: selectedProduct.classcode ? `${selectedProduct.classcode} — ${pickName(selectedProduct.classnames, lang)}` : "-"
-                    },
-                    {
-                      label: text.design,
-                      value: selectedProduct.designcode ? `${selectedProduct.designcode} — ${pickName(selectedProduct.designnames, lang)}` : "-"
-                    },
-                    {
-                      label: text.model,
-                      value: selectedProduct.modelcode ? `${selectedProduct.modelcode} — ${pickName(selectedProduct.modelnames, lang)}` : "-"
-                    },
-                    {
-                      label: text.pattern,
-                      value: selectedProduct.patterncode ? `${selectedProduct.patterncode} — ${pickName(selectedProduct.patternnames, lang)}` : "-"
-                    },
-                    {
-                      label: text.grade,
-                      value: selectedProduct.gradecode ? `${selectedProduct.gradecode} — ${pickName(selectedProduct.gradenames, lang)}` : "-"
-                    }
-                  ]}
-                />
-
-                {/* 3. Stock */}
-                <DetailSection
-                  title={text.tabStock ?? "การควบคุมคลังสินค้า"}
-                  fields={[
-                    { label: text.orderPoint, value: String(selectedProduct.orderpoint ?? 0) },
-                    { label: text.minPoint, value: String(selectedProduct.minpoint ?? 0) },
-                    { label: text.maxPoint, value: String(selectedProduct.maxpoint ?? 0) },
-                    { label: text.qty, value: String(selectedProduct.qty ?? 0) },
-                    { label: text.stockBarcode, value: selectedProduct.stockbarcode || "-" }
-                  ]}
-                />
-
-                <DetailSection
-                  title={text.tabUnitsBarcode ?? "หน่วยนับและบาร์โค้ด"}
-                  fields={[
-                    { label: "ใช้หลายบาร์โค้ด", value: formatYesNo(selectedProduct.isusesubbarcodes) },
-                    { label: "เงื่อนไขแปลงหน่วย", value: formatYesNo(selectedProduct.condition) },
-                    { label: "ตัวตั้ง", value: String(selectedProduct.standvalue ?? "-") },
-                    { label: "ตัวหาร", value: String(selectedProduct.dividevalue ?? "-") },
-                    { label: "บาร์โค้ดย่อย", value: formatRefBarcodeList(selectedProduct.refbarcodes, lang) },
-                    { label: "บาร์โค้ดสินค้า", value: formatRefBarcodeList(selectedProduct.barcodes, lang) },
-                    { label: "ส่วนประกอบ BOM", value: formatBomList(selectedProduct.bom, lang) }
-                  ]}
-                />
-
-                {/* 4. Logistics & Dimensions */}
-                <DetailSection
-                  title="ข้อมูลขนาดและน้ำหนักพัสดุ (Logistics & Dimensions)"
-                  fields={[
-                    { label: "น้ำหนักรวมพัสดุ", value: `${selectedProduct.packageweight ?? 0} kg` },
-                    {
-                      label: "มิติตัวกล่อง (ก x ย x ส)",
-                      value: `${selectedProduct.packagewidth ?? 0} x ${selectedProduct.packagelength ?? 0} x ${selectedProduct.packageheight ?? 0} cm`
-                    },
-                    {
-                      label: "น้ำหนักปริมาตร (ประเมิน)",
-                      value: `${(((selectedProduct.packagewidth ?? 0) * (selectedProduct.packagelength ?? 0) * (selectedProduct.packageheight ?? 0)) / 5000).toFixed(3)} kg`
-                    },
-                    { label: "คุณลักษณะพิเศษ", value: selectedProduct.isalert ? "ระวังแตก (Fragile)" : "-" }
-                  ]}
-                />
-
-                <DetailSection
-                  title={text.tabRestaurant ?? "ร้านอาหาร/POS"}
-                  fields={[
-                    { label: text.isForRestaurant, value: formatYesNo(selectedProduct.restaurant?.isforrestaurant) },
-                    { label: text.isForTakeaway, value: formatYesNo(selectedProduct.restaurant?.isfortakeaway) },
-                    { label: text.isForDelivery, value: formatYesNo(selectedProduct.restaurant?.isfordelivery) },
-                    { label: text.isForCustomer, value: formatYesNo(selectedProduct.restaurant?.isforcustomer) },
-                    { label: text.isForCustomerPreOrder, value: formatYesNo(selectedProduct.restaurant?.isforcustomerpreorder) },
-                    { label: text.isALaCarte, value: formatYesNo(selectedProduct.isalacarte) },
-                    { label: text.isStockForRestaurant, value: formatYesNo(selectedProduct.isstockforrestaurant) },
-                    { label: text.isSplitUnitPrint, value: formatYesNo(selectedProduct.issplitunitprint) },
-                    { label: text.isOnlyStaff, value: formatYesNo(selectedProduct.isonlystaff) },
-                    { label: text.foodType, value: foodTypes.find((t) => t.value === selectedProduct.foodtype)?.label ?? String(selectedProduct.foodtype ?? "-") },
-                    { label: "บริการสั่งอาหาร", value: formatNamedList(selectedProduct.ordertypes, lang) },
-                    { label: "ชุดตัวเลือกสินค้า", value: formatOptionList(selectedProduct.options, lang) }
-                  ]}
-                />
-
-                <DetailSection
-                  title={`${text.tabTimeForSales} / ${text.tabBusinessBranchShort}`}
-                  fields={[
-                    { label: text.tabTimeForSales, value: formatTimeForSaleList(selectedProduct.timeforsales) },
-                    { label: text.businessTypes ?? "ประเภทธุรกิจ", value: formatNamedList(selectedProduct.businesstypes, lang) },
-                    { label: text.ignoreBranches ?? "สาขาที่ยกเว้น", value: formatNamedList(selectedProduct.ignorebranches, lang) }
-                  ]}
-                />
-
-                <DetailSection
-                  title={`${text.tabMedia} / Marketplace`}
-                  fields={[
-                    { label: "ใช้รูปหรือสี", value: formatYesNo(selectedProduct.useimageorcolor) },
-                    { label: "สี", value: selectedProduct.colorselect || selectedProduct.colorselecthex || "-" },
-                    { label: "รูปหลัก", value: selectedProduct.imageuri || "-" },
-                    { label: "รูปทั้งหมด", value: formatImageList(selectedProduct.images) },
-                    { label: "Marketplace", value: formatMarketplaceProductList(selectedProduct.marketplaceproducts) },
-                    { label: "คำเตือน", value: selectedProduct.alertdescription || "-" },
-                    { label: "รายละเอียด", value: selectedProduct.description || "-" }
-                  ]}
-                />
-
-                <DetailSection
-                  title={text.tabMisc ?? "อื่น ๆ"}
-                  fields={[
-                    { label: "รหัสภายในสินค้า", value: selectedProduct.guidfixed || "-" },
-                    { label: "รหัสกลุ่มกิจการ", value: selectedProduct.holdingcode || "-" },
-                    { label: "GUID หน่วยนับ", value: selectedProduct.unitguid || "-" },
-                    { label: "เปิดคำเตือน", value: formatYesNo(selectedProduct.isalert) },
-                    { label: "ข้อความคำเตือน", value: selectedProduct.alertdescription || "-" },
-                    { label: "รายละเอียดสินค้า", value: selectedProduct.description || "-" }
-                  ]}
-                />
-
-                {/* 5. Manufacturers & Suppliers */}
-                <div className="grid gap-2 sm:grid-cols-2 xl:col-span-2">
-                  <section className="rounded-lg border border-border/60 bg-muted/5 p-2">
-                    <h3 className="border-b border-border/40 pb-1 text-xs font-bold text-primary">{text.manufacturers}</h3>
-                    {(!selectedProduct.manufacturers || selectedProduct.manufacturers.length === 0) ? (
-                      <p className="py-1 text-xs italic text-muted-foreground">{text.noManufacturerInfo}</p>
-                    ) : (
-                      <div className="mt-1 grid gap-1">
-                        {selectedProduct.manufacturers.map((m) => (
-                          <div key={m.guidfixed} className="break-words rounded-md border border-border/50 bg-background/70 px-2 py-1 text-xs font-semibold text-foreground">
-                            {m.code} — {pickName(m.names, lang)}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </section>
-
-                  <section className="rounded-lg border border-border/60 bg-muted/5 p-2">
-                    <h3 className="border-b border-border/40 pb-1 text-xs font-bold text-primary">{text.suppliers}</h3>
-                    {(!selectedProduct.suppliers || selectedProduct.suppliers.length === 0) ? (
-                      <p className="py-1 text-xs italic text-muted-foreground">{text.noSupplierInfo}</p>
-                    ) : (
-                      <div className="mt-1 grid gap-1">
-                        {selectedProduct.suppliers.map((s) => (
-                          <div key={s.guidfixed} className="break-words rounded-md border border-border/50 bg-background/70 px-2 py-1 text-xs font-semibold text-foreground">
-                            {s.code} — {pickName(s.names, lang)}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </section>
+                <div className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-4">
+                  <DetailSummary
+                    label="ยอดคงเหลือ"
+                    value={formatAutoPackingBalance(selectedProduct, lang)}
+                    emphasize={(selectedProduct.qty ?? 0) <= 0}
+                  />
+                  <DetailSummary label="หน่วยหลัก" value={selectedUnitLabel} />
+                  <DetailSummary
+                    label="กลุ่มสินค้า"
+                    value={selectedGroupLabel}
+                  />
+                  <DetailSummary
+                    label="ภาษีมูลค่าเพิ่ม"
+                    value={selectedVatLabel}
+                  />
                 </div>
-              </CardContent>
+              </CardHeader>
+
+              {detailLoading ? (
+                <div
+                  className="flex min-h-0 flex-1 items-center justify-center gap-2 p-8 text-sm text-muted-foreground"
+                  aria-label="กำลังโหลดรายละเอียดสินค้า"
+                >
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  กำลังโหลดรายละเอียดสินค้า...
+                </div>
+              ) : (
+                <>
+                  {detailError ? (
+                    <div
+                      role="alert"
+                      className="flex shrink-0 items-start gap-2 border-b border-destructive/30 bg-destructive/5 px-3 py-2 text-xs"
+                    >
+                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-bold text-foreground">
+                          โหลดข้อมูลฉบับเต็มไม่สำเร็จ —
+                          กำลังแสดงข้อมูลสรุปจากรายการ
+                        </p>
+                        <p className="mt-0.5 break-words text-muted-foreground">
+                          {detailError}
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 shrink-0 text-xs"
+                        onClick={() =>
+                          setDetailReloadKey((current) => current + 1)
+                        }
+                      >
+                        <RefreshCcw className="h-3.5 w-3.5" />
+                        ลองใหม่
+                      </Button>
+                    </div>
+                  ) : null}
+                  <div className="flex shrink-0 flex-col gap-2 border-b border-border bg-background px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div
+                      role="tablist"
+                      aria-label="หมวดรายละเอียดสินค้า"
+                      className="flex min-w-0 gap-1 overflow-x-auto"
+                    >
+                      {PRODUCT_DETAIL_TABS.map((tab) => (
+                        <button
+                          key={tab.key}
+                          type="button"
+                          role="tab"
+                          aria-selected={detailTab === tab.key}
+                          aria-controls="product-detail-content"
+                          data-testid={`product-detail-tab-${tab.key}`}
+                          onClick={() => setDetailTab(tab.key)}
+                          className={cn(
+                            "shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors",
+                            detailTab === tab.key
+                              ? "bg-primary text-primary-foreground shadow-sm"
+                              : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                          )}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 shrink-0 self-start text-xs sm:self-auto"
+                      onClick={() => setShowEmptyDetails((current) => !current)}
+                    >
+                      {showEmptyDetails ? (
+                        <EyeOff className="h-3.5 w-3.5" />
+                      ) : (
+                        <Eye className="h-3.5 w-3.5" />
+                      )}
+                      {showEmptyDetails
+                        ? "ซ่อนข้อมูลว่าง"
+                        : "แสดงข้อมูลทั้งหมด"}
+                    </Button>
+                  </div>
+
+                  <CardContent
+                    id="product-detail-content"
+                    data-testid="product-detail-content"
+                    className="min-h-0 flex-1 overflow-y-auto bg-muted/10 p-3"
+                  >
+                    {detailTab === "overview" ? (
+                      <div className="grid gap-3 2xl:grid-cols-2">
+                        <DetailSection
+                          title={text.basicInfoCard ?? "ข้อมูลพื้นฐานสินค้า"}
+                          showEmptyFields={showEmptyDetails}
+                          fields={[
+                            { label: text.itemType, value: selectedTypeLabel },
+                            {
+                              label: text.materialType,
+                              value: selectedMaterialLabel,
+                            },
+                            {
+                              label: "สถานะภาษีมูลค่าเพิ่ม",
+                              value: selectedVatLabel,
+                            },
+                            {
+                              label: "รหัสประเภทภาษี",
+                              value: String(
+                                selectedProduct.taxtype ??
+                                  selectedProduct.vattype ??
+                                  "-",
+                              ),
+                            },
+                            {
+                              label: "รหัสหน่วยหลัก",
+                              value:
+                                selectedProduct.unitcode ||
+                                selectedProduct.itemunitcode ||
+                                "-",
+                            },
+                            {
+                              label: "ชื่อหน่วยหลัก",
+                              value:
+                                pickName(
+                                  selectedProduct.unitnames ||
+                                    selectedProduct.itemunitnames,
+                                  lang,
+                                ) || "-",
+                            },
+                            {
+                              label: "มิติสินค้า",
+                              value: formatDimensionList(
+                                selectedProduct.dimensions,
+                                lang,
+                              ),
+                            },
+                          ]}
+                        />
+                        <DetailSection
+                          title="คู่ค้าและรายละเอียด"
+                          showEmptyFields={showEmptyDetails}
+                          fields={[
+                            {
+                              label: text.manufacturers,
+                              value: formatNamedList(
+                                selectedProduct.manufacturers,
+                                lang,
+                              ),
+                            },
+                            {
+                              label: text.suppliers,
+                              value: formatNamedList(
+                                selectedProduct.suppliers,
+                                lang,
+                              ),
+                            },
+                            {
+                              label: "รายละเอียดสินค้า",
+                              value: selectedProduct.description || "-",
+                            },
+                            {
+                              label: "คำเตือน",
+                              value: selectedProduct.alertdescription || "-",
+                            },
+                          ]}
+                        />
+                      </div>
+                    ) : null}
+
+                    {detailTab === "classification" ? (
+                      <DetailSection
+                        title={text.groupingCard ?? "ข้อมูลการจัดกลุ่ม"}
+                        showEmptyFields={showEmptyDetails}
+                        fields={[
+                          {
+                            label: text.group,
+                            value: selectedProduct.groupcode
+                              ? `${selectedProduct.groupcode} — ${pickName(selectedProduct.groupnames, lang)}`
+                              : "-",
+                          },
+                          {
+                            label: text.groupsubone,
+                            value: selectedProduct.groupsubonecode
+                              ? `${selectedProduct.groupsubonecode} — ${pickName(selectedProduct.groupsubonenames, lang)}`
+                              : "-",
+                          },
+                          {
+                            label: text.groupsubtwo,
+                            value: selectedProduct.groupsubtwocode
+                              ? `${selectedProduct.groupsubtwocode} — ${pickName(selectedProduct.groupsubtwonames, lang)}`
+                              : "-",
+                          },
+                          {
+                            label: text.brand,
+                            value: selectedProduct.brandcode
+                              ? `${selectedProduct.brandcode} — ${pickName(selectedProduct.brandnames, lang)}`
+                              : "-",
+                          },
+                          {
+                            label: text.category,
+                            value: selectedProduct.categorycode
+                              ? `${selectedProduct.categorycode} — ${pickName(selectedProduct.categorynames, lang)}`
+                              : "-",
+                          },
+                          {
+                            label: text.class,
+                            value: selectedProduct.classcode
+                              ? `${selectedProduct.classcode} — ${pickName(selectedProduct.classnames, lang)}`
+                              : "-",
+                          },
+                          {
+                            label: text.design,
+                            value: selectedProduct.designcode
+                              ? `${selectedProduct.designcode} — ${pickName(selectedProduct.designnames, lang)}`
+                              : "-",
+                          },
+                          {
+                            label: text.model,
+                            value: selectedProduct.modelcode
+                              ? `${selectedProduct.modelcode} — ${pickName(selectedProduct.modelnames, lang)}`
+                              : "-",
+                          },
+                          {
+                            label: text.pattern,
+                            value: selectedProduct.patterncode
+                              ? `${selectedProduct.patterncode} — ${pickName(selectedProduct.patternnames, lang)}`
+                              : "-",
+                          },
+                          {
+                            label: text.grade,
+                            value: selectedProduct.gradecode
+                              ? `${selectedProduct.gradecode} — ${pickName(selectedProduct.gradenames, lang)}`
+                              : "-",
+                          },
+                        ]}
+                      />
+                    ) : null}
+
+                    {detailTab === "inventory" ? (
+                      <div className="grid gap-3 2xl:grid-cols-2">
+                        <DetailSection
+                          title={text.tabStock ?? "การควบคุมคลังสินค้า"}
+                          showEmptyFields={showEmptyDetails}
+                          fields={[
+                            {
+                              label: text.qty,
+                              value: formatAutoPackingBalance(
+                                selectedProduct,
+                                lang,
+                              ),
+                            },
+                            {
+                              label: text.orderPoint,
+                              value: String(selectedProduct.orderpoint ?? 0),
+                            },
+                            {
+                              label: text.minPoint,
+                              value: String(selectedProduct.minpoint ?? 0),
+                            },
+                            {
+                              label: text.maxPoint,
+                              value: String(selectedProduct.maxpoint ?? 0),
+                            },
+                            {
+                              label: text.stockBarcode,
+                              value: selectedProduct.stockbarcode || "-",
+                            },
+                          ]}
+                        />
+                        <DetailSection
+                          title={text.tabUnitsBarcode ?? "หน่วยนับและบาร์โค้ด"}
+                          showEmptyFields={showEmptyDetails}
+                          fields={[
+                            {
+                              label: "ใช้หลายบาร์โค้ด",
+                              value: formatYesNo(
+                                selectedProduct.isusesubbarcodes,
+                              ),
+                            },
+                            {
+                              label: "เงื่อนไขแปลงหน่วย",
+                              value: formatYesNo(selectedProduct.condition),
+                            },
+                            {
+                              label: "ตัวตั้ง",
+                              value: String(selectedProduct.standvalue ?? "-"),
+                            },
+                            {
+                              label: "ตัวหาร",
+                              value: String(selectedProduct.dividevalue ?? "-"),
+                            },
+                            {
+                              label: "บาร์โค้ดย่อย",
+                              value: formatRefBarcodeList(
+                                selectedProduct.refbarcodes,
+                                lang,
+                              ),
+                            },
+                            {
+                              label: "บาร์โค้ดสินค้า",
+                              value: formatRefBarcodeList(
+                                selectedProduct.barcodes,
+                                lang,
+                              ),
+                            },
+                            {
+                              label: "ส่วนประกอบ BOM",
+                              value: formatBomList(selectedProduct.bom, lang),
+                            },
+                          ]}
+                        />
+                        <DetailSection
+                          title="ขนาดและน้ำหนักพัสดุ"
+                          showEmptyFields={showEmptyDetails}
+                          fields={[
+                            {
+                              label: "น้ำหนักรวมพัสดุ",
+                              value: `${selectedProduct.packageweight ?? 0} kg`,
+                            },
+                            {
+                              label: "มิติตัวกล่อง (ก × ย × ส)",
+                              value: `${selectedProduct.packagewidth ?? 0} × ${selectedProduct.packagelength ?? 0} × ${selectedProduct.packageheight ?? 0} cm`,
+                            },
+                            {
+                              label: "น้ำหนักปริมาตร (ประเมิน)",
+                              value: `${(((selectedProduct.packagewidth ?? 0) * (selectedProduct.packagelength ?? 0) * (selectedProduct.packageheight ?? 0)) / 5000).toFixed(3)} kg`,
+                            },
+                            {
+                              label: "คุณลักษณะพิเศษ",
+                              value: selectedProduct.isalert ? "ระวังแตก" : "-",
+                            },
+                          ]}
+                        />
+                      </div>
+                    ) : null}
+
+                    {detailTab === "sales" ? (
+                      <div className="grid gap-3 2xl:grid-cols-2">
+                        <DetailSection
+                          title={text.tabRestaurant ?? "ร้านอาหาร/POS"}
+                          showEmptyFields={showEmptyDetails}
+                          fields={[
+                            {
+                              label: text.isForRestaurant,
+                              value: formatYesNo(
+                                selectedProduct.restaurant?.isforrestaurant,
+                              ),
+                            },
+                            {
+                              label: text.isForTakeaway,
+                              value: formatYesNo(
+                                selectedProduct.restaurant?.isfortakeaway,
+                              ),
+                            },
+                            {
+                              label: text.isForDelivery,
+                              value: formatYesNo(
+                                selectedProduct.restaurant?.isfordelivery,
+                              ),
+                            },
+                            {
+                              label: text.isForCustomer,
+                              value: formatYesNo(
+                                selectedProduct.restaurant?.isforcustomer,
+                              ),
+                            },
+                            {
+                              label: text.isForCustomerPreOrder,
+                              value: formatYesNo(
+                                selectedProduct.restaurant
+                                  ?.isforcustomerpreorder,
+                              ),
+                            },
+                            {
+                              label: text.isALaCarte,
+                              value: formatYesNo(selectedProduct.isalacarte),
+                            },
+                            {
+                              label: text.isStockForRestaurant,
+                              value: formatYesNo(
+                                selectedProduct.isstockforrestaurant,
+                              ),
+                            },
+                            {
+                              label: text.isSplitUnitPrint,
+                              value: formatYesNo(
+                                selectedProduct.issplitunitprint,
+                              ),
+                            },
+                            {
+                              label: text.isOnlyStaff,
+                              value: formatYesNo(selectedProduct.isonlystaff),
+                            },
+                            {
+                              label: text.foodType,
+                              value: selectedProduct.restaurant?.isforrestaurant
+                                ? (foodTypes.find(
+                                    (item) =>
+                                      item.value === selectedProduct.foodtype,
+                                  )?.label ??
+                                  String(selectedProduct.foodtype ?? "-"))
+                                : "-",
+                            },
+                            {
+                              label: "บริการสั่งอาหาร",
+                              value: formatNamedList(
+                                selectedProduct.ordertypes,
+                                lang,
+                              ),
+                            },
+                            {
+                              label: "ชุดตัวเลือกสินค้า",
+                              value: formatOptionList(
+                                selectedProduct.options,
+                                lang,
+                              ),
+                            },
+                          ]}
+                        />
+                        <DetailSection
+                          title={`${text.tabTimeForSales} / ${text.tabBusinessBranchShort}`}
+                          showEmptyFields={showEmptyDetails}
+                          fields={[
+                            {
+                              label: text.tabTimeForSales,
+                              value: formatTimeForSaleList(
+                                selectedProduct.timeforsales,
+                              ),
+                            },
+                            {
+                              label: text.businessTypes ?? "ประเภทธุรกิจ",
+                              value: formatNamedList(
+                                selectedProduct.businesstypes,
+                                lang,
+                              ),
+                            },
+                            {
+                              label: text.ignoreBranches ?? "สาขาที่ยกเว้น",
+                              value: formatNamedList(
+                                selectedProduct.ignorebranches,
+                                lang,
+                              ),
+                            },
+                          ]}
+                        />
+                      </div>
+                    ) : null}
+
+                    {detailTab === "more" ? (
+                      <div className="grid gap-3 2xl:grid-cols-2">
+                        <DetailSection
+                          title={`${text.tabMedia} / Marketplace`}
+                          showEmptyFields={showEmptyDetails}
+                          fields={[
+                            {
+                              label: "ใช้รูปหรือสี",
+                              value: formatYesNo(
+                                selectedProduct.useimageorcolor,
+                              ),
+                            },
+                            {
+                              label: "สี",
+                              value:
+                                selectedProduct.colorselect ||
+                                selectedProduct.colorselecthex ||
+                                "-",
+                            },
+                            {
+                              label: "รูปหลัก",
+                              value: selectedProduct.imageuri
+                                ? "มีรูปหลัก"
+                                : "-",
+                            },
+                            {
+                              label: "รูปทั้งหมด",
+                              value: selectedProduct.images?.length
+                                ? `${selectedProduct.images.length} รูป`
+                                : "-",
+                            },
+                            {
+                              label: "Marketplace",
+                              value: formatMarketplaceProductList(
+                                selectedProduct.marketplaceproducts,
+                              ),
+                            },
+                            {
+                              label: "คำเตือน",
+                              value: selectedProduct.alertdescription || "-",
+                            },
+                            {
+                              label: "รายละเอียด",
+                              value: selectedProduct.description || "-",
+                            },
+                          ]}
+                        />
+                        <DetailSection
+                          title="ข้อมูลระบบ"
+                          showEmptyFields={showEmptyDetails}
+                          fields={[
+                            {
+                              label: "รหัสภายในสินค้า",
+                              value: selectedProduct.guidfixed || "-",
+                            },
+                            {
+                              label: "รหัสกลุ่มกิจการ",
+                              value: selectedProduct.holdingcode || "-",
+                            },
+                            {
+                              label: "GUID หน่วยนับ",
+                              value: selectedProduct.unitguid || "-",
+                            },
+                            {
+                              label: "เปิดคำเตือน",
+                              value: formatYesNo(selectedProduct.isalert),
+                            },
+                          ]}
+                        />
+                      </div>
+                    ) : null}
+                  </CardContent>
+                </>
+              )}
             </Card>
           ) : (
             <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
@@ -1596,7 +2574,11 @@ const [pickerType, setPickerType] = useState<string>("");
         auth={auth}
         language={lang}
         master={pickerType as any}
-        title={pickerType ? `ค้นหา ${text[pickerType as keyof typeof text] || pickerType}` : ""}
+        title={
+          pickerType
+            ? `ค้นหา ${text[pickerType as keyof typeof text] || pickerType}`
+            : ""
+        }
         onSelect={handlePickerSelect}
         placement={pickerAnchorRef.current ? "field" : "dialog"}
         anchorRef={pickerAnchorRef}
@@ -1619,7 +2601,11 @@ const [pickerType, setPickerType] = useState<string>("");
                 <Link className="h-5 w-5 text-primary" />
                 <span>{text.selectUnlinkedBarcode}</span>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => setShowBarcodePicker(false)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowBarcodePicker(false)}
+              >
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -1631,7 +2617,9 @@ const [pickerType, setPickerType] = useState<string>("");
                   autoFocus
                   type="search"
                   value={barcodeSearchInput}
-                  onChange={(event) => setBarcodeSearchInput(event.target.value)}
+                  onChange={(event) =>
+                    setBarcodeSearchInput(event.target.value)
+                  }
                   placeholder={text.searchBarcodeOrName}
                   className="h-9 !pl-10"
                 />
@@ -1646,7 +2634,9 @@ const [pickerType, setPickerType] = useState<string>("");
                 </div>
               ) : barcodeList.length === 0 ? (
                 <div className="p-8 text-center text-sm text-muted-foreground">
-                  {barcodeSearch ? text.noUnlinkedBarcode : text.allBarcodesLinked}
+                  {barcodeSearch
+                    ? text.noUnlinkedBarcode
+                    : text.allBarcodesLinked}
                 </div>
               ) : (
                 <ul className="divide-y divide-border">
@@ -1662,7 +2652,10 @@ const [pickerType, setPickerType] = useState<string>("");
                             {pickName(b.names, lang) || text.noName}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            {text.unitLabel}: {b.itemunitcode || "-"} {b.itemunitnames && b.itemunitnames.length > 0 ? `(${pickName(b.itemunitnames, lang)})` : ""}
+                            {text.unitLabel}: {b.itemunitcode || "-"}{" "}
+                            {b.itemunitnames && b.itemunitnames.length > 0
+                              ? `(${pickName(b.itemunitnames, lang)})`
+                              : ""}
                           </div>
                         </div>
                         <div className="text-right shrink-0">
@@ -1678,7 +2671,12 @@ const [pickerType, setPickerType] = useState<string>("");
             </div>
 
             <div className="border-t border-border px-4 py-3 text-right">
-              <Button variant="outline" size="sm" type="button" onClick={() => setShowBarcodePicker(false)}>
+              <Button
+                variant="outline"
+                size="sm"
+                type="button"
+                onClick={() => setShowBarcodePicker(false)}
+              >
                 {text.closeWindow}
               </Button>
             </div>
@@ -1691,7 +2689,11 @@ const [pickerType, setPickerType] = useState<string>("");
   );
 }
 
-function setNameXEntry(list: NameX[] | undefined, code: string, name: string): NameX[] {
+function setNameXEntry(
+  list: NameX[] | undefined,
+  code: string,
+  name: string,
+): NameX[] {
   const arr = list ? [...list] : [];
   const idx = arr.findIndex((x) => x.code === code);
   if (idx >= 0) {
@@ -1702,18 +2704,25 @@ function setNameXEntry(list: NameX[] | undefined, code: string, name: string): N
   return arr;
 }
 
-function productRowKey(item: Product, index: number): string {
-  return item.guidfixed || `${item.code || "product"}-${index}`;
+function productRowKey(item: Product): string {
+  return item.code || item.guidfixed;
 }
 
 function productUnitRows(item: Product): RefProductBarcode[] {
-  const rows = item.barcodes && item.barcodes.length > 0 ? item.barcodes : item.refbarcodes || [];
+  const rows =
+    item.barcodes && item.barcodes.length > 0
+      ? item.barcodes
+      : item.refbarcodes || [];
   return rows.filter((row) => row.itemunitcode || row.barcode || row.qty);
 }
 
 function formatProductUnitType(item: Product): string {
   const projectedUnitCount = Number(item._unit_count ?? 0);
-  return projectedUnitCount > 1 || productUnitRows(item).length > 1 || item.isusesubbarcodes ? "หลายหน่วยนับ" : "หน่วยนับเดียว";
+  return projectedUnitCount > 1 ||
+    productUnitRows(item).length > 1 ||
+    item.isusesubbarcodes
+    ? "หลายหน่วยนับ"
+    : "หน่วยนับเดียว";
 }
 
 function formatAutoPackingBalance(item: Product, language: string): string {
@@ -1725,13 +2734,18 @@ function formatAutoPackingBalance(item: Product, language: string): string {
     "หน่วย";
   const unitRows = productUnitRows(item)
     .map((row) => ({
-      name: pickName(row.itemunitnames, language) || row.itemunitcode || row.barcode,
+      name:
+        pickName(row.itemunitnames, language) ||
+        row.itemunitcode ||
+        row.barcode,
       size: Math.max(1, Math.floor(Number(row.qty ?? 1))),
     }))
     .filter((row) => row.name)
     .sort((a, b) => b.size - a.size);
 
-  const hasBase = unitRows.some((row) => row.size === 1 || row.name === baseUnit);
+  const hasBase = unitRows.some(
+    (row) => row.size === 1 || row.name === baseUnit,
+  );
   const units = hasBase ? unitRows : [...unitRows, { name: baseUnit, size: 1 }];
   if (total === 0) return `0 ${baseUnit}`;
 
@@ -1743,8 +2757,11 @@ function formatAutoPackingBalance(item: Product, language: string): string {
     parts.push(`${count.toLocaleString("th-TH")} ${unit.name}`);
     remaining -= count * unit.size;
   }
-  if (remaining > 0) parts.push(`${remaining.toLocaleString("th-TH")} ${baseUnit}`);
-  return parts.length > 0 ? parts.join(" x ") : `${total.toLocaleString("th-TH")} ${baseUnit}`;
+  if (remaining > 0)
+    parts.push(`${remaining.toLocaleString("th-TH")} ${baseUnit}`);
+  return parts.length > 0
+    ? parts.join(" x ")
+    : `${total.toLocaleString("th-TH")} ${baseUnit}`;
 }
 
 // ─── Tab Components ───────────────────────────────────────────────────────
@@ -1758,55 +2775,88 @@ function formatYesNo(value?: boolean) {
   return value ? "ใช่" : "ไม่ใช่";
 }
 
-function formatNamedList(items: Array<{ code?: string; names?: NameX[] }> | undefined, language: string) {
+function formatNamedList(
+  items: Array<{ code?: string; names?: NameX[] }> | undefined,
+  language: string,
+) {
   if (!items || items.length === 0) return "-";
   return items
-    .map((item) => [item.code, pickName(item.names, language)].filter(Boolean).join(" — "))
+    .map((item) =>
+      [item.code, pickName(item.names, language)].filter(Boolean).join(" — "),
+    )
     .filter(Boolean)
     .join(", ");
 }
 
-function formatRefBarcodeList(items: RefProductBarcode[] | undefined, language: string) {
+function formatRefBarcodeList(
+  items: RefProductBarcode[] | undefined,
+  language: string,
+) {
   if (!items || items.length === 0) return "-";
   return items
     .map((item) => {
-      const barcodeText = [item.barcode, pickName(item.names, language), item.itemunitcode].filter(Boolean).join(" / ");
+      const barcodeText = [
+        item.barcode,
+        pickName(item.names, language),
+        item.itemunitcode,
+      ]
+        .filter(Boolean)
+        .join(" / ");
       const marketplaceText = (item.marketplaceskumappings || [])
         .map((mapping) => {
           const stockText = (mapping.marketplacedimensionstocks || [])
-            .map((stock) => `${stock.dimensionname || stock.dimensionkey}: พร้อมขาย ${stock.availableqty}`)
+            .map(
+              (stock) =>
+                `${stock.dimensionname || stock.dimensionkey}: พร้อมขาย ${stock.availableqty}`,
+            )
             .join("; ");
           return [
-            [mapping.platform, mapping.holdingcode, mapping.sellersku].filter(Boolean).join(" / "),
+            [mapping.platform, mapping.holdingcode, mapping.sellersku]
+              .filter(Boolean)
+              .join(" / "),
             stockText,
-          ].filter(Boolean).join(" => ");
+          ]
+            .filter(Boolean)
+            .join(" => ");
         })
         .filter(Boolean)
         .join(" | ");
-      return marketplaceText ? `${barcodeText}\n${marketplaceText}` : barcodeText;
+      return marketplaceText
+        ? `${barcodeText}\n${marketplaceText}`
+        : barcodeText;
     })
     .join("\n");
 }
 
-function formatBomList(items: BOMProductBarcode[] | undefined, language: string) {
+function formatBomList(
+  items: BOMProductBarcode[] | undefined,
+  language: string,
+) {
   if (!items || items.length === 0) return "-";
   return items
     .map((item) => {
       const name = pickName(item.names, language);
       const qty = item.qty == null ? "" : ` x ${item.qty}`;
-      return [item.barcode, name, item.itemunitcode].filter(Boolean).join(" / ") + qty;
+      return (
+        [item.barcode, name, item.itemunitcode].filter(Boolean).join(" / ") +
+        qty
+      );
     })
     .join(", ");
 }
 
-function formatOptionList(items: ProductOption[] | undefined, language: string) {
+function formatOptionList(
+  items: ProductOption[] | undefined,
+  language: string,
+) {
   if (!items || items.length === 0) return "-";
   return items
     .map((item) => {
       const name = pickName(item.names, language) || "ชุดตัวเลือก";
       const choiceText = (item.choices || [])
         .map((choice) => {
-          const choiceName = pickName(choice.names, language) || choice.refbarcode || "ตัวเลือก";
+          const choiceName =
+            pickName(choice.names, language) || choice.refbarcode || "ตัวเลือก";
           const price = choice.price ? `ราคา ${choice.price}` : "";
           const qty = choice.qty == null ? "" : `จำนวน ${choice.qty}`;
           return [choiceName, price, qty].filter(Boolean).join(" ");
@@ -1817,19 +2867,13 @@ function formatOptionList(items: ProductOption[] | undefined, language: string) 
     .join(", ");
 }
 
-function formatImageList(items: ProductImage[] | undefined) {
-  if (!items || items.length === 0) return "-";
-  return items
-    .map((item) => `#${item.xorder}: ${item.uri}`)
-    .join("\n");
-}
-
 function formatDimensionList(items: Product["dimensions"], language: string) {
   if (!items || items.length === 0) return "-";
   return items
     .map((item) => {
       const dimensionName = pickName(item.names, language) || item.guidfixed;
-      const choiceName = pickName(item.item?.names, language) || item.item?.guidfixed || "-";
+      const choiceName =
+        pickName(item.item?.names, language) || item.item?.guidfixed || "-";
       return `${dimensionName}: ${choiceName}${item.isdisabled || item.item?.isdisabled ? " (ปิดใช้)" : ""}`;
     })
     .join(", ");
@@ -1865,24 +2909,94 @@ function formatTimeForSaleList(items: ProductTimeForSale[] | undefined) {
     .join(", ");
 }
 
-function DetailSection({ fields, title }: { fields: DetailFieldItem[]; title: string }) {
+function isEmptyDetailValue(value: string) {
+  const normalized = value.trim().toLowerCase();
   return (
-    <section className="rounded-lg border border-border/60 bg-muted/5 p-2">
-      <h3 className="border-b border-border/40 pb-1 text-xs font-bold text-primary">{title}</h3>
-      <div className="mt-1 grid gap-1 sm:grid-cols-2 2xl:grid-cols-3">
-        {fields.map((field, index) => (
-          <DetailField key={`${title}-${field.label}-${index}`} label={field.label} value={field.value} />
-        ))}
+    normalized === "" ||
+    normalized === "-" ||
+    normalized === "—" ||
+    normalized === "ไม่ใช่" ||
+    normalized === "0 kg" ||
+    normalized === "0.000 kg" ||
+    /^0\s*[×x]\s*0\s*[×x]\s*0\s*cm$/.test(normalized)
+  );
+}
+
+function DetailSummary({
+  emphasize = false,
+  label,
+  value,
+}: {
+  emphasize?: boolean;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "min-w-0 rounded-lg border border-border bg-background px-3 py-2",
+        emphasize && "border-destructive/30 bg-destructive/5",
+      )}
+    >
+      <p className="text-[10px] font-semibold text-muted-foreground">{label}</p>
+      <p
+        className={cn(
+          "mt-0.5 break-words text-sm font-bold leading-snug text-foreground",
+          emphasize && "text-destructive",
+        )}
+      >
+        {value || "-"}
+      </p>
+    </div>
+  );
+}
+
+function DetailSection({
+  fields,
+  showEmptyFields = false,
+  title,
+}: {
+  fields: DetailFieldItem[];
+  showEmptyFields?: boolean;
+  title: string;
+}) {
+  const visibleFields = showEmptyFields
+    ? fields
+    : fields.filter((field) => !isEmptyDetailValue(field.value));
+
+  return (
+    <section className="overflow-hidden rounded-xl border border-border bg-card">
+      <div className="border-b border-border bg-background px-3 py-2.5">
+        <h3 className="text-sm font-bold text-primary">{title}</h3>
       </div>
+      {visibleFields.length > 0 ? (
+        <dl className="grid md:grid-cols-2">
+          {visibleFields.map((field, index) => (
+            <DetailField
+              key={`${title}-${field.label}-${index}`}
+              label={field.label}
+              value={field.value}
+            />
+          ))}
+        </dl>
+      ) : (
+        <p className="px-3 py-5 text-center text-sm text-muted-foreground">
+          ยังไม่มีข้อมูลในส่วนนี้
+        </p>
+      )}
     </section>
   );
 }
 
 function DetailField({ label, value }: DetailFieldItem) {
   return (
-    <div className="min-w-0 rounded-md border border-border/50 bg-background/70 px-2 py-1">
-      <p className="text-[10px] font-bold leading-tight text-muted-foreground">{label}</p>
-      <p className="mt-0.5 whitespace-pre-line break-words text-xs font-bold leading-snug text-foreground">{value || "-"}</p>
+    <div className="min-w-0 border-b border-border/60 px-3 py-2.5 md:odd:border-r">
+      <dt className="text-[10px] font-semibold leading-tight text-muted-foreground">
+        {label}
+      </dt>
+      <dd className="mt-1 whitespace-pre-line break-words text-sm font-semibold leading-snug text-foreground">
+        {value || "-"}
+      </dd>
     </div>
   );
 }

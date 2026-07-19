@@ -183,7 +183,7 @@ func (pbc *ProductBarcodeConsumer) ConsumerOnProductBarcodeDelete(ctx microservi
 		pbc.ms.Logger.Errorf(moduleName, err.Error())
 	}
 
-	err = pbc.svc.Delete(context.Background(), doc.HoldingCode, doc.Barcode)
+	err = pbc.svc.Delete(context.Background(), doc.HoldingCode, doc.ItemCode, doc.Barcode)
 
 	if err != nil {
 		pbc.ms.Logger.Errorf(moduleName, err.Error())

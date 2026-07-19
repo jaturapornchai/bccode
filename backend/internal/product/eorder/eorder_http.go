@@ -71,7 +71,7 @@ func NewEOrderHttp(ms *microservice.Microservice, cfg config.IConfig) EOrderHttp
 	repoMaster := productmaster.NewProductRepository(pst)
 	unitmaster := unitmaster.NewUnitRepository(pst)
 	repoCategory := category_repositories.NewProductCategoryRepository(pst)
-	svcCategory := category_services.NewProductCategoryHttpService(repoCategory, masterSyncCacheRepo, repo)
+	svcCategory := category_services.NewProductCategoryHttpService(repoCategory, masterSyncCacheRepo, repoMaster)
 
 	clickHouseRepo := product_repo.NewProductBarcodeClickhouseRepository(pstClickHouse)
 	mqRepo := product_repo.NewProductBarcodeMessageQueueRepository(prod)
@@ -87,7 +87,7 @@ func NewEOrderHttp(ms *microservice.Microservice, cfg config.IConfig) EOrderHttp
 	unitMqRepo := unit_repositories.NewUnitMessageQueueRepository(prod)
 	unitSvc := unit_services.NewUnitHttpService(unitmaster, repo, unitMqRepo, masterSyncCacheRepo)
 
-	svcProduct := product_services.NewProductBarcodeHttpService(repo, repoMaster, unitmaster, unitSvc, *creditorRepo, mqRepo, clickHouseRepo, svcCategory, masterSyncCacheRepo, priceHistorySvc, warehouseRepo)
+	svcProduct := product_services.NewProductBarcodeHttpService(repo, repoMaster, unitmaster, unitSvc, *creditorRepo, mqRepo, clickHouseRepo, masterSyncCacheRepo, priceHistorySvc, warehouseRepo)
 
 	repoCust := repoCust.NewDebtorRepository(pst)
 	repoShop := shop.NewShopRepository(pst)

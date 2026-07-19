@@ -1174,7 +1174,7 @@ function productMasterConfigs(): SystemSettingConfig[] {
     nameLabelTh = "ชื่อ",
     nameLabelEn = "Name",
   ) => [
-    textField("code", codeLabelTh, codeLabelEn, true),
+    businessCodeField("code", codeLabelTh, codeLabelEn, true),
     namesField("names", nameLabelTh, nameLabelEn),
   ];
 
@@ -1351,8 +1351,8 @@ function productMasterConfigs(): SystemSettingConfig[] {
       idField: "guidfixed",
       title: { th: "จัดหมวดสินค้า", en: "Product Categories" },
       subtitle: {
-        th: "จัดการหมวดสินค้าและหมวดย่อย แบบลำดับชั้น",
-        en: "Manage product categories and subcategories in a hierarchy.",
+        th: "เลือกชุดหมวด แล้วจัดหมวดหลักและหมวดย่อยให้เหมาะกับแต่ละช่องทางใช้งาน",
+        en: "Choose a category set, then organize root categories and subcategories for each usage channel.",
       },
       fields: [
         { ...numberField("groupnumber", "ลำดับกลุ่ม", "Group number"), readOnly: true },

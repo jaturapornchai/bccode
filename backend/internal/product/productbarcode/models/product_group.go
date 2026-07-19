@@ -3,8 +3,9 @@ package models
 import "smlcloudplatform/internal/models"
 
 type ProductGroup struct {
-	Code  string          `json:"code" bson:"code"`
-	Names *[]models.NameX `json:"names" bson:"names"`
+	GuidFixed string          `json:"guidfixed" bson:"guidfixed"`
+	Code      string          `json:"code" bson:"code"`
+	Names     *[]models.NameX `json:"names" bson:"names"`
 }
 
 type ProductGroupMessageQueueRequest struct {
@@ -13,8 +14,5 @@ type ProductGroupMessageQueueRequest struct {
 }
 
 func (doc ProductGroup) ToProductGroup() ProductGroup {
-	temp := &ProductGroup{}
-	temp.Code = doc.Code
-	temp.Names = doc.Names
 	return doc
 }

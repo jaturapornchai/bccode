@@ -1,0 +1,4 @@
+interface:
+  display_name: "Stable CRUD Editor"
+  short_description: "Keep hydrated CRUD forms mounted while records switch."
+  default_prompt: "Apply stable record switching to this Next.js CRUD form without flicker."

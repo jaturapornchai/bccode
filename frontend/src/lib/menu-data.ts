@@ -374,6 +374,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("line-notify", "แจ้งเตือนผ่าน LINE", "LINE Notifications", "/linenotify", "settings"),
           tx("ai-provider", "ผู้ให้บริการ AI", "AI Service Provider", "/aiprovider", "settings"),
           tx("copy-uat-dev", "คัดลอกข้อมูลทดสอบ", "Copy Test Data", "/copyuattodev", "settings"),
+          tx("data-model-graph", "โครงสร้างข้อมูล (สมอง)", "Data Model Graph", "/datamodelgraph", "settings"),
         ],
       },
     ],

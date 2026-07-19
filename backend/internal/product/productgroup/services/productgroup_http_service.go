@@ -14,6 +14,7 @@ import (
 	"smlcloudplatform/internal/utils"
 	"smlcloudplatform/internal/utils/importdata"
 	micromodels "smlcloudplatform/pkg/microservice/models"
+	"strings"
 	"time"
 
 	productbarcode_repositories "smlcloudplatform/internal/product/productbarcode/repositories"
@@ -77,7 +78,25 @@ func (svc ProductGroupHttpService) getContextTimeout() (context.Context, context
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
+// A group must keep at least one non-empty name. The struct validator cannot
+// catch this: `required` on NameX.Name (*string) only rejects nil pointers, so
+// empty strings slip through and used to persist nameless groups.
+func validateProductGroupHasName(doc models.ProductGroup) error {
+	if doc.Names != nil {
+		for _, name := range *doc.Names {
+			if name.Name != nil && strings.TrimSpace(*name.Name) != "" {
+				return nil
+			}
+		}
+	}
+	return errors.New("at least one product group name is required")
+}
+
 func (svc ProductGroupHttpService) SaveProductGroup(holdingCode string, authUsername string, doc models.ProductGroup) (string, error) {
+
+	if err := validateProductGroupHasName(doc); err != nil {
+		return "", err
+	}
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -110,6 +129,10 @@ func (svc ProductGroupHttpService) SaveProductGroup(holdingCode string, authUser
 }
 
 func (svc ProductGroupHttpService) CreateProductGroup(holdingCode string, authUsername string, doc models.ProductGroup) (string, error) {
+
+	if err := validateProductGroupHasName(doc); err != nil {
+		return "", err
+	}
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -162,6 +185,10 @@ func (svc ProductGroupHttpService) create(holdingCode string, authUsername strin
 }
 
 func (svc ProductGroupHttpService) UpdateProductGroup(holdingCode string, guid string, authUsername string, doc models.ProductGroup) error {
+
+	if err := validateProductGroupHasName(doc); err != nil {
+		return err
+	}
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -236,10 +263,17 @@ func (svc ProductGroupHttpService) DeleteProductGroup(holdingCode, guid, authUse
 		return nil
 	}
 
-	existsInProduct, _ := svc.existsGroupRefInProduct(holdingCode, []string{findDoc.Code})
+	existsInProduct, err := svc.existsGroupRefInProduct(
+		holdingCode,
+		[]string{findDoc.GuidFixed},
+		[]string{findDoc.Code},
+	)
+	if err != nil {
+		return err
+	}
 
 	if existsInProduct {
-		return fmt.Errorf("group code \"%s\" is referenced in product barcode", findDoc.Code)
+		return errors.New("ไม่สามารถลบกลุ่มสินค้าที่ถูกใช้งานในบาร์โค้ดสินค้า")
 	}
 
 	// Block deletion of a group that still has sub-groups so children are not
@@ -286,14 +320,19 @@ func (svc ProductGroupHttpService) DeleteProductGroupByGUIDs(holdingCode, authUs
 	}
 
 	groupCodes := []string{}
+	groupGUIDs := []string{}
 	for _, v := range findDocs {
+		groupGUIDs = append(groupGUIDs, v.GuidFixed)
 		groupCodes = append(groupCodes, v.Code)
 	}
 
-	existsInProduct, _ := svc.existsGroupRefInProduct(holdingCode, groupCodes)
+	existsInProduct, err := svc.existsGroupRefInProduct(holdingCode, groupGUIDs, groupCodes)
+	if err != nil {
+		return err
+	}
 
 	if existsInProduct {
-		return fmt.Errorf("referenced in product")
+		return errors.New("ไม่สามารถลบกลุ่มสินค้าที่ถูกใช้งานในบาร์โค้ดสินค้า")
 	}
 
 	// Block batch deletion when any selected group still has sub-groups, so
@@ -594,19 +633,41 @@ func (svc ProductGroupHttpService) GetModuleName() string {
 	return "productgroup"
 }
 
-func (svc ProductGroupHttpService) existsGroupRefInProduct(holdingCode string, groupCodes []string) (bool, error) {
+func (svc ProductGroupHttpService) existsGroupRefInProduct(holdingCode string, groupGUIDs, groupCodes []string) (bool, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	docCount, err := svc.repoProductBarcode.CountByGroupCodes(ctx, holdingCode, groupCodes)
-
-	if err != nil {
-		return true, err
+	nonEmptyGUIDs := make([]string, 0, len(groupGUIDs))
+	for _, guid := range groupGUIDs {
+		if strings.TrimSpace(guid) != "" {
+			nonEmptyGUIDs = append(nonEmptyGUIDs, guid)
+		}
+	}
+	if len(nonEmptyGUIDs) > 0 {
+		docCount, err := svc.repoProductBarcode.CountByGroupGUIDs(ctx, holdingCode, nonEmptyGUIDs)
+		if err != nil {
+			return false, err
+		}
+		if docCount > 0 {
+			return true, nil
+		}
 	}
 
-	if docCount > 0 {
-		return true, fmt.Errorf("referenced in product barcode")
+	nonEmptyCodes := make([]string, 0, len(groupCodes))
+	for _, code := range groupCodes {
+		if strings.TrimSpace(code) != "" {
+			nonEmptyCodes = append(nonEmptyCodes, code)
+		}
+	}
+	if len(nonEmptyCodes) > 0 {
+		docCount, err := svc.repoProductBarcode.CountByGroupCodes(ctx, holdingCode, nonEmptyCodes)
+		if err != nil {
+			return false, err
+		}
+		if docCount > 0 {
+			return true, nil
+		}
 	}
 
 	return false, nil

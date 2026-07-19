@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"smlcloudplatform/internal/config"
+	build "smlcloudplatform/internal/goapi/process/build"
 	"smlcloudplatform/internal/logger"
 	common "smlcloudplatform/internal/models"
 	"smlcloudplatform/pkg/microservice"
@@ -53,6 +54,15 @@ func (s *ProductAdminHttp) ReSycProductBarcode(ctx microservice.IContext) error 
 		return err
 	}
 
+	rebuilt, err := build.ProcessBarcodePostgresRebuildAll(req.HoldingCode)
+	if err != nil {
+		ctx.Response(http.StatusInternalServerError, common.ApiResponse{
+			Success: false,
+			Message: err.Error(),
+		})
+		return err
+	}
+
 	err = s.svc.ReSyncProductBarcode(req.HoldingCode)
 	if err != nil {
 		logger.GetLogger().Error("ReSycProductBarcode error ", err)
@@ -63,8 +73,9 @@ func (s *ProductAdminHttp) ReSycProductBarcode(ctx microservice.IContext) error 
 		return err
 	}
 
-	ctx.Response(http.StatusOK, common.ResponseSuccess{
+	ctx.Response(http.StatusOK, common.ApiResponse{
 		Success: true,
+		Data:    map[string]int{"rebuilt": rebuilt},
 	})
 	return nil
 }

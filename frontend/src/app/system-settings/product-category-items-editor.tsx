@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useLayoutEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import {
   Loader2,
@@ -11,16 +11,12 @@ import {
   X,
   Info,
   Check,
-  ShoppingBag,
   GripVertical,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { listBarcodes } from "@/lib/product-barcode/api";
-import { pickName } from "@/lib/product-barcode/utils";
 import { type AuthSession } from "@/lib/workspace-models";
-import { type LanguageCode } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { pushNotice } from "@/lib/toast";
 
@@ -31,12 +27,70 @@ interface NameX {
   name: string;
 }
 
-interface CodeXSort {
-  code: string;       // itemcode
-  barcode: string;
-  unitcode: string;
+interface CategoryProduct {
+  code: string;
+  xorder: number;
   names: NameX[];
-  unitnames: NameX[];
+}
+
+interface ProductSearchResult {
+  code: string;
+  names: NameX[];
+}
+
+function normalizeProductCode(value: unknown): string {
+  return String(value ?? "").trim().toUpperCase();
+}
+
+function categoryNamesFrom(value: unknown): NameX[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const raw = item as Record<string, unknown>;
+    const code = String(raw.code ?? "").trim();
+    const name = String(raw.name ?? "").trim();
+    return code && name ? [{ code, name }] : [];
+  });
+}
+
+function pickName(value: unknown, language: string): string {
+  const names = categoryNamesFrom(value);
+  const languageCode = language.trim().toLowerCase();
+  return (
+    names.find((item) => item.code.toLowerCase() === languageCode)?.name ??
+    names.find((item) => item.code.toLowerCase() === "th")?.name ??
+    names.find((item) => item.code.toLowerCase() === "en")?.name ??
+    names[0]?.name ??
+    ""
+  );
+}
+
+function productSearchResultFrom(value: unknown): ProductSearchResult | null {
+  if (!value || typeof value !== "object") return null;
+  const raw = value as Record<string, unknown>;
+  const code = normalizeProductCode(raw.code);
+  if (!code) return null;
+  return { code, names: categoryNamesFrom(raw.names) };
+}
+
+function categoryProductsFrom(value: unknown): CategoryProduct[] {
+  if (!Array.isArray(value)) return [];
+
+  const seen = new Set<string>();
+  const products: CategoryProduct[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== "object") continue;
+    const raw = item as Record<string, unknown>;
+    const code = normalizeProductCode(raw.code);
+    if (!code || seen.has(code)) continue;
+    seen.add(code);
+    products.push({
+      code,
+      xorder: products.length,
+      names: categoryNamesFrom(raw.names),
+    });
+  }
+  return products;
 }
 
 export interface ProductCategoryItemsEditorProps {
@@ -64,11 +118,11 @@ export function ProductCategoryItemsEditor({
   setSaving,
   onUnsavedChangesChange,
 }: ProductCategoryItemsEditorProps) {
-  const [localCodelist, setLocalCodelist] = useState<CodeXSort[]>([]);
+  const [localCodelist, setLocalCodelist] = useState<CategoryProduct[]>([]);
   const [searchDialogOpen, setSearchDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<ProductSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
   const setNotice = pushNotice;
@@ -78,13 +132,11 @@ export function ProductCategoryItemsEditor({
   // Compare current localCodelist with original categoryRecord.codelist
   const hasChanges = useMemo(() => {
     if (!categoryRecord) return false;
-    const originalList = Array.isArray(categoryRecord.codelist) ? categoryRecord.codelist : [];
+    const originalList = categoryProductsFrom(categoryRecord.codelist);
     if (originalList.length !== localCodelist.length) return true;
     return localCodelist.some((item, idx) => {
       const orig = originalList[idx];
-      if (!orig) return true;
-      const origBarcode = orig.barcode ?? orig.itemcode ?? "";
-      return item.barcode !== origBarcode;
+      return !orig || item.code !== orig.code;
     });
   }, [categoryRecord, localCodelist]);
 
@@ -107,19 +159,9 @@ export function ProductCategoryItemsEditor({
   }, [hasChanges]);
 
   // Sync categoryRecord codelist when selected category changes
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (categoryRecord) {
-      const rawCodelist = categoryRecord.codelist;
-      const parsedList: CodeXSort[] = Array.isArray(rawCodelist)
-        ? rawCodelist.map((item: any) => ({
-            code: String(item.code ?? item.itemcode ?? ""),
-            barcode: String(item.barcode ?? ""),
-            unitcode: String(item.unitcode ?? item.itemunitcode ?? ""),
-            names: Array.isArray(item.names) ? item.names : [],
-            unitnames: Array.isArray(item.unitnames) ? item.unitnames : [],
-          }))
-        : [];
-      setLocalCodelist(parsedList);
+      setLocalCodelist(categoryProductsFrom(categoryRecord.codelist));
       setNotice(null);
     } else {
       setLocalCodelist([]);
@@ -134,26 +176,39 @@ export function ProductCategoryItemsEditor({
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Query barcodes from backend
+  // Query Product master from MongoDB through the Product API.
   useEffect(() => {
     if (!searchDialogOpen || !auth || !workspace) return;
 
-    const holdingcode = workspace.shop.holdingcode;
+    const authSession = auth;
     let active = true;
-    async function fetchBarcodes() {
+    async function fetchProducts() {
       setSearching(true);
       setSearchError("");
       try {
-        const response = await listBarcodes(auth, {
-          holdingcode,
-          keyword: debouncedQuery,
-          limit: 50,
+        const params = new URLSearchParams({
+          q: debouncedQuery,
+          limit: "50",
         });
+        const response = await fetch(`/api/product?${params.toString()}`, {
+          headers: {
+            Authorization: `Bearer ${authSession.token}`,
+            "x-bc-backend-url": authSession.backendUrl,
+            "Accept-Language": language,
+          },
+          cache: "no-store",
+        });
+        const payload = await response.json();
         if (!active) return;
-        if (response.success) {
-          setSearchResults(response.data ?? []);
+        if (response.ok && payload.success !== false) {
+          const products = Array.isArray(payload.data)
+            ? payload.data
+                .map(productSearchResultFrom)
+                .filter((item: ProductSearchResult | null): item is ProductSearchResult => item !== null)
+            : [];
+          setSearchResults(products);
         } else {
-          setSearchError(response.message || "Failed to load products");
+          setSearchError(payload.message || "Failed to load products");
         }
       } catch (err: any) {
         if (!active) return;
@@ -163,68 +218,47 @@ export function ProductCategoryItemsEditor({
       }
     }
 
-    void fetchBarcodes();
+    void fetchProducts();
     return () => {
       active = false;
     };
-  }, [debouncedQuery, searchDialogOpen, auth, workspace]);
+  }, [debouncedQuery, searchDialogOpen, auth, workspace, language]);
 
-  const isSelectedLoading = categorySelectedGuid && (!categoryRecord || (categoryRecord.guidfixed !== categorySelectedGuid && categoryRecord.guidfixed !== categorySelectedGuid));
-
-  if (isSelectedLoading) {
-    return (
-      <Card className="h-full border-border bg-card shadow-sm">
-        <CardContent className="grid h-full min-h-60 place-items-center p-4 text-center text-sm text-muted-foreground">
-          <div className="flex flex-col items-center gap-2">
-            <Loader2 className="size-8 animate-spin text-primary" />
-            <span>{language === "th" ? "กำลังโหลดข้อมูลสินค้า..." : "Loading category products..."}</span>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  const categoryRecordGuid = String(
+    categoryRecord?.guidfixed ?? categoryRecord?.guid ?? "",
+  );
+  const categoryPending = Boolean(
+    categorySelectedGuid && categoryRecordGuid !== categorySelectedGuid,
+  );
 
   if (!categoryRecord) {
-    return (
-      <Card className="h-full border-border bg-card shadow-sm">
-        <CardContent className="grid h-full min-h-60 place-items-center p-4 text-center text-sm text-muted-foreground">
-          <div className="grid gap-2">
-            <ShoppingBag className="mx-auto size-8 text-primary/70" />
-            <b className="text-foreground">
-              {language === "th" ? "เลือกหมวดสินค้า" : "Select a category"}
-            </b>
-            <span>
-              {language === "th"
-                ? "เลือกหมวดสินค้าจากรายการด้านซ้ายเพื่อจัดสินค้าในหมวด"
-                : "Pick a category from the list on the left to manage its products."}
-            </span>
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return null;
   }
 
-  const categoryName = pickName(categoryRecord.names as any[], language) || String(categoryRecord.code || "");
+  const categoryName = pickName(categoryRecord.names, language) || String(categoryRecord.code || "");
 
   // Add item to local codelist
-  const handleAddItem = (item: any) => {
-    const isDuplicate = localCodelist.some((x) => x.barcode === item.barcode);
+  const handleAddItem = (item: ProductSearchResult) => {
+    const code = normalizeProductCode(item.code);
+    const isDuplicate = localCodelist.some((x) => x.code === code);
     if (isDuplicate) return;
 
-    const newItem: CodeXSort = {
-      code: item.itemcode,
-      barcode: item.barcode,
-      unitcode: item.itemunitcode || "",
-      names: Array.isArray(item.names) ? item.names : [],
-      unitnames: Array.isArray(item.itemunitnames) ? item.itemunitnames : [],
+    const newItem: CategoryProduct = {
+      code,
+      xorder: localCodelist.length,
+      names: categoryNamesFrom(item.names),
     };
 
     setLocalCodelist((prev) => [...prev, newItem]);
   };
 
   // Remove item from local codelist
-  const handleRemoveItem = (barcode: string) => {
-    setLocalCodelist((prev) => prev.filter((item) => item.barcode !== barcode));
+  const handleRemoveItem = (code: string) => {
+    setLocalCodelist((prev) =>
+      prev
+        .filter((item) => item.code !== code)
+        .map((item, index) => ({ ...item, xorder: index })),
+    );
   };
 
   // Drag & Drop Handlers
@@ -247,7 +281,7 @@ export function ProductCategoryItemsEditor({
     const draggedItem = list[draggedIndex];
     list.splice(draggedIndex, 1);
     list.splice(targetIndex, 0, draggedItem);
-    setLocalCodelist(list);
+    setLocalCodelist(list.map((item, index) => ({ ...item, xorder: index })));
     setDraggedIndex(null);
     setDragOverIndex(null);
   };
@@ -263,11 +297,16 @@ export function ProductCategoryItemsEditor({
     setSaving(true);
     setNotice(null);
 
-    const guid = String(categoryRecord.guidfixed || categoryRecord.guidfixed || "");
+    const guid = String(categoryRecord.guidfixed || categoryRecord.guid || "");
     try {
+      const codelist = localCodelist.map((item, index) => ({
+        code: item.code,
+        xorder: index,
+        names: item.names,
+      }));
       const payload = {
         ...categoryRecord,
-        codelist: localCodelist,
+        codelist,
       };
 
       const response = await fetch(
@@ -298,6 +337,7 @@ export function ProductCategoryItemsEditor({
       });
 
       // Update parent state
+      setLocalCodelist(codelist);
       setEditing(payload);
       onRefresh?.();
     } catch (err: any) {
@@ -320,6 +360,9 @@ export function ProductCategoryItemsEditor({
         onClick={() => setSearchDialogOpen(false)}
       >
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={language === "th" ? "ค้นหาและเพิ่มสินค้า" : "Search and add products"}
           className="flex h-[80vh] w-full max-w-2xl flex-col rounded-xl border border-border bg-card text-card-foreground shadow-2xl overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
@@ -342,7 +385,7 @@ export function ProductCategoryItemsEditor({
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 autoFocus
-                placeholder={language === "th" ? "ค้นหาด้วยรหัสสินค้า, บาร์โค้ด หรือชื่อสินค้า..." : "Search by code, barcode, or name..."}
+                placeholder={language === "th" ? "ค้นหาด้วยรหัสสินค้า หรือชื่อสินค้า..." : "Search by product code or name..."}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="h-10 !pl-10 rounded-lg border-input bg-background"
@@ -367,12 +410,12 @@ export function ProductCategoryItemsEditor({
             ) : (
               <div className="divide-y divide-border/60">
                 {searchResults.map((item, idx) => {
-                  const isAdded = localCodelist.some((x) => x.barcode === item.barcode);
-                  const pName = pickName(item.names, language) || item.barcode;
-                  const uName = pickName(item.itemunitnames, language) || item.itemunitcode || "";
+                  const code = normalizeProductCode(item.code);
+                  const isAdded = localCodelist.some((x) => x.code === code);
+                  const pName = pickName(item.names, language) || code;
                   return (
                     <div
-                      key={item.guidfixed || item.guidfixed || `${item.barcode || ""}-${item.itemunitcode || ""}-${idx}`}
+                      key={code || idx}
                       className="flex items-center justify-between gap-4 p-3 hover:bg-muted/40 rounded-lg transition-colors"
                     >
                       <div className="min-w-0 flex-1">
@@ -380,15 +423,7 @@ export function ProductCategoryItemsEditor({
                           {pName}
                         </div>
                         <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground font-medium">
-                          <span>รหัส: {item.itemcode}</span>
-                          <span>•</span>
-                          <span>บาร์โค้ด: {item.barcode}</span>
-                          {uName && (
-                            <>
-                              <span>•</span>
-                              <span>หน่วย: {uName}</span>
-                            </>
-                          )}
+                          <span>{language === "th" ? "รหัสสินค้า" : "Product code"}: {code}</span>
                         </div>
                       </div>
                       <Button
@@ -439,28 +474,68 @@ export function ProductCategoryItemsEditor({
   };
 
   return (
-    <Card className="flex h-full min-h-0 flex-col overflow-hidden border-border bg-card shadow-sm">
-      <CardHeader className="flex flex-row items-center justify-between border-b border-border bg-muted/20 px-4 py-3 shrink-0">
+    <Card
+      aria-busy={categoryPending}
+      className="flex h-full min-h-0 flex-col overflow-hidden border-border bg-card shadow-sm"
+      inert={categoryPending ? true : undefined}
+    >
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 border-b border-border bg-muted/20 px-4 py-3 shrink-0">
         <div className="grid gap-0.5">
           <CardTitle className="text-sm font-bold text-foreground">
             {language === "th" ? "สินค้าในหมวด" : "Products in Category"}
           </CardTitle>
-          <span className="text-xs font-semibold text-primary">
-            {categoryName}
-          </span>
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs font-semibold">
+            <span className="text-primary">{categoryName}</span>
+            <span className="text-muted-foreground">
+              {language === "th" ? `ทั้งหมด ${localCodelist.length} รายการ` : `Total ${localCodelist.length} items`}
+            </span>
+          </div>
         </div>
-        <Button
-          type="button"
-          size="sm"
-          className="h-8 rounded-lg gap-1 font-semibold"
-          onClick={() => {
-            setSearchQuery("");
-            setSearchDialogOpen(true);
-          }}
-        >
-          <Plus className="size-4" />
-          {language === "th" ? "เพิ่มสินค้า" : "Add Product"}
-        </Button>
+        <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto" data-testid="product-category-item-actions">
+          <Button
+            type="button"
+            size="sm"
+            className="h-8 rounded-lg gap-1 font-semibold"
+            onClick={() => {
+              setSearchQuery("");
+              setSearchDialogOpen(true);
+            }}
+          >
+            <Plus className="size-4" />
+            {language === "th" ? "เพิ่มสินค้า" : "Add Product"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={saving}
+            onClick={() => {
+              if (categoryRecord) {
+                setLocalCodelist(categoryProductsFrom(categoryRecord.codelist));
+              }
+              setNotice(null);
+            }}
+            className="h-8 rounded-lg font-semibold"
+          >
+            {language === "th" ? "ยกเลิก" : "Cancel"}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            disabled={saving}
+            onClick={handleSave}
+            className="h-8 rounded-lg gap-1.5 font-semibold"
+          >
+            {saving ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Save className="size-4" />
+            )}
+            {saving
+              ? (language === "th" ? "กำลังบันทึก..." : "Saving...")
+              : (language === "th" ? "บันทึก" : "Save")}
+          </Button>
+        </div>
       </CardHeader>
 
       <CardContent className="flex min-h-0 flex-1 flex-col p-0">
@@ -473,8 +548,8 @@ export function ProductCategoryItemsEditor({
               </span>
               <span className="text-xs text-muted-foreground max-w-xs leading-normal">
                 {language === "th"
-                  ? "กดปุ่ม 'เพิ่มสินค้า' ด้านบนเพื่อค้นหาบาร์โค้ดสินค้าที่ต้องการนำมาแสดงในหมวดหมู่นี้"
-                  : "Click 'Add Product' above to search and link barcodes to this category."}
+                  ? "กดปุ่ม 'เพิ่มสินค้า' ด้านบนเพื่อค้นหาสินค้าจาก Master สินค้า"
+                  : "Click 'Add Product' above to search Product master records for this category."}
               </span>
             </div>
           ) : (
@@ -483,20 +558,17 @@ export function ProductCategoryItemsEditor({
                 <thead>
                   <tr className="border-b border-border bg-muted/30 text-xs font-bold text-muted-foreground uppercase tracking-wider select-none">
                     <th className="w-8 px-2 py-2.5"></th>
-                    <th className="px-4 py-2.5 font-bold">{language === "th" ? "บาร์โค้ด" : "Barcode"}</th>
                     <th className="px-4 py-2.5 font-bold">{language === "th" ? "รหัสสินค้า" : "Product Code"}</th>
                     <th className="px-4 py-2.5 font-bold">{language === "th" ? "ชื่อสินค้า" : "Name"}</th>
-                    <th className="px-4 py-2.5 font-bold">{language === "th" ? "หน่วย" : "Unit"}</th>
                     <th className="px-4 py-2.5 text-center font-bold w-12">{language === "th" ? "จัดการ" : "Action"}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60">
                   {localCodelist.map((item, idx) => {
-                    const pName = pickName(item.names, language) || item.barcode;
-                    const uName = pickName(item.unitnames, language) || item.unitcode || "";
+                    const pName = pickName(item.names, language) || item.code;
                     return (
                       <tr
-                        key={`${item.barcode}:${idx}`}
+                        key={item.code}
                         draggable
                         onDragStart={(e) => handleDragStart(e, idx)}
                         onDragOver={(e) => handleDragOver(e, idx)}
@@ -511,17 +583,11 @@ export function ProductCategoryItemsEditor({
                         <td className="w-8 px-2 py-3 text-center cursor-grab active:cursor-grabbing select-none">
                           <GripVertical className="size-4 text-muted-foreground/60 mx-auto" />
                         </td>
-                        <td className="px-4 py-3 font-semibold text-xs font-mono select-all">
-                          {item.barcode}
-                        </td>
                         <td className="px-4 py-3 text-xs font-mono font-medium">
                           {item.code}
                         </td>
                         <td className="px-4 py-3 font-semibold text-foreground max-w-xs truncate">
                           {pName}
-                        </td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground font-semibold">
-                          {uName}
                         </td>
                         <td className="px-4 py-3 text-center">
                           <Button
@@ -529,7 +595,7 @@ export function ProductCategoryItemsEditor({
                             variant="ghost"
                             size="icon"
                             className="size-7 rounded-full text-destructive hover:bg-destructive/10"
-                            onClick={() => handleRemoveItem(item.barcode)}
+                            onClick={() => handleRemoveItem(item.code)}
                             aria-label={language === "th" ? "ลบสินค้าออกจากหมวด" : "Remove product"}
                             title={language === "th" ? "ลบสินค้าออกจากหมวด" : "Remove product"}
                           >
@@ -545,54 +611,6 @@ export function ProductCategoryItemsEditor({
           )}
         </div>
 
-        <footer className="flex items-center justify-between gap-4 border-t border-border bg-muted/20 px-4 py-3 shrink-0">
-          <span className="text-xs font-semibold text-muted-foreground">
-            {language === "th" ? `ทั้งหมด ${localCodelist.length} รายการ` : `Total ${localCodelist.length} items`}
-          </span>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={saving}
-              onClick={() => {
-                if (categoryRecord) {
-                  const rawCodelist = categoryRecord.codelist;
-                  const parsedList: CodeXSort[] = Array.isArray(rawCodelist)
-                    ? rawCodelist.map((item: any) => ({
-                        code: String(item.code ?? item.itemcode ?? ""),
-                        barcode: String(item.barcode ?? ""),
-                        unitcode: String(item.unitcode ?? item.itemunitcode ?? ""),
-                        names: Array.isArray(item.names) ? item.names : [],
-                        unitnames: Array.isArray(item.unitnames) ? item.unitnames : [],
-                      }))
-                    : [];
-                  setLocalCodelist(parsedList);
-                }
-                setNotice(null);
-              }}
-              className="rounded-lg font-semibold"
-            >
-              {language === "th" ? "ยกเลิก" : "Cancel"}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              disabled={saving}
-              onClick={handleSave}
-              className="rounded-lg gap-1.5 font-semibold"
-            >
-              {saving ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Save className="size-4" />
-              )}
-              {saving
-                ? (language === "th" ? "กำลังบันทึก..." : "Saving...")
-                : (language === "th" ? "บันทึก" : "Save")}
-            </Button>
-          </div>
-        </footer>
       </CardContent>
       {renderSearchDialog()}
     </Card>

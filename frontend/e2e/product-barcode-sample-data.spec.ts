@@ -37,10 +37,9 @@ import { test, expect, type Page } from "@playwright/test";
  *   `product-set-screen.tsx` `addChoiceToGroup`/`handleSave`) — the task briefing's `RefBarcodes`/`BOM`
  *   note describes backend struct shape, but is not the mechanism the live screen exercises. Flagged in
  *   the session report.
- * - "สินค้าในหมวด" (`/productcategorylist`, `product-category-items-editor.tsx`) assigns real BARCODES
- *   (not bare product codes) into a category's `codelist`, each item keyed by `barcode` with `code`
- *   mirroring the barcode's `itemcode` (= parent product code) — search-and-add modal searches
- *   `listBarcodes`, not products directly.
+ * - "สินค้าในหมวด" (`/productcategorylist`, `product-category-items-editor.tsx`) assigns Product
+ *   master codes into a category's `codelist`. Barcode records stay independent and are never used
+ *   as category membership.
  *
  * Login/menu-navigation helpers follow the current repo convention (retry-with-deadline, "test" holding
  * excludes "bctest0N" via `test(?!\d)`, dismiss the one-time "ยังไม่มีหน่วยนับสินค้า" modal).
@@ -553,7 +552,7 @@ test.describe.serial("sample data — สินค้า/บาร์โค้�
     expect(Object.keys(setGuids).length).toBe(sets.length);
   });
 
-  test("assign coffee-themed product barcodes into the real productcategories 'กาแฟ' node via /productcategorylist UI", async ({
+  test("assign coffee-themed Product masters into the real productcategories 'กาแฟ' node via /productcategorylist UI", async ({
     page,
   }) => {
     await loginOnly(page);
@@ -579,8 +578,8 @@ test.describe.serial("sample data — สินค้า/บาร์โค้�
 
     const coffeeComponents = ["COFFEE1", "COFFEE2"] as const;
     for (const key of coffeeComponents) {
-      const barcode = barcodeCodes[key];
-      await page.fill('input[placeholder*="ค้นหาด้วยรหัสสินค้า"]', barcode);
+      const productCode = `SMP${key}${uid}`;
+      await page.fill('input[placeholder*="ค้นหาด้วยรหัสสินค้า"]', productCode);
       await page.waitForTimeout(800);
       await clickButtonByText(page, /^เพิ่ม$/);
       await page.waitForTimeout(400);
@@ -591,19 +590,21 @@ test.describe.serial("sample data — สินค้า/บาร์โค้�
     await page.waitForTimeout(1500);
     expect(await bodyHasText(page, "บันทึกข้อมูลเรียบร้อยแล้ว")).toBe(true);
 
-    // Verify via fresh API read: the "กาแฟ" category's codelist now contains both real coffee barcodes.
+    // Verify via fresh API read: the "กาแฟ" category contains Product codes only.
     const H = await getAuthHeaders(page);
     const catRes = await (
       await page.request.get(`${MAINAPI}/product/category/list?group-number=1`, { headers: H })
     ).json();
-    const coffeeCat = (catRes.data as { names: { name: string }[]; codelist?: { barcode: string; code: string }[] }[]).find(
+    const coffeeCat = (catRes.data as { names: { name: string }[]; codelist?: { code: string; barcode?: unknown }[] }[]).find(
       (c) => c.names.some((n) => n.name === "กาแฟ"),
     );
     expect(coffeeCat, "กาแฟ category node found").toBeTruthy();
-    const codelistBarcodes = (coffeeCat!.codelist ?? []).map((c) => c.barcode);
+    const categoryProducts = coffeeCat!.codelist ?? [];
+    const categoryProductCodes = categoryProducts.map((item) => item.code);
     for (const key of coffeeComponents) {
-      expect(codelistBarcodes, `กาแฟ codelist contains ${key}`).toContain(barcodeCodes[key]);
+      expect(categoryProductCodes, `กาแฟ codelist contains Product ${key}`).toContain(`SMP${key}${uid}`);
     }
+    expect(categoryProducts.every((item) => !("barcode" in item)), "กาแฟ codelist is Product-only").toBe(true);
   });
 
   test("relation-completeness check: every classification field on every product resolves to a real Phase-2 master doc", async ({

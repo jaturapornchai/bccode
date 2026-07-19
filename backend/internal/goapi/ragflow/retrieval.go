@@ -72,8 +72,8 @@ func (c *Client) Retrieve(question string, datasetIDs []string, topK int) ([]Ret
 	// match document text — RAGFlow's hybrid scoring filters out chunks where
 	// BM25 contribution is zero, so a generic word like "search" returns nothing.
 	//
-	// Since every document in BC Account's KB is a BC Account document, prepending
-	// "BC Account document" gives near-universal BM25 hits while the multilingual
+	// The pre-rebrand corpus still contains a legacy brand anchor. Prepending the
+	// matching compatibility phrase gives near-universal BM25 hits while the multilingual
 	// embedding (gemma) handles the actual Thai semantic match via vector similarity.
 	//
 	// We deliberately do NOT use `keyword=true` (which would invoke the chat model
@@ -106,7 +106,7 @@ func (c *Client) Retrieve(question string, datasetIDs []string, topK int) ([]Ret
 }
 
 // RetrieveByDocument returns chunks for a specific document in the dataset.
-// Uses a generic "BC Account document" query to satisfy RAGFlow's required
+// Uses the legacy indexed-corpus anchor to satisfy RAGFlow's required
 // question param, then filters by document_id server-side.
 func (c *Client) RetrieveByDocument(datasetID, documentID string, topK int) ([]RetrievalChunk, error) {
 	if datasetID == "" || documentID == "" {

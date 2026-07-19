@@ -1,6 +1,6 @@
 ---
 name: go-api-handler
-description: Create Go API handlers following BC Account patterns.
+description: Create Go API handlers following BC Ai Account patterns.
 ---
 
 - **Route Framework**: Use Gin. Route handlers must accept `*gin.Context`.

@@ -14,8 +14,6 @@ import (
 	productmaster "smlcloudplatform/internal/product/product/repositories"
 	product_repositories "smlcloudplatform/internal/product/productbarcode/repositories"
 	product_serrvices "smlcloudplatform/internal/product/productbarcode/services"
-	productcategory_repositories "smlcloudplatform/internal/product/productcategory/repositories"
-	productcategory_services "smlcloudplatform/internal/product/productcategory/services"
 	productunit_repo "smlcloudplatform/internal/product/unit/repositories"
 	unit_repositories "smlcloudplatform/internal/product/unit/repositories"
 	unitmaster "smlcloudplatform/internal/product/unit/repositories"
@@ -80,9 +78,6 @@ func NewProductImportHttp(ms *microservice.Microservice, cfg config.IConfig) Pro
 	unitmaster := unitmaster.NewUnitRepository(pst)
 	masterSyncCacheRepo := mastersync.NewMasterSyncCacheRepository(cache)
 
-	productcategoryRepo := productcategory_repositories.NewProductCategoryRepository(pst)
-	productcategorySvc := productcategory_services.NewProductCategoryHttpService(productcategoryRepo, masterSyncCacheRepo, repo)
-
 	unitRepo := productunit_repo.NewUnitRepository(pst)
 
 	groupProductRepo := groupproduct_repositories.NewGroupProductRepository(pst)
@@ -114,7 +109,7 @@ func NewProductImportHttp(ms *microservice.Microservice, cfg config.IConfig) Pro
 	unitMqRepo := unit_repositories.NewUnitMessageQueueRepository(producer)
 	unitSvc := unit_services.NewUnitHttpService(unitRepo, repo, unitMqRepo, masterSyncCacheRepo)
 
-	stockBalanceSvc := product_serrvices.NewProductBarcodeHttpService(repo, repoMaster, unitmaster, unitSvc, *creditorRepo, repoMq, repoCh, productcategorySvc, masterSyncCacheRepo, priceHistorySvc, warehouseRepo)
+	stockBalanceSvc := product_serrvices.NewProductBarcodeHttpService(repo, repoMaster, unitmaster, unitSvc, *creditorRepo, repoMq, repoCh, masterSyncCacheRepo, priceHistorySvc, warehouseRepo)
 
 	svc := services.NewProductImportService(chRepo, taskStatusRepo, repo, stockBalanceSvc, unitRepo, groupProductRepo, groupsuboneProductRepo, groupsubtwoproductRepo, brandProductRepo, designProductRepo, modelProductRepo, patternProductRepo, gradeProductRepo, categoryProductRepo, classProductRepo, branchRepo, businessTypeRepo, utils.RandStringBytesMaskImprSrcUnsafe, utils.NewGUID, safeTimeNow)
 

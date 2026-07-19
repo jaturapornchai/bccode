@@ -27,20 +27,35 @@ export type ApiEnvelope<T = unknown> = {
 function authHeaders(auth: AuthSession | null): Record<string, string> {
   return {
     "Content-Type": "application/json",
-    ...(auth ? { Authorization: `Bearer ${auth.token}`, "x-bc-backend-url": auth.backendUrl } : {}),
+    ...(auth
+      ? {
+          Authorization: `Bearer ${auth.token}`,
+          "x-bc-backend-url": auth.backendUrl,
+        }
+      : {}),
   };
 }
 
-async function jsonRequest<T = unknown>(input: RequestInfo | URL, init: RequestInit): Promise<ApiEnvelope<T>> {
+async function jsonRequest<T = unknown>(
+  input: RequestInfo | URL,
+  init: RequestInit,
+): Promise<ApiEnvelope<T>> {
   try {
     const response = await fetch(input, init);
     const payload = (await response.json().catch(() => ({}))) as ApiEnvelope<T>;
     if (!response.ok && payload.success !== false) {
-      return { ...payload, success: false, message: payload.message ?? `HTTP ${response.status}` };
+      return {
+        ...payload,
+        success: false,
+        message: payload.message ?? `HTTP ${response.status}`,
+      };
     }
     return payload;
   } catch (error) {
-    return { success: false, message: error instanceof Error ? error.message : "Network error" };
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Network error",
+    };
   }
 }
 
@@ -62,7 +77,10 @@ export function listBarcodes(
 }
 
 /** Get a single barcode by GUID. */
-export function getBarcode(auth: AuthSession | null, guid: string): Promise<ApiEnvelope<unknown>> {
+export function getBarcode(
+  auth: AuthSession | null,
+  guid: string,
+): Promise<ApiEnvelope<unknown>> {
   return jsonRequest("/api/product-barcode/" + encodeURIComponent(guid), {
     method: "GET",
     headers: authHeaders(auth),
@@ -70,7 +88,10 @@ export function getBarcode(auth: AuthSession | null, guid: string): Promise<ApiE
 }
 
 /** Create a new barcode. */
-export function createBarcode(auth: AuthSession | null, data: ProductBarcode): Promise<ApiEnvelope<unknown>> {
+export function createBarcode(
+  auth: AuthSession | null,
+  data: ProductBarcode,
+): Promise<ApiEnvelope<unknown>> {
   return jsonRequest("/api/product-barcode", {
     method: "POST",
     headers: authHeaders(auth),
@@ -92,7 +113,10 @@ export function updateBarcode(
 }
 
 /** Delete by GUID list (bulk) or single. */
-export function deleteBarcodes(auth: AuthSession | null, guids: string[]): Promise<ApiEnvelope<unknown>> {
+export function deleteBarcodes(
+  auth: AuthSession | null,
+  guids: string[],
+): Promise<ApiEnvelope<unknown>> {
   if (guids.length === 1) {
     return jsonRequest("/api/product-barcode/" + encodeURIComponent(guids[0]), {
       method: "DELETE",
@@ -107,25 +131,44 @@ export function deleteBarcodes(auth: AuthSession | null, guids: string[]): Promi
 }
 
 /** Get BOM tree by barcode (read-only view). */
-export function getBarcodeBom(auth: AuthSession | null, barcode: string): Promise<ApiEnvelope<unknown>> {
-  return jsonRequest("/api/product-barcode/bom/" + encodeURIComponent(barcode), {
-    method: "GET",
-    headers: authHeaders(auth),
-  });
+export function getBarcodeBom(
+  auth: AuthSession | null,
+  itemCode: string,
+  barcode: string,
+): Promise<ApiEnvelope<unknown>> {
+  const query = itemCode ? `?itemcode=${encodeURIComponent(itemCode)}` : "";
+  return jsonRequest(
+    "/api/product-barcode/bom/" + encodeURIComponent(barcode) + query,
+    {
+      method: "GET",
+      headers: authHeaders(auth),
+    },
+  );
 }
 
 /** Get price history for a barcode. */
 export function getPriceHistory(
   auth: AuthSession | null,
+  itemCode: string,
   barcode: string,
   page = 1,
   limit = 20,
 ): Promise<ApiEnvelope<unknown>> {
-  const qs = new URLSearchParams({ page: String(page), limit: String(limit) }).toString();
-  return jsonRequest("/api/product-barcode/price-history/" + encodeURIComponent(barcode) + "?" + qs, {
-    method: "GET",
-    headers: authHeaders(auth),
-  });
+  const qs = new URLSearchParams({
+    itemcode: itemCode,
+    page: String(page),
+    limit: String(limit),
+  }).toString();
+  return jsonRequest(
+    "/api/product-barcode/price-history/" +
+      encodeURIComponent(barcode) +
+      "?" +
+      qs,
+    {
+      method: "GET",
+      headers: authHeaders(auth),
+    },
+  );
 }
 
 /** Master data entry returned by picker endpoints. */
@@ -204,16 +247,31 @@ export function uploadProductImage(
   return fetch("/api/product-barcode/image", {
     method: "POST",
     headers: {
-      ...(auth ? { Authorization: `Bearer ${auth.token}`, "x-bc-backend-url": auth.backendUrl } : {}),
+      ...(auth
+        ? {
+            Authorization: `Bearer ${auth.token}`,
+            "x-bc-backend-url": auth.backendUrl,
+          }
+        : {}),
     },
     body: form,
   })
     .then(async (res) => {
-      const payload = (await res.json().catch(() => ({}))) as ApiEnvelope<{ url: string; key?: string }>;
+      const payload = (await res.json().catch(() => ({}))) as ApiEnvelope<{
+        url: string;
+        key?: string;
+      }>;
       if (!res.ok && payload.success !== false) {
-        return { ...payload, success: false, message: payload.message ?? `HTTP ${res.status}` };
+        return {
+          ...payload,
+          success: false,
+          message: payload.message ?? `HTTP ${res.status}`,
+        };
       }
       return payload;
     })
-    .catch((error) => ({ success: false, message: error instanceof Error ? error.message : "Upload failed" }));
+    .catch((error) => ({
+      success: false,
+      message: error instanceof Error ? error.message : "Upload failed",
+    }));
 }

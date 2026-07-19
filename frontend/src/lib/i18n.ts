@@ -1,4 +1,4 @@
-// BC Account frontend i18n.
+// BC Ai Account frontend i18n.
 // Source of truth: src/locales/th.json. Other languages live in src/locales/<lang>.json.
 // Adding a new string: edit src/locales/th.json first (Thai-First No Auto-Translate Iron Rule),
 // then copy the Thai value as a placeholder into the other locale files. Jead commands translation passes.

@@ -33,12 +33,22 @@ export async function GET(request: Request, context: ProductProxyContext) {
       if (value) qs.set(key, value);
     }
     if (holdingCode) {
-      return proxyProductPgListJson(request, holdingCode, q, Number(limit) || 50, pageToOffset(page, limit));
+      return proxyProductPgListJson(
+        request,
+        holdingCode,
+        q,
+        Number(limit) || 50,
+        pageToOffset(page, limit),
+      );
     }
-    return proxyProductJson(request, base, `/product?${qs.toString()}`, { method: "GET" });
+    return proxyProductJson(request, base, `/product?${qs.toString()}`, {
+      method: "GET",
+    });
   }
 
-  return proxyProductJson(request, base, `/product/${encodeURIComponent(id)}`, { method: "GET" });
+  return proxyProductJson(request, base, `/product/${encodeURIComponent(id)}`, {
+    method: "GET",
+  });
 }
 
 async function proxyProductPgListJson(
@@ -55,7 +65,11 @@ async function proxyProductPgListJson(
     validateBackendUrl(getBackendUrlFromRequest(request));
   } catch (error) {
     return NextResponse.json(
-      { success: false, message: error instanceof Error ? error.message : "Backend URL ไม่ถูกต้อง" },
+      {
+        success: false,
+        message:
+          error instanceof Error ? error.message : "Backend URL ไม่ถูกต้อง",
+      },
       { status: 400 },
     );
   }
@@ -75,7 +89,7 @@ async function proxyProductPgListJson(
         search,
         limit,
         offset,
-        use_cache: false,
+        usecache: false,
       }),
       signal: controller.signal,
       cache: "no-store",
@@ -83,10 +97,15 @@ async function proxyProductPgListJson(
     const payload = await readJsonOrText(response);
     if (!isRecord(payload)) {
       const message = String(payload ?? "");
-      return NextResponse.json({ success: response.ok, message, source: "pgsql" }, { status: response.status });
+      return NextResponse.json(
+        { success: response.ok, message, source: "pgsql" },
+        { status: response.status },
+      );
     }
     if (!response.ok || payload.status === "error") {
-      return NextResponse.json(productPgErrorPayload(payload), { status: response.status });
+      return NextResponse.json(productPgErrorPayload(payload), {
+        status: response.status,
+      });
     }
     const rawRows = Array.isArray(payload.data) ? payload.data : [];
     const rows = rawRows.map(productPgListRowToProduct);
@@ -96,7 +115,12 @@ async function proxyProductPgListJson(
         data: rows,
         total: typeof payload.count === "number" ? payload.count : rows.length,
         source: "pgsql",
-        message: typeof payload.message === "string" ? payload.message : typeof payload.error === "string" ? payload.error : undefined,
+        message:
+          typeof payload.message === "string"
+            ? payload.message
+            : typeof payload.error === "string"
+              ? payload.error
+              : undefined,
       },
       { status: response.status },
     );
@@ -105,13 +129,18 @@ async function proxyProductPgListJson(
       error instanceof Error && error.name === "AbortError"
         ? "Server ไม่ตอบกลับทันเวลา"
         : "ไม่สามารถเชื่อมต่อ Server ได้";
-    return NextResponse.json({ success: false, message, source: "pgsql" }, { status: 504 });
+    return NextResponse.json(
+      { success: false, message, source: "pgsql" },
+      { status: 504 },
+    );
   } finally {
     clearTimeout(timeout);
   }
 }
 
-function productPgErrorPayload(payload: Record<string, unknown>): Record<string, unknown> {
+function productPgErrorPayload(
+  payload: Record<string, unknown>,
+): Record<string, unknown> {
   const message =
     stringFromRecord(payload, "message") ||
     stringFromRecord(payload, "error") ||
@@ -140,7 +169,7 @@ function productPgListRowToProduct(row: unknown): Record<string, unknown> {
   const unitCount = numberFromRecord(r, "unit_count");
   const balanceQty = numberFromRecord(r, "balanceqty");
   return {
-    guidfixed: code,
+    guidfixed: "",
     code,
     names: name ? [{ code: "th", name }] : [],
     itemtype: 0,
@@ -167,12 +196,18 @@ function productPgListRowToProduct(row: unknown): Record<string, unknown> {
   };
 }
 
-function stringFromRecord(record: Record<string, unknown>, key: string): string {
+function stringFromRecord(
+  record: Record<string, unknown>,
+  key: string,
+): string {
   const value = record[key];
   return typeof value === "string" ? value : value == null ? "" : String(value);
 }
 
-function numberFromRecord(record: Record<string, unknown>, key: string): number {
+function numberFromRecord(
+  record: Record<string, unknown>,
+  key: string,
+): number {
   const value = record[key];
   if (typeof value === "number") return Number.isFinite(value) ? value : 0;
   if (typeof value === "string") {
@@ -182,15 +217,31 @@ function numberFromRecord(record: Record<string, unknown>, key: string): number 
   return 0;
 }
 
-export async function POST(request: Request) {
+export async function POST(request: Request, context: ProductProxyContext) {
   const body = await readBody(request);
   const bodyRecord = isRecord(body) ? body : undefined;
   const base = resolveMainApiUrl(request, bodyRecord);
   if (base instanceof NextResponse) return base;
+  const { productPath } = await context.params;
+  const action = (productPath ?? []).join("/").trim();
+  if (action === "resync") {
+    return proxyProductJson(request, base, "/product/resync", {
+      method: "POST",
+    });
+  }
+  if (action) {
+    return NextResponse.json(
+      { success: false, message: "ไม่พบคำสั่งสินค้า" },
+      { status: 404 },
+    );
+  }
 
   const payload = getPayload(body);
   if (!isRecord(payload)) {
-    return NextResponse.json({ success: false, message: "ไม่พบข้อมูลสินค้า" }, { status: 400 });
+    return NextResponse.json(
+      { success: false, message: "ไม่พบข้อมูลสินค้า" },
+      { status: 400 },
+    );
   }
 
   return proxyProductJson(request, base, "/product", {
@@ -204,14 +255,21 @@ export async function PUT(request: Request, context: ProductProxyContext) {
   const bodyRecord = isRecord(body) ? body : undefined;
   const { productPath } = await context.params;
   const id = (productPath ?? []).join("/").trim();
-  if (!id) return NextResponse.json({ success: false, message: "ไม่พบรหัสสินค้า" }, { status: 400 });
+  if (!id)
+    return NextResponse.json(
+      { success: false, message: "ไม่พบรหัสสินค้า" },
+      { status: 400 },
+    );
 
   const base = resolveMainApiUrl(request, bodyRecord);
   if (base instanceof NextResponse) return base;
 
   const payload = getPayload(body);
   if (!isRecord(payload)) {
-    return NextResponse.json({ success: false, message: "ไม่พบข้อมูลสินค้า" }, { status: 400 });
+    return NextResponse.json(
+      { success: false, message: "ไม่พบข้อมูลสินค้า" },
+      { status: 400 },
+    );
   }
 
   return proxyProductJson(request, base, `/product/${encodeURIComponent(id)}`, {
@@ -230,24 +288,44 @@ export async function DELETE(request: Request, context: ProductProxyContext) {
   if (base instanceof NextResponse) return base;
 
   if (id) {
-    return proxyProductJson(request, base, `/product/${encodeURIComponent(id)}`, { method: "DELETE" });
+    return proxyProductJson(
+      request,
+      base,
+      `/product/${encodeURIComponent(id)}`,
+      { method: "DELETE" },
+    );
   }
 
-  return NextResponse.json({ success: false, message: "ไม่พบรายการที่ต้องการลบ" }, { status: 400 });
+  return NextResponse.json(
+    { success: false, message: "ไม่พบรายการที่ต้องการลบ" },
+    { status: 400 },
+  );
 }
 
-function resolveMainApiUrl(request: Request, body?: ApiProxyBody): string | NextResponse {
+function resolveMainApiUrl(
+  request: Request,
+  body?: ApiProxyBody,
+): string | NextResponse {
   try {
     return getMainApiUrl(getBackendUrlFromRequest(request, body));
   } catch (error) {
     return NextResponse.json(
-      { success: false, message: error instanceof Error ? error.message : "Backend URL ไม่ถูกต้อง" },
+      {
+        success: false,
+        message:
+          error instanceof Error ? error.message : "Backend URL ไม่ถูกต้อง",
+      },
       { status: 400 },
     );
   }
 }
 
-async function proxyProductJson(request: Request, baseUrl: string, path: string, init: RequestInit): Promise<NextResponse> {
+async function proxyProductJson(
+  request: Request,
+  baseUrl: string,
+  path: string,
+  init: RequestInit,
+): Promise<NextResponse> {
   const authorization = requireBearerToken(request);
   if (typeof authorization !== "string") return authorization;
 
@@ -267,8 +345,12 @@ async function proxyProductJson(request: Request, baseUrl: string, path: string,
       cache: "no-store",
     });
     const payload = await readJsonOrText(response);
-    if (isRecord(payload)) return NextResponse.json(payload, { status: response.status });
-    return NextResponse.json({ success: response.ok, message: String(payload ?? "") }, { status: response.status });
+    if (isRecord(payload))
+      return NextResponse.json(payload, { status: response.status });
+    return NextResponse.json(
+      { success: response.ok, message: String(payload ?? "") },
+      { status: response.status },
+    );
   } catch (error) {
     const message =
       error instanceof Error && error.name === "AbortError"

@@ -34,21 +34,31 @@ import { test, expect, type Page } from "@playwright/test";
  * The product code input (`product-screen.tsx` basic tab) has no placeholder — it is preceded by
  * a `<label>รหัสสินค้า *</label>` sibling. Find the input in that label's parent `div`.
  */
-async function fillFieldByLabelPrefix(page: Page, labelPrefix: string, value: string) {
+async function fillFieldByLabelPrefix(
+  page: Page,
+  labelPrefix: string,
+  value: string,
+) {
   await page.evaluate(
     ({ labelPrefix, value }) => {
       const setValue = (el: HTMLInputElement, v: string) => {
-        const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!;
+        const setter = Object.getOwnPropertyDescriptor(
+          window.HTMLInputElement.prototype,
+          "value",
+        )!.set!;
         setter.call(el, v);
         el.dispatchEvent(new Event("input", { bubbles: true }));
         el.dispatchEvent(new Event("change", { bubbles: true }));
       };
-      const label = [...document.querySelectorAll<HTMLElement>("label")].find((l) =>
-        (l.textContent ?? "").trim().startsWith(labelPrefix),
+      const label = [...document.querySelectorAll<HTMLElement>("label")].find(
+        (l) => (l.textContent ?? "").trim().startsWith(labelPrefix),
       );
-      if (!label) throw new Error(`No label found starting with "${labelPrefix}"`);
-      const input = label.parentElement?.querySelector<HTMLInputElement>("input");
-      if (!input) throw new Error(`No input found under label "${labelPrefix}"`);
+      if (!label)
+        throw new Error(`No label found starting with "${labelPrefix}"`);
+      const input =
+        label.parentElement?.querySelector<HTMLInputElement>("input");
+      if (!input)
+        throw new Error(`No input found under label "${labelPrefix}"`);
       setValue(input, value);
     },
     { labelPrefix, value },
@@ -59,12 +69,17 @@ async function fillFieldByLabelPrefix(page: Page, labelPrefix: string, value: st
 async function fillFirstNameInput(page: Page, value: string) {
   await page.evaluate((value) => {
     const setValue = (el: HTMLInputElement, v: string) => {
-      const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!;
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value",
+      )!.set!;
       setter.call(el, v);
       el.dispatchEvent(new Event("input", { bubbles: true }));
       el.dispatchEvent(new Event("change", { bubbles: true }));
     };
-    const input = document.querySelector<HTMLInputElement>('input[placeholder="th"]');
+    const input = document.querySelector<HTMLInputElement>(
+      'input[placeholder="th"]',
+    );
     if (!input) throw new Error('No name input found with placeholder "th"');
     setValue(input, value);
   }, value);
@@ -73,7 +88,9 @@ async function fillFirstNameInput(page: Page, value: string) {
 async function clickButtonByText(page: Page, textPattern: RegExp) {
   const clicked = await page.evaluate((pattern) => {
     const re = new RegExp(pattern);
-    const el = [...document.querySelectorAll<HTMLElement>("button,a,[role=button]")].find(
+    const el = [
+      ...document.querySelectorAll<HTMLElement>("button,a,[role=button]"),
+    ].find(
       (e) => re.test((e.textContent ?? "").trim()) && e.offsetParent !== null,
     );
     if (!el) return false;
@@ -90,16 +107,23 @@ async function bodyHasText(page: Page, text: string): Promise<boolean> {
 /** Opens the "สินค้า" tab via the left menu search (in-memory tab, not a real Next.js route). */
 async function openProductScreenFromMenu(page: Page) {
   await page.evaluate(() => {
-    const input = document.querySelector<HTMLInputElement>('input[placeholder*="ค้นหาเมนู"]');
+    const input = document.querySelector<HTMLInputElement>(
+      'input[placeholder*="ค้นหาเมนู"]',
+    );
     if (!input) throw new Error("Menu search input not found");
-    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!;
+    const setter = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype,
+      "value",
+    )!.set!;
     setter.call(input, "สินค้าและบาร์โค้ด");
     input.dispatchEvent(new Event("input", { bubbles: true }));
   });
   await page.waitForTimeout(1000);
   await clickButtonByText(page, /^สินค้า$/);
   await page.waitForTimeout(2500);
-  await expect(page.locator("body")).toContainText(/ไม่พบข้อมูลสินค้า|รหัสสินค้า/);
+  await expect(page.locator("body")).toContainText(
+    /ไม่พบข้อมูลสินค้า|รหัสสินค้า/,
+  );
 }
 
 async function loginAndOpenProductScreen(page: Page) {
@@ -116,8 +140,8 @@ async function loginAndOpenProductScreen(page: Page) {
   await expect(page.locator("body")).toContainText(/Test/i, { timeout: 15000 });
   await page.waitForTimeout(500);
   await page.evaluate(() => {
-    const btn = [...document.querySelectorAll<HTMLElement>("button")].find((b) =>
-      (b.textContent ?? "").trim().startsWith("Test"),
+    const btn = [...document.querySelectorAll<HTMLElement>("button")].find(
+      (b) => (b.textContent ?? "").trim().startsWith("Test"),
     );
     if (!btn) throw new Error("No holding group card button found");
     btn.click();
@@ -126,7 +150,9 @@ async function loginAndOpenProductScreen(page: Page) {
   // /workspace: pick the first company card.
   await page.evaluate(() => {
     const btn = [...document.querySelectorAll<HTMLElement>("button")].find(
-      (b) => (b.textContent ?? "").includes("บริษัท") && (b.textContent ?? "").trim().length > 15,
+      (b) =>
+        (b.textContent ?? "").includes("บริษัท") &&
+        (b.textContent ?? "").trim().length > 15,
     );
     if (!btn) throw new Error("No company card button found");
     btn.click();
@@ -146,6 +172,57 @@ test("product — create via UI across all detail tabs, verify API+DB, then upda
   const name = `สินค้าE2E${uid}`;
 
   await loginAndOpenProductScreen(page);
+
+  // Read-only workbench regression: the list and detail panes must remain usable at Playwright's
+  // default 1280px viewport before entering Create mode. This catches the old five-column list
+  // overflow and the all-sections-at-once detail wall without changing any product data.
+  await expect(page.getByTestId("product-workbench")).toBeVisible();
+  await expect(page.getByTestId("product-list-pane")).toBeVisible();
+  await expect(page.getByTestId("product-detail-pane")).toBeVisible();
+  expect(
+    await page
+      .getByTestId("product-workbench")
+      .evaluate((element) => element.scrollWidth <= element.clientWidth + 1),
+  ).toBe(true);
+
+  const productRows = page.getByTestId("product-row");
+  const productRowCount = await productRows.count();
+  if (productRowCount > 0) {
+    const keyboardRow = productRows.nth(productRowCount > 1 ? 1 : 0);
+    await keyboardRow.focus();
+    await keyboardRow.press("Enter");
+    await expect(keyboardRow).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("product-detail-card")).toBeVisible();
+    await expect(page.getByTestId("product-detail-content")).toBeVisible({
+      timeout: 10000,
+    });
+
+    for (const detailTab of [
+      "overview",
+      "classification",
+      "inventory",
+      "sales",
+      "more",
+    ] as const) {
+      await page.getByTestId(`product-detail-tab-${detailTab}`).click();
+      await expect(page.getByTestId("product-detail-content")).toBeVisible();
+    }
+    await page.getByTestId("product-detail-tab-overview").click();
+
+    const detailEditButton = page
+      .getByTestId("product-detail-card")
+      .getByRole("button", { name: /^แก้ไข$/ });
+    await expect(detailEditButton).toBeEnabled();
+    await expect(
+      page.getByText(
+        "โหลดข้อมูลฉบับเต็มไม่สำเร็จ — กำลังแสดงข้อมูลสรุปจากรายการ",
+      ),
+    ).toHaveCount(0);
+    await detailEditButton.click();
+    await expect(page.getByRole("button", { name: /^บันทึก$/ })).toBeVisible();
+    await page.getByRole("button", { name: /^ยกเลิก$/ }).click();
+    await expect(page.getByTestId("product-detail-card")).toBeVisible();
+  }
 
   // Fixed 2026-07-07 (see file-level comment): the list now works. The Add form is opened
   // explicitly regardless, so Create does not depend on the list's current state.
@@ -176,7 +253,10 @@ test("product — create via UI across all detail tabs, verify API+DB, then upda
     "อื่นๆ",
     "ข้อมูลหลัก",
   ]) {
-    await clickButtonByText(page, new RegExp(`^${tabLabel.replace(/[()/]/g, "\\$&")}$`));
+    await clickButtonByText(
+      page,
+      new RegExp(`^${tabLabel.replace(/[()/]/g, "\\$&")}$`),
+    );
     await page.waitForTimeout(200);
   }
 
@@ -205,7 +285,9 @@ test("product — create via UI across all detail tabs, verify API+DB, then upda
     .setInputFiles("public/flags/th.png");
   const uploadedImg = page.locator("img[src^='blob:']").first();
   await expect(uploadedImg).toBeVisible({ timeout: 10000 });
-  expect(await uploadedImg.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
+  expect(
+    await uploadedImg.evaluate((img: HTMLImageElement) => img.naturalWidth),
+  ).toBeGreaterThan(0);
 
   // Switch back to "ข้อมูลหลัก" (basic tab, primary group) before filling remaining basic fields /
   // saving, so the create flow below operates from a known, non-advanced tab.
@@ -214,12 +296,13 @@ test("product — create via UI across all detail tabs, verify API+DB, then upda
 
   // Capture the real create response (contains guidfixed) by waiting on the network response
   // alongside the click. The list-driven UI is not used to find this row afterward because the
-  // list search result is served from an in-memory cache (`productCache` in
-  // `backend/internal/goapi/handlers/product_cache.go`, 5-minute TTL, not invalidated on
-  // create/update/delete — a separate, still-open, pre-existing bug unrelated to this fix) and can
-  // lag real backend state for up to 5 minutes.
+  // The list is an asynchronous PostgreSQL projection. Use the create response identity for
+  // deterministic Mongo CRUD verification instead of waiting on Kafka projection timing.
   const [createRes] = await Promise.all([
-    page.waitForResponse((res) => res.url().includes("/api/product") && res.request().method() === "POST"),
+    page.waitForResponse(
+      (res) =>
+        res.url().includes("/api/product") && res.request().method() === "POST",
+    ),
     clickButtonByText(page, /^บันทึก$/),
   ]);
   expect(createRes.status()).toBe(201);
@@ -234,18 +317,25 @@ test("product — create via UI across all detail tabs, verify API+DB, then upda
   // staleness after this point is the separate cache-TTL issue noted above, not this error.)
   expect(await bodyHasText(page, "Query execution failed")).toBe(false);
 
-  const auth = JSON.parse((await page.evaluate(() => localStorage.getItem("bc_auth")))!) as {
+  const auth = JSON.parse(
+    (await page.evaluate(() => localStorage.getItem("bc_auth")))!,
+  ) as {
     token: string;
     backendUrl: string;
   };
-  const H = { Authorization: `Bearer ${auth.token}`, "x-bc-backend-url": auth.backendUrl };
+  const H = {
+    Authorization: `Bearer ${auth.token}`,
+    "x-bc-backend-url": auth.backendUrl,
+  };
 
   // READ: GET-by-guid (MongoDB-backed, unaffected by the list bug) must return what was saved.
   const getRes = await page.request.get(`/api/product/${guid}`, { headers: H });
   expect(getRes.ok()).toBe(true);
   const getBody = await getRes.json();
   expect(getBody.data.code).toBe(code);
-  expect(getBody.data.names.find((n: { code: string }) => n.code === "th")?.name).toBe(name);
+  expect(
+    getBody.data.names.find((n: { code: string }) => n.code === "th")?.name,
+  ).toBe(name);
 
   // UPDATE: change name + classification hierarchy, verify round-trip via API.
   //
@@ -261,28 +351,45 @@ test("product — create via UI across all detail tabs, verify API+DB, then upda
     ...getBody.data,
     names: [{ code: "th", name: `${name}X`, isauto: false, isdelete: false }],
     groupcode: `GRP${uid}`,
-    groupnames: [{ code: "th", name: `กลุ่มE2E${uid}`, isauto: false, isdelete: false }],
+    groupnames: [
+      { code: "th", name: `กลุ่มE2E${uid}`, isauto: false, isdelete: false },
+    ],
     categorycode: `CAT${uid}`,
-    categorynames: [{ code: "th", name: `หมวดE2E${uid}`, isauto: false, isdelete: false }],
+    categorynames: [
+      { code: "th", name: `หมวดE2E${uid}`, isauto: false, isdelete: false },
+    ],
     brandcode: `BRD${uid}`,
-    brandnames: [{ code: "th", name: `ยี่ห้อE2E${uid}`, isauto: false, isdelete: false }],
+    brandnames: [
+      { code: "th", name: `ยี่ห้อE2E${uid}`, isauto: false, isdelete: false },
+    ],
   };
-  const putRes = await page.request.put(`/api/product/${guid}`, { headers: H, data: updated });
+  const putRes = await page.request.put(`/api/product/${guid}`, {
+    headers: H,
+    data: updated,
+  });
   expect(putRes.ok()).toBe(true);
   expect((await putRes.json()).success).toBe(true);
 
-  const afterUpdateRes = await page.request.get(`/api/product/${guid}`, { headers: H });
+  const afterUpdateRes = await page.request.get(`/api/product/${guid}`, {
+    headers: H,
+  });
   const afterUpdate = (await afterUpdateRes.json()).data;
-  expect(afterUpdate.names.find((n: { code: string }) => n.code === "th")?.name).toBe(`${name}X`);
+  expect(
+    afterUpdate.names.find((n: { code: string }) => n.code === "th")?.name,
+  ).toBe(`${name}X`);
   expect(afterUpdate.groupcode).toBe(`GRP${uid}`);
   expect(afterUpdate.categorycode).toBe(`CAT${uid}`);
   expect(afterUpdate.brandcode).toBe(`BRD${uid}`);
 
   // DELETE: soft-delete (deletedat/deletedby set, document retained) — confirmed by GET now 404ing.
-  const delRes = await page.request.delete(`/api/product/${guid}`, { headers: H });
+  const delRes = await page.request.delete(`/api/product/${guid}`, {
+    headers: H,
+  });
   expect(delRes.ok()).toBe(true);
   expect((await delRes.json()).success).toBe(true);
 
-  const afterDeleteRes = await page.request.get(`/api/product/${guid}`, { headers: H });
+  const afterDeleteRes = await page.request.get(`/api/product/${guid}`, {
+    headers: H,
+  });
   expect(afterDeleteRes.status()).toBe(404);
 });

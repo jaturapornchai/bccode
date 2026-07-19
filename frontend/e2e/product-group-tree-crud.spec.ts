@@ -39,23 +39,9 @@ import { test, expect, type Page } from "@playwright/test";
  * backend/persistence/display half of the flow: that a correctly-resolved target really persists and
  * really displays, for both the "before/after" (reorder) and "inside" (reparent) branches of the fix.
  *
- * Child records below are created as top-level roots via the UI's "เพิ่มกลุ่มหลัก" (Add Root) button,
- * then nested via the same record-PUT contract the fix relies on, INSTEAD of via the UI's own
- * "เพิ่มกลุ่มย่อย" (Add Subgroup) button. This is deliberate, not a shortcut: independently confirmed
- * live this session (see `.agents/worklog.md`) that "เพิ่มกลุ่มย่อย" has a real, separate,
- * already-flagged bug -- `handleOpenGroupCreate`'s `parentguid` is only ever set on FORM state, but
- * `buildPayload` (`system-settings-screen.tsx`) skips every field marked `readOnly` in
- * `system-setting-screens.ts`, and `productgroup`'s `parentguid` field IS `readOnly` (unlike the
- * category screen, which has a dedicated slug-specific block that re-adds `parentguid`/`parentguidall`
- * to the payload after `buildPayload` strips it -- that block does not cover `productgroup`). The
- * create form visibly shows the correct parent guid in the (disabled) "กลุ่มแม่" field, but the save
- * silently sends no `parentguid` at all, so the new row is created as an orphaned ROOT instead of a
- * child, with no error shown to the user. Confirmed via a live create + fresh API read this session
- * (new group's `parentguid`/`parentguidall` both `""` despite a parent being selected). This exact
- * defect was ALSO already flagged by an earlier session -- the live dataset already contains a row
- * literally named "[VERIFY-BUG-เพิ่มกลุ่มย่อย ห้ามใช้ orphan]" for this reason. Out of scope for the
- * drop-zone precision fix this file covers, so NOT fixed here -- flagged separately instead (see
- * worklog + task report). These tests route around it by nesting via the record PUT directly.
+ * The UI's "เพิ่มกลุ่มย่อย" path now has direct CRUD regression coverage below. The drag-specific
+ * tests still seed exact parent/xorder values through the same record PUT used by the drag handler,
+ * keeping those tests focused on reorder/reparent persistence rather than duplicating UI creation.
  */
 
 async function clickButtonByText(page: Page, textPattern: RegExp) {
@@ -102,12 +88,46 @@ async function loginAndSearchMenu(page: Page, menuQuery: string) {
 
 const MAINAPI = "http://localhost:8888";
 
+type ProductGroupRecord = {
+  guidfixed: string;
+  code?: string;
+  parentguid?: string;
+  parentguidall?: string;
+  names?: { code: string; name: string }[];
+  xsorts?: { code: string; xorder: number }[];
+};
+
+const createdGroupGuids = new WeakMap<Page, string[]>();
+
+function rememberCreatedGroup(page: Page, guid: string) {
+  const guids = createdGroupGuids.get(page) ?? [];
+  guids.push(guid);
+  createdGroupGuids.set(page, guids);
+}
+
 function getAuthHeaders(page: Page) {
   return page.evaluate(() => {
     const auth = JSON.parse(localStorage.getItem("bc_auth")!) as { token: string; backendUrl: string };
     return { Authorization: `Bearer ${auth.token}`, "x-bc-backend-url": auth.backendUrl };
   });
 }
+
+test.afterEach(async ({ page }) => {
+  const guids = createdGroupGuids.get(page) ?? [];
+  if (guids.length === 0) return;
+
+  const headers = await getAuthHeaders(page);
+  for (const guid of [...guids].reverse()) {
+    const response = await page.request.delete(
+      `/api/system-settings/productgroup/${guid}?holdingcode=test`,
+      { headers },
+    );
+    if (!response.ok() && response.status() !== 404) {
+      throw new Error(`Failed to clean up product group ${guid}: HTTP ${response.status()}`);
+    }
+  }
+  createdGroupGuids.delete(page);
+});
 
 /** Fills the primary-language input of the "names" multilingual editor (`NamesEditor` component) --
  *  same anchor strategy as the category screen's `fillPrimaryNameInput`: the wrapping `<label>`
@@ -127,6 +147,140 @@ async function fillPrimaryNameInput(page: Page, value: string) {
     input.dispatchEvent(new Event("change", { bubbles: true }));
   }, value);
 }
+
+test("productgroup — full UI CRUD nests subgroup and deletes code-less groups", async ({ page }) => {
+  const uid = Date.now().toString().slice(-6);
+  const rootName = `UATกลุ่มหลัก${uid}`;
+  const updatedRootName = `UATกลุ่มหลักแก้ไข${uid}`;
+  const childName = `UATกลุ่มย่อย${uid}`;
+
+  await loginAndSearchMenu(page, "กลุ่มสินค้า");
+  await clickButtonByText(page, /^กลุ่มสินค้า$/);
+  await page.waitForTimeout(2000);
+
+  const headers = await getAuthHeaders(page);
+  const recordUrl = (guid: string) => `/api/system-settings/productgroup/${guid}?holdingcode=test`;
+  const activeList = async () => {
+    const response = await page.request.get(`${MAINAPI}/product/group/list?limit=100000`, { headers });
+    expect(response.ok(), "fresh product-group list read").toBe(true);
+    return ((await response.json()) as { data: ProductGroupRecord[] }).data;
+  };
+  const primaryName = (record: ProductGroupRecord) =>
+    record.names?.find((name) => name.code === "th")?.name ?? record.names?.[0]?.name ?? "";
+
+  await clickButtonByText(page, /^เพิ่มกลุ่มหลัก$/);
+  await fillPrimaryNameInput(page, rootName);
+  const [createRootResponse] = await Promise.all([
+    page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/system-settings/productgroup") &&
+        response.request().method() === "POST",
+    ),
+    clickButtonByText(page, /^บันทึก$/),
+  ]);
+  expect(createRootResponse.ok(), "create root response").toBe(true);
+  const rootGuid = ((await createRootResponse.json()) as { id: string }).id;
+  expect(rootGuid, "created root guid").toBeTruthy();
+  rememberCreatedGroup(page, rootGuid);
+
+  const rootReadResponse = await page.request.get(recordUrl(rootGuid), { headers });
+  expect(rootReadResponse.ok(), "fresh root detail read").toBe(true);
+  const rootRecord = ((await rootReadResponse.json()) as { data: ProductGroupRecord }).data;
+  expect(primaryName(rootRecord)).toBe(rootName);
+  expect(rootRecord.parentguid ?? "").toBe("");
+
+  const search = page.getByPlaceholder("ค้นหา...");
+  await search.fill(rootName);
+  await expect(page.getByText(rootName, { exact: true })).toBeVisible();
+  await page.getByText(rootName, { exact: true }).click();
+  const addSubgroupButtons = page.getByRole("button", { name: "เพิ่มกลุ่มย่อย", exact: true });
+  await expect(addSubgroupButtons).toHaveCount(2);
+  await addSubgroupButtons.first().click();
+  await fillPrimaryNameInput(page, childName);
+  const [createChildResponse] = await Promise.all([
+    page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/system-settings/productgroup") &&
+        response.request().method() === "POST",
+    ),
+    clickButtonByText(page, /^บันทึก$/),
+  ]);
+  expect(createChildResponse.ok(), "create subgroup response").toBe(true);
+  const childGuid = ((await createChildResponse.json()) as { id: string }).id;
+  expect(childGuid, "created subgroup guid").toBeTruthy();
+  rememberCreatedGroup(page, childGuid);
+
+  const childReadResponse = await page.request.get(recordUrl(childGuid), { headers });
+  expect(childReadResponse.ok(), "fresh subgroup detail read").toBe(true);
+  const childRecord = ((await childReadResponse.json()) as { data: ProductGroupRecord }).data;
+  expect(primaryName(childRecord)).toBe(childName);
+  expect(childRecord.parentguid).toBe(rootGuid);
+  expect(childRecord.parentguidall).toBe(rootGuid);
+  expect(childRecord.xsorts?.[0]?.xorder).toBe(1);
+
+  await page.goto("/productgroup", { waitUntil: "domcontentloaded" });
+  await expect(search).toBeVisible({ timeout: 10_000 });
+  await search.fill(childName);
+  await expect(page.getByText(childName, { exact: true })).toBeVisible();
+
+  await search.fill(rootName);
+  await expect(page.getByRole("button", { name: "แก้ไข", exact: true })).toHaveCount(1);
+  await page.getByRole("button", { name: "แก้ไข", exact: true }).click();
+  const editRootForm = page.getByRole("form", { name: "แก้ไข" });
+  await expect(editRootForm).toBeVisible();
+  const inlineActions = editRootForm.getByTestId("inline-form-actions");
+  const editRootHeading = editRootForm.getByRole("heading", { level: 2 });
+  await expect(inlineActions).toBeInViewport();
+  const [inlineActionsBox, editRootHeadingBox] = await Promise.all([
+    inlineActions.boundingBox(),
+    editRootHeading.boundingBox(),
+  ]);
+  expect(inlineActionsBox).not.toBeNull();
+  expect(editRootHeadingBox).not.toBeNull();
+  expect(inlineActionsBox!.y).toBeLessThan(editRootHeadingBox!.y + 64);
+  await fillPrimaryNameInput(page, updatedRootName);
+  const [updateRootResponse] = await Promise.all([
+    page.waitForResponse(
+      (response) =>
+        response.url().includes(`/api/system-settings/productgroup/${rootGuid}`) &&
+        response.request().method() === "PUT",
+    ),
+    clickButtonByText(page, /^บันทึก$/),
+  ]);
+  expect(updateRootResponse.ok(), "update root response").toBe(true);
+
+  const updatedRootReadResponse = await page.request.get(recordUrl(rootGuid), { headers });
+  expect(updatedRootReadResponse.ok(), "fresh updated-root detail read").toBe(true);
+  const updatedRoot = ((await updatedRootReadResponse.json()) as { data: ProductGroupRecord }).data;
+  expect(primaryName(updatedRoot)).toBe(updatedRootName);
+  expect(updatedRoot.parentguid ?? "").toBe("");
+  await search.fill(updatedRootName);
+  await expect(page.getByText(updatedRootName, { exact: true })).toBeVisible();
+
+  const deleteFromUI = async (name: string, guid: string) => {
+    await search.fill(name);
+    await expect(page.getByText(name, { exact: true })).toBeVisible();
+    await page.getByText(name, { exact: true }).click();
+    await expect(page.getByRole("button", { name: "ลบ", exact: true })).toHaveCount(1);
+    await page.getByRole("button", { name: "ลบ", exact: true }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    const [deleteResponse] = await Promise.all([
+      page.waitForResponse(
+        (response) =>
+          response.url().includes(`/api/system-settings/productgroup/${guid}`) &&
+          response.request().method() === "DELETE",
+      ),
+      dialog.getByRole("button", { name: "ลบ", exact: true }).click(),
+    ]);
+    expect(deleteResponse.ok(), `delete ${name} response`).toBe(true);
+    await expect(page.getByText(name, { exact: true })).toHaveCount(0);
+    expect((await activeList()).some((record) => record.guidfixed === guid)).toBe(false);
+  };
+
+  await deleteFromUI(childName, childGuid);
+  await deleteFromUI(updatedRootName, rootGuid);
+});
 
 test("productgroup — sibling reorder via the real xsort API persists and displays in the new order", async ({
   page,
@@ -152,15 +306,15 @@ test("productgroup — sibling reorder via the real xsort API persists and displ
   expect(rootRes.ok(), "create root group").toBe(true);
   const rootGuid = ((await rootRes.json()) as { id: string }).id;
   expect(rootGuid).toBeTruthy();
+  rememberCreatedGroup(page, rootGuid);
   await page.waitForTimeout(1000);
 
   const H = await getAuthHeaders(page);
   const listUrl = `${MAINAPI}/product/group/list?limit=100000`;
   const recordUrl = (guid: string) => `/api/system-settings/productgroup/${guid}?holdingcode=test`;
 
-  // Create the 3 children as top-level roots via the UI (the working "เพิ่มกลุ่มหลัก" path -- see the
-  // file-level comment above for why "เพิ่มกลุ่มย่อย" is deliberately NOT used), then nest each one
-  // under `rootGuid` via the real record-PUT contract, seeding xorder 1,2,3 in creation order.
+  // Seed exact parent/xorder values through the same record-PUT contract used by drag persistence;
+  // the full CRUD test above covers the real "เพิ่มกลุ่มย่อย" UI path.
   const childGuids: string[] = [];
   for (const childName of childNames) {
     await clickButtonByText(page, /^เพิ่มกลุ่มหลัก$/);
@@ -175,6 +329,7 @@ test("productgroup — sibling reorder via the real xsort API persists and displ
     expect(childRes.ok(), `create subgroup ${childName}`).toBe(true);
     const childGuid = ((await childRes.json()) as { id: string }).id;
     expect(childGuid).toBeTruthy();
+    rememberCreatedGroup(page, childGuid);
     childGuids.push(childGuid);
     await page.waitForTimeout(800);
   }
@@ -272,16 +427,15 @@ test("productgroup — reparent via the real record+xsort API (moveGroupAsChild 
   expect(rootRes.ok(), "create root group").toBe(true);
   const rootGuid = ((await rootRes.json()) as { id: string }).id;
   expect(rootGuid).toBeTruthy();
+  rememberCreatedGroup(page, rootGuid);
   await page.waitForTimeout(1000);
 
   const H = await getAuthHeaders(page);
   const recordUrl = (guid: string) => `/api/system-settings/productgroup/${guid}?holdingcode=test`;
   const listUrl = `${MAINAPI}/product/group/list?limit=100000`;
 
-  // Create both children as top-level roots via the UI (see the file-level comment above for why
-  // "เพิ่มกลุ่มย่อย" is deliberately NOT used), then nest both under `rootGuid` via the real
-  // record-PUT contract -- establishing the "child1, child2 both under root" baseline the actual
-  // reparent-under-test (child2 -> under child1) starts from.
+  // Seed the exact "child1, child2 both under root" baseline through the same record-PUT contract
+  // used by drag persistence; the full CRUD test above covers the real subgroup-creation UI.
   const childGuids: string[] = [];
   for (const childName of childNames) {
     await clickButtonByText(page, /^เพิ่มกลุ่มหลัก$/);
@@ -296,6 +450,7 @@ test("productgroup — reparent via the real record+xsort API (moveGroupAsChild 
     expect(childRes.ok(), `create subgroup ${childName}`).toBe(true);
     const childGuid = ((await childRes.json()) as { id: string }).id;
     expect(childGuid).toBeTruthy();
+    rememberCreatedGroup(page, childGuid);
     childGuids.push(childGuid);
     await page.waitForTimeout(800);
   }
@@ -347,4 +502,299 @@ test("productgroup — reparent via the real record+xsort API (moveGroupAsChild 
   expect(child2After!.parentguidall, "child2's ancestor chain includes root then child1").toBe(newParentGuidAll);
   expect(child1After!.parentguid, "child1 stays under root (untouched by the reparent)").toBe(rootGuid);
   expect(child1After!.xsorts?.[0]?.xorder, "child1 keeps xorder 1 under root").toBe(1);
+});
+
+/**
+ * Regression coverage for the 2026-07-09 addition to `product-group-tree-view.tsx`: per-row
+ * up/down move buttons (call the same `reorderGroup()` the drag handler uses) plus a session-local
+ * Undo/Redo stack that replays moves through the real `saveGroupRecord`/`saveXSorts` calls (not a
+ * local-only revert). Independently re-verified live this session via claude-in-chrome real button
+ * clicks + a real pointer drag reparent, each checked against a fresh API read -- see
+ * `.agents/worklog.md` 2026-07-09. Drives the same real button elements and the real `xsort` PUT the
+ * UI uses, asserting against fresh API reads (not the optimistic in-memory state) at every step.
+ */
+test("productgroup — up/down move buttons + undo/redo reorder and revert via the real xsort API", async ({
+  page,
+}) => {
+  const uid = Date.now().toString().slice(-6);
+  const rootName = `E2Eกลุ่มปุ่ม${uid}`;
+  const childNames = [`E2Eปุ่มลูก1_${uid}`, `E2Eปุ่มลูก2_${uid}`];
+
+  await loginAndSearchMenu(page, "กลุ่มสินค้า");
+  await clickButtonByText(page, /^กลุ่มสินค้า$/);
+  await page.waitForTimeout(2000);
+
+  await clickButtonByText(page, /^เพิ่มกลุ่มหลัก$/);
+  await page.waitForTimeout(500);
+  await fillPrimaryNameInput(page, rootName);
+  const [rootRes] = await Promise.all([
+    page.waitForResponse(
+      (res) => res.url().includes("/api/system-settings/productgroup") && res.request().method() === "POST",
+    ),
+    clickButtonByText(page, /^บันทึก$/),
+  ]);
+  expect(rootRes.ok(), "create root group").toBe(true);
+  const rootGuid = ((await rootRes.json()) as { id: string }).id;
+  expect(rootGuid).toBeTruthy();
+  rememberCreatedGroup(page, rootGuid);
+  await page.waitForTimeout(1000);
+
+  const H = await getAuthHeaders(page);
+  const recordUrl = (guid: string) => `/api/system-settings/productgroup/${guid}?holdingcode=test`;
+  const listUrl = `${MAINAPI}/product/group/list?limit=100000`;
+
+  // Seed exact parent/xorder values through the same record-PUT contract used by drag persistence;
+  // the full CRUD test above covers the real subgroup-creation UI.
+  const childGuids: string[] = [];
+  for (const childName of childNames) {
+    await clickButtonByText(page, /^เพิ่มกลุ่มหลัก$/);
+    await page.waitForTimeout(500);
+    await fillPrimaryNameInput(page, childName);
+    const [childRes] = await Promise.all([
+      page.waitForResponse(
+        (res) => res.url().includes("/api/system-settings/productgroup") && res.request().method() === "POST",
+      ),
+      clickButtonByText(page, /^บันทึก$/),
+    ]);
+    expect(childRes.ok(), `create subgroup ${childName}`).toBe(true);
+    const childGuid = ((await childRes.json()) as { id: string }).id;
+    expect(childGuid).toBeTruthy();
+    rememberCreatedGroup(page, childGuid);
+    childGuids.push(childGuid);
+    await page.waitForTimeout(800);
+  }
+  const [child1Guid, child2Guid] = childGuids;
+  for (let i = 0; i < childGuids.length; i++) {
+    const before = ((await (await page.request.get(recordUrl(childGuids[i]), { headers: H })).json()) as {
+      data: Record<string, unknown>;
+    }).data;
+    const nestRes = await page.request.put(recordUrl(childGuids[i]), {
+      headers: { ...H, "Content-Type": "application/json" },
+      data: { ...before, parentguid: rootGuid, parentguidall: rootGuid, xsorts: [{ code: "X", xorder: i + 1 }] },
+    });
+    expect(nestRes.ok(), `nest child${i + 1} under root`).toBe(true);
+  }
+
+  // Reload so the tree view picks up the freshly-nested children (fresh JS memory, no stale
+  // in-memory overrides), then expand the root to reveal the up/down buttons on its children.
+  await page.goto("/productgroup", { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(2000);
+  await page.evaluate((guid) => {
+    const row = document.querySelector<HTMLElement>(`[data-group-row-guid="${guid}"]`);
+    const toggle = row?.querySelector<HTMLButtonElement>("button");
+    if (!toggle) throw new Error("No expand toggle found on root row");
+    toggle.click();
+  }, rootGuid);
+  await page.waitForTimeout(600);
+
+  const orderOf = async () => {
+    const data = ((await (await page.request.get(listUrl, { headers: H })).json()).data as {
+      guidfixed: string;
+      xsorts?: { xorder: number }[];
+    }[]);
+    return {
+      child1: data.find((r) => r.guidfixed === child1Guid)?.xsorts?.[0]?.xorder,
+      child2: data.find((r) => r.guidfixed === child2Guid)?.xsorts?.[0]?.xorder,
+    };
+  };
+
+  // Boundary check: the first sibling's up button and the last sibling's down button must be
+  // disabled (can't move a first child further up, or a last child further down).
+  const boundaryDisabled = await page.evaluate(({ c1, c2 }) => {
+    const row1 = document.querySelector<HTMLElement>(`[data-group-row-guid="${c1}"]`);
+    const row2 = document.querySelector<HTMLElement>(`[data-group-row-guid="${c2}"]`);
+    const up1 = row1?.querySelector<HTMLButtonElement>('button[aria-label="ย้ายขึ้น"]');
+    const down2 = row2?.querySelector<HTMLButtonElement>('button[aria-label="ย้ายลง"]');
+    return { firstUpDisabled: up1?.disabled, lastDownDisabled: down2?.disabled };
+  }, { c1: child1Guid, c2: child2Guid });
+  expect(boundaryDisabled.firstUpDisabled, "first sibling's up button is disabled").toBe(true);
+  expect(boundaryDisabled.lastDownDisabled, "last sibling's down button is disabled").toBe(true);
+
+  expect(await orderOf(), "children start in creation order").toEqual({ child1: 1, child2: 2 });
+
+  // Click the "ย้ายลง" (move down) button on child1's row -- calls the exact same `reorderGroup()`
+  // the drag handler uses, just with a fixed "before"/"after" target instead of a pointer position.
+  const [downRes] = await Promise.all([
+    page.waitForResponse((res) => res.url().includes("/xsort") && res.request().method() === "PUT"),
+    page.evaluate((guid) => {
+      const row = document.querySelector<HTMLElement>(`[data-group-row-guid="${guid}"]`);
+      const btn = row?.querySelector<HTMLButtonElement>('button[aria-label="ย้ายลง"]');
+      if (!btn) throw new Error("No move-down button found on child1's row");
+      btn.click();
+    }, child1Guid),
+  ]);
+  expect(downRes.ok(), "move-down xsort PUT").toBe(true);
+  expect(await orderOf(), "down button swapped child1/child2 via the real API").toEqual({ child1: 2, child2: 1 });
+
+  // Undo -- must revert through the real record/xsort API (`applyMoveSnapshot`), not just local state.
+  const [undoRes] = await Promise.all([
+    page.waitForResponse((res) => res.url().includes("/xsort") && res.request().method() === "PUT"),
+    clickButtonByText(page, /^เลิกทำ$/),
+  ]);
+  expect(undoRes.ok(), "undo xsort PUT").toBe(true);
+  expect(await orderOf(), "undo restored creation order via the real API").toEqual({ child1: 1, child2: 2 });
+
+  // Redo -- must reapply the exact same move via the real API.
+  const [redoRes] = await Promise.all([
+    page.waitForResponse((res) => res.url().includes("/xsort") && res.request().method() === "PUT"),
+    clickButtonByText(page, /^ทำซ้ำ$/),
+  ]);
+  expect(redoRes.ok(), "redo xsort PUT").toBe(true);
+  expect(await orderOf(), "redo re-applied the swap via the real API").toEqual({ child1: 2, child2: 1 });
+});
+
+/**
+ * Regression coverage for the 2026-07-09 (cont. 2) drag-jank redesign's independent re-verification:
+ * the existing undo/redo test above only exercises a single linear undo-then-redo sequence, which
+ * does not catch a redo tail that fails to clear after a genuinely NEW move is made post-undo (i.e.
+ * a stale/leftover "future" branch of history incorrectly staying replayable after being superseded).
+ * Standard undo/redo semantics require a new action taken after an undo to discard that redo tail --
+ * confirmed still correct here via live claude-in-chrome testing this session (see `.agents/worklog.md`
+ * 2026-07-09 cont. 3), not previously covered by an automated test. Uses 3 siblings so "move A" and
+ * "move B" are unambiguously different operations (not just the same swap re-applied).
+ */
+test("productgroup — a new move after Undo clears the Redo tail (does not replay the undone move)", async ({
+  page,
+}) => {
+  const uid = Date.now().toString().slice(-6);
+  const rootName = `E2Eกลุ่มล้าง${uid}`;
+  const childNames = [`E2Eล้าง1_${uid}`, `E2Eล้าง2_${uid}`, `E2Eล้าง3_${uid}`];
+
+  await loginAndSearchMenu(page, "กลุ่มสินค้า");
+  await clickButtonByText(page, /^กลุ่มสินค้า$/);
+  await page.waitForTimeout(2000);
+
+  await clickButtonByText(page, /^เพิ่มกลุ่มหลัก$/);
+  await page.waitForTimeout(500);
+  await fillPrimaryNameInput(page, rootName);
+  const [rootRes] = await Promise.all([
+    page.waitForResponse(
+      (res) => res.url().includes("/api/system-settings/productgroup") && res.request().method() === "POST",
+    ),
+    clickButtonByText(page, /^บันทึก$/),
+  ]);
+  expect(rootRes.ok(), "create root group").toBe(true);
+  const rootGuid = ((await rootRes.json()) as { id: string }).id;
+  expect(rootGuid).toBeTruthy();
+  rememberCreatedGroup(page, rootGuid);
+  await page.waitForTimeout(1000);
+
+  const H = await getAuthHeaders(page);
+  const recordUrl = (guid: string) => `/api/system-settings/productgroup/${guid}?holdingcode=test`;
+  const listUrl = `${MAINAPI}/product/group/list?limit=100000`;
+
+  const childGuids: string[] = [];
+  for (const childName of childNames) {
+    await clickButtonByText(page, /^เพิ่มกลุ่มหลัก$/);
+    await page.waitForTimeout(500);
+    await fillPrimaryNameInput(page, childName);
+    const [childRes] = await Promise.all([
+      page.waitForResponse(
+        (res) => res.url().includes("/api/system-settings/productgroup") && res.request().method() === "POST",
+      ),
+      clickButtonByText(page, /^บันทึก$/),
+    ]);
+    expect(childRes.ok(), `create subgroup ${childName}`).toBe(true);
+    const childGuid = ((await childRes.json()) as { id: string }).id;
+    expect(childGuid).toBeTruthy();
+    rememberCreatedGroup(page, childGuid);
+    childGuids.push(childGuid);
+    await page.waitForTimeout(800);
+  }
+  const [child1Guid, child2Guid, child3Guid] = childGuids;
+  for (let i = 0; i < childGuids.length; i++) {
+    const before = ((await (await page.request.get(recordUrl(childGuids[i]), { headers: H })).json()) as {
+      data: Record<string, unknown>;
+    }).data;
+    const nestRes = await page.request.put(recordUrl(childGuids[i]), {
+      headers: { ...H, "Content-Type": "application/json" },
+      data: { ...before, parentguid: rootGuid, parentguidall: rootGuid, xsorts: [{ code: "X", xorder: i + 1 }] },
+    });
+    expect(nestRes.ok(), `nest child${i + 1} under root`).toBe(true);
+  }
+
+  await page.goto("/productgroup", { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(2000);
+  await page.evaluate((guid) => {
+    const row = document.querySelector<HTMLElement>(`[data-group-row-guid="${guid}"]`);
+    const toggle = row?.querySelector<HTMLButtonElement>("button");
+    if (!toggle) throw new Error("No expand toggle found on root row");
+    toggle.click();
+  }, rootGuid);
+  await page.waitForTimeout(600);
+
+  const orderOf = async () => {
+    const data = ((await (await page.request.get(listUrl, { headers: H })).json()).data as {
+      guidfixed: string;
+      xsorts?: { xorder: number }[];
+    }[]);
+    return {
+      child1: data.find((r) => r.guidfixed === child1Guid)?.xsorts?.[0]?.xorder,
+      child2: data.find((r) => r.guidfixed === child2Guid)?.xsorts?.[0]?.xorder,
+      child3: data.find((r) => r.guidfixed === child3Guid)?.xsorts?.[0]?.xorder,
+    };
+  };
+  const clickMoveDown = async (guid: string) => {
+    const [res] = await Promise.all([
+      page.waitForResponse((r) => r.url().includes("/xsort") && r.request().method() === "PUT"),
+      page.evaluate((g) => {
+        const row = document.querySelector<HTMLElement>(`[data-group-row-guid="${g}"]`);
+        const btn = row?.querySelector<HTMLButtonElement>('button[aria-label="ย้ายลง"]');
+        if (!btn) throw new Error("No move-down button found");
+        btn.click();
+      }, guid),
+    ]);
+    expect(res.ok(), "move-down xsort PUT").toBe(true);
+  };
+
+  expect(await orderOf(), "children start in creation order").toEqual({ child1: 1, child2: 2, child3: 3 });
+
+  // Move A: swap child1/child2 (down-button on child1) -> child2, child1, child3.
+  await clickMoveDown(child1Guid);
+  expect(await orderOf(), "move A applied").toEqual({ child1: 2, child2: 1, child3: 3 });
+
+  // Undo move A -> back to creation order.
+  const [undoRes] = await Promise.all([
+    page.waitForResponse((res) => res.url().includes("/xsort") && res.request().method() === "PUT"),
+    clickButtonByText(page, /^เลิกทำ$/),
+  ]);
+  expect(undoRes.ok(), "undo xsort PUT").toBe(true);
+  expect(await orderOf(), "undo reverted move A").toEqual({ child1: 1, child2: 2, child3: 3 });
+
+  // Redo button must be enabled here (move A is replayable) before we supersede it.
+  const redoEnabledBeforeMoveB = await page.evaluate(() => {
+    const btn = [...document.querySelectorAll<HTMLButtonElement>("button")].find(
+      (b) => (b.textContent ?? "").trim() === "ทำซ้ำ",
+    );
+    return btn ? !btn.disabled : null;
+  });
+  expect(redoEnabledBeforeMoveB, "redo is enabled right after undo, before move B").toBe(true);
+
+  // Move B: a DIFFERENT move (swap child2/child3 via down-button on child2) -> child1, child3, child2.
+  await clickMoveDown(child2Guid);
+  expect(await orderOf(), "move B applied").toEqual({ child1: 1, child2: 3, child3: 2 });
+
+  // The redo tail (move A) must now be cleared -- the button must be disabled, not just unclicked.
+  const redoDisabledAfterMoveB = await page.evaluate(() => {
+    const btn = [...document.querySelectorAll<HTMLButtonElement>("button")].find(
+      (b) => (b.textContent ?? "").trim() === "ทำซ้ำ",
+    );
+    return btn ? btn.disabled : null;
+  });
+  expect(redoDisabledAfterMoveB, "redo is disabled after a new move supersedes the undone one").toBe(true);
+
+  // Order must still reflect move B (not move A) -- fresh API read, not optimistic state.
+  expect(await orderOf(), "order reflects move B, unaffected by the cleared redo tail").toEqual({
+    child1: 1,
+    child2: 3,
+    child3: 2,
+  });
+
+  // Undo move B, back to creation order, for a clean final state.
+  const [undoBRes] = await Promise.all([
+    page.waitForResponse((res) => res.url().includes("/xsort") && res.request().method() === "PUT"),
+    clickButtonByText(page, /^เลิกทำ$/),
+  ]);
+  expect(undoBRes.ok(), "undo move B xsort PUT").toBe(true);
+  expect(await orderOf(), "undo move B restored creation order").toEqual({ child1: 1, child2: 2, child3: 3 });
 });

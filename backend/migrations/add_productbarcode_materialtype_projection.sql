@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS productbarcode (
     bom JSONB NOT NULL DEFAULT '[]'::jsonb,
     createdat TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updatedat TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    PRIMARY KEY (holdingcode, barcode)
+    PRIMARY KEY (holdingcode, itemcode, barcode)
 );
 
 ALTER TABLE IF EXISTS productbarcode
@@ -110,12 +110,16 @@ BEGIN
         CREATE INDEX IF NOT EXISTS idxproductbarcodeshopbarcode
             ON productbarcode(holdingcode, barcode);
 
+		CREATE UNIQUE INDEX IF NOT EXISTS uniqproductbarcodeshopitembarcode
+			ON productbarcode(holdingcode, itemcode, barcode);
+
         CREATE INDEX IF NOT EXISTS idxproductbarcodeshopitemmaterial
             ON productbarcode(holdingcode, itemtype, materialtype);
     END IF;
 END $$;
 
 -- DOWN (manual rollback)
+-- DROP INDEX IF EXISTS uniqproductbarcodeshopitembarcode;
 -- DROP INDEX IF EXISTS idxproductbarcodeshopitemmaterial;
 -- DROP INDEX IF EXISTS idxproductbarcodeshopbarcode;
 -- ALTER TABLE IF EXISTS productbarcode DROP CONSTRAINT IF EXISTS chkproductbarcodesetmaterialtype;

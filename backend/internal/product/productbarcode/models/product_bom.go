@@ -25,6 +25,7 @@ const productBarcodeBOMCollectionName = "productbarcodeboms"
 
 type BOMProductBarcode struct {
 	BarcodeGuidFixed string          `json:"guidfixed" bson:"guidfixed"`
+	ItemCode         string          `json:"itemcode" bson:"itemcode"`
 	Level            int             `json:"level" bson:"level"`
 	Names            *[]models.NameX `json:"names" bson:"names"`
 	ItemUnitCode     string          `json:"itemunitcode" bson:"itemunitcode"`
@@ -73,6 +74,7 @@ func (ProductBarcodeBOMViewDoc) CollectionName() string {
 
 func (pbbv *ProductBarcodeBOMView) FromProductBarcode(doc ProductBarcodeData) {
 	pbbv.BarcodeGuidFixed = doc.GuidFixed
+	pbbv.ItemCode = doc.ItemCode
 	pbbv.Names = doc.Names
 	pbbv.ItemUnitCode = doc.ItemUnitCode
 	pbbv.ItemUnitNames = doc.ItemUnitNames
@@ -86,6 +88,7 @@ func (pbbv *ProductBarcodeBOMView) FromProductBarcode(doc ProductBarcodeData) {
 
 func (pbbv *ProductBarcodeBOMView) FromProductBOM(doc ProductBarcodeData, docBom BOMProductBarcode) {
 	pbbv.BarcodeGuidFixed = docBom.BarcodeGuidFixed
+	pbbv.ItemCode = docBom.ItemCode
 
 	pbbv.Barcode = docBom.Barcode
 	pbbv.Condition = docBom.Condition

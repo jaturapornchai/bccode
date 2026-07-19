@@ -17,6 +17,7 @@ type ProductPriceHistory struct {
 
 	// ข้อมูลสินค้า
 	ProductBarcodeGUID string `json:"productbarcodeguid" bson:"productbarcodeguid"` // GUID ของ ProductBarcode
+	ItemCode           string `json:"itemcode" bson:"itemcode"`
 	Barcode            string `json:"barcode" bson:"barcode"`
 	ProductName        string `json:"productname" bson:"productname"`
 
@@ -57,6 +58,7 @@ func (ProductPriceHistoryInfo) CollectionName() string {
 // PriceChangeRequest สำหรับ request
 type PriceChangeRequest struct {
 	ProductBarcodeGUID string         `json:"productbarcodeguid" validate:"required"`
+	ItemCode           string         `json:"itemcode" validate:"required"`
 	Barcode            string         `json:"barcode" validate:"required"`
 	ProductName        string         `json:"productname"`
 	OldPrices          []ProductPrice `json:"oldprices"`
@@ -67,6 +69,7 @@ type PriceChangeRequest struct {
 // PriceHistoryFilter สำหรับ filter
 type PriceHistoryFilter struct {
 	Barcode            string `json:"barcode"`
+	ItemCode           string `json:"itemcode"`
 	ProductBarcodeGUID string `json:"productbarcodeguid"`
 	Action             string `json:"action"`
 	CreatedBy          string `json:"createdby"`

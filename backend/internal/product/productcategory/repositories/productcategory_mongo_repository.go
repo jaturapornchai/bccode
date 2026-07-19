@@ -32,7 +32,6 @@ type IProductCategoryRepository interface {
 	FindDeletedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ProductCategoryDeleteActivity, error)
 	FindCreatedOrUpdatedStep(ctx context.Context, holdingCode string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ProductCategoryActivity, error)
 
-	UpdateCodeList(ctx context.Context, holdingCode string, codeXSort models.CodeXSort) error
 	UpdateXSorts(ctx context.Context, holdingCode string, guid string, xsorts []common.XSort, username string, updatedAt time.Time) error
 }
 
@@ -56,30 +55,6 @@ func NewProductCategoryRepository(pst microservice.IPersisterMongo) *ProductCate
 	insRepo.ActivityRepository = repositories.NewActivityRepository[models.ProductCategoryActivity, models.ProductCategoryDeleteActivity](pst)
 
 	return insRepo
-}
-
-func (repo ProductCategoryRepository) UpdateCodeList(ctx context.Context, holdingCode string, codeXSort models.CodeXSort) error {
-
-	filters := bson.M{
-		"holdingcode":      holdingCode,
-		"codelist.barcode": codeXSort.Barcode,
-	}
-
-	doc := bson.M{
-		"$set": bson.M{
-			"codelist.$.code":      codeXSort.Code,
-			"codelist.$.names":     codeXSort.Names,
-			"codelist.$.unitcode":  codeXSort.UnitCode,
-			"codelist.$.unitnames": codeXSort.UnitNames,
-		},
-	}
-
-	return repo.pst.Update(
-		ctx,
-		models.ProductCategoryDoc{},
-		filters,
-		doc,
-	)
 }
 
 func (repo ProductCategoryRepository) UpdateXSorts(ctx context.Context, holdingCode string, guid string, xsorts []common.XSort, username string, updatedAt time.Time) error {

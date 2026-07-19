@@ -13,11 +13,9 @@ func MapBarcodeFromMongoToStruct(productBarcode models.ProcessMongoBarcodeModel)
 	var barcodeModel = models.NewBarcodeModel()
 	var barcodeRefModel = []models.BarcodeRefModel{}
 
-	// กำหนดค่า itemCode
+	// Preserve an empty itemcode for barcode-first records until a Product
+	// master is explicitly linked by code.
 	barcodeModel.ItemCode = productBarcode.ItemCode
-	if barcodeModel.ItemCode == "" {
-		barcodeModel.ItemCode = productBarcode.Barcode
-	}
 
 	// กำหนดค่าพื้นฐาน
 	barcodeModel.HoldingCode = productBarcode.HoldingCode

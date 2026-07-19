@@ -23,6 +23,7 @@ import (
 // checkedShops — cache holdingcode ที่ผ่าน DatabaseChecker แล้วในรอบ process นี้
 // ponytail: process-lifetime cache, กัน DatabaseRebuildAll ทำงานซ้ำทุก Kafka message (hot path)
 var checkedShops sync.Map
+var databaseCheckerLocks sync.Map
 
 func TableProductCreate(db *sql.DB) error {
 	logger.Info("Creating product table")
@@ -214,6 +215,8 @@ func TableProductBarcodeCreate(db *sql.DB) error {
 		CREATE INDEX IF NOT EXISTS idx_productbarcode_itemcode ON productbarcode (itemcode);
 		CREATE INDEX IF NOT EXISTS idx_productbarcode_itemcode_unitcode ON productbarcode (itemcode,unitcode);
 		CREATE INDEX IF NOT EXISTS idx_productbarcode_barcode ON productbarcode (barcode);
+		CREATE UNIQUE INDEX IF NOT EXISTS uniq_productbarcode_holding_itemcode_barcode
+			ON productbarcode (holding_code, itemcode, barcode);
 		CREATE INDEX IF NOT EXISTS idx_productbarcode_barcoderef ON productbarcode (barcoderef);
 		CREATE INDEX IF NOT EXISTS idx_productbarcode_isupdated ON productbarcode (isupdated);
 		CREATE INDEX IF NOT EXISTS idx_productbarcode_unitstandanddivideisupdated ON productbarcode (unitstandanddivideisupdated);
@@ -1907,7 +1910,7 @@ func DatabaseRebuildAll(holdingCode string) {
 	resultChan := make(chan taskResult, len(independentTables))
 
 	for _, task := range independentTables {
-		if containsTable(tables, task.name) {
+		if containsTable(tables, task.name) && task.name != "productbarcode" {
 			logger.Info("%s table already exists", task.name)
 			resultChan <- taskResult{task.name, nil}
 			continue
@@ -1981,6 +1984,9 @@ func DatabaseNameIsExists(holdingCode string) bool {
 func DatabaseChecker(holdingCode string, recheckData bool) {
 	// เช็คแค่ครั้งแรกต่อ shop ต่อ process (DatabaseRebuildAll เอง idempotent อยู่แล้ว
 	// แต่ยังต้องเปิด admin connection + query table list ทุกครั้ง ไม่คุ้มทำซ้ำทุก Kafka message)
+	lockValue, _ := databaseCheckerLocks.LoadOrStore(holdingCode, &sync.Mutex{})
+	shopLock := lockValue.(*sync.Mutex)
+	shopLock.Lock()
 	if _, alreadyChecked := checkedShops.Load(holdingCode); !alreadyChecked {
 		logger.Info("* Starting DatabaseChecker for shop %s", holdingCode)
 		// DatabaseRebuildAll ครอบคลุมทั้ง "shop ใหม่ยังไม่มี database" และ
@@ -1988,6 +1994,7 @@ func DatabaseChecker(holdingCode string, recheckData bool) {
 		DatabaseRebuildAll(holdingCode)
 		checkedShops.Store(holdingCode, true)
 	}
+	shopLock.Unlock()
 
 	// recheckData = true → rebuild ข้อมูลทั้งหมดจาก MongoDB (ใช้ตอน rebuild stock เป็นต้น)
 	if recheckData {
@@ -2002,7 +2009,9 @@ func DatabaseRebuild(holdingCode string) {
 	ProcessErpUserRebuildAll(holdingCode)
 	ProcessWarehouseRebuildAll(holdingCode)
 	ProcessBarcodeRebuildAll(holdingCode)
-	processProductByBarcodeBuild(holdingCode)
+	if _, err := ProcessProductRebuildAll(holdingCode); err != nil {
+		logger.Error("Product rebuild failed: %v", err)
+	}
 	ProcessCustomerRebuildAll(holdingCode)
 	ProcessDebtorRebuildAll(holdingCode)
 	ProcessCreditorRebuildAll(holdingCode)
@@ -2135,7 +2144,9 @@ func RebuildProductsOnly(holdingCode string) error {
 	// 2. Rebuild Barcode และ Product ใน PostgreSQL
 	logger.Info("[1/3] Rebuilding products in PostgreSQL...")
 	ProcessBarcodeRebuildAll(holdingCode)
-	processProductByBarcodeBuild(holdingCode)
+	if _, err := ProcessProductRebuildAll(holdingCode); err != nil {
+		return fmt.Errorf("product rebuild failed: %w", err)
+	}
 	logger.Info("✓ PostgreSQL products rebuild completed")
 
 	// 3. Rebuild ProductBarcode ใน ClickHouse
@@ -2433,7 +2444,9 @@ func DatabaseRebuildWithProgress(holdingCode string, job *RebuildJob, stepOffset
 
 	// Step: สร้างข้อมูลสินค้า
 	job.SendProgress(stepOffset+5, totalSteps, "สร้างข้อมูลสินค้า", "running")
-	processProductByBarcodeBuild(holdingCode)
+	if _, err := ProcessProductRebuildAll(holdingCode); err != nil {
+		logger.Error("Product rebuild failed: %v", err)
+	}
 
 	// Step: นำเข้าข้อมูลลูกค้า
 	job.SendProgress(stepOffset+6, totalSteps, "นำเข้าข้อมูลลูกค้า", "running")

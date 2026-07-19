@@ -1,8 +1,8 @@
 ---
-description: Single-file agent prompt for auditing BC Account marketplace readiness and deriving a canonical marketplace JSON/model foundation.
+description: Single-file agent prompt for auditing BC Ai Account marketplace readiness and deriving a canonical marketplace JSON/model foundation.
 ---
 
-# Agent Prompt: Marketplace Foundation Audit For BC Account
+# Agent Prompt: Marketplace Foundation Audit For BC Ai Account
 
 You are the agent working in `D:\bccode`.
 
@@ -13,14 +13,14 @@ You are the agent working in `D:\bccode`.
 - Do not expose chain-of-thought. Explain decisions with source evidence, tradeoffs, and verification only.
 
 ## Mission
-Audit the BC Account product, barcode/SKU, inventory, price, media, and marketplace-related system. Compare the current implementation against real marketplace product JSON/API structures from:
+Audit the BC Ai Account product, barcode/SKU, inventory, price, media, and marketplace-related system. Compare the current implementation against real marketplace product JSON/API structures from:
 
 - Shopee
 - Lazada
 - TikTok Shop
 - AliExpress
 
-The goal is to find weaknesses and design a canonical BC Account marketplace-ready standard that can support future marketplace import/export/sync for many business types such as restaurant, clothing, mobile phones, SIM cards, computers, serialized goods, options/variants, prices, stock, images, and specifications.
+The goal is to find weaknesses and design a canonical BC Ai Account marketplace-ready standard that can support future marketplace import/export/sync for many business types such as restaurant, clothing, mobile phones, SIM cards, computers, serialized goods, options/variants, prices, stock, images, and specifications.
 
 This is an audit/design task first. Do not implement production code unless Jead explicitly says `แก้เลย`.
 
@@ -144,7 +144,7 @@ Do not use private accounts, credentials, or paid-only content.
 ## Analysis Questions
 Answer these with source-backed evidence:
 
-1. What does BC Account currently model well?
+1. What does BC Ai Account currently model well?
 2. What is missing for marketplace readiness?
 3. Which current fields are too technical or raw JSON for normal users?
 4. Where does the current product/barcode/SKU model mix responsibilities incorrectly?
@@ -176,7 +176,7 @@ Answer these with source-backed evidence:
 11. What should be combined to reduce user confusion?
 12. What should be separate because it has a different lifecycle, permission, or scale?
 
-## Canonical BC Account Model Design
+## Canonical BC Ai Account Model Design
 Propose a canonical model using lower `snake_case`. It must separate normal user-facing data from importer/debug raw payloads.
 
 Required model areas:
@@ -306,7 +306,7 @@ Produce one Thai report with these sections:
 โมเดลกลางที่เสนอ แยก product, barcode/SKU, options, media, specs, marketplace mapping, stock, price, raw payload
 
 ## JSON EXAMPLES
-ตัวอย่าง JSON กลางของ BC Account ที่ normalize จาก marketplace แล้ว
+ตัวอย่าง JSON กลางของ BC Ai Account ที่ normalize จาก marketplace แล้ว
 
 ## MIGRATION PLAN
 แผนปรับ model/API/DB/frontend ทีละขั้น พร้อม rollback idea

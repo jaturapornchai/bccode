@@ -15,15 +15,15 @@ import (
 
 func TestBuildBOMView(t *testing.T) {
 
-	data01, _ := findByBarcode(context.Background(), "holdingCode", "01")
+	data01, _ := findByBarcode(context.Background(), "holdingCode", "ITEM", "01")
 	productBarcodeDict := map[string]models.ProductBarcodeDoc{}
 	bomViewDict := map[string]*models.ProductBarcodeBOMView{}
 
 	bomView := models.ProductBarcodeBOMView{}
 	bomView.FromProductBarcode(data01.ProductBarcodeData)
 
-	if _, ok := bomViewDict[data01.Barcode]; !ok {
-		bomViewDict[data01.Barcode] = &bomView
+	if _, ok := bomViewDict["ITEM\x0001"]; !ok {
+		bomViewDict["ITEM\x0001"] = &bomView
 	}
 
 	services.BuildBOMView(context.Background(), findByBarcode, 1, &productBarcodeDict, &bomViewDict, "holdingCode", data01.BOM, &bomView.BOM)
@@ -31,23 +31,23 @@ func TestBuildBOMView(t *testing.T) {
 	bomView2 := models.ProductBarcodeBOMView{}
 	bomView2.FromProductBarcode(data01.ProductBarcodeData)
 
-	if _, ok := bomViewDict[data01.Barcode]; !ok {
-		bomViewDict[data01.Barcode] = &bomView
+	if _, ok := bomViewDict["ITEM\x0001"]; !ok {
+		bomViewDict["ITEM\x0001"] = &bomView
 	}
 
 	services.BuildBOMView(context.Background(), findByBarcode, 1, &productBarcodeDict, &bomViewDict, "holdingCode", data01.BOM, &bomView2.BOM)
 
-	assert.Equal(t, "guid1", bomViewDict["01"].BarcodeGuidFixed)
+	assert.Equal(t, "guid1", bomViewDict["ITEM\x0001"].BarcodeGuidFixed)
 }
 
 func TestBuildBOMView2(t *testing.T) {
 
-	data01, _ := findByBarcode(context.Background(), "holdingCode", "01")
+	data01, _ := findByBarcode(context.Background(), "holdingCode", "ITEM", "01")
 	productBarcodeDict := map[string]models.ProductBarcodeDoc{}
 	bomViewDict := map[string]*models.ProductBarcodeBOMView{}
 	bomView := models.ProductBarcodeBOMView{}
 
-	services.BuildBOMViewCache(context.Background(), findByBarcode, 0, &productBarcodeDict, &bomViewDict, "holdingCode", data01.Barcode, []models.BOMProductBarcode{}, &bomView)
+	services.BuildBOMViewCache(context.Background(), findByBarcode, 0, &productBarcodeDict, &bomViewDict, "holdingCode", data01.ItemCode, data01.Barcode, []models.BOMProductBarcode{}, &bomView)
 
 	jsonData, err := json.Marshal(bomView)
 
@@ -59,12 +59,13 @@ func TestBuildBOMView2(t *testing.T) {
 
 var data = map[string]models.ProductBarcodeDoc{}
 
-func findByBarcode(ctx context.Context, holdingCode string, barcode string) (models.ProductBarcodeDoc, error) {
+func findByBarcode(ctx context.Context, holdingCode string, itemCode string, barcode string) (models.ProductBarcodeDoc, error) {
 
 	if len(data) == 0 {
 		fmt.Println("init data")
 		data01 := models.ProductBarcodeDoc{}
 		data01.GuidFixed = "guid1"
+		data01.ItemCode = "ITEM"
 		data01.Barcode = "01"
 		data01.Names = &[]common.NameX{
 			*common.NewNameXWithCodeName("en", "name01"),
@@ -76,6 +77,7 @@ func findByBarcode(ctx context.Context, holdingCode string, barcode string) (mod
 
 		data02 := models.ProductBarcodeDoc{}
 		data02.GuidFixed = "guid2"
+		data02.ItemCode = "ITEM"
 		data02.Barcode = "02"
 		data02.Names = &[]common.NameX{
 			*common.NewNameXWithCodeName("en", "name02"),
@@ -87,6 +89,7 @@ func findByBarcode(ctx context.Context, holdingCode string, barcode string) (mod
 
 		data03 := models.ProductBarcodeDoc{}
 		data03.GuidFixed = "guid3"
+		data03.ItemCode = "ITEM"
 		data03.Barcode = "03"
 		data03.Names = &[]common.NameX{
 			*common.NewNameXWithCodeName("en", "name03"),
@@ -98,6 +101,7 @@ func findByBarcode(ctx context.Context, holdingCode string, barcode string) (mod
 
 		data04 := models.ProductBarcodeDoc{}
 		data04.GuidFixed = "guid4"
+		data04.ItemCode = "ITEM"
 		data04.Barcode = "04"
 		data04.Names = &[]common.NameX{
 			*common.NewNameXWithCodeName("en", "name04"),
@@ -109,6 +113,7 @@ func findByBarcode(ctx context.Context, holdingCode string, barcode string) (mod
 
 		data05 := models.ProductBarcodeDoc{}
 		data05.GuidFixed = "guid5"
+		data05.ItemCode = "ITEM"
 		data05.Barcode = "05"
 		data05.Names = &[]common.NameX{
 			*common.NewNameXWithCodeName("en", "name05"),
@@ -127,20 +132,20 @@ func findByBarcode(ctx context.Context, holdingCode string, barcode string) (mod
 			data02.ToBOM(),
 		}
 
-		data["01"] = data01
-		data["02"] = data02
-		data["03"] = data03
-		data["04"] = data04
-		data["05"] = data05
+		data["ITEM\x0001"] = data01
+		data["ITEM\x0002"] = data02
+		data["ITEM\x0003"] = data03
+		data["ITEM\x0004"] = data04
+		data["ITEM\x0005"] = data05
 
-		if _, ok := data[barcode]; !ok {
+		if _, ok := data[itemCode+"\x00"+barcode]; !ok {
 			return models.ProductBarcodeDoc{}, errors.New("not found")
 		}
 	} else {
 		fmt.Println("data exist")
 	}
 
-	tempBarcode01 := data[barcode]
+	tempBarcode01 := data[itemCode+"\x00"+barcode]
 
 	return tempBarcode01, nil
 }

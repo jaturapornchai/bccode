@@ -6,7 +6,7 @@ import { logoThumbUri } from "@/lib/logo-thumb";
 import { imageNeedsAuthenticatedFetch } from "@/lib/image-upload-proxy";
 
 /**
- * LogoAvatar — shared brand-logo avatar used across BC Account screens.
+ * LogoAvatar — shared brand-logo avatar used across BC Ai Account screens.
  *
  * Logos are stored as protected R2 objects (served via `/goapi/s3/file/...`)
  * so we fetch them with the current bearer token and render a short-lived

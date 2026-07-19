@@ -235,7 +235,9 @@ func ProductBarcodeInsertOrUpdateToPostgreSQL(productData models.MongoProductBar
 	}
 
 	// Delete existing record
-	_, err = db.ExecContext(ctx, "DELETE FROM productbarcode WHERE holding_code = $1 AND barcode = $2", productData.HoldingCode, productData.Barcode)
+	_, err = db.ExecContext(ctx,
+		"DELETE FROM productbarcode WHERE holding_code = $1 AND itemcode = $2 AND barcode = $3",
+		productData.HoldingCode, productData.ItemCode, productData.Barcode)
 	if err != nil {
 		logger.Warn("Could not delete existing barcode %s: %v", productData.Barcode, err)
 	}
@@ -337,8 +339,8 @@ func productBarcodeBulkUpdateInternalWithLogging(ctx context.Context, db *sql.DB
 		}
 
 		// For bulk update, use prepared statement to delete existing records
-		deleteQuery := "DELETE FROM productbarcode WHERE holding_code = $1 AND barcode = $2"
-		_, err := db.ExecContext(ctx, deleteQuery, productData.HoldingCode, productData.Barcode)
+		deleteQuery := "DELETE FROM productbarcode WHERE holding_code = $1 AND itemcode = $2 AND barcode = $3"
+		_, err := db.ExecContext(ctx, deleteQuery, productData.HoldingCode, productData.ItemCode, productData.Barcode)
 		if err != nil {
 			logger.Warn("Could not delete existing barcode %s: %v", productData.Barcode, err)
 		}
@@ -393,7 +395,9 @@ func ProductBarcodeDeleteFromPostgreSQL(productData models.MongoProductBarcodeMo
 	ctx := context.Background()
 
 	// ลบข้อมูลสินค้า (PostgreSQL)
-	result, err := db.ExecContext(ctx, "DELETE FROM productbarcode WHERE holding_code = $1 AND barcode = $2", productData.HoldingCode, productData.Barcode)
+	result, err := db.ExecContext(ctx,
+		"DELETE FROM productbarcode WHERE holding_code = $1 AND itemcode = $2 AND barcode = $3",
+		productData.HoldingCode, productData.ItemCode, productData.Barcode)
 	if err != nil {
 		return fmt.Errorf("error deleting product barcode %s: %v", productData.Barcode, err)
 	}
@@ -407,7 +411,7 @@ func ProductBarcodeDeleteFromPostgreSQL(productData models.MongoProductBarcodeMo
 	}
 
 	// ClickHouse: ลบด้วย (best-effort)
-	clickHouseDelete(productData.HoldingCode, productData.Barcode)
+	clickHouseDelete(productData.HoldingCode, productData.ItemCode, productData.Barcode)
 
 	return nil
 }
@@ -454,7 +458,9 @@ func productBarcodeBulkDeleteInternalWithLogging(ctx context.Context, db *sql.DB
 	var failedBarcodes []string
 
 	for _, productData := range productDataList {
-		result, err := db.ExecContext(ctx, "DELETE FROM productbarcode WHERE holding_code = $1 AND barcode = $2", productData.HoldingCode, productData.Barcode)
+		result, err := db.ExecContext(ctx,
+			"DELETE FROM productbarcode WHERE holding_code = $1 AND itemcode = $2 AND barcode = $3",
+			productData.HoldingCode, productData.ItemCode, productData.Barcode)
 		if err != nil {
 			logger.Error("failed to delete barcode %s: %v", productData.Barcode, err)
 			failedBarcodes = append(failedBarcodes, productData.Barcode)
@@ -500,7 +506,7 @@ func clickHouseInsertOrUpdate(holdingCode, barcode, itemcode, name0, unitcode, u
 func clickHouseBulkInsert(productDataList []models.MongoProductBarcodeModel) {
 }
 
-func clickHouseDelete(holdingCode, barcode string) {
+func clickHouseDelete(holdingCode, itemcode, barcode string) {
 }
 
 func clickHouseBulkDelete(holdingCode string, productDataList []models.MongoProductBarcodeModel) {

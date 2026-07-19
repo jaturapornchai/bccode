@@ -6,12 +6,12 @@ import (
 	"smlcloudplatform/internal/product/productbarcode/models"
 )
 
-func (svc ProductBarcodeHttpService) InfoBomView(holdingCode string, barcode string) (models.ProductBarcodeBOMView, error) {
+func (svc ProductBarcodeHttpService) InfoBomView(holdingCode string, itemCode string, barcode string) (models.ProductBarcodeBOMView, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	doc, err := svc.repo.FindByBarcode(ctx, holdingCode, barcode)
+	doc, err := svc.findBarcodeByBusinessKey(ctx, holdingCode, itemCode, barcode)
 
 	if err != nil {
 		return models.ProductBarcodeBOMView{}, err
@@ -31,15 +31,16 @@ func (svc ProductBarcodeHttpService) InfoBomView(holdingCode string, barcode str
 
 	bomView.FromProductBarcode(doc.ProductBarcodeData)
 
-	if _, ok := bomViewDict[doc.Barcode]; !ok {
-		bomViewDict[doc.Barcode] = &bomView
+	rootKey := productBarcodeBusinessKey(doc.ItemCode, doc.Barcode)
+	if _, ok := bomViewDict[rootKey]; !ok {
+		bomViewDict[rootKey] = &bomView
 	}
 
 	bomView.Level = 1
 
 	if doc.BOM != nil && len(*doc.BOM) > 0 {
 		productBarcodeDict := map[string]models.ProductBarcodeDoc{}
-		err = BuildBOMView(ctx, svc.repo.FindByBarcode, bomView.Level, &productBarcodeDict, &bomViewDict, holdingCode, doc.BOM, &bomView.BOM)
+		err = BuildBOMView(ctx, svc.findBarcodeByBusinessKey, bomView.Level, &productBarcodeDict, &bomViewDict, holdingCode, doc.BOM, &bomView.BOM)
 		if err != nil {
 			return models.ProductBarcodeBOMView{}, err
 		}
@@ -69,13 +70,14 @@ func (svc ProductBarcodeHttpService) ListBomView(holdingCode string, barcodes []
 		bomView := models.ProductBarcodeBOMView{}
 		bomView.FromProductBarcode(doc.ProductBarcodeData)
 
-		if _, ok := bomViewDict[doc.Barcode]; !ok {
-			bomViewDict[doc.Barcode] = &bomView
+		docKey := productBarcodeBusinessKey(doc.ItemCode, doc.Barcode)
+		if _, ok := bomViewDict[docKey]; !ok {
+			bomViewDict[docKey] = &bomView
 		}
 
 		if doc.BOM != nil && len(*doc.BOM) > 0 {
 			productBarcodeDict := map[string]models.ProductBarcodeDoc{}
-			err = BuildBOMView(ctx, svc.repo.FindByBarcode, 1, &productBarcodeDict, &bomViewDict, holdingCode, doc.BOM, &bomView.BOM)
+			err = BuildBOMView(ctx, svc.findBarcodeByBusinessKey, 1, &productBarcodeDict, &bomViewDict, holdingCode, doc.BOM, &bomView.BOM)
 			if err != nil {
 				return []models.ProductBarcodeBOMView{}, err
 			}
@@ -93,7 +95,7 @@ func (svc ProductBarcodeHttpService) BuildBOM() (context.Context, context.Cancel
 
 func BuildBOMView(
 	ctx context.Context,
-	findByBarcode func(ctx context.Context, holdingCode string, barcode string) (models.ProductBarcodeDoc, error),
+	findByBarcode func(ctx context.Context, holdingCode string, itemCode string, barcode string) (models.ProductBarcodeDoc, error),
 	currentLevel int,
 	productBarcodeDict *map[string]models.ProductBarcodeDoc,
 	bomViewDict *map[string]*models.ProductBarcodeBOMView,
@@ -108,16 +110,17 @@ func BuildBOMView(
 	currentLevel += 1
 
 	for _, bom := range *BOMs {
+		bomKey := productBarcodeBusinessKey(bom.ItemCode, bom.Barcode)
 
 		tempBOMView := models.ProductBarcodeBOMView{}
 		tempBOMView.Level = currentLevel
 
-		if _, bomOk := (*bomViewDict)[bom.Barcode]; bomOk {
-			tempBOMView = *(*bomViewDict)[bom.Barcode]
+		if _, bomOk := (*bomViewDict)[bomKey]; bomOk {
+			tempBOMView = *(*bomViewDict)[bomKey]
 		} else {
 			var tempDoc = models.ProductBarcodeDoc{}
-			if _, ok := (*productBarcodeDict)[bom.Barcode]; !ok {
-				findDoc, err := findByBarcode(ctx, holdingCode, bom.Barcode)
+			if _, ok := (*productBarcodeDict)[bomKey]; !ok {
+				findDoc, err := findByBarcode(ctx, holdingCode, bom.ItemCode, bom.Barcode)
 
 				if err != nil {
 					return err
@@ -125,11 +128,11 @@ func BuildBOMView(
 
 				tempDoc = findDoc
 			} else {
-				tempDoc = (*productBarcodeDict)[bom.Barcode]
+				tempDoc = (*productBarcodeDict)[bomKey]
 			}
 
-			if _, ok := (*productBarcodeDict)[tempDoc.ProductBarcode.Barcode]; !ok {
-				(*productBarcodeDict)[bom.Barcode] = tempDoc
+			if _, ok := (*productBarcodeDict)[bomKey]; !ok {
+				(*productBarcodeDict)[bomKey] = tempDoc
 			}
 
 			tempBOMView.FromProductBOM(tempDoc.ProductBarcodeData, bom)
@@ -160,11 +163,12 @@ func BuildBOMView(
 
 func BuildBOMViewCache(
 	ctx context.Context,
-	findByBarcode func(ctx context.Context, holdingCode string, barcode string) (models.ProductBarcodeDoc, error),
+	findByBarcode func(ctx context.Context, holdingCode string, itemCode string, barcode string) (models.ProductBarcodeDoc, error),
 	currentLevel int,
 	productBarcodeDict *map[string]models.ProductBarcodeDoc,
 	bomViewDict *map[string]*models.ProductBarcodeBOMView,
 	holdingCode string,
+	itemCode string,
 	barcode string,
 	childBOMs []models.BOMProductBarcode,
 	bomView *models.ProductBarcodeBOMView) error {
@@ -176,12 +180,13 @@ func BuildBOMViewCache(
 	tempBOMView := models.ProductBarcodeBOMView{}
 	tempBOMView.Level = currentLevel
 
-	if _, bomOk := (*bomViewDict)[barcode]; bomOk {
-		tempBOMView = *(*bomViewDict)[barcode]
+	key := productBarcodeBusinessKey(itemCode, barcode)
+	if _, bomOk := (*bomViewDict)[key]; bomOk {
+		tempBOMView = *(*bomViewDict)[key]
 	} else {
 		var tempDoc = models.ProductBarcodeDoc{}
-		if _, ok := (*productBarcodeDict)[barcode]; !ok {
-			findDoc, err := findByBarcode(ctx, holdingCode, barcode)
+		if _, ok := (*productBarcodeDict)[key]; !ok {
+			findDoc, err := findByBarcode(ctx, holdingCode, itemCode, barcode)
 
 			if err != nil {
 				return err
@@ -189,11 +194,11 @@ func BuildBOMViewCache(
 
 			tempDoc = findDoc
 		} else {
-			tempDoc = (*productBarcodeDict)[barcode]
+			tempDoc = (*productBarcodeDict)[key]
 		}
 
-		if _, ok := (*productBarcodeDict)[tempDoc.ProductBarcode.Barcode]; !ok {
-			(*productBarcodeDict)[barcode] = tempDoc
+		if _, ok := (*productBarcodeDict)[key]; !ok {
+			(*productBarcodeDict)[key] = tempDoc
 		}
 
 		var tempBOMs []models.BOMProductBarcode
@@ -212,15 +217,10 @@ func BuildBOMViewCache(
 			tempBOMs = *tempDoc.BOM
 		}
 
-		if tempDoc.GuidFixed == "2dJ5kfBc9tTIcHeB14I4P4PoTqP" {
-			fmt.Println("tempDoc", tempDoc)
-			fmt.Println("tempBOMs", tempBOMs)
-		}
-
 		if len(tempBOMs) != 0 {
 			for _, bom := range tempBOMs {
 				if tempBOMs != nil {
-					err := BuildBOMViewCache(ctx, findByBarcode, currentLevel+1, productBarcodeDict, bomViewDict, holdingCode, bom.Barcode, *tempDoc.BOM, &tempBOMView)
+					err := BuildBOMViewCache(ctx, findByBarcode, currentLevel+1, productBarcodeDict, bomViewDict, holdingCode, bom.ItemCode, bom.Barcode, *tempDoc.BOM, &tempBOMView)
 
 					if err != nil {
 						return err
@@ -241,4 +241,8 @@ func BuildBOMViewCache(
 	}
 
 	return nil
+}
+
+func productBarcodeBusinessKey(itemCode string, barcode string) string {
+	return itemCode + "\x00" + barcode
 }

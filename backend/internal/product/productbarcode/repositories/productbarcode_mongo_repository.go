@@ -3,9 +3,11 @@ package repositories
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"smlcloudplatform/internal/product/productbarcode/models"
 	"smlcloudplatform/internal/repositories"
+	"smlcloudplatform/internal/utils"
 	"smlcloudplatform/pkg/microservice"
 	micromodels "smlcloudplatform/pkg/microservice/models"
 	"time"
@@ -17,11 +19,12 @@ import (
 
 type IProductBarcodeRepository interface {
 	Count(ctx context.Context, holdingCode string) (int, error)
-	CountByRefBarcode(ctx context.Context, holdingCode string, refBarcode string) (int, error)
+	CountByRefKey(ctx context.Context, holdingCode string, itemCode string, refBarcode string) (int, error)
 	CountByRefGuids(ctx context.Context, holdingCode string, GUIDs []string) (int, error)
-	CountByBOM(ctx context.Context, holdingCode string, bomBarcode string) (int, error)
+	CountByBOMKey(ctx context.Context, holdingCode string, itemCode string, bomBarcode string) (int, error)
 	CountByBOMGuids(ctx context.Context, holdingCode string, GUIDs []string) (int, error)
 	CountByUnitCodes(ctx context.Context, holdingCode string, unitCodes []string) (int, error)
+	CountByGroupGUIDs(ctx context.Context, holdingCode string, GUIDs []string) (int, error)
 	CountByGroupCodes(ctx context.Context, holdingCode string, unitCodes []string) (int, error)
 	CountByOrderTypes(ctx context.Context, holdingCode string, GUIDs []string) (int, error)
 	CountByProductTypes(ctx context.Context, holdingCode string, GUIDs []string) (int, error)
@@ -63,17 +66,22 @@ type IProductBarcodeRepository interface {
 	Transaction(ctx context.Context, fnc func(ctx context.Context) error) error
 	FindByRefBarcode(ctx context.Context, holdingCode string, barcode string) ([]models.ProductBarcodeDoc, error)
 	FindByBOMBarcode(ctx context.Context, holdingCode string, barcode string) ([]models.ProductBarcodeDoc, error)
+	FindByRefKey(ctx context.Context, holdingCode string, itemCode string, barcode string) ([]models.ProductBarcodeDoc, error)
+	FindByBOMKey(ctx context.Context, holdingCode string, itemCode string, barcode string) ([]models.ProductBarcodeDoc, error)
 
 	Find(ctx context.Context, holdingCode string, filters interface{}, opts ...*options.FindOptions) ([]models.ProductBarcodeDoc, error)
 	FindOne(ctx context.Context, holdingCode string, filters interface{}) (models.ProductBarcodeDoc, error)
 	FindByBarcode(ctx context.Context, holdingCode string, barcode string) (models.ProductBarcodeDoc, error)
+	FindByBusinessKey(ctx context.Context, holdingCode string, itemCode string, barcode string) (models.ProductBarcodeDoc, error)
+	FindByItemCodeAndBarcode(ctx context.Context, holdingCode string, itemCode string, barcode string) (models.ProductBarcodeDoc, error)
 	FindByBarcodes(ctx context.Context, holdingCode string, barcodes []string) ([]models.ProductBarcodeInfo, error)
 	FindPageByUnits(ctx context.Context, holdingCode string, unitCodes []string, pageable micromodels.Pageable) ([]models.ProductBarcodeInfo, mongopagination.PaginationData, error)
 	FindPageByGroups(ctx context.Context, holdingCode string, groupCodes []string, pageable micromodels.Pageable) ([]models.ProductBarcodeInfo, mongopagination.PaginationData, error)
+	EnsureIndexes(ctx context.Context) error
 
-	UpdateRefBarcodeByGUID(ctx context.Context, holdingCode string, guid string, refBarcode models.RefProductBarcode) error
+	UpdateRefBarcodeByKey(ctx context.Context, holdingCode string, itemCode string, barcode string, refBarcode models.RefProductBarcode) error
 	UpdateAllProductTypeByGUID(ctx context.Context, holdingCode string, guid string, doc models.ProductType) error
-	UpdateAllProductGroupByCode(ctx context.Context, holdingCode string, doc models.ProductGroup) error
+	UpdateAllProductGroup(ctx context.Context, holdingCode string, doc models.ProductGroup) error
 	UpdateAllProductUnitByCode(ctx context.Context, holdingCode string, doc models.ProductUnit) error
 	UpdateAllProductOrderTypeByGUID(ctx context.Context, holdingCode string, guid string, doc models.ProductOrderType) error
 
@@ -107,12 +115,55 @@ func NewProductBarcodeRepository(pst microservice.IPersisterMongo, cache microse
 	return insRepo
 }
 
-func (repo ProductBarcodeRepository) CountByRefBarcode(ctx context.Context, holdingCode string, refBarcode string) (int, error) {
-	return repo.CountByKey(ctx, holdingCode, "refbarcodes.barcode", refBarcode)
+func (repo ProductBarcodeRepository) EnsureIndexes(ctx context.Context) error {
+	if _, err := repo.pst.CreateIndex(
+		ctx,
+		models.ProductBarcodeDoc{},
+		"uniq_productbarcodes_holdingcode_guidfixed",
+		bson.D{{Key: "holdingcode", Value: 1}, {Key: "guidfixed", Value: 1}},
+	); err != nil {
+		return fmt.Errorf("ensure product barcode guidfixed index: %w", err)
+	}
+
+	_, err := repo.pst.CreatePartialUniqueIndex(
+		ctx,
+		models.ProductBarcodeDoc{},
+		"uniq_productbarcodes_active_holdingcode_itemcode_barcode",
+		bson.D{
+			{Key: "holdingcode", Value: 1},
+			{Key: "itemcode", Value: 1},
+			{Key: "barcode", Value: 1},
+		},
+		bson.M{
+			"deletedat": nil,
+			"barcode":   bson.M{"$type": "string", "$gt": ""},
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("ensure active product barcode key index: %w", err)
+	}
+	return nil
 }
 
-func (repo ProductBarcodeRepository) CountByBOM(ctx context.Context, holdingCode string, bomBarcode string) (int, error) {
-	return repo.CountByKey(ctx, holdingCode, "bom.barcode", bomBarcode)
+func (repo ProductBarcodeRepository) CountByRefKey(ctx context.Context, holdingCode string, itemCode string, refBarcode string) (int, error) {
+	return repo.pst.Count(ctx, models.ProductBarcodeDoc{}, bson.M{
+		"holdingcode": holdingCode,
+		"deletedat":   bson.M{"$exists": false},
+		"refbarcodes": bson.M{"$elemMatch": bson.M{"itemcode": itemCode, "barcode": refBarcode}},
+	})
+}
+
+func (repo ProductBarcodeRepository) CountByBOMKey(ctx context.Context, holdingCode string, itemCode string, bomBarcode string) (int, error) {
+	return repo.pst.Count(ctx, models.ProductBarcodeDoc{}, bson.M{
+		"holdingcode": holdingCode,
+		"deletedat":   bson.M{"$exists": false},
+		"$or": []bson.M{
+			{"bom": bson.M{"$elemMatch": bson.M{"itemcode": itemCode, "barcode": bomBarcode}}},
+			{"boms": bson.M{"$elemMatch": bson.M{
+				"bom": bson.M{"$elemMatch": bson.M{"itemcode": itemCode, "barcode": bomBarcode}},
+			}}},
+		},
+	})
 }
 
 func (repo ProductBarcodeRepository) CountByRefGuids(ctx context.Context, holdingCode string, GUIDs []string) (int, error) {
@@ -125,6 +176,10 @@ func (repo ProductBarcodeRepository) CountByBOMGuids(ctx context.Context, holdin
 
 func (repo ProductBarcodeRepository) CountByUnitCodes(ctx context.Context, holdingCode string, unitCodes []string) (int, error) {
 	return repo.CountByInKeys(ctx, holdingCode, "itemunitcode", unitCodes)
+}
+
+func (repo ProductBarcodeRepository) CountByGroupGUIDs(ctx context.Context, holdingCode string, GUIDs []string) (int, error) {
+	return repo.CountByInKeys(ctx, holdingCode, "groupguid", GUIDs)
 }
 
 func (repo ProductBarcodeRepository) CountByGroupCodes(ctx context.Context, holdingCode string, unitCodes []string) (int, error) {
@@ -289,6 +344,24 @@ func (repo ProductBarcodeRepository) FindByBOMBarcode(ctx context.Context, holdi
 	return docList, nil
 }
 
+func (repo ProductBarcodeRepository) FindByRefKey(ctx context.Context, holdingCode string, itemCode string, barcode string) ([]models.ProductBarcodeDoc, error) {
+	return repo.Find(ctx, holdingCode, bson.M{
+		"refbarcodes": bson.M{"$elemMatch": bson.M{"itemcode": itemCode, "barcode": barcode}},
+		"itemtype":    bson.M{"$ne": 2},
+	})
+}
+
+func (repo ProductBarcodeRepository) FindByBOMKey(ctx context.Context, holdingCode string, itemCode string, barcode string) ([]models.ProductBarcodeDoc, error) {
+	return repo.Find(ctx, holdingCode, bson.M{
+		"$or": []bson.M{
+			{"bom": bson.M{"$elemMatch": bson.M{"itemcode": itemCode, "barcode": barcode}}},
+			{"boms": bson.M{"$elemMatch": bson.M{
+				"bom": bson.M{"$elemMatch": bson.M{"itemcode": itemCode, "barcode": barcode}},
+			}}},
+		},
+	})
+}
+
 func (repo ProductBarcodeRepository) Transaction(ctx context.Context, fnc func(ctx context.Context) error) error {
 	return repo.pst.Transaction(ctx, fnc)
 }
@@ -312,13 +385,28 @@ func (repo ProductBarcodeRepository) FindByBarcode(ctx context.Context, holdingC
 		"barcode":     barcode,
 	}
 
-	result, err := repo.FindOne(ctx, holdingCode, filters)
-
+	results, err := repo.Find(ctx, holdingCode, filters, options.Find().SetLimit(2))
 	if err != nil {
 		return models.ProductBarcodeDoc{}, err
 	}
+	if len(results) == 0 {
+		return models.ProductBarcodeDoc{}, nil
+	}
+	if len(results) > 1 {
+		return models.ProductBarcodeDoc{}, fmt.Errorf("barcode %s matches multiple products; itemcode is required", barcode)
+	}
+	return results[0], nil
+}
 
-	return result, nil
+func (repo ProductBarcodeRepository) FindByItemCodeAndBarcode(ctx context.Context, holdingCode string, itemCode string, barcode string) (models.ProductBarcodeDoc, error) {
+	return repo.FindOne(ctx, holdingCode, bson.M{
+		"itemcode": itemCode,
+		"barcode":  barcode,
+	})
+}
+
+func (repo ProductBarcodeRepository) FindByBusinessKey(ctx context.Context, holdingCode string, itemCode string, barcode string) (models.ProductBarcodeDoc, error) {
+	return repo.FindByItemCodeAndBarcode(ctx, holdingCode, itemCode, barcode)
 }
 
 func (repo ProductBarcodeRepository) FindByBarcodes(ctx context.Context, holdingCode string, barcodes []string) ([]models.ProductBarcodeInfo, error) {
@@ -383,12 +471,12 @@ func (repo ProductBarcodeRepository) FindPageByGroups(ctx context.Context, holdi
 	return results, pagination, nil
 }
 
-func (repo ProductBarcodeRepository) UpdateRefBarcodeByGUID(ctx context.Context, holdingCode string, guid string, refBarcode models.RefProductBarcode) error {
+func (repo ProductBarcodeRepository) UpdateRefBarcodeByKey(ctx context.Context, holdingCode string, itemCode string, barcode string, refBarcode models.RefProductBarcode) error {
 
 	filters := bson.M{
-		"holdingcode":           holdingCode,
-		"deletedat":             bson.M{"$exists": false},
-		"refbarcodes.guidfixed": guid,
+		"holdingcode": holdingCode,
+		"deletedat":   bson.M{"$exists": false},
+		"refbarcodes": bson.M{"$elemMatch": bson.M{"itemcode": itemCode, "barcode": barcode}},
 	}
 
 	update := bson.M{
@@ -423,21 +511,23 @@ func (repo ProductBarcodeRepository) UpdateAllProductTypeByGUID(ctx context.Cont
 	return repo.pst.Update(ctx, models.ProductBarcodeDoc{}, filters, update)
 }
 
-func (repo ProductBarcodeRepository) UpdateAllProductGroupByCode(ctx context.Context, holdingCode string, doc models.ProductGroup) error {
+func (repo ProductBarcodeRepository) UpdateAllProductGroup(ctx context.Context, holdingCode string, doc models.ProductGroup) error {
+	groupCode := utils.NormalizeBusinessCode(doc.Code)
+	if groupCode == "" {
+		return nil
+	}
 	filters := bson.M{
 		"holdingcode": holdingCode,
 		"deletedat":   bson.M{"$exists": false},
-		"groupcode":   doc.Code,
+		"groupcode":   groupCode,
 	}
 
-	update := bson.M{
-		"$set": bson.M{
-			"groupcode":  doc.Code,
-			"groupnames": doc.Names,
-		},
+	updateFields := bson.M{
+		"groupcode":  groupCode,
+		"groupnames": doc.Names,
 	}
 
-	return repo.pst.Update(ctx, models.ProductBarcodeDoc{}, filters, update)
+	return repo.pst.Update(ctx, models.ProductBarcodeDoc{}, filters, bson.M{"$set": updateFields})
 }
 
 func (repo ProductBarcodeRepository) UpdateAllProductUnitByCode(ctx context.Context, holdingCode string, doc models.ProductUnit) error {
@@ -528,6 +618,9 @@ func (repo ProductBarcodeRepository) FindByBarcodesMap(holdingCode string, barco
 
 	productMap := make(map[string]models.ProductBarcodeInfo)
 	for _, product := range docs {
+		if existing, exists := productMap[product.Barcode]; exists && existing.ItemCode != product.ItemCode {
+			return nil, fmt.Errorf("barcode %s matches multiple products; itemcode is required", product.Barcode)
+		}
 		productMap[product.Barcode] = product
 	}
 

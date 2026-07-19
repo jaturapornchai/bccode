@@ -68,7 +68,7 @@ func (svc ProductHttpService) GetProduct(holdingCode string, code string) (*mode
 		return nil, err
 	}
 	if product.ID == primitive.NilObjectID {
-		product, err = svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", code)
+		product, err = svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", utils.NormalizeBusinessCode(code))
 		if err != nil {
 			return nil, err
 		}
@@ -176,13 +176,36 @@ func min(a, b int) int {
 	return b
 }
 
+func (svc ProductHttpService) ensureProductCodeAvailable(
+	ctx context.Context,
+	holdingCode string,
+	code string,
+	currentGuid string,
+) error {
+	product, err := svc.repo.FindOneByCode(ctx, holdingCode, code)
+	if err != nil {
+		return err
+	}
+	if product.ID != primitive.NilObjectID && product.GuidFixed != currentGuid {
+		return errors.New("รหัสสินค้านี้มีอยู่แล้ว")
+	}
+	return nil
+}
+
 // ✅ **Create (สร้าง Product ใหม่)**
 func (svc ProductHttpService) Create(doc *models.ProductDoc) error {
 	ctx, cancel := svc.getContextTimeout()
 	defer cancel()
 
+	doc.Code = utils.NormalizeBusinessCode(doc.Code)
 	if doc.HoldingCode == "" || doc.Code == "" {
 		return errors.New("HoldingCode and Code are required")
+	}
+	if err := svc.repo.EnsureIndexes(ctx); err != nil {
+		return err
+	}
+	if err := svc.ensureProductCodeAvailable(ctx, doc.HoldingCode, doc.Code, ""); err != nil {
+		return err
 	}
 
 	if err := barcodeModel.ValidateProductClassification(doc.ItemType, doc.MaterialType); err != nil {
@@ -200,8 +223,8 @@ func (svc ProductHttpService) Create(doc *models.ProductDoc) error {
 	}
 
 	// ✅ ตั้งค่าเวลาก่อนสร้าง
-	doc.CreatedAt = time.Now()
-	doc.UpdatedAt = time.Now()
+	doc.CreatedAt = time.Now().UTC()
+	doc.UpdatedAt = doc.CreatedAt
 
 	// ✅ เรียก `Create()`
 	_, err := svc.repo.Create(ctx, *doc)
@@ -233,7 +256,7 @@ func (svc ProductHttpService) Update(holdingCode string, code string, authUserna
 	}
 
 	if findDoc.ID == primitive.NilObjectID {
-		findDoc, err = svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", code)
+		findDoc, err = svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", utils.NormalizeBusinessCode(code))
 		if err != nil {
 			return models.ProductDoc{}, err
 		}
@@ -241,6 +264,19 @@ func (svc ProductHttpService) Update(holdingCode string, code string, authUserna
 		if findDoc.ID == primitive.NilObjectID {
 			return models.ProductDoc{}, errors.New("document not found")
 		}
+	}
+	doc.Code = utils.NormalizeBusinessCode(doc.Code)
+	if doc.Code == "" {
+		return models.ProductDoc{}, errors.New("Code is required")
+	}
+	if doc.Code != utils.NormalizeBusinessCode(findDoc.Code) {
+		return models.ProductDoc{}, errors.New("ไม่สามารถเปลี่ยนรหัสสินค้าในหน้าจอแก้ไขได้")
+	}
+	if err := svc.repo.EnsureIndexes(ctx); err != nil {
+		return models.ProductDoc{}, err
+	}
+	if err := svc.ensureProductCodeAvailable(ctx, holdingCode, doc.Code, findDoc.GuidFixed); err != nil {
+		return models.ProductDoc{}, err
 	}
 	docData := findDoc
 	docData.ProductData = doc.ProductData
@@ -256,10 +292,10 @@ func (svc ProductHttpService) Update(holdingCode string, code string, authUserna
 	}
 
 	docData.UpdatedBy = authUsername
-	docData.UpdatedAt = time.Now()
+	docData.UpdatedAt = time.Now().UTC()
 
 	// ✅ เรียก Repository เพื่ออัปเดตข้อมูล
-	errx := svc.repo.Update(ctx, holdingCode, code, docData)
+	errx := svc.repo.Update(ctx, holdingCode, findDoc.GuidFixed, docData)
 	if errx != nil {
 		return models.ProductDoc{}, errx
 	}
@@ -286,7 +322,7 @@ func (svc ProductHttpService) Delete(holdingCode string, guid string, user strin
 		return err
 	}
 	if findDoc.ID == primitive.NilObjectID {
-		findDoc, err = svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", guid)
+		findDoc, err = svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "code", utils.NormalizeBusinessCode(guid))
 		if err != nil {
 			return err
 		}

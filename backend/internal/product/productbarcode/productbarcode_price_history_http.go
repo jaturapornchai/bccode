@@ -72,9 +72,10 @@ func (h ProductBarcodeHttp) GetPriceHistoryByBarcode(ctx microservice.IContext) 
 	holdingCode := userInfo.HoldingCode
 
 	barcode := ctx.Param("barcode")
+	itemCode := ctx.QueryParam("itemcode")
 	pageable := utils.GetPageable(ctx.QueryParam)
 
-	docs, pagination, err := h.svc.GetPriceHistoryByBarcode(holdingCode, barcode, pageable)
+	docs, pagination, err := h.svc.GetPriceHistoryByBarcode(holdingCode, itemCode, barcode, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -93,6 +94,11 @@ func (h ProductBarcodeHttp) GetPriceHistoryByBarcode(ctx microservice.IContext) 
 
 func (h ProductBarcodeHttp) priceHistoryFilter(queryParam func(string) string) map[string]interface{} {
 	filters := requestfilter.GenerateFilters(queryParam, []requestfilter.FilterRequest{
+		{
+			Param: "itemcode",
+			Field: "itemcode",
+			Type:  requestfilter.FieldTypeString,
+		},
 		{
 			Param: "barcode",
 			Field: "barcode",

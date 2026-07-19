@@ -110,11 +110,23 @@ export interface ProductOrderType {
 }
 
 /** Supported marketplace platforms (matches backend `platform` values). */
-export const MARKETPLACE_PLATFORMS = ["shopee", "lazada", "aliexpress", "tiktok"] as const;
+export const MARKETPLACE_PLATFORMS = [
+  "shopee",
+  "lazada",
+  "aliexpress",
+  "tiktok",
+] as const;
 export type MarketplacePlatform = (typeof MARKETPLACE_PLATFORMS)[number];
 
 /** Listing status options shared across platforms. */
-export const MARKETPLACE_STATUS = ["", "LIVE", "UNLIST", "REVIEWING", "REJECTED", "DELETED"] as const;
+export const MARKETPLACE_STATUS = [
+  "",
+  "LIVE",
+  "UNLIST",
+  "REVIEWING",
+  "REJECTED",
+  "DELETED",
+] as const;
 export type MarketplaceStatus = (typeof MARKETPLACE_STATUS)[number];
 
 /**
@@ -221,7 +233,9 @@ export function emptyMarketplaceSKUMap(
 }
 
 /** Build an empty marketplace listing map for a given platform. */
-export function emptyMarketplaceProductMap(platform: MarketplacePlatform): MarketplaceProductMap {
+export function emptyMarketplaceProductMap(
+  platform: MarketplacePlatform,
+): MarketplaceProductMap {
   return {
     platform,
     accountid: "",
@@ -259,6 +273,7 @@ export function emptyMarketplaceProductMap(platform: MarketplacePlatform): Marke
 /** Sub/ref barcode — matches Go `RefProductBarcode`. */
 export interface RefProductBarcode {
   guidfixed: string;
+  itemcode: string;
   names: NameX[];
   itemunitcode: string;
   itemunitnames: NameX[];
@@ -280,6 +295,7 @@ export interface RefProductBarcode {
 /** BOM entry — matches Go `BOMProductBarcode`. */
 export interface BOMProductBarcode {
   barcodeguidfixed: string;
+  itemcode: string;
   names: NameX[];
   itemunitcode: string;
   itemunitnames: NameX[];

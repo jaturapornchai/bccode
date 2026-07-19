@@ -158,7 +158,7 @@ func (sc *StockCalculator) CalculatorStock(holdingCode string, barcode string) e
 			productBarcode.BalanceAmount = calculator.BalanceAmount()
 			productBarcode.AverageCost = calculator.AverageCost()
 
-			err = sc.productBarcodeRepo.Update(holdingCode, barcode, productBarcode)
+			err = sc.productBarcodeRepo.Update(holdingCode, productBarcode.ItemCode, barcode, productBarcode)
 			if err != nil {
 				return err
 			}
