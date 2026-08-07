@@ -29,6 +29,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "re
 import { motion, MotionConfig } from "motion/react";
 import { cardStaggerParent, cardStaggerChild } from "../shared/motion-variants";
 import { pushNotice } from "@/lib/toast";
+import { normalizeBusinessCode } from "@/lib/business-code";
 import { SkeletonCardList } from "../shared/skeleton-card";
 import { backendText, useBackendLanguage, type BackendLanguageDictionary } from "@/lib/backend-language";
 import { normalizeLanguage, t, type LanguageCode } from "@/lib/i18n";
@@ -41,6 +42,7 @@ import {
   type BranchListItem,
   type ShopListItem,
   type WorkspaceCompany,
+  type WorkspaceSession,
   WORKSPACE_CHANGED_EVENT,
   workspaceStorageKeys,
   notifyWorkspaceChanged,
@@ -164,7 +166,7 @@ const workspaceTextEn = {
   companyNameRequired: "Please enter a company name.",
   createCompany: "Create company",
   createCompanyNew: "Create new company",
-  createCompanyRequiresGoogle: "Sign in with Google to create a new company.",
+  createCompanyRequiresGoogle: "Link a valid email to your account before creating a new company.",
   createShopFailed: "Could not create company.",
   createShopSuccess: "Company created. Reloading list.",
   loadShopsFailed: "Could not load companies.",
@@ -218,7 +220,7 @@ const workspaceText: Partial<Record<LanguageCode, Record<WorkspaceTextKey, strin
     companyNameRequired: "กรุณากรอกชื่อบริษัท",
     createCompany: "สร้างบริษัท",
     createCompanyNew: "สร้างบริษัทใหม่",
-    createCompanyRequiresGoogle: "ต้องเข้าสู่ระบบด้วย Google เพื่อสร้างบริษัทใหม่",
+    createCompanyRequiresGoogle: "ต้องเชื่อมอีเมลที่ถูกต้องกับบัญชีก่อนสร้างบริษัทใหม่",
     createShopFailed: "สร้างบริษัทไม่สำเร็จ",
     createShopSuccess: "สร้างบริษัทแล้ว กำลังโหลดรายการใหม่",
     loadShopsFailed: "โหลดบริษัทไม่สำเร็จ",
@@ -250,7 +252,7 @@ const workspaceText: Partial<Record<LanguageCode, Record<WorkspaceTextKey, strin
     companyNameRequired: "សូមបញ្ចូលឈ្មោះក្រុមហ៊ុន។",
     createCompany: "បង្កើតក្រុមហ៊ុន",
     createCompanyNew: "បង្កើតក្រុមហ៊ុនថ្មី",
-    createCompanyRequiresGoogle: "សូមចូលដោយ Google ដើម្បីបង្កើតក្រុមហ៊ុនថ្មី។",
+    createCompanyRequiresGoogle: "សូមភ្ជាប់អ៊ីមែលត្រឹមត្រូវទៅគណនី មុនពេលបង្កើតក្រុមហ៊ុនថ្មី។",
     createShopFailed: "មិនអាចបង្កើតក្រុមហ៊ុនបាន។",
     createShopSuccess: "បានបង្កើតក្រុមហ៊ុន កំពុងផ្ទុកបញ្ជីឡើងវិញ។",
     loadShopsFailed: "មិនអាចផ្ទុកក្រុមហ៊ុនបាន។",
@@ -281,7 +283,7 @@ const workspaceText: Partial<Record<LanguageCode, Record<WorkspaceTextKey, strin
     companyNameRequired: "Vui lòng nhập tên công ty.",
     createCompany: "Tạo công ty",
     createCompanyNew: "Tạo công ty mới",
-    createCompanyRequiresGoogle: "Đăng nhập bằng Google để tạo công ty mới.",
+    createCompanyRequiresGoogle: "Hãy liên kết email hợp lệ với tài khoản trước khi tạo công ty mới.",
     createShopFailed: "Không thể tạo công ty.",
     createShopSuccess: "Đã tạo công ty. Đang tải lại danh sách.",
     loadShopsFailed: "Không thể tải danh sách công ty.",
@@ -403,8 +405,9 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     setNotice(null);
     try {
       const selectedHoldingCode = activeHoldingCodeFromAuth(currentAuth);
+      const selectedBusinessCode = activeBusinessCodeFromWorkspace(selectedHoldingCode);
       const endpoint = selectedHoldingCode
-        ? `holdings?activeholdingcode=${encodeURIComponent(selectedHoldingCode)}`
+        ? `holdings?activeholdingcode=${encodeURIComponent(selectedHoldingCode)}${selectedBusinessCode ? `&businesscode=${encodeURIComponent(selectedBusinessCode)}` : ""}`
         : "holdings";
       const payload = await callWorkspaceApi<{ data?: ShopListItem[] }>(currentAuth, endpoint);
       const allShops = Array.isArray(payload.data) ? payload.data : [];
@@ -498,7 +501,11 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     let cancelled = false;
     void (async () => {
       try {
-        const payload = await callWorkspaceApi<{ data?: ShopListItem[] }>(auth, `holdings?activeholdingcode=${encodeURIComponent(code)}`);
+        const businessCode = normalizeBusinessCode(selectedCompany?.code) || activeBusinessCodeFromWorkspace(code);
+        const payload = await callWorkspaceApi<{ data?: ShopListItem[] }>(
+          auth,
+          `holdings?activeholdingcode=${encodeURIComponent(code)}${businessCode ? `&businesscode=${encodeURIComponent(businessCode)}` : ""}`,
+        );
         const fresh = (Array.isArray(payload.data) ? payload.data : []).find((s) => tenantCodeForShop(s) === code);
         if (!cancelled && fresh && hasExplicitLanguageSettings(fresh)) setSelectedShopForAccess(fresh);
       } catch {
@@ -508,7 +515,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     return () => {
       cancelled = true;
     };
-  }, [activeAccessRoute, step, auth, selectedShopForAccess]);
+  }, [activeAccessRoute, step, auth, selectedCompany, selectedShopForAccess]);
 
   const flatCompanies = useMemo(() => {
     const list: Array<{
@@ -826,7 +833,10 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     try {
       await callWorkspaceApi(auth, "select-holding", {
         method: "POST",
-        body: { holdingcode: tenantCodeForShop(shop) },
+        body: {
+          holdingcode: tenantCodeForShop(shop),
+          businesscode: company.code ?? "",
+        },
       });
       const shopInfo = await callWorkspaceApi<{ data?: Record<string, unknown> }>(auth, `holding-info?holdingcode=${encodeURIComponent(tenantCodeForShop(shop))}`);
       const branchPayload = await callWorkspaceApi<{ data?: BranchListItem[] }>(auth, "branches?offset=0&limit=100&q=");
@@ -1013,6 +1023,15 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     company: WorkspaceCompany | null = null,
   ) {
     if (!auth) return;
+    if (company?.code?.trim()) {
+      await callWorkspaceApi(auth, "select-holding", {
+        method: "POST",
+        body: {
+          holdingcode: tenantCodeForShop(shop),
+          businesscode: company.code,
+        },
+      });
+    }
     persistWorkspace(shop, branch, shopInfo, company);
     const payload = await callWorkspaceApi<{ data?: unknown[]; total?: number }>(auth, "product-units?offset=0&limit=1&q=");
 
@@ -1864,7 +1883,7 @@ function readAuth(): AuthSession | null {
 }
 
 function canAuthCreateCompany(auth: AuthSession | null): boolean {
-  return auth?.method === "google";
+  return Boolean(auth?.profile?.email?.trim());
 }
 
 function activeHoldingCodeFromAuth(auth: AuthSession | null): string {
@@ -1872,6 +1891,19 @@ function activeHoldingCodeFromAuth(auth: AuthSession | null): string {
   if (authHoldingCode) return authHoldingCode;
   if (typeof window === "undefined") return "";
   return localStorage.getItem(workspaceStorageKeys.holdingCode)?.trim() || "";
+}
+
+function activeBusinessCodeFromWorkspace(holdingCode: string): string {
+  if (typeof window === "undefined" || !holdingCode) return "";
+  try {
+    const raw = localStorage.getItem(workspaceStorageKeys.workspace);
+    if (!raw) return "";
+    const workspace = JSON.parse(raw) as WorkspaceSession;
+    if (workspace.shop.holdingcode.trim().toLowerCase() !== holdingCode.trim().toLowerCase()) return "";
+    return normalizeBusinessCode(workspace.company?.code);
+  } catch {
+    return "";
+  }
 }
 
 async function callWorkspaceApi<T extends Record<string, unknown>>(

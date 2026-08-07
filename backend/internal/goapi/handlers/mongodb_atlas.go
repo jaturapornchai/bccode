@@ -186,9 +186,9 @@ func validateAtlasTenant(c echo.Context, requestHoldingCode string) error {
 // bypassing the Next proxy. Email/username code fields (e.g. employeepermissions.employeecode)
 // are intentionally excluded — emails are exempt from uppercasing.
 var atlasBusinessCodeFields = map[string]string{
-	"permissiondefinitions":  "permissioncode",
-	"permissiongroups":       "groupcode",
-	"approvalsettings":       "approvalcode",
+	"permissiondefinitions":   "permissioncode",
+	"permissiongroups":        "groupcode",
+	"approvalsettings":        "approvalcode",
 	"productcolors":           "code",
 	"productsizes":            "code",
 	"productvariantmatrices":  "code",
@@ -393,7 +393,7 @@ func MongoAtlasUpdateHandler(c echo.Context) error {
 				atlasTenantFilterAny(tenantIDs.filterIDs...),
 				bson.M{
 					idCodeField: bson.M{"$regex": "^" + regexp.QuoteMeta(idValue) + "$", "$options": "i"},
-					"guidfixed":  bson.M{"$ne": reqBody.GuidFixed},
+					"guidfixed": bson.M{"$ne": reqBody.GuidFixed},
 				},
 			)
 			if cnt, dupErr := collection.CountDocuments(ctx, dupFilter); dupErr == nil && cnt > 0 {

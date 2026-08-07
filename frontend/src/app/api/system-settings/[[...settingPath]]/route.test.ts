@@ -36,7 +36,7 @@ describe("system settings API route security", () => {
     expect(JSON.parse(String(selectInit?.body))).toMatchObject({ holdingcode: "SHOP002" });
   });
 
-  it("uses a generated password when creating a username login user", async () => {
+  it("delegates user login-account creation to the authorized backend save", async () => {
     process.env.JWT_SECRET_KEY = SECRET;
     const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
       void url;
@@ -63,10 +63,11 @@ describe("system settings API route security", () => {
     );
 
     expect(response.status).toBe(200);
-    expect(fetchMock).toHaveBeenCalledTimes(3);
-    const registerBody = JSON.parse(String(fetchMock.mock.calls[1][1]?.body));
-    expect(registerBody.password).not.toBe("12345");
-    expect(registerBody.password).toMatch(/^[0-9a-f]{24}$/);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(String(fetchMock.mock.calls[0][0])).toBe("http://localhost:8888/holding/permission?holdingcode=SHOP001");
+    const saveBody = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+    expect(saveBody).toMatchObject({ username: "new-user", name: "New User" });
+    expect(saveBody).not.toHaveProperty("password");
   });
 
   it("proxies product unit deletes to the legacy unit guid endpoint", async () => {
@@ -228,7 +229,6 @@ describe("system settings API route security", () => {
     const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
       calls.push([String(url), init]);
       const requestUrl = String(url);
-      if (requestUrl.includes("/register/exists-username")) return Response.json({ success: true, data: true });
       return Response.json({ success: true, data: [] });
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -270,14 +270,13 @@ describe("system settings API route security", () => {
 
     expect(calls.map(([url]) => url)).toEqual([
       "http://localhost:8888/holding/users?offset=0&limit=100",
-      "http://localhost:8888/register/exists-username",
       "http://localhost:8888/holding/permission?holdingcode=SHOP001",
       "http://localhost:8888/holding/permission?holdingcode=SHOP001",
       "http://localhost:8888/holding/permission/newuser@example.com?holdingcode=SHOP001",
     ]);
+    expect(calls[1][1]?.method).toBe("PUT");
     expect(calls[2][1]?.method).toBe("PUT");
-    expect(calls[3][1]?.method).toBe("PUT");
-    expect(calls[4][1]?.method).toBe("DELETE");
+    expect(calls[3][1]?.method).toBe("DELETE");
   });
 
   it.each([

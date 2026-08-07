@@ -58,6 +58,17 @@ func MongoGetDataHandler(c echo.Context) error {
 	collection := mongoClient.Database(MongodbDatabaseName).Collection(payLoad.Collection)
 
 	filter := bson.M{"holdingcode": payLoad.HoldingCode, "guidfixed": payLoad.GuidFixed}
+	if companyOwnedCollection(payLoad.Collection) {
+		holdingCode, businessCode, scopeErr := authenticatedCompanyContext(c, payLoad.HoldingCode, "")
+		if scopeErr != nil {
+			return c.JSON(scopeErr.Status, map[string]string{
+				"error": scopeErr.Message,
+				"code":  scopeErr.Code,
+			})
+		}
+		filter["holdingcode"] = holdingCode
+		filter["businesscode"] = businessCode
+	}
 
 	// ⭐ แก้ไข: Log ก่อน Find และใช้ collection name ที่ถูกต้อง
 	logger.Info("Finding documents in MongoDB collection '%s' with filter: %+v", payLoad.Collection, filter)
@@ -108,6 +119,15 @@ func MongoGetDataHandler(c echo.Context) error {
 
 	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	return c.JSON(http.StatusOK, response)
+}
+
+func companyOwnedCollection(name string) bool {
+	switch strings.ToLower(strings.TrimSpace(name)) {
+	case "product", "products", "productbarcode", "productbarcodes":
+		return true
+	default:
+		return false
+	}
 }
 
 // PostgreSQL Get Document Handler - supports multiple GET queries
@@ -245,7 +265,7 @@ func PgGetDocHandler(c echo.Context) error {
 	// ใช้ DISTINCT ON เพื่อป้องกันรายการซ้ำ (กรณีมีข้อมูลซ้ำใน database)
 	// ใช้ subquery เพื่อให้ DISTINCT ON ทำงานก่อน แล้วค่อยเรียงลำดับทีหลัง
 	// ใช้ COALESCE เพื่อ handle NULL values สำหรับ creator fields (เอกสารเก่าไม่มี fields เหล่านี้)
-	distinctQuery := fmt.Sprintf("SELECT DISTINCT ON (docno) guidfixed, docdatetime, docno, custcode, coalesce((select name0 from creditor where creditor.code = doc.custcode), 'X') as custname, totalamount, (select count(*) from docdetail where docdetail.docno = doc.docno and docdetail.transflag = doc.transflag) as detailcount, transflag, isref, islocked, isclosed, COALESCE(creator_code, '') as creator_code, COALESCE(creator_name, '') as creator_name, COALESCE(createdat, docdatetime) as createdat, COALESCE(doc_currency, '') as doc_currency, COALESCE(doc_currency_symbol, '') as doc_currency_symbol, COALESCE(exchange_rate, 0) as exchange_rate, COALESCE(totalamount_doc, 0) as totalamount_doc, COALESCE(iscancel, false) as iscancel, COALESCE(isdelete, false) as isdelete, COALESCE(iscomparedsuccess, 0) as iscomparedsuccess, COALESCE(isclosedmanual, false) as isclosedmanual, COALESCE(closedmanual_by_code, '') as closedmanual_by_code, COALESCE(closedmanual_by_name, '') as closedmanual_by_name, COALESCE(closedmanual_at, '1970-01-01') as closedmanual_at, COALESCE(closedmanual_reason, '') as closedmanual_reason FROM doc WHERE %s ORDER BY docno, docdatetime DESC", whereClause)
+	distinctQuery := fmt.Sprintf("SELECT DISTINCT ON (docno) guidfixed, docdatetime, docno, custcode, coalesce((select name0 from creditor where creditor.code = doc.custcode), 'X') as custname, totalamount, (select count(*) from docdetail where docdetail.docno = doc.docno and docdetail.transflag = doc.transflag) as detailcount, transflag, isref, islocked, isclosed, COALESCE(creator_code, '') as creator_code, COALESCE(creator_name, '') as creator_name, COALESCE(created_at, docdatetime) as createdat, COALESCE(doc_currency, '') as doc_currency, COALESCE(doc_currency_symbol, '') as doc_currency_symbol, COALESCE(exchange_rate, 0) as exchange_rate, COALESCE(totalamount_doc, 0) as totalamount_doc, COALESCE(iscancel, false) as iscancel, COALESCE(isdelete, false) as isdelete, COALESCE(iscomparedsuccess, 0) as iscomparedsuccess, COALESCE(isclosedmanual, false) as isclosedmanual, COALESCE(closedmanual_by_code, '') as closedmanual_by_code, COALESCE(closedmanual_by_name, '') as closedmanual_by_name, COALESCE(closedmanual_at, '1970-01-01') as closedmanual_at, COALESCE(closedmanual_reason, '') as closedmanual_reason FROM doc WHERE %s ORDER BY docno, docdatetime DESC", whereClause)
 	query := fmt.Sprintf("SELECT * FROM (%s) AS unique_docs ORDER BY docdatetime", distinctQuery)
 	// เรียงลำดับวันที่/เวลา (ใช้ docdatetime เต็มรวมเวลาด้วย)
 	if payLoad.DateOrder == 1 {

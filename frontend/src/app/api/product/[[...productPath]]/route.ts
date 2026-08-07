@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { serverGoApiBase, validateBackendUrl } from "@/lib/backend-url";
 import {
   getBackendUrlFromRequest,
   getMainApiUrl,
@@ -26,20 +25,10 @@ export async function GET(request: Request, context: ProductProxyContext) {
     const q = url.searchParams.get("q") ?? "";
     const page = url.searchParams.get("page") ?? "1";
     const limit = url.searchParams.get("limit") ?? "50";
-    const holdingCode = url.searchParams.get("holdingcode") ?? "";
     const qs = new URLSearchParams({ q, page, limit });
     for (const key of ["itemtype", "materialtype"]) {
       const value = url.searchParams.get(key);
       if (value) qs.set(key, value);
-    }
-    if (holdingCode) {
-      return proxyProductPgListJson(
-        request,
-        holdingCode,
-        q,
-        Number(limit) || 50,
-        pageToOffset(page, limit),
-      );
     }
     return proxyProductJson(request, base, `/product?${qs.toString()}`, {
       method: "GET",
@@ -49,172 +38,6 @@ export async function GET(request: Request, context: ProductProxyContext) {
   return proxyProductJson(request, base, `/product/${encodeURIComponent(id)}`, {
     method: "GET",
   });
-}
-
-async function proxyProductPgListJson(
-  request: Request,
-  holdingCode: string,
-  search: string,
-  limit: number,
-  offset: number,
-): Promise<NextResponse> {
-  const authorization = requireBearerToken(request);
-  if (typeof authorization !== "string") return authorization;
-
-  try {
-    validateBackendUrl(getBackendUrlFromRequest(request));
-  } catch (error) {
-    return NextResponse.json(
-      {
-        success: false,
-        message:
-          error instanceof Error ? error.message : "Backend URL ไม่ถูกต้อง",
-      },
-      { status: 400 },
-    );
-  }
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 30000);
-  try {
-    const response = await fetch(`${serverGoApiBase()}/api/product/search`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept-Language": request.headers.get("accept-language") ?? "th",
-        Authorization: authorization,
-      },
-      body: JSON.stringify({
-        holdingcode: holdingCode,
-        search,
-        limit,
-        offset,
-        usecache: false,
-      }),
-      signal: controller.signal,
-      cache: "no-store",
-    });
-    const payload = await readJsonOrText(response);
-    if (!isRecord(payload)) {
-      const message = String(payload ?? "");
-      return NextResponse.json(
-        { success: response.ok, message, source: "pgsql" },
-        { status: response.status },
-      );
-    }
-    if (!response.ok || payload.status === "error") {
-      return NextResponse.json(productPgErrorPayload(payload), {
-        status: response.status,
-      });
-    }
-    const rawRows = Array.isArray(payload.data) ? payload.data : [];
-    const rows = rawRows.map(productPgListRowToProduct);
-    return NextResponse.json(
-      {
-        success: response.ok && payload.status !== "error",
-        data: rows,
-        total: typeof payload.count === "number" ? payload.count : rows.length,
-        source: "pgsql",
-        message:
-          typeof payload.message === "string"
-            ? payload.message
-            : typeof payload.error === "string"
-              ? payload.error
-              : undefined,
-      },
-      { status: response.status },
-    );
-  } catch (error) {
-    const message =
-      error instanceof Error && error.name === "AbortError"
-        ? "Server ไม่ตอบกลับทันเวลา"
-        : "ไม่สามารถเชื่อมต่อ Server ได้";
-    return NextResponse.json(
-      { success: false, message, source: "pgsql" },
-      { status: 504 },
-    );
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
-function productPgErrorPayload(
-  payload: Record<string, unknown>,
-): Record<string, unknown> {
-  const message =
-    stringFromRecord(payload, "message") ||
-    stringFromRecord(payload, "error") ||
-    "โหลดรายการสินค้าจากฐานข้อมูลไม่สำเร็จ";
-  const code = stringFromRecord(payload, "code");
-  return {
-    success: false,
-    message,
-    ...(code ? { code } : {}),
-    source: "pgsql",
-  };
-}
-
-function pageToOffset(page: string, limit: string): number {
-  const pageNumber = Math.max(1, Number(page) || 1);
-  const limitNumber = Math.max(1, Number(limit) || 50);
-  return (pageNumber - 1) * limitNumber;
-}
-
-function productPgListRowToProduct(row: unknown): Record<string, unknown> {
-  const r = isRecord(row) ? row : {};
-  const code = stringFromRecord(r, "itemcode");
-  const name = stringFromRecord(r, "itemname");
-  const unitCode = stringFromRecord(r, "unitcode");
-  const unitName = stringFromRecord(r, "unitname");
-  const unitCount = numberFromRecord(r, "unit_count");
-  const balanceQty = numberFromRecord(r, "balanceqty");
-  return {
-    guidfixed: "",
-    code,
-    names: name ? [{ code: "th", name }] : [],
-    itemtype: 0,
-    materialtype: 0,
-    categorycode: stringFromRecord(r, "categorycode"),
-    vattype: numberFromRecord(r, "vattype"),
-    unitcode: unitCode,
-    unitnames: unitName ? [{ code: "th", name: unitName }] : [],
-    itemunitcode: unitCode,
-    itemunitnames: unitName ? [{ code: "th", name: unitName }] : [],
-    qty: balanceQty,
-    barcodes: [
-      {
-        barcode: stringFromRecord(r, "barcode"),
-        itemunitcode: unitCode,
-        itemunitnames: unitName ? [{ code: "th", name: unitName }] : [],
-        qty: Math.max(1, numberFromRecord(r, "unitstand")),
-        standvalue: Math.max(1, numberFromRecord(r, "unitstand")),
-        dividevalue: Math.max(1, numberFromRecord(r, "unitdivide")),
-      },
-    ].filter((item) => item.barcode),
-    _unit_count: unitCount,
-    _source: "pgsql",
-  };
-}
-
-function stringFromRecord(
-  record: Record<string, unknown>,
-  key: string,
-): string {
-  const value = record[key];
-  return typeof value === "string" ? value : value == null ? "" : String(value);
-}
-
-function numberFromRecord(
-  record: Record<string, unknown>,
-  key: string,
-): number {
-  const value = record[key];
-  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
-  if (typeof value === "string") {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-  return 0;
 }
 
 export async function POST(request: Request, context: ProductProxyContext) {

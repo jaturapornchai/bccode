@@ -61,6 +61,7 @@ type ProductBarcodeBase struct {
 	ImageURI        string           `json:"imageuri" bson:"imageuri"`
 	Options         *[]ProductOption `json:"options" bson:"options"`
 	Images          *[]ProductImage  `json:"images" bson:"images"`
+	Videos          *[]ProductVideo  `json:"videos" bson:"videos"`
 	UseImageOrColor bool             `json:"useimageorcolor" bson:"useimageorcolor"`
 	ColorSelect     string           `json:"colorselect" bson:"colorselect"`
 	ColorSelectHex  string           `json:"colorselecthex" bson:"colorselecthex"`
@@ -218,6 +219,12 @@ type ProductImage struct {
 	URI    string `json:"uri" bson:"uri"`
 }
 
+type ProductVideo struct {
+	XOrder    int    `json:"xorder" bson:"xorder"`
+	URI       string `json:"uri" bson:"uri"`
+	PosterURI string `json:"posteruri" bson:"posteruri"`
+}
+
 type MarketplaceMediaAsset struct {
 	Kind           string `json:"kind" bson:"kind"` // main, gallery, sku, size_chart, video, description
 	URI            string `json:"uri" bson:"uri"`
@@ -285,6 +292,7 @@ func (ProductBarcodeInfo) CollectionName() string {
 
 type ProductBarcodeData struct {
 	models.HoldingCodeentity `bson:"inline"`
+	BusinessCode             string `json:"businesscode" bson:"businesscode"`
 	ProductBarcodeInfo       `bson:"inline"`
 }
 
@@ -363,7 +371,8 @@ func (ProductBarcodeSearch) TableName() string {
 // Names                    datatypes.JSON `json:"names"  gorm:"column:names;type:jsonb;default:'[]'" `
 // Names                    *JSONB  `json:"names"  gorm:"column:names;type:jsonb" `
 type ProductBarcodePg struct {
-	HoldingCode              string `json:"holdingcode" gorm:"column:holdingcode;primaryKey"`
+	HoldingCode              string `json:"holdingcode" gorm:"column:holding_code;primaryKey"`
+	BusinessCode             string `json:"businesscode" gorm:"column:businesscode;primaryKey"`
 	models.PartitionIdentity `gorm:"embedded;"`
 	Barcode                  string              `json:"barcode" gorm:"column:barcode;primaryKey"`
 	Names                    JSONB               `json:"names"  gorm:"column:names;type:jsonb" `
@@ -375,7 +384,7 @@ type ProductBarcodePg struct {
 	DivideValue              float64             `json:"dividevalue" gorm:"column:dividevalue"`
 	BalanceAmount            float64             `json:"balanceamount" gorm:"column:balanceamount"`
 	AverageCost              float64             `json:"averagecost" gorm:"column:averagecost"`
-	ItemCode                 string              `json:"itemcode" gorm:"column:itemcode;primaryKey"`
+	ItemCode                 string              `json:"itemcode" gorm:"column:itemcode"`
 	ItemType                 int8                `json:"itemtype" gorm:"column:itemtype"`
 	MaterialType             int8                `json:"materialtype" gorm:"column:materialtype"`
 	BrandCode                string              `json:"brandcode" gorm:"column:brandcode"`

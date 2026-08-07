@@ -2,10 +2,13 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"smlcloudplatform/internal/product/productbarcode/models"
 	"smlcloudplatform/internal/product/productbarcode/repositories"
 	"smlcloudplatform/internal/product/productbarcode/usecases"
+	"smlcloudplatform/internal/utils"
 	"smlcloudplatform/pkg/microservice"
+	"strings"
 
 	commonModels "smlcloudplatform/internal/models"
 	msModels "smlcloudplatform/pkg/microservice/models"
@@ -17,13 +20,13 @@ type IProductBarcodeConsumeService interface {
 	UpdateProductGroup(holdingCode string, doc models.ProductGroup) error
 	UpdateProductUnit(holdingCode string, doc models.ProductUnit) error
 	UpdateProductOrderType(holdingCode string, doc models.ProductOrderType) error
-	UpSert(holdingCode string, barcode string, doc models.ProductBarcodeDoc) (*models.ProductBarcodePg, error)
-	Delete(ctx context.Context, holdingCode string, itemCode string, barcode string) error
-	ReSync(holdingCode string) error
+	UpSert(holdingCode string, businessCode string, barcode string, doc models.ProductBarcodeDoc) (*models.ProductBarcodePg, error)
+	Delete(ctx context.Context, holdingCode string, businessCode string, barcode string) error
+	ReSync(holdingCode string, businessCode string) error
 }
 
 type ProductBarcodeConsumeService struct {
-	productPgRepo         repositories.IProductBarcodePGRepository
+	productPgRepo         repositories.ICompanyProductBarcodePGRepository
 	productMongoRepo      repositories.IProductBarcodeRepository
 	productClickhouseRepo repositories.IProductBarcodeClickhouseRepository
 	phaser                usecases.IProductBarcodePhaser
@@ -107,20 +110,31 @@ func (svc ProductBarcodeConsumeService) UpdateProductOrderType(holdingCode strin
 	return nil
 }
 
-func (svc ProductBarcodeConsumeService) UpSert(holdingCode string, barcode string, doc models.ProductBarcodeDoc) (*models.ProductBarcodePg, error) {
+func (svc ProductBarcodeConsumeService) UpSert(holdingCode string, businessCode string, barcode string, doc models.ProductBarcodeDoc) (*models.ProductBarcodePg, error) {
+	holdingCode = strings.TrimSpace(holdingCode)
+	businessCode = utils.NormalizeBusinessCode(businessCode)
+	barcode = utils.NormalizeBusinessCode(barcode)
+	if holdingCode == "" || businessCode == "" || barcode == "" {
+		return nil, fmt.Errorf("holdingcode, businesscode and barcode are required")
+	}
+	doc.HoldingCode = holdingCode
+	doc.BusinessCode = businessCode
+	doc.Barcode = barcode
 
 	pgDoc, err := svc.phaser.PhaseProductBarcodeDoc(&doc)
 	if err != nil {
 		return nil, err
 	}
 
-	findbarcodePG, err := svc.productPgRepo.GetByKey(holdingCode, pgDoc.ItemCode, pgDoc.Barcode)
+	pgDoc.HoldingCode = holdingCode
+	pgDoc.BusinessCode = businessCode
+	findbarcodePG, err := svc.productPgRepo.GetByCompanyBarcode(holdingCode, businessCode, barcode)
 	if err != nil {
 		return nil, err
 	}
 
 	if findbarcodePG != nil {
-		err = svc.productPgRepo.Update(holdingCode, pgDoc.ItemCode, pgDoc.Barcode, pgDoc)
+		err = svc.productPgRepo.UpdateInCompany(holdingCode, businessCode, barcode, pgDoc)
 	} else {
 		err = svc.productPgRepo.Create(pgDoc)
 	}
@@ -132,15 +146,26 @@ func (svc ProductBarcodeConsumeService) UpSert(holdingCode string, barcode strin
 	return pgDoc, nil
 }
 
-func (svc ProductBarcodeConsumeService) Delete(ctx context.Context, holdingCode string, itemCode string, barcode string) error {
+func (svc ProductBarcodeConsumeService) Delete(ctx context.Context, holdingCode string, businessCode string, barcode string) error {
+	holdingCode = strings.TrimSpace(holdingCode)
+	businessCode = utils.NormalizeBusinessCode(businessCode)
+	barcode = utils.NormalizeBusinessCode(barcode)
+	if holdingCode == "" || businessCode == "" || barcode == "" {
+		return fmt.Errorf("holdingcode, businesscode and barcode are required")
+	}
 
-	err := svc.productPgRepo.Delete(holdingCode, itemCode, barcode)
+	err := svc.productPgRepo.DeleteInCompany(holdingCode, businessCode, barcode)
 	if err != nil {
 		return err
 	}
 	return nil
 }
-func (svc ProductBarcodeConsumeService) ReSync(holdingCode string) error {
+func (svc ProductBarcodeConsumeService) ReSync(holdingCode string, businessCode string) error {
+	holdingCode = strings.TrimSpace(holdingCode)
+	businessCode = utils.NormalizeBusinessCode(businessCode)
+	if holdingCode == "" || businessCode == "" {
+		return fmt.Errorf("holdingcode and businesscode are required")
+	}
 
 	// resync 100
 
@@ -156,7 +181,14 @@ func (svc ProductBarcodeConsumeService) ReSync(holdingCode string) error {
 	}
 
 	for {
-		barcodes, pages, err := svc.productMongoRepo.FindPage(context.Background(), holdingCode, nil, pageRequest)
+		barcodes, pages, err := svc.productMongoRepo.FindPageFilterInCompany(
+			context.Background(),
+			holdingCode,
+			businessCode,
+			nil,
+			nil,
+			pageRequest,
+		)
 		if err != nil {
 			return err
 		}
@@ -168,11 +200,14 @@ func (svc ProductBarcodeConsumeService) ReSync(holdingCode string) error {
 					HoldingCodeentity: commonModels.HoldingCodeentity{
 						HoldingCode: holdingCode,
 					},
+					BusinessCode:       businessCode,
 					ProductBarcodeInfo: barcode,
 				},
 			}
 
-			svc.UpSert(holdingCode, barcode.Barcode, doc)
+			if _, err := svc.UpSert(holdingCode, businessCode, barcode.Barcode, doc); err != nil {
+				return err
+			}
 		}
 
 		if pages.TotalPage > int64(pageRequest.Page) {

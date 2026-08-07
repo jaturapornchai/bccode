@@ -98,6 +98,7 @@ type WorkTab = {
   route: string;
   item?: MenuItem;
   closable: boolean;
+  productFocusRequest?: { code: string; requestId: string };
 };
 
 type TabInsertSide = "before" | "after";
@@ -613,7 +614,9 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
         });
         const payload = await response.json() as ProfileResponse;
         if (cancelled || !response.ok || payload.success === false) return;
-        setIsDefaultPassword(Boolean(payload.data?.isdefaultpassword));
+        const usesDefaultPassword = Boolean(payload.data?.isdefaultpassword);
+        setIsDefaultPassword(usesDefaultPassword);
+        if (usesDefaultPassword) setPasswordDialogOpen(true);
         setProfileAvatar(payload.data?.avatarthumb || payload.data?.avatar || "");
       } catch {
         if (!cancelled) setIsDefaultPassword(false);
@@ -661,9 +664,16 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
   const activeWorkTab = useMemo(() => tabs.find((tab) => tab.id === activeTabId) ?? firstTab, [activeTabId, tabs]);
   const activeTabNeedsFixedViewport = activeWorkTab.route === "/productbarcode" || activeWorkTab.route === "/product" || activeWorkTab.route === "/productset" || activeWorkTab.route === "/datamodelgraph";
 
-  function openMenuItem(item: MenuItem, options: { forceNew?: boolean } = {}) {
+  function openMenuItem(
+    item: MenuItem,
+    options: { forceNew?: boolean; productCode?: string } = {},
+  ) {
     if (!canAccessMenuItem(item)) return;
     const title = menuText(item.label, language, backendLanguage);
+    const productCode = options.productCode?.trim().toUpperCase();
+    const productFocusRequest = productCode
+      ? { code: productCode, requestId: crypto.randomUUID() }
+      : undefined;
     if (menuUsageKey) {
       setMenuUsage(recordMenuUsage(localStorage, menuUsageKey, item.id));
     }
@@ -671,6 +681,13 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
     if (!options.forceNew) {
       const existingTab = tabs.find((tab) => tab.route === item.route);
       if (existingTab) {
+        if (productFocusRequest) {
+          setTabs((current) =>
+            current.map((tab) =>
+              tab.id === existingTab.id ? { ...tab, productFocusRequest } : tab,
+            ),
+          );
+        }
         setActiveTabId(existingTab.id);
         return;
       }
@@ -678,7 +695,17 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
 
     const tabId = `${item.route}::${crypto.randomUUID()}`;
     setTabs((current) => {
-      return [...current, { id: tabId, title, route: item.route, item, closable: true }];
+      return [
+        ...current,
+        {
+          id: tabId,
+          title,
+          route: item.route,
+          item,
+          closable: true,
+          productFocusRequest,
+        },
+      ];
     });
     setActiveTabId(tabId);
   }
@@ -862,6 +889,10 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
       setPasswordNotice({ type: "error", text: t(language, "passwordMismatch") });
       return;
     }
+    if (newPassword === "12345") {
+      setPasswordNotice({ type: "error", text: language === "th" ? "ห้ามใช้รหัสผ่านเริ่มต้น 12345 เป็นรหัสผ่านใหม่" : "The new password cannot be 12345." });
+      return;
+    }
 
     setPasswordSaving(true);
     setPasswordNotice(null);
@@ -882,12 +913,14 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
       const payload = await response.json() as { success?: boolean; message?: string };
       if (!response.ok || payload.success === false) throw new Error(payload.message ?? requestFailedText);
 
+      const changedDefaultPassword = isDefaultPassword;
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
       setIsDefaultPassword(false);
       setPasswordNotice({ type: "success", text: backendText(backendLanguage, "saved", language === "th" ? "บันทึกแล้ว" : "Saved.") });
       setPasswordDialogOpen(false);
+      if (changedDefaultPassword) logout();
     } catch (error) {
       setPasswordNotice({ type: "error", text: error instanceof Error ? backendText(backendLanguage, error.message, error.message) : requestFailedText });
     } finally {
@@ -1184,7 +1217,17 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                       {tab.id === "home" ? (
                         <DashboardHome />
                       ) : (
-                        <WorkTabPanel active={tab.id === activeTabId} activeTab={tab} backendLanguage={backendLanguage} language={language} tabCount={tabs.length} />
+                        <WorkTabPanel
+                          active={tab.id === activeTabId}
+                          activeTab={tab}
+                          backendLanguage={backendLanguage}
+                          language={language}
+                          onOpenRoute={(route, productCode) => {
+                             const item = allMenuItems.find((candidate) => candidate.route === route);
+                             if (item) openMenuItem(item, { productCode });
+                           }}
+                          tabCount={tabs.length}
+                        />
                       )}
                     </section>
                   ))}
@@ -1203,9 +1246,11 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                 <p className="eyebrow">{loginText}</p>
                 <h2>{changePasswordText}</h2>
               </div>
-              <button className="icon-button dialog-close" type="button" onClick={() => setPasswordDialogOpen(false)} aria-label={t(language, "lineLoginClose")}>
-                ×
-              </button>
+              {!isDefaultPassword ? (
+                <button className="icon-button dialog-close" type="button" onClick={() => setPasswordDialogOpen(false)} aria-label={t(language, "lineLoginClose")}>
+                  ×
+                </button>
+              ) : null}
             </div>
             {isDefaultPassword ? (
               <div className="message error">
@@ -1226,9 +1271,11 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
               <Input value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} type="password" autoComplete="new-password" />
             </label>
             <div className="line-dialog-actions">
-              <button className="secondary-button" type="button" onClick={() => setPasswordDialogOpen(false)}>
-                {t(language, "lineLoginClose")}
-              </button>
+              {!isDefaultPassword ? (
+                <button className="secondary-button" type="button" onClick={() => setPasswordDialogOpen(false)}>
+                  {t(language, "lineLoginClose")}
+                </button>
+              ) : null}
               <button className="primary-button" type="submit" disabled={passwordSaving}>
                 {passwordSaving ? <Loader2 className="spin" size={17} /> : <KeyRound aria-hidden="true" size={17} />}
                 <span>{changePasswordText}</span>
@@ -2239,7 +2286,7 @@ function DashboardHome() {
   return <div className="min-h-[320px] min-w-0" aria-label="overview" />;
 }
 
-function WorkTabPanel({ active, activeTab, backendLanguage, language, tabCount }: { active: boolean; activeTab: WorkTab; backendLanguage: BackendLanguageDictionary; language: LanguageCode; tabCount: number }) {
+function WorkTabPanel({ active, activeTab, backendLanguage, language, onOpenRoute, tabCount }: { active: boolean; activeTab: WorkTab; backendLanguage: BackendLanguageDictionary; language: LanguageCode; onOpenRoute: (route: string, productCode?: string) => void; tabCount: number }) {
   if (activeTab.route === "/currency") {
     return <CurrencyScreen embedded language={language} />;
   }
@@ -2249,7 +2296,14 @@ function WorkTabPanel({ active, activeTab, backendLanguage, language, tabCount }
   }
 
   if (activeTab.route === "/product") {
-    return <ProductScreen active={active} embedded language={language} />;
+    return (
+      <ProductScreen
+        active={active}
+        embedded
+        focusRequest={activeTab.productFocusRequest}
+        language={language}
+      />
+    );
   }
 
   if (activeTab.route === "/productset") {
@@ -2257,7 +2311,14 @@ function WorkTabPanel({ active, activeTab, backendLanguage, language, tabCount }
   }
 
   if (activeTab.route === "/productbarcode") {
-    return <ProductBarcodeScreen embedded language={language} />;
+    return (
+      <ProductBarcodeScreen
+        embedded
+        language={language}
+        onOpenLabelPrint={() => onOpenRoute("/productbarcodeshelf")}
+        onOpenProduct={(itemCode) => onOpenRoute("/product", itemCode)}
+      />
+    );
   }
 
   if (activeTab.route === "/productbarcodeshelf") {

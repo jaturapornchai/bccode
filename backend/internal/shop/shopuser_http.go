@@ -90,7 +90,7 @@ func (h ShopMemberHttp) ListUserInShop(ctx microservice.IContext) error {
 
 	if err != nil {
 		if err.Error() == "permission denied" {
-			ctx.Response(http.StatusOK, &common.ApiResponse{Success: false, Message: "permission denied"})
+			ctx.Response(http.StatusForbidden, &common.ApiResponse{Success: false, Message: "permission denied"})
 			return err
 		}
 		ctx.ResponseError(400, "find failed")
@@ -118,15 +118,10 @@ func (h ShopMemberHttp) ListUserInShop(ctx microservice.IContext) error {
 func (h ShopMemberHttp) InfoShopUser(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	holdingCode := userInfo.HoldingCode
-
-	// if userInfo.Role != models.ROLE_OWNER && userInfo.Role != models.ROLE_ADMIN {
-	// 	ctx.Response(http.StatusOK, &common.ApiResponse{
-	// 		Success: false,
-	// 		Message: "permission denied",
-	// 	})
-
-	// 	return errors.New("permission denied")
-	// }
+	if err := h.svc.EnsureHoldingManager(holdingCode, userInfo.Username); err != nil {
+		ctx.Response(http.StatusForbidden, &common.ApiResponse{Success: false, Message: "permission denied"})
+		return err
+	}
 
 	username := strings.TrimSpace(decodePathUsername(ctx.Param("username")))
 
@@ -171,7 +166,7 @@ func (h ShopMemberHttp) ListShopUser(ctx microservice.IContext) error {
 	authUsername := userInfo.Username
 
 	if userInfo.Role != models.ROLE_OWNER && userInfo.Role != models.ROLE_ADMIN {
-		ctx.Response(http.StatusOK, &common.ApiResponse{
+		ctx.Response(http.StatusForbidden, &common.ApiResponse{
 			Success: false,
 			Message: "permission denied",
 		})
@@ -299,7 +294,7 @@ func (h ShopMemberHttp) SaveUserPermissionShop(ctx microservice.IContext) error 
 	holdingCode := userInfo.HoldingCode
 
 	if userInfo.Role != models.ROLE_OWNER && userInfo.Role != models.ROLE_ADMIN {
-		ctx.Response(http.StatusOK, &common.ApiResponse{
+		ctx.Response(http.StatusForbidden, &common.ApiResponse{
 			Success: false,
 			Message: "permission denied",
 		})
@@ -355,7 +350,7 @@ func (h ShopMemberHttp) DeleteUserPermissionShop(ctx microservice.IContext) erro
 	h.ms.Logger.Debug("DeleteUserPermissionShop - holdingCode: " + holdingCode)
 
 	if userInfo.Role != models.ROLE_OWNER && userInfo.Role != models.ROLE_ADMIN {
-		ctx.Response(http.StatusOK, &common.ApiResponse{
+		ctx.Response(http.StatusForbidden, &common.ApiResponse{
 			Success: false,
 			Message: "permission denied",
 		})
@@ -413,7 +408,7 @@ func (h ShopMemberHttp) CleanupEmptyUsers(ctx microservice.IContext) error {
 
 	// ต้องเป็น Owner เท่านั้น
 	if userInfo.Role != models.ROLE_OWNER && userInfo.Role != models.ROLE_ADMIN {
-		ctx.Response(http.StatusOK, &common.ApiResponse{
+		ctx.Response(http.StatusForbidden, &common.ApiResponse{
 			Success: false,
 			Message: "permission denied",
 		})

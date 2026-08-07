@@ -1,6 +1,7 @@
 package authentication
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,11 +14,15 @@ import (
 	"smlcloudplatform/internal/firebase"
 	"smlcloudplatform/internal/line"
 	common "smlcloudplatform/internal/models"
+	companyModels "smlcloudplatform/internal/organization/company/models"
 	"smlcloudplatform/internal/shop"
 	"smlcloudplatform/internal/utils"
+	"smlcloudplatform/pkg/apperr"
 	"smlcloudplatform/pkg/microservice"
 	"strconv"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 type IAuthenticationHttp interface {
@@ -34,6 +39,7 @@ type IAuthenticationHttp interface {
 type AuthenticationHttp struct {
 	ms                    *microservice.Microservice
 	cfg                   config.IConfig
+	pst                   microservice.IPersisterMongo
 	authService           *microservice.AuthService
 	authenticationService services.IAuthenticationService
 	shopService           shop.IShopService
@@ -75,6 +81,7 @@ func NewAuthenticationHttp(ms *microservice.Microservice, cfg config.IConfig) IA
 	return AuthenticationHttp{
 		ms:                    ms,
 		cfg:                   cfg,
+		pst:                   pst,
 		authService:           authService,
 		authenticationService: authenticationService,
 		shopUserService:       shopUserService,
@@ -95,7 +102,6 @@ func (h AuthenticationHttp) RegisterHttp() {
 	h.ms.POST("/logout", h.Logout)
 	h.ms.POST("/refresh", h.RefreshToken)
 	h.ms.POST("/register", h.Register)
-	h.ms.POST("/register-username", h.RegisterByUsername)
 	h.ms.POST("/send-phonenumber-otp", h.SendPhoneNumberOTP)
 	h.ms.POST("/forgot-password-phonenumber", h.ForgotPasswordByPhoneNumber)
 	h.ms.POST("/register-phonenumber", h.RegisterByPhoneNumber)
@@ -144,13 +150,11 @@ func (h AuthenticationHttp) LoginWithPhoneNumber(ctx microservice.IContext) erro
 	err := json.Unmarshal([]byte(input), &userReq)
 
 	if err != nil {
-		ctx.ResponseError(400, "user payload invalid")
-		return err
+		return apperr.Respond(ctx, apperr.ErrBadRequest.WithMessage("user payload invalid"))
 	}
 
 	if err = ctx.Validate(userReq); err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
+		return apperr.Respond(ctx, apperr.ErrValidation.WithWrap(err))
 	}
 
 	authContext := models.AuthenticationContext{
@@ -160,14 +164,14 @@ func (h AuthenticationHttp) LoginWithPhoneNumber(ctx microservice.IContext) erro
 	result, err := h.authenticationService.LoginWithPhoneNumber(userReq, authContext)
 
 	if err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
+		return apperr.Respond(ctx, apperr.ErrUnauthorized.WithWrap(err).WithMessage("login failed."))
 	}
 
 	ctx.Response(http.StatusOK, map[string]interface{}{
-		"success": true,
-		"token":   result.Token,
-		"refresh": result.Refresh,
+		"success":            true,
+		"token":              result.Token,
+		"refresh":            result.Refresh,
+		"mustchangepassword": result.MustChangePassword,
 	})
 
 	return nil
@@ -189,13 +193,11 @@ func (h AuthenticationHttp) Login(ctx microservice.IContext) error {
 	err := json.Unmarshal([]byte(input), &userReq)
 
 	if err != nil {
-		ctx.ResponseError(400, "user payload invalid")
-		return err
+		return apperr.Respond(ctx, apperr.ErrBadRequest.WithMessage("user payload invalid"))
 	}
 
 	if err = ctx.Validate(userReq); err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
+		return apperr.Respond(ctx, apperr.ErrValidation.WithWrap(err))
 	}
 
 	authContext := models.AuthenticationContext{
@@ -207,17 +209,16 @@ func (h AuthenticationHttp) Login(ctx microservice.IContext) error {
 	if err != nil {
 
 		if errors.Is(err, &models.UserDisableLoginError{}) {
-			ctx.ResponseError(400, "user is disabled")
-		} else {
-			ctx.ResponseError(401, "login failed.")
+			return apperr.Respond(ctx, apperr.ErrDisabled.WithMessage("user is disabled"))
 		}
-		return err
+		return apperr.Respond(ctx, apperr.ErrUnauthorized.WithWrap(err).WithMessage("login failed."))
 	}
 
 	ctx.Response(http.StatusOK, map[string]interface{}{
-		"success": true,
-		"token":   result.Token,
-		"refresh": result.Refresh,
+		"success":            true,
+		"token":              result.Token,
+		"refresh":            result.Refresh,
+		"mustchangepassword": result.MustChangePassword,
 	})
 
 	return nil
@@ -239,13 +240,11 @@ func (h AuthenticationHttp) Poslogin(ctx microservice.IContext) error {
 	err := json.Unmarshal([]byte(input), &userReq)
 
 	if err != nil {
-		ctx.ResponseError(400, "user payload invalid")
-		return err
+		return apperr.Respond(ctx, apperr.ErrBadRequest.WithMessage("user payload invalid"))
 	}
 
 	if err = ctx.Validate(userReq); err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
+		return apperr.Respond(ctx, apperr.ErrValidation.WithWrap(err))
 	}
 
 	authContext := models.AuthenticationContext{
@@ -255,14 +254,14 @@ func (h AuthenticationHttp) Poslogin(ctx microservice.IContext) error {
 	result, err := h.authenticationService.Poslogin(userReq, authContext)
 
 	if err != nil {
-		ctx.ResponseError(400, "login failed.")
-		return err
+		return apperr.Respond(ctx, apperr.ErrUnauthorized.WithWrap(err).WithMessage("login failed."))
 	}
 
 	ctx.Response(http.StatusOK, map[string]interface{}{
-		"success": true,
-		"token":   result.Token,
-		"refresh": result.Refresh,
+		"success":            true,
+		"token":              result.Token,
+		"refresh":            result.Refresh,
+		"mustchangepassword": result.MustChangePassword,
 	})
 
 	return nil
@@ -284,13 +283,11 @@ func (h AuthenticationHttp) LoginEmail(ctx microservice.IContext) error {
 	err := json.Unmarshal([]byte(input), &userReq)
 
 	if err != nil {
-		ctx.ResponseError(400, "user payload invalid")
-		return err
+		return apperr.Respond(ctx, apperr.ErrBadRequest.WithMessage("user payload invalid"))
 	}
 
 	if err = ctx.Validate(userReq); err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
+		return apperr.Respond(ctx, apperr.ErrValidation.WithWrap(err))
 	}
 
 	authContext := models.AuthenticationContext{
@@ -300,8 +297,7 @@ func (h AuthenticationHttp) LoginEmail(ctx microservice.IContext) error {
 	result, err := h.authenticationService.LoginEmail(userReq, authContext)
 
 	if err != nil {
-		ctx.ResponseError(400, "login failed.")
-		return err
+		return apperr.Respond(ctx, apperr.ErrUnauthorized.WithWrap(err).WithMessage("login failed."))
 	}
 
 	ctx.Response(http.StatusOK, map[string]interface{}{
@@ -328,26 +324,24 @@ func (h AuthenticationHttp) RefreshToken(ctx microservice.IContext) error {
 	err := json.Unmarshal([]byte(input), &reqBody)
 
 	if err != nil {
-		ctx.ResponseError(400, "payload invalid")
-		return err
+		return apperr.Respond(ctx, apperr.ErrBadRequest.WithMessage("payload invalid"))
 	}
 
 	if err = ctx.Validate(reqBody); err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
+		return apperr.Respond(ctx, apperr.ErrValidation.WithWrap(err))
 	}
 
 	result, err := h.authenticationService.RefreshToken(reqBody)
 
 	if err != nil {
-		ctx.ResponseError(400, "login failed.")
-		return err
+		return apperr.Respond(ctx, apperr.ErrUnauthorized.WithWrap(err).WithMessage("login failed."))
 	}
 
 	ctx.Response(http.StatusOK, map[string]interface{}{
-		"success": true,
-		"token":   result.Token,
-		"refresh": result.Refresh,
+		"success":            true,
+		"token":              result.Token,
+		"refresh":            result.Refresh,
+		"mustchangepassword": result.MustChangePassword,
 	})
 
 	return nil
@@ -369,19 +363,16 @@ func (h AuthenticationHttp) TokenLogin(ctx microservice.IContext) error {
 	err := json.Unmarshal([]byte(input), &tokenReq)
 
 	if err != nil {
-		ctx.ResponseError(400, "user payload invalid")
-		return err
+		return apperr.Respond(ctx, apperr.ErrBadRequest.WithMessage("user payload invalid"))
 	}
 
 	tokenString, err := h.authenticationService.LoginWithFirebaseToken(tokenReq.Token)
 
 	if err != nil {
 		if errors.Is(err, &models.UserDisableLoginError{}) {
-			ctx.ResponseError(400, "user is disabled")
-			return err
+			return apperr.Respond(ctx, apperr.ErrDisabled.WithMessage("user is disabled"))
 		}
-		ctx.ResponseError(400, "login failed.")
-		return err
+		return apperr.Respond(ctx, apperr.ErrUnauthorized.WithWrap(err).WithMessage("login failed."))
 	}
 
 	ctx.Response(http.StatusOK, common.AuthResponse{
@@ -406,31 +397,26 @@ func (h AuthenticationHttp) GoogleLogin(ctx microservice.IContext) error {
 	req := &models.GoogleLoginRequest{}
 	err := json.Unmarshal([]byte(input), req)
 	if err != nil {
-		ctx.ResponseError(400, "payload invalid")
-		return err
+		return apperr.Respond(ctx, apperr.ErrBadRequest.WithMessage("payload invalid"))
 	}
 
 	// SECURITY (2026-06-21): require + verify a real Google ID token. Never trust a
 	// caller-supplied email — derive the trusted email from the verified token claims.
 	// This closes the account-takeover hole where posting any email minted a token.
 	if req.Credential == "" {
-		ctx.ResponseError(401, "google credential required")
-		return nil
+		return apperr.Respond(ctx, apperr.ErrUnauthorized.WithMessage("google credential required"))
 	}
 	claims, err := verifyGoogleIDToken(req.Credential, h.cfg.GoogleClientId())
 	if err != nil {
-		ctx.ResponseError(401, "google token verification failed")
-		return err
+		return apperr.Respond(ctx, apperr.ErrUnauthorized.WithWrap(err).WithMessage("google token verification failed"))
 	}
 
 	tokenString, err := h.authenticationService.LoginWithGoogleEmail(claims.Email, claims.Name)
 	if err != nil {
 		if errors.Is(err, &models.UserDisableLoginError{}) {
-			ctx.ResponseError(400, "user is disabled")
-			return err
+			return apperr.Respond(ctx, apperr.ErrDisabled.WithMessage("user is disabled"))
 		}
-		ctx.ResponseError(400, "login failed.")
-		return err
+		return apperr.Respond(ctx, apperr.ErrUnauthorized.WithWrap(err).WithMessage("login failed."))
 	}
 
 	ctx.Response(http.StatusOK, common.AuthResponse{
@@ -505,24 +491,20 @@ func (h AuthenticationHttp) LoginWithLine(ctx microservice.IContext) error {
 	err := json.Unmarshal([]byte(input), &lineReq)
 
 	if err != nil {
-		ctx.ResponseError(400, "user payload invalid")
-		return err
+		return apperr.Respond(ctx, apperr.ErrBadRequest.WithMessage("user payload invalid"))
 	}
 
 	if err = ctx.Validate(lineReq); err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
+		return apperr.Respond(ctx, apperr.ErrValidation.WithWrap(err))
 	}
 
 	tokenString, err := h.authenticationService.LoginWithLineToken(lineReq.Token)
 
 	if err != nil {
 		if errors.Is(err, &models.UserDisableLoginError{}) {
-			ctx.ResponseError(400, "user is disabled")
-			return err
+			return apperr.Respond(ctx, apperr.ErrDisabled.WithMessage("user is disabled"))
 		}
-		ctx.ResponseError(400, "login failed.")
-		return err
+		return apperr.Respond(ctx, apperr.ErrUnauthorized.WithWrap(err).WithMessage("login failed."))
 	}
 
 	ctx.Response(http.StatusOK, common.AuthResponse{
@@ -543,13 +525,11 @@ func (h AuthenticationHttp) LoginWithLineUserID(ctx microservice.IContext) error
 	err := json.Unmarshal([]byte(input), &lineReq)
 
 	if err != nil {
-		ctx.ResponseError(400, "user payload invalid")
-		return err
+		return apperr.Respond(ctx, apperr.ErrBadRequest.WithMessage("user payload invalid"))
 	}
 
 	if err = ctx.Validate(lineReq); err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
+		return apperr.Respond(ctx, apperr.ErrValidation.WithWrap(err))
 	}
 
 	tokenString, username, err := h.authenticationService.LoginWithLineUserID(
@@ -561,12 +541,10 @@ func (h AuthenticationHttp) LoginWithLineUserID(ctx microservice.IContext) error
 
 	if err != nil {
 		if errors.Is(err, &models.UserDisableLoginError{}) {
-			ctx.ResponseError(400, "user is disabled")
-			return err
+			return apperr.Respond(ctx, apperr.ErrDisabled.WithMessage("user is disabled"))
 		}
 		// ส่ง error message จริงจาก service (เช่น "ไม่พบบัญชีที่เชื่อมต่อ LINE นี้")
-		ctx.ResponseError(400, err.Error())
-		return err
+		return apperr.RespondErr(ctx, err)
 	}
 
 	// ส่ง username จริงกลับไปด้วย — Flutter จะได้แสดง email แทน LINE display name
@@ -596,23 +574,17 @@ func (h AuthenticationHttp) Register(ctx microservice.IContext) error {
 	err := json.Unmarshal([]byte(input), &userReq)
 
 	if err != nil {
-		ctx.ResponseError(400, "user payload invalid")
-		return err
+		return apperr.Respond(ctx, apperr.ErrBadRequest.WithMessage("user payload invalid"))
 	}
 
 	if err = ctx.Validate(userReq); err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
+		return apperr.Respond(ctx, apperr.ErrValidation.WithWrap(err))
 	}
 
 	idx, err := h.authenticationService.Register(userReq)
 
 	if err != nil {
-		ctx.Response(http.StatusBadRequest, common.ApiResponse{
-			Success: false,
-			Message: err.Error(),
-		})
-		return err
+		return apperr.RespondErr(ctx, err)
 	}
 
 	ctx.Response(http.StatusCreated, common.ApiResponse{
@@ -640,23 +612,17 @@ func (h AuthenticationHttp) RegisterByUsername(ctx microservice.IContext) error 
 	err := json.Unmarshal([]byte(input), &userReq)
 
 	if err != nil {
-		ctx.ResponseError(400, "user payload invalid")
-		return err
+		return apperr.Respond(ctx, apperr.ErrBadRequest.WithMessage("user payload invalid"))
 	}
 
 	if err = ctx.Validate(userReq); err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
+		return apperr.Respond(ctx, apperr.ErrValidation.WithWrap(err))
 	}
 
 	idx, err := h.authenticationService.RegisterByUsername(userReq)
 
 	if err != nil {
-		ctx.Response(http.StatusBadRequest, common.ApiResponse{
-			Success: false,
-			Message: err.Error(),
-		})
-		return err
+		return apperr.RespondErr(ctx, err)
 	}
 
 	ctx.Response(http.StatusCreated, common.ApiResponse{
@@ -684,23 +650,17 @@ func (h AuthenticationHttp) SendPhoneNumberOTP(ctx microservice.IContext) error 
 	err := json.Unmarshal([]byte(input), &payload)
 
 	if err != nil {
-		ctx.ResponseError(400, "user payload invalid")
-		return err
+		return apperr.Respond(ctx, apperr.ErrBadRequest.WithMessage("user payload invalid"))
 	}
 
 	if err = ctx.Validate(payload); err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
+		return apperr.Respond(ctx, apperr.ErrValidation.WithWrap(err))
 	}
 
 	result, err := h.authenticationService.SendPhonenumberOTP(payload)
 
 	if err != nil {
-		ctx.Response(http.StatusBadRequest, common.ApiResponse{
-			Success: false,
-			Message: err.Error(),
-		})
-		return err
+		return apperr.RespondErr(ctx, err)
 	}
 
 	ctx.Response(http.StatusCreated, common.ApiResponse{
@@ -728,23 +688,17 @@ func (h AuthenticationHttp) RegisterByPhoneNumber(ctx microservice.IContext) err
 	err := json.Unmarshal([]byte(input), &payload)
 
 	if err != nil {
-		ctx.ResponseError(400, "user payload invalid")
-		return err
+		return apperr.Respond(ctx, apperr.ErrBadRequest.WithMessage("user payload invalid"))
 	}
 
 	if err = ctx.Validate(payload); err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
+		return apperr.Respond(ctx, apperr.ErrValidation.WithWrap(err))
 	}
 
 	idx, err := h.authenticationService.RegisterByPhonenumber(payload)
 
 	if err != nil {
-		ctx.Response(http.StatusBadRequest, common.ApiResponse{
-			Success: false,
-			Message: err.Error(),
-		})
-		return err
+		return apperr.RespondErr(ctx, err)
 	}
 
 	ctx.Response(http.StatusCreated, common.ApiResponse{
@@ -771,23 +725,17 @@ func (h AuthenticationHttp) ForgotPasswordByPhoneNumber(ctx microservice.IContex
 	err := json.Unmarshal([]byte(input), &payload)
 
 	if err != nil {
-		ctx.ResponseError(400, "user payload invalid")
-		return err
+		return apperr.Respond(ctx, apperr.ErrBadRequest.WithMessage("user payload invalid"))
 	}
 
 	if err = ctx.Validate(payload); err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
+		return apperr.Respond(ctx, apperr.ErrValidation.WithWrap(err))
 	}
 
 	err = h.authenticationService.ForgotPasswordByPhonenumber(payload)
 
 	if err != nil {
-		ctx.Response(http.StatusBadRequest, common.ApiResponse{
-			Success: false,
-			Message: err.Error(),
-		})
-		return err
+		return apperr.RespondErr(ctx, err)
 	}
 
 	ctx.Response(http.StatusCreated, common.ApiResponse{
@@ -814,23 +762,17 @@ func (h AuthenticationHttp) RegisterCheckExistUsername(ctx microservice.IContext
 	err := json.Unmarshal([]byte(input), &payload)
 
 	if err != nil {
-		ctx.ResponseError(400, "user payload invalid")
-		return err
+		return apperr.Respond(ctx, apperr.ErrBadRequest.WithMessage("user payload invalid"))
 	}
 
 	if err = ctx.Validate(payload); err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
+		return apperr.Respond(ctx, apperr.ErrValidation.WithWrap(err))
 	}
 
 	isExists, err := h.authenticationService.CheckExistsUsername(payload.Username)
 
 	if err != nil {
-		ctx.Response(http.StatusBadRequest, common.ApiResponse{
-			Success: false,
-			Message: err.Error(),
-		})
-		return err
+		return apperr.RespondErr(ctx, err)
 	}
 
 	ctx.Response(http.StatusCreated, common.ApiResponse{
@@ -858,23 +800,17 @@ func (h AuthenticationHttp) RegisterCheckExistPhonenumber(ctx microservice.ICont
 	err := json.Unmarshal([]byte(input), &payload)
 
 	if err != nil {
-		ctx.ResponseError(400, "user payload invalid")
-		return err
+		return apperr.Respond(ctx, apperr.ErrBadRequest.WithMessage("user payload invalid"))
 	}
 
 	if err = ctx.Validate(payload); err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
+		return apperr.Respond(ctx, apperr.ErrValidation.WithWrap(err))
 	}
 
 	isExists, err := h.authenticationService.CheckExistsPhonenumber(payload.PhoneNumber)
 
 	if err != nil {
-		ctx.Response(http.StatusBadRequest, common.ApiResponse{
-			Success: false,
-			Message: err.Error(),
-		})
-		return err
+		return apperr.RespondErr(ctx, err)
 	}
 
 	ctx.Response(http.StatusCreated, common.ApiResponse{
@@ -902,23 +838,17 @@ func (h AuthenticationHttp) Update(ctx microservice.IContext) error {
 	err := json.Unmarshal([]byte(input), &userReq)
 
 	if err != nil {
-		ctx.ResponseError(400, "user payload invalid")
-		return err
+		return apperr.Respond(ctx, apperr.ErrBadRequest.WithMessage("user payload invalid"))
 	}
 
 	if err = ctx.Validate(userReq); err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
+		return apperr.Respond(ctx, apperr.ErrValidation.WithWrap(err))
 	}
 
 	err = h.authenticationService.Update(authUsername, userReq)
 
 	if err != nil {
-		ctx.Response(http.StatusBadRequest, common.ApiResponse{
-			Success: false,
-			Message: err.Error(),
-		})
-		return err
+		return apperr.RespondErr(ctx, err)
 	}
 
 	ctx.Response(http.StatusCreated, common.ApiResponse{
@@ -945,23 +875,17 @@ func (h AuthenticationHttp) UpdatePassword(ctx microservice.IContext) error {
 	err := json.Unmarshal([]byte(input), &userPwdReq)
 
 	if err != nil {
-		ctx.ResponseError(400, "user payload invalid")
-		return err
+		return apperr.Respond(ctx, apperr.ErrBadRequest.WithMessage("user payload invalid"))
 	}
 
 	if err = ctx.Validate(userPwdReq); err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
+		return apperr.Respond(ctx, apperr.ErrValidation.WithWrap(err))
 	}
 
 	err = h.authenticationService.UpdatePassword(authUsername, userPwdReq.CurrentPassword, userPwdReq.NewPassword)
 
 	if err != nil {
-		ctx.Response(http.StatusBadRequest, common.ApiResponse{
-			Success: false,
-			Message: err.Error(),
-		})
-		return err
+		return apperr.RespondErr(ctx, err)
 	}
 
 	ctx.Response(http.StatusCreated, common.ApiResponse{
@@ -985,17 +909,12 @@ func (h AuthenticationHttp) ResetPasswordToDefault(ctx microservice.IContext) er
 	targetUsername := ctx.Param("username")
 
 	if len(targetUsername) < 1 {
-		ctx.ResponseError(400, "username invalid")
-		return nil
+		return apperr.Respond(ctx, apperr.ErrValidation.WithField("username").WithMessage("username invalid"))
 	}
 
 	err := h.authenticationService.ResetPasswordToDefault(userInfo.HoldingCode, userInfo.Username, targetUsername)
 	if err != nil {
-		ctx.Response(http.StatusBadRequest, common.ApiResponse{
-			Success: false,
-			Message: err.Error(),
-		})
-		return err
+		return apperr.RespondErr(ctx, err)
 	}
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
@@ -1020,11 +939,7 @@ func (h AuthenticationHttp) Logout(ctx microservice.IContext) error {
 	err := h.authenticationService.Logout(authorizationHeader)
 
 	if err != nil {
-		ctx.Response(http.StatusBadRequest, common.ApiResponse{
-			Success: false,
-			Message: err.Error(),
-		})
-		return err
+		return apperr.RespondErr(ctx, err)
 	}
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
@@ -1069,11 +984,7 @@ func (h AuthenticationHttp) Profile(ctx microservice.IContext) error {
 	userProfile, err := h.authenticationService.Profile(userInfo.Username, userInfo.UID)
 
 	if err != nil {
-		ctx.Response(http.StatusBadRequest, common.ApiResponse{
-			Success: false,
-			Message: err.Error(),
-		})
-		return err
+		return apperr.RespondErr(ctx, err)
 	}
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
@@ -1098,11 +1009,7 @@ func (h AuthenticationHttp) ProfileShop(ctx microservice.IContext) error {
 	userProfile, err := h.shopService.InfoShop(ctx.UserInfo().HoldingCode)
 
 	if err != nil {
-		ctx.Response(http.StatusBadRequest, common.ApiResponse{
-			Success: false,
-			Message: err.Error(),
-		})
-		return err
+		return apperr.RespondErr(ctx, err)
 	}
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
@@ -1132,34 +1039,37 @@ func (h AuthenticationHttp) SelectShop(ctx microservice.IContext) error {
 	err := json.Unmarshal([]byte(input), &shopSelectReq)
 
 	if err != nil {
-		ctx.Response(http.StatusBadRequest, common.ApiResponse{
-			Success: false,
-			Message: err.Error(),
-		})
-		return err
+		return apperr.Respond(ctx, apperr.ErrBadRequest.WithWrap(err))
 	}
 	holdingCode, normalizeErr := utils.NormalizeHoldingCode(shopSelectReq.HoldingCode)
 	if normalizeErr != nil || holdingCode == "" {
-		ctx.Response(http.StatusBadRequest, common.ApiResponse{
-			Success: false,
-			Message: "holdingcode invalid",
-		})
-		return normalizeErr
+		return apperr.Respond(ctx, apperr.ErrValidation.WithField("holdingcode").WithMessage("holdingcode invalid"))
 	}
 	shopSelectReq.HoldingCode = holdingCode
+	shopSelectReq.BusinessCode = companyModels.NormalizeCompanyCode(shopSelectReq.BusinessCode)
+	if shopSelectReq.BusinessCode != "" {
+		companyCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		company := companyModels.CompanyDoc{}
+		if err := h.pst.FindOne(companyCtx, companyModels.CompanyDoc{}, selectableCompanyFilter(
+			shopSelectReq.HoldingCode,
+			shopSelectReq.BusinessCode,
+		), &company); err != nil {
+			return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(err))
+		}
+		if company.GuidFixed == "" {
+			return apperr.Respond(ctx, apperr.ErrForbidden.WithMessage("company not found in Holding").WithThaiMessage("ไม่พบบริษัทนี้ใน Holding ที่เลือก"))
+		}
+	}
 
 	authContext := models.AuthenticationContext{
 		Ip: ctx.RealIp(),
 	}
 
-	err = h.authenticationService.AccessShop(shopSelectReq.HoldingCode, authUsername, userInfo.UID, authorizationHeader, authContext)
+	err = h.authenticationService.AccessShop(shopSelectReq.HoldingCode, shopSelectReq.BusinessCode, authUsername, userInfo.UID, authorizationHeader, authContext)
 
 	if err != nil {
-		ctx.Response(http.StatusBadRequest, common.ApiResponse{
-			Success: false,
-			Message: err.Error(),
-		})
-		return err
+		return apperr.RespondErr(ctx, err)
 	}
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
@@ -1167,6 +1077,15 @@ func (h AuthenticationHttp) SelectShop(ctx microservice.IContext) error {
 	})
 
 	return nil
+}
+
+func selectableCompanyFilter(holdingCode string, businessCode string) bson.M {
+	return bson.M{
+		"holdingcode": holdingCode,
+		"code":        businessCode,
+		"isactive":    true,
+		"deletedat":   bson.M{"$exists": false},
+	}
 }
 
 // List Shop godoc
@@ -1186,8 +1105,7 @@ func (h AuthenticationHttp) ListShopCanAccess(ctx microservice.IContext) error {
 	docList, pagination, err := h.shopUserService.ListShopByUser(authUsername, userInfo.UID, pageable)
 
 	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return nil
+		return apperr.RespondErr(ctx, err)
 	}
 
 	ctx.Response(http.StatusOK,
@@ -1220,15 +1138,13 @@ func (h AuthenticationHttp) UpdateShopFavorite(ctx microservice.IContext) error 
 	err := json.Unmarshal([]byte(input), &reqBody)
 
 	if err != nil {
-		ctx.ResponseError(400, "request payload invalid")
-		return err
+		return apperr.Respond(ctx, apperr.ErrBadRequest.WithMessage("request payload invalid"))
 	}
 
 	err = h.authenticationService.UpdateFavoriteShop(reqBody.HoldingCode, authUsername, userInfo.UID, reqBody.IsFavorite)
 
 	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return nil
+		return apperr.RespondErr(ctx, err)
 	}
 
 	ctx.Response(http.StatusOK,
@@ -1257,23 +1173,17 @@ func (h AuthenticationHttp) LinkLine(ctx microservice.IContext) error {
 	err := json.Unmarshal([]byte(input), &req)
 
 	if err != nil {
-		ctx.ResponseError(400, "user payload invalid")
-		return err
+		return apperr.Respond(ctx, apperr.ErrBadRequest.WithMessage("user payload invalid"))
 	}
 
 	if err = ctx.Validate(req); err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
+		return apperr.Respond(ctx, apperr.ErrValidation.WithWrap(err))
 	}
 
 	err = h.authenticationService.LinkLine(authUsername, req)
 
 	if err != nil {
-		ctx.Response(http.StatusBadRequest, common.ApiResponse{
-			Success: false,
-			Message: err.Error(),
-		})
-		return err
+		return apperr.RespondErr(ctx, err)
 	}
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
@@ -1297,11 +1207,7 @@ func (h AuthenticationHttp) UnlinkLine(ctx microservice.IContext) error {
 	err := h.authenticationService.UnlinkLine(authUsername)
 
 	if err != nil {
-		ctx.Response(http.StatusBadRequest, common.ApiResponse{
-			Success: false,
-			Message: err.Error(),
-		})
-		return err
+		return apperr.RespondErr(ctx, err)
 	}
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
@@ -1326,8 +1232,7 @@ func (h AuthenticationHttp) DisableUser(ctx microservice.IContext) error {
 	err := h.authenticationService.DisableUser(authUsername)
 
 	if err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
+		return apperr.RespondErr(ctx, err)
 	}
 
 	ctx.Response(http.StatusOK, common.ApiResponse{

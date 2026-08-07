@@ -565,9 +565,13 @@ test.describe.serial("sample data — สินค้า/บาร์โค้�
     // "กาแฟ" child.
     await clickButtonByText(page, /1.*เครื่องดื่ม|เครื่องดื่ม.*1/);
     await page.waitForTimeout(1200);
-    const hasChild = await bodyHasText(page, "กาแฟ");
-    if (!hasChild) {
-      await page.locator('button[aria-label^="แสดงหมวดย่อย"]').first().click();
+    // Expand nodes one by one until กาแฟ is visible — the เครื่องดื่ม root is not
+    // guaranteed to be the first tree row, so expanding only the first node is
+    // not enough (found after junk-group cleanup reordered roots).
+    for (let attempt = 0; attempt < 6 && !(await bodyHasText(page, "กาแฟ")); attempt += 1) {
+      const expander = page.locator('button[aria-label^="แสดงหมวดย่อย"]').first();
+      if ((await expander.count()) === 0) break;
+      await expander.click();
       await page.waitForTimeout(600);
     }
     await clickTreeRowByText(page, "กาแฟ");

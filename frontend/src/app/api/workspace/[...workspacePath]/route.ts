@@ -10,6 +10,7 @@ import {
   requireBearerToken,
   type ApiProxyBody,
 } from "@/lib/workspace-api";
+import { normalizeBusinessCode } from "@/lib/business-code";
 import { holdingCodeValidationMessageTh, isValidHoldingCode, normalizeHoldingCode } from "@/lib/holding-code";
 
 type WorkspaceProxyContext = {
@@ -19,8 +20,6 @@ type WorkspaceProxyContext = {
 type ProductUnitName = {
   code: string;
   name: string;
-  isauto?: boolean;
-  isdelete?: boolean;
 };
 
 type ProductUnit = {
@@ -31,8 +30,6 @@ type ProductUnit = {
 type HoldingNameEntry = {
   code?: string;
   name?: string;
-  isauto?: boolean;
-  isdelete?: boolean;
 };
 
 type MainApiResult = {
@@ -127,9 +124,13 @@ export async function POST(request: Request, context: WorkspaceProxyContext) {
     case "select-holding": {
       const holdingCode = holdingCodeFromPayload(payload);
       if (!holdingCode) return NextResponse.json({ success: false, message: "ไม่พบรหัส holding" }, { status: 400 });
+      const businessCode = normalizeBusinessCode(getPayloadString(payload, "businesscode"));
       return proxyMainApiJson(request, mainApiUrl, "/select-holding", {
         method: "POST",
-        body: JSON.stringify({ holdingcode: holdingCode }),
+        body: JSON.stringify({
+          holdingcode: holdingCode,
+          ...(businessCode ? { businesscode: businessCode } : {}),
+        }),
       });
     }
     case "branch": {
@@ -202,6 +203,7 @@ async function listHoldingsWithDisplayNames(request: Request, mainApiUrl: string
   if (typeof authorization !== "string") return authorization;
   const url = new URL(request.url);
   const activeHoldingCode = holdingCodeFromSearchParams(url.searchParams);
+  const activeBusinessCode = normalizeBusinessCode(url.searchParams.get("businesscode") ?? "");
 
   try {
     const result = await callMainApiJson(request, mainApiUrl, "/list-holding?limit=100", { method: "GET" }, authorization);
@@ -232,13 +234,19 @@ async function listHoldingsWithDisplayNames(request: Request, mainApiUrl: string
       }
 
       try {
+        const selectPayload = {
+          holdingcode: holdingCode,
+          ...(activeBusinessCode && holdingCode.toLowerCase() === activeHoldingCodeKey
+            ? { businesscode: activeBusinessCode }
+            : {}),
+        };
         const selectResult = await callMainApiJson(
           request,
           mainApiUrl,
           "/select-holding",
           {
             method: "POST",
-            body: JSON.stringify({ holdingcode: holdingCode }),
+            body: JSON.stringify(selectPayload),
           },
           authorization,
         );
@@ -296,7 +304,10 @@ async function listHoldingsWithDisplayNames(request: Request, mainApiUrl: string
         "/select-holding",
         {
           method: "POST",
-          body: JSON.stringify({ holdingcode: activeHoldingCode }),
+          body: JSON.stringify({
+            holdingcode: activeHoldingCode,
+            ...(activeBusinessCode ? { businesscode: activeBusinessCode } : {}),
+          }),
         },
         authorization,
       );
@@ -609,8 +620,6 @@ function normalizeUnitName(value: unknown): ProductUnitName | null {
   return {
     code,
     name: getPayloadString(value, "name")?.trim() ?? "",
-    isauto: false,
-    isdelete: false,
   };
 }
 
@@ -621,8 +630,6 @@ function normalizeHoldingNameEntry(value: unknown): HoldingNameEntry | null {
   return {
     code: getPayloadString(value, "code")?.trim(),
     name,
-    isauto: value.isauto === true,
-    isdelete: value.isdelete === true,
   };
 }
 

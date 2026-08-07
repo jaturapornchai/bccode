@@ -18,6 +18,16 @@ type IProductBarcodePGRepository interface {
 	Delete(holdingCode string, itemCode string, barcode string) error
 }
 
+// ICompanyProductBarcodePGRepository is the metadata projection contract.
+// It stays separate from the legacy stock repository contract so stock code
+// cannot accidentally resolve a duplicate barcode across companies.
+type ICompanyProductBarcodePGRepository interface {
+	GetByCompanyBarcode(holdingCode string, businessCode string, barcode string) (*models.ProductBarcodePg, error)
+	Create(doc *models.ProductBarcodePg) error
+	UpdateInCompany(holdingCode string, businessCode string, barcode string, doc *models.ProductBarcodePg) error
+	DeleteInCompany(holdingCode string, businessCode string, barcode string) error
+}
+
 type ProductBarcodePGRepository struct {
 	pst microservice.IPersister
 }
@@ -34,7 +44,7 @@ func (repo *ProductBarcodePGRepository) Get(holdingCode string, barcode string) 
 
 func (repo *ProductBarcodePGRepository) GetByKey(holdingCode string, itemCode string, barcode string) (*models.ProductBarcodePg, error) {
 	var result models.ProductBarcodePg
-	_, err := repo.pst.First(&result, "holdingcode=? AND itemcode=? AND barcode=?", holdingCode, itemCode, barcode)
+	_, err := repo.pst.First(&result, "holding_code=? AND itemcode=? AND barcode=?", holdingCode, itemCode, barcode)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
@@ -48,7 +58,7 @@ func (repo *ProductBarcodePGRepository) GetByKey(holdingCode string, itemCode st
 
 func (repo *ProductBarcodePGRepository) FindByBarcode(holdingCode string, barcode string) (*models.ProductBarcodePg, error) {
 	var results []models.ProductBarcodePg
-	_, err := repo.pst.Where(&results, "holdingcode=? AND barcode = ?", holdingCode, barcode)
+	_, err := repo.pst.Where(&results, "holding_code=? AND barcode = ?", holdingCode, barcode)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
@@ -68,7 +78,7 @@ func (repo *ProductBarcodePGRepository) FindByBarcode(holdingCode string, barcod
 
 func (repo *ProductBarcodePGRepository) FindByBarcodes(holdingCode string, barcodes []string) ([]models.ProductBarcodePg, error) {
 	var results []models.ProductBarcodePg
-	_, err := repo.pst.Where(&results, "holdingcode=? AND barcode IN ?", holdingCode, barcodes)
+	_, err := repo.pst.Where(&results, "holding_code=? AND barcode IN ?", holdingCode, barcodes)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
@@ -89,10 +99,10 @@ func (repo *ProductBarcodePGRepository) Create(doc *models.ProductBarcodePg) err
 }
 
 func (repo *ProductBarcodePGRepository) Update(holdingCode string, itemCode string, barcode string, doc *models.ProductBarcodePg) error {
-	err := repo.pst.Update(&doc, map[string]interface{}{
-		"holdingcode": holdingCode,
-		"itemcode":    itemCode,
-		"barcode":     barcode,
+	err := repo.pst.Update(doc, map[string]interface{}{
+		"holding_code": holdingCode,
+		"itemcode":     itemCode,
+		"barcode":      barcode,
 	})
 
 	if err != nil {
@@ -104,13 +114,47 @@ func (repo *ProductBarcodePGRepository) Update(holdingCode string, itemCode stri
 func (repo *ProductBarcodePGRepository) Delete(holdingCode string, itemCode string, barcode string) error {
 
 	err := repo.pst.Delete(&models.ProductBarcodePg{}, map[string]interface{}{
-		"holdingcode": holdingCode,
-		"itemcode":    itemCode,
-		"barcode":     barcode,
+		"holding_code": holdingCode,
+		"itemcode":     itemCode,
+		"barcode":      barcode,
 	})
 
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func (repo *ProductBarcodePGRepository) GetByCompanyBarcode(holdingCode string, businessCode string, barcode string) (*models.ProductBarcodePg, error) {
+	var result models.ProductBarcodePg
+	_, err := repo.pst.First(
+		&result,
+		"holding_code=? AND businesscode=? AND barcode=?",
+		holdingCode,
+		businessCode,
+		barcode,
+	)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (repo *ProductBarcodePGRepository) UpdateInCompany(holdingCode string, businessCode string, barcode string, doc *models.ProductBarcodePg) error {
+	return repo.pst.Update(doc, map[string]interface{}{
+		"holding_code": holdingCode,
+		"businesscode": businessCode,
+		"barcode":      barcode,
+	})
+}
+
+func (repo *ProductBarcodePGRepository) DeleteInCompany(holdingCode string, businessCode string, barcode string) error {
+	return repo.pst.Delete(&models.ProductBarcodePg{}, map[string]interface{}{
+		"holding_code": holdingCode,
+		"businesscode": businessCode,
+		"barcode":      barcode,
+	})
 }

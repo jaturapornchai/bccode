@@ -30,6 +30,7 @@ import {
   type FormEvent,
 } from "react";
 import { AuthenticatedImg } from "@/components/authenticated-image";
+import { BusinessImageGallery } from "@/components/product-barcode/business-image-editor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -39,6 +40,7 @@ import { MasterPicker } from "@/components/product-barcode/master-picker";
 import { listBarcodes, type MasterEntry } from "@/lib/product-barcode/api";
 import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
 import { pushNotice } from "@/lib/toast";
+import { normalizeBusinessCode } from "@/lib/business-code";
 import { cn } from "@/lib/utils";
 import {
   localizedName,
@@ -55,6 +57,7 @@ import {
   type NameX,
   type ProductOption,
   type ProductTimeForSale,
+  type ProductUnitConversion,
   type RefProductBarcode,
   type BOMProductBarcode,
 } from "@/lib/product-barcode/types";
@@ -105,6 +108,7 @@ function readWorkspaceSession(): WorkspaceSession | null {
 async function ensureActiveProductHolding(
   auth: AuthSession,
   holdingcode: string,
+  businesscode: string,
 ): Promise<void> {
   const response = await fetch("/api/workspace/select-holding", {
     method: "POST",
@@ -113,7 +117,11 @@ async function ensureActiveProductHolding(
       "x-bc-backend-url": auth.backendUrl,
       Authorization: `Bearer ${auth.token}`,
     },
-    body: JSON.stringify({ backendUrl: auth.backendUrl, holdingcode }),
+    body: JSON.stringify({
+      backendUrl: auth.backendUrl,
+      holdingcode,
+      businesscode,
+    }),
     cache: "no-store",
   });
   const data = (await response.json().catch(() => null)) as {
@@ -124,14 +132,6 @@ async function ensureActiveProductHolding(
     throw new Error(data?.message || "ไม่สามารถเลือกบริษัทใน token ได้");
   }
 }
-
-const ADVANCED_PRODUCT_TAB_KEYS = [
-  "logistics",
-  "restaurant",
-  "timeforsales",
-  "business",
-  "misc",
-] as const;
 
 const PRIMARY_PRODUCT_TABS = (text: ReturnType<typeof getBarcodeText>) => ({
   basic: text.tabBasic,
@@ -150,16 +150,6 @@ const ADVANCED_PRODUCT_TABS = (text: ReturnType<typeof getBarcodeText>) => ({
   misc: text.tabMisc,
 });
 
-const PRODUCT_DETAIL_TABS = [
-  { key: "overview", label: "ภาพรวม" },
-  { key: "classification", label: "การจัดหมวด" },
-  { key: "inventory", label: "หน่วยและคงคลัง" },
-  { key: "sales", label: "การขาย / POS" },
-  { key: "more", label: "ข้อมูลเพิ่มเติม" },
-] as const;
-
-type ProductDetailTab = (typeof PRODUCT_DETAIL_TABS)[number]["key"];
-
 const PRODUCT_SPLIT_DEFAULT_LEFT = 30;
 const PRODUCT_SPLIT_STORAGE_KEY = "bc_product_split_left_v3";
 const PRODUCT_SPLIT_MIN_LEFT = 24;
@@ -176,10 +166,12 @@ function clampProductSplitLeft(value: number) {
 export function ProductScreen({
   active = true,
   embedded = false,
+  focusRequest,
   language = "th",
 }: {
   active?: boolean;
   embedded?: boolean;
+  focusRequest?: { code: string; requestId: string };
   language?: LanguageCode;
 }) {
   const lang = normalizeLanguage(language);
@@ -208,6 +200,9 @@ export function ProductScreen({
   const splitContainerRef = useRef<HTMLDivElement | null>(null);
   const selectedShopTokenRef = useRef("");
   const productListRequestRef = useRef(0);
+  const handledFocusRequestRef = useRef("");
+  const productDetailRequestRef = useRef(0);
+  const productDetailRef = useRef<Product | null>(null);
 
   // Restore split settings
   useEffect(() => {
@@ -339,20 +334,13 @@ export function ProductScreen({
     | "business"
     | "misc"
   >("basic");
-  const [advancedTabsOpen, setAdvancedTabsOpen] = useState(false);
-  const [detailTab, setDetailTab] = useState<ProductDetailTab>("overview");
+
   const [showEmptyDetails, setShowEmptyDetails] = useState(false);
   const [selectedProductDetail, setSelectedProductDetail] =
     useState<Product | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState("");
   const [detailReloadKey, setDetailReloadKey] = useState(0);
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    setAdvancedTabsOpen(
-      window.localStorage.getItem("bcproductadvancedtabsopen") === "1",
-    );
-  }, []);
 
   const itemTypes = useMemo(
     () => [
@@ -428,6 +416,7 @@ export function ProductScreen({
   const [bindBarcodeOnSave, setBindBarcodeOnSave] =
     useState<ProductBarcode | null>(null);
   const activeHoldingCode = workspace?.shop.holdingcode ?? "";
+  const activeBusinessCode = normalizeBusinessCode(workspace?.company?.code);
 
   useEffect(() => {
     setAuth(readAuthSession());
@@ -438,8 +427,16 @@ export function ProductScreen({
     const handleWorkspaceChange = () => {
       const nextWorkspace = readWorkspaceSession();
       const nextHoldingCode = nextWorkspace?.shop.holdingcode ?? "";
-      if (nextHoldingCode !== activeHoldingCode) {
+      const nextBusinessCode = normalizeBusinessCode(
+        nextWorkspace?.company?.code,
+      );
+      if (
+        nextHoldingCode !== activeHoldingCode ||
+        nextBusinessCode !== activeBusinessCode
+      ) {
         productListRequestRef.current += 1;
+        productDetailRequestRef.current += 1;
+        productDetailRef.current = null;
         selectedShopTokenRef.current = "";
         setItems([]);
         setSelectedCode("");
@@ -463,14 +460,15 @@ export function ProductScreen({
       );
       window.removeEventListener("storage", handleWorkspaceChange);
     };
-  }, [activeHoldingCode]);
+  }, [activeBusinessCode, activeHoldingCode]);
 
   useEffect(() => {
-    if (!showBarcodePicker || !auth) return;
+    if (!showBarcodePicker || !auth || !activeBusinessCode) return;
     let active = true;
     setLoadingBarcodes(true);
     listBarcodes(auth, {
       holdingcode: activeHoldingCode,
+      businesscode: activeBusinessCode,
       keyword: barcodeSearch,
       limit: 100,
     })
@@ -489,7 +487,13 @@ export function ProductScreen({
     return () => {
       active = false;
     };
-  }, [showBarcodePicker, auth, activeHoldingCode, barcodeSearch]);
+  }, [
+    showBarcodePicker,
+    auth,
+    activeBusinessCode,
+    activeHoldingCode,
+    barcodeSearch,
+  ]);
 
   const activeLanguages = useMemo(
     () => languageCodesFromWorkspace(workspace),
@@ -497,22 +501,28 @@ export function ProductScreen({
   );
 
   const selectedListProduct = useMemo(() => {
-    return items.find((item) => item.code === selectedCode) ?? items[0] ?? null;
+    if (!selectedCode) return null;
+    return items.find((item) => item.code === selectedCode) ?? null;
   }, [items, selectedCode]);
 
   useEffect(() => {
-    let cancelled = false;
+    const requestId = ++productDetailRequestRef.current;
     const listProduct = selectedListProduct;
+    const previousDetail = productDetailRef.current;
 
-    setSelectedProductDetail(null);
     setDetailError("");
-    setDetailTab("overview");
     setShowEmptyDetails(false);
 
-    if (!auth || !listProduct?.code) {
+    if (!active || !auth || !listProduct?.code) {
       setDetailLoading(false);
+      if (!listProduct?.code) {
+        productDetailRef.current = null;
+        setSelectedProductDetail(null);
+      }
       return () => {
-        cancelled = true;
+        if (productDetailRequestRef.current === requestId) {
+          productDetailRequestRef.current += 1;
+        }
       };
     }
 
@@ -536,7 +546,7 @@ export function ProductScreen({
         return data.data;
       })
       .then((rawDetail) => {
-        if (cancelled) return;
+        if (requestId !== productDetailRequestRef.current) return;
         const normalized = rawToProduct(rawDetail);
         if (
           normalized.holdingcode &&
@@ -544,41 +554,58 @@ export function ProductScreen({
         ) {
           throw new Error("ข้อมูลสินค้าไม่ตรงกับกลุ่มกิจการที่เลือก");
         }
-        setSelectedProductDetail({
+        const rawBusinessCode = normalizeBusinessCode(
+          typeof (rawDetail as { businesscode?: unknown }).businesscode ===
+            "string"
+            ? (rawDetail as { businesscode: string }).businesscode
+            : "",
+        );
+        if (rawBusinessCode && rawBusinessCode !== activeBusinessCode) {
+          throw new Error("ข้อมูลสินค้าไม่ตรงกับบริษัทที่เลือก");
+        }
+        const detail = {
           ...listProduct,
           ...(rawDetail as Product),
           ...normalized,
           qty: listProduct.qty,
           _unit_count: listProduct._unit_count,
-        });
+        };
+        productDetailRef.current = detail;
+        setSelectedProductDetail(detail);
       })
       .catch((error: unknown) => {
-        if (cancelled) return;
-        setDetailError(
-          error instanceof Error ? error.message : text.requestFailed,
-        );
+        if (requestId !== productDetailRequestRef.current) return;
+        const message =
+          error instanceof Error ? error.message : text.requestFailed;
+        setDetailError(message);
+        setNotice({ type: "error", text: message });
+        if (previousDetail?.code && previousDetail.code !== listProduct.code) {
+          setSelectedCode(previousDetail.code);
+        }
       })
       .finally(() => {
-        if (!cancelled) setDetailLoading(false);
+        if (requestId === productDetailRequestRef.current) {
+          setDetailLoading(false);
+        }
       });
 
     return () => {
-      cancelled = true;
+      if (productDetailRequestRef.current === requestId) {
+        productDetailRequestRef.current += 1;
+      }
     };
   }, [
+    active,
+    activeBusinessCode,
     activeHoldingCode,
     auth,
     detailReloadKey,
     selectedListProduct,
+    setNotice,
     text.requestFailed,
   ]);
 
-  const selectedProduct = useMemo(() => {
-    if (selectedProductDetail?.code === selectedListProduct?.code) {
-      return selectedProductDetail;
-    }
-    return selectedListProduct;
-  }, [selectedListProduct, selectedProductDetail]);
+  const selectedProduct = selectedProductDetail;
 
   const visibleItems = useMemo(() => {
     if (listItemTypeFilter === "all") return items;
@@ -593,27 +620,31 @@ export function ProductScreen({
     return JSON.stringify(editProduct) !== JSON.stringify(selectedProduct);
   }, [editorOpen, editProduct, selectedProduct]);
 
-  const handleSelectProduct = useCallback(
-    (code: string) => {
+  const requestProductSelection = useCallback(
+    async (code: string): Promise<boolean> => {
       if (isFormDirty) {
-        void confirm({
+        const ok = await confirm({
           title: "ข้อมูลมีการเปลี่ยนแปลง",
           description:
             "คุณมีข้อมูลที่ยังไม่ได้บันทึก ต้องการละทิ้งการเปลี่ยนแปลงแล้วเปลี่ยนสินค้าหรือไม่?",
           confirmLabel: "เปลี่ยนสินค้า",
           cancelLabel: "ยกเลิก",
-        }).then((ok) => {
-          if (ok) {
-            setSelectedCode(code);
-            setEditorOpen(false);
-          }
         });
-      } else {
-        setSelectedCode(code);
-        setEditorOpen(false);
+        if (!ok) return false;
       }
+
+      setSelectedCode(code);
+      setEditorOpen(false);
+      return true;
     },
     [isFormDirty, confirm],
+  );
+
+  const handleSelectProduct = useCallback(
+    (code: string) => {
+      void requestProductSelection(code);
+    },
+    [requestProductSelection],
   );
 
   const handleCancelEdit = useCallback(() => {
@@ -634,15 +665,44 @@ export function ProductScreen({
     }
   }, [isFormDirty, confirm]);
 
+  useEffect(() => {
+    const requestId = focusRequest?.requestId ?? "";
+    const code = focusRequest?.code.trim().toUpperCase() ?? "";
+    if (!active || !requestId || !code) return;
+    if (handledFocusRequestRef.current === requestId) return;
+    handledFocusRequestRef.current = requestId;
+
+    let cancelled = false;
+    void requestProductSelection(code).then((selected) => {
+      if (cancelled || !selected) return;
+      setListItemTypeFilter("all");
+      setSearchInput(code);
+      setSearch(code);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    active,
+    focusRequest?.code,
+    focusRequest?.requestId,
+    requestProductSelection,
+  ]);
+
   const loadProducts = useCallback(async () => {
-    if (!auth || !activeHoldingCode) return;
+    if (!auth || !activeHoldingCode || !activeBusinessCode) return;
     const requestId = ++productListRequestRef.current;
     setLoading(true);
     setNotice(null);
     try {
-      const tokenShopKey = `${auth.token}:${activeHoldingCode}`;
+      const tokenShopKey = `${auth.token}:${activeHoldingCode}:${activeBusinessCode}`;
       if (selectedShopTokenRef.current !== tokenShopKey) {
-        await ensureActiveProductHolding(auth, activeHoldingCode);
+        await ensureActiveProductHolding(
+          auth,
+          activeHoldingCode,
+          activeBusinessCode,
+        );
         selectedShopTokenRef.current = tokenShopKey;
       }
       const params = new URLSearchParams({
@@ -685,13 +745,13 @@ export function ProductScreen({
     } finally {
       if (requestId === productListRequestRef.current) setLoading(false);
     }
-  }, [auth, activeHoldingCode, search, text.requestFailed]);
+  }, [auth, activeBusinessCode, activeHoldingCode, search, text.requestFailed]);
 
   useEffect(() => {
-    if (active && auth && activeHoldingCode) {
+    if (active && auth && activeHoldingCode && activeBusinessCode) {
       void loadProducts();
     }
-  }, [active, auth, activeHoldingCode, loadProducts]);
+  }, [active, auth, activeBusinessCode, activeHoldingCode, loadProducts]);
 
   const makeBlankProduct = useCallback(
     (): Product => ({
@@ -711,8 +771,11 @@ export function ProductScreen({
       manufacturers: [],
       suppliers: [],
       condition: false,
+      unitcode: "",
+      unitnames: [],
       dividevalue: 1,
       standvalue: 1,
+      unitconversions: [],
       isusesubbarcodes: false,
       refbarcodes: [],
       bom: [],
@@ -740,6 +803,7 @@ export function ProductScreen({
       ...selectedProduct,
       guidfixed: "",
       holdingcode: activeHoldingCode,
+      barcodes: [],
     });
     setProductTab("basic");
     setEditorOpen(true);
@@ -769,12 +833,9 @@ export function ProductScreen({
             code: b.itemcode || b.barcode || current.code,
             groupcode: b.groupcode || "",
             groupnames: b.groupnames || [],
-            groupsuboneguid: b.groupsuboneguid || "",
-            groupsubonecode: b.groupsubonecode || "",
-            groupsubonenames: b.groupsubonenames || [],
-            groupsubtwoguid: b.groupsubtwoguid || "",
-            groupsubtwocode: b.groupsubtwocode || "",
-            groupsubtwonames: b.groupsubtwonames || [],
+            subgroupguid: b.subgroupguid || "",
+            subgroupcode: b.subgroupcode || "",
+            subgroupnames: b.subgroupnames || [],
             brandguid: b.brandguid || "",
             brandcode: b.brandcode || "",
             brandnames: b.brandnames || [],
@@ -802,11 +863,13 @@ export function ProductScreen({
             taxtype: b.taxtype ?? 0,
             manufacturers: b.manufacturers || [],
             suppliers: b.suppliers || [],
-            condition: b.condition ?? false,
-            dividevalue: b.dividevalue ?? 1,
-            standvalue: b.standvalue ?? 1,
-            isusesubbarcodes: b.isusesubbarcodes ?? false,
-            refbarcodes: b.refbarcodes || [],
+            unitguid: b.itemunitguid || "",
+            unitcode: b.itemunitcode || "",
+            unitnames: b.itemunitnames || [],
+            condition: false,
+            dividevalue: 1,
+            standvalue: 1,
+            unitconversions: [],
             bom: b.bom || [],
             orderpoint: b.orderpoint ?? 0,
             minpoint: b.minpoint ?? 0,
@@ -940,6 +1003,42 @@ export function ProductScreen({
       setNotice({ type: "error", text: text.nameRequired });
       return;
     }
+    if (!editProduct.unitcode?.trim()) {
+      setProductTab("units");
+      setNotice({
+        type: "error",
+        text: `${text.unitBaseUnit}: ${text.required_error}`,
+      });
+      return;
+    }
+    const conversions = editProduct.unitconversions ?? [];
+    if (conversions.some((unit) => !normalizeBusinessCode(unit.unitcode))) {
+      setProductTab("units");
+      setNotice({ type: "error", text: text.unitConversionRequired });
+      return;
+    }
+    const unitCodes = [
+      editProduct.unitcode,
+      ...conversions.map((unit) => unit.unitcode),
+    ].map(normalizeBusinessCode);
+    if (new Set(unitCodes).size !== unitCodes.length) {
+      setProductTab("units");
+      setNotice({ type: "error", text: text.unitConversionDuplicate });
+      return;
+    }
+    if (
+      conversions.some(
+        (unit) =>
+          !Number.isSafeInteger(unit.dividevalue) ||
+          !Number.isSafeInteger(unit.standvalue) ||
+          unit.dividevalue <= 0 ||
+          unit.standvalue <= 0,
+      )
+    ) {
+      setProductTab("units");
+      setNotice({ type: "error", text: text.unitConversionInvalidRatio });
+      return;
+    }
 
     setSaving(true);
     setNotice(null);
@@ -952,6 +1051,7 @@ export function ProductScreen({
 
       const payload = {
         ...editProduct,
+        barcodes: undefined,
         dividevalue: 1,
         standvalue: 1,
         condition: false,
@@ -1059,18 +1159,17 @@ export function ProductScreen({
   const handlePickerSelect = (entry: MasterEntry) => {
     if (!editProduct) return;
 
-    // Check if picker target is unit-ref-IDX
-    if (pickerTarget.startsWith("unit-ref-")) {
-      const idx = parseInt(pickerTarget.split("-")[2], 10);
-      const current = editProduct.refbarcodes || [];
+    if (pickerTarget.startsWith("unit-conversion-")) {
+      const idx = Number(pickerTarget.slice("unit-conversion-".length));
+      const current = editProduct.unitconversions || [];
       setEditProduct({
         ...editProduct,
-        refbarcodes: current.map((row, rowIdx) =>
+        unitconversions: current.map((row, rowIdx) =>
           rowIdx === idx
             ? {
                 ...row,
-                itemunitcode: entry.code,
-                itemunitnames: entry.names,
+                unitcode: entry.code,
+                unitnames: entry.names,
               }
             : row,
         ),
@@ -1137,15 +1236,10 @@ export function ProductScreen({
         code: "groupcode",
         names: "groupnames",
       },
-      groupsubone: {
-        guid: "groupsuboneguid" as keyof Product,
-        code: "groupsubonecode",
-        names: "groupsubonenames",
-      },
-      groupsubtwo: {
-        guid: "groupsubtwoguid" as keyof Product,
-        code: "groupsubtwocode",
-        names: "groupsubtwonames",
+      subgroup: {
+        guid: "subgroupguid" as keyof Product,
+        code: "subgroupcode",
+        names: "subgroupnames",
       },
       brand: {
         guid: "brandguid" as keyof Product,
@@ -1215,15 +1309,10 @@ export function ProductScreen({
         code: "groupcode",
         names: "groupnames",
       },
-      groupsubone: {
-        guid: "groupsuboneguid" as keyof Product,
-        code: "groupsubonecode",
-        names: "groupsubonenames",
-      },
-      groupsubtwo: {
-        guid: "groupsubtwoguid" as keyof Product,
-        code: "groupsubtwocode",
-        names: "groupsubtwonames",
+      subgroup: {
+        guid: "subgroupguid" as keyof Product,
+        code: "subgroupcode",
+        names: "subgroupnames",
       },
       brand: {
         guid: "brandguid" as keyof Product,
@@ -1743,8 +1832,8 @@ export function ProductScreen({
                 </div>
               </div>
 
-              {/* Product Form Tab bar */}
-              <div className="mt-2 flex shrink-0 gap-1 overflow-x-auto border-b border-border bg-muted/30 px-1 py-1.5">
+              {/* Product Form Tab bar — flex-wrap so every tab stays visible (no hidden overflow) */}
+              <div className="mt-2 flex shrink-0 flex-wrap gap-1 border-b border-border bg-muted/30 px-1 py-1.5">
                 {(
                   Object.entries(PRIMARY_PRODUCT_TABS(text)) as [
                     (
@@ -1775,57 +1864,37 @@ export function ProductScreen({
                     </button>
                   );
                 })}
-                {(advancedTabsOpen ||
-                  ADVANCED_PRODUCT_TAB_KEYS.includes(
-                    productTab as (typeof ADVANCED_PRODUCT_TAB_KEYS)[number],
-                  )) &&
-                  (
-                    Object.entries(ADVANCED_PRODUCT_TABS(text)) as [
-                      (
-                        | "logistics"
-                        | "restaurant"
-                        | "timeforsales"
-                        | "business"
-                        | "misc"
-                      ),
-                      string,
-                    ][]
-                  ).map(([k, label]) => {
-                    const isActive = productTab === k;
-                    return (
-                      <button
-                        key={k}
-                        type="button"
-                        onClick={() => setProductTab(k)}
-                        className={cn(
-                          "shrink-0 rounded-md px-3 py-1.5 text-xs font-medium transition",
-                          isActive
-                            ? "bg-primary text-primary-foreground shadow-sm"
-                            : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                        )}
-                      >
-                        {label}
-                      </button>
-                    );
-                  })}
-                <button
-                  type="button"
-                  onClick={() =>
-                    setAdvancedTabsOpen((prev) => {
-                      const next = !prev;
-                      if (typeof window !== "undefined") {
-                        window.localStorage.setItem(
-                          "bcproductadvancedtabsopen",
-                          next ? "1" : "0",
-                        );
-                      }
-                      return next;
-                    })
-                  }
-                  className="shrink-0 rounded-md border border-dashed border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
-                >
-                  {advancedTabsOpen ? "ขั้นสูง ▾" : "ขั้นสูง ▸"}
-                </button>
+                {// Show every tab directly — no "ขั้นสูง" overflow toggle
+                // (per Jead 2026-07-19: ไม่ต้องมีปุ่มขั้นสูง ให้แสดงเมนูทุกตัวเลย).
+                (
+                  Object.entries(ADVANCED_PRODUCT_TABS(text)) as [
+                    (
+                      | "logistics"
+                      | "restaurant"
+                      | "timeforsales"
+                      | "business"
+                      | "misc"
+                    ),
+                    string,
+                  ][]
+                ).map(([k, label]) => {
+                  const isActive = productTab === k;
+                  return (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => setProductTab(k)}
+                      className={cn(
+                        "shrink-0 rounded-md px-3 py-1.5 text-xs font-medium transition",
+                        isActive
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                      )}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
               </div>
 
               <div className="min-h-0 flex-1 overflow-y-auto py-3 pr-1">
@@ -1865,7 +1934,6 @@ export function ProductScreen({
                     onChange={setEditProduct}
                     lang={lang}
                     openPicker={openPicker}
-                    clearPickerField={clearPickerField}
                   />
                 )}
 
@@ -1948,6 +2016,7 @@ export function ProductScreen({
           ) : selectedProduct ? (
             <Card
               data-testid="product-detail-card"
+              aria-busy={detailLoading}
               className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm"
             >
               <div className="absolute left-0 right-0 top-0 h-1 bg-primary" />
@@ -2039,524 +2108,528 @@ export function ProductScreen({
                 </div>
               </CardHeader>
 
-              {detailLoading ? (
-                <div
-                  className="flex min-h-0 flex-1 items-center justify-center gap-2 p-8 text-sm text-muted-foreground"
-                  aria-label="กำลังโหลดรายละเอียดสินค้า"
-                >
-                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                  กำลังโหลดรายละเอียดสินค้า...
-                </div>
-              ) : (
-                <>
-                  {detailError ? (
-                    <div
-                      role="alert"
-                      className="flex shrink-0 items-start gap-2 border-b border-destructive/30 bg-destructive/5 px-3 py-2 text-xs"
-                    >
-                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-                      <div className="min-w-0 flex-1">
-                        <p className="font-bold text-foreground">
-                          โหลดข้อมูลฉบับเต็มไม่สำเร็จ —
-                          กำลังแสดงข้อมูลสรุปจากรายการ
-                        </p>
-                        <p className="mt-0.5 break-words text-muted-foreground">
-                          {detailError}
-                        </p>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-7 shrink-0 text-xs"
-                        onClick={() =>
-                          setDetailReloadKey((current) => current + 1)
-                        }
-                      >
-                        <RefreshCcw className="h-3.5 w-3.5" />
-                        ลองใหม่
-                      </Button>
-                    </div>
-                  ) : null}
-                  <div className="flex shrink-0 flex-col gap-2 border-b border-border bg-background px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div
-                      role="tablist"
-                      aria-label="หมวดรายละเอียดสินค้า"
-                      className="flex min-w-0 gap-1 overflow-x-auto"
-                    >
-                      {PRODUCT_DETAIL_TABS.map((tab) => (
-                        <button
-                          key={tab.key}
-                          type="button"
-                          role="tab"
-                          aria-selected={detailTab === tab.key}
-                          aria-controls="product-detail-content"
-                          data-testid={`product-detail-tab-${tab.key}`}
-                          onClick={() => setDetailTab(tab.key)}
-                          className={cn(
-                            "shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors",
-                            detailTab === tab.key
-                              ? "bg-primary text-primary-foreground shadow-sm"
-                              : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                          )}
-                        >
-                          {tab.label}
-                        </button>
-                      ))}
+              <>
+                {detailError ? (
+                  <div
+                    role="alert"
+                    className="flex shrink-0 items-start gap-2 border-b border-destructive/30 bg-destructive/5 px-3 py-2 text-xs"
+                  >
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-bold text-foreground">
+                        โหลดข้อมูลฉบับเต็มไม่สำเร็จ —
+                        ยังคงแสดงข้อมูลล่าสุดที่โหลดสำเร็จ
+                      </p>
+                      <p className="mt-0.5 break-words text-muted-foreground">
+                        {detailError}
+                      </p>
                     </div>
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      className="h-8 shrink-0 self-start text-xs sm:self-auto"
-                      onClick={() => setShowEmptyDetails((current) => !current)}
+                      className="h-7 shrink-0 text-xs"
+                      onClick={() =>
+                        setDetailReloadKey((current) => current + 1)
+                      }
                     >
-                      {showEmptyDetails ? (
-                        <EyeOff className="h-3.5 w-3.5" />
-                      ) : (
-                        <Eye className="h-3.5 w-3.5" />
-                      )}
-                      {showEmptyDetails
-                        ? "ซ่อนข้อมูลว่าง"
-                        : "แสดงข้อมูลทั้งหมด"}
+                      <RefreshCcw className="h-3.5 w-3.5" />
+                      ลองใหม่
                     </Button>
                   </div>
-
-                  <CardContent
-                    id="product-detail-content"
-                    data-testid="product-detail-content"
-                    className="min-h-0 flex-1 overflow-y-auto bg-muted/10 p-3"
+                ) : null}
+                <div className="flex shrink-0 items-center justify-end border-b border-border bg-background px-3 py-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 shrink-0 text-xs"
+                    onClick={() => setShowEmptyDetails((current) => !current)}
                   >
-                    {detailTab === "overview" ? (
-                      <div className="grid gap-3 2xl:grid-cols-2">
-                        <DetailSection
-                          title={text.basicInfoCard ?? "ข้อมูลพื้นฐานสินค้า"}
-                          showEmptyFields={showEmptyDetails}
-                          fields={[
-                            { label: text.itemType, value: selectedTypeLabel },
-                            {
-                              label: text.materialType,
-                              value: selectedMaterialLabel,
-                            },
-                            {
-                              label: "สถานะภาษีมูลค่าเพิ่ม",
-                              value: selectedVatLabel,
-                            },
-                            {
-                              label: "รหัสประเภทภาษี",
-                              value: String(
-                                selectedProduct.taxtype ??
-                                  selectedProduct.vattype ??
-                                  "-",
-                              ),
-                            },
-                            {
-                              label: "รหัสหน่วยหลัก",
-                              value:
-                                selectedProduct.unitcode ||
-                                selectedProduct.itemunitcode ||
-                                "-",
-                            },
-                            {
-                              label: "ชื่อหน่วยหลัก",
-                              value:
-                                pickName(
-                                  selectedProduct.unitnames ||
-                                    selectedProduct.itemunitnames,
-                                  lang,
-                                ) || "-",
-                            },
-                            {
-                              label: "มิติสินค้า",
-                              value: formatDimensionList(
-                                selectedProduct.dimensions,
-                                lang,
-                              ),
-                            },
-                          ]}
-                        />
-                        <DetailSection
-                          title="คู่ค้าและรายละเอียด"
-                          showEmptyFields={showEmptyDetails}
-                          fields={[
-                            {
-                              label: text.manufacturers,
-                              value: formatNamedList(
-                                selectedProduct.manufacturers,
-                                lang,
-                              ),
-                            },
-                            {
-                              label: text.suppliers,
-                              value: formatNamedList(
-                                selectedProduct.suppliers,
-                                lang,
-                              ),
-                            },
-                            {
-                              label: "รายละเอียดสินค้า",
-                              value: selectedProduct.description || "-",
-                            },
-                            {
-                              label: "คำเตือน",
-                              value: selectedProduct.alertdescription || "-",
-                            },
-                          ]}
-                        />
-                      </div>
-                    ) : null}
+                    {showEmptyDetails ? (
+                      <EyeOff className="h-3.5 w-3.5" />
+                    ) : (
+                      <Eye className="h-3.5 w-3.5" />
+                    )}
+                    {showEmptyDetails ? "ซ่อนข้อมูลว่าง" : "แสดงข้อมูลทั้งหมด"}
+                  </Button>
+                </div>
 
-                    {detailTab === "classification" ? (
-                      <DetailSection
-                        title={text.groupingCard ?? "ข้อมูลการจัดกลุ่ม"}
-                        showEmptyFields={showEmptyDetails}
-                        fields={[
-                          {
-                            label: text.group,
-                            value: selectedProduct.groupcode
-                              ? `${selectedProduct.groupcode} — ${pickName(selectedProduct.groupnames, lang)}`
-                              : "-",
-                          },
-                          {
-                            label: text.groupsubone,
-                            value: selectedProduct.groupsubonecode
-                              ? `${selectedProduct.groupsubonecode} — ${pickName(selectedProduct.groupsubonenames, lang)}`
-                              : "-",
-                          },
-                          {
-                            label: text.groupsubtwo,
-                            value: selectedProduct.groupsubtwocode
-                              ? `${selectedProduct.groupsubtwocode} — ${pickName(selectedProduct.groupsubtwonames, lang)}`
-                              : "-",
-                          },
-                          {
-                            label: text.brand,
-                            value: selectedProduct.brandcode
-                              ? `${selectedProduct.brandcode} — ${pickName(selectedProduct.brandnames, lang)}`
-                              : "-",
-                          },
-                          {
-                            label: text.category,
-                            value: selectedProduct.categorycode
-                              ? `${selectedProduct.categorycode} — ${pickName(selectedProduct.categorynames, lang)}`
-                              : "-",
-                          },
-                          {
-                            label: text.class,
-                            value: selectedProduct.classcode
-                              ? `${selectedProduct.classcode} — ${pickName(selectedProduct.classnames, lang)}`
-                              : "-",
-                          },
-                          {
-                            label: text.design,
-                            value: selectedProduct.designcode
-                              ? `${selectedProduct.designcode} — ${pickName(selectedProduct.designnames, lang)}`
-                              : "-",
-                          },
-                          {
-                            label: text.model,
-                            value: selectedProduct.modelcode
-                              ? `${selectedProduct.modelcode} — ${pickName(selectedProduct.modelnames, lang)}`
-                              : "-",
-                          },
-                          {
-                            label: text.pattern,
-                            value: selectedProduct.patterncode
-                              ? `${selectedProduct.patterncode} — ${pickName(selectedProduct.patternnames, lang)}`
-                              : "-",
-                          },
-                          {
-                            label: text.grade,
-                            value: selectedProduct.gradecode
-                              ? `${selectedProduct.gradecode} — ${pickName(selectedProduct.gradenames, lang)}`
-                              : "-",
-                          },
-                        ]}
-                      />
-                    ) : null}
+                <CardContent
+                  id="product-detail-content"
+                  data-testid="product-detail-content"
+                  className="min-h-0 flex-1 overflow-y-auto bg-muted/10 p-3"
+                >
+                  <div className="mb-3 grid gap-3 2xl:grid-cols-2">
+                    <BusinessImageGallery
+                      auth={auth}
+                      sources={[
+                        {
+                          key:
+                            selectedProduct.guidfixed || selectedProduct.code,
+                          label: `${selectedProduct.code} — ${pickName(selectedProduct.names, lang)}`,
+                          imageuri: selectedProduct.imageuri,
+                          images: selectedProduct.images,
+                          videos: selectedProduct.videos,
+                        },
+                      ]}
+                      title={lang === "th" ? "สื่อสินค้า" : "Product media"}
+                    />
+                    <BusinessImageGallery
+                      auth={auth}
+                      sources={(selectedProduct.barcodes ?? []).map(
+                        (barcode) => ({
+                          key: barcode.guidfixed || barcode.barcode,
+                          label: `${lang === "th" ? "บาร์โค้ด" : "Barcode"} ${barcode.barcode}${barcode.itemunitcode ? ` · ${barcode.itemunitcode}` : ""}`,
+                          imageuri: barcode.imageuri,
+                          images: barcode.images,
+                          videos: barcode.videos,
+                        }),
+                      )}
+                      title={
+                        lang === "th"
+                          ? "สื่อจากบาร์โค้ด"
+                          : "Media from barcodes"
+                      }
+                    />
+                  </div>
+                  <div className="grid gap-3 2xl:grid-cols-2">
+                    <DetailSection
+                      title={text.basicInfoCard ?? "ข้อมูลพื้นฐานสินค้า"}
+                      showEmptyFields={showEmptyDetails}
+                      fields={[
+                        { label: text.itemType, value: selectedTypeLabel },
+                        {
+                          label: text.materialType,
+                          value: selectedMaterialLabel,
+                        },
+                        {
+                          label: "สถานะภาษีมูลค่าเพิ่ม",
+                          value: selectedVatLabel,
+                        },
+                        {
+                          label: "รหัสประเภทภาษี",
+                          value: String(
+                            selectedProduct.taxtype ??
+                              selectedProduct.vattype ??
+                              "-",
+                          ),
+                        },
+                        {
+                          label: "รหัสหน่วยหลัก",
+                          value:
+                            selectedProduct.unitcode ||
+                            selectedProduct.itemunitcode ||
+                            "-",
+                        },
+                        {
+                          label: "ชื่อหน่วยหลัก",
+                          value:
+                            pickName(
+                              selectedProduct.unitnames ||
+                                selectedProduct.itemunitnames,
+                              lang,
+                            ) || "-",
+                        },
+                        {
+                          label: "มิติสินค้า",
+                          value: formatDimensionList(
+                            selectedProduct.dimensions,
+                            lang,
+                          ),
+                        },
+                        {
+                          label: "ประเภทสินค้า (ระบบ)",
+                          value: selectedProduct.producttype?.code
+                            ? `${selectedProduct.producttype.code} — ${pickName(selectedProduct.producttype.names, lang)}`
+                            : "-",
+                        },
+                        {
+                          label: "วิธีคำนวณ VAT",
+                          value: String(selectedProduct.vatcal ?? 0),
+                        },
+                      ]}
+                    />
+                    <DetailSection
+                      title="คู่ค้าและรายละเอียด"
+                      showEmptyFields={showEmptyDetails}
+                      fields={[
+                        {
+                          label: text.manufacturers,
+                          value: formatNamedList(
+                            selectedProduct.manufacturers,
+                            lang,
+                          ),
+                        },
+                        {
+                          label: text.suppliers,
+                          value: formatNamedList(
+                            selectedProduct.suppliers,
+                            lang,
+                          ),
+                        },
+                        {
+                          label: "รายละเอียดสินค้า",
+                          value: selectedProduct.description || "-",
+                        },
+                        {
+                          label: "คำเตือน",
+                          value: selectedProduct.alertdescription || "-",
+                        },
+                      ]}
+                    />
+                  </div>
 
-                    {detailTab === "inventory" ? (
-                      <div className="grid gap-3 2xl:grid-cols-2">
-                        <DetailSection
-                          title={text.tabStock ?? "การควบคุมคลังสินค้า"}
-                          showEmptyFields={showEmptyDetails}
-                          fields={[
-                            {
-                              label: text.qty,
-                              value: formatAutoPackingBalance(
-                                selectedProduct,
-                                lang,
-                              ),
-                            },
-                            {
-                              label: text.orderPoint,
-                              value: String(selectedProduct.orderpoint ?? 0),
-                            },
-                            {
-                              label: text.minPoint,
-                              value: String(selectedProduct.minpoint ?? 0),
-                            },
-                            {
-                              label: text.maxPoint,
-                              value: String(selectedProduct.maxpoint ?? 0),
-                            },
-                            {
-                              label: text.stockBarcode,
-                              value: selectedProduct.stockbarcode || "-",
-                            },
-                          ]}
-                        />
-                        <DetailSection
-                          title={text.tabUnitsBarcode ?? "หน่วยนับและบาร์โค้ด"}
-                          showEmptyFields={showEmptyDetails}
-                          fields={[
-                            {
-                              label: "ใช้หลายบาร์โค้ด",
-                              value: formatYesNo(
-                                selectedProduct.isusesubbarcodes,
-                              ),
-                            },
-                            {
-                              label: "เงื่อนไขแปลงหน่วย",
-                              value: formatYesNo(selectedProduct.condition),
-                            },
-                            {
-                              label: "ตัวตั้ง",
-                              value: String(selectedProduct.standvalue ?? "-"),
-                            },
-                            {
-                              label: "ตัวหาร",
-                              value: String(selectedProduct.dividevalue ?? "-"),
-                            },
-                            {
-                              label: "บาร์โค้ดย่อย",
-                              value: formatRefBarcodeList(
-                                selectedProduct.refbarcodes,
-                                lang,
-                              ),
-                            },
-                            {
-                              label: "บาร์โค้ดสินค้า",
-                              value: formatRefBarcodeList(
-                                selectedProduct.barcodes,
-                                lang,
-                              ),
-                            },
-                            {
-                              label: "ส่วนประกอบ BOM",
-                              value: formatBomList(selectedProduct.bom, lang),
-                            },
-                          ]}
-                        />
-                        <DetailSection
-                          title="ขนาดและน้ำหนักพัสดุ"
-                          showEmptyFields={showEmptyDetails}
-                          fields={[
-                            {
-                              label: "น้ำหนักรวมพัสดุ",
-                              value: `${selectedProduct.packageweight ?? 0} kg`,
-                            },
-                            {
-                              label: "มิติตัวกล่อง (ก × ย × ส)",
-                              value: `${selectedProduct.packagewidth ?? 0} × ${selectedProduct.packagelength ?? 0} × ${selectedProduct.packageheight ?? 0} cm`,
-                            },
-                            {
-                              label: "น้ำหนักปริมาตร (ประเมิน)",
-                              value: `${(((selectedProduct.packagewidth ?? 0) * (selectedProduct.packagelength ?? 0) * (selectedProduct.packageheight ?? 0)) / 5000).toFixed(3)} kg`,
-                            },
-                            {
-                              label: "คุณลักษณะพิเศษ",
-                              value: selectedProduct.isalert ? "ระวังแตก" : "-",
-                            },
-                          ]}
-                        />
-                      </div>
-                    ) : null}
+                  <DetailSection
+                    title={text.groupingCard ?? "ข้อมูลการจัดกลุ่ม"}
+                    showEmptyFields={showEmptyDetails}
+                    fields={[
+                      {
+                        label: text.group,
+                        value: selectedProduct.groupcode
+                          ? `${selectedProduct.groupcode} — ${pickName(selectedProduct.groupnames, lang)}`
+                          : "-",
+                      },
+                      {
+                        label: text.groupsubone,
+                        value: selectedProduct.subgroupcode
+                          ? `${selectedProduct.subgroupcode} — ${pickName(selectedProduct.subgroupnames, lang)}`
+                          : "-",
+                      },
+                      {
+                        label: text.brand,
+                        value: selectedProduct.brandcode
+                          ? `${selectedProduct.brandcode} — ${pickName(selectedProduct.brandnames, lang)}`
+                          : "-",
+                      },
+                      {
+                        label: text.category,
+                        value: selectedProduct.categorycode
+                          ? `${selectedProduct.categorycode} — ${pickName(selectedProduct.categorynames, lang)}`
+                          : "-",
+                      },
+                      {
+                        label: text.class,
+                        value: selectedProduct.classcode
+                          ? `${selectedProduct.classcode} — ${pickName(selectedProduct.classnames, lang)}`
+                          : "-",
+                      },
+                      {
+                        label: text.design,
+                        value: selectedProduct.designcode
+                          ? `${selectedProduct.designcode} — ${pickName(selectedProduct.designnames, lang)}`
+                          : "-",
+                      },
+                      {
+                        label: text.model,
+                        value: selectedProduct.modelcode
+                          ? `${selectedProduct.modelcode} — ${pickName(selectedProduct.modelnames, lang)}`
+                          : "-",
+                      },
+                      {
+                        label: text.pattern,
+                        value: selectedProduct.patterncode
+                          ? `${selectedProduct.patterncode} — ${pickName(selectedProduct.patternnames, lang)}`
+                          : "-",
+                      },
+                      {
+                        label: text.grade,
+                        value: selectedProduct.gradecode
+                          ? `${selectedProduct.gradecode} — ${pickName(selectedProduct.gradenames, lang)}`
+                          : "-",
+                      },
+                    ]}
+                  />
 
-                    {detailTab === "sales" ? (
-                      <div className="grid gap-3 2xl:grid-cols-2">
-                        <DetailSection
-                          title={text.tabRestaurant ?? "ร้านอาหาร/POS"}
-                          showEmptyFields={showEmptyDetails}
-                          fields={[
-                            {
-                              label: text.isForRestaurant,
-                              value: formatYesNo(
-                                selectedProduct.restaurant?.isforrestaurant,
-                              ),
-                            },
-                            {
-                              label: text.isForTakeaway,
-                              value: formatYesNo(
-                                selectedProduct.restaurant?.isfortakeaway,
-                              ),
-                            },
-                            {
-                              label: text.isForDelivery,
-                              value: formatYesNo(
-                                selectedProduct.restaurant?.isfordelivery,
-                              ),
-                            },
-                            {
-                              label: text.isForCustomer,
-                              value: formatYesNo(
-                                selectedProduct.restaurant?.isforcustomer,
-                              ),
-                            },
-                            {
-                              label: text.isForCustomerPreOrder,
-                              value: formatYesNo(
-                                selectedProduct.restaurant
-                                  ?.isforcustomerpreorder,
-                              ),
-                            },
-                            {
-                              label: text.isALaCarte,
-                              value: formatYesNo(selectedProduct.isalacarte),
-                            },
-                            {
-                              label: text.isStockForRestaurant,
-                              value: formatYesNo(
-                                selectedProduct.isstockforrestaurant,
-                              ),
-                            },
-                            {
-                              label: text.isSplitUnitPrint,
-                              value: formatYesNo(
-                                selectedProduct.issplitunitprint,
-                              ),
-                            },
-                            {
-                              label: text.isOnlyStaff,
-                              value: formatYesNo(selectedProduct.isonlystaff),
-                            },
-                            {
-                              label: text.foodType,
-                              value: selectedProduct.restaurant?.isforrestaurant
-                                ? (foodTypes.find(
-                                    (item) =>
-                                      item.value === selectedProduct.foodtype,
-                                  )?.label ??
-                                  String(selectedProduct.foodtype ?? "-"))
-                                : "-",
-                            },
-                            {
-                              label: "บริการสั่งอาหาร",
-                              value: formatNamedList(
-                                selectedProduct.ordertypes,
-                                lang,
-                              ),
-                            },
-                            {
-                              label: "ชุดตัวเลือกสินค้า",
-                              value: formatOptionList(
-                                selectedProduct.options,
-                                lang,
-                              ),
-                            },
-                          ]}
-                        />
-                        <DetailSection
-                          title={`${text.tabTimeForSales} / ${text.tabBusinessBranchShort}`}
-                          showEmptyFields={showEmptyDetails}
-                          fields={[
-                            {
-                              label: text.tabTimeForSales,
-                              value: formatTimeForSaleList(
-                                selectedProduct.timeforsales,
-                              ),
-                            },
-                            {
-                              label: text.businessTypes ?? "ประเภทธุรกิจ",
-                              value: formatNamedList(
-                                selectedProduct.businesstypes,
-                                lang,
-                              ),
-                            },
-                            {
-                              label: text.ignoreBranches ?? "สาขาที่ยกเว้น",
-                              value: formatNamedList(
-                                selectedProduct.ignorebranches,
-                                lang,
-                              ),
-                            },
-                          ]}
-                        />
-                      </div>
-                    ) : null}
+                  <div className="grid gap-3 2xl:grid-cols-2">
+                    <DetailSection
+                      title={text.tabStock ?? "การควบคุมคลังสินค้า"}
+                      showEmptyFields={showEmptyDetails}
+                      fields={[
+                        {
+                          label: text.qty,
+                          value: formatAutoPackingBalance(
+                            selectedProduct,
+                            lang,
+                          ),
+                        },
+                        {
+                          label: text.orderPoint,
+                          value: String(selectedProduct.orderpoint ?? 0),
+                        },
+                        {
+                          label: text.minPoint,
+                          value: String(selectedProduct.minpoint ?? 0),
+                        },
+                        {
+                          label: text.maxPoint,
+                          value: String(selectedProduct.maxpoint ?? 0),
+                        },
+                        {
+                          label: text.stockBarcode,
+                          value: selectedProduct.stockbarcode || "-",
+                        },
+                        {
+                          label: "ต้นทุนคงที่",
+                          value:
+                            selectedProduct.fixedcost != null
+                              ? String(selectedProduct.fixedcost)
+                              : "-",
+                        },
+                      ]}
+                    />
+                    <DetailSection
+                      title={text.tabUnitsBarcode ?? "หน่วยนับและบาร์โค้ด"}
+                      showEmptyFields={showEmptyDetails}
+                      fields={[
+                        {
+                          label: "หน่วยนับมาตรฐาน",
+                          value: [
+                            selectedProduct.unitcode,
+                            pickName(selectedProduct.unitnames, lang),
+                            "1:1",
+                          ]
+                            .filter(Boolean)
+                            .join(" — "),
+                        },
+                        {
+                          label: "หน่วยนับเพิ่มเติม",
+                          value: formatUnitConversionList(
+                            selectedProduct.unitconversions,
+                            lang,
+                          ),
+                        },
+                        {
+                          label: "บาร์โค้ดสินค้า",
+                          value: formatRefBarcodeList(
+                            selectedProduct.barcodes,
+                            lang,
+                          ),
+                        },
+                        {
+                          label: "ส่วนประกอบ BOM",
+                          value: formatBomList(selectedProduct.bom, lang),
+                        },
+                      ]}
+                    />
+                    <DetailSection
+                      title="ขนาดและน้ำหนักพัสดุ"
+                      showEmptyFields={showEmptyDetails}
+                      fields={[
+                        {
+                          label: "น้ำหนักรวมพัสดุ",
+                          value: `${selectedProduct.packageweight ?? 0} kg`,
+                        },
+                        {
+                          label: "มิติตัวกล่อง (ก × ย × ส)",
+                          value: `${selectedProduct.packagewidth ?? 0} × ${selectedProduct.packagelength ?? 0} × ${selectedProduct.packageheight ?? 0} cm`,
+                        },
+                        {
+                          label: "น้ำหนักปริมาตร (ประเมิน)",
+                          value: `${(((selectedProduct.packagewidth ?? 0) * (selectedProduct.packagelength ?? 0) * (selectedProduct.packageheight ?? 0)) / 5000).toFixed(3)} kg`,
+                        },
+                        {
+                          label: "คุณลักษณะพิเศษ",
+                          value: selectedProduct.isalert ? "ระวังแตก" : "-",
+                        },
+                      ]}
+                    />
+                  </div>
 
-                    {detailTab === "more" ? (
-                      <div className="grid gap-3 2xl:grid-cols-2">
-                        <DetailSection
-                          title={`${text.tabMedia} / Marketplace`}
-                          showEmptyFields={showEmptyDetails}
-                          fields={[
-                            {
-                              label: "ใช้รูปหรือสี",
-                              value: formatYesNo(
-                                selectedProduct.useimageorcolor,
-                              ),
-                            },
-                            {
-                              label: "สี",
-                              value:
-                                selectedProduct.colorselect ||
-                                selectedProduct.colorselecthex ||
-                                "-",
-                            },
-                            {
-                              label: "รูปหลัก",
-                              value: selectedProduct.imageuri
-                                ? "มีรูปหลัก"
-                                : "-",
-                            },
-                            {
-                              label: "รูปทั้งหมด",
-                              value: selectedProduct.images?.length
-                                ? `${selectedProduct.images.length} รูป`
-                                : "-",
-                            },
-                            {
-                              label: "Marketplace",
-                              value: formatMarketplaceProductList(
-                                selectedProduct.marketplaceproducts,
-                              ),
-                            },
-                            {
-                              label: "คำเตือน",
-                              value: selectedProduct.alertdescription || "-",
-                            },
-                            {
-                              label: "รายละเอียด",
-                              value: selectedProduct.description || "-",
-                            },
-                          ]}
-                        />
-                        <DetailSection
-                          title="ข้อมูลระบบ"
-                          showEmptyFields={showEmptyDetails}
-                          fields={[
-                            {
-                              label: "รหัสภายในสินค้า",
-                              value: selectedProduct.guidfixed || "-",
-                            },
-                            {
-                              label: "รหัสกลุ่มกิจการ",
-                              value: selectedProduct.holdingcode || "-",
-                            },
-                            {
-                              label: "GUID หน่วยนับ",
-                              value: selectedProduct.unitguid || "-",
-                            },
-                            {
-                              label: "เปิดคำเตือน",
-                              value: formatYesNo(selectedProduct.isalert),
-                            },
-                          ]}
-                        />
-                      </div>
-                    ) : null}
-                  </CardContent>
-                </>
-              )}
+                  <div className="grid gap-3 2xl:grid-cols-2">
+                    <DetailSection
+                      title={text.tabRestaurant ?? "ร้านอาหาร/POS"}
+                      showEmptyFields={showEmptyDetails}
+                      fields={[
+                        {
+                          label: text.isForRestaurant,
+                          value: formatYesNo(
+                            selectedProduct.restaurant?.isforrestaurant,
+                          ),
+                        },
+                        {
+                          label: text.isForTakeaway,
+                          value: formatYesNo(
+                            selectedProduct.restaurant?.isfortakeaway,
+                          ),
+                        },
+                        {
+                          label: text.isForDelivery,
+                          value: formatYesNo(
+                            selectedProduct.restaurant?.isfordelivery,
+                          ),
+                        },
+                        {
+                          label: text.isForCustomer,
+                          value: formatYesNo(
+                            selectedProduct.restaurant?.isforcustomer,
+                          ),
+                        },
+                        {
+                          label: text.isForCustomerPreOrder,
+                          value: formatYesNo(
+                            selectedProduct.restaurant?.isforcustomerpreorder,
+                          ),
+                        },
+                        {
+                          label: text.isALaCarte,
+                          value: formatYesNo(selectedProduct.isalacarte),
+                        },
+                        {
+                          label: text.isStockForRestaurant,
+                          value: formatYesNo(
+                            selectedProduct.isstockforrestaurant,
+                          ),
+                        },
+                        {
+                          label: text.isSplitUnitPrint,
+                          value: formatYesNo(selectedProduct.issplitunitprint),
+                        },
+                        {
+                          label: text.isOnlyStaff,
+                          value: formatYesNo(selectedProduct.isonlystaff),
+                        },
+                        {
+                          label: text.foodType,
+                          value: selectedProduct.restaurant?.isforrestaurant
+                            ? (foodTypes.find(
+                                (item) =>
+                                  item.value === selectedProduct.foodtype,
+                              )?.label ??
+                              String(selectedProduct.foodtype ?? "-"))
+                            : "-",
+                        },
+                        {
+                          label: "บริการสั่งอาหาร",
+                          value: formatNamedList(
+                            selectedProduct.ordertypes,
+                            lang,
+                          ),
+                        },
+                        {
+                          label: "ชุดตัวเลือกสินค้า",
+                          value: formatOptionList(
+                            selectedProduct.options,
+                            lang,
+                          ),
+                        },
+                        {
+                          label: "สะสมแต้ม",
+                          value: formatYesNo(selectedProduct.issumpoint),
+                        },
+                        {
+                          label: "ส่วนลดสูงสุด",
+                          value: selectedProduct.maxdiscount || "-",
+                        },
+                        {
+                          label: "ส่วนลด",
+                          value: selectedProduct.discount || "-",
+                        },
+                        {
+                          label: "หักส่วนลด ณ จุดขาย",
+                          value: formatYesNo(
+                            selectedProduct.isdiscountpointofpurchase,
+                          ),
+                        },
+                        {
+                          label: "เงินปันผล",
+                          value: formatYesNo(selectedProduct.isdividend),
+                        },
+                      ]}
+                    />
+                    <DetailSection
+                      title={`${text.tabTimeForSales} / ${text.tabBusinessBranchShort}`}
+                      showEmptyFields={showEmptyDetails}
+                      fields={[
+                        {
+                          label: text.tabTimeForSales,
+                          value: formatTimeForSaleList(
+                            selectedProduct.timeforsales,
+                          ),
+                        },
+                        {
+                          label: text.businessTypes ?? "ประเภทธุรกิจ",
+                          value: formatNamedList(
+                            selectedProduct.businesstypes,
+                            lang,
+                          ),
+                        },
+                        {
+                          label: text.ignoreBranches ?? "สาขาที่ยกเว้น",
+                          value: formatNamedList(
+                            selectedProduct.ignorebranches,
+                            lang,
+                          ),
+                        },
+                      ]}
+                    />
+                  </div>
+
+                  <div className="grid gap-3 2xl:grid-cols-2">
+                    <DetailSection
+                      title={`${text.tabMedia} / Marketplace`}
+                      showEmptyFields={showEmptyDetails}
+                      fields={[
+                        {
+                          label: "ใช้รูปหรือสี",
+                          value: formatYesNo(selectedProduct.useimageorcolor),
+                        },
+                        {
+                          label: "สี",
+                          value:
+                            selectedProduct.colorselect ||
+                            selectedProduct.colorselecthex ||
+                            "-",
+                        },
+                        {
+                          label: "รูปหลัก",
+                          value: selectedProduct.imageuri ? "มีรูปหลัก" : "-",
+                        },
+                        {
+                          label: "รูปทั้งหมด",
+                          value: selectedProduct.images?.length
+                            ? `${selectedProduct.images.length} รูป`
+                            : "-",
+                        },
+                        {
+                          label: "Marketplace",
+                          value: formatMarketplaceProductList(
+                            selectedProduct.marketplaceproducts,
+                          ),
+                        },
+                        {
+                          label: "คำเตือน",
+                          value: selectedProduct.alertdescription || "-",
+                        },
+                        {
+                          label: "รายละเอียด",
+                          value: selectedProduct.description || "-",
+                        },
+                      ]}
+                    />
+                    <DetailSection
+                      title="ข้อมูลระบบ"
+                      showEmptyFields={showEmptyDetails}
+                      fields={[
+                        {
+                          label: "รหัสภายในสินค้า",
+                          value: selectedProduct.guidfixed || "-",
+                        },
+                        {
+                          label: "รหัสกลุ่มกิจการ",
+                          value: selectedProduct.holdingcode || "-",
+                        },
+                        {
+                          label: "GUID หน่วยนับ",
+                          value: selectedProduct.unitguid || "-",
+                        },
+                        {
+                          label: "เปิดคำเตือน",
+                          value: formatYesNo(selectedProduct.isalert),
+                        },
+                      ]}
+                    />
+                  </div>
+                </CardContent>
+              </>
             </Card>
           ) : (
             <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
@@ -2708,21 +2781,12 @@ function productRowKey(item: Product): string {
   return item.code || item.guidfixed;
 }
 
-function productUnitRows(item: Product): RefProductBarcode[] {
-  const rows =
-    item.barcodes && item.barcodes.length > 0
-      ? item.barcodes
-      : item.refbarcodes || [];
-  return rows.filter((row) => row.itemunitcode || row.barcode || row.qty);
+function productUnitRows(item: Product): ProductUnitConversion[] {
+  return item.unitconversions ?? [];
 }
 
 function formatProductUnitType(item: Product): string {
-  const projectedUnitCount = Number(item._unit_count ?? 0);
-  return projectedUnitCount > 1 ||
-    productUnitRows(item).length > 1 ||
-    item.isusesubbarcodes
-    ? "หลายหน่วยนับ"
-    : "หน่วยนับเดียว";
+  return productUnitRows(item).length > 0 ? "หลายหน่วยนับ" : "หน่วยนับเดียว";
 }
 
 function formatAutoPackingBalance(item: Product, language: string): string {
@@ -2734,19 +2798,13 @@ function formatAutoPackingBalance(item: Product, language: string): string {
     "หน่วย";
   const unitRows = productUnitRows(item)
     .map((row) => ({
-      name:
-        pickName(row.itemunitnames, language) ||
-        row.itemunitcode ||
-        row.barcode,
-      size: Math.max(1, Math.floor(Number(row.qty ?? 1))),
+      name: pickName(row.unitnames, language) || row.unitcode,
+      size: Number(row.standvalue) / Number(row.dividevalue),
     }))
-    .filter((row) => row.name)
+    .filter((row) => row.name && Number.isFinite(row.size) && row.size > 0)
     .sort((a, b) => b.size - a.size);
 
-  const hasBase = unitRows.some(
-    (row) => row.size === 1 || row.name === baseUnit,
-  );
-  const units = hasBase ? unitRows : [...unitRows, { name: baseUnit, size: 1 }];
+  const units = [...unitRows, { name: baseUnit, size: 1 }];
   if (total === 0) return `0 ${baseUnit}`;
 
   let remaining = total;
@@ -2785,6 +2843,21 @@ function formatNamedList(
       [item.code, pickName(item.names, language)].filter(Boolean).join(" — "),
     )
     .filter(Boolean)
+    .join(", ");
+}
+
+function formatUnitConversionList(
+  items: ProductUnitConversion[] | undefined,
+  language: string,
+) {
+  if (!items || items.length === 0) return "-";
+  return items
+    .map((item) => {
+      const unit = [item.unitcode, pickName(item.unitnames, language)]
+        .filter(Boolean)
+        .join(" — ");
+      return `${unit} (${item.standvalue}:${item.dividevalue})`;
+    })
     .join(", ");
 }
 

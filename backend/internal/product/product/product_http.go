@@ -3,7 +3,6 @@ package products
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"smlcloudplatform/internal/config"
@@ -18,9 +17,12 @@ import (
 	unitRepo "smlcloudplatform/internal/product/unit/repositories"
 	"smlcloudplatform/internal/utils"
 	"smlcloudplatform/internal/utils/requestfilter"
+	"smlcloudplatform/pkg/apperr"
 	"smlcloudplatform/pkg/microservice"
 	"strings"
 	"time"
+
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type IProductHttp interface{}
@@ -47,7 +49,8 @@ func NewProductHttp(ms *microservice.Microservice, cfg config.IConfig) ProductHt
 	repomgProductBarcode := productBarcodeRepo.NewProductBarcodeRepository(pstmg, cache)
 	prod := ms.Producer(cfg.MQConfig())
 	mqRepo := repositories.NewProductMessageQueueRepository(prod)
-	svc := services.NewProductHttpService(repo, repoUnit, *repomgCreditor, *repomgProductBarcode, mqRepo)
+	barcodeMQRepo := productBarcodeRepo.NewProductBarcodeMessageQueueRepository(prod)
+	svc := services.NewProductHttpService(repo, repoUnit, *repomgCreditor, *repomgProductBarcode, mqRepo, barcodeMQRepo)
 
 	return ProductHttp{
 		ms:  ms,
@@ -66,6 +69,19 @@ func (h ProductHttp) RegisterHttp() {
 	h.ms.DELETE("/product/:guid", h.DeleteProduct)
 }
 
+func requireProductBusinessCode(ctx microservice.IContext) (string, error) {
+	businessCode := utils.NormalizeBusinessCode(ctx.UserInfo().BusinessCode)
+	if businessCode == "" {
+		return "", apperr.Respond(ctx, apperr.New(
+			"COMPANY_REQUIRED",
+			http.StatusConflict,
+			"an active company is required",
+			"กรุณาเลือกบริษัทก่อนใช้งานข้อมูลสินค้า",
+		).WithField("businesscode"))
+	}
+	return businessCode, nil
+}
+
 // @Summary		Search products
 // @Description Search products with pagination
 // @Tags		Product
@@ -82,15 +98,18 @@ func (h ProductHttp) RegisterHttp() {
 func (h ProductHttp) SearchProduct(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	holdingCode := userInfo.HoldingCode
+	businessCode, err := requireProductBusinessCode(ctx)
+	if err != nil {
+		return err
+	}
 	pageable := utils.GetPageable(ctx.QueryParam)
 
 	filters := h.searchFilter(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.ProductList(holdingCode, filters, pageable)
+	docList, pagination, err := h.svc.ProductList(holdingCode, businessCode, filters, pageable)
 
 	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
+		return apperr.RespondErr(ctx, err)
 	}
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
@@ -116,29 +135,31 @@ func (h ProductHttp) SearchProduct(ctx microservice.IContext) error {
 func (h ProductHttp) CreateProduct(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	holdingCode := strings.TrimSpace(userInfo.HoldingCode)
+	businessCode, err := requireProductBusinessCode(ctx)
+	if err != nil {
+		return err
+	}
 
 	input := strings.TrimSpace(ctx.ReadInput())
 	if input == "" {
-		ctx.ResponseError(http.StatusBadRequest, "Invalid input: Empty request body")
-		return errors.New("Invalid input: Empty request body")
+		return apperr.Respond(ctx, apperr.ErrBadRequest.WithMessage("Invalid input: Empty request body"))
 	}
 
 	// ✅ แปลง JSON เป็น struct
 	newProduct := &models.ProductDoc{}
-	err := json.Unmarshal([]byte(input), newProduct)
+	err = json.Unmarshal([]byte(input), newProduct)
 	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, "Invalid JSON format: "+err.Error())
-		return err
+		return apperr.Respond(ctx, apperr.ErrBadRequest.Withf("Invalid JSON format: %v", err))
 	}
 
 	// ✅ กำหนดค่า `HoldingCode` และ `GuidFixed`
 	newProduct.HoldingCode = holdingCode
+	newProduct.BusinessCode = businessCode
 	newProduct.GuidFixed = utils.NewGUID()
 
 	// ✅ ตรวจสอบ Validation
 	if err = ctx.Validate(newProduct); err != nil {
-		ctx.ResponseError(http.StatusBadRequest, "Validation failed: "+err.Error())
-		return err
+		return apperr.Respond(ctx, apperr.ErrValidation.WithWrap(err).Withf("Validation failed: %v", err))
 	}
 
 	// ✅ กำหนดค่า `CreatedBy` และ `CreatedAt`
@@ -151,8 +172,14 @@ func (h ProductHttp) CreateProduct(ctx microservice.IContext) error {
 	// ✅ เรียก Service เพื่อสร้าง Product
 	err = h.svc.Create(newProduct)
 	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
+		if mongo.IsDuplicateKeyError(err) {
+			return apperr.Respond(ctx, apperr.ErrDuplicate.
+				WithField("code").
+				WithMessage("product code already exists").
+				WithThaiMessage("รหัสสินค้านี้ถูกใช้งานแล้ว กรุณาใช้รหัสอื่น").
+				WithWrap(err))
+		}
+		return apperr.RespondErr(ctx, err)
 	}
 
 	ctx.Response(http.StatusCreated, common.ApiResponse{
@@ -178,16 +205,18 @@ func (h ProductHttp) InfoProduct(ctx microservice.IContext) error {
 	code := strings.TrimSpace(ctx.Param("guid"))
 	userInfo := ctx.UserInfo()
 	holdingCode := userInfo.HoldingCode
-
-	if code == "" {
-		ctx.ResponseError(http.StatusBadRequest, "Product Code is required")
-		return errors.New("Product Code is required")
+	businessCode, err := requireProductBusinessCode(ctx)
+	if err != nil {
+		return err
 	}
 
-	product, err := h.svc.GetProduct(holdingCode, code)
+	if code == "" {
+		return apperr.Respond(ctx, apperr.ErrValidation.WithField("guid").WithMessage("Product Code is required"))
+	}
+
+	product, err := h.svc.GetProduct(holdingCode, businessCode, code)
 	if err != nil {
-		ctx.ResponseError(http.StatusNotFound, "Product not found")
-		return err
+		return apperr.Respond(ctx, apperr.NotFound("Product").WithWrap(err))
 	}
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
@@ -213,24 +242,25 @@ func (h ProductHttp) UpdateProduct(ctx microservice.IContext) error {
 	code := strings.TrimSpace(ctx.Param("guid"))
 	userInfo := ctx.UserInfo()
 	holdingCode := userInfo.HoldingCode
+	businessCode, err := requireProductBusinessCode(ctx)
+	if err != nil {
+		return err
+	}
 
 	if code == "" {
-		ctx.ResponseError(http.StatusBadRequest, "Product Code is required")
-		return errors.New("Product Code is required")
+		return apperr.Respond(ctx, apperr.ErrValidation.WithField("guid").WithMessage("Product Code is required"))
 	}
 
 	input := strings.TrimSpace(ctx.ReadInput())
 	if input == "" {
-		ctx.ResponseError(http.StatusBadRequest, "Invalid input: Empty request body")
-		return errors.New("Invalid input: Empty request body")
+		return apperr.Respond(ctx, apperr.ErrBadRequest.WithMessage("Invalid input: Empty request body"))
 	}
 
 	// ✅ แปลง JSON เป็น struct
 	updateData := &models.ProductDoc{}
-	err := json.Unmarshal([]byte(input), updateData)
+	err = json.Unmarshal([]byte(input), updateData)
 	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, "Invalid JSON format: "+err.Error())
-		return err
+		return apperr.Respond(ctx, apperr.ErrBadRequest.Withf("Invalid JSON format: %v", err))
 	}
 
 	updateData.UpdatedBy = userInfo.Username
@@ -240,10 +270,9 @@ func (h ProductHttp) UpdateProduct(ctx microservice.IContext) error {
 	fmt.Println("Updating Product:", updateData)
 
 	// ✅ อัปเดต Product
-	docData, err := h.svc.Update(holdingCode, code, userInfo.Username, updateData)
+	docData, err := h.svc.Update(holdingCode, businessCode, code, userInfo.Username, updateData)
 	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
+		return apperr.RespondErr(ctx, err)
 	}
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
@@ -269,16 +298,18 @@ func (h ProductHttp) DeleteProduct(ctx microservice.IContext) error {
 	code := strings.TrimSpace(ctx.Param("guid"))
 	userInfo := ctx.UserInfo()
 	holdingCode := userInfo.HoldingCode
-
-	if code == "" {
-		ctx.ResponseError(http.StatusBadRequest, "Product Code is required")
-		return errors.New("Product Code is required")
+	businessCode, err := requireProductBusinessCode(ctx)
+	if err != nil {
+		return err
 	}
 
-	err := h.svc.Delete(holdingCode, code, userInfo.Username)
+	if code == "" {
+		return apperr.Respond(ctx, apperr.ErrValidation.WithField("guid").WithMessage("Product Code is required"))
+	}
+
+	err = h.svc.Delete(holdingCode, businessCode, code, userInfo.Username)
 	if err != nil {
-		ctx.ResponseError(http.StatusInternalServerError, err.Error())
-		return err
+		return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(err))
 	}
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
@@ -299,16 +330,18 @@ func (h ProductHttp) DeleteProduct(ctx microservice.IContext) error {
 func (h ProductHttp) ResyncProduct(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	holdingCode := userInfo.HoldingCode
-
-	rebuilt, err := build.ProcessProductRebuildAll(holdingCode)
+	businessCode, err := requireProductBusinessCode(ctx)
 	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
-	published, err := h.svc.Resync(holdingCode)
+
+	rebuilt, err := build.ProcessProductRebuildCompany(holdingCode, businessCode)
 	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
+		return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(err).WithMessage("product rebuild failed"))
+	}
+	published, err := h.svc.Resync(holdingCode, businessCode)
+	if err != nil {
+		return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(err).WithMessage("product resync failed"))
 	}
 
 	ctx.Response(http.StatusOK, common.ApiResponse{

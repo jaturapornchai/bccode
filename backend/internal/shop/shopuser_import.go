@@ -32,6 +32,7 @@ type importUsersRequest struct {
 type importUserRow struct {
 	Row        int    `json:"row"`
 	Username   string `json:"username"`
+	Email      string `json:"email"`
 	Name       string `json:"name"`
 	Role       uint8  `json:"role"`
 	Position   string `json:"position"`
@@ -105,7 +106,7 @@ func (h ShopMemberHttp) ImportHoldingUsers(ctx microservice.IContext) error {
 			}
 			saveErr := h.svc.SaveUserFullProfile(holdingCode, authUsername, &models.UserRoleRequest{
 				Username:        r.Username,
-				Email:           r.Username,
+				Email:           r.Email,
 				UserProfileName: r.Name,
 				Role:            models.UserRole(r.Role),
 				Position:        r.Position,
@@ -127,7 +128,7 @@ func (h ShopMemberHttp) ImportHoldingUsers(ctx microservice.IContext) error {
 }
 
 // parseImportUsers decodes a .csv or .xlsx user list. Header row is matched case-insensitively
-// in Thai or English: email/username (required), name, role, position, department.
+// in Thai or English: usercode/username (required), email (optional), name, role, position, department.
 func parseImportUsers(filename string, data []byte) ([]importUserRow, error) {
 	var records [][]string
 	lower := strings.ToLower(strings.TrimSpace(filename))
@@ -167,11 +168,12 @@ func parseImportUsers(filename string, data []byte) ([]importUserRow, error) {
 	}
 
 	idx := mapImportColumns(records[0])
-	if idx.email < 0 {
-		return nil, errors.New("ไม่พบคอลัมน์ อีเมล/email ในหัวตาราง")
+	if idx.usercode < 0 {
+		return nil, errors.New("ไม่พบคอลัมน์ รหัสผู้ใช้/usercode ในหัวตาราง")
 	}
 
-	seen := map[string]bool{}
+	seenUserCodes := map[string]bool{}
+	seenEmails := map[string]bool{}
 	out := make([]importUserRow, 0, len(records)-1)
 	for i := 1; i < len(records); i++ {
 		rec := records[i]
@@ -181,26 +183,33 @@ func parseImportUsers(filename string, data []byte) ([]importUserRow, error) {
 			}
 			return ""
 		}
-		email := utils.NormalizeUsername(cell(idx.email))
+		usercode := utils.NormalizeUsername(cell(idx.usercode))
+		email := utils.NormalizeEmail(cell(idx.email))
 		row := importUserRow{
 			Row:        i + 1,
-			Username:   email,
+			Username:   usercode,
+			Email:      email,
 			Name:       cell(idx.name),
 			Position:   cell(idx.position),
 			Department: cell(idx.department),
 			Role:       parseImportRole(cell(idx.role)),
 		}
 		switch {
-		case email == "" && row.Name == "" && cell(idx.role) == "":
+		case usercode == "" && email == "" && row.Name == "" && cell(idx.role) == "":
 			continue // skip fully-blank rows silently
-		case email == "":
-			row.Valid, row.Message = false, "ไม่มีอีเมล"
-		case !isValidEmail(email):
+		case usercode == "":
+			row.Valid, row.Message = false, "ไม่มีรหัสผู้ใช้"
+		case email != "" && !isValidEmail(email):
 			row.Valid, row.Message = false, "อีเมลไม่ถูกต้อง"
-		case seen[email]:
+		case seenUserCodes[usercode]:
+			row.Valid, row.Message = false, "รหัสผู้ใช้ซ้ำในไฟล์"
+		case email != "" && seenEmails[email]:
 			row.Valid, row.Message = false, "อีเมลซ้ำในไฟล์"
 		default:
-			seen[email] = true
+			seenUserCodes[usercode] = true
+			if email != "" {
+				seenEmails[email] = true
+			}
 			row.Valid = true
 		}
 		out = append(out, row)
@@ -211,14 +220,16 @@ func parseImportUsers(filename string, data []byte) ([]importUserRow, error) {
 	return out, nil
 }
 
-type importColIndex struct{ email, name, role, position, department int }
+type importColIndex struct{ usercode, email, name, role, position, department int }
 
 func mapImportColumns(header []string) importColIndex {
-	idx := importColIndex{email: -1, name: -1, role: -1, position: -1, department: -1}
+	idx := importColIndex{usercode: -1, email: -1, name: -1, role: -1, position: -1, department: -1}
 	for i, h := range header {
 		key := strings.ToLower(strings.TrimSpace(h))
 		switch {
-		case idx.email < 0 && containsAny(key, "email", "อีเมล", "username", "ชื่อเข้าสู่ระบบ", "ผู้ใช้"):
+		case idx.usercode < 0 && containsAny(key, "usercode", "username", "รหัสผู้ใช้", "ชื่อเข้าสู่ระบบ"):
+			idx.usercode = i
+		case idx.email < 0 && containsAny(key, "email", "อีเมล"):
 			idx.email = i
 		case idx.name < 0 && containsAny(key, "name", "ชื่อ", "นามสกุล"):
 			idx.name = i

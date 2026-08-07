@@ -72,7 +72,7 @@ func TestParseProductBarcode(t *testing.T) {
 	productBarcode.VatType = 2
 	productBarcode.Discount = "DISCOUNT1"
 	productBarcode.DivideValue = 1
-	productBarcode.StandValue = 1
+	productBarcode.StandValue = 12
 	productBarcode.VatCal = 1
 
 	saleInvoiceParser := services.SaleInvocieParser{}
@@ -93,7 +93,7 @@ func TestParseProductBarcode(t *testing.T) {
 	require.Equal(t, int8(2), transDetail.VatType)
 	require.Equal(t, "DISCOUNT1", transDetail.Discount)
 	require.Equal(t, float64(1), transDetail.DivideValue)
-	require.Equal(t, float64(1), transDetail.StandValue)
+	require.Equal(t, float64(12), transDetail.StandValue)
 	require.Equal(t, 1, transDetail.VatCal)
 	require.Equal(t, 10.0, transDetail.Qty)
 	require.Equal(t, 100.0, transDetail.Price)

@@ -313,7 +313,7 @@ test("branch — Thai geo cascade forward+reverse, addresses untouched on geo-on
   await page.waitForTimeout(500);
   expect(await readInputValue(page, /รหัสไปรษณีย์/)).toBe("50200");
 
-  await clickButtonByText(page, /^บันทึกข้อมูล$/);
+  await clickButtonByText(page, /^บันทึก$/);
   await confirmCodeDialog(page, /^ยืนยันบันทึก$/);
   await page.waitForTimeout(1500); // left tree refetches after save; the form panel itself stays open (not a redirect)
   expect(await bodyHasText(page, name)).toBe(true);
@@ -357,7 +357,7 @@ test("branch — Thai geo cascade forward+reverse, addresses untouched on geo-on
   await waitForSelectEnabled(page, /อำเภอ\/เขต/);
   await setSelect(page, /ตำบล\/แขวง/, /^พระสิงห์/);
   await page.waitForTimeout(500);
-  await clickButtonByText(page, /^บันทึกข้อมูล$/);
+  await clickButtonByText(page, /^บันทึก$/);
   await confirmCodeDialog(page, /^ยืนยันบันทึก$/);
   await page.waitForTimeout(1000);
 
@@ -397,7 +397,7 @@ test("branch — Thai geo cascade forward+reverse, addresses untouched on geo-on
   await page.waitForTimeout(500);
   expect(await readInputValue(page, /รหัสไปรษณีย์/)).toBe("83000");
 
-  await clickButtonByText(page, /^บันทึกข้อมูล$/);
+  await clickButtonByText(page, /^บันทึก$/);
   await confirmCodeDialog(page, /^ยืนยันบันทึก$/);
   await page.waitForTimeout(1000);
 

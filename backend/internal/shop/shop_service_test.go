@@ -6,6 +6,7 @@ import (
 	auth_model "smlcloudplatform/internal/authentication/models"
 	"smlcloudplatform/internal/shop"
 	"smlcloudplatform/internal/shop/models"
+	utilmock "smlcloudplatform/mock"
 	micromodels "smlcloudplatform/pkg/microservice/models"
 	"testing"
 	"time"

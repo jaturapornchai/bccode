@@ -24,12 +24,14 @@ import (
 	"smlcloudplatform/internal/utils"
 	"smlcloudplatform/internal/utils/requestfilter"
 	warehouse_repositories "smlcloudplatform/internal/warehouse/repositories"
+	"smlcloudplatform/pkg/apperr"
 	"smlcloudplatform/pkg/microservice"
 	"strings"
 	"time"
 
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/text/encoding/unicode"
 	"golang.org/x/text/transform"
 )
@@ -58,6 +60,7 @@ func NewProductBarcodeHttp(ms *microservice.Microservice, cfg config.IConfig) Pr
 	}
 	clickHouseRepo := repositories.NewProductBarcodeClickhouseRepository(pstClickHouse)
 	mqRepo := repositories.NewProductBarcodeMessageQueueRepository(prod)
+	productMQRepo := productmaster.NewProductMessageQueueRepository(prod)
 	masterSyncCacheRepo := mastersync.NewMasterSyncCacheRepository(cache)
 
 	// Warehouse Repository for shelf search
@@ -71,7 +74,7 @@ func NewProductBarcodeHttp(ms *microservice.Microservice, cfg config.IConfig) Pr
 	unitMqRepo := unit_repositories.NewUnitMessageQueueRepository(prod)
 	unitSvc := unit_services.NewUnitHttpService(unitmaster, repo, unitMqRepo, masterSyncCacheRepo)
 
-	svc := services.NewProductBarcodeHttpService(repo, repoMaster, unitmaster, unitSvc, *creditorRepo, mqRepo, clickHouseRepo, masterSyncCacheRepo, priceHistorySvc, warehouseRepo)
+	svc := services.NewProductBarcodeHttpService(repo, repoMaster, unitmaster, unitSvc, *creditorRepo, mqRepo, clickHouseRepo, masterSyncCacheRepo, priceHistorySvc, warehouseRepo, productMQRepo)
 
 	return ProductBarcodeHttp{
 		ms:  ms,
@@ -113,6 +116,19 @@ func (h ProductBarcodeHttp) RegisterHttp() {
 	h.ms.POST("/product/barcode/import-refbarcode", h.ImportRefBarcodeUpdate)
 }
 
+func requireProductBarcodeBusinessCode(ctx microservice.IContext) (string, error) {
+	businessCode := utils.NormalizeBusinessCode(ctx.UserInfo().BusinessCode)
+	if businessCode == "" {
+		return "", apperr.Respond(ctx, apperr.New(
+			"COMPANY_REQUIRED",
+			http.StatusConflict,
+			"an active company is required",
+			"กรุณาเลือกบริษัทก่อนใช้งานบาร์โค้ด",
+		).WithField("businesscode"))
+	}
+	return businessCode, nil
+}
+
 // Create ProductBarcode godoc
 // @Description Create ProductBarcode
 // @Tags		ProductBarcode
@@ -123,12 +139,17 @@ func (h ProductBarcodeHttp) RegisterHttp() {
 // @Security     AccessToken
 // @Router /product/barcode [post]
 func (h ProductBarcodeHttp) CreateProductBarcode(ctx microservice.IContext) error {
-	authUsername := ctx.UserInfo().Username
-	holdingCode := ctx.UserInfo().HoldingCode
+	userInfo := ctx.UserInfo()
+	authUsername := userInfo.Username
+	holdingCode := userInfo.HoldingCode
+	businessCode, err := requireProductBarcodeBusinessCode(ctx)
+	if err != nil {
+		return err
+	}
 	input := ctx.ReadInput()
 
 	docReq := &models.ProductBarcodeRequest{}
-	err := json.Unmarshal([]byte(input), &docReq)
+	err = json.Unmarshal([]byte(input), &docReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())
@@ -144,9 +165,16 @@ func (h ProductBarcodeHttp) CreateProductBarcode(ctx microservice.IContext) erro
 		return err
 	}
 
-	idx, err := h.svc.CreateProductBarcode(holdingCode, authUsername, *docReq)
+	idx, err := h.svc.CreateProductBarcodeInCompany(holdingCode, businessCode, authUsername, *docReq)
 
 	if err != nil {
+		if mongo.IsDuplicateKeyError(err) {
+			return apperr.Respond(ctx, apperr.ErrDuplicate.
+				WithField("barcode").
+				WithMessage("barcode already exists").
+				WithThaiMessage("บาร์โค้ดนี้ถูกใช้งานแล้ว กรุณาใช้บาร์โค้ดอื่น").
+				WithWrap(err))
+		}
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
@@ -172,12 +200,16 @@ func (h ProductBarcodeHttp) UpdateProductBarcode(ctx microservice.IContext) erro
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
 	holdingCode := userInfo.HoldingCode
+	businessCode, err := requireProductBarcodeBusinessCode(ctx)
+	if err != nil {
+		return err
+	}
 
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
 
 	docReq := &models.ProductBarcodeRequest{}
-	err := json.Unmarshal([]byte(input), &docReq)
+	err = json.Unmarshal([]byte(input), &docReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())
@@ -193,7 +225,7 @@ func (h ProductBarcodeHttp) UpdateProductBarcode(ctx microservice.IContext) erro
 		return err
 	}
 
-	err = h.svc.UpdateProductBarcode(holdingCode, id, authUsername, *docReq)
+	err = h.svc.UpdateProductBarcodeInCompany(holdingCode, businessCode, id, authUsername, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -350,10 +382,14 @@ func (h ProductBarcodeHttp) DeleteProductBarcode(ctx microservice.IContext) erro
 	userInfo := ctx.UserInfo()
 	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
+	businessCode, err := requireProductBarcodeBusinessCode(ctx)
+	if err != nil {
+		return err
+	}
 
 	id := ctx.Param("id")
 
-	err := h.svc.DeleteProductBarcode(holdingCode, id, authUsername)
+	err = h.svc.DeleteProductBarcodeInCompany(holdingCode, businessCode, id, authUsername)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -380,14 +416,21 @@ func (h ProductBarcodeHttp) DeleteProductBarcode(ctx microservice.IContext) erro
 func (h ProductBarcodeHttp) InfoProductBarcode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	holdingCode := userInfo.HoldingCode
+	businessCode, err := requireProductBarcodeBusinessCode(ctx)
+	if err != nil {
+		return err
+	}
 
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get ProductBarcode %v", id)
-	doc, err := h.svc.InfoProductBarcode(holdingCode, id)
+	doc, err := h.svc.InfoProductBarcodeInCompany(holdingCode, businessCode, id)
 
 	if err != nil {
 		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
+		if err.Error() == "document not found" {
+			return apperr.Respond(ctx, apperr.ErrNotFound.WithField("id"))
+		}
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
@@ -466,26 +509,20 @@ func (h ProductBarcodeHttp) GetroductBarcodeByRef(ctx microservice.IContext) err
 func (h ProductBarcodeHttp) InfoProductBarcodeByBarcode(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	holdingCode := userInfo.HoldingCode
+	businessCode, err := requireProductBarcodeBusinessCode(ctx)
+	if err != nil {
+		return err
+	}
 
 	barcode := ctx.Param("barcode")
 	itemCode := ctx.QueryParam("itemcode")
-	shopsidParam := strings.Trim(ctx.QueryParam("shopsid"), " ")
 
-	// If shopsid parameter is provided, use it instead of user's holdingCode
-	if shopsidParam != "" {
-		shopsList := strings.Split(shopsidParam, ",")
-		for i, shop := range shopsList {
-			shopsList[i] = strings.Trim(shop, " ")
-		}
-		// Use the first shop from the list for single barcode lookup
-		if len(shopsList) > 0 {
-			holdingCode = shopsList[0]
-		}
-	}
-
-	doc, err := h.svc.InfoProductBarcodeByBarcode(holdingCode, itemCode, barcode)
+	doc, err := h.svc.InfoProductBarcodeByBarcodeInCompany(holdingCode, businessCode, itemCode, barcode)
 
 	if err != nil {
+		if err.Error() == "document not found" {
+			return apperr.Respond(ctx, apperr.ErrNotFound.WithField("barcode"))
+		}
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
@@ -603,12 +640,16 @@ func (h ProductBarcodeHttp) InfoArrayMaster(ctx microservice.IContext) error {
 func (h ProductBarcodeHttp) SearchProductBarcodePage(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	holdingCode := userInfo.HoldingCode
+	businessCode, err := requireProductBarcodeBusinessCode(ctx)
+	if err != nil {
+		return err
+	}
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
 	filters := h.searchFilter(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.SearchProductBarcode(holdingCode, filters, pageable)
+	docList, pagination, err := h.svc.SearchProductBarcodeInCompany(holdingCode, businessCode, filters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

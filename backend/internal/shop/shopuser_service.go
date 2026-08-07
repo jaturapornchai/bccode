@@ -351,13 +351,9 @@ func (svc ShopUserService) SaveUserFullProfile(holdingCode string, authUsername 
 		return errors.New("can not edit self permission")
 	}
 
-	authUser, err := svc.repo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, authUsername)
+	authUser, err := svc.requireHoldingManager(holdingCode, authUsername)
 	if err != nil {
 		return err
-	}
-
-	if authUser.Role != models.ROLE_OWNER && authUser.Role != models.ROLE_ADMIN {
-		return errors.New("permission denied")
 	}
 
 	createdBy, err := svc.repo.FindShopCreatedBy(context.Background(), holdingCode)
@@ -423,14 +419,9 @@ func (svc ShopUserService) SaveUserFullProfile(holdingCode string, authUsername 
 
 func (svc ShopUserService) DeleteUserPermissionShop(holdingCode string, authUsername string, username string) error {
 
-	authUser, err := svc.repo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, authUsername)
-
+	authUser, err := svc.requireHoldingManager(holdingCode, authUsername)
 	if err != nil {
 		return err
-	}
-
-	if authUser.Role != models.ROLE_OWNER && authUser.Role != models.ROLE_ADMIN {
-		return errors.New("permission denied")
 	}
 
 	findUser, err := svc.repo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, username)
@@ -478,6 +469,9 @@ func (svc ShopUserService) requireHoldingManager(holdingCode string, authUsernam
 		return models.ShopUser{}, err
 	}
 	if authUser.Role != models.ROLE_OWNER && authUser.Role != models.ROLE_ADMIN {
+		return models.ShopUser{}, errors.New("permission denied")
+	}
+	if authUser.IsAccessDisabled || (!authUser.AccessExpiryDate.IsZero() && time.Now().After(authUser.AccessExpiryDate)) {
 		return models.ShopUser{}, errors.New("permission denied")
 	}
 	return authUser, nil

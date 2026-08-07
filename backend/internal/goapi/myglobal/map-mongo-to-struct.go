@@ -19,6 +19,7 @@ func MapBarcodeFromMongoToStruct(productBarcode models.ProcessMongoBarcodeModel)
 
 	// กำหนดค่าพื้นฐาน
 	barcodeModel.HoldingCode = productBarcode.HoldingCode
+	barcodeModel.BusinessCode = productBarcode.BusinessCode
 	barcodeModel.Barcode = productBarcode.Barcode
 	barcodeModel.UnitCode = productBarcode.ItemUnitCode
 	barcodeModel.ItemType = productBarcode.ItemType
@@ -83,13 +84,14 @@ func MapBarcodeFromMongoToStruct(productBarcode models.ProcessMongoBarcodeModel)
 		// สร้าง BarcodeRefModel สำหรับทุก RefBarCodes
 		for _, ref := range productBarcode.RefBarCodes {
 			barcodeRefModel = append(barcodeRefModel, models.BarcodeRefModel{
-				HoldingCode: productBarcode.HoldingCode,
-				Barcode:     productBarcode.Barcode,
-				BarcodeRef:  ref.Barcode,
-				ItemCode:    barcodeModel.ItemCode,
-				UnitCode:    ref.ItemUnitCode,
-				StandValue:  ref.UnitStand,
-				DivideValue: ref.UnitDivide,
+				HoldingCode:  productBarcode.HoldingCode,
+				BusinessCode: productBarcode.BusinessCode,
+				Barcode:      productBarcode.Barcode,
+				BarcodeRef:   ref.Barcode,
+				ItemCode:     barcodeModel.ItemCode,
+				UnitCode:     ref.ItemUnitCode,
+				StandValue:   ref.UnitStand,
+				DivideValue:  ref.UnitDivide,
 			})
 		}
 	} else {

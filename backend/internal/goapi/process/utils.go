@@ -105,7 +105,7 @@ func BulkInsertProcessStockLot(ctx context.Context, db *sql.DB, data any) error 
 		}
 
 		columns := []string{
-			"docdatetime", "lot_number", "docno", "transflag", "itemcode",
+			"docdatetime", "lotnumber", "docno", "transflag", "itemcode",
 			"unitcode", "whcode", "locationcode", "qty", "price", "unitstand",
 			"unitdivide", "cost", "balanceamount", "balanceqty", "guidref",
 		}
@@ -113,7 +113,7 @@ func BulkInsertProcessStockLot(ctx context.Context, db *sql.DB, data any) error 
 		rows := make([][]any, len(v))
 		for i, item := range v {
 			rows[i] = []any{
-				item["docdatetime"], item["lot_number"], item["docno"], item["transflag"],
+				item["docdatetime"], item["lotnumber"], item["docno"], item["transflag"],
 				item["itemcode"], item["unitcode"], item["whcode"], item["locationcode"],
 				item["qty"], item["price"], item["unitstand"], item["unitdivide"],
 				item["cost"], item["balanceamount"], item["balanceqty"], item["guidref"],

@@ -40,7 +40,7 @@ func S3FileProxyHandler(c echo.Context) error {
 			"error": "shop not selected",
 		})
 	}
-	if !storageObjectBelongsToShop(objectKey, holdingCode) {
+	if !storageObjectBelongsToContext(objectKey, holdingCode, storageContextBusinessCode(c)) {
 		logger.Warn("S3 proxy blocked: requested_shop=%s token_shop=%s", storageObjectHoldingCode(objectKey), holdingCode)
 		return c.JSON(http.StatusForbidden, map[string]string{
 			"error": "forbidden",

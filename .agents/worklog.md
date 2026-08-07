@@ -9,6 +9,15 @@ Rules for this file:
 - Detailed cross-layer pending work goes in `.agents/handoffs/`; this file is the short shared history + open-decision list.
 - Prune entries once fully superseded or older than ~30 days.
 
+### 2026-08-05 (cont. 3) — อนุญาตแก้/test/deploy MongoModel อัตโนมัติ
+- เพิ่มกฎกลางและกฎ `D:\mongomodel` ให้ agent แก้ root cause ของ MCP หรือทุกส่วนใน MongoModel ได้ทันที; หลัง code/behavior change ต้อง test + production build + rebuild/deploy บน Docker Desktop ด้วย `npm run docker:up` แล้วตรวจ container/UI/MCP request จริง
+- ขอบเขตเป็น local edit/test/Docker Desktop deploy; ไม่รวมเปิด LAN, production/R0 หรือ auto commit/push repo ภายนอก
+
+### 2026-08-05 (cont. 4) — Workflow แสดง Schema ที่อ้างถึง
+- MongoModel สรุป `step.dataAccess` เป็น “Schema ที่เกี่ยวข้อง” ในแผงตรวจ Workflow พร้อม Collection/Field/operation/จำนวนขั้นตอนและลิงก์กลับ Schema; MCP `get_workflow` + Markdown คืนสรุปเดียวกัน
+- verify: regression 12/12, Next production build ผ่าน, rebuild/deploy container `mongomodel` บน Docker Desktop, UI/MCP จริงผ่านและ browser console ไม่มี error
+- เพิ่ม schema ตาม auth runtime ในแท็บ Login: `users`, `shopusers`, `shopuseraccesslogs`; ลบ `employee.password`, เพิ่ม business-key relations/index และผูก Workflow เป็น 3 Schema (read/update/create). `lint_model` + `lint_workflows` = 0, คำอธิบายไทยครบ, project rev 1034
+
 ### 2026-07-15 (cont.) — Single-agent rule + complete MongoDB inline graph
 - Jead disabled automatic AI-advisor consultation globally/project-wide: active Codex/Claude/BC rules now require the running agent to analyze, review, and verify from source/runtime evidence; GLM/DeepSeek/other AI calls require an explicit named-model request in the current task. An in-flight consult was terminated before output and nothing was used.
 - Corrected Jarvis over-filtering: graph links now come only from field-table relationships reachable from 17 Mongo roots, while narrative references/DTO/Response/PG remain excluded. Added source-backed nodes for 8 shared reachable structures (`PartitionIdentity`, `ActivityDoc`, `HoldingCodeentity`, `DocIdentity`, `Name`, `NameX`, `UnitName`, `XSort`).
@@ -1211,3 +1220,527 @@ other entry):
 - **MCP probe** (`tmp/mcp-probe/probe.mjs`, initialize+tools/list จริง): playwright OK (1.62.0-alpha, 24 tools), context7 OK (3.2.4, 2 tools), github OK (github-mcp-server@0.6.2, 26 tools — ใช้ token จาก `gh auth token` ผ่าน env GITHUB_PERSONAL_ACCESS_TOKEN). เพิ่ม playwright+context7 เข้า `.mcp.json` โปรเจคแล้ว (ไม่มี secret); github ไม่ใส่เพราะต้องใช้ token (ห้าม hardcode secret ใน repo) — ต้องตั้ง env เองใน config ฝั่ง user
 - **BE normalize ครบ**: subagent แก้ 8 services (categoryproduct, classproduct, designproduct, gradeproduct, groupsuboneproduct, groupsubtwoproduct, modelproduct, patternproduct) Create/Update เรียก `utils.NormalizeBusinessCode` + reject code ว่าง ตามแพตเทิร์น brandproduct; deploy fast-binary-swap 19.9s
 - **Verify จริงทั้ง 8 จอ**: probe API — bad-shape "test zz0746" → เก็บ `TESTZZ0746` ทุก collection (category/pattern/model/grade/groupsubone/groupsubtwo/class/design master), blank code → 400 "code is required" ทุกตัว; purge TESTZZ 8 docs. `groupproduct` (service ตัวที่ 9) ไม่ได้แก้ — จอ /productgroup ไม่มีช่อง code ให้ผู้ใช้กรอก อยู่นอกขอบเขต (flag ไว้ถ้าต้องการ)
+
+### 2026-07-19 (cont. 4) — Push batch ใหญ่ขึ้น GitHub (dev)
+- `git add -A` ทั้งโปรเจค (130+ ไฟล์ รวมงาน session ก่อน ๆ ที่ค้างอยู่ตาม push-whole-project rule): commit f45993a0 → push origin dev สำเร็จ (c5f72fc9..f45993a0), branch sync กับ origin/dev
+- ก่อน push: secret scan สะอาด, git diff --check ผ่าน (CRLF warnings ปกติ), ลบไฟล์ขยะ `D:bccode.agentstmpdeepseek-stderr.txt` (73 bytes)
+- R0 เดิมเรื่อง s/warehouse.md คลี่คลาย: จริง ๆ เป็น rename ไป `s/workflow/warehouse.md` (git ตรวจเจอ rename 100%) ไม่ได้ถูกลบ
+
+### 2026-07-19 (cont. 5) — W0: e2e suite 39/39 ผ่าน + ล้างขยะ DEV
+- Full suite (`--workers=2`, 10.5m): **39/39 PASS** — สาเหตุที่พังรอบแรก ๆ: (1) dev server ดับกลางรัน (zombie จาก VSCode restart, kill PID แล้วยกใหม่); (2) branch spec selector เก่า "บันทึกข้อมูล" → ปุ่มจริง "บันทึก" (UI restyle จาก session ก่อนที่ push ไป batch f45993a0) — อัปเดต spec 3 จุด; (3) sample-data ขาด seed classification masters → seed 27 รายการผ่าน API จริง (`tmp/uat-masters/seed-classifications.mjs`); (4) **ลบ junk E2E groups 152 docs** เหลือ 35 (แก้ picker เต็มขยะ + UX รกที่เคย flag); (5) category tree: spec expand แค่ node แรก → แก้เป็น loop expand จนเจอ (เครื่องดื่มอยู่ลำดับ 2); (6) parallel workers แย่ง login helpers (fixed 2.5s waits) → workers=2 เสถียร, ควร harden helper เป็น retry ภายหลัง
+
+### 2026-07-19 (cont. 6) — W1: masters UAT ครบ + unitcode normalize
+- Sweep 8 aicloud masters (`tmp/uat-masters/run-sweep.sh`, generic script `uat-master.mjs`): **136 PASS / 0 FAIL** — create(normalize+dup)/search/row-click/copy/edit/dirty/delete/iPad ผ่านทุกจอ
+- หน่วยนับสินค้า: เจอบั๊กชุดเดียวกับยี่ห้อ — `unitcode` เป็น plain textField + BE ไม่ normalize → แก้ FE `businessCodeField("unitcode")` + BE unit service Create/Update เรียก `utils.NormalizeBusinessCode` + reject ว่าง; re-UAT **17/17 PASS**; purge bad unit 1
+- W1 ปิด: กลุ่มสินค้า/ยี่ห้อ/หน่วยนับ/8 masters/หมวด/คลัง/สินค้า/บาร์โค้ด/ชุด/BOM ผ่านหมด (e2e 39/39 + sweep 136 + UAT เฉพาะจอ)
+
+### 2026-07-19 (cont. 7) — W2: ซ่อมเส้นทางสต็อก/ต้นทุน itemcode ให้ทำงานจริง end-to-end
+- **พิสูจน์ก่อนแก้**: post PU/SI จริงผ่าน API → เอกสารสร้างสำเร็จ (เลขที่ PU2026.../SI2026... จริง — doc-number generator ทำงานแล้ว) แต่ balanceqty ไม่ขยับ เพราะ projection พังหลายชั้น
+- **บั๊กที่แก้ (deploy 6 รอบ ตรวจจบด้วย psql ทุกรอบ)**:
+  1. **schema drift** — insert_doc.go COPY + process-doc-model.go db tags ใช้ creatorcode/totalamountdoc ฯลฯ แต่ DDL/ตารางจริงเป็น snake_case → doc insert ตายทุก event (subagent แก้ 5 ไฟล์ ครบ doc/docdetail/docref/lot/SELECT/migrate)
+  2. `d.isclosed = 0` → boolean เทียบ integer → แก้เป็น `= false` 4 จุด (process-product-balance-update.go)
+  3. batch UPDATE product: text ไปชน numeric → เติม `::numeric` 3 จุด
+  4. queryPendingRecv/Send ใช้ placeholder ชุดเดียว 2 CTE แต่ส่ง args 2 ชุด → เพิ่ม buildPlaceholdersOffset
+  5. **processstockcost idempotency** — minimalLog mode ข้าม deleteFirst แต่ UPSERT ไม่เคยถูกเขียน → ทุก replay แถวซ้ำ; แก้ให้ delete-first เสมอ (พิสูจน์: 7 docs = 7 rows)
+  6. **product search cache ค้าง 5 นาที** — เพิ่ม hook `processstock.OnBalanceUpdated` → `InvalidateProductSearchCache()` (init ใน product_cache.go)
+- **ผลยืนยันจริง**: ซื้อ+10@25 ขาย-3@40 → product.balanceqty = 31 (ตรง docdetail sum), processstockcost ลงต้นทุน moving-average 25 ถูกทุกแถว, balance ตามทีละเอกสาร 10→7→17→27→24→34→31→38
+- **ค้างไว้เป็นงานถัดไป**: (1) `sql: database is closed` intermittent — mydb manager ปิด shared handle ระหว่าง workers ใช้งาน (lock.go:316/calc-cost:106/balance-update:164) ทำ event หลุดเข้า DLQ เป็นครั้งคราว; (2) DLQ ยังไม่มี replayer; (3) ClickHouse disabled; (4) decimal math migration (PG เป็น NUMERIC แล้ว แต่ Go คำนวณ float64 ทั้งสาย) — เป็น phase ของตัวเอง; (5) Pipeline A (barcode-keyed stockcalculator) ยังเขียน productbarcode.* แต่ไม่มีผู้อ่าน = dead-end (legacy display เท่านั้น)
+- เอกสารทดสอบ PU2026071900001-6/SI2026071900001-6 ยังอยู่ใน DEV (หลักฐาน pipeline — ไม่ลบเพื่อกัน desync Mongo/PG)
+
+### 2026-07-19 (cont. 8) — NumericInput widget กลาง (ชิดขวา + เครื่องคิดเลย popup)
+- สร้าง `frontend/src/components/ui/numeric-input.tsx`: input ชิดขวา + ปุ่มไอคอนเครื่องคิดเลย → popup numpad (Portal สู่ body, flip เมื่อที่ว่างด้านล่างไม่พอ, clamp ขอบจอ), คำนวณ + − × ÷ แบบ pocket calculator (left-to-right, 10+5×2=30), C/⌫/=/ตกลง (apply + clamp min/max), ESC/backdrop ปิด, ไม่ใช้ eval
+- เปลี่ยน NumberField ทั้ง 4 ตัว (product-tab-shared, tab-product-units, tab-product-marketplace, barcode-form) ให้ wrap NumericInput — signature เดิม ทุกจอสินค้า/บาร์โค้ดได้ widget ใหม่ทันทีทั้งระบบ
+- ตามมาด้วยงานก่อนหน้า session เดียวกัน: ลบปุ่ม "ขั้นสูง" จอแก้ไขสินค้า → แท็บครบ 11 ตัว flex-wrap 2 แถว
+- verify: tsc exit=0 + probe จริง (เปิด popup กด 10+5×2= ตกลง → input=30 pocket-calc semantics) + ภาพจอ tmp/uat-masters/numeric-*.png
+
+### 2026-07-19 (cont. 9) — NumericInput typing UX fix (ตามรายงานลุงจืด: กด 1 กลายเป็น 10)
+- Reproduce จริง: click-end+type "1" → "10", clear+type "7" → "07" — controlled input coerce เป็น number ทุก keystroke ทำให้ "0" นำหน้าลบไม่ได้
+- แก้ `numeric-input.tsx`: local text state ขณะ focus (พิมพ์ว่าง/ติดลบ/จุดค้างได้), onFocus select-all **แบบ synchronous + onMouseUp preventDefault** (ของเดิม requestAnimationFrame — race กับการพิมพ์ ตัวเลขตัวแรกโดนกลืน: "25"→"5", "12.5"→"2.5"), เปลี่ยนเป็น type="text"+inputMode="decimal" กรองอักขระเอง (ได้ควบคุมเต็ม), commit+clamp min/max ตอน blur, ล้างแล้ว blur ว่าง = คืนค่าเดิม, calculator apply sync text ป้องกัน blur ทับ
+- ทดสอบ 10 patterns คนกดจริง ผ่านหมด: click+1=1, 25=25, clear+7=7, 12.5, -5→clamp 0, abc12→12, 007→7, 1.5, clear+blur คืนค่าเดิม, เครื่องคิดเลย 10+5×2=30 apply ได้ — tsc exit=0
+
+### 2026-07-19 (cont. 10) — NumericInput: focus เจอ 0 แสดงค่าว่าง
+- ตามคำสั่งลุงจืด: onFocus ถ้า value=0 → text ว่าง (พิมพ์ใหม่ได้เลยไม่มี 0 ค้าง), non-zero → select-all ทับได้ทันที, blur ว่างคืน 0 เดิม; verify 5 เคส: focus0→'', type5→5, focus non-zero ทับ 42, blur ว่าง→0 — ผ่านหมด, tsc exit=0
+
+### 2026-07-19 (cont. 11) — NumericInput: Undo/Redo ระดับ field (ปุ่ม + hotkey) พร้อม focus-follow
+- เพิ่ม history ต่อ field: emit ทุกค่าที่เปลี่ยน (พิมพ์/blur-commit/เครื่องคิดเลย) เป็น undo step, ปุ่ม Undo2/Redo2 โผล่เมื่อมี history ข้างๆ ปุ่มเครื่องคิดเลย, hotkey Ctrl+Z / Ctrl+Y (Ctrl+Shift+Z), focus+select ตามค่าที่ restore ทุกครั้ง
+- บั๊กที่เจอระหว่างทำ: (1) side-effect ใน setState updater โดน StrictMode double-invoke → undo กระโดดผิด; (2) **อ่าน lastEmittedRef ใน updater — updater รันตอน render หลัง ref ถูก assign แล้ว → push ค่าใหม่แทนค่าเดิม** แก้ capture anchor ก่อน queue; (3) probe sequencing ที่ field focus ค้างจาก focus-follow ทำ type แทรกแทนที่จะทับ
+- verify: chain undo 42→4→5→0 / redo 5→4→42, focus ตาม, Ctrl+Z→9 Ctrl+Y→99, calc apply ทำ undo ได้ — ผ่านหมด, tsc exit=0
+
+### 2026-07-21 — Import Go datamodel เข้า mongomodel MCP (localhost:3100)
+- ตรวจ `http://localhost:3100/mcp` = MCP server "mongomodel" v2.0.0 (streamable HTTP, tools: project/diagram/collection/field/relation/generate_code) — ลุงจืดเพิ่ม MCP entry แล้ว แต่ session นี้ยังไม่ reload tools จึงยิงผ่าน HTTP ตรง (protocol เดียวกัน)
+- สร้าง project `BC Ai Account` แล้ว import model จาก `D:/bccode/datamodel/*.go` (เฉพาะ struct ที่มี bson tag = mongo document จริง) ด้วย `tmp/import-mongomodel.py`: 22 collections — productbarcode, barcode, shop, warehouse, customer, debtor, creditor, employee, doc (details 62 ฟิลด์ซ้อน), stocktransfer, stockreceive, stockpickup, stockreturn, stockadjustment, stockbalance, images, attachments, pdfhistory, stockmovement, productbalance, docdetail, report + 4 relations (doc.custcode→debtor, stocktransfer.custcode→debtor, attachments.docno→doc, pdfhistory.docno→doc)
+- type map: string→String, int/float64→Number, bool→Boolean, time.Time→Date, ObjectID→ObjectId, map/any→Mixed, []struct→Array<Object> children (LanguageModel=code/name/isauto/isdelete)
+- verify: get_diagram 22 nodes/4 edges, nested children ครบ (doc.details=62, productbalance.warehouses.locations 3 ชั้น) — relation pdfhistory→doc หลุดรอบแรก เพิ่มซ้ำแล้วขึ้นครบ
+
+### 2026-07-21 (cont.) — mongomodel: ใส่คำอธิบายภาษาไทยทุกฟิลด์ + พบ server validate ไทย
+- Rebuild project `BC Ai Account` ใหม่พร้อม description ไทยทุก collection/field (`tmp/import-mongomodel-th.py`) — ระหว่างรัน ลุงจืดพัฒนาแอป mongomodel ต่อ: server เพิ่ม validation **ทุก field ต้องมี description และต้องมีอักขระไทย** (isError กลับมาทั้ง collection ถ้าขาด/ไม่ไทย)
+- บั๊กที่เจอ: (1) helper เช็คแค่ exception ไม่เช็ค `result.isError` → พิมพ์ [OK] ทั้งที่ server ปฏิเสธ images/attachments/report (contenttype="MIME type" ไม่มีไทย, report ฟิลด์ value ไม่มี desc) (2) report โดนเพิ่มซ้ำ 2 node ตอน patch — ลบตัวเก่าออกแล้ว
+- สถานะสุดท้าย (verify ผ่าน get_diagram): 22 collections / 4 relations / 783 fields ทุกฟิลด์มีคำอธิบายไทยครบ (0 ขาด 0 ไม่ไทย) — เปิดดูที่ http://localhost:3100 project BC Ai Account
+
+### 2026-07-21 (cont. 2) — Re-test mongomodel MCP หลังทีม dev ปรับปรุงตาม prompt
+- Tools 21 ตัว (+`replace_diagram` bulk, `check_descriptions`) — tool description บอกกฎไทยแล้ว, error มี machine code ([DUPLICATE_LABEL], [DESCRIPTION_NOT_THAI]), add_collection กัน label ซ้ำ + replace_diagram atomic (dup ใน payload ไม่เขียนทับ)
+- Conditional GET ครบ 3 endpoint: ?rev=เดิม → 204 0B, rev เก่า/parse ไม่ได้ → 200; wiki มี rev field + cache invalidate ตาม rev ถูกต้อง
+- Cross-route freshness ผ่าน: MCP→REST และ REST→MCP เห็นของใหม่ทันที; parallel MCP 20 calls ผ่าน 20/20 ไม่ cross-talk
+- **สำคัญ — 21s mystery:** ความช้าที่เห็นตลอด session (import 7 นาที, ทุก request ~21.0s) คือ Python urllib ของผมเอง resolve `localhost`→::1 แล้วรอ Windows TCP timeout ~21s ก่อนตกกลับ IPv4 — server เร็วปกติตลอด (curl/127.0.0.1 = ~0.2s แม้ก่อนแก้) บทเรียน: เทส latency ให้ยิง 127.0.0.1 หรือ curl เสมอ
+- ตัวเลขจริงหลังแก้: GET project 109KB=0.022s, 204 polls=0.003-0.018s (0B), wiki full cache-hit=0.029s, MCP get_diagram=0.016s avg, mutation add_collection=0.033s
+
+### 2026-07-22 — mongomodel: BC Ai Account เหลือเฉพาะ MongoDB collections จริง
+- ลุงจืดสั่ง "ใน BC Ai Account ให้มีเฉพาะ MongoDB" — audit 22 collections เทียบ backend Go จริง พบ 3 ตัวที่ไม่ใช่ Mongo collection แต่เป็น report/query-result struct ใน memory: `stockmovement` (process-stock-movement-cost.go), `productbalance` (process-stock-balance-by-item-warehouse-location.go), `report` (build-report.go) — ไม่มี .Collection()/persistence ใด ๆ
+- ลบ 3 ตัวนั้นออกจาก diagram → เหลือ 19 collections (masters: productbarcode/barcode/shop/warehouse/customer/debtor/creditor/employee; docs: doc/docdetail/stocktransfer/stockreceive/stockpickup/stockreturn/stockadjustment/stockbalance; files: images/attachments/pdfhistory) + 4 relations ครบ + คำอธิบายไทยครบ 699 fields
+- หมายเหตุ: project default/ร้านค้าออนไลน์ ถูกลบไปก่อนหน้าแล้ว เหลือ project เดียวในแอป; DEV on-prem mongo (192.168.2.202/appdb) มี 17 collections จริง (shops/warehouse/images/units/productcategories/organizationcompanies/... — scope กว้างกว่า package datamodel)
+
+### 2026-07-22 (cont.) — mongomodel: แก้ description collection barcode
+- ลุงจืดทักว่า header ของ `barcode` บอก Kafka — ตรวจ backend พบว่า description เดิมที่เขียนตอน import ผิด (เดาจาก prefix Process): จริง ๆ ProcessMongoBarcodeModel = shape เอกสารของ MongoDB collection `productbarcodes` (build-barcode-product.go loadProductBarcodesFromMongo → ProcessProductBarcodeDecode อ่านจาก Mongo ตรง) — update_collection แก้คำอธิบายแล้ว; MongoProductBarcodeModel คือ shape เต็มของ collection เดียวกัน
+
+### 2026-07-22 (cont. 2) — mongomodel: ลบ collection barcode ออกจาก BC Ai Account
+- เหตุผล: barcode (ProcessMongoBarcodeModel 13 ฟิลด์) เป็น subset ล้วนของ productbarcode (MongoProductBarcodeModel 35 ฟิลด์) — ทั้งคู่คือ struct 2 shape ของ MongoDB collection `productbarcodes` เดียวกัน (ไม่มี collection `barcodes` ใน backend) ลบเพื่อให้ node = physical collection ตรง 1:1
+- เหลือ 18 collections / 4 relations — คืนได้จาก tmp/import-mongomodel-th.py ถ้าต้องการ
+
+### 2026-07-22 (cont. 3) — mongomodel: แยก tab ตามประเภทใน BC Ai Account
+- ลุงจืดสั่งแยก tab ตามประเภท (เช่น การ Login) — สำรอง diagram เดิมก่อนที่ tmp/mongomodel-backup-pre-tabs.json (18 collections ครบ) แล้วสร้าง 4 tab: การ Login (employee, shop) / ข้อมูลหลัก (productbarcode, warehouse, customer, debtor, creditor) / เอกสาร (doc, docdetail, stock* 6 ตัว) / ไฟล์/ประวัติ (images, attachments, pdfhistory) ด้วย create_diagram+replace_diagram แล้วลบ Main Diagram
+- verify: 18 collections ครบ, 668 fields (ลดจาก 699 เพราะ barcode ถูกลบไปก่อนหน้า = 31 ฟิลด์), คำอธิบายไทยครบ (check_descriptions ผ่าน)
+- trade-off: relations 4 เส้นเดิม (doc.custcode→debtor ฯลฯ) ข้ามกลุ่ม — relation วาดได้เฉพาะใน diagram เดียวกัน จึงไม่ได้ย้ายไปด้วย; restore ได้จาก backup ถ้าต้องการ
+
+### 2026-07-22 (cont. 4) — mongomodel: โครงสร้าง holding→company→branch + relations ข้าม tab
+- MCP อัปเดตใหม่รองรับ relation ข้าม tab (add_relation ตอบ crossTab:true, move_collection คง node id) — ใช้ทันที
+- หลักฐานสำคัญ: collection `shops` ใน MongoDB จริง guidfixed == holdingcode ทุกเอกสาร → shop = โฮลดิ้ง; company=organizationcompanies, branch=organizationbranches (shape ดึงจากเอกสารจริง on-prem DEV)
+- สร้าง tab "โครงสร้างองค์กร": ย้าย shop จาก การ Login (move_collection), เพิ่ม company (12 ฟิลด์) + branch (shape จริง ~90 ฟิลด์รวม nested contact/pos/paymentrounding/pointconfig/businesstype + ธง is* 21 ตัว + businesscode ตามกฎ AGENTS.md), relations company.holdingcode→shop (1-n), branch.businesscode→company (1-n)
+- เอา 4 relations เดิมกลับมาแบบข้าม tab: doc.custcode→debtor, stocktransfer.custcode→debtor (tab เอกสาร), attachments.docno→doc, pdfhistory.docno→doc (tab ไฟล์/ประวัติ)
+- สุดท้าย: 5 tabs / 20 collections / 6 relations / คำอธิบายไทยครบ
+
+### 2026-07-22 (cont. 5) — mongomodel: layout องค์กร + ทิศลูกศรแม่→ลูก + shop.code + กฎ guidfixed ห้ามอ้างอิง
+- จัด layout tab โครงสร้างองค์กร เป็นแถวเดียว shop(-400,60) → company(240,60) → branch(800,60) (แก้ตรง data/projects.json + bump rev — store reload ตาม mtime/size อัตโนมัติ, สำรอง tmp/projects.json.bak-20260723-064326)
+- ทิศ handle: target ref ของ node ย้ายซ้าย→ขวา (page.tsx:570), source field ย้ายขวา→ซ้าย (page.tsx:379), และลูกศรกลับทิศ markerEnd→markerStart (page.tsx:1821 + wiki graph.tsx:133) → เส้นอ่านจากแม่→ลูก arrowhead อยู่ฝั่งลูก ตรง mental model "shop 1:N company" (convention เดิมเส้น source=FK field ไม่เปลี่ยน codegen/onConnect)
+- shop มี `code` (String, required, unique) แล้ว — เพิ่มใน diagram (อยู่ระหว่าง guidfixed กับ names) + เพิ่ม `Code string json:"code" bson:"code"` ใน datamodel/mongo-shop-model.go และ backend/internal/goapi/models/mongo-shop-model.go (build ผ่าน); แก้ description: shop อ้างอิงด้วย code เท่านั้น, company.holdingcode อ้าง shop.code
+- กฎใหม่: เสริม AGENTS.md (bccode) "Immutable GUID + Code Relationship Rule" ด้วยเหตุผล import/export/ย้ายเครื่อง guidfixed ไม่ตาม + เพิ่มกฎ "relation ห้ามอ้าง guidfixed" ใน D:\mongomodel\AGENTS.md
+- ⚠️ pending ใหญ่: วันนี้ holdingcode ทั้งระบบ = shop.guidfixed (random string เช่น 3E0aX0qsmeRr26TjCk3kRz5vBdv ใน dbtest) — การเปลี่ยนให้ holdingcode = shop.code (business code อ่านได้) เป็น migration ใหญ่ทั้ง backend/frontend/seed ยังไม่ได้ทำ รอคำสั่งลุงจืด
+
+### 2026-07-23 (cont. 6) — mongomodel: relation เป็น field→field เสมอ + rename shop→holding
+- ลุงจืดสั่ง: relation ต้องระดับ field ไม่ใช่ table (ไม่รู้ว่าเชื่อม field ไหน) + collection shop → holding
+- พบเส้น stray `xy-edge__44130058...` (shop.code→company.holdingcode-t) ที่ลุงจืดลากทดสอบ + เส้น e_company_holdingcode_shop หาย (ถูกลบใน UI) — ลบ stray แล้วสร้างใหม่ถูกทิศก่อน migrate
+- app: field target handle `-t` กลับมาที่ Position.RIGHT (ปลายเส้น = business key ที่ถูกอ้าง), source `-s` คงซ้าย (ฝั่ง FK), ลบ node-level `ref` handle ออก (ไม่มี relation ระดับ collection อีก), starter edge → u1-t
+- MCP: add_relation + replace_diagram บังคับ `targetfield` (required, validate [FIELD_NOT_FOUND]) — edge ใหม่ targetHandle = `${fieldId}-t` เสมอ; codegen ไม่ต้องแก้ (resolve จาก sourceHandle อยู่แล้ว, schema.ts demo ใช้ -t อยู่ก่อนแล้ว)
+- migrate projects.json: 6 เส้นทั้งหมดเป็น field target — company.holdingcode→holding.code, branch.businesscode→company.code, doc/stocktransfer.custcode→debtor.code, attachments/pdfhistory.docno→doc.docno
+- rename collection shop → holding (diagram; physical Mongo collection ยัง `shops`) + อัปเดต desc อ้าง holding.code + กฎ AGENTS.md ทั้ง 2 โปรเจกต์ (shop.code→holding.code + กฎ field→field)
+- tsc --noEmit ผ่าน, rebuild docker แล้ว
+- ⚠️ pending เดิม: holdingcode ทั้งระบบ = guidfixed (random) → shop.code ยังไม่ได้ทำ + physical collection `shops`→`holdings` ถ้าต้องการ รอคำสั่ง
+
+### 2026-07-23 (cont. 7) — mongomodel: auto-side connection points (ไม่โดนทับอีก)
+- ลุงจืดแจ้งเส้นยังโดนทับ (ปลายเส้นตายตัวข้างขวา เวลาลาก node ไปคนละด้านเส้นอ้อมหลังการ์ด) + ต้องการจุดเชื่อมซ้าย/ขวาอัตโนมัติตอน drag
+- ออกแบบ: ข้อมูลเส้นคง canonical `${fid}-s`/`${fid}-t` (codegen/MCP ไม่ต้องแก้) — ทุก top-level field มี handle 4 ตัว (`-s-l/-s-r` source, `-t-l/-t-r` target สี amber) และ `displayEdges` เลือกข้างตอน render จาก center x ของ node คู่เชื่อม (หันหน้าเข้าหากันเสมอ → bezier ตรง ไม่วนหลังการ์ด, ลาก node แล้วสลับข้างทันที)
+- `onConnect` normalize ตัด suffix `-l/-r` ก่อนเก็บ (1 field = 1 ref filter ยังทำงาน); fid extraction ใน label รองรับ suffix ปลอมด้วย
+- tsc ผ่าน (error .next/dev/types เป็น artifact ของ next dev ไม่เกี่ยว) — rebuild docker แล้ว
+
+### 2026-07-23 (cont. 8) — mongomodel: composite key 2 เส้น + ล็อกทิศลากเส้น (FK→PK)
+- ลุงจืด: branch↔company ต้องมีตัวเชื่อม 2 ตัว เพราะ key = holdingcode + code (composite business key)
+- พบปัญหาจาก handle 4 ตัว/field: React Flow ตัดสินทิศจาก handle type ที่จับได้ ไม่ใช่เจตนา → เส้นทดลองใน UI กลับทิศ/ผิด field (holding.code→company.holdingcode, company.holdingcode→branch.holdingcode, company.guidfixed→branch.businesscode) และเส้นถูกเดิมหาย
+- แก้ UX: -s render ทีหลัง (อยู่บน) ลากเริ่มได้จาก -s เท่านั้น + isConnectableEnd=false; -t เป็น drop target เท่านั้น (isConnectableStart=false, จับด้วย proximity ตาม type) → ทิศเส้น = จุดที่ลากเริ่มเสมอ (เริ่มจาก FK)
+- migrate ข้อมูล: ลบ 3 เส้นผิด สร้างใหม่ถูกทิศ — company.holdingcode→holding.code, branch.holdingcode→company.holdingcode, branch.businesscode→company.code (composite 2 เส้นคู่ขนาน); เส้น tab อื่นครบ (เอกสาร 2, ไฟล์/ประวัติ 2)
+
+### 2026-07-23 (cont. 9) — mongomodel: จุดเชื่อมลอยนอกการ์ด + หัวลูกศรชัด + ลากวางได้ทั้ง 2 ฝั่ง
+- ลุงจืดแจ้ง: ลากไปวางไม่ได้ (จุดซ้อนกัน + isConnectable lock), icon ทับกัน, ไม่มีหัวลูกศร (markerStart ถูกการ์ดบังเพราะ edge อยู่ใต้ node)
+- แก้: จุด -s (FK) ลอยนอกการ์ด 10px, จุด -t (amber) ลอยนอก 24px ทั้งซ้าย/ขวา → ไม่ทับ ✕/⠿/U ในแถว ไม่ทับกันเอง หัวลูกศร (markerStart ที่ต้นเส้น) อยู่นอกการ์ดเห็นชัดโดยไม่ต้องยก z-index เส้น
+- ถอด isConnectableStart/End lock — ลากเริ่มได้จากจุดไหนก็ได้ React Flow จัดทิศตาม handle type เอง (source end = FK เสมอ); connectionRadius 48 ให้วางง่าย
+- หัวลูกศร markerStart สี #38bdf8 ขนาด 20 — อ่านทิศ จากแม่→ลูก (arrowhead อยู่ฝั่ง FK/ลูก)
+
+### 2026-07-23 (cont. 10) — mongomodel: 1 field = 1 key (ตัดเส้น holdingcode ซ้ำซ้อนออก)
+- ลุงจืด rename ใน UI: holding.code→holdingcode (unique), company.code→companycode, branch.businesscode→companycode และถาม "1 field เป็น 1 key ทำยังไง" (ไม่อยากเห็น 2 เส้นคู่ composite)
+- คำตอบที่ใช้: relation ใช้ business key เฉพาะตัว — holdingcode เป็น tenant scope ตรงกันโดยนิยาม (doc ใน holding เดียวกัน holdingcode เดียวกันเสมอ) จึงไม่ต้องมีเส้น; ลบ branch.holdingcode→company.holdingcode เหลือ branch.companycode→company.companycode เส้นเดียว (+ company.holdingcode→holding.holdingcode เดิม)
+
+### 2026-07-23 (cont. 11) — mongomodel: field `key` flag (🔑 business key เห็นชัด)
+- ลุงจืดเสนอ: เพิ่ม key ให้เห็นชัด — เพิ่ม `key?: boolean` ใน Field schema + UI (🔑 ข้างชื่อฟิลด์เมื่อ isPK||f.key + ปุ่ม toggle 🔑 ข้างปุ่ม U) + MCP (add_field/update_field/replace_diagram รับ key) + codegen (markdown/wiki แสดง "• 🔑 key")
+- set key=true 16 fields: holding.holdingcode, company.companycode, branch.code, employee.code, customer/debtor/creditor.code, warehouse.code, productbarcode.barcode, doc+stock* 7 ตัว .docno
+- หมายเหตุ: key ไม่สร้าง index ใน codegen (index ยังคุมด้วย unique เท่านั้น) — เป็น marker เชิงออกแบบ
+
+### 2026-07-23 (cont. 12) — mongomodel: field `sessionkey` flag (🌐 tenant scope)
+- ลุงจืดสั่งเพิ่ม session key ให้เห็นชัด — เพิ่ม `sessionkey?: boolean` ตามแพทเทิร์น key: Field schema, UI (slot ซ้ายขยาย w-8 แสดงได้ทั้ง 🔑+🌐 + ปุ่ม toggle 🌐 ในแถว), MCP (add_field/update_field/replace_diagram), codegen ("• 🌐 session key")
+- set sessionkey=true ให้ holdingcode ครบ 19 collections (holding.holdingcode มีทั้ง 🔑+🌐)
+
+### 2026-07-23 (cont. 13) — mongomodel: pin key fields ขึ้นบนสุดเสมอ
+- ลุงจืดสั่ง: key ต้องแสดงด้านบนก่อน แล้วค่อยรายละเอียดด้านล่าง
+- กลุ่ม key = PK(_id ตัวแรก) / key(🔑) / sessionkey(🌐) — reorder ข้อมูลจริง 13 collections (คงลำดับเดิมภายในกลุ่ม, nested ไม่แตะ) → key อยู่บนสุดทั้ง UI และ codegen
+- auto-pin ต่อเนื่อง: UI toggle 🔑/🌐 ติดแล้ว field กระโดดขึ้นต่อท้ายกลุ่ม key ทันที (patchField), MCP add_field ที่ส่ง key/sessionkey ก็ pin ให้เหมือนกัน
+
+### 2026-07-23 (cont. 14) — mongomodel: เส้นข้าม tab แสดงได้ (crossref stub node)
+- ลุงจืดทวงว่าเหมือนติดอ่าง — ลุยแก้จุดค้างจริง: เส้นข้าม tab ไม่แสดง (stub เดิม fields ว่างไม่มี handle + dedup ผิด → node id ซ้ำเมื่อหลายเส้นชี้ target เดียวกัน)
+- แก้: node type ใหม่ "crossref" (การ์ดจางเส้นประ amber, label + ชื่อ tab, handle `-t-l/-t-r` ครบทุก field ที่ถูกชี้), crossNodes dedup ตาม target + รวม refHandles, displayEdges เลือกข้างเทียบ crossNodes ด้วย, กด stub = ข้ามไป tab นั้น (onNodeClick → openDiagram), ตัดป้าย "⇢ tab" ซ้ำซ้อนออก
+
+### 2026-07-23 (cont. 15) — mongomodel: แถบ key ด้านบนการ์ด + เชื่อมเส้นจากแถบ key ได้
+- ลุงจืดสั่ง: แสดง key ด้านบนว่า collection มี key อะไรบ้าง และเชื่อมไป collection อื่นได้
+- แก้ `app/page.tsx`: KeyBar ใต้ description สรุป key ทั้งหมด (PK/🔑/🌐) + **จุดเชื่อม (handle ทั้ง 4) ของ key field ย้ายไปอยู่ที่แถบ key** (id เดิม เส้นเก่าไม่พัง, FieldRow ข้าม handle เมื่อ keyHandles) + badge `← N` จำนวน collection ในแท็บที่อ้างถึง; อัปเดต AGENTS.md ตาม
+- verify: tsc ผ่าน, Docker rebuild รันได้, e2e ผ่าน dev server — สร้าง 2 collection ขึ้น KeyBar อัตโนมัติ (PK _id), ลาก key→key สร้าง edge ได้ (0→1, undo คืน), edge เดิม anchor ที่แถบ key ถูก
+- ⚠ pending: Docker Desktop ตายระหว่างงาน (`\.\pipe\dockerBackendApiServer` Access denied, WSL docker-desktop Stopped, shell ไม่มี admin) — image build ใหม่พร้อมแล้ว แค่ `docker start mongomodel` เมื่อ Docker ฟื้น; โค้ดใน D:\mongomodel ยังไม่ commit
+
+### 2026-07-23 (cont. 16) — mongomodel: แก้ทิศลูกศร relation ผิด (ลูก→แม่ กลายเป็น แม่→ลูก)
+- ลุงจืดแจ้ง: การวิ่งของ relation ผิดทาง (shop เป็นแม่ต้องชี้ไปลูก) — สาเหตุ markerStart ArrowClosed ใช้ orient default (`auto`) หัวลูกศรชี้ออกจากลูก = อ่านเป็นลูก→แม่
+- แก้ `orient: "auto-start-reverse"` ทั้ง designer (`defaultEdgeOptions` ใน page.tsx) และ wiki graph (`app/wiki/[project]/graph.tsx`) → หัวลูกศรอยู่ปลายฝั่งลูก (FK source) ชี้เข้าหาลูก = แม่→ลูก
+- verify: tsc ผ่าน, e2e ผ่าน dev server — DOM marker orient ถูก + ภาพ zoom ยืนยันหัวลูกศร ▶ ชี้เข้า collection_2 (ลูก); อัปเดต AGENTS.md
+- ⚠ Docker Desktop ยังตาย (ต้อง admin/reboot) — เว็บรันด้วย `npm run dev` ชั่วคราว; Docker image ตอนนี้เก่ากว่าโค้ด (ขาด orient fix) เมื่อ Docker ฟื้นต้อง `npm run docker:up` build ใหม่
+
+### 2026-07-23 (cont. 17) — mongomodel: key bar จัดระดับซ้ายตรง field + animation เส้นวิ่งถูกทิศ (แม่→ลูก)
+- ลุงจืดแจ้ง 2 จุด: (1) แถว key กับแถว field ต้องอยู่ระดับเดียวกันจากซ้าย (คนละเรื่องกัน) — แก้ใส่ spacer เท่ากว้าง grip ⠿ ในแถว key bar → วัดจริง delta=0 (2) หัวลูกศรชี้ถูกแล้วแต่ dash animation วิ่งกลับ (ลูก→แม่) — path วาดจากลูก(source)→แม่(target) จึงต้อง reverse
+- พบกับดัก: globals.css override ไม่เข้า (dev watcher เพิกเฉย) + inline ใน defaultEdgeOptions ก็ไม่ครอบ edge เก่าที่ persist `style` ของตัวเอง → จุดบังคับจริง = merge `animationDirection:"reverse"` ใน `displayEdges` ทุกเส้น + ใส่ใน style ใหม่ทุกจุด (defaultEdgeOptions/onEdgeDoubleClick/wiki graph)
+- verify: computed animationDirection=reverse + dashoffset drift กลับเครื่องหมาย (-8.3 → +8.3 = วิ่งแม่→ลูก), alignment delta=0, tsc ผ่าน; อัปเดต AGENTS.md
+
+### 2026-07-23 (cont. 18) — mongomodel: normalize marker orient ให้ edge เก่าที่ persist ไว้ + ตอบคำถาม multi-key
+- พบจาก get_diagram: edge `branch→company` (สร้างก่อน fix) persist `markerStart` เก่าที่ไม่มี orient → ยังวาดลูก→แม่อยู่; แก้ `displayEdges` สร้าง markerStart พร้อม `orient:"auto-start-reverse"` ให้ทุกเส้น (เหมือนที่ทำกับ animationDirection) — verify ทุกเส้นมี marker กลับแล้ว, tsc ผ่าน
+- ลุงจืดถาม "ถ้า key มีมากกว่า 1 field ทำยังไง" — ตอนนี้ key หลายตัว = หลายแถวใน key bar (holding มี holdingcode+field_4 ขึ้น 2 แถว) เชื่อมแยกต่อ field ได้ ส่วน composite key (หลาย field รวมเป็น key เดียว) ยังไม่มี concept — รอลุงจืดเลือกทิศทาง
+
+### 2026-07-23 (cont. 19) — mongomodel: composite key group (key ผสม) เต็มระบบ
+- ลุงจืดเลือกรองรับ key ผสม (หลาย field รวมเป็น key เดียว เช่น holdingcode+itemcode+barcode)
+- `schema.ts`: `Field.keygroup?: string` + `keyGroupsOf()` + compound unique index ใน toMongosh/toMongoose (เฉพาะกลุ่ม ≥2 field) + markdown/wiki แสดง ⛓ + demo() regression check
+- `page.tsx`: แถบ key แสดงกรอบกลุ่ม `⛓ key ผสม: a + b + c` (สมาชิกมี handle ของตัวเอง), ปุ่ม ⛓ ในแถว field + popup ตั้ง/เลือกกลุ่ม, isKeyField/pin ครอบ keygroup
+- `server.ts`: MCP รับ keygroup ครบ (fieldShape/add_field/update_field, ""=ออกจากกลุ่ม)
+- verify: tsc+demo ผ่าน, e2e ผ่าน UI — popup ตั้งกลุ่ม 3 fields, กรอบกลุ่มขึ้นถูก, ลากเชื่อมเข้าสมาชิกกลุ่มได้, /mcp generate_code ออก `createIndex({holdingcode:1,itemcode:1,barcode:1},{unique:true})` ถูก
+- ⚠ กับดักที่เจอ: MCP client ที่ connect ค้าง (รวม session นี้) cache tool schema เก่า → strip `keygroup` เงียบๆ (zod ก็ strip) — ต้อง reconnect ถึงใช้ได้; เว็บ dev server ต้อง restart หลังแก้ server.ts เพราะ server pool ใน /mcp ค้าง bundle เก่า
+- Docker Desktop ยังตาย — image เก่ากว่าโค้ดอีกแล้ว เมื่อฟื้นต้อง `npm run docker:up`
+
+### 2026-07-23 (cont. 20) — mongomodel: ทดสอบรวม composite key + regression ทุกฟีเจอร์ (ผ่านครบ)
+- MCP stdio (client ใหม่ = schema ใหม่): initialize/tools-list มี keygroup, add_collection ผ่าน, generate_code ออก compound unique index ถูก → พิสูจน์ว่า client ที่ reconnect ใช้ keygroup ได้เต็มรูปแบบ
+- UI regression (BC Ai Account): key bar 3/3 node, marker ทุกเส้น reversed (แม่→ลูก), animation reverse drift +8, alignment delta=0, badge ← 1 ถูก
+
+### 2026-07-23 (cont. 21) — mongomodel: ออกแบบ org structure ด้วย composite key จริง (BC Ai Account)
+- โมเดลลุงจืด: company ใช้ key ผสม holdingcode+companycode (companycode unique ภายในโฮลดิ้ง), holding ใช้ holdingcode เดี่ยว
+- ทำ: set keygroup "company" ให้ company.holdingcode+companycode (ผ่าน /mcp HTTP ตรง — session MCP เก่า strip keygroup) + เพิ่ม relation branch.holdingcode→company.holdingcode และ branch.companycode→company.companycode (พบเส้น companycode หายไปตอนเทส จึงสร้างใหม่ให้ครบ 2 ขา)
+- ผลลัพธ์: company key bar แสดงกรอบ "⛓ key ผสม: holdingcode + companycode" badge ← 1 ทั้ง 2 สมาชิก, edges 3 เส้นถูก, codegen ออก FK index + compound unique index `{holdingcode:1, companycode:1}`, UI regression ผ่าน 5/5
+- บทเรียนสำคัญ: MCP stdio process ที่ spawn ตอน session start = bundle เก่าตลอด session (ทั้ง strip arg และ codegen เก่า) — verify MCP ต้องยิง /mcp HTTP หรือ spawn stdio ใหม่เท่านั้น
+
+### 2026-07-23 (cont. 22) — mongomodel: อ่านทั้งโปรเจกต์ผ่าน MCP แล้วปรับปรุงโมเดลครบทุกแท็บ (BC Ai Account)
+- อ่าน 5 แท็บผ่าน MCP แล้วปรับปรุงตามกฎลุงจืด (ยิง /mcp HTTP ตรงเพราะ session MCP เก่า strip keygroup):
+  1. composite keys ทั้งระบบ: productbarcode (holdingcode+itemcode+barcode), branch (holdingcode+companycode+branchcode — ลุงจืด rename code→branchcode เองระหว่างนั้น), doc+stock ทั้ง 7 (holdingcode+docno), warehouse/customer/debtor/creditor/employee (holdingcode+code)
+  2. docdetail: เติม holdingcode (sessionkey — เดิมขาด tenant scope) + relation docdetail.docno→doc.docno
+  3. rename branchid→branchcode 6 collections (ตาม Business Reference Code Rule — stocktransfer ใช้ branchcode อยู่แล้วเป็นหลักฐานเจตนา)
+  4. relations เพิ่ม: branchcode→branch.branchcode ×7 (ข้ามแท็บ), doc.creatorcode→employee.code
+  5. holding.field_4 ทดสอบ — ลุงจืดลบเองแล้วก่อนผมทำ
+- verify: codegen doc ออก FK indexes (branchcode/creatorcode/custcode) + compound `{holdingcode,docno}`; productbarcode compound 3 fields; UI เอกสาร: key bar 8, group 7, crossref stub 3 (branch/employee/debtor), edges 11 ถูกต้อง; UI regression 5/5 (แก้เช็ค animation ให้ sample หลายจุดกัน loop wrap — เจอ false alarm จาก wrap)
+- กับดักที่บันทึก: generate_code ต้องส่ง diagram ถ้า collection ไม่อยู่ current tab; เรียก /mcp ช่วง dev server recompile อาจได้ผลเก่าชั่วคราว — retry อีกที
+
+### 2026-07-23 (cont. 23) — mongomodel: เรียงลำดับสมาชิก key ผสมได้ด้วยปุ่ม ↑↓ ใน key bar
+- ลุงจืดต้องการเรียงลำดับสมาชิก key ผสม (ลำดับมีผลต่อ compound index prefix) — ออกแบบ: ลำดับกลุ่มผูกกับลำดับ field จริง (source of truth เดียว) ปุ่ม ↑↓ ใน key bar สลับตำแหน่ง field เฉพาะช่องสมาชิกกลุ่ม ไม่เพิ่ม data model
+- page.tsx: keyRow รับ reorder callbacks, moveGroupMember สลับ field ในช่องสมาชิก, ปุ่ม ↑↓ disable ต้น/ท้ายกลุ่ม
+- ใช้จริง: เรียง branch จาก companycode+holdingcode+branchcode → **holdingcode+companycode+branchcode** (คลิก ↑ ครั้งเดียว) — codegen ออก `{holdingcode:1, companycode:1, branchcode:1}` ตามลำดับใหม่ถูกต้อง; tsc ผ่าน
+- หมายเหตุ: ลำดับใหม่ทำให้ FK index เดี่ยวของ branch (holdingcode/companycode) ซ้ำ prefix ของ compound — ยังไม่ dedup รอลุงจืดตัดสินใจตามที่เสนอไว้
+
+### 2026-07-23 (cont. 24) — mongomodel: ลบ key ผสม/เอาสมาชิกออกได้จาก key bar โดยตรง
+- ลุงจืดถามวิธีลบ key ผสม/เอา field ออกจากกลุ่ม — เดิมทำได้แค่ผ่าน popup ⛓ ในแถว field (ไม่ชัดเจน) → เพิ่มปุ่ม ✕ ที่แถวสมาชิกใน key bar (เอาออกจากกลุ่ม field ยังอยู่) และ ✕ ที่หัวกรอบกลุ่ม (ยกเลิกทั้งกลุ่ม ล้าง keygroup ทุกสมาชิก fields ไม่ถูกลบ)
+- e2e ผ่าน: ลบสมาชิก a ออก (กลุ่มเหลือ 2, field ยังอยู่) + ยกเลิกกลุ่ม (กรอบหาย holdingcode กลับเป็น key เดี่ยว 🌐); tsc ผ่าน
+
+### 2026-07-23 (cont. 25) — decision: เก็บ sessionkey (🌐) + holdingcode ทุก collection ไว้ตามเดิม
+- ลุงจืดทบทวนว่า sessionkey จำเป็นไหม/จะลบออกดีไหม → อธิบาย: field = รั้ว tenant (MongoDB ไม่มี join, filter ตรงปลอดภัย+เร็ว, Kafka/projection พก scope เอง), ป้าย 🌐 = ตาเช็ค scope หลุด (เคยจับ docdetail ได้) → ลุงจืดตัดสินใจ **เก็บไว้ทั้งคู่** ไม่ลบ
+
+### 2026-07-23 (cont. 26) — mongomodel: โหมด key ผสม ห้ามซ้ำ ⇄ ซ้ำได้ + เตือนสมาชิกไม่ required
+- ลุงจืดถาม "ต้องมี ซ้ำได้ ห้ามซ้ำ ฯลฯ หรือไม่" → ตอบ+ทำ: (1) โหมดกลุ่มผ่าน `field.keygroupunique` (default true=compound unique; false=compound index ธรรมดาเพื่อค้นเร็ว) ปุ่ม toggle `ห้ามซ้ำ ⇄ ซ้ำได้` ที่หัวกรอบ เขียนซ้ำทุกสมาชิก อ่านจากตัวแรก (2) ⚠ ที่สมาชิกกลุ่มห้ามซ้ำที่ไม่ required (duplicate null trap) (3) "ต้องมี" มีอยู่แล้วที่ required ของ field
+- codegen (mongosh/mongoose) ออก index ตามโหมด + comment ระบุ (ห้ามซ้ำ/ซ้ำได้), markdown/wiki แสดงโหมด, MCP รับ keygroupunique ครบ, demo() regression ทั้ง 2 โหมด
+- e2e ผ่าน: default ห้ามซ้ำ + ⚠ ขึ้น, toggle แล้ว codegen เปลี่ยนตาม (unique ⇄ plain), toggle กลับถูก; tsc ผ่าน; อัปเดต AGENTS.md
+- restart dev server รอบใหม่หลังแก้ server.ts (server pool /mcp cache bundle เก่า — จำไว้ทุกครั้งที่แก้ server.ts ต้อง restart dev)
+
+### 2026-07-23 (cont. 27) — mongomodel: normalize โครงสร้าง names ทั้งโปรเจกต์ให้ตรงมาตรฐาน
+- ลุงจืดถาม "ทำไมโครงสร้าง names ไม่เหมือนกัน" → สาเหตุ: tool ยังไม่มี shared template บังคับ names พิมพ์แยกมือจึงเพี้ยน
+- สแกนทั้งโปรเจกต์ (recursive ทุกแท็บ) พบ array-of-object ชื่อลงท้าย *names* 42 จุด เพี้ยน 4: holding.names [code,name] ขาด isauto/isdelete, customer/debtor/creditor.names [name] ขาด code/isauto/isdelete
+- แก้ผ่าน MCP update_field children → รูปแบบมาตรฐาน `{code, name, isauto, isdelete}` (desc ไทยตามแบบ company) — re-scan เหลือ 0 เพี้ยน, codegen customer ออก validator ครบ 4 fields ถูก
+- บันทึก gap ฟีเจอร์: ยังไม่มี "names template กลาง" ใน tool — ถ้าสร้าง names ใหม่ยังเพี้ยนได้อีก (candidate improvement อนาคต)
+
+### 2026-07-23 (cont. 28) — mongomodel: ตัด isauto/isdelete ออกจาก names ทั้งโปรเจกต์ (มาตรฐานใหม่ {code, name})
+- ลุงจืดสั่ง 2 รอบ: เอา isauto, isdelete ออกทั้งหมด → bulk strip ผ่าน MCP update_field children 42 จุดครบทุกแท็บ (รวม nested: location.names, details.itemnames, branch.names ฯลฯ)
+- มาตรฐาน names ใหม่ = `{code, name}` เท่านั้น (ยกเลิก cont. 27 ที่เติม isauto/isdelete — ลุงจืดตัดสินใจไม่ใช้ pattern นั้น)
+- verify: re-scan 42/42 = [code,name], codegen company ไม่เหลือ isauto/isdelete
+- ⚠ หมายเหตุข้ามโปรเจกต์: bccode backend (Go models) + frontend NamesEditor ยังมี isauto/isdelete อยู่ — ถ้าจะให้ตัดตาม model ต้องสั่งแยกที่ bccode
+
+### 2026-07-23 (cont. 29) — handoff ส่ง Claude Code: `.agents/handoffs/2026-07-23-mongomodel-claude-handoff.md`
+- สรุปงาน mongomodel ทั้ง session (key bar, composite keys, unique modes, arrow/animation, model redesign, names {code,name}) + สภาพ environment (Docker ตาย, dev server ชั่วคราว, image เก่า) + MCP traps (schema cache, server pool, restart rule) + pending: (1) bccode ตัด isauto/isdelete ตาม model (2) Docker recovery+docker:up (3) prefix-dedup รอตัดสินใจ (4) names template gap + เครื่องมือ verify ที่ใช้ซ้ำได้
+
+### 2026-07-25 (cont. 30) — bccode+mongomodel: ปิด pending ทั้ง 4 ข้อจาก handoff (ลุงจืดสั่ง "ทำทั้งหมด")
+- **(1) bccode ตัด isauto/isdelete ตาม model** — canonical names = `{code, name}` ทั้ง stack
+  - Go: `internal/models/name.go` (NameX, NameNormal) + `internal/goapi/models/mongo-trans-model.go` (LanguageModel) + `datamodel/` mirror; ไล่แก้ caller ทุกจุด (kafka handlers ×6, productcategory, unit import, phaser tests ×5)
+  - cleanup: ลบ dead `lo.Filter(...)` ใน unit_http_service (ผลลัพธ์ไม่เคยถูก assign — no-op มาแต่แรก)
+  - swagger generated (`docs/docs.go`, `swagger.json`, `swagger.yaml`) ตัด property isauto/isdelete ออกจาก models.NameX/NameNormal (ไม่มี swag CLI → patch ตรง, JSON ยัง valid)
+  - Frontend: `route.ts` (2 type + 2 normalizer), `company-branch-tree-view.tsx`, `system-settings-screen.tsx` (objectToNames), fixtures ใน route.test.ts + e2e 3 ไฟล์
+  - ไม่แตะ `isdelete` ระดับเอกสาร (soft delete) — คนละความหมายกับ flag ใน names
+  - verify: tsc ผ่าน, `npm run build` ผ่าน, vitest = 7 fail เท่า baseline ก่อนแก้ (pre-existing), gofmt ผ่านทั้ง tree, `go build ./internal/models ./internal/goapi/models` ผ่าน, residual scan เหลือแค่ isautoformat (คนละ feature)
+  - verify Go เต็ม repo (หลังกู้ Docker): `CGO_ENABLED=1 go build -tags musl ./...` ใน container `golang:1.26-alpine` + librdkafka → **ผ่านทั้ง repo (exit 0)**; `go test ./internal/transaction/transactionconsumer/...` FAIL 19 = เท่า baseline ที่ HEAD เป๊ะ (pre-existing), productbarcode/usecases ที่แก้ test = ok
+- **(3) prefix-dedup ใน codegen (mongomodel)** — single-field FK index ที่ชื่อตรงกับ **ฟิลด์แรก** ของ key ผสม → ข้าม + คอมเมนต์บอกเหตุผล (MongoDB ใช้ index prefix ได้); unique ไม่ข้าม (คนละ semantic), สมาชิกตัวที่ 2+ ไม่ข้าม (prefix ต้องเริ่มตัวแรก)
+- **(4) names shape check (mongomodel)** — `namesShapeWarnings()` เตือนใน mongosh/mongoose เมื่อ array ชื่อลงท้าย names ไม่ใช่ `{code, name}` เป๊ะ (recursive ถึง nested) → กัน drift ซ้ำรอย cont. 27/28
+  - verify: demo() regression เพิ่ม fixture (shops + key ผสม + names ถูก/ผิด) ผ่าน, tsc ผ่าน, ยิงจริงครบ 5 diagram ของ BC Ai Account → dedup ทำงาน 1 จุด (branch.holdingcode), shape warning 0 = names 42 array สะอาดแล้วจริง
+- **(2) Docker recovery — สำเร็จ** — kill process ตรงๆ ไม่ได้ (Access denied) → รัน script ผ่าน `Start-Process -Verb RunAs` (UAC): stop Docker Desktop/backend + `Restart-Service com.docker.service` + เปิด Docker Desktop ใหม่ → daemon ขึ้น container กลับครบ (mainapi/mongodb/postgres/kafka/redis/clickhouse/minio)
+  - **traps:** เครื่องนี้ไม่มี `docker compose` v2 + ไม่มี buildx → ใช้ `docker-compose` (v1 classic) และ build mainapi ผ่าน Dockerfile ไม่ได้ (`--mount=type=cache` ต้อง BuildKit) — verify Go จึงใช้ `docker run golang:1.26-alpine` แทน
+  - mongomodel rebuild: kill dev server 3100 → `docker-compose up -d --build` → image ใหม่ `mongomodel-mongomodel:latest`; ครั้งแรก container ไม่ publish port (start ตอน 3100 ยังถูกยึด) → `docker restart mongomodel` แล้วได้ `0.0.0.0:3100->3100/tcp`
+  - verify image ใหม่: ยิง MCP `generate_code` ผ่าน container → เห็นบรรทัด prefix-dedup ของ feature วันนี้ = image ไม่ stale แล้ว
+- frontend server: build+start ที่ :3000 ผ่าน preview tools — หน้า login render ปกติ, console ไม่มี error (ขึ้น "เชื่อมต่อ Backend ไม่ได้" ตามคาดเพราะ Docker ล่ม)
+
+### 2026-07-25 (cont. 31) — mongomodel: ยก UX/UI ให้ดูพรีเมียม (ลุงจืดสั่ง "ปรับ ux/ui ให้ดูพรีเมี่ยม")
+- **ปัญหาที่เจอตอนเปิดจริง (ไม่ใช่แค่ความสวย):** ปุ่ม toolbar ถูกบีบจน**ข้อความห่อ 3-4 บรรทัด** ("＋ เพิ่ม/คอล/เลก/ชัน"), subtitle ห่อทับโลโก้, badge ชื่อโปรเจกต์ตัดเหลือ "B..."
+- **แก้ที่ระบบ ไม่ใช่ทาสีทับ** — `app/globals.css` เพิ่ม design token + `@layer components`:
+  - surface stack ด้วย alpha (`--surface-1/2/3`, `--line`) แทนสีทึบ + เงา 2 ชั้น (`--elev-1/2/3` ambient+direct)
+  - utility: `.mm-bar` (glass + blur), `.mm-panel`, `.mm-btn` (+`-primary`/`-accent`/`-on`), `.mm-input`, `.mm-tab`(+active), `.mm-card`(+selected/head), `.mm-toolbar`
+  - `.mm-btn` มี `white-space: nowrap` + `flex-shrink: 0` = **root cause fix** ของปุ่มห่อบรรทัด (แก้ทุกปุ่มทีเดียว)
+  - พื้นหลัง radial gradient อมฟ้าจาง, scrollbar บาง 9px, `:focus-visible` ring, react-flow handle มี glow, minimap/controls โค้งมน
+- `app/page.tsx` เปลี่ยน 28 จุดมาใช้ token: header/toolbar/undo-redo/search + tab bar + collection card & head + panel รายชื่อ + modal + หน้าแรก (heading, ช่องสร้างโปรเจกต์, การ์ดโปรเจกต์, empty state)
+- ปุ่มรอง (นำเข้า/ส่งออก/สำรองทั้งหมด) เหลือไอคอนบนจอแคบ (`hidden 2xl:inline`) + toolbar เลื่อนได้แบบไม่โชว์ราง — ไม่ต้องเขียน dropdown ใหม่
+- verify: tsc ผ่าน, `demo()` regression ผ่าน, เปิดจริงทุกหน้า (home / canvas / node card / panel) console ไม่มี error, rebuild image + `docker-compose down && up -d` → `0.0.0.0:3100->3100/tcp` เสิร์ฟ UI ใหม่
+- **gotcha ใหม่ (บันทึก memory แล้ว):** ถ้า container ถูกสร้างตอน dev server ยังยึด 3100 อยู่ จะ start สำเร็จแต่ **ไม่ map port เลย** (`NetworkSettings.Ports` ว่าง) — `docker restart` ไม่พอ ต้อง `docker-compose down && up -d`
+
+### 2026-07-25 (cont. 32) — mongomodel: แก้บั๊ก "ลากเส้น relation แล้วเส้นออกไม่ตรงจุดที่กด"
+- ลุงจืดรายงานพร้อมภาพ → วัดจาก react-flow store จริง (ไม่เดา) เจอ 2 สาเหตุ:
+  1. **`connectionRadius={48}`** — RF ใช้รัศมีนี้หา handle ที่ใกล้ที่สุดตอนกด แต่ระยะจริงระหว่าง handle เล็กกว่ามาก: source↔target ของ field เดียวกัน = **14px**, handle แถวถัดไป = **~39px** → รัศมีกินทั้งคู่ เลยคว้าตัวข้างเคียงแทนตัวที่กด → `connectionRadius={10}`
+  2. **handle เล็ก 6px ทั้งที่ CSS สั่ง 10px** — `.react-flow__handle` ใน globals.css specificity เท่ากับ stylesheet ของ react-flow ที่โหลดทีหลัง จึงแพ้ (computed 6px / border 0.8px) **CSS นี้ไม่เคยมีผลเลย ทั้งเวอร์ชันเก่า (10px) และที่เพิ่งแต่ง (9px)** → เปลี่ยน selector เป็น `.react-flow .react-flow__handle` ได้ 10px จริง
+- verify: computed handle 10px + connectionRadius 10 (อ่านจาก store ใน container จริง), tsc ผ่าน, demo() ผ่าน, **ลุงจืดลากทดสอบเอง = ผ่าน**
+- deploy กลับ container: `docker-compose down` + `up -d --force-recreate` — **หมายเหตุสำคัญ:** แค่ `down && up -d` ไม่พอ! container start แล้วแต่ `NetworkSettings.Ports` ว่าง (PortBindings มีค่า แต่ไม่ activate) ทั้งที่พอร์ตว่างและ container อื่น (mainapi 8888) forward ปกติ — ต้อง `--force-recreate` ถึงได้ `0.0.0.0:3100->3100/tcp`
+- บันทึก bug note ที่ obsidian: `bugs/2026-07-25-mongomodel-relation-drag-wrong-anchor.md`
+
+### 2026-07-25 (cont. 33) — mongomodel: ลูกศร relation ไม่โดนจุดเชื่อมทับ + ป้ายไม่ซ้อน + โหมดมืด/สว่าง
+- **ลูกศรถูกทับ (root cause เชิงเรขาคณิต):** react-flow ตรึง marker ที่ `refX=0` = ปลายแหลมอยู่ที่จุดปลาย path = ศูนย์กลาง handle พอดี; ลูกศรยาว 7.5px (markerWidth 20 × strokeWidth 1.5 ÷ viewBox 20) แต่จุดเชื่อมรัศมีที่มองเห็น 8px (10px + border 2 + glow 3) → **ลูกศรจมในวงจุด 100%** + สีเดียวกัน #38bdf8
+  - แก้: custom edge `RelEdgeView` (module scope `edgeTypes`) ขยับปลาย path ก่อนเรียก `getBezierPath` — ฝั่งลูก 17px ฝั่งแม่ 12px → วัดจริงได้ gap **22px** ลูกศรพ้นวงจุด
+  - **ต้องบังคับ `type: "rel"` ใน displayEdges ด้วย** ไม่ใช่แค่ defaultEdgeOptions (edge ที่ persist ไว้มี type ของตัวเอง ชนะ default — เหตุผลเดียวกับที่ต้องบังคับ marker อยู่แล้ว)
+  - ลบ glow ถาวรของ handle (จุด source/target ห่างกัน 14px วงเรือง 8px สองวงเกยกัน 2px กลายเป็นก้อนเดียว) เหลือ glow ตอน hover
+- **ป้าย edge ซ้อนกัน:** ป้าย built-in วางกึ่งกลาง path เสมอ เส้นที่ขนานกันจึงกองที่เดียว → วาดเองด้วย `EdgeLabelRenderer` (`.mm-edge-label` glass) วางช่วงต้นเส้น + เลื่อนแนวตั้งทีละ 32px ตาม lane (ลำดับเส้นต่อการ์ดต้นทาง)
+  - ลองมา 3 แบบก่อนได้: สัดส่วน t (เส้นสั้น 155px ได้ระยะแค่ 15px < ความสูงป้าย 26px), hash id (ชนกันเอง), สลับข้างตั้งฉาก (ไปหักล้างกับระยะแถว field) — เลื่อนแนวตั้งตรง ๆ คือแบบเดียวที่ผ่าน
+- **โหมดมืด/สว่าง (ลุงจืดสั่งกลางทาง):** UI ใช้ utility ของ tailwind 122 จุด การเติม `dark:` ทีละอันคือ diff มหาศาล → **สลับค่าสเกล slate ที่ tailwind v4 อ้างผ่านตัวแปรแทน** (`[data-theme="light"] { --color-slate-800: … }` ไล่กลับด้าน 950↔50) utility เดิมทุกตัวจึงพลิกโทนเองโดยไม่แตะ tsx เลย + override พื้นผิวที่ระบุสีตรง (card/bar/label/btn/tab/input) + `colorMode` ของ react-flow ตามธีม + ปุ่ม ☀️/🌙 ทั้งหน้าแรกและ toolbar + จำค่าใน localStorage (ครั้งแรกตาม `prefers-color-scheme`)
+- **verify (Playwright จริง — browser pane ใน IDE ใช้ไม่ได้ เพราะไม่ compositing → ResizeObserver ไม่ fire → react-flow ไม่วัด handleBounds → edge ไม่ render เลย ทำให้วัดผลผิดอยู่นาน):**
+  - `tmp/verify-edge-gap-label.mjs` → PASS (edge 3 เส้น, gap 22px, ป้ายไม่ทับ, handle 10px, connectionRadius 10)
+  - `tmp/verify-theme.mjs` → PASS (dark bg lum 11 ↔ light 248, การ์ดพลิกจริง, ธีมอยู่รอด reload, จุดเชื่อมไม่เพี้ยนข้ามธีม)
+  - tsc + `demo()` regression ผ่าน, container rebuild แล้วรัน regression ซ้ำกับ container = PASS ทั้งคู่
+- **แก้ความเข้าใจผิดเรื่อง port gotcha:** สาเหตุจริงคือ **TIME_WAIT socket ค้างที่ `[::1]:3100`** ไม่ใช่ `--force-recreate` — ต้อง `down` → รอจน `netstat | grep :3100` ว่าง → `up -d --force-recreate` (อัปเดต memory แล้ว)
+
+### 2026-07-25 (cont. 34) — mongomodel: audit จุดอ่อนทั้งระบบ (5 มุมขนาน) + ปิด 5 ข้อแรก
+- ลุงจืดถาม "ควรมีอะไรเพิ่มเพื่อปิดจุดอ่อน" → workflow 5 agent ขนาน (feature inventory จากโค้ดจริง / MongoDB best practice จาก docs ทางการ / คู่แข่ง Hackolade-Moon-dbdiagram-Compass / ความเสี่ยงวิศวกรรม / การใช้งานจริงกับโมเดล BC) ได้ **62 findings** แล้ว Opus ตัดเหลือ 10 ข้อตามน้ำหนัก + verify ของจริงเองทุกข้อก่อนสรุป
+- **ปิดแล้ว 5 ข้อ (ทำที่ D:\mongomodel ตามที่ลุงจืดยืนยัน):**
+  1. **ประวัติย้อนหลังฝั่ง server** — `snapshot()` ใน store.ts copy ไฟล์เดิมไป `data/history/projects-<rev>.json` ก่อนเขียนทุกครั้ง เก็บ 20 ล่าสุด + MCP tool `list_revisions` / `restore_revision` (เดิม: AI เรียก replace_diagram ผิด tab = งานทั้งโปรเจกต์หายถาวร undo อยู่ในเบราว์เซอร์อย่างเดียว)
+  2. **bsonType "double" → "number"** — `"double"` match เฉพาะ BSON double, backend BC เป็น Go ที่ marshal int เป็น int32/64 → validator ที่ gen จะปฏิเสธทั้ง 186 field ตัวเลข
+  3. **session key (🌐) เป็น prefix ของ FK index** — เดิม `sessionkey` ใช้แค่เป็นข้อความใน markdown/wiki ไม่มีผลต่อ index เลย ระบบหลายผู้เช่าแต่ index เป็น `{branchcode:1}` ใช้ไม่ได้จริง → ตอนนี้ gen `{holdingcode:1, branchcode:1}` (ยิงจริง: docs diagram ได้ 11 index)
+  4. **optimistic lock** — `saveProject(name, data, expectedRev)` + `RevConflictError` → HTTP 409; UI autosave แนบ rev ที่ถืออยู่ ชนแล้วขึ้นแถบเตือนแทนทับงานหายเงียบ (ไม่ส่ง expectedRev = โหมดเดิม ของเก่าไม่พัง)
+  5. **unique บน field ซ้อน** — mongoose ใส่ `unique: true` ให้ทุกระดับ แต่ mongosh วนสร้าง index เฉพาะระดับบน ค่าที่ตั้งหายเงียบ → gen เป็น dotted-path index (`{"contacts.value": 1}`) ให้ตรงกันสองฝั่ง
+- regression เพิ่มใน demo(): Number ต้องไม่ gen เป็น double, session key ต้องนำหน้า index, collection ที่ไม่มี session key ต้องไม่ regress, unique ของ field ซ้อนต้องได้ dotted-path index
+- verify: tsc + demo() ผ่าน · `tmp/verify-store-safety.mjs` ใหม่ (ยิง API จริง: rev ถูก=200, rev เก่า=409, ไม่ส่ง rev=200, snapshot เกิดจริง, codegen ไม่มี double, มี index นำด้วย session key) · รันครบ 3 regression กับ container หลัง rebuild = PASS ทั้งหมด
+- **ยังไม่ทำ (เสนอไว้):** auth/bind 127.0.0.1 (กระทบการเข้าถึง LAN ต้องให้ลุงจืดตัดสิน), migration diff, reverse engineer จาก DB จริง, index กำหนดเอง (TTL/partial/descending), Go struct generator, model linter
+
+### 2026-07-25 (cont. 35) — mongomodel: model linter (ข้อถัดไปที่เสนอไว้)
+- `lintModel(nodes, edges, allNodes)` ใน schema.ts — pure function ใช้ร่วมกันทั้ง UI/MCP กฎที่ใส่ (ทุกข้อมาจากความผิดพลาดที่เคยหลุดจริง):
+  - `money-not-decimal` (error) ฟิลด์ชื่อเงิน (amount/price/cost/total/balance/vat/tax…) ที่เป็น Number
+  - `unique-not-required` (error) unique บนฟิลด์ที่ไม่ required → เอกสารที่ขาดฟิลด์ชนกันที่ null
+  - `fk-type-mismatch` (error) FK ชนิดไม่ตรงกับฟิลด์ปลายทาง → query หาไม่เจอเงียบ ๆ
+  - `no-session-key` (warn) collection ที่มี FK แต่ไม่มี 🌐 → index ไม่ scope ตามผู้เช่า
+  - `compound-member-not-required` (warn) สมาชิก key ผสมห้ามซ้ำที่ไม่ required
+  - `array-unknown-shape` / `unbounded-array` (warn) array ที่ไม่รู้ชนิดสมาชิก / array of object ที่ไม่มีขอบเขต (เพดาน 16MB)
+  - `names-shape` (warn) ย้ายกฎเดิมจาก codegen มารวมที่ linter
+- **ตัดกฎ `no-_id` ทิ้งหลังเห็นผลจริง** — จับได้ 15/20 collection แต่ MongoDB สร้าง `_id` ให้เองเสมอ = noise ล้วน
+- **ผลกับโมเดลจริง BC Ai Account: 140 ข้อ** — `money-not-decimal` 88 (ตรงกับที่ audit เตือนว่าเงินเป็น double ทั้งระบบ), `compound-member-not-required` 32, `unbounded-array` 18, `no-session-key` 2
+  - ตรวจ false positive แล้ว: `doc.holdingcode`/`employee.code` มี `required: false` จริง (ไม่ใช่ noise) และกลุ่ม key ผสมแบบ "ซ้ำได้" ไม่ถูกเตือน
+- MCP tool `lint_model` (project ทั้งชุดหรือระบุ diagram, `level: error` กรองเฉพาะที่ผิดจริง) + ปุ่ม 🩺 บน toolbar โชว์จำนวน + แผงตารางแยกสี error/warn
+- regression: demo() เพิ่ม 5 assert (Decimal128 ต้องไม่ถูกเตือน, Number ที่เป็นเงินต้องถูกเตือน, กลุ่มซ้ำได้ไม่เตือน required, unique+required ไม่เตือน, FK ชนิดไม่ตรงต้องจับได้) + `tmp/verify-linter.mjs` (MCP 140/88 + UI ปุ่ม/แผง)
+- verify กับ container หลัง rebuild: **4 regression PASS ทั้งหมด** (linter, store-safety, edge-gap-label, theme)
+
+### 2026-07-25 (cont. 36) — mongomodel: แก้โมเดล BC Ai Account ตาม linter จนสะอาด (140 → 0)
+- ลุงจืดสั่ง "แก้ทั้งหมดเลย" → ก่อนแก้ ตรวจ false positive จากคำอธิบายจริงในโมเดลก่อน แล้ว**แก้ที่กฎ ไม่ใช่ยัด exception**:
+  - `MONEY_RE` ตัด `vat|tax|credit` ออก + เพิ่ม `NOT_MONEY_RE` (`^decimal` / ลงท้าย type|rate|day|qty|cal|count|flag|status|percent|ratio|code|no|id) → เงิน 88 → **75 จุดที่เป็นเงินจริง** (ตัด creditday=จำนวนวัน, vattype/taxtype=ประเภท, vatrate=อัตรา%, totalqty=จำนวนชิ้น, decimalprice=จำนวนหลักทศนิยม, vatcal=วิธีคำนวณ ออก)
+- **แก้โมเดลจริงโดยใช้ผล lintModel เป็นเป้าหมาย** (กฎเดียวกับที่ตรวจ = ไม่มีทางหลุด) ผ่าน API PUT เพื่อให้ระบบ snapshot ให้เอง:
+  - `money-not-decimal` 75 จุด → Decimal128 (rev 697)
+  - `compound-member-not-required` 32 จุด → `required: true`
+  - `no-session-key` 2 (company, branch) → ติด 🌐 ให้ holdingcode
+  - `unbounded-array` 18 จุด → เพิ่มธง **`bounded`** (⊂) ใน Field + ปุ่ม toggle บนแถว field + MCP รับได้ แล้ว mark ทั้ง 18 (details=รายการในเอกสารหนึ่งใบ, rules=กฎปัดเศษ, prices=ราคาตามระดับ, refbarcodes=หน่วยย่อย, location=ที่เก็บย่อย, docreferences) — ยืนยันจากคำอธิบายในโมเดลเอง ไม่ใช่ปิดกฎทิ้ง (rev 698)
+- **ผล: `lint_model` = "ไม่พบปัญหา"** · codegen ออก `bsonType: "decimal"` ให้ฟิลด์เงิน และไม่มี `"double"` เหลือเลย
+- **กับดักที่เจอ:** MCP รายงาน 31 ข้อทั้งที่สคริปต์ในเครื่องได้ 0 — dev server (แม้ restart) ยังรัน bundle เก่าของ schema.ts ต้อง **rebuild container** ถึงเห็นกฎใหม่ (money 13 ที่ต่างกันพอดีคือตัวที่ NOT_MONEY_RE กรองออก = ยืนยันว่าเป็นปัญหา bundle ไม่ใช่ตรรกะ)
+- **เขียน `tmp/verify-linter.mjs` ใหม่** — ของเดิมเทสต์ "โมเดลสกปรก" จึงพังทันทีที่แก้ข้อมูลเสร็จ ของใหม่สร้าง project ที่จงใจผิดแล้วเช็คว่าจับครบ 7 กฎ + `bounded` ทำให้ warning หาย + `level=error` กรองถูก + โมเดลจริงต้องสะอาด + UI เปิดแผงได้
+- verify สุดท้ายกับ container: **4 regression PASS ทั้งหมด** (linter / store-safety / edge-gap-label / theme)
+
+### 2026-07-25 (cont. 37) — mongomodel: Go struct generator (ปิด drift ที่เกิดจาก Decimal128)
+- `toGo(nodes, edges)` ใน schema.ts — backend BC เป็น Go ล้วน แต่เครื่องมือ gen ให้แต่ mongoose ที่ไม่มีใครใช้
+  - ชนิด: Decimal128→`primitive.Decimal128`, ObjectId→`primitive.ObjectID`, Date→`time.Time`, Number→`float64`, Mixed→`any` (import เฉพาะที่ใช้จริง)
+  - tag `bson:"name" json:"name"` + `,omitempty` เฉพาะฟิลด์ที่ไม่ required และ `_id` (required ต้องไม่มี omitempty ไม่งั้นค่า 0/"" หายตอน marshal)
+  - nested เป็น **named struct แยก** (`DocDetails`) ไม่ใช่ inline — อ้างถึงได้จากโค้ดอื่นและอ่าน diff ง่าย
+  - ชื่อฟิลด์ที่ไม่ใช่ identifier (`customer id`) → exported name (`CustomerID`) แต่ tag คงชื่อจริงใน DB + initialism ตามธรรมเนียม Go (Id→ID, Url→URL, Vat→VAT ฯลฯ)
+- ต่อเข้า UI (แท็บ "Go" ใน ⚙️ สร้างโค้ด) + MCP (`generate_code format:"go"`)
+- **verify แบบคอมไพล์จริง** ไม่ใช่แค่ดูหน้าตา: `tmp/verify-go-gen.mjs` gen ทั้ง 5 diagram ผ่าน MCP → เขียน go.mod + `go build ./...` ใน container `golang:1.26-alpine` พร้อม mongo-driver → **99 struct, EXIT=0** + `gofmt -e` parse ผ่าน
+- demo() เพิ่ม 9 assert (package/import/omitempty/named struct/tag ไม่ว่าง/ชื่อมีช่องว่าง)
+- **อุบัติเหตุระหว่างทาง + วิธีกู้:** ใส่โค้ดผ่าน python heredoc แล้ว escaping พัง → เผลอ `git checkout app/schema.ts` ซึ่งย้อนไป HEAD = **ลบงาน schema.ts ทั้งวัน** (prefix-dedup, namesShapeWarnings, bsonType number, session key prefix, nestedUniquePaths, lintModel) กู้คืนได้จาก **source map ของ Next dev build** (`.next/dev/server/chunks/ssr/*.js.map` → `sections[].map.sourcesContent`) ได้ไฟล์ 53,278 ตัวอักษรครบทุกอย่างยกเว้น 2 จุดสุดท้าย (NOT_MONEY_RE, bounded) ที่เขียนกลับด้วยมือ — **บทเรียน: ห้าม `git checkout <file>` ระหว่าง session ที่ยังไม่ commit**
+- regression ทั้งชุดกับ container: **5 PASS** (go-gen / linter / store-safety / edge-gap-label / theme)
+
+### 2026-07-25 (cont. 38) — mongomodel: ล่า edge case ด้วย 4 agent ขนาน (57 เคส พัง 39) แล้วไล่แก้
+- ลุงจืดสั่ง "ทดสอบด้วย หลายๆ case" → workflow 4 agent (Go / mongosh+mongod จริง / mongoose+TS / MCP-API) ทุกตัวต้อง**รันจริงและพิสูจน์** ห้ามเดา — agent ฝั่ง mongosh ถึงขั้นยก mongod 7.0 ขึ้นมา insert ทดสอบ
+- **แก้แล้ว (severity สูง):**
+  1. **nested struct ผูก type ผิดตัวเงียบ ๆ** — โค้ดที่ผมเขียนเองใช้ regex `/^type (\w+) struct/` ขูดชื่อจากข้อความที่ push แล้ว แต่ `\w` ไม่ match อักษรไทย จึง fallback ไปชื่อก่อน uniquify → `หมู` กับ `หมู่` ผูก struct สลับกัน **คอมไพล์ผ่านแต่ฟิลด์หาย** แก้เป็น `emitStruct` return ชื่อจริง (เลิกใช้ regex)
+  2. **backtick/quote/newline ในชื่อฟิลด์** — backtick ปิด raw string ของ struct tag กลางคัน (go build พัง), newline/quote ทำให้ `reflect.StructTag.Lookup` อ่านไม่ออกแล้ว marshal ใช้ชื่อ Go แทนเงียบ ๆ → `goTagName()` sanitize + คอมเมนต์เตือนชื่อจริง; `-` (sentinel ข้ามฟิลด์ของทั้ง json และ bson) → `-,`
+  3. **description หลายบรรทัด → Go/TS คอมไพล์ไม่ผ่าน + Markdown ตารางแตก** (และเปิดช่องแทรกโค้ด) → `oneLine()` ใช้ทุกจุดที่ emit คอมเมนต์
+  4. **collection โดน nested struct แย่งชื่อ** — `doc.detail` จอง `DocDetail` ก่อน collection จริงชื่อ `doc detail` ทำให้ type ของ collection เปลี่ยนตามลำดับ node (โค้ด backend พังทุกครั้งที่ regen) → 2-pass จองชื่อ collection ทั้งหมดก่อน nested
+  5. **enum ชนิดไม่ตรง = collection ที่ insert อะไรไม่ได้เลย** (พิสูจน์กับ mongod จริง: `{bsonType:"number", enum:["1","2"]}` ใส่ `1` ไม่ตรง enum ใส่ `"1"` ไม่ตรง bsonType) → `enumLiterals()` cast ตามชนิด (Number→เลข, Boolean→bool, Date/ObjectId→ตัดทิ้ง) ใช้ทั้ง mongosh และ mongoose
+- **กฎ linter ใหม่ 4 ข้อ** ปิดเคสที่เหลือแบบครอบคลุม: `duplicate-collection` (NamespaceExists ทำสคริปต์ตายกลางคัน), `bad-collection-name` / `bad-field-name` (`.` `$` backtick quote newline ว่าง), `enum-type-mismatch`, `id-unique` (createIndex ซ้ำบน _id ทำสคริปต์ตาย)
+- **ยังไม่แก้ (บันทึกไว้):** index ซ้ำจน IndexKeySpecsConflict (sessionkey prefix ชนกับ keygroup), keygroup ที่มีสมาชิกตัวเดียวไม่ gen index, keygroup ที่สมาชิกเป็น Array 2 ตัว (multikey ผสมไม่ได้), PUT ที่ diagrams สมาชิกไม่ใช่ object → 500, PUT ข้าม validProjectName, mongoose ชนกับ `const Schema`, `__proto__`, Array ของ Array ที่มี children
+- **บั๊กใน test เอง:** `verify-go-gen` กรองบรรทัดด้วย `/^\t\S/` ซึ่งจับบรรทัด import ด้วย → แก้เป็น `/^\t[^"]/`
+- regression: demo() เพิ่ม assert เคสชื่อโหด + newline; ชุดเต็ม **5 PASS** กับ container ที่ rebuild แล้ว
+
+### 2026-07-29 — Fixed Docker Desktop completely + updated to 4.84.0
+- Symptom chain: engine "unable to start" since 07-18; morning install attempts by Jead all failed. Three root causes found and fixed in order: (1) zombie processes + `com.docker.service` stuck "marked for deletion" → killed elevated + wsl --shutdown. (2) Corrupted ACLs (owner locked out, UnauthorizedAccess) on `C:\ProgramData\DockerDesktop` AND `C:\Program Files\Docker\cli-plugins` → takeown+icacls+delete both (installer recreates); install then succeeded: 4.73.1 → **4.84.0** (Engine 29.6.2). (3) **True engine-start root cause: Windows system env var `ProgramData` (+PUBLIC/ALLUSERSPROFILE/SystemRoot/ProgramFiles set) was MISSING from Machine scope** — 4.84's Go backend needs `ProgramData` env to locate data folder ("unable to get 'ProgramData'" crash, confirmed by docker/for-win#14860 + mcp-gateway#424 as env-var dependency; 4.73 tolerated it). UAC path to fix Machine scope hung twice; fixed at **User scope** (HKCU, no admin) instead + launch process passes env — engine started, `docker-desktop` distro re-registered, ALL containers/images survived (mongodb/postgres/clickhouse/kafka/redis/minio/mainapi/thclaws/mongomodel Up), mainapi /healthz=200.
+- Pending: (a) restore the same env vars at **Machine scope** when UAC can be approved (script ready: `D:\bccode\tmp\fix-env.ps1`) — user-scope works for jatur incl. boot autostart, but Machine is the proper fix; (b) risk of "paging file too small" remains — `.wslconfig` has memory=80GB + swap=32GB with auto-managed pagefile; consider manual pagefile (1.5–3x RAM) or trimming WSL memory if it recurs; (c) installer kept at `D:\bccode\tmp\DockerDesktopInstaller.exe` (643MB) — delete when convenient.
+
+### 2026-07-31 — Audit กฎ/skill/KM หาจุดขัดแย้ง (Kimi, read-only ยังไม่แก้ไฟล์)
+- สแกน AGENTS.md / AI_INDEX.md / CLAUDE.md / GEMINI.md / core-rules / llm-index / wiki 4 เพจ / skills 15 ตัว / backend/CLAUDE.md — พบขัดแย้งจริง 7 กลุ่ม: (1) `next dev` HMR vs "never npm run dev" (core-rules:353, backend/CLAUDE.md:122, handoff-datamodel-brain:30 ขัดกับ Dev Workflow Mode), (2) DEV frontend ชี้ localhost:8888 vs .202 (core-rules:143 vs :353), (3) Atlas retired (core-rules:155) แต่ยังอ้างใน AGENTS.md:84, core-rules:163/259, llm-index:43, backend/CLAUDE.md:99/108, (4) push policy ขัดกันใน core-rules เอง (:366 ask-first vs :369 auto-push), (5) AGENTS.md rule 12 "do NOT rebuild Docker until Jead says" ขัด rule 6 auto-deploy (core-rules:149  claim override แล้วแต่ text เก่ายังอยู่), (6) R2 vs MinIO ยังไม่ตกผลึก (flagged ใน zcode-handoff:56 ตั้งแต่ 06-28), (7) nextjs-frontend:64 ใช้ชื่อ marketplace แบบ underscore legacy ขัด canonical `marketplaceskumappings` ใน core-rules/llm-index
+- ขัดแย้งรอง: db-migration "no DROP without backup" + naming-audit R0 blocker vs Disposable rule; decimal migration ceremony vs No-Migration; go-expert `go vet ./...` host-build vs Fast Execution Contract; `tenant_id`/`tenantid` vs `holdingcode`; project-context brand (primary #a04035, radius 12/16px) vs formdesign (#812920, radius 2-14px); accounting-number-rules naming section ยังเป็นสมัย no-underscore
+- Pending: รอลุงจืดตัดสินใจว่า canonical คือฝั่งไหน (โดยเฉพาะ next dev vs build+start, R2 vs MinIO, push policy) แล้วค่อยแก้ไฟล์ให้ตรงกัน
+
+### 2026-07-31 (cont.) — แก้จุดขัดแย้งกฎ/skill/KM ทั้ง 13 ไฟล์ (Kimi, ตามคำสั่งลุงจืด "ปรับเลย")
+- **Canonical ที่ฟันธง:** (1) frontend DEV = `next dev` HMR เป็น default, `build+start` ใช้ verify production-like (ถ้า Turbopack ค้างค่อย fallback) + ชี้ backend LOCAL `localhost:8888`; (2) Atlas ถูกประกาศ retired ทุกจุด (DEV = local Docker containers); (3) push = auto-push งาน meaningful แบบ batch (ลบข้อ "push เฉพาะเมื่อสั่ง" ที่ขัด); (4) storage = S3-compatible (MinIO local/.202, R2 เมื่อ config — หลักฐาน: bootstrap.local.json ใช้ s3endpoint=minio, image_r2.go resolve S3_* ก่อน R2_*); (5) marketplace canonical = `marketplaceskumappings[].marketplacedimensionstocks[]`
+- **ไฟล์ที่แก้:** AGENTS.md (rule 12 backend auto-deploy, DEV reset scope ไม่มี Atlas), core-rules 7 จุด (157-159/163/213/225/259/353/366), backend/CLAUDE.md (service table เป็น local stack + frontend ชี้ local), handoff-datamodel-brain (next dev OK), skills 7 ตัว (nextjs-frontend marketplace naming, go-expert targeted checks แทน go vet ./..., go-api-handler/db-expert/security-check ใช้ holdingcode แทน tenant_id, db-migration pre-launch drop ได้), wiki 4 เพจ (llm-index ไม่มี Atlas, accounting-number-rules reconcile No-Migration + naming underscore era, naming-audit R0 blocker superseded note, project-context brand ตรง formdesign), docs/onprem-server-spec.md (note Atlas เป็น history)
+- **ไม่แก้ (ตั้งใจ):** backend/CLAUDE.md §"Multi-Tenant With tenant_id" + backend/architecture/* — เป็น design doc ที่นิยาม tenant_id เป็น logical alias ของ holdingcode ชัดเจน ไม่ใช่ conflict (skills ทุกตัวชี้ holdingcode แล้ว)
+- **verify:** git diff --check ผ่าน (EOL warning เฉยๆ), ไม่มี secret ใน diff, grep ยืนยันไม่เหลือ "never npm run dev"/Atlas ใน active rule files
+- **pending:** working tree มีไฟล์ค้างของ session อื่น (backend/docs/swagger*, authentication/*, ฯลฯ) — ยังไม่ push รอลุงจืดตัดสินใจ scope ตาม Checkpoint rule
+
+### 2026-07-31 (cont.) — แก้ page title ค้าง "BC Ai Account Login" ทุกหน้า (Kimi)
+- layout.tsx ใช้ title template `%s | BC Ai Account` + default `BC Ai Account`; ทุก page.tsx (/, holding, workspace, menu, settings, currency, line-oa, price_history, product_barcode_shelf) export metadata ชื่อไทยตรง label จอ; `[systemSetting]` ใช้ generateMetadata ดึง `config.title.th`
+- verify: curl <title> ทุก route ถูก (เช่น /menu → "เมนูหลัก | BC Ai Account", /company → "ข้อมูลบริษัท | BC Ai Account"), typecheck ผ่าน
+- สังเกต: DashboardHome (main-menu-screen.tsx:2238) เป็น empty div โดย design — หน้าภาพรวมว่าง = ตั้งใจ ไม่ใช่ bug
+- ยังไม่ push: working tree มีไฟล์ค้าง session อื่น รอลุงจืดสั่ง scope (ตาม entry ก่อนหน้า)
+
+### 2026-08-05 — MongoModel BC Ai Account phase 2 (Codex)
+- แก้ผ่าน MCP `http://localhost:3100/mcp` โดยรักษา collection/field ID เดิม: revision 854 → 1010, 20 → 26 collections, รวม 156 mutations.
+- ทุก 26 collections มี `isdeleted/deletedat/deletedby/__v` และ explicit active-list index; `holding`/`branch` ได้ `updatedat/updatedby`, `branch` ได้ `isactive`.
+- `branch.businesstypes` เปลี่ยนเป็น `Array<String>`; ลบ embedded `businesstype`, Boolean ธุรกิจ 21 ตัว และ legacy `isdelete` ในกลุ่มเอกสาร.
+- เพิ่ม `business_type_master`, `fiscal_year`, `chart_of_accounts`, `currency`, `unit_of_measure`, `role_permission`; ใช้ `warehouse`/`employee` เดิม ไม่สร้างซ้ำ. เพิ่ม business-key/tenant relations และ compound unique key groups.
+- verify: 26/26 มีฟิลด์มาตรฐาน, target collections อย่างละ 1, generated `createIndex` 64 รายการ, `lint_model` ไม่พบปัญหา, `check_descriptions` ครบทุกจุด.
+- pending: นี่คือ MongoModel baseline เท่านั้น; backend models/repositories/API, optimistic-lock conflict handling, database rebuild และ frontend contracts ยังต้องทำ end-to-end ก่อนถือว่า runtime ใช้งาน phase 2 แล้ว.
+
+### 2026-08-05 (cont.) — รองรับ relation จาก Array ไป master key
+- ลุงจืดพบว่า `branch.businesstypes` ยังไม่มีเส้นไป `business_type_master.code`; root cause คือ linter ของ MongoModel เทียบ `Array` กับ `String` โดยไม่ดู `of: String`.
+- แก้ `D:\mongomodel\app\schema.ts` ให้ `Array<T>` อ้าง business key ชนิด `T` ได้ พร้อม regression self-check และอัปเดตกฎ MongoModel; rebuild container แล้ว.
+- เพิ่ม relation `branch.businesstypes → business_type_master.code` ผ่าน MCP; codegen สร้าง multikey index `{businesstypes: 1}`, `lint_model` ไม่พบปัญหา, revision หลังบันทึก = 1021.
+
+### 2026-08-05 (cont. 2) — ลดความซับซ้อน business type ตามคำสั่งลุงจืด
+- Decision supersedes entry ก่อนหน้า: ลบ `business_type_master` และ relation ออก; `branch.businesstypes: Array<String>` เป็นค่าที่กำหนดโดยตรงในแต่ละสาขา.
+- ถอนการแก้ MCP เรื่อง `Array<T> → T` และ regression/rule ที่เพิ่มมาเฉพาะ relation นี้ออกทั้งหมด; ไม่เหลือ diff จากงานดังกล่าวใน `D:\mongomodel\app\schema.ts`/`AGENTS.md`.
+- verify ผ่าน MCP: project เหลือ 25 collections, ไม่มี master/relation ค้าง, `businesstypes` ยังเป็น `Array<String>`, `lint_model` ไม่พบปัญหา, คำอธิบายไทยครบ, revision = 1023.
+
+### 2026-08-05 (cont. 3) — Auth/User/Organization/Journal hardening + Browser QA (Codex)
+- Admin เพิ่มผู้ใช้แบบไม่มีอีเมลได้: สร้าง global user ก่อน membership, UID คงที่, hash รหัสเริ่มต้น `12345`, เชื่อมอีเมลภายหลังได้; ปิด public `/register-username` ป้องกัน usercode pre-claim.
+- บังคับเปลี่ยนรหัสจาก server-side hash ครบ password/OTP/Google/LINE/Firebase/refresh; middleware อนุญาตเฉพาะ profile/password/logout จนเปลี่ยน และ reset/change/disable revoke bearer, refresh และ X-API key ทุก session.
+- Company/Branch ต้องมี linked email + active Holding OWNER/ADMIN; Holding root ยังใช้ email bootstrap ชั่วคราว เพราะ source ไม่มี global admin/allowlist/active seeder. Pending: ต้องอนุมัติ bootstrap `SYSTEM_ADMIN_UIDS` แบบ fail-closed ก่อนบังคับ admin-only เพื่อไม่ lockout Holding แรก.
+- Journal write ใช้ actor จาก token ทั้ง code+name; MQ error ไม่ถูกกลืน, bulk publish เอกสารใหม่, rebuild รักษา actor, delete event ส่ง `deletedby/deletedbyname` และหยุดก่อน delete เมื่อ read ล้มเหลว; เพิ่ม regression test payload.
+- ใช้ `universal-browser-mcp-prompt.md` แทน PDF สร้าง `.agents/skills/run-browser-qa/`; เพิ่มกฎ DeepSeek latest แบบ sanitized/no-secret (รอบนี้ไม่ได้ส่ง source ภายนอกเพราะ approval gate).
+- Verify: Docker Go targeted tests/compile ผ่าน, frontend typecheck + route tests 32/32 ผ่าน, skill validator ผ่าน, `mainapi` fast-deploy 27.74s และ `/healthz` 200; Browser MCP UAT หน้า Login ผ่าน, แก้ generic error ไทยแล้ว, console ไม่มี error (มี Reduced Motion warning), network log ไม่ exposed.
+
+### 2026-08-05 (cont. 4) — Global Admin/Holding policy + MongoModel workflows (Codex)
+- กำหนด Platform Global Admin เป็น `jaturapornchai@gmail.com` แยกจากบทบาทราย Holding; ไม่จำกัดการสร้าง Holding ไว้เฉพาะ Global Admin. บัญชี active ที่มี linked email รูปแบบถูกต้องสร้าง Holding ได้ ผู้สร้างเป็น `OWNER` และเพิ่ม `ADMIN` ได้หลายคน.
+- Source runtime เดิมตรงกับ Holding policy อยู่แล้ว (`RequireEmailedAccount`, `CreateShop` → `ROLE_OWNER`, `AddHoldingAdminByEmail`); แต่ยังไม่มี runtime resolver/สิทธิ์ข้าม Holding สำหรับ Global Admin จึงไม่เพิ่ม field/collection ปลอม และบันทึกข้อจำกัดไว้ใน architecture.
+- ปรับ MongoModel ผ่าน `http://localhost:3100/mcp`: แก้คำอธิบาย `users`/`shopusers`/`holding`, เพิ่ม `holding.createdat/createdby`, เพิ่ม workflow `สร้าง Holding และกำหนดผู้ดูแล`, และแก้ workflow Login ให้ยืนยัน `users` ก่อน session, บังคับเปลี่ยน `12345`, แล้วค่อยตรวจ `shopusers` เมื่อเลือก Holding. Project revision 1047 → 1056.
+- Pending: หากต้องการให้ Global Admin มีอำนาจข้าม Holding จริง ต้องกำหนด operation ที่อนุญาตและเพิ่ม backend enforcement/audit; ห้ามถือว่าการระบุอีเมลใน policy ให้สิทธิ์ runtime แล้ว.
+
+### 2026-08-05 (cont. 5) — MongoModel Workflow auto-layout (Codex)
+- เพิ่มปุ่ม `▦ จัดผัง` ใน toolbar Workflow โดยใช้ ELK dependency เดิม จัดซ้าย→ขวา, กัน self-loop/dangling edge, ใช้ขนาด node จริง และบันทึกตำแหน่งผ่าน history/autosave เดิมก่อน fit view.
+- เพิ่ม regression test ของลำดับ source→target; `npm test` ผ่าน 13/13, `npm run build` ผ่าน และ rebuild/deploy Docker Desktop แล้ว.
+- Browser QA ที่ `http://localhost:3100`: ผัง Login 15 nodes เปลี่ยนตำแหน่งครบ, overlap = 0, reload แล้วยังตรง 15/15, console warning/error = 0; หน้าเว็บ HTTP 200 และ MCP มี 31 tools รวม workflow tools.
+- ไม่ commit/push เพราะ `D:\mongomodel` เป็น external repo และมี local changes งานก่อนหน้าร่วมอยู่.
+
+### 2026-08-05 (cont. 6) — Workflow auto-layout เปลี่ยนเป็นแนวตั้ง (Codex)
+- Decision supersedes ทิศซ้าย→ขวาใน entry ก่อนหน้า: ELK ใช้ `DOWN` และ node ใช้ target handle ด้านบน/source handle ด้านล่าง เพื่อให้เส้นไหลบน→ล่างจริง.
+- Verify: tests 13/13, production build และ Docker rebuild ผ่าน; Browser QA ผัง Login เส้นทางหลักเรียงบน→ล่าง, overlap 0, reload คงตำแหน่ง 15/15, console 0; หน้าเว็บ HTTP 200 และ MCP 31 tools.
+
+### 2026-08-05 (cont. 7) — Auth/Register/Login UAT แบบผู้ใช้ทั่วไป (Codex, read-only)
+- ทดสอบผ่าน Browser จริงและ HTTP API: สมัครบัญชี, validation, duplicate, login ถูก/ผิด/ระบุ Holding, route guard, สร้าง Holding, admin เพิ่ม user ไม่มี email, default password `12345`, บังคับเปลี่ยนรหัส, token revoke/refresh/logout และสิทธิ์ผู้ใช้ทั่วไป.
+- ผ่าน: สมัคร lowercase email, validation email/password, login และสร้าง Holding, ห้ามใช้ `12345` เป็นรหัสใหม่, เปลี่ยนรหัสแล้ว token เก่าถูก revoke, user ไม่มี email ไม่เห็นปุ่มสร้าง Holding และเข้า Holding ที่ได้รับสิทธิ์ได้.
+- Bug ยืนยัน runtime: admin เพิ่ม user ผ่าน UI ล้มเมื่อวันหมดอายุว่าง (`time.Time` parse empty string); duplicate register และ current password ผิดคืน 500; email ตัวพิมพ์ใหญ่สมัครได้แต่ login ไม่ได้; logout ไม่ revoke/rotate refresh และ refresh เดิม replay ซ้ำได้; default-password user ที่ยังไม่เลือก Holding เรียก logout ได้ 401; user role ปกติเห็นเมนูตั้งค่า admin/ปุ่มเพิ่มและ permission API คืน 500 แทน 403; Google Identity initialize ซ้ำหลายครั้ง.
+- DEV QA data ที่สร้างไว้: Holding `qa23995213`, usercode `qauser4187665` และ synthetic email accounts; ไม่มีการลบด้วยมือเพื่อรักษา Backend-Owned Schema/DEV workflow.
+- Pending: Google signup/login แบบ end-to-end ยังไม่ได้ใช้บัญชี Google QA จริง; Browser MCP ไม่ expose network panel จึงยืนยัน status ผ่าน HTTP API โดยตรงแทน.
+
+### 2026-08-05 (cont. 8) — Product company scope (Codex)
+- Product documents now carry `businesscode`; HTTP handlers require the active company from authenticated `UserInfo`, and list/detail/create/update/delete/resync repository paths scope every operation by `holdingcode + businesscode` while preserving stored tenant identity on update.
+- Added the company-scoped partial unique index `(holdingcode, businesscode, code)` but intentionally retained the legacy holding-wide unique index until Barcode/stock projections are migrated, so duplicate product codes across companies are not enabled prematurely.
+- Verify: `git diff --check` passed; targeted Product repository/service/HTTP tests compiled and passed in the Linux musl Docker builder. Host Windows test remains unavailable because project Kafka bindings require CGo/librdkafka.
+- Pending: migrate Barcode/stock/projection lookup keys to company scope, then remove the legacy holding-wide product-code unique index and reset disposable pre-launch data.
+
+### 2026-08-05 (cont. 9) — Barcode main CRUD company scope (Codex)
+- Main Barcode create/update/delete/detail/by-barcode/search now require authenticated active `businesscode`; Mongo reads/writes and relation propagation use `holdingcode + businesscode`, request tenant filters cannot override scope, and Barcode mutations persist only `CoreOnly` fields with required `itemcode/barcode/itemunitcode` and immutable item/barcode identity on update.
+- Create/update validate the linked Product in the same Company; a missing Product is created minimally in the same Mongo transaction as the Barcode, then Product and Barcode events publish only after commit. Product names fall back to item code when absent.
+- Added the company-scoped partial unique Barcode key `(holdingcode,businesscode,itemcode,barcode)` while retaining the holding-wide unique key until stock/PG/ClickHouse projections become company-scoped.
+- Verify: focused Docker musl repository/service/model/usecase tests passed; full backend musl build passed; `git diff --check` passed. No deploy was run while agents are integrating changes.
+- Pending: company-scope Barcode bulk/import/ref endpoints, unit/price-history/warehouse projections, Kafka consumers, PostgreSQL/ClickHouse stock spine; then remove legacy holding-wide indexes and allow duplicate codes across Companies.
+
+### 2026-08-05 (cont. 10) — Quick Barcode frontend + Company session restore (Codex)
+- ย่อหน้า Barcode เหลือ barcode immutable, รหัส/ชื่อสินค้า, หน่วย, อัตราแปลง และสถานะบาร์โค้ดหลัก; ตัดราคา ต้นทุน ยอดคงเหลือ สต๊อก หมวด รูปภาพ BOM และ marketplace ออกจาก UI และใช้ write-payload allowlist เท่านั้น.
+- รายการ/สร้าง/แก้ Barcode ผูก `holdingcode + businesscode`, reset รายการเมื่อเปลี่ยน Company, เก็บ draft เดิมแต่บล็อก save ข้าม Company และเพิ่มปุ่มไปเติมรายละเอียดที่หน้าสินค้า.
+- แก้ workspace Holding enrichment ให้ restore ทั้ง Holding และ Company เพื่อไม่ให้ `select-holding` ล้าง active `businesscode`; caller list Barcode ที่เกี่ยวข้องส่ง Company scope แล้ว.
+- Verify: focused Vitest ผ่าน 16/16, `npm run typecheck` ผ่าน และ targeted `git diff --check` ผ่าน.
+
+### 2026-08-05 (cont. 11) — Holding aggregate / Company operational ownership (Codex)
+- Decision: Holding เป็นชั้นสิทธิ์และอ่านข้อมูลรวมเท่านั้น; Product, Barcode, Customer, Debtor, Creditor, Stock และ Transaction ต้องมีเจ้าของเป็น `(holdingcode,businesscode)` เพื่ออนุญาตรหัสซ้ำคนละ Company โดยไม่ชนกัน.
+- Runtime ที่ปรับแล้ว: session ตรวจ Company membership; Product/Barcode main CRUD, Kafka validation และ PostgreSQL projection ผูก Company; Quick Barcode เหลือข้อมูลจำเป็นและไม่มี balance/cost/stock; frontend product list ใช้ canonical Company-scoped MainAPI.
+- MongoModel BC Ai Account revision 1185: collection เอกสาร/สต๊อกที่เกี่ยวข้องบังคับ `businesscode`, เพิ่ม company relation/index และอธิบาย Holding เป็น consolidation; lint/description ผ่าน, tests 13/13, build และ Docker Desktop deploy ผ่าน, หน้าเว็บ/MCP HTTP 200.
+- Safety: stock/cost/AR/AP/customer/debtor/creditor บางเส้นทางยังใช้ Holding-only key จึงยังคง legacy Holding-wide unique index ของ Product/Barcode ไว้ชั่วคราว; ห้ามเปิดรหัสซ้ำข้าม Company จน transaction/Redis/stock/AR/AP ทั้ง spine ผูก `businesscode` ครบ.
+- Verify: backend targeted Docker tests + full Linux compile ผ่าน, `mainapi` fast-deploy และ `/healthz` ผ่าน; frontend tests 22/22, typecheck/build ผ่าน; Playwright UAT Login → Holding → Company → Branch → Quick Barcode ผ่าน 1/1 โดยไม่พบ app HTTP/console error (Google GSI 403 บน `127.0.0.1` เป็น dev-origin config แยกต่างหาก).
+
+### 2026-08-06 — Auth/Quick Barcode/Company isolation UAT fixes (Codex)
+- Browser/API UAT ยืนยันและแก้: optional access-expiry รับค่าว่าง, USER เปิดหน้าจัดการผู้ใช้ไม่ได้และ API ตอบ 403, Barcode detail ไม่เอาชื่อ/อัตราแปลงจาก Product มาทับ, และ delete Holding membership ใช้ key `(holdingcode,username)` จึงลบสมาชิกที่ `useruid` เดิมว่างได้จริง; หลังสร้าง global account แล้วบันทึก stable `useruid` กลับ membership.
+- เพิ่ม partial unique guard `(holdingcode,barcode)` สำหรับ Barcode ที่ active ระหว่าง stock/document spine ยังไม่ company-scoped; duplicate ข้าม Company ตอบ 409 `DUPLICATE` โดยไม่เปิด E11000/collection/index/tenant key. Guard นี้เป็นของชั่วคราวและถอดได้พร้อม stock-spine migration + isolation UAT เท่านั้น.
+- UAT ผ่าน: default password/forced change/relogin, blank expiry, direct-route/API authorization, create/list/reload/edit/delete Quick Barcode, ชื่อและ ratio คงค่า, Company A/B list/detail isolation, duplicate rollback, logout/route guard และ cleanup synthetic users (รายการ 4 → 2; ไม่ลบ user อื่น). Barcode test record cleanup ผ่าน.
+- Verify: frontend typecheck + production build, focused Vitest 19/19 (กำหนด test backend URL), Playwright Barcode 1/1, targeted Go tests ใน Linux musl builder, mainapi fast deploy + health และ frontend HTTP 200. Product duplicate safety conflict ตอบ 409 โดยไม่ leak DB และ Barcode cross-company not-found ตอบ 404 แล้ว. Known pending: stock/AR/AP spine ยังต้องเติม `businesscode` ก่อนอนุญาต barcode ซ้ำข้าม Company.
+
+### 2026-08-06 (cont. 2) — Product preserved active Company for Barcode (Codex)
+- Root cause ของ toast ซ้ำหน้า Barcode: หน้า Product เรียก `select-holding` ด้วย `holdingcode` อย่างเดียว ทำให้ backend ล้าง active Company; แก้ให้ส่ง current normalized `businesscode`, ใช้ Company ใน selection cache key และไม่โหลด Product หากยังไม่มี Company.
+- เพิ่ม Playwright regression เส้นทาง Login → Holding/Company/Branch → Product → Barcode เพื่อตรวจ request scope และยืนยันว่าไม่เกิดข้อความ `an active company is required`/`กรุณาเลือกบริษัทก่อนใช้งาน`.
+- Verify: frontend typecheck ผ่าน, production build ผ่าน, restart `next start` พอร์ต 3000 แล้ว HTTP 200, targeted Playwright UAT ผ่าน 1/1 โดยไม่มี app HTTP/console error.
+
+### 2026-08-06 (cont. 3) — Compact Barcode detail layout (Codex)
+- แก้ right detail grid ที่ยืด summary card เต็มความสูง: ใช้ `content-start items-start` และ responsive `auto-fit/minmax` ให้สรุปบาร์โค้ดกับข้อมูลหลักอยู่แถวเดียวกันเมื่อ pane กว้าง และเรียงลงเมื่อ pane แคบ; ตารางซ้ายแสดง Barcode+ชื่อสินค้าที่ notebook และเพิ่มหน่วย+รหัสสินค้ากลับบนจอ `2xl` เพื่อไม่ให้คอลัมน์ชนกัน.
+- เพิ่ม layout regression checks ใน Barcode UAT: summary สูงต่ำกว่า 160px, desktop วางคู่กัน, ตารางซ้ายไม่ล้น, iPad ไม่ล้นแนวนอน และ mobile พับเป็นหนึ่งคอลัมน์.
+- Verify: frontend production build ผ่าน, deploy `next start` พอร์ต 3000 แล้ว HTTP 200, Playwright UAT ผ่าน 1/1; API/MongoDB ไม่เปลี่ยน.
+
+### 2026-08-06 (cont. 4) — Exact Product drill-down + retail-ready Barcode (Codex)
+- แก้ปุ่ม `ไปเติมรายละเอียดสินค้า` ที่ Main Menu ทิ้ง `itemCode`: ส่ง one-shot `{code,requestId}` เข้า Product tab, เลือก/search exact code, รักษา dirty-form confirmation และไม่ fallback ไปสินค้าแถวแรกระหว่างโหลด.
+- Barcode list ใช้ pager จาก backend `limit/offset/total` จึงเข้าถึงรายการที่ 81+ ได้และ reset หน้าเมื่อค้นหา; แสดง `ราคาขาย 1` แบบ read-only โดยไม่เพิ่ม `prices` เข้า Quick write payload; ปรับอัตราแปลงเป็นภาษาร้านค้า.
+- Generator ใช้ Web Crypto, เลือก prefix `200` (default) หรือ `885` พร้อมคำเตือน GS1, ต่อ check digit และตรวจซ้ำก่อนใส่ค่า; frontend+backend ปฏิเสธ EAN-13 check digit ผิด ขณะที่ Code128 เดิมยังใช้ได้.
+- เพิ่ม EAN-13 95-module SVG สำหรับ preview/print แทนลายแท่งตกแต่งที่สแกนไม่ได้, แก้ราคาจอพิมพ์จาก `prices[]`, ปรับฉลากให้พอดี A4 และเพิ่มปุ่ม `พิมพ์ฉลาก` จาก Barcode detail. Excel import มี backend foundation แต่ UI/company-scope ยัง pending; camera scan defer ไว้ POS phase.
+- Verify: frontend Vitest 23/23, typecheck/build ผ่าน, Playwright UAT 2/2 (CRUD/generator/exact drill-down/live invalid-EAN rejection + mocked 81-row pagination/search reset), backend targeted Linux-musl test ผ่าน, mainapi fast-deploy healthy/curl 200 และ frontend HTTP 200. ลบ Barcode UAT ที่ค้างจากรอบ fail แล้ว; MongoModel/DB schema ไม่เปลี่ยน.
+
+### 2026-08-06 (cont. 5) — Product + Barcode owned media and clean-slate rule (Codex)
+- Decision: ช่วง PRE-LAUNCH ข้อมูลเดิม/legacy shape ไม่ใช่ข้อจำกัดการออกแบบ ห้ามเพิ่ม migration, fallback หรือ compatibility shim; ออกแบบ shape ใหม่ที่ถูกและปล่อยให้ข้อมูล rebuild ตาม Disposable Database Rule.
+- Barcode เป็นเจ้าของ `imageuri`, `images`, `description` เฉพาะหน่วย/แพ็กของตนเอง; Product เป็นเจ้าของรูป/รายละเอียดหลักของตนเอง และ Product detail รวมรูป Barcode ที่เชื่อมด้วย `(holdingcode,businesscode,itemcode)` ตอนอ่านเท่านั้น ห้ามคัดลอกเข้า Product document.
+- แก้ Quick Barcode payload/backend `CoreOnly()` ให้เก็บ media/description, หยุด Product overlay ทับ Barcode media, บังคับ MongoDB detail ก่อน edit/copy และเพิ่ม shared authenticated image editor/gallery ให้ Product/Barcode.
+- MongoModel เพิ่ม 3 fields ให้ `productbarcode` ผ่าน MCP field-level, ปรับ ownership descriptions, lint/description ผ่าน, tests 14/14, production build + Docker Desktop deploy ผ่าน, หน้าเว็บ 200 และ real MCP ตอบ `MCP_MEDIA_OK`.
+- Verify: frontend unit 1/1, typecheck + production build ผ่าน; backend targeted Linux-musl tests ผ่านและ fast deploy `/healthz` 200; Playwright UAT จริงผ่าน 2/2 (login/company scope, Barcode main+gallery+description, Product own image, save/reload/API persistence, Product แสดง linked Barcode images, console/network clean และ pagination 81+). UAT records ที่สร้างถูกลบผ่าน API; records ค้างจากรอบ fail `UAT981340696` และ `UAT981391693` ถูกลบพร้อม Product และตรวจซ้ำว่าไม่เหลือแล้ว.
+
+### 2026-08-06 (cont. 6) — Product + Barcode e-commerce video (Codex)
+- เพิ่ม Product/Barcode-owned `videos[{xorder,uri}]`; Product detail รวมวิดีโอ Barcode ที่ `(holdingcode,businesscode,itemcode)` ตอนอ่านเท่านั้น. `barcodes` เป็น `bson:"-"` และ Product message-queue boundary strip ก่อน Create/Update/Delete event เพื่อไม่ copy aggregate เข้า MongoDB/Kafka.
+- เพิ่ม dedicated MP4 upload ไม่เกิน 50 MB: Next proxy stream พร้อม Content-Length/chunk byte cap; backend request cap, stream เข้า S3 และตรวจ `.mp4` + `ftyp/moov/mdat`. Private object key ใช้ Company segment แบบ path-safe และ proxy decode กลับมาเทียบ active Company.
+- Security: authenticated image/video ส่ง Bearer เฉพาะ frontend/configured backend origin; external/malformed `/s3/file/` URL ไม่ได้รับ token. UAT พบและแก้ sanitizer สองชั้นที่ตัด `~` จาก encoded Company segment จน preview 403; company-scoped key ที่ decode ไม่ได้ fail closed แทนการตกเป็น Holding-owned.
+- MongoModel เพิ่ม `videos[{xorder,uri}]` ใน `product` และ `productbarcode` ผ่าน real MCP; description/lint ผ่าน, tests 14/14, build + `npm run docker:up`, HTTP 3100 และ post-deploy MCP `MCP_VIDEO_SCHEMA_OK` ผ่าน; external repo ไม่มี file diff.
+- Verify: frontend tests 33/33 (รวม security), typecheck/build ผ่าน; backend targeted Linux-musl models/services/repositories/handlers ผ่าน; mainapi fast-deploy healthy, frontend HTTP 200; Playwright UAT จริงผ่าน 2/2 (MP4 จริง Product+Barcode upload/play/save/reload/edit/no-copy + pagination, console/network clean). Pending: native progressive streaming/seek และ cleanup ของ object ที่อัปโหลดแล้วแต่ไม่ผูก record ให้ทำเมื่อกำหนด media-retention policy.
+
+### 2026-08-06 (cont. 7) — Product/Barcode video over 50 MB (Codex)
+- ยกเพดาน MP4 จาก 50 MB เป็น safety cap 500 MB ทั้ง frontend, streaming proxy และ `VideoUploadHandler`; รวมค่าฝั่ง frontend ไว้จุดเดียวและขยาย proxy/R2 upload timeout เป็น 30 นาทีสำหรับไฟล์ใหญ่. Generic image upload 50 MB ไม่เปลี่ยน.
+- MongoModel/MCP ไม่ต้องแก้ เพราะ `product.videos`/`productbarcode.videos` เก็บเพียง `{xorder,uri}` และไม่มี size policy ใน schema.
+- Verify: Vitest upload proxy 10/10 (51 MB ผ่าน, เกิน 500 MB ถูกบล็อก), targeted Go validator ผ่านใน Linux/musl, frontend typecheck + production build ผ่าน, mainapi fast deploy + `/healthz` 200, frontend HTTP 200 และ Playwright Barcode UAT ผ่าน 1/1 พร้อมข้อความ `MP4 สูงสุด 500 MB` และอัปโหลด/เล่น/บันทึก MP4 จริง.
+
+### 2026-08-07 — Frontend Node 24 / Next.js 16.3 upgrade (Codex)
+- อัปเกรด frontend เป็น Node `24.x`, npm `11.x`, Next.js `16.3.0`, React `19.2.8` และแพ็กเกจ patch/minor รุ่นล่าสุดที่ไม่เปลี่ยน major; lockfile audit เหลือ 0 vulnerabilities. แยก major ที่มี breaking risk ไว้ภายหลัง: TanStack Table 9, ESLint 10, Motion 13, TypeScript 7 และ Node types 26.
+- แก้ production Docker ให้ใช้ `node:24.18.0-alpine`, แยก full/prod dependencies, รัน non-root และใช้ `next start`; เพิ่ม `.dockerignore` กัน Windows `node_modules`, `.next` และ `.env*` ปนเข้า Linux image; CI pin Node `24.18.0`.
+- Verify: typecheck/build ผ่าน, Docker clean build + container smoke ผ่าน (`/` 200, Next.js 16.3.0, UID 1001), Browser QA หน้า Login render ปกติและไม่พบ app HTTP 4xx/5xx; Google Fonts ถูก browser sandbox ปฏิเสธเท่านั้น. Unit tests เมื่อกำหนด local backend ผ่าน 169/175 และผล 6 failures ตรงกับ Vitest เดิม 4.1.6; lint ยังแดงจาก source/test debt เดิม ไม่ใช่ dependency regression. ไม่ deploy `.202` เพราะไม่มีคำสั่ง `deploy dev`.
+
+### 2026-08-07 (cont. 2) — Stable Product detail switching (Codex)
+- Root cause ของแผงขวากระพริบ: ทุกครั้งที่เลือกแถว Product จะล้าง MongoDB detail เดิม, แสดง list projection ชั่วคราว แล้ว unmount เพื่อขึ้น loading ก่อน mount detail ใหม่.
+- แก้ให้คง detail ล่าสุดระหว่างโหลด, ใช้ request token แบบ latest-wins กันคำตอบเก่าทับรายการใหม่, invalidate เมื่อเปลี่ยน Holding/Company และคืน selection เดิมเมื่อโหลดผิดพลาด; backend/MongoModel ไม่เปลี่ยน.
+- เพิ่ม Playwright regression ที่หน่วง API 450 ms, ตรวจทุก animation frame ว่า detail ไม่หาย/ไม่ว่าง/ไม่มี loading chrome และตรวจ race คลิก A→B. Verify: typecheck + production build ผ่าน, targeted Playwright 1/1 ผ่าน; Browser QA จริง 55/55 frames คงอยู่, app console/network ไม่มี error. Targeted ESLint ยังพบ debt เดิมในไฟล์ Product ขนาดใหญ่ ไม่มี finding จาก detail fix รอบนี้.
+- Runtime lesson: หลัง build ทับ `.next` ต้อง restart `next start`; process เก่าถือ stale manifest ทำให้ static assets ตอบ 500.
+
+### 2026-08-07 (cont. 3) — Stable CRUD skill hardened after accepted UAT (Codex)
+- Jead ยืนยัน Product detail switching ผ่าน; อัปเดต `stable-crud-editor` ให้ครอบ read-only detail pane, retained Mongo detail ref, latest-request-wins, Holding/Company invalidation, error selection restore และ frame-sampled regression 450–500 ms. ปรับ skill UI metadata ให้ตรง และ `quick_validate.py` ผ่าน.
+
+### 2026-08-07 (cont. 4) — Product/Barcode media previews hide storage paths (Codex)
+- ลบ raw URL/path captions จาก shared Product/Barcode image+video cards และ galleries; media ยังอ่านจาก URI ภายในและแสดงผ่าน authenticated preview ตามเดิม. ปรับ core rule + `nextjs-frontend` skill ให้ normal business UI แสดงสื่อ/empty/error เท่านั้น ส่วน path เปิดเผยได้เฉพาะ technical/admin diagnostic.
+- Verify: targeted ESLint, typecheck, Next.js 16.3 production build และ Playwright media UAT 1/1 ผ่าน. Browser QA จริงยืนยันรูปโหลดสมบูรณ์ `1254x1254`, `rawPathVisible=false`, console ไม่มี error; Playwright runtime audit ไม่พบ app HTTP 4xx/5xx.
+
+### 2026-08-07 (cont. 5) — Product/Barcode video still posters (Codex)
+- Product/Barcode video เก็บ `videos[{xorder,uri,posteruri}]`; ตอนเลือก MP4 เบราว์เซอร์จับเฟรมแรกเป็น JPG และอัปโหลดผ่าน image path เดิม เพื่อแสดงภาพนิ่งทันทีโดยยังไม่ดาวน์โหลด MP4 จนกดเล่น.
+- อัปเดต frontend/backend, MongoModel `product`/`productbarcode`, `AGENTS.md`, core rule และ `nextjs-frontend` skill ให้สัญญาข้อมูลตรงกัน; MainAPI fast-deploy และ MongoModel Docker Desktop deploy แล้ว.
+- Verify: targeted ESLint, typecheck, Vitest, Go targeted tests, Next.js 16.3 build และ Chrome Playwright UAT 1/1 ผ่าน; poster JPG ตอบ `200 image/jpeg`, ไม่พบ MP4 GET ก่อนกดเล่น และวิดีโอเล่นได้หลังคลิก.
+
+### 2026-08-07 (cont. 6) — Product standard base unit 1:1 (Codex)
+- Product ทุกตัวต้องมี top-level `unitcode/unitnames` หนึ่งหน่วยเป็นหน่วยมาตรฐาน; backend Create/Update บังคับ `dividevalue=1`, `standvalue=1`, `condition=false`. Quick Barcode สร้าง Product พร้อมหน่วยฐานเดียวกัน และ `refbarcodes[]` เหลือเฉพาะหน่วยเพิ่มเติม.
+- หน้า Product ทำเครื่องหมายหน่วยมาตรฐานเป็น required, เปลี่ยนผ่าน picker ได้แต่ลบให้ว่างไม่ได้ และเปิดแท็บหน่วยพร้อมแจ้งเตือนเมื่อบันทึกโดยไม่มี `unitcode`. อัปเดต `AGENTS.md`, core rule และ `nextjs-frontend` skill เพื่อกัน regression.
+- MongoModel เพิ่ม 5 ฟิลด์หน่วยฐานของ `product` ผ่าน MCP จริง พร้อมปรับคำอธิบาย `unitguid/refbarcodes`; descriptions/lint/codegen ผ่าน, tests 14/14, build + Docker deploy, HTTP 3100 และ post-deploy MCP ผ่าน. Verify runtime: Go targeted tests 2 packages, frontend typecheck/build, MainAPI health และ Chrome Playwright UAT 1/1 ผ่านโดยตรวจ API missing-unit, UI 1:1/ลบไม่ได้ และข้อมูล Product ที่บันทึกจริง.
+
+### 2026-08-07 (cont. 7) — Product-owned multi-unit conversions (Codex)
+- Supersedes cont. 6 เฉพาะจุด `refbarcodes[]`: หน่วยเพิ่มเติมของ Product เก็บใน `unitconversions[{unitcode,unitnames,dividevalue,standvalue}]` เท่านั้น ไม่เก็บ Barcode identity; หน้า Product แสดง Barcode ที่ match แต่ละหน่วยแบบ read-only จาก `itemunitcode`.
+- Backend บังคับรหัสหน่วยว่าต้องอยู่ใน Product, derive ชื่อ/อัตราจาก Product แทน request, ห้ามลบหน่วยที่ยังมี Barcode ใช้ และตอบ validation เป็น HTTP 400. การแก้อัตรา Product อัปเดต linked Barcode snapshots ใน Mongo transaction เดียวกัน และ republish PostgreSQL projection เพื่อให้ขาย/ซื้อ/สต๊อกได้อัตราจริง ไม่ตกเป็น 1:1.
+- MongoModel `product.unitconversions` เพิ่มผ่าน MCP; description/lint/codegen, tests 14/14, production build, `npm run docker:up`, HTTP 3100 และ real MCP ผ่าน. Verify: Go targeted Linux/musl 4 packages + sale-invoice ratio path, frontend Vitest 24/24, typecheck, Next.js 16.3 build, MainAPI fast-deploy `/healthz`, frontend HTTP 200 และ Chrome UAT 1/1 ผ่านจาก UI จริง (เพิ่ม BOX 1:12, save, create Barcode, match, reject CASE, reject removing BOX, console/network guard).
+- Pending: Unit master runtime ยังต้องย้ายจาก Holding-scope เป็น Company-scope ก่อนจะ enforce FK-like membership ด้วย `(businesscode,unitcode)` ได้ครบ; legacy transaction/projection ratio fields ยังเป็น `float64` แม้ Product `unitconversions` จะเป็น exact `int64` source of truth.
+
+### 2026-08-07 (cont. 8) — ลบโฟลเดอร์ `s/` (scope-of-work) ออกจาก repo + ล้างกฎที่อ้างถึง (Kimi)
+- Jead ลบ `s/` ออกเอง (5 ไฟล์: `aimodel.md`, `editscreen.md`, `global.md`, `mainmenu.md`, `workflow/warehouse.md`) — กฎ "Scope Of Work Folder — always read, never write" จึงตกรุ่น ถูกถอดออกจาก: `AGENTS.md` (Forbidden list), `CLAUDE.md`/`GEMINI.md` (Read order step 3, renumber เหลือ 6 ขั้น), `.agents/rules/bc-account-core-rules.md` (ลบ section ทั้งก้อน). entry เก่าใน worklog นี้ไม่แตะตาม convention append-only
+- สำหรับสเปควิธีการทำงานของระบบต่อจากนี้: ใช้ `docs/` (คนอ่าน), `.agents/wiki/` (AI อ่าน, มี llm-index เป็น router), workflow ใน MongoModel MCP, หรือตีเป็นกฎบังคับใน core-rules/AGENTS.md
+- Push ทั้งโปรเจกต์ตามคำสั่ง (Rule 9): รวมงานค้างจากหลาย session — company-scope authz (`company_context.go`, creator_access), video upload MP4 (`video_r2.go`), authentication/user model, kafka handlers, product/barcode tests, skills/rules updates, CODE-MAP

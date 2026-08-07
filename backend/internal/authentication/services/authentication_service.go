@@ -12,6 +12,7 @@ import (
 	"smlcloudplatform/internal/logger"
 	"smlcloudplatform/internal/shop"
 	"smlcloudplatform/internal/utils"
+	"smlcloudplatform/pkg/apperr"
 	"smlcloudplatform/pkg/microservice"
 	"strings"
 	"time"
@@ -34,7 +35,7 @@ type IAuthenticationService interface {
 	ResetPasswordToDefault(holdingCode string, authUsername string, targetUsername string) error
 	Logout(authorizationHeader string) error
 	Profile(username string, userUID string) (auth_models.UserProfile, error)
-	AccessShop(holdingCode string, username string, userUID string, authorizationHeader string, authContext models.AuthenticationContext) error
+	AccessShop(holdingCode string, businessCode string, username string, userUID string, authorizationHeader string, authContext models.AuthenticationContext) error
 	UpdateFavoriteShop(holdingCode string, username string, userUID string, isFavorite bool) error
 	LoginWithFirebaseToken(token string) (string, error)
 	LoginWithLineToken(token string) (string, error)
@@ -128,13 +129,14 @@ func (svc AuthenticationService) LoginWithPhoneNumberOTP(userLoginReq *auth_mode
 		return models.TokenLoginResponse{}, errors.New("username or password is invalid")
 	}
 
-	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, micromodel.UserInfo{Username: findUser.Username, Name: findUser.Name, UID: findUser.UID})
+	userInfo := svc.tokenUserInfo(*findUser)
+	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, userInfo)
 
 	if err != nil {
 		return models.TokenLoginResponse{}, errors.New("login failed")
 	}
 
-	refreshTokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_REFRESH, micromodel.UserInfo{Username: findUser.Username, Name: findUser.Name, UID: findUser.UID})
+	refreshTokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_REFRESH, userInfo)
 
 	if err != nil {
 		svc.authService.DeleteToken(microservice.AUTHTYPE_BEARER, tokenString)
@@ -142,8 +144,9 @@ func (svc AuthenticationService) LoginWithPhoneNumberOTP(userLoginReq *auth_mode
 	}
 
 	return models.TokenLoginResponse{
-		Token:   tokenString,
-		Refresh: refreshTokenString,
+		Token:              tokenString,
+		Refresh:            refreshTokenString,
+		MustChangePassword: userInfo.MustChangePassword,
 	}, nil
 }
 
@@ -307,7 +310,7 @@ func (svc AuthenticationService) LoginEmail(userLoginReq *auth_models.PosLoginRe
 		}
 	}
 
-	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, micromodel.UserInfo{Username: findUser.Username, Name: findUser.Name, UID: findUser.UID})
+	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, svc.tokenUserInfo(*findUser))
 
 	if err != nil {
 		return "", errors.New("generate token error")
@@ -316,13 +319,15 @@ func (svc AuthenticationService) LoginEmail(userLoginReq *auth_models.PosLoginRe
 }
 
 func (svc *AuthenticationService) processUserLogin(findUser auth_models.UserDoc, holdingCode string, authContext models.AuthenticationContext) (models.TokenLoginResponse, error) {
-	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, micromodel.UserInfo{Username: findUser.Username, Name: findUser.Name, UID: findUser.UID})
+	userInfo := svc.tokenUserInfo(findUser)
+	mustChangePassword := userInfo.MustChangePassword
+	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, userInfo)
 
 	if err != nil {
 		return models.TokenLoginResponse{}, errors.New("login failed")
 	}
 
-	refreshTokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_REFRESH, micromodel.UserInfo{Username: findUser.Username, Name: findUser.Name, UID: findUser.UID})
+	refreshTokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_REFRESH, userInfo)
 
 	if err != nil {
 		svc.authService.DeleteToken(microservice.AUTHTYPE_BEARER, tokenString)
@@ -356,7 +361,7 @@ func (svc *AuthenticationService) processUserLogin(findUser auth_models.UserDoc,
 			return models.TokenLoginResponse{}, err
 		}
 
-		err = svc.authService.SelectShop(microservice.AUTHTYPE_BEARER, tokenString, holdingCode, shopUser.Role)
+		err = svc.authService.SelectShop(microservice.AUTHTYPE_BEARER, tokenString, holdingCode, "", shopUser.Role)
 
 		if err != nil {
 			return models.TokenLoginResponse{}, errors.New("failed shop select")
@@ -381,7 +386,16 @@ func (svc *AuthenticationService) processUserLogin(findUser auth_models.UserDoc,
 		}
 	}
 
-	return models.TokenLoginResponse{Token: tokenString, Refresh: refreshTokenString}, nil
+	return models.TokenLoginResponse{Token: tokenString, Refresh: refreshTokenString, MustChangePassword: mustChangePassword}, nil
+}
+
+func (svc AuthenticationService) tokenUserInfo(user auth_models.UserDoc) micromodel.UserInfo {
+	return micromodel.UserInfo{
+		Username:           user.Username,
+		Name:               user.Name,
+		UID:                user.UID,
+		MustChangePassword: user.Password != "" && svc.checkHashPassword(models.DefaultUserPassword, user.Password),
+	}
 }
 
 func (svc *AuthenticationService) resolveLoginHoldingCode(ctx context.Context, holdingCode string) (string, error) {
@@ -445,15 +459,16 @@ func (svc *AuthenticationService) ensureShopAccessAllowed(ctx context.Context, h
 
 func (svc AuthenticationService) RefreshToken(tokenRequest models.TokenLoginRequest) (models.TokenLoginResponse, error) {
 
-	token, refreshToken, err := svc.authService.RefreshToken(tokenRequest.Token)
+	token, refreshToken, mustChangePassword, err := svc.authService.RefreshToken(tokenRequest.Token)
 
 	if err != nil {
 		return models.TokenLoginResponse{}, err
 	}
 
 	return models.TokenLoginResponse{
-		Token:   token,
-		Refresh: refreshToken,
+		Token:              token,
+		Refresh:            refreshToken,
+		MustChangePassword: mustChangePassword,
 	}, nil
 }
 
@@ -707,6 +722,9 @@ func (svc AuthenticationService) UpdatePassword(username string, currentPassword
 	if username == "" {
 		return errors.New("username invalid")
 	}
+	if newPassword == models.DefaultUserPassword {
+		return apperr.Validation("newpassword", "new password must not be the default password")
+	}
 
 	userFind, err := svc.authRepo.FindUser(context.Background(), username)
 	if err != nil && err.Error() != "mongo: no documents in result" {
@@ -738,7 +756,7 @@ func (svc AuthenticationService) UpdatePassword(username string, currentPassword
 		return err
 	}
 
-	return nil
+	return svc.authService.RevokeUserTokens(username)
 }
 
 func (svc AuthenticationService) ResetPasswordToDefault(holdingCode string, authUsername string, targetUsername string) error {
@@ -760,7 +778,8 @@ func (svc AuthenticationService) ResetPasswordToDefault(holdingCode string, auth
 	if err != nil {
 		return err
 	}
-	if authUser.Role != models.ROLE_OWNER && authUser.Role != models.ROLE_ADMIN {
+	expired := !authUser.AccessExpiryDate.IsZero() && svc.timeNow().After(authUser.AccessExpiryDate)
+	if authUser.IsAccessDisabled || expired || (authUser.Role != models.ROLE_OWNER && authUser.Role != models.ROLE_ADMIN) {
 		return errors.New("permission denied")
 	}
 
@@ -808,7 +827,10 @@ func (svc AuthenticationService) ResetPasswordToDefault(holdingCode string, auth
 	userFind.Password = hashPassword
 	userFind.UpdatedAt = svc.timeNow()
 
-	return svc.authRepo.UpdateUser(context.Background(), targetUsername, *userFind)
+	if err := svc.authRepo.UpdateUser(context.Background(), targetUsername, *userFind); err != nil {
+		return err
+	}
+	return svc.authService.RevokeUserTokens(targetUsername)
 }
 
 func isMongoNotFoundError(err error) bool {
@@ -848,7 +870,7 @@ func (svc AuthenticationService) Profile(username string, userUID string) (auth_
 	return userProfile, nil
 }
 
-func (svc AuthenticationService) AccessShop(holdingCode string, username string, userUID string, authorizationHeader string, authContext models.AuthenticationContext) error {
+func (svc AuthenticationService) AccessShop(holdingCode string, businessCode string, username string, userUID string, authorizationHeader string, authContext models.AuthenticationContext) error {
 
 	holdingCode = strings.TrimSpace(holdingCode)
 	if holdingCode == "" {
@@ -889,8 +911,12 @@ func (svc AuthenticationService) AccessShop(holdingCode string, username string,
 	if err = svc.ensureShopAccessAllowed(context.Background(), holdingCode, shopUser); err != nil {
 		return err
 	}
+	businessCode = utils.NormalizeBusinessCode(businessCode)
+	if businessCode != "" && !auth_models.ScopesAllowCompanySelection(shopUser.AccessScopes, businessCode) {
+		return apperr.ErrForbidden.WithMessage("company access denied").WithThaiMessage("ไม่มีสิทธิ์ใช้งานบริษัทนี้")
+	}
 
-	err = svc.authService.SelectShop(microservice.AUTHTYPE_BEARER, tokenStr, holdingCode, shopUser.Role)
+	err = svc.authService.SelectShop(microservice.AUTHTYPE_BEARER, tokenStr, holdingCode, businessCode, shopUser.Role)
 
 	if err != nil {
 		return errors.New("failed shop select")
@@ -906,6 +932,7 @@ func (svc AuthenticationService) AccessShop(holdingCode string, username string,
 		context.Background(),
 		auth_models.ShopUserAccessLog{
 			HoldingCode:    holdingCode,
+			BusinessCode:   businessCode,
 			Username:       shopUser.Username,
 			Ip:             authContext.Ip,
 			LastAccessedAt: lastAccessedAt,
@@ -993,7 +1020,7 @@ func (svc AuthenticationService) LoginWithFirebaseToken(token string) (string, e
 		return "", &auth_models.UserDisableLoginError{}
 	}
 
-	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, micromodel.UserInfo{Username: userFind.Username, Name: userFind.Name, UID: userFind.UID})
+	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, svc.tokenUserInfo(*userFind))
 
 	if err != nil {
 		return "", errors.New("generate token error")
@@ -1039,7 +1066,7 @@ func (svc AuthenticationService) LoginWithGoogleEmail(email string, displayName 
 		return "", &auth_models.UserDisableLoginError{}
 	}
 
-	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, micromodel.UserInfo{Username: userFind.Username, Name: userFind.Name, UID: userFind.UID})
+	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, svc.tokenUserInfo(*userFind))
 	if err != nil {
 		return "", errors.New("generate token error")
 	}
@@ -1085,7 +1112,7 @@ func (svc AuthenticationService) LoginWithLineToken(token string) (string, error
 		return "", &auth_models.UserDisableLoginError{}
 	}
 
-	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, micromodel.UserInfo{Username: userFind.Username, Name: userFind.Name, UID: userFind.UID})
+	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, svc.tokenUserInfo(*userFind))
 
 	if err != nil {
 		return "", errors.New("generate token error")
@@ -1126,7 +1153,7 @@ func (svc AuthenticationService) LoginWithLineUserID(lineUserID string, displayN
 		return "", "", &auth_models.UserDisableLoginError{}
 	}
 
-	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, micromodel.UserInfo{Username: userFind.Username, Name: userFind.Name, UID: userFind.UID})
+	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, svc.tokenUserInfo(*userFind))
 
 	if err != nil {
 		return "", "", errors.New("generate token error")
@@ -1222,7 +1249,7 @@ func (svc AuthenticationService) DisableUser(username string) error {
 		return err
 	}
 
-	return nil
+	return svc.authService.RevokeUserTokens(username)
 
 }
 

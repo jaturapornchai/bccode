@@ -106,6 +106,8 @@ Known verification limits:
 
 ## R0 Blocker
 
+> **Update 2026-07-31:** while PRE-LAUNCH this R0 gate is superseded by the No-Migration / Disposable Database Rule and the DEV Destructive Reset Rule — drop/rebuild is allowed without asking. This blocker re-activates at go-live once real customer data exists.
+
 Deleting old data is destructive. Before running any drop/delete/truncate command, Jead must explicitly name:
 
 1. Environment: local, DEV, UAT, production, or all.

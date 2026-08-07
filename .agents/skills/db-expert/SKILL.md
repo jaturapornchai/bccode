@@ -4,8 +4,8 @@ description: Use when writing SQL, schema design, migration, or query optimizati
 ---
 
 ## 1. Multi-Tenant Isolation
-- **Boundary**: Filter every query by `tenantid` (physically mapped to `holdingcode` or `holdingcode`).
-- **No Leaks**: Never perform cross-tenant queries unless explicitly auditing.
+- **Boundary**: Filter every company-owned operational query by validated `holdingcode + businesscode`; branch-owned data also includes `branchcode`.
+- **No Leaks**: Cross-company queries are allowed only through authorized read-only Holding aggregation and must retain/group by `businesscode`. Never merge equal business keys from different companies.
 - **Indexes**: Ensure every `WHERE` and `JOIN` column is indexed.
 
 ## 2. Postgres & ClickHouse Rules
@@ -16,7 +16,7 @@ description: Use when writing SQL, schema design, migration, or query optimizati
 - **ClickHouse Implementation**: Use MergeTree engine. Insert in batch. Track `companygroupid`, `tenantid`, and `branchid`.
 - **Pipeline Contract**: Derived stores are fed by `MongoDB -> Kafka -> PostgreSQL -> ClickHouse`. PostgreSQL schema/migrations support projection consumers only; ClickHouse schema supports BI/reporting consumers only. Never design a CRUD write path that starts in PostgreSQL or ClickHouse.
 - **Projection Conflict Rule**: If PostgreSQL or ClickHouse data differs from MongoDB, MongoDB wins. Repair the sync/rebuild path; do not manually patch derived stores as operational truth.
-- **Portable Relationship Keys**: PostgreSQL/ClickHouse may carry Mongo `guidfixed` for traceability, but foreign keys, joins, and cross-store relationships use normalized business keys such as `code`, `itemcode`, `unitcode`, document number, or explicit composites. Never synthesize or use GUID as a relation key.
-- **Rebuild Driving Set**: Rebuild projections from active MongoDB rows as the complete driving set and remove projection-only rows. The Product projection is driven by MongoDB `products`; `productbarcodes` can enrich unit data but must not create Product masters because barcode-only records are allowed before product linking.
+- **Portable Relationship Keys**: PostgreSQL/ClickHouse may carry Mongo `guidfixed` for traceability, but company-owned foreign keys, joins, and relationships include `businesscode` with normalized keys such as `code`, `itemcode`, `unitcode`, or document number. Never use GUID or a business code alone across companies.
+- **Rebuild Driving Set**: Rebuild projections from active same-company MongoDB rows, retain `businesscode`, and remove projection-only rows. Product projection is driven by MongoDB `products`; `productbarcodes` never creates Product masters because every Barcode is linked at creation.
 - **Timezone = UTC+0 (set 2026-06-22)**: Store every timestamp/datetime column in MongoDB, PostgreSQL, and ClickHouse in **UTC+0** (PostgreSQL `timestamptz` / store UTC, ClickHouse `DateTime`/`DateTime64` in UTC). Never store branch/local time in the DB; the frontend converts UTC → the active branch `timezone` for display. See core-rules "Timezone Iron Rule".
 - **Migrations**: Always provide both UP and DOWN SQL files. Transaction-wrapped.

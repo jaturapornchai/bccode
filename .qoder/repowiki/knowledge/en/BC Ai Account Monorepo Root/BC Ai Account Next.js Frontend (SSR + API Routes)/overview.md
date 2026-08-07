@@ -1,0 +1,1 @@
+Next.js 16 application providing the BC Ai Account web UI, server-side API routes that proxy to the Go backend, and a React-based workspace with product, barcode, currency, and system-settings screens.

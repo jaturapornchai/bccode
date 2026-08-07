@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"smlcloudplatform/internal/config"
+	orgaccess "smlcloudplatform/internal/organization"
+	"smlcloudplatform/pkg/apperr"
 	"smlcloudplatform/pkg/microservice"
 
 	goMicroModels "smlcloudplatform/internal/models"
@@ -37,7 +39,6 @@ func NewShopAdminHttp(ms *microservice.Microservice, cfg config.IConfig) IShopAd
 
 func (s *ShopAdminHttp) RegisterHttp(ms *microservice.Microservice, prefix string) {
 	ms.GET(prefix+"/shopadmin/listshop", s.ListShop)
-	ms.POST(prefix+"/shopadmin/newshop", s.CreateShop)
 	ms.GET(prefix+"/shopadmin/getshopbybranchcode", s.GetShopByProjectNo)
 	ms.GET(prefix+"/shopadmin/listshopusers", s.ListShopUsers)
 	ms.GET(prefix+"/shopadmin/shopusers", s.ListShopUsersByHoldingCode)
@@ -64,6 +65,9 @@ func (s *ShopAdminHttp) ListShop(ctx microservice.IContext) error {
 }
 
 func (s *ShopAdminHttp) CreateShop(ctx microservice.IContext) error {
+	if authErr := orgaccess.RequireHoldingAdmin(s.ms.MongoPersister(s.cfg.MongoPersisterConfig()), ctx.UserInfo()); authErr != nil {
+		return apperr.Respond(ctx, authErr)
+	}
 
 	input := ctx.ReadInput()
 	var doc shopModels.ShopDoc

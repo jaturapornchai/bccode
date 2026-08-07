@@ -38,6 +38,23 @@ func TestDeserializeJsonProductBarcode(t *testing.T) {
 
 }
 
+func TestPhaseProductBarcodeUsesProductUnitSnapshotWithoutRefBarcode(t *testing.T) {
+	doc := models.ProductBarcodeDoc{}
+	doc.Barcode = "8850000000001"
+	doc.ItemCode = "ITEM-A"
+	doc.ItemUnitCode = "BOX"
+	doc.ItemType = 0
+	doc.MaterialType = 0
+	doc.DivideValue = 1
+	doc.StandValue = 12
+
+	got, err := (usecases.ProductBarcodePhaser{}).PhaseProductBarcodeDoc(&doc)
+	assert.NoError(t, err)
+	assert.Equal(t, float64(1), got.DivideValue)
+	assert.Equal(t, float64(12), got.StandValue)
+	assert.Equal(t, doc.Barcode, got.MainBarcodeRef)
+}
+
 func TestProductBarcodePhaser(t *testing.T) {
 
 	var jsonStr = `{
@@ -273,8 +290,6 @@ func TestProductBarcodePhaser(t *testing.T) {
 		assert.Equal(t, 1, len(namesList), "Should have 1 name entry")
 		assert.Equal(t, "th", *namesList[0].Code, "Name code should be 'th'")
 		assert.Equal(t, "ref3", *namesList[0].Name, "Name should be 'ref3'")
-		assert.False(t, namesList[0].IsAuto, "IsAuto should be false")
-		assert.False(t, namesList[0].IsDelete, "IsDelete should be false")
 
 		// Unit names
 		assert.NotNil(t, got.UnitNames, "UnitNames should not be nil")
@@ -284,14 +299,10 @@ func TestProductBarcodePhaser(t *testing.T) {
 		// Check Thai unit name
 		assert.Equal(t, "th", *unitNamesList[0].Code, "First unit name code should be 'th'")
 		assert.Equal(t, "ปี๊บ", *unitNamesList[0].Name, "First unit name should be 'ปี๊บ'")
-		assert.False(t, unitNamesList[0].IsAuto, "First unit name IsAuto should be false")
-		assert.False(t, unitNamesList[0].IsDelete, "First unit name IsDelete should be false")
 
 		// Check English unit name
 		assert.Equal(t, "en", *unitNamesList[1].Code, "Second unit name code should be 'en'")
 		assert.Equal(t, "BUCKET", *unitNamesList[1].Name, "Second unit name should be 'BUCKET'")
-		assert.False(t, unitNamesList[1].IsAuto, "Second unit name IsAuto should be false")
-		assert.False(t, unitNamesList[1].IsDelete, "Second unit name IsDelete should be false")
 
 		// Quantities and values
 		assert.Equal(t, float64(0), got.BalanceQty, "BalanceQty should be 0")

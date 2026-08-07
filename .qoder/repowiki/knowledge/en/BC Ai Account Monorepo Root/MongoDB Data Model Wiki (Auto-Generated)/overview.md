@@ -1,0 +1,1 @@
+Markdown wiki documenting the BC Ai Account Go structs that back MongoDB collections and shared request/response types, generated from source `source:` annotations.

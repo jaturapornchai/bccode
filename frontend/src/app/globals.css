@@ -5493,20 +5493,20 @@ h2:not([class]) {
 
   body.product-label-printing .label-sheet {
     display: grid;
-    grid-template-columns: repeat(3, 65mm);
-    gap: 4mm;
-    padding: 8mm;
+    grid-template-columns: repeat(3, 60mm);
+    gap: 3mm;
+    padding: 6mm;
   }
 
   body.product-label-printing .print-label {
     display: grid;
     align-content: start;
     gap: 1.5mm;
-    width: 65mm;
-    min-height: 35mm;
+    width: 60mm;
+    min-height: 50mm;
     overflow: hidden;
     border: 1px solid #111;
-    padding: 3mm;
+    padding: 2mm;
     page-break-inside: avoid;
     font-family: Arial, sans-serif;
     font-size: 9pt;
@@ -5518,8 +5518,9 @@ h2:not([class]) {
   }
 
   body.product-label-printing .label-bars {
-    width: 100%;
-    height: 10mm;
+    width: 48mm;
+    height: 26mm;
+    justify-self: center;
   }
 }
 

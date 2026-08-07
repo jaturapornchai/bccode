@@ -10,9 +10,16 @@ import (
 	"time"
 
 	"smlcloudplatform/internal/goapi/mypg"
+	processstock "smlcloudplatform/internal/goapi/process/process-stock"
 
 	"github.com/labstack/echo/v4"
 )
+
+func init() {
+	// Invalidate the product search cache whenever document events update
+	// product balances, so lists never serve stale ยอดคงเหลือ (up to 5-min TTL).
+	processstock.OnBalanceUpdated = InvalidateProductSearchCache
+}
 
 // ProductCache - Centralized product cache
 type ProductCache struct {
@@ -104,6 +111,20 @@ func (pc *ProductCache) Set(key string, data []map[string]any) {
 }
 
 // evictLRU - Evict least recently used entries (20%)
+// InvalidateAll clears every cached search (called when product balances
+// change via document events so lists never show stale ยอดคงเหลือ).
+func (pc *ProductCache) InvalidateAll() {
+	pc.mu.Lock()
+	defer pc.mu.Unlock()
+	pc.cache = make(map[string]*ProductCacheEntry)
+}
+
+// InvalidateProductSearchCache — package-level hook target for
+// processstock.OnBalanceUpdated.
+func InvalidateProductSearchCache() {
+	productCache.InvalidateAll()
+}
+
 func (pc *ProductCache) evictLRU() {
 	type cacheItem struct {
 		key       string

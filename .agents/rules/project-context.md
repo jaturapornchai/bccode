@@ -20,11 +20,11 @@ BC Ai Account is a modern multilingual multi-tenant ERP and accounting platform 
 - Naming: snake_case for files, PascalCase for exports
 
 ## Brand (for UI work)
-- Primary: `#a04035` (terracotta/brick red)
+- Primary: `#812920` (terracotta primary; `primary-container` `#a04035`) — see formdesign skill palette
 - Accent: HSL tailored colors (sky blue, emerald green, amber yellow)
 - Font heading: Outfit
 - Font body: Inter
-- Radius: 12px (rounded-xl) and 16px (rounded-2xl)
+- Radius: token scale only — `--radius-xs..2xl` = 2/3/5/7/10/14px (never hardcode px; see formdesign skill)
 - Tone: premium, modern, clean dark/light mode
 
 ## Do NOT touch

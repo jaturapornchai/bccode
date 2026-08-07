@@ -80,10 +80,8 @@ func SaleInvoiceReturnTransactionStruct() models.SaleInvoiceReturnTransactionPG 
 		DebtorCode:       "AR002",
 		DebtorNames: []pkgModels.NameX{
 			{
-				Code:     &codeTh,
-				Name:     &nameTh,
-				IsAuto:   false,
-				IsDelete: false,
+				Code: &codeTh,
+				Name: &nameTh,
 			},
 		},
 	}

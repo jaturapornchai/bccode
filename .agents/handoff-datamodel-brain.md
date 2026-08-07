@@ -27,7 +27,7 @@ Removed (do not resurrect): `react-force-graph-2d` dep, `frontend/scripts/gen-da
 ## Machine gotchas (Windows, this box)
 - **npm run / npx shims are broken** ("The system cannot find the path specified"). Run binaries directly: `node node_modules/next/dist/bin/next build`, `./node_modules/.bin/tsc --noEmit`, `node node_modules/vite/bin/vite.js`, `node node_modules/tsx/dist/cli.mjs`.
 - **jarvisui npm install requires `--ignore-scripts`** (sharp/libvips postinstall fails). Only side effect: semantic search disabled.
-- **Frontend must run `build` + `start`** — never `next dev` (Turbopack hangs on this machine). Port 3000 may be held by a stale server; kill it or let autoPort pick another.
+- **Frontend iteration**: `next dev` HMR is the default (fast-iteration mode); use `next build` + `next start` for production-like verification. If Turbopack hangs on this machine, kill the stale port-3000 server and fall back to build+start for that session.
 - `frontend/src/app/globals.css` has mixed CRLF/CR/LF — do not let an editor rewrite whole-file EOLs.
 - Wiki folder `D:\bccode\s\` is read-only scope-of-work docs — never write there.
 

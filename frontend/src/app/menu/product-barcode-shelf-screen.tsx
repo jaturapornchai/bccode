@@ -15,7 +15,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Ean13Barcode } from "@/components/product-barcode/ean13-barcode";
 import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
+import { encodeEan13 } from "@/lib/product-barcode/utils";
 import { pushNotice } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import {
@@ -37,7 +39,7 @@ type ProductForLabel = {
   name: string;
   itemCode: string;
   unitName: string;
-  price: number;
+  price: string;
   shelfName: string;
 };
 
@@ -340,7 +342,7 @@ export function ProductBarcodeShelfScreen({
                         {product.name || product.barcode}
                       </b>
                       <Badge variant={active ? "success" : "outline"}>
-                        {product.price.toLocaleString()}
+                        {product.price || "-"}
                       </Badge>
                     </div>
                     <div className="grid gap-1 text-xs text-muted-foreground sm:grid-cols-3">
@@ -443,24 +445,10 @@ export function ProductBarcodeShelfScreen({
               >
                 <b>{product.name || product.barcode}</b>
                 <span>{product.itemCode || product.barcode}</span>
-                <svg
-                  className="label-bars"
-                  viewBox="0 0 120 32"
-                  aria-hidden="true"
-                >
-                  {Array.from(product.barcode || "000000").map((char, i) => (
-                    <rect
-                      height="32"
-                      key={`${char}-${i}`}
-                      width={i % 3 === 0 ? 3 : 1}
-                      x={i * 6}
-                      y="0"
-                    />
-                  ))}
-                </svg>
-                <span>{product.barcode}</span>
+                <Ean13Barcode className="label-bars" value={product.barcode} />
+                {!encodeEan13(product.barcode) ? <span>{product.barcode}</span> : null}
                 {product.price ? (
-                  <strong>{product.price.toLocaleString()}.-</strong>
+                  <strong>{product.price}</strong>
                 ) : null}
               </div>
             )),
@@ -533,13 +521,21 @@ function normalizeProduct(value: unknown): ProductForLabel | null {
         getArray(value, "itemunitnames") as LocalizedName[],
         "th",
       ) || getString(value, "unitname"),
-    price: getNumber(value, "prices") || getNumber(value, "price"),
+    price: getPrice1(value),
     shelfName: getString(value, "shelfname") || getString(value, "shelf_name"),
   };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function getPrice1(record: Record<string, unknown>): string {
+  const prices = getArray(record, "prices").filter(isRecord);
+  const price = prices.find((item) => String(item.keynumber ?? "") === "1") ?? prices[0];
+  const value = price?.price ?? record.price;
+  if (typeof value === "string") return value.trim();
+  return typeof value === "number" && Number.isFinite(value) ? String(value) : "";
 }
 
 function getString(record: Record<string, unknown>, key: string): string {
@@ -549,12 +545,6 @@ function getString(record: Record<string, unknown>, key: string): string {
     : value === null || value === undefined
       ? ""
       : String(value);
-}
-
-function getNumber(record: Record<string, unknown>, key: string): number {
-  const value = record[key];
-  const number = typeof value === "number" ? value : Number(value ?? 0);
-  return Number.isFinite(number) ? number : 0;
 }
 
 function getArray(record: Record<string, unknown>, key: string): unknown[] {

@@ -31,7 +31,11 @@ func ProductCalcCost(db *sql.DB, holdingCode string, itemCodeForProcess string, 
 
 // ProductCalcCostIncremental - Calculate stock cost with incremental mode
 func ProductCalcCostIncremental(db *sql.DB, holdingCode string, itemCodeForProcess string, pointQty int, pointAmount int, pointCost int, incremental, minimalLog bool) {
-	ProductCalcCostWithOptions(db, holdingCode, itemCodeForProcess, pointQty, pointAmount, pointCost, !minimalLog, incremental, minimalLog, nil)
+	// Always deleteFirst: the calc rebuilds the whole per-item ledger from
+	// docdetail, so the per-itemcode DELETE is the idempotency mechanism.
+	// The old !minimalLog skipped it while the "UPSERT" path was never
+	// implemented — every replay duplicated processstockcost rows.
+	ProductCalcCostWithOptions(db, holdingCode, itemCodeForProcess, pointQty, pointAmount, pointCost, true, incremental, minimalLog, nil)
 }
 
 // ProductCalcCostWithSaver - Calculate stock cost with custom saver (legacy interface)
@@ -87,8 +91,10 @@ func ProductCalcCostWithOptions(db *sql.DB, holdingCode string, itemCodeForProce
 		logger.Info("Item %s has changed (checksum=%s), will recalculate", itemCodeForProcess, checksum)
 	}
 
-	// ลบข้อมูลเก่าก่อน เพื่อป้องกันการซ้ำซ้อน (skip if minimalLog mode - will use UPSERT)
-	if deleteFirst && !minimalLog {
+	// ลบข้อมูลเก่าก่อน เพื่อป้องกันการซ้ำซ้อน (per-itemcode delete — the UPSERT
+	// path promised by minimalLog was never implemented; delete-then-insert is
+	// what keeps replays idempotent)
+	if deleteFirst {
 		// วิธีเดิม: ลบเฉพาะ item code ที่กำลังประมวลผลโดยใช้หลาย query
 		deleteQueries := []string{
 			"DELETE FROM processstockcost WHERE itemcode = $1",

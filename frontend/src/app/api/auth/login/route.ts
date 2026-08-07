@@ -84,6 +84,8 @@ export async function POST(request: Request) {
 
     const token = getString(payload, "token") ?? getNestedString(payload, "data", "token");
     const refresh = getString(payload, "refresh") ?? getNestedString(payload, "data", "refresh");
+    const nestedData = isRecord(payload.data) ? payload.data : undefined;
+    const mustChangePassword = payload.mustchangepassword === true || nestedData?.mustchangepassword === true;
     const success = payload.success === true || Boolean(token);
 
     if (!success) {
@@ -98,6 +100,7 @@ export async function POST(request: Request) {
       user: username,
       token,
       refresh,
+      mustchangepassword: mustChangePassword,
       backendUrl: normalizedGoApiUrl,
       mainApiUrl,
     });

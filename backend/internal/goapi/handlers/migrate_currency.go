@@ -49,8 +49,8 @@ ADD COLUMN IF NOT EXISTS exchange_rate NUMERIC(18,6) DEFAULT 1,
 ADD COLUMN IF NOT EXISTS totalvalue_doc NUMERIC(18,2) DEFAULT 0,
 ADD COLUMN IF NOT EXISTS totaldiscount_doc NUMERIC(18,2) DEFAULT 0,
 ADD COLUMN IF NOT EXISTS totalvatvalue_doc NUMERIC(18,2) DEFAULT 0,
-ADD COLUMN IF NOT EXISTS totalbefore_vat_doc NUMERIC(18,2) DEFAULT 0,
-ADD COLUMN IF NOT EXISTS totalafter_vat_doc NUMERIC(18,2) DEFAULT 0,
+ADD COLUMN IF NOT EXISTS totalbeforevat_doc NUMERIC(18,2) DEFAULT 0,
+ADD COLUMN IF NOT EXISTS totalaftervat_doc NUMERIC(18,2) DEFAULT 0,
 ADD COLUMN IF NOT EXISTS totalamount_doc NUMERIC(18,2) DEFAULT 0;
 `
 
@@ -122,7 +122,7 @@ CREATE INDEX IF NOT EXISTS idxdocdocnotransflagisdelete ON doc(docno, transflag,
 		FROM information_schema.columns
 		WHERE table_name = 'doc'
 		AND column_name IN ('currency', 'currency_symbol', 'exchange_rate', 'totalamount_doc',
-		                     'totalbefore_vat_doc', 'totalafter_vat_doc', 'totalvalue_doc',
+		                     'totalbeforevat_doc', 'totalaftervat_doc', 'totalvalue_doc',
 		                     'totaldiscount_doc', 'totalvatvalue_doc')
 	`).Scan(&columnCount)
 

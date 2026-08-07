@@ -5,10 +5,8 @@ import (
 )
 
 type LanguageModel struct {
-	Code     string `json:"code" bson:"code"`
-	Name     string `json:"name" bson:"name"`
-	IsAuto   bool   `json:"isauto" bson:"isauto"`
-	IsDelete bool   `json:"isdelete" bson:"isdelete"`
+	Code string `json:"code" bson:"code"`
+	Name string `json:"name" bson:"name"`
 }
 
 type MongoDocDetailModel struct {

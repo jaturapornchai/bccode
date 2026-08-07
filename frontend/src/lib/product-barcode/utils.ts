@@ -11,6 +11,7 @@ import type {
   ProductBarcode,
   ProductBarcodeListRow,
   ProductPrice,
+  ProductUnitConversion,
   RefProductBarcode,
 } from "./types";
 
@@ -299,9 +300,29 @@ export function listRowToBarcode(
   };
 }
 
-/** Validate barcode string — A-Z, 0-9, -, no space. */
+/** Validate the supported barcode characters and EAN-13 check digit when applicable. */
 export function isValidBarcode(value: string): boolean {
-  return /^[A-Za-z0-9-]+$/.test(value.trim());
+  const barcode = value.trim();
+  if (!/^[A-Za-z0-9-]+$/.test(barcode)) return false;
+  if (!/^\d{13}$/.test(barcode)) return true;
+  return ean13CheckDigit(barcode.slice(0, 12)) === barcode.slice(12);
+}
+
+export function toProductUnitConversionArray(
+  value: unknown,
+): ProductUnitConversion[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry) => {
+    if (!isRecord(entry)) return [];
+    return [
+      {
+        unitcode: getString(entry, "unitcode"),
+        unitnames: toNameXArray(entry.unitnames),
+        dividevalue: getNumber(entry, "dividevalue", 1),
+        standvalue: getNumber(entry, "standvalue", 1),
+      },
+    ];
+  });
 }
 
 /** Compute the standard EAN-13 check digit for a 12-digit base string. */
@@ -312,6 +333,78 @@ export function ean13CheckDigit(base12: string): string {
     0,
   );
   return String((10 - (sum % 10)) % 10);
+}
+
+const EAN13_LEFT_ODD = [
+  "0001101",
+  "0011001",
+  "0010011",
+  "0111101",
+  "0100011",
+  "0110001",
+  "0101111",
+  "0111011",
+  "0110111",
+  "0001011",
+] as const;
+const EAN13_LEFT_EVEN = [
+  "0100111",
+  "0110011",
+  "0011011",
+  "0100001",
+  "0011101",
+  "0111001",
+  "0000101",
+  "0010001",
+  "0001001",
+  "0010111",
+] as const;
+const EAN13_RIGHT = [
+  "1110010",
+  "1100110",
+  "1101100",
+  "1000010",
+  "1011100",
+  "1001110",
+  "1010000",
+  "1000100",
+  "1001000",
+  "1110100",
+] as const;
+const EAN13_PARITY = [
+  "LLLLLL",
+  "LLGLGG",
+  "LLGGLG",
+  "LLGGGL",
+  "LGLLGG",
+  "LGGLLG",
+  "LGGGLL",
+  "LGLGLG",
+  "LGLGGL",
+  "LGGLGL",
+] as const;
+
+/** Encode a valid EAN-13 into its 95 binary bar modules. */
+export function encodeEan13(value: string): string | null {
+  const barcode = value.trim();
+  if (!/^\d{13}$/.test(barcode) || !isValidBarcode(barcode)) return null;
+
+  const parity = EAN13_PARITY[Number(barcode[0])];
+  const left = barcode
+    .slice(1, 7)
+    .split("")
+    .map((digit, index) =>
+      parity[index] === "L"
+        ? EAN13_LEFT_ODD[Number(digit)]
+        : EAN13_LEFT_EVEN[Number(digit)],
+    )
+    .join("");
+  const right = barcode
+    .slice(7)
+    .split("")
+    .map((digit) => EAN13_RIGHT[Number(digit)])
+    .join("");
+  return `101${left}01010${right}101`;
 }
 
 /** Normalize raw API JSON from `/api/product` list into a `Product` shape. */
@@ -328,12 +421,14 @@ export function rawToProduct(raw: unknown): Product {
     itemtype: getNumber(r, "itemtype", 0),
     materialtype: getNumber(r, "materialtype", 0),
     taxtype: getNumber(r, "taxtype", 0),
-    groupsuboneguid: getString(r, "groupsuboneguid"),
-    groupsubonecode: getString(r, "groupsubonecode"),
-    groupsubonenames: toNameXArray(r.groupsubonenames),
-    groupsubtwoguid: getString(r, "groupsubtwoguid"),
-    groupsubtwocode: getString(r, "groupsubtwocode"),
-    groupsubtwonames: toNameXArray(r.groupsubtwonames),
+    unitguid: getString(r, "unitguid"),
+    unitcode: getString(r, "unitcode"),
+    unitnames: toNameXArray(r.unitnames),
+    subgroupguid:
+      getString(r, "subgroupguid") || getString(r, "groupsuboneguid"),
+    subgroupcode:
+      getString(r, "subgroupcode") || getString(r, "groupsubonecode"),
+    subgroupnames: toNameXArray(r.subgroupnames ?? r.groupsubonenames),
     brandguid: getString(r, "brandguid"),
     brandcode: getString(r, "brandcode"),
     brandnames: toNameXArray(r.brandnames),
@@ -364,6 +459,7 @@ export function rawToProduct(raw: unknown): Product {
     condition: getBoolean(r, "condition", false),
     dividevalue: getNumber(r, "dividevalue", 1),
     standvalue: getNumber(r, "standvalue", 1),
+    unitconversions: toProductUnitConversionArray(r.unitconversions),
     isusesubbarcodes: getBoolean(r, "isusesubbarcodes", false),
     refbarcodes: toRefBarcodeArray(r.refbarcodes),
     bom: toBomArray(r.bom),
@@ -389,6 +485,8 @@ export function rawToProductBarcode(
     guidfixed: getFirstString(r, ["guidfixed", "guidfixed"]) || base.guidfixed,
     holdingcode:
       getFirstString(r, ["holdingcode", "holdingcode"]) || base.holdingcode,
+    businesscode:
+      getFirstString(r, ["businesscode", "businessCode"]) || base.businesscode,
     itemcode: getString(r, "itemcode") || base.itemcode,
     barcode: getString(r, "barcode") || base.barcode,
     names: toNameXArray(r.names) || base.names,
@@ -405,12 +503,11 @@ export function rawToProductBarcode(
     groupguid: getString(r, "groupguid") || base.groupguid,
     groupcode: getFirstString(r, ["groupcode", "groupcode"]) || base.groupcode,
     groupnames: toNameXArray(r.groupnames ?? r.groupnames),
-    groupsubonecode: getString(r, "groupsubonecode"),
-    groupsubonenames: toNameXArray(r.groupsubonenames),
-    groupsuboneguid: getString(r, "groupsuboneguid"),
-    groupsubtwoguid: getString(r, "groupsubtwoguid"),
-    groupsubtwocode: getString(r, "groupsubtwocode"),
-    groupsubtwonames: toNameXArray(r.groupsubtwonames),
+    subgroupguid:
+      getString(r, "subgroupguid") || getString(r, "groupsuboneguid"),
+    subgroupcode:
+      getString(r, "subgroupcode") || getString(r, "groupsubonecode"),
+    subgroupnames: toNameXArray(r.subgroupnames ?? r.groupsubonenames),
 
     brandguid: getString(r, "brandguid"),
     brandcode: getFirstString(r, ["brandcode", "brandcode"]),
@@ -470,6 +567,9 @@ export function rawToProductBarcode(
     images: Array.isArray(r.images)
       ? (r.images as ProductBarcode["images"])
       : base.images,
+    videos: Array.isArray(r.videos)
+      ? (r.videos as ProductBarcode["videos"])
+      : base.videos,
     useimageorcolor: getBoolean(r, "useimageorcolor", base.useimageorcolor),
     colorselect: getString(r, "colorselect"),
     colorselecthex: getString(r, "colorselecthex"),

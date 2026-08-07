@@ -28,8 +28,11 @@ const notoSansThai = Noto_Sans_Thai({
 });
 
 export const metadata: Metadata = {
-  title: "BC Ai Account Login",
-  description: "BC Ai Account login",
+  title: {
+    default: "BC Ai Account",
+    template: "%s | BC Ai Account",
+  },
+  description: "ระบบบัญชีและจัดการร้านค้าสำหรับธุรกิจไทย",
   icons: {
     icon: "/favicon.ico",
   },

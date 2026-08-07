@@ -143,10 +143,8 @@ func (svc *UnitHttpService) ImportUnitsFromFile(file []byte, holdingCode string,
 					copiedLang := lang
 					copiedName := name
 					names = append(names, common.NameX{
-						Code:     &copiedLang,
-						Name:     &copiedName,
-						IsAuto:   false,
-						IsDelete: false,
+						Code: &copiedLang,
+						Name: &copiedName,
 					})
 				}
 			}
@@ -197,6 +195,14 @@ func (svc *UnitHttpService) ImportUnitsFromFile(file []byte, holdingCode string,
 
 func (svc UnitHttpService) CreateUnit(holdingCode string, authUsername string, doc models.Unit) (string, error) {
 
+	// Business Code Uppercase + No-Space rules: unitcode is a business key
+	// referenced by products/barcodes/documents — normalize before dup-check
+	// and persistence (mirrors brandproduct and the other masters).
+	doc.UnitCode = utils.NormalizeBusinessCode(doc.UnitCode)
+	if doc.UnitCode == "" {
+		return "", errors.New("unit code is required")
+	}
+
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
@@ -237,6 +243,12 @@ func (svc UnitHttpService) CreateUnit(holdingCode string, authUsername string, d
 }
 
 func (svc UnitHttpService) UpdateUnit(holdingCode string, guid string, authUsername string, doc models.Unit) error {
+
+	// Same unitcode normalization as CreateUnit (uppercase, no whitespace).
+	doc.UnitCode = utils.NormalizeBusinessCode(doc.UnitCode)
+	if doc.UnitCode == "" {
+		return errors.New("unit code is required")
+	}
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -311,11 +323,6 @@ func (svc UnitHttpService) UpdateFieldUnit(holdingCode string, guid string, auth
 	for _, v := range temp {
 		tempNames = append(tempNames, v)
 	}
-
-	lo.Filter[common.NameX](tempNames, func(n common.NameX, i int) bool {
-		notDelete := !n.IsDelete
-		return notDelete
-	})
 
 	findDoc.Unit.Names = &tempNames
 	svc.syncUnitNames(&findDoc.Unit)

@@ -1,16 +1,17 @@
 "use client";
 
 import { useCallback } from "react";
-import { Plus, Trash2, X } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/ui/numeric-input";
+import { normalizeBusinessCode } from "@/lib/business-code";
 import { getBarcodeText } from "@/lib/product-barcode/language";
 import { pickName } from "@/lib/product-barcode/utils";
 import {
   type Product,
-  type RefProductBarcode,
+  type ProductUnitConversion,
 } from "@/lib/product-barcode/types";
-import { cn } from "@/lib/utils";
 
 type ProductStateAction = (
   value: Product | null | ((current: Product | null) => Product | null),
@@ -67,36 +68,6 @@ function Section({
   );
 }
 
-function Toggle({
-  checked,
-  onCheckedChange,
-  label,
-  disabled,
-}: {
-  checked: boolean;
-  onCheckedChange: (next: boolean) => void;
-  label: string;
-  disabled?: boolean;
-}) {
-  return (
-    <label
-      className={cn(
-        "flex cursor-pointer items-center gap-2 text-sm",
-        disabled && "cursor-not-allowed opacity-60",
-      )}
-    >
-      <input
-        type="checkbox"
-        checked={checked}
-        disabled={disabled}
-        onChange={(event) => onCheckedChange(event.target.checked)}
-        className="size-4 rounded border-input"
-      />
-      <span>{label}</span>
-    </label>
-  );
-}
-
 function NumberField({
   value,
   onChange,
@@ -113,18 +84,55 @@ function NumberField({
   disabled?: boolean;
 }) {
   return (
-    <Input
-      type="number"
-      value={Number.isFinite(value) ? value : 0}
-      step={step}
+    <NumericInput
+      value={value}
+      onChange={onChange}
       min={min}
+      step={step}
       disabled={disabled}
-      onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-        const n = Number(event.target.value);
-        onChange(Number.isFinite(n) ? n : 0);
-      }}
       className={className}
     />
+  );
+}
+
+function MatchedBarcodes({
+  product,
+  unitCode,
+  label,
+  emptyLabel,
+}: {
+  product: Product;
+  unitCode: string;
+  label: string;
+  emptyLabel: string;
+}) {
+  const normalizedUnit = normalizeBusinessCode(unitCode);
+  const matches = (product.barcodes ?? []).filter(
+    (barcode) => normalizeBusinessCode(barcode.itemunitcode) === normalizedUnit,
+  );
+  return (
+    <div
+      className="rounded-md bg-muted/35 px-3 py-2"
+      data-testid="matched-barcodes"
+    >
+      <div className="mb-1 text-xs font-medium text-muted-foreground">
+        {label}
+      </div>
+      {matches.length > 0 ? (
+        <div className="flex flex-wrap gap-1.5">
+          {matches.map((barcode) => (
+            <span
+              key={barcode.guidfixed || barcode.barcode}
+              className="rounded-md border border-border bg-background px-2 py-1 font-mono text-xs"
+            >
+              {barcode.barcode}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">{emptyLabel}</p>
+      )}
+    </div>
   );
 }
 
@@ -133,7 +141,6 @@ export function TabProductUnits({
   onChange,
   lang,
   openPicker,
-  clearPickerField,
 }: {
   value: Product;
   onChange: ProductStateAction;
@@ -143,14 +150,16 @@ export function TabProductUnits({
     master: string,
     anchorEl?: HTMLElement | null,
   ) => void;
-  clearPickerField: (field: string) => void;
 }) {
   const textU = getBarcodeText(lang);
-  const setRef = useCallback(
-    (mutator: (rows: RefProductBarcode[]) => RefProductBarcode[]) =>
+  const setUnits = useCallback(
+    (mutator: (rows: ProductUnitConversion[]) => ProductUnitConversion[]) =>
       onChange((c) =>
         c
-          ? ({ ...c, refbarcodes: mutator(c.refbarcodes ?? []) } as Product)
+          ? ({
+              ...c,
+              unitconversions: mutator(c.unitconversions ?? []),
+            } as Product)
           : null,
       ),
     [onChange],
@@ -160,7 +169,7 @@ export function TabProductUnits({
     <div className="space-y-4">
       <Section title={textU.unitSection}>
         <FieldGrid>
-          <FieldRow label={textU.unitBaseUnit}>
+          <FieldRow label={textU.unitBaseUnit} required>
             <div className="flex gap-1.5">
               <Input
                 readOnly
@@ -174,21 +183,13 @@ export function TabProductUnits({
               <Button
                 type="button"
                 variant="outline"
+                aria-label={textU.unitBaseUnit}
                 onClick={(e) =>
                   openPicker("unit", "unit", e.currentTarget.parentElement)
                 }
               >
                 ...
               </Button>
-              {value.unitcode && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => clearPickerField("unit")}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
             </div>
           </FieldRow>
           <FieldRow label={textU.unitDivide}>
@@ -208,160 +209,134 @@ export function TabProductUnits({
             />
           </FieldRow>
         </FieldGrid>
+        <div className="mt-3">
+          <MatchedBarcodes
+            product={value}
+            unitCode={value.unitcode ?? ""}
+            label={textU.unitRefBarcode}
+            emptyLabel={textU.unitRefBarcodePlaceholder}
+          />
+        </div>
       </Section>
 
-      <Section title={textU.unitMultiSection}>
-        <div className="space-y-3">
-          <Toggle
-            checked={value.isusesubbarcodes ?? false}
-            onCheckedChange={(n) =>
-              onChange((c) =>
-                c ? ({ ...c, isusesubbarcodes: n } as Product) : null,
-              )
+      <Section
+        title={textU.unitMultiSection}
+        action={
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              setUnits((rows) => [
+                ...rows,
+                { unitcode: "", unitnames: [], dividevalue: 1, standvalue: 1 },
+              ])
             }
-            label={textU.unitMultiToggle}
-          />
-
-          {value.isusesubbarcodes ? (
-            <div className="border border-border/50 rounded-lg p-4 space-y-4">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium">
-                  {textU.unitRefListTitle}
-                </h4>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    setRef((rows) => [
-                      ...rows,
-                      {
-                        guidfixed: "",
-                        itemcode: value.code,
-                        names: [],
-                        itemunitcode: "",
-                        itemunitnames: [],
-                        barcode: "",
-                        condition: false,
-                        dividevalue: 1,
-                        standvalue: 1,
-                        qty: 1,
-                      },
-                    ])
-                  }
-                >
-                  <Plus className="mr-1 h-4 w-4" />
-                  {textU.unitRefAddBtn}
-                </Button>
-              </div>
-
-              {!value.refbarcodes || value.refbarcodes.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-6">
-                  {textU.unitRefNoData}
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {value.refbarcodes.map((entry, idx) => (
-                    <div
-                      key={idx}
-                      className="grid grid-cols-1 items-center gap-2 rounded-md border border-border p-2 md:grid-cols-[1.5fr_1.2fr_0.8fr_0.8fr_40px]"
-                    >
-                      {/* หน่วยนับ เป็นตัวหลัก */}
-                      <FieldRow label={textU.unitRefUnitCode}>
-                        <div className="flex gap-1.5">
-                          <Input
-                            readOnly
-                            placeholder={textU.unitRefUnitPlaceholder}
-                            value={
-                              entry.itemunitcode
-                                ? `${entry.itemunitcode} — ${pickName(entry.itemunitnames, lang)}`
-                                : ""
-                            }
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={(e) =>
-                              openPicker(
-                                "unit",
-                                "unit-ref-" + idx,
-                                e.currentTarget.parentElement,
-                              )
-                            }
-                          >
-                            ...
-                          </Button>
-                        </div>
-                      </FieldRow>
-
-                      {/* บาร์โค้ด เป็นทางเลือก */}
-                      <FieldRow label={textU.unitRefBarcode}>
-                        <Input
-                          placeholder={textU.unitRefBarcodePlaceholder}
-                          value={entry.barcode || ""}
-                          onChange={(event) =>
-                            setRef((rows) =>
-                              rows.map((row, rowIdx) =>
-                                rowIdx === idx
-                                  ? { ...row, barcode: event.target.value }
-                                  : row,
-                              ),
-                            )
-                          }
-                        />
-                      </FieldRow>
-
-                      <FieldRow label={textU.unitRefDivide}>
-                        <NumberField
-                          value={entry.dividevalue ?? 1}
-                          onChange={(n) =>
-                            setRef((rows) =>
-                              rows.map((row, rowIdx) =>
-                                rowIdx === idx
-                                  ? { ...row, dividevalue: n }
-                                  : row,
-                              ),
-                            )
-                          }
-                          min={0.0001}
-                        />
-                      </FieldRow>
-                      <FieldRow label={textU.unitRefStand}>
-                        <NumberField
-                          value={entry.standvalue ?? 1}
-                          onChange={(n) =>
-                            setRef((rows) =>
-                              rows.map((row, rowIdx) =>
-                                rowIdx === idx
-                                  ? { ...row, standvalue: n }
-                                  : row,
-                              ),
-                            )
-                          }
-                          min={0.0001}
-                        />
-                      </FieldRow>
-                      <div className="flex justify-end pt-5">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() =>
-                            setRef((rows) =>
-                              rows.filter((_, rowIdx) => rowIdx !== idx),
-                            )
-                          }
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+          >
+            <Plus className="mr-1 h-4 w-4" />
+            {textU.unitRefAddBtn}
+          </Button>
+        }
+      >
+        {!value.unitconversions || value.unitconversions.length === 0 ? (
+          <p
+            className="py-6 text-center text-sm text-muted-foreground"
+            data-testid="product-unit-conversions"
+          >
+            {textU.unitRefNoData}
+          </p>
+        ) : (
+          <div className="space-y-2" data-testid="product-unit-conversions">
+            {value.unitconversions.map((entry, idx) => (
+              <div
+                key={`${entry.unitcode}-${idx}`}
+                className="space-y-2 rounded-md border border-border p-3"
+                data-testid="product-unit-conversion"
+              >
+                <div className="grid grid-cols-1 items-center gap-2 md:grid-cols-[1.5fr_0.8fr_0.8fr_40px]">
+                  <FieldRow label={textU.unitRefUnitCode} required>
+                    <div className="flex gap-1.5">
+                      <Input
+                        readOnly
+                        placeholder={textU.unitRefUnitPlaceholder}
+                        value={
+                          entry.unitcode
+                            ? `${entry.unitcode} — ${pickName(entry.unitnames, lang)}`
+                            : ""
+                        }
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        aria-label={textU.unitRefUnitCode}
+                        onClick={(event) =>
+                          openPicker(
+                            "unit",
+                            `unit-conversion-${idx}`,
+                            event.currentTarget.parentElement,
+                          )
+                        }
+                      >
+                        ...
+                      </Button>
                     </div>
-                  ))}
+                  </FieldRow>
+                  <FieldRow label={textU.unitRefDivide}>
+                    <NumberField
+                      value={entry.dividevalue ?? 1}
+                      onChange={(next) =>
+                        setUnits((rows) =>
+                          rows.map((row, rowIdx) =>
+                            rowIdx === idx
+                              ? { ...row, dividevalue: next }
+                              : row,
+                          ),
+                        )
+                      }
+                      min={1}
+                      step={1}
+                    />
+                  </FieldRow>
+                  <FieldRow label={textU.unitRefStand}>
+                    <NumberField
+                      value={entry.standvalue ?? 1}
+                      onChange={(next) =>
+                        setUnits((rows) =>
+                          rows.map((row, rowIdx) =>
+                            rowIdx === idx ? { ...row, standvalue: next } : row,
+                          ),
+                        )
+                      }
+                      min={1}
+                      step={1}
+                    />
+                  </FieldRow>
+                  <div className="flex justify-end pt-5">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label={textU.delete}
+                      onClick={() =>
+                        setUnits((rows) =>
+                          rows.filter((_, rowIdx) => rowIdx !== idx),
+                        )
+                      }
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-              )}
-            </div>
-          ) : null}
-        </div>
+                <MatchedBarcodes
+                  product={value}
+                  unitCode={entry.unitcode}
+                  label={textU.unitRefBarcode}
+                  emptyLabel={textU.unitRefBarcodePlaceholder}
+                />
+              </div>
+            ))}
+          </div>
+        )}
       </Section>
     </div>
   );

@@ -1,6 +1,8 @@
 package models
 
 import (
+	"strings"
+
 	"smlcloudplatform/internal/models"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -19,9 +21,11 @@ type Product struct {
 	ManufacturerNames        *[]models.NameX        `json:"manufacturernames" bson:"manufacturernames"`
 	Dimensions               []ProductDimension     `json:"dimensions" bson:"dimensions"`
 	VatType                  int8                   `json:"vattype" bson:"vattype"`
-	Barcodes                 []Barcodes             `json:"barcodes,omitempty"`
+	Barcodes                 []Barcodes             `json:"barcodes,omitempty" bson:"-"`
 	ItemType                 int8                   `json:"itemtype" bson:"itemtype"`
 	UnitGuid                 string                 `json:"unitguid" bson:"unitguid"`
+	UnitCode                 string                 `json:"unitcode" bson:"unitcode" validate:"required,max=100"`
+	UnitNames                *[]models.NameX        `json:"unitnames" bson:"unitnames"`
 	GroupsuboneGuid          string                 `json:"groupsuboneguid" bson:"groupsuboneguid"`
 	GroupsuboneCode          string                 `json:"groupsubonecode" bson:"groupsubonecode"`
 	GroupsuboneNames         *[]models.NameX        `json:"groupsubonenames" bson:"groupsubonenames"`
@@ -57,6 +61,7 @@ type Product struct {
 	// Core Product Properties Moved from ProductBarcode
 	ImageURI             string                        `json:"imageuri" bson:"imageuri"`
 	Images               *[]ProductImage               `json:"images" bson:"images"`
+	Videos               *[]ProductVideo               `json:"videos" bson:"videos"`
 	UseImageOrColor      bool                          `json:"useimageorcolor" bson:"useimageorcolor"`
 	ColorSelect          string                        `json:"colorselect" bson:"colorselect"`
 	ColorSelectHex       string                        `json:"colorselecthex" bson:"colorselecthex"`
@@ -77,12 +82,13 @@ type Product struct {
 	IgnoreBranches       *[]ProductBarcodeBranch       `json:"ignorebranches" bson:"ignorebranches"`
 
 	// Units and BOM properties moved from ProductBarcode to Product
-	Condition        bool                 `json:"condition" bson:"condition"`
-	DivideValue      float64              `json:"dividevalue" bson:"dividevalue"`
-	StandValue       float64              `json:"standvalue" bson:"standvalue"`
-	IsUseSubBarcodes bool                 `json:"isusesubbarcodes" bson:"isusesubbarcodes"`
-	RefBarcodes      *[]RefProductBarcode `json:"refbarcodes" bson:"refbarcodes"`
-	BOM              *[]BOMProductBarcode `json:"bom" bson:"bom"`
+	Condition        bool                    `json:"condition" bson:"condition"`
+	DivideValue      float64                 `json:"dividevalue" bson:"dividevalue"`
+	StandValue       float64                 `json:"standvalue" bson:"standvalue"`
+	UnitConversions  []ProductUnitConversion `json:"unitconversions" bson:"unitconversions"`
+	IsUseSubBarcodes bool                    `json:"isusesubbarcodes" bson:"isusesubbarcodes"`
+	RefBarcodes      *[]RefProductBarcode    `json:"refbarcodes" bson:"refbarcodes"`
+	BOM              *[]BOMProductBarcode    `json:"bom" bson:"bom"`
 
 	// Marketplace & Logistics
 	PackageWeight       float64                  `json:"packageweight" bson:"packageweight"`
@@ -97,6 +103,39 @@ type Product struct {
 	MaxPoint     float64 `json:"maxpoint" bson:"maxpoint"`
 	Qty          float64 `json:"qty" bson:"qty"`
 	StockBarcode string  `json:"stockbarcode" bson:"stockbarcode"`
+}
+
+type ProductUnitConversion struct {
+	UnitCode    string          `json:"unitcode" bson:"unitcode"`
+	UnitNames   *[]models.NameX `json:"unitnames" bson:"unitnames"`
+	DivideValue int64           `json:"dividevalue" bson:"dividevalue"`
+	StandValue  int64           `json:"standvalue" bson:"standvalue"`
+}
+
+func (product Product) UnitRatio(unitCode string) (int64, int64, bool) {
+	unit, ok := product.UnitDefinition(unitCode)
+	if !ok {
+		return 0, 0, false
+	}
+	return unit.DivideValue, unit.StandValue, true
+}
+
+func (product Product) UnitDefinition(unitCode string) (ProductUnitConversion, bool) {
+	unitCode = strings.TrimSpace(unitCode)
+	if unitCode != "" && strings.EqualFold(unitCode, product.UnitCode) {
+		return ProductUnitConversion{
+			UnitCode:    product.UnitCode,
+			UnitNames:   product.UnitNames,
+			DivideValue: 1,
+			StandValue:  1,
+		}, true
+	}
+	for _, unit := range product.UnitConversions {
+		if strings.EqualFold(unitCode, unit.UnitCode) {
+			return unit, true
+		}
+	}
+	return ProductUnitConversion{}, false
 }
 
 type RefProductBarcode struct {
@@ -151,6 +190,10 @@ type Barcodes struct {
 	ItemUnitCode  string          `json:"itemunitcode" gorm:"-"`
 	ItemUnitNames *[]models.NameX `json:"itemunitnames" gorm:"-"`
 	Barcode       string          `json:"barcode" gorm:"-"`
+	ImageURI      string          `json:"imageuri" gorm:"-"`
+	Images        *[]ProductImage `json:"images" gorm:"-"`
+	Videos        *[]ProductVideo `json:"videos" gorm:"-"`
+	Description   string          `json:"description" gorm:"-"`
 	Prices        *[]ProductPrice `json:"prices" gorm:"-"`
 	Condition     bool            `json:"condition" gorm:"-"`
 	DivideValue   float64         `json:"dividevalue" gorm:"-"`
@@ -188,6 +231,7 @@ func (ProductInfo) CollectionName() string {
 
 type ProductData struct {
 	models.HoldingCodeentity `bson:"inline"`
+	BusinessCode             string `json:"businesscode" bson:"businesscode"`
 	ProductInfo              `bson:"inline"`
 }
 
@@ -230,6 +274,12 @@ func (ProductDeleteActivity) CollectionName() string {
 type ProductImage struct {
 	XOrder int    `json:"xorder" bson:"xorder"`
 	URI    string `json:"uri" bson:"uri"`
+}
+
+type ProductVideo struct {
+	XOrder    int    `json:"xorder" bson:"xorder"`
+	URI       string `json:"uri" bson:"uri"`
+	PosterURI string `json:"posteruri" bson:"posteruri"`
 }
 
 type MarketplaceMediaAsset struct {

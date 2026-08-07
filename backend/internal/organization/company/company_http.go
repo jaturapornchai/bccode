@@ -5,13 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"smlcloudplatform/internal/config"
 	authModels "smlcloudplatform/internal/authentication/models"
+	"smlcloudplatform/internal/config"
 	common "smlcloudplatform/internal/models"
+	orgaccess "smlcloudplatform/internal/organization"
 	branchModels "smlcloudplatform/internal/organization/branch/models"
 	companyModels "smlcloudplatform/internal/organization/company/models"
 	orgEvents "smlcloudplatform/internal/organization/events"
 	"smlcloudplatform/internal/utils"
+	"smlcloudplatform/pkg/apperr"
 	"smlcloudplatform/pkg/microservice"
 	"strings"
 	"time"
@@ -63,6 +65,9 @@ func (h CompanyHttp) CreateCompany(ctx microservice.IContext) error {
 	mongoCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
+	if authErr := orgaccess.RequireHoldingAdmin(pst, ctx.UserInfo()); authErr != nil {
+		return apperr.Respond(ctx, authErr)
+	}
 
 	req.Code = companyModels.NormalizeCompanyCode(req.Code)
 	if req.Code == "" {

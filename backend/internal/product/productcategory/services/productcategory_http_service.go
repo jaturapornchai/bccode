@@ -119,11 +119,11 @@ func (svc ProductCategoryHttpService) buildDefaultAllProductsCategory(ctx contex
 	jpName := "すべて"
 
 	names := []common.NameX{
-		{Code: &[]string{"th"}[0], Name: &thName, IsAuto: false, IsDelete: false},
-		{Code: &[]string{"en"}[0], Name: &enName, IsAuto: false, IsDelete: false},
-		{Code: &[]string{"cn"}[0], Name: &cnName, IsAuto: false, IsDelete: false},
-		{Code: &[]string{"kr"}[0], Name: &krName, IsAuto: false, IsDelete: false},
-		{Code: &[]string{"jp"}[0], Name: &jpName, IsAuto: false, IsDelete: false},
+		{Code: &[]string{"th"}[0], Name: &thName},
+		{Code: &[]string{"en"}[0], Name: &enName},
+		{Code: &[]string{"cn"}[0], Name: &cnName},
+		{Code: &[]string{"kr"}[0], Name: &krName},
+		{Code: &[]string{"jp"}[0], Name: &jpName},
 	}
 
 	products, _, err := svc.productRepo.FindStep(

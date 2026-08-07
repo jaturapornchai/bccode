@@ -31,17 +31,13 @@ type Description struct {
 }
 
 type NameX struct {
-	Code     *string `json:"code" bson:"code" validate:"required,min=1,max=255"`
-	Name     *string `json:"name" bson:"name" validate:"required,max=255"`
-	IsAuto   bool    `json:"isauto" bson:"isauto"`
-	IsDelete bool    `json:"isdelete"`
+	Code *string `json:"code" bson:"code" validate:"required,min=1,max=255"`
+	Name *string `json:"name" bson:"name" validate:"required,max=255"`
 }
 
 type NameNormal struct {
-	Code     *string `json:"code" bson:"code" validate:"max=255"`
-	Name     *string `json:"name" bson:"name" validate:"max=255"`
-	IsAuto   bool    `json:"isauto" bson:"isauto"`
-	IsDelete bool    `json:"isdelete"`
+	Code *string `json:"code" bson:"code" validate:"max=255"`
+	Name *string `json:"name" bson:"name" validate:"max=255"`
 }
 
 func DefaultArrayNameX(names *[]NameX) *[]NameX {
@@ -52,7 +48,7 @@ func DefaultArrayNameX(names *[]NameX) *[]NameX {
 }
 
 func NewNameXWithCodeName(code, name string) *NameX {
-	return &NameX{Code: &code, Name: &name, IsAuto: false, IsDelete: false}
+	return &NameX{Code: &code, Name: &name}
 }
 
 // Value Marshal

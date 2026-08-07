@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState, useRef } from "react";
 import { Plus, Trash2, X, AlertCircle, Upload, FileSpreadsheet, Check, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/ui/numeric-input";
 import { pickName } from "@/lib/product-barcode/utils";
 import { getBarcodeText } from "@/lib/product-barcode/language";
 import { cn } from "@/lib/utils";
@@ -91,18 +92,7 @@ function NumberField({
   disabled?: boolean;
 }) {
   return (
-    <Input
-      type="number"
-      value={Number.isFinite(value) ? value : 0}
-      step={step}
-      min={min}
-      disabled={disabled}
-      onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-        const n = Number(event.target.value);
-        onChange(Number.isFinite(n) ? n : 0);
-      }}
-      className={className}
-    />
+    <NumericInput value={value} onChange={onChange} min={min} step={step} disabled={disabled} className={className} />
   );
 }
 

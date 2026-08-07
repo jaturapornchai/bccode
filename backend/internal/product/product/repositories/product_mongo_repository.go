@@ -35,6 +35,12 @@ type IProductRepository interface {
 
 	FindOneByCode(ctx context.Context, holdingCode, code string) (models.ProductDoc, error)
 	FindFilter(ctx context.Context, holdingCode string, filters map[string]interface{}) ([]models.ProductDoc, error)
+	FindByGuidInCompany(ctx context.Context, holdingCode, businessCode, guid string) (models.ProductDoc, error)
+	FindByCodeInCompany(ctx context.Context, holdingCode, businessCode, code string) (models.ProductDoc, error)
+	FindPageFilterInCompany(ctx context.Context, holdingCode, businessCode string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.ProductInfo, mongopagination.PaginationData, error)
+	UpdateInCompany(ctx context.Context, holdingCode, businessCode, guid string, doc models.ProductDoc) error
+	DeleteByGuidfixedInCompany(ctx context.Context, holdingCode, businessCode, guid, username string) error
+	FindFilterInCompany(ctx context.Context, holdingCode, businessCode string, filters map[string]interface{}) ([]models.ProductDoc, error)
 	EnsureIndexes(ctx context.Context) error
 }
 
@@ -70,7 +76,7 @@ func (repo ProductRepository) EnsureIndexes(ctx context.Context) error {
 		return fmt.Errorf("ensure product guidfixed index: %w", err)
 	}
 
-	_, err := repo.pst.CreatePartialUniqueIndex(
+	if _, err := repo.pst.CreatePartialUniqueIndex(
 		ctx,
 		models.ProductDoc{},
 		"uniq_products_active_holdingcode_code",
@@ -82,11 +88,84 @@ func (repo ProductRepository) EnsureIndexes(ctx context.Context) error {
 			"deletedat": nil,
 			"code":      bson.M{"$type": "string", "$gt": ""},
 		},
-	)
-	if err != nil {
+	); err != nil {
 		return fmt.Errorf("ensure active product code index: %w", err)
 	}
+
+	_, err := repo.pst.CreatePartialUniqueIndex(
+		ctx,
+		models.ProductDoc{},
+		"uniq_products_active_holdingcode_businesscode_code",
+		bson.D{
+			{Key: "holdingcode", Value: 1},
+			{Key: "businesscode", Value: 1},
+			{Key: "code", Value: 1},
+		},
+		bson.M{
+			"deletedat":    nil,
+			"businesscode": bson.M{"$type": "string", "$gt": ""},
+			"code":         bson.M{"$type": "string", "$gt": ""},
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("ensure active company product code index: %w", err)
+	}
 	return nil
+}
+
+func productCompanyFilters(businessCode string, filters map[string]interface{}) map[string]interface{} {
+	companyFilters := make(map[string]interface{}, len(filters)+1)
+	for key, value := range filters {
+		companyFilters[key] = value
+	}
+	companyFilters["businesscode"] = businessCode
+	return companyFilters
+}
+
+func (repo ProductRepository) FindByGuidInCompany(ctx context.Context, holdingCode, businessCode, guid string) (models.ProductDoc, error) {
+	doc := models.ProductDoc{}
+	err := repo.pst.FindOne(ctx, models.ProductDoc{}, bson.M{
+		"holdingcode":  holdingCode,
+		"businesscode": businessCode,
+		"guidfixed":    guid,
+		"deletedat":    bson.M{"$exists": false},
+	}, &doc)
+	return doc, err
+}
+
+func (repo ProductRepository) FindByCodeInCompany(ctx context.Context, holdingCode, businessCode, code string) (models.ProductDoc, error) {
+	doc := models.ProductDoc{}
+	err := repo.pst.FindOne(ctx, models.ProductDoc{}, bson.M{
+		"holdingcode":  holdingCode,
+		"businesscode": businessCode,
+		"code":         code,
+		"deletedat":    bson.M{"$exists": false},
+	}, &doc)
+	return doc, err
+}
+
+func (repo ProductRepository) FindPageFilterInCompany(ctx context.Context, holdingCode, businessCode string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.ProductInfo, mongopagination.PaginationData, error) {
+	return repo.SearchRepository.FindPageFilter(ctx, holdingCode, productCompanyFilters(businessCode, filters), searchInFields, pageable)
+}
+
+func (repo ProductRepository) UpdateInCompany(ctx context.Context, holdingCode, businessCode, guid string, doc models.ProductDoc) error {
+	return repo.pst.UpdateOne(ctx, models.ProductDoc{}, bson.M{
+		"holdingcode":  holdingCode,
+		"businesscode": businessCode,
+		"guidfixed":    guid,
+	}, doc)
+}
+
+func (repo ProductRepository) DeleteByGuidfixedInCompany(ctx context.Context, holdingCode, businessCode, guid, username string) error {
+	return repo.pst.SoftDelete(ctx, models.ProductDoc{}, username, bson.M{
+		"holdingcode":  holdingCode,
+		"businesscode": businessCode,
+		"guidfixed":    guid,
+	})
+}
+
+func (repo ProductRepository) FindFilterInCompany(ctx context.Context, holdingCode, businessCode string, filters map[string]interface{}) ([]models.ProductDoc, error) {
+	return repo.CrudRepository.FindFilter(ctx, holdingCode, productCompanyFilters(businessCode, filters))
 }
 
 func (repo ProductRepository) FindOneByCode(ctx context.Context, holdingCode string, code string) (models.ProductDoc, error) {

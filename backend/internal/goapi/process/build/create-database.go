@@ -41,6 +41,8 @@ func TableProductCreate(db *sql.DB) error {
 	createTableQuery := `
 		CREATE TABLE IF NOT EXISTS product (
 			id SERIAL PRIMARY KEY,
+			holding_code TEXT NOT NULL DEFAULT '',
+			businesscode TEXT NOT NULL DEFAULT '',
 			itemcode TEXT,		
 			name0 TEXT NOT NULL,
 			unitcode TEXT NOT NULL,
@@ -53,6 +55,8 @@ func TableProductCreate(db *sql.DB) error {
 
 	// 1.5. เพิ่ม columns ใหม่ถ้ายังไม่มี (สำหรับ table เก่า)
 	alterProductQuery := `
+		ALTER TABLE product ADD COLUMN IF NOT EXISTS holding_code TEXT NOT NULL DEFAULT '';
+		ALTER TABLE product ADD COLUMN IF NOT EXISTS businesscode TEXT NOT NULL DEFAULT '';
 		ALTER TABLE product ADD COLUMN IF NOT EXISTS balanceqty NUMERIC(18,4) DEFAULT 0;
 		ALTER TABLE product ADD COLUMN IF NOT EXISTS balanceqtyword TEXT DEFAULT '';
 		ALTER TABLE product ADD COLUMN IF NOT EXISTS pendingrecvqty NUMERIC(18,4) DEFAULT 0;
@@ -71,6 +75,8 @@ func TableProductCreate(db *sql.DB) error {
 
 		-- สร้าง column comments
 		COMMENT ON COLUMN product.id IS 'รหัสอัตโนมัติ';
+		COMMENT ON COLUMN product.holding_code IS 'รหัส Holding เจ้าของข้อมูล';
+		COMMENT ON COLUMN product.businesscode IS 'รหัสบริษัทเจ้าของสินค้า';
 		COMMENT ON COLUMN product.itemcode IS 'รหัสสินค้า';
 		COMMENT ON COLUMN product.name0 IS 'ชื่อสินค้า';
 		COMMENT ON COLUMN product.unitcode IS 'รหัสหน่วยนับ';
@@ -83,21 +89,25 @@ func TableProductCreate(db *sql.DB) error {
 		COMMENT ON COLUMN product.pendingsendqtyword IS 'ยอดค้างส่งเป็นข้อความ';
 
 		-- สร้าง indexes และ constraints
-		CREATE INDEX IF NOT EXISTS idx_product_itemcode ON product (itemcode)`
+		CREATE INDEX IF NOT EXISTS idx_product_itemcode ON product (itemcode);
+		CREATE INDEX IF NOT EXISTS idx_product_company_itemcode
+			ON product (holding_code, businesscode, itemcode)`
 
 	if _, err := tx.ExecContext(context.Background(), commentsAndIndexesQuery); err != nil {
 		return fmt.Errorf("create product comments and indexes: %w", err)
 	}
 
-	// 3. สร้าง unique constraint แยกต่างหาก (เพราะ PostgreSQL ไม่รองรับ IF NOT EXISTS)
+	// 3. Product code is unique inside a company, not across the Holding.
 	_, err = tx.ExecContext(context.Background(), `
+		ALTER TABLE product DROP CONSTRAINT IF EXISTS product_itemcode_unique;
 		DO $$
 		BEGIN
 			IF NOT EXISTS (
 				SELECT 1 FROM pg_constraint 
-				WHERE conname = 'product_itemcode_unique'
+				WHERE conname = 'product_company_itemcode_unique'
 			) THEN
-				ALTER TABLE product ADD CONSTRAINT product_itemcode_unique UNIQUE (itemcode);
+				ALTER TABLE product ADD CONSTRAINT product_company_itemcode_unique
+					UNIQUE (holding_code, businesscode, itemcode);
 			END IF;
 		END
 		$$`)
@@ -161,6 +171,7 @@ func TableProductBarcodeCreate(db *sql.DB) error {
 
 		ALTER TABLE productbarcode ADD COLUMN IF NOT EXISTS guidfixed TEXT DEFAULT '';
 		ALTER TABLE productbarcode ADD COLUMN IF NOT EXISTS holding_code TEXT DEFAULT '';
+		ALTER TABLE productbarcode ADD COLUMN IF NOT EXISTS businesscode TEXT NOT NULL DEFAULT '';
 		ALTER TABLE productbarcode ADD COLUMN IF NOT EXISTS brandcode TEXT DEFAULT '';
 		ALTER TABLE productbarcode ADD COLUMN IF NOT EXISTS brandnames TEXT DEFAULT '';
 		ALTER TABLE productbarcode ADD COLUMN IF NOT EXISTS categorycode TEXT DEFAULT '';
@@ -193,6 +204,8 @@ func TableProductBarcodeCreate(db *sql.DB) error {
 
 		-- สร้าง column comments
 		COMMENT ON COLUMN productbarcode.id IS 'รหัสอัตโนมัติ';
+		COMMENT ON COLUMN productbarcode.holding_code IS 'รหัส Holding เจ้าของข้อมูล';
+		COMMENT ON COLUMN productbarcode.businesscode IS 'รหัสบริษัทเจ้าของบาร์โค้ด';
 		COMMENT ON COLUMN productbarcode.barcode IS 'บาร์โค้ด';
 		COMMENT ON COLUMN productbarcode.barcoderef IS 'บาร์โค้ดอ้างอิง (ถ้ามี)';
 		COMMENT ON COLUMN productbarcode.itemcode IS 'รหัสสินค้า';
@@ -215,12 +228,15 @@ func TableProductBarcodeCreate(db *sql.DB) error {
 		CREATE INDEX IF NOT EXISTS idx_productbarcode_itemcode ON productbarcode (itemcode);
 		CREATE INDEX IF NOT EXISTS idx_productbarcode_itemcode_unitcode ON productbarcode (itemcode,unitcode);
 		CREATE INDEX IF NOT EXISTS idx_productbarcode_barcode ON productbarcode (barcode);
-		CREATE UNIQUE INDEX IF NOT EXISTS uniq_productbarcode_holding_itemcode_barcode
-			ON productbarcode (holding_code, itemcode, barcode);
+		DROP INDEX IF EXISTS uniq_productbarcode_holding_itemcode_barcode;
+		CREATE UNIQUE INDEX IF NOT EXISTS uniq_productbarcode_company_barcode
+			ON productbarcode (holding_code, businesscode, barcode);
 		CREATE INDEX IF NOT EXISTS idx_productbarcode_barcoderef ON productbarcode (barcoderef);
 		CREATE INDEX IF NOT EXISTS idx_productbarcode_isupdated ON productbarcode (isupdated);
 		CREATE INDEX IF NOT EXISTS idx_productbarcode_unitstandanddivideisupdated ON productbarcode (unitstandanddivideisupdated);
 		CREATE INDEX IF NOT EXISTS idx_productbarcode_holding_code ON productbarcode (holding_code);
+		CREATE INDEX IF NOT EXISTS idx_productbarcode_company_itemcode
+			ON productbarcode (holding_code, businesscode, itemcode);
 		CREATE INDEX IF NOT EXISTS idx_productbarcode_guidfixed ON productbarcode (guidfixed);
 		CREATE INDEX IF NOT EXISTS idx_productbarcode_groupcode ON productbarcode (groupcode);
 		CREATE INDEX IF NOT EXISTS idx_productbarcode_brandcode ON productbarcode (brandcode);

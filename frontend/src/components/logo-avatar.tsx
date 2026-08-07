@@ -113,7 +113,7 @@ function useLogoImage(uri: string, auth: AuthLike, width: number) {
   const token = auth?.token ?? "";
   const username = auth?.username ?? "";
   const isProtected = useMemo(
-    () => imageNeedsAuthenticatedFetch(resolveDisplayUrl(uri, backendUrl)),
+    () => imageNeedsAuthenticatedFetch(resolveDisplayUrl(uri, backendUrl), backendUrl),
     [uri, backendUrl],
   );
   // For public paths, ask Cloudflare for a resized thumbnail.

@@ -634,15 +634,15 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
         },
       },
       {
-        ...textField("username", "ชื่อเข้าสู่ระบบ", "Login username", true),
-        placeholder: "เช่น somchai หรือ somchai@email.com",
+        ...textField("username", "รหัสผู้ใช้ (usercode)", "User code", true),
+        placeholder: "เช่น somchai01",
         helper: {
-          th: "ใช้ภาษาอังกฤษหรือตัวเลข ใช้สำหรับเข้าสู่ระบบ ตั้งครั้งเดียวแล้วไม่ควรเปลี่ยนบ่อย",
-          en: "Letters or numbers. Used to sign in. Set once and avoid changing.",
+		  th: "ใช้เข้าสู่ระบบได้โดยไม่ต้องมีอีเมล ผู้ใช้ใหม่จะได้รหัสผ่านเริ่มต้น 12345",
+		  en: "Used to sign in without an email. New users start with password 12345.",
         },
       },
       {
-        ...textField("userprofilename", "ชื่อ-นามสกุล", "Full name"),
+		...textField("userprofilename", "ชื่อผู้ใช้ (username)", "User name"),
         placeholder: "เช่น สมชาย ใจดี",
         helper: {
           th: "ชื่อที่แสดงในระบบและเอกสาร ใช้ภาษาไทยได้",
@@ -655,8 +655,8 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
         type: "text",
         placeholder: "เช่น somchai@email.com",
         helper: {
-          th: "อีเมลสำหรับรับการแจ้งเตือนและกู้คืนรหัสผ่าน ถ้าเหมือนชื่อเข้าสู่ระบบก็กรอกซ้ำได้",
-          en: "Email for notifications and password recovery. May match the login username.",
+		  th: "ไม่บังคับ สามารถเชื่อมอีเมลภายหลังเพื่อรับการแจ้งเตือนและกู้คืนรหัสผ่านได้",
+		  en: "Optional. An email can be linked later for notifications and password recovery.",
         },
       },
       {
@@ -1315,7 +1315,7 @@ function productMasterConfigs(): SystemSettingConfig[] {
         en: "Manage product unit codes and names.",
       },
       fields: [
-        textField("unitcode", "รหัสหน่วยนับ", "Unit code", true),
+        businessCodeField("unitcode", "รหัสหน่วยนับ", "Unit code", true),
         namesField("names", "ชื่อหน่วยนับ", "Unit names"),
         companyMultiSelectField("businesscodes", "สิทธิ์การเข้าถึงบริษัท", "Active companies"),
       ],
@@ -1737,21 +1737,22 @@ function productMasterConfigs(): SystemSettingConfig[] {
       "Pattern",
       "Pattern",
     ),
-    aicloudConfig(
-      "master_groupsubone_screen",
-      "/mastergroupsubonescreen",
+    atlasMasterConfig(
+      "productsubgroup",
+      "/productsubgroup",
       "group",
-      "groupsubone",
-      "กลุ่มย่อยระดับ 1",
-      "Subgroup Level 1",
-    ),
-    aicloudConfig(
-      "master_groupsubtwo_screen",
-      "/mastergroupsubtwoscreen",
-      "group",
-      "groupsubtwo",
-      "กลุ่มย่อยระดับ 2",
-      "Subgroup Level 2",
+      "productsubgroups",
+      "กลุ่มย่อยสินค้า",
+      "Product Subgroups",
+      "จัดกลุ่มย่อยแบบ tree กี่ระดับก็ได้ ลากวางจัดลำดับและย้ายกลุ่มได้อิสระ",
+      "Organize subgroups as a free-form tree. Drag to reorder or reparent to any depth.",
+      [
+        businessCodeField("code", "รหัสกลุ่มย่อย", "Subgroup code", true),
+        namesField("names", "ชื่อกลุ่มย่อย", "Subgroup names"),
+        textField("parentcode", "กลุ่มหลัก", "Parent group"),
+        numberField("sortorder", "ลำดับ", "Sort order"),
+        checkboxField("isdisabled", "ปิดใช้งาน", "Disabled"),
+      ],
     ),
   ];
 }

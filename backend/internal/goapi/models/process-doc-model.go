@@ -30,35 +30,35 @@ type DocStruct struct {
 	GuidBranch      string    `json:"guidbranch" db:"guidbranch"`
 	GuidFixed       string    `json:"guidfixed" db:"guidfixed"`
 	// ข้อมูลผู้สร้างเอกสาร
-	CreatorCode string    `json:"creatorcode" db:"creatorcode"` // รหัสผู้สร้างเอกสาร
-	CreatorName string    `json:"creatorname" db:"creatorname"` // ชื่อผู้สร้างเอกสาร
-	CreatedAt   time.Time `json:"createdat" db:"createdat"`     // วันเวลาที่สร้างเอกสาร
+	CreatorCode string    `json:"creatorcode" db:"creator_code"` // รหัสผู้สร้างเอกสาร
+	CreatorName string    `json:"creatorname" db:"creator_name"` // ชื่อผู้สร้างเอกสาร
+	CreatedAt   time.Time `json:"createdat" db:"created_at"`     // วันเวลาที่สร้างเอกสาร
 
 	// ============ Multi-Currency Fields ============
 	// สกุลเงินหลัก (Base Currency) - สำหรับลงบัญชี (field เดิม)
 	Currency       string `json:"currency" db:"currency"`
-	CurrencySymbol string `json:"currencysymbol" db:"currencysymbol"`
+	CurrencySymbol string `json:"currencysymbol" db:"currency_symbol"`
 
 	// สกุลเงินเอกสาร (Document Currency) - field ใหม่
-	DocCurrency       string  `json:"doccurrency" db:"doccurrency"`
-	DocCurrencySymbol string  `json:"doccurrencysymbol" db:"doccurrencysymbol"`
-	ExchangeRate      float64 `json:"exchangerate" db:"exchangerate"`
+	DocCurrency       string  `json:"doccurrency" db:"doc_currency"`
+	DocCurrencySymbol string  `json:"doccurrencysymbol" db:"doc_currency_symbol"`
+	ExchangeRate      float64 `json:"exchangerate" db:"exchange_rate"`
 
 	// ยอดรวมในสกุลเงินเอกสาร
-	TotalAmountDoc float64 `json:"totalamountdoc" db:"totalamountdoc"`
+	TotalAmountDoc float64 `json:"totalamountdoc" db:"totalamount_doc"`
 
 	// Soft Delete
 	IsDelete bool `json:"isdelete" db:"isdelete"`
 
 	// Approval status from poapprovalstatus collection.
-	ApprovalStatus string `json:"approvalstatus" db:"approvalstatus"`
+	ApprovalStatus string `json:"approvalstatus" db:"approval_status"`
 }
 
 type DocRefStruct struct {
 	DocNo             string `json:"docno" db:"docno"`
 	DocNoTransFlag    int    `json:"docnotransflag" db:"docnotransflag"`
-	DocRefNo          string `json:"refdocno" db:"refdocno"`
-	DocRefNoTransFlag int    `json:"refdocnotransflag" db:"refdocnotransflag"`
+	DocRefNo          string `json:"refdocno" db:"docnoref"`
+	DocRefNoTransFlag int    `json:"refdocnotransflag" db:"docnoreftransflag"`
 }
 
 type DocDetailStruct struct {

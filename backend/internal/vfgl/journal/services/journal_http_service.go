@@ -9,6 +9,7 @@ import (
 	"smlcloudplatform/internal/vfgl/journal/models"
 	"smlcloudplatform/internal/vfgl/journal/repositories"
 	micromodels "smlcloudplatform/pkg/microservice/models"
+	"strings"
 	"time"
 
 	"github.com/smlsoft/mongopagination"
@@ -17,17 +18,17 @@ import (
 )
 
 type IJournalHttpService interface {
-	CreateJournal(holdingCode string, authUsername string, doc models.Journal) (string, error)
+	CreateJournal(holdingCode string, actor micromodels.UserInfo, doc models.Journal) (string, error)
 	RebuildPgJournal(holdingCode string, authUsername string) ([]models.JournalDoc, error)
-	UpdateJournal(guid string, holdingCode string, authUsername string, doc models.Journal) (oldDocNo string, newDocNo string, err error)
-	DeleteJournal(guid string, holdingCode string, authUsername string) error
-	DeleteJournalByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
-	DeleteJournalByBatchID(holdingCode string, authUsername string, batchID string) error
+	UpdateJournal(guid string, holdingCode string, actor micromodels.UserInfo, doc models.Journal) (oldDocNo string, newDocNo string, err error)
+	DeleteJournal(guid string, holdingCode string, actor micromodels.UserInfo) error
+	DeleteJournalByGUIDs(holdingCode string, actor micromodels.UserInfo, GUIDs []string) error
+	DeleteJournalByBatchID(holdingCode string, actor micromodels.UserInfo, batchID string) error
 	InfoJournal(holdingCode string, guid string) (models.JournalInfo, error)
 	InfoJournalByDocNo(holdingCode string, docNo string) (models.JournalInfo, error)
 	InfoJournalByDocumentRef(holdingCode string, documentRef string) (models.JournalInfo, error)
 	SearchJournal(holdingCode string, pagable micromodels.Pageable, searchFilters map[string]interface{}, startDate time.Time, endDate time.Time, accountGroup string) ([]models.JournalInfo, mongopagination.PaginationData, error)
-	SaveInBatch(holdingCode string, authUsername string, dataList []models.Journal) (common.BulkImport, error)
+	SaveInBatch(holdingCode string, actor micromodels.UserInfo, dataList []models.Journal) (common.BulkImport, error)
 	GetDuplicateDocNos(holdingCode string) ([]models.DuplicateDocNo, error)
 	CheckVatDocNoExists(holdingCode string, debtType int, code string, vatDocNo string) (models.VatDocNoCheckResult, error)
 	CheckTaxDocNoExists(holdingCode string, debtType int, code string, taxDocNo string) (models.VatDocNoCheckResult, error)
@@ -57,7 +58,24 @@ func (svc JournalHttpService) getContextTimeout() (context.Context, context.Canc
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
-func (svc JournalHttpService) CreateJournal(holdingCode string, authUsername string, doc models.Journal) (string, error) {
+func journalActorName(actor micromodels.UserInfo) string {
+	if name := strings.TrimSpace(actor.Name); name != "" {
+		return name
+	}
+	return actor.Username
+}
+
+func applyJournalDeletedActor(doc *models.JournalDoc, actor micromodels.UserInfo, deletedAt time.Time) {
+	actorName := journalActorName(actor)
+	doc.ActivityDoc.DeletedBy = actor.Username
+	doc.ActivityDoc.DeletedByName = actorName
+	doc.ActivityDoc.DeletedAt = deletedAt
+	doc.JournalInfo.DeletedBy = actor.Username
+	doc.JournalInfo.DeletedByName = actorName
+	doc.JournalInfo.DeletedAt = deletedAt
+}
+
+func (svc JournalHttpService) CreateJournal(holdingCode string, actor micromodels.UserInfo, doc models.Journal) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -82,8 +100,12 @@ func (svc JournalHttpService) CreateJournal(holdingCode string, authUsername str
 	// docDate := doc.DocDate.Format("2006-01-02")
 	docData.DocDate = time.Date(doc.DocDate.Year(), doc.DocDate.Month(), doc.DocDate.Day(), 0, 0, 0, 0, time.UTC)
 
-	docData.CreatedBy = authUsername
+	docData.CreatedBy = actor.Username
+	docData.CreatedByName = journalActorName(actor)
+	docData.JournalInfo.CreatedBy = actor.Username
+	docData.JournalInfo.CreatedByName = journalActorName(actor)
 	docData.CreatedAt = time.Now()
+	docData.JournalInfo.CreatedAt = docData.CreatedAt
 
 	_, err = svc.repo.Create(ctx, docData)
 
@@ -91,8 +113,7 @@ func (svc JournalHttpService) CreateJournal(holdingCode string, authUsername str
 		return "", err
 	}
 
-	svc.mqRepo.Create(docData)
-
+	err = svc.mqRepo.Create(docData)
 	if err != nil {
 		return "", err
 	}
@@ -114,34 +135,20 @@ func (svc JournalHttpService) RebuildPgJournal(holdingCode string, authUsername 
 
 		docData := models.JournalDoc{}
 		docData.HoldingCode = holdingCode
-		docData.GuidFixed = doc.GuidFixed
-		// docData.Journal = doc.Journal
-		docData.AccountBook = doc.AccountBook
-		docData.AccountGroup = doc.AccountGroup
-		docData.DocNo = doc.DocNo
-		docData.DocumentRef = doc.DocumentRef
-		docData.BatchID = doc.BatchID
-		docData.DocDate = doc.DocDate
-		docData.CreatedAt = doc.CreatedAt
-		docData.CreatedBy = doc.CreatedBy
-		docData.AccountPeriod = doc.AccountPeriod
-		docData.AccountYear = doc.AccountYear
-		docData.Amount = doc.Amount
-		docData.AccountDescription = doc.AccountDescription
-		docData.BookCode = doc.BookCode
-		docData.Vats = doc.Vats
-		docData.Taxes = doc.Taxes
-		docData.JournalType = doc.JournalType
-		docData.ExDocRefNo = doc.ExDocRefNo
-		docData.ExDocRefDate = doc.ExDocRefDate
-		docData.DocFormat = doc.DocFormat
-		docData.AppName = doc.AppName
-		docData.DebtAccountType = doc.DebtAccountType
-		docData.Creditor = doc.Creditor
-		docData.Debtor = doc.Debtor
+		docData.JournalInfo = doc
+		docData.ActivityDoc = common.ActivityDoc{
+			CreatedBy:     doc.CreatedBy,
+			CreatedByName: doc.CreatedByName,
+			CreatedAt:     doc.CreatedAt,
+			UpdatedBy:     doc.UpdatedBy,
+			UpdatedByName: doc.UpdatedByName,
+			UpdatedAt:     doc.UpdatedAt,
+			DeletedBy:     doc.DeletedBy,
+			DeletedByName: doc.DeletedByName,
+			DeletedAt:     doc.DeletedAt,
+		}
 		docDatax = append(docDatax, docData)
-		svc.mqRepo.Create(docData)
-
+		err = svc.mqRepo.Create(docData)
 		if err != nil {
 			return []models.JournalDoc{}, err
 		}
@@ -149,7 +156,7 @@ func (svc JournalHttpService) RebuildPgJournal(holdingCode string, authUsername 
 	return docDatax, nil
 }
 
-func (svc JournalHttpService) UpdateJournal(guid string, holdingCode string, authUsername string, doc models.Journal) (oldDocNo string, newDocNo string, err error) {
+func (svc JournalHttpService) UpdateJournal(guid string, holdingCode string, actor micromodels.UserInfo, doc models.Journal) (oldDocNo string, newDocNo string, err error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -168,23 +175,26 @@ func (svc JournalHttpService) UpdateJournal(guid string, holdingCode string, aut
 	newDocNo = doc.DocNo
 
 	findDoc.Journal = doc
-	findDoc.UpdatedBy = authUsername
+	findDoc.UpdatedBy = actor.Username
+	findDoc.UpdatedByName = journalActorName(actor)
+	findDoc.JournalInfo.UpdatedBy = actor.Username
+	findDoc.JournalInfo.UpdatedByName = journalActorName(actor)
 	findDoc.UpdatedAt = time.Now()
+	findDoc.JournalInfo.UpdatedAt = findDoc.UpdatedAt
 
 	err = svc.repo.Update(ctx, holdingCode, guid, findDoc)
 
 	if err != nil {
 		return "", "", err
 	}
-	svc.mqRepo.Update(findDoc)
-
+	err = svc.mqRepo.Update(findDoc)
 	if err != nil {
 		return "", "", err
 	}
 	return oldDocNo, newDocNo, nil
 }
 
-func (svc JournalHttpService) DeleteJournal(guid string, holdingCode string, authUsername string) error {
+func (svc JournalHttpService) DeleteJournal(guid string, holdingCode string, actor micromodels.UserInfo) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -199,43 +209,46 @@ func (svc JournalHttpService) DeleteJournal(guid string, holdingCode string, aut
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
+	deletedAt := time.Now().UTC()
+	err = svc.repo.DeleteWithActor(ctx, holdingCode, map[string]interface{}{"guidfixed": guid}, actor, deletedAt)
 	if err != nil {
 		return err
 	}
-	svc.mqRepo.Delete(findDoc)
-
+	applyJournalDeletedActor(&findDoc, actor, deletedAt)
+	err = svc.mqRepo.Delete(findDoc)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (svc JournalHttpService) DeleteJournalByGUIDs(holdingCode string, authUsername string, GUIDs []string) error {
+func (svc JournalHttpService) DeleteJournalByGUIDs(holdingCode string, actor micromodels.UserInfo, GUIDs []string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	docs, _ := svc.repo.FindByGuids(ctx, holdingCode, GUIDs)
+	docs, err := svc.repo.FindByGuids(ctx, holdingCode, GUIDs)
+	if err != nil {
+		return err
+	}
 
 	deleteFilterQuery := map[string]interface{}{
 		"guidfixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, holdingCode, authUsername, deleteFilterQuery)
+	deletedAt := time.Now().UTC()
+	err = svc.repo.DeleteWithActor(ctx, holdingCode, deleteFilterQuery, actor, deletedAt)
 	if err != nil {
 		return err
 	}
 
-	func() {
-
-		svc.mqRepo.DeleteInBatch(docs)
-	}()
-
-	return nil
+	for idx := range docs {
+		applyJournalDeletedActor(&docs[idx], actor, deletedAt)
+	}
+	return svc.mqRepo.DeleteInBatch(docs)
 }
 
-func (svc JournalHttpService) DeleteJournalByBatchID(holdingCode string, authUsername string, batchID string) error {
+func (svc JournalHttpService) DeleteJournalByBatchID(holdingCode string, actor micromodels.UserInfo, batchID string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -250,11 +263,15 @@ func (svc JournalHttpService) DeleteJournalByBatchID(holdingCode string, authUse
 		return errors.New("document not found")
 	}
 
-	err = svc.repo.Delete(ctx, holdingCode, authUsername, map[string]interface{}{"batchid": batchID})
+	deletedAt := time.Now().UTC()
+	err = svc.repo.DeleteWithActor(ctx, holdingCode, map[string]interface{}{"batchid": batchID}, actor, deletedAt)
 	if err != nil {
 		return err
 	}
 
+	for idx := range findDocs {
+		applyJournalDeletedActor(&findDocs[idx], actor, deletedAt)
+	}
 	err = svc.mqRepo.DeleteInBatch(findDocs)
 
 	if err != nil {
@@ -279,7 +296,11 @@ func (svc JournalHttpService) InfoJournal(holdingCode string, guid string) (mode
 	}
 
 	findDoc.JournalInfo.CreatedBy = findDoc.ActivityDoc.CreatedBy
+	findDoc.JournalInfo.CreatedByName = findDoc.ActivityDoc.CreatedByName
 	findDoc.JournalInfo.CreatedAt = findDoc.ActivityDoc.CreatedAt
+	findDoc.JournalInfo.UpdatedBy = findDoc.ActivityDoc.UpdatedBy
+	findDoc.JournalInfo.UpdatedByName = findDoc.ActivityDoc.UpdatedByName
+	findDoc.JournalInfo.UpdatedAt = findDoc.ActivityDoc.UpdatedAt
 
 	return findDoc.JournalInfo, nil
 
@@ -434,7 +455,7 @@ func (svc JournalHttpService) ReGenerateGuidEmpty() error {
 	return nil
 }
 
-func (svc JournalHttpService) SaveInBatch(holdingCode string, authUsername string, dataList []models.Journal) (common.BulkImport, error) {
+func (svc JournalHttpService) SaveInBatch(holdingCode string, actor micromodels.UserInfo, dataList []models.Journal) (common.BulkImport, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -459,7 +480,7 @@ func (svc JournalHttpService) SaveInBatch(holdingCode string, authUsername strin
 
 	duplicateDataList, createDataList := importdata.PreparePayloadData[models.Journal, models.JournalDoc](
 		holdingCode,
-		authUsername,
+		actor.Username,
 		foundItemGuidList,
 		payloadList,
 		svc.getDocIDKey,
@@ -474,14 +495,19 @@ func (svc JournalHttpService) SaveInBatch(holdingCode string, authUsername strin
 
 			currentTime := time.Now()
 			dataDoc.CreatedBy = authUsername
+			dataDoc.CreatedByName = journalActorName(actor)
+			dataDoc.JournalInfo.CreatedBy = authUsername
+			dataDoc.JournalInfo.CreatedByName = journalActorName(actor)
 			dataDoc.CreatedAt = currentTime
+			dataDoc.JournalInfo.CreatedAt = currentTime
 			return dataDoc
 		},
 	)
 
-	updateSuccessDataList, updateFailDataList := importdata.UpdateOnDuplicate[models.Journal, models.JournalDoc](
+	updatedDocs := []models.JournalDoc{}
+	_, updateFailDataList := importdata.UpdateOnDuplicate[models.Journal, models.JournalDoc](
 		holdingCode,
-		authUsername,
+		actor.Username,
 		duplicateDataList,
 		svc.getDocIDKey,
 		func(holdingCode string, guid string) (models.JournalDoc, error) {
@@ -497,12 +523,16 @@ func (svc JournalHttpService) SaveInBatch(holdingCode string, authUsername strin
 
 			doc.Journal = data
 			doc.UpdatedBy = authUsername
+			doc.UpdatedByName = journalActorName(actor)
+			doc.JournalInfo.UpdatedBy = authUsername
+			doc.JournalInfo.UpdatedByName = journalActorName(actor)
 			doc.UpdatedAt = time.Now()
+			doc.JournalInfo.UpdatedAt = doc.UpdatedAt
 
-			err = svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc)
-			if err != nil {
-				return nil
+			if err := svc.repo.Update(ctx, holdingCode, doc.GuidFixed, doc); err != nil {
+				return err
 			}
+			updatedDocs = append(updatedDocs, doc)
 			return nil
 		},
 	)
@@ -514,8 +544,7 @@ func (svc JournalHttpService) SaveInBatch(holdingCode string, authUsername strin
 			return common.BulkImport{}, err
 		}
 
-		svc.mqRepo.CreateInBatch(createDataList)
-
+		err = svc.mqRepo.CreateInBatch(createDataList)
 		if err != nil {
 			return common.BulkImport{}, err
 		}
@@ -533,8 +562,10 @@ func (svc JournalHttpService) SaveInBatch(holdingCode string, authUsername strin
 	}
 
 	updateDataKey := []string{}
-	for _, doc := range updateSuccessDataList {
-		svc.mqRepo.Update(doc)
+	for _, doc := range updatedDocs {
+		if err = svc.mqRepo.Update(doc); err != nil {
+			return common.BulkImport{}, err
+		}
 		updateDataKey = append(updateDataKey, doc.DocNo)
 	}
 

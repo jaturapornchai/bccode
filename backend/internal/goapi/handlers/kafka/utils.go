@@ -377,10 +377,8 @@ func ConvertLanguageModels(sourceNames []models.LanguageModel) []models.Language
 	var result []models.LanguageModel
 	for _, name := range sourceNames {
 		result = append(result, models.LanguageModel{
-			Code:     name.Code,
-			Name:     name.Name,
-			IsAuto:   name.IsAuto,
-			IsDelete: name.IsDelete,
+			Code: name.Code,
+			Name: name.Name,
 		})
 	}
 	return result

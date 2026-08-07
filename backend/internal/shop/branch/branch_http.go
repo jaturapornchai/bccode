@@ -6,10 +6,12 @@ import (
 	"smlcloudplatform/internal/config"
 	mastersync "smlcloudplatform/internal/mastersync/repositories"
 	common "smlcloudplatform/internal/models"
+	orgaccess "smlcloudplatform/internal/organization"
 	"smlcloudplatform/internal/shop/branch/models"
 	"smlcloudplatform/internal/shop/branch/repositories"
 	"smlcloudplatform/internal/shop/branch/services"
 	"smlcloudplatform/internal/utils"
+	"smlcloudplatform/pkg/apperr"
 	"smlcloudplatform/pkg/microservice"
 )
 
@@ -65,8 +67,12 @@ func (h BranchHttp) RegisterHttp() {
 // @Security     AccessToken
 // @Router /shop/branch [post]
 func (h BranchHttp) CreateBranch(ctx microservice.IContext) error {
-	authUsername := ctx.UserInfo().Username
-	holdingCode := ctx.UserInfo().HoldingCode
+	userInfo := ctx.UserInfo()
+	authUsername := userInfo.Username
+	holdingCode := userInfo.HoldingCode
+	if authErr := orgaccess.RequireHoldingAdmin(h.ms.MongoPersister(h.cfg.MongoPersisterConfig()), userInfo); authErr != nil {
+		return apperr.Respond(ctx, authErr)
+	}
 	input := ctx.ReadInput()
 
 	docReq := &models.Branch{}

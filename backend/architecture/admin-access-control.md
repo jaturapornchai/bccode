@@ -82,17 +82,20 @@ platform_admins(
 )
 ```
 
-First-admin bootstrap:
+Current platform policy:
 
-1. If no active `platform_owner` exists, the first verified login becomes `platform_owner`.
-2. After bootstrap, no one becomes platform owner automatically.
-3. `platform_owner` can add/remove `platform_admin`.
-4. The system must reject disabling/removing the last active `platform_owner`.
+1. The Global Admin email is `jaturapornchai@gmail.com`.
+2. Do not auto-promote other verified-email accounts to a platform role.
+3. Any active account with a valid linked email may create a Holding; the creator becomes that Holding's `OWNER`.
+4. A Holding may have multiple `ADMIN` members. Holding roles remain separate from Global Admin.
+5. The system must reject disabling/removing the last active platform owner after platform-role enforcement is implemented.
+
+Runtime note: the current backend enforces the Holding rules above but does not yet resolve a platform Global Admin role. Do not claim cross-Holding Global Admin authority until its operations and enforcement are implemented.
 
 Optional production hardening:
 
 ```text
-BC_AI_ERP_BOOTSTRAP_ADMIN_EMAILS=jaturapornchai@gmail.com,admin@example.com
+BC_AI_ERP_BOOTSTRAP_ADMIN_EMAILS=jaturapornchai@gmail.com
 ```
 
 Use this only during first deployment from a controlled secret source or environment config.

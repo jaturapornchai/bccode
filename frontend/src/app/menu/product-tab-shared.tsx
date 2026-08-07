@@ -8,6 +8,7 @@
 
 import { type ChangeEvent, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/ui/numeric-input";
 import { cn } from "@/lib/utils";
 import type { Product } from "@/lib/product-barcode/types";
 
@@ -121,16 +122,6 @@ export function NumberField({
   className?: string;
 }) {
   return (
-    <Input
-      type="number"
-      value={Number.isFinite(value) ? value : 0}
-      step={step}
-      min={min}
-      onChange={(event: ChangeEvent<HTMLInputElement>) => {
-        const n = Number(event.target.value);
-        onChange(Number.isFinite(n) ? n : 0);
-      }}
-      className={className}
-    />
+    <NumericInput value={value} onChange={onChange} min={min} step={step} className={className} />
   );
 }

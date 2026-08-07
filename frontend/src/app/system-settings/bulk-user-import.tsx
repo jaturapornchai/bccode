@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 type ImportRow = {
   row: number;
   username: string;
+  email: string;
   name: string;
   role: number;
   position: string;
@@ -142,7 +143,7 @@ export function BulkUserImport({
         </div>
 
         <p className="text-xs text-muted-foreground">
-          หัวตาราง: <b>email</b> (จำเป็น), name, role (ผู้ใช้/แอดมิน/เจ้าของ หรือ 0/1/2), position, department — รองรับ .csv และ .xlsx
+          หัวตาราง: <b>usercode</b> (จำเป็น), username (ชื่อแสดง), email (ไม่บังคับ), role (ผู้ใช้/แอดมิน/เจ้าของ หรือ 0/1/2), position, department
         </p>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -192,8 +193,9 @@ export function BulkUserImport({
                 <thead className="sticky top-0 bg-muted">
                   <tr>
                     <th className="px-2 py-1">#</th>
-                    <th className="px-2 py-1">อีเมล</th>
-                    <th className="px-2 py-1">ชื่อ</th>
+					<th className="px-2 py-1">รหัสผู้ใช้</th>
+					<th className="px-2 py-1">ชื่อผู้ใช้</th>
+					<th className="px-2 py-1">อีเมล</th>
                     <th className="px-2 py-1">สิทธิ์</th>
                     <th className="px-2 py-1">สถานะ</th>
                   </tr>
@@ -204,6 +206,7 @@ export function BulkUserImport({
                       <td className="px-2 py-1 text-muted-foreground">{r.row}</td>
                       <td className="px-2 py-1 break-all">{r.username || <span className="text-muted-foreground">—</span>}</td>
                       <td className="px-2 py-1">{r.name}</td>
+					  <td className="px-2 py-1 break-all">{r.email || <span className="text-muted-foreground">—</span>}</td>
                       <td className="px-2 py-1">{ROLE_LABEL[r.role] ?? r.role}</td>
                       <td className="px-2 py-1">
                         {committed ? (

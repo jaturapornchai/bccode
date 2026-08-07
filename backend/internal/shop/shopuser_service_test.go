@@ -136,6 +136,30 @@ func TestShopUserSaveFullProfilePreservesUserUIDWhenUsernameChanges(t *testing.T
 	require.NoError(t, err)
 }
 
+func TestEnsureHoldingManagerRejectsInactiveUser(t *testing.T) {
+	tests := []struct {
+		name string
+		user models.ShopUser
+	}{
+		{name: "disabled", user: models.ShopUser{IsAccessDisabled: true}},
+		{name: "expired", user: models.ShopUser{AccessExpiryDate: time.Now().Add(-time.Minute)}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := new(ShopUserRepositoryMock)
+			tt.user.HoldingCode = "holdingcode"
+			tt.user.Username = "admin@example.com"
+			tt.user.Role = models.ROLE_ADMIN
+			repo.On("FindByHoldingCodeAndUsername", context.Background(), tt.user.HoldingCode, tt.user.Username).Return(tt.user, nil)
+
+			err := shop.NewShopUserService(repo).EnsureHoldingManager(tt.user.HoldingCode, tt.user.Username)
+
+			require.EqualError(t, err, "permission denied")
+		})
+	}
+}
+
 func testShopUser(holdingCode string, username string, role models.UserRole) models.ShopUser {
 	shopUser := models.ShopUser{}
 	shopUser.HoldingCode = holdingCode

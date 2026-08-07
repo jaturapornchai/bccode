@@ -5,20 +5,20 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/models"
 	"smlcloudplatform/internal/goapi/myglobal"
 	"smlcloudplatform/internal/goapi/mypg"
 	build "smlcloudplatform/internal/goapi/process/build"
-	processstock "smlcloudplatform/internal/goapi/process/process-stock"
+	"smlcloudplatform/internal/utils"
 )
 
 // OnConsumeMessageInventoryCreateOrUpdate - handles inventory create/update messages
 func OnConsumeMessageInventoryCreateOrUpdate(msg string) error {
 	logger.Debug("OnConsumeMessageInventoryCreateOrUpdate: %s", msg)
-	ProductBarcodeBuild(msg)
-	return nil
+	return ProductBarcodeBuild(msg)
 }
 
 // OnConsumeMessageInventoryDelete - handles inventory delete messages
@@ -33,14 +33,9 @@ func OnConsumeMessageInventoryDelete(msg string) error {
 		return err
 	}
 
-	if productData.HoldingCode == "" {
-		logger.Warn("Product barcode delete data missing HoldingCode")
-		return fmt.Errorf("missing HoldingCode for product deletion")
-	}
-
-	if productData.Barcode == "" {
-		logger.Warn("Product barcode delete data missing Barcode")
-		return fmt.Errorf("missing Barcode for product deletion")
+	if err := normalizeProductBarcodeIdentity(&productData, false); err != nil {
+		logger.Warn("Invalid product barcode delete message: %v", err)
+		return err
 	}
 
 	build.DatabaseChecker(productData.HoldingCode, false)
@@ -122,14 +117,8 @@ func OnConsumeMessageInventoryBulkDelete(msg string) error {
 		return nil
 	}
 
-	// ตรวจสอบ HoldingCode ให้ตรงกันทุกตัว
-	holdingCode := barcodes[0].HoldingCode
-	for i, barcode := range barcodes {
-		if barcode.HoldingCode != holdingCode {
-			logger.Error("HoldingCode mismatch in bulk delete: barcode %d has HoldingCode %s, expected %s",
-				i+1, barcode.HoldingCode, holdingCode)
-			return fmt.Errorf("HoldingCode mismatch in bulk delete")
-		}
+	if _, _, err := normalizeProductBarcodeBatch(barcodes, false); err != nil {
+		return err
 	}
 
 	err = ProductBarcodeBulkDeleteWithLogging(barcodes)
@@ -144,8 +133,7 @@ func OnConsumeMessageInventoryBulkDelete(msg string) error {
 // OnProductBarcodeCreateUpdateMessageConsume - wrapper function for product barcode processing
 func OnProductBarcodeCreateUpdateMessageConsume(msg string) error {
 	return SafeConsumerWrapper("PRODUCT_BARCODE_WAREHOUSE", func(msg string) error {
-		ProductBarcodeBuild(msg)
-		return nil
+		return ProductBarcodeBuild(msg)
 	})(msg)
 }
 
@@ -164,18 +152,18 @@ func OnProductBarcodeBulkDeleteMessageConsume(msg string) error {
 }
 
 // ProductBarcodeBuild - processes single product barcode update
-func ProductBarcodeBuild(msg string) {
+func ProductBarcodeBuild(msg string) error {
 	// Decode the product barcode message
 	var productData models.MongoProductBarcodeModel
 	err := json.Unmarshal([]byte(msg), &productData)
 	if err != nil {
 		logger.Error("unmarshaling product barcode: %v", err)
-		return
+		return err
 	}
 
-	if productData.HoldingCode == "" {
-		logger.Warn("Product barcode data missing HoldingCode")
-		return
+	if err := normalizeProductBarcodeIdentity(&productData, true); err != nil {
+		logger.Warn("Invalid product barcode message: %v", err)
+		return err
 	}
 
 	build.DatabaseChecker(productData.HoldingCode, false)
@@ -184,21 +172,20 @@ func ProductBarcodeBuild(msg string) {
 	err = ProductBarcodeInsertOrUpdateToPostgreSQL(productData)
 	if err != nil {
 		logger.Error("updating product barcode: %v", err)
+		return err
 	}
 
-	// Update product balance (packing/unitname อาจเปลี่ยน → ต้อง recalc word)
-	if productData.ItemCode != "" {
-		db, dbErr := mypg.PgSqlFastConnect(productData.HoldingCode)
-		if dbErr == nil {
-			processstock.ProcessProductBalanceUpdateByItemsAsync(db, []string{productData.ItemCode})
-		}
-	}
+	// Stock projection stays untouched until it is partitioned by BusinessCode.
+	return nil
 }
 
 // ProductBarcodeInsertOrUpdateToPostgreSQL - inserts or updates product barcode data in PostgreSQL
 func ProductBarcodeInsertOrUpdateToPostgreSQL(productData models.MongoProductBarcodeModel) error {
-	logger.Info("Processing product barcode: HoldingCode=%s, Barcode=%s, ItemCode=%s",
-		productData.HoldingCode, productData.Barcode, productData.ItemCode)
+	if err := normalizeProductBarcodeIdentity(&productData, true); err != nil {
+		return err
+	}
+	logger.Info("Processing product barcode: HoldingCode=%s, BusinessCode=%s, Barcode=%s, ItemCode=%s",
+		productData.HoldingCode, productData.BusinessCode, productData.Barcode, productData.ItemCode)
 
 	db, err := mypg.PgSqlFastConnect(productData.HoldingCode)
 	if err != nil {
@@ -234,19 +221,26 @@ func ProductBarcodeInsertOrUpdateToPostgreSQL(productData models.MongoProductBar
 		price = productData.Prices[0].Price
 	}
 
-	// Delete existing record
+	// Barcode is the stable company-scoped lookup key. An upsert also handles a
+	// corrected item link without exposing another company's row.
 	_, err = db.ExecContext(ctx,
-		"DELETE FROM productbarcode WHERE holding_code = $1 AND itemcode = $2 AND barcode = $3",
-		productData.HoldingCode, productData.ItemCode, productData.Barcode)
-	if err != nil {
-		logger.Warn("Could not delete existing barcode %s: %v", productData.Barcode, err)
-	}
-
-	// Insert new record (PostgreSQL)
-	_, err = db.ExecContext(ctx,
-		`INSERT INTO productbarcode (holding_code, barcode, itemcode, name0, checksum, groupcode, groupnames, unitcode, unitname, price1, barcoderefunitstand, barcoderefunitdivide, itemtype)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+		`INSERT INTO productbarcode (holding_code, businesscode, barcode, itemcode, name0, checksum, groupcode, groupnames, unitcode, unitname, price1, barcoderefunitstand, barcoderefunitdivide, itemtype)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+		 ON CONFLICT (holding_code, businesscode, barcode)
+		 DO UPDATE SET
+			itemcode = EXCLUDED.itemcode,
+			name0 = EXCLUDED.name0,
+			checksum = EXCLUDED.checksum,
+			groupcode = EXCLUDED.groupcode,
+			groupnames = EXCLUDED.groupnames,
+			unitcode = EXCLUDED.unitcode,
+			unitname = EXCLUDED.unitname,
+			price1 = EXCLUDED.price1,
+			barcoderefunitstand = EXCLUDED.barcoderefunitstand,
+			barcoderefunitdivide = EXCLUDED.barcoderefunitdivide,
+			itemtype = EXCLUDED.itemtype`,
 		productData.HoldingCode,
+		productData.BusinessCode,
 		productData.Barcode,
 		productData.ItemCode,
 		productName,
@@ -280,8 +274,10 @@ func ProductBarcodeBulkUpdateWithLogging(productDataList []models.MongoProductBa
 		return nil
 	}
 
-	// Get holding Code from first item
-	holdingCode := productDataList[0].HoldingCode
+	holdingCode, _, err := normalizeProductBarcodeBatch(productDataList, true)
+	if err != nil {
+		return err
+	}
 
 	// Connect to PostgreSQL
 	db, err := mypg.PgSqlFastConnect(holdingCode)
@@ -339,14 +335,15 @@ func productBarcodeBulkUpdateInternalWithLogging(ctx context.Context, db *sql.DB
 		}
 
 		// For bulk update, use prepared statement to delete existing records
-		deleteQuery := "DELETE FROM productbarcode WHERE holding_code = $1 AND itemcode = $2 AND barcode = $3"
-		_, err := db.ExecContext(ctx, deleteQuery, productData.HoldingCode, productData.ItemCode, productData.Barcode)
+		deleteQuery := "DELETE FROM productbarcode WHERE holding_code = $1 AND businesscode = $2 AND barcode = $3"
+		_, err := db.ExecContext(ctx, deleteQuery, productData.HoldingCode, productData.BusinessCode, productData.Barcode)
 		if err != nil {
 			logger.Warn("Could not delete existing barcode %s: %v", productData.Barcode, err)
 		}
 
 		record := []any{
 			productData.HoldingCode,
+			productData.BusinessCode,
 			productData.Barcode,
 			productData.ItemCode,
 			productName,
@@ -365,7 +362,7 @@ func productBarcodeBulkUpdateInternalWithLogging(ctx context.Context, db *sql.DB
 
 	// Use COPY FROM for bulk insert (PostgreSQL)
 	columns := []string{
-		"holding_code", "barcode", "itemcode", "name0", "checksum",
+		"holding_code", "businesscode", "barcode", "itemcode", "name0", "checksum",
 		"groupcode", "groupnames", "unitcode", "unitname", "price1",
 		"barcoderefunitstand", "barcoderefunitdivide", "itemtype",
 	}
@@ -384,8 +381,11 @@ func productBarcodeBulkUpdateInternalWithLogging(ctx context.Context, db *sql.DB
 
 // ProductBarcodeDeleteFromPostgreSQL - ลบข้อมูลสินค้าใน PostgreSQL + ClickHouse
 func ProductBarcodeDeleteFromPostgreSQL(productData models.MongoProductBarcodeModel) error {
-	logger.Info("Deleting product barcode: HoldingCode=%s, Barcode=%s",
-		productData.HoldingCode, productData.Barcode)
+	if err := normalizeProductBarcodeIdentity(&productData, false); err != nil {
+		return err
+	}
+	logger.Info("Deleting product barcode: HoldingCode=%s, BusinessCode=%s, Barcode=%s",
+		productData.HoldingCode, productData.BusinessCode, productData.Barcode)
 
 	db, err := mypg.PgSqlFastConnect(productData.HoldingCode)
 	if err != nil {
@@ -396,8 +396,8 @@ func ProductBarcodeDeleteFromPostgreSQL(productData models.MongoProductBarcodeMo
 
 	// ลบข้อมูลสินค้า (PostgreSQL)
 	result, err := db.ExecContext(ctx,
-		"DELETE FROM productbarcode WHERE holding_code = $1 AND itemcode = $2 AND barcode = $3",
-		productData.HoldingCode, productData.ItemCode, productData.Barcode)
+		"DELETE FROM productbarcode WHERE holding_code = $1 AND businesscode = $2 AND barcode = $3",
+		productData.HoldingCode, productData.BusinessCode, productData.Barcode)
 	if err != nil {
 		return fmt.Errorf("error deleting product barcode %s: %v", productData.Barcode, err)
 	}
@@ -422,8 +422,10 @@ func ProductBarcodeBulkDeleteWithLogging(productDataList []models.MongoProductBa
 		return nil
 	}
 
-	// Get holding Code from first item
-	holdingCode := productDataList[0].HoldingCode
+	holdingCode, _, err := normalizeProductBarcodeBatch(productDataList, false)
+	if err != nil {
+		return err
+	}
 
 	// Connect to PostgreSQL
 	db, err := mypg.PgSqlFastConnect(holdingCode)
@@ -459,8 +461,8 @@ func productBarcodeBulkDeleteInternalWithLogging(ctx context.Context, db *sql.DB
 
 	for _, productData := range productDataList {
 		result, err := db.ExecContext(ctx,
-			"DELETE FROM productbarcode WHERE holding_code = $1 AND itemcode = $2 AND barcode = $3",
-			productData.HoldingCode, productData.ItemCode, productData.Barcode)
+			"DELETE FROM productbarcode WHERE holding_code = $1 AND businesscode = $2 AND barcode = $3",
+			productData.HoldingCode, productData.BusinessCode, productData.Barcode)
 		if err != nil {
 			logger.Error("failed to delete barcode %s: %v", productData.Barcode, err)
 			failedBarcodes = append(failedBarcodes, productData.Barcode)
@@ -510,4 +512,38 @@ func clickHouseDelete(holdingCode, itemcode, barcode string) {
 }
 
 func clickHouseBulkDelete(holdingCode string, productDataList []models.MongoProductBarcodeModel) {
+}
+
+func normalizeProductBarcodeIdentity(productData *models.MongoProductBarcodeModel, requireItemCode bool) error {
+	productData.HoldingCode = strings.TrimSpace(productData.HoldingCode)
+	productData.BusinessCode = utils.NormalizeBusinessCode(productData.BusinessCode)
+	productData.ItemCode = utils.NormalizeBusinessCode(productData.ItemCode)
+	productData.Barcode = utils.NormalizeBusinessCode(productData.Barcode)
+
+	if productData.HoldingCode == "" || productData.BusinessCode == "" || productData.Barcode == "" {
+		return fmt.Errorf("holdingcode, businesscode and barcode are required")
+	}
+	if requireItemCode && productData.ItemCode == "" {
+		return fmt.Errorf("itemcode is required for product barcode upsert")
+	}
+	return nil
+}
+
+func normalizeProductBarcodeBatch(productDataList []models.MongoProductBarcodeModel, requireItemCode bool) (string, string, error) {
+	if len(productDataList) == 0 {
+		return "", "", nil
+	}
+	for index := range productDataList {
+		if err := normalizeProductBarcodeIdentity(&productDataList[index], requireItemCode); err != nil {
+			return "", "", fmt.Errorf("barcode %d: %w", index+1, err)
+		}
+	}
+	holdingCode := productDataList[0].HoldingCode
+	businessCode := productDataList[0].BusinessCode
+	for index := 1; index < len(productDataList); index++ {
+		if productDataList[index].HoldingCode != holdingCode || productDataList[index].BusinessCode != businessCode {
+			return "", "", fmt.Errorf("barcode %d belongs to a different holding or company", index+1)
+		}
+	}
+	return holdingCode, businessCode, nil
 }

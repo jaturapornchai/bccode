@@ -21,7 +21,7 @@ import (
 func ProcessInsertBarCodeListForPostgres(conn interface{}, barcodes *[]models.BarcodeModel) error {
 	// เตรียม columns สำหรับ COPY FROM
 	columns := []string{
-		"holding_code", "barcode", "barcoderef", "itemcode", "name0", "unitcode", "unitname",
+		"holding_code", "businesscode", "barcode", "barcoderef", "itemcode", "name0", "unitcode", "unitname",
 		"groupcode", "groupnames", "price1", "price_retail", "barcoderefunitstand", "barcoderefunitdivide",
 		"isstock", "itemtype", "checksum", "imageuri",
 	}
@@ -32,6 +32,7 @@ func ProcessInsertBarCodeListForPostgres(conn interface{}, barcodes *[]models.Ba
 	for i, barcode := range *barcodes {
 		rows[i] = []any{
 			barcode.HoldingCode,
+			barcode.BusinessCode,
 			barcode.Barcode,
 			barcode.BarcodeRef,
 			barcode.ItemCode,

@@ -96,6 +96,7 @@ import { MapPickerDialog } from "@/components/map-picker-dialog";
 import { ProductCategoryTreeView } from "./product-category-tree-view";
 import { ProductCategoryItemsEditor } from "./product-category-items-editor";
 import { ProductGroupTreeView } from "./product-group-tree-view";
+import { ProductSubgroupTreeView } from "./product-subgroup-tree-view";
 import { WarehouseTreeView } from "./warehouse-tree-view";
 import { CompanyBranchTreeView } from "./company-branch-tree-view";
 import { BulkUserImport } from "./bulk-user-import";
@@ -139,6 +140,64 @@ import { cn } from "@/lib/utils";
 import { AppHeaderControls } from "../app-header-controls";
 import { ManualLink } from "../manual-link";
 import { pushNotice } from "@/lib/toast";
+// Extracted modules (wired up from components/system-settings)
+import {
+  type SettingRecord,
+  type FormState,
+  type DateTimeScope,
+  requestHeaders,
+  isRecord,
+  isFailed,
+  extractMessage,
+  safeJsonParse,
+  localeOf,
+  getByPath,
+  getPathOrFlatValue,
+  booleanLikeValue,
+  stringValue,
+  localizedValue,
+  dateTimeScopePayload,
+} from "@/components/system-settings/types";
+import {
+  readAuth,
+  readWorkspace,
+  isCreatorRecord,
+  isSelfUserRecord,
+  userAccessDisabled,
+  radioFormValue,
+  radioValueToFormValue,
+  optionValueToFormValue,
+  fieldGridItemClass,
+  isBranchLatitudeField,
+  isBranchLongitudeField,
+  isPermissionAccessRulesField,
+  isProductVariantStructuredField,
+  isBranchStructuredSettingField,
+  recordId,
+  recordDisplayCode,
+  recordDetailId,
+  recordBusinessLookup,
+  recordMatchesBusinessLookup,
+  recordTitle,
+  recordBranchCaption,
+  recordValueForField,
+  shouldHydrateRecordDetail,
+  firstRecordValue,
+  wait,
+  uiEn,
+  uiText,
+  uiBackendKeys,
+  uiBackendKey,
+  systemSettingTitle,
+  fieldLabel,
+  optionLabel,
+  normalizeHexColor,
+  languageName,
+  systemSettingBackendKeys,
+  fieldBackendKeys,
+  fieldValueAliases,
+} from "@/components/system-settings/utils";
+import { StatCard } from "@/components/system-settings/stat-card";
 
 type SystemSettingsScreenProps = {
   embedded?: boolean;
@@ -151,8 +210,6 @@ type SystemSettingsScreenProps = {
   hideChrome?: boolean;
 };
 
-type SettingRecord = Record<string, unknown>;
-type FormState = Record<string, unknown>;
 type ProductUnitOption = {
   unitcode?: string;
   names?: { code?: string; name?: string }[];
@@ -532,16 +589,6 @@ type WorkDay = {
   worktimes: WorkDayTime[];
 };
 
-type DateTimeScope = {
-  key: string;
-  branchcode: string;
-  branchguid: string;
-  timezone: string;
-  timezonelabel: string;
-  timezoneoffset: string;
-  calendarYearType: CalendarYearType;
-};
-
 const emptyStandardUnitDialog: StandardUnitDialogState = {
   open: false,
   loading: false,
@@ -593,358 +640,6 @@ const branchSetupDefaults: FormState = {
   pointconfig: defaultPointConfigJson(),
 };
 
-const uiEn = {
-  active: "Active",
-  add: "Add",
-  addItem: "Add item",
-  all: "All",
-  accessEnabled: "Can access",
-  accessStatus: "Access status",
-  accessTemporarilyDisabled: "Temporarily disabled",
-  allBranches: "All branches",
-  branch: "Branch",
-  cancel: "Cancel",
-  close: "Close",
-  company: "Company",
-  copyNow: "Copy now",
-  copyMondaySchedule: "Copy Monday time",
-  creator: "Creator",
-  creatorAlwaysEnabled: "Creator can always access.",
-  creatorCannotDelete: "Creator cannot be deleted.",
-  selfPermissionCannotEdit: "You cannot edit your own permission.",
-  delete: "Delete",
-  deleteConfirm: "Confirm delete this item?",
-  edit: "Edit",
-  empty: "No data",
-  emptyHint: "Add a new item or change the search term.",
-  readOnlyEmptyHint: "No data found from the real database.",
-  enableAccess: "Enable access",
-  enabled: "Enabled",
-  errorRequired: "Please fill required fields.",
-  fullDay: "Full day",
-  id: "ID",
-  jsonInvalid: "JSON format is invalid.",
-  details: "Details",
-  items: "items",
-  list: "List",
-  loading: "Loading data",
-  manual: "Manual",
-  newItem: "New item",
-  findStandardUnits: "Find standard units",
-  standardUnits: "Standard units",
-  addSelected: "Add selected",
-  clearSelection: "Clear selection",
-  noStandardUnits: "No standard units to add.",
-  selectAll: "Select all",
-  selected: "Selected",
-  off: "Closed",
-  preview: "Preview",
-  quickAdd: "Quick add",
-  range: "Range",
-  readAccess: "Access",
-  refresh: "Refresh",
-  removeRange: "Remove range",
-  requestFailed: "Request failed.",
-  resetPassword: "Reset password",
-  resetPasswordConfirm: "Reset this user's password to 12345?",
-  resetPasswordDone: "Password was reset to 12345.",
-  save: "Save",
-  saveFailed: "Save failed",
-  saveSucceeded: "Saved successfully",
-  saved: "Saved.",
-  search: "Search",
-  selfOnly: "Own data only",
-  selectSourceShop: "Select source shop",
-  sourceEnvironment: "Source environment",
-  sourcePro: "PRO",
-  sourceShop: "Source shop",
-  sourceUat: "UAT",
-  startTime: "Start",
-  status: "Status",
-  targetShop: "Target shop",
-  timezone: "Timezone",
-  endTime: "End",
-  timeInvalid: "Start time must be before end time.",
-  timeOverlap: "Time ranges overlap.",
-  total: "Total",
-  totalRanges: "Ranges",
-  updated: "Updated",
-  updateAccess: "Edit",
-  workTime: "Work time",
-  writeAccess: "Add",
-  afternoonShift: "Afternoon",
-  eveningShift: "Evening",
-  morningShift: "Morning",
-  standardTwoShifts: "2 shifts",
-  temporarilyDisableAccess: "Disable temporarily",
-} as const;
-
-const uiText: Partial<
-  Record<LanguageCode, Partial<Record<keyof typeof uiEn, string>>>
-> = {
-  th: {
-    active: "ใช้งาน",
-    add: "เพิ่ม",
-    addItem: "เพิ่มรายการ",
-    all: "ทั้งหมด",
-    accessEnabled: "เข้าใช้งานได้",
-    accessStatus: "สถานะเข้าใช้งาน",
-    accessTemporarilyDisabled: "เข้าใช้งานไม่ได้ชั่วคราว",
-    allBranches: "ใช้กับทุกสาขา",
-    branch: "สาขา",
-    cancel: "ยกเลิก",
-    close: "ปิด",
-    company: "บริษัท",
-    copyNow: "โอนข้อมูล",
-    copyMondaySchedule: "คัดลอกเวลาจันทร์",
-    creator: "ผู้สร้าง",
-    creatorAlwaysEnabled: "ผู้สร้างเข้าใช้งานได้ตลอด",
-    creatorCannotDelete: "ผู้สร้างไม่สามารถลบได้",
-    selfPermissionCannotEdit: "ไม่สามารถแก้ไขสิทธิ์ของตัวเองได้",
-    delete: "ลบ",
-    deleteConfirm: "ต้องการลบจริงหรือไม่",
-    edit: "แก้ไข",
-    empty: "ไม่มีข้อมูล",
-    emptyHint: "เพิ่มรายการใหม่ หรือเปลี่ยนคำค้นหา",
-    readOnlyEmptyHint: "ไม่พบข้อมูลจากฐานข้อมูลจริง",
-    enableAccess: "ให้เข้าใช้งานได้",
-    enabled: "เปิดใช้งาน",
-    errorRequired: "กรุณากรอกช่องที่จำเป็น",
-    fullDay: "ทั้งวัน",
-    id: "รหัส",
-    jsonInvalid: "รูปแบบ JSON ไม่ถูกต้อง",
-    details: "รายละเอียด",
-    items: "รายการ",
-    list: "รายการ",
-    loading: "กำลังโหลดข้อมูล",
-    manual: "คู่มือ",
-    newItem: "รายการใหม่",
-    findStandardUnits: "ค้นหาหน่วยนับมาตรฐาน",
-    standardUnits: "หน่วยนับมาตรฐาน",
-    addSelected: "เพิ่มรายการที่เลือก",
-    clearSelection: "ล้างการเลือก",
-    noStandardUnits: "ไม่พบหน่วยนับมาตรฐานที่เพิ่มได้",
-    selectAll: "เลือกทั้งหมด",
-    selected: "เลือกแล้ว",
-    off: "หยุด",
-    preview: "ตรวจสอบก่อนโอน",
-    quickAdd: "เพิ่มด่วน",
-    range: "ช่วง",
-    readAccess: "เข้าถึง",
-    refresh: "โหลดใหม่",
-    removeRange: "ลบช่วงเวลา",
-    requestFailed: "เรียกข้อมูลไม่สำเร็จ",
-    resetPassword: "รีเซ็ตรหัสผ่าน",
-    resetPasswordConfirm: "ยืนยันรีเซ็ตรหัสผ่านผู้ใช้นี้กลับเป็น 12345?",
-    resetPasswordDone: "รีเซ็ตรหัสผ่านเป็น 12345 แล้ว",
-    save: "บันทึก",
-    saveFailed: "บันทึกไม่สำเร็จ",
-    saveSucceeded: "บันทึกสำเร็จ",
-    saved: "บันทึกแล้ว",
-    search: "ค้นหา",
-    selfOnly: "เห็นข้อมูลตัวเองเท่านั้น",
-    selectSourceShop: "เลือก shop ต้นทาง",
-    sourceEnvironment: "ฐานข้อมูลต้นทาง",
-    sourcePro: "PRO ใช้งานจริง",
-    sourceShop: "Shop ต้นทาง",
-    sourceUat: "UAT ทดสอบ",
-    startTime: "เริ่ม",
-    status: "สถานะ",
-    targetShop: "Shop ปลายทาง",
-    timezone: "เขตเวลา",
-    endTime: "สิ้นสุด",
-    timeInvalid: "เวลาเริ่มต้องน้อยกว่าเวลาจบ",
-    timeOverlap: "ช่วงเวลาทับซ้อนกัน",
-    total: "ทั้งหมด",
-    totalRanges: "ช่วงเวลา",
-    updated: "อัปเดต",
-    updateAccess: "แก้ไขได้",
-    workTime: "เวลาทำงาน",
-    writeAccess: "เพิ่มได้",
-    afternoonShift: "บ่าย",
-    eveningShift: "เย็น",
-    morningShift: "เช้า",
-    standardTwoShifts: "2 ช่วง",
-    temporarilyDisableAccess: "ปิดชั่วคราว",
-  },
-  en: uiEn,
-};
-
-const uiBackendKeys: Partial<Record<keyof typeof uiEn, string>> = {
-  accessEnabled: "access_enabled",
-  accessStatus: "access_status",
-  accessTemporarilyDisabled: "access_temporarily_disabled",
-  active: "active",
-  add: "add",
-  all: "all",
-  allBranches: "allbranches",
-  branch: "branch",
-  cancel: "cancel",
-  close: "close",
-  company: "company",
-  creator: "creator",
-  creatorAlwaysEnabled: "creator_always_enabled",
-  creatorCannotDelete: "creator_cannot_delete",
-  selfPermissionCannotEdit: "self_permission_cannot_edit",
-  delete: "delete",
-  edit: "edit",
-  empty: "empty_data",
-  emptyHint: "press_add_item_to_start",
-  enableAccess: "enable_access",
-  enabled: "enabled",
-  id: "code",
-  loading: "loading",
-  manual: "manual",
-  newItem: "new_item",
-  findStandardUnits: "find_standard_units",
-  standardUnits: "standard_units",
-  addSelected: "add_selected",
-  clearSelection: "clear_selection",
-  noStandardUnits: "no_standard_units",
-  selectAll: "select_all",
-  selected: "selected",
-  readAccess: "access",
-  refresh: "refresh",
-  resetPassword: "reset_password",
-  resetPasswordConfirm: "reset_password_confirm",
-  resetPasswordDone: "reset_password_done",
-  save: "save",
-  search: "search",
-  selfOnly: "own_data_only",
-  status: "status",
-  timezone: "timezone",
-  total: "total",
-  updated: "updated",
-  updateAccess: "can_edit",
-  temporarilyDisableAccess: "temporarily_disable_access",
-  writeAccess: "can_add",
-};
-
-const systemSettingBackendKeys: Record<string, string> = {
-  branch: "branch",
-  businesstypescreen: "business_type",
-  company: "company",
-  department: "department",
-  employee: "employee",
-  holidayscreen: "holiday",
-  permissiondefinition: "permissiondefinition",
-  permissionlink: "permissionlink",
-  approvalsetting: "approvalsetting",
-  user: "user",
-  workdayscreen: "work_day",
-};
-
-const fieldBackendKeys: Record<string, string> = {
-  "branch.basecurrency": "basecurrency",
-  "branch.code": "branchcode",
-  "branch.companyregistrationno": "companyregistrationno",
-  "branch.dateformat": "dateformat",
-  "branch.decimaldocument": "decimaldocument",
-  "branch.decimalprice": "decimalprice",
-  "branch.decimalquantity": "decimalquantity",
-  "branch.isvatregistered": "vat_status",
-  "branch.language": "default_language",
-  "branch.machinetype": "machine_type",
-  "branch.names": "branch_name",
-  "branch.pointconfig": "point_config",
-  "branch.timezone": "timezone",
-  "branch.yeartype": "yeartype",
-  "branch.languages": "select_data_language",
-  "branch.businesstype": "business_type",
-  "branch.pos.taxid": "company_taxid",
-  "branch.pos.vatrate": "vat_rate",
-  "branch.pos.isbom": "cut_stock_by_bom",
-  "branch.pos.vattypepurchase": "vattype_purchase",
-  "branch.pos.inquirytypepurchase": "inquirytype_purchase",
-  "branch.pos.vattypesale": "vattype_sale",
-  "branch.pos.inquirytypesale": "inquirytype_sale",
-  "businesstypescreen.code": "code",
-  "businesstypescreen.names": "business_type",
-  "company.address": "company_address",
-  "company.logo": "company_logo",
-  "company.names": "company_name",
-  "company.settings.basecurrency": "basecurrency",
-  "company.settings.companyregistrationno": "companyregistrationno",
-  "company.settings.country_code": "country_code",
-  "company.settings.dateformat": "dateformat",
-  "company.settings.decimaldocument": "decimaldocument",
-  "company.settings.decimalprice": "decimalprice",
-  "company.settings.decimalquantity": "decimalquantity",
-  "company.settings.isvatregistered": "vat_status",
-  "company.settings.isusebranch": "use_branch_system",
-  "company.settings.isusedepartment": "use_department_system",
-  "company.settings.language": "default_language",
-  "company.settings.languageconfigs": "activelanguages",
-  "company.settings.taxid": "taxid",
-  "company.settings.timezone": "timezone",
-  "company.settings.usebuddhistcalendar": "yeartype",
-  "company.settings.vatrate": "vat_rate",
-  "company.telephone": "telephone",
-  "department.code": "department_code",
-  "department.names": "department_name",
-  "holidayscreen.date": "date",
-  "holidayscreen.desc": "description",
-  "user.isaccessdisabled": "access_status",
-  "user.uid": "user_id_guid",
-  "user.userprofilename": "user_name",
-  "user.email": "registered_email",
-  "user.role": "user_role",
-  "user.position": "user_position",
-  "user.department": "department",
-  "user.accessscopes": "accessscopes",
-  "user.lineuserid": "lineuserid",
-  "user.linedisplayname": "linedisplayname",
-  "permissiondefinition.permissioncode": "permissioncode",
-  "permissiondefinition.permissionname": "permissionname",
-  "permissiondefinition.scoperules": "scoperules",
-  "permissiondefinition.accessrules": "accessrules",
-  "approvalsetting.approvalcode": "approvalcode",
-  "approvalsetting.approvalname": "approvalname",
-  "approvalsetting.approvalrules": "approvalrules",
-  "approvalsetting.approvals": "approval_permission",
-  "permissionlink.employeecode": "user_employeecode",
-  "permissionlink.employeename": "name",
-  "permissionlink.scoperules": "scoperules",
-  "permissionlink.permissioncodes": "permissioncodes",
-  "permissionlink.approvalcodes": "approvalcodes",
-};
-
-const fieldValueAliases: Record<string, string[]> = {
-  "company.settings.languageconfigs": ["settings.languageconfigs"],
-  "productunit.unitcode": ["unitcode"],
-  "productunit.businesscodes": ["companyguids"],
-  "employee.businesscodes": ["companyguids"],
-  "user.businesscodes": ["companyguids"],
-  "user.accessscopes": ["scoperules", "businesscodes", "companyguids"],
-  "approvalsetting.approvalcode": ["approvalCode"],
-  "approvalsetting.approvalname": ["approvalName"],
-  "approvalsetting.isactive": ["isActive"],
-  "approvalsetting.approvalrules": ["scoperules"],
-  "permissiondefinition.permissioncode": ["permissionCode"],
-  "permissiondefinition.permissionname": ["permissionName"],
-  "permissiondefinition.isactive": ["isActive"],
-  "permissiondefinition.scoperules": ["accessscopes"],
-  "permissiondefinition.accessrules": ["branches"],
-  "permissiongroup.groupcode": ["groupCode"],
-  "permissiongroup.groupname": ["groupName"],
-  "permissiongroup.isactive": ["isActive"],
-  "permissiongroup.scoperules": ["accessscopes"],
-  "permissiongroup.permissioncodes": ["permissionCodes"],
-  "permissionlink.employeecode": ["employeeCode"],
-  "permissionlink.employeename": ["employeeName"],
-  "permissionlink.groupcode": ["groupCode"],
-  "permissionlink.scoperules": ["accessscopes", "businesscodes", "companyguids"],
-  "permissionlink.businesscodes": ["companyguids"],
-  "permissionlink.permissioncodes": ["permissionCodes"],
-  "permissionlink.approvalcodes": ["approvalCodes"],
-  "branch.pos.taxid": ["pos.taxid"],
-  "branch.yeartype": ["yeartype"],
-  "productcategorygroupselectscreen.groupnumber": ["groupnumber"],
-  "productcategorygroupselectscreen.parentguid": ["parentguid"],
-  "productcategorylist.groupnumber": ["groupnumber"],
-  "productcategorylist.parentguid": ["parentguid"],
-};
-
 const dayNames: Record<LanguageCode, string[]> = {
   th: ["จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์", "อาทิตย์"],
   en: [
@@ -991,35 +686,6 @@ const dayNames: Record<LanguageCode, string[]> = {
     "Linggo",
   ],
 };
-
-function isCreatorRecord(
-  record: SettingRecord,
-  workspace: WorkspaceSession | null,
-): boolean {
-  if (Boolean(record.iscreator)) return true;
-  const creator = stringValue(
-    record.createdby ??
-      workspace?.shop.createdby ??
-      getByPath(workspace?.shopInfo ?? {}, "createdby"),
-  );
-  const username = stringValue(record.username ?? record.email ?? record.code);
-  return Boolean(
-    creator && username && creator.toLowerCase() === username.toLowerCase(),
-  );
-}
-
-function isSelfUserRecord(
-  record: SettingRecord,
-  auth: AuthSession | null,
-): boolean {
-  const username = stringValue(
-    record.username ?? record.email ?? record.code,
-  ).toLowerCase();
-  const identities = [auth?.username, auth?.profile?.email]
-    .map((item) => stringValue(item).toLowerCase())
-    .filter(Boolean);
-  return Boolean(username && identities.includes(username));
-}
 
 export function SystemSettingsScreen({
   embedded = false,
@@ -1476,6 +1142,23 @@ export function SystemSettingsScreen({
         text: "กรุณาเข้าสู่ระบบและเลือกบริษัทก่อนเปิดหน้าจอนี้",
       });
       if (!embedded) router.replace("/");
+      return;
+    }
+
+    const isHoldingManager =
+      nextWorkspace.shop.iscreator === true ||
+      nextWorkspace.shop.role === 1 ||
+      nextWorkspace.shop.role === 2 ||
+      Boolean(
+        nextWorkspace.shop.createdby &&
+          nextWorkspace.shop.createdby.trim().toLowerCase() === nextAuth.username.trim().toLowerCase(),
+      );
+    if (config.slug === "user" && !isHoldingManager) {
+      setNotice({
+        type: "error",
+        text: savedLanguage === "th" ? "ไม่มีสิทธิ์จัดการผู้ใช้งาน" : "You do not have permission to manage users.",
+      });
+      if (!embedded) router.replace("/menu");
       return;
     }
 
@@ -2877,6 +2560,50 @@ export function SystemSettingsScreen({
             setSelectedGuid={setCategorySelectedGuid}
             searchQuery={categorySearchQuery}
             onOpenCreate={handleOpenGroupCreate}
+            onOpenEdit={openEdit}
+            onDeleteRecord={deleteRecord}
+            onRefresh={() => void loadRecords(auth, workspace, config)}
+            saving={saving}
+            loading={loading}
+          />
+          <div className="min-h-0 h-full">
+            {formOpen ? (
+              <SettingFormDialog
+                inline
+                auth={auth}
+                config={config}
+                dictionary={backendLanguage}
+                editing={editing}
+                form={form}
+                dateTimeScope={dateTimeScope}
+                language={language}
+                onClose={() => {
+                  if (!saving) setFormOpen(false);
+                }}
+                onSubmit={saveRecord}
+                saving={saving}
+                setForm={setForm}
+                text={text}
+                workspace={workspace}
+              />
+            ) : null}
+          </div>
+        </div>
+      ) : config.slug === "productsubgroup" && !hideChrome ? (
+        <div className="grid w-full min-w-0 items-stretch gap-3 min-h-[calc(100dvh-12rem)] xl:grid-cols-[minmax(320px,0.95fr)_minmax(420px,1.05fr)]">
+          <ProductSubgroupTreeView
+            auth={auth}
+            workspace={workspace}
+            language={language}
+            records={records}
+            selectedGuid={categorySelectedGuid}
+            setSelectedGuid={setCategorySelectedGuid}
+            searchQuery={categorySearchQuery}
+            onOpenCreate={(parentCode) => {
+              setEditing(null);
+              setForm(parentCode ? { parentcode: parentCode } : {});
+              setFormOpen(true);
+            }}
             onOpenEdit={openEdit}
             onDeleteRecord={deleteRecord}
             onRefresh={() => void loadRecords(auth, workspace, config)}
@@ -5059,60 +4786,6 @@ function UserFormSections({
   );
 }
 
-function fieldGridItemClass(
-  field: SystemSettingField,
-  config: SystemSettingConfig,
-): string {
-  if (config.kind === "company") return "min-w-0 md:col-span-2";
-  if (isBranchLatitudeField(config, field)) return "min-w-0 md:col-span-2";
-  if (
-    field.type === "bank-accounts" ||
-    field.type === "branch-multi-select" ||
-    field.type === "company-multi-select" ||
-    field.type === "holding-scope-rules" ||
-    field.type === "image-upload" ||
-    field.type === "image-gallery" ||
-    field.type === "json" ||
-    field.type === "language-configs" ||
-    field.type === "language-list" ||
-    field.type === "master-picker" ||
-    field.type === "master-multi-picker" ||
-    field.type === "names" ||
-    field.type === "radio" ||
-    field.type === "string-list" ||
-    field.type === "thai-address" ||
-    field.type === "time-sale-list" ||
-    field.type === "textarea"
-  ) {
-    return "min-w-0 md:col-span-2";
-  }
-  if (
-    (config.slug === "permissiondefinition" && isPermissionAccessRulesField(field)) ||
-    (config.slug === "approvalsetting" && field.key === "approvals") ||
-    (config.slug === "permissionlink" &&
-      (isEmployeeCodeField(field) ||
-        isPermissionCodesField(field) ||
-        isApprovalCodesField(field)))
-  ) {
-    return "min-w-0 md:col-span-2";
-  }
-  return "min-w-0";
-}
-
-function isBranchLatitudeField(
-  config: SystemSettingConfig,
-  field: SystemSettingField,
-): boolean {
-  return config.slug === "branch" && field.key === "contact.latitude";
-}
-
-function isBranchLongitudeField(
-  config: SystemSettingConfig,
-  field: SystemSettingField,
-): boolean {
-  return config.slug === "branch" && field.key === "contact.longitude";
-}
-
 function parseCoordinateValue(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string") {
@@ -6208,10 +5881,6 @@ function normalizeStringListValue(value: unknown): string[] {
 
 function uniqueStrings(values: string[]): string[] {
   return Array.from(new Set(values.filter(Boolean)));
-}
-
-function isPermissionAccessRulesField(field: SystemSettingField): boolean {
-  return field.key === "accessrules" || field.key === "branches";
 }
 
 function isPermissionCodesField(field: SystemSettingField): boolean {
@@ -8471,16 +8140,6 @@ function workspaceBusinessCode(workspace: WorkspaceSession | null): string {
   );
 }
 
-const productVariantStructuredFieldKeys = new Set([
-  "optiontiers",
-  "skucombinations",
-  "mediaassets",
-  "specificationgroups",
-  "importattributemaps",
-  "integrationprofiles",
-  "payloadexamples",
-]);
-
 type VariantColumn = {
   key: string;
   labelTh: string;
@@ -8533,16 +8192,6 @@ const variantFieldColumns: Record<string, VariantColumn[]> = {
     { key: "note", labelTh: "หมายเหตุ", labelEn: "Note" },
   ],
 };
-
-function isProductVariantStructuredField(
-  config: SystemSettingConfig,
-  field: SystemSettingField,
-): boolean {
-  return (
-    config.slug === "productvariantmatrix" &&
-    productVariantStructuredFieldKeys.has(field.key)
-  );
-}
 
 function ProductVariantStructuredFieldEditor({
   field,
@@ -9858,17 +9507,6 @@ function isColorHexField(
   );
 }
 
-function isBranchStructuredSettingField(
-  config: SystemSettingConfig,
-  field: SystemSettingField,
-): boolean {
-  return (
-    config.slug === "branch" &&
-    field.type === "json" &&
-    (field.key === "paymentrounding" || field.key === "pointconfig")
-  );
-}
-
 type TimeSaleRow = {
   daysofweek: number[];
   fromdate: string;
@@ -10255,13 +9893,6 @@ function timeSaleDateInputToIso(value: unknown): string {
   const raw = timeSaleDateInputValue(value);
   if (!raw) return "";
   return new Date(`${raw}T00:00:00.000Z`).toISOString();
-}
-
-function normalizeHexColor(value: unknown): string {
-  const raw = stringValue(value).replace(/^#/, "");
-  if (/^[0-9a-fA-F]{6}$/.test(raw)) return `#${raw}`;
-  if (/^[0-9a-fA-F]{8}$/.test(raw)) return `#${raw.slice(2)}`;
-  return "#ffffff";
 }
 
 const paymentMethodKeys = [
@@ -11977,13 +11608,6 @@ function supportedLanguageCode(
   return LANGUAGES.some((item) => item.code === normalized)
     ? normalized
     : fallback;
-}
-
-function languageName(code: string, language: LanguageCode): string {
-  const item = LANGUAGES.find((entry) => entry.code === code);
-  if (!item) return code.toUpperCase();
-  if (language === "th") return item.name;
-  return `${item.name} (${item.code.toUpperCase()})`;
 }
 
 function LanguageFlag({ code }: { code: string }) {
@@ -15165,39 +14789,6 @@ function CopyUatPanel({
   );
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <Card className="shadow-sm">
-      <CardHeader className="p-3 pb-1">
-        <CardDescription>{label}</CardDescription>
-        <CardTitle>{value}</CardTitle>
-      </CardHeader>
-    </Card>
-  );
-}
-
-function readAuth(): AuthSession | null {
-  try {
-    const raw = localStorage.getItem(workspaceStorageKeys.auth);
-    if (!raw) return null;
-    const auth = JSON.parse(raw) as AuthSession;
-    return auth.token && auth.backendUrl ? auth : null;
-  } catch {
-    return null;
-  }
-}
-
-function readWorkspace(): WorkspaceSession | null {
-  try {
-    const raw = localStorage.getItem(workspaceStorageKeys.workspace);
-    if (!raw) return null;
-    const workspace = JSON.parse(raw) as WorkspaceSession;
-    return workspace?.shop?.holdingcode ? workspace : null;
-  } catch {
-    return null;
-  }
-}
-
 function companyRecordForEdit(
   records: SettingRecord[],
   workspace: WorkspaceSession | null,
@@ -15236,14 +14827,6 @@ function getMainHoldingCodeFromWorkspace(
     workspace.shopInfo.mainholdingcode ??
     workspace.shopInfo.mainHoldingCode;
   return typeof mainHoldingCode === "string" ? mainHoldingCode.trim() : "";
-}
-
-function requestHeaders(auth: AuthSession): HeadersInit {
-  return {
-    "Content-Type": "application/json",
-    "x-bc-backend-url": auth.backendUrl,
-    Authorization: `Bearer ${auth.token}`,
-  };
 }
 
 function workspaceHoldingCode(workspace: WorkspaceSession): string {
@@ -15796,28 +15379,6 @@ function formFromRecord(
   return form;
 }
 
-function recordValueForField(
-  record: SettingRecord,
-  config: SystemSettingConfig,
-  field: SystemSettingField,
-): unknown {
-  if (
-    (config.slug === "creditor" || config.slug === "debtor") &&
-    field.key === "creditlimitbaht"
-  ) {
-    const satang = Number(getByPath(record, "creditlimitsatang") ?? 0);
-    return Number.isFinite(satang) && satang !== 0 ? satang / 100 : undefined;
-  }
-  const value = getByPath(record, field.key);
-  if (value !== undefined) return value;
-  const aliases = fieldValueAliases[`${config.slug}.${field.key}`] ?? [];
-  for (const alias of aliases) {
-    const aliasValue = getByPath(record, alias);
-    if (aliasValue !== undefined) return aliasValue;
-  }
-  return undefined;
-}
-
 function applyCompanyDefaults(form: FormState, config: SystemSettingConfig) {
   if (config.slug !== "company" && config.slug !== "activelanguages") return;
   for (const [key, value] of Object.entries(companySetupDefaults)) {
@@ -16241,18 +15802,6 @@ function resolveDateTimeScope(
   };
 }
 
-function dateTimeScopePayload(scope: DateTimeScope): SettingRecord {
-  return {
-    branchkey: scope.key,
-    branchcode: scope.branchcode,
-    branchguid: scope.branchguid,
-    timezone: scope.timezone,
-    timezonelabel: scope.timezonelabel,
-    timezoneoffset: scope.timezoneoffset,
-    calendaryeartype: scope.calendarYearType,
-  };
-}
-
 function localDateToUtcIso(localDate: string, utcOffset: string): string {
   const [year, month, day] = localDate.split("-").map(Number);
   if (!year || !month || !day || !utcOffset) return "";
@@ -16269,14 +15818,6 @@ function normalizeUtcOffset(value: string): string {
   const match = raw.match(/^([+-])(\d{1,2}):?(\d{2})$/);
   if (!match) return raw;
   return `${match[1]}${match[2].padStart(2, "0")}:${match[3]}`;
-}
-
-function stringValue(value: unknown): string {
-  return typeof value === "string"
-    ? value.trim()
-    : value === null || value === undefined
-      ? ""
-      : String(value).trim();
 }
 
 function productCategoryGuid(record: SettingRecord | null | undefined): string {
@@ -16343,245 +15884,6 @@ function productCategoryGroupLabel(
 
 function isEmailLike(value: unknown): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(stringValue(value));
-}
-
-function recordId(
-  record: SettingRecord | null | undefined,
-  config: SystemSettingConfig,
-): string {
-  if (!record) return "";
-  return firstRecordValue(
-    config.idField ? getByPath(record, config.idField) : undefined,
-    record.guidfixed,
-    record.guid,
-    record.id,
-    record._id,
-    record.unitcode,
-    record.unitCode,
-    record.approvalcode,
-    record.permissioncode,
-    record.groupcode,
-    record.employeecode,
-    record.approvalCode,
-    record.permissionCode,
-    record.groupCode,
-    record.employeeCode,
-    record.code,
-    record.holdingcode,
-    record.providername,
-  );
-}
-
-// recordDisplayCode — the human-facing code shown as "รหัส:" in headers. Prefers the
-// screen's business-code field (permissioncode/groupcode/approvalcode/...) over the
-// internal guidfixed, so users never see a GUID. Falls back to recordId when none.
-function recordDisplayCode(
-  record: SettingRecord | null | undefined,
-  config: SystemSettingConfig,
-): string {
-  if (!record) return "";
-  const codeField = config.fields.find((field) => field.businessCode);
-  if (codeField) {
-    const code = stringValue(getByPath(record, codeField.key));
-    if (code) return code;
-  }
-  // idField that is itself a business identifier (e.g. username) is safe to show as-is.
-  const idKey = (config.idField ?? "").toLowerCase();
-  if (idKey && idKey !== "guidfixed" && idKey !== "guid") {
-    return recordId(record, config);
-  }
-  // idField is an opaque GUID (atlas screens) — prefer any business code over it.
-  return recordBusinessLookup(record, config) || recordId(record, config);
-}
-
-function recordDetailId(
-  record: SettingRecord | null | undefined,
-  config: SystemSettingConfig,
-): string {
-  if (!record) return "";
-  return firstRecordValue(
-    config.idField ? getByPath(record, config.idField) : undefined,
-    record.guidfixed,
-    record.guid,
-    record.id,
-    record._id,
-  );
-}
-
-function recordBusinessLookup(
-  record: SettingRecord | null | undefined,
-  config: SystemSettingConfig,
-): string {
-  if (!record) return "";
-  return firstRecordValue(
-    config.fields?.[0]?.key ? getByPath(record, config.fields[0].key) : undefined,
-    record.unitcode,
-    record.unitCode,
-    record.code,
-    record.approvalcode,
-    record.permissioncode,
-    record.groupcode,
-    record.employeecode,
-    record.approvalCode,
-    record.permissionCode,
-    record.groupCode,
-    record.employeeCode,
-  );
-}
-
-function recordMatchesBusinessLookup(
-  record: SettingRecord,
-  config: SystemSettingConfig,
-  lookup: string,
-): boolean {
-  const target = lookup.trim().toUpperCase();
-  if (!target) return false;
-  const candidates = [
-    config.fields?.[0]?.key ? getByPath(record, config.fields[0].key) : undefined,
-    record.unitcode,
-    record.unitCode,
-    record.code,
-    record.approvalcode,
-    record.permissioncode,
-    record.groupcode,
-    record.employeecode,
-    record.approvalCode,
-    record.permissionCode,
-    record.groupCode,
-    record.employeeCode,
-  ];
-  return candidates.some((value) => stringValue(value).toUpperCase() === target);
-}
-
-function shouldHydrateRecordDetail(config: SystemSettingConfig): boolean {
-  return config.kind === "main-crud" || config.kind === "atlas";
-}
-
-function wait(milliseconds: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, milliseconds));
-}
-
-function firstRecordValue(...values: unknown[]): string {
-  for (const value of values) {
-    const text = stringValue(value);
-    if (text) return text;
-  }
-  return "";
-}
-
-function recordTitle(
-  record: SettingRecord,
-  config: SystemSettingConfig | undefined,
-  language: LanguageCode,
-): string {
-  if (config?.slug === "activelanguages")
-    return systemSettingLabel(config, language);
-  const names =
-    getByPath(record, "names") ??
-    getByPath(record, "name") ??
-    getByPath(record, "desc");
-  const localized = localizedValue(names, language);
-  if (localized) return localized;
-  return String(
-      record.userprofilename ??
-      record.name ??
-      record.name1 ??
-      record.permissionname ??
-      record.approvalname ??
-      record.employeename ??
-      record.permissionName ??
-      record.approvalName ??
-      record.employeeName ??
-      record.username ??
-      record.providername ??
-      record.code ??
-      record.employeecode ??
-      record.approvalcode ??
-      record.permissioncode ??
-      record.groupcode ??
-      record.guidfixed ??
-      config?.slug ??
-      "",
-  );
-}
-
-function recordBranchCaption(record: SettingRecord): string {
-  return (
-    stringValue(record.branchcode) ||
-    stringValue(record.branchguid) ||
-    stringValue(record.branchkey)
-  );
-}
-
-
-
-function userAccessDisabled(record: SettingRecord): boolean {
-  return Boolean(
-    record.isaccessdisabled ?? record.isaccessdisabled ?? false,
-  );
-}
-
-function localizedValue(value: unknown, language: LanguageCode): string {
-  if (Array.isArray(value)) {
-    const found = value.find(
-      (item) =>
-        isRecord(item) &&
-        String(item.code).toLowerCase() === language &&
-        typeof item.name === "string",
-    );
-    if (isRecord(found) && typeof found.name === "string") return found.name;
-    const fallback = value.find(
-      (item) => isRecord(item) && typeof item.name === "string",
-    );
-    return isRecord(fallback) && typeof fallback.name === "string"
-      ? fallback.name
-      : "";
-  }
-  if (typeof value === "string") return value;
-  return "";
-}
-
-function uiBackendKey(key: keyof typeof uiEn): string {
-  return uiBackendKeys[key] ?? key;
-}
-
-function systemSettingTitle(
-  config: SystemSettingConfig,
-  language: LanguageCode,
-  dictionary: BackendLanguageDictionary,
-): string {
-  const fallback = systemSettingLabel(config, language);
-  const backendKey = systemSettingBackendKeys[config.slug] ?? config.slug;
-  const value = backendText(dictionary, backendKey, fallback);
-  return value === backendKey || value === config.slug ? fallback : value;
-}
-
-function fieldLabel(
-  field: SystemSettingField,
-  language: LanguageCode,
-  config?: SystemSettingConfig,
-  dictionary?: BackendLanguageDictionary,
-): string {
-  const fallback = field.label[language] ?? field.label.en ?? field.label.th;
-  const backendKey = config
-    ? (fieldBackendKeys[`${config.slug}.${field.key}`] ??
-      fieldBackendKeys[field.key])
-    : undefined;
-  if (!backendKey || !dictionary) return fallback;
-  const value = backendText(dictionary, backendKey, fallback);
-  return value === backendKey || value === field.key ? fallback : value;
-}
-
-function optionLabel(
-  option: SystemSettingOption,
-  language: LanguageCode,
-): string {
-  return (
-    option.labels?.[language] ??
-    option.labels?.en ??
-    option.labels?.th ??
-    option.label
-  );
 }
 
 function isProductUnitOption(value: unknown): value is ProductUnitOption {
@@ -16955,67 +16257,6 @@ function canvasToBlob(
   return new Promise((resolve) => canvas.toBlob(resolve, type, quality));
 }
 
-function radioFormValue(value: unknown, field: SystemSettingField): string {
-  const fallback = field.options?.[0]?.value ?? "";
-  if (field.valueType !== "boolean") return stringValue(value) || fallback;
-  if (typeof value === "boolean") return value ? "true" : "false";
-  const normalized = stringValue(value).toLowerCase();
-  if (normalized === "true" || normalized === "false") return normalized;
-  if (
-    normalized === "1" ||
-    normalized === "yes" ||
-    normalized === "y" ||
-    normalized === "buddhist" ||
-    normalized === "be" ||
-    normalized === "พ.ศ."
-  )
-    return "true";
-  if (
-    normalized === "0" ||
-    normalized === "no" ||
-    normalized === "n" ||
-    normalized === "christian" ||
-    normalized === "ce" ||
-    normalized === "ค.ศ."
-  )
-    return "false";
-  return fallback;
-}
-
-function radioValueToFormValue(
-  value: string,
-  field: SystemSettingField,
-): string | boolean | number {
-  if (field.valueType === "boolean") return booleanLikeValue(value);
-  if (field.valueType === "number") return Number(value);
-  return value;
-}
-
-function optionValueToFormValue(
-  value: string,
-  field: SystemSettingField,
-): string | number {
-  if (field.valueType === "number") {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-  return value;
-}
-
-function booleanLikeValue(value: unknown): boolean {
-  if (typeof value === "boolean") return value;
-  const normalized = stringValue(value).toLowerCase();
-  return (
-    normalized === "true" ||
-    normalized === "1" ||
-    normalized === "yes" ||
-    normalized === "y" ||
-    normalized === "buddhist" ||
-    normalized === "be" ||
-    normalized === "พ.ศ."
-  );
-}
-
 function isDecimalSettingField(key: string): boolean {
   return (
     key === "decimalquantity" ||
@@ -17132,7 +16373,7 @@ function objectToNames(
   language: LanguageCode,
   previousValue?: unknown,
   activeLanguages?: string[],
-): { code: string; name: string; isauto: boolean; isdelete: boolean }[] {
+): { code: string; name: string }[] {
   const record = namesToObject(value);
   const previous = namesToObject(previousValue);
   const active = new Set(
@@ -17148,8 +16389,6 @@ function objectToNames(
         (item.code === "en" ? record[language]?.trim() : "") ||
         ""
       : previous[item.code]?.trim() || record[item.code]?.trim() || "",
-    isauto: false,
-    isdelete: false,
   }));
 }
 
@@ -17295,21 +16534,6 @@ function normalizeStringArray(value: unknown): string[] {
   );
 }
 
-function getByPath(record: unknown, path: string): unknown {
-  if (!isRecord(record)) return undefined;
-  return path
-    .split(".")
-    .reduce<unknown>(
-      (current, key) => (isRecord(current) ? current[key] : undefined),
-      record,
-    );
-}
-
-function getPathOrFlatValue(record: SettingRecord, path: string): unknown {
-  const nested = getByPath(record, path);
-  return nested ?? record[path];
-}
-
 function setByPath(record: SettingRecord, path: string, value: unknown) {
   const parts = path.split(".");
   let current: SettingRecord = record;
@@ -17406,33 +16630,6 @@ function masterPickerDisplayValue(
   return name || code || "-";
 }
 
-function isRecord(value: unknown): value is SettingRecord {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function isFailed(payload: unknown): boolean {
-  if (!isRecord(payload)) return false;
-  return payload.success === false || payload.status === "error";
-}
-
-function extractMessage(payload: unknown): string | undefined {
-  if (typeof payload === "string") return payload;
-  if (!isRecord(payload)) return undefined;
-  return typeof payload.message === "string"
-    ? payload.message
-    : typeof payload.error === "string"
-      ? payload.error
-      : undefined;
-}
-
-function safeJsonParse(value: string, fallback: unknown): unknown {
-  try {
-    return JSON.parse(value);
-  } catch {
-    return fallback;
-  }
-}
-
 function isActiveRecord(record: SettingRecord): boolean {
   if ("isaccessdisabled" in record || "isaccessdisabled" in record)
     return !userAccessDisabled(record);
@@ -17441,24 +16638,6 @@ function isActiveRecord(record: SettingRecord): boolean {
   if ("isenabled" in record) return Boolean(record.isenabled);
   if ("isdisabled" in record) return !record.isdisabled;
   return true;
-}
-
-function localeOf(language: LanguageCode): string {
-  const map: Record<LanguageCode, string> = {
-    th: "th-TH",
-    en: "en-US",
-    cn: "zh-CN",
-    ja: "ja-JP",
-    ko: "ko-KR",
-    lo: "lo-LA",
-    my: "my-MM",
-    km: "km-KH",
-    vi: "vi-VN",
-    ms: "ms-MY",
-    id: "id-ID",
-    fil: "fil-PH",
-  };
-  return map[language];
 }
 
 function settingIcon(icon: string): ReactNode {

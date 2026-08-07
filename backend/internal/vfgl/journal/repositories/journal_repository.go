@@ -6,6 +6,8 @@ import (
 	"smlcloudplatform/internal/vfgl/journal/models"
 	"smlcloudplatform/pkg/microservice"
 	micromodels "smlcloudplatform/pkg/microservice/models"
+	"strings"
+	"time"
 
 	"github.com/smlsoft/mongopagination"
 	"go.mongodb.org/mongo-driver/bson"
@@ -20,6 +22,7 @@ type IJournalRepository interface {
 	CreateInBatch(ctx context.Context, docList []models.JournalDoc) error
 	Update(ctx context.Context, holdingCode string, guid string, doc models.JournalDoc) error
 	DeleteByGuidfixed(ctx context.Context, holdingCode string, guid string, username string) error
+	DeleteWithActor(ctx context.Context, holdingCode string, filters map[string]interface{}, actor micromodels.UserInfo, deletedAt time.Time) error
 	FindPage(ctx context.Context, holdingCode string, searchInFields []string, pageable micromodels.Pageable) ([]models.JournalInfo, mongopagination.PaginationData, error)
 	FindByGuid(ctx context.Context, holdingCode string, guid string) (models.JournalDoc, error)
 	FindOne(ctx context.Context, holdingCode string, filters interface{}) (models.JournalDoc, error)
@@ -51,6 +54,22 @@ func NewJournalRepository(pst microservice.IPersisterMongo) JournalRepository {
 	insRepo.GuidRepository = repositories.NewGuidRepository[models.JournalItemGuid](pst)
 
 	return insRepo
+}
+
+func (repo *JournalRepository) DeleteWithActor(ctx context.Context, holdingCode string, filters map[string]interface{}, actor micromodels.UserInfo, deletedAt time.Time) error {
+	filter := bson.M{"holdingcode": holdingCode}
+	for key, value := range filters {
+		filter[key] = value
+	}
+	actorName := strings.TrimSpace(actor.Name)
+	if actorName == "" {
+		actorName = actor.Username
+	}
+	return repo.pst.Update(ctx, models.JournalDoc{}, filter, bson.M{"$set": bson.M{
+		"deletedby":     actor.Username,
+		"deletedbyname": actorName,
+		"deletedat":     deletedAt,
+	}})
 }
 
 func (repo *JournalRepository) IsAccountCodeUsed(ctx context.Context, holdingCode string, accountCode string) (bool, error) {

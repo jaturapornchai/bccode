@@ -309,7 +309,22 @@ func ImageUploadHandler(c echo.Context) error {
 	// ถ้ามี category จะแยก folder เช่น holdingcode/slip_money_in/filename.png
 	timestamp := time.Now().Format("20060102_150405")
 	fileName := fmt.Sprintf("%s_%s%s", timestamp, hashStr, ext)
-	category := c.FormValue("category")
+	rawCategory := strings.Trim(strings.ReplaceAll(c.FormValue("category"), "\\", "/"), "/")
+	category := storageSanitizeCategory(rawCategory)
+	if rawCategory != category {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"status": "error", "code": 400, "message": "Invalid upload category",
+		})
+	}
+	if category == "products" {
+		businessCode, businessStatus := storageAuthorizedBusinessCode(c)
+		if businessStatus != http.StatusOK {
+			return c.JSON(businessStatus, map[string]interface{}{
+				"status": "error", "code": businessStatus, "message": "an active company is required",
+			})
+		}
+		category = fmt.Sprintf("companies/%s/products/images", storageBusinessPathSegment(businessCode))
+	}
 	var r2Key string
 	if category != "" {
 		r2Key = fmt.Sprintf("%s/%s/%s", holdingCode, category, fileName)

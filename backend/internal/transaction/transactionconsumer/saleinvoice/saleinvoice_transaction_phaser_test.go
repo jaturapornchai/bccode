@@ -90,10 +90,8 @@ func SaleInvoiceTransactionStruct() models.SaleInvoiceTransactionPG {
 		DebtorCode:       "POS001",
 		DebtorNames: []pkgModels.NameX{
 			{
-				Code:     &codeTh,
-				Name:     &nameTh,
-				IsAuto:   false,
-				IsDelete: false,
+				Code: &codeTh,
+				Name: &nameTh,
 			},
 		},
 		DetailDiscountFormula:        "detail discount formula 1",

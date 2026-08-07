@@ -1,0 +1,1 @@
+Go 1.26 with Echo v4 HTTP framework; GORM + lib/pq for PostgreSQL, go.mongodb.org/mongo-driver for MongoDB, ClickHouse ch-go for OLAP, OpenSearch client for search, go-redis/v8 as cache, segmentio/kafka-go + confluent-kafka-go for messaging, gorilla/websocket for WS, swaggo/echo-swagger for OpenAPI docs, golang-jwt/jwt/v4 for tokens, and AWS SDK v2 S3-compatible storage.

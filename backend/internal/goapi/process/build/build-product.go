@@ -18,8 +18,9 @@ import (
 )
 
 type mongoProductProjection struct {
-	Code  string `bson:"code"`
-	Names []struct {
+	BusinessCode string `bson:"businesscode"`
+	Code         string `bson:"code"`
+	Names        []struct {
 		Name string `bson:"name"`
 	} `bson:"names"`
 }
@@ -28,6 +29,18 @@ type mongoProductProjection struct {
 // active MongoDB product masters. Barcode-only records intentionally remain
 // outside this table until they are linked to a product master by code.
 func ProcessProductRebuildAll(holdingCode string) (int, error) {
+	return 0, fmt.Errorf("company-scoped product rebuild requires businesscode")
+}
+
+// ProcessProductRebuildCompany reconciles only one company's product metadata.
+// Stock columns are deliberately left untouched until stock projections carry
+// BusinessCode too.
+func ProcessProductRebuildCompany(holdingCode string, businessCode string) (int, error) {
+	holdingCode = strings.TrimSpace(holdingCode)
+	businessCode = utils.NormalizeBusinessCode(businessCode)
+	if holdingCode == "" || businessCode == "" {
+		return 0, fmt.Errorf("holdingcode and businesscode are required")
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
@@ -41,9 +54,13 @@ func ProcessProductRebuildAll(holdingCode string) (int, error) {
 		Collection("products")
 	cursor, err := collection.Find(
 		ctx,
-		bson.M{"holdingcode": holdingCode, "deletedat": bson.M{"$exists": false}},
+		bson.M{
+			"holdingcode":  holdingCode,
+			"businesscode": businessCode,
+			"deletedat":    bson.M{"$exists": false},
+		},
 		options.Find().
-			SetProjection(bson.M{"code": 1, "names": 1}).
+			SetProjection(bson.M{"businesscode": 1, "code": 1, "names": 1}).
 			SetSort(bson.D{{Key: "code", Value: 1}, {Key: "_id", Value: 1}}),
 	)
 	if err != nil {
@@ -56,6 +73,9 @@ func ProcessProductRebuildAll(holdingCode string) (int, error) {
 		var product mongoProductProjection
 		if err := cursor.Decode(&product); err != nil {
 			return 0, fmt.Errorf("decode MongoDB product: %w", err)
+		}
+		if utils.NormalizeBusinessCode(product.BusinessCode) != businessCode {
+			return 0, fmt.Errorf("MongoDB product belongs to a different company")
 		}
 		code := utils.NormalizeBusinessCode(product.Code)
 		if code == "" {
@@ -97,25 +117,34 @@ func ProcessProductRebuildAll(holdingCode string) (int, error) {
 	defer tx.Rollback()
 
 	if len(codes) == 0 {
-		if _, err := tx.ExecContext(ctx, "DELETE FROM product"); err != nil {
+		if _, err := tx.ExecContext(
+			ctx,
+			"DELETE FROM product WHERE holding_code = $1 AND businesscode = $2",
+			holdingCode,
+			businessCode,
+		); err != nil {
 			return 0, fmt.Errorf("clear empty PostgreSQL product projection: %w", err)
 		}
 	} else {
 		placeholders := make([]string, len(codes))
-		args := make([]interface{}, len(codes))
+		args := make([]interface{}, 0, len(codes)+2)
+		args = append(args, holdingCode, businessCode)
 		for index, code := range codes {
-			placeholders[index] = fmt.Sprintf("$%d", index+1)
-			args[index] = code
+			placeholders[index] = fmt.Sprintf("$%d", index+3)
+			args = append(args, code)
 		}
-		query := fmt.Sprintf("DELETE FROM product WHERE itemcode NOT IN (%s)", strings.Join(placeholders, ","))
+		query := fmt.Sprintf(
+			"DELETE FROM product WHERE holding_code = $1 AND businesscode = $2 AND itemcode NOT IN (%s)",
+			strings.Join(placeholders, ","),
+		)
 		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 			return 0, fmt.Errorf("remove stale PostgreSQL products: %w", err)
 		}
 	}
 	upsert, err := tx.PrepareContext(ctx, `
-		INSERT INTO product (itemcode, name0, unitcode, unitname)
-		VALUES ($1, $2, '', '')
-		ON CONFLICT ON CONSTRAINT product_itemcode_unique
+		INSERT INTO product (holding_code, businesscode, itemcode, name0, unitcode, unitname)
+		VALUES ($1, $2, $3, $4, '', '')
+		ON CONFLICT ON CONSTRAINT product_company_itemcode_unique
 		DO UPDATE SET
 			name0 = EXCLUDED.name0,
 			unitcode = '',
@@ -126,7 +155,7 @@ func ProcessProductRebuildAll(holdingCode string) (int, error) {
 	defer upsert.Close()
 
 	for _, code := range codes {
-		if _, err := upsert.ExecContext(ctx, code, productNames[code]); err != nil {
+		if _, err := upsert.ExecContext(ctx, holdingCode, businessCode, code, productNames[code]); err != nil {
 			return 0, fmt.Errorf("upsert PostgreSQL product %s: %w", code, err)
 		}
 	}
@@ -141,18 +170,22 @@ func ProcessProductRebuildAll(holdingCode string) (int, error) {
 				COALESCE(unitcode, '') AS unitcode,
 				COALESCE(unitname, '') AS unitname
 			FROM productbarcode
-			WHERE itemcode IS NOT NULL AND itemcode <> ''
+			WHERE holding_code = $1
+				AND businesscode = $2
+				AND itemcode IS NOT NULL AND itemcode <> ''
 			ORDER BY itemcode,
 				CASE WHEN barcoderefunitstand = 1 AND barcoderefunitdivide = 1 THEN 0 ELSE 1 END,
 				barcode
 		) units
-		WHERE units.itemcode = p.itemcode`); err != nil {
+		WHERE p.holding_code = $1
+			AND p.businesscode = $2
+			AND units.itemcode = p.itemcode`, holdingCode, businessCode); err != nil {
 		return 0, fmt.Errorf("enrich PostgreSQL product units: %w", err)
 	}
 
 	if err := tx.Commit(); err != nil {
 		return 0, fmt.Errorf("commit product projection rebuild: %w", err)
 	}
-	logger.Info("Rebuilt %d PostgreSQL products from MongoDB for shop %s", len(codes), holdingCode)
+	logger.Info("Rebuilt %d PostgreSQL products from MongoDB for holding %s company %s", len(codes), holdingCode, businessCode)
 	return len(codes), nil
 }

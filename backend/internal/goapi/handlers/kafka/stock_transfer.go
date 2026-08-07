@@ -162,10 +162,8 @@ func ConvertStockTransferMongoDocToProcessModel(stockTransfer models.StockTransf
 		logger.Info("ConvertStockTransferMongoDocToProcessModel: Processing %d branch names", len(stockTransfer.Branch.Names))
 		for _, name := range stockTransfer.Branch.Names {
 			branchNames = append(branchNames, models.LanguageModel{
-				Code:     name.Code,
-				Name:     name.Name,
-				IsAuto:   name.IsAuto,
-				IsDelete: name.IsDelete,
+				Code: name.Code,
+				Name: name.Name,
 			})
 		}
 	} else {

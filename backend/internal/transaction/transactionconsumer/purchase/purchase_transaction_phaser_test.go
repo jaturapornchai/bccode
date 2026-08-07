@@ -85,10 +85,8 @@ func PurchaseTransactionStruct() models.PurchaseTransactionPG {
 		CreditorCode:     "AP001",
 		CreditorNames: []pkgModels.NameX{
 			{
-				Code:     &codeTh,
-				Name:     &nameTh,
-				IsAuto:   false,
-				IsDelete: false,
+				Code: &codeTh,
+				Name: &nameTh,
 			},
 		},
 	}

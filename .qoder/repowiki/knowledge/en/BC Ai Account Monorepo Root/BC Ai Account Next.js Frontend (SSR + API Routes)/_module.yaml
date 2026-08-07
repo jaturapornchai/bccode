@@ -1,0 +1,8 @@
+schema_version: 1
+module_path: frontend
+title: BC Ai Account Next.js Frontend (SSR + API Routes)
+scope:
+    - frontend/
+source_files: []
+depends_on: []
+related_to: []

@@ -24,6 +24,61 @@ export type ApiEnvelope<T = unknown> = {
   total?: number;
 };
 
+export type QuickBarcodePayload = Pick<
+  ProductBarcode,
+  | "barcode"
+  | "itemcode"
+  | "names"
+  | "itemunitguid"
+  | "itemunitcode"
+  | "itemunitnames"
+  | "dividevalue"
+  | "standvalue"
+  | "ismainbarcode"
+  | "imageuri"
+  | "images"
+  | "videos"
+  | "description"
+>;
+
+/** Keep barcode writes small: identity, unit/conversion, and barcode-owned media/description only. */
+export function toQuickBarcodePayload(data: ProductBarcode): QuickBarcodePayload {
+  const compactNames = (names: NameX[]) =>
+    names
+      .map((entry) => ({
+        code: String(entry.code ?? "").trim().toLowerCase(),
+        name: String(entry.name ?? "").trim(),
+      }))
+      .filter((entry) => entry.code || entry.name);
+
+  return {
+    barcode: data.barcode.trim().toUpperCase(),
+    itemcode: data.itemcode.trim().toUpperCase(),
+    names: compactNames(data.names),
+    itemunitguid: data.itemunitguid.trim(),
+    itemunitcode: data.itemunitcode.trim().toUpperCase(),
+    itemunitnames: compactNames(data.itemunitnames),
+    dividevalue: data.dividevalue,
+    standvalue: data.standvalue,
+    ismainbarcode: data.ismainbarcode,
+    imageuri: data.imageuri.trim(),
+    images: data.images
+      .map((image, index) => ({
+        xorder: index + 1,
+        uri: String(image.uri ?? "").trim(),
+      }))
+      .filter((image) => image.uri),
+    videos: data.videos
+      .map((video, index) => ({
+        xorder: index + 1,
+        uri: String(video.uri ?? "").trim(),
+        posteruri: String(video.posteruri ?? "").trim(),
+      }))
+      .filter((video) => video.uri),
+    description: data.description.trim(),
+  };
+}
+
 function authHeaders(auth: AuthSession | null): Record<string, string> {
   return {
     "Content-Type": "application/json",
@@ -95,7 +150,10 @@ export function createBarcode(
   return jsonRequest("/api/product-barcode", {
     method: "POST",
     headers: authHeaders(auth),
-    body: JSON.stringify({ backendUrl: auth?.backendUrl, data }),
+    body: JSON.stringify({
+      backendUrl: auth?.backendUrl,
+      data: toQuickBarcodePayload(data),
+    }),
   });
 }
 
@@ -108,7 +166,10 @@ export function updateBarcode(
   return jsonRequest("/api/product-barcode/" + encodeURIComponent(guid), {
     method: "PUT",
     headers: authHeaders(auth),
-    body: JSON.stringify({ backendUrl: auth?.backendUrl, data }),
+    body: JSON.stringify({
+      backendUrl: auth?.backendUrl,
+      data: toQuickBarcodePayload(data),
+    }),
   });
 }
 
@@ -241,10 +302,24 @@ export function uploadProductImage(
   auth: AuthSession | null,
   file: File,
 ): Promise<ApiEnvelope<{ url: string; key?: string }>> {
+  return uploadProductMedia(auth, file, "/api/product-barcode/image");
+}
+
+export function uploadProductVideo(
+  auth: AuthSession | null,
+  file: File,
+): Promise<ApiEnvelope<{ url: string; key?: string }>> {
+  return uploadProductMedia(auth, file, "/api/product-barcode/video");
+}
+
+function uploadProductMedia(
+  auth: AuthSession | null,
+  file: File,
+  endpoint: string,
+): Promise<ApiEnvelope<{ url: string; key?: string }>> {
   const form = new FormData();
   form.append("file", file);
-  form.append("category", "products");
-  return fetch("/api/product-barcode/image", {
+  return fetch(endpoint, {
     method: "POST",
     headers: {
       ...(auth

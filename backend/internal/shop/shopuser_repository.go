@@ -16,6 +16,7 @@ import (
 	"github.com/smlsoft/mongopagination"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -145,18 +146,16 @@ func (svc ShopUserRepository) SaveFullProfile(ctx context.Context, holdingCode s
 		filter = bson.M{"holdingcode": holdingCode, "username": req.EditUsername}
 	}
 
-	optUpdate := options.Update().SetUpsert(true)
-	err := svc.pst.Update(ctx, &models.ShopUser{}, filter, bson.M{"$set": updateData}, optUpdate)
-
-	if err != nil {
-		return err
-	}
-
 	if err := svc.saveUserLoginProfile(ctx, req); err != nil {
 		return err
 	}
+	if userUID == "" {
+		userUID = svc.lookupUserUID(ctx, req.Username)
+		updateData["useruid"] = userUID
+	}
 
-	return nil
+	optUpdate := options.Update().SetUpsert(true)
+	return svc.pst.Update(ctx, &models.ShopUser{}, filter, bson.M{"$set": updateData}, optUpdate)
 }
 
 func (svc ShopUserRepository) saveUserLoginProfile(ctx context.Context, req *models.UserRoleRequest) error {
@@ -164,13 +163,35 @@ func (svc ShopUserRepository) saveUserLoginProfile(ctx context.Context, req *mod
 	if username == "" {
 		return nil
 	}
+	lookupUsername := username
+	if editUsername := strings.TrimSpace(req.EditUsername); editUsername != "" {
+		lookupUsername = editUsername
+	}
+
+	existing := &models.UserDoc{}
+	if err := svc.pst.FindOne(ctx, &models.UserDoc{}, bson.M{"username": lookupUsername}, existing); err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
+		return err
+	}
 
 	updateData := bson.M{}
 	if name := strings.TrimSpace(req.UserProfileName); name != "" {
 		updateData["name"] = name
 	}
-	if !isEmailUsername(username) {
-		updateData["email"] = strings.TrimSpace(req.Email)
+	email := strings.TrimSpace(req.Email)
+	if isEmailUsername(username) {
+		email = username
+	}
+	if email != "" {
+		linkedUser := &models.UserDoc{}
+		if err := svc.pst.FindOne(ctx, &models.UserDoc{}, bson.M{"email": email}, linkedUser); err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
+			return err
+		}
+		if linkedUser.Username != "" && linkedUser.UID != existing.UID && !strings.EqualFold(linkedUser.Username, lookupUsername) {
+			return errors.New("อีเมลนี้เชื่อมกับผู้ใช้อื่นแล้ว")
+		}
+	}
+	if email != "" {
+		updateData["email"] = email
 	}
 	// Avatar is set only when the caller provided it (nil = leave avatar untouched,
 	// "" = explicit clear). This lets the user screen save/clear the avatar while
@@ -181,13 +202,33 @@ func (svc ShopUserRepository) saveUserLoginProfile(ctx context.Context, req *mod
 	if req.AvatarThumb != nil {
 		updateData["avatarthumb"] = strings.TrimSpace(*req.AvatarThumb)
 	}
-	if len(updateData) == 0 {
-		return nil
+	if !strings.EqualFold(lookupUsername, username) {
+		updateData["username"] = username
 	}
-	updateData["updatedat"] = time.Now().UTC()
+	now := time.Now().UTC()
+	updateData["updatedat"] = now
 
-	optUpdate := options.Update().SetUpsert(false)
-	return svc.pst.Update(ctx, &models.UserDoc{}, bson.M{"username": username}, bson.M{"$set": updateData}, optUpdate)
+	update := bson.M{"$set": updateData}
+	if existing.Username == "" {
+		hashPassword, err := utils.HashPassword(models.DefaultUserPassword)
+		if err != nil {
+			return err
+		}
+		insertData := bson.M{
+			"uid":       utils.NewGUID(),
+			"password":  hashPassword,
+			"createdat": now,
+		}
+		if _, hasUsername := updateData["username"]; !hasUsername {
+			insertData["username"] = username
+		}
+		if _, hasName := updateData["name"]; !hasName {
+			insertData["name"] = username
+		}
+		update["$setOnInsert"] = insertData
+	}
+
+	return svc.pst.Update(ctx, &models.UserDoc{}, bson.M{"username": lookupUsername}, update, options.Update().SetUpsert(true))
 }
 
 func (svc ShopUserRepository) UpdateLastAccess(ctx context.Context, holdingCode string, username string, lastAccessedAt time.Time) error {
@@ -664,12 +705,10 @@ func isEmailUsername(username string) bool {
 	return strings.EqualFold(address.Address, strings.TrimSpace(username))
 }
 
-func (svc ShopUserRepository) shopUserIdentityFilter(ctx context.Context, holdingCode string, username string) bson.M {
-	filter := bson.M{"holdingcode": holdingCode, "username": username}
-	if userUID := svc.lookupUserUID(ctx, username); userUID != "" {
-		filter = bson.M{"holdingcode": holdingCode, "useruid": userUID}
-	}
-	return filter
+func (svc ShopUserRepository) shopUserIdentityFilter(_ context.Context, holdingCode string, username string) bson.M {
+	// Memberships created before first login may not have useruid yet; username is
+	// the stable holding-membership key used by SaveFullProfile.
+	return bson.M{"holdingcode": holdingCode, "username": username}
 }
 
 func (svc ShopUserRepository) lookupUserUID(ctx context.Context, username string) string {

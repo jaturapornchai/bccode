@@ -58,14 +58,14 @@ import { notifyWorkspaceChanged } from "@/lib/workspace-models";
 import { normalizeBusinessCode } from "@/lib/business-code";
 
 interface CompanyBranchTreeViewProps {
-  auth: { token: string; backendUrl: string } | null;
+  auth: { token: string; backendUrl: string; profile?: { email?: string } | null } | null;
   workspace: CompanyWorkspace | null;
   language: LanguageCode;
   onRefresh?: () => void;
 }
 
 interface CompanyWorkspace {
-  shop: { holdingcode: string };
+  shop: { holdingcode: string; role?: number };
   shopInfo?: {
     settings?: {
       language?: string;
@@ -77,8 +77,6 @@ interface CompanyWorkspace {
 interface LocalizedNameEntry {
   code?: string;
   name?: string;
-  isauto?: boolean;
-  isdelete?: boolean;
 }
 
 type LocalizedNames = LocalizedNameEntry[] | Record<string, unknown> | null | undefined;
@@ -715,6 +713,9 @@ export function CompanyBranchTreeView({
     () => workspace?.shopInfo?.settings?.language || "th",
     [workspace],
   );
+  const canCreateOrganization = Boolean(
+    auth?.profile?.email?.trim() && [1, 2].includes(Number(workspace?.shop?.role)),
+  );
 
   // Collapsed states
   const [collapsedCompanies, setCollapsedCompanies] = useState<Record<string, boolean>>({});
@@ -847,8 +848,6 @@ export function CompanyBranchTreeView({
       list.push({
         code: lang,
         name: getNameFromObject(rawNames, lang),
-        isauto: false,
-        isdelete: false,
       });
     });
 
@@ -961,6 +960,10 @@ export function CompanyBranchTreeView({
   // Handle Save
   const handleSave = async () => {
     if (!auth || !selectedNode || !formType || formType.startsWith("view")) return;
+    if (formType.startsWith("create") && !canCreateOrganization) {
+      setSaveError("เฉพาะ OWNER หรือ ADMIN ที่เชื่อมอีเมลแล้วเท่านั้นที่สร้างบริษัทหรือสาขาได้");
+      return;
+    }
     setSaving(true);
     setSaveError("");
 
@@ -1288,6 +1291,8 @@ export function CompanyBranchTreeView({
             <Button
               size="sm"
               className="gap-1 font-semibold"
+              disabled={!canCreateOrganization}
+              title={!canCreateOrganization ? "ต้องเป็น OWNER/ADMIN และเชื่อมอีเมลก่อน" : "เพิ่มบริษัท"}
               onClick={() => {
                 setFormType("createcompany");
                 setSelectedNode({
@@ -1409,6 +1414,7 @@ export function CompanyBranchTreeView({
                           variant="ghost"
                           className="w-7 h-7 text-sky-500 hover:text-sky-600 hover:bg-sky-500/10"
                           title="เพิ่มสาขา"
+                          disabled={!canCreateOrganization}
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedNode({

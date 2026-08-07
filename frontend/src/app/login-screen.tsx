@@ -54,6 +54,11 @@ type LoginState = "idle" | "loading" | "success" | "error";
 type ConnectionState = "idle" | "testing" | "success" | "error";
 type ProviderLoginState = "idle" | "google";
 type AuthMethod = "password" | "google";
+type PendingPasswordChange = {
+  backendUrl: string;
+  token: string;
+  username: string;
+};
 type RuntimeMode = {
   ready: boolean;
   sameServerBackend: boolean;
@@ -68,8 +73,19 @@ type SocialLoginResponse = {
   user?: {
     username?: string;
     email?: string;
+    isdefaultpassword?: boolean;
     name?: string;
     pictureUrl?: string;
+  };
+};
+type LoginProfileResponse = {
+  success?: boolean;
+  data?: {
+    email?: string;
+    isdefaultpassword?: boolean;
+    name?: string;
+    avatar?: string;
+    avatarthumb?: string;
   };
 };
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
@@ -126,6 +142,11 @@ export function LoginScreen() {
   const [isLocalhost, setIsLocalhost] = useState(false);
   const [runtimeMode, setRuntimeMode] = useState<RuntimeMode>({ ready: false, sameServerBackend: false });
   const [message, setMessage] = useState("");
+  const [pendingPasswordChange, setPendingPasswordChange] = useState<PendingPasswordChange | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordChangeMessage, setPasswordChangeMessage] = useState("");
+  const [passwordChanging, setPasswordChanging] = useState(false);
   const googleButtonRef = useRef<HTMLDivElement | null>(null);
   const googleCredentialRef = useRef<(credential: string) => void>(() => {});
   const autoConnectionTested = useRef(false);
@@ -272,12 +293,26 @@ export function LoginScreen() {
       });
       const data = (await response.json()) as SocialLoginResponse;
 
-      if (!response.ok || !data.success || !data.token) {
-        throw new Error(data.message ?? t(language, "loginFailed"));
+		if (!response.ok || !data.success || !data.token) {
+			const serverMessage = data.message?.trim();
+			throw new Error(!serverMessage || /^(login failed\.?|username or password is invalid)$/i.test(serverMessage) ? t(language, "loginFailed") : serverMessage);
+		}
+
+      const nextBackendUrl = runtimeBackendUrlForCurrentPage();
+      const profile = await loadLoginProfile(nextBackendUrl, data.token);
+      if (!profile) throw new Error("ไม่สามารถตรวจสอบสถานะรหัสผ่านของบัญชีได้ กรุณาลองใหม่");
+      const nextProfile = { ...data.user, ...profile };
+      const nextUsername = nextProfile.email || nextProfile.username || nextProfile.name || "google";
+      if (nextProfile.isdefaultpassword) {
+        setPassword("");
+        setPendingPasswordChange({ backendUrl: nextBackendUrl, token: data.token, username: nextUsername });
+        setPasswordChangeMessage("");
+        setProviderLoginState("idle");
+        setLoginState("idle");
+        return;
       }
 
-      const nextUsername = data.user?.email || data.user?.username || data.user?.name || "google";
-      persistLogin(runtimeBackendUrlForCurrentPage(), nextUsername, data.token, data.refresh ?? "", "google", data.user);
+      persistLogin(nextBackendUrl, nextUsername, data.token, data.refresh ?? "", "google", nextProfile);
       setProviderLoginState("idle");
       setLoginState("success");
       setMessage(t(language, "loginSuccess"));
@@ -339,21 +374,46 @@ export function LoginScreen() {
         message?: string;
         token?: string;
         refresh?: string;
+        mustchangepassword?: boolean;
         user?: string;
         backendUrl?: string;
       };
 
-      if (!response.ok || !data.success || !data.token) {
-        throw new Error(data.message ?? t(language, "loginFailed"));
+		if (!response.ok || !data.success || !data.token) {
+			const serverMessage = data.message?.trim();
+			throw new Error(!serverMessage || /^(login failed\.?|username or password is invalid)$/i.test(serverMessage) ? t(language, "loginFailed") : serverMessage);
+		}
+
+		const sessionBackendUrl = data.backendUrl ?? backendUrl;
+      if (data.mustchangepassword) {
+        setPendingPasswordChange({
+          backendUrl: sessionBackendUrl,
+          token: data.token,
+          username: input.username.trim(),
+        });
+        setPasswordChangeMessage("");
+        setLoginState("idle");
+        return;
       }
 
+      const profile = await loadLoginProfile(sessionBackendUrl, data.token);
+      if (profile?.isdefaultpassword) {
+        setPendingPasswordChange({
+          backendUrl: sessionBackendUrl,
+          token: data.token,
+          username: input.username.trim(),
+        });
+        setPasswordChangeMessage("");
+        setLoginState("idle");
+        return;
+      }
       persistLogin(
-        data.backendUrl ?? backendUrl,
+        sessionBackendUrl,
         input.username.trim(),
         data.token,
         data.refresh ?? "",
         "password",
-        undefined,
+        profile,
         normalizedHoldingCode,
       );
       setLoginState("success");
@@ -369,8 +429,80 @@ export function LoginScreen() {
     }
   }
 
+  async function loadLoginProfile(nextBackendUrl: string, token: string): Promise<SocialLoginResponse["user"]> {
+    try {
+      const response = await fetch(`/api/auth/profile?backendUrl=${encodeURIComponent(nextBackendUrl)}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "x-bc-backend-url": nextBackendUrl,
+        },
+        cache: "no-store",
+      });
+      const payload = (await response.json()) as LoginProfileResponse;
+      if (!response.ok || payload.success === false) return undefined;
+      return {
+        email: payload.data?.email,
+        isdefaultpassword: payload.data?.isdefaultpassword,
+        name: payload.data?.name,
+        pictureUrl: payload.data?.avatarthumb || payload.data?.avatar,
+      };
+    } catch {
+      return undefined;
+    }
+  }
+
   async function handleConnectionTest() {
     await runConnectionTest({ automatic: false });
+  }
+
+  async function handleRequiredPasswordChange(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!pendingPasswordChange) return;
+    if (newPassword === "12345") {
+      setPasswordChangeMessage("ห้ามใช้รหัสผ่านเริ่มต้น 12345 เป็นรหัสผ่านใหม่");
+      return;
+    }
+    if (newPassword.length < 5) {
+      setPasswordChangeMessage("รหัสผ่านใหม่ต้องมีอย่างน้อย 5 ตัวอักษร");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordChangeMessage(t(language, "passwordMismatch"));
+      return;
+    }
+
+    setPasswordChanging(true);
+    setPasswordChangeMessage("");
+    try {
+      const response = await fetch("/api/auth/profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${pendingPasswordChange.token}`,
+          "x-bc-backend-url": pendingPasswordChange.backendUrl,
+        },
+        body: JSON.stringify({
+          backendUrl: pendingPasswordChange.backendUrl,
+          currentpassword: password,
+          newpassword: newPassword,
+        }),
+      });
+      const payload = (await response.json()) as { success?: boolean; message?: string };
+      if (!response.ok || payload.success === false) {
+        throw new Error(payload.message ?? "เปลี่ยนรหัสผ่านไม่สำเร็จ");
+      }
+
+      setPendingPasswordChange(null);
+      setPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setLoginState("success");
+      setMessage("เปลี่ยนรหัสผ่านแล้ว กรุณาเข้าสู่ระบบด้วยรหัสผ่านใหม่");
+    } catch (error) {
+      setPasswordChangeMessage(error instanceof Error ? error.message : "เปลี่ยนรหัสผ่านไม่สำเร็จ");
+    } finally {
+      setPasswordChanging(false);
+    }
   }
 
   async function runConnectionTest(options: { automatic: boolean }) {
@@ -750,6 +882,52 @@ export function LoginScreen() {
 
         </form>
       </motion.section>
+
+      {pendingPasswordChange ? (
+        <div className="dialog-backdrop" role="presentation">
+          <form
+            className="line-login-dialog"
+            aria-label="บังคับเปลี่ยนรหัสผ่านเริ่มต้น"
+            role="dialog"
+            aria-modal="true"
+            onSubmit={handleRequiredPasswordChange}
+          >
+            <div className="dialog-header">
+              <div>
+                <p className="eyebrow">{pendingPasswordChange.username}</p>
+                <h2>ตั้งรหัสผ่านใหม่ก่อนเข้าใช้งาน</h2>
+              </div>
+              <ShieldCheck aria-hidden="true" size={24} />
+            </div>
+            <div className="message error">
+              <AlertCircle size={18} />
+              <span>รหัสผ่านปัจจุบันคือค่าเริ่มต้น 12345 ต้องเปลี่ยนก่อนใช้งานระบบ และห้ามใช้ 12345 ซ้ำ</span>
+            </div>
+            {passwordChangeMessage ? (
+              <div className="message error" role="alert">
+                <AlertCircle size={18} />
+                <span>{passwordChangeMessage}</span>
+              </div>
+            ) : null}
+            <label className="grid gap-1 text-sm font-medium">
+              <span>รหัสผ่านปัจจุบัน</span>
+              <Input value={password} onChange={(event) => setPassword(event.target.value)} type="password" autoComplete="current-password" autoFocus />
+            </label>
+            <label className="grid gap-1 text-sm font-medium">
+              <span>รหัสผ่านใหม่</span>
+              <Input value={newPassword} onChange={(event) => setNewPassword(event.target.value)} type="password" autoComplete="new-password" />
+            </label>
+            <label className="grid gap-1 text-sm font-medium">
+              <span>{t(language, "confirmPassword")}</span>
+              <Input value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} type="password" autoComplete="new-password" />
+            </label>
+            <Button className="primary-button w-full" type="submit" disabled={passwordChanging}>
+              {passwordChanging ? <Loader2 className="spin" size={18} /> : <LockKeyhole size={18} />}
+              <span>{passwordChanging ? "กำลังบันทึก..." : "เปลี่ยนรหัสผ่าน"}</span>
+            </Button>
+          </form>
+        </div>
+      ) : null}
     </main>
   );
 }

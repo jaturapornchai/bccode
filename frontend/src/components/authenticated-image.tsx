@@ -1,6 +1,6 @@
 "use client";
 
-import type { ImgHTMLAttributes, ReactNode } from "react";
+import type { ImgHTMLAttributes, ReactNode, VideoHTMLAttributes } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { imageNeedsAuthenticatedFetch } from "@/lib/image-upload-proxy";
 import type { AuthSession } from "@/lib/workspace-models";
@@ -160,7 +160,7 @@ export function useAuthenticatedImageDisplaySource(
       return;
     }
 
-    if (!imageNeedsAuthenticatedFetch(requestedUrl)) {
+    if (!imageNeedsAuthenticatedFetch(requestedUrl, authBackendUrl)) {
       setState({ displayUrl: requestedUrl, failed: false, loading: false });
       return;
     }
@@ -258,4 +258,139 @@ export function AuthenticatedImg({
     return <div className={`${className ?? ""} animate-pulse bg-muted`.trim()} aria-hidden="true" />;
   }
   return <>{fallback}</>;
+}
+
+type AuthenticatedVideoProps = Omit<VideoHTMLAttributes<HTMLVideoElement>, "src"> & {
+  src: string | null | undefined;
+  posterSrc?: string | null | undefined;
+  auth: AuthSession | null;
+  loadLabel: string;
+  failedLabel: string;
+};
+
+/** Loads a private video only when requested and releases its blob after unmount. */
+export function AuthenticatedVideo({
+  src,
+  posterSrc,
+  auth,
+  loadLabel,
+  failedLabel,
+  className,
+  ...videoProps
+}: AuthenticatedVideoProps) {
+  const [requested, setRequested] = useState(false);
+  const [state, setState] = useState({ displayUrl: "", failed: false, loading: false });
+  const requestedUrl = useMemo(
+    () => imageDisplayUrl(src, auth?.backendUrl),
+    [auth?.backendUrl, src],
+  );
+  const poster = useAuthenticatedImageDisplaySource(posterSrc ?? "", auth);
+
+  useEffect(() => {
+    setRequested(false);
+    setState({ displayUrl: "", failed: false, loading: false });
+  }, [requestedUrl]);
+
+  useEffect(() => {
+    if (!requested || !requestedUrl) return;
+    if (!imageNeedsAuthenticatedFetch(requestedUrl, auth?.backendUrl ?? "")) {
+      setState({ displayUrl: requestedUrl, failed: false, loading: false });
+      return;
+    }
+    if (!auth?.token) {
+      setState({ displayUrl: "", failed: true, loading: false });
+      return;
+    }
+
+    const controller = new AbortController();
+    let cancelled = false;
+    let objectUrl = "";
+    setState({ displayUrl: "", failed: false, loading: true });
+    void fetch(requestedUrl, {
+      cache: "no-store",
+      headers: { Authorization: `Bearer ${auth.token}` },
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.blob();
+      })
+      .then((blob) => {
+        objectUrl = URL.createObjectURL(blob);
+        if (cancelled) {
+          URL.revokeObjectURL(objectUrl);
+          objectUrl = "";
+          return;
+        }
+        setState({ displayUrl: objectUrl, failed: false, loading: false });
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setState({ displayUrl: "", failed: true, loading: false });
+      });
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [auth?.backendUrl, auth?.token, requested, requestedUrl]);
+
+  if (!requested) {
+    return (
+      <button
+        aria-label={loadLabel}
+        className={`${className ?? ""} group relative flex items-center justify-center overflow-hidden bg-muted px-3 text-sm font-medium hover:bg-muted/80`.trim()}
+        onClick={() => setRequested(true)}
+        type="button"
+      >
+        {poster.displayUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover"
+            data-testid="video-poster"
+            src={poster.displayUrl}
+          />
+        ) : poster.loading ? (
+          <span className="absolute inset-0 animate-pulse bg-muted" aria-hidden="true" />
+        ) : (
+          <span className="relative z-10 px-3 text-center">{loadLabel}</span>
+        )}
+        {poster.displayUrl ? (
+          <span
+            aria-hidden="true"
+            className="relative z-10 grid size-12 place-items-center rounded-full bg-black/65 text-xl text-white shadow-lg transition-transform group-hover:scale-105"
+          >
+            ▶
+          </span>
+        ) : null}
+      </button>
+    );
+  }
+  if (state.displayUrl) {
+    return (
+      <video
+        className={className}
+        controls
+        playsInline
+        poster={poster.displayUrl || undefined}
+        preload="metadata"
+        src={state.displayUrl}
+        {...videoProps}
+        onError={() => setState({ displayUrl: "", failed: true, loading: false })}
+      />
+    );
+  }
+  return (
+    <button
+      className={`${className ?? ""} flex items-center justify-center bg-muted p-3 text-center text-xs text-muted-foreground`.trim()}
+      disabled={state.loading}
+      onClick={() => setRequested(false)}
+      type="button"
+    >
+      {state.loading ? loadLabel : failedLabel}
+    </button>
+  );
 }

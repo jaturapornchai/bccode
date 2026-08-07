@@ -46,6 +46,7 @@ import {
 } from "@/lib/product-barcode/types";
 import { cn } from "@/lib/utils";
 import { pushNotice } from "@/lib/toast";
+import { normalizeBusinessCode } from "@/lib/business-code";
 
 type MarketplaceScreenProps = {
   platform: "shopee" | "lazada" | "tiktok";
@@ -144,6 +145,7 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
   }, []);
 
   const activeHoldingCode = workspace?.shop.holdingcode ?? "";
+  const activeBusinessCode = normalizeBusinessCode(workspace?.company?.code);
   const dateDisplayOptions = useMemo(
     () => resolveWorkspaceDateTimeDisplayOptions(workspace, lang),
     [lang, workspace],
@@ -151,12 +153,13 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
 
   // Load product list
   const loadProductBarcodes = useCallback(async () => {
-    if (!auth || !activeHoldingCode) return;
+    if (!auth || !activeHoldingCode || !activeBusinessCode) return;
     setLoading(true);
     setNotice(null);
     try {
       const res = await listBarcodes(auth, {
         holdingcode: activeHoldingCode,
+        businesscode: activeBusinessCode,
         limit: 100,
         offset: 0,
         sortfield: "barcode",
@@ -172,13 +175,13 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
     } finally {
       setLoading(false);
     }
-  }, [auth, activeHoldingCode]);
+  }, [auth, activeBusinessCode, activeHoldingCode]);
 
   useEffect(() => {
-    if (auth && activeHoldingCode && activeTab === "mappings") {
+    if (auth && activeHoldingCode && activeBusinessCode && activeTab === "mappings") {
       void loadProductBarcodes();
     }
-  }, [auth, activeHoldingCode, activeTab, loadProductBarcodes]);
+  }, [auth, activeBusinessCode, activeHoldingCode, activeTab, loadProductBarcodes]);
 
   // Handle new shop auth
   const handleConnectShop = () => {

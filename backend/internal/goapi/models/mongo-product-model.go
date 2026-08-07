@@ -2,6 +2,7 @@ package models
 
 type MongoProductBarcodeModel struct {
 	HoldingCode      string                               `json:"holdingcode" bson:"holdingcode"`
+	BusinessCode     string                               `json:"businesscode" bson:"businesscode"`
 	GuidFixed        string                               `json:"guidfixed" bson:"guidfixed"`
 	ItemCode         string                               `json:"itemcode" bson:"itemcode"`
 	Barcode          string                               `json:"barcode" bson:"barcode"`

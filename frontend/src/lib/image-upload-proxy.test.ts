@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { PRODUCT_VIDEO_REQUEST_MAX_BYTES } from "@/lib/product-barcode/types";
 import {
   imageNeedsAuthenticatedFetch,
   normalizeImageUploadPayload,
@@ -37,18 +38,77 @@ describe("image upload proxy response", () => {
     expect(payload.message).toBe("R2 storage is not configured");
   });
 
+  it("normalizes the private URL returned by the video uploader", () => {
+    const payload = normalizeImageUploadPayload({
+      success: true,
+      fileurl: "/s3/file/SHOP001/companies/COMPANY-A/products/videos/demo.mp4",
+      objectkey: "SHOP001/companies/COMPANY-A/products/videos/demo.mp4",
+    });
+
+    expect(payload).toMatchObject({
+      success: true,
+      url: "/goapi/s3/file/SHOP001/companies/COMPANY-A/products/videos/demo.mp4",
+      data: {
+        key: "SHOP001/companies/COMPANY-A/products/videos/demo.mp4",
+        url: "/goapi/s3/file/SHOP001/companies/COMPANY-A/products/videos/demo.mp4",
+      },
+    });
+  });
+
+  it("preserves an encoded Company segment returned by the image uploader", () => {
+    const payload = normalizeImageUploadPayload({
+      status: "success",
+      data: {
+        category: "companies/~VUFUQg/products/images",
+        file_name: "product.png",
+        holdingcode: "test",
+      },
+    });
+
+    expect(payload.url).toBe(
+      "/goapi/s3/file/test/companies/~VUFUQg/products/images/product.png",
+    );
+  });
+
   it("detects private GoAPI image paths across all routing surfaces", () => {
     expect(imageNeedsAuthenticatedFetch("/goapi/s3/file/SHOP/imageuri/a.webp")).toBe(true);
     expect(imageNeedsAuthenticatedFetch("/s3/file/SHOP/imageuri/a.webp")).toBe(true);
     expect(
-      imageNeedsAuthenticatedFetch("http://localhost:8888/goapi/s3/file/SHOP/imageuri/a.webp"),
+      imageNeedsAuthenticatedFetch(
+        "http://localhost:8888/goapi/s3/file/SHOP/imageuri/a.webp",
+        "http://localhost:8888/goapi",
+      ),
     ).toBe(true);
     expect(
-      imageNeedsAuthenticatedFetch("http://localhost:3000/backend/goapi/s3/file/SHOP/imageuri/a.webp"),
+      imageNeedsAuthenticatedFetch(
+        "http://localhost:3000/backend/goapi/s3/file/SHOP/imageuri/a.webp",
+        "http://localhost:3000/backend/goapi",
+      ),
     ).toBe(true);
     expect(
-      imageNeedsAuthenticatedFetch("https://dev.bcaicloud.com/backend/goapi/s3/file/SHOP/imageuri/a.webp"),
+      imageNeedsAuthenticatedFetch(
+        "https://dev.bcaicloud.com/backend/goapi/s3/file/SHOP/imageuri/a.webp",
+        "https://dev.bcaicloud.com/backend/goapi",
+      ),
     ).toBe(true);
+    expect(
+      imageNeedsAuthenticatedFetch(
+        "https://evil.example/s3/file/SHOP/imageuri/a.webp",
+        "https://dev.bcaicloud.com/backend/goapi",
+      ),
+    ).toBe(false);
+    expect(
+      imageNeedsAuthenticatedFetch(
+        String.raw`\\evil.example\s3\file\SHOP\imageuri\a.webp`,
+        "https://dev.bcaicloud.com/backend/goapi",
+      ),
+    ).toBe(false);
+    expect(
+      imageNeedsAuthenticatedFetch(
+        "https:/evil.example/s3/file/SHOP/imageuri/a.webp",
+        "https://dev.bcaicloud.com/backend/goapi",
+      ),
+    ).toBe(false);
   });
 
   it("ignores public, blob, data, and unrelated paths", () => {
@@ -80,5 +140,102 @@ describe("image upload proxy response", () => {
       success: false,
       message: "ไม่พบหมวดหมู่รูปภาพสำหรับอัปโหลด",
     });
+  });
+
+  it("allows a streamed video larger than 50 MB within the configured limit", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ success: true }), {
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    try {
+      const response = await proxyImageUploadToGoApi(
+        new Request("http://localhost/api/product-barcode/video", {
+          method: "POST",
+          headers: {
+            authorization: "Bearer test-token",
+            "content-length": String(51 * 1024 * 1024),
+            "content-type": "multipart/form-data; boundary=video-test",
+            "x-bc-backend-url": "http://localhost:8888/goapi",
+          },
+          body: new Uint8Array([1]),
+        }),
+        {
+          backendPath: "/goapi/video/upload",
+          category: "products/videos",
+          forwardRequestBody: true,
+          kind: "video",
+          maxRequestBytes: PRODUCT_VIDEO_REQUEST_MAX_BYTES,
+        },
+      );
+
+      expect(response.status).toBe(200);
+      expect(fetchMock).toHaveBeenCalledOnce();
+    } finally {
+      fetchMock.mockRestore();
+    }
+  });
+
+  it("rejects a streamed video above the configured limit before forwarding it", async () => {
+    const response = await proxyImageUploadToGoApi(
+      new Request("http://localhost/api/product-barcode/video", {
+        method: "POST",
+        headers: {
+          authorization: "Bearer test-token",
+          "content-length": String(PRODUCT_VIDEO_REQUEST_MAX_BYTES + 1),
+          "content-type": "multipart/form-data; boundary=video-test",
+          "x-bc-backend-url": "http://localhost:8888/goapi",
+        },
+        body: new Uint8Array([1]),
+      }),
+      {
+        backendPath: "/goapi/video/upload",
+        category: "products/videos",
+        forwardRequestBody: true,
+        kind: "video",
+        maxRequestBytes: PRODUCT_VIDEO_REQUEST_MAX_BYTES,
+      },
+    );
+
+    expect(response.status).toBe(413);
+  });
+
+  it("stops a chunked video stream that exceeds the limit", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (_input, init) => {
+      const reader = (init?.body as ReadableStream<Uint8Array>).getReader();
+      while (!(await reader.read()).done) {
+        // Consume the forwarded stream like the backend connection.
+      }
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { "content-type": "application/json" },
+      });
+    });
+
+    try {
+      const response = await proxyImageUploadToGoApi(
+        new Request("http://localhost/api/product-barcode/video", {
+          method: "POST",
+          headers: {
+            authorization: "Bearer test-token",
+            "content-type": "multipart/form-data; boundary=video-test",
+            "x-bc-backend-url": "http://localhost:8888/goapi",
+          },
+          body: new Uint8Array([1, 2, 3]),
+        }),
+        {
+          backendPath: "/goapi/video/upload",
+          category: "products/videos",
+          forwardRequestBody: true,
+          kind: "video",
+          maxRequestBytes: 2,
+        },
+      );
+
+      expect(response.status).toBe(413);
+      expect(fetchMock).toHaveBeenCalledOnce();
+    } finally {
+      fetchMock.mockRestore();
+    }
   });
 });

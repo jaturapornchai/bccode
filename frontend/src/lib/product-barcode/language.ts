@@ -129,8 +129,10 @@ const barcodeTextTh = {
   // Basic tab
   required: "จำเป็น",
   optional: "ไม่บังคับ",
-  barcodeHelp: "เฉพาะ A-Z, 0-9, - (ไม่เว้นวรรค)",
-  barcodeLockedHint: "บาร์โค้ดแก้ไขไม่ได้หลังสร้าง — หากต้องเปลี่ยน ให้ลบรายการนี้แล้วสร้างใหม่",
+  barcodeHelp:
+    "ใช้ A-Z, 0-9, - และถ้าเป็นเลข 13 หลักต้องมี EAN-13 check digit ถูกต้อง",
+  barcodeLockedHint:
+    "บาร์โค้ดแก้ไขไม่ได้หลังสร้าง — หากต้องเปลี่ยน ให้ลบรายการนี้แล้วสร้างใหม่",
   names: "ชื่อสินค้า",
   product: "สินค้าหลัก",
   addLanguage: "เพิ่มภาษาอื่น",
@@ -193,8 +195,8 @@ const barcodeTextTh = {
   stockBarcode: "Barcode อ้างอิงสต๊อก",
 
   // Units tab
-  divideValue: "ตัวหาร (Divide)",
-  standValue: "ค่ามาตรฐาน (Stand)",
+  divideValue: "จำนวนหน่วยขาย (เช่น 1 ลัง)",
+  standValue: "เท่ากับหน่วยฐาน (เช่น 24 ชิ้น)",
   condition: "Condition",
   isUseSubBarcodes: "ใช้บาร์โค้ดอ้างอิง",
   refBarcodes: "บาร์โค้ดอ้างอิง",
@@ -308,7 +310,8 @@ const barcodeTextTh = {
   on: "เปิด",
   off: "ปิด",
   required_error: "จำเป็นต้องระบุ",
-  invalidBarcode: "บาร์โค้ดต้องเป็น A-Z, 0-9 หรือ - เท่านั้น",
+  invalidBarcode:
+    "บาร์โค้ดใช้ได้เฉพาะ A-Z, 0-9, - และเลข 13 หลักต้องมี EAN-13 check digit ถูกต้อง",
   unsavedChanges: "มีการแก้ไขที่ยังไม่บันทึก ต้องการออกหรือไม่?",
 
   // Detail-view section labels (barcode-screen detail panel)
@@ -367,11 +370,13 @@ const barcodeTextTh = {
   searchBarcodeOrName: "ค้นหาด้วยบาร์โค้ด หรือชื่อสินค้า...",
   searchingBarcode: "กำลังค้นหาบาร์โค้ด...",
   noUnlinkedBarcode: "ไม่พบข้อมูลบาร์โค้ดที่ยังไม่ผูกสินค้าหลัก",
-  allBarcodesLinked: "ไม่มีบาร์โค้ดจรค้างอยู่ในระบบ (ทุกบาร์โค้ดผูกสินค้าหลักหมดแล้ว)",
+  allBarcodesLinked:
+    "ไม่มีบาร์โค้ดจรค้างอยู่ในระบบ (ทุกบาร์โค้ดผูกสินค้าหลักหมดแล้ว)",
   closeWindow: "ปิดหน้าต่าง",
   noName: "ไม่มีชื่อ",
   unitLabel: "หน่วยนับ",
-  barcodeFetchSuccess: "ดึงข้อมูลจากบาร์โค้ด %s สำเร็จ กรุณาตรวจสอบรหัสสินค้าหลักและบันทึกข้อมูล",
+  barcodeFetchSuccess:
+    "ดึงข้อมูลจากบาร์โค้ด %s สำเร็จ กรุณาตรวจสอบรหัสสินค้าหลักและบันทึกข้อมูล",
   barcodeFetchFail: "ไม่สามารถดึงข้อมูลรายละเอียดบาร์โค้ดได้",
 
   // barcode-form TabProductDetail section titles
@@ -405,11 +410,13 @@ const barcodeTextTh = {
   alertMessageLabel: "ข้อความแจ้งเตือน",
   descriptionLabel: "รายละเอียดเพิ่มเติม",
   inheritedInfoBanner: "ข้อมูลสืบทอดจากสินค้าหลัก:",
-  inheritedInfoDetail: "ข้อมูลการจัดกลุ่ม คู่ค้า รูปภาพ และการตั้งค่า POS ของบาร์โค้ดนี้ถูกสืบทอดมาจากสินค้าหลัก",
+  inheritedInfoDetail:
+    "ข้อมูลการจัดกลุ่ม คู่ค้า รูปภาพ และการตั้งค่า POS ของบาร์โค้ดนี้ถูกสืบทอดมาจากสินค้าหลัก",
   inheritedInfoEditHint: "หากต้องการแก้ไขข้อมูลเหล่านี้ กรุณาไปที่เมนู",
   productMenuName: "สินค้า",
   loadingProductDetail: "กำลังดึงข้อมูลรายละเอียดสินค้าหลัก...",
-  noProductDetailFound: "ไม่พบข้อมูลสินค้าหลักในระบบ กรุณาตรวจสอบการผูกสินค้าหลักที่แท็บข้อมูลหลัก",
+  noProductDetailFound:
+    "ไม่พบข้อมูลสินค้าหลักในระบบ กรุณาตรวจสอบการผูกสินค้าหลักที่แท็บข้อมูลหลัก",
 
   // product-screen sub-component labels (media, units, BOM, options, time, business, misc)
   mediaUseSection: "การใช้รูปภาพหรือสีป้ายสินค้า",
@@ -454,7 +461,8 @@ const barcodeTextTh = {
   businessTypeNoData: "— ไม่มีการยกเว้น ขายได้ทุกประเภทธุรกิจ —",
   branchSection: "สาขาที่ยกเว้นการขายสินค้าตัวนี้",
   branchAddBtn: "เพิ่มสาขาที่ห้ามขาย",
-  branchHintDetail: "สาขาที่เพิ่มเข้าในรายการนี้ จะไม่สามารถสแกนขายหรือเช็คสต็อกสินค้าชิ้นนี้ได้",
+  branchHintDetail:
+    "สาขาที่เพิ่มเข้าในรายการนี้ จะไม่สามารถสแกนขายหรือเช็คสต็อกสินค้าชิ้นนี้ได้",
   branchNoData: "— ไม่มีสาขาที่ยกเว้น ขายได้ทุกสาขา —",
   pickerBranch: "สาขา",
   pickerBusinessType: "ประเภทธุรกิจ",
@@ -473,18 +481,21 @@ const barcodeTextTh = {
   unitStand: "ตัวคูณ (Stand Value)",
   unitCondition: "มีเงื่อนไขหน่วยนับ (Has Condition)",
   unitConditionEnable: "เปิดใช้งาน",
-  unitMultiSection: "การจัดการบาร์โค้ดหลายหน่วยนับ (Multi-unit Barcodes)",
-  unitMultiToggle: "เปิดใช้งานบาร์โค้ดหลายหน่วยนับ (Use Multi-unit Barcodes)",
-  unitRefListTitle: "รายการบาร์โค้ดหน่วยนับเสริม",
-  unitRefAddBtn: "เพิ่มบาร์โค้ดหน่วยนับเสริม",
-  unitRefNoData: "ไม่มีรายการบาร์โค้ดหน่วยนับเสริม",
-  unitRefBarcode: "บาร์โค้ด",
-  unitRefBarcodePlaceholder: "ระบุบาร์โค้ดหน่วยย่อย",
+  unitMultiSection: "หน่วยนับเพิ่มเติม (Additional units)",
+  unitMultiToggle: "กำหนดหน่วยนับเพิ่มเติม",
+  unitRefListTitle: "รายการหน่วยนับเพิ่มเติม",
+  unitRefAddBtn: "เพิ่มหน่วยนับ",
+  unitRefNoData: "ยังไม่มีหน่วยนับเพิ่มเติม",
+  unitRefBarcode: "บาร์โค้ดที่ตรงกับหน่วยนี้",
+  unitRefBarcodePlaceholder: "ยังไม่มีบาร์โค้ดที่ใช้หน่วยนี้",
   unitRefUnitCode: "หน่วยนับ (Unit Code)",
   unitRefUnitPlaceholder: "เช่น PCS, BOX",
   unitRefQty: "จำนวนขายย่อย (Qty)",
   unitRefDivide: "ตัวหาร",
   unitRefStand: "ตัวคูณ",
+  unitConversionRequired: "กรุณาเลือกหน่วยนับเพิ่มเติมให้ครบทุกรายการ",
+  unitConversionDuplicate: "รหัสหน่วยนับต้องไม่ซ้ำกัน",
+  unitConversionInvalidRatio: "ตัวหารและตัวคูณต้องเป็นจำนวนเต็มมากกว่า 0",
   bomSection: "สูตรการผลิตสินค้า (BOM - Bill of Materials)",
   bomAddBtn: "เพิ่มรายการวัตถุดิบ",
   bomNoData: "ไม่มีรายการวัตถุดิบในสูตร BOM",
@@ -493,9 +504,11 @@ const barcodeTextTh = {
   bomUnitLabel: "หน่วยนับวัตถุดิบ",
   bomUnitPlaceholder: "เช่น PCS, KG",
   bomQtyLabel: "ปริมาณที่ใช้ (Qty)",
-  miscAlertPlaceholder: "ระบุข้อความเตือน เช่น สินค้าตัวนี้ขายให้เฉพาะผู้ที่อายุ 18+ ขึ้นไปเท่านั้น",
+  miscAlertPlaceholder:
+    "ระบุข้อความเตือน เช่น สินค้าตัวนี้ขายให้เฉพาะผู้ที่อายุ 18+ ขึ้นไปเท่านั้น",
   miscDescPlaceholder: "รายละเอียดสินค้าสำหรับระบบหลังบ้านหรือการจัดส่ง...",
-  unsavedDetail: "การเปลี่ยนแปลงในฟอร์มนี้ยังไม่ได้บันทึก ถ้ายืนยัน ระบบจะปิดฟอร์มและทิ้งข้อมูลที่แก้ไขอยู่",
+  unsavedDetail:
+    "การเปลี่ยนแปลงในฟอร์มนี้ยังไม่ได้บันทึก ถ้ายืนยัน ระบบจะปิดฟอร์มและทิ้งข้อมูลที่แก้ไขอยู่",
   discardLabel: "ทิ้งการแก้ไข",
   resizeAriaLabel: "ปรับขนาดรายการบาร์โค้ดและรายละเอียดบาร์โค้ด",
 
@@ -510,7 +523,8 @@ const barcodeTextTh = {
   tabAliexpress: "AliExpress",
   tabTiktok: "TikTok",
   mkEnableOnPlatform: "ขายสินค้านี้บน %s",
-  mkNotLinked: "ยังไม่ได้ผูกสินค้านี้กับ %s — เปิดสวิตช์ด้านบนเพื่อเริ่มแมพข้อมูล",
+  mkNotLinked:
+    "ยังไม่ได้ผูกสินค้านี้กับ %s — เปิดสวิตช์ด้านบนเพื่อเริ่มแมพข้อมูล",
   mkSectionListing: "ข้อมูลการลงขาย",
   mkSectionMediaSpecs: "รูปภาพและข้อมูลจำเพาะ",
   mkSectionPriceStock: "ราคาและสต๊อก",
@@ -554,7 +568,8 @@ const barcodeTextTh = {
 
 const barcodeTextEn: BarcodeText = {
   title: "Barcode",
-  subtitle: "Manage barcodes, SKUs, selling units, prices, and product references",
+  subtitle:
+    "Manage barcodes, SKUs, selling units, prices, and product references",
   tenant: "Company",
   branch: "Branch",
 
@@ -619,7 +634,8 @@ const barcodeTextEn: BarcodeText = {
   missingGuid: "No GUID to delete",
   exportSuccess: "Exported current rows",
   productMasterTitle: "Product Master",
-  productMasterSubtitle: "Manage main products and link relationship with barcodes",
+  productMasterSubtitle:
+    "Manage main products and link relationship with barcodes",
   productMasterSearch: "Search name or item code",
   productMasterAdd: "Add Product",
   productMasterDetailTitle: "Product Detail",
@@ -660,8 +676,10 @@ const barcodeTextEn: BarcodeText = {
 
   required: "Required",
   optional: "Optional",
-  barcodeHelp: "A-Z, 0-9, - only (no space)",
-  barcodeLockedHint: "Barcode cannot be changed after creation — delete this record and create a new one if needed.",
+  barcodeHelp:
+    "Use A-Z, 0-9, -; a 13-digit number must have a valid EAN-13 check digit",
+  barcodeLockedHint:
+    "Barcode cannot be changed after creation — delete this record and create a new one if needed.",
   names: "Names",
   product: "Main Product",
   addLanguage: "Add language",
@@ -720,8 +738,8 @@ const barcodeTextEn: BarcodeText = {
   qty: "Quantity",
   stockBarcode: "Stock barcode ref",
 
-  divideValue: "Divide",
-  standValue: "Stand",
+  divideValue: "Selling units (e.g. 1 case)",
+  standValue: "Equals base units (e.g. 24 pieces)",
   condition: "Condition",
   isUseSubBarcodes: "Use reference barcode",
   refBarcodes: "Reference barcodes",
@@ -826,7 +844,8 @@ const barcodeTextEn: BarcodeText = {
   on: "On",
   off: "Off",
   required_error: "Required",
-  invalidBarcode: "Barcode must contain only A-Z, 0-9, or -",
+  invalidBarcode:
+    "Use only A-Z, 0-9, -; a 13-digit number needs a valid EAN-13 check digit",
   unsavedChanges: "Unsaved changes — leave anyway?",
 
   // Detail-view section labels (barcode-screen detail panel)
@@ -885,11 +904,13 @@ const barcodeTextEn: BarcodeText = {
   searchBarcodeOrName: "Search by barcode or product name...",
   searchingBarcode: "Searching barcodes...",
   noUnlinkedBarcode: "No unlinked barcodes found",
-  allBarcodesLinked: "No orphan barcodes — all barcodes are linked to a product",
+  allBarcodesLinked:
+    "No orphan barcodes — all barcodes are linked to a product",
   closeWindow: "Close window",
   noName: "No name",
   unitLabel: "Unit",
-  barcodeFetchSuccess: "Fetched data from barcode %s. Please verify the item code and save.",
+  barcodeFetchSuccess:
+    "Fetched data from barcode %s. Please verify the item code and save.",
   barcodeFetchFail: "Failed to fetch barcode detail",
 
   // barcode-form TabProductDetail section titles
@@ -923,11 +944,13 @@ const barcodeTextEn: BarcodeText = {
   alertMessageLabel: "Alert message",
   descriptionLabel: "Additional details",
   inheritedInfoBanner: "Inherited from main product:",
-  inheritedInfoDetail: "Classification, creditors, images, and POS settings of this barcode are inherited from the main product",
+  inheritedInfoDetail:
+    "Classification, creditors, images, and POS settings of this barcode are inherited from the main product",
   inheritedInfoEditHint: "To edit these fields, go to menu",
   productMenuName: "Products",
   loadingProductDetail: "Loading main product details...",
-  noProductDetailFound: "Main product not found. Please check the product link in the Basic tab.",
+  noProductDetailFound:
+    "Main product not found. Please check the product link in the Basic tab.",
 
   // product-screen sub-component labels (media, units, BOM, options, time, business, misc)
   mediaUseSection: "Image or tag color",
@@ -972,7 +995,8 @@ const barcodeTextEn: BarcodeText = {
   businessTypeNoData: "— No exclusions — available for all business types —",
   branchSection: "Branches excluded from selling this item",
   branchAddBtn: "Add excluded branch",
-  branchHintDetail: "Branches added here cannot scan or check stock of this item",
+  branchHintDetail:
+    "Branches added here cannot scan or check stock of this item",
   branchNoData: "— No excluded branches — available in all branches —",
   pickerBranch: "Branch",
   pickerBusinessType: "Business type",
@@ -991,18 +1015,22 @@ const barcodeTextEn: BarcodeText = {
   unitStand: "Stand value",
   unitCondition: "Has unit condition",
   unitConditionEnable: "Enable",
-  unitMultiSection: "Multi-unit barcode management",
-  unitMultiToggle: "Enable multi-unit barcodes",
-  unitRefListTitle: "Supplementary unit barcodes",
-  unitRefAddBtn: "Add supplementary barcode",
-  unitRefNoData: "No supplementary unit barcodes",
-  unitRefBarcode: "Barcode",
-  unitRefBarcodePlaceholder: "Enter sub-unit barcode",
+  unitMultiSection: "Additional units",
+  unitMultiToggle: "Configure additional units",
+  unitRefListTitle: "Additional units",
+  unitRefAddBtn: "Add unit",
+  unitRefNoData: "No additional units",
+  unitRefBarcode: "Barcodes matching this unit",
+  unitRefBarcodePlaceholder: "No barcode uses this unit yet",
   unitRefUnitCode: "Unit code",
   unitRefUnitPlaceholder: "e.g. PCS, BOX",
   unitRefQty: "Sub-unit qty",
   unitRefDivide: "Divide",
   unitRefStand: "Stand",
+  unitConversionRequired: "Select a unit for every additional row",
+  unitConversionDuplicate: "Unit codes must be unique",
+  unitConversionInvalidRatio:
+    "Divide and stand values must be positive integers",
   bomSection: "Bill of Materials (BOM)",
   bomAddBtn: "Add material",
   bomNoData: "No materials in BOM",
@@ -1013,7 +1041,8 @@ const barcodeTextEn: BarcodeText = {
   bomQtyLabel: "Qty used",
   miscAlertPlaceholder: "Enter alert message, e.g. Age 18+ only",
   miscDescPlaceholder: "Product description for back-office or delivery...",
-  unsavedDetail: "Changes in this form are not yet saved. If you confirm, the form will close and edits will be discarded.",
+  unsavedDetail:
+    "Changes in this form are not yet saved. If you confirm, the form will close and edits will be discarded.",
   discardLabel: "Discard changes",
   resizeAriaLabel: "Resize barcode list and barcode detail panels",
 
@@ -1028,7 +1057,8 @@ const barcodeTextEn: BarcodeText = {
   tabAliexpress: "AliExpress",
   tabTiktok: "TikTok",
   mkEnableOnPlatform: "Sell this item on %s",
-  mkNotLinked: "Not linked to %s yet — turn on the switch above to start mapping",
+  mkNotLinked:
+    "Not linked to %s yet — turn on the switch above to start mapping",
   mkSectionListing: "Listing info",
   mkSectionMediaSpecs: "Images & specifications",
   mkSectionPriceStock: "Price & stock",
@@ -1085,6 +1115,8 @@ const dict: Record<LanguageCode, BarcodeText> = {
   fil: barcodeTextEn,
 };
 
-export function getBarcodeText(language: LanguageCode | string | undefined): BarcodeText {
+export function getBarcodeText(
+  language: LanguageCode | string | undefined,
+): BarcodeText {
   return dict[normalizeLanguage(language)] ?? barcodeTextTh;
 }

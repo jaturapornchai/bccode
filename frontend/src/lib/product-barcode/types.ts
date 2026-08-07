@@ -36,6 +36,19 @@ export interface ProductImage {
   uri: string;
 }
 
+/** Video entry — matches Go `ProductVideo`. */
+export interface ProductVideo {
+  xorder: number;
+  uri: string;
+  posteruri: string;
+}
+
+export const PRODUCT_VIDEO_MAX_MB = 500;
+export const PRODUCT_VIDEO_MAX_BYTES = PRODUCT_VIDEO_MAX_MB * 1024 * 1024;
+export const PRODUCT_VIDEO_REQUEST_MAX_BYTES =
+  PRODUCT_VIDEO_MAX_BYTES + 1024 * 1024;
+export const PRODUCT_VIDEO_UPLOAD_TIMEOUT_MS = 30 * 60 * 1000;
+
 export interface MarketplaceMediaAsset {
   kind: string;
   uri: string;
@@ -282,6 +295,10 @@ export interface RefProductBarcode {
   dividevalue: number;
   standvalue: number;
   qty: number;
+  imageuri?: string;
+  images?: ProductImage[];
+  videos?: ProductVideo[];
+  description?: string;
 
   // Marketplace & SKU Logistics
   sellersku?: string;
@@ -290,6 +307,14 @@ export interface RefProductBarcode {
   skupackagewidth?: number;
   skupackageheight?: number;
   marketplaceskumappings?: MarketplaceSKUMap[];
+}
+
+/** Additional Product unit; Barcode matching is derived by `itemunitcode`. */
+export interface ProductUnitConversion {
+  unitcode: string;
+  unitnames: NameX[];
+  dividevalue: number;
+  standvalue: number;
 }
 
 /** BOM entry — matches Go `BOMProductBarcode`. */
@@ -422,7 +447,8 @@ export interface ProductType {
 export interface ProductBarcode {
   // Identity
   guidfixed: string;
-  holdingcode?: string;
+  holdingcode: string;
+  businesscode: string;
   itemcode: string;
   barcode: string;
   names: NameX[];
@@ -439,12 +465,9 @@ export interface ProductBarcode {
   groupguid: string;
   groupcode: string;
   groupnames: NameX[];
-  groupsubonecode: string;
-  groupsubonenames: NameX[];
-  groupsuboneguid: string;
-  groupsubtwoguid: string;
-  groupsubtwocode: string;
-  groupsubtwonames: NameX[];
+  subgroupguid: string;
+  subgroupcode: string;
+  subgroupnames: NameX[];
 
   // Other masters
   brandguid: string;
@@ -503,6 +526,7 @@ export interface ProductBarcode {
   // Image & color
   imageuri: string;
   images: ProductImage[];
+  videos: ProductVideo[];
   useimageorcolor: boolean;
   colorselect: string;
   colorselecthex: string;
@@ -626,6 +650,7 @@ export interface ProductBarcodeListFilters {
 /** Request body for list endpoint. */
 export interface ProductBarcodeListRequest extends ProductBarcodeListFilters {
   holdingcode: string;
+  businesscode: string;
 }
 
 /** Response envelope from list endpoint. */
@@ -641,6 +666,7 @@ export function emptyProductBarcode(): ProductBarcode {
   return {
     guidfixed: "",
     holdingcode: "",
+    businesscode: "",
     itemcode: "",
     barcode: "",
     names: [],
@@ -655,12 +681,9 @@ export function emptyProductBarcode(): ProductBarcode {
     groupguid: "",
     groupcode: "",
     groupnames: [],
-    groupsubonecode: "",
-    groupsubonenames: [],
-    groupsuboneguid: "",
-    groupsubtwoguid: "",
-    groupsubtwocode: "",
-    groupsubtwonames: [],
+    subgroupguid: "",
+    subgroupcode: "",
+    subgroupnames: [],
 
     brandguid: "",
     brandcode: "",
@@ -712,6 +735,7 @@ export function emptyProductBarcode(): ProductBarcode {
 
     imageuri: "",
     images: [],
+    videos: [],
     useimageorcolor: true,
     colorselect: "",
     colorselecthex: "",
@@ -789,12 +813,9 @@ export interface Product {
   unitguid?: string;
 
   // Classifications
-  groupsuboneguid?: string;
-  groupsubonecode?: string;
-  groupsubonenames?: NameX[];
-  groupsubtwoguid?: string;
-  groupsubtwocode?: string;
-  groupsubtwonames?: NameX[];
+  subgroupguid?: string;
+  subgroupcode?: string;
+  subgroupnames?: NameX[];
   brandguid?: string;
   brandcode?: string;
   brandnames?: NameX[];
@@ -824,6 +845,7 @@ export interface Product {
   // Core Product Properties Moved from ProductBarcode
   imageuri?: string;
   images?: ProductImage[];
+  videos?: ProductVideo[];
   useimageorcolor?: boolean;
   colorselect?: string;
   colorselecthex?: string;
@@ -847,6 +869,7 @@ export interface Product {
   condition?: boolean;
   dividevalue?: number;
   standvalue?: number;
+  unitconversions?: ProductUnitConversion[];
   isusesubbarcodes?: boolean;
   refbarcodes?: RefProductBarcode[];
   bom?: BOMProductBarcode[];
@@ -864,6 +887,15 @@ export interface Product {
   stockbarcode?: string;
   _unit_count?: number;
   _source?: string;
+
+  // Pricing & Discounts
+  maxdiscount?: string;
+  discount?: string;
+  isdividend?: boolean;
+  isdiscountpointofpurchase?: boolean;
+  fixedcost?: number | null;
+  vatcal?: number;
+  producttype?: { guidfixed?: string; code?: string; names?: NameX[] };
 
   // Marketplace & Logistics
   packageweight?: number;

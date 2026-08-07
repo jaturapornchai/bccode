@@ -5723,10 +5723,6 @@ definitions:
       code:
         maxLength: 255
         type: string
-      isauto:
-        type: boolean
-      isdelete:
-        type: boolean
       name:
         maxLength: 255
         type: string
@@ -5737,10 +5733,6 @@ definitions:
         maxLength: 255
         minLength: 1
         type: string
-      isauto:
-        type: boolean
-      isdelete:
-        type: boolean
       name:
         maxLength: 255
         type: string

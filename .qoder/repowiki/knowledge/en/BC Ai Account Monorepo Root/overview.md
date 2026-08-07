@@ -1,0 +1,1 @@
+Repository root that wires a Go backend monorepo, a Next.js frontend, and auto-generated data-model docs under shared AI-agent orchestration rules.

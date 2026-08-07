@@ -31,13 +31,13 @@ Default precision:
 - Exchange rate: `28,8`
 
 ## Project Naming
-This project also enforces lowercase persisted/API/database names (underscore allowed; snake_case OK — only uppercase/camelCase is a violation). Use project names such as:
-- `vatamount`, not `vat_amount`
-- `netamount`, not `net_amount`
-- `grossamount`, not `gross_amount`
-- `unitprice`, not `unit_price`
-- `exchangerate`, not `exchange_rate`
-- `amountsatang`, not `amount_satang`
+This project also enforces lowercase persisted/API/database names (underscore allowed; snake_case OK — only uppercase/camelCase is a violation). Preferred project names (concatenated lowercase; the snake_case form is also acceptable):
+- `vatamount` (or `vat_amount`)
+- `netamount` (or `net_amount`)
+- `grossamount` (or `gross_amount`)
+- `unitprice` (or `unit_price`)
+- `exchangerate` (or `exchange_rate`)
+- `amountsatang` (or `amount_satang`)
 
 External provider fields may keep provider-required names only inside adapter boundaries.
 
@@ -58,6 +58,8 @@ Use decimal library calculations or database decimal aggregation.
 Reports must sum/filter/sort/group directly on decimal fields. Do not cast decimal values to float. Do not create float shadow fields such as `amountfloat`, `totalfloat`, or `balancefloat`.
 
 ## Migration Rules
+Pre-launch the No-Migration / Disposable Database Rule wins: prefer rebuilding decimal-correct structures from code over migration ceremony. The ceremony below applies only when existing data must be preserved (post go-live, or any store holding real records).
+
 Legacy float/double/number accounting data must not be silently converted. Required migration evidence:
 - Backup
 - Dry run

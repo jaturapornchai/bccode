@@ -6,6 +6,77 @@ describe("workspace product unit setup route", () => {
     vi.unstubAllGlobals();
   });
 
+  it("forwards a normalized optional businesscode when selecting a Holding", async () => {
+    const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+      expect(String(url)).toBe("http://localhost:8888/select-holding");
+      expect(init?.method).toBe("POST");
+      expect(JSON.parse(String(init?.body))).toEqual({
+        holdingcode: "SHOP001",
+        businesscode: "COMPANY01",
+      });
+      return Response.json({ success: true });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await POST(
+      new Request("http://localhost/api/workspace/select-holding", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer test-token" },
+        body: JSON.stringify({
+          backendUrl: "http://localhost:8888/goapi",
+          holdingcode: "SHOP001",
+          businesscode: " company 01 ",
+        }),
+      }),
+      workspaceContext("select-holding"),
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ success: true });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("restores both the active Holding and Company after organization enrichment", async () => {
+    const selections: Array<Record<string, unknown>> = [];
+    const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+      const requestUrl = String(url);
+      if (requestUrl === "http://localhost:8888/list-holding?limit=100") {
+        return Response.json({
+          success: true,
+          data: [{ holdingcode: "SHOP001", names: [{ code: "th", name: "กิจการทดสอบ" }], language: "th" }],
+          total: 1,
+        });
+      }
+      if (requestUrl === "http://localhost:8888/select-holding") {
+        selections.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
+        return Response.json({ success: true });
+      }
+      if (requestUrl === "http://localhost:8888/organization/company") {
+        return Response.json({ success: true, data: [{ guidfixed: "COMP-GUID", code: "COMPANY01" }] });
+      }
+      if (requestUrl === "http://localhost:8888/organization/branch") {
+        return Response.json({ success: true, data: [] });
+      }
+      throw new Error(`Unexpected URL ${requestUrl}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await GET(
+      new Request(
+        "http://localhost/api/workspace/holdings?backendUrl=http://localhost:8888/goapi&activeholdingcode=SHOP001&businesscode=company%2001",
+        { headers: { Authorization: "Bearer test-token" } },
+      ),
+      workspaceContext("holdings"),
+    );
+
+    expect(response.status).toBe(200);
+    expect(selections).toEqual([
+      { holdingcode: "SHOP001", businesscode: "COMPANY01" },
+      { holdingcode: "SHOP001", businesscode: "COMPANY01" },
+    ]);
+    expect(fetchMock).toHaveBeenCalledTimes(5);
+  });
+
   it("enriches company cards with names from holding info when list-holding only returns ids", async () => {
     const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
       const requestUrl = String(url);
@@ -475,7 +546,7 @@ describe("workspace product unit setup route", () => {
         expect(JSON.parse(String(init?.body))).toEqual([
           {
             unitcode: "KG",
-            names: [{ code: "th", name: "กิโลกรัม", isauto: false, isdelete: false }],
+            names: [{ code: "th", name: "กิโลกรัม" }],
           },
         ]);
         return Response.json({ success: true, bulk_import: { created: ["KG"] } }, { status: 201 });
@@ -546,8 +617,8 @@ describe("workspace product unit setup route", () => {
           {
             unitcode: "PCE",
             names: [
-              { code: "th", name: "ชิ้น", isauto: false, isdelete: false },
-              { code: "en", name: "Piece", isauto: false, isdelete: false },
+              { code: "th", name: "ชิ้น" },
+              { code: "en", name: "Piece" },
             ],
           },
         ]);

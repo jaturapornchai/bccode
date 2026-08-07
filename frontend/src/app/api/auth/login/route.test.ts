@@ -6,8 +6,16 @@ describe("password login route", () => {
     vi.unstubAllGlobals();
   });
 
-  it("requires holdingcode before password login", async () => {
-    const fetchMock = vi.fn();
+  it("allows password login without holdingcode", async () => {
+    const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+      expect(String(url)).toBe("http://localhost:8888/login");
+      expect(JSON.parse(String(init?.body))).toEqual({
+        username: "demo",
+        password: "secret",
+        holdingcode: "",
+      });
+      return Response.json({ success: true, token: "token-0", refresh: "refresh-0" });
+    });
     vi.stubGlobal("fetch", fetchMock);
 
     const response = await POST(new Request("http://localhost/api/auth/login", {
@@ -21,12 +29,12 @@ describe("password login route", () => {
     }));
     const json = await response.json();
 
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(200);
     expect(json).toMatchObject({
-      success: false,
-      message: "กรุณากรอกรหัสกลุ่มกิจการก่อนเข้าสู่ระบบด้วย User , Password",
+      success: true,
+      token: "token-0",
     });
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("forwards normalized holdingcode to mainapi login", async () => {
@@ -38,7 +46,7 @@ describe("password login route", () => {
         password: "secret",
         holdingcode: "bcdemo",
       });
-      return Response.json({ success: true, token: "token-1", refresh: "refresh-1" });
+      return Response.json({ success: true, token: "token-1", refresh: "refresh-1", mustchangepassword: true });
     });
     vi.stubGlobal("fetch", fetchMock);
 
@@ -59,6 +67,7 @@ describe("password login route", () => {
       success: true,
       token: "token-1",
       refresh: "refresh-1",
+      mustchangepassword: true,
       backendUrl: "http://localhost:8888/goapi",
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);

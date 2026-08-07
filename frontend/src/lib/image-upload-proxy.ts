@@ -8,7 +8,11 @@ import {
 } from "@/lib/workspace-api";
 
 type ImageUploadProxyOptions = {
+  backendPath?: string;
   category: string;
+  forwardRequestBody?: boolean;
+  kind?: "image" | "video";
+  maxRequestBytes?: number;
   requireClientCategory?: boolean;
   timeoutMs?: number;
 };
@@ -37,57 +41,109 @@ export async function proxyImageUploadToGoApi(
     );
   }
 
-  const form = await request.formData().catch(() => null);
-  const file = form?.get("file");
-  if (!form || !(file instanceof File)) {
-    return NextResponse.json(
-      { success: false, message: "ไม่พบไฟล์รูป" },
-      { status: 400 },
-    );
-  }
-
-  const category = resolveUploadCategory(form.get("category"), options);
-  if (!category) {
-    return NextResponse.json(
-      { success: false, message: "ไม่พบหมวดหมู่รูปภาพสำหรับอัปโหลด" },
-      { status: 400 },
-    );
-  }
-
-  const uploadForm = new FormData();
-  uploadForm.append("file", file, file.name || "image.jpg");
-  uploadForm.append("category", category);
-
-  for (const field of forwardedTextFields) {
-    const value = form.get(field);
-    if (typeof value === "string" && value.trim()) {
-      uploadForm.append(field, value.trim().slice(0, 500));
+  let uploadBody: BodyInit;
+  let uploadContentType = "";
+  let uploadExceededLimit = false;
+  if (options.forwardRequestBody) {
+    const contentLength = Number(request.headers.get("content-length") ?? 0);
+    if (options.maxRequestBytes && contentLength > options.maxRequestBytes) {
+      return NextResponse.json(
+        { success: false, message: "ไฟล์มีขนาดใหญ่เกินกำหนด" },
+        { status: 413 },
+      );
     }
+    uploadContentType = request.headers.get("content-type") ?? "";
+    if (!request.body || !uploadContentType.toLowerCase().startsWith("multipart/form-data;")) {
+      return NextResponse.json(
+        { success: false, message: options.kind === "video" ? "ไม่พบไฟล์วิดีโอ" : "ไม่พบไฟล์รูป" },
+        { status: 400 },
+      );
+    }
+    if (options.maxRequestBytes) {
+      let receivedBytes = 0;
+      uploadBody = request.body.pipeThrough(
+        new TransformStream<Uint8Array, Uint8Array>({
+          transform(chunk, controller) {
+            receivedBytes += chunk.byteLength;
+            if (receivedBytes > options.maxRequestBytes!) {
+              uploadExceededLimit = true;
+              controller.error(new Error("upload body exceeds limit"));
+              return;
+            }
+            controller.enqueue(chunk);
+          },
+        }),
+      );
+    } else {
+      uploadBody = request.body;
+    }
+  } else {
+    const form = await request.formData().catch(() => null);
+    const file = form?.get("file");
+    if (!form || !(file instanceof File)) {
+      return NextResponse.json(
+        { success: false, message: options.kind === "video" ? "ไม่พบไฟล์วิดีโอ" : "ไม่พบไฟล์รูป" },
+        { status: 400 },
+      );
+    }
+
+    const category = resolveUploadCategory(form.get("category"), options);
+    if (!category) {
+      return NextResponse.json(
+        { success: false, message: "ไม่พบหมวดหมู่รูปภาพสำหรับอัปโหลด" },
+        { status: 400 },
+      );
+    }
+
+    const uploadForm = new FormData();
+    uploadForm.append("file", file, file.name || (options.kind === "video" ? "video.mp4" : "image.jpg"));
+    uploadForm.append("category", category);
+
+    for (const field of forwardedTextFields) {
+      const value = form.get(field);
+      if (typeof value === "string" && value.trim()) {
+        uploadForm.append(field, value.trim().slice(0, 500));
+      }
+    }
+    uploadBody = uploadForm;
   }
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? 60000);
 
   try {
-    const response = await fetch(`${mainApiUrl}/goapi/image/upload`, {
+    const headers: Record<string, string> = {
+      "Accept-Language": request.headers.get("accept-language") ?? "th",
+      Authorization: authorization,
+    };
+    if (uploadContentType) headers["Content-Type"] = uploadContentType;
+    const uploadRequest: RequestInit & { duplex?: "half" } = {
       method: "POST",
-      headers: {
-        "Accept-Language": request.headers.get("accept-language") ?? "th",
-        Authorization: authorization,
-      },
-      body: uploadForm,
+      headers,
+      body: uploadBody,
       signal: controller.signal,
       cache: "no-store",
-    });
+    };
+    if (options.forwardRequestBody) uploadRequest.duplex = "half";
+    const response = await fetch(
+      `${mainApiUrl}${options.backendPath ?? "/goapi/image/upload"}`,
+      uploadRequest,
+    );
     const payload = await readJsonOrText(response);
     return NextResponse.json(normalizeImageUploadPayload(payload, response.ok), {
       status: response.status,
     });
   } catch (error) {
+    if (uploadExceededLimit) {
+      return NextResponse.json(
+        { success: false, message: "ไฟล์มีขนาดใหญ่เกินกำหนด" },
+        { status: 413 },
+      );
+    }
     const message =
       error instanceof Error && error.name === "AbortError"
         ? "Server ไม่ตอบกลับทันเวลา"
-        : "อัปโหลดรูปไม่สำเร็จ";
+        : options.kind === "video" ? "อัปโหลดวิดีโอไม่สำเร็จ" : "อัปโหลดรูปไม่สำเร็จ";
     return NextResponse.json({ success: false, message }, { status: 504 });
   } finally {
     clearTimeout(timeout);
@@ -123,10 +179,12 @@ export function normalizeImageUploadPayload(
         payload.uri ??
         data.uri ??
         payload.file_url ??
-        data.file_url,
+        data.file_url ??
+        payload.fileurl ??
+        data.fileurl,
     ),
   );
-  const objectKey = imageObjectKey(data);
+  const objectKey = stringValue(payload.objectkey ?? data.objectkey) || imageObjectKey(data);
   const url = existingUrl || (objectKey ? `/goapi/s3/file/${objectKey}` : "");
 
   return {
@@ -163,7 +221,7 @@ function normalizeImageProxyUrl(value: string): string {
   return value;
 }
 
-export function imageNeedsAuthenticatedFetch(imageUrl: string): boolean {
+export function imageNeedsAuthenticatedFetch(imageUrl: string, trustedBackendUrl = ""): boolean {
   if (!imageUrl || /^(blob:|data:)/i.test(imageUrl)) return false;
   const fallbackOrigin =
     typeof window === "undefined"
@@ -171,9 +229,23 @@ export function imageNeedsAuthenticatedFetch(imageUrl: string): boolean {
       : window.location.origin;
   try {
     const parsed = new URL(imageUrl, fallbackOrigin);
-    return parsed.pathname.includes("/s3/file/");
+    if (!parsed.pathname.includes("/s3/file/")) return false;
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
+    const frontendOrigin = new URL(fallbackOrigin).origin;
+    const trustedOrigin = uploadOrigin(trustedBackendUrl, fallbackOrigin);
+    return parsed.origin === frontendOrigin || parsed.origin === trustedOrigin;
   } catch {
-    return imageUrl.includes("/s3/file/");
+    return false;
+  }
+}
+
+function uploadOrigin(value: string, fallbackOrigin: string): string {
+  const normalized = value.trim();
+  if (!normalized) return fallbackOrigin;
+  try {
+    return new URL(/^https?:\/\//i.test(normalized) ? normalized : `http://${normalized}`).origin;
+  } catch {
+    return fallbackOrigin;
   }
 }
 
@@ -192,7 +264,7 @@ function sanitizeUploadCategory(value: unknown): string {
   return source
     .replaceAll("\\", "/")
     .split("/")
-    .map((part) => part.replace(/[^a-z0-9_-]/gi, "").slice(0, 64))
+    .map((part) => part.replace(/[^a-z0-9_~-]/gi, "").slice(0, 64))
     .filter(Boolean)
     .join("/");
 }

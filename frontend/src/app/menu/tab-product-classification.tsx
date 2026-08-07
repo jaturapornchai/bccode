@@ -26,8 +26,7 @@ export function TabProductClassification({
       <div className="grid gap-4 sm:grid-cols-2">
         {[
           { key: "group", label: text.group, code: value.groupcode, names: value.groupnames },
-          { key: "groupsubone", label: text.groupsubone, code: value.groupsubonecode, names: value.groupsubonenames },
-          { key: "groupsubtwo", label: text.groupsubtwo, code: value.groupsubtwocode, names: value.groupsubtwonames },
+          { key: "subgroup", label: text.groupsubone, code: value.subgroupcode, names: value.subgroupnames },
           { key: "brand", label: text.brand, code: value.brandcode, names: value.brandnames },
           { key: "category", label: text.category, code: value.categorycode, names: value.categorynames },
           { key: "class", label: text.class, code: value.classcode, names: value.classnames },

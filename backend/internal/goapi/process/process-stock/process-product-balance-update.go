@@ -153,10 +153,19 @@ func ProcessProductBalanceUpdateByItems(db *sql.DB, itemCodes []string) error {
 }
 
 // ProcessProductBalanceUpdateByItemsAsync — เรียกแบบ goroutine (ไม่ block Kafka consumer)
+// OnBalanceUpdated — optional hook invoked after product balances are updated.
+// Set by the handlers package to invalidate the product search cache without
+// an import cycle (process-stock must not import handlers).
+var OnBalanceUpdated func()
+
 func ProcessProductBalanceUpdateByItemsAsync(db *sql.DB, itemCodes []string) {
 	go func() {
 		if err := ProcessProductBalanceUpdateByItems(db, itemCodes); err != nil {
 			logger.Error("ProcessProductBalanceUpdateByItemsAsync: %v", err)
+			return
+		}
+		if OnBalanceUpdated != nil {
+			OnBalanceUpdated()
 		}
 	}()
 }
@@ -192,7 +201,7 @@ func queryPendingRecvAll(db *sql.DB) (map[string]float64, error) {
 				SUM(dd.totalqty * COALESCE(dd.unitstand,1) / NULLIF(COALESCE(dd.unitdivide,1), 0)) as orderedqty
 			FROM docdetail dd
 			JOIN doc d ON d.docno = dd.docno AND d.transflag = dd.transflag
-			WHERE dd.transflag = 6 AND d.isclosed = 0
+			WHERE dd.transflag = 6 AND d.isclosed = false
 			GROUP BY dd.itemcode, dd.docno
 		),
 		received AS (
@@ -214,13 +223,14 @@ func queryPendingRecvAll(db *sql.DB) (map[string]float64, error) {
 
 func queryPendingRecvByItems(db *sql.DB, itemCodes []string) (map[string]float64, error) {
 	ph, args := buildPlaceholders(itemCodes)
+	ph2, args2 := buildPlaceholdersOffset(itemCodes, len(itemCodes))
 	query := fmt.Sprintf(`
 		WITH openpo AS (
 			SELECT dd.itemcode, dd.docno,
 				SUM(dd.totalqty * COALESCE(dd.unitstand,1) / NULLIF(COALESCE(dd.unitdivide,1), 0)) as orderedqty
 			FROM docdetail dd
 			JOIN doc d ON d.docno = dd.docno AND d.transflag = dd.transflag
-			WHERE dd.transflag = 6 AND d.isclosed = 0 AND dd.itemcode IN (%s)
+			WHERE dd.transflag = 6 AND d.isclosed = false AND dd.itemcode IN (%s)
 			GROUP BY dd.itemcode, dd.docno
 		),
 		received AS (
@@ -236,9 +246,9 @@ func queryPendingRecvByItems(db *sql.DB, itemCodes []string) (map[string]float64
 		LEFT JOIN received r ON po.docno = r.docno AND po.itemcode = r.itemcode
 		GROUP BY po.itemcode
 		HAVING SUM(po.orderedqty - COALESCE(r.receivedqty, 0)) > 0
-	`, ph, ph)
-	// ส่ง args 2 ชุด (สำหรับ openpo + received)
-	doubleArgs := append(args, args...)
+	`, ph, ph2)
+	// ส่ง args 2 ชุด (สำหรับ openpo + received) — placeholder groups are now distinct
+	doubleArgs := append(args, args2...)
 	return queryItemQtyMapWithArgs(db, query, doubleArgs)
 }
 
@@ -252,7 +262,7 @@ func queryPendingSendAll(db *sql.DB) (map[string]float64, error) {
 				SUM(dd.totalqty * COALESCE(dd.unitstand,1) / NULLIF(COALESCE(dd.unitdivide,1), 0)) as orderedqty
 			FROM docdetail dd
 			JOIN doc d ON d.docno = dd.docno AND d.transflag = dd.transflag
-			WHERE dd.transflag = 36 AND d.isclosed = 0
+			WHERE dd.transflag = 36 AND d.isclosed = false
 			GROUP BY dd.itemcode, dd.docno
 		),
 		delivered AS (
@@ -274,13 +284,14 @@ func queryPendingSendAll(db *sql.DB) (map[string]float64, error) {
 
 func queryPendingSendByItems(db *sql.DB, itemCodes []string) (map[string]float64, error) {
 	ph, args := buildPlaceholders(itemCodes)
+	ph2, args2 := buildPlaceholdersOffset(itemCodes, len(itemCodes))
 	query := fmt.Sprintf(`
 		WITH openso AS (
 			SELECT dd.itemcode, dd.docno,
 				SUM(dd.totalqty * COALESCE(dd.unitstand,1) / NULLIF(COALESCE(dd.unitdivide,1), 0)) as orderedqty
 			FROM docdetail dd
 			JOIN doc d ON d.docno = dd.docno AND d.transflag = dd.transflag
-			WHERE dd.transflag = 36 AND d.isclosed = 0 AND dd.itemcode IN (%s)
+			WHERE dd.transflag = 36 AND d.isclosed = false AND dd.itemcode IN (%s)
 			GROUP BY dd.itemcode, dd.docno
 		),
 		delivered AS (
@@ -296,8 +307,8 @@ func queryPendingSendByItems(db *sql.DB, itemCodes []string) (map[string]float64
 		LEFT JOIN delivered d ON so.docno = d.docno AND so.itemcode = d.itemcode
 		GROUP BY so.itemcode
 		HAVING SUM(so.orderedqty - COALESCE(d.deliveredqty, 0)) > 0
-	`, ph, ph)
-	doubleArgs := append(args, args...)
+	`, ph, ph2)
+	doubleArgs := append(args, args2...)
 	return queryItemQtyMapWithArgs(db, query, doubleArgs)
 }
 
@@ -334,11 +345,11 @@ func batchUpdateProduct(db *sql.DB, items []productQtyInfo, packingCache map[str
 			recvWord := formatBalanceWord(item.PendingRecvQty, item.ItemCode, packingCache, unitNameMap)
 			sendWord := formatBalanceWord(item.PendingSendQty, item.ItemCode, packingCache, unitNameMap)
 
-			balQtyClauses = append(balQtyClauses, fmt.Sprintf("WHEN itemcode = $%d THEN $%d", argIdx, argIdx+1))
+			balQtyClauses = append(balQtyClauses, fmt.Sprintf("WHEN itemcode = $%d THEN $%d::numeric", argIdx, argIdx+1))
 			balWordClauses = append(balWordClauses, fmt.Sprintf("WHEN itemcode = $%d THEN $%d", argIdx, argIdx+2))
-			recvQtyClauses = append(recvQtyClauses, fmt.Sprintf("WHEN itemcode = $%d THEN $%d", argIdx, argIdx+3))
+			recvQtyClauses = append(recvQtyClauses, fmt.Sprintf("WHEN itemcode = $%d THEN $%d::numeric", argIdx, argIdx+3))
 			recvWordClauses = append(recvWordClauses, fmt.Sprintf("WHEN itemcode = $%d THEN $%d", argIdx, argIdx+4))
-			sendQtyClauses = append(sendQtyClauses, fmt.Sprintf("WHEN itemcode = $%d THEN $%d", argIdx, argIdx+5))
+			sendQtyClauses = append(sendQtyClauses, fmt.Sprintf("WHEN itemcode = $%d THEN $%d::numeric", argIdx, argIdx+5))
 			sendWordClauses = append(sendWordClauses, fmt.Sprintf("WHEN itemcode = $%d THEN $%d", argIdx, argIdx+6))
 			inCodes = append(inCodes, fmt.Sprintf("$%d", argIdx))
 			args = append(args, item.ItemCode, item.BalanceQty, balWord, item.PendingRecvQty, recvWord, item.PendingSendQty, sendWord)
@@ -403,10 +414,18 @@ func zeroMissingProduct(db *sql.DB, activeItemCodes []string) (int, error) {
 // ==================== Helpers ====================
 
 func buildPlaceholders(items []string) (string, []interface{}) {
+	return buildPlaceholdersOffset(items, 0)
+}
+
+// buildPlaceholdersOffset — placeholder group with distinct indices ($offset+1..$offset+N).
+// Two-CTE queries need two DISTINCT groups: pq treats each $N as one parameter,
+// so reusing $1..$N in both CTEs while passing 2N args fails with
+// "got 2 parameters but the statement requires 1".
+func buildPlaceholdersOffset(items []string, offset int) (string, []interface{}) {
 	placeholders := make([]string, len(items))
 	args := make([]interface{}, len(items))
 	for i, item := range items {
-		placeholders[i] = fmt.Sprintf("$%d", i+1)
+		placeholders[i] = fmt.Sprintf("$%d", offset+i+1)
 		args[i] = item
 	}
 	return strings.Join(placeholders, ","), args

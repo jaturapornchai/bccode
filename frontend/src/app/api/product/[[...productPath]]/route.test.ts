@@ -6,7 +6,7 @@ describe("product route", () => {
     vi.unstubAllGlobals();
   });
 
-  it("returns PostgreSQL list search errors without falling back to another product source", async () => {
+  it("uses the authenticated Company-scoped Product API for list reads", async () => {
     const fetchMock = vi.fn(
       async (url: string | URL | Request, init?: RequestInit) => {
         const requestUrl = String(url);
@@ -14,19 +14,10 @@ describe("product route", () => {
           Authorization: "Bearer test-token",
         });
 
-        if (requestUrl === "http://localhost:8888/goapi/api/product/search") {
-          expect(init?.method).toBe("POST");
-          expect(JSON.parse(String(init?.body))).toMatchObject({
-            holdingcode: "bctest01",
-            search: "",
-            limit: 80,
-            offset: 0,
-            usecache: false,
-          });
-          return Response.json(
-            { status: "error", error: "Query execution failed" },
-            { status: 500 },
-          );
+        if (requestUrl === "http://localhost:8888/product?q=&page=1&limit=80") {
+          expect(init?.method).toBe("GET");
+          expect(init?.body).toBeUndefined();
+          return Response.json({ success: true, data: [] });
         }
 
         throw new Error(`Unexpected URL ${requestUrl}`);
@@ -48,59 +39,12 @@ describe("product route", () => {
     );
     const json = await response.json();
 
-    expect(response.status).toBe(500);
+    expect(response.status).toBe(200);
     expect(json).toMatchObject({
-      success: false,
-      message: "Query execution failed",
-      source: "pgsql",
+      success: true,
+      data: [],
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
-  });
-
-  it("maps PostgreSQL list rows without inventing guidfixed values", async () => {
-    const fetchMock = vi.fn(
-      async (url: string | URL | Request, init?: RequestInit) => {
-        expect(String(url)).toBe(
-          "http://localhost:8888/goapi/api/product/search",
-        );
-        expect(JSON.parse(String(init?.body))).toMatchObject({
-          usecache: false,
-        });
-        return Response.json({
-          status: "success",
-          count: 1,
-          data: [
-            {
-              itemcode: "SKU001",
-              itemname: "สินค้า",
-              unitcode: "PCS",
-              unitname: "ชิ้น",
-            },
-          ],
-        });
-      },
-    );
-    vi.stubGlobal("fetch", fetchMock);
-
-    const response = await GET(
-      new Request("http://localhost/api/product?holdingcode=bctest01", {
-        headers: {
-          Authorization: "Bearer test-token",
-          "x-bc-backend-url": "http://localhost:8888/goapi",
-        },
-      }),
-      productContext(),
-    );
-    const json = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(json.data).toEqual([
-      expect.objectContaining({
-        code: "SKU001",
-        guidfixed: "",
-        _source: "pgsql",
-      }),
-    ]);
   });
 
   it("proxies the explicit product resync action", async () => {

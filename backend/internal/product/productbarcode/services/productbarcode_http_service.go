@@ -9,6 +9,7 @@ import (
 	creditorRepo "smlcloudplatform/internal/debtaccount/creditor/repositories"
 	mastersync "smlcloudplatform/internal/mastersync/repositories"
 	common "smlcloudplatform/internal/models"
+	productmodels "smlcloudplatform/internal/product/product/models"
 	productmaster "smlcloudplatform/internal/product/product/repositories"
 	"smlcloudplatform/internal/product/productbarcode/models"
 	"smlcloudplatform/internal/product/productbarcode/repositories"
@@ -32,16 +33,22 @@ import (
 
 type IProductBarcodeHttpService interface {
 	CreateProductBarcode(holdingCode string, authUsername string, doc models.ProductBarcodeRequest) (string, error)
+	CreateProductBarcodeInCompany(holdingCode string, businessCode string, authUsername string, doc models.ProductBarcodeRequest) (string, error)
 	UpdateProductBarcode(holdingCode string, guid string, authUsername string, doc models.ProductBarcodeRequest) error
+	UpdateProductBarcodeInCompany(holdingCode string, businessCode string, guid string, authUsername string, doc models.ProductBarcodeRequest) error
 	DeleteProductBarcode(holdingCode string, guid string, authUsername string) error
+	DeleteProductBarcodeInCompany(holdingCode string, businessCode string, guid string, authUsername string) error
 	DeleteProductBarcodeByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
 	InfoProductBarcode(holdingCode string, guid string) (models.ProductBarcodeInfo, error)
+	InfoProductBarcodeInCompany(holdingCode string, businessCode string, guid string) (models.ProductBarcodeInfo, error)
 	InfoProductBarcodeByBarcode(holdingCode string, itemCode string, barcode string) (models.ProductBarcodeInfo, error)
+	InfoProductBarcodeByBarcodeInCompany(holdingCode string, businessCode string, itemCode string, barcode string) (models.ProductBarcodeInfo, error)
 	InfoWTFArray(holdingCode string, codes []string) ([]interface{}, error)
 	InfoWTFArrayMaster(codes []string) ([]interface{}, error)
 	GetProductBarcodeByBarcodeRef(holdingCode string, barcodeRef string) ([]models.ProductBarcodeInfo, error)
 	GetProductBarcodeByBarcodeRefMultiShops(holdingCodes []string, barcodeRef string) ([]models.ProductBarcodeInfo, error)
 	SearchProductBarcode(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ProductBarcodeInfo, mongopagination.PaginationData, error)
+	SearchProductBarcodeInCompany(holdingCode string, businessCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ProductBarcodeInfo, mongopagination.PaginationData, error)
 	SearchProductBarcode2(holdingCode string, pageable micromodels.Pageable) ([]models.ProductBarcodeSearch, common.Pagination, error)
 
 	SearchProductBarcodeStep(holdingCode string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ProductBarcodeInfo, int, error)
@@ -71,6 +78,7 @@ type IProductBarcodeHttpService interface {
 type ProductBarcodeHttpService struct {
 	repo            repositories.IProductBarcodeRepository
 	repoMaster      productmaster.IProductRepository
+	productMQRepo   productmaster.IProductMessageQueueRepository
 	repoUnit        unitmaster.IUnitRepository
 	unitSvc         unitservices.IUnitHttpService
 	repomgCreditror creditorRepo.CreditorRepository
@@ -94,6 +102,7 @@ func NewProductBarcodeHttpService(
 	syncCacheRepo mastersync.IMasterSyncCacheRepository,
 	priceHistorySvc IProductPriceHistoryService,
 	warehouseRepo warehouseRepo.IWarehouseRepository,
+	productMQRepos ...productmaster.IProductMessageQueueRepository,
 ) *ProductBarcodeHttpService {
 
 	contextTimeout := time.Duration(15) * time.Second
@@ -112,6 +121,9 @@ func NewProductBarcodeHttpService(
 		contextTimeout:  contextTimeout,
 	}
 	insSvc.ActivityService = services.NewActivityService[models.ProductBarcodeActivity, models.ProductBarcodeDeleteActivity](repo)
+	if len(productMQRepos) > 0 {
+		insSvc.productMQRepo = productMQRepos[0]
+	}
 	return insSvc
 }
 
@@ -119,37 +131,158 @@ func (svc ProductBarcodeHttpService) getContextTimeout() (context.Context, conte
 	return context.WithTimeout(context.Background(), svc.contextTimeout)
 }
 
+func normalizeCompanyBarcodeRequest(docReq models.ProductBarcodeRequest) (models.ProductBarcodeRequest, error) {
+	docReq = docReq.CoreOnly()
+	docReq.ItemCode = utils.NormalizeBusinessCode(docReq.ItemCode)
+	docReq.Barcode = utils.NormalizeBusinessCode(docReq.Barcode)
+	docReq.ItemUnitCode = utils.NormalizeBusinessCode(docReq.ItemUnitCode)
+	if docReq.ItemCode == "" || docReq.Barcode == "" || docReq.ItemUnitCode == "" {
+		return models.ProductBarcodeRequest{}, errors.New("ItemCode, Barcode and ItemUnitCode are required")
+	}
+	if err := validateEAN13Barcode(docReq.Barcode); err != nil {
+		return models.ProductBarcodeRequest{}, err
+	}
+	return docReq, nil
+}
+
+func validateEAN13Barcode(barcode string) error {
+	if len(barcode) != 13 {
+		return nil
+	}
+	for index := range barcode {
+		if barcode[index] < '0' || barcode[index] > '9' {
+			return nil
+		}
+	}
+
+	sum := 0
+	for index := 0; index < 12; index++ {
+		digit := int(barcode[index] - '0')
+		if index%2 == 1 {
+			digit *= 3
+		}
+		sum += digit
+	}
+	expected := byte('0' + (10-(sum%10))%10)
+	if barcode[12] != expected {
+		return errors.New("invalid EAN-13 check digit")
+	}
+	return nil
+}
+
+func validateImmutableBarcodeIdentity(docReq models.ProductBarcodeRequest, stored models.ProductBarcodeDoc) error {
+	if docReq.ItemCode != stored.ItemCode || docReq.Barcode != stored.Barcode {
+		return errors.New("ItemCode and Barcode cannot be changed")
+	}
+	return nil
+}
+
+func minimumProductForBarcode(holdingCode, businessCode, authUsername string, barcode models.ProductBarcodeDoc, now time.Time) productmodels.ProductDoc {
+	names := barcode.Names
+	if names == nil || len(*names) == 0 {
+		names = &[]common.NameX{*common.NewNameXWithCodeName("th", barcode.ItemCode)}
+	}
+
+	doc := productmodels.ProductDoc{}
+	doc.HoldingCode = holdingCode
+	doc.BusinessCode = businessCode
+	doc.GuidFixed = utils.NewGUID()
+	doc.Code = barcode.ItemCode
+	doc.Names = names
+	doc.UnitGuid = barcode.ItemUnitGuid
+	doc.UnitCode = barcode.ItemUnitCode
+	doc.UnitNames = barcode.ItemUnitNames
+	doc.DivideValue = 1
+	doc.StandValue = 1
+	doc.UnitConversions = []productmodels.ProductUnitConversion{}
+	doc.CreatedBy = authUsername
+	doc.CreatedAt = now
+	doc.UpdatedAt = now
+	return doc
+}
+
+func applyProductUnitToBarcode(barcode *models.ProductBarcodeDoc, product productmodels.ProductDoc) error {
+	unit, ok := product.UnitDefinition(barcode.ItemUnitCode)
+	if !ok {
+		return fmt.Errorf("หน่วยนับ %s ยังไม่ได้กำหนดในสินค้า %s", barcode.ItemUnitCode, product.Code)
+	}
+	barcode.ItemUnitCode = unit.UnitCode
+	barcode.ItemUnitNames = unit.UnitNames
+	barcode.ItemUnitGuid = ""
+	if unit.UnitCode == product.UnitCode {
+		barcode.ItemUnitGuid = product.UnitGuid
+	}
+	barcode.Condition = false
+	barcode.DivideValue = float64(unit.DivideValue)
+	barcode.StandValue = float64(unit.StandValue)
+	return nil
+}
+
 func (svc ProductBarcodeHttpService) CreateProductBarcode(holdingCode string, authUsername string, docReq models.ProductBarcodeRequest) (string, error) {
+	return svc.createProductBarcode(holdingCode, "", authUsername, docReq)
+}
+
+func (svc ProductBarcodeHttpService) CreateProductBarcodeInCompany(holdingCode string, businessCode string, authUsername string, docReq models.ProductBarcodeRequest) (string, error) {
+	businessCode = utils.NormalizeBusinessCode(businessCode)
+	if businessCode == "" {
+		return "", errors.New("BusinessCode is required")
+	}
+	return svc.createProductBarcode(holdingCode, businessCode, authUsername, docReq)
+}
+
+func (svc ProductBarcodeHttpService) createProductBarcode(holdingCode string, businessCode string, authUsername string, docReq models.ProductBarcodeRequest) (string, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	docReq.ItemCode = utils.NormalizeBusinessCode(docReq.ItemCode)
-	docReq.Barcode = utils.NormalizeBusinessCode(docReq.Barcode)
-	if docReq.Barcode == "" {
-		return "", errors.New("Barcode is required")
+	var err error
+	if businessCode != "" {
+		docReq, err = normalizeCompanyBarcodeRequest(docReq)
+		if err != nil {
+			return "", err
+		}
+		if svc.productMQRepo == nil {
+			return "", errors.New("Product message queue repository is required")
+		}
+	} else {
+		docReq.ItemCode = utils.NormalizeBusinessCode(docReq.ItemCode)
+		docReq.Barcode = utils.NormalizeBusinessCode(docReq.Barcode)
+		if docReq.Barcode == "" {
+			return "", errors.New("Barcode is required")
+		}
 	}
 	if err := svc.repo.EnsureIndexes(ctx); err != nil {
 		return "", err
 	}
+	if businessCode != "" {
+		if err := svc.repoMaster.EnsureIndexes(ctx); err != nil {
+			return "", err
+		}
+	}
 
-	findDoc, err := svc.repo.FindOne(ctx, holdingCode, bson.M{
-		"itemcode": docReq.ItemCode,
-		"barcode":  docReq.Barcode,
-	})
+	findDoc := models.ProductBarcodeDoc{}
+	if businessCode != "" {
+		findDoc, err = svc.repo.FindByBarcodeInCompany(ctx, holdingCode, businessCode, docReq.Barcode)
+	} else {
+		findDoc, err = svc.repo.FindOne(ctx, holdingCode, bson.M{
+			"itemcode": docReq.ItemCode,
+			"barcode":  docReq.Barcode,
+		})
+	}
 
 	if err != nil {
 		return "", err
 	}
 
 	if findDoc.Barcode != "" {
-		return "", errors.New("รหัสสินค้าและบาร์โค้ดคู่นี้มีอยู่แล้ว")
+		return "", errors.New("บาร์โค้ดนี้มีอยู่แล้วในบริษัท")
 	}
 
 	newGuidFixed := utils.NewGUID()
 
 	docData := models.ProductBarcodeDoc{}
 	docData.HoldingCode = holdingCode
+	docData.BusinessCode = businessCode
 	docData.GuidFixed = newGuidFixed
 	docData.ProductBarcode = docReq.ToProductBarcode()
 	if err := models.ValidateProductClassification(docData.ItemType, docData.MaterialType); err != nil {
@@ -244,19 +377,56 @@ func (svc ProductBarcodeHttpService) CreateProductBarcode(holdingCode string, au
 		}
 	}
 
-	_, err = svc.repo.Create(ctx, docData)
+	var createdProduct *productmodels.ProductDoc
+	if businessCode != "" {
+		err = svc.repo.Transaction(ctx, func(transactionContext context.Context) error {
+			duplicate, err := svc.repo.FindByBarcodeInCompany(transactionContext, holdingCode, businessCode, docData.Barcode)
+			if err != nil {
+				return err
+			}
+			if duplicate.ID != primitive.NilObjectID {
+				return errors.New("บาร์โค้ดนี้มีอยู่แล้วในบริษัท")
+			}
 
+			product, err := svc.repoMaster.FindByCodeInCompany(transactionContext, holdingCode, businessCode, docData.ItemCode)
+			if err != nil {
+				return err
+			}
+			if product.ID == primitive.NilObjectID {
+				minimumProduct := minimumProductForBarcode(holdingCode, businessCode, authUsername, docData, docData.CreatedAt)
+				if err := applyProductUnitToBarcode(&docData, minimumProduct); err != nil {
+					return err
+				}
+				if _, err := svc.repoMaster.Create(transactionContext, minimumProduct); err != nil {
+					return err
+				}
+				createdProduct = &minimumProduct
+			} else if err := applyProductUnitToBarcode(&docData, product); err != nil {
+				return err
+			}
+
+			_, err = svc.repo.Create(transactionContext, docData)
+			return err
+		})
+	} else {
+		_, err = svc.repo.Create(ctx, docData)
+	}
 	if err != nil {
 		return "", err
 	}
 
-	err = svc.mqRepo.Create(docData)
-	if err != nil {
+	if createdProduct != nil {
+		if err := svc.productMQRepo.Create(*createdProduct); err != nil {
+			return "", err
+		}
+	}
+	if err = svc.mqRepo.Create(docData); err != nil {
 		return "", err
 	}
 
-	// บันทึกประวัติราคาสำหรับการสร้างใหม่
-	if docData.Prices != nil && len(*docData.Prices) > 0 {
+	// Legacy price history has no BusinessCode. Skip company-owned writes until
+	// that collection is partitioned, otherwise duplicate item/barcode keys mix.
+	if shouldRecordLegacyPriceHistory(businessCode) && docData.Prices != nil && len(*docData.Prices) > 0 {
 		productName := ""
 		if docData.Names != nil && len(*docData.Names) > 0 {
 			if (*docData.Names)[0].Name != nil {
@@ -289,11 +459,29 @@ func (svc ProductBarcodeHttpService) CreateProductBarcode(holdingCode string, au
 }
 
 func (svc ProductBarcodeHttpService) UpdateProductBarcode(holdingCode string, guid string, authUsername string, docReq models.ProductBarcodeRequest) error {
+	return svc.updateProductBarcode(holdingCode, "", guid, authUsername, docReq)
+}
+
+func (svc ProductBarcodeHttpService) UpdateProductBarcodeInCompany(holdingCode string, businessCode string, guid string, authUsername string, docReq models.ProductBarcodeRequest) error {
+	businessCode = utils.NormalizeBusinessCode(businessCode)
+	if businessCode == "" {
+		return errors.New("BusinessCode is required")
+	}
+	return svc.updateProductBarcode(holdingCode, businessCode, guid, authUsername, docReq)
+}
+
+func (svc ProductBarcodeHttpService) updateProductBarcode(holdingCode string, businessCode string, guid string, authUsername string, docReq models.ProductBarcodeRequest) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
+	findDoc := models.ProductBarcodeDoc{}
+	var err error
+	if businessCode != "" {
+		findDoc, err = svc.repo.FindByGuidInCompany(ctx, holdingCode, businessCode, guid)
+	} else {
+		findDoc, err = svc.repo.FindByGuid(ctx, holdingCode, guid)
+	}
 
 	if err != nil {
 		return err
@@ -302,20 +490,44 @@ func (svc ProductBarcodeHttpService) UpdateProductBarcode(holdingCode string, gu
 	if findDoc.ID == primitive.NilObjectID {
 		return errors.New("document not found")
 	}
-	docReq.ItemCode = utils.NormalizeBusinessCode(docReq.ItemCode)
-	docReq.Barcode = findDoc.Barcode
+	if businessCode != "" {
+		docReq, err = normalizeCompanyBarcodeRequest(docReq)
+		if err != nil {
+			return err
+		}
+		if err := validateImmutableBarcodeIdentity(docReq, findDoc); err != nil {
+			return err
+		}
+		if svc.productMQRepo == nil {
+			return errors.New("Product message queue repository is required")
+		}
+	} else {
+		docReq.ItemCode = utils.NormalizeBusinessCode(docReq.ItemCode)
+		docReq.Barcode = findDoc.Barcode
+	}
 	if err := svc.repo.EnsureIndexes(ctx); err != nil {
 		return err
 	}
-	duplicate, err := svc.repo.FindOne(ctx, holdingCode, bson.M{
-		"itemcode": docReq.ItemCode,
-		"barcode":  findDoc.Barcode,
-	})
+	if businessCode != "" {
+		if err := svc.repoMaster.EnsureIndexes(ctx); err != nil {
+			return err
+		}
+	}
+
+	duplicate := models.ProductBarcodeDoc{}
+	if businessCode != "" {
+		duplicate, err = svc.repo.FindByBarcodeInCompany(ctx, holdingCode, businessCode, docReq.Barcode)
+	} else {
+		duplicate, err = svc.repo.FindOne(ctx, holdingCode, bson.M{
+			"itemcode": docReq.ItemCode,
+			"barcode":  findDoc.Barcode,
+		})
+	}
 	if err != nil {
 		return err
 	}
 	if duplicate.ID != primitive.NilObjectID && duplicate.GuidFixed != findDoc.GuidFixed {
-		return errors.New("รหัสสินค้าและบาร์โค้ดคู่นี้มีอยู่แล้ว")
+		return errors.New("บาร์โค้ดนี้มีอยู่แล้วในบริษัท")
 	}
 
 	docData := findDoc
@@ -369,25 +581,53 @@ func (svc ProductBarcodeHttpService) UpdateProductBarcode(holdingCode string, gu
 		}
 	}
 
-	err = svc.updateMetaInRefBarcode(ctx, holdingCode, findDoc.ItemCode, docData)
+	var createdProduct *productmodels.ProductDoc
+	if businessCode != "" {
+		err = svc.repo.Transaction(ctx, func(transactionContext context.Context) error {
+			product, err := svc.repoMaster.FindByCodeInCompany(transactionContext, holdingCode, businessCode, docData.ItemCode)
+			if err != nil {
+				return err
+			}
+			if product.ID == primitive.NilObjectID {
+				minimumProduct := minimumProductForBarcode(holdingCode, businessCode, authUsername, docData, docData.UpdatedAt)
+				if err := applyProductUnitToBarcode(&docData, minimumProduct); err != nil {
+					return err
+				}
+				if _, err := svc.repoMaster.Create(transactionContext, minimumProduct); err != nil {
+					return err
+				}
+				createdProduct = &minimumProduct
+			} else if err := applyProductUnitToBarcode(&docData, product); err != nil {
+				return err
+			}
 
+			if err := svc.updateMetaInRefBarcode(transactionContext, holdingCode, businessCode, findDoc.ItemCode, docData); err != nil {
+				return err
+			}
+			if err := svc.updateMetaInBOMBarcode(transactionContext, holdingCode, businessCode, findDoc.ItemCode, docData); err != nil {
+				return err
+			}
+			return svc.repo.UpdateInCompany(transactionContext, holdingCode, businessCode, guid, docData)
+		})
+	} else {
+		if err = svc.updateMetaInRefBarcode(ctx, holdingCode, "", findDoc.ItemCode, docData); err != nil {
+			return err
+		}
+		if err = svc.updateMetaInBOMBarcode(ctx, holdingCode, "", findDoc.ItemCode, docData); err != nil {
+			return err
+		}
+		err = svc.repo.Update(ctx, holdingCode, guid, docData)
+	}
 	if err != nil {
 		return err
 	}
-
-	err = svc.updateMetaInBOMBarcode(ctx, holdingCode, findDoc.ItemCode, docData)
-
-	if err != nil {
-		return err
+	if createdProduct != nil {
+		if err := svc.productMQRepo.Create(*createdProduct); err != nil {
+			return err
+		}
 	}
 
-	err = svc.repo.Update(ctx, holdingCode, guid, docData)
-
-	if err != nil {
-		return err
-	}
-
-	if findDoc.ItemCode != docData.ItemCode {
+	if businessCode == "" && findDoc.ItemCode != docData.ItemCode {
 		if err := svc.mqRepo.Delete(findDoc); err != nil {
 			return err
 		}
@@ -398,40 +638,44 @@ func (svc ProductBarcodeHttpService) UpdateProductBarcode(holdingCode string, gu
 		return err
 	}
 
-	// บันทึกประวัติการเปลี่ยนแปลงราคา
-	newPrices := []models.ProductPrice{}
-	if docData.Prices != nil {
-		newPrices = *docData.Prices
-	}
-
-	productName := ""
-	if docData.Names != nil && len(*docData.Names) > 0 {
-		if (*docData.Names)[0].Name != nil {
-			productName = *(*docData.Names)[0].Name
+	if shouldRecordLegacyPriceHistory(businessCode) {
+		newPrices := []models.ProductPrice{}
+		if docData.Prices != nil {
+			newPrices = *docData.Prices
 		}
-	}
 
-	err = svc.priceHistorySvc.RecordPriceChange(
-		ctx,
-		holdingCode,
-		guid,
-		docData.ItemCode,
-		docData.Barcode,
-		productName,
-		oldPrices,
-		newPrices,
-		"update",
-		authUsername,
-		"แก้ไขข้อมูลสินค้า",
-	)
-	if err != nil {
-		// Log error แต่ไม่ return เพื่อไม่ให้การอัปเดตล้มเหลว
-		// TODO: Add proper logging
+		productName := ""
+		if docData.Names != nil && len(*docData.Names) > 0 {
+			if (*docData.Names)[0].Name != nil {
+				productName = *(*docData.Names)[0].Name
+			}
+		}
+
+		err = svc.priceHistorySvc.RecordPriceChange(
+			ctx,
+			holdingCode,
+			guid,
+			docData.ItemCode,
+			docData.Barcode,
+			productName,
+			oldPrices,
+			newPrices,
+			"update",
+			authUsername,
+			"แก้ไขข้อมูลสินค้า",
+		)
+		if err != nil {
+			// Price history is best-effort and must not fail the master update.
+		}
 	}
 
 	svc.saveMasterSync(holdingCode)
 
 	return nil
+}
+
+func shouldRecordLegacyPriceHistory(businessCode string) bool {
+	return strings.TrimSpace(businessCode) == ""
 }
 
 func (svc ProductBarcodeHttpService) UpdateProductBarcodeBranch(holdingCode string, authUsername string, branch models.ProductBarcodeBranch, productBarcodeGUIDFixedes []string) error {
@@ -557,11 +801,18 @@ func (svc ProductBarcodeHttpService) prepareBOMs(ctx context.Context, holdingCod
 func (svc ProductBarcodeHttpService) updateMetaInRefBarcode(
 	ctx context.Context,
 	holdingCode string,
+	businessCode string,
 	lookupItemCode string,
 	docData models.ProductBarcodeDoc,
 ) error {
 
-	findDocs, err := svc.repo.FindByRefKey(ctx, holdingCode, lookupItemCode, docData.Barcode)
+	var findDocs []models.ProductBarcodeDoc
+	var err error
+	if businessCode != "" {
+		findDocs, err = svc.repo.FindByRefKeyInCompany(ctx, holdingCode, businessCode, lookupItemCode, docData.Barcode)
+	} else {
+		findDocs, err = svc.repo.FindByRefKey(ctx, holdingCode, lookupItemCode, docData.Barcode)
+	}
 	if err != nil {
 		return err
 	}
@@ -604,7 +855,11 @@ func (svc ProductBarcodeHttpService) updateMetaInRefBarcode(
 		// fmt.Printf("findDoc.RefBarcodes :%v\n",
 		// 	findDoc.RefBarcodes)
 
-		err = svc.repo.Update(ctx, holdingCode, findDoc.GuidFixed, findDoc)
+		if businessCode != "" {
+			err = svc.repo.UpdateInCompany(ctx, holdingCode, businessCode, findDoc.GuidFixed, findDoc)
+		} else {
+			err = svc.repo.Update(ctx, holdingCode, findDoc.GuidFixed, findDoc)
+		}
 		if err != nil {
 			return err
 		}
@@ -639,11 +894,18 @@ func updateBOMBarcodeMetadata(
 func (svc ProductBarcodeHttpService) updateMetaInBOMBarcode(
 	ctx context.Context,
 	holdingCode string,
+	businessCode string,
 	lookupItemCode string,
 	docData models.ProductBarcodeDoc,
 ) error {
 
-	findDocs, err := svc.repo.FindByBOMKey(ctx, holdingCode, lookupItemCode, docData.Barcode)
+	var findDocs []models.ProductBarcodeDoc
+	var err error
+	if businessCode != "" {
+		findDocs, err = svc.repo.FindByBOMKeyInCompany(ctx, holdingCode, businessCode, lookupItemCode, docData.Barcode)
+	} else {
+		findDocs, err = svc.repo.FindByBOMKey(ctx, holdingCode, lookupItemCode, docData.Barcode)
+	}
 	if err != nil {
 		return err
 	}
@@ -661,7 +923,11 @@ func (svc ProductBarcodeHttpService) updateMetaInBOMBarcode(
 		if !changed {
 			continue
 		}
-		if err := svc.repo.Update(ctx, holdingCode, findDoc.GuidFixed, findDoc); err != nil {
+		if businessCode != "" {
+			if err := svc.repo.UpdateInCompany(ctx, holdingCode, businessCode, findDoc.GuidFixed, findDoc); err != nil {
+				return err
+			}
+		} else if err := svc.repo.Update(ctx, holdingCode, findDoc.GuidFixed, findDoc); err != nil {
 			return err
 		}
 	}
@@ -670,11 +936,29 @@ func (svc ProductBarcodeHttpService) updateMetaInBOMBarcode(
 }
 
 func (svc ProductBarcodeHttpService) DeleteProductBarcode(holdingCode string, guid string, authUsername string) error {
+	return svc.deleteProductBarcode(holdingCode, "", guid, authUsername)
+}
+
+func (svc ProductBarcodeHttpService) DeleteProductBarcodeInCompany(holdingCode string, businessCode string, guid string, authUsername string) error {
+	businessCode = utils.NormalizeBusinessCode(businessCode)
+	if businessCode == "" {
+		return errors.New("BusinessCode is required")
+	}
+	return svc.deleteProductBarcode(holdingCode, businessCode, guid, authUsername)
+}
+
+func (svc ProductBarcodeHttpService) deleteProductBarcode(holdingCode string, businessCode string, guid string, authUsername string) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
+	findDoc := models.ProductBarcodeDoc{}
+	var err error
+	if businessCode != "" {
+		findDoc, err = svc.repo.FindByGuidInCompany(ctx, holdingCode, businessCode, guid)
+	} else {
+		findDoc, err = svc.repo.FindByGuid(ctx, holdingCode, guid)
+	}
 
 	if err != nil {
 		return err
@@ -684,7 +968,12 @@ func (svc ProductBarcodeHttpService) DeleteProductBarcode(holdingCode string, gu
 		return errors.New("document not found")
 	}
 
-	countRef, err := svc.repo.CountByRefKey(ctx, holdingCode, findDoc.ItemCode, findDoc.Barcode)
+	countRef := 0
+	if businessCode != "" {
+		countRef, err = svc.repo.CountByRefKeyInCompany(ctx, holdingCode, businessCode, findDoc.ItemCode, findDoc.Barcode)
+	} else {
+		countRef, err = svc.repo.CountByRefKey(ctx, holdingCode, findDoc.ItemCode, findDoc.Barcode)
+	}
 
 	if err != nil {
 		return err
@@ -694,7 +983,12 @@ func (svc ProductBarcodeHttpService) DeleteProductBarcode(holdingCode string, gu
 		return errors.New("document has other ref barcode referenced")
 	}
 
-	countBOM, err := svc.repo.CountByBOMKey(ctx, holdingCode, findDoc.ItemCode, findDoc.Barcode)
+	countBOM := 0
+	if businessCode != "" {
+		countBOM, err = svc.repo.CountByBOMKeyInCompany(ctx, holdingCode, businessCode, findDoc.ItemCode, findDoc.Barcode)
+	} else {
+		countBOM, err = svc.repo.CountByBOMKey(ctx, holdingCode, findDoc.ItemCode, findDoc.Barcode)
+	}
 
 	if err != nil {
 		return err
@@ -704,7 +998,11 @@ func (svc ProductBarcodeHttpService) DeleteProductBarcode(holdingCode string, gu
 		return errors.New("document has other bom referenced")
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
+	if businessCode != "" {
+		err = svc.repo.DeleteByGuidfixedInCompany(ctx, holdingCode, businessCode, guid, authUsername)
+	} else {
+		err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
+	}
 	if err != nil {
 		return err
 	}
@@ -720,11 +1018,29 @@ func (svc ProductBarcodeHttpService) DeleteProductBarcode(holdingCode string, gu
 }
 
 func (svc ProductBarcodeHttpService) InfoProductBarcode(holdingCode string, guid string) (models.ProductBarcodeInfo, error) {
+	return svc.infoProductBarcode(holdingCode, "", guid)
+}
+
+func (svc ProductBarcodeHttpService) InfoProductBarcodeInCompany(holdingCode string, businessCode string, guid string) (models.ProductBarcodeInfo, error) {
+	businessCode = utils.NormalizeBusinessCode(businessCode)
+	if businessCode == "" {
+		return models.ProductBarcodeInfo{}, errors.New("BusinessCode is required")
+	}
+	return svc.infoProductBarcode(holdingCode, businessCode, guid)
+}
+
+func (svc ProductBarcodeHttpService) infoProductBarcode(holdingCode string, businessCode string, guid string) (models.ProductBarcodeInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByGuid(ctx, holdingCode, guid)
+	findDoc := models.ProductBarcodeDoc{}
+	var err error
+	if businessCode != "" {
+		findDoc, err = svc.repo.FindByGuidInCompany(ctx, holdingCode, businessCode, guid)
+	} else {
+		findDoc, err = svc.repo.FindByGuid(ctx, holdingCode, guid)
+	}
 	if err != nil {
 		return models.ProductBarcodeInfo{}, err
 	}
@@ -735,19 +1051,13 @@ func (svc ProductBarcodeHttpService) InfoProductBarcode(holdingCode string, guid
 
 	// Product relations resolve by the portable Product code, never by guidfixed.
 	if strings.TrimSpace(findDoc.ItemCode) != "" {
-		findMasterDoc, err := svc.repoMaster.FindOneByCode(ctx, holdingCode, utils.NormalizeBusinessCode(findDoc.ItemCode))
+		findMasterDoc := productmodels.ProductDoc{}
+		if businessCode != "" {
+			findMasterDoc, err = svc.repoMaster.FindByCodeInCompany(ctx, holdingCode, businessCode, utils.NormalizeBusinessCode(findDoc.ItemCode))
+		} else {
+			findMasterDoc, err = svc.repoMaster.FindOneByCode(ctx, holdingCode, utils.NormalizeBusinessCode(findDoc.ItemCode))
+		}
 		if err == nil && findMasterDoc.ID != primitive.NilObjectID {
-			// ✅ ตรวจสอบค่า `findMasterDoc.Names` ก่อนใช้งาน
-			tempName := []common.NameX{}
-			if findMasterDoc.Names != nil {
-				for _, name := range *findMasterDoc.Names {
-					tempName = append(tempName, common.NameX{
-						Name: name.Name,
-						Code: name.Code,
-					})
-				}
-			}
-
 			// ✅ ตรวจสอบค่า `findMasterDoc.GroupName` ก่อนใช้งาน
 			tempGroupNames := []common.NameX{}
 			if findMasterDoc.GroupNames != nil {
@@ -761,7 +1071,6 @@ func (svc ProductBarcodeHttpService) InfoProductBarcode(holdingCode string, guid
 
 			// ✅ กำหนดค่าให้ findDoc โดยเช็คค่าว่างก่อนใช้งาน
 			findDoc.ItemCode = findMasterDoc.Code
-			findDoc.Names = &tempName
 
 			if findMasterDoc.ManufacturerGUID != "" {
 				findManu, err := svc.repomgCreditror.FindByGuid(ctx, holdingCode, findMasterDoc.ManufacturerGUID)
@@ -855,18 +1164,7 @@ func (svc ProductBarcodeHttpService) InfoProductBarcode(holdingCode string, guid
 				findDoc.Suppliers = &[]models.ProductBarcodeSupplier{}
 			}
 
-			// Map Image and color settings
-			findDoc.ImageURI = findMasterDoc.ImageURI
-			if findMasterDoc.Images != nil {
-				tempImages := []models.ProductImage{}
-				for _, img := range *findMasterDoc.Images {
-					tempImages = append(tempImages, models.ProductImage{
-						XOrder: img.XOrder,
-						URI:    img.URI,
-					})
-				}
-				findDoc.Images = &tempImages
-			}
+			// Product controls shared color settings; Barcode keeps its own images.
 			findDoc.UseImageOrColor = findMasterDoc.UseImageOrColor
 			findDoc.ColorSelect = findMasterDoc.ColorSelect
 			findDoc.ColorSelectHex = findMasterDoc.ColorSelectHex
@@ -934,10 +1232,9 @@ func (svc ProductBarcodeHttpService) InfoProductBarcode(holdingCode string, guid
 				findDoc.Options = &tempOpts
 			}
 
-			// Map alerts and description
+			// Map shared alerts; Barcode keeps its own description.
 			findDoc.IsAlert = findMasterDoc.IsAlert
 			findDoc.AlertDescription = findMasterDoc.AlertDescription
-			findDoc.Description = findMasterDoc.Description
 
 			// Map TimeForSales
 			if findMasterDoc.TimeForSales != nil {
@@ -983,33 +1280,7 @@ func (svc ProductBarcodeHttpService) InfoProductBarcode(holdingCode string, guid
 				findDoc.IgnoreBranches = &tempIb
 			}
 
-			// Map Units and BOM from Product to ProductBarcode (Backward compatibility)
-			findDoc.Condition = findMasterDoc.Condition
-			findDoc.DivideValue = findMasterDoc.DivideValue
-			findDoc.StandValue = findMasterDoc.StandValue
-			findDoc.IsUseSubBarcodes = findMasterDoc.IsUseSubBarcodes
-
-			if findMasterDoc.RefBarcodes != nil {
-				tempRefs := []models.RefProductBarcode{}
-				for _, r := range *findMasterDoc.RefBarcodes {
-					tempRefs = append(tempRefs, models.RefProductBarcode{
-						GuidFixed:     r.GuidFixed,
-						ItemCode:      r.ItemCode,
-						Names:         r.Names,
-						ItemUnitCode:  r.ItemUnitCode,
-						ItemUnitNames: r.ItemUnitNames,
-						Barcode:       r.Barcode,
-						Condition:     r.Condition,
-						DivideValue:   r.DivideValue,
-						StandValue:    r.StandValue,
-						Qty:           r.Qty,
-					})
-				}
-				findDoc.RefBarcodes = &tempRefs
-			} else {
-				findDoc.RefBarcodes = &[]models.RefProductBarcode{}
-			}
-
+			// BOM remains a Barcode reference; unit conversions belong to Product.
 			if findMasterDoc.BOM != nil {
 				tempBOM := []models.BOMProductBarcode{}
 				for _, b := range *findMasterDoc.BOM {
@@ -1055,6 +1326,18 @@ func (svc ProductBarcodeHttpService) InfoProductBarcode(holdingCode string, guid
 }
 
 func (svc ProductBarcodeHttpService) InfoProductBarcodeByBarcode(holdingCode string, itemCode string, barcode string) (models.ProductBarcodeInfo, error) {
+	return svc.infoProductBarcodeByBarcode(holdingCode, "", itemCode, barcode)
+}
+
+func (svc ProductBarcodeHttpService) InfoProductBarcodeByBarcodeInCompany(holdingCode string, businessCode string, itemCode string, barcode string) (models.ProductBarcodeInfo, error) {
+	businessCode = utils.NormalizeBusinessCode(businessCode)
+	if businessCode == "" {
+		return models.ProductBarcodeInfo{}, errors.New("BusinessCode is required")
+	}
+	return svc.infoProductBarcodeByBarcode(holdingCode, businessCode, itemCode, barcode)
+}
+
+func (svc ProductBarcodeHttpService) infoProductBarcodeByBarcode(holdingCode string, businessCode string, itemCode string, barcode string) (models.ProductBarcodeInfo, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -1063,7 +1346,11 @@ func (svc ProductBarcodeHttpService) InfoProductBarcodeByBarcode(holdingCode str
 	barcode = utils.NormalizeBusinessCode(barcode)
 	var findDoc models.ProductBarcodeDoc
 	var err error
-	if itemCode == "" {
+	if businessCode != "" && itemCode == "" {
+		findDoc, err = svc.repo.FindByBarcodeInCompany(ctx, holdingCode, businessCode, barcode)
+	} else if businessCode != "" {
+		findDoc, err = svc.repo.FindByBusinessKeyInCompany(ctx, holdingCode, businessCode, itemCode, barcode)
+	} else if itemCode == "" {
 		findDoc, err = svc.repo.FindByBarcode(ctx, holdingCode, barcode)
 	} else {
 		findDoc, err = svc.repo.FindByBusinessKey(ctx, holdingCode, itemCode, barcode)
@@ -1079,19 +1366,13 @@ func (svc ProductBarcodeHttpService) InfoProductBarcodeByBarcode(holdingCode str
 
 	// Product relations resolve by the portable Product code, never by guidfixed.
 	if strings.TrimSpace(findDoc.ItemCode) != "" {
-		findMasterDoc, err := svc.repoMaster.FindOneByCode(ctx, holdingCode, utils.NormalizeBusinessCode(findDoc.ItemCode))
+		findMasterDoc := productmodels.ProductDoc{}
+		if businessCode != "" {
+			findMasterDoc, err = svc.repoMaster.FindByCodeInCompany(ctx, holdingCode, businessCode, utils.NormalizeBusinessCode(findDoc.ItemCode))
+		} else {
+			findMasterDoc, err = svc.repoMaster.FindOneByCode(ctx, holdingCode, utils.NormalizeBusinessCode(findDoc.ItemCode))
+		}
 		if err == nil && findMasterDoc.ID != primitive.NilObjectID {
-			// ✅ ตรวจสอบค่า `findMasterDoc.Names` ก่อนใช้งาน
-			tempName := []common.NameX{}
-			if findMasterDoc.Names != nil {
-				for _, name := range *findMasterDoc.Names {
-					tempName = append(tempName, common.NameX{
-						Name: name.Name,
-						Code: name.Code,
-					})
-				}
-			}
-
 			// ✅ ตรวจสอบค่า `findMasterDoc.GroupName` ก่อนใช้งาน
 			tempGroupNames := []common.NameX{}
 			if findMasterDoc.GroupNames != nil {
@@ -1105,7 +1386,6 @@ func (svc ProductBarcodeHttpService) InfoProductBarcodeByBarcode(holdingCode str
 
 			// ✅ กำหนดค่าให้ findDoc โดยเช็คค่าว่างก่อนใช้งาน
 			findDoc.ItemCode = findMasterDoc.Code
-			findDoc.Names = &tempName
 
 			if findMasterDoc.ManufacturerGUID != "" {
 				findManu, err := svc.repomgCreditror.FindByGuid(ctx, holdingCode, findMasterDoc.ManufacturerGUID)
@@ -1199,18 +1479,7 @@ func (svc ProductBarcodeHttpService) InfoProductBarcodeByBarcode(holdingCode str
 				findDoc.Suppliers = &[]models.ProductBarcodeSupplier{}
 			}
 
-			// Map Image and color settings
-			findDoc.ImageURI = findMasterDoc.ImageURI
-			if findMasterDoc.Images != nil {
-				tempImages := []models.ProductImage{}
-				for _, img := range *findMasterDoc.Images {
-					tempImages = append(tempImages, models.ProductImage{
-						XOrder: img.XOrder,
-						URI:    img.URI,
-					})
-				}
-				findDoc.Images = &tempImages
-			}
+			// Product controls shared color settings; Barcode keeps its own images.
 			findDoc.UseImageOrColor = findMasterDoc.UseImageOrColor
 			findDoc.ColorSelect = findMasterDoc.ColorSelect
 			findDoc.ColorSelectHex = findMasterDoc.ColorSelectHex
@@ -1278,10 +1547,9 @@ func (svc ProductBarcodeHttpService) InfoProductBarcodeByBarcode(holdingCode str
 				findDoc.Options = &tempOpts
 			}
 
-			// Map alerts and description
+			// Map shared alerts; Barcode keeps its own description.
 			findDoc.IsAlert = findMasterDoc.IsAlert
 			findDoc.AlertDescription = findMasterDoc.AlertDescription
-			findDoc.Description = findMasterDoc.Description
 
 			// Map TimeForSales
 			if findMasterDoc.TimeForSales != nil {
@@ -1326,33 +1594,7 @@ func (svc ProductBarcodeHttpService) InfoProductBarcodeByBarcode(holdingCode str
 				findDoc.IgnoreBranches = &tempIb
 			}
 
-			// Map Units and BOM from Product to ProductBarcode (Backward compatibility)
-			findDoc.Condition = findMasterDoc.Condition
-			findDoc.DivideValue = findMasterDoc.DivideValue
-			findDoc.StandValue = findMasterDoc.StandValue
-			findDoc.IsUseSubBarcodes = findMasterDoc.IsUseSubBarcodes
-
-			if findMasterDoc.RefBarcodes != nil {
-				tempRefs := []models.RefProductBarcode{}
-				for _, r := range *findMasterDoc.RefBarcodes {
-					tempRefs = append(tempRefs, models.RefProductBarcode{
-						GuidFixed:     r.GuidFixed,
-						ItemCode:      r.ItemCode,
-						Names:         r.Names,
-						ItemUnitCode:  r.ItemUnitCode,
-						ItemUnitNames: r.ItemUnitNames,
-						Barcode:       r.Barcode,
-						Condition:     r.Condition,
-						DivideValue:   r.DivideValue,
-						StandValue:    r.StandValue,
-						Qty:           r.Qty,
-					})
-				}
-				findDoc.RefBarcodes = &tempRefs
-			} else {
-				findDoc.RefBarcodes = &[]models.RefProductBarcode{}
-			}
-
+			// BOM remains a Barcode reference; unit conversions belong to Product.
 			if findMasterDoc.BOM != nil {
 				tempBOM := []models.BOMProductBarcode{}
 				for _, b := range *findMasterDoc.BOM {
@@ -1514,6 +1756,18 @@ func (svc ProductBarcodeHttpService) GetProductBarcodeByBarcodes(holdingCode str
 }
 
 func (svc ProductBarcodeHttpService) SearchProductBarcode(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ProductBarcodeInfo, mongopagination.PaginationData, error) {
+	return svc.searchProductBarcode(holdingCode, "", filters, pageable)
+}
+
+func (svc ProductBarcodeHttpService) SearchProductBarcodeInCompany(holdingCode string, businessCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ProductBarcodeInfo, mongopagination.PaginationData, error) {
+	businessCode = utils.NormalizeBusinessCode(businessCode)
+	if businessCode == "" {
+		return []models.ProductBarcodeInfo{}, mongopagination.PaginationData{}, errors.New("BusinessCode is required")
+	}
+	return svc.searchProductBarcode(holdingCode, businessCode, filters, pageable)
+}
+
+func (svc ProductBarcodeHttpService) searchProductBarcode(holdingCode string, businessCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ProductBarcodeInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -1584,7 +1838,9 @@ func (svc ProductBarcodeHttpService) SearchProductBarcode(holdingCode string, fi
 	var pagination mongopagination.PaginationData
 	var err error
 
-	if _, hasHoldingCodeFilter := filters["holdingcode"]; hasHoldingCodeFilter {
+	if businessCode != "" {
+		docList, pagination, err = svc.repo.FindPageFilterInCompany(ctx, holdingCode, businessCode, filters, searchInFields, pageable)
+	} else if _, hasHoldingCodeFilter := filters["holdingcode"]; hasHoldingCodeFilter {
 		// Use FindPageFilterNoHoldingCode when holdingcode filter exists
 		docList, pagination, err = svc.repo.FindPageFilterNoHoldingCode(ctx, filters, searchInFields, pageable)
 	} else {

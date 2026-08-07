@@ -1,4 +1,3 @@
-import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 import { serverGoApiBase, validateBackendUrl } from "@/lib/backend-url";
 import { verifyHs256Jwt } from "@/lib/server-jwt";
@@ -59,10 +58,6 @@ export async function POST(request: Request, context: SystemSettingsProxyContext
 
   const path = buildWritePath(request, resolved.config, "", "POST", body);
   const payload = buildWritePayload(request, resolved.config, "", body);
-  if (resolved.config.slug === "user") {
-    const ensureResponse = await ensureUsernameLoginUser(request, base, payload);
-    if (ensureResponse) return ensureResponse;
-  }
   return proxyJson(request, base, path, { method: resolved.config.slug === "user" ? "PUT" : "POST", body: JSON.stringify(payload) });
 }
 
@@ -559,44 +554,6 @@ function encodeProxyPathId(config: SystemSettingConfig, id: string): string {
     return encodeURIComponent(id).replace(/%40/gi, "@").replace(/%2B/gi, "+");
   }
   return encodeURIComponent(id);
-}
-
-async function ensureUsernameLoginUser(request: Request, baseUrl: string, payload: Record<string, unknown>): Promise<NextResponse | null> {
-  const authorization = requireBearerToken(request);
-  if (typeof authorization !== "string") return authorization;
-
-  const username = String(payload.username ?? "").trim();
-  if (!username) return NextResponse.json({ success: false, message: "username invalid" }, { status: 400 });
-
-  const existsResponse = await fetch(`${baseUrl}/register/exists-username`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "Accept-Language": request.headers.get("accept-language") ?? "th" },
-    body: JSON.stringify({ username }),
-    cache: "no-store",
-  });
-  const existsPayload = await readJsonOrText(existsResponse);
-  if (!existsResponse.ok || !isRecord(existsPayload) || existsPayload.success === false) {
-    return NextResponse.json({ success: false, message: extractMessage(existsPayload) ?? "ตรวจสอบรหัสผู้ใช้ไม่สำเร็จ" }, { status: existsResponse.status });
-  }
-
-  if (existsPayload.data === true) return null;
-
-  const registerResponse = await fetch(`${baseUrl}/register-username`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "Accept-Language": request.headers.get("accept-language") ?? "th" },
-    body: JSON.stringify({
-      username,
-      password: randomBytes(12).toString("hex"),
-      name: String(payload.name ?? payload.userprofilename ?? username),
-    }),
-    cache: "no-store",
-  });
-  const registerPayload = await readJsonOrText(registerResponse);
-  if (!registerResponse.ok || !isRecord(registerPayload) || registerPayload.success === false) {
-    return NextResponse.json({ success: false, message: extractMessage(registerPayload) ?? "สร้างผู้ใช้เข้าสู่ระบบไม่สำเร็จ" }, { status: registerResponse.status });
-  }
-
-  return null;
 }
 
 async function proxyJson(request: Request, baseUrl: string, path: string, init: RequestInit): Promise<NextResponse> {

@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"strings"
 	"time"
 
@@ -168,7 +169,8 @@ type UserProfileReponse struct {
 }
 
 type ShopSelectRequest struct {
-	HoldingCode string `json:"holdingcode"`
+	HoldingCode  string `json:"holdingcode"`
+	BusinessCode string `json:"businesscode,omitempty"`
 }
 
 type UserRole = uint8
@@ -228,6 +230,34 @@ func ScopesAllow(scopes []AccessScope, businessCode string, branchCode string) b
 			return true
 		}
 		if st == "branch" && strings.ToUpper(strings.TrimSpace(s.BranchCode)) == brc {
+			return true
+		}
+	}
+	return false
+}
+
+// ScopesAllowCompanySelection reports whether a user may enter a company-wide
+// session. Branch-only scopes must not be promoted to company-wide access.
+func ScopesAllowCompanySelection(scopes []AccessScope, businessCode string) bool {
+	if len(scopes) == 0 {
+		return true
+	}
+	bc := strings.ToUpper(strings.TrimSpace(businessCode))
+	if bc == "" {
+		return false
+	}
+	for _, scope := range scopes {
+		scopeType := strings.ToLower(strings.TrimSpace(scope.ScopeType))
+		if scopeType == "" || scopeType == "holding" {
+			return true
+		}
+		if scopeType != "company" {
+			continue
+		}
+		if strings.ToUpper(strings.TrimSpace(scope.BusinessCode)) != bc {
+			continue
+		}
+		if strings.TrimSpace(scope.BranchCode) == "" {
 			return true
 		}
 	}
@@ -309,12 +339,12 @@ func (*ShopUserInfo) CollectionName() string {
 }
 
 type UserRoleRequest struct {
-	HoldingCode      string        `json:"holdingcode" bson:"holdingcode"`
-	EditUsername     string        `json:"editusername" bson:"editusername"`
-	Username         string        `json:"username" bson:"username"`
-	UserUID          string        `json:"useruid,omitempty" bson:"useruid,omitempty"`
-	UserProfileName  string        `json:"userprofilename" bson:"userprofilename"`
-	Email            string        `json:"email,omitempty" bson:"email,omitempty"`
+	HoldingCode     string `json:"holdingcode" bson:"holdingcode"`
+	EditUsername    string `json:"editusername" bson:"editusername"`
+	Username        string `json:"username" bson:"username"`
+	UserUID         string `json:"useruid,omitempty" bson:"useruid,omitempty"`
+	UserProfileName string `json:"userprofilename" bson:"userprofilename"`
+	Email           string `json:"email,omitempty" bson:"email,omitempty"`
 	// Avatar/AvatarThumb are pointers so LINE-sync/auto-unlink callers that omit them do not wipe stored values.
 	Avatar           *string       `json:"avatar,omitempty" bson:"-"`
 	AvatarThumb      *string       `json:"avatarthumb,omitempty" bson:"-"`
@@ -341,9 +371,29 @@ type UserRoleRequest struct {
 	QuotationApproval *DocumentApproval `json:"quotationapproval,omitempty" bson:"quotationapproval,omitempty"`
 }
 
+// UnmarshalJSON accepts an empty expiry from optional date inputs as no expiry.
+func (req *UserRoleRequest) UnmarshalJSON(data []byte) error {
+	type requestAlias UserRoleRequest
+	decoded := struct {
+		AccessExpiryDate json.RawMessage `json:"accessexpirydate"`
+		*requestAlias
+	}{requestAlias: (*requestAlias)(req)}
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		return err
+	}
+
+	rawExpiry := strings.TrimSpace(string(decoded.AccessExpiryDate))
+	if rawExpiry == "" || rawExpiry == "null" || rawExpiry == `""` {
+		req.AccessExpiryDate = time.Time{}
+		return nil
+	}
+	return json.Unmarshal(decoded.AccessExpiryDate, &req.AccessExpiryDate)
+}
+
 type ShopUserAccessLog struct {
 	ID             primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	HoldingCode    string             `json:"holdingcode" bson:"holdingcode"`
+	BusinessCode   string             `json:"businesscode,omitempty" bson:"businesscode,omitempty"`
 	Username       string             `json:"username" bson:"username"`
 	Ip             string             `json:"ip" bson:"ip"`
 	LastAccessedAt time.Time          `json:"lastaccessedat" bson:"lastaccessedat"`

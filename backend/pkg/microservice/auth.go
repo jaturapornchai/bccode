@@ -22,10 +22,11 @@ type IAuthService interface {
 	GetTokenFromAuthorizationHeader(tokenType TokenType, tokenAuthorization string) (string, error)
 	GenerateTokenWithRedis(tokenType TokenType, userInfo models.UserInfo) (string, error)
 	GenerateTokenWithRedisExpire(tokenType TokenType, userInfo models.UserInfo, expireTime time.Duration) (string, error)
-	SelectShop(tokenType TokenType, tokenStr string, holdingCode string, role uint8) error
+	SelectShop(tokenType TokenType, tokenStr string, holdingCode string, businessCode string, role uint8) error
 	ExpireToken(tokenType TokenType, tokenAuthorizationHeader string) error
 	DeleteToken(tokenType TokenType, tokenStr string) error
-	RefreshToken(token string) (string, string, error)
+	RefreshToken(token string) (string, string, bool, error)
+	RevokeUserTokens(username string) error
 }
 
 type TokenType = int
@@ -61,6 +62,15 @@ func cacheString(value interface{}) string {
 		return ""
 	}
 	return fmt.Sprintf("%v", value)
+}
+
+func cacheBool(value interface{}) bool {
+	parsed, err := strconv.ParseBool(cacheString(value))
+	return err == nil && parsed
+}
+
+func passwordChangeAllowed(method string, path string) bool {
+	return path == "/profile/password" || path == "/logout" || (method == http.MethodGet && path == "/profile")
 }
 
 func NewAuthService(cacher ICacher, expireTimeBearer time.Duration, expireTimeRefresh time.Duration) *AuthService {
@@ -130,7 +140,7 @@ func (authService *AuthService) MWFuncWithRedisMixShop(cacher ICacher, shopPath 
 
 			if len(tempUserInfo.Username) < 1 {
 
-				tempUserInfoRaw, err := authService.cacher.HMGet(cacheKey, []string{"username", "name", "uid", "holdingcode", "role"})
+				tempUserInfoRaw, err := authService.cacher.HMGet(cacheKey, []string{"username", "name", "uid", "holdingcode", "role", "mustchangepassword", "businesscode"})
 
 				if err != nil {
 					return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false, "message": "Token Invalid."})
@@ -157,11 +167,22 @@ func (authService *AuthService) MWFuncWithRedisMixShop(cacher ICacher, shopPath 
 						return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false, "message": "Token Invalid."})
 					}
 				}
+				tempUserInfo.MustChangePassword = cacheBool(tempUserInfoRaw[5])
+				if tempUserInfoRaw[6] != nil {
+					tempUserInfo.BusinessCode = cacheString(tempUserInfoRaw[6])
+				}
 
 			}
 
 			if tempUserInfo.Username == "" {
 				return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false, "message": "Token Invalid."})
+			}
+			if tempUserInfo.MustChangePassword && !passwordChangeAllowed(c.Request().Method, currentPath) {
+				return c.JSON(http.StatusForbidden, map[string]interface{}{
+					"success": false,
+					"code":    "password_change_required",
+					"message": "กรุณาเปลี่ยนรหัสผ่านเริ่มต้นก่อนใช้งานระบบ",
+				})
 			}
 
 			tempHoldingCode := ""
@@ -183,9 +204,10 @@ func (authService *AuthService) MWFuncWithRedisMixShop(cacher ICacher, shopPath 
 			}
 
 			userInfo := models.UserInfo{
-				Username: tempUserInfo.Username,
-				Name:     tempUserInfo.Name,
-				UID:      tempUserInfo.UID,
+				Username:           tempUserInfo.Username,
+				Name:               tempUserInfo.Name,
+				UID:                tempUserInfo.UID,
+				MustChangePassword: tempUserInfo.MustChangePassword,
 			}
 
 			if !thisPathExceptShopSelected {
@@ -194,6 +216,7 @@ func (authService *AuthService) MWFuncWithRedisMixShop(cacher ICacher, shopPath 
 				}
 
 				userInfo.HoldingCode = tempUserInfo.HoldingCode
+				userInfo.BusinessCode = tempUserInfo.BusinessCode
 				userInfo.Role = tempUserInfo.Role
 			}
 
@@ -235,10 +258,18 @@ func (authService *AuthService) MWFuncWithRedis(cacher ICacher, publicPath ...st
 
 			cacheKey := authService.GetPrefixCacheKey(tokenCtx.tokenType) + tokenCtx.token
 
-			tempUserInfo, err := authService.cacher.HMGet(cacheKey, []string{"username", "name", "uid", "holdingcode", "role"})
+			tempUserInfo, err := authService.cacher.HMGet(cacheKey, []string{"username", "name", "uid", "holdingcode", "role", "mustchangepassword", "businesscode"})
 
-			if err != nil || tempUserInfo[0] == nil {
+			if err != nil || len(tempUserInfo) < 7 || tempUserInfo[0] == nil {
 				return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false, "message": "Token Invalid."})
+			}
+			mustChangePassword := cacheBool(tempUserInfo[5])
+			if mustChangePassword && !passwordChangeAllowed(c.Request().Method, currentPath) {
+				return c.JSON(http.StatusForbidden, map[string]interface{}{
+					"success": false,
+					"code":    "password_change_required",
+					"message": "กรุณาเปลี่ยนรหัสผ่านเริ่มต้นก่อนใช้งานระบบ",
+				})
 			}
 
 			tempHoldingCode := ""
@@ -259,11 +290,13 @@ func (authService *AuthService) MWFuncWithRedis(cacher ICacher, publicPath ...st
 			}
 
 			userInfo := models.UserInfo{
-				Username:    fmt.Sprintf("%v", tempUserInfo[0]),
-				Name:        fmt.Sprintf("%v", tempUserInfo[1]),
-				UID:         cacheString(tempUserInfo[2]),
-				HoldingCode: cacheString(tempUserInfo[3]),
-				Role:        uint8(userRole),
+				Username:           fmt.Sprintf("%v", tempUserInfo[0]),
+				Name:               fmt.Sprintf("%v", tempUserInfo[1]),
+				UID:                cacheString(tempUserInfo[2]),
+				HoldingCode:        cacheString(tempUserInfo[3]),
+				BusinessCode:       cacheString(tempUserInfo[6]),
+				Role:               uint8(userRole),
+				MustChangePassword: mustChangePassword,
 			}
 
 			authService.ReTokenExpire(tokenCtx.tokenType, cacheKey)
@@ -295,20 +328,29 @@ func (authService *AuthService) MWFuncWithShop(cacher ICacher, publicPath ...str
 
 			cacheKey := authService.GetPrefixCacheKey(tokenCtx.tokenType) + tokenCtx.token
 
-			tempUserInfo, err := authService.cacher.HMGet(cacheKey, []string{"username", "name", "uid"})
+			tempUserInfo, err := authService.cacher.HMGet(cacheKey, []string{"username", "name", "uid", "mustchangepassword"})
 
-			if err != nil {
+			if err != nil || len(tempUserInfo) < 4 {
 				return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false, "message": "Token Invalid."})
 			}
 
 			if tempUserInfo[0] == nil {
 				return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false, "message": "Token Invalid."})
 			}
+			mustChangePassword := cacheBool(tempUserInfo[3])
+			if mustChangePassword && !passwordChangeAllowed(c.Request().Method, currentPath) {
+				return c.JSON(http.StatusForbidden, map[string]interface{}{
+					"success": false,
+					"code":    "password_change_required",
+					"message": "กรุณาเปลี่ยนรหัสผ่านเริ่มต้นก่อนใช้งานระบบ",
+				})
+			}
 
 			userInfo := models.UserInfo{
-				Username: fmt.Sprintf("%v", tempUserInfo[0]),
-				Name:     fmt.Sprintf("%v", tempUserInfo[1]),
-				UID:      cacheString(tempUserInfo[2]),
+				Username:           fmt.Sprintf("%v", tempUserInfo[0]),
+				Name:               fmt.Sprintf("%v", tempUserInfo[1]),
+				UID:                cacheString(tempUserInfo[2]),
+				MustChangePassword: mustChangePassword,
 			}
 
 			c.Set("UserInfo", userInfo)
@@ -417,9 +459,10 @@ func (authService *AuthService) GenerateTokenWithRedis(tokenType TokenType, user
 	cacheKey := authService.GetPrefixCacheKey(tokenType) + tokenStr
 
 	authService.cacher.HMSet(cacheKey, map[string]interface{}{
-		"username": userInfo.Username,
-		"name":     userInfo.Name,
-		"uid":      userInfo.UID,
+		"username":           userInfo.Username,
+		"name":               userInfo.Name,
+		"uid":                userInfo.UID,
+		"mustchangepassword": userInfo.MustChangePassword,
 	})
 	authService.SetTokenExpire(tokenType, cacheKey)
 
@@ -432,23 +475,26 @@ func (authService *AuthService) GenerateTokenWithRedisExpire(tokenType TokenType
 	cacheKey := authService.GetPrefixCacheKey(tokenType) + tokenStr
 
 	authService.cacher.HMSet(cacheKey, map[string]interface{}{
-		"username":    userInfo.Username,
-		"name":        userInfo.Name,
-		"uid":         userInfo.UID,
-		"holdingcode": userInfo.HoldingCode,
-		"role":        userInfo.Role,
+		"username":           userInfo.Username,
+		"name":               userInfo.Name,
+		"uid":                userInfo.UID,
+		"holdingcode":        userInfo.HoldingCode,
+		"businesscode":       userInfo.BusinessCode,
+		"role":               userInfo.Role,
+		"mustchangepassword": userInfo.MustChangePassword,
 	})
 	authService.cacher.Expire(cacheKey, expireTime)
 
 	return tokenStr, nil
 }
 
-func (authService *AuthService) SelectShop(tokenType TokenType, tokenStr string, holdingCode string, role uint8) error {
+func (authService *AuthService) SelectShop(tokenType TokenType, tokenStr string, holdingCode string, businessCode string, role uint8) error {
 	cacheKey := authService.GetPrefixCacheKey(tokenType) + tokenStr
 
 	err := authService.cacher.HMSet(cacheKey, map[string]interface{}{
-		"holdingcode": holdingCode,
-		"role":        role,
+		"holdingcode":  holdingCode,
+		"businesscode": businessCode,
+		"role":         role,
 	})
 
 	if err != nil {
@@ -458,34 +504,72 @@ func (authService *AuthService) SelectShop(tokenType TokenType, tokenStr string,
 	return nil
 }
 
-func (authService *AuthService) RefreshToken(token string) (string, string, error) {
+func (authService *AuthService) RefreshToken(token string) (string, string, bool, error) {
 	cacheKey := authService.GetPrefixCacheKey(AUTHTYPE_REFRESH) + token
 
-	tempUserInfo, err := authService.cacher.HMGet(cacheKey, []string{"username", "name", "uid"})
+	tempUserInfo, err := authService.cacher.HMGet(cacheKey, []string{"username", "name", "uid", "mustchangepassword"})
 
-	if err != nil || tempUserInfo[0] == nil {
-		return "", "", err
+	if err != nil {
+		return "", "", false, err
+	}
+	if len(tempUserInfo) < 4 || tempUserInfo[0] == nil {
+		return "", "", false, fmt.Errorf("refresh token invalid")
 	}
 
 	userInfo := models.UserInfo{
-		Username: fmt.Sprintf("%v", tempUserInfo[0]),
-		Name:     fmt.Sprintf("%v", tempUserInfo[1]),
-		UID:      cacheString(tempUserInfo[2]),
+		Username:           fmt.Sprintf("%v", tempUserInfo[0]),
+		Name:               fmt.Sprintf("%v", tempUserInfo[1]),
+		UID:                cacheString(tempUserInfo[2]),
+		MustChangePassword: cacheBool(tempUserInfo[3]),
 	}
 
 	tokenStr, err := authService.GenerateTokenWithRedis(AUTHTYPE_BEARER, userInfo)
 
 	if err != nil {
-		return "", "", err
+		return "", "", false, err
 	}
 
 	refreshTokenStr, err := authService.GenerateTokenWithRedis(AUTHTYPE_REFRESH, userInfo)
 
 	if err != nil {
-		return "", "", err
+		return "", "", false, err
 	}
 
-	return tokenStr, refreshTokenStr, err
+	return tokenStr, refreshTokenStr, userInfo.MustChangePassword, nil
+}
+
+func (authService *AuthService) RevokeUserTokens(username string) error {
+	username = strings.TrimSpace(username)
+	if username == "" {
+		return fmt.Errorf("username invalid")
+	}
+
+	keysToDelete := make([]string, 0)
+	for _, prefix := range []string{authService.prefixBearerCacheKey, authService.prefixRefreshCacheKey, authService.prefixXApiKeyCacheKey} {
+		keys, err := authService.cacher.Keys(prefix + "*")
+		if err != nil {
+			return err
+		}
+		for _, key := range keys {
+			cachedUsername, err := authService.cacher.HGet(key, "username")
+			if err != nil {
+				return err
+			}
+			if !strings.EqualFold(strings.TrimSpace(cachedUsername), username) {
+				continue
+			}
+			// Block immediately even if Redis deletion fails after this write.
+			if err := authService.cacher.HMSet(key, map[string]interface{}{"mustchangepassword": true}); err != nil {
+				return err
+			}
+			authService.cacheMemory.Delete(key)
+			keysToDelete = append(keysToDelete, key)
+		}
+	}
+	if len(keysToDelete) == 0 {
+		return nil
+	}
+	return authService.cacher.Del(keysToDelete...)
 }
 
 func (authService *AuthService) ReTokenExpire(tokenType TokenType, cacheKey string) {

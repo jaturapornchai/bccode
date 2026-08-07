@@ -2,13 +2,13 @@ package shop
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 	auth_model "smlcloudplatform/internal/authentication/models"
 	"smlcloudplatform/internal/config"
 	"smlcloudplatform/internal/logger"
 	mastersync "smlcloudplatform/internal/mastersync/repositories"
 	common "smlcloudplatform/internal/models"
+	orgaccess "smlcloudplatform/internal/organization"
 	branch_model "smlcloudplatform/internal/organization/branch/models"
 	branch_repositories "smlcloudplatform/internal/organization/branch/repositories"
 	branch_services "smlcloudplatform/internal/organization/branch/services"
@@ -19,6 +19,7 @@ import (
 	deparment_repositories "smlcloudplatform/internal/organization/department/repositories"
 	"smlcloudplatform/internal/shop/models"
 	"smlcloudplatform/internal/utils"
+	"smlcloudplatform/pkg/apperr"
 	"smlcloudplatform/pkg/microservice"
 	"time"
 
@@ -125,10 +126,13 @@ func Docs() {
 // @Security     AccessToken
 // @Router /shop [post]
 func (h ShopHttp) CreateShop(ctx microservice.IContext) error {
-	authUsername := ctx.UserInfo().Username
+	userInfo := ctx.UserInfo()
+	authUsername := userInfo.Username
 	if len(authUsername) < 1 {
-		ctx.ResponseError(400, "user authentication invalid")
-		return nil
+		return apperr.Respond(ctx, apperr.ErrUnauthorized.WithMessage("user authentication invalid"))
+	}
+	if authErr := orgaccess.RequireEmailedAccount(h.ms.MongoPersister(h.cfg.MongoPersisterConfig()), userInfo); authErr != nil {
+		return apperr.Respond(ctx, authErr)
 	}
 
 	input := ctx.ReadInput()
@@ -137,8 +141,7 @@ func (h ShopHttp) CreateShop(ctx microservice.IContext) error {
 	err := json.Unmarshal([]byte(input), &shopPayload)
 
 	if err != nil {
-		ctx.ResponseError(400, "shop payload invalid")
-		return err
+		return apperr.Respond(ctx, apperr.ErrBadRequest.WithMessage("shop payload invalid"))
 	}
 
 	shopTemp := shopPayload.Shop
@@ -146,11 +149,7 @@ func (h ShopHttp) CreateShop(ctx microservice.IContext) error {
 	holdingCode, err := h.service.CreateShop(authUsername, shopTemp)
 
 	if err != nil {
-		ctx.Response(http.StatusBadRequest, &common.ApiResponse{
-			Success: false,
-			Message: err.Error(),
-		})
-		return err
+		return apperr.RespondErr(ctx, err)
 	}
 
 	err = h.initialShop(holdingCode, authUsername, *shopPayload)
@@ -162,11 +161,7 @@ func (h ShopHttp) CreateShop(ctx microservice.IContext) error {
 			logger.GetLogger().Error("HTTP:: Error Rollback Shop " + err.Error())
 		}
 
-		ctx.Response(http.StatusBadRequest, &common.ApiResponse{
-			Success: false,
-			Message: err.Error(),
-		})
-		return err
+		return apperr.RespondErr(ctx, err)
 	}
 
 	ctx.Response(http.StatusOK, &common.ApiResponse{
@@ -540,27 +535,17 @@ func (h ShopHttp) UpdateShop(ctx microservice.IContext) error {
 	err := json.Unmarshal([]byte(input), &shopRequest)
 
 	if err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
+		return apperr.Respond(ctx, apperr.ErrBadRequest.WithWrap(err))
 	}
 
 	if userInfo.Role != auth_model.ROLE_OWNER && userInfo.Role != auth_model.ROLE_ADMIN {
-		ctx.Response(http.StatusOK, &common.ApiResponse{
-			Success: false,
-			Message: "permission denied",
-		})
-
-		return errors.New("permission denied")
+		return apperr.Respond(ctx, apperr.ErrForbidden.WithMessage("permission denied"))
 	}
 
 	err = h.service.UpdateShop(id, authUsername, *shopRequest)
 
 	if err != nil {
-		ctx.Response(http.StatusBadRequest, &common.ApiResponse{
-			Success: false,
-			Message: err.Error(),
-		})
-		return err
+		return apperr.RespondErr(ctx, err)
 	}
 
 	ctx.Response(http.StatusOK, &common.ApiResponse{
@@ -587,22 +572,13 @@ func (h ShopHttp) DeleteShop(ctx microservice.IContext) error {
 	id := ctx.Param("id")
 
 	if userInfo.Role != auth_model.ROLE_OWNER && userInfo.Role != auth_model.ROLE_ADMIN {
-		ctx.Response(http.StatusOK, &common.ApiResponse{
-			Success: false,
-			Message: "permission denied",
-		})
-
-		return errors.New("permission denied")
+		return apperr.Respond(ctx, apperr.ErrForbidden.WithMessage("permission denied"))
 	}
 
 	err := h.service.DeleteShop(id, authUsername)
 
 	if err != nil {
-		ctx.Response(http.StatusBadRequest, &common.ApiResponse{
-			Success: false,
-			Message: err.Error(),
-		})
-		return err
+		return apperr.RespondErr(ctx, err)
 	}
 	ctx.Response(http.StatusOK, &common.ApiResponse{
 		Success: true,
@@ -626,11 +602,7 @@ func (h ShopHttp) InfoShop(ctx microservice.IContext) error {
 	shopInfo, err := h.service.InfoShop(id)
 
 	if err != nil {
-		ctx.Response(http.StatusBadRequest, &common.ApiResponse{
-			Success: false,
-			Message: err.Error(),
-		})
-		return err
+		return apperr.RespondErr(ctx, err)
 	}
 
 	ctx.Response(http.StatusOK, &common.ApiResponse{
@@ -655,9 +627,8 @@ func (h ShopHttp) SearchShop(ctx microservice.IContext) error {
 	shopList, pagination, err := h.service.SearchShop(pageable)
 
 	if err != nil {
-		ctx.ResponseError(400, "database error")
 		h.ms.Logger.Error("HTTP:: SearchShop " + err.Error())
-		return err
+		return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(err).WithMessage("database error"))
 	}
 
 	ctx.Response(http.StatusOK, map[string]interface{}{"success": true, "pagination": pagination, "data": shopList})

@@ -34,6 +34,27 @@ func (p ProductBarcodeRequest) ToProductBarcode() ProductBarcode {
 	}
 }
 
+// CoreOnly keeps Product/stock fields out while preserving Barcode-owned media and description.
+func (p ProductBarcodeRequest) CoreOnly() ProductBarcodeRequest {
+	return ProductBarcodeRequest{ProductBarcodeBase: ProductBarcodeBase{
+		ItemCode:      p.ItemCode,
+		Barcode:       p.Barcode,
+		Names:         p.Names,
+		ItemUnitGuid:  p.ItemUnitGuid,
+		ItemUnitCode:  p.ItemUnitCode,
+		ItemUnitNames: p.ItemUnitNames,
+		Prices:        p.Prices,
+		Condition:     p.Condition,
+		DivideValue:   p.DivideValue,
+		StandValue:    p.StandValue,
+		IsMainBarcode: p.IsMainBarcode,
+		ImageURI:      p.ImageURI,
+		Images:        p.Images,
+		Videos:        p.Videos,
+		Description:   p.Description,
+	}}
+}
+
 type BarcodeRequest struct {
 	ItemCode    string  `json:"itemcode" bson:"itemcode"`
 	Barcode     string  `json:"barcode" bson:"barcode" validate:"required,min=1"`

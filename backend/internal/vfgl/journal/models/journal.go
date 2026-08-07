@@ -97,8 +97,15 @@ type JournalInfo struct {
 	models.DocIdentity `bson:"inline"`
 	Journal            `bson:"inline"`
 
-	CreatedBy string    `json:"createdby" bson:"createdby"`
-	CreatedAt time.Time `json:"createdat" bson:"createdat"`
+	CreatedBy     string    `json:"createdby" bson:"createdby"`
+	CreatedByName string    `json:"createdbyname,omitempty" bson:"createdbyname,omitempty"`
+	CreatedAt     time.Time `json:"createdat" bson:"createdat"`
+	UpdatedBy     string    `json:"updatedby,omitempty" bson:"updatedby,omitempty"`
+	UpdatedByName string    `json:"updatedbyname,omitempty" bson:"updatedbyname,omitempty"`
+	UpdatedAt     time.Time `json:"updatedat,omitempty" bson:"updatedat,omitempty"`
+	DeletedBy     string    `json:"deletedby,omitempty" bson:"deletedby,omitempty"`
+	DeletedByName string    `json:"deletedbyname,omitempty" bson:"deletedbyname,omitempty"`
+	DeletedAt     time.Time `json:"deletedat,omitempty" bson:"deletedat,omitempty"`
 }
 
 func (JournalInfo) CollectionName() string {

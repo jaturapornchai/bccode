@@ -68,6 +68,7 @@ import {
 } from "@/lib/product-barcode/types";
 import { cn } from "@/lib/utils";
 import { pushNotice } from "@/lib/toast";
+import { normalizeBusinessCode } from "@/lib/business-code";
 
 type ProductSetScreenProps = {
   active?: boolean;
@@ -102,6 +103,7 @@ function BarcodePickerModal({
   onClose,
   auth,
   holdingCode,
+  businessCode,
   language,
   onSelect,
 }: {
@@ -109,6 +111,7 @@ function BarcodePickerModal({
   onClose: () => void;
   auth: AuthSession | null;
   holdingCode: string;
+  businessCode: string;
   language: string;
   onSelect: (row: ProductBarcodeListRow) => void;
 }) {
@@ -125,6 +128,7 @@ function BarcodePickerModal({
         const response = await listBarcodes(auth, {
           keyword: query,
           holdingcode: holdingCode,
+          businesscode: businessCode,
           limit: 30,
         });
         if (response.success && response.data) {
@@ -138,7 +142,7 @@ function BarcodePickerModal({
     };
     const handler = setTimeout(fetchBarcodes, 300);
     return () => clearTimeout(handler);
-  }, [open, query, auth, holdingCode]);
+  }, [open, query, auth, businessCode, holdingCode]);
 
   if (!open) return null;
 
@@ -291,6 +295,7 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
   }, []);
 
   const activeHoldingCode = workspace?.shop.holdingcode ?? "";
+  const activeBusinessCode = normalizeBusinessCode(workspace?.company?.code);
   const shopLanguages = useMemo(() => languageCodesFromWorkspace(workspace), [workspace]);
 
   // Load products of type SET (itemtype: 2)
@@ -1988,6 +1993,7 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
           onClose={() => setCustomBarcodePickerOpen(false)}
           auth={auth}
           holdingCode={activeHoldingCode}
+          businessCode={activeBusinessCode}
           language={lang}
           onSelect={(entry) => {
             if (activeOptionIndex >= 0) {

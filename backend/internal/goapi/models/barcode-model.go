@@ -2,6 +2,7 @@ package models
 
 type BarcodeModel struct {
 	HoldingCode          string
+	BusinessCode         string
 	ItemCode             string
 	Barcode              string
 	BarcodeRef           string
@@ -31,6 +32,7 @@ type BarcodeModel struct {
 func NewBarcodeModel() BarcodeModel {
 	return BarcodeModel{
 		HoldingCode:          "",
+		BusinessCode:         "",
 		ItemCode:             "",
 		Barcode:              "",
 		BarcodeRef:           "",
@@ -59,11 +61,12 @@ func NewBarcodeModel() BarcodeModel {
 }
 
 type BarcodeRefModel struct {
-	HoldingCode string
-	Barcode     string
-	BarcodeRef  string
-	ItemCode    string
-	UnitCode    string
-	StandValue  float64
-	DivideValue float64
+	HoldingCode  string
+	BusinessCode string
+	Barcode      string
+	BarcodeRef   string
+	ItemCode     string
+	UnitCode     string
+	StandValue   float64
+	DivideValue  float64
 }

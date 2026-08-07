@@ -96,19 +96,20 @@ Kafka and Redis are mandatory runtime services for MainAPI. Local Docker Desktop
 | Service | Host Port | Bind | Note |
 |---------|-----------|------|------|
 | **MainAPI** (gateway) | **8888** | `0.0.0.0` | จุดเข้าเดียว (GoAPI embedded) |
-| MongoDB | Atlas | external | DEV uses MongoDB Atlas via `MONGODB_DEV_URI` from local env/secret files |
-| PostgreSQL | 5432 | server | DEV PostgreSQL runs on `192.168.2.202` |
+| MongoDB | 27017 | local docker | DEV ใช้ local container (replica set rs0) — Atlas เลิกใช้แล้ว ตาม Environment Topology |
+| PostgreSQL | 5432 | local docker | DEV ใช้ local container |
 | Redis | 6379 | `0.0.0.0` | redis:6379 |
-| ClickHouse HTTP | 8123 | server | DEV ClickHouse runs on `192.168.2.202` |
-| ClickHouse Native | 9000 | server | DEV ClickHouse runs on `192.168.2.202` |
+| ClickHouse HTTP | 8123 | local docker | DEV ใช้ local container |
+| ClickHouse Native | 9000 | local docker | DEV ใช้ local container |
 | Kafka | 9092 | `0.0.0.0` | kafka:29092 |
+| MinIO | 9000 | local docker | S3-compatible image/file storage |
 | Zookeeper | — | docker only | zookeeper:2181 |
 
 **DEV data services:**
-- MongoDB uses MongoDB Atlas. Supply `MONGODB_DEV_URI` and `MONGODB_DEV_DB` from local env/secret files only.
-- PostgreSQL and ClickHouse run on `192.168.2.202`. Supply credentials from local env/secret files only.
-- System images/files are stored on Cloudflare storage. Supply Cloudflare credentials from local env/secret files only.
-- Do not commit server passwords, MongoDB Atlas connection strings with credentials, Cloudflare tokens, or storage access keys.
+- DEV stack ทั้งหมดรัน local (Docker Desktop): MongoDB/PostgreSQL/ClickHouse/Kafka/Redis/MinIO — ตาม Environment Topology ใน core-rules (MongoDB Atlas เลิกใช้แล้ว; stack บน `192.168.2.202` คือ DEPLOY ไม่ใช่ DEV local)
+- Supply DB/storage credentials from local env/secret files only.
+- System images/files เก็บใน S3-compatible storage (MinIO local/`.202`, Cloudflare R2 เมื่อ config `S3_*`/`R2_*`)
+- Do not commit server passwords, MongoDB connection strings with credentials, Cloudflare tokens, or storage access keys.
 
 **กฏ Port:**
 - **MainAPI (port 8888) เท่านั้น** ที่เปิดออกนอก
@@ -119,7 +120,7 @@ Kafka and Redis are mandatory runtime services for MainAPI. Local Docker Desktop
 **DEV server (on-prem) rule:**
 - DEV server: `192.168.2.202`, SSH user `smlsoft` (key-based / passwordless), on-prem Docker stack.
 - Backend entrypoint: `http://192.168.2.202:8888` (mainapi, GoAPI embedded).
-- Frontend runs on the dev machine pointing at `http://192.168.2.202:8888` (build + start, never `npm run dev`/`output:"standalone"`).
+- Frontend runs on the dev machine pointing at the LOCAL backend `http://localhost:8888` via `BCAI_LOCAL_BACKEND_URL` (fast iteration with `next dev` HMR; `next build && next start` for production-like verification; never `output:"standalone"`). It points at `http://192.168.2.202:8888` only when deliberately testing against the DEPLOY stack.
 - A public domain/Caddy is optional and only applies if Jead exposes one; agents must not require it.
 
 ### Build Commands

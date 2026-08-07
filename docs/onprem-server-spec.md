@@ -123,7 +123,7 @@ auth database: admin
 app database: appdb
 ```
 
-**Data ในระบบ (seeded จาก MongoDB Atlas):**
+**Data ในระบบ (seeded จาก MongoDB Atlas — หมายเหตุ: Atlas เลิกใช้แล้ว, DEV ปัจจุบันเป็น local containers ตาม Environment Topology ใน core-rules):**
 - `users` — 13 records (owner + 12 seed users)
 - `organizationcompanies` — 8 companies
 - `organizationbranches` — 38 branches

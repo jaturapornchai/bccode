@@ -485,7 +485,7 @@ test("product BOM — live sub-recipe cascade: edit shared sub-recipe, both pare
         holdingcode: "test",
         backendUrl: auth.backendUrl,
         barcode: subBarcode,
-        names: [{ code: "th", name: subName2, isauto: false, isdelete: false }],
+        names: [{ code: "th", name: subName2 }],
         itemunitcode: "RECIPE",
         price: 0,
         outputqty: 1,

@@ -128,10 +128,13 @@ async function openProductScreenFromMenu(page: Page) {
 
 async function loginAndOpenProductScreen(page: Page) {
   await page.goto("/", { waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(2500);
   // Dev test-login shortcut: pre-fills test/demo credentials and submits in one click, then
   // redirects straight to /holding (no separate "Test" confirmation button in this app version).
-  await clickButtonByText(page, /เข้าทดสอบระบบ/);
+  const devLoginButton = page.getByRole("button", {
+    name: /เข้าทดสอบระบบ/,
+  });
+  await expect(devLoginButton).toBeVisible({ timeout: 20000 });
+  await devLoginButton.click();
   await page.waitForTimeout(2500);
   // /holding: the holding-group list loads asynchronously after login; wait for at least one real
   // card (not just the "0 กลุ่มกิจการที่เข้าได้" header) before picking the test holding group.
@@ -163,6 +166,108 @@ async function loginAndOpenProductScreen(page: Page) {
   await page.waitForTimeout(2500);
   await openProductScreenFromMenu(page);
 }
+
+test("product detail stays mounted and the latest row click wins", async ({
+  page,
+}) => {
+  await loginAndOpenProductScreen(page);
+
+  const rows = page.getByTestId("product-row");
+  const rowCount = await rows.count();
+  expect(rowCount).toBeGreaterThanOrEqual(2);
+
+  let selectedIndex = 0;
+  for (let index = 0; index < rowCount; index += 1) {
+    if ((await rows.nth(index).getAttribute("aria-pressed")) === "true") {
+      selectedIndex = index;
+      break;
+    }
+  }
+
+  const sourceRow = rows.nth(selectedIndex);
+  const targetRow = rows.nth(selectedIndex === 0 ? 1 : 0);
+  const sourceCode = ((await sourceRow.getAttribute("aria-label")) ?? "")
+    .trim()
+    .split(/\s+/)[0];
+  const targetCode = ((await targetRow.getAttribute("aria-label")) ?? "")
+    .trim()
+    .split(/\s+/)[0];
+  expect(sourceCode).not.toBe("");
+  expect(targetCode).not.toBe("");
+
+  const detailCard = page.getByTestId("product-detail-card");
+  const detailContent = page.getByTestId("product-detail-content");
+  await expect(detailCard).toContainText(sourceCode, { timeout: 10000 });
+  await expect(detailContent).toBeVisible();
+
+  await page.route(
+    `**/api/product/${encodeURIComponent(targetCode)}`,
+    async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 450));
+      await route.continue();
+    },
+    { times: 1 },
+  );
+  await targetRow.click();
+
+  const frames = await page.evaluate(async () => {
+    let blank = 0;
+    let loadingChrome = 0;
+    let sampled = 0;
+    const started = performance.now();
+    while (performance.now() - started < 300) {
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => resolve()),
+      );
+      sampled += 1;
+      const card = document.querySelector<HTMLElement>(
+        '[data-testid="product-detail-card"]',
+      );
+      const content = document.querySelector<HTMLElement>(
+        '[data-testid="product-detail-content"]',
+      );
+      if (
+        !card ||
+        !content ||
+        card.getBoundingClientRect().height === 0 ||
+        content.getBoundingClientRect().height === 0
+      ) {
+        blank += 1;
+      }
+      if (document.body.innerText.includes("กำลังโหลดรายละเอียดสินค้า")) {
+        loadingChrome += 1;
+      }
+    }
+    return { blank, loadingChrome, sampled };
+  });
+
+  expect(frames.sampled).toBeGreaterThan(0);
+  expect(frames.blank).toBe(0);
+  expect(frames.loadingChrome).toBe(0);
+  await expect(detailCard).toContainText(targetCode, { timeout: 10000 });
+
+  await page.route(
+    `**/api/product/${encodeURIComponent(sourceCode)}`,
+    async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 450));
+      await route.continue();
+    },
+    { times: 1 },
+  );
+  const slowRequest = page.waitForRequest(
+    (request) =>
+      new URL(request.url()).pathname ===
+      `/api/product/${encodeURIComponent(sourceCode)}`,
+  );
+  await sourceRow.click();
+  await slowRequest;
+  await page.waitForTimeout(25);
+  await targetRow.click();
+  await page.waitForTimeout(650);
+
+  await expect(targetRow).toHaveAttribute("aria-pressed", "true");
+  await expect(detailCard).toContainText(targetCode);
+});
 
 test("product — create via UI across all detail tabs, verify API+DB, then update+delete via API", async ({
   page,
@@ -349,18 +454,18 @@ test("product — create via UI across all detail tabs, verify API+DB, then upda
   // Barcode screen's own UAT suite, not this one.
   const updated = {
     ...getBody.data,
-    names: [{ code: "th", name: `${name}X`, isauto: false, isdelete: false }],
+    names: [{ code: "th", name: `${name}X` }],
     groupcode: `GRP${uid}`,
     groupnames: [
-      { code: "th", name: `กลุ่มE2E${uid}`, isauto: false, isdelete: false },
+      { code: "th", name: `กลุ่มE2E${uid}` },
     ],
     categorycode: `CAT${uid}`,
     categorynames: [
-      { code: "th", name: `หมวดE2E${uid}`, isauto: false, isdelete: false },
+      { code: "th", name: `หมวดE2E${uid}` },
     ],
     brandcode: `BRD${uid}`,
     brandnames: [
-      { code: "th", name: `ยี่ห้อE2E${uid}`, isauto: false, isdelete: false },
+      { code: "th", name: `ยี่ห้อE2E${uid}` },
     ],
   };
   const putRes = await page.request.put(`/api/product/${guid}`, {

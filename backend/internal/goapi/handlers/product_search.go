@@ -24,6 +24,7 @@ import (
 // UnifiedSearchRequest - Request body สำหรับค้นหาสินค้าแบบ Unified
 type UnifiedSearchRequest struct {
 	HoldingCode    string `json:"holdingcode"`
+	BusinessCode   string `json:"businesscode"`
 	Keyword        string `json:"keyword"`
 	WHCode         string `json:"whcode"`
 	LocationCode   string `json:"locationcode"`
@@ -82,12 +83,13 @@ type SearchProductItem struct {
 
 // UnifiedSearchResponse - Response สำหรับการค้นหา
 type UnifiedSearchResponse struct {
-	Status   string              `json:"status"`
-	Count    int                 `json:"count"`
-	Total    int                 `json:"total"`   // จำนวนสินค้าทั้งหมดที่พบ (ก่อน pagination)
-	HasMore  bool                `json:"hasmore"` // มีข้อมูลเพิ่มหรือไม่ (สำหรับ infinite scroll)
-	Products []SearchProductItem `json:"products"`
-	Tokens   []string            `json:"tokens"`
+	Status       string              `json:"status"`
+	Count        int                 `json:"count"`
+	Total        int                 `json:"total"`   // จำนวนสินค้าทั้งหมดที่พบ (ก่อน pagination)
+	HasMore      bool                `json:"hasmore"` // มีข้อมูลเพิ่มหรือไม่ (สำหรับ infinite scroll)
+	Products     []SearchProductItem `json:"products"`
+	Tokens       []string            `json:"tokens"`
+	BalanceScope string              `json:"balancescope,omitempty"`
 }
 
 // ==================== Main Handler ====================
@@ -105,12 +107,23 @@ func UnifiedProductSearchHandler(c echo.Context) error {
 		})
 	}
 
-	// Validate
-	if req.HoldingCode == "" {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+	holdingCode, businessCode, companyErr := authenticatedCompanyContext(c, req.HoldingCode, req.BusinessCode)
+	if companyErr != nil {
+		return c.JSON(companyErr.Status, map[string]interface{}{
 			"status":  "error",
-			"message": "Missing required parameter: holdingcode",
+			"code":    companyErr.Code,
+			"message": companyErr.Message,
 		})
+	}
+	req.HoldingCode = holdingCode
+	req.BusinessCode = businessCode
+
+	balanceScope := ""
+	if req.IncludeBalance {
+		// Stock/docdetail is still Holding-scoped. Returning it here would mix
+		// companies that reuse the same item code, so this path is metadata-only.
+		balanceScope = "disabled_company_scope"
+		req.IncludeBalance = false
 	}
 
 	if req.Keyword == "" {
@@ -157,7 +170,7 @@ func UnifiedProductSearchHandler(c echo.Context) error {
 
 	// 4. Search products (รองรับ pagination)
 	t2 := time.Now()
-	searchResult, err := searchProductsUnified(db, tokens, req.Limit, req.Offset)
+	searchResult, err := searchProductsUnified(db, holdingCode, businessCode, tokens, req.Limit, req.Offset)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
 			"status":  "error",
@@ -175,12 +188,13 @@ func UnifiedProductSearchHandler(c echo.Context) error {
 
 	if len(products) == 0 {
 		return c.JSON(http.StatusOK, UnifiedSearchResponse{
-			Status:   "success",
-			Count:    0,
-			Total:    total,
-			HasMore:  false,
-			Products: []SearchProductItem{},
-			Tokens:   tokens,
+			Status:       "success",
+			Count:        0,
+			Total:        total,
+			HasMore:      false,
+			Products:     []SearchProductItem{},
+			Tokens:       tokens,
+			BalanceScope: balanceScope,
 		})
 	}
 
@@ -220,7 +234,7 @@ func UnifiedProductSearchHandler(c echo.Context) error {
 	// Goroutine 1: Fetch units
 	go func() {
 		t := time.Now()
-		data, err := fetchAllUnitsForSearch(db, itemCodes)
+		data, err := fetchAllUnitsForSearch(db, holdingCode, businessCode, itemCodes)
 		unitsCh <- unitsResult{data: data, err: err, ms: time.Since(t).Milliseconds()}
 	}()
 
@@ -351,12 +365,13 @@ func UnifiedProductSearchHandler(c echo.Context) error {
 	// 8. Return response
 	logger.Info("[UnifiedSearch] TOTAL handler took %dms", time.Since(totalStart).Milliseconds())
 	return c.JSON(http.StatusOK, UnifiedSearchResponse{
-		Status:   "success",
-		Count:    len(products),
-		Total:    total,
-		HasMore:  hasMore,
-		Products: products,
-		Tokens:   tokens,
+		Status:       "success",
+		Count:        len(products),
+		Total:        total,
+		HasMore:      hasMore,
+		Products:     products,
+		Tokens:       tokens,
+		BalanceScope: balanceScope,
 	})
 }
 
@@ -437,7 +452,7 @@ type SearchResult struct {
 	Total    int // จำนวนทั้งหมดที่พบ (ก่อน pagination)
 }
 
-func searchProductsUnified(db *sql.DB, tokens []string, limit int, offset int) (*SearchResult, error) {
+func searchProductsUnified(db *sql.DB, holdingCode string, businessCode string, tokens []string, limit int, offset int) (*SearchResult, error) {
 	// Build WHERE clause - all tokens must match somewhere
 	var conditions []string
 	for _, token := range tokens {
@@ -462,13 +477,16 @@ func searchProductsUnified(db *sql.DB, tokens []string, limit int, offset int) (
 		FROM (
 			SELECT DISTINCT itemcode, name0
 			FROM productbarcode
-			WHERE %s
+			WHERE holding_code = $1
+				AND businesscode = $2
+				AND itemcode <> ''
+				AND %s
 		) sub
 		ORDER BY name0
 		LIMIT %d OFFSET %d
 	`, whereClause, limit, offset)
 
-	rows, err := db.Query(query)
+	rows, err := db.Query(query, holdingCode, businessCode)
 	if err != nil {
 		return nil, err
 	}
@@ -497,7 +515,7 @@ func searchProductsUnified(db *sql.DB, tokens []string, limit int, offset int) (
 }
 
 // fetchAllUnitsForSearch - ดึงหน่วยทั้งหมดของสินค้า
-func fetchAllUnitsForSearch(db *sql.DB, itemCodes []string) (map[string][]SearchProductUnit, error) {
+func fetchAllUnitsForSearch(db *sql.DB, holdingCode string, businessCode string, itemCodes []string) (map[string][]SearchProductUnit, error) {
 	if len(itemCodes) == 0 {
 		return nil, nil
 	}
@@ -520,11 +538,13 @@ func fetchAllUnitsForSearch(db *sql.DB, itemCodes []string) (map[string][]Search
 			COALESCE(price1, 0) as price1,
 			COALESCE(price_retail, 0) as price_retail
 		FROM productbarcode
-		WHERE itemcode IN (%s)
+		WHERE holding_code = $1
+			AND businesscode = $2
+			AND itemcode IN (%s)
 		ORDER BY itemcode ASC, barcoderefunitstand DESC, barcoderefunitdivide ASC, barcode ASC
 	`, strings.Join(quoted, ","))
 
-	rows, err := db.Query(query)
+	rows, err := db.Query(query, holdingCode, businessCode)
 	if err != nil {
 		return nil, err
 	}

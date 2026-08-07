@@ -29,3 +29,18 @@ func NewProductMessageQueueRepository(prod microservice.IProducer) ProductMessag
 	insRepo.KafkaRepository = repositories.NewKafkaRepository[models.ProductDoc](prod, config.ProductMessageQueueConfig{}, "")
 	return insRepo
 }
+
+func (repo ProductMessageQueueRepository) Create(doc models.ProductDoc) error {
+	doc.Barcodes = nil
+	return repo.KafkaRepository.Create(doc)
+}
+
+func (repo ProductMessageQueueRepository) Update(doc models.ProductDoc) error {
+	doc.Barcodes = nil
+	return repo.KafkaRepository.Update(doc)
+}
+
+func (repo ProductMessageQueueRepository) Delete(doc models.ProductDoc) error {
+	doc.Barcodes = nil
+	return repo.KafkaRepository.Delete(doc)
+}

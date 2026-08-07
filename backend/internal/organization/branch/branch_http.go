@@ -10,10 +10,12 @@ import (
 	authModels "smlcloudplatform/internal/authentication/models"
 	"smlcloudplatform/internal/config"
 	common "smlcloudplatform/internal/models"
+	orgaccess "smlcloudplatform/internal/organization"
 	branchModels "smlcloudplatform/internal/organization/branch/models"
 	companyModels "smlcloudplatform/internal/organization/company/models"
 	orgEvents "smlcloudplatform/internal/organization/events"
 	"smlcloudplatform/internal/utils"
+	"smlcloudplatform/pkg/apperr"
 	"smlcloudplatform/pkg/microservice"
 	"strconv"
 	"strings"
@@ -66,6 +68,9 @@ func (h BranchHttp) CreateBranch(ctx microservice.IContext) error {
 	mongoCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
+	if authErr := orgaccess.RequireHoldingAdmin(pst, ctx.UserInfo()); authErr != nil {
+		return apperr.Respond(ctx, authErr)
+	}
 
 	if err := prepareBranchCreate(&req, holdingCode, authUsername); err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

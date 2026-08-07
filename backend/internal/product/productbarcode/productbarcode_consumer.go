@@ -110,12 +110,14 @@ func (pbc *ProductBarcodeConsumer) ConsumerOnProductBarcodeCreate(ctx microservi
 
 	if err != nil {
 		pbc.ms.Logger.Errorf(moduleName, err.Error())
+		return err
 	}
 
-	_, err = pbc.svc.UpSert(doc.HoldingCode, doc.Barcode, doc)
+	_, err = pbc.svc.UpSert(doc.HoldingCode, doc.BusinessCode, doc.Barcode, doc)
 
 	if err != nil {
 		pbc.ms.Logger.Errorf(moduleName, err.Error())
+		return err
 	}
 	return nil
 }
@@ -130,14 +132,14 @@ func (pbc *ProductBarcodeConsumer) ConsumerOnProductBarcodeBulkCreate(ctx micros
 
 	if err != nil {
 		pbc.ms.Logger.Errorf(moduleName, err.Error())
+		return err
 	}
 
 	for _, item := range doc {
-		_, err = pbc.svc.UpSert(item.HoldingCode, item.Barcode, item)
-	}
-
-	if err != nil {
-		pbc.ms.Logger.Errorf(moduleName, err.Error())
+		if _, err = pbc.svc.UpSert(item.HoldingCode, item.BusinessCode, item.Barcode, item); err != nil {
+			pbc.ms.Logger.Errorf(moduleName, err.Error())
+			return err
+		}
 	}
 	return nil
 }
@@ -153,6 +155,7 @@ func (pbc *ProductBarcodeConsumer) ConsumerOnProductBarcodeUpdate(ctx microservi
 
 	if err != nil {
 		pbc.ms.Logger.Errorf(moduleName, err.Error())
+		return err
 	}
 
 	// err = pbc.svc.UpdateRefBarcode(doc.HoldingCode, doc)
@@ -161,10 +164,11 @@ func (pbc *ProductBarcodeConsumer) ConsumerOnProductBarcodeUpdate(ctx microservi
 	// 	pbc.ms.Logger.Errorf(moduleName, err.Error())
 	// }
 
-	_, err = pbc.svc.UpSert(doc.HoldingCode, doc.Barcode, doc)
+	_, err = pbc.svc.UpSert(doc.HoldingCode, doc.BusinessCode, doc.Barcode, doc)
 
 	if err != nil {
 		pbc.ms.Logger.Errorf(moduleName, err.Error())
+		return err
 	}
 
 	return nil
@@ -181,12 +185,14 @@ func (pbc *ProductBarcodeConsumer) ConsumerOnProductBarcodeDelete(ctx microservi
 
 	if err != nil {
 		pbc.ms.Logger.Errorf(moduleName, err.Error())
+		return err
 	}
 
-	err = pbc.svc.Delete(context.Background(), doc.HoldingCode, doc.ItemCode, doc.Barcode)
+	err = pbc.svc.Delete(context.Background(), doc.HoldingCode, doc.BusinessCode, doc.Barcode)
 
 	if err != nil {
 		pbc.ms.Logger.Errorf(moduleName, err.Error())
+		return err
 	}
 	return nil
 }

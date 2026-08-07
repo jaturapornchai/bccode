@@ -75,6 +75,69 @@ func TestStorageObjectBelongsToShop(t *testing.T) {
 	}
 }
 
+func TestStorageObjectBelongsToCompanyContext(t *testing.T) {
+	objectKey := "SHOP001/companies/COMPANY-A/products/videos/a.mp4"
+	if !storageObjectBelongsToContext(objectKey, "SHOP001", "COMPANY-A") {
+		t.Fatal("same-company product media was rejected")
+	}
+	if storageObjectBelongsToContext(objectKey, "SHOP001", "COMPANY-B") {
+		t.Fatal("cross-company product media was accepted")
+	}
+	if storageObjectBelongsToContext(objectKey, "SHOP001", "") {
+		t.Fatal("company-owned media was accepted without an active company")
+	}
+	if !storageObjectBelongsToContext("SHOP001/system/logo.png", "SHOP001", "") {
+		t.Fatal("holding-owned media should remain accessible inside its holding")
+	}
+	if storageObjectBelongsToContext("SHOP001/companies/~invalid!/products/videos/a.mp4", "SHOP001", "COMPANY-A") {
+		t.Fatal("malformed encoded company media was accepted as holding-owned")
+	}
+	if storageObjectBelongsToContext("SHOP001/companies", "SHOP001", "COMPANY-A") {
+		t.Fatal("incomplete company media path was accepted as holding-owned")
+	}
+}
+
+func TestStorageBusinessPathSegmentRoundTrip(t *testing.T) {
+	businessCode := "บริษัท A/B #1"
+	segment := storageBusinessPathSegment(businessCode)
+	if strings.ContainsAny(segment, `/\\`) {
+		t.Fatalf("encoded business segment is not path-safe: %q", segment)
+	}
+	objectKey := "SHOP001/companies/" + segment + "/products/videos/a.mp4"
+	if got := storageObjectBusinessCode(objectKey); got != businessCode {
+		t.Fatalf("storageObjectBusinessCode() = %q, want %q", got, businessCode)
+	}
+	if !storageObjectBelongsToContext(objectKey, "SHOP001", businessCode) {
+		t.Fatal("encoded company media was rejected for its owning company")
+	}
+}
+
+func TestStorageSanitizeCategoryRejectsTraversalShape(t *testing.T) {
+	if got := storageSanitizeCategory("products/../../other"); got == "products/../../other" || strings.Contains(got, "..") {
+		t.Fatalf("unsafe category survived sanitization: %q", got)
+	}
+	if got := storageSanitizeCategory("companies/~VUFUQg/products/images"); got != "companies/~VUFUQg/products/images" {
+		t.Fatalf("encoded company segment was changed: %q", got)
+	}
+}
+
+func TestS3FileProxyBlocksCrossCompanyKeyBeforeStorage(t *testing.T) {
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodGet, "/s3/file/SHOP001/companies/COMPANY-B/products/videos/a.mp4", nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetParamNames("*")
+	c.SetParamValues("SHOP001/companies/COMPANY-B/products/videos/a.mp4")
+	c.Set("UserInfo", msmodels.UserInfo{Username: "user@example.com", HoldingCode: "SHOP001", BusinessCode: "COMPANY-A"})
+
+	if err := S3FileProxyHandler(c); err != nil {
+		t.Fatalf("S3FileProxyHandler returned error: %v", err)
+	}
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("expected status %d, got %d", http.StatusForbidden, rec.Code)
+	}
+}
+
 func TestS3FileProxyBlocksCrossShopKeyBeforeStorage(t *testing.T) {
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodGet, "/s3/file/SHOP002/images/a.png", nil)
@@ -215,6 +278,19 @@ func TestImageUploadHandlerRejectsMissingShopToken(t *testing.T) {
 	}
 	if rec.Code != http.StatusUnauthorized {
 		t.Fatalf("expected status %d when shop not selected, got %d", http.StatusUnauthorized, rec.Code)
+	}
+}
+
+func TestVideoUploadHandlerRequiresActiveCompany(t *testing.T) {
+	e := echo.New()
+	c, rec := newMultipartUploadContext(t, e, "")
+	c.Set("UserInfo", msmodels.UserInfo{Username: "user@example.com", HoldingCode: "SHOP001"})
+
+	if err := VideoUploadHandler(c); err != nil {
+		t.Fatalf("VideoUploadHandler returned error: %v", err)
+	}
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected status %d without an active company, got %d", http.StatusBadRequest, rec.Code)
 	}
 }
 

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { getInitialBackendLanguage } from "@/lib/backend-language-server";
 import { getSystemSettingConfig } from "@/lib/system-setting-screens";
 import { SystemSettingsScreen } from "../system-settings/system-settings-screen";
@@ -6,6 +7,12 @@ import { SystemSettingsScreen } from "../system-settings/system-settings-screen"
 type SystemSettingPageProps = {
   params: Promise<{ systemSetting: string }>;
 };
+
+export async function generateMetadata({ params }: SystemSettingPageProps): Promise<Metadata> {
+  const { systemSetting } = await params;
+  const config = getSystemSettingConfig(systemSetting);
+  return { title: config?.title.th ?? "ตั้งค่าระบบ" };
+}
 
 export default async function SystemSettingPage({ params }: SystemSettingPageProps) {
   const { systemSetting } = await params;

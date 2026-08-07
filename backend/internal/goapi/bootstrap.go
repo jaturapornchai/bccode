@@ -249,6 +249,13 @@ func createGoAPIAuthMiddleware(cacher microservice.ICacher) echo.MiddlewareFunc 
 					"message": "Shop not selected",
 				})
 			}
+			if userInfo.MustChangePassword {
+				return c.JSON(http.StatusForbidden, map[string]interface{}{
+					"success": false,
+					"code":    "password_change_required",
+					"message": "กรุณาเปลี่ยนรหัสผ่านเริ่มต้นก่อนใช้งานระบบ",
+				})
+			}
 
 			requestedHoldingCode, err := goAPIRequestHoldingCode(c)
 			if err != nil {
@@ -283,8 +290,8 @@ func authenticateGoAPIRedisToken(cacher microservice.ICacher, tokenText string) 
 	}
 
 	cacheKey := "auth-" + tokenText
-	raw, err := cacher.HMGet(cacheKey, []string{"username", "name", "holdingcode", "role"})
-	if err != nil || len(raw) < 4 || raw[0] == nil {
+	raw, err := cacher.HMGet(cacheKey, []string{"username", "name", "holdingcode", "role", "mustchangepassword", "businesscode"})
+	if err != nil || len(raw) < 6 || raw[0] == nil {
 		return msmodels.UserInfo{}, false
 	}
 
@@ -303,6 +310,16 @@ func authenticateGoAPIRedisToken(cacher microservice.ICacher, tokenText string) 
 			return msmodels.UserInfo{}, false
 		}
 		userInfo.Role = uint8(role)
+	}
+	if raw[4] != nil {
+		mustChangePassword, err := strconv.ParseBool(fmt.Sprintf("%v", raw[4]))
+		if err != nil {
+			return msmodels.UserInfo{}, false
+		}
+		userInfo.MustChangePassword = mustChangePassword
+	}
+	if raw[5] != nil {
+		userInfo.BusinessCode = strings.ToUpper(strings.TrimSpace(fmt.Sprintf("%v", raw[5])))
 	}
 	if userInfo.Username == "" {
 		return msmodels.UserInfo{}, false
@@ -640,6 +657,7 @@ func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string) {
 
 	// Image endpoints
 	authGroup.POST("/image/upload", handlers.ImageUploadHandler)
+	authGroup.POST("/video/upload", handlers.VideoUploadHandler)
 	authGroup.POST("/image/list", handlers.ImageListHandler)
 	authGroup.POST("/image/get", handlers.ImageGetHandler)
 	authGroup.POST("/image/info", handlers.ImageInfoHandler)

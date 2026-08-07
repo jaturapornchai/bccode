@@ -2,48 +2,28 @@ package handlers
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
-
-	"smlcloudplatform/internal/goapi/logger"
-	mypg "smlcloudplatform/internal/goapi/mypg"
 
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"smlcloudplatform/internal/goapi/logger"
 )
 
 // ==================== Barcode List (MongoDB Atlas) ====================
 
 // BarcodeListRequest — Request body สำหรับดึงรายการบาร์โค้ด
 type BarcodeListRequest struct {
-	HoldingCode        string   `json:"holdingcode"`
-	Keyword            string   `json:"keyword"`
-	GroupCode          string   `json:"groupcode"`
-	GroupCodeLegacy    string   `json:"groupcode"`
-	BrandCode          string   `json:"brandcode"`
-	BrandCodeLegacy    string   `json:"brandcode"`
-	CategoryCode       string   `json:"categorycode"`
-	ClassCode          string   `json:"classcode"`
-	DesignCode         string   `json:"designcode"`
-	GradeCode          string   `json:"gradecode"`
-	ModelCode          string   `json:"modelcode"`
-	PatternCode        string   `json:"patterncode"`
-	ItemType           *int     `json:"itemtype"`
-	ItemTypeLegacy     *int     `json:"itemtype"`
-	MaterialType       *int     `json:"materialtype"`
-	MaterialTypeLegacy *int     `json:"materialtype"`
-	PriceMin           *float64 `json:"pricemin"`
-	PriceMax           *float64 `json:"pricemax"`
-	Limit              int      `json:"limit"`
-	Offset             int      `json:"offset"`
-	SortField          string   `json:"sortfield"`
-	SortOrder          string   `json:"sortorder"`
+	HoldingCode string `json:"holdingcode"`
+	Keyword     string `json:"keyword"`
+	Limit       int    `json:"limit"`
+	Offset      int    `json:"offset"`
+	SortField   string `json:"sortfield"`
+	SortOrder   string `json:"sortorder"`
 }
 
 func mapString(doc bson.M, key string) string {
@@ -89,24 +69,6 @@ func mapInt(doc bson.M, key string) int {
 	return 0
 }
 
-func mapIntAny(doc bson.M, keys ...string) int {
-	for _, key := range keys {
-		if _, ok := doc[key]; ok {
-			return mapInt(doc, key)
-		}
-	}
-	return 0
-}
-
-func mapStringAny(doc bson.M, keys ...string) string {
-	for _, key := range keys {
-		if val := mapString(doc, key); val != "" {
-			return val
-		}
-	}
-	return ""
-}
-
 func mapBool(doc bson.M, key string) bool {
 	if val, ok := doc[key]; ok && val != nil {
 		if b, ok := val.(bool); ok {
@@ -137,178 +99,6 @@ func mapNames(doc bson.M, key string) []map[string]string {
 	return result
 }
 
-func firstMappedName(names []map[string]string) string {
-	for _, name := range names {
-		if val := strings.TrimSpace(name["name"]); val != "" {
-			return val
-		}
-	}
-	return ""
-}
-
-func bsonMap(value interface{}) (bson.M, bool) {
-	switch v := value.(type) {
-	case bson.M:
-		return v, true
-	case map[string]interface{}:
-		return bson.M(v), true
-	default:
-		return nil, false
-	}
-}
-
-func barcodeStockDimensions(doc bson.M) []map[string]string {
-	raw, ok := doc["dimensions"]
-	if !ok || raw == nil {
-		return nil
-	}
-	arr, ok := raw.(primitive.A)
-	if !ok {
-		return nil
-	}
-	dimensions := make([]map[string]string, 0, len(arr))
-	for _, entry := range arr {
-		dim, ok := bsonMap(entry)
-		if !ok {
-			continue
-		}
-		item := bson.M{}
-		if rawItem, ok := dim["item"]; ok {
-			if itemMap, ok := bsonMap(rawItem); ok {
-				item = itemMap
-			}
-		}
-		dimensionGuid := mapStringAny(dim, "guidfixed", "guidfixed", "guid", "dimensionguid", "dimension_code", "code")
-		itemGuid := mapStringAny(item, "guidfixed", "guidfixed", "guid", "itemguid", "option_guid", "valuecode", "code")
-		dimensionName := firstMappedName(mapNames(dim, "names"))
-		itemName := firstMappedName(mapNames(item, "names"))
-		if dimensionGuid == "" && itemGuid == "" && dimensionName == "" && itemName == "" {
-			continue
-		}
-		dimensions = append(dimensions, map[string]string{
-			"dimensionguid": dimensionGuid,
-			"dimensionname": dimensionName,
-			"itemguid":      itemGuid,
-			"itemname":      itemName,
-		})
-	}
-	return dimensions
-}
-
-func stockDimensionPart(value string) string {
-	return strings.ToUpper(strings.TrimSpace(value))
-}
-
-func stockDimensionKey(dimensions []map[string]string) string {
-	if len(dimensions) == 0 {
-		return ""
-	}
-	parts := make([]string, 0, len(dimensions))
-	for _, dim := range dimensions {
-		left := stockDimensionPart(dim["dimensionguid"])
-		if left == "" {
-			left = stockDimensionPart(dim["dimensionname"])
-		}
-		right := stockDimensionPart(dim["itemguid"])
-		if right == "" {
-			right = stockDimensionPart(dim["itemname"])
-		}
-		if left == "" && right == "" {
-			continue
-		}
-		parts = append(parts, fmt.Sprintf("%s=%s", left, right))
-	}
-	return strings.Join(parts, "|")
-}
-
-type stockBalanceInfo struct {
-	currentQty   float64
-	reservedQty  float64
-	availableQty float64
-	totalValue   float64
-}
-
-func stockBalanceMapKey(itemCode, dimensionKey string) string {
-	return itemCode + "\x00" + dimensionKey
-}
-
-// pgSchemaCap caches information_schema capability probes (does table/column
-// exist) per holding+table+column. The PG schema only changes on migration —
-// which redeploys (restarts) the backend — so a process-lifetime cache is safe
-// and removes a catalog round-trip from every barcode-list request.
-var (
-	pgSchemaCapMu sync.RWMutex
-	pgSchemaCap   = map[string]bool{}
-)
-
-func pgSchemaCapGet(key string) (bool, bool) {
-	pgSchemaCapMu.RLock()
-	v, ok := pgSchemaCap[key]
-	pgSchemaCapMu.RUnlock()
-	return v, ok
-}
-
-func pgSchemaCapSet(key string, val bool) {
-	pgSchemaCapMu.Lock()
-	pgSchemaCap[key] = val
-	pgSchemaCapMu.Unlock()
-}
-
-func pgColumnExistsProbe(ctx context.Context, db *sql.DB, tableName, columnName string) (bool, error) {
-	var exists bool
-	err := db.QueryRowContext(ctx,
-		`SELECT EXISTS (
-			SELECT 1
-			FROM information_schema.columns
-			WHERE table_schema = 'public' AND table_name = $1 AND column_name = $2
-		)`,
-		tableName, columnName,
-	).Scan(&exists)
-	return exists, err
-}
-
-func pgTableExistsProbe(ctx context.Context, db *sql.DB, tableName string) (bool, error) {
-	var exists bool
-	err := db.QueryRowContext(ctx,
-		`SELECT EXISTS (
-			SELECT 1
-			FROM information_schema.tables
-			WHERE table_schema = 'public' AND table_name = $1
-		)`,
-		tableName,
-	).Scan(&exists)
-	return exists, err
-}
-
-// pgColumnExistsCached returns whether a column exists, caching the result.
-// A transient probe error is not cached (returns false for this request only).
-func pgColumnExistsCached(ctx context.Context, db *sql.DB, holdingCode, tableName, columnName string) bool {
-	key := "c|" + holdingCode + "|" + tableName + "|" + columnName
-	if v, ok := pgSchemaCapGet(key); ok {
-		return v
-	}
-	exists, err := pgColumnExistsProbe(ctx, db, tableName, columnName)
-	if err != nil {
-		return false
-	}
-	pgSchemaCapSet(key, exists)
-	return exists
-}
-
-// pgTableExistsCached returns whether a table exists, caching the result.
-func pgTableExistsCached(ctx context.Context, db *sql.DB, holdingCode, tableName string) bool {
-	key := "t|" + holdingCode + "|" + tableName
-	if v, ok := pgSchemaCapGet(key); ok {
-		return v
-	}
-	exists, err := pgTableExistsProbe(ctx, db, tableName)
-	if err != nil {
-		return false
-	}
-	pgSchemaCapSet(key, exists)
-	return exists
-}
-
 // BarcodeListHandler — Handler สำหรับดึงรายการบาร์โค้ดจาก MongoDB Atlas
 // POST /api/product/barcode/list
 func BarcodeListHandler(c echo.Context) error {
@@ -320,25 +110,15 @@ func BarcodeListHandler(c echo.Context) error {
 		})
 	}
 
-	if req.HoldingCode == "" {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+	holdingCode, companyCode, scopeErr := authenticatedCompanyContext(c, req.HoldingCode, "")
+	if scopeErr != nil {
+		return c.JSON(scopeErr.Status, map[string]interface{}{
 			"success": false,
-			"message": "Missing required parameter: holdingcode",
+			"code":    scopeErr.Code,
+			"message": scopeErr.Message,
 		})
 	}
-	if req.GroupCode == "" {
-		req.GroupCode = req.GroupCodeLegacy
-	}
-	if req.BrandCode == "" {
-		req.BrandCode = req.BrandCodeLegacy
-	}
-	if req.ItemType == nil {
-		req.ItemType = req.ItemTypeLegacy
-	}
-	if req.MaterialType == nil {
-		req.MaterialType = req.MaterialTypeLegacy
-	}
-
+	req.HoldingCode = holdingCode
 	// Defaults
 	if req.Limit <= 0 {
 		req.Limit = 50
@@ -367,8 +147,9 @@ func BarcodeListHandler(c echo.Context) error {
 	// Build MongoDB filter. Exclude soft-deleted docs (deletedat set) — otherwise deleted barcodes
 	// linger as ghosts and look like duplicates, since uniqueness only blocks LIVE barcodes.
 	filter := bson.M{
-		"holdingcode": req.HoldingCode,
-		"deletedat":   bson.M{"$exists": false},
+		"holdingcode":  req.HoldingCode,
+		"businesscode": companyCode,
+		"deletedat":    bson.M{"$exists": false},
 	}
 
 	if req.Keyword != "" {
@@ -395,48 +176,7 @@ func BarcodeListHandler(c echo.Context) error {
 		}
 	}
 
-	// Apply other filters
-	if req.GroupCode != "" {
-		filter["groupcode"] = req.GroupCode
-	}
-	if req.BrandCode != "" {
-		filter["brandcode"] = req.BrandCode
-	}
-	if req.CategoryCode != "" {
-		filter["categorycode"] = req.CategoryCode
-	}
-	if req.ClassCode != "" {
-		filter["classcode"] = req.ClassCode
-	}
-	if req.DesignCode != "" {
-		filter["designcode"] = req.DesignCode
-	}
-	if req.GradeCode != "" {
-		filter["gradecode"] = req.GradeCode
-	}
-	if req.ModelCode != "" {
-		filter["modelcode"] = req.ModelCode
-	}
-	if req.PatternCode != "" {
-		filter["patterncode"] = req.PatternCode
-	}
-	if req.ItemType != nil {
-		filter["itemtype"] = *req.ItemType
-	}
-	if req.MaterialType != nil {
-		filter["materialtype"] = *req.MaterialType
-	}
-	if req.PriceMin != nil {
-		filter["prices.price"] = bson.M{"$gte": *req.PriceMin}
-	}
-	if req.PriceMax != nil {
-		if minFilter, ok := filter["prices.price"].(bson.M); ok {
-			minFilter["$lte"] = *req.PriceMax
-		} else {
-			filter["prices.price"] = bson.M{"$lte": *req.PriceMax}
-		}
-	}
-
+	// Product classification belongs to Product. Barcode list only filters its own fields.
 	// Count total documents
 	totalCount, err := collection.CountDocuments(ctx, filter)
 	if err != nil {
@@ -523,76 +263,33 @@ func BarcodeListHandler(c echo.Context) error {
 			prices = append(prices, map[string]interface{}{"keynumber": 1, "price": 0.0})
 		}
 
-		itemType := mapIntAny(doc, "itemtype", "itemtype")
-		materialType := mapIntAny(doc, "materialtype", "material_type")
-		stockDimensions := barcodeStockDimensions(doc)
-		dimensionKey := stockDimensionKey(stockDimensions)
-
 		resultList = append(resultList, map[string]interface{}{
-			"guidfixed":          mapString(doc, "guidfixed"),
-			"barcode":            mapString(doc, "barcode"),
-			"names":              mapNames(doc, "names"),
-			"itemunitcode":       mapString(doc, "itemunitcode"),
-			"itemunitnames":      mapNames(doc, "itemunitnames"),
-			"itemcode":           itemCode,
-			"barcoderef":         mapString(doc, "barcoderef"),
-			"groupcode":          mapString(doc, "groupcode"),
-			"groupnames":         mapNames(doc, "groupnames"),
-			"brandcode":          mapString(doc, "brandcode"),
-			"brandnames":         mapNames(doc, "brandnames"),
-			"categorycode":       mapString(doc, "categorycode"),
-			"category_code":      mapString(doc, "categorycode"),
-			"categorynames":      mapNames(doc, "categorynames"),
-			"classcode":          mapString(doc, "classcode"),
-			"class_code":         mapString(doc, "classcode"),
-			"classnames":         mapNames(doc, "classnames"),
-			"designcode":         mapString(doc, "designcode"),
-			"design_code":        mapString(doc, "designcode"),
-			"designnames":        mapNames(doc, "designnames"),
-			"gradecode":          mapString(doc, "gradecode"),
-			"grade_code":         mapString(doc, "gradecode"),
-			"gradenames":         mapNames(doc, "gradenames"),
-			"modelcode":          mapString(doc, "modelcode"),
-			"model_code":         mapString(doc, "modelcode"),
-			"modelnames":         mapNames(doc, "modelnames"),
-			"patterncode":        mapString(doc, "patterncode"),
-			"pattern_code":       mapString(doc, "patterncode"),
-			"patternnames":       mapNames(doc, "patternnames"),
-			"groupsubonecode":    mapString(doc, "groupsubonecode"),
-			"groupsubonenames":   mapNames(doc, "groupsubonenames"),
-			"groupsubtwocode":    mapString(doc, "groupsubtwocode"),
-			"groupsubtwonames":   mapNames(doc, "groupsubtwonames"),
-			"prices":             prices,
-			"imageuri":           mapString(doc, "imageuri"),
-			"standvalue":         mapFloat(doc, "standvalue"),
-			"dividevalue":        mapFloat(doc, "dividevalue"),
-			"isstock":            mapInt(doc, "isstock"),
-			"itemtype":           itemType,
-			"materialtype":       materialType,
-			"material_type":      materialType,
-			"isusesubbarcodes":   mapBool(doc, "isusesubbarcodes"),
-			"checksum":           mapString(doc, "checksum"),
-			"holdingcode":        mapString(doc, "holdingcode"),
-			"refbarcodes":        doc["refbarcodes"],
-			"bom":                doc["bom"],
-			"businesstypes":      doc["businesstypes"],
-			"ignorebranches":     doc["ignorebranches"],
-			"unit_count":         1,
-			"all_unit_names":     "",
-			"stock_dimensionkey": dimensionKey,
-			"stockdimensions":    stockDimensions,
-			"balanceqty":         0.0,
-			"reservedqty":        0.0,
-			"availableqty":       0.0,
-			"balance_formatted":  "",
+			"guidfixed":      mapString(doc, "guidfixed"),
+			"holdingcode":    req.HoldingCode,
+			"businesscode":   companyCode,
+			"barcode":        mapString(doc, "barcode"),
+			"names":          mapNames(doc, "names"),
+			"itemcode":       itemCode,
+			"itemunitguid":   mapString(doc, "itemunitguid"),
+			"itemunitcode":   mapString(doc, "itemunitcode"),
+			"itemunitnames":  mapNames(doc, "itemunitnames"),
+			"prices":         prices,
+			"condition":      mapBool(doc, "condition"),
+			"dividevalue":    mapFloat(doc, "dividevalue"),
+			"standvalue":     mapFloat(doc, "standvalue"),
+			"ismainbarcode":  mapBool(doc, "ismainbarcode"),
+			"unit_count":     1,
+			"all_unit_names": "",
 		})
 	}
 
 	// 1. Enrich Unit Info from MongoDB
 	if len(itemCodes) > 0 {
 		unitFilter := bson.M{
-			"holdingcode": req.HoldingCode,
-			"itemcode":    bson.M{"$in": itemCodes},
+			"holdingcode":  req.HoldingCode,
+			"businesscode": companyCode,
+			"itemcode":     bson.M{"$in": itemCodes},
+			"deletedat":    bson.M{"$exists": false},
 		}
 		unitCursor, err := collection.Find(ctx, unitFilter)
 		if err == nil {
@@ -670,119 +367,6 @@ func BarcodeListHandler(c echo.Context) error {
 					}
 					res["all_unit_names"] = strings.Join(parts, ", ")
 				}
-			}
-		}
-	}
-
-	// 2. Enrich accounting stock and marketplace dimension availability.
-	if len(itemCodes) > 0 {
-		accountingBalanceMap := map[string]stockBalanceInfo{}
-		marketplaceBalanceMap := map[string]stockBalanceInfo{}
-
-		db, err := mypg.PgSqlFastConnect(req.HoldingCode)
-		if err == nil {
-			placeholders := make([]string, len(itemCodes))
-			args := make([]interface{}, 0, len(itemCodes)+1)
-			args = append(args, req.HoldingCode)
-			for i, code := range itemCodes {
-				placeholders[i] = fmt.Sprintf("$%d", i+2)
-				args = append(args, code)
-			}
-
-			hasReservedQty := pgColumnExistsCached(ctx, db, req.HoldingCode, "inventorystockbalances", "reservedqty")
-			reservedExpr := "0::numeric"
-			if hasReservedQty {
-				reservedExpr = "COALESCE(SUM(reservedqty), 0)"
-			}
-			accountingQuery := fmt.Sprintf(
-				`SELECT itemcode,
-				        COALESCE(SUM(currentqty), 0),
-				        %s,
-				        COALESCE(SUM(currenttotalvalue), 0)
-				   FROM inventorystockbalances
-				  WHERE holdingcode = $1 AND itemcode IN (%s)
-				  GROUP BY itemcode`,
-				reservedExpr,
-				strings.Join(placeholders, ","),
-			)
-
-			rows, err := db.QueryContext(ctx, accountingQuery, args...)
-			if err == nil {
-				defer rows.Close()
-				for rows.Next() {
-					var code string
-					var qty, reservedQty, totalValue float64
-					if err := rows.Scan(&code, &qty, &reservedQty, &totalValue); err == nil {
-						accountingBalanceMap[code] = stockBalanceInfo{
-							currentQty:  qty,
-							reservedQty: reservedQty,
-							totalValue:  totalValue,
-						}
-					}
-				}
-			} else {
-				logger.Warn("BarcodeListHandler: inventory stock balance query failed: %v", err)
-			}
-
-			hasMarketplaceStock := pgTableExistsCached(ctx, db, req.HoldingCode, "marketplacestockbalances") &&
-				pgColumnExistsCached(ctx, db, req.HoldingCode, "marketplacestockbalances", "itemcode") &&
-				pgColumnExistsCached(ctx, db, req.HoldingCode, "marketplacestockbalances", "dimensionkey") &&
-				pgColumnExistsCached(ctx, db, req.HoldingCode, "marketplacestockbalances", "availableqty")
-			if hasMarketplaceStock {
-				marketplaceQuery := fmt.Sprintf(
-					`SELECT itemcode,
-					        COALESCE(dimensionkey, '') AS dimensionkey,
-					        COALESCE(SUM(current_qty), 0),
-					        COALESCE(SUM(reservedqty), 0),
-					        COALESCE(SUM(availableqty), 0)
-					   FROM marketplacestockbalances
-					  WHERE holdingcode = $1 AND itemcode IN (%s)
-					  GROUP BY itemcode, COALESCE(dimensionkey, '')`,
-					strings.Join(placeholders, ","),
-				)
-				rows, err := db.QueryContext(ctx, marketplaceQuery, args...)
-				if err == nil {
-					defer rows.Close()
-					for rows.Next() {
-						var code, dimensionKey string
-						var qty, reservedQty, availableQty float64
-						if err := rows.Scan(&code, &dimensionKey, &qty, &reservedQty, &availableQty); err == nil {
-							marketplaceBalanceMap[stockBalanceMapKey(code, dimensionKey)] = stockBalanceInfo{
-								currentQty:   qty,
-								reservedQty:  reservedQty,
-								availableQty: availableQty,
-							}
-						}
-					}
-				} else {
-					logger.Warn("BarcodeListHandler: marketplace stock balance query failed: %v", err)
-				}
-			}
-		} else {
-			logger.Warn("BarcodeListHandler: PostgreSQL connection failed: %v", err)
-		}
-
-		for _, res := range resultList {
-			code, _ := res["itemcode"].(string)
-			dimensionKey, _ := res["stock_dimensionkey"].(string)
-			if accountingBalance, ok := accountingBalanceMap[code]; ok {
-				res["balanceqty"] = accountingBalance.currentQty
-				res["product_balanceqty"] = accountingBalance.currentQty
-				res["reservedqty"] = accountingBalance.reservedQty
-				res["availableqty"] = accountingBalance.currentQty - accountingBalance.reservedQty
-				res["balanceamount"] = accountingBalance.totalValue
-				res["balance_formatted"] = fmt.Sprintf("%.4f", accountingBalance.currentQty-accountingBalance.reservedQty)
-			}
-			if dimensionKey == "" {
-				continue
-			}
-			if marketplaceBalance, ok := marketplaceBalanceMap[stockBalanceMapKey(code, dimensionKey)]; ok {
-				res["reservedqty"] = marketplaceBalance.reservedQty
-				res["availableqty"] = marketplaceBalance.availableQty
-				res["balance_formatted"] = fmt.Sprintf("%.4f", marketplaceBalance.availableQty)
-			} else {
-				res["availableqty"] = 0.0
-				res["balance_formatted"] = "0.0000"
 			}
 		}
 	}

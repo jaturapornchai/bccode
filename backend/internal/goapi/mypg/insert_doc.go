@@ -77,21 +77,21 @@ func insertDocListWithTx(ctx context.Context, tx *sql.Tx, data []models.DocStruc
 				"paycashbalance", "deliverycode", "checksum", "branchid", "slipurl",
 				"salechannelcode", "deliveryamount", "iscancel", "cancelreason",
 				"guidpos", "guidbranch", "guidfixed",
-				"creatorcode", "creatorname", "createdat",
+				"creator_code", "creator_name", "created_at",
 				// Multi-Currency Fields
-				"currency", "currencysymbol",
-				"doccurrency", "doccurrencysymbol",
-				"exchangerate", "totalamountdoc",
+				"currency", "currency_symbol",
+				"doc_currency", "doc_currency_symbol",
+				"exchange_rate", "totalamount_doc",
 				// Soft Delete
 				"isdelete",
 				// สถานะการอนุมัติ
-				"approvalstatus",
+				"approval_status",
 			}
 
 			// แปลง Doc เป็น [][]any สำหรับ COPY
 			rows := make([][]any, len(validData))
 			for i, data := range validData {
-				// กำหนดค่า createdat ถ้ายังไม่มี
+				// กำหนดค่า created_at ถ้ายังไม่มี
 				createdAt := data.CreatedAt
 				if createdAt.IsZero() {
 					createdAt = data.DocDateTime // ใช้ DocDateTime เป็น default
@@ -309,8 +309,8 @@ func insertDocDetailListWithTx(ctx context.Context, tx *sql.Tx, holdingCode stri
 		"itemcode", "description", "barcodemain", "barcode", "unitcode",
 		"whcode", "locationcode", "totalqty", "price", "priceexcludevat",
 		"unitstand", "unitdivide", "docref", "sumamount", "iscancel",
-		"pricedoc", "sumamountdoc",
-		"discountamountdoc", "priceexcludevatdoc", "sumamountexcludevatdoc", "totalvaluevatdoc",
+		"price_doc", "sumamount_doc",
+		"discountamount_doc", "priceexcludevat_doc", "sumamountexcludevat_doc", "totalvaluevat_doc",
 	}
 
 	// Pre-fetch product info to avoid post-insert UPDATE

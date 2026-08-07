@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   ean13CheckDigit,
+  encodeEan13,
   getBoolean,
   getFirstString,
   getNumber,
@@ -8,6 +9,7 @@ import {
   isRecord,
   isValidBarcode,
   pickName,
+  rawToProduct,
   rawToProductBarcode,
   setNameXEntry,
   toBomArray,
@@ -50,7 +52,9 @@ describe("utils — primitives", () => {
   });
 
   it("getFirstString picks first non-empty key", () => {
-    expect(getFirstString({ a: "", b: "ok", c: "later" }, ["a", "b", "c"])).toBe("ok");
+    expect(
+      getFirstString({ a: "", b: "ok", c: "later" }, ["a", "b", "c"]),
+    ).toBe("ok");
     expect(getFirstString({ a: "" }, ["a"])).toBe("");
   });
 
@@ -90,7 +94,9 @@ describe("utils — names", () => {
 
   it("setNameXEntry replaces existing code, appends new code", () => {
     const start = [{ code: "th", name: "ก" }];
-    expect(setNameXEntry(start, "th", "ข")).toEqual([{ code: "th", name: "ข" }]);
+    expect(setNameXEntry(start, "th", "ข")).toEqual([
+      { code: "th", name: "ข" },
+    ]);
     expect(setNameXEntry(start, "en", "B")).toEqual([
       { code: "th", name: "ก" },
       { code: "en", name: "B" },
@@ -132,7 +138,9 @@ describe("utils — price/refbarcode/bom arrays", () => {
   });
 
   it("toBomArray normalizes barcode reference fields", () => {
-    expect(toBomArray([{ barcode: "X1", barcodeguidfixed: "G1", qty: 2 }])).toEqual([
+    expect(
+      toBomArray([{ barcode: "X1", barcodeguidfixed: "G1", qty: 2 }]),
+    ).toEqual([
       {
         barcodeguidfixed: "G1",
         itemcode: "",
@@ -152,11 +160,13 @@ describe("utils — barcode validation", () => {
   it("isValidBarcode accepts A-Z 0-9 -", () => {
     expect(isValidBarcode("ABC-123")).toBe(true);
     expect(isValidBarcode("X")).toBe(true);
+    expect(isValidBarcode("4006381333931")).toBe(true);
   });
   it("isValidBarcode rejects spaces, lowercase-only-bad-chars", () => {
     expect(isValidBarcode("AB C")).toBe(false);
     expect(isValidBarcode("AB#1")).toBe(false);
     expect(isValidBarcode("")).toBe(false);
+    expect(isValidBarcode("4006381333932")).toBe(false);
   });
 });
 
@@ -170,6 +180,35 @@ describe("utils — ean13CheckDigit", () => {
   });
 });
 
+describe("utils — encodeEan13", () => {
+  it("encodes a known EAN-13 into the standard 95 modules", () => {
+    expect(encodeEan13("4006381333931")).toBe(
+      [
+        "101",
+        "0001101",
+        "0100111",
+        "0101111",
+        "0111101",
+        "0001001",
+        "0110011",
+        "01010",
+        "1000010",
+        "1000010",
+        "1000010",
+        "1110100",
+        "1000010",
+        "1100110",
+        "101",
+      ].join(""),
+    );
+  });
+
+  it("rejects a bad check digit and non-EAN value", () => {
+    expect(encodeEan13("4006381333932")).toBeNull();
+    expect(encodeEan13("ABC-123")).toBeNull();
+  });
+});
+
 describe("utils — rawToProductBarcode", () => {
   it("merges raw payload over base defaults", () => {
     const base = emptyProductBarcode();
@@ -179,14 +218,28 @@ describe("utils — rawToProductBarcode", () => {
         names: [{ code: "th", name: "สินค้า" }],
         itemunitcode: "PCS",
         prices: [{ keynumber: 1, price: 99 }],
+        videos: [
+          {
+            xorder: 1,
+            uri: "/goapi/s3/file/H/companies/C/products/videos/demo.mp4",
+          },
+        ],
         itemtype: 2,
       },
       base,
     );
     expect(merged.barcode).toBe("ABC-1");
-    expect(merged.names).toEqual([{ code: "th", name: "สินค้า", description: undefined }]);
+    expect(merged.names).toEqual([
+      { code: "th", name: "สินค้า", description: undefined },
+    ]);
     expect(merged.itemunitcode).toBe("PCS");
     expect(merged.prices).toEqual([{ keynumber: 1, price: 99 }]);
+    expect(merged.videos).toEqual([
+      {
+        xorder: 1,
+        uri: "/goapi/s3/file/H/companies/C/products/videos/demo.mp4",
+      },
+    ]);
     expect(merged.itemtype).toBe(ITEM_TYPE.SET);
   });
 
@@ -197,6 +250,32 @@ describe("utils — rawToProductBarcode", () => {
   });
 });
 
+describe("utils — rawToProduct", () => {
+  it("keeps Product units independent from Barcode references", () => {
+    const product = rawToProduct({
+      code: "P001",
+      unitcode: "PCS",
+      unitnames: [{ code: "th", name: "ชิ้น" }],
+      unitconversions: [
+        {
+          unitcode: "BOX",
+          unitnames: [{ code: "th", name: "กล่อง" }],
+          dividevalue: 1,
+          standvalue: 12,
+        },
+      ],
+    });
+    expect(product.unitcode).toBe("PCS");
+    expect(product.unitconversions).toEqual([
+      {
+        unitcode: "BOX",
+        unitnames: [{ code: "th", name: "กล่อง", description: undefined }],
+        dividevalue: 1,
+        standvalue: 12,
+      },
+    ]);
+  });
+});
 
 describe("utils — toProductUnitOptions", () => {
   it("uses product.barcodes as the unit choices returned by /api/product detail", () => {
@@ -222,13 +301,27 @@ describe("utils — toProductUnitOptions", () => {
     });
 
     expect(options).toEqual([
-      expect.objectContaining({ guidfixed: "BARCODE-GUID-1", barcode: "885-PCS", itemunitcode: "PCS" }),
-      expect.objectContaining({ guidfixed: "BARCODE-GUID-2", barcode: "885-BOX", itemunitcode: "BOX" }),
+      expect.objectContaining({
+        guidfixed: "BARCODE-GUID-1",
+        barcode: "885-PCS",
+        itemunitcode: "PCS",
+      }),
+      expect.objectContaining({
+        guidfixed: "BARCODE-GUID-2",
+        barcode: "885-BOX",
+        itemunitcode: "BOX",
+      }),
     ]);
   });
 
   it("does not invent a barcode when a product has no barcode/unit choices", () => {
-    expect(toProductUnitOptions({ guidfixed: "PRODUCT-GUID", code: "P001", names: [] })).toEqual([]);
+    expect(
+      toProductUnitOptions({
+        guidfixed: "PRODUCT-GUID",
+        code: "P001",
+        names: [],
+      }),
+    ).toEqual([]);
   });
 
   it("does not use legacy refbarcodes as recipe unit choices", () => {

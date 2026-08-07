@@ -119,8 +119,9 @@ func (h JournalHttp) ReUpdateGuidJournalEmpty(ctx microservice.IContext) error {
 // @Security     AccessToken
 // @Router /gl/journal [post]
 func (h JournalHttp) CreateJournal(ctx microservice.IContext) error {
-	authUsername := ctx.UserInfo().Username
-	holdingCode := ctx.UserInfo().HoldingCode
+	userInfo := ctx.UserInfo()
+	authUsername := userInfo.Username
+	holdingCode := userInfo.HoldingCode
 	input := ctx.ReadInput()
 
 	docReq := &models.Journal{}
@@ -153,7 +154,7 @@ func (h JournalHttp) CreateJournal(ctx microservice.IContext) error {
 		}
 	}
 
-	idx, err := h.svc.CreateJournal(holdingCode, authUsername, *docReq)
+	idx, err := h.svc.CreateJournal(holdingCode, userInfo, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -266,7 +267,7 @@ func (h JournalHttp) UpdateJournal(ctx microservice.IContext) error {
 		return err
 	}
 
-	oldDocNo, newDocNo, err := h.svc.UpdateJournal(id, holdingCode, authUsername, *docReq)
+	oldDocNo, newDocNo, err := h.svc.UpdateJournal(id, holdingCode, userInfo, *docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -330,7 +331,7 @@ func (h JournalHttp) DeleteJournal(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.DeleteJournal(id, holdingCode, authUsername)
+	err = h.svc.DeleteJournal(id, holdingCode, userInfo)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -365,7 +366,6 @@ func (h JournalHttp) DeleteJournal(ctx microservice.IContext) error {
 func (h JournalHttp) DeleteJournalByGUIDs(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	holdingCode := userInfo.HoldingCode
-	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
 
@@ -377,7 +377,7 @@ func (h JournalHttp) DeleteJournalByGUIDs(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.DeleteJournalByGUIDs(holdingCode, authUsername, docReq)
+	err = h.svc.DeleteJournalByGUIDs(holdingCode, userInfo, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -404,11 +404,10 @@ func (h JournalHttp) DeleteJournalByGUIDs(ctx microservice.IContext) error {
 func (h JournalHttp) DeleteJournalByBatchID(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	holdingCode := userInfo.HoldingCode
-	authUsername := userInfo.Username
 
 	batchID := ctx.Param("batchid")
 
-	err := h.svc.DeleteJournalByBatchID(holdingCode, authUsername, batchID)
+	err := h.svc.DeleteJournalByBatchID(holdingCode, userInfo, batchID)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -688,7 +687,6 @@ func (h JournalHttp) SearchJournal(ctx microservice.IContext) error {
 func (h JournalHttp) SaveBulk(ctx microservice.IContext) error {
 
 	userInfo := ctx.UserInfo()
-	authUsername := userInfo.Username
 	holdingCode := userInfo.HoldingCode
 
 	input := ctx.ReadInput()
@@ -701,7 +699,7 @@ func (h JournalHttp) SaveBulk(ctx microservice.IContext) error {
 		return err
 	}
 
-	bulkResponse, err := h.svc.SaveInBatch(holdingCode, authUsername, dataReq)
+	bulkResponse, err := h.svc.SaveInBatch(holdingCode, userInfo, dataReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

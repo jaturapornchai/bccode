@@ -288,7 +288,7 @@ test("warehouse — create/edit/delete for warehouse, location, and bin", async 
 test("warehouse — company scope: warehouse restriction + location subset UI and API", async ({ page, request }) => {
   const uid = Date.now().toString().slice(-6);
   const MAINAPI = "http://localhost:8888";
-  const nameX = (name: string) => [{ code: "th", name, isauto: false, isdelete: false }];
+  const nameX = (name: string) => [{ code: "th", name }];
 
   // Bootstrap auth via a throwaway page load first, purely to get a bearer token for the setup API
   // calls below — the real page (with companiesList fetched fresh) opens after both companies exist,

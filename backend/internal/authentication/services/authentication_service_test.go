@@ -7,6 +7,7 @@ import (
 	"smlcloudplatform/internal/authentication/services"
 	"smlcloudplatform/internal/firebase"
 	"smlcloudplatform/internal/line"
+	"smlcloudplatform/pkg/apperr"
 	"smlcloudplatform/pkg/microservice"
 	micromodels "smlcloudplatform/pkg/microservice/models"
 	"testing"
@@ -21,7 +22,7 @@ import (
 
 func mockLoginData(authRepo *AuthenticationRepositoryMock, shopUserRepo *ShopUserRepositoryMock, microAuthServiceMock *AuthServiceMock) {
 
-	holdingCode := "HOLDING_CODE_TEST"
+	holdingCode := "holdingtest"
 	role := uint8(2)
 
 	tokenMock := "TOKEN_MOCK"
@@ -70,7 +71,7 @@ func mockLoginData(authRepo *AuthenticationRepositoryMock, shopUserRepo *ShopUse
 		UID:      userDoc1.UID,
 	}).Return(tokenMock, nil)
 
-	microAuthServiceMock.On("SelectShop", microservice.AUTHTYPE_BEARER, tokenMock, holdingCode, role).Return(nil)
+	microAuthServiceMock.On("SelectShop", microservice.AUTHTYPE_BEARER, tokenMock, holdingCode, "", role).Return(nil)
 
 	shopUser := models.ShopUser{}
 	shopUser.ID = MockObjectID()
@@ -82,14 +83,16 @@ func mockLoginData(authRepo *AuthenticationRepositoryMock, shopUserRepo *ShopUse
 	//shopUser
 	shopUserRepo.On("FindByHoldingCodeAndUserUID", holdingCode, userDoc1.UID).Return(shopUser, nil)
 	shopUserRepo.On("FindByHoldingCodeAndUsername", holdingCode, userDoc1.Username).Return(shopUser, nil)
+	shopUserRepo.On("ResolveHoldingCodeByHoldingCode", holdingCode).Return(holdingCode, nil)
 
-	shopUserRepo.On("FindByHoldingCodeAndUserUID", "HOLDING_CODE_INVALID", userDoc1.UID).Return(models.ShopUser{}, nil)
-	shopUserRepo.On("FindByHoldingCodeAndUsername", "HOLDING_CODE_INVALID", userDoc1.Username).Return(models.ShopUser{}, nil)
+	shopUserRepo.On("ResolveHoldingCodeByHoldingCode", "holdingmissing").Return("holdingmissing", nil)
+	shopUserRepo.On("FindByHoldingCodeAndUserUID", "holdingmissing", userDoc1.UID).Return(models.ShopUser{}, nil)
+	shopUserRepo.On("FindByHoldingCodeAndUsername", "holdingmissing", userDoc1.Username).Return(models.ShopUser{}, nil)
 	shopUserRepo.On("UpdateLastAccess", holdingCode, userDoc1.Username, MockTime()).Return(nil)
 }
 
 func TestAuthService_Login(t *testing.T) {
-	holdingCode := "HOLDING_CODE_TEST"
+	holdingCode := "holdingtest"
 
 	authRepo := new(AuthenticationRepositoryMock)
 	shopUserRepo := new(ShopUserRepositoryMock)
@@ -133,7 +136,7 @@ func TestAuthService_Login(t *testing.T) {
 		{
 			name: "login failure invalid holding code",
 			args: args{
-				holdingCode: "HOLDING_CODE_INVALID",
+				holdingCode: "holdingmissing",
 				username:    "tester1",
 				password:    "tester1",
 			},
@@ -210,6 +213,90 @@ func TestAuthService_Login(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAuthService_LoginFlagsDefaultPassword(t *testing.T) {
+	authRepo := new(AuthenticationRepositoryMock)
+	shopUserRepo := new(ShopUserRepositoryMock)
+	shopUserAccessLogRepo := new(ShopUserAccessLogRepositoryMock)
+	smsRepo := new(SMSRepositoryMock)
+	microAuthServiceMock := &AuthServiceMock{}
+
+	user := &models.UserDoc{}
+	user.UID = "uid-default-user"
+	user.Username = "default-user"
+	user.Name = "ผู้ใช้เริ่มต้น"
+	user.Password = models.DefaultUserPassword
+	authRepo.On("FindUser", user.Username).Return(user, nil)
+
+	userInfo := micromodels.UserInfo{
+		Username:           user.Username,
+		Name:               user.Name,
+		UID:                user.UID,
+		MustChangePassword: true,
+	}
+	microAuthServiceMock.On("GenerateTokenWithRedis", microservice.AUTHTYPE_BEARER, userInfo).Return("bearer", nil)
+	microAuthServiceMock.On("GenerateTokenWithRedis", microservice.AUTHTYPE_REFRESH, userInfo).Return("refresh", nil)
+
+	authService := services.NewAuthenticationService(
+		authRepo, shopUserRepo, shopUserAccessLogRepo, smsRepo, microAuthServiceMock,
+		MockRandomString, MockRandomNumber, MockGUID, MockHashPassword, MockCheckPasswordHash,
+		MockTime, MockFirebaseAdapter(), MockLineAdapter())
+
+	result, err := authService.Login(&models.UserLoginRequest{
+		UsernameField: models.UsernameField{Username: user.Username},
+		UserPassword:  models.UserPassword{Password: models.DefaultUserPassword},
+	}, models.AuthenticationContext{Ip: "localhost"})
+
+	assert.NoError(t, err)
+	assert.True(t, result.MustChangePassword)
+}
+
+func TestAuthService_OTPLoginFlagsDefaultPassword(t *testing.T) {
+	authRepo := new(AuthenticationRepositoryMock)
+	shopUserRepo := new(ShopUserRepositoryMock)
+	shopUserAccessLogRepo := new(ShopUserAccessLogRepositoryMock)
+	smsRepo := new(SMSRepositoryMock)
+	microAuthServiceMock := &AuthServiceMock{}
+
+	user := &models.UserDoc{}
+	user.UID = "uid-default-otp"
+	user.Username = "default-otp"
+	user.PhoneNumber = "0812345678"
+	user.Password = models.DefaultUserPassword
+	smsRepo.On("VerifyOTP", "ref", "123456").Return(true, nil)
+	authRepo.On("FindByIdentity", "phonenumber", user.PhoneNumber).Return(user, nil)
+	userInfo := micromodels.UserInfo{Username: user.Username, UID: user.UID, MustChangePassword: true}
+	microAuthServiceMock.On("GenerateTokenWithRedis", microservice.AUTHTYPE_BEARER, userInfo).Return("bearer", nil)
+	microAuthServiceMock.On("GenerateTokenWithRedis", microservice.AUTHTYPE_REFRESH, userInfo).Return("refresh", nil)
+
+	authService := services.NewAuthenticationService(
+		authRepo, shopUserRepo, shopUserAccessLogRepo, smsRepo, microAuthServiceMock,
+		MockRandomString, MockRandomNumber, MockGUID, MockHashPassword, MockCheckPasswordHash,
+		MockTime, MockFirebaseAdapter(), MockLineAdapter())
+
+	result, err := authService.LoginWithPhoneNumberOTP(&models.PhoneNumberOTPRequest{
+		PhoneNumber: user.PhoneNumber,
+		RefCode:     "ref",
+		OTP:         "123456",
+	}, models.AuthenticationContext{})
+
+	assert.NoError(t, err)
+	assert.True(t, result.MustChangePassword)
+}
+
+func TestAuthService_RefreshTokenPreservesDefaultPasswordFlag(t *testing.T) {
+	microAuthServiceMock := &AuthServiceMock{}
+	microAuthServiceMock.On("RefreshToken", "refresh-in").Return("bearer", "refresh-out", true, nil)
+	authService := services.NewAuthenticationService(
+		new(AuthenticationRepositoryMock), new(ShopUserRepositoryMock), new(ShopUserAccessLogRepositoryMock),
+		new(SMSRepositoryMock), microAuthServiceMock, MockRandomString, MockRandomNumber, MockGUID,
+		MockHashPassword, MockCheckPasswordHash, MockTime, MockFirebaseAdapter(), MockLineAdapter())
+
+	result, err := authService.RefreshToken(models.TokenLoginRequest{Token: "refresh-in"})
+
+	assert.NoError(t, err)
+	assert.True(t, result.MustChangePassword)
 }
 
 func TestAuthService_Register(t *testing.T) {
@@ -386,6 +473,7 @@ func TestAuthService_UpdatePassword(t *testing.T) {
 	userDocUpdate.UpdatedAt = MockTime()
 
 	authRepo.On("UpdateUser", "user_update", userDocUpdate).Return(nil)
+	microAuthServiceMock.On("RevokeUserTokens", "user_update").Return(nil)
 
 	type args struct {
 		username        string
@@ -444,6 +532,29 @@ func TestAuthService_UpdatePassword(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAuthService_UpdatePasswordRejectsDefaultPassword(t *testing.T) {
+	authService := services.NewAuthenticationService(
+		new(AuthenticationRepositoryMock),
+		new(ShopUserRepositoryMock),
+		new(ShopUserAccessLogRepositoryMock),
+		new(SMSRepositoryMock),
+		&AuthServiceMock{},
+		MockRandomString,
+		MockRandomNumber,
+		MockGUID,
+		MockHashPassword,
+		MockCheckPasswordHash,
+		MockTime,
+		MockFirebaseAdapter(),
+		MockLineAdapter())
+
+	err := authService.UpdatePassword("default-user", models.DefaultUserPassword, models.DefaultUserPassword)
+	appErr := apperr.FromError(err)
+	assert.NotNil(t, appErr)
+	assert.Equal(t, "VALIDATION_FAILED", appErr.Code)
+	assert.Equal(t, "newpassword", appErr.Field)
 }
 
 func TestAuthService_ProfileFlagsDefaultPassword(t *testing.T) {
@@ -514,6 +625,7 @@ func TestAuthService_ResetPasswordToDefault(t *testing.T) {
 	shopUserRepo.On("FindByHoldingCodeAndUsername", "shoptest", "target_user").Return(targetShopUser, nil)
 	authRepo.On("FindUser", "target_user").Return(targetUser, nil)
 	authRepo.On("UpdateUser", "target_user", expectedUser).Return(nil)
+	microAuthServiceMock.On("RevokeUserTokens", "target_user").Return(nil)
 
 	authService := services.NewAuthenticationService(
 		authRepo,
@@ -535,6 +647,37 @@ func TestAuthService_ResetPasswordToDefault(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestAuthService_ResetPasswordRejectsDisabledAdmin(t *testing.T) {
+	authRepo := new(AuthenticationRepositoryMock)
+	shopUserRepo := new(ShopUserRepositoryMock)
+	authUser := models.ShopUser{}
+	authUser.HoldingCode = "shoptest"
+	authUser.Username = "disabled_admin"
+	authUser.Role = models.ROLE_ADMIN
+	authUser.IsAccessDisabled = true
+	shopUserRepo.On("FindByHoldingCodeAndUsername", "shoptest", "disabled_admin").Return(authUser, nil)
+
+	authService := services.NewAuthenticationService(
+		authRepo,
+		shopUserRepo,
+		new(ShopUserAccessLogRepositoryMock),
+		new(SMSRepositoryMock),
+		&AuthServiceMock{},
+		MockRandomString,
+		MockRandomNumber,
+		MockGUID,
+		MockHashPassword,
+		MockCheckPasswordHash,
+		MockTime,
+		MockFirebaseAdapter(),
+		MockLineAdapter())
+
+	err := authService.ResetPasswordToDefault("shoptest", "disabled_admin", "target_user")
+
+	assert.EqualError(t, err, "permission denied")
+	shopUserRepo.AssertNotCalled(t, "FindByHoldingCodeAndUsername", "shoptest", "target_user")
+}
+
 func TestAuthService_AccessShop(t *testing.T) {
 	authRepo := new(AuthenticationRepositoryMock)
 	shopUserRepo := new(ShopUserRepositoryMock)
@@ -550,8 +693,13 @@ func TestAuthService_AccessShop(t *testing.T) {
 	shopUser.Username = "user_access_shop"
 	shopUser.HoldingCode = "shoptest"
 	shopUser.Role = uint8(0)
+	shopUser.AccessScopes = []models.AccessScope{{ScopeType: "company", BusinessCode: "COMP-A"}}
 
 	shopUserRepo.On("FindByHoldingCodeAndUsername", "shoptest", "user_access_shop").Return(shopUser, nil)
+	branchOnlyShopUser := shopUser
+	branchOnlyShopUser.Username = "branch_only_user"
+	branchOnlyShopUser.AccessScopes = []models.AccessScope{{ScopeType: "branch", BusinessCode: "COMP-A", BranchCode: "00001"}}
+	shopUserRepo.On("FindByHoldingCodeAndUsername", "shoptest", "branch_only_user").Return(branchOnlyShopUser, nil)
 
 	shopUserRepo.On("FindByHoldingCodeAndUsername", "shoptestinvalid", "user_access_shop").Return(models.ShopUser{}, nil)
 
@@ -584,12 +732,14 @@ func TestAuthService_AccessShop(t *testing.T) {
 			log.LastAccessedAt.Equal(MockTime())
 	})).Return(nil)
 
-	microAuthServiceMock.On("SelectShop", microservice.AUTHTYPE_BEARER, "valid_token", "shoptest", uint8(0)).Return(nil)
-	microAuthServiceMock.On("SelectShop", microservice.AUTHTYPE_BEARER, "valid_token", "shopdisabledcreator", uint8(0)).Return(nil)
-	microAuthServiceMock.On("SelectShop", microservice.AUTHTYPE_BEARER, "valid_token_invalid", "shoptestinvalid", uint8(0)).Return(errors.New("select shop failed"))
+	microAuthServiceMock.On("SelectShop", microservice.AUTHTYPE_BEARER, "valid_token", "shoptest", "", uint8(0)).Return(nil)
+	microAuthServiceMock.On("SelectShop", microservice.AUTHTYPE_BEARER, "valid_token", "shoptest", "COMP-A", uint8(0)).Return(nil)
+	microAuthServiceMock.On("SelectShop", microservice.AUTHTYPE_BEARER, "valid_token", "shopdisabledcreator", "", uint8(0)).Return(nil)
+	microAuthServiceMock.On("SelectShop", microservice.AUTHTYPE_BEARER, "valid_token_invalid", "shoptestinvalid", "", uint8(0)).Return(errors.New("select shop failed"))
 
 	type args struct {
 		holdingCode         string
+		businessCode        string
 		username            string
 		authorizationHeader string
 	}
@@ -607,6 +757,36 @@ func TestAuthService_AccessShop(t *testing.T) {
 				authorizationHeader: "authorization_header_valid",
 			},
 			wantErr: false,
+		},
+		{
+			name: "success access allowed company",
+			args: args{
+				holdingCode:         "shoptest",
+				businessCode:        "comp-a",
+				username:            "user_access_shop",
+				authorizationHeader: "authorization_header_valid",
+			},
+			wantErr: false,
+		},
+		{
+			name: "failure company scope denied",
+			args: args{
+				holdingCode:         "shoptest",
+				businessCode:        "COMP-B",
+				username:            "user_access_shop",
+				authorizationHeader: "authorization_header_valid",
+			},
+			wantErr: true,
+		},
+		{
+			name: "failure branch-only scope cannot select company",
+			args: args{
+				holdingCode:         "shoptest",
+				businessCode:        "COMP-A",
+				username:            "branch_only_user",
+				authorizationHeader: "authorization_header_valid",
+			},
+			wantErr: true,
 		},
 		{
 			name: "failure authorization empty",
@@ -675,7 +855,7 @@ func TestAuthService_AccessShop(t *testing.T) {
 				MockTime,
 				MockFirebaseAdapter(),
 				MockLineAdapter())
-			err := authService.AccessShop(tt.args.holdingCode, tt.args.username, "", tt.args.authorizationHeader, authContext)
+			err := authService.AccessShop(tt.args.holdingCode, tt.args.businessCode, tt.args.username, "", tt.args.authorizationHeader, authContext)
 
 			if tt.wantErr {
 				assert.NotNil(t, err)
@@ -923,9 +1103,9 @@ func (m *AuthServiceMock) GenerateTokenWithRedisExpire(tokenType microservice.To
 	return args.String(0), args.Error(1)
 }
 
-func (m *AuthServiceMock) SelectShop(tokenType microservice.TokenType, tokenStr string, holdingCode string, role uint8) error {
+func (m *AuthServiceMock) SelectShop(tokenType microservice.TokenType, tokenStr string, holdingCode string, businessCode string, role uint8) error {
 
-	args := m.Called(tokenType, tokenStr, holdingCode, role)
+	args := m.Called(tokenType, tokenStr, holdingCode, businessCode, role)
 	return args.Error(0)
 }
 
@@ -939,9 +1119,14 @@ func (m *AuthServiceMock) DeleteToken(tokenType microservice.TokenType, tokenStr
 	return args.Error(0)
 }
 
-func (m *AuthServiceMock) RefreshToken(token string) (string, string, error) {
+func (m *AuthServiceMock) RefreshToken(token string) (string, string, bool, error) {
 	args := m.Called(token)
-	return args.String(0), args.String(1), args.Error(2)
+	return args.String(0), args.String(1), args.Bool(2), args.Error(3)
+}
+
+func (m *AuthServiceMock) RevokeUserTokens(username string) error {
+	args := m.Called(username)
+	return args.Error(0)
 }
 
 type SMSRepositoryMock struct {

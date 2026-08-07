@@ -67950,12 +67950,6 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 255
                 },
-                "isauto": {
-                    "type": "boolean"
-                },
-                "isdelete": {
-                    "type": "boolean"
-                },
                 "name": {
                     "type": "string",
                     "maxLength": 255
@@ -67973,12 +67967,6 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 255,
                     "minLength": 1
-                },
-                "isauto": {
-                    "type": "boolean"
-                },
-                "isdelete": {
-                    "type": "boolean"
                 },
                 "name": {
                     "type": "string",

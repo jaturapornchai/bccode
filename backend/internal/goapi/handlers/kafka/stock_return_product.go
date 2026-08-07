@@ -186,10 +186,8 @@ func ConvertStockReturnProductMongoDocToProcessModel(docData models.StockReturnP
 			if detail.ItemNames != nil {
 				for _, name := range detail.ItemNames {
 					itemNames = append(itemNames, models.LanguageModel{
-						Code:     name.Code,
-						Name:     name.Name,
-						IsAuto:   name.IsAuto,
-						IsDelete: name.IsDelete,
+						Code: name.Code,
+						Name: name.Name,
 					})
 				}
 			}
@@ -220,10 +218,8 @@ func ConvertStockReturnProductMongoDocToProcessModel(docData models.StockReturnP
 		logger.Info("ConvertStockReturnProductMongoDocToProcessModel: Processing %d branch names", len(docData.Branch.Names))
 		for _, name := range docData.Branch.Names {
 			branchNames = append(branchNames, models.LanguageModel{
-				Code:     name.Code,
-				Name:     name.Name,
-				IsAuto:   name.IsAuto,
-				IsDelete: name.IsDelete,
+				Code: name.Code,
+				Name: name.Name,
 			})
 		}
 	} else {
