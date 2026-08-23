@@ -1,6 +1,0 @@
-interface:
-  display_name: "Browser QA Human Flow"
-  short_description: "Test web flows naturally and capture reproducible bugs"
-  default_prompt: "Use $run-browser-qa to test this web flow like a real user and report reproducible bugs."
-policy:
-  allow_implicit_invocation: true

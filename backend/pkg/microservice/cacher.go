@@ -35,6 +35,7 @@ type ICacher interface {
 	HGet(key string, field string) (string, error)
 	HGetAll(key string) (map[string]string, error)
 	HMGet(key string, fields []string) ([]interface{}, error)
+	ConsumeHash(key string, markerKey string, fields []string, markerTTL time.Duration) ([]interface{}, string, bool, error)
 	HDel(key string, fields ...string) error
 	HExists(key string, field string) (bool, error)
 	HFields(key string, pattern string) ([]string, error)
@@ -856,6 +857,67 @@ func (cache *Cacher) HMGet(key string, fields []string) ([]interface{}, error) {
 	}
 
 	return vals, nil
+}
+
+// ConsumeHash atomically reads selected hash fields, records a marker, and deletes
+// the hash. It is used for one-time credentials such as refresh tokens. When the
+// hash was already consumed, marker contains the session identifier recorded by
+// the first consumer so callers can revoke the whole token family on replay.
+func (cache *Cacher) ConsumeHash(key string, markerKey string, fields []string, markerTTL time.Duration) ([]interface{}, string, bool, error) {
+	c, err := cache.getClient()
+	if err != nil {
+		return nil, "", false, err
+	}
+	if len(fields) == 0 {
+		return nil, "", false, fmt.Errorf("consume hash fields are required")
+	}
+
+	script := redis.NewScript(`
+local values = redis.call('HMGET', KEYS[1], unpack(ARGV, 2))
+if values[1] then
+  local marker = values[1]
+  redis.call('SET', KEYS[2], marker, 'PX', ARGV[1])
+  redis.call('DEL', KEYS[1])
+  local result = {1, marker}
+  for i = 1, #values do
+    result[#result + 1] = values[i]
+  end
+  return result
+end
+local marker = redis.call('GET', KEYS[2])
+return {0, marker or ''}
+`)
+
+	args := make([]interface{}, 0, len(fields)+1)
+	markerMillis := markerTTL.Milliseconds()
+	if markerMillis < 1 {
+		markerMillis = 1
+	}
+	args = append(args, markerMillis)
+	for _, field := range fields {
+		args = append(args, field)
+	}
+
+	raw, err := script.Run(context.Background(), c, []string{key, markerKey}, args...).Result()
+	if err != nil {
+		return nil, "", false, err
+	}
+	items, ok := raw.([]interface{})
+	if !ok || len(items) < 2 {
+		return nil, "", false, fmt.Errorf("consume hash returned invalid result")
+	}
+	consumed, ok := items[0].(int64)
+	if !ok {
+		return nil, "", false, fmt.Errorf("consume hash returned invalid status")
+	}
+	marker := cacheString(items[1])
+	if consumed == 0 {
+		return nil, marker, false, nil
+	}
+	if len(items) != len(fields)+2 {
+		return nil, "", false, fmt.Errorf("consume hash returned incomplete fields")
+	}
+	return items[2:], marker, true, nil
 }
 
 func (cache *Cacher) HGetAll(key string) (map[string]string, error) {

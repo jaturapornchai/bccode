@@ -1,5 +1,6 @@
 "use client";
 
+import { authFetch } from "@/lib/client-auth-session";
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronDown,
@@ -601,7 +602,7 @@ export function ProductGroupTreeView({
   const saveXSorts = async (updateList: XSortPayload[]) => {
     if (!auth || !workspace || updateList.length === 0) return;
     const payload = validateXSortPayload(updateList);
-    const response = await fetch(
+    const response = await authFetch(
       `/api/system-settings/productgroup/xsort?holdingcode=${encodeURIComponent(workspace.shop.holdingcode)}`,
       {
         method: "PUT",
@@ -621,7 +622,7 @@ export function ProductGroupTreeView({
 
   const saveGroupRecord = async (guid: string, payload: SettingRecord) => {
     if (!auth || !workspace) return;
-    const response = await fetch(
+    const response = await authFetch(
       `/api/system-settings/productgroup/${encodeURIComponent(guid)}?holdingcode=${encodeURIComponent(workspace.shop.holdingcode)}`,
       {
         method: "PUT",

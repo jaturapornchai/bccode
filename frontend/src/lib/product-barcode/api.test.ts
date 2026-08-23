@@ -14,8 +14,8 @@ describe("toQuickBarcodePayload", () => {
       itemunitguid: "unit-guid",
       itemunitcode: " pcs ",
       itemunitnames: [{ code: "TH", name: " ชิ้น " }],
-      dividevalue: 1,
-      standvalue: 12,
+      dividevalue: 99,
+      standvalue: 999,
       ismainbarcode: true,
       qty: 99,
       prices: [{ keynumber: 1, price: 250 }],
@@ -48,9 +48,6 @@ describe("toQuickBarcodePayload", () => {
       itemunitguid: "unit-guid",
       itemunitcode: "PCS",
       itemunitnames: [{ code: "th", name: "ชิ้น" }],
-      dividevalue: 1,
-      standvalue: 12,
-      ismainbarcode: true,
       imageuri: "/goapi/s3/file/HOLDING-01/products/main.jpg",
       images: [
         {
@@ -67,6 +64,9 @@ describe("toQuickBarcodePayload", () => {
       ],
       description: "รายละเอียดเฉพาะบาร์โค้ด",
     });
+    expect(payload).not.toHaveProperty("dividevalue");
+    expect(payload).not.toHaveProperty("standvalue");
+    expect(payload).not.toHaveProperty("ismainbarcode");
     expect(payload).not.toHaveProperty("qty");
     expect(payload).not.toHaveProperty("prices");
     expect(payload).not.toHaveProperty("fixedcost");

@@ -160,8 +160,8 @@ export function TabProductMarketplace({
     let failedCount = 0;
     const logs: string[] = [];
 
-    let nextProductMaps = [...(value.marketplaceproducts || [])];
-    let nextRefBarcodes = [...(value.refbarcodes || [])];
+    const nextProductMaps = [...(value.marketplaceproducts || [])];
+    const nextRefBarcodes = [...(value.refbarcodes || [])];
 
     for (let i = 1; i < lines.length; i++) {
       const row = lines[i].split(delimiter).map(v => v.trim());
@@ -205,7 +205,7 @@ export function TabProductMarketplace({
 
       const mappings = entry.marketplaceskumappings || [];
       const matchMapIdx = mappings.findIndex(m => m.platform === platform && m.holdingcode === holdingCode);
-      let nextMappings = [...mappings];
+      const nextMappings = [...mappings];
 
       const mappingData: MarketplaceSKUMap = {
         ...emptyMarketplaceSKUMap(platform, holdingCode, marketItemId),
@@ -323,7 +323,7 @@ export function TabProductMarketplace({
         if (idx !== barcodeIdx) return row;
         const mappings = row.marketplaceskumappings || [];
         const matchIdx = mappings.findIndex(m => m.platform === platform && m.holdingcode === holdingCode);
-        let nextMappings = [...mappings];
+        const nextMappings = [...mappings];
         if (matchIdx >= 0) {
           nextMappings[matchIdx] = { ...nextMappings[matchIdx], ...fields };
         } else {

@@ -1,5 +1,6 @@
 "use client";
 
+import { authFetch } from "@/lib/client-auth-session";
 import { Check, Loader2, UserRound } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -323,7 +324,7 @@ export function PermissionLinkUserSelector({
           q: searchText,
         });
         applyWorkspaceTenantParams(searchParams, workspace);
-        const response = await fetch(
+        const response = await authFetch(
           `/api/system-settings/${userConfig.slug}?${searchParams.toString()}`,
           {
             headers: requestHeaders(auth),
@@ -549,7 +550,7 @@ export function PermissionLinkMultiSelectEditor({
           offset: "0",
         });
         applyWorkspaceTenantParams(searchParams, workspace);
-        const response = await fetch(
+        const response = await authFetch(
           `/api/system-settings/${sourceConfig.slug}?${searchParams.toString()}`,
           {
             headers: requestHeaders(auth),

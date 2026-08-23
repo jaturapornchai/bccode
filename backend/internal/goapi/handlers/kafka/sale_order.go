@@ -32,7 +32,7 @@ func OnConsumeMessageSaleOrderDelete(msg string) error {
 		return fmt.Errorf("invalid sale order data")
 	}
 
-	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.DocNo, TRANS_FLAG_SALE_ORDER)
+	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.BusinessCode, docData.DocNo, TRANS_FLAG_SALE_ORDER)
 }
 
 // ProcessSaleOrderDocument - ประมวลผลเอกสาร Sale Order (ใบสั่งขาย)
@@ -79,13 +79,14 @@ func ProcessSaleOrderDocument(msg string) error {
 
 	// Step 4: ลบเอกสารเดิม (upsert behavior)
 	logger.Debug("Step 4: Deleting existing documents...")
-	mypg.DeleteDocPgSql(ctx, db, saleOrderData.DocNo, TRANS_FLAG_SALE_ORDER)
+	mypg.DeleteDocPgSql(ctx, db, saleOrderData.BusinessCode, saleOrderData.DocNo, TRANS_FLAG_SALE_ORDER)
 	logger.Debug("Step 4 completed: Existing documents deleted (if any)")
 
 	// Step 5: แปลงเป็น build-doc structs
 	logger.Debug("Step 5: Converting to build-doc structs...")
 	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, saleOrderData.HoldingCode)
 	docDetailStructs := MapSaleOrderToDocDetailStructs(processData, saleOrderData.HoldingCode)
+	setDocumentCompany(&docStruct, docDetailStructs, saleOrderData.BusinessCode)
 	logger.Debug("Step 5 completed: Converted to %d doc details", len(docDetailStructs))
 
 	// Step 6: สร้าง document references (ถ้ามี)
@@ -231,7 +232,6 @@ func MapSaleOrderToDocDetailStructs(processData models.ProcessMongoTransModel, h
 			CalcSeq:         1,
 			ItemCode:        detail.ItemCode,
 			Description:     GetItemName(detail.ItemNames),
-			BarcodeMain:     detail.Barcode,
 			Barcode:         detail.Barcode,
 			UnitCode:        detail.UnitCode,
 			WhCode:          detail.WhCode,

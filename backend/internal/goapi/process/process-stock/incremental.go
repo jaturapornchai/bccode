@@ -28,6 +28,14 @@ var DefaultIncrementalConfig = IncrementalConfig{
 // CalculateItemChecksum - Calculate MD5 checksum for an item's docdetail records
 // The checksum is based on all relevant fields that affect cost calculation
 func CalculateItemChecksum(ctx context.Context, db *sql.DB, holdingCode, itemCode string) (string, error) {
+	return calculateItemChecksum(ctx, db, "", itemCode)
+}
+
+func CalculateItemChecksumCompany(ctx context.Context, db *sql.DB, holdingCode, businessCode, itemCode string) (string, error) {
+	return calculateItemChecksum(ctx, db, strings.ToUpper(strings.TrimSpace(businessCode)), itemCode)
+}
+
+func calculateItemChecksum(ctx context.Context, db *sql.DB, businessCode, itemCode string) (string, error) {
 	// Build query with transflags
 	transFlagStrings := make([]string, len(myglobal.TransFlagsToProcess))
 	for i, flag := range myglobal.TransFlagsToProcess {
@@ -53,7 +61,21 @@ func CalculateItemChecksum(ctx context.Context, db *sql.DB, holdingCode, itemCod
 		ORDER BY docdatetime, linenumber, docno
 	`, transFlagForQuery)
 
-	rows, err := db.QueryContext(ctx, query, itemCode)
+	queryArgs := []any{itemCode}
+	if businessCode != "" {
+		query = fmt.Sprintf(`
+		SELECT
+			COALESCE(docdatetime::text, ''), COALESCE(docno, ''), COALESCE(linenumber::text, '0'),
+			COALESCE(transflag::text, '0'), COALESCE(totalqty::text, '0'), COALESCE(priceexcludevat::text, '0'),
+			COALESCE(sumamount::text, '0'), COALESCE(unitstand::text, '1'), COALESCE(unitdivide::text, '1')
+		FROM docdetail
+		WHERE businesscode = $1 AND itemcode = $2 AND transflag IN (%s)
+		ORDER BY docdatetime, linenumber, docno
+	`, transFlagForQuery)
+		queryArgs = []any{businessCode, itemCode}
+	}
+
+	rows, err := db.QueryContext(ctx, query, queryArgs...)
 	if err != nil {
 		return "", fmt.Errorf("query docdetail for checksum: %w", err)
 	}
@@ -108,8 +130,16 @@ func CalculateItemChecksum(ctx context.Context, db *sql.DB, holdingCode, itemCod
 // CheckItemChanged - Check if an item's data has changed since last calculation
 // Returns true if the item needs recalculation, false if it can be skipped
 func CheckItemChanged(ctx context.Context, db *sql.DB, holdingCode, itemCode string) (bool, string, error) {
+	return checkItemChanged(ctx, db, holdingCode, "", itemCode)
+}
+
+func CheckItemChangedCompany(ctx context.Context, db *sql.DB, holdingCode, businessCode, itemCode string) (bool, string, error) {
+	return checkItemChanged(ctx, db, holdingCode, strings.ToUpper(strings.TrimSpace(businessCode)), itemCode)
+}
+
+func checkItemChanged(ctx context.Context, db *sql.DB, holdingCode, businessCode, itemCode string) (bool, string, error) {
 	// Calculate current checksum
-	currentChecksum, err := CalculateItemChecksum(ctx, db, holdingCode, itemCode)
+	currentChecksum, err := calculateItemChecksum(ctx, db, businessCode, itemCode)
 	if err != nil {
 		// If we can't calculate checksum, assume changed for safety
 		return true, "", fmt.Errorf("calculate checksum: %w", err)
@@ -119,7 +149,13 @@ func CheckItemChanged(ctx context.Context, db *sql.DB, holdingCode, itemCode str
 	if currentChecksum == "" {
 		// Check if there's existing data in processstockcost
 		var count int
-		err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM processstockcost WHERE itemcode = $1 LIMIT 1", itemCode).Scan(&count)
+		query := "SELECT COUNT(*) FROM processstockcost WHERE itemcode = $1 LIMIT 1"
+		args := []any{itemCode}
+		if businessCode != "" {
+			query = "SELECT COUNT(*) FROM processstockcost WHERE businesscode = $1 AND itemcode = $2 LIMIT 1"
+			args = []any{businessCode, itemCode}
+		}
+		err := db.QueryRowContext(ctx, query, args...).Scan(&count)
 		if err != nil {
 			return true, currentChecksum, nil
 		}
@@ -129,10 +165,13 @@ func CheckItemChanged(ctx context.Context, db *sql.DB, holdingCode, itemCode str
 
 	// Get last checksum from stockcalculationstate
 	var lastChecksum sql.NullString
-	err = db.QueryRowContext(ctx,
-		"SELECT lastchecksum FROM stockcalculationstate WHERE holdingcode = $1 AND itemcode = $2",
-		holdingCode, itemCode,
-	).Scan(&lastChecksum)
+	stateQuery := "SELECT lastchecksum FROM stockcalculationstate WHERE holdingcode = $1 AND itemcode = $2"
+	stateArgs := []any{holdingCode, itemCode}
+	if businessCode != "" {
+		stateQuery = "SELECT lastchecksum FROM stockcalculationstate_company WHERE holdingcode = $1 AND businesscode = $2 AND itemcode = $3"
+		stateArgs = []any{holdingCode, businessCode, itemCode}
+	}
+	err = db.QueryRowContext(ctx, stateQuery, stateArgs...).Scan(&lastChecksum)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -169,6 +208,21 @@ func UpdateItemChecksum(ctx context.Context, db *sql.DB, holdingCode, itemCode, 
 		return fmt.Errorf("upsert stockcalculationstate: %w", err)
 	}
 
+	return nil
+}
+
+func UpdateItemChecksumCompany(ctx context.Context, db *sql.DB, holdingCode, businessCode, itemCode, checksum string) error {
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO stockcalculationstate_company (holdingcode, businesscode, itemcode, lastchecksum, lastcalctime, version, createdat, updatedat)
+		VALUES ($1, $2, $3, $4, NOW(), 1, NOW(), NOW())
+		ON CONFLICT (holdingcode, businesscode, itemcode) DO UPDATE
+		SET lastchecksum = EXCLUDED.lastchecksum,
+			lastcalctime = EXCLUDED.lastcalctime,
+			version = stockcalculationstate_company.version + 1,
+			updatedat = NOW()`, holdingCode, strings.ToUpper(strings.TrimSpace(businessCode)), itemCode, checksum)
+	if err != nil {
+		return fmt.Errorf("upsert company stockcalculationstate: %w", err)
+	}
 	return nil
 }
 
@@ -242,5 +296,24 @@ func EnsureStockCalculationStateTable(ctx context.Context, db *sql.DB) error {
 		}
 	}
 
+	return nil
+}
+
+func EnsureCompanyStockCalculationStateTable(ctx context.Context, db *sql.DB) error {
+	_, err := db.ExecContext(ctx, `
+		CREATE TABLE IF NOT EXISTS stockcalculationstate_company (
+			holdingcode VARCHAR(100) NOT NULL,
+			businesscode VARCHAR(100) NOT NULL,
+			itemcode VARCHAR(100) NOT NULL,
+			lastchecksum CHAR(32),
+			lastcalctime TIMESTAMPTZ DEFAULT NOW(),
+			version INTEGER DEFAULT 0,
+			createdat TIMESTAMPTZ DEFAULT NOW(),
+			updatedat TIMESTAMPTZ DEFAULT NOW(),
+			PRIMARY KEY (holdingcode, businesscode, itemcode)
+		)`)
+	if err != nil {
+		return fmt.Errorf("create company stockcalculationstate table: %w", err)
+	}
 	return nil
 }

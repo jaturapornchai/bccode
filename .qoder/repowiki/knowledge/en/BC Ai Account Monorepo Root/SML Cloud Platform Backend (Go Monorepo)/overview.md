@@ -1,1 +1,0 @@
-Go monorepo hosting the main API, multiple microservice binaries, Kafka consumers, migration tools and shared domain packages for a multi-tenant POS/ERP platform.

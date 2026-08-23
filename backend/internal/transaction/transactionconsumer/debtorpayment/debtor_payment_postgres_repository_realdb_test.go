@@ -1,3 +1,5 @@
+//go:build integration
+
 package debtorpayment_test
 
 import (

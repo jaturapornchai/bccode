@@ -1,5 +1,6 @@
 "use client";
 
+import { authFetch } from "@/lib/client-auth-session";
 import {
   Edit3,
   ImageIcon,
@@ -564,7 +565,7 @@ export function ImageUploadFieldEditor({
       const uploadForm = new FormData();
       uploadForm.append("file", toUpload, toUpload.name);
       uploadForm.append("category", `system-settings/${field.key}`);
-      const response = await fetch("/api/upload/image", {
+      const response = await authFetch("/api/upload/image", {
         method: "POST",
         headers: {
           "x-bc-backend-url": session.backendUrl,
@@ -855,7 +856,7 @@ export function ImageGalleryFieldEditor({
       const uploadForm = new FormData();
       uploadForm.append("file", resizedFile, resizedFile.name);
       uploadForm.append("category", `system-settings/${field.key}`);
-      const response = await fetch("/api/upload/image", {
+      const response = await authFetch("/api/upload/image", {
         method: "POST",
         headers: {
           "x-bc-backend-url": auth.backendUrl,

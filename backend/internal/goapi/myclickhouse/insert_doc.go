@@ -149,12 +149,12 @@ func InsertDocDetailListToClickHouse(ctx context.Context, holdingCode string, da
 	insertBatch, err := connClickHouse.PrepareBatch(ctx, fmt.Sprintf(`
 		INSERT INTO %s (
 			holdingcode, branchid, docno, docdatetime, perioddatetime,
-			linenumber, barcode, barcodemain, qty, price, sumamount, discountamount,
+			linenumber, barcode, qty, price, sumamount, discountamount,
 			itemname, itemnames, refguid, sumamountchoice, ischoice, guidfixed, guidpos,
 			guidbranch, transflag, itemcode, unitcode, unitstand, unitdivide, calcflag, calcseq, iscalcstock,
 			pricedoc, sumamountdoc,
 			discountamountdoc, priceexcludevatdoc, sumamountexcludevatdoc, totalvaluevatdoc
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, TableName("docdetail")))
 	if err != nil {
 		return fmt.Errorf("prepare batch: %w", err)
@@ -203,7 +203,7 @@ func InsertDocDetailListToClickHouse(ctx context.Context, holdingCode string, da
 
 		insertBatch.Append(
 			holdingCode, "00000", docDetail.DocNo, docDetail.DocDateTime, docDetail.DocDateTime,
-			docDetail.LineNumber, barcode, docDetail.BarcodeMain, docDetail.TotalQty, docDetail.Price,
+			docDetail.LineNumber, barcode, docDetail.TotalQty, docDetail.Price,
 			docDetail.SumAmount, 0.0, itemName, itemName, "", docDetail.SumAmount, 0, "", "", "",
 			docDetail.TransFlag, itemCode, docDetail.UnitCode, unitStand, unitDivide,
 			int(myglobal.GetTransactionMultiplier(docDetail.TransFlag)), docDetail.CalcSeq,

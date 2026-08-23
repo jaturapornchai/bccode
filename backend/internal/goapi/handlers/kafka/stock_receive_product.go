@@ -29,7 +29,7 @@ func OnConsumeMessageStockReceiveProductDelete(msg string) error {
 		return fmt.Errorf("invalid stock receive product data")
 	}
 
-	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.DocNo, TRANS_FLAG_STOCK_RECEIVE_PRODUCT)
+	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.BusinessCode, docData.DocNo, TRANS_FLAG_STOCK_RECEIVE_PRODUCT)
 }
 
 // ProcessStockReceiveProductDocument - processes stock receive product document following standardized 10-step pattern
@@ -60,12 +60,13 @@ func ProcessStockReceiveProductDocument(docData models.StockReceiveProductStruct
 
 	// Step 3: Delete existing documents from PostgreSQL
 	logger.Info("ProcessStockReceiveProductDocument: Step 3 - Deleting existing documents from PostgreSQL for DocNo=%s", docData.DocNo)
-	mypg.DeleteDocPgSql(ctx, db, docData.DocNo, TRANS_FLAG_STOCK_RECEIVE_PRODUCT)
+	mypg.DeleteDocPgSql(ctx, db, docData.BusinessCode, docData.DocNo, TRANS_FLAG_STOCK_RECEIVE_PRODUCT)
 
 	// Step 4: Convert process model to build-doc structs
 	logger.Info("ProcessStockReceiveProductDocument: Step 4 - Converting process model to build-doc structs")
 	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, docData.HoldingCode)
 	docDetailStructs := MapStockReceiveProductToDocDetailStructs(processData, docData.HoldingCode)
+	setDocumentCompany(&docStruct, docDetailStructs, docData.BusinessCode)
 
 	// Step 5: Create document references
 	logger.Info("ProcessStockReceiveProductDocument: Step 5 - Creating document references")
@@ -121,7 +122,6 @@ func MapStockReceiveProductToDocDetailStructs(processData models.ProcessMongoTra
 			CalcSeq:         1,
 			ItemCode:        detail.ItemCode,
 			Description:     GetItemName(detail.ItemNames),
-			BarcodeMain:     detail.Barcode,
 			Barcode:         detail.Barcode,
 			UnitCode:        detail.UnitCode,
 			WhCode:          detail.WhCode,

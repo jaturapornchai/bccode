@@ -14,11 +14,13 @@ import {
   UserRound,
 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence, type Variants } from "motion/react";
-import { runtimeGoApiUrlForOrigin } from "@/lib/backend-url";
+import { isLoopbackHostname, runtimeGoApiUrlForOrigin } from "@/lib/backend-url";
 import { persistLanguagePreferenceCookies } from "@/lib/backend-language-preload";
+import { setAuthSession } from "@/lib/client-auth-session";
 import { isValidHoldingCode, normalizeHoldingCode } from "@/lib/holding-code";
 import { normalizeLanguage, t, type LanguageCode } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
@@ -53,27 +55,16 @@ const staggerChild: Variants = {
 type LoginState = "idle" | "loading" | "success" | "error";
 type ConnectionState = "idle" | "testing" | "success" | "error";
 type ProviderLoginState = "idle" | "google";
-type AuthMethod = "password" | "google";
-type PendingPasswordChange = {
-  backendUrl: string;
-  token: string;
-  username: string;
-};
-type RuntimeMode = {
-  ready: boolean;
-  sameServerBackend: boolean;
-};
+type AuthMethod = "password" | "google" | "dev";
 type SocialLoginResponse = {
   success?: boolean;
   status?: "pending" | "success" | "failed" | "expired";
   message?: string;
   token?: string;
-  refresh?: string;
   backendUrl?: string;
   user?: {
     username?: string;
     email?: string;
-    isdefaultpassword?: boolean;
     name?: string;
     pictureUrl?: string;
   };
@@ -82,7 +73,6 @@ type LoginProfileResponse = {
   success?: boolean;
   data?: {
     email?: string;
-    isdefaultpassword?: boolean;
     name?: string;
     avatar?: string;
     avatarthumb?: string;
@@ -104,7 +94,6 @@ declare global {
             auto_select?: boolean;
           }) => void;
           renderButton: (parent: HTMLElement, options: Record<string, unknown>) => void;
-          prompt: () => void;
         };
       };
     };
@@ -120,7 +109,6 @@ const storageKeys = {
   legacyRememberPassword: "remember_password",
   rememberUsername: "remember_username",
   holdingCode: "saved_holdingcode",
-  auth: "bc_auth",
 };
 
 export function LoginScreen() {
@@ -137,24 +125,11 @@ export function LoginScreen() {
   const [connectionState, setConnectionState] = useState<ConnectionState>("idle");
   const [connectionMessage, setConnectionMessage] = useState("");
   const [providerLoginState, setProviderLoginState] = useState<ProviderLoginState>("idle");
-  // DEV bypass shortcut: rendered on localhost / dev LAN host (192.168.2.202) — set after mount
-  // to avoid SSR hydration mismatch. Never shows on the deployed/public production frontend.
-  const [isLocalhost, setIsLocalhost] = useState(false);
-  const [runtimeMode, setRuntimeMode] = useState<RuntimeMode>({ ready: false, sameServerBackend: false });
+  const [isLoopback, setIsLoopback] = useState(false);
   const [message, setMessage] = useState("");
-  const [pendingPasswordChange, setPendingPasswordChange] = useState<PendingPasswordChange | null>(null);
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [passwordChangeMessage, setPasswordChangeMessage] = useState("");
-  const [passwordChanging, setPasswordChanging] = useState(false);
   const googleButtonRef = useRef<HTMLDivElement | null>(null);
   const googleCredentialRef = useRef<(credential: string) => void>(() => {});
   const autoConnectionTested = useRef(false);
-
-  useEffect(() => {
-    const host = window.location.hostname;
-    setIsLocalhost(host === "localhost" || host === "127.0.0.1" || host === "192.168.2.202");
-  }, []);
 
   const canSubmit = useMemo(() => {
     return backendUrl.trim().length > 0 &&
@@ -166,7 +141,7 @@ export function LoginScreen() {
 
   useEffect(() => {
     setMounted(true);
-    setRuntimeMode({ ready: true, sameServerBackend: isPublicRuntimeHost() });
+    setIsLoopback(isLoopbackHostname(window.location.hostname));
     const savedLanguage = normalizeLanguage(localStorage.getItem(storageKeys.language) ?? "th");
     const savedUsername = localStorage.getItem(storageKeys.username);
     const savedHoldingCode = localStorage.getItem(storageKeys.holdingCode);
@@ -229,6 +204,8 @@ export function LoginScreen() {
   // Keep the Google Identity Services callback pointing at the latest handler.
   useEffect(() => {
     googleCredentialRef.current = (credential: string) => {
+      // The provider invokes this callback only after the component has rendered.
+      // eslint-disable-next-line react-hooks/immutability
       void handleGoogleCredential(credential);
     };
   });
@@ -296,23 +273,13 @@ export function LoginScreen() {
 		if (!response.ok || !data.success || !data.token) {
 			const serverMessage = data.message?.trim();
 			throw new Error(!serverMessage || /^(login failed\.?|username or password is invalid)$/i.test(serverMessage) ? t(language, "loginFailed") : serverMessage);
-		}
-
-      const nextBackendUrl = runtimeBackendUrlForCurrentPage();
-      const profile = await loadLoginProfile(nextBackendUrl, data.token);
-      if (!profile) throw new Error("ไม่สามารถตรวจสอบสถานะรหัสผ่านของบัญชีได้ กรุณาลองใหม่");
-      const nextProfile = { ...data.user, ...profile };
-      const nextUsername = nextProfile.email || nextProfile.username || nextProfile.name || "google";
-      if (nextProfile.isdefaultpassword) {
-        setPassword("");
-        setPendingPasswordChange({ backendUrl: nextBackendUrl, token: data.token, username: nextUsername });
-        setPasswordChangeMessage("");
-        setProviderLoginState("idle");
-        setLoginState("idle");
-        return;
       }
 
-      persistLogin(nextBackendUrl, nextUsername, data.token, data.refresh ?? "", "google", nextProfile);
+      const nextBackendUrl = runtimeBackendUrlForCurrentPage();
+      const nextProfile = data.user ?? {};
+      const nextUsername = nextProfile.email || nextProfile.username || nextProfile.name || "google";
+
+      persistLogin(nextBackendUrl, nextUsername, data.token, "google", nextProfile);
       setProviderLoginState("idle");
       setLoginState("success");
       setMessage(t(language, "loginSuccess"));
@@ -324,10 +291,6 @@ export function LoginScreen() {
     }
   }
 
-  function handleGooglePrompt() {
-    if (typeof window !== "undefined") window.google?.accounts.id.prompt();
-  }
-
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     await performLogin({
@@ -335,6 +298,38 @@ export function LoginScreen() {
       password,
       holdingCode,
     });
+  }
+
+  async function handleDevLogin() {
+    setLoginState("loading");
+    setMessage("");
+    try {
+      const response = await fetch("/api/auth/dev-login", {
+        method: "POST",
+        credentials: "same-origin",
+        cache: "no-store",
+      });
+      const data = (await response.json()) as {
+        success?: boolean;
+        message?: string;
+        token?: string;
+        user?: string;
+      };
+      if (!response.ok || !data.success || !data.token) {
+        throw new Error(data.message ?? t(language, "loginFailed"));
+      }
+
+      const nextBackendUrl = runtimeBackendUrlForCurrentPage();
+      const profile = await loadLoginProfile(nextBackendUrl, data.token);
+      const nextUsername = profile?.email || data.user || "dev";
+      persistLogin(nextBackendUrl, nextUsername, data.token, "dev", profile);
+      setLoginState("success");
+      setMessage(t(language, "loginSuccess"));
+      router.push("/holding");
+    } catch (error) {
+      setLoginState("error");
+      setMessage(error instanceof Error ? error.message : t(language, "loginFailed"));
+    }
   }
 
   async function performLogin(input: {
@@ -373,8 +368,6 @@ export function LoginScreen() {
         success?: boolean;
         message?: string;
         token?: string;
-        refresh?: string;
-        mustchangepassword?: boolean;
         user?: string;
         backendUrl?: string;
       };
@@ -385,33 +378,11 @@ export function LoginScreen() {
 		}
 
 		const sessionBackendUrl = data.backendUrl ?? backendUrl;
-      if (data.mustchangepassword) {
-        setPendingPasswordChange({
-          backendUrl: sessionBackendUrl,
-          token: data.token,
-          username: input.username.trim(),
-        });
-        setPasswordChangeMessage("");
-        setLoginState("idle");
-        return;
-      }
-
       const profile = await loadLoginProfile(sessionBackendUrl, data.token);
-      if (profile?.isdefaultpassword) {
-        setPendingPasswordChange({
-          backendUrl: sessionBackendUrl,
-          token: data.token,
-          username: input.username.trim(),
-        });
-        setPasswordChangeMessage("");
-        setLoginState("idle");
-        return;
-      }
       persistLogin(
         sessionBackendUrl,
         input.username.trim(),
         data.token,
-        data.refresh ?? "",
         "password",
         profile,
         normalizedHoldingCode,
@@ -442,7 +413,6 @@ export function LoginScreen() {
       if (!response.ok || payload.success === false) return undefined;
       return {
         email: payload.data?.email,
-        isdefaultpassword: payload.data?.isdefaultpassword,
         name: payload.data?.name,
         pictureUrl: payload.data?.avatarthumb || payload.data?.avatar,
       };
@@ -453,56 +423,6 @@ export function LoginScreen() {
 
   async function handleConnectionTest() {
     await runConnectionTest({ automatic: false });
-  }
-
-  async function handleRequiredPasswordChange(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!pendingPasswordChange) return;
-    if (newPassword === "12345") {
-      setPasswordChangeMessage("ห้ามใช้รหัสผ่านเริ่มต้น 12345 เป็นรหัสผ่านใหม่");
-      return;
-    }
-    if (newPassword.length < 5) {
-      setPasswordChangeMessage("รหัสผ่านใหม่ต้องมีอย่างน้อย 5 ตัวอักษร");
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setPasswordChangeMessage(t(language, "passwordMismatch"));
-      return;
-    }
-
-    setPasswordChanging(true);
-    setPasswordChangeMessage("");
-    try {
-      const response = await fetch("/api/auth/profile", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${pendingPasswordChange.token}`,
-          "x-bc-backend-url": pendingPasswordChange.backendUrl,
-        },
-        body: JSON.stringify({
-          backendUrl: pendingPasswordChange.backendUrl,
-          currentpassword: password,
-          newpassword: newPassword,
-        }),
-      });
-      const payload = (await response.json()) as { success?: boolean; message?: string };
-      if (!response.ok || payload.success === false) {
-        throw new Error(payload.message ?? "เปลี่ยนรหัสผ่านไม่สำเร็จ");
-      }
-
-      setPendingPasswordChange(null);
-      setPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-      setLoginState("success");
-      setMessage("เปลี่ยนรหัสผ่านแล้ว กรุณาเข้าสู่ระบบด้วยรหัสผ่านใหม่");
-    } catch (error) {
-      setPasswordChangeMessage(error instanceof Error ? error.message : "เปลี่ยนรหัสผ่านไม่สำเร็จ");
-    } finally {
-      setPasswordChanging(false);
-    }
   }
 
   async function runConnectionTest(options: { automatic: boolean }) {
@@ -536,7 +456,6 @@ export function LoginScreen() {
     nextBackendUrl: string,
     nextUsername: string,
     token: string,
-    refresh: string,
     method: AuthMethod,
     profile?: SocialLoginResponse["user"],
     nextHoldingCode = "",
@@ -556,18 +475,14 @@ export function LoginScreen() {
     localStorage.removeItem(storageKeys.legacyPassword);
     localStorage.removeItem(storageKeys.backendUrl);
     localStorage.removeItem(storageKeys.backendUrlHistory);
-    localStorage.setItem(
-      storageKeys.auth,
-      JSON.stringify({
-        token,
-        refresh,
-        username: nextUsername,
-        backendUrl: runtimeBackendUrl,
-        method,
-        profile: profile ?? null,
-        ...(nextHoldingCode ? { holdingcode: nextHoldingCode } : {}),
-      }),
-    );
+    setAuthSession({
+      token,
+      username: nextUsername,
+      backendUrl: runtimeBackendUrl,
+      method,
+      profile: profile ?? null,
+      ...(nextHoldingCode ? { holdingcode: nextHoldingCode } : {}),
+    });
   }
 
   return (
@@ -672,13 +587,13 @@ export function LoginScreen() {
                   <code className="connection-error-url" title={backendUrl}>
                     {backendUrl || t(language, "api")}
                   </code>
-                  <a
+                  <Link
                     href="/settings"
                     className="connection-error-link"
                     aria-label={language === "th" ? "ไปตั้งค่า Backend URL" : "Open settings to change Backend URL"}
                   >
                     {language === "th" ? "ไปตั้งค่า →" : "Open Settings →"}
-                  </a>
+                  </Link>
                 </div>
               </div>
             </motion.div>
@@ -717,22 +632,18 @@ export function LoginScreen() {
                   <span>{t(language, "loggingIn")}</span>
                 </span>
               ) : null}
+              {isLoopback ? (
+                <button
+                  type="button"
+                  className="social-login-button dev-login-button"
+                  onClick={() => void handleDevLogin()}
+                  disabled={loginState === "loading"}
+                >
+                  {loginState === "loading" ? <Loader2 className="spin" aria-hidden="true" size={18} /> : null}
+                  <span>เข้าทดสอบระบบ (Dev Login)</span>
+                </button>
+              ) : null}
             </div>
-            {isLocalhost ? (
-              <button
-                type="button"
-                className="social-login-button dev-bypass-login"
-                style={{ marginTop: "var(--density-gap)", borderStyle: "dashed", fontWeight: 700 }}
-                onClick={() =>
-                  void performLogin({ username: "jaturapornchai@gmail.com", password: "smlsoft", holdingCode: "" })
-                }
-                disabled={loginState === "loading"}
-                aria-label="เข้าทดสอบระบบ (dev — localhost/LAN เท่านั้น)"
-                title="เฉพาะ dev (localhost / 192.168.2.202): เข้าทดสอบระบบด้วย jaturapornchai@gmail.com"
-              >
-                <span>🧪 เข้าทดสอบระบบ (dev)</span>
-              </button>
-            ) : null}
           </motion.section>
 
           <motion.div
@@ -850,17 +761,6 @@ export function LoginScreen() {
               <span>{loginState === "loading" ? t(language, "loggingIn") : t(language, "login")}</span>
             </Button>
 
-            <p className="sign-up-hint">
-              {t(language, "noAccountPrompt")}{" "}
-              <button
-                type="button"
-                className="sign-up-link"
-                onClick={handleGooglePrompt}
-                disabled={providerLoginState !== "idle" || loginState === "loading"}
-              >
-                {t(language, "loginWithGoogle")} →
-              </button>
-            </p>
           </motion.section>
 
           <motion.div
@@ -883,51 +783,6 @@ export function LoginScreen() {
         </form>
       </motion.section>
 
-      {pendingPasswordChange ? (
-        <div className="dialog-backdrop" role="presentation">
-          <form
-            className="line-login-dialog"
-            aria-label="บังคับเปลี่ยนรหัสผ่านเริ่มต้น"
-            role="dialog"
-            aria-modal="true"
-            onSubmit={handleRequiredPasswordChange}
-          >
-            <div className="dialog-header">
-              <div>
-                <p className="eyebrow">{pendingPasswordChange.username}</p>
-                <h2>ตั้งรหัสผ่านใหม่ก่อนเข้าใช้งาน</h2>
-              </div>
-              <ShieldCheck aria-hidden="true" size={24} />
-            </div>
-            <div className="message error">
-              <AlertCircle size={18} />
-              <span>รหัสผ่านปัจจุบันคือค่าเริ่มต้น 12345 ต้องเปลี่ยนก่อนใช้งานระบบ และห้ามใช้ 12345 ซ้ำ</span>
-            </div>
-            {passwordChangeMessage ? (
-              <div className="message error" role="alert">
-                <AlertCircle size={18} />
-                <span>{passwordChangeMessage}</span>
-              </div>
-            ) : null}
-            <label className="grid gap-1 text-sm font-medium">
-              <span>รหัสผ่านปัจจุบัน</span>
-              <Input value={password} onChange={(event) => setPassword(event.target.value)} type="password" autoComplete="current-password" autoFocus />
-            </label>
-            <label className="grid gap-1 text-sm font-medium">
-              <span>รหัสผ่านใหม่</span>
-              <Input value={newPassword} onChange={(event) => setNewPassword(event.target.value)} type="password" autoComplete="new-password" />
-            </label>
-            <label className="grid gap-1 text-sm font-medium">
-              <span>{t(language, "confirmPassword")}</span>
-              <Input value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} type="password" autoComplete="new-password" />
-            </label>
-            <Button className="primary-button w-full" type="submit" disabled={passwordChanging}>
-              {passwordChanging ? <Loader2 className="spin" size={18} /> : <LockKeyhole size={18} />}
-              <span>{passwordChanging ? "กำลังบันทึก..." : "เปลี่ยนรหัสผ่าน"}</span>
-            </Button>
-          </form>
-        </div>
-      ) : null}
     </main>
   );
 }
@@ -935,8 +790,4 @@ export function LoginScreen() {
 function runtimeBackendUrlForCurrentPage(fallback = ""): string {
   if (typeof window === "undefined") return fallback;
   return runtimeGoApiUrlForOrigin(window.location.origin);
-}
-
-function isPublicRuntimeHost(): boolean {
-  return typeof window !== "undefined" && !window.location.hostname.includes("localhost") && !window.location.hostname.includes("127.0.0.1");
 }

@@ -42,6 +42,7 @@ import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
 import { pushNotice } from "@/lib/toast";
 import { normalizeBusinessCode } from "@/lib/business-code";
 import { cn } from "@/lib/utils";
+import { authFetch, getAuthSession } from "@/lib/client-auth-session";
 import {
   localizedName,
   shopDisplayName,
@@ -61,7 +62,11 @@ import {
   type RefProductBarcode,
   type BOMProductBarcode,
 } from "@/lib/product-barcode/types";
-import { pickName, rawToProduct } from "@/lib/product-barcode/utils";
+import {
+  formatProductBalance,
+  pickName,
+  rawToProduct,
+} from "@/lib/product-barcode/utils";
 import { languageCodesFromWorkspace } from "@/components/product-barcode/names-editor";
 import { getBarcodeText } from "@/lib/product-barcode/language";
 
@@ -86,13 +91,7 @@ import {
   type ProductStateAction,
 } from "./product-tab-shared";
 function readAuthSession(): AuthSession | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(workspaceStorageKeys.auth);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
+  return getAuthSession();
 }
 
 function readWorkspaceSession(): WorkspaceSession | null {
@@ -110,7 +109,7 @@ async function ensureActiveProductHolding(
   holdingcode: string,
   businesscode: string,
 ): Promise<void> {
-  const response = await fetch("/api/workspace/select-holding", {
+  const response = await authFetch("/api/workspace/select-holding", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -527,7 +526,7 @@ export function ProductScreen({
     }
 
     setDetailLoading(true);
-    void fetch(`/api/product/${encodeURIComponent(listProduct.code)}`, {
+    void authFetch(`/api/product/${encodeURIComponent(listProduct.code)}`, {
       headers: {
         Authorization: `Bearer ${auth.token}`,
         "x-bc-backend-url": auth.backendUrl,
@@ -710,7 +709,7 @@ export function ProductScreen({
         limit: "80",
         holdingcode: activeHoldingCode,
       });
-      const response = await fetch(`/api/product?${params.toString()}`, {
+      const response = await authFetch(`/api/product?${params.toString()}`, {
         headers: {
           Authorization: `Bearer ${auth.token}`,
           "x-bc-backend-url": auth.backendUrl,
@@ -813,7 +812,7 @@ export function ProductScreen({
     if (!auth) return;
     try {
       setLoading(true);
-      const res = await fetch(
+      const res = await authFetch(
         `/api/product-barcode/${encodeURIComponent(barcodeRow.guidfixed)}`,
         {
           headers: {
@@ -911,7 +910,7 @@ export function ProductScreen({
     if (!ok) return;
 
     try {
-      const res = await fetch(
+      const res = await authFetch(
         `/api/product/${encodeURIComponent(p.guidfixed)}`,
         {
           method: "DELETE",
@@ -961,7 +960,7 @@ export function ProductScreen({
     if (!ok) return;
     try {
       for (const code of codes) {
-        const res = await fetch(`/api/product/${encodeURIComponent(code)}`, {
+        const res = await authFetch(`/api/product/${encodeURIComponent(code)}`, {
           method: "DELETE",
           headers: {
             Authorization: `Bearer ${auth.token}`,
@@ -1057,7 +1056,7 @@ export function ProductScreen({
         condition: false,
       };
 
-      const res = await fetch(url, {
+      const res = await authFetch(url, {
         method,
         headers: {
           "Content-Type": "application/json",
@@ -1080,7 +1079,7 @@ export function ProductScreen({
         const createdGuid = data.data.guidfixed;
         const createdCode = editProduct.code;
 
-        const bcRes = await fetch(
+        const bcRes = await authFetch(
           `/api/product-barcode/${encodeURIComponent(bindBarcodeOnSave.guidfixed)}`,
           {
             headers: {
@@ -1100,7 +1099,7 @@ export function ProductScreen({
         fullBarcode.itemguid = createdGuid;
         fullBarcode.itemcode = createdCode;
 
-        const putRes = await fetch(
+        const putRes = await authFetch(
           `/api/product-barcode/${encodeURIComponent(bindBarcodeOnSave.guidfixed)}`,
           {
             method: "PUT",
@@ -1703,7 +1702,7 @@ export function ProductScreen({
                           (item.qty ?? 0) <= 0 && "text-destructive",
                         )}
                       >
-                        {formatAutoPackingBalance(item, lang)}
+                        {formatProductBalance(item, lang)}
                       </div>
                     </div>
                   </div>
@@ -2093,7 +2092,7 @@ export function ProductScreen({
                 <div className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-4">
                   <DetailSummary
                     label="ยอดคงเหลือ"
-                    value={formatAutoPackingBalance(selectedProduct, lang)}
+                    value={formatProductBalance(selectedProduct, lang)}
                     emphasize={(selectedProduct.qty ?? 0) <= 0}
                   />
                   <DetailSummary label="หน่วยหลัก" value={selectedUnitLabel} />
@@ -2346,7 +2345,7 @@ export function ProductScreen({
                       fields={[
                         {
                           label: text.qty,
-                          value: formatAutoPackingBalance(
+                          value: formatProductBalance(
                             selectedProduct,
                             lang,
                           ),
@@ -2787,39 +2786,6 @@ function productUnitRows(item: Product): ProductUnitConversion[] {
 
 function formatProductUnitType(item: Product): string {
   return productUnitRows(item).length > 0 ? "หลายหน่วยนับ" : "หน่วยนับเดียว";
-}
-
-function formatAutoPackingBalance(item: Product, language: string): string {
-  const total = Math.max(0, Math.floor(Number(item.qty ?? 0)));
-  const baseUnit =
-    pickName(item.unitnames || item.itemunitnames, language) ||
-    item.unitcode ||
-    item.itemunitcode ||
-    "หน่วย";
-  const unitRows = productUnitRows(item)
-    .map((row) => ({
-      name: pickName(row.unitnames, language) || row.unitcode,
-      size: Number(row.standvalue) / Number(row.dividevalue),
-    }))
-    .filter((row) => row.name && Number.isFinite(row.size) && row.size > 0)
-    .sort((a, b) => b.size - a.size);
-
-  const units = [...unitRows, { name: baseUnit, size: 1 }];
-  if (total === 0) return `0 ${baseUnit}`;
-
-  let remaining = total;
-  const parts: string[] = [];
-  for (const unit of units) {
-    const count = Math.floor(remaining / unit.size);
-    if (count <= 0) continue;
-    parts.push(`${count.toLocaleString("th-TH")} ${unit.name}`);
-    remaining -= count * unit.size;
-  }
-  if (remaining > 0)
-    parts.push(`${remaining.toLocaleString("th-TH")} ${baseUnit}`);
-  return parts.length > 0
-    ? parts.join(" x ")
-    : `${total.toLocaleString("th-TH")} ${baseUnit}`;
 }
 
 // ─── Tab Components ───────────────────────────────────────────────────────

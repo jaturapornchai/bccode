@@ -1,5 +1,6 @@
 "use client";
 
+import { authFetch } from "@/lib/client-auth-session";
 import type { ImgHTMLAttributes, ReactNode, VideoHTMLAttributes } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { imageNeedsAuthenticatedFetch } from "@/lib/image-upload-proxy";
@@ -188,7 +189,7 @@ export function useAuthenticatedImageDisplaySource(
     let cancelled = false;
 
     setState({ displayUrl: "", failed: false, loading: true });
-    void fetch(requestedUrl, {
+    void authFetch(requestedUrl, {
       cache: "no-store",
       headers: { Authorization: `Bearer ${authToken}` },
       signal: controller.signal,
@@ -306,7 +307,7 @@ export function AuthenticatedVideo({
     let cancelled = false;
     let objectUrl = "";
     setState({ displayUrl: "", failed: false, loading: true });
-    void fetch(requestedUrl, {
+    void authFetch(requestedUrl, {
       cache: "no-store",
       headers: { Authorization: `Bearer ${auth.token}` },
       signal: controller.signal,

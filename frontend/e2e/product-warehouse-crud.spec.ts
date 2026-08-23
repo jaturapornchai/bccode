@@ -4,7 +4,7 @@ import { test, expect, type Page } from "@playwright/test";
  * Regression test for the "คลัง" (Warehouse) screen — /productwarehousescreen.
  *
  * **Rewritten 2026-07-03** for the warehouse -> warehouselocation -> warehousebin master-data
- * redesign (`.agents/worklog.md`), which replaced the old single `warehouse` document with
+ * redesign recorded in the regression history, which replaced the old single `warehouse` document with
  * embedded `location[].shelf[]` arrays with THREE separate MongoDB collections and a
  * `GET /warehouse/tree` read model:
  *  - `warehouse` (`Warehouse{Code, Names, Latitude, Longitude, CompanyGuids, Status}`)
@@ -31,7 +31,7 @@ import { test, expect, type Page } from "@playwright/test";
  *   the explicit pencil icon is what this suite uses to enter edit mode, matching the Data List
  *   Selection vs Editing Rule.
  *
- * A real bug was found and fixed while writing this suite (see `.agents/worklog.md` 2026-07-03):
+ * A real bug was found and fixed while writing this suite (2026-07-03 regression):
  * `UpdateWarehouse` / `UpdateLocation` / `UpdateBin` HTTP handlers in `warehouse_http.go` blanket-
  * returned `500 Internal Server Error` for ANY service-layer error, including client-side validation
  * failures like the location -> warehouse company-scope subset check — inconsistent with the sibling

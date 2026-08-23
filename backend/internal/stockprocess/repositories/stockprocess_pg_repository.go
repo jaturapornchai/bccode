@@ -29,7 +29,7 @@ func (repo *StockProcessPGRepository) GetStockTransactionList(holdingCode string
 	sql := `SELECT
 	STKD.id,
 	STK.holdingcode, STK.docno,  STK.docdate, STK.transflag, STK.inquirytype, STKD.docref
-	, STKD.barcode, PDB.mainbarcoderef, STKD.unitcode, STKD.qty
+	, STKD.barcode, STKD.unitcode, STKD.qty
 	, PDB.standvalue, PDB.dividevalue
 	, STKD.calcflag
 	, ((STKD.qty*PDB.standvalue)/PDB.dividevalue) AS calcqty
@@ -43,7 +43,7 @@ func (repo *StockProcessPGRepository) GetStockTransactionList(holdingCode string
 	FROM stock_transaction AS STK
 	JOIN stock_transaction_detail AS STKD on STKD.docno = STK.docno AND STKD.holdingcode = STK.holdingcode
 	JOIN productbarcode AS PDB ON PDB.barcode = STKD.barcode AND STKD.holdingcode = PDB.holdingcode
-	WHERE STK.holdingcode = @holdingcode AND STK.iscancel = false AND PDB.mainbarcoderef = (select mainbarcoderef from productbarcode where barcode = @barcode and productbarcode.holdingcode = STK.holdingcode )
+	WHERE STK.holdingcode = @holdingcode AND STK.iscancel = false AND PDB.itemcode = (select itemcode from productbarcode where barcode = @barcode and productbarcode.holdingcode = STK.holdingcode )
 	ORDER BY STK.docdate, STK.docno, STKD.calcflag, STKD.linenumber`
 
 	//repo.pst.Where(&stockDatas, "holdingcode = ? AND barcode = ?", holdingCode, barcode)

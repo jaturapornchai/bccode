@@ -9,20 +9,6 @@ import (
 
 const productBarcodeBOMCollectionName = "productbarcodeboms"
 
-// type ProductBarcodeBOM struct {
-// 	Level         int             `json:"level" gorm:"column:level"`
-// 	MainBarcode   string          `json:"mainbarcode" gorm:"column:mainbarcode"`
-// 	GuidFixed     string          `json:"guidfixed" gorm:"column:guidfixed"`
-// 	Names         *[]models.NameX `json:"names" gorm:"column:names"`
-// 	ItemUnitCode  string          `json:"itemunitcode" gorm:"column:itemunitcode"`
-// 	ItemUnitNames *[]models.NameX `json:"itemunitnames" gorm:"column:itemunitnames"`
-// 	Barcode       string          `json:"barcode" gorm:"column:barcode"`
-// 	Condition     bool            `json:"condition" gorm:"column:condition"`
-// 	DivideValue   float64         `json:"dividevalue" gorm:"column:dividevalue"`
-// 	StandValue    float64         `json:"standvalue" gorm:"column:standvalue"`
-// 	Qty           float64         `json:"qty" gorm:"column:qty"`
-// }
-
 type BOMProductBarcode struct {
 	BarcodeGuidFixed string          `json:"guidfixed" bson:"guidfixed"`
 	ItemCode         string          `json:"itemcode" bson:"itemcode"`
@@ -32,8 +18,8 @@ type BOMProductBarcode struct {
 	ItemUnitNames    *[]models.NameX `json:"itemunitnames" bson:"itemunitnames"`
 	Barcode          string          `json:"barcode" bson:"barcode" validate:"required,min=1"`
 	Condition        bool            `json:"condition" bson:"condition"`
-	DivideValue      float64         `json:"dividevalue" bson:"dividevalue"`
-	StandValue       float64         `json:"standvalue" bson:"standvalue"`
+	DivideValue      int64           `json:"dividevalue" bson:"dividevalue"`
+	StandValue       int64           `json:"standvalue" bson:"standvalue"`
 	Qty              float64         `json:"qty" bson:"qty"`
 }
 

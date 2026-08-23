@@ -20,27 +20,31 @@ import (
 	micromodel "smlcloudplatform/pkg/microservice/models"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
+
+const devLoginUserEmail = "jaturapornchai@gmail.com"
 
 type IAuthenticationService interface {
 	LoginWithPhoneNumber(userLoginReq *auth_models.UserLoginPhoneNumberRequest, authContext models.AuthenticationContext) (models.TokenLoginResponse, error)
 	LoginWithPhoneNumberOTP(userLoginReq *auth_models.PhoneNumberOTPRequest, authContext models.AuthenticationContext) (models.TokenLoginResponse, error)
 	Login(userReq *auth_models.UserLoginRequest, authContext models.AuthenticationContext) (models.TokenLoginResponse, error)
+	DevLoginByUID(userUID string, authContext models.AuthenticationContext) (models.TokenLoginResponse, error)
 	Poslogin(userReq *auth_models.PosLoginRequest, authContext models.AuthenticationContext) (models.TokenLoginResponse, error)
 	LoginEmail(userReq *auth_models.PosLoginRequest, authContext models.AuthenticationContext) (string, error)
 	Register(userRequest auth_models.RegisterEmailRequest) (string, error)
 	ForgotPasswordByPhonenumber(userRequest auth_models.ForgotPasswordPhoneNumberRequest) error
-	Update(username string, userRequest auth_models.UserProfileRequest) error
+	Update(userUID string, userRequest auth_models.UserProfileRequest) error
 	UpdatePassword(username string, currentPassword string, newPassword string) error
 	ResetPasswordToDefault(holdingCode string, authUsername string, targetUsername string) error
 	Logout(authorizationHeader string) error
 	Profile(username string, userUID string) (auth_models.UserProfile, error)
-	AccessShop(holdingCode string, businessCode string, username string, userUID string, authorizationHeader string, authContext models.AuthenticationContext) error
+	AccessShop(holdingCode string, businessCode string, branchUID string, username string, userUID string, authorizationHeader string, authContext models.AuthenticationContext) error
 	UpdateFavoriteShop(holdingCode string, username string, userUID string, isFavorite bool) error
 	LoginWithFirebaseToken(token string) (string, error)
 	LoginWithLineToken(token string) (string, error)
 	LoginWithLineUserID(lineUserID string, displayName string, pictureUrl string, email string) (string, string, error)
-	LoginWithGoogleEmail(email string, displayName string) (string, error)
+	LoginWithGoogleIdentity(issuer string, subject string, email string, displayName string) (models.TokenLoginResponse, error)
 	RefreshToken(tokenRequest models.TokenLoginRequest) (models.TokenLoginResponse, error)
 
 	LinkLine(username string, req auth_models.LinkLineRequest) error
@@ -52,7 +56,7 @@ type IAuthenticationService interface {
 	RegisterByPhonenumber(userRequest auth_models.RegisterPhoneNumberRequest) (string, error)
 	RegisterByUsername(userRequest auth_models.RegisterUsernameRequest) (string, error)
 
-	DisableUser(username string) error
+	DisableUser(userUID string) error
 	DeleteUser(username string) error
 }
 
@@ -130,23 +134,14 @@ func (svc AuthenticationService) LoginWithPhoneNumberOTP(userLoginReq *auth_mode
 	}
 
 	userInfo := svc.tokenUserInfo(*findUser)
-	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, userInfo)
-
+	tokenString, refreshTokenString, err := svc.authService.CreateSession(userInfo)
 	if err != nil {
-		return models.TokenLoginResponse{}, errors.New("login failed")
-	}
-
-	refreshTokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_REFRESH, userInfo)
-
-	if err != nil {
-		svc.authService.DeleteToken(microservice.AUTHTYPE_BEARER, tokenString)
 		return models.TokenLoginResponse{}, errors.New("login failed")
 	}
 
 	return models.TokenLoginResponse{
-		Token:              tokenString,
-		Refresh:            refreshTokenString,
-		MustChangePassword: userInfo.MustChangePassword,
+		Token:   tokenString,
+		Refresh: refreshTokenString,
 	}, nil
 }
 
@@ -186,28 +181,17 @@ func (svc AuthenticationService) LoginWithPhoneNumber(userLoginReq *auth_models.
 
 func (svc AuthenticationService) Login(userLoginReq *auth_models.UserLoginRequest, authContext models.AuthenticationContext) (models.TokenLoginResponse, error) {
 
-	userLoginReq.Username = utils.NormalizeUsername(userLoginReq.Username)
-
-	userLoginReq.Username = strings.TrimSpace(userLoginReq.Username)
+	userLoginReq.Username = auth_models.NormalizeUsercode(userLoginReq.Username)
 	userLoginReq.HoldingCode = strings.TrimSpace(userLoginReq.HoldingCode)
+	if !auth_models.IsValidUsercode(userLoginReq.Username) || !auth_models.IsValidPasswordLength(userLoginReq.Password) {
+		return models.TokenLoginResponse{}, errors.New("username or password is invalid")
+	}
 
 	findUser, err := svc.authRepo.FindUser(context.Background(), userLoginReq.Username)
 
 	if err != nil && err.Error() != "mongo: no documents in result" {
 		// svc.ms.Log("Authentication service", err.Error())
 		return models.TokenLoginResponse{}, errors.New("auth: database connect error")
-	}
-
-	// Email-as-login fallback: if the username lookup did not match, retry by email.
-	// The input may be an email address (e.g. owner logging in with jaturapornchai@gmail.com).
-	// FindUser is built on PersisterMongo.FindOne which swallows "no documents" and returns
-	// a zero struct + nil err (see go-expert "Mongo not-found semantics"), so the empty
-	// result test below is the real "not found" signal — same pattern as the select-holding fix.
-	if len(findUser.Username) < 1 && strings.Contains(userLoginReq.Username, "@") {
-		findUserByEmail, emailErr := svc.authRepo.FindByIdentity(context.Background(), "email", userLoginReq.Username)
-		if emailErr == nil && findUserByEmail != nil && len(findUserByEmail.Username) > 0 {
-			findUser = findUserByEmail
-		}
 	}
 
 	if len(findUser.Username) < 1 {
@@ -236,6 +220,49 @@ func (svc AuthenticationService) Login(userLoginReq *auth_models.UserLoginReques
 	}
 
 	return resultLogin, nil
+}
+
+func (svc AuthenticationService) DevLoginByUID(userUID string, authContext models.AuthenticationContext) (models.TokenLoginResponse, error) {
+	userUID = strings.TrimSpace(userUID)
+	if userUID == "" {
+		return models.TokenLoginResponse{}, apperr.ErrUnauthorized.WithMessage("dev login failed")
+	}
+
+	ctx := context.Background()
+	user, err := svc.authRepo.FindUserByUID(ctx, userUID)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return models.TokenLoginResponse{}, apperr.ErrUnauthorized.WithMessage("dev login failed")
+		}
+		return models.TokenLoginResponse{}, apperr.ErrInternal.WithWrap(err)
+	}
+	if user == nil || strings.TrimSpace(user.UID) == "" || user.IsDeleted {
+		return models.TokenLoginResponse{}, apperr.ErrUnauthorized.WithMessage("dev login failed")
+	}
+	if !strings.EqualFold(strings.TrimSpace(user.Email), devLoginUserEmail) {
+		return models.TokenLoginResponse{}, apperr.ErrUnauthorized.WithMessage("dev login failed")
+	}
+	if !user.DisabledAt.IsZero() {
+		return models.TokenLoginResponse{}, &auth_models.UserDisableLoginError{}
+	}
+
+	result, err := svc.processUserLogin(*user, "", authContext)
+	if err != nil {
+		return models.TokenLoginResponse{}, err
+	}
+	audit := auth_models.AuthAudit{
+		AuditUID:   svc.generateGUID(),
+		UserUID:    user.UID,
+		Action:     "DEV_LOGIN",
+		Outcome:    "SUCCESS",
+		OccurredAt: svc.timeNow().UTC(),
+	}
+	if err := svc.authRepo.CreateAuthAudit(ctx, audit); err != nil {
+		_ = svc.authService.RevokeSession("Bearer " + result.Token)
+		return models.TokenLoginResponse{}, apperr.ErrInternal.WithWrap(err)
+	}
+
+	return result, nil
 }
 
 func (svc AuthenticationService) Poslogin(userLoginReq *auth_models.PosLoginRequest, authContext models.AuthenticationContext) (models.TokenLoginResponse, error) {
@@ -318,34 +345,24 @@ func (svc AuthenticationService) LoginEmail(userLoginReq *auth_models.PosLoginRe
 	return tokenString, nil
 }
 
-func (svc *AuthenticationService) processUserLogin(findUser auth_models.UserDoc, holdingCode string, authContext models.AuthenticationContext) (models.TokenLoginResponse, error) {
+func (svc *AuthenticationService) processUserLogin(findUser auth_models.UserDoc, holdingCode string, authContext models.AuthenticationContext) (result models.TokenLoginResponse, resultErr error) {
 	userInfo := svc.tokenUserInfo(findUser)
-	mustChangePassword := userInfo.MustChangePassword
-	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, userInfo)
-
+	tokenString, refreshTokenString, err := svc.authService.CreateSession(userInfo)
 	if err != nil {
 		return models.TokenLoginResponse{}, errors.New("login failed")
 	}
-
-	refreshTokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_REFRESH, userInfo)
-
-	if err != nil {
-		svc.authService.DeleteToken(microservice.AUTHTYPE_BEARER, tokenString)
-		return models.TokenLoginResponse{}, errors.New("login failed")
-	}
+	sessionAccepted := false
+	defer func() {
+		if !sessionAccepted {
+			_ = svc.authService.RevokeSession("Bearer " + tokenString)
+		}
+	}()
 
 	if len(holdingCode) > 0 {
-		var shopUser auth_models.ShopUser
-		var err error
-		if strings.TrimSpace(findUser.UID) != "" {
-			shopUser, err = svc.shopUserRepo.FindByHoldingCodeAndUserUID(context.Background(), holdingCode, findUser.UID)
+		if strings.TrimSpace(findUser.UID) == "" {
+			return models.TokenLoginResponse{}, errors.New("user identity invalid")
 		}
-		// Also fall back when the uid query matched nothing (FindOne returns a zero struct + nil
-		// error on no-match). A by-email membership created before first login keeps an empty/old
-		// useruid, so the uid lookup misses and we must match by the stable username.
-		if strings.TrimSpace(findUser.UID) == "" || err != nil || shopUser.ID == primitive.NilObjectID {
-			shopUser, err = svc.shopUserRepo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, findUser.Username)
-		}
+		shopUser, err := svc.shopUserRepo.FindByHoldingCodeAndUserUID(context.Background(), holdingCode, findUser.UID)
 
 		if err != nil {
 			return models.TokenLoginResponse{}, err
@@ -355,13 +372,11 @@ func (svc *AuthenticationService) processUserLogin(findUser auth_models.UserDoc,
 			return models.TokenLoginResponse{}, errors.New("holdingcode invalid")
 		}
 
-		if err = svc.ensureShopAccessAllowed(context.Background(), holdingCode, shopUser); err != nil {
-			svc.authService.DeleteToken(microservice.AUTHTYPE_BEARER, tokenString)
-			svc.authService.DeleteToken(microservice.AUTHTYPE_REFRESH, refreshTokenString)
+		if err = svc.ensureShopAccessAllowed(shopUser); err != nil {
 			return models.TokenLoginResponse{}, err
 		}
 
-		err = svc.authService.SelectShop(microservice.AUTHTYPE_BEARER, tokenString, holdingCode, "", shopUser.Role)
+		err = svc.authService.SelectShop(microservice.AUTHTYPE_BEARER, tokenString, holdingCode, "", "", shopUser.Role)
 
 		if err != nil {
 			return models.TokenLoginResponse{}, errors.New("failed shop select")
@@ -369,7 +384,7 @@ func (svc *AuthenticationService) processUserLogin(findUser auth_models.UserDoc,
 
 		lastAccessedAt := svc.timeNow()
 
-		err = svc.shopUserRepo.UpdateLastAccess(context.Background(), holdingCode, shopUser.Username, lastAccessedAt)
+		err = svc.shopUserRepo.UpdateLastAccess(context.Background(), holdingCode, shopUser.UserUID, lastAccessedAt)
 		if err != nil {
 			logger.GetLogger().Error(err.Error())
 		}
@@ -386,15 +401,15 @@ func (svc *AuthenticationService) processUserLogin(findUser auth_models.UserDoc,
 		}
 	}
 
-	return models.TokenLoginResponse{Token: tokenString, Refresh: refreshTokenString, MustChangePassword: mustChangePassword}, nil
+	sessionAccepted = true
+	return models.TokenLoginResponse{Token: tokenString, Refresh: refreshTokenString}, nil
 }
 
 func (svc AuthenticationService) tokenUserInfo(user auth_models.UserDoc) micromodel.UserInfo {
 	return micromodel.UserInfo{
-		Username:           user.Username,
-		Name:               user.Name,
-		UID:                user.UID,
-		MustChangePassword: user.Password != "" && svc.checkHashPassword(models.DefaultUserPassword, user.Password),
+		Username: user.Username,
+		Name:     user.Name,
+		UID:      user.UID,
 	}
 }
 
@@ -417,58 +432,39 @@ func (svc *AuthenticationService) resolveLoginHoldingCode(ctx context.Context, h
 	return resolvedHoldingCode, nil
 }
 
-func (svc AuthenticationService) findShopUser(ctx context.Context, holdingCode string, username string, userUID string) (auth_models.ShopUser, error) {
-	var shopUser auth_models.ShopUser
-	var err error
-	if strings.TrimSpace(userUID) != "" {
-		shopUser, err = svc.shopUserRepo.FindByHoldingCodeAndUserUID(ctx, holdingCode, userUID)
+func (svc AuthenticationService) findShopUser(ctx context.Context, holdingCode string, userUID string) (auth_models.ShopUser, error) {
+	if strings.TrimSpace(userUID) == "" {
+		return auth_models.ShopUser{}, errors.New("user identity invalid")
 	}
-	// Fall back to a username lookup when there is no userUID, the userUID query errored,
-	// OR it matched nothing (PersisterMongo.FindOne swallows "no documents" and returns a
-	// zero-valued struct with nil error). The token's uid can drift from the useruid stored
-	// on the membership — e.g. a membership created by email before that person logged in,
-	// or a token minted with an older uid — so the uid query misses and we must match by the
-	// stable email username instead. Without this, AccessShop wrongly reports "holdingcode invalid".
-	if strings.TrimSpace(userUID) == "" || err != nil || shopUser.ID == primitive.NilObjectID {
-		shopUser, err = svc.shopUserRepo.FindByHoldingCodeAndUsername(ctx, holdingCode, username)
-	}
-	return shopUser, err
+	return svc.shopUserRepo.FindByHoldingCodeAndUserUID(ctx, holdingCode, userUID)
 }
 
-func (svc *AuthenticationService) ensureShopAccessAllowed(ctx context.Context, holdingCode string, shopUser auth_models.ShopUser) error {
-	expired := !shopUser.AccessExpiryDate.IsZero() && time.Now().After(shopUser.AccessExpiryDate)
-	if !shopUser.IsAccessDisabled && !expired {
-		return nil
-	}
-
-	// Access is disabled (manual) or expired (offboarding) — the shop creator is always exempt.
-	createdBy, err := svc.shopUserRepo.FindShopCreatedBy(ctx, holdingCode)
-	if err != nil {
-		return err
-	}
-
-	if strings.EqualFold(utils.NormalizeUsername(shopUser.Username), utils.NormalizeUsername(createdBy)) {
+func (svc *AuthenticationService) ensureShopAccessAllowed(shopUser auth_models.ShopUser) error {
+	expired := !shopUser.AccessExpiryDate.IsZero() && !svc.timeNow().Before(shopUser.AccessExpiryDate)
+	if !shopUser.IsDeleted && !shopUser.IsAccessDisabled && !expired {
 		return nil
 	}
 
 	if expired {
 		return errors.New("user_access_expired")
 	}
+	if shopUser.IsDeleted {
+		return errors.New("user_access_revoked")
+	}
 	return errors.New("user_access_disabled")
 }
 
 func (svc AuthenticationService) RefreshToken(tokenRequest models.TokenLoginRequest) (models.TokenLoginResponse, error) {
 
-	token, refreshToken, mustChangePassword, err := svc.authService.RefreshToken(tokenRequest.Token)
+	token, refreshToken, _, err := svc.authService.RefreshToken(tokenRequest.Token)
 
 	if err != nil {
 		return models.TokenLoginResponse{}, err
 	}
 
 	return models.TokenLoginResponse{
-		Token:              token,
-		Refresh:            refreshToken,
-		MustChangePassword: mustChangePassword,
+		Token:   token,
+		Refresh: refreshToken,
 	}, nil
 }
 
@@ -513,7 +509,13 @@ func (svc AuthenticationService) Register(userEmailRequest auth_models.RegisterE
 // RegisterByUsername — สมัครสมาชิกด้วยรหัสพนักงาน + รหัสผ่าน (ไม่ต้องมี email)
 func (svc AuthenticationService) RegisterByUsername(userRequest auth_models.RegisterUsernameRequest) (string, error) {
 
-	userRequest.Username = utils.NormalizeUsername(userRequest.Username)
+	userRequest.Username = auth_models.NormalizeUsercode(userRequest.Username)
+	if !auth_models.IsValidUsercode(userRequest.Username) {
+		return "", apperr.Validation("username", "usercode must contain 3 to 64 lowercase letters, digits, dots, hyphens, or underscores")
+	}
+	if !auth_models.IsValidPasswordLength(userRequest.Password) {
+		return "", apperr.Validation("password", "password must contain 15 to 64 characters")
+	}
 
 	userFind, err := svc.authRepo.FindByIdentity(context.Background(), "username", userRequest.Username)
 	if err != nil && err.Error() != "mongo: no documents in result" {
@@ -546,7 +548,10 @@ func (svc AuthenticationService) RegisterByUsername(userRequest auth_models.Regi
 
 func (svc AuthenticationService) CheckExistsUsername(username string) (bool, error) {
 
-	username = utils.NormalizeUsername(username)
+	username = auth_models.NormalizeUsercode(username)
+	if !auth_models.IsValidUsercode(username) {
+		return false, apperr.Validation("username", "usercode must contain 3 to 64 lowercase letters, digits, dots, hyphens, or underscores")
+	}
 
 	userFind, err := svc.authRepo.FindByIdentity(context.Background(), "username", username)
 	if err != nil && err.Error() != "mongo: no documents in result" {
@@ -690,25 +695,29 @@ func (svc AuthenticationService) ForgotPasswordByPhonenumber(userRequest auth_mo
 	return nil
 }
 
-func (svc AuthenticationService) Update(username string, userRequest auth_models.UserProfileRequest) error {
+func (svc AuthenticationService) Update(userUID string, userRequest auth_models.UserProfileRequest) error {
 
-	if username == "" {
-		return errors.New("username invalid")
+	if strings.TrimSpace(userUID) == "" {
+		return errors.New("user identity invalid")
 	}
 
-	userFind, err := svc.authRepo.FindUser(context.Background(), username)
+	userFind, err := svc.authRepo.FindUserByUID(context.Background(), userUID)
 	if err != nil && err.Error() != "mongo: no documents in result" {
 		return err
 	}
 
-	if len(userFind.Username) < 1 {
-		return errors.New("username is not exists")
+	if strings.TrimSpace(userFind.UID) == "" {
+		return errors.New("user is not exists")
 	}
 
+	stableUID := userFind.UID
+	stableRegisterType := userFind.RegisterType
 	userFind.UserDetail = userRequest.UserDetail
+	userFind.UID = stableUID
+	userFind.RegisterType = stableRegisterType
 	userFind.UpdatedAt = svc.timeNow()
 
-	err = svc.authRepo.UpdateUser(context.Background(), username, *userFind)
+	err = svc.authRepo.UpdateUserByUID(context.Background(), userUID, *userFind)
 
 	if err != nil {
 		return err
@@ -722,8 +731,11 @@ func (svc AuthenticationService) UpdatePassword(username string, currentPassword
 	if username == "" {
 		return errors.New("username invalid")
 	}
-	if newPassword == models.DefaultUserPassword {
-		return apperr.Validation("newpassword", "new password must not be the default password")
+	if !auth_models.IsValidPasswordLength(newPassword) {
+		return apperr.Validation("newpassword", "password must contain 15 to 64 characters")
+	}
+	if auth_models.IsKnownCompromisedPassword(newPassword) {
+		return apperr.Validation("newpassword", "password is known to be compromised")
 	}
 
 	userFind, err := svc.authRepo.FindUser(context.Background(), username)
@@ -760,89 +772,13 @@ func (svc AuthenticationService) UpdatePassword(username string, currentPassword
 }
 
 func (svc AuthenticationService) ResetPasswordToDefault(holdingCode string, authUsername string, targetUsername string) error {
-	holdingCode = strings.TrimSpace(holdingCode)
-	authUsername = utils.NormalizeUsername(authUsername)
-	targetUsername = utils.NormalizeUsername(targetUsername)
-
-	if holdingCode == "" {
-		return errors.New("shop invalid")
-	}
-	if authUsername == "" || targetUsername == "" {
-		return errors.New("username invalid")
-	}
-	if authUsername == targetUsername {
-		return errors.New("use change password for self")
-	}
-
-	authUser, err := svc.shopUserRepo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, authUsername)
-	if err != nil {
-		return err
-	}
-	expired := !authUser.AccessExpiryDate.IsZero() && svc.timeNow().After(authUser.AccessExpiryDate)
-	if authUser.IsAccessDisabled || expired || (authUser.Role != models.ROLE_OWNER && authUser.Role != models.ROLE_ADMIN) {
-		return errors.New("permission denied")
-	}
-
-	targetShopUser, err := svc.shopUserRepo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, targetUsername)
-	if err != nil {
-		return err
-	}
-	if targetShopUser.Username == "" {
-		return errors.New("user not found")
-	}
-	if authUser.Role == models.ROLE_ADMIN && targetShopUser.Role == models.ROLE_OWNER {
-		return errors.New("permission denied")
-	}
-
-	hashPassword, err := svc.passwordEncoder(models.DefaultUserPassword)
-	if err != nil {
-		return err
-	}
-
-	userFind, err := svc.authRepo.FindUser(context.Background(), targetUsername)
-	if err != nil {
-		if !isMongoNotFoundError(err) {
-			return err
-		}
-		user := auth_models.UserDoc{}
-		user.UID = svc.generateGUID()
-		user.Username = targetUsername
-		user.Password = hashPassword
-		user.UserDetail.Name = targetUsername
-		user.CreatedAt = svc.timeNow()
-		_, err = svc.authRepo.CreateUser(context.Background(), user)
-		return err
-	}
-	if userFind.Username == "" {
-		user := auth_models.UserDoc{}
-		user.UID = svc.generateGUID()
-		user.Username = targetUsername
-		user.Password = hashPassword
-		user.UserDetail.Name = targetUsername
-		user.CreatedAt = svc.timeNow()
-		_, err = svc.authRepo.CreateUser(context.Background(), user)
-		return err
-	}
-
-	userFind.Password = hashPassword
-	userFind.UpdatedAt = svc.timeNow()
-
-	if err := svc.authRepo.UpdateUser(context.Background(), targetUsername, *userFind); err != nil {
-		return err
-	}
-	return svc.authService.RevokeUserTokens(targetUsername)
-}
-
-func isMongoNotFoundError(err error) bool {
-	if err == nil {
-		return false
-	}
-	message := strings.ToLower(err.Error())
-	return strings.Contains(message, "no documents") || strings.Contains(message, "not found")
+	return apperr.ErrForbidden.
+		WithMessage("administrator password reset is disabled").
+		WithThaiMessage("ผู้ดูแลไม่สามารถตั้งหรือรีเซ็ตรหัสผ่านแทนผู้ใช้ได้")
 }
 
 func (svc AuthenticationService) Logout(authorizationHeader string) error {
-	return svc.authService.ExpireToken(microservice.AUTHTYPE_BEARER, authorizationHeader)
+	return svc.authService.RevokeSession(authorizationHeader)
 }
 
 func (svc AuthenticationService) Profile(username string, userUID string) (auth_models.UserProfile, error) {
@@ -865,20 +801,14 @@ func (svc AuthenticationService) Profile(username string, userUID string) (auth_
 	userProfile.LineUserID = user.LineUserID
 	userProfile.LineDisplayName = user.LineDisplayName
 	userProfile.LinePictureURL = user.LinePictureURL
-	userProfile.IsDefaultPassword = user.Password != "" && svc.checkHashPassword(models.DefaultUserPassword, user.Password)
-
 	return userProfile, nil
 }
 
-func (svc AuthenticationService) AccessShop(holdingCode string, businessCode string, username string, userUID string, authorizationHeader string, authContext models.AuthenticationContext) error {
+func (svc AuthenticationService) AccessShop(holdingCode string, businessCode string, branchUID string, username string, userUID string, authorizationHeader string, authContext models.AuthenticationContext) error {
 
 	holdingCode = strings.TrimSpace(holdingCode)
 	if holdingCode == "" {
 		return errors.New("holdingcode invalid")
-	}
-
-	if username == "" {
-		return errors.New("username invalid")
 	}
 
 	tokenStr, err := svc.authService.GetTokenFromAuthorizationHeader(microservice.AUTHTYPE_BEARER, authorizationHeader)
@@ -891,12 +821,12 @@ func (svc AuthenticationService) AccessShop(holdingCode string, businessCode str
 		return errors.New("token invalid")
 	}
 
-	shopUser, err := svc.findShopUser(context.Background(), holdingCode, username, userUID)
+	shopUser, err := svc.findShopUser(context.Background(), holdingCode, userUID)
 	if err != nil {
 		resolvedHoldingCode, resolveErr := svc.resolveLoginHoldingCode(context.Background(), holdingCode)
 		if resolveErr == nil && resolvedHoldingCode != "" && resolvedHoldingCode != holdingCode {
 			holdingCode = resolvedHoldingCode
-			shopUser, err = svc.findShopUser(context.Background(), holdingCode, username, userUID)
+			shopUser, err = svc.findShopUser(context.Background(), holdingCode, userUID)
 		}
 	}
 
@@ -908,22 +838,32 @@ func (svc AuthenticationService) AccessShop(holdingCode string, businessCode str
 		return errors.New("holdingcode invalid")
 	}
 
-	if err = svc.ensureShopAccessAllowed(context.Background(), holdingCode, shopUser); err != nil {
+	if err = svc.ensureShopAccessAllowed(shopUser); err != nil {
 		return err
 	}
 	businessCode = utils.NormalizeBusinessCode(businessCode)
-	if businessCode != "" && !auth_models.ScopesAllowCompanySelection(shopUser.AccessScopes, businessCode) {
-		return apperr.ErrForbidden.WithMessage("company access denied").WithThaiMessage("ไม่มีสิทธิ์ใช้งานบริษัทนี้")
+	branchUID = strings.TrimSpace(branchUID)
+	if businessCode != "" {
+		companyUID, resolveErr := svc.shopUserRepo.ResolveCompanyUID(context.Background(), holdingCode, businessCode)
+		allowed := auth_models.ScopesAllowCompanySelection(shopUser.AccessScopes, companyUID)
+		if branchUID != "" {
+			allowed = auth_models.ScopesAllowBranchSelection(shopUser.AccessScopes, companyUID, branchUID)
+		}
+		if resolveErr != nil || !allowed {
+			return apperr.ErrForbidden.WithMessage("company access denied").WithThaiMessage("ไม่มีสิทธิ์ใช้งานบริษัทนี้")
+		}
+	} else if branchUID != "" {
+		return apperr.ErrForbidden.WithMessage("branch requires company workspace").WithThaiMessage("ต้องเลือกบริษัทของสาขาก่อน")
 	}
 
-	err = svc.authService.SelectShop(microservice.AUTHTYPE_BEARER, tokenStr, holdingCode, businessCode, shopUser.Role)
+	err = svc.authService.SelectShop(microservice.AUTHTYPE_BEARER, tokenStr, holdingCode, businessCode, branchUID, shopUser.Role)
 
 	if err != nil {
 		return errors.New("failed shop select")
 	}
 
 	lastAccessedAt := svc.timeNow()
-	err = svc.shopUserRepo.UpdateLastAccess(context.Background(), holdingCode, shopUser.Username, lastAccessedAt)
+	err = svc.shopUserRepo.UpdateLastAccess(context.Background(), holdingCode, shopUser.UserUID, lastAccessedAt)
 	if err != nil {
 		logger.GetLogger().Error(err.Error())
 	}
@@ -951,20 +891,11 @@ func (svc AuthenticationService) UpdateFavoriteShop(holdingCode string, username
 		return errors.New("holdingcode invalid")
 	}
 
-	if username == "" {
-		return errors.New("username invalid")
+	if strings.TrimSpace(userUID) == "" {
+		return errors.New("user identity invalid")
 	}
 
-	var shopUser auth_models.ShopUser
-	var err error
-	if strings.TrimSpace(userUID) != "" {
-		shopUser, err = svc.shopUserRepo.FindByHoldingCodeAndUserUID(context.Background(), holdingCode, userUID)
-	}
-	// Fall back to username when the uid query matched nothing (FindOne returns a zero struct +
-	// nil error on no-match) so uid drift / by-email memberships still resolve.
-	if strings.TrimSpace(userUID) == "" || err != nil || shopUser.ID == primitive.NilObjectID {
-		shopUser, err = svc.shopUserRepo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, username)
-	}
+	shopUser, err := svc.shopUserRepo.FindByHoldingCodeAndUserUID(context.Background(), holdingCode, userUID)
 
 	if err != nil {
 		return err
@@ -974,7 +905,7 @@ func (svc AuthenticationService) UpdateFavoriteShop(holdingCode string, username
 		return errors.New("shop invalid")
 	}
 
-	err = svc.shopUserRepo.SaveFavorite(context.Background(), holdingCode, shopUser.Username, isFavorite)
+	err = svc.shopUserRepo.SaveFavorite(context.Background(), holdingCode, shopUser.UserUID, isFavorite)
 	if err != nil {
 		return errors.New("favorite failed")
 	}
@@ -1029,49 +960,89 @@ func (svc AuthenticationService) LoginWithFirebaseToken(token string) (string, e
 	return tokenString, nil
 }
 
-// LoginWithGoogleEmail — สำหรับ mobile Google OAuth (Android/iOS)
-// ค้นหา user ด้วย email หรือสร้างใหม่ถ้ายังไม่มี แล้ว generate JWT
-func (svc AuthenticationService) LoginWithGoogleEmail(email string, displayName string) (string, error) {
-	if email == "" {
-		return "", errors.New("email is required")
+// LoginWithGoogleIdentity resolves returning users exclusively by the stable OIDC
+// issuer+subject pair. Email is only recorded during the first verified link.
+func (svc AuthenticationService) LoginWithGoogleIdentity(issuer string, subject string, email string, displayName string) (models.TokenLoginResponse, error) {
+	issuer = normalizeGoogleIssuer(issuer)
+	subject = strings.TrimSpace(subject)
+	email = strings.ToLower(strings.TrimSpace(email))
+	if issuer == "" || subject == "" || email == "" {
+		return models.TokenLoginResponse{}, errors.New("google identity is invalid")
 	}
 
-	// ค้นหา user ด้วย email
-	userFind, err := svc.authRepo.FindUser(context.Background(), email)
-	if err != nil && err.Error() != "mongo: no documents in result" {
-		return "", err
+	ctx := context.Background()
+	identity, err := svc.authRepo.FindGoogleIdentity(ctx, issuer, subject)
+	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
+		return models.TokenLoginResponse{}, err
+	}
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		identity = &auth_models.GoogleIdentity{}
+	}
+	if identity.IdentityUID != "" {
+		return svc.loginWithLinkedGoogleIdentity(ctx, *identity)
 	}
 
-	// ถ้าไม่มี user ให้สร้างใหม่
-	if len(userFind.Username) == 0 {
-		user := auth_models.UserDoc{}
-		user.UID = svc.generateGUID()
-		user.Username = email
-		user.Email = email
-		user.Password = ""
-		user.UserDetail.Name = displayName
-		user.CreatedAt = svc.timeNow()
-
-		_, err = svc.authRepo.CreateUser(context.Background(), user)
-		if err != nil {
-			return "", err
-		}
-		userFind, err = svc.authRepo.FindUser(context.Background(), email)
-		if err != nil {
-			return "", err
-		}
+	now := svc.timeNow().UTC()
+	user := auth_models.UserDoc{
+		GuidFixed: svc.generateGUID(),
+		CreatedAt: now,
 	}
-
-	if !userFind.DisabledAt.IsZero() {
-		return "", &auth_models.UserDisableLoginError{}
+	user.UID = svc.generateGUID()
+	user.Email = email
+	user.Name = strings.TrimSpace(displayName)
+	identity = &auth_models.GoogleIdentity{
+		IdentityUID:   svc.generateGUID(),
+		UserUID:       user.UID,
+		Issuer:        issuer,
+		Subject:       subject,
+		VerifiedEmail: email,
+		IsActive:      true,
+		LinkedAt:      now,
 	}
-
-	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, svc.tokenUserInfo(*userFind))
+	audit := auth_models.AuthAudit{
+		AuditUID:   svc.generateGUID(),
+		UserUID:    user.UID,
+		Action:     "GOOGLE_IDENTITY_LINK",
+		Outcome:    "SUCCESS",
+		OccurredAt: now,
+	}
+	linkedUser, err := svc.authRepo.CreateGoogleUserIdentity(ctx, user, *identity, audit)
 	if err != nil {
-		return "", errors.New("generate token error")
+		if mongo.IsDuplicateKeyError(err) {
+			linked, findErr := svc.authRepo.FindGoogleIdentity(ctx, issuer, subject)
+			if findErr == nil && linked.IdentityUID != "" {
+				return svc.loginWithLinkedGoogleIdentity(ctx, *linked)
+			}
+		}
+		return models.TokenLoginResponse{}, err
 	}
+	return svc.processUserLogin(linkedUser, "", models.AuthenticationContext{})
+}
 
-	return tokenString, nil
+func (svc AuthenticationService) loginWithLinkedGoogleIdentity(ctx context.Context, identity auth_models.GoogleIdentity) (models.TokenLoginResponse, error) {
+	if !identity.IsActive || identity.RevokedAt != nil || strings.TrimSpace(identity.UserUID) == "" {
+		return models.TokenLoginResponse{}, errors.New("google identity is inactive")
+	}
+	user, err := svc.authRepo.FindUserByUID(ctx, identity.UserUID)
+	if err != nil {
+		return models.TokenLoginResponse{}, err
+	}
+	if user.UID == "" || user.IsDeleted {
+		return models.TokenLoginResponse{}, errors.New("google identity user not found")
+	}
+	if !user.DisabledAt.IsZero() {
+		return models.TokenLoginResponse{}, &auth_models.UserDisableLoginError{}
+	}
+	return svc.processUserLogin(*user, "", models.AuthenticationContext{})
+}
+
+func normalizeGoogleIssuer(issuer string) string {
+	switch strings.TrimSpace(issuer) {
+	case "accounts.google.com", "https://accounts.google.com":
+		return "https://accounts.google.com"
+	default:
+		return ""
+	}
 }
 
 func (svc AuthenticationService) LoginWithLineToken(token string) (string, error) {
@@ -1227,29 +1198,29 @@ func (svc AuthenticationService) UnlinkLine(username string) error {
 	return nil
 }
 
-func (svc AuthenticationService) DisableUser(username string) error {
+func (svc AuthenticationService) DisableUser(userUID string) error {
 
-	if username == "" {
-		return errors.New("username invalid")
+	if strings.TrimSpace(userUID) == "" {
+		return errors.New("user identity invalid")
 	}
 
-	userFind, err := svc.authRepo.FindUser(context.Background(), username)
+	userFind, err := svc.authRepo.FindUserByUID(context.Background(), userUID)
 	if err != nil && err.Error() != "mongo: no documents in result" {
 		return err
 	}
 
-	if len(userFind.Username) < 1 {
-		return errors.New("username is not exists")
+	if strings.TrimSpace(userFind.UID) == "" {
+		return errors.New("user is not exists")
 	}
 
 	userFind.DisabledAt = svc.timeNow()
 
-	err = svc.authRepo.UpdateUser(context.Background(), username, *userFind)
+	err = svc.authRepo.UpdateUserByUID(context.Background(), userUID, *userFind)
 	if err != nil {
 		return err
 	}
 
-	return svc.authService.RevokeUserTokens(username)
+	return svc.authService.RevokeUserTokensByUID(userUID)
 
 }
 

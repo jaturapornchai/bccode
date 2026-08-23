@@ -107,6 +107,26 @@ func TestMongodbConfigDoesNotFallbackToGenericInUAT(t *testing.T) {
 	assert.Equal(t, "", mongoConfig.DB())
 }
 
+func TestConfiguredDataEnvironmentRequiresExplicitValue(t *testing.T) {
+	clearMongoEnvironment(t)
+
+	dataEnvironment, configured := config.ConfiguredDataEnvironment()
+
+	assert.False(t, configured)
+	assert.Empty(t, dataEnvironment)
+	assert.Equal(t, config.DataEnvironmentDev, config.CurrentDataEnvironment())
+}
+
+func TestConfiguredDataEnvironmentNormalizesExplicitValue(t *testing.T) {
+	clearMongoEnvironment(t)
+	t.Setenv("BC_ENV", " production ")
+
+	dataEnvironment, configured := config.ConfiguredDataEnvironment()
+
+	assert.True(t, configured)
+	assert.Equal(t, config.DataEnvironmentPRO, dataEnvironment)
+}
+
 func clearMongoEnvironment(t *testing.T) {
 	t.Helper()
 	for _, key := range []string{

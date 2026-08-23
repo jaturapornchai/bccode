@@ -22,7 +22,12 @@ type productQtyInfo struct {
 // ==================== Full Rebuild (ทำทั้งหมด) ====================
 
 // ProcessProductBalanceUpdate — คำนวณยอดคงเหลือ + ค้างรับ + ค้างส่ง ทั้งหมด แล้ว UPDATE ลง product
-func ProcessProductBalanceUpdate(holdingCode string) error {
+func ProcessProductBalanceUpdate(holdingCode, businessCode string) error {
+	holdingCode = strings.TrimSpace(holdingCode)
+	businessCode = strings.ToUpper(strings.TrimSpace(businessCode))
+	if holdingCode == "" || businessCode == "" {
+		return fmt.Errorf("holdingcode and businesscode are required")
+	}
 	startTime := time.Now()
 	logger.Info("ProcessProductBalanceUpdate: start (holdingCode=%s)", holdingCode)
 
@@ -32,20 +37,20 @@ func ProcessProductBalanceUpdate(holdingCode string) error {
 	}
 
 	// 1. Query ยอดคงเหลือ
-	balanceMap, err := queryBalanceAll(db)
+	balanceMap, err := queryBalanceAll(db, businessCode)
 	if err != nil {
 		return fmt.Errorf("query balance: %w", err)
 	}
 
 	// 2. Query ค้างรับ (PO - received)
-	pendingRecvMap, err := queryPendingRecvAll(db)
+	pendingRecvMap, err := queryPendingRecvAll(db, businessCode)
 	if err != nil {
 		logger.Error("ProcessProductBalanceUpdate: pending recv: %v", err)
 		pendingRecvMap = map[string]float64{}
 	}
 
 	// 3. Query ค้างส่ง (SO - delivered)
-	pendingSendMap, err := queryPendingSendAll(db)
+	pendingSendMap, err := queryPendingSendAll(db, businessCode)
 	if err != nil {
 		logger.Error("ProcessProductBalanceUpdate: pending send: %v", err)
 		pendingSendMap = map[string]float64{}
@@ -79,17 +84,17 @@ func ProcessProductBalanceUpdate(holdingCode string) error {
 		len(items), len(balanceMap), len(pendingRecvMap), len(pendingSendMap))
 
 	// 5. Build packing + unitname
-	packingCache := BuildAutoPackingCache(db, itemCodes)
-	unitNameMap := buildUnitNameMap(db, itemCodes)
+	packingCache := BuildAutoPackingCacheCompany(db, holdingCode, businessCode, itemCodes)
+	unitNameMap := buildUnitNameMapCompany(db, holdingCode, businessCode, itemCodes)
 
 	// 6. Batch UPDATE
-	updated, err := batchUpdateProduct(db, items, packingCache, unitNameMap)
+	updated, err := batchUpdateProductCompany(db, holdingCode, businessCode, items, packingCache, unitNameMap)
 	if err != nil {
 		return fmt.Errorf("batch update: %w", err)
 	}
 
 	// 7. Reset ยอดเป็น 0 สำหรับ product ที่ไม่มีข้อมูล
-	zeroed, err := zeroMissingProduct(db, itemCodes)
+	zeroed, err := zeroMissingProductCompany(db, holdingCode, businessCode, itemCodes)
 	if err != nil {
 		logger.Error("ProcessProductBalanceUpdate: zero missing: %v", err)
 	}
@@ -102,26 +107,31 @@ func ProcessProductBalanceUpdate(holdingCode string) error {
 // ==================== Partial Update (ทำตามรหัส) ====================
 
 // ProcessProductBalanceUpdateByItems — คำนวณ + UPDATE เฉพาะ itemcodes ที่ระบุ (เรียกจาก Kafka consumer)
-func ProcessProductBalanceUpdateByItems(db *sql.DB, itemCodes []string) error {
+func ProcessProductBalanceUpdateByItems(db *sql.DB, holdingCode, businessCode string, itemCodes []string) error {
+	holdingCode = strings.TrimSpace(holdingCode)
+	businessCode = strings.ToUpper(strings.TrimSpace(businessCode))
+	if holdingCode == "" || businessCode == "" {
+		return fmt.Errorf("holdingcode and businesscode are required")
+	}
 	if len(itemCodes) == 0 {
 		return nil
 	}
 
 	// 1. Query ยอดคงเหลือ
-	balanceMap, err := queryBalanceByItems(db, itemCodes)
+	balanceMap, err := queryBalanceByItems(db, businessCode, itemCodes)
 	if err != nil {
 		return fmt.Errorf("query balance by items: %w", err)
 	}
 
 	// 2. Query ค้างรับ
-	pendingRecvMap, err := queryPendingRecvByItems(db, itemCodes)
+	pendingRecvMap, err := queryPendingRecvByItems(db, businessCode, itemCodes)
 	if err != nil {
 		logger.Error("ProcessProductBalanceUpdateByItems: pending recv: %v", err)
 		pendingRecvMap = map[string]float64{}
 	}
 
 	// 3. Query ค้างส่ง
-	pendingSendMap, err := queryPendingSendByItems(db, itemCodes)
+	pendingSendMap, err := queryPendingSendByItems(db, businessCode, itemCodes)
 	if err != nil {
 		logger.Error("ProcessProductBalanceUpdateByItems: pending send: %v", err)
 		pendingSendMap = map[string]float64{}
@@ -139,11 +149,11 @@ func ProcessProductBalanceUpdateByItems(db *sql.DB, itemCodes []string) error {
 	}
 
 	// 5. Build packing + unitname
-	packingCache := BuildAutoPackingCache(db, itemCodes)
-	unitNameMap := buildUnitNameMap(db, itemCodes)
+	packingCache := BuildAutoPackingCacheCompany(db, holdingCode, businessCode, itemCodes)
+	unitNameMap := buildUnitNameMapCompany(db, holdingCode, businessCode, itemCodes)
 
 	// 6. Batch UPDATE
-	updated, err := batchUpdateProduct(db, items, packingCache, unitNameMap)
+	updated, err := batchUpdateProductCompany(db, holdingCode, businessCode, items, packingCache, unitNameMap)
 	if err != nil {
 		return fmt.Errorf("batch update by items: %w", err)
 	}
@@ -158,9 +168,9 @@ func ProcessProductBalanceUpdateByItems(db *sql.DB, itemCodes []string) error {
 // an import cycle (process-stock must not import handlers).
 var OnBalanceUpdated func()
 
-func ProcessProductBalanceUpdateByItemsAsync(db *sql.DB, itemCodes []string) {
+func ProcessProductBalanceUpdateByItemsAsync(db *sql.DB, holdingCode, businessCode string, itemCodes []string) {
 	go func() {
-		if err := ProcessProductBalanceUpdateByItems(db, itemCodes); err != nil {
+		if err := ProcessProductBalanceUpdateByItems(db, holdingCode, businessCode, itemCodes); err != nil {
 			logger.Error("ProcessProductBalanceUpdateByItemsAsync: %v", err)
 			return
 		}
@@ -172,44 +182,45 @@ func ProcessProductBalanceUpdateByItemsAsync(db *sql.DB, itemCodes []string) {
 
 // ==================== Query: ยอดคงเหลือ ====================
 
-func queryBalanceAll(db *sql.DB) (map[string]float64, error) {
+func queryBalanceAll(db *sql.DB, businessCode string) (map[string]float64, error) {
 	transFlagList := myglobal.GetTransFlagsForQuery()
 	query := fmt.Sprintf(`
 		SELECT itemcode, SUM((totalqty * calcflag) * unitstand / NULLIF(unitdivide, 0)) as balance
-		FROM docdetail WHERE transflag IN (%s) GROUP BY itemcode
+		FROM docdetail WHERE businesscode = $1 AND transflag IN (%s) GROUP BY itemcode
 	`, transFlagList)
-	return queryItemQtyMap(db, query)
+	return queryItemQtyMapWithArgs(db, query, []interface{}{businessCode})
 }
 
-func queryBalanceByItems(db *sql.DB, itemCodes []string) (map[string]float64, error) {
+func queryBalanceByItems(db *sql.DB, businessCode string, itemCodes []string) (map[string]float64, error) {
 	transFlagList := myglobal.GetTransFlagsForQuery()
-	ph, args := buildPlaceholders(itemCodes)
+	ph, itemArgs := buildPlaceholdersOffset(itemCodes, 1)
 	query := fmt.Sprintf(`
 		SELECT itemcode, SUM((totalqty * calcflag) * unitstand / NULLIF(unitdivide, 0)) as balance
-		FROM docdetail WHERE transflag IN (%s) AND itemcode IN (%s) GROUP BY itemcode
+		FROM docdetail WHERE businesscode = $1 AND transflag IN (%s) AND itemcode IN (%s) GROUP BY itemcode
 	`, transFlagList, ph)
+	args := append([]interface{}{businessCode}, itemArgs...)
 	return queryItemQtyMapWithArgs(db, query, args)
 }
 
 // ==================== Query: ค้างรับ (PO - received) ====================
 // ค้างรับ = จำนวนสั่งซื้อใน PO (transflag=6, ยังไม่ปิด) - จำนวนรับแล้ว (transflag=12,310 ที่อ้าง PO)
 
-func queryPendingRecvAll(db *sql.DB) (map[string]float64, error) {
+func queryPendingRecvAll(db *sql.DB, businessCode string) (map[string]float64, error) {
 	query := `
 		WITH openpo AS (
 			SELECT dd.itemcode, dd.docno,
 				SUM(dd.totalqty * COALESCE(dd.unitstand,1) / NULLIF(COALESCE(dd.unitdivide,1), 0)) as orderedqty
 			FROM docdetail dd
-			JOIN doc d ON d.docno = dd.docno AND d.transflag = dd.transflag
-			WHERE dd.transflag = 6 AND d.isclosed = false
+			JOIN doc d ON d.businesscode = dd.businesscode AND d.docno = dd.docno AND d.transflag = dd.transflag
+			WHERE dd.businesscode = $1 AND dd.transflag = 6 AND d.isclosed = false
 			GROUP BY dd.itemcode, dd.docno
 		),
 		received AS (
 			SELECT dr.docnoref as docno, dd.itemcode,
 				SUM(dd.totalqty * COALESCE(dd.unitstand,1) / NULLIF(COALESCE(dd.unitdivide,1), 0)) as receivedqty
 			FROM docdetail dd
-			JOIN docref dr ON dd.docno = dr.docno
-			WHERE dd.transflag IN (12, 310)
+			JOIN docref dr ON dr.businesscode = dd.businesscode AND dd.docno = dr.docno
+			WHERE dd.businesscode = $1 AND dd.transflag IN (12, 310)
 			GROUP BY dr.docnoref, dd.itemcode
 		)
 		SELECT po.itemcode, SUM(po.orderedqty - COALESCE(r.receivedqty, 0)) as pending
@@ -218,27 +229,27 @@ func queryPendingRecvAll(db *sql.DB) (map[string]float64, error) {
 		GROUP BY po.itemcode
 		HAVING SUM(po.orderedqty - COALESCE(r.receivedqty, 0)) > 0
 	`
-	return queryItemQtyMap(db, query)
+	return queryItemQtyMapWithArgs(db, query, []interface{}{businessCode})
 }
 
-func queryPendingRecvByItems(db *sql.DB, itemCodes []string) (map[string]float64, error) {
-	ph, args := buildPlaceholders(itemCodes)
-	ph2, args2 := buildPlaceholdersOffset(itemCodes, len(itemCodes))
+func queryPendingRecvByItems(db *sql.DB, businessCode string, itemCodes []string) (map[string]float64, error) {
+	ph, args := buildPlaceholdersOffset(itemCodes, 1)
+	ph2, args2 := buildPlaceholdersOffset(itemCodes, len(itemCodes)+1)
 	query := fmt.Sprintf(`
 		WITH openpo AS (
 			SELECT dd.itemcode, dd.docno,
 				SUM(dd.totalqty * COALESCE(dd.unitstand,1) / NULLIF(COALESCE(dd.unitdivide,1), 0)) as orderedqty
 			FROM docdetail dd
-			JOIN doc d ON d.docno = dd.docno AND d.transflag = dd.transflag
-			WHERE dd.transflag = 6 AND d.isclosed = false AND dd.itemcode IN (%s)
+			JOIN doc d ON d.businesscode = dd.businesscode AND d.docno = dd.docno AND d.transflag = dd.transflag
+			WHERE dd.businesscode = $1 AND dd.transflag = 6 AND d.isclosed = false AND dd.itemcode IN (%s)
 			GROUP BY dd.itemcode, dd.docno
 		),
 		received AS (
 			SELECT dr.docnoref as docno, dd.itemcode,
 				SUM(dd.totalqty * COALESCE(dd.unitstand,1) / NULLIF(COALESCE(dd.unitdivide,1), 0)) as receivedqty
 			FROM docdetail dd
-			JOIN docref dr ON dd.docno = dr.docno
-			WHERE dd.transflag IN (12, 310) AND dd.itemcode IN (%s)
+			JOIN docref dr ON dr.businesscode = dd.businesscode AND dd.docno = dr.docno
+			WHERE dd.businesscode = $1 AND dd.transflag IN (12, 310) AND dd.itemcode IN (%s)
 			GROUP BY dr.docnoref, dd.itemcode
 		)
 		SELECT po.itemcode, SUM(po.orderedqty - COALESCE(r.receivedqty, 0)) as pending
@@ -248,29 +259,30 @@ func queryPendingRecvByItems(db *sql.DB, itemCodes []string) (map[string]float64
 		HAVING SUM(po.orderedqty - COALESCE(r.receivedqty, 0)) > 0
 	`, ph, ph2)
 	// ส่ง args 2 ชุด (สำหรับ openpo + received) — placeholder groups are now distinct
-	doubleArgs := append(args, args2...)
+	doubleArgs := append([]interface{}{businessCode}, args...)
+	doubleArgs = append(doubleArgs, args2...)
 	return queryItemQtyMapWithArgs(db, query, doubleArgs)
 }
 
 // ==================== Query: ค้างส่ง (SO - delivered) ====================
 // ค้างส่ง = จำนวนสั่งขายใน SO (transflag=36, ยังไม่ปิด) - จำนวนส่งแล้ว (transflag=44 ที่อ้าง SO)
 
-func queryPendingSendAll(db *sql.DB) (map[string]float64, error) {
+func queryPendingSendAll(db *sql.DB, businessCode string) (map[string]float64, error) {
 	query := `
 		WITH openso AS (
 			SELECT dd.itemcode, dd.docno,
 				SUM(dd.totalqty * COALESCE(dd.unitstand,1) / NULLIF(COALESCE(dd.unitdivide,1), 0)) as orderedqty
 			FROM docdetail dd
-			JOIN doc d ON d.docno = dd.docno AND d.transflag = dd.transflag
-			WHERE dd.transflag = 36 AND d.isclosed = false
+			JOIN doc d ON d.businesscode = dd.businesscode AND d.docno = dd.docno AND d.transflag = dd.transflag
+			WHERE dd.businesscode = $1 AND dd.transflag = 36 AND d.isclosed = false
 			GROUP BY dd.itemcode, dd.docno
 		),
 		delivered AS (
 			SELECT dr.docnoref as docno, dd.itemcode,
 				SUM(dd.totalqty * COALESCE(dd.unitstand,1) / NULLIF(COALESCE(dd.unitdivide,1), 0)) as deliveredqty
 			FROM docdetail dd
-			JOIN docref dr ON dd.docno = dr.docno
-			WHERE dd.transflag = 44
+			JOIN docref dr ON dr.businesscode = dd.businesscode AND dd.docno = dr.docno
+			WHERE dd.businesscode = $1 AND dd.transflag = 44
 			GROUP BY dr.docnoref, dd.itemcode
 		)
 		SELECT so.itemcode, SUM(so.orderedqty - COALESCE(d.deliveredqty, 0)) as pending
@@ -279,27 +291,27 @@ func queryPendingSendAll(db *sql.DB) (map[string]float64, error) {
 		GROUP BY so.itemcode
 		HAVING SUM(so.orderedqty - COALESCE(d.deliveredqty, 0)) > 0
 	`
-	return queryItemQtyMap(db, query)
+	return queryItemQtyMapWithArgs(db, query, []interface{}{businessCode})
 }
 
-func queryPendingSendByItems(db *sql.DB, itemCodes []string) (map[string]float64, error) {
-	ph, args := buildPlaceholders(itemCodes)
-	ph2, args2 := buildPlaceholdersOffset(itemCodes, len(itemCodes))
+func queryPendingSendByItems(db *sql.DB, businessCode string, itemCodes []string) (map[string]float64, error) {
+	ph, args := buildPlaceholdersOffset(itemCodes, 1)
+	ph2, args2 := buildPlaceholdersOffset(itemCodes, len(itemCodes)+1)
 	query := fmt.Sprintf(`
 		WITH openso AS (
 			SELECT dd.itemcode, dd.docno,
 				SUM(dd.totalqty * COALESCE(dd.unitstand,1) / NULLIF(COALESCE(dd.unitdivide,1), 0)) as orderedqty
 			FROM docdetail dd
-			JOIN doc d ON d.docno = dd.docno AND d.transflag = dd.transflag
-			WHERE dd.transflag = 36 AND d.isclosed = false AND dd.itemcode IN (%s)
+			JOIN doc d ON d.businesscode = dd.businesscode AND d.docno = dd.docno AND d.transflag = dd.transflag
+			WHERE dd.businesscode = $1 AND dd.transflag = 36 AND d.isclosed = false AND dd.itemcode IN (%s)
 			GROUP BY dd.itemcode, dd.docno
 		),
 		delivered AS (
 			SELECT dr.docnoref as docno, dd.itemcode,
 				SUM(dd.totalqty * COALESCE(dd.unitstand,1) / NULLIF(COALESCE(dd.unitdivide,1), 0)) as deliveredqty
 			FROM docdetail dd
-			JOIN docref dr ON dd.docno = dr.docno
-			WHERE dd.transflag = 44 AND dd.itemcode IN (%s)
+			JOIN docref dr ON dr.businesscode = dd.businesscode AND dd.docno = dr.docno
+			WHERE dd.businesscode = $1 AND dd.transflag = 44 AND dd.itemcode IN (%s)
 			GROUP BY dr.docnoref, dd.itemcode
 		)
 		SELECT so.itemcode, SUM(so.orderedqty - COALESCE(d.deliveredqty, 0)) as pending
@@ -308,7 +320,8 @@ func queryPendingSendByItems(db *sql.DB, itemCodes []string) (map[string]float64
 		GROUP BY so.itemcode
 		HAVING SUM(so.orderedqty - COALESCE(d.deliveredqty, 0)) > 0
 	`, ph, ph2)
-	doubleArgs := append(args, args2...)
+	doubleArgs := append([]interface{}{businessCode}, args...)
+	doubleArgs = append(doubleArgs, args2...)
 	return queryItemQtyMapWithArgs(db, query, doubleArgs)
 }
 
@@ -316,6 +329,14 @@ func queryPendingSendByItems(db *sql.DB, itemCodes []string) (map[string]float64
 
 // batchUpdateProduct — UPDATE product ทั้ง 6 fields (balance + pending recv + pending send)
 func batchUpdateProduct(db *sql.DB, items []productQtyInfo, packingCache map[string][]models.ProductBarcodePackingStruct, unitNameMap map[string]string) (int, error) {
+	return batchUpdateProductScoped(db, "", "", items, packingCache, unitNameMap)
+}
+
+func batchUpdateProductCompany(db *sql.DB, holdingCode, businessCode string, items []productQtyInfo, packingCache map[string][]models.ProductBarcodePackingStruct, unitNameMap map[string]string) (int, error) {
+	return batchUpdateProductScoped(db, holdingCode, businessCode, items, packingCache, unitNameMap)
+}
+
+func batchUpdateProductScoped(db *sql.DB, holdingCode, businessCode string, items []productQtyInfo, packingCache map[string][]models.ProductBarcodePackingStruct, unitNameMap map[string]string) (int, error) {
 	if len(items) == 0 {
 		return 0, nil
 	}
@@ -356,6 +377,11 @@ func batchUpdateProduct(db *sql.DB, items []productQtyInfo, packingCache map[str
 			argIdx += 7
 		}
 
+		companyWhere := ""
+		if businessCode != "" {
+			companyWhere = fmt.Sprintf("holding_code = $%d AND businesscode = $%d AND ", argIdx, argIdx+1)
+			args = append(args, holdingCode, businessCode)
+		}
 		query := fmt.Sprintf(`
 			UPDATE product SET
 				balanceqty = CASE %s END,
@@ -364,7 +390,7 @@ func batchUpdateProduct(db *sql.DB, items []productQtyInfo, packingCache map[str
 				pendingrecvqtyword = CASE %s END,
 				pendingsendqty = CASE %s END,
 				pendingsendqtyword = CASE %s END
-			WHERE itemcode IN (%s)
+			WHERE %sitemcode IN (%s)
 		`,
 			strings.Join(balQtyClauses, " "),
 			strings.Join(balWordClauses, " "),
@@ -372,6 +398,7 @@ func batchUpdateProduct(db *sql.DB, items []productQtyInfo, packingCache map[str
 			strings.Join(recvWordClauses, " "),
 			strings.Join(sendQtyClauses, " "),
 			strings.Join(sendWordClauses, " "),
+			companyWhere,
 			strings.Join(inCodes, ","),
 		)
 
@@ -403,6 +430,30 @@ func zeroMissingProduct(db *sql.DB, activeItemCodes []string) (int, error) {
 
 	ph, args := buildPlaceholders(activeItemCodes)
 	query := fmt.Sprintf("UPDATE product SET %s WHERE %s AND itemcode NOT IN (%s)", zeroFields, hasData, ph)
+	result, err := db.Exec(query, args...)
+	if err != nil {
+		return 0, err
+	}
+	affected, _ := result.RowsAffected()
+	return int(affected), nil
+}
+
+func zeroMissingProductCompany(db *sql.DB, holdingCode, businessCode string, activeItemCodes []string) (int, error) {
+	zeroFields := "balanceqty = 0, balanceqtyword = '', pendingrecvqty = 0, pendingrecvqtyword = '', pendingsendqty = 0, pendingsendqtyword = ''"
+	hasData := "(balanceqty != 0 OR balanceqtyword != '' OR pendingrecvqty != 0 OR pendingrecvqtyword != '' OR pendingsendqty != 0 OR pendingsendqtyword != '')"
+	args := []interface{}{holdingCode, businessCode}
+	if len(activeItemCodes) == 0 {
+		result, err := db.Exec(fmt.Sprintf("UPDATE product SET %s WHERE holding_code = $1 AND businesscode = $2 AND %s", zeroFields, hasData), args...)
+		if err != nil {
+			return 0, err
+		}
+		affected, _ := result.RowsAffected()
+		return int(affected), nil
+	}
+
+	ph, itemArgs := buildPlaceholdersOffset(activeItemCodes, 2)
+	args = append(args, itemArgs...)
+	query := fmt.Sprintf("UPDATE product SET %s WHERE holding_code = $1 AND businesscode = $2 AND %s AND itemcode NOT IN (%s)", zeroFields, hasData, ph)
 	result, err := db.Exec(query, args...)
 	if err != nil {
 		return 0, err
@@ -468,6 +519,14 @@ func queryItemQtyMapWithArgs(db *sql.DB, query string, args []interface{}) (map[
 }
 
 func buildUnitNameMap(db *sql.DB, itemCodes []string) map[string]string {
+	return buildUnitNameMapScoped(db, "", "", itemCodes)
+}
+
+func buildUnitNameMapCompany(db *sql.DB, holdingCode, businessCode string, itemCodes []string) map[string]string {
+	return buildUnitNameMapScoped(db, holdingCode, businessCode, itemCodes)
+}
+
+func buildUnitNameMapScoped(db *sql.DB, holdingCode, businessCode string, itemCodes []string) map[string]string {
 	result := map[string]string{}
 	if len(itemCodes) == 0 {
 		return result
@@ -478,8 +537,17 @@ func buildUnitNameMap(db *sql.DB, itemCodes []string) map[string]string {
 		if end > len(itemCodes) {
 			end = len(itemCodes)
 		}
-		ph, args := buildPlaceholders(itemCodes[i:end])
-		query := fmt.Sprintf("SELECT itemcode, COALESCE(unitname,'') FROM product WHERE itemcode IN (%s)", ph)
+		offset := 0
+		args := []interface{}{}
+		companyWhere := ""
+		if businessCode != "" {
+			offset = 2
+			args = append(args, holdingCode, businessCode)
+			companyWhere = "holding_code = $1 AND businesscode = $2 AND "
+		}
+		ph, itemArgs := buildPlaceholdersOffset(itemCodes[i:end], offset)
+		args = append(args, itemArgs...)
+		query := fmt.Sprintf("SELECT itemcode, COALESCE(unitname,'') FROM product WHERE %sitemcode IN (%s)", companyWhere, ph)
 		rows, err := db.Query(query, args...)
 		if err != nil {
 			logger.Error("buildUnitNameMap: %v", err)

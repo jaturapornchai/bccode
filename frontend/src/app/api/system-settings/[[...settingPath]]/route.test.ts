@@ -10,7 +10,7 @@ describe("system settings API route security", () => {
     vi.unstubAllGlobals();
   });
 
-  it("asks the backend to validate selected holding before atlas proxying", async () => {
+  it("asks the backend to validate selected holding before legacy atlas proxying", async () => {
     process.env.JWT_SECRET_KEY = SECRET;
     const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
       void url;
@@ -20,13 +20,13 @@ describe("system settings API route security", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const response = await GET(
-      new Request("http://localhost/api/system-settings/permissiondefinition?holdingcode=SHOP002", {
+      new Request("http://localhost/api/system-settings/approvalsetting?holdingcode=SHOP002", {
         headers: {
           Authorization: `Bearer ${signJwt({ username: "user@example.com", holdingcode: "SHOP001" })}`,
           "x-bc-backend-url": "http://localhost:8888/goapi",
         },
       }),
-      { params: Promise.resolve({ settingPath: ["permissiondefinition"] }) },
+      { params: Promise.resolve({ settingPath: ["approvalsetting"] }) },
     );
 
     expect(response.status).toBe(403);
@@ -280,8 +280,6 @@ describe("system settings API route security", () => {
   });
 
   it.each([
-    ["permissiondefinition", "permissiondefinitions", "permissioncode"],
-    ["permissiongroup", "permissiongroups", "groupcode"],
     ["permissionlink", "employeepermissions", "employeecode"],
     ["approvalsetting", "approvalsettings", "approvalcode"],
   ])("supports atlas CRUD proxy for %s", async (slug, collection, codeKey) => {
@@ -350,6 +348,96 @@ describe("system settings API route security", () => {
     expect(createBody).toMatchObject({ collection, holdingcode: "SHOP001", guidfixed: "GUID001" });
     expect(updateBody).toMatchObject({ collection, holdingcode: "SHOP001", guidfixed: "GUID001" });
     expect(deleteBody).toMatchObject({ collection, holdingcode: "SHOP001", guidfixed: "GUID001", deletemany: false });
+  });
+
+  it("serves the screen permission catalog locally and keeps it read-only", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: "Bearer test-token",
+      "x-bc-backend-url": "http://localhost:8888/goapi",
+    };
+
+    const getResponse = await GET(
+      new Request("http://localhost/api/system-settings/permissiondefinition?q=sale&limit=10&offset=0", { headers }),
+      { params: Promise.resolve({ settingPath: ["permissiondefinition"] }) },
+    );
+    const getPayload = await getResponse.json() as { success: boolean; data: Array<Record<string, unknown>>; total: number };
+    expect(getResponse.status).toBe(200);
+    expect(getPayload.success).toBe(true);
+    expect(getPayload.total).toBeGreaterThan(0);
+    expect(getPayload.data.every((item) => typeof item.permissioncode === "string" && item.isactive === true)).toBe(true);
+
+    const postResponse = await POST(
+      new Request("http://localhost/api/system-settings/permissiondefinition", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ permissioncode: "CUSTOM" }),
+      }),
+      { params: Promise.resolve({ settingPath: ["permissiondefinition"] }) },
+    );
+    expect(postResponse.status).toBe(405);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("proxies role permission CRUD to the dedicated organization API", async () => {
+    const calls: Array<[string, RequestInit | undefined]> = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+      calls.push([String(url), init]);
+      return Response.json({ success: true, data: [] });
+    }));
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: "Bearer test-token",
+      "x-bc-backend-url": "http://localhost:8888/goapi",
+    };
+    const body = {
+      rolecode: "USER",
+      names: [{ code: "th", name: "ผู้ใช้งาน" }],
+      permissions: ["sale-order"],
+      isactive: true,
+      __v: 0,
+    };
+
+    await GET(
+      new Request("http://localhost/api/system-settings/permissiongroup?holdingcode=SHOP001&limit=100&offset=0", { headers }),
+      { params: Promise.resolve({ settingPath: ["permissiongroup"] }) },
+    );
+    await POST(
+      new Request("http://localhost/api/system-settings/permissiongroup?holdingcode=SHOP001", {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+      }),
+      { params: Promise.resolve({ settingPath: ["permissiongroup"] }) },
+    );
+    await PUT(
+      new Request("http://localhost/api/system-settings/permissiongroup/507f1f77bcf86cd799439011?holdingcode=SHOP001", {
+        method: "PUT",
+        headers,
+        body: JSON.stringify(body),
+      }),
+      { params: Promise.resolve({ settingPath: ["permissiongroup", "507f1f77bcf86cd799439011"] }) },
+    );
+    await DELETE(
+      new Request("http://localhost/api/system-settings/permissiongroup/507f1f77bcf86cd799439011?holdingcode=SHOP001", {
+        method: "DELETE",
+        headers,
+      }),
+      { params: Promise.resolve({ settingPath: ["permissiongroup", "507f1f77bcf86cd799439011"] }) },
+    );
+
+    expect(calls.map(([url]) => url)).toEqual([
+      "http://localhost:8888/organization/role-permission?offset=0&limit=100",
+      "http://localhost:8888/organization/role-permission?holdingcode=SHOP001",
+      "http://localhost:8888/organization/role-permission/507f1f77bcf86cd799439011?holdingcode=SHOP001",
+      "http://localhost:8888/organization/role-permission/507f1f77bcf86cd799439011?holdingcode=SHOP001",
+    ]);
+    expect(calls.map(([, init]) => init?.method)).toEqual(["GET", "POST", "PUT", "DELETE"]);
+    expect(JSON.parse(String(calls[1][1]?.body))).toMatchObject(body);
+    expect(JSON.parse(String(calls[2][1]?.body))).toMatchObject(body);
+    expect(calls[3][1]?.body).toBeUndefined();
   });
 
   it("keeps user access audit read-only at the API proxy layer", async () => {

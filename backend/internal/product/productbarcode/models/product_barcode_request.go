@@ -47,7 +47,6 @@ func (p ProductBarcodeRequest) CoreOnly() ProductBarcodeRequest {
 		Condition:     p.Condition,
 		DivideValue:   p.DivideValue,
 		StandValue:    p.StandValue,
-		IsMainBarcode: p.IsMainBarcode,
 		ImageURI:      p.ImageURI,
 		Images:        p.Images,
 		Videos:        p.Videos,
@@ -59,8 +58,8 @@ type BarcodeRequest struct {
 	ItemCode    string  `json:"itemcode" bson:"itemcode"`
 	Barcode     string  `json:"barcode" bson:"barcode" validate:"required,min=1"`
 	Condition   bool    `json:"condition" bson:"condition"`
-	DivideValue float64 `json:"dividevalue" bson:"dividevalue"`
-	StandValue  float64 `json:"standvalue" bson:"standvalue"`
+	DivideValue int64   `json:"dividevalue" bson:"dividevalue"`
+	StandValue  int64   `json:"standvalue" bson:"standvalue"`
 	Qty         float64 `json:"qty" bson:"qty"`
 }
 
@@ -68,16 +67,16 @@ type BOMRequest struct {
 	ItemCode    string  `json:"itemcode" bson:"itemcode"`
 	Barcode     string  `json:"barcode" bson:"barcode" validate:"required,min=1"`
 	Condition   bool    `json:"condition" bson:"condition"`
-	DivideValue float64 `json:"dividevalue" bson:"dividevalue"`
-	StandValue  float64 `json:"standvalue" bson:"standvalue"`
+	DivideValue int64   `json:"dividevalue" bson:"dividevalue"`
+	StandValue  int64   `json:"standvalue" bson:"standvalue"`
 	Qty         float64 `json:"qty" bson:"qty"`
 }
 
 type RefBarcodeImportRequest struct {
-	Barcode     string  `json:"barcode" validate:"required"`
-	StandValue  float64 `json:"standvalue" validate:"required"`
-	DivideValue float64 `json:"dividevalue" validate:"required"`
-	BarcodeRef  string  `json:"barcoderef" validate:"required"`
+	Barcode     string `json:"barcode" validate:"required"`
+	StandValue  int64  `json:"standvalue" validate:"required"`
+	DivideValue int64  `json:"dividevalue" validate:"required"`
+	BarcodeRef  string `json:"barcoderef" validate:"required"`
 }
 
 type RefBarcodeImportResponse struct {

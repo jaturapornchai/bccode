@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { serverGoApiBase, validateBackendUrl } from "@/lib/backend-url";
 import { verifyHs256Jwt } from "@/lib/server-jwt";
 import { getSystemSettingConfig, type SystemSettingConfig } from "@/lib/system-setting-screens";
+import { flattenMenuItems } from "@/lib/menu-data";
 import {
   getBackendUrlFromRequest,
   extractMessage,
@@ -24,11 +25,17 @@ type ResolvedProxy = {
 export async function GET(request: Request, context: SystemSettingsProxyContext) {
   const resolved = await resolveProxy(context);
   if (resolved instanceof NextResponse) return resolved;
-  const unsupportedResponse = rejectUnsupportedProxy(resolved.config);
+  const unsupportedResponse = rejectUnsupportedProxy(resolved.config, "GET");
   if (unsupportedResponse) return unsupportedResponse;
 
   const tenantResponse = await validateTenantAccess(request, resolved.config);
   if (tenantResponse) return tenantResponse;
+
+  if (resolved.config.kind === "permission-catalog") {
+    const authorization = requireBearerToken(request);
+    if (typeof authorization !== "string") return authorization;
+    return permissionCatalogResponse(request, resolved.id);
+  }
 
   const base = resolveBaseUrl(request, resolved.config);
   if (base instanceof NextResponse) return base;
@@ -42,7 +49,7 @@ export async function POST(request: Request, context: SystemSettingsProxyContext
 
   const resolved = await resolveProxy(context);
   if (resolved instanceof NextResponse) return resolved;
-  const unsupportedResponse = rejectUnsupportedProxy(resolved.config);
+  const unsupportedResponse = rejectUnsupportedProxy(resolved.config, "POST");
   if (unsupportedResponse) return unsupportedResponse;
 
   const tenantResponse = await validateTenantAccess(request, resolved.config, Array.isArray(body) ? undefined : body);
@@ -67,7 +74,7 @@ export async function PUT(request: Request, context: SystemSettingsProxyContext)
 
   const resolved = await resolveProxy(context);
   if (resolved instanceof NextResponse) return resolved;
-  const unsupportedResponse = rejectUnsupportedProxy(resolved.config);
+  const unsupportedResponse = rejectUnsupportedProxy(resolved.config, "PUT");
   if (unsupportedResponse) return unsupportedResponse;
 
   const tenantResponse = await validateTenantAccess(request, resolved.config, Array.isArray(body) ? undefined : body);
@@ -90,7 +97,7 @@ export async function DELETE(request: Request, context: SystemSettingsProxyConte
   const body = await readBody(request);
   const resolved = await resolveProxy(context);
   if (resolved instanceof NextResponse) return resolved;
-  const unsupportedResponse = rejectUnsupportedProxy(resolved.config);
+  const unsupportedResponse = rejectUnsupportedProxy(resolved.config, "DELETE");
   if (unsupportedResponse) return unsupportedResponse;
 
   const tenantResponse = await validateTenantAccess(request, resolved.config, isRecord(body) ? body : undefined);
@@ -143,9 +150,14 @@ function resolveBaseUrl(request: Request, config: SystemSettingConfig, body?: Ap
   }
 }
 
-function rejectUnsupportedProxy(config: SystemSettingConfig): NextResponse | null {
-  if (config.kind !== "report") return null;
-  return NextResponse.json({ success: false, message: "รายงานนี้ไม่มี CRUD API" }, { status: 405 });
+function rejectUnsupportedProxy(config: SystemSettingConfig, method: "GET" | "POST" | "PUT" | "DELETE"): NextResponse | null {
+  if (config.kind === "report") {
+    return NextResponse.json({ success: false, message: "รายงานนี้ไม่มี CRUD API" }, { status: 405 });
+  }
+  if (config.kind === "permission-catalog" && method !== "GET") {
+    return NextResponse.json({ success: false, message: "รายการสิทธิ์หน้าจอแก้ไขไม่ได้" }, { status: 405 });
+  }
+  return null;
 }
 
 function usesGoApi(config: SystemSettingConfig): boolean {
@@ -256,7 +268,10 @@ function buildGetPath(request: Request, config: SystemSettingConfig, id: string)
 
   if (config.kind === "goapi-crud") {
     query.set("holdingcode", holdingcode);
-    return `${config.basePath ?? ""}?${query.toString()}`;
+    const basePath = id
+      ? `${config.basePath ?? ""}/${encodeProxyPathId(config, id)}`
+      : (config.listPath ?? config.basePath ?? "");
+    return `${basePath}?${query.toString()}`;
   }
 
   if (config.kind === "ai-provider") {
@@ -308,6 +323,39 @@ function buildGetInit(request: Request, config: SystemSettingConfig, id = ""): R
   }
 
   return { method: "GET" };
+}
+
+function permissionCatalogResponse(request: Request, id: string): NextResponse {
+  const url = new URL(request.url);
+  const query = (url.searchParams.get("q") ?? "").trim().toLowerCase();
+  const catalog = flattenMenuItems().map((item) => ({
+    _id: item.id,
+    permissioncode: item.id,
+    permissionname: item.label.th,
+    names: Object.entries(item.label)
+      .filter(([code, name]) => code !== "key" && typeof name === "string" && name.trim())
+      .map(([code, name]) => ({ code, name })),
+    description: item.route,
+    category: item.category,
+    isactive: true,
+  }));
+  const matched = catalog.filter((item) => {
+    if (id && item.permissioncode !== id) return false;
+    if (!query) return true;
+    return `${item.permissioncode} ${item.permissionname} ${item.description} ${item.category}`
+      .toLowerCase()
+      .includes(query);
+  });
+  const offset = boundedCatalogNumber(url.searchParams.get("offset"), 0, 0, matched.length);
+  const limit = boundedCatalogNumber(url.searchParams.get("limit"), 100, 1, 1000);
+  const data = id ? matched.slice(0, 1) : matched.slice(offset, offset + limit);
+  return NextResponse.json({ success: true, data: id ? (data[0] ?? null) : data, total: matched.length });
+}
+
+function boundedCatalogNumber(raw: string | null, fallback: number, minimum: number, maximum = Number.MAX_SAFE_INTEGER): number {
+  const value = Number(raw);
+  if (!Number.isInteger(value)) return fallback;
+  return Math.min(maximum, Math.max(minimum, value));
 }
 
 function buildWritePath(request: Request, config: SystemSettingConfig, id: string, method: "POST" | "PUT", body: Record<string, unknown>): string {

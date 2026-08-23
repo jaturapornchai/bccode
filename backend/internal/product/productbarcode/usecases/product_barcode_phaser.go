@@ -35,20 +35,11 @@ func (ProductBarcodePhaser) PhaseProductBarcodeDoc(doc *models.ProductBarcodeDoc
 
 	productBarcodePG.UnitCode = doc.ItemUnitCode
 
-	isNormalProductAndHasRefBarcode := productBarcode.ItemType == 0 && productBarcode.RefBarcodes != nil && len(*productBarcode.RefBarcodes) > 0
-
-	if isNormalProductAndHasRefBarcode {
-		productBarcodePG.MainBarcodeRef = (*productBarcode.RefBarcodes)[0].Barcode
-		productBarcodePG.StandValue = (*productBarcode.RefBarcodes)[0].StandValue
-		productBarcodePG.DivideValue = (*productBarcode.RefBarcodes)[0].DivideValue
-	} else {
-		productBarcodePG.MainBarcodeRef = productBarcode.Barcode
-		productBarcodePG.StandValue = productBarcode.StandValue
-		productBarcodePG.DivideValue = productBarcode.DivideValue
-		if productBarcodePG.StandValue <= 0 || productBarcodePG.DivideValue <= 0 {
-			productBarcodePG.StandValue = 1
-			productBarcodePG.DivideValue = 1
-		}
+	productBarcodePG.StandValue = productBarcode.StandValue
+	productBarcodePG.DivideValue = productBarcode.DivideValue
+	if productBarcodePG.StandValue <= 0 || productBarcodePG.DivideValue <= 0 {
+		productBarcodePG.StandValue = 1
+		productBarcodePG.DivideValue = 1
 	}
 
 	return &productBarcodePG, nil

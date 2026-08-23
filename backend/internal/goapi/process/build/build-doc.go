@@ -223,16 +223,16 @@ func RebuildDocFromMongoWhereTransFlags(mongoClient *mongo.Client, postgresDB *s
 						// Transfer transaction - create 2 records
 						lineNumber++
 						postgresDocDetailData = append(postgresDocDetailData,
-							myglobal.MapDocDetailFromMongo(docData, detail, transFlag, -1, 1, "", 1.0, 1.0, detail.WhCode, detail.LocationCode, detail.Qty*-1, lineNumber))
+							myglobal.MapDocDetailFromMongo(docData, detail, transFlag, -1, 1, 1.0, 1.0, detail.WhCode, detail.LocationCode, detail.Qty*-1, lineNumber))
 						lineNumber++
 						postgresDocDetailData = append(postgresDocDetailData,
-							myglobal.MapDocDetailFromMongo(docData, detail, transFlag, 1, 2, "", 1.0, 1.0, detail.ToWhCode, detail.ToLocationCode, detail.Qty, lineNumber))
+							myglobal.MapDocDetailFromMongo(docData, detail, transFlag, 1, 2, 1.0, 1.0, detail.ToWhCode, detail.ToLocationCode, detail.Qty, lineNumber))
 						totalDetailsProcessed += 2
 					}
 				} else {
 					// Other transactions - create 1 record
 					lineNumber++
-					detailGenerated := myglobal.MapDocDetailFromMongo(docData, detail, transFlag, transCalc, calcSeq, "", 1.0, 1.0, detail.WhCode, detail.LocationCode, detail.Qty*transCalc, lineNumber)
+					detailGenerated := myglobal.MapDocDetailFromMongo(docData, detail, transFlag, transCalc, calcSeq, 1.0, 1.0, detail.WhCode, detail.LocationCode, detail.Qty*transCalc, lineNumber)
 					postgresDocDetailData = append(postgresDocDetailData, detailGenerated)
 					totalDetailsProcessed++
 				}
@@ -545,7 +545,6 @@ func createDocDetailTransFlag54(docDetailData models.ProcessMongoTransDetailTran
 		CalcSeq:         1,
 		ItemCode:        docDetailData.ItemCode,
 		Description:     itemName,
-		BarcodeMain:     "",
 		Barcode:         docDetailData.Barcode,
 		UnitCode:        docDetailData.UnitCode,
 		WhCode:          whCode,

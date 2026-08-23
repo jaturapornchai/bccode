@@ -284,6 +284,7 @@ func TableDocDetailCreate(db *sql.DB) error {
 	createTableQuery := `
 		CREATE TABLE IF NOT EXISTS docdetail (
 			id SERIAL PRIMARY KEY,
+			businesscode TEXT NOT NULL DEFAULT '',
 			docdatetime TIMESTAMPTZ,
 			docno TEXT,
 			docref TEXT,
@@ -313,7 +314,8 @@ func TableDocDetailCreate(db *sql.DB) error {
 			priceexcludevat_doc NUMERIC(18,2) DEFAULT 0,
 			sumamountexcludevat_doc NUMERIC(18,2) DEFAULT 0,
 			totalvaluevat_doc NUMERIC(18,2) DEFAULT 0
-		)`
+		);
+		ALTER TABLE docdetail ADD COLUMN IF NOT EXISTS businesscode TEXT NOT NULL DEFAULT ''`
 
 	if _, err := tx.ExecContext(context.Background(), createTableQuery); err != nil {
 		return fmt.Errorf("create docdetail table: %w", err)
@@ -358,6 +360,8 @@ func TableDocDetailCreate(db *sql.DB) error {
 		CREATE INDEX IF NOT EXISTS idx_docdetail_docdatetime ON docdetail (docdatetime);
 		CREATE INDEX IF NOT EXISTS idx_docdetail_barcode ON docdetail (barcode);
 		CREATE INDEX IF NOT EXISTS idx_docdetail_isupdated ON docdetail (isupdated);
+		CREATE INDEX IF NOT EXISTS idx_docdetail_company_item ON docdetail (businesscode, itemcode);
+		CREATE INDEX IF NOT EXISTS idx_docdetail_company_doc ON docdetail (businesscode, transflag, docno);
 		`
 
 	if _, err := tx.ExecContext(context.Background(), commentsAndIndexesQuery); err != nil {
@@ -389,6 +393,7 @@ func TableDocCreate(db *sql.DB) error {
 	createTableQuery := `
 		CREATE TABLE IF NOT EXISTS doc (
 			id SERIAL PRIMARY KEY,
+			businesscode TEXT NOT NULL DEFAULT '',
 			transflag INT,
 			docno TEXT,
 			custcode TEXT,
@@ -440,7 +445,8 @@ func TableDocCreate(db *sql.DB) error {
 			closedmanual_by_name TEXT DEFAULT '',
 			closedmanual_at TIMESTAMPTZ DEFAULT '1970-01-01',
 			closedmanual_reason TEXT DEFAULT ''
-		)`
+		);
+		ALTER TABLE doc ADD COLUMN IF NOT EXISTS businesscode TEXT NOT NULL DEFAULT ''`
 
 	if _, err := tx.ExecContext(context.Background(), createTableQuery); err != nil {
 		return fmt.Errorf("create doc table: %w", err)
@@ -506,7 +512,8 @@ func TableDocCreate(db *sql.DB) error {
 		CREATE INDEX IF NOT EXISTS idx_doc_transflag_docno_perioddatetime ON doc (transflag, docno, perioddatetime);
 		CREATE INDEX IF NOT EXISTS idx_doc_creator_code ON doc (creator_code);
 		CREATE INDEX IF NOT EXISTS idx_doc_created_at ON doc (created_at);
-		CREATE INDEX IF NOT EXISTS idx_doc_approval_status ON doc (approval_status) WHERE approval_status != ''`
+		CREATE INDEX IF NOT EXISTS idx_doc_approval_status ON doc (approval_status) WHERE approval_status != '';
+		CREATE INDEX IF NOT EXISTS idx_doc_company_doc ON doc (businesscode, transflag, docno)`
 
 	if _, err := tx.ExecContext(context.Background(), commentsAndIndexesQuery); err != nil {
 		return fmt.Errorf("create doc comments and indexes: %w", err)
@@ -697,6 +704,7 @@ func TableProcessStockCostCreate(db *sql.DB) error {
 	createTableQuery := `
 		CREATE TABLE IF NOT EXISTS processstockcost (
 			id SERIAL PRIMARY KEY,
+			businesscode TEXT NOT NULL DEFAULT '',
 			docdatetime TIMESTAMPTZ,
 			docno TEXT,
 			docref TEXT,
@@ -717,7 +725,8 @@ func TableProcessStockCostCreate(db *sql.DB) error {
 			balanceamount NUMERIC(18,2),
 			unitcost NUMERIC(18,2),			
 			guid TEXT
-		)`
+		);
+		ALTER TABLE processstockcost ADD COLUMN IF NOT EXISTS businesscode TEXT NOT NULL DEFAULT ''`
 
 	if _, err := tx.ExecContext(context.Background(), createTableQuery); err != nil {
 		return fmt.Errorf("create processstockcost table: %w", err)
@@ -756,7 +765,8 @@ func TableProcessStockCostCreate(db *sql.DB) error {
 		CREATE INDEX IF NOT EXISTS idx_processstockcost_itemcode_guid ON processstockcost (itemcode, guid);
 		CREATE INDEX IF NOT EXISTS idx_processstockcost_docno ON processstockcost (docno);
 		CREATE INDEX IF NOT EXISTS idx_processstockcost_docdatetime ON processstockcost (docdatetime);
-		CREATE INDEX IF NOT EXISTS idx_processstockcost_guid ON processstockcost (guid)`
+		CREATE INDEX IF NOT EXISTS idx_processstockcost_guid ON processstockcost (guid);
+		CREATE INDEX IF NOT EXISTS idx_processstockcost_company_item ON processstockcost (businesscode, itemcode)`
 
 	if _, err := tx.ExecContext(context.Background(), commentsAndIndexesQuery); err != nil {
 		return fmt.Errorf("create processstockcost comments and indexes: %w", err)
@@ -787,6 +797,7 @@ func TableProcessStockLotCreate(db *sql.DB) error {
 	createTableQuery := `
 		CREATE TABLE IF NOT EXISTS processstocklot (
 			id SERIAL PRIMARY KEY,
+			businesscode TEXT NOT NULL DEFAULT '',
 			docdatetime TIMESTAMPTZ,
 			lotnumber TEXT,
 			docno TEXT,
@@ -803,7 +814,8 @@ func TableProcessStockLotCreate(db *sql.DB) error {
 			balanceqty NUMERIC(18,8),
 			balanceamount NUMERIC(18,2),
 			guidref TEXT
-		)`
+		);
+		ALTER TABLE processstocklot ADD COLUMN IF NOT EXISTS businesscode TEXT NOT NULL DEFAULT ''`
 
 	if _, err := tx.ExecContext(context.Background(), createTableQuery); err != nil {
 		return fmt.Errorf("create processstocklot table: %w", err)
@@ -839,7 +851,8 @@ func TableProcessStockLotCreate(db *sql.DB) error {
 		CREATE INDEX IF NOT EXISTS idx_processstocklot_lotnumber ON processstocklot (lotnumber);
 		CREATE INDEX IF NOT EXISTS idx_processstocklot_docno ON processstocklot (docno);
 		CREATE INDEX IF NOT EXISTS idx_processstocklot_docdatetime ON processstocklot (docdatetime);
-		CREATE INDEX IF NOT EXISTS idx_processstocklot_guidref ON processstocklot (guidref)`
+		CREATE INDEX IF NOT EXISTS idx_processstocklot_guidref ON processstocklot (guidref);
+		CREATE INDEX IF NOT EXISTS idx_processstocklot_company_item ON processstocklot (businesscode, itemcode)`
 
 	if _, err := tx.ExecContext(context.Background(), commentsAndIndexesQuery); err != nil {
 		return fmt.Errorf("create processstocklot comments and indexes: %w", err)
@@ -1266,11 +1279,13 @@ func TableDocRefCreate(db *sql.DB) error {
 	createTableQuery := `
 		CREATE TABLE IF NOT EXISTS docref (
 			id SERIAL PRIMARY KEY,
+			businesscode TEXT NOT NULL DEFAULT '',
 			docno TEXT,
 			docnotransflag INT,
 			docnoref TEXT,
 			docnoreftransflag INT
-		)`
+		);
+		ALTER TABLE docref ADD COLUMN IF NOT EXISTS businesscode TEXT NOT NULL DEFAULT ''`
 
 	if _, err := tx.ExecContext(context.Background(), createTableQuery); err != nil {
 		return fmt.Errorf("create docref table: %w", err)
@@ -1290,7 +1305,8 @@ func TableDocRefCreate(db *sql.DB) error {
 
 		-- สร้าง indexes
 		CREATE INDEX IF NOT EXISTS idx_docref_docno ON docref (docno);
-		CREATE INDEX IF NOT EXISTS idx_docref_docnoref ON docref (docnoref)`
+		CREATE INDEX IF NOT EXISTS idx_docref_docnoref ON docref (docnoref);
+		CREATE INDEX IF NOT EXISTS idx_docref_company_doc ON docref (businesscode, docnotransflag, docno)`
 
 	if _, err := tx.ExecContext(context.Background(), commentsAndIndexesQuery); err != nil {
 		return fmt.Errorf("create docref comments and indexes: %w", err)
@@ -1533,6 +1549,7 @@ func TableDocPaymentCreate(db *sql.DB) error {
 	createTableQuery := `
 		CREATE TABLE IF NOT EXISTS docpayment (
 			id SERIAL PRIMARY KEY,
+			businesscode TEXT NOT NULL DEFAULT '',
 			branchid TEXT,
 			docdatetime TIMESTAMPTZ,
 			perioddatetime TIMESTAMPTZ,
@@ -1543,7 +1560,8 @@ func TableDocPaymentCreate(db *sql.DB) error {
 			transflag INTEGER,
 			guidfixed TEXT DEFAULT '',
 			guidbranch TEXT DEFAULT ''
-		)`
+		);
+		ALTER TABLE docpayment ADD COLUMN IF NOT EXISTS businesscode TEXT NOT NULL DEFAULT ''`
 
 	if _, err := tx.ExecContext(context.Background(), createTableQuery); err != nil {
 		return fmt.Errorf("create docpayment table: %w", err)
@@ -1573,7 +1591,8 @@ func TableDocPaymentCreate(db *sql.DB) error {
 		CREATE INDEX IF NOT EXISTS idx_docpayment_docno ON docpayment (docno);
 		CREATE INDEX IF NOT EXISTS idx_docpayment_transflag ON docpayment (transflag);
 		CREATE INDEX IF NOT EXISTS idx_docpayment_guidfixed ON docpayment (guidfixed);
-		CREATE INDEX IF NOT EXISTS idx_docpayment_guidbranch ON docpayment (guidbranch)`
+		CREATE INDEX IF NOT EXISTS idx_docpayment_guidbranch ON docpayment (guidbranch);
+		CREATE INDEX IF NOT EXISTS idx_docpayment_company_doc ON docpayment (businesscode, transflag, docno)`
 
 	if _, err := tx.ExecContext(context.Background(), commentsAndIndexesQuery); err != nil {
 		return fmt.Errorf("create docpayment comments and indexes: %w", err)

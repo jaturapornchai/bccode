@@ -10,7 +10,7 @@ import (
 
 // ==================== DocDetail Functions (รวมจาก build-doc-detail.go) ====================
 
-func MapDocDetailFromMongo(docData models.MongoDocModel, detail any, transFlag int, calcFlag float64, calcSeq int, barcodeMain string, unitStand, unitDivide float64, whCode, locationCode string, totalQty float64, lineNumber int) models.DocDetailStruct {
+func MapDocDetailFromMongo(docData models.MongoDocModel, detail any, transFlag int, calcFlag float64, calcSeq int, unitStand, unitDivide float64, whCode, locationCode string, totalQty float64, lineNumber int) models.DocDetailStruct {
 	// Type assertion for detail
 	var detailStruct struct {
 		LineNumber             int
@@ -81,7 +81,6 @@ func MapDocDetailFromMongo(docData models.MongoDocModel, detail any, transFlag i
 		CalcSeq:                calcSeq,
 		ItemCode:               detailStruct.ItemCode,
 		Description:            detailStruct.ItemName,
-		BarcodeMain:            barcodeMain,
 		Barcode:                detailStruct.Barcode,
 		UnitCode:               detailStruct.UnitCode,
 		WhCode:                 whCode,
@@ -127,6 +126,7 @@ func MapDocStructFromMongo(docData models.MongoDocModel, holdingCode string) (mo
 
 	s := models.DocStruct{
 		HoldingCode:     holdingCode,
+		BusinessCode:    docData.BusinessCode,
 		TransFlag:       docData.TransFlag,
 		DocNo:           docData.DocNo,
 		DocDateTime:     docData.DocDateTime,
@@ -183,6 +183,7 @@ func MapDocStructFromMongo(docData models.MongoDocModel, holdingCode string) (mo
 				transflag, _ := payment["transflag"].(float64)
 				p = models.DocPaymentStruct{
 					HoldingCode:    holdingCode,
+					BusinessCode:   docData.BusinessCode,
 					BranchID:       docData.Branch.GuidFixed,
 					DocDateTime:    docData.DocDateTime,
 					PeriodDateTime: docData.DocDateTime,

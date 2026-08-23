@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { serverMainApiBase, validateBackendUrl } from "@/lib/backend-url";
 import { holdingCodeValidationMessageTh, isValidHoldingCode, normalizeHoldingCode } from "@/lib/holding-code";
+import { setRefreshTokenCookie } from "@/lib/auth-session-server";
 
 type LoginBody = {
   backendUrl?: string;
@@ -84,8 +85,6 @@ export async function POST(request: Request) {
 
     const token = getString(payload, "token") ?? getNestedString(payload, "data", "token");
     const refresh = getString(payload, "refresh") ?? getNestedString(payload, "data", "refresh");
-    const nestedData = isRecord(payload.data) ? payload.data : undefined;
-    const mustChangePassword = payload.mustchangepassword === true || nestedData?.mustchangepassword === true;
     const success = payload.success === true || Boolean(token);
 
     if (!success) {
@@ -94,16 +93,18 @@ export async function POST(request: Request) {
         { status: 401 },
       );
     }
+    if (!token || !refresh) {
+      return NextResponse.json({ success: false, message: "Server ตอบกลับไม่ครบ" }, { status: 502 });
+    }
 
-    return NextResponse.json({
+    const result = NextResponse.json({
       success: true,
       user: username,
       token,
-      refresh,
-      mustchangepassword: mustChangePassword,
       backendUrl: normalizedGoApiUrl,
       mainApiUrl,
     });
+    return setRefreshTokenCookie(result, refresh);
   } catch (error) {
     const message = error instanceof Error && error.name === "AbortError"
       ? "Server ไม่ตอบกลับทันเวลา"

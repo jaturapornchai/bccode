@@ -1,3 +1,5 @@
+//go:build integration
+
 package stockbalance_test
 
 import (

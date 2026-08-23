@@ -22,6 +22,7 @@ import { backendText, useBackendLanguage, type BackendLanguageDictionary } from 
 import { applyCurrencySymbolPreset, currencyPresetSource, filterCurrencySymbolPresets, findCurrencySymbolPreset } from "@/lib/currency-presets";
 import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
 import { pushNotice } from "@/lib/toast";
+import { authFetch, getAuthSession } from "@/lib/client-auth-session";
 import {
   type AuthSession,
   type WorkspaceSession,
@@ -405,7 +406,7 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
     setLoading(true);
     setNotice(null);
     try {
-      const response = await fetch("/api/currency?page=1&limit=1000", {
+      const response = await authFetch("/api/currency?page=1&limit=1000", {
         headers: {
           "x-bc-backend-url": currentAuth.backendUrl,
           Authorization: `Bearer ${currentAuth.token}`,
@@ -503,7 +504,7 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
     setNotice(null);
     try {
       const path = editing ? `/api/currency/${encodeURIComponent(editing.guidfixed)}` : "/api/currency";
-      const response = await fetch(path, {
+      const response = await authFetch(path, {
         method: editing ? "PUT" : "POST",
         headers: {
           "Content-Type": "application/json",
@@ -554,7 +555,7 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
     setLoading(true);
     setNotice(null);
     try {
-      const response = await fetch(deleteIds.length === 1 ? `/api/currency/${encodeURIComponent(deleteIds[0])}` : "/api/currency", {
+      const response = await authFetch(deleteIds.length === 1 ? `/api/currency/${encodeURIComponent(deleteIds[0])}` : "/api/currency", {
         method: "DELETE",
         headers: {
           ...(deleteIds.length > 1 ? { "Content-Type": "application/json" } : {}),
@@ -879,14 +880,7 @@ function CurrencyFormPanel({
 }
 
 function readAuth(): AuthSession | null {
-  try {
-    const raw = localStorage.getItem(workspaceStorageKeys.auth);
-    if (!raw) return null;
-    const auth = JSON.parse(raw) as AuthSession;
-    return auth.token && auth.backendUrl ? auth : null;
-  } catch {
-    return null;
-  }
+  return getAuthSession();
 }
 
 function readWorkspace(): WorkspaceSession | null {

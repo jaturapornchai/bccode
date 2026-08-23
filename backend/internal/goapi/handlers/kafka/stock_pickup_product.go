@@ -86,7 +86,7 @@ func OnConsumeMessageStockPickupProductDelete(msg string) error {
 		return fmt.Errorf("invalid stock pickup product data")
 	}
 
-	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.DocNo, TRANS_FLAG_STOCK_PICKUP_PRODUCT)
+	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.BusinessCode, docData.DocNo, TRANS_FLAG_STOCK_PICKUP_PRODUCT)
 }
 
 // ProcessStockPickupProductDocument - processes stock pickup product document following standardized 10-step pattern
@@ -117,12 +117,13 @@ func ProcessStockPickupProductDocument(docData models.StockPickupProductStruct) 
 
 	// Step 3: Delete existing documents from PostgreSQL
 	logger.Info("ProcessStockPickupProductDocument: Step 3 - Deleting existing documents from PostgreSQL for DocNo=%s", docData.DocNo)
-	mypg.DeleteDocPgSql(ctx, db, docData.DocNo, TRANS_FLAG_STOCK_PICKUP_PRODUCT)
+	mypg.DeleteDocPgSql(ctx, db, docData.BusinessCode, docData.DocNo, TRANS_FLAG_STOCK_PICKUP_PRODUCT)
 
 	// Step 4: Convert process model to build-doc structs
 	logger.Info("ProcessStockPickupProductDocument: Step 4 - Converting process model to build-doc structs")
 	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, docData.HoldingCode)
 	docDetailStructs := MapStockPickupProductToDocDetailStructs(processData, docData.HoldingCode)
+	setDocumentCompany(&docStruct, docDetailStructs, docData.BusinessCode)
 
 	// Step 5: Create document references
 	logger.Info("ProcessStockPickupProductDocument: Step 5 - Creating document references")
@@ -178,7 +179,6 @@ func MapStockPickupProductToDocDetailStructs(processData models.ProcessMongoTran
 			CalcSeq:         1,
 			ItemCode:        detail.ItemCode,
 			Description:     GetItemName(detail.ItemNames),
-			BarcodeMain:     detail.Barcode,
 			Barcode:         detail.Barcode,
 			UnitCode:        detail.UnitCode,
 			WhCode:          detail.WhCode,

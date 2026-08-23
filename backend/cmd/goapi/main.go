@@ -9,8 +9,10 @@ import (
 	"syscall"
 	"time"
 
+	"smlcloudplatform/internal/config"
 	goapi "smlcloudplatform/internal/goapi"
 	"smlcloudplatform/internal/goapi/logger"
+	"smlcloudplatform/pkg/microservice"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -58,7 +60,8 @@ func main() {
 	// Register goapi middleware + routes (no prefix in standalone mode)
 	root := e.Group("")
 	s.RegisterMiddleware(root)
-	s.RegisterRoutes(root, "")
+	cfg := config.NewConfig()
+	s.RegisterRoutes(root, "", microservice.NewPersisterMongo(cfg.MongoPersisterConfig()))
 
 	logger.Success("GoAPI routes registered (standalone mode)")
 

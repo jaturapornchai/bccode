@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"smlcloudplatform/internal/goapi/logger"
@@ -58,6 +57,10 @@ func insertDocListWithTx(ctx context.Context, tx *sql.Tx, data []models.DocStruc
 		// Data validation
 		validData := make([]models.DocStruct, 0, len(data))
 		for _, doc := range data {
+			doc.BusinessCode = strings.ToUpper(strings.TrimSpace(doc.BusinessCode))
+			if doc.BusinessCode == "" {
+				return fmt.Errorf("missing businesscode for document %s", doc.DocNo)
+			}
 			if doc.DocNo == "" {
 				totalSkipped++
 				continue
@@ -72,7 +75,7 @@ func insertDocListWithTx(ctx context.Context, tx *sql.Tx, data []models.DocStruc
 		if len(validData) > 0 {
 			// เตรียม columns สำหรับ COPY doc
 			columns := []string{
-				"transflag", "docno", "custcode", "docdatetime", "perioddatetime", "taxdocno",
+				"businesscode", "transflag", "docno", "custcode", "docdatetime", "perioddatetime", "taxdocno",
 				"totalamount", "roundamount", "paytype", "paycashamount", "paycashchange",
 				"paycashbalance", "deliverycode", "checksum", "branchid", "slipurl",
 				"salechannelcode", "deliveryamount", "iscancel", "cancelreason",
@@ -98,6 +101,7 @@ func insertDocListWithTx(ctx context.Context, tx *sql.Tx, data []models.DocStruc
 				}
 
 				rows[i] = []any{
+					data.BusinessCode,
 					data.TransFlag,
 					data.DocNo,
 					data.CustCode,
@@ -151,6 +155,10 @@ func insertDocListWithTx(ctx context.Context, tx *sql.Tx, data []models.DocStruc
 		// Data validation
 		validRefData := make([]models.DocRefStruct, 0, len(docRefData))
 		for _, item := range docRefData {
+			item.BusinessCode = strings.ToUpper(strings.TrimSpace(item.BusinessCode))
+			if item.BusinessCode == "" {
+				return fmt.Errorf("missing businesscode for document reference %s", item.DocNo)
+			}
 			if item.DocNo == "" || item.DocRefNo == "" {
 				totalErrors++
 				continue
@@ -161,13 +169,14 @@ func insertDocListWithTx(ctx context.Context, tx *sql.Tx, data []models.DocStruc
 		if len(validRefData) > 0 {
 			// เตรียม columns สำหรับ COPY doc ref
 			columns := []string{
-				"docno", "docnotransflag", "docnoref", "docnoreftransflag",
+				"businesscode", "docno", "docnotransflag", "docnoref", "docnoreftransflag",
 			}
 
 			// แปลง DocRef เป็น [][]any สำหรับ COPY
 			rows := make([][]any, len(validRefData))
 			for i, item := range validRefData {
 				rows[i] = []any{
+					item.BusinessCode,
 					item.DocNo,
 					item.DocNoTransFlag,
 					item.DocRefNo,
@@ -188,21 +197,25 @@ func insertDocListWithTx(ctx context.Context, tx *sql.Tx, data []models.DocStruc
 		// สร้าง map เก็บ transflag จากหัวเอกสาร (doc)
 		docTransFlagMap := make(map[string]int32)
 		for _, doc := range data {
-			docTransFlagMap[doc.DocNo] = int32(doc.TransFlag)
+			docTransFlagMap[doc.BusinessCode+"|"+doc.DocNo] = int32(doc.TransFlag)
 		}
 
 		// Data validation และกรองเฉพาะเอกสารที่มีการชำระเงิน
 		validPaymentData := make([]models.DocPaymentStruct, 0, len(docPaymentData))
 		for _, doc := range docPaymentData {
+			doc.BusinessCode = strings.ToUpper(strings.TrimSpace(doc.BusinessCode))
 			if doc.DocNo == "" {
 				totalErrors++
 				continue
+			}
+			if doc.BusinessCode == "" {
+				return fmt.Errorf("missing businesscode for document payment %s", doc.DocNo)
 			}
 
 			// ดึง transflag จากหัวเอกสาร
 			transflag := doc.TransFlag
 			if transflag == 0 {
-				if headerTransFlag, exists := docTransFlagMap[doc.DocNo]; exists {
+				if headerTransFlag, exists := docTransFlagMap[doc.BusinessCode+"|"+doc.DocNo]; exists {
 					transflag = headerTransFlag
 				} else {
 					totalErrors++
@@ -224,7 +237,7 @@ func insertDocListWithTx(ctx context.Context, tx *sql.Tx, data []models.DocStruc
 		if len(validPaymentData) > 0 {
 			// เตรียม columns สำหรับ COPY doc payment
 			columns := []string{
-				"branchid", "docdatetime", "perioddatetime", "providername", "amount",
+				"businesscode", "branchid", "docdatetime", "perioddatetime", "providername", "amount",
 				"description", "docno", "transflag", "guidfixed", "guidbranch",
 			}
 
@@ -232,6 +245,7 @@ func insertDocListWithTx(ctx context.Context, tx *sql.Tx, data []models.DocStruc
 			rows := make([][]any, len(validPaymentData))
 			for i, payItem := range validPaymentData {
 				rows[i] = []any{
+					payItem.BusinessCode,
 					payItem.BranchID,
 					payItem.DocDateTime,
 					payItem.PeriodDateTime,
@@ -285,17 +299,19 @@ func InsertDocDetailListToPostgreSqlTx(ctx context.Context, tx *sql.Tx, holdingC
 }
 
 func insertDocDetailListWithTx(ctx context.Context, tx *sql.Tx, holdingCode string, data []models.DocDetailStruct) error {
+	if strings.TrimSpace(holdingCode) == "" {
+		return fmt.Errorf("holdingcode is required")
+	}
 	if len(data) == 0 {
 		return nil
 	}
 
 	validData := make([]models.DocDetailStruct, 0, len(data))
-	skippedCount := 0
-
 	for _, docDetail := range data {
-		if docDetail.DocNo == "" || (docDetail.ItemCode == "" && docDetail.Barcode == "") {
-			skippedCount++
-			continue
+		docDetail.BusinessCode = strings.ToUpper(strings.TrimSpace(docDetail.BusinessCode))
+		docDetail.ItemCode = strings.ToUpper(strings.TrimSpace(docDetail.ItemCode))
+		if docDetail.BusinessCode == "" || docDetail.ItemCode == "" || docDetail.DocNo == "" {
+			return fmt.Errorf("missing businesscode, itemcode or docno in document detail")
 		}
 		validData = append(validData, docDetail)
 	}
@@ -305,73 +321,20 @@ func insertDocDetailListWithTx(ctx context.Context, tx *sql.Tx, holdingCode stri
 	}
 
 	columns := []string{
-		"docdatetime", "docno", "linenumber", "transflag", "calcflag", "calcseq",
-		"itemcode", "description", "barcodemain", "barcode", "unitcode",
+		"businesscode", "docdatetime", "docno", "linenumber", "transflag", "calcflag", "calcseq",
+		"itemcode", "description", "barcode", "unitcode",
 		"whcode", "locationcode", "totalqty", "price", "priceexcludevat",
 		"unitstand", "unitdivide", "docref", "sumamount", "iscancel",
 		"price_doc", "sumamount_doc",
 		"discountamount_doc", "priceexcludevat_doc", "sumamountexcludevat_doc", "totalvaluevat_doc",
 	}
 
-	// Pre-fetch product info to avoid post-insert UPDATE
-	uniqueBarcodes := make(map[string]struct{})
-	for _, item := range validData {
-		if item.Barcode != "" {
-			uniqueBarcodes[item.Barcode] = struct{}{}
-		}
-	}
-
-	if len(uniqueBarcodes) > 0 {
-		barcodes := make([]string, 0, len(uniqueBarcodes))
-		for barcode := range uniqueBarcodes {
-			barcodes = append(barcodes, barcode)
-		}
-
-		// Query productbarcode
-		queryProduct := `
-			SELECT barcode, itemcode, barcoderefunitstand, barcoderefunitdivide
-			FROM productbarcode
-			WHERE barcode = ANY($1)
-		`
-
-		rows, err := tx.QueryContext(ctx, queryProduct, pq.Array(barcodes))
-		if err == nil {
-			defer rows.Close()
-
-			productMap := make(map[string]struct {
-				ItemCode   string
-				UnitStand  float64
-				UnitDivide float64
-			})
-
-			for rows.Next() {
-				var barcode, itemCode string
-				var unitStand, unitDivide float64
-				if err := rows.Scan(&barcode, &itemCode, &unitStand, &unitDivide); err == nil {
-					productMap[barcode] = struct {
-						ItemCode   string
-						UnitStand  float64
-						UnitDivide float64
-					}{itemCode, unitStand, unitDivide}
-				}
-			}
-
-			// Update validData in memory
-			for i := range validData {
-				if info, ok := productMap[validData[i].Barcode]; ok {
-					if validData[i].ItemCode == "" || validData[i].ItemCode != info.ItemCode {
-						validData[i].ItemCode = info.ItemCode
-					}
-					validData[i].UnitStand = info.UnitStand
-					validData[i].UnitDivide = info.UnitDivide
-				}
-			}
-		}
-	}
-
 	rows := make([][]any, len(validData))
-	deleteTargets := make(map[string]struct{})
-	docNos := make(map[string]struct{})
+	type deleteTarget struct {
+		businessCode string
+		transFlag    int
+	}
+	docNosByTarget := make(map[deleteTarget][]string)
 	lineNumbers := 0
 
 	for i, item := range validData {
@@ -400,11 +363,6 @@ func insertDocDetailListWithTx(ctx context.Context, tx *sql.Tx, holdingCode stri
 			}
 		}
 
-		barcodeMain := item.BarcodeMain
-		if barcodeMain == "" {
-			barcodeMain = barcode
-		}
-
 		unitStand := item.UnitStand
 		unitDivide := item.UnitDivide
 		if unitStand == 0 {
@@ -422,6 +380,7 @@ func insertDocDetailListWithTx(ctx context.Context, tx *sql.Tx, holdingCode stri
 		lineNumbers++
 
 		rows[i] = []any{
+			item.BusinessCode,
 			item.DocDateTime,
 			item.DocNo,
 			lineNumbers,
@@ -430,7 +389,6 @@ func insertDocDetailListWithTx(ctx context.Context, tx *sql.Tx, holdingCode stri
 			item.CalcSeq,
 			item.ItemCode,
 			description,
-			barcodeMain,
 			barcode,
 			item.UnitCode,
 			whCode,
@@ -451,33 +409,20 @@ func insertDocDetailListWithTx(ctx context.Context, tx *sql.Tx, holdingCode stri
 			item.TotalValueVatDoc,
 		}
 
-		key := fmt.Sprintf("%s|%d", item.DocNo, item.TransFlag)
-		deleteTargets[key] = struct{}{}
-		docNos[item.DocNo] = struct{}{}
-	}
-
-	// Group docNos by TransFlag for batch delete
-	docNosByTransFlag := make(map[int][]string)
-	for key := range deleteTargets {
-		parts := strings.Split(key, "|")
-		if len(parts) != 2 {
-			continue
-		}
-		transFlag, _ := strconv.Atoi(parts[1])
-		docNo := parts[0]
-		docNosByTransFlag[transFlag] = append(docNosByTransFlag[transFlag], docNo)
+		target := deleteTarget{businessCode: item.BusinessCode, transFlag: item.TransFlag}
+		docNosByTarget[target] = append(docNosByTarget[target], item.DocNo)
 	}
 
 	// Execute batch delete
-	for transFlag, docNos := range docNosByTransFlag {
+	for target, docNos := range docNosByTarget {
 		if len(docNos) == 0 {
 			continue
 		}
 
 		// Use ANY for bulk delete
-		query := "DELETE FROM docdetail WHERE transflag = $1 AND docno = ANY($2)"
-		if _, err := tx.ExecContext(ctx, query, transFlag, pq.Array(docNos)); err != nil {
-			return fmt.Errorf("failed to batch delete existing docdetail for transflag=%d: %w", transFlag, err)
+		query := "DELETE FROM docdetail WHERE businesscode = $1 AND transflag = $2 AND docno = ANY($3)"
+		if _, err := tx.ExecContext(ctx, query, target.businessCode, target.transFlag, pq.Array(docNos)); err != nil {
+			return fmt.Errorf("failed to batch delete existing docdetail for businesscode=%s transflag=%d: %w", target.businessCode, target.transFlag, err)
 		}
 	}
 

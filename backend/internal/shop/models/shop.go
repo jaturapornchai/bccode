@@ -20,6 +20,7 @@ type ShopBusinessType struct {
 
 type Shop struct {
 	HoldingCode          string         `json:"holdingcode" bson:"holdingcode"`
+	IsActive             bool           `json:"isactive" bson:"isactive"`
 	ProfilePicture       string         `json:"profilepicture" bson:"profilepicture"`
 	Name1                string         `json:"name1" bson:"name1"`
 	Names                []models.NameX `json:"names" bson:"names"`
@@ -93,6 +94,9 @@ func (ShopInfo) CollectionName() string {
 
 type ShopDoc struct {
 	ID                 primitive.ObjectID `json:"-" bson:"_id,omitempty"`
+	Version            int64              `json:"-" bson:"__v"`
+	HoldingUID         string             `json:"holdinguid" bson:"holdinguid"`
+	IsDeleted          bool               `json:"isdeleted" bson:"isdeleted"`
 	ShopInfo           `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

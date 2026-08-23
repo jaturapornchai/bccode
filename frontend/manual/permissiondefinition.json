@@ -1,0 +1,96 @@
+{
+  "screen": "permissiondefinition",
+  "updatedAt": "2026-08-23",
+  "translations": {
+    "th": {
+      "title": "คู่มือเบื้องต้น — รายการสิทธิ์หน้าจอ",
+      "summary": "ตรวจแค็ตตาล็อกหน้าจอที่ระบบรองรับก่อนนำไปกำหนดให้แต่ละบทบาท",
+      "sources": [
+        {
+          "name": "การสร้างและค้นหาแค็ตตาล็อกสิทธิ์",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/frontend/src/app/api/system-settings/%5B%5B...settingPath%5D%5D/route.ts#L328-L352"
+        },
+        {
+          "name": "ค่าหน้าจอรายการสิทธิ์",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/frontend/src/lib/system-setting-screens.ts#L821-L839"
+        }
+      ],
+      "objective": "แนวคิด: หน้านี้เป็นรายการอ้างอิงแบบอ่านอย่างเดียวของรหัสสิทธิ์ ชื่อหน้าจอ เส้นทาง และหมวดหมู่ที่ระบบรู้จัก",
+      "prerequisites": [
+        "เลือก Holding ที่ต้องการตั้งค่า",
+        "เข้าใจว่ารายการในหน้านี้ยังไม่ใช่สิทธิ์ที่มอบให้ผู้ใช้"
+      ],
+      "workflow": [
+        "ใช้ช่องค้นหาเพื่อหารหัสหรือชื่อหน้าจอ",
+        "ตรวจชื่อ เส้นทาง และหมวดหมู่ของรายการที่ต้องการ",
+        "จดหรือจำรหัสหน้าจอที่ต้องการให้แต่ละบทบาท",
+        "ไปหน้ากำหนดสิทธิ์ตามบทบาทและเลือกรายการจากแค็ตตาล็อกนี้"
+      ],
+      "config": [
+        "ข้อมูลหน้านี้สร้างจากรายการหน้าจอที่ระบบรองรับในปัจจุบัน",
+        "หน้านี้เพิ่ม แก้ไข หรือลบรายการไม่ได้",
+        "การพบหน้าจอในแค็ตตาล็อกไม่ได้แปลว่าบทบาทหรือผู้ใช้เข้าถึงได้แล้ว"
+      ],
+      "expectedResults": [
+        "ทราบรหัสและเส้นทางของหน้าจอที่จะนำไปกำหนดสิทธิ์",
+        "ลดการเลือกหน้าจอผิดหมวดหรือผิดเส้นทาง"
+      ],
+      "commonMistakes": [
+        "คิดว่าการเห็นรายการในหน้านี้เท่ากับได้รับสิทธิ์แล้ว",
+        "เลือกรหัสจากชื่อคล้ายกันโดยไม่ตรวจเส้นทางหน้าจอ"
+      ],
+      "limitations": [
+        "เป็นรายงานอ่านอย่างเดียว ไม่ใช่หน้ากำหนดสิทธิ์",
+        "สิทธิ์จริงยังขึ้นกับ Membership, Role, Scope และการตรวจของ Backend"
+      ],
+      "nextSteps": [
+        "ไปที่กำหนดสิทธิ์ตามบทบาท"
+      ]
+    },
+    "en": {
+      "title": "Basic guide — Screen Permission Catalog",
+      "summary": "Review the supported-screen catalog before assigning screens to roles.",
+      "sources": [
+        {
+          "name": "Permission-catalog generation and search",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/frontend/src/app/api/system-settings/%5B%5B...settingPath%5D%5D/route.ts#L328-L352"
+        },
+        {
+          "name": "Permission-catalog screen configuration",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/frontend/src/lib/system-setting-screens.ts#L821-L839"
+        }
+      ],
+      "objective": "Concept: this is a read-only reference of permission codes, screen names, routes, and categories known by the system.",
+      "prerequisites": [
+        "Select the Holding to configure.",
+        "Understand that catalog entries are not permissions already granted to a user."
+      ],
+      "workflow": [
+        "Search by permission code, Thai screen label, route, or category.",
+        "Review the name, route, and category.",
+        "Identify the screens required by each role.",
+        "Open Role Permissions and select entries from this catalog."
+      ],
+      "config": [
+        "The list comes from the screens currently supported by the application.",
+        "Entries cannot be created, edited, or deleted here.",
+        "A catalog entry does not by itself grant access to any role or user."
+      ],
+      "expectedResults": [
+        "You know the codes and routes to use in role permissions.",
+        "Similar screen names can be distinguished by route and category."
+      ],
+      "commonMistakes": [
+        "Treating a visible catalog entry as an already granted permission.",
+        "Selecting a similar name without checking its route."
+      ],
+      "limitations": [
+        "This is a read-only report, not a permission editor.",
+        "Effective access still depends on Membership, Role, Scope, and Backend authorization."
+      ],
+      "nextSteps": [
+        "Continue to Role Permissions."
+      ]
+    }
+  }
+}

@@ -66,11 +66,10 @@ type ProductBarcodeBase struct {
 	ColorSelect     string           `json:"colorselect" bson:"colorselect"`
 	ColorSelectHex  string           `json:"colorselecthex" bson:"colorselecthex"`
 
-	Condition        bool    `json:"condition" bson:"condition"`
-	DivideValue      float64 `json:"dividevalue" bson:"dividevalue"`
-	StandValue       float64 `json:"standvalue" bson:"standvalue"`
-	IsUseSubBarcodes bool    `json:"isusesubbarcodes" bson:"isusesubbarcodes"`
-	IsMainBarcode    bool    `json:"ismainbarcode" bson:"ismainbarcode"`
+	Condition        bool  `json:"condition" bson:"condition"`
+	DivideValue      int64 `json:"dividevalue" bson:"dividevalue"`
+	StandValue       int64 `json:"standvalue" bson:"standvalue"`
+	IsUseSubBarcodes bool  `json:"isusesubbarcodes" bson:"isusesubbarcodes"`
 
 	// Marketplace & Logistics
 	PackageWeight       float64                  `json:"packageweight" bson:"packageweight"`
@@ -91,8 +90,8 @@ type ProductBarcodeBase struct {
 	RefUnitNames              *[]models.NameX               `json:"refunitnames" bson:"refunitnames"`
 	StockBarcode              string                        `json:"stockbarcode" bson:"stockbarcode"`
 	Qty                       float64                       `json:"qty" bson:"qty"`
-	RefDivideValue            float64                       `json:"refdividevalue" bson:"refdividevalue"`
-	RefStandValue             float64                       `json:"refstandvalue" bson:"refstandvalue"`
+	RefDivideValue            int64                         `json:"refdividevalue" bson:"refdividevalue"`
+	RefStandValue             int64                         `json:"refstandvalue" bson:"refstandvalue"`
 	VatCal                    int                           `json:"vatcal" bson:"vatcal"`
 	IsALaCarte                bool                          `json:"isalacarte" bson:"isalacarte"`
 	OrderTypes                *[]ProductOrderType           `json:"ordertypes" bson:"ordertypes"`
@@ -158,8 +157,8 @@ type RefProductBarcode struct {
 	ItemUnitNames *[]models.NameX `json:"itemunitnames" bson:"itemunitnames"`
 	Barcode       string          `json:"barcode" bson:"barcode" validate:"required,min=1"`
 	Condition     bool            `json:"condition" bson:"condition"`
-	DivideValue   float64         `json:"dividevalue" bson:"dividevalue"`
-	StandValue    float64         `json:"standvalue" bson:"standvalue"`
+	DivideValue   int64           `json:"dividevalue" bson:"dividevalue"`
+	StandValue    int64           `json:"standvalue" bson:"standvalue"`
 	Qty           float64         `json:"qty" bson:"qty"`
 
 	// Marketplace & SKU Logistics
@@ -379,9 +378,8 @@ type ProductBarcodePg struct {
 	UnitCode                 string              `json:"itemunitcode" gorm:"column:unitcode"`
 	UnitNames                JSONB               `json:"itemunitnames" gorm:"column:unitnames;type:jsonb"`
 	BalanceQty               float64             `json:"balanceqty" gorm:"column:balanceqty"`
-	MainBarcodeRef           string              `json:"mainbarcoderef" gorm:"column:mainbarcoderef"`
-	StandValue               float64             `json:"standvalue" gorm:"column:standvalue"`
-	DivideValue              float64             `json:"dividevalue" gorm:"column:dividevalue"`
+	StandValue               int64               `json:"standvalue" gorm:"column:standvalue"`
+	DivideValue              int64               `json:"dividevalue" gorm:"column:dividevalue"`
 	BalanceAmount            float64             `json:"balanceamount" gorm:"column:balanceamount"`
 	AverageCost              float64             `json:"averagecost" gorm:"column:averagecost"`
 	ItemCode                 string              `json:"itemcode" gorm:"column:itemcode"`

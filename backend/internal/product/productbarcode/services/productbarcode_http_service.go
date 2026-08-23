@@ -213,8 +213,8 @@ func applyProductUnitToBarcode(barcode *models.ProductBarcodeDoc, product produc
 		barcode.ItemUnitGuid = product.UnitGuid
 	}
 	barcode.Condition = false
-	barcode.DivideValue = float64(unit.DivideValue)
-	barcode.StandValue = float64(unit.StandValue)
+	barcode.DivideValue = unit.DivideValue
+	barcode.StandValue = unit.StandValue
 	return nil
 }
 
@@ -2740,7 +2740,6 @@ func (s ProductBarcodeHttpService) processBatchRefBarcodeUpdate(holdingCode, aut
 		updateData := bson.M{
 			"$set": bson.M{
 				"refbarcodes":      []models.RefProductBarcode{refBarcode},
-				"ismainbarcode":    false,
 				"updatedby":        authUsername,
 				"updatedat":        time.Now().UTC(),
 				"isusesubbarcodes": true,
@@ -2761,7 +2760,7 @@ func (s ProductBarcodeHttpService) processBatchRefBarcodeUpdate(holdingCode, aut
 		response.Updated++
 
 		// Log the update
-		fmt.Printf("Updated refbarcodes for %s -> %s (standvalue: %f, dividevalue: %f, condition: %t, ismainbarcode: false)\n",
+		fmt.Printf("Updated refbarcodes for %s -> %s (standvalue: %d, dividevalue: %d, condition: %t)\n",
 			req.Barcode, req.BarcodeRef, req.StandValue, req.DivideValue, condition)
 	}
 

@@ -2,6 +2,7 @@
 // These are pure functions used across system-settings panels and editors
 
 import type { AuthSession, WorkspaceSession } from "@/lib/workspace-models";
+import { getAuthSession } from "@/lib/client-auth-session";
 import { LANGUAGES, type LanguageCode } from "@/lib/i18n";
 import type { BackendLanguageDictionary } from "@/lib/backend-language";
 import { backendText } from "@/lib/backend-language";
@@ -74,9 +75,9 @@ export const uiEn = {
   refresh: "Refresh",
   removeRange: "Remove range",
   requestFailed: "Request failed.",
-  resetPassword: "Reset password",
-  resetPasswordConfirm: "Reset this user's password to 12345?",
-  resetPasswordDone: "Password was reset to 12345.",
+  resetPassword: "Send reset link",
+  resetPasswordConfirm: "Send this user a one-time password reset link?",
+  resetPasswordDone: "Password reset link sent.",
   save: "Save",
   saveFailed: "Save failed",
   saveSucceeded: "Saved successfully",
@@ -165,9 +166,9 @@ export const uiText: Partial<
     refresh: "โหลดใหม่",
     removeRange: "ลบช่วงเวลา",
     requestFailed: "เรียกข้อมูลไม่สำเร็จ",
-    resetPassword: "รีเซ็ตรหัสผ่าน",
-    resetPasswordConfirm: "ยืนยันรีเซ็ตรหัสผ่านผู้ใช้นี้กลับเป็น 12345?",
-    resetPasswordDone: "รีเซ็ตรหัสผ่านเป็น 12345 แล้ว",
+    resetPassword: "ส่งลิงก์รีเซ็ตรหัสผ่าน",
+    resetPasswordConfirm: "ยืนยันส่งลิงก์รีเซ็ตรหัสผ่านแบบใช้ครั้งเดียวให้ผู้ใช้นี้?",
+    resetPasswordDone: "ส่งลิงก์รีเซ็ตรหัสผ่านแล้ว",
     save: "บันทึก",
     saveFailed: "บันทึกไม่สำเร็จ",
     saveSucceeded: "บันทึกสำเร็จ",
@@ -632,14 +633,7 @@ export function wait(milliseconds: number): Promise<void> {
 import { workspaceStorageKeys } from "@/lib/workspace-models";
 
 export function readAuth(): AuthSession | null {
-  try {
-    const raw = localStorage.getItem(workspaceStorageKeys.auth);
-    if (!raw) return null;
-    const auth = JSON.parse(raw) as AuthSession;
-    return auth.token && auth.backendUrl ? auth : null;
-  } catch {
-    return null;
-  }
+  return getAuthSession();
 }
 
 export function readWorkspace(): WorkspaceSession | null {

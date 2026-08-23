@@ -33,20 +33,13 @@ import (
 	patternproduct_repositories "smlcloudplatform/internal/smlaiproduct/patternproduct/repositories"
 	"smlcloudplatform/internal/utils"
 	warehouse_repositories "smlcloudplatform/internal/warehouse/repositories"
+	"smlcloudplatform/pkg/apperr"
 	"smlcloudplatform/pkg/microservice"
 	"strconv"
 	"time"
 )
 
 type IProductImportHttp interface{}
-
-// SaveTaskRequest - Request structure for SaveTask endpoint
-type SaveTaskRequest struct {
-	models.ProductImportHeader
-	ImportMode  string `json:"importmode"`  // "INSERT_ONLY" | "UPDATE_ONLY" | "BOTH" | "AUTO"
-	Preview     bool   `json:"preview"`     // true = แสดงผลเฉพาะ, false = บันทึกจริง
-	ForceUpdate bool   `json:"forceupdate"` // true = บังคับ update แม้ไม่มีการเปลี่ยนแปลง
-}
 
 // ApplyChangesRequest - Request structure for ApplyChanges endpoint
 type ApplyChangesRequest struct {
@@ -75,6 +68,7 @@ func NewProductImportHttp(ms *microservice.Microservice, cfg config.IConfig) Pro
 	repoCh := product_repositories.NewProductBarcodeClickhouseRepository(pstClickHouse)
 	creditorRepo := creditorRepo.NewCreditorRepository(pst)
 	repoMaster := productmaster.NewProductRepository(pst)
+	productMQRepo := productmaster.NewProductMessageQueueRepository(producer)
 	unitmaster := unitmaster.NewUnitRepository(pst)
 	masterSyncCacheRepo := mastersync.NewMasterSyncCacheRepository(cache)
 
@@ -109,7 +103,7 @@ func NewProductImportHttp(ms *microservice.Microservice, cfg config.IConfig) Pro
 	unitMqRepo := unit_repositories.NewUnitMessageQueueRepository(producer)
 	unitSvc := unit_services.NewUnitHttpService(unitRepo, repo, unitMqRepo, masterSyncCacheRepo)
 
-	stockBalanceSvc := product_serrvices.NewProductBarcodeHttpService(repo, repoMaster, unitmaster, unitSvc, *creditorRepo, repoMq, repoCh, masterSyncCacheRepo, priceHistorySvc, warehouseRepo)
+	stockBalanceSvc := product_serrvices.NewProductBarcodeHttpService(repo, repoMaster, unitmaster, unitSvc, *creditorRepo, repoMq, repoCh, masterSyncCacheRepo, priceHistorySvc, warehouseRepo, productMQRepo)
 
 	svc := services.NewProductImportService(chRepo, taskStatusRepo, repo, stockBalanceSvc, unitRepo, groupProductRepo, groupsuboneProductRepo, groupsubtwoproductRepo, brandProductRepo, designProductRepo, modelProductRepo, patternProductRepo, gradeProductRepo, categoryProductRepo, classProductRepo, branchRepo, businessTypeRepo, utils.RandStringBytesMaskImprSrcUnsafe, utils.NewGUID, safeTimeNow)
 
@@ -125,7 +119,6 @@ func (h ProductImportHttp) RegisterHttp() {
 	h.ms.POST("/productimport", h.Create)
 	h.ms.GET("/productimport/:task-id", h.List)
 	h.ms.DELETE("/productimport/:task-id", h.DeleteByTask)
-	h.ms.POST("/productimport/:task-id", h.SaveTask)
 	h.ms.PUT("/productimport/item/:guid", h.Update)
 	h.ms.DELETE("/productimport/item/:guid", h.Delete)
 
@@ -137,6 +130,19 @@ func (h ProductImportHttp) RegisterHttp() {
 	h.ms.GET("/productimport/:task-id/preview", h.PreviewChanges)
 	h.ms.POST("/productimport/:task-id/apply", h.ApplyChanges)
 	h.ms.GET("/productimport/:task-id/summary", h.GetImportSummary)
+}
+
+func requireProductImportBusinessCode(ctx microservice.IContext) (string, error) {
+	businessCode := utils.NormalizeBusinessCode(ctx.UserInfo().BusinessCode)
+	if businessCode == "" {
+		return "", apperr.Respond(ctx, apperr.New(
+			"COMPANY_REQUIRED",
+			http.StatusConflict,
+			"an active company is required",
+			"กรุณาเลือกบริษัทก่อนนำเข้าสินค้า",
+		).WithField("businesscode"))
+	}
+	return businessCode, nil
 }
 
 // Create ProductImport godoc
@@ -151,6 +157,10 @@ func (h ProductImportHttp) RegisterHttp() {
 func (h ProductImportHttp) UploadExcel(ctx microservice.IContext) error {
 	holdingCode := ctx.UserInfo().HoldingCode
 	authUsername := ctx.UserInfo().Username
+	businessCode, err := requireProductImportBusinessCode(ctx)
+	if err != nil {
+		return err
+	}
 	tempFile, err := ctx.FormFile("file")
 
 	if err != nil {
@@ -172,7 +182,7 @@ func (h ProductImportHttp) UploadExcel(ctx microservice.IContext) error {
 	}
 	defer file.Close()
 
-	taskID, err := h.svc.ImportFromFile(holdingCode, authUsername, file)
+	taskID, err := h.svc.ImportFromFile(holdingCode, businessCode, authUsername, file)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -199,11 +209,15 @@ func (h ProductImportHttp) UploadExcel(ctx microservice.IContext) error {
 func (h ProductImportHttp) Create(ctx microservice.IContext) error {
 	holdingCode := ctx.UserInfo().HoldingCode
 	authUsername := ctx.UserInfo().Username
+	businessCode, err := requireProductImportBusinessCode(ctx)
+	if err != nil {
+		return err
+	}
 
 	input := ctx.ReadInput()
 
 	docReq := models.ProductImport{}
-	err := json.Unmarshal([]byte(input), &docReq)
+	err = json.Unmarshal([]byte(input), &docReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())
@@ -215,7 +229,7 @@ func (h ProductImportHttp) Create(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.Create(holdingCode, authUsername, &docReq)
+	err = h.svc.Create(holdingCode, businessCode, authUsername, &docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -242,6 +256,10 @@ func (h ProductImportHttp) Create(ctx microservice.IContext) error {
 // @Router /productimport/{task-id} [get]
 func (h ProductImportHttp) List(ctx microservice.IContext) error {
 	holdingCode := ctx.UserInfo().HoldingCode
+	businessCode, err := requireProductImportBusinessCode(ctx)
+	if err != nil {
+		return err
+	}
 
 	taskID := ctx.Param("task-id")
 
@@ -254,7 +272,7 @@ func (h ProductImportHttp) List(ctx microservice.IContext) error {
 	}
 
 	// เช็ค task status ก่อน
-	status, err := h.svc.GetTaskStatus(holdingCode, taskID)
+	status, err := h.svc.GetTaskStatus(holdingCode, businessCode, taskID)
 	if err == nil {
 		// ถ้ามี status แปลว่ายังทำงานอยู่หรือ error
 		ctx.Response(http.StatusOK, common.ApiResponse{
@@ -270,7 +288,7 @@ func (h ProductImportHttp) List(ctx microservice.IContext) error {
 	// ถ้าไม่มี status แปลว่าเสร็จแล้ว ให้ list ตามปกติ
 	pageable := utils.GetPageable(ctx.QueryParam)
 
-	results, page, err := h.svc.List(holdingCode, taskID, pageable)
+	results, page, err := h.svc.List(holdingCode, businessCode, taskID, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -296,13 +314,17 @@ func (h ProductImportHttp) List(ctx microservice.IContext) error {
 // @Router /productimport/item/{guid} [put]
 func (h ProductImportHttp) Update(ctx microservice.IContext) error {
 	holdingCode := ctx.UserInfo().HoldingCode
+	businessCode, err := requireProductImportBusinessCode(ctx)
+	if err != nil {
+		return err
+	}
 
 	input := ctx.ReadInput()
 
 	guid := ctx.Param("guid")
 
 	docReq := models.ProductImportRaw{}
-	err := json.Unmarshal([]byte(input), &docReq)
+	err = json.Unmarshal([]byte(input), &docReq)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())
@@ -314,7 +336,7 @@ func (h ProductImportHttp) Update(ctx microservice.IContext) error {
 		return err
 	}
 
-	err = h.svc.Update(holdingCode, guid, docReq)
+	err = h.svc.Update(holdingCode, businessCode, guid, docReq)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -338,10 +360,14 @@ func (h ProductImportHttp) Update(ctx microservice.IContext) error {
 // @Router /productimport/item/{guid} [delete]
 func (h ProductImportHttp) Delete(ctx microservice.IContext) error {
 	holdingCode := ctx.UserInfo().HoldingCode
+	businessCode, err := requireProductImportBusinessCode(ctx)
+	if err != nil {
+		return err
+	}
 
 	guid := ctx.Param("guid")
 
-	err := h.svc.Delete(holdingCode, guid)
+	err = h.svc.Delete(holdingCode, businessCode, guid)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -365,49 +391,14 @@ func (h ProductImportHttp) Delete(ctx microservice.IContext) error {
 // @Router /productimport/{task-id} [delete]
 func (h ProductImportHttp) DeleteByTask(ctx microservice.IContext) error {
 	holdingCode := ctx.UserInfo().HoldingCode
-
-	taskID := ctx.Param("task-id")
-
-	err := h.svc.DeleteTask(holdingCode, taskID)
-
+	businessCode, err := requireProductImportBusinessCode(ctx)
 	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
 
-	ctx.Response(http.StatusCreated, common.ApiResponse{
-		Success: true,
-	})
-	return nil
-}
-
-// Save ProductImport Task godoc
-// @Description Save ProductImport Task with Compare and Insert/Update modes
-// @Tags		ProductImport
-// @Param		task-id		path		string		true		"task id"
-// @Accept 		json
-// @Success		201	{object}	common.ApiResponse
-// @Failure		401 {object}	common.AuthResponseFailed
-// @Security     AccessToken
-// @Router /productimport/{task-id} [post]
-func (h ProductImportHttp) SaveTask(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	holdingCode := userInfo.HoldingCode
-	authUsername := userInfo.Username
-
 	taskID := ctx.Param("task-id")
 
-	payload := ctx.ReadInput()
-
-	var docReq models.ProductImportHeader
-	err := json.Unmarshal([]byte(payload), &docReq)
-
-	if err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
-	}
-
-	err = h.svc.SaveTask(holdingCode, authUsername, taskID, docReq)
+	err = h.svc.DeleteTask(holdingCode, businessCode, taskID)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -431,10 +422,14 @@ func (h ProductImportHttp) SaveTask(ctx microservice.IContext) error {
 // @Router /productimport/{task-id}/verify [post]
 func (h ProductImportHttp) Verify(ctx microservice.IContext) error {
 	holdingCode := ctx.UserInfo().HoldingCode
+	businessCode, err := requireProductImportBusinessCode(ctx)
+	if err != nil {
+		return err
+	}
 
 	guid := ctx.Param("task-id")
 
-	err := h.svc.Verify(holdingCode, guid)
+	err = h.svc.Verify(holdingCode, businessCode, guid)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -458,9 +453,13 @@ func (h ProductImportHttp) Verify(ctx microservice.IContext) error {
 // @Router /productimport/task/{task-id}/status [get]
 func (h ProductImportHttp) GetTaskStatus(ctx microservice.IContext) error {
 	holdingCode := ctx.UserInfo().HoldingCode
+	businessCode, err := requireProductImportBusinessCode(ctx)
+	if err != nil {
+		return err
+	}
 	taskID := ctx.Param("task-id")
 
-	status, err := h.svc.GetTaskStatus(holdingCode, taskID)
+	status, err := h.svc.GetTaskStatus(holdingCode, businessCode, taskID)
 	if err != nil {
 		ctx.ResponseError(http.StatusNotFound, "Task not found or completed")
 		return err
@@ -488,6 +487,10 @@ func (h ProductImportHttp) GetTaskStatus(ctx microservice.IContext) error {
 func (h ProductImportHttp) GetCompareResult(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	holdingCode := userInfo.HoldingCode
+	businessCode, err := requireProductImportBusinessCode(ctx)
+	if err != nil {
+		return err
+	}
 
 	taskID := ctx.Param("task-id")
 
@@ -505,7 +508,7 @@ func (h ProductImportHttp) GetCompareResult(ctx microservice.IContext) error {
 
 	if fastMode {
 		// 🚀 Fast mode - return summary only (very fast)
-		summary, err := h.svc.GetCompareResultSummary(holdingCode, taskID)
+		summary, err := h.svc.GetCompareResultSummary(holdingCode, businessCode, taskID)
 		if err != nil {
 			ctx.ResponseError(http.StatusBadRequest, err.Error())
 			return err
@@ -521,7 +524,7 @@ func (h ProductImportHttp) GetCompareResult(ctx microservice.IContext) error {
 		})
 	} else {
 		// 🔧 True pagination mode - process only requested page
-		result, pagination, err := h.svc.GetCompareResultPaginated(holdingCode, taskID, pageable)
+		result, pagination, err := h.svc.GetCompareResultPaginated(holdingCode, businessCode, taskID, pageable)
 		if err != nil {
 			ctx.ResponseError(http.StatusBadRequest, err.Error())
 			return err
@@ -550,6 +553,10 @@ func (h ProductImportHttp) GetCompareResult(ctx microservice.IContext) error {
 func (h ProductImportHttp) PreviewChanges(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	holdingCode := userInfo.HoldingCode
+	businessCode, err := requireProductImportBusinessCode(ctx)
+	if err != nil {
+		return err
+	}
 
 	taskID := ctx.Param("task-id")
 	importMode := ctx.Request().URL.Query().Get("import_mode")
@@ -557,7 +564,7 @@ func (h ProductImportHttp) PreviewChanges(ctx microservice.IContext) error {
 		importMode = "AUTO"
 	}
 
-	result, err := h.svc.PreviewChanges(holdingCode, taskID, importMode)
+	result, err := h.svc.PreviewChanges(holdingCode, businessCode, taskID, importMode)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
@@ -587,6 +594,10 @@ func (h ProductImportHttp) ApplyChanges(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
+	businessCode, err := requireProductImportBusinessCode(ctx)
+	if err != nil {
+		return err
+	}
 
 	taskID := ctx.Param("task-id")
 	payload := ctx.ReadInput()
@@ -602,7 +613,7 @@ func (h ProductImportHttp) ApplyChanges(ctx microservice.IContext) error {
 	}
 
 	var req ApplyChangesRequest
-	err := json.Unmarshal([]byte(payload), &req)
+	err = json.Unmarshal([]byte(payload), &req)
 	if err != nil {
 		ctx.ResponseError(400, err.Error())
 		return err
@@ -635,32 +646,32 @@ func (h ProductImportHttp) ApplyChanges(ctx microservice.IContext) error {
 		// 🔧 สร้าง initial task status สำหรับ progress tracking
 		go func() {
 			// สร้าง initial status
-			err := h.svc.CreateTaskStatus(holdingCode, taskID, "APPLYING", 0, "Starting import process...")
+			err := h.svc.CreateTaskStatus(holdingCode, businessCode, taskID, "APPLYING", 0, "Starting import process...")
 			if err != nil {
 				// Log error but continue
 			}
 
 			// เรียก ApplyChanges ที่มี progress tracking
-			err = h.svc.ApplyChangesWithProgress(holdingCode, authUsername, taskID, req.ImportMode, req.ForceUpdate, batchSize)
+			err = h.svc.ApplyChangesWithProgress(holdingCode, businessCode, authUsername, taskID, req.ImportMode, req.ForceUpdate, batchSize)
 
 			// อัพเดต final status
 			if err != nil {
 				// ❌ System error (database, network, etc.)
-				_ = h.svc.UpdateTaskStatus(holdingCode, taskID, "ERROR", 0, err.Error())
+				_ = h.svc.UpdateTaskStatus(holdingCode, businessCode, taskID, "ERROR", 0, err.Error())
 			}
 			// ✅ ไม่ต้อง update status เป็น "COMPLETED" เพราะ ApplyChangesWithProgress
 			// จะตั้ง status เป็น "COMPLETED" หรือ "COMPLETED_WITH_ERRORS" เองแล้ว
 		}()
 	} else {
 		// 🔧 Synchronous processing - สร้าง task status สำหรับ sync mode ด้วย
-		err = h.svc.CreateTaskStatus(holdingCode, taskID, "APPLYING", 0, "Starting synchronous import...")
+		err = h.svc.CreateTaskStatus(holdingCode, businessCode, taskID, "APPLYING", 0, "Starting synchronous import...")
 		if err != nil {
 			// Log warning but continue
 		}
 
-		err = h.svc.ApplyChangesWithProgress(holdingCode, authUsername, taskID, req.ImportMode, req.ForceUpdate, batchSize)
+		err = h.svc.ApplyChangesWithProgress(holdingCode, businessCode, authUsername, taskID, req.ImportMode, req.ForceUpdate, batchSize)
 		if err != nil {
-			_ = h.svc.UpdateTaskStatus(holdingCode, taskID, "ERROR", 0, err.Error())
+			_ = h.svc.UpdateTaskStatus(holdingCode, businessCode, taskID, "ERROR", 0, err.Error())
 			ctx.ResponseError(http.StatusBadRequest, err.Error())
 			return err
 		}
@@ -695,10 +706,14 @@ func (h ProductImportHttp) ApplyChanges(ctx microservice.IContext) error {
 func (h ProductImportHttp) GetImportSummary(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	holdingCode := userInfo.HoldingCode
+	businessCode, err := requireProductImportBusinessCode(ctx)
+	if err != nil {
+		return err
+	}
 
 	taskID := ctx.Param("task-id")
 
-	result, err := h.svc.GetImportSummary(holdingCode, taskID)
+	result, err := h.svc.GetImportSummary(holdingCode, businessCode, taskID)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err

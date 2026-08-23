@@ -21,8 +21,12 @@ type Company struct {
 
 type CompanyDoc struct {
 	ID          primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	Version     int64              `json:"__v" bson:"__v"`
 	HoldingCode string             `json:"holdingcode" bson:"holdingcode"`
+	HoldingUID  string             `json:"holdinguid" bson:"holdinguid"`
 	GuidFixed   string             `json:"guidfixed" bson:"guidfixed"`
+	CompanyUID  string             `json:"companyuid" bson:"companyuid"`
+	IsDeleted   bool               `json:"isdeleted" bson:"isdeleted"`
 	Company     `bson:"inline"`
 	CreatedAt   time.Time  `json:"createdat" bson:"createdat"`
 	UpdatedAt   time.Time  `json:"updatedat" bson:"updatedat"`

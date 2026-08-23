@@ -11,7 +11,8 @@ import (
 
 // ProductBalanceUpdateRequest — request body
 type ProductBalanceUpdateRequest struct {
-	HoldingCode string `json:"holdingcode"`
+	HoldingCode  string `json:"holdingcode"`
+	BusinessCode string `json:"businesscode"`
 }
 
 // ProductBalanceUpdateHandler — POST /api/process/product-balance
@@ -25,20 +26,18 @@ func ProductBalanceUpdateHandler(c echo.Context) error {
 		})
 	}
 
-	holdingCode := req.HoldingCode
-	if holdingCode == "" {
-		holdingCode = c.QueryParam("holdingcode")
-	}
-	if holdingCode == "" {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+	holdingCode, businessCode, scopeErr := authenticatedCompanyContext(c, req.HoldingCode, req.BusinessCode)
+	if scopeErr != nil {
+		return c.JSON(scopeErr.Status, map[string]interface{}{
 			"success": false,
-			"message": "Missing required parameter: holdingcode",
+			"code":    scopeErr.Code,
+			"message": scopeErr.Message,
 		})
 	}
 
 	logger.Info("ProductBalanceUpdateHandler: processing holdingCode=%s", holdingCode)
 
-	if err := processstock.ProcessProductBalanceUpdate(holdingCode); err != nil {
+	if err := processstock.ProcessProductBalanceUpdate(holdingCode, businessCode); err != nil {
 		logger.Error("ProductBalanceUpdateHandler: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
 			"success": false,

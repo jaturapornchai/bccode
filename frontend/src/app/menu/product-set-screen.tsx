@@ -69,6 +69,7 @@ import {
 import { cn } from "@/lib/utils";
 import { pushNotice } from "@/lib/toast";
 import { normalizeBusinessCode } from "@/lib/business-code";
+import { authFetch, getAuthSession } from "@/lib/client-auth-session";
 
 type ProductSetScreenProps = {
   active?: boolean;
@@ -81,7 +82,7 @@ function productSetRowKey(item: Product, index: number): string {
 }
 
 async function ensureActiveProductSetHolding(auth: AuthSession, holdingcode: string): Promise<void> {
-  const response = await fetch("/api/workspace/select-holding", {
+  const response = await authFetch("/api/workspace/select-holding", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -288,9 +289,8 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
 
   useEffect(() => {
     // Read auth/workspace session
-    const authRaw = localStorage.getItem(workspaceStorageKeys.auth);
     const workspaceRaw = localStorage.getItem(workspaceStorageKeys.workspace);
-    if (authRaw) setAuth(JSON.parse(authRaw));
+    setAuth(getAuthSession());
     if (workspaceRaw) setWorkspace(JSON.parse(workspaceRaw));
   }, []);
 
@@ -315,7 +315,7 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
         itemtype: "2",
         materialtype: "3",
       });
-      const response = await fetch(`/api/product?${params.toString()}`, {
+      const response = await authFetch(`/api/product?${params.toString()}`, {
         headers: {
           Authorization: `Bearer ${auth.token}`,
           "x-bc-backend-url": auth.backendUrl,
@@ -367,7 +367,7 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
     if (!auth || !activeHoldingCode || barcodes.length === 0) return;
     try {
       const promises = barcodes.map(async (code) => {
-        const response = await fetch(`/api/product-barcode/list`, {
+        const response = await authFetch(`/api/product-barcode/list`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -450,8 +450,8 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
     if (!source) return null;
 
     let price = 0;
-    let weight = source.packageweight ?? 0;
-    let componentsList: Array<{
+    const weight = source.packageweight ?? 0;
+    const componentsList: Array<{
       barcode: string;
       name: string;
       qty: number;
@@ -582,7 +582,7 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
     if (!ok) return;
 
     try {
-      const res = await fetch(`/api/product/${encodeURIComponent(p.guidfixed)}`, {
+      const res = await authFetch(`/api/product/${encodeURIComponent(p.guidfixed)}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${auth.token}`,
@@ -622,7 +622,7 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
     if (!ok) return;
     try {
       for (const guid of guids) {
-        const res = await fetch(`/api/product/${encodeURIComponent(guid)}`, {
+        const res = await authFetch(`/api/product/${encodeURIComponent(guid)}`, {
           method: "DELETE",
           headers: {
             Authorization: `Bearer ${auth.token}`,
@@ -672,7 +672,7 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
         condition: editProduct.condition ?? false,
       };
 
-      const res = await fetch(url, {
+      const res = await authFetch(url, {
         method,
         headers: {
           "Content-Type": "application/json",
@@ -881,7 +881,7 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
             จัดการระบบสินค้าชุด (Product Bundles)
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">จัดกลุ่มคอมโบเซ็ต คอนฟิกตัวเลือกรวม และกติกาการตัดสต๊อกสินค้าหลัก</p>
-          <p className="text-xs text-muted-foreground mt-0.5">สินค้าชุด = จับสินค้าหลายตัวขายรวมกันเป็นเซ็ต · ต่างจาก "สูตรผลิต (BOM)" ซึ่งใช้ผลิต/แปรรูปเป็นสินค้าใหม่</p>
+          <p className="text-xs text-muted-foreground mt-0.5">สินค้าชุด = จับสินค้าหลายตัวขายรวมกันเป็นเซ็ต · ต่างจาก &quot;สูตรผลิต (BOM)&quot; ซึ่งใช้ผลิต/แปรรูปเป็นสินค้าใหม่</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => void loadProductSets()} disabled={loading} className="h-9 hover:bg-muted">

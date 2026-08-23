@@ -1,5 +1,6 @@
 "use client";
 
+import { authFetch } from "@/lib/client-auth-session";
 import React, { useState, useEffect, useLayoutEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -190,7 +191,7 @@ export function ProductCategoryItemsEditor({
           q: debouncedQuery,
           limit: "50",
         });
-        const response = await fetch(`/api/product?${params.toString()}`, {
+        const response = await authFetch(`/api/product?${params.toString()}`, {
           headers: {
             Authorization: `Bearer ${authSession.token}`,
             "x-bc-backend-url": authSession.backendUrl,
@@ -309,7 +310,7 @@ export function ProductCategoryItemsEditor({
         codelist,
       };
 
-      const response = await fetch(
+      const response = await authFetch(
         `/api/system-settings/productcategorylist/${encodeURIComponent(guid)}?holdingcode=${encodeURIComponent(workspace.shop.holdingcode)}`,
         {
           method: "PUT",

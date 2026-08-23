@@ -6,13 +6,14 @@ describe("workspace product unit setup route", () => {
     vi.unstubAllGlobals();
   });
 
-  it("forwards a normalized optional businesscode when selecting a Holding", async () => {
+  it("forwards normalized Company and stable Branch scope when selecting a workspace", async () => {
     const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
       expect(String(url)).toBe("http://localhost:8888/select-holding");
       expect(init?.method).toBe("POST");
       expect(JSON.parse(String(init?.body))).toEqual({
         holdingcode: "SHOP001",
         businesscode: "COMPANY01",
+        branchuid: "BRANCH-UID-01",
       });
       return Response.json({ success: true });
     });
@@ -26,6 +27,7 @@ describe("workspace product unit setup route", () => {
           backendUrl: "http://localhost:8888/goapi",
           holdingcode: "SHOP001",
           businesscode: " company 01 ",
+          branchuid: "BRANCH-UID-01",
         }),
       }),
       workspaceContext("select-holding"),
@@ -45,6 +47,7 @@ describe("workspace product unit setup route", () => {
           success: true,
           data: [{ holdingcode: "SHOP001", names: [{ code: "th", name: "กิจการทดสอบ" }], language: "th" }],
           total: 1,
+          cancreateholding: true,
         });
       }
       if (requestUrl === "http://localhost:8888/select-holding") {
@@ -70,6 +73,7 @@ describe("workspace product unit setup route", () => {
     );
 
     expect(response.status).toBe(200);
+    expect(await response.clone().json()).toMatchObject({ cancreateholding: true });
     expect(selections).toEqual([
       { holdingcode: "SHOP001", businesscode: "COMPANY01" },
       { holdingcode: "SHOP001", businesscode: "COMPANY01" },

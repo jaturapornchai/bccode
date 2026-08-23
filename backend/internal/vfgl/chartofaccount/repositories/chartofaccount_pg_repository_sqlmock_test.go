@@ -71,11 +71,11 @@ func TestCreateChartOfAccount(t *testing.T) {
 	s.mock.ExpectBegin()
 
 	s.mock.ExpectExec(
-		regexp.QuoteMeta(`INSERT INTO "chartofaccounts" ("holdingcode","parid","accountcode","accountname","accountcategory","accountbalancetype","accountgroup","accountlevel","consolidateaccountcode")
-	                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`)).
+		regexp.QuoteMeta(`INSERT INTO "chartofaccounts" ("holdingcode","parid","accountcode","accountname","financial_statements","accountcategory","accountbalancetype","accountgroup","accountlevel","consolidateaccountcode")
+	                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`)).
 		WithArgs(
 			s.chartofaccount.HoldingCode, s.chartofaccount.ParID, s.chartofaccount.AccountCode, s.chartofaccount.AccountName,
-			s.chartofaccount.AccountCategory, s.chartofaccount.AccountBalanceType, s.chartofaccount.AccountGroup, s.chartofaccount.AccountLevel,
+			s.chartofaccount.FinancialStatements, s.chartofaccount.AccountCategory, s.chartofaccount.AccountBalanceType, s.chartofaccount.AccountGroup, s.chartofaccount.AccountLevel,
 			s.chartofaccount.ConsolidateAccountCode).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 

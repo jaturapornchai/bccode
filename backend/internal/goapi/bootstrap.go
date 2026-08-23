@@ -2,13 +2,13 @@ package goapi
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -17,7 +17,6 @@ import (
 	"smlcloudplatform/internal/goapi/handlers/aichat"
 	"smlcloudplatform/internal/goapi/handlers/approval"
 	"smlcloudplatform/internal/goapi/handlers/datahistory"
-	"smlcloudplatform/internal/goapi/handlers/kafka"
 	"smlcloudplatform/internal/goapi/handlers/knowledgebase"
 	"smlcloudplatform/internal/goapi/handlers/lineoa"
 	"smlcloudplatform/internal/goapi/handlers/unified"
@@ -36,7 +35,6 @@ import (
 	"smlcloudplatform/pkg/microservice"
 	msmodels "smlcloudplatform/pkg/microservice/models"
 
-	"github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -202,24 +200,12 @@ func (s *GoAPIServer) RegisterMiddleware(g *echo.Group) {
 
 	// 4. Request Timeout
 	g.Use(middleware.TimeoutWithConfig(middleware.TimeoutConfig{
-		Skipper: func(c echo.Context) bool {
-			path := c.Path()
-			return strings.HasSuffix(path, "/reportget") ||
-				strings.HasSuffix(path, "/reportpost") ||
-				strings.HasSuffix(path, "/mongogetdata") ||
-				strings.HasSuffix(path, "/getdoc") ||
-				strings.HasSuffix(path, "/copymongouattodev") ||
-				strings.HasSuffix(path, "/previewcopymongo") ||
-				strings.HasSuffix(path, "/listsourceshops") ||
-				strings.Contains(path, "/rebuild/progress/") ||
-				strings.Contains(path, "/ai-provider/test")
-		},
 		ErrorMessage: "Request timeout",
 		Timeout:      30 * time.Second,
 	}))
 }
 
-func createGoAPIAuthMiddleware(cacher microservice.ICacher) echo.MiddlewareFunc {
+func createGoAPIAuthMiddleware(authService *microservice.AuthService) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			tokenText, err := getBearerToken(c.Request().Header.Get(echo.HeaderAuthorization))
@@ -231,16 +217,13 @@ func createGoAPIAuthMiddleware(cacher microservice.ICacher) echo.MiddlewareFunc 
 				})
 			}
 
-			userInfo, ok := authenticateGoAPIRedisToken(cacher, tokenText)
+			userInfo, ok := authenticateGoAPIRedisToken(c.Request().Context(), authService, tokenText)
 			if !ok {
-				userInfo, err = authenticateGoAPIJWTToken(tokenText)
-				if err != nil {
-					logger.Warn("GoAPI auth failed: invalid token")
-					return c.JSON(http.StatusUnauthorized, map[string]interface{}{
-						"success": false,
-						"message": "Unauthorized",
-					})
-				}
+				logger.Warn("GoAPI auth failed: inactive session")
+				return c.JSON(http.StatusUnauthorized, map[string]interface{}{
+					"success": false,
+					"message": "Unauthorized",
+				})
 			}
 			if userInfo.HoldingCode == "" {
 				logger.Warn("GoAPI auth failed: shop not selected")
@@ -249,14 +232,6 @@ func createGoAPIAuthMiddleware(cacher microservice.ICacher) echo.MiddlewareFunc 
 					"message": "Shop not selected",
 				})
 			}
-			if userInfo.MustChangePassword {
-				return c.JSON(http.StatusForbidden, map[string]interface{}{
-					"success": false,
-					"code":    "password_change_required",
-					"message": "กรุณาเปลี่ยนรหัสผ่านเริ่มต้นก่อนใช้งานระบบ",
-				})
-			}
-
 			requestedHoldingCode, err := goAPIRequestHoldingCode(c)
 			if err != nil {
 				logger.Warn("GoAPI auth failed: invalid tenant payload")
@@ -284,82 +259,15 @@ func createGoAPIAuthMiddleware(cacher microservice.ICacher) echo.MiddlewareFunc 
 	}
 }
 
-func authenticateGoAPIRedisToken(cacher microservice.ICacher, tokenText string) (msmodels.UserInfo, bool) {
-	if cacher == nil {
+func authenticateGoAPIRedisToken(ctx context.Context, authService *microservice.AuthService, tokenText string) (msmodels.UserInfo, bool) {
+	if authService == nil {
 		return msmodels.UserInfo{}, false
 	}
-
-	cacheKey := "auth-" + tokenText
-	raw, err := cacher.HMGet(cacheKey, []string{"username", "name", "holdingcode", "role", "mustchangepassword", "businesscode"})
-	if err != nil || len(raw) < 6 || raw[0] == nil {
+	userInfo, err := authService.AuthenticateAccessToken(ctx, tokenText)
+	if err != nil {
 		return msmodels.UserInfo{}, false
-	}
-
-	userInfo := msmodels.UserInfo{
-		Username: fmt.Sprintf("%v", raw[0]),
-	}
-	if raw[1] != nil {
-		userInfo.Name = fmt.Sprintf("%v", raw[1])
-	}
-	if raw[2] != nil {
-		userInfo.HoldingCode = fmt.Sprintf("%v", raw[2])
-	}
-	if raw[3] != nil {
-		role, err := strconv.ParseUint(fmt.Sprintf("%v", raw[3]), 10, 8)
-		if err != nil {
-			return msmodels.UserInfo{}, false
-		}
-		userInfo.Role = uint8(role)
-	}
-	if raw[4] != nil {
-		mustChangePassword, err := strconv.ParseBool(fmt.Sprintf("%v", raw[4]))
-		if err != nil {
-			return msmodels.UserInfo{}, false
-		}
-		userInfo.MustChangePassword = mustChangePassword
-	}
-	if raw[5] != nil {
-		userInfo.BusinessCode = strings.ToUpper(strings.TrimSpace(fmt.Sprintf("%v", raw[5])))
-	}
-	if userInfo.Username == "" {
-		return msmodels.UserInfo{}, false
-	}
-
-	if userInfo.HoldingCode != "" {
-		_ = cacher.Expire(cacheKey, 24*3*time.Hour)
 	}
 	return userInfo, true
-}
-
-func authenticateGoAPIJWTToken(tokenText string) (msmodels.UserInfo, error) {
-	secret := goAPIJWTSecret()
-	if secret == "" {
-		return msmodels.UserInfo{}, fmt.Errorf("JWT_SECRET_KEY is not configured")
-	}
-
-	claims := &microservice.CustomClaims{RegisteredClaims: &jwt.RegisteredClaims{}}
-	token, err := jwt.ParseWithClaims(tokenText, claims, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return []byte(secret), nil
-	})
-	if err != nil || !token.Valid {
-		return msmodels.UserInfo{}, fmt.Errorf("invalid token")
-	}
-	return claims.UserInfo, nil
-}
-
-func goAPIJWTSecret() string {
-	secret := strings.TrimSpace(os.Getenv("JWT_SECRET_KEY"))
-	if secret != "" {
-		return secret
-	}
-	if strings.EqualFold(strings.TrimSpace(os.Getenv("MODE")), "production") {
-		return ""
-	}
-	// Development fallback follows the existing main API config source so local GoAPI can verify existing dev tokens.
-	return strings.TrimSpace((&appConfig.Config{}).JwtSecretKey())
 }
 
 func getBearerToken(authorization string) (string, error) {
@@ -439,9 +347,10 @@ func isDevelopmentMode() bool {
 
 // RegisterRoutes registers all goapi routes on the Echo group
 // prefix คือ URL prefix ของ group เช่น "/goapi" หรือ "" (standalone)
-func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string) {
+func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string, authorizationFinders ...microservice.AuthorizationFinder) {
 	authCacher := microservice.NewCacher((&appConfig.Config{}).CacherConfig())
-	authGroup := g.Group("", createGoAPIAuthMiddleware(authCacher))
+	authService := microservice.NewAuthService(authCacher, 15*time.Minute, 8*time.Hour, authorizationFinders...)
+	authGroup := g.Group("", createGoAPIAuthMiddleware(authService))
 
 	// Health & Status
 	g.GET("/", func(c echo.Context) error {
@@ -471,27 +380,6 @@ func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string) {
 	g.GET("/api/health/queue/:holdingcode", handlers.QueueShopStatusHandler)
 	g.GET("/api/health/database", handlers.DatabaseHealthHandler)
 	g.GET("/api/health/system", handlers.SystemHealthHandler)
-
-	authGroup.GET("/reportget", handlers.ReportGetHandler)
-
-	// Database operation routes
-	authGroup.POST("/get", handlers.PgSelectHandler)
-	authGroup.POST("/exec", handlers.PgExecHandler)
-	authGroup.POST("/getdoc", handlers.PgGetDocHandler)
-	authGroup.POST("/mongogetdata", handlers.MongoGetDataHandler)
-	authGroup.POST("/reportpost", handlers.ReportPostHandler)
-	authGroup.GET("/rebuild/progress/:jobId", handlers.RebuildProgressSSEHandler)
-
-	// Result table endpoints
-	authGroup.POST("/resultfromquery", handlers.ResultFromQueryHandler)
-	authGroup.POST("/resultget", handlers.ResultGetHandler)
-	authGroup.POST("/resulttopdf", handlers.ResultToPDFHandler)
-
-	// Generate PDF
-	authGroup.POST("/genpdf", handlers.GenPDFHandler)
-	authGroup.GET("/genpdf/history", handlers.PdfHistoryGetHandler)
-	authGroup.POST("/genpdf/history", handlers.PdfHistoryListHandler)
-	authGroup.GET("/genpdf/reprint/:id", handlers.PdfReprintHandler)
 
 	// Inventory Costing
 	inventoryGroup := authGroup.Group("/api")
@@ -533,7 +421,6 @@ func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string) {
 	authGroup.POST("/api/lineoa/configs", lineoa.GetConfigsHandler)
 	authGroup.POST("/api/lineoa/config", lineoa.GetConfigHandler)
 	authGroup.POST("/api/lineoa/config/save", lineoa.SaveConfigHandler)
-	authGroup.POST("/api/lineoa/test", lineoa.TestHandler)
 	authGroup.POST("/api/lineoa/employees", lineoa.GetEmployeesHandler)
 	authGroup.POST("/api/lineoa/employee/add", lineoa.AddEmployeeHandler)
 	authGroup.POST("/api/lineoa/employee/remove", lineoa.RemoveEmployeeHandler)
@@ -566,10 +453,8 @@ func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string) {
 	authGroup.POST("/api/approval/notification/send-real", approval.SendRealApprovalNotificationHandler)
 	authGroup.POST("/api/approval/notification/resend", approval.ResendApprovalNotificationHandler)
 	authGroup.GET("/api/approval/smtp-status", approval.GetSMTPStatusHandler)
-	authGroup.POST("/api/approval/test-email", approval.SendTestEmailHandler)
 	authGroup.GET("/api/approval/lineoa-config-status", approval.GetLineOAConfigStatusHandler)
 	authGroup.GET("/api/approval/lineoa-configs", approval.ListAllLineOAConfigsHandler)
-	authGroup.POST("/api/approval/test-line-push", approval.TestLinePushHandler)
 	g.GET("/api/approval/action", approval.ApproveViaTokenHandler)
 	g.POST("/api/approval/action", approval.ApproveViaTokenHandler)
 	g.GET("/api/approval/token-info", approval.GetApprovalTokenInfoHandler)
@@ -612,33 +497,6 @@ func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string) {
 
 	// Purchase Order Manual Close
 	authGroup.POST("/api/purchase-order/manual-close", handlers.ManualClosePOHandler)
-
-	// Migration
-	authGroup.GET("/api/migrate/currency", handlers.MigrateCurrencyColumnsHandler)
-	authGroup.GET("/api/migrate/currency-backfill", handlers.BackfillCurrencyDataHandler)
-	authGroup.GET("/api/migrate/clickhouse-softdelete", handlers.MigrateClickHouseSoftDeleteHandler)
-
-	// MongoDB copy
-	authGroup.POST("/copymongouattodev", handlers.CopyMongoUatToDevHandler)
-	authGroup.POST("/previewcopymongo", handlers.PreviewCopyMongoHandler)
-	authGroup.GET("/listsourceshops", handlers.ListSourceShopsHandler)
-
-	// MongoDB
-	atlasGroup := authGroup.Group("/atlas")
-	atlasGroup.POST("/get", handlers.MongoAtlasGetHandler)
-	atlasGroup.POST("/update", handlers.MongoAtlasUpdateHandler)
-	atlasGroup.POST("/delete", handlers.MongoAtlasDeleteHandler)
-
-	// ClickHouse
-	authGroup.POST("/clickhouse/query", handlers.ClickHouseQueryHandler)
-	authGroup.POST("/clickhouse/querys", handlers.ClickHouseMultiQueryHandler)
-	authGroup.POST("/clickhouse/select", handlers.ClickHouseSelectHandler)
-
-	// Test endpoints
-	authGroup.POST("/test/sale-order", kafka.TestSaleOrderHandler)
-	authGroup.POST("/test/purchase", kafka.TestPurchaseHandler)
-	authGroup.POST("/test/purchase-order", kafka.TestPurchaseOrderHandler)
-	authGroup.POST("/test/purchase-partial", kafka.TestPurchasePartialHandler)
 
 	// S3 File Proxy
 	authGroup.GET("/s3/file/*", handlers.S3FileProxyHandler)
@@ -693,7 +551,6 @@ func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string) {
 	aiProviderV1.POST("/list", aichat.ListAIProviders)
 	aiProviderV1.POST("/save", aichat.SaveAIProvider)
 	aiProviderV1.POST("/delete", aichat.DeleteAIProvider)
-	aiProviderV1.POST("/test", aichat.TestAIProvider)
 	aiProviderV1.POST("/models", aichat.ListAIModels)
 	aiProviderV1.POST("/status", aichat.AIProviderStatus)
 	aiProviderV1.POST("/question-history", aichat.ListQuestionHistory)
@@ -705,20 +562,6 @@ func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string) {
 	unifiedV1.POST("/query", unifiedServer.ProcessUnifiedQuery)
 	unifiedV1.GET("/health", unifiedServer.HealthCheck)
 	unifiedV1.GET("/cache/stats", unifiedServer.GetCacheStats)
-
-	// Setup Config Routes
-	g.POST("/api/setup/verify-password", handlers.SetupVerifyPasswordHandler)
-	g.POST("/api/setup/change-password", handlers.SetupChangePasswordHandler)
-	g.POST("/api/setup/config/get", handlers.SetupGetConfigHandler)
-	g.POST("/api/setup/config/get-raw", handlers.SetupGetConfigRawHandler)
-	g.POST("/api/setup/config/save", handlers.SetupSaveConfigHandler)
-	g.POST("/api/setup/test-connection", handlers.SetupTestConnectionHandler)
-	g.POST("/api/setup/create-clickhouse-database", handlers.SetupCreateClickHouseDatabaseHandler)
-
-	// Deploy Webhook Routes
-	g.POST("/api/deploy/backend", handlers.DeployBackendHandler)
-	g.POST("/api/deploy/frontend", handlers.DeployFrontendHandler)
-	g.GET("/api/deploy/status", handlers.DeployStatusHandler)
 
 	logger.Success("GoAPI: ✅ Routes registered successfully")
 }
@@ -763,29 +606,6 @@ func createTieredRateLimiter() echo.MiddlewareFunc {
 	tiers["/api/health"] = healthTier
 	tiers["/health"] = healthTier
 
-	// Heavy operations - low limit
-	heavyTier := RateLimitTier{
-		rateLimit: 10,
-		limiterConfig: middleware.RateLimiterConfig{
-			Store: middleware.NewRateLimiterMemoryStoreWithConfig(
-				middleware.RateLimiterMemoryStoreConfig{Rate: 10, Burst: 2, ExpiresIn: 60 * time.Second}),
-			IdentifierExtractor: func(ctx echo.Context) (string, error) { return ctx.RealIP(), nil },
-			DenyHandler:         createRateLimitDenyHandler(10),
-		},
-	}
-	tiers["/reportget"] = heavyTier
-	tiers["/reportpost"] = heavyTier
-
-	tiers["/mongogetdata"] = RateLimitTier{
-		rateLimit: 20,
-		limiterConfig: middleware.RateLimiterConfig{
-			Store: middleware.NewRateLimiterMemoryStoreWithConfig(
-				middleware.RateLimiterMemoryStoreConfig{Rate: 20, Burst: 5, ExpiresIn: 60 * time.Second}),
-			IdentifierExtractor: func(ctx echo.Context) (string, error) { return ctx.RealIP(), nil },
-			DenyHandler:         createRateLimitDenyHandler(20),
-		},
-	}
-
 	// Standard APIs
 	standardTier := RateLimitTier{
 		rateLimit: 200,
@@ -819,8 +639,6 @@ func createTieredRateLimiter() echo.MiddlewareFunc {
 			DenyHandler:         createRateLimitDenyHandler(500),
 		},
 	}
-	tiers["/get"] = dbQueryTier
-	tiers["/pg/select"] = dbQueryTier
 	tiers["/api/product/search/unified"] = dbQueryTier
 
 	// Default rate limiter

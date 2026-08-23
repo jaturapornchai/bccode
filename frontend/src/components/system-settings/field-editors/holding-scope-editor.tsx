@@ -1,5 +1,6 @@
 "use client";
 
+import { authFetch } from "@/lib/client-auth-session";
 import { Building2, GitBranch, Loader2, Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -263,7 +264,7 @@ export function HoldingScopeRulesEditor({
     const params = new URLSearchParams();
     if (activeHoldingCode) params.set("activeholdingcode", activeHoldingCode);
 
-    void fetch(`/api/workspace/holdings${params.size ? `?${params.toString()}` : ""}`, {
+    void authFetch(`/api/workspace/holdings${params.size ? `?${params.toString()}` : ""}`, {
       headers: requestHeaders(auth),
       cache: "no-store",
       signal: controller.signal,

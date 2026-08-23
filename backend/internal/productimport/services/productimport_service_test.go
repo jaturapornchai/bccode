@@ -46,7 +46,7 @@ func TestPrepareProductBarcodes(t *testing.T) {
 
 		tempResultPrices := *resultDoc.Prices
 
-		assert.Equal(t, 2, len(tempResultPrices))
+		assert.Len(t, tempResultPrices, 12)
 
 		assert.Equal(t, expectDoc.Price, tempResultPrices[0].Price)
 		assert.Equal(t, expectDoc.PriceMember, tempResultPrices[1].Price)

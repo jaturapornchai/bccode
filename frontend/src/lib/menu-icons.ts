@@ -157,6 +157,8 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/masterclassscreen": "category",
   "/masterdesignscreen": "design",
   "/mastergradescreen": "badge",
+  "/mastergroupsubonescreen": "group",
+  "/mastergroupsubtwoscreen": "group",
   "/mastermodelscreen": "activity",
   "/masterpatternscreen": "grid",
   "/addproducttobranchscreen": "building",
@@ -219,6 +221,7 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/marketplace/tiktok": "shoppingBasket",
   "/aiprovider": "bot",
   "/copyuattodev": "cloudDownload",
+  "/datamodelgraph": "table",
 };
 
 export function menuIconKeyForRoute(route: string, category: MenuCategory): MenuIconKey {

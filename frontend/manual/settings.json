@@ -1,0 +1,96 @@
+{
+  "screen": "settings",
+  "updatedAt": "2026-08-23",
+  "translations": {
+    "th": {
+      "title": "คู่มือเบื้องต้น — ศูนย์ตั้งค่าระบบ",
+      "summary": "ตรวจการเชื่อมต่อ Backend, ฐานข้อมูล, ที่เก็บไฟล์, Kafka, ธีม ภาษา และ Integration จากจุดเดียว",
+      "sources": [
+        {
+          "name": "หน้าศูนย์ตั้งค่าระบบ",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/frontend/src/app/settings/settings-screen.tsx"
+        },
+        {
+          "name": "กฎระบบและส่วนประกอบ Backend",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/docs/system.md"
+        }
+      ],
+      "objective": "แนวคิด: หน้านี้ใช้ตั้งค่าการเชื่อมต่อและเครื่องมือของระบบ ไม่ใช่หน้าบันทึกข้อมูลธุรกิจประจำวัน",
+      "prerequisites": [
+        "เตรียม endpoint และ credential จากผู้ดูแลระบบ",
+        "สำรอง Config เดิมก่อนเปลี่ยนค่าหลายรายการ"
+      ],
+      "workflow": [
+        "ตรวจ Backend URL แล้วกดทดสอบการเชื่อมต่อ",
+        "เลือกธีมและภาษาที่ต้องการใช้",
+        "เปิดหมวดฐานข้อมูล ที่เก็บไฟล์ Kafka หรือ Integration ที่ต้องตั้งค่า แล้วทดสอบเฉพาะหมวด",
+        "ตรวจผลทดสอบก่อนยืนยันบันทึก Config"
+      ],
+      "config": [
+        "แต่ละหมวดมีปุ่มทดสอบแยกเพื่อระบุจุดที่เชื่อมต่อไม่สำเร็จ",
+        "ส่วน Import/Export ใช้สำรองหรือย้ายค่า Config",
+        "ค่ารหัสผ่าน Token และ Secret ต้องรับจากช่องทางที่ปลอดภัยและไม่ส่งผ่านแชทหรือภาพหน้าจอ"
+      ],
+      "expectedResults": [
+        "ทราบว่าการเชื่อมต่อหมวดใดพร้อมใช้งานหรือมีปัญหา",
+        "บันทึกเฉพาะ Config ที่ตรวจแล้ว"
+      ],
+      "commonMistakes": [
+        "แก้หลายหมวดพร้อมกันโดยไม่ทดสอบทีละส่วน",
+        "นำ Config ที่มี Secret ไปเผยแพร่หรือส่งต่อโดยไม่ตรวจ"
+      ],
+      "limitations": [
+        "คู่มือนี้ไม่ระบุ credential จริงของระบบ",
+        "ความพร้อมของบริการภายนอกขึ้นกับเครือข่าย สิทธิ์ และสถานะของบริการนั้น"
+      ],
+      "nextSteps": [
+        "กลับไปหน้าเข้าสู่ระบบหรือพื้นที่ทำงาน แล้วทดสอบ flow ที่ใช้ Config นี้"
+      ]
+    },
+    "en": {
+      "title": "Basic guide — System Settings Center",
+      "summary": "Review Backend, database, file storage, Kafka, theme, language, and integration settings in one place.",
+      "sources": [
+        {
+          "name": "System Settings Center implementation",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/frontend/src/app/settings/settings-screen.tsx"
+        },
+        {
+          "name": "System and Backend component rules",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/docs/system.md"
+        }
+      ],
+      "objective": "Concept: this screen configures system connections and tools; it is not a daily business-data screen.",
+      "prerequisites": [
+        "Obtain endpoints and credentials from the system administrator.",
+        "Export the current Config before changing several settings."
+      ],
+      "workflow": [
+        "Check the Backend URL and run its connection test.",
+        "Select the preferred theme and language.",
+        "Open the required database, storage, Kafka, or integration section and test that section.",
+        "Review test results before confirming Config changes."
+      ],
+      "config": [
+        "Each section has its own test action to isolate connection failures.",
+        "Import and Export support Config backup and transfer.",
+        "Receive passwords, tokens, and secrets through a secure channel; never share them in chat or screenshots."
+      ],
+      "expectedResults": [
+        "You know which connection sections are ready or failing.",
+        "Only reviewed Config is saved."
+      ],
+      "commonMistakes": [
+        "Changing several sections without testing them separately.",
+        "Sharing exported Config without checking it for secrets."
+      ],
+      "limitations": [
+        "This guide never contains real system credentials.",
+        "External-service availability depends on network, permissions, and provider status."
+      ],
+      "nextSteps": [
+        "Return to sign-in or the workspace and test the flow that uses this Config."
+      ]
+    }
+  }
+}

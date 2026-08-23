@@ -1,0 +1,96 @@
+{
+  "screen": "workspace",
+  "updatedAt": "2026-08-23",
+  "translations": {
+    "th": {
+      "title": "คู่มือเบื้องต้น — เลือกพื้นที่ทำงาน",
+      "summary": "เลือก Holding, Company และ Branch ที่ผู้ใช้มีสิทธิ์ก่อนเข้าสู่เมนูงาน",
+      "sources": [
+        {
+          "name": "กฎพื้นที่องค์กรและ Membership",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/docs/organization.md"
+        },
+        {
+          "name": "กฎขั้นตอน Login และเลือกพื้นที่",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/docs/login.md"
+        }
+      ],
+      "objective": "แนวคิด: หน้านี้ใช้เลือกบริบทการทำงานจากรายการที่ Backend ส่งกลับก่อนเปิดเมนูงาน ส่วนเงื่อนไข Membership และ Scope ให้อ่านจากแหล่งอ้างอิง",
+      "prerequisites": [
+        "เข้าสู่ระบบให้สำเร็จ",
+        "เตรียมกลุ่มกิจการ บริษัท และสาขาที่ต้องการทำงาน"
+      ],
+      "workflow": [
+        "ตรวจกลุ่มกิจการที่กำลังใช้งาน",
+        "เลือกบริษัทจากรายการที่หน้าจอแสดง",
+        "เลือกสาขาที่ต้องการทำงาน",
+        "ถ้ายังไม่มีบริษัทหรือสาขา ให้เปิดตั้งค่าระบบ โดยเริ่มกำหนดภาษาก่อนกรอกข้อมูลหลายภาษา"
+      ],
+      "config": [
+        "ส่วนบนของหน้าจอแสดงกลุ่มกิจการที่กำลังใช้งาน",
+        "ช่องค้นหาช่วยกรองรายการบริษัทที่โหลดมาแล้ว",
+        "กฎ Membership, Scope และสถานะพื้นที่ฉบับเต็มให้อ่านจากแหล่งอ้างอิง"
+      ],
+      "expectedResults": [
+        "ระบบทราบ Holding, Company และ Branch ที่เลือก",
+        "เมนูงานเปิดจากบริบทที่ผู้ใช้เลือก"
+      ],
+      "commonMistakes": [
+        "ข้ามขั้นที่หน้าจอยังขอให้เลือก Company หรือ Branch",
+        "เห็นชื่อบริษัทแล้วไม่ตรวจรายการสาขาและข้อความแจ้งสถานะ"
+      ],
+      "limitations": [
+        "รายการที่เห็นมาจากผลตอบกลับของ Backend และอาจเปลี่ยนหลังรีเฟรชหรือเปลี่ยนกลุ่มกิจการ",
+        "ถ้าปุ่มหรือรายการขั้นถัดไปไม่พร้อม ให้ตรวจข้อความสถานะบนหน้าและกฎจากแหล่งอ้างอิง"
+      ],
+      "nextSteps": [
+        "ถ้าโครงสร้างพร้อมแล้วให้เลือก Branch; ถ้ายังไม่พร้อมให้กดตั้งค่าระบบ"
+      ]
+    },
+    "en": {
+      "title": "Basic guide — Select Workspace",
+      "summary": "Select an allowed Holding, Company, and Branch before opening work menus.",
+      "sources": [
+        {
+          "name": "Organization and Membership rules",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/docs/organization.md"
+        },
+        {
+          "name": "Login and workspace-selection rules",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/docs/login.md"
+        }
+      ],
+      "objective": "Concept: this screen selects a work context from records returned by the Backend before opening work menus; use the linked sources for Membership and Scope conditions.",
+      "prerequisites": [
+        "Sign in successfully.",
+        "Prepare the business group, Company, and Branch where you intend to work."
+      ],
+      "workflow": [
+        "Review the active business group.",
+        "Select a Company from the list shown on the screen.",
+        "Select the Branch where you will work.",
+        "If no Company or Branch exists, open System Setup and configure languages before multilingual data."
+      ],
+      "config": [
+        "The page header shows the active business group.",
+        "The search box filters the Companies already loaded.",
+        "Use the linked sources for complete Membership, Scope, and area-status rules."
+      ],
+      "expectedResults": [
+        "The system knows the selected Holding, Company, and Branch.",
+        "Work menus open from the context selected by the user."
+      ],
+      "commonMistakes": [
+        "Skipping a Company or Branch selection that the screen still requests.",
+        "Treating a visible Company name as sufficient without checking Branch options and status messages."
+      ],
+      "limitations": [
+        "The visible list comes from the Backend response and may change after refresh or business-group selection.",
+        "If the next control or list is unavailable, review the status message and the linked rules."
+      ],
+      "nextSteps": [
+        "Select a Branch when the structure is ready; otherwise open System Setup."
+      ]
+    }
+  }
+}

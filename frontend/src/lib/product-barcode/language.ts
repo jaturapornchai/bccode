@@ -156,7 +156,6 @@ const barcodeTextTh = {
   vatExcluded: "สินค้ายกเว้นภาษีมูลค่าเพิ่ม",
   taxType: "ประเภทภาษี",
   vatCal: "วิธีคำนวณ VAT",
-  isMainBarcode: "บาร์โค้ดหลัก",
   isStock: "ตัดสต๊อก",
 
   // Classification tab
@@ -305,8 +304,6 @@ const barcodeTextTh = {
   pickerClear: "ล้างค่า",
 
   // Common
-  yes: "ใช่",
-  no: "ไม่",
   on: "เปิด",
   off: "ปิด",
   required_error: "จำเป็นต้องระบุ",
@@ -703,7 +700,6 @@ const barcodeTextEn: BarcodeText = {
   vatExcluded: "VAT exempt product",
   taxType: "Tax type",
   vatCal: "VAT calc",
-  isMainBarcode: "Main barcode",
   isStock: "Track stock",
 
   group: "Group",
@@ -839,8 +835,6 @@ const barcodeTextEn: BarcodeText = {
   pickerLoading: "Loading…",
   pickerClear: "Clear",
 
-  yes: "Yes",
-  no: "No",
   on: "On",
   off: "Off",
   required_error: "Required",

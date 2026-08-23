@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   ean13CheckDigit,
   encodeEan13,
+  formatProductBalance,
   getBoolean,
   getFirstString,
   getNumber,
@@ -19,7 +20,80 @@ import {
   toRefBarcodeArray,
   toProductUnitOptions,
 } from "./utils";
-import { emptyProductBarcode, ITEM_TYPE } from "./types";
+import { emptyProductBarcode, ITEM_TYPE, type Product } from "./types";
+
+describe("utils — Product balance", () => {
+  const product = (overrides: Partial<Product>): Product => ({
+    guidfixed: "P1",
+    holdingcode: "H1",
+    code: "P1",
+    names: [{ code: "th", name: "สินค้า" }],
+    groupcode: "",
+    groupnames: [],
+    qty: 0,
+    unitcode: "EA",
+    unitnames: [{ code: "th", name: "ชิ้น" }],
+    unitconversions: [],
+    ...overrides,
+  });
+
+  it("preserves fractional base-unit balance", () => {
+    expect(
+      formatProductBalance(
+        product({
+          qty: 25.5,
+          unitconversions: [
+            {
+              unitcode: "BOX",
+              unitnames: [{ code: "th", name: "กล่อง" }],
+              dividevalue: 1,
+              standvalue: 12,
+            },
+          ],
+        }),
+        "th",
+      ),
+    ).toBe("2 กล่อง + 1.5 ชิ้น");
+  });
+
+  it("shows non-terminating remainder as an exact fraction", () => {
+    expect(
+      formatProductBalance(
+        product({
+          qty: 2,
+          unitconversions: [
+            {
+              unitcode: "PACK",
+              unitnames: [{ code: "th", name: "แพ็ก" }],
+              dividevalue: 3,
+              standvalue: 4,
+            },
+          ],
+        }),
+        "th",
+      ),
+    ).toBe("1 แพ็ก + 2/3 ชิ้น");
+  });
+
+  it("ignores invalid ratios and clamps negative balances to zero", () => {
+    expect(
+      formatProductBalance(
+        product({
+          qty: -3,
+          unitconversions: [
+            {
+              unitcode: "BAD",
+              unitnames: [{ code: "th", name: "เสีย" }],
+              dividevalue: 0,
+              standvalue: 1,
+            },
+          ],
+        }),
+        "th",
+      ),
+    ).toBe("0 ชิ้น");
+  });
+});
 
 describe("utils — primitives", () => {
   it("isRecord recognizes objects only", () => {

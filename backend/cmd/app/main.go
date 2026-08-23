@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"smlcloudplatform/internal/apikeyservice"
 	"smlcloudplatform/internal/authentication"
 	"smlcloudplatform/internal/channel/salechannel"
 	"smlcloudplatform/internal/channel/transportchannel"
@@ -31,6 +30,7 @@ import (
 	"smlcloudplatform/internal/organization/businesstype"
 	"smlcloudplatform/internal/organization/company"
 	"smlcloudplatform/internal/organization/department"
+	"smlcloudplatform/internal/organization/rolepermission"
 	"smlcloudplatform/internal/payment/bankmaster"
 	"smlcloudplatform/internal/payment/bookbank"
 	"smlcloudplatform/internal/payment/qrpayment"
@@ -114,8 +114,6 @@ import (
 	purchase_consumer "smlcloudplatform/internal/transaction/transactionconsumer/purchase"
 	saleinvoice_consumer "smlcloudplatform/internal/transaction/transactionconsumer/saleinvoice"
 
-	_ "net/http/pprof"
-
 	"github.com/labstack/echo/v4"
 )
 
@@ -128,28 +126,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	go func() {
-		log.Println(http.ListenAndServe(":6060", nil))
-	}()
-
 	cacher := ms.Cacher(cfg.CacherConfig())
 	// jwtService := microservice.NewJwtService(cacher, cfg.JwtSecretKey(), 24*3)
-	authService := microservice.NewAuthService(cacher, 24*3*time.Hour, 24*30*time.Hour)
+	authService := microservice.NewAuthService(cacher, 24*3*time.Hour, 24*30*time.Hour, ms.MongoPersister(cfg.MongoPersisterConfig()))
 
 	publicPath := []string{
 		"/slip/*",
 		"/swagger",
 		"/login",
-		"/poslogin",
-		"/login/phone-number",
-		"/register",
+		"/dev-login",
+		"/googlelogin",
 		"/refresh",
-		"/register-phonenumber",
-		"/register/exists-username",
-		"/register/exists-phonenumber",
-		"/send-phonenumber-otp",
-
-		"/employee/login",
 
 		"/images*",
 		"/productimage",
@@ -177,6 +164,7 @@ func main() {
 	exceptShopPath := []string{
 		"/holding",
 		"/shop",
+		"/logout",
 		"/list-holding",
 		"/list-shop",
 		"/select-holding",
@@ -228,8 +216,6 @@ func main() {
 		//new
 
 		paymentmaster.NewPaymentMasterHttp(ms, cfg),
-		apikeyservice.NewApiKeyServiceHttp(ms, cfg),
-
 		smstransaction.NewSmsTransactionHttp(ms, cfg),
 		smspatterns.NewSmsPatternsHttp(ms, cfg),
 		smspaymentsettings.NewSmsPaymentSettingsHttp(ms, cfg),
@@ -268,6 +254,7 @@ func main() {
 		businesstype.NewBusinessTypeHttp(ms, cfg),
 		company.NewCompanyHttp(ms, cfg),
 		branch.NewBranchHttp(ms, cfg),
+		rolepermission.NewRolePermissionHttp(ms, cfg),
 
 		//transaction
 		purchase.NewPurchaseHttp(ms, cfg),

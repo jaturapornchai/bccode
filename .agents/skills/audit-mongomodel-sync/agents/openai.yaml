@@ -1,0 +1,12 @@
+interface:
+  display_name: "MongoModel Sync Audit"
+  short_description: "Audit live MongoModel against project requirements"
+  default_prompt: "Use $audit-mongomodel-sync to compare live MongoModel MCP with applicable project requirements and implementation, then report exact changes."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "mongomodel"
+      description: "Local MongoModel schema and workflow MCP server"
+      transport: "streamable_http"
+      url: "http://localhost:3100/mcp"

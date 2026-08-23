@@ -24,6 +24,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { motion, MotionConfig, useReducedMotion } from "motion/react";
 import { isValidHoldingCode, normalizeHoldingCode } from "@/lib/holding-code";
 import { pushNotice } from "@/lib/toast";
+import { authFetch, getAuthSession, logoutAuthSession, setAuthSession } from "@/lib/client-auth-session";
 import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
 import {
   notifyWorkspaceChanged,
@@ -589,6 +590,7 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
   const [language, setLanguage] = useState<LanguageCode>(initialLanguage);
   const [auth, setAuth] = useState<AuthSession | null>(null);
   const [holdings, setHoldings] = useState<HoldingListItem[]>([]);
+  const [canCreateHolding, setCanCreateHolding] = useState(false);
   const [query, setQuery] = useState("");
   const [busyHoldingCode, setBusyHoldingCode] = useState("");
   const [loading, setLoading] = useState(true);
@@ -645,7 +647,6 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
 
   const signedInAs = auth?.profile?.email || auth?.username || "";
   const profileAvatar = useProfileAvatar(auth);
-  const canCreateHolding = Boolean(auth?.profile?.email?.trim());
   const normalizedCreateHoldingCode = normalizeHoldingCode(createForm.holdingcode);
   const createHoldingDuplicate = useMemo(() => {
     if (!normalizedCreateHoldingCode) return false;
@@ -656,13 +657,15 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
     setLoading(true);
     if (!options?.preserveNotice) setNotice(null);
     try {
-      const payload = await callWorkspaceApi<{ data?: HoldingListItem[] }>(currentAuth, "holdings");
+      const payload = await callWorkspaceApi<{ data?: HoldingListItem[]; cancreateholding?: boolean }>(currentAuth, "holdings");
       const nextHoldings = dedupeHoldings(Array.isArray(payload.data) ? payload.data : []);
       setHoldings(nextHoldings);
+      setCanCreateHolding(payload.cancreateholding === true);
       if (nextHoldings.length === 0 && !options?.preserveNotice) {
         setNotice({ type: "info", text: ht(activeLanguage, "emptyDescription") });
       }
     } catch (error) {
+      setCanCreateHolding(false);
       setNotice({
         type: "error",
         text: error instanceof Error && error.message ? error.message : ht(activeLanguage, "requestFailed"),
@@ -892,7 +895,7 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
       body: { holdingcode: holdingCode },
     });
     const nextAuth: AuthSession = { ...auth, holdingcode: holdingCode };
-    localStorage.setItem(workspaceStorageKeys.auth, JSON.stringify(nextAuth));
+    setAuthSession(nextAuth);
     localStorage.setItem(workspaceStorageKeys.holdingCode, holdingCode);
     localStorage.removeItem(workspaceStorageKeys.workspace);
     localStorage.removeItem(workspaceStorageKeys.shopInfo);
@@ -903,8 +906,8 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
     router.push("/workspace");
   }
 
-  function logout() {
-    localStorage.removeItem(workspaceStorageKeys.auth);
+  async function logout() {
+    await logoutAuthSession();
     localStorage.removeItem(workspaceStorageKeys.holdingCode);
     localStorage.removeItem(workspaceStorageKeys.workspace);
     localStorage.removeItem(workspaceStorageKeys.shopInfo);
@@ -1379,14 +1382,7 @@ function generateConfirmationCode(): string {
 }
 
 function readAuth(): AuthSession | null {
-  try {
-    const raw = localStorage.getItem(workspaceStorageKeys.auth);
-    if (!raw) return null;
-    const auth = JSON.parse(raw) as AuthSession;
-    return auth.token && auth.backendUrl ? auth : null;
-  } catch {
-    return null;
-  }
+  return getAuthSession();
 }
 
 function activeHoldingCode(auth: AuthSession): string {
@@ -1398,7 +1394,7 @@ async function callWorkspaceApi<T extends Record<string, unknown>>(
   path: string,
   init?: { method?: "GET" | "POST"; body?: Record<string, unknown> },
 ): Promise<T> {
-  const response = await fetch(`/api/workspace/${path}`, {
+  const response = await authFetch(`/api/workspace/${path}`, {
     method: init?.method ?? "GET",
     headers: {
       "Content-Type": "application/json",
@@ -1486,7 +1482,7 @@ async function callHoldingMemberApi(
     method === "GET"
       ? `/api/holding-member?holdingcode=${encodeURIComponent(params.holdingcode)}`
       : "/api/holding-member";
-  const response = await fetch(url, {
+  const response = await authFetch(url, {
     method,
     headers: {
       "Content-Type": "application/json",

@@ -39,25 +39,16 @@ func (h *ShopMemberHttp) RegisterHttp() {
 	h.ms.GET("/holding/users", h.ListUserInShop)
 	h.ms.GET("/shop/users", h.ListUserInShop)
 
-	h.ms.PUT("/holding/permission", h.SaveUserPermissionShop)
-	h.ms.PUT("/shop/permission", h.SaveUserPermissionShop)
 	h.ms.GET("/holding/permission/:username", h.InfoShopUser)
 	h.ms.GET("/shop/permission/:username", h.InfoShopUser)
 
 	// Bulk import users into the holding from an uploaded .csv/.xlsx (base64 in JSON body).
-	h.ms.POST("/holding/users/import", h.ImportHoldingUsers)
-	h.ms.DELETE("/holding/permission/:username", h.DeleteUserPermissionShop)
-	h.ms.DELETE("/shop/permission/:username", h.DeleteUserPermissionShop)
 
 	// Holding admin management by email (holdingcode comes from the request; the caller's role
 	// is resolved per-holding so it works from the holding-selection screen, no select required).
 	h.ms.GET("/holding-member/list", h.ListHoldingMembers)
-	h.ms.POST("/holding-member/add", h.AddHoldingMemberAdmin)
-	h.ms.POST("/holding-member/remove", h.RemoveHoldingMemberAdmin)
-
-	// Cleanup endpoint สำหรับลบ users ที่ username ว่าง
-	h.ms.DELETE("/holding/users/cleanup", h.CleanupEmptyUsers)
-	h.ms.DELETE("/shop/users/cleanup", h.CleanupEmptyUsers)
+	// Adding and removing members must go through the invitation lifecycle.
+	// Legacy direct-grant routes stay unregistered to prevent bypassing acceptance and audit.
 
 	// Public endpoint สำหรับ sync LINE data จาก lineoa-liff (LIFF callback)
 	h.ms.POST("/line-sync", h.SyncLineData)

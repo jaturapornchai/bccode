@@ -17,9 +17,13 @@ type MongoProductModel struct {
 	HoldingCode  string `json:"holdingcode"`
 	BusinessCode string `json:"businesscode"`
 	Code         string `json:"code"`
+	UnitCode     string `json:"unitcode"`
 	Names        []struct {
 		Name *string `json:"name"`
 	} `json:"names"`
+	UnitNames []struct {
+		Name *string `json:"name"`
+	} `json:"unitnames"`
 }
 
 // OnConsumeMessageProductCreateOrUpdate — when-product-created / when-product-updated
@@ -32,9 +36,10 @@ func OnConsumeMessageProductCreateOrUpdate(msg string) error {
 	p.HoldingCode = strings.TrimSpace(p.HoldingCode)
 	p.BusinessCode = utils.NormalizeBusinessCode(p.BusinessCode)
 	p.Code = utils.NormalizeBusinessCode(p.Code)
-	if p.HoldingCode == "" || p.BusinessCode == "" || p.Code == "" {
-		logger.Warn("Product message missing HoldingCode, BusinessCode or Code")
-		return fmt.Errorf("missing HoldingCode, BusinessCode or Code for product upsert")
+	p.UnitCode = utils.NormalizeBusinessCode(p.UnitCode)
+	if p.HoldingCode == "" || p.BusinessCode == "" || p.Code == "" || p.UnitCode == "" {
+		logger.Warn("Product message missing HoldingCode, BusinessCode, Code or UnitCode")
+		return fmt.Errorf("missing HoldingCode, BusinessCode, Code or UnitCode for product upsert")
 	}
 
 	build.DatabaseChecker(p.HoldingCode, false)
@@ -48,15 +53,21 @@ func OnConsumeMessageProductCreateOrUpdate(msg string) error {
 	if len(p.Names) > 0 && p.Names[0].Name != nil && *p.Names[0].Name != "" {
 		name0 = *p.Names[0].Name
 	}
+	unitName := p.UnitCode
+	if len(p.UnitNames) > 0 && p.UnitNames[0].Name != nil && *p.UnitNames[0].Name != "" {
+		unitName = *p.UnitNames[0].Name
+	}
 
 	// Metadata-only upsert. Stock columns (balanceqty*, pending*) belong to
 	// processstock/batchUpdateProduct — never written here.
 	_, err = db.ExecContext(context.Background(), `
 		INSERT INTO product (holding_code, businesscode, itemcode, name0, unitcode, unitname)
-		VALUES ($1, $2, $3, $4, '', '')
+		VALUES ($1, $2, $3, $4, $5, $6)
 		ON CONFLICT ON CONSTRAINT product_company_itemcode_unique
-		DO UPDATE SET name0 = EXCLUDED.name0`,
-		p.HoldingCode, p.BusinessCode, p.Code, name0)
+		DO UPDATE SET name0 = EXCLUDED.name0,
+			unitcode = EXCLUDED.unitcode,
+			unitname = EXCLUDED.unitname`,
+		p.HoldingCode, p.BusinessCode, p.Code, name0, p.UnitCode, unitName)
 	if err != nil {
 		return fmt.Errorf("error upserting product %s: %v", p.Code, err)
 	}

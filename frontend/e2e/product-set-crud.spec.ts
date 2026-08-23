@@ -3,7 +3,7 @@ import { test, expect, type Page } from "@playwright/test";
 /**
  * Regression test for the "สินค้าชุด" (Product Set) screen — /productset.
  *
- * **Key mechanism (verified against source this run, see `.agents/worklog.md`):** ProductSet has NO
+ * **Key mechanism (verified against source in the regression run):** ProductSet has NO
  * dedicated backend model or collection. It is a client-side filtered view of the shared `Product`
  * model (`backend/internal/product/product/models/product.go`, collection `products`) — a set is
  * simply a Product document with `itemtype: 2` (ItemTypeSet) and `materialtype: 3` (MaterialTypeSet).

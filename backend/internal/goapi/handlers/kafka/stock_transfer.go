@@ -29,7 +29,7 @@ func OnConsumeMessageStockTransferDelete(msg string) error {
 		return fmt.Errorf("invalid stock transfer data")
 	}
 
-	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.DocNo, TRANS_FLAG_STOCK_TRANSFER)
+	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.BusinessCode, docData.DocNo, TRANS_FLAG_STOCK_TRANSFER)
 }
 
 // ProcessStockTransferDocument - processes stock transfer document following standardized 10-step pattern
@@ -69,12 +69,13 @@ func ProcessStockTransferDocument(msg string) error {
 
 	// Step 4: Delete existing documents from PostgreSQL
 	logger.Info("ProcessStockTransferDocument: Step 4 - Deleting existing documents from PostgreSQL for DocNo=%s", docData.DocNo)
-	mypg.DeleteDocPgSql(ctx, db, docData.DocNo, TRANS_FLAG_STOCK_TRANSFER)
+	mypg.DeleteDocPgSql(ctx, db, docData.BusinessCode, docData.DocNo, TRANS_FLAG_STOCK_TRANSFER)
 
 	// Step 5: Convert process model to build-doc structs
 	logger.Info("ProcessStockTransferDocument: Step 5 - Converting process model to build-doc structs")
 	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, docData.HoldingCode)
 	docDetailStructs := MapStockTransferToDocDetailStructs(processData, docData.HoldingCode)
+	setDocumentCompany(&docStruct, docDetailStructs, docData.BusinessCode)
 
 	// Step 6: Create document references
 	logger.Info("ProcessStockTransferDocument: Step 6 - Creating document references")
@@ -226,7 +227,6 @@ func MapStockTransferToDocDetailStructs(processData models.ProcessMongoTransMode
 			CalcSeq:         1,
 			ItemCode:        detail.ItemCode,
 			Description:     detail.ItemCode, // Use ItemCode as description if no name available
-			BarcodeMain:     detail.Barcode,
 			Barcode:         detail.Barcode,
 			UnitCode:        detail.UnitCode,
 			WhCode:          detail.WhCode,

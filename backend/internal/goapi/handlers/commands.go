@@ -282,6 +282,15 @@ func ReportPostHandler(c echo.Context) error {
 	}
 
 	if strings.EqualFold(payLoad.CommandID, processStockCalcCostCommandID) {
+		holdingCode, businessCode, scopeErr := authenticatedCompanyContext(c, payLoad.HoldingCode, "")
+		if scopeErr != nil {
+			return c.JSON(scopeErr.Status, map[string]any{
+				"success": false,
+				"code":    scopeErr.Code,
+				"message": scopeErr.Message,
+			})
+		}
+
 		itemCodes, err := parseItemCodesFromJSON(payLoad.ItemCodeList)
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, map[string]any{
@@ -298,7 +307,7 @@ func ReportPostHandler(c echo.Context) error {
 			deleteFirst = *payLoad.DeleteFirst
 		}
 
-		results, err := runProcessStockCalcCost(payLoad.HoldingCode, itemCodes, pointQty, pointAmount, pointCost, deleteFirst, false, false)
+		results, err := runProcessStockCalcCost(holdingCode, businessCode, itemCodes, pointQty, pointAmount, pointCost, deleteFirst, false, false)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, map[string]any{
 				"error": err.Error(),

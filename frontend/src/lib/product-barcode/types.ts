@@ -513,7 +513,6 @@ export interface ProductBarcode {
   dividevalue: number;
   standvalue: number;
   isusesubbarcodes: boolean;
-  ismainbarcode: boolean;
 
   // Pricing
   prices: ProductPrice[];
@@ -610,7 +609,6 @@ export interface ProductBarcodeListRow {
   stockdimensions?: ProductStockDimension[];
   balanceamount?: number;
   averagecost?: number;
-  mainbarcoderef?: string;
   standvalue?: number;
   dividevalue?: number;
   bom?: BOMProductBarcode[];
@@ -724,7 +722,6 @@ export function emptyProductBarcode(): ProductBarcode {
     dividevalue: 1,
     standvalue: 1,
     isusesubbarcodes: false,
-    ismainbarcode: true,
 
     prices: [{ keynumber: 1, price: 0 }],
     fixedcost: [],

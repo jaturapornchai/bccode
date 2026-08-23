@@ -5,18 +5,22 @@ import (
 	"errors"
 	auth_model "smlcloudplatform/internal/authentication/models"
 	common "smlcloudplatform/internal/models"
+	organization "smlcloudplatform/internal/organization"
 	"smlcloudplatform/internal/shop/models"
 	"smlcloudplatform/internal/utils"
+	"smlcloudplatform/pkg/apperr"
 	micromodels "smlcloudplatform/pkg/microservice/models"
 	"strings"
 	"time"
 
 	"github.com/smlsoft/mongopagination"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type IShopService interface {
-	CreateShop(username string, shop models.Shop) (string, error)
+	CreateShop(userUID string, username string, shop models.Shop) (string, error)
 	UpdateShop(guid string, username string, shop models.Shop) error
 	DeleteShop(guid string, username string) error
 	InfoShop(guid string) (models.ShopInfo, error)
@@ -30,6 +34,8 @@ type ShopService struct {
 	timeNow      func() time.Time
 }
 
+var ErrHoldingCodeRenameUnavailable = errors.New("holdingcode change requires atomic rename workflow")
+
 func NewShopService(shopRepo IShopRepository, shopUserRepo IShopUserRepository, newGUID func() string, timeNow func() time.Time) ShopService {
 	return ShopService{
 		shopRepo:     shopRepo,
@@ -39,7 +45,7 @@ func NewShopService(shopRepo IShopRepository, shopUserRepo IShopUserRepository, 
 	}
 }
 
-func (svc ShopService) CreateShop(username string, doc models.Shop) (string, error) {
+func (svc ShopService) CreateShop(userUID string, username string, doc models.Shop) (string, error) {
 
 	dataDoc := models.ShopDoc{}
 	holdingCode, err := utils.NormalizeHoldingCode(doc.HoldingCode)
@@ -49,14 +55,26 @@ func (svc ShopService) CreateShop(username string, doc models.Shop) (string, err
 	if holdingCode == "" {
 		return "", errors.New("holdingcode invalid")
 	}
-	if existing, findErr := svc.shopRepo.FindByHoldingCode(context.Background(), holdingCode); findErr == nil && existing.GuidFixed != "" {
-		return "", errors.New("holdingcode is exists")
+	if !hasValidHoldingName(doc.Names) {
+		return "", errors.New("holding name is required")
 	}
-	dataDoc.GuidFixed = holdingCode
-	dataDoc.CreatedBy = username
-	dataDoc.CreatedAt = svc.timeNow()
+	if existing, findErr := svc.shopRepo.FindByHoldingCode(context.Background(), holdingCode); findErr == nil && existing.GuidFixed != "" {
+		return "", apperr.DuplicateCode("holdingcode", holdingCode)
+	}
+	holdingUID := strings.TrimSpace(svc.newGUID())
+	if holdingUID == "" || strings.TrimSpace(userUID) == "" {
+		return "", errors.New("stable Holding and User identity are required")
+	}
+	dataDoc.GuidFixed = holdingUID
+	dataDoc.HoldingUID = holdingUID
+	dataDoc.Version = 0
+	dataDoc.IsDeleted = false
+	dataDoc.CreatedBy = userUID
+	now := svc.timeNow().UTC()
+	dataDoc.CreatedAt = now
 	dataDoc.Shop = doc
 	dataDoc.HoldingCode = holdingCode
+	dataDoc.IsActive = true
 
 	if dataDoc.Shop.MainHoldingCode != "" {
 		dataDoc.IsMainShop = false
@@ -66,23 +84,59 @@ func (svc ShopService) CreateShop(username string, doc models.Shop) (string, err
 	dataDoc.ProductCenterType = doc.ProductCenterType
 	dataDoc.PosProductCenterType = doc.PosProductCenterType
 
-	if doc.Names == nil {
-		dataDoc.Names = []common.NameX{}
+	if err := svc.shopRepo.EnsureBootstrapIndexes(context.Background()); err != nil {
+		return "", err
 	}
-
-	_, err = svc.shopRepo.Create(context.Background(), dataDoc)
-
+	auditUID := primitive.NewObjectID().Hex()
+	eventUID := primitive.NewObjectID().Hex()
+	err = svc.shopRepo.Transaction(context.Background(), func(transactionContext context.Context) error {
+		if err := svc.shopRepo.CreateCodeClaim(transactionContext, organization.OrganizationCodeClaim{
+			EntityType: "holding", ScopeUID: "global", NormalizedCode: holdingCode,
+			EntityUID: holdingUID, ClaimedAt: now, ClaimedBy: userUID,
+		}); err != nil {
+			return err
+		}
+		if _, err := svc.shopRepo.Create(transactionContext, dataDoc); err != nil {
+			return err
+		}
+		if err := svc.shopUserRepo.SaveStable(transactionContext, holdingCode, holdingUID, userUID, username, auth_model.ROLE_OWNER, now); err != nil {
+			return err
+		}
+		if err := svc.shopRepo.CreateAudit(transactionContext, organization.OrganizationAudit{
+			AuditUID: auditUID, ActorUID: userUID, Action: "holding.created",
+			TargetType: "holding", TargetUID: holdingUID, HoldingUID: holdingUID,
+			After:      bson.M{"holdinguid": holdingUID, "holdingcode": holdingCode, "isactive": true},
+			OccurredAt: now,
+		}); err != nil {
+			return err
+		}
+		return svc.shopRepo.CreateOutbox(transactionContext, organization.OrganizationOutboxEvent{
+			EventUID: eventUID, AggregateType: "holding", AggregateUID: holdingUID,
+			Version: 0, EventType: "holding.created",
+			Payload: bson.M{"audituid": auditUID, "holdinguid": holdingUID, "holdingcode": holdingCode},
+			Status:  "PENDING", Attempts: 0, OccurredAt: now,
+		})
+	})
 	if err != nil {
+		if mongo.IsDuplicateKeyError(err) {
+			return "", apperr.DuplicateCode("holdingcode", holdingCode).WithWrap(err)
+		}
 		return "", err
 	}
 
-	err = svc.shopUserRepo.Save(context.Background(), holdingCode, username, auth_model.ROLE_OWNER)
+	return holdingUID, nil
+}
 
-	if err != nil {
-		return "", err
+func hasValidHoldingName(names []common.NameX) bool {
+	if len(names) == 0 {
+		return false
 	}
-
-	return holdingCode, nil
+	for _, name := range names {
+		if name.Code != nil && name.Name != nil && strings.TrimSpace(*name.Code) != "" && strings.TrimSpace(*name.Name) != "" {
+			return true
+		}
+	}
+	return false
 }
 
 func (svc ShopService) UpdateShop(guid string, username string, shop models.Shop) error {
@@ -107,20 +161,21 @@ func (svc ShopService) UpdateShop(guid string, username string, shop models.Shop
 			return err
 		}
 		if holdingCode != findShop.HoldingCode {
-			if existing, findErr := svc.shopRepo.FindByHoldingCode(context.Background(), holdingCode); findErr == nil && existing.GuidFixed != "" && existing.GuidFixed != guid {
-				return errors.New("holdingcode is exists")
-			}
+			return ErrHoldingCodeRenameUnavailable
 		}
 		shop.HoldingCode = holdingCode
 	}
 
+	expectedVersion := findShop.Version
+	expectedActive := findShop.IsActive
+	shop.IsActive = expectedActive
 	dataDoc.Shop = shop
 
 	dataDoc.UpdatedBy = username
 	dataDoc.UpdatedAt = time.Now()
 	dataDoc.GuidFixed = findShop.GuidFixed
 
-	err = svc.shopRepo.Update(context.Background(), guid, dataDoc)
+	err = svc.shopRepo.Update(context.Background(), findShop.GuidFixed, expectedVersion, expectedActive, dataDoc)
 
 	if err != nil {
 		return err

@@ -1105,6 +1105,7 @@ data_editing	มีการแก้ไขข้อมูล	Data has been edit
 data_field	ข้อมูล	Data	数据	データ	ទិន្នន័យ	데이터	ຂໍ້ມູນ	ဒေတာ	Dữ liệu	Data	Data	Data
 data_filter	ตัวกรองข้อมูล	Data Filter	Data Filter	Data Filter	Data Filter	Data Filter	Data Filter	Data Filter	Data Filter	Data Filter	Data Filter	Data Filter
 data_has_been_modified	ข้อมูลมีการเปลี่ยนแปลง	Data Has Been Modified	数据已修改	データが変更されました	ទិន្នន័យត្រូវបានកែប្រែ	데이터가 수정되었습니다	ຂໍ້ມູນມີການປ່ຽນແປງ	ဒေတာကို ပြင်ဆင်ပြီးပါပြီ	Dữ liệu đã được thay đổi	Data Has Been Modified	Data Has Been Modified	Data Has Been Modified
+data_model_graph	โครงสร้างข้อมูล (สมอง)	Data Model Graph	Data Model Graph	Data Model Graph	Data Model Graph	Data Model Graph	Data Model Graph	Data Model Graph	Data Model Graph	Data Model Graph	Data Model Graph	Data Model Graph
 data_transfer_started	เริ่มโอนข้อมูลแล้ว	Data transfer started	数据传输已开始	データ転送を開始しました	ការផ្ទេរទិន្នន័យបានចាប់ផ្តើម	데이터 전송이 시작되었습니다	ເລີ່ມໂອນຂໍ້ມູນແລ້ວ	ဒေတာလွှဲပြောင်းခြင်း စတင်ပြီ	Đã bắt đầu chuyển dữ liệu	Data transfer started	Data transfer started	Data transfer started
 data_uploaded	ยกเลิกไฟล์นำเข้า	Cancel Import File	取消导入文件	インポートファイルをキャンセル	បោះបង់ឯកសារនាំចូល	가져오기 파일 취소	ຍົກເລີກໄຟລ໌ນຳເຂົ້າ	တင်သွင်းဖိုင်ကို ပယ်ဖျက်ပါ	Hủy tệp nhập	Cancel Import File	Cancel Import File	Cancel Import File
 database_master_info.creditor	เจ้าหนี้ (creditor)	Creditor	债权人 (creditor)	債権者 (creditor)	ម្ចាស់បំណុល (creditor)	채권자 (creditor)	ເຈົ້າໜີ້ (creditor)	ကြွေးရှင် (creditor)	Chủ nợ (creditor)	Creditor	Creditor	Creditor

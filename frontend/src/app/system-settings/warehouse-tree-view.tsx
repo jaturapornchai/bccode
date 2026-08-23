@@ -1,5 +1,6 @@
 "use client";
 
+import { authFetch } from "@/lib/client-auth-session";
 import React, { useCallback, useMemo, useState, useEffect } from "react";
 import {
   MapPin,
@@ -502,7 +503,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
     setLoading(true);
     setLoadError("");
     try {
-      const res = await fetch(`${mainApiUrl}/warehouse/tree`, {
+      const res = await authFetch(`${mainApiUrl}/warehouse/tree`, {
         headers: { Authorization: `Bearer ${auth.token}` },
         cache: "no-store",
       });
@@ -525,7 +526,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
 
   useEffect(() => {
     if (!auth || !mainApiUrl) return;
-    fetch(`${mainApiUrl}/organization/company`, {
+    authFetch(`${mainApiUrl}/organization/company`, {
       headers: { Authorization: `Bearer ${auth.token}` },
     })
       .then((res) => res.json())
@@ -701,7 +702,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
           status: "active",
         };
         const url = isCreate ? `${mainApiUrl}/warehouse` : `${mainApiUrl}/warehouse/${warehouseId}`;
-        const res = await fetch(url, {
+        const res = await authFetch(url, {
           method: isCreate ? "POST" : "PUT",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${auth.token}` },
           body: JSON.stringify(payload),
@@ -755,7 +756,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
         const url = isCreate
           ? `${mainApiUrl}/warehouse/${warehouseId}/location`
           : `${mainApiUrl}/warehouse/${warehouseId}/location/${locationId}`;
-        const res = await fetch(url, {
+        const res = await authFetch(url, {
           method: isCreate ? "POST" : "PUT",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${auth.token}` },
           body: JSON.stringify(payload),
@@ -818,7 +819,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
         const url = isCreate
           ? `${mainApiUrl}/warehouse/${warehouseId}/location/${locationId}/bin`
           : `${mainApiUrl}/warehouse/${warehouseId}/location/${locationId}/bin/${binId}`;
-        const res = await fetch(url, {
+        const res = await authFetch(url, {
           method: isCreate ? "POST" : "PUT",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${auth.token}` },
           body: JSON.stringify(payload),
@@ -872,7 +873,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
     setIsSavingLocal(true);
     setFormError("");
     try {
-      const res = await fetch(`${mainApiUrl}/warehouse/${encodeURIComponent(warehouseId)}`, {
+      const res = await authFetch(`${mainApiUrl}/warehouse/${encodeURIComponent(warehouseId)}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${auth.token}` },
       });
@@ -909,7 +910,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
     setIsSavingLocal(true);
     setFormError("");
     try {
-      const res = await fetch(
+      const res = await authFetch(
         `${mainApiUrl}/warehouse/${warehouseId}/location/${encodeURIComponent(locationId)}`,
         { method: "DELETE", headers: { Authorization: `Bearer ${auth.token}` } }
       );
@@ -946,7 +947,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
     setIsSavingLocal(true);
     setFormError("");
     try {
-      const res = await fetch(
+      const res = await authFetch(
         `${mainApiUrl}/warehouse/${warehouseId}/location/${locationId}/bin/${encodeURIComponent(binId)}`,
         { method: "DELETE", headers: { Authorization: `Bearer ${auth.token}` } }
       );

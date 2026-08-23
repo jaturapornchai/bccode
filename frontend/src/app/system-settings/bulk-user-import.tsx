@@ -1,5 +1,6 @@
 "use client";
 
+import { authFetch } from "@/lib/client-auth-session";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -73,7 +74,7 @@ export function BulkUserImport({
 
   const callImport = async (file: File, commit: boolean): Promise<ImportResult> => {
     const contentbase64 = await fileToBase64(file);
-    const res = await fetch("/api/holding-users-import", {
+    const res = await authFetch("/api/holding-users-import", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

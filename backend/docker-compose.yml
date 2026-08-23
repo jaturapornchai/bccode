@@ -73,6 +73,7 @@ services:
     user: root
     environment:
       GO_ENV: development
+      BC_ENV: "${BC_ENV:-}"
       DEV_API_MODE: "2"
       SERVICE_PORT: "8888"
       LOG_LEVEL: DEBUG
@@ -80,6 +81,11 @@ services:
       KAFKA_SERVER_URL: "kafka:29092"
       FIREBASE_PROJECT_ID: "test06-a1240"
       GODEBUG: "x509negativeserial=1"
+      # Dev Login remains disabled unless all three server-side values are supplied.
+      # Keep the secret outside git (for example in the caller's environment).
+      BCAI_DEV_LOGIN_ENABLED: "${BCAI_DEV_LOGIN_ENABLED:-false}"
+      BCAI_DEV_LOGIN_USER_UID: "${BCAI_DEV_LOGIN_USER_UID:-}"
+      BCAI_DEV_LOGIN_SECRET: "${BCAI_DEV_LOGIN_SECRET:-}"
       R2_ACCOUNT_ID: "${R2_ACCOUNT_ID:-}"
       R2_ACCESS_KEY_ID: "${R2_ACCESS_KEY_ID:-}"
       R2_SECRET_ACCESS_KEY: "${R2_SECRET_ACCESS_KEY:-}"
@@ -88,7 +94,7 @@ services:
       R2_FORCE_PATH_STYLE: "${R2_FORCE_PATH_STYLE:-true}"
     volumes:
       - ./bootstrap.json:/app/bootstrap.json:ro
-      - ./custom_config.json:/app/custom_config.json:rw
+      - ${BCAI_CUSTOM_CONFIG_FILE:-./custom_config.json}:/app/custom_config.json:rw
       - ./tdict-std.txt:/app/tdict-std.txt
       - ./docs/swagger.json:/app/docs/swagger.json:ro
     restart: unless-stopped

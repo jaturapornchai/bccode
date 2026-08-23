@@ -17,7 +17,7 @@ func main() {
 	}
 
 	cacher := ms.Cacher(cfg.CacherConfig())
-	authService := microservice.NewAuthServicePrefix("linemember:", "linememberrefresh:", cacher, 24*3*time.Hour, 24*30*time.Hour)
+	authService := microservice.NewLegacyAuthServicePrefix("linemember:", "linememberrefresh:", cacher, 24*3*time.Hour, 24*30*time.Hour)
 
 	publicPath := []string{
 		"/holding/*",

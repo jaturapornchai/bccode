@@ -32,7 +32,7 @@ func OnConsumeMessagePurchasePartialDelete(msg string) error {
 		return fmt.Errorf("invalid purchase partial data")
 	}
 
-	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.DocNo, TRANS_FLAG_PURCHASE_PARTIAL)
+	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.BusinessCode, docData.DocNo, TRANS_FLAG_PURCHASE_PARTIAL)
 }
 
 // ProcessPurchasePartialDocument - processes purchase partial using build-doc system
@@ -77,13 +77,14 @@ func ProcessPurchasePartialDocument(msg string) error {
 
 	// Delete existing documents (upsert behavior)
 	logger.Debug("Step 4: Deleting existing documents...")
-	mypg.DeleteDocPgSql(ctx, db, purchasePartialData.DocNo, TRANS_FLAG_PURCHASE_PARTIAL)
+	mypg.DeleteDocPgSql(ctx, db, purchasePartialData.BusinessCode, purchasePartialData.DocNo, TRANS_FLAG_PURCHASE_PARTIAL)
 	logger.Debug("Step 4 completed: Existing documents deleted")
 
 	// Convert to build-doc structs
 	logger.Debug("Step 5: Converting to build-doc structs...")
 	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, purchasePartialData.HoldingCode)
 	docDetailStructs := MapPurchasePartialToDocDetailStructs(processData, purchasePartialData.HoldingCode)
+	setDocumentCompany(&docStruct, docDetailStructs, purchasePartialData.BusinessCode)
 	logger.Debug("Step 5 completed: DocStruct created with %d details", len(docDetailStructs))
 
 	// Create doc references if any
@@ -142,7 +143,6 @@ func MapPurchasePartialToDocDetailStructs(processData models.ProcessMongoTransMo
 			CalcSeq:         1,
 			ItemCode:        detail.ItemCode,
 			Description:     GetItemName(detail.ItemNames),
-			BarcodeMain:     detail.Barcode,
 			Barcode:         detail.Barcode,
 			UnitCode:        detail.UnitCode,
 			WhCode:          detail.WhCode,

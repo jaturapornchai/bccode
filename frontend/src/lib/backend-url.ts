@@ -26,7 +26,7 @@ export function migrateRuntimeBackendUrl(rawUrl: string, currentOrigin: string):
       return runtimeGoApiUrlForOrigin(current.origin);
     }
 
-    if (parsed.origin === current.origin && path === "/goapi" && !isLocalWebHost(current.hostname)) {
+    if (parsed.origin === current.origin && path === "/goapi" && !isLoopbackHostname(current.hostname)) {
       return publicGoApiUrlForOrigin(current.origin);
     }
 
@@ -43,7 +43,7 @@ export function migrateSameOriginLegacyGoApiUrl(rawUrl: string, currentOrigin: s
     const current = new URL(currentOrigin);
     const path = parsed.pathname.replace(/\/+$/, "").toLowerCase();
 
-    if (parsed.origin === current.origin && path === "/goapi" && !isLocalWebHost(current.hostname)) {
+    if (parsed.origin === current.origin && path === "/goapi" && !isLoopbackHostname(current.hostname)) {
       return publicGoApiUrlForOrigin(current.origin);
     }
 
@@ -59,7 +59,7 @@ export function normalizeBackendUrl(rawUrl: string): string {
     throw new Error("กรุณากรอก Backend URL");
   }
 
-  if (!/^https?:\/\//i.test(value)) {
+  if (!/^[a-z][a-z\d+.-]*:\/\//i.test(value)) {
     value = `http://${value}`;
   }
 
@@ -115,7 +115,10 @@ export function validateBackendUrl(rawUrl: string): BackendUrlCheck {
 // goapi + assets. The browser keeps using the public same-origin URL for its own calls;
 // only server-side fetches use these. Matches the next.config.ts rewrite target.
 export function serverMainApiBase(): string {
-  const raw = process.env.BCAI_LOCAL_BACKEND_URL ?? "http://192.168.2.202:8888";
+  const raw = process.env.BCAI_LOCAL_BACKEND_URL?.trim();
+  if (!raw) {
+    throw new Error("BCAI_LOCAL_BACKEND_URL is required for server-side backend requests");
+  }
   return raw.replace(/\/+$/, "");
 }
 
@@ -123,8 +126,8 @@ export function serverGoApiBase(): string {
   return `${serverMainApiBase()}/goapi`;
 }
 
-function isLocalWebHost(hostname: string): boolean {
-  const normalized = hostname.toLowerCase();
+export function isLoopbackHostname(hostname: string): boolean {
+  const normalized = hostname.trim().toLowerCase().replace(/^\[|\]$/g, "");
   return normalized === "localhost" || normalized === "127.0.0.1" || normalized === "::1";
 }
 
@@ -133,7 +136,7 @@ function isDevServerBackend(parsed: URL, current: URL): boolean {
   const path = parsed.pathname.replace(/\/+$/, "").toLowerCase();
   if (path !== "/goapi" && path !== "/backend/goapi") return false;
 
-  if (isLocalWebHost(hostname)) {
+  if (isLoopbackHostname(hostname)) {
     return parsed.origin !== current.origin || path === "/goapi";
   }
 

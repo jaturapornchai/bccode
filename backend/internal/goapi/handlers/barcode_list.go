@@ -277,7 +277,6 @@ func BarcodeListHandler(c echo.Context) error {
 			"condition":      mapBool(doc, "condition"),
 			"dividevalue":    mapFloat(doc, "dividevalue"),
 			"standvalue":     mapFloat(doc, "standvalue"),
-			"ismainbarcode":  mapBool(doc, "ismainbarcode"),
 			"unit_count":     1,
 			"all_unit_names": "",
 		})

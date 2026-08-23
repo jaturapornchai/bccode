@@ -1,0 +1,96 @@
+{
+  "screen": "company",
+  "updatedAt": "2026-08-23",
+  "translations": {
+    "th": {
+      "title": "คู่มือเบื้องต้น — ข้อมูลบริษัทและสาขา",
+      "summary": "สร้างและดูแลรายการองค์กรภายในกลุ่มกิจการปัจจุบันจากหน้าจอแบบผัง",
+      "sources": [
+        {
+          "name": "กฎ Holding, Company และ Branch",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/docs/organization.md"
+        },
+        {
+          "name": "หน้าจอจัดการบริษัทและสาขา",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/frontend/src/app/system-settings/company-branch-tree-view.tsx"
+        }
+      ],
+      "objective": "แนวคิด: ใช้หน้าจอนี้ดูและแก้รายการองค์กรแบบลำดับชั้น ส่วนความหมายและกฎธุรกิจของแต่ละระดับให้อ่านจากแหล่งอ้างอิง",
+      "prerequisites": [
+        "เข้าสู่ระบบ เลือก Holding และตรวจว่าปุ่มเพิ่มองค์กรพร้อมใช้งาน",
+        "กำหนดภาษาที่ใช้งานก่อน เพื่อให้ช่องชื่อหลายภาษาถูกต้อง"
+      ],
+      "workflow": [
+        "เลือกกลุ่มกิจการปัจจุบันและตรวจรายการบริษัททางซ้าย",
+        "เพิ่มหรือเลือกบริษัท แล้วกรอกรหัสธุรกิจและชื่อในภาษาหลัก",
+        "เลือกบริษัทที่ต้องการ จากนั้นเพิ่มสาขา",
+        "กรอกรหัสและชื่อสาขา พร้อมเลือกภาษา สกุลเงิน และ IANA timezone ให้ถูกต้องก่อนบันทึก"
+      ],
+      "config": [
+        "แผงซ้ายใช้เลือก Company หรือ Branch ส่วนแผงขวาใช้ดูและแก้ข้อมูลรายการที่เลือก",
+        "ช่องที่มีเครื่องหมาย * ต้องกรอกก่อนบันทึก",
+        "กฎรหัส สถานะ และ timezone ฉบับเต็มให้อ่านจากแหล่งอ้างอิง"
+      ],
+      "expectedResults": [
+        "รายการที่สร้างแสดงในตำแหน่งที่เลือกบนผังองค์กร",
+        "สามารถไปตรวจหน้ากำหนดขอบเขตผู้ใช้ต่อได้"
+      ],
+      "commonMistakes": [
+        "เพิ่มสาขาใต้บริษัทผิดรายการ",
+        "บันทึกสาขาโดยไม่ตรวจ timezone ภาษา หรือสกุลเงิน"
+      ],
+      "limitations": [
+        "หน้าจอแสดงและแก้ข้อมูลตามกลุ่มกิจการที่ผู้ใช้เปิดอยู่",
+        "รายละเอียดสิทธิ์และผลของสถานะองค์กรต้องยืนยันจากแหล่งอ้างอิงก่อนใช้งานจริง"
+      ],
+      "nextSteps": [
+        "ตรวจรายการสิทธิ์หน้าจอ แล้วกำหนดสิทธิ์ตามบทบาท"
+      ]
+    },
+    "en": {
+      "title": "Basic guide — Company & Branch",
+      "summary": "Create and maintain organization records in the current business group through a tree view.",
+      "sources": [
+        {
+          "name": "Holding, Company, and Branch rules",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/docs/organization.md"
+        },
+        {
+          "name": "Company and Branch management screen",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/frontend/src/app/system-settings/company-branch-tree-view.tsx"
+        }
+      ],
+      "objective": "Concept: use this screen to view and edit the organization tree; follow the linked source for the business meaning and rules of each level.",
+      "prerequisites": [
+        "Sign in, select a Holding, and confirm that the organization add action is available.",
+        "Configure active languages first so multilingual names are correct."
+      ],
+      "workflow": [
+        "Select the current business group and review its companies.",
+        "Add or select a Company, then enter its business code and primary-language name.",
+        "Select the Company and add a Branch.",
+        "Enter the Branch code and name, then verify language, currency, and IANA timezone before saving."
+      ],
+      "config": [
+        "Use the left panel to select a Company or Branch and the right panel to view or edit it.",
+        "Fields marked with * must be completed before saving.",
+        "Use the linked source for complete code, status, and timezone rules."
+      ],
+      "expectedResults": [
+        "New records appear at the selected position in the organization tree.",
+        "You can continue to the user-scope review screen."
+      ],
+      "commonMistakes": [
+        "Adding a Branch under the wrong Company.",
+        "Saving without checking timezone, language, or base currency."
+      ],
+      "limitations": [
+        "The screen shows and edits records for the business group currently open by the user.",
+        "Confirm access rules and organization-status effects from the linked source before production use."
+      ],
+      "nextSteps": [
+        "Review the screen-permission catalog, then configure role permissions."
+      ]
+    }
+  }
+}

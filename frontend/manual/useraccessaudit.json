@@ -1,0 +1,96 @@
+{
+  "screen": "useraccessaudit",
+  "updatedAt": "2026-08-23",
+  "translations": {
+    "th": {
+      "title": "คู่มือเบื้องต้น — ตรวจสอบสถานะผู้ใช้งาน",
+      "summary": "ตรวจภาพรวมข้อมูล Role, Company/Branch Scope และชุดสิทธิ์หน้าจอที่รายงานโหลดมา",
+      "sources": [
+        {
+          "name": "การสร้างรายงานตรวจสิทธิ์ผู้ใช้",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/frontend/src/app/system-settings/system-settings-screen.tsx#L6673-L7330"
+        },
+        {
+          "name": "การตรวจ Membership และวันหมดอายุของ Backend",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/backend/internal/organization/access/membership.go"
+        }
+      ],
+      "objective": "แนวคิด: หน้านี้เป็นรายงานอ่านอย่างเดียวที่รวบรวม Role, Scope และชุดสิทธิ์หน้าจอ ณ เวลาที่โหลด ไม่ใช่การยืนยันสิทธิ์จริงครบทุกเงื่อนไข",
+      "prerequisites": [
+        "กำหนดสิทธิ์ตามบทบาทและข้อมูลผู้ใช้ให้ครบก่อน",
+        "เลือก Holding ที่ต้องการตรวจให้ถูกต้อง"
+      ],
+      "workflow": [
+        "ค้นหาและเลือกผู้ใช้หนึ่งคนเพื่อดูรายละเอียด",
+        "ทำเครื่องหมายผู้ใช้หนึ่งคนหรือหลายคนที่ต้องการรวมในรายงาน",
+        "ตรวจ Role, สถานะ, Company/Branch Scope และรายการสิทธิ์หน้าจอ",
+        "หลังแก้การตั้งค่า ให้กดรีเฟรชและตรวจผลอีกครั้ง"
+      ],
+      "config": [
+        "ข้อมูลรายงานอ้างอิงเวลาที่โหลดซึ่งแสดงบนหน้าจอ",
+        "รายงานนี้อ่านอย่างเดียวและไม่แก้สิทธิ์ต้นทาง",
+        "รายละเอียดเงื่อนไขที่รายงานและ Backend ตรวจจริงให้อ่านจากแหล่งอ้างอิง"
+      ],
+      "expectedResults": [
+        "เห็นภาพรวมค่าที่ตั้งไว้ต่อผู้ใช้ก่อนเริ่มใช้งานจริง",
+        "พบ Scope หรือชุดหน้าจอที่ควรตรวจต่อได้จากจุดเดียว"
+      ],
+      "commonMistakes": [
+        "ตรวจรายงานเดิมหลังแก้ค่าโดยไม่กดรีเฟรช",
+        "ดูเฉพาะ Role แต่ไม่ตรวจ Scope และรายการหน้าจอ"
+      ],
+      "limitations": [
+        "รายงานเป็นภาพ ณ เวลาที่โหลด ไม่ใช่การติดตามแบบเรียลไทม์",
+        "รายงานปัจจุบันยังไม่ประเมิน accessexpirydate จึงต้องตรวจวันหมดอายุแยกก่อนสรุปว่าผู้ใช้เข้าได้จริง"
+      ],
+      "nextSteps": [
+        "ถ้าพบค่าผิด ให้กลับไปแก้หน้าสิทธิ์ตามบทบาทหรือผู้ใช้งาน แล้วรีเฟรชรายงาน"
+      ]
+    },
+    "en": {
+      "title": "Basic guide — User Access Audit",
+      "summary": "Review the Role, Company/Branch Scope, and screen-permission sets loaded by the report.",
+      "sources": [
+        {
+          "name": "User-access report implementation",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/frontend/src/app/system-settings/system-settings-screen.tsx#L6673-L7330"
+        },
+        {
+          "name": "Backend Membership and expiry validation",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/backend/internal/organization/access/membership.go"
+        }
+      ],
+      "objective": "Concept: this read-only report combines Role, Scope, and screen-permission sets at load time. It does not prove effective access across every condition.",
+      "prerequisites": [
+        "Complete Role Permissions and user configuration first.",
+        "Select the correct Holding to audit."
+      ],
+      "workflow": [
+        "Search for and select one user to inspect.",
+        "Check one or more users to include in the report.",
+        "Review Role, status, Company/Branch Scope, and screen permissions.",
+        "After changing settings, refresh and review the result again."
+      ],
+      "config": [
+        "The report shows the time when its data was loaded.",
+        "It is read-only and does not edit source permissions.",
+        "Use the linked sources to distinguish report checks from Backend authorization checks."
+      ],
+      "expectedResults": [
+        "You can review configured values per user before go-live.",
+        "Scope or screen sets that need further checking can be found in one place."
+      ],
+      "commonMistakes": [
+        "Reviewing stale data after a change without refreshing.",
+        "Checking only Role while ignoring Scope and screen permissions."
+      ],
+      "limitations": [
+        "The report is a snapshot at load time, not real-time monitoring.",
+        "The current report does not evaluate accessexpirydate; check expiry separately before concluding that a user can sign in."
+      ],
+      "nextSteps": [
+        "Correct Role Permissions or Users & Roles, then refresh the report."
+      ]
+    }
+  }
+}

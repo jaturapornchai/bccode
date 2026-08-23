@@ -74,8 +74,6 @@ pnpm-lock.yaml
 manual/
 manual/*.json
 
-# Duplicate agent/IDE skill bundles under backend. Use root .agents/ instead.
-backend/.agents/
 backend/.claude/
 backend/.cline/
 backend/.roo/

@@ -31,7 +31,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { NumericInput } from "@/components/ui/numeric-input";
 import { MasterPicker } from "@/components/product-barcode/master-picker";
 import { Ean13Barcode } from "@/components/product-barcode/ean13-barcode";
 import { BusinessImageEditor } from "@/components/product-barcode/business-image-editor";
@@ -84,8 +83,6 @@ export function ProductBarcodeFormDialog(props: ProductBarcodeFormDialogProps) {
     const firstName = value.names[0]?.name ?? "";
     if (!firstName.trim()) next.name0 = text.required_error;
     if (!value.itemunitcode.trim()) next.itemunitcode = text.required_error;
-    if (value.dividevalue <= 0) next.dividevalue = text.required_error;
-    if (value.standvalue <= 0) next.standvalue = text.required_error;
     setErrors(next);
     return Object.keys(next).length === 0;
   }, [value, text.required_error, text.invalidBarcode]);
@@ -232,51 +229,6 @@ function Section({ title, action, children }: { title: string; action?: ReactNod
     </section>
   );
 }
-
-function Toggle({
-  checked,
-  onCheckedChange,
-  label,
-  disabled,
-}: {
-  checked: boolean;
-  onCheckedChange: (next: boolean) => void;
-  label: string;
-  disabled?: boolean;
-}) {
-  return (
-    <label className={cn("flex cursor-pointer items-center gap-2 text-sm", disabled && "cursor-not-allowed opacity-60")}>
-      <input
-        type="checkbox"
-        checked={checked}
-        disabled={disabled}
-        onChange={(event) => onCheckedChange(event.target.checked)}
-        className="size-4 rounded border-input"
-      />
-      <span>{label}</span>
-    </label>
-  );
-}
-
-function NumberField({
-  value,
-  onChange,
-  min,
-  step = "any",
-  className,
-}: {
-  value: number;
-  onChange: (next: number) => void;
-  min?: number;
-  step?: string | number;
-  className?: string;
-}) {
-  return (
-    <NumericInput value={value} onChange={onChange} min={min} step={step} className={className} />
-  );
-}
-
-
 
 // ─── Master picker field ──────────────────────────────────────────────────
 
@@ -567,37 +519,6 @@ function QuickBarcodeFields({
             language={language}
           />
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <FieldRow label={text.divideValue} required>
-              <NumberField
-                value={value.dividevalue}
-                onChange={(next) => upd("dividevalue", next)}
-                min={0.000001}
-              />
-              {errors.dividevalue ? <p className="text-xs text-destructive">{errors.dividevalue}</p> : null}
-            </FieldRow>
-            <FieldRow label={text.standValue} required>
-              <NumberField
-                value={value.standvalue}
-                onChange={(next) => upd("standvalue", next)}
-                min={0.000001}
-              />
-              {errors.standvalue ? <p className="text-xs text-destructive">{errors.standvalue}</p> : null}
-            </FieldRow>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {isThai ? "อ่านเป็น" : "Read as"}: {value.dividevalue || 0}{" "}
-            {pickName(value.itemunitnames, language) || value.itemunitcode || (isThai ? "หน่วยขาย" : "selling unit")}{" "}
-            = {value.standvalue || 0} {isThai ? "หน่วยฐาน เช่น 1 ลัง = 24 ชิ้น" : "base units, e.g. 1 case = 24 pieces"}
-          </p>
-
-          <div className="rounded-lg border border-border bg-muted/30 p-3">
-            <Toggle
-              checked={value.ismainbarcode}
-              onCheckedChange={(next) => upd("ismainbarcode", next)}
-              label={text.isMainBarcode}
-            />
-          </div>
         </div>
       </Section>
 

@@ -140,10 +140,9 @@ func (svc ProductHttpService) GetProduct(holdingCode string, businessCode string
 				Prices:        &tempPrices,
 				GuidFixed:     barcode.GuidFixed,
 				Condition:     false,
-				DivideValue:   float64(divideValue),
-				StandValue:    float64(standValue),
+				DivideValue:   divideValue,
+				StandValue:    standValue,
 				Qty:           1,
-				IsMainBarcode: barcode.IsMainBarcode,
 			})
 		}
 	}
@@ -247,8 +246,8 @@ func syncLinkedBarcodeUnitSnapshots(doc models.ProductDoc, barcodes []barcodeMod
 			barcodes[i].ItemUnitGuid = doc.UnitGuid
 		}
 		barcodes[i].Condition = false
-		barcodes[i].DivideValue = float64(unit.DivideValue)
-		barcodes[i].StandValue = float64(unit.StandValue)
+		barcodes[i].DivideValue = unit.DivideValue
+		barcodes[i].StandValue = unit.StandValue
 		barcodes[i].UpdatedBy = actor
 		barcodes[i].UpdatedAt = updatedAt
 	}

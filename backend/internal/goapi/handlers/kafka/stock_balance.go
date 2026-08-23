@@ -120,12 +120,13 @@ func ProcessStockBalanceDocument(docData models.StockBalanceStruct) error {
 
 	// Step 3: Delete existing documents from PostgreSQL
 	logger.Info("ProcessStockBalanceDocument: Step 3 - Deleting existing documents from PostgreSQL for DocNo=%s", docData.DocNo)
-	mypg.DeleteDocPgSql(ctx, db, docData.DocNo, TRANS_FLAG_STOCK_BALANCE)
+	mypg.DeleteDocPgSql(ctx, db, docData.BusinessCode, docData.DocNo, TRANS_FLAG_STOCK_BALANCE)
 
 	// Step 4: Convert process model to build-doc structs
 	logger.Info("ProcessStockBalanceDocument: Step 4 - Converting process model to build-doc structs")
 	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, docData.HoldingCode)
 	docDetailStructs := MapStockBalanceToDocDetailStructs(processData, docData.HoldingCode)
+	setDocumentCompany(&docStruct, docDetailStructs, docData.BusinessCode)
 
 	// Step 5: Create document references
 	logger.Info("ProcessStockBalanceDocument: Step 5 - Creating document references")
@@ -176,7 +177,7 @@ func OnConsumeMessageStockBalanceDelete(message string) error {
 		return fmt.Errorf("invalid stock balance data")
 	}
 
-	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.DocNo, TRANS_FLAG_STOCK_BALANCE)
+	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.BusinessCode, docData.DocNo, TRANS_FLAG_STOCK_BALANCE)
 }
 
 // ConvertStockBalanceMongoDocToProcessModel - converts StockBalanceStruct to ProcessModel format
@@ -285,7 +286,6 @@ func MapStockBalanceToDocDetailStructs(processData models.ProcessMongoTransModel
 			CalcSeq:         1,
 			ItemCode:        detail.ItemCode,
 			Description:     GetItemName(detail.ItemNames),
-			BarcodeMain:     detail.Barcode,
 			Barcode:         detail.Barcode,
 			UnitCode:        detail.UnitCode,
 			WhCode:          detail.WhCode,

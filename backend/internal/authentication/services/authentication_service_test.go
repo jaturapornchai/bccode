@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func mockLoginData(authRepo *AuthenticationRepositoryMock, shopUserRepo *ShopUserRepositoryMock, microAuthServiceMock *AuthServiceMock) {
@@ -30,7 +31,7 @@ func mockLoginData(authRepo *AuthenticationRepositoryMock, shopUserRepo *ShopUse
 	userDoc1 := models.UserDoc{}
 	userDoc1.UID = "uid-tester1"
 	userDoc1.Username = "tester1"
-	userDoc1.Password = "tester1"
+	userDoc1.Password = "valid_password_123"
 	userDoc1.Name = "tester1"
 
 	authRepo.On("FindUser", userDoc1.Username).Return(&userDoc1, nil)
@@ -60,18 +61,15 @@ func mockLoginData(authRepo *AuthenticationRepositoryMock, shopUserRepo *ShopUse
 	})).Return(MockObjectID(), nil)
 
 	//microAuth
-	microAuthServiceMock.On("GenerateTokenWithRedis", microservice.AUTHTYPE_BEARER, micromodels.UserInfo{
+	loginUserInfo := micromodels.UserInfo{
 		Username: userDoc1.Username,
 		Name:     userDoc1.Name,
 		UID:      userDoc1.UID,
-	}).Return(tokenMock, nil)
-	microAuthServiceMock.On("GenerateTokenWithRedis", microservice.AUTHTYPE_REFRESH, micromodels.UserInfo{
-		Username: userDoc1.Username,
-		Name:     userDoc1.Name,
-		UID:      userDoc1.UID,
-	}).Return(tokenMock, nil)
+	}
+	microAuthServiceMock.On("CreateSession", loginUserInfo).Return(tokenMock, tokenMock, nil)
+	microAuthServiceMock.On("RevokeSession", "Bearer "+tokenMock).Return(nil).Maybe()
 
-	microAuthServiceMock.On("SelectShop", microservice.AUTHTYPE_BEARER, tokenMock, holdingCode, "", role).Return(nil)
+	microAuthServiceMock.On("SelectShop", microservice.AUTHTYPE_BEARER, tokenMock, holdingCode, "", "", role).Return(nil)
 
 	shopUser := models.ShopUser{}
 	shopUser.ID = MockObjectID()
@@ -88,7 +86,7 @@ func mockLoginData(authRepo *AuthenticationRepositoryMock, shopUserRepo *ShopUse
 	shopUserRepo.On("ResolveHoldingCodeByHoldingCode", "holdingmissing").Return("holdingmissing", nil)
 	shopUserRepo.On("FindByHoldingCodeAndUserUID", "holdingmissing", userDoc1.UID).Return(models.ShopUser{}, nil)
 	shopUserRepo.On("FindByHoldingCodeAndUsername", "holdingmissing", userDoc1.Username).Return(models.ShopUser{}, nil)
-	shopUserRepo.On("UpdateLastAccess", holdingCode, userDoc1.Username, MockTime()).Return(nil)
+	shopUserRepo.On("UpdateLastAccess", holdingCode, userDoc1.UID, MockTime()).Return(nil)
 }
 
 func TestAuthService_Login(t *testing.T) {
@@ -119,7 +117,7 @@ func TestAuthService_Login(t *testing.T) {
 			args: args{
 				holdingCode: holdingCode,
 				username:    "tester1",
-				password:    "tester1",
+				password:    "valid_password_123",
 			},
 			wantErr:  false,
 			wantData: "TOKEN_MOCK",
@@ -128,7 +126,7 @@ func TestAuthService_Login(t *testing.T) {
 			name: "login success without holding code",
 			args: args{
 				username: "tester1",
-				password: "tester1",
+				password: "valid_password_123",
 			},
 			wantErr:  false,
 			wantData: "TOKEN_MOCK",
@@ -138,7 +136,7 @@ func TestAuthService_Login(t *testing.T) {
 			args: args{
 				holdingCode: "holdingmissing",
 				username:    "tester1",
-				password:    "tester1",
+				password:    "valid_password_123",
 			},
 			wantErr:  true,
 			wantData: "TOKEN_MOCK",
@@ -215,7 +213,37 @@ func TestAuthService_Login(t *testing.T) {
 	}
 }
 
-func TestAuthService_LoginFlagsDefaultPassword(t *testing.T) {
+func TestAuthService_LoginRevokesSessionWhenStableMembershipIsMissing(t *testing.T) {
+	authRepo := new(AuthenticationRepositoryMock)
+	shopUserRepo := new(ShopUserRepositoryMock)
+	microAuthServiceMock := &AuthServiceMock{}
+	user := &models.UserDoc{}
+	user.UID = "uid-member"
+	user.Username = "member_user"
+	user.Password = "valid_password_123"
+	authRepo.On("FindUser", user.Username).Return(user, nil)
+	shopUserRepo.On("ResolveHoldingCodeByHoldingCode", "holdingtest").Return("holdingtest", nil)
+	shopUserRepo.On("FindByHoldingCodeAndUserUID", "holdingtest", user.UID).Return(models.ShopUser{}, nil)
+	microAuthServiceMock.On("CreateSession", micromodels.UserInfo{Username: user.Username, UID: user.UID}).
+		Return("access-token", "refresh-token", nil)
+	microAuthServiceMock.On("RevokeSession", "Bearer access-token").Return(nil)
+	authService := services.NewAuthenticationService(
+		authRepo, shopUserRepo, new(ShopUserAccessLogRepositoryMock), new(SMSRepositoryMock),
+		microAuthServiceMock, MockRandomString, MockRandomNumber, MockGUID, MockHashPassword,
+		MockCheckPasswordHash, MockTime, MockFirebaseAdapter(), MockLineAdapter())
+
+	_, err := authService.Login(&models.UserLoginRequest{
+		UsernameField: models.UsernameField{Username: user.Username},
+		UserPassword:  models.UserPassword{Password: user.Password},
+		HoldingCode:   "holdingtest",
+	}, models.AuthenticationContext{})
+
+	assert.EqualError(t, err, "holdingcode invalid")
+	microAuthServiceMock.AssertCalled(t, "RevokeSession", "Bearer access-token")
+	shopUserRepo.AssertNotCalled(t, "FindByHoldingCodeAndUsername", mock.Anything, mock.Anything)
+}
+
+func TestAuthService_LoginDoesNotUseSharedPasswordState(t *testing.T) {
 	authRepo := new(AuthenticationRepositoryMock)
 	shopUserRepo := new(ShopUserRepositoryMock)
 	shopUserAccessLogRepo := new(ShopUserAccessLogRepositoryMock)
@@ -226,17 +254,15 @@ func TestAuthService_LoginFlagsDefaultPassword(t *testing.T) {
 	user.UID = "uid-default-user"
 	user.Username = "default-user"
 	user.Name = "ผู้ใช้เริ่มต้น"
-	user.Password = models.DefaultUserPassword
+	user.Password = "valid_password_123"
 	authRepo.On("FindUser", user.Username).Return(user, nil)
 
 	userInfo := micromodels.UserInfo{
-		Username:           user.Username,
-		Name:               user.Name,
-		UID:                user.UID,
-		MustChangePassword: true,
+		Username: user.Username,
+		Name:     user.Name,
+		UID:      user.UID,
 	}
-	microAuthServiceMock.On("GenerateTokenWithRedis", microservice.AUTHTYPE_BEARER, userInfo).Return("bearer", nil)
-	microAuthServiceMock.On("GenerateTokenWithRedis", microservice.AUTHTYPE_REFRESH, userInfo).Return("refresh", nil)
+	microAuthServiceMock.On("CreateSession", userInfo).Return("bearer", "refresh", nil)
 
 	authService := services.NewAuthenticationService(
 		authRepo, shopUserRepo, shopUserAccessLogRepo, smsRepo, microAuthServiceMock,
@@ -245,14 +271,15 @@ func TestAuthService_LoginFlagsDefaultPassword(t *testing.T) {
 
 	result, err := authService.Login(&models.UserLoginRequest{
 		UsernameField: models.UsernameField{Username: user.Username},
-		UserPassword:  models.UserPassword{Password: models.DefaultUserPassword},
+		UserPassword:  models.UserPassword{Password: user.Password},
 	}, models.AuthenticationContext{Ip: "localhost"})
 
 	assert.NoError(t, err)
-	assert.True(t, result.MustChangePassword)
+	assert.Equal(t, "bearer", result.Token)
+	assert.Equal(t, "refresh", result.Refresh)
 }
 
-func TestAuthService_OTPLoginFlagsDefaultPassword(t *testing.T) {
+func TestAuthService_OTPLoginDoesNotUseSharedPasswordState(t *testing.T) {
 	authRepo := new(AuthenticationRepositoryMock)
 	shopUserRepo := new(ShopUserRepositoryMock)
 	shopUserAccessLogRepo := new(ShopUserAccessLogRepositoryMock)
@@ -263,12 +290,11 @@ func TestAuthService_OTPLoginFlagsDefaultPassword(t *testing.T) {
 	user.UID = "uid-default-otp"
 	user.Username = "default-otp"
 	user.PhoneNumber = "0812345678"
-	user.Password = models.DefaultUserPassword
+	user.Password = "valid_password_123"
 	smsRepo.On("VerifyOTP", "ref", "123456").Return(true, nil)
 	authRepo.On("FindByIdentity", "phonenumber", user.PhoneNumber).Return(user, nil)
-	userInfo := micromodels.UserInfo{Username: user.Username, UID: user.UID, MustChangePassword: true}
-	microAuthServiceMock.On("GenerateTokenWithRedis", microservice.AUTHTYPE_BEARER, userInfo).Return("bearer", nil)
-	microAuthServiceMock.On("GenerateTokenWithRedis", microservice.AUTHTYPE_REFRESH, userInfo).Return("refresh", nil)
+	userInfo := micromodels.UserInfo{Username: user.Username, UID: user.UID}
+	microAuthServiceMock.On("CreateSession", userInfo).Return("bearer", "refresh", nil)
 
 	authService := services.NewAuthenticationService(
 		authRepo, shopUserRepo, shopUserAccessLogRepo, smsRepo, microAuthServiceMock,
@@ -282,10 +308,11 @@ func TestAuthService_OTPLoginFlagsDefaultPassword(t *testing.T) {
 	}, models.AuthenticationContext{})
 
 	assert.NoError(t, err)
-	assert.True(t, result.MustChangePassword)
+	assert.Equal(t, "bearer", result.Token)
+	assert.Equal(t, "refresh", result.Refresh)
 }
 
-func TestAuthService_RefreshTokenPreservesDefaultPasswordFlag(t *testing.T) {
+func TestAuthService_RefreshTokenReturnsRotatedTokens(t *testing.T) {
 	microAuthServiceMock := &AuthServiceMock{}
 	microAuthServiceMock.On("RefreshToken", "refresh-in").Return("bearer", "refresh-out", true, nil)
 	authService := services.NewAuthenticationService(
@@ -296,7 +323,192 @@ func TestAuthService_RefreshTokenPreservesDefaultPasswordFlag(t *testing.T) {
 	result, err := authService.RefreshToken(models.TokenLoginRequest{Token: "refresh-in"})
 
 	assert.NoError(t, err)
-	assert.True(t, result.MustChangePassword)
+	assert.Equal(t, "bearer", result.Token)
+	assert.Equal(t, "refresh-out", result.Refresh)
+}
+
+func TestAuthService_DevLoginByUIDCreatesSessionAndAudit(t *testing.T) {
+	authRepo := new(AuthenticationRepositoryMock)
+	microAuthServiceMock := &AuthServiceMock{}
+	user := &models.UserDoc{}
+	user.UID = "dev-user-uid"
+	user.Username = "dev_user"
+	user.Email = " JATURAPORNCHAI@GMAIL.COM "
+	user.Name = "Dev User"
+	authRepo.On("FindUserByUID", user.UID).Return(user, nil)
+	microAuthServiceMock.On("CreateSession", micromodels.UserInfo{
+		Username: user.Username,
+		Name:     user.Name,
+		UID:      user.UID,
+	}).Return("access-token", "refresh-token", nil)
+	authRepo.On("CreateAuthAudit", mock.MatchedBy(func(audit models.AuthAudit) bool {
+		return audit.AuditUID == MockGUID() && audit.UserUID == user.UID &&
+			audit.Action == "DEV_LOGIN" && audit.Outcome == "SUCCESS" &&
+			audit.OccurredAt.Equal(MockTime().UTC()) && audit.Metadata == nil && audit.SessionUID == ""
+	})).Return(nil)
+	authService := services.NewAuthenticationService(
+		authRepo, new(ShopUserRepositoryMock), new(ShopUserAccessLogRepositoryMock),
+		new(SMSRepositoryMock), microAuthServiceMock, MockRandomString, MockRandomNumber,
+		MockGUID, MockHashPassword, MockCheckPasswordHash, MockTime, MockFirebaseAdapter(), MockLineAdapter())
+
+	result, err := authService.DevLoginByUID(user.UID, models.AuthenticationContext{Ip: "127.0.0.1"})
+
+	assert.NoError(t, err)
+	assert.Equal(t, "access-token", result.Token)
+	assert.Equal(t, "refresh-token", result.Refresh)
+	microAuthServiceMock.AssertNotCalled(t, "RevokeSession", mock.Anything)
+}
+
+func TestAuthService_DevLoginByUIDRevokesSessionWhenAuditFails(t *testing.T) {
+	authRepo := new(AuthenticationRepositoryMock)
+	microAuthServiceMock := &AuthServiceMock{}
+	user := &models.UserDoc{}
+	user.UID = "dev-user-uid"
+	user.Username = "dev_user"
+	user.Email = "jaturapornchai@gmail.com"
+	authRepo.On("FindUserByUID", user.UID).Return(user, nil)
+	microAuthServiceMock.On("CreateSession", micromodels.UserInfo{Username: user.Username, UID: user.UID}).Return("access-token", "refresh-token", nil)
+	authRepo.On("CreateAuthAudit", mock.Anything).Return(errors.New("audit unavailable"))
+	microAuthServiceMock.On("RevokeSession", "Bearer access-token").Return(nil)
+	authService := services.NewAuthenticationService(
+		authRepo, new(ShopUserRepositoryMock), new(ShopUserAccessLogRepositoryMock),
+		new(SMSRepositoryMock), microAuthServiceMock, MockRandomString, MockRandomNumber,
+		MockGUID, MockHashPassword, MockCheckPasswordHash, MockTime, MockFirebaseAdapter(), MockLineAdapter())
+
+	result, err := authService.DevLoginByUID(user.UID, models.AuthenticationContext{})
+
+	assert.Empty(t, result.Token)
+	assert.Empty(t, result.Refresh)
+	appErr := apperr.FromError(err)
+	assert.NotNil(t, appErr)
+	assert.Equal(t, "INTERNAL_ERROR", appErr.Code)
+	microAuthServiceMock.AssertCalled(t, "RevokeSession", "Bearer access-token")
+}
+
+func TestAuthService_DevLoginByUIDRejectsUnavailableUsers(t *testing.T) {
+	tests := []struct {
+		name    string
+		userUID string
+		user    *models.UserDoc
+		err     error
+	}{
+		{name: "missing", userUID: "missing-user", err: mongo.ErrNoDocuments},
+		{name: "deleted", userUID: "deleted-user", user: &models.UserDoc{UserDetail: models.UserDetail{UID: "deleted-user"}, IsDeleted: true}},
+		{name: "wrong email", userUID: "wrong-email-user", user: &models.UserDoc{UserDetail: models.UserDetail{UID: "wrong-email-user"}, EmailField: models.EmailField{Email: "other@example.com"}}},
+		{name: "disabled", userUID: "disabled-user", user: &models.UserDoc{UserDetail: models.UserDetail{UID: "disabled-user"}, EmailField: models.EmailField{Email: "jaturapornchai@gmail.com"}, DisabledAt: MockTime()}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			authRepo := new(AuthenticationRepositoryMock)
+			microAuthServiceMock := &AuthServiceMock{}
+			authRepo.On("FindUserByUID", tt.userUID).Return(tt.user, tt.err)
+			authService := services.NewAuthenticationService(
+				authRepo, new(ShopUserRepositoryMock), new(ShopUserAccessLogRepositoryMock),
+				new(SMSRepositoryMock), microAuthServiceMock, MockRandomString, MockRandomNumber,
+				MockGUID, MockHashPassword, MockCheckPasswordHash, MockTime, MockFirebaseAdapter(), MockLineAdapter())
+
+			_, err := authService.DevLoginByUID(tt.userUID, models.AuthenticationContext{})
+
+			assert.Error(t, err)
+			microAuthServiceMock.AssertNotCalled(t, "CreateSession", mock.Anything)
+			authRepo.AssertNotCalled(t, "CreateAuthAudit", mock.Anything)
+		})
+	}
+}
+
+func TestAuthService_GoogleLoginResolvesLinkedUserByIssuerAndSubject(t *testing.T) {
+	authRepo := new(AuthenticationRepositoryMock)
+	microAuthServiceMock := &AuthServiceMock{}
+	user := &models.UserDoc{}
+	user.UID = "uid-google-user"
+	user.Username = "google_user"
+	user.Email = "old@example.com"
+	user.Name = "Google User"
+	identity := &models.GoogleIdentity{
+		IdentityUID: "identity-1",
+		UserUID:     user.UID,
+		Issuer:      "https://accounts.google.com",
+		Subject:     "google-subject",
+		IsActive:    true,
+	}
+	authRepo.On("FindGoogleIdentity", identity.Issuer, identity.Subject).Return(identity, nil)
+	authRepo.On("FindUserByUID", user.UID).Return(user, nil)
+	userInfo := micromodels.UserInfo{Username: user.Username, Name: user.Name, UID: user.UID}
+	microAuthServiceMock.On("CreateSession", userInfo).Return("access-token", "refresh-token", nil)
+
+	authService := services.NewAuthenticationService(
+		authRepo, new(ShopUserRepositoryMock), new(ShopUserAccessLogRepositoryMock),
+		new(SMSRepositoryMock), microAuthServiceMock, MockRandomString, MockRandomNumber,
+		MockGUID, MockHashPassword, MockCheckPasswordHash, MockTime, MockFirebaseAdapter(), MockLineAdapter())
+
+	result, err := authService.LoginWithGoogleIdentity("accounts.google.com", identity.Subject, "new@example.com", user.Name)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "access-token", result.Token)
+	assert.Equal(t, "refresh-token", result.Refresh)
+	authRepo.AssertNotCalled(t, "FindUser", mock.Anything)
+	authRepo.AssertNotCalled(t, "CreateGoogleUserIdentity", mock.Anything, mock.Anything, mock.Anything)
+}
+
+func TestAuthService_GoogleLoginCreatesUserIdentityAndAuditAtomically(t *testing.T) {
+	authRepo := new(AuthenticationRepositoryMock)
+	microAuthServiceMock := &AuthServiceMock{}
+	issuer := "https://accounts.google.com"
+	subject := "new-google-subject"
+	email := "new@example.com"
+	authRepo.On("FindGoogleIdentity", issuer, subject).Return((*models.GoogleIdentity)(nil), mongo.ErrNoDocuments)
+	authRepo.On("CreateGoogleUserIdentity",
+		mock.MatchedBy(func(user models.UserDoc) bool {
+			return user.GuidFixed == MockGUID() && user.UID == MockGUID() && user.Username == "" &&
+				user.Email == email && user.Name == "New Google User" && user.CreatedAt.Equal(MockTime().UTC())
+		}),
+		mock.MatchedBy(func(identity models.GoogleIdentity) bool {
+			return identity.IdentityUID == MockGUID() && identity.UserUID == MockGUID() &&
+				identity.Issuer == issuer && identity.Subject == subject && identity.VerifiedEmail == email &&
+				identity.IsActive && identity.LinkedAt.Equal(MockTime().UTC())
+		}),
+		mock.MatchedBy(func(audit models.AuthAudit) bool {
+			return audit.AuditUID == MockGUID() && audit.UserUID == MockGUID() &&
+				audit.Action == "GOOGLE_IDENTITY_LINK" && audit.Outcome == "SUCCESS" &&
+				audit.OccurredAt.Equal(MockTime().UTC())
+		}),
+	).Return(models.UserDoc{
+		UserDetail: models.UserDetail{UID: MockGUID(), Name: "New Google User"},
+	}, nil)
+	userInfo := micromodels.UserInfo{Name: "New Google User", UID: MockGUID()}
+	microAuthServiceMock.On("CreateSession", userInfo).Return("access-token", "refresh-token", nil)
+
+	authService := services.NewAuthenticationService(
+		authRepo, new(ShopUserRepositoryMock), new(ShopUserAccessLogRepositoryMock),
+		new(SMSRepositoryMock), microAuthServiceMock, MockRandomString, MockRandomNumber,
+		MockGUID, MockHashPassword, MockCheckPasswordHash, MockTime, MockFirebaseAdapter(), MockLineAdapter())
+
+	result, err := authService.LoginWithGoogleIdentity(issuer, subject, " NEW@EXAMPLE.COM ", " New Google User ")
+
+	assert.NoError(t, err)
+	assert.Equal(t, "access-token", result.Token)
+	assert.Equal(t, "refresh-token", result.Refresh)
+}
+
+func TestAuthService_GoogleLoginRejectsInactiveIdentity(t *testing.T) {
+	authRepo := new(AuthenticationRepositoryMock)
+	authRepo.On("FindGoogleIdentity", "https://accounts.google.com", "revoked-subject").Return(&models.GoogleIdentity{
+		IdentityUID: "identity-revoked",
+		UserUID:     "uid-revoked",
+		IsActive:    false,
+	}, nil)
+	microAuthServiceMock := &AuthServiceMock{}
+	authService := services.NewAuthenticationService(
+		authRepo, new(ShopUserRepositoryMock), new(ShopUserAccessLogRepositoryMock),
+		new(SMSRepositoryMock), microAuthServiceMock, MockRandomString, MockRandomNumber,
+		MockGUID, MockHashPassword, MockCheckPasswordHash, MockTime, MockFirebaseAdapter(), MockLineAdapter())
+
+	_, err := authService.LoginWithGoogleIdentity("accounts.google.com", "revoked-subject", "user@example.com", "User")
+
+	assert.EqualError(t, err, "google identity is inactive")
+	authRepo.AssertNotCalled(t, "FindUserByUID", mock.Anything)
+	microAuthServiceMock.AssertNotCalled(t, "CreateSession", mock.Anything)
 }
 
 func TestAuthService_Register(t *testing.T) {
@@ -388,20 +600,23 @@ func TestAuthService_Update(t *testing.T) {
 	userDoc := &models.UserDoc{}
 
 	userDoc.Username = "user_update"
+	userDoc.UID = "user-update-uid"
 	userDoc.Name = "user_update"
 	userDoc.UpdatedAt = MockTime()
 
-	authRepo.On("FindUser", "user_update").Return(userDoc, nil)
+	authRepo.On("FindUserByUID", "user-update-uid").Return(userDoc, nil)
 
 	userDocUpdate := models.UserDoc{}
 	userDocUpdate.Username = "user_update"
+	userDocUpdate.UID = "user-update-uid"
 	userDocUpdate.Name = "new name"
 	userDocUpdate.UpdatedAt = MockTime()
 
-	authRepo.On("UpdateUser", "user_update", userDocUpdate).Return(nil)
+	authRepo.On("UpdateUserByUID", "user-update-uid", userDocUpdate).Return(nil)
 
 	type args struct {
 		username string
+		userUID  string
 		name     string
 	}
 
@@ -414,6 +629,7 @@ func TestAuthService_Update(t *testing.T) {
 			name: "update success",
 			args: args{
 				username: "user_update",
+				userUID:  "user-update-uid",
 				name:     "new name",
 			},
 			wantErr: false,
@@ -440,7 +656,7 @@ func TestAuthService_Update(t *testing.T) {
 			userReq := models.UserProfileRequest{}
 			userReq.Name = tt.args.name
 
-			err := authService.Update(tt.args.username, userReq)
+			err := authService.Update(tt.args.userUID, userReq)
 
 			if tt.wantErr {
 				assert.NotNil(t, err)
@@ -469,7 +685,7 @@ func TestAuthService_UpdatePassword(t *testing.T) {
 
 	userDocUpdate := models.UserDoc{}
 	userDocUpdate.Username = "user_update"
-	userDocUpdate.Password = "new_password"
+	userDocUpdate.Password = "new_password_secure"
 	userDocUpdate.UpdatedAt = MockTime()
 
 	authRepo.On("UpdateUser", "user_update", userDocUpdate).Return(nil)
@@ -491,7 +707,7 @@ func TestAuthService_UpdatePassword(t *testing.T) {
 			args: args{
 				username:        "user_update",
 				currentPassword: "current_password",
-				newPassword:     "new_password",
+				newPassword:     "new_password_secure",
 			},
 			wantErr: false,
 		},
@@ -500,7 +716,7 @@ func TestAuthService_UpdatePassword(t *testing.T) {
 			args: args{
 				username:        "user_update",
 				currentPassword: "current_password_invalid",
-				newPassword:     "new_password",
+				newPassword:     "new_password_secure",
 			},
 			wantErr: true,
 		},
@@ -534,7 +750,7 @@ func TestAuthService_UpdatePassword(t *testing.T) {
 	}
 }
 
-func TestAuthService_UpdatePasswordRejectsDefaultPassword(t *testing.T) {
+func TestAuthService_UpdatePasswordRejectsShortPassword(t *testing.T) {
 	authService := services.NewAuthenticationService(
 		new(AuthenticationRepositoryMock),
 		new(ShopUserRepositoryMock),
@@ -550,14 +766,14 @@ func TestAuthService_UpdatePasswordRejectsDefaultPassword(t *testing.T) {
 		MockFirebaseAdapter(),
 		MockLineAdapter())
 
-	err := authService.UpdatePassword("default-user", models.DefaultUserPassword, models.DefaultUserPassword)
+	err := authService.UpdatePassword("default-user", "current_password", "12345")
 	appErr := apperr.FromError(err)
 	assert.NotNil(t, appErr)
 	assert.Equal(t, "VALIDATION_FAILED", appErr.Code)
 	assert.Equal(t, "newpassword", appErr.Field)
 }
 
-func TestAuthService_ProfileFlagsDefaultPassword(t *testing.T) {
+func TestAuthService_ProfileDoesNotExposeSharedPasswordState(t *testing.T) {
 	authRepo := new(AuthenticationRepositoryMock)
 	shopUserRepo := new(ShopUserRepositoryMock)
 	shopUserAccessLogRepo := new(ShopUserAccessLogRepositoryMock)
@@ -567,7 +783,7 @@ func TestAuthService_ProfileFlagsDefaultPassword(t *testing.T) {
 	userDoc := &models.UserDoc{}
 	userDoc.Username = "default_user"
 	userDoc.Email = "default_user@example.com"
-	userDoc.Password = models.DefaultUserPassword
+	userDoc.Password = "hashed_password"
 	userDoc.Name = "Default User"
 
 	authRepo.On("FindUser", "default_user").Return(userDoc, nil)
@@ -591,71 +807,12 @@ func TestAuthService_ProfileFlagsDefaultPassword(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Equal(t, "default_user@example.com", profile.Email)
-	assert.True(t, profile.IsDefaultPassword)
 	assert.Empty(t, profile.Password)
 }
 
-func TestAuthService_ResetPasswordToDefault(t *testing.T) {
+func TestAuthService_ResetPasswordToDefaultIsDisabled(t *testing.T) {
 	authRepo := new(AuthenticationRepositoryMock)
 	shopUserRepo := new(ShopUserRepositoryMock)
-	shopUserAccessLogRepo := new(ShopUserAccessLogRepositoryMock)
-	smsRepo := new(SMSRepositoryMock)
-	microAuthServiceMock := &AuthServiceMock{}
-
-	owner := models.ShopUser{}
-	owner.HoldingCode = "shoptest"
-	owner.Username = "owner_user"
-	owner.Role = models.ROLE_OWNER
-
-	targetShopUser := models.ShopUser{}
-	targetShopUser.HoldingCode = "shoptest"
-	targetShopUser.Username = "target_user"
-	targetShopUser.Role = models.ROLE_USER
-
-	targetUser := &models.UserDoc{}
-	targetUser.Username = "target_user"
-	targetUser.Password = "old_hash"
-
-	expectedUser := models.UserDoc{}
-	expectedUser.Username = "target_user"
-	expectedUser.Password = models.DefaultUserPassword
-	expectedUser.UpdatedAt = MockTime()
-
-	shopUserRepo.On("FindByHoldingCodeAndUsername", "shoptest", "owner_user").Return(owner, nil)
-	shopUserRepo.On("FindByHoldingCodeAndUsername", "shoptest", "target_user").Return(targetShopUser, nil)
-	authRepo.On("FindUser", "target_user").Return(targetUser, nil)
-	authRepo.On("UpdateUser", "target_user", expectedUser).Return(nil)
-	microAuthServiceMock.On("RevokeUserTokens", "target_user").Return(nil)
-
-	authService := services.NewAuthenticationService(
-		authRepo,
-		shopUserRepo,
-		shopUserAccessLogRepo,
-		smsRepo,
-		microAuthServiceMock,
-		MockRandomString,
-		MockRandomNumber,
-		MockGUID,
-		MockHashPassword,
-		MockCheckPasswordHash,
-		MockTime,
-		MockFirebaseAdapter(),
-		MockLineAdapter())
-
-	err := authService.ResetPasswordToDefault("shoptest", "owner_user", "target_user")
-
-	assert.Nil(t, err)
-}
-
-func TestAuthService_ResetPasswordRejectsDisabledAdmin(t *testing.T) {
-	authRepo := new(AuthenticationRepositoryMock)
-	shopUserRepo := new(ShopUserRepositoryMock)
-	authUser := models.ShopUser{}
-	authUser.HoldingCode = "shoptest"
-	authUser.Username = "disabled_admin"
-	authUser.Role = models.ROLE_ADMIN
-	authUser.IsAccessDisabled = true
-	shopUserRepo.On("FindByHoldingCodeAndUsername", "shoptest", "disabled_admin").Return(authUser, nil)
 
 	authService := services.NewAuthenticationService(
 		authRepo,
@@ -672,10 +829,28 @@ func TestAuthService_ResetPasswordRejectsDisabledAdmin(t *testing.T) {
 		MockFirebaseAdapter(),
 		MockLineAdapter())
 
-	err := authService.ResetPasswordToDefault("shoptest", "disabled_admin", "target_user")
+	err := authService.ResetPasswordToDefault("shoptest", "owner_user", "target_user")
 
-	assert.EqualError(t, err, "permission denied")
+	appErr := apperr.FromError(err)
+	assert.NotNil(t, appErr)
+	assert.Equal(t, "FORBIDDEN", appErr.Code)
+	authRepo.AssertNotCalled(t, "FindUser", "target_user")
 	shopUserRepo.AssertNotCalled(t, "FindByHoldingCodeAndUsername", "shoptest", "target_user")
+}
+
+func TestAuthService_LogoutRevokesWholeSession(t *testing.T) {
+	microAuthServiceMock := &AuthServiceMock{}
+	microAuthServiceMock.On("RevokeSession", "Bearer access-token").Return(nil)
+	authService := services.NewAuthenticationService(
+		new(AuthenticationRepositoryMock), new(ShopUserRepositoryMock), new(ShopUserAccessLogRepositoryMock),
+		new(SMSRepositoryMock), microAuthServiceMock, MockRandomString, MockRandomNumber, MockGUID,
+		MockHashPassword, MockCheckPasswordHash, MockTime, MockFirebaseAdapter(), MockLineAdapter())
+
+	err := authService.Logout("Bearer access-token")
+
+	assert.NoError(t, err)
+	microAuthServiceMock.AssertCalled(t, "RevokeSession", "Bearer access-token")
+	microAuthServiceMock.AssertNotCalled(t, "ExpireToken", mock.Anything, mock.Anything)
 }
 
 func TestAuthService_AccessShop(t *testing.T) {
@@ -691,34 +866,38 @@ func TestAuthService_AccessShop(t *testing.T) {
 	shopUser := models.ShopUser{}
 	shopUser.ID = MockObjectID()
 	shopUser.Username = "user_access_shop"
+	shopUser.UserUID = "user-access-shop-uid"
 	shopUser.HoldingCode = "shoptest"
 	shopUser.Role = uint8(0)
-	shopUser.AccessScopes = []models.AccessScope{{ScopeType: "company", BusinessCode: "COMP-A"}}
+	shopUser.AccessScopes = []models.AccessScope{{ScopeType: "company", CompanyUID: "company-a-uid"}}
 
-	shopUserRepo.On("FindByHoldingCodeAndUsername", "shoptest", "user_access_shop").Return(shopUser, nil)
+	shopUserRepo.On("FindByHoldingCodeAndUserUID", "shoptest", shopUser.UserUID).Return(shopUser, nil)
+	shopUserRepo.On("ResolveCompanyUID", "shoptest", "COMP-A").Return("company-a-uid", nil)
+	shopUserRepo.On("ResolveCompanyUID", "shoptest", "COMP-B").Return("company-b-uid", nil)
 	branchOnlyShopUser := shopUser
 	branchOnlyShopUser.Username = "branch_only_user"
-	branchOnlyShopUser.AccessScopes = []models.AccessScope{{ScopeType: "branch", BusinessCode: "COMP-A", BranchCode: "00001"}}
-	shopUserRepo.On("FindByHoldingCodeAndUsername", "shoptest", "branch_only_user").Return(branchOnlyShopUser, nil)
+	branchOnlyShopUser.UserUID = "branch-only-user-uid"
+	branchOnlyShopUser.AccessScopes = []models.AccessScope{{ScopeType: "branch", CompanyUID: "company-a-uid", BranchUID: "branch-1-uid"}}
+	shopUserRepo.On("FindByHoldingCodeAndUserUID", "shoptest", branchOnlyShopUser.UserUID).Return(branchOnlyShopUser, nil)
 
-	shopUserRepo.On("FindByHoldingCodeAndUsername", "shoptestinvalid", "user_access_shop").Return(models.ShopUser{}, nil)
+	shopUserRepo.On("FindByHoldingCodeAndUserUID", "shoptestinvalid", shopUser.UserUID).Return(models.ShopUser{}, nil)
 
 	disabledShopUser := shopUser
 	disabledShopUser.Username = "disabled_user"
+	disabledShopUser.UserUID = "disabled-user-uid"
 	disabledShopUser.HoldingCode = "shopdisabled"
 	disabledShopUser.IsAccessDisabled = true
 
 	disabledCreator := shopUser
 	disabledCreator.Username = "creator_user"
+	disabledCreator.UserUID = "creator-user-uid"
 	disabledCreator.HoldingCode = "shopdisabledcreator"
 	disabledCreator.IsAccessDisabled = true
 
-	shopUserRepo.On("FindByHoldingCodeAndUsername", "shopdisabled", "disabled_user").Return(disabledShopUser, nil)
-	shopUserRepo.On("FindShopCreatedBy", "shopdisabled").Return("creator_user", nil)
-	shopUserRepo.On("FindByHoldingCodeAndUsername", "shopdisabledcreator", "creator_user").Return(disabledCreator, nil)
-	shopUserRepo.On("FindShopCreatedBy", "shopdisabledcreator").Return("creator_user", nil)
-	shopUserRepo.On("UpdateLastAccess", "shoptest", "user_access_shop", MockTime()).Return(nil)
-	shopUserRepo.On("UpdateLastAccess", "shopdisabledcreator", "creator_user", MockTime()).Return(nil)
+	shopUserRepo.On("FindByHoldingCodeAndUserUID", "shopdisabled", disabledShopUser.UserUID).Return(disabledShopUser, nil)
+	shopUserRepo.On("FindByHoldingCodeAndUserUID", "shopdisabledcreator", disabledCreator.UserUID).Return(disabledCreator, nil)
+	shopUserRepo.On("UpdateLastAccess", "shoptest", shopUser.UserUID, MockTime()).Return(nil)
+	shopUserRepo.On("UpdateLastAccess", "shoptest", branchOnlyShopUser.UserUID, MockTime()).Return(nil)
 	shopUserAccessLogRepo.On("Create", mock.MatchedBy(func(log models.ShopUserAccessLog) bool {
 		return log.HoldingCode == "shoptest" &&
 			log.Username == "user_access_shop" &&
@@ -726,21 +905,19 @@ func TestAuthService_AccessShop(t *testing.T) {
 			log.LastAccessedAt.Equal(MockTime())
 	})).Return(nil)
 	shopUserAccessLogRepo.On("Create", mock.MatchedBy(func(log models.ShopUserAccessLog) bool {
-		return log.HoldingCode == "shopdisabledcreator" &&
-			log.Username == "creator_user" &&
-			log.Ip == "localhost" &&
-			log.LastAccessedAt.Equal(MockTime())
+		return log.HoldingCode == "shoptest" && log.Username == "branch_only_user" && log.LastAccessedAt.Equal(MockTime())
 	})).Return(nil)
-
-	microAuthServiceMock.On("SelectShop", microservice.AUTHTYPE_BEARER, "valid_token", "shoptest", "", uint8(0)).Return(nil)
-	microAuthServiceMock.On("SelectShop", microservice.AUTHTYPE_BEARER, "valid_token", "shoptest", "COMP-A", uint8(0)).Return(nil)
-	microAuthServiceMock.On("SelectShop", microservice.AUTHTYPE_BEARER, "valid_token", "shopdisabledcreator", "", uint8(0)).Return(nil)
-	microAuthServiceMock.On("SelectShop", microservice.AUTHTYPE_BEARER, "valid_token_invalid", "shoptestinvalid", "", uint8(0)).Return(errors.New("select shop failed"))
+	microAuthServiceMock.On("SelectShop", microservice.AUTHTYPE_BEARER, "valid_token", "shoptest", "", "", uint8(0)).Return(nil)
+	microAuthServiceMock.On("SelectShop", microservice.AUTHTYPE_BEARER, "valid_token", "shoptest", "COMP-A", "", uint8(0)).Return(nil)
+	microAuthServiceMock.On("SelectShop", microservice.AUTHTYPE_BEARER, "valid_token", "shoptest", "COMP-A", "branch-1-uid", uint8(0)).Return(nil)
+	microAuthServiceMock.On("SelectShop", microservice.AUTHTYPE_BEARER, "valid_token_invalid", "shoptestinvalid", "", "", uint8(0)).Return(errors.New("select shop failed"))
 
 	type args struct {
 		holdingCode         string
 		businessCode        string
+		branchUID           string
 		username            string
+		userUID             string
 		authorizationHeader string
 	}
 
@@ -754,6 +931,7 @@ func TestAuthService_AccessShop(t *testing.T) {
 			args: args{
 				holdingCode:         "shoptest",
 				username:            "user_access_shop",
+				userUID:             shopUser.UserUID,
 				authorizationHeader: "authorization_header_valid",
 			},
 			wantErr: false,
@@ -764,6 +942,7 @@ func TestAuthService_AccessShop(t *testing.T) {
 				holdingCode:         "shoptest",
 				businessCode:        "comp-a",
 				username:            "user_access_shop",
+				userUID:             shopUser.UserUID,
 				authorizationHeader: "authorization_header_valid",
 			},
 			wantErr: false,
@@ -774,9 +953,22 @@ func TestAuthService_AccessShop(t *testing.T) {
 				holdingCode:         "shoptest",
 				businessCode:        "COMP-B",
 				username:            "user_access_shop",
+				userUID:             shopUser.UserUID,
 				authorizationHeader: "authorization_header_valid",
 			},
 			wantErr: true,
+		},
+		{
+			name: "success access exact branch scope",
+			args: args{
+				holdingCode:         "shoptest",
+				businessCode:        "COMP-A",
+				branchUID:           "branch-1-uid",
+				username:            "branch_only_user",
+				userUID:             branchOnlyShopUser.UserUID,
+				authorizationHeader: "authorization_header_valid",
+			},
+			wantErr: false,
 		},
 		{
 			name: "failure branch-only scope cannot select company",
@@ -784,6 +976,7 @@ func TestAuthService_AccessShop(t *testing.T) {
 				holdingCode:         "shoptest",
 				businessCode:        "COMP-A",
 				username:            "branch_only_user",
+				userUID:             branchOnlyShopUser.UserUID,
 				authorizationHeader: "authorization_header_valid",
 			},
 			wantErr: true,
@@ -793,6 +986,7 @@ func TestAuthService_AccessShop(t *testing.T) {
 			args: args{
 				holdingCode:         "shoptest",
 				username:            "user_access_shop",
+				userUID:             shopUser.UserUID,
 				authorizationHeader: "",
 			},
 			wantErr: true,
@@ -802,6 +996,7 @@ func TestAuthService_AccessShop(t *testing.T) {
 			args: args{
 				holdingCode:         "shoptestinvalid",
 				username:            "user_access_shop",
+				userUID:             shopUser.UserUID,
 				authorizationHeader: "authorization_header_valid",
 			},
 			wantErr: true,
@@ -811,6 +1006,7 @@ func TestAuthService_AccessShop(t *testing.T) {
 			args: args{
 				holdingCode:         "shoptestinvalid",
 				username:            "user_access_shop",
+				userUID:             shopUser.UserUID,
 				authorizationHeader: "authorization_header_valid",
 			},
 			wantErr: true,
@@ -820,18 +1016,20 @@ func TestAuthService_AccessShop(t *testing.T) {
 			args: args{
 				holdingCode:         "shopdisabled",
 				username:            "disabled_user",
+				userUID:             disabledShopUser.UserUID,
 				authorizationHeader: "authorization_header_valid",
 			},
 			wantErr: true,
 		},
 		{
-			name: "success disabled creator still access",
+			name: "failure disabled creator cannot bypass membership state",
 			args: args{
 				holdingCode:         "shopdisabledcreator",
 				username:            "creator_user",
+				userUID:             disabledCreator.UserUID,
 				authorizationHeader: "authorization_header_valid",
 			},
-			wantErr: false,
+			wantErr: true,
 		},
 	}
 
@@ -855,7 +1053,7 @@ func TestAuthService_AccessShop(t *testing.T) {
 				MockTime,
 				MockFirebaseAdapter(),
 				MockLineAdapter())
-			err := authService.AccessShop(tt.args.holdingCode, tt.args.businessCode, tt.args.username, "", tt.args.authorizationHeader, authContext)
+			err := authService.AccessShop(tt.args.holdingCode, tt.args.businessCode, tt.args.branchUID, tt.args.username, tt.args.userUID, tt.args.authorizationHeader, authContext)
 
 			if tt.wantErr {
 				assert.NotNil(t, err)
@@ -903,8 +1101,41 @@ func (m *AuthenticationRepositoryMock) UpdateUser(ctx context.Context, username 
 	return args.Error(0)
 }
 
+func (m *AuthenticationRepositoryMock) UpdateUserByUID(ctx context.Context, userUID string, userDoc models.UserDoc) error {
+	args := m.Called(userUID, userDoc)
+	return args.Error(0)
+}
+
 func (m *AuthenticationRepositoryMock) DeleteUser(ctx context.Context, username string) error {
 	args := m.Called(ctx, username)
+	return args.Error(0)
+}
+
+func (m *AuthenticationRepositoryMock) FindGoogleIdentity(ctx context.Context, issuer string, subject string) (*models.GoogleIdentity, error) {
+	args := m.Called(issuer, subject)
+	identity, _ := args.Get(0).(*models.GoogleIdentity)
+	return identity, args.Error(1)
+}
+
+func (m *AuthenticationRepositoryMock) FindUserByUID(ctx context.Context, userUID string) (*models.UserDoc, error) {
+	args := m.Called(userUID)
+	user, _ := args.Get(0).(*models.UserDoc)
+	return user, args.Error(1)
+}
+
+func (m *AuthenticationRepositoryMock) CreateAuthAudit(ctx context.Context, audit models.AuthAudit) error {
+	args := m.Called(audit)
+	return args.Error(0)
+}
+
+func (m *AuthenticationRepositoryMock) CreateGoogleUserIdentity(ctx context.Context, user models.UserDoc, identity models.GoogleIdentity, audit models.AuthAudit) (models.UserDoc, error) {
+	args := m.Called(user, identity, audit)
+	linkedUser, _ := args.Get(0).(models.UserDoc)
+	return linkedUser, args.Error(1)
+}
+
+func (m *AuthenticationRepositoryMock) EnsureGoogleIdentityIndexes(ctx context.Context) error {
+	args := m.Called()
 	return args.Error(0)
 }
 
@@ -927,18 +1158,28 @@ func (m *ShopUserRepositoryMock) Save(ctx context.Context, holdingCode string, u
 	return args.Error(0)
 }
 
+func (m *ShopUserRepositoryMock) SaveStable(ctx context.Context, holdingCode string, holdingUID string, userUID string, username string, role models.UserRole, createdAt time.Time) error {
+	args := m.Called(ctx, holdingCode, holdingUID, userUID, username, role, createdAt)
+	return args.Error(0)
+}
+
 func (m *ShopUserRepositoryMock) SaveFullProfile(ctx context.Context, holdingCode string, req *models.UserRoleRequest) error {
 	args := m.Called(holdingCode, req)
 	return args.Error(0)
 }
 
-func (m *ShopUserRepositoryMock) UpdateLastAccess(ctx context.Context, holdingCode string, username string, lastAccessedAt time.Time) error {
-	args := m.Called(holdingCode, username, lastAccessedAt)
+func (m *ShopUserRepositoryMock) UpdateLineFields(ctx context.Context, holdingCode string, userUID string, lineUserID string, lineDisplayName string, linePictureURL string) error {
+	args := m.Called(holdingCode, userUID, lineUserID, lineDisplayName, linePictureURL)
 	return args.Error(0)
 }
 
-func (m *ShopUserRepositoryMock) SaveFavorite(ctx context.Context, holdingCode string, username string, isFavorite bool) error {
-	args := m.Called(holdingCode, username, isFavorite)
+func (m *ShopUserRepositoryMock) UpdateLastAccess(ctx context.Context, holdingCode string, userUID string, lastAccessedAt time.Time) error {
+	args := m.Called(holdingCode, userUID, lastAccessedAt)
+	return args.Error(0)
+}
+
+func (m *ShopUserRepositoryMock) SaveFavorite(ctx context.Context, holdingCode string, userUID string, isFavorite bool) error {
+	args := m.Called(holdingCode, userUID, isFavorite)
 	return args.Error(0)
 }
 
@@ -969,6 +1210,11 @@ func (m *ShopUserRepositoryMock) FindByHoldingCodeAndUserUID(ctx context.Context
 
 func (m *ShopUserRepositoryMock) ResolveHoldingCodeByHoldingCode(ctx context.Context, holdingCode string) (string, error) {
 	args := m.Called(holdingCode)
+	return args.String(0), args.Error(1)
+}
+
+func (m *ShopUserRepositoryMock) ResolveCompanyUID(ctx context.Context, holdingCode string, businessCode string) (string, error) {
+	args := m.Called(holdingCode, businessCode)
 	return args.String(0), args.Error(1)
 }
 
@@ -1103,9 +1349,14 @@ func (m *AuthServiceMock) GenerateTokenWithRedisExpire(tokenType microservice.To
 	return args.String(0), args.Error(1)
 }
 
-func (m *AuthServiceMock) SelectShop(tokenType microservice.TokenType, tokenStr string, holdingCode string, businessCode string, role uint8) error {
+func (m *AuthServiceMock) CreateSession(userInfo micromodels.UserInfo) (string, string, error) {
+	args := m.Called(userInfo)
+	return args.String(0), args.String(1), args.Error(2)
+}
 
-	args := m.Called(tokenType, tokenStr, holdingCode, businessCode, role)
+func (m *AuthServiceMock) SelectShop(tokenType microservice.TokenType, tokenStr string, holdingCode string, businessCode string, branchUID string, role uint8) error {
+
+	args := m.Called(tokenType, tokenStr, holdingCode, businessCode, branchUID, role)
 	return args.Error(0)
 }
 
@@ -1124,8 +1375,18 @@ func (m *AuthServiceMock) RefreshToken(token string) (string, string, bool, erro
 	return args.String(0), args.String(1), args.Bool(2), args.Error(3)
 }
 
+func (m *AuthServiceMock) RevokeSession(tokenAuthorizationHeader string) error {
+	args := m.Called(tokenAuthorizationHeader)
+	return args.Error(0)
+}
+
 func (m *AuthServiceMock) RevokeUserTokens(username string) error {
 	args := m.Called(username)
+	return args.Error(0)
+}
+
+func (m *AuthServiceMock) RevokeUserTokensByUID(userUID string) error {
+	args := m.Called(userUID)
 	return args.Error(0)
 }
 

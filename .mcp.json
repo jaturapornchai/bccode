@@ -20,9 +20,9 @@
       "command": "C:/Users/jatur/AppData/Local/Programs/codebase-memory-mcp/codebase-memory-mcp.exe",
       "args": []
     },
-    "openrouter": {
+    "mongomodel": {
       "type": "http",
-      "url": "https://mcp.openrouter.ai/mcp"
+      "url": "http://localhost:3100/mcp"
     },
     "playwright": {
       "command": "npx",

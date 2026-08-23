@@ -43,7 +43,7 @@ func NewMemberHttp(ms *microservice.Microservice, cfg config.IConfig) MemberHttp
 	shopUserRepo := shop.NewShopUserRepository(pst)
 	shopService := shop.NewShopService(shopRepo, shopUserRepo, utils.NewGUID, ms.TimeNow)
 
-	authService := microservice.NewAuthServicePrefix("linemember:", "linememberrefresh:", ms.Cacher(cfg.CacherConfig()), 24*3*time.Hour, 24*30*time.Hour)
+	authService := microservice.NewLegacyAuthServicePrefix("linemember:", "linememberrefresh:", ms.Cacher(cfg.CacherConfig()), 24*3*time.Hour, 24*30*time.Hour)
 
 	service := NewMemberService(memberRepo, memberPgRepo, shopService, authService, masterSyncCacheRepo)
 

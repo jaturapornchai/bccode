@@ -1,0 +1,96 @@
+{
+  "screen": "menu",
+  "updatedAt": "2026-08-23",
+  "translations": {
+    "th": {
+      "title": "คู่มือเบื้องต้น — เมนูหลัก",
+      "summary": "ค้นหา เปิด และสลับหน้าทำงานภายในพื้นที่ Company/Branch ที่เลือก",
+      "sources": [
+        {
+          "name": "หน้าจอเมนูหลักและแท็บงาน",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/frontend/src/app/menu/main-menu-screen.tsx"
+        },
+        {
+          "name": "รายการเมนูและหมวดงาน",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/frontend/src/lib/menu-data.ts"
+        }
+      ],
+      "objective": "แนวคิด: เมนูหลักเป็นทางเข้าหน้าทำงานและเก็บหน้าที่เปิดไว้เป็นแท็บ โดยรายการที่เห็นขึ้นกับพื้นที่และชุดสิทธิ์ที่โหลดมา",
+      "prerequisites": [
+        "เลือก Company และ Branch จากหน้าพื้นที่ทำงาน",
+        "ตรวจว่าผู้ใช้มีรายการเมนูที่ต้องใช้"
+      ],
+      "workflow": [
+        "เลือกมุมมองเมนูซ้ายหรือเมนูบน",
+        "ค้นหาด้วยชื่อเมนู เส้นทาง หรือรหัส",
+        "กดรายการเพื่อเปิดเป็นแท็บงาน",
+        "สลับหรือปิดแท็บเมื่อทำงานเสร็จ"
+      ],
+      "config": [
+        "ระบบจำรูปแบบเมนูและรายการที่ใช้บ่อยใน Browser",
+        "รายการที่ถูกล็อกจะแสดงข้อความไม่มีสิทธิ์",
+        "ปุ่มแสดง/ซ่อนเมนูช่วยเพิ่มพื้นที่ให้หน้าทำงาน"
+      ],
+      "expectedResults": [
+        "เปิดหน้าที่ต้องการได้จากเมนูหรือรายการใช้บ่อย",
+        "สลับหลายงานได้โดยไม่ต้องออกจากเมนูหลัก"
+      ],
+      "commonMistakes": [
+        "ค้นหาไม่พบเพราะเลือก Company/Branch ผิดพื้นที่",
+        "คิดว่าเมนูที่ซ่อนอยู่หมายถึง Backend อนุญาตหรือปฏิเสธแล้วทุกกรณี"
+      ],
+      "limitations": [
+        "การแสดงเมนูไม่แทนการตรวจสิทธิ์ของ Backend",
+        "ข้อมูลรายการใช้บ่อยเป็นค่าภายใน Browser ปัจจุบัน"
+      ],
+      "nextSteps": [
+        "เปิดหน้าทำงานที่ต้องการและตรวจชื่อ Company/Branch บนหัวจออีกครั้ง"
+      ]
+    },
+    "en": {
+      "title": "Basic guide — Main Menu",
+      "summary": "Find, open, and switch work screens inside the selected Company/Branch workspace.",
+      "sources": [
+        {
+          "name": "Main Menu and work-tab implementation",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/frontend/src/app/menu/main-menu-screen.tsx"
+        },
+        {
+          "name": "Menu and category registry",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/frontend/src/lib/menu-data.ts"
+        }
+      ],
+      "objective": "Concept: the Main Menu opens work screens as tabs. Visible entries depend on the selected workspace and loaded permission set.",
+      "prerequisites": [
+        "Select a Company and Branch from the workspace.",
+        "Confirm that the user has the required menu entries."
+      ],
+      "workflow": [
+        "Choose the left-menu or top-menu layout.",
+        "Search by menu name, route, or code.",
+        "Select an entry to open a work tab.",
+        "Switch or close tabs when work is complete."
+      ],
+      "config": [
+        "The Browser remembers menu layout and frequently used entries.",
+        "Locked entries display a no-permission message.",
+        "Show or hide the menu to control work-screen space."
+      ],
+      "expectedResults": [
+        "Open the required screen from the menu or frequent list.",
+        "Switch between several tasks without leaving the Main Menu."
+      ],
+      "commonMistakes": [
+        "Searching in the wrong Company/Branch workspace.",
+        "Treating menu visibility as complete Backend authorization."
+      ],
+      "limitations": [
+        "Menu visibility never replaces Backend authorization.",
+        "Frequent-menu data belongs to the current Browser."
+      ],
+      "nextSteps": [
+        "Open the required work screen and recheck the Company/Branch shown in the header."
+      ]
+    }
+  }
+}

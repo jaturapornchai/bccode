@@ -11,14 +11,30 @@ type ManualLinkProps = {
   label?: string;
 };
 
+const manualScreensWithContent = new Set([
+  "activelanguages",
+  "company",
+  "currency",
+  "menu",
+  "permissiondefinition",
+  "permissiongroup",
+  "settings",
+  "user",
+  "useraccessaudit",
+  "workspace",
+]);
+
 export function ManualLink({ compact = false, label, language, screen }: ManualLinkProps) {
   const text = label ?? t(language, "manual");
+  const href = manualScreensWithContent.has(screen)
+    ? `/manual/${screen}?lang=${language}`
+    : `/manual?lang=${language}&screen=${encodeURIComponent(screen)}`;
 
   return (
     <Link
       aria-label={text}
       className={compact ? "icon-button manual-link compact" : "manual-link"}
-      href={`/manual/${screen}?lang=${language}`}
+      href={href}
       rel="noreferrer"
       target="_blank"
       title={text}

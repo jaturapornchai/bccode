@@ -32,7 +32,7 @@ func OnConsumeMessageSaleInvoiceReturnDelete(msg string) error {
 		return fmt.Errorf("invalid sale invoice return data")
 	}
 
-	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.DocNo, TRANS_FLAG_SALE_INVOICE_RETURN)
+	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.BusinessCode, docData.DocNo, TRANS_FLAG_SALE_INVOICE_RETURN)
 }
 
 // ProcessSaleInvoiceReturnDocument - processes sale invoice return using build-doc system
@@ -78,13 +78,14 @@ func ProcessSaleInvoiceReturnDocument(msg string) error {
 
 	// Delete existing documents (upsert behavior)
 	logger.Debug("Step 4: Deleting existing documents...")
-	mypg.DeleteDocPgSql(ctx, db, saleInvoiceReturnData.DocNo, TRANS_FLAG_SALE_INVOICE_RETURN)
+	mypg.DeleteDocPgSql(ctx, db, saleInvoiceReturnData.BusinessCode, saleInvoiceReturnData.DocNo, TRANS_FLAG_SALE_INVOICE_RETURN)
 	logger.Debug("Step 4 completed: Existing documents deleted")
 
 	// Convert to build-doc structs
 	logger.Debug("Step 5: Converting to build-doc structs...")
 	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, saleInvoiceReturnData.HoldingCode)
 	docDetailStructs := MapSaleInvoiceReturnToDocDetailStructs(processData, saleInvoiceReturnData.HoldingCode)
+	setDocumentCompany(&docStruct, docDetailStructs, saleInvoiceReturnData.BusinessCode)
 	logger.Debug("Step 5 completed: Converted to %d doc details", len(docDetailStructs))
 
 	// Create doc references if any
@@ -229,7 +230,6 @@ func MapSaleInvoiceReturnToDocDetailStructs(processData models.ProcessMongoTrans
 			CalcSeq:         1,
 			ItemCode:        detail.ItemCode,
 			Description:     GetItemName(detail.ItemNames),
-			BarcodeMain:     detail.Barcode,
 			Barcode:         detail.Barcode,
 			UnitCode:        detail.UnitCode,
 			WhCode:          detail.WhCode,

@@ -1,0 +1,96 @@
+{
+  "screen": "activelanguages",
+  "updatedAt": "2026-08-23",
+  "translations": {
+    "th": {
+      "title": "คู่มือเบื้องต้น — ภาษาที่ใช้งาน",
+      "summary": "กำหนดชุดภาษาและภาษาหลักก่อนเริ่มกรอกชื่อข้อมูลหลายภาษา",
+      "sources": [
+        {
+          "name": "ค่าหน้าจอภาษาที่ใช้งาน",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/frontend/src/lib/system-setting-screens.ts#L310-L327"
+        },
+        {
+          "name": "ตัวแก้ไขลำดับภาษา",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/frontend/src/app/system-settings/system-settings-screen.tsx"
+        }
+      ],
+      "objective": "แนวคิด: หน้านี้กำหนดภาษาที่ใช้กับข้อมูลหลายภาษา โดยรายการลำดับแรกคือภาษาหลักที่ระบบใช้ตรวจชื่อข้อมูล",
+      "prerequisites": [
+        "เลือกกลุ่มกิจการที่ต้องการตั้งค่าให้ถูกต้อง",
+        "เตรียมรายชื่อภาษาที่กิจการต้องใช้จริง"
+      ],
+      "workflow": [
+        "เลือกภาษาที่ต้องการเปิดใช้งาน",
+        "จัดลำดับให้ภาษาหลักอยู่รายการแรก",
+        "ตรวจว่ามีภาษาที่จำเป็นครบ แล้วบันทึก",
+        "เปิดหน้าข้อมูลถัดไปและตรวจว่าช่องชื่อแสดงตามชุดภาษาที่กำหนด"
+      ],
+      "config": [
+        "รายการแรกเป็นภาษาหลักของบริษัทและช่องชื่อหลายภาษา",
+        "ถ้ายังไม่ยืนยันค่า ระบบปัจจุบันใช้ภาษาไทยเป็นค่าเริ่มต้น",
+        "ควรกำหนดหน้านี้ก่อนข้อมูลบริษัท สาขา และข้อมูลหลักอื่น"
+      ],
+      "expectedResults": [
+        "หน้าจอข้อมูลถัดไปใช้ชุดภาษาและภาษาหลักเดียวกัน",
+        "ชื่อในภาษาหลักผ่านการตรวจข้อมูลบังคับ"
+      ],
+      "commonMistakes": [
+        "เลือกภาษาครบแต่ไม่ได้วางภาษาหลักไว้ลำดับแรก",
+        "กรอกข้อมูลหลายภาษาไปแล้วจึงเปลี่ยนภาษาหลักโดยไม่ตรวจชื่อเดิม"
+      ],
+      "limitations": [
+        "การตั้งค่านี้กำหนดช่องภาษา แต่ไม่ได้แปลข้อความให้อัตโนมัติ",
+        "หน้านี้ไม่เปลี่ยนบทบาท สิทธิ์ หรือขอบเขตองค์กร"
+      ],
+      "nextSteps": [
+        "ไปที่ข้อมูลบริษัทและสาขาเพื่อสร้างโครงสร้างองค์กร"
+      ]
+    },
+    "en": {
+      "title": "Basic guide — Active Languages",
+      "summary": "Set the language set and primary language before entering multilingual master data.",
+      "sources": [
+        {
+          "name": "Active-language screen configuration",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/frontend/src/lib/system-setting-screens.ts#L310-L327"
+        },
+        {
+          "name": "Language-order editor",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/frontend/src/app/system-settings/system-settings-screen.tsx"
+        }
+      ],
+      "objective": "Concept: this screen controls the languages used by multilingual data. The first item is the primary language used for required-name validation.",
+      "prerequisites": [
+        "Select the correct business group.",
+        "Decide which languages the business actually needs."
+      ],
+      "workflow": [
+        "Select the languages to enable.",
+        "Put the primary language first.",
+        "Review the list and save it.",
+        "Open the next data screen and confirm that its name fields match the configured languages."
+      ],
+      "config": [
+        "The first item is the primary language for company and multilingual names.",
+        "Until the setting is confirmed, the current system uses Thai as the default.",
+        "Complete this screen before company, branch, and other master data."
+      ],
+      "expectedResults": [
+        "Later screens use the same language set and primary language.",
+        "Required names can be validated in the primary language."
+      ],
+      "commonMistakes": [
+        "Selecting all languages but leaving the wrong language first.",
+        "Changing the primary language after data entry without reviewing existing names."
+      ],
+      "limitations": [
+        "This setting adds language fields; it does not translate content automatically.",
+        "It does not change roles, permissions, or organization scope."
+      ],
+      "nextSteps": [
+        "Continue to Company & Branch."
+      ]
+    }
+  }
+}

@@ -33,7 +33,7 @@ func OnConsumeMessagePurchaseReturnDelete(msg string) error {
 		return fmt.Errorf("invalid purchase return data")
 	}
 
-	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.DocNo, TRANS_FLAG_PURCHASE_RETURN)
+	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.BusinessCode, docData.DocNo, TRANS_FLAG_PURCHASE_RETURN)
 }
 
 // ProcessPurchaseReturnDocument - processes purchase return using build-doc system
@@ -78,13 +78,14 @@ func ProcessPurchaseReturnDocument(msg string) error {
 
 	// Delete existing documents (upsert behavior)
 	logger.Debug("Step 4: Deleting existing documents...")
-	mypg.DeleteDocPgSql(ctx, db, purchaseReturnData.DocNo, TRANS_FLAG_PURCHASE_RETURN)
+	mypg.DeleteDocPgSql(ctx, db, purchaseReturnData.BusinessCode, purchaseReturnData.DocNo, TRANS_FLAG_PURCHASE_RETURN)
 	logger.Debug("Step 4 completed: Existing documents deleted")
 
 	// Convert to build-doc structs
 	logger.Debug("Step 5: Converting to build-doc structs...")
 	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, purchaseReturnData.HoldingCode)
 	docDetailStructs := MapPurchaseReturnToDocDetailStructs(processData, purchaseReturnData.HoldingCode)
+	setDocumentCompany(&docStruct, docDetailStructs, purchaseReturnData.BusinessCode)
 	logger.Debug("Step 5 completed: DocStruct created with %d details", len(docDetailStructs))
 
 	// Create doc references if any
@@ -142,7 +143,6 @@ func MapPurchaseReturnToDocDetailStructs(processData models.ProcessMongoTransMod
 			CalcSeq:         1,
 			ItemCode:        detail.ItemCode,
 			Description:     GetItemName(detail.ItemNames),
-			BarcodeMain:     detail.Barcode,
 			Barcode:         detail.Barcode,
 			UnitCode:        detail.UnitCode,
 			WhCode:          detail.WhCode,

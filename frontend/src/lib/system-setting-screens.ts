@@ -82,6 +82,7 @@ export type SystemSettingKind =
   | "copy-uat"
   | "goapi-crud"
   | "main-crud"
+  | "permission-catalog"
   | "report"
   | "restaurant-setting";
 
@@ -637,8 +638,8 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
         ...textField("username", "รหัสผู้ใช้ (usercode)", "User code", true),
         placeholder: "เช่น somchai01",
         helper: {
-		  th: "ใช้เข้าสู่ระบบได้โดยไม่ต้องมีอีเมล ผู้ใช้ใหม่จะได้รหัสผ่านเริ่มต้น 12345",
-		  en: "Used to sign in without an email. New users start with password 12345.",
+          th: "ใช้เข้าสู่ระบบด้วยรหัสผ่านได้หลัง User ตั้งรหัสผ่านผ่านลิงก์แบบใช้ครั้งเดียว",
+          en: "Can be used for password login after the user sets a password through a one-time link.",
         },
       },
       {
@@ -821,46 +822,52 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     slug: "permissiondefinition",
     route: "/permissiondefinition",
     manual: "permissiondefinition",
-    kind: "atlas",
+    kind: "permission-catalog",
     icon: "shield",
-    collection: "permissiondefinitions",
-    idField: "guidfixed",
-    deleteKey: "guidfixed",
-    title: { th: "กำหนดสิทธิ์หน้าจอ", en: "Permission Definition" },
+    idField: "permissioncode",
+    title: { th: "รายการสิทธิ์หน้าจอ", en: "Screen Permission Catalog" },
     subtitle: {
-      th: "สร้างรหัสสิทธิ์หน้าจอภายใต้กลุ่มกิจการ และกำหนดขอบเขตบริษัท/สาขา",
-      en: "Create business group screen permission codes and company/branch scope.",
+      th: "รายการหน้าจอที่ระบบรองรับ ใช้เลือกรายการสิทธิ์ให้แต่ละบทบาท",
+      en: "Read-only screen catalog used to assign permissions to each role.",
     },
+    editable: false,
     fields: [
       businessCodeField("permissioncode", "รหัสสิทธิ์", "Permission code", true),
       textField("permissionname", "ชื่อสิทธิ์", "Permission name", true),
-      textareaField("description", "คำอธิบาย", "Description"),
-      checkboxField("isactive", "เปิดใช้งาน", "Active"),
-      holdingScopeRulesField("scoperules", "ขอบเขตที่ใช้สิทธิ์นี้", "Permission scope"),
-      jsonField("accessrules", "สิทธิ์หน้าจอ/action ตามสาขา", "Branch screen/action permissions"),
+      textField("description", "เส้นทางหน้าจอ", "Screen route"),
+      textField("category", "หมวด", "Category"),
     ],
   },
   {
     slug: "permissiongroup",
     route: "/permissiongroup",
     manual: "permissiongroup",
-    kind: "atlas",
+    kind: "main-crud",
     icon: "users",
-    collection: "permissiongroups",
-    idField: "guidfixed",
-    deleteKey: "guidfixed",
-    title: { th: "กำหนดสิทธิ์ตามกลุ่ม", en: "Permission Group" },
+    basePath: "/organization/role-permission",
+    listPath: "/organization/role-permission",
+    idField: "_id",
+    deleteKey: "_id",
+    title: { th: "กำหนดสิทธิ์ตามบทบาท", en: "Role Permissions" },
     subtitle: {
-      th: "สร้างกลุ่มสิทธิ์การใช้งานหน้าจอสำหรับตำแหน่งงาน",
-      en: "Create permission groups for job roles.",
+      th: "กำหนดหน้าจอที่บทบาท USER, ADMIN และ OWNER เข้าใช้งานได้",
+      en: "Assign accessible screens to the USER, ADMIN, and OWNER roles.",
     },
     fields: [
-      businessCodeField("groupcode", "รหัสกลุ่มสิทธิ์", "Group code", true),
-      textField("groupname", "ชื่อกลุ่มสิทธิ์", "Group name", true),
-      textareaField("description", "คำอธิบาย", "Description"),
+      selectField(
+        "rolecode",
+        "บทบาท",
+        "Role",
+        [
+          { value: "USER", label: roleUserLabel.en, labels: roleUserLabel },
+          { value: "ADMIN", label: roleAdminLabel.en, labels: roleAdminLabel },
+          { value: "OWNER", label: roleOwnerLabel.en, labels: roleOwnerLabel },
+        ],
+        true,
+      ),
+      namesField("names", "ชื่อบทบาท", "Role name"),
       checkboxField("isactive", "เปิดใช้งาน", "Active"),
-      holdingScopeRulesField("scoperules", "ขอบเขตที่ใช้กลุ่มสิทธิ์นี้", "Permission group scope"),
-      jsonField("permissioncodes", "สิทธิ์", "Permissions"),
+      jsonField("permissions", "หน้าจอที่เข้าใช้งานได้", "Accessible screens"),
     ],
   },
   {

@@ -137,6 +137,7 @@ import {
   notifyWorkspaceChanged,
 } from "@/lib/workspace-models";
 import { cn } from "@/lib/utils";
+import { authFetch, setAuthSession } from "@/lib/client-auth-session";
 import { AppHeaderControls } from "../app-header-controls";
 import { ManualLink } from "../manual-link";
 import { pushNotice } from "@/lib/toast";
@@ -198,6 +199,9 @@ import {
   fieldValueAliases,
 } from "@/components/system-settings/utils";
 import { StatCard } from "@/components/system-settings/stat-card";
+
+// Enable only after the Backend can issue and deliver one-time reset links.
+const passwordResetLinkAvailable = false;
 
 type SystemSettingsScreenProps = {
   embedded?: boolean;
@@ -875,6 +879,8 @@ export function SystemSettingsScreen({
     },
     [backendLanguage, text],
   );
+  const errorTextRef = useRef(errorText);
+  errorTextRef.current = errorText;
   const saveSuccessText = useCallback(
     (message?: string) => {
       const success = text("saveSucceeded");
@@ -962,7 +968,7 @@ export function SystemSettingsScreen({
           });
           return;
         }
-        const response = await fetch(
+        const response = await authFetch(
           `/api/system-settings/${fetchSlug}?${searchParams.toString()}`,
           {
             headers: {
@@ -977,7 +983,7 @@ export function SystemSettingsScreen({
           forbiddenListRequestKeysRef.current.add(forbiddenKey);
         }
         if (!response.ok || isFailed(payload))
-          throw new Error(extractMessage(payload) ?? text("requestFailed"));
+          throw new Error(extractMessage(payload) ?? "");
         let nextRecords = normalizeRecords(payload, currentConfig.slug === "permissionlink" ? getSystemSettingConfig("user")! : currentConfig);
         if (currentConfig.slug === "permissionlink") {
           nextRecords = nextRecords.map((r: any) => ({
@@ -1007,7 +1013,7 @@ export function SystemSettingsScreen({
         if (currentConfig.slug === "workdayscreen")
           setWorkDays(normalizeWorkDays(nextRecords, language, scope));
       } catch (error) {
-        setNotice({ type: "error", text: errorText(error) });
+        setNotice({ type: "error", text: errorTextRef.current(error) });
       } finally {
         if (append) setLoadingMore(false);
         else setLoading(false);
@@ -1015,14 +1021,12 @@ export function SystemSettingsScreen({
     },
     [
       copySourceEnvironment,
-      errorText,
       language,
       query,
       setLoading,
       setNotice,
       setRecords,
       setWorkDays,
-      text,
     ],
   );
 
@@ -1042,7 +1046,7 @@ export function SystemSettingsScreen({
             : "Missing record ID for detail loading.",
         );
       const params = workspaceTenantSearchParams(currentWorkspace);
-      const response = await fetch(
+      const response = await authFetch(
         `/api/system-settings/${currentConfig.slug}/${encodeURIComponent(id)}?${params.toString()}`,
         {
           headers: requestHeaders(currentAuth),
@@ -1084,7 +1088,7 @@ export function SystemSettingsScreen({
         if (firstFieldKey && currentConfig.slug !== "permissionlink") {
           searchParams.set("sort", `${firstFieldKey}:1`);
         }
-        const response = await fetch(
+        const response = await authFetch(
           `/api/system-settings/${currentConfig.slug}?${searchParams.toString()}`,
           {
             headers: requestHeaders(currentAuth),
@@ -1389,7 +1393,7 @@ export function SystemSettingsScreen({
   // True only when the open form actually differs from its loaded baseline, so the
   // "unsaved changes" guard fires on real edits — not merely because a form is open
   // (e.g. opening a record then clicking another without changing anything).
-  const isFormDirty = useMemo(() => {
+  const isFormDirty = (() => {
     if (!formOpen) return false;
     const baseline = editing
       ? formFromRecord(editing, currentConfig, language)
@@ -1404,7 +1408,7 @@ export function SystemSettingsScreen({
       }
     }
     return JSON.stringify(form) !== JSON.stringify(baseline);
-  }, [formOpen, editing, form, currentConfig, language, workspace, auth]);
+  })();
   const isCreator = workspace?.shop?.iscreator === true ||
     Boolean(auth?.username && workspace?.shop?.createdby && workspace?.shop?.createdby.trim().toLowerCase() === auth.username.trim().toLowerCase());
   const isOwnerOrAdmin = isCreator || workspace?.shop?.role === 1 || workspace?.shop?.role === 2;
@@ -1834,7 +1838,7 @@ export function SystemSettingsScreen({
     setSaving(true);
     setNotice(null);
     try {
-      const response = await fetch(
+      const response = await authFetch(
         `/api/system-settings/${currentConfig.slug}${editing && id ? `/${encodeURIComponent(id)}` : ""}`,
         {
           method: editing ? "PUT" : "POST",
@@ -1928,10 +1932,7 @@ export function SystemSettingsScreen({
               email: stringValue(payload.email ?? auth?.profile?.email),
             },
           };
-          localStorage.setItem(
-            workspaceStorageKeys.auth,
-            JSON.stringify(nextAuth),
-          );
+          setAuthSession(nextAuth);
         }
         setFormOpen(false);
         setEditing(null);
@@ -1981,6 +1982,17 @@ export function SystemSettingsScreen({
       return;
     }
     const id = recordId(record, currentConfig);
+    const rolePermissionVersion = Number(record.__v);
+    if (
+      currentConfig.slug === "permissiongroup" &&
+      (!Number.isInteger(rolePermissionVersion) || rolePermissionVersion < 0)
+    ) {
+      setNotice({
+        type: "error",
+        text: language === "th" ? "ไม่พบเวอร์ชันข้อมูล กรุณารีเฟรชก่อนลบ" : "Record version is missing. Refresh before deleting.",
+      });
+      return;
+    }
     const confirmed = await confirm({
       title: text("deleteConfirm"),
       description: recordTitle(record, currentConfig, language),
@@ -2003,8 +2015,12 @@ export function SystemSettingsScreen({
     setLoading(true);
     setNotice(null);
     try {
-      const response = await fetch(
-        `/api/system-settings/${currentConfig.slug}/${encodeURIComponent(id)}?${workspaceTenantSearchParams(workspace).toString()}`,
+      const deleteParams = workspaceTenantSearchParams(workspace);
+      if (currentConfig.slug === "permissiongroup") {
+        deleteParams.set("__v", String(rolePermissionVersion));
+      }
+      const response = await authFetch(
+        `/api/system-settings/${currentConfig.slug}/${encodeURIComponent(id)}?${deleteParams.toString()}`,
         {
           method: "DELETE",
           headers: requestHeaders(auth),
@@ -2067,7 +2083,7 @@ export function SystemSettingsScreen({
     setSaving(true);
     setNotice(null);
     try {
-      const response = await fetch(
+      const response = await authFetch(
         `/api/system-settings/${currentConfig.slug}/${encodeURIComponent(id)}`,
         {
           method: "PUT",
@@ -2130,7 +2146,7 @@ export function SystemSettingsScreen({
     setSaving(true);
     setNotice(null);
     try {
-      const response = await fetch("/api/auth/profile/reset-password", {
+      const response = await authFetch("/api/auth/profile/reset-password", {
         method: "PUT",
         headers: requestHeaders(auth),
         body: JSON.stringify({
@@ -2156,7 +2172,7 @@ export function SystemSettingsScreen({
     setSaving(true);
     setNotice(null);
     try {
-      const response = await fetch(
+      const response = await authFetch(
         `/api/system-settings/${currentConfig.slug}${currentId ? `/${encodeURIComponent(currentId)}` : ""}`,
         {
           method: currentId ? "PUT" : "POST",
@@ -2188,7 +2204,7 @@ export function SystemSettingsScreen({
     setSaving(true);
     setNotice(null);
     try {
-      const response = await fetch(
+      const response = await authFetch(
         `/api/system-settings/${currentConfig.slug}?${workspaceTenantSearchParams(workspace).toString()}`,
         {
           method: "POST",
@@ -2244,7 +2260,7 @@ export function SystemSettingsScreen({
         mainHoldingCode: getMainHoldingCodeFromWorkspace(workspace),
         q: searchText,
       });
-      const response = await fetch(
+      const response = await authFetch(
         `/api/workspace/product-units/standard?${params.toString()}`,
         {
           headers: requestHeaders(auth),
@@ -2284,7 +2300,7 @@ export function SystemSettingsScreen({
     }));
     setNotice(null);
     try {
-      const response = await fetch("/api/workspace/product-units/defaults", {
+      const response = await authFetch("/api/workspace/product-units/defaults", {
         method: "POST",
         headers: requestHeaders(auth),
         body: JSON.stringify({
@@ -3514,7 +3530,8 @@ function SettingDataList({
                         <Pencil className="size-3.5" />
                       </Button>
                     ) : null}
-                    {config.slug === "user" &&
+                    {passwordResetLinkAvailable &&
+                    config.slug === "user" &&
                     !isCreator &&
                     !isSelfUserRecord(record, auth) ? (
                       <Button
@@ -3720,7 +3737,7 @@ function CompanyMultiSelectCell({
   useEffect(() => {
     if (!auth || selectedGuids.length === 0) return;
     const controller = new AbortController();
-    void fetch(`/api/workspace/holdings`, {
+    void authFetch(`/api/workspace/holdings`, {
       headers: requestHeaders(auth),
       cache: "no-store",
       signal: controller.signal,
@@ -4209,7 +4226,7 @@ function SettingDetailPanel({
                 {text("edit")}
               </Button>
             ) : null}
-            {isUser && !isCreator && !isSelf ? (
+            {passwordResetLinkAvailable && isUser && !isCreator && !isSelf ? (
               <Button
                 type="button"
                 size="sm"
@@ -5884,7 +5901,7 @@ function uniqueStrings(values: string[]): string[] {
 }
 
 function isPermissionCodesField(field: SystemSettingField): boolean {
-  return field.key === "permissioncodes" || field.key === "permissionCodes";
+  return field.key === "permissioncodes" || field.key === "permissionCodes" || field.key === "permissions";
 }
 
 function isApprovalCodesField(field: SystemSettingField): boolean {
@@ -5990,7 +6007,7 @@ function PermissionLinkUserSelector({
           q: searchText,
         });
         applyWorkspaceTenantParams(searchParams, workspace);
-        const response = await fetch(
+        const response = await authFetch(
           `/api/system-settings/${userConfig.slug}?${searchParams.toString()}`,
           {
             headers: requestHeaders(auth),
@@ -6217,7 +6234,7 @@ function PermissionLinkMultiSelectEditor({
           offset: "0",
         });
         applyWorkspaceTenantParams(searchParams, workspace);
-        const response = await fetch(
+        const response = await authFetch(
           `/api/system-settings/${sourceConfig.slug}?${searchParams.toString()}`,
           {
             headers: requestHeaders(auth),
@@ -6887,9 +6904,9 @@ function UserAccessAuditReportPanel({
           <div className="grid gap-2 rounded-xl border border-border bg-muted/20 p-3 text-xs">
             <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
               <AuditMetric label={language === "th" ? "เลือกทำรายงาน" : "Report users"} value={`${reportUsers.length}/${data.users.length}`} />
-              <AuditMetric label={language === "th" ? "ผูกสิทธิ์" : "Assignments"} value={String(selectedUserLinks.length)} />
+              <AuditMetric label={language === "th" ? "บทบาทสิทธิ์" : "Role permissions"} value={String(auditSummary.linkLines.length)} />
               <AuditMetric label={language === "th" ? "สิทธิ์หน้าจอ" : "Permissions"} value={String(auditSummary.permissions.length)} />
-              <AuditMetric label={language === "th" ? "สิทธิ์อนุมัติ" : "Approvals"} value={String(auditSummary.approvals.length)} />
+              <AuditMetric label={language === "th" ? "สิทธิ์อนุมัติ" : "Approvals"} value="-" />
             </div>
             <p className="text-muted-foreground">
               {language === "th" ? "เวลาสร้างรายงาน" : "Report generated"}:{" "}
@@ -6968,7 +6985,7 @@ function UserAccessAuditReportPage({
         <div className="audit-report-meta grid gap-0 border border-slate-300 text-xs md:grid-cols-3">
           <AuditLine label={language === "th" ? "กลุ่มกิจการ" : "Business group"} value={holdingLabel} />
           <AuditLine label={language === "th" ? "ผู้ใช้งาน" : "User"} value={auditUserCode(user)} />
-          <AuditLine label={language === "th" ? "จำนวนรายการผูกสิทธิ์" : "Assignments"} value={String(links.length)} />
+          <AuditLine label={language === "th" ? "จำนวนบทบาทสิทธิ์" : "Role permissions"} value={String(summary.linkLines.length)} />
         </div>
       </header>
       <div className="audit-report-body grid gap-2 pt-2">
@@ -6991,11 +7008,11 @@ function UserAccessAuditReportPage({
               <AuditBullet text={language === "th" ? "ยังไม่ได้กำหนดขอบเขตการเข้าใช้งาน" : "No access scope configured."} />
             )}
           </AuditSection>
-          <AuditSection title={language === "th" ? "สิทธิ์ผู้ใช้งานที่ผูกไว้" : "Assigned User Permissions"}>
+          <AuditSection title={language === "th" ? "สิทธิ์ตามบทบาท" : "Role Permissions"}>
             {summary.linkLines.length > 0 ? (
               summary.linkLines.map((line) => <AuditBullet key={line} text={line} />)
             ) : (
-              <AuditBullet text={language === "th" ? "ยังไม่มีรายการผูกสิทธิ์ผู้ใช้งาน" : "No user permission assignment found."} />
+              <AuditBullet text={language === "th" ? "ยังไม่ได้กำหนดสิทธิ์สำหรับบทบาทนี้" : "No permission is configured for this role."} />
             )}
           </AuditSection>
         </div>
@@ -7024,14 +7041,20 @@ function UserAccessAuditReportPage({
               ))}
             </div>
           ) : (
-            <AuditBullet text={language === "th" ? "ยังไม่พบสิทธิ์อนุมัติ" : "No approval permissions found."} />
+            <AuditBullet
+              text={
+                language === "th"
+                  ? "ยังไม่มีแหล่งข้อมูลสิทธิ์อนุมัติที่ยืนยันในระบบ"
+                  : "No confirmed approval-permission data source is configured."
+              }
+            />
           )}
         </AuditSection>
       </div>
       <footer className="audit-report-footer mt-2 border-t border-slate-300 pt-1.5 text-[10px] text-slate-500">
         {language === "th"
-          ? "รายงานนี้สร้างจากข้อมูลสิทธิ์ในระบบ ณ เวลาที่พิมพ์"
-          : "This report is generated from the current system permission data at print time."}
+          ? "รายงานนี้สร้างจากข้อมูลบทบาทและสิทธิ์หน้าจอ ณ เวลาที่พิมพ์"
+          : "This report is generated from role and screen-permission data at print time."}
       </footer>
     </section>
   );
@@ -7078,22 +7101,20 @@ async function loadUserAccessAuditData(
   language: LanguageCode,
   signal?: AbortSignal,
 ): Promise<UserAccessAuditData> {
-  const [users, permissionLinks, permissionDefinitions, permissionGroups, approvals, holdingData] = await Promise.all([
+  const [users, permissionDefinitions, permissionGroups, holdingData] = await Promise.all([
     loadAuditRecords(auth, workspace, "user", signal),
-    loadAuditRecords(auth, workspace, "permissionlink", signal),
     loadAuditRecords(auth, workspace, "permissiondefinition", signal),
     loadAuditRecords(auth, workspace, "permissiongroup", signal),
-    loadAuditRecords(auth, workspace, "approvalsetting", signal),
     loadAuditHoldingData(auth, workspace, language, signal),
   ]);
   return {
-    approvals,
+    approvals: [],
     branches: holdingData.branches,
     companies: holdingData.companies,
     loadedAt: new Date().toISOString(),
     permissionDefinitions,
     permissionGroups,
-    permissionLinks,
+    permissionLinks: [],
     users,
   };
 }
@@ -7112,7 +7133,7 @@ async function loadAuditRecords(
     page: "1",
   });
   applyWorkspaceTenantParams(params, workspace);
-  const response = await fetch(`/api/system-settings/${slug}?${params.toString()}`, {
+  const response = await authFetch(`/api/system-settings/${slug}?${params.toString()}`, {
     headers: requestHeaders(auth),
     cache: "no-store",
     signal,
@@ -7133,7 +7154,7 @@ async function loadAuditHoldingData(
   const activeHoldingCode = workspaceHoldingCode(workspace);
   const params = new URLSearchParams();
   if (activeHoldingCode) params.set("activeholdingcode", activeHoldingCode);
-  const response = await fetch(`/api/workspace/holdings${params.size ? `?${params.toString()}` : ""}`, {
+  const response = await authFetch(`/api/workspace/holdings${params.size ? `?${params.toString()}` : ""}`, {
     headers: requestHeaders(auth),
     cache: "no-store",
     signal,
@@ -7183,12 +7204,23 @@ function buildUserAccessAuditSummary(
   }
 
   const groupByCode = new Map(
-    data.permissionGroups.map((group) => [normalizeBusinessCode(group.groupcode ?? group.groupCode ?? group.code), group]),
+    data.permissionGroups.map((group) => [
+      normalizeBusinessCode(group.rolecode ?? group.roleCode ?? group.groupcode ?? group.groupCode ?? group.code),
+      group,
+    ]),
   );
   for (const groupCode of groupCodes) {
     const group = groupByCode.get(groupCode);
     if (!group) continue;
-    auditCodeList(group.permissioncodes ?? group.permissionCodes).forEach((code) => permissionCodes.add(code));
+    auditCodeList(group.permissions ?? group.permissioncodes ?? group.permissionCodes).forEach((code) => permissionCodes.add(code));
+  }
+
+  const roleCode = user ? auditRoleCode(user.role) : "";
+  const rolePermission = roleCode ? groupByCode.get(roleCode) : undefined;
+  if (rolePermission && rolePermission.isactive !== false) {
+    auditCodeList(rolePermission.permissions ?? rolePermission.permissioncodes ?? rolePermission.permissionCodes).forEach((code) =>
+      permissionCodes.add(code),
+    );
   }
 
   const permissionByCode = new Map(
@@ -7222,6 +7254,13 @@ function buildUserAccessAuditSummary(
       ...scopeLines.map((line) => `- ${line}`),
     ];
   });
+  if (rolePermission) {
+    const roleName = localizedValue(rolePermission.names, language) || roleCode;
+    const activeLabel = rolePermission.isactive === false
+      ? (language === "th" ? "ปิดใช้งาน" : "inactive")
+      : (language === "th" ? "เปิดใช้งาน" : "active");
+    linkLines.unshift(`${language === "th" ? "บทบาท" : "Role"}: ${roleCode} - ${roleName} (${activeLabel})`);
+  }
   const permissions = Array.from(permissionCodes)
     .sort()
     .map((code) => {
@@ -7356,6 +7395,13 @@ function auditRoleLabel(value: unknown, language: LanguageCode): string {
   return language === "th" ? "ระดับผู้ใช้งาน" : "User";
 }
 
+function auditRoleCode(value: unknown): "USER" | "ADMIN" | "OWNER" {
+  const role = Number(value ?? 0);
+  if (role === 2) return "OWNER";
+  if (role === 1) return "ADMIN";
+  return "USER";
+}
+
 function HoldingScopeRulesEditor({
   auth,
   field,
@@ -7407,7 +7453,7 @@ function HoldingScopeRulesEditor({
     const params = new URLSearchParams();
     if (activeHoldingCode) params.set("activeholdingcode", activeHoldingCode);
 
-    void fetch(`/api/workspace/holdings${params.size ? `?${params.toString()}` : ""}`, {
+    void authFetch(`/api/workspace/holdings${params.size ? `?${params.toString()}` : ""}`, {
       headers: requestHeaders(auth),
       cache: "no-store",
       signal: controller.signal,
@@ -9371,7 +9417,7 @@ async function fetchSettingRecordsByTaxId(
     if (!config) return [];
     const params = applyWorkspaceTenantParams(new URLSearchParams(), workspace);
     params.set("q", taxid);
-    const response = await fetch(`/api/system-settings/${slug}?${params.toString()}`, {
+    const response = await authFetch(`/api/system-settings/${slug}?${params.toString()}`, {
       headers: {
         "x-bc-backend-url": auth.backendUrl,
         Authorization: `Bearer ${auth.token}`,
@@ -12058,7 +12104,7 @@ function ImageUploadFieldEditor({
       const uploadForm = new FormData();
       uploadForm.append("file", toUpload, toUpload.name);
       uploadForm.append("category", `system-settings/${field.key}`);
-      const response = await fetch("/api/upload/image", {
+      const response = await authFetch("/api/upload/image", {
         method: "POST",
         headers: {
           "x-bc-backend-url": session.backendUrl,
@@ -12384,7 +12430,7 @@ function ImageGalleryFieldEditor({
       const uploadForm = new FormData();
       uploadForm.append("file", resizedFile, resizedFile.name);
       uploadForm.append("category", `system-settings/${field.key}`);
-      const response = await fetch("/api/upload/image", {
+      const response = await authFetch("/api/upload/image", {
         method: "POST",
         headers: {
           "x-bc-backend-url": auth.backendUrl,
@@ -12819,7 +12865,7 @@ function BranchMultiSelectFieldEditor({
       holdingcodes = [workspace.shop.holdingcode];
     }
 
-    void fetch(`/api/workspace/holdings`, {
+    void authFetch(`/api/workspace/holdings`, {
       headers: requestHeaders(auth),
       cache: "no-store",
       signal: controller.signal,
@@ -12842,7 +12888,7 @@ function BranchMultiSelectFieldEditor({
             offset: "0",
             holdingcode: sid,
           });
-          const response = await fetch(`/api/system-settings/branch?${params.toString()}`, {
+          const response = await authFetch(`/api/system-settings/branch?${params.toString()}`, {
             headers: requestHeaders(auth),
             cache: "no-store",
             signal: controller.signal,
@@ -13295,7 +13341,7 @@ function CompanyMultiSelectFieldEditor({
     const activeHoldingCode = stringValue(workspace.shop.holdingcode);
     if (activeHoldingCode) params.set("activeholdingcode", activeHoldingCode);
 
-    void fetch(`/api/workspace/holdings${params.size > 0 ? `?${params.toString()}` : ""}`, {
+    void authFetch(`/api/workspace/holdings${params.size > 0 ? `?${params.toString()}` : ""}`, {
       headers: requestHeaders(auth),
       cache: "no-store",
       signal: controller.signal,
@@ -13416,7 +13462,7 @@ function CompanyMultiSelectReadOnlyDetail({
   useEffect(() => {
     if (!auth || selectedGuids.length === 0) return;
     const controller = new AbortController();
-    void fetch(`/api/workspace/holdings`, {
+    void authFetch(`/api/workspace/holdings`, {
       headers: requestHeaders(auth),
       cache: "no-store",
       signal: controller.signal,

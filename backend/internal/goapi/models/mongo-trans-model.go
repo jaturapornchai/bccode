@@ -112,6 +112,7 @@ type MongoDocReferenceModel struct {
 
 type MongoDocModel struct {
 	HoldingCode    string                   `json:"holdingcode" bson:"holdingcode"`
+	BusinessCode   string                   `json:"businesscode" bson:"businesscode"`
 	BranchId       string                   `json:"branchid" bson:"branchid"`
 	GuidFixed      string                   `json:"guidfixed" bson:"guidfixed"`
 	DocNo          string                   `json:"docno" bson:"docno"`
@@ -179,6 +180,7 @@ type BranchModel = MongoBranchModel
 // StockTransferStruct represents a stock transfer document
 type StockTransferStruct struct {
 	HoldingCode        string                      `json:"holdingcode" bson:"holdingcode"`
+	BusinessCode       string                      `json:"businesscode" bson:"businesscode"`
 	BranchCode         string                      `json:"branchcode" bson:"branchcode"`
 	DocNo              string                      `json:"docno" bson:"docno"`
 	RefNo              string                      `json:"refno" bson:"refno"`
@@ -200,7 +202,6 @@ type StockTransferDetailStruct struct {
 	LineNumber      int     `json:"linenumber" bson:"linenumber"`
 	ItemCode        string  `json:"itemcode" bson:"itemcode"`
 	Description     string  `json:"description" bson:"description"`
-	BarcodeMain     string  `json:"barcodemain" bson:"barcodemain"`
 	Barcode         string  `json:"barcode" bson:"barcode"`
 	UnitCode        string  `json:"unitcode" bson:"unitcode"`
 	WhCode          string  `json:"whcode" bson:"whcode"`
@@ -219,6 +220,7 @@ type StockTransferDetailStruct struct {
 // StockReceiveProductStruct represents a stock receive product document (TransFlag 60)
 type StockReceiveProductStruct struct {
 	HoldingCode        string                            `json:"holdingcode" bson:"holdingcode"`
+	BusinessCode       string                            `json:"businesscode" bson:"businesscode"`
 	BranchId           string                            `json:"branchid" bson:"branchid"`
 	GuidFixed          string                            `json:"guidfixed" bson:"guidfixed"`
 	DocNo              string                            `json:"docno" bson:"docno"`
@@ -262,6 +264,7 @@ type StockReceiveProductDetailStruct struct {
 // StockPickupProductStruct represents a stock pickup product document (TransFlag 56)
 type StockPickupProductStruct struct {
 	HoldingCode        string                           `json:"holdingcode" bson:"holdingcode"`
+	BusinessCode       string                           `json:"businesscode" bson:"businesscode"`
 	BranchId           string                           `json:"branchid" bson:"branchid"`
 	GuidFixed          string                           `json:"guidfixed" bson:"guidfixed"`
 	DocNo              string                           `json:"docno" bson:"docno"`
@@ -305,6 +308,7 @@ type StockPickupProductDetailStruct struct {
 // StockReturnProductStruct represents a stock return product document (TransFlag 58)
 type StockReturnProductStruct struct {
 	HoldingCode        string                           `json:"holdingcode" bson:"holdingcode"`
+	BusinessCode       string                           `json:"businesscode" bson:"businesscode"`
 	BranchId           string                           `json:"branchid" bson:"branchid"`
 	GuidFixed          string                           `json:"guidfixed" bson:"guidfixed"`
 	DocNo              string                           `json:"docno" bson:"docno"`
@@ -348,6 +352,7 @@ type StockReturnProductDetailStruct struct {
 // StockAdjustmentStruct represents a stock adjustment document (TransFlag 66, 68)
 type StockAdjustmentStruct struct {
 	HoldingCode        string                        `json:"holdingcode" bson:"holdingcode"`
+	BusinessCode       string                        `json:"businesscode" bson:"businesscode"`
 	BranchId           string                        `json:"branchid" bson:"branchid"`
 	GuidFixed          string                        `json:"guidfixed" bson:"guidfixed"`
 	DocNo              string                        `json:"docno" bson:"docno"`
@@ -394,6 +399,7 @@ type StockAdjustmentDetailStruct struct {
 // StockBalanceStruct represents a stock balance document (TransFlag 54) - ยอดยกมา
 type StockBalanceStruct struct {
 	HoldingCode        string                     `json:"holdingcode" bson:"holdingcode"`
+	BusinessCode       string                     `json:"businesscode" bson:"businesscode"`
 	BranchId           string                     `json:"branchid" bson:"branchid"`
 	GuidFixed          string                     `json:"guidfixed" bson:"guidfixed"`
 	DocNo              string                     `json:"docno" bson:"docno"`
